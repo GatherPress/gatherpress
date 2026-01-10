@@ -122,7 +122,7 @@ jQuery( document ).ready( function( $ ) {
 					}
 
 					// Add AI response
-					addMessage( data.response, 'assistant', data.actions, data.model_info );
+					addMessage( data.response, 'assistant', data.actions, data.model_info, data.token_usage );
 				} else {
 					addMessage( 'Error: ' + ( response.data.message || 'Unknown error' ), 'error' );
 				}
@@ -218,12 +218,13 @@ jQuery( document ).ready( function( $ ) {
 	/**
 	 * Add a message to the chat
 	 *
-	 * @param {string} content   The message content
-	 * @param {string} type      The message type (user, assistant, error, success)
-	 * @param {Array}  actions   Optional array of actions taken
-	 * @param {Object} modelInfo Optional object with provider and model info
+	 * @param {string} content    The message content
+	 * @param {string} type       The message type (user, assistant, error, success)
+	 * @param {Array}  actions    Optional array of actions taken
+	 * @param {Object} modelInfo  Optional object with provider and model info
+	 * @param {Object} tokenUsage Optional object with token usage stats
 	 */
-	function addMessage( content, type, actions, modelInfo ) {
+	function addMessage( content, type, actions, modelInfo, tokenUsage ) {
 		const $message = $( '<div>' )
 			.addClass( 'gp-ai-message' )
 			.addClass( type );
@@ -242,6 +243,28 @@ jQuery( document ).ready( function( $ ) {
 				} )
 				.text( `Using ${ modelInfo.provider } ${ modelInfo.model }` );
 			$message.append( $modelInfo );
+
+			// Add token usage debug info if available.
+			if ( tokenUsage ) {
+				const costText = tokenUsage.estimated_cost
+					? ` (~$${ tokenUsage.estimated_cost.toFixed( 4 ) })`
+					: '';
+				const $tokenInfo = $( '<div>' )
+					.addClass( 'gp-ai-token-info' )
+					.css( {
+						'margin-bottom': '10px',
+						'padding-bottom': '10px',
+						'border-bottom': '1px solid rgba(0, 0, 0, 0.1)',
+						'font-size': '12px',
+						color: '#646970',
+					} )
+					.text(
+						`Tokens: ${ tokenUsage.prompt_tokens.toLocaleString() } prompt, ` +
+						`${ tokenUsage.completion_tokens.toLocaleString() } completion, ` +
+						`${ tokenUsage.total_tokens.toLocaleString() } total${ costText }`
+					);
+				$message.append( $tokenInfo );
+			}
 		}
 
 		const $content = $( '<div>' )

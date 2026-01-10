@@ -264,11 +264,14 @@ Rules:
 		array $function_declarations,
 		array $existing_history = array()
 	) {
-		$actions_taken        = array();
-		$iterations           = 0;
-		$executed_calls       = array(); // Track executed function calls to prevent duplicates.
-		$conversation_history = array();
-		$model_info           = null; // Store model/provider info from first successful result.
+		$actions_taken           = array();
+		$iterations              = 0;
+		$executed_calls          = array(); // Track executed function calls to prevent duplicates.
+		$conversation_history    = array();
+		$model_info              = null; // Store model/provider info from first successful result.
+		$total_prompt_tokens     = 0; // Accumulate prompt tokens across all iterations.
+		$total_completion_tokens = 0; // Accumulate completion tokens across all iterations.
+		$total_tokens            = 0; // Accumulate total tokens across all iterations.
 
 		while ( $iterations < self::MAX_ITERATIONS ) {
 			++$iterations;
@@ -372,6 +375,12 @@ Rules:
 				);
 			}
 
+			// Accumulate token usage from this iteration.
+			$token_usage              = $result->getTokenUsage();
+			$total_prompt_tokens     += $token_usage->getPromptTokens();
+			$total_completion_tokens += $token_usage->getCompletionTokens();
+			$total_tokens            += $token_usage->getTotalTokens();
+
 			$message = $candidates[0]->getMessage();
 
 			// Check if message has ability function calls.
@@ -383,10 +392,20 @@ Rules:
 					? $text_content
 					: __( 'Task completed!', 'gatherpress' );
 
+				// Calculate estimated cost (using GPT-4 Turbo pricing as default).
+				// Input: $0.01 per 1K tokens, Output: $0.03 per 1K tokens.
+				$estimated_cost = ( $total_prompt_tokens / 1000 * 0.01 ) + ( $total_completion_tokens / 1000 * 0.03 );
+
 				$return_data = array(
-					'response'   => $response_text,
-					'actions'    => $actions_taken,
-					'model_info' => $model_info,
+					'response'    => $response_text,
+					'actions'     => $actions_taken,
+					'model_info'  => $model_info,
+					'token_usage' => array(
+						'prompt_tokens'     => $total_prompt_tokens,
+						'completion_tokens' => $total_completion_tokens,
+						'total_tokens'      => $total_tokens,
+						'estimated_cost'    => $estimated_cost,
+					),
 				);
 
 				return $return_data;

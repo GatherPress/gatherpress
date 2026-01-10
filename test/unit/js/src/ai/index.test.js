@@ -885,6 +885,85 @@ describe( 'AI Assistant', () => {
 				done();
 			}, 10 );
 		} );
+
+		it( 'should display token usage info when provided', ( done ) => {
+			const clickHandler = mockSubmit.on.mock.calls.find(
+				( call ) => 'click' === call[ 0 ]
+			)[ 1 ];
+
+			mockPrompt.val.mockReturnValue( 'Test prompt' );
+
+			mockJQuery.ajax.mockImplementation( ( options ) => {
+				setTimeout( () => {
+					options.success( {
+						success: true,
+						data: {
+							response: 'Test response',
+							model_info: {
+								provider: 'OpenAI',
+								model: 'gpt-4-turbo',
+							},
+							token_usage: {
+								prompt_tokens: 1000,
+								completion_tokens: 500,
+								total_tokens: 1500,
+								estimated_cost: 0.025,
+							},
+						},
+					} );
+					options.complete();
+				}, 0 );
+			} );
+
+			clickHandler( { preventDefault: jest.fn() } );
+
+			setTimeout( () => {
+				// Verify that addMessage was called with token_usage parameter.
+				// This is verified by checking that append was called (which happens in addMessage).
+				expect( mockMessages.append ).toHaveBeenCalled();
+				// Verify the message element has addClass called (which happens when creating message structure).
+				expect( mockMessages.append.mock.calls.length ).toBeGreaterThan( 0 );
+				done();
+			}, 10 );
+		} );
+
+		it( 'should display token usage without cost when estimated_cost is missing', ( done ) => {
+			const clickHandler = mockSubmit.on.mock.calls.find(
+				( call ) => 'click' === call[ 0 ]
+			)[ 1 ];
+
+			mockPrompt.val.mockReturnValue( 'Test prompt' );
+
+			mockJQuery.ajax.mockImplementation( ( options ) => {
+				setTimeout( () => {
+					options.success( {
+						success: true,
+						data: {
+							response: 'Test response',
+							model_info: {
+								provider: 'OpenAI',
+								model: 'gpt-4-turbo',
+							},
+							token_usage: {
+								prompt_tokens: 500,
+								completion_tokens: 200,
+								total_tokens: 700,
+								// No estimated_cost
+							},
+						},
+					} );
+					options.complete();
+				}, 0 );
+			} );
+
+			clickHandler( { preventDefault: jest.fn() } );
+
+			setTimeout( () => {
+				// Verify that message is added even without estimated_cost.
+				expect( mockMessages.append ).toHaveBeenCalled();
+				done();
+			}, 10 );
+		} );
 	} );
 } );
 

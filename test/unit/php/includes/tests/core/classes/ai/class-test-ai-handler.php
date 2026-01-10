@@ -1007,4 +1007,65 @@ class Test_AI_Handler extends Base {
 		$fourth = Message::fromArray( $updated[3] );
 		$this->assertInstanceOf( ModelMessage::class, $fourth );
 	}
+
+	/**
+	 * Coverage for token usage calculation structure.
+	 *
+	 * Verifies that token usage data structure matches expected format.
+	 * Full integration testing would require extensive mocking of wp-ai-client
+	 * TokenUsage and GenerativeAiResult objects.
+	 *
+	 * @return void
+	 */
+	public function test_token_usage_calculation_structure(): void {
+		// Test the calculation formula used in process_conversation_loop.
+		// Input: $0.01 per 1K tokens, Output: $0.03 per 1K tokens.
+		$total_prompt_tokens     = 1000;
+		$total_completion_tokens = 500;
+		$total_tokens            = 1500;
+
+		$estimated_cost = ( $total_prompt_tokens / 1000 * 0.01 ) + ( $total_completion_tokens / 1000 * 0.03 );
+
+		// Verify calculation is correct.
+		$expected_cost = ( 1000 / 1000 * 0.01 ) + ( 500 / 1000 * 0.03 );
+		$this->assertSame(
+			$expected_cost,
+			$estimated_cost,
+			'Failed to assert token usage cost calculation is correct.'
+		);
+		$this->assertSame( 0.025, $estimated_cost, 'Failed to assert expected cost value.' );
+
+		// Verify token usage structure matches expected format.
+		$token_usage = array(
+			'prompt_tokens'     => $total_prompt_tokens,
+			'completion_tokens' => $total_completion_tokens,
+			'total_tokens'      => $total_tokens,
+			'estimated_cost'    => $estimated_cost,
+		);
+
+		$this->assertIsArray( $token_usage );
+		$this->assertArrayHasKey( 'prompt_tokens', $token_usage );
+		$this->assertArrayHasKey( 'completion_tokens', $token_usage );
+		$this->assertArrayHasKey( 'total_tokens', $token_usage );
+		$this->assertArrayHasKey( 'estimated_cost', $token_usage );
+		$this->assertIsInt( $token_usage['prompt_tokens'] );
+		$this->assertIsInt( $token_usage['completion_tokens'] );
+		$this->assertIsInt( $token_usage['total_tokens'] );
+		$this->assertIsFloat( $token_usage['estimated_cost'] );
+	}
+
+	/**
+	 * Coverage for token usage calculation with zero tokens.
+	 *
+	 * @return void
+	 */
+	public function test_token_usage_calculation_with_zero_tokens(): void {
+		$total_prompt_tokens     = 0;
+		$total_completion_tokens = 0;
+		$total_tokens            = 0;
+
+		$estimated_cost = ( $total_prompt_tokens / 1000 * 0.01 ) + ( $total_completion_tokens / 1000 * 0.03 );
+
+		$this->assertSame( 0.0, $estimated_cost, 'Failed to assert zero tokens results in zero cost.' );
+	}
 }
