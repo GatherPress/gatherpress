@@ -14,6 +14,7 @@ Key points:
 * Event can have Topics, which work like Categories for posts.
 
 [More about Events](./creating-and-managing-events.md)
+
 [More about Topics](./topics.md)
 
 ## Venues
