@@ -126,6 +126,15 @@ class Event {
 	public ?Rsvp $rsvp = null;
 
 	/**
+	 * Cached datetime data.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @var array|null
+	 */
+	private ?array $datetime_cache = null;
+
+	/**
 	 * Event constructor.
 	 *
 	 * Initializes an Event object for a specific event post.
@@ -416,10 +425,9 @@ class Event {
 	/**
 	 * Retrieves event timing and adjusts timezone based on user preferences or site settings.
 	 *
-	 * This method fetches the event's start and end dates and times, along with timezone information,
-	 * either from a custom database table associated with the event or user metadata. It uses caching
-	 * to optimize database interactions, ensuring that data is fetched and stored efficiently for
-	 * future requests.
+	 * Fetches the event's start and end dates/times (local and GMT) along with
+	 * timezone information from post meta. Datetime values are validated before
+	 * being returned.
 	 *
 	 * @since 1.0.0
 	 *
@@ -432,7 +440,9 @@ class Event {
 	 *     - 'timezone'           (string) The timezone of the event, adjusted per user or site settings.
 	 */
 	public function get_datetime(): array {
-		global $wpdb;
+		if ( null !== $this->datetime_cache ) {
+			return $this->datetime_cache;
+		}
 
 		$data = array(
 			'datetime_start'     => '',
@@ -446,15 +456,17 @@ class Event {
 			return $data;
 		}
 
-		foreach ( $data as $key => & $value ) {
-			$result = get_post_meta( $this->event->ID, 'gatherpress_' . $key, true );
+		foreach ( array_keys( $data ) as $key ) {
+			$result = get_post_meta( $this->event->ID, Utility::prefix_key( $key ), true );
 
-			if ( ! empty( $result ) ) {
-				$value = $result;
+			if ( ! empty( $result ) && Validate::datetime( $result ) ) {
+				$data[ $key ] = $result;
 			}
 		}
 
 		$data['timezone'] = apply_filters( 'gatherpress_timezone', $data['timezone'] );
+
+		$this->datetime_cache = $data;
 
 		return $data;
 	}
@@ -872,7 +884,7 @@ class Event {
 				array( 'post_id' => $fields['post_id'] )
 			);
 
-			delete_transient( sprintf( self::DATETIME_CACHE_KEY, $fields['post_id'] ) );
+			$this->datetime_cache = null;
 		} else {
 			$value = $wpdb->insert( $table, $fields );
 		}
