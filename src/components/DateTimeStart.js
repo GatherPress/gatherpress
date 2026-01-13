@@ -1,9 +1,4 @@
 /**
- * External dependencies.
- */
-import moment from 'moment';
-
-/**
  * WordPress dependencies.
  */
 import {
@@ -23,6 +18,7 @@ import { useDispatch, useSelect } from '@wordpress/data';
  */
 import { hasEventPastNotice } from '../helpers/event';
 import {
+	createMomentWithTimezone,
 	dateTimeDatabaseFormat,
 	dateTimeLabelFormat,
 	dateTimeOffset,
@@ -66,8 +62,7 @@ const DateTimeStart = () => {
 
 	useEffect( () => {
 		setDateTimeStart(
-			moment
-				.tz( dateTimeStart, getTimezone() )
+			createMomentWithTimezone( dateTimeStart, getTimezone() )
 				.format( dateTimeDatabaseFormat ),
 		);
 
@@ -98,8 +93,7 @@ const DateTimeStart = () => {
 								aria-expanded={ isOpen }
 								variant="link"
 							>
-								{ moment
-									.tz( dateTimeStart, getTimezone() )
+								{ createMomentWithTimezone( dateTimeStart, getTimezone() )
 									.format( dateTimeLabelFormat() ) }
 							</Button>
 						) }

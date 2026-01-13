@@ -1,9 +1,4 @@
 /**
- * External dependencies.
- */
-import moment from 'moment';
-
-/**
  * WordPress dependencies.
  */
 import { useDispatch, useSelect } from '@wordpress/data';
@@ -12,7 +7,10 @@ import { useEffect } from '@wordpress/element';
 /**
  * Internal dependencies.
  */
-import { dateTimeDatabaseFormat } from '../helpers/datetime';
+import {
+	dateTimeDatabaseFormat,
+	createMomentWithTimezone,
+} from '../helpers/datetime';
 import DateTimeStart from '../components/DateTimeStart';
 import DateTimeEnd from '../components/DateTimeEnd';
 import Timezone from './Timezone';
@@ -65,11 +63,9 @@ const DateTimeRange = () => {
 	useEffect( () => {
 		const payload = JSON.stringify( {
 			...dateTimeMetaData,
-			dateTimeStart: moment
-				.tz( dateTimeStart, timezone )
+			dateTimeStart: createMomentWithTimezone( dateTimeStart, timezone )
 				.format( dateTimeDatabaseFormat ),
-			dateTimeEnd: moment
-				.tz( dateTimeEnd, timezone )
+			dateTimeEnd: createMomentWithTimezone( dateTimeEnd, timezone )
 				.format( dateTimeDatabaseFormat ),
 			timezone,
 		} );
