@@ -284,6 +284,9 @@ class Test_Import extends Base {
 		);
 		$instance->datetimes_callback( $post->ID, $meta_data_value );
 
+		// Create new Event instance to get fresh data after datetime save.
+		$event = new Event( $post->ID );
+
 		$expect = array(
 			'datetime_start'     => '2020-05-11 15:00:00',
 			'datetime_start_gmt' => '2020-05-11 19:00:00',

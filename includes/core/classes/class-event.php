@@ -440,10 +440,6 @@ class Event {
 	 *     - 'timezone'           (string) The timezone of the event, adjusted per user or site settings.
 	 */
 	public function get_datetime(): array {
-		if ( null !== $this->datetime_cache ) {
-			return $this->datetime_cache;
-		}
-
 		$data = array(
 			'datetime_start'     => '',
 			'datetime_start_gmt' => '',
@@ -456,10 +452,21 @@ class Event {
 			return $data;
 		}
 
+		if ( null !== $this->datetime_cache ) {
+			return $this->datetime_cache;
+		}
+
 		foreach ( array_keys( $data ) as $key ) {
 			$result = get_post_meta( $this->event->ID, Utility::prefix_key( $key ), true );
 
-			if ( ! empty( $result ) && Validate::datetime( $result ) ) {
+			if ( empty( $result ) ) {
+				continue;
+			}
+
+			// Validate datetime fields vs timezone field.
+			if ( 'timezone' === $key && Validate::timezone( $result ) ) {
+				$data[ $key ] = $result;
+			} elseif ( Validate::datetime( $result ) ) {
 				$data[ $key ] = $result;
 			}
 		}
@@ -883,11 +890,12 @@ class Event {
 				$fields,
 				array( 'post_id' => $fields['post_id'] )
 			);
-
-			$this->datetime_cache = null;
 		} else {
 			$value = $wpdb->insert( $table, $fields );
 		}
+
+		// Clear cache after insert or update.
+		$this->datetime_cache = null;
 		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery
 		// phpcs:enable WordPress.DB.DirectDatabaseQuery.NoCaching
 
