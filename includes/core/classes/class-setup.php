@@ -226,10 +226,25 @@ class Setup {
 		$content = '<h2>' .
 			__( 'Inform your visitors about GatherPress\' use of OpenStreetMap services.', 'gatherpress' ) .
 			'</h2>'
-				. '<p><strong class="privacy-policy-tutorial">' . __( 'Suggested Text:', 'default' ) . '</strong> '
+				. '<p><strong class="privacy-policy-tutorial">' . __( 'Suggested Text:', 'gatherpress' ) . '</strong> '
+				. __(
+					'When viewing maps on event or venue pages, your IP address and certain technical information (such as browser type and referrer URL) are transmitted to the OpenStreetMap Foundation, which operates the map service. ', // phpcs:ignore Generic.Files.LineLength.TooLong
+					'gatherpress'
+				)
 				. sprintf(
 					// translators: %1$s: privacy policy URL of the OpenStreetMap foundation.
-					__( 'When viewing maps on event or venue pages, your IP address and certain technical information (such as browser type and referrer URL) are transmitted to the OpenStreetMap Foundation, which operates the map service. This data is processed according to their <a href="%1$s" target="_blank">privacy policy</a>. For more information about what data OpenStreetMap collects and how it is used, please refer to their <a href="%1$s" target="_blank">privacy documents</a>.', 'gatherpress' ), // phpcs:ignore Generic.Files.LineLength.TooLong
+					__(
+						'This data is processed according to their <a href="%1$s" target="_blank">privacy policy</a>. ',
+						'gatherpress'
+					),
+					'https://osmfoundation.org/wiki/Privacy_Policy'
+				)
+				. sprintf(
+					// translators: %1$s: privacy policy URL of the OpenStreetMap foundation.
+					__(
+						'For more information about what data OpenStreetMap collects and how it is used, please refer to their <a href="%1$s" target="_blank">privacy documents</a>.', // phpcs:ignore Generic.Files.LineLength.TooLong
+						'gatherpress'
+					),
 					'https://osmfoundation.org/wiki/Privacy_Policy'
 				)
 				. '</p>';
@@ -390,7 +405,8 @@ class Setup {
 					KEY datetime_end_gmt (datetime_end_gmt)
 				) {$charset_collate};";
 
-		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+		// Loading WordPress core file for dbDelta function, not importing a class.
+		require_once ABSPATH . 'wp-admin/includes/upgrade.php'; // NOSONAR.
 
 		dbDelta( $sql );
 
@@ -433,8 +449,11 @@ class Setup {
 		}
 
 		wp_admin_notice(
-			// phpcs:ignore Generic.Files.LineLength.TooLong
-			__( 'The GatherPress Alpha plugin is not installed or activated. This plugin is currently in heavy development and requires GatherPress Alpha to handle breaking changes. Please <a href="https://github.com/GatherPress/gatherpress-alpha" target="_blank">download and install GatherPress Alpha</a> to ensure compatibility and avoid issues.', 'gatherpress' ),
+			__(
+				// phpcs:ignore Generic.Files.LineLength.TooLong
+				'The GatherPress Alpha plugin is not installed or activated. This plugin is currently in heavy development and requires GatherPress Alpha to handle breaking changes. Please <a href="https://github.com/GatherPress/gatherpress-alpha" target="_blank">download and install GatherPress Alpha</a> to ensure compatibility and avoid issues.',
+				'gatherpress'
+			),
 			array(
 				'type'        => 'warning',
 				'dismissible' => true,

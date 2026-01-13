@@ -4,7 +4,7 @@
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 return array (
-  'version' => '0.33.0-beta.2',
+  'version' => '0.34.0-alpha.1',
   'project-leaders' => 
   array (
     0 => 
@@ -101,73 +101,47 @@ return array (
         96 => '//www.gravatar.com/avatar/6a8ec9fee1e8bd1da62a7c8a6753b46f?s=96&#038;r=g&#038;d=mm',
       ),
     ),
+    5 => 
+    array (
+      'id' => 23239242,
+      'name' => 'Mahima Dave',
+      'link' => 'https://profiles.wordpress.org/mahimadave/',
+      'slug' => 'mahimadave',
+      'avatar_urls' => 
+      array (
+        24 => '//www.gravatar.com/avatar/d021d620f543af6028b33a4e5442a62e?s=24&#038;r=g&#038;d=mm',
+        48 => '//www.gravatar.com/avatar/d021d620f543af6028b33a4e5442a62e?s=48&#038;r=g&#038;d=mm',
+        96 => '//www.gravatar.com/avatar/d021d620f543af6028b33a4e5442a62e?s=96&#038;r=g&#038;d=mm',
+      ),
+    ),
+    6 => 
+    array (
+      'id' => 21158862,
+      'name' => 'Tushar Patel',
+      'link' => 'https://profiles.wordpress.org/tusharaddweb/',
+      'slug' => 'tusharaddweb',
+      'avatar_urls' => 
+      array (
+        24 => '//www.gravatar.com/avatar/821fa9f96555fb9f3033ea3042b52b45?s=24&#038;r=g&#038;d=mm',
+        48 => '//www.gravatar.com/avatar/821fa9f96555fb9f3033ea3042b52b45?s=48&#038;r=g&#038;d=mm',
+        96 => '//www.gravatar.com/avatar/821fa9f96555fb9f3033ea3042b52b45?s=96&#038;r=g&#038;d=mm',
+      ),
+    ),
+    7 => 
+    array (
+      'id' => 10452344,
+      'name' => 'Pratik Bhatt',
+      'link' => 'https://profiles.wordpress.org/pkbhatt/',
+      'slug' => 'pkbhatt',
+      'avatar_urls' => 
+      array (
+        24 => '//www.gravatar.com/avatar/8c23225a67ae866951341a9d5844af55?s=24&#038;r=g&#038;d=mm',
+        48 => '//www.gravatar.com/avatar/8c23225a67ae866951341a9d5844af55?s=48&#038;r=g&#038;d=mm',
+        96 => '//www.gravatar.com/avatar/8c23225a67ae866951341a9d5844af55?s=96&#038;r=g&#038;d=mm',
+      ),
+    ),
   ),
   'contributors' => 
   array (
-    0 => 
-    array (
-      'id' => 18854320,
-      'name' => 'André Menrath',
-      'link' => 'https://profiles.wordpress.org/andremenrath/',
-      'slug' => 'andremenrath',
-      'avatar_urls' => 
-      array (
-        24 => '//www.gravatar.com/avatar/712f4da4c076ed06a62413971dd25f00?s=24&#038;r=g&#038;d=mm',
-        48 => '//www.gravatar.com/avatar/712f4da4c076ed06a62413971dd25f00?s=48&#038;r=g&#038;d=mm',
-        96 => '//www.gravatar.com/avatar/712f4da4c076ed06a62413971dd25f00?s=96&#038;r=g&#038;d=mm',
-      ),
-    ),
-    1 => 
-    array (
-      'id' => 8521779,
-      'name' => 'Christoph Daum',
-      'link' => 'https://profiles.wordpress.org/apermo/',
-      'slug' => 'apermo',
-      'avatar_urls' => 
-      array (
-        24 => '//www.gravatar.com/avatar/2e834e78e3b90c551711b90418650fd4?s=24&#038;r=g&#038;d=mm',
-        48 => '//www.gravatar.com/avatar/2e834e78e3b90c551711b90418650fd4?s=48&#038;r=g&#038;d=mm',
-        96 => '//www.gravatar.com/avatar/2e834e78e3b90c551711b90418650fd4?s=96&#038;r=g&#038;d=mm',
-      ),
-    ),
-    2 => 
-    array (
-      'id' => 148148,
-      'name' => 'Dion Hulse',
-      'link' => 'https://profiles.wordpress.org/dd32/',
-      'slug' => 'dd32',
-      'avatar_urls' => 
-      array (
-        24 => '//www.gravatar.com/avatar/019f95633d5ea08e39d8d5dab9bed527?s=24&#038;r=g&#038;d=mm',
-        48 => '//www.gravatar.com/avatar/019f95633d5ea08e39d8d5dab9bed527?s=48&#038;r=g&#038;d=mm',
-        96 => '//www.gravatar.com/avatar/019f95633d5ea08e39d8d5dab9bed527?s=96&#038;r=g&#038;d=mm',
-      ),
-    ),
-    3 => 
-    array (
-      'id' => 17578268,
-      'name' => 'Arslan Kalwar',
-      'link' => 'https://profiles.wordpress.org/passoniate/',
-      'slug' => 'passoniate',
-      'avatar_urls' => 
-      array (
-        24 => '//www.gravatar.com/avatar/df262cbc82caecc7302849e8d591b32c?s=24&#038;r=g&#038;d=mm',
-        48 => '//www.gravatar.com/avatar/df262cbc82caecc7302849e8d591b32c?s=48&#038;r=g&#038;d=mm',
-        96 => '//www.gravatar.com/avatar/df262cbc82caecc7302849e8d591b32c?s=96&#038;r=g&#038;d=mm',
-      ),
-    ),
-    4 => 
-    array (
-      'id' => 16994801,
-      'name' => 'Paul Barthmaier (pbrocks)',
-      'link' => 'https://profiles.wordpress.org/pbrocks/',
-      'slug' => 'pbrocks',
-      'avatar_urls' => 
-      array (
-        24 => '//www.gravatar.com/avatar/b6d92ca42584e8419dffc636e809321a?s=24&#038;r=g&#038;d=mm',
-        48 => '//www.gravatar.com/avatar/b6d92ca42584e8419dffc636e809321a?s=48&#038;r=g&#038;d=mm',
-        96 => '//www.gravatar.com/avatar/b6d92ca42584e8419dffc636e809321a?s=96&#038;r=g&#038;d=mm',
-      ),
-    ),
   ),
 );

@@ -25,21 +25,6 @@ import { Broadcaster } from '../helpers/broadcasting';
  * @return {JSX.Element} The rendered React component.
  */
 const VenueSelector = () => {
-	// eslint-disable-next-line no-unused-vars
-	const [ name, setName ] = useState( '' );
-	// eslint-disable-next-line no-unused-vars
-	const [ fullAddress, setFullAddress ] = useState( '' );
-	// eslint-disable-next-line no-unused-vars
-	const [ phoneNumber, setPhoneNumber ] = useState( '' );
-	// eslint-disable-next-line no-unused-vars
-	const [ website, setWebsite ] = useState( '' );
-	// eslint-disable-next-line no-unused-vars
-	const [ isOnlineEventTerm, setIsOnlineEventTerm ] = useState( false );
-	// eslint-disable-next-line no-unused-vars
-	const [ latitude, setLatitude ] = useState( '' );
-	// eslint-disable-next-line no-unused-vars
-	const [ longitude, setLongitude ] = useState( '' );
-
 	const [ venue, setVenue ] = useState( '' );
 	const editPost = useDispatch( 'core/editor' ).editPost;
 	const { unlockPostSaving } = useDispatch( 'core/editor' );
@@ -94,10 +79,6 @@ const VenueSelector = () => {
 
 		setVenue( venueValue ? String( venueValue ) : '' );
 
-		setName( nameUpdated );
-		setFullAddress( fullAddressUpdated );
-		setPhoneNumber( phoneNumberUpdated );
-		setWebsite( websiteUpdated );
 		updateVenueLatitude( latitudeUpdated );
 		updateVenueLongitude( longitudeUpdated );
 
@@ -148,7 +129,7 @@ const VenueSelector = () => {
 		setVenue( value );
 		value = value.split( ':' );
 
-		const term = '' !== value[ 0 ] ? [ value[ 0 ] ] : [];
+		const term = '' === value[ 0 ] ? [] : [ value[ 0 ] ];
 
 		editPost( { _gatherpress_venue: term } );
 		setVenueSlug( value[ 1 ] );

@@ -75,20 +75,18 @@ export const EventExcludeControls = ( { attributes, setAttributes } ) => {
 	}
 
 	return (
-		<>
-			<ToggleControl
-				label={ __( 'Exclude Current Event', 'gatherpress' ) }
-				checked={ !! excludeCurrent }
-				onChange={ ( value ) => {
-					setAttributes( {
-						query: {
-							...attributes.query,
-							exclude_current: value ? currentPost.id : 0,
-						},
-					} );
-				} }
-			/>
-		</>
+		<ToggleControl
+			label={ __( 'Exclude Current Event', 'gatherpress' ) }
+			checked={ !! excludeCurrent }
+			onChange={ ( value ) => {
+				setAttributes( {
+					query: {
+						...attributes.query,
+						exclude_current: value ? currentPost.id : 0,
+					},
+				} );
+			} }
+		/>
 	);
 };
 
@@ -130,32 +128,30 @@ export const EventIncludeUnfinishedControls = ( {
 	}
 
 	return (
-		<>
-			<ToggleControl
-				label={ __( 'Include unfinished events', 'gatherpress' ) }
-				help={ sprintf(
-					/* translators: %s: 'upcoming' or 'past' */
-					_x(
-						'%s events that have started but are not yet finished.',
-						"'Shows' or 'Hides'",
-						'gatherpress',
-					),
-					effectiveValue
-						? __( 'Shows', 'gatherpress' )
-						: __( 'Hides', 'gatherpress' ),
-				) }
-				checked={ effectiveValue }
-				onChange={ ( value ) => {
-					const newValue = value ? 1 : 0;
-					setAttributes( {
-						query: {
-							...attributes.query,
-							include_unfinished: newValue,
-						},
-					} );
-				} }
-			/>
-		</>
+		<ToggleControl
+			label={ __( 'Include unfinished events', 'gatherpress' ) }
+			help={ sprintf(
+				/* translators: %s: 'upcoming' or 'past' */
+				_x(
+					'%s events that have started but are not yet finished.',
+					"'Shows' or 'Hides'",
+					'gatherpress',
+				),
+				effectiveValue
+					? __( 'Shows', 'gatherpress' )
+					: __( 'Hides', 'gatherpress' ),
+			) }
+			checked={ effectiveValue }
+			onChange={ ( value ) => {
+				const newValue = value ? 1 : 0;
+				setAttributes( {
+					query: {
+						...attributes.query,
+						include_unfinished: newValue,
+					},
+				} );
+			} }
+		/>
 	);
 };
 

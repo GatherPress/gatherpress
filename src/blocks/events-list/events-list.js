@@ -31,10 +31,10 @@ domReady( () => {
 		`[data-gatherpress_block_name="events-list"]`,
 	);
 
-	for ( let i = 0; i < containers.length; i++ ) {
-		const attrs = JSON.parse( containers[ i ].dataset.gatherpress_block_attrs );
+	for ( const container of containers ) {
+		const attrs = JSON.parse( container.dataset.gatherpress_block_attrs );
 
-		createRoot( containers[ i ] ).render(
+		createRoot( container ).render(
 			<EventsList
 				eventOptions={
 					attrs.eventOptions ?? {

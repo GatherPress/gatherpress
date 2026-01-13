@@ -18,19 +18,16 @@ const { state, actions } = store( 'gatherpress', {
 			// Call the linkHandler action to handle the default link behavior.
 			actions.linkHandler( event );
 			const element = getElement();
+			const status = element?.ref?.dataset?.status;
 
-			if ( element && element.ref ) {
-				const status = element.ref.getAttribute( 'data-status' );
+			if ( status ) {
+				const context = getContext();
+				const postId = context?.postId || 0;
 
-				if ( status ) {
-					const context = getContext();
-					const postId = context?.postId || 0;
+				initPostContext( state, postId );
 
-					initPostContext( state, postId );
-
-					if ( postId ) {
-						state.posts[ postId ].rsvpSelection = status;
-					}
+				if ( postId ) {
+					state.posts[ postId ].rsvpSelection = status;
 				}
 			}
 		},
@@ -107,12 +104,12 @@ const { state, actions } = store( 'gatherpress', {
 
 			initPostContext( state, postId );
 
-			const counts = JSON.parse(
-				rsvpResponseElement.getAttribute( 'data-counts' ),
-			);
+			const counts = rsvpResponseElement.dataset.counts
+				? JSON.parse( rsvpResponseElement.dataset.counts )
+				: null;
 
 			// Delete attribute after setting variable. This is just to kick things off...
-			rsvpResponseElement.removeAttribute( 'data-counts' );
+			delete rsvpResponseElement.dataset.counts;
 
 			if ( counts ) {
 				state.posts[ postId ] = {
@@ -125,25 +122,23 @@ const { state, actions } = store( 'gatherpress', {
 				};
 			}
 
-			if ( element && element.ref ) {
-				// Check if the `data-label` attribute is already set.
-				if ( ! element.ref.hasAttribute( 'data-label' ) ) {
-					// Set `data-label` to the element's text content.
-					const textContent = element.ref.textContent.trim();
-					if ( textContent ) {
-						element.ref.setAttribute( 'data-label', textContent );
-					}
+			// Check if the `data-label` attribute is already set.
+			if ( element?.ref && ! element.ref.dataset.label ) {
+				// Set `data-label` to the element's text content.
+				const textContent = element.ref.textContent.trim();
+				if ( textContent ) {
+					element.ref.dataset.label = textContent;
 				}
 			}
 
 			// Fetch the current label and responses data.
 			const parentElement = element.ref.parentElement;
 			const classList = parentElement?.classList || [];
-			const dataLabel = element.ref.getAttribute( 'data-label' );
+			const dataLabel = element.ref.dataset.label;
 			const activeElement =
-				element.ref.getAttribute( 'data-status' ) ===
+				element.ref.dataset.status ===
 					state.posts[ postId ]?.rsvpSelection ||
-				( 'attending' === element.ref.getAttribute( 'data-status' ) &&
+				( 'attending' === element.ref.dataset.status &&
 					'no_status' === state.posts[ postId ]?.rsvpSelection );
 
 			const dropdownParent = element.ref.closest(

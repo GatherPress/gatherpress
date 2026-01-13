@@ -366,14 +366,18 @@ class Rsvp_Form {
 			$prepare_values = array( $post_id, Rsvp::COMMENT_TYPE, $email );
 		}
 
-		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.NoCaching
+		// phpcs:disable WordPress.DB.PreparedSQL.NotPrepared
 		$count = $wpdb->get_var(
 			$wpdb->prepare(
 				$query,
 				...$prepare_values
 			)
 		);
-		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery.NoCaching
+		// phpcs:enable WordPress.DB.PreparedSQL.NotPrepared
 
 		return (int) $count > 0;
 	}
@@ -553,6 +557,11 @@ class Rsvp_Form {
 
 		// Process each custom field.
 		foreach ( $fields as $field_name => $field_config ) {
+			// Skip built-in fields - they are handled by process_meta_fields().
+			if ( in_array( $field_name, Rsvp_Form_Block::BUILT_IN_FIELDS, true ) ) {
+				continue;
+			}
+
 			if ( ! isset( $data[ $field_name ] ) ) {
 				continue;
 			}

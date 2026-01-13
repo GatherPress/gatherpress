@@ -30,6 +30,27 @@ import DateTimePreview from '../components/DateTimePreview';
 export const dateTimeDatabaseFormat = 'YYYY-MM-DD HH:mm:ss';
 
 /**
+ * Get the default start date and time for an event.
+ * It is set to the current date and time plus one day at 18:00:00 in the application's timezone.
+ *
+ * @since 1.0.0
+ *
+ * @return {string} Formatted default start date and time in the application's timezone.
+ */
+function getDefaultDateTimeStart() {
+	const timezone = getTimezone();
+	return createMomentWithTimezone(
+		moment().format( 'YYYY-MM-DD HH:mm:ss' ),
+		timezone
+	)
+		.add( 1, 'day' )
+		.set( 'hour', 18 )
+		.set( 'minute', 0 )
+		.set( 'second', 0 )
+		.format( dateTimeDatabaseFormat );
+}
+
+/**
  * The default start date and time for an event.
  * It is set to the current date and time plus one day at 18:00:00 in the application's timezone.
  *
@@ -37,13 +58,23 @@ export const dateTimeDatabaseFormat = 'YYYY-MM-DD HH:mm:ss';
  *
  * @type {string} Formatted default start date and time in the application's timezone.
  */
-export const defaultDateTimeStart = moment
-	.tz( getTimezone() )
-	.add( 1, 'day' )
-	.set( 'hour', 18 )
-	.set( 'minute', 0 )
-	.set( 'second', 0 )
-	.format( dateTimeDatabaseFormat );
+export const defaultDateTimeStart = getDefaultDateTimeStart();
+
+/**
+ * Get the default end date and time for an event.
+ * It is calculated based on the default start date and time plus two hours in the application's timezone.
+ *
+ * @since 1.0.0
+ *
+ * @return {string} Formatted default end date and time in the application's timezone.
+ */
+function getDefaultDateTimeEnd() {
+	const timezone = getTimezone();
+	const startDateTime = getDefaultDateTimeStart();
+	return createMomentWithTimezone( startDateTime, timezone )
+		.add( 2, 'hours' )
+		.format( dateTimeDatabaseFormat );
+}
 
 /**
  * The default end date and time for an event.
@@ -53,10 +84,7 @@ export const defaultDateTimeStart = moment
  *
  * @type {string} Formatted default end date and time in the application's timezone.
  */
-export const defaultDateTimeEnd = moment
-	.tz( defaultDateTimeStart, getTimezone() )
-	.add( 2, 'hours' )
-	.format( dateTimeDatabaseFormat );
+export const defaultDateTimeEnd = getDefaultDateTimeEnd();
 
 /**
  * Predefined duration options for event scheduling.
@@ -112,8 +140,7 @@ export function durationOptions() {
  * @return {string} The adjusted date and time formatted in a database-compatible format.
  */
 export function dateTimeOffset( hours ) {
-	return moment
-		.tz( getDateTimeStart(), getTimezone() )
+	return createMomentWithTimezone( getDateTimeStart(), getTimezone() )
 		.add( hours, 'hours' )
 		.format( dateTimeDatabaseFormat );
 }
@@ -160,6 +187,45 @@ export function dateTimeLabelFormat() {
 }
 
 /**
+ * Checks if a timezone string is a manual offset (like +05:00 or -12:00).
+ *
+ * Manual offsets start with + or - and cannot be used with moment.tz().
+ *
+ * @since 1.0.0
+ *
+ * @param {string} timezone - The timezone string to check.
+ *
+ * @return {boolean} True if the timezone is a manual offset, false otherwise.
+ */
+export function isManualOffset( timezone ) {
+	return /^[+-]\d{2}:\d{2}$/.test( timezone );
+}
+
+/**
+ * Creates a moment object with the correct timezone handling.
+ *
+ * For IANA timezone identifiers (like 'America/New_York'), uses moment.tz().
+ * For manual offsets (like '+05:00'), uses moment with utcOffset, keeping local time.
+ *
+ * @since 1.0.0
+ *
+ * @param {string} datetime - The datetime string to parse.
+ * @param {string} timezone - The timezone or offset to use.
+ *
+ * @return {Object} A moment object with the correct timezone applied.
+ */
+export function createMomentWithTimezone( datetime, timezone ) {
+	if ( isManualOffset( timezone ) ) {
+		// For manual offsets, parse the datetime and apply the offset while keeping the local time.
+		// The 'true' parameter keeps the local time the same.
+		return moment( datetime ).utcOffset( timezone, true );
+	}
+
+	// For IANA timezone identifiers, use moment.tz().
+	return moment.tz( datetime, timezone );
+}
+
+/**
  * Retrieves the timezone for the application based on the provided timezone or the global setting.
  * If the provided timezone is invalid, the default timezone is set to 'GMT'.
  *
@@ -172,7 +238,13 @@ export function dateTimeLabelFormat() {
 export function getTimezone(
 	timezone = getFromGlobal( 'eventDetails.dateTime.timezone' ),
 ) {
-	if ( !! moment.tz.zone( timezone ) ) {
+	// Manual offsets (like +05:00) are valid, return as-is.
+	if ( isManualOffset( timezone ) ) {
+		return timezone;
+	}
+
+	// For IANA timezone identifiers, validate with moment.tz.
+	if ( moment.tz.zone( timezone ) ) {
 		return timezone;
 	}
 
@@ -192,13 +264,13 @@ export function getTimezone(
 export function getUtcOffset( timezone ) {
 	timezone = getTimezone( timezone );
 
-	if ( __( 'GMT', 'gatherpress' ) !== timezone ) {
-		return '';
+	if ( __( 'GMT', 'gatherpress' ) === timezone ) {
+		const offset = getFromGlobal( 'eventDetails.dateTime.timezone' );
+
+		return maybeConvertUtcOffsetForDisplay( offset );
 	}
 
-	const offset = getFromGlobal( 'eventDetails.dateTime.timezone' );
-
-	return maybeConvertUtcOffsetForDisplay( offset );
+	return '';
 }
 
 /**
@@ -231,23 +303,23 @@ export function maybeConvertUtcOffsetForDatabase( offset = '' ) {
 	const pattern = /^UTC([+-])(\d+)(\.\d+)?$/;
 	const sign = offset.replace( pattern, '$1' );
 
-	if ( sign !== offset ) {
-		const hour = offset.replace( pattern, '$2' ).padStart( 2, '0' );
-		let minute = offset.replace( pattern, '$3' );
-
-		if ( '' === minute ) {
-			minute = ':00';
-		}
-
-		minute = minute
-			.replace( '.25', ':15' )
-			.replace( '.5', ':30' )
-			.replace( '.75', ':45' );
-
-		return sign + hour + minute;
+	if ( sign === offset ) {
+		return offset;
 	}
 
-	return offset;
+	const hour = offset.replace( pattern, '$2' ).padStart( 2, '0' );
+	let minute = offset.replace( pattern, '$3' );
+
+	if ( '' === minute ) {
+		minute = ':00';
+	}
+
+	minute = minute
+		.replace( '.25', ':15' )
+		.replace( '.5', ':30' )
+		.replace( '.75', ':45' );
+
+	return sign + hour + minute;
 }
 
 /**
@@ -293,9 +365,11 @@ export function getDateTimeStart() {
 	let dateTime = getFromGlobal( 'eventDetails.dateTime.datetime_start' );
 
 	dateTime =
-		'' !== dateTime
-			? moment.tz( dateTime, getTimezone() ).format( dateTimeDatabaseFormat )
-			: defaultDateTimeStart;
+		'' === dateTime
+			? defaultDateTimeStart
+			: createMomentWithTimezone( dateTime, getTimezone() ).format(
+				dateTimeDatabaseFormat,
+			);
 
 	setToGlobal( 'eventDetails.dateTime.datetime_start', dateTime );
 
@@ -315,9 +389,11 @@ export function getDateTimeEnd() {
 	let dateTime = getFromGlobal( 'eventDetails.dateTime.datetime_end' );
 
 	dateTime =
-		'' !== dateTime
-			? moment.tz( dateTime, getTimezone() ).format( dateTimeDatabaseFormat )
-			: defaultDateTimeEnd;
+		'' === dateTime
+			? defaultDateTimeEnd
+			: createMomentWithTimezone( dateTime, getTimezone() ).format(
+				dateTimeDatabaseFormat,
+			);
 
 	setToGlobal( 'eventDetails.dateTime.datetime_end', dateTime );
 
@@ -352,8 +428,7 @@ export function updateDateTimeStart(
 
 	// If in relative mode (duration is numeric), always update the end time to maintain the offset.
 	if ( 'number' === typeof currentDuration ) {
-		const dateTimeEnd = moment
-			.tz( date, getTimezone() )
+		const dateTimeEnd = createMomentWithTimezone( date, getTimezone() )
 			.add( currentDuration, 'hours' )
 			.format( dateTimeDatabaseFormat );
 
@@ -421,21 +496,23 @@ export function updateDateTimeEnd(
  * @return {void}
  */
 export function validateDateTimeStart( dateTimeStart, setDateTimeEnd = null, currentDuration = null ) {
-	const dateTimeEndNumeric = moment
-		.tz( getFromGlobal( 'eventDetails.dateTime.datetime_end' ), getTimezone() )
-		.valueOf();
-	const dateTimeStartNumeric = moment
-		.tz( dateTimeStart, getTimezone() )
-		.valueOf();
+	const tz = getTimezone();
+	const dateTimeEndNumeric = createMomentWithTimezone(
+		getFromGlobal( 'eventDetails.dateTime.datetime_end' ),
+		tz,
+	).valueOf();
+	const dateTimeStartNumeric = createMomentWithTimezone(
+		dateTimeStart,
+		tz,
+	).valueOf();
 
 	if ( dateTimeStartNumeric >= dateTimeEndNumeric ) {
 		// Use the passed duration if available, otherwise check current offset.
 		// Only use duration if it's numeric (relative mode), not if it's false (absolute mode).
-		const duration = null !== currentDuration ? currentDuration : getDateTimeOffset();
+		const duration = null === currentDuration ? getDateTimeOffset() : currentDuration;
 		const hoursToAdd = ( false !== duration && 'number' === typeof duration ) ? duration : 2;
 
-		const dateTimeEnd = moment
-			.tz( dateTimeStartNumeric, getTimezone() )
+		const dateTimeEnd = createMomentWithTimezone( dateTimeStartNumeric, tz )
 			.add( hoursToAdd, 'hours' )
 			.format( dateTimeDatabaseFormat );
 
@@ -459,17 +536,18 @@ export function validateDateTimeStart( dateTimeStart, setDateTimeEnd = null, cur
  * @return {void}
  */
 export function validateDateTimeEnd( dateTimeEnd, setDateTimeStart = null ) {
-	const dateTimeStartNumeric = moment
-		.tz(
-			getFromGlobal( 'eventDetails.dateTime.datetime_start' ),
-			getTimezone(),
-		)
-		.valueOf();
-	const dateTimeEndNumeric = moment.tz( dateTimeEnd, getTimezone() ).valueOf();
+	const tz = getTimezone();
+	const dateTimeStartNumeric = createMomentWithTimezone(
+		getFromGlobal( 'eventDetails.dateTime.datetime_start' ),
+		tz,
+	).valueOf();
+	const dateTimeEndNumeric = createMomentWithTimezone(
+		dateTimeEnd,
+		tz,
+	).valueOf();
 
 	if ( dateTimeEndNumeric <= dateTimeStartNumeric ) {
-		const dateTimeStart = moment
-			.tz( dateTimeEndNumeric, getTimezone() )
+		const dateTimeStart = createMomentWithTimezone( dateTimeEndNumeric, tz )
 			.subtract( 2, 'hours' )
 			.format( dateTimeDatabaseFormat );
 		updateDateTimeStart( dateTimeStart, setDateTimeStart );
@@ -559,14 +637,14 @@ export function dateTimePreview() {
 	);
 
 	// Iterate through each matched element and initialize DateTimePreview component.
-	for ( let i = 0; i < dateTimePreviewContainers.length; i++ ) {
+	for ( const container of dateTimePreviewContainers ) {
 		// Parse attributes from the 'data-gatherpress_component_attrs' attribute.
 		const attrs = JSON.parse(
-			dateTimePreviewContainers[ i ].dataset.gatherpress_component_attrs,
+			container.dataset.gatherpress_component_attrs,
 		);
 
 		// Create a root element and render the DateTimePreview component with the parsed attributes.
-		createRoot( dateTimePreviewContainers[ i ] ).render(
+		createRoot( container ).render(
 			<DateTimePreview attrs={ attrs } />,
 		);
 	}

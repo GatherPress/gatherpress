@@ -32,8 +32,10 @@ import { useSelect } from '@wordpress/data';
  */
 import {
 	convertPHPToMomentFormat,
+	createMomentWithTimezone,
 	getTimezone,
 	getUtcOffset,
+	isManualOffset,
 	removeNonTimePHPFormatChars,
 } from '../../helpers/datetime';
 import DateTimeRange from '../../components/DateTimeRange';
@@ -75,8 +77,8 @@ const displayDateTime = (
 	if ( dateTimeStart && dateTimeEnd ) {
 		const sameDayFormat = convertPHPToMomentFormat( globalDateFormat );
 		sameStartEndDay =
-			moment.tz( dateTimeStart, timezone ).format( sameDayFormat ) ===
-			moment.tz( dateTimeEnd, timezone ).format( sameDayFormat );
+			createMomentWithTimezone( dateTimeStart, timezone ).format( sameDayFormat ) ===
+			createMomentWithTimezone( dateTimeEnd, timezone ).format( sameDayFormat );
 	}
 
 	const parts = [];
@@ -84,15 +86,15 @@ const displayDateTime = (
 	// Add start date/time.
 	if ( dateTimeStart ) {
 		startFormat = convertPHPToMomentFormat(
-			startFormat ? startFormat : defaultFormat
+			startFormat || defaultFormat
 		);
-		parts.push( moment.tz( dateTimeStart, timezone ).format( startFormat ) );
+		parts.push( createMomentWithTimezone( dateTimeStart, timezone ).format( startFormat ) );
 	}
 
 	// Determine end date/time.
 	if ( dateTimeEnd ) {
 		// Fall formatting back to default.
-		endFormat = endFormat ? endFormat : defaultFormat;
+		endFormat = endFormat || defaultFormat;
 
 		// Remove non-time characters from PHP date format if start and end
 		// are on the same day.
@@ -112,23 +114,55 @@ const displayDateTime = (
 	// Add end date/time.
 	if ( dateTimeEnd && endFormat ) {
 		endFormat = convertPHPToMomentFormat( endFormat );
-		parts.push( moment.tz( dateTimeEnd, timezone ).format( endFormat ) );
+		parts.push( createMomentWithTimezone( dateTimeEnd, timezone ).format( endFormat ) );
 	}
 
 	// Add timezone.
 	if ( showTimezone ? 'yes' === showTimezone : globalShowTimezone ) {
-		parts.push(
-			moment
-				.tz( dateTimeEnd ? dateTimeEnd : dateTimeStart, timezone )
-				.format( 'z' )
-		);
+		if ( isManualOffset( timezone ) ) {
+			// For manual offsets, display them as GMT+/-offset.
+			// Convert +05:30 to GMT+0530, -04:30 to GMT-0430, +00:00 to GMT+0000.
+			const sign = timezone.charAt( 0 );
+			const offset = timezone.substring( 1 ).replace( ':', '' );
+			parts.push( `GMT${ sign }${ offset }` );
+		} else {
+			// For IANA timezones, use the timezone abbreviation.
+			parts.push(
+				createMomentWithTimezone( dateTimeEnd || dateTimeStart, timezone )
+					.format( 'z' )
+			);
+		}
 	}
 
 	// Add UTC offset if GMT (invalid site timezone).
 	parts.push( getUtcOffset( timezone ) );
 
 	// The filter removes empty values.
-	return parts.filter( ( part ) => part ).join( ' ' );
+	return parts.filter( Boolean ).join( ' ' );
+};
+
+/**
+ * Calculate the new display type when toggling start/end date visibility.
+ *
+ * @param {string}  toggleType    - Which date to toggle: 'start' or 'end'.
+ * @param {boolean} showStartTime - Whether start time is currently shown.
+ * @param {boolean} showEndTime   - Whether end time is currently shown.
+ * @return {string} New display type value.
+ */
+const calculateDisplayType = ( toggleType, showStartTime, showEndTime ) => {
+	if ( 'start' === toggleType ) {
+		// Toggling start date.
+		if ( showEndTime ) {
+			return showStartTime ? 'end' : 'both';
+		}
+		return 'start';
+	}
+
+	// Toggling end date.
+	if ( showStartTime ) {
+		return showEndTime ? 'start' : 'both';
+	}
+	return 'end';
 };
 
 /**
@@ -236,7 +270,10 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 
 	// If we have a postId but no valid event data (404 or invalid event),
 	// fall back to today's date to show a normal appearance.
-	const fallbackDateTime = moment().tz( getTimezone() );
+	const fallbackDateTime = createMomentWithTimezone(
+		moment().format( 'YYYY-MM-DD HH:mm:ss' ),
+		getTimezone()
+	);
 	const finalDateTimeStart = dateTimeStart || fallbackDateTime.format();
 	const finalDateTimeEnd = dateTimeEnd || fallbackDateTime.clone().add( 1, 'hour' ).format();
 	const finalTimezone = timezone || getTimezone();
@@ -260,10 +297,11 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 						isPressed={ showStartTime }
 						onClick={ () => {
 							setAttributes( {
-								// eslint-disable-next-line no-nested-ternary
-								displayType: showEndTime
-									? ( showStartTime ? 'end' : 'both' )
-									: 'start',
+								displayType: calculateDisplayType(
+									'start',
+									showStartTime,
+									showEndTime
+								),
 							} );
 						} }
 					/>
@@ -273,10 +311,11 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 						isPressed={ showEndTime }
 						onClick={ () => {
 							setAttributes( {
-								// eslint-disable-next-line no-nested-ternary
-								displayType: showStartTime
-									? ( showEndTime ? 'start' : 'both' )
-									: 'end',
+								displayType: calculateDisplayType(
+									'end',
+									showStartTime,
+									showEndTime
+								),
 							} );
 						} }
 					/>

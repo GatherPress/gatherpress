@@ -16,8 +16,7 @@ import {
 	RichText,
 } from '@wordpress/block-editor';
 import {
-	// eslint-disable-next-line @wordpress/no-unsafe-wp-apis
-	__experimentalBoxControl as BoxControl,
+	BoxControl,
 	PanelBody,
 	ToolbarButton,
 	RangeControl,
@@ -32,6 +31,11 @@ import {
 import { __, sprintf } from '@wordpress/i18n';
 import { useState, useEffect } from '@wordpress/element';
 import { dispatch, select, useSelect } from '@wordpress/data';
+
+/**
+ * Internal dependencies.
+ */
+import { useIsBlockOrDescendantSelected } from './helpers';
 
 /**
  * Edit component for the GatherPress Dropdown block.
@@ -78,6 +82,28 @@ const Edit = ( { attributes, setAttributes, clientId } ) => {
 				?.innerBlocks || [],
 		[ clientId ],
 	);
+
+	// Track if dropdown or its children are selected for auto-close behavior.
+	const isDropdownOrChildSelected = useIsBlockOrDescendantSelected( clientId );
+
+	// Get the currently selected block ID.
+	const selectedBlockId = useSelect(
+		( blockEditorSelect ) =>
+			blockEditorSelect( 'core/block-editor' ).getSelectedBlockClientId(),
+		[]
+	);
+
+	// Auto-expand dropdown when a child block is selected (e.g., from List View)
+	// and auto-close when clicking outside the dropdown tree.
+	useEffect( () => {
+		if ( isDropdownOrChildSelected && selectedBlockId !== clientId ) {
+			// A child block is selected (not the dropdown itself), expand.
+			setIsExpanded( true );
+		} else if ( ! isDropdownOrChildSelected && isExpanded ) {
+			// Nothing in the dropdown tree is selected, close.
+			setIsExpanded( false );
+		}
+	}, [ isDropdownOrChildSelected, selectedBlockId, clientId, isExpanded ] );
 
 	// Generate a persistent unique ID for the dropdown if not already set.
 	useEffect( () => {
@@ -436,7 +462,6 @@ const Edit = ( { attributes, setAttributes, clientId } ) => {
 			<style>{ dropdownStyles }</style>
 			<div
 				id={ dropdownId }
-				role="region"
 				className="wp-block-gatherpress-dropdown__menu"
 				style={ {
 					display: isExpanded ? 'block' : 'none',

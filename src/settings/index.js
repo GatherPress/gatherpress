@@ -27,14 +27,14 @@ const autocompleteContainers = document.querySelectorAll(
 );
 
 // Iterate through each matched element and initialize Autocomplete component.
-for ( let i = 0; i < autocompleteContainers.length; i++ ) {
+for ( const container of autocompleteContainers ) {
 	// Parse attributes from the 'data-gatherpress_component_attrs' attribute.
 	const attrs = JSON.parse(
-		autocompleteContainers[ i ].dataset.gatherpress_component_attrs,
+		container.dataset.gatherpress_component_attrs,
 	);
 
 	// Create a root element and render the Autocomplete component with the parsed attributes.
-	createRoot( autocompleteContainers[ i ] ).render(
+	createRoot( container ).render(
 		<Autocomplete attrs={ attrs } />,
 	);
 }

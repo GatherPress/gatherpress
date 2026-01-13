@@ -1,4 +1,9 @@
 /**
+ * External dependencies.
+ */
+import { v4 as uuidv4 } from 'uuid';
+
+/**
  * WordPress dependencies.
  */
 import { __ } from '@wordpress/i18n';
@@ -24,7 +29,7 @@ import {
  */
 export default function RadioFieldPanels( { attributes, setAttributes } ) {
 	const {
-		radioOptions = [ { label: '', value: '' } ],
+		radioOptions = [ { label: '', value: '', id: uuidv4() } ],
 		fieldValue,
 		required,
 		labelFontSize,
@@ -54,7 +59,10 @@ export default function RadioFieldPanels( { attributes, setAttributes } ) {
 	};
 
 	const addRadioOption = () => {
-		const newOptions = [ ...radioOptions, { label: '', value: '' } ];
+		const newOptions = [
+			...radioOptions,
+			{ label: '', value: '', id: uuidv4() },
+		];
 
 		setAttributes( { radioOptions: newOptions } );
 	};
@@ -76,7 +84,7 @@ export default function RadioFieldPanels( { attributes, setAttributes } ) {
 		<>
 			<PanelBody title={ __( 'Radio Options', 'gatherpress' ) }>
 				{ radioOptions.map( ( option, index ) => (
-					<div key={ index }>
+					<div key={ option.id }>
 						<Flex
 							justify="normal"
 							gap="2"

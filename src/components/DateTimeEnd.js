@@ -1,9 +1,4 @@
 /**
- * External dependencies.
- */
-import moment from 'moment';
-
-/**
  * WordPress dependencies.
  */
 import {
@@ -23,6 +18,7 @@ import { useDispatch, useSelect } from '@wordpress/data';
  */
 import { hasEventPastNotice } from '../helpers/event';
 import {
+	createMomentWithTimezone,
 	dateTimeDatabaseFormat,
 	dateTimeLabelFormat,
 	getTimezone,
@@ -56,7 +52,7 @@ const DateTimeEnd = () => {
 	const is12HourTime = /a(?!\\)/i.test(
 		settings.formats.time
 			.toLowerCase()
-			.replace( /\\\\/g, '' )
+			.replaceAll( '\\\\', '' )
 			.split( '' )
 			.reverse()
 			.join( '' ),
@@ -64,7 +60,7 @@ const DateTimeEnd = () => {
 
 	useEffect( () => {
 		setDateTimeEnd(
-			moment.tz( dateTimeEnd, getTimezone() ).format( dateTimeDatabaseFormat ),
+			createMomentWithTimezone( dateTimeEnd, getTimezone() ).format( dateTimeDatabaseFormat ),
 		);
 
 		hasEventPastNotice();
@@ -88,10 +84,9 @@ const DateTimeEnd = () => {
 								id="gatherpress-datetime-end"
 								onClick={ onToggle }
 								aria-expanded={ isOpen }
-								isLink
+								variant="link"
 							>
-								{ moment
-									.tz( dateTimeEnd, getTimezone() )
+								{ createMomentWithTimezone( dateTimeEnd, getTimezone() )
 									.format( dateTimeLabelFormat() ) }
 							</Button>
 						) }

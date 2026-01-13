@@ -6,6 +6,7 @@ GatherPress includes a growing list of features to help communities organize and
 
 - **Event scheduling**: Set dates, times, and detailed event information.
 - **Attendee registration**: Let users RSVP to events.
+- **Open RSVP support**: Allow non-logged-in users to RSVP to events.
 - **Guest support**: Allow attendees to include additional guests.
 - **Anonymous RSVPs**: Optionally list attendees as anonymous (only visible to admins).
 - **Email notifications**: Send emails to all members, event attendees, non-attendees, or those on the waitlist.

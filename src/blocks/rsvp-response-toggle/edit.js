@@ -14,7 +14,7 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 	const isLimitEnabled = context?.[ 'gatherpress/rsvpLimitEnabled' ] ?? false;
 
 	if ( ! isLimitEnabled ) {
-		return '';
+		return null;
 	}
 
 	return (

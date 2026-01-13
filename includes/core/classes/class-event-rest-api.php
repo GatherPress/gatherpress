@@ -489,8 +489,11 @@ class Event_Rest_Api {
 					wp_set_current_user( $recipient['user_id'] );
 				}
 
-				// translators: %s: event title.
-				$subject = sprintf( _x( '📅 %s', 'Email notification subject with event title', 'gatherpress' ), get_the_title( $post_id ) ); // phpcs:ignore Generic.Files.LineLength.TooLong
+				$subject = sprintf(
+					// translators: %s: event title.
+					_x( '📅 %s', 'Email notification subject with event title', 'gatherpress' ),
+					get_the_title( $post_id )
+				);
 				$body    = Utility::render_template(
 					sprintf( '%s/includes/templates/admin/emails/event-email.php', GATHERPRESS_CORE_PATH ),
 					array(

@@ -54,11 +54,11 @@ const Edit = ( { context, clientId } ) => {
 			if ( parentBlocks && 0 < parentBlocks.length ) {
 				for ( const parentId of parentBlocks ) {
 					const parent = select( 'core/block-editor' ).getBlock( parentId );
-					if ( parent && 'gatherpress/rsvp' === parent.name && parent.attributes?.postId ) {
+					if ( 'gatherpress/rsvp' === parent?.name && parent.attributes?.postId ) {
 						postIdOverride = parent.attributes.postId;
 						break;
 					}
-					if ( parent && 'gatherpress/rsvp-response' === parent.name && parent.attributes?.postId ) {
+					if ( 'gatherpress/rsvp-response' === parent?.name && parent.attributes?.postId ) {
 						postIdOverride = parent.attributes.postId;
 						break;
 					}
@@ -112,9 +112,7 @@ const Edit = ( { context, clientId } ) => {
 
 		// Cleanup on unmount.
 		return () => {
-			if ( styleElement && styleElement.parentNode ) {
-				styleElement.parentNode.removeChild( styleElement );
-			}
+			styleElement?.remove();
 		};
 	}, [ shouldDim, clientId ] );
 

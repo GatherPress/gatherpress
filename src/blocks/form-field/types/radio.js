@@ -1,4 +1,9 @@
 /**
+ * External dependencies.
+ */
+import { v4 as uuidv4 } from 'uuid';
+
+/**
  * WordPress dependencies.
  */
 import { __ } from '@wordpress/i18n';
@@ -38,7 +43,7 @@ export default function RadioField( {
 		required,
 		requiredText,
 		requiredTextColor,
-		radioOptions = [ { label: '', value: '' } ],
+		radioOptions = [ { label: '', value: '', id: uuidv4() } ],
 	} = attributes;
 
 	// Handle label blur to auto-generate field name.
@@ -76,7 +81,7 @@ export default function RadioField( {
 	};
 
 	const addRadioOption = () => {
-		const newOptions = [ ...radioOptions, { label: '', value: '' } ];
+		const newOptions = [ ...radioOptions, { label: '', value: '', id: uuidv4() } ];
 		setAttributes( { radioOptions: newOptions } );
 
 		setTimeout( () => {
@@ -182,7 +187,7 @@ export default function RadioField( {
 				style={ getLabelWrapperStyles( attributes ) }
 			>
 				{ radioOptions.map( ( option, index ) => (
-					<div key={ index } className="gatherpress-radio-option">
+					<div key={ option.id } className="gatherpress-radio-option">
 						<input
 							style={ getInputStyles( fieldType, attributes ) }
 							type="radio"

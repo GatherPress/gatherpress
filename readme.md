@@ -1,10 +1,10 @@
 # GatherPress
 
-Stable tag: 0.33.0-beta.2  
+Stable tag: 0.34.0-alpha.1  
 Tested up to: 6.9  
 License: GPL v2 or later  
 Tags: events, event, meetup, community  
-Contributors: mauteri, patricia70, hrmervin, jmarx75, stephenerdelyi, carstenbach, jordanpak, andremenrath, apermo, dd32, passoniate, pbrocks
+Contributors: mauteri, patricia70, hrmervin, jmarx75, stephenerdelyi, carstenbach, jordanpak, mahimadave, tusharaddweb, pkbhatt
 
 <!-- markdownlint-disable-next-line MD045 -->
 ![](.wordpress-org/banner-1544x500.jpg)
@@ -23,6 +23,7 @@ Contributors: mauteri, patricia70, hrmervin, jmarx75, stephenerdelyi, carstenbac
 
 - Event scheduling (date, time, location, description)
 - Attendee registration (with optional anonymous listing)
+- Open RSVP support (non-logged-in users)
 - Attendees can bring guests
 - Email notifications for attendees and non-attendees
 - Online and in-person event support (with mapping)

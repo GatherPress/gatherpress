@@ -69,7 +69,7 @@ const { state, actions } = store( 'gatherpress', {
 
 			initPostContext( state, postId );
 
-			const setStatus = element.ref.getAttribute( 'data-set-status' ) ?? '';
+			const setStatus = element.ref.dataset.setStatus ?? '';
 			const currentUserStatus = state.posts[ postId ].currentUser.status;
 
 			let status = 'not_attending';
@@ -110,7 +110,7 @@ const { state, actions } = store( 'gatherpress', {
 					const parentWithRsvpStatus =
 						element.ref.closest( '[data-rsvp-status]' );
 					const rsvpStatus =
-						parentWithRsvpStatus.getAttribute( 'data-rsvp-status' );
+						parentWithRsvpStatus.dataset.rsvpStatus;
 					const rsvpContainer = parentWithRsvpStatus.closest(
 						'.wp-block-gatherpress-rsvp',
 					);
@@ -170,11 +170,11 @@ const { state, actions } = store( 'gatherpress', {
 
 			initPostContext( state, postId );
 
-			const userDetails = JSON.parse(
-				element.ref.getAttribute( 'data-user-details' ),
-			);
+			const userDetails = element.ref.dataset.userDetails
+				? JSON.parse( element.ref.dataset.userDetails )
+				: null;
 			// Delete attribute after setting variable. This is just to kick things off...
-			element.ref.removeAttribute( 'data-user-details' );
+			delete element.ref.dataset.userDetails;
 
 			if ( userDetails ) {
 				state.posts[ postId ] = {
@@ -193,7 +193,7 @@ const { state, actions } = store( 'gatherpress', {
 			innerBlocks.forEach( ( innerBlock ) => {
 				const parent = innerBlock.parentNode;
 				if (
-					innerBlock.getAttribute( 'data-rsvp-status' ) ===
+					innerBlock.dataset.rsvpStatus ===
 					state.posts[ postId ].currentUser.status
 				) {
 					innerBlock.classList.remove( 'gatherpress--is-hidden' );
@@ -221,10 +221,8 @@ const { state, actions } = store( 'gatherpress', {
 			const element = getElement();
 
 			// Get the singular and plural labels from the data attributes.
-			const singularLabel = element.ref.getAttribute(
-				'data-guest-singular',
-			);
-			const pluralLabel = element.ref.getAttribute( 'data-guest-plural' );
+			const singularLabel = element.ref.dataset.guestSingular;
+			const pluralLabel = element.ref.dataset.guestPlural;
 
 			// Determine the text to display based on the guest count.
 			let text = '';

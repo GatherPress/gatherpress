@@ -149,8 +149,6 @@ class Assets {
 	 */
 	public function maybe_enqueue_styles( string $block_content, array $block ): string {
 		if ( isset( $block['blockName'] ) && str_contains( $block['blockName'], 'gatherpress/' ) ) {
-			$asset = $this->get_asset_data( 'utility_style' );
-
 			wp_enqueue_style( 'gatherpress-utility-style' );
 		}
 
@@ -422,7 +420,8 @@ class Assets {
 	protected function get_asset_data( string $asset, ?string $path = null ): array {
 		$path = $path ?? $this->path . sprintf( '%s.asset.php', $asset );
 		if ( empty( $this->asset_data[ $asset ] ) ) {
-			$this->asset_data[ $asset ] = require_once $path;
+			// Loading WordPress asset metadata file that returns an array, not importing a class.
+			$this->asset_data[ $asset ] = require_once $path; // NOSONAR.
 		}
 
 		return (array) $this->asset_data[ $asset ];

@@ -236,7 +236,9 @@ export async function sendRsvpApiRequest(
 			}
 		}
 	} catch ( error ) {
-		// Handle error silently.
+		// Handle error silently - log for debugging but don't interrupt user.
+		// eslint-disable-next-line no-console
+		console.warn( 'RSVP API request failed:', error );
 	} finally {
 		// Always remove loading class when request completes.
 		if ( loadingElement ) {
@@ -277,8 +279,8 @@ export function manageFocusTrap( focusableElements ) {
 	const isElementVisible = ( element ) => {
 		return (
 			null !== element.offsetParent && // Excludes elements with `display: none`.
-			'hidden' !== global.window.getComputedStyle( element ).visibility && // Excludes elements with `visibility: hidden`.
-			'0' !== global.window.getComputedStyle( element ).opacity // Excludes fully transparent elements..
+			'hidden' !== window.getComputedStyle( element ).visibility && // Excludes elements with `visibility: hidden`.
+			'0' !== window.getComputedStyle( element ).opacity // Excludes fully transparent elements..
 		);
 	};
 
@@ -290,20 +292,19 @@ export function manageFocusTrap( focusableElements ) {
 	}
 
 	const firstFocusableElement = visibleFocusableElements[ 0 ];
-	const lastFocusableElement =
-		visibleFocusableElements[ visibleFocusableElements.length - 1 ];
+	const lastFocusableElement = visibleFocusableElements.at( -1 );
 
 	const handleFocusTrap = ( e ) => {
 		if ( 'Tab' === e.key ) {
 			if (
 				e.shiftKey && // Shift + Tab..
-				global.document.activeElement === firstFocusableElement
+				firstFocusableElement.ownerDocument.activeElement === firstFocusableElement
 			) {
 				e.preventDefault();
 				lastFocusableElement.focus();
 			} else if (
 				! e.shiftKey && // Tab..
-				global.document.activeElement === lastFocusableElement
+				lastFocusableElement.ownerDocument.activeElement === lastFocusableElement
 			) {
 				e.preventDefault();
 				firstFocusableElement.focus();
@@ -318,13 +319,13 @@ export function manageFocusTrap( focusableElements ) {
 	};
 
 	const cleanup = () => {
-		global.document.removeEventListener( 'keydown', handleFocusTrap );
-		global.document.removeEventListener( 'keydown', handleEscapeKey );
+		document.removeEventListener( 'keydown', handleFocusTrap );
+		document.removeEventListener( 'keydown', handleEscapeKey );
 	};
 
 	// Attach the event listeners for focus trap..
-	global.document.addEventListener( 'keydown', handleFocusTrap );
-	global.document.addEventListener( 'keydown', handleEscapeKey );
+	document.addEventListener( 'keydown', handleFocusTrap );
+	document.addEventListener( 'keydown', handleEscapeKey );
 
 	// Return a cleanup function for the caller..
 	return cleanup;
@@ -350,7 +351,7 @@ export function setupCloseHandlers( elementSelector, contentSelector, onClose ) 
 
 	const handleEscapeKey = ( event ) => {
 		if ( 'Escape' === event.key ) {
-			const openElements = global.document.querySelectorAll(
+			const openElements = document.querySelectorAll(
 				`${ elementSelector }.gatherpress--is-visible`,
 			);
 			openElements.forEach( ( element ) => handleClose( element ) );
@@ -358,7 +359,7 @@ export function setupCloseHandlers( elementSelector, contentSelector, onClose ) 
 	};
 
 	const handleOutsideClick = ( event ) => {
-		const openElements = global.document.querySelectorAll(
+		const openElements = document.querySelectorAll(
 			`${ elementSelector }.gatherpress--is-visible`,
 		);
 		openElements.forEach( ( element ) => {
@@ -380,12 +381,12 @@ export function setupCloseHandlers( elementSelector, contentSelector, onClose ) 
 	};
 
 	// Attach event listeners..
-	global.document.addEventListener( 'keydown', handleEscapeKey );
-	global.document.addEventListener( 'click', handleOutsideClick );
+	document.addEventListener( 'keydown', handleEscapeKey );
+	document.addEventListener( 'click', handleOutsideClick );
 
 	// Return a cleanup function to remove event listeners if needed..
 	return () => {
-		global.document.removeEventListener( 'keydown', handleEscapeKey );
-		global.document.removeEventListener( 'click', handleOutsideClick );
+		document.removeEventListener( 'keydown', handleEscapeKey );
+		document.removeEventListener( 'click', handleOutsideClick );
 	};
 }
