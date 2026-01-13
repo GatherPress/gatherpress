@@ -1,4 +1,4 @@
-name: PHPStan Tests
+name: PHP Mess Detector Tests
 on:
   push:
     branches:
