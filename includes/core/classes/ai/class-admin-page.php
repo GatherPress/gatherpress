@@ -25,6 +25,13 @@ class Admin_Page {
 	use Singleton;
 
 	/**
+	 * Image handler instance (for dependency injection in tests).
+	 *
+	 * @var Image_Handler|null
+	 */
+	protected $image_handler = null;
+
+	/**
 	 * Constructor.
 	 */
 	protected function __construct() {
@@ -164,6 +171,7 @@ class Admin_Page {
 							<li>"List all my venues"</li>
 						</ul>
 					</div>
+
 				</div>
 
 				<div class="gp-ai-chat">
@@ -172,13 +180,31 @@ class Admin_Page {
 					</div>
 					
 					<div class="gp-ai-input-container">
+						<div style="margin-bottom: 10px;">
+							<label for="gp-ai-image-upload" style="display: block; margin-bottom: 5px;">
+								<strong><?php esc_html_e( 'Upload Images:', 'gatherpress' ); ?></strong>
+							</label>
+							<input
+								type="file"
+								id="gp-ai-image-upload"
+								name="images"
+								accept="image/jpeg,image/png,image/gif,image/webp"
+								multiple
+								style="margin-bottom: 5px;"
+							/>
+							<small style="display: block; color: #666;">
+								<?php
+								esc_html_e( 'Select one or more images to upload with your prompt', 'gatherpress' );
+								?>
+							</small>
+						</div>
 						<textarea 
 							id="gp-ai-prompt" 
 							class="gp-ai-prompt" 
 							placeholder="<?php esc_attr_e( 'What would you like me to do?', 'gatherpress' ); ?>"
 							rows="3"
 						></textarea>
-						<button id="gp-ai-submit" class="button button-primary button-large">
+						<button type="button" id="gp-ai-submit" class="button button-primary button-large">
 							<?php esc_html_e( 'Send', 'gatherpress' ); ?>
 						</button>
 					</div>
@@ -233,14 +259,219 @@ class Admin_Page {
 			wp_send_json_error( array( 'message' => 'Prompt is required' ) );
 		}
 
+		// Handle image uploads if present.
+		$attachment_ids = $this->handle_image_uploads();
+
 		// Process with AI handler (wp-ai-client).
-		$result = $handler->process_prompt( $prompt );
+		try {
+			$result = $handler->process_prompt( $prompt, $attachment_ids );
+		} catch ( \Exception $e ) {
+			wp_send_json_error(
+				array(
+					'message' => 'Error processing prompt: ' . $e->getMessage(),
+				)
+			);
+			return;
+		}
 
 		if ( is_wp_error( $result ) ) {
 			wp_send_json_error( array( 'message' => $result->get_error_message() ) );
+			return;
+		}
+
+		// Attach images to events or venues if images were uploaded and an event/venue was created/updated.
+		$this->maybe_attach_images_to_posts( $attachment_ids, $result );
+
+		// Add gentle reminder if event or venue was created/updated without an image.
+		$this->maybe_add_image_reminder( $attachment_ids, $result );
+
+		// Add attachment IDs to response.
+		if ( ! empty( $attachment_ids ) ) {
+			$result['attachment_ids'] = $attachment_ids;
+		}
+
+		// Debug: Add image URL info to response for debugging.
+		if ( ! empty( $attachment_ids ) ) {
+			$debug_urls = array();
+			foreach ( $attachment_ids as $attachment_id ) {
+				$url          = wp_get_attachment_url( $attachment_id );
+				$debug_urls[] = array(
+					'attachment_id' => $attachment_id,
+					'url'           => $url,
+				);
+			}
+			$result['debug_image_urls'] = $debug_urls;
 		}
 
 		wp_send_json_success( $result );
+	}
+
+	/**
+	 * Handle image uploads from $_FILES.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return array<int> Array of attachment IDs.
+	 */
+	private function handle_image_uploads(): array {
+		$attachment_ids = array();
+
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce is verified in process_prompt_ajax() before this method is called.
+		if ( empty( $_FILES['images'] ) ) {
+			return $attachment_ids;
+		}
+
+		// Use injected image handler or create new one (allows mocking in tests).
+		$image_handler = $this->image_handler ?? new Image_Handler();
+
+		// Handle multiple files (when input has name="images[]") or single file.
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing,WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Nonce verified in parent method. $_FILES array structure is validated, file data is handled by WordPress functions.
+		$files = $_FILES['images'];
+
+		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- $_FILES array structure is validated, file data is handled by WordPress functions.
+		if ( is_array( $files['name'] ) ) {
+			// Multiple files.
+			$file_count = count( $files['name'] );
+			for ( $i = 0; $i < $file_count; $i++ ) {
+				$file = array(
+					'name'     => $files['name'][ $i ],
+					'type'     => $files['type'][ $i ],
+					'tmp_name' => $files['tmp_name'][ $i ],
+					'error'    => $files['error'][ $i ],
+					'size'     => $files['size'][ $i ],
+				);
+
+				$attachment_id = $image_handler->upload_to_media_library( $file );
+				if ( ! is_wp_error( $attachment_id ) ) {
+					$attachment_ids[] = $attachment_id;
+				}
+			}
+		} else {
+			// Single file.
+			$attachment_id = $image_handler->upload_to_media_library( $files );
+			if ( ! is_wp_error( $attachment_id ) ) {
+				$attachment_ids[] = $attachment_id;
+			}
+		}
+
+		return $attachment_ids;
+	}
+
+	/**
+	 * Attach images to events or venues if images were uploaded and an event/venue was created/updated.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param array<int> $attachment_ids Array of attachment IDs.
+	 * @param array      $result         Result from AI handler.
+	 * @return void
+	 */
+	private function maybe_attach_images_to_posts( array $attachment_ids, array &$result ): void {
+		if ( empty( $attachment_ids ) || ! isset( $result['actions'] ) || ! is_array( $result['actions'] ) ) {
+			return;
+		}
+
+		foreach ( $result['actions'] as $action ) {
+			if ( ! isset( $action['ability'] ) || ! isset( $action['result'] ) ) {
+				continue;
+			}
+
+			$action_result = $action['result'];
+			if ( ! isset( $action_result['success'] ) || true !== $action_result['success'] ) {
+				continue;
+			}
+
+			$first_attachment_id = intval( $attachment_ids[0] );
+			$thumbnail_result    = false;
+
+			// Check if this is a create or update event action.
+			$event_abilities = array( 'gatherpress/create-event', 'gatherpress/update-event' );
+			if ( in_array( $action['ability'], $event_abilities, true ) ) {
+				if ( isset( $action_result['event_id'] ) ) {
+					$event_id         = intval( $action_result['event_id'] );
+					$thumbnail_result = set_post_thumbnail( $event_id, $first_attachment_id );
+				}
+			}
+
+			// Check if this is a create or update venue action.
+			$venue_abilities = array( 'gatherpress/create-venue', 'gatherpress/update-venue' );
+			if ( in_array( $action['ability'], $venue_abilities, true ) ) {
+				if ( isset( $action_result['venue_id'] ) ) {
+					$venue_id         = intval( $action_result['venue_id'] );
+					$thumbnail_result = set_post_thumbnail( $venue_id, $first_attachment_id );
+				}
+			}
+
+			// Only attach to the first event/venue if multiple were created/updated.
+			if ( $thumbnail_result ) {
+				break;
+			}
+		}
+	}
+
+	/**
+	 * Add gentle reminder if event or venue was created/updated without an image.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param array<int> $attachment_ids Array of attachment IDs.
+	 * @param array      $result         Result from AI handler (passed by reference).
+	 * @return void
+	 */
+	private function maybe_add_image_reminder( array $attachment_ids, array &$result ): void {
+		if ( ! empty( $attachment_ids ) || ! isset( $result['actions'] ) || ! is_array( $result['actions'] ) ) {
+			return;
+		}
+
+		$event_or_venue_created_or_updated = false;
+		$is_venue                          = false;
+		foreach ( $result['actions'] as $action ) {
+			if ( ! isset( $action['ability'] ) || ! isset( $action['result'] ) ) {
+				continue;
+			}
+
+			$action_result = $action['result'];
+			if ( ! isset( $action_result['success'] ) || true !== $action_result['success'] ) {
+				continue;
+			}
+
+			// Check if this is a create or update event action.
+			$event_abilities = array( 'gatherpress/create-event', 'gatherpress/update-event' );
+			if ( in_array( $action['ability'], $event_abilities, true ) ) {
+				if ( isset( $action_result['event_id'] ) ) {
+					$event_or_venue_created_or_updated = true;
+					$is_venue                          = false;
+					break;
+				}
+			}
+
+			// Check if this is a create or update venue action.
+			$venue_abilities = array( 'gatherpress/create-venue', 'gatherpress/update-venue' );
+			if ( in_array( $action['ability'], $venue_abilities, true ) ) {
+				if ( isset( $action_result['venue_id'] ) ) {
+					$event_or_venue_created_or_updated = true;
+					$is_venue                          = true;
+					break;
+				}
+			}
+		}
+
+		// Append gentle reminder to response if event or venue was created/updated without image.
+		if ( $event_or_venue_created_or_updated && isset( $result['response'] ) ) {
+			if ( $is_venue ) {
+				$reminder_text = __(
+					'💡 Tip: Consider adding an image to make your venue more engaging!',
+					'gatherpress'
+				);
+			} else {
+				$reminder_text = __(
+					'💡 Tip: Consider adding an image to make your event more engaging!',
+					'gatherpress'
+				);
+			}
+			$reminder           = "\n\n" . $reminder_text;
+			$result['response'] = $result['response'] . $reminder;
+		}
 	}
 
 	/**

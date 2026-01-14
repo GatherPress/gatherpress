@@ -549,25 +549,32 @@ class Abilities_Integration {
 				'input_schema'        => array(
 					'type'       => 'object',
 					'properties' => array(
-						'venue_id' => array(
+						'venue_id'     => array(
 							'type'        => 'integer',
 							'description' => __( 'ID of the venue to update', 'gatherpress' ),
 						),
-						'name'     => array(
+						'name'         => array(
 							'type'        => 'string',
 							'description' => __( 'Name of the venue', 'gatherpress' ),
 						),
-						'address'  => array(
+						'address'      => array(
 							'type'        => 'string',
 							'description' => __( 'Full address of the venue', 'gatherpress' ),
 						),
-						'phone'    => array(
+						'phone'        => array(
 							'type'        => 'string',
 							'description' => __( 'Phone number for the venue', 'gatherpress' ),
 						),
-						'website'  => array(
+						'website'      => array(
 							'type'        => 'string',
 							'description' => __( 'Website URL for the venue', 'gatherpress' ),
+						),
+						'thumbnail_id' => array(
+							'type'        => 'integer',
+							'description' => __(
+								'Attachment ID of the image to set as the featured image for this venue',
+								'gatherpress'
+							),
 						),
 					),
 					'required'   => array( 'venue_id' ),
@@ -650,6 +657,13 @@ class Abilities_Integration {
 							'type'        => 'array',
 							'items'       => array( 'type' => 'integer' ),
 							'description' => __( 'Array of topic IDs to assign to this event', 'gatherpress' ),
+						),
+						'thumbnail_id'   => array(
+							'type'        => 'integer',
+							'description' => __(
+								'Attachment ID of the image to set as the featured image for this event',
+								'gatherpress'
+							),
 						),
 					),
 					'required'   => array( 'event_id' ),
@@ -1111,6 +1125,20 @@ class Abilities_Integration {
 		// Save updated venue information.
 		update_post_meta( $venue_id, 'gatherpress_venue_information', wp_json_encode( $venue_info ) );
 
+		// Update featured image if provided.
+		if ( isset( $params['thumbnail_id'] ) ) {
+			$thumbnail_id = intval( $params['thumbnail_id'] );
+			// Verify attachment exists and is an image.
+			$attachment = get_post( $thumbnail_id );
+			if ( $attachment && 'attachment' === $attachment->post_type && wp_attachment_is_image( $thumbnail_id ) ) {
+				$thumbnail_result = set_post_thumbnail( $venue_id, $thumbnail_id );
+				if ( ! $thumbnail_result ) {
+					// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
+					error_log( 'GatherPress AI: Failed to set thumbnail ' . $thumbnail_id . ' for venue ' . $venue_id );
+				}
+			}
+		}
+
 		return array(
 			'success'  => true,
 			'venue_id' => $venue_id,
@@ -1262,6 +1290,20 @@ class Abilities_Integration {
 		if ( isset( $params['topic_ids'] ) && is_array( $params['topic_ids'] ) ) {
 			$topic_ids = array_map( 'intval', $params['topic_ids'] );
 			wp_set_object_terms( $event_id, $topic_ids, Topic::TAXONOMY );
+		}
+
+		// Update featured image if provided.
+		if ( isset( $params['thumbnail_id'] ) ) {
+			$thumbnail_id = intval( $params['thumbnail_id'] );
+			// Verify attachment exists and is an image.
+			$attachment = get_post( $thumbnail_id );
+			if ( $attachment && 'attachment' === $attachment->post_type && wp_attachment_is_image( $thumbnail_id ) ) {
+				$thumbnail_result = set_post_thumbnail( $event_id, $thumbnail_id );
+				if ( ! $thumbnail_result ) {
+					// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
+					error_log( 'GatherPress AI: Failed to set thumbnail ' . $thumbnail_id . ' for event ' . $event_id );
+				}
+			}
 		}
 
 		// Get updated datetime to include in response (so OpenAI can use correct date in response message).

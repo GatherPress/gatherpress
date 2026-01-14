@@ -964,6 +964,196 @@ describe( 'AI Assistant', () => {
 				done();
 			}, 10 );
 		} );
+
+		it( 'should handle FormData when files are selected', () => {
+			const clickHandler = mockSubmit.on.mock.calls.find(
+				( call ) => 'click' === call[ 0 ]
+			)[ 1 ];
+
+			mockPrompt.val.mockReturnValue( 'Test prompt with image' );
+
+			// Mock file input element with files
+			const mockFileInput = {
+				files: [
+					{
+						name: 'test-image.jpg',
+						size: 1024,
+						type: 'image/jpeg',
+					},
+				],
+				value: '',
+			};
+			global.document.getElementById = jest.fn( ( id ) => {
+				if ( 'gp-ai-image-upload' === id ) {
+					return mockFileInput;
+				}
+				return null;
+			} );
+
+			// Clear previous calls
+			ajaxSpy.mockClear();
+
+			clickHandler( { preventDefault: jest.fn() } );
+
+			// Verify FormData is used (contentType and processData should be false)
+			expect( ajaxSpy ).toHaveBeenCalledWith(
+				expect.objectContaining( {
+					url: global.gatherpressAI.ajaxUrl,
+					type: 'POST',
+					contentType: false,
+					processData: false,
+					data: expect.any( FormData ),
+				} )
+			);
+		} );
+
+		it( 'should use regular POST data when no files are selected', () => {
+			const clickHandler = mockSubmit.on.mock.calls.find(
+				( call ) => 'click' === call[ 0 ]
+			)[ 1 ];
+
+			mockPrompt.val.mockReturnValue( 'Test prompt without image' );
+
+			// Mock file input element with no files
+			const mockFileInput = {
+				files: [],
+				value: '',
+			};
+			global.document.getElementById = jest.fn( ( id ) => {
+				if ( 'gp-ai-image-upload' === id ) {
+					return mockFileInput;
+				}
+				return null;
+			} );
+
+			// Clear previous calls
+			ajaxSpy.mockClear();
+
+			clickHandler( { preventDefault: jest.fn() } );
+
+			// Verify regular POST data is used (not FormData)
+			expect( ajaxSpy ).toHaveBeenCalledWith(
+				expect.objectContaining( {
+					url: global.gatherpressAI.ajaxUrl,
+					type: 'POST',
+					data: expect.objectContaining( {
+						action: 'gatherpress_ai_process_prompt',
+						nonce: global.gatherpressAI.nonce,
+						prompt: 'Test prompt without image',
+					} ),
+				} )
+			);
+		} );
+
+		it( 'should display attachment IDs when present in response', ( done ) => {
+			const clickHandler = mockSubmit.on.mock.calls.find(
+				( call ) => 'click' === call[ 0 ]
+			)[ 1 ];
+
+			mockPrompt.val.mockReturnValue( 'Test prompt' );
+
+			// Override ajax to return success with attachment_ids
+			mockJQuery.ajax.mockImplementation( ( options ) => {
+				setTimeout( () => {
+					options.success( {
+						success: true,
+						data: {
+							response: 'Test response',
+							actions: [],
+							attachment_ids: [ 10535, 10536 ],
+						},
+					} );
+					options.complete();
+				}, 0 );
+			} );
+
+			clickHandler( { preventDefault: jest.fn() } );
+
+			setTimeout( () => {
+				// Verify that append was called (for attachment IDs message and AI response)
+				expect( mockMessages.append.mock.calls.length ).toBeGreaterThanOrEqual( 2 );
+				// Check that one of the calls includes attachment IDs info
+				const attachmentMessage = mockMessages.append.mock.calls.find( ( call ) => {
+					return call[ 0 ].includes( 'Uploaded' ) && call[ 0 ].includes( 'Attachment IDs' );
+				} );
+				expect( attachmentMessage ).toBeDefined();
+				done();
+			}, 10 );
+		} );
+
+		it( 'should not display attachment IDs message when not present in response', ( done ) => {
+			const clickHandler = mockSubmit.on.mock.calls.find(
+				( call ) => 'click' === call[ 0 ]
+			)[ 1 ];
+
+			mockPrompt.val.mockReturnValue( 'Test prompt' );
+
+			// Override ajax to return success without attachment_ids
+			mockJQuery.ajax.mockImplementation( ( options ) => {
+				setTimeout( () => {
+					options.success( {
+						success: true,
+						data: {
+							response: 'Test response',
+							actions: [],
+							// No attachment_ids
+						},
+					} );
+					options.complete();
+				}, 0 );
+			} );
+
+			clickHandler( { preventDefault: jest.fn() } );
+
+			setTimeout( () => {
+				// Verify that append was called (only for AI response, not attachment IDs)
+				expect( mockMessages.append ).toHaveBeenCalled();
+				// Check that no call includes attachment IDs info
+				const attachmentMessage = mockMessages.append.mock.calls.find( ( call ) => {
+					return call[ 0 ].includes( 'Uploaded' ) && call[ 0 ].includes( 'Attachment IDs' );
+				} );
+				expect( attachmentMessage ).toBeUndefined();
+				done();
+			}, 10 );
+		} );
+
+		it( 'should include file info in user message when files are selected', () => {
+			const clickHandler = mockSubmit.on.mock.calls.find(
+				( call ) => 'click' === call[ 0 ]
+			)[ 1 ];
+
+			mockPrompt.val.mockReturnValue( 'Test prompt' );
+
+			// Mock file input element with files
+			const mockFileInput = {
+				files: [
+					{
+						name: 'test-image.jpg',
+						size: 1024,
+						type: 'image/jpeg',
+					},
+				],
+				value: '',
+			};
+			global.document.getElementById = jest.fn( ( id ) => {
+				if ( 'gp-ai-image-upload' === id ) {
+					return mockFileInput;
+				}
+				return null;
+			} );
+
+			// Clear previous calls
+			mockMessages.append.mockClear();
+
+			clickHandler( { preventDefault: jest.fn() } );
+
+			// Verify user message includes file info
+			const userMessageCall = mockMessages.append.mock.calls.find( ( call ) => {
+				return call[ 0 ].includes( 'test-image.jpg' );
+			} );
+			expect( userMessageCall ).toBeDefined();
+			expect( userMessageCall[ 0 ] ).toContain( '[1 image(s): test-image.jpg]' );
+		} );
 	} );
 } );
 

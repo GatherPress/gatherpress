@@ -78,29 +78,77 @@ jQuery( document ).ready( function( $ ) {
 	function processPrompt() {
 		const prompt = $prompt.val().trim();
 
+		// Debug: Log that processPrompt was called.
+		console.error( 'GatherPress AI: processPrompt() called with prompt:', prompt );
+
 		if ( ! prompt ) {
+			console.error( 'GatherPress AI: processPrompt() - prompt is empty, returning' );
 			return;
 		}
 
-		// Add user message to chat
-		addMessage( prompt, 'user' );
+		// Get file input element (Chunk 3+).
+		const fileInput = document.getElementById( 'gp-ai-image-upload' );
+		const hasFiles = fileInput && fileInput.files && fileInput.files.length > 0;
 
-		// Clear input
+		// Capture files BEFORE clearing input (Chunk 3+).
+		const selectedFiles = hasFiles ? Array.from( fileInput.files ) : [];
+
+		// Add user message to chat
+		let userMessageText = prompt;
+
+		// Include file info in user message if files are selected (Chunk 3).
+		if ( hasFiles ) {
+			const fileNames = selectedFiles.map( ( file ) => file.name ).join( ', ' );
+			userMessageText += ` [${ selectedFiles.length } image(s): ${ fileNames }]`;
+		}
+
+		addMessage( userMessageText, 'user' );
+
+		// Clear input and file input
 		$prompt.val( '' );
+		if ( fileInput ) {
+			fileInput.value = '';
+		}
 
 		// Disable submit button
 		$submit.prop( 'disabled', true );
 		$status.show();
 
-		// Send to backend
-		$.ajax( {
-			url: gatherpressAI.ajaxUrl,
-			type: 'POST',
-			data: {
+		// Prepare request data.
+		let requestData;
+		let contentType;
+		let processData;
+
+		if ( hasFiles && selectedFiles.length > 0 ) {
+			// Use FormData for file uploads (Chunk 3+).
+			const formData = new FormData();
+			formData.append( 'action', 'gatherpress_ai_process_prompt' );
+			formData.append( 'nonce', gatherpressAI.nonce );
+			formData.append( 'prompt', prompt );
+
+			// Add image files using captured files (Chunk 3+).
+			for ( let i = 0; i < selectedFiles.length; i++ ) {
+				formData.append( 'images', selectedFiles[ i ] );
+			}
+
+			requestData = formData;
+			contentType = false;
+			processData = false;
+		} else {
+			// Use regular POST data for text-only prompts (jQuery defaults).
+			requestData = {
 				action: 'gatherpress_ai_process_prompt',
 				nonce: gatherpressAI.nonce,
-				prompt,
-			},
+				prompt: prompt,
+			};
+			// Don't set contentType/processData - let jQuery use defaults.
+		}
+
+		// Build AJAX options.
+		const ajaxOptions = {
+			url: gatherpressAI.ajaxUrl,
+			type: 'POST',
+			data: requestData,
 			success( response ) {
 				if ( response.success ) {
 					const data = response.data;
@@ -121,6 +169,20 @@ jQuery( document ).ready( function( $ ) {
 						);
 					}
 
+					// Display attachment IDs if present (Chunk 3).
+					if ( data.attachment_ids && Array.isArray( data.attachment_ids ) && data.attachment_ids.length > 0 ) {
+						const attachmentInfo = `✅ Uploaded ${ data.attachment_ids.length } image(s): Attachment IDs ${ data.attachment_ids.join( ', ' ) }`;
+						addMessage( attachmentInfo, 'success' );
+					}
+
+					// Debug: Log image URLs to console for debugging.
+					if ( data.debug_image_urls ) {
+						console.log( 'GatherPress AI Debug: Image URLs being sent to AI:', data.debug_image_urls );
+						data.debug_image_urls.forEach( function( debugInfo ) {
+							console.log( 'GatherPress AI Debug: Attachment ID', debugInfo.attachment_id, 'URL:', debugInfo.url );
+						} );
+					}
+
 					// Add AI response
 					addMessage( data.response, 'assistant', data.actions, data.model_info, data.token_usage );
 				} else {
@@ -134,7 +196,18 @@ jQuery( document ).ready( function( $ ) {
 				$submit.prop( 'disabled', false );
 				$status.hide();
 			},
-		} );
+		};
+
+		// Only set contentType/processData for file uploads.
+		if ( typeof contentType !== 'undefined' ) {
+			ajaxOptions.contentType = contentType;
+		}
+		if ( typeof processData !== 'undefined' ) {
+			ajaxOptions.processData = processData;
+		}
+
+		// Send to backend
+		$.ajax( ajaxOptions );
 	}
 
 	/**

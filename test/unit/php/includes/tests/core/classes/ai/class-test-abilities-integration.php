@@ -4427,4 +4427,162 @@ class Test_Abilities_Integration extends Base {
 		$this->assertStringContainsString( 'gp-ai-description', $result );
 		$this->assertStringContainsString( 'wp:gatherpress/event-date', $result );
 	}
+
+	/**
+	 * Coverage for execute_update_event with thumbnail_id parameter.
+	 *
+	 * @covers ::execute_update_event
+	 *
+	 * @return void
+	 */
+	public function test_execute_update_event_with_thumbnail_id(): void {
+		// Create an event first.
+		$event_id = $this->factory->post->create(
+			array(
+				'post_type'   => Event::POST_TYPE,
+				'post_title'  => 'Test Event',
+				'post_status' => 'draft',
+			)
+		);
+
+		// Create an image attachment.
+		$attachment_id = $this->factory->attachment->create(
+			array(
+				'post_mime_type' => 'image/jpeg',
+				'post_title'     => 'Test Image',
+			)
+		);
+
+		// Get upload directory.
+		$upload_dir = wp_upload_dir();
+		if ( isset( $upload_dir['error'] ) && $upload_dir['error'] ) {
+			$this->markTestSkipped( 'Upload directory is not writable.' );
+		}
+
+		// Get attachment file path.
+		$attachment_file = get_attached_file( $attachment_id );
+		if ( ! $attachment_file || ! file_exists( $attachment_file ) ) {
+			// Create a minimal image file for the attachment.
+			require_once ABSPATH . 'wp-admin/includes/image.php';
+			$temp_file = sys_get_temp_dir() . '/' . uniqid( 'gp_test_' ) . '.jpg';
+			// phpcs:ignore Generic.Files.LineLength.TooLong -- Binary data cannot be split.
+			$jpeg_data = "\xFF\xD8\xFF\xE0\x00\x10\x4A\x46\x49\x46\x00\x01\x01\x01\x00\x48\x00\x48\x00\x00\xFF\xDB\x00\x43\x00\x08\x06\x06\x07\x06\x05\x08\x07\x07\x07\x09\x09\x08\x0A\x0C\x14\x0D\x0C\x0B\x0B\x0C\x19\x12\x13\x0F\x14\x1D\x1A\x1F\x1E\x1D\x1A\x1C\x1C\x20\x24\x2E\x27\x20\x22\x2C\x23\x1C\x1C\x28\x37\x29\x2C\x30\x31\x34\x34\x34\x1F\x27\x39\x3D\x38\x32\x3C\x2E\x33\x34\x32\xFF\xC0\x00\x0B\x08\x00\x01\x00\x01\x01\x01\x11\x00\xFF\xC4\x00\x14\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x08\xFF\xC4\x00\x14\x10\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xFF\xDA\x00\x08\x01\x01\x00\x00\x3F\x00\xD2\xCF\x20\xFF\xD9";
+			// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents -- Test file creation.
+			file_put_contents( $temp_file, $jpeg_data );
+			$file_path = $upload_dir['path'] . '/' . basename( $temp_file );
+			if ( ! file_exists( $upload_dir['path'] ) ) {
+				wp_mkdir_p( $upload_dir['path'] );
+			}
+			copy( $temp_file, $file_path );
+			update_attached_file( $attachment_id, $file_path );
+			// Clean up temp file.
+			if ( file_exists( $temp_file ) ) {
+				// phpcs:ignore WordPress.WP.AlternativeFunctions.unlink_unlink -- Test file cleanup.
+				unlink( $temp_file );
+			}
+		}
+
+		// Generate attachment metadata so wp_attachment_is_image() works.
+		require_once ABSPATH . 'wp-admin/includes/image.php';
+		$attach_file = get_attached_file( $attachment_id );
+		if ( $attach_file && file_exists( $attach_file ) ) {
+			$attach_data = wp_generate_attachment_metadata( $attachment_id, $attach_file );
+			wp_update_attachment_metadata( $attachment_id, $attach_data );
+		}
+
+		$instance = Abilities_Integration::get_instance();
+		$params   = array(
+			'event_id'     => $event_id,
+			'thumbnail_id' => $attachment_id,
+		);
+		$result   = $instance->execute_update_event( $params );
+
+		$this->assertTrue( $result['success'], 'Failed to assert success is true.' );
+
+		// Verify thumbnail was set.
+		$thumbnail_id = get_post_thumbnail_id( $event_id );
+		$this->assertSame( $attachment_id, $thumbnail_id, 'Failed to assert thumbnail was set.' );
+
+		// Clean up.
+		wp_delete_attachment( $attachment_id, true );
+	}
+
+	/**
+	 * Coverage for execute_update_venue with thumbnail_id parameter.
+	 *
+	 * @covers ::execute_update_venue
+	 *
+	 * @return void
+	 */
+	public function test_execute_update_venue_with_thumbnail_id(): void {
+		// Create a venue first.
+		$venue_id = $this->factory->post->create(
+			array(
+				'post_type'   => Venue::POST_TYPE,
+				'post_title'  => 'Test Venue',
+				'post_status' => 'publish',
+			)
+		);
+
+		// Create an image attachment.
+		$attachment_id = $this->factory->attachment->create(
+			array(
+				'post_mime_type' => 'image/jpeg',
+				'post_title'     => 'Test Image',
+			)
+		);
+
+		// Get upload directory.
+		$upload_dir = wp_upload_dir();
+		if ( isset( $upload_dir['error'] ) && $upload_dir['error'] ) {
+			$this->markTestSkipped( 'Upload directory is not writable.' );
+		}
+
+		// Get attachment file path.
+		$attachment_file = get_attached_file( $attachment_id );
+		if ( ! $attachment_file || ! file_exists( $attachment_file ) ) {
+			// Create a minimal image file for the attachment.
+			require_once ABSPATH . 'wp-admin/includes/image.php';
+			$temp_file = sys_get_temp_dir() . '/' . uniqid( 'gp_test_' ) . '.jpg';
+			// phpcs:ignore Generic.Files.LineLength.TooLong -- Binary data cannot be split.
+			$jpeg_data = "\xFF\xD8\xFF\xE0\x00\x10\x4A\x46\x49\x46\x00\x01\x01\x01\x00\x48\x00\x48\x00\x00\xFF\xDB\x00\x43\x00\x08\x06\x06\x07\x06\x05\x08\x07\x07\x07\x09\x09\x08\x0A\x0C\x14\x0D\x0C\x0B\x0B\x0C\x19\x12\x13\x0F\x14\x1D\x1A\x1F\x1E\x1D\x1A\x1C\x1C\x20\x24\x2E\x27\x20\x22\x2C\x23\x1C\x1C\x28\x37\x29\x2C\x30\x31\x34\x34\x34\x1F\x27\x39\x3D\x38\x32\x3C\x2E\x33\x34\x32\xFF\xC0\x00\x0B\x08\x00\x01\x00\x01\x01\x01\x11\x00\xFF\xC4\x00\x14\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x08\xFF\xC4\x00\x14\x10\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xFF\xDA\x00\x08\x01\x01\x00\x00\x3F\x00\xD2\xCF\x20\xFF\xD9";
+			// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents -- Test file creation.
+			file_put_contents( $temp_file, $jpeg_data );
+			$file_path = $upload_dir['path'] . '/' . basename( $temp_file );
+			if ( ! file_exists( $upload_dir['path'] ) ) {
+				wp_mkdir_p( $upload_dir['path'] );
+			}
+			copy( $temp_file, $file_path );
+			update_attached_file( $attachment_id, $file_path );
+			// Clean up temp file.
+			if ( file_exists( $temp_file ) ) {
+				// phpcs:ignore WordPress.WP.AlternativeFunctions.unlink_unlink -- Test file cleanup.
+				unlink( $temp_file );
+			}
+		}
+
+		// Generate attachment metadata so wp_attachment_is_image() works.
+		require_once ABSPATH . 'wp-admin/includes/image.php';
+		$attach_file = get_attached_file( $attachment_id );
+		if ( $attach_file && file_exists( $attach_file ) ) {
+			$attach_data = wp_generate_attachment_metadata( $attachment_id, $attach_file );
+			wp_update_attachment_metadata( $attachment_id, $attach_data );
+		}
+
+		$instance = Abilities_Integration::get_instance();
+		$params   = array(
+			'venue_id'     => $venue_id,
+			'thumbnail_id' => $attachment_id,
+		);
+		$result   = $instance->execute_update_venue( $params );
+
+		$this->assertTrue( $result['success'], 'Failed to assert success is true.' );
+
+		// Verify thumbnail was set.
+		$thumbnail_id = get_post_thumbnail_id( $venue_id );
+		$this->assertSame( $attachment_id, $thumbnail_id, 'Failed to assert thumbnail was set.' );
+
+		// Clean up.
+		wp_delete_attachment( $attachment_id, true );
+	}
 }

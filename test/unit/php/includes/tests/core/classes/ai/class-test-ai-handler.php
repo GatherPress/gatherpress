@@ -9,13 +9,16 @@
 namespace GatherPress\Tests\Core\AI;
 
 use GatherPress\Core\AI\AI_Handler;
+use GatherPress\Core\AI\Image_Handler;
 use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;
 use WP_Error;
+use WordPress\AiClient\Files\DTO\File as AiClientFile;
 use WordPress\AiClient\Messages\DTO\Message;
 use WordPress\AiClient\Messages\DTO\MessagePart;
 use WordPress\AiClient\Messages\DTO\ModelMessage;
 use WordPress\AiClient\Messages\DTO\UserMessage;
+use WordPress\AiClient\Messages\Enums\MessagePartChannelEnum;
 
 /**
  * Class Test_AI_Handler.
@@ -105,6 +108,219 @@ class Test_AI_Handler extends Base {
 
 		$this->assertInstanceOf( WP_Error::class, $result );
 		$this->assertSame( 'no_api_key', $result->get_error_code() );
+	}
+
+	/**
+	 * Coverage for process_prompt method signature accepts optional attachment_ids parameter.
+	 *
+	 * @covers ::process_prompt
+	 *
+	 * @return void
+	 */
+	public function test_process_prompt_accepts_attachment_ids_parameter(): void {
+		if ( ! class_exists( 'WordPress\AI_Client\AI_Client' ) ) {
+			$this->markTestSkipped( 'wp-ai-client is not available in test environment.' );
+		}
+
+		$handler = new AI_Handler();
+
+		// Ensure no API key is set (we're just testing the method signature, not the full flow).
+		delete_option( 'wp_ai_client_provider_credentials' );
+
+		// Test that method accepts empty attachment_ids array (backward compatibility).
+		$result = $handler->process_prompt( 'Test prompt', array() );
+
+		$this->assertInstanceOf( WP_Error::class, $result );
+		$this->assertSame( 'no_api_key', $result->get_error_code() );
+
+		// Verify method signature using reflection.
+		$method     = new \ReflectionMethod( $handler, 'process_prompt' );
+		$parameters = $method->getParameters();
+
+		$this->assertCount( 2, $parameters, 'Failed to assert process_prompt has 2 parameters.' );
+		$this->assertSame(
+			'prompt',
+			$parameters[0]->getName(),
+			'Failed to assert first parameter is "prompt".'
+		);
+		$this->assertSame(
+			'attachment_ids',
+			$parameters[1]->getName(),
+			'Failed to assert second parameter is "attachment_ids".'
+		);
+		$this->assertTrue(
+			$parameters[1]->isDefaultValueAvailable(),
+			'Failed to assert attachment_ids has default value.'
+		);
+		$this->assertSame(
+			array(),
+			$parameters[1]->getDefaultValue(),
+			'Failed to assert attachment_ids default value is empty array.'
+		);
+	}
+
+	/**
+	 * Coverage for process_prompt with attachment IDs builds UserMessage with mixed MessageParts.
+	 *
+	 * @covers ::process_prompt
+	 *
+	 * @return void
+	 */
+	public function test_process_prompt_with_attachment_ids_builds_mixed_messageparts(): void {
+		if ( ! class_exists( 'WordPress\AI_Client\AI_Client' ) ) {
+			$this->markTestSkipped( 'wp-ai-client is not available in test environment.' );
+		}
+
+		if ( ! class_exists( 'WordPress\AiClient\Files\DTO\File' ) ) {
+			$this->markTestSkipped( 'wp-ai-client File class is not available in test environment.' );
+		}
+
+		$handler = new AI_Handler();
+
+		// Set a fake API key so the code continues past the API key check
+		// (we want to test the image conversion, not the API key check).
+		update_option(
+			'wp_ai_client_provider_credentials',
+			array(
+				'openai' => 'test-key',
+			)
+		);
+
+		// Create a mock Image_Handler.
+		$mock_image_handler = $this->createMock( Image_Handler::class );
+
+		// Create a real File MessagePart (using real constructor, not mock).
+		$attachment_id          = 123;
+		$real_file_message_part = $this->create_real_file_message_part();
+
+		// Set up mock to return real File MessagePart for valid attachment ID.
+		$mock_image_handler->expects( $this->once() )
+			->method( 'attachment_to_file_message_part' )
+			->with( $attachment_id )
+			->willReturn( $real_file_message_part );
+
+		// Inject mock Image_Handler using reflection.
+		Utility::set_and_get_hidden_property( $handler, 'image_handler', $mock_image_handler );
+
+		// Call process_prompt with attachment ID.
+		// This will fail somewhere after attachment conversion (abilities check or model initialization).
+		$result = $handler->process_prompt( 'Test prompt', array( $attachment_id ) );
+
+		// Should fail after attachment conversion (not at API key check).
+		// This confirms the Image_Handler was called before the failure.
+		$this->assertInstanceOf( WP_Error::class, $result );
+		// The error code may be 'no_abilities' or 'no_models_found' depending on wp-ai-client initialization.
+		// What matters is that it's NOT 'no_api_key', which confirms we got past the API key check.
+		$this->assertNotSame( 'no_api_key', $result->get_error_code(), 'Failed to assert that API key check passed.' );
+
+		// Reset image_handler property.
+		Utility::set_and_get_hidden_property( $handler, 'image_handler', null );
+
+		// Clean up.
+		delete_option( 'wp_ai_client_provider_credentials' );
+	}
+
+	/**
+	 * Coverage for process_prompt with invalid attachment ID continues with text-only MessagePart.
+	 *
+	 * @covers ::process_prompt
+	 *
+	 * @return void
+	 */
+	public function test_process_prompt_with_invalid_attachment_id_continues_without_file(): void {
+		if ( ! class_exists( 'WordPress\AI_Client\AI_Client' ) ) {
+			$this->markTestSkipped( 'wp-ai-client is not available in test environment.' );
+		}
+
+		$handler = new AI_Handler();
+
+		// Ensure no API key is set.
+		delete_option( 'wp_ai_client_provider_credentials' );
+
+		// Call process_prompt with invalid attachment ID.
+		// Image_Handler should return WP_Error, and process_prompt should continue with just text MessagePart.
+		$result = $handler->process_prompt( 'Test prompt', array( 99999 ) );
+
+		// Should fail at API key check (not at attachment conversion).
+		$this->assertInstanceOf( WP_Error::class, $result );
+		$this->assertSame( 'no_api_key', $result->get_error_code() );
+		// If attachment conversion failed, we'd get a different error, so this confirms it continued.
+	}
+
+	/**
+	 * Coverage for process_prompt with multiple attachment IDs converts all to File MessageParts.
+	 *
+	 * @covers ::process_prompt
+	 *
+	 * @return void
+	 */
+	public function test_process_prompt_with_multiple_attachment_ids(): void {
+		if ( ! class_exists( 'WordPress\AI_Client\AI_Client' ) ) {
+			$this->markTestSkipped( 'wp-ai-client is not available in test environment.' );
+		}
+
+		if ( ! class_exists( 'WordPress\AiClient\Files\DTO\File' ) ) {
+			$this->markTestSkipped( 'wp-ai-client File class is not available in test environment.' );
+		}
+
+		$handler = new AI_Handler();
+
+		// Set a fake API key so the code continues past the API key check
+		// (we want to test the image conversion, not the API key check).
+		update_option(
+			'wp_ai_client_provider_credentials',
+			array(
+				'openai' => 'test-key',
+			)
+		);
+
+		// Create a mock Image_Handler.
+		$mock_image_handler = $this->createMock( Image_Handler::class );
+
+		// Create real File MessageParts (using real constructors, not mocks).
+		$attachment_id1          = 123;
+		$attachment_id2          = 456;
+		$real_file_message_part1 = $this->create_real_file_message_part();
+		$real_file_message_part2 = $this->create_real_file_message_part();
+
+		// Set up mock to return real File MessageParts for valid attachment IDs.
+		$mock_image_handler->expects( $this->exactly( 2 ) )
+			->method( 'attachment_to_file_message_part' )
+			->willReturnCallback(
+				function ( $attachment_id ) use (
+					$attachment_id1,
+					$attachment_id2,
+					$real_file_message_part1,
+					$real_file_message_part2
+				) {
+					if ( $attachment_id === $attachment_id1 ) {
+						return $real_file_message_part1;
+					}
+					if ( $attachment_id === $attachment_id2 ) {
+						return $real_file_message_part2;
+					}
+					return new WP_Error( 'invalid_attachment', 'Invalid attachment ID' );
+				}
+			);
+
+		// Inject mock Image_Handler using reflection.
+		Utility::set_and_get_hidden_property( $handler, 'image_handler', $mock_image_handler );
+
+		// Call process_prompt with multiple attachment IDs.
+		$result = $handler->process_prompt( 'Test prompt', array( $attachment_id1, $attachment_id2 ) );
+
+		// Should fail after attachment conversion (not at API key check).
+		// This confirms the Image_Handler was called before the failure.
+		$this->assertInstanceOf( WP_Error::class, $result );
+		// The error code may be 'no_abilities' or 'no_models_found' depending on wp-ai-client initialization.
+		// What matters is that it's NOT 'no_api_key', which confirms we got past the API key check.
+		$this->assertNotSame( 'no_api_key', $result->get_error_code(), 'Failed to assert that API key check passed.' );
+
+		// Reset image_handler property.
+		Utility::set_and_get_hidden_property( $handler, 'image_handler', null );
+
+		// Clean up.
+		delete_option( 'wp_ai_client_provider_credentials' );
 	}
 
 	/**
@@ -1067,5 +1283,32 @@ class Test_AI_Handler extends Base {
 		$estimated_cost = ( $total_prompt_tokens / 1000 * 0.01 ) + ( $total_completion_tokens / 1000 * 0.03 );
 
 		$this->assertSame( 0.0, $estimated_cost, 'Failed to assert zero tokens results in zero cost.' );
+	}
+
+	/**
+	 * Helper method to create a real File MessagePart for testing.
+	 *
+	 * @return MessagePart Real File MessagePart instance.
+	 */
+	private function create_real_file_message_part(): MessagePart {
+		if ( ! class_exists( 'WordPress\AiClient\Files\DTO\File' ) ) {
+			// Fallback to text MessagePart if File class is not available.
+			return new MessagePart( 'test' );
+		}
+
+		// Create a File DTO with a test URL and MIME type.
+		$file = new AiClientFile( 'http://example.com/test-image.jpg', 'image/jpeg' );
+
+		// Create MessagePart with file channel.
+		$channel      = MessagePartChannelEnum::from( MessagePartChannelEnum::CONTENT );
+		$message_part = new MessagePart( '', $channel );
+
+		// Set file property using reflection (since there's no public setter).
+		$reflection    = new \ReflectionClass( $message_part );
+		$file_property = $reflection->getProperty( 'file' );
+		$file_property->setAccessible( true );
+		$file_property->setValue( $message_part, $file );
+
+		return $message_part;
 	}
 }

@@ -64,14 +64,22 @@ class AI_Handler {
 	const META_KEY_CONVERSATION_STATE = 'gatherpress_ai_conversation_state';
 
 	/**
+	 * Image handler instance (for dependency injection in tests).
+	 *
+	 * @var Image_Handler|null
+	 */
+	protected $image_handler = null;
+
+	/**
 	 * Process a user prompt with AI.
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param string $prompt User's natural language prompt.
+	 * @param string     $prompt         User's natural language prompt.
+	 * @param array<int> $attachment_ids Optional. Array of image attachment IDs to include in the message.
 	 * @return array|WP_Error Result of processing or error.
 	 */
-	public function process_prompt( $prompt ) {
+	public function process_prompt( $prompt, array $attachment_ids = array() ) {
 		// Check if wp-ai-client is available.
 		if ( ! class_exists( 'WordPress\AI_Client\AI_Client' ) ) {
 			return new WP_Error(
@@ -112,13 +120,39 @@ Rules:
 - When user mentions a venue by name, call list-venues to get the venue ID.
 - Always create events as drafts. Event dates must be after %s.
 - If success=true: Display the data (even if empty - say "No X found", '
-			. 'don\'t say "error"). Only say "error" if success=false.',
+			. 'don\'t say "error"). Only say "error" if success=false.
+- If an image is provided but the user\'s request doesn\'t clearly indicate what to do with it '
+			. '(e.g., they\'re not creating or updating an event), politely ask what they\'d like to do with the image.
+- If a user asks to update an event or venue with an attached image, call update-event or update-venue normally. '
+			. 'The image will be attached automatically - you do not need to pass any image parameters.',
 			$current_date,
 			$current_date
 		);
 
+		// Build message parts: text prompt + any image files.
+		$message_parts = array( new MessagePart( $prompt ) );
+
+		// Convert attachment IDs to File MessageParts if provided.
+		if ( ! empty( $attachment_ids ) ) {
+			// Use injected image handler or create new one (allows mocking in tests).
+			$image_handler            = $this->image_handler ?? new Image_Handler();
+			$file_message_parts_count = 0;
+			foreach ( $attachment_ids as $attachment_id ) {
+				$file_message_part = $image_handler->attachment_to_file_message_part( $attachment_id );
+				if ( ! is_wp_error( $file_message_part ) ) {
+					$message_parts[] = $file_message_part;
+					++$file_message_parts_count;
+				}
+				// Note: We continue even if one attachment fails to convert.
+			}
+		}
+
 		// Store original user message for conversation loop.
-		$original_user_message = new UserMessage( array( new MessagePart( $prompt ) ) );
+		$original_user_message = new UserMessage( $message_parts );
+
+		// Debug: Log UserMessage parts count.
+		// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
+		error_log( 'GatherPress AI: UserMessage created with ' . count( $message_parts ) . ' MessagePart(s)' );
 
 		// Load conversation state.
 		$user_id      = get_current_user_id();
@@ -282,6 +316,20 @@ Rules:
 			} catch ( \WordPress\AiClient\Providers\Http\Exception\ClientException $e ) {
 				// Handle HTTP client errors (429 rate limit, 401 auth, etc.).
 				$message = $e->getMessage();
+
+				// Debug: Log full exception details for troubleshooting.
+				// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
+				error_log( 'GatherPress AI: ClientException caught: ' . $e->getMessage() );
+				// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
+				error_log( 'GatherPress AI: ClientException code: ' . $e->getCode() );
+				if ( method_exists( $e, 'getResponse' ) ) {
+					try {
+						$e->getResponse();
+					} catch ( \Exception $response_exception ) {
+						// Response not available, continue without it.
+						unset( $response_exception );
+					}
+				}
 
 				// Try to determine which provider was used from the request URL.
 				$provider_name = '';
