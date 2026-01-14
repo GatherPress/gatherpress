@@ -143,5 +143,18 @@ return array (
   ),
   'contributors' => 
   array (
+    0 => 
+    array (
+      'id' => 15768524,
+      'name' => 'Kofi Mokome',
+      'link' => 'https://profiles.wordpress.org/kofimokome/',
+      'slug' => 'kofimokome',
+      'avatar_urls' => 
+      array (
+        24 => '//www.gravatar.com/avatar/35d97e8ebb19530c8cb46cb42f5e5c86?s=24&#038;r=g&#038;d=mm',
+        48 => '//www.gravatar.com/avatar/35d97e8ebb19530c8cb46cb42f5e5c86?s=48&#038;r=g&#038;d=mm',
+        96 => '//www.gravatar.com/avatar/35d97e8ebb19530c8cb46cb42f5e5c86?s=96&#038;r=g&#038;d=mm',
+      ),
+    ),
   ),
 );
