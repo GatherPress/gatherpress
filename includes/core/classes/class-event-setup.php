@@ -624,7 +624,6 @@ class Event_Setup {
 		}
 
 		// Use WordPress's standard comment count sorting approach.
-
 		$order = $query->get( 'order', 'ASC' );
 		$order = strtoupper( $order );
 
