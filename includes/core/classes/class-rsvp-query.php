@@ -205,6 +205,8 @@ class Rsvp_Query {
 	 * @param int        $id      The comment ID.
 	 * @param WP_Comment $comment The comment object.
 	 * @return void
+	 *
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
 	 */
 	public function maybe_invalidate_comment_types_cache( int $id, WP_Comment $comment ): void {
 		// Skip if it's an empty comment type (regular comment).

@@ -205,7 +205,7 @@ class Settings {
 	public function remove_sub_options(): void {
 		$sub_pages = $this->get_sub_pages();
 
-		foreach ( $sub_pages as $sub_page => $setting ) {
+		foreach ( array_keys( $sub_pages ) as $sub_page ) {
 			if ( $this->main_sub_page === $sub_page ) {
 				continue;
 			}
