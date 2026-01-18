@@ -1,8 +1,14 @@
 /**
- * Uses the hookable block pattern designed for this purpose and template.
- *
- * @see https://github.com/GatherPress/gatherpress/tree/develop/docs/developer/blocks/hookable-patterns
+ * Simplified template with just the venue title for now.
+ * Will expand with more fields once block guard issues are resolved.
  */
-const TEMPLATE = [ [ 'core/pattern', { slug: 'gatherpress/venue-details' } ] ];
+const TEMPLATE = [
+	[
+		'core/post-title',
+		{
+			level: 2,
+		},
+	],
+];
 
 export default TEMPLATE;

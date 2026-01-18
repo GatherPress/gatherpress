@@ -1,21 +1,25 @@
 /**
  * WordPress dependencies
  */
+import { __ } from '@wordpress/i18n';
 import {
 	// eslint-disable-next-line @wordpress/no-unsafe-wp-apis
 	__experimentalNavigatorProvider as NavigatorProvider,
 	Navigator,
 } from '@wordpress/components';
-import { store as coreDataStore } from '@wordpress/core-data';
+import { store as coreDataStore, useEntityProp } from '@wordpress/core-data';
 import { useSelect } from '@wordpress/data';
-import { useState } from '@wordpress/element';
+import { useState, useCallback } from '@wordpress/element';
 
 /**
  * Internal dependencies
  */
-import { PT_VENUE } from '../helpers/namespace';
+import { PT_VENUE, PT_EVENT, TAX_VENUE } from '../helpers/namespace';
 import CreateVenueForm from './VenueForm';
 import { VenueComboboxProvider } from './VenueComboboxProvider';
+import PopularVenues from './PopularVenues';
+import { isEventPostType } from '../helpers/event';
+import { getCurrentContextualPostId } from '../helpers/editor';
 
 /**
  *
@@ -23,10 +27,7 @@ import { VenueComboboxProvider } from './VenueComboboxProvider';
  * @return {Component} A Navigator component to be rendered.
  */
 export default function VenueNavigator( props = null ) {
-	const addNewItemLabel = useSelect( ( select ) => {
-		const { getPostType } = select( coreDataStore );
-		return getPostType( PT_VENUE )?.labels?.add_new_item;
-	}, [] );
+	const addNewItemLabel = __( 'Add Venue', 'gatherpress' );
 
 	/**
 	 * Check if user can CREATE new venues.
@@ -39,6 +40,31 @@ export default function VenueNavigator( props = null ) {
 	}, [] );
 
 	const [ search, setSearch ] = useState( '' );
+
+	// Check if we're in an event context to show popular venues.
+	// When used in panel context, props may be null, so check current editor post type.
+	const isEventContext = props?.context?.postType
+		? isEventPostType( props.context.postType )
+		: isEventPostType();
+
+	// Get current venue and update function for event context.
+	const cId = getCurrentContextualPostId( props?.context?.postId );
+	const [ venueTaxonomyIds, updateVenueTaxonomyIds ] = useEntityProp(
+		'postType',
+		PT_EVENT,
+		TAX_VENUE,
+		cId
+	);
+
+	// Handler for popular venue selection.
+	const handlePopularVenueSelect = useCallback(
+		( venueId ) => {
+			if ( isEventContext && updateVenueTaxonomyIds ) {
+				updateVenueTaxonomyIds( [ venueId ] );
+			}
+		},
+		[ isEventContext, updateVenueTaxonomyIds ]
+	);
 
 	return (
 		<NavigatorProvider
@@ -58,10 +84,16 @@ export default function VenueNavigator( props = null ) {
 					search={ search }
 					setSearch={ setSearch }
 				/>
+				{ isEventContext && (
+					<PopularVenues
+						onSelect={ handlePopularVenueSelect }
+						currentId={ venueTaxonomyIds?.[ 0 ] }
+					/>
+				) }
 				{ userCanEdit && (
 					<Navigator.Button
 						path="/new"
-						variant="tertiary"
+						variant="link"
 						text={ addNewItemLabel }
 					/>
 				) }

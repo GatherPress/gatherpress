@@ -3,9 +3,9 @@
  */
 import {
 	BlockContextProvider,
+	InnerBlocks,
 	InspectorControls,
 	useBlockProps,
-	useInnerBlocksProps,
 } from '@wordpress/block-editor';
 import { __ } from '@wordpress/i18n';
 import { PanelBody, PanelRow } from '@wordpress/components';
@@ -24,12 +24,6 @@ import VenueNavigator from '../../components/VenueNavigator';
 import { PT_EVENT, PT_VENUE, TAX_VENUE } from '../../helpers/namespace';
 import TEMPLATE from './template';
 
-const TemplateInnerBlocks = ( { blockProps } ) => {
-	const { children } = useInnerBlocksProps( {}, { template: TEMPLATE } );
-
-	return <div { ...blockProps }>{ children ? children : null }</div>;
-};
-
 const List = ( {
 	props,
 	blockProps,
@@ -38,24 +32,14 @@ const List = ( {
 	isSelected,
 } ) => {
 	return (
-		<>
-			{ ! venuePostContext && (
-				<p>
-					<em>
-						What to show, when (1) no venues or (2) an online-event
-						is selected?
-					</em>
-					<br /> (At least, add a placeholder here to provide help).
-				</p>
-			) }
-
+		<div { ...blockProps }>
 			<BlockContextProvider
 				value={ {
 					postId: venuePostContext,
 					postType: PT_VENUE,
 				} }
 			>
-				<TemplateInnerBlocks blockProps={ blockProps } />
+				<InnerBlocks template={ TEMPLATE } />
 				{ ! isDescendentOfQueryLoop && isSelected && (
 					<InspectorControls>
 						<PanelBody
@@ -69,7 +53,7 @@ const List = ( {
 					</InspectorControls>
 				) }
 			</BlockContextProvider>
-		</>
+		</div>
 	);
 };
 

@@ -299,12 +299,23 @@ class Event_Setup {
 				'type'              => 'boolean',
 				'default'           => false,
 			),
+			// Legacy online event link field (kept for backwards compatibility until migration).
+			// @todo GatherPress Alpha: Migrate data from gatherpress_online_event_link → gatherpress_event_online_link.
 			'gatherpress_online_event_link'     => array(
 				'auth_callback'     => array( $this, 'can_edit_posts_meta' ),
 				'sanitize_callback' => 'sanitize_url',
 				'show_in_rest'      => true,
 				'single'            => true,
 				'type'              => 'string',
+			),
+			// New consistent naming for event-specific online link.
+			'gatherpress_event_online_link'     => array(
+				'auth_callback'     => array( $this, 'can_edit_posts_meta' ),
+				'sanitize_callback' => 'sanitize_url',
+				'show_in_rest'      => true,
+				'single'            => true,
+				'type'              => 'string',
+				'default'           => '',
 			),
 			'gatherpress_max_attendance_limit'  => array(
 				'auth_callback'     => array( $this, 'can_edit_posts_meta' ),

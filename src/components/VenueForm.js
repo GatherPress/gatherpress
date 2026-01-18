@@ -1,7 +1,7 @@
 /**
  * WordPress dependencies
  */
-import { __ } from '@wordpress/i18n';
+import { __, sprintf } from '@wordpress/i18n';
 import {
 	Spinner,
 	Button,
@@ -22,6 +22,55 @@ import { PT_EVENT, PT_VENUE, TAX_VENUE } from '../helpers/namespace';
 import { isEventPostType } from '../helpers/event';
 import { getCurrentContextualPostId } from '../helpers/editor';
 
+/**
+ * Geocodes an address using Nominatim OpenStreetMap API.
+ *
+ * @param {string} address - The full address to geocode.
+ * @return {Promise<Object>} Promise resolving to { latitude, longitude } or { latitude: '', longitude: '' } on error.
+ */
+async function geocodeAddress( address ) {
+	if ( ! address || '' === address.trim() ) {
+		return { latitude: '', longitude: '' };
+	}
+
+	try {
+		const response = await fetch(
+			`https://nominatim.openstreetmap.org/search?q=${ encodeURIComponent(
+				address
+			) }&format=geojson`
+		);
+
+		if ( ! response.ok ) {
+			throw new Error(
+				sprintf(
+					/* translators: %s: Error message */
+					__( 'Network response was not ok %s', 'gatherpress' ),
+					response.statusText
+				)
+			);
+		}
+
+		const data = await response.json();
+
+		if ( 0 < data.features.length ) {
+			const latitude = String(
+				data.features[ 0 ].geometry.coordinates[ 1 ]
+			);
+			const longitude = String(
+				data.features[ 0 ].geometry.coordinates[ 0 ]
+			);
+			return { latitude, longitude };
+		}
+
+		// No results found.
+		return { latitude: '', longitude: '' };
+	} catch ( error ) {
+		// eslint-disable-next-line no-console
+		console.error( 'Geocoding error:', error );
+		return { latitude: '', longitude: '' };
+	}
+}
+
 function VenueForm( {
 	title,
 	onChangeTitle,
@@ -39,16 +88,19 @@ function VenueForm( {
 				<TextControl
 					__next40pxDefaultSize
 					__nextHasNoMarginBottom
-					label={ __( 'Venue title', 'gatherpress' ) } // Would be nice to use apply_filters('enter_title_here) on this.
+					label={ __( 'Venue name', 'gatherpress' ) }
 					value={ title }
 					onChange={ onChangeTitle }
 				/>
 				<TextControl
 					__next40pxDefaultSize
-					__nextHasNoMarginBottom
 					label={ __( 'Full Address', 'gatherpress' ) }
 					value={ address }
 					onChange={ onChangeAddress }
+					help={ __(
+						'Address will be automatically geocoded for map display.',
+						'gatherpress'
+					) }
 				/>
 			</div>
 			{ lastError ? (
@@ -56,7 +108,7 @@ function VenueForm( {
 			) : (
 				false
 			) }
-			<HStack justify="flex-start">
+			<HStack justify="flex-start" style={ { marginTop: '1rem' } }>
 				<Button
 					onClick={ onSave }
 					variant="primary"
@@ -85,7 +137,7 @@ function VenueForm( {
 
 function CreateVenueForm( { search, ...props } ) {
 	const [ title, setTitle ] = useState( search );
-	const [ address, setAddress ] = useState();
+	const [ address, setAddress ] = useState( '' );
 
 	const { lastError, isSaving } = useSelect(
 		( select ) => ( {
@@ -127,16 +179,23 @@ function CreateVenueForm( { search, ...props } ) {
 	};
 
 	/**
-	 * Creates a new venue post with the provided title and address.
+	 * Creates a new venue post with the provided details.
 	 *
-	 * Have been & could also run,
-	 * based on "const { saveEntityRecord } = useDispatch( coreDataStore )".
+	 * Uses the new individual meta fields architecture.
+	 * Phone and website can be added later when editing the full venue post.
 	 *
 	 * @param {string} newTitle   - The title of the new venue.
 	 * @param {string} newAddress - The address of the new venue.
+	 * @param {string} latitude   - Latitude coordinate (from geocoding).
+	 * @param {string} longitude  - Longitude coordinate (from geocoding).
 	 * @return {Object} The newly created venue post.
 	 */
-	const createNewVenuePost = async ( newTitle, newAddress ) => {
+	const createNewVenuePost = async (
+		newTitle,
+		newAddress,
+		latitude = '',
+		longitude = ''
+	) => {
 		try {
 			const newPost = await apiFetch( {
 				path: `/wp/v2/${ PT_VENUE }s`, // !! Watch out & beware of the 's' at the end. // @TODO Make this nicer.
@@ -145,7 +204,15 @@ function CreateVenueForm( { search, ...props } ) {
 					title,
 					status: 'publish', // 'draft' is the default
 					meta: {
-						// @TODO: Should become 'geo_address', when #560 is resolved!
+						// New individual meta fields architecture.
+						gatherpress_venue_address: newAddress,
+						gatherpress_venue_latitude: latitude,
+						gatherpress_venue_longitude: longitude,
+						// Phone and website can be added later via full venue editor.
+						gatherpress_venue_phone: '',
+						gatherpress_venue_website: '',
+						// @todo GatherPress Alpha: Keep saving to old field during transition for backwards compatibility.
+						// @todo GatherPress Alpha: Remove gatherpress_venue_information after migration completes.
 						gatherpress_venue_information: JSON.stringify( {
 							fullAddress: newAddress,
 						} ),
@@ -193,7 +260,15 @@ function CreateVenueForm( { search, ...props } ) {
 	 */
 	const updateVenueTermOnEventPost = async () => {
 		try {
-			const newPost = await createNewVenuePost( title, address );
+			// Geocode the address to get lat/long coordinates.
+			const { latitude, longitude } = await geocodeAddress( address );
+
+			const newPost = await createNewVenuePost(
+				title,
+				address,
+				latitude,
+				longitude
+			);
 			const newPostSlug = '_' + newPost.slug;
 			await fetchTermAndUpdateEvent( newPostSlug, updateVenueTaxonomyIds );
 		} catch ( error ) {
@@ -206,11 +281,19 @@ function CreateVenueForm( { search, ...props } ) {
 	};
 
 	/**
-	 *
+	 * Updates the venue post on block attributes when saving from non-event context.
 	 */
 	const updateVenuePostOnBlockAttributes = async () => {
 		try {
-			const newPost = await createNewVenuePost( title, address );
+			// Geocode the address to get lat/long coordinates.
+			const { latitude, longitude } = await geocodeAddress( address );
+
+			const newPost = await createNewVenuePost(
+				title,
+				address,
+				latitude,
+				longitude
+			);
 			updateVenueDetailsBlockAttributes( newPost.id, props );
 		} catch ( error ) {
 			// eslint-disable-next-line no-console

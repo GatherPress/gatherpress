@@ -213,6 +213,8 @@ class Venue {
 	 */
 	public function register_post_meta(): void {
 		$post_meta = array(
+			// Legacy JSON blob field (kept for backwards compatibility until migration).
+			// @todo GatherPress Alpha: Migrate JSON data from gatherpress_venue_information to individual meta fields.
 			'gatherpress_venue_information' => array(
 				'auth_callback'     => static function () {
 					return current_user_can( 'edit_posts' ); // @codeCoverageIgnore
@@ -221,6 +223,98 @@ class Venue {
 				'show_in_rest'      => true,
 				'single'            => true,
 				'type'              => 'string',
+			),
+			// Individual venue fields (new architecture).
+			'gatherpress_venue_address'     => array(
+				'auth_callback'     => static function () {
+					return current_user_can( 'edit_posts' ); // @codeCoverageIgnore
+				},
+				'sanitize_callback' => 'sanitize_text_field',
+				'show_in_rest'      => true,
+				'single'            => true,
+				'type'              => 'string',
+				'default'           => '',
+			),
+			'gatherpress_venue_phone'       => array(
+				'auth_callback'     => static function () {
+					return current_user_can( 'edit_posts' ); // @codeCoverageIgnore
+				},
+				'sanitize_callback' => 'sanitize_text_field',
+				'show_in_rest'      => true,
+				'single'            => true,
+				'type'              => 'string',
+				'default'           => '',
+			),
+			'gatherpress_venue_website'     => array(
+				'auth_callback'     => static function () {
+					return current_user_can( 'edit_posts' ); // @codeCoverageIgnore
+				},
+				'sanitize_callback' => 'sanitize_url',
+				'show_in_rest'      => true,
+				'single'            => true,
+				'type'              => 'string',
+				'default'           => '',
+			),
+			'gatherpress_venue_latitude'    => array(
+				'auth_callback'     => static function () {
+					return current_user_can( 'edit_posts' ); // @codeCoverageIgnore
+				},
+				'sanitize_callback' => 'sanitize_text_field',
+				'show_in_rest'      => true,
+				'single'            => true,
+				'type'              => 'string',
+				'default'           => '',
+			),
+			'gatherpress_venue_longitude'   => array(
+				'auth_callback'     => static function () {
+					return current_user_can( 'edit_posts' ); // @codeCoverageIgnore
+				},
+				'sanitize_callback' => 'sanitize_text_field',
+				'show_in_rest'      => true,
+				'single'            => true,
+				'type'              => 'string',
+				'default'           => '',
+			),
+			'gatherpress_venue_online_link' => array(
+				'auth_callback'     => static function () {
+					return current_user_can( 'edit_posts' ); // @codeCoverageIgnore
+				},
+				'sanitize_callback' => 'sanitize_url',
+				'show_in_rest'      => true,
+				'single'            => true,
+				'type'              => 'string',
+				'default'           => '',
+			),
+			// Map display settings.
+			'gatherpress_venue_map_show'    => array(
+				'auth_callback'     => static function () {
+					return current_user_can( 'edit_posts' ); // @codeCoverageIgnore
+				},
+				'sanitize_callback' => 'rest_sanitize_boolean',
+				'show_in_rest'      => true,
+				'single'            => true,
+				'type'              => 'boolean',
+				'default'           => true,
+			),
+			'gatherpress_venue_map_zoom'    => array(
+				'auth_callback'     => static function () {
+					return current_user_can( 'edit_posts' ); // @codeCoverageIgnore
+				},
+				'sanitize_callback' => 'absint',
+				'show_in_rest'      => true,
+				'single'            => true,
+				'type'              => 'integer',
+				'default'           => 10,
+			),
+			'gatherpress_venue_map_height'  => array(
+				'auth_callback'     => static function () {
+					return current_user_can( 'edit_posts' ); // @codeCoverageIgnore
+				},
+				'sanitize_callback' => 'absint',
+				'show_in_rest'      => true,
+				'single'            => true,
+				'type'              => 'integer',
+				'default'           => 300,
 			),
 		);
 

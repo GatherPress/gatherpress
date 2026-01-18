@@ -21,7 +21,6 @@ import GuestLimitPanel from './guest-limit';
 import MaxAttendanceLimitPanel from './max-attendance-limit';
 import NotifyMembersPanel from './notify-members';
 import OnlineEventLinkPanel from './online-link';
-import VenueSelectorPanel from './venue-selector';
 import { EventPluginDocumentSettings } from './slot';
 
 /**
@@ -49,7 +48,6 @@ const EventSettings = () => {
 
 				<VStack spacing={ 4 }>
 					<DateTimeRangePanel />
-					<VenueSelectorPanel />
 					<OnlineEventLinkPanel />
 					<GuestLimitPanel />
 					<MaxAttendanceLimitPanel />

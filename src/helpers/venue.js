@@ -149,7 +149,17 @@ export function GetVenuePostFromEventId( eventId ) {
 	return GetVenuePostFromTermId( termId );
 }
 
-const getVenueTitle = ( venue, kind ) => {
+/**
+ * Get the title of a venue based on its kind (taxonomy term or post type).
+ *
+ * @since 1.0.0
+ *
+ * @param {Object} venue Venue object (either a term or post).
+ * @param {string} kind  Type of venue ('taxonomy' or 'postType').
+ *
+ * @return {string} The venue title.
+ */
+export function getVenueTitle( venue, kind ) {
 	switch ( kind ) {
 		case 'taxonomy':
 			return venue.name;
@@ -158,7 +168,7 @@ const getVenueTitle = ( venue, kind ) => {
 		default:
 			return '&hellip;loading';
 	}
-};
+}
 
 /**
  * Get a list of venue options from either posts or taxonomy terms.
@@ -239,4 +249,36 @@ export function useVenueOptions(
 	);
 
 	return { venueOptions };
+}
+
+/**
+ * Hook to fetch the most popular venues (based on usage count).
+ *
+ * Retrieves venue taxonomy terms ordered by count (number of events using that venue)
+ * in descending order, limited to the specified number.
+ *
+ * @since 1.0.0
+ *
+ * @param {number} limit Maximum number of popular venues to fetch (default: 3).
+ *
+ * @return {Array} Array of popular venue terms with id, name, and count properties.
+ */
+export function usePopularVenues( limit = 3 ) {
+	const popularVenues = useSelect(
+		( wpSelect ) => {
+			const { getEntityRecords } = wpSelect( coreStore );
+			const query = {
+				context: 'view',
+				per_page: limit,
+				orderby: 'count',
+				order: 'desc',
+				hide_empty: true, // Only show venues that are actually used.
+			};
+
+			return getEntityRecords( 'taxonomy', TAX_VENUE, query );
+		},
+		[ limit ]
+	);
+
+	return popularVenues ?? [];
 }
