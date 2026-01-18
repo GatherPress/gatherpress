@@ -37,23 +37,23 @@ export function isVenuePostType() {
  * @param {number|null} termId The ID of the '_gatherpress_venue' term. If null, no post is retrieved.
  * @return {Object[]|Array}     An array of matching Venue post objects, or an empty array if none is found.
  */
-export function GetVenuePostFromTermId(termId) {
+export function GetVenuePostFromTermId( termId ) {
 	const { venuePost } = useSelect(
-		(wpSelect) => {
-			if (null === termId) {
+		( wpSelect ) => {
+			if ( null === termId ) {
 				return [];
 			}
 			// Get the term object from the '_gatherpress_venue' taxonomy.
-			const venueTerm = wpSelect('core').getEntityRecord(
+			const venueTerm = wpSelect( 'core' ).getEntityRecord(
 				'taxonomy',
 				TAX_VENUE,
 				termId
 			);
 			// If term object exists, strip any leading underscore from its slug.
-			const venueSlug = venueTerm?.slug.replace(/^_/, '');
+			const venueSlug = venueTerm?.slug.replace( /^_/, '' );
 			// Query for one Venue post with the matching slug.
 			return {
-				venuePost: wpSelect('core').getEntityRecords(
+				venuePost: wpSelect( 'core' ).getEntityRecords(
 					'postType',
 					PT_VENUE,
 					{
@@ -63,7 +63,7 @@ export function GetVenuePostFromTermId(termId) {
 				),
 			};
 		},
-		[termId]
+		[ termId ]
 	);
 
 	return venuePost;
@@ -81,14 +81,14 @@ export function GetVenuePostFromTermId(termId) {
  *                             Defaults to null, in which case no term is retrieved.
  * @return {Object[]|Array}    An array of matching term objects, or an empty array if no matching term is found.
  */
-export function GetVenueTermFromPostId(postId = null) {
+export function GetVenueTermFromPostId( postId = null ) {
 	const { venueTerm } = useSelect(
-		(wpSelect) => {
-			if (null === postId) {
+		( wpSelect ) => {
+			if ( null === postId ) {
 				return [];
 			}
 			// Retrieve the venue post entity from the WordPress data store.
-			const venuePost = wpSelect('core').getEntityRecord(
+			const venuePost = wpSelect( 'core' ).getEntityRecord(
 				'postType',
 				PT_VENUE,
 				postId
@@ -97,7 +97,7 @@ export function GetVenueTermFromPostId(postId = null) {
 			const venueSlug = '_' + venuePost.slug;
 			// Fetch the '_gatherpress_venue' taxonomy term matching this slug.
 			return {
-				venueTerm: wpSelect('core').getEntityRecords(
+				venueTerm: wpSelect( 'core' ).getEntityRecords(
 					'taxonomy',
 					TAX_VENUE,
 					{
@@ -107,7 +107,7 @@ export function GetVenueTermFromPostId(postId = null) {
 				),
 			};
 		},
-		[postId]
+		[ postId ]
 	);
 
 	return venueTerm;
@@ -125,11 +125,11 @@ export function GetVenueTermFromPostId(postId = null) {
  * @param {number} eventId The ID of the GatherPress event post.
  * @return {Object|null} The related Venue post object, or null if none is found.
  */
-export function GetVenuePostFromEventId(eventId) {
+export function GetVenuePostFromEventId( eventId ) {
 	const { termId } = useSelect(
-		(wpSelect) => {
+		( wpSelect ) => {
 			// Retrieve the event post entity from the core store.
-			const eventPost = wpSelect('core').getEntityRecord(
+			const eventPost = wpSelect( 'core' ).getEntityRecord(
 				'postType',
 				PT_EVENT,
 				eventId
@@ -137,20 +137,20 @@ export function GetVenuePostFromEventId(eventId) {
 			// Extract the venue term ID if available; otherwise return null.
 			return {
 				termId:
-					eventPost && eventPost._gatherpress_venue.length >= 1
-						? eventPost?._gatherpress_venue?.[0]
+					eventPost && 1 <= eventPost._gatherpress_venue.length
+						? eventPost?._gatherpress_venue?.[ 0 ]
 						: null,
 			};
 		},
-		[eventId]
+		[ eventId ]
 	);
 
 	// Fetch and return the related Venue post using the term ID.
-	return GetVenuePostFromTermId(termId);
+	return GetVenuePostFromTermId( termId );
 }
 
-const getVenueTitle = (venue, kind) => {
-	switch (kind) {
+const getVenueTitle = ( venue, kind ) => {
+	switch ( kind ) {
 		case 'taxonomy':
 			return venue.name;
 		case 'postType':
@@ -180,9 +180,9 @@ export function useVenueOptions(
 	name = TAX_VENUE
 ) {
 	const { venue, venues } = useSelect(
-		(wpSelect) => {
+		( wpSelect ) => {
 			// Unified for VenueTermsCombobox and VenuePostsCombobox
-			const { getEntityRecord, getEntityRecords } = wpSelect(coreStore);
+			const { getEntityRecord, getEntityRecords } = wpSelect( coreStore );
 			const query = {
 				context: 'view',
 				per_page: 10,
@@ -195,11 +195,11 @@ export function useVenueOptions(
 				// Query for the currently selected venue,
 				// which may be a venue-term or a venue-post,
 				// depending on context.
-				venue: getEntityRecord(kind, name, venueId),
-				venues: getEntityRecords(kind, name, query),
+				venue: getEntityRecord( kind, name, venueId ),
+				venues: getEntityRecords( kind, name, query ),
 			};
 		},
-		[kind, name, search, venueId]
+		[ kind, name, search, venueId ]
 	);
 
 	// Using useMemo will cause a re-render only when the raw venues really change.
@@ -207,25 +207,25 @@ export function useVenueOptions(
 		() => {
 			// Create a combobox-friendly list as dropdown
 			// from the array of venues (can be ~posts or ~terms).
-			const fetchedVenues = (venues ?? []).map((venueObj) => {
+			const fetchedVenues = ( venues ?? [] ).map( ( venueObj ) => {
 				return {
 					value: venueObj.id,
-					label: decodeEntities(getVenueTitle(venueObj, kind)),
+					label: decodeEntities( getVenueTitle( venueObj, kind ) ),
 				};
-			});
+			} );
 
 			// Check if the current venue is already included in the list.
 			// Will be -1 if not found.
 			const foundVenue = fetchedVenues.findIndex(
-				({ value }) => venue?.id === value
+				( { value } ) => venue?.id === value
 			);
 
 			// Ensure the current venue is included in the list.
-			if (foundVenue < 0 && venue) {
+			if ( 0 > foundVenue && venue ) {
 				return [
 					{
 						value: venue.id,
-						label: decodeEntities(getVenueTitle(venue, kind)),
+						label: decodeEntities( getVenueTitle( venue, kind ) ),
 					},
 					...fetchedVenues,
 				];
@@ -235,7 +235,7 @@ export function useVenueOptions(
 		},
 		// Dependency array, every time venue or venues is updated,
 		//  the useMemo callback will be called.
-		[venue, venues, kind]
+		[ venue, venues, kind ]
 	);
 
 	return { venueOptions };

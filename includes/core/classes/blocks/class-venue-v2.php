@@ -109,7 +109,10 @@ class Venue_V2 {
 			$venue_post = $venue->get_venue_post_from_event_post_id( $current_post->ID );
 
 			// Variant B: The block is NOT within an event, but has a venue selected to create a context of.
-		} elseif ( isset( $block['attrs'], $block['attrs']['selectedPostId'] ) && is_int( $block['attrs']['selectedPostId'] ) ) {
+		} elseif (
+			isset( $block['attrs'], $block['attrs']['selectedPostId'] ) &&
+			is_int( $block['attrs']['selectedPostId'] )
+		) {
 			$venue_post_id = $block['attrs']['selectedPostId'];
 		}
 
@@ -157,7 +160,8 @@ class Venue_V2 {
 		 * Render the inner blocks of the Post Template block with `dynamic` set to `false` to prevent calling
 		 * `render_callback` and ensure that no wrapper markup is included.
 		 *
-		 * @todo Find out why I removed: "$block_content = ( new WP_Block( $block_instance ) )->render( array( 'dynamic' => false ) );".
+		 * @todo Find out why I removed:
+		 *       "$block_content = ( new WP_Block( $block_instance ) )->render( array( 'dynamic' => false ) );".
 		 */
 		$block_content = ( new WP_Block( $block_instance ) )->render();
 		remove_filter( 'render_block_context', $filter_block_context, 1 );

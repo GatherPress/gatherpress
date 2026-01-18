@@ -22,7 +22,7 @@ import { PT_EVENT, PT_VENUE, TAX_VENUE } from '../helpers/namespace';
 import { isEventPostType } from '../helpers/event';
 import { getCurrentContextualPostId } from '../helpers/editor';
 
-function VenueForm({
+function VenueForm( {
 	title,
 	onChangeTitle,
 	address,
@@ -32,78 +32,78 @@ function VenueForm({
 	isSaving,
 	onCancel,
 	onSave,
-}) {
+} ) {
 	return (
 		<>
 			<div className="gatherpress-new-venue-form">
 				<TextControl
 					__next40pxDefaultSize
 					__nextHasNoMarginBottom
-					label={__('Venue title', 'gatherpress')} // Would be nice to use apply_filters('enter_title_here) on this.
-					value={title}
-					onChange={onChangeTitle}
+					label={ __( 'Venue title', 'gatherpress' ) } // Would be nice to use apply_filters('enter_title_here) on this.
+					value={ title }
+					onChange={ onChangeTitle }
 				/>
 				<TextControl
 					__next40pxDefaultSize
 					__nextHasNoMarginBottom
-					label={__('Full Address', 'gatherpress')}
-					value={address}
-					onChange={onChangeAddress}
+					label={ __( 'Full Address', 'gatherpress' ) }
+					value={ address }
+					onChange={ onChangeAddress }
 				/>
 			</div>
-			{lastError ? (
-				<div className="form-error">Error: {lastError.message}</div>
+			{ lastError ? (
+				<div className="form-error">Error: { lastError.message }</div>
 			) : (
 				false
-			)}
+			) }
 			<HStack justify="flex-start">
 				<Button
-					onClick={onSave}
+					onClick={ onSave }
 					variant="primary"
-					disabled={!hasEdits || isSaving}
+					disabled={ ! hasEdits || isSaving }
 				>
-					{isSaving ? (
+					{ isSaving ? (
 						<>
 							<Spinner />
-							{__('Saving')}
+							{ __( 'Saving', 'gatherpress' ) }
 						</>
 					) : (
-						__('Save')
-					)}
+						__( 'Save', 'gatherpress' )
+					) }
 				</Button>
 				<Button
-					onClick={onCancel}
+					onClick={ onCancel }
 					variant="tertiary"
-					disabled={isSaving}
+					disabled={ isSaving }
 				>
-					{__('Back')}
+					{ __( 'Back', 'gatherpress' ) }
 				</Button>
 			</HStack>
 		</>
 	);
 }
 
-function CreateVenueForm({ search, ...props }) {
-	const [title, setTitle] = useState(search);
-	const [address, setAddress] = useState();
+function CreateVenueForm( { search, ...props } ) {
+	const [ title, setTitle ] = useState( search );
+	const [ address, setAddress ] = useState();
 
 	const { lastError, isSaving } = useSelect(
-		(select) => ({
-			lastError: select(coreDataStore).getLastEntitySaveError(
+		( select ) => ( {
+			lastError: select( coreDataStore ).getLastEntitySaveError(
 				'postType',
 				PT_VENUE
 			),
-			isSaving: select(coreDataStore).isSavingEntityRecord(
+			isSaving: select( coreDataStore ).isSavingEntityRecord(
 				'postType',
 				PT_VENUE
 			),
-		}),
+		} ),
 		[]
 	);
 
-	const cId = getCurrentContextualPostId(props?.context?.postId);
+	const cId = getCurrentContextualPostId( props?.context?.postId );
 
-	const [, updateVenueTaxonomyIds] = useEntityProp(
+	const [ , updateVenueTaxonomyIds ] = useEntityProp(
 		'postType',
 		PT_EVENT,
 		TAX_VENUE,
@@ -112,17 +112,17 @@ function CreateVenueForm({ search, ...props }) {
 
 	const { goTo } = useNavigator();
 	const navigateBack = () => {
-		goTo('/', { isBack: true });
+		goTo( '/', { isBack: true } );
 	};
 
-	const updateVenueDetailsBlockAttributes = (postId, blockProps = null) => {
-		if (typeof blockProps.setAttributes !== 'undefined') {
+	const updateVenueDetailsBlockAttributes = ( postId, blockProps = null ) => {
+		if ( 'undefined' !== typeof blockProps.setAttributes ) {
 			const newAttributes = {
 				...blockProps.attributes,
 				selectedPostId: postId,
 				selectedPostType: PT_VENUE,
 			};
-			blockProps.setAttributes(newAttributes);
+			blockProps.setAttributes( newAttributes );
 		}
 	};
 
@@ -136,26 +136,26 @@ function CreateVenueForm({ search, ...props }) {
 	 * @param {string} newAddress - The address of the new venue.
 	 * @return {Object} The newly created venue post.
 	 */
-	const createNewVenuePost = async (newTitle, newAddress) => {
+	const createNewVenuePost = async ( newTitle, newAddress ) => {
 		try {
-			const newPost = await apiFetch({
-				path: `/wp/v2/${PT_VENUE}s`, // !! Watch out & beware of the 's' at the end. // @TODO Make this nicer.
+			const newPost = await apiFetch( {
+				path: `/wp/v2/${ PT_VENUE }s`, // !! Watch out & beware of the 's' at the end. // @TODO Make this nicer.
 				method: 'POST',
 				data: {
 					title,
 					status: 'publish', // 'draft' is the default
 					meta: {
 						// @TODO: Should become 'geo_address', when #560 is resolved!
-						gatherpress_venue_information: JSON.stringify({
+						gatherpress_venue_information: JSON.stringify( {
 							fullAddress: newAddress,
-						}),
+						} ),
 					},
 				},
-			});
+			} );
 
 			// console.log(`${newPost.title.rendered} Venue saved successfully.`, newPost );
 			return newPost;
-		} catch (error) {
+		} catch ( error ) {
 			// console.error('Error creating post:', error);
 			throw error;
 		}
@@ -172,17 +172,18 @@ function CreateVenueForm({ search, ...props }) {
 		wpUpdateVenueTaxonomyIds
 	) => {
 		try {
-			const terms = await apiFetch({
-				path: `/wp/v2/${TAX_VENUE}?slug=${newPostSlug}`,
-			});
+			const terms = await apiFetch( {
+				path: `/wp/v2/${ TAX_VENUE }?slug=${ newPostSlug }`,
+			} );
 
-			if (terms.length > 0) {
-				const term = terms[0];
+			if ( 0 < terms.length ) {
+				const term = terms[ 0 ];
 				// Update the currently edited event with the venue taxonomy term.
-				wpUpdateVenueTaxonomyIds([term.id]);
+				wpUpdateVenueTaxonomyIds( [ term.id ] );
 			}
-		} catch (error) {
-			console.error('Error fetching term:', error);
+		} catch ( error ) {
+			// eslint-disable-next-line no-console
+			console.error( 'Error fetching term:', error );
 		}
 	};
 
@@ -192,10 +193,11 @@ function CreateVenueForm({ search, ...props }) {
 	 */
 	const updateVenueTermOnEventPost = async () => {
 		try {
-			const newPost = await createNewVenuePost(title, address);
+			const newPost = await createNewVenuePost( title, address );
 			const newPostSlug = '_' + newPost.slug;
-			await fetchTermAndUpdateEvent(newPostSlug, updateVenueTaxonomyIds);
-		} catch (error) {
+			await fetchTermAndUpdateEvent( newPostSlug, updateVenueTaxonomyIds );
+		} catch ( error ) {
+			// eslint-disable-next-line no-console
 			console.error(
 				'Error in the updateVenueTermOnEventPost process:',
 				error
@@ -208,9 +210,10 @@ function CreateVenueForm({ search, ...props }) {
 	 */
 	const updateVenuePostOnBlockAttributes = async () => {
 		try {
-			const newPost = await createNewVenuePost(title, address);
-			updateVenueDetailsBlockAttributes(newPost.id, props);
-		} catch (error) {
+			const newPost = await createNewVenuePost( title, address );
+			updateVenueDetailsBlockAttributes( newPost.id, props );
+		} catch ( error ) {
+			// eslint-disable-next-line no-console
 			console.error(
 				'Error in the updateVenuePostOnBlockAttributes process:',
 				error
@@ -223,7 +226,7 @@ function CreateVenueForm({ search, ...props }) {
 	 * This function is called when the save button is clicked.
 	 */
 	const saveBogus = async () => {
-		if (isEventPostType()) {
+		if ( isEventPostType() ) {
 			// This should only run for the VenueTermsCombobox.
 			await updateVenueTermOnEventPost();
 		} else {
@@ -236,15 +239,15 @@ function CreateVenueForm({ search, ...props }) {
 
 	return (
 		<VenueForm
-			title={title ?? ''}
-			onChangeTitle={setTitle}
-			address={address ?? ''}
-			onChangeAddress={setAddress}
-			hasEdits={!!title}
-			onSave={saveBogus}
-			lastError={lastError}
-			onCancel={navigateBack}
-			isSaving={isSaving}
+			title={ title ?? '' }
+			onChangeTitle={ setTitle }
+			address={ address ?? '' }
+			onChangeAddress={ setAddress }
+			hasEdits={ !! title }
+			onSave={ saveBogus }
+			lastError={ lastError }
+			onCancel={ navigateBack }
+			isSaving={ isSaving }
 		/>
 	);
 }

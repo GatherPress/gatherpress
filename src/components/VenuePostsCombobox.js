@@ -27,7 +27,7 @@ import { PT_VENUE } from '../helpers/namespace';
  *
  * @return {JSX.Element} Venue post selection combobox control.
  */
-export const VenuePostsCombobox = ({ search, setSearch, ...props }) => {
+export const VenuePostsCombobox = ( { search, setSearch, ...props } ) => {
 	// Get the currently selected venue post ID from block attributes.
 	const venueId = props?.attributes?.selectedPostId;
 
@@ -45,7 +45,7 @@ export const VenuePostsCombobox = ({ search, setSearch, ...props }) => {
 	 * @param {number|string} value The ID of the newly selected venue.
 	 */
 	const update = useCallback(
-		(value) => {
+		( value ) => {
 			// Setup the 'gatherpress_venue' post to provide context for,
 			// after a new 'gatherpress_venue' post was selected.
 			const newAttributes = {
@@ -53,9 +53,9 @@ export const VenuePostsCombobox = ({ search, setSearch, ...props }) => {
 				selectedPostId: value,
 				selectedPostType: PT_VENUE,
 			};
-			props.setAttributes(newAttributes);
+			props.setAttributes( newAttributes );
 		},
-		[props]
+		[ props ]
 	);
 
 	/**
@@ -63,9 +63,9 @@ export const VenuePostsCombobox = ({ search, setSearch, ...props }) => {
 	 *
 	 * @param {string} value The search term entered by the user.
 	 */
-	const setSearchDebounced = useDebounce((value) => {
-		setSearch(value);
-	}, 300);
+	const setSearchDebounced = useDebounce( ( value ) => {
+		setSearch( value );
+	}, 300 );
 
 	/**
 	 * Determines the current value for the combobox.
@@ -79,12 +79,12 @@ export const VenuePostsCombobox = ({ search, setSearch, ...props }) => {
 	return (
 		<>
 			<ComboboxControl
-				label={__('Choose a venue', 'gatherpress')}
+				label={ __( 'Choose a venue', 'gatherpress' ) }
 				__next40pxDefaultSize
-				onChange={update}
-				onFilterValueChange={setSearchDebounced}
-				options={venueOptions}
-				value={setValue()}
+				onChange={ update }
+				onFilterValueChange={ setSearchDebounced }
+				options={ venueOptions }
+				value={ setValue() }
 			/>
 		</>
 	);

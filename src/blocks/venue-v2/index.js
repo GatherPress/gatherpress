@@ -23,19 +23,19 @@ import metadata from './block.json';
  *
  * @return {void}
  */
-registerBlockType(metadata, {
+registerBlockType( metadata, {
 	edit: Edit,
 	save: () => {
 		return (
-			<div {...useBlockProps.save()}>
+			<div { ...useBlockProps.save() }>
 				<InnerBlocks.Content />
 			</div>
 		);
 	},
-});
+} );
 
 /*
  */
-registerPlugin('venue-block-slot-fill', {
+registerPlugin( 'venue-block-slot-fill', {
 	render: VenueBlockPluginFill,
-});
+} );

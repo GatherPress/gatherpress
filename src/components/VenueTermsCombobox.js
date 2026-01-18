@@ -32,10 +32,10 @@ import { PT_EVENT, TAX_VENUE } from '../helpers/namespace';
  *
  * @return {JSX.Element} Venue term selection combobox control.
  */
-export const VenueTermsCombobox = ({ search, setSearch, ...props }) => {
+export const VenueTermsCombobox = ( { search, setSearch, ...props } ) => {
 	// Get the current contextual post ID, falling back to editor post ID if not passed.
-	const cId = getCurrentContextualPostId(props?.context?.postId);
-	const [venueTaxonomyIds, updateVenueTaxonomyIds] = useEntityProp(
+	const cId = getCurrentContextualPostId( props?.context?.postId );
+	const [ venueTaxonomyIds, updateVenueTaxonomyIds ] = useEntityProp(
 		'postType',
 		PT_EVENT,
 		TAX_VENUE,
@@ -43,17 +43,17 @@ export const VenueTermsCombobox = ({ search, setSearch, ...props }) => {
 	);
 
 	// The currently selected venue term ID (if any).
-	const venueId = venueTaxonomyIds?.[0];
-	const { venueOptions } = useVenueOptions(search, venueId);
+	const venueId = venueTaxonomyIds?.[ 0 ];
+	const { venueOptions } = useVenueOptions( search, venueId );
 
 	/**
 	 * Debounced setter for the search input to avoid excessive queries.
 	 *
 	 * @param {string} value The search term entered by the user.
 	 */
-	const setSearchDebounced = useDebounce((value) => {
-		setSearch(value);
-	}, 300);
+	const setSearchDebounced = useDebounce( ( value ) => {
+		setSearch( value );
+	}, 300 );
 
 	/**
 	 * Updates the event's '_gatherpress_venue' taxonomy term relationship.
@@ -62,11 +62,11 @@ export const VenueTermsCombobox = ({ search, setSearch, ...props }) => {
 	 *                         or other value if "Choose a venue" was selected
 	 */
 	const update = useCallback(
-		(value) => {
-			const save = Number.isFinite(value) ? [value] : []; //
-			updateVenueTaxonomyIds(save);
+		( value ) => {
+			const save = Number.isFinite( value ) ? [ value ] : []; //
+			updateVenueTaxonomyIds( save );
 		},
-		[updateVenueTaxonomyIds]
+		[ updateVenueTaxonomyIds ]
 	);
 
 	/**
@@ -75,18 +75,18 @@ export const VenueTermsCombobox = ({ search, setSearch, ...props }) => {
 	 * @return {number|string} The currently selected venue term ID or 'loading'.
 	 */
 	const setValue = () => {
-		return venueTaxonomyIds?.[0] || 'loading';
+		return venueTaxonomyIds?.[ 0 ] || 'loading';
 	};
 
 	return (
 		<>
 			<ComboboxControl
-				label={__('Choose a venue', 'gatherpress')}
+				label={ __( 'Choose a venue', 'gatherpress' ) }
 				__next40pxDefaultSize
-				onChange={update}
-				onFilterValueChange={setSearchDebounced}
-				options={venueOptions}
-				value={setValue()}
+				onChange={ update }
+				onFilterValueChange={ setSearchDebounced }
+				options={ venueOptions }
+				value={ setValue() }
 			/>
 		</>
 	);

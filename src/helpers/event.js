@@ -14,7 +14,6 @@ import { __ } from '@wordpress/i18n';
  */
 import { createMomentWithTimezone, getTimezone } from './datetime';
 import { getFromGlobal } from './globals';
-import { Broadcaster } from './broadcasting';
 
 /**
  * Opacity value for disabled form fields and elements.

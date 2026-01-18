@@ -54,8 +54,8 @@ export function isGatherPressPostType() {
  * @param {number|null} postId Optional. A specific post ID to return instead of detecting the current one. Defaults to null.
  * @return {number|null}                 The post ID, or null if it cannot be determined.
  */
-export function getCurrentContextualPostId(postId = null) {
-	return postId || select('core/editor').getCurrentPostId();
+export function getCurrentContextualPostId( postId = null ) {
+	return postId || select( 'core/editor' ).getCurrentPostId();
 }
 
 /**
@@ -69,8 +69,8 @@ export function getCurrentContextualPostId(postId = null) {
  * @param {string|null} postType Optional. A specific post type to return instead of detecting the current one. Defaults to null.
  * @return {string|null} The post type slug, or null if it cannot be determined.
  */
-export function getCurrentContextualPostType(postType = null) {
-	return postType || select('core/editor').getCurrentPostType();
+export function getCurrentContextualPostType( postType = null ) {
+	return postType || select( 'core/editor' ).getCurrentPostType();
 }
 
 /**
