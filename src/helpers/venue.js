@@ -22,7 +22,7 @@ import { PT_EVENT, PT_VENUE, TAX_VENUE } from './namespace';
  * @return {boolean} True if the current post type is a venue; false otherwise.
  */
 export function isVenuePostType() {
-	return PT_VENUE === select('core/editor')?.getCurrentPostType();
+	return 'gatherpress_venue' === select( 'core/editor' )?.getCurrentPostType();
 }
 
 /**

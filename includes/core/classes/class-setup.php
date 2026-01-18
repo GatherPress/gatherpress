@@ -59,16 +59,18 @@ class Setup {
 		Assets::get_instance();
 		Block::get_instance();
 		Cli::get_instance();
+		Feed::get_instance();
 		Event_Query::get_instance();
 		Event_Rest_Api::get_instance();
 		Event_Setup::get_instance();
 		Export::get_instance();
 		Import::get_instance();
+		Rsvp_Form::get_instance();
 		Rsvp_Query::get_instance();
 		Rsvp_Setup::get_instance();
 		Settings::get_instance();
-		User::get_instance();
 		Topic::get_instance();
+		User::get_instance();
 		Venue::get_instance();
 	}
 
@@ -85,7 +87,7 @@ class Setup {
 		register_activation_hook( GATHERPRESS_CORE_FILE, array( $this, 'activate_gatherpress_plugin' ) );
 		register_deactivation_hook( GATHERPRESS_CORE_FILE, array( $this, 'deactivate_gatherpress_plugin' ) );
 
-		add_action( 'init', array( $this, 'maybe_flush_rewrite_rules' ) );
+		add_action( 'admin_init', array( $this, 'add_privacy_policy_content' ) );
 		add_action( 'admin_notices', array( $this, 'check_gatherpress_alpha' ) );
 		add_action( 'network_admin_notices', array( $this, 'check_gatherpress_alpha' ) );
 		add_action( 'wp_initialize_site', array( $this, 'on_site_create' ) );
@@ -125,8 +127,9 @@ class Setup {
 	public function filter_plugin_action_links( array $actions ): array {
 		return array_merge(
 			array(
-				'settings' => '<a href="' . esc_url( admin_url( 'edit.php?post_type=gatherpress_event&page=gatherpress_general' ) ) . '">'
-					. esc_html__( 'Settings', 'gatherpress' ) . '</a>',
+				'settings' => '<a href="' .
+					esc_url( admin_url( 'edit.php?post_type=gatherpress_event&page=gatherpress_general' ) ) .
+					'">' . esc_html__( 'Settings', 'gatherpress' ) . '</a>',
 			),
 			$actions
 		);
@@ -183,44 +186,77 @@ class Setup {
 	}
 
 	/**
-	 * Flush GatherPress rewrite rules if the previously added flag exists and then remove the flag.
+	 * Schedule rewrite rules flush by deleting the core rewrite_rules option.
 	 *
-	 * This method checks if the 'gatherpress_flush_rewrite_rules_flag' option exists. If it does, it flushes
-	 * the rewrite rules to ensure they are up to date and removes the flag afterward.
+	 * WordPress will automatically regenerate rewrite rules on the next request
+	 * when the rewrite_rules option is missing. This is more efficient than
+	 * calling flush_rewrite_rules() directly and removes the need for a custom
+	 * flag option.
 	 *
 	 * @since 1.0.0
 	 *
 	 * @return void
 	 */
-	public function maybe_flush_rewrite_rules(): void {
-		if ( get_option( 'gatherpress_flush_rewrite_rules_flag' ) ) {
-			flush_rewrite_rules();
-			delete_option( 'gatherpress_flush_rewrite_rules_flag' );
-		}
+	private function schedule_rewrite_flush(): void {
+		delete_option( 'rewrite_rules' );
 	}
 
 	/**
-	 * Creates a flag option to indicate that rewrite rules need to be flushed.
+	 * Adds a privacy policy statement.
 	 *
-	 * This method checks if the 'gatherpress_flush_rewrite_rules_flag' option
-	 * exists. If it does not, it adds the option and sets it to true. This flag
-	 * can be used to determine when rewrite rules should be flushed.
+	 * Every plugin that collects, uses, or stores user data,
+	 * or passes it to an external source or third party,
+	 * should add a section of suggested text to the privacy policy postbox.
+	 *
+	 * This is best done with wp_add_privacy_policy_content( $plugin_name, $policy_text ).
+	 * This will allow site administrators to pull that information into their site’s privacy policy.
+	 *
+	 * The HTML contents of the $content supports use of a specialized .privacy-policy-tutorial CSS class
+	 * which can be used to provide supplemental information.
+	 * Any content contained within HTML elements that have the .privacy-policy-tutorial CSS class applied
+	 * will be omitted from the clipboard when the section content is copied.
+	 *
+	 * @see https://developer.wordpress.org/plugins/privacy/suggesting-text-for-the-site-privacy-policy/
 	 *
 	 * @since 1.0.0
 	 *
 	 * @return void
 	 */
-	private function maybe_create_flush_rewrite_rules_flag(): void {
-		if ( ! get_option( 'gatherpress_flush_rewrite_rules_flag' ) ) {
-			add_option( 'gatherpress_flush_rewrite_rules_flag', true );
-		}
+	public function add_privacy_policy_content() {
+		$content = '<h2>' .
+			__( 'Inform your visitors about GatherPress\' use of OpenStreetMap services.', 'gatherpress' ) .
+			'</h2>'
+				. '<p><strong class="privacy-policy-tutorial">' . __( 'Suggested Text:', 'gatherpress' ) . '</strong> '
+				. __(
+					'When viewing maps on event or venue pages, your IP address and certain technical information (such as browser type and referrer URL) are transmitted to the OpenStreetMap Foundation, which operates the map service. ', // phpcs:ignore Generic.Files.LineLength.TooLong
+					'gatherpress'
+				)
+				. sprintf(
+					// translators: %1$s: privacy policy URL of the OpenStreetMap foundation.
+					__(
+						'This data is processed according to their <a href="%1$s" target="_blank">privacy policy</a>. ',
+						'gatherpress'
+					),
+					'https://osmfoundation.org/wiki/Privacy_Policy'
+				)
+				. sprintf(
+					// translators: %1$s: privacy policy URL of the OpenStreetMap foundation.
+					__(
+						'For more information about what data OpenStreetMap collects and how it is used, please refer to their <a href="%1$s" target="_blank">privacy documents</a>.', // phpcs:ignore Generic.Files.LineLength.TooLong
+						'gatherpress'
+					),
+					'https://osmfoundation.org/wiki/Privacy_Policy'
+				)
+				. '</p>';
+
+		wp_add_privacy_policy_content( 'GatherPress', wp_kses_post( wpautop( $content, false ) ) );
 	}
 
 	/**
 	 * Add GatherPress-specific body classes to the existing body classes.
 	 *
-	 * This method appends custom body classes, such as 'gatherpress-enabled' and 'gatherpress-theme-{theme-name}',
-	 * to the array of existing body classes.
+	 * This method appends custom body classes, such as 'gatherpress-enabled' and
+	 * 'gatherpress-theme-{theme-name}', to the array of existing body classes.
 	 *
 	 * @since 1.0.0
 	 *
@@ -339,10 +375,10 @@ class Setup {
 	 * Creates necessary database tables for the GatherPress plugin.
 	 *
 	 * This method creates the required database tables for storing event and RSVP data.
-	 * It constructs SQL queries for creating the tables with appropriate charset and
-	 * collation, and then executes these queries using the `dbDelta` function to ensure
-	 * the tables are created or updated as necessary. Additionally, it calls methods to
-	 * add the online event term and to set a flag for flushing rewrite rules.
+	 * It constructs SQL queries for creating the tables with appropriate charset and collation,
+	 * and then executes these queries using the `dbDelta` function to ensure the tables are created
+	 * or updated as necessary. Additionally, it calls methods to add the online event term
+	 * and to set a flag for flushing rewrite rules.
 	 *
 	 * @since 1.0.0
 	 *
@@ -369,12 +405,13 @@ class Setup {
 					KEY datetime_end_gmt (datetime_end_gmt)
 				) {$charset_collate};";
 
-		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+		// Loading WordPress core file for dbDelta function, not importing a class.
+		require_once ABSPATH . 'wp-admin/includes/upgrade.php'; // NOSONAR.
 
 		dbDelta( $sql );
 
 		$this->add_online_event_term();
-		$this->maybe_create_flush_rewrite_rules_flag();
+		$this->schedule_rewrite_flush();
 	}
 
 	/**
@@ -389,12 +426,23 @@ class Setup {
 	 * @return void
 	 */
 	public function check_gatherpress_alpha(): void {
+		/**
+		 * Filters whether GatherPress Alpha is considered active.
+		 *
+		 * Allows tests to override the constant check.
+		 *
+		 * @since 1.0.0
+		 *
+		 * @param bool $is_alpha_active Whether GatherPress Alpha is active.
+		 */
+		$is_alpha_active = apply_filters( 'gatherpress_is_alpha_active', defined( 'GATHERPRESS_ALPHA_VERSION' ) );
+
 		if (
-			defined( 'GATHERPRESS_ALPHA_VERSION' ) ||
+			$is_alpha_active ||
 			filter_var( ! current_user_can( 'install_plugins' ), FILTER_VALIDATE_BOOLEAN ) || (
-				false === strpos( get_current_screen()->id, 'plugins' ) &&
-				false === strpos( get_current_screen()->id, 'plugin-install' ) &&
-				false === strpos( get_current_screen()->id, 'gatherpress' )
+				! str_contains( get_current_screen()->id, 'plugins' ) &&
+				! str_contains( get_current_screen()->id, 'plugin-install' ) &&
+				! str_contains( get_current_screen()->id, 'gatherpress' )
 			)
 		) {
 			return;
@@ -402,6 +450,7 @@ class Setup {
 
 		wp_admin_notice(
 			__(
+				// phpcs:ignore Generic.Files.LineLength.TooLong
 				'The GatherPress Alpha plugin is not installed or activated. This plugin is currently in heavy development and requires GatherPress Alpha to handle breaking changes. Please <a href="https://github.com/GatherPress/gatherpress-alpha" target="_blank">download and install GatherPress Alpha</a> to ensure compatibility and avoid issues.',
 				'gatherpress'
 			),

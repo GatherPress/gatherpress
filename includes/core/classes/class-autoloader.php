@@ -44,14 +44,17 @@ class Autoloader {
 				 * @since 1.0.0
 				 *
 				 * @example
+				 * ```php
 				 * function gatherpress_awesome_autoloader( array $namespace ): array {
 				 *     $namespace['GatherPress_Awesome'] = __DIR__;
 				 *
 				 *     return $namespace;
 				 * }
 				 * add_filter( 'gatherpress_autoloader', 'gatherpress_awesome_autoloader' );
+				 * ```
 				 *
-				 * Example: The namespace 'GatherPress_Awesome\Setup' would map to 'gatherpress-awesome/includes/classes/class-setup.php'.
+				 * **Example:** The namespace `GatherPress_Awesome\Setup` would map to
+				 * `gatherpress-awesome/includes/classes/class-setup.php`.
 				 */
 				$registered_autoloaders = apply_filters( 'gatherpress_autoloader', array() );
 
@@ -86,16 +89,19 @@ class Autoloader {
 					array_pop( $structure );
 					array_unshift( $structure, 'includes' );
 
-					switch ( $class_type ) {
-						case 'blocks':
-						case 'commands':
-						case 'settings':
-						case 'traits':
-							array_pop( $structure );
-							array_push( $structure, 'classes', $class_type );
-							break;
-						default:
-							$structure[] = 'classes';
+					// Check if a specialized directory exists for this class type.
+					$test_structure = $structure;
+
+					array_pop( $test_structure );
+					array_push( $test_structure, 'classes', $class_type );
+
+					$specialized_dir = $path . DIRECTORY_SEPARATOR . implode( DIRECTORY_SEPARATOR, $test_structure );
+
+					if ( is_dir( $specialized_dir ) ) {
+						array_pop( $structure );
+						array_push( $structure, 'classes', $class_type );
+					} else {
+						$structure[] = 'classes';
 					}
 
 					$structure[]         = sprintf( 'class-%s.php', $file );
@@ -106,7 +112,8 @@ class Autoloader {
 						file_exists( $resource_path ) &&
 						( 0 === $resource_path_valid || 2 === $resource_path_valid )
 					) {
-						require_once $resource_path;
+						// Autoloader dynamically loads class files at runtime - cannot use 'use' keyword.
+						require_once $resource_path; // NOSONAR.
 					}
 				}
 			}

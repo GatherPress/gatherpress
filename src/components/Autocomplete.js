@@ -30,96 +30,94 @@ import { useSelect } from '@wordpress/data';
  *
  * @return {JSX.Element} The rendered React component.
  */
-const Autocomplete = (props) => {
+const Autocomplete = ( props ) => {
 	const { name, option, value, fieldOptions } = props.attrs;
 	const showHowTo = 1 !== fieldOptions.limit;
-	const [content, setContent] = useState(JSON.parse(value) ?? '[]');
+	const [ content, setContent ] = useState( JSON.parse( value ) ?? '[]' );
 	const { contentList } = useSelect(
-		(select) => {
-			const { getEntityRecords } = select(coreStore);
+		( select ) => {
+			const { getEntityRecords } = select( coreStore );
 			const entityType =
-				'user' !== fieldOptions.type ? 'postType' : 'root';
+				'user' === fieldOptions.type ? 'root' : 'postType';
 			const kind = fieldOptions.type || 'post';
 			return {
-				contentList: getEntityRecords(entityType, kind, {
+				contentList: getEntityRecords( entityType, kind, {
 					per_page: -1,
 					context: 'view',
-				}),
+				} ),
 			};
 		},
-		[fieldOptions.type]
+		[ fieldOptions.type ],
 	);
 
 	const contentSuggestions =
 		contentList?.reduce(
-			(accumulator, item) => ({
+			( accumulator, item ) => ( {
 				...accumulator,
-				[item.title?.rendered || item.name]: item,
-			}),
-			{}
+				[ item.title?.rendered || item.name ]: item,
+			} ),
+			{},
 		) ?? {};
 
-	const selectContent = (tokens) => {
+	const selectContent = ( tokens ) => {
 		const hasNoSuggestion = tokens.some(
-			(token) => typeof token === 'string' && !contentSuggestions[token]
+			( token ) => 'string' === typeof token && ! contentSuggestions[ token ],
 		);
 
-		if (hasNoSuggestion) {
+		if ( hasNoSuggestion ) {
 			return;
 		}
 
-		const allContent = tokens.map((token) => {
-			return typeof token === 'string'
-				? contentSuggestions[token]
+		const allContent = tokens.map( ( token ) => {
+			return 'string' === typeof token
+				? contentSuggestions[ token ]
 				: token;
-		});
+		} );
 
-		if (includes(allContent, null)) {
+		if ( includes( allContent, null ) ) {
 			return false;
 		}
 
-		setContent(allContent);
+		setContent( allContent );
 	};
 
 	return (
 		<>
 			<FormTokenField
-				key={option}
-				label={fieldOptions.label || __('Select Posts', 'gatherpress')}
-				name={name}
-				value={
-					content &&
-					content.map((item) => ({
-						id: item.id,
-						slug: item.slug,
-						value: item.title?.rendered || item.name || item.value,
-					}))
-				}
-				suggestions={Object.keys(contentSuggestions)}
-				onChange={selectContent}
-				maxSuggestions={fieldOptions.max_suggestions || 20}
-				maxLength={fieldOptions.limit || 0}
-				__experimentalShowHowTo={showHowTo}
+				key={ option }
+				label={ fieldOptions.label || __( 'Select Posts', 'gatherpress' ) }
+				name={ name }
+				value={ content?.map( ( item ) => ( {
+					id: item.id,
+					slug: item.slug,
+					value: item.title?.rendered || item.name || item.value,
+				} ) ) }
+				suggestions={ Object.keys( contentSuggestions ) }
+				onChange={ selectContent }
+				maxSuggestions={ fieldOptions.max_suggestions || 20 }
+				maxLength={ fieldOptions.limit || 0 }
+				__experimentalShowHowTo={ showHowTo }
 			/>
-			{false === showHowTo && (
+			{ false === showHowTo && (
 				<p className="description">
-					{__('Choose only one item.', 'gatherpress')}
+					{ __( 'Choose only one item.', 'gatherpress' ) }
 				</p>
-			)}
+			) }
 			<input
 				type="hidden"
-				id={option}
-				name={name}
+				id={ option }
+				name={ name }
 				value={
-					content &&
-					JSON.stringify(
-						content.map((item) => ({
-							id: item.id,
-							slug: item.slug,
-							value:
-								item.title?.rendered || item.name || item.value,
-						}))
-					)
+					content
+						? JSON.stringify(
+							content.map( ( item ) => ( {
+								id: item.id,
+								slug: item.slug,
+								value:
+										item.title?.rendered || item.name || item.value,
+							} ) ),
+						)
+						: undefined
 				}
 			/>
 		</>

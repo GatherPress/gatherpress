@@ -28,27 +28,27 @@ import { getFromGlobal, setToGlobal } from '../helpers/globals';
  *
  * @return {JSX.Element} The rendered RSVP response component.
  */
-const RsvpResponseEdit = ({ defaultStatus, setDefaultStatus }) => {
-	const responses = getFromGlobal('eventDetails.responses');
-	const postId = getFromGlobal('eventDetails.postId');
-	const [rsvpResponse, setRsvpResponse] = useState(responses);
-	const attendees = rsvpResponse[defaultStatus].responses;
+const RsvpResponseEdit = ( { defaultStatus, setDefaultStatus } ) => {
+	const responses = getFromGlobal( 'eventDetails.responses' );
+	const postId = getFromGlobal( 'eventDetails.postId' );
+	const [ rsvpResponse, setRsvpResponse ] = useState( responses );
+	const attendees = rsvpResponse[ defaultStatus ].responses;
 
 	/**
 	 * Fetches user records from the core store via getEntityRecords.
 	 * Returns userList containing the list of user records.
 	 */
-	const { userList } = useSelect((select) => {
-		const { getEntityRecords } = select(coreStore);
+	const { userList } = useSelect( ( select ) => {
+		const { getEntityRecords } = select( coreStore );
 
-		const users = getEntityRecords('root', 'user', {
+		const users = getEntityRecords( 'root', 'user', {
 			per_page: -1,
-		});
+		} );
 
 		return {
 			userList: users,
 		};
-	}, []);
+	}, [] );
 
 	/**
 	 * Reduces the userList to an object mapping usernames to user objects.
@@ -56,11 +56,11 @@ const RsvpResponseEdit = ({ defaultStatus, setDefaultStatus }) => {
 	 */
 	const userSuggestions =
 		userList?.reduce(
-			(accumulator, user) => ({
+			( accumulator, user ) => ( {
 				...accumulator,
-				[user.username]: user,
-			}),
-			{}
+				[ user.username ]: user,
+			} ),
+			{},
 		) ?? {};
 
 	/**
@@ -69,20 +69,20 @@ const RsvpResponseEdit = ({ defaultStatus, setDefaultStatus }) => {
 	 * @param {number} userId               - The ID of the user to update.
 	 * @param {string} [status='attending'] - The RSVP status to set (attending or remove).
 	 */
-	const updateUserStatus = (userId, status = 'attending') => {
-		apiFetch({
-			path: getFromGlobal('urls.eventApiPath') + '/rsvp',
+	const updateUserStatus = ( userId, status = 'attending' ) => {
+		apiFetch( {
+			path: getFromGlobal( 'urls.eventApiPath' ) + '/rsvp',
 			method: 'POST',
 			data: {
 				post_id: postId,
 				status,
 				user_id: userId,
-				_wpnonce: getFromGlobal('misc.nonce'),
+				_wpnonce: getFromGlobal( 'misc.nonce' ),
 			},
-		}).then((res) => {
-			setRsvpResponse(res.responses);
-			setToGlobal('eventDetails.responses', res.responses);
-		});
+		} ).then( ( res ) => {
+			setRsvpResponse( res.responses );
+			setToGlobal( 'eventDetails.responses', res.responses );
+		} );
 	};
 
 	/**
@@ -92,42 +92,42 @@ const RsvpResponseEdit = ({ defaultStatus, setDefaultStatus }) => {
 	 *
 	 * @param {Object[]} tokens - Array of token objects representing attendees
 	 */
-	const changeAttendees = async (tokens) => {
+	const changeAttendees = async ( tokens ) => {
 		// Adding some new attendees
-		if (tokens.length > attendees.length) {
-			tokens.forEach((token) => {
-				if (!userSuggestions[token]) {
+		if ( tokens.length > attendees.length ) {
+			tokens.forEach( ( token ) => {
+				if ( ! userSuggestions[ token ] ) {
 					return;
 				}
 
 				// We have a new user to add to the attendees list.
-				updateUserStatus(userSuggestions[token].id, defaultStatus);
-			});
+				updateUserStatus( userSuggestions[ token ].id, defaultStatus );
+			} );
 		} else {
 			// Removing attendees
-			attendees.forEach((attendee) => {
-				if (false === tokens.some((item) => item.id === attendee.id)) {
-					updateUserStatus(attendee.id, 'no_status');
+			attendees.forEach( ( attendee ) => {
+				if ( false === tokens.some( ( item ) => item.id === attendee.id ) ) {
+					updateUserStatus( attendee.id, 'no_status' );
 				}
-			});
+			} );
 		}
 	};
 
 	return (
 		<div className="gatherpress-rsvp-response">
 			<SelectControl
-				label={_x(
+				label={ _x(
 					'Status',
 					'Label for RSVP status dropdown',
-					'gatherpress'
-				)}
-				value={defaultStatus}
-				options={[
+					'gatherpress',
+				) }
+				value={ defaultStatus }
+				options={ [
 					{
 						label: _x(
 							'Attending',
 							'RSVP status option in dropdown',
-							'gatherpress'
+							'gatherpress',
 						),
 						value: 'attending',
 					},
@@ -135,7 +135,7 @@ const RsvpResponseEdit = ({ defaultStatus, setDefaultStatus }) => {
 						label: _x(
 							'Waiting List',
 							'RSVP status option in dropdown',
-							'gatherpress'
+							'gatherpress',
 						),
 						value: 'waiting_list',
 					},
@@ -143,27 +143,24 @@ const RsvpResponseEdit = ({ defaultStatus, setDefaultStatus }) => {
 						label: _x(
 							'Not Attending',
 							'RSVP status option in dropdown',
-							'gatherpress'
+							'gatherpress',
 						),
 						value: 'not_attending',
 					},
-				]}
-				onChange={(status) => setDefaultStatus(status)}
+				] }
+				onChange={ ( status ) => setDefaultStatus( status ) }
 			/>
 			<FormTokenField
 				key="query-controls-topics-select"
-				label={__('Members', 'gatherpress')}
-				value={
-					attendees &&
-					attendees.map((item) => ({
-						id: item.id,
-						value: item.name,
-					}))
-				}
-				tokenizeOnSpace={true}
-				onChange={changeAttendees}
-				suggestions={Object.keys(userSuggestions)}
-				maxSuggestions={20}
+				label={ __( 'Members', 'gatherpress' ) }
+				value={ attendees?.map( ( item ) => ( {
+					id: item.id,
+					value: item.name,
+				} ) ) }
+				tokenizeOnSpace={ true }
+				onChange={ changeAttendees }
+				suggestions={ Object.keys( userSuggestions ) }
+				maxSuggestions={ 20 }
 			/>
 		</div>
 	);

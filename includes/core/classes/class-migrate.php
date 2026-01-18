@@ -52,11 +52,9 @@ class Migrate {
 		 * That can be helpful, if you want to import event- or venue-data from another plugin.
 		 *
 		 * @example
-		 *   The filter in use, to import data from the "Event Organiser" plugin.
-		 *   https://github.com/carstingaxion/gatherpress-export-import/blob/main/import-events-from--event-organiser.php
-		 *
-		 * @example
 		 *   Example use of the filter to illustrate function signatures for the callbacks.
+		 *
+		 *   ```php
 		 *   \add_filter(
 		 *       'gatherpress_pseudopostmetas',
 		 *       function ( array $pseudopostmetas ): array {
@@ -76,6 +74,7 @@ class Migrate {
 		 *           return $pseudopostmetas;
 		 *       }
 		 *   );
+		 *   ```
 		 *
 		 * @since 1.0.0
 		 *

@@ -8,12 +8,15 @@
 	"icon": "forms",
 	"example": {},
 	"description": "Allows visitors to RSVP to an event without requiring a site account.",
+	"usesContext": [ "postId", "queryId" ],
 	"supports": {
 		"gatherpress": {
 			"postIdOverride": true
 		},
+		"interactivity": true,
 		"html": false
 	},
 	"textdomain": "gatherpress",
-	"editorScript": "file:./index.js"
+	"editorScript": "file:./index.js",
+	"viewScriptModule": "file:./view.js"
 }

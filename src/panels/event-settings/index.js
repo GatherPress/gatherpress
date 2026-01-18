@@ -41,13 +41,13 @@ const EventSettings = () => {
 		isEventPostType() && (
 			<PluginDocumentSettingPanel
 				name="gatherpress-event-settings"
-				title={__('Event settings', 'gatherpress')}
+				title={ __( 'Event settings', 'gatherpress' ) }
 				className="gatherpress-event-settings"
 			>
-				{/* Extendable entry point for "Event Settings" panel. */}
+				{ /* Extendable entry point for "Event Settings" panel. */ }
 				<EventPluginDocumentSettings.Slot />
 
-				<VStack spacing={4}>
+				<VStack spacing={ 4 }>
 					<DateTimeRangePanel />
 					<VenueSelectorPanel />
 					<OnlineEventLinkPanel />
@@ -71,9 +71,9 @@ const EventSettings = () => {
  *
  * @return {void}
  */
-registerPlugin('gatherpress-event-settings', {
+registerPlugin( 'gatherpress-event-settings', {
 	render: EventSettings,
-});
+} );
 
 /**
  * Toggles the visibility of the 'gatherpress-event-settings' panel in the Block Editor.
@@ -87,21 +87,21 @@ registerPlugin('gatherpress-event-settings', {
  *
  * @return {void}
  */
-domReady(() => {
-	const selectEditPost = select('core/edit-post');
-	const dispatchEditor = dispatch('core/editor');
+domReady( () => {
+	const selectEditPost = select( 'core/edit-post' );
+	const dispatchEditor = dispatch( 'core/editor' );
 
-	if (!selectEditPost || !dispatchEditor) {
+	if ( ! selectEditPost || ! dispatchEditor ) {
 		return;
 	}
 
 	const isEventSettingsPanelOpen = selectEditPost.isEditorPanelOpened(
-		'gatherpress-event-settings/gatherpress-event-settings'
+		'gatherpress-event-settings/gatherpress-event-settings',
 	);
 
-	if (!isEventSettingsPanelOpen) {
+	if ( ! isEventSettingsPanelOpen ) {
 		dispatchEditor.toggleEditorPanelOpened(
-			'gatherpress-event-settings/gatherpress-event-settings'
+			'gatherpress-event-settings/gatherpress-event-settings',
 		);
 	}
-});
+} );

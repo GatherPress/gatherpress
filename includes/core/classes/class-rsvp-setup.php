@@ -14,9 +14,12 @@ namespace GatherPress\Core;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
+use GatherPress\Core\Blocks\Rsvp_Form;
+use GatherPress\Core\Rsvp_Token;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Utility;
 use WP_Comment;
+use WP_User;
 
 /**
  * Handles setup tasks related to RSVP functionality.
@@ -34,6 +37,14 @@ class Rsvp_Setup {
 	use Singleton;
 
 	/**
+	 * The RSVP list table instance.
+	 *
+	 * @since 1.0.0
+	 * @var RSVP_List_Table|null
+	 */
+	protected $list_table = null;
+
+	/**
 	 * Class constructor.
 	 *
 	 * This method initializes the object and sets up necessary hooks.
@@ -42,6 +53,17 @@ class Rsvp_Setup {
 	 */
 	protected function __construct() {
 		$this->setup_hooks();
+	}
+
+	/**
+	 * Gets the per page option name for RSVP list table.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return string The per page option name.
+	 */
+	private function get_per_page_option(): string {
+		return sprintf( '%s_per_page', Rsvp::COMMENT_TYPE );
 	}
 
 	/**
@@ -55,9 +77,10 @@ class Rsvp_Setup {
 	 */
 	protected function setup_hooks(): void {
 		add_action( 'init', array( $this, 'register_taxonomy' ) );
-		add_action( 'init', array( $this, 'initialize_rsvp_form_handling' ) );
+		add_action( 'init', array( $this, 'handle_rsvp_token' ) );
 		add_action( 'wp_after_insert_post', array( $this, 'maybe_process_waiting_list' ) );
 		add_action( 'admin_menu', array( $this, 'add_rsvp_submenu_page' ) );
+		add_filter( 'comment_notification_recipients', array( $this, 'remove_rsvp_notification_emails' ), 10, 2 );
 
 		add_filter(
 			sprintf( 'set_screen_option_%s_per_page', Rsvp::COMMENT_TYPE ),
@@ -73,7 +96,8 @@ class Rsvp_Setup {
 	/**
 	 * Register custom comment taxonomy for RSVPs.
 	 *
-	 * Registers a custom taxonomy 'gatherpress_rsvp' for managing RSVP related functionalities specifically for comments.
+	 * Registers a custom taxonomy 'gatherpress_rsvp' for managing RSVP related functionalities
+	 * specifically for comments.
 	 *
 	 * @since 1.0.0
 	 *
@@ -96,55 +120,27 @@ class Rsvp_Setup {
 		);
 	}
 
+
+
 	/**
-	 * Initializes RSVP form handling.
+	 * Get user identifier for RSVP operations.
 	 *
-	 * This method detects RSVP form submissions and configures the necessary WordPress
-	 * filters and actions to process them correctly as specialized comment objects.
+	 * Returns the current user ID if logged in, or email address from
+	 * a valid RSVP token if accessing via magic link.
 	 *
 	 * @since 1.0.0
-	 * @return void
+	 *
+	 * @return string|int User ID if logged in, email address if via token, or 0 if neither.
 	 */
-	public function initialize_rsvp_form_handling(): void {
-		// Only proceed if this is an RSVP form submission.
-		if (
-			! isset( $_SERVER['REQUEST_METHOD'] ) ||
-			'POST' !== $_SERVER['REQUEST_METHOD'] ||
-			'1' !== sanitize_text_field( wp_unslash( filter_input( INPUT_POST, 'gatherpress_rsvp' ) ) )
-		) {
-			return;
+	public function get_user_identifier() {
+		$user_identifier = get_current_user_id();
+		$rsvp_token      = Rsvp_Token::from_url_parameter();
+
+		if ( $rsvp_token && ! empty( $rsvp_token->get_comment() ) ) {
+			$user_identifier = $rsvp_token->get_email();
 		}
 
-		add_filter( 'allow_empty_comment', '__return_true', PHP_INT_MAX );
-
-		add_filter( 'comments_open', '__return_true', PHP_INT_MAX );
-
-		add_filter(
-			'preprocess_comment',
-			static function ( array $comment_data ): array {
-				$comment_data['comment_content'] = '';
-				$comment_data['comment_type']    = 'gatherpress_rsvp';
-				$comment_data['comment_parent']  = 0;
-
-				return $comment_data;
-			}
-		);
-
-		add_filter( 'pre_comment_approved', '__return_zero' );
-
-		add_action(
-			'comment_post',
-			static function ( int $comment_id ): void {
-				wp_set_object_terms( $comment_id, 'attending', Rsvp::TAXONOMY );
-			}
-		);
-
-		add_filter(
-			'comment_duplicate_message',
-			static function (): string {
-				return __( "You've already RSVP'd to this event.", 'gatherpress' );
-			}
-		);
+		return $user_identifier;
 	}
 
 	/**
@@ -214,23 +210,35 @@ class Rsvp_Setup {
 			2
 		);
 
-		$list_table = new RSVP_List_Table();
+		$this->list_table = new RSVP_List_Table();
 
 		add_action(
-			"load-$hook",
-			static function () use ( $list_table ) {
-				add_screen_option(
-					'per_page',
-					array(
-						'label'   => __( 'RSVPs per page', 'gatherpress' ),
-						'default' => RSVP_List_Table::DEFAULT_PER_PAGE,
-						'option'  => sprintf( '%s_per_page', Rsvp::COMMENT_TYPE ),
-					)
-				);
-
-				$list_table->register_column_options();
-			}
+			sprintf( 'load-%s', $hook ),
+			array( $this, 'setup_rsvp_list_table_screen_options' )
 		);
+	}
+
+	/**
+	 * Sets up screen options for the RSVP list table.
+	 *
+	 * This method registers the per-page screen option and column options
+	 * for the RSVP list table in the WordPress admin.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return void
+	 */
+	public function setup_rsvp_list_table_screen_options(): void {
+		add_screen_option(
+			'per_page',
+			array(
+				'label'   => __( 'RSVPs per page', 'gatherpress' ),
+				'default' => RSVP_List_Table::DEFAULT_PER_PAGE,
+				'option'  => $this->get_per_page_option(),
+			)
+		);
+
+		$this->list_table->register_column_options();
 	}
 
 	/**
@@ -316,7 +324,7 @@ class Rsvp_Setup {
 			array(
 				'label'   => __( 'RSVPs per page', 'gatherpress' ),
 				'default' => RSVP_List_Table::DEFAULT_PER_PAGE,
-				'option'  => sprintf( '%s_per_page', Rsvp::COMMENT_TYPE ),
+				'option'  => $this->get_per_page_option(),
 			)
 		);
 
@@ -344,7 +352,7 @@ class Rsvp_Setup {
 	 * @return mixed The screen option value or false to use default.
 	 */
 	public function set_rsvp_screen_options( $status, $option, $value ) {
-		if ( sprintf( '%s_per_page', Rsvp::COMMENT_TYPE ) === $option ) {
+		if ( $this->get_per_page_option() === $option ) {
 			return $value;
 		}
 
@@ -389,5 +397,49 @@ class Rsvp_Setup {
 	 */
 	public function set_submenu_file(): string {
 		return Rsvp::COMMENT_TYPE;
+	}
+
+	/**
+	 * Removes email notifications for RSVP comments.
+	 *
+	 * Prevents WordPress from sending standard comment notification emails for RSVP submissions.
+	 * RSVPs should not trigger the same notifications as regular comments since they are
+	 * specialized interactions with events rather than commentary. This avoids confusing
+	 * event authors with irrelevant comment notifications.
+	 *
+	 * @todo Implement custom RSVP notification emails for event organizers with relevant
+	 *       information about new RSVPs and changes to existing RSVPs.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param array  $emails     Array of email addresses to notify.
+	 * @param string $comment_id The comment ID.
+	 *
+	 * @return array Empty array for RSVP comments, original array otherwise.
+	 */
+	public function remove_rsvp_notification_emails( array $emails, string $comment_id ): array {
+		if ( get_comment_type( (int) $comment_id ) !== Rsvp::COMMENT_TYPE ) {
+			return $emails;
+		}
+
+		return array();
+	}
+
+	/**
+	 * Handle RSVP token from URL and approve associated comment.
+	 *
+	 * Validates the RSVP token from the URL parameter and automatically
+	 * approves the corresponding comment if the token is valid.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return void
+	 */
+	public function handle_rsvp_token(): void {
+		$rsvp_token = Rsvp_Token::from_url_parameter();
+
+		if ( $rsvp_token ) {
+			$rsvp_token->approve_comment();
+		}
 	}
 }

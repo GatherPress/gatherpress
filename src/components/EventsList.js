@@ -30,7 +30,7 @@ import apiFetch from '@wordpress/api-fetch';
  *
  * @return {JSX.Element} The rendered React component.
  */
-const EventsList = (props) => {
+const EventsList = ( props ) => {
 	const {
 		eventOptions,
 		maxNumberOfEvents,
@@ -39,65 +39,65 @@ const EventsList = (props) => {
 		topics,
 		venues,
 	} = props;
-	const [events, setEvents] = useState([]);
-	const [loaded, setLoaded] = useState(false);
-	const renderEvents = events.map((event) => {
+	const [ events, setEvents ] = useState( [] );
+	const [ loaded, setLoaded ] = useState( false );
+	const renderEvents = events.map( ( event ) => {
 		return (
 			<EventItem
-				key={event.ID}
-				eventOptions={eventOptions}
-				type={type}
-				event={event}
+				key={ event.ID }
+				eventOptions={ eventOptions }
+				type={ type }
+				event={ event }
 			/>
 		);
-	});
+	} );
 
 	const renderNoEventsMessage = () => {
 		const message =
 			'upcoming' === type
-				? __('There are no upcoming events.', 'gatherpress')
-				: __('There are no past events.', 'gatherpress');
+				? __( 'There are no upcoming events.', 'gatherpress' )
+				: __( 'There are no past events.', 'gatherpress' );
 
 		return (
-			<div className={`gatherpress-${type}-events__no_events_message`}>
-				{message}
+			<div className={ `gatherpress-${ type }-events__no_events_message` }>
+				{ message }
 			</div>
 		);
 	};
 
-	useEffect(() => {
+	useEffect( () => {
 		let topicsString = '';
 		let venuesString = '';
 
-		if ('object' === typeof topics) {
+		if ( 'object' === typeof topics ) {
 			topicsString = topics
-				.map((topic) => {
+				.map( ( topic ) => {
 					return topic.slug;
-				})
-				?.join(',');
+				} )
+				?.join( ',' );
 		}
 
-		if ('object' === typeof venues) {
+		if ( 'object' === typeof venues ) {
 			venuesString = venues
-				.map((venue) => {
+				.map( ( venue ) => {
 					return venue.slug;
-				})
-				?.join(',');
+				} )
+				?.join( ',' );
 		}
 
 		/**
 		 * Check if user is logged in, so we have current_user for the event present, which
 		 * allows them to interact with the block.
 		 */
-		if (getFromGlobal('misc.isUserLoggedIn')) {
-			apiFetch({
+		if ( getFromGlobal( 'misc.isUserLoggedIn' ) ) {
+			apiFetch( {
 				path:
-					getFromGlobal('urls.eventApiPath') +
-					`/events-list?event_list_type=${type}&max_number=${maxNumberOfEvents}&datetime_format=${datetimeFormat}&topics=${topicsString}&venues=${venuesString}`,
-			}).then((data) => {
-				setLoaded(true);
-				setEvents(data);
-			});
+					getFromGlobal( 'urls.eventApiPath' ) +
+					`/events-list?event_list_type=${ type }&max_number=${ maxNumberOfEvents }&datetime_format=${ datetimeFormat }&topics=${ topicsString }&venues=${ venuesString }`,
+			} ).then( ( data ) => {
+				setLoaded( true );
+				setEvents( data );
+			} );
 		} else {
 			/**
 			 * Not using apiFetch helper here as it will use X-Wp-Nonce and cache it when page caching is on causing a 403.
@@ -105,24 +105,24 @@ const EventsList = (props) => {
 			 * @see https://github.com/GatherPress/gatherpress/issues/300
 			 */
 			fetch(
-				getFromGlobal('urls.eventApiUrl') +
-					`/events-list?event_list_type=${type}&max_number=${maxNumberOfEvents}&datetime_format=${datetimeFormat}&topics=${topicsString}&venues=${venuesString}`
+				getFromGlobal( 'urls.eventApiUrl' ) +
+					`/events-list?event_list_type=${ type }&max_number=${ maxNumberOfEvents }&datetime_format=${ datetimeFormat }&topics=${ topicsString }&venues=${ venuesString }`,
 			)
-				.then((response) => {
+				.then( ( response ) => {
 					return response.json();
-				})
-				.then((data) => {
-					setLoaded(true);
-					setEvents(data);
-				});
+				} )
+				.then( ( data ) => {
+					setLoaded( true );
+					setEvents( data );
+				} );
 		}
-	}, [setEvents, maxNumberOfEvents, datetimeFormat, type, topics, venues]);
+	}, [ setEvents, maxNumberOfEvents, datetimeFormat, type, topics, venues ] );
 
 	return (
-		<div className={`gatherpress-${type}-events-list`}>
-			{!loaded && <Spinner />}
-			{loaded && 0 === events.length && renderNoEventsMessage()}
-			{loaded && renderEvents}
+		<div className={ `gatherpress-${ type }-events-list` }>
+			{ ! loaded && <Spinner /> }
+			{ loaded && 0 === events.length && renderNoEventsMessage() }
+			{ loaded && renderEvents }
 		</div>
 	);
 };

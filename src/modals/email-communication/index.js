@@ -13,11 +13,11 @@ import {
 	TextareaControl,
 } from '@wordpress/components';
 import apiFetch from '@wordpress/api-fetch';
+import { useSelect, useDispatch } from '@wordpress/data';
 
 /**
  * Internal dependencies.
  */
-import { Listener } from '../../helpers/broadcasting';
 import { getFromGlobal } from '../../helpers/globals';
 
 /**
@@ -32,25 +32,28 @@ import { getFromGlobal } from '../../helpers/globals';
  * @return {JSX.Element} The JSX element for the Event Communication Modal.
  */
 const EventCommunicationModal = () => {
-	const [isOpen, setOpen] = useState(false);
-	const [isAllChecked, setAllChecked] = useState(false);
-	const [isAttendingChecked, setAttendingChecked] = useState(false);
-	const [isWaitingListChecked, setWaitingListChecked] = useState(false);
-	const [isNotAttendingChecked, setNotAttendingChecked] = useState(false);
-	const [isCheckBoxDisabled, setCheckBoxDisabled] = useState(false);
-	const [buttonDisabled, setButtonDisabled] = useState(false);
-	const [message, setMessage] = useState('');
-	const textareaRef = useRef(null);
-	const closeModal = () => setOpen(false);
+	const { isOpen, isSaving } = useSelect( ( select ) => ( {
+		isOpen: select( 'gatherpress/email-modal' ).isModalOpen(),
+		isSaving: select( 'gatherpress/email-modal' ).isSaving(),
+	} ), [] );
+	const { closeModal } = useDispatch( 'gatherpress/email-modal' );
+	const [ isAllChecked, setAllChecked ] = useState( false );
+	const [ isAttendingChecked, setAttendingChecked ] = useState( false );
+	const [ isWaitingListChecked, setWaitingListChecked ] = useState( false );
+	const [ isNotAttendingChecked, setNotAttendingChecked ] = useState( false );
+	const [ buttonDisabled, setButtonDisabled ] = useState( false );
+	const [ message, setMessage ] = useState( '' );
+	const textareaRef = useRef( null );
 	const sendMessage = () => {
 		if (
-			global.confirm(__('Confirm you are ready to send?', 'gatherpress'))
+			// eslint-disable-next-line no-alert -- Confirmation required before sending mass emails.
+			window.confirm( __( 'Confirm you are ready to send?', 'gatherpress' ) )
 		) {
-			apiFetch({
-				path: getFromGlobal('urls.eventApiPath') + '/email',
+			apiFetch( {
+				path: getFromGlobal( 'urls.eventApiPath' ) + '/email',
 				method: 'POST',
 				data: {
-					post_id: getFromGlobal('eventDetails.postId'),
+					post_id: getFromGlobal( 'eventDetails.postId' ),
 					message,
 					send: {
 						all: isAllChecked,
@@ -58,150 +61,136 @@ const EventCommunicationModal = () => {
 						waiting_list: isWaitingListChecked,
 						not_attending: isNotAttendingChecked,
 					},
-					_wpnonce: getFromGlobal('misc.nonce'),
 				},
-			}).then((res) => {
-				if (res.success) {
+			} ).then( ( res ) => {
+				if ( res.success ) {
 					closeModal();
-					setMessage('');
-					setAllChecked(false);
-					setAttendingChecked(false);
-					setWaitingListChecked(false);
-					setNotAttendingChecked(false);
+					setMessage( '' );
+					setAllChecked( false );
+					setAttendingChecked( false );
+					setWaitingListChecked( false );
+					setNotAttendingChecked( false );
 				}
-			});
+			} );
 		}
 	};
 
-	useEffect(() => {
-		if (isAllChecked) {
-			setCheckBoxDisabled(true);
-			setAttendingChecked(false);
-			setWaitingListChecked(false);
-			setNotAttendingChecked(false);
-		} else {
-			setCheckBoxDisabled(false);
-		}
-
+	useEffect( () => {
 		if (
-			!isAllChecked &&
-			!isAttendingChecked &&
-			!isWaitingListChecked &&
-			!isNotAttendingChecked
+			! isAllChecked &&
+			! isAttendingChecked &&
+			! isWaitingListChecked &&
+			! isNotAttendingChecked
 		) {
-			setButtonDisabled(true);
+			setButtonDisabled( true );
 		} else {
-			setButtonDisabled(false);
+			setButtonDisabled( false );
 		}
 	}, [
 		isAllChecked,
 		isAttendingChecked,
 		isWaitingListChecked,
 		isNotAttendingChecked,
-	]);
+	] );
 
-	Listener({ setOpen });
-
-	useEffect(() => {
+	useEffect( () => {
 		// Focus the TextareaControl when the modal opens
-		if (isOpen && textareaRef.current) {
+		if ( isOpen && textareaRef.current ) {
 			textareaRef.current.focus();
 		}
-	}, [isOpen]);
+	}, [ isOpen ] );
 
 	return (
 		<>
-			{isOpen && (
+			{ isOpen && (
 				<Modal
-					title={__('Notify members via email', 'gatherpress')}
-					onRequestClose={closeModal}
-					shouldCloseOnClickOutside={false}
+					title={ __( 'Send event update via email', 'gatherpress' ) }
+					onRequestClose={ closeModal }
+					shouldCloseOnClickOutside={ false }
+					style={ { maxWidth: '550px' } }
 				>
 					<TextareaControl
-						label={__('Optional message', 'gatherpress')}
-						value={message}
+						label={ __( 'Optional message', 'gatherpress' ) }
+						value={ message }
 						focus
-						onChange={(value) => setMessage(value)}
-						ref={textareaRef}
+						onChange={ ( value ) => setMessage( value ) }
+						ref={ textareaRef }
 					/>
 					<p className="description">
-						{__(
-							'Select the recipients for your message by checking the relevant boxes.',
-							'gatherpress'
-						)}
+						{ __(
+							'Select the recipients for your message by checking the relevant boxes. "All Members" includes site users only. RSVP status options include both site users and non-user RSVPs.',
+							'gatherpress',
+						) }
 					</p>
 					<Flex gap="8">
 						<FlexItem>
 							<CheckboxControl
-								label={_x(
+								label={ _x(
 									'All Members',
 									'Email recipient group option',
-									'gatherpress'
-								)}
-								checked={isAllChecked}
-								onChange={setAllChecked}
+									'gatherpress',
+								) }
+								checked={ isAllChecked }
+								onChange={ setAllChecked }
 							/>
 						</FlexItem>
 						<FlexItem>
 							<CheckboxControl
-								label={_x(
+								label={ _x(
 									'Attending',
 									'Email recipient group option',
-									'gatherpress'
-								)}
-								checked={isAttendingChecked}
-								onChange={setAttendingChecked}
-								disabled={isCheckBoxDisabled}
+									'gatherpress',
+								) }
+								checked={ isAttendingChecked }
+								onChange={ setAttendingChecked }
 							/>
 						</FlexItem>
 						<FlexItem>
 							<CheckboxControl
-								label={_x(
+								label={ _x(
 									'Waiting List',
 									'Email recipient group option',
-									'gatherpress'
-								)}
-								checked={isWaitingListChecked}
-								onChange={setWaitingListChecked}
-								disabled={isCheckBoxDisabled}
+									'gatherpress',
+								) }
+								checked={ isWaitingListChecked }
+								onChange={ setWaitingListChecked }
 							/>
 						</FlexItem>
 						<FlexItem>
 							<CheckboxControl
-								label={_x(
+								label={ _x(
 									'Not Attending',
 									'Email recipient group option',
-									'gatherpress'
-								)}
-								checked={isNotAttendingChecked}
-								onChange={setNotAttendingChecked}
-								disabled={isCheckBoxDisabled}
+									'gatherpress',
+								) }
+								checked={ isNotAttendingChecked }
+								onChange={ setNotAttendingChecked }
 							/>
 						</FlexItem>
 					</Flex>
 					<br />
 					<Button
 						variant="primary"
-						onClick={sendMessage}
-						disabled={buttonDisabled}
+						onClick={ sendMessage }
+						disabled={ buttonDisabled || isSaving }
 					>
-						{_x(
+						{ _x(
 							'Send Email',
 							'Email submission button text',
-							'gatherpress'
-						)}
+							'gatherpress',
+						) }
 					</Button>
 				</Modal>
-			)}
+			) }
 		</>
 	);
 };
 
-domReady(() => {
+domReady( () => {
 	const modalWrapper = document.getElementById(
-		'gatherpress-event-communication-modal'
+		'gatherpress-event-communication-modal',
 	);
-	if (modalWrapper) {
-		createRoot(modalWrapper).render(<EventCommunicationModal />);
+	if ( modalWrapper ) {
+		createRoot( modalWrapper ).render( <EventCommunicationModal /> );
 	}
-});
+} );

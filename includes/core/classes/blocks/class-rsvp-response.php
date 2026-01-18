@@ -13,8 +13,10 @@ namespace GatherPress\Core\Blocks;
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Block;
+use GatherPress\Core\Event;
 use GatherPress\Core\Rsvp;
 use GatherPress\Core\Traits\Singleton;
+use GatherPress\Core\Utility;
 use WP_HTML_Tag_Processor;
 use WP_User;
 
@@ -87,11 +89,23 @@ class Rsvp_Response {
 	 * @return string The modified block content with updated attributes.
 	 */
 	public function transform_block_content( string $block_content, array $block ): string {
-		$block_instance     = Block::get_instance();
-		$post_id            = $block_instance->get_post_id( $block );
+		$block_instance = Block::get_instance();
+		$post_id        = $block_instance->get_post_id( $block );
+
+		// Validate that the post ID is an actual event post type.
+		// Only check publish status if not in preview mode.
+		if (
+			Event::POST_TYPE !== get_post_type( $post_id ) ||
+			( ! is_preview() && 'publish' !== get_post_status( $post_id ) )
+		) {
+			return '';
+		}
+
 		$rsvp               = new Rsvp( $post_id );
 		$tag                = new WP_HTML_Tag_Processor( $block_content );
-		$rsvp_limit_enabled = isset( $block['attrs']['rsvpLimitEnabled'] ) ? (string) $block['attrs']['rsvpLimitEnabled'] : '0';
+		$rsvp_limit_enabled = isset( $block['attrs']['rsvpLimitEnabled'] ) ?
+			(string) $block['attrs']['rsvpLimitEnabled'] :
+			'0';
 		$rsvp_limit         = isset( $block['attrs']['rsvpLimit'] ) ? (string) $block['attrs']['rsvpLimit'] : '8';
 
 		if ( $tag->next_tag() ) {
@@ -118,17 +132,17 @@ class Rsvp_Response {
 
 			do {
 				$class_attr = $tag->get_attribute( 'class' );
-				if ( $class_attr && false !== strpos( $class_attr, 'gatherpress--empty-rsvp' ) ) {
+				if ( Utility::has_css_class( $class_attr, 'gatherpress-rsvp-response--no-responses' ) ) {
 					if ( ! empty( $counts['attending'] ) ) {
 						$updated_class  = str_replace(
 							'gatherpress--is-visible',
 							'',
 							$class_attr
 						);
-						$updated_class .= ' gatherpress--is-not-visible';
+						$updated_class .= ' gatherpress--is-hidden';
 					} else {
 						$updated_class  = str_replace(
-							'gatherpress--is-not-visible',
+							'gatherpress--is-hidden',
 							'',
 							$class_attr
 						);
@@ -178,8 +192,6 @@ class Rsvp_Response {
 			$tag->next_token();
 			$trigger_text = sprintf( $tag->get_modifiable_text(), intval( $counts['attending'] ?? 0 ) );
 
-			// @todo PHPStan flags this line. The method is available in WordPress 6.7. Revisit and consider removing this ignore in the future.
-			// @phpstan-ignore-next-line
 			$tag->set_modifiable_text( $trigger_text );
 		}
 
@@ -200,7 +212,11 @@ class Rsvp_Response {
 
 				if (
 					$current_class &&
-					preg_match( '/gatherpress--rsvp-(attending|waiting-list|not-attending)/', $current_class, $matches ) &&
+					preg_match(
+						'/gatherpress--is-(attending|waiting-list|not-attending)/',
+						$current_class,
+						$matches
+					) &&
 					$tag->next_tag( array( 'tag_name' => 'a' ) )
 				) {
 					// Change for needed format.
@@ -237,7 +253,7 @@ class Rsvp_Response {
 		if (
 			$comment &&
 			is_a( $comment, 'WP_Comment' ) &&
-			'gatherpress_rsvp' === $comment->comment_type
+			Rsvp::COMMENT_TYPE === $comment->comment_type
 		) {
 			$email = $comment->comment_author_email;
 
@@ -260,6 +276,9 @@ class Rsvp_Response {
 			}
 
 			$args['url'] = get_avatar_url( $email, array( 'default' => 'mystery' ) );
+
+			// Clear extra attributes to prevent JavaScript framework conflicts.
+			$args['extra_attr'] = '';
 		}
 
 		return $args;

@@ -20,7 +20,7 @@ import './style.scss';
  *
  * @return {JSX.Element} The rendered React component.
  */
-registerBlockType(metadata, {
+registerBlockType( metadata, {
 	edit,
 	save: () => null,
-});
+} );

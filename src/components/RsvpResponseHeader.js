@@ -30,62 +30,62 @@ import { getFromGlobal } from '../helpers/globals';
  *
  * @return {JSX.Element} The rendered React component.
  */
-const RsvpResponseHeader = ({
+const RsvpResponseHeader = ( {
 	items,
 	activeValue,
 	onTitleClick,
 	rsvpLimit,
 	setRsvpLimit,
 	defaultLimit,
-}) => {
-	const updateLimit = (e) => {
+} ) => {
+	const updateLimit = ( e ) => {
 		e.preventDefault();
 
-		if (false !== rsvpLimit) {
-			setRsvpLimit(false);
+		if ( false === rsvpLimit ) {
+			setRsvpLimit( defaultLimit );
 		} else {
-			setRsvpLimit(defaultLimit);
+			setRsvpLimit( false );
 		}
 	};
 
 	let loadListText;
 
-	if (false === rsvpLimit) {
-		loadListText = __('See fewer', 'gatherpress');
+	if ( false === rsvpLimit ) {
+		loadListText = __( 'See fewer', 'gatherpress' );
 	} else {
-		loadListText = __('See all', 'gatherpress');
+		loadListText = __( 'See all', 'gatherpress' );
 	}
 
 	let defaultRsvpSeeAllLink = false;
-	const responses = getFromGlobal('eventDetails.responses');
+	const responses = getFromGlobal( 'eventDetails.responses' );
 
-	if (responses && responses[activeValue]) {
+	if ( responses && responses[ activeValue ] ) {
 		defaultRsvpSeeAllLink =
-			(getFromGlobal('eventDetails.responses')[activeValue].count ?? 0) >
+			( getFromGlobal( 'eventDetails.responses' )[ activeValue ].count ?? 0 ) >
 			defaultLimit;
 	}
 
-	const [rsvpSeeAllLink, setRsvpSeeAllLink] = useState(defaultRsvpSeeAllLink);
+	const [ rsvpSeeAllLink, setRsvpSeeAllLink ] = useState( defaultRsvpSeeAllLink );
 
-	Listener({ setRsvpSeeAllLink }, getFromGlobal('eventDetails.postId'));
+	Listener( { setRsvpSeeAllLink }, getFromGlobal( 'eventDetails.postId' ) );
 
 	return (
 		<div className="gatherpress-rsvp-response__header">
 			<div className="dashicons dashicons-groups"></div>
 			<RsvpResponseNavigation
-				items={items}
-				activeValue={activeValue}
-				onTitleClick={onTitleClick}
-				defaultLimit={defaultLimit}
+				items={ items }
+				activeValue={ activeValue }
+				onTitleClick={ onTitleClick }
+				defaultLimit={ defaultLimit }
 			/>
-			{rsvpSeeAllLink && (
+			{ rsvpSeeAllLink && (
 				<div className="gatherpress-rsvp-response__see-all">
-					{/* eslint-disable-next-line jsx-a11y/anchor-is-valid */}
-					<a href="#" onClick={(e) => updateLimit(e)}>
-						{loadListText}
+					{ /* eslint-disable-next-line jsx-a11y/anchor-is-valid */ }
+					<a href="#" onClick={ ( e ) => updateLimit( e ) }>
+						{ loadListText }
 					</a>
 				</div>
-			)}
+			) }
 		</div>
 	);
 };

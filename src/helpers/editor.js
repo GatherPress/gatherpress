@@ -22,7 +22,7 @@ import { PT_EVENT, PT_VENUE } from './namespace';
  *       Monitor the issue for any updates or changes in the Gutenberg behavior.
  */
 export function enableSave() {
-	dispatch('core/editor')?.editPost({ meta: { _non_existing_meta: true } });
+	dispatch( 'core/editor' )?.editPost( { meta: { _non_existing_meta: true } } );
 }
 
 /**
@@ -38,7 +38,7 @@ export function enableSave() {
  * @return {boolean} True if the current post type is 'gatherpress_event' or 'gatherpress_venue', false otherwise.
  */
 export function isGatherPressPostType() {
-	const postType = select('core/editor')?.getCurrentPostType();
+	const postType = select( 'core/editor' )?.getCurrentPostType();
 
 	return PT_EVENT === postType || PT_VENUE === postType;
 }
@@ -71,4 +71,41 @@ export function getCurrentContextualPostId(postId = null) {
  */
 export function getCurrentContextualPostType(postType = null) {
 	return postType || select('core/editor').getCurrentPostType();
+}
+
+/**
+ * Get the appropriate document context for the block editor.
+ *
+ * In FSE (Full Site Editing) contexts, blocks are rendered within an iframe
+ * with the name "editor-canvas". This function detects that iframe and returns
+ * its document, otherwise falls back to the main document for regular editors.
+ *
+ * @return {Document} The document object containing the block editor content.
+ */
+export function getEditorDocument() {
+	const iframe = document.querySelector(
+		'iframe[name="editor-canvas"]',
+	);
+
+	if ( iframe?.contentDocument ) {
+		return iframe.contentDocument;
+	}
+
+	return document;
+}
+
+/**
+ * Checks if the current editor context is a Full Site Editor template.
+ *
+ * This function determines if the user is editing a template or template part
+ * in the Full Site Editor, as opposed to editing a regular post or page.
+ *
+ * @since 1.0.0
+ *
+ * @return {boolean} True if editing an FSE template or template part, false otherwise.
+ */
+export function isInFSETemplate() {
+	const postType = select( 'core/editor' )?.getCurrentPostType();
+
+	return [ 'wp_template', 'wp_template_part' ].includes( postType );
 }

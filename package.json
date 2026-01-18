@@ -1,6 +1,6 @@
 {
 	"name": "gatherpress",
-	"version": "0.33.0-alpha.1",
+	"version": "0.34.0-alpha.1",
 	"description": "Powering Communities with WordPress",
 	"author": "",
 	"license": "GPL-2.0-or-later",
@@ -18,8 +18,9 @@
 	},
 	"main": "index.js",
 	"devDependencies": {
+		"@anthropic-ai/claude-code": "^2.0.31",
 		"@jest/globals": "^30.0.2",
-		"@playwright/test": "^1.53.1",
+		"@playwright/test": "^1.56.1",
 		"@testing-library/jest-dom": "^6.6.3",
 		"@testing-library/react": "^16.3.0",
 		"@typescript-eslint/eslint-plugin": "^8.34.1",
@@ -35,8 +36,8 @@
 		"@wordpress/e2e-test-utils-playwright": "^1.25.0",
 		"@wordpress/editor": "^14.25.0",
 		"@wordpress/element": "^6.25.0",
-		"@wordpress/env": "^10.25.0",
-		"@wordpress/eslint-plugin": "^22.11.0",
+		"@wordpress/env": "^10.37.0",
+		"@wordpress/eslint-plugin": "^22.14.0",
 		"@wordpress/i18n": "^5.25.0",
 		"@wordpress/icons": "^10.25.0",
 		"@wordpress/interactivity": "^6.25.0",
@@ -56,12 +57,22 @@
 		"lodash": "^4.17.21",
 		"moment": "^2.30.1",
 		"moment-timezone": "^0.6.0",
-		"playwright": "^1.53.1",
+		"playwright": "^1.56.1",
+		"prettier": "^3.6.2",
 		"react-modal": "^3.16.3",
 		"react-tooltip": "^5.29.1",
 		"rimraf": "^6.0.1",
 		"stylelint-config-standard": "^38.0.0",
-		"uuid": "^11.1.0"
+		"uuid": "^11.1.0",
+		"webpack-remove-empty-scripts": "^1.1.1"
+	},
+	"overrides": {
+		"@wordpress/scripts": {
+			"qs": ">=6.14.1"
+		},
+		"@wp-playground/cli": {
+			"qs": ">=6.14.1"
+		}
 	},
 	"scripts": {
 		"build": "rimraf build && wp-scripts build --experimental-modules",
@@ -88,8 +99,11 @@
 		"test:unit:js": "wp-scripts test-unit-js --coverage --testResultsProcessor=jest-sonar-reporter",
 		"pretest:unit:php": "wp-env start --xdebug",
 		"test:unit:php": "wp-env run tests-wordpress php -dxdebug.mode=coverage /var/www/html/wp-content/plugins/gatherpress/vendor/bin/phpunit -c /var/www/html/wp-content/plugins/gatherpress/phpunit.xml.dist --coverage-clover=coverage.xml --coverage-html=build/coverage-report",
+		"pretest:unit:php:multisite": "wp-env start --xdebug",
+		"test:unit:php:multisite": "wp-env run tests-wordpress php -dxdebug.mode=coverage /var/www/html/wp-content/plugins/gatherpress/vendor/bin/phpunit -c /var/www/html/wp-content/plugins/gatherpress/phpunit-multisite.xml.dist --coverage-clover=coverage-multisite.xml --coverage-html=build/coverage-report-multisite",
 		"wp-env": "wp-env",
 		"playground": "./node_modules/@wp-playground/cli/wp-playground.js server",
-		"playground:mount": "./node_modules/@wp-playground/cli/wp-playground.js server --mount=./:/wordpress/wp-content/plugins/gatherpress"
+		"playground:mount": "./node_modules/@wp-playground/cli/wp-playground.js server --mount=./:/wordpress/wp-content/plugins/gatherpress",
+		"claude": "npx @anthropic-ai/claude-code"
 	}
 }

@@ -22,8 +22,8 @@ import { addFilter } from '@wordpress/hooks';
  * @param {Object} settings Original block settings.
  * @return {Object} Updated block settings with `postId` attribute if `postIdOverride` is supported.
  */
-function addPostIdOverrideSupport(settings) {
-	if (settings.supports?.gatherpress?.postIdOverride) {
+function addPostIdOverrideSupport( settings ) {
+	if ( settings.supports?.gatherpress?.postIdOverride ) {
 		settings.attributes = {
 			...settings.attributes,
 			postId: {
@@ -46,7 +46,7 @@ function addPostIdOverrideSupport(settings) {
 addFilter(
 	'blocks.registerBlockType',
 	'gatherpress/add-post-id-override-support',
-	addPostIdOverrideSupport
+	addPostIdOverrideSupport,
 );
 
 /**
@@ -69,51 +69,51 @@ addFilter(
  *   }
  * }
  */
-const withPostIdOverride = createHigherOrderComponent((BlockEdit) => {
-	return (props) => {
+const withPostIdOverride = createHigherOrderComponent( ( BlockEdit ) => {
+	return ( props ) => {
 		const { name, clientId } = props;
 
 		// Check if the block supports `postIdOverride`.
 		if (
-			!name.startsWith('gatherpress/') ||
-			!getBlockType(name)?.supports?.gatherpress?.postIdOverride
+			! name.startsWith( 'gatherpress/' ) ||
+			! getBlockType( name )?.supports?.gatherpress?.postIdOverride
 		) {
-			return <BlockEdit {...props} />;
+			return <BlockEdit { ...props } />;
 		}
 
 		const postId = useSelect(
-			(blockEditorSelect) => {
+			( blockEditorSelect ) => {
 				const { getBlockAttributes } =
-					blockEditorSelect('core/block-editor');
-				return getBlockAttributes(clientId)?.postId ?? '';
+					blockEditorSelect( 'core/block-editor' );
+				return getBlockAttributes( clientId )?.postId ?? '';
 			},
-			[clientId]
+			[ clientId ],
 		);
 
-		const { updateBlockAttributes } = useDispatch('core/block-editor');
+		const { updateBlockAttributes } = useDispatch( 'core/block-editor' );
 
 		return (
 			<>
-				<BlockEdit {...props} />
+				<BlockEdit { ...props } />
 				<InspectorAdvancedControls>
 					<NumberControl
-						label={__('Post ID Override', 'gatherpress')}
-						value={postId}
-						onChange={(value) => {
-							updateBlockAttributes(clientId, {
-								postId: parseInt(value, 10) || 0,
-							});
-						}}
-						help={__(
+						label={ __( 'Post ID Override', 'gatherpress' ) }
+						value={ postId }
+						onChange={ ( value ) => {
+							updateBlockAttributes( clientId, {
+								postId: parseInt( value, 10 ) || '',
+							} );
+						} }
+						help={ __(
 							'Specify the post ID of an event to replace the default post ID used by this block.',
-							'gatherpress'
-						)}
+							'gatherpress',
+						) }
 					/>
 				</InspectorAdvancedControls>
 			</>
 		);
 	};
-}, 'withPostIdOverride');
+}, 'withPostIdOverride' );
 
 /**
  * Register the HOC as a filter for the BlockEdit component.
@@ -123,5 +123,5 @@ const withPostIdOverride = createHigherOrderComponent((BlockEdit) => {
 addFilter(
 	'editor.BlockEdit',
 	'gatherpress/with-post-id-override',
-	withPostIdOverride
+	withPostIdOverride,
 );

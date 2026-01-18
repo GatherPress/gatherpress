@@ -37,5 +37,7 @@ if ( ! isset(
 		}
 		?>
 	</div>
-	<textarea<?php echo wp_kses_data( $input_attributes . $input_styles ); ?>><?php echo esc_textarea( $attributes['field_value'] ); ?></textarea>
+	<textarea<?php echo wp_kses_data( $input_attributes . $input_styles ); ?>>
+		<?php echo esc_textarea( $attributes['field_value'] ); ?>
+	</textarea>
 </div>

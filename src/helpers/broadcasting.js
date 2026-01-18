@@ -8,19 +8,19 @@
  *
  * @return {void}
  */
-export const Broadcaster = (payload, identifier = '') => {
-	for (const [key, value] of Object.entries(payload)) {
+export const Broadcaster = ( payload, identifier = '' ) => {
+	for ( const [ key, value ] of Object.entries( payload ) ) {
 		let type = key;
 
-		if (identifier) {
-			type += '_' + String(identifier);
+		if ( identifier ) {
+			type += '_' + String( identifier );
 		}
 
-		const dispatcher = new CustomEvent(type, {
+		const dispatcher = new CustomEvent( type, {
 			detail: value,
-		});
+		} );
 
-		dispatchEvent(dispatcher);
+		dispatchEvent( dispatcher );
 	}
 };
 
@@ -35,20 +35,20 @@ export const Broadcaster = (payload, identifier = '') => {
  *
  * @return {void}
  */
-export const Listener = (payload, identifier = '') => {
-	for (const [key, value] of Object.entries(payload)) {
+export const Listener = ( payload, identifier = '' ) => {
+	for ( const [ key, value ] of Object.entries( payload ) ) {
 		let type = key;
 
-		if (identifier) {
-			type += '_' + String(identifier);
+		if ( identifier ) {
+			type += '_' + String( identifier );
 		}
 
 		addEventListener(
 			type,
-			(e) => {
-				value(e.detail);
+			( e ) => {
+				value( e.detail );
 			},
-			false
+			false,
 		);
 	}
 };

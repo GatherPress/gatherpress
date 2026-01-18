@@ -46,106 +46,106 @@ import { isGatherPressPostType } from '../../helpers/editor';
  *
  * @return {JSX.Element} The rendered React component.
  */
-const Edit = ({ attributes, setAttributes, isSelected }) => {
+const Edit = ( { attributes, setAttributes, isSelected } ) => {
 	const { mapZoomLevel, mapType, mapHeight } = attributes;
-	const [name, setName] = useState('');
-	const [fullAddress, setFullAddress] = useState('');
-	const [phoneNumber, setPhoneNumber] = useState('');
-	const [website, setWebsite] = useState('');
-	const [isOnlineEventTerm, setIsOnlineEventTerm] = useState(false);
+	const [ name, setName ] = useState( '' );
+	const [ fullAddress, setFullAddress ] = useState( '' );
+	const [ phoneNumber, setPhoneNumber ] = useState( '' );
+	const [ website, setWebsite ] = useState( '' );
+	const [ isOnlineEventTerm, setIsOnlineEventTerm ] = useState( false );
 	const blockProps = useBlockProps();
-	const mapPlatform = getFromGlobal('settings.mapPlatform');
+	const mapPlatform = getFromGlobal( 'settings.mapPlatform' );
 
 	const { latitude } = useSelect(
-		(select) => ({
-			latitude: select('gatherpress/venue').getVenueLatitude(),
-		}),
-		[]
+		( select ) => ( {
+			latitude: select( 'gatherpress/venue' ).getVenueLatitude(),
+		} ),
+		[],
 	);
 	const { longitude } = useSelect(
-		(select) => ({
-			longitude: select('gatherpress/venue').getVenueLongitude(),
-		}),
-		[]
+		( select ) => ( {
+			longitude: select( 'gatherpress/venue' ).getVenueLongitude(),
+		} ),
+		[],
 	);
 
 	const {
 		updateVenueLatitude,
 		updateVenueLongitude,
 		updateMapCustomLatLong,
-	} = useDispatch('gatherpress/venue');
+	} = useDispatch( 'gatherpress/venue' );
 
 	const onlineEventLink = useSelect(
-		(select) =>
-			select('core/editor')?.getEditedPostAttribute('meta')
-				?.gatherpress_online_event_link
+		( select ) =>
+			select( 'core/editor' )?.getEditedPostAttribute( 'meta' )
+				?.gatherpress_online_event_link,
 	);
 
 	let { mapShow, mapCustomLatLong } = attributes;
 
-	useEffect(() => {
-		updateMapCustomLatLong(mapCustomLatLong);
-	}, [mapCustomLatLong, updateMapCustomLatLong]);
+	useEffect( () => {
+		updateMapCustomLatLong( mapCustomLatLong );
+	}, [ mapCustomLatLong, updateMapCustomLatLong ] );
 
-	const editPost = useDispatch('core/editor').editPost;
-	const updateVenueMeta = (metaData) => {
-		const payload = JSON.stringify({
+	const editPost = useDispatch( 'core/editor' ).editPost;
+	const updateVenueMeta = ( metaData ) => {
+		const payload = JSON.stringify( {
 			...venueInformationMetaData,
 			...metaData,
-		});
+		} );
 		const meta = { gatherpress_venue_information: payload };
 
-		editPost({ meta });
+		editPost( { meta } );
 	};
 
 	let venueInformationMetaData = useSelect(
-		(select) =>
-			select('core/editor')?.getEditedPostAttribute('meta')
-				?.gatherpress_venue_information
+		( select ) =>
+			select( 'core/editor' )?.getEditedPostAttribute( 'meta' )
+				?.gatherpress_venue_information,
 	);
 
-	if (venueInformationMetaData) {
-		venueInformationMetaData = JSON.parse(venueInformationMetaData);
+	if ( venueInformationMetaData ) {
+		venueInformationMetaData = JSON.parse( venueInformationMetaData );
 	} else {
 		venueInformationMetaData = {};
 	}
 
-	if (mapShow && fullAddress) {
+	if ( mapShow && fullAddress ) {
 		mapShow = true;
 	}
 
-	if (mapShow && !isGatherPressPostType()) {
+	if ( mapShow && ! isGatherPressPostType() ) {
 		mapShow = true;
 	}
 
-	Listener({
+	Listener( {
 		setName,
 		setFullAddress,
 		setPhoneNumber,
 		setWebsite,
 		setIsOnlineEventTerm,
-	});
+	} );
 
-	useEffect(() => {
-		if (isVenuePostType()) {
-			setFullAddress(venueInformationMetaData.fullAddress);
-			setPhoneNumber(venueInformationMetaData.phoneNumber);
-			setWebsite(venueInformationMetaData.website);
-			updateVenueLatitude(venueInformationMetaData.latitude);
-			updateVenueLongitude(venueInformationMetaData.longitude);
+	useEffect( () => {
+		if ( isVenuePostType() ) {
+			setFullAddress( venueInformationMetaData.fullAddress );
+			setPhoneNumber( venueInformationMetaData.phoneNumber );
+			setWebsite( venueInformationMetaData.website );
+			updateVenueLatitude( venueInformationMetaData.latitude );
+			updateVenueLongitude( venueInformationMetaData.longitude );
 
-			if (!fullAddress && !phoneNumber && !website) {
-				setName(__('Add venue information.', 'gatherpress'));
+			if ( ! fullAddress && ! phoneNumber && ! website ) {
+				setName( __( 'Add venue information.', 'gatherpress' ) );
 			} else {
-				setName('');
+				setName( '' );
 			}
 		}
 
-		if (isEventPostType() || !isGatherPressPostType()) {
-			if (!fullAddress && !phoneNumber && !website) {
-				setName(__('No venue selected.', 'gatherpress'));
+		if ( isEventPostType() || ! isGatherPressPostType() ) {
+			if ( ! fullAddress && ! phoneNumber && ! website ) {
+				setName( __( 'No venue selected.', 'gatherpress' ) );
 			} else {
-				setName('');
+				setName( '' );
 			}
 		}
 	}, [
@@ -161,168 +161,168 @@ const Edit = ({ attributes, setAttributes, isSelected }) => {
 		longitude,
 		updateVenueLongitude,
 		updateVenueLatitude,
-	]);
+	] );
 
-	useEffect(() => {
+	useEffect( () => {
 		// Trigger a window resize event
-		const resizeEvent = new Event('resize');
-		window.dispatchEvent(resizeEvent);
-	}, [mapHeight]);
+		const resizeEvent = new Event( 'resize' );
+		window.dispatchEvent( resizeEvent );
+	}, [ mapHeight ] );
 
 	return (
 		<>
 			<InspectorControls>
-				{isGatherPressPostType() && (
+				{ isGatherPressPostType() && (
 					<PanelBody
-						title={__('Venue settings', 'gatherpress')}
-						initialOpen={true}
+						title={ __( 'Venue settings', 'gatherpress' ) }
+						initialOpen={ true }
 					>
 						<PanelRow>
-							{!isVenuePostType() && <VenueSelector />}
-							{isVenuePostType() && <VenueInformation />}
+							{ ! isVenuePostType() && <VenueSelector /> }
+							{ isVenuePostType() && <VenueInformation /> }
 						</PanelRow>
-						{isOnlineEventTerm && (
+						{ isOnlineEventTerm && (
 							<PanelRow>
 								<OnlineEventLink />
 							</PanelRow>
-						)}
+						) }
 					</PanelBody>
-				)}
-				{!isOnlineEventTerm && (
+				) }
+				{ ! isOnlineEventTerm && (
 					<PanelBody
-						title={__('Map settings', 'gatherpress')}
-						initialOpen={true}
+						title={ __( 'Map settings', 'gatherpress' ) }
+						initialOpen={ true }
 					>
 						<PanelRow>
-							{__('Show map on venue', 'gatherpress')}
+							{ __( 'Show map on venue', 'gatherpress' ) }
 						</PanelRow>
 						<PanelRow>
 							<ToggleControl
 								label={
 									mapShow
-										? __('Display the map', 'gatherpress')
-										: __('Hide the map', 'gatherpress')
+										? __( 'Display the map', 'gatherpress' )
+										: __( 'Hide the map', 'gatherpress' )
 								}
-								checked={mapShow}
-								onChange={(value) => {
-									setAttributes({ mapShow: value });
-								}}
+								checked={ mapShow }
+								onChange={ ( value ) => {
+									setAttributes( { mapShow: value } );
+								} }
 							/>
 						</PanelRow>
 						<RangeControl
-							label={__('Zoom level', 'gatherpress')}
+							label={ __( 'Zoom level', 'gatherpress' ) }
 							beforeIcon="search"
-							value={mapZoomLevel}
-							onChange={(value) =>
-								setAttributes({ mapZoomLevel: value })
+							value={ mapZoomLevel }
+							onChange={ ( value ) =>
+								setAttributes( { mapZoomLevel: value } )
 							}
-							min={1}
-							max={22}
+							min={ 1 }
+							max={ 22 }
 						/>
-						{'google' === mapPlatform && (
+						{ 'google' === mapPlatform && (
 							<RadioControl
-								label={__('Map type', 'gatherpress')}
-								selected={mapType}
-								options={[
+								label={ __( 'Map type', 'gatherpress' ) }
+								selected={ mapType }
+								options={ [
 									{
-										label: __('Roadmap', 'gatherpress'),
+										label: __( 'Roadmap', 'gatherpress' ),
 										value: 'm',
 									},
 									{
-										label: __('Satellite', 'gatherpress'),
+										label: __( 'Satellite', 'gatherpress' ),
 										value: 'k',
 									},
-								]}
-								onChange={(value) => {
-									setAttributes({ mapType: value });
-								}}
+								] }
+								onChange={ ( value ) => {
+									setAttributes( { mapType: value } );
+								} }
 							/>
-						)}
+						) }
 						<RangeControl
-							label={__('Map height', 'gatherpress')}
+							label={ __( 'Map height', 'gatherpress' ) }
 							beforeIcon="location"
-							value={mapHeight}
-							onChange={(height) =>
-								setAttributes({ mapHeight: height })
+							value={ mapHeight }
+							onChange={ ( height ) =>
+								setAttributes( { mapHeight: height } )
 							}
-							min={100}
-							max={1000}
+							min={ 100 }
+							max={ 1000 }
 						/>
-						{isVenuePostType() && (
+						{ isVenuePostType() && (
 							<PanelRow>
-								{__('Latitude / Longitude', 'gatherpress')}
+								{ __( 'Latitude / Longitude', 'gatherpress' ) }
 							</PanelRow>
-						)}
-						{isVenuePostType() && (
+						) }
+						{ isVenuePostType() && (
 							<PanelRow>
 								<ToggleControl
 									label={
 										mapCustomLatLong
 											? __(
-													'Use custom values',
-													'gatherpress'
-												)
+												'Use custom values',
+												'gatherpress',
+											)
 											: __(
-													'Use default values',
-													'gatherpress'
-												)
+												'Use default values',
+												'gatherpress',
+											)
 									}
-									checked={mapCustomLatLong}
-									onChange={(value) => {
-										setAttributes({
+									checked={ mapCustomLatLong }
+									onChange={ ( value ) => {
+										setAttributes( {
 											mapCustomLatLong: value,
-										});
-										updateMapCustomLatLong(value);
-									}}
+										} );
+										updateMapCustomLatLong( value );
+									} }
 								/>
 							</PanelRow>
-						)}
-						{mapCustomLatLong && isVenuePostType() && (
+						) }
+						{ mapCustomLatLong && isVenuePostType() && (
 							<>
 								<NumberControl
-									label={__('Latitude', 'gatherpress')}
-									value={latitude}
-									onChange={(value) => {
-										updateVenueLatitude(value);
-										updateVenueMeta({ latitude: value });
-									}}
+									label={ __( 'Latitude', 'gatherpress' ) }
+									value={ latitude }
+									onChange={ ( value ) => {
+										updateVenueLatitude( value );
+										updateVenueMeta( { latitude: value } );
+									} }
 								/>
 								<NumberControl
-									label={__('Longitude', 'gatherpress')}
-									value={longitude}
-									onChange={(value) => {
-										updateVenueLongitude(value);
-										updateVenueMeta({ longitude: value });
-									}}
+									label={ __( 'Longitude', 'gatherpress' ) }
+									value={ longitude }
+									onChange={ ( value ) => {
+										updateVenueLongitude( value );
+										updateVenueMeta( { longitude: value } );
+									} }
 								/>
 							</>
-						)}
+						) }
 					</PanelBody>
-				)}
+				) }
 			</InspectorControls>
 
-			<div {...blockProps}>
-				<EditCover isSelected={isSelected}>
+			<div { ...blockProps }>
+				<EditCover isSelected={ isSelected }>
 					<div className="gatherpress-venue">
 						<VenueOrOnlineEvent
-							name={name}
-							fullAddress={fullAddress}
-							phoneNumber={phoneNumber}
-							website={website}
-							isOnlineEventTerm={isOnlineEventTerm}
-							onlineEventLink={onlineEventLink}
+							name={ name }
+							fullAddress={ fullAddress }
+							phoneNumber={ phoneNumber }
+							website={ website }
+							isOnlineEventTerm={ isOnlineEventTerm }
+							onlineEventLink={ onlineEventLink }
 						/>
-						{mapShow && !isOnlineEventTerm && (
+						{ mapShow && ! isOnlineEventTerm && (
 							<MapEmbed
-								mapCustomLatLong={mapCustomLatLong}
-								location={fullAddress}
-								latitude={latitude}
-								longitude={longitude}
-								zoom={mapZoomLevel}
-								type={mapType}
-								height={mapHeight}
+								mapCustomLatLong={ mapCustomLatLong }
+								location={ fullAddress }
+								latitude={ latitude }
+								longitude={ longitude }
+								zoom={ mapZoomLevel }
+								type={ mapType }
+								height={ mapHeight }
 							/>
-						)}
+						) }
 					</div>
 				</EditCover>
 			</div>

@@ -15,7 +15,7 @@ import {
  * @param {Object} attributes - Block attributes
  * @return {Object} Style object for the input
  */
-export const getInputStyles = (fieldType, attributes) => {
+export const getInputStyles = ( fieldType, attributes ) => {
 	const {
 		inputFontSize,
 		inputLineHeight,
@@ -34,62 +34,62 @@ export const getInputStyles = (fieldType, attributes) => {
 	styles.opacity = 1;
 
 	// Font and text styles (for text-based inputs).
-	if (!['checkbox', 'radio', 'hidden'].includes(fieldType)) {
+	if ( [ 'checkbox', 'radio', 'hidden' ].includes( fieldType ) ) {
+		styles.cursor = 'default';
+	} else {
 		styles.cursor = 'text';
 
-		if (undefined !== inputFontSize) {
-			styles.fontSize = `${inputFontSize}`;
+		if ( undefined !== inputFontSize ) {
+			styles.fontSize = `${ inputFontSize }`;
 		}
 
-		if (undefined !== inputLineHeight) {
+		if ( undefined !== inputLineHeight ) {
 			styles.lineHeight = inputLineHeight;
 		}
 
-		if (fieldTextColor) {
+		if ( fieldTextColor ) {
 			styles.color = fieldTextColor;
 		}
 
-		if (fieldBackgroundColor) {
+		if ( fieldBackgroundColor ) {
 			styles.backgroundColor = fieldBackgroundColor;
 		}
 
-		if (undefined !== inputPadding) {
-			styles.padding = `${inputPadding}px`;
+		if ( undefined !== inputPadding ) {
+			styles.padding = `${ inputPadding }px`;
 		}
 
-		if (undefined !== inputBorderRadius) {
-			styles.borderRadius = `${inputBorderRadius}px`;
+		if ( undefined !== inputBorderRadius ) {
+			styles.borderRadius = `${ inputBorderRadius }px`;
 		}
 
-		if (undefined !== fieldWidth) {
-			styles.width = `${fieldWidth}%`;
+		if ( undefined !== fieldWidth ) {
+			styles.width = `${ fieldWidth }%`;
 		}
 
-		if (undefined !== inputBorderWidth) {
-			styles.borderWidth = `${inputBorderWidth}px`;
+		if ( undefined !== inputBorderWidth ) {
+			styles.borderWidth = `${ inputBorderWidth }px`;
 		}
 
-		if (borderColor) {
+		if ( borderColor ) {
 			styles.borderColor = borderColor;
 		}
-	} else {
-		styles.cursor = 'default';
 	}
 
 	// Override any other disabled styling.
-	if (['checkbox', 'radio'].includes(fieldType)) {
+	if ( [ 'checkbox', 'radio' ].includes( fieldType ) ) {
 		styles.opacity = 1;
 	}
 
 	// Ensure consistent appearance for readonly inputs.
 	if (
-		!fieldBackgroundColor &&
-		!['checkbox', 'radio', 'hidden'].includes(fieldType)
+		! fieldBackgroundColor &&
+		! [ 'checkbox', 'radio', 'hidden' ].includes( fieldType )
 	) {
 		styles.backgroundColor = 'transparent';
 	}
 
-	if (!fieldTextColor) {
+	if ( ! fieldTextColor ) {
 		styles.color = 'inherit';
 	}
 
@@ -102,12 +102,12 @@ export const getInputStyles = (fieldType, attributes) => {
  * @param {Object} attributes - Block attributes
  * @return {Object} Style object for the label
  */
-export const getLabelStyles = (attributes) => {
+export const getLabelStyles = ( attributes ) => {
 	const { labelTextColor } = attributes;
 
 	const styles = {};
 
-	if (labelTextColor) {
+	if ( labelTextColor ) {
 		styles.color = labelTextColor;
 	}
 
@@ -122,16 +122,16 @@ export const getLabelStyles = (attributes) => {
  * @param {Object} attributes - Block attributes
  * @return {Object} Style object for the label wrapper
  */
-export const getLabelWrapperStyles = (attributes) => {
+export const getLabelWrapperStyles = ( attributes ) => {
 	const { labelFontSize, labelLineHeight } = attributes;
 
 	const styles = {};
 
-	if (undefined !== labelFontSize) {
-		styles.fontSize = `${labelFontSize}`;
+	if ( undefined !== labelFontSize ) {
+		styles.fontSize = `${ labelFontSize }`;
 	}
 
-	if (undefined !== labelLineHeight) {
+	if ( undefined !== labelLineHeight ) {
 		styles.lineHeight = labelLineHeight;
 	}
 
@@ -144,20 +144,20 @@ export const getLabelWrapperStyles = (attributes) => {
  * @param {Object} attributes - Block attributes
  * @return {Object} Style object for the options
  */
-export const getOptionStyles = (attributes) => {
+export const getOptionStyles = ( attributes ) => {
 	const { optionFontSize, optionLineHeight, optionTextColor } = attributes;
 
 	const styles = {};
 
-	if (optionFontSize !== undefined) {
-		styles.fontSize = `${optionFontSize}`;
+	if ( optionFontSize !== undefined ) {
+		styles.fontSize = `${ optionFontSize }`;
 	}
 
-	if (optionLineHeight !== undefined) {
+	if ( optionLineHeight !== undefined ) {
 		styles.lineHeight = optionLineHeight;
 	}
 
-	if (optionTextColor) {
+	if ( optionTextColor ) {
 		styles.color = optionTextColor;
 	}
 
@@ -177,14 +177,14 @@ export const getOptionStyles = (attributes) => {
 export const getWrapperClasses = (
 	fieldType,
 	blockProps,
-	inlineLayout = false
+	inlineLayout = false,
 ) => {
-	let classes = `${blockProps.className || ''} gatherpress-field-type-${fieldType}`;
+	let classes = `${ blockProps.className || '' } gatherpress-form-field--${ fieldType }`;
 
 	// Add inline layout class for text-based fields.
 	if (
 		inlineLayout &&
-		!['checkbox', 'radio', 'hidden', 'textarea'].includes(fieldType)
+		! [ 'checkbox', 'radio', 'hidden', 'textarea' ].includes( fieldType )
 	) {
 		classes += ' gatherpress-inline-layout';
 	}
@@ -201,87 +201,87 @@ export const getWrapperClasses = (
  * @param {Function} props.setAttributes - Function to update block attributes.
  * @return {JSX.Element|null} The field value control component or null.
  */
-export default function FieldValue({ fieldType, attributes, setAttributes }) {
+export default function FieldValue( { fieldType, attributes, setAttributes } ) {
 	const { fieldValue } = attributes;
 
-	switch (fieldType) {
+	switch ( fieldType ) {
 		case 'email':
 			return (
 				<TextControl
-					label={__('Default Value', 'gatherpress')}
+					label={ __( 'Default Value', 'gatherpress' ) }
 					type="email"
-					value={fieldValue}
-					onChange={(value) => setAttributes({ fieldValue: value })}
-					help={__(
+					value={ fieldValue }
+					onChange={ ( value ) => setAttributes( { fieldValue: value } ) }
+					help={ __(
 						'Default email address for this field.',
-						'gatherpress'
-					)}
+						'gatherpress',
+					) }
 				/>
 			);
 
 		case 'url':
 			return (
 				<TextControl
-					label={__('Default Value', 'gatherpress')}
+					label={ __( 'Default Value', 'gatherpress' ) }
 					type="url"
-					value={fieldValue}
-					onChange={(value) => setAttributes({ fieldValue: value })}
-					help={__('Default URL for this field.', 'gatherpress')}
+					value={ fieldValue }
+					onChange={ ( value ) => setAttributes( { fieldValue: value } ) }
+					help={ __( 'Default URL for this field.', 'gatherpress' ) }
 				/>
 			);
 
 		case 'tel':
 			return (
 				<TextControl
-					label={__('Default Value', 'gatherpress')}
+					label={ __( 'Default Value', 'gatherpress' ) }
 					type="tel"
-					value={fieldValue}
-					onChange={(value) => setAttributes({ fieldValue: value })}
-					help={__(
+					value={ fieldValue }
+					onChange={ ( value ) => setAttributes( { fieldValue: value } ) }
+					help={ __(
 						'Default telephone number for this field.',
-						'gatherpress'
-					)}
+						'gatherpress',
+					) }
 				/>
 			);
 
 		case 'number':
 			return (
 				<TextControl
-					label={__('Default Value', 'gatherpress')}
+					label={ __( 'Default Value', 'gatherpress' ) }
 					type="number"
-					value={fieldValue}
-					onChange={(value) => setAttributes({ fieldValue: value })}
-					help={__(
+					value={ fieldValue }
+					onChange={ ( value ) => setAttributes( { fieldValue: value } ) }
+					help={ __(
 						'Default number value for this field.',
-						'gatherpress'
-					)}
+						'gatherpress',
+					) }
 				/>
 			);
 
 		case 'textarea':
 			return (
 				<TextareaControl
-					label={__('Default Value', 'gatherpress')}
-					value={fieldValue}
-					onChange={(value) => setAttributes({ fieldValue: value })}
-					help={__(
+					label={ __( 'Default Value', 'gatherpress' ) }
+					value={ fieldValue }
+					onChange={ ( value ) => setAttributes( { fieldValue: value } ) }
+					help={ __(
 						'Default content for this textarea.',
-						'gatherpress'
-					)}
-					rows={3}
+						'gatherpress',
+					) }
+					rows={ 3 }
 				/>
 			);
 
 		case 'checkbox':
 			return (
 				<ToggleControl
-					label={__('Default Checked', 'gatherpress')}
-					checked={!!fieldValue}
-					onChange={(value) => setAttributes({ fieldValue: value })}
-					help={__(
+					label={ __( 'Default Checked', 'gatherpress' ) }
+					checked={ !! fieldValue }
+					onChange={ ( value ) => setAttributes( { fieldValue: value } ) }
+					help={ __(
 						'Whether this checkbox should be checked by default.',
-						'gatherpress'
-					)}
+						'gatherpress',
+					) }
 				/>
 			);
 
@@ -292,20 +292,20 @@ export default function FieldValue({ fieldType, attributes, setAttributes }) {
 		case 'hidden':
 			return (
 				<TextControl
-					label={__('Value', 'gatherpress')}
-					value={fieldValue}
-					onChange={(value) => setAttributes({ fieldValue: value })}
-					help={__('The value for this hidden field.', 'gatherpress')}
+					label={ __( 'Value', 'gatherpress' ) }
+					value={ fieldValue }
+					onChange={ ( value ) => setAttributes( { fieldValue: value } ) }
+					help={ __( 'The value for this hidden field.', 'gatherpress' ) }
 				/>
 			);
 
 		default:
 			return (
 				<TextControl
-					label={__('Default Value', 'gatherpress')}
-					value={fieldValue}
-					onChange={(value) => setAttributes({ fieldValue: value })}
-					help={__('Default value for this field.', 'gatherpress')}
+					label={ __( 'Default Value', 'gatherpress' ) }
+					value={ fieldValue }
+					onChange={ ( value ) => setAttributes( { fieldValue: value } ) }
+					help={ __( 'Default value for this field.', 'gatherpress' ) }
 				/>
 			);
 	}

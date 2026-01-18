@@ -7,68 +7,80 @@ import {
 	InnerBlocks,
 	InspectorControls,
 } from '@wordpress/block-editor';
-import { PanelBody, ButtonGroup, Button } from '@wordpress/components';
+import { PanelBody, Button } from '@wordpress/components';
 import { useState, useEffect } from '@wordpress/element';
 import { select, dispatch, subscribe } from '@wordpress/data';
 import TEMPLATE from './template';
 
-const Edit = ({ clientId }) => {
+const Edit = ( { clientId } ) => {
 	const blockProps = useBlockProps();
-	const [activeModalId, setActiveModalId] = useState(null);
-	const innerBlocks = select('core/block-editor').getBlocks(clientId);
-	const handleModalSelect = (modalId) => {
-		if (activeModalId === modalId) {
-			setActiveModalId(null);
-			dispatch('core/block-editor').clearSelectedBlock();
+	const [ activeModalId, setActiveModalId ] = useState( null );
+	const innerBlocks = select( 'core/block-editor' ).getBlocks( clientId );
+	const handleModalSelect = ( modalId ) => {
+		if ( activeModalId === modalId ) {
+			setActiveModalId( null );
+			dispatch( 'core/block-editor' ).clearSelectedBlock();
 		} else {
-			setActiveModalId(modalId);
-			dispatch('core/block-editor').selectBlock(modalId);
+			setActiveModalId( modalId );
+			dispatch( 'core/block-editor' ).selectBlock( modalId );
 		}
 	};
 
-	useEffect(() => {
-		const unsubscribe = subscribe(() => {
+	useEffect( () => {
+		const unsubscribe = subscribe( () => {
 			const selectedBlockId =
-				select('core/block-editor').getSelectedBlockClientId();
+				select( 'core/block-editor' ).getSelectedBlockClientId();
 
-			if (activeModalId && selectedBlockId !== activeModalId) {
-				setActiveModalId(null);
+			if ( activeModalId && selectedBlockId !== activeModalId ) {
+				setActiveModalId( null );
 			}
-		});
+		} );
 
 		return () => unsubscribe();
-	}, [activeModalId]);
+	}, [ activeModalId ] );
 
 	return (
 		<>
 			<InspectorControls>
-				<PanelBody title={__('Open a Modal', 'gatherpress')}>
-					<ButtonGroup style={{ display: 'flex', gap: '0.5rem' }}>
-						{innerBlocks.map((block) => {
-							if ('gatherpress/modal' === block.name) {
+				<PanelBody title={ __( 'Open a Modal', 'gatherpress' ) }>
+					<fieldset
+						aria-label={ __( 'Modal selection', 'gatherpress' ) }
+						style={ {
+							display: 'flex',
+							gap: '0.5rem',
+							flexWrap: 'wrap',
+							border: 'none',
+							padding: 0,
+							margin: 0,
+						} }
+					>
+						{ innerBlocks.map( ( block ) => {
+							if ( 'gatherpress/modal' === block.name ) {
 								const modalName =
 									block?.attributes?.metadata?.name ||
-									__('Modal', 'gatherpress');
+									__( 'Modal', 'gatherpress' );
+								const isActive = activeModalId === block.clientId;
 
 								return (
 									<Button
-										key={block.clientId}
-										variant="secondary"
-										onClick={() =>
-											handleModalSelect(block.clientId)
+										key={ block.clientId }
+										variant={ isActive ? 'primary' : 'secondary' }
+										onClick={ () =>
+											handleModalSelect( block.clientId )
 										}
+										aria-pressed={ isActive }
 									>
-										{modalName}
+										{ modalName }
 									</Button>
 								);
 							}
 							return null;
-						})}
-					</ButtonGroup>
+						} ) }
+					</fieldset>
 				</PanelBody>
 			</InspectorControls>
-			<div {...blockProps}>
-				<InnerBlocks template={TEMPLATE} />
+			<div { ...blockProps }>
+				<InnerBlocks template={ TEMPLATE } />
 			</div>
 		</>
 	);

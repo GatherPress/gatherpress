@@ -20,13 +20,13 @@ import './style.scss';
  *
  * @return {JSX.Element} The rendered React component.
  */
-registerBlockType(metadata, {
+registerBlockType( metadata, {
 	edit,
 	save: () => {
 		return (
-			<div {...useBlockProps.save()}>
+			<div { ...useBlockProps.save() }>
 				<InnerBlocks.Content />
 			</div>
 		);
 	},
-});
+} );

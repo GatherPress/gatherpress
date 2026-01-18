@@ -61,6 +61,8 @@ class Event_Cli extends WP_CLI {
 	 * @param array $assoc_args Associative arguments for the script.
 	 *
 	 * @return void
+	 *
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
 	 */
 	public function rsvp( array $args = array(), array $assoc_args = array() ): void {
 		$event_id  = (int) $assoc_args['event_id'];
@@ -74,7 +76,10 @@ class Event_Cli extends WP_CLI {
 		static::success(
 			sprintf(
 				/* translators: %1$d: event ID, %2$s: attendance status, %3$d: user ID. */
-				__( 'The RSVP status for Event ID "%1$d" has been successfully set to "%2$s" for User ID "%3$d".', 'gatherpress' ),
+				__(
+					'The RSVP status for Event ID "%1$d" has been successfully set to "%2$s" for User ID "%3$d".',
+					'gatherpress'
+				),
 				$event_id,
 				$response['status'],
 				$user_id

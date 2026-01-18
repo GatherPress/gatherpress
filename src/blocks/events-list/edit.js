@@ -2,7 +2,6 @@
  * External dependencies.
  */
 import { includes } from 'lodash';
-import classnames from 'classnames';
 import HtmlReactParser from 'html-react-parser';
 
 /**
@@ -15,12 +14,12 @@ import {
 	FormTokenField,
 	SelectControl,
 	RangeControl,
-	ButtonGroup,
-	Button,
-	// eslint-disable-next-line @wordpress/no-unsafe-wp-apis
-	__experimentalText as Text,
 	TextControl,
 	ToggleControl,
+	// eslint-disable-next-line @wordpress/no-unsafe-wp-apis
+	__experimentalToggleGroupControl as ToggleGroupControl,
+	// eslint-disable-next-line @wordpress/no-unsafe-wp-apis
+	__experimentalToggleGroupControlOption as ToggleGroupControlOption,
 } from '@wordpress/components';
 import { store as coreStore } from '@wordpress/core-data';
 import { useSelect } from '@wordpress/data';
@@ -48,84 +47,84 @@ import EditCover from '../../components/EditCover';
  *
  * @return {JSX.Element} The rendered React component.
  */
-const Edit = (props) => {
+const Edit = ( props ) => {
 	const { attributes, setAttributes } = props;
 	const blockProps = useBlockProps();
 	const { topics, venues } = attributes;
-	const { topicsList } = useSelect((select) => {
-		const { getEntityRecords } = select(coreStore);
+	const { topicsList } = useSelect( ( select ) => {
+		const { getEntityRecords } = select( coreStore );
 		return {
-			topicsList: getEntityRecords('taxonomy', 'gatherpress_topic', {
+			topicsList: getEntityRecords( 'taxonomy', 'gatherpress_topic', {
 				per_page: -1,
 				context: 'view',
-			}),
+			} ),
 		};
-	}, []);
-	const { venueList } = useSelect((select) => {
-		const { getEntityRecords } = select(coreStore);
+	}, [] );
+	const { venueList } = useSelect( ( select ) => {
+		const { getEntityRecords } = select( coreStore );
 		return {
-			venueList: getEntityRecords('taxonomy', '_gatherpress_venue', {
+			venueList: getEntityRecords( 'taxonomy', '_gatherpress_venue', {
 				per_page: -1,
 				context: 'view',
-			}),
+			} ),
 		};
-	}, []);
+	}, [] );
 	const excerptMax = 55;
 	const topicSuggestions =
 		topicsList?.reduce(
-			(accumulator, topic) => ({
+			( accumulator, topic ) => ( {
 				...accumulator,
-				[topic.name]: topic,
-			}),
-			{}
+				[ topic.name ]: topic,
+			} ),
+			{},
 		) ?? {};
 	const venueSuggestions =
 		venueList?.reduce(
-			(accumulator, venue) => ({
+			( accumulator, venue ) => ( {
 				...accumulator,
-				[venue.name]: venue,
-			}),
-			{}
+				[ venue.name ]: venue,
+			} ),
+			{},
 		) ?? {};
 
-	const selectTopics = (tokens) => {
+	const selectTopics = ( tokens ) => {
 		const hasNoSuggestion = tokens.some(
-			(token) => typeof token === 'string' && !topicSuggestions[token]
+			( token ) => 'string' === typeof token && ! topicSuggestions[ token ],
 		);
 
-		if (hasNoSuggestion) {
+		if ( hasNoSuggestion ) {
 			return;
 		}
 
-		const allTopics = tokens.map((token) => {
-			return typeof token === 'string' ? topicSuggestions[token] : token;
-		});
+		const allTopics = tokens.map( ( token ) => {
+			return 'string' === typeof token ? topicSuggestions[ token ] : token;
+		} );
 
-		if (includes(allTopics, null)) {
+		if ( includes( allTopics, null ) ) {
 			return false;
 		}
 
-		setAttributes({ topics: allTopics });
+		setAttributes( { topics: allTopics } );
 	};
 
-	const selectVenues = (tokens) => {
+	const selectVenues = ( tokens ) => {
 		const hasNoSuggestion = tokens.some(
-			(token) => typeof token === 'string' && !venueSuggestions[token]
+			( token ) => 'string' === typeof token && ! venueSuggestions[ token ],
 		);
 
-		if (hasNoSuggestion) {
+		if ( hasNoSuggestion ) {
 			return;
 		}
 
-		const allVenues = tokens.map((token) => {
-			return typeof token === 'string' ? venueSuggestions[token] : token;
-		});
+		const allVenues = tokens.map( ( token ) => {
+			return 'string' === typeof token ? venueSuggestions[ token ] : token;
+		} );
 
-		if (includes(allVenues, null)) {
+		if ( includes( allVenues, null ) ) {
 			return false;
 		}
 
-		setAttributes({ venues: allVenues });
+		setAttributes( { venues: allVenues } );
 	};
 
 	const imageOptions = [
@@ -138,248 +137,210 @@ const Edit = (props) => {
 		<>
 			<InspectorControls>
 				<PanelBody>
-					<p>{__('Event List type', 'gatherpress')}</p>
-					<ButtonGroup className="block-editor-block-styles__variants">
-						<Button
-							className={classnames(
-								'block-editor-block-styles__item',
-								{
-									'is-active': 'upcoming' === attributes.type,
-								}
-							)}
-							variant="secondary"
-							label={__('Upcoming', 'gatherpress')}
-							onClick={() => {
-								setAttributes({ type: 'upcoming' });
-							}}
-						>
-							<Text
-								as="span"
-								limit={12}
-								ellipsizeMode="tail"
-								className="block-editor-block-styles__item-text"
-								truncate
-							>
-								{__('Upcoming', 'gatherpress')}
-							</Text>
-						</Button>
-						<Button
-							className={classnames(
-								'block-editor-block-styles__item',
-								{
-									'is-active': 'past' === attributes.type,
-								}
-							)}
-							variant="secondary"
-							label={__('Past', 'gatherpress')}
-							onClick={() => {
-								setAttributes({ type: 'past' });
-							}}
-						>
-							<Text
-								as="span"
-								limit={12}
-								ellipsizeMode="tail"
-								className="block-editor-block-styles__item-text"
-								truncate
-							>
-								{__('Past', 'gatherpress')}
-							</Text>
-						</Button>
-					</ButtonGroup>
+					<ToggleGroupControl
+						label={ __( 'Event List type', 'gatherpress' ) }
+						value={ attributes.type }
+						onChange={ ( value ) => {
+							setAttributes( { type: value } );
+						} }
+						isBlock
+					>
+						<ToggleGroupControlOption
+							value="upcoming"
+							label={ __( 'Upcoming', 'gatherpress' ) }
+						/>
+						<ToggleGroupControlOption
+							value="past"
+							label={ __( 'Past', 'gatherpress' ) }
+						/>
+					</ToggleGroupControl>
 				</PanelBody>
 				<PanelBody>
 					<TextControl
-						label={__('Date & time format', 'gatherpress')}
-						value={attributes.datetimeFormat}
-						help={HtmlReactParser(
+						label={ __( 'Date & time format', 'gatherpress' ) }
+						value={ attributes.datetimeFormat }
+						help={ HtmlReactParser(
 							__(
 								'For more information read the <a href="https://wordpress.org/documentation/article/customize-date-and-time-format/">Documentation on date and time formatting</a>.',
-								'gatherpress'
-							)
-						)}
-						onChange={(newVal) =>
-							setAttributes({ datetimeFormat: newVal })
+								'gatherpress',
+							),
+						) }
+						onChange={ ( newVal ) =>
+							setAttributes( { datetimeFormat: newVal } )
 						}
 					/>
 					<RangeControl
-						label={__(
+						label={ __(
 							'Maximum number of events to display',
-							'gatherpress'
-						)}
-						min={1}
-						max={10}
-						value={parseInt(attributes.maxNumberOfEvents, 10)}
-						onChange={(newVal) =>
-							setAttributes({ maxNumberOfEvents: newVal })
+							'gatherpress',
+						) }
+						min={ 1 }
+						max={ 10 }
+						value={ parseInt( attributes.maxNumberOfEvents, 10 ) }
+						onChange={ ( newVal ) =>
+							setAttributes( { maxNumberOfEvents: newVal } )
 						}
 					/>
 					<FormTokenField
 						key="query-controls-topics-select"
-						label={__('Topics', 'gatherpress')}
-						value={
-							topics &&
-							topics.map((item) => ({
-								id: item.id,
-								slug: item.slug,
-								value: item.name || item.value,
-							}))
-						}
-						suggestions={Object.keys(topicSuggestions)}
-						onChange={selectTopics}
-						maxSuggestions={20}
+						label={ __( 'Topics', 'gatherpress' ) }
+						value={ topics?.map( ( item ) => ( {
+							id: item.id,
+							slug: item.slug,
+							value: item.name || item.value,
+						} ) ) }
+						suggestions={ Object.keys( topicSuggestions ) }
+						onChange={ selectTopics }
+						maxSuggestions={ 20 }
 					/>
 					<FormTokenField
 						key="query-controls-venues-select"
-						label={__('Venues', 'gatherpress')}
-						value={
-							venues &&
-							venues.map((item) => ({
-								id: item.id,
-								slug: item.slug,
-								value: item.name || item.value,
-							}))
-						}
-						suggestions={Object.keys(venueSuggestions)}
-						onChange={selectVenues}
-						maxSuggestions={20}
+						label={ __( 'Venues', 'gatherpress' ) }
+						value={ venues?.map( ( item ) => ( {
+							id: item.id,
+							slug: item.slug,
+							value: item.name || item.value,
+						} ) ) }
+						suggestions={ Object.keys( venueSuggestions ) }
+						onChange={ selectVenues }
+						maxSuggestions={ 20 }
 					/>
 				</PanelBody>
 				<PanelBody>
 					<ToggleControl
-						label={__(
+						label={ __(
 							'Show/Hide All RSVP Responses',
-							'gatherpress'
-						)}
+							'gatherpress',
+						) }
 						help={
 							attributes.eventOptions.showRsvpResponse
-								? __('Show All RSVP Responses', 'gatherpress')
-								: __('Hide All RSVP Responses', 'gatherpress')
+								? __( 'Show All RSVP Responses', 'gatherpress' )
+								: __( 'Hide All RSVP Responses', 'gatherpress' )
 						}
 						checked={
 							attributes.eventOptions.showRsvpResponse ?? true
 						}
-						onChange={(value) => {
-							setAttributes({
+						onChange={ ( value ) => {
+							setAttributes( {
 								eventOptions: {
 									...attributes.eventOptions,
 									showRsvpResponse: value,
 								},
-							});
-						}}
+							} );
+						} }
 					/>
 					<ToggleControl
-						label={__('Show/Hide My RSVP Response')}
+						label={ __( 'Show/Hide My RSVP Response', 'gatherpress' ) }
 						help={
 							attributes.eventOptions.showRsvp
-								? __('Show My RSVP Response')
-								: __('Hide My RSVP Response')
+								? __( 'Show My RSVP Response', 'gatherpress' )
+								: __( 'Hide My RSVP Response', 'gatherpress' )
 						}
-						checked={attributes.eventOptions.showRsvp}
-						onChange={(value) => {
-							setAttributes({
+						checked={ attributes.eventOptions.showRsvp }
+						onChange={ ( value ) => {
+							setAttributes( {
 								eventOptions: {
 									...attributes.eventOptions,
 									showRsvp: value,
 								},
-							});
-						}}
+							} );
+						} }
 					/>
 					<SelectControl
-						label={__('Image Size Options', 'gatherpress')}
-						value={attributes.eventOptions.imageSize}
-						options={imageOptions}
-						onChange={(value) =>
-							setAttributes({
+						label={ __( 'Image Size Options', 'gatherpress' ) }
+						value={ attributes.eventOptions.imageSize }
+						options={ imageOptions }
+						onChange={ ( value ) =>
+							setAttributes( {
 								eventOptions: {
 									...attributes.eventOptions,
 									imageSize: value,
 								},
-							})
+							} )
 						}
 					/>
 					<ToggleControl
-						label={__('Show/Hide Featured Image', 'gatherpress')}
+						label={ __( 'Show/Hide Featured Image', 'gatherpress' ) }
 						help={
 							attributes.eventOptions.showFeaturedImage
-								? __('Show Featured Image', 'gatherpress')
-								: __('Hide Featured Image', 'gatherpress')
+								? __( 'Show Featured Image', 'gatherpress' )
+								: __( 'Hide Featured Image', 'gatherpress' )
 						}
-						checked={attributes.eventOptions.showFeaturedImage}
-						onChange={(value) => {
-							setAttributes({
+						checked={ attributes.eventOptions.showFeaturedImage }
+						onChange={ ( value ) => {
+							setAttributes( {
 								eventOptions: {
 									...attributes.eventOptions,
 									showFeaturedImage: value,
 								},
-							});
-						}}
+							} );
+						} }
 					/>
 					<ToggleControl
-						label={__('Show/Hide Description', 'gatherpress')}
+						label={ __( 'Show/Hide Description', 'gatherpress' ) }
 						help={
 							attributes.eventOptions.showDescription
-								? __('Show Description', 'gatherpress')
-								: __('Hide Description', 'gatherpress')
+								? __( 'Show Description', 'gatherpress' )
+								: __( 'Hide Description', 'gatherpress' )
 						}
-						checked={attributes.eventOptions.showDescription}
-						onChange={(value) => {
-							setAttributes({
+						checked={ attributes.eventOptions.showDescription }
+						onChange={ ( value ) => {
+							setAttributes( {
 								eventOptions: {
 									...attributes.eventOptions,
 									showDescription: value,
 								},
-							});
-						}}
+							} );
+						} }
 					/>
 					<TextControl
-						label={__('Description Limit')}
-						help={__(
-							'Limit the amount of words that display underneath the title of the event'
-						)}
-						value={parseInt(
-							attributes.eventOptions.descriptionLimit
-						)}
-						onChange={(value) =>
-							setAttributes({
+						label={ __( 'Description Limit', 'gatherpress' ) }
+						help={ __(
+							'Limit the amount of words that display underneath the title of the event', 'gatherpress',
+						) }
+						value={ parseInt(
+							attributes.eventOptions.descriptionLimit,
+						) }
+						onChange={ ( value ) =>
+							setAttributes( {
 								eventOptions: {
 									...attributes.eventOptions,
 									descriptionLimit: value,
 								},
-							})
+							} )
 						}
-						min={0}
-						max={excerptMax}
+						min={ 0 }
+						max={ excerptMax }
 						type="number"
 					/>
 					<ToggleControl
-						label={__('Show/Event Venue')}
+						label={ __( 'Show/Event Venue', 'gatherpress' ) }
 						help={
 							attributes.eventOptions.showVenue
-								? __('Show Event Venue')
-								: __('Hide Event Venue')
+								? __( 'Show Event Venue', 'gatherpress' )
+								: __( 'Hide Event Venue', 'gatherpress' )
 						}
-						checked={attributes.eventOptions.showVenue}
-						onChange={(value) => {
-							setAttributes({
+						checked={ attributes.eventOptions.showVenue }
+						onChange={ ( value ) => {
+							setAttributes( {
 								eventOptions: {
 									...attributes.eventOptions,
 									showVenue: value,
 								},
-							});
-						}}
+							} );
+						} }
 					/>
 				</PanelBody>
 			</InspectorControls>
-			<div {...blockProps}>
+			<div { ...blockProps }>
 				<EditCover>
 					<EventsList
-						eventOptions={attributes.eventOptions}
-						maxNumberOfEvents={attributes.maxNumberOfEvents}
-						datetimeFormat={attributes.datetimeFormat}
-						type={attributes.type}
-						topics={attributes.topics}
-						venues={attributes.venues}
+						eventOptions={ attributes.eventOptions }
+						maxNumberOfEvents={ attributes.maxNumberOfEvents }
+						datetimeFormat={ attributes.datetimeFormat }
+						type={ attributes.type }
+						topics={ attributes.topics }
+						venues={ attributes.venues }
 					/>
 				</EditCover>
 			</div>

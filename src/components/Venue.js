@@ -25,10 +25,10 @@ import { Flex, FlexItem, Icon } from '@wordpress/components';
  *
  * @return {JSX.Element} The rendered React component.
  */
-const Venue = ({ name, fullAddress, phoneNumber, website }) => {
+const Venue = ( { name, fullAddress, phoneNumber, website } ) => {
 	return (
 		<>
-			{(name || fullAddress) && (
+			{ ( name || fullAddress ) && (
 				<Flex justify="normal" align="flex-start" gap="4">
 					<FlexItem
 						display="flex"
@@ -37,22 +37,22 @@ const Venue = ({ name, fullAddress, phoneNumber, website }) => {
 						<Icon icon="location" />
 					</FlexItem>
 					<FlexItem>
-						{name && (
+						{ name && (
 							<div className="gatherpress-venue__name">
-								<strong>{HtmlReactParser(name)}</strong>
+								<strong>{ HtmlReactParser( name ) }</strong>
 							</div>
-						)}
-						{fullAddress && (
+						) }
+						{ fullAddress && (
 							<div className="gatherpress-venue__full-address">
-								{HtmlReactParser(fullAddress)}
+								{ HtmlReactParser( fullAddress ) }
 							</div>
-						)}
+						) }
 					</FlexItem>
 				</Flex>
-			)}
-			{(phoneNumber || website) && (
+			) }
+			{ ( phoneNumber || website ) && (
 				<Flex justify="normal" gap="8">
-					{phoneNumber && (
+					{ phoneNumber && (
 						<FlexItem>
 							<Flex justify="normal" gap="4">
 								<FlexItem
@@ -63,13 +63,13 @@ const Venue = ({ name, fullAddress, phoneNumber, website }) => {
 								</FlexItem>
 								<FlexItem>
 									<div className="gatherpress-venue__phone-number">
-										{phoneNumber}
+										{ phoneNumber }
 									</div>
 								</FlexItem>
 							</Flex>
 						</FlexItem>
-					)}
-					{website && (
+					) }
+					{ website && (
 						<FlexItem>
 							<Flex justify="normal" gap="4">
 								<FlexItem
@@ -81,19 +81,19 @@ const Venue = ({ name, fullAddress, phoneNumber, website }) => {
 								<FlexItem>
 									<div className="gatherpress-venue__website">
 										<a
-											href={website}
+											href={ website }
 											target="_blank"
 											rel="noreferrer noopener"
 										>
-											{website}
+											{ website }
 										</a>
 									</div>
 								</FlexItem>
 							</Flex>
 						</FlexItem>
-					)}
+					) }
 				</Flex>
-			)}
+			) }
 		</>
 	);
 };

@@ -14,11 +14,11 @@ import './style.scss';
 /**
  * Register the block
  */
-registerBlockType(metadata.name, {
+registerBlockType( metadata.name, {
 	title: metadata.title,
 	category: metadata.category,
 	icon: metadata.icon,
 	attributes: metadata.attributes,
 	edit,
 	save,
-});
+} );

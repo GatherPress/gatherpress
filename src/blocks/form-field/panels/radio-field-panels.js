@@ -1,4 +1,9 @@
 /**
+ * External dependencies.
+ */
+import { v4 as uuidv4 } from 'uuid';
+
+/**
  * WordPress dependencies.
  */
 import { __ } from '@wordpress/i18n';
@@ -22,9 +27,9 @@ import {
  * @param {Function} props.setAttributes - Function to update block attributes.
  * @return {JSX.Element} The radio field styling and options panels.
  */
-export default function RadioFieldPanels({ attributes, setAttributes }) {
+export default function RadioFieldPanels( { attributes, setAttributes } ) {
 	const {
-		radioOptions = [{ label: '', value: '' }],
+		radioOptions = [ { label: '', value: '', id: uuidv4() } ],
 		fieldValue,
 		required,
 		labelFontSize,
@@ -37,190 +42,194 @@ export default function RadioFieldPanels({ attributes, setAttributes }) {
 	} = attributes;
 
 	// Handle radio option changes
-	const updateRadioOption = (index, field, value) => {
-		const newOptions = [...radioOptions];
-		newOptions[index] = { ...newOptions[index], [field]: value };
+	const updateRadioOption = ( index, field, value ) => {
+		const newOptions = [ ...radioOptions ];
+		newOptions[ index ] = { ...newOptions[ index ], [ field ]: value };
 
-		if ('label' === field) {
+		if ( 'label' === field ) {
 			const cleanValue = value
 				.toLowerCase()
-				.replace(/[^a-z0-9]+/g, '-')
-				.replace(/^-+|-+$/g, '');
-			newOptions[index].value = cleanValue || value;
+				.split( /[^a-z0-9]+/ ) // Split on non-alphanumeric sequences.
+				.filter( ( part ) => 0 < part.length ) // Remove empty strings.
+				.join( '-' ); // Join with dashes.
+			newOptions[ index ].value = cleanValue || value;
 		}
 
-		setAttributes({ radioOptions: newOptions });
+		setAttributes( { radioOptions: newOptions } );
 	};
 
 	const addRadioOption = () => {
-		const newOptions = [...radioOptions, { label: '', value: '' }];
+		const newOptions = [
+			...radioOptions,
+			{ label: '', value: '', id: uuidv4() },
+		];
 
-		setAttributes({ radioOptions: newOptions });
+		setAttributes( { radioOptions: newOptions } );
 	};
 
-	const removeRadioOption = (index) => {
-		const optionToRemove = radioOptions[index];
-		const newOptions = radioOptions.filter((_, i) => i !== index);
+	const removeRadioOption = ( index ) => {
+		const optionToRemove = radioOptions[ index ];
+		const newOptions = radioOptions.filter( ( _, i ) => i !== index );
 
 		// Clear fieldValue if removing the selected option.
 		const updates = { radioOptions: newOptions };
-		if (fieldValue === optionToRemove.value) {
+		if ( fieldValue === optionToRemove.value ) {
 			updates.fieldValue = '';
 		}
 
-		setAttributes(updates);
+		setAttributes( updates );
 	};
 
 	return (
 		<>
-			<PanelBody title={__('Radio Options', 'gatherpress')}>
-				{radioOptions.map((option, index) => (
-					<div key={index}>
+			<PanelBody title={ __( 'Radio Options', 'gatherpress' ) }>
+				{ radioOptions.map( ( option, index ) => (
+					<div key={ option.id }>
 						<Flex
 							justify="normal"
 							gap="2"
-							style={{ position: 'relative' }}
+							style={ { position: 'relative' } }
 						>
 							<FlexItem>
 								<TextControl
-									label={`${__('Option', 'gatherpress')} ${index + 1}`}
-									value={option.label}
-									onChange={(value) =>
-										updateRadioOption(index, 'label', value)
+									label={ `${ __( 'Option', 'gatherpress' ) } ${ index + 1 }` }
+									value={ option.label }
+									onChange={ ( value ) =>
+										updateRadioOption( index, 'label', value )
 									}
-									help={__(
+									help={ __(
 										'Label and value for this option.',
-										'gatherpress'
-									)}
+										'gatherpress',
+									) }
 								/>
 								<ToggleControl
-									label={__(
+									label={ __(
 										'Default Selected',
-										'gatherpress'
-									)}
+										'gatherpress',
+									) }
 									checked={
 										fieldValue === option.value &&
 										'' !== option.value
 									}
-									onChange={(checked) => {
-										setAttributes({
+									onChange={ ( checked ) => {
+										setAttributes( {
 											fieldValue: checked
 												? option.value
 												: '',
-										});
-									}}
-									help={__(
+										} );
+									} }
+									help={ __(
 										'Select this option by default.',
-										'gatherpress'
-									)}
+										'gatherpress',
+									) }
 								/>
 							</FlexItem>
 							<FlexItem>
-								{radioOptions.length > 1 && (
+								{ 1 < radioOptions.length && (
 									<Button
 										variant="secondary"
 										isDestructive
-										onClick={() => removeRadioOption(index)}
-										style={{
+										onClick={ () => removeRadioOption( index ) }
+										style={ {
 											padding: 0,
 											position: 'absolute',
 											top: '1.45rem',
 											width: '2rem',
 											height: '2rem',
-										}}
+										} }
 										icon="no-alt"
-										label={__(
+										label={ __(
 											'Remove option',
-											'gatherpress'
-										)}
+											'gatherpress',
+										) }
 									/>
-								)}
+								) }
 							</FlexItem>
 						</Flex>
 					</div>
-				))}
-				<Button variant="secondary" onClick={addRadioOption}>
-					{__('Add Option', 'gatherpress')}
+				) ) }
+				<Button variant="secondary" onClick={ addRadioOption }>
+					{ __( 'Add Option', 'gatherpress' ) }
 				</Button>
 			</PanelBody>
 
-			<PanelBody title={__('Label Styles', 'gatherpress')}>
-				<BaseControl __nextHasNoMarginBottom={true}>
+			<PanelBody title={ __( 'Label Styles', 'gatherpress' ) }>
+				<BaseControl __nextHasNoMarginBottom={ true }>
 					<FontSizePicker
-						withReset={true}
+						withReset={ true }
 						size="__unstable-large"
 						__nextHasNoMarginBottom
-						onChange={(value) =>
-							setAttributes({ labelFontSize: value })
+						onChange={ ( value ) =>
+							setAttributes( { labelFontSize: value } )
 						}
-						value={labelFontSize}
+						value={ labelFontSize }
 					/>
 				</BaseControl>
 				<RangeControl
-					label={__('Line Height', 'gatherpress')}
-					value={labelLineHeight}
-					onChange={(value) =>
-						setAttributes({ labelLineHeight: value })
+					label={ __( 'Line Height', 'gatherpress' ) }
+					value={ labelLineHeight }
+					onChange={ ( value ) =>
+						setAttributes( { labelLineHeight: value } )
 					}
-					min={1}
-					max={3}
-					step={0.1}
+					min={ 1 }
+					max={ 3 }
+					step={ 0.1 }
 				/>
 			</PanelBody>
 
-			<PanelBody title={__('Option Styles', 'gatherpress')}>
-				<BaseControl __nextHasNoMarginBottom={true}>
+			<PanelBody title={ __( 'Option Styles', 'gatherpress' ) }>
+				<BaseControl __nextHasNoMarginBottom={ true }>
 					<FontSizePicker
-						withReset={true}
+						withReset={ true }
 						size="__unstable-large"
 						__nextHasNoMarginBottom
-						onChange={(value) =>
-							setAttributes({ optionFontSize: value })
+						onChange={ ( value ) =>
+							setAttributes( { optionFontSize: value } )
 						}
-						value={optionFontSize}
+						value={ optionFontSize }
 					/>
 				</BaseControl>
 
 				<RangeControl
-					label={__('Line Height', 'gatherpress')}
-					value={optionLineHeight}
-					onChange={(value) =>
-						setAttributes({ optionLineHeight: value })
+					label={ __( 'Line Height', 'gatherpress' ) }
+					value={ optionLineHeight }
+					onChange={ ( value ) =>
+						setAttributes( { optionLineHeight: value } )
 					}
-					min={1}
-					max={3}
-					step={0.1}
+					min={ 1 }
+					max={ 3 }
+					step={ 0.1 }
 				/>
 			</PanelBody>
 
 			<PanelColorSettings
-				title={__('Colors', 'gatherpress')}
-				colorSettings={[
+				title={ __( 'Colors', 'gatherpress' ) }
+				colorSettings={ [
 					{
 						value: labelTextColor,
-						onChange: (value) =>
-							setAttributes({ labelTextColor: value }),
-						label: __('Label Text', 'gatherpress'),
+						onChange: ( value ) =>
+							setAttributes( { labelTextColor: value } ),
+						label: __( 'Label Text', 'gatherpress' ),
 					},
-					...(required
+					...( required
 						? [
-								{
-									value: requiredTextColor,
-									onChange: (value) =>
-										setAttributes({
-											requiredTextColor: value,
-										}),
-									label: __('Required Text', 'gatherpress'),
-								},
-							]
-						: []),
+							{
+								value: requiredTextColor,
+								onChange: ( value ) =>
+									setAttributes( {
+										requiredTextColor: value,
+									} ),
+								label: __( 'Required Text', 'gatherpress' ),
+							},
+						]
+						: [] ),
 					{
 						value: optionTextColor,
-						onChange: (value) =>
-							setAttributes({ optionTextColor: value }),
-						label: __('Option Text', 'gatherpress'),
+						onChange: ( value ) =>
+							setAttributes( { optionTextColor: value } ),
+						label: __( 'Option Text', 'gatherpress' ),
 					},
-				]}
+				] }
 			/>
 		</>
 	);

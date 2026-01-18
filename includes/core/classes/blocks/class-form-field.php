@@ -34,6 +34,38 @@ class Form_Field {
 	private array $attributes;
 
 	/**
+	 * Constant representing the Block Name.
+	 *
+	 * @since 1.0.0
+	 * @var string
+	 */
+	const BLOCK_NAME = 'gatherpress/form-field';
+
+	/**
+	 * CSS property format for color.
+	 *
+	 * @since 1.0.0
+	 * @var string
+	 */
+	const CSS_COLOR = 'color:%s';
+
+	/**
+	 * CSS property format for font size.
+	 *
+	 * @since 1.0.0
+	 * @var string
+	 */
+	const CSS_FONT_SIZE = 'font-size:%s';
+
+	/**
+	 * CSS property format for line height.
+	 *
+	 * @since 1.0.0
+	 * @var string
+	 */
+	const CSS_LINE_HEIGHT = 'line-height:%s';
+
+	/**
 	 * FormField constructor.
 	 *
 	 * Initializes a FormField object with the provided block attributes.
@@ -182,11 +214,11 @@ class Form_Field {
 
 		// Text-based input styles.
 		if ( ! in_array( $field_type, $non_text_based_fields, true ) ) {
-			$this->add_style( $styles, 'input_font_size', 'font-size:%s' );
-			$this->add_style( $styles, 'input_line_height', 'line-height:%s' );
+			$this->add_style( $styles, 'input_font_size', self::CSS_FONT_SIZE );
+			$this->add_style( $styles, 'input_line_height', self::CSS_LINE_HEIGHT );
 			$this->add_style( $styles, 'input_padding', 'padding:%dpx' );
 			$this->add_style( $styles, 'input_border_radius', 'border-radius:%dpx' );
-			$this->add_style( $styles, 'field_text_color', 'color:%s' );
+			$this->add_style( $styles, 'field_text_color', self::CSS_COLOR );
 			$this->add_style( $styles, 'field_background_color', 'background-color:%s' );
 			$this->add_style( $styles, 'field_width', 'width:%s%%' );
 			$this->add_style( $styles, 'input_border_width', 'border-width:%dpx' );
@@ -210,7 +242,7 @@ class Form_Field {
 	public function get_label_styles(): string {
 		$styles = array();
 
-		$this->add_style( $styles, 'label_text_color', 'color:%s' );
+		$this->add_style( $styles, 'label_text_color', self::CSS_COLOR );
 
 		return $this->compile_styles( $styles );
 	}
@@ -229,8 +261,8 @@ class Form_Field {
 	public function get_label_wrapper_styles(): string {
 		$styles = array();
 
-		$this->add_style( $styles, 'label_font_size', 'font-size:%s' );
-		$this->add_style( $styles, 'label_line_height', 'line-height:%s' );
+		$this->add_style( $styles, 'label_font_size', self::CSS_FONT_SIZE );
+		$this->add_style( $styles, 'label_line_height', self::CSS_LINE_HEIGHT );
 
 		return $this->compile_styles( $styles );
 	}
@@ -248,7 +280,7 @@ class Form_Field {
 	public function get_required_styles(): string {
 		$styles = array();
 
-		$this->add_style( $styles, 'required_text_color', 'color:%s' );
+		$this->add_style( $styles, 'required_text_color', self::CSS_COLOR );
 
 		return $this->compile_styles( $styles );
 	}
@@ -266,9 +298,9 @@ class Form_Field {
 	public function get_option_styles(): string {
 		$styles = array();
 
-		$this->add_style( $styles, 'option_font_size', 'font-size:%s' );
-		$this->add_style( $styles, 'option_line_height', 'line-height:%s' );
-		$this->add_style( $styles, 'option_text_color', 'color:%s' );
+		$this->add_style( $styles, 'option_font_size', self::CSS_FONT_SIZE );
+		$this->add_style( $styles, 'option_line_height', self::CSS_LINE_HEIGHT );
+		$this->add_style( $styles, 'option_text_color', self::CSS_COLOR );
 
 		return $this->compile_styles( $styles );
 	}
@@ -286,7 +318,7 @@ class Form_Field {
 	 */
 	public function get_wrapper_classes(): array {
 		$field_type = $this->get_field_type();
-		$classes    = array( sprintf( 'gatherpress-field-type-%s', esc_attr( $field_type ) ) );
+		$classes    = array( sprintf( 'gatherpress-form-field--%s', esc_attr( $field_type ) ) );
 
 		// Add inline layout class for text-based fields.
 		if (
@@ -313,7 +345,10 @@ class Form_Field {
 	public function get_wrapper_attributes(): string {
 		$classes = $this->get_wrapper_classes();
 
-		return get_block_wrapper_attributes( array( 'class' => implode( ' ', $classes ) ) );
+		// Build wrapper arguments.
+		$wrapper_args = array( 'class' => implode( ' ', $classes ) );
+
+		return get_block_wrapper_attributes( $wrapper_args );
 	}
 
 	/**

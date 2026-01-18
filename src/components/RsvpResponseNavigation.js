@@ -28,12 +28,12 @@ import { getFromGlobal } from '../helpers/globals';
  *
  * @return {JSX.Element} The rendered React component.
  */
-const RsvpResponseNavigation = ({
+const RsvpResponseNavigation = ( {
 	items,
 	activeValue,
 	onTitleClick,
 	defaultLimit,
-}) => {
+} ) => {
 	const defaultCount = {
 		all: 0,
 		attending: 0,
@@ -41,89 +41,89 @@ const RsvpResponseNavigation = ({
 		waiting_list: 0, // eslint-disable-line camelcase
 	};
 
-	const responses = getFromGlobal('eventDetails.responses') ?? {};
+	const responses = getFromGlobal( 'eventDetails.responses' ) ?? {};
 
-	for (const [key, value] of Object.entries(responses)) {
-		defaultCount[key] = value.count;
+	for ( const [ key, value ] of Object.entries( responses ) ) {
+		defaultCount[ key ] = value.count;
 	}
 
-	const [rsvpCount, setRsvpCount] = useState(defaultCount);
-	const [showNavigationDropdown, setShowNavigationDropdown] = useState(false);
-	const [hideNavigationDropdown, setHideNavigationDropdown] = useState(true);
+	const [ rsvpCount, setRsvpCount ] = useState( defaultCount );
+	const [ showNavigationDropdown, setShowNavigationDropdown ] = useState( false );
+	const [ hideNavigationDropdown, setHideNavigationDropdown ] = useState( true );
 	const Tag = hideNavigationDropdown ? `span` : `a`;
 
-	Listener({ setRsvpCount }, getFromGlobal('eventDetails.postId'));
+	Listener( { setRsvpCount }, getFromGlobal( 'eventDetails.postId' ) );
 
 	let activeIndex = 0;
 
-	const renderedItems = items.map((item, index) => {
+	const renderedItems = items.map( ( item, index ) => {
 		const activeItem = item.value === activeValue;
 
-		if (activeItem) {
+		if ( activeItem ) {
 			activeIndex = index;
 		}
 
 		return (
 			<RsvpResponseNavigationItem
-				key={index}
-				item={item}
-				count={rsvpCount[item.value]}
-				activeItem={activeItem}
-				onTitleClick={onTitleClick}
-				defaultLimit={defaultLimit}
+				key={ index }
+				item={ item }
+				count={ rsvpCount[ item.value ] }
+				activeItem={ activeItem }
+				onTitleClick={ onTitleClick }
+				defaultLimit={ defaultLimit }
 			/>
 		);
-	});
+	} );
 
-	useEffect(() => {
-		global.document.addEventListener('click', ({ target }) => {
+	useEffect( () => {
+		document.addEventListener( 'click', ( { target } ) => {
 			if (
-				!target.closest('.gatherpress-rsvp-response__navigation-active')
+				! target.closest( '.gatherpress-rsvp-response__navigation-active' )
 			) {
-				setShowNavigationDropdown(false);
+				setShowNavigationDropdown( false );
 			}
-		});
+		} );
 
-		global.document.addEventListener('keydown', ({ key }) => {
-			if ('Escape' === key) {
-				setShowNavigationDropdown(false);
+		document.addEventListener( 'keydown', ( { key } ) => {
+			if ( 'Escape' === key ) {
+				setShowNavigationDropdown( false );
 			}
-		});
-	});
+		} );
+	} );
 
-	useEffect(() => {
-		if (0 === rsvpCount.not_attending && 0 === rsvpCount.waiting_list) {
-			setHideNavigationDropdown(true);
+	useEffect( () => {
+		if ( 0 === rsvpCount.not_attending && 0 === rsvpCount.waiting_list ) {
+			setHideNavigationDropdown( true );
 		} else {
-			setHideNavigationDropdown(false);
+			setHideNavigationDropdown( false );
 		}
-	}, [rsvpCount]);
+	}, [ rsvpCount ] );
 
-	const toggleNavigation = (e) => {
+	const toggleNavigation = ( e ) => {
 		e.preventDefault();
 
-		setShowNavigationDropdown(!showNavigationDropdown);
+		setShowNavigationDropdown( ! showNavigationDropdown );
 	};
 
 	return (
 		<div className="gatherpress-rsvp-response__navigation-wrapper">
 			<div>
-				{/* eslint-disable-next-line jsx-a11y/anchor-is-valid */}
+				{ /* eslint-disable-next-line jsx-a11y/anchor-is-valid */ }
 				<Tag
 					href="#"
 					className="gatherpress-rsvp-response__navigation-active"
-					onClick={(e) => toggleNavigation(e)}
+					onClick={ ( e ) => toggleNavigation( e ) }
 				>
-					{items[activeIndex].title}
+					{ items[ activeIndex ].title }
 				</Tag>
 				&nbsp;
-				<span>({rsvpCount[activeValue]})</span>
+				<span>({ rsvpCount[ activeValue ] })</span>
 			</div>
-			{!hideNavigationDropdown && showNavigationDropdown && (
+			{ ! hideNavigationDropdown && showNavigationDropdown && (
 				<nav className="gatherpress-rsvp-response__navigation">
-					{renderedItems}
+					{ renderedItems }
 				</nav>
-			)}
+			) }
 		</div>
 	);
 };

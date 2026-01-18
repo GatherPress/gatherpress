@@ -26,79 +26,79 @@ import { getFromGlobal } from '../helpers/globals';
  *
  * @return {JSX.Element} The rendered React component.
  */
-const RsvpResponseCard = ({ value, limit, responses = [] }) => {
+const RsvpResponseCard = ( { value, limit, responses = [] } ) => {
 	let renderedItems = '';
 
 	if (
 		'object' === typeof responses &&
-		'undefined' !== typeof responses[value]
+		'undefined' !== typeof responses[ value ]
 	) {
-		responses = [...responses[value].records];
+		responses = [ ...responses[ value ].records ];
 
-		if (limit) {
-			responses = responses.splice(0, limit);
+		if ( limit ) {
+			responses = responses.splice( 0, limit );
 		}
 
-		renderedItems = responses.map((response, index) => {
+		renderedItems = responses.map( ( response, index ) => {
 			const { profile, name, photo, role } = response;
 			const { guests } = response;
 
 			return (
-				<div key={index} className="gatherpress-rsvp-response__item">
+				<div key={ index } className="gatherpress-rsvp-response__item">
 					<figure className="gatherpress-rsvp-response__member-avatar">
-						{'' !== profile ? (
-							<a href={profile}>
-								<img alt={name} title={name} src={photo} />
-							</a>
+						{ '' === profile ? (
+							<img alt={ name } title={ name } src={ photo } />
 						) : (
-							<img alt={name} title={name} src={photo} />
-						)}
+							<a href={ profile }>
+								<img alt={ name } title={ name } src={ photo } />
+							</a>
+						) }
 					</figure>
 					<div className="gatherpress-rsvp-response__member-info">
 						<div className="gatherpress-rsvp-response__member-name">
-							{'' !== profile ? (
-								<a href={profile} title={name}>
-									{name}
-								</a>
+							{ '' === profile ? (
+								<span>{ name }</span>
 							) : (
-								<span>{name}</span>
-							)}
+								<a href={ profile } title={ name }>
+									{ name }
+								</a>
+							) }
 						</div>
 						<div className="gatherpress-rsvp-response__member-role">
-							{role}
+							{ role }
 						</div>
-						{0 !== guests && (
+						{ 0 < guests && (
 							<small className="gatherpress-rsvp-response__guests">
-								{sprintf(
+								{ sprintf(
 									/* translators: %d: Number of guests. */
 									_n(
 										'+%d guest',
 										'+%d guests',
 										guests,
-										'gatherpress'
+										'gatherpress',
 									),
-									guests
-								)}
+									guests,
+								) }
 							</small>
-						)}
+						) }
 					</div>
 				</div>
 			);
-		});
+		} );
 	}
 	return (
 		<>
-			{'attending' === value && 0 === renderedItems.length && (
+			{ 'attending' === value && 0 === renderedItems.length && (
 				<div className="gatherpress-rsvp-response__no-responses">
-					{false === getFromGlobal('eventDetails.hasEventPast')
-						? __(
-								'No one is attending this event yet.',
-								'gatherpress'
-							)
-						: __('No one went to this event.', 'gatherpress')}
+					{ true === getFromGlobal( 'eventDetails.hasEventPast' )
+						? __( 'No one went to this event.', 'gatherpress' )
+						: __(
+							'No one is attending this event yet.',
+							'gatherpress',
+						) }
 				</div>
-			)}
-			{renderedItems}
+			) }
+			{ renderedItems }
 		</>
 	);
 };
