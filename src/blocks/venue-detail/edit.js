@@ -67,10 +67,13 @@ const Edit = ( { attributes, setAttributes, context, clientId, insertBlocksAfter
 	);
 
 	const updateFieldValue = ( newValue ) => {
+		// Strip any HTML tags from the value (plain text only).
+		const strippedValue = newValue.replace( /<[^>]*>/g, '' );
+
 		// Update the entity record (marks as dirty, handled by WordPress save flow).
 		editEntityRecord( 'postType', PT_VENUE, venuePostId, {
 			meta: {
-				[ metaFieldName ]: newValue,
+				[ metaFieldName ]: strippedValue,
 			},
 		} );
 	};

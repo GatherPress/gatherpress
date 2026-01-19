@@ -87,8 +87,8 @@ const OpenStreetMap = ( props ) => {
 
 	useEffect( () => {
 		// Check for valid latitude and longitude (not empty strings, null, or undefined).
-		const validLat = latitude && latitude !== '' && ! isNaN( parseFloat( latitude ) );
-		const validLng = longitude && longitude !== '' && ! isNaN( parseFloat( longitude ) );
+		const validLat = latitude && '' !== latitude && ! isNaN( parseFloat( latitude ) );
+		const validLng = longitude && '' !== longitude && ! isNaN( parseFloat( longitude ) );
 
 		if ( ! Leaflet || ! validLat || ! validLng || ! mapRef.current ) {
 			return;
@@ -145,8 +145,8 @@ const OpenStreetMap = ( props ) => {
 	}, [ Leaflet, latitude, location, longitude, zoom ] );
 
 	// Check for valid latitude and longitude before rendering.
-	const validLat = latitude && latitude !== '' && ! isNaN( parseFloat( latitude ) );
-	const validLng = longitude && longitude !== '' && ! isNaN( parseFloat( longitude ) );
+	const validLat = latitude && '' !== latitude && ! isNaN( parseFloat( latitude ) );
+	const validLng = longitude && '' !== longitude && ! isNaN( parseFloat( longitude ) );
 
 	if ( ! Leaflet || ! validLat || ! validLng ) {
 		return null;

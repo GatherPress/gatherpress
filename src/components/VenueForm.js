@@ -26,11 +26,11 @@ import { getCurrentContextualPostId } from '../helpers/editor';
  * Geocodes an address using Nominatim OpenStreetMap API.
  *
  * @param {string} address - The full address to geocode.
- * @return {Promise<Object>} Promise resolving to { latitude, longitude } or { latitude: '', longitude: '' } on error.
+ * @return {Promise<Object>} Promise resolving to { latitude, longitude, error } or { latitude: '', longitude: '', error: string } on error.
  */
 async function geocodeAddress( address ) {
 	if ( ! address || '' === address.trim() ) {
-		return { latitude: '', longitude: '' };
+		return { latitude: '', longitude: '', error: null };
 	}
 
 	try {
@@ -41,13 +41,15 @@ async function geocodeAddress( address ) {
 		);
 
 		if ( ! response.ok ) {
-			throw new Error(
-				sprintf(
-					/* translators: %s: Error message */
-					__( 'Network response was not ok %s', 'gatherpress' ),
+			return {
+				latitude: '',
+				longitude: '',
+				error: sprintf(
+					/* translators: %s: HTTP status text */
+					__( 'Geocoding failed: %s', 'gatherpress' ),
 					response.statusText
-				)
-			);
+				),
+			};
 		}
 
 		const data = await response.json();
@@ -59,24 +61,39 @@ async function geocodeAddress( address ) {
 			const longitude = String(
 				data.features[ 0 ].geometry.coordinates[ 0 ]
 			);
-			return { latitude, longitude };
+			return { latitude, longitude, error: null };
 		}
 
 		// No results found.
-		return { latitude: '', longitude: '' };
+		return {
+			latitude: '',
+			longitude: '',
+			error: __(
+				'Could not find location. Please check the address and try again.',
+				'gatherpress'
+			),
+		};
 	} catch ( error ) {
-		// eslint-disable-next-line no-console
-		console.error( 'Geocoding error:', error );
-		return { latitude: '', longitude: '' };
+		return {
+			latitude: '',
+			longitude: '',
+			error: sprintf(
+				/* translators: %s: Error message */
+				__( 'Geocoding error: %s', 'gatherpress' ),
+				error.message
+			),
+		};
 	}
 }
 
 function VenueForm( {
 	title,
 	onChangeTitle,
+	titleError,
 	address,
 	onChangeAddress,
 	hasEdits,
+	hasValidationErrors,
 	lastError,
 	isSaving,
 	onCancel,
@@ -91,6 +108,8 @@ function VenueForm( {
 					label={ __( 'Venue name', 'gatherpress' ) }
 					value={ title }
 					onChange={ onChangeTitle }
+					help={ titleError }
+					className={ titleError ? 'has-error' : '' }
 				/>
 				<TextControl
 					__next40pxDefaultSize
@@ -112,7 +131,7 @@ function VenueForm( {
 				<Button
 					onClick={ onSave }
 					variant="primary"
-					disabled={ ! hasEdits || isSaving }
+					disabled={ ! hasEdits || hasValidationErrors || isSaving }
 				>
 					{ isSaving ? (
 						<>
@@ -138,6 +157,9 @@ function VenueForm( {
 function CreateVenueForm( { search, ...props } ) {
 	const [ title, setTitle ] = useState( search );
 	const [ address, setAddress ] = useState( '' );
+	const [ titleError, setTitleError ] = useState( '' );
+	const [ geocodingError, setGeocodingError ] = useState( '' );
+	const [ isGeocoding, setIsGeocoding ] = useState( false );
 
 	const { lastError, isSaving } = useSelect(
 		( select ) => ( {
@@ -152,6 +174,36 @@ function CreateVenueForm( { search, ...props } ) {
 		} ),
 		[]
 	);
+
+	/**
+	 * Validates the venue title.
+	 *
+	 * @param {string} value - The title value to validate.
+	 * @return {string} Error message if validation fails, empty string if valid.
+	 */
+	const validateTitle = ( value ) => {
+		if ( ! value || '' === value.trim() ) {
+			return __( 'Venue name is required.', 'gatherpress' );
+		}
+		if ( 2 > value.trim().length ) {
+			return __(
+				'Venue name must be at least 2 characters.',
+				'gatherpress'
+			);
+		}
+		return '';
+	};
+
+	/**
+	 * Handles title change with validation.
+	 *
+	 * @param {string} value - The new title value.
+	 */
+	const handleTitleChange = ( value ) => {
+		setTitle( value );
+		const error = validateTitle( value );
+		setTitleError( error );
+	};
 
 	const cId = getCurrentContextualPostId( props?.context?.postId );
 
@@ -315,13 +367,17 @@ function CreateVenueForm( { search, ...props } ) {
 		navigateBack();
 	};
 
+	const hasValidationErrors = !! titleError;
+
 	return (
 		<VenueForm
 			title={ title ?? '' }
-			onChangeTitle={ setTitle }
+			onChangeTitle={ handleTitleChange }
+			titleError={ titleError }
 			address={ address ?? '' }
 			onChangeAddress={ setAddress }
 			hasEdits={ !! title }
+			hasValidationErrors={ hasValidationErrors }
 			onSave={ saveBogus }
 			lastError={ lastError }
 			onCancel={ navigateBack }

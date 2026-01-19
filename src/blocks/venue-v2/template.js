@@ -26,6 +26,7 @@ const TEMPLATE = [
 			[
 				'core/group',
 				{
+					className: 'gatherpress--has-venue-address',
 					style: {
 						spacing: {
 							blockGap: 'var:preset|spacing|20',
@@ -78,6 +79,7 @@ const TEMPLATE = [
 			[
 				'core/group',
 				{
+					className: 'gatherpress--has-venue-phone',
 					style: {
 						spacing: {
 							blockGap: 'var:preset|spacing|20',
@@ -112,6 +114,7 @@ const TEMPLATE = [
 			[
 				'core/group',
 				{
+					className: 'gatherpress--has-venue-website',
 					style: {
 						spacing: {
 							blockGap: 'var:preset|spacing|20',

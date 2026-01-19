@@ -15,12 +15,12 @@ if ( ! isset( $attributes ) || ! is_array( $attributes ) ) {
 	return;
 }
 
-$gatherpress_venue = Venue::get_instance();
+$gatherpress_venue      = Venue::get_instance();
 $gatherpress_venue_meta = $gatherpress_venue->get_venue_meta( get_the_ID(), get_post_type() );
 
 // Get venue data.
-$venue_address = $gatherpress_venue_meta['fullAddress'] ?? '';
-$venue_latitude = $gatherpress_venue_meta['latitude'] ?? '';
+$venue_address   = $gatherpress_venue_meta['fullAddress'] ?? '';
+$venue_latitude  = $gatherpress_venue_meta['latitude'] ?? '';
 $venue_longitude = $gatherpress_venue_meta['longitude'] ?? '';
 
 if ( empty( $venue_address ) ) {

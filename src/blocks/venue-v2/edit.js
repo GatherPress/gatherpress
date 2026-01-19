@@ -83,17 +83,17 @@ const Edit = ( props ) => {
 				{ ! isDescendentOfQueryLoop &&
 					isSelected &&
 					isEventContext && (
-						<InspectorControls>
-							<PanelBody
-								title={ __( 'Venue settings', 'gatherpress' ) }
-								initialOpen={ true }
-							>
-								<PanelRow>
-									<VenueNavigator { ...props } />
-								</PanelRow>
-							</PanelBody>
-						</InspectorControls>
-					) }
+					<InspectorControls>
+						<PanelBody
+							title={ __( 'Venue settings', 'gatherpress' ) }
+							initialOpen={ true }
+						>
+							<PanelRow>
+								<VenueNavigator { ...props } />
+							</PanelRow>
+						</PanelBody>
+					</InspectorControls>
+				) }
 			</BlockContextProvider>
 		</div>
 	);

@@ -6,22 +6,27 @@
 	"title": "Online Event (v2)",
 	"category": "gatherpress",
 	"icon": "video-alt2",
-	"description": "Display a link for online events with context-aware fallback.",
+	"description": "Display an editable link for online events. Link URL comes from event/venue meta, text is customizable.",
 	"usesContext": ["postId", "queryId"],
 	"attributes": {
 		"blockId": {
 			"type": "string"
+		},
+		"linkText": {
+			"type": "string",
+			"default": ""
 		}
 	},
 	"supports": {
 		"gatherpress": {
 			"postIdOverride": true
 		},
-		"html": false
+		"html": false,
+		"interactivity": true
 	},
 	"textdomain": "gatherpress",
 	"editorScript": "file:./index.js",
+	"viewScriptModule": "file:./view.js",
 	"style": "file:./style-index.css",
-	"viewScript": "file:./online-event-v2.js",
 	"render": "file:./render.php"
 }

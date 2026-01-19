@@ -19,6 +19,7 @@ use GatherPress\Core\Block;
 use GatherPress\Core\Event;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Utility;
+use GatherPress\Core\Venue;
 use WP_HTML_Tag_Processor;
 
 /**
@@ -59,6 +60,7 @@ class General_Block {
 	protected function setup_hooks(): void {
 		add_filter( 'render_block', array( $this, 'process_login_block' ), 10, 2 );
 		add_filter( 'render_block', array( $this, 'process_registration_block' ), 10, 2 );
+		add_filter( 'render_block', array( $this, 'process_venue_detail_field' ), 10, 2 );
 		add_filter( 'render_block_core/button', array( $this, 'convert_submit_button' ), 10, 2 );
 	}
 
@@ -128,6 +130,61 @@ class General_Block {
 		}
 
 		return $tag->get_updated_html();
+	}
+
+	/**
+	 * Processes blocks with venue conditional classes.
+	 *
+	 * This method hides blocks (and their contents) when the associated venue meta field
+	 * is empty. It uses a naming convention to automatically map class names to meta keys:
+	 *
+	 * - Class: `gatherpress--has-venue-phone` → Meta: `gatherpress_venue_phone`
+	 * - Class: `gatherpress--has-venue-address` → Meta: `gatherpress_venue_address`
+	 * - Class: `gatherpress--has-venue-website` → Meta: `gatherpress_venue_website`
+	 *
+	 * This allows wrapper blocks (like Groups/Rows) containing icons and venue-detail blocks
+	 * to be hidden together when the field has no value.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $block_content The HTML content of the block.
+	 * @param array  $block         The parsed block data.
+	 *
+	 * @return string The modified block content or an empty string if the block should be removed.
+	 */
+	public function process_venue_detail_field( string $block_content, array $block ): string {
+		$class_name = $block['attrs']['className'] ?? '';
+
+		// Check if the block has a venue conditional class.
+		if ( ! preg_match( '/gatherpress--has-venue-([a-z-]+)/', $class_name, $matches ) ) {
+			return $block_content;
+		}
+
+		// Extract field name from class (e.g., "phone" from "gatherpress--has-venue-phone").
+		$field_name = $matches[1];
+
+		// Convert class name format to meta key format (dashes to underscores).
+		// Example: "phone" → "gatherpress_venue_phone".
+		$meta_key = 'gatherpress_venue_' . str_replace( '-', '_', $field_name );
+
+		// Get the venue post ID from the current context.
+		// First try to get it from block context, then fall back to current post.
+		$venue_post_id = $block['attrs']['postId'] ?? get_the_ID();
+
+		// Verify this is actually a venue post.
+		if ( Venue::POST_TYPE !== get_post_type( $venue_post_id ) ) {
+			return $block_content;
+		}
+
+		// Get the meta value.
+		$meta_value = get_post_meta( $venue_post_id, $meta_key, true );
+
+		// If the meta field is empty, hide the entire block.
+		if ( empty( $meta_value ) ) {
+			return '';
+		}
+
+		return $block_content;
 	}
 
 	/**
