@@ -7,7 +7,6 @@
 	"category": "gatherpress",
 	"icon": "location-alt",
 	"description": "Display a map for the venue location.",
-	"ancestor": ["gatherpress/venue-v2"],
 	"usesContext": ["postId", "queryId"],
 	"attributes": {
 		"zoom": {

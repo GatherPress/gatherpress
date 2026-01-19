@@ -13,7 +13,6 @@ import { useSelect } from '@wordpress/data';
 /**
  * Internal dependencies.
  */
-import { getCurrentContextualPostId } from '../../helpers/editor';
 import { PT_VENUE } from '../../helpers/namespace';
 import MapEmbed from '../../components/MapEmbed';
 
@@ -34,7 +33,7 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 	const blockProps = useBlockProps();
 
 	// Get the venue post ID from context (provided by venue-v2 block).
-	const venuePostId = getCurrentContextualPostId( context?.postId );
+	const venuePostId = context?.postId || 0;
 
 	// Get venue meta fields from the venue post.
 	const { fullAddress, latitude, longitude } = useSelect(

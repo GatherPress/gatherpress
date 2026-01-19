@@ -9,16 +9,15 @@ import { useSelect } from '@wordpress/data';
 /**
  * Internal dependencies.
  */
-import { getCurrentContextualPostId } from '../../helpers/editor';
 import { PT_VENUE } from '../../helpers/namespace';
 
 /**
  * Render the appropriate HTML based on field type.
  *
- * @param {string} fieldType    - The type of field (address, phone, url, text).
- * @param {string} value        - The field value.
- * @param {string} placeholder  - Placeholder text.
- * @param {Object} blockProps   - Block props from useBlockProps.
+ * @param {string} fieldType   - The type of field (address, phone, url, text).
+ * @param {string} value       - The field value.
+ * @param {string} placeholder - Placeholder text.
+ * @param {Object} blockProps  - Block props from useBlockProps.
  *
  * @return {JSX.Element} The rendered element.
  */
@@ -91,7 +90,7 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 	const blockProps = useBlockProps();
 
 	// Get the venue post ID from context (provided by venue-v2 block).
-	const venuePostId = getCurrentContextualPostId( context?.postId );
+	const venuePostId = context?.postId || 0;
 
 	// Get the bound meta field name from metadata.bindings.
 	const metaFieldName = metadata?.bindings?.content?.args?.key;

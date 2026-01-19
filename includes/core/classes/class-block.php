@@ -288,7 +288,7 @@ class Block {
 			'core/post-title' === $anchor_block_type &&
 			'after' === $relative_position
 		) {
-			$hooked_block_types[] = 'core/paragraph';
+			$hooked_block_types[] = 'gatherpress/venue-v2';
 		}
 
 		return $hooked_block_types;

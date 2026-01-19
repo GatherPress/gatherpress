@@ -21,6 +21,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 
 	// Icon original source: https://github.com/WordPress/dashicons/tree/master/svg-min.
 	const ICON_OPTIONS = [
+		{ label: __( 'Admin Site Alt3', 'gatherpress' ), value: 'admin-site-alt3' },
 		{ label: __( 'Calendar', 'gatherpress' ), value: 'calendar' },
 		{ label: __( 'Clock', 'gatherpress' ), value: 'clock' },
 		{ label: __( 'Dismiss', 'gatherpress' ), value: 'dismiss' },
@@ -28,6 +29,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 		{ label: __( 'Groups', 'gatherpress' ), value: 'groups' },
 		{ label: __( 'Location', 'gatherpress' ), value: 'location' },
 		{ label: __( 'Nametag', 'gatherpress' ), value: 'nametag' },
+		{ label: __( 'Phone', 'gatherpress' ), value: 'phone' },
 		{ label: __( 'Yes Alt', 'gatherpress' ), value: 'yes-alt' },
 	];
 

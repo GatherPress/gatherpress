@@ -63,7 +63,7 @@ export const VenueTermsCombobox = ( { search, setSearch, ...props } ) => {
 	 */
 	const update = useCallback(
 		( value ) => {
-			const save = Number.isFinite( value ) ? [ value ] : []; //
+			const save = Number.isFinite( value ) ? [ value ] : [];
 			updateVenueTaxonomyIds( save );
 		},
 		[ updateVenueTaxonomyIds ]
