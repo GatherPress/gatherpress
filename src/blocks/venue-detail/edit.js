@@ -387,6 +387,7 @@ const Edit = ( { attributes, setAttributes, context, clientId, insertBlocksAfter
 						{ ...richTextProps }
 						tagName="address"
 						className="gatherpress-venue-detail__address"
+						style={ { display: 'inline' } }
 					/>
 				);
 
