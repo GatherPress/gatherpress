@@ -35,36 +35,72 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 	// Get the venue post ID from context (provided by venue-v2 block).
 	const venuePostId = context?.postId || 0;
 
-	// Get venue meta fields from the venue post.
-	const { fullAddress, latitude, longitude } = useSelect(
+	// Check if we're editing this venue post directly.
+	const { isEditingThisVenue, venueInfoJson } = useSelect(
 		( select ) => {
 			if ( ! venuePostId ) {
 				return {
-					fullAddress: '',
-					latitude: '',
-					longitude: '',
+					isEditingThisVenue: false,
+					venueInfoJson: '{}',
 				};
 			}
 
-			const { getEntityRecord } = select( 'core' );
-			const venuePost = getEntityRecord( 'postType', PT_VENUE, venuePostId );
+			const currentPostId = select( 'core/editor' ).getCurrentPostId();
+			const currentPostType = select( 'core/editor' ).getCurrentPostType();
+			const isEditing = currentPostId === venuePostId && currentPostType === PT_VENUE;
 
-			if ( ! venuePost ) {
+			if ( isEditing ) {
+				// Read from core/editor store for the current post being edited.
+				const meta = select( 'core/editor' ).getEditedPostAttribute( 'meta' ) || {};
 				return {
-					fullAddress: '',
-					latitude: '',
-					longitude: '',
+					isEditingThisVenue: true,
+					venueInfoJson: meta.gatherpress_venue_information || '{}',
 				};
 			}
+
+			// Read from core store for a different venue post.
+			const { getEditedEntityRecord } = select( 'core' );
+			const venuePost = getEditedEntityRecord( 'postType', PT_VENUE, venuePostId );
 
 			return {
-				fullAddress: venuePost.meta?.gatherpress_venue_address || '',
-				latitude: venuePost.meta?.gatherpress_venue_latitude || '',
-				longitude: venuePost.meta?.gatherpress_venue_longitude || '',
+				isEditingThisVenue: false,
+				venueInfoJson: venuePost?.meta?.gatherpress_venue_information || '{}',
 			};
 		},
 		[ venuePostId ]
 	);
+
+	// For live preview when editing the venue, read lat/long from venue store.
+	// The venue store is updated in real-time by VenueInformation.js.
+	const { storeLat, storeLng } = useSelect(
+		( select ) => ( {
+			storeLat: select( 'gatherpress/venue' ).getVenueLatitude(),
+			storeLng: select( 'gatherpress/venue' ).getVenueLongitude(),
+		} ),
+		[]
+	);
+
+	// Parse venue information from JSON field.
+	let venueInfo = {};
+	try {
+		venueInfo = JSON.parse( venueInfoJson );
+	} catch ( e ) {
+		venueInfo = {};
+	}
+
+	const fullAddress = venueInfo.fullAddress || '';
+
+	// Use venue store values for live preview when editing this venue.
+	// The store is kept in sync with meta by VenueInformation.js.
+	// When editing, the store is updated in real-time by geocoding.
+	let latitude = venueInfo.latitude || '';
+	let longitude = venueInfo.longitude || '';
+
+	if ( isEditingThisVenue ) {
+		// When editing the venue, always use store values for live preview.
+		latitude = null !== storeLat && storeLat !== undefined ? String( storeLat ) : latitude;
+		longitude = null !== storeLng && storeLng !== undefined ? String( storeLng ) : longitude;
+	}
 
 	return (
 		<>
@@ -114,27 +150,16 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 				</PanelBody>
 			</InspectorControls>
 			<div { ...blockProps }>
-				{ fullAddress ? (
-					<div className="block-editor-inner-blocks">
-						<MapEmbed
-							location={ fullAddress }
-							latitude={ latitude }
-							longitude={ longitude }
-							zoom={ zoom }
-							type={ type }
-							height={ height }
-						/>
-					</div>
-				) : (
-					<div className="gatherpress-venue-map__placeholder">
-						<p>
-							{ __(
-								'No venue address available. Please add a venue address to display the map.',
-								'gatherpress'
-							) }
-						</p>
-					</div>
-				) }
+				<div className="block-editor-inner-blocks">
+					<MapEmbed
+						location={ fullAddress }
+						latitude={ latitude }
+						longitude={ longitude }
+						zoom={ zoom }
+						type={ type }
+						height={ height }
+					/>
+				</div>
 			</div>
 		</>
 	);

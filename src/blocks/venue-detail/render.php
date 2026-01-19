@@ -15,17 +15,31 @@ if ( ! isset( $attributes ) || ! is_array( $attributes ) ) {
 	return;
 }
 
-// Get the meta field name from bindings.
-$meta_field_name = $attributes['metadata']['bindings']['content']['args']['key'] ?? '';
-$field_type      = $attributes['fieldType'] ?? 'text';
-$placeholder     = $attributes['placeholder'] ?? '';
+$field_type  = $attributes['fieldType'] ?? 'text';
+$placeholder = $attributes['placeholder'] ?? '';
 
-if ( empty( $meta_field_name ) ) {
+// Get venue information from JSON field.
+$venue_info_json = get_post_meta( get_the_ID(), 'gatherpress_venue_information', true );
+$venue_info      = json_decode( $venue_info_json, true );
+
+if ( ! is_array( $venue_info ) ) {
 	return;
 }
 
-// Get the value from the individual meta field.
-$value = get_post_meta( get_the_ID(), $meta_field_name, true );
+// Map field type to JSON field name.
+$field_mapping = array(
+	'address' => 'fullAddress',
+	'phone'   => 'phoneNumber',
+	'url'     => 'website',
+);
+
+$json_field = $field_mapping[ $field_type ] ?? '';
+
+if ( empty( $json_field ) ) {
+	return;
+}
+
+$value = $venue_info[ $json_field ] ?? '';
 
 if ( empty( $value ) ) {
 	return;

@@ -18,16 +18,6 @@ const variations = [
 		attributes: {
 			placeholder: __( 'Venue address…', 'gatherpress' ),
 			fieldType: 'address',
-			metadata: {
-				bindings: {
-					content: {
-						source: 'core/post-meta',
-						args: {
-							key: 'gatherpress_venue_address',
-						},
-					},
-				},
-			},
 		},
 		scope: [ 'inserter', 'transform' ],
 	},
@@ -39,16 +29,6 @@ const variations = [
 		attributes: {
 			placeholder: __( 'Venue phone…', 'gatherpress' ),
 			fieldType: 'phone',
-			metadata: {
-				bindings: {
-					content: {
-						source: 'core/post-meta',
-						args: {
-							key: 'gatherpress_venue_phone',
-						},
-					},
-				},
-			},
 		},
 		scope: [ 'inserter', 'transform' ],
 	},
@@ -60,16 +40,6 @@ const variations = [
 		attributes: {
 			placeholder: __( 'Venue website…', 'gatherpress' ),
 			fieldType: 'url',
-			metadata: {
-				bindings: {
-					content: {
-						source: 'core/post-meta',
-						args: {
-							key: 'gatherpress_venue_website',
-						},
-					},
-				},
-			},
 		},
 		scope: [ 'inserter', 'transform' ],
 	},

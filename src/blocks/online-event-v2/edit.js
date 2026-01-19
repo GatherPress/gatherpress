@@ -25,9 +25,9 @@ import { PT_EVENT, PT_VENUE } from '../../helpers/namespace';
  *
  * @since 1.0.0
  *
- * @param {Object} props               - Component properties.
- * @param {Object} props.context       - Block context.
- * @param {Object} props.attributes    - Block attributes.
+ * @param {Object}   props               - Component properties.
+ * @param {Object}   props.context       - Block context.
+ * @param {Object}   props.attributes    - Block attributes.
  * @param {Function} props.setAttributes - Function to update block attributes.
  *
  * @return {JSX.Element} The rendered React component.

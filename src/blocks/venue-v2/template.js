@@ -44,16 +44,6 @@ const TEMPLATE = [
 						{
 							placeholder: 'Venue address…',
 							fieldType: 'address',
-							metadata: {
-								bindings: {
-									content: {
-										source: 'core/post-meta',
-										args: {
-											key: 'gatherpress_venue_address',
-										},
-									},
-								},
-							},
 						},
 					],
 				],
@@ -97,16 +87,6 @@ const TEMPLATE = [
 						{
 							placeholder: 'Venue phone…',
 							fieldType: 'phone',
-							metadata: {
-								bindings: {
-									content: {
-										source: 'core/post-meta',
-										args: {
-											key: 'gatherpress_venue_phone',
-										},
-									},
-								},
-							},
 						},
 					],
 				],
@@ -132,16 +112,6 @@ const TEMPLATE = [
 						{
 							placeholder: 'Website URL…',
 							fieldType: 'url',
-							metadata: {
-								bindings: {
-									content: {
-										source: 'core/post-meta',
-										args: {
-											key: 'gatherpress_venue_website',
-										},
-									},
-								},
-							},
 						},
 					],
 				],

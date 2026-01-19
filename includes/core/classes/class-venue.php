@@ -213,48 +213,8 @@ class Venue {
 	 */
 	public function register_post_meta(): void {
 		$post_meta = array(
-			// Individual venue fields.
-			'gatherpress_venue_address'     => array(
-				'auth_callback'     => static function () {
-					return current_user_can( 'edit_posts' ); // @codeCoverageIgnore
-				},
-				'sanitize_callback' => 'sanitize_text_field',
-				'show_in_rest'      => true,
-				'single'            => true,
-				'type'              => 'string',
-				'default'           => '',
-			),
-			'gatherpress_venue_phone'       => array(
-				'auth_callback'     => static function () {
-					return current_user_can( 'edit_posts' ); // @codeCoverageIgnore
-				},
-				'sanitize_callback' => 'sanitize_text_field',
-				'show_in_rest'      => true,
-				'single'            => true,
-				'type'              => 'string',
-				'default'           => '',
-			),
-			'gatherpress_venue_website'     => array(
-				'auth_callback'     => static function () {
-					return current_user_can( 'edit_posts' ); // @codeCoverageIgnore
-				},
-				'sanitize_callback' => 'sanitize_url',
-				'show_in_rest'      => true,
-				'single'            => true,
-				'type'              => 'string',
-				'default'           => '',
-			),
-			'gatherpress_venue_latitude'    => array(
-				'auth_callback'     => static function () {
-					return current_user_can( 'edit_posts' ); // @codeCoverageIgnore
-				},
-				'sanitize_callback' => 'sanitize_text_field',
-				'show_in_rest'      => true,
-				'single'            => true,
-				'type'              => 'string',
-				'default'           => '',
-			),
-			'gatherpress_venue_longitude'   => array(
+			// Venue information stored as JSON.
+			'gatherpress_venue_information' => array(
 				'auth_callback'     => static function () {
 					return current_user_can( 'edit_posts' ); // @codeCoverageIgnore
 				},
@@ -586,12 +546,27 @@ class Venue {
 		}
 
 		if ( is_a( $venue_post, 'WP_Post' ) ) {
-			$venue_meta['name']            = get_the_title( $venue_post );
-			$venue_meta['fullAddress']     = get_post_meta( $venue_post->ID, 'gatherpress_venue_address', true );
-			$venue_meta['phoneNumber']     = get_post_meta( $venue_post->ID, 'gatherpress_venue_phone', true );
-			$venue_meta['website']         = get_post_meta( $venue_post->ID, 'gatherpress_venue_website', true );
-			$venue_meta['latitude']        = get_post_meta( $venue_post->ID, 'gatherpress_venue_latitude', true );
-			$venue_meta['longitude']       = get_post_meta( $venue_post->ID, 'gatherpress_venue_longitude', true );
+			$venue_meta['name'] = get_the_title( $venue_post );
+
+			// Get venue information from JSON field.
+			$venue_info_json = get_post_meta( $venue_post->ID, 'gatherpress_venue_information', true );
+			$venue_info      = json_decode( $venue_info_json, true );
+
+			if ( is_array( $venue_info ) ) {
+				$venue_meta['fullAddress'] = $venue_info['fullAddress'] ?? '';
+				$venue_meta['phoneNumber'] = $venue_info['phoneNumber'] ?? '';
+				$venue_meta['website']     = $venue_info['website'] ?? '';
+				$venue_meta['latitude']    = $venue_info['latitude'] ?? '';
+				$venue_meta['longitude']   = $venue_info['longitude'] ?? '';
+			} else {
+				// Fallback to empty values if JSON parse fails.
+				$venue_meta['fullAddress'] = '';
+				$venue_meta['phoneNumber'] = '';
+				$venue_meta['website']     = '';
+				$venue_meta['latitude']    = '';
+				$venue_meta['longitude']   = '';
+			}
+
 			$venue_meta['onlineEventLink'] = get_post_meta( $venue_post->ID, 'gatherpress_venue_online_link', true );
 		}
 

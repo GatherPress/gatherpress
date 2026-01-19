@@ -158,8 +158,6 @@ function CreateVenueForm( { search, ...props } ) {
 	const [ title, setTitle ] = useState( search );
 	const [ address, setAddress ] = useState( '' );
 	const [ titleError, setTitleError ] = useState( '' );
-	const [ geocodingError, setGeocodingError ] = useState( '' );
-	const [ isGeocoding, setIsGeocoding ] = useState( false );
 
 	const { lastError, isSaving } = useSelect(
 		( select ) => ( {
@@ -256,13 +254,14 @@ function CreateVenueForm( { search, ...props } ) {
 					title,
 					status: 'publish', // 'draft' is the default
 					meta: {
-						// Individual meta fields.
-						gatherpress_venue_address: newAddress,
-						gatherpress_venue_latitude: latitude,
-						gatherpress_venue_longitude: longitude,
-						// Phone and website can be added later via full venue editor.
-						gatherpress_venue_phone: '',
-						gatherpress_venue_website: '',
+						// Store venue information as JSON.
+						gatherpress_venue_information: JSON.stringify( {
+							fullAddress: newAddress,
+							latitude,
+							longitude,
+							phoneNumber: '',
+							website: '',
+						} ),
 					},
 				},
 			} );

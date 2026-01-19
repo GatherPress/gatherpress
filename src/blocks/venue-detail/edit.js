@@ -1,13 +1,19 @@
 /**
  * WordPress dependencies.
  */
-import { __ } from '@wordpress/i18n';
-import { InspectorControls, RichText, useBlockProps } from '@wordpress/block-editor';
+import { __, sprintf } from '@wordpress/i18n';
+import {
+	InspectorControls,
+	RichText,
+	useBlockProps,
+	store as blockEditorStore,
+} from '@wordpress/block-editor';
 import { PanelBody, SelectControl } from '@wordpress/components';
-import { useSelect, useDispatch } from '@wordpress/data';
+import { useSelect, useDispatch, select } from '@wordpress/data';
 import { store as coreStore } from '@wordpress/core-data';
-import { store as blockEditorStore } from '@wordpress/block-editor';
 import { createBlock } from '@wordpress/blocks';
+import { useCallback, useEffect, useRef } from '@wordpress/element';
+import { useDebounce } from '@wordpress/compose';
 
 /**
  * Internal dependencies.
@@ -32,51 +38,296 @@ import { PT_VENUE } from '../../helpers/namespace';
  * @return {JSX.Element} The rendered React component.
  */
 const Edit = ( { attributes, setAttributes, context, clientId, insertBlocksAfter } ) => {
-	const { placeholder, fieldType, metadata } = attributes;
+	const { placeholder, fieldType } = attributes;
 	const blockProps = useBlockProps();
 
 	// Get the venue post ID from context (provided by venue-v2 block).
 	const venuePostId = context?.postId || 0;
 
-	// Get the bound meta field name from metadata.bindings.
-	const metaFieldName = metadata?.bindings?.content?.args?.key;
+	// Check if we're editing the current post or a different venue post.
+	const { isEditingCurrentPost } = useSelect(
+		( selectData ) => {
+			const currentPostId = selectData( 'core/editor' ).getCurrentPostId();
+			const currentPostType = selectData( 'core/editor' ).getCurrentPostType();
+			return {
+				isEditingCurrentPost: currentPostId === venuePostId && currentPostType === PT_VENUE,
+			};
+		},
+		[ venuePostId ]
+	);
 
-	// Get and update the meta field value.
+	// Map field type to JSON field name.
+	const fieldMapping = {
+		address: 'fullAddress',
+		phone: 'phoneNumber',
+		url: 'website',
+	};
+
+	const jsonFieldName = fieldMapping[ fieldType ] || '';
+
+	// Get dispatch functions for both stores.
 	const { editEntityRecord } = useDispatch( coreStore );
+	const { editPost } = useDispatch( 'core/editor' );
 
 	// Block insertion for Enter key handling at beginning.
 	const { insertBlocks, selectBlock } = useDispatch( blockEditorStore );
-	const { getBlockRootClientId, getBlockIndex } = useSelect( ( select ) => select( blockEditorStore ), [] );
+	const { getBlockRootClientId, getBlockIndex } = useSelect(
+		( selectEditor ) => selectEditor( blockEditorStore ),
+		[]
+	);
 
 	const fieldValue = useSelect(
-		( select ) => {
-			if ( ! venuePostId || ! metaFieldName ) {
+		( selectData ) => {
+			if ( ! venuePostId || ! jsonFieldName ) {
 				return '';
 			}
 
-			const { getEditedEntityRecord } = select( coreStore );
-			const venuePost = getEditedEntityRecord(
-				'postType',
-				PT_VENUE,
-				venuePostId
-			);
+			let venueInfoJson = '{}';
 
-			return venuePost?.meta?.[ metaFieldName ] || '';
+			if ( isEditingCurrentPost ) {
+				// Read from core/editor store for the current post being edited.
+				const meta = selectData( 'core/editor' ).getEditedPostAttribute( 'meta' ) || {};
+				venueInfoJson = meta.gatherpress_venue_information || '{}';
+			} else {
+				// Read from core store for a different venue post.
+				const { getEditedEntityRecord } = selectData( coreStore );
+				const venuePost = getEditedEntityRecord(
+					'postType',
+					PT_VENUE,
+					venuePostId
+				);
+				venueInfoJson = venuePost?.meta?.gatherpress_venue_information || '{}';
+			}
+
+			// Parse venue information from JSON field.
+			let venueInfo = {};
+			try {
+				venueInfo = JSON.parse( venueInfoJson );
+			} catch ( e ) {
+				venueInfo = {};
+			}
+
+			return venueInfo[ jsonFieldName ] || '';
 		},
-		[ venuePostId, metaFieldName ]
+		[ venuePostId, jsonFieldName, isEditingCurrentPost ]
 	);
 
-	const updateFieldValue = ( newValue ) => {
-		// Strip any HTML tags from the value (plain text only).
-		const strippedValue = newValue.replace( /<[^>]*>/g, '' );
+	const updateFieldValue = useCallback(
+		( newValue ) => {
+			// Strip any HTML tags from the value (plain text only).
+			const strippedValue = newValue.replace( /<[^>]*>/g, '' );
 
-		// Update the entity record (marks as dirty, handled by WordPress save flow).
-		editEntityRecord( 'postType', PT_VENUE, venuePostId, {
-			meta: {
-				[ metaFieldName ]: strippedValue,
-			},
-		} );
-	};
+			let venueInfoJson = '{}';
+
+			if ( isEditingCurrentPost ) {
+				// Read from core/editor store for the current post.
+				const meta = select( 'core/editor' ).getEditedPostAttribute( 'meta' ) || {};
+				venueInfoJson = meta.gatherpress_venue_information || '{}';
+			} else {
+				// Read from core store for a different venue post.
+				const currentVenueInfo = select( coreStore ).getEditedEntityRecord(
+					'postType',
+					PT_VENUE,
+					venuePostId
+				);
+				venueInfoJson = currentVenueInfo?.meta?.gatherpress_venue_information || '{}';
+			}
+
+			let venueInfo = {};
+			try {
+				venueInfo = JSON.parse( venueInfoJson );
+			} catch ( e ) {
+				venueInfo = {};
+			}
+
+			// Update the specific field.
+			venueInfo[ jsonFieldName ] = strippedValue;
+
+			if ( isEditingCurrentPost ) {
+				// Use editPost for current post (same store as VenueInformation.js).
+				editPost( {
+					meta: {
+						gatherpress_venue_information: JSON.stringify( venueInfo ),
+					},
+				} );
+			} else {
+				// Use editEntityRecord for different venue post.
+				editEntityRecord( 'postType', PT_VENUE, venuePostId, {
+					meta: {
+						gatherpress_venue_information: JSON.stringify( venueInfo ),
+					},
+				} );
+			}
+		},
+		[ jsonFieldName, venuePostId, isEditingCurrentPost, editEntityRecord, editPost ]
+	);
+
+	// Get dispatch functions for venue store.
+	const { updateVenueLatitude, updateVenueLongitude } = useDispatch( 'gatherpress/venue' );
+
+	// Get mapCustomLatLong setting from venue store.
+	const { mapCustomLatLong } = useSelect(
+		( selectData ) => ( {
+			mapCustomLatLong: selectData( 'gatherpress/venue' ).getMapCustomLatLong(),
+		} ),
+		[]
+	);
+
+	// Track address for geocoding.
+	const addressRef = useRef( 'address' === fieldType ? fieldValue : '' );
+	if ( 'address' === fieldType ) {
+		addressRef.current = fieldValue;
+	}
+
+	// Geocode address field changes.
+	const geocodeAddress = useCallback( () => {
+		const address = addressRef.current;
+
+		if ( 'address' !== fieldType ) {
+			return;
+		}
+
+		// If address is empty, clear lat/long.
+		if ( ! address ) {
+			if ( ! mapCustomLatLong ) {
+				// Clear venue store for live preview.
+				updateVenueLatitude( '' );
+				updateVenueLongitude( '' );
+
+				// Clear meta for the venue post.
+				let venueInfoJson = '{}';
+				let venueInfo = {};
+
+				if ( isEditingCurrentPost ) {
+					// Read from core/editor store for the current post.
+					const meta = select( 'core/editor' ).getEditedPostAttribute( 'meta' ) || {};
+					venueInfoJson = meta.gatherpress_venue_information || '{}';
+				} else {
+					// Read from core store for a different venue post.
+					const currentVenueInfo = select( coreStore ).getEditedEntityRecord(
+						'postType',
+						PT_VENUE,
+						venuePostId
+					);
+					venueInfoJson = currentVenueInfo?.meta?.gatherpress_venue_information || '{}';
+				}
+
+				try {
+					venueInfo = JSON.parse( venueInfoJson );
+				} catch ( e ) {
+					venueInfo = {};
+				}
+
+				venueInfo.latitude = '';
+				venueInfo.longitude = '';
+
+				if ( isEditingCurrentPost ) {
+					// Use editPost for current post.
+					editPost( {
+						meta: {
+							gatherpress_venue_information: JSON.stringify( venueInfo ),
+						},
+					} );
+				} else {
+					// Use editEntityRecord for different venue post.
+					editEntityRecord( 'postType', PT_VENUE, venuePostId, {
+						meta: {
+							gatherpress_venue_information: JSON.stringify( venueInfo ),
+						},
+					} );
+				}
+			}
+			return;
+		}
+
+		fetch(
+			`https://nominatim.openstreetmap.org/search?q=${ encodeURIComponent( address ) }&format=geojson`,
+		)
+			.then( ( response ) => {
+				if ( ! response.ok ) {
+					throw new Error(
+						sprintf(
+							/* translators: %s: Error message */
+							__( 'Network response was not ok %s', 'gatherpress' ),
+							response.statusText,
+						),
+					);
+				}
+				return response.json();
+			} )
+			.then( ( data ) => {
+				let lat = null;
+				let lng = null;
+
+				if ( 0 < data.features.length ) {
+					lat = data.features[ 0 ].geometry.coordinates[ 1 ];
+					lng = data.features[ 0 ].geometry.coordinates[ 0 ];
+				}
+
+				if ( ! mapCustomLatLong ) {
+					// Update venue store for live preview.
+					updateVenueLatitude( lat );
+					updateVenueLongitude( lng );
+
+					// Update meta for the venue post.
+					let venueInfoJson = '{}';
+					let venueInfo = {};
+
+					if ( isEditingCurrentPost ) {
+						// Read from core/editor store for the current post.
+						const meta = select( 'core/editor' ).getEditedPostAttribute( 'meta' ) || {};
+						venueInfoJson = meta.gatherpress_venue_information || '{}';
+					} else {
+						// Read from core store for a different venue post.
+						const currentVenueInfo = select( coreStore ).getEditedEntityRecord(
+							'postType',
+							PT_VENUE,
+							venuePostId
+						);
+						venueInfoJson = currentVenueInfo?.meta?.gatherpress_venue_information || '{}';
+					}
+
+					try {
+						venueInfo = JSON.parse( venueInfoJson );
+					} catch ( e ) {
+						venueInfo = {};
+					}
+
+					venueInfo.latitude = lat ? String( lat ) : '';
+					venueInfo.longitude = lng ? String( lng ) : '';
+
+					if ( isEditingCurrentPost ) {
+						// Use editPost for current post.
+						editPost( {
+							meta: {
+								gatherpress_venue_information: JSON.stringify( venueInfo ),
+							},
+						} );
+					} else {
+						// Use editEntityRecord for different venue post.
+						editEntityRecord( 'postType', PT_VENUE, venuePostId, {
+							meta: {
+								gatherpress_venue_information: JSON.stringify( venueInfo ),
+							},
+						} );
+					}
+				}
+			} )
+			.catch( ( error ) => {
+				// eslint-disable-next-line no-console
+				console.warn( '[VenueDetail] Geocoding failed:', error );
+			} );
+	}, [ fieldType, venuePostId, isEditingCurrentPost, mapCustomLatLong, updateVenueLatitude, updateVenueLongitude, editPost, editEntityRecord ] );
+
+	const debouncedGeocode = useDebounce( geocodeAddress, 300 );
+
+	// Trigger geocoding when address field value changes.
+	useEffect( () => {
+		if ( 'address' === fieldType ) {
+			debouncedGeocode();
+		}
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [ fieldValue, fieldType ] );
 
 	// Render different field types with appropriate HTML elements.
 	const renderEditableField = () => {
@@ -94,13 +345,14 @@ const Edit = ( { attributes, setAttributes, context, clientId, insertBlocksAfter
 					// Always prevent default to avoid line break/snap behavior.
 					event.preventDefault();
 
-					const selection = window.getSelection();
+					const contentElement = event.currentTarget;
+					const selection =
+						contentElement.ownerDocument.defaultView.getSelection();
 					if ( ! selection.rangeCount ) {
 						return;
 					}
 
 					const range = selection.getRangeAt( 0 );
-					const contentElement = event.currentTarget;
 					const textContent = contentElement.textContent || '';
 
 					// Calculate cursor position.
@@ -118,9 +370,8 @@ const Edit = ( { attributes, setAttributes, context, clientId, insertBlocksAfter
 						insertBlocks( newBlock, blockIndex, rootClientId );
 						// Select the newly created block to move focus to it.
 						selectBlock( newBlock.clientId );
-					}
-					// At the end.
-					else if ( cursorPosition === textContent.length ) {
+					} else if ( cursorPosition === textContent.length ) {
+						// At the end.
 						const newBlock = createBlock( 'core/paragraph' );
 						insertBlocksAfter( [ newBlock ] );
 					}
