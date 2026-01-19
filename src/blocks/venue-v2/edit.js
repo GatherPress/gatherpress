@@ -23,9 +23,8 @@ import { PT_EVENT, PT_VENUE, TAX_VENUE } from '../../helpers/namespace';
 import { TEMPLATE_WITH_TITLE, TEMPLATE_WITHOUT_TITLE, TEMPLATE_ONLINE_EVENT } from './template';
 
 const Edit = ( props ) => {
-	const { context, isSelected, clientId } = props;
+	const { context, isSelected } = props;
 	const blockProps = useBlockProps();
-	const { replaceInnerBlocks } = useDispatch( 'core/block-editor' );
 
 	const eventId = getCurrentContextualPostId( context?.postId );
 	const [ venueTaxonomyIds ] = useEntityProp(
