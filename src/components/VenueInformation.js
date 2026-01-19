@@ -18,7 +18,7 @@ import { Broadcaster, Listener } from '../helpers/broadcasting';
  * This component allows users to input and update venue information, including full address,
  * phone number, and website. It uses the `TextControl` component from the Gutenberg editor
  * package to provide input fields for each type of information. The entered data is stored
- * in post meta as JSON and updated using the `editPost` method from the editor package.
+ * in individual post meta fields.
  *
  * @since 1.0.0
  *
@@ -26,16 +26,6 @@ import { Broadcaster, Listener } from '../helpers/broadcasting';
  */
 const VenueInformation = () => {
 	const editPost = useDispatch( 'core/editor' ).editPost;
-	// eslint-disable-next-line react-hooks/exhaustive-deps
-	const updateVenueMeta = ( metaData ) => {
-		const payload = JSON.stringify( {
-			...venueInformationMetaData,
-			...metaData,
-		} );
-		const meta = { gatherpress_venue_information: payload };
-
-		editPost( { meta } );
-	};
 
 	const { updateVenueLatitude, updateVenueLongitude } =
 		useDispatch( 'gatherpress/venue' );
@@ -47,31 +37,35 @@ const VenueInformation = () => {
 		[],
 	);
 
-	let venueInformationMetaData = useSelect(
+	const venueMeta = useSelect(
 		( select ) =>
-			select( 'core/editor' ).getEditedPostAttribute( 'meta' )
-				.gatherpress_venue_information,
+			select( 'core/editor' ).getEditedPostAttribute( 'meta' ) || {},
 	);
-
-	if ( venueInformationMetaData ) {
-		venueInformationMetaData = JSON.parse( venueInformationMetaData );
-	} else {
-		venueInformationMetaData = {};
-	}
 
 	const [ fullAddress, setFullAddress ] = useState(
-		venueInformationMetaData.fullAddress ?? '',
+		venueMeta.gatherpress_venue_address ?? '',
 	);
 	const [ phoneNumber, setPhoneNumber ] = useState(
-		venueInformationMetaData.phoneNumber ?? '',
+		venueMeta.gatherpress_venue_phone ?? '',
 	);
 	const [ website, setWebsite ] = useState(
-		venueInformationMetaData.website ?? '',
+		venueMeta.gatherpress_venue_website ?? '',
 	);
 
-	Listener( { setFullAddress, setPhoneNumber, setWebsite } );
+	// Sync local state when meta changes (e.g., from venue-detail blocks).
+	useEffect( () => {
+		if ( venueMeta.gatherpress_venue_address !== fullAddress ) {
+			setFullAddress( venueMeta.gatherpress_venue_address ?? '' );
+		}
+		if ( venueMeta.gatherpress_venue_phone !== phoneNumber ) {
+			setPhoneNumber( venueMeta.gatherpress_venue_phone ?? '' );
+		}
+		if ( venueMeta.gatherpress_venue_website !== website ) {
+			setWebsite( venueMeta.gatherpress_venue_website ?? '' );
+		}
+	}, [ venueMeta, fullAddress, phoneNumber, website ] );
 
-	const updateVenueMetaRef = useRef( updateVenueMeta );
+	Listener( { setFullAddress, setPhoneNumber, setWebsite } );
 
 	const getData = useCallback( () => {
 		let lat = null;
@@ -100,9 +94,11 @@ const VenueInformation = () => {
 				if ( ! mapCustomLatLong ) {
 					updateVenueLatitude( lat );
 					updateVenueLongitude( lng );
-					updateVenueMetaRef.current( {
-						latitude: lat,
-						longitude: lng,
+					editPost( {
+						meta: {
+							gatherpress_venue_latitude: String( lat ),
+							gatherpress_venue_longitude: String( lng ),
+						},
 					} );
 				}
 			} );
@@ -111,13 +107,10 @@ const VenueInformation = () => {
 		mapCustomLatLong,
 		updateVenueLatitude,
 		updateVenueLongitude,
+		editPost,
 	] );
 
 	const debouncedGetData = useDebounce( getData, 300 );
-
-	useEffect( () => {
-		updateVenueMetaRef.current = updateVenueMeta;
-	}, [ updateVenueMeta ] );
 
 	useEffect( () => {
 		debouncedGetData();
@@ -130,7 +123,11 @@ const VenueInformation = () => {
 				value={ fullAddress }
 				onChange={ ( value ) => {
 					Broadcaster( { setFullAddress: value } );
-					updateVenueMeta( { fullAddress: value } );
+					editPost( {
+						meta: {
+							gatherpress_venue_address: value,
+						},
+					} );
 				} }
 			/>
 			<TextControl
@@ -138,7 +135,11 @@ const VenueInformation = () => {
 				value={ phoneNumber }
 				onChange={ ( value ) => {
 					Broadcaster( { setPhoneNumber: value } );
-					updateVenueMeta( { phoneNumber: value } );
+					editPost( {
+						meta: {
+							gatherpress_venue_phone: value,
+						},
+					} );
 				} }
 			/>
 			<TextControl
@@ -147,7 +148,11 @@ const VenueInformation = () => {
 				type="url"
 				onChange={ ( value ) => {
 					Broadcaster( { setWebsite: value } );
-					updateVenueMeta( { website: value } );
+					editPost( {
+						meta: {
+							gatherpress_venue_website: value,
+						},
+					} );
 				} }
 			/>
 		</>

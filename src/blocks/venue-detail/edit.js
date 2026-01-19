@@ -2,9 +2,12 @@
  * WordPress dependencies.
  */
 import { __ } from '@wordpress/i18n';
-import { InspectorControls, useBlockProps } from '@wordpress/block-editor';
+import { InspectorControls, RichText, useBlockProps } from '@wordpress/block-editor';
 import { PanelBody, SelectControl } from '@wordpress/components';
-import { useSelect } from '@wordpress/data';
+import { useSelect, useDispatch } from '@wordpress/data';
+import { store as coreStore } from '@wordpress/core-data';
+import { store as blockEditorStore } from '@wordpress/block-editor';
+import { createBlock } from '@wordpress/blocks';
 
 /**
  * Internal dependencies.
@@ -12,80 +15,23 @@ import { useSelect } from '@wordpress/data';
 import { PT_VENUE } from '../../helpers/namespace';
 
 /**
- * Render the appropriate HTML based on field type.
- *
- * @param {string} fieldType   - The type of field (address, phone, url, text).
- * @param {string} value       - The field value.
- * @param {string} placeholder - Placeholder text.
- * @param {Object} blockProps  - Block props from useBlockProps.
- *
- * @return {JSX.Element} The rendered element.
- */
-const renderField = ( fieldType, value, placeholder, blockProps ) => {
-	const placeholderElement = (
-		<span className="gatherpress-venue-detail__placeholder">
-			{ placeholder || __( 'Venue detail…', 'gatherpress' ) }
-		</span>
-	);
-
-	switch ( fieldType ) {
-		case 'address':
-			return (
-				<div { ...blockProps }>
-					<address>{ value || placeholderElement }</address>
-				</div>
-			);
-
-		case 'phone':
-			return (
-				<div { ...blockProps }>
-					{ value ? (
-						<a href={ `tel:${ value }` }>{ value }</a>
-					) : (
-						placeholderElement
-					) }
-				</div>
-			);
-
-		case 'url':
-			return (
-				<div { ...blockProps }>
-					{ value ? (
-						<a
-							href={ value }
-							target="_blank"
-							rel="noopener noreferrer"
-						>
-							{ value }
-						</a>
-					) : (
-						placeholderElement
-					) }
-				</div>
-			);
-
-		default:
-			return (
-				<div { ...blockProps }>
-					{ value || placeholderElement }
-				</div>
-			);
-	}
-};
-
-/**
  * Edit component for the Venue Detail block.
+ *
+ * Provides inline editing of venue meta fields with automatic
+ * cross-post editing warnings (like post-title block).
  *
  * @since 1.0.0
  *
- * @param {Object}   props               - Component properties.
- * @param {Object}   props.attributes    - Block attributes.
- * @param {Function} props.setAttributes - Function to set block attributes.
- * @param {Object}   props.context       - Block context.
+ * @param {Object}   props                   - Component properties.
+ * @param {Object}   props.attributes        - Block attributes.
+ * @param {Function} props.setAttributes     - Function to set block attributes.
+ * @param {Object}   props.context           - Block context.
+ * @param {string}   props.clientId          - Block client ID.
+ * @param {Function} props.insertBlocksAfter - Function to insert blocks after this block.
  *
  * @return {JSX.Element} The rendered React component.
  */
-const Edit = ( { attributes, setAttributes, context } ) => {
+const Edit = ( { attributes, setAttributes, context, clientId, insertBlocksAfter } ) => {
 	const { placeholder, fieldType, metadata } = attributes;
 	const blockProps = useBlockProps();
 
@@ -95,24 +41,149 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 	// Get the bound meta field name from metadata.bindings.
 	const metaFieldName = metadata?.bindings?.content?.args?.key;
 
-	// Get the meta field value from the venue post.
-	const metaValue = useSelect(
+	// Get and update the meta field value.
+	const { editEntityRecord } = useDispatch( coreStore );
+
+	// Block insertion for Enter key handling at beginning.
+	const { insertBlocks, selectBlock } = useDispatch( blockEditorStore );
+	const { getBlockRootClientId, getBlockIndex } = useSelect( ( select ) => select( blockEditorStore ), [] );
+
+	const fieldValue = useSelect(
 		( select ) => {
 			if ( ! venuePostId || ! metaFieldName ) {
 				return '';
 			}
 
-			const { getEntityRecord } = select( 'core' );
-			const venuePost = getEntityRecord( 'postType', PT_VENUE, venuePostId );
+			const { getEditedEntityRecord } = select( coreStore );
+			const venuePost = getEditedEntityRecord(
+				'postType',
+				PT_VENUE,
+				venuePostId
+			);
 
-			if ( ! venuePost || ! venuePost.meta ) {
-				return '';
-			}
-
-			return venuePost.meta[ metaFieldName ] || '';
+			return venuePost?.meta?.[ metaFieldName ] || '';
 		},
 		[ venuePostId, metaFieldName ]
 	);
+
+	const updateFieldValue = ( newValue ) => {
+		// Update the entity record (marks as dirty, handled by WordPress save flow).
+		editEntityRecord( 'postType', PT_VENUE, venuePostId, {
+			meta: {
+				[ metaFieldName ]: newValue,
+			},
+		} );
+	};
+
+	// Render different field types with appropriate HTML elements.
+	const renderEditableField = () => {
+		const placeholderText =
+			placeholder || __( 'Venue detail…', 'gatherpress' );
+
+		// Common RichText props.
+		const richTextProps = {
+			value: fieldValue,
+			onChange: updateFieldValue,
+			placeholder: placeholderText,
+			allowedFormats: [], // Plain text only.
+			onKeyDown: ( event ) => {
+				if ( 'Enter' === event.key && ! event.shiftKey ) {
+					// Always prevent default to avoid line break/snap behavior.
+					event.preventDefault();
+
+					const selection = window.getSelection();
+					if ( ! selection.rangeCount ) {
+						return;
+					}
+
+					const range = selection.getRangeAt( 0 );
+					const contentElement = event.currentTarget;
+					const textContent = contentElement.textContent || '';
+
+					// Calculate cursor position.
+					const preRange = document.createRange();
+					preRange.selectNodeContents( contentElement );
+					preRange.setEnd( range.startContainer, range.startOffset );
+					const cursorPosition = preRange.toString().length;
+
+					// At the beginning.
+					if ( 0 === cursorPosition ) {
+						const newBlock = createBlock( 'core/paragraph' );
+						const rootClientId = getBlockRootClientId( clientId );
+						const blockIndex = getBlockIndex( clientId );
+						// Insert at the current block's index (pushes current block down).
+						insertBlocks( newBlock, blockIndex, rootClientId );
+						// Select the newly created block to move focus to it.
+						selectBlock( newBlock.clientId );
+					}
+					// At the end.
+					else if ( cursorPosition === textContent.length ) {
+						const newBlock = createBlock( 'core/paragraph' );
+						insertBlocksAfter( [ newBlock ] );
+					}
+					// In the middle - do nothing (already prevented default).
+				}
+			},
+		};
+
+		switch ( fieldType ) {
+			case 'address':
+				return (
+					<RichText
+						{ ...richTextProps }
+						tagName="address"
+						className="gatherpress-venue-detail__address"
+					/>
+				);
+
+			case 'phone':
+				// Render as a link with tel: href.
+				return fieldValue ? (
+					<RichText
+						{ ...richTextProps }
+						tagName="a"
+						href={ `tel:${ fieldValue }` }
+						className="gatherpress-venue-detail__phone"
+						onClick={ ( e ) => e.preventDefault() }
+					/>
+				) : (
+					<RichText
+						{ ...richTextProps }
+						tagName="span"
+						className="gatherpress-venue-detail__phone"
+					/>
+				);
+
+			case 'url':
+				// Render as a link.
+				return fieldValue ? (
+					<RichText
+						{ ...richTextProps }
+						tagName="a"
+						href={ fieldValue }
+						target="_blank"
+						rel="noopener noreferrer"
+						className="gatherpress-venue-detail__url"
+						onClick={ ( e ) => e.preventDefault() }
+					/>
+				) : (
+					<RichText
+						{ ...richTextProps }
+						tagName="span"
+						className="gatherpress-venue-detail__url"
+					/>
+				);
+
+			default:
+				return (
+					<RichText
+						{ ...richTextProps }
+						tagName="div"
+						className="gatherpress-venue-detail__text"
+					/>
+				);
+		}
+	};
 
 	return (
 		<>
@@ -149,7 +220,7 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 					/>
 				</PanelBody>
 			</InspectorControls>
-			{ renderField( fieldType, metaValue, placeholder, blockProps ) }
+			<div { ...blockProps }>{ renderEditableField() }</div>
 		</>
 	);
 };

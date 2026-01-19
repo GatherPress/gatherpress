@@ -213,18 +213,7 @@ class Venue {
 	 */
 	public function register_post_meta(): void {
 		$post_meta = array(
-			// Legacy JSON blob field (kept for backwards compatibility until migration).
-			// @todo GatherPress Alpha: Migrate JSON data from gatherpress_venue_information to individual meta fields.
-			'gatherpress_venue_information' => array(
-				'auth_callback'     => static function () {
-					return current_user_can( 'edit_posts' ); // @codeCoverageIgnore
-				},
-				'sanitize_callback' => 'sanitize_text_field',
-				'show_in_rest'      => true,
-				'single'            => true,
-				'type'              => 'string',
-			),
-			// Individual venue fields (new architecture).
+			// Individual venue fields.
 			'gatherpress_venue_address'     => array(
 				'auth_callback'     => static function () {
 					return current_user_can( 'edit_posts' ); // @codeCoverageIgnore
@@ -597,11 +586,13 @@ class Venue {
 		}
 
 		if ( is_a( $venue_post, 'WP_Post' ) ) {
-			$venue_meta['name'] = get_the_title( $venue_post );
-			$venue_meta         = array_merge(
-				$venue_meta,
-				(array) json_decode( get_post_meta( $venue_post->ID, 'gatherpress_venue_information', true ) )
-			);
+			$venue_meta['name']         = get_the_title( $venue_post );
+			$venue_meta['fullAddress']  = get_post_meta( $venue_post->ID, 'gatherpress_venue_address', true );
+			$venue_meta['phoneNumber']  = get_post_meta( $venue_post->ID, 'gatherpress_venue_phone', true );
+			$venue_meta['website']      = get_post_meta( $venue_post->ID, 'gatherpress_venue_website', true );
+			$venue_meta['latitude']     = get_post_meta( $venue_post->ID, 'gatherpress_venue_latitude', true );
+			$venue_meta['longitude']    = get_post_meta( $venue_post->ID, 'gatherpress_venue_longitude', true );
+			$venue_meta['onlineEventLink'] = get_post_meta( $venue_post->ID, 'gatherpress_venue_online_link', true );
 		}
 
 		return $venue_meta;

@@ -204,18 +204,13 @@ function CreateVenueForm( { search, ...props } ) {
 					title,
 					status: 'publish', // 'draft' is the default
 					meta: {
-						// New individual meta fields architecture.
+						// Individual meta fields.
 						gatherpress_venue_address: newAddress,
 						gatherpress_venue_latitude: latitude,
 						gatherpress_venue_longitude: longitude,
 						// Phone and website can be added later via full venue editor.
 						gatherpress_venue_phone: '',
 						gatherpress_venue_website: '',
-						// @todo GatherPress Alpha: Keep saving to old field during transition for backwards compatibility.
-						// @todo GatherPress Alpha: Remove gatherpress_venue_information after migration completes.
-						gatherpress_venue_information: JSON.stringify( {
-							fullAddress: newAddress,
-						} ),
 					},
 				},
 			} );
