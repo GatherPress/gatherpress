@@ -206,7 +206,9 @@ class Event_Query {
 		}
 
 		// Order By.
-		$query_args['orderby'] = array( $block_query['orderBy'] );
+		if ( isset( $block_query['orderBy'] ) ) {
+			$query_args['orderby'] = array( $block_query['orderBy'] );
+		}
 
 		// Order
 		// can be NULL, when ASC.
