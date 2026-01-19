@@ -8,6 +8,7 @@ import { v4 as uuidv4 } from 'uuid';
  */
 import { sprintf, __ } from '@wordpress/i18n';
 import { useEffect, useState, useRef } from '@wordpress/element';
+import { select } from '@wordpress/data';
 
 /**
  * Internal dependencies.
@@ -46,6 +47,7 @@ const OpenStreetMap = ( props ) => {
 	const mapRef = useRef( null );
 	const mapInstanceRef = useRef( null );
 	const style = { height };
+	const isPostEditor = Boolean( select( 'core/edit-post' ) );
 
 	useEffect( () => {
 		// Load Leaflet and its assets dynamically
@@ -58,6 +60,9 @@ const OpenStreetMap = ( props ) => {
 			await import(
 				'leaflet-gesture-handling/dist/leaflet-gesture-handling.css'
 			);
+
+			// Import editor overrides to fix z-index issues.
+			await import( './leaflet-editor-overrides.css' );
 
 			// Import marker images.
 			await import( 'leaflet/dist/images/marker-icon-2x.png' );
@@ -139,9 +144,16 @@ const OpenStreetMap = ( props ) => {
 		return null;
 	}
 
-	return (
-		<div className={ className } id={ mapId } ref={ mapRef } style={ style }></div>
-	);
+	// Add inert attribute in editor to prevent all interactions and focus.
+	const mapProps = {
+		className,
+		id: mapId,
+		ref: mapRef,
+		style,
+		...( isPostEditor && { inert: '' } ),
+	};
+
+	return <div { ...mapProps }></div>;
 };
 
 export default OpenStreetMap;

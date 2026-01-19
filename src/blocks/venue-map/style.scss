@@ -1,0 +1,13 @@
+.wp-block-gatherpress-venue-map {
+	&__placeholder {
+		padding: 2rem;
+		text-align: center;
+		background: #f0f0f0;
+		border: 1px dashed #ccc;
+		color: #666;
+
+		p {
+			margin: 0;
+		}
+	}
+}
