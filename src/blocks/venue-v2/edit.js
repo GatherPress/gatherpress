@@ -10,7 +10,9 @@ import {
 import { __ } from '@wordpress/i18n';
 import { PanelBody, PanelRow } from '@wordpress/components';
 import { useEntityProp } from '@wordpress/core-data';
-import { useSelect } from '@wordpress/data';
+import { useSelect, useDispatch } from '@wordpress/data';
+import { useEffect, useRef } from '@wordpress/element';
+import { createBlocksFromInnerBlocksTemplate } from '@wordpress/blocks';
 
 /**
  * Internal dependencies
@@ -23,8 +25,10 @@ import { PT_EVENT, PT_VENUE, TAX_VENUE } from '../../helpers/namespace';
 import { TEMPLATE_WITH_TITLE, TEMPLATE_WITHOUT_TITLE, TEMPLATE_ONLINE_EVENT } from './template';
 
 const Edit = ( props ) => {
-	const { context, isSelected } = props;
+	const { context, isSelected, clientId } = props;
 	const blockProps = useBlockProps();
+	const { replaceInnerBlocks } = useDispatch( 'core/block-editor' );
+	const prevModeRef = useRef( null );
 
 	const eventId = getCurrentContextualPostId( context?.postId );
 	const [ venueTaxonomyIds ] = useEntityProp(
@@ -81,19 +85,26 @@ const Edit = ( props ) => {
 	// Choose template based on post type context.
 	const template = isEventContext ? TEMPLATE_WITH_TITLE : TEMPLATE_WITHOUT_TITLE;
 
-	// Determine which template to use based on online event status.
-	const activeTemplate = hasOnlyOnlineEvent ? TEMPLATE_ONLINE_EVENT : template;
+	// Replace blocks when switching between online and venue modes.
+	useEffect( () => {
+		const currentMode = hasOnlyOnlineEvent ? 'online' : 'venue';
 
-	// Use a key to force remount when switching between modes.
-	const innerBlocksKey = hasOnlyOnlineEvent ? 'online' : `venue-${ venuePostId }`;
+		// Only replace if mode actually changed (not on initial render).
+		if ( prevModeRef.current !== null && prevModeRef.current !== currentMode ) {
+			const newTemplate = hasOnlyOnlineEvent ? TEMPLATE_ONLINE_EVENT : template;
+			const newBlocks = createBlocksFromInnerBlocksTemplate( newTemplate );
+			replaceInnerBlocks( clientId, newBlocks, false );
+		}
+
+		prevModeRef.current = currentMode;
+	}, [ hasOnlyOnlineEvent, template, clientId, replaceInnerBlocks ] );
 
 	return (
 		<div { ...blockProps }>
 			{ hasOnlyOnlineEvent ? (
 				// Show online event template - no venue context needed.
 				<InnerBlocks
-					key={ innerBlocksKey }
-					template={ activeTemplate }
+					template={ TEMPLATE_ONLINE_EVENT }
 					templateLock={ false }
 				/>
 			) : (
@@ -104,11 +115,7 @@ const Edit = ( props ) => {
 						postType: PT_VENUE,
 					} }
 				>
-					<InnerBlocks
-						key={ innerBlocksKey }
-						template={ activeTemplate }
-						templateLock={ false }
-					/>
+					<InnerBlocks template={ template } templateLock={ false } />
 				</BlockContextProvider>
 			) }
 			{ ! isDescendentOfQueryLoop &&
