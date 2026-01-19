@@ -20,11 +20,12 @@ import { isEventPostType } from '../../helpers/event';
 import { GetVenuePostFromTermId } from '../../helpers/venue';
 import VenueNavigator from '../../components/VenueNavigator';
 import { PT_EVENT, PT_VENUE, TAX_VENUE } from '../../helpers/namespace';
-import { TEMPLATE_WITH_TITLE, TEMPLATE_WITHOUT_TITLE } from './template';
+import { TEMPLATE_WITH_TITLE, TEMPLATE_WITHOUT_TITLE, TEMPLATE_ONLINE_EVENT } from './template';
 
 const Edit = ( props ) => {
-	const { context, isSelected } = props;
+	const { context, isSelected, clientId } = props;
 	const blockProps = useBlockProps();
+	const { replaceInnerBlocks } = useDispatch( 'core/block-editor' );
 
 	const eventId = getCurrentContextualPostId( context?.postId );
 	const [ venueTaxonomyIds ] = useEntityProp(
@@ -59,6 +60,13 @@ const Edit = ( props ) => {
 		[ isEditableEventContext, venueTaxonomyIds ]
 	);
 
+	// Check if we only have the online-event term.
+	const hasOnlyOnlineEvent =
+		isEventContext &&
+		venueTerms &&
+		1 === venueTerms.length &&
+		'online-event' === venueTerms[ 0 ]?.slug;
+
 	// Find venue term ID (excluding online-event).
 	const venueTermId =
 		venueTerms.find( ( term ) => 'online-event' !== term.slug )?.id ||
@@ -74,30 +82,50 @@ const Edit = ( props ) => {
 	// Choose template based on post type context.
 	const template = isEventContext ? TEMPLATE_WITH_TITLE : TEMPLATE_WITHOUT_TITLE;
 
+	// Determine which template to use based on online event status.
+	const activeTemplate = hasOnlyOnlineEvent ? TEMPLATE_ONLINE_EVENT : template;
+
+	// Use a key to force remount when switching between modes.
+	const innerBlocksKey = hasOnlyOnlineEvent ? 'online' : `venue-${ venuePostId }`;
+
 	return (
 		<div { ...blockProps }>
-			<BlockContextProvider
-				value={ {
-					postId: venuePostId,
-					postType: PT_VENUE,
-				} }
-			>
-				<InnerBlocks template={ template } templateLock={ false } />
-				{ ! isDescendentOfQueryLoop &&
-					isSelected &&
-					isEventContext && (
-					<InspectorControls>
-						<PanelBody
-							title={ __( 'Venue settings', 'gatherpress' ) }
-							initialOpen={ true }
-						>
-							<PanelRow>
-								<VenueNavigator { ...props } />
-							</PanelRow>
-						</PanelBody>
-					</InspectorControls>
-				) }
-			</BlockContextProvider>
+			{ hasOnlyOnlineEvent ? (
+				// Show online event template - no venue context needed.
+				<InnerBlocks
+					key={ innerBlocksKey }
+					template={ activeTemplate }
+					templateLock={ false }
+				/>
+			) : (
+				// Show normal venue template for physical venues.
+				<BlockContextProvider
+					value={ {
+						postId: venuePostId,
+						postType: PT_VENUE,
+					} }
+				>
+					<InnerBlocks
+						key={ innerBlocksKey }
+						template={ activeTemplate }
+						templateLock={ false }
+					/>
+				</BlockContextProvider>
+			) }
+			{ ! isDescendentOfQueryLoop &&
+				isSelected &&
+				isEventContext && (
+				<InspectorControls>
+					<PanelBody
+						title={ __( 'Venue settings', 'gatherpress' ) }
+						initialOpen={ true }
+					>
+						<PanelRow>
+							<VenueNavigator { ...props } />
+						</PanelRow>
+					</PanelBody>
+				</InspectorControls>
+			) }
 		</div>
 	);
 };

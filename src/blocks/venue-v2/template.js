@@ -230,5 +230,27 @@ export const TEMPLATE_WITHOUT_TITLE = [
 	[ 'gatherpress/venue-map' ],
 ];
 
+// Template for online events (icon + online-event-v2 block).
+export const TEMPLATE_ONLINE_EVENT = [
+	[
+		'core/group',
+		{
+			style: {
+				spacing: {
+					blockGap: 'var:preset|spacing|20',
+				},
+			},
+			layout: {
+				type: 'flex',
+				flexWrap: 'nowrap',
+			},
+		},
+		[
+			[ 'gatherpress/icon', { icon: 'video-alt2' } ],
+			[ 'gatherpress/online-event-v2' ],
+		],
+	],
+];
+
 // Default export is with title for backward compatibility.
 export default TEMPLATE_WITH_TITLE;
