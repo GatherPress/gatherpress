@@ -30,6 +30,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 		{ label: __( 'Location', 'gatherpress' ), value: 'location' },
 		{ label: __( 'Nametag', 'gatherpress' ), value: 'nametag' },
 		{ label: __( 'Phone', 'gatherpress' ), value: 'phone' },
+		{ label: __( 'Video Alt2', 'gatherpress' ), value: 'video-alt2' },
 		{ label: __( 'Yes Alt', 'gatherpress' ), value: 'yes-alt' },
 	];
 

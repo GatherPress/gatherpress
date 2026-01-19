@@ -20,7 +20,7 @@ import { isEventPostType } from '../../helpers/event';
 import { GetVenuePostFromTermId } from '../../helpers/venue';
 import VenueNavigator from '../../components/VenueNavigator';
 import { PT_EVENT, PT_VENUE, TAX_VENUE } from '../../helpers/namespace';
-import TEMPLATE from './template';
+import { TEMPLATE_WITH_TITLE, TEMPLATE_WITHOUT_TITLE } from './template';
 
 const Edit = ( props ) => {
 	const { context, isSelected } = props;
@@ -71,6 +71,9 @@ const Edit = ( props ) => {
 			? venuePostArray[ 0 ].id
 			: 0;
 
+	// Choose template based on post type context.
+	const template = isEventContext ? TEMPLATE_WITH_TITLE : TEMPLATE_WITHOUT_TITLE;
+
 	return (
 		<div { ...blockProps }>
 			<BlockContextProvider
@@ -79,7 +82,7 @@ const Edit = ( props ) => {
 					postType: PT_VENUE,
 				} }
 			>
-				<InnerBlocks template={ TEMPLATE } templateLock={ false } />
+				<InnerBlocks template={ template } templateLock={ false } />
 				{ ! isDescendentOfQueryLoop &&
 					isSelected &&
 					isEventContext && (

@@ -112,13 +112,23 @@ const Edit = ( { context, attributes, setAttributes } ) => {
 	// Use default text if linkText is empty.
 	const displayText = linkText || __( 'Online event', 'gatherpress' );
 
+	// Conditionally set tag and props based on whether we have a URL.
+	const hasUrl = !! linkUrl;
+	const tagProps = hasUrl
+		? {
+				tagName: 'a',
+				href: linkUrl,
+				target: '_blank',
+				rel: 'noopener noreferrer',
+		  }
+		: {
+				tagName: 'span',
+		  };
+
 	return (
 		<div { ...blockProps }>
 			<RichText
-				tagName="a"
-				href={ linkUrl }
-				target="_blank"
-				rel="noopener noreferrer"
+				{ ...tagProps }
 				value={ displayText }
 				onChange={ updateLinkText }
 				placeholder={ __( 'Online event', 'gatherpress' ) }

@@ -26,11 +26,7 @@ import metadata from './block.json';
 registerBlockType( metadata, {
 	edit: Edit,
 	save: () => {
-		return (
-			<div { ...useBlockProps.save() }>
-				<InnerBlocks.Content />
-			</div>
-		);
+		return <InnerBlocks.Content />;
 	},
 } );
 

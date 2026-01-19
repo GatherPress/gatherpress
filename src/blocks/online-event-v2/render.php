@@ -45,11 +45,6 @@ if ( $is_venue ) {
 	$online_event_link = $gatherpress_event->maybe_get_online_event_link();
 }
 
-// Don't render if there's no URL at all.
-if ( empty( $full_url ) ) {
-	return;
-}
-
 $has_link = ! empty( $online_event_link );
 
 $context_json = wp_json_encode(
@@ -59,6 +54,7 @@ $context_json = wp_json_encode(
 	),
 	JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP
 );
+
 ?>
 
 <div <?php echo wp_kses_data( get_block_wrapper_attributes( array( 'class' => 'gatherpress-online-event__link' ) ) ); ?>
