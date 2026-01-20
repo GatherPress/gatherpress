@@ -88,6 +88,7 @@ class Test_Block extends Base {
 			'gatherpress/modal-content',
 			'gatherpress/modal-manager',
 			'gatherpress/online-event',
+			'gatherpress/online-event-v2',
 			'gatherpress/rsvp',
 			'gatherpress/rsvp-form',
 			'gatherpress/rsvp-guest-count-display',
@@ -95,6 +96,8 @@ class Test_Block extends Base {
 			'gatherpress/rsvp-response-toggle',
 			'gatherpress/rsvp-template',
 			'gatherpress/venue',
+			'gatherpress/venue-detail',
+			'gatherpress/venue-map',
 			'gatherpress/venue-v2',
 		);
 		$block_type_registry = WP_Block_Type_Registry::get_instance();
@@ -352,7 +355,7 @@ class Test_Block extends Base {
 		);
 
 		$this->assertContains( 'gatherpress/add-to-calendar', $hooked_blocks );
-		$this->assertContains( 'gatherpress/venue', $hooked_blocks );
+		$this->assertContains( 'gatherpress/venue-v2', $hooked_blocks );
 		$this->assertContains( 'gatherpress/rsvp', $hooked_blocks );
 		$this->assertContains( 'core/paragraph', $hooked_blocks );
 		$this->assertContains( 'gatherpress/rsvp-response', $hooked_blocks );
@@ -379,7 +382,7 @@ class Test_Block extends Base {
 			$context
 		);
 
-		$this->assertContains( 'gatherpress/venue', $hooked_blocks );
+		$this->assertContains( 'gatherpress/venue-v2', $hooked_blocks );
 	}
 
 	/**

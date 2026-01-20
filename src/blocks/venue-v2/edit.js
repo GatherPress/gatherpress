@@ -90,7 +90,7 @@ const Edit = ( props ) => {
 		const currentMode = hasOnlyOnlineEvent ? 'online' : 'venue';
 
 		// Only replace if mode actually changed (not on initial render).
-		if ( prevModeRef.current !== null && prevModeRef.current !== currentMode ) {
+		if ( null !== prevModeRef.current && prevModeRef.current !== currentMode ) {
 			const newTemplate = hasOnlyOnlineEvent ? TEMPLATE_ONLINE_EVENT : template;
 			const newBlocks = createBlocksFromInnerBlocksTemplate( newTemplate );
 			replaceInnerBlocks( clientId, newBlocks, false );

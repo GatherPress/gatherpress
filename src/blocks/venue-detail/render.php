@@ -15,70 +15,70 @@ if ( ! isset( $attributes ) || ! is_array( $attributes ) ) {
 	return;
 }
 
-$field_type  = $attributes['fieldType'] ?? 'text';
-$placeholder = $attributes['placeholder'] ?? '';
+$gatherpress_field_type  = $attributes['fieldType'] ?? 'text';
+$gatherpress_placeholder = $attributes['placeholder'] ?? '';
 
 // Get venue information from JSON field.
-$venue_info_json = get_post_meta( get_the_ID(), 'gatherpress_venue_information', true );
-$venue_info      = json_decode( $venue_info_json, true );
+$gatherpress_venue_info_json = get_post_meta( get_the_ID(), 'gatherpress_venue_information', true );
+$gatherpress_venue_info      = json_decode( $gatherpress_venue_info_json, true );
 
-if ( ! is_array( $venue_info ) ) {
+if ( ! is_array( $gatherpress_venue_info ) ) {
 	return;
 }
 
 // Map field type to JSON field name.
-$field_mapping = array(
+$gatherpress_field_mapping = array(
 	'address' => 'fullAddress',
 	'phone'   => 'phoneNumber',
 	'url'     => 'website',
 );
 
-$json_field = $field_mapping[ $field_type ] ?? '';
+$gatherpress_json_field = $gatherpress_field_mapping[ $gatherpress_field_type ] ?? '';
 
-if ( empty( $json_field ) ) {
+if ( empty( $gatherpress_json_field ) ) {
 	return;
 }
 
-$value = $venue_info[ $json_field ] ?? '';
+$gatherpress_value = $gatherpress_venue_info[ $gatherpress_json_field ] ?? '';
 
-if ( empty( $value ) ) {
+if ( empty( $gatherpress_value ) ) {
 	return;
 }
 
-$wrapper_attributes = get_block_wrapper_attributes();
+$gatherpress_wrapper_attributes = get_block_wrapper_attributes();
 
-switch ( $field_type ) {
+switch ( $gatherpress_field_type ) {
 	case 'address':
 		printf(
 			'<div %s><address>%s</address></div>',
-			$wrapper_attributes, // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
-			esc_html( $value )
+			$gatherpress_wrapper_attributes, // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+			esc_html( $gatherpress_value )
 		);
 		break;
 
 	case 'phone':
 		printf(
 			'<div %s><a href="tel:%s">%s</a></div>',
-			$wrapper_attributes, // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
-			esc_attr( $value ),
-			esc_html( $value )
+			$gatherpress_wrapper_attributes, // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+			esc_attr( $gatherpress_value ),
+			esc_html( $gatherpress_value )
 		);
 		break;
 
 	case 'url':
 		printf(
 			'<div %s><a href="%s" target="_blank" rel="noopener noreferrer">%s</a></div>',
-			$wrapper_attributes, // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
-			esc_url( $value ),
-			esc_html( $value )
+			$gatherpress_wrapper_attributes, // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+			esc_url( $gatherpress_value ),
+			esc_html( $gatherpress_value )
 		);
 		break;
 
 	default:
 		printf(
 			'<div %s>%s</div>',
-			$wrapper_attributes, // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
-			esc_html( $value )
+			$gatherpress_wrapper_attributes, // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+			esc_html( $gatherpress_value )
 		);
 		break;
 }

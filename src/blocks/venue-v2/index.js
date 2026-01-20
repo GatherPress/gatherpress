@@ -2,7 +2,7 @@
  * WordPress dependencies.
  */
 import { registerBlockType } from '@wordpress/blocks';
-import { useBlockProps, InnerBlocks } from '@wordpress/block-editor';
+import { InnerBlocks } from '@wordpress/block-editor';
 import { registerPlugin } from '@wordpress/plugins';
 
 /**

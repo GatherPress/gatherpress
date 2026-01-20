@@ -47,6 +47,12 @@ class Test_General_Block extends Base {
 			),
 			array(
 				'type'     => 'filter',
+				'name'     => 'render_block',
+				'priority' => 10,
+				'callback' => array( $instance, 'process_venue_detail_field' ),
+			),
+			array(
+				'type'     => 'filter',
 				'name'     => 'render_block_core/button',
 				'priority' => 10,
 				'callback' => array( $instance, 'convert_submit_button' ),

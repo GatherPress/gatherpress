@@ -116,14 +116,14 @@ const Edit = ( { context, attributes, setAttributes } ) => {
 	const hasUrl = !! linkUrl;
 	const tagProps = hasUrl
 		? {
-				tagName: 'a',
-				href: linkUrl,
-				target: '_blank',
-				rel: 'noopener noreferrer',
-		  }
+			tagName: 'a',
+			href: linkUrl,
+			target: '_blank',
+			rel: 'noopener noreferrer',
+		}
 		: {
-				tagName: 'span',
-		  };
+			tagName: 'span',
+		};
 
 	return (
 		<div { ...blockProps }>

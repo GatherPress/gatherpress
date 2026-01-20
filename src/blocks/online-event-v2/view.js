@@ -22,7 +22,6 @@ const { state } = store( 'gatherpress', {
 		 * @return {void}
 		 */
 		updateOnlineEventLink() {
-			const element = getElement();
 			const context = getContext();
 			const postId = context?.postId || 0;
 
@@ -32,6 +31,7 @@ const { state } = store( 'gatherpress', {
 
 			initPostContext( state, postId );
 
+			const element = getElement();
 			const currentElement = element.ref.querySelector( '.gatherpress-online-event__text' );
 
 			if ( ! currentElement ) {
