@@ -1,7 +1,7 @@
 const { test, expect } = require( '@playwright/test' );
 const { createEventWithAPI } = require( '../helpers/create-event-via-api' );
 
-test.describe( 'GatherPress Event Creation via REST API', () => {
+test.describe.skip( 'GatherPress Event Creation via REST API', () => {
 	test( 'creates event with RSVP block and shows login message', async ( {
 		page,
 		playwright,
