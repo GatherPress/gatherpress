@@ -30,18 +30,22 @@ const Edit = ( props ) => {
 	const { replaceInnerBlocks } = useDispatch( 'core/block-editor' );
 	const prevModeRef = useRef( null );
 
-	const eventId = getCurrentContextualPostId( context?.postId );
-	const [ venueTaxonomyIds ] = useEntityProp(
-		'postType',
-		PT_EVENT,
-		TAX_VENUE,
-		eventId
-	);
-
+	const currentPostId = getCurrentContextualPostId( context?.postId );
 	const isDescendentOfQueryLoop = Number.isFinite( context?.queryId );
 	const isEventContext = isEventPostType( context?.postType );
+
+	// Only fetch venue taxonomy when in event context.
+	const [ venueTaxonomyIds ] = useEntityProp(
+		'postType',
+		isEventContext ? PT_EVENT : PT_VENUE,
+		TAX_VENUE,
+		isEventContext ? currentPostId : null
+	);
+
 	const isEditableEventContext =
-		! isDescendentOfQueryLoop && Array.isArray( venueTaxonomyIds );
+		isEventContext &&
+		! isDescendentOfQueryLoop &&
+		Array.isArray( venueTaxonomyIds );
 
 	// Fetch venue terms.
 	const venueTerms = useSelect(
@@ -75,12 +79,20 @@ const Edit = ( props ) => {
 		venueTerms.find( ( term ) => 'online-event' !== term.slug )?.id ||
 		null;
 
-	// Fetch venue post only if we have a venue term.
-	const venuePostArray = GetVenuePostFromTermId( venueTermId );
-	const venuePostId =
-		venuePostArray?.[ 0 ]?.id && venuePostArray[ 0 ].id !== eventId
-			? venuePostArray[ 0 ].id
-			: 0;
+	// Determine venue post ID based on context.
+	let venuePostId = 0;
+
+	if ( isEventContext ) {
+		// In event context: fetch venue post from venue term.
+		const venuePostArray = GetVenuePostFromTermId( venueTermId );
+		venuePostId =
+			venuePostArray?.[ 0 ]?.id && venuePostArray[ 0 ].id !== currentPostId
+				? venuePostArray[ 0 ].id
+				: 0;
+	} else {
+		// In venue context: use the current post being edited.
+		venuePostId = currentPostId;
+	}
 
 	// Choose template based on post type context.
 	const template = isEventContext ? TEMPLATE_WITH_TITLE : TEMPLATE_WITHOUT_TITLE;

@@ -241,7 +241,7 @@ const Edit = ( { attributes, setAttributes, context, clientId, insertBlocksAfter
 		}
 
 		fetch(
-			`https://nominatim.openstreetmap.org/search?q=${ encodeURIComponent( address ) }&format=geojson`,
+			`https://nominatim.openstreetmap.org/search?q=${ encodeURIComponent( address ) }&format=json&addressdetails=1`,
 		)
 			.then( ( response ) => {
 				if ( ! response.ok ) {
@@ -258,10 +258,12 @@ const Edit = ( { attributes, setAttributes, context, clientId, insertBlocksAfter
 			.then( ( data ) => {
 				let lat = null;
 				let lng = null;
+				let addressComponents = null;
 
-				if ( 0 < data.features.length ) {
-					lat = data.features[ 0 ].geometry.coordinates[ 1 ];
-					lng = data.features[ 0 ].geometry.coordinates[ 0 ];
+				if ( 0 < data.length ) {
+					lat = data[ 0 ].lat;
+					lng = data[ 0 ].lon;
+					addressComponents = data[ 0 ].address || null;
 				}
 
 				if ( ! mapCustomLatLong ) {
@@ -295,6 +297,11 @@ const Edit = ( { attributes, setAttributes, context, clientId, insertBlocksAfter
 
 					venueInfo.latitude = lat ? String( lat ) : '';
 					venueInfo.longitude = lng ? String( lng ) : '';
+
+					// Save address components if available.
+					if ( addressComponents ) {
+						venueInfo.address = addressComponents;
+					}
 
 					if ( isEditingCurrentPost ) {
 						// Use editPost for current post.
