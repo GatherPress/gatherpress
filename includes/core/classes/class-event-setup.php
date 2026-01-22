@@ -337,7 +337,7 @@ class Event_Setup {
 	 */
 	public function register_calendar_rewrite_rule(): void {
 		$settings     = Settings::get_instance();
-		$rewrite_slug = $settings->get_value( 'general', 'urls', 'events' );
+		$rewrite_slug = sanitize_title( $settings->get_value( 'general', 'urls', 'events' ) );
 
 		add_rewrite_rule(
 			sprintf( '^%s/([^/]+)\.ics$', $rewrite_slug ),
