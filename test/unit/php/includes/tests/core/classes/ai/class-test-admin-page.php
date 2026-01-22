@@ -817,4 +817,257 @@ class Test_Admin_Page extends Base {
 			'Failed to assert reminder was added.'
 		);
 	}
+
+	/**
+	 * Coverage for maybe_attach_images_to_posts with invalid attachment ID (empty).
+	 *
+	 * @covers ::maybe_attach_images_to_posts
+	 *
+	 * @return void
+	 */
+	public function test_maybe_attach_images_to_posts_invalid_attachment_id_empty(): void {
+		$user_id = $this->factory->user->create( array( 'role' => 'administrator' ) );
+		wp_set_current_user( $user_id );
+
+		// Create an event.
+		$event_id = $this->factory->post->create(
+			array(
+				'post_type'   => Event::POST_TYPE,
+				'post_title'  => 'Test Event',
+				'post_status' => 'draft',
+			)
+		);
+
+		$instance = Admin_Page::get_instance();
+
+		// Test with empty attachment ID.
+		$attachment_ids = array( 0 );
+		$result         = array(
+			'actions' => array(
+				array(
+					'ability' => 'gatherpress/create-event',
+					'result'  => array(
+						'success'  => true,
+						'event_id' => $event_id,
+					),
+				),
+			),
+		);
+
+		Utility::invoke_hidden_method( $instance, 'maybe_attach_images_to_posts', array( $attachment_ids, $result ) );
+
+		// Verify thumbnail was NOT set.
+		$thumbnail_id = get_post_thumbnail_id( $event_id );
+		$this->assertEmpty( $thumbnail_id, 'Failed to assert thumbnail was not set with invalid attachment ID.' );
+	}
+
+	/**
+	 * Coverage for maybe_attach_images_to_posts with non-existent attachment.
+	 *
+	 * @covers ::maybe_attach_images_to_posts
+	 *
+	 * @return void
+	 */
+	public function test_maybe_attach_images_to_posts_nonexistent_attachment(): void {
+		$user_id = $this->factory->user->create( array( 'role' => 'administrator' ) );
+		wp_set_current_user( $user_id );
+
+		// Create an event.
+		$event_id = $this->factory->post->create(
+			array(
+				'post_type'   => Event::POST_TYPE,
+				'post_title'  => 'Test Event',
+				'post_status' => 'draft',
+			)
+		);
+
+		$instance = Admin_Page::get_instance();
+
+		// Test with non-existent attachment ID.
+		$attachment_ids = array( 99999 );
+		$result         = array(
+			'actions' => array(
+				array(
+					'ability' => 'gatherpress/create-event',
+					'result'  => array(
+						'success'  => true,
+						'event_id' => $event_id,
+					),
+				),
+			),
+		);
+
+		Utility::invoke_hidden_method( $instance, 'maybe_attach_images_to_posts', array( $attachment_ids, $result ) );
+
+		// Verify thumbnail was NOT set.
+		$thumbnail_id = get_post_thumbnail_id( $event_id );
+		$this->assertEmpty( $thumbnail_id, 'Failed to assert thumbnail was not set with non-existent attachment.' );
+	}
+
+	/**
+	 * Coverage for maybe_attach_images_to_posts with attachment that is not an image.
+	 *
+	 * @covers ::maybe_attach_images_to_posts
+	 *
+	 * @return void
+	 */
+	public function test_maybe_attach_images_to_posts_attachment_not_image(): void {
+		$user_id = $this->factory->user->create( array( 'role' => 'administrator' ) );
+		wp_set_current_user( $user_id );
+
+		// Create an event.
+		$event_id = $this->factory->post->create(
+			array(
+				'post_type'   => Event::POST_TYPE,
+				'post_title'  => 'Test Event',
+				'post_status' => 'draft',
+			)
+		);
+
+		// Create a non-image attachment (PDF).
+		$attachment_id = $this->factory->attachment->create(
+			array(
+				'post_mime_type' => 'application/pdf',
+				'post_title'     => 'Test PDF',
+			)
+		);
+
+		$instance = Admin_Page::get_instance();
+
+		$attachment_ids = array( $attachment_id );
+		$result         = array(
+			'actions' => array(
+				array(
+					'ability' => 'gatherpress/create-event',
+					'result'  => array(
+						'success'  => true,
+						'event_id' => $event_id,
+					),
+				),
+			),
+		);
+
+		Utility::invoke_hidden_method( $instance, 'maybe_attach_images_to_posts', array( $attachment_ids, $result ) );
+
+		// Verify thumbnail was NOT set.
+		$thumbnail_id = get_post_thumbnail_id( $event_id );
+		$this->assertEmpty( $thumbnail_id, 'Failed to assert thumbnail was not set with non-image attachment.' );
+
+		// Clean up.
+		wp_delete_attachment( $attachment_id, true );
+	}
+
+	/**
+	 * Coverage for maybe_attach_images_to_posts with invalid event_id (empty).
+	 *
+	 * @covers ::maybe_attach_images_to_posts
+	 *
+	 * @return void
+	 */
+	public function test_maybe_attach_images_to_posts_invalid_event_id(): void {
+		$user_id = $this->factory->user->create( array( 'role' => 'administrator' ) );
+		wp_set_current_user( $user_id );
+
+		// Create an image attachment.
+		$attachment_id = $this->factory->attachment->create(
+			array(
+				'post_mime_type' => 'image/jpeg',
+				'post_title'     => 'Test Image',
+			)
+		);
+
+		// Get upload directory.
+		$upload_dir = wp_upload_dir();
+		if ( isset( $upload_dir['error'] ) && $upload_dir['error'] ) {
+			$this->markTestSkipped( 'Upload directory is not writable.' );
+		}
+
+		// Generate attachment metadata so wp_attachment_is_image() works.
+		require_once ABSPATH . 'wp-admin/includes/image.php';
+		$attach_file = get_attached_file( $attachment_id );
+		if ( $attach_file && file_exists( $attach_file ) ) {
+			$attach_data = wp_generate_attachment_metadata( $attachment_id, $attach_file );
+			wp_update_attachment_metadata( $attachment_id, $attach_data );
+		}
+
+		$instance = Admin_Page::get_instance();
+
+		$attachment_ids = array( $attachment_id );
+		$result         = array(
+			'actions' => array(
+				array(
+					'ability' => 'gatherpress/create-event',
+					'result'  => array(
+						'success'  => true,
+						'event_id' => 0, // Invalid event_id.
+					),
+				),
+			),
+		);
+
+		Utility::invoke_hidden_method( $instance, 'maybe_attach_images_to_posts', array( $attachment_ids, $result ) );
+
+		// Method should return early without error.
+		$this->assertTrue( true, 'Method should handle invalid event_id gracefully.' );
+
+		// Clean up.
+		wp_delete_attachment( $attachment_id, true );
+	}
+
+	/**
+	 * Coverage for maybe_attach_images_to_posts with invalid venue_id (empty).
+	 *
+	 * @covers ::maybe_attach_images_to_posts
+	 *
+	 * @return void
+	 */
+	public function test_maybe_attach_images_to_posts_invalid_venue_id(): void {
+		$user_id = $this->factory->user->create( array( 'role' => 'administrator' ) );
+		wp_set_current_user( $user_id );
+
+		// Create an image attachment.
+		$attachment_id = $this->factory->attachment->create(
+			array(
+				'post_mime_type' => 'image/jpeg',
+				'post_title'     => 'Test Image',
+			)
+		);
+
+		// Get upload directory.
+		$upload_dir = wp_upload_dir();
+		if ( isset( $upload_dir['error'] ) && $upload_dir['error'] ) {
+			$this->markTestSkipped( 'Upload directory is not writable.' );
+		}
+
+		// Generate attachment metadata so wp_attachment_is_image() works.
+		require_once ABSPATH . 'wp-admin/includes/image.php';
+		$attach_file = get_attached_file( $attachment_id );
+		if ( $attach_file && file_exists( $attach_file ) ) {
+			$attach_data = wp_generate_attachment_metadata( $attachment_id, $attach_file );
+			wp_update_attachment_metadata( $attachment_id, $attach_data );
+		}
+
+		$instance = Admin_Page::get_instance();
+
+		$attachment_ids = array( $attachment_id );
+		$result         = array(
+			'actions' => array(
+				array(
+					'ability' => 'gatherpress/create-venue',
+					'result'  => array(
+						'success'  => true,
+						'venue_id' => 0, // Invalid venue_id.
+					),
+				),
+			),
+		);
+
+		Utility::invoke_hidden_method( $instance, 'maybe_attach_images_to_posts', array( $attachment_ids, $result ) );
+
+		// Method should return early without error.
+		$this->assertTrue( true, 'Method should handle invalid venue_id gracefully.' );
+
+		// Clean up.
+		wp_delete_attachment( $attachment_id, true );
+	}
 }

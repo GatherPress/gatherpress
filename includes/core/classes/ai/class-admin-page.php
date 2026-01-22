@@ -379,7 +379,10 @@ class Admin_Page {
 
 		// Verify attachment exists and is an image.
 		$attachment = get_post( $first_attachment_id );
-		if ( ! $attachment || 'attachment' !== $attachment->post_type || ! wp_attachment_is_image( $first_attachment_id ) ) {
+		if ( ! $attachment
+			|| 'attachment' !== $attachment->post_type
+			|| ! wp_attachment_is_image( $first_attachment_id )
+		) {
 			return;
 		}
 
@@ -399,7 +402,7 @@ class Admin_Page {
 			$event_abilities = array( 'gatherpress/create-event', 'gatherpress/update-event' );
 			if ( in_array( $action['ability'], $event_abilities, true ) ) {
 				if ( isset( $action_result['event_id'] ) ) {
-					$event_id         = intval( $action_result['event_id'] );
+					$event_id = intval( $action_result['event_id'] );
 					if ( $event_id ) {
 						$thumbnail_result = set_post_thumbnail( $event_id, $first_attachment_id );
 					}
@@ -410,7 +413,7 @@ class Admin_Page {
 			$venue_abilities = array( 'gatherpress/create-venue', 'gatherpress/update-venue' );
 			if ( in_array( $action['ability'], $venue_abilities, true ) ) {
 				if ( isset( $action_result['venue_id'] ) ) {
-					$venue_id         = intval( $action_result['venue_id'] );
+					$venue_id = intval( $action_result['venue_id'] );
 					if ( $venue_id ) {
 						$thumbnail_result = set_post_thumbnail( $venue_id, $first_attachment_id );
 					}
