@@ -17,6 +17,9 @@
 		"url": "https://github.com/GatherPress/gatherpress/issues"
 	},
 	"main": "index.js",
+	"dependencies": {
+		"@wordpress/commands": "^1.38.0"
+	},
 	"devDependencies": {
 		"@anthropic-ai/claude-code": "^2.0.65",
 		"@jest/globals": "^30.0.2",
@@ -105,8 +108,5 @@
 		"playground": "./node_modules/@wp-playground/cli/wp-playground.js server",
 		"playground:mount": "./node_modules/@wp-playground/cli/wp-playground.js server --mount=./:/wordpress/wp-content/plugins/gatherpress",
 		"claude": "npx @anthropic-ai/claude-code"
-	},
-	"dependencies": {
-		"@wordpress/commands": "^1.38.0"
 	}
 }
