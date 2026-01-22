@@ -371,6 +371,18 @@ class Admin_Page {
 			return;
 		}
 
+		// Validate and get the first valid image attachment.
+		$first_attachment_id = intval( $attachment_ids[0] );
+		if ( ! $first_attachment_id ) {
+			return;
+		}
+
+		// Verify attachment exists and is an image.
+		$attachment = get_post( $first_attachment_id );
+		if ( ! $attachment || 'attachment' !== $attachment->post_type || ! wp_attachment_is_image( $first_attachment_id ) ) {
+			return;
+		}
+
 		foreach ( $result['actions'] as $action ) {
 			if ( ! isset( $action['ability'] ) || ! isset( $action['result'] ) ) {
 				continue;
@@ -381,15 +393,16 @@ class Admin_Page {
 				continue;
 			}
 
-			$first_attachment_id = intval( $attachment_ids[0] );
-			$thumbnail_result    = false;
+			$thumbnail_result = false;
 
 			// Check if this is a create or update event action.
 			$event_abilities = array( 'gatherpress/create-event', 'gatherpress/update-event' );
 			if ( in_array( $action['ability'], $event_abilities, true ) ) {
 				if ( isset( $action_result['event_id'] ) ) {
 					$event_id         = intval( $action_result['event_id'] );
-					$thumbnail_result = set_post_thumbnail( $event_id, $first_attachment_id );
+					if ( $event_id ) {
+						$thumbnail_result = set_post_thumbnail( $event_id, $first_attachment_id );
+					}
 				}
 			}
 
@@ -398,7 +411,9 @@ class Admin_Page {
 			if ( in_array( $action['ability'], $venue_abilities, true ) ) {
 				if ( isset( $action_result['venue_id'] ) ) {
 					$venue_id         = intval( $action_result['venue_id'] );
-					$thumbnail_result = set_post_thumbnail( $venue_id, $first_attachment_id );
+					if ( $venue_id ) {
+						$thumbnail_result = set_post_thumbnail( $venue_id, $first_attachment_id );
+					}
 				}
 			}
 

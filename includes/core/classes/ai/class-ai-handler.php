@@ -121,8 +121,12 @@ Rules:
 - Always create events as drafts. Event dates must be after %s.
 - If success=true: Display the data (even if empty - say "No X found", '
 			. 'don\'t say "error"). Only say "error" if success=false.
-- If an image is provided but the user\'s request doesn\'t clearly indicate what to do with it '
-			. '(e.g., they\'re not creating or updating an event), politely ask what they\'d like to do with the image.
+- IMPORTANT: Image handling rules:
+  * When images are provided WITH a create-event or update-event request, the image(s) will be automatically '
+			. 'attached to the event. DO NOT ask the user if they want to attach the image - just acknowledge '
+			. 'that the event was created/updated and the image has been attached.
+  * When images are provided WITHOUT a create/update event/venue request (e.g., user just uploads an image '
+			. 'with a greeting or unrelated question), politely ask what they would like to do with the image.
 - If a user asks to update an event or venue with an attached image, call update-event or update-venue normally. '
 			. 'The image will be attached automatically - you do not need to pass any image parameters.',
 			$current_date,
