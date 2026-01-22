@@ -1072,11 +1072,22 @@ describe( 'AI Assistant', () => {
 			setTimeout( () => {
 				// Verify that append was called (for attachment IDs message and AI response)
 				expect( mockMessages.append.mock.calls.length ).toBeGreaterThanOrEqual( 2 );
-				// Check that one of the calls includes attachment IDs info
-				const attachmentMessage = mockMessages.append.mock.calls.find( ( call ) => {
-					return call[ 0 ].includes( 'Uploaded' ) && call[ 0 ].includes( 'Attachment IDs' );
+				// Check that one of the appended elements had text() called with attachment IDs info
+				// We need to check all text() calls made on any element
+				let foundAttachmentMessage = false;
+				mockJQuery.mock.results.forEach( ( result ) => {
+					if ( result.value && result.value.text ) {
+						const textCalls = result.value.text.mock.calls;
+						textCalls.forEach( ( call ) => {
+							if ( call[ 0 ] && 'string' === typeof call[ 0 ] ) {
+								if ( call[ 0 ].includes( 'Uploaded' ) && call[ 0 ].includes( 'Attachment IDs' ) ) {
+									foundAttachmentMessage = true;
+								}
+							}
+						} );
+					}
 				} );
-				expect( attachmentMessage ).toBeDefined();
+				expect( foundAttachmentMessage ).toBe( true );
 				done();
 			}, 10 );
 		} );
@@ -1108,11 +1119,21 @@ describe( 'AI Assistant', () => {
 			setTimeout( () => {
 				// Verify that append was called (only for AI response, not attachment IDs)
 				expect( mockMessages.append ).toHaveBeenCalled();
-				// Check that no call includes attachment IDs info
-				const attachmentMessage = mockMessages.append.mock.calls.find( ( call ) => {
-					return call[ 0 ].includes( 'Uploaded' ) && call[ 0 ].includes( 'Attachment IDs' );
+				// Check that no text() call includes attachment IDs info
+				let foundAttachmentMessage = false;
+				mockJQuery.mock.results.forEach( ( result ) => {
+					if ( result.value && result.value.text ) {
+						const textCalls = result.value.text.mock.calls;
+						textCalls.forEach( ( call ) => {
+							if ( call[ 0 ] && 'string' === typeof call[ 0 ] ) {
+								if ( call[ 0 ].includes( 'Uploaded' ) && call[ 0 ].includes( 'Attachment IDs' ) ) {
+									foundAttachmentMessage = true;
+								}
+							}
+						} );
+					}
 				} );
-				expect( attachmentMessage ).toBeUndefined();
+				expect( foundAttachmentMessage ).toBe( false );
 				done();
 			}, 10 );
 		} );
@@ -1147,12 +1168,22 @@ describe( 'AI Assistant', () => {
 
 			clickHandler( { preventDefault: jest.fn() } );
 
-			// Verify user message includes file info
-			const userMessageCall = mockMessages.append.mock.calls.find( ( call ) => {
-				return call[ 0 ].includes( 'test-image.jpg' );
+			// Verify user message includes file info by checking text() calls
+			let foundFileInfo = false;
+			let fileInfoText = '';
+			mockJQuery.mock.results.forEach( ( result ) => {
+				if ( result.value && result.value.text ) {
+					const textCalls = result.value.text.mock.calls;
+					textCalls.forEach( ( call ) => {
+						if ( call[ 0 ] && 'string' === typeof call[ 0 ] && call[ 0 ].includes( 'test-image.jpg' ) ) {
+							foundFileInfo = true;
+							fileInfoText = call[ 0 ];
+						}
+					} );
+				}
 			} );
-			expect( userMessageCall ).toBeDefined();
-			expect( userMessageCall[ 0 ] ).toContain( '[1 image(s): test-image.jpg]' );
+			expect( foundFileInfo ).toBe( true );
+			expect( fileInfoText ).toContain( '[1 image(s): test-image.jpg]' );
 		} );
 	} );
 } );
