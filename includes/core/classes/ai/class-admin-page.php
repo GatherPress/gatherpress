@@ -438,8 +438,8 @@ class Admin_Page {
 			}
 
 			$thumbnail_result = set_post_thumbnail( $event_id, $attachment_id );
-			// Check for WP_Error and success.
-			if ( ! is_wp_error( $thumbnail_result ) && $thumbnail_result ) {
+			// Returns attachment ID (int) on success, false on failure.
+			if ( $thumbnail_result ) {
 				return true;
 			}
 		}
@@ -489,8 +489,8 @@ class Admin_Page {
 			}
 
 			$thumbnail_result = set_post_thumbnail( $venue_id, $attachment_id );
-			// Check for WP_Error and success.
-			if ( ! is_wp_error( $thumbnail_result ) && $thumbnail_result ) {
+			// Returns attachment ID (int) on success, false on failure.
+			if ( $thumbnail_result ) {
 				return true;
 			}
 		}
