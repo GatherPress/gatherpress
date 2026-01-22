@@ -86,12 +86,24 @@ const Edit = ( { attributes, setAttributes, clientId } ) => {
 	// Track if dropdown or its children are selected for auto-close behavior.
 	const isDropdownOrChildSelected = useIsBlockOrDescendantSelected( clientId );
 
-	// Auto-close dropdown when clicking outside the dropdown tree.
+	// Get the currently selected block ID.
+	const selectedBlockId = useSelect(
+		( blockEditorSelect ) =>
+			blockEditorSelect( 'core/block-editor' ).getSelectedBlockClientId(),
+		[]
+	);
+
+	// Auto-expand dropdown when a child block is selected (e.g., from List View)
+	// and auto-close when clicking outside the dropdown tree.
 	useEffect( () => {
-		if ( ! isDropdownOrChildSelected && isExpanded ) {
+		if ( isDropdownOrChildSelected && selectedBlockId !== clientId ) {
+			// A child block is selected (not the dropdown itself), expand.
+			setIsExpanded( true );
+		} else if ( ! isDropdownOrChildSelected && isExpanded ) {
+			// Nothing in the dropdown tree is selected, close.
 			setIsExpanded( false );
 		}
-	}, [ isDropdownOrChildSelected, isExpanded ] );
+	}, [ isDropdownOrChildSelected, selectedBlockId, clientId, isExpanded ] );
 
 	// Generate a persistent unique ID for the dropdown if not already set.
 	useEffect( () => {

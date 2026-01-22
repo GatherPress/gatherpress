@@ -12,6 +12,7 @@ on:
       - 'test/unit/php**'
       - '*.php'
       - 'phpunit.xml.dist'
+      - 'phpunit-multisite.xml.dist'
       - 'composer.*'
       - 'src/**'
       - 'test/unit/js/**'
@@ -52,6 +53,12 @@ jobs:
         run: |
           npm run test:unit:php
           docker cp $(docker ps -aqf "name=tests-wordpress"):/var/www/html/coverage.xml coverage.xml
+        continue-on-error: true  # Continue even if tests fail to show coverage report
+
+      - name: Run PHP multisite unit tests with coverage
+        run: |
+          npm run test:unit:php:multisite
+          docker cp $(docker ps -aqf "name=tests-wordpress"):/var/www/html/coverage-multisite.xml coverage-multisite.xml
         continue-on-error: true  # Continue even if tests fail to show coverage report
 
       - name: Run JavaScript unit tests with coverage

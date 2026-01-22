@@ -899,7 +899,7 @@ class Event_Rest_Api {
 
 			if ( is_array( $schemas ) && isset( $schemas[ $form_schema_id ]['fields'] ) ) {
 				$fields = $schemas[ $form_schema_id ]['fields'];
-				foreach ( $fields as $field_name => $field_config ) {
+				foreach ( array_keys( $fields ) as $field_name ) {
 					if ( isset( $params[ $field_name ] ) ) {
 						$data[ $field_name ] = $params[ $field_name ];
 					}
