@@ -127,6 +127,9 @@ Rules:
 			. 'that the event was created/updated and the image has been attached.
   * When images are provided WITHOUT a create/update event/venue request (e.g., user just uploads an image '
 			. 'with a greeting or unrelated question), politely ask what they would like to do with the image.
+  * If a user asks to attach an image to an event/venue but NO image is uploaded in the current request, '
+			. 'politely inform them that they need to upload the image again in this request. You cannot access '
+			. 'images from previous requests.
 - If a user asks to update an event or venue with an attached image, call update-event or update-venue normally. '
 			. 'The image will be attached automatically - you do not need to pass any image parameters.',
 			$current_date,
@@ -153,10 +156,6 @@ Rules:
 
 		// Store original user message for conversation loop.
 		$original_user_message = new UserMessage( $message_parts );
-
-		// Debug: Log UserMessage parts count.
-		// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
-		error_log( 'GatherPress AI: UserMessage created with ' . count( $message_parts ) . ' MessagePart(s)' );
 
 		// Load conversation state.
 		$user_id      = get_current_user_id();
@@ -209,10 +208,8 @@ Rules:
 			// Ensure input_schema is either a valid object schema or null.
 			// The schema must have 'type' => 'object' and 'properties' (even if empty).
 			$schema_for_declaration = null;
-			if ( is_array( $input_schema )
-				&& isset( $input_schema['type'] )
-				&& 'object' === $input_schema['type']
-			) {
+			// Check if input_schema is a valid object schema.
+			if ( isset( $input_schema['type'] ) && 'object' === $input_schema['type'] ) {
 				// Ensure properties key exists and is an object (not array).
 				// Empty array [] serializes to [] in JSON, but we need {} (object).
 				if ( ! isset( $input_schema['properties'] ) || empty( $input_schema['properties'] ) ) {
@@ -294,6 +291,8 @@ Rules:
 	 * @param array<Message>             $existing_history     Existing conversation history.
 	 * @return array|WP_Error Result with actions taken, or error.
 	 * @throws \WordPress\AiClient\Common\Exception\InvalidArgumentException If invalid arguments are provided.
+	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
 	 */
 	private function process_conversation_loop(
 		Prompt_Builder $builder,
@@ -304,7 +303,6 @@ Rules:
 	) {
 		$actions_taken           = array();
 		$iterations              = 0;
-		$executed_calls          = array(); // Track executed function calls to prevent duplicates.
 		$conversation_history    = array();
 		$model_info              = null; // Store model/provider info from first successful result.
 		$total_prompt_tokens     = 0; // Accumulate prompt tokens across all iterations.
@@ -318,83 +316,7 @@ Rules:
 			try {
 				$result = $builder->generate_result();
 			} catch ( \WordPress\AiClient\Providers\Http\Exception\ClientException $e ) {
-				// Handle HTTP client errors (429 rate limit, 401 auth, etc.).
-				$message = $e->getMessage();
-
-				// Debug: Log full exception details for troubleshooting.
-				// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
-				error_log( 'GatherPress AI: ClientException caught: ' . $e->getMessage() );
-				// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
-				error_log( 'GatherPress AI: ClientException code: ' . $e->getCode() );
-				if ( method_exists( $e, 'getResponse' ) ) {
-					try {
-						$e->getResponse();
-					} catch ( \Exception $response_exception ) {
-						// Response not available, continue without it.
-						unset( $response_exception );
-					}
-				}
-
-				// Try to determine which provider was used from the request URL.
-				$provider_name = '';
-				try {
-					$request = $e->getRequest();
-					$url     = (string) $request->getUri();
-					if (
-						strpos( $url, 'api.google.com' ) !== false
-						|| strpos( $url, 'generativelanguage.googleapis.com' ) !== false
-					) {
-						$provider_name = 'Google';
-					} elseif ( strpos( $url, 'api.openai.com' ) !== false ) {
-						$provider_name = 'OpenAI';
-					} elseif ( strpos( $url, 'api.anthropic.com' ) !== false ) {
-						$provider_name = 'Anthropic';
-					}
-				} catch ( \Exception $request_exception ) {
-					// Request not available, continue without provider name.
-					// Provider name will remain empty string.
-					$provider_name = '';
-				}
-
-				if ( strpos( $message, '429' ) !== false || strpos( $message, 'Too Many Requests' ) !== false ) {
-					$error_msg = __(
-						'API rate limit exceeded. You may need to upgrade your API plan or check your quota limits.',
-						'gatherpress'
-					);
-					if ( $provider_name ) {
-						/* translators: %s: Provider name (e.g., Google, OpenAI) */
-						$rate_limit_msg = __(
-							'API rate limit exceeded for %s. Upgrade your API plan or check quota limits.',
-							'gatherpress'
-						);
-						$error_msg      = sprintf( $rate_limit_msg, $provider_name );
-					}
-					return new WP_Error( 'rate_limit', $error_msg );
-				}
-				if ( strpos( $message, '401' ) !== false || strpos( $message, 'Unauthorized' ) !== false ) {
-					$error_msg = __(
-						'Invalid API credentials. Please check your API key in Settings > AI Credentials.',
-						'gatherpress'
-					);
-					if ( $provider_name ) {
-						/* translators: %s: Provider name (e.g., Google, OpenAI) */
-						$invalid_creds_msg = __(
-							'Invalid API credentials for %s. Please check your API key in Settings > AI Credentials.',
-							'gatherpress'
-						);
-						$error_msg         = sprintf( $invalid_creds_msg, $provider_name );
-					}
-					return new WP_Error( 'invalid_credentials', $error_msg );
-				}
-				// For other client errors, return the error message.
-				return new WP_Error(
-					'api_error',
-					sprintf(
-						/* translators: %s: Error message */
-						__( 'API error: %s', 'gatherpress' ),
-						$message
-					)
-				);
+				return $this->handle_client_exception( $e );
 			} catch ( \WordPress\AiClient\Common\Exception\InvalidArgumentException $e ) {
 				// Handle "No models found" error - credentials not recognized.
 				if ( strpos( $e->getMessage(), 'No models found' ) !== false ) {
@@ -530,6 +452,96 @@ Rules:
 	}
 
 	/**
+	 * Handle ClientException from AI API requests.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param \WordPress\AiClient\Providers\Http\Exception\ClientException $e The exception to handle.
+	 * @return WP_Error Error object with appropriate message.
+	 */
+	private function handle_client_exception(
+		\WordPress\AiClient\Providers\Http\Exception\ClientException $e
+	): WP_Error {
+		// Handle HTTP client errors (429 rate limit, 401 auth, etc.).
+		$message = $e->getMessage();
+
+		// Debug: Log full exception details for troubleshooting.
+		// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
+		error_log( 'GatherPress AI: ClientException caught: ' . $e->getMessage() );
+		// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
+		error_log( 'GatherPress AI: ClientException code: ' . $e->getCode() );
+		if ( method_exists( $e, 'getResponse' ) ) {
+			try {
+				$e->getResponse();
+			} catch ( \Exception $response_exception ) {
+				// Response not available, continue without it.
+				unset( $response_exception );
+			}
+		}
+
+		// Try to determine which provider was used from the request URL.
+		$provider_name = '';
+		try {
+			$request = $e->getRequest();
+			$url     = (string) $request->getUri();
+			if (
+				strpos( $url, 'api.google.com' ) !== false
+				|| strpos( $url, 'generativelanguage.googleapis.com' ) !== false
+			) {
+				$provider_name = 'Google';
+			} elseif ( strpos( $url, 'api.openai.com' ) !== false ) {
+				$provider_name = 'OpenAI';
+			} elseif ( strpos( $url, 'api.anthropic.com' ) !== false ) {
+				$provider_name = 'Anthropic';
+			}
+		} catch ( \Exception $request_exception ) {
+			// Request not available, continue without provider name.
+			// Provider name will remain empty string.
+			$provider_name = '';
+		}
+
+		if ( strpos( $message, '429' ) !== false || strpos( $message, 'Too Many Requests' ) !== false ) {
+			$error_msg = __(
+				'API rate limit exceeded. You may need to upgrade your API plan or check your quota limits.',
+				'gatherpress'
+			);
+			if ( $provider_name ) {
+				/* translators: %s: Provider name (e.g., Google, OpenAI) */
+				$rate_limit_msg = __(
+					'API rate limit exceeded for %s. Upgrade your API plan or check quota limits.',
+					'gatherpress'
+				);
+				$error_msg      = sprintf( $rate_limit_msg, $provider_name );
+			}
+			return new WP_Error( 'rate_limit', $error_msg );
+		}
+		if ( strpos( $message, '401' ) !== false || strpos( $message, 'Unauthorized' ) !== false ) {
+			$error_msg = __(
+				'Invalid API credentials. Please check your API key in Settings > AI Credentials.',
+				'gatherpress'
+			);
+			if ( $provider_name ) {
+				/* translators: %s: Provider name (e.g., Google, OpenAI) */
+				$invalid_creds_msg = __(
+					'Invalid API credentials for %s. Please check your API key in Settings > AI Credentials.',
+					'gatherpress'
+				);
+				$error_msg         = sprintf( $invalid_creds_msg, $provider_name );
+			}
+			return new WP_Error( 'invalid_credentials', $error_msg );
+		}
+		// For other client errors, return the error message.
+		return new WP_Error(
+			'api_error',
+			sprintf(
+				/* translators: %s: Error message */
+				__( 'API error: %s', 'gatherpress' ),
+				$message
+			)
+		);
+	}
+
+	/**
 	 * Extract text content from a message.
 	 *
 	 * @since 1.0.0
@@ -630,7 +642,6 @@ Rules:
 
 		$ability = wp_get_ability( $ability_name );
 
-		// @phpstan-ignore-next-line
 		if ( ! $ability instanceof \WP_Ability ) {
 			return new FunctionResponse(
 				$function_id,
@@ -643,8 +654,7 @@ Rules:
 		}
 
 		// Execute the ability.
-		$args = $call->getArgs();
-		// @phpstan-ignore-next-line
+		$args   = $call->getArgs();
 		$result = $ability->execute( $args );
 
 		// Handle WP_Error responses.

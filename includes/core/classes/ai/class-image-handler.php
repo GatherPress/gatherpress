@@ -111,8 +111,21 @@ class Image_Handler {
 		}
 
 		// Suppress warnings for non-image files (getimagesize generates warnings for invalid files).
-		// phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- getimagesize() generates warnings for non-image files, which is expected in validation.
-		$image_info = @getimagesize( $file['tmp_name'] );
+		// Use temporary error handler to avoid @ operator.
+		// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_set_error_handler -- Required to suppress getimagesize() warnings.
+		set_error_handler(
+			function () {
+				return true; // Suppress warnings.
+			},
+			E_WARNING
+		);
+		/**
+		 * Result of getimagesize() - array with image info or false on failure.
+		 *
+		 * @var array{0: int, 1: int, 2: int, 3: string, mime: string, channels?: int, bits?: int}|false $image_info
+		 */
+		$image_info = getimagesize( $file['tmp_name'] );
+		restore_error_handler();
 
 		if ( false === $image_info ) {
 			return array(
@@ -122,7 +135,8 @@ class Image_Handler {
 		}
 
 		// Verify MIME type matches actual image type.
-		$detected_mime = $image_info['mime'] ?? '';
+		// After false check, we know $image_info is an array with 'mime' key.
+		$detected_mime = (string) $image_info['mime'];
 		if ( ! in_array( $detected_mime, self::ALLOWED_MIME_TYPES, true ) ) {
 			return array(
 				'valid' => false,
@@ -160,9 +174,14 @@ class Image_Handler {
 		}
 
 		// Use WordPress media_handle_upload function.
-		require_once ABSPATH . 'wp-admin/includes/file.php';
-		require_once ABSPATH . 'wp-admin/includes/media.php';
-		require_once ABSPATH . 'wp-admin/includes/image.php';
+		// WordPress core functions are usually already loaded in admin context.
+		// If not available, we cannot proceed with upload.
+		if ( ! function_exists( 'media_handle_upload' ) ) {
+			return new WP_Error(
+				'media_functions_unavailable',
+				__( 'WordPress media functions are not available.', 'gatherpress' )
+			);
+		}
 
 		// Prepare file for WordPress upload handler.
 		$uploaded_file = array(
@@ -209,6 +228,11 @@ class Image_Handler {
 			$upload_result['file']
 		);
 
+		/**
+		 * Result of wp_insert_attachment - can be int (attachment ID) or WP_Error.
+		 *
+		 * @var int|WP_Error $attachment_id
+		 */
 		if ( is_wp_error( $attachment_id ) ) {
 			return $attachment_id;
 		}

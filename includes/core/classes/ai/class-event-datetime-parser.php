@@ -271,7 +271,74 @@ class Event_Datetime_Parser {
 			'timezone' => $timezone,
 		);
 
-		// Get existing start and end datetimes (prefer local over GMT).
+		// Get existing datetimes.
+		$existing_datetimes = $this->get_existing_datetimes( $existing_datetime, $timezone );
+		$existing_start     = $existing_datetimes['start'];
+		$existing_end       = $existing_datetimes['end'];
+
+		// Parse new start datetime if provided.
+		if ( isset( $new_datetimes['datetime_start'] ) ) {
+			$existing_start_date      = $this->get_existing_start_date(
+				$existing_start,
+				$existing_datetime,
+				$timezone
+			);
+			$start_datetime           = $this->parse_datetime_input(
+				$new_datetimes['datetime_start'],
+				$existing_start_date,
+				$timezone
+			);
+			$result['datetime_start'] = $start_datetime->format( 'Y-m-d H:i:s' );
+		} elseif ( $existing_start ) {
+			$result['datetime_start'] = $existing_start;
+		}
+
+		// Parse new end datetime if provided.
+		if ( isset( $new_datetimes['datetime_end'] ) ) {
+			$existing_end_date      = $this->get_existing_end_date(
+				$existing_start,
+				$existing_end,
+				$existing_datetime,
+				$timezone
+			);
+			$end_datetime           = $this->parse_datetime_input(
+				$new_datetimes['datetime_end'],
+				$existing_end_date,
+				$timezone
+			);
+			$result['datetime_end'] = $end_datetime->format( 'Y-m-d H:i:s' );
+		} elseif ( $existing_end && ! isset( $new_datetimes['datetime_start'] ) ) {
+			$result['datetime_end'] = $existing_end;
+		}
+
+		// Calculate default end from start if needed.
+		$this->calculate_default_end_from_start( $result, $timezone );
+
+		// Calculate default start from end if needed.
+		$this->calculate_default_start_from_end(
+			$result,
+			$new_datetimes,
+			$existing_start,
+			$existing_datetime,
+			$timezone
+		);
+
+		// Validate that end is after start.
+		$this->validate_datetime_order( $result, $timezone );
+
+		return $result;
+	}
+
+	/**
+	 * Get existing start and end datetimes from existing datetime data.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param array  $existing_datetime Existing datetime data.
+	 * @param string $timezone          Timezone.
+	 * @return array Array with 'start' and 'end' keys.
+	 */
+	private function get_existing_datetimes( array $existing_datetime, string $timezone ): array {
 		$existing_start = ! empty( $existing_datetime['datetime_start'] )
 			? $existing_datetime['datetime_start']
 			: null;
@@ -281,6 +348,7 @@ class Event_Datetime_Parser {
 				$timezone
 			);
 		}
+
 		$existing_end = ! empty( $existing_datetime['datetime_end'] )
 			? $existing_datetime['datetime_end']
 			: null;
@@ -291,70 +359,93 @@ class Event_Datetime_Parser {
 			);
 		}
 
-		// Parse new start datetime if provided.
-		if ( isset( $new_datetimes['datetime_start'] ) ) {
-			// Extract date from existing datetime (local or GMT).
-			$existing_start_date = null;
-			if ( $existing_start ) {
-				$existing_start_date = $this->extract_date_from_datetime( $existing_start, $timezone );
-			} elseif ( ! empty( $existing_datetime['datetime_start_gmt'] ) ) {
-				// Use GMT datetime and convert to local timezone.
-				$existing_start_date = $this->extract_date_from_gmt(
-					$existing_datetime['datetime_start_gmt'],
-					$timezone
-				);
-			}
+		return array(
+			'start' => $existing_start,
+			'end'   => $existing_end,
+		);
+	}
 
-			$start_datetime           = $this->parse_datetime_input(
-				$new_datetimes['datetime_start'],
-				$existing_start_date,
-				$timezone
-			);
-			$result['datetime_start'] = $start_datetime->format( 'Y-m-d H:i:s' );
-		} elseif ( $existing_start ) {
-			// Preserve existing start if not being updated.
-			$result['datetime_start'] = $existing_start;
+	/**
+	 * Get existing start date for parsing new start datetime.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string|null $existing_start    Existing start datetime.
+	 * @param array       $existing_datetime Existing datetime data.
+	 * @param string      $timezone          Timezone.
+	 * @return string|null Date in Y-m-d format.
+	 */
+	private function get_existing_start_date(
+		?string $existing_start,
+		array $existing_datetime,
+		string $timezone
+	): ?string {
+		if ( $existing_start ) {
+			return $this->extract_date_from_datetime( $existing_start, $timezone );
 		}
 
-		// Parse new end datetime if provided.
-		if ( isset( $new_datetimes['datetime_end'] ) ) {
-			// Extract date from existing datetime (local or GMT).
-			// Prefer start datetime's date if available (for time-only updates).
-			$existing_end_date = null;
-			if ( $existing_start ) {
-				// Use start datetime's date for time-only end updates.
-				$existing_end_date = $this->extract_date_from_datetime( $existing_start, $timezone );
-			} elseif ( ! empty( $existing_datetime['datetime_start_gmt'] ) ) {
-				// Use GMT start datetime and convert to local timezone.
-				$existing_end_date = $this->extract_date_from_gmt(
-					$existing_datetime['datetime_start_gmt'],
-					$timezone
-				);
-			} elseif ( $existing_end ) {
-				// Fall back to end datetime's date if start doesn't exist.
-				$existing_end_date = $this->extract_date_from_datetime( $existing_end, $timezone );
-			} elseif ( ! empty( $existing_datetime['datetime_end_gmt'] ) ) {
-				// Use GMT end datetime and convert to local timezone.
-				$existing_end_date = $this->extract_date_from_gmt(
-					$existing_datetime['datetime_end_gmt'],
-					$timezone
-				);
-			}
-
-			$end_datetime           = $this->parse_datetime_input(
-				$new_datetimes['datetime_end'],
-				$existing_end_date,
+		if ( ! empty( $existing_datetime['datetime_start_gmt'] ) ) {
+			return $this->extract_date_from_gmt(
+				$existing_datetime['datetime_start_gmt'],
 				$timezone
 			);
-			$result['datetime_end'] = $end_datetime->format( 'Y-m-d H:i:s' );
-		} elseif ( $existing_end && ! isset( $new_datetimes['datetime_start'] ) ) {
-			// Preserve existing end only if we're not updating the start time.
-			// If we're updating start, we'll recalculate end below.
-			$result['datetime_end'] = $existing_end;
 		}
 
-		// If start is provided (updated) and end is missing, default end to start + default duration.
-		// This handles the case where we update start time only - we want to recalculate end.
+		return null;
+	}
+
+	/**
+	 * Get existing end date for parsing new end datetime.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string|null $existing_start    Existing start datetime.
+	 * @param string|null $existing_end     Existing end datetime.
+	 * @param array       $existing_datetime Existing datetime data.
+	 * @param string      $timezone          Timezone.
+	 * @return string|null Date in Y-m-d format.
+	 */
+	private function get_existing_end_date(
+		?string $existing_start,
+		?string $existing_end,
+		array $existing_datetime,
+		string $timezone
+	): ?string {
+		if ( $existing_start ) {
+			return $this->extract_date_from_datetime( $existing_start, $timezone );
+		}
+
+		if ( ! empty( $existing_datetime['datetime_start_gmt'] ) ) {
+			return $this->extract_date_from_gmt(
+				$existing_datetime['datetime_start_gmt'],
+				$timezone
+			);
+		}
+
+		if ( $existing_end ) {
+			return $this->extract_date_from_datetime( $existing_end, $timezone );
+		}
+
+		if ( ! empty( $existing_datetime['datetime_end_gmt'] ) ) {
+			return $this->extract_date_from_gmt(
+				$existing_datetime['datetime_end_gmt'],
+				$timezone
+			);
+		}
+
+		return null;
+	}
+
+	/**
+	 * Calculate default end datetime from start if end is missing.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param array  $result   Result array to modify.
+	 * @param string $timezone Timezone.
+	 * @return void
+	 */
+	private function calculate_default_end_from_start( array &$result, string $timezone ): void {
 		if ( isset( $result['datetime_start'] ) && ! isset( $result['datetime_end'] ) ) {
 			$start_dt = DateTime::createFromFormat(
 				'Y-m-d H:i:s',
@@ -367,9 +458,27 @@ class Event_Datetime_Parser {
 				$result['datetime_end'] = $end_dt->format( 'Y-m-d H:i:s' );
 			}
 		}
+	}
 
-		// If only end is provided and start is missing (no existing start), default start to end - default duration.
-		// Only recalculate if updating end, not updating start, and no existing start exists (local or GMT).
+	/**
+	 * Calculate default start datetime from end if start is missing.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param array       $result           Result array to modify.
+	 * @param array       $new_datetimes    New datetime values.
+	 * @param string|null $existing_start   Existing start datetime.
+	 * @param array       $existing_datetime Existing datetime data.
+	 * @param string      $timezone         Timezone.
+	 * @return void
+	 */
+	private function calculate_default_start_from_end(
+		array &$result,
+		array $new_datetimes,
+		?string $existing_start,
+		array $existing_datetime,
+		string $timezone
+	): void {
 		if ( isset( $result['datetime_end'] )
 			&& ! isset( $result['datetime_start'] )
 			&& isset( $new_datetimes['datetime_end'] )
@@ -388,28 +497,39 @@ class Event_Datetime_Parser {
 				$result['datetime_start'] = $start_dt->format( 'Y-m-d H:i:s' );
 			}
 		}
+	}
 
-		// Validate that end is after start.
-		if ( isset( $result['datetime_start'] ) && isset( $result['datetime_end'] ) ) {
-			$start_dt = DateTime::createFromFormat(
-				'Y-m-d H:i:s',
-				$result['datetime_start'],
-				new DateTimeZone( $timezone )
-			);
-			$end_dt   = DateTime::createFromFormat(
-				'Y-m-d H:i:s',
-				$result['datetime_end'],
-				new DateTimeZone( $timezone )
-			);
-
-			if ( $start_dt && $end_dt && $end_dt <= $start_dt ) {
-				throw new Exception(
-					esc_html__( 'End datetime must be after start datetime.', 'gatherpress' )
-				);
-			}
+	/**
+	 * Validate that end datetime is after start datetime.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param array  $result   Result array with datetime_start and datetime_end.
+	 * @param string $timezone Timezone.
+	 * @return void
+	 * @throws Exception If end is not after start.
+	 */
+	private function validate_datetime_order( array $result, string $timezone ): void {
+		if ( ! isset( $result['datetime_start'] ) || ! isset( $result['datetime_end'] ) ) {
+			return;
 		}
 
-		return $result;
+		$start_dt = DateTime::createFromFormat(
+			'Y-m-d H:i:s',
+			$result['datetime_start'],
+			new DateTimeZone( $timezone )
+		);
+		$end_dt   = DateTime::createFromFormat(
+			'Y-m-d H:i:s',
+			$result['datetime_end'],
+			new DateTimeZone( $timezone )
+		);
+
+		if ( $start_dt && $end_dt && $end_dt <= $start_dt ) {
+			throw new Exception(
+				esc_html__( 'End datetime must be after start datetime.', 'gatherpress' )
+			);
+		}
 	}
 
 	/**

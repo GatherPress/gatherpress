@@ -8,8 +8,10 @@
 
 namespace GatherPress\Core\AI;
 
+use GatherPress\Core\Event;
 use GatherPress\Core\Settings;
 use GatherPress\Core\Traits\Singleton;
+use GatherPress\Core\Venue;
 
 /**
  * Class Admin_Page.
@@ -271,12 +273,10 @@ class Admin_Page {
 					'message' => 'Error processing prompt: ' . $e->getMessage(),
 				)
 			);
-			return;
 		}
 
 		if ( is_wp_error( $result ) ) {
 			wp_send_json_error( array( 'message' => $result->get_error_message() ) );
-			return;
 		}
 
 		// Attach images to events or venues if images were uploaded and an event/venue was created/updated.
@@ -386,7 +386,28 @@ class Admin_Page {
 			return;
 		}
 
-		foreach ( $result['actions'] as $action ) {
+		// Prioritize events over venues when both are created.
+		// First pass: Look for event actions and attach to events.
+		if ( $this->try_attach_to_events( $result['actions'], $first_attachment_id ) ) {
+			return;
+		}
+
+		// Second pass: Only if no event was found, look for venue actions.
+		$this->try_attach_to_venues( $result['actions'], $first_attachment_id );
+	}
+
+	/**
+	 * Try to attach image to events from actions array.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param array<array> $actions           Array of action results from AI handler.
+	 * @param int          $attachment_id    Attachment ID to attach.
+	 * @return bool True if attachment was successful, false otherwise.
+	 */
+	private function try_attach_to_events( array $actions, int $attachment_id ): bool {
+		$event_abilities = array( 'gatherpress/create-event', 'gatherpress/update-event' );
+		foreach ( $actions as $action ) {
 			if ( ! isset( $action['ability'] ) || ! isset( $action['result'] ) ) {
 				continue;
 			}
@@ -396,35 +417,85 @@ class Admin_Page {
 				continue;
 			}
 
-			$thumbnail_result = false;
-
 			// Check if this is a create or update event action.
-			$event_abilities = array( 'gatherpress/create-event', 'gatherpress/update-event' );
-			if ( in_array( $action['ability'], $event_abilities, true ) ) {
-				if ( isset( $action_result['event_id'] ) ) {
-					$event_id = intval( $action_result['event_id'] );
-					if ( $event_id ) {
-						$thumbnail_result = set_post_thumbnail( $event_id, $first_attachment_id );
-					}
-				}
+			if ( ! in_array( $action['ability'], $event_abilities, true ) ) {
+				continue;
+			}
+
+			if ( ! isset( $action_result['event_id'] ) ) {
+				continue;
+			}
+
+			$event_id = intval( $action_result['event_id'] );
+			if ( ! $event_id ) {
+				continue;
+			}
+
+			// Validate event post exists and is correct post type.
+			$event_post = get_post( $event_id );
+			if ( ! $event_post || Event::POST_TYPE !== $event_post->post_type ) {
+				continue;
+			}
+
+			$thumbnail_result = set_post_thumbnail( $event_id, $attachment_id );
+			// Check for WP_Error and success.
+			if ( ! is_wp_error( $thumbnail_result ) && $thumbnail_result ) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	/**
+	 * Try to attach image to venues from actions array.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param array<array> $actions        Array of action results from AI handler.
+	 * @param int          $attachment_id Attachment ID to attach.
+	 * @return bool True if attachment was successful, false otherwise.
+	 */
+	private function try_attach_to_venues( array $actions, int $attachment_id ): bool {
+		$venue_abilities = array( 'gatherpress/create-venue', 'gatherpress/update-venue' );
+		foreach ( $actions as $action ) {
+			if ( ! isset( $action['ability'] ) || ! isset( $action['result'] ) ) {
+				continue;
+			}
+
+			$action_result = $action['result'];
+			if ( ! isset( $action_result['success'] ) || true !== $action_result['success'] ) {
+				continue;
 			}
 
 			// Check if this is a create or update venue action.
-			$venue_abilities = array( 'gatherpress/create-venue', 'gatherpress/update-venue' );
-			if ( in_array( $action['ability'], $venue_abilities, true ) ) {
-				if ( isset( $action_result['venue_id'] ) ) {
-					$venue_id = intval( $action_result['venue_id'] );
-					if ( $venue_id ) {
-						$thumbnail_result = set_post_thumbnail( $venue_id, $first_attachment_id );
-					}
-				}
+			if ( ! in_array( $action['ability'], $venue_abilities, true ) ) {
+				continue;
 			}
 
-			// Only attach to the first event/venue if multiple were created/updated.
-			if ( $thumbnail_result ) {
-				break;
+			if ( ! isset( $action_result['venue_id'] ) ) {
+				continue;
+			}
+
+			$venue_id = intval( $action_result['venue_id'] );
+			if ( ! $venue_id ) {
+				continue;
+			}
+
+			// Validate venue post exists and is correct post type.
+			$venue_post = get_post( $venue_id );
+			if ( ! $venue_post || Venue::POST_TYPE !== $venue_post->post_type ) {
+				continue;
+			}
+
+			$thumbnail_result = set_post_thumbnail( $venue_id, $attachment_id );
+			// Check for WP_Error and success.
+			if ( ! is_wp_error( $thumbnail_result ) && $thumbnail_result ) {
+				return true;
 			}
 		}
+
+		return false;
 	}
 
 	/**

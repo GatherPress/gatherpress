@@ -27,7 +27,3 @@ parameters:
         #
         # A dev-only errors, which can occur if the gatherpress is symlinked into a WP instance or called via wp-env or Playground.
         - '#^Path in require_once\(\) "\./wp-admin/includes/upgrade\.php" is not a file or it does not exist\.$#'
-        # WordPress Abilities API functions - optional feature from plugin, not in core yet.
-        # Code checks function_exists() before using, but PHPStan doesn't know about these functions.
-        - '#^Function wp_get_ability not found\.$#'
-        - '#^Function wp_register_ability not found\.$#'

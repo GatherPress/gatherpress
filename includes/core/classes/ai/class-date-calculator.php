@@ -549,14 +549,15 @@ class Date_Calculator {
 	 *
 	 * @param int       $weeks         Number of weeks to add.
 	 * @param string    $weekday       The weekday name.
-	 * @param int       $occurrences   Number of occurrences.
+	 * @param int       $_occurrences  Number of occurrences (unused).
 	 * @param \DateTime $start_datetime Starting date.
 	 * @return array Array of date strings in Y-m-d format.
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
 	 */
 	private function calculate_weeks_from_weekday(
 		int $weeks,
 		string $weekday,
-		int $occurrences,
+		int $_occurrences,
 		\DateTime $start_datetime
 	): array {
 		$dates   = array();

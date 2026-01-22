@@ -1070,4 +1070,116 @@ class Test_Admin_Page extends Base {
 		// Clean up.
 		wp_delete_attachment( $attachment_id, true );
 	}
+
+	/**
+	 * Coverage for maybe_attach_images_to_posts method when both venue and event are created.
+	 * Verifies that event takes priority over venue.
+	 *
+	 * @covers ::maybe_attach_images_to_posts
+	 *
+	 * @return void
+	 */
+	public function test_maybe_attach_images_to_posts_event_priority_over_venue(): void {
+		$user_id = $this->factory->user->create( array( 'role' => 'administrator' ) );
+		wp_set_current_user( $user_id );
+
+		// Create both a venue and an event.
+		$venue_id = $this->factory->post->create(
+			array(
+				'post_type'   => Venue::POST_TYPE,
+				'post_title'  => 'Test Venue',
+				'post_status' => 'publish',
+			)
+		);
+
+		$event_id = $this->factory->post->create(
+			array(
+				'post_type'   => Event::POST_TYPE,
+				'post_title'  => 'Test Event',
+				'post_status' => 'draft',
+			)
+		);
+
+		// Create an image attachment.
+		$attachment_id = $this->factory->attachment->create(
+			array(
+				'post_mime_type' => 'image/jpeg',
+				'post_title'     => 'Test Image',
+			)
+		);
+
+		// Get upload directory.
+		$upload_dir = wp_upload_dir();
+		if ( isset( $upload_dir['error'] ) && $upload_dir['error'] ) {
+			$this->markTestSkipped( 'Upload directory is not writable.' );
+		}
+
+		// Get attachment file path.
+		$attachment_file = get_attached_file( $attachment_id );
+		if ( ! $attachment_file || ! file_exists( $attachment_file ) ) {
+			// Create a minimal image file for the attachment.
+			require_once ABSPATH . 'wp-admin/includes/image.php';
+			$temp_file = sys_get_temp_dir() . '/' . uniqid( 'gp_test_' ) . '.jpg';
+			// phpcs:ignore Generic.Files.LineLength.TooLong -- Binary data cannot be split.
+			$jpeg_data = "\xFF\xD8\xFF\xE0\x00\x10\x4A\x46\x49\x46\x00\x01\x01\x01\x00\x48\x00\x48\x00\x00\xFF\xDB\x00\x43\x00\x08\x06\x06\x07\x06\x05\x08\x07\x07\x07\x09\x09\x08\x0A\x0C\x14\x0D\x0C\x0B\x0B\x0C\x19\x12\x13\x0F\x14\x1D\x1A\x1F\x1E\x1D\x1A\x1C\x1C\x20\x24\x2E\x27\x20\x22\x2C\x23\x1C\x1C\x28\x37\x29\x2C\x30\x31\x34\x34\x34\x1F\x27\x39\x3D\x38\x32\x3C\x2E\x33\x34\x32\xFF\xC0\x00\x0B\x08\x00\x01\x00\x01\x01\x01\x11\x00\xFF\xC4\x00\x14\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x08\xFF\xC4\x00\x14\x10\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xFF\xDA\x00\x08\x01\x01\x00\x00\x3F\x00\xD2\xCF\x20\xFF\xD9";
+			// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents -- Test file creation.
+			file_put_contents( $temp_file, $jpeg_data );
+			$file_path = $upload_dir['path'] . '/' . basename( $temp_file );
+			if ( ! file_exists( $upload_dir['path'] ) ) {
+				wp_mkdir_p( $upload_dir['path'] );
+			}
+			copy( $temp_file, $file_path );
+			update_attached_file( $attachment_id, $file_path );
+			// Clean up temp file.
+			if ( file_exists( $temp_file ) ) {
+				// phpcs:ignore WordPress.WP.AlternativeFunctions.unlink_unlink -- Test file cleanup.
+				unlink( $temp_file );
+			}
+		}
+
+		// Generate attachment metadata so wp_attachment_is_image() works.
+		require_once ABSPATH . 'wp-admin/includes/image.php';
+		$attach_file = get_attached_file( $attachment_id );
+		if ( $attach_file && file_exists( $attach_file ) ) {
+			$attach_data = wp_generate_attachment_metadata( $attachment_id, $attach_file );
+			wp_update_attachment_metadata( $attachment_id, $attach_data );
+		}
+
+		$instance = Admin_Page::get_instance();
+
+		$attachment_ids = array( $attachment_id );
+
+		// Test scenario: venue created first, then event (the bug scenario).
+		$result = array(
+			'actions' => array(
+				array(
+					'ability' => 'gatherpress/create-venue',
+					'result'  => array(
+						'success'  => true,
+						'venue_id' => $venue_id,
+					),
+				),
+				array(
+					'ability' => 'gatherpress/create-event',
+					'result'  => array(
+						'success'  => true,
+						'event_id' => $event_id,
+					),
+				),
+			),
+		);
+
+		Utility::invoke_hidden_method( $instance, 'maybe_attach_images_to_posts', array( $attachment_ids, $result ) );
+
+		// Verify thumbnail was set on EVENT (not venue) - event should take priority.
+		$event_thumbnail_id = get_post_thumbnail_id( $event_id );
+		$this->assertSame( $attachment_id, $event_thumbnail_id, 'Failed to assert thumbnail was set on event.' );
+
+		// Verify thumbnail was NOT set on venue.
+		$venue_thumbnail_id = get_post_thumbnail_id( $venue_id );
+		$this->assertEmpty( $venue_thumbnail_id, 'Failed to assert thumbnail was NOT set on venue.' );
+
+		// Clean up.
+		wp_delete_attachment( $attachment_id, true );
+	}
 }
