@@ -251,34 +251,34 @@ class Event_Setup {
 				'type'              => 'string',
 			),
 			'gatherpress_datetime_start'        => array(
-				'auth_callback'     => array( $this, 'can_edit_posts_meta' ),
+				'auth_callback'     => '__return_false', // Read-only: derived from gatherpress_datetime.
 				'sanitize_callback' => 'sanitize_text_field',
 				'show_in_rest'      => true,
 				'single'            => true,
 			),
 			'gatherpress_datetime_start_gmt'    => array(
-				'auth_callback'     => array( $this, 'can_edit_posts_meta' ),
+				'auth_callback'     => '__return_false', // Read-only: derived from gatherpress_datetime.
 				'sanitize_callback' => 'sanitize_text_field',
 				'show_in_rest'      => true,
 				'single'            => true,
 				'type'              => 'string',
 			),
 			'gatherpress_datetime_end'          => array(
-				'auth_callback'     => array( $this, 'can_edit_posts_meta' ),
+				'auth_callback'     => '__return_false', // Read-only: derived from gatherpress_datetime.
 				'sanitize_callback' => 'sanitize_text_field',
 				'show_in_rest'      => true,
 				'single'            => true,
 				'type'              => 'string',
 			),
 			'gatherpress_datetime_end_gmt'      => array(
-				'auth_callback'     => array( $this, 'can_edit_posts_meta' ),
+				'auth_callback'     => '__return_false', // Read-only: derived from gatherpress_datetime.
 				'sanitize_callback' => 'sanitize_text_field',
 				'show_in_rest'      => true,
 				'single'            => true,
 				'type'              => 'string',
 			),
 			'gatherpress_timezone'              => array(
-				'auth_callback'     => array( $this, 'can_edit_posts_meta' ),
+				'auth_callback'     => '__return_false', // Read-only: derived from gatherpress_datetime.
 				'sanitize_callback' => 'sanitize_text_field',
 				'show_in_rest'      => true,
 				'single'            => true,
