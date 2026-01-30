@@ -87,6 +87,7 @@ class Setup {
 		register_activation_hook( GATHERPRESS_CORE_FILE, array( $this, 'activate_gatherpress_plugin' ) );
 		register_deactivation_hook( GATHERPRESS_CORE_FILE, array( $this, 'deactivate_gatherpress_plugin' ) );
 
+		add_action( 'admin_init', array( $this, 'check_plugin_version' ) );
 		add_action( 'admin_init', array( $this, 'add_privacy_policy_content' ) );
 		add_action( 'admin_notices', array( $this, 'check_gatherpress_alpha' ) );
 		add_action( 'network_admin_notices', array( $this, 'check_gatherpress_alpha' ) );
@@ -183,6 +184,31 @@ class Setup {
 	 */
 	public function deactivate_gatherpress_plugin(): void {
 		flush_rewrite_rules();
+	}
+
+	/**
+	 * Check if plugin version has changed and flush rewrite rules if needed.
+	 *
+	 * This method runs on admin_init to detect plugin updates. When the stored
+	 * version differs from the current version, it schedules a rewrite rules flush
+	 * to ensure any changes to rewrite rules take effect automatically.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return void
+	 */
+	public function check_plugin_version(): void {
+		if ( ! defined( 'GATHERPRESS_VERSION' ) ) {
+			return;
+		}
+
+		$stored_version  = get_option( 'gatherpress_version', '' );
+		$current_version = GATHERPRESS_VERSION;
+
+		if ( $stored_version !== $current_version ) {
+			$this->schedule_rewrite_flush();
+			update_option( 'gatherpress_version', $current_version );
+		}
 	}
 
 	/**
