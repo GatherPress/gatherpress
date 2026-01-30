@@ -16,6 +16,7 @@ import { useDispatch, useSelect } from '@wordpress/data';
 /**
  * Internal dependencies.
  */
+import { getStartOfWeek } from '../helpers/editor';
 import { hasEventPastNotice } from '../helpers/event';
 import {
 	createMomentWithTimezone,
@@ -101,6 +102,7 @@ const DateTimeEnd = () => {
 									)
 								}
 								is12Hour={ is12HourTime }
+								startOfWeek={ getStartOfWeek() }
 							/>
 						) }
 					/>
