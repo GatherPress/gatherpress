@@ -11,6 +11,7 @@ namespace GatherPress\Tests\Core;
 use Exception;
 use GatherPress\Core\Event;
 use GatherPress\Core\Event_Setup;
+use GatherPress\Core\Settings;
 use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;
 use WP;
@@ -141,7 +142,7 @@ class Test_Event_Setup extends Base {
 	}
 
 	/**
-	 * Test that the calendar rewrite rule is registered correctly.
+	 * Test that the calendar rewrite rule is registered correctly with default slug.
 	 *
 	 * @covers ::register_calendar_rewrite_rule
 	 *
@@ -149,6 +150,10 @@ class Test_Event_Setup extends Base {
 	 */
 	public function test_register_calendar_rewrite_rule(): void {
 		$instance = Event_Setup::get_instance();
+		$settings = Settings::get_instance();
+
+		// Get the dynamic slug from settings (default is 'events' plural).
+		$rewrite_slug = $settings->get_value( 'general', 'urls', 'events' );
 
 		$instance->register_calendar_rewrite_rule();
 
@@ -161,8 +166,8 @@ class Test_Event_Setup extends Base {
 		// Get the current rewrite rules.
 		$rules = $wp_rewrite->rewrite_rules();
 
-		// Build the expected rule pattern.
-		$expected_rule_pattern     = '^event/([^/]+)\.ics$';
+		// Build the expected rule pattern using dynamic slug.
+		$expected_rule_pattern     = sprintf( '^%s/([^/]+)\.ics$', $rewrite_slug );
 		$expected_rule_replacement = sprintf(
 			'index.php?post_type=%s&name=$matches[1]&gatherpress_ics=1',
 			Event::POST_TYPE
@@ -172,7 +177,10 @@ class Test_Event_Setup extends Base {
 		$this->assertArrayHasKey(
 			$expected_rule_pattern,
 			$rules,
-			"Expected rewrite rule pattern '^event/([^/]+)\\.ics$' was not found in WordPress rewrite rules"
+			sprintf(
+				"Expected rewrite rule pattern '^%s/([^/]+)\\.ics$' was not found in WordPress rewrite rules",
+				$rewrite_slug
+			)
 		);
 
 		// Check that the rule maps to the correct replacement.
