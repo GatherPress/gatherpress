@@ -15,6 +15,8 @@ namespace GatherPress\Core;
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use Exception;
+use GatherPress\Core\AI\Abilities_Integration;
+use GatherPress\Core\AI\Admin_Page;
 use GatherPress\Core\Traits\Singleton;
 use WP_Site;
 
@@ -56,6 +58,11 @@ class Setup {
 	 * @throws Exception If there are issues instantiating singleton classes.
 	 */
 	protected function instantiate_classes(): void {
+		// Only instantiate Abilities Integration if Abilities API is available.
+		if ( function_exists( 'wp_register_ability' ) ) {
+			Abilities_Integration::get_instance();
+		}
+		Admin_Page::get_instance();
 		Assets::get_instance();
 		Block::get_instance();
 		Cli::get_instance();
@@ -75,6 +82,45 @@ class Setup {
 	}
 
 	/**
+	 * Initialize wp-ai-client if available.
+	 *
+	 * Called on the 'init' hook, following the pattern used by the AI plugin.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return void
+	 */
+	public function init_wp_ai_client(): void {
+		if ( ! class_exists( 'WordPress\AI_Client\AI_Client' ) ) {
+			return;
+		}
+
+		// Initialize wp-ai-client (it checks internally if already initialized).
+		\WordPress\AI_Client\AI_Client::init();
+	}
+
+	/**
+	 * Increase HTTP request timeout for AI API requests.
+	 *
+	 * Matches the old OpenAI handler's 60-second timeout to prevent timeouts
+	 * on complex prompts with many function calls.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param array  $args Request arguments.
+	 * @param string $url  Request URL.
+	 * @return array Modified request arguments.
+	 */
+	public function increase_ai_request_timeout( array $args, string $url ): array {
+		// Check if this is an OpenAI API request.
+		if ( strpos( $url, 'api.openai.com' ) !== false || strpos( $url, 'api.anthropic.com' ) !== false ) {
+			$args['timeout'] = 60; // Match old handler's timeout.
+		}
+
+		return $args;
+	}
+
+	/**
 	 * Set up hooks for various purposes.
 	 *
 	 * This method adds hooks for different purposes as needed.
@@ -84,8 +130,17 @@ class Setup {
 	 * @return void
 	 */
 	protected function setup_hooks(): void {
+		// Add admin notice on wp-ai-client settings page about provider recommendations.
+		add_action( 'admin_notices', array( $this, 'show_ai_provider_notice' ) );
 		register_activation_hook( GATHERPRESS_CORE_FILE, array( $this, 'activate_gatherpress_plugin' ) );
 		register_deactivation_hook( GATHERPRESS_CORE_FILE, array( $this, 'deactivate_gatherpress_plugin' ) );
+
+		// Initialize wp-ai-client if available.
+		// Call on init hook, following the pattern used by the AI plugin.
+		add_action( 'init', array( $this, 'init_wp_ai_client' ) );
+
+		// Increase HTTP timeout for OpenAI API requests (matching old handler's 60-second timeout).
+		add_filter( 'http_request_args', array( $this, 'increase_ai_request_timeout' ), 10, 2 );
 
 		add_action( 'admin_init', array( $this, 'add_privacy_policy_content' ) );
 		add_action( 'admin_notices', array( $this, 'check_gatherpress_alpha' ) );
@@ -464,7 +519,7 @@ class Setup {
 	/**
 	 * Smash tables and add a custom HTTP header to show undying love for the Buffalo Bills.
 	 *
-	 * ♫ Let’s Go Buffalo! ♫
+	 * ♫ Let's Go Buffalo! ♫
 	 *
 	 * @since 1.0.0
 	 *
@@ -472,5 +527,43 @@ class Setup {
 	 */
 	public function smash_table(): void {
 		header( 'X-Bills-Mafia: Go Bills!' );
+	}
+
+	/**
+	 * Show admin notice on wp-ai-client settings page about provider recommendations.
+	 *
+	 * Recommends OpenAI as the tested provider and notes that Google and Anthropic
+	 * have not been fully tested with GatherPress.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return void
+	 */
+	public function show_ai_provider_notice(): void {
+		$screen = get_current_screen();
+		if ( ! $screen || 'settings_page_wp-ai-client' !== $screen->id ) {
+			return;
+		}
+
+		?>
+		<div class="notice notice-info">
+			<p>
+				<strong><?php esc_html_e( 'Provider Recommendation', 'gatherpress' ); ?></strong><br>
+				<?php
+				echo wp_kses_post(
+					sprintf(
+						/* translators: %1$s: Bold "OpenAI", %2$s: Bold "OpenAI" */
+						__(
+							'GatherPress AI Assistant has been tested with %1$s. We recommend %2$s.',
+							'gatherpress'
+						),
+						'<strong>OpenAI</strong>',
+						'<strong>OpenAI</strong>'
+					)
+				);
+				?>
+			</p>
+		</div>
+		<?php
 	}
 }

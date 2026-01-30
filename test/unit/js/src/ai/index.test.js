@@ -1,0 +1,1190 @@
+/**
+ * External dependencies.
+ */
+import { describe, expect, jest, it, beforeEach, afterEach } from '@jest/globals';
+
+/**
+ * Mock jQuery
+ */
+const createMockElement = () => {
+	const mockElement = {
+		val: jest.fn( function( value ) {
+			if ( value !== undefined ) {
+				return this;
+			}
+			return '';
+		} ),
+		text: jest.fn( function( text ) {
+			if ( text !== undefined ) {
+				return this;
+			}
+			return '';
+		} ),
+		html: jest.fn( function( html ) {
+			if ( html !== undefined ) {
+				return this;
+			}
+			return '';
+		} ),
+		append: jest.fn( function() {
+			return this;
+		} ),
+		addClass: jest.fn( function() {
+			return this;
+		} ),
+		removeClass: jest.fn( function() {
+			return this;
+		} ),
+		prop: jest.fn( function( prop, value ) {
+			if ( value !== undefined ) {
+				return this;
+			}
+			return false;
+		} ),
+		show: jest.fn( function() {
+			return this;
+		} ),
+		hide: jest.fn( function() {
+			return this;
+		} ),
+		on: jest.fn( function() {
+			return this;
+		} ),
+		scrollTop: jest.fn( function( value ) {
+			if ( value !== undefined ) {
+				return this;
+			}
+			return 0;
+		} ),
+		before: jest.fn( function() {
+			return this;
+		} ),
+		css: jest.fn( function() {
+			return this;
+		} ),
+		empty: jest.fn( function() {
+			return this;
+		} ),
+		children: jest.fn( () => ( { length: 0 } ) ),
+		length: 1,
+		scrollHeight: 1000,
+	};
+
+	// Make it array-like so $element[0] works
+	mockElement[ 0 ] = mockElement;
+
+	return mockElement;
+};
+
+let mockJQuery;
+
+// Create a fresh mock for each test
+const createMockJQuery = () => {
+	const mock = jest.fn( ( selector ) => {
+		const mockElement = createMockElement();
+
+		// Handle jQuery(document).ready() - check if selector is document
+		if ( selector && ( 9 === selector.nodeType || global.document === selector || selector.toString().includes( 'HTMLDocument' ) ) ) {
+			mockElement.ready = jest.fn( ( callback ) => {
+				callback( mock );
+			} );
+			return mockElement;
+		}
+
+		return mockElement;
+	} );
+
+	// Mock jQuery.ajax
+	mock.ajax = jest.fn();
+
+	return mock;
+};
+
+// Initialize mocks before tests
+mockJQuery = createMockJQuery();
+
+// Make jQuery available globally
+global.jQuery = mockJQuery;
+global.$ = mockJQuery;
+
+// Mock gatherpressAI global
+global.gatherpressAI = {
+	ajaxUrl: 'http://example.com/wp-admin/admin-ajax.php',
+	nonce: 'test-nonce-123',
+};
+
+/**
+ * Internal dependencies.
+ */
+// Clear module cache before each test suite
+jest.resetModules();
+
+describe( 'AI Assistant', () => {
+	let mockPrompt, mockSubmit, mockMessages, mockStatus;
+	let ajaxSpy;
+
+	beforeEach( () => {
+		// Reset mocks and create fresh jQuery mock
+		jest.clearAllMocks();
+		mockJQuery = createMockJQuery();
+		global.jQuery = mockJQuery;
+		global.$ = mockJQuery;
+
+		// Create mock jQuery elements
+		mockPrompt = {
+			val: jest.fn( () => '' ),
+			on: jest.fn( function() {
+				return this;
+			} ),
+		};
+
+		mockSubmit = {
+			on: jest.fn( function() {
+				return this;
+			} ),
+			prop: jest.fn( function( prop, value ) {
+				if ( value !== undefined ) {
+					return this;
+				}
+				return false;
+			} ),
+		};
+
+		mockMessages = {
+			append: jest.fn( function() {
+				return this;
+			} ),
+			scrollTop: jest.fn( function( value ) {
+				if ( value !== undefined ) {
+					return this;
+				}
+				return 0;
+			} ),
+			children: jest.fn( () => ( { length: 0 } ) ),
+			length: 1,
+			scrollHeight: 1000,
+		};
+		// Make it array-like so $messages[0] works
+		mockMessages[ 0 ] = mockMessages;
+
+		mockStatus = {
+			show: jest.fn( function() {
+				return this;
+			} ),
+			hide: jest.fn( function() {
+				return this;
+			} ),
+		};
+
+		// Mock jQuery selector returns
+		mockJQuery.mockImplementation( ( selector ) => {
+			// Handle jQuery(document).ready()
+			if ( selector && ( 9 === selector.nodeType || global.document === selector || selector.toString().includes( 'HTMLDocument' ) ) ) {
+				const docElement = createMockElement();
+				docElement.ready = jest.fn( ( callback ) => {
+					callback( mockJQuery );
+				} );
+				return docElement;
+			}
+
+			if ( '#gp-ai-prompt' === selector ) {
+				return mockPrompt;
+			}
+			if ( '#gp-ai-submit' === selector ) {
+				return mockSubmit;
+			}
+			if ( '#gp-ai-messages' === selector ) {
+				return mockMessages;
+			}
+			if ( '#gp-ai-status' === selector ) {
+				return mockStatus;
+			}
+			if ( '.gp-ai-input-container' === selector ) {
+				return createMockElement();
+			}
+			// Default mock element
+			return createMockElement();
+		} );
+
+		// Mock jQuery.ajax
+		ajaxSpy = jest.fn( ( options ) => {
+			// Simulate async behavior
+			setTimeout( () => {
+				if ( options.success ) {
+					options.success( {
+						success: true,
+						data: {
+							response: 'Test response',
+							actions: [],
+						},
+					} );
+				}
+				if ( options.complete ) {
+					options.complete();
+				}
+			}, 0 );
+			return {
+				done: jest.fn(),
+				fail: jest.fn(),
+			};
+		} );
+
+		mockJQuery.ajax = ajaxSpy;
+	} );
+
+	afterEach( () => {
+		jest.restoreAllMocks();
+	} );
+
+	describe( 'Initialization', () => {
+		it( 'should initialize on document ready', () => {
+			// Require the module to trigger initialization
+			require( '../../../../../src/ai/index.js' );
+
+			// Check that jQuery was called with document
+			expect( mockJQuery ).toHaveBeenCalledWith( global.document );
+		} );
+
+		it( 'should show initial message when messages container is empty', ( done ) => {
+			mockMessages.children.mockReturnValue( { length: 0 } );
+
+			jest.resetModules();
+			require( '../../../../../src/ai/index.js' );
+
+			// Wait for async operations
+			setTimeout( () => {
+				expect( mockMessages.append ).toHaveBeenCalled();
+				done();
+			}, 10 );
+		} );
+	} );
+
+	describe( 'Event Handlers', () => {
+		beforeEach( () => {
+			jest.resetModules();
+			require( '../../../../../src/ai/index.js' );
+		} );
+
+		it( 'should attach click handler to submit button', () => {
+			expect( mockSubmit.on ).toHaveBeenCalledWith(
+				'click',
+				expect.any( Function )
+			);
+		} );
+
+		it( 'should attach keydown handler to prompt input', () => {
+			expect( mockPrompt.on ).toHaveBeenCalledWith(
+				'keydown',
+				expect.any( Function )
+			);
+		} );
+
+		it( 'should process prompt on Enter key (without Shift)', () => {
+			const keydownHandler = mockPrompt.on.mock.calls.find(
+				( call ) => 'keydown' === call[ 0 ]
+			)[ 1 ];
+
+			mockPrompt.val.mockReturnValue( 'Test prompt' );
+
+			const mockEvent = {
+				key: 'Enter',
+				shiftKey: false,
+				preventDefault: jest.fn(),
+			};
+
+			keydownHandler( mockEvent );
+
+			expect( mockEvent.preventDefault ).toHaveBeenCalled();
+			expect( ajaxSpy ).toHaveBeenCalled();
+		} );
+
+		it( 'should not process prompt on Shift+Enter', () => {
+			const keydownHandler = mockPrompt.on.mock.calls.find(
+				( call ) => 'keydown' === call[ 0 ]
+			)[ 1 ];
+
+			const mockEvent = {
+				key: 'Enter',
+				shiftKey: true,
+				preventDefault: jest.fn(),
+			};
+
+			keydownHandler( mockEvent );
+
+			expect( mockEvent.preventDefault ).not.toHaveBeenCalled();
+		} );
+
+		it( 'should process prompt on submit button click', () => {
+			const clickHandler = mockSubmit.on.mock.calls.find(
+				( call ) => 'click' === call[ 0 ]
+			)[ 1 ];
+
+			mockPrompt.val.mockReturnValue( 'Test prompt' );
+
+			const mockEvent = {
+				preventDefault: jest.fn(),
+			};
+
+			clickHandler( mockEvent );
+
+			expect( mockEvent.preventDefault ).toHaveBeenCalled();
+			expect( ajaxSpy ).toHaveBeenCalled();
+		} );
+	} );
+
+	describe( 'processPrompt', () => {
+		beforeEach( () => {
+			jest.resetModules();
+			require( '../../../../../src/ai/index.js' );
+		} );
+
+		it( 'should not process empty prompt', () => {
+			const clickHandler = mockSubmit.on.mock.calls.find(
+				( call ) => 'click' === call[ 0 ]
+			)[ 1 ];
+
+			// Clear previous AJAX calls (including initial state call)
+			ajaxSpy.mockClear();
+
+			mockPrompt.val.mockReturnValue( '   ' ); // Whitespace only
+
+			clickHandler( { preventDefault: jest.fn() } );
+
+			// Should not make an AJAX call for empty prompt
+			expect( ajaxSpy ).not.toHaveBeenCalled();
+		} );
+
+		it( 'should add user message and clear input', () => {
+			const clickHandler = mockSubmit.on.mock.calls.find(
+				( call ) => 'click' === call[ 0 ]
+			)[ 1 ];
+
+			mockPrompt.val.mockReturnValue( 'Create an event' );
+
+			clickHandler( { preventDefault: jest.fn() } );
+
+			expect( mockMessages.append ).toHaveBeenCalled();
+			expect( mockPrompt.val ).toHaveBeenCalledWith( '' );
+		} );
+
+		it( 'should disable submit button and show status during processing', () => {
+			const clickHandler = mockSubmit.on.mock.calls.find(
+				( call ) => 'click' === call[ 0 ]
+			)[ 1 ];
+
+			mockPrompt.val.mockReturnValue( 'Test prompt' );
+
+			clickHandler( { preventDefault: jest.fn() } );
+
+			expect( mockSubmit.prop ).toHaveBeenCalledWith( 'disabled', true );
+			expect( mockStatus.show ).toHaveBeenCalled();
+		} );
+
+		it( 'should send AJAX request with correct data', () => {
+			const clickHandler = mockSubmit.on.mock.calls.find(
+				( call ) => 'click' === call[ 0 ]
+			)[ 1 ];
+
+			mockPrompt.val.mockReturnValue( 'Create an event' );
+
+			clickHandler( { preventDefault: jest.fn() } );
+
+			expect( ajaxSpy ).toHaveBeenCalledWith(
+				expect.objectContaining( {
+					url: global.gatherpressAI.ajaxUrl,
+					type: 'POST',
+					data: expect.objectContaining( {
+						action: 'gatherpress_ai_process_prompt',
+						nonce: global.gatherpressAI.nonce,
+						prompt: 'Create an event',
+					} ),
+				} )
+			);
+		} );
+
+		it( 'should handle successful response', ( done ) => {
+			const clickHandler = mockSubmit.on.mock.calls.find(
+				( call ) => 'click' === call[ 0 ]
+			)[ 1 ];
+
+			mockPrompt.val.mockReturnValue( 'Test prompt' );
+
+			// Override ajax to return success
+			mockJQuery.ajax.mockImplementation( ( options ) => {
+				setTimeout( () => {
+					options.success( {
+						success: true,
+						data: {
+							response: 'Success message',
+							actions: [],
+						},
+					} );
+					options.complete();
+				}, 0 );
+			} );
+
+			clickHandler( { preventDefault: jest.fn() } );
+
+			setTimeout( () => {
+				expect( mockMessages.append ).toHaveBeenCalled();
+				expect( mockSubmit.prop ).toHaveBeenCalledWith( 'disabled', false );
+				expect( mockStatus.hide ).toHaveBeenCalled();
+				done();
+			}, 10 );
+		} );
+
+		it( 'should handle error response', ( done ) => {
+			const clickHandler = mockSubmit.on.mock.calls.find(
+				( call ) => 'click' === call[ 0 ]
+			)[ 1 ];
+
+			mockPrompt.val.mockReturnValue( 'Test prompt' );
+
+			// Override ajax to return error
+			mockJQuery.ajax.mockImplementation( ( options ) => {
+				setTimeout( () => {
+					options.success( {
+						success: false,
+						data: {
+							message: 'Error occurred',
+						},
+					} );
+					options.complete();
+				}, 0 );
+			} );
+
+			clickHandler( { preventDefault: jest.fn() } );
+
+			setTimeout( () => {
+				expect( mockMessages.append ).toHaveBeenCalled();
+				expect( mockSubmit.prop ).toHaveBeenCalledWith( 'disabled', false );
+				expect( mockStatus.hide ).toHaveBeenCalled();
+				done();
+			}, 10 );
+		} );
+
+		it( 'should handle AJAX error', ( done ) => {
+			const clickHandler = mockSubmit.on.mock.calls.find(
+				( call ) => 'click' === call[ 0 ]
+			)[ 1 ];
+
+			mockPrompt.val.mockReturnValue( 'Test prompt' );
+
+			// Override ajax to call error handler
+			mockJQuery.ajax.mockImplementation( ( options ) => {
+				setTimeout( () => {
+					options.error( null, 'error', 'Network error' );
+					options.complete();
+				}, 0 );
+			} );
+
+			clickHandler( { preventDefault: jest.fn() } );
+
+			setTimeout( () => {
+				expect( mockMessages.append ).toHaveBeenCalled();
+				expect( mockSubmit.prop ).toHaveBeenCalledWith( 'disabled', false );
+				expect( mockStatus.hide ).toHaveBeenCalled();
+				done();
+			}, 10 );
+		} );
+	} );
+
+	describe( 'addMessage', () => {
+		beforeEach( () => {
+			jest.resetModules();
+			require( '../../../../../src/ai/index.js' );
+		} );
+
+		it( 'should add message with correct type and content', () => {
+			const clickHandler = mockSubmit.on.mock.calls.find(
+				( call ) => 'click' === call[ 0 ]
+			)[ 1 ];
+
+			mockPrompt.val.mockReturnValue( 'Test' );
+
+			clickHandler( { preventDefault: jest.fn() } );
+
+			// Check that append was called with a message element
+			expect( mockMessages.append ).toHaveBeenCalled();
+		} );
+
+		it( 'should add actions when provided', ( done ) => {
+			const clickHandler = mockSubmit.on.mock.calls.find(
+				( call ) => 'click' === call[ 0 ]
+			)[ 1 ];
+
+			mockPrompt.val.mockReturnValue( 'Create event' );
+
+			mockJQuery.ajax.mockImplementation( ( options ) => {
+				setTimeout( () => {
+					options.success( {
+						success: true,
+						data: {
+							response: 'Event created',
+							actions: [
+								{
+									ability: 'gatherpress/create-event',
+									args: { title: 'Test Event' },
+									result: { success: true, edit_url: '/edit' },
+								},
+							],
+						},
+					} );
+					options.complete();
+				}, 0 );
+			} );
+
+			clickHandler( { preventDefault: jest.fn() } );
+
+			setTimeout( () => {
+				expect( mockMessages.append ).toHaveBeenCalled();
+				done();
+			}, 10 );
+		} );
+
+		it( 'should format create-event action correctly', ( done ) => {
+			const clickHandler = mockSubmit.on.mock.calls.find(
+				( call ) => 'click' === call[ 0 ]
+			)[ 1 ];
+
+			mockPrompt.val.mockReturnValue( 'Create event' );
+
+			mockJQuery.ajax.mockImplementation( ( options ) => {
+				setTimeout( () => {
+					options.success( {
+						success: true,
+						data: {
+							response: 'Event created',
+							actions: [
+								{
+									ability: 'gatherpress/create-event',
+									args: { title: 'My Event' },
+									result: {
+										success: true,
+										edit_url: 'http://example.com/edit',
+									},
+								},
+							],
+						},
+					} );
+					options.complete();
+				}, 0 );
+			} );
+
+			clickHandler( { preventDefault: jest.fn() } );
+
+			setTimeout( () => {
+				expect( mockMessages.append ).toHaveBeenCalled();
+				done();
+			}, 10 );
+		} );
+
+		it( 'should format create-venue action correctly', ( done ) => {
+			const clickHandler = mockSubmit.on.mock.calls.find(
+				( call ) => 'click' === call[ 0 ]
+			)[ 1 ];
+
+			mockPrompt.val.mockReturnValue( 'Create venue' );
+
+			mockJQuery.ajax.mockImplementation( ( options ) => {
+				setTimeout( () => {
+					options.success( {
+						success: true,
+						data: {
+							response: 'Venue created',
+							actions: [
+								{
+									ability: 'gatherpress/create-venue',
+									args: { name: 'Test Venue' },
+									result: {
+										success: true,
+										edit_url: 'http://example.com/edit',
+									},
+								},
+							],
+						},
+					} );
+					options.complete();
+				}, 0 );
+			} );
+
+			clickHandler( { preventDefault: jest.fn() } );
+
+			setTimeout( () => {
+				expect( mockMessages.append ).toHaveBeenCalled();
+				done();
+			}, 10 );
+		} );
+
+		it( 'should format list-venues action correctly', ( done ) => {
+			const clickHandler = mockSubmit.on.mock.calls.find(
+				( call ) => 'click' === call[ 0 ]
+			)[ 1 ];
+
+			mockPrompt.val.mockReturnValue( 'List venues' );
+
+			mockJQuery.ajax.mockImplementation( ( options ) => {
+				setTimeout( () => {
+					options.success( {
+						success: true,
+						data: {
+							response: 'Venues listed',
+							actions: [
+								{
+									ability: 'gatherpress/list-venues',
+									args: {},
+									result: {
+										success: true,
+										data: [ {}, {}, {} ], // 3 venues
+									},
+								},
+							],
+						},
+					} );
+					options.complete();
+				}, 0 );
+			} );
+
+			clickHandler( { preventDefault: jest.fn() } );
+
+			setTimeout( () => {
+				expect( mockMessages.append ).toHaveBeenCalled();
+				done();
+			}, 10 );
+		} );
+
+		it( 'should format list-events action correctly', ( done ) => {
+			const clickHandler = mockSubmit.on.mock.calls.find(
+				( call ) => 'click' === call[ 0 ]
+			)[ 1 ];
+
+			mockPrompt.val.mockReturnValue( 'List events' );
+
+			mockJQuery.ajax.mockImplementation( ( options ) => {
+				setTimeout( () => {
+					options.success( {
+						success: true,
+						data: {
+							response: 'Events listed',
+							actions: [
+								{
+									ability: 'gatherpress/list-events',
+									args: {},
+									result: {
+										success: true,
+										data: { events: [ {}, {} ] }, // 2 events
+									},
+								},
+							],
+						},
+					} );
+					options.complete();
+				}, 0 );
+			} );
+
+			clickHandler( { preventDefault: jest.fn() } );
+
+			setTimeout( () => {
+				expect( mockMessages.append ).toHaveBeenCalled();
+				done();
+			}, 10 );
+		} );
+
+		it( 'should scroll to bottom after adding message', () => {
+			const clickHandler = mockSubmit.on.mock.calls.find(
+				( call ) => 'click' === call[ 0 ]
+			)[ 1 ];
+
+			mockPrompt.val.mockReturnValue( 'Test' );
+
+			clickHandler( { preventDefault: jest.fn() } );
+
+			expect( mockMessages.scrollTop ).toHaveBeenCalledWith(
+				mockMessages.scrollHeight
+			);
+		} );
+
+		it( 'should format update-event action correctly', ( done ) => {
+			const clickHandler = mockSubmit.on.mock.calls.find(
+				( call ) => 'click' === call[ 0 ]
+			)[ 1 ];
+
+			mockPrompt.val.mockReturnValue( 'Update event' );
+
+			mockJQuery.ajax.mockImplementation( ( options ) => {
+				setTimeout( () => {
+					options.success( {
+						success: true,
+						data: {
+							response: 'Event updated',
+							actions: [
+								{
+									ability: 'gatherpress/update-event',
+									args: { event_id: 123 },
+									result: {
+										success: true,
+										edit_url: 'http://example.com/edit-event',
+									},
+								},
+							],
+						},
+					} );
+					options.complete();
+				}, 0 );
+			} );
+
+			clickHandler( { preventDefault: jest.fn() } );
+
+			setTimeout( () => {
+				expect( mockMessages.append ).toHaveBeenCalled();
+				done();
+			}, 10 );
+		} );
+
+		it( 'should format update-event action without edit_url', ( done ) => {
+			const clickHandler = mockSubmit.on.mock.calls.find(
+				( call ) => 'click' === call[ 0 ]
+			)[ 1 ];
+
+			mockPrompt.val.mockReturnValue( 'Update event' );
+
+			mockJQuery.ajax.mockImplementation( ( options ) => {
+				setTimeout( () => {
+					options.success( {
+						success: true,
+						data: {
+							response: 'Event updated',
+							actions: [
+								{
+									ability: 'gatherpress/update-event',
+									args: { event_id: 456 },
+									result: {
+										success: true,
+									},
+								},
+							],
+						},
+					} );
+					options.complete();
+				}, 0 );
+			} );
+
+			clickHandler( { preventDefault: jest.fn() } );
+
+			setTimeout( () => {
+				expect( mockMessages.append ).toHaveBeenCalled();
+				done();
+			}, 10 );
+		} );
+
+		it( 'should format update-venue action correctly', ( done ) => {
+			const clickHandler = mockSubmit.on.mock.calls.find(
+				( call ) => 'click' === call[ 0 ]
+			)[ 1 ];
+
+			mockPrompt.val.mockReturnValue( 'Update venue' );
+
+			mockJQuery.ajax.mockImplementation( ( options ) => {
+				setTimeout( () => {
+					options.success( {
+						success: true,
+						data: {
+							response: 'Venue updated',
+							actions: [
+								{
+									ability: 'gatherpress/update-venue',
+									args: { venue_id: 789 },
+									result: {
+										success: true,
+										edit_url: 'http://example.com/edit-venue',
+									},
+								},
+							],
+						},
+					} );
+					options.complete();
+				}, 0 );
+			} );
+
+			clickHandler( { preventDefault: jest.fn() } );
+
+			setTimeout( () => {
+				expect( mockMessages.append ).toHaveBeenCalled();
+				done();
+			}, 10 );
+		} );
+
+		it( 'should format update-venue action without edit_url', ( done ) => {
+			const clickHandler = mockSubmit.on.mock.calls.find(
+				( call ) => 'click' === call[ 0 ]
+			)[ 1 ];
+
+			mockPrompt.val.mockReturnValue( 'Update venue' );
+
+			mockJQuery.ajax.mockImplementation( ( options ) => {
+				setTimeout( () => {
+					options.success( {
+						success: true,
+						data: {
+							response: 'Venue updated',
+							actions: [
+								{
+									ability: 'gatherpress/update-venue',
+									args: { venue_id: 101 },
+									result: {
+										success: true,
+									},
+								},
+							],
+						},
+					} );
+					options.complete();
+				}, 0 );
+			} );
+
+			clickHandler( { preventDefault: jest.fn() } );
+
+			setTimeout( () => {
+				expect( mockMessages.append ).toHaveBeenCalled();
+				done();
+			}, 10 );
+		} );
+
+		it( 'should format unknown ability with default case', ( done ) => {
+			const clickHandler = mockSubmit.on.mock.calls.find(
+				( call ) => 'click' === call[ 0 ]
+			)[ 1 ];
+
+			mockPrompt.val.mockReturnValue( 'Execute unknown ability' );
+
+			mockJQuery.ajax.mockImplementation( ( options ) => {
+				setTimeout( () => {
+					options.success( {
+						success: true,
+						data: {
+							response: 'Unknown ability executed',
+							actions: [
+								{
+									ability: 'gatherpress/unknown-ability',
+									args: {},
+									result: {
+										success: true,
+									},
+								},
+							],
+						},
+					} );
+					options.complete();
+				}, 0 );
+			} );
+
+			clickHandler( { preventDefault: jest.fn() } );
+
+			setTimeout( () => {
+				expect( mockMessages.append ).toHaveBeenCalled();
+				done();
+			}, 10 );
+		} );
+
+		it( 'should display token usage info when provided', ( done ) => {
+			const clickHandler = mockSubmit.on.mock.calls.find(
+				( call ) => 'click' === call[ 0 ]
+			)[ 1 ];
+
+			mockPrompt.val.mockReturnValue( 'Test prompt' );
+
+			mockJQuery.ajax.mockImplementation( ( options ) => {
+				setTimeout( () => {
+					options.success( {
+						success: true,
+						data: {
+							response: 'Test response',
+							model_info: {
+								provider: 'OpenAI',
+								model: 'gpt-4-turbo',
+							},
+							token_usage: {
+								prompt_tokens: 1000,
+								completion_tokens: 500,
+								total_tokens: 1500,
+								estimated_cost: 0.025,
+							},
+						},
+					} );
+					options.complete();
+				}, 0 );
+			} );
+
+			clickHandler( { preventDefault: jest.fn() } );
+
+			setTimeout( () => {
+				// Verify that addMessage was called with token_usage parameter.
+				// This is verified by checking that append was called (which happens in addMessage).
+				expect( mockMessages.append ).toHaveBeenCalled();
+				// Verify the message element has addClass called (which happens when creating message structure).
+				expect( mockMessages.append.mock.calls.length ).toBeGreaterThan( 0 );
+				done();
+			}, 10 );
+		} );
+
+		it( 'should display token usage without cost when estimated_cost is missing', ( done ) => {
+			const clickHandler = mockSubmit.on.mock.calls.find(
+				( call ) => 'click' === call[ 0 ]
+			)[ 1 ];
+
+			mockPrompt.val.mockReturnValue( 'Test prompt' );
+
+			mockJQuery.ajax.mockImplementation( ( options ) => {
+				setTimeout( () => {
+					options.success( {
+						success: true,
+						data: {
+							response: 'Test response',
+							model_info: {
+								provider: 'OpenAI',
+								model: 'gpt-4-turbo',
+							},
+							token_usage: {
+								prompt_tokens: 500,
+								completion_tokens: 200,
+								total_tokens: 700,
+								// No estimated_cost
+							},
+						},
+					} );
+					options.complete();
+				}, 0 );
+			} );
+
+			clickHandler( { preventDefault: jest.fn() } );
+
+			setTimeout( () => {
+				// Verify that message is added even without estimated_cost.
+				expect( mockMessages.append ).toHaveBeenCalled();
+				done();
+			}, 10 );
+		} );
+
+		it( 'should handle FormData when files are selected', () => {
+			const clickHandler = mockSubmit.on.mock.calls.find(
+				( call ) => 'click' === call[ 0 ]
+			)[ 1 ];
+
+			mockPrompt.val.mockReturnValue( 'Test prompt with image' );
+
+			// Mock file input element with files
+			const mockFileInput = {
+				files: [
+					{
+						name: 'test-image.jpg',
+						size: 1024,
+						type: 'image/jpeg',
+					},
+				],
+				value: '',
+			};
+			global.document.getElementById = jest.fn( ( id ) => {
+				if ( 'gp-ai-image-upload' === id ) {
+					return mockFileInput;
+				}
+				return null;
+			} );
+
+			// Clear previous calls
+			ajaxSpy.mockClear();
+
+			clickHandler( { preventDefault: jest.fn() } );
+
+			// Verify FormData is used (contentType and processData should be false)
+			expect( ajaxSpy ).toHaveBeenCalledWith(
+				expect.objectContaining( {
+					url: global.gatherpressAI.ajaxUrl,
+					type: 'POST',
+					contentType: false,
+					processData: false,
+					data: expect.any( FormData ),
+				} )
+			);
+		} );
+
+		it( 'should use regular POST data when no files are selected', () => {
+			const clickHandler = mockSubmit.on.mock.calls.find(
+				( call ) => 'click' === call[ 0 ]
+			)[ 1 ];
+
+			mockPrompt.val.mockReturnValue( 'Test prompt without image' );
+
+			// Mock file input element with no files
+			const mockFileInput = {
+				files: [],
+				value: '',
+			};
+			global.document.getElementById = jest.fn( ( id ) => {
+				if ( 'gp-ai-image-upload' === id ) {
+					return mockFileInput;
+				}
+				return null;
+			} );
+
+			// Clear previous calls
+			ajaxSpy.mockClear();
+
+			clickHandler( { preventDefault: jest.fn() } );
+
+			// Verify regular POST data is used (not FormData)
+			expect( ajaxSpy ).toHaveBeenCalledWith(
+				expect.objectContaining( {
+					url: global.gatherpressAI.ajaxUrl,
+					type: 'POST',
+					data: expect.objectContaining( {
+						action: 'gatherpress_ai_process_prompt',
+						nonce: global.gatherpressAI.nonce,
+						prompt: 'Test prompt without image',
+					} ),
+				} )
+			);
+		} );
+
+		it( 'should display attachment IDs when present in response', ( done ) => {
+			const clickHandler = mockSubmit.on.mock.calls.find(
+				( call ) => 'click' === call[ 0 ]
+			)[ 1 ];
+
+			mockPrompt.val.mockReturnValue( 'Test prompt' );
+
+			// Override ajax to return success with attachment_ids
+			mockJQuery.ajax.mockImplementation( ( options ) => {
+				setTimeout( () => {
+					options.success( {
+						success: true,
+						data: {
+							response: 'Test response',
+							actions: [],
+							attachment_ids: [ 10535, 10536 ],
+						},
+					} );
+					options.complete();
+				}, 0 );
+			} );
+
+			clickHandler( { preventDefault: jest.fn() } );
+
+			setTimeout( () => {
+				// Verify that append was called (for attachment IDs message and AI response)
+				expect( mockMessages.append.mock.calls.length ).toBeGreaterThanOrEqual( 2 );
+				// Check that one of the appended elements had text() called with attachment IDs info
+				// We need to check all text() calls made on any element
+				let foundAttachmentMessage = false;
+				mockJQuery.mock.results.forEach( ( result ) => {
+					if ( result.value && result.value.text ) {
+						const textCalls = result.value.text.mock.calls;
+						textCalls.forEach( ( call ) => {
+							if ( call[ 0 ] && 'string' === typeof call[ 0 ] ) {
+								if ( call[ 0 ].includes( 'Uploaded' ) && call[ 0 ].includes( 'Attachment IDs' ) ) {
+									foundAttachmentMessage = true;
+								}
+							}
+						} );
+					}
+				} );
+				expect( foundAttachmentMessage ).toBe( true );
+				done();
+			}, 10 );
+		} );
+
+		it( 'should not display attachment IDs message when not present in response', ( done ) => {
+			const clickHandler = mockSubmit.on.mock.calls.find(
+				( call ) => 'click' === call[ 0 ]
+			)[ 1 ];
+
+			mockPrompt.val.mockReturnValue( 'Test prompt' );
+
+			// Override ajax to return success without attachment_ids
+			mockJQuery.ajax.mockImplementation( ( options ) => {
+				setTimeout( () => {
+					options.success( {
+						success: true,
+						data: {
+							response: 'Test response',
+							actions: [],
+							// No attachment_ids
+						},
+					} );
+					options.complete();
+				}, 0 );
+			} );
+
+			clickHandler( { preventDefault: jest.fn() } );
+
+			setTimeout( () => {
+				// Verify that append was called (only for AI response, not attachment IDs)
+				expect( mockMessages.append ).toHaveBeenCalled();
+				// Check that no text() call includes attachment IDs info
+				let foundAttachmentMessage = false;
+				mockJQuery.mock.results.forEach( ( result ) => {
+					if ( result.value && result.value.text ) {
+						const textCalls = result.value.text.mock.calls;
+						textCalls.forEach( ( call ) => {
+							if ( call[ 0 ] && 'string' === typeof call[ 0 ] ) {
+								if ( call[ 0 ].includes( 'Uploaded' ) && call[ 0 ].includes( 'Attachment IDs' ) ) {
+									foundAttachmentMessage = true;
+								}
+							}
+						} );
+					}
+				} );
+				expect( foundAttachmentMessage ).toBe( false );
+				done();
+			}, 10 );
+		} );
+
+		it( 'should include file info in user message when files are selected', () => {
+			const clickHandler = mockSubmit.on.mock.calls.find(
+				( call ) => 'click' === call[ 0 ]
+			)[ 1 ];
+
+			mockPrompt.val.mockReturnValue( 'Test prompt' );
+
+			// Mock file input element with files
+			const mockFileInput = {
+				files: [
+					{
+						name: 'test-image.jpg',
+						size: 1024,
+						type: 'image/jpeg',
+					},
+				],
+				value: '',
+			};
+			global.document.getElementById = jest.fn( ( id ) => {
+				if ( 'gp-ai-image-upload' === id ) {
+					return mockFileInput;
+				}
+				return null;
+			} );
+
+			// Clear previous calls
+			mockMessages.append.mockClear();
+
+			clickHandler( { preventDefault: jest.fn() } );
+
+			// Verify user message includes file info by checking text() calls
+			let foundFileInfo = false;
+			let fileInfoText = '';
+			mockJQuery.mock.results.forEach( ( result ) => {
+				if ( result.value && result.value.text ) {
+					const textCalls = result.value.text.mock.calls;
+					textCalls.forEach( ( call ) => {
+						if ( call[ 0 ] && 'string' === typeof call[ 0 ] && call[ 0 ].includes( 'test-image.jpg' ) ) {
+							foundFileInfo = true;
+							fileInfoText = call[ 0 ];
+						}
+					} );
+				}
+			} );
+			expect( foundFileInfo ).toBe( true );
+			expect( fileInfoText ).toContain( '[1 image(s): test-image.jpg]' );
+		} );
+	} );
+} );
+

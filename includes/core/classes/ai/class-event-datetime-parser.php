@@ -1,0 +1,607 @@
+<?php
+/**
+ * Event Datetime Parser helper class.
+ *
+ * Handles parsing and merging datetime inputs for event updates.
+ * Supports both full datetime strings and time-only inputs.
+ *
+ * @package GatherPress\Core\AI
+ * @since 1.0.0
+ */
+
+// Trigger playground preview.
+
+namespace GatherPress\Core\AI;
+
+// Exit if accessed directly.
+defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
+
+use DateTime;
+use DateTimeZone;
+use Exception;
+
+/**
+ * Class Event_Datetime_Parser.
+ *
+ * Parses datetime inputs for event updates, handling time-only and full datetime formats.
+ *
+ * @since 1.0.0
+ */
+class Event_Datetime_Parser {
+
+	/**
+	 * Default duration in hours when only start time is provided.
+	 *
+	 * @since 1.0.0
+	 * @var int
+	 */
+	private const DEFAULT_DURATION_HOURS = 2;
+
+	/**
+	 * Parse datetime input (time-only or full datetime).
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string      $input           The datetime input to parse (e.g., "3pm", "15:00", "2025-01-04 15:00:00").
+	 * @param string|null $existing_date   Existing date to merge with if input is time-only (Y-m-d format).
+	 * @param string      $timezone        Timezone for parsing (defaults to site timezone).
+	 * @return DateTime Parsed DateTime object.
+	 * @throws Exception If input cannot be parsed.
+	 */
+	public function parse_datetime_input(
+		string $input,
+		?string $existing_date = null,
+		string $timezone = ''
+	): DateTime {
+		if ( empty( $timezone ) ) {
+			$timezone = wp_timezone_string();
+		}
+
+		$tz    = new DateTimeZone( $timezone );
+		$input = trim( $input );
+
+		// Try parsing as full datetime first (Y-m-d H:i:s).
+		$datetime = DateTime::createFromFormat( 'Y-m-d H:i:s', $input, $tz );
+		if ( $datetime ) {
+			// If we have an existing date and the provided date is "today",
+			// preserve the existing date and only use the time portion.
+			// This handles cases where OpenAI provides "today's date + time"
+			// when the user only wanted to update the time.
+			if ( $existing_date ) {
+				$today         = new DateTime( 'now', $tz );
+				$provided_date = $datetime->format( 'Y-m-d' );
+				$today_date    = $today->format( 'Y-m-d' );
+
+				// If the provided date is today but we have an existing date, use existing date + provided time.
+				if ( $provided_date === $today_date && $existing_date !== $today_date ) {
+					$existing_datetime = DateTime::createFromFormat( 'Y-m-d H:i:s', $existing_date . ' 00:00:00', $tz );
+					if ( $existing_datetime ) {
+						$existing_datetime->setTime(
+							(int) $datetime->format( 'H' ),
+							(int) $datetime->format( 'i' ),
+							(int) $datetime->format( 's' )
+						);
+						return $existing_datetime;
+					}
+				}
+			}
+			return $datetime;
+		}
+
+		// Try parsing as date only (Y-m-d).
+		$datetime = DateTime::createFromFormat( 'Y-m-d', $input, $tz );
+		if ( $datetime ) {
+			// Set to noon if only date provided.
+			$datetime->setTime( 12, 0, 0 );
+			return $datetime;
+		}
+
+		// Try parsing as time-only formats (strip seconds first if present).
+		// Remove seconds if present (e.g., "19:30:00" -> "19:30").
+		$time_input = preg_replace( '/:(\d{2})$/', '', $input );
+		$time_only  = $this->parse_time_only( $time_input );
+		if ( $time_only ) {
+			// If we have an existing date, merge with it.
+			if ( $existing_date ) {
+				$existing_datetime = DateTime::createFromFormat( 'Y-m-d H:i:s', $existing_date . ' 00:00:00', $tz );
+				if ( $existing_datetime ) {
+					$existing_datetime->setTime( $time_only['hour'], $time_only['minute'], 0 );
+					return $existing_datetime;
+				}
+			}
+
+			// No existing date, use today.
+			$datetime = new DateTime( 'now', $tz );
+			$datetime->setTime( $time_only['hour'], $time_only['minute'], 0 );
+			return $datetime;
+		}
+
+		// Try parsing weekday patterns (e.g., "sunday at 1 pm", "this sunday at 1 pm").
+		// PHP's DateTime constructor interprets bare weekdays as "next [weekday]", but we want "this [weekday]".
+		$weekday_pattern = '/^(this\s+)?(monday|tuesday|wednesday|thursday|friday|saturday|sunday)(\s+at\s+.*)?$/i';
+		if ( preg_match( $weekday_pattern, $input, $matches ) ) {
+			$weekday   = strtolower( $matches[2] );
+			$time_part = ! empty( $matches[3] ) ? trim( $matches[3] ) : '';
+
+			// Calculate "this week's" occurrence of the weekday.
+			$today       = new DateTime( 'now', $tz );
+			$current_day = (int) $today->format( 'N' ); // ISO-8601 weekday (Monday=1, Sunday=7).
+			$weekday_map = array(
+				'monday'    => 1,
+				'tuesday'   => 2,
+				'wednesday' => 3,
+				'thursday'  => 4,
+				'friday'    => 5,
+				'saturday'  => 6,
+				'sunday'    => 7,
+			);
+			$target_day  = $weekday_map[ $weekday ] ?? 1;
+
+			// Calculate days to target weekday.
+			// "This Sunday" means the upcoming Sunday in the current week if it hasn't passed,
+			// or next week's Sunday if it has passed (for future event scheduling).
+			if ( $current_day <= $target_day ) {
+				// Target is today or later this week.
+				$days_ahead = $target_day - $current_day;
+			} else {
+				// Target already passed this week. For event scheduling, use next week's occurrence.
+				$days_ahead = 7 - $current_day + $target_day;
+			}
+
+			$target_date = clone $today;
+			$target_date->modify( "+{$days_ahead} days" );
+
+			// Parse time if provided.
+			if ( ! empty( $time_part ) ) {
+				// Remove "at" prefix if present.
+				$time_part = preg_replace( '/^at\s+/', '', $time_part );
+				$time_only = $this->parse_time_only( $time_part );
+				if ( $time_only ) {
+					$target_date->setTime( $time_only['hour'], $time_only['minute'], 0 );
+				} else {
+					// Default to noon if time parsing fails.
+					$target_date->setTime( 12, 0, 0 );
+				}
+			} else {
+				// Default to noon if no time provided.
+				$target_date->setTime( 12, 0, 0 );
+			}
+
+			return $target_date;
+		}
+
+		// Try parsing with DateTime's flexible parser as last resort.
+		try {
+			$datetime = new DateTime( $input, $tz );
+			// If we have an existing date and the parsed date is not what we want, use existing date.
+			if ( $existing_date ) {
+				$parsed_date = $datetime->format( 'Y-m-d' );
+				if ( $parsed_date !== $existing_date ) {
+					// Use existing date with parsed time.
+					$time_string       = $datetime->format( 'H:i:s' );
+					$existing_datetime = DateTime::createFromFormat(
+						'Y-m-d H:i:s',
+						$existing_date . ' ' . $time_string,
+						$tz
+					);
+					if ( $existing_datetime ) {
+						return $existing_datetime;
+					}
+				}
+			}
+			return $datetime;
+		} catch ( Exception $e ) {
+			throw new Exception(
+				sprintf(
+					/* translators: %s: input value */
+					esc_html__( 'Unable to parse datetime input: %s', 'gatherpress' ),
+					esc_html( $input )
+				)
+			);
+		}
+	}
+
+	/**
+	 * Parse time-only input (e.g., "3pm", "15:00", "3:00 PM").
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $input Time-only input string.
+	 * @return array{hour: int, minute: int}|false Array with 'hour' and 'minute' keys, or false if not parseable.
+	 */
+	public function parse_time_only( string $input ) {
+		$input = trim( strtolower( $input ) );
+
+		// Remove "at" prefix if present (e.g., "at 3pm" -> "3pm").
+		$input = preg_replace( '/^at\s+/', '', $input );
+
+		// Patterns to match time formats.
+		$patterns = array(
+			// 12-hour format with am/pm.
+			'/^(\d{1,2})(?::(\d{2}))?\s*(am|pm)$/',
+			// 24-hour format with colon (with or without seconds).
+			'/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/',
+			// 24-hour format without colon.
+			'/^(\d{1,2})(\d{2})$/',
+		);
+
+		foreach ( $patterns as $pattern ) {
+			if ( preg_match( $pattern, $input, $matches ) ) {
+				$hour = (int) $matches[1];
+				// Pattern 1 has optional minutes (?:), patterns 2-3 require it. Check key existence for pattern 1.
+				// @phpstan-ignore-next-line -- Pattern 1 has optional $matches[2], but patterns 2-3 always have it.
+				$minute = array_key_exists( 2, $matches ) ? (int) $matches[2] : 0;
+
+				// Handle 12-hour format.
+				if ( array_key_exists( 3, $matches ) ) {
+					$ampm = strtolower( $matches[3] );
+					if ( 'pm' === $ampm && 12 !== $hour ) {
+						$hour += 12;
+					} elseif ( 'am' === $ampm && 12 === $hour ) {
+						$hour = 0;
+					}
+				}
+
+				// Validate hour and minute.
+				if ( $hour >= 0 && $hour <= 23 && $minute >= 0 && $minute <= 59 ) {
+					return array(
+						'hour'   => $hour,
+						'minute' => $minute,
+					);
+				}
+			}
+		}
+
+		return false;
+	}
+
+	/**
+	 * Prepare datetime parameters for event update, merging with existing datetimes.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param array<string, mixed> $new_datetimes     New datetime values to apply.
+	 * @param array<string, mixed> $existing_datetime Existing event datetime data from Event::get_datetime().
+	 * @return array<string, string> Prepared datetime parameters ready for Event::save_datetimes().
+	 * @throws Exception If datetime parsing fails or validation fails.
+	 */
+	public function prepare_datetime_params( array $new_datetimes, array $existing_datetime ): array {
+		$timezone = $new_datetimes['timezone'] ?? $existing_datetime['timezone'] ?? wp_timezone_string();
+		$result   = array(
+			'timezone' => $timezone,
+		);
+
+		// Get existing datetimes.
+		$existing_datetimes = $this->get_existing_datetimes( $existing_datetime, $timezone );
+		$existing_start     = $existing_datetimes['start'];
+		$existing_end       = $existing_datetimes['end'];
+
+		// Parse new start datetime if provided.
+		if ( isset( $new_datetimes['datetime_start'] ) ) {
+			$existing_start_date      = $this->get_existing_start_date(
+				$existing_start,
+				$existing_datetime,
+				$timezone
+			);
+			$start_datetime           = $this->parse_datetime_input(
+				$new_datetimes['datetime_start'],
+				$existing_start_date,
+				$timezone
+			);
+			$result['datetime_start'] = $start_datetime->format( 'Y-m-d H:i:s' );
+		} elseif ( $existing_start ) {
+			$result['datetime_start'] = $existing_start;
+		}
+
+		// Parse new end datetime if provided.
+		if ( isset( $new_datetimes['datetime_end'] ) ) {
+			$existing_end_date      = $this->get_existing_end_date(
+				$existing_start,
+				$existing_end,
+				$existing_datetime,
+				$timezone
+			);
+			$end_datetime           = $this->parse_datetime_input(
+				$new_datetimes['datetime_end'],
+				$existing_end_date,
+				$timezone
+			);
+			$result['datetime_end'] = $end_datetime->format( 'Y-m-d H:i:s' );
+		} elseif ( $existing_end && ! isset( $new_datetimes['datetime_start'] ) ) {
+			$result['datetime_end'] = $existing_end;
+		}
+
+		// Calculate default end from start if needed.
+		$this->calculate_default_end_from_start( $result, $timezone );
+
+		// Calculate default start from end if needed.
+		$this->calculate_default_start_from_end(
+			$result,
+			$new_datetimes,
+			$existing_start,
+			$existing_datetime,
+			$timezone
+		);
+
+		// Validate that end is after start.
+		$this->validate_datetime_order( $result, $timezone );
+
+		return $result;
+	}
+
+	/**
+	 * Get existing start and end datetimes from existing datetime data.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param array  $existing_datetime Existing datetime data.
+	 * @param string $timezone          Timezone.
+	 * @return array Array with 'start' and 'end' keys.
+	 */
+	private function get_existing_datetimes( array $existing_datetime, string $timezone ): array {
+		$existing_start = ! empty( $existing_datetime['datetime_start'] )
+			? $existing_datetime['datetime_start']
+			: null;
+		if ( empty( $existing_start ) && ! empty( $existing_datetime['datetime_start_gmt'] ) ) {
+			$existing_start = $this->convert_gmt_to_local(
+				$existing_datetime['datetime_start_gmt'],
+				$timezone
+			);
+		}
+
+		$existing_end = ! empty( $existing_datetime['datetime_end'] )
+			? $existing_datetime['datetime_end']
+			: null;
+		if ( empty( $existing_end ) && ! empty( $existing_datetime['datetime_end_gmt'] ) ) {
+			$existing_end = $this->convert_gmt_to_local(
+				$existing_datetime['datetime_end_gmt'],
+				$timezone
+			);
+		}
+
+		return array(
+			'start' => $existing_start,
+			'end'   => $existing_end,
+		);
+	}
+
+	/**
+	 * Get existing start date for parsing new start datetime.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string|null $existing_start    Existing start datetime.
+	 * @param array       $existing_datetime Existing datetime data.
+	 * @param string      $timezone          Timezone.
+	 * @return string|null Date in Y-m-d format.
+	 */
+	private function get_existing_start_date(
+		?string $existing_start,
+		array $existing_datetime,
+		string $timezone
+	): ?string {
+		if ( $existing_start ) {
+			return $this->extract_date_from_datetime( $existing_start, $timezone );
+		}
+
+		if ( ! empty( $existing_datetime['datetime_start_gmt'] ) ) {
+			return $this->extract_date_from_gmt(
+				$existing_datetime['datetime_start_gmt'],
+				$timezone
+			);
+		}
+
+		return null;
+	}
+
+	/**
+	 * Get existing end date for parsing new end datetime.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string|null $existing_start    Existing start datetime.
+	 * @param string|null $existing_end     Existing end datetime.
+	 * @param array       $existing_datetime Existing datetime data.
+	 * @param string      $timezone          Timezone.
+	 * @return string|null Date in Y-m-d format.
+	 */
+	private function get_existing_end_date(
+		?string $existing_start,
+		?string $existing_end,
+		array $existing_datetime,
+		string $timezone
+	): ?string {
+		if ( $existing_start ) {
+			return $this->extract_date_from_datetime( $existing_start, $timezone );
+		}
+
+		if ( ! empty( $existing_datetime['datetime_start_gmt'] ) ) {
+			return $this->extract_date_from_gmt(
+				$existing_datetime['datetime_start_gmt'],
+				$timezone
+			);
+		}
+
+		if ( $existing_end ) {
+			return $this->extract_date_from_datetime( $existing_end, $timezone );
+		}
+
+		if ( ! empty( $existing_datetime['datetime_end_gmt'] ) ) {
+			return $this->extract_date_from_gmt(
+				$existing_datetime['datetime_end_gmt'],
+				$timezone
+			);
+		}
+
+		return null;
+	}
+
+	/**
+	 * Calculate default end datetime from start if end is missing.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param array  $result   Result array to modify.
+	 * @param string $timezone Timezone.
+	 * @return void
+	 */
+	private function calculate_default_end_from_start( array &$result, string $timezone ): void {
+		if ( isset( $result['datetime_start'] ) && ! isset( $result['datetime_end'] ) ) {
+			$start_dt = DateTime::createFromFormat(
+				'Y-m-d H:i:s',
+				$result['datetime_start'],
+				new DateTimeZone( $timezone )
+			);
+			if ( $start_dt ) {
+				$end_dt = clone $start_dt;
+				$end_dt->modify( '+' . self::DEFAULT_DURATION_HOURS . ' hours' );
+				$result['datetime_end'] = $end_dt->format( 'Y-m-d H:i:s' );
+			}
+		}
+	}
+
+	/**
+	 * Calculate default start datetime from end if start is missing.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param array       $result           Result array to modify.
+	 * @param array       $new_datetimes    New datetime values.
+	 * @param string|null $existing_start   Existing start datetime.
+	 * @param array       $existing_datetime Existing datetime data.
+	 * @param string      $timezone         Timezone.
+	 * @return void
+	 */
+	private function calculate_default_start_from_end(
+		array &$result,
+		array $new_datetimes,
+		?string $existing_start,
+		array $existing_datetime,
+		string $timezone
+	): void {
+		if ( isset( $result['datetime_end'] )
+			&& ! isset( $result['datetime_start'] )
+			&& isset( $new_datetimes['datetime_end'] )
+			&& ! isset( $new_datetimes['datetime_start'] )
+			&& empty( $existing_start )
+			&& empty( $existing_datetime['datetime_start_gmt'] )
+			&& empty( $existing_datetime['datetime_start'] ) ) {
+			$end_dt = DateTime::createFromFormat(
+				'Y-m-d H:i:s',
+				$result['datetime_end'],
+				new DateTimeZone( $timezone )
+			);
+			if ( $end_dt ) {
+				$start_dt = clone $end_dt;
+				$start_dt->modify( '-' . self::DEFAULT_DURATION_HOURS . ' hours' );
+				$result['datetime_start'] = $start_dt->format( 'Y-m-d H:i:s' );
+			}
+		}
+	}
+
+	/**
+	 * Validate that end datetime is after start datetime.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param array  $result   Result array with datetime_start and datetime_end.
+	 * @param string $timezone Timezone.
+	 * @return void
+	 * @throws Exception If end is not after start.
+	 */
+	private function validate_datetime_order( array $result, string $timezone ): void {
+		if ( ! isset( $result['datetime_start'] ) || ! isset( $result['datetime_end'] ) ) {
+			return;
+		}
+
+		$start_dt = DateTime::createFromFormat(
+			'Y-m-d H:i:s',
+			$result['datetime_start'],
+			new DateTimeZone( $timezone )
+		);
+		$end_dt   = DateTime::createFromFormat(
+			'Y-m-d H:i:s',
+			$result['datetime_end'],
+			new DateTimeZone( $timezone )
+		);
+
+		if ( $start_dt && $end_dt && $end_dt <= $start_dt ) {
+			throw new Exception(
+				esc_html__( 'End datetime must be after start datetime.', 'gatherpress' )
+			);
+		}
+	}
+
+	/**
+	 * Extract date portion (Y-m-d) from datetime string.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $datetime Datetime string in Y-m-d H:i:s format.
+	 * @param string $timezone  Optional timezone for the datetime. If not provided, assumes local timezone.
+	 * @return string|null Date portion in Y-m-d format, or null if parsing fails.
+	 */
+	private function extract_date_from_datetime( string $datetime, string $timezone = '' ): ?string {
+		if ( empty( $timezone ) ) {
+			$timezone = wp_timezone_string();
+		}
+
+		$tz = new DateTimeZone( $timezone );
+		$dt = DateTime::createFromFormat( 'Y-m-d H:i:s', $datetime, $tz );
+		if ( $dt ) {
+			return $dt->format( 'Y-m-d' );
+		}
+
+		// Try date-only format.
+		$dt = DateTime::createFromFormat( 'Y-m-d', $datetime, $tz );
+		if ( $dt ) {
+			return $dt->format( 'Y-m-d' );
+		}
+
+		return null;
+	}
+
+	/**
+	 * Extract date from GMT datetime and convert to local timezone.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $gmt_datetime GMT datetime string.
+	 * @param string $timezone     Target timezone to convert to.
+	 * @return string|null Date portion in Y-m-d format in the target timezone, or null if parsing fails.
+	 */
+	private function extract_date_from_gmt( string $gmt_datetime, string $timezone ): ?string {
+		$gmt_tz = new DateTimeZone( 'UTC' );
+		$dt     = DateTime::createFromFormat( 'Y-m-d H:i:s', $gmt_datetime, $gmt_tz );
+		if ( ! $dt ) {
+			return null;
+		}
+
+		// Convert to target timezone.
+		$target_tz = new DateTimeZone( $timezone );
+		$dt->setTimezone( $target_tz );
+		return $dt->format( 'Y-m-d' );
+	}
+
+	/**
+	 * Convert GMT datetime to local timezone datetime string.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $gmt_datetime GMT datetime string in Y-m-d H:i:s format.
+	 * @param string $timezone     Target timezone to convert to.
+	 * @return string|null Local datetime string in Y-m-d H:i:s format, or null if parsing fails.
+	 */
+	private function convert_gmt_to_local( string $gmt_datetime, string $timezone ): ?string {
+		$gmt_tz = new DateTimeZone( 'UTC' );
+		$dt     = DateTime::createFromFormat( 'Y-m-d H:i:s', $gmt_datetime, $gmt_tz );
+		if ( ! $dt ) {
+			return null;
+		}
+
+		// Convert to target timezone.
+		$target_tz = new DateTimeZone( $timezone );
+		$dt->setTimezone( $target_tz );
+		return $dt->format( 'Y-m-d H:i:s' );
+	}
+}

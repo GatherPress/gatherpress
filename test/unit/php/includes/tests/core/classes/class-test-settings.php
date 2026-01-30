@@ -1725,4 +1725,72 @@ class Test_Settings extends Base {
 
 		remove_all_filters( 'gatherpress_sub_pages' );
 	}
+
+	/**
+	 * Test register_settings with password field type.
+	 *
+	 * @covers ::register_settings
+	 * @covers ::text
+	 *
+	 * @return void
+	 */
+	public function test_register_settings_with_password_field_type(): void {
+		$instance = Settings::get_instance();
+
+		// Mock sub_pages with password field type.
+		add_filter(
+			'gatherpress_sub_pages',
+			function ( $settings ) {
+				$settings['test_page_password'] = array(
+					'name'     => 'Test Password Page',
+					'priority' => 99,
+					'sections' => array(
+						'test_section' => array(
+							'name'    => 'Test Section',
+							'options' => array(
+								'test_password_field' => array(
+									'field'  => array(
+										'type'  => 'password',
+										'label' => 'Password Field',
+									),
+									'labels' => array(
+										'name' => 'Test Password Field',
+									),
+								),
+							),
+						),
+					),
+				);
+				return $settings;
+			}
+		);
+
+		// Register the settings (sets up password field callback).
+		$instance->register_settings();
+
+		// Render the settings form which triggers the password field callback.
+		$output = \PMC\Unit_Test\Utility::buffer_and_return(
+			array( $instance, 'render_settings_form' ),
+			array( 'gatherpress_test_page_password' )
+		);
+
+		// Verify password field was rendered via the closure callback (tests target code lines 287-288).
+		// The password field uses the text method, so it should render an input field.
+		$this->assertStringContainsString(
+			'gatherpress_test_password_field',
+			$output,
+			'Failed to assert password field was rendered via callback.'
+		);
+		// The closure callback executes the text method which renders the field.
+		// Verify the field was rendered (the actual type may vary based on implementation).
+		$this->assertStringContainsString(
+			'Password Field',
+			$output,
+			'Failed to assert password field label was rendered.'
+		);
+
+		remove_all_filters( 'gatherpress_sub_pages' );
+
+		remove_all_filters( 'gatherpress_settings' );
+	}
 }
