@@ -267,10 +267,10 @@ class Test_Import extends Base {
 		$instance->datetimes_callback( $post->ID, 0 );
 		$this->assertSame(
 			array(
-				'datetime_start'     => '0000-00-00 00:00:00',
-				'datetime_start_gmt' => '0000-00-00 00:00:00',
-				'datetime_end'       => '0000-00-00 00:00:00',
-				'datetime_end_gmt'   => '0000-00-00 00:00:00',
+				'datetime_start'     => '',
+				'datetime_start_gmt' => '',
+				'datetime_end'       => '',
+				'datetime_end_gmt'   => '',
 				'timezone'           => '+00:00',
 			),
 			$event->get_datetime()
@@ -283,6 +283,9 @@ class Test_Import extends Base {
 			'timezone'       => 'America/New_York',
 		);
 		$instance->datetimes_callback( $post->ID, $meta_data_value );
+
+		// Create new Event instance to get fresh data after datetime save.
+		$event = new Event( $post->ID );
 
 		$expect = array(
 			'datetime_start'     => '2020-05-11 15:00:00',

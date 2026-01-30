@@ -1,10 +1,10 @@
 # GatherPress
 
-Stable tag: 0.33.1  
+Stable tag: 0.34.0-alpha.1
 Tested up to: 6.9  
 License: GPL v2 or later  
 Tags: events, event, meetup, community  
-Contributors: mauteri, patricia70, hrmervin, jmarx75, stephenerdelyi, carstenbach, jordanpak, mahimadave, tusharaddweb, pkbhatt, andremenrath, apermo, dd32, passoniate, pbrocks
+Contributors: mauteri, patricia70, hrmervin, jmarx75, stephenerdelyi, carstenbach, jordanpak, mahimadave, tusharaddweb, pkbhatt, kofimokome
 
 <!-- markdownlint-disable-next-line MD045 -->
 ![](.wordpress-org/banner-1544x500.jpg)

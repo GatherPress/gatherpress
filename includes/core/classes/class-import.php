@@ -135,6 +135,8 @@ class Import extends Migrate {
 	 * @param  mixed     $meta_value Metadata value. Must be serializable if non-scalar.
 	 * @return null|bool             Returning a non-null value will effectively short-circuit the saving
 	 *                               of 'normal' meta data.
+	 *
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
 	 */
 	public function run( ?bool $check, int $object_id, string $meta_key, $meta_value ): ?bool {
 		$pseudopostmetas = $this->get_pseudopostmetas();
