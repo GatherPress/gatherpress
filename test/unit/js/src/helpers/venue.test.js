@@ -13,6 +13,11 @@ jest.mock( '@wordpress/data', () => ( {
 	select: jest.fn(),
 } ) );
 
+// Mock the @wordpress/core-data module
+jest.mock( '@wordpress/core-data', () => ( {
+	store: 'core',
+} ) );
+
 /**
  * Coverage for isVenuePostType.
  */

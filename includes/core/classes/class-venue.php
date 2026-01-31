@@ -213,6 +213,7 @@ class Venue {
 	 */
 	public function register_post_meta(): void {
 		$post_meta = array(
+			// Venue information stored as JSON.
 			'gatherpress_venue_information' => array(
 				'auth_callback'     => static function () {
 					return current_user_can( 'edit_posts' ); // @codeCoverageIgnore
@@ -221,6 +222,48 @@ class Venue {
 				'show_in_rest'      => true,
 				'single'            => true,
 				'type'              => 'string',
+				'default'           => '',
+			),
+			'gatherpress_venue_online_link' => array(
+				'auth_callback'     => static function () {
+					return current_user_can( 'edit_posts' ); // @codeCoverageIgnore
+				},
+				'sanitize_callback' => 'sanitize_url',
+				'show_in_rest'      => true,
+				'single'            => true,
+				'type'              => 'string',
+				'default'           => '',
+			),
+			// Map display settings.
+			'gatherpress_venue_map_show'    => array(
+				'auth_callback'     => static function () {
+					return current_user_can( 'edit_posts' ); // @codeCoverageIgnore
+				},
+				'sanitize_callback' => 'rest_sanitize_boolean',
+				'show_in_rest'      => true,
+				'single'            => true,
+				'type'              => 'boolean',
+				'default'           => true,
+			),
+			'gatherpress_venue_map_zoom'    => array(
+				'auth_callback'     => static function () {
+					return current_user_can( 'edit_posts' ); // @codeCoverageIgnore
+				},
+				'sanitize_callback' => 'absint',
+				'show_in_rest'      => true,
+				'single'            => true,
+				'type'              => 'integer',
+				'default'           => 10,
+			),
+			'gatherpress_venue_map_height'  => array(
+				'auth_callback'     => static function () {
+					return current_user_can( 'edit_posts' ); // @codeCoverageIgnore
+				},
+				'sanitize_callback' => 'absint',
+				'show_in_rest'      => true,
+				'single'            => true,
+				'type'              => 'integer',
+				'default'           => 300,
 			),
 		);
 
@@ -442,6 +485,27 @@ class Venue {
 	}
 
 	/**
+	 * Retrieves the Venue Custom Post Type (CPT) from a given Event post ID.
+	 *
+	 * This method fetches the terms attached to the Event post in the Venue taxonomy,
+	 * and returns the post associated with the first related Venue term.
+	 * Returns null if no Venue is found.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param int $post_id Event post ID to get the first venue from.
+	 * @return null|WP_Post The Venue post object if found; otherwise, null.
+	 */
+	public function get_venue_post_from_event_post_id( int $post_id ): ?WP_Post {
+		$venue_terms = get_the_terms( $post_id, self::TAXONOMY );
+		if ( ! is_array( $venue_terms ) || empty( $venue_terms ) ) {
+			return null;
+		}
+		// Assuming that we have only ONE venue related.
+		return $this->get_venue_post_from_term_slug( $venue_terms[0]->slug );
+	}
+
+	/**
 	 * Retrieve venue information from meta data.
 	 *
 	 * This method retrieves and assembles venue-related information from meta data
@@ -483,10 +547,27 @@ class Venue {
 
 		if ( is_a( $venue_post, 'WP_Post' ) ) {
 			$venue_meta['name'] = get_the_title( $venue_post );
-			$venue_meta         = array_merge(
-				$venue_meta,
-				(array) json_decode( get_post_meta( $venue_post->ID, 'gatherpress_venue_information', true ) )
-			);
+
+			// Get venue information from JSON field.
+			$venue_info_json = get_post_meta( $venue_post->ID, 'gatherpress_venue_information', true );
+			$venue_info      = json_decode( $venue_info_json, true );
+
+			if ( is_array( $venue_info ) ) {
+				$venue_meta['fullAddress'] = $venue_info['fullAddress'] ?? '';
+				$venue_meta['phoneNumber'] = $venue_info['phoneNumber'] ?? '';
+				$venue_meta['website']     = $venue_info['website'] ?? '';
+				$venue_meta['latitude']    = $venue_info['latitude'] ?? '';
+				$venue_meta['longitude']   = $venue_info['longitude'] ?? '';
+			} else {
+				// Fallback to empty values if JSON parse fails.
+				$venue_meta['fullAddress'] = '';
+				$venue_meta['phoneNumber'] = '';
+				$venue_meta['website']     = '';
+				$venue_meta['latitude']    = '';
+				$venue_meta['longitude']   = '';
+			}
+
+			$venue_meta['onlineEventLink'] = get_post_meta( $venue_post->ID, 'gatherpress_venue_online_link', true );
 		}
 
 		return $venue_meta;
