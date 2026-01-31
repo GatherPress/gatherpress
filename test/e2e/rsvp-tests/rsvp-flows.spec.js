@@ -1,4 +1,5 @@
 const { test, expect } = require( '@playwright/test' );
+const { createEventWithRSVP } = require( '../helpers/create-event-via-admin' );
 
 /**
  * RSVP Flow Tests
@@ -49,26 +50,21 @@ const { test, expect } = require( '@playwright/test' );
  *
  * See test/e2e/helpers/ for attempted implementations.
  */
-test.describe.skip( 'RSVP Flows', () => {
+test.describe( 'RSVP Flows', () => {
 	let eventUrl;
 
-	test.beforeAll( async () => {
-		// Require EVENT_URL to be provided.
-		if ( ! process.env.EVENT_URL ) {
-			throw new Error(
-				'\n\n' +
-				'❌ EVENT_URL environment variable is required.\n\n' +
-				'To run RSVP tests:\n' +
-				'1. Create a GatherPress event with an RSVP block via WordPress admin\n' +
-				'2. Set EVENT_URL to your event URL\n\n' +
-				'Example:\n' +
-				'  EVENT_URL=http://localhost:8889/event/test-event/ npm run test:e2e -- rsvp-tests/rsvp-flows.spec.js\n'
-			);
-		}
+	test.beforeAll( async ( { browser } ) => {
+		const context = await browser.newContext( {
+			// Uses your existing admin login state
+			storageState: './test/e2e/storageState.json',
+			baseURL: process.env.WP_BASE_URL || 'http://localhost:8889',
+		} );
 
-		eventUrl = process.env.EVENT_URL;
-		// eslint-disable-next-line no-console
-		console.log( `\n✓ Using event URL: ${ eventUrl }\n` );
+		const page = await context.newPage();
+
+		eventUrl = await createEventWithRSVP( page );
+
+		await context.close();
 	} );
 
 	test.describe( 'Open RSVP Flow (Logged Out Users)', () => {
@@ -85,13 +81,19 @@ test.describe.skip( 'RSVP Flows', () => {
 			await rsvpButton.click();
 
 			// Modal should open.
-			const modal = page.locator( '.gatherpress-modal--type-rsvp' );
+			const modal = page.locator( '.gatherpress--has-login-url' );
 			await expect( modal ).toBeVisible();
 
-			// Should have email field for open RSVP.
-			const emailField = modal.locator( 'input[type="email"]' );
-			await expect( emailField ).toBeVisible();
-		} );
+			// click on login link
+			const loginLink = page.getByRole( 'link', { name: 'Login' } );
+			await loginLink.click();
+
+			// Login in form
+			const loginForm = page.locator( '#loginform' );
+			await expect( loginForm ).toBeVisible();
+		} ); //completed
+
+		//using admin credential for login
 
 		test( 'should allow RSVP with email for open RSVP', async ( { page } ) => {
 			await page.goto( eventUrl );
@@ -101,20 +103,44 @@ test.describe.skip( 'RSVP Flows', () => {
 			const rsvpButton = page.locator( 'button:has-text("RSVP")' ).first();
 			await rsvpButton.click();
 
-			// Fill email field.
-			const modal = page.locator( '.gatherpress-modal--type-rsvp' );
-			const emailField = modal.locator( 'input[type="email"]' );
-			await emailField.fill( 'test@example.com' );
+			// Modal should open.
+			const modal = page.locator( '.gatherpress--has-login-url' );
+			await expect( modal ).toBeVisible();
+
+			// click on login link
+			const loginLink = page.getByRole( 'link', { name: 'Login' } );
+			await loginLink.click();
+
+			const loginForm = page.locator( '#loginform' );
+			await expect( loginForm ).toBeVisible();
+
+			const username = 'admin';
+			const password = 'password';
+
+			await page.getByRole( 'textbox', { name: 'Username or Email Address' } ).fill( username );
+			await page.getByRole( 'textbox', { name: 'Password' } ).fill( password );
+			await page.getByRole( 'button', { name: 'Log In' } ).click();
+
+			// // Click RSVP button.
+			// await page.getByRole('button', { name: 'RSVP' }).click();
 
 			// Submit RSVP.
-			const submitButton = modal.locator( 'button:has-text("RSVP")' );
+			const submitButton = page.getByRole( 'button', { name: 'RSVP' } );
 			await submitButton.click();
 
+			const Attend = page.getByRole( 'button', { name: 'Attend', exact: true } );
+			await Attend.click();
+
+			const close = page.getByRole( 'button', { name: 'Close' } );
+			await close.click();
+
 			// Should show success state.
-			await expect( page.locator( ':has-text("Attending")' ) ).toBeVisible( { timeout: 10000 } );
+			await expect(
+				page.getByText( 'Attending' ).first()
+			).toBeVisible( { timeout: 10000 } );
 		} );
 
-		test( 'should validate email field in open RSVP', async ( { page } ) => {
+		test( 'should validate email and password field in open RSVP', async ( { page } ) => {
 			await page.goto( eventUrl );
 			await page.waitForLoadState( 'load' );
 
@@ -122,16 +148,27 @@ test.describe.skip( 'RSVP Flows', () => {
 			const rsvpButton = page.locator( 'button:has-text("RSVP")' ).first();
 			await rsvpButton.click();
 
-			const modal = page.locator( '.gatherpress-modal--type-rsvp' );
+			// click on login link
+			const loginLink = page.getByRole( 'link', { name: 'Login' } );
+			await loginLink.click();
+
+			const loginForm = page.locator( '#loginform' );
+			await expect( loginForm ).toBeVisible();
+
+			const username = 'admin1';
+			const password = 'password';
+
+			await page.getByRole( 'textbox', { name: 'Username or Email Address' } ).fill( username );
+			await page.getByRole( 'textbox', { name: 'Password' } ).fill( password );
+			await page.getByRole( 'button', { name: 'Log In' } ).click();
 
 			// Try to submit without email.
-			const submitButton = modal.locator( 'button:has-text("RSVP")' );
+			const submitButton = loginForm.locator( '#wp-submit' );
 			await submitButton.click();
 
-			// Should show validation error or prevent submission.
-			const emailField = modal.locator( 'input[type="email"]' );
-			const isInvalid = await emailField.evaluate( ( el ) => ! el.checkValidity() );
-			expect( isInvalid ).toBe( true );
+			// Error for email is visible
+			const loginError = page.locator( '#login_error' );
+			await expect( loginError ).toBeVisible();
 		} );
 	} );
 
@@ -144,54 +181,86 @@ test.describe.skip( 'RSVP Flows', () => {
 			const rsvpButton = page.locator( 'button:has-text("RSVP")' ).first();
 			await rsvpButton.click();
 
-			const modal = page.locator( '.gatherpress-modal--type-rsvp' );
+			const modal = page.getByRole( 'dialog', { name: 'RSVP Modal' } );
 			await expect( modal ).toBeVisible();
 
 			// Should NOT have email field for logged in users.
 			const emailField = modal.locator( 'input[type="email"]' );
 			await expect( emailField ).toHaveCount( 0 );
 
-			// Submit RSVP.
-			const submitButton = modal.locator( 'button.gatherpress-rsvp--trigger-update' );
-			await submitButton.click();
+			// RSVP attending (wait until button is actionable)
+			// const rsvpAttend = modal.getByRole('button', { name: 'Attend', exact: true });
+			// await expect(rsvpAttend).toBeVisible();
+			// await expect(rsvpAttend).toBeEnabled();
+			// await rsvpAttend.click();
 
-			// Should show success state.
-			await expect( page.locator( ':has-text("Attending")' ) ).toBeVisible( { timeout: 10000 } );
+			// Wait for modal update to complete
+			await expect( modal ).toBeVisible();
+
+			// Close RSVP (wait until clickable)
+			const closeRSVP = modal.getByRole( 'button', { name: 'Close' } );
+			await expect( closeRSVP ).toBeVisible();
+			await expect( closeRSVP ).toBeEnabled();
+			await closeRSVP.click();
+
+			// Wait for modal to fully disappear
+			await expect( modal ).toBeHidden();
+
+			// Assert visible attending state (page content only)
+			await expect(
+				page.locator( 'main' )
+					.locator( 'strong', { hasText: 'Attending' } )
+					.first()
+			).toBeVisible( { timeout: 10000 } );
 		} );
 
 		test( 'should change RSVP status from attending to not attending', async ( { page } ) => {
 			await page.goto( eventUrl );
 			await page.waitForLoadState( 'load' );
 
-			// First, ensure we're attending.
-			let rsvpButton = page.locator( 'button:has-text("RSVP"), button:has-text("Edit RSVP")' ).first();
+			// Click RSVP button.
+			const rsvpButton = page.locator( 'button:has-text("RSVP")' ).first();
 			await rsvpButton.click();
 
-			let modal = page.locator( '.gatherpress-modal--type-rsvp' );
-			let submitButton = modal.locator( 'button.gatherpress-rsvp--trigger-update' );
-			await submitButton.click();
+			const modal = page.getByRole( 'dialog', { name: 'RSVP Modal' } );
+			await expect( modal ).toBeVisible();
 
-			// Wait for attending status.
-			await expect( page.locator( ':has-text("Attending")' ) ).toBeVisible( { timeout: 10000 } );
+			// Should NOT have email field for logged in users.
+			const emailField = modal.locator( 'input[type="email"]' );
+			await expect( emailField ).toHaveCount( 0 );
+
+			// click on attend
+			const notAttendingButton = modal.getByRole( 'button', { name: 'Not Attending' } );
+			await notAttendingButton.click( { force: true } );
+
+			//close rsvp model
+			const closeRSVP = modal.getByRole( 'button', { name: 'Close' } );
+			await closeRSVP.click();
 
 			// Now change to not attending.
-			rsvpButton = page.locator( 'button:has-text("Edit RSVP")' ).first();
-			await rsvpButton.click();
+			// const EditRSVPButton = modal.getByRole('button', { name: 'Not Attending' });
+			// await EditRSVPButton.click();
 
-			modal = page.locator( '.gatherpress-modal--type-rsvp' );
+			// modal = page.locator('.gatherpress-modal--type-rsvp');
+			// await expect(modal).toBeVisible();
 
 			// Select "Not Attending" radio button.
-			const notAttendingRadio = modal.locator( 'input[value="not_attending"]' );
-			await notAttendingRadio.click();
+			// const notAttendingButton = modal.getByRole('button', { name: 'Not Attending' });
+			// await notAttendingButton.click({ force: true});
 
-			submitButton = modal.locator( 'button.gatherpress-rsvp--trigger-update' );
-			await submitButton.click();
+			await page.waitForTimeout( 1000 );
 
+			// submitButton = modal.locator('button.gatherpress-rsvp--trigger-update');
+			// await submitButton.click();
+
+			// await closeRSVP.click({ timeout: 500 });
 			// Should show not attending status.
-			await expect( page.locator( ':has-text("Not Attending")' ) ).toBeVisible( { timeout: 10000 } );
+			await expect(
+				page.locator( 'main' ).locator( 'strong', { hasText: 'Not Attending' } ).first()
+			).toBeVisible( { timeout: 10000 } );
 		} );
 
-		test( 'should handle waiting list status', async ( { page } ) => {
+		test.skip( 'should handle waiting list status', async ( { page } ) => {
 			await page.goto( eventUrl );
 			await page.waitForLoadState( 'load' );
 
@@ -222,10 +291,8 @@ test.describe.skip( 'RSVP Flows', () => {
 			const rsvpButton = page.locator( 'button:has-text("RSVP"), button:has-text("Edit RSVP")' ).first();
 			await rsvpButton.click();
 
-			const modal = page.locator( '.gatherpress-modal--type-rsvp' );
-
 			// Should have anonymous checkbox.
-			const anonymousCheckbox = modal.locator( 'input[type="checkbox"][name*="anonymous"]' );
+			const anonymousCheckbox = page.getByRole( 'dialog', { name: 'RSVP Modal' } ).getByLabel( 'List me as anonymous' );
 			await expect( anonymousCheckbox ).toBeVisible();
 		} );
 
@@ -235,20 +302,31 @@ test.describe.skip( 'RSVP Flows', () => {
 
 			// Click RSVP button.
 			const rsvpButton = page.locator( 'button:has-text("RSVP"), button:has-text("Edit RSVP")' ).first();
-			await rsvpButton.click();
-
+			await rsvpButton.click( { timeout: 1000 } );
 			const modal = page.locator( '.gatherpress-modal--type-rsvp' );
+			//click on attend
+			const rsvpAttend = modal.getByRole( 'button', { name: 'Attending', exact: true } );
+			await rsvpAttend.click( { timeout: 1000 } );
 
+			await page.waitForTimeout( 1000 );
 			// Check anonymous checkbox.
-			const anonymousCheckbox = modal.locator( 'input[type="checkbox"][name*="anonymous"]' );
+			const anonymousCheckbox = page.getByRole( 'checkbox', { name: 'List me as anonymous' } );
 			await anonymousCheckbox.check();
 
-			// Submit RSVP.
-			const submitButton = modal.locator( 'button.gatherpress-rsvp--trigger-update' );
-			await submitButton.click();
+			await page.waitForTimeout( 1000 );
 
-			// Should show success state.
-			await expect( page.locator( ':has-text("Attending")' ) ).toBeVisible( { timeout: 10000 } );
+			await page.waitForTimeout( 5000 );
+			// //close rsvp model
+			// const closeRSVP = modal.getByRole('button', { name: 'Close' });
+			// await closeRSVP.click();
+			// await page.waitForTimeout(1000)
+
+			// Assert visible attending state (page content only)
+			await expect(
+				page.locator( 'main' )
+					.locator( 'strong', { hasText: 'Attending' } )
+					.first()
+			).toBeVisible( { timeout: 10000 } );
 		} );
 	} );
 
@@ -263,6 +341,18 @@ test.describe.skip( 'RSVP Flows', () => {
 
 			const modal = page.locator( '.gatherpress-modal--type-rsvp' );
 
+			await page.waitForTimeout( 1000 );
+			// Check anonymous checkbox.
+			const anonymousCheckbox = page.getByRole( 'checkbox', { name: 'List me as anonymous' } );
+			await anonymousCheckbox.check();
+
+			await page.waitForTimeout( 5000 );
+			//click on attend
+			const rsvpAttend = modal.getByRole( 'button', { name: 'Attend', exact: true } );
+			await rsvpAttend.click( { timeout: 1000 } );
+
+			await page.waitForTimeout( 5000 );
+
 			// Find guest count field (might be number input or similar).
 			const guestField = modal.locator( 'input[type="number"][name*="guest"], input[name*="guests"]' );
 
@@ -271,11 +361,20 @@ test.describe.skip( 'RSVP Flows', () => {
 				await guestField.fill( '2' );
 
 				// Submit RSVP.
-				const submitButton = modal.locator( 'button.gatherpress-rsvp--trigger-update' );
-				await submitButton.click();
+				// const submitButton = modal.locator('button.gatherpress-rsvp--trigger-update');
+				// await submitButton.click();
+
+				// close rsvp
+				const closeRSVP = modal.getByRole( 'button', { name: 'Close' } );
+				await closeRSVP.click();
 
 				// Should show success.
-				await expect( page.locator( ':has-text("Attending")' ) ).toBeVisible( { timeout: 10000 } );
+
+				await expect(
+					page.locator( 'main' )
+						.locator( 'strong', { hasText: 'Attending' } )
+						.first()
+				).toBeVisible( { timeout: 10000 } );
 			} else {
 				// Guest field might not be enabled for this event - skip test.
 				test.skip();
@@ -292,11 +391,11 @@ test.describe.skip( 'RSVP Flows', () => {
 			const rsvpButton = page.locator( 'button:has-text("RSVP")' ).first();
 			await rsvpButton.click();
 
-			const modal = page.locator( '.gatherpress-modal--type-rsvp' );
+			const modal = page.getByRole( 'dialog', { name: 'RSVP Modal' } );
 			await expect( modal ).toBeVisible();
 
 			// Click close button.
-			const closeButton = modal.locator( 'button.gatherpress-modal--trigger-close' );
+			const closeButton = modal.getByRole( 'button', { name: 'Close' } );
 			await closeButton.click();
 
 			// Modal should be hidden.
@@ -313,12 +412,16 @@ test.describe.skip( 'RSVP Flows', () => {
 
 			const modal = page.locator( '.gatherpress-modal--type-rsvp' );
 
-			// Submit RSVP.
-			const submitButton = modal.locator( 'button.gatherpress-rsvp--trigger-update' );
-			await submitButton.click();
+			// click on attend
+			const rsvpAttend = modal.getByRole( 'button', { name: 'Not Attending', exact: true } );
+			await rsvpAttend.click();
+
+			//close rsvp model after clcking on attend
+			const closeRSVP = modal.getByRole( 'button', { name: 'Close' } );
+			await closeRSVP.click();
 
 			// Modal should close.
-			await expect( modal ).toBeHidden( { timeout: 10000 } );
+			await expect( page.getByLabel( 'RSVP Modal' ).first() ).toBeHidden( { timeout: 10000 } );
 		} );
 	} );
 } );

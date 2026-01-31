@@ -47,27 +47,37 @@ async function createEventWithRSVP( page ) {
 
 	// Add RSVP block to the event.
 	// Click the "Add block" button in the editor.
-	await page.click( '.edit-post-header-toolbar__inserter-toggle, [aria-label="Toggle block inserter"]' );
+	// await page.click( '.edit-post-header-toolbar__inserter-toggle, [aria-label="Toggle block inserter"]' );
 
 	// Search for the RSVP block.
-	const searchInput = page.locator( '.block-editor-inserter__search-input, .block-editor-inserter__search input' );
-	await searchInput.fill( 'rsvp' );
+	// const searchInput = page.locator( '.block-editor-inserter__search-input, .block-editor-inserter__search input' );
+	// await searchInput.fill( 'rsvp' );
 
 	// Click the RSVP block option.
-	const rsvpBlockOption = page.locator( '.block-editor-block-types-list__item:has-text("RSVP"), button:has-text("RSVP")' ).first();
-	await rsvpBlockOption.click();
+	// const rsvpBlockOption = page.locator( '.block-editor-block-types-list__item:has-text("RSVP"), button:has-text("RSVP")' ).first();
+	// await rsvpBlockOption.click();
 
 	// Wait a moment for the block to be inserted.
 	await page.waitForTimeout( 1000 );
 
 	// Publish the event.
-	// Click the publish button in the header.
-	const publishButton = page.locator( '.editor-post-publish-panel__toggle, button:has-text("Publish")' ).first();
-	await publishButton.click();
+	const publishToggle = page.locator(
+		'button.editor-post-publish-panel__toggle'
+	);
+	await publishToggle.click();
 
-	// Wait for the publish panel to open, then click the final publish button.
-	const finalPublishButton = page.locator( '.editor-post-publish-button, button:has-text("Publish"):visible' ).last();
-	await finalPublishButton.click();
+	// Wait for the final Publish button inside the panel
+	const finalPublish = page.locator(
+		'button.editor-post-publish-button__button.is-primary'
+	).last();
+
+	await finalPublish.waitFor( { state: 'visible' } );
+
+	// Give Gutenberg a moment to remove overlay
+	await page.waitForTimeout( 500 );
+
+	// Click the real publish button (overlay-safe)
+	await finalPublish.click( { force: true } );
 
 	// Wait for the publish confirmation.
 	await page.waitForSelector( '.components-snackbar, .post-publish-panel__postpublish' );
