@@ -10,6 +10,18 @@ import 'moment-timezone';
  */
 import { dispatch } from '@wordpress/data';
 
+// Mock WordPress modules before importing internal dependencies.
+jest.mock( '@wordpress/data', () => ( {
+	select: jest.fn(),
+	dispatch: jest.fn().mockReturnValue( {
+		removeNotice: jest.fn(),
+		createNotice: jest.fn(),
+	} ),
+} ) );
+jest.mock( '@wordpress/core-data', () => ( {
+	store: {},
+} ) );
+
 /**
  * Internal dependencies.
  */
@@ -21,15 +33,6 @@ import {
 	getEventMeta,
 } from '../../../../../src/helpers/event';
 import { dateTimeDatabaseFormat } from '../../../../../src/helpers/datetime';
-
-// Mock the @wordpress/data module
-jest.mock( '@wordpress/data', () => ( {
-	select: jest.fn(),
-	dispatch: jest.fn().mockReturnValue( {
-		removeNotice: jest.fn(),
-		createNotice: jest.fn(),
-	} ),
-} ) );
 
 /**
  * Coverage for isEventPostType.
