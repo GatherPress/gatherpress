@@ -184,7 +184,7 @@ class Event_Setup {
 					'thumbnail',
 					'comments',
 					'revisions',
-					'custom-fields',
+					// 'custom-fields',
 				),
 				'menu_icon'     => 'dashicons-nametag',
 				'has_archive'   => true,
