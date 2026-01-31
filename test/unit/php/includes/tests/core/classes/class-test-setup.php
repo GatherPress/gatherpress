@@ -53,6 +53,12 @@ class Test_Setup extends Base {
 			),
 			array(
 				'type'     => 'action',
+				'name'     => 'admin_notices',
+				'priority' => 10,
+				'callback' => array( $instance, 'check_shared_options' ),
+			),
+			array(
+				'type'     => 'action',
 				'name'     => 'network_admin_notices',
 				'priority' => 10,
 				'callback' => array( $instance, 'check_gatherpress_alpha' ),
