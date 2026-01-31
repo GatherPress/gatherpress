@@ -301,8 +301,9 @@ function main(): void {
 	}
 
 	// Check coverage for each file that needs checking.
-	$failed_files = array();
-	$passed_files = array();
+	$failed_files     = array();
+	$missing_coverage = array();
+	$passed_files     = array();
 
 	foreach ( $files_to_check as $file ) {
 
@@ -310,8 +311,10 @@ function main(): void {
 		$coverage = get_file_coverage( $coverage_xml, $file );
 
 		if ( $coverage === null ) {
-			// File not in coverage report (might be excluded from Jest or have no executable statements).
-			echo "⚠️  {$file} - Not in coverage report (may be excluded or have no testable code)\n";
+			// File not in coverage report - this means no test imports it.
+			// This is a failure because changed files should have test coverage.
+			$missing_coverage[] = $file;
+			echo "❌ {$file} - Not in coverage report (no test imports this file)\n";
 			continue;
 		}
 
@@ -348,28 +351,45 @@ function main(): void {
 	echo "\n=== Summary ===\n";
 	echo '✅ Passed: ' . count( $passed_files ) . " file(s)\n";
 	echo '⏭️  Excluded: ' . $excluded_count . " file(s)\n";
-	echo '❌ Failed: ' . count( $failed_files ) . " file(s)\n\n";
+	echo '❌ Low coverage: ' . count( $failed_files ) . " file(s)\n";
+	echo '❌ Missing coverage: ' . count( $missing_coverage ) . " file(s)\n\n";
+
+	$has_failures = ! empty( $failed_files ) || ! empty( $missing_coverage );
 
 	// If any files failed, provide detailed information and exit with error.
-	if ( ! empty( $failed_files ) ) {
-		echo "=== JavaScript Files Requiring Additional Test Coverage ===\n\n";
+	if ( $has_failures ) {
+		if ( ! empty( $failed_files ) ) {
+			echo "=== JavaScript Files Requiring Additional Test Coverage ===\n\n";
 
-		foreach ( $failed_files as $failed ) {
-			echo "File: {$failed['file']}\n";
-			echo "  Coverage: {$failed['percentage']}% ({$failed['covered']}/{$failed['total']} statements)\n";
-			echo "  Required: {$min_coverage}%\n";
+			foreach ( $failed_files as $failed ) {
+				echo "File: {$failed['file']}\n";
+				echo "  Coverage: {$failed['percentage']}% ({$failed['covered']}/{$failed['total']} statements)\n";
+				echo "  Required: {$min_coverage}%\n";
 
-			if ( ! empty( $failed['uncovered_lines'] ) ) {
-				$line_ranges = format_line_ranges( $failed['uncovered_lines'] );
-				echo "  Uncovered lines: {$line_ranges}\n";
-				echo '  Total uncovered: ' . count( $failed['uncovered_lines'] ) . " lines\n";
+				if ( ! empty( $failed['uncovered_lines'] ) ) {
+					$line_ranges = format_line_ranges( $failed['uncovered_lines'] );
+					echo "  Uncovered lines: {$line_ranges}\n";
+					echo '  Total uncovered: ' . count( $failed['uncovered_lines'] ) . " lines\n";
+				}
+
+				echo "\n";
 			}
 
-			echo "\n";
+			echo "Please add tests to cover the missing lines in the files listed above.\n";
+			echo "Minimum required coverage: {$min_coverage}%\n\n";
 		}
 
-		echo "Please add tests to cover the missing lines in the files listed above.\n";
-		echo "Minimum required coverage: {$min_coverage}%\n";
+		if ( ! empty( $missing_coverage ) ) {
+			echo "=== JavaScript Files With No Test Coverage ===\n\n";
+			echo "The following files are not in the coverage report, which means no test file imports them:\n\n";
+
+			foreach ( $missing_coverage as $file ) {
+				echo "  - {$file}\n";
+			}
+
+			echo "\nThese files need to have tests created that import and test their functionality.\n";
+			echo "Create a test file that imports the module to ensure it appears in the coverage report.\n\n";
+		}
 
 		exit( 1 );
 	}
