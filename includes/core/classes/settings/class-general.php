@@ -310,6 +310,61 @@ class General extends Base {
 
 				),
 			),
+			'rsvp_cleanup' => array(
+				'name' => __('RSVP Cleanup Settings', 'gatherpress'),
+				'description' => __('Schedule how often unverified RSVPs are cleaned up', 'gatherpress'),
+				'options' => array(
+					'rsvp_cleanup_switch' => array(
+						'labels' => array(
+							'name' => __('Toggle RSVP Cleanup', 'gatherpress'),
+						),
+						'description' => __('Enable/Disable unverified RSVP cleanup.', 'gatherpress'),
+						'field' => array(
+							'type' => 'select',
+							'options' => array(
+								'default' => 'off',
+								'items' => array(
+									'off' => __('Disable', 'gatherpress'),
+									'on' => __('Enable', 'gatherpress'),
+								)
+							)
+						)
+					),
+					'rsvp_cleanup_frequency' => array(
+						'labels' => array(
+							'name' => __('Cleanup Frequency', 'gatherpress'),
+						),
+						'description' => __('How often the system should check for and remove unverified RSVPs.', 'gatherpress'),
+						'field' => array(
+							'type' => 'select',
+							'options' => array(
+								'default' => 'day',
+								'items' => array(
+									'hourly' => __('Hourly', 'gatherpress'),
+									'daily' => __('Daily', 'gatherpress'),
+									'weekly' => __('Weekly', 'gatherpress'),
+									'monthly' => __('Monthly', 'gatherpress'),
+									'yearly' => __('Yearly', 'gatherpress'),
+								)
+							)
+						)
+					),
+					'rsvp_cleanup_interval' => array(
+						'labels' => array(
+							'name' => __('Cleanup Frequency Interval', 'gatherpress'),
+						),
+						'description' => __('The number of days, months, or years between each cleanup run.', 'gatherpress'),
+						'field' => array(
+							'type' => 'number',
+							'size' => 'small',
+							'options' => array(
+								'min' => 1,
+								'default' => 1
+							)
+						)
+					)
+				)
+			)
 		);
 	}
 }

@@ -123,6 +123,12 @@ class Rsvp_Token {
 			return '';
 		}
 
+		// Reject token if the comment is more than 24 hours old.
+		$diff = strtotime( 'now' ) - strtotime( $this->comment->comment_date );
+		if( $diff >= 86400 ) {
+			return "";
+		}
+
 		$token = (string) get_comment_meta(
 			(int) $this->comment->comment_ID,
 			$this->get_meta_key(),
@@ -133,6 +139,7 @@ class Rsvp_Token {
 
 		return $this->token;
 	}
+
 
 	/**
 	 * Approves the RSVP comment.
@@ -441,7 +448,7 @@ class Rsvp_Token {
 
 		return array(
 			'subject' => sprintf(
-				/* translators: %s: Event title. */
+			/* translators: %s: Event title. */
 				__( 'Confirm your RSVP for %s', 'gatherpress' ),
 				$title
 			),
