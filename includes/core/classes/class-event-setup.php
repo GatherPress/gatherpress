@@ -251,34 +251,34 @@ class Event_Setup {
 				'type'              => 'string',
 			),
 			'gatherpress_datetime_start'        => array(
-				'auth_callback'     => array( $this, 'can_edit_posts_meta' ),
+				'auth_callback'     => '__return_false', // Read-only: derived from gatherpress_datetime.
 				'sanitize_callback' => 'sanitize_text_field',
 				'show_in_rest'      => true,
 				'single'            => true,
 			),
 			'gatherpress_datetime_start_gmt'    => array(
-				'auth_callback'     => array( $this, 'can_edit_posts_meta' ),
+				'auth_callback'     => '__return_false', // Read-only: derived from gatherpress_datetime.
 				'sanitize_callback' => 'sanitize_text_field',
 				'show_in_rest'      => true,
 				'single'            => true,
 				'type'              => 'string',
 			),
 			'gatherpress_datetime_end'          => array(
-				'auth_callback'     => array( $this, 'can_edit_posts_meta' ),
+				'auth_callback'     => '__return_false', // Read-only: derived from gatherpress_datetime.
 				'sanitize_callback' => 'sanitize_text_field',
 				'show_in_rest'      => true,
 				'single'            => true,
 				'type'              => 'string',
 			),
 			'gatherpress_datetime_end_gmt'      => array(
-				'auth_callback'     => array( $this, 'can_edit_posts_meta' ),
+				'auth_callback'     => '__return_false', // Read-only: derived from gatherpress_datetime.
 				'sanitize_callback' => 'sanitize_text_field',
 				'show_in_rest'      => true,
 				'single'            => true,
 				'type'              => 'string',
 			),
 			'gatherpress_timezone'              => array(
-				'auth_callback'     => array( $this, 'can_edit_posts_meta' ),
+				'auth_callback'     => '__return_false', // Read-only: derived from gatherpress_datetime.
 				'sanitize_callback' => 'sanitize_text_field',
 				'show_in_rest'      => true,
 				'single'            => true,
@@ -327,16 +327,20 @@ class Event_Setup {
 	/**
 	 * Register a rewrite rule and query var for serving .ics calendar downloads.
 	 *
-	 * This adds support for URLs like /event/my-event/my-event.ics that serve
-	 * dynamically generated ICS files for individual events.
+	 * This adds support for URLs like /events/my-event.ics that serve
+	 * dynamically generated ICS files for individual events. The URL slug
+	 * matches the configured event post type slug from GatherPress settings.
 	 *
 	 * @since 1.0.0
 	 *
 	 * @return void
 	 */
 	public function register_calendar_rewrite_rule(): void {
+		$settings     = Settings::get_instance();
+		$rewrite_slug = sanitize_title( $settings->get_value( 'general', 'urls', 'events' ) );
+
 		add_rewrite_rule(
-			'^event/([^/]+)\.ics$',
+			sprintf( '^%s/([^/]+)\.ics$', $rewrite_slug ),
 			sprintf( 'index.php?post_type=%s&name=$matches[1]&gatherpress_ics=1', Event::POST_TYPE ),
 			'top'
 		);

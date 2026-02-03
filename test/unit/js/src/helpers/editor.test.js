@@ -8,6 +8,12 @@ import { describe, expect, it, jest, beforeEach, afterEach } from '@jest/globals
  */
 import { dispatch, select } from '@wordpress/data';
 
+// Mock WordPress modules before importing internal dependencies.
+jest.mock( '@wordpress/data' );
+jest.mock( '@wordpress/core-data', () => ( {
+	store: {},
+} ) );
+
 /**
  * Internal dependencies.
  */
@@ -15,11 +21,9 @@ import {
 	enableSave,
 	isGatherPressPostType,
 	getEditorDocument,
+	getStartOfWeek,
 	isInFSETemplate,
 } from '../../../../../src/helpers/editor';
-
-// Mock WordPress data module.
-jest.mock( '@wordpress/data' );
 
 describe( 'Editor helper functions', () => {
 	describe( 'enableSave', () => {
@@ -181,6 +185,66 @@ describe( 'Editor helper functions', () => {
 			const result = getEditorDocument();
 
 			expect( result ).toBe( global.document );
+		} );
+	} );
+
+	describe( 'getStartOfWeek', () => {
+		beforeEach( () => {
+			jest.clearAllMocks();
+		} );
+
+		it( 'returns start_of_week from site settings', () => {
+			select.mockReturnValue( {
+				getSite: jest.fn().mockReturnValue( {
+					start_of_week: 1, // Monday
+				} ),
+			} );
+
+			expect( getStartOfWeek() ).toBe( 1 );
+		} );
+
+		it( 'returns 0 (Sunday) when start_of_week is 0', () => {
+			select.mockReturnValue( {
+				getSite: jest.fn().mockReturnValue( {
+					start_of_week: 0, // Sunday
+				} ),
+			} );
+
+			expect( getStartOfWeek() ).toBe( 0 );
+		} );
+
+		it( 'returns 0 when site is undefined', () => {
+			select.mockReturnValue( {
+				getSite: jest.fn().mockReturnValue( undefined ),
+			} );
+
+			expect( getStartOfWeek() ).toBe( 0 );
+		} );
+
+		it( 'returns 0 when site is null', () => {
+			select.mockReturnValue( {
+				getSite: jest.fn().mockReturnValue( null ),
+			} );
+
+			expect( getStartOfWeek() ).toBe( 0 );
+		} );
+
+		it( 'returns 0 when start_of_week property is missing', () => {
+			select.mockReturnValue( {
+				getSite: jest.fn().mockReturnValue( {} ),
+			} );
+
+			expect( getStartOfWeek() ).toBe( 0 );
+		} );
+
+		it( 'returns 6 when start_of_week is 6 (Saturday)', () => {
+			select.mockReturnValue( {
+				getSite: jest.fn().mockReturnValue( {
+					start_of_week: 6, // Saturday
+				} ),
+			} );
+
+			expect( getStartOfWeek() ).toBe( 6 );
 		} );
 	} );
 
