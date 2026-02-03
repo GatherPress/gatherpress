@@ -30,4 +30,4 @@ apply_filters( 'gatherpress_is_alpha_active', defined( 'GATHERPRESS_ALPHA_VERSIO
 
 
 
-[← All Hooks](Hooks)
+[← All Hooks](Hooks.md)
