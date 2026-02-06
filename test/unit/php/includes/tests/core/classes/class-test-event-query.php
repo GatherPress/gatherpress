@@ -222,7 +222,7 @@ class Test_Event_Query extends Base {
 		$query    = new WP_Query();
 
 		$query->set( 'post_type', 'gatherpress_event' );
-		$query->set( 'gatherpress_events_query', 'upcoming' );
+		$query->set( 'gatherpress_event_query', 'upcoming' );
 		$instance->prepare_event_query_before_execution( $query );
 
 		$this->assertEquals(
@@ -250,7 +250,7 @@ class Test_Event_Query extends Base {
 		$query    = new WP_Query();
 
 		$query->set( 'post_type', 'gatherpress_event' );
-		$query->set( 'gatherpress_events_query', 'past' );
+		$query->set( 'gatherpress_event_query', 'past' );
 		$instance->prepare_event_query_before_execution( $query );
 
 		$this->assertEquals(

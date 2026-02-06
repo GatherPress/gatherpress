@@ -353,8 +353,8 @@ class Event_Query {
 		if ( 'datetime' === $wp_query->get( 'orderby' ) ) {
 
 			// Admin event list views can be filtered by 'upcoming', 'past' or 'all' events.
-			$gatherpress_events_query = ( ! empty( $wp_query->get( 'gatherpress_events_query' ) ) )
-				? $wp_query->get( 'gatherpress_events_query' )
+			$gatherpress_events_query = ( ! empty( $wp_query->get( 'gatherpress_event_query' ) ) )
+				? $wp_query->get( 'gatherpress_event_query' )
 				: 'all';
 			$query_pieces             = $this->adjust_event_sql( $query_pieces, $gatherpress_events_query, $wp_query->get( 'order' ) );
 		}

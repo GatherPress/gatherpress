@@ -628,7 +628,7 @@ class Event_Setup {
 	 */
 	public function views_edit( array $view_links ): array {
 		$nonce           = isset( $_REQUEST['_wpnonce'] ) ? sanitize_text_field( wp_unslash( $_REQUEST['_wpnonce'] ) ) : '';
-		$is_events_query = isset( $_REQUEST['gatherpress_events_query'] ) ? sanitize_text_field( wp_unslash( $_REQUEST['gatherpress_events_query'] ) ) : '';
+		$is_events_query = isset( $_REQUEST['gatherpress_event_query'] ) ? sanitize_text_field( wp_unslash( $_REQUEST['gatherpress_event_query'] ) ) : '';
 		$nonce_action    = sprintf( '%ss_views_query', Event::POST_TYPE );
 		$current_view    = ( $nonce && wp_verify_nonce( $nonce, $nonce_action ) && $is_events_query ) ? $is_events_query : '';
 		$placement       = 1;
@@ -643,7 +643,7 @@ class Event_Setup {
 				'<a href="%s"%s>%s</a>',
 				add_query_arg(
 					array(
-						'gatherpress_events_query' => $key,
+						'gatherpress_event_query' => $key,
 						'post_type'                => Event::POST_TYPE,
 					),
 					$nonce_url
@@ -658,7 +658,7 @@ class Event_Setup {
 	/**
 	 * Allowlist for additional query parameters.
 	 *
-	 * Adds 'gatherpress_events_query' to the list of allowed query variables,
+	 * Adds 'gatherpress_event_query' to the list of allowed query variables,
 	 * to be able to request 'upcoming' or 'past' events in the admin list view.
 	 *
 	 * @since 1.0.0
@@ -668,7 +668,7 @@ class Event_Setup {
 	 * @return string[] Updated list of allowed query variables.
 	 */
 	public function query_vars( array $query_vars ) {
-		$query_vars[] = 'gatherpress_events_query';
+		$query_vars[] = 'gatherpress_event_query';
 		return $query_vars;
 	}
 
