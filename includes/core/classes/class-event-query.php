@@ -61,7 +61,7 @@ class Event_Query {
 	 */
 	protected function setup_hooks(): void {
 		add_action( 'pre_get_posts', array( $this, 'prepare_event_query_before_execution' ) );
-		add_filter( 'posts_clauses', array( $this, 'adjust_admin_event_sorting' ), 10, 2 );
+		add_filter( 'posts_clauses', array( $this, 'adjust_admin_event_sorting' ), 9, 2 ); // Priority 9 to run before the upcoming/past adjustments at priority 10.
 	}
 
 	/**
@@ -174,9 +174,9 @@ class Event_Query {
 	 * @return void
 	 */
 	public function prepare_event_query_before_execution( WP_Query $query ): void {
-		if ( ! in_array( Event::POST_TYPE, (array) $query->get( 'post_type' ), true ) ) {
-			return;
-		}
+		// if ( ! in_array( Event::POST_TYPE, (array) $query->get( 'post_type' ), true ) ) {
+		// 	return;
+		// }
 
 		$events_query = $query->get( self::EVENT_QUERY_PARAM );
 
@@ -350,18 +350,22 @@ class Event_Query {
 			return $query_pieces;
 		}
 
-		if ( 'datetime' === $wp_query->get( 'orderby' ) ) {
+		remove_filter( 'posts_clauses', array( $this, 'adjust_sorting_for_past_events' ) );
+		remove_filter( 'posts_clauses', array( $this, 'adjust_sorting_for_upcoming_events' ) );
+
+		// if ( 'datetime' === $wp_query->get( 'orderby' ) ) {
 
 			// Admin event list views can be filtered by 'upcoming', 'past' or 'all' events.
-			$gatherpress_events_query = ( ! empty( $wp_query->get( 'gatherpress_event_query' ) ) )
-				? $wp_query->get( 'gatherpress_event_query' )
+			$gatherpress_events_query = ( ! empty( $wp_query->get( self::EVENT_QUERY_PARAM ) ) )
+				? $wp_query->get( self::EVENT_QUERY_PARAM )
 				: 'all';
 			$query_pieces             = $this->adjust_event_sql(
 				$query_pieces,
 				$gatherpress_events_query,
-				$wp_query->get( 'order' )
+				$wp_query->get( 'order' ),
+				$wp_query->get( 'orderby' )
 			);
-		}
+		// }
 
 		return $query_pieces;
 	}
