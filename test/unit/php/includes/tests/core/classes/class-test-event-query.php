@@ -43,7 +43,7 @@ class Test_Event_Query extends Base {
 			array(
 				'type'     => 'filter',
 				'name'     => 'posts_clauses',
-				'priority' => 10,
+				'priority' => 9,
 				'callback' => array( $instance, 'adjust_admin_event_sorting' ),
 			),
 		);
