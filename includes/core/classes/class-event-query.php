@@ -356,7 +356,11 @@ class Event_Query {
 			$gatherpress_events_query = ( ! empty( $wp_query->get( 'gatherpress_event_query' ) ) )
 				? $wp_query->get( 'gatherpress_event_query' )
 				: 'all';
-			$query_pieces             = $this->adjust_event_sql( $query_pieces, $gatherpress_events_query, $wp_query->get( 'order' ) );
+			$query_pieces             = $this->adjust_event_sql(
+				$query_pieces,
+				$gatherpress_events_query,
+				$wp_query->get( 'order' )
+			);
 		}
 
 		return $query_pieces;

@@ -644,7 +644,7 @@ class Event_Setup {
 				add_query_arg(
 					array(
 						'gatherpress_event_query' => $key,
-						'post_type'                => Event::POST_TYPE,
+						'post_type'               => Event::POST_TYPE,
 					),
 					$nonce_url
 				),
