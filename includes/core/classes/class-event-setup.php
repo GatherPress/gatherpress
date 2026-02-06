@@ -670,6 +670,9 @@ class Event_Setup {
 	public function query_vars( array $query_vars ) {
 		$query_vars[] = 'gatherpress_events_query';
 		return $query_vars;
+	}
+
+	/**
 	 * Handle RSVP column sorting in the events list.
 	 *
 	 * @since 1.0.0
