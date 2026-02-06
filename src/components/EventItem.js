@@ -38,7 +38,7 @@ const EventItem = ( props ) => {
 		);
 	};
 	const size =
-		eventOptions.imageSize === 'default'
+		'default' === eventOptions.imageSize
 			? 'featured_image'
 			: 'featured_image_' + eventOptions.imageSize;
 	const featuredImage = HtmlReactParser( event[ size ] );

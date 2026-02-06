@@ -5,7 +5,7 @@
  * Description:       Powering Communities with WordPress.
  * Author:            The GatherPress Community
  * Author URI:        https://gatherpress.org/
- * Version:           0.33.0-alpha.1
+ * Version:           0.34.0-alpha.1
  * Requires PHP:      7.4
  * Requires at least: 6.7
  * Text Domain:       gatherpress
@@ -22,7 +22,8 @@
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 // Ensure no other versions of GatherPress are currently running.
-if ( require_once __DIR__ . '/includes/core/duplicate-check.php' ) {
+$gatherpress_duplicate_check_result = require_once __DIR__ . '/includes/core/duplicate-check.php';
+if ( $gatherpress_duplicate_check_result ) {
 	return;
 }
 
@@ -44,6 +45,11 @@ if ( ! require_once GATHERPRESS_CORE_PATH . '/includes/core/requirements-check.p
 // Include and register the autoloader class for automatic loading of plugin classes.
 require_once GATHERPRESS_CORE_PATH . '/includes/core/classes/class-autoloader.php';
 GatherPress\Core\Autoloader::register();
+
+// Ensure the Singleton trait is loaded before initializing Setup class.
+if ( ! trait_exists( 'GatherPress\Core\Traits\Singleton' ) ) {
+	require_once GATHERPRESS_CORE_PATH . '/includes/core/classes/traits/class-singleton.php';
+}
 
 // Initialize setups.
 GatherPress\Core\Setup::get_instance();

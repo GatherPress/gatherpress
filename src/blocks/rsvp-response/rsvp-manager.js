@@ -151,8 +151,7 @@ const RsvpManager = ( { defaultStatus, setDefaultStatus } ) => {
 				key="query-controls-topics-select"
 				label={ __( 'Members', 'gatherpress' ) }
 				value={
-					attendees &&
-					attendees.map( ( item ) => ( {
+					attendees?.map( ( item ) => ( {
 						id: item.userId,
 						value: item.name,
 					} ) )

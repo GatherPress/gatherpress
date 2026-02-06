@@ -53,9 +53,8 @@ const Edit = ( { attributes, setAttributes, clientId, insertBlocksAfter } ) => {
 					// Default fallback anchor tag.
 					let openingTag = '<a href="#">';
 					const closingTag = '</a>';
-					let newText = value.trim();
 
-					if ( anchors.length > 0 ) {
+					if ( 0 < anchors.length ) {
 						// Extract the opening tag from the first anchor.
 						const firstAnchor = anchors[ 0 ];
 
@@ -85,6 +84,7 @@ const Edit = ( { attributes, setAttributes, clientId, insertBlocksAfter } ) => {
 					const cleanText = parsedDoc.body.textContent.trim();
 
 					// Wrap the clean text with the anchor tags.
+					let newText;
 					if ( cleanText ) {
 						newText = `${ openingTag }${ cleanText }${ closingTag }`;
 					} else {
@@ -116,7 +116,7 @@ const Edit = ( { attributes, setAttributes, clientId, insertBlocksAfter } ) => {
 					setAttributes( { text: before } );
 				} }
 				onKeyDown={ ( event ) => {
-					if ( event.key === 'Enter' ) {
+					if ( 'Enter' === event.key ) {
 						event.preventDefault();
 						const newBlock = createBlock(
 							'gatherpress/dropdown-item',
@@ -125,7 +125,7 @@ const Edit = ( { attributes, setAttributes, clientId, insertBlocksAfter } ) => {
 						insertBlocksAfter( [ newBlock ] );
 					}
 
-					if ( event.key === 'Backspace' && ! attributes.text ) {
+					if ( 'Backspace' === event.key && ! attributes.text ) {
 						event.preventDefault();
 
 						// Retrieve block order and index.
@@ -138,7 +138,7 @@ const Edit = ( { attributes, setAttributes, clientId, insertBlocksAfter } ) => {
 						const currentIndex = getBlockIndex( clientId );
 
 						// Check if there's a previous block.
-						if ( currentIndex > 0 ) {
+						if ( 0 < currentIndex ) {
 							const previousBlockId =
 								blockOrder[ currentIndex - 1 ];
 

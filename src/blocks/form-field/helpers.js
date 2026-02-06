@@ -34,7 +34,9 @@ export const getInputStyles = ( fieldType, attributes ) => {
 	styles.opacity = 1;
 
 	// Font and text styles (for text-based inputs).
-	if ( ! [ 'checkbox', 'radio', 'hidden' ].includes( fieldType ) ) {
+	if ( [ 'checkbox', 'radio', 'hidden' ].includes( fieldType ) ) {
+		styles.cursor = 'default';
+	} else {
 		styles.cursor = 'text';
 
 		if ( undefined !== inputFontSize ) {
@@ -72,8 +74,6 @@ export const getInputStyles = ( fieldType, attributes ) => {
 		if ( borderColor ) {
 			styles.borderColor = borderColor;
 		}
-	} else {
-		styles.cursor = 'default';
 	}
 
 	// Override any other disabled styling.
@@ -179,7 +179,7 @@ export const getWrapperClasses = (
 	blockProps,
 	inlineLayout = false,
 ) => {
-	let classes = `${ blockProps.className || '' } gatherpress-field-type-${ fieldType }`;
+	let classes = `${ blockProps.className || '' } gatherpress-form-field--${ fieldType }`;
 
 	// Add inline layout class for text-based fields.
 	if (

@@ -8,6 +8,7 @@
 	"icon": "forms",
 	"example": {},
 	"description": "Allows visitors to RSVP to an event without requiring a site account.",
+	"usesContext": [ "postId", "queryId" ],
 	"supports": {
 		"gatherpress": {
 			"postIdOverride": true

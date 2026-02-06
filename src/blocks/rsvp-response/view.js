@@ -18,19 +18,16 @@ const { state, actions } = store( 'gatherpress', {
 			// Call the linkHandler action to handle the default link behavior.
 			actions.linkHandler( event );
 			const element = getElement();
+			const status = element?.ref?.dataset?.status;
 
-			if ( element && element.ref ) {
-				const status = element.ref.getAttribute( 'data-status' );
+			if ( status ) {
+				const context = getContext();
+				const postId = context?.postId || 0;
 
-				if ( status ) {
-					const context = getContext();
-					const postId = context?.postId || 0;
+				initPostContext( state, postId );
 
-					initPostContext( state, postId );
-
-					if ( postId ) {
-						state.posts[ postId ].rsvpSelection = status;
-					}
+				if ( postId ) {
+					state.posts[ postId ].rsvpSelection = status;
 				}
 			}
 		},
@@ -69,12 +66,12 @@ const { state, actions } = store( 'gatherpress', {
 				);
 				element.ref.textContent = element.ref.dataset.showFewer;
 
-				// Show all RSVP responses by removing the 'gatherpress--is-not-visible' class.
+				// Show all RSVP responses by removing the 'gatherpress--is-hidden' class.
 				const hiddenElements = rsvpResponsesElement.querySelectorAll(
-					'[data-id].gatherpress--is-not-visible',
+					'[data-id].gatherpress--is-hidden',
 				);
 				hiddenElements.forEach( ( el ) =>
-					el.classList.remove( 'gatherpress--is-not-visible' ),
+					el.classList.remove( 'gatherpress--is-hidden' ),
 				);
 			} else {
 				element.ref.setAttribute(
@@ -88,9 +85,9 @@ const { state, actions } = store( 'gatherpress', {
 					rsvpResponsesElement.querySelectorAll( '[data-id]' );
 				rsvpItems.forEach( ( el, index ) => {
 					if ( index >= limit ) {
-						el.classList.add( 'gatherpress--is-not-visible' );
+						el.classList.add( 'gatherpress--is-hidden' );
 					} else {
-						el.classList.remove( 'gatherpress--is-not-visible' );
+						el.classList.remove( 'gatherpress--is-hidden' );
 					}
 				} );
 			}
@@ -107,12 +104,12 @@ const { state, actions } = store( 'gatherpress', {
 
 			initPostContext( state, postId );
 
-			const counts = JSON.parse(
-				rsvpResponseElement.getAttribute( 'data-counts' ),
-			);
+			const counts = rsvpResponseElement.dataset.counts
+				? JSON.parse( rsvpResponseElement.dataset.counts )
+				: null;
 
 			// Delete attribute after setting variable. This is just to kick things off...
-			rsvpResponseElement.removeAttribute( 'data-counts' );
+			delete rsvpResponseElement.dataset.counts;
 
 			if ( counts ) {
 				state.posts[ postId ] = {
@@ -125,25 +122,23 @@ const { state, actions } = store( 'gatherpress', {
 				};
 			}
 
-			if ( element && element.ref ) {
-				// Check if the `data-label` attribute is already set.
-				if ( ! element.ref.hasAttribute( 'data-label' ) ) {
-					// Set `data-label` to the element's text content.
-					const textContent = element.ref.textContent.trim();
-					if ( textContent ) {
-						element.ref.setAttribute( 'data-label', textContent );
-					}
+			// Check if the `data-label` attribute is already set.
+			if ( element?.ref && ! element.ref.dataset.label ) {
+				// Set `data-label` to the element's text content.
+				const textContent = element.ref.textContent.trim();
+				if ( textContent ) {
+					element.ref.dataset.label = textContent;
 				}
 			}
 
 			// Fetch the current label and responses data.
 			const parentElement = element.ref.parentElement;
 			const classList = parentElement?.classList || [];
-			const dataLabel = element.ref.getAttribute( 'data-label' );
+			const dataLabel = element.ref.dataset.label;
 			const activeElement =
-				element.ref.getAttribute( 'data-status' ) ===
+				element.ref.dataset.status ===
 					state.posts[ postId ]?.rsvpSelection ||
-				( 'attending' === element.ref.getAttribute( 'data-status' ) &&
+				( 'attending' === element.ref.dataset.status &&
 					'no_status' === state.posts[ postId ]?.rsvpSelection );
 
 			const dropdownParent = element.ref.closest(
@@ -156,11 +151,11 @@ const { state, actions } = store( 'gatherpress', {
 			// Determine the count to replace %d with based on the class.
 			let count = 0;
 
-			if ( classList.contains( 'gatherpress--rsvp-attending' ) ) {
+			if ( classList.contains( 'gatherpress--is-attending' ) ) {
 				count = state.posts[ postId ]?.eventResponses?.attending || 0;
-			} else if ( classList.contains( 'gatherpress--rsvp-waiting-list' ) ) {
+			} else if ( classList.contains( 'gatherpress--is-waiting-list' ) ) {
 				count = state.posts[ postId ]?.eventResponses?.waitingList || 0;
-			} else if ( classList.contains( 'gatherpress--rsvp-not-attending' ) ) {
+			} else if ( classList.contains( 'gatherpress--is-not-attending' ) ) {
 				count = state.posts[ postId ]?.eventResponses?.notAttending || 0;
 			}
 
@@ -189,15 +184,15 @@ const { state, actions } = store( 'gatherpress', {
 
 			if (
 				0 === count &&
-				! classList.contains( 'gatherpress--rsvp-attending' )
+				! classList.contains( 'gatherpress--is-attending' )
 			) {
-				parentElement.classList.add( 'gatherpress--is-not-visible' );
+				parentElement.classList.add( 'gatherpress--is-hidden' );
 			} else {
-				parentElement.classList.remove( 'gatherpress--is-not-visible' );
+				parentElement.classList.remove( 'gatherpress--is-hidden' );
 			}
 
 			const visibleItems = dropdownParent.querySelectorAll(
-				'.wp-block-gatherpress-dropdown-item:not(.gatherpress--is-not-visible)',
+				'.wp-block-gatherpress-dropdown-item:not(.gatherpress--is-hidden)',
 			);
 
 			// Disable the dropdown if "Attending" is both:
@@ -206,7 +201,7 @@ const { state, actions } = store( 'gatherpress', {
 			if (
 				1 === visibleItems.length &&
 				visibleItems[ 0 ].classList.contains(
-					'gatherpress--rsvp-attending',
+					'gatherpress--is-attending',
 				) &&
 				visibleItems[ 0 ].textContent === triggerElement.textContent
 			) {
@@ -249,9 +244,9 @@ const { state, actions } = store( 'gatherpress', {
 
 			// If the count is less than or equal to the limit, apply the class.
 			if ( count <= limit ) {
-				element.ref.classList.add( 'gatherpress--is-not-visible' );
+				element.ref.classList.add( 'gatherpress--is-hidden' );
 			} else {
-				element.ref.classList.remove( 'gatherpress--is-not-visible' );
+				element.ref.classList.remove( 'gatherpress--is-hidden' );
 			}
 
 			// Reset the anchor.

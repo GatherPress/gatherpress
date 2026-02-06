@@ -317,7 +317,7 @@ class Test_Modal extends Base {
 		$input_html  = '<div>Login Form</div>';
 		$block       = array(
 			'attrs' => array(
-				'className' => 'gatherpress--is-login-modal',
+				'className' => 'gatherpress-modal--type-login',
 			),
 		);
 		$output_html = $instance->filter_login_modal( $input_html, $block );
@@ -347,7 +347,7 @@ class Test_Modal extends Base {
 		$input_html  = '<div>Login Form</div>';
 		$block       = array(
 			'attrs' => array(
-				'className' => 'gatherpress--is-login-modal',
+				'className' => 'gatherpress-modal--type-login',
 			),
 		);
 		$output_html = $instance->filter_login_modal( $input_html, $block );
@@ -437,7 +437,7 @@ class Test_Modal extends Base {
 		$input_html  = '<div>RSVP Form</div>';
 		$block       = array(
 			'attrs' => array(
-				'className' => 'gatherpress--is-rsvp-modal',
+				'className' => 'gatherpress-modal--type-rsvp',
 			),
 		);
 		$output_html = $instance->filter_rsvp_modal( $input_html, $block );
@@ -466,7 +466,7 @@ class Test_Modal extends Base {
 		$input_html  = '<div>RSVP Form</div>';
 		$block       = array(
 			'attrs' => array(
-				'className' => 'gatherpress--is-rsvp-modal',
+				'className' => 'gatherpress-modal--type-rsvp',
 			),
 		);
 		$output_html = $instance->filter_rsvp_modal( $input_html, $block );

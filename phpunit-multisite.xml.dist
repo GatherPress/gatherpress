@@ -1,0 +1,29 @@
+<phpunit
+	bootstrap="test/unit/php/bootstrap.php"
+	backupGlobals="false"
+	colors="true"
+	convertErrorsToExceptions="true"
+	convertNoticesToExceptions="true"
+	convertWarningsToExceptions="true"
+	convertDeprecationsToExceptions="true"
+	verbose="true"
+	>
+	<php>
+		<const name="WP_TESTS_MULTISITE" value="1" />
+	</php>
+	<testsuites>
+		<testsuite name="multisite">
+			<directory prefix="class-test-" suffix=".php">./test/unit/php/</directory>
+		</testsuite>
+	</testsuites>
+	<groups>
+		<include>
+			<group>multisite</group>
+		</include>
+	</groups>
+	<coverage>
+		<include>
+			<directory suffix=".php">./includes/core/classes</directory>
+		</include>
+	</coverage>
+</phpunit>

@@ -46,7 +46,8 @@ jobs:
     - name: Check for changes
       id: check-for-changes
       run: |
-        if git diff --quiet HEAD^ HEAD -- .; then
+        git add -A
+        if git diff --staged --quiet; then
           echo "changed=false" >> $GITHUB_OUTPUT
         else
           echo "changed=true" >> $GITHUB_OUTPUT
@@ -63,7 +64,6 @@ jobs:
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
 
-        git add -A
         git commit -m "Hook docs updated!"
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

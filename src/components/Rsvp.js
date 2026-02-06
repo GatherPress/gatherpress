@@ -10,7 +10,7 @@ import { Tooltip } from 'react-tooltip';
  */
 import { useState } from '@wordpress/element';
 import { __, _n, _x, sprintf } from '@wordpress/i18n';
-import { ButtonGroup, Spinner } from '@wordpress/components';
+import { Spinner } from '@wordpress/components';
 import apiFetch from '@wordpress/api-fetch';
 
 /**
@@ -135,7 +135,7 @@ const Rsvp = ( {
 					setRsvpStatus: res.status,
 					setRsvpResponse: res.responses,
 					setRsvpCount: count,
-					setRsvpSeeAllLink: count[ res.status ] > 8, // @todo make defaultLimit a setting, not hardcoded.
+					setRsvpSeeAllLink: 8 < count[ res.status ], // @todo make defaultLimit a setting, not hardcoded.
 					setOnlineEventLink: res.online_link,
 				};
 
@@ -219,7 +219,7 @@ const Rsvp = ( {
 						</div>
 					) }
 				</div>
-				<ButtonGroup className="gatherpress-buttons wp-block-buttons">
+				<div className="gatherpress-buttons wp-block-buttons">
 					<div className="gatherpress-buttons__container wp-block-button">
 						{ /* eslint-disable-next-line jsx-a11y/anchor-is-valid */ }
 						<a
@@ -234,7 +234,7 @@ const Rsvp = ( {
 							) }
 						</a>
 					</div>
-				</ButtonGroup>
+				</div>
 			</div>
 		);
 	};
@@ -342,7 +342,7 @@ const Rsvp = ( {
 						</div>
 					) }
 				</div>
-				<ButtonGroup className="gatherpress-buttons wp-block-buttons">
+				<div className="gatherpress-buttons wp-block-buttons">
 					<div className="gatherpress-buttons__container wp-block-button is-style-outline">
 						{ /* eslint-disable-next-line jsx-a11y/anchor-is-valid */ }
 						<a
@@ -352,9 +352,9 @@ const Rsvp = ( {
 									e,
 									buttonStatus,
 									rsvpAnonymous,
-									'not_attending' !== buttonStatus
-										? rsvpGuests
-										: 0,
+									'not_attending' === buttonStatus
+										? 0
+										: rsvpGuests,
 									'not_attending' === buttonStatus,
 								)
 							}
@@ -377,14 +377,14 @@ const Rsvp = ( {
 							) }
 						</a>
 					</div>
-				</ButtonGroup>
+				</div>
 			</div>
 		);
 	};
 
 	return (
 		<div className="gatherpress-rsvp">
-			<ButtonGroup className="gatherpress-buttons wp-block-buttons">
+			<div className="gatherpress-buttons wp-block-buttons">
 				<div className="gatherpress-buttons__container wp-block-button">
 					{ /* eslint-disable-next-line jsx-a11y/anchor-is-valid */ }
 					<a
@@ -409,7 +409,7 @@ const Rsvp = ( {
 						<LoggedInModal status={ rsvpStatus } />
 					) }
 				</Modal>
-			</ButtonGroup>
+			</div>
 			{ 'no_status' !== rsvpStatus && (
 				<div className="gatherpress-status">
 					<RsvpStatusResponse type={ type } status={ rsvpStatus } />

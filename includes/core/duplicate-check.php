@@ -18,7 +18,12 @@ if ( defined( 'GATHERPRESS_VERSION' ) ) {
 		'admin_notices',
 		static function (): void {
 			wp_admin_notice(
-				esc_html__( 'You have more than one version of GatherPress installed and activated. Please activate only one version of GatherPress at a time.', 'gatherpress' ),
+				esc_html__(
+					// phpcs:disable Generic.Files.LineLength.TooLong
+					'You have more than one version of GatherPress installed and activated. Please activate only one version of GatherPress at a time.',
+					// phpcs:enable Generic.Files.LineLength.TooLong
+					'gatherpress'
+				),
 				array(
 					'type' => 'error',
 				)

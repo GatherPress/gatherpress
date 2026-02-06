@@ -1,9 +1,4 @@
 /**
- * External dependencies.
- */
-import moment from 'moment';
-
-/**
  * WordPress dependencies.
  */
 import {
@@ -21,8 +16,10 @@ import { useDispatch, useSelect } from '@wordpress/data';
 /**
  * Internal dependencies.
  */
+import { getStartOfWeek } from '../helpers/editor';
 import { hasEventPastNotice } from '../helpers/event';
 import {
+	createMomentWithTimezone,
 	dateTimeDatabaseFormat,
 	dateTimeLabelFormat,
 	dateTimeOffset,
@@ -58,7 +55,7 @@ const DateTimeStart = () => {
 	const is12HourTime = /a(?!\\)/i.test(
 		settings.formats.time
 			.toLowerCase()
-			.replace( /\\\\/g, '' )
+			.replaceAll( '\\\\', '' )
 			.split( '' )
 			.reverse()
 			.join( '' ),
@@ -66,8 +63,7 @@ const DateTimeStart = () => {
 
 	useEffect( () => {
 		setDateTimeStart(
-			moment
-				.tz( dateTimeStart, getTimezone() )
+			createMomentWithTimezone( dateTimeStart, getTimezone() )
 				.format( dateTimeDatabaseFormat ),
 		);
 
@@ -96,10 +92,9 @@ const DateTimeStart = () => {
 								id="gatherpress-datetime-start"
 								onClick={ onToggle }
 								aria-expanded={ isOpen }
-								isLink
+								variant="link"
 							>
-								{ moment
-									.tz( dateTimeStart, getTimezone() )
+								{ createMomentWithTimezone( dateTimeStart, getTimezone() )
 									.format( dateTimeLabelFormat() ) }
 							</Button>
 						) }
@@ -114,6 +109,7 @@ const DateTimeStart = () => {
 									);
 								} }
 								is12Hour={ is12HourTime }
+								startOfWeek={ getStartOfWeek() }
 							/>
 						) }
 					/>

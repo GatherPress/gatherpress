@@ -17,7 +17,8 @@ function gatherpress_awesome_autoloader( array $namespace ): array {
 add_filter( 'gatherpress_autoloader', 'gatherpress_awesome_autoloader' );
 ```
 
-**Example:** The namespace `GatherPress_Awesome\Setup` would map to `gatherpress-awesome/includes/classes/class-setup.php`.
+**Example:** The namespace `GatherPress_Awesome\Setup` would map to
+`gatherpress-awesome/includes/classes/class-setup.php`.
 
 ## Parameters
 
@@ -29,7 +30,7 @@ add_filter( 'gatherpress_autoloader', 'gatherpress_awesome_autoloader' );
 
 ## Files
 
-- [includes/core/classes/class-autoloader.php:58](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/class-autoloader.php#L58)
+- [includes/core/classes/class-autoloader.php:59](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/class-autoloader.php#L59)
 ```php
 apply_filters( 'gatherpress_autoloader', array() )
 ```

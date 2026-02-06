@@ -27,6 +27,7 @@ if ( ! isset( $name, $label, $option, $options, $options['items'], $value, $desc
 <select id="<?php echo esc_attr( $option ); ?>" name="<?php echo esc_attr( $name ); ?>">
 	<?php
 	foreach ( $options['items'] as $gatherpress_key => $gatherpress_label ) :
+		// phpcs:ignore Generic.Files.LineLength.TooLong -- Template output formatting.
 		?>
 		<option value="<?php echo esc_attr( $gatherpress_key ); ?>" <?php selected( $gatherpress_key, $value, true ); ?>>
 			<?php echo esc_html( $gatherpress_label ); ?>

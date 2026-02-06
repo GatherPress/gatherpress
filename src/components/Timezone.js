@@ -56,7 +56,7 @@ const Timezone = () => {
 			>
 				{ choices &&
 				'object' === typeof choices &&
-				Object.keys( choices ).length > 0 ? (
+				0 < Object.keys( choices ).length ? (
 						Object.keys( choices ).map( ( group ) => {
 							return (
 								<optgroup key={ group } label={ group }>

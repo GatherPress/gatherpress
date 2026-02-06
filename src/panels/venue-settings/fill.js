@@ -15,10 +15,8 @@ import { VenuePluginDocumentSettings } from './slot';
 
 export default function VenuePluginFill() {
 	return (
-		<>
-			<Fill name="EventPluginDocumentSettings">
-				<VenuePluginDocumentSettings.Slot />
-			</Fill>
-		</>
+		<Fill name="EventPluginDocumentSettings">
+			<VenuePluginDocumentSettings.Slot />
+		</Fill>
 	);
 }

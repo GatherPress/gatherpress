@@ -126,8 +126,8 @@ class Test_Venue extends Base {
 		// Restore default locale for following tests.
 		switch_to_locale( 'en_US' );
 
-		// This also checks that the post type is still registered with the same 'Admin menu and post type singular name' label,
-		// which is used by the method under test and the test itself.
+		// This checks that the post type is still registered with the same
+		// 'Admin menu and post type singular name' label, used by the method under test.
 		$filter = static function ( string $translation, string $text, string $context ): string {
 			if ( 'Venue' !== $text || 'Admin menu and post type singular name' !== $context ) {
 				return $translation;
@@ -155,6 +155,63 @@ class Test_Venue extends Base {
 		);
 
 		remove_filter( 'gettext_with_context_gatherpress', $filter );
+
+		// Test restore_previous_locale() path by switching to a different locale first.
+		switch_to_locale( 'es_ES' );
+		$this->assertSame(
+			'venue',
+			Venue::get_localized_post_type_slug(),
+			'Failed to assert post type slug is "venue" after locale restore.'
+		);
+		// Verify we're back to Spanish after the method restored the previous locale.
+		$this->assertSame(
+			'es_ES',
+			determine_locale(),
+			'Failed to assert locale was restored to Spanish.'
+		);
+
+		// Clean up: restore to en_US for other tests.
+		restore_previous_locale();
+	}
+
+	/**
+	 * Coverage for get_localized_post_type_slug with locale restoration.
+	 *
+	 * Tests that restore_previous_locale() is called when switch_to_locale() succeeds.
+	 * This test creates a scenario where the global locale differs from get_locale().
+	 *
+	 * @covers ::get_localized_post_type_slug
+	 *
+	 * @return void
+	 */
+	public function test_get_localized_post_type_slug_restores_locale(): void {
+		// Create a scenario where get_locale() returns a different value.
+		// than the current global locale by using the locale filter.
+		// phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.Found -- Intentionally overriding locale.
+		$locale_filter = static function ( $locale ) {
+			return 'de_DE';
+		};
+
+		add_filter( 'locale', $locale_filter );
+
+		// Now get_locale() will return 'de_DE', but the global locale is still 'en_US'.
+		// When the method calls switch_to_locale(get_locale()), it will actually switch.
+		// to 'de_DE' and return true, triggering the restore_previous_locale() path.
+		$slug = Venue::get_localized_post_type_slug();
+
+		// Verify the slug was generated.
+		$this->assertNotEmpty( $slug, 'Failed to assert slug is not empty.' );
+
+		// The method should have called restore_previous_locale() since.
+		// switch_to_locale() returned true.
+		// We should be back to en_US (with the filter still active).
+		remove_filter( 'locale', $locale_filter );
+
+		$this->assertSame(
+			'en_US',
+			determine_locale(),
+			'Failed to assert locale was restored after method execution.'
+		);
 	}
 
 	/**
@@ -171,13 +228,21 @@ class Test_Venue extends Base {
 
 		$meta = get_registered_meta_keys( 'post', Venue::POST_TYPE );
 
-		$this->assertArrayNotHasKey( 'gatherpress_venue_information', $meta, 'Failed to assert that gatherpress_venue_information does not exist.' );
+		$this->assertArrayNotHasKey(
+			'gatherpress_venue_information',
+			$meta,
+			'Failed to assert that gatherpress_venue_information does not exist.'
+		);
 
 		$instance->register_post_meta();
 
 		$meta = get_registered_meta_keys( 'post', Venue::POST_TYPE );
 
-		$this->assertArrayHasKey( 'gatherpress_venue_information', $meta, 'Failed to assert that gatherpress_venue_information does exist.' );
+		$this->assertArrayHasKey(
+			'gatherpress_venue_information',
+			$meta,
+			'Failed to assert that gatherpress_venue_information does exist.'
+		);
 	}
 
 	/**

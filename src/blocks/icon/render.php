@@ -8,6 +8,9 @@
  * @since 1.0.0
  */
 
+// Exit if accessed directly.
+defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
+
 $gatherpress_icon         = ! empty( $attributes['icon'] ) ? $attributes['icon'] : 'nametag';
 $gatherpress_icon_color   = ! empty( $attributes['iconColor'] ) ? $attributes['iconColor'] : 'inherit';
 $gatherpress_icon_size    = ! empty( $attributes['iconSize'] ) ? $attributes['iconSize'] : 20;

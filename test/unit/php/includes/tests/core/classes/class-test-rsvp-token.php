@@ -548,6 +548,42 @@ class Test_Rsvp_Token extends Base {
 	}
 
 	/**
+	 * Coverage for generate_url method when permalink is unavailable.
+	 *
+	 * @covers ::generate_url
+	 *
+	 * @return void
+	 */
+	public function test_generate_url_with_no_permalink(): void {
+		$post = $this->mock->post(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		)->get();
+
+		$comment_id = $this->factory->comment->create(
+			array(
+				'comment_post_ID' => $post->ID,
+				'comment_type'    => Rsvp::COMMENT_TYPE,
+			)
+		);
+
+		$token = new Rsvp_Token( $comment_id );
+		$token->generate_token();
+
+		// Filter get_permalink to return false.
+		$filter = static function () {
+			return false;
+		};
+		add_filter( 'post_type_link', $filter );
+
+		$this->assertFalse( get_permalink( $post ) );
+		$this->assertEmpty( $token->generate_url() );
+
+		remove_filter( 'post_type_link', $filter );
+	}
+
+	/**
 	 * Coverage for send_rsvp_confirmation_email method.
 	 *
 	 * @covers ::send_rsvp_confirmation_email
@@ -770,5 +806,244 @@ class Test_Rsvp_Token extends Base {
 			array( $post, $comment, '' )
 		);
 		$this->assertFalse( $result );
+	}
+
+	/**
+	 * Coverage for parse_token_string static method.
+	 *
+	 * @covers ::parse_token_string
+	 *
+	 * @return void
+	 */
+	public function test_parse_token_string(): void {
+		// Valid token string.
+		$result = Rsvp_Token::parse_token_string( '123_test-token-abc' );
+		$this->assertIsArray( $result );
+		$this->assertArrayHasKey( 'comment_id', $result );
+		$this->assertArrayHasKey( 'token', $result );
+		$this->assertEquals( 123, $result['comment_id'] );
+		$this->assertEquals( 'test-token-abc', $result['token'] );
+
+		// Token with underscore in token part.
+		$result = Rsvp_Token::parse_token_string( '456_token_with_underscores' );
+		$this->assertEquals( 456, $result['comment_id'] );
+		$this->assertEquals( 'token_with_underscores', $result['token'] );
+
+		// Empty string.
+		$result = Rsvp_Token::parse_token_string( '' );
+		$this->assertIsArray( $result );
+		$this->assertEmpty( $result );
+
+		// Null string.
+		$result = Rsvp_Token::parse_token_string( null );
+		$this->assertIsArray( $result );
+		$this->assertEmpty( $result );
+
+		// Invalid format - no underscore.
+		$result = Rsvp_Token::parse_token_string( 'invalid-token' );
+		$this->assertEmpty( $result );
+
+		// Invalid format - no comment ID.
+		$result = Rsvp_Token::parse_token_string( '_token-only' );
+		$this->assertEmpty( $result );
+
+		// Invalid format - non-numeric comment ID.
+		$result = Rsvp_Token::parse_token_string( 'abc_token' );
+		$this->assertEmpty( $result );
+
+		// Invalid format - just underscore.
+		$result = Rsvp_Token::parse_token_string( '_' );
+		$this->assertEmpty( $result );
+
+		// Zero comment ID (technically valid format but invalid ID).
+		$result = Rsvp_Token::parse_token_string( '0_token' );
+		$this->assertEquals( 0, $result['comment_id'] );
+		$this->assertEquals( 'token', $result['token'] );
+	}
+
+	/**
+	 * Coverage for from_token_string static factory method.
+	 *
+	 * @covers ::from_token_string
+	 * @covers ::parse_token_string
+	 * @covers ::is_valid
+	 *
+	 * @return void
+	 */
+	public function test_from_token_string(): void {
+		// Create a valid RSVP comment with token.
+		$post = $this->mock->post(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		)->get();
+
+		$comment_id = $this->factory->comment->create(
+			array(
+				'comment_post_ID'      => $post->ID,
+				'comment_type'         => Rsvp::COMMENT_TYPE,
+				'comment_author_email' => 'test@example.com',
+			)
+		);
+
+		// Generate token for this comment.
+		$token = new Rsvp_Token( $comment_id );
+		$token->generate_token();
+		$generated_token = $token->get_token();
+
+		// Test valid token string.
+		$token_string = sprintf( '%d_%s', $comment_id, $generated_token );
+		$result       = Rsvp_Token::from_token_string( $token_string );
+
+		$this->assertInstanceOf( Rsvp_Token::class, $result );
+		$this->assertNotNull( $result->get_comment() );
+		$this->assertEquals( $comment_id, $result->get_comment()->comment_ID );
+		$this->assertEquals( 'test@example.com', $result->get_email() );
+
+		// Test invalid token for same comment.
+		$invalid_token_string = sprintf( '%d_%s', $comment_id, 'invalid-token' );
+		$result               = Rsvp_Token::from_token_string( $invalid_token_string );
+		$this->assertNull( $result );
+
+		// Test empty string.
+		$result = Rsvp_Token::from_token_string( '' );
+		$this->assertNull( $result );
+
+		// Test null string.
+		$result = Rsvp_Token::from_token_string( null );
+		$this->assertNull( $result );
+
+		// Test malformed token string.
+		$result = Rsvp_Token::from_token_string( 'not-a-valid-token' );
+		$this->assertNull( $result );
+
+		// Test non-existent comment ID.
+		$result = Rsvp_Token::from_token_string( '999999_some-token' );
+		$this->assertNull( $result );
+
+		// Test with non-RSVP comment.
+		$regular_comment_id = $this->factory->comment->create(
+			array(
+				'comment_post_ID' => $post->ID,
+				'comment_type'    => 'comment',
+			)
+		);
+		$result             = Rsvp_Token::from_token_string( sprintf( '%d_token', $regular_comment_id ) );
+		$this->assertNull( $result );
+	}
+
+	/**
+	 * Test that from_token_string returns null for zero comment ID.
+	 *
+	 * @covers ::from_token_string
+	 *
+	 * @return void
+	 */
+	public function test_from_token_string_with_zero_comment_id(): void {
+		$result = Rsvp_Token::from_token_string( '0_some-token' );
+		$this->assertNull( $result );
+	}
+
+	/**
+	 * Test integration between parse_token_string and from_token_string.
+	 *
+	 * @covers ::from_token_string
+	 * @covers ::parse_token_string
+	 *
+	 * @return void
+	 */
+	public function test_static_methods_integration(): void {
+		// Create valid RSVP.
+		$post = $this->mock->post(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		)->get();
+
+		$comment_id = $this->factory->comment->create(
+			array(
+				'comment_post_ID' => $post->ID,
+				'comment_type'    => Rsvp::COMMENT_TYPE,
+			)
+		);
+
+		$token = new Rsvp_Token( $comment_id );
+		$token->generate_token();
+
+		// Get the URL which includes the formatted token.
+		$url = $token->generate_url();
+		$this->assertNotEmpty( $url );
+
+		// Extract token from URL.
+		$parsed_url = wp_parse_url( $url );
+		parse_str( $parsed_url['query'], $query_args );
+		$token_string = $query_args[ Rsvp_Token::NAME ];
+
+		// Parse should return valid array.
+		$parsed = Rsvp_Token::parse_token_string( $token_string );
+		$this->assertNotEmpty( $parsed );
+		$this->assertEquals( $comment_id, $parsed['comment_id'] );
+
+		// from_token_string should return valid instance.
+		$new_instance = Rsvp_Token::from_token_string( $token_string );
+		$this->assertInstanceOf( Rsvp_Token::class, $new_instance );
+		$this->assertEquals( $comment_id, $new_instance->get_comment()->comment_ID );
+	}
+
+	/**
+	 * Tests from_url_parameter static factory method.
+	 *
+	 * Verifies that the method correctly creates an instance from mocked GET parameters.
+	 *
+	 * @since 1.0.0
+	 * @covers ::from_url_parameter
+	 *
+	 * @return void
+	 */
+	public function test_from_url_parameter(): void {
+		$comment_id = $this->factory()->comment->create(
+			array(
+				'comment_post_ID' => $this->factory()->post->create( array( 'post_type' => Event::POST_TYPE ) ),
+				'comment_type'    => Rsvp::COMMENT_TYPE,
+			)
+		);
+
+		$instance = new Rsvp_Token( $comment_id );
+		$instance->generate_token();
+		$token        = $instance->get_token();
+		$token_string = sprintf( '%d_%s', $comment_id, $token );
+
+		// Set up mock data using pre_ filter.
+		add_filter(
+			'gatherpress_pre_get_http_input',
+			function ( $pre_value, $type, $var_name ) use ( $token_string ) {
+				if ( INPUT_GET === $type && Rsvp_Token::NAME === $var_name ) {
+					return $token_string;
+				}
+				return null;
+			},
+			10,
+			3
+		);
+
+		// Test successful creation from URL parameter.
+		$result = Rsvp_Token::from_url_parameter();
+		$this->assertInstanceOf( Rsvp_Token::class, $result );
+		$this->assertEquals( $comment_id, $result->get_comment()->comment_ID );
+
+		// Test with no token parameter.
+		remove_all_filters( 'gatherpress_pre_get_http_input' );
+		add_filter(
+			'gatherpress_pre_get_http_input',
+			static function () {
+				return null;
+			}
+		);
+
+		$result = Rsvp_Token::from_url_parameter();
+		$this->assertNull( $result );
+
+		// Clean up filters.
+		remove_all_filters( 'gatherpress_pre_get_http_input' );
 	}
 }

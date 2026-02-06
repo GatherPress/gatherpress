@@ -93,7 +93,7 @@ const VenueInformation = () => {
 				return response.json();
 			} )
 			.then( ( data ) => {
-				if ( data.features.length > 0 ) {
+				if ( 0 < data.features.length ) {
 					lat = data.features[ 0 ].geometry.coordinates[ 1 ];
 					lng = data.features[ 0 ].geometry.coordinates[ 0 ];
 				}

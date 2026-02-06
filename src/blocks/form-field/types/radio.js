@@ -1,4 +1,9 @@
 /**
+ * External dependencies.
+ */
+import { v4 as uuidv4 } from 'uuid';
+
+/**
  * WordPress dependencies.
  */
 import { __ } from '@wordpress/i18n';
@@ -38,7 +43,7 @@ export default function RadioField( {
 		required,
 		requiredText,
 		requiredTextColor,
-		radioOptions = [ { label: '', value: '' } ],
+		radioOptions = [ { label: '', value: '', id: uuidv4() } ],
 	} = attributes;
 
 	// Handle label blur to auto-generate field name.
@@ -56,17 +61,18 @@ export default function RadioField( {
 		const newOptions = [ ...radioOptions ];
 		newOptions[ index ] = { ...newOptions[ index ], [ field ]: value };
 
-		if ( field === 'label' ) {
+		if ( 'label' === field ) {
 			const cleanValue = value
 				.toLowerCase()
-				.replace( /[^a-z0-9]+/g, '-' )
-				.replace( /^-+|-+$/g, '' );
+				.split( /[^a-z0-9]+/ ) // Split on non-alphanumeric sequences.
+				.filter( ( part ) => 0 < part.length ) // Remove empty strings.
+				.join( '-' ); // Join with dashes.
 			newOptions[ index ].value = cleanValue || value;
 		}
 
 		setAttributes( { radioOptions: newOptions } );
 
-		if ( field === 'label' && index === 0 && ! fieldName && value ) {
+		if ( 'label' === field && 0 === index && ! fieldName && value ) {
 			const generatedFieldName = generateFieldName( value );
 			if ( generatedFieldName ) {
 				setAttributes( { fieldName: generatedFieldName } );
@@ -75,7 +81,7 @@ export default function RadioField( {
 	};
 
 	const addRadioOption = () => {
-		const newOptions = [ ...radioOptions, { label: '', value: '' } ];
+		const newOptions = [ ...radioOptions, { label: '', value: '', id: uuidv4() } ];
 		setAttributes( { radioOptions: newOptions } );
 
 		setTimeout( () => {
@@ -125,14 +131,14 @@ export default function RadioField( {
 	};
 
 	const handleKeyDown = ( event, index ) => {
-		if ( event.key === 'Enter' ) {
+		if ( 'Enter' === event.key ) {
 			event.preventDefault();
 			addRadioOption();
-		} else if ( event.key === 'Backspace' || event.key === 'Delete' ) {
+		} else if ( 'Backspace' === event.key || 'Delete' === event.key ) {
 			const currentOption = radioOptions[ index ];
 
 			// Only remove if the option is empty and it's not the last remaining option.
-			if ( ! currentOption.label && radioOptions.length > 1 ) {
+			if ( ! currentOption.label && 1 < radioOptions.length ) {
 				event.preventDefault();
 				removeRadioOption( index );
 			}
@@ -181,7 +187,7 @@ export default function RadioField( {
 				style={ getLabelWrapperStyles( attributes ) }
 			>
 				{ radioOptions.map( ( option, index ) => (
-					<div key={ index } className="gatherpress-radio-option">
+					<div key={ option.id } className="gatherpress-radio-option">
 						<input
 							style={ getInputStyles( fieldType, attributes ) }
 							type="radio"
