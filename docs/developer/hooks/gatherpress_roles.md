@@ -38,4 +38,4 @@ apply_filters( 'gatherpress_roles', $roles )
 
 
 
-[← All Hooks](Hooks)
+[← All Hooks](Hooks.md)

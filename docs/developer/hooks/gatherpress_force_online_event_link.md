@@ -36,4 +36,4 @@ apply_filters( 'gatherpress_force_online_event_link', false )
 
 
 
-[← All Hooks](Hooks)
+[← All Hooks](Hooks.md)

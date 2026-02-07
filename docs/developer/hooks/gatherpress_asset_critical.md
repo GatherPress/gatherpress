@@ -44,4 +44,4 @@ apply_filters( 'gatherpress_asset_critical', $critical, $path, $name )
 
 
 
-[← All Hooks](Hooks)
+[← All Hooks](Hooks.md)

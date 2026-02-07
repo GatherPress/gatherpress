@@ -40,4 +40,4 @@ apply_filters( 'gatherpress_pre_get_http_input', null, $type, $var_name )
 
 
 
-[← All Hooks](Hooks)
+[← All Hooks](Hooks.md)

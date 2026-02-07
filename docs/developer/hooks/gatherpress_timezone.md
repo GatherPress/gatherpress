@@ -25,4 +25,4 @@ apply_filters( 'gatherpress_timezone', $data['timezone'] )
 
 
 
-[← All Hooks](Hooks)
+[← All Hooks](Hooks.md)

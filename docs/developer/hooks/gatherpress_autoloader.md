@@ -37,4 +37,4 @@ apply_filters( 'gatherpress_autoloader', array() )
 
 
 
-[← All Hooks](Hooks)
+[← All Hooks](Hooks.md)
