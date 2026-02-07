@@ -157,7 +157,7 @@ class Event_Setup {
 				'template'      => array(
 					array( 'gatherpress/event-date' ),
 					array( 'gatherpress/add-to-calendar' ),
-					array( 'gatherpress/venue' ),
+					array( 'gatherpress/venue-v2' ),
 					array( 'gatherpress/rsvp' ),
 					array(
 						'core/paragraph',
@@ -305,6 +305,7 @@ class Event_Setup {
 				'show_in_rest'      => true,
 				'single'            => true,
 				'type'              => 'string',
+				'default'           => '',
 			),
 			'gatherpress_max_attendance_limit'  => array(
 				'auth_callback'     => array( $this, 'can_edit_posts_meta' ),

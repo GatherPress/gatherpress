@@ -108,6 +108,7 @@ class Block {
 		Blocks\Rsvp_Form::get_instance();
 		Blocks\Rsvp_Response::get_instance();
 		Blocks\Rsvp_Template::get_instance();
+		Blocks\Venue_V2::get_instance();
 	}
 
 	/**
@@ -260,13 +261,7 @@ class Block {
 			'after' === $relative_position
 		) {
 			$hooked_block_types[] = 'gatherpress/add-to-calendar';
-
-			// @todo As soon as the new venue block is in place,
-			// load 'core/patterns' here
-			// and fill it with {"slug":"gatherpress/venue-details"} in modify_hooked_blocks_in_patterns() later
-			// instead of loading the (old) venue block.
-			$hooked_block_types[] = 'gatherpress/venue';
-
+			$hooked_block_types[] = 'gatherpress/venue-v2';
 			$hooked_block_types[] = 'gatherpress/rsvp';
 			$hooked_block_types[] = 'core/paragraph';
 			$hooked_block_types[] = 'gatherpress/rsvp-response';
@@ -278,7 +273,16 @@ class Block {
 			'core/paragraph' === $anchor_block_type &&
 			'after' === $relative_position
 		) {
-			$hooked_block_types[] = 'gatherpress/venue';
+			$hooked_block_types[] = 'gatherpress/venue-v2';
+		}
+
+		// Hook blocks into the "gatherpress/venue-details" pattern.
+		if (
+			'gatherpress/venue-details' === $context['name'] &&
+			'core/post-title' === $anchor_block_type &&
+			'after' === $relative_position
+		) {
+			$hooked_block_types[] = 'gatherpress/venue-v2';
 		}
 
 		return $hooked_block_types;
