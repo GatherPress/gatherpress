@@ -18,9 +18,6 @@
 		"eventStart": {
 			"type": "string"
 		},
-		"textAlign": {
-			"type": "string"
-		},
 		"displayType": {
 			"type": "string",
 			"default": "both"
@@ -61,6 +58,7 @@
 			"padding": true
 		},
 		"typography": {
+			"textAlign": true,
 			"fontSize": true,
 			"lineHeight": true,
 			"__experimentalFontFamily": true,
