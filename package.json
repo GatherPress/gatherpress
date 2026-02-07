@@ -17,6 +17,9 @@
 		"url": "https://github.com/GatherPress/gatherpress/issues"
 	},
 	"main": "index.js",
+	"dependencies": {
+		"@wordpress/commands": "^1.38.0"
+	},
 	"devDependencies": {
 		"@anthropic-ai/claude-code": "^2.1.7",
 		"@jest/globals": "^30.0.2",
