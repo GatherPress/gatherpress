@@ -346,9 +346,9 @@ class Event_Setup {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param \stdClass        $prepared_post An object representing a single post prepared for inserting or updating.
-	 * @param \WP_REST_Request $request       Request object.
-	 * @return \stdClass The prepared post object.
+	 * @param stdClass        $prepared_post An object representing a single post prepared for inserting or updating.
+	 * @param WP_REST_Request $request       Request object.
+	 * @return stdClass The prepared post object.
 	 */
 	public function filter_readonly_meta( stdClass $prepared_post, WP_REST_Request $request ): stdClass {
 		$readonly_keys = array(
