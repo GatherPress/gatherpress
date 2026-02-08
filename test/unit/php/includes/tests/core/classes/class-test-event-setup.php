@@ -14,8 +14,10 @@ use GatherPress\Core\Event_Setup;
 use GatherPress\Core\Settings;
 use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;
+use stdClass;
 use WP;
 use WP_Query;
+use WP_REST_Request;
 
 /**
  * Class Test_Event_Query.
@@ -87,6 +89,12 @@ class Test_Event_Setup extends Base {
 				'name'     => 'redirect_canonical',
 				'priority' => 10,
 				'callback' => array( $instance, 'disable_ics_canonical_redirect' ),
+			),
+			array(
+				'type'     => 'filter',
+				'name'     => sprintf( 'rest_pre_insert_%s', Event::POST_TYPE ),
+				'priority' => 10,
+				'callback' => array( $instance, 'filter_readonly_meta' ),
 			),
 			array(
 				'type'     => 'filter',
@@ -1791,5 +1799,213 @@ class Test_Event_Setup extends Base {
 		);
 
 		set_current_screen( 'front' );
+	}
+
+	/**
+	 * Tests filter_readonly_meta removes read-only meta keys from REST request.
+	 *
+	 * @covers ::filter_readonly_meta
+	 * @return void
+	 */
+	public function test_filter_readonly_meta_removes_readonly_keys(): void {
+		$instance = Event_Setup::get_instance();
+
+		// Create a mock REST request with all readonly keys plus a writable key.
+		$request = new WP_REST_Request( 'POST', '/wp/v2/gatherpress_event' );
+		$request->set_param(
+			'meta',
+			array(
+				'gatherpress_datetime'           => '{"dateTimeStart":"2025-01-01 10:00:00"}',
+				'gatherpress_datetime_start'     => '2025-01-01 10:00:00',
+				'gatherpress_datetime_start_gmt' => '2025-01-01 15:00:00',
+				'gatherpress_datetime_end'       => '2025-01-01 12:00:00',
+				'gatherpress_datetime_end_gmt'   => '2025-01-01 17:00:00',
+				'gatherpress_timezone'           => 'America/New_York',
+				'gatherpress_online_event_link'  => 'https://example.com',
+			)
+		);
+
+		$prepared_post     = new stdClass();
+		$prepared_post->ID = 123;
+
+		$result = $instance->filter_readonly_meta( $prepared_post, $request );
+
+		// Verify prepared_post is returned unchanged.
+		$this->assertSame( $prepared_post, $result, 'Should return the same prepared_post object.' );
+		$this->assertEquals( 123, $result->ID, 'Prepared post ID should be unchanged.' );
+
+		// Verify readonly keys were removed from request meta.
+		$filtered_meta = $request->get_param( 'meta' );
+
+		$this->assertArrayNotHasKey(
+			'gatherpress_datetime_start',
+			$filtered_meta,
+			'Should remove gatherpress_datetime_start.'
+		);
+		$this->assertArrayNotHasKey(
+			'gatherpress_datetime_start_gmt',
+			$filtered_meta,
+			'Should remove gatherpress_datetime_start_gmt.'
+		);
+		$this->assertArrayNotHasKey(
+			'gatherpress_datetime_end',
+			$filtered_meta,
+			'Should remove gatherpress_datetime_end.'
+		);
+		$this->assertArrayNotHasKey(
+			'gatherpress_datetime_end_gmt',
+			$filtered_meta,
+			'Should remove gatherpress_datetime_end_gmt.'
+		);
+		$this->assertArrayNotHasKey(
+			'gatherpress_timezone',
+			$filtered_meta,
+			'Should remove gatherpress_timezone.'
+		);
+
+		// Verify writable keys are preserved.
+		$this->assertArrayHasKey(
+			'gatherpress_datetime',
+			$filtered_meta,
+			'Should preserve gatherpress_datetime (writable).'
+		);
+		$this->assertArrayHasKey(
+			'gatherpress_online_event_link',
+			$filtered_meta,
+			'Should preserve gatherpress_online_event_link (writable).'
+		);
+	}
+
+	/**
+	 * Tests filter_readonly_meta with null meta parameter.
+	 *
+	 * @covers ::filter_readonly_meta
+	 * @return void
+	 */
+	public function test_filter_readonly_meta_with_null_meta(): void {
+		$instance = Event_Setup::get_instance();
+
+		// Create a REST request without meta parameter.
+		$request = new WP_REST_Request( 'POST', '/wp/v2/gatherpress_event' );
+		// Do not set meta parameter - it will be null.
+
+		$prepared_post       = new stdClass();
+		$prepared_post->ID   = 456;
+		$prepared_post->name = 'Test Event';
+
+		$result = $instance->filter_readonly_meta( $prepared_post, $request );
+
+		// Verify prepared_post is returned unchanged.
+		$this->assertSame( $prepared_post, $result, 'Should return the same prepared_post object.' );
+		$this->assertEquals( 456, $result->ID, 'Prepared post ID should be unchanged.' );
+		$this->assertEquals( 'Test Event', $result->name, 'Prepared post name should be unchanged.' );
+
+		// Verify meta is still null.
+		$this->assertNull( $request->get_param( 'meta' ), 'Meta should remain null.' );
+	}
+
+	/**
+	 * Tests filter_readonly_meta with empty meta array.
+	 *
+	 * @covers ::filter_readonly_meta
+	 * @return void
+	 */
+	public function test_filter_readonly_meta_with_empty_meta(): void {
+		$instance = Event_Setup::get_instance();
+
+		// Create a REST request with empty meta array.
+		$request = new WP_REST_Request( 'POST', '/wp/v2/gatherpress_event' );
+		$request->set_param( 'meta', array() );
+
+		$prepared_post     = new stdClass();
+		$prepared_post->ID = 789;
+
+		$result = $instance->filter_readonly_meta( $prepared_post, $request );
+
+		// Verify prepared_post is returned unchanged.
+		$this->assertSame( $prepared_post, $result, 'Should return the same prepared_post object.' );
+
+		// Verify meta is still an empty array.
+		$filtered_meta = $request->get_param( 'meta' );
+		$this->assertIsArray( $filtered_meta, 'Meta should still be an array.' );
+		$this->assertEmpty( $filtered_meta, 'Meta should still be empty.' );
+	}
+
+	/**
+	 * Tests filter_readonly_meta with only writable keys.
+	 *
+	 * @covers ::filter_readonly_meta
+	 * @return void
+	 */
+	public function test_filter_readonly_meta_with_only_writable_keys(): void {
+		$instance = Event_Setup::get_instance();
+
+		// Create a REST request with only writable meta keys.
+		$request = new WP_REST_Request( 'POST', '/wp/v2/gatherpress_event' );
+		$request->set_param(
+			'meta',
+			array(
+				'gatherpress_datetime'              => '{"dateTimeStart":"2025-01-01 10:00:00"}',
+				'gatherpress_online_event_link'     => 'https://example.com/meeting',
+				'gatherpress_enable_anonymous_rsvp' => true,
+				'gatherpress_max_guest_limit'       => 5,
+				'gatherpress_max_attendance_limit'  => 100,
+			)
+		);
+
+		$prepared_post     = new stdClass();
+		$prepared_post->ID = 101;
+
+		$result = $instance->filter_readonly_meta( $prepared_post, $request );
+
+		// Verify prepared_post is returned unchanged.
+		$this->assertSame( $prepared_post, $result, 'Should return the same prepared_post object.' );
+
+		// Verify all writable keys are preserved.
+		$filtered_meta = $request->get_param( 'meta' );
+
+		$this->assertCount( 5, $filtered_meta, 'Should have all 5 writable keys.' );
+		$this->assertArrayHasKey( 'gatherpress_datetime', $filtered_meta );
+		$this->assertArrayHasKey( 'gatherpress_online_event_link', $filtered_meta );
+		$this->assertArrayHasKey( 'gatherpress_enable_anonymous_rsvp', $filtered_meta );
+		$this->assertArrayHasKey( 'gatherpress_max_guest_limit', $filtered_meta );
+		$this->assertArrayHasKey( 'gatherpress_max_attendance_limit', $filtered_meta );
+	}
+
+	/**
+	 * Tests filter_readonly_meta with only readonly keys.
+	 *
+	 * @covers ::filter_readonly_meta
+	 * @return void
+	 */
+	public function test_filter_readonly_meta_with_only_readonly_keys(): void {
+		$instance = Event_Setup::get_instance();
+
+		// Create a REST request with only readonly meta keys.
+		$request = new WP_REST_Request( 'POST', '/wp/v2/gatherpress_event' );
+		$request->set_param(
+			'meta',
+			array(
+				'gatherpress_datetime_start'     => '2025-01-01 10:00:00',
+				'gatherpress_datetime_start_gmt' => '2025-01-01 15:00:00',
+				'gatherpress_datetime_end'       => '2025-01-01 12:00:00',
+				'gatherpress_datetime_end_gmt'   => '2025-01-01 17:00:00',
+				'gatherpress_timezone'           => 'America/New_York',
+			)
+		);
+
+		$prepared_post     = new stdClass();
+		$prepared_post->ID = 202;
+
+		$result = $instance->filter_readonly_meta( $prepared_post, $request );
+
+		// Verify prepared_post is returned unchanged.
+		$this->assertSame( $prepared_post, $result, 'Should return the same prepared_post object.' );
+
+		// Verify all readonly keys were removed.
+		$filtered_meta = $request->get_param( 'meta' );
+
+		$this->assertIsArray( $filtered_meta, 'Meta should still be an array.' );
+		$this->assertEmpty( $filtered_meta, 'Meta should be empty after removing all readonly keys.' );
 	}
 }
