@@ -65,6 +65,7 @@ class Setup {
 		Event_Setup::get_instance();
 		Export::get_instance();
 		Import::get_instance();
+		Rsvp_Cleanup::get_instance();
 		Rsvp_Form::get_instance();
 		Rsvp_Query::get_instance();
 		Rsvp_Setup::get_instance();
@@ -72,7 +73,6 @@ class Setup {
 		Topic::get_instance();
 		User::get_instance();
 		Venue::get_instance();
-		Rsvp_Cleanup::get_instance();
 	}
 
 	/**

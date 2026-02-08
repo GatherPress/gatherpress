@@ -2,8 +2,9 @@
 /**
  * Class responsible for scheduling rsvp cleanup cron jobs.
  *
+ * @since 1.0.0
+ *
  * @package GatherPress\Core
- * @since   1.0.0
  */
 
 namespace GatherPress\Core;
@@ -16,21 +17,19 @@ use GatherPress\Core\Traits\Singleton;
 /**
  * Class Rsvp_Cleanup.
  *
- * This class manages rsvp cleanup events.
- *
  * @since 1.0.0
+ *
+ * This class manages rsvp cleanup events.
  */
 class Rsvp_Cleanup {
-
-
 	use Singleton;
 
 	/**
 	 * Initializes hooks needed for the cleanup cron event.
 	 *
-	 * @return  void
-	 *
 	 * @since 1.0.0
+	 *
+	 * @return void
 	 */
 	public function __construct() {
 		$this->setup_hooks();
@@ -39,8 +38,9 @@ class Rsvp_Cleanup {
 	/**
 	 * Sets up WordPress action hooks for managing cron scheduling and cleanup operations.
 	 *
+	 * @since 1.0.0
+	 *
 	 * @return void
-	 * @since  1.0.0
 	 */
 	private function setup_hooks() {
 		add_action( 'init', array( $this, 'schedule_cleanup_cron' ) );
@@ -56,8 +56,9 @@ class Rsvp_Cleanup {
 	 * 2. Filters the retrieved RSVPs to include only those that are more than 24 hours old.
 	 * 3. Deletes the filtered RSVP comments along with their associated metadata.
 	 *
+	 * @since 1.0.0
+	 *
 	 * @return void
-	 * @since  1.0.0
 	 */
 	public function rsvp_cleanup(): void {
 		// Perform cleanup.
@@ -75,20 +76,24 @@ class Rsvp_Cleanup {
 				),
 			)
 		);
+
 		// 2. Further filter by those that are more than 24hrs old.
 		$rsvps = array_filter(
 			$rsvps,
-			function ( $rsvp ) {
+			static function ( $rsvp ): bool {
 				$diff = strtotime( 'now' ) - strtotime( $rsvp->comment_date );
-				return $diff >= 86400;
+				return $diff >= HOUR_IN_SECONDS * 24;
 			}
 		);
+
 		// 3. Delete RSVP comment + associated meta.
 		foreach ( $rsvps as $rsvp ) {
 			$meta_keys = array_keys( get_comment_meta( $rsvp->comment_ID ) );
+
 			foreach ( $meta_keys as $meta_key ) {
 				delete_comment_meta( $rsvp->comment_ID, $meta_key );
 			}
+
 			wp_delete_comment( $rsvp->comment_ID, true );
 		}
 
@@ -100,9 +105,9 @@ class Rsvp_Cleanup {
 	/**
 	 * Determines if rsvp cleanup is enabled and schedules the next cleanup event.
 	 *
-	 * @return void
-	 *
 	 * @since 1.0.0
+	 *
+	 * @return void
 	 */
 	public function schedule_cleanup_cron() {
 		$settings = Settings::get_instance();
@@ -110,10 +115,10 @@ class Rsvp_Cleanup {
 
 		if ( 'on' === $switch ) {
 			if ( ! wp_next_scheduled( 'gatherpress_rsvp_cleanup' ) ) {
-				$frequency = $settings->get_value( 'general', 'rsvp_cleanup', 'rsvp_cleanup_frequency' );
-				$interval  = $settings->get_value( 'general', 'rsvp_cleanup', 'rsvp_cleanup_interval' );
-
+				$frequency       = $settings->get_value( 'general', 'rsvp_cleanup', 'rsvp_cleanup_frequency' );
+				$interval        = $settings->get_value( 'general', 'rsvp_cleanup', 'rsvp_cleanup_interval' );
 				$time_in_seconds = $this->convert_to_seconds( $frequency, $interval );
+
 				wp_schedule_single_event( time() + $time_in_seconds, 'gatherpress_rsvp_cleanup' );
 			}
 		}
@@ -126,11 +131,12 @@ class Rsvp_Cleanup {
 	 * multiplier interval. Supported frequencies include 'hourly', 'daily',
 	 * 'weekly', 'monthly', and 'yearly'.
 	 *
+	 * @since 1.0.0
+	 *
 	 * @param string $frequency The recurrence frequency (e.g., 'hourly', 'daily').
 	 * @param int    $interval The interval multiplier for the frequency.
 	 *
 	 * @return int The total number of seconds, or 0 if the frequency is not recognized.
-	 * @since  1.0.0
 	 */
 	private function convert_to_seconds( string $frequency, int $interval ): int {
 		switch ( $frequency ) {
@@ -155,16 +161,16 @@ class Rsvp_Cleanup {
 	 * or frequency. If a change is detected, it clears the existing scheduled cron job
 	 * and schedules a new one with the updated settings.
 	 *
+	 * @since 1.0.0
+	 *
 	 * @param array $old_value The previous RSVP cleanup settings including interval and frequency.
 	 * @param array $new_value The updated RSVP cleanup settings including interval and frequency.
 	 *
 	 * @return void
-	 * @since  1.0.0
 	 */
 	public function reschedule_cleanup_cron( $old_value, $new_value ): void {
-		$old_interval = $old_value['rsvp_cleanup']['rsvp_cleanup_interval'] ?? null;
-		$new_interval = $new_value['rsvp_cleanup']['rsvp_cleanup_interval'] ?? null;
-
+		$old_interval  = $old_value['rsvp_cleanup']['rsvp_cleanup_interval'] ?? null;
+		$new_interval  = $new_value['rsvp_cleanup']['rsvp_cleanup_interval'] ?? null;
 		$old_frequency = $old_value['rsvp_cleanup']['rsvp_cleanup_frequency'] ?? null;
 		$new_frequency = $new_value['rsvp_cleanup']['rsvp_cleanup_frequency'] ?? null;
 
