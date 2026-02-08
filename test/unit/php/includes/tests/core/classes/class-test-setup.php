@@ -37,6 +37,12 @@ class Test_Setup extends Base {
 				'type'     => 'action',
 				'name'     => 'admin_init',
 				'priority' => 10,
+				'callback' => array( $instance, 'check_plugin_version' ),
+			),
+			array(
+				'type'     => 'action',
+				'name'     => 'admin_init',
+				'priority' => 10,
 				'callback' => array( $instance, 'add_privacy_policy_content' ),
 			),
 			array(
@@ -302,6 +308,121 @@ class Test_Setup extends Base {
 		$this->assertTrue(
 			true,
 			'The deactivate_gatherpress_plugin method should execute without error.'
+		);
+	}
+
+	/**
+	 * Coverage for check_plugin_version method when version changes.
+	 *
+	 * Verifies that rewrite rules are flushed when the plugin version changes.
+	 *
+	 * @covers ::check_plugin_version
+	 *
+	 * @return void
+	 */
+	public function test_check_plugin_version_when_version_changes(): void {
+		$instance = Setup::get_instance();
+
+		// Set up an old version in the database.
+		update_option( 'gatherpress_version', '0.1.0' );
+
+		// Set up rewrite_rules option to verify it gets deleted.
+		add_option( 'rewrite_rules', array( 'test' => 'rules' ) );
+
+		$this->assertNotFalse(
+			get_option( 'rewrite_rules' ),
+			'Failed to assert that rewrite_rules option exists before version check.'
+		);
+
+		// Run the version check.
+		$instance->check_plugin_version();
+
+		// Verify rewrite_rules were scheduled to flush.
+		$this->assertFalse(
+			get_option( 'rewrite_rules' ),
+			'Failed to assert that rewrite_rules option was deleted when version changed.'
+		);
+
+		// Verify version was updated.
+		$this->assertSame(
+			GATHERPRESS_VERSION,
+			get_option( 'gatherpress_version' ),
+			'Failed to assert that plugin version was updated in options.'
+		);
+	}
+
+	/**
+	 * Coverage for check_plugin_version method when version is unchanged.
+	 *
+	 * Verifies that rewrite rules are not flushed when the plugin version hasn't changed.
+	 *
+	 * @covers ::check_plugin_version
+	 *
+	 * @return void
+	 */
+	public function test_check_plugin_version_when_version_unchanged(): void {
+		$instance = Setup::get_instance();
+
+		// Set current version in the database.
+		update_option( 'gatherpress_version', GATHERPRESS_VERSION );
+
+		// Set up rewrite_rules option to verify it doesn't get deleted.
+		add_option( 'rewrite_rules', array( 'test' => 'rules' ) );
+
+		$this->assertNotFalse(
+			get_option( 'rewrite_rules' ),
+			'Failed to assert that rewrite_rules option exists before version check.'
+		);
+
+		// Run the version check.
+		$instance->check_plugin_version();
+
+		// Verify rewrite_rules were NOT deleted.
+		$this->assertNotFalse(
+			get_option( 'rewrite_rules' ),
+			'Failed to assert that rewrite_rules option was not deleted when version unchanged.'
+		);
+
+		// Verify version is still the same.
+		$this->assertSame(
+			GATHERPRESS_VERSION,
+			get_option( 'gatherpress_version' ),
+			'Failed to assert that plugin version remains unchanged.'
+		);
+	}
+
+	/**
+	 * Coverage for check_plugin_version method on first install.
+	 *
+	 * Verifies that version is set and rewrite rules are flushed on first install.
+	 *
+	 * @covers ::check_plugin_version
+	 *
+	 * @return void
+	 */
+	public function test_check_plugin_version_on_first_install(): void {
+		$instance = Setup::get_instance();
+
+		// Delete version option to simulate first install.
+		delete_option( 'gatherpress_version' );
+
+		// Set up rewrite_rules option to verify it gets deleted.
+		add_option( 'rewrite_rules', array( 'test' => 'rules' ) );
+
+		// Run the version check.
+		$instance->check_plugin_version();
+
+		// Verify rewrite_rules were scheduled to flush.
+		$this->assertFalse(
+			get_option( 'rewrite_rules' ),
+			'Failed to assert that rewrite_rules option was deleted on first install.'
+		);
+
+		// Verify version was set.
+		$this->assertSame(
+			GATHERPRESS_VERSION,
+			get_option( 'gatherpress_version' ),
+			'Failed to assert that plugin version was set on first install.'
 		);
 	}
 

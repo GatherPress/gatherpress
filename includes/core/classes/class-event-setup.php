@@ -16,9 +16,11 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use Exception;
 use GatherPress\Core\Traits\Singleton;
+use stdClass;
 use WP;
 use WP_Post;
 use WP_Query;
+use WP_REST_Request;
 
 /**
  * Class Event_Setup.
@@ -69,6 +71,12 @@ class Event_Setup {
 		);
 
 		add_filter( 'redirect_canonical', array( $this, 'disable_ics_canonical_redirect' ), 10, 2 );
+		add_filter(
+			sprintf( 'rest_pre_insert_%s', Event::POST_TYPE ),
+			array( $this, 'filter_readonly_meta' ),
+			10,
+			2
+		);
 		add_filter(
 			sprintf( 'manage_%s_posts_columns', Event::POST_TYPE ),
 			array( $this, 'set_custom_columns' )
@@ -251,34 +259,34 @@ class Event_Setup {
 				'type'              => 'string',
 			),
 			'gatherpress_datetime_start'        => array(
-				'auth_callback'     => array( $this, 'can_edit_posts_meta' ),
+				'auth_callback'     => '__return_false', // Read-only: derived from gatherpress_datetime.
 				'sanitize_callback' => 'sanitize_text_field',
 				'show_in_rest'      => true,
 				'single'            => true,
 			),
 			'gatherpress_datetime_start_gmt'    => array(
-				'auth_callback'     => array( $this, 'can_edit_posts_meta' ),
+				'auth_callback'     => '__return_false', // Read-only: derived from gatherpress_datetime.
 				'sanitize_callback' => 'sanitize_text_field',
 				'show_in_rest'      => true,
 				'single'            => true,
 				'type'              => 'string',
 			),
 			'gatherpress_datetime_end'          => array(
-				'auth_callback'     => array( $this, 'can_edit_posts_meta' ),
+				'auth_callback'     => '__return_false', // Read-only: derived from gatherpress_datetime.
 				'sanitize_callback' => 'sanitize_text_field',
 				'show_in_rest'      => true,
 				'single'            => true,
 				'type'              => 'string',
 			),
 			'gatherpress_datetime_end_gmt'      => array(
-				'auth_callback'     => array( $this, 'can_edit_posts_meta' ),
+				'auth_callback'     => '__return_false', // Read-only: derived from gatherpress_datetime.
 				'sanitize_callback' => 'sanitize_text_field',
 				'show_in_rest'      => true,
 				'single'            => true,
 				'type'              => 'string',
 			),
 			'gatherpress_timezone'              => array(
-				'auth_callback'     => array( $this, 'can_edit_posts_meta' ),
+				'auth_callback'     => '__return_false', // Read-only: derived from gatherpress_datetime.
 				'sanitize_callback' => 'sanitize_text_field',
 				'show_in_rest'      => true,
 				'single'            => true,
@@ -326,18 +334,62 @@ class Event_Setup {
 	}
 
 	/**
+	 * Filter out read-only meta fields from REST API requests.
+	 *
+	 * This prevents the "Publishing failed. Sorry, you are not allowed to edit
+	 * the gatherpress_datetime_start custom field." error that occurs when the
+	 * block editor tries to save derived meta fields that have auth_callback
+	 * set to __return_false.
+	 *
+	 * The derived datetime fields are populated programmatically via the
+	 * set_datetimes() method when gatherpress_datetime is saved, so any
+	 * values sent via REST API should be silently discarded.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param stdClass        $prepared_post An object representing a single post prepared for inserting or updating.
+	 * @param WP_REST_Request $request       Request object.
+	 * @return stdClass The prepared post object.
+	 */
+	public function filter_readonly_meta( stdClass $prepared_post, WP_REST_Request $request ): stdClass {
+		$readonly_keys = array(
+			'gatherpress_datetime_start',
+			'gatherpress_datetime_start_gmt',
+			'gatherpress_datetime_end',
+			'gatherpress_datetime_end_gmt',
+			'gatherpress_timezone',
+		);
+
+		$meta = $request->get_param( 'meta' );
+
+		if ( is_array( $meta ) ) {
+			foreach ( $readonly_keys as $key ) {
+				unset( $meta[ $key ] );
+			}
+
+			$request->set_param( 'meta', $meta );
+		}
+
+		return $prepared_post;
+	}
+
+	/**
 	 * Register a rewrite rule and query var for serving .ics calendar downloads.
 	 *
-	 * This adds support for URLs like /event/my-event/my-event.ics that serve
-	 * dynamically generated ICS files for individual events.
+	 * This adds support for URLs like /events/my-event.ics that serve
+	 * dynamically generated ICS files for individual events. The URL slug
+	 * matches the configured event post type slug from GatherPress settings.
 	 *
 	 * @since 1.0.0
 	 *
 	 * @return void
 	 */
 	public function register_calendar_rewrite_rule(): void {
+		$settings     = Settings::get_instance();
+		$rewrite_slug = sanitize_title( $settings->get_value( 'general', 'urls', 'events' ) );
+
 		add_rewrite_rule(
-			'^event/([^/]+)\.ics$',
+			sprintf( '^%s/([^/]+)\.ics$', $rewrite_slug ),
 			sprintf( 'index.php?post_type=%s&name=$matches[1]&gatherpress_ics=1', Event::POST_TYPE ),
 			'top'
 		);

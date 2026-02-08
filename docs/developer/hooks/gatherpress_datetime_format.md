@@ -33,4 +33,4 @@ apply_filters( 'gatherpress_datetime_format', $format, $which, $local )
 
 
 
-[← All Hooks](Hooks)
+[← All Hooks](Hooks.md)

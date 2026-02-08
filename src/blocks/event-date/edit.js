@@ -2,14 +2,12 @@
  * External dependencies.
  */
 import moment from 'moment';
-import clsx from 'clsx';
 
 /**
  * WordPress dependencies.
  */
 import { __, sprintf } from '@wordpress/i18n';
 import {
-	AlignmentToolbar,
 	BlockControls,
 	InspectorControls,
 	useBlockProps,
@@ -185,13 +183,11 @@ const calculateDisplayType = ( toggleType, showStartTime, showEndTime ) => {
  * @return {JSX.Element} The rendered Edit component for the GatherPress Event Date block.
  *
  * @see {@link DateTimeRange} - Component for editing date and time range.
- * @see {@link AlignmentToolbar} - Toolbar for text alignment control.
  * @see {@link useBlockProps} - Custom hook for block props.
  * @see {@link displayDateTime} - Function for formatting and displaying date and time.
  */
 const Edit = ( { attributes, setAttributes, context } ) => {
 	const {
-		textAlign,
 		displayType,
 		startDateFormat,
 		endDateFormat,
@@ -205,9 +201,6 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 	const isValidEvent = hasValidEventId( postId );
 
 	const blockProps = useBlockProps( {
-		className: clsx( {
-			[ `has-text-align-${ textAlign }` ]: textAlign,
-		} ),
 		style: {
 			opacity: ( isInFSETemplate() || isValidEvent ) ? 1 : 0.3,
 		},
@@ -284,12 +277,6 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 	return (
 		<div { ...blockProps }>
 			<BlockControls>
-				<AlignmentToolbar
-					value={ textAlign }
-					onChange={ ( newAlign ) =>
-						setAttributes( { textAlign: newAlign } )
-					}
-				/>
 				<ToolbarGroup>
 					<ToolbarButton
 						label={ __( 'Toggle start date', 'gatherpress' ) }

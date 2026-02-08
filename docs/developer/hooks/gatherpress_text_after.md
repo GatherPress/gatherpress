@@ -30,4 +30,4 @@ do_action( 'gatherpress_text_after', $name, $value )
 
 
 
-[← All Hooks](Hooks)
+[← All Hooks](Hooks.md)

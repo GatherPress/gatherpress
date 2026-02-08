@@ -50,4 +50,4 @@ apply_filters( 'gatherpress_pseudopostmetas', $this->pseudopostmetas )
 
 
 
-[← All Hooks](Hooks)
+[← All Hooks](Hooks.md)

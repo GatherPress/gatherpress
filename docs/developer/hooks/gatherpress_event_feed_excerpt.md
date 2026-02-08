@@ -45,4 +45,4 @@ apply_filters( 'gatherpress_event_feed_excerpt', $excerpt )
 
 
 
-[← All Hooks](Hooks)
+[← All Hooks](Hooks.md)
