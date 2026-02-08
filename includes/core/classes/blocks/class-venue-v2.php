@@ -80,14 +80,14 @@ class Venue_V2 {
 	 * @param array|null  $block         The full block, including name and attributes.
 	 * @param WP_Block    $instance      The block instance.
 	 *
-	 * @return string|null
+	 * @return string
 	 */
-	public function render_venue_v2_block( ?string $block_content, ?array $block, WP_Block $instance ): ?string {
+	public function render_venue_v2_block( ?string $block_content, ?array $block, WP_Block $instance ): string {
 		// $block_content and $block can become null,
 		// so be sure to handle these cases.
 		// https://developer.wordpress.org/reference/hooks/render_block/#comment-6606
 		if ( is_null( $block_content ) || is_null( $block ) ) {
-			return $block_content;
+			return is_string( $block_content ) ? $block_content : '';
 		}
 
 		$current_post  = get_post();
@@ -122,7 +122,7 @@ class Venue_V2 {
 
 		if ( ! $venue_post instanceof WP_Post || Venue::POST_TYPE !== $venue_post->post_type ) {
 			// This might be an online-only event.
-			return null;
+			return '';
 		}
 
 		/*
