@@ -619,6 +619,22 @@ class Test_Event_Query extends Base {
 			$response,
 			'Failed to assert the array, containing pieces of the SQL query, is not empty'
 		);
+
+		$wp_query = new WP_Query();
+
+		$wp_query->set( 'gatherpress_event_query', 'upcoming' );
+		$response = $instance->adjust_admin_event_sorting( array(), $wp_query );
+		$this->assertNotEmpty(
+			$response,
+			'Failed to assert the array, containing pieces of the SQL query, is not empty'
+		);
+
+		$wp_query->set( 'gatherpress_event_query', 'past' );
+		$response = $instance->adjust_admin_event_sorting( array(), $wp_query );
+		$this->assertNotEmpty(
+			$response,
+			'Failed to assert the array, containing pieces of the SQL query, is not empty'
+		);
 	}
 
 	/**
