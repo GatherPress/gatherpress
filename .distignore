@@ -58,6 +58,7 @@ node_modules
 vendor
 src
 docs
+wp-cron.sh
 
 # Miscellaneous and SQL Archives
 behat.yml
