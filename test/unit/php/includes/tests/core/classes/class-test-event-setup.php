@@ -14,6 +14,7 @@ use GatherPress\Core\Event_Setup;
 use GatherPress\Core\Settings;
 use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;
+use stdClass;
 use WP;
 use WP_Query;
 use WP_REST_Request;
@@ -1824,7 +1825,7 @@ class Test_Event_Setup extends Base {
 			)
 		);
 
-		$prepared_post     = new \stdClass();
+		$prepared_post     = new stdClass();
 		$prepared_post->ID = 123;
 
 		$result = $instance->filter_readonly_meta( $prepared_post, $request );
@@ -1888,7 +1889,7 @@ class Test_Event_Setup extends Base {
 		$request = new WP_REST_Request( 'POST', '/wp/v2/gatherpress_event' );
 		// Do not set meta parameter - it will be null.
 
-		$prepared_post       = new \stdClass();
+		$prepared_post       = new stdClass();
 		$prepared_post->ID   = 456;
 		$prepared_post->name = 'Test Event';
 
@@ -1916,7 +1917,7 @@ class Test_Event_Setup extends Base {
 		$request = new WP_REST_Request( 'POST', '/wp/v2/gatherpress_event' );
 		$request->set_param( 'meta', array() );
 
-		$prepared_post     = new \stdClass();
+		$prepared_post     = new stdClass();
 		$prepared_post->ID = 789;
 
 		$result = $instance->filter_readonly_meta( $prepared_post, $request );
@@ -1952,7 +1953,7 @@ class Test_Event_Setup extends Base {
 			)
 		);
 
-		$prepared_post     = new \stdClass();
+		$prepared_post     = new stdClass();
 		$prepared_post->ID = 101;
 
 		$result = $instance->filter_readonly_meta( $prepared_post, $request );
@@ -1993,7 +1994,7 @@ class Test_Event_Setup extends Base {
 			)
 		);
 
-		$prepared_post     = new \stdClass();
+		$prepared_post     = new stdClass();
 		$prepared_post->ID = 202;
 
 		$result = $instance->filter_readonly_meta( $prepared_post, $request );
