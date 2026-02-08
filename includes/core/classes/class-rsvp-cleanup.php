@@ -134,8 +134,6 @@ class Rsvp_Cleanup {
 	 */
 	private function convert_to_seconds( string $frequency, int $interval ): int {
 		switch ( $frequency ) {
-			case 'hourly':
-				return $interval * HOUR_IN_SECONDS;
 			case 'daily':
 				return $interval * DAY_IN_SECONDS;
 			case 'weekly':
@@ -144,8 +142,9 @@ class Rsvp_Cleanup {
 				return $interval * MONTH_IN_SECONDS;
 			case 'yearly':
 				return $interval * YEAR_IN_SECONDS;
+			case 'hourly':
 			default:
-				return 0;
+				return $interval * HOUR_IN_SECONDS;
 		}
 	}
 

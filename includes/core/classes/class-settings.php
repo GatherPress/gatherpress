@@ -582,7 +582,7 @@ class Settings {
 		$sub_pages = $this->get_sub_pages();
 
 		return $sub_pages[ Utility::unprefix_key( $sub_page ) ]['sections'][ $section ]['options']
-			[ $option ]['field']['options']['default'] ?? '';
+		[ $option ]['field']['options']['default'] ?? '';
 	}
 
 	/**
