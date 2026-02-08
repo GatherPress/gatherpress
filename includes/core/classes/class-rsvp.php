@@ -202,6 +202,8 @@ class Rsvp {
 	 *               and 'anonymous' to 0 if the post ID or user identifier is not valid, or if the status
 	 *               is not one of the acceptable values. If the attending limit is reached, 'status' may be
 	 *               automatically set to 'waiting_list', and 'guests' to 0, depending on the context.
+	 *
+	 * @SuppressWarnings(PHPMD.NPathComplexity)
 	 */
 	public function save( $user_identifier, string $status, int $anonymous = 0, int $guests = 0 ): array {
 		$rsvp_query      = Rsvp_Query::get_instance();

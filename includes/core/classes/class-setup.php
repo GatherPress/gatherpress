@@ -72,6 +72,7 @@ class Setup {
 		Topic::get_instance();
 		User::get_instance();
 		Venue::get_instance();
+		Rsvp_Cleanup::get_instance();
 	}
 
 	/**
