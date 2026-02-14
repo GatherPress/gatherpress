@@ -18,11 +18,14 @@ add_filter(
 
 ## Files
 
-- [includes/core/classes/class-event.php:109](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/class-event.php#L109)
+- [includes/core/classes/class-event.php:181](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/class-event.php#L181)
 ```php
-apply_filters( 'gatherpress_date_format', $settings->get_value( 'general', 'formatting', 'date_format' ) )
+apply_filters(
+			'gatherpress_date_format',
+			$settings->get_value( 'general', 'formatting', 'date_format' )
+		)
 ```
 
 
 
-[← All Hooks](Hooks)
+[← All Hooks](Hooks.md)

@@ -41,10 +41,10 @@ const RsvpResponseHeader = ( {
 	const updateLimit = ( e ) => {
 		e.preventDefault();
 
-		if ( false !== rsvpLimit ) {
-			setRsvpLimit( false );
-		} else {
+		if ( false === rsvpLimit ) {
 			setRsvpLimit( defaultLimit );
+		} else {
+			setRsvpLimit( false );
 		}
 	};
 

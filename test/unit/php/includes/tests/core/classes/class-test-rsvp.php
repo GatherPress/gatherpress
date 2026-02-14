@@ -71,13 +71,25 @@ class Test_Rsvp extends Base {
 
 		$status = 'not_attending';
 
-		$this->assertSame( $status, $rsvp->save( $user_id, $status )['status'], 'Failed to assert user is not attending.' );
+		$this->assertSame(
+			$status,
+			$rsvp->save( $user_id, $status )['status'],
+			'Failed to assert user is not attending.'
+		);
 
-		$this->assertSame( 'no_status', $rsvp->save( 0, $status )['status'], 'Failed to assert no_status due to invalid user ID.' );
+		$this->assertSame(
+			'no_status',
+			$rsvp->save( 0, $status )['status'],
+			'Failed to assert no_status due to invalid user ID.'
+		);
 
 		$status = 'unittest';
 
-		$this->assertSame( 'no_status', $rsvp->save( $user_id, $status )['status'], 'Failed to assert no_status due to invalid status.' );
+		$this->assertSame(
+			'no_status',
+			$rsvp->save( $user_id, $status )['status'],
+			'Failed to assert no_status due to invalid status.'
+		);
 
 		$rsvp = new Rsvp( $post->ID );
 
@@ -87,18 +99,41 @@ class Test_Rsvp extends Base {
 		$user_2_id = $this->factory->user->create();
 		$status    = 'attending';
 
-		$this->assertSame( 'attending', $rsvp->save( $user_1_id, $status )['status'], 'Failed to assert that user 1 is attending.' );
-		$this->assertSame( 'waiting_list', $rsvp->save( $user_2_id, $status )['status'], 'Failed to assert that user 2 is on waiting list.' );
+		$this->assertSame(
+			'attending',
+			$rsvp->save( $user_1_id, $status )['status'],
+			'Failed to assert that user 1 is attending.'
+		);
+		$this->assertSame(
+			'waiting_list',
+			$rsvp->save( $user_2_id, $status )['status'],
+			'Failed to assert that user 2 is on waiting list.'
+		);
 
 		$user_1_id = $this->factory->user->create();
 
+		// Enable anonymous RSVP for this test.
+		update_post_meta( $post->ID, 'gatherpress_enable_anonymous_rsvp', true );
+
 		// When not_attending and anonymous, user record should be removed and marked no_status.
-		$this->assertSame( 'waiting_list', $rsvp->save( $user_1_id, 'attending', 1 )['status'], 'Failed to assert that user 1 is attending' );
-		$this->assertSame( 'no_status', $rsvp->save( $user_1_id, 'not_attending', 1 )['status'], 'Failed to assert that user 1 is no_status.' );
+		$this->assertSame(
+			'waiting_list',
+			$rsvp->save( $user_1_id, 'attending', 1 )['status'],
+			'Failed to assert that user 1 is attending'
+		);
+		$this->assertSame(
+			'no_status',
+			$rsvp->save( $user_1_id, 'not_attending', 1 )['status'],
+			'Failed to assert that user 1 is no_status.'
+		);
 
 		$user_2_id = $this->factory->user->create();
 
-		$this->assertSame( 'no_status', $rsvp->save( $user_2_id, 'no_status' )['status'], 'Failed to assert that user 2 is no_status.' );
+		$this->assertSame(
+			'no_status',
+			$rsvp->save( $user_2_id, 'no_status' )['status'],
+			'Failed to assert that user 2 is no_status.'
+		);
 
 		$post      = $this->mock->post(
 			array(
@@ -110,7 +145,11 @@ class Test_Rsvp extends Base {
 		)->get();
 		$rsvp      = new Rsvp( $post->ID );
 		$user_1_id = $this->factory->user->create();
-		$this->assertSame( 2, $rsvp->save( $user_1_id, 'attending', 0, 3 )['guests'], 'Failed to assert that user 1 can only bring 2 guests at most.' );
+		$this->assertSame(
+			2,
+			$rsvp->save( $user_1_id, 'attending', 0, 3 )['guests'],
+			'Failed to assert that user 1 can only bring 2 guests at most.'
+		);
 
 		// Simulate error saving RSVP.
 		add_filter( 'query', '__return_false' );
@@ -330,7 +369,10 @@ class Test_Rsvp extends Base {
 		$rsvp      = new Rsvp( $post->ID );
 		$responses = $rsvp->responses();
 
-		$this->assertEmpty( $responses['all']['records'], 'Failed to assert all responses empty with non-event post type.' );
+		$this->assertEmpty(
+			$responses['all']['records'],
+			'Failed to assert all responses empty with non-event post type.'
+		);
 		$this->assertEquals( 0, $responses['count'], 'Failed to assert count is 0 with non-event post type.' );
 
 		$this->mock->user( 'subscriber' );
@@ -338,6 +380,9 @@ class Test_Rsvp extends Base {
 		$post      = $this->mock->post(
 			array(
 				'post_type' => Event::POST_TYPE,
+				'post_meta' => array(
+					'gatherpress_enable_anonymous_rsvp' => true,
+				),
 			)
 		)->get();
 		$rsvp      = new Rsvp( $post->ID );
@@ -411,5 +456,109 @@ class Test_Rsvp extends Base {
 			$rsvp->sort_by_timestamp( $newer, $newer ),
 			'Failed to assert that it returns 0 while both response\'s timestamps are equal.'
 		);
+	}
+
+	/**
+	 * Test get method with email identifier.
+	 *
+	 * @covers ::get
+	 * @covers ::__construct
+	 */
+	public function test_get_with_email(): void {
+		$post  = $this->mock->post(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		)->get();
+		$rsvp  = new Rsvp( $post->ID );
+		$email = 'test@example.com';
+
+		// Get RSVP by email (should return empty before save).
+		$data = $rsvp->get( $email );
+		$this->assertEquals( 0, $data['comment_id'] );
+
+		// Save RSVP with email.
+		$rsvp->save( $email, 'attending' );
+
+		// Get RSVP by email (should return the RSVP).
+		$data = $rsvp->get( $email );
+
+		$this->assertSame( $post->ID, intval( $data['post_id'] ) );
+		$this->assertSame( 'attending', $data['status'] );
+		$this->assertNotEmpty( $data['comment_id'] );
+	}
+
+	/**
+	 * Test save method with email identifier.
+	 *
+	 * @covers ::save
+	 * @covers ::__construct
+	 */
+	public function test_save_with_email(): void {
+		$post  = $this->mock->post(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		)->get();
+		$rsvp  = new Rsvp( $post->ID );
+		$email = 'rsvp@example.com';
+
+		$data = $rsvp->save( $email, 'attending' );
+
+		$this->assertSame( $post->ID, intval( $data['post_id'] ) );
+		$this->assertSame( 'attending', $data['status'] );
+		$this->assertNotEmpty( $data['comment_id'] );
+
+		// Verify email was stored.
+		$comment = get_comment( $data['comment_id'] );
+		$this->assertEquals( $email, $comment->comment_author_email );
+	}
+
+	/**
+	 * Test check_waiting_list when not enough people on waiting list.
+	 *
+	 * @covers ::check_waiting_list
+	 * @covers ::responses
+	 * @covers ::__construct
+	 */
+	public function test_check_waiting_list_insufficient_waiting(): void {
+		$post = $this->mock->post(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		)->get();
+
+		// Set attendance limit.
+		update_post_meta( $post->ID, 'gatherpress_enable_attendance_limit', 1 );
+		update_post_meta( $post->ID, 'gatherpress_max_attendance_limit', 5 );
+
+		$rsvp = new Rsvp( $post->ID );
+
+		// Add 3 attending users.
+		$user1 = $this->factory->user->create();
+		$user2 = $this->factory->user->create();
+		$user3 = $this->factory->user->create();
+
+		$rsvp->save( $user1, 'attending' );
+		$rsvp->save( $user2, 'attending' );
+		$rsvp->save( $user3, 'attending' );
+
+		// Add 1 person to waiting list.
+		$user4 = $this->factory->user->create();
+		$rsvp->save( $user4, 'waiting_list' );
+
+		// Remove one attending person, creating 2 open spots.
+		$rsvp->save( $user1, 'not_attending' );
+
+		// Check waiting list - should only move 1 person (user4) since only 1 on waiting list.
+		$rsvp->check_waiting_list();
+
+		// Verify user4 moved to attending.
+		$data = $rsvp->get( $user4 );
+		$this->assertEquals( 'attending', $data['status'] );
+
+		// Verify only 3 attending (user2, user3, user4).
+		$responses = $rsvp->responses();
+		$this->assertEquals( 3, $responses['attending']['count'] );
 	}
 }

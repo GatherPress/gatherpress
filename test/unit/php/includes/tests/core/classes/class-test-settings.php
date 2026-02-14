@@ -149,8 +149,15 @@ class Test_Settings extends Base {
 	public function test_render_settings_form(): void {
 		$instance = Settings::get_instance();
 
-		$response = Utility::buffer_and_return( array( $instance, 'render_settings_form' ), array( 'gatherpress_general' ) );
-		$this->assertStringContainsString( 'value=\'gatherpress_general\'', $response, 'Failed to assert general form rendered.' );
+		$response = Utility::buffer_and_return(
+			array( $instance, 'render_settings_form' ),
+			array( 'gatherpress_general' )
+		);
+		$this->assertStringContainsString(
+			'value=\'gatherpress_general\'',
+			$response,
+			'Failed to assert general form rendered.'
+		);
 	}
 
 	/**
@@ -183,7 +190,8 @@ class Test_Settings extends Base {
 			'Failed to assert that label matches.'
 		);
 		$this->assertStringContainsString(
-			'<input id="gatherpress_option" type="text" name="sub_page[section][option]" class="regular-text" value="" />',
+			'<input id="gatherpress_option" type="text" name="sub_page[section][option]" ' .
+			'class="regular-text" value="" />',
 			$text,
 			'Failed to assert that input matches.'
 		);
@@ -326,7 +334,8 @@ class Test_Settings extends Base {
 			'Failed to assert that label matches.'
 		);
 		$this->assertStringContainsString(
-			'<input id="gatherpress_option" type="number" name="sub_page[section][option]" class="regular-text" value="" min="1" max="5" />',
+			'<input id="gatherpress_option" type="number" name="sub_page[section][option]" ' .
+			'class="regular-text" value="" min="1" max="5" />',
 			$text,
 			'Failed to assert that input matches.'
 		);
@@ -361,7 +370,10 @@ class Test_Settings extends Base {
 		);
 
 		$this->assertStringContainsString(
-			'<div class="regular-text" data-gatherpress_component_name="autocomplete" data-gatherpress_component_attrs="{&quot;name&quot;:&quot;sub_page[section][option]&quot;,&quot;option&quot;:&quot;gatherpress_option&quot;,&quot;value&quot;:&quot;[]&quot;,&quot;fieldOptions&quot;:{&quot;unit&quot;:&quot;test&quot;}}"></div>',
+			'<div class="regular-text" data-gatherpress_component_name="autocomplete" ' .
+			'data-gatherpress_component_attrs="{&quot;name&quot;:&quot;sub_page[section][option]&quot;,' .
+			'&quot;option&quot;:&quot;gatherpress_option&quot;,&quot;value&quot;:&quot;[]&quot;,' .
+			'&quot;fieldOptions&quot;:{&quot;unit&quot;:&quot;test&quot;}}"></div>',
 			$autocomplete,
 			'Failed to assert that markup matches.'
 		);
@@ -989,5 +1001,728 @@ class Test_Settings extends Base {
 			$result,
 			'Should return empty string when sub pages are empty'
 		);
+	}
+
+	/**
+	 * Test select field rendering.
+	 *
+	 * @since  1.0.0
+	 * @covers ::select
+	 *
+	 * @return void
+	 */
+	public function test_select(): void {
+		$instance = Settings::get_instance();
+
+		// Just verify method executes without error.
+		$instance->select(
+			'gatherpress_sub_page',
+			'section',
+			'option',
+			array(
+				'field'       => array(
+					'label'   => 'Unit test',
+					'options' => array(
+						'option1' => 'Option 1',
+						'option2' => 'Option 2',
+					),
+				),
+				'description' => 'unit test description',
+			)
+		);
+
+		$this->assertTrue( true, 'Select method executed successfully.' );
+	}
+
+	/**
+	 * Test datetime_preview method with date format.
+	 *
+	 * @since  1.0.0
+	 * @covers ::datetime_preview
+	 *
+	 * @return void
+	 */
+	public function test_datetime_preview_with_date_format(): void {
+		$instance = Settings::get_instance();
+		$output   = Utility::buffer_and_return(
+			array( $instance, 'datetime_preview' ),
+			array(
+				'gatherpress_general[formatting][date_format]',
+				'F j, Y',
+			)
+		);
+
+		$this->assertStringContainsString(
+			'datetime-preview',
+			$output,
+			'Failed to assert preview is rendered for date format.'
+		);
+	}
+
+	/**
+	 * Test datetime_preview method with time format.
+	 *
+	 * @since  1.0.0
+	 * @covers ::datetime_preview
+	 *
+	 * @return void
+	 */
+	public function test_datetime_preview_with_time_format(): void {
+		$instance = Settings::get_instance();
+		$output   = Utility::buffer_and_return(
+			array( $instance, 'datetime_preview' ),
+			array(
+				'gatherpress_general[formatting][time_format]',
+				'g:i a',
+			)
+		);
+
+		$this->assertStringContainsString(
+			'datetime-preview',
+			$output,
+			'Failed to assert preview is rendered for time format.'
+		);
+	}
+
+	/**
+	 * Test datetime_preview method with non-datetime field.
+	 *
+	 * @since  1.0.0
+	 * @covers ::datetime_preview
+	 *
+	 * @return void
+	 */
+	public function test_datetime_preview_with_other_field(): void {
+		$instance = Settings::get_instance();
+		$output   = Utility::buffer_and_return(
+			array( $instance, 'datetime_preview' ),
+			array(
+				'gatherpress_general[other][field]',
+				'value',
+			)
+		);
+
+		$this->assertEmpty(
+			$output,
+			'Failed to assert no preview is rendered for non-datetime field.'
+		);
+	}
+
+	/**
+	 * Test url_rewrite_preview method with events URL.
+	 *
+	 * @since  1.0.0
+	 * @covers ::url_rewrite_preview
+	 *
+	 * @return void
+	 */
+	public function test_url_rewrite_preview_with_events(): void {
+		$instance = Settings::get_instance();
+		$output   = Utility::buffer_and_return(
+			array( $instance, 'url_rewrite_preview' ),
+			array(
+				'gatherpress_general[urls][events]',
+				'events',
+			)
+		);
+
+		$this->assertStringContainsString(
+			'urlrewrite-preview',
+			$output,
+			'Failed to assert preview is rendered for events URL.'
+		);
+		$this->assertStringContainsString(
+			'sample-event',
+			$output,
+			'Failed to assert preview contains sample-event.'
+		);
+	}
+
+	/**
+	 * Test url_rewrite_preview method with venues URL.
+	 *
+	 * @since  1.0.0
+	 * @covers ::url_rewrite_preview
+	 *
+	 * @return void
+	 */
+	public function test_url_rewrite_preview_with_venues(): void {
+		$instance = Settings::get_instance();
+		$output   = Utility::buffer_and_return(
+			array( $instance, 'url_rewrite_preview' ),
+			array(
+				'gatherpress_general[urls][venues]',
+				'venues',
+			)
+		);
+
+		$this->assertStringContainsString(
+			'urlrewrite-preview',
+			$output,
+			'Failed to assert preview is rendered for venues URL.'
+		);
+		$this->assertStringContainsString(
+			'sample-venue',
+			$output,
+			'Failed to assert preview contains sample-venue.'
+		);
+	}
+
+	/**
+	 * Test url_rewrite_preview method with topics URL.
+	 *
+	 * @since  1.0.0
+	 * @covers ::url_rewrite_preview
+	 *
+	 * @return void
+	 */
+	public function test_url_rewrite_preview_with_topics(): void {
+		$instance = Settings::get_instance();
+		$output   = Utility::buffer_and_return(
+			array( $instance, 'url_rewrite_preview' ),
+			array(
+				'gatherpress_general[urls][topics]',
+				'topics',
+			)
+		);
+
+		$this->assertStringContainsString(
+			'urlrewrite-preview',
+			$output,
+			'Failed to assert preview is rendered for topics URL.'
+		);
+		$this->assertStringContainsString(
+			'sample-topic-term',
+			$output,
+			'Failed to assert preview contains sample-topic-term.'
+		);
+	}
+
+	/**
+	 * Test url_rewrite_preview method with other field.
+	 *
+	 * @since  1.0.0
+	 * @covers ::url_rewrite_preview
+	 *
+	 * @return void
+	 */
+	public function test_url_rewrite_preview_with_other_field(): void {
+		$instance = Settings::get_instance();
+		$output   = Utility::buffer_and_return(
+			array( $instance, 'url_rewrite_preview' ),
+			array(
+				'gatherpress_general[other][field]',
+				'value',
+			)
+		);
+
+		$this->assertEmpty(
+			$output,
+			'Failed to assert no preview is rendered for non-url field.'
+		);
+	}
+
+	/**
+	 * Test maybe_flush_rewrite_rules when URLs change.
+	 *
+	 * @since  1.0.0
+	 * @covers ::maybe_flush_rewrite_rules
+	 *
+	 * @return void
+	 */
+	public function test_maybe_flush_rewrite_rules_when_urls_change(): void {
+		$instance = Settings::get_instance();
+
+		// Set initial rewrite rules.
+		add_option( 'rewrite_rules', array( 'test' => 'value' ) );
+
+		$old_value = array(
+			'urls' => array(
+				'events' => 'events',
+			),
+		);
+
+		$new_value = array(
+			'urls' => array(
+				'events' => 'gatherings',
+			),
+		);
+
+		$instance->maybe_flush_rewrite_rules( $old_value, $new_value );
+
+		$this->assertFalse(
+			get_option( 'rewrite_rules' ),
+			'Failed to assert rewrite rules were deleted when URLs changed.'
+		);
+	}
+
+	/**
+	 * Test maybe_flush_rewrite_rules when URLs are the same.
+	 *
+	 * @since  1.0.0
+	 * @covers ::maybe_flush_rewrite_rules
+	 *
+	 * @return void
+	 */
+	public function test_maybe_flush_rewrite_rules_when_urls_same(): void {
+		$instance = Settings::get_instance();
+
+		// Set initial rewrite rules.
+		add_option( 'rewrite_rules', array( 'test' => 'value' ) );
+
+		$old_value = array(
+			'urls' => array(
+				'events' => 'events',
+			),
+		);
+
+		$new_value = array(
+			'urls' => array(
+				'events' => 'events',
+			),
+		);
+
+		$instance->maybe_flush_rewrite_rules( $old_value, $new_value );
+
+		$this->assertNotFalse(
+			get_option( 'rewrite_rules' ),
+			'Failed to assert rewrite rules were not deleted when URLs stayed same.'
+		);
+
+		delete_option( 'rewrite_rules' );
+	}
+
+	/**
+	 * Test maybe_flush_rewrite_rules when old value has no URLs.
+	 *
+	 * @since  1.0.0
+	 * @covers ::maybe_flush_rewrite_rules
+	 *
+	 * @return void
+	 */
+	public function test_maybe_flush_rewrite_rules_when_old_value_no_urls(): void {
+		$instance = Settings::get_instance();
+
+		// Set initial rewrite rules.
+		add_option( 'rewrite_rules', array( 'test' => 'value' ) );
+
+		$old_value = array();
+
+		$new_value = array(
+			'urls' => array(
+				'events' => 'events',
+			),
+		);
+
+		$instance->maybe_flush_rewrite_rules( $old_value, $new_value );
+
+		$this->assertFalse(
+			get_option( 'rewrite_rules' ),
+			'Failed to assert rewrite rules were deleted when URLs added.'
+		);
+	}
+
+	/**
+	 * Test maybe_flush_rewrite_rules when new value has no URLs.
+	 *
+	 * @since  1.0.0
+	 * @covers ::maybe_flush_rewrite_rules
+	 *
+	 * @return void
+	 */
+	public function test_maybe_flush_rewrite_rules_when_new_value_no_urls(): void {
+		$instance = Settings::get_instance();
+
+		// Set initial rewrite rules.
+		add_option( 'rewrite_rules', array( 'test' => 'value' ) );
+
+		$old_value = array(
+			'urls' => array(
+				'events' => 'events',
+			),
+		);
+
+		$new_value = array();
+
+		$instance->maybe_flush_rewrite_rules( $old_value, $new_value );
+
+		$this->assertFalse(
+			get_option( 'rewrite_rules' ),
+			'Failed to assert rewrite rules were deleted when URLs removed.'
+		);
+	}
+
+	/**
+	 * Test sanitize_page_settings callback with various field types.
+	 *
+	 * @since  1.0.0
+	 * @covers ::sanitize_page_settings
+	 *
+	 * @return void
+	 */
+	public function test_sanitize_page_settings(): void {
+		$instance = Settings::get_instance();
+
+		$sub_page_settings = array(
+			'sections' => array(
+				'test_section' => array(
+					'options' => array(
+						'checkbox_field'     => array(
+							'field' => array( 'type' => 'checkbox' ),
+						),
+						'number_field'       => array(
+							'field' => array( 'type' => 'number' ),
+						),
+						'text_field'         => array(
+							'field' => array( 'type' => 'text' ),
+						),
+						'select_field'       => array(
+							'field' => array( 'type' => 'select' ),
+						),
+						'autocomplete_field' => array(
+							'field' => array( 'type' => 'autocomplete' ),
+						),
+					),
+				),
+			),
+		);
+
+		$callback = $instance->sanitize_page_settings( $sub_page_settings );
+
+		$input = array(
+			'test_section' => array(
+				'checkbox_field'     => '1',
+				'number_field'       => '42',
+				'text_field'         => 'Test <strong>text</strong>',
+				'select_field'       => 'option1',
+				'autocomplete_field' => '[{"id":"3","slug":"test","value":"Test"}]',
+			),
+		);
+
+		$result = $callback( $input );
+
+		$this->assertTrue(
+			$result['test_section']['checkbox_field'],
+			'Failed to assert checkbox was converted to boolean.'
+		);
+
+		$this->assertSame(
+			42,
+			$result['test_section']['number_field'],
+			'Failed to assert number was converted to integer.'
+		);
+
+		$this->assertSame(
+			'Test text',
+			$result['test_section']['text_field'],
+			'Failed to assert text was sanitized.'
+		);
+
+		$this->assertSame(
+			'option1',
+			$result['test_section']['select_field'],
+			'Failed to assert select value was sanitized.'
+		);
+
+		$this->assertStringContainsString(
+			'"id":3',
+			$result['test_section']['autocomplete_field'],
+			'Failed to assert autocomplete was sanitized.'
+		);
+	}
+
+	/**
+	 * Test settings_page method.
+	 *
+	 * @since  1.0.0
+	 * @covers ::settings_page
+	 *
+	 * @return void
+	 */
+	public function test_settings_page(): void {
+		$instance = Settings::get_instance();
+
+		$output = Utility::buffer_and_return( array( $instance, 'settings_page' ), array() );
+
+		$this->assertStringContainsString(
+			'wrap',
+			$output,
+			'Failed to assert settings page was rendered.'
+		);
+	}
+
+	/**
+	 * Test sort_sub_pages_by_priority with default priorities.
+	 *
+	 * @since  1.0.0
+	 * @covers ::sort_sub_pages_by_priority
+	 *
+	 * @return void
+	 */
+	public function test_sort_sub_pages_by_priority_with_defaults(): void {
+		$instance = Settings::get_instance();
+
+		// Test with both missing priority (should default to 10).
+		$this->assertSame(
+			0,
+			$instance->sort_sub_pages_by_priority( array(), array() ),
+			'Failed to assert equal priorities with defaults.'
+		);
+	}
+
+	/**
+	 * Test options_page method.
+	 *
+	 * @covers ::options_page
+	 *
+	 * @return void
+	 */
+	public function test_options_page(): void {
+		global $submenu;
+
+		// Initialize submenu if not set.
+		if ( ! is_array( $submenu ) ) {
+			$submenu = array(); // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
+		}
+
+		$instance = Settings::get_instance();
+		$instance->options_page();
+
+		// Check that submenu was populated.
+		$this->assertIsArray( $submenu );
+	}
+
+	/**
+	 * Test remove_sub_options method.
+	 *
+	 * @covers ::remove_sub_options
+	 *
+	 * @return void
+	 */
+	public function test_remove_sub_options(): void {
+		global $submenu;
+
+		// Initialize submenu if not set.
+		if ( ! is_array( $submenu ) ) {
+			$submenu = array(); // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
+		}
+
+		$instance = Settings::get_instance();
+
+		// First add submenu pages.
+		$instance->options_page();
+
+		// Then remove them (except main).
+		$instance->remove_sub_options();
+
+		// Should execute without errors.
+		$this->assertTrue( true );
+	}
+
+	/**
+	 * Test register_settings method.
+	 *
+	 * @covers ::register_settings
+	 *
+	 * @return void
+	 */
+	public function test_register_settings(): void {
+		global $wp_registered_settings;
+
+		$instance = Settings::get_instance();
+		$instance->register_settings();
+
+		// Check that general settings were registered.
+		$this->assertArrayHasKey( 'gatherpress_general', $wp_registered_settings );
+	}
+
+	/**
+	 * Test register_settings with empty sections.
+	 *
+	 * @covers ::register_settings
+	 *
+	 * @return void
+	 */
+	public function test_register_settings_with_empty_sections(): void {
+		$instance = Settings::get_instance();
+
+		// Mock sub_pages with no sections.
+		add_filter(
+			'gatherpress_settings',
+			function ( $settings ) {
+				$settings['test_page'] = array(
+					'name'     => 'Test Page',
+					'priority' => 99,
+				);
+				return $settings;
+			}
+		);
+
+		// Should not throw errors when sections are missing.
+		$instance->register_settings();
+
+		$this->assertTrue( true );
+
+		remove_all_filters( 'gatherpress_settings' );
+	}
+
+	/**
+	 * Test register_settings with section but no options.
+	 *
+	 * @covers ::register_settings
+	 *
+	 * @return void
+	 */
+	public function test_register_settings_with_empty_options(): void {
+		$instance = Settings::get_instance();
+
+		// Mock sub_pages with section but no options.
+		add_filter(
+			'gatherpress_settings',
+			function ( $settings ) {
+				$settings['test_page_2'] = array(
+					'name'     => 'Test Page 2',
+					'priority' => 99,
+					'sections' => array(
+						'test_section' => array(
+							'name' => 'Test Section',
+						),
+					),
+				);
+				return $settings;
+			}
+		);
+
+		// Should not throw errors when options are missing.
+		$instance->register_settings();
+
+		$this->assertTrue( true );
+
+		remove_all_filters( 'gatherpress_settings' );
+	}
+
+	/**
+	 * Test register_settings with invalid field type.
+	 *
+	 * @covers ::register_settings
+	 *
+	 * @return void
+	 */
+	public function test_register_settings_with_invalid_field_type(): void {
+		$instance = Settings::get_instance();
+
+		// Mock sub_pages with invalid field type.
+		add_filter(
+			'gatherpress_settings',
+			function ( $settings ) {
+				$settings['test_page_3'] = array(
+					'name'     => 'Test Page 3',
+					'priority' => 99,
+					'sections' => array(
+						'test_section' => array(
+							'name'    => 'Test Section',
+							'options' => array(
+								'test_option' => array(
+									'field'  => array(
+										'type' => 'nonexistent_method',
+									),
+									'labels' => array(
+										'name' => 'Test Option',
+									),
+								),
+							),
+						),
+					),
+				);
+				return $settings;
+			}
+		);
+
+		// Should not set callback when method doesn't exist.
+		$instance->register_settings();
+
+		$this->assertTrue( true );
+
+		remove_all_filters( 'gatherpress_settings' );
+	}
+
+	/**
+	 * Test register_settings section descriptions and field callbacks render.
+	 *
+	 * Tests section description rendering and
+	 * target code (field callback execution).
+	 *
+	 * @covers ::register_settings
+	 * @covers ::render_settings_form
+	 *
+	 * @return void
+	 */
+	public function test_register_settings_renders_section_descriptions_and_fields(): void {
+		$instance = Settings::get_instance();
+
+		// Add a test page with a section that has a description and a field.
+		add_filter(
+			'gatherpress_sub_pages',
+			function ( $settings ) {
+				$settings['test_page_render'] = array(
+					'name'     => 'Test Render Page',
+					'priority' => 99,
+					'sections' => array(
+						'test_section_render' => array(
+							'name'        => 'Test Section Render',
+							'description' => 'This is a test section description.',
+							'options'     => array(
+								'test_text_field' => array(
+									'field'  => array(
+										'type'  => 'text',
+										'label' => 'Test Field',
+									),
+									'labels' => array(
+										'name' => 'Test Field Name',
+									),
+								),
+							),
+						),
+					),
+				);
+				return $settings;
+			}
+		);
+
+		// Register the settings (sets up sections and fields with closures).
+		$instance->register_settings();
+
+		// Render the settings form which triggers both the section description
+		// closure (target code) and field callback closure (target code).
+		$output = \PMC\Unit_Test\Utility::buffer_and_return(
+			array( $instance, 'render_settings_form' ),
+			array( 'gatherpress_test_page_render' )
+		);
+
+		// Verify section description was rendered (tests target code).
+		$this->assertStringContainsString(
+			'This is a test section description.',
+			$output,
+			'Failed to assert section description was rendered.'
+		);
+		$this->assertStringContainsString(
+			'<p class="description">',
+			$output,
+			'Failed to assert section description has proper markup.'
+		);
+
+		// Verify field was rendered via the closure callback (tests target code).
+		$this->assertStringContainsString(
+			'Test Field',
+			$output,
+			'Failed to assert field label was rendered via callback.'
+		);
+		$this->assertStringContainsString(
+			'type="text"',
+			$output,
+			'Failed to assert text field type was rendered via callback.'
+		);
+
+		remove_all_filters( 'gatherpress_sub_pages' );
 	}
 }

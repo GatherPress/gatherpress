@@ -123,6 +123,12 @@ class Rsvp_Token {
 			return '';
 		}
 
+		// Reject token if the comment is more than 24 hours old.
+		$diff = strtotime( 'now' ) - strtotime( $this->comment->comment_date );
+		if ( $diff >= HOUR_IN_SECONDS * 24 ) {
+			return '';
+		}
+
 		$token = (string) get_comment_meta(
 			(int) $this->comment->comment_ID,
 			$this->get_meta_key(),
@@ -269,6 +275,78 @@ class Rsvp_Token {
 	 */
 	public function is_valid( string $token ): bool {
 		return ! empty( $token ) && $this->get_token() === $token;
+	}
+
+	/**
+	 * Creates an Rsvp_Token instance from a token string.
+	 *
+	 * Parses the token string and validates it against the stored token.
+	 * Returns null if the token string is invalid or doesn't match.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string|null $token_string Token in format "commentId_token".
+	 * @return self|null Instance if valid, null otherwise.
+	 */
+	public static function from_token_string( ?string $token_string ): ?self {
+		$parts = self::parse_token_string( $token_string );
+
+		if ( empty( $parts ) ) {
+			return null;
+		}
+
+		$instance = new self( $parts['comment_id'] );
+
+		// Validate the token matches.
+		if ( ! $instance->is_valid( $parts['token'] ) ) {
+			return null;
+		}
+
+		return $instance;
+	}
+
+	/**
+	 * Parse token string into component parts.
+	 *
+	 * Splits a token string in the format "commentId_token" into its
+	 * component parts for validation and instantiation.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string|null $token_string Raw token string in format "commentId_token".
+	 * @return array Array with 'comment_id' and 'token' keys, or empty array if invalid.
+	 */
+	public static function parse_token_string( ?string $token_string ): array {
+		if ( empty( $token_string ) ) {
+			return array();
+		}
+
+		$parts = explode( '_', $token_string, 2 );
+
+		if ( 2 !== count( $parts ) || ! is_numeric( $parts[0] ) ) {
+			return array();
+		}
+
+		return array(
+			'comment_id' => (int) $parts[0],
+			'token'      => $parts[1],
+		);
+	}
+
+	/**
+	 * Creates an Rsvp_Token instance from a URL parameter.
+	 *
+	 * Retrieves the token from GET request and attempts to create
+	 * a valid instance. Useful for handling magic link clicks.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return self|null Instance if valid token found, null otherwise.
+	 */
+	public static function from_url_parameter(): ?self {
+		$token_param = Utility::get_http_input( INPUT_GET, self::NAME );
+
+		return self::from_token_string( $token_param );
 	}
 
 	/**

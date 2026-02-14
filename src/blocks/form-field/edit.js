@@ -43,7 +43,14 @@ export default function Edit( { attributes, setAttributes } ) {
 		required,
 		autocomplete,
 	} = attributes;
-	const blockProps = useBlockProps();
+
+	// Handle data attributes for conditional rendering.
+	const additionalProps = {};
+	if ( attributes[ 'data-gatherpress-no-render' ] ) {
+		additionalProps[ 'data-gatherpress-no-render' ] = attributes[ 'data-gatherpress-no-render' ];
+	}
+
+	const blockProps = useBlockProps( additionalProps );
 
 	/**
 	 * Generate field name from label.
@@ -55,9 +62,10 @@ export default function Edit( { attributes, setAttributes } ) {
 		return labelValue
 			.toLowerCase()
 			.trim()
-			.replace( /[^a-z0-9\s]/g, '' )
-			.replace( /\s+/g, '_' )
-			.replace( /^_+|_+$/g, '' );
+			.replaceAll( /[^a-z0-9\s]/g, '' ) // Remove special characters.
+			.split( /\s+/ ) // Split on whitespace sequences.
+			.filter( ( part ) => 0 < part.length ) // Remove empty strings.
+			.join( '_' ); // Join with underscores.
 	};
 
 	/**
@@ -179,7 +187,7 @@ export default function Edit( { attributes, setAttributes } ) {
 						value={ fieldName }
 						onChange={ ( value ) => {
 							// Only allow alphanumeric, underscore, and hyphen.
-							const sanitized = value.replace(
+							const sanitized = value.replaceAll(
 								/[^a-zA-Z0-9_-]/g,
 								'',
 							);
@@ -290,8 +298,8 @@ export default function Edit( { attributes, setAttributes } ) {
 							value={ autocomplete }
 							onChange={ ( value ) => {
 								// Only allow lowercase alphanumeric, underscore, hyphen, space.
-								const sanitized = value.replace(
-									/[^a-zA0-9_\s-]/g,
+								const sanitized = value.replaceAll(
+									/[^a-z0-9_\s-]/g,
 									'',
 								);
 

@@ -23,7 +23,9 @@ if ( ! isset(
 ?>
 
 <div <?php echo wp_kses_data( $wrapper_attributes ); ?>>
-	<input<?php echo wp_kses_data( $input_attributes . $input_styles ); ?> <?php checked( ! empty( $attributes['field_value'] ) ); ?> />
+	<input<?php echo wp_kses_data( $input_attributes . $input_styles ); ?>
+		<?php checked( ! empty( $attributes['field_value'] ) ); ?>
+	/>
 	<div class="gatherpress-label-wrapper" <?php echo wp_kses_data( $label_wrapper_styles ); ?>>
 		<label for="<?php echo esc_attr( $attributes['input_id'] ); ?>"<?php echo wp_kses_data( $label_styles ); ?>>
 			<?php echo wp_kses_post( $attributes['label'] ); ?>

@@ -18,8 +18,25 @@
 		"eventStart": {
 			"type": "string"
 		},
-		"textAlign": {
-			"type": "string"
+		"displayType": {
+			"type": "string",
+			"default": "both"
+		},
+		"startDateFormat": {
+			"type": "string",
+			"default": ""
+		},
+		"endDateFormat": {
+			"type": "string",
+			"default": ""
+		},
+		"separator": {
+			"type": "string",
+			"default": "to"
+		},
+		"showTimezone": {
+			"type": "string",
+			"default": ""
 		}
 	},
 	"supports": {
@@ -41,6 +58,7 @@
 			"padding": true
 		},
 		"typography": {
+			"textAlign": true,
 			"fontSize": true,
 			"lineHeight": true,
 			"__experimentalFontFamily": true,

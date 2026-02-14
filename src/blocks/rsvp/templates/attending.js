@@ -37,7 +37,7 @@ const ATTENDING = [
 								'gatherpress',
 							),
 							tagName: 'button',
-							className: 'gatherpress--open-modal',
+							className: 'gatherpress-modal--trigger-open',
 							metadata: {
 								name: _x(
 									'RSVP Button',
@@ -115,7 +115,7 @@ const ATTENDING = [
 			[
 				'gatherpress/modal',
 				{
-					className: 'gatherpress--is-rsvp-modal',
+					className: 'gatherpress-modal--type-rsvp',
 					metadata: {
 						name: _x(
 							'RSVP Modal',
@@ -172,8 +172,31 @@ const ATTENDING = [
 									},
 								},
 							],
-							[ 'gatherpress/rsvp-guest-count-input', {} ],
-							[ 'gatherpress/rsvp-anonymous-checkbox', {} ],
+							[
+								'gatherpress/form-field',
+								{
+									className: 'gatherpress-rsvp-field-guests',
+									fieldType: 'number',
+									fieldName: 'gatherpress_rsvp_guests',
+									label: __( 'Number of guests?', 'gatherpress' ),
+									placeholder: __( '0', 'gatherpress' ),
+									minValue: 0,
+									inlineLayout: true,
+									fieldWidth: 10,
+									inputPadding: 5,
+									autocomplete: 'off',
+								},
+							],
+							[
+								'gatherpress/form-field',
+								{
+									className: 'gatherpress-rsvp-field-anonymous',
+									fieldType: 'checkbox',
+									fieldName: 'gatherpress_rsvp_anonymous',
+									label: __( 'List me as anonymous', 'gatherpress' ),
+									autocomplete: 'off',
+								},
+							],
 							[
 								'core/buttons',
 								{
@@ -211,7 +234,7 @@ const ATTENDING = [
 											),
 											tagName: 'button',
 											className:
-												'gatherpress--update-rsvp',
+												'gatherpress-rsvp--trigger-update',
 											metadata: {
 												name: _x(
 													'RSVP Button',
@@ -231,7 +254,7 @@ const ATTENDING = [
 											),
 											tagName: 'button',
 											className:
-												'is-style-outline gatherpress--close-modal',
+												'is-style-outline gatherpress-modal--trigger-close',
 											metadata: {
 												name: _x(
 													'Close Button',

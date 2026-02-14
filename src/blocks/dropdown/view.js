@@ -31,10 +31,7 @@ const { actions } = store( 'gatherpress', {
 			);
 
 			// If the dropdown is in select mode
-			if (
-				dropdownParent &&
-				dropdownParent.dataset.dropdownMode === 'select'
-			) {
+			if ( 'select' === dropdownParent?.dataset.dropdownMode ) {
 				// Get the dropdown menu and trigger
 				const dropdownMenu = dropdownParent.querySelector(
 					'.wp-block-gatherpress-dropdown__menu',
@@ -49,12 +46,7 @@ const { actions } = store( 'gatherpress', {
 				);
 				if ( clickedItem ) {
 					const clickedAnchor = clickedItem.querySelector( 'a' );
-					if (
-						clickedAnchor &&
-						clickedAnchor.classList.contains(
-							'gatherpress--is-disabled',
-						)
-					) {
+					if ( clickedAnchor?.classList.contains( 'gatherpress--is-disabled' ) ) {
 						return;
 					}
 
@@ -118,10 +110,10 @@ const { actions } = store( 'gatherpress', {
 
 			let isVisible = false;
 
-			if ( ! forceClose ) {
-				isVisible = menu.classList.toggle( 'gatherpress--is-visible' );
-			} else {
+			if ( forceClose ) {
 				menu.classList.remove( 'gatherpress--is-visible' );
+			} else {
+				isVisible = menu.classList.toggle( 'gatherpress--is-visible' );
 			}
 
 			trigger.setAttribute( 'aria-expanded', isVisible ? 'true' : 'false' );

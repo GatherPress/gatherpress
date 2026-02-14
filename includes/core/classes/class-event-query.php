@@ -3,7 +3,7 @@
  * Manages event-related queries and filtering.
  *
  * This class is responsible for handling all queries related to events, including retrieving
- * upcoming and past events, applying filters, and ordering events. It also handles adjustments
+ * upcoming and past events, applying filters and ordering events. It also handles adjustments
  * for event pages and admin queries.
  *
  * @package GatherPress\Core
@@ -30,6 +30,14 @@ class Event_Query {
 	 * Enforces a single instance of this class.
 	 */
 	use Singleton;
+
+	/**
+	 * Query parameter name for event type filtering.
+	 *
+	 * @since 1.0.0
+	 * @var string
+	 */
+	const EVENT_QUERY_PARAM = 'gatherpress_event_query';
 
 	/**
 	 * Class constructor.
@@ -105,13 +113,17 @@ class Event_Query {
 		array $topics = array(),
 		array $venues = array()
 	): WP_Query {
+		// Past events should be ordered DESC (most recent first),
+		// upcoming events should be ordered ASC (soonest first).
+		$order = ( 'past' === $event_list_type ) ? 'DESC' : 'ASC';
+
 		$args = array(
-			'post_type'                => Event::POST_TYPE,
-			'fields'                   => 'ids',
-			'no_found_rows'            => true,
-			'posts_per_page'           => $number,
-			'gatherpress_events_query' => $event_list_type,
-			'order'                    => 'ASC',
+			'post_type'             => Event::POST_TYPE,
+			'fields'                => 'ids',
+			'no_found_rows'         => true,
+			'posts_per_page'        => $number,
+			self::EVENT_QUERY_PARAM => $event_list_type,
+			'order'                 => $order,
 		);
 
 		$tax_query = array();
@@ -162,7 +174,7 @@ class Event_Query {
 	 * @return void
 	 */
 	public function prepare_event_query_before_execution( WP_Query $query ): void {
-		$events_query = $query->get( 'gatherpress_events_query' );
+		$events_query = $query->get( self::EVENT_QUERY_PARAM );
 
 		if ( ! is_admin() && $query->is_main_query() ) {
 			$general = get_option( Utility::prefix_key( 'general' ) );
@@ -187,10 +199,11 @@ class Event_Query {
 					$page = $value[0];
 
 					if ( $page->id === $query->queried_object_id ) {
-						$query->set( 'post_type', 'gatherpress_event' );
+						$page_id      = $query->queried_object_id;
+						$events_query = $key;
 
-						$page_id                     = $query->queried_object_id;
-						$events_query                = $key;
+						$query->set( 'post_type', 'gatherpress_event' );
+						$query->set( self::EVENT_QUERY_PARAM, $key );
 						$query->is_page              = false;
 						$query->is_singular          = false;
 						$query->is_archive           = true;
@@ -259,12 +272,16 @@ class Event_Query {
 	 * @return array The modified SQL query pieces with adjusted sorting criteria for upcoming events.
 	 */
 	public function adjust_sorting_for_upcoming_events( array $query_pieces, WP_Query $query ): array {
+		$include_unfinished = $query->get( 'include_unfinished' );
+		// Default to true if not explicitly set to maintain backward compatibility.
+		$inclusive = ( '' === $include_unfinished ) ? true : (bool) $include_unfinished;
+
 		return $this->adjust_event_sql(
 			$query_pieces,
 			'upcoming',
 			$query->get( 'order' ),
 			$query->get( 'orderby' ),
-			(bool) $query->get( 'include_unfinished' )
+			$inclusive
 		);
 	}
 
@@ -274,17 +291,24 @@ class Event_Query {
 	 * This method modifies the SQL query pieces, including join, where, orderby, etc., to adjust the sorting criteria
 	 * for past events in the query. It ensures that events are ordered by their start datetime in the desired order.
 	 *
+	 * @since 1.0.0
+	 *
 	 * @param array    $query_pieces An array containing pieces of the SQL query.
 	 * @param WP_Query $query        The WP_Query instance (passed by reference).
 	 * @return array The modified SQL query pieces with adjusted sorting criteria for past events.
 	 */
 	public function adjust_sorting_for_past_events( array $query_pieces, WP_Query $query ): array {
+		$include_unfinished = $query->get( 'include_unfinished' );
+		// For past events, default to false (exclude currently running events).
+		// This shows only truly finished events unless explicitly requested otherwise.
+		$inclusive = ( '' === $include_unfinished ) ? false : (bool) $include_unfinished;
+
 		return $this->adjust_event_sql(
 			$query_pieces,
 			'past',
 			$query->get( 'order' ),
 			$query->get( 'orderby' ),
-			(bool) $query->get( 'include_unfinished' )
+			$inclusive
 		);
 	}
 
@@ -316,7 +340,8 @@ class Event_Query {
 		 * This sanity check was added after it's been reported that some admin screens may not have $wp_query set.
 		 * @see https://wordpress.org/support/topic/gatherpress-has-critical-error-when-i-access-wpforms-payment-settings/
 		 */
-		if ( ! function_exists( 'get_current_screen' ) || 'edit-gatherpress_event' !== get_current_screen()->id ) {
+		$current_screen = function_exists( 'get_current_screen' ) ? get_current_screen() : null;
+		if ( ! $current_screen || 'edit-gatherpress_event' !== $current_screen->id ) {
 			return $query_pieces;
 		}
 
@@ -340,9 +365,12 @@ class Event_Query {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param array           $pieces    An array of query pieces, including join, where, orderby, and more.
-	 * @param string          $type      The type of events to query (options: 'all', 'upcoming', 'past') (Default: 'all').
-	 * @param string          $order     The event order ('DESC' for descending or 'ASC' for ascending) (Default: 'DESC').
+	 * @param array           $pieces    An array of query pieces, including join, where, orderby,
+	 *                                   and more.
+	 * @param string          $type      The type of events to query (options: 'all', 'upcoming', 'past')
+	 *                                   (Default: 'all').
+	 * @param string          $order     The event order ('DESC' for descending or 'ASC' for ascending)
+	 *                                   (Default: 'DESC').
 	 * @param string[]|string $order_by  List  or singular string of ORDERBY statement(s) (Default: ['datetime']).
 	 * @param bool            $inclusive Whether to include currently running events in the query (Default: true).
 	 * @return array An array containing adjusted SQL clauses for the Event query.
@@ -356,7 +384,7 @@ class Event_Query {
 	): array {
 		global $wpdb;
 
-		$defaults        = array(
+		$defaults = array(
 			'where'    => '',
 			'groupby'  => '',
 			'join'     => '',
@@ -365,8 +393,9 @@ class Event_Query {
 			'fields'   => '',
 			'limits'   => '',
 		);
-		$pieces          = array_merge( $defaults, $pieces );
-		$table           = sprintf( Event::TABLE_FORMAT, $wpdb->prefix ); // Could also be (just) $wpdb->{gatherpress_events}.
+		$pieces   = array_merge( $defaults, $pieces );
+
+		$table           = sprintf( Event::TABLE_FORMAT, $wpdb->prefix );
 		$pieces['join'] .= ' LEFT JOIN ' . esc_sql( $table ) . ' ON ' . esc_sql( $wpdb->posts ) . '.ID='
 						. esc_sql( $table ) . '.post_id';
 		$order           = strtoupper( $order );
@@ -384,7 +413,10 @@ class Event_Query {
 					$pieces['orderby'] = sprintf( esc_sql( $wpdb->posts ) . '.post_name %s', esc_sql( $order ) );
 					break;
 				case 'modified':
-					$pieces['orderby'] = sprintf( esc_sql( $wpdb->posts ) . '.post_modified_gmt %s', esc_sql( $order ) );
+					$pieces['orderby'] = sprintf(
+						esc_sql( $wpdb->posts ) . '.post_modified_gmt %s',
+						esc_sql( $order )
+					);
 					break;
 				case 'rand':
 					$pieces['orderby'] = esc_sql( 'RAND()' );
@@ -421,7 +453,8 @@ class Event_Query {
 	 * based on the type of event query (either upcoming or past)
 	 * and if started but unfinished events should be included.
 	 *
-	 * @param  string $type      The type of events to query (options: 'all', 'upcoming', 'past') (Cannot be 'all' anymore).
+	 * @param  string $type      The type of events to query (options: 'all', 'upcoming', 'past')
+	 *                          (Cannot be 'all' anymore).
 	 * @param  bool   $inclusive Whether to include currently running events in the query.
 	 *
 	 * @return string Name of the DB column, which content to compare against the current time.

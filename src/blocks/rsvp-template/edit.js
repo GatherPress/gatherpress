@@ -90,35 +90,36 @@ const List = ( {
 	activeRsvpId,
 	setActiveRsvpId,
 	firstRsvpId,
+	postId,
 } ) => (
 	<>
-		{ responses &&
-			responses.map( ( { commentId, ...response }, index ) => {
-				// Force commentId to be an integer
-				const forcedCommentId = parseInt( commentId, 10 );
+		{ responses?.map( ( { commentId, ...response }, index ) => {
+			// Force commentId to be an integer
+			const forcedCommentId = parseInt( commentId, 10 );
 
-				return (
-					<BlockContextProvider
-						key={ forcedCommentId || index }
-						value={ {
-							commentId:
-								forcedCommentId < 0 ? null : forcedCommentId,
+			return (
+				<BlockContextProvider
+					key={ forcedCommentId || index }
+					value={ {
+						commentId:
+								0 > forcedCommentId ? null : forcedCommentId,
+						postId,
+					} }
+				>
+					<TemplateInnerBlocks
+						response={ {
+							commentId: forcedCommentId,
+							...response,
 						} }
-					>
-						<TemplateInnerBlocks
-							response={ {
-								commentId: forcedCommentId,
-								...response,
-							} }
-							blockProps={ blockProps }
-							blocks={ blocks }
-							activeRsvpId={ activeRsvpId }
-							setActiveRsvpId={ setActiveRsvpId }
-							firstRsvpId={ firstRsvpId }
-						/>
-					</BlockContextProvider>
-				);
-			} ) }
+						blockProps={ blockProps }
+						blocks={ blocks }
+						activeRsvpId={ activeRsvpId }
+						setActiveRsvpId={ setActiveRsvpId }
+						firstRsvpId={ firstRsvpId }
+					/>
+				</BlockContextProvider>
+			);
+		} ) }
 	</>
 );
 
@@ -129,6 +130,7 @@ const Edit = ( { clientId, context } ) => {
 	const rsvpResponses = context?.[ 'gatherpress/rsvpResponses' ] ?? null;
 	const rsvpLimitEnabled = context?.[ 'gatherpress/rsvpLimitEnabled' ] ?? false;
 	const rsvpLimit = context?.[ 'gatherpress/rsvpLimit' ] ?? 8;
+	const postId = context?.postId;
 
 	// Initialize active RSVP ID.
 	const [ activeRsvpId, setActiveRsvpId ] = useState(
@@ -166,6 +168,7 @@ const Edit = ( { clientId, context } ) => {
 			activeRsvpId={ activeRsvpId }
 			setActiveRsvpId={ setActiveRsvpId }
 			firstRsvpId={ rsvps[ 0 ]?.commentId }
+			postId={ postId }
 		/>
 	);
 };

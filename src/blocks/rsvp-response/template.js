@@ -74,7 +74,7 @@ const TEMPLATE = [
 								{
 									text: `<a href="#">${ translations.attending }</a>`,
 									metadata: { name: translations.attending },
-									className: 'gatherpress--rsvp-attending',
+									className: 'gatherpress--is-attending',
 								},
 							],
 							[
@@ -84,7 +84,7 @@ const TEMPLATE = [
 									metadata: {
 										name: translations.waitingList,
 									},
-									className: 'gatherpress--rsvp-waiting-list',
+									className: 'gatherpress--is-waiting-list',
 								},
 							],
 							[
@@ -95,7 +95,7 @@ const TEMPLATE = [
 										name: translations.notAttending,
 									},
 									className:
-										'gatherpress--rsvp-not-attending',
+										'gatherpress--is-not-attending',
 								},
 							],
 						],
@@ -129,7 +129,7 @@ const TEMPLATE = [
 					'gatherpress',
 				),
 			},
-			className: 'gatherpress--empty-rsvp gatherpress--is-not-visible',
+			className: 'gatherpress-rsvp-response--no-responses',
 		},
 		[
 			[

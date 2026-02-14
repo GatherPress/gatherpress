@@ -1,35 +1,40 @@
-// test/e2e/global-setup.js
-const { chromium } = require( '@playwright/test' );
-const path = require( 'path' );
-const fs = require( 'fs' );
+const { request } = require( '@playwright/test' );
+const { RequestUtils } = require( '@wordpress/e2e-test-utils-playwright' );
 
-async function globalSetup() {
-	// eslint-disable-next-line no-console
-	console.log( 'Running global setup...' );
+/**
+ * Global setup for E2E tests
+ *
+ * Uses WordPress E2E test utils to authenticate via REST API
+ * and prepare the test environment.
+ *
+ * @param {Object} config - Playwright configuration object
+ */
+module.exports = async ( config ) => {
+	const { storageState, baseURL } = config.projects[ 0 ].use;
+	const storageStatePath =
+		'string' === typeof storageState ? storageState : undefined;
 
-	// Create artifacts directory.
-	if ( ! fs.existsSync( 'artifacts' ) ) {
-		fs.mkdirSync( 'artifacts' );
-	}
+	// Create request context for API calls.
+	const requestContext = await request.newContext( {
+		baseURL: baseURL || 'http://localhost:8889',
+	} );
 
-	// Create WordPress auth state
-	const browser = await chromium.launch();
-	const page = await browser.newPage();
+	// Create request utils for WordPress REST API operations.
+	const requestUtils = new RequestUtils( requestContext, {
+		storageStatePath,
+	} );
 
 	try {
-		await page.goto( 'http://localhost:8889/wp-login.php' );
-		await page.fill( '#user_login', 'admin' );
-		await page.fill( '#user_pass', 'password' );
-		await page.click( '#wp-submit' );
-		await page.waitForSelector( '#wpadminbar' );
+		// Authenticate and save the storageState to disk.
+		await requestUtils.setupRest();
 
-		const storageStatePath = path.join( __dirname, 'storageState.json' );
-		await page.context().storageState( { path: storageStatePath } );
 		// eslint-disable-next-line no-console
-		console.log( `Created auth state at ${ storageStatePath }` );
+		console.log( 'Authentication successful - storage state saved' );
+	} catch ( error ) {
+		// eslint-disable-next-line no-console
+		console.error( 'Global setup failed:', error );
+		throw error;
 	} finally {
-		await browser.close();
+		await requestContext.dispose();
 	}
-}
-
-module.exports = globalSetup;
+};

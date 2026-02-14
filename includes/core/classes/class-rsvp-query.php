@@ -34,6 +34,22 @@ class Rsvp_Query {
 	use Singleton;
 
 	/**
+	 * Cache key for storing comment types.
+	 *
+	 * @since 1.0.0
+	 * @var string
+	 */
+	const COMMENT_TYPES_CACHE_KEY = 'gatherpress_all_comment_types';
+
+	/**
+	 * Cache expiration time (24 hours).
+	 *
+	 * @since 1.0.0
+	 * @var int
+	 */
+	const CACHE_EXPIRATION = DAY_IN_SECONDS;
+
+	/**
 	 * Class constructor.
 	 *
 	 * This method initializes the object and sets up necessary hooks.
@@ -56,6 +72,7 @@ class Rsvp_Query {
 	protected function setup_hooks(): void {
 		add_action( 'pre_get_comments', array( $this, 'exclude_rsvp_from_comment_query' ) );
 		add_filter( 'comments_clauses', array( $this, 'taxonomy_query' ), 10, 2 );
+		add_action( 'wp_insert_comment', array( $this, 'maybe_invalidate_comment_types_cache' ), 10, 2 );
 	}
 
 	/**
@@ -96,7 +113,6 @@ class Rsvp_Query {
 	 * @return mixed Array of RSVP comments or integer count when count parameter is true.
 	 */
 	public function get_rsvps( array $args ) {
-
 		$args['type']         = Rsvp::COMMENT_TYPE;
 		$args['post_type']    = Event::POST_TYPE;
 		$args['type__in']     = array();
@@ -140,11 +156,81 @@ class Rsvp_Query {
 	}
 
 	/**
+	 * Get all comment types registered in the database.
+	 *
+	 * This method queries the database for all distinct comment types
+	 * and caches the result for performance.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return array Array of all comment types in the database.
+	 */
+	protected function get_all_comment_types(): array {
+		$default_types = array( 'comment', 'pingback', 'trackback' );
+		$types         = get_transient( self::COMMENT_TYPES_CACHE_KEY );
+
+		if ( false === $types ) {
+			global $wpdb;
+
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+			$types = $wpdb->get_col(
+				$wpdb->prepare(
+					'SELECT DISTINCT comment_type FROM %i WHERE comment_type != %s',
+					$wpdb->comments,
+					''
+				)
+			);
+
+			// If no types found or database error, use WordPress defaults.
+			if ( empty( $types ) || ! is_array( $types ) ) {
+				$types = $default_types;
+			}
+
+			// Cache for 24 hours.
+			set_transient( self::COMMENT_TYPES_CACHE_KEY, $types, self::CACHE_EXPIRATION );
+		}
+
+		// Ensure we always return an array.
+		return is_array( $types ) ? $types : $default_types;
+	}
+
+	/**
+	 * Invalidate comment types cache when a new comment type is added.
+	 *
+	 * This method checks if a newly inserted comment has a type that's not
+	 * already in our cached types, and if so, invalidates the cache.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param int        $id      The comment ID.
+	 * @param WP_Comment $comment The comment object.
+	 * @return void
+	 *
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+	 */
+	public function maybe_invalidate_comment_types_cache( int $id, WP_Comment $comment ): void {
+		// Skip if it's an empty comment type (regular comment).
+		if ( empty( $comment->comment_type ) ) {
+			return;
+		}
+
+		$cached_types = get_transient( self::COMMENT_TYPES_CACHE_KEY );
+
+		// If cache exists and this type isn't in it, invalidate the cache.
+		if ( false !== $cached_types && ! in_array( $comment->comment_type, $cached_types, true ) ) {
+			delete_transient( self::COMMENT_TYPES_CACHE_KEY );
+		}
+	}
+
+	/**
 	 * Exclude RSVP comments from a query.
 	 *
 	 * This method modifies the comment query to exclude comments of the RSVP type. It
 	 * ensures that RSVP comments are not included in the query results by adjusting the
 	 * comment types in the query variables.
+	 *
+	 * Note: The comment_type field is not currently indexed in WordPress core,
+	 * which may impact query performance. See https://core.trac.wordpress.org/ticket/59488
 	 *
 	 * @since 1.0.0
 	 *
@@ -157,12 +243,15 @@ class Rsvp_Query {
 
 		if ( ! empty( $current_comment_types ) ) {
 			if ( is_array( $current_comment_types ) ) {
-				$current_comment_types = array_values( array_diff( $current_comment_types, array( Rsvp::COMMENT_TYPE ) ) );
+				$current_comment_types = array_values(
+					array_diff( $current_comment_types, array( Rsvp::COMMENT_TYPE ) )
+				);
 			} elseif ( Rsvp::COMMENT_TYPE === $current_comment_types ) {
 				$current_comment_types = '';
 			}
 		} else {
-			$current_comment_types = array( 'comment', 'pingback', 'trackback' );
+			// Get all registered comment types from the database (cached).
+			$current_comment_types = $this->get_all_comment_types();
 			$current_comment_types = array_values( array_diff( $current_comment_types, array( Rsvp::COMMENT_TYPE ) ) );
 		}
 
@@ -173,7 +262,9 @@ class Rsvp_Query {
 
 		if ( ! empty( $current_comment_types_in ) ) {
 			if ( is_array( $current_comment_types_in ) ) {
-				$current_comment_types_in = array_values( array_diff( $current_comment_types_in, array( Rsvp::COMMENT_TYPE ) ) );
+				$current_comment_types_in = array_values(
+					array_diff( $current_comment_types_in, array( Rsvp::COMMENT_TYPE ) )
+				);
 			} elseif ( Rsvp::COMMENT_TYPE === $current_comment_types_in ) {
 				$current_comment_types_in = '';
 			}

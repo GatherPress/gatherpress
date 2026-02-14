@@ -76,7 +76,7 @@ const RsvpResponseNavigation = ( {
 	} );
 
 	useEffect( () => {
-		global.document.addEventListener( 'click', ( { target } ) => {
+		document.addEventListener( 'click', ( { target } ) => {
 			if (
 				! target.closest( '.gatherpress-rsvp-response__navigation-active' )
 			) {
@@ -84,7 +84,7 @@ const RsvpResponseNavigation = ( {
 			}
 		} );
 
-		global.document.addEventListener( 'keydown', ( { key } ) => {
+		document.addEventListener( 'keydown', ( { key } ) => {
 			if ( 'Escape' === key ) {
 				setShowNavigationDropdown( false );
 			}

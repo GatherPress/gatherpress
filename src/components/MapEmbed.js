@@ -46,7 +46,7 @@ const MapEmbed = ( props ) => {
 	const mapPlatform = getFromGlobal( 'settings.mapPlatform' );
 	if ( ! location || ! mapPlatform ) {
 		return <></>;
-	} else if ( mapPlatform === 'google' ) {
+	} else if ( 'google' === mapPlatform ) {
 		return (
 			<GoogleMap
 				location={ location }
@@ -58,7 +58,7 @@ const MapEmbed = ( props ) => {
 				height={ height }
 			/>
 		);
-	} else if ( mapPlatform === 'osm' ) {
+	} else if ( 'osm' === mapPlatform ) {
 		return (
 			<OpenStreetMap
 				location={ location }

@@ -11,6 +11,7 @@ import {
 	setToGlobal,
 	toCamelCase,
 	safeHTML,
+	getUrlParam,
 } from '../../../../../src/helpers/globals';
 
 /**
@@ -233,6 +234,54 @@ describe( 'safeHTML', () => {
 		expect( sanitized ).not.toContain( '<script>' );
 		expect( sanitized ).toContain( '<div>Unclosed div' );
 	} );
+
+	it( 'handles script elements that are already detached', () => {
+		// Create a document with a script element.
+		const html = '<div id="container"><script>bad();</script></div>';
+
+		// Mock getElementsByTagName to return an element without a parentNode.
+		const originalCreateHTMLDocument =
+			document.implementation.createHTMLDocument;
+		document.implementation.createHTMLDocument = function( title ) {
+			const doc = originalCreateHTMLDocument.call( this, title );
+			const originalGetElementsByTagName =
+				doc.body.getElementsByTagName;
+
+			// Override getElementsByTagName to test the defensive check.
+			doc.body.getElementsByTagName = function( tagName ) {
+				const elements = originalGetElementsByTagName.call(
+					this,
+					tagName,
+				);
+
+				// Create a detached script element to test the parentNode check.
+				if ( 0 < elements.length ) {
+					const detachedScript = doc.createElement( 'script' );
+					detachedScript.textContent = 'detached();';
+
+					// Create a new collection that includes the detached element.
+					const newCollection = Array.from( elements );
+					newCollection.push( detachedScript );
+
+					return newCollection;
+				}
+
+				return elements;
+			};
+
+			return doc;
+		};
+
+		// This should not throw even with a detached script element.
+		const sanitized = safeHTML( html );
+
+		// Restore original implementation.
+		document.implementation.createHTMLDocument =
+			originalCreateHTMLDocument;
+
+		expect( sanitized ).not.toContain( '<script>' );
+		expect( sanitized ).toContain( '<div' );
+	} );
 } );
 
 /**
@@ -275,5 +324,61 @@ describe( 'toCamelCase', () => {
 
 	it( 'handles uppercase letters in the middle of words', () => {
 		expect( toCamelCase( 'heLLo_world' ) ).toBe( 'heLLoWorld' );
+	} );
+} );
+
+/**
+ * Coverage for getUrlParam.
+ */
+describe( 'getUrlParam', () => {
+	beforeEach( () => {
+		// Mock global.location.search.
+		delete global.location;
+		global.location = { search: '' };
+	} );
+
+	it( 'returns parameter value when parameter exists', () => {
+		global.location.search = '?foo=bar&baz=qux';
+
+		expect( getUrlParam( 'foo' ) ).toBe( 'bar' );
+		expect( getUrlParam( 'baz' ) ).toBe( 'qux' );
+	} );
+
+	it( 'returns null when parameter does not exist', () => {
+		global.location.search = '?foo=bar';
+
+		expect( getUrlParam( 'missing' ) ).toBeNull();
+	} );
+
+	it( 'handles empty query string', () => {
+		global.location.search = '';
+
+		expect( getUrlParam( 'anything' ) ).toBeNull();
+	} );
+
+	it( 'handles URL-encoded values', () => {
+		global.location.search = '?message=hello%20world';
+
+		expect( getUrlParam( 'message' ) ).toBe( 'hello world' );
+	} );
+
+	it( 'handles parameters with no value', () => {
+		global.location.search = '?flag';
+
+		expect( getUrlParam( 'flag' ) ).toBe( '' );
+	} );
+
+	it( 'handles multiple parameters with same name', () => {
+		global.location.search = '?tag=react&tag=wordpress';
+
+		// URLSearchParams.get() returns the first value.
+		expect( getUrlParam( 'tag' ) ).toBe( 'react' );
+	} );
+
+	it( 'handles parameters with special characters', () => {
+		global.location.search = '?email=test%40example.com&path=%2Fhome%2Fuser';
+
+		expect( getUrlParam( 'email' ) ).toBe( 'test@example.com' );
+		expect( getUrlParam( 'path' ) ).toBe( '/home/user' );
 	} );
 } );

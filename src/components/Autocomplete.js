@@ -38,7 +38,7 @@ const Autocomplete = ( props ) => {
 		( select ) => {
 			const { getEntityRecords } = select( coreStore );
 			const entityType =
-				'user' !== fieldOptions.type ? 'postType' : 'root';
+				'user' === fieldOptions.type ? 'root' : 'postType';
 			const kind = fieldOptions.type || 'post';
 			return {
 				contentList: getEntityRecords( entityType, kind, {
@@ -61,7 +61,7 @@ const Autocomplete = ( props ) => {
 
 	const selectContent = ( tokens ) => {
 		const hasNoSuggestion = tokens.some(
-			( token ) => typeof token === 'string' && ! contentSuggestions[ token ],
+			( token ) => 'string' === typeof token && ! contentSuggestions[ token ],
 		);
 
 		if ( hasNoSuggestion ) {
@@ -69,7 +69,7 @@ const Autocomplete = ( props ) => {
 		}
 
 		const allContent = tokens.map( ( token ) => {
-			return typeof token === 'string'
+			return 'string' === typeof token
 				? contentSuggestions[ token ]
 				: token;
 		} );
@@ -87,14 +87,11 @@ const Autocomplete = ( props ) => {
 				key={ option }
 				label={ fieldOptions.label || __( 'Select Posts', 'gatherpress' ) }
 				name={ name }
-				value={
-					content &&
-					content.map( ( item ) => ( {
-						id: item.id,
-						slug: item.slug,
-						value: item.title?.rendered || item.name || item.value,
-					} ) )
-				}
+				value={ content?.map( ( item ) => ( {
+					id: item.id,
+					slug: item.slug,
+					value: item.title?.rendered || item.name || item.value,
+				} ) ) }
 				suggestions={ Object.keys( contentSuggestions ) }
 				onChange={ selectContent }
 				maxSuggestions={ fieldOptions.max_suggestions || 20 }
@@ -111,15 +108,16 @@ const Autocomplete = ( props ) => {
 				id={ option }
 				name={ name }
 				value={
-					content &&
-					JSON.stringify(
-						content.map( ( item ) => ( {
-							id: item.id,
-							slug: item.slug,
-							value:
-								item.title?.rendered || item.name || item.value,
-						} ) ),
-					)
+					content
+						? JSON.stringify(
+							content.map( ( item ) => ( {
+								id: item.id,
+								slug: item.slug,
+								value:
+										item.title?.rendered || item.name || item.value,
+							} ) ),
+						)
+						: undefined
 				}
 			/>
 		</>

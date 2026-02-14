@@ -37,7 +37,7 @@ const WAITING_LIST = [
 								'gatherpress',
 							),
 							tagName: 'button',
-							className: 'gatherpress--open-modal',
+							className: 'gatherpress-modal--trigger-open',
 							metadata: {
 								name: _x(
 									'RSVP Button',
@@ -102,7 +102,7 @@ const WAITING_LIST = [
 			[
 				'gatherpress/modal',
 				{
-					className: 'gatherpress--is-rsvp-modal',
+					className: 'gatherpress-modal--type-rsvp',
 					metadata: {
 						name: _x(
 							'RSVP Modal',
@@ -159,7 +159,16 @@ const WAITING_LIST = [
 									},
 								},
 							],
-							[ 'gatherpress/rsvp-anonymous-checkbox', {} ],
+							[
+								'gatherpress/form-field',
+								{
+									className: 'gatherpress-rsvp-field-anonymous',
+									fieldType: 'checkbox',
+									fieldName: 'gatherpress_rsvp_anonymous',
+									label: __( 'List me as anonymous', 'gatherpress' ),
+									autocomplete: 'off',
+								},
+							],
 							[
 								'core/buttons',
 								{
@@ -197,7 +206,7 @@ const WAITING_LIST = [
 											),
 											tagName: 'button',
 											className:
-												'gatherpress--update-rsvp',
+												'gatherpress-rsvp--trigger-update',
 											metadata: {
 												name: _x(
 													'RSVP Button',
@@ -217,7 +226,7 @@ const WAITING_LIST = [
 											),
 											tagName: 'button',
 											className:
-												'is-style-outline gatherpress--close-modal',
+												'is-style-outline gatherpress-modal--trigger-close',
 											metadata: {
 												name: _x(
 													'Close Button',
