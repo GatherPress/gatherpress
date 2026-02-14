@@ -156,6 +156,47 @@ class Test_Rsvp_Token extends Base {
 	}
 
 	/**
+	 * Coverage for get_token method when token exists and is more than 24 hours old
+	 *
+	 * @covers ::get_token
+	 * @covers ::get_meta_key
+	 *
+	 * @return void
+	 */
+	public function test_get_token_when_token_is_more_than_a_day_old(): void {
+		global $wpdb;
+
+		$post = $this->mock->post(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		)->get();
+
+		$comment_id = $this->factory->comment->create(
+			array(
+				'comment_post_ID' => $post->ID,
+				'comment_type'    => Rsvp::COMMENT_TYPE,
+			)
+		);
+
+		$rsvp_token = 'test-token-123';
+		update_comment_meta( $comment_id, '_gatherpress_rsvp_token', $rsvp_token );
+
+		// Update comment time to an older date so that the difference between now and the date is moe than 24 hours.
+		$new_date = '2023-12-25 10:00:00';
+		wp_update_comment(
+			array(
+				'comment_ID'       => $comment_id,
+				'comment_date'     => $new_date,
+				'comment_date_gmt' => $new_date,
+			)
+		);
+
+		$token = new Rsvp_Token( $comment_id );
+		$this->assertEmpty( $token->get_token() );
+	}
+
+	/**
 	 * Coverage for get_token method caching.
 	 *
 	 * @covers ::get_token

@@ -27,4 +27,4 @@ do_action( 'gatherpress_import', $post_data_raw )
 
 
 
-[← All Hooks](Hooks)
+[← All Hooks](Hooks.md)

@@ -6,6 +6,7 @@
 [files]
 extend-exclude = [
     ".git/",
+    ".github/",
     "**/vendor/**",
     "**/node_modules/**",
     "build/**",

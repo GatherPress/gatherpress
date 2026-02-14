@@ -35,4 +35,4 @@ apply_filters( 'gatherpress_sub_pages', array() )
 
 
 
-[← All Hooks](Hooks)
+[← All Hooks](Hooks.md)
