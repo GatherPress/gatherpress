@@ -36,6 +36,15 @@ class Event_Setup {
 	use Singleton;
 
 	/**
+	 * Cached event counts for the current request.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @var array<string, int>|null
+	 */
+	protected ?array $event_counts = null;
+
+	/**
 	 * Class constructor.
 	 *
 	 * This method initializes the object and sets up necessary hooks.
@@ -85,6 +94,11 @@ class Event_Setup {
 			sprintf( 'manage_edit-%s_sortable_columns', Event::POST_TYPE ),
 			array( $this, 'sortable_columns' )
 		);
+		add_filter(
+			sprintf( 'views_edit-%s', Event::POST_TYPE ),
+			array( $this, 'views_edit' )
+		);
+		add_filter( 'query_vars', array( $this, 'query_vars' ) );
 		add_action( 'pre_get_posts', array( $this, 'handle_rsvp_sorting' ) );
 		add_action( 'pre_get_posts', array( $this, 'handle_venue_sorting' ) );
 		add_filter( 'get_the_date', array( $this, 'get_the_event_date' ) );
@@ -652,6 +666,152 @@ class Event_Setup {
 		$columns['rsvps'] = 'rsvps';
 
 		return $columns;
+	}
+
+	/**
+	 * Add 'Upcoming' & 'Past' to the available admin event list table views.
+	 *
+	 * This method adds links to filter the shown events in the admin list,
+	 * the filtering allows to show 'upcoming' or 'past' events.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param array $view_links An array of available list table views.
+	 *
+	 * @return array Updated list table views.
+	 */
+	public function views_edit( array $view_links ): array {
+		$nonce = isset( $_REQUEST['_wpnonce'] )
+			? sanitize_text_field( wp_unslash( $_REQUEST['_wpnonce'] ) )
+			: '';
+
+		$is_events_query = isset( $_REQUEST['gatherpress_event_query'] )
+			? sanitize_text_field( wp_unslash( $_REQUEST['gatherpress_event_query'] ) )
+			: '';
+
+		$nonce_action = sprintf(
+			'%ss_views_query',
+			Event::POST_TYPE
+		);
+
+		$current_view = (
+			$nonce &&
+			wp_verify_nonce( $nonce, $nonce_action ) &&
+			$is_events_query
+		) ? $is_events_query : '';
+
+		$counts    = $this->get_event_counts();
+		$placement = 1;
+		$inserts   = array(
+			'upcoming' => __( 'Upcoming', 'gatherpress' ),
+			'past'     => __( 'Past', 'gatherpress' ),
+		);
+		$nonce_url = wp_nonce_url( admin_url( 'edit.php' ), $nonce_action );
+
+		foreach ( $inserts as $key => $value ) {
+			$count           = isset( $counts[ $key ] ) ? $counts[ $key ] : 0;
+			$inserts[ $key ] = sprintf(
+				'<a href="%s"%s>%s <span class="count">(%s)</span></a>',
+				add_query_arg(
+					array(
+						'gatherpress_event_query' => $key,
+						'post_type'               => Event::POST_TYPE,
+					),
+					$nonce_url
+				),
+				$key === $current_view ? ' class="current" aria-current="page"' : '',
+				$value,
+				number_format_i18n( $count )
+			);
+		}
+
+		return array_slice( $view_links, 0, $placement, true )
+			+ $inserts
+			+ array_slice( $view_links, $placement, null, true );
+	}
+
+	/**
+	 * Get counts of upcoming and past events.
+	 *
+	 * Uses the same datetime comparison logic as Event_Query::adjust_event_sql()
+	 * with inclusive=true: upcoming uses datetime_end_gmt (includes running events),
+	 * past uses datetime_start_gmt (excludes running events).
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return array<string, int> Associative array with 'upcoming' and 'past' counts.
+	 */
+	protected function get_event_counts(): array {
+		if ( null !== $this->event_counts ) {
+			return $this->event_counts;
+		}
+
+		global $wpdb;
+
+		$table   = sprintf( Event::TABLE_FORMAT, $wpdb->prefix );
+		$current = gmdate( Event::DATETIME_FORMAT, time() );
+
+		// Upcoming: events whose end time is still in the future (includes currently running).
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$upcoming = (int) $wpdb->get_var(
+			$wpdb->prepare(
+				'SELECT COUNT(1) FROM %i INNER JOIN %i ON %i.ID = %i.post_id'
+				. ' WHERE %i.post_type = %s AND %i.post_status NOT IN'
+				. " ('trash', 'auto-draft') AND %i.datetime_end_gmt >= %s",
+				$wpdb->posts,
+				$table,
+				$wpdb->posts,
+				$table,
+				$wpdb->posts,
+				Event::POST_TYPE,
+				$wpdb->posts,
+				$table,
+				$current
+			)
+		);
+
+		// Past: events whose start time is in the past (excludes currently running).
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$past = (int) $wpdb->get_var(
+			$wpdb->prepare(
+				'SELECT COUNT(1) FROM %i INNER JOIN %i ON %i.ID = %i.post_id'
+				. ' WHERE %i.post_type = %s AND %i.post_status NOT IN'
+				. " ('trash', 'auto-draft') AND %i.datetime_start_gmt < %s",
+				$wpdb->posts,
+				$table,
+				$wpdb->posts,
+				$table,
+				$wpdb->posts,
+				Event::POST_TYPE,
+				$wpdb->posts,
+				$table,
+				$current
+			)
+		);
+
+		$this->event_counts = array(
+			'upcoming' => $upcoming,
+			'past'     => $past,
+		);
+
+		return $this->event_counts;
+	}
+
+	/**
+	 * Allowlist for additional query parameters.
+	 *
+	 * Adds 'gatherpress_event_query' to the list of allowed query variables,
+	 * to be able to request 'upcoming' or 'past' events in the admin list view.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param  string[] $query_vars List of allowed query variables.
+	 *
+	 * @return string[] Updated list of allowed query variables.
+	 */
+	public function query_vars( array $query_vars ) {
+		$query_vars[] = 'gatherpress_event_query';
+		return $query_vars;
 	}
 
 	/**

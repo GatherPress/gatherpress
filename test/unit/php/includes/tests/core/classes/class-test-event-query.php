@@ -43,7 +43,7 @@ class Test_Event_Query extends Base {
 			array(
 				'type'     => 'filter',
 				'name'     => 'posts_clauses',
-				'priority' => 10,
+				'priority' => 9,
 				'callback' => array( $instance, 'adjust_admin_event_sorting' ),
 			),
 		);
@@ -221,6 +221,7 @@ class Test_Event_Query extends Base {
 		$instance = Event_Query::get_instance();
 		$query    = new WP_Query();
 
+		$query->set( 'post_type', 'gatherpress_event' );
 		$query->set( 'gatherpress_event_query', 'upcoming' );
 		$instance->prepare_event_query_before_execution( $query );
 
@@ -248,6 +249,7 @@ class Test_Event_Query extends Base {
 		$instance = Event_Query::get_instance();
 		$query    = new WP_Query();
 
+		$query->set( 'post_type', 'gatherpress_event' );
 		$query->set( 'gatherpress_event_query', 'past' );
 		$instance->prepare_event_query_before_execution( $query );
 
@@ -613,6 +615,22 @@ class Test_Event_Query extends Base {
 		$response = $instance->adjust_admin_event_sorting( array(), $wp_query );
 
 		// Assert that an array was generated from the adjustsql argument. todo: make this test more meaningful.
+		$this->assertNotEmpty(
+			$response,
+			'Failed to assert the array, containing pieces of the SQL query, is not empty'
+		);
+
+		$wp_query = new WP_Query();
+
+		$wp_query->set( 'gatherpress_event_query', 'upcoming' );
+		$response = $instance->adjust_admin_event_sorting( array(), $wp_query );
+		$this->assertNotEmpty(
+			$response,
+			'Failed to assert the array, containing pieces of the SQL query, is not empty'
+		);
+
+		$wp_query->set( 'gatherpress_event_query', 'past' );
+		$response = $instance->adjust_admin_event_sorting( array(), $wp_query );
 		$this->assertNotEmpty(
 			$response,
 			'Failed to assert the array, containing pieces of the SQL query, is not empty'
