@@ -1814,6 +1814,566 @@ class Test_Event_Setup extends Base {
 	}
 
 	/**
+	 * Coverage for query_vars method.
+	 *
+	 * @covers ::query_vars
+	 *
+	 * @return void
+	 */
+	public function test_query_vars(): void {
+		$instance = Event_Setup::get_instance();
+
+		$result = $instance->query_vars( array( 'existing_var' ) );
+
+		$this->assertContains(
+			'gatherpress_event_query',
+			$result,
+			'Should add gatherpress_event_query to query vars.'
+		);
+		$this->assertContains(
+			'existing_var',
+			$result,
+			'Should preserve existing query vars.'
+		);
+		$this->assertCount( 2, $result, 'Should have exactly 2 query vars.' );
+	}
+
+	/**
+	 * Coverage for query_vars method with empty input.
+	 *
+	 * @covers ::query_vars
+	 *
+	 * @return void
+	 */
+	public function test_query_vars_empty_input(): void {
+		$instance = Event_Setup::get_instance();
+
+		$result = $instance->query_vars( array() );
+
+		$this->assertContains(
+			'gatherpress_event_query',
+			$result,
+			'Should add gatherpress_event_query even with empty input.'
+		);
+		$this->assertCount( 1, $result, 'Should have exactly 1 query var.' );
+	}
+
+	/**
+	 * Coverage for get_event_counts method with no events.
+	 *
+	 * @covers ::get_event_counts
+	 *
+	 * @return void
+	 */
+	public function test_get_event_counts_no_events(): void {
+		$instance = Event_Setup::get_instance();
+
+		// Reset cached counts and invoke the protected method.
+		Utility::set_and_get_hidden_property( $instance, 'event_counts', null );
+
+		$counts = Utility::invoke_hidden_method( $instance, 'get_event_counts' );
+
+		$this->assertArrayHasKey( 'upcoming', $counts, 'Should have upcoming key.' );
+		$this->assertArrayHasKey( 'past', $counts, 'Should have past key.' );
+		$this->assertSame( 0, $counts['upcoming'], 'Should have 0 upcoming events.' );
+		$this->assertSame( 0, $counts['past'], 'Should have 0 past events.' );
+	}
+
+	/**
+	 * Coverage for get_event_counts method with upcoming events.
+	 *
+	 * @covers ::get_event_counts
+	 *
+	 * @return void
+	 */
+	public function test_get_event_counts_with_upcoming(): void {
+		$instance = Event_Setup::get_instance();
+
+		// Create a published event in the future.
+		$post_id = $this->mock->post(
+			array(
+				'post_type'   => Event::POST_TYPE,
+				'post_status' => 'publish',
+			)
+		)->get()->ID;
+
+		$event = new Event( $post_id );
+		$event->save_datetimes(
+			array(
+				'datetime_start' => gmdate( 'Y-m-d H:i:s', strtotime( '+1 day' ) ),
+				'datetime_end'   => gmdate( 'Y-m-d H:i:s', strtotime( '+1 day +2 hours' ) ),
+				'timezone'       => 'UTC',
+			)
+		);
+
+		// Reset cached counts before querying.
+		Utility::set_and_get_hidden_property( $instance, 'event_counts', null );
+
+		$counts = Utility::invoke_hidden_method( $instance, 'get_event_counts' );
+
+		$this->assertSame( 1, $counts['upcoming'], 'Should have 1 upcoming event.' );
+		$this->assertSame( 0, $counts['past'], 'Should have 0 past events.' );
+	}
+
+	/**
+	 * Coverage for get_event_counts method with past events.
+	 *
+	 * @covers ::get_event_counts
+	 *
+	 * @return void
+	 */
+	public function test_get_event_counts_with_past(): void {
+		$instance = Event_Setup::get_instance();
+
+		// Create a published event in the past.
+		$post_id = $this->mock->post(
+			array(
+				'post_type'   => Event::POST_TYPE,
+				'post_status' => 'publish',
+			)
+		)->get()->ID;
+
+		$event = new Event( $post_id );
+		$event->save_datetimes(
+			array(
+				'datetime_start' => gmdate( 'Y-m-d H:i:s', strtotime( '-2 days' ) ),
+				'datetime_end'   => gmdate( 'Y-m-d H:i:s', strtotime( '-2 days +2 hours' ) ),
+				'timezone'       => 'UTC',
+			)
+		);
+
+		// Reset cached counts before querying.
+		Utility::set_and_get_hidden_property( $instance, 'event_counts', null );
+
+		$counts = Utility::invoke_hidden_method( $instance, 'get_event_counts' );
+
+		$this->assertSame( 0, $counts['upcoming'], 'Should have 0 upcoming events.' );
+		$this->assertSame( 1, $counts['past'], 'Should have 1 past event.' );
+	}
+
+	/**
+	 * Coverage for get_event_counts method with mixed events.
+	 *
+	 * @covers ::get_event_counts
+	 *
+	 * @return void
+	 */
+	public function test_get_event_counts_with_mixed(): void {
+		$instance = Event_Setup::get_instance();
+
+		// Create a published upcoming event.
+		$upcoming_id = $this->mock->post(
+			array(
+				'post_type'   => Event::POST_TYPE,
+				'post_status' => 'publish',
+			)
+		)->get()->ID;
+
+		$event = new Event( $upcoming_id );
+		$event->save_datetimes(
+			array(
+				'datetime_start' => gmdate( 'Y-m-d H:i:s', strtotime( '+1 day' ) ),
+				'datetime_end'   => gmdate( 'Y-m-d H:i:s', strtotime( '+1 day +2 hours' ) ),
+				'timezone'       => 'UTC',
+			)
+		);
+
+		// Create a published past event.
+		$past_id = $this->mock->post(
+			array(
+				'post_type'   => Event::POST_TYPE,
+				'post_status' => 'publish',
+			)
+		)->get()->ID;
+
+		$event = new Event( $past_id );
+		$event->save_datetimes(
+			array(
+				'datetime_start' => gmdate( 'Y-m-d H:i:s', strtotime( '-2 days' ) ),
+				'datetime_end'   => gmdate( 'Y-m-d H:i:s', strtotime( '-2 days +2 hours' ) ),
+				'timezone'       => 'UTC',
+			)
+		);
+
+		// Create a draft event (should not be counted).
+		$draft_id = $this->mock->post(
+			array(
+				'post_type'   => Event::POST_TYPE,
+				'post_status' => 'draft',
+			)
+		)->get()->ID;
+
+		$event = new Event( $draft_id );
+		$event->save_datetimes(
+			array(
+				'datetime_start' => gmdate( 'Y-m-d H:i:s', strtotime( '+3 days' ) ),
+				'datetime_end'   => gmdate( 'Y-m-d H:i:s', strtotime( '+3 days +2 hours' ) ),
+				'timezone'       => 'UTC',
+			)
+		);
+
+		// Reset cached counts before querying.
+		Utility::set_and_get_hidden_property( $instance, 'event_counts', null );
+
+		$counts = Utility::invoke_hidden_method( $instance, 'get_event_counts' );
+
+		$this->assertSame( 1, $counts['upcoming'], 'Should have 1 upcoming event (draft excluded).' );
+		$this->assertSame( 1, $counts['past'], 'Should have 1 past event.' );
+	}
+
+	/**
+	 * Coverage for get_event_counts method with a currently running event.
+	 *
+	 * A running event (started but not ended) should count as upcoming
+	 * because datetime_end_gmt >= now, and also as past because
+	 * datetime_start_gmt < now.
+	 *
+	 * @covers ::get_event_counts
+	 *
+	 * @return void
+	 */
+	public function test_get_event_counts_running_event(): void {
+		$instance = Event_Setup::get_instance();
+
+		// Create a published event that is currently running.
+		$post_id = $this->mock->post(
+			array(
+				'post_type'   => Event::POST_TYPE,
+				'post_status' => 'publish',
+			)
+		)->get()->ID;
+
+		$event = new Event( $post_id );
+		$event->save_datetimes(
+			array(
+				'datetime_start' => gmdate( 'Y-m-d H:i:s', strtotime( '-1 hour' ) ),
+				'datetime_end'   => gmdate( 'Y-m-d H:i:s', strtotime( '+1 hour' ) ),
+				'timezone'       => 'UTC',
+			)
+		);
+
+		// Reset cached counts before querying.
+		Utility::set_and_get_hidden_property( $instance, 'event_counts', null );
+
+		$counts = Utility::invoke_hidden_method( $instance, 'get_event_counts' );
+
+		// Running events appear in both counts (same logic as Event_Query with inclusive=true).
+		$this->assertSame( 1, $counts['upcoming'], 'Running event should count as upcoming.' );
+		$this->assertSame( 1, $counts['past'], 'Running event should count as past.' );
+	}
+
+	/**
+	 * Coverage for get_event_counts caching to class property.
+	 *
+	 * Verifies that repeated calls return the cached result without re-querying.
+	 *
+	 * @covers ::get_event_counts
+	 *
+	 * @return void
+	 */
+	public function test_get_event_counts_caches_result(): void {
+		$instance = Event_Setup::get_instance();
+
+		// Reset cached counts.
+		Utility::set_and_get_hidden_property( $instance, 'event_counts', null );
+
+		// First call should query the database and cache.
+		$counts = Utility::invoke_hidden_method( $instance, 'get_event_counts' );
+		$this->assertSame( 0, $counts['upcoming'], 'Should have 0 upcoming events.' );
+
+		// Verify the property is now cached.
+		$cached = Utility::set_and_get_hidden_property( $instance, 'event_counts', $counts );
+		$this->assertNotNull( $cached, 'Property should be cached after first call.' );
+		$this->assertSame( $counts, $cached, 'Cached value should match returned value.' );
+
+		// Create an event after the first call.
+		$post_id = $this->mock->post(
+			array(
+				'post_type'   => Event::POST_TYPE,
+				'post_status' => 'publish',
+			)
+		)->get()->ID;
+
+		$event = new Event( $post_id );
+		$event->save_datetimes(
+			array(
+				'datetime_start' => gmdate( 'Y-m-d H:i:s', strtotime( '+1 day' ) ),
+				'datetime_end'   => gmdate( 'Y-m-d H:i:s', strtotime( '+1 day +2 hours' ) ),
+				'timezone'       => 'UTC',
+			)
+		);
+
+		// Second call should return cached result (still 0).
+		$counts_cached = Utility::invoke_hidden_method( $instance, 'get_event_counts' );
+		$this->assertSame( 0, $counts_cached['upcoming'], 'Cached call should still return 0.' );
+
+		// After resetting the cache, should reflect the new event.
+		Utility::set_and_get_hidden_property( $instance, 'event_counts', null );
+		$counts_fresh = Utility::invoke_hidden_method( $instance, 'get_event_counts' );
+		$this->assertSame( 1, $counts_fresh['upcoming'], 'Fresh call should return 1 after cache reset.' );
+	}
+
+	/**
+	 * Coverage for views_edit method with no events.
+	 *
+	 * @covers ::views_edit
+	 *
+	 * @return void
+	 */
+	public function test_views_edit_adds_links(): void {
+		$instance = Event_Setup::get_instance();
+
+		$view_links = array(
+			'all'     => '<a href="#">All</a>',
+			'publish' => '<a href="#">Published</a>',
+			'draft'   => '<a href="#">Draft</a>',
+		);
+
+		$result = $instance->views_edit( $view_links );
+
+		// Should have original links plus upcoming and past.
+		$this->assertArrayHasKey( 'upcoming', $result, 'Should have upcoming link.' );
+		$this->assertArrayHasKey( 'past', $result, 'Should have past link.' );
+		$this->assertArrayHasKey( 'all', $result, 'Should preserve all link.' );
+		$this->assertArrayHasKey( 'publish', $result, 'Should preserve publish link.' );
+		$this->assertArrayHasKey( 'draft', $result, 'Should preserve draft link.' );
+
+		// Verify count spans are present.
+		$this->assertStringContainsString(
+			'<span class="count">',
+			$result['upcoming'],
+			'Upcoming link should contain count span.'
+		);
+		$this->assertStringContainsString(
+			'<span class="count">',
+			$result['past'],
+			'Past link should contain count span.'
+		);
+
+		// Verify links contain proper query args.
+		$this->assertStringContainsString(
+			'gatherpress_event_query=upcoming',
+			$result['upcoming'],
+			'Upcoming link should have correct query arg.'
+		);
+		$this->assertStringContainsString(
+			'gatherpress_event_query=past',
+			$result['past'],
+			'Past link should have correct query arg.'
+		);
+
+		// Verify the labels.
+		$this->assertStringContainsString( 'Upcoming', $result['upcoming'], 'Should contain Upcoming label.' );
+		$this->assertStringContainsString( 'Past', $result['past'], 'Should contain Past label.' );
+	}
+
+	/**
+	 * Coverage for views_edit method link placement.
+	 *
+	 * Upcoming and Past should be inserted after the first link (All).
+	 *
+	 * @covers ::views_edit
+	 *
+	 * @return void
+	 */
+	public function test_views_edit_placement(): void {
+		$instance = Event_Setup::get_instance();
+
+		$view_links = array(
+			'all'     => '<a href="#">All</a>',
+			'publish' => '<a href="#">Published</a>',
+		);
+
+		$result = $instance->views_edit( $view_links );
+		$keys   = array_keys( $result );
+
+		$this->assertEquals( 'all', $keys[0], 'First link should be all.' );
+		$this->assertEquals( 'upcoming', $keys[1], 'Second link should be upcoming.' );
+		$this->assertEquals( 'past', $keys[2], 'Third link should be past.' );
+		$this->assertEquals( 'publish', $keys[3], 'Fourth link should be publish.' );
+	}
+
+	/**
+	 * Coverage for views_edit method with active upcoming view.
+	 *
+	 * @covers ::views_edit
+	 *
+	 * @return void
+	 */
+	public function test_views_edit_active_upcoming(): void {
+		$instance = Event_Setup::get_instance();
+
+		// Simulate an active upcoming view with valid nonce.
+		$nonce_action = sprintf( '%ss_views_query', Event::POST_TYPE );
+
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$_REQUEST['_wpnonce'] = wp_create_nonce( $nonce_action );
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$_REQUEST['gatherpress_event_query'] = 'upcoming';
+
+		$view_links = array(
+			'all' => '<a href="#">All</a>',
+		);
+
+		$result = $instance->views_edit( $view_links );
+
+		$this->assertStringContainsString(
+			'class="current"',
+			$result['upcoming'],
+			'Active upcoming link should have current class.'
+		);
+		$this->assertStringContainsString(
+			'aria-current="page"',
+			$result['upcoming'],
+			'Active upcoming link should have aria-current attribute.'
+		);
+
+		// Past should not be marked as current.
+		$this->assertStringNotContainsString(
+			'class="current"',
+			$result['past'],
+			'Past link should not have current class.'
+		);
+
+		// Clean up.
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		unset( $_REQUEST['_wpnonce'], $_REQUEST['gatherpress_event_query'] );
+	}
+
+	/**
+	 * Coverage for views_edit method with active past view.
+	 *
+	 * @covers ::views_edit
+	 *
+	 * @return void
+	 */
+	public function test_views_edit_active_past(): void {
+		$instance = Event_Setup::get_instance();
+
+		// Simulate an active past view with valid nonce.
+		$nonce_action = sprintf( '%ss_views_query', Event::POST_TYPE );
+
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$_REQUEST['_wpnonce'] = wp_create_nonce( $nonce_action );
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$_REQUEST['gatherpress_event_query'] = 'past';
+
+		$view_links = array(
+			'all' => '<a href="#">All</a>',
+		);
+
+		$result = $instance->views_edit( $view_links );
+
+		$this->assertStringContainsString(
+			'class="current"',
+			$result['past'],
+			'Active past link should have current class.'
+		);
+
+		// Upcoming should not be marked as current.
+		$this->assertStringNotContainsString(
+			'class="current"',
+			$result['upcoming'],
+			'Upcoming link should not have current class.'
+		);
+
+		// Clean up.
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		unset( $_REQUEST['_wpnonce'], $_REQUEST['gatherpress_event_query'] );
+	}
+
+	/**
+	 * Coverage for views_edit method with invalid nonce.
+	 *
+	 * @covers ::views_edit
+	 *
+	 * @return void
+	 */
+	public function test_views_edit_invalid_nonce(): void {
+		$instance = Event_Setup::get_instance();
+
+		// Simulate a request with invalid nonce.
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$_REQUEST['_wpnonce'] = 'invalid_nonce';
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$_REQUEST['gatherpress_event_query'] = 'upcoming';
+
+		$view_links = array(
+			'all' => '<a href="#">All</a>',
+		);
+
+		$result = $instance->views_edit( $view_links );
+
+		// Neither link should be marked as current with an invalid nonce.
+		$this->assertStringNotContainsString(
+			'class="current"',
+			$result['upcoming'],
+			'Upcoming link should not have current class with invalid nonce.'
+		);
+		$this->assertStringNotContainsString(
+			'class="current"',
+			$result['past'],
+			'Past link should not have current class with invalid nonce.'
+		);
+
+		// Clean up.
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		unset( $_REQUEST['_wpnonce'], $_REQUEST['gatherpress_event_query'] );
+	}
+
+	/**
+	 * Coverage for views_edit method with event counts displayed.
+	 *
+	 * @covers ::views_edit
+	 * @covers ::get_event_counts
+	 *
+	 * @return void
+	 */
+	public function test_views_edit_displays_counts(): void {
+		$instance = Event_Setup::get_instance();
+
+		// Create a published upcoming event.
+		$post_id = $this->mock->post(
+			array(
+				'post_type'   => Event::POST_TYPE,
+				'post_status' => 'publish',
+			)
+		)->get()->ID;
+
+		$event = new Event( $post_id );
+		$event->save_datetimes(
+			array(
+				'datetime_start' => gmdate( 'Y-m-d H:i:s', strtotime( '+1 day' ) ),
+				'datetime_end'   => gmdate( 'Y-m-d H:i:s', strtotime( '+1 day +2 hours' ) ),
+				'timezone'       => 'UTC',
+			)
+		);
+
+		// Reset cached counts after event creation so fresh queries run.
+		Utility::set_and_get_hidden_property( $instance, 'event_counts', null );
+
+		$view_links = array(
+			'all' => '<a href="#">All</a>',
+		);
+
+		$result = $instance->views_edit( $view_links );
+
+		// Upcoming should show count of 1.
+		$this->assertStringContainsString(
+			'<span class="count">(1)</span>',
+			$result['upcoming'],
+			'Upcoming link should show count of 1.'
+		);
+
+		// Past should show count of 0.
+		$this->assertStringContainsString(
+			'<span class="count">(0)</span>',
+			$result['past'],
+			'Past link should show count of 0.'
+		);
+	}
+
+	/**
 	 * Tests filter_readonly_meta removes read-only meta keys from REST request.
 	 *
 	 * @covers ::filter_readonly_meta
