@@ -654,9 +654,9 @@ class Event_Setup {
 			return;
 		}
 
-		// Define the event date as default ORDERBY and ORDER ascending.
+		// Define the event date as default ORDERBY and ORDER descending.
 		$_GET['orderby'] = 'datetime';
-		$_GET['order']   = 'asc';
+		$_GET['order']   = 'desc';
 	}
 
 	/**

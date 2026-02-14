@@ -1808,6 +1808,95 @@ class Test_Event_Setup extends Base {
 	}
 
 	/**
+	 * Coverage for default_sort method when on the wrong screen.
+	 *
+	 * @covers ::default_sort
+	 *
+	 * @return void
+	 */
+	public function test_default_sort_wrong_screen(): void {
+		$instance = Event_Setup::get_instance();
+
+		// Set current screen to a non-event screen.
+		set_current_screen( 'edit-post' );
+
+		// Ensure $_GET is clean.
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		unset( $_GET['orderby'], $_GET['order'] );
+
+		$instance->default_sort();
+
+		// Should return early without modifying $_GET.
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$this->assertArrayNotHasKey( 'orderby', $_GET, 'Should not set orderby on wrong screen.' );
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$this->assertArrayNotHasKey( 'order', $_GET, 'Should not set order on wrong screen.' );
+
+		// Clean up.
+		set_current_screen( 'front' );
+	}
+
+	/**
+	 * Coverage for default_sort method when orderby is already set.
+	 *
+	 * @covers ::default_sort
+	 *
+	 * @return void
+	 */
+	public function test_default_sort_orderby_already_set(): void {
+		$instance = Event_Setup::get_instance();
+
+		// Set current screen to event edit screen.
+		set_current_screen( 'edit-gatherpress_event' );
+
+		// Set an existing orderby value.
+		$_GET['orderby'] = 'title'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+
+		$instance->default_sort();
+
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended, WordPress.Security.ValidatedSanitizedInput
+		$this->assertSame( 'title', $_GET['orderby'], 'Should not override existing orderby.' );
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$this->assertArrayNotHasKey( 'order', $_GET, 'Should not set order when orderby already exists.' );
+
+		// Clean up.
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		unset( $_GET['orderby'], $_GET['order'] );
+		set_current_screen( 'front' );
+	}
+
+	/**
+	 * Coverage for default_sort method when on the correct screen with no orderby.
+	 *
+	 * @covers ::default_sort
+	 *
+	 * @return void
+	 */
+	public function test_default_sort_sets_defaults(): void {
+		$instance = Event_Setup::get_instance();
+
+		// Set current screen to event edit screen.
+		set_current_screen( 'edit-gatherpress_event' );
+
+		// Ensure $_GET is clean.
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		unset( $_GET['orderby'], $_GET['order'] );
+
+		$instance->default_sort();
+
+		// Should set default orderby and order.
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended, WordPress.Security.ValidatedSanitizedInput
+		$this->assertSame( 'datetime', $_GET['orderby'], 'Should set orderby to datetime.' );
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended, WordPress.Security.ValidatedSanitizedInput
+		$this->assertSame( 'desc', $_GET['order'], 'Should set order to desc.' );
+
+		// Clean up.
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		unset( $_GET['orderby'], $_GET['order'] );
+		set_current_screen( 'front' );
+	}
+
+	/**
 	 * Tests filter_readonly_meta removes read-only meta keys from REST request.
 	 *
 	 * @covers ::filter_readonly_meta
