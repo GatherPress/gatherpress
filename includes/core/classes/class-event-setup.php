@@ -731,7 +731,7 @@ class Event_Setup {
 	}
 
 	/**
-	 * Get counts of upcoming and past published events.
+	 * Get counts of upcoming and past events.
 	 *
 	 * Uses the same datetime comparison logic as Event_Query::adjust_event_sql()
 	 * with inclusive=true: upcoming uses datetime_end_gmt (includes running events),
@@ -756,8 +756,8 @@ class Event_Setup {
 		$upcoming = (int) $wpdb->get_var(
 			$wpdb->prepare(
 				'SELECT COUNT(1) FROM %i INNER JOIN %i ON %i.ID = %i.post_id'
-				. " WHERE %i.post_type = %s AND %i.post_status = 'publish'"
-				. ' AND %i.datetime_end_gmt >= %s',
+				. ' WHERE %i.post_type = %s AND %i.post_status NOT IN'
+				. " ('trash', 'auto-draft') AND %i.datetime_end_gmt >= %s",
 				$wpdb->posts,
 				$table,
 				$wpdb->posts,
@@ -775,8 +775,8 @@ class Event_Setup {
 		$past = (int) $wpdb->get_var(
 			$wpdb->prepare(
 				'SELECT COUNT(1) FROM %i INNER JOIN %i ON %i.ID = %i.post_id'
-				. " WHERE %i.post_type = %s AND %i.post_status = 'publish'"
-				. ' AND %i.datetime_start_gmt < %s',
+				. ' WHERE %i.post_type = %s AND %i.post_status NOT IN'
+				. " ('trash', 'auto-draft') AND %i.datetime_start_gmt < %s",
 				$wpdb->posts,
 				$table,
 				$wpdb->posts,

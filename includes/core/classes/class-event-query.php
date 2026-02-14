@@ -175,7 +175,6 @@ class Event_Query {
 	 * @return void
 	 */
 	public function prepare_event_query_before_execution( WP_Query $query ): void {
-
 		$events_query = $query->get( self::EVENT_QUERY_PARAM );
 
 		if ( ! is_admin() && $query->is_main_query() ) {

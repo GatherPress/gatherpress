@@ -1995,7 +1995,7 @@ class Test_Event_Setup extends Base {
 			)
 		);
 
-		// Create a draft event (should not be counted).
+		// Create a draft event (should be counted, only trash/auto-draft excluded).
 		$draft_id = $this->mock->post(
 			array(
 				'post_type'   => Event::POST_TYPE,
@@ -2017,7 +2017,7 @@ class Test_Event_Setup extends Base {
 
 		$counts = Utility::invoke_hidden_method( $instance, 'get_event_counts' );
 
-		$this->assertSame( 1, $counts['upcoming'], 'Should have 1 upcoming event (draft excluded).' );
+		$this->assertSame( 2, $counts['upcoming'], 'Should have 2 upcoming events (draft included).' );
 		$this->assertSame( 1, $counts['past'], 'Should have 1 past event.' );
 	}
 
