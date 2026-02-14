@@ -31,6 +31,10 @@ export const TEMPLATE_WITH_TITLE = [
 					style: {
 						spacing: {
 							blockGap: 'var:preset|spacing|20',
+							margin: {
+								top: '0',
+								bottom: '0',
+							},
 						},
 					},
 					layout: {
@@ -57,6 +61,7 @@ export const TEMPLATE_WITH_TITLE = [
 			style: {
 				spacing: {
 					margin: {
+						top: '0',
 						bottom: 'var:preset|spacing|30',
 					},
 				},
@@ -139,6 +144,10 @@ export const TEMPLATE_WITHOUT_TITLE = [
 					style: {
 						spacing: {
 							blockGap: 'var:preset|spacing|20',
+							margin: {
+								top: '0',
+								bottom: '0',
+							},
 						},
 					},
 					layout: {
@@ -165,6 +174,7 @@ export const TEMPLATE_WITHOUT_TITLE = [
 			style: {
 				spacing: {
 					margin: {
+						top: '0',
 						bottom: 'var:preset|spacing|30',
 					},
 				},
