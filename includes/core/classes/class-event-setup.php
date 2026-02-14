@@ -78,6 +78,9 @@ class Event_Setup {
 			10,
 			2
 		);
+		add_action( 'load-edit.php', array( $this, 'default_sort' ) );
+		add_action( 'admin_menu', array( $this, 'modify_all_events_menu_link' ) );
+		add_filter( 'submenu_file', array( $this, 'highlight_events_submenu' ) );
 
 		add_filter( 'redirect_canonical', array( $this, 'disable_ics_canonical_redirect' ), 10, 2 );
 		add_filter(
@@ -149,7 +152,7 @@ class Event_Setup {
 					'not_found'                => __( 'No Events found.', 'gatherpress' ),
 					'not_found_in_trash'       => __( 'No Events found in Trash.', 'gatherpress' ),
 					'parent_item_colon'        => __( 'Parent Events:', 'gatherpress' ),
-					'all_items'                => __( 'All Events', 'gatherpress' ),
+					'all_items'                => __( 'View Events', 'gatherpress' ),
 					'archives'                 => __( 'Event Archives', 'gatherpress' ),
 					'attributes'               => __( 'Event Attributes', 'gatherpress' ),
 					'insert_into_item'         => __( 'Insert into Event', 'gatherpress' ),
@@ -647,6 +650,77 @@ class Event_Setup {
 	}
 
 	/**
+	 * Sets the default sort field and sort order on the event post type admin screen, to order by event date.
+	 *
+	 * @author John Blackbourn @johnbillion
+	 * @source https://github.com/johnbillion/extended-cpts/blob/20b7e9773b60f7301cd59ee520affa0ff63f90e6/src/PostTypeAdmin.php#L160-L178
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return void
+	 */
+	public function default_sort(): void {
+		$screen_id = sprintf( 'edit-%s', Event::POST_TYPE );
+		if ( ! function_exists( 'get_current_screen' ) || get_current_screen()->id !== $screen_id ) {
+			return;
+		}
+
+		// If the screen is already ordered, bail out.
+		if ( isset( $_GET['orderby'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+			return;
+		}
+
+		// Default to sorting by event date ascending.
+		$_GET['orderby'] = 'datetime';
+		$_GET['order']   = 'asc';
+	}
+
+	/**
+	 * Modify the "Upcoming Events" admin submenu link to default to upcoming events.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return void
+	 */
+	public function modify_all_events_menu_link(): void {
+		global $submenu;
+
+		$menu_slug = sprintf( 'edit.php?post_type=%s', Event::POST_TYPE );
+
+		if ( empty( $submenu[ $menu_slug ] ) ) {
+			return;
+		}
+
+		foreach ( $submenu[ $menu_slug ] as &$item ) {
+			if ( $menu_slug === $item[2] ) {
+				$item[2] = add_query_arg( 'gatherpress_event_query', 'upcoming', $item[2] );
+				break;
+			}
+		}
+	}
+
+	/**
+	 * Highlight the "Upcoming Events" submenu when viewing events with query filters.
+	 *
+	 * WordPress cannot match the modified submenu URL against the current page,
+	 * so this filter ensures the correct submenu item stays highlighted.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string|null $submenu_file The current submenu file.
+	 * @return string|null The submenu file to highlight.
+	 */
+	public function highlight_events_submenu( $submenu_file ) {
+		$menu_slug = sprintf( 'edit.php?post_type=%s', Event::POST_TYPE );
+
+		if ( $menu_slug === $submenu_file ) {
+			return add_query_arg( 'gatherpress_event_query', 'upcoming', $menu_slug );
+		}
+
+		return $submenu_file;
+	}
+
+	/**
 	 * Make custom columns sortable for Event post type in the admin dashboard.
 	 *
 	 * This method allows the custom columns, including the 'Event date & time' and 'RSVPs' columns,
@@ -681,24 +755,11 @@ class Event_Setup {
 	 * @return array Updated list table views.
 	 */
 	public function views_edit( array $view_links ): array {
-		$nonce = isset( $_REQUEST['_wpnonce'] )
-			? sanitize_text_field( wp_unslash( $_REQUEST['_wpnonce'] ) )
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$current_view = isset( $_GET['gatherpress_event_query'] )
+			// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+			? sanitize_text_field( wp_unslash( $_GET['gatherpress_event_query'] ) )
 			: '';
-
-		$is_events_query = isset( $_REQUEST['gatherpress_event_query'] )
-			? sanitize_text_field( wp_unslash( $_REQUEST['gatherpress_event_query'] ) )
-			: '';
-
-		$nonce_action = sprintf(
-			'%ss_views_query',
-			Event::POST_TYPE
-		);
-
-		$current_view = (
-			$nonce &&
-			wp_verify_nonce( $nonce, $nonce_action ) &&
-			$is_events_query
-		) ? $is_events_query : '';
 
 		$counts    = $this->get_event_counts();
 		$placement = 1;
@@ -706,7 +767,7 @@ class Event_Setup {
 			'upcoming' => __( 'Upcoming', 'gatherpress' ),
 			'past'     => __( 'Past', 'gatherpress' ),
 		);
-		$nonce_url = wp_nonce_url( admin_url( 'edit.php' ), $nonce_action );
+		$base_url  = admin_url( 'edit.php' );
 
 		foreach ( $inserts as $key => $value ) {
 			$count           = isset( $counts[ $key ] ) ? $counts[ $key ] : 0;
@@ -717,12 +778,32 @@ class Event_Setup {
 						'gatherpress_event_query' => $key,
 						'post_type'               => Event::POST_TYPE,
 					),
-					$nonce_url
+					$base_url
 				),
 				$key === $current_view ? ' class="current" aria-current="page"' : '',
 				$value,
 				number_format_i18n( $count )
 			);
+		}
+
+		if ( isset( $view_links['all'] ) ) {
+			if ( $current_view ) {
+				// Remove the "current" class from "All" when an event query filter is active.
+				$view_links['all'] = str_replace(
+					array( ' class="current"', ' aria-current="page"' ),
+					'',
+					$view_links['all']
+				);
+			} elseif ( false === strpos( $view_links['all'], 'class="current"' ) ) {
+				// Add "current" class to "All" when no filter is active.
+				// default_sort() adds orderby/order to $_GET which prevents
+				// WordPress from detecting this as a base request.
+				$view_links['all'] = str_replace(
+					'<a ',
+					'<a class="current" aria-current="page" ',
+					$view_links['all']
+				);
+			}
 		}
 
 		return array_slice( $view_links, 0, $placement, true )

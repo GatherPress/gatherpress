@@ -85,6 +85,24 @@ class Test_Event_Setup extends Base {
 				'callback' => array( $instance, 'custom_columns' ),
 			),
 			array(
+				'type'     => 'action',
+				'name'     => 'load-edit.php',
+				'priority' => 10,
+				'callback' => array( $instance, 'default_sort' ),
+			),
+			array(
+				'type'     => 'action',
+				'name'     => 'admin_menu',
+				'priority' => 10,
+				'callback' => array( $instance, 'modify_all_events_menu_link' ),
+			),
+			array(
+				'type'     => 'filter',
+				'name'     => 'submenu_file',
+				'priority' => 10,
+				'callback' => array( $instance, 'highlight_events_submenu' ),
+			),
+			array(
 				'type'     => 'filter',
 				'name'     => 'redirect_canonical',
 				'priority' => 10,
@@ -1814,6 +1832,198 @@ class Test_Event_Setup extends Base {
 	}
 
 	/**
+	 * Coverage for default_sort method when on the wrong screen.
+	 *
+	 * @covers ::default_sort
+	 *
+	 * @return void
+	 */
+	public function test_default_sort_wrong_screen(): void {
+		$instance = Event_Setup::get_instance();
+
+		// Set current screen to a non-event screen.
+		set_current_screen( 'edit-post' );
+
+		// Ensure $_GET is clean.
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		unset( $_GET['orderby'], $_GET['order'] );
+
+		$instance->default_sort();
+
+		// Should return early without modifying $_GET.
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$this->assertArrayNotHasKey( 'orderby', $_GET, 'Should not set orderby on wrong screen.' );
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$this->assertArrayNotHasKey( 'order', $_GET, 'Should not set order on wrong screen.' );
+
+		// Clean up.
+		set_current_screen( 'front' );
+	}
+
+	/**
+	 * Coverage for default_sort method when orderby is already set.
+	 *
+	 * @covers ::default_sort
+	 *
+	 * @return void
+	 */
+	public function test_default_sort_orderby_already_set(): void {
+		$instance = Event_Setup::get_instance();
+
+		// Set current screen to event edit screen.
+		set_current_screen( 'edit-gatherpress_event' );
+
+		// Set an existing orderby value.
+		$_GET['orderby'] = 'title'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+
+		$instance->default_sort();
+
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended, WordPress.Security.ValidatedSanitizedInput
+		$this->assertSame( 'title', $_GET['orderby'], 'Should not override existing orderby.' );
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$this->assertArrayNotHasKey( 'order', $_GET, 'Should not set order when orderby already exists.' );
+
+		// Clean up.
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		unset( $_GET['orderby'], $_GET['order'] );
+		set_current_screen( 'front' );
+	}
+
+	/**
+	 * Coverage for default_sort method when on the correct screen with no orderby.
+	 *
+	 * @covers ::default_sort
+	 *
+	 * @return void
+	 */
+	public function test_default_sort_sets_defaults(): void {
+		$instance = Event_Setup::get_instance();
+
+		// Set current screen to event edit screen.
+		set_current_screen( 'edit-gatherpress_event' );
+
+		// Ensure $_GET is clean.
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		unset( $_GET['orderby'], $_GET['order'] );
+
+		$instance->default_sort();
+
+		// Should set default orderby and order.
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended, WordPress.Security.ValidatedSanitizedInput
+		$this->assertSame( 'datetime', $_GET['orderby'], 'Should set orderby to datetime.' );
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended, WordPress.Security.ValidatedSanitizedInput
+		$this->assertSame( 'asc', $_GET['order'], 'Should set order to asc.' );
+
+		// Clean up.
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		unset( $_GET['orderby'], $_GET['order'] );
+		set_current_screen( 'front' );
+	}
+
+	/**
+	 * Coverage for modify_all_events_menu_link method.
+	 *
+	 * @covers ::modify_all_events_menu_link
+	 *
+	 * @return void
+	 */
+	public function test_modify_all_events_menu_link(): void {
+		global $submenu;
+
+		$instance  = Event_Setup::get_instance();
+		$menu_slug = sprintf( 'edit.php?post_type=%s', Event::POST_TYPE );
+
+		// Set up a mock submenu structure.
+		// phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
+		$submenu[ $menu_slug ] = array(
+			5  => array( 'View Events', 'edit_posts', $menu_slug ),
+			10 => array( 'Add New', 'edit_posts', 'post-new.php?post_type=' . Event::POST_TYPE ),
+		);
+
+		$instance->modify_all_events_menu_link();
+
+		$this->assertStringContainsString(
+			'gatherpress_event_query=upcoming',
+			$submenu[ $menu_slug ][5][2],
+			'Upcoming Events menu link should include upcoming parameter.'
+		);
+
+		// Other submenu items should be unchanged.
+		$this->assertStringNotContainsString(
+			'gatherpress_event_query',
+			$submenu[ $menu_slug ][10][2],
+			'Add New menu link should not be modified.'
+		);
+
+		// Clean up.
+		unset( $submenu[ $menu_slug ] );
+	}
+
+	/**
+	 * Coverage for modify_all_events_menu_link method with empty submenu.
+	 *
+	 * @covers ::modify_all_events_menu_link
+	 *
+	 * @return void
+	 */
+	public function test_modify_all_events_menu_link_empty_submenu(): void {
+		global $submenu;
+
+		$instance  = Event_Setup::get_instance();
+		$menu_slug = sprintf( 'edit.php?post_type=%s', Event::POST_TYPE );
+
+		// Ensure the submenu doesn't exist.
+		unset( $submenu[ $menu_slug ] );
+
+		// Should return early without error.
+		$instance->modify_all_events_menu_link();
+
+		$this->assertFalse(
+			isset( $submenu[ $menu_slug ] ),
+			'Should not create submenu when none exists.'
+		);
+	}
+
+	/**
+	 * Coverage for highlight_events_submenu when on events page.
+	 *
+	 * @covers ::highlight_events_submenu
+	 *
+	 * @return void
+	 */
+	public function test_highlight_events_submenu_on_events_page(): void {
+		$instance  = Event_Setup::get_instance();
+		$menu_slug = sprintf( 'edit.php?post_type=%s', Event::POST_TYPE );
+
+		$result = $instance->highlight_events_submenu( $menu_slug );
+
+		$this->assertStringContainsString(
+			'gatherpress_event_query=upcoming',
+			$result,
+			'Should return modified slug with upcoming parameter.'
+		);
+	}
+
+	/**
+	 * Coverage for highlight_events_submenu on a different page.
+	 *
+	 * @covers ::highlight_events_submenu
+	 *
+	 * @return void
+	 */
+	public function test_highlight_events_submenu_other_page(): void {
+		$instance = Event_Setup::get_instance();
+
+		$result = $instance->highlight_events_submenu( 'edit.php?post_type=post' );
+
+		$this->assertSame(
+			'edit.php?post_type=post',
+			$result,
+			'Should not modify submenu file for other post types.'
+		);
+	}
+
+	/**
 	 * Coverage for query_vars method.
 	 *
 	 * @covers ::query_vars
@@ -2203,16 +2413,12 @@ class Test_Event_Setup extends Base {
 	public function test_views_edit_active_upcoming(): void {
 		$instance = Event_Setup::get_instance();
 
-		// Simulate an active upcoming view with valid nonce.
-		$nonce_action = sprintf( '%ss_views_query', Event::POST_TYPE );
+		// Simulate an active upcoming view via GET parameter.
+		$_GET['gatherpress_event_query'] = 'upcoming'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 
-		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		$_REQUEST['_wpnonce'] = wp_create_nonce( $nonce_action );
-		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		$_REQUEST['gatherpress_event_query'] = 'upcoming';
-
+		// WordPress marks "All" as current by default.
 		$view_links = array(
-			'all' => '<a href="#">All</a>',
+			'all' => '<a href="#" class="current" aria-current="page">All</a>',
 		);
 
 		$result = $instance->views_edit( $view_links );
@@ -2235,9 +2441,16 @@ class Test_Event_Setup extends Base {
 			'Past link should not have current class.'
 		);
 
+		// "All" should have its current class removed.
+		$this->assertStringNotContainsString(
+			'class="current"',
+			$result['all'],
+			'All link should not have current class when filter is active.'
+		);
+
 		// Clean up.
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		unset( $_REQUEST['_wpnonce'], $_REQUEST['gatherpress_event_query'] );
+		unset( $_GET['gatherpress_event_query'] );
 	}
 
 	/**
@@ -2250,13 +2463,8 @@ class Test_Event_Setup extends Base {
 	public function test_views_edit_active_past(): void {
 		$instance = Event_Setup::get_instance();
 
-		// Simulate an active past view with valid nonce.
-		$nonce_action = sprintf( '%ss_views_query', Event::POST_TYPE );
-
-		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		$_REQUEST['_wpnonce'] = wp_create_nonce( $nonce_action );
-		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		$_REQUEST['gatherpress_event_query'] = 'past';
+		// Simulate an active past view via GET parameter.
+		$_GET['gatherpress_event_query'] = 'past'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 
 		$view_links = array(
 			'all' => '<a href="#">All</a>',
@@ -2279,46 +2487,86 @@ class Test_Event_Setup extends Base {
 
 		// Clean up.
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		unset( $_REQUEST['_wpnonce'], $_REQUEST['gatherpress_event_query'] );
+		unset( $_GET['gatherpress_event_query'] );
 	}
 
 	/**
-	 * Coverage for views_edit method with invalid nonce.
+	 * Coverage for views_edit method with no active event query filter.
 	 *
 	 * @covers ::views_edit
 	 *
 	 * @return void
 	 */
-	public function test_views_edit_invalid_nonce(): void {
+	public function test_views_edit_no_active_filter(): void {
 		$instance = Event_Setup::get_instance();
 
-		// Simulate a request with invalid nonce.
+		// Ensure no event query filter is set.
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		$_REQUEST['_wpnonce'] = 'invalid_nonce';
-		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		$_REQUEST['gatherpress_event_query'] = 'upcoming';
+		unset( $_GET['gatherpress_event_query'] );
 
+		// WordPress marks "All" as current by default.
+		$view_links = array(
+			'all' => '<a href="#" class="current" aria-current="page">All</a>',
+		);
+
+		$result = $instance->views_edit( $view_links );
+
+		// Neither Upcoming nor Past should be marked as current.
+		$this->assertStringNotContainsString(
+			'class="current"',
+			$result['upcoming'],
+			'Upcoming link should not have current class without filter.'
+		);
+		$this->assertStringNotContainsString(
+			'class="current"',
+			$result['past'],
+			'Past link should not have current class without filter.'
+		);
+
+		// "All" should keep its current class.
+		$this->assertStringContainsString(
+			'class="current"',
+			$result['all'],
+			'All link should keep current class when no filter is active.'
+		);
+	}
+
+	/**
+	 * Coverage for views_edit adding current class to "All" when WordPress omits it.
+	 *
+	 * When default_sort() adds orderby/order to $_GET, WordPress's
+	 * is_base_request() returns false and omits the current class from "All".
+	 *
+	 * @covers ::views_edit
+	 *
+	 * @return void
+	 */
+	public function test_views_edit_all_gets_current_when_missing(): void {
+		$instance = Event_Setup::get_instance();
+
+		// Ensure no event query filter is set.
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		unset( $_GET['gatherpress_event_query'] );
+
+		// Simulate WordPress not adding current class due to default_sort()
+		// adding extra $_GET params that break is_base_request().
 		$view_links = array(
 			'all' => '<a href="#">All</a>',
 		);
 
 		$result = $instance->views_edit( $view_links );
 
-		// Neither link should be marked as current with an invalid nonce.
-		$this->assertStringNotContainsString(
+		// "All" should get the current class added by views_edit.
+		$this->assertStringContainsString(
 			'class="current"',
-			$result['upcoming'],
-			'Upcoming link should not have current class with invalid nonce.'
+			$result['all'],
+			'All link should get current class when no filter is active.'
 		);
-		$this->assertStringNotContainsString(
-			'class="current"',
-			$result['past'],
-			'Past link should not have current class with invalid nonce.'
+		$this->assertStringContainsString(
+			'aria-current="page"',
+			$result['all'],
+			'All link should get aria-current when no filter is active.'
 		);
-
-		// Clean up.
-		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		unset( $_REQUEST['_wpnonce'], $_REQUEST['gatherpress_event_query'] );
 	}
 
 	/**
