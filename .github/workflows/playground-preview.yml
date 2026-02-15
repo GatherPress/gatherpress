@@ -64,8 +64,8 @@ jobs:
           coverage: none
           tools: wp-cli
 
-      - name: Install latest version of dist-archive-command
-        run: wp package install wp-cli/dist-archive-command:dev-main
+      - name: Install dist-archive-command
+        run: wp package install wp-cli/dist-archive-command:^2
 
       - name: Setup Node
         uses: actions/setup-node@v4
