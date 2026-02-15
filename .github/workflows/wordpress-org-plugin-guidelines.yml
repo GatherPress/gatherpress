@@ -28,6 +28,9 @@ jobs:
           coverage: none
           tools: wp-cli
 
+      - name: Update WP-CLI to latest version
+        run: wp cli update --yes
+
       - name: Install latest version of dist-archive-command
         run: wp package install wp-cli/dist-archive-command:dev-main
 
