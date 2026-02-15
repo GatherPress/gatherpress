@@ -97,6 +97,7 @@ class Setup {
 		add_filter( 'block_categories_all', array( $this, 'register_gatherpress_block_category' ) );
 		add_filter( 'wpmu_drop_tables', array( $this, 'on_site_delete' ) );
 		add_filter( 'body_class', array( $this, 'add_gatherpress_body_classes' ) );
+		add_filter( 'is_protected_meta', array( $this, 'protect_gatherpress_meta' ), 10, 2 );
 		add_filter(
 			sprintf(
 				'plugin_action_links_%s/%s',
@@ -485,6 +486,29 @@ class Setup {
 				'dismissible' => true,
 			)
 		);
+	}
+
+	/**
+	 * Protect GatherPress meta from the Custom Fields panel.
+	 *
+	 * This prevents GatherPress meta fields from appearing in the Custom Fields
+	 * metabox in the block editor. When Custom Fields are enabled, WordPress
+	 * saves all visible meta values on post save, which can overwrite values
+	 * set by the JavaScript editor with stale data. Hiding these fields also
+	 * prevents users from editing them in the wrong place.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param bool   $is_protected Whether the meta key is protected.
+	 * @param string $meta_key     The meta key being checked.
+	 * @return bool True if the meta key should be protected, false otherwise.
+	 */
+	public function protect_gatherpress_meta( bool $is_protected, string $meta_key ): bool {
+		if ( str_starts_with( $meta_key, 'gatherpress_' ) ) {
+			return true;
+		}
+
+		return $is_protected;
 	}
 
 	/**

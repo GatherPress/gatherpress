@@ -107,6 +107,12 @@ class Test_Setup extends Base {
 				'priority' => 10,
 				'callback' => array( $instance, 'filter_plugin_action_links' ),
 			),
+			array(
+				'type'     => 'filter',
+				'name'     => 'is_protected_meta',
+				'priority' => 10,
+				'callback' => array( $instance, 'protect_gatherpress_meta' ),
+			),
 		);
 
 		$this->assert_hooks( $hooks, $instance );
@@ -780,5 +786,56 @@ class Test_Setup extends Base {
 		// Clean up.
 		remove_filter( 'gatherpress_is_alpha_active', '__return_false' );
 		set_current_screen( 'front' );
+	}
+
+	/**
+	 * Tests protect_gatherpress_meta returns true for gatherpress meta keys.
+	 *
+	 * @covers ::protect_gatherpress_meta
+	 *
+	 * @return void
+	 */
+	public function test_protect_gatherpress_meta_protects_gatherpress_keys(): void {
+		$instance       = Setup::get_instance();
+		$protected_keys = array(
+			'gatherpress_datetime',
+			'gatherpress_max_guest_limit',
+			'gatherpress_enable_anonymous_rsvp',
+			'gatherpress_online_event_link',
+			'gatherpress_max_attendance_limit',
+		);
+
+		foreach ( $protected_keys as $key ) {
+			$result = $instance->protect_gatherpress_meta( false, $key );
+			$this->assertTrue( $result, "{$key} should be protected." );
+		}
+	}
+
+	/**
+	 * Tests protect_gatherpress_meta returns original value for other meta keys.
+	 *
+	 * @covers ::protect_gatherpress_meta
+	 *
+	 * @return void
+	 */
+	public function test_protect_gatherpress_meta_ignores_other_keys(): void {
+		$instance = Setup::get_instance();
+
+		$result = $instance->protect_gatherpress_meta( false, 'some_other_meta' );
+		$this->assertFalse( $result, 'Non-gatherpress meta should not be protected.' );
+	}
+
+	/**
+	 * Tests protect_gatherpress_meta preserves existing protection.
+	 *
+	 * @covers ::protect_gatherpress_meta
+	 *
+	 * @return void
+	 */
+	public function test_protect_gatherpress_meta_preserves_existing_protection(): void {
+		$instance = Setup::get_instance();
+
+		$result = $instance->protect_gatherpress_meta( true, 'some_other_meta' );
+		$this->assertTrue( $result, 'Already protected meta should remain protected.' );
 	}
 }

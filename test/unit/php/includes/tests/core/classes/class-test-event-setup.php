@@ -144,12 +144,6 @@ class Test_Event_Setup extends Base {
 				'priority' => 10,
 				'callback' => array( $instance, 'handle_venue_sorting' ),
 			),
-			array(
-				'type'     => 'filter',
-				'name'     => 'is_protected_meta',
-				'priority' => 10,
-				'callback' => array( $instance, 'protect_event_meta' ),
-			),
 		);
 
 		$this->assert_hooks( $hooks, $instance );
@@ -2013,56 +2007,5 @@ class Test_Event_Setup extends Base {
 
 		$this->assertIsArray( $filtered_meta, 'Meta should still be an array.' );
 		$this->assertEmpty( $filtered_meta, 'Meta should be empty after removing all readonly keys.' );
-	}
-
-	/**
-	 * Tests protect_event_meta returns true for gatherpress meta keys.
-	 *
-	 * @covers ::protect_event_meta
-	 * @return void
-	 */
-	public function test_protect_event_meta_protects_gatherpress_keys(): void {
-		$instance = Event_Setup::get_instance();
-
-		$protected_keys = array(
-			'gatherpress_datetime',
-			'gatherpress_max_guest_limit',
-			'gatherpress_enable_anonymous_rsvp',
-			'gatherpress_online_event_link',
-			'gatherpress_max_attendance_limit',
-		);
-
-		foreach ( $protected_keys as $key ) {
-			$result = $instance->protect_event_meta( false, $key );
-			$this->assertTrue( $result, "{$key} should be protected." );
-		}
-	}
-
-	/**
-	 * Tests protect_event_meta returns original value for other meta keys.
-	 *
-	 * @covers ::protect_event_meta
-	 * @return void
-	 */
-	public function test_protect_event_meta_ignores_other_keys(): void {
-		$instance = Event_Setup::get_instance();
-
-		$result = $instance->protect_event_meta( false, 'some_other_meta' );
-
-		$this->assertFalse( $result, 'Other meta keys should not be protected.' );
-	}
-
-	/**
-	 * Tests protect_event_meta preserves existing protection.
-	 *
-	 * @covers ::protect_event_meta
-	 * @return void
-	 */
-	public function test_protect_event_meta_preserves_existing_protection(): void {
-		$instance = Event_Setup::get_instance();
-
-		$result = $instance->protect_event_meta( true, 'some_other_meta' );
-
-		$this->assertTrue( $result, 'Should preserve existing protection for other keys.' );
 	}
 }

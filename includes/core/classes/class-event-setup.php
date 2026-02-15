@@ -94,7 +94,6 @@ class Event_Setup {
 			sprintf( 'manage_%s_posts_columns', Event::POST_TYPE ),
 			array( $this, 'remove_comments_column' )
 		);
-		add_filter( 'is_protected_meta', array( $this, 'protect_event_meta' ), 10, 2 );
 	}
 
 	/**
@@ -371,29 +370,6 @@ class Event_Setup {
 		}
 
 		return $prepared_post;
-	}
-
-	/**
-	 * Protect event meta from the Custom Fields panel.
-	 *
-	 * This prevents GatherPress meta fields from appearing in the Custom Fields
-	 * metabox in the block editor. When Custom Fields are enabled, WordPress
-	 * saves all visible meta values on post save, which can overwrite values
-	 * set by the JavaScript editor with stale data. Hiding these fields also
-	 * prevents users from editing them in the wrong place.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param bool   $is_protected Whether the meta key is protected.
-	 * @param string $meta_key     The meta key being checked.
-	 * @return bool True if the meta key should be protected, false otherwise.
-	 */
-	public function protect_event_meta( bool $is_protected, string $meta_key ): bool {
-		if ( str_starts_with( $meta_key, 'gatherpress_' ) ) {
-			return true;
-		}
-
-		return $is_protected;
 	}
 
 	/**
