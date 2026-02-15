@@ -69,6 +69,7 @@ class Event_Setup {
 		add_action( 'init', array( $this, 'register_post_meta' ) );
 		add_action( 'init', array( $this, 'register_calendar_rewrite_rule' ) );
 		add_action( 'parse_request', array( $this, 'handle_calendar_ics_request' ) );
+		add_action( 'template_redirect', array( $this, 'handle_event_archive_redirect' ) );
 		add_action( 'delete_post', array( $this, 'delete_event' ) );
 		add_action( 'wp_after_insert_post', array( $this, 'set_datetimes' ) );
 		add_action( sprintf( 'save_post_%s', Event::POST_TYPE ), array( $this, 'check_waiting_list' ) );
@@ -212,6 +213,9 @@ class Event_Setup {
 					'custom-fields',
 				),
 				'menu_icon'     => 'dashicons-nametag',
+				// Note: has_archive must be true for event feed URLs (/event/feed/) to work.
+				// The archive page itself is handled by handle_event_archive_redirect() which
+				// returns a 404 or redirects to a page with the same slug.
 				'has_archive'   => true,
 				'rewrite'       => array(
 					'slug'       => $rewrite_slug,
@@ -471,6 +475,67 @@ class Event_Setup {
 
 			wp_die( esc_html__( 'Event not found.', 'gatherpress' ), '', array( 'response' => 404 ) );
 		}
+	}
+
+	/**
+	 * Handle event post type archive requests.
+	 *
+	 * When visiting the event archive URL (e.g., /event/), this method checks
+	 * if a WordPress page exists with the same slug. If a page exists, it
+	 * redirects to that page. Otherwise, it triggers a 404 error.
+	 *
+	 * This prevents the default archive behavior where visiting /event/ shows
+	 * a confusing list of events that may not be in a useful order.
+	 *
+	 * Note: We keep `has_archive => true` on the post type registration because
+	 * it is required for the event feed URLs (e.g., /event/feed/) to work. The
+	 * Feed class provides customized RSS feeds for upcoming and past events.
+	 * Setting `has_archive => false` would cause feed URLs to 404.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @see Feed::handle_events_feed_query()
+	 *
+	 * @return void
+	 */
+	public function handle_event_archive_redirect(): void {
+		global $wp_query;
+
+		// Only handle event post type archive requests.
+		if ( ! is_post_type_archive( Event::POST_TYPE ) ) {
+			return;
+		}
+
+		// Don't interfere with feed requests - those are handled by the Feed class.
+		if ( is_feed() ) {
+			return;
+		}
+
+		// Get the configured rewrite slug for events.
+		$settings     = Settings::get_instance();
+		$rewrite_slug = $settings->get_value( 'general', 'urls', 'events' );
+
+		// Check if a page exists with this slug.
+		$page = get_page_by_path( $rewrite_slug );
+
+		if ( $page instanceof WP_Post && 'publish' === $page->post_status ) {
+			// Convert the archive query to serve the page instead.
+			// This avoids a redirect loop since /event/ resolves to the archive.
+			$wp_query->init();
+			$wp_query->query( array( 'page_id' => $page->ID ) );
+			$wp_query->is_post_type_archive = false;
+			$wp_query->is_archive           = false;
+			$wp_query->is_page              = true;
+			$wp_query->is_singular          = true;
+			$wp_query->queried_object       = $page;
+			$wp_query->queried_object_id    = $page->ID;
+			return;
+		}
+
+		// No page exists with this slug, so trigger a 404.
+		$wp_query->set_404();
+		status_header( 404 );
+		nocache_headers();
 	}
 
 	/**

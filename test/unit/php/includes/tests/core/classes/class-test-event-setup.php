@@ -62,6 +62,12 @@ class Test_Event_Setup extends Base {
 			),
 			array(
 				'type'     => 'action',
+				'name'     => 'template_redirect',
+				'priority' => 10,
+				'callback' => array( $instance, 'handle_event_archive_redirect' ),
+			),
+			array(
+				'type'     => 'action',
 				'name'     => 'delete_post',
 				'priority' => 10,
 				'callback' => array( $instance, 'delete_event' ),
@@ -2827,5 +2833,165 @@ class Test_Event_Setup extends Base {
 
 		$this->assertIsArray( $filtered_meta, 'Meta should still be an array.' );
 		$this->assertEmpty( $filtered_meta, 'Meta should be empty after removing all readonly keys.' );
+	}
+
+	/**
+	 * Tests handle_event_archive_redirect returns early when not on post type archive.
+	 *
+	 * @covers ::handle_event_archive_redirect
+	 * @return void
+	 */
+	public function test_handle_event_archive_redirect_not_archive(): void {
+		$instance = Event_Setup::get_instance();
+
+		// Create an event and go to its single page.
+		$post_id = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get()->ID;
+		$this->go_to( get_permalink( $post_id ) );
+
+		// This should return early without setting 404.
+		$instance->handle_event_archive_redirect();
+
+		$this->assertFalse( is_404(), 'Should not be 404 when on single event page.' );
+	}
+
+	/**
+	 * Tests handle_event_archive_redirect serves page when page exists with same slug.
+	 *
+	 * @covers ::handle_event_archive_redirect
+	 * @return void
+	 */
+	public function test_handle_event_archive_redirect_with_page(): void {
+		global $wp_query;
+
+		$instance = Event_Setup::get_instance();
+
+		// Get the rewrite slug from settings.
+		$settings     = Settings::get_instance();
+		$rewrite_slug = $settings->get_value( 'general', 'urls', 'events' );
+
+		// Create a page with the same slug as the events rewrite slug.
+		$page_id = wp_insert_post(
+			array(
+				'post_type'   => 'page',
+				'post_name'   => $rewrite_slug,
+				'post_title'  => 'Events Page',
+				'post_status' => 'publish',
+			)
+		);
+
+		$this->assertIsInt( $page_id, 'Page should be created successfully.' );
+
+		// Mock being on the post type archive by setting WP_Query properties directly.
+		$wp_query->is_post_type_archive = true;
+		$wp_query->set( 'post_type', Event::POST_TYPE );
+
+		$instance->handle_event_archive_redirect();
+
+		// Verify the query was modified to serve the page.
+		$this->assertTrue( $wp_query->is_page, 'Should be a page query.' );
+		$this->assertTrue( $wp_query->is_singular, 'Should be a singular query.' );
+		$this->assertFalse( $wp_query->is_post_type_archive, 'Should not be a post type archive.' );
+		$this->assertFalse( $wp_query->is_archive, 'Should not be an archive.' );
+		$this->assertSame( $page_id, $wp_query->queried_object_id, 'Queried object should be the page.' );
+
+		// Clean up.
+		wp_delete_post( $page_id, true );
+	}
+
+	/**
+	 * Tests handle_event_archive_redirect sets 404 when no page exists.
+	 *
+	 * @covers ::handle_event_archive_redirect
+	 * @return void
+	 */
+	public function test_handle_event_archive_redirect_no_page_404(): void {
+		global $wp_query;
+
+		$instance = Event_Setup::get_instance();
+
+		// Get the rewrite slug from settings.
+		$settings     = Settings::get_instance();
+		$rewrite_slug = $settings->get_value( 'general', 'urls', 'events' );
+
+		// Make sure no page exists with this slug.
+		$existing_page = get_page_by_path( $rewrite_slug );
+		if ( $existing_page ) {
+			wp_delete_post( $existing_page->ID, true );
+		}
+
+		// Mock being on the post type archive by setting WP_Query properties directly.
+		$wp_query->is_post_type_archive = true;
+		$wp_query->set( 'post_type', Event::POST_TYPE );
+
+		// Call the method.
+		$instance->handle_event_archive_redirect();
+
+		// Verify 404 was set.
+		$this->assertTrue( $wp_query->is_404(), 'Should be 404 when no page exists with the same slug.' );
+	}
+
+	/**
+	 * Tests handle_event_archive_redirect does not redirect to draft page.
+	 *
+	 * @covers ::handle_event_archive_redirect
+	 * @return void
+	 */
+	public function test_handle_event_archive_redirect_draft_page_404(): void {
+		global $wp_query;
+
+		$instance = Event_Setup::get_instance();
+
+		// Get the rewrite slug from settings.
+		$settings     = Settings::get_instance();
+		$rewrite_slug = $settings->get_value( 'general', 'urls', 'events' );
+
+		// Create a draft page with the same slug.
+		$page_id = wp_insert_post(
+			array(
+				'post_type'   => 'page',
+				'post_name'   => $rewrite_slug,
+				'post_title'  => 'Events Page Draft',
+				'post_status' => 'draft',
+			)
+		);
+
+		$this->assertIsInt( $page_id, 'Page should be created successfully.' );
+
+		// Mock being on the post type archive by setting WP_Query properties directly.
+		$wp_query->is_post_type_archive = true;
+		$wp_query->set( 'post_type', Event::POST_TYPE );
+
+		// Call the method.
+		$instance->handle_event_archive_redirect();
+
+		// Verify 404 was set (draft page should not trigger redirect).
+		$this->assertTrue( $wp_query->is_404(), 'Should be 404 when page exists but is not published.' );
+
+		// Clean up.
+		wp_delete_post( $page_id, true );
+	}
+
+	/**
+	 * Tests handle_event_archive_redirect does not interfere with feed requests.
+	 *
+	 * @covers ::handle_event_archive_redirect
+	 * @return void
+	 */
+	public function test_handle_event_archive_redirect_feed_not_affected(): void {
+		global $wp_query;
+
+		$instance = Event_Setup::get_instance();
+
+		// Mock being on the post type archive feed.
+		$wp_query->is_post_type_archive = true;
+		$wp_query->is_feed              = true;
+		$wp_query->set( 'post_type', Event::POST_TYPE );
+
+		// Call the method.
+		$instance->handle_event_archive_redirect();
+
+		// Verify the archive state was not changed (feeds should pass through).
+		$this->assertTrue( $wp_query->is_post_type_archive, 'Should still be a post type archive.' );
+		$this->assertFalse( $wp_query->is_404(), 'Should not be 404 for feed requests.' );
 	}
 }
