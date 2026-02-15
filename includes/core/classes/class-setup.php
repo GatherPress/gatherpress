@@ -200,7 +200,7 @@ class Setup {
 	 */
 	public function check_plugin_version(): void {
 		if ( ! defined( 'GATHERPRESS_VERSION' ) ) {
-			return;
+			return; // @codeCoverageIgnore
 		}
 
 		$stored_version  = get_option( 'gatherpress_version', '' );
