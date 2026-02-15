@@ -27,6 +27,11 @@
 			<property name="ignorepattern" value="(^(__construct|getIterator|offsetExists|offsetGet|offsetSet|offsetUnset))i" />
 		</properties>
 	</rule>
+	<rule ref="rulesets/codesize.xml/TooManyMethods">
+		<properties>
+			<property name="maxmethods" value="30"/>
+		</properties>
+	</rule>
 	<rule ref="rulesets/codesize.xml/ExcessiveClassComplexity">
 		<properties>
 			<property name="maximum" value="103"/>
