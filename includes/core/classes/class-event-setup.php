@@ -535,7 +535,6 @@ class Event_Setup {
 		// No page exists with this slug, so trigger a 404.
 		$wp_query->set_404();
 		status_header( 404 );
-		nocache_headers();
 	}
 
 	/**
