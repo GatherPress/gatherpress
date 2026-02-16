@@ -10,7 +10,7 @@ import { store as editorStore } from '@wordpress/editor';
 /**
  * Internal dependencies.
  */
-import { CPT_EVENT, CPT_VENUE } from '../../helpers/namespace';
+import { CPT_EVENT } from '../../helpers/namespace';
 
 /**
  * Edit component for the GatherPress Online Event v2 block.
@@ -48,22 +48,14 @@ const Edit = ( { context, attributes, setAttributes } ) => {
 		[]
 	);
 
-	// Determine which post and meta field to use.
+	// Determine which post and meta field to use (only events have online links).
 	const { postId, postType, metaKey } = useSelect(
 		( select ) => {
-			// If we have context, use that.
+			// If we have context, check if it's an event.
 			if ( contextPostId ) {
 				const { getEntityRecord } = select( coreStore );
 				const contextPost = getEntityRecord( 'postType', 'any', contextPostId );
 				const contextType = contextPost?.type;
-
-				if ( CPT_VENUE === contextType ) {
-					return {
-						postId: contextPostId,
-						postType: CPT_VENUE,
-						metaKey: 'gatherpress_venue_online_link',
-					};
-				}
 
 				if ( CPT_EVENT === contextType ) {
 					return {
@@ -74,14 +66,20 @@ const Edit = ( { context, attributes, setAttributes } ) => {
 				}
 			}
 
-			// Fall back to current editor post.
+			// Fall back to current editor post if it's an event.
+			if ( CPT_EVENT === currentPostType ) {
+				return {
+					postId: currentPostId,
+					postType: currentPostType,
+					metaKey: 'gatherpress_online_event_link',
+				};
+			}
+
+			// Not an event context - no online link.
 			return {
-				postId: currentPostId,
-				postType: currentPostType,
-				metaKey:
-					CPT_VENUE === currentPostType
-						? 'gatherpress_venue_online_link'
-						: 'gatherpress_online_event_link',
+				postId: null,
+				postType: null,
+				metaKey: null,
 			};
 		},
 		[ contextPostId, currentPostId, currentPostType ]

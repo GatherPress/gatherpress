@@ -233,14 +233,6 @@ class Venue {
 				'type'              => 'string',
 				'default'           => '',
 			),
-			'gatherpress_venue_online_link' => array(
-				'auth_callback'     => array( $this, 'can_edit_posts_meta' ),
-				'sanitize_callback' => 'sanitize_url',
-				'show_in_rest'      => true,
-				'single'            => true,
-				'type'              => 'string',
-				'default'           => '',
-			),
 			// Map display settings.
 			'gatherpress_venue_map_show'    => array(
 				'auth_callback'     => array( $this, 'can_edit_posts_meta' ),
@@ -567,8 +559,6 @@ class Venue {
 				$venue_meta['latitude']    = '';
 				$venue_meta['longitude']   = '';
 			}
-
-			$venue_meta['onlineEventLink'] = get_post_meta( $venue_post->ID, 'gatherpress_venue_online_link', true );
 		}
 
 		return $venue_meta;

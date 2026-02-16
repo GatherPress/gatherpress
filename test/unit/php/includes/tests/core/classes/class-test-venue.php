@@ -535,7 +535,6 @@ class Test_Venue extends Base {
 
 		// Generic test for an in person event.
 		$this->assertFalse( $venue_meta['isOnlineEventTerm'] );
-		$this->assertEmpty( $venue_meta['onlineEventLink'] );
 
 		$venue_title = 'Unit Test Venue';
 

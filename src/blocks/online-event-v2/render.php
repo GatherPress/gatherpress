@@ -2,9 +2,8 @@
 /**
  * Render Online Event v2 block.
  *
- * This block provides context-aware online event link display:
- * - In event context: displays event's online link (RSVP-aware)
- * - In venue context: displays venue's online link
+ * This block provides context-aware online event link display
+ * for events with RSVP-aware URL handling.
  *
  * @package GatherPress
  * @subpackage Core
@@ -30,17 +29,12 @@ if ( empty( $gatherpress_link_text ) ) {
 	$gatherpress_link_text = __( 'Online event', 'gatherpress' );
 }
 
-// Determine the full URL and RSVP-aware URL based on context.
+// Determine the full URL and RSVP-aware URL.
 $gatherpress_full_url          = '';
 $gatherpress_online_event_link = '';
-$gatherpress_is_venue          = 'gatherpress_venue' === $gatherpress_current_post_type;
 
-if ( $gatherpress_is_venue ) {
-	// Venue context: use venue's link directly (no RSVP check).
-	$gatherpress_full_url          = get_post_meta( $gatherpress_current_post_id, 'gatherpress_venue_online_link', true );
-	$gatherpress_online_event_link = $gatherpress_full_url;
-} else {
-	// Event context: get both the full URL and RSVP-aware URL.
+// Only events have online event links.
+if ( Event::POST_TYPE === $gatherpress_current_post_type ) {
 	$gatherpress_full_url          = get_post_meta( $gatherpress_current_post_id, 'gatherpress_online_event_link', true );
 	$gatherpress_event             = new Event( $gatherpress_current_post_id );
 	$gatherpress_online_event_link = $gatherpress_event->maybe_get_online_event_link();
