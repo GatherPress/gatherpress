@@ -12,7 +12,7 @@ import { __ } from '@wordpress/i18n';
  */
 import { getCurrentContextualPostId } from '../helpers/editor';
 import { useVenueOptions } from '../helpers/venue';
-import { PT_EVENT, TAX_VENUE } from '../helpers/namespace';
+import { CPT_EVENT, TAX_VENUE } from '../helpers/namespace';
 
 /**
  * VenueTermsCombobox component.
@@ -37,7 +37,7 @@ export const VenueTermsCombobox = ( { search, setSearch, ...props } ) => {
 	const cId = getCurrentContextualPostId( props?.context?.postId );
 	const [ venueTaxonomyIds, updateVenueTaxonomyIds ] = useEntityProp(
 		'postType',
-		PT_EVENT,
+		CPT_EVENT,
 		TAX_VENUE,
 		cId
 	);

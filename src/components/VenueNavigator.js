@@ -14,7 +14,7 @@ import { useState, useCallback } from '@wordpress/element';
 /**
  * Internal dependencies
  */
-import { PT_VENUE, PT_EVENT, TAX_VENUE } from '../helpers/namespace';
+import { CPT_VENUE, CPT_EVENT, TAX_VENUE } from '../helpers/namespace';
 import CreateVenueForm from './VenueForm';
 import { VenueComboboxProvider } from './VenueComboboxProvider';
 import PopularVenues from './PopularVenues';
@@ -36,7 +36,7 @@ export default function VenueNavigator( props = null ) {
 	 *       https://developer.wordpress.org/block-editor/reference-guides/packages/packages-core-data/#useresourcepermissions
 	 */
 	const userCanEdit = useSelect( ( select ) => {
-		return select( coreDataStore ).canUser( 'create', PT_VENUE + 's' ); // needs to be plural, because canUser currently only supports resources in the wp/v2 namespace.
+		return select( coreDataStore ).canUser( 'create', CPT_VENUE + 's' ); // needs to be plural, because canUser currently only supports resources in the wp/v2 namespace.
 	}, [] );
 
 	const [ search, setSearch ] = useState( '' );
@@ -51,7 +51,7 @@ export default function VenueNavigator( props = null ) {
 	const cId = getCurrentContextualPostId( props?.context?.postId );
 	const [ venueTaxonomyIds, updateVenueTaxonomyIds ] = useEntityProp(
 		'postType',
-		PT_EVENT,
+		CPT_EVENT,
 		TAX_VENUE,
 		cId
 	);

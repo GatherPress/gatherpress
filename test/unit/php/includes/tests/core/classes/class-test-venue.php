@@ -246,6 +246,34 @@ class Test_Venue extends Base {
 	}
 
 	/**
+	 * Tests can_edit_posts_meta authorization callback.
+	 *
+	 * @covers ::can_edit_posts_meta
+	 *
+	 * @return void
+	 */
+	public function test_can_edit_posts_meta(): void {
+		$instance = Venue::get_instance();
+
+		// Test with user who can edit posts.
+		$editor_id = $this->factory->user->create( array( 'role' => 'editor' ) );
+		wp_set_current_user( $editor_id );
+
+		$this->assertTrue( $instance->can_edit_posts_meta(), 'Editor should be able to edit post meta.' );
+
+		// Test with user who cannot edit posts.
+		$subscriber_id = $this->factory->user->create( array( 'role' => 'subscriber' ) );
+		wp_set_current_user( $subscriber_id );
+
+		$this->assertFalse( $instance->can_edit_posts_meta(), 'Subscriber should not be able to edit post meta.' );
+
+		// Test with logged-out user.
+		wp_set_current_user( 0 );
+
+		$this->assertFalse( $instance->can_edit_posts_meta(), 'Logged-out user should not be able to edit post meta.' );
+	}
+
+	/**
 	 * Coverage for register_taxonomy method.
 	 *
 	 * @covers ::register_taxonomy

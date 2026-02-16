@@ -499,7 +499,7 @@ class Form_Field {
 				'required_styles'      => $this->get_required_styles(),
 				'option_styles'        => $this->get_option_styles(),
 				'input_attributes'     => $this->get_input_attributes(),
-				'tooltip_allowed_html' => Tooltip::get_allowed_html(),
+				'tooltip_allowed_html' => array_merge( wp_kses_allowed_html( 'post' ), Tooltip::get_allowed_html() ),
 			),
 			true
 		);

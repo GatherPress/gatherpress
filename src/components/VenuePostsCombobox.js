@@ -10,7 +10,7 @@ import { __ } from '@wordpress/i18n';
  * Internal dependencies.
  */
 import { useVenueOptions } from '../helpers/venue';
-import { PT_VENUE } from '../helpers/namespace';
+import { CPT_VENUE } from '../helpers/namespace';
 
 /**
  * VenuePostsCombobox component.
@@ -36,7 +36,7 @@ export const VenuePostsCombobox = ( { search, setSearch, ...props } ) => {
 		search,
 		venueId,
 		'postType',
-		PT_VENUE
+		CPT_VENUE
 	);
 
 	/**
@@ -51,7 +51,7 @@ export const VenuePostsCombobox = ( { search, setSearch, ...props } ) => {
 			const newAttributes = {
 				...props.attributes,
 				selectedPostId: value,
-				selectedPostType: PT_VENUE,
+				selectedPostType: CPT_VENUE,
 			};
 			props.setAttributes( newAttributes );
 		},

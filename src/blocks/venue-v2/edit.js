@@ -21,7 +21,7 @@ import { getCurrentContextualPostId } from '../../helpers/editor';
 import { isEventPostType } from '../../helpers/event';
 import { GetVenuePostFromTermId } from '../../helpers/venue';
 import VenueNavigator from '../../components/VenueNavigator';
-import { PT_EVENT, PT_VENUE, TAX_VENUE } from '../../helpers/namespace';
+import { CPT_EVENT, CPT_VENUE, TAX_VENUE } from '../../helpers/namespace';
 import { TEMPLATE_WITH_TITLE, TEMPLATE_WITHOUT_TITLE, TEMPLATE_ONLINE_EVENT } from './template';
 
 const Edit = ( props ) => {
@@ -33,7 +33,7 @@ const Edit = ( props ) => {
 	const eventId = getCurrentContextualPostId( context?.postId );
 	const [ venueTaxonomyIds ] = useEntityProp(
 		'postType',
-		PT_EVENT,
+		CPT_EVENT,
 		TAX_VENUE,
 		eventId
 	);
@@ -112,7 +112,7 @@ const Edit = ( props ) => {
 				<BlockContextProvider
 					value={ {
 						postId: venuePostId,
-						postType: PT_VENUE,
+						postType: CPT_VENUE,
 					} }
 				>
 					<InnerBlocks template={ template } templateLock={ false } />

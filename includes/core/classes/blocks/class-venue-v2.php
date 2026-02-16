@@ -196,9 +196,9 @@ class Venue_V2 {
 			return $context;
 		};
 
-		add_filter( 'render_block_context', $filter_block_context, 1 );
+		add_filter( 'render_block_context', $filter_block_context, PHP_INT_MIN );
 		$block_content = ( new WP_Block( $block_instance ) )->render();
-		remove_filter( 'render_block_context', $filter_block_context, 1 );
+		remove_filter( 'render_block_context', $filter_block_context, PHP_INT_MIN );
 
 		$post = $original_post; // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
 

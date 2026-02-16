@@ -13,7 +13,7 @@ import { useSelect } from '@wordpress/data';
 /**
  * Internal dependencies.
  */
-import { PT_VENUE } from '../../helpers/namespace';
+import { CPT_VENUE } from '../../helpers/namespace';
 import MapEmbed from '../../components/MapEmbed';
 
 /**
@@ -47,7 +47,7 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 
 			const currentPostId = select( 'core/editor' ).getCurrentPostId();
 			const currentPostType = select( 'core/editor' ).getCurrentPostType();
-			const isEditing = currentPostId === venuePostId && currentPostType === PT_VENUE;
+			const isEditing = currentPostId === venuePostId && currentPostType === CPT_VENUE;
 
 			if ( isEditing ) {
 				// Read from core/editor store for the current post being edited.
@@ -60,7 +60,7 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 
 			// Read from core store for a different venue post.
 			const { getEditedEntityRecord } = select( 'core' );
-			const venuePost = getEditedEntityRecord( 'postType', PT_VENUE, venuePostId );
+			const venuePost = getEditedEntityRecord( 'postType', CPT_VENUE, venuePostId );
 
 			return {
 				isEditingThisVenue: false,

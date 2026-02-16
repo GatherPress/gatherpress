@@ -174,6 +174,17 @@ class Venue {
 	}
 
 	/**
+	 * Authorization callback for post meta that requires edit_posts capability.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return bool True if user can edit posts, false otherwise.
+	 */
+	public function can_edit_posts_meta(): bool {
+		return current_user_can( 'edit_posts' );
+	}
+
+	/**
 	 * Returns the post type slug localized for the site language and sanitized as URL part.
 	 *
 	 * Do not use this directly, use get_value( 'general', 'urls', 'venues' ) instead.
@@ -215,9 +226,7 @@ class Venue {
 		$post_meta = array(
 			// Venue information stored as JSON.
 			'gatherpress_venue_information' => array(
-				'auth_callback'     => static function () {
-					return current_user_can( 'edit_posts' ); // @codeCoverageIgnore
-				},
+				'auth_callback'     => array( $this, 'can_edit_posts_meta' ),
 				'sanitize_callback' => 'sanitize_text_field',
 				'show_in_rest'      => true,
 				'single'            => true,
@@ -225,9 +234,7 @@ class Venue {
 				'default'           => '',
 			),
 			'gatherpress_venue_online_link' => array(
-				'auth_callback'     => static function () {
-					return current_user_can( 'edit_posts' ); // @codeCoverageIgnore
-				},
+				'auth_callback'     => array( $this, 'can_edit_posts_meta' ),
 				'sanitize_callback' => 'sanitize_url',
 				'show_in_rest'      => true,
 				'single'            => true,
@@ -236,9 +243,7 @@ class Venue {
 			),
 			// Map display settings.
 			'gatherpress_venue_map_show'    => array(
-				'auth_callback'     => static function () {
-					return current_user_can( 'edit_posts' ); // @codeCoverageIgnore
-				},
+				'auth_callback'     => array( $this, 'can_edit_posts_meta' ),
 				'sanitize_callback' => 'rest_sanitize_boolean',
 				'show_in_rest'      => true,
 				'single'            => true,
@@ -246,9 +251,7 @@ class Venue {
 				'default'           => true,
 			),
 			'gatherpress_venue_map_zoom'    => array(
-				'auth_callback'     => static function () {
-					return current_user_can( 'edit_posts' ); // @codeCoverageIgnore
-				},
+				'auth_callback'     => array( $this, 'can_edit_posts_meta' ),
 				'sanitize_callback' => 'absint',
 				'show_in_rest'      => true,
 				'single'            => true,
@@ -256,9 +259,7 @@ class Venue {
 				'default'           => 10,
 			),
 			'gatherpress_venue_map_height'  => array(
-				'auth_callback'     => static function () {
-					return current_user_can( 'edit_posts' ); // @codeCoverageIgnore
-				},
+				'auth_callback'     => array( $this, 'can_edit_posts_meta' ),
 				'sanitize_callback' => 'absint',
 				'show_in_rest'      => true,
 				'single'            => true,

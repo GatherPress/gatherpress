@@ -7,7 +7,7 @@ import { store as coreStore } from '@wordpress/core-data';
 /**
  * Internal dependencies.
  */
-import { PT_EVENT, PT_VENUE } from './namespace';
+import { CPT_EVENT, CPT_VENUE } from './namespace';
 
 /**
  * Enable the Save buttons after making an update.
@@ -41,7 +41,7 @@ export function enableSave() {
 export function isGatherPressPostType() {
 	const postType = select( 'core/editor' )?.getCurrentPostType();
 
-	return PT_EVENT === postType || PT_VENUE === postType;
+	return CPT_EVENT === postType || CPT_VENUE === postType;
 }
 
 /**

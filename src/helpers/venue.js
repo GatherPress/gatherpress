@@ -9,7 +9,7 @@ import { store as coreStore } from '@wordpress/core-data';
 /**
  * Internal dependencies
  */
-import { PT_EVENT, PT_VENUE, TAX_VENUE } from './namespace';
+import { CPT_EVENT, CPT_VENUE, TAX_VENUE } from './namespace';
 
 /**
  * Check if the current post type is a venue.
@@ -55,7 +55,7 @@ export function GetVenuePostFromTermId( termId ) {
 			return {
 				venuePost: wpSelect( 'core' ).getEntityRecords(
 					'postType',
-					PT_VENUE,
+					CPT_VENUE,
 					{
 						per_page: 1,
 						slug: venueSlug,
@@ -90,7 +90,7 @@ export function GetVenueTermFromPostId( postId = null ) {
 			// Retrieve the venue post entity from the WordPress data store.
 			const venuePost = wpSelect( 'core' ).getEntityRecord(
 				'postType',
-				PT_VENUE,
+				CPT_VENUE,
 				postId
 			);
 			// Prefix the slug with an underscore to match taxonomy term format.
@@ -131,7 +131,7 @@ export function GetVenuePostFromEventId( eventId ) {
 			// Retrieve the event post entity from the core store.
 			const eventPost = wpSelect( 'core' ).getEntityRecord(
 				'postType',
-				PT_EVENT,
+				CPT_EVENT,
 				eventId
 			);
 			// Extract the venue term ID if available; otherwise return null.

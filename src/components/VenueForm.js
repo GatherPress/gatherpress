@@ -18,7 +18,7 @@ import { useEntityProp, store as coreDataStore } from '@wordpress/core-data';
 /**
  * Internal dependencies
  */
-import { PT_EVENT, PT_VENUE, TAX_VENUE } from '../helpers/namespace';
+import { CPT_EVENT, CPT_VENUE, TAX_VENUE } from '../helpers/namespace';
 import { isEventPostType } from '../helpers/event';
 import { getCurrentContextualPostId } from '../helpers/editor';
 
@@ -86,6 +86,29 @@ async function geocodeAddress( address ) {
 	}
 }
 
+/**
+ * Venue form component for creating or editing a venue.
+ *
+ * Renders a form with fields for venue name and address,
+ * along with save and cancel buttons.
+ *
+ * @since 1.0.0
+ *
+ * @param {Object}   props                     Component props.
+ * @param {string}   props.title               The venue title.
+ * @param {Function} props.onChangeTitle       Callback when title changes.
+ * @param {string}   props.titleError          Error message for title validation.
+ * @param {string}   props.address             The venue address.
+ * @param {Function} props.onChangeAddress     Callback when address changes.
+ * @param {boolean}  props.hasEdits            Whether the form has been edited.
+ * @param {boolean}  props.hasValidationErrors Whether there are validation errors.
+ * @param {Object}   props.lastError           The last error from saving.
+ * @param {boolean}  props.isSaving            Whether the form is currently saving.
+ * @param {Function} props.onCancel            Callback when cancel is clicked.
+ * @param {Function} props.onSave              Callback when save is clicked.
+ *
+ * @return {JSX.Element} The venue form component.
+ */
 function VenueForm( {
 	title,
 	onChangeTitle,
@@ -154,6 +177,19 @@ function VenueForm( {
 	);
 }
 
+/**
+ * Create venue form component with state management.
+ *
+ * Handles the complete workflow of creating a new venue post,
+ * including geocoding the address and updating event relationships.
+ *
+ * @since 1.0.0
+ *
+ * @param {Object} props        Component props.
+ * @param {string} props.search Initial search text to populate the title.
+ *
+ * @return {JSX.Element} The create venue form component.
+ */
 function CreateVenueForm( { search, ...props } ) {
 	const [ title, setTitle ] = useState( search );
 	const [ address, setAddress ] = useState( '' );
@@ -163,11 +199,11 @@ function CreateVenueForm( { search, ...props } ) {
 		( select ) => ( {
 			lastError: select( coreDataStore ).getLastEntitySaveError(
 				'postType',
-				PT_VENUE
+				CPT_VENUE
 			),
 			isSaving: select( coreDataStore ).isSavingEntityRecord(
 				'postType',
-				PT_VENUE
+				CPT_VENUE
 			),
 		} ),
 		[]
@@ -207,22 +243,32 @@ function CreateVenueForm( { search, ...props } ) {
 
 	const [ , updateVenueTaxonomyIds ] = useEntityProp(
 		'postType',
-		PT_EVENT,
+		CPT_EVENT,
 		TAX_VENUE,
 		cId
 	);
 
 	const { goTo } = useNavigator();
+
+	/**
+	 * Navigates back to the main venue selection screen.
+	 */
 	const navigateBack = () => {
 		goTo( '/', { isBack: true } );
 	};
 
+	/**
+	 * Updates the venue block attributes with the newly created venue post ID.
+	 *
+	 * @param {number} postId     The ID of the newly created venue post.
+	 * @param {Object} blockProps Block props containing setAttributes function.
+	 */
 	const updateVenueDetailsBlockAttributes = ( postId, blockProps = null ) => {
 		if ( 'undefined' !== typeof blockProps.setAttributes ) {
 			const newAttributes = {
 				...blockProps.attributes,
 				selectedPostId: postId,
-				selectedPostType: PT_VENUE,
+				selectedPostType: CPT_VENUE,
 			};
 			blockProps.setAttributes( newAttributes );
 		}
@@ -248,7 +294,7 @@ function CreateVenueForm( { search, ...props } ) {
 	) => {
 		try {
 			const newPost = await apiFetch( {
-				path: `/wp/v2/${ PT_VENUE }s`, // !! Watch out & beware of the 's' at the end. // @TODO Make this nicer.
+				path: `/wp/v2/${ CPT_VENUE }s`, // !! Watch out & beware of the 's' at the end. // @TODO Make this nicer.
 				method: 'POST',
 				data: {
 					title,

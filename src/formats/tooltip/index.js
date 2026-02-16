@@ -1,6 +1,7 @@
 /**
  * WordPress dependencies.
  */
+import { __ } from '@wordpress/i18n';
 import { registerFormatType } from '@wordpress/rich-text';
 
 /**
@@ -19,7 +20,7 @@ import './style.scss';
  * @since 1.0.0
  */
 registerFormatType( FORMAT_NAME, {
-	title: 'Tooltip',
+	title: __( 'Tooltip', 'gatherpress' ),
 	tagName: 'span',
 	className: 'gatherpress-tooltip',
 	attributes: {

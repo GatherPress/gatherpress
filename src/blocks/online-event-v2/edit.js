@@ -10,7 +10,7 @@ import { store as editorStore } from '@wordpress/editor';
 /**
  * Internal dependencies.
  */
-import { PT_EVENT, PT_VENUE } from '../../helpers/namespace';
+import { CPT_EVENT, CPT_VENUE } from '../../helpers/namespace';
 
 /**
  * Edit component for the GatherPress Online Event v2 block.
@@ -57,18 +57,18 @@ const Edit = ( { context, attributes, setAttributes } ) => {
 				const contextPost = getEntityRecord( 'postType', 'any', contextPostId );
 				const contextType = contextPost?.type;
 
-				if ( PT_VENUE === contextType ) {
+				if ( CPT_VENUE === contextType ) {
 					return {
 						postId: contextPostId,
-						postType: PT_VENUE,
+						postType: CPT_VENUE,
 						metaKey: 'gatherpress_venue_online_link',
 					};
 				}
 
-				if ( PT_EVENT === contextType ) {
+				if ( CPT_EVENT === contextType ) {
 					return {
 						postId: contextPostId,
-						postType: PT_EVENT,
+						postType: CPT_EVENT,
 						metaKey: 'gatherpress_online_event_link',
 					};
 				}
@@ -79,7 +79,7 @@ const Edit = ( { context, attributes, setAttributes } ) => {
 				postId: currentPostId,
 				postType: currentPostType,
 				metaKey:
-					PT_VENUE === currentPostType
+					CPT_VENUE === currentPostType
 						? 'gatherpress_venue_online_link'
 						: 'gatherpress_online_event_link',
 			};

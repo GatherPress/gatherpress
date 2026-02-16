@@ -18,7 +18,7 @@ import { useDebounce } from '@wordpress/compose';
 /**
  * Internal dependencies.
  */
-import { PT_VENUE } from '../../helpers/namespace';
+import { CPT_VENUE } from '../../helpers/namespace';
 
 /**
  * Edit component for the Venue Detail block.
@@ -50,7 +50,7 @@ const Edit = ( { attributes, setAttributes, context, clientId, insertBlocksAfter
 			const currentPostId = selectData( 'core/editor' ).getCurrentPostId();
 			const currentPostType = selectData( 'core/editor' ).getCurrentPostType();
 			return {
-				isEditingCurrentPost: currentPostId === venuePostId && currentPostType === PT_VENUE,
+				isEditingCurrentPost: currentPostId === venuePostId && currentPostType === CPT_VENUE,
 			};
 		},
 		[ venuePostId ]
@@ -93,7 +93,7 @@ const Edit = ( { attributes, setAttributes, context, clientId, insertBlocksAfter
 				const { getEditedEntityRecord } = selectData( coreStore );
 				const venuePost = getEditedEntityRecord(
 					'postType',
-					PT_VENUE,
+					CPT_VENUE,
 					venuePostId
 				);
 				venueInfoJson = venuePost?.meta?.gatherpress_venue_information || '{}';
@@ -127,7 +127,7 @@ const Edit = ( { attributes, setAttributes, context, clientId, insertBlocksAfter
 				// Read from core store for a different venue post.
 				const currentVenueInfo = select( coreStore ).getEditedEntityRecord(
 					'postType',
-					PT_VENUE,
+					CPT_VENUE,
 					venuePostId
 				);
 				venueInfoJson = currentVenueInfo?.meta?.gatherpress_venue_information || '{}';
@@ -152,7 +152,7 @@ const Edit = ( { attributes, setAttributes, context, clientId, insertBlocksAfter
 				} );
 			} else {
 				// Use editEntityRecord for different venue post.
-				editEntityRecord( 'postType', PT_VENUE, venuePostId, {
+				editEntityRecord( 'postType', CPT_VENUE, venuePostId, {
 					meta: {
 						gatherpress_venue_information: JSON.stringify( venueInfo ),
 					},
@@ -206,7 +206,7 @@ const Edit = ( { attributes, setAttributes, context, clientId, insertBlocksAfter
 					// Read from core store for a different venue post.
 					const currentVenueInfo = select( coreStore ).getEditedEntityRecord(
 						'postType',
-						PT_VENUE,
+						CPT_VENUE,
 						venuePostId
 					);
 					venueInfoJson = currentVenueInfo?.meta?.gatherpress_venue_information || '{}';
@@ -230,7 +230,7 @@ const Edit = ( { attributes, setAttributes, context, clientId, insertBlocksAfter
 					} );
 				} else {
 					// Use editEntityRecord for different venue post.
-					editEntityRecord( 'postType', PT_VENUE, venuePostId, {
+					editEntityRecord( 'postType', CPT_VENUE, venuePostId, {
 						meta: {
 							gatherpress_venue_information: JSON.stringify( venueInfo ),
 						},
@@ -281,7 +281,7 @@ const Edit = ( { attributes, setAttributes, context, clientId, insertBlocksAfter
 						// Read from core store for a different venue post.
 						const currentVenueInfo = select( coreStore ).getEditedEntityRecord(
 							'postType',
-							PT_VENUE,
+							CPT_VENUE,
 							venuePostId
 						);
 						venueInfoJson = currentVenueInfo?.meta?.gatherpress_venue_information || '{}';
@@ -305,7 +305,7 @@ const Edit = ( { attributes, setAttributes, context, clientId, insertBlocksAfter
 						} );
 					} else {
 						// Use editEntityRecord for different venue post.
-						editEntityRecord( 'postType', PT_VENUE, venuePostId, {
+						editEntityRecord( 'postType', CPT_VENUE, venuePostId, {
 							meta: {
 								gatherpress_venue_information: JSON.stringify( venueInfo ),
 							},
