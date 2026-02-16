@@ -84,15 +84,27 @@ class Venue_V2 {
 			return is_string( $block_content ) ? $block_content : '';
 		}
 
-		$venue_post = $this->get_venue_post_for_block( $block );
+		$venue_post   = $this->get_venue_post_for_block( $block );
+		$current_post = get_post();
+		$is_event     = Event::POST_TYPE === get_post_type( $current_post );
 
-		// No venue post means online-only event or no venue set.
-		// Render inner blocks as-is without changing context.
-		if ( ! $venue_post instanceof WP_Post ) {
+		// Has venue - render with venue context.
+		if ( $venue_post instanceof WP_Post ) {
+			return $this->render_with_venue_context( $venue_post, $instance );
+		}
+
+		// No venue, but online-only event - render content as-is.
+		if ( $is_event && $this->is_online_only_event( $current_post->ID ) ) {
 			return $block_content;
 		}
 
-		return $this->render_with_venue_context( $venue_post, $instance );
+		// No venue and not online-only event - don't render.
+		if ( $is_event ) {
+			return '';
+		}
+
+		// Non-events render as-is.
+		return $block_content;
 	}
 
 	/**

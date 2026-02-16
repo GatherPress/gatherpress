@@ -10,17 +10,6 @@ import {
 	afterEach,
 } from '@jest/globals';
 
-// Store the captured actions for testing.
-let capturedActions = null;
-
-// Mock WordPress interactivity store.
-jest.mock( '@wordpress/interactivity', () => ( {
-	store: jest.fn( ( namespace, config ) => {
-		capturedActions = config.actions;
-		return config;
-	} ),
-} ) );
-
 describe( 'Tooltip view', () => {
 	let originalReadyState;
 	let originalQuerySelectorAll;
@@ -29,7 +18,6 @@ describe( 'Tooltip view', () => {
 	beforeEach( () => {
 		// Reset mocks.
 		jest.clearAllMocks();
-		capturedActions = null;
 
 		// Store original values.
 		originalReadyState = Object.getOwnPropertyDescriptor(
@@ -56,58 +44,17 @@ describe( 'Tooltip view', () => {
 		document.addEventListener = originalAddEventListener;
 	} );
 
-	describe( 'store registration', () => {
-		it( 'registers store with gatherpress namespace', async () => {
-			const { store } = await import( '@wordpress/interactivity' );
-
-			// Set readyState to loading to prevent immediate execution.
-			Object.defineProperty( document, 'readyState', {
-				value: 'loading',
-				configurable: true,
-			} );
-			document.addEventListener = jest.fn();
-
-			await import( '../../../../../../src/formats/tooltip/view' );
-
-			expect( store ).toHaveBeenCalledWith(
-				'gatherpress',
-				expect.objectContaining( {
-					actions: expect.objectContaining( {
-						initTooltips: expect.any( Function ),
-					} ),
-				} )
-			);
-		} );
-
-		it( 'defines initTooltips action', async () => {
-			Object.defineProperty( document, 'readyState', {
-				value: 'loading',
-				configurable: true,
-			} );
-			document.addEventListener = jest.fn();
-
-			await import( '../../../../../../src/formats/tooltip/view' );
-
-			expect( capturedActions ).toBeDefined();
-			expect( capturedActions.initTooltips ).toBeDefined();
-			expect( typeof capturedActions.initTooltips ).toBe( 'function' );
-		} );
-	} );
-
-	describe( 'initTooltips action', () => {
+	describe( 'initTooltips function', () => {
 		it( 'queries for tooltip elements', async () => {
 			const mockQuerySelectorAll = jest.fn( () => [] );
 			document.querySelectorAll = mockQuerySelectorAll;
 
 			Object.defineProperty( document, 'readyState', {
-				value: 'loading',
+				value: 'complete',
 				configurable: true,
 			} );
-			document.addEventListener = jest.fn();
 
 			await import( '../../../../../../src/formats/tooltip/view' );
-
-			capturedActions.initTooltips();
 
 			expect( mockQuerySelectorAll ).toHaveBeenCalledWith(
 				'.gatherpress-tooltip[data-gatherpress-tooltip]'
@@ -127,14 +74,11 @@ describe( 'Tooltip view', () => {
 			document.querySelectorAll = jest.fn( () => [ mockTooltip ] );
 
 			Object.defineProperty( document, 'readyState', {
-				value: 'loading',
+				value: 'complete',
 				configurable: true,
 			} );
-			document.addEventListener = jest.fn();
 
 			await import( '../../../../../../src/formats/tooltip/view' );
-
-			capturedActions.initTooltips();
 
 			expect( mockSetProperty ).toHaveBeenCalledWith(
 				'--gatherpress-tooltip-text-color',
@@ -155,14 +99,11 @@ describe( 'Tooltip view', () => {
 			document.querySelectorAll = jest.fn( () => [ mockTooltip ] );
 
 			Object.defineProperty( document, 'readyState', {
-				value: 'loading',
+				value: 'complete',
 				configurable: true,
 			} );
-			document.addEventListener = jest.fn();
 
 			await import( '../../../../../../src/formats/tooltip/view' );
-
-			capturedActions.initTooltips();
 
 			expect( mockSetProperty ).toHaveBeenCalledWith(
 				'--gatherpress-tooltip-bg-color',
@@ -184,14 +125,11 @@ describe( 'Tooltip view', () => {
 			document.querySelectorAll = jest.fn( () => [ mockTooltip ] );
 
 			Object.defineProperty( document, 'readyState', {
-				value: 'loading',
+				value: 'complete',
 				configurable: true,
 			} );
-			document.addEventListener = jest.fn();
 
 			await import( '../../../../../../src/formats/tooltip/view' );
-
-			capturedActions.initTooltips();
 
 			expect( mockSetProperty ).toHaveBeenCalledTimes( 2 );
 			expect( mockSetProperty ).toHaveBeenCalledWith(
@@ -215,14 +153,11 @@ describe( 'Tooltip view', () => {
 			document.querySelectorAll = jest.fn( () => [ mockTooltip ] );
 
 			Object.defineProperty( document, 'readyState', {
-				value: 'loading',
+				value: 'complete',
 				configurable: true,
 			} );
-			document.addEventListener = jest.fn();
 
 			await import( '../../../../../../src/formats/tooltip/view' );
-
-			capturedActions.initTooltips();
 
 			expect( mockSetProperty ).not.toHaveBeenCalled();
 		} );
@@ -243,14 +178,11 @@ describe( 'Tooltip view', () => {
 			document.querySelectorAll = jest.fn( () => mockTooltips );
 
 			Object.defineProperty( document, 'readyState', {
-				value: 'loading',
+				value: 'complete',
 				configurable: true,
 			} );
-			document.addEventListener = jest.fn();
 
 			await import( '../../../../../../src/formats/tooltip/view' );
-
-			capturedActions.initTooltips();
 
 			expect( mockSetProperty1 ).toHaveBeenCalledWith(
 				'--gatherpress-tooltip-text-color',

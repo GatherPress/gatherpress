@@ -387,11 +387,11 @@ class Test_Venue_V2 extends Base {
 
 		$result = $instance->render_block( $block_content, $block, $block_instance );
 
-		// Without a valid venue post, the original block content should be returned.
+		// Without a valid venue post, the venue block should not render for events.
 		$this->assertSame(
-			$block_content,
+			'',
 			$result,
-			'Should return original content when venue term exists but no matching venue post.'
+			'Should return empty string when venue term exists but no matching venue post.'
 		);
 	}
 
@@ -426,11 +426,11 @@ class Test_Venue_V2 extends Base {
 
 		$result = $instance->render_block( $block_content, $block, $block_instance );
 
-		// With no venue terms, the event is not online-only, but also has no venue.
+		// With no venue terms, the event has no venue, so the block should not render.
 		$this->assertSame(
-			$block_content,
+			'',
 			$result,
-			'Should return content unchanged when event has no venue terms.'
+			'Should return empty string when event has no venue terms.'
 		);
 	}
 
@@ -489,11 +489,11 @@ class Test_Venue_V2 extends Base {
 		$result = $instance->render_block( $block_content, $block, $block_instance );
 
 		// With multiple terms, the event is not online-only.
-		// It will try to get the venue post from the event, which may return null.
+		// Without a valid venue post, the venue block should not render.
 		$this->assertSame(
-			$block_content,
+			'',
 			$result,
-			'Should return content unchanged when event has multiple venue terms but no valid venue post.'
+			'Should return empty string when event has multiple venue terms but no valid venue post.'
 		);
 	}
 
@@ -782,11 +782,11 @@ class Test_Venue_V2 extends Base {
 
 		$result = $instance->render_block( $block_content, $block, $block_instance );
 
-		// The venue term doesn't map to a venue post, so content should be unchanged.
+		// The venue term doesn't map to a venue post, so the venue block should not render.
 		$this->assertSame(
-			$block_content,
+			'',
 			$result,
-			'Should return content unchanged when venue term does not map to a venue post.'
+			'Should return empty string when venue term does not map to a venue post.'
 		);
 	}
 }

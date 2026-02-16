@@ -197,16 +197,12 @@ class Assets {
 		// Enqueue tooltip view script for initializing CSS custom properties.
 		$script_asset = $this->get_asset_data( 'tooltip_view' );
 
-		wp_enqueue_script_module(
+		wp_enqueue_script(
 			'gatherpress-tooltip-view',
 			$this->build . 'tooltip_view.js',
-			array(
-				array(
-					'id'     => '@wordpress/interactivity',
-					'import' => 'static',
-				),
-			),
-			$script_asset['version']
+			array(),
+			$script_asset['version'],
+			true
 		);
 	}
 
