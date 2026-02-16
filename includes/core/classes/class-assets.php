@@ -95,7 +95,7 @@ class Assets {
 		add_action( 'admin_footer', array( $this, 'event_communication_modal' ), 11 );
 
 		add_filter( 'render_block', array( $this, 'maybe_enqueue_styles' ), 10, 2 );
-		add_filter( 'render_block', array( $this, 'maybe_enqueue_tooltip_assets' ), 10, 2 );
+		add_filter( 'render_block', array( $this, 'maybe_enqueue_tooltip_assets' ) );
 	}
 
 	/**
@@ -162,10 +162,9 @@ class Assets {
 	 * @since 1.0.0
 	 *
 	 * @param string $block_content The block content.
-	 * @param array  $block         The block settings.
 	 * @return string The block content.
 	 */
-	public function maybe_enqueue_tooltip_assets( string $block_content, array $block ): string {
+	public function maybe_enqueue_tooltip_assets( string $block_content ): string {
 		if ( str_contains( $block_content, 'gatherpress-tooltip' ) ) {
 			$this->enqueue_tooltip_assets();
 		}

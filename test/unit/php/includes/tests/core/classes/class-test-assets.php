@@ -85,10 +85,11 @@ class Test_Assets extends Base {
 				'callback' => array( $instance, 'maybe_enqueue_styles' ),
 			),
 			array(
-				'type'     => 'filter',
-				'name'     => 'render_block',
-				'priority' => 10,
-				'callback' => array( $instance, 'maybe_enqueue_tooltip_assets' ),
+				'type'          => 'filter',
+				'name'          => 'render_block',
+				'priority'      => 10,
+				'callback'      => array( $instance, 'maybe_enqueue_tooltip_assets' ),
+				'accepted_args' => 1,
 			),
 		);
 
@@ -787,11 +788,8 @@ class Test_Assets extends Base {
 		wp_dequeue_style( 'gatherpress-utility-style' );
 
 		$block_content = '<div class="gatherpress-tooltip">Tooltip content</div>';
-		$block         = array(
-			'blockName' => 'gatherpress/rsvp',
-		);
 
-		$result = $instance->maybe_enqueue_tooltip_assets( $block_content, $block );
+		$result = $instance->maybe_enqueue_tooltip_assets( $block_content );
 
 		$this->assertSame(
 			$block_content,
@@ -821,11 +819,8 @@ class Test_Assets extends Base {
 		wp_dequeue_style( 'gatherpress-utility-style' );
 
 		$block_content = '<div class="some-other-class">Content</div>';
-		$block         = array(
-			'blockName' => 'core/paragraph',
-		);
 
-		$result = $instance->maybe_enqueue_tooltip_assets( $block_content, $block );
+		$result = $instance->maybe_enqueue_tooltip_assets( $block_content );
 
 		$this->assertSame(
 			$block_content,
