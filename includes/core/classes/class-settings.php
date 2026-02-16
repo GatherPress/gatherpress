@@ -88,6 +88,7 @@ class Settings {
 	 * @return void
 	 */
 	protected function setup_hooks(): void {
+		add_action( 'init', array( $this, 'init_shared_options' ), PHP_INT_MIN );
 		add_action( 'init', array( $this, 'set_main_sub_page' ) );
 		add_action( 'admin_menu', array( $this, 'options_page' ) );
 		add_action( 'admin_head', array( $this, 'remove_sub_options' ) );
@@ -870,5 +871,158 @@ class Settings {
 		) {
 			delete_option( 'rewrite_rules' );
 		}
+	}
+
+	/**
+	 * Initialize shared options and apply necessary filters.
+	 *
+	 * Hooked to WordPress `init` action, this sets up shared options and initializes
+	 * their processing logic based on the existence of a site-option 'gatherpress_shared_options'.
+	 *
+	 * Fires after WordPress has finished loading but before any headers are sent.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return void
+	 */
+	public function init_shared_options(): void {
+
+		// DEVELOPMENT ONLY // REMOVE BEFORE MERGE // Set Site option "gatherpress_shared_options" to enable feature, until UI, or filter, or whatever is in place.
+		add_filter(
+			sprintf( 'pre_site_option_%s', Utility::prefix_key( 'shared_options' ) ),
+			function () {
+				return array( Utility::prefix_key( 'general' ) );
+			}
+		);
+
+		$shared_options = $this->get_shared_options();
+		if ( empty( $shared_options ) ) {
+			return;
+		}
+
+		array_map(
+			array( $this, 'init_shared_options_for' ),
+			$shared_options
+		);
+	}
+
+	/**
+	 * Get list of shared setting-slugs, when conditions are met.
+	 *
+	 * Checks for multisite and retrieves slugs of options to share from the database.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return string[] List of shared option slugs or an empty array if conditions were not met.
+	 */
+	protected function get_shared_options(): array {
+		$shared_options = get_site_option( Utility::prefix_key( 'shared_options' ) );
+		return (
+			is_multisite() &&
+			is_array( $shared_options ) &&
+			! empty( $shared_options )
+		) ? $shared_options : array();
+	}
+
+	/**
+	 * Initialize shared options processing for a specific option slug.
+	 *
+	 * Sets up filters and actions for getting, setting, or modifying a shared option
+	 * across the network or site-specific contexts.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $option The slug of the option to initialize.
+	 * @return void
+	 */
+	protected function init_shared_options_for( string $option ): void {
+		add_filter( sprintf( 'pre_option_%s', $option ), array( $this, 'pre_option' ), 10, 2 );
+
+		if ( is_main_site() ) {
+			add_action( sprintf( 'update_option_%s', $option ), array( $this, 'update_option' ), 10, 3 );
+		} else {
+			$hook_suffix = sprintf( 'gatherpress_event_page_%s', $option );
+			add_action( sprintf( 'admin_head-%s', $hook_suffix ), array( $this, 'read_only_js' ) );
+		}
+	}
+
+	/**
+	 * Retrieve the value of a shared option before it is retrieved from the database.
+	 *
+	 * Filters the value of an option to return its network-wide shared value.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param mixed  $pre_option The short-circuited value to return. Default false.
+	 * @param string $option     The name of the option being retrieved.
+	 * @return mixed The value of the shared option from the main site.
+	 */
+	public function pre_option( $pre_option, string $option ) {
+		return get_site_option( $option );
+	}
+
+	/**
+	 * Update a shared option across the network.
+	 *
+	 * Fires after a site-specific option is updated to sync its value to the network.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param mixed  $old_value The previous value of the option.
+	 * @param mixed  $value     The new value of the option.
+	 * @param string $option    The name of the updated option.
+	 *
+	 * @return void
+	 */
+	public function update_option( $old_value, $value, string $option ): void {
+		update_site_option( $option, $value );
+	}
+
+	/**
+	 * Output JavaScript and CSS to enforce read-only behavior for admin pages.
+	 *
+	 * Injects styles and scripts into the admin page head to disable form fields,
+	 * making them read-only.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return void
+	 */
+	public function read_only_js(): void {
+		?>
+		<style>
+			/* Overwriting build/style-settings_style.css */
+			.gatherpress-settings .components-form-token-field__input-container {
+				background: unset;
+			}
+		</style>
+		<script>
+			document.addEventListener("DOMContentLoaded", function () {
+				const formWrapper = document.querySelector('.gatherpress-settings form');
+
+				if (!formWrapper) return;
+
+				// Select all form fields inside the wrapper
+				const formFields = formWrapper.querySelectorAll("input, textarea, select, button");
+
+				formFields.forEach(field => {
+					switch (field.tagName) {
+						case "INPUT":
+						case "TEXTAREA":
+							field.setAttribute("readonly", true);
+							break;
+						case "SELECT":
+						case "BUTTON":
+							field.disabled = true;
+							break;
+					}
+					// Additional handling for input types
+					if (field.type === "checkbox" || field.type === "radio" || field.type === "submit") {
+						field.disabled = true;
+					}
+				});
+			});
+		</script>
+		<?php
 	}
 }

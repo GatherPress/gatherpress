@@ -15,6 +15,7 @@ namespace GatherPress\Core;
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use Exception;
+use GatherPress\Core\Settings;
 use GatherPress\Core\Traits\Singleton;
 use WP_Site;
 
@@ -92,6 +93,7 @@ class Setup {
 		add_action( 'admin_init', array( $this, 'add_privacy_policy_content' ) );
 		add_action( 'admin_notices', array( $this, 'check_gatherpress_alpha' ) );
 		add_action( 'network_admin_notices', array( $this, 'check_gatherpress_alpha' ) );
+		add_action( 'admin_notices', array( $this, 'check_shared_options' ) );
 		add_action( 'wp_initialize_site', array( $this, 'on_site_create' ) );
 		add_action( 'send_headers', array( $this, 'smash_table' ) );
 
@@ -484,6 +486,65 @@ class Setup {
 			array(
 				'type'        => 'warning',
 				'dismissible' => true,
+			)
+		);
+	}
+
+	/**
+	 * Display a notification in the case that GatherPress settings are managed for the whole Multisite.
+	 *
+	 * This method checks if the current site is part of a Multisite,
+	 * if "shared options" exist and the current user is capable to edit those.
+	 *
+	 * On the main site of a Multisite the admin-user is notified about the fact,
+	 * that changes to the settings will affect all sites of the network,
+	 * on any subsite of a Multisite the admin-user is notified,
+	 * that settings are managed and can only be changed from the main site.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return void
+	 */
+	public function check_shared_options(): void {
+		if (
+			filter_var( ! is_multisite(), FILTER_VALIDATE_BOOLEAN ) ||
+			filter_var( ! current_user_can( 'manage_options' ), FILTER_VALIDATE_BOOLEAN )
+		) {
+			return;
+		}
+
+		$shared_options = get_site_option( Utility::prefix_key( 'shared_options' ) );
+		if (
+			filter_var( $shared_options, FILTER_VALIDATE_BOOLEAN ) || (
+				false === strpos( get_current_screen()->id, 'gatherpress_general' ) // @TODO: should be more abstract, based on the $shared_options array.
+			)
+		) {
+			return;
+		}
+
+		if ( is_main_site() ) {
+			$notice = __( 'You are managing settings for the whole multisite.', 'gatherpress' );
+		} else {
+			$main_site_id   = get_main_site_id();
+			$main_site_name = get_blog_option( $main_site_id, 'blogname' );
+			$main_site_url  = get_admin_url( $main_site_id, Settings::PARENT_SLUG . '&page=gatherpress_general' ); // @TODO: should be more abstract, based on the $shared_options array.
+			$main_site_link = sprintf(
+				'<a href="%1$s" title="%2$s">%3$s</a>',
+				esc_url( $main_site_url ),
+				esc_attr( $main_site_name ),
+				esc_html( $main_site_name )
+			);
+			$notice         = sprintf(
+				/* translators: %s is a link to the main site of a Multisite network, named by the blogs title. */
+				__( 'Settings are inherited from the main site of your multisite and can only be edited from %s.', 'gatherpress' ),
+				$main_site_link
+			);
+		}
+
+		wp_admin_notice(
+			$notice,
+			array(
+				'type' => 'info',
 			)
 		);
 	}
