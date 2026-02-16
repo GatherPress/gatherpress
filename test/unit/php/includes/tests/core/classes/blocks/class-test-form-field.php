@@ -9,7 +9,6 @@
 namespace GatherPress\Tests\Core\Blocks;
 
 use GatherPress\Core\Blocks\Form_Field;
-use GatherPress\Core\Tooltip;
 use GatherPress\Tests\Base;
 
 /**
@@ -998,14 +997,14 @@ class Test_Form_Field extends Base {
 	}
 
 	/**
-	 * Coverage for tooltip_allowed_html containing merged post and tooltip HTML.
+	 * Coverage for wp_kses_post allowing standard post and tooltip HTML.
 	 *
 	 * @covers ::render
 	 *
 	 * @return void
 	 */
-	public function test_tooltip_allowed_html_contains_post_and_tooltip_tags(): void {
-		$allowed_html = array_merge( wp_kses_allowed_html( 'post' ), Tooltip::get_allowed_html() );
+	public function test_wp_kses_post_allows_post_and_tooltip_tags(): void {
+		$allowed_html = wp_kses_allowed_html( 'post' );
 
 		// Verify standard post HTML tags are allowed.
 		$this->assertArrayHasKey(
@@ -1024,26 +1023,16 @@ class Test_Form_Field extends Base {
 			'Should allow anchor tag from post HTML.'
 		);
 
-		// Verify tooltip-specific span attributes are allowed.
+		// Verify span with data-* attributes is allowed (for tooltips).
 		$this->assertArrayHasKey(
 			'span',
 			$allowed_html,
 			'Should allow span tag.'
 		);
 		$this->assertArrayHasKey(
-			Tooltip::DATA_ATTR,
+			'data-*',
 			$allowed_html['span'],
-			'Should allow tooltip data attribute on span.'
-		);
-		$this->assertArrayHasKey(
-			Tooltip::DATA_ATTR_TEXT_COLOR,
-			$allowed_html['span'],
-			'Should allow tooltip text color attribute on span.'
-		);
-		$this->assertArrayHasKey(
-			Tooltip::DATA_ATTR_BG_COLOR,
-			$allowed_html['span'],
-			'Should allow tooltip background color attribute on span.'
+			'Should allow data-* attributes on span for tooltips.'
 		);
 	}
 
@@ -1055,11 +1044,9 @@ class Test_Form_Field extends Base {
 	 * @return void
 	 */
 	public function test_label_allows_standard_html_formatting(): void {
-		$allowed_html = array_merge( wp_kses_allowed_html( 'post' ), Tooltip::get_allowed_html() );
-
 		// Test that standard formatting HTML is preserved.
 		$label_with_formatting = '<strong>Required</strong> field with <em>emphasis</em>';
-		$escaped_label         = wp_kses( $label_with_formatting, $allowed_html );
+		$escaped_label         = wp_kses_post( $label_with_formatting );
 
 		$this->assertStringContainsString(
 			'<strong>Required</strong>',
@@ -1081,12 +1068,10 @@ class Test_Form_Field extends Base {
 	 * @return void
 	 */
 	public function test_label_allows_tooltip_markup(): void {
-		$allowed_html = array_merge( wp_kses_allowed_html( 'post' ), Tooltip::get_allowed_html() );
-
 		// Test that tooltip markup is preserved.
 		$label_with_tooltip = 'Field <span class="gatherpress-tooltip" '
 			. 'data-gatherpress-tooltip="Help text">with tooltip</span>';
-		$escaped_label      = wp_kses( $label_with_tooltip, $allowed_html );
+		$escaped_label      = wp_kses_post( $label_with_tooltip );
 
 		$this->assertStringContainsString(
 			'gatherpress-tooltip',
@@ -1108,11 +1093,9 @@ class Test_Form_Field extends Base {
 	 * @return void
 	 */
 	public function test_label_strips_dangerous_html(): void {
-		$allowed_html = array_merge( wp_kses_allowed_html( 'post' ), Tooltip::get_allowed_html() );
-
 		// Test that dangerous HTML tags are stripped.
 		$label_with_script = 'Field <script>alert("xss")</script>';
-		$escaped_label     = wp_kses( $label_with_script, $allowed_html );
+		$escaped_label     = wp_kses_post( $label_with_script );
 
 		$this->assertStringNotContainsString(
 			'<script>',
@@ -1122,7 +1105,7 @@ class Test_Form_Field extends Base {
 
 		// Test that onclick handlers are stripped from allowed tags.
 		$label_with_onclick = 'Field <span onclick="alert(1)">text</span>';
-		$escaped_onclick    = wp_kses( $label_with_onclick, $allowed_html );
+		$escaped_onclick    = wp_kses_post( $label_with_onclick );
 
 		$this->assertStringNotContainsString(
 			'onclick',
