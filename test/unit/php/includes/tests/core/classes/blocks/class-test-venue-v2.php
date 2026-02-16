@@ -659,6 +659,87 @@ class Test_Venue_V2 extends Base {
 	}
 
 	/**
+	 * Tests render_block with event that has a properly linked venue.
+	 *
+	 * This test creates an event with a venue term that maps to a real venue post,
+	 * covering the success path where get_venue_post_from_event_post_id returns
+	 * a valid venue post.
+	 *
+	 * @since 1.0.0
+	 * @covers ::render_block
+	 * @covers ::get_venue_post_for_block
+	 * @covers ::render_with_venue_context
+	 *
+	 * @return void
+	 */
+	public function test_render_block_with_event_linked_to_venue(): void {
+		$instance = Venue_V2::get_instance();
+
+		// Create a venue post.
+		$venue_id = $this->factory->post->create(
+			array(
+				'post_type'  => Venue::POST_TYPE,
+				'post_name'  => 'linked-venue-for-event-test',
+				'post_title' => 'Linked Venue For Event Test',
+			)
+		);
+
+		// Get the venue post to ensure we have the correct slug.
+		$venue_post = get_post( $venue_id );
+
+		// Create the venue term with the correct slug format.
+		$term_slug = Venue::get_instance()->get_venue_term_slug( $venue_post->post_name );
+		wp_insert_term(
+			'Linked Venue For Event Test',
+			Venue::TAXONOMY,
+			array( 'slug' => $term_slug )
+		);
+
+		// Create an event post.
+		$event_id = $this->factory->post->create(
+			array(
+				'post_type'   => Event::POST_TYPE,
+				'post_status' => 'publish',
+			)
+		);
+
+		// Associate the event with the venue term.
+		wp_set_post_terms( $event_id, $term_slug, Venue::TAXONOMY );
+
+		$this->go_to( get_permalink( $event_id ) );
+
+		$block_instance = new WP_Block(
+			array(
+				'blockName'    => 'gatherpress/venue-v2',
+				'attrs'        => array(),
+				'innerBlocks'  => array(
+					array(
+						'blockName'    => 'core/post-title',
+						'attrs'        => array(),
+						'innerBlocks'  => array(),
+						'innerHTML'    => '',
+						'innerContent' => array(),
+					),
+				),
+				'innerHTML'    => '',
+				'innerContent' => array( null ),
+			)
+		);
+
+		$block_content = '<div class="venue-content">Test venue block</div>';
+		$block         = array( 'attrs' => array() );
+
+		$result = $instance->render_block( $block_content, $block, $block_instance );
+
+		// The venue title should appear in the rendered output.
+		$this->assertStringContainsString(
+			'Linked Venue For Event Test',
+			$result,
+			'Should render inner blocks with venue context from event.'
+		);
+	}
+
+	/**
 	 * Tests render_block when event has venue term but no matching venue post.
 	 *
 	 * @since 1.0.0
