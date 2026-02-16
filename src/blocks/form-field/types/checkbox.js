@@ -75,7 +75,7 @@ export default function CheckboxField( {
 					value={ label }
 					onChange={ ( value ) => setAttributes( { label: value } ) }
 					onBlur={ () => handleLabelBlur( label ) }
-					allowedFormats={ [] }
+					allowedFormats={ [ 'gatherpress/tooltip' ] }
 					style={ getLabelStyles( attributes ) }
 				/>
 				{ required && (

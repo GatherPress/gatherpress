@@ -104,9 +104,7 @@ const Edit = ( { context, attributes, setAttributes } ) => {
 
 	// Update the link text (stored in block attributes).
 	const updateLinkText = ( newValue ) => {
-		// Strip any HTML tags from the value (plain text only).
-		const strippedValue = newValue.replace( /<[^>]*>/g, '' );
-		setAttributes( { linkText: strippedValue } );
+		setAttributes( { linkText: newValue } );
 	};
 
 	// Use default text if linkText is empty.
@@ -132,7 +130,7 @@ const Edit = ( { context, attributes, setAttributes } ) => {
 				value={ displayText }
 				onChange={ updateLinkText }
 				placeholder={ __( 'Online event', 'gatherpress' ) }
-				allowedFormats={ [] }
+				allowedFormats={ [ 'gatherpress/tooltip' ] }
 				className="gatherpress-online-event__link"
 			/>
 		</div>

@@ -386,6 +386,30 @@ class Test_Block extends Base {
 	}
 
 	/**
+	 * Coverage for hook_blocks_into_patterns with venue details pattern.
+	 *
+	 * @covers ::hook_blocks_into_patterns
+	 *
+	 * @return void
+	 */
+	public function test_hook_blocks_into_patterns_venue_details(): void {
+		$instance = Block::get_instance();
+
+		$context = array(
+			'name' => 'gatherpress/venue-details',
+		);
+
+		$hooked_blocks = $instance->hook_blocks_into_patterns(
+			array(),
+			'after',
+			'core/post-title',
+			$context
+		);
+
+		$this->assertContains( 'gatherpress/venue-v2', $hooked_blocks );
+	}
+
+	/**
 	 * Coverage for hook_blocks_into_patterns with non-array context.
 	 *
 	 * @covers ::hook_blocks_into_patterns

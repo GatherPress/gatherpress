@@ -1,4 +1,9 @@
 /**
+ * WordPress dependencies.
+ */
+import { __, sprintf } from '@wordpress/i18n';
+
+/**
  * Default template for the venue-v2 block.
  */
 
@@ -257,7 +262,17 @@ export const TEMPLATE_ONLINE_EVENT = [
 		},
 		[
 			[ 'gatherpress/icon', { icon: 'video-alt2' } ],
-			[ 'gatherpress/online-event-v2' ],
+			[
+				'gatherpress/online-event-v2',
+				{
+					linkText: sprintf(
+						/* translators: 1: tooltip text, 2: label text */
+						'<span class="gatherpress-tooltip" data-gatherpress-tooltip="%1$s">%2$s</span>',
+						__( 'Link available for attendees only.', 'gatherpress' ),
+						__( 'Online event', 'gatherpress' )
+					),
+				},
+			],
 		],
 	],
 ];

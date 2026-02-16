@@ -1,3 +1,6 @@
+// Import tooltip format styles for frontend display.
+@use "formats/tooltip/style";
+
 .gatherpress--is-visible {
 	display: block !important;
 }

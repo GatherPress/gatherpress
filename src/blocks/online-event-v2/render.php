@@ -15,6 +15,7 @@
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Event;
+use GatherPress\Core\Tooltip;
 
 if ( ! isset( $attributes ) || ! is_array( $attributes ) ) {
 	return;
@@ -61,13 +62,14 @@ $gatherpress_context_json = wp_json_encode(
 	data-wp-interactive="gatherpress"
 	data-wp-context='<?php echo $gatherpress_context_json; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>'
 	data-wp-watch="callbacks.updateOnlineEventLink">
+	<?php $gatherpress_allowed_html = Tooltip::get_allowed_html(); ?>
 	<?php if ( $gatherpress_has_link ) : ?>
 		<a class="gatherpress-online-event__text" href="<?php echo esc_url( $gatherpress_online_event_link ); ?>" target="_blank" rel="noopener noreferrer">
-			<?php echo esc_html( $gatherpress_link_text ); ?>
+			<?php echo wp_kses( $gatherpress_link_text, $gatherpress_allowed_html ); ?>
 		</a>
 	<?php else : ?>
 		<span class="gatherpress-online-event__text">
-			<?php echo esc_html( $gatherpress_link_text ); ?>
+			<?php echo wp_kses( $gatherpress_link_text, $gatherpress_allowed_html ); ?>
 		</span>
 	<?php endif; ?>
 </div>

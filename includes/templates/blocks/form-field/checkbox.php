@@ -16,7 +16,8 @@ if ( ! isset(
 	$input_styles,
 	$label_styles,
 	$label_wrapper_styles,
-	$required_styles
+	$required_styles,
+	$tooltip_allowed_html
 ) ) {
 	return;
 }
@@ -28,7 +29,7 @@ if ( ! isset(
 	/>
 	<div class="gatherpress-label-wrapper" <?php echo wp_kses_data( $label_wrapper_styles ); ?>>
 		<label for="<?php echo esc_attr( $attributes['input_id'] ); ?>"<?php echo wp_kses_data( $label_styles ); ?>>
-			<?php echo wp_kses_post( $attributes['label'] ); ?>
+			<?php echo wp_kses( $attributes['label'], $tooltip_allowed_html ); ?>
 		</label>
 		<?php
 		if ( $attributes['required'] && ! empty( $attributes['required_text'] ) ) {

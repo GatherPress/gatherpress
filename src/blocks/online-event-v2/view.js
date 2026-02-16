@@ -7,6 +7,7 @@ import { store, getElement, getContext } from '@wordpress/interactivity';
  * Internal dependencies.
  */
 import { initPostContext } from '../../helpers/interactivity';
+import { safeHTML } from '../../helpers/globals';
 
 const { state } = store( 'gatherpress', {
 	callbacks: {
@@ -50,7 +51,9 @@ const { state } = store( 'gatherpress', {
 			// Access state.posts[postId].onlineEventLink for reactivity.
 			const onlineEventLink = state.posts[ postId ]?.onlineEventLink || '';
 			const hasLink = '' !== onlineEventLink;
-			const linkText = context?.linkText || '';
+
+			// Preserve current inner HTML (including tooltip markup), sanitized for security.
+			const currentHTML = safeHTML( currentElement.innerHTML );
 
 			if ( hasLink && ! isLink ) {
 				const linkElement = document.createElement( 'a' );
@@ -58,12 +61,12 @@ const { state } = store( 'gatherpress', {
 				linkElement.href = onlineEventLink;
 				linkElement.target = '_blank';
 				linkElement.rel = 'noopener noreferrer';
-				linkElement.textContent = linkText;
+				linkElement.innerHTML = currentHTML;
 				currentElement.replaceWith( linkElement );
 			} else if ( ! hasLink && isLink ) {
 				const spanElement = document.createElement( 'span' );
 				spanElement.className = 'gatherpress-online-event__text';
-				spanElement.textContent = linkText;
+				spanElement.innerHTML = currentHTML;
 				currentElement.replaceWith( spanElement );
 			} else if ( hasLink && isLink && currentElement.href !== onlineEventLink ) {
 				currentElement.href = onlineEventLink;

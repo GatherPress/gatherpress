@@ -84,6 +84,12 @@ class Test_Assets extends Base {
 				'priority' => 10,
 				'callback' => array( $instance, 'maybe_enqueue_styles' ),
 			),
+			array(
+				'type'     => 'filter',
+				'name'     => 'render_block',
+				'priority' => 10,
+				'callback' => array( $instance, 'maybe_enqueue_tooltip_assets' ),
+			),
 		);
 
 		$this->assert_hooks( $hooks, $instance );
@@ -761,6 +767,74 @@ class Test_Assets extends Base {
 		$this->assertTrue(
 			wp_style_is( 'wp-edit-blocks', 'enqueued' ),
 			'Failed to assert wp-edit-blocks is enqueued for settings page.'
+		);
+	}
+
+	/**
+	 * Coverage for maybe_enqueue_tooltip_assets method with tooltip markup.
+	 *
+	 * @covers ::maybe_enqueue_tooltip_assets
+	 *
+	 * @return void
+	 */
+	public function test_maybe_enqueue_tooltip_assets_with_tooltip_markup(): void {
+		$instance = Assets::get_instance();
+
+		// First register the utility style.
+		$instance->block_enqueue_scripts();
+
+		// Dequeue if it was enqueued by previous test.
+		wp_dequeue_style( 'gatherpress-utility-style' );
+
+		$block_content = '<div class="gatherpress-tooltip">Tooltip content</div>';
+		$block         = array(
+			'blockName' => 'gatherpress/rsvp',
+		);
+
+		$result = $instance->maybe_enqueue_tooltip_assets( $block_content, $block );
+
+		$this->assertSame(
+			$block_content,
+			$result,
+			'Failed to assert block content is unchanged.'
+		);
+		$this->assertTrue(
+			wp_style_is( 'gatherpress-utility-style', 'enqueued' ),
+			'Failed to assert gatherpress-utility-style is enqueued when tooltip markup is present.'
+		);
+	}
+
+	/**
+	 * Coverage for maybe_enqueue_tooltip_assets method without tooltip markup.
+	 *
+	 * @covers ::maybe_enqueue_tooltip_assets
+	 *
+	 * @return void
+	 */
+	public function test_maybe_enqueue_tooltip_assets_without_tooltip_markup(): void {
+		$instance = Assets::get_instance();
+
+		// First register the utility style.
+		$instance->block_enqueue_scripts();
+
+		// Dequeue if it was enqueued by previous test.
+		wp_dequeue_style( 'gatherpress-utility-style' );
+
+		$block_content = '<div class="some-other-class">Content</div>';
+		$block         = array(
+			'blockName' => 'core/paragraph',
+		);
+
+		$result = $instance->maybe_enqueue_tooltip_assets( $block_content, $block );
+
+		$this->assertSame(
+			$block_content,
+			$result,
+			'Failed to assert block content is unchanged.'
+		);
+		$this->assertFalse(
+			wp_style_is( 'gatherpress-utility-style', 'enqueued' ),
+			'Failed to assert gatherpress-utility-style is not enqueued without tooltip markup.'
 		);
 	}
 }
