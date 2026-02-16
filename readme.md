@@ -1,9 +1,9 @@
 # GatherPress
 
-Stable tag: 0.33.2  
-Tested up to: 6.9  
-License: GPL v2 or later  
-Tags: events, event, meetup, community  
+Stable tag: 0.33.3
+Tested up to: 6.9
+License: GPL v2 or later
+Tags: events, event, meetup, community
 Contributors: mauteri, patricia70, hrmervin, jmarx75, stephenerdelyi, carstenbach, jordanpak, mahimadave, tusharaddweb, pkbhatt, andremenrath, apermo, dd32, passoniate, pbrocks
 
 <!-- markdownlint-disable-next-line MD045 -->
@@ -30,7 +30,7 @@ Contributors: mauteri, patricia70, hrmervin, jmarx75, stephenerdelyi, carstenbac
 - Full block editor support
 - Multisite-ready and fully internationalized
 
-👉 See the [full feature list](https://github.com/GatherPress/gatherpress/blob/main/docs/features.md)  
+👉 See the [full feature list](https://github.com/GatherPress/gatherpress/blob/main/docs/features.md)
 👉 Explore [upcoming features](https://github.com/GatherPress/gatherpress/blob/main/docs/roadmap.md)
 
 ---
@@ -47,7 +47,7 @@ Contributors: mauteri, patricia70, hrmervin, jmarx75, stephenerdelyi, carstenbac
 
 Download the latest `.zip` from the [Releases page](https://github.com/GatherPress/gatherpress/releases), then upload it to your WordPress dashboard under **Plugins > Add New > Upload Plugin**.
 
-📖 [View installation guide](https://github.com/GatherPress/gatherpress/blob/main/docs/installation.md)  
+📖 [View installation guide](https://github.com/GatherPress/gatherpress/blob/main/docs/installation.md)
 🛠️ [View configuration guide](https://github.com/GatherPress/gatherpress/blob/main/docs/configuration.md)
 
 ---
@@ -56,7 +56,7 @@ Download the latest `.zip` from the [Releases page](https://github.com/GatherPre
 
 Use our [Playground Environment](https://playground.wordpress.net/?blueprint-url=https://raw.githubusercontent.com/GatherPress/gatherpress/main/.wordpress-org/blueprints/blueprint.json) to test GatherPress with real data — no setup required!
 
-📺 [Watch the intro demo](https://gatherpress.org/demovideo)  
+📺 [Watch the intro demo](https://gatherpress.org/demovideo)
 🧪 [Learn more about Playground](https://github.com/GatherPress/gatherpress/blob/main/docs/playground.md)
 
 ---
