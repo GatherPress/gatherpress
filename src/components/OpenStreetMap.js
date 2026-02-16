@@ -14,7 +14,6 @@ import { select } from '@wordpress/data';
  * Internal dependencies.
  */
 import { getFromGlobal } from '../helpers/globals';
-import './leaflet-editor-overrides.css';
 
 /**
  * OpenStreetMap component for GatherPress.

@@ -3,4 +3,9 @@
 		// Create new stacking context to contain Leaflet's z-index values.
 		isolation: isolate;
 	}
+
+	// Override Leaflet's excessive z-index: 400 on .leaflet-pane.
+	.leaflet-pane {
+		z-index: 0 !important;
+	}
 }
