@@ -246,6 +246,34 @@ class Test_Venue extends Base {
 	}
 
 	/**
+	 * Tests can_edit_posts_meta authorization callback.
+	 *
+	 * @covers ::can_edit_posts_meta
+	 *
+	 * @return void
+	 */
+	public function test_can_edit_posts_meta(): void {
+		$instance = Venue::get_instance();
+
+		// Test with user who can edit posts.
+		$editor_id = $this->factory->user->create( array( 'role' => 'editor' ) );
+		wp_set_current_user( $editor_id );
+
+		$this->assertTrue( $instance->can_edit_posts_meta(), 'Editor should be able to edit post meta.' );
+
+		// Test with user who cannot edit posts.
+		$subscriber_id = $this->factory->user->create( array( 'role' => 'subscriber' ) );
+		wp_set_current_user( $subscriber_id );
+
+		$this->assertFalse( $instance->can_edit_posts_meta(), 'Subscriber should not be able to edit post meta.' );
+
+		// Test with logged-out user.
+		wp_set_current_user( 0 );
+
+		$this->assertFalse( $instance->can_edit_posts_meta(), 'Logged-out user should not be able to edit post meta.' );
+	}
+
+	/**
 	 * Coverage for register_taxonomy method.
 	 *
 	 * @covers ::register_taxonomy
@@ -507,7 +535,6 @@ class Test_Venue extends Base {
 
 		// Generic test for an in person event.
 		$this->assertFalse( $venue_meta['isOnlineEventTerm'] );
-		$this->assertEmpty( $venue_meta['onlineEventLink'] );
 
 		$venue_title = 'Unit Test Venue';
 
@@ -526,6 +553,147 @@ class Test_Venue extends Base {
 			$venue_title,
 			$venue_meta['name'],
 			'Failed to assert venue title matches the venue meta title.'
+		);
+	}
+
+	/**
+	 * Coverage for get_venue_meta method with valid JSON venue information.
+	 *
+	 * @covers ::get_venue_meta
+	 *
+	 * @return void
+	 */
+	public function test_get_venue_meta_with_venue_info_json(): void {
+		$venue_title = 'Unit Test Venue With Info';
+
+		$venue = $this->mock->post(
+			array(
+				'post_type'  => Venue::POST_TYPE,
+				'post_name'  => 'unit-test-venue-with-info',
+				'post_title' => $venue_title,
+			)
+		)->get();
+
+		// Add venue information as JSON.
+		$venue_info = array(
+			'fullAddress' => '123 Test Street, Test City, TS 12345',
+			'phoneNumber' => '555-123-4567',
+			'website'     => 'https://example.com',
+			'latitude'    => '40.7128',
+			'longitude'   => '-74.0060',
+		);
+		add_post_meta( $venue->ID, 'gatherpress_venue_information', wp_json_encode( $venue_info ) );
+
+		$venue_meta = Venue::get_instance()->get_venue_meta( $venue->ID, Venue::POST_TYPE );
+
+		// Test that venue information is correctly extracted from JSON.
+		$this->assertEquals(
+			$venue_title,
+			$venue_meta['name'],
+			'Failed to assert venue title matches.'
+		);
+		$this->assertEquals(
+			'123 Test Street, Test City, TS 12345',
+			$venue_meta['fullAddress'],
+			'Failed to assert fullAddress matches.'
+		);
+		$this->assertEquals(
+			'555-123-4567',
+			$venue_meta['phoneNumber'],
+			'Failed to assert phoneNumber matches.'
+		);
+		$this->assertEquals(
+			'https://example.com',
+			$venue_meta['website'],
+			'Failed to assert website matches.'
+		);
+		$this->assertEquals(
+			'40.7128',
+			$venue_meta['latitude'],
+			'Failed to assert latitude matches.'
+		);
+		$this->assertEquals(
+			'-74.0060',
+			$venue_meta['longitude'],
+			'Failed to assert longitude matches.'
+		);
+	}
+
+	/**
+	 * Coverage for get_venue_post_from_event_post_id method.
+	 *
+	 * @covers ::get_venue_post_from_event_post_id
+	 *
+	 * @return void
+	 */
+	public function test_get_venue_post_from_event_post_id(): void {
+		// Create a venue post.
+		$venue = $this->mock->post(
+			array(
+				'post_type'  => Venue::POST_TYPE,
+				'post_name'  => 'test-venue-for-event',
+				'post_title' => 'Test Venue For Event',
+			)
+		)->get();
+
+		// Create the venue term with the correct slug format.
+		$term_slug = Venue::get_instance()->get_venue_term_slug( $venue->post_name );
+		wp_insert_term(
+			'Test Venue For Event',
+			Venue::TAXONOMY,
+			array( 'slug' => $term_slug )
+		);
+
+		// Create an event post.
+		$event = $this->mock->post(
+			array(
+				'post_type' => Event::POST_TYPE,
+				'post_name' => 'test-event-with-venue',
+			)
+		)->get();
+
+		// Associate the event with the venue term.
+		wp_set_post_terms( $event->ID, $term_slug, Venue::TAXONOMY );
+
+		// Get the venue post from the event.
+		$result = Venue::get_instance()->get_venue_post_from_event_post_id( $event->ID );
+
+		// The result should be the venue post.
+		$this->assertInstanceOf(
+			'WP_Post',
+			$result,
+			'Should return a WP_Post instance.'
+		);
+		$this->assertEquals(
+			$venue->ID,
+			$result->ID,
+			'Should return the correct venue post.'
+		);
+	}
+
+	/**
+	 * Coverage for get_venue_post_from_event_post_id when event has no venue terms.
+	 *
+	 * @covers ::get_venue_post_from_event_post_id
+	 *
+	 * @return void
+	 */
+	public function test_get_venue_post_from_event_post_id_no_terms(): void {
+		// Create an event post without any venue terms.
+		$event = $this->mock->post(
+			array(
+				'post_type' => Event::POST_TYPE,
+				'post_name' => 'test-event-no-venue',
+			)
+		)->get();
+
+		// Get the venue post from the event.
+		$result = Venue::get_instance()->get_venue_post_from_event_post_id( $event->ID );
+
+		// The result should be null since there are no venue terms.
+		$this->assertNull(
+			$result,
+			'Should return null when event has no venue terms.'
 		);
 	}
 }

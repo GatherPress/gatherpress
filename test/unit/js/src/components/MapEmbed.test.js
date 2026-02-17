@@ -44,7 +44,7 @@ test( 'MapEmbed returns empty when no location is provided', () => {
 	expect( container ).toHaveTextContent( '' );
 } );
 
-test( 'OSM MapEmbed returns a div when location is set', async () => {
+test( 'OSM MapEmbed returns a placeholder div when location is set but no coordinates', async () => {
 	global.GatherPress = {
 		settings: {
 			mapPlatform: 'osm',
@@ -60,7 +60,11 @@ test( 'OSM MapEmbed returns a div when location is set', async () => {
 		container = result.container;
 	} );
 
-	expect( container ).toContainHTML( '<div></div>' );
+	// Should render a placeholder div with grey background when no coordinates.
+	expect( container.children[ 0 ] ).toBeInTheDocument();
+	expect( container.children[ 0 ] ).toHaveStyle( {
+		backgroundColor: 'rgb(224, 224, 224)',
+	} );
 } );
 
 test( 'Google MapEmbed returns address in source when location is set', () => {

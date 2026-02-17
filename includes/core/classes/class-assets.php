@@ -95,6 +95,7 @@ class Assets {
 		add_action( 'admin_footer', array( $this, 'event_communication_modal' ), 11 );
 
 		add_filter( 'render_block', array( $this, 'maybe_enqueue_styles' ), 10, 2 );
+		add_filter( 'render_block', array( $this, 'maybe_enqueue_tooltip_assets' ) );
 	}
 
 	/**
@@ -153,6 +154,56 @@ class Assets {
 		}
 
 		return $block_content;
+	}
+
+	/**
+	 * Conditionally enqueue tooltip assets if tooltip markup is found in block content.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $block_content The block content.
+	 * @return string The block content.
+	 */
+	public function maybe_enqueue_tooltip_assets( string $block_content ): string {
+		if ( str_contains( $block_content, 'gatherpress-tooltip' ) ) {
+			$this->enqueue_tooltip_assets();
+		}
+
+		return $block_content;
+	}
+
+	/**
+	 * Register and enqueue tooltip frontend assets.
+	 *
+	 * Enqueues the tooltip view script which initializes CSS custom properties
+	 * from data attributes for custom tooltip colors.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return void
+	 */
+	protected function enqueue_tooltip_assets(): void {
+		static $enqueued = false;
+
+		if ( $enqueued ) {
+			return;
+		}
+
+		$enqueued = true;
+
+		// Enqueue utility styles which include tooltip styles.
+		wp_enqueue_style( 'gatherpress-utility-style' );
+
+		// Enqueue tooltip view script for initializing CSS custom properties.
+		$script_asset = $this->get_asset_data( 'tooltip_view' );
+
+		wp_enqueue_script(
+			'gatherpress-tooltip-view',
+			$this->build . 'tooltip_view.js',
+			array(),
+			$script_asset['version'],
+			true
+		);
 	}
 
 	/**

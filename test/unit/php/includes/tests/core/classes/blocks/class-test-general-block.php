@@ -47,6 +47,12 @@ class Test_General_Block extends Base {
 			),
 			array(
 				'type'     => 'filter',
+				'name'     => 'render_block',
+				'priority' => 10,
+				'callback' => array( $instance, 'process_venue_detail_field' ),
+			),
+			array(
+				'type'     => 'filter',
 				'name'     => 'render_block_core/button',
 				'priority' => 10,
 				'callback' => array( $instance, 'convert_submit_button' ),
@@ -737,6 +743,378 @@ class Test_General_Block extends Base {
 			$block_content,
 			$result,
 			'Anonymous field processing should skip draft posts.'
+		);
+	}
+
+	/**
+	 * Test venue detail field returns unchanged when block has no venue conditional class.
+	 *
+	 * @since 1.0.0
+	 * @covers ::process_venue_detail_field
+	 *
+	 * @return void
+	 */
+	public function test_process_venue_detail_field_returns_unchanged_without_venue_class(): void {
+		$general_block = General_Block::get_instance();
+
+		$block_content = '<div class="some-other-class">Test content</div>';
+		$block         = array(
+			'attrs' => array(
+				'className' => 'some-other-class',
+			),
+		);
+
+		$result = $general_block->process_venue_detail_field( $block_content, $block );
+
+		$this->assertEquals(
+			$block_content,
+			$result,
+			'Block without venue conditional class should remain unchanged.'
+		);
+	}
+
+	/**
+	 * Test venue detail field returns unchanged when block has no className attribute.
+	 *
+	 * @since 1.0.0
+	 * @covers ::process_venue_detail_field
+	 *
+	 * @return void
+	 */
+	public function test_process_venue_detail_field_returns_unchanged_without_classname(): void {
+		$general_block = General_Block::get_instance();
+
+		$block_content = '<div>Test content</div>';
+		$block         = array(
+			'attrs' => array(),
+		);
+
+		$result = $general_block->process_venue_detail_field( $block_content, $block );
+
+		$this->assertEquals(
+			$block_content,
+			$result,
+			'Block without className attribute should remain unchanged.'
+		);
+	}
+
+	/**
+	 * Test venue detail field returns unchanged when field name is not in mapping.
+	 *
+	 * @since 1.0.0
+	 * @covers ::process_venue_detail_field
+	 *
+	 * @return void
+	 */
+	public function test_process_venue_detail_field_returns_unchanged_for_unknown_field(): void {
+		$general_block = General_Block::get_instance();
+
+		$block_content = '<div class="gatherpress--has-venue-unknown">Test content</div>';
+		$block         = array(
+			'attrs' => array(
+				'className' => 'gatherpress--has-venue-unknown',
+			),
+		);
+
+		$result = $general_block->process_venue_detail_field( $block_content, $block );
+
+		$this->assertEquals(
+			$block_content,
+			$result,
+			'Block with unknown venue field should remain unchanged.'
+		);
+	}
+
+	/**
+	 * Test venue detail field returns unchanged when post is not a venue type.
+	 *
+	 * @since 1.0.0
+	 * @covers ::process_venue_detail_field
+	 *
+	 * @return void
+	 */
+	public function test_process_venue_detail_field_returns_unchanged_for_non_venue_post(): void {
+		$general_block = General_Block::get_instance();
+		$post_id       = $this->mock->post()->get()->ID;
+
+		// Set up the post context.
+		$this->go_to( get_permalink( $post_id ) );
+
+		$block_content = '<div class="gatherpress--has-venue-phone">Phone content</div>';
+		$block         = array(
+			'attrs' => array(
+				'className' => 'gatherpress--has-venue-phone',
+			),
+		);
+
+		$result = $general_block->process_venue_detail_field( $block_content, $block );
+
+		$this->assertEquals(
+			$block_content,
+			$result,
+			'Block should remain unchanged when post is not a venue type.'
+		);
+	}
+
+	/**
+	 * Test venue detail field returns empty when venue info JSON is invalid.
+	 *
+	 * @since 1.0.0
+	 * @covers ::process_venue_detail_field
+	 *
+	 * @return void
+	 */
+	public function test_process_venue_detail_field_returns_empty_for_invalid_json(): void {
+		$general_block = General_Block::get_instance();
+		$post_id       = $this->factory->post->create( array( 'post_type' => 'gatherpress_venue' ) );
+
+		// Set up the post context.
+		$this->go_to( get_permalink( $post_id ) );
+
+		// Add invalid JSON to venue meta.
+		add_post_meta( $post_id, 'gatherpress_venue_information', 'not valid json' );
+
+		$block_content = '<div class="gatherpress--has-venue-phone">Phone content</div>';
+		$block         = array(
+			'attrs' => array(
+				'className' => 'gatherpress--has-venue-phone',
+			),
+		);
+
+		$result = $general_block->process_venue_detail_field( $block_content, $block );
+
+		$this->assertEmpty(
+			$result,
+			'Block should be empty when venue info JSON is invalid.'
+		);
+	}
+
+	/**
+	 * Test venue detail field returns empty when venue field is empty.
+	 *
+	 * @since 1.0.0
+	 * @covers ::process_venue_detail_field
+	 *
+	 * @return void
+	 */
+	public function test_process_venue_detail_field_returns_empty_for_empty_field(): void {
+		$general_block = General_Block::get_instance();
+		$post_id       = $this->factory->post->create( array( 'post_type' => 'gatherpress_venue' ) );
+
+		// Set up the post context.
+		$this->go_to( get_permalink( $post_id ) );
+
+		// Add venue info with empty phone number.
+		$venue_info = array(
+			'phoneNumber' => '',
+			'fullAddress' => '123 Main St',
+			'website'     => 'https://example.com',
+		);
+		add_post_meta( $post_id, 'gatherpress_venue_information', wp_json_encode( $venue_info ) );
+
+		$block_content = '<div class="gatherpress--has-venue-phone">Phone content</div>';
+		$block         = array(
+			'attrs' => array(
+				'className' => 'gatherpress--has-venue-phone',
+			),
+		);
+
+		$result = $general_block->process_venue_detail_field( $block_content, $block );
+
+		$this->assertEmpty(
+			$result,
+			'Block should be empty when venue phone field is empty.'
+		);
+	}
+
+	/**
+	 * Test venue detail field returns content when venue field has value.
+	 *
+	 * @since 1.0.0
+	 * @covers ::process_venue_detail_field
+	 *
+	 * @return void
+	 */
+	public function test_process_venue_detail_field_returns_content_when_field_has_value(): void {
+		$general_block = General_Block::get_instance();
+		$post_id       = $this->factory->post->create( array( 'post_type' => 'gatherpress_venue' ) );
+
+		// Set up the post context.
+		$this->go_to( get_permalink( $post_id ) );
+
+		// Add venue info with phone number.
+		$venue_info = array(
+			'phoneNumber' => '555-123-4567',
+			'fullAddress' => '123 Main St',
+			'website'     => 'https://example.com',
+		);
+		add_post_meta( $post_id, 'gatherpress_venue_information', wp_json_encode( $venue_info ) );
+
+		$block_content = '<div class="gatherpress--has-venue-phone">Phone content</div>';
+		$block         = array(
+			'attrs' => array(
+				'className' => 'gatherpress--has-venue-phone',
+			),
+		);
+
+		$result = $general_block->process_venue_detail_field( $block_content, $block );
+
+		$this->assertEquals(
+			$block_content,
+			$result,
+			'Block should remain unchanged when venue phone field has value.'
+		);
+	}
+
+	/**
+	 * Test venue detail field works with address field.
+	 *
+	 * @since 1.0.0
+	 * @covers ::process_venue_detail_field
+	 *
+	 * @return void
+	 */
+	public function test_process_venue_detail_field_works_with_address_field(): void {
+		$general_block = General_Block::get_instance();
+		$post_id       = $this->factory->post->create( array( 'post_type' => 'gatherpress_venue' ) );
+
+		// Set up the post context.
+		$this->go_to( get_permalink( $post_id ) );
+
+		// Add venue info with address.
+		$venue_info = array(
+			'phoneNumber' => '',
+			'fullAddress' => '123 Main St, City, State 12345',
+			'website'     => '',
+		);
+		add_post_meta( $post_id, 'gatherpress_venue_information', wp_json_encode( $venue_info ) );
+
+		$block_content = '<div class="gatherpress--has-venue-address">Address content</div>';
+		$block         = array(
+			'attrs' => array(
+				'className' => 'gatherpress--has-venue-address',
+			),
+		);
+
+		$result = $general_block->process_venue_detail_field( $block_content, $block );
+
+		$this->assertEquals(
+			$block_content,
+			$result,
+			'Block should remain unchanged when venue address field has value.'
+		);
+	}
+
+	/**
+	 * Test venue detail field works with website field.
+	 *
+	 * @since 1.0.0
+	 * @covers ::process_venue_detail_field
+	 *
+	 * @return void
+	 */
+	public function test_process_venue_detail_field_works_with_website_field(): void {
+		$general_block = General_Block::get_instance();
+		$post_id       = $this->factory->post->create( array( 'post_type' => 'gatherpress_venue' ) );
+
+		// Set up the post context.
+		$this->go_to( get_permalink( $post_id ) );
+
+		// Add venue info with website.
+		$venue_info = array(
+			'phoneNumber' => '',
+			'fullAddress' => '',
+			'website'     => 'https://example.com',
+		);
+		add_post_meta( $post_id, 'gatherpress_venue_information', wp_json_encode( $venue_info ) );
+
+		$block_content = '<div class="gatherpress--has-venue-website">Website content</div>';
+		$block         = array(
+			'attrs' => array(
+				'className' => 'gatherpress--has-venue-website',
+			),
+		);
+
+		$result = $general_block->process_venue_detail_field( $block_content, $block );
+
+		$this->assertEquals(
+			$block_content,
+			$result,
+			'Block should remain unchanged when venue website field has value.'
+		);
+	}
+
+	/**
+	 * Test venue detail field returns empty when field is missing from JSON.
+	 *
+	 * @since 1.0.0
+	 * @covers ::process_venue_detail_field
+	 *
+	 * @return void
+	 */
+	public function test_process_venue_detail_field_returns_empty_for_missing_field(): void {
+		$general_block = General_Block::get_instance();
+		$post_id       = $this->factory->post->create( array( 'post_type' => 'gatherpress_venue' ) );
+
+		// Set up the post context.
+		$this->go_to( get_permalink( $post_id ) );
+
+		// Add venue info without the phone number field.
+		$venue_info = array(
+			'fullAddress' => '123 Main St',
+			'website'     => 'https://example.com',
+		);
+		add_post_meta( $post_id, 'gatherpress_venue_information', wp_json_encode( $venue_info ) );
+
+		$block_content = '<div class="gatherpress--has-venue-phone">Phone content</div>';
+		$block         = array(
+			'attrs' => array(
+				'className' => 'gatherpress--has-venue-phone',
+			),
+		);
+
+		$result = $general_block->process_venue_detail_field( $block_content, $block );
+
+		$this->assertEmpty(
+			$result,
+			'Block should be empty when venue field is missing from JSON.'
+		);
+	}
+
+	/**
+	 * Test venue detail field uses postId attribute when provided.
+	 *
+	 * @since 1.0.0
+	 * @covers ::process_venue_detail_field
+	 *
+	 * @return void
+	 */
+	public function test_process_venue_detail_field_uses_post_id_attribute(): void {
+		$general_block = General_Block::get_instance();
+		$venue_post_id = $this->factory->post->create( array( 'post_type' => 'gatherpress_venue' ) );
+
+		// Add venue info with phone number.
+		$venue_info = array(
+			'phoneNumber' => '555-123-4567',
+			'fullAddress' => '123 Main St',
+			'website'     => 'https://example.com',
+		);
+		add_post_meta( $venue_post_id, 'gatherpress_venue_information', wp_json_encode( $venue_info ) );
+
+		$block_content = '<div class="gatherpress--has-venue-phone">Phone content</div>';
+		$block         = array(
+			'attrs' => array(
+				'className' => 'gatherpress--has-venue-phone',
+				'postId'    => $venue_post_id,
+			),
+		);
+
+		$result = $general_block->process_venue_detail_field( $block_content, $block );
+
+		$this->assertEquals(
+			$block_content,
+			$result,
+			'Block should use postId attribute when provided.'
 		);
 	}
 

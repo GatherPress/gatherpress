@@ -5,6 +5,11 @@ import { dispatch, select } from '@wordpress/data';
 import { store as coreStore } from '@wordpress/core-data';
 
 /**
+ * Internal dependencies.
+ */
+import { CPT_EVENT, CPT_VENUE } from './namespace';
+
+/**
  * Enable the Save buttons after making an update.
  *
  * This function uses a hacky approach to trigger a change in the post's meta, which prompts
@@ -36,7 +41,37 @@ export function enableSave() {
 export function isGatherPressPostType() {
 	const postType = select( 'core/editor' )?.getCurrentPostType();
 
-	return 'gatherpress_event' === postType || 'gatherpress_venue' === postType;
+	return CPT_EVENT === postType || CPT_VENUE === postType;
+}
+
+/**
+ * Retrieves the current contextual post ID.
+ *
+ * If a `postId` argument is provided, that value is returned.
+ * If not, falls back to the current post ID from the block editor's `core/editor` store.
+ *
+ * @since 1.0.0
+ *
+ * @param {number|null} postId Optional. A specific post ID to return instead of detecting the current one. Defaults to null.
+ * @return {number|null}                 The post ID, or null if it cannot be determined.
+ */
+export function getCurrentContextualPostId( postId = null ) {
+	return postId || select( 'core/editor' ).getCurrentPostId();
+}
+
+/**
+ * Retrieves the current contextual post type.
+ *
+ * If a `postType` argument is provided, that value is returned.
+ * Otherwise, falls back to the current post type from the block editor's `core/editor` store.
+ *
+ * @since 1.0.0
+ *
+ * @param {string|null} postType Optional. A specific post type to return instead of detecting the current one. Defaults to null.
+ * @return {string|null} The post type slug, or null if it cannot be determined.
+ */
+export function getCurrentContextualPostType( postType = null ) {
+	return postType || select( 'core/editor' ).getCurrentPostType();
 }
 
 /**

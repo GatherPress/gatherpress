@@ -160,7 +160,7 @@ export default function RadioField( {
 					value={ label }
 					onChange={ ( value ) => setAttributes( { label: value } ) }
 					onBlur={ () => handleLabelBlur( label ) }
-					allowedFormats={ [] }
+					allowedFormats={ [ 'gatherpress/tooltip' ] }
 					style={ getLabelStyles( attributes ) }
 				/>
 				{ required && (
@@ -172,7 +172,7 @@ export default function RadioField( {
 						onChange={ ( value ) =>
 							setAttributes( { requiredText: value } )
 						}
-						allowedFormats={ [] }
+						allowedFormats={ [ 'gatherpress/tooltip' ] }
 						style={ {
 							...( requiredTextColor && {
 								color: requiredTextColor,
@@ -209,7 +209,7 @@ export default function RadioField( {
 								updateRadioOption( index, 'label', value )
 							}
 							onKeyDown={ ( event ) => handleKeyDown( event, index ) }
-							allowedFormats={ [] }
+							allowedFormats={ [ 'gatherpress/tooltip' ] }
 							identifier={ `radio-option-${ index }` }
 							style={ getOptionStyles( attributes ) }
 						/>

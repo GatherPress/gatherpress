@@ -44,7 +44,7 @@ const MapEmbed = ( props ) => {
 	}
 
 	const mapPlatform = getFromGlobal( 'settings.mapPlatform' );
-	if ( ! location || ! mapPlatform ) {
+	if ( ! mapPlatform ) {
 		return <></>;
 	} else if ( 'google' === mapPlatform ) {
 		return (

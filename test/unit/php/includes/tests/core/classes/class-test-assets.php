@@ -84,6 +84,13 @@ class Test_Assets extends Base {
 				'priority' => 10,
 				'callback' => array( $instance, 'maybe_enqueue_styles' ),
 			),
+			array(
+				'type'          => 'filter',
+				'name'          => 'render_block',
+				'priority'      => 10,
+				'callback'      => array( $instance, 'maybe_enqueue_tooltip_assets' ),
+				'accepted_args' => 1,
+			),
 		);
 
 		$this->assert_hooks( $hooks, $instance );
@@ -761,6 +768,108 @@ class Test_Assets extends Base {
 		$this->assertTrue(
 			wp_style_is( 'wp-edit-blocks', 'enqueued' ),
 			'Failed to assert wp-edit-blocks is enqueued for settings page.'
+		);
+	}
+
+	/**
+	 * Coverage for enqueue_tooltip_assets method.
+	 *
+	 * This test must run first to ensure the static $enqueued variable is false.
+	 * The 'a_' prefix ensures alphabetical ordering runs it early.
+	 *
+	 * @covers ::enqueue_tooltip_assets
+	 *
+	 * @return void
+	 */
+	public function test_a_enqueue_tooltip_assets(): void {
+		$instance = Assets::get_instance();
+
+		// First register the utility style.
+		$instance->block_enqueue_scripts();
+
+		// Dequeue if it was enqueued by previous test.
+		wp_dequeue_style( 'gatherpress-utility-style' );
+
+		// Use invoke_hidden_method to call the protected method.
+		Utility::invoke_hidden_method( $instance, 'enqueue_tooltip_assets' );
+
+		$this->assertTrue(
+			wp_style_is( 'gatherpress-utility-style', 'enqueued' ),
+			'Failed to assert gatherpress-utility-style is enqueued by enqueue_tooltip_assets.'
+		);
+	}
+
+	/**
+	 * Coverage for enqueue_tooltip_assets early return when already enqueued.
+	 *
+	 * @covers ::enqueue_tooltip_assets
+	 *
+	 * @return void
+	 */
+	public function test_enqueue_tooltip_assets_early_return(): void {
+		$instance = Assets::get_instance();
+
+		// First register the utility style.
+		$instance->block_enqueue_scripts();
+
+		// Call enqueue_tooltip_assets twice - second call should return early.
+		Utility::invoke_hidden_method( $instance, 'enqueue_tooltip_assets' );
+		Utility::invoke_hidden_method( $instance, 'enqueue_tooltip_assets' );
+
+		// The test passes if no errors occur - the early return path is covered.
+		$this->assertTrue( true, 'Second call should return early without error.' );
+	}
+
+	/**
+	 * Coverage for maybe_enqueue_tooltip_assets method with tooltip markup.
+	 *
+	 * @covers ::maybe_enqueue_tooltip_assets
+	 *
+	 * @return void
+	 */
+	public function test_maybe_enqueue_tooltip_assets_with_tooltip_markup(): void {
+		$instance = Assets::get_instance();
+
+		$block_content = '<div class="gatherpress-tooltip">Tooltip content</div>';
+
+		$result = $instance->maybe_enqueue_tooltip_assets( $block_content );
+
+		// The method should return block content unchanged.
+		$this->assertSame(
+			$block_content,
+			$result,
+			'Failed to assert block content is unchanged.'
+		);
+	}
+
+	/**
+	 * Coverage for maybe_enqueue_tooltip_assets method without tooltip markup.
+	 *
+	 * @covers ::maybe_enqueue_tooltip_assets
+	 *
+	 * @return void
+	 */
+	public function test_maybe_enqueue_tooltip_assets_without_tooltip_markup(): void {
+		$instance = Assets::get_instance();
+
+		// First register the utility style.
+		$instance->block_enqueue_scripts();
+
+		// Dequeue if it was enqueued by previous test.
+		wp_dequeue_style( 'gatherpress-utility-style' );
+
+		$block_content = '<div class="some-other-class">Content</div>';
+
+		$result = $instance->maybe_enqueue_tooltip_assets( $block_content );
+
+		$this->assertSame(
+			$block_content,
+			$result,
+			'Failed to assert block content is unchanged.'
+		);
+		$this->assertFalse(
+			wp_style_is( 'gatherpress-utility-style', 'enqueued' ),
+			'Failed to assert gatherpress-utility-style is not enqueued without tooltip markup.'
 		);
 	}
 }

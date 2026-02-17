@@ -1,0 +1,75 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "gatherpress/venue-detail",
+	"version": "1.0.0",
+	"title": "Venue Detail",
+	"category": "gatherpress",
+	"icon": "location",
+	"description": "Display venue details like address, phone, or website.",
+	"usesContext": ["postId", "queryId"],
+	"attributes": {
+		"content": {
+			"type": "string",
+			"source": "html",
+			"selector": "div"
+		},
+		"placeholder": {
+			"type": "string"
+		},
+		"fieldType": {
+			"type": "string",
+			"default": "text"
+		},
+		"metadata": {
+			"type": "object",
+			"default": {}
+		}
+	},
+	"supports": {
+		"gatherpress": {
+			"postIdOverride": true
+		},
+		"html": false,
+		"anchor": true,
+		"className": true,
+		"color": {
+			"gradients": true,
+			"link": true,
+			"__experimentalDefaultControls": {
+				"background": true,
+				"text": true
+			}
+		},
+		"spacing": {
+			"margin": true,
+			"padding": true
+		},
+		"typography": {
+			"fontSize": true,
+			"lineHeight": true,
+			"__experimentalFontFamily": true,
+			"__experimentalFontWeight": true,
+			"__experimentalFontStyle": true,
+			"__experimentalTextTransform": true,
+			"__experimentalTextDecoration": true,
+			"__experimentalLetterSpacing": true,
+			"__experimentalDefaultControls": {
+				"fontSize": true
+			}
+		},
+		"__experimentalBorder": {
+			"radius": true,
+			"color": true,
+			"width": true,
+			"style": true
+		},
+		"interactivity": {
+			"clientNavigation": true
+		}
+	},
+	"textdomain": "gatherpress",
+	"editorScript": "file:./index.js",
+	"style": "file:./style-index.css",
+	"render": "file:./render.php"
+}

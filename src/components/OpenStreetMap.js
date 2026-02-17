@@ -8,6 +8,7 @@ import { v4 as uuidv4 } from 'uuid';
  */
 import { sprintf, __ } from '@wordpress/i18n';
 import { useEffect, useState, useRef } from '@wordpress/element';
+import { select } from '@wordpress/data';
 
 /**
  * Internal dependencies.
@@ -46,9 +47,10 @@ const OpenStreetMap = ( props ) => {
 	const mapRef = useRef( null );
 	const mapInstanceRef = useRef( null );
 	const style = { height };
+	const isPostEditor = Boolean( select( 'core/edit-post' ) );
 
 	useEffect( () => {
-		// Load Leaflet and its assets dynamically
+		// Load Leaflet and its assets dynamically.
 		const loadLeaflet = async () => {
 			const { default: L } = await import( 'leaflet' );
 
@@ -63,11 +65,11 @@ const OpenStreetMap = ( props ) => {
 			await import( 'leaflet/dist/images/marker-icon-2x.png' );
 			await import( 'leaflet/dist/images/marker-shadow.png' );
 
-			// Import gesture handling
+			// Import gesture handling.
 			// eslint-disable-next-line import/no-extraneous-dependencies
 			await import( 'leaflet-gesture-handling' );
 
-			// Add gesture handling to Leaflet
+			// Add gesture handling to Leaflet.
 			L.Map.addInitHook(
 				'addHandler',
 				'gestureHandling',
@@ -81,17 +83,21 @@ const OpenStreetMap = ( props ) => {
 	}, [] );
 
 	useEffect( () => {
-		if ( ! Leaflet || ! latitude || ! longitude || ! mapRef.current ) {
+		// Check for valid latitude and longitude (not empty strings, null, or undefined).
+		const validLat = latitude && '' !== latitude && ! isNaN( parseFloat( latitude ) );
+		const validLng = longitude && '' !== longitude && ! isNaN( parseFloat( longitude ) );
+
+		if ( ! Leaflet || ! validLat || ! validLng || ! mapRef.current ) {
 			return;
 		}
 
-		// Clean up previous map instance if it exists
+		// Clean up previous map instance if it exists.
 		if ( mapInstanceRef.current ) {
 			mapInstanceRef.current.remove();
 			mapInstanceRef.current = null;
 		}
 
-		// Create new map instance
+		// Create new map instance.
 		const map = Leaflet.map( mapRef.current, {
 			gestureHandling: true,
 			gestureHandlingOptions: {
@@ -135,13 +141,41 @@ const OpenStreetMap = ( props ) => {
 		};
 	}, [ Leaflet, latitude, location, longitude, zoom ] );
 
-	if ( ! Leaflet || ! latitude || ! longitude ) {
+	// Check for valid latitude and longitude before rendering.
+	const validLat = latitude && '' !== latitude && ! isNaN( parseFloat( latitude ) );
+	const validLng = longitude && '' !== longitude && ! isNaN( parseFloat( longitude ) );
+
+	// Show placeholder when no valid coordinates.
+	if ( ! validLat || ! validLng ) {
+		return (
+			<div
+				className={ className }
+				style={ {
+					...style,
+					backgroundColor: '#e0e0e0',
+					display: 'flex',
+					alignItems: 'center',
+					justifyContent: 'center',
+					color: '#757575',
+				} }
+			></div>
+		);
+	}
+
+	if ( ! Leaflet ) {
 		return null;
 	}
 
-	return (
-		<div className={ className } id={ mapId } ref={ mapRef } style={ style }></div>
-	);
+	// Add inert attribute in editor to prevent all interactions and focus.
+	const mapProps = {
+		className,
+		id: mapId,
+		ref: mapRef,
+		style,
+		...( isPostEditor && { inert: '' } ),
+	};
+
+	return <div { ...mapProps }></div>;
 };
 
 export default OpenStreetMap;
