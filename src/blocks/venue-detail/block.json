@@ -21,6 +21,14 @@
 			"type": "string",
 			"default": "text"
 		},
+		"linkTarget": {
+			"type": "string",
+			"default": "_blank"
+		},
+		"cleanUrl": {
+			"type": "boolean",
+			"default": true
+		},
 		"metadata": {
 			"type": "object",
 			"default": {}

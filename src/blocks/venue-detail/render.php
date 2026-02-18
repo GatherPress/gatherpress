@@ -66,11 +66,25 @@ switch ( $gatherpress_field_type ) {
 		break;
 
 	case 'url':
+		$gatherpress_link_target = $attributes['linkTarget'] ?? '_blank';
+		$gatherpress_clean_url   = $attributes['cleanUrl'] ?? true;
+
+		// Display URL cleaned or raw based on setting.
+		if ( $gatherpress_clean_url ) {
+			$gatherpress_display_url = preg_replace( '#^https?://(www\.)?#', '', $gatherpress_value );
+			$gatherpress_display_url = rtrim( $gatherpress_display_url, '/' );
+		} else {
+			$gatherpress_display_url = $gatherpress_value;
+		}
+
+		$gatherpress_target_attr = '_blank' === $gatherpress_link_target ? ' target="_blank" rel="noopener noreferrer"' : '';
+
 		printf(
-			'<div %s><a href="%s" target="_blank" rel="noopener noreferrer">%s</a></div>',
+			'<div %s><a href="%s"%s>%s</a></div>',
 			$gatherpress_wrapper_attributes, // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 			esc_url( $gatherpress_value ),
-			esc_html( $gatherpress_value )
+			$gatherpress_target_attr, // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+			esc_html( $gatherpress_display_url )
 		);
 		break;
 
