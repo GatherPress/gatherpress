@@ -7,6 +7,7 @@ import { mapMarker as icon } from '@wordpress/icons';
 /**
  * Internal dependencies.
  */
+import './editor.scss';
 import edit from './edit';
 import metadata from './block.json';
 import variations from './variations';
