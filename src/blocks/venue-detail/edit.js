@@ -1,7 +1,7 @@
 /**
  * WordPress dependencies.
  */
-import { __, sprintf } from '@wordpress/i18n';
+import { __ } from '@wordpress/i18n';
 import {
 	BlockControls,
 	InspectorControls,
@@ -28,22 +28,8 @@ import { link as linkIcon } from '@wordpress/icons';
  * Internal dependencies.
  */
 import { CPT_VENUE } from '../../helpers/namespace';
-
-/**
- * Cleans a URL for display by removing protocol, www, and trailing slash.
- *
- * @param {string} url - The URL to clean.
- * @return {string} The cleaned URL for display.
- */
-const cleanUrlForDisplay = ( url ) => {
-	if ( ! url ) {
-		return '';
-	}
-	return url
-		.replace( /^https?:\/\//, '' )
-		.replace( /^www\./, '' )
-		.replace( /\/$/, '' );
-};
+import { geocodeAddress } from '../../helpers/geocoding';
+import { cleanUrlForDisplay, getJsonFieldName } from './helpers';
 
 /**
  * Edit component for the Venue Detail block.
@@ -100,14 +86,8 @@ const Edit = ( {
 		[ context?.postId ]
 	);
 
-	// Map field type to JSON field name.
-	const fieldMapping = {
-		address: 'fullAddress',
-		phone: 'phoneNumber',
-		url: 'website',
-	};
-
-	const jsonFieldName = fieldMapping[ fieldType ] || '';
+	// Map field type to JSON field name using helper.
+	const jsonFieldName = getJsonFieldName( fieldType );
 
 	// Get dispatch functions for both stores.
 	const { editEntityRecord } = useDispatch( coreStore );
@@ -251,7 +231,7 @@ const Edit = ( {
 	}
 
 	// Geocode address field changes.
-	const geocodeAddress = useCallback( () => {
+	const handleGeocode = useCallback( async () => {
 		const address = addressRef.current;
 
 		if ( 'address' !== fieldType ) {
@@ -271,46 +251,19 @@ const Edit = ( {
 			return;
 		}
 
-		fetch(
-			`https://nominatim.openstreetmap.org/search?q=${ encodeURIComponent( address ) }&format=geojson`
-		)
-			.then( ( response ) => {
-				if ( ! response.ok ) {
-					throw new Error(
-						sprintf(
-							/* translators: %s: Error message */
-							__( 'Network response was not ok %s', 'gatherpress' ),
-							response.statusText
-						)
-					);
-				}
-				return response.json();
-			} )
-			.then( ( data ) => {
-				let lat = null;
-				let lng = null;
+		const { latitude, longitude } = await geocodeAddress( address );
 
-				if ( 0 < data.features.length ) {
-					lat = data.features[ 0 ].geometry.coordinates[ 1 ];
-					lng = data.features[ 0 ].geometry.coordinates[ 0 ];
-				}
+		if ( ! mapCustomLatLong ) {
+			// Update venue store for live preview.
+			updateVenueLatitude( latitude || null );
+			updateVenueLongitude( longitude || null );
 
-				if ( ! mapCustomLatLong ) {
-					// Update venue store for live preview.
-					updateVenueLatitude( lat );
-					updateVenueLongitude( lng );
-
-					// Update meta for the venue post.
-					updateVenueField( {
-						latitude: lat ? String( lat ) : '',
-						longitude: lng ? String( lng ) : '',
-					} );
-				}
-			} )
-			.catch( ( error ) => {
-				// eslint-disable-next-line no-console
-				console.warn( '[VenueDetail] Geocoding failed:', error );
+			// Update meta for the venue post.
+			updateVenueField( {
+				latitude: latitude || '',
+				longitude: longitude || '',
 			} );
+		}
 	}, [
 		fieldType,
 		mapCustomLatLong,
@@ -319,7 +272,7 @@ const Edit = ( {
 		updateVenueField,
 	] );
 
-	const debouncedGeocode = useDebounce( geocodeAddress, 300 );
+	const debouncedGeocode = useDebounce( handleGeocode, 300 );
 
 	// Trigger geocoding when address field value changes.
 	useEffect( () => {

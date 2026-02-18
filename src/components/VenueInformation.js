@@ -2,10 +2,15 @@
  * WordPress dependencies.
  */
 import { TextControl } from '@wordpress/components';
-import { __, sprintf } from '@wordpress/i18n';
+import { __ } from '@wordpress/i18n';
 import { useDispatch, useSelect } from '@wordpress/data';
 import { useEffect, useCallback, useRef } from '@wordpress/element';
 import { useDebounce } from '@wordpress/compose';
+
+/**
+ * Internal dependencies.
+ */
+import { geocodeAddress } from '../helpers/geocoding';
 
 /**
  * Parse venue information from JSON meta field.
@@ -106,7 +111,7 @@ const VenueInformation = () => {
 		[ editPost ],
 	);
 
-	const getData = useCallback( () => {
+	const getData = useCallback( async () => {
 		// Read current address from ref to avoid recreating this callback.
 		const address = fullAddressRef.current;
 
@@ -134,55 +139,27 @@ const VenueInformation = () => {
 			return;
 		}
 
-		let lat = null;
-		let lng = null;
+		const { latitude, longitude } = await geocodeAddress( address );
 
-		fetch(
-			`https://nominatim.openstreetmap.org/search?q=${ encodeURIComponent( address ) }&format=geojson`,
-		)
-			.then( ( response ) => {
-				if ( ! response.ok ) {
-					throw new Error(
-						sprintf(
-							/* translators: %s: Error message */
-							__( 'Network response was not ok %s', 'gatherpress' ),
-							response.statusText,
-						),
-					);
-				}
-				return response.json();
-			} )
-			.then( ( data ) => {
-				if ( 0 < data.features.length ) {
-					lat = data.features[ 0 ].geometry.coordinates[ 1 ];
-					lng = data.features[ 0 ].geometry.coordinates[ 0 ];
-				}
+		if ( ! mapCustomLatLong ) {
+			updateVenueLatitude( latitude || null );
+			updateVenueLongitude( longitude || null );
 
-				if ( ! mapCustomLatLong ) {
-					updateVenueLatitude( lat );
-					updateVenueLongitude( lng );
+			// Update the JSON meta field with lat/long.
+			const currentMeta = window.wp.data.select( 'core/editor' ).getEditedPostAttribute( 'meta' ) || {};
+			const currentInfo = parseVenueInfo( currentMeta );
+			const updatedInfo = {
+				...currentInfo,
+				latitude: latitude || '',
+				longitude: longitude || '',
+			};
 
-					// Update the JSON meta field with lat/long.
-					const currentMeta = window.wp.data.select( 'core/editor' ).getEditedPostAttribute( 'meta' ) || {};
-					const currentInfo = parseVenueInfo( currentMeta );
-					const updatedInfo = {
-						...currentInfo,
-						latitude: lat ? String( lat ) : '',
-						longitude: lng ? String( lng ) : '',
-					};
-
-					editPost( {
-						meta: {
-							gatherpress_venue_information: JSON.stringify( updatedInfo ),
-						},
-					} );
-				}
-			} )
-			.catch( ( error ) => {
-				// Silently fail geocoding errors.
-				// eslint-disable-next-line no-console
-				console.warn( 'Geocoding failed:', error );
+			editPost( {
+				meta: {
+					gatherpress_venue_information: JSON.stringify( updatedInfo ),
+				},
 			} );
+		}
 	}, [
 		mapCustomLatLong,
 		updateVenueLatitude,

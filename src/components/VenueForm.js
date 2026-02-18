@@ -1,7 +1,7 @@
 /**
  * WordPress dependencies
  */
-import { __, sprintf } from '@wordpress/i18n';
+import { __ } from '@wordpress/i18n';
 import {
 	Spinner,
 	Button,
@@ -16,75 +16,12 @@ import apiFetch from '@wordpress/api-fetch';
 import { useEntityProp, store as coreDataStore } from '@wordpress/core-data';
 
 /**
- * Internal dependencies
+ * Internal dependencies.
  */
 import { CPT_EVENT, CPT_VENUE, TAX_VENUE } from '../helpers/namespace';
 import { isEventPostType } from '../helpers/event';
 import { getCurrentContextualPostId } from '../helpers/editor';
-
-/**
- * Geocodes an address using Nominatim OpenStreetMap API.
- *
- * @param {string} address - The full address to geocode.
- * @return {Promise<Object>} Promise resolving to { latitude, longitude, error } or { latitude: '', longitude: '', error: string } on error.
- */
-async function geocodeAddress( address ) {
-	if ( ! address || '' === address.trim() ) {
-		return { latitude: '', longitude: '', error: null };
-	}
-
-	try {
-		const response = await fetch(
-			`https://nominatim.openstreetmap.org/search?q=${ encodeURIComponent(
-				address
-			) }&format=geojson`
-		);
-
-		if ( ! response.ok ) {
-			return {
-				latitude: '',
-				longitude: '',
-				error: sprintf(
-					/* translators: %s: HTTP status text */
-					__( 'Geocoding failed: %s', 'gatherpress' ),
-					response.statusText
-				),
-			};
-		}
-
-		const data = await response.json();
-
-		if ( 0 < data.features.length ) {
-			const latitude = String(
-				data.features[ 0 ].geometry.coordinates[ 1 ]
-			);
-			const longitude = String(
-				data.features[ 0 ].geometry.coordinates[ 0 ]
-			);
-			return { latitude, longitude, error: null };
-		}
-
-		// No results found.
-		return {
-			latitude: '',
-			longitude: '',
-			error: __(
-				'Could not find location. Please check the address and try again.',
-				'gatherpress'
-			),
-		};
-	} catch ( error ) {
-		return {
-			latitude: '',
-			longitude: '',
-			error: sprintf(
-				/* translators: %s: Error message */
-				__( 'Geocoding error: %s', 'gatherpress' ),
-				error.message
-			),
-		};
-	}
-}
+import { geocodeAddress } from '../helpers/geocoding';
 
 /**
  * Venue form component for creating or editing a venue.
