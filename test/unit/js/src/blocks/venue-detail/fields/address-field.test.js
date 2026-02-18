@@ -68,4 +68,18 @@ describe( 'AddressField', () => {
 			'Enter address…'
 		);
 	} );
+
+	it( 'renders non-editable placeholder when disabled', () => {
+		render( <AddressField { ...defaultProps } disabled={ true } /> );
+
+		// Should not render RichText when disabled.
+		expect( screen.queryByTestId( 'rich-text' ) ).toBeNull();
+
+		// Should render static placeholder.
+		const placeholder = screen.getByText( 'Enter address…' );
+		expect( placeholder ).toBeTruthy();
+		expect( placeholder.className ).toBe(
+			'wp-block-gatherpress-venue-detail__placeholder'
+		);
+	} );
 } );

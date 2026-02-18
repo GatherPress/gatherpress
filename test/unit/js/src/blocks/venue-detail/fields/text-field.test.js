@@ -60,4 +60,18 @@ describe( 'TextField', () => {
 			'Enter text…'
 		);
 	} );
+
+	it( 'renders non-editable placeholder when disabled', () => {
+		render( <TextField { ...defaultProps } disabled={ true } /> );
+
+		// Should not render RichText when disabled.
+		expect( screen.queryByTestId( 'rich-text' ) ).toBeNull();
+
+		// Should render static placeholder.
+		const placeholder = screen.getByText( 'Enter text…' );
+		expect( placeholder ).toBeTruthy();
+		expect( placeholder.className ).toBe(
+			'wp-block-gatherpress-venue-detail__placeholder'
+		);
+	} );
 } );
