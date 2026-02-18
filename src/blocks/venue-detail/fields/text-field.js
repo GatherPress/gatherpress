@@ -15,13 +15,27 @@ import { RichText } from '@wordpress/block-editor';
  * @param {Function} props.onChange    - Callback when value changes.
  * @param {string}   props.placeholder - Placeholder text.
  * @param {Function} props.onKeyDown   - Keyboard event handler.
+ * @param {boolean}  props.disabled    - Whether the field is disabled.
  * @return {JSX.Element} The rendered text field.
  */
-const TextField = ( { value, onChange, placeholder, onKeyDown } ) => {
+const TextField = ( { value, onChange, placeholder, onKeyDown, disabled } ) => {
+	const baseClass = 'gatherpress-venue-detail__text';
+
+	// Render non-editable placeholder when disabled.
+	if ( disabled ) {
+		return (
+			<div className={ `${ baseClass } gatherpress-venue-detail--disabled` }>
+				<span className="wp-block-gatherpress-venue-detail__placeholder">
+					{ placeholder }
+				</span>
+			</div>
+		);
+	}
+
 	return (
 		<RichText
 			tagName="div"
-			className="gatherpress-venue-detail__text"
+			className={ baseClass }
 			value={ value }
 			onChange={ onChange }
 			placeholder={ placeholder }

@@ -38,8 +38,13 @@ const Edit = ( {
 	const blockProps = useBlockProps();
 
 	// Get venue data and update functions.
-	const { fieldValue, updateFieldValue, updateWebsiteUrl, updateVenueField } =
-		useVenueData( context, fieldType );
+	const {
+		venuePostId,
+		fieldValue,
+		updateFieldValue,
+		updateWebsiteUrl,
+		updateVenueField,
+	} = useVenueData( context, fieldType );
 
 	// Handle geocoding for address fields.
 	useGeocoding( fieldType, fieldValue, updateVenueField );
@@ -50,13 +55,17 @@ const Edit = ( {
 	// Default placeholder text.
 	const placeholderText = placeholder || __( 'Venue detail…', 'gatherpress' );
 
+	// Check if editing is disabled (no venue context).
+	const isDisabled = ! venuePostId;
+
 	// Render the appropriate field component based on field type.
 	const renderField = () => {
 		const commonProps = {
 			value: fieldValue,
-			onChange: updateFieldValue,
+			onChange: isDisabled ? () => {} : updateFieldValue,
 			placeholder: placeholderText,
-			onKeyDown: handleKeyDown,
+			onKeyDown: isDisabled ? () => {} : handleKeyDown,
+			disabled: isDisabled,
 		};
 
 		switch ( fieldType ) {
@@ -70,7 +79,7 @@ const Edit = ( {
 				return (
 					<UrlField
 						{ ...commonProps }
-						onChange={ updateWebsiteUrl }
+						onChange={ isDisabled ? () => {} : updateWebsiteUrl }
 						linkTarget={ linkTarget }
 						cleanUrl={ cleanUrl }
 						setAttributes={ setAttributes }

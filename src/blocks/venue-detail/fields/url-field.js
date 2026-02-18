@@ -33,6 +33,7 @@ import { cleanUrlForDisplay } from '../helpers';
  * @param {string}   props.linkTarget    - Link target attribute (_blank or _self).
  * @param {boolean}  props.cleanUrl      - Whether to display cleaned URL.
  * @param {Function} props.setAttributes - Function to update block attributes.
+ * @param {boolean}  props.disabled      - Whether the field is disabled.
  * @return {JSX.Element} The rendered URL field.
  */
 const UrlField = ( {
@@ -43,6 +44,7 @@ const UrlField = ( {
 	linkTarget,
 	cleanUrl,
 	setAttributes,
+	disabled,
 } ) => {
 	const [ isLinkPopoverOpen, setIsLinkPopoverOpen ] = useState( false );
 	const [ isUrlFieldFocused, setIsUrlFieldFocused ] = useState( false );
@@ -54,7 +56,23 @@ const UrlField = ( {
 		displayValue = cleanUrlForDisplay( value );
 	}
 
-	const placeholderText = placeholder || __( 'Website…', 'gatherpress' );
+	const placeholderText =
+		placeholder || __( 'Venue website URL…', 'gatherpress' );
+
+	const baseClass = 'gatherpress-venue-detail__url';
+
+	// Render non-editable placeholder when disabled.
+	if ( disabled ) {
+		return (
+			<span
+				className={ `${ baseClass } gatherpress-venue-detail--disabled` }
+			>
+				<span className="wp-block-gatherpress-venue-detail__placeholder">
+					{ placeholderText }
+				</span>
+			</span>
+		);
+	}
 
 	return (
 		<>
@@ -114,7 +132,7 @@ const UrlField = ( {
 						? 'noopener noreferrer'
 						: undefined
 				}
-				className="gatherpress-venue-detail__url"
+				className={ baseClass }
 				value={ displayValue }
 				onChange={ onChange }
 				placeholder={ placeholderText }

@@ -6,3 +6,10 @@
 		opacity: 0.62;
 	}
 }
+
+// Disabled state for venue-detail fields (no venue context).
+.gatherpress-venue-detail--disabled {
+	pointer-events: none;
+	cursor: not-allowed;
+	user-select: none;
+}

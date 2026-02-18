@@ -43,13 +43,14 @@ jest.mock( '@wordpress/block-editor', () => ( {
 
 jest.mock( '@wordpress/components', () => {
 	// Use require inside the factory to avoid out-of-scope variable issue.
-	const { forwardRef } = require( 'react' );
+	const { forwardRef } = require( '@wordpress/element' );
 
 	return {
 		Popover: ( { children } ) => (
 			<div data-testid="popover">{ children }</div>
 		),
 		ToggleControl: ( { label, checked, onChange } ) => (
+			// eslint-disable-next-line jsx-a11y/label-has-associated-control
 			<label data-testid={ `toggle-${ label }` }>
 				<input
 					type="checkbox"
@@ -90,7 +91,9 @@ jest.mock(
 	'../../../../../../../src/blocks/venue-detail/helpers',
 	() => ( {
 		cleanUrlForDisplay: ( url ) => {
-			if ( ! url ) return '';
+			if ( ! url ) {
+				return '';
+			}
 			return url
 				.replace( /^https?:\/\//, '' )
 				.replace( /^www\./, '' )
@@ -103,7 +106,7 @@ describe( 'UrlField', () => {
 	const defaultProps = {
 		value: '',
 		onChange: jest.fn(),
-		placeholder: 'Website…',
+		placeholder: 'Venue website URL…',
 		onKeyDown: jest.fn(),
 		linkTarget: '_self',
 		cleanUrl: false,
@@ -208,7 +211,7 @@ describe( 'UrlField', () => {
 		render( <UrlField { ...defaultProps } placeholder="" /> );
 
 		const element = screen.getByTestId( 'rich-text' );
-		// Uses default 'Website…' placeholder.
-		expect( element.getAttribute( 'data-placeholder' ) ).toBe( 'Website…' );
+		// Uses default 'Venue website URL…' placeholder.
+		expect( element.getAttribute( 'data-placeholder' ) ).toBe( 'Venue website URL…' );
 	} );
 } );

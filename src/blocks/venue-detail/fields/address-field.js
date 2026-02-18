@@ -15,13 +15,33 @@ import { RichText } from '@wordpress/block-editor';
  * @param {Function} props.onChange    - Callback when value changes.
  * @param {string}   props.placeholder - Placeholder text.
  * @param {Function} props.onKeyDown   - Keyboard event handler.
+ * @param {boolean}  props.disabled    - Whether the field is disabled.
  * @return {JSX.Element} The rendered address field.
  */
-const AddressField = ( { value, onChange, placeholder, onKeyDown } ) => {
+const AddressField = ( {
+	value,
+	onChange,
+	placeholder,
+	onKeyDown,
+	disabled,
+} ) => {
+	const baseClass = 'gatherpress-venue-detail__address';
+
+	// Render non-editable placeholder when disabled.
+	if ( disabled ) {
+		return (
+			<address className={ baseClass } style={ { display: 'inline' } }>
+				<span className="wp-block-gatherpress-venue-detail__placeholder">
+					{ placeholder }
+				</span>
+			</address>
+		);
+	}
+
 	return (
 		<RichText
 			tagName="address"
-			className="gatherpress-venue-detail__address"
+			className={ baseClass }
 			style={ { display: 'inline' } }
 			value={ value }
 			onChange={ onChange }

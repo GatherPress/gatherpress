@@ -121,7 +121,7 @@ export const TEMPLATE_WITH_TITLE = [
 					[
 						'gatherpress/venue-detail',
 						{
-							placeholder: 'Website URL…',
+							placeholder: 'Venue website URL…',
 							fieldType: 'url',
 						},
 					],
@@ -234,7 +234,7 @@ export const TEMPLATE_WITHOUT_TITLE = [
 					[
 						'gatherpress/venue-detail',
 						{
-							placeholder: 'Website URL…',
+							placeholder: 'Venue website URL…',
 							fieldType: 'url',
 						},
 					],

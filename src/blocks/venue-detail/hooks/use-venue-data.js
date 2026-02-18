@@ -33,11 +33,26 @@ export function useVenueData( context, fieldType ) {
 				selectData( 'core/editor' )?.getCurrentPostType();
 			const contextPostId = context?.postId || 0;
 
-			// If we're editing a venue post directly and context doesn't provide a valid ID,
-			// use the current post ID.
-			const effectiveVenuePostId =
-				contextPostId ||
-				( currentPostType === CPT_VENUE ? currentPostId : 0 );
+			// Check if the context post is actually a venue.
+			let contextPostIsVenue = false;
+			if ( contextPostId ) {
+				const contextPost = selectData( coreStore ).getEntityRecord(
+					'postType',
+					CPT_VENUE,
+					contextPostId
+				);
+				// If we got a record from the venue post type, it's a venue.
+				contextPostIsVenue = !! contextPost;
+			}
+
+			// Only use contextPostId if it's actually a venue post.
+			// Otherwise, check if we're editing a venue directly.
+			let effectiveVenuePostId = 0;
+			if ( contextPostIsVenue ) {
+				effectiveVenuePostId = contextPostId;
+			} else if ( currentPostType === CPT_VENUE ) {
+				effectiveVenuePostId = currentPostId;
+			}
 
 			return {
 				venuePostId: effectiveVenuePostId,

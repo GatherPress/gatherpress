@@ -16,16 +16,36 @@ import { RichText } from '@wordpress/block-editor';
  * @param {Function} props.onChange    - Callback when value changes.
  * @param {string}   props.placeholder - Placeholder text.
  * @param {Function} props.onKeyDown   - Keyboard event handler.
+ * @param {boolean}  props.disabled    - Whether the field is disabled.
  * @return {JSX.Element} The rendered phone field.
  */
-const PhoneField = ( { value, onChange, placeholder, onKeyDown } ) => {
+const PhoneField = ( {
+	value,
+	onChange,
+	placeholder,
+	onKeyDown,
+	disabled,
+} ) => {
+	const baseClass = 'gatherpress-venue-detail__phone';
+
+	// Render non-editable placeholder when disabled.
+	if ( disabled ) {
+		return (
+			<span className={ `${ baseClass } gatherpress-venue-detail--disabled` }>
+				<span className="wp-block-gatherpress-venue-detail__placeholder">
+					{ placeholder }
+				</span>
+			</span>
+		);
+	}
+
 	const commonProps = {
 		value,
 		onChange,
 		placeholder,
 		allowedFormats: [],
 		onKeyDown,
-		className: 'gatherpress-venue-detail__phone',
+		className: baseClass,
 	};
 
 	// Render as a link with tel: href when value exists.
