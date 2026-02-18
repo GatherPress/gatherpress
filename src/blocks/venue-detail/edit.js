@@ -2,34 +2,14 @@
  * WordPress dependencies.
  */
 import { __ } from '@wordpress/i18n';
-import {
-	BlockControls,
-	InspectorControls,
-	RichText,
-	useBlockProps,
-	store as blockEditorStore,
-} from '@wordpress/block-editor';
-import {
-	PanelBody,
-	Popover,
-	SelectControl,
-	ToggleControl,
-	ToolbarButton,
-	ToolbarGroup,
-} from '@wordpress/components';
-import { useSelect, useDispatch, select } from '@wordpress/data';
-import { store as coreStore } from '@wordpress/core-data';
-import { createBlock } from '@wordpress/blocks';
-import { useCallback, useEffect, useRef, useState } from '@wordpress/element';
-import { useDebounce } from '@wordpress/compose';
-import { link as linkIcon } from '@wordpress/icons';
+import { InspectorControls, useBlockProps } from '@wordpress/block-editor';
+import { PanelBody, SelectControl } from '@wordpress/components';
 
 /**
  * Internal dependencies.
  */
-import { CPT_VENUE } from '../../helpers/namespace';
-import { geocodeAddress } from '../../helpers/geocoding';
-import { cleanUrlForDisplay, getJsonFieldName } from './helpers';
+import { useVenueData, useGeocoding, useBlockInsertion } from './hooks';
+import { AddressField, PhoneField, UrlField, TextField } from './fields';
 
 /**
  * Edit component for the Venue Detail block.
@@ -45,7 +25,6 @@ import { cleanUrlForDisplay, getJsonFieldName } from './helpers';
  * @param {Object}   props.context           - Block context.
  * @param {string}   props.clientId          - Block client ID.
  * @param {Function} props.insertBlocksAfter - Function to insert blocks after this block.
- *
  * @return {JSX.Element} The rendered React component.
  */
 const Edit = ( {
@@ -57,408 +36,49 @@ const Edit = ( {
 } ) => {
 	const { placeholder, fieldType, linkTarget, cleanUrl } = attributes;
 	const blockProps = useBlockProps();
-	const [ isLinkPopoverOpen, setIsLinkPopoverOpen ] = useState( false );
-	const [ isUrlFieldFocused, setIsUrlFieldFocused ] = useState( false );
-	const linkButtonRef = useRef( null );
 
-	// Determine the venue post ID and whether we're editing the current post.
-	const { venuePostId, isEditingCurrentPost } = useSelect(
-		( selectData ) => {
-			const currentPostId =
-				selectData( 'core/editor' )?.getCurrentPostId();
-			const currentPostType =
-				selectData( 'core/editor' )?.getCurrentPostType();
-			const contextPostId = context?.postId || 0;
+	// Get venue data and update functions.
+	const { fieldValue, updateFieldValue, updateWebsiteUrl, updateVenueField } =
+		useVenueData( context, fieldType );
 
-			// If we're editing a venue post directly and context doesn't provide a valid ID,
-			// use the current post ID.
-			const effectiveVenuePostId =
-				contextPostId ||
-				( currentPostType === CPT_VENUE ? currentPostId : 0 );
+	// Handle geocoding for address fields.
+	useGeocoding( fieldType, fieldValue, updateVenueField );
 
-			return {
-				venuePostId: effectiveVenuePostId,
-				isEditingCurrentPost:
-					currentPostId === effectiveVenuePostId &&
-					currentPostType === CPT_VENUE,
-			};
-		},
-		[ context?.postId ]
-	);
+	// Handle Enter key block insertion.
+	const { handleKeyDown } = useBlockInsertion( clientId, insertBlocksAfter );
 
-	// Map field type to JSON field name using helper.
-	const jsonFieldName = getJsonFieldName( fieldType );
+	// Default placeholder text.
+	const placeholderText = placeholder || __( 'Venue detail…', 'gatherpress' );
 
-	// Get dispatch functions for both stores.
-	const { editEntityRecord } = useDispatch( coreStore );
-	const { editPost } = useDispatch( 'core/editor' );
-
-	// Block insertion for Enter key handling at beginning.
-	const { insertBlocks, selectBlock } = useDispatch( blockEditorStore );
-	const { getBlockRootClientId, getBlockIndex } = useSelect(
-		( selectEditor ) => selectEditor( blockEditorStore ),
-		[]
-	);
-
-	// Get venue info from meta.
-	const venueInfo = useSelect(
-		( selectData ) => {
-			if ( ! venuePostId ) {
-				return {};
-			}
-
-			let venueInfoJson = '{}';
-
-			if ( isEditingCurrentPost ) {
-				const meta =
-					selectData( 'core/editor' )?.getEditedPostAttribute(
-						'meta'
-					) || {};
-				venueInfoJson = meta?.gatherpress_venue_information || '{}';
-			} else {
-				const { getEditedEntityRecord } = selectData( coreStore );
-				const venuePost = getEditedEntityRecord(
-					'postType',
-					CPT_VENUE,
-					venuePostId
-				);
-				venueInfoJson =
-					venuePost?.meta?.gatherpress_venue_information || '{}';
-			}
-
-			try {
-				return JSON.parse( venueInfoJson );
-			} catch ( e ) {
-				return {};
-			}
-		},
-		[ venuePostId, isEditingCurrentPost ]
-	);
-
-	const fieldValue = jsonFieldName ? venueInfo[ jsonFieldName ] || '' : '';
-
-	// Generic function to update venue meta fields.
-	// Accepts either (fieldName, value) or an object of { fieldName: value } pairs.
-	const updateVenueField = useCallback(
-		( fieldNameOrFields, newValue ) => {
-			if ( ! venuePostId ) {
-				return;
-			}
-
-			let venueInfoJson = '{}';
-
-			if ( isEditingCurrentPost ) {
-				const meta =
-					select( 'core/editor' )?.getEditedPostAttribute( 'meta' ) ||
-					{};
-				venueInfoJson = meta?.gatherpress_venue_information || '{}';
-			} else {
-				const currentVenueInfo = select(
-					coreStore
-				)?.getEditedEntityRecord( 'postType', CPT_VENUE, venuePostId );
-				venueInfoJson =
-					currentVenueInfo?.meta?.gatherpress_venue_information ||
-					'{}';
-			}
-
-			let updatedVenueInfo = {};
-			try {
-				updatedVenueInfo = JSON.parse( venueInfoJson );
-			} catch ( e ) {
-				updatedVenueInfo = {};
-			}
-
-			// Support both single field and multiple fields.
-			if ( 'object' === typeof fieldNameOrFields ) {
-				Object.assign( updatedVenueInfo, fieldNameOrFields );
-			} else {
-				updatedVenueInfo[ fieldNameOrFields ] = newValue;
-			}
-
-			if ( isEditingCurrentPost ) {
-				editPost( {
-					meta: {
-						gatherpress_venue_information:
-							JSON.stringify( updatedVenueInfo ),
-					},
-				} );
-			} else {
-				editEntityRecord( 'postType', CPT_VENUE, venuePostId, {
-					meta: {
-						gatherpress_venue_information:
-							JSON.stringify( updatedVenueInfo ),
-					},
-				} );
-			}
-		},
-		[ venuePostId, isEditingCurrentPost, editEntityRecord, editPost ]
-	);
-
-	const updateFieldValue = useCallback(
-		( newValue ) => {
-			// Strip any HTML tags from the value (plain text only).
-			const strippedValue = newValue.replace( /<[^>]*>/g, '' );
-			updateVenueField( jsonFieldName, strippedValue );
-		},
-		[ jsonFieldName, updateVenueField ]
-	);
-
-	const updateWebsiteUrl = useCallback(
-		( newValue ) => {
-			const strippedValue = newValue.replace( /<[^>]*>/g, '' );
-			updateVenueField( 'website', strippedValue );
-		},
-		[ updateVenueField ]
-	);
-
-	// Get dispatch functions for venue store.
-	const { updateVenueLatitude, updateVenueLongitude } =
-		useDispatch( 'gatherpress/venue' );
-
-	// Get mapCustomLatLong setting from venue store.
-	const { mapCustomLatLong } = useSelect(
-		( selectData ) => ( {
-			mapCustomLatLong:
-				selectData( 'gatherpress/venue' ).getMapCustomLatLong(),
-		} ),
-		[]
-	);
-
-	// Track address for geocoding.
-	const addressRef = useRef( 'address' === fieldType ? fieldValue : '' );
-	if ( 'address' === fieldType ) {
-		addressRef.current = fieldValue;
-	}
-
-	// Geocode address field changes.
-	const handleGeocode = useCallback( async () => {
-		const address = addressRef.current;
-
-		if ( 'address' !== fieldType ) {
-			return;
-		}
-
-		// If address is empty, clear lat/long.
-		if ( ! address ) {
-			if ( ! mapCustomLatLong ) {
-				// Clear venue store for live preview.
-				updateVenueLatitude( '' );
-				updateVenueLongitude( '' );
-
-				// Clear meta for the venue post.
-				updateVenueField( { latitude: '', longitude: '' } );
-			}
-			return;
-		}
-
-		const { latitude, longitude } = await geocodeAddress( address );
-
-		if ( ! mapCustomLatLong ) {
-			// Update venue store for live preview.
-			updateVenueLatitude( latitude || null );
-			updateVenueLongitude( longitude || null );
-
-			// Update meta for the venue post.
-			updateVenueField( {
-				latitude: latitude || '',
-				longitude: longitude || '',
-			} );
-		}
-	}, [
-		fieldType,
-		mapCustomLatLong,
-		updateVenueLatitude,
-		updateVenueLongitude,
-		updateVenueField,
-	] );
-
-	const debouncedGeocode = useDebounce( handleGeocode, 300 );
-
-	// Trigger geocoding when address field value changes.
-	useEffect( () => {
-		if ( 'address' === fieldType ) {
-			debouncedGeocode();
-		}
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [ fieldValue, fieldType ] );
-
-	// Common onKeyDown handler for RichText fields.
-	const handleKeyDown = ( event ) => {
-		if ( 'Enter' === event.key && ! event.shiftKey ) {
-			// Always prevent default to avoid line break/snap behavior.
-			event.preventDefault();
-
-			const contentElement = event.currentTarget;
-			const selection =
-				contentElement.ownerDocument.defaultView.getSelection();
-			if ( ! selection.rangeCount ) {
-				return;
-			}
-
-			const range = selection.getRangeAt( 0 );
-			const textContent = contentElement.textContent || '';
-
-			// Calculate cursor position.
-			const preRange = document.createRange();
-			preRange.selectNodeContents( contentElement );
-			preRange.setEnd( range.startContainer, range.startOffset );
-			const cursorPosition = preRange.toString().length;
-
-			// At the beginning.
-			if ( 0 === cursorPosition ) {
-				const newBlock = createBlock( 'core/paragraph' );
-				const rootClientId = getBlockRootClientId( clientId );
-				const blockIndex = getBlockIndex( clientId );
-				// Insert at the current block's index (pushes current block down).
-				insertBlocks( newBlock, blockIndex, rootClientId );
-				// Select the newly created block to move focus to it.
-				selectBlock( newBlock.clientId );
-			} else if ( cursorPosition === textContent.length ) {
-				// At the end.
-				const newBlock = createBlock( 'core/paragraph' );
-				insertBlocksAfter( [ newBlock ] );
-			}
-			// In the middle - do nothing (already prevented default).
-		}
-	};
-
-	// Render the URL field with link settings popover.
-	const renderUrlField = () => {
-		// When focused, show raw URL for editing. When blurred, show cleaned URL if enabled.
-		let displayValue = fieldValue;
-		if ( ! isUrlFieldFocused && cleanUrl ) {
-			displayValue = cleanUrlForDisplay( fieldValue );
-		}
-		const placeholderText = placeholder || __( 'Website…', 'gatherpress' );
-
-		return (
-			<>
-				<BlockControls>
-					<ToolbarGroup>
-						<ToolbarButton
-							ref={ linkButtonRef }
-							icon={ linkIcon }
-							title={ __( 'Link settings', 'gatherpress' ) }
-							onClick={ () =>
-								setIsLinkPopoverOpen( ! isLinkPopoverOpen )
-							}
-							isPressed={ isLinkPopoverOpen }
-						/>
-					</ToolbarGroup>
-				</BlockControls>
-				{ isLinkPopoverOpen && (
-					<Popover
-						anchor={ linkButtonRef.current }
-						onClose={ () => setIsLinkPopoverOpen( false ) }
-						placement="bottom"
-						shift
-					>
-						<div
-							style={ {
-								padding: '16px',
-								width: '280px',
-							} }
-						>
-							<ToggleControl
-								label={ __( 'Open in new tab', 'gatherpress' ) }
-								checked={ '_blank' === linkTarget }
-								onChange={ ( value ) =>
-									setAttributes( {
-										linkTarget: value ? '_blank' : '_self',
-									} )
-								}
-							/>
-							<ToggleControl
-								label={ __( 'Clean URL display', 'gatherpress' ) }
-								checked={ cleanUrl }
-								onChange={ ( value ) =>
-									setAttributes( { cleanUrl: value } )
-								}
-							/>
-						</div>
-					</Popover>
-				) }
-				<RichText
-					tagName={ fieldValue ? 'a' : 'span' }
-					href={ fieldValue || undefined }
-					target={
-						fieldValue && '_blank' === linkTarget
-							? '_blank'
-							: undefined
-					}
-					rel={
-						fieldValue && '_blank' === linkTarget
-							? 'noopener noreferrer'
-							: undefined
-					}
-					className="gatherpress-venue-detail__url"
-					value={ displayValue }
-					onChange={ updateWebsiteUrl }
-					placeholder={ placeholderText }
-					allowedFormats={ [] }
-					onKeyDown={ handleKeyDown }
-					onFocus={ () => setIsUrlFieldFocused( true ) }
-					onBlur={ () => setIsUrlFieldFocused( false ) }
-					onClick={ ( e ) => fieldValue && e.preventDefault() }
-				/>
-			</>
-		);
-	};
-
-	// Render different field types with appropriate HTML elements.
-	const renderEditableField = () => {
-		const placeholderText =
-			placeholder || __( 'Venue detail…', 'gatherpress' );
-
-		// Common RichText props.
-		const richTextProps = {
+	// Render the appropriate field component based on field type.
+	const renderField = () => {
+		const commonProps = {
 			value: fieldValue,
 			onChange: updateFieldValue,
 			placeholder: placeholderText,
-			allowedFormats: [], // Plain text only.
 			onKeyDown: handleKeyDown,
 		};
 
 		switch ( fieldType ) {
 			case 'address':
-				return (
-					<RichText
-						{ ...richTextProps }
-						tagName="address"
-						className="gatherpress-venue-detail__address"
-						style={ { display: 'inline' } }
-					/>
-				);
+				return <AddressField { ...commonProps } />;
 
 			case 'phone':
-				// Render as a link with tel: href.
-				return fieldValue ? (
-					<RichText
-						{ ...richTextProps }
-						tagName="a"
-						href={ `tel:${ fieldValue }` }
-						className="gatherpress-venue-detail__phone"
-						onClick={ ( e ) => e.preventDefault() }
-					/>
-				) : (
-					<RichText
-						{ ...richTextProps }
-						tagName="span"
-						className="gatherpress-venue-detail__phone"
-					/>
-				);
+				return <PhoneField { ...commonProps } />;
 
 			case 'url':
-				return renderUrlField();
-
-			default:
 				return (
-					<RichText
-						{ ...richTextProps }
-						tagName="div"
-						className="gatherpress-venue-detail__text"
+					<UrlField
+						{ ...commonProps }
+						onChange={ updateWebsiteUrl }
+						linkTarget={ linkTarget }
+						cleanUrl={ cleanUrl }
+						setAttributes={ setAttributes }
 					/>
 				);
+
+			default:
+				return <TextField { ...commonProps } />;
 		}
 	};
 
@@ -497,7 +117,7 @@ const Edit = ( {
 					/>
 				</PanelBody>
 			</InspectorControls>
-			<div { ...blockProps }>{ renderEditableField() }</div>
+			<div { ...blockProps }>{ renderField() }</div>
 		</>
 	);
 };
