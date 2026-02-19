@@ -32,42 +32,54 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 	const { zoom, type, height } = attributes;
 	const blockProps = useBlockProps();
 
-	// Get the venue post ID from context (provided by venue-v2 block).
-	const venuePostId = context?.postId || 0;
-
-	// Check if we're editing this venue post directly.
+	// Determine the venue post ID and get venue info.
 	const { isEditingThisVenue, venueInfoJson } = useSelect(
 		( select ) => {
-			if ( ! venuePostId ) {
+			const currentPostId = select( 'core/editor' )?.getCurrentPostId();
+			const currentPostType = select( 'core/editor' )?.getCurrentPostType();
+			const contextPostId = context?.postId || 0;
+
+			// If we're editing a venue post directly and context doesn't provide a valid ID,
+			// use the current post ID.
+			const effectiveVenuePostId =
+				contextPostId ||
+				( currentPostType === CPT_VENUE ? currentPostId : 0 );
+
+			if ( ! effectiveVenuePostId ) {
 				return {
 					isEditingThisVenue: false,
 					venueInfoJson: '{}',
 				};
 			}
 
-			const currentPostId = select( 'core/editor' ).getCurrentPostId();
-			const currentPostType = select( 'core/editor' ).getCurrentPostType();
-			const isEditing = currentPostId === venuePostId && currentPostType === CPT_VENUE;
+			const isEditing =
+				currentPostId === effectiveVenuePostId &&
+				currentPostType === CPT_VENUE;
 
 			if ( isEditing ) {
 				// Read from core/editor store for the current post being edited.
-				const meta = select( 'core/editor' ).getEditedPostAttribute( 'meta' ) || {};
+				const meta =
+					select( 'core/editor' )?.getEditedPostAttribute( 'meta' ) || {};
 				return {
 					isEditingThisVenue: true,
-					venueInfoJson: meta.gatherpress_venue_information || '{}',
+					venueInfoJson: meta?.gatherpress_venue_information || '{}',
 				};
 			}
 
 			// Read from core store for a different venue post.
 			const { getEditedEntityRecord } = select( 'core' );
-			const venuePost = getEditedEntityRecord( 'postType', CPT_VENUE, venuePostId );
+			const venuePost = getEditedEntityRecord(
+				'postType',
+				CPT_VENUE,
+				effectiveVenuePostId
+			);
 
 			return {
 				isEditingThisVenue: false,
 				venueInfoJson: venuePost?.meta?.gatherpress_venue_information || '{}',
 			};
 		},
-		[ venuePostId ]
+		[ context?.postId ]
 	);
 
 	// For live preview when editing the venue, read lat/long from venue store.

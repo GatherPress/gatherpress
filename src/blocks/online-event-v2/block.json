@@ -9,9 +9,6 @@
 	"description": "Display an editable link for online events. Link URL comes from event/venue meta, text is customizable.",
 	"usesContext": ["postId", "queryId"],
 	"attributes": {
-		"blockId": {
-			"type": "string"
-		},
 		"linkText": {
 			"type": "string",
 			"default": ""

@@ -2,10 +2,15 @@
  * WordPress dependencies.
  */
 import { TextControl } from '@wordpress/components';
-import { __, sprintf } from '@wordpress/i18n';
-import { useDispatch, useSelect } from '@wordpress/data';
+import { __ } from '@wordpress/i18n';
+import { select, useDispatch, useSelect } from '@wordpress/data';
 import { useEffect, useCallback, useRef } from '@wordpress/element';
 import { useDebounce } from '@wordpress/compose';
+
+/**
+ * Internal dependencies.
+ */
+import { geocodeAddress } from '../helpers/geocoding';
 
 /**
  * Parse venue information from JSON meta field.
@@ -37,6 +42,25 @@ const parseVenueInfo = ( venueMeta ) => {
 };
 
 /**
+ * Get the current venue info merged with new fields.
+ *
+ * Reads the current meta from the editor store, parses it,
+ * and merges with the provided fields.
+ *
+ * @param {Object} fields - Object of field names and values to merge.
+ * @return {Object} The updated venue info object.
+ */
+const getUpdatedVenueInfo = ( fields ) => {
+	const currentMeta =
+		select( 'core/editor' ).getEditedPostAttribute( 'meta' ) || {};
+	const currentInfo = parseVenueInfo( currentMeta );
+	return {
+		...currentInfo,
+		...fields,
+	};
+};
+
+/**
  * VenueInformation component for GatherPress.
  *
  * This component allows users to input and update venue information, including full address,
@@ -55,9 +79,9 @@ const VenueInformation = () => {
 		useDispatch( 'gatherpress/venue' );
 
 	const { mapCustomLatLong, venueMeta } = useSelect(
-		( select ) => ( {
-			mapCustomLatLong: select( 'gatherpress/venue' ).getMapCustomLatLong(),
-			venueMeta: select( 'core/editor' ).getEditedPostAttribute( 'meta' ) || {},
+		( selectData ) => ( {
+			mapCustomLatLong: selectData( 'gatherpress/venue' ).getMapCustomLatLong(),
+			venueMeta: selectData( 'core/editor' ).getEditedPostAttribute( 'meta' ) || {},
 		} ),
 		[],
 	);
@@ -86,16 +110,16 @@ const VenueInformation = () => {
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [] ); // Run once on mount only.
 
-	// Helper to update JSON field.
+	// Helper to update venue JSON meta field.
+	// Accepts either (fieldName, value) or (fieldsObject) for multiple fields.
 	const updateVenueField = useCallback(
-		( jsonField, value ) => {
-			// Get the current meta value from the editor store directly.
-			const currentMeta = window.wp.data.select( 'core/editor' ).getEditedPostAttribute( 'meta' ) || {};
-			const currentInfo = parseVenueInfo( currentMeta );
-			const updatedInfo = {
-				...currentInfo,
-				[ jsonField ]: value,
-			};
+		( fieldNameOrFields, value ) => {
+			const fields =
+				'object' === typeof fieldNameOrFields
+					? fieldNameOrFields
+					: { [ fieldNameOrFields ]: value };
+
+			const updatedInfo = getUpdatedVenueInfo( fields );
 
 			editPost( {
 				meta: {
@@ -106,7 +130,7 @@ const VenueInformation = () => {
 		[ editPost ],
 	);
 
-	const getData = useCallback( () => {
+	const getData = useCallback( async () => {
 		// Read current address from ref to avoid recreating this callback.
 		const address = fullAddressRef.current;
 
@@ -115,79 +139,26 @@ const VenueInformation = () => {
 			if ( ! mapCustomLatLong ) {
 				updateVenueLatitude( '' );
 				updateVenueLongitude( '' );
-
-				// Update the JSON meta field with empty lat/long.
-				const currentMeta = window.wp.data.select( 'core/editor' ).getEditedPostAttribute( 'meta' ) || {};
-				const currentInfo = parseVenueInfo( currentMeta );
-				const updatedInfo = {
-					...currentInfo,
-					latitude: '',
-					longitude: '',
-				};
-
-				editPost( {
-					meta: {
-						gatherpress_venue_information: JSON.stringify( updatedInfo ),
-					},
-				} );
+				updateVenueField( { latitude: '', longitude: '' } );
 			}
 			return;
 		}
 
-		let lat = null;
-		let lng = null;
+		const { latitude, longitude } = await geocodeAddress( address );
 
-		fetch(
-			`https://nominatim.openstreetmap.org/search?q=${ encodeURIComponent( address ) }&format=geojson`,
-		)
-			.then( ( response ) => {
-				if ( ! response.ok ) {
-					throw new Error(
-						sprintf(
-							/* translators: %s: Error message */
-							__( 'Network response was not ok %s', 'gatherpress' ),
-							response.statusText,
-						),
-					);
-				}
-				return response.json();
-			} )
-			.then( ( data ) => {
-				if ( 0 < data.features.length ) {
-					lat = data.features[ 0 ].geometry.coordinates[ 1 ];
-					lng = data.features[ 0 ].geometry.coordinates[ 0 ];
-				}
-
-				if ( ! mapCustomLatLong ) {
-					updateVenueLatitude( lat );
-					updateVenueLongitude( lng );
-
-					// Update the JSON meta field with lat/long.
-					const currentMeta = window.wp.data.select( 'core/editor' ).getEditedPostAttribute( 'meta' ) || {};
-					const currentInfo = parseVenueInfo( currentMeta );
-					const updatedInfo = {
-						...currentInfo,
-						latitude: lat ? String( lat ) : '',
-						longitude: lng ? String( lng ) : '',
-					};
-
-					editPost( {
-						meta: {
-							gatherpress_venue_information: JSON.stringify( updatedInfo ),
-						},
-					} );
-				}
-			} )
-			.catch( ( error ) => {
-				// Silently fail geocoding errors.
-				// eslint-disable-next-line no-console
-				console.warn( 'Geocoding failed:', error );
+		if ( ! mapCustomLatLong ) {
+			updateVenueLatitude( latitude || null );
+			updateVenueLongitude( longitude || null );
+			updateVenueField( {
+				latitude: latitude || '',
+				longitude: longitude || '',
 			} );
+		}
 	}, [
 		mapCustomLatLong,
 		updateVenueLatitude,
 		updateVenueLongitude,
-		editPost,
+		updateVenueField,
 	] ); // fullAddress removed - read from ref instead.
 
 	const debouncedGetData = useDebounce( getData, 300 );
