@@ -28,4 +28,4 @@ apply_filters(
 
 
 
-[← All Hooks](Hooks)
+[← All Hooks](Hooks.md)

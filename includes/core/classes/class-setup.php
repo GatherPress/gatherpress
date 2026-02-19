@@ -65,6 +65,7 @@ class Setup {
 		Event_Setup::get_instance();
 		Export::get_instance();
 		Import::get_instance();
+		Rsvp_Cleanup::get_instance();
 		Rsvp_Form::get_instance();
 		Rsvp_Query::get_instance();
 		Rsvp_Setup::get_instance();
@@ -87,6 +88,7 @@ class Setup {
 		register_activation_hook( GATHERPRESS_CORE_FILE, array( $this, 'activate_gatherpress_plugin' ) );
 		register_deactivation_hook( GATHERPRESS_CORE_FILE, array( $this, 'deactivate_gatherpress_plugin' ) );
 
+		add_action( 'admin_init', array( $this, 'check_plugin_version' ) );
 		add_action( 'admin_init', array( $this, 'add_privacy_policy_content' ) );
 		add_action( 'admin_notices', array( $this, 'check_gatherpress_alpha' ) );
 		add_action( 'network_admin_notices', array( $this, 'check_gatherpress_alpha' ) );
@@ -96,6 +98,7 @@ class Setup {
 		add_filter( 'block_categories_all', array( $this, 'register_gatherpress_block_category' ) );
 		add_filter( 'wpmu_drop_tables', array( $this, 'on_site_delete' ) );
 		add_filter( 'body_class', array( $this, 'add_gatherpress_body_classes' ) );
+		add_filter( 'is_protected_meta', array( $this, 'protect_gatherpress_meta' ), 10, 2 );
 		add_filter(
 			sprintf(
 				'plugin_action_links_%s/%s',
@@ -183,6 +186,31 @@ class Setup {
 	 */
 	public function deactivate_gatherpress_plugin(): void {
 		flush_rewrite_rules();
+	}
+
+	/**
+	 * Check if plugin version has changed and flush rewrite rules if needed.
+	 *
+	 * This method runs on admin_init to detect plugin updates. When the stored
+	 * version differs from the current version, it schedules a rewrite rules flush
+	 * to ensure any changes to rewrite rules take effect automatically.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return void
+	 */
+	public function check_plugin_version(): void {
+		if ( ! defined( 'GATHERPRESS_VERSION' ) ) {
+			return; // @codeCoverageIgnore
+		}
+
+		$stored_version  = get_option( 'gatherpress_version', '' );
+		$current_version = GATHERPRESS_VERSION;
+
+		if ( $stored_version !== $current_version ) {
+			$this->schedule_rewrite_flush();
+			update_option( 'gatherpress_version', $current_version );
+		}
 	}
 
 	/**
@@ -459,6 +487,29 @@ class Setup {
 				'dismissible' => true,
 			)
 		);
+	}
+
+	/**
+	 * Protect GatherPress meta from the Custom Fields panel.
+	 *
+	 * This prevents GatherPress meta fields from appearing in the Custom Fields
+	 * metabox in the block editor. When Custom Fields are enabled, WordPress
+	 * saves all visible meta values on post save, which can overwrite values
+	 * set by the JavaScript editor with stale data. Hiding these fields also
+	 * prevents users from editing them in the wrong place.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param bool   $is_protected Whether the meta key is protected.
+	 * @param string $meta_key     The meta key being checked.
+	 * @return bool True if the meta key should be protected, false otherwise.
+	 */
+	public function protect_gatherpress_meta( bool $is_protected, string $meta_key ): bool {
+		if ( str_starts_with( $meta_key, 'gatherpress_' ) ) {
+			return true;
+		}
+
+		return $is_protected;
 	}
 
 	/**

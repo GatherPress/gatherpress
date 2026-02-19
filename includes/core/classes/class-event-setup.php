@@ -16,9 +16,11 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use Exception;
 use GatherPress\Core\Traits\Singleton;
+use stdClass;
 use WP;
 use WP_Post;
 use WP_Query;
+use WP_REST_Request;
 
 /**
  * Class Event_Setup.
@@ -32,6 +34,15 @@ class Event_Setup {
 	 * Enforces a single instance of this class.
 	 */
 	use Singleton;
+
+	/**
+	 * Cached event counts for the current request.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @var array<string, int>|null
+	 */
+	protected ?array $event_counts = null;
 
 	/**
 	 * Class constructor.
@@ -67,8 +78,17 @@ class Event_Setup {
 			10,
 			2
 		);
+		add_action( 'load-edit.php', array( $this, 'default_sort' ) );
+		add_action( 'admin_menu', array( $this, 'modify_all_events_menu_link' ) );
+		add_filter( 'submenu_file', array( $this, 'highlight_events_submenu' ) );
 
 		add_filter( 'redirect_canonical', array( $this, 'disable_ics_canonical_redirect' ), 10, 2 );
+		add_filter(
+			sprintf( 'rest_pre_insert_%s', Event::POST_TYPE ),
+			array( $this, 'filter_readonly_meta' ),
+			10,
+			2
+		);
 		add_filter(
 			sprintf( 'manage_%s_posts_columns', Event::POST_TYPE ),
 			array( $this, 'set_custom_columns' )
@@ -77,6 +97,11 @@ class Event_Setup {
 			sprintf( 'manage_edit-%s_sortable_columns', Event::POST_TYPE ),
 			array( $this, 'sortable_columns' )
 		);
+		add_filter(
+			sprintf( 'views_edit-%s', Event::POST_TYPE ),
+			array( $this, 'views_edit' )
+		);
+		add_filter( 'query_vars', array( $this, 'query_vars' ) );
 		add_action( 'pre_get_posts', array( $this, 'handle_rsvp_sorting' ) );
 		add_action( 'pre_get_posts', array( $this, 'handle_venue_sorting' ) );
 		add_filter( 'get_the_date', array( $this, 'get_the_event_date' ) );
@@ -127,7 +152,7 @@ class Event_Setup {
 					'not_found'                => __( 'No Events found.', 'gatherpress' ),
 					'not_found_in_trash'       => __( 'No Events found in Trash.', 'gatherpress' ),
 					'parent_item_colon'        => __( 'Parent Events:', 'gatherpress' ),
-					'all_items'                => __( 'All Events', 'gatherpress' ),
+					'all_items'                => __( 'View Events', 'gatherpress' ),
 					'archives'                 => __( 'Event Archives', 'gatherpress' ),
 					'attributes'               => __( 'Event Attributes', 'gatherpress' ),
 					'insert_into_item'         => __( 'Insert into Event', 'gatherpress' ),
@@ -157,7 +182,7 @@ class Event_Setup {
 				'template'      => array(
 					array( 'gatherpress/event-date' ),
 					array( 'gatherpress/add-to-calendar' ),
-					array( 'gatherpress/venue' ),
+					array( 'gatherpress/venue-v2' ),
 					array( 'gatherpress/rsvp' ),
 					array(
 						'core/paragraph',
@@ -251,34 +276,34 @@ class Event_Setup {
 				'type'              => 'string',
 			),
 			'gatherpress_datetime_start'        => array(
-				'auth_callback'     => array( $this, 'can_edit_posts_meta' ),
+				'auth_callback'     => '__return_false', // Read-only: derived from gatherpress_datetime.
 				'sanitize_callback' => 'sanitize_text_field',
 				'show_in_rest'      => true,
 				'single'            => true,
 			),
 			'gatherpress_datetime_start_gmt'    => array(
-				'auth_callback'     => array( $this, 'can_edit_posts_meta' ),
+				'auth_callback'     => '__return_false', // Read-only: derived from gatherpress_datetime.
 				'sanitize_callback' => 'sanitize_text_field',
 				'show_in_rest'      => true,
 				'single'            => true,
 				'type'              => 'string',
 			),
 			'gatherpress_datetime_end'          => array(
-				'auth_callback'     => array( $this, 'can_edit_posts_meta' ),
+				'auth_callback'     => '__return_false', // Read-only: derived from gatherpress_datetime.
 				'sanitize_callback' => 'sanitize_text_field',
 				'show_in_rest'      => true,
 				'single'            => true,
 				'type'              => 'string',
 			),
 			'gatherpress_datetime_end_gmt'      => array(
-				'auth_callback'     => array( $this, 'can_edit_posts_meta' ),
+				'auth_callback'     => '__return_false', // Read-only: derived from gatherpress_datetime.
 				'sanitize_callback' => 'sanitize_text_field',
 				'show_in_rest'      => true,
 				'single'            => true,
 				'type'              => 'string',
 			),
 			'gatherpress_timezone'              => array(
-				'auth_callback'     => array( $this, 'can_edit_posts_meta' ),
+				'auth_callback'     => '__return_false', // Read-only: derived from gatherpress_datetime.
 				'sanitize_callback' => 'sanitize_text_field',
 				'show_in_rest'      => true,
 				'single'            => true,
@@ -305,6 +330,7 @@ class Event_Setup {
 				'show_in_rest'      => true,
 				'single'            => true,
 				'type'              => 'string',
+				'default'           => '',
 			),
 			'gatherpress_max_attendance_limit'  => array(
 				'auth_callback'     => array( $this, 'can_edit_posts_meta' ),
@@ -325,18 +351,62 @@ class Event_Setup {
 	}
 
 	/**
+	 * Filter out read-only meta fields from REST API requests.
+	 *
+	 * This prevents the "Publishing failed. Sorry, you are not allowed to edit
+	 * the gatherpress_datetime_start custom field." error that occurs when the
+	 * block editor tries to save derived meta fields that have auth_callback
+	 * set to __return_false.
+	 *
+	 * The derived datetime fields are populated programmatically via the
+	 * set_datetimes() method when gatherpress_datetime is saved, so any
+	 * values sent via REST API should be silently discarded.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param stdClass        $prepared_post An object representing a single post prepared for inserting or updating.
+	 * @param WP_REST_Request $request       Request object.
+	 * @return stdClass The prepared post object.
+	 */
+	public function filter_readonly_meta( stdClass $prepared_post, WP_REST_Request $request ): stdClass {
+		$readonly_keys = array(
+			'gatherpress_datetime_start',
+			'gatherpress_datetime_start_gmt',
+			'gatherpress_datetime_end',
+			'gatherpress_datetime_end_gmt',
+			'gatherpress_timezone',
+		);
+
+		$meta = $request->get_param( 'meta' );
+
+		if ( is_array( $meta ) ) {
+			foreach ( $readonly_keys as $key ) {
+				unset( $meta[ $key ] );
+			}
+
+			$request->set_param( 'meta', $meta );
+		}
+
+		return $prepared_post;
+	}
+
+	/**
 	 * Register a rewrite rule and query var for serving .ics calendar downloads.
 	 *
-	 * This adds support for URLs like /event/my-event/my-event.ics that serve
-	 * dynamically generated ICS files for individual events.
+	 * This adds support for URLs like /events/my-event.ics that serve
+	 * dynamically generated ICS files for individual events. The URL slug
+	 * matches the configured event post type slug from GatherPress settings.
 	 *
 	 * @since 1.0.0
 	 *
 	 * @return void
 	 */
 	public function register_calendar_rewrite_rule(): void {
+		$settings     = Settings::get_instance();
+		$rewrite_slug = sanitize_title( $settings->get_value( 'general', 'urls', 'events' ) );
+
 		add_rewrite_rule(
-			'^event/([^/]+)\.ics$',
+			sprintf( '^%s/([^/]+)\.ics$', $rewrite_slug ),
 			sprintf( 'index.php?post_type=%s&name=$matches[1]&gatherpress_ics=1', Event::POST_TYPE ),
 			'top'
 		);
@@ -581,6 +651,77 @@ class Event_Setup {
 	}
 
 	/**
+	 * Sets the default sort field and sort order on the event post type admin screen, to order by event date.
+	 *
+	 * @author John Blackbourn @johnbillion
+	 * @source https://github.com/johnbillion/extended-cpts/blob/20b7e9773b60f7301cd59ee520affa0ff63f90e6/src/PostTypeAdmin.php#L160-L178
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return void
+	 */
+	public function default_sort(): void {
+		$screen_id = sprintf( 'edit-%s', Event::POST_TYPE );
+		if ( ! function_exists( 'get_current_screen' ) || get_current_screen()->id !== $screen_id ) {
+			return;
+		}
+
+		// If the screen is already ordered, bail out.
+		if ( isset( $_GET['orderby'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+			return;
+		}
+
+		// Default to sorting by event date ascending.
+		$_GET['orderby'] = 'datetime';
+		$_GET['order']   = 'asc';
+	}
+
+	/**
+	 * Modify the "Upcoming Events" admin submenu link to default to upcoming events.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return void
+	 */
+	public function modify_all_events_menu_link(): void {
+		global $submenu;
+
+		$menu_slug = sprintf( 'edit.php?post_type=%s', Event::POST_TYPE );
+
+		if ( empty( $submenu[ $menu_slug ] ) ) {
+			return;
+		}
+
+		foreach ( $submenu[ $menu_slug ] as &$item ) {
+			if ( $menu_slug === $item[2] ) {
+				$item[2] = add_query_arg( 'gatherpress_event_query', 'upcoming', $item[2] );
+				break;
+			}
+		}
+	}
+
+	/**
+	 * Highlight the "Upcoming Events" submenu when viewing events with query filters.
+	 *
+	 * WordPress cannot match the modified submenu URL against the current page,
+	 * so this filter ensures the correct submenu item stays highlighted.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string|null $submenu_file The current submenu file.
+	 * @return string|null The submenu file to highlight.
+	 */
+	public function highlight_events_submenu( $submenu_file ) {
+		$menu_slug = sprintf( 'edit.php?post_type=%s', Event::POST_TYPE );
+
+		if ( $menu_slug === $submenu_file ) {
+			return add_query_arg( 'gatherpress_event_query', 'upcoming', $menu_slug );
+		}
+
+		return $submenu_file;
+	}
+
+	/**
 	 * Make custom columns sortable for Event post type in the admin dashboard.
 	 *
 	 * This method allows the custom columns, including the 'Event date & time' and 'RSVPs' columns,
@@ -600,6 +741,159 @@ class Event_Setup {
 		$columns['rsvps'] = 'rsvps';
 
 		return $columns;
+	}
+
+	/**
+	 * Add 'Upcoming' & 'Past' to the available admin event list table views.
+	 *
+	 * This method adds links to filter the shown events in the admin list,
+	 * the filtering allows to show 'upcoming' or 'past' events.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param array $view_links An array of available list table views.
+	 *
+	 * @return array Updated list table views.
+	 */
+	public function views_edit( array $view_links ): array {
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$current_view = isset( $_GET['gatherpress_event_query'] )
+			// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+			? sanitize_text_field( wp_unslash( $_GET['gatherpress_event_query'] ) )
+			: '';
+
+		$counts    = $this->get_event_counts();
+		$placement = 1;
+		$inserts   = array(
+			'upcoming' => __( 'Upcoming', 'gatherpress' ),
+			'past'     => __( 'Past', 'gatherpress' ),
+		);
+		$base_url  = admin_url( 'edit.php' );
+
+		foreach ( $inserts as $key => $value ) {
+			$count           = isset( $counts[ $key ] ) ? $counts[ $key ] : 0;
+			$inserts[ $key ] = sprintf(
+				'<a href="%s"%s>%s <span class="count">(%s)</span></a>',
+				add_query_arg(
+					array(
+						'gatherpress_event_query' => $key,
+						'post_type'               => Event::POST_TYPE,
+					),
+					$base_url
+				),
+				$key === $current_view ? ' class="current" aria-current="page"' : '',
+				$value,
+				number_format_i18n( $count )
+			);
+		}
+
+		if ( isset( $view_links['all'] ) ) {
+			if ( $current_view ) {
+				// Remove the "current" class from "All" when an event query filter is active.
+				$view_links['all'] = str_replace(
+					array( ' class="current"', ' aria-current="page"' ),
+					'',
+					$view_links['all']
+				);
+			} elseif ( false === strpos( $view_links['all'], 'class="current"' ) ) {
+				// Add "current" class to "All" when no filter is active.
+				// default_sort() adds orderby/order to $_GET which prevents
+				// WordPress from detecting this as a base request.
+				$view_links['all'] = str_replace(
+					'<a ',
+					'<a class="current" aria-current="page" ',
+					$view_links['all']
+				);
+			}
+		}
+
+		return array_slice( $view_links, 0, $placement, true )
+			+ $inserts
+			+ array_slice( $view_links, $placement, null, true );
+	}
+
+	/**
+	 * Get counts of upcoming and past events.
+	 *
+	 * Uses the same datetime comparison logic as Event_Query::adjust_event_sql()
+	 * with inclusive=true: upcoming uses datetime_end_gmt (includes running events),
+	 * past uses datetime_start_gmt (excludes running events).
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return array<string, int> Associative array with 'upcoming' and 'past' counts.
+	 */
+	protected function get_event_counts(): array {
+		if ( null !== $this->event_counts ) {
+			return $this->event_counts;
+		}
+
+		global $wpdb;
+
+		$table   = sprintf( Event::TABLE_FORMAT, $wpdb->prefix );
+		$current = gmdate( Event::DATETIME_FORMAT, time() );
+
+		// Upcoming: events whose end time is still in the future (includes currently running).
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$upcoming = (int) $wpdb->get_var(
+			$wpdb->prepare(
+				'SELECT COUNT(1) FROM %i INNER JOIN %i ON %i.ID = %i.post_id'
+				. ' WHERE %i.post_type = %s AND %i.post_status NOT IN'
+				. " ('trash', 'auto-draft') AND %i.datetime_end_gmt >= %s",
+				$wpdb->posts,
+				$table,
+				$wpdb->posts,
+				$table,
+				$wpdb->posts,
+				Event::POST_TYPE,
+				$wpdb->posts,
+				$table,
+				$current
+			)
+		);
+
+		// Past: events whose start time is in the past (excludes currently running).
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$past = (int) $wpdb->get_var(
+			$wpdb->prepare(
+				'SELECT COUNT(1) FROM %i INNER JOIN %i ON %i.ID = %i.post_id'
+				. ' WHERE %i.post_type = %s AND %i.post_status NOT IN'
+				. " ('trash', 'auto-draft') AND %i.datetime_start_gmt < %s",
+				$wpdb->posts,
+				$table,
+				$wpdb->posts,
+				$table,
+				$wpdb->posts,
+				Event::POST_TYPE,
+				$wpdb->posts,
+				$table,
+				$current
+			)
+		);
+
+		$this->event_counts = array(
+			'upcoming' => $upcoming,
+			'past'     => $past,
+		);
+
+		return $this->event_counts;
+	}
+
+	/**
+	 * Allowlist for additional query parameters.
+	 *
+	 * Adds 'gatherpress_event_query' to the list of allowed query variables,
+	 * to be able to request 'upcoming' or 'past' events in the admin list view.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param  string[] $query_vars List of allowed query variables.
+	 *
+	 * @return string[] Updated list of allowed query variables.
+	 */
+	public function query_vars( array $query_vars ) {
+		$query_vars[] = 'gatherpress_event_query';
+		return $query_vars;
 	}
 
 	/**

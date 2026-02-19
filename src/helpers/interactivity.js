@@ -216,6 +216,14 @@ export async function sendRsvpApiRequest(
 
 		if ( res.success ) {
 			if ( state ) {
+				// eslint-disable-next-line no-console
+				console.log( '[RSVP API] Response received:', {
+					postId,
+					status: res.status,
+					onlineLink: res.online_link,
+					fullResponse: res,
+				} );
+
 				state.posts[ postId ] = {
 					...state.posts[ postId ],
 					eventResponses: {
@@ -228,7 +236,11 @@ export async function sendRsvpApiRequest(
 						guests: res.guests,
 						anonymous: res.anonymous,
 					},
+					onlineEventLink: res.online_link || '',
 				};
+
+				// eslint-disable-next-line no-console
+				console.log( '[RSVP API] State updated:', state.posts[ postId ] );
 			}
 
 			if ( 'function' === typeof onSuccess ) {

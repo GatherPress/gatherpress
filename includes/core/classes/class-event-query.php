@@ -61,7 +61,8 @@ class Event_Query {
 	 */
 	protected function setup_hooks(): void {
 		add_action( 'pre_get_posts', array( $this, 'prepare_event_query_before_execution' ) );
-		add_filter( 'posts_clauses', array( $this, 'adjust_admin_event_sorting' ), 10, 2 );
+		// Priority 9 to run before the upcoming/past adjustments at priority 10.
+		add_filter( 'posts_clauses', array( $this, 'adjust_admin_event_sorting' ), 9, 2 );
 	}
 
 	/**
@@ -340,14 +341,25 @@ class Event_Query {
 		 * This sanity check was added after it's been reported that some admin screens may not have $wp_query set.
 		 * @see https://wordpress.org/support/topic/gatherpress-has-critical-error-when-i-access-wpforms-payment-settings/
 		 */
+		$screen_id      = sprintf( 'edit-%s', Event::POST_TYPE );
 		$current_screen = function_exists( 'get_current_screen' ) ? get_current_screen() : null;
-		if ( ! $current_screen || 'edit-gatherpress_event' !== $current_screen->id ) {
+		if ( ! $current_screen || $screen_id !== $current_screen->id ) {
 			return $query_pieces;
 		}
 
-		if ( 'datetime' === $wp_query->get( 'orderby' ) ) {
-			$query_pieces = $this->adjust_event_sql( $query_pieces, 'all', $wp_query->get( 'order' ) );
-		}
+		remove_filter( 'posts_clauses', array( $this, 'adjust_sorting_for_past_events' ) );
+		remove_filter( 'posts_clauses', array( $this, 'adjust_sorting_for_upcoming_events' ) );
+
+		// Admin event list views can be filtered by 'upcoming', 'past' or 'all' events.
+		$gatherpress_events_query = ( ! empty( $wp_query->get( self::EVENT_QUERY_PARAM ) ) )
+			? $wp_query->get( self::EVENT_QUERY_PARAM )
+			: 'all';
+		$query_pieces             = $this->adjust_event_sql(
+			$query_pieces,
+			$gatherpress_events_query,
+			$wp_query->get( 'order' ),
+			$wp_query->get( 'orderby' )
+		);
 
 		return $query_pieces;
 	}

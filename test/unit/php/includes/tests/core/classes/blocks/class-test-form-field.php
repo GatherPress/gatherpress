@@ -995,4 +995,122 @@ class Test_Form_Field extends Base {
 			'data-test-attr should NOT be in wrapper attributes'
 		);
 	}
+
+	/**
+	 * Coverage for wp_kses_post allowing standard post and tooltip HTML.
+	 *
+	 * @covers ::render
+	 *
+	 * @return void
+	 */
+	public function test_wp_kses_post_allows_post_and_tooltip_tags(): void {
+		$allowed_html = wp_kses_allowed_html( 'post' );
+
+		// Verify standard post HTML tags are allowed.
+		$this->assertArrayHasKey(
+			'strong',
+			$allowed_html,
+			'Should allow strong tag from post HTML.'
+		);
+		$this->assertArrayHasKey(
+			'em',
+			$allowed_html,
+			'Should allow em tag from post HTML.'
+		);
+		$this->assertArrayHasKey(
+			'a',
+			$allowed_html,
+			'Should allow anchor tag from post HTML.'
+		);
+
+		// Verify span with data-* attributes is allowed (for tooltips).
+		$this->assertArrayHasKey(
+			'span',
+			$allowed_html,
+			'Should allow span tag.'
+		);
+		$this->assertArrayHasKey(
+			'data-*',
+			$allowed_html['span'],
+			'Should allow data-* attributes on span for tooltips.'
+		);
+	}
+
+	/**
+	 * Coverage for labels with standard HTML being properly escaped.
+	 *
+	 * @covers ::render
+	 *
+	 * @return void
+	 */
+	public function test_label_allows_standard_html_formatting(): void {
+		// Test that standard formatting HTML is preserved.
+		$label_with_formatting = '<strong>Required</strong> field with <em>emphasis</em>';
+		$escaped_label         = wp_kses_post( $label_with_formatting );
+
+		$this->assertStringContainsString(
+			'<strong>Required</strong>',
+			$escaped_label,
+			'Strong tags should be preserved in label.'
+		);
+		$this->assertStringContainsString(
+			'<em>emphasis</em>',
+			$escaped_label,
+			'Em tags should be preserved in label.'
+		);
+	}
+
+	/**
+	 * Coverage for labels with tooltip markup being properly escaped.
+	 *
+	 * @covers ::render
+	 *
+	 * @return void
+	 */
+	public function test_label_allows_tooltip_markup(): void {
+		// Test that tooltip markup is preserved.
+		$label_with_tooltip = 'Field <span class="gatherpress-tooltip" '
+			. 'data-gatherpress-tooltip="Help text">with tooltip</span>';
+		$escaped_label      = wp_kses_post( $label_with_tooltip );
+
+		$this->assertStringContainsString(
+			'gatherpress-tooltip',
+			$escaped_label,
+			'Tooltip class should be preserved in label.'
+		);
+		$this->assertStringContainsString(
+			'data-gatherpress-tooltip="Help text"',
+			$escaped_label,
+			'Tooltip data attribute should be preserved in label.'
+		);
+	}
+
+	/**
+	 * Coverage for labels with dangerous HTML being stripped.
+	 *
+	 * @covers ::render
+	 *
+	 * @return void
+	 */
+	public function test_label_strips_dangerous_html(): void {
+		// Test that dangerous HTML tags are stripped.
+		$label_with_script = 'Field <script>alert("xss")</script>';
+		$escaped_label     = wp_kses_post( $label_with_script );
+
+		$this->assertStringNotContainsString(
+			'<script>',
+			$escaped_label,
+			'Script tags should be stripped from label.'
+		);
+
+		// Test that onclick handlers are stripped from allowed tags.
+		$label_with_onclick = 'Field <span onclick="alert(1)">text</span>';
+		$escaped_onclick    = wp_kses_post( $label_with_onclick );
+
+		$this->assertStringNotContainsString(
+			'onclick',
+			$escaped_onclick,
+			'Onclick handlers should be stripped from span tags.'
+		);
+	}
 }

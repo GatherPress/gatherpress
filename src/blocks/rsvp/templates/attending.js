@@ -1,7 +1,7 @@
 /**
  * WordPress dependencies.
  */
-import { __, _x } from '@wordpress/i18n';
+import { __, _x, sprintf } from '@wordpress/i18n';
 
 const ATTENDING = [
 	[
@@ -193,7 +193,18 @@ const ATTENDING = [
 									className: 'gatherpress-rsvp-field-anonymous',
 									fieldType: 'checkbox',
 									fieldName: 'gatherpress_rsvp_anonymous',
-									label: __( 'List me as anonymous', 'gatherpress' ),
+									label: sprintf(
+										/* translators: 1: tooltip text, 2: label text */
+										'<span class="gatherpress-tooltip" data-gatherpress-tooltip="%1$s">%2$s</span>',
+										__(
+											'Only admins will see your identity.',
+											'gatherpress'
+										),
+										__(
+											'List me as anonymous',
+											'gatherpress'
+										)
+									),
 									autocomplete: 'off',
 								},
 							],

@@ -32,4 +32,4 @@ apply_filters( 'gatherpress_pre_get_wp_referer', null )
 
 
 
-[← All Hooks](Hooks)
+[← All Hooks](Hooks.md)

@@ -11,10 +11,13 @@ namespace GatherPress\Tests\Core;
 use Exception;
 use GatherPress\Core\Event;
 use GatherPress\Core\Event_Setup;
+use GatherPress\Core\Settings;
 use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;
+use stdClass;
 use WP;
 use WP_Query;
+use WP_REST_Request;
 
 /**
  * Class Test_Event_Query.
@@ -82,10 +85,34 @@ class Test_Event_Setup extends Base {
 				'callback' => array( $instance, 'custom_columns' ),
 			),
 			array(
+				'type'     => 'action',
+				'name'     => 'load-edit.php',
+				'priority' => 10,
+				'callback' => array( $instance, 'default_sort' ),
+			),
+			array(
+				'type'     => 'action',
+				'name'     => 'admin_menu',
+				'priority' => 10,
+				'callback' => array( $instance, 'modify_all_events_menu_link' ),
+			),
+			array(
+				'type'     => 'filter',
+				'name'     => 'submenu_file',
+				'priority' => 10,
+				'callback' => array( $instance, 'highlight_events_submenu' ),
+			),
+			array(
 				'type'     => 'filter',
 				'name'     => 'redirect_canonical',
 				'priority' => 10,
 				'callback' => array( $instance, 'disable_ics_canonical_redirect' ),
+			),
+			array(
+				'type'     => 'filter',
+				'name'     => sprintf( 'rest_pre_insert_%s', Event::POST_TYPE ),
+				'priority' => 10,
+				'callback' => array( $instance, 'filter_readonly_meta' ),
 			),
 			array(
 				'type'     => 'filter',
@@ -98,6 +125,18 @@ class Test_Event_Setup extends Base {
 				'name'     => sprintf( 'manage_edit-%s_sortable_columns', Event::POST_TYPE ),
 				'priority' => 10,
 				'callback' => array( $instance, 'sortable_columns' ),
+			),
+			array(
+				'type'     => 'filter',
+				'name'     => sprintf( 'views_edit-%s', Event::POST_TYPE ),
+				'priority' => 10,
+				'callback' => array( $instance, 'views_edit' ),
+			),
+			array(
+				'type'     => 'filter',
+				'name'     => 'query_vars',
+				'priority' => 10,
+				'callback' => array( $instance, 'query_vars' ),
 			),
 			array(
 				'type'     => 'filter',
@@ -141,7 +180,7 @@ class Test_Event_Setup extends Base {
 	}
 
 	/**
-	 * Test that the calendar rewrite rule is registered correctly.
+	 * Test that the calendar rewrite rule is registered correctly with default slug.
 	 *
 	 * @covers ::register_calendar_rewrite_rule
 	 *
@@ -149,6 +188,10 @@ class Test_Event_Setup extends Base {
 	 */
 	public function test_register_calendar_rewrite_rule(): void {
 		$instance = Event_Setup::get_instance();
+		$settings = Settings::get_instance();
+
+		// Get the dynamic slug from settings (default is 'events' plural).
+		$rewrite_slug = $settings->get_value( 'general', 'urls', 'events' );
 
 		$instance->register_calendar_rewrite_rule();
 
@@ -161,8 +204,8 @@ class Test_Event_Setup extends Base {
 		// Get the current rewrite rules.
 		$rules = $wp_rewrite->rewrite_rules();
 
-		// Build the expected rule pattern.
-		$expected_rule_pattern     = '^event/([^/]+)\.ics$';
+		// Build the expected rule pattern using dynamic slug.
+		$expected_rule_pattern     = sprintf( '^%s/([^/]+)\.ics$', $rewrite_slug );
 		$expected_rule_replacement = sprintf(
 			'index.php?post_type=%s&name=$matches[1]&gatherpress_ics=1',
 			Event::POST_TYPE
@@ -172,7 +215,10 @@ class Test_Event_Setup extends Base {
 		$this->assertArrayHasKey(
 			$expected_rule_pattern,
 			$rules,
-			"Expected rewrite rule pattern '^event/([^/]+)\\.ics$' was not found in WordPress rewrite rules"
+			sprintf(
+				"Expected rewrite rule pattern '^%s/([^/]+)\\.ics$' was not found in WordPress rewrite rules",
+				$rewrite_slug
+			)
 		);
 
 		// Check that the rule maps to the correct replacement.
@@ -1783,5 +1829,1003 @@ class Test_Event_Setup extends Base {
 		);
 
 		set_current_screen( 'front' );
+	}
+
+	/**
+	 * Coverage for default_sort method when on the wrong screen.
+	 *
+	 * @covers ::default_sort
+	 *
+	 * @return void
+	 */
+	public function test_default_sort_wrong_screen(): void {
+		$instance = Event_Setup::get_instance();
+
+		// Set current screen to a non-event screen.
+		set_current_screen( 'edit-post' );
+
+		// Ensure $_GET is clean.
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		unset( $_GET['orderby'], $_GET['order'] );
+
+		$instance->default_sort();
+
+		// Should return early without modifying $_GET.
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$this->assertArrayNotHasKey( 'orderby', $_GET, 'Should not set orderby on wrong screen.' );
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$this->assertArrayNotHasKey( 'order', $_GET, 'Should not set order on wrong screen.' );
+
+		// Clean up.
+		set_current_screen( 'front' );
+	}
+
+	/**
+	 * Coverage for default_sort method when orderby is already set.
+	 *
+	 * @covers ::default_sort
+	 *
+	 * @return void
+	 */
+	public function test_default_sort_orderby_already_set(): void {
+		$instance = Event_Setup::get_instance();
+
+		// Set current screen to event edit screen.
+		set_current_screen( 'edit-gatherpress_event' );
+
+		// Set an existing orderby value.
+		$_GET['orderby'] = 'title'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+
+		$instance->default_sort();
+
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended, WordPress.Security.ValidatedSanitizedInput
+		$this->assertSame( 'title', $_GET['orderby'], 'Should not override existing orderby.' );
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$this->assertArrayNotHasKey( 'order', $_GET, 'Should not set order when orderby already exists.' );
+
+		// Clean up.
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		unset( $_GET['orderby'], $_GET['order'] );
+		set_current_screen( 'front' );
+	}
+
+	/**
+	 * Coverage for default_sort method when on the correct screen with no orderby.
+	 *
+	 * @covers ::default_sort
+	 *
+	 * @return void
+	 */
+	public function test_default_sort_sets_defaults(): void {
+		$instance = Event_Setup::get_instance();
+
+		// Set current screen to event edit screen.
+		set_current_screen( 'edit-gatherpress_event' );
+
+		// Ensure $_GET is clean.
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		unset( $_GET['orderby'], $_GET['order'] );
+
+		$instance->default_sort();
+
+		// Should set default orderby and order.
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended, WordPress.Security.ValidatedSanitizedInput
+		$this->assertSame( 'datetime', $_GET['orderby'], 'Should set orderby to datetime.' );
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended, WordPress.Security.ValidatedSanitizedInput
+		$this->assertSame( 'asc', $_GET['order'], 'Should set order to asc.' );
+
+		// Clean up.
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		unset( $_GET['orderby'], $_GET['order'] );
+		set_current_screen( 'front' );
+	}
+
+	/**
+	 * Coverage for modify_all_events_menu_link method.
+	 *
+	 * @covers ::modify_all_events_menu_link
+	 *
+	 * @return void
+	 */
+	public function test_modify_all_events_menu_link(): void {
+		global $submenu;
+
+		$instance  = Event_Setup::get_instance();
+		$menu_slug = sprintf( 'edit.php?post_type=%s', Event::POST_TYPE );
+
+		// Set up a mock submenu structure.
+		// phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
+		$submenu[ $menu_slug ] = array(
+			5  => array( 'View Events', 'edit_posts', $menu_slug ),
+			10 => array( 'Add New', 'edit_posts', 'post-new.php?post_type=' . Event::POST_TYPE ),
+		);
+
+		$instance->modify_all_events_menu_link();
+
+		$this->assertStringContainsString(
+			'gatherpress_event_query=upcoming',
+			$submenu[ $menu_slug ][5][2],
+			'Upcoming Events menu link should include upcoming parameter.'
+		);
+
+		// Other submenu items should be unchanged.
+		$this->assertStringNotContainsString(
+			'gatherpress_event_query',
+			$submenu[ $menu_slug ][10][2],
+			'Add New menu link should not be modified.'
+		);
+
+		// Clean up.
+		unset( $submenu[ $menu_slug ] );
+	}
+
+	/**
+	 * Coverage for modify_all_events_menu_link method with empty submenu.
+	 *
+	 * @covers ::modify_all_events_menu_link
+	 *
+	 * @return void
+	 */
+	public function test_modify_all_events_menu_link_empty_submenu(): void {
+		global $submenu;
+
+		$instance  = Event_Setup::get_instance();
+		$menu_slug = sprintf( 'edit.php?post_type=%s', Event::POST_TYPE );
+
+		// Ensure the submenu doesn't exist.
+		unset( $submenu[ $menu_slug ] );
+
+		// Should return early without error.
+		$instance->modify_all_events_menu_link();
+
+		$this->assertFalse(
+			isset( $submenu[ $menu_slug ] ),
+			'Should not create submenu when none exists.'
+		);
+	}
+
+	/**
+	 * Coverage for highlight_events_submenu when on events page.
+	 *
+	 * @covers ::highlight_events_submenu
+	 *
+	 * @return void
+	 */
+	public function test_highlight_events_submenu_on_events_page(): void {
+		$instance  = Event_Setup::get_instance();
+		$menu_slug = sprintf( 'edit.php?post_type=%s', Event::POST_TYPE );
+
+		$result = $instance->highlight_events_submenu( $menu_slug );
+
+		$this->assertStringContainsString(
+			'gatherpress_event_query=upcoming',
+			$result,
+			'Should return modified slug with upcoming parameter.'
+		);
+	}
+
+	/**
+	 * Coverage for highlight_events_submenu on a different page.
+	 *
+	 * @covers ::highlight_events_submenu
+	 *
+	 * @return void
+	 */
+	public function test_highlight_events_submenu_other_page(): void {
+		$instance = Event_Setup::get_instance();
+
+		$result = $instance->highlight_events_submenu( 'edit.php?post_type=post' );
+
+		$this->assertSame(
+			'edit.php?post_type=post',
+			$result,
+			'Should not modify submenu file for other post types.'
+		);
+	}
+
+	/**
+	 * Coverage for query_vars method.
+	 *
+	 * @covers ::query_vars
+	 *
+	 * @return void
+	 */
+	public function test_query_vars(): void {
+		$instance = Event_Setup::get_instance();
+
+		$result = $instance->query_vars( array( 'existing_var' ) );
+
+		$this->assertContains(
+			'gatherpress_event_query',
+			$result,
+			'Should add gatherpress_event_query to query vars.'
+		);
+		$this->assertContains(
+			'existing_var',
+			$result,
+			'Should preserve existing query vars.'
+		);
+		$this->assertCount( 2, $result, 'Should have exactly 2 query vars.' );
+	}
+
+	/**
+	 * Coverage for query_vars method with empty input.
+	 *
+	 * @covers ::query_vars
+	 *
+	 * @return void
+	 */
+	public function test_query_vars_empty_input(): void {
+		$instance = Event_Setup::get_instance();
+
+		$result = $instance->query_vars( array() );
+
+		$this->assertContains(
+			'gatherpress_event_query',
+			$result,
+			'Should add gatherpress_event_query even with empty input.'
+		);
+		$this->assertCount( 1, $result, 'Should have exactly 1 query var.' );
+	}
+
+	/**
+	 * Coverage for get_event_counts method with no events.
+	 *
+	 * @covers ::get_event_counts
+	 *
+	 * @return void
+	 */
+	public function test_get_event_counts_no_events(): void {
+		$instance = Event_Setup::get_instance();
+
+		// Reset cached counts and invoke the protected method.
+		Utility::set_and_get_hidden_property( $instance, 'event_counts', null );
+
+		$counts = Utility::invoke_hidden_method( $instance, 'get_event_counts' );
+
+		$this->assertArrayHasKey( 'upcoming', $counts, 'Should have upcoming key.' );
+		$this->assertArrayHasKey( 'past', $counts, 'Should have past key.' );
+		$this->assertSame( 0, $counts['upcoming'], 'Should have 0 upcoming events.' );
+		$this->assertSame( 0, $counts['past'], 'Should have 0 past events.' );
+	}
+
+	/**
+	 * Coverage for get_event_counts method with upcoming events.
+	 *
+	 * @covers ::get_event_counts
+	 *
+	 * @return void
+	 */
+	public function test_get_event_counts_with_upcoming(): void {
+		$instance = Event_Setup::get_instance();
+
+		// Create a published event in the future.
+		$post_id = $this->mock->post(
+			array(
+				'post_type'   => Event::POST_TYPE,
+				'post_status' => 'publish',
+			)
+		)->get()->ID;
+
+		$event = new Event( $post_id );
+		$event->save_datetimes(
+			array(
+				'datetime_start' => gmdate( 'Y-m-d H:i:s', strtotime( '+1 day' ) ),
+				'datetime_end'   => gmdate( 'Y-m-d H:i:s', strtotime( '+1 day +2 hours' ) ),
+				'timezone'       => 'UTC',
+			)
+		);
+
+		// Reset cached counts before querying.
+		Utility::set_and_get_hidden_property( $instance, 'event_counts', null );
+
+		$counts = Utility::invoke_hidden_method( $instance, 'get_event_counts' );
+
+		$this->assertSame( 1, $counts['upcoming'], 'Should have 1 upcoming event.' );
+		$this->assertSame( 0, $counts['past'], 'Should have 0 past events.' );
+	}
+
+	/**
+	 * Coverage for get_event_counts method with past events.
+	 *
+	 * @covers ::get_event_counts
+	 *
+	 * @return void
+	 */
+	public function test_get_event_counts_with_past(): void {
+		$instance = Event_Setup::get_instance();
+
+		// Create a published event in the past.
+		$post_id = $this->mock->post(
+			array(
+				'post_type'   => Event::POST_TYPE,
+				'post_status' => 'publish',
+			)
+		)->get()->ID;
+
+		$event = new Event( $post_id );
+		$event->save_datetimes(
+			array(
+				'datetime_start' => gmdate( 'Y-m-d H:i:s', strtotime( '-2 days' ) ),
+				'datetime_end'   => gmdate( 'Y-m-d H:i:s', strtotime( '-2 days +2 hours' ) ),
+				'timezone'       => 'UTC',
+			)
+		);
+
+		// Reset cached counts before querying.
+		Utility::set_and_get_hidden_property( $instance, 'event_counts', null );
+
+		$counts = Utility::invoke_hidden_method( $instance, 'get_event_counts' );
+
+		$this->assertSame( 0, $counts['upcoming'], 'Should have 0 upcoming events.' );
+		$this->assertSame( 1, $counts['past'], 'Should have 1 past event.' );
+	}
+
+	/**
+	 * Coverage for get_event_counts method with mixed events.
+	 *
+	 * @covers ::get_event_counts
+	 *
+	 * @return void
+	 */
+	public function test_get_event_counts_with_mixed(): void {
+		$instance = Event_Setup::get_instance();
+
+		// Create a published upcoming event.
+		$upcoming_id = $this->mock->post(
+			array(
+				'post_type'   => Event::POST_TYPE,
+				'post_status' => 'publish',
+			)
+		)->get()->ID;
+
+		$event = new Event( $upcoming_id );
+		$event->save_datetimes(
+			array(
+				'datetime_start' => gmdate( 'Y-m-d H:i:s', strtotime( '+1 day' ) ),
+				'datetime_end'   => gmdate( 'Y-m-d H:i:s', strtotime( '+1 day +2 hours' ) ),
+				'timezone'       => 'UTC',
+			)
+		);
+
+		// Create a published past event.
+		$past_id = $this->mock->post(
+			array(
+				'post_type'   => Event::POST_TYPE,
+				'post_status' => 'publish',
+			)
+		)->get()->ID;
+
+		$event = new Event( $past_id );
+		$event->save_datetimes(
+			array(
+				'datetime_start' => gmdate( 'Y-m-d H:i:s', strtotime( '-2 days' ) ),
+				'datetime_end'   => gmdate( 'Y-m-d H:i:s', strtotime( '-2 days +2 hours' ) ),
+				'timezone'       => 'UTC',
+			)
+		);
+
+		// Create a draft event (should be counted, only trash/auto-draft excluded).
+		$draft_id = $this->mock->post(
+			array(
+				'post_type'   => Event::POST_TYPE,
+				'post_status' => 'draft',
+			)
+		)->get()->ID;
+
+		$event = new Event( $draft_id );
+		$event->save_datetimes(
+			array(
+				'datetime_start' => gmdate( 'Y-m-d H:i:s', strtotime( '+3 days' ) ),
+				'datetime_end'   => gmdate( 'Y-m-d H:i:s', strtotime( '+3 days +2 hours' ) ),
+				'timezone'       => 'UTC',
+			)
+		);
+
+		// Reset cached counts before querying.
+		Utility::set_and_get_hidden_property( $instance, 'event_counts', null );
+
+		$counts = Utility::invoke_hidden_method( $instance, 'get_event_counts' );
+
+		$this->assertSame( 2, $counts['upcoming'], 'Should have 2 upcoming events (draft included).' );
+		$this->assertSame( 1, $counts['past'], 'Should have 1 past event.' );
+	}
+
+	/**
+	 * Coverage for get_event_counts method with a currently running event.
+	 *
+	 * A running event (started but not ended) should count as upcoming
+	 * because datetime_end_gmt >= now, and also as past because
+	 * datetime_start_gmt < now.
+	 *
+	 * @covers ::get_event_counts
+	 *
+	 * @return void
+	 */
+	public function test_get_event_counts_running_event(): void {
+		$instance = Event_Setup::get_instance();
+
+		// Create a published event that is currently running.
+		$post_id = $this->mock->post(
+			array(
+				'post_type'   => Event::POST_TYPE,
+				'post_status' => 'publish',
+			)
+		)->get()->ID;
+
+		$event = new Event( $post_id );
+		$event->save_datetimes(
+			array(
+				'datetime_start' => gmdate( 'Y-m-d H:i:s', strtotime( '-1 hour' ) ),
+				'datetime_end'   => gmdate( 'Y-m-d H:i:s', strtotime( '+1 hour' ) ),
+				'timezone'       => 'UTC',
+			)
+		);
+
+		// Reset cached counts before querying.
+		Utility::set_and_get_hidden_property( $instance, 'event_counts', null );
+
+		$counts = Utility::invoke_hidden_method( $instance, 'get_event_counts' );
+
+		// Running events appear in both counts (same logic as Event_Query with inclusive=true).
+		$this->assertSame( 1, $counts['upcoming'], 'Running event should count as upcoming.' );
+		$this->assertSame( 1, $counts['past'], 'Running event should count as past.' );
+	}
+
+	/**
+	 * Coverage for get_event_counts caching to class property.
+	 *
+	 * Verifies that repeated calls return the cached result without re-querying.
+	 *
+	 * @covers ::get_event_counts
+	 *
+	 * @return void
+	 */
+	public function test_get_event_counts_caches_result(): void {
+		$instance = Event_Setup::get_instance();
+
+		// Reset cached counts.
+		Utility::set_and_get_hidden_property( $instance, 'event_counts', null );
+
+		// First call should query the database and cache.
+		$counts = Utility::invoke_hidden_method( $instance, 'get_event_counts' );
+		$this->assertSame( 0, $counts['upcoming'], 'Should have 0 upcoming events.' );
+
+		// Verify the property is now cached.
+		$cached = Utility::set_and_get_hidden_property( $instance, 'event_counts', $counts );
+		$this->assertNotNull( $cached, 'Property should be cached after first call.' );
+		$this->assertSame( $counts, $cached, 'Cached value should match returned value.' );
+
+		// Create an event after the first call.
+		$post_id = $this->mock->post(
+			array(
+				'post_type'   => Event::POST_TYPE,
+				'post_status' => 'publish',
+			)
+		)->get()->ID;
+
+		$event = new Event( $post_id );
+		$event->save_datetimes(
+			array(
+				'datetime_start' => gmdate( 'Y-m-d H:i:s', strtotime( '+1 day' ) ),
+				'datetime_end'   => gmdate( 'Y-m-d H:i:s', strtotime( '+1 day +2 hours' ) ),
+				'timezone'       => 'UTC',
+			)
+		);
+
+		// Second call should return cached result (still 0).
+		$counts_cached = Utility::invoke_hidden_method( $instance, 'get_event_counts' );
+		$this->assertSame( 0, $counts_cached['upcoming'], 'Cached call should still return 0.' );
+
+		// After resetting the cache, should reflect the new event.
+		Utility::set_and_get_hidden_property( $instance, 'event_counts', null );
+		$counts_fresh = Utility::invoke_hidden_method( $instance, 'get_event_counts' );
+		$this->assertSame( 1, $counts_fresh['upcoming'], 'Fresh call should return 1 after cache reset.' );
+	}
+
+	/**
+	 * Coverage for views_edit method with no events.
+	 *
+	 * @covers ::views_edit
+	 *
+	 * @return void
+	 */
+	public function test_views_edit_adds_links(): void {
+		$instance = Event_Setup::get_instance();
+
+		$view_links = array(
+			'all'     => '<a href="#">All</a>',
+			'publish' => '<a href="#">Published</a>',
+			'draft'   => '<a href="#">Draft</a>',
+		);
+
+		$result = $instance->views_edit( $view_links );
+
+		// Should have original links plus upcoming and past.
+		$this->assertArrayHasKey( 'upcoming', $result, 'Should have upcoming link.' );
+		$this->assertArrayHasKey( 'past', $result, 'Should have past link.' );
+		$this->assertArrayHasKey( 'all', $result, 'Should preserve all link.' );
+		$this->assertArrayHasKey( 'publish', $result, 'Should preserve publish link.' );
+		$this->assertArrayHasKey( 'draft', $result, 'Should preserve draft link.' );
+
+		// Verify count spans are present.
+		$this->assertStringContainsString(
+			'<span class="count">',
+			$result['upcoming'],
+			'Upcoming link should contain count span.'
+		);
+		$this->assertStringContainsString(
+			'<span class="count">',
+			$result['past'],
+			'Past link should contain count span.'
+		);
+
+		// Verify links contain proper query args.
+		$this->assertStringContainsString(
+			'gatherpress_event_query=upcoming',
+			$result['upcoming'],
+			'Upcoming link should have correct query arg.'
+		);
+		$this->assertStringContainsString(
+			'gatherpress_event_query=past',
+			$result['past'],
+			'Past link should have correct query arg.'
+		);
+
+		// Verify the labels.
+		$this->assertStringContainsString( 'Upcoming', $result['upcoming'], 'Should contain Upcoming label.' );
+		$this->assertStringContainsString( 'Past', $result['past'], 'Should contain Past label.' );
+	}
+
+	/**
+	 * Coverage for views_edit method link placement.
+	 *
+	 * Upcoming and Past should be inserted after the first link (All).
+	 *
+	 * @covers ::views_edit
+	 *
+	 * @return void
+	 */
+	public function test_views_edit_placement(): void {
+		$instance = Event_Setup::get_instance();
+
+		$view_links = array(
+			'all'     => '<a href="#">All</a>',
+			'publish' => '<a href="#">Published</a>',
+		);
+
+		$result = $instance->views_edit( $view_links );
+		$keys   = array_keys( $result );
+
+		$this->assertEquals( 'all', $keys[0], 'First link should be all.' );
+		$this->assertEquals( 'upcoming', $keys[1], 'Second link should be upcoming.' );
+		$this->assertEquals( 'past', $keys[2], 'Third link should be past.' );
+		$this->assertEquals( 'publish', $keys[3], 'Fourth link should be publish.' );
+	}
+
+	/**
+	 * Coverage for views_edit method with active upcoming view.
+	 *
+	 * @covers ::views_edit
+	 *
+	 * @return void
+	 */
+	public function test_views_edit_active_upcoming(): void {
+		$instance = Event_Setup::get_instance();
+
+		// Simulate an active upcoming view via GET parameter.
+		$_GET['gatherpress_event_query'] = 'upcoming'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+
+		// WordPress marks "All" as current by default.
+		$view_links = array(
+			'all' => '<a href="#" class="current" aria-current="page">All</a>',
+		);
+
+		$result = $instance->views_edit( $view_links );
+
+		$this->assertStringContainsString(
+			'class="current"',
+			$result['upcoming'],
+			'Active upcoming link should have current class.'
+		);
+		$this->assertStringContainsString(
+			'aria-current="page"',
+			$result['upcoming'],
+			'Active upcoming link should have aria-current attribute.'
+		);
+
+		// Past should not be marked as current.
+		$this->assertStringNotContainsString(
+			'class="current"',
+			$result['past'],
+			'Past link should not have current class.'
+		);
+
+		// "All" should have its current class removed.
+		$this->assertStringNotContainsString(
+			'class="current"',
+			$result['all'],
+			'All link should not have current class when filter is active.'
+		);
+
+		// Clean up.
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		unset( $_GET['gatherpress_event_query'] );
+	}
+
+	/**
+	 * Coverage for views_edit method with active past view.
+	 *
+	 * @covers ::views_edit
+	 *
+	 * @return void
+	 */
+	public function test_views_edit_active_past(): void {
+		$instance = Event_Setup::get_instance();
+
+		// Simulate an active past view via GET parameter.
+		$_GET['gatherpress_event_query'] = 'past'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+
+		$view_links = array(
+			'all' => '<a href="#">All</a>',
+		);
+
+		$result = $instance->views_edit( $view_links );
+
+		$this->assertStringContainsString(
+			'class="current"',
+			$result['past'],
+			'Active past link should have current class.'
+		);
+
+		// Upcoming should not be marked as current.
+		$this->assertStringNotContainsString(
+			'class="current"',
+			$result['upcoming'],
+			'Upcoming link should not have current class.'
+		);
+
+		// Clean up.
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		unset( $_GET['gatherpress_event_query'] );
+	}
+
+	/**
+	 * Coverage for views_edit method with no active event query filter.
+	 *
+	 * @covers ::views_edit
+	 *
+	 * @return void
+	 */
+	public function test_views_edit_no_active_filter(): void {
+		$instance = Event_Setup::get_instance();
+
+		// Ensure no event query filter is set.
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		unset( $_GET['gatherpress_event_query'] );
+
+		// WordPress marks "All" as current by default.
+		$view_links = array(
+			'all' => '<a href="#" class="current" aria-current="page">All</a>',
+		);
+
+		$result = $instance->views_edit( $view_links );
+
+		// Neither Upcoming nor Past should be marked as current.
+		$this->assertStringNotContainsString(
+			'class="current"',
+			$result['upcoming'],
+			'Upcoming link should not have current class without filter.'
+		);
+		$this->assertStringNotContainsString(
+			'class="current"',
+			$result['past'],
+			'Past link should not have current class without filter.'
+		);
+
+		// "All" should keep its current class.
+		$this->assertStringContainsString(
+			'class="current"',
+			$result['all'],
+			'All link should keep current class when no filter is active.'
+		);
+	}
+
+	/**
+	 * Coverage for views_edit adding current class to "All" when WordPress omits it.
+	 *
+	 * When default_sort() adds orderby/order to $_GET, WordPress's
+	 * is_base_request() returns false and omits the current class from "All".
+	 *
+	 * @covers ::views_edit
+	 *
+	 * @return void
+	 */
+	public function test_views_edit_all_gets_current_when_missing(): void {
+		$instance = Event_Setup::get_instance();
+
+		// Ensure no event query filter is set.
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		unset( $_GET['gatherpress_event_query'] );
+
+		// Simulate WordPress not adding current class due to default_sort()
+		// adding extra $_GET params that break is_base_request().
+		$view_links = array(
+			'all' => '<a href="#">All</a>',
+		);
+
+		$result = $instance->views_edit( $view_links );
+
+		// "All" should get the current class added by views_edit.
+		$this->assertStringContainsString(
+			'class="current"',
+			$result['all'],
+			'All link should get current class when no filter is active.'
+		);
+		$this->assertStringContainsString(
+			'aria-current="page"',
+			$result['all'],
+			'All link should get aria-current when no filter is active.'
+		);
+	}
+
+	/**
+	 * Coverage for views_edit method with event counts displayed.
+	 *
+	 * @covers ::views_edit
+	 * @covers ::get_event_counts
+	 *
+	 * @return void
+	 */
+	public function test_views_edit_displays_counts(): void {
+		$instance = Event_Setup::get_instance();
+
+		// Create a published upcoming event.
+		$post_id = $this->mock->post(
+			array(
+				'post_type'   => Event::POST_TYPE,
+				'post_status' => 'publish',
+			)
+		)->get()->ID;
+
+		$event = new Event( $post_id );
+		$event->save_datetimes(
+			array(
+				'datetime_start' => gmdate( 'Y-m-d H:i:s', strtotime( '+1 day' ) ),
+				'datetime_end'   => gmdate( 'Y-m-d H:i:s', strtotime( '+1 day +2 hours' ) ),
+				'timezone'       => 'UTC',
+			)
+		);
+
+		// Reset cached counts after event creation so fresh queries run.
+		Utility::set_and_get_hidden_property( $instance, 'event_counts', null );
+
+		$view_links = array(
+			'all' => '<a href="#">All</a>',
+		);
+
+		$result = $instance->views_edit( $view_links );
+
+		// Upcoming should show count of 1.
+		$this->assertStringContainsString(
+			'<span class="count">(1)</span>',
+			$result['upcoming'],
+			'Upcoming link should show count of 1.'
+		);
+
+		// Past should show count of 0.
+		$this->assertStringContainsString(
+			'<span class="count">(0)</span>',
+			$result['past'],
+			'Past link should show count of 0.'
+		);
+	}
+
+	/**
+	 * Tests filter_readonly_meta removes read-only meta keys from REST request.
+	 *
+	 * @covers ::filter_readonly_meta
+	 * @return void
+	 */
+	public function test_filter_readonly_meta_removes_readonly_keys(): void {
+		$instance = Event_Setup::get_instance();
+
+		// Create a mock REST request with all readonly keys plus a writable key.
+		$request = new WP_REST_Request( 'POST', '/wp/v2/gatherpress_event' );
+		$request->set_param(
+			'meta',
+			array(
+				'gatherpress_datetime'           => '{"dateTimeStart":"2025-01-01 10:00:00"}',
+				'gatherpress_datetime_start'     => '2025-01-01 10:00:00',
+				'gatherpress_datetime_start_gmt' => '2025-01-01 15:00:00',
+				'gatherpress_datetime_end'       => '2025-01-01 12:00:00',
+				'gatherpress_datetime_end_gmt'   => '2025-01-01 17:00:00',
+				'gatherpress_timezone'           => 'America/New_York',
+				'gatherpress_online_event_link'  => 'https://example.com',
+			)
+		);
+
+		$prepared_post     = new stdClass();
+		$prepared_post->ID = 123;
+
+		$result = $instance->filter_readonly_meta( $prepared_post, $request );
+
+		// Verify prepared_post is returned unchanged.
+		$this->assertSame( $prepared_post, $result, 'Should return the same prepared_post object.' );
+		$this->assertEquals( 123, $result->ID, 'Prepared post ID should be unchanged.' );
+
+		// Verify readonly keys were removed from request meta.
+		$filtered_meta = $request->get_param( 'meta' );
+
+		$this->assertArrayNotHasKey(
+			'gatherpress_datetime_start',
+			$filtered_meta,
+			'Should remove gatherpress_datetime_start.'
+		);
+		$this->assertArrayNotHasKey(
+			'gatherpress_datetime_start_gmt',
+			$filtered_meta,
+			'Should remove gatherpress_datetime_start_gmt.'
+		);
+		$this->assertArrayNotHasKey(
+			'gatherpress_datetime_end',
+			$filtered_meta,
+			'Should remove gatherpress_datetime_end.'
+		);
+		$this->assertArrayNotHasKey(
+			'gatherpress_datetime_end_gmt',
+			$filtered_meta,
+			'Should remove gatherpress_datetime_end_gmt.'
+		);
+		$this->assertArrayNotHasKey(
+			'gatherpress_timezone',
+			$filtered_meta,
+			'Should remove gatherpress_timezone.'
+		);
+
+		// Verify writable keys are preserved.
+		$this->assertArrayHasKey(
+			'gatherpress_datetime',
+			$filtered_meta,
+			'Should preserve gatherpress_datetime (writable).'
+		);
+		$this->assertArrayHasKey(
+			'gatherpress_online_event_link',
+			$filtered_meta,
+			'Should preserve gatherpress_online_event_link (writable).'
+		);
+	}
+
+	/**
+	 * Tests filter_readonly_meta with null meta parameter.
+	 *
+	 * @covers ::filter_readonly_meta
+	 * @return void
+	 */
+	public function test_filter_readonly_meta_with_null_meta(): void {
+		$instance = Event_Setup::get_instance();
+
+		// Create a REST request without meta parameter.
+		$request = new WP_REST_Request( 'POST', '/wp/v2/gatherpress_event' );
+		// Do not set meta parameter - it will be null.
+
+		$prepared_post       = new stdClass();
+		$prepared_post->ID   = 456;
+		$prepared_post->name = 'Test Event';
+
+		$result = $instance->filter_readonly_meta( $prepared_post, $request );
+
+		// Verify prepared_post is returned unchanged.
+		$this->assertSame( $prepared_post, $result, 'Should return the same prepared_post object.' );
+		$this->assertEquals( 456, $result->ID, 'Prepared post ID should be unchanged.' );
+		$this->assertEquals( 'Test Event', $result->name, 'Prepared post name should be unchanged.' );
+
+		// Verify meta is still null.
+		$this->assertNull( $request->get_param( 'meta' ), 'Meta should remain null.' );
+	}
+
+	/**
+	 * Tests filter_readonly_meta with empty meta array.
+	 *
+	 * @covers ::filter_readonly_meta
+	 * @return void
+	 */
+	public function test_filter_readonly_meta_with_empty_meta(): void {
+		$instance = Event_Setup::get_instance();
+
+		// Create a REST request with empty meta array.
+		$request = new WP_REST_Request( 'POST', '/wp/v2/gatherpress_event' );
+		$request->set_param( 'meta', array() );
+
+		$prepared_post     = new stdClass();
+		$prepared_post->ID = 789;
+
+		$result = $instance->filter_readonly_meta( $prepared_post, $request );
+
+		// Verify prepared_post is returned unchanged.
+		$this->assertSame( $prepared_post, $result, 'Should return the same prepared_post object.' );
+
+		// Verify meta is still an empty array.
+		$filtered_meta = $request->get_param( 'meta' );
+		$this->assertIsArray( $filtered_meta, 'Meta should still be an array.' );
+		$this->assertEmpty( $filtered_meta, 'Meta should still be empty.' );
+	}
+
+	/**
+	 * Tests filter_readonly_meta with only writable keys.
+	 *
+	 * @covers ::filter_readonly_meta
+	 * @return void
+	 */
+	public function test_filter_readonly_meta_with_only_writable_keys(): void {
+		$instance = Event_Setup::get_instance();
+
+		// Create a REST request with only writable meta keys.
+		$request = new WP_REST_Request( 'POST', '/wp/v2/gatherpress_event' );
+		$request->set_param(
+			'meta',
+			array(
+				'gatherpress_datetime'              => '{"dateTimeStart":"2025-01-01 10:00:00"}',
+				'gatherpress_online_event_link'     => 'https://example.com/meeting',
+				'gatherpress_enable_anonymous_rsvp' => true,
+				'gatherpress_max_guest_limit'       => 5,
+				'gatherpress_max_attendance_limit'  => 100,
+			)
+		);
+
+		$prepared_post     = new stdClass();
+		$prepared_post->ID = 101;
+
+		$result = $instance->filter_readonly_meta( $prepared_post, $request );
+
+		// Verify prepared_post is returned unchanged.
+		$this->assertSame( $prepared_post, $result, 'Should return the same prepared_post object.' );
+
+		// Verify all writable keys are preserved.
+		$filtered_meta = $request->get_param( 'meta' );
+
+		$this->assertCount( 5, $filtered_meta, 'Should have all 5 writable keys.' );
+		$this->assertArrayHasKey( 'gatherpress_datetime', $filtered_meta );
+		$this->assertArrayHasKey( 'gatherpress_online_event_link', $filtered_meta );
+		$this->assertArrayHasKey( 'gatherpress_enable_anonymous_rsvp', $filtered_meta );
+		$this->assertArrayHasKey( 'gatherpress_max_guest_limit', $filtered_meta );
+		$this->assertArrayHasKey( 'gatherpress_max_attendance_limit', $filtered_meta );
+	}
+
+	/**
+	 * Tests filter_readonly_meta with only readonly keys.
+	 *
+	 * @covers ::filter_readonly_meta
+	 * @return void
+	 */
+	public function test_filter_readonly_meta_with_only_readonly_keys(): void {
+		$instance = Event_Setup::get_instance();
+
+		// Create a REST request with only readonly meta keys.
+		$request = new WP_REST_Request( 'POST', '/wp/v2/gatherpress_event' );
+		$request->set_param(
+			'meta',
+			array(
+				'gatherpress_datetime_start'     => '2025-01-01 10:00:00',
+				'gatherpress_datetime_start_gmt' => '2025-01-01 15:00:00',
+				'gatherpress_datetime_end'       => '2025-01-01 12:00:00',
+				'gatherpress_datetime_end_gmt'   => '2025-01-01 17:00:00',
+				'gatherpress_timezone'           => 'America/New_York',
+			)
+		);
+
+		$prepared_post     = new stdClass();
+		$prepared_post->ID = 202;
+
+		$result = $instance->filter_readonly_meta( $prepared_post, $request );
+
+		// Verify prepared_post is returned unchanged.
+		$this->assertSame( $prepared_post, $result, 'Should return the same prepared_post object.' );
+
+		// Verify all readonly keys were removed.
+		$filtered_meta = $request->get_param( 'meta' );
+
+		$this->assertIsArray( $filtered_meta, 'Meta should still be an array.' );
+		$this->assertEmpty( $filtered_meta, 'Meta should be empty after removing all readonly keys.' );
 	}
 }

@@ -1,0 +1,32 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "gatherpress/online-event-v2",
+	"version": "2.0.0",
+	"title": "Online Event (v2)",
+	"category": "gatherpress",
+	"icon": "video-alt2",
+	"description": "Display an editable link for online events. Link URL comes from event/venue meta, text is customizable.",
+	"usesContext": ["postId", "queryId"],
+	"attributes": {
+		"blockId": {
+			"type": "string"
+		},
+		"linkText": {
+			"type": "string",
+			"default": ""
+		}
+	},
+	"supports": {
+		"gatherpress": {
+			"postIdOverride": true
+		},
+		"html": false,
+		"interactivity": true
+	},
+	"textdomain": "gatherpress",
+	"editorScript": "file:./index.js",
+	"viewScriptModule": "file:./view.js",
+	"style": "file:./style-index.css",
+	"render": "file:./render.php"
+}

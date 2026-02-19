@@ -8,18 +8,24 @@ import { describe, expect, it, jest, beforeEach, afterEach } from '@jest/globals
  */
 import { dispatch, select } from '@wordpress/data';
 
+// Mock WordPress modules before importing internal dependencies.
+jest.mock( '@wordpress/data' );
+jest.mock( '@wordpress/core-data', () => ( {
+	store: {},
+} ) );
+
 /**
  * Internal dependencies.
  */
 import {
 	enableSave,
 	isGatherPressPostType,
+	getCurrentContextualPostId,
+	getCurrentContextualPostType,
 	getEditorDocument,
+	getStartOfWeek,
 	isInFSETemplate,
 } from '../../../../../src/helpers/editor';
-
-// Mock WordPress data module.
-jest.mock( '@wordpress/data' );
 
 describe( 'Editor helper functions', () => {
 	describe( 'enableSave', () => {
@@ -181,6 +187,154 @@ describe( 'Editor helper functions', () => {
 			const result = getEditorDocument();
 
 			expect( result ).toBe( global.document );
+		} );
+	} );
+
+	describe( 'getStartOfWeek', () => {
+		beforeEach( () => {
+			jest.clearAllMocks();
+		} );
+
+		it( 'returns start_of_week from site settings', () => {
+			select.mockReturnValue( {
+				getSite: jest.fn().mockReturnValue( {
+					start_of_week: 1, // Monday
+				} ),
+			} );
+
+			expect( getStartOfWeek() ).toBe( 1 );
+		} );
+
+		it( 'returns 0 (Sunday) when start_of_week is 0', () => {
+			select.mockReturnValue( {
+				getSite: jest.fn().mockReturnValue( {
+					start_of_week: 0, // Sunday
+				} ),
+			} );
+
+			expect( getStartOfWeek() ).toBe( 0 );
+		} );
+
+		it( 'returns 0 when site is undefined', () => {
+			select.mockReturnValue( {
+				getSite: jest.fn().mockReturnValue( undefined ),
+			} );
+
+			expect( getStartOfWeek() ).toBe( 0 );
+		} );
+
+		it( 'returns 0 when site is null', () => {
+			select.mockReturnValue( {
+				getSite: jest.fn().mockReturnValue( null ),
+			} );
+
+			expect( getStartOfWeek() ).toBe( 0 );
+		} );
+
+		it( 'returns 0 when start_of_week property is missing', () => {
+			select.mockReturnValue( {
+				getSite: jest.fn().mockReturnValue( {} ),
+			} );
+
+			expect( getStartOfWeek() ).toBe( 0 );
+		} );
+
+		it( 'returns 6 when start_of_week is 6 (Saturday)', () => {
+			select.mockReturnValue( {
+				getSite: jest.fn().mockReturnValue( {
+					start_of_week: 6, // Saturday
+				} ),
+			} );
+
+			expect( getStartOfWeek() ).toBe( 6 );
+		} );
+	} );
+
+	describe( 'getCurrentContextualPostId', () => {
+		beforeEach( () => {
+			jest.clearAllMocks();
+		} );
+
+		it( 'returns provided postId when given', () => {
+			const result = getCurrentContextualPostId( 123 );
+
+			expect( result ).toBe( 123 );
+		} );
+
+		it( 'returns postId from editor when no postId provided', () => {
+			select.mockReturnValue( {
+				getCurrentPostId: jest.fn().mockReturnValue( 456 ),
+			} );
+
+			const result = getCurrentContextualPostId();
+
+			expect( select ).toHaveBeenCalledWith( 'core/editor' );
+			expect( result ).toBe( 456 );
+		} );
+
+		it( 'returns postId from editor when null is provided', () => {
+			select.mockReturnValue( {
+				getCurrentPostId: jest.fn().mockReturnValue( 789 ),
+			} );
+
+			const result = getCurrentContextualPostId( null );
+
+			expect( result ).toBe( 789 );
+		} );
+
+		it( 'returns 0 when postId is 0 (falsy but valid)', () => {
+			select.mockReturnValue( {
+				getCurrentPostId: jest.fn().mockReturnValue( 999 ),
+			} );
+
+			// 0 is falsy, so it falls back to getCurrentPostId.
+			const result = getCurrentContextualPostId( 0 );
+
+			expect( result ).toBe( 999 );
+		} );
+	} );
+
+	describe( 'getCurrentContextualPostType', () => {
+		beforeEach( () => {
+			jest.clearAllMocks();
+		} );
+
+		it( 'returns provided postType when given', () => {
+			const result = getCurrentContextualPostType( 'gatherpress_event' );
+
+			expect( result ).toBe( 'gatherpress_event' );
+		} );
+
+		it( 'returns postType from editor when no postType provided', () => {
+			select.mockReturnValue( {
+				getCurrentPostType: jest.fn().mockReturnValue( 'post' ),
+			} );
+
+			const result = getCurrentContextualPostType();
+
+			expect( select ).toHaveBeenCalledWith( 'core/editor' );
+			expect( result ).toBe( 'post' );
+		} );
+
+		it( 'returns postType from editor when null is provided', () => {
+			select.mockReturnValue( {
+				getCurrentPostType: jest.fn().mockReturnValue( 'page' ),
+			} );
+
+			const result = getCurrentContextualPostType( null );
+
+			expect( result ).toBe( 'page' );
+		} );
+
+		it( 'returns postType from editor when empty string is provided', () => {
+			select.mockReturnValue( {
+				getCurrentPostType: jest.fn().mockReturnValue( 'gatherpress_venue' ),
+			} );
+
+			// Empty string is falsy, so it falls back to getCurrentPostType.
+			const result = getCurrentContextualPostType( '' );
+
+			expect( result ).toBe( 'gatherpress_venue' );
 		} );
 	} );
 

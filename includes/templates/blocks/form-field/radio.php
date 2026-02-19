@@ -17,7 +17,7 @@ if ( ! isset(
 	$label_styles,
 	$label_wrapper_styles,
 	$required_styles,
-	$option_styles
+	$option_styles,
 ) ) {
 	return;
 }

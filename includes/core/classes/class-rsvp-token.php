@@ -123,6 +123,12 @@ class Rsvp_Token {
 			return '';
 		}
 
+		// Reject token if the comment is more than 24 hours old.
+		$diff = strtotime( 'now' ) - strtotime( $this->comment->comment_date );
+		if ( $diff >= HOUR_IN_SECONDS * 24 ) {
+			return '';
+		}
+
 		$token = (string) get_comment_meta(
 			(int) $this->comment->comment_ID,
 			$this->get_meta_key(),

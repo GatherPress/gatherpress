@@ -24,4 +24,4 @@ do_action( 'gatherpress_settings_section', $page )
 
 
 
-[← All Hooks](Hooks)
+[← All Hooks](Hooks.md)

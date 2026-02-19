@@ -70,6 +70,11 @@ module.exports = [
 				'style.scss',
 			),
 			utility_style: path.resolve( process.cwd(), 'src', 'utility.scss' ),
+			tooltip_view: path.resolve(
+				process.cwd(),
+				'src/formats/tooltip',
+				'view.js'
+			),
 			...getVariationEntries(),
 		},
 		module: {
