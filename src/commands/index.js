@@ -30,7 +30,7 @@ const Render = () => {
 					title={ __( 'Add new venue', 'gatherpress' ) }
 					onRequestClose={ () => {
 						props.onRequestClose();
-					}}
+					} }
 					shouldCloseOnClickOutside={ true }
 					shouldCloseOnEsc={ true }
 				>
@@ -39,7 +39,7 @@ const Render = () => {
 						variant="secondary"
 						onClick={ () => {
 							props.onRequestClose();
-						}}
+						} }
 					>
 						{ __( 'Cancel', 'gatherpress' ) }
 					</Button>
@@ -55,7 +55,7 @@ const Render = () => {
 		callback: () => {
 			setIsVenueNavigatorOpen( true );
 		},
-		context: 'block-editor'
+		context: 'block-editor',
 	} );
 
 	useCommand( {
@@ -73,7 +73,7 @@ const Render = () => {
 			<UserModal
 				onRequestClose={ () => {
 					setIsVenueNavigatorOpen( false );
-				}}
+				} }
 			/>
 		);
 	}
