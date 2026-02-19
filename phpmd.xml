@@ -11,6 +11,7 @@
 	<rule ref="rulesets/codesize.xml">
 		<exclude name="CyclomaticComplexity" />
 		<exclude name="TooManyPublicMethods" />
+		<exclude name="TooManyMethods" />
 		<exclude name="ExcessiveClassComplexity" />
 		<exclude name="NPathComplexity" />
 		<exclude name="ExcessiveMethodLength" />
@@ -25,6 +26,11 @@
 		<properties>
 			<property name="maxmethods" value="30"/>
 			<property name="ignorepattern" value="(^(__construct|getIterator|offsetExists|offsetGet|offsetSet|offsetUnset))i" />
+		</properties>
+	</rule>
+	<rule ref="rulesets/codesize.xml/TooManyMethods">
+		<properties>
+			<property name="maxmethods" value="30"/>
 		</properties>
 	</rule>
 	<rule ref="rulesets/codesize.xml/ExcessiveClassComplexity">
