@@ -27,7 +27,7 @@ import { getCurrentContextualPostId } from '../helpers/editor';
  * @return {Component} A Navigator component to be rendered.
  */
 export default function VenueNavigator( props = null ) {
-	const addNewItemLabel = __( 'Add Venue', 'gatherpress' );
+	const addNewItemLabel = __( 'Add New Venue', 'gatherpress' );
 
 	/**
 	 * Check if user can CREATE new venues.
