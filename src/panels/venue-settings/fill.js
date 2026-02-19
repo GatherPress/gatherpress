@@ -28,9 +28,8 @@ export default function VenuePluginFill() {
 				title={ __( 'Venue settings', 'gatherpress' ) }
 				className="gatherpress-venue-settings"
 			>
-				<VenuePluginDocumentSettings.Slot />
-
-				<VStack spacing={ 4 }>
+				<VStack spacing={ 6 }>
+					<VenuePluginDocumentSettings.Slot />
 					<OnlineEventLinkPanel />
 				</VStack>
 			</PluginDocumentSettingPanel>
