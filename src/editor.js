@@ -12,6 +12,7 @@ import { getBlockType, unregisterBlockType } from '@wordpress/blocks';
 import { getFromGlobal } from './helpers/globals';
 import { hasEventPastNotice } from './helpers/event';
 import EmailNotificationManager from './components/EmailNotificationManager';
+import './commands';
 import './stores';
 import './supports/post-id-override';
 import './supports/block-guard';
