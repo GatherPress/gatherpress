@@ -3,7 +3,7 @@
  */
 
 /**
- * WordPress dependencies
+ * WordPress dependencies.
  */
 import { createSlotFill, PanelRow } from '@wordpress/components';
 
