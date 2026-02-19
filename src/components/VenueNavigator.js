@@ -93,7 +93,7 @@ export default function VenueNavigator( props = null ) {
 				{ userCanEdit && (
 					<Navigator.Button
 						path="/new"
-						variant="link"
+						variant="primary"
 						text={ addNewItemLabel }
 					/>
 				) }
