@@ -31,6 +31,7 @@ import {
 	isEventPostType,
 	hasValidEventId,
 	getEventMeta,
+	hasOnlineEventTerm,
 } from '../../../../../src/helpers/event';
 import { dateTimeDatabaseFormat } from '../../../../../src/helpers/datetime';
 
@@ -598,5 +599,254 @@ describe( 'getEventMeta', () => {
 		const result = getEventMeta( mockSelect, null, {} );
 
 		expect( result.enableAnonymousRsvp ).toBe( false );
+	} );
+} );
+
+/**
+ * Coverage for hasOnlineEventTerm.
+ */
+describe( 'hasOnlineEventTerm', () => {
+	it( 'returns false when online-event term does not exist', () => {
+		require( '@wordpress/data' ).select.mockImplementation( ( store ) => {
+			if ( 'core' === store ) {
+				return {
+					getEntityRecords: () => null,
+				};
+			}
+			return {};
+		} );
+
+		expect( hasOnlineEventTerm() ).toBe( false );
+	} );
+
+	it( 'returns false when online-event term array is empty', () => {
+		require( '@wordpress/data' ).select.mockImplementation( ( store ) => {
+			if ( 'core' === store ) {
+				return {
+					getEntityRecords: () => [],
+				};
+			}
+			return {};
+		} );
+
+		expect( hasOnlineEventTerm() ).toBe( false );
+	} );
+
+	it( 'returns false when postId provided but post not found', () => {
+		require( '@wordpress/data' ).select.mockImplementation( ( store ) => {
+			if ( 'core' === store ) {
+				return {
+					getEntityRecords: () => [ { id: 1 } ],
+					getEntityRecord: () => null,
+				};
+			}
+			return {};
+		} );
+
+		expect( hasOnlineEventTerm( 123 ) ).toBe( false );
+	} );
+
+	it( 'returns false when postId provided but post has no venue terms', () => {
+		require( '@wordpress/data' ).select.mockImplementation( ( store ) => {
+			if ( 'core' === store ) {
+				return {
+					getEntityRecords: () => [ { id: 1 } ],
+					getEntityRecord: () => ( {
+						id: 123,
+						_gatherpress_venue: [],
+					} ),
+				};
+			}
+			return {};
+		} );
+
+		expect( hasOnlineEventTerm( 123 ) ).toBe( false );
+	} );
+
+	it( 'returns false when postId provided but venue terms undefined', () => {
+		require( '@wordpress/data' ).select.mockImplementation( ( store ) => {
+			if ( 'core' === store ) {
+				return {
+					getEntityRecords: () => [ { id: 1 } ],
+					getEntityRecord: () => ( {
+						id: 123,
+					} ),
+				};
+			}
+			return {};
+		} );
+
+		expect( hasOnlineEventTerm( 123 ) ).toBe( false );
+	} );
+
+	it( 'returns true when postId provided and has matching online-event term', () => {
+		const onlineTermId = 42;
+
+		require( '@wordpress/data' ).select.mockImplementation( ( store ) => {
+			if ( 'core' === store ) {
+				return {
+					getEntityRecords: () => [ { id: onlineTermId } ],
+					getEntityRecord: () => ( {
+						id: 123,
+						_gatherpress_venue: [ onlineTermId ],
+					} ),
+				};
+			}
+			return {};
+		} );
+
+		expect( hasOnlineEventTerm( 123 ) ).toBe( true );
+	} );
+
+	it( 'returns false when postId provided but term does not match', () => {
+		require( '@wordpress/data' ).select.mockImplementation( ( store ) => {
+			if ( 'core' === store ) {
+				return {
+					getEntityRecords: () => [ { id: 42 } ],
+					getEntityRecord: () => ( {
+						id: 123,
+						_gatherpress_venue: [ 99 ], // Different term ID.
+					} ),
+				};
+			}
+			return {};
+		} );
+
+		expect( hasOnlineEventTerm( 123 ) ).toBe( false );
+	} );
+
+	it( 'returns false when no postId and current post is not event', () => {
+		require( '@wordpress/data' ).select.mockImplementation( ( store ) => {
+			if ( 'core' === store ) {
+				return {
+					getEntityRecords: () => [ { id: 42 } ],
+				};
+			}
+			if ( 'core/editor' === store ) {
+				return {
+					getCurrentPostType: () => 'post',
+				};
+			}
+			return {};
+		} );
+
+		expect( hasOnlineEventTerm() ).toBe( false );
+	} );
+
+	it( 'returns false when no postId, current post is event but no venue terms', () => {
+		require( '@wordpress/data' ).select.mockImplementation( ( store ) => {
+			if ( 'core' === store ) {
+				return {
+					getEntityRecords: () => [ { id: 42 } ],
+				};
+			}
+			if ( 'core/editor' === store ) {
+				return {
+					getCurrentPostType: () => 'gatherpress_event',
+					getEditedPostAttribute: () => [],
+				};
+			}
+			return {};
+		} );
+
+		expect( hasOnlineEventTerm() ).toBe( false );
+	} );
+
+	it( 'returns false when no postId, current post is event but venue terms undefined', () => {
+		require( '@wordpress/data' ).select.mockImplementation( ( store ) => {
+			if ( 'core' === store ) {
+				return {
+					getEntityRecords: () => [ { id: 42 } ],
+				};
+			}
+			if ( 'core/editor' === store ) {
+				return {
+					getCurrentPostType: () => 'gatherpress_event',
+					getEditedPostAttribute: () => undefined,
+				};
+			}
+			return {};
+		} );
+
+		expect( hasOnlineEventTerm() ).toBe( false );
+	} );
+
+	it( 'returns true when no postId, current post is event with online-event term', () => {
+		const onlineTermId = 42;
+
+		require( '@wordpress/data' ).select.mockImplementation( ( store ) => {
+			if ( 'core' === store ) {
+				return {
+					getEntityRecords: () => [ { id: onlineTermId } ],
+				};
+			}
+			if ( 'core/editor' === store ) {
+				return {
+					getCurrentPostType: () => 'gatherpress_event',
+					getEditedPostAttribute: () => [ onlineTermId ],
+				};
+			}
+			return {};
+		} );
+
+		expect( hasOnlineEventTerm() ).toBe( true );
+	} );
+
+	it( 'returns false when no postId, current post is event but term does not match', () => {
+		require( '@wordpress/data' ).select.mockImplementation( ( store ) => {
+			if ( 'core' === store ) {
+				return {
+					getEntityRecords: () => [ { id: 42 } ],
+				};
+			}
+			if ( 'core/editor' === store ) {
+				return {
+					getCurrentPostType: () => 'gatherpress_event',
+					getEditedPostAttribute: () => [ 99 ], // Different term ID.
+				};
+			}
+			return {};
+		} );
+
+		expect( hasOnlineEventTerm() ).toBe( false );
+	} );
+
+	it( 'handles string comparison for term IDs correctly', () => {
+		// Term IDs might be strings or numbers - verify comparison works.
+		require( '@wordpress/data' ).select.mockImplementation( ( store ) => {
+			if ( 'core' === store ) {
+				return {
+					getEntityRecords: () => [ { id: 42 } ], // Number.
+				};
+			}
+			if ( 'core/editor' === store ) {
+				return {
+					getCurrentPostType: () => 'gatherpress_event',
+					getEditedPostAttribute: () => [ '42' ], // String.
+				};
+			}
+			return {};
+		} );
+
+		expect( hasOnlineEventTerm() ).toBe( true );
+	} );
+
+	it( 'handles multiple venue terms including online-event', () => {
+		const onlineTermId = 42;
+
+		require( '@wordpress/data' ).select.mockImplementation( ( store ) => {
+			if ( 'core' === store ) {
+				return {
+					getEntityRecords: () => [ { id: onlineTermId } ],
+					getEntityRecord: () => ( {
+						id: 123,
+						_gatherpress_venue: [ 10, onlineTermId, 20 ], // Multiple terms.
+					} ),
+				};
+			}
+			return {};
+		} );
+
+		expect( hasOnlineEventTerm( 123 ) ).toBe( true );
 	} );
 } );

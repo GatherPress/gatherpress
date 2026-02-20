@@ -19,6 +19,11 @@ on:
       - 'jest.config.js'
       - 'package.json'
 
+# Ensure only one coverage check runs per PR at a time.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
 jobs:
   check-coverage:
     name: Check Test Coverage on Changed Files
@@ -70,22 +75,61 @@ jobs:
 
       - name: Check PHP PR coverage
         id: php-coverage
-        run: php .github/scripts/check-pr-coverage.php
+        run: |
+          # Capture output to file and display it.
+          php .github/scripts/check-pr-coverage.php 2>&1 | tee php-coverage-output.txt
+          # Preserve the exit code from PHP script.
+          exit ${PIPESTATUS[0]}
         env:
           GITHUB_BASE_REF: ${{ github.base_ref }}
         continue-on-error: true  # Continue to check JS coverage even if PHP fails
 
       - name: Check JavaScript PR coverage
         id: js-coverage
-        run: php .github/scripts/check-pr-coverage-js.php
+        run: |
+          # Capture output to file and display it.
+          php .github/scripts/check-pr-coverage-js.php 2>&1 | tee js-coverage-output.txt
+          # Preserve the exit code from PHP script.
+          exit ${PIPESTATUS[0]}
         env:
           GITHUB_BASE_REF: ${{ github.base_ref }}
         continue-on-error: true  # Continue to show all results before failing
 
+      - name: Post coverage comment on PR
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            const createCoverageComment = require('.github/scripts/pr-coverage-comment');
+
+            // Read coverage output files.
+            let phpOutput = '';
+            let jsOutput = '';
+
+            try {
+              phpOutput = fs.readFileSync('php-coverage-output.txt', 'utf8');
+            } catch (e) {
+              phpOutput = 'PHP coverage check did not run.';
+            }
+
+            try {
+              jsOutput = fs.readFileSync('js-coverage-output.txt', 'utf8');
+            } catch (e) {
+              jsOutput = 'JavaScript coverage check did not run.';
+            }
+
+            // Get the status of each coverage check.
+            const phpStatus = '${{ steps.php-coverage.outcome }}';
+            const jsStatus = '${{ steps.js-coverage.outcome }}';
+
+            await createCoverageComment(github, context, phpOutput, jsOutput, phpStatus, jsStatus);
+
       - name: Fail if coverage checks failed
         if: steps.php-coverage.outcome == 'failure' || steps.js-coverage.outcome == 'failure'
         run: |
-          echo "❌ One or more coverage checks failed. See above for details."
+          echo "❌ One or more coverage checks failed. See the PR comment for details."
           exit 1
 
       - name: Stop WordPress environment
