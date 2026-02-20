@@ -3,7 +3,8 @@
  */
 import { ComboboxControl } from '@wordpress/components';
 import { useEntityProp } from '@wordpress/core-data';
-import { useCallback } from '@wordpress/element';
+import { useSelect } from '@wordpress/data';
+import { useCallback, useMemo } from '@wordpress/element';
 import { useDebounce } from '@wordpress/compose';
 import { __ } from '@wordpress/i18n';
 
@@ -42,8 +43,26 @@ export const VenueTermsCombobox = ( { search, setSearch, ...props } ) => {
 		cId
 	);
 
-	// The currently selected venue term ID (if any).
-	const venueId = venueTaxonomyIds?.[ 0 ];
+	// Get the online-event term to exclude it from venue selection.
+	const onlineEventTermId = useSelect( ( wpSelect ) => {
+		const terms = wpSelect( 'core' ).getEntityRecords( 'taxonomy', TAX_VENUE, {
+			slug: 'online-event',
+			per_page: 1,
+		} );
+		return terms?.[ 0 ]?.id || null;
+	}, [] );
+
+	// Filter out the online-event term to get only physical venue IDs.
+	const physicalVenueIds = useMemo( () => {
+		if ( ! venueTaxonomyIds || ! onlineEventTermId ) {
+			return venueTaxonomyIds || [];
+		}
+		const onlineIdStr = String( onlineEventTermId );
+		return venueTaxonomyIds.filter( ( id ) => String( id ) !== onlineIdStr );
+	}, [ venueTaxonomyIds, onlineEventTermId ] );
+
+	// The currently selected physical venue term ID (if any).
+	const venueId = physicalVenueIds?.[ 0 ];
 	const { venueOptions } = useVenueOptions( search, venueId );
 
 	/**
@@ -55,27 +74,44 @@ export const VenueTermsCombobox = ( { search, setSearch, ...props } ) => {
 		setSearch( value );
 	}, 300 );
 
+	// Check if online-event term is currently assigned.
+	const hasOnlineEventTerm = useMemo( () => {
+		if ( ! venueTaxonomyIds || ! onlineEventTermId ) {
+			return false;
+		}
+		const onlineIdStr = String( onlineEventTermId );
+		return venueTaxonomyIds.some( ( id ) => String( id ) === onlineIdStr );
+	}, [ venueTaxonomyIds, onlineEventTermId ] );
+
 	/**
 	 * Updates the event's '_gatherpress_venue' taxonomy term relationship.
+	 * Preserves the online-event term if it's currently assigned.
 	 *
 	 * @param {number|*} value The selected venue term ID,
-	 *                         or other value if "Choose a venue" was selected
+	 *                         or other value if "Choose a venue" was selected.
 	 */
 	const update = useCallback(
 		( value ) => {
-			const save = Number.isFinite( value ) ? [ value ] : [];
+			let save = [];
+			if ( Number.isFinite( value ) ) {
+				save = [ value ];
+			}
+			// Preserve online-event term if it was set.
+			if ( hasOnlineEventTerm && onlineEventTermId ) {
+				save = [ ...save, onlineEventTermId ];
+			}
 			updateVenueTaxonomyIds( save );
 		},
-		[ updateVenueTaxonomyIds ]
+		[ updateVenueTaxonomyIds, hasOnlineEventTerm, onlineEventTermId ]
 	);
 
 	/**
 	 * Determines the current value for the combobox.
 	 *
-	 * @return {number|string} The currently selected venue term ID or 'loading'.
+	 * @return {number|string} The currently selected physical venue term ID or 'loading'.
 	 */
 	const setValue = () => {
-		return venueTaxonomyIds?.[ 0 ] || 'loading';
+		return physicalVenueIds?.[ 0 ] || 'loading';
 	};
 
 	return (

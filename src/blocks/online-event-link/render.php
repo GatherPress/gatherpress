@@ -19,8 +19,13 @@ if ( ! isset( $attributes ) || ! is_array( $attributes ) ) {
 	return;
 }
 
-$gatherpress_current_post_id   = get_the_ID();
-$gatherpress_current_post_type = get_post_type();
+// Get the event post ID from block context (set by online-event-v2 via providesContext).
+// Fall back to get_the_ID() for standalone usage outside venue-v2.
+$gatherpress_current_post_id = ! empty( $block->context['postId'] )
+	? (int) $block->context['postId']
+	: get_the_ID();
+
+$gatherpress_current_post_type = get_post_type( $gatherpress_current_post_id );
 
 // Get the link text from block attributes, default to "Online event".
 $gatherpress_link_text = $attributes['linkText'] ?? '';

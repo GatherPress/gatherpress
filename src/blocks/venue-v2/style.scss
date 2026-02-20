@@ -1,0 +1,4 @@
+// Spacing between venue content and online event when both are present.
+.wp-block-gatherpress-venue-v2 .wp-block-gatherpress-online-event-v2:not(:first-child) {
+	margin-top: var(--wp--preset--spacing--30);
+}

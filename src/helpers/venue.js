@@ -217,12 +217,15 @@ export function useVenueOptions(
 		() => {
 			// Create a combobox-friendly list as dropdown
 			// from the array of venues (can be ~posts or ~terms).
-			const fetchedVenues = ( venues ?? [] ).map( ( venueObj ) => {
-				return {
-					value: venueObj.id,
-					label: decodeEntities( getVenueTitle( venueObj, kind ) ),
-				};
-			} );
+			// Filter out the online-event term since it's controlled by a separate toggle.
+			const fetchedVenues = ( venues ?? [] )
+				.filter( ( venueObj ) => 'online-event' !== venueObj.slug )
+				.map( ( venueObj ) => {
+					return {
+						value: venueObj.id,
+						label: decodeEntities( getVenueTitle( venueObj, kind ) ),
+					};
+				} );
 
 			// Check if the current venue is already included in the list.
 			// Will be -1 if not found.
@@ -230,8 +233,8 @@ export function useVenueOptions(
 				( { value } ) => venue?.id === value
 			);
 
-			// Ensure the current venue is included in the list.
-			if ( 0 > foundVenue && venue ) {
+			// Ensure the current venue is included in the list (but not online-event).
+			if ( 0 > foundVenue && venue && 'online-event' !== venue.slug ) {
 				return [
 					{
 						value: venue.id,
@@ -267,15 +270,20 @@ export function usePopularVenues( limit = 3 ) {
 	const popularVenues = useSelect(
 		( wpSelect ) => {
 			const { getEntityRecords } = wpSelect( coreStore );
+			// Fetch extra to account for filtering out online-event.
 			const query = {
 				context: 'view',
-				per_page: limit,
+				per_page: limit + 1,
 				orderby: 'count',
 				order: 'desc',
 				hide_empty: true, // Only show venues that are actually used.
 			};
 
-			return getEntityRecords( 'taxonomy', TAX_VENUE, query );
+			const venues = getEntityRecords( 'taxonomy', TAX_VENUE, query );
+			// Filter out the online-event term since it's controlled by a separate toggle.
+			return venues
+				?.filter( ( venue ) => 'online-event' !== venue.slug )
+				.slice( 0, limit );
 		},
 		[ limit ]
 	);
