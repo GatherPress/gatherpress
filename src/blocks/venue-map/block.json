@@ -11,7 +11,7 @@
 	"attributes": {
 		"zoom": {
 			"type": "number",
-			"default": 10
+			"default": 18
 		},
 		"type": {
 			"type": "string",

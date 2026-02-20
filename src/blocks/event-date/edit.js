@@ -317,7 +317,7 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 				separator,
 				showTimezone
 			) }
-			{ isEventPostType() && (
+				{ isEventPostType() && (
 				<InspectorControls>
 					<PanelBody>
 						<VStack spacing={ 4 }>
@@ -354,7 +354,15 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 								setAttributes( { showTimezone: value } )
 							}
 						/>
-						<RadioControl
+					</PanelBody>
+				</InspectorControls>
+			) }
+			<InspectorControls>
+				<PanelBody
+					title={ __( 'Display Settings', 'gatherpress' ) }
+					initialOpen={ true }
+				>
+					<RadioControl
 							label={ __( 'Display', 'gatherpress' ) }
 							selected={ displayType }
 							options={ [
@@ -419,10 +427,9 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 									'gatherpress'
 								) }
 							</a>
-						</p>
-					</PanelBody>
-				</InspectorControls>
-			) }
+					</p>
+				</PanelBody>
+			</InspectorControls>
 		</div>
 	);
 };

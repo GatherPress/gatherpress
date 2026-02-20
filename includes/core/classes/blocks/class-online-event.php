@@ -12,7 +12,9 @@ namespace GatherPress\Core\Blocks;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
+use GatherPress\Core\Event;
 use GatherPress\Core\Traits\Singleton;
+use GatherPress\Core\Venue;
 use WP_Block;
 
 /**
@@ -64,6 +66,7 @@ class Online_Event {
 	 *
 	 * When the block has a postId attribute (override), this method
 	 * ensures that postId is passed as context to inner blocks.
+	 * The block is hidden if the event doesn't have the online-event term.
 	 *
 	 * @see https://developer.wordpress.org/reference/hooks/render_block_this-name/
 	 *
@@ -82,15 +85,50 @@ class Online_Event {
 		}
 
 		// Check if block has a postId override attribute.
-		$post_id = isset( $block['attrs']['postId'] ) ? intval( $block['attrs']['postId'] ) : 0;
+		$post_id = isset( $block['attrs']['postId'] ) ? intval( $block['attrs']['postId'] ) : get_the_ID();
+
+		// Don't render if the event doesn't have the online-event term.
+		if ( ! $this->has_online_event_term( $post_id ) ) {
+			return '';
+		}
 
 		// No override - render as-is.
-		if ( 0 === $post_id ) {
+		if ( ! isset( $block['attrs']['postId'] ) ) {
 			return $block_content;
 		}
 
 		// Re-render inner blocks with the override postId as context.
 		return $this->render_with_post_context( $post_id, $instance );
+	}
+
+	/**
+	 * Checks if an event has the online-event term.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param int $post_id The post ID to check.
+	 *
+	 * @return bool True if the event has the online-event term, false otherwise.
+	 */
+	private function has_online_event_term( int $post_id ): bool {
+		// Only check for event post types.
+		if ( Event::POST_TYPE !== get_post_type( $post_id ) ) {
+			return true;
+		}
+
+		$venue_terms = get_the_terms( $post_id, Venue::TAXONOMY );
+
+		if ( ! is_array( $venue_terms ) ) {
+			return false;
+		}
+
+		foreach ( $venue_terms as $term ) {
+			if ( 'online-event' === $term->slug ) {
+				return true;
+			}
+		}
+
+		return false;
 	}
 
 	/**

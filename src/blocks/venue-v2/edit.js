@@ -186,8 +186,6 @@ const Edit = ( props ) => {
 			}
 		} else {
 			newTerms = currentTerms.filter( ( id ) => String( id ) !== termIdStr );
-			// Also clear the link when toggling off.
-			updateOnlineEventLink( '' );
 		}
 
 		updateVenueTaxonomyIds( newTerms );
