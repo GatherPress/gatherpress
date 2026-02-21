@@ -11,7 +11,6 @@ import { __ } from '@wordpress/i18n';
 import {
 	PanelBody,
 	PanelRow,
-	SelectControl,
 	TextControl,
 	ToggleControl,
 	// eslint-disable-next-line @wordpress/no-unsafe-wp-apis
@@ -25,7 +24,7 @@ import { createBlocksFromInnerBlocksTemplate } from '@wordpress/blocks';
 /**
  * Internal dependencies
  */
-import { getCurrentContextualPostId, isInFSETemplate } from '../../helpers/editor';
+import { getCurrentContextualPostId } from '../../helpers/editor';
 import { isEventPostType } from '../../helpers/event';
 import { GetVenuePostFromTermId } from '../../helpers/venue';
 import VenueNavigator from '../../components/VenueNavigator';
@@ -66,8 +65,7 @@ function getCompositeTemplate( hasPhysicalVenue, hasOnlineEvent, isEventContext,
 }
 
 const Edit = ( props ) => {
-	const { attributes, setAttributes, context, clientId } = props;
-	const { displayCondition } = attributes;
+	const { context, clientId } = props;
 	const blockProps = useBlockProps();
 	const { replaceInnerBlocks } = useDispatch( 'core/block-editor' );
 	const { editPost, unlockPostSaving } = useDispatch( 'core/editor' );
@@ -241,35 +239,6 @@ const Edit = ( props ) => {
 				<InnerBlocks template={ template } templateLock={ false } />
 			</BlockContextProvider>
 			<InspectorControls>
-				{ ( isDescendentOfQueryLoop || isInFSETemplate() ) && (
-					<PanelBody
-						title={ __( 'Display settings', 'gatherpress' ) }
-						initialOpen={ true }
-					>
-						<SelectControl
-							label={ __( 'Display condition', 'gatherpress' ) }
-							help={ __(
-								'Control when this block renders based on venue type.',
-								'gatherpress'
-							) }
-							value={ displayCondition }
-							options={ [
-								{ label: __( 'Any', 'gatherpress' ), value: 'any' },
-								{
-									label: __( 'Physical venue only', 'gatherpress' ),
-									value: 'physical',
-								},
-								{
-									label: __( 'Online event only', 'gatherpress' ),
-									value: 'online',
-								},
-							] }
-							onChange={ ( value ) =>
-								setAttributes( { displayCondition: value } )
-							}
-						/>
-					</PanelBody>
-				) }
 				{ ! isDescendentOfQueryLoop && isEventContext && (
 					<PanelBody
 						title={ __( 'Venue settings', 'gatherpress' ) }

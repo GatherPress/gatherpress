@@ -149,7 +149,7 @@ class Online_Event {
 		$block_instance              = $instance->parsed_block;
 		$block_instance['blockName'] = 'core/null';
 
-		$filter_block_context = static function ( $context ) use ( $post_id ) {
+		$filter_block_context = static function ( array $context ) use ( $post_id ): array {
 			$context['postId'] = $post_id;
 			return $context;
 		};

@@ -15,10 +15,6 @@
 		},
 		"selectedPostType": {
 			"type": "string"
-		},
-		"displayCondition": {
-			"type": "string",
-			"default": "any"
 		}
 	},
 	"supports": {
