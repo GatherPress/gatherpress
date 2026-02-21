@@ -354,75 +354,82 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 								setAttributes( { showTimezone: value } )
 							}
 						/>
-						<RadioControl
-							label={ __( 'Display', 'gatherpress' ) }
-							selected={ displayType }
-							options={ [
-								{
-									label: __(
-										'Start and end date',
-										'gatherpress'
-									),
-									value: 'both',
-								},
-								{
-									label: __( 'Start date only', 'gatherpress' ),
-									value: 'start',
-								},
-								{
-									label: __( 'End date only', 'gatherpress' ),
-									value: 'end',
-								},
-							] }
-							onChange={ ( value ) =>
-								setAttributes( { displayType: value } )
-							}
-						/>
-						{ 'both' === displayType && (
-							<TextControl
-								label={ __( 'Separator', 'gatherpress' ) }
-								value={ separator }
-								placeholder={ __( 'to', 'gatherpress' ) }
-								onChange={ ( value ) =>
-									setAttributes( { separator: value } )
-								}
-							/>
-						) }
-						{ showStartTime && (
-							<TextControl
-								label={ __( 'Start date format', 'gatherpress' ) }
-								value={ startDateFormat }
-								placeholder={ `${ globalDateFormat } ${ globalTimeFormat }` }
-								onChange={ ( value ) =>
-									setAttributes( { startDateFormat: value } )
-								}
-							/>
-						) }
-						{ showEndTime && (
-							<TextControl
-								label={ __( 'End date format', 'gatherpress' ) }
-								value={ endDateFormat }
-								placeholder={ `${ globalDateFormat } ${ globalTimeFormat }` }
-								onChange={ ( value ) =>
-									setAttributes( { endDateFormat: value } )
-								}
-							/>
-						) }
-						<p className="components-base-control__help">
-							<a
-								href="https://wordpress.org/documentation/article/customize-date-and-time-format/"
-								target="_blank"
-								rel="noreferrer"
-							>
-								{ __(
-									'Date/time formatting documentation',
-									'gatherpress'
-								) }
-							</a>
-						</p>
 					</PanelBody>
 				</InspectorControls>
 			) }
+			<InspectorControls>
+				<PanelBody
+					title={ __( 'Display Settings', 'gatherpress' ) }
+					initialOpen={ true }
+				>
+					<RadioControl
+						label={ __( 'Display', 'gatherpress' ) }
+						selected={ displayType }
+						options={ [
+							{
+								label: __(
+									'Start and end date',
+									'gatherpress'
+								),
+								value: 'both',
+							},
+							{
+								label: __( 'Start date only', 'gatherpress' ),
+								value: 'start',
+							},
+							{
+								label: __( 'End date only', 'gatherpress' ),
+								value: 'end',
+							},
+						] }
+						onChange={ ( value ) =>
+							setAttributes( { displayType: value } )
+						}
+					/>
+					{ 'both' === displayType && (
+						<TextControl
+							label={ __( 'Separator', 'gatherpress' ) }
+							value={ separator }
+							placeholder={ __( 'to', 'gatherpress' ) }
+							onChange={ ( value ) =>
+								setAttributes( { separator: value } )
+							}
+						/>
+					) }
+					{ showStartTime && (
+						<TextControl
+							label={ __( 'Start date format', 'gatherpress' ) }
+							value={ startDateFormat }
+							placeholder={ `${ globalDateFormat } ${ globalTimeFormat }` }
+							onChange={ ( value ) =>
+								setAttributes( { startDateFormat: value } )
+							}
+						/>
+					) }
+					{ showEndTime && (
+						<TextControl
+							label={ __( 'End date format', 'gatherpress' ) }
+							value={ endDateFormat }
+							placeholder={ `${ globalDateFormat } ${ globalTimeFormat }` }
+							onChange={ ( value ) =>
+								setAttributes( { endDateFormat: value } )
+							}
+						/>
+					) }
+					<p className="components-base-control__help">
+						<a
+							href="https://wordpress.org/documentation/article/customize-date-and-time-format/"
+							target="_blank"
+							rel="noreferrer"
+						>
+							{ __(
+								'Date/time formatting documentation',
+								'gatherpress'
+							) }
+						</a>
+					</p>
+				</PanelBody>
+			</InspectorControls>
 		</div>
 	);
 };

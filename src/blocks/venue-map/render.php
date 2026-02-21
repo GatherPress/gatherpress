@@ -32,7 +32,7 @@ $gatherpress_map_attrs = array(
 	'fullAddress'  => $gatherpress_venue_address,
 	'latitude'     => $gatherpress_venue_latitude,
 	'longitude'    => $gatherpress_venue_longitude,
-	'mapZoomLevel' => $attributes['zoom'] ?? 10,
+	'mapZoomLevel' => $attributes['zoom'] ?? 18,
 	'mapType'      => $attributes['type'] ?? 'roadmap',
 	'mapHeight'    => $attributes['height'] ?? 300,
 );

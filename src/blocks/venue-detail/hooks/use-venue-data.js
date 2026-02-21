@@ -3,6 +3,8 @@
  */
 import { useSelect, useDispatch, select } from '@wordpress/data';
 import { store as coreStore } from '@wordpress/core-data';
+// eslint-disable-next-line @wordpress/no-unsafe-wp-apis
+import { __unstableStripHTML as stripHTML } from '@wordpress/dom';
 import { useCallback } from '@wordpress/element';
 
 /**
@@ -168,8 +170,7 @@ export function useVenueData( context, fieldType ) {
 	// Update the current field value (strips HTML tags).
 	const updateFieldValue = useCallback(
 		( newValue ) => {
-			const strippedValue = newValue.replace( /<[^>]*>/g, '' );
-			updateVenueField( jsonFieldName, strippedValue );
+			updateVenueField( jsonFieldName, stripHTML( newValue ) );
 		},
 		[ jsonFieldName, updateVenueField ]
 	);
@@ -177,8 +178,7 @@ export function useVenueData( context, fieldType ) {
 	// Update the website URL specifically (strips HTML tags).
 	const updateWebsiteUrl = useCallback(
 		( newValue ) => {
-			const strippedValue = newValue.replace( /<[^>]*>/g, '' );
-			updateVenueField( 'website', strippedValue );
+			updateVenueField( 'website', stripHTML( newValue ) );
 		},
 		[ updateVenueField ]
 	);

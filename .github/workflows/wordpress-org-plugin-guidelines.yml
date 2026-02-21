@@ -75,4 +75,4 @@ jobs:
         uses: wordpress/plugin-check-action@v1.1.5
         with:
           build-dir: './tmp-build/gatherpress'
-          wp-version: 'trunk'
+          wp-version: 'latest'

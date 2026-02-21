@@ -1,4 +1,7 @@
 .wp-block-gatherpress-venue-map {
+	// Create new stacking context to contain Leaflet's z-index values.
+	isolation: isolate;
+
 	&__placeholder {
 		padding: 2rem;
 		text-align: center;

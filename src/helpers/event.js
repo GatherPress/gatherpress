@@ -132,6 +132,67 @@ export function hasEventPastNotice() {
 }
 
 /**
+ * Checks if an event has the online-event term.
+ *
+ * This function checks if the event (either current post or specified by postId)
+ * has the online-event venue term assigned.
+ *
+ * @since 1.0.0
+ *
+ * @param {number|null} postId Optional post ID override to check.
+ * @return {boolean} True if the event has the online-event term, false otherwise.
+ */
+export function hasOnlineEventTerm( postId = null ) {
+	const TAX_VENUE = '_gatherpress_venue';
+
+	// Get the online-event term ID.
+	const onlineEventTerms = select( 'core' ).getEntityRecords(
+		'taxonomy',
+		TAX_VENUE,
+		{ slug: 'online-event', per_page: 1 }
+	);
+	const onlineEventTermId = onlineEventTerms?.[ 0 ]?.id;
+
+	if ( ! onlineEventTermId ) {
+		return false;
+	}
+
+	// If postId is provided, check that specific post.
+	if ( postId ) {
+		const post = select( 'core' ).getEntityRecord(
+			'postType',
+			'gatherpress_event',
+			postId
+		);
+		const venueTaxonomyIds = post?.[ TAX_VENUE ];
+
+		if ( ! venueTaxonomyIds?.length ) {
+			return false;
+		}
+
+		return venueTaxonomyIds.some(
+			( id ) => String( id ) === String( onlineEventTermId )
+		);
+	}
+
+	// Otherwise, check current post if it's an event.
+	if ( ! isEventPostType() ) {
+		return false;
+	}
+
+	const venueTaxonomyIds =
+		select( 'core/editor' ).getEditedPostAttribute( TAX_VENUE );
+
+	if ( ! venueTaxonomyIds?.length ) {
+		return false;
+	}
+
+	return venueTaxonomyIds.some(
+		( id ) => String( id ) === String( onlineEventTermId )
+	);
+}
+
+/**
  * Gets event meta data (max guest limit and anonymous RSVP setting).
  *
  * This function retrieves event meta data either from the current post being edited

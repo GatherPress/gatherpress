@@ -557,7 +557,8 @@ describe( 'usePopularVenues', () => {
 
 		renderHook( () => usePopularVenues() );
 
-		expect( capturedQuery.per_page ).toBe( 3 );
+		// Fetches limit + 1 to account for filtering out online-event term.
+		expect( capturedQuery.per_page ).toBe( 4 );
 		expect( capturedQuery.orderby ).toBe( 'count' );
 		expect( capturedQuery.order ).toBe( 'desc' );
 		expect( capturedQuery.hide_empty ).toBe( true );
@@ -578,7 +579,8 @@ describe( 'usePopularVenues', () => {
 
 		renderHook( () => usePopularVenues( 5 ) );
 
-		expect( capturedQuery.per_page ).toBe( 5 );
+		// Fetches limit + 1 to account for filtering out online-event term.
+		expect( capturedQuery.per_page ).toBe( 6 );
 	} );
 
 	it( 'queries the correct taxonomy', () => {

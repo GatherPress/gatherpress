@@ -2,7 +2,6 @@
  * External dependencies.
  */
 import { registerBlockType } from '@wordpress/blocks';
-import { InnerBlocks, useBlockProps } from '@wordpress/block-editor';
 
 /**
  * Internal dependencies.
@@ -13,7 +12,8 @@ import metadata from './block.json';
 /**
  * Register the GatherPress Online Event v2 block.
  *
- * Container block for online event display with icon and link.
+ * This block provides context-aware online event link fetching with support for
+ * both event and venue contexts, with smart fallback logic.
  *
  * @since 1.0.0
  *
@@ -21,11 +21,5 @@ import metadata from './block.json';
  */
 registerBlockType( metadata, {
 	edit,
-	save: () => {
-		return (
-			<div { ...useBlockProps.save() }>
-				<InnerBlocks.Content />
-			</div>
-		);
-	},
+	save: () => null,
 } );

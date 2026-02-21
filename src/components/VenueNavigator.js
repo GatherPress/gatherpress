@@ -9,7 +9,7 @@ import {
 } from '@wordpress/components';
 import { store as coreDataStore, useEntityProp } from '@wordpress/core-data';
 import { useSelect } from '@wordpress/data';
-import { useState, useCallback } from '@wordpress/element';
+import { useState, useCallback, useMemo } from '@wordpress/element';
 
 /**
  * Internal dependencies
@@ -56,14 +56,37 @@ export default function VenueNavigator( props = null ) {
 		cId
 	);
 
+	// Get the online-event term to preserve it when selecting a venue.
+	const onlineEventTermId = useSelect( ( wpSelect ) => {
+		const terms = wpSelect( 'core' ).getEntityRecords( 'taxonomy', TAX_VENUE, {
+			slug: 'online-event',
+			per_page: 1,
+		} );
+		return terms?.[ 0 ]?.id || null;
+	}, [] );
+
+	// Check if online-event term is currently assigned.
+	const hasOnlineEventTerm = useMemo( () => {
+		if ( ! venueTaxonomyIds || ! onlineEventTermId ) {
+			return false;
+		}
+		const onlineIdStr = String( onlineEventTermId );
+		return venueTaxonomyIds.some( ( id ) => String( id ) === onlineIdStr );
+	}, [ venueTaxonomyIds, onlineEventTermId ] );
+
 	// Handler for popular venue selection.
 	const handlePopularVenueSelect = useCallback(
 		( venueId ) => {
 			if ( isEventContext && updateVenueTaxonomyIds ) {
-				updateVenueTaxonomyIds( [ venueId ] );
+				let save = [ venueId ];
+				// Preserve online-event term if it was set.
+				if ( hasOnlineEventTerm && onlineEventTermId ) {
+					save = [ ...save, onlineEventTermId ];
+				}
+				updateVenueTaxonomyIds( save );
 			}
 		},
-		[ isEventContext, updateVenueTaxonomyIds ]
+		[ isEventContext, updateVenueTaxonomyIds, hasOnlineEventTerm, onlineEventTermId ]
 	);
 
 	return (

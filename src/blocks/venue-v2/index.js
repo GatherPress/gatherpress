@@ -11,6 +11,7 @@ import { registerPlugin } from '@wordpress/plugins';
 import VenueBlockPluginFill from './slotfill';
 import Edit from './edit';
 import metadata from './block.json';
+import './style.scss';
 
 /**
  * Register the GatherPress Venue block.

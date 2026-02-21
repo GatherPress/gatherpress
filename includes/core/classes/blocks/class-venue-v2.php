@@ -202,7 +202,7 @@ class Venue_V2 {
 		$post_id   = $venue_post->ID;
 		$post_type = $venue_post->post_type;
 
-		$filter_block_context = static function ( $context ) use ( $post_id, $post_type ) {
+		$filter_block_context = static function ( array $context ) use ( $post_id, $post_type ): array {
 			$context['postType'] = $post_type;
 			$context['postId']   = $post_id;
 			return $context;

@@ -104,6 +104,7 @@ class Block {
 		Blocks\General_Block::get_instance();
 		Blocks\Modal::get_instance();
 		Blocks\Modal_Manager::get_instance();
+		Blocks\Online_Event::get_instance();
 		Blocks\Rsvp::get_instance();
 		Blocks\Rsvp_Form::get_instance();
 		Blocks\Rsvp_Response::get_instance();
@@ -177,6 +178,14 @@ class Block {
 	 * @return void
 	 */
 	public function register_block_patterns(): void {
+		// Register GatherPress pattern category.
+		register_block_pattern_category(
+			'gatherpress',
+			array(
+				'label' => __( 'GatherPress', 'gatherpress' ),
+			)
+		);
+
 		$block_patterns = array(
 			array(
 				'gatherpress/event-template',
@@ -220,11 +229,6 @@ class Block {
 		);
 
 		foreach ( $block_patterns as $block_pattern ) {
-			/**
-			 * Made to be used with the 'template' parameter
-			 * when registering the 'gatherpress_event' post type
-			 * and will not be visible to the editor at any point.
-			 */
 			register_block_pattern( $block_pattern[0], $block_pattern[1] );
 		}
 	}

@@ -6,24 +6,23 @@
 	"title": "Online Event (v2)",
 	"category": "gatherpress",
 	"icon": "video-alt2",
-	"description": "Display an editable link for online events. Link URL comes from event/venue meta, text is customizable.",
+	"description": "Container block for online event display with icon and link.",
 	"usesContext": ["postId", "queryId"],
+	"providesContext": {
+		"postId": "postId"
+	},
 	"attributes": {
-		"linkText": {
-			"type": "string",
-			"default": ""
+		"postId": {
+			"type": "number"
 		}
 	},
 	"supports": {
 		"gatherpress": {
+			"blockGuard": true,
 			"postIdOverride": true
 		},
-		"html": false,
-		"interactivity": true
+		"html": false
 	},
 	"textdomain": "gatherpress",
-	"editorScript": "file:./index.js",
-	"viewScriptModule": "file:./view.js",
-	"style": "file:./style-index.css",
-	"render": "file:./render.php"
+	"editorScript": "file:./index.js"
 }
