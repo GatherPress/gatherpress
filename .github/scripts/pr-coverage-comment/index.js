@@ -79,11 +79,15 @@ async function createCoverageComment(github, context, phpOutput, jsOutput, phpSt
 		...repoData,
 	});
 
+	console.log(`Found ${comments.length} comments on PR #${prNumber}`);
+
 	const existingComment = comments.find(
 		(comment) =>
 			comment.user.login === 'github-actions[bot]' &&
 			comment.body.startsWith(COMMENT_TITLE)
 	);
+
+	console.log(existingComment ? `Found existing coverage comment (ID: ${existingComment.id})` : 'No existing coverage comment found');
 
 	const commentObject = {
 		body: `${COMMENT_TITLE}\n\n${commentBody}`,
@@ -91,19 +95,24 @@ async function createCoverageComment(github, context, phpOutput, jsOutput, phpSt
 	};
 
 	// If an existing comment is found, update it instead of creating a new one.
-	if (existingComment) {
-		await github.rest.issues.updateComment({
-			comment_id: existingComment.id,
-			...commentObject,
-		});
-		console.log(`Updated existing coverage comment (ID: ${existingComment.id})`);
-	} else {
-		// Create a new comment.
-		await github.rest.issues.createComment({
-			issue_number: prNumber,
-			...commentObject,
-		});
-		console.log('Created new coverage comment');
+	try {
+		if (existingComment) {
+			await github.rest.issues.updateComment({
+				comment_id: existingComment.id,
+				...commentObject,
+			});
+			console.log(`Updated existing coverage comment (ID: ${existingComment.id})`);
+		} else {
+			// Create a new comment.
+			await github.rest.issues.createComment({
+				issue_number: prNumber,
+				...commentObject,
+			});
+			console.log('Created new coverage comment');
+		}
+	} catch (error) {
+		console.error('Failed to create/update coverage comment:', error.message);
+		throw error;
 	}
 }
 
