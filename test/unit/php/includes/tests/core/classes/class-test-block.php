@@ -91,6 +91,7 @@ class Test_Block extends Base {
 			'gatherpress/online-event-link',
 			'gatherpress/online-event-v2',
 			'gatherpress/rsvp',
+			'gatherpress/rsvp-count',
 			'gatherpress/rsvp-form',
 			'gatherpress/rsvp-guest-count-display',
 			'gatherpress/rsvp-response',

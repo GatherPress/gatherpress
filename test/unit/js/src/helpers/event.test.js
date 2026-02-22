@@ -135,6 +135,7 @@ describe( 'hasValidEventId', () => {
 			if ( 'core/editor' === store ) {
 				return {
 					getCurrentPostId: () => postId,
+					getCurrentPostType: () => 'gatherpress_event',
 				};
 			}
 			if ( 'core' === store ) {
@@ -164,6 +165,7 @@ describe( 'hasValidEventId', () => {
 			if ( 'core/editor' === store ) {
 				return {
 					getCurrentPostId: () => currentPostId,
+					getCurrentPostType: () => 'gatherpress_event',
 				};
 			}
 			if ( 'core' === store ) {
@@ -193,6 +195,7 @@ describe( 'hasValidEventId', () => {
 			if ( 'core/editor' === store ) {
 				return {
 					getCurrentPostId: () => currentPostId,
+					getCurrentPostType: () => 'gatherpress_event',
 				};
 			}
 			if ( 'core' === store ) {
@@ -221,6 +224,7 @@ describe( 'hasValidEventId', () => {
 			if ( 'core/editor' === store ) {
 				return {
 					getCurrentPostId: () => 999,
+					getCurrentPostType: () => 'gatherpress_event',
 				};
 			}
 			if ( 'core' === store ) {
@@ -241,6 +245,7 @@ describe( 'hasValidEventId', () => {
 			if ( 'core/editor' === store ) {
 				return {
 					getCurrentPostId: () => 999,
+					getCurrentPostType: () => 'gatherpress_event',
 				};
 			}
 			if ( 'core' === store ) {
@@ -262,6 +267,7 @@ describe( 'hasValidEventId', () => {
 			if ( 'core/editor' === store ) {
 				return {
 					getCurrentPostId: () => currentPostId,
+					getCurrentPostType: () => 'gatherpress_event',
 				};
 			}
 			if ( 'core' === store ) {

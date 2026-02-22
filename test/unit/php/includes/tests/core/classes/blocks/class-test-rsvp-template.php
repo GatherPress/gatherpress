@@ -188,10 +188,22 @@ class Test_Rsvp_Template extends Base {
 		$block    = array( 'innerBlocks' => array() );
 		$result   = $instance->generate_rsvp_template_block( '', $block, $wp_block );
 
-		// With no responses, the result should be empty.
-		$this->assertEmpty(
+		// With no responses, the result should only contain the hidden template div.
+		$this->assertStringContainsString(
+			'<div hidden data-wp-interactive="gatherpress"',
 			$result,
-			'Failed to assert published event with no responses returns empty content.'
+			'Failed to assert published event with no responses contains hidden template div.'
+		);
+		$this->assertStringContainsString(
+			'data-block-template=',
+			$result,
+			'Failed to assert published event with no responses contains block template data attribute.'
+		);
+		// Should not contain any response content (data-id="rsvp-").
+		$this->assertStringNotContainsString(
+			'data-id="rsvp-',
+			$result,
+			'Failed to assert published event with no responses has no response content.'
 		);
 	}
 
