@@ -68,7 +68,7 @@ const Edit = ( { attributes, context } ) => {
 		'postType',
 		CPT_EVENT,
 		TAX_VENUE,
-		currentPostId
+		isEditingEvent ? currentPostId : undefined
 	);
 
 	// Get online event link from meta.
