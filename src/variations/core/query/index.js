@@ -34,6 +34,7 @@ const VARIATION_ATTRIBUTES = {
 	isActive: [ 'namespace', 'query.postType' ],
 	attributes: {
 		...QUERY_ATTRIBUTES,
+		className: 'gatherpress-event-query',
 	},
 	// Disabling irrelevant or unsupported query controls
 	// @see https://developer.wordpress.org/block-editor/how-to-guides/block-tutorial/extending-the-query-loop-block/#disabling-irrelevant-or-unsupported-query-controls
@@ -86,110 +87,137 @@ registerBlockVariation( 'core/query', {
 				metadata: {
 					name: __( 'Events Template', 'gatherpress' ),
 				},
+				style: {
+					spacing: {
+						blockGap: 'var:preset|spacing|50',
+					},
+				},
 			},
 			[
+				// Media & Text - Event details (left) and featured image (right).
+				// Image stacks on top on mobile.
+				[
+					'core/media-text',
+					{
+						mediaPosition: 'right',
+						mediaType: 'image',
+						mediaWidth: 40,
+						imageFill: false,
+						useFeaturedImage: true,
+						style: {
+							spacing: {
+								margin: {
+									bottom: 'var:preset|spacing|30',
+								},
+							},
+						},
+					},
+					[
+						[
+							'gatherpress/event-date',
+							{
+								displayType: 'start',
+								startDateFormat: ' D, M j, Y, g:i a ',
+								style: {
+									typography: {
+										textTransform: 'uppercase',
+									},
+								},
+								fontSize: 'medium',
+							},
+						],
+						[ 'core/post-title', { isLink: true } ],
+						[
+							'gatherpress/venue-v2',
+							{},
+							[
+								[
+									'core/group',
+									{
+										className:
+											'gatherpress--has-venue-address',
+										style: {
+											spacing: {
+												blockGap:
+													'var:preset|spacing|20',
+												margin: {
+													top: '0',
+													bottom: '0',
+												},
+											},
+										},
+										layout: {
+											type: 'flex',
+											flexWrap: 'nowrap',
+										},
+									},
+									[
+										[
+											'gatherpress/icon',
+											{ icon: 'location' },
+										],
+										[
+											'core/post-title',
+											{
+												isLink: true,
+												fontSize: 'medium',
+											},
+										],
+									],
+								],
+							],
+						],
+						[
+							'gatherpress/online-event-v2',
+							{},
+							[
+								[
+									'core/group',
+									{
+										style: {
+											spacing: {
+												blockGap:
+													'var:preset|spacing|20',
+												margin: {
+													top: '0',
+													bottom: '0',
+												},
+											},
+										},
+										layout: {
+											type: 'flex',
+											flexWrap: 'nowrap',
+										},
+									},
+									[
+										[
+											'gatherpress/icon',
+											{ icon: 'video-alt2' },
+										],
+										[
+											'gatherpress/online-event-link',
+											{
+												linkText:
+													'<span class="gatherpress-tooltip" data-gatherpress-tooltip="Link available for attendees only.">Online event</span>',
+												fontSize: 'medium',
+											},
+										],
+									],
+								],
+							],
+						],
+					],
+				],
+				// Second row of columns (40/60) - Avatars/count and RSVP button.
 				[
 					'core/columns',
 					{},
 					[
-						// Left column (60%) - Event details.
+						// Left column (40%) - Avatars and RSVP count.
 						[
 							'core/column',
-							{ width: '60%' },
+							{ width: '40%' },
 							[
-								[
-									'gatherpress/event-date',
-									{
-										displayType: 'start',
-										startDateFormat: ' D, M j, Y, g:i a ',
-										style: {
-											typography: {
-												textTransform: 'uppercase',
-											},
-										},
-										fontSize: 'medium',
-									},
-								],
-								[ 'core/post-title', { isLink: true } ],
-								[
-									'gatherpress/venue-v2',
-									{},
-									[
-										[
-											'core/group',
-											{
-												className:
-													'gatherpress--has-venue-address',
-												style: {
-													spacing: {
-														blockGap:
-															'var:preset|spacing|20',
-														margin: {
-															top: '0',
-															bottom: '0',
-														},
-													},
-												},
-												layout: {
-													type: 'flex',
-													flexWrap: 'nowrap',
-												},
-											},
-											[
-												[
-													'gatherpress/icon',
-													{ icon: 'location' },
-												],
-												[
-													'core/post-title',
-													{
-														isLink: true,
-														fontSize: 'medium',
-													},
-												],
-											],
-										],
-									],
-								],
-								[
-									'gatherpress/online-event-v2',
-									{},
-									[
-										[
-											'core/group',
-											{
-												style: {
-													spacing: {
-														blockGap:
-															'var:preset|spacing|20',
-														margin: {
-															top: '0',
-															bottom: '0',
-														},
-													},
-												},
-												layout: {
-													type: 'flex',
-													flexWrap: 'nowrap',
-												},
-											},
-											[
-												[
-													'gatherpress/icon',
-													{ icon: 'video-alt2' },
-												],
-												[
-													'gatherpress/online-event-link',
-													{
-														linkText:
-															'<span class="gatherpress-tooltip" data-gatherpress-tooltip="Link available for attendees only.">Online event</span>',
-														fontSize: 'medium',
-													},
-												],
-											],
-										],
-									],
-								],
 								[
 									'core/group',
 									{
@@ -251,15 +279,25 @@ registerBlockVariation( 'core/query', {
 								[ 'gatherpress/rsvp-count' ],
 							],
 						],
-						// Right column (40%) - Featured image.
+						// Right column (60%) - RSVP button.
 						[
 							'core/column',
-							{ width: '40%' },
-							[ [ 'core/post-featured-image', { isLink: true } ] ],
+							{ width: '60%' },
+							[
+								[
+									'gatherpress/rsvp',
+									{
+										layout: {
+											type: 'flex',
+											justifyContent: 'right',
+											flexWrap: 'wrap',
+										},
+									},
+								],
+							],
 						],
 					],
 				],
-				[ 'gatherpress/rsvp' ],
 			],
 		],
 		QUERY_PAGINATION_VARIATION,

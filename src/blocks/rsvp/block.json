@@ -25,7 +25,16 @@
 			"postIdOverride": true
 		},
 		"html": false,
-		"interactivity": true
+		"interactivity": true,
+		"layout": {
+			"allowEditing": true,
+			"allowSwitching": true,
+			"default": {
+				"type": "flex",
+				"justifyContent": "center",
+				"flexWrap": "wrap"
+			}
+		}
 	},
 	"textdomain": "gatherpress",
 	"editorScript": "file:./index.js",
