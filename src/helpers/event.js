@@ -14,6 +14,7 @@ import { __ } from '@wordpress/i18n';
  */
 import { createMomentWithTimezone, getTimezone } from './datetime';
 import { getFromGlobal } from './globals';
+import { CPT_EVENT } from './namespace';
 
 /**
  * Opacity value for disabled form fields and elements.
@@ -28,18 +29,21 @@ import { getFromGlobal } from './globals';
 export const DISABLED_FIELD_OPACITY = 0.3;
 
 /**
- * Checks if the current post type is an event in the GatherPress application.
+ * Checks if a post type is an event in the GatherPress application.
  *
- * This function queries the current post type using the `select` function from the `core/editor` package.
- * It returns `true` if the current post type is 'gatherpress_event', indicating that the post is an event,
- * and `false` otherwise.
+ * If a postType argument is provided, checks against that value.
+ * Otherwise, queries the current post type using the `select` function from the `core/editor` package.
  *
  * @since 1.0.0
  *
- * @return {boolean} True if the current post type is 'gatherpress_event', false otherwise.
+ * @param {string|null} postType Optional post type to check. If not provided, checks current editor post type.
+ * @return {boolean} True if the post type is 'gatherpress_event', false otherwise.
  */
-export function isEventPostType() {
-	return 'gatherpress_event' === select( 'core/editor' )?.getCurrentPostType();
+export function isEventPostType( postType = null ) {
+	if ( postType ) {
+		return CPT_EVENT === postType;
+	}
+	return CPT_EVENT === select( 'core/editor' )?.getCurrentPostType();
 }
 
 /**
@@ -50,24 +54,34 @@ export function isEventPostType() {
  *
  * @since 1.0.0
  *
- * @param {number|null} postId Optional post ID override to check.
+ * @param {number|null} postId   Optional post ID override to check.
+ * @param {string|null} postType Optional post type to verify before making API calls.
  * @return {boolean} True if connected to a valid event, false otherwise.
  */
-export function hasValidEventId( postId = null ) {
+export function hasValidEventId( postId = null, postType = null ) {
 	// If postId is provided, verify it points to a valid, published event.
 	if ( postId ) {
-		const post = select( 'core' ).getEntityRecord( 'postType', 'gatherpress_event', postId );
-
 		// Check if this is the current post being edited in the editor.
 		const currentPostId = select( 'core/editor' )?.getCurrentPostId();
+		const currentPostType = select( 'core/editor' )?.getCurrentPostType();
 		const isCurrentPost = currentPostId && currentPostId === postId;
 
-		// If editing this post in the editor, it's valid regardless of status.
-		// Otherwise, check if it's published.
+		// If this is the current post, check if it's an event.
 		if ( isCurrentPost ) {
+			if ( CPT_EVENT !== currentPostType ) {
+				return false;
+			}
+			const post = select( 'core' ).getEntityRecord( 'postType', CPT_EVENT, postId );
 			return !! post;
 		}
 
+		// If postType is provided, verify it's an event before fetching.
+		if ( postType && CPT_EVENT !== postType ) {
+			return false;
+		}
+
+		// Only fetch if we have reason to believe it's an event.
+		const post = select( 'core' ).getEntityRecord( 'postType', CPT_EVENT, postId );
 		return !! post && 'publish' === post.status;
 	}
 

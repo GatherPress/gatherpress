@@ -88,10 +88,178 @@ registerBlockVariation( 'core/query', {
 				},
 			},
 			[
-				[ 'core/post-title' ],
-				[ 'gatherpress/event-date' ],
-				[ 'core/post-excerpt' ],
-				[ 'core/post-terms', { term: '_gatherpress_venue' } ],
+				[
+					'core/columns',
+					{},
+					[
+						// Left column (60%) - Event details.
+						[
+							'core/column',
+							{ width: '60%' },
+							[
+								[
+									'gatherpress/event-date',
+									{
+										displayType: 'start',
+										startDateFormat: ' D, M j, Y, g:i a ',
+										style: {
+											typography: {
+												textTransform: 'uppercase',
+											},
+										},
+										fontSize: 'medium',
+									},
+								],
+								[ 'core/post-title', { isLink: true } ],
+								[
+									'gatherpress/venue-v2',
+									{},
+									[
+										[
+											'core/group',
+											{
+												className:
+													'gatherpress--has-venue-address',
+												style: {
+													spacing: {
+														blockGap:
+															'var:preset|spacing|20',
+														margin: {
+															top: '0',
+															bottom: '0',
+														},
+													},
+												},
+												layout: {
+													type: 'flex',
+													flexWrap: 'nowrap',
+												},
+											},
+											[
+												[
+													'gatherpress/icon',
+													{ icon: 'location' },
+												],
+												[
+													'core/post-title',
+													{
+														isLink: true,
+														fontSize: 'medium',
+													},
+												],
+											],
+										],
+									],
+								],
+								[
+									'gatherpress/online-event-v2',
+									{},
+									[
+										[
+											'core/group',
+											{
+												style: {
+													spacing: {
+														blockGap:
+															'var:preset|spacing|20',
+														margin: {
+															top: '0',
+															bottom: '0',
+														},
+													},
+												},
+												layout: {
+													type: 'flex',
+													flexWrap: 'nowrap',
+												},
+											},
+											[
+												[
+													'gatherpress/icon',
+													{ icon: 'video-alt2' },
+												],
+												[
+													'gatherpress/online-event-link',
+													{
+														linkText:
+															'<span class="gatherpress-tooltip" data-gatherpress-tooltip="Link available for attendees only.">Online event</span>',
+														fontSize: 'medium',
+													},
+												],
+											],
+										],
+									],
+								],
+								[
+									'core/group',
+									{
+										style: {
+											spacing: {
+												blockGap:
+												'var:preset|spacing|20',
+											},
+										},
+										layout: {
+											type: 'grid',
+											minimumColumnWidth: '4rem',
+											columnCount: null,
+										},
+									},
+									[
+										[
+											'gatherpress/rsvp-response',
+											{
+												rsvpLimitEnabled: true,
+												rsvpLimit: 3,
+											},
+											[
+												[
+													'core/group',
+													{
+														className:
+															'gatherpress--rsvp-responses',
+														style: {
+															spacing: {
+																blockGap: '0',
+															},
+														},
+														layout: {
+															type: 'grid',
+															columnCount: 3,
+															minimumColumnWidth: null,
+														},
+													},
+													[
+														[
+															'gatherpress/rsvp-template',
+															{},
+															[
+																[
+																	'core/avatar',
+																	{
+																		size: 48,
+																	},
+																],
+															],
+														],
+													],
+												],
+											],
+										],
+									],
+								],
+								[ 'gatherpress/rsvp-count' ],
+							],
+						],
+						// Right column (40%) - Featured image.
+						[
+							'core/column',
+							{ width: '40%' },
+							[ [ 'core/post-featured-image', { isLink: true } ] ],
+						],
+					],
+				],
+				[ 'gatherpress/rsvp' ],
 			],
 		],
 		QUERY_PAGINATION_VARIATION,

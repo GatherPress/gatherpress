@@ -10,7 +10,8 @@ import { useEffect } from '@wordpress/element';
  * Internal dependencies.
  */
 import { getEditorDocument } from '../../helpers/editor';
-import { DISABLED_FIELD_OPACITY } from '../../helpers/event';
+import { DISABLED_FIELD_OPACITY, isEventPostType } from '../../helpers/event';
+import { CPT_EVENT } from '../../helpers/namespace';
 
 /**
  * Edit function for the RSVP Guest Count Display Block.
@@ -30,6 +31,9 @@ const Edit = ( { context, clientId } ) => {
 	const { commentId } = context;
 	const contextPostId = context?.postId;
 	const rsvpResponses = context?.[ 'gatherpress/rsvpResponses' ] ?? null;
+
+	// Check if context post type is an event.
+	const isEventContext = isEventPostType( context?.postType );
 
 	// Example guest count.
 	let guestCount = 1;
@@ -65,20 +69,20 @@ const Edit = ( { context, clientId } ) => {
 				}
 			}
 
-			// If no parent block postId, check context postId.
-			if ( ! postIdOverride && contextPostId ) {
+			// If no parent block postId, check context postId only if it's an event.
+			if ( ! postIdOverride && contextPostId && isEventContext ) {
 				postIdOverride = contextPostId;
 			}
 
 			// If we have a Post ID override, fetch from that post.
 			if ( postIdOverride ) {
-				const post = select( 'core' ).getEntityRecord( 'postType', 'gatherpress_event', postIdOverride );
+				const post = select( 'core' ).getEntityRecord( 'postType', CPT_EVENT, postIdOverride );
 				return post?.meta?.gatherpress_max_guest_limit || 0;
 			}
 
 			// Otherwise check current post.
 			const currentPostType = select( 'core/editor' )?.getCurrentPostType();
-			const isCurrentPostEvent = 'gatherpress_event' === currentPostType;
+			const isCurrentPostEvent = CPT_EVENT === currentPostType;
 
 			if ( isCurrentPostEvent ) {
 				return select( 'core/editor' ).getEditedPostAttribute( 'meta' )
@@ -87,7 +91,7 @@ const Edit = ( { context, clientId } ) => {
 
 			return 0;
 		},
-		[ clientId, contextPostId ],
+		[ clientId, contextPostId, isEventContext ],
 	);
 
 	// Apply dimming via CSS when max attendance limit is 0.

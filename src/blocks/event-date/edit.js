@@ -40,6 +40,7 @@ import DateTimeRange from '../../components/DateTimeRange';
 import { getFromGlobal } from '../../helpers/globals';
 import { isEventPostType, hasValidEventId } from '../../helpers/event';
 import { isInFSETemplate } from '../../helpers/editor';
+import { CPT_EVENT } from '../../helpers/namespace';
 
 const globalDateFormat = getFromGlobal( 'settings.dateFormat' );
 const globalTimeFormat = getFromGlobal( 'settings.timeFormat' );
@@ -194,11 +195,22 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 		separator,
 		showTimezone,
 	} = attributes;
-	// Normalize empty strings to null so fallback to context.postId works correctly.
-	const postId = ( attributes?.postId || null ) ?? context?.postId ?? null;
+
+	// Check if we're inside a query loop and if context is an event.
+	const isDescendentOfQueryLoop = Number.isFinite( context?.queryId );
+	const isEventContext = isEventPostType( context?.postType );
+
+	// Only use postId if context is an event or have an explicit override.
+	const postId =
+		( attributes?.postId || null ) ??
+		( ( isDescendentOfQueryLoop || isEventContext ) ? context?.postId : null ) ??
+		null;
 
 	// Check if block has a valid event connection.
-	const isValidEvent = hasValidEventId( postId );
+	// Only check if we're in an event context.
+	const isValidEvent =
+		( isDescendentOfQueryLoop || isEventContext ) &&
+		hasValidEventId( postId, context?.postType );
 
 	const blockProps = useBlockProps( {
 		style: {
@@ -208,7 +220,8 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 
 	const { dateTimeStart, dateTimeEnd, timezone, isLoading } = useSelect(
 		( select ) => {
-			if ( ! postId ) {
+			// Return early if no postId or not in an event context.
+			if ( ! postId || ! ( isDescendentOfQueryLoop || isEventContext ) ) {
 				return {
 					dateTimeStart: undefined,
 					dateTimeEnd: undefined,
@@ -230,15 +243,25 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 				};
 			}
 
+			// Only fetch if context confirms it's an event post type.
+			if ( context?.postType !== CPT_EVENT ) {
+				return {
+					dateTimeStart: undefined,
+					dateTimeEnd: undefined,
+					timezone: undefined,
+					isLoading: false,
+				};
+			}
+
 			// Check if the entity record has finished loading.
 			const hasResolved = select( 'core' ).hasFinishedResolution(
 				'getEntityRecord',
-				[ 'postType', 'gatherpress_event', postId ]
+				[ 'postType', CPT_EVENT, postId ]
 			);
 
 			const meta = select( 'core' ).getEntityRecord(
 				'postType',
-				'gatherpress_event',
+				CPT_EVENT,
 				postId,
 			)?.meta;
 
@@ -249,7 +272,7 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 				isLoading: ! hasResolved,
 			};
 		},
-		[ postId ],
+		[ postId, isDescendentOfQueryLoop, isEventContext, context?.postType ],
 	);
 
 	// Show spinner only while loading, not on 404.

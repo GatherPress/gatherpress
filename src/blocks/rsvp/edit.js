@@ -17,7 +17,7 @@ import { createBlock, parse, serialize } from '@wordpress/blocks';
  * Internal dependencies.
  */
 import TEMPLATES from './templates';
-import { hasValidEventId, DISABLED_FIELD_OPACITY, getEventMeta } from '../../helpers/event';
+import { hasValidEventId, DISABLED_FIELD_OPACITY, getEventMeta, isEventPostType } from '../../helpers/event';
 import { isInFSETemplate, getEditorDocument } from '../../helpers/editor';
 
 /**
@@ -53,11 +53,21 @@ const Edit = ( { attributes, setAttributes, clientId, context } ) => {
 	const { serializedInnerBlocks = '{}', selectedStatus } = attributes;
 	const { replaceInnerBlocks } = useDispatch( blockEditorStore );
 
-	// Normalize empty strings to null so fallback to context.postId works correctly.
-	const postId = ( attributes?.postId || null ) ?? context?.postId ?? null;
+	// Check if we're inside a query loop and if context is an event.
+	const isDescendentOfQueryLoop = Number.isFinite( context?.queryId );
+	const isEventContext = isEventPostType( context?.postType );
+
+	// Only use postId if context is an event or have an explicit override.
+	const postId =
+		( attributes?.postId || null ) ??
+		( ( isDescendentOfQueryLoop || isEventContext ) ? context?.postId : null ) ??
+		null;
 
 	// Check if block has a valid event connection.
-	const isValidEvent = hasValidEventId( postId );
+	// Only check if we're in an event context.
+	const isValidEvent =
+		( isDescendentOfQueryLoop || isEventContext ) &&
+		hasValidEventId( postId, context?.postType );
 
 	const blockProps = useBlockProps( {
 		style: {

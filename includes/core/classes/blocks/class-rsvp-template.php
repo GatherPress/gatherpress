@@ -150,18 +150,7 @@ class Rsvp_Template {
 			$block_content .= $this->get_block_content( $block, $response_id, $args );
 		}
 
-		// Used for generating a parsed block for calls to API on the front end.
-		$blocks                 = wp_json_encode(
-			$block,
-			JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT
-		);
-		$rsvp_response_template = sprintf(
-			'<script type="application/json" data-wp-interactive="gatherpress"'
-				. ' data-wp-watch="callbacks.renderBlocks">%s</script>',
-			$blocks
-		);
-
-		return $block_content . $rsvp_response_template;
+		return $block_content;
 	}
 
 	/**

@@ -1,0 +1,62 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "gatherpress/rsvp-count",
+	"version": "1.0.0",
+	"title": "RSVP Count",
+	"category": "gatherpress",
+	"icon": "groups",
+	"example": {},
+	"description": "Displays the count of attendees, waiting list, or not attending for an event.",
+	"usesContext": [ "postId", "postType", "queryId" ],
+	"attributes": {
+		"status": {
+			"type": "string",
+			"default": "attending"
+		},
+		"singularLabel": {
+			"type": "string",
+			"default": "%d attendee"
+		},
+		"pluralLabel": {
+			"type": "string",
+			"default": "%d attendees"
+		}
+	},
+	"supports": {
+		"gatherpress": {
+			"postIdOverride": true
+		},
+		"html": false,
+		"color": {
+			"text": true,
+			"background": true,
+			"link": true,
+			"__experimentalDefaultControls": {
+				"text": true
+			}
+		},
+		"spacing": {
+			"margin": true,
+			"padding": true
+		},
+		"typography": {
+			"fontSize": true,
+			"lineHeight": true,
+			"__experimentalFontFamily": true,
+			"__experimentalFontWeight": true,
+			"__experimentalFontStyle": true,
+			"__experimentalTextTransform": true,
+			"__experimentalTextDecoration": true,
+			"__experimentalLetterSpacing": true,
+			"__experimentalDefaultControls": {
+				"fontSize": true
+			}
+		},
+		"interactivity": true
+	},
+	"textdomain": "gatherpress",
+	"editorScript": "file:./index.js",
+	"render": "file:./render.php",
+	"viewScriptModule": "file:./view.js"
+}
