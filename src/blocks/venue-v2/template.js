@@ -2,56 +2,49 @@
  * Default template for the venue-v2 block.
  */
 
-// Template with post-title (for events).
-export const TEMPLATE_WITH_TITLE = [
-	[
-		'core/post-title',
-		{
-			style: {
-				spacing: {
-					margin: {
-						bottom: 'var:preset|spacing|30',
-					},
+// Post title block (for events).
+const POST_TITLE = [
+	'core/post-title',
+	{
+		style: {
+			spacing: {
+				margin: {
+					bottom: 'var:preset|spacing|30',
 				},
 			},
 		},
-	],
+	},
+];
+
+// Base venue details template shared between both variants.
+const VENUE_DETAILS = [
 	[
 		'core/group',
 		{
+			className: 'gatherpress--has-venue-address',
+			style: {
+				spacing: {
+					blockGap: 'var:preset|spacing|20',
+					margin: {
+						top: '0',
+						bottom: '0',
+					},
+				},
+			},
 			layout: {
-				type: 'constrained',
+				type: 'flex',
+				flexWrap: 'nowrap',
+				justifyContent: 'left',
 			},
 		},
 		[
+			[ 'gatherpress/icon', { icon: 'location' } ],
 			[
-				'core/group',
+				'gatherpress/venue-detail',
 				{
-					className: 'gatherpress--has-venue-address',
-					style: {
-						spacing: {
-							blockGap: 'var:preset|spacing|20',
-							margin: {
-								top: '0',
-								bottom: '0',
-							},
-						},
-					},
-					layout: {
-						type: 'flex',
-						flexWrap: 'nowrap',
-					},
+					placeholder: 'Venue address…',
+					fieldType: 'address',
 				},
-				[
-					[ 'gatherpress/icon', { icon: 'location' } ],
-					[
-						'gatherpress/venue-detail',
-						{
-							placeholder: 'Venue address…',
-							fieldType: 'address',
-						},
-					],
-				],
 			],
 		],
 	],
@@ -69,6 +62,7 @@ export const TEMPLATE_WITH_TITLE = [
 			layout: {
 				type: 'flex',
 				flexWrap: 'nowrap',
+				justifyContent: 'left',
 			},
 		},
 		[
@@ -126,124 +120,12 @@ export const TEMPLATE_WITH_TITLE = [
 	],
 	[ 'gatherpress/venue-map' ],
 ];
+
+// Template with post-title (for events).
+export const TEMPLATE_WITH_TITLE = [ POST_TITLE, ...VENUE_DETAILS ];
 
 // Template without post-title (for venues).
-export const TEMPLATE_WITHOUT_TITLE = [
-	[
-		'core/group',
-		{
-			layout: {
-				type: 'constrained',
-			},
-		},
-		[
-			[
-				'core/group',
-				{
-					className: 'gatherpress--has-venue-address',
-					style: {
-						spacing: {
-							blockGap: 'var:preset|spacing|20',
-							margin: {
-								top: '0',
-								bottom: '0',
-							},
-						},
-					},
-					layout: {
-						type: 'flex',
-						flexWrap: 'nowrap',
-					},
-				},
-				[
-					[ 'gatherpress/icon', { icon: 'location' } ],
-					[
-						'gatherpress/venue-detail',
-						{
-							placeholder: 'Venue address…',
-							fieldType: 'address',
-						},
-					],
-				],
-			],
-		],
-	],
-	[
-		'core/group',
-		{
-			style: {
-				spacing: {
-					margin: {
-						top: '0',
-						bottom: 'var:preset|spacing|30',
-					},
-				},
-			},
-			layout: {
-				type: 'flex',
-				flexWrap: 'nowrap',
-			},
-		},
-		[
-			[
-				'core/group',
-				{
-					className: 'gatherpress--has-venue-phone',
-					style: {
-						spacing: {
-							blockGap: 'var:preset|spacing|20',
-						},
-					},
-					layout: {
-						type: 'flex',
-						flexWrap: 'nowrap',
-					},
-				},
-				[
-					[ 'gatherpress/icon', { icon: 'phone' } ],
-					[
-						'gatherpress/venue-detail',
-						{
-							placeholder: 'Venue phone…',
-							fieldType: 'phone',
-						},
-					],
-				],
-			],
-			[
-				'core/group',
-				{
-					className: 'gatherpress--has-venue-website',
-					style: {
-						spacing: {
-							blockGap: 'var:preset|spacing|20',
-						},
-					},
-					layout: {
-						type: 'flex',
-						flexWrap: 'nowrap',
-					},
-				},
-				[
-					[ 'gatherpress/icon', { icon: 'admin-site-alt3' } ],
-					[
-						'gatherpress/venue-detail',
-						{
-							placeholder: 'Venue website URL…',
-							fieldType: 'url',
-						},
-					],
-				],
-			],
-		],
-	],
-	[ 'gatherpress/venue-map' ],
-];
-
-// Template for online events - uses the online-event-v2 container block.
-export const TEMPLATE_ONLINE_EVENT = [
-	[ 'gatherpress/online-event-v2', {} ],
-];
+export const TEMPLATE_WITHOUT_TITLE = VENUE_DETAILS;
 
 // Default export is with title for backward compatibility.
 export default TEMPLATE_WITH_TITLE;

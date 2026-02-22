@@ -184,6 +184,7 @@ class Event_Setup {
 					array( 'gatherpress/event-date' ),
 					array( 'gatherpress/add-to-calendar' ),
 					array( 'gatherpress/venue-v2' ),
+					array( 'gatherpress/online-event-v2' ),
 					array( 'gatherpress/rsvp' ),
 					array(
 						'core/paragraph',

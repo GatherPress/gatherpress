@@ -266,6 +266,7 @@ class Block {
 		) {
 			$hooked_block_types[] = 'gatherpress/add-to-calendar';
 			$hooked_block_types[] = 'gatherpress/venue-v2';
+			$hooked_block_types[] = 'gatherpress/online-event-v2';
 			$hooked_block_types[] = 'gatherpress/rsvp';
 			$hooked_block_types[] = 'core/paragraph';
 			$hooked_block_types[] = 'gatherpress/rsvp-response';

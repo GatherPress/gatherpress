@@ -110,15 +110,15 @@ class Test_Venue_V2 extends Base {
 	}
 
 	/**
-	 * Tests render_block returns content unchanged when no venue is found.
+	 * Tests render_block returns empty string when no venue is found.
 	 *
 	 * @since 1.0.0
 	 * @covers ::render_block
-	 * @covers ::get_venue_post_for_block
+	 * @covers ::get_venue_post
 	 *
 	 * @return void
 	 */
-	public function test_render_block_returns_content_when_no_venue(): void {
+	public function test_render_block_returns_empty_when_no_venue(): void {
 		$instance = Venue_V2::get_instance();
 
 		// Create a regular post (not an event).
@@ -141,22 +141,22 @@ class Test_Venue_V2 extends Base {
 		$result = $instance->render_block( $block_content, $block, $block_instance );
 
 		$this->assertSame(
-			$block_content,
+			'',
 			$result,
-			'Should return block content unchanged when no venue is found.'
+			'Should return empty string when no venue is found.'
 		);
 	}
 
 	/**
-	 * Tests render_block returns content when post type is not an event.
+	 * Tests render_block returns empty string for non-event post without venue.
 	 *
 	 * @since 1.0.0
 	 * @covers ::render_block
-	 * @covers ::get_venue_post_for_block
+	 * @covers ::get_venue_post
 	 *
 	 * @return void
 	 */
-	public function test_render_block_returns_content_for_non_event_post(): void {
+	public function test_render_block_returns_empty_for_non_event_post(): void {
 		$instance = Venue_V2::get_instance();
 
 		// Create a page (not an event).
@@ -179,9 +179,9 @@ class Test_Venue_V2 extends Base {
 		$result = $instance->render_block( $block_content, $block, $block_instance );
 
 		$this->assertSame(
-			$block_content,
+			'',
 			$result,
-			'Should return block content unchanged for non-event posts.'
+			'Should return empty string for non-event posts without venue.'
 		);
 	}
 
@@ -190,7 +190,7 @@ class Test_Venue_V2 extends Base {
 	 *
 	 * @since 1.0.0
 	 * @covers ::render_block
-	 * @covers ::get_venue_post_for_block
+	 * @covers ::get_venue_post
 	 * @covers ::render_with_venue_context
 	 *
 	 * @return void
@@ -238,15 +238,15 @@ class Test_Venue_V2 extends Base {
 	}
 
 	/**
-	 * Tests render_block ignores invalid selected post ID (non-venue post type).
+	 * Tests render_block returns empty when selected post ID is not a venue.
 	 *
 	 * @since 1.0.0
 	 * @covers ::render_block
-	 * @covers ::get_venue_post_for_block
+	 * @covers ::get_venue_post
 	 *
 	 * @return void
 	 */
-	public function test_render_block_ignores_non_venue_selected_post_id(): void {
+	public function test_render_block_returns_empty_for_non_venue_selected_post_id(): void {
 		$instance = Venue_V2::get_instance();
 
 		// Create a regular post (not a venue).
@@ -269,23 +269,22 @@ class Test_Venue_V2 extends Base {
 		$result = $instance->render_block( $block_content, $block, $block_instance );
 
 		$this->assertSame(
-			$block_content,
+			'',
 			$result,
-			'Should return content unchanged when selected post is not a venue.'
+			'Should return empty string when selected post is not a venue.'
 		);
 	}
 
 	/**
-	 * Tests render_block returns content for online-only event.
+	 * Tests render_block returns empty for online-only event (no physical venue).
 	 *
 	 * @since 1.0.0
 	 * @covers ::render_block
-	 * @covers ::get_venue_post_for_block
-	 * @covers ::is_online_only_event
+	 * @covers ::get_venue_post
 	 *
 	 * @return void
 	 */
-	public function test_render_block_returns_content_for_online_only_event(): void {
+	public function test_render_block_returns_empty_for_online_only_event(): void {
 		$instance = Venue_V2::get_instance();
 
 		// Create an event post.
@@ -324,9 +323,9 @@ class Test_Venue_V2 extends Base {
 		$result = $instance->render_block( $block_content, $block, $block_instance );
 
 		$this->assertSame(
-			$block_content,
+			'',
 			$result,
-			'Should return block content unchanged for online-only event.'
+			'Should return empty string for online-only event (no physical venue).'
 		);
 	}
 
@@ -335,7 +334,7 @@ class Test_Venue_V2 extends Base {
 	 *
 	 * This test verifies the code path where an event has a venue term
 	 * but the venue lookup doesn't find a matching venue post. This covers
-	 * the fallback path in get_venue_post_for_block.
+	 * the fallback path in get_venue_post.
 	 *
 	 * Note: Testing the full event-to-venue rendering path would require
 	 * get_page_by_path to work in the test environment, which has limitations.
@@ -343,7 +342,7 @@ class Test_Venue_V2 extends Base {
 	 *
 	 * @since 1.0.0
 	 * @covers ::render_block
-	 * @covers ::get_venue_post_for_block
+	 * @covers ::get_venue_post
 	 *
 	 * @return void
 	 */
@@ -396,14 +395,15 @@ class Test_Venue_V2 extends Base {
 	}
 
 	/**
-	 * Tests is_online_only_event returns false when no venue terms.
+	 * Tests render_block returns empty when event has no venue terms.
 	 *
 	 * @since 1.0.0
-	 * @covers ::is_online_only_event
+	 * @covers ::render_block
+	 * @covers ::get_venue_post
 	 *
 	 * @return void
 	 */
-	public function test_is_online_only_event_false_for_no_terms(): void {
+	public function test_render_block_returns_empty_for_event_with_no_terms(): void {
 		$instance = Venue_V2::get_instance();
 
 		// Create an event post without any venue terms.
@@ -435,14 +435,15 @@ class Test_Venue_V2 extends Base {
 	}
 
 	/**
-	 * Tests is_online_only_event returns false when multiple terms exist.
+	 * Tests render_block returns empty when event has multiple venue terms but no valid venue post.
 	 *
 	 * @since 1.0.0
-	 * @covers ::is_online_only_event
+	 * @covers ::render_block
+	 * @covers ::get_venue_post
 	 *
 	 * @return void
 	 */
-	public function test_is_online_only_event_false_for_multiple_terms(): void {
+	public function test_render_block_returns_empty_for_multiple_terms_no_venue_post(): void {
 		$instance = Venue_V2::get_instance();
 
 		// Create an event post.
@@ -622,14 +623,15 @@ class Test_Venue_V2 extends Base {
 	}
 
 	/**
-	 * Tests render_block with selected post ID that is not an integer.
+	 * Tests render_block returns empty when selectedPostId is not an integer.
 	 *
 	 * @since 1.0.0
-	 * @covers ::get_venue_post_for_block
+	 * @covers ::render_block
+	 * @covers ::get_venue_post
 	 *
 	 * @return void
 	 */
-	public function test_get_venue_post_for_block_ignores_non_integer_selected_id(): void {
+	public function test_render_block_returns_empty_for_non_integer_selected_id(): void {
 		$instance = Venue_V2::get_instance();
 
 		// Create a regular post for context.
@@ -652,9 +654,9 @@ class Test_Venue_V2 extends Base {
 		$result = $instance->render_block( $block_content, $block, $block_instance );
 
 		$this->assertSame(
-			$block_content,
+			'',
 			$result,
-			'Should return content unchanged when selectedPostId is not an integer.'
+			'Should return empty string when selectedPostId is not an integer.'
 		);
 	}
 
@@ -667,7 +669,7 @@ class Test_Venue_V2 extends Base {
 	 *
 	 * @since 1.0.0
 	 * @covers ::render_block
-	 * @covers ::get_venue_post_for_block
+	 * @covers ::get_venue_post
 	 * @covers ::render_with_venue_context
 	 *
 	 * @return void
@@ -743,7 +745,7 @@ class Test_Venue_V2 extends Base {
 	 * Tests render_block when event has venue term but no matching venue post.
 	 *
 	 * @since 1.0.0
-	 * @covers ::get_venue_post_for_block
+	 * @covers ::get_venue_post
 	 *
 	 * @return void
 	 */
@@ -787,6 +789,293 @@ class Test_Venue_V2 extends Base {
 			'',
 			$result,
 			'Should return empty string when venue term does not map to a venue post.'
+		);
+	}
+
+	/**
+	 * Tests render_with_venue_context applies align class.
+	 *
+	 * @since 1.0.0
+	 * @covers ::render_with_venue_context
+	 *
+	 * @return void
+	 */
+	public function test_render_with_venue_context_applies_align_class(): void {
+		$instance = Venue_V2::get_instance();
+
+		// Create a venue post.
+		$venue_id = $this->factory->post->create(
+			array(
+				'post_type'  => 'gatherpress_venue',
+				'post_title' => 'Align Test Venue',
+			)
+		);
+
+		$block_instance = new WP_Block(
+			array(
+				'blockName'    => 'gatherpress/venue-v2',
+				'attrs'        => array(
+					'selectedPostId' => $venue_id,
+					'align'          => 'wide',
+				),
+				'innerBlocks'  => array(
+					array(
+						'blockName'    => 'core/paragraph',
+						'attrs'        => array(),
+						'innerBlocks'  => array(),
+						'innerHTML'    => '<p>Inner content</p>',
+						'innerContent' => array( '<p>Inner content</p>' ),
+					),
+				),
+				'innerHTML'    => '',
+				'innerContent' => array( null ),
+			)
+		);
+
+		$block = array( 'attrs' => array( 'selectedPostId' => $venue_id ) );
+
+		$result = $instance->render_block( '<div>Test</div>', $block, $block_instance );
+
+		$this->assertStringContainsString(
+			'alignwide',
+			$result,
+			'Should apply align class to wrapper.'
+		);
+	}
+
+	/**
+	 * Tests render_with_venue_context applies className attribute.
+	 *
+	 * @since 1.0.0
+	 * @covers ::render_with_venue_context
+	 *
+	 * @return void
+	 */
+	public function test_render_with_venue_context_applies_classname(): void {
+		$instance = Venue_V2::get_instance();
+
+		// Create a venue post.
+		$venue_id = $this->factory->post->create(
+			array(
+				'post_type'  => 'gatherpress_venue',
+				'post_title' => 'ClassName Test Venue',
+			)
+		);
+
+		$block_instance = new WP_Block(
+			array(
+				'blockName'    => 'gatherpress/venue-v2',
+				'attrs'        => array(
+					'selectedPostId' => $venue_id,
+					'className'      => 'custom-class another-class',
+				),
+				'innerBlocks'  => array(
+					array(
+						'blockName'    => 'core/paragraph',
+						'attrs'        => array(),
+						'innerBlocks'  => array(),
+						'innerHTML'    => '<p>Inner content</p>',
+						'innerContent' => array( '<p>Inner content</p>' ),
+					),
+				),
+				'innerHTML'    => '',
+				'innerContent' => array( null ),
+			)
+		);
+
+		$block = array( 'attrs' => array( 'selectedPostId' => $venue_id ) );
+
+		$result = $instance->render_block( '<div>Test</div>', $block, $block_instance );
+
+		$this->assertStringContainsString(
+			'custom-class another-class',
+			$result,
+			'Should apply className attribute to wrapper.'
+		);
+	}
+
+	/**
+	 * Tests render_with_venue_context applies both align and className.
+	 *
+	 * @since 1.0.0
+	 * @covers ::render_with_venue_context
+	 *
+	 * @return void
+	 */
+	public function test_render_with_venue_context_applies_align_and_classname(): void {
+		$instance = Venue_V2::get_instance();
+
+		// Create a venue post.
+		$venue_id = $this->factory->post->create(
+			array(
+				'post_type'  => 'gatherpress_venue',
+				'post_title' => 'Combined Test Venue',
+			)
+		);
+
+		$block_instance = new WP_Block(
+			array(
+				'blockName'    => 'gatherpress/venue-v2',
+				'attrs'        => array(
+					'selectedPostId' => $venue_id,
+					'align'          => 'full',
+					'className'      => 'my-custom-class',
+				),
+				'innerBlocks'  => array(
+					array(
+						'blockName'    => 'core/paragraph',
+						'attrs'        => array(),
+						'innerBlocks'  => array(),
+						'innerHTML'    => '<p>Inner content</p>',
+						'innerContent' => array( '<p>Inner content</p>' ),
+					),
+				),
+				'innerHTML'    => '',
+				'innerContent' => array( null ),
+			)
+		);
+
+		$block = array( 'attrs' => array( 'selectedPostId' => $venue_id ) );
+
+		$result = $instance->render_block( '<div>Test</div>', $block, $block_instance );
+
+		$this->assertStringContainsString(
+			'wp-block-gatherpress-venue-v2',
+			$result,
+			'Should include base wrapper class.'
+		);
+		$this->assertStringContainsString(
+			'alignfull',
+			$result,
+			'Should apply align class.'
+		);
+		$this->assertStringContainsString(
+			'my-custom-class',
+			$result,
+			'Should apply className.'
+		);
+	}
+
+	/**
+	 * Tests get_venue_post with postId override attribute.
+	 *
+	 * This tests the Block::get_post_id() path where postId comes from
+	 * block attributes (used for query loop context).
+	 *
+	 * @since 1.0.0
+	 * @covers ::get_venue_post
+	 * @covers ::render_with_venue_context
+	 *
+	 * @return void
+	 */
+	public function test_get_venue_post_with_postid_override(): void {
+		$instance = Venue_V2::get_instance();
+
+		// Create a venue post.
+		$venue_id = $this->factory->post->create(
+			array(
+				'post_type'  => Venue::POST_TYPE,
+				'post_name'  => 'override-venue-test',
+				'post_title' => 'Override Venue Test',
+			)
+		);
+
+		// Get the venue post to ensure we have the correct slug.
+		$venue_post = get_post( $venue_id );
+
+		// Create the venue term with the correct slug format.
+		$term_slug = Venue::get_instance()->get_venue_term_slug( $venue_post->post_name );
+		wp_insert_term(
+			'Override Venue Test',
+			Venue::TAXONOMY,
+			array( 'slug' => $term_slug )
+		);
+
+		// Create an event post and link it to the venue.
+		$event_id = $this->factory->post->create(
+			array(
+				'post_type'   => Event::POST_TYPE,
+				'post_status' => 'publish',
+			)
+		);
+		wp_set_post_terms( $event_id, $term_slug, Venue::TAXONOMY );
+
+		// Create a different post for global context (not an event).
+		$other_post_id = $this->factory->post->create();
+		$this->go_to( get_permalink( $other_post_id ) );
+
+		// Block attributes include postId override (query loop context).
+		$block_instance = new WP_Block(
+			array(
+				'blockName'    => 'gatherpress/venue-v2',
+				'attrs'        => array(
+					'postId' => $event_id, // Override to event ID.
+				),
+				'innerBlocks'  => array(
+					array(
+						'blockName'    => 'core/post-title',
+						'attrs'        => array(),
+						'innerBlocks'  => array(),
+						'innerHTML'    => '',
+						'innerContent' => array(),
+					),
+				),
+				'innerHTML'    => '',
+				'innerContent' => array( null ),
+			)
+		);
+
+		$block = array( 'attrs' => array( 'postId' => $event_id ) );
+
+		$result = $instance->render_block( '<div>Test</div>', $block, $block_instance );
+
+		// The venue title should appear in the rendered output.
+		$this->assertStringContainsString(
+			'Override Venue Test',
+			$result,
+			'Should use postId attribute to get event and render venue context.'
+		);
+	}
+
+	/**
+	 * Tests get_venue_post returns null when postId override points to non-event.
+	 *
+	 * @since 1.0.0
+	 * @covers ::get_venue_post
+	 *
+	 * @return void
+	 */
+	public function test_get_venue_post_returns_null_for_non_event_postid_override(): void {
+		$instance = Venue_V2::get_instance();
+
+		// Create a regular post (not an event).
+		$post_id = $this->factory->post->create( array( 'post_type' => 'post' ) );
+
+		// Create an event as global context.
+		$event_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
+		$this->go_to( get_permalink( $event_id ) );
+
+		// Block attributes include postId override pointing to non-event.
+		$block_instance = new WP_Block(
+			array(
+				'blockName'    => 'gatherpress/venue-v2',
+				'attrs'        => array(
+					'postId' => $post_id, // Override to non-event post ID.
+				),
+				'innerBlocks'  => array(),
+				'innerHTML'    => '',
+				'innerContent' => array(),
+			)
+		);
+
+		$block = array( 'attrs' => array( 'postId' => $post_id ) );
+
+		$result = $instance->render_block( '<div>Test</div>', $block, $block_instance );
+
+		$this->assertSame(
+			'',
+			$result,
+			'Should return empty when postId override points to non-event.'
 		);
 	}
 }

@@ -14,6 +14,7 @@ namespace GatherPress\Core\Blocks;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
+use GatherPress\Core\Block;
 use GatherPress\Core\Event;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Venue;
@@ -84,27 +85,15 @@ class Venue_V2 {
 			return is_string( $block_content ) ? $block_content : '';
 		}
 
-		$venue_post   = $this->get_venue_post_for_block( $block );
-		$current_post = get_post();
-		$is_event     = Event::POST_TYPE === get_post_type( $current_post );
+		$venue_post = $this->get_venue_post( $block );
 
-		// Has venue - render with venue context.
-		if ( $venue_post instanceof WP_Post ) {
-			return $this->render_with_venue_context( $venue_post, $instance );
-		}
-
-		// No venue, but online-only event - render content as-is.
-		if ( $is_event && $this->is_online_only_event( $current_post->ID ) ) {
-			return $block_content;
-		}
-
-		// No venue and not online-only event - don't render.
-		if ( $is_event ) {
+		// No physical venue - don't render.
+		if ( ! $venue_post instanceof WP_Post ) {
 			return '';
 		}
 
-		// Non-events render as-is.
-		return $block_content;
+		// Has venue - render with venue context.
+		return $this->render_with_venue_context( $venue_post, $instance );
 	}
 
 	/**
@@ -112,6 +101,7 @@ class Venue_V2 {
 	 *
 	 * Checks for a manually selected venue in block attributes first,
 	 * then falls back to getting the venue from the current event.
+	 * Handles query loop, post ID override, and global contexts.
 	 *
 	 * @since 1.0.0
 	 *
@@ -119,7 +109,7 @@ class Venue_V2 {
 	 *
 	 * @return WP_Post|null The venue post or null if not found.
 	 */
-	private function get_venue_post_for_block( array $block ): ?WP_Post {
+	private function get_venue_post( array $block ): ?WP_Post {
 		// Check for manually selected venue in block attributes.
 		if ( isset( $block['attrs']['selectedPostId'] ) && is_int( $block['attrs']['selectedPostId'] ) ) {
 			$venue_post = get_post( $block['attrs']['selectedPostId'] );
@@ -129,46 +119,22 @@ class Venue_V2 {
 			}
 		}
 
-		$current_post = get_post();
+		// Get event ID from block attributes or global (handles query loop, override, global).
+		$event_id = Block::get_instance()->get_post_id( $block );
 
 		// If not an event, no venue to get.
-		if ( Event::POST_TYPE !== get_post_type( $current_post ) ) {
-			return null;
-		}
-
-		// Check for online-only event.
-		if ( $this->is_online_only_event( $current_post->ID ) ) {
+		if ( Event::POST_TYPE !== get_post_type( $event_id ) ) {
 			return null;
 		}
 
 		// Get venue from event.
-		$venue_post = Venue::get_instance()->get_venue_post_from_event_post_id( $current_post->ID );
+		$venue_post = Venue::get_instance()->get_venue_post_from_event_post_id( $event_id );
 
 		if ( $venue_post instanceof WP_Post && Venue::POST_TYPE === $venue_post->post_type ) {
 			return $venue_post;
 		}
 
 		return null;
-	}
-
-	/**
-	 * Checks if an event is online-only.
-	 *
-	 * An event is online-only if it has exactly one venue term
-	 * and that term is the 'online-event' term.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param int $event_id The event post ID.
-	 *
-	 * @return bool True if online-only, false otherwise.
-	 */
-	private function is_online_only_event( int $event_id ): bool {
-		$venue_terms = get_the_terms( $event_id, Venue::TAXONOMY );
-
-		return is_array( $venue_terms )
-			&& 1 === count( $venue_terms )
-			&& 'online-event' === $venue_terms[0]->slug;
 	}
 
 	/**
@@ -214,6 +180,21 @@ class Venue_V2 {
 
 		$post = $original_post; // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
 
-		return $block_content;
+		// Build wrapper classes from block instance attributes.
+		$classes = array( 'wp-block-gatherpress-venue-v2' );
+
+		if ( ! empty( $instance->attributes['align'] ) ) {
+			$classes[] = 'align' . $instance->attributes['align'];
+		}
+
+		if ( ! empty( $instance->attributes['className'] ) ) {
+			$classes[] = $instance->attributes['className'];
+		}
+
+		return sprintf(
+			'<div class="%s">%s</div>',
+			esc_attr( implode( ' ', $classes ) ),
+			$block_content
+		);
 	}
 }
