@@ -174,6 +174,7 @@ class Block {
 	 *
 	 * @since 1.0.0
 	 * @see   https://developer.wordpress.org/reference/functions/register_block_pattern/
+	 * @see   https://developer.wordpress.org/reference/classes/wp_block_patterns_registry/register/#parameters
 	 *
 	 * @return void
 	 */
@@ -199,6 +200,80 @@ class Block {
 					'source'   => 'plugin',
 				),
 			),
+
+
+
+			array(
+				'gatherpress/event-content-1',
+				array(
+					'title'    => __( 'Event Content Starter Pattern 1', 'gatherpress' ),
+					'content'  => '<!-- wp:paragraph -->
+					<p>hallo pattern 1</p>
+					<!-- /wp:paragraph -->',
+					// 'inserter' => false,
+					// 'source'   => 'plugin',
+					// 'keywords' => array('starter'),
+					'blockTypes' => array( 'core/post-content' ),
+					'postTypes' => array( 'post', 'car', 'page', 'gatherpress_event' ),
+					// 'postTypes' => array( 'post', 'car', 'gatherpress_event', 'gatherpress_venue' ),
+					// 'templateTypes' => array( 'single-gatherpress_event' ),
+				),
+			),
+			array(
+				'gatherpress/event-content-2',
+				array(
+					'title'    => __( 'Event Content Starter Pattern 2', 'gatherpress' ),
+					// 'content'  => '<!-- wp:post-featured-image /--><!-- wp:pattern {"slug":"gatherpress/event-template"} /-->',
+					'content'  => '<!-- wp:post-featured-image /--><!-- wp:paragraph -->
+					<p>hallo pattern 2</p>
+					<!-- /wp:paragraph -->',
+					// 'inserter' => false,
+					// 'source'   => 'plugin',
+					// 'keywords' => array('starter'),
+					'blockTypes' => array( 'core/post-content' ),
+					'postTypes' => array( 'post', 'car', 'page', 'gatherpress_event' ),
+					// 'postTypes' => array( 'post', 'car', 'gatherpress_event', 'gatherpress_venue' ),
+					// 'templateTypes' => array( 'single-gatherpress_event' ),
+				),
+			),
+
+
+
+
+
+			/*
+			 * WORKING
+			 * 
+			 * Starter patterns for TEMPLATES
+			 * 
+			 * ....
+			 *  
+			array(
+				'gatherpress/event-starter-1',
+				array(
+					'title'    => __( 'Event Template Starter Pattern 1', 'gatherpress' ),
+					'description'   => _x( 'This is my first starter pattern', 'Block pattern description', 'textdomain' ),
+					'content'  => '<!-- wp:pattern {"slug":"gatherpress/event-template"} /-->',
+					'inserter' => false,
+					'source'   => 'plugin',
+					// 'blockTypes' => array( 'core/post-content' ),
+					'postTypes' => array( 'gatherpress_event' ),
+					'templateTypes' => array( 'single-gatherpress_event' ),
+				),
+			),
+			array(
+				'gatherpress/event-starter-2',
+				array(
+					'title'    => __( 'Event Template Starter Pattern 2', 'gatherpress' ),
+					'description'   => _x( 'This is my second starter pattern', 'Block pattern description', 'textdomain' ),
+					'content'  => '<!-- wp:post-featured-image /--><!-- wp:pattern {"slug":"gatherpress/event-template"} /-->',
+					'inserter' => false,
+					'source'   => 'plugin',
+					// 'blockTypes' => array( 'core/post-content' ),
+					'postTypes' => array( 'gatherpress_event' ),
+					'templateTypes' => array( 'single-gatherpress_event' ),
+				),
+			), */
 			array(
 				'gatherpress/venue-template',
 				array(

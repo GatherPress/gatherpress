@@ -211,7 +211,7 @@ class Event_Setup {
 					'thumbnail',
 					'comments',
 					'revisions',
-					'custom-fields',
+					// 'custom-fields',
 				),
 				'menu_icon'     => 'dashicons-nametag',
 				// Note: has_archive must be true for event feed URLs (/event/feed/) to work.
