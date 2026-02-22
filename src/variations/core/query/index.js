@@ -197,8 +197,13 @@ registerBlockVariation( 'core/query', {
 										[
 											'gatherpress/online-event-link',
 											{
-												linkText:
-													'<span class="gatherpress-tooltip" data-gatherpress-tooltip="Link available for attendees only.">Online event</span>',
+												linkText: `<span class="gatherpress-tooltip" data-gatherpress-tooltip="${ __(
+													'Link available for attendees only.',
+													'gatherpress'
+												) }">${ __(
+													'Online event',
+													'gatherpress'
+												) }</span>`,
 												fontSize: 'medium',
 											},
 										],

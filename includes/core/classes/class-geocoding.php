@@ -77,7 +77,7 @@ class Geocoding {
 			array(
 				'methods'             => WP_REST_Server::READABLE,
 				'callback'            => array( $this, 'geocode_address' ),
-				'permission_callback' => static function () {
+				'permission_callback' => static function (): bool {
 					return current_user_can( 'edit_posts' );
 				},
 				'args'                => array(
@@ -121,7 +121,7 @@ class Geocoding {
 			self::NOMINATIM_API_URL
 		);
 
-		$response = wp_remote_get(
+		$response = wp_safe_remote_get(
 			$url,
 			array(
 				'headers' => array(
