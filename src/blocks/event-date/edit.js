@@ -220,59 +220,43 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 
 	const { dateTimeStart, dateTimeEnd, timezone, isLoading } = useSelect(
 		( select ) => {
-			// Return early if no postId or not in an event context.
-			if ( ! postId || ! ( isDescendentOfQueryLoop || isEventContext ) ) {
-				return {
-					dateTimeStart: undefined,
-					dateTimeEnd: undefined,
-					timezone: undefined,
-					isLoading: false,
-				};
+			if ( ! postId ) {
+				return {};
 			}
 
+			// When editing an event directly, use the datetime store for live updates.
 			if ( isEventPostType() ) {
+				const datetimeStore = select( 'gatherpress/datetime' );
 				return {
-					dateTimeStart: select(
-						'gatherpress/datetime',
-					).getDateTimeStart(),
-					dateTimeEnd: select(
-						'gatherpress/datetime',
-					).getDateTimeEnd(),
-					timezone: select( 'gatherpress/datetime' ).getTimezone(),
-					isLoading: false,
+					dateTimeStart: datetimeStore.getDateTimeStart(),
+					dateTimeEnd: datetimeStore.getDateTimeEnd(),
+					timezone: datetimeStore.getTimezone(),
 				};
 			}
 
-			// Only fetch if context confirms it's an event post type.
-			if ( context?.postType !== CPT_EVENT ) {
-				return {
-					dateTimeStart: undefined,
-					dateTimeEnd: undefined,
-					timezone: undefined,
-					isLoading: false,
-				};
-			}
-
-			// Check if the entity record has finished loading.
+			// For Query Loop context, fetch from entity record.
 			const hasResolved = select( 'core' ).hasFinishedResolution(
 				'getEntityRecord',
 				[ 'postType', CPT_EVENT, postId ]
 			);
 
+			if ( ! hasResolved ) {
+				return { isLoading: true };
+			}
+
 			const meta = select( 'core' ).getEntityRecord(
 				'postType',
 				CPT_EVENT,
-				postId,
+				postId
 			)?.meta;
 
 			return {
 				dateTimeStart: meta?.gatherpress_datetime_start,
 				dateTimeEnd: meta?.gatherpress_datetime_end,
 				timezone: meta?.gatherpress_timezone,
-				isLoading: ! hasResolved,
 			};
 		},
-		[ postId, isDescendentOfQueryLoop, isEventContext, context?.postType ],
+		[ postId ]
 	);
 
 	// Show spinner only while loading, not on 404.

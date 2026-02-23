@@ -17,7 +17,7 @@ import { __ } from '@wordpress/i18n';
  * Internal dependencies.
  */
 import TEMPLATE from './template';
-import { isInFSETemplate } from '../../helpers/editor';
+import { hasValidBlockContext, isInFSETemplate } from '../../helpers/editor';
 import { DISABLED_FIELD_OPACITY } from '../../helpers/event';
 import { TAX_VENUE, CPT_EVENT } from '../../helpers/namespace';
 
@@ -170,12 +170,17 @@ const Edit = ( { attributes, context } ) => {
 		[ eventId, onlineEventTerm ]
 	);
 
+	// Dim the block when not an online event or no valid context.
 	const blockProps = useBlockProps( {
 		style: {
-			opacity:
-				isInFSETemplate() || isDescendentOfQueryLoop || isOnlineEvent
-					? 1
-					: DISABLED_FIELD_OPACITY,
+			opacity: hasValidBlockContext( {
+				isDescendentOfQueryLoop,
+				postType: context?.postType,
+				expectedPostType: CPT_EVENT,
+				hasData: isOnlineEvent,
+			} )
+				? 1
+				: DISABLED_FIELD_OPACITY,
 		},
 	} );
 

@@ -15,15 +15,18 @@ import { useSelect } from '@wordpress/data';
 /**
  * Internal dependencies
  */
-import { getCurrentContextualPostId, isInFSETemplate } from '../../helpers/editor';
+import { getCurrentContextualPostId, hasValidBlockContext } from '../../helpers/editor';
 import { isEventPostType, DISABLED_FIELD_OPACITY } from '../../helpers/event';
-import { GetVenuePostFromTermId } from '../../helpers/venue';
+import { GetVenuePostFromTermId, GetVenuePostFromEventId } from '../../helpers/venue';
 import VenueNavigator from '../../components/VenueNavigator';
 import { CPT_EVENT, CPT_VENUE, TAX_VENUE } from '../../helpers/namespace';
 import { TEMPLATE_WITH_TITLE, TEMPLATE_WITHOUT_TITLE } from './template';
 
 const Edit = ( props ) => {
 	const { context } = props;
+
+	const isDescendentOfQueryLoop = Number.isFinite( context?.queryId );
+	const isEventContext = isEventPostType( context?.postType );
 
 	const eventId = getCurrentContextualPostId( context?.postId );
 	const [ venueTaxonomyIds ] = useEntityProp(
@@ -33,12 +36,10 @@ const Edit = ( props ) => {
 		eventId
 	);
 
-	const isDescendentOfQueryLoop = Number.isFinite( context?.queryId );
-	const isEventContext = isEventPostType( context?.postType );
 	const isEditableEventContext =
 		! isDescendentOfQueryLoop && Array.isArray( venueTaxonomyIds );
 
-	// Fetch venue terms.
+	// Fetch venue terms for direct event editing.
 	const venueTerms = useSelect(
 		( wpSelect ) => {
 			if ( ! isEditableEventContext || ! venueTaxonomyIds?.length ) {
@@ -62,8 +63,17 @@ const Edit = ( props ) => {
 	const venueTermId =
 		venueTerms.find( ( term ) => 'online-event' !== term?.slug )?.id || null;
 
-	// Fetch venue post only if we have a venue term.
-	const venuePostArray = GetVenuePostFromTermId( venueTermId );
+	// Fetch venue post - use different methods for Query Loop vs direct editing.
+	const venuePostFromTerm = GetVenuePostFromTermId( venueTermId );
+	const venuePostFromEvent = GetVenuePostFromEventId(
+		isDescendentOfQueryLoop ? context?.postId : null
+	);
+
+	// Use Query Loop result if available, otherwise use direct editing result.
+	const venuePostArray = isDescendentOfQueryLoop
+		? venuePostFromEvent
+		: venuePostFromTerm;
+
 	const venuePostId =
 		venuePostArray?.[ 0 ]?.id && venuePostArray[ 0 ].id !== eventId
 			? venuePostArray[ 0 ].id
@@ -72,13 +82,17 @@ const Edit = ( props ) => {
 	// Check if we have a physical venue selected.
 	const hasVenue = 0 < venuePostId;
 
-	// Dim the block when no venue is selected (except in query loop or FSE template).
+	// Dim the block when no venue is selected or no valid context.
 	const blockProps = useBlockProps( {
 		style: {
-			opacity:
-				isInFSETemplate() || isDescendentOfQueryLoop || hasVenue
-					? 1
-					: DISABLED_FIELD_OPACITY,
+			opacity: hasValidBlockContext( {
+				isDescendentOfQueryLoop,
+				postType: context?.postType,
+				expectedPostType: CPT_EVENT,
+				hasData: hasVenue,
+			} )
+				? 1
+				: DISABLED_FIELD_OPACITY,
 		},
 	} );
 
