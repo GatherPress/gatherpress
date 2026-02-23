@@ -115,6 +115,74 @@ class Setup {
 			),
 			array( $this, 'filter_plugin_action_links' )
 		);
+
+
+
+
+
+		/**
+		 * Embed needs to have trailing slash "/" to work!
+		 */
+		add_filter( 'embed_template', function ( $template ) {
+
+			if ( 'gatherpress_event' === get_post_type() ) {
+
+
+				add_action('embed_content',function() : void {
+					echo do_blocks('<!-- wp:separator -->
+					<hr class="wp-block-separator has-alpha-channel-opacity"/>
+					<!-- /wp:separator -->
+					
+					<!-- wp:gatherpress/event-date /-->
+					
+					<!-- wp:gatherpress/venue /-->
+					
+					<!-- wp:separator -->
+					<hr class="wp-block-separator has-alpha-channel-opacity"/>
+					<!-- /wp:separator -->');
+				}, 20 );
+				// Needed to show GatherPress block icons.
+				add_action( 'embed_head', 'wp_enqueue_scripts', -10 );
+				add_action( 'embed_head', function() : void {
+					// Fix icon positioning.
+					// Override ".dashicon" defaults loaded for oEmbeds.
+					echo '<style>.gatherpress-venue__icon .dashicon {top:0;}</style>';
+				}, 10 );
+
+				// add_action( 'embed_head', function() : void {
+				// 	wp_enqueue_style( 'global-styles' );
+				// }, 20 );
+
+				remove_action( 'embed_content_meta', 'print_embed_comments_button' );
+				remove_action( 'embed_content_meta', 'print_embed_sharing_button' );
+				remove_action( 'embed_footer', 'print_embed_sharing_dialog' );
+				add_action( 'embed_content_meta', function () {
+					if ( is_404() || ! ( get_comments_number() || comments_open() ) ) {
+						return;
+					}
+					?>
+					<div class="wp-embed-comments">
+						<a href="<?php comments_link(); ?>" target="_top">
+							<span class="dashicons dashicons-admin-comments"></span>
+							<?php
+							printf(
+								/* translators: %s: Number of comments. */
+								_n(
+									'%s <span class="screen-reader-text">Approved RSVP</span>',
+									'%s <span class="screen-reader-text">Approved RSVPs</span>',
+									get_comments_number()
+								),
+								number_format_i18n( get_comments_number() )
+							);
+							?>
+						</a>
+					</div>
+					<?php
+				}, 9 );
+			}
+			return $template;
+		} );
+
 	}
 
 	/**
