@@ -12,6 +12,7 @@ namespace {
     define( 'GATHERPRESS_CORE_URL', '');
     define( 'GATHERPRESS_REST_NAMESPACE', '');
     define( 'GATHERPRESS_REQUIRES_PHP', '');
+    define( 'GATHERPRESS_VERSION', '');
 
     /**
      * Used in includes/core/classes/class-export.php

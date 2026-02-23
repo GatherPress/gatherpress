@@ -1,14 +1,13 @@
 /**
  * WordPress dependencies.
  */
-import { __, sprintf } from '@wordpress/i18n';
+import { __ } from '@wordpress/i18n';
+import apiFetch from '@wordpress/api-fetch';
 
 /**
- * Nominatim OpenStreetMap API base URL.
- *
- * @type {string}
+ * Internal dependencies.
  */
-export const NOMINATIM_API_URL = 'https://nominatim.openstreetmap.org/search';
+import { REST_NAMESPACE } from './namespace';
 
 /**
  * In-memory cache for geocoding results (memoization).
@@ -17,40 +16,6 @@ export const NOMINATIM_API_URL = 'https://nominatim.openstreetmap.org/search';
  * @type {Map<string, Object>}
  */
 const geocodeCache = new Map();
-
-/**
- * Gets the browser/WordPress language code for Accept-Language header.
- *
- * @return {string} Language code (e.g., 'en', 'de', 'fr').
- */
-export function getLanguageCode() {
-	// Try WordPress document lang attribute first (set by WP).
-	const htmlLang = document.documentElement.lang;
-	if ( htmlLang ) {
-		// Convert 'en-US' or 'de_DE' to 'en' or 'de'.
-		return htmlLang.split( /[-_]/ )[ 0 ];
-	}
-
-	// Fall back to browser language.
-	return navigator.language?.split( '-' )[ 0 ] || 'en';
-}
-
-/**
- * Builds the Nominatim API URL with all parameters.
- *
- * @param {string} address The address to geocode.
- * @return {string} The complete API URL.
- */
-export function buildNominatimUrl( address ) {
-	const params = new URLSearchParams( {
-		q: address,
-		format: 'geojson',
-		limit: '1',
-		'accept-language': getLanguageCode(),
-	} );
-
-	return `${ NOMINATIM_API_URL }?${ params.toString() }`;
-}
 
 /**
  * Clears the geocoding cache.
@@ -71,11 +36,11 @@ export function getGeocoCacheSize() {
 }
 
 /**
- * Geocodes an address using Nominatim OpenStreetMap API.
+ * Geocodes an address using the GatherPress REST API proxy.
  *
  * Uses memoization to cache results and avoid duplicate API calls
- * for the same address. Follows Nominatim usage policy by including
- * accept-language and limiting results to 1.
+ * for the same address. The PHP backend proxies requests to Nominatim
+ * to avoid CORS issues and comply with Nominatim's usage policy.
  *
  * @since 1.0.0
  *
@@ -97,58 +62,48 @@ export async function geocodeAddress( address ) {
 	}
 
 	try {
-		const response = await fetch( buildNominatimUrl( trimmedAddress ) );
+		const response = await apiFetch( {
+			path: `/${ REST_NAMESPACE }/geocode?address=${ encodeURIComponent(
+				trimmedAddress
+			) }`,
+		} );
 
-		if ( ! response.ok ) {
+		// The REST API returns the result directly.
+		if ( response.latitude && response.longitude ) {
 			const result = {
-				latitude: '',
-				longitude: '',
-				error: sprintf(
-					/* translators: %s: HTTP status text. */
-					__( 'Geocoding failed: %s', 'gatherpress' ),
-					response.statusText
-				),
+				latitude: response.latitude,
+				longitude: response.longitude,
+				error: null,
 			};
-			// Don't cache errors - allow retry.
-			return result;
-		}
-
-		const data = await response.json();
-
-		if ( 0 < data.features.length ) {
-			const latitude = String(
-				data.features[ 0 ].geometry.coordinates[ 1 ]
-			);
-			const longitude = String(
-				data.features[ 0 ].geometry.coordinates[ 0 ]
-			);
-			const result = { latitude, longitude, error: null };
 			// Cache successful results.
 			geocodeCache.set( trimmedAddress, result );
 			return result;
 		}
 
-		// No results found - cache this too since the address won't suddenly exist.
+		// No results found or error from API.
 		const noResultsResponse = {
 			latitude: '',
 			longitude: '',
-			error: __(
-				'Could not find location. Please check the address and try again.',
-				'gatherpress'
-			),
+			error:
+				response.error ||
+				__(
+					'Could not find location. Please check the address and try again.',
+					'gatherpress'
+				),
 		};
-		geocodeCache.set( trimmedAddress, noResultsResponse );
+		// Cache "not found" results since the address won't suddenly exist.
+		if ( ! response.error ) {
+			geocodeCache.set( trimmedAddress, noResultsResponse );
+		}
 		return noResultsResponse;
 	} catch ( error ) {
 		// Don't cache network errors - allow retry.
 		return {
 			latitude: '',
 			longitude: '',
-			error: sprintf(
-				/* translators: %s: Error message. */
-				__( 'Geocoding error: %s', 'gatherpress' ),
-				error.message
-			),
+			error:
+				error.message ||
+				__( 'Geocoding request failed.', 'gatherpress' ),
 		};
 	}
 }

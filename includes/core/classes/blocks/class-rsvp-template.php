@@ -156,9 +156,10 @@ class Rsvp_Template {
 			JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT
 		);
 		$rsvp_response_template = sprintf(
-			'<script type="application/json" data-wp-interactive="gatherpress"'
-				. ' data-wp-watch="callbacks.renderBlocks">%s</script>',
-			$blocks
+			'<div hidden data-wp-interactive="gatherpress"'
+				. ' data-wp-watch="callbacks.renderBlocks"'
+				. ' data-block-template="%s"></div>',
+			esc_attr( $blocks )
 		);
 
 		return $block_content . $rsvp_response_template;

@@ -24,6 +24,7 @@ import {
 	getCurrentContextualPostType,
 	getEditorDocument,
 	getStartOfWeek,
+	hasValidBlockContext,
 	isInFSETemplate,
 } from '../../../../../src/helpers/editor';
 
@@ -401,6 +402,146 @@ describe( 'Editor helper functions', () => {
 			} );
 
 			expect( isInFSETemplate() ).toBe( false );
+		} );
+	} );
+
+	describe( 'hasValidBlockContext', () => {
+		beforeEach( () => {
+			jest.clearAllMocks();
+		} );
+
+		it( 'returns true when in FSE template (wp_template)', () => {
+			select.mockReturnValue( {
+				getCurrentPostType: jest.fn().mockReturnValue( 'wp_template' ),
+			} );
+
+			const result = hasValidBlockContext( {
+				isDescendentOfQueryLoop: false,
+				postType: 'post',
+				expectedPostType: 'gatherpress_event',
+				hasData: false,
+			} );
+
+			expect( result ).toBe( true );
+		} );
+
+		it( 'returns true when in FSE template (wp_template_part)', () => {
+			select.mockReturnValue( {
+				getCurrentPostType: jest.fn().mockReturnValue( 'wp_template_part' ),
+			} );
+
+			const result = hasValidBlockContext( {
+				isDescendentOfQueryLoop: false,
+				postType: 'post',
+				expectedPostType: 'gatherpress_event',
+				hasData: false,
+			} );
+
+			expect( result ).toBe( true );
+		} );
+
+		it( 'returns true when in Query Loop with matching post type and hasData', () => {
+			select.mockReturnValue( {
+				getCurrentPostType: jest.fn().mockReturnValue( 'post' ),
+			} );
+
+			const result = hasValidBlockContext( {
+				isDescendentOfQueryLoop: true,
+				postType: 'gatherpress_event',
+				expectedPostType: 'gatherpress_event',
+				hasData: true,
+			} );
+
+			expect( result ).toBe( true );
+		} );
+
+		it( 'returns false when in Query Loop with matching post type but no hasData', () => {
+			select.mockReturnValue( {
+				getCurrentPostType: jest.fn().mockReturnValue( 'post' ),
+			} );
+
+			const result = hasValidBlockContext( {
+				isDescendentOfQueryLoop: true,
+				postType: 'gatherpress_event',
+				expectedPostType: 'gatherpress_event',
+				hasData: false,
+			} );
+
+			expect( result ).toBe( false );
+		} );
+
+		it( 'returns false when in Query Loop with non-matching post type', () => {
+			select.mockReturnValue( {
+				getCurrentPostType: jest.fn().mockReturnValue( 'post' ),
+			} );
+
+			const result = hasValidBlockContext( {
+				isDescendentOfQueryLoop: true,
+				postType: 'post',
+				expectedPostType: 'gatherpress_event',
+				hasData: true,
+			} );
+
+			expect( result ).toBe( false );
+		} );
+
+		it( 'returns true when editing directly with hasData', () => {
+			select.mockReturnValue( {
+				getCurrentPostType: jest.fn().mockReturnValue( 'gatherpress_event' ),
+			} );
+
+			const result = hasValidBlockContext( {
+				isDescendentOfQueryLoop: false,
+				postType: 'gatherpress_event',
+				expectedPostType: 'gatherpress_event',
+				hasData: true,
+			} );
+
+			expect( result ).toBe( true );
+		} );
+
+		it( 'returns false when editing directly without hasData', () => {
+			select.mockReturnValue( {
+				getCurrentPostType: jest.fn().mockReturnValue( 'gatherpress_event' ),
+			} );
+
+			const result = hasValidBlockContext( {
+				isDescendentOfQueryLoop: false,
+				postType: 'gatherpress_event',
+				expectedPostType: 'gatherpress_event',
+				hasData: false,
+			} );
+
+			expect( result ).toBe( false );
+		} );
+
+		it( 'defaults hasData to false when not provided', () => {
+			select.mockReturnValue( {
+				getCurrentPostType: jest.fn().mockReturnValue( 'gatherpress_event' ),
+			} );
+
+			const result = hasValidBlockContext( {
+				isDescendentOfQueryLoop: false,
+				postType: 'gatherpress_event',
+				expectedPostType: 'gatherpress_event',
+			} );
+
+			expect( result ).toBe( false );
+		} );
+
+		it( 'works with venue post type', () => {
+			select.mockReturnValue( {
+				getCurrentPostType: jest.fn().mockReturnValue( 'post' ),
+			} );
+
+			const result = hasValidBlockContext( {
+				isDescendentOfQueryLoop: true,
+				postType: 'gatherpress_venue',
+				expectedPostType: 'gatherpress_venue',
+				hasData: true,
+			} );
+
+			expect( result ).toBe( true );
 		} );
 	} );
 } );
