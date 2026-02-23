@@ -96,6 +96,21 @@ describe( 'isEventPostType', () => {
 
 		expect( isEventPostType() ).toBe( false );
 	} );
+
+	it( 'returns true when postType argument is gatherpress_event', () => {
+		// No select mock needed - uses argument directly.
+		expect( isEventPostType( 'gatherpress_event' ) ).toBe( true );
+	} );
+
+	it( 'returns false when postType argument is post', () => {
+		// No select mock needed - uses argument directly.
+		expect( isEventPostType( 'post' ) ).toBe( false );
+	} );
+
+	it( 'returns false when postType argument is page', () => {
+		// No select mock needed - uses argument directly.
+		expect( isEventPostType( 'page' ) ).toBe( false );
+	} );
 } );
 
 /**
@@ -300,6 +315,56 @@ describe( 'hasValidEventId', () => {
 		} );
 
 		expect( hasValidEventId( null ) ).toBe( true );
+	} );
+
+	it( 'returns false when postId matches current post but current post is not an event', () => {
+		const postId = 123;
+
+		require( '@wordpress/data' ).select.mockImplementation( ( store ) => {
+			if ( 'core/editor' === store ) {
+				return {
+					getCurrentPostId: () => postId,
+					getCurrentPostType: () => 'post', // Not an event.
+				};
+			}
+			return {};
+		} );
+
+		expect( hasValidEventId( postId ) ).toBe( false );
+	} );
+
+	it( 'returns false when postType argument is not an event', () => {
+		const postId = 456;
+
+		require( '@wordpress/data' ).select.mockImplementation( ( store ) => {
+			if ( 'core/editor' === store ) {
+				return {
+					getCurrentPostId: () => 999, // Different from postId.
+					getCurrentPostType: () => 'gatherpress_event',
+				};
+			}
+			return {};
+		} );
+
+		// PostType argument is 'post', not an event.
+		expect( hasValidEventId( postId, 'post' ) ).toBe( false );
+	} );
+
+	it( 'returns false when postType argument is page', () => {
+		const postId = 789;
+
+		require( '@wordpress/data' ).select.mockImplementation( ( store ) => {
+			if ( 'core/editor' === store ) {
+				return {
+					getCurrentPostId: () => 999, // Different from postId.
+					getCurrentPostType: () => 'gatherpress_event',
+				};
+			}
+			return {};
+		} );
+
+		// PostType argument is 'page', not an event.
+		expect( hasValidEventId( postId, 'page' ) ).toBe( false );
 	} );
 } );
 
