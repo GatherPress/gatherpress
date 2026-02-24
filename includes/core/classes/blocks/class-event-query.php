@@ -103,13 +103,19 @@ class Event_Query {
 				true === $parsed_block['attrs']['query']['inherit']
 			) {
 				global $wp_query;
+error_log( 'Event_Query::pre_render_block - Inheriting query' );
+error_log( 'Event_Query::pre_render_block - Parsed block attrs: ' . print_r( $parsed_block['attrs'], true ) );
+error_log( 'Event_Query::pre_render_block - Original WP_Query args: ' . print_r( $wp_query->query_vars, true ) );	
 
 				$query_args = array_merge(
 					$wp_query->query_vars,
 					array(
-						'posts_per_page' => $parsed_block['attrs']['query']['perPage'],
-						'order'          => $parsed_block['attrs']['query']['order'],
-						'orderby'        => $parsed_block['attrs']['query']['orderBy'],
+						'posts_per_page'          => $parsed_block['attrs']['query']['perPage'],
+						'order'                   => $parsed_block['attrs']['query']['order'],
+						'orderby'                 => $parsed_block['attrs']['query']['orderBy'],
+						'gatherpress_event_query' => $parsed_block['attrs']['query']['gatherpress_event_query'],
+						'include_unfinished'      => $parsed_block['attrs']['query']['include_unfinished'],
+
 					)
 				);
 
@@ -135,6 +141,7 @@ class Event_Query {
 				// "Hijack the global query. It's a hack, but it works." Ryan Welcher.
 				// phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
 				$wp_query = new WP_Query( $filtered_query_args );
+				error_log( 'Event_Query::pre_render_block - Modified WP_Query args: ' . print_r( $wp_query->query_vars, true ) );
 			} else {
 				add_filter(
 					'query_loop_block_query_vars',
