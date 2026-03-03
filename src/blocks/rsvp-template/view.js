@@ -26,7 +26,7 @@ const { state } = store( 'gatherpress', {
 						state.posts[ context.postId ]?.rsvpSelection ||
 						'attending',
 					post_id: context.postId,
-					block_data: element.ref.textContent,
+					block_data: element.ref.dataset.blockTemplate,
 					limit_enabled:
 						'1' === rsvpResponseElement.dataset.limitEnabled,
 					limit: parseInt( rsvpResponseElement.dataset.limit, 10 ),

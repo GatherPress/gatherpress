@@ -64,12 +64,23 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 	const [ responses, setResponses ] = useState( null );
 	const [ loading, setLoading ] = useState( true );
 	const [ error, setError ] = useState( null );
-	// Normalize empty strings to null so fallback to context.postId works correctly.
-	const postId = ( attributes?.postId || null ) ?? context?.postId ?? null;
+
+	// Check if we're inside a query loop and if context is an event.
+	const isDescendentOfQueryLoop = Number.isFinite( context?.queryId );
+	const isEventContext = isEventPostType( context?.postType );
+
+	// Only use postId if context is an event or have an explicit override.
+	const postId =
+		( attributes?.postId || null ) ??
+		( ( isDescendentOfQueryLoop || isEventContext ) ? context?.postId : null ) ??
+		null;
 	const { rsvpLimitEnabled, rsvpLimit } = attributes;
 
 	// Check if block has a valid event connection.
-	const isValidEvent = hasValidEventId( postId );
+	// Only check if we're in an event context.
+	const isValidEvent =
+		( isDescendentOfQueryLoop || isEventContext ) &&
+		hasValidEventId( postId, context?.postType );
 
 	const blockProps = useBlockProps( {
 		style: {

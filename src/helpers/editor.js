@@ -112,6 +112,44 @@ export function isInFSETemplate() {
 }
 
 /**
+ * Determines if a block should display at full opacity based on its context.
+ *
+ * Use this helper to consistently apply dimming logic across GatherPress blocks.
+ * A block is fully visible (not dimmed) when:
+ * - It's in an FSE template (always visible for preview)
+ * - It's in a Query Loop with valid post type context AND has data
+ * - It's editing a post directly AND has data
+ *
+ * @since 1.0.0
+ *
+ * @param {Object}  options                         Options for determining visibility.
+ * @param {boolean} options.isDescendentOfQueryLoop Whether the block is inside a Query Loop.
+ * @param {string}  options.postType                The post type from block context.
+ * @param {string}  options.expectedPostType        The expected post type for this block.
+ * @param {boolean} [options.hasData=false]         Whether the block has its specific data.
+ * @return {boolean} True if the block should be fully visible, false if it should be dimmed.
+ */
+export function hasValidBlockContext( {
+	isDescendentOfQueryLoop,
+	postType,
+	expectedPostType,
+	hasData = false,
+} ) {
+	// Always visible in FSE templates for design/preview purposes.
+	if ( isInFSETemplate() ) {
+		return true;
+	}
+
+	// In Query Loop, require both valid post type context AND data.
+	if ( isDescendentOfQueryLoop ) {
+		return postType === expectedPostType && hasData;
+	}
+
+	// When editing directly, just check if we have data.
+	return hasData;
+}
+
+/**
  * Gets the site's configured start of the week.
  *
  * This function retrieves the start of the week setting from the site's

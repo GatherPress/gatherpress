@@ -63,6 +63,7 @@ class Setup {
 		Event_Query::get_instance();
 		Event_Rest_Api::get_instance();
 		Event_Setup::get_instance();
+		Geocoding::get_instance();
 		Export::get_instance();
 		Import::get_instance();
 		Rsvp_Cleanup::get_instance();

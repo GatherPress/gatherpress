@@ -188,15 +188,22 @@ class Test_Rsvp_Template extends Base {
 		$block    = array( 'innerBlocks' => array() );
 		$result   = $instance->generate_rsvp_template_block( '', $block, $wp_block );
 
+		// With no responses, the result should only contain the hidden template div.
 		$this->assertStringContainsString(
-			'data-wp-interactive="gatherpress"',
+			'<div hidden data-wp-interactive="gatherpress"',
 			$result,
-			'Failed to assert published event generates interactive markup.'
+			'Failed to assert published event with no responses contains hidden template div.'
 		);
 		$this->assertStringContainsString(
-			'data-wp-watch="callbacks.renderBlocks"',
+			'data-block-template=',
 			$result,
-			'Failed to assert published event includes watch callback.'
+			'Failed to assert published event with no responses contains block template data attribute.'
+		);
+		// Should not contain any response content (data-id="rsvp-").
+		$this->assertStringNotContainsString(
+			'data-id="rsvp-',
+			$result,
+			'Failed to assert published event with no responses has no response content.'
 		);
 	}
 
@@ -744,18 +751,11 @@ class Test_Rsvp_Template extends Base {
 		$result = $instance->generate_rsvp_template_block( '', $block, $wp_block );
 
 		// Tests: Foreach loop through responses.
-		// Just verify that output was generated (responses were processed).
+		// Verify that output was generated with response wrappers.
 		$this->assertStringContainsString(
-			'data-wp-interactive="gatherpress"',
+			'data-id="rsvp-',
 			$result,
 			'Failed to assert output was generated with responses.'
-		);
-
-		// Verify script tag with block data is present.
-		$this->assertStringContainsString(
-			'<script type="application/json"',
-			$result,
-			'Failed to assert script tag is present.'
 		);
 	}
 }
