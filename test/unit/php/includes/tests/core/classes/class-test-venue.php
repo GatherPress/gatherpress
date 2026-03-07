@@ -37,6 +37,12 @@ class Test_Venue extends Base {
 			),
 			array(
 				'type'     => 'action',
+				'name'     => sprintf( 'save_post_%s', Venue::POST_TYPE ),
+				'priority' => 10,
+				'callback' => array( $instance, 'maybe_apply_venue_template' ),
+			),
+			array(
+				'type'     => 'action',
 				'name'     => 'init',
 				'priority' => 10,
 				'callback' => array( $instance, 'register_post_type' ),
@@ -694,6 +700,116 @@ class Test_Venue extends Base {
 		$this->assertNull(
 			$result,
 			'Should return null when event has no venue terms.'
+		);
+	}
+
+	/**
+	 * Coverage for maybe_apply_venue_template method.
+	 *
+	 * Verifies that the venue template content is applied when a venue
+	 * is saved with empty content (e.g., created via REST API).
+	 *
+	 * @covers ::maybe_apply_venue_template
+	 *
+	 * @return void
+	 */
+	public function test_maybe_apply_venue_template(): void {
+		$instance = Venue::get_instance();
+
+		// Create a venue post with empty content (simulating REST API creation).
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type'    => Venue::POST_TYPE,
+				'post_status'  => 'publish',
+				'post_content' => '',
+			)
+		);
+
+		$post = get_post( $post_id );
+
+		// Call the method directly.
+		$instance->maybe_apply_venue_template( $post_id, $post );
+
+		// Refresh the post data.
+		$updated_post = get_post( $post_id );
+
+		$this->assertNotEmpty(
+			$updated_post->post_content,
+			'Venue with empty content should have template applied.'
+		);
+
+		$this->assertStringContainsString(
+			'wp:gatherpress/venue-v2',
+			$updated_post->post_content,
+			'Template content should contain venue-v2 block.'
+		);
+	}
+
+	/**
+	 * Coverage for maybe_apply_venue_template skipping non-empty content.
+	 *
+	 * Verifies that the template is NOT applied when venue already has content.
+	 *
+	 * @covers ::maybe_apply_venue_template
+	 *
+	 * @return void
+	 */
+	public function test_maybe_apply_venue_template_skips_non_empty(): void {
+		$instance         = Venue::get_instance();
+		$existing_content = '<!-- wp:paragraph --><p>Existing content.</p><!-- /wp:paragraph -->';
+
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type'    => Venue::POST_TYPE,
+				'post_status'  => 'publish',
+				'post_content' => $existing_content,
+			)
+		);
+
+		$post = get_post( $post_id );
+
+		$instance->maybe_apply_venue_template( $post_id, $post );
+
+		// Content should remain unchanged.
+		$updated_post = get_post( $post_id );
+
+		$this->assertSame(
+			$existing_content,
+			$updated_post->post_content,
+			'Venue with existing content should not be modified.'
+		);
+	}
+
+	/**
+	 * Coverage for maybe_apply_venue_template skipping draft posts.
+	 *
+	 * Verifies that the template is NOT applied to draft venues.
+	 *
+	 * @covers ::maybe_apply_venue_template
+	 *
+	 * @return void
+	 */
+	public function test_maybe_apply_venue_template_skips_drafts(): void {
+		$instance = Venue::get_instance();
+
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type'    => Venue::POST_TYPE,
+				'post_status'  => 'draft',
+				'post_content' => '',
+			)
+		);
+
+		$post = get_post( $post_id );
+
+		$instance->maybe_apply_venue_template( $post_id, $post );
+
+		// Content should remain empty for drafts.
+		$updated_post = get_post( $post_id );
+
+		$this->assertEmpty(
+			$updated_post->post_content,
+			'Draft venue should not have template applied.'
 		);
 	}
 }

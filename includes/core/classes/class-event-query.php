@@ -358,7 +358,9 @@ class Event_Query {
 			$query_pieces,
 			$gatherpress_events_query,
 			$wp_query->get( 'order' ),
-			$wp_query->get( 'orderby' )
+			$wp_query->get( 'orderby' ),
+			true,
+			true
 		);
 
 		return $query_pieces;
@@ -384,7 +386,9 @@ class Event_Query {
 	 * @param string          $order     The event order ('DESC' for descending or 'ASC' for ascending)
 	 *                                   (Default: 'DESC').
 	 * @param string[]|string $order_by  List  or singular string of ORDERBY statement(s) (Default: ['datetime']).
-	 * @param bool            $inclusive Whether to include currently running events in the query (Default: true).
+	 * @param bool            $inclusive      Whether to include currently running events in the query (Default: true).
+	 * @param bool            $include_no_date Whether to include events with no date set in upcoming
+	 *                                         and exclude them from past (Default: false).
 	 * @return array An array containing adjusted SQL clauses for the Event query.
 	 */
 	public function adjust_event_sql(
@@ -392,7 +396,8 @@ class Event_Query {
 		string $type = 'all',
 		string $order = 'DESC',
 		$order_by = array( 'datetime' ),
-		bool $inclusive = true
+		bool $inclusive = true,
+		bool $include_no_date = false
 	): array {
 		global $wpdb;
 
@@ -450,11 +455,27 @@ class Event_Query {
 		// Appends a date-based condition to the WHERE clause of the SQL query,
 		// filtering events as either upcoming or past.
 		if ( 'upcoming' === $type ) {
-			// Include only events starting on or after the current date/time (upcoming).
-			$pieces['where'] .= $wpdb->prepare( ' AND %i.%i >= %s', $table, $column, $current );
+			if ( $include_no_date ) {
+				// Include events on or after the current date/time, or events with no row in the events table.
+				$pieces['where'] .= $wpdb->prepare(
+					' AND (%i.%i >= %s OR %i.post_id IS NULL)',
+					$table,
+					$column,
+					$current,
+					$table
+				);
+			} else {
+				// Include only events starting on or after the current date/time (upcoming).
+				$pieces['where'] .= $wpdb->prepare( ' AND %i.%i >= %s', $table, $column, $current );
+			}
 		} elseif ( 'past' === $type ) {
 			// Include only events starting before the current date/time (past).
 			$pieces['where'] .= $wpdb->prepare( ' AND %i.%i < %s', $table, $column, $current );
+
+			if ( $include_no_date ) {
+				// Exclude events with no row in the events table.
+				$pieces['where'] .= $wpdb->prepare( ' AND %i.post_id IS NOT NULL', $table );
+			}
 		}
 
 		return $pieces;

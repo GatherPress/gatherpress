@@ -898,13 +898,15 @@ class Event_Setup {
 		$table   = sprintf( Event::TABLE_FORMAT, $wpdb->prefix );
 		$current = gmdate( Event::DATETIME_FORMAT, time() );
 
-		// Upcoming: events whose end time is still in the future (includes currently running).
+		// Upcoming: events whose end time is still in the future (includes currently running),
+		// or events with no row in the events table (no date set yet).
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$upcoming = (int) $wpdb->get_var(
 			$wpdb->prepare(
-				'SELECT COUNT(1) FROM %i INNER JOIN %i ON %i.ID = %i.post_id'
+				'SELECT COUNT(1) FROM %i LEFT JOIN %i ON %i.ID = %i.post_id'
 				. ' WHERE %i.post_type = %s AND %i.post_status NOT IN'
-				. " ('trash', 'auto-draft') AND %i.datetime_end_gmt >= %s",
+				. " ('trash', 'auto-draft') AND (%i.datetime_end_gmt >= %s"
+				. ' OR %i.post_id IS NULL)',
 				$wpdb->posts,
 				$table,
 				$wpdb->posts,
@@ -913,17 +915,20 @@ class Event_Setup {
 				Event::POST_TYPE,
 				$wpdb->posts,
 				$table,
-				$current
+				$current,
+				$table
 			)
 		);
 
-		// Past: events whose start time is in the past (excludes currently running).
+		// Past: events whose start time is in the past (excludes currently running),
+		// excluding events with no row in the events table.
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$past = (int) $wpdb->get_var(
 			$wpdb->prepare(
-				'SELECT COUNT(1) FROM %i INNER JOIN %i ON %i.ID = %i.post_id'
+				'SELECT COUNT(1) FROM %i LEFT JOIN %i ON %i.ID = %i.post_id'
 				. ' WHERE %i.post_type = %s AND %i.post_status NOT IN'
-				. " ('trash', 'auto-draft') AND %i.datetime_start_gmt < %s",
+				. " ('trash', 'auto-draft') AND %i.datetime_start_gmt < %s"
+				. ' AND %i.post_id IS NOT NULL',
 				$wpdb->posts,
 				$table,
 				$wpdb->posts,
@@ -932,7 +937,8 @@ class Event_Setup {
 				Event::POST_TYPE,
 				$wpdb->posts,
 				$table,
-				$current
+				$current,
+				$table
 			)
 		);
 

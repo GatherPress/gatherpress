@@ -1146,6 +1146,109 @@ class Test_Event_Query extends Base {
 	}
 
 	/**
+	 * Test that events without dates appear in upcoming admin queries with include_no_date.
+	 *
+	 * Events without a date/time set have no row in the gatherpress_events table.
+	 * When include_no_date is true (admin context), these should appear in upcoming
+	 * and be excluded from past.
+	 *
+	 * @covers ::adjust_event_sql
+	 *
+	 * @return void
+	 */
+	public function test_events_without_dates_in_admin_upcoming(): void {
+		global $wpdb;
+
+		$instance = Event_Query::get_instance();
+		$table    = sprintf( Event::TABLE_FORMAT, $wpdb->prefix );
+
+		// Create an event without setting any dates (no row in gatherpress_events).
+		$no_date_post = $this->mock->post( array( 'post_type' => 'gatherpress_event' ) )->get();
+
+		// Verify there is no row in the events table for this post.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$row = $wpdb->get_var(
+			$wpdb->prepare(
+				'SELECT post_id FROM %i WHERE post_id = %d',
+				$table,
+				$no_date_post->ID
+			)
+		);
+		$this->assertNull( $row, 'Event without dates should have no row in gatherpress_events.' );
+
+		// Create a normal upcoming event for comparison.
+		$upcoming_post  = $this->mock->post( array( 'post_type' => 'gatherpress_event' ) )->get();
+		$upcoming_event = new Event( $upcoming_post->ID );
+		$date           = new \DateTime( 'tomorrow' );
+
+		$params = array(
+			'datetime_start' => $date->format( 'Y-m-d H:i:s' ),
+			'datetime_end'   => $date->modify( '+1 day' )->format( 'Y-m-d H:i:s' ),
+			'timezone'       => 'America/New_York',
+		);
+
+		$upcoming_event->save_datetimes( $params );
+
+		// Create a normal past event for comparison.
+		$past_post  = $this->mock->post( array( 'post_type' => 'gatherpress_event' ) )->get();
+		$past_event = new Event( $past_post->ID );
+		$past_date  = new \DateTime( 'yesterday' );
+
+		$params = array(
+			'datetime_start' => $past_date->modify( '-1 day' )->format( 'Y-m-d H:i:s' ),
+			'datetime_end'   => $past_date->format( 'Y-m-d H:i:s' ),
+			'timezone'       => 'America/New_York',
+		);
+
+		$past_event->save_datetimes( $params );
+
+		// With include_no_date=true (admin), upcoming should include IS NULL.
+		$retval = $instance->adjust_event_sql(
+			array(),
+			'upcoming',
+			'ASC',
+			'datetime',
+			true,
+			true
+		);
+		$this->assertStringContainsString(
+			'IS NULL',
+			$retval['where'],
+			'Admin upcoming query should include IS NULL.'
+		);
+
+		// With include_no_date=true (admin), past should exclude via IS NOT NULL.
+		$retval = $instance->adjust_event_sql(
+			array(),
+			'past',
+			'DESC',
+			'datetime',
+			true,
+			true
+		);
+		$this->assertStringContainsString(
+			'IS NOT NULL',
+			$retval['where'],
+			'Admin past query should include IS NOT NULL.'
+		);
+
+		// With include_no_date=false (frontend), no IS NULL check.
+		$retval = $instance->adjust_event_sql(
+			array(),
+			'upcoming',
+			'ASC',
+			'datetime',
+			true,
+			false
+		);
+		$this->assertStringNotContainsString(
+			'IS NULL',
+			$retval['where'],
+			'Frontend query should not have IS NULL.'
+		);
+	}
+
+	/**
 	 * Test that currently running events appear in upcoming query by default.
 	 *
 	 * @covers ::adjust_sorting_for_upcoming_events

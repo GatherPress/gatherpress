@@ -27,17 +27,20 @@ const Edit = ( props ) => {
 
 	const isDescendentOfQueryLoop = Number.isFinite( context?.queryId );
 	const isEventContext = isEventPostType( context?.postType );
+	const isVenueContext = CPT_VENUE === context?.postType;
 
 	const eventId = getCurrentContextualPostId( context?.postId );
 	const [ venueTaxonomyIds ] = useEntityProp(
 		'postType',
 		CPT_EVENT,
 		TAX_VENUE,
-		eventId
+		isVenueContext ? 0 : eventId
 	);
 
 	const isEditableEventContext =
-		! isDescendentOfQueryLoop && Array.isArray( venueTaxonomyIds );
+		! isDescendentOfQueryLoop &&
+		! isVenueContext &&
+		Array.isArray( venueTaxonomyIds );
 
 	// Fetch venue terms for direct event editing.
 	const venueTerms = useSelect(
@@ -61,7 +64,8 @@ const Edit = ( props ) => {
 
 	// Find venue term ID (excluding online-event).
 	const venueTermId =
-		venueTerms.find( ( term ) => 'online-event' !== term?.slug )?.id || null;
+		venueTerms.find( ( term ) => 'online-event' !== term?.slug )?.id ||
+		null;
 
 	// Fetch venue post - use different methods for Query Loop vs direct editing.
 	const venuePostFromTerm = GetVenuePostFromTermId( venueTermId );
@@ -74,10 +78,17 @@ const Edit = ( props ) => {
 		? venuePostFromEvent
 		: venuePostFromTerm;
 
-	const venuePostId =
-		venuePostArray?.[ 0 ]?.id && venuePostArray[ 0 ].id !== eventId
-			? venuePostArray[ 0 ].id
-			: 0;
+	// When on a venue post, use the current post ID directly.
+	// Otherwise, resolve from the event's venue taxonomy.
+	let venuePostId = 0;
+	if ( isVenueContext ) {
+		venuePostId = getCurrentContextualPostId( context?.postId );
+	} else if (
+		venuePostArray?.[ 0 ]?.id &&
+		venuePostArray[ 0 ].id !== eventId
+	) {
+		venuePostId = venuePostArray[ 0 ].id;
+	}
 
 	// Check if we have a physical venue selected.
 	const hasVenue = 0 < venuePostId;
