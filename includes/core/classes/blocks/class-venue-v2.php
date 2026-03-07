@@ -120,32 +120,24 @@ class Venue_V2 {
 		}
 
 		// Get post ID from block attributes or global (handles query loop, override, global).
-		$post_id = Block::get_instance()->get_post_id( $block );
+		$post_id   = Block::get_instance()->get_post_id( $block );
+		$post_type = get_post_type( $post_id );
 
-		// If the current post is a venue, use it directly.
-		if ( Venue::POST_TYPE === get_post_type( $post_id ) ) {
-			$venue_post = get_post( $post_id );
+		switch ( $post_type ) {
+			case Venue::POST_TYPE:
+				return get_post( $post_id );
 
-			if ( $venue_post instanceof WP_Post ) {
-				return $venue_post;
-			}
+			case Event::POST_TYPE:
+				$venue_post = Venue::get_instance()->get_venue_post_from_event_post_id( $post_id );
 
-			return null;
+				if ( $venue_post instanceof WP_Post && Venue::POST_TYPE === $venue_post->post_type ) {
+					return $venue_post;
+				}
+				// Fall through to default.
+
+			default:
+				return null;
 		}
-
-		// If not an event, no venue to get.
-		if ( Event::POST_TYPE !== get_post_type( $post_id ) ) {
-			return null;
-		}
-
-		// Get venue from event.
-		$venue_post = Venue::get_instance()->get_venue_post_from_event_post_id( $post_id );
-
-		if ( $venue_post instanceof WP_Post && Venue::POST_TYPE === $venue_post->post_type ) {
-			return $venue_post;
-		}
-
-		return null;
 	}
 
 	/**
