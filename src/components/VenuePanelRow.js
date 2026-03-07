@@ -56,7 +56,7 @@ function VenuePanelRowToggle( { isOpen, onClick } ) {
 /**
  * Renders the Post Venue Panel component.
  *
- * @param {Object} props Properties of the 'gatherpress/venue-v2'-block.
+ * @param {Object} props Properties of the 'gatherpress/venue'-block.
  * @return {Component} The component to be rendered.
  */
 export function VenuePanelRow( props = null ) {

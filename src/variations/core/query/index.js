@@ -128,7 +128,7 @@ registerBlockVariation( 'core/query', {
 						],
 						[ 'core/post-title', { isLink: true } ],
 						[
-							'gatherpress/venue-v2',
+							'gatherpress/venue',
 							{},
 							[
 								[
@@ -168,7 +168,7 @@ registerBlockVariation( 'core/query', {
 							],
 						],
 						[
-							'gatherpress/online-event-v2',
+							'gatherpress/online-event',
 							{},
 							[
 								[

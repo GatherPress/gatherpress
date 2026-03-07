@@ -4,7 +4,7 @@
 import { __, sprintf } from '@wordpress/i18n';
 
 /**
- * Default template for the online-event-v2 block.
+ * Default template for the online-event block.
  */
 const TEMPLATE = [
 	[

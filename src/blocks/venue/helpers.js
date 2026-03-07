@@ -1,5 +1,5 @@
 /**
- * Helper functions for the venue-v2 block.
+ * Helper functions for the venue block.
  *
  * @since 1.0.0
  */

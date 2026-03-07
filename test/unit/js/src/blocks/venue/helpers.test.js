@@ -6,9 +6,9 @@ import { describe, expect, it } from '@jest/globals';
 /**
  * Internal dependencies.
  */
-import { calculateMode, getNewTaxonomyIds } from '../../../../../../src/blocks/venue-v2/helpers';
+import { calculateMode, getNewTaxonomyIds } from '../../../../../../src/blocks/venue/helpers';
 
-describe( 'venue-v2 helpers', () => {
+describe( 'venue helpers', () => {
 	describe( 'calculateMode', () => {
 		it( 'should return "in-person" when terms array is empty', () => {
 			expect( calculateMode( [] ) ).toBe( 'in-person' );

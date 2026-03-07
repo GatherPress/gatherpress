@@ -21,7 +21,7 @@ import { CPT_VENUE } from '../helpers/namespace';
  *
  * @since 1.0.0
  *
- * @param {Object}   props           Properties of the 'gatherpress/venue-v2'-block.
+ * @param {Object}   props           Properties of the 'gatherpress/venue'-block.
  * @param {string}   props.search    Current search string for venue filtering.
  * @param {Function} props.setSearch Function to update the search string.
  *

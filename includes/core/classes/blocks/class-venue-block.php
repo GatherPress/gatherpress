@@ -1,6 +1,6 @@
 <?php
 /**
- * The "Venue_V2" class handles the functionality of the Venue block,
+ * The "Venue_Block" class handles the functionality of the Venue block,
  * ensuring proper rendering.
  *
  * ...
@@ -22,12 +22,12 @@ use WP_Block;
 use WP_Post;
 
 /**
- * Class responsible for managing the "Venue_V2" block and its functionality,
+ * Class responsible for managing the "Venue_Block" block and its functionality,
  * including dynamic rendering adjustments.
  *
  * @since 1.0.0
  */
-class Venue_V2 {
+class Venue_Block {
 	/**
 	 * Enforces a single instance of this class.
 	 */
@@ -39,7 +39,7 @@ class Venue_V2 {
 	 * @since 1.0.0
 	 * @var string
 	 */
-	const BLOCK_NAME = 'gatherpress/venue-v2';
+	const BLOCK_NAME = 'gatherpress/venue';
 
 	/**
 	 * Class constructor.
@@ -185,7 +185,7 @@ class Venue_V2 {
 		$post = $original_post; // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
 
 		// Build wrapper classes from block instance attributes.
-		$classes = array( 'wp-block-gatherpress-venue-v2' );
+		$classes = array( 'wp-block-gatherpress-venue' );
 
 		if ( ! empty( $instance->attributes['align'] ) ) {
 			$classes[] = 'align' . $instance->attributes['align'];

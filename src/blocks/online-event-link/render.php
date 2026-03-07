@@ -19,8 +19,8 @@ if ( ! isset( $attributes ) || ! is_array( $attributes ) ) {
 	return;
 }
 
-// Get the event post ID from block context (set by online-event-v2 via providesContext).
-// Fall back to get_the_ID() for standalone usage outside venue-v2.
+// Get the event post ID from block context (set by online-event via providesContext).
+// Fall back to get_the_ID() for standalone usage outside venue.
 $gatherpress_current_post_id = ! empty( $block->context['postId'] )
 	? (int) $block->context['postId']
 	: get_the_ID();

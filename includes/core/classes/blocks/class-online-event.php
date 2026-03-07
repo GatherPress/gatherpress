@@ -35,7 +35,7 @@ class Online_Event {
 	 * @since 1.0.0
 	 * @var string
 	 */
-	const BLOCK_NAME = 'gatherpress/online-event-v2';
+	const BLOCK_NAME = 'gatherpress/online-event';
 
 	/**
 	 * Class constructor.
