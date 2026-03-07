@@ -377,7 +377,7 @@ class Test_Block extends Base {
 			'name' => 'gatherpress/venue-template',
 		);
 
-		// Venue-v2 is now directly in the pattern content, not hooked.
+		// Venue is now directly in the pattern content, not hooked.
 		$hooked_blocks = $instance->hook_blocks_into_patterns(
 			array(),
 			'after',

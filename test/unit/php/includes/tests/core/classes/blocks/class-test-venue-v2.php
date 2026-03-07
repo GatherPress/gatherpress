@@ -1038,6 +1038,61 @@ class Test_Venue_V2 extends Base {
 	}
 
 	/**
+	 * Tests render_block when the current post is a venue (without selectedPostId).
+	 *
+	 * Covers the Venue::POST_TYPE case in the switch statement, where
+	 * the block renders directly using the current venue post.
+	 *
+	 * @since 1.0.0
+	 * @covers ::render_block
+	 * @covers ::get_venue_post
+	 * @covers ::render_with_venue_context
+	 *
+	 * @return void
+	 */
+	public function test_render_block_on_venue_post_context(): void {
+		$instance = Venue_V2::get_instance();
+
+		// Create a venue post.
+		$venue_id = $this->factory->post->create(
+			array(
+				'post_type'  => Venue::POST_TYPE,
+				'post_title' => 'Venue Context Test',
+			)
+		);
+
+		$this->go_to( get_permalink( $venue_id ) );
+
+		$block_instance = new WP_Block(
+			array(
+				'blockName'    => 'gatherpress/venue-v2',
+				'attrs'        => array(),
+				'innerBlocks'  => array(
+					array(
+						'blockName'    => 'core/post-title',
+						'attrs'        => array(),
+						'innerBlocks'  => array(),
+						'innerHTML'    => '',
+						'innerContent' => array(),
+					),
+				),
+				'innerHTML'    => '',
+				'innerContent' => array( null ),
+			)
+		);
+
+		$block = array( 'attrs' => array() );
+
+		$result = $instance->render_block( '<div>Test</div>', $block, $block_instance );
+
+		$this->assertStringContainsString(
+			'Venue Context Test',
+			$result,
+			'Should render venue block using current venue post context.'
+		);
+	}
+
+	/**
 	 * Tests get_venue_post returns null when postId override points to non-event.
 	 *
 	 * @since 1.0.0

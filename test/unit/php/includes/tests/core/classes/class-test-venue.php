@@ -11,6 +11,7 @@ namespace GatherPress\Tests\Core;
 use GatherPress\Core\Event;
 use GatherPress\Core\Venue;
 use GatherPress\Tests\Base;
+use WP_Block_Patterns_Registry;
 
 /**
  * Class Test_Venue.
@@ -810,6 +811,55 @@ class Test_Venue extends Base {
 		$this->assertEmpty(
 			$updated_post->post_content,
 			'Draft venue should not have template applied.'
+		);
+	}
+
+	/**
+	 * Coverage for maybe_apply_venue_template when pattern is not registered.
+	 *
+	 * Verifies that the method returns early when the venue-template
+	 * pattern is not found in the registry.
+	 *
+	 * @covers ::maybe_apply_venue_template
+	 *
+	 * @return void
+	 */
+	public function test_maybe_apply_venue_template_skips_unregistered_pattern(): void {
+		$instance = Venue::get_instance();
+		$registry = WP_Block_Patterns_Registry::get_instance();
+
+		// Unregister the venue-template pattern.
+		$registry->unregister( 'gatherpress/venue-template' );
+
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type'    => Venue::POST_TYPE,
+				'post_status'  => 'publish',
+				'post_content' => '',
+			)
+		);
+
+		$post = get_post( $post_id );
+
+		$instance->maybe_apply_venue_template( $post_id, $post );
+
+		// Content should remain empty when pattern is not registered.
+		$updated_post = get_post( $post_id );
+
+		$this->assertEmpty(
+			$updated_post->post_content,
+			'Venue should not have template applied when pattern is unregistered.'
+		);
+
+		// Re-register the pattern for other tests.
+		$registry->register(
+			'gatherpress/venue-template',
+			array(
+				'title'    => 'Invisible Venue Template Block Pattern',
+				'content'  => '<!-- wp:gatherpress/venue-v2 /-->',
+				'inserter' => false,
+				'source'   => 'plugin',
+			)
 		);
 	}
 }
