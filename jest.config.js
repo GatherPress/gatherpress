@@ -8,6 +8,6 @@ module.exports = {
 		...defaultConfig.moduleNameMapper,
 	},
 	transformIgnorePatterns: [
-		'node_modules/(?!(?:parsel-js)/)',
+		'node_modules/(?!(?:parsel-js|uuid)/)',
 	],
 };
