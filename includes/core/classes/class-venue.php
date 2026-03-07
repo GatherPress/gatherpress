@@ -15,6 +15,7 @@ namespace GatherPress\Core;
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Traits\Singleton;
+use WP_Block_Patterns_Registry;
 use WP_Post;
 
 /**
@@ -76,6 +77,12 @@ class Venue {
 			array( $this, 'add_venue_term' ),
 			10,
 			3
+		);
+		add_action(
+			sprintf( 'save_post_%s', self::POST_TYPE ),
+			array( $this, 'maybe_apply_venue_template' ),
+			10,
+			2
 		);
 		add_action( 'init', array( $this, 'register_post_type' ) );
 		add_action( 'init', array( $this, 'register_post_meta' ) );
@@ -341,6 +348,59 @@ class Venue {
 				);
 			}
 		}
+	}
+
+	/**
+	 * Apply the venue template content when a venue is saved with empty content.
+	 *
+	 * When a venue is created via the REST API (e.g., the "Add New Venue" button
+	 * in the Event editor), no content is sent. This method populates the post
+	 * content from the registered venue template pattern, including any hooked blocks.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param int     $post_id Post ID of the venue post.
+	 * @param WP_Post $post    The venue post object.
+	 * @return void
+	 */
+	public function maybe_apply_venue_template( int $post_id, WP_Post $post ): void {
+		if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) { // @codeCoverageIgnore
+			return; // @codeCoverageIgnore
+		}
+
+		// Only apply template to published venues with empty content.
+		if ( 'publish' !== $post->post_status || ! empty( $post->post_content ) ) {
+			return;
+		}
+
+		$registry = WP_Block_Patterns_Registry::get_instance();
+		$pattern  = $registry->get_registered( 'gatherpress/venue-template' );
+
+		if ( ! $pattern || empty( $pattern['content'] ) ) {
+			return;
+		}
+
+		$content = apply_block_hooks_to_content( $pattern['content'], $pattern );
+
+		// Prevent infinite recursion when updating the post.
+		remove_action(
+			sprintf( 'save_post_%s', self::POST_TYPE ),
+			array( $this, 'maybe_apply_venue_template' )
+		);
+
+		wp_update_post(
+			array(
+				'ID'           => $post_id,
+				'post_content' => $content,
+			)
+		);
+
+		add_action(
+			sprintf( 'save_post_%s', self::POST_TYPE ),
+			array( $this, 'maybe_apply_venue_template' ),
+			10,
+			2
+		);
 	}
 
 	/**

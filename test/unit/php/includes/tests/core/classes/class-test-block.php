@@ -377,14 +377,15 @@ class Test_Block extends Base {
 			'name' => 'gatherpress/venue-template',
 		);
 
+		// Venue is now directly in the pattern content, not hooked.
 		$hooked_blocks = $instance->hook_blocks_into_patterns(
 			array(),
 			'after',
-			'core/paragraph',
+			'gatherpress/venue-v2',
 			$context
 		);
 
-		$this->assertContains( 'gatherpress/venue-v2', $hooked_blocks );
+		$this->assertNotContains( 'gatherpress/venue-v2', $hooked_blocks );
 	}
 
 	/**

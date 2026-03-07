@@ -203,13 +203,10 @@ class Block {
 				'gatherpress/venue-template',
 				array(
 					'title'    => __( 'Invisible Venue Template Block Pattern', 'gatherpress' ),
-					// Even this paragraph seems useless, it's not.
+					// Even this block seems useless, it's not.
 					// It is the entry point for all our hooked blocks
 					// and as such absolutely important!
-					// Other blocks are hooked-in here.
-					'content'  => '<!-- wp:post-featured-image /--><!-- wp:paragraph ' .
-						'{"placeholder":"Add some infos about the venue and maybe a nice picture."} -->' .
-						'<p></p><!-- /wp:paragraph -->',
+					'content'  => '<!-- wp:gatherpress/venue-v2 /-->', // Other blocks are hooked-in here.
 					'inserter' => false,
 					'source'   => 'plugin',
 				),
@@ -270,15 +267,6 @@ class Block {
 			$hooked_block_types[] = 'gatherpress/rsvp';
 			$hooked_block_types[] = 'core/paragraph';
 			$hooked_block_types[] = 'gatherpress/rsvp-response';
-		}
-
-		// Hook blocks into the "gatherpress/venue-template" pattern.
-		if (
-			'gatherpress/venue-template' === $context['name'] &&
-			'core/paragraph' === $anchor_block_type &&
-			'after' === $relative_position
-		) {
-			$hooked_block_types[] = 'gatherpress/venue-v2';
 		}
 
 		// Hook blocks into the "gatherpress/venue-details" pattern.

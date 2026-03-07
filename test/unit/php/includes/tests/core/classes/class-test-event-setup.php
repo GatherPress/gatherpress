@@ -2279,6 +2279,36 @@ class Test_Event_Setup extends Base {
 	}
 
 	/**
+	 * Coverage for get_event_counts method with events that have no date set.
+	 *
+	 * Events without a date/time set have no row in the gatherpress_events table.
+	 * These should be counted as upcoming, not past.
+	 *
+	 * @covers ::get_event_counts
+	 *
+	 * @return void
+	 */
+	public function test_get_event_counts_with_no_date(): void {
+		$instance = Event_Setup::get_instance();
+
+		// Reset cached counts.
+		Utility::set_and_get_hidden_property( $instance, 'event_counts', null );
+
+		// Create an event without setting any dates.
+		$this->mock->post(
+			array(
+				'post_type'   => Event::POST_TYPE,
+				'post_status' => 'publish',
+			)
+		)->get();
+
+		$counts = Utility::invoke_hidden_method( $instance, 'get_event_counts' );
+
+		$this->assertSame( 1, $counts['upcoming'], 'Event without date should count as upcoming.' );
+		$this->assertSame( 0, $counts['past'], 'Event without date should not count as past.' );
+	}
+
+	/**
 	 * Coverage for get_event_counts caching to class property.
 	 *
 	 * Verifies that repeated calls return the cached result without re-querying.
