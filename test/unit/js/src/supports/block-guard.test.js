@@ -435,13 +435,8 @@ describe( 'Block Guard Integration', () => {
  * Tests for getEditorDocument function.
  */
 describe( 'getEditorDocument', () => {
-	beforeEach( () => {
-		jest.clearAllMocks();
-	} );
-
 	afterEach( () => {
-		// Clean up global document.
-		delete global.document;
+		jest.restoreAllMocks();
 	} );
 
 	it( 'returns iframe contentDocument in FSE context', () => {
@@ -450,7 +445,9 @@ describe( 'getEditorDocument', () => {
 		};
 		const mockIframe = { contentDocument: mockContentDocument };
 
-		document.querySelector = jest.fn( () => mockIframe );
+		jest.spyOn( document, 'querySelector' ).mockReturnValue(
+			mockIframe
+		);
 
 		const result = getEditorDocument();
 		expect( result ).toBe( mockContentDocument );
@@ -460,23 +457,21 @@ describe( 'getEditorDocument', () => {
 	} );
 
 	it( 'returns main document when iframe is not found', () => {
-		global.document = {
-			querySelector: jest.fn( () => null ),
-		};
+		jest.spyOn( document, 'querySelector' ).mockReturnValue( null );
 
 		const result = getEditorDocument();
-		expect( result ).toBe( global.document );
+		expect( result ).toBe( document );
 	} );
 
 	it( 'returns main document when iframe has no contentDocument', () => {
 		const mockIframe = { contentDocument: null };
 
-		global.document = {
-			querySelector: jest.fn( () => mockIframe ),
-		};
+		jest.spyOn( document, 'querySelector' ).mockReturnValue(
+			mockIframe
+		);
 
 		const result = getEditorDocument();
-		expect( result ).toBe( global.document );
+		expect( result ).toBe( document );
 	} );
 } );
 
@@ -686,15 +681,12 @@ describe( 'applyListViewGuard', () => {
  */
 describe( 'Drag Event Handlers', () => {
 	beforeEach( () => {
-		global.document = {
-			addEventListener: jest.fn(),
-			removeEventListener: jest.fn(),
-		};
+		jest.spyOn( document, 'addEventListener' );
+		jest.spyOn( document, 'removeEventListener' );
 	} );
 
 	afterEach( () => {
-		delete global.document;
-		jest.clearAllMocks();
+		jest.restoreAllMocks();
 	} );
 
 	describe( 'addDragListeners', () => {
@@ -702,27 +694,27 @@ describe( 'Drag Event Handlers', () => {
 			const mockHandler = jest.fn();
 			addDragListeners( mockHandler );
 
-			expect( global.document.addEventListener ).toHaveBeenCalledWith(
+			expect( document.addEventListener ).toHaveBeenCalledWith(
 				'dragover',
 				mockHandler,
 				true,
 			);
-			expect( global.document.addEventListener ).toHaveBeenCalledWith(
+			expect( document.addEventListener ).toHaveBeenCalledWith(
 				'dragenter',
 				mockHandler,
 				true,
 			);
-			expect( global.document.addEventListener ).toHaveBeenCalledWith(
+			expect( document.addEventListener ).toHaveBeenCalledWith(
 				'dragleave',
 				mockHandler,
 				true,
 			);
-			expect( global.document.addEventListener ).toHaveBeenCalledWith(
+			expect( document.addEventListener ).toHaveBeenCalledWith(
 				'drop',
 				mockHandler,
 				true,
 			);
-			expect( global.document.addEventListener ).toHaveBeenCalledTimes( 4 );
+			expect( document.addEventListener ).toHaveBeenCalledTimes( 4 );
 		} );
 	} );
 
@@ -731,27 +723,27 @@ describe( 'Drag Event Handlers', () => {
 			const mockHandler = jest.fn();
 			removeDragListeners( mockHandler );
 
-			expect( global.document.removeEventListener ).toHaveBeenCalledWith(
+			expect( document.removeEventListener ).toHaveBeenCalledWith(
 				'dragover',
 				mockHandler,
 				true,
 			);
-			expect( global.document.removeEventListener ).toHaveBeenCalledWith(
+			expect( document.removeEventListener ).toHaveBeenCalledWith(
 				'dragenter',
 				mockHandler,
 				true,
 			);
-			expect( global.document.removeEventListener ).toHaveBeenCalledWith(
+			expect( document.removeEventListener ).toHaveBeenCalledWith(
 				'dragleave',
 				mockHandler,
 				true,
 			);
-			expect( global.document.removeEventListener ).toHaveBeenCalledWith(
+			expect( document.removeEventListener ).toHaveBeenCalledWith(
 				'drop',
 				mockHandler,
 				true,
 			);
-			expect( global.document.removeEventListener ).toHaveBeenCalledTimes(
+			expect( document.removeEventListener ).toHaveBeenCalledTimes(
 				4,
 			);
 		} );
@@ -867,24 +859,12 @@ describe( 'Drag Event Handlers', () => {
  * Tests for applyListViewGuardForBlock function.
  */
 describe( 'applyListViewGuardForBlock', () => {
-	let mockDocument;
-
-	beforeEach( () => {
-		mockDocument = {
-			querySelector: jest.fn(),
-		};
-
-		// Mock getEditorDocument to return our mock.
-		global.document = mockDocument;
-	} );
-
 	afterEach( () => {
-		delete global.document;
-		jest.clearAllMocks();
+		jest.restoreAllMocks();
 	} );
 
 	it( 'returns null if list view item is not found', () => {
-		mockDocument.querySelector = jest.fn( () => null );
+		jest.spyOn( document, 'querySelector' ).mockReturnValue( null );
 
 		const result = applyListViewGuardForBlock( 'test-123', true );
 
@@ -896,7 +876,9 @@ describe( 'applyListViewGuardForBlock', () => {
 			querySelector: jest.fn( () => null ),
 		};
 
-		mockDocument.querySelector = jest.fn( () => mockListViewItem );
+		jest.spyOn( document, 'querySelector' ).mockReturnValue(
+			mockListViewItem
+		);
 
 		const result = applyListViewGuardForBlock( 'test-123', true );
 
@@ -912,7 +894,9 @@ describe( 'applyListViewGuardForBlock', () => {
 			querySelector: jest.fn( () => mockExpander ),
 		};
 
-		mockDocument.querySelector = jest.fn( () => mockListViewItem );
+		jest.spyOn( document, 'querySelector' ).mockReturnValue(
+			mockListViewItem
+		);
 
 		const result = applyListViewGuardForBlock( 'test-123', true );
 
@@ -941,7 +925,9 @@ describe( 'applyListViewGuardForBlock', () => {
 			querySelector: jest.fn( () => mockExpander ),
 		};
 
-		mockDocument.querySelector = jest.fn( () => mockListViewItem );
+		jest.spyOn( document, 'querySelector' ).mockReturnValue(
+			mockListViewItem
+		);
 
 		const result = applyListViewGuardForBlock( 'test-123', true );
 
