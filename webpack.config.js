@@ -75,6 +75,11 @@ module.exports = [
 				'src/formats/tooltip',
 				'view.js'
 			),
+			'integrations/aql/index': path.resolve(
+				process.cwd(),
+				'src/integrations/aql',
+				'index.js'
+			),
 			...getVariationEntries(),
 		},
 		module: {

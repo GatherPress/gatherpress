@@ -89,6 +89,7 @@ class Assets {
 		add_action( 'enqueue_block_assets', array( $this, 'block_enqueue_scripts' ) );
 		add_action( 'enqueue_block_editor_assets', array( $this, 'editor_enqueue_scripts' ) );
 		add_action( 'enqueue_block_editor_assets', array( $this, 'enqueue_variation_assets' ) );
+		add_action( 'enqueue_block_editor_assets', array( $this, 'enqueue_aql_integration' ) );
 		add_action( 'init', array( $this, 'register_variation_assets' ) );
 		add_action( 'wp_head', array( $this, 'add_global_object' ), PHP_INT_MIN );
 		// Set priority to 11 to not conflict with media modal.
@@ -468,6 +469,45 @@ class Assets {
 			array( $this, 'enqueue_asset' ),
 			Block::get_instance()->get_block_variations()
 		);
+	}
+
+	/**
+	 * Conditionally enqueue the Advanced Query Loop integration script.
+	 *
+	 * Only enqueues when the AQL plugin is active and its script is registered.
+	 * Adds AQL's script handle as a dependency so GatherPress loads after AQL.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return void
+	 */
+	public function enqueue_aql_integration(): void {
+		// Only load when Advanced Query Loop is active.
+		if ( ! wp_script_is( 'advanced-query-loop', 'registered' ) ) {
+			return;
+		}
+
+		$asset_path = $this->path . 'integrations/aql/index.asset.php';
+
+		if ( ! file_exists( $asset_path ) ) {
+			return;
+		}
+
+		$asset = include $asset_path;
+
+		// Add AQL as a dependency so our script loads after theirs.
+		$dependencies   = $asset['dependencies'] ?? array();
+		$dependencies[] = 'advanced-query-loop';
+
+		wp_enqueue_script(
+			'gatherpress-aql-integration',
+			$this->build . 'integrations/aql/index.js',
+			$dependencies,
+			$asset['version'] ?? false,
+			true
+		);
+
+		wp_set_script_translations( 'gatherpress-aql-integration', 'gatherpress' );
 	}
 
 	/**

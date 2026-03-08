@@ -285,6 +285,9 @@ class Venue {
 	 * It supports query var and REST API interactions but is entirely excluded from the admin UI
 	 * and user-facing interfaces.
 	 *
+	 * The taxonomy is publicly queryable so that it appears in the Query Loop block's taxonomy
+	 * filter controls, while rewrite rules are disabled to prevent public archive URLs.
+	 *
 	 * @since 1.0.0
 	 *
 	 * @return void
@@ -303,7 +306,8 @@ class Venue {
 				'show_ui'            => false,
 				'show_admin_column'  => false,
 				'query_var'          => true,
-				'publicly_queryable' => false,
+				'publicly_queryable' => true,
+				'rewrite'            => false,
 				'show_in_rest'       => true,
 			)
 		);

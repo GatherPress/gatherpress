@@ -38,7 +38,7 @@ const VARIATION_ATTRIBUTES = {
 	},
 	// Disabling irrelevant or unsupported query controls
 	// @see https://developer.wordpress.org/block-editor/how-to-guides/block-tutorial/extending-the-query-loop-block/#disabling-irrelevant-or-unsupported-query-controls
-	allowedControls: [ 'inherit', 'taxQuery', 'author', 'search' ],
+	allowedControls: [ 'inherit', 'postType', 'taxQuery', 'author', 'search' ],
 	scope: [ 'block' ],
 };
 
@@ -62,7 +62,7 @@ const VARIATION_ATTRIBUTES = {
 registerBlockVariation( 'core/query', {
 	...VARIATION_ATTRIBUTES,
 	name: NAME,
-	title: __( 'Event Query', 'gatherpress' ),
+	title: __( 'Event Query Loop', 'gatherpress' ),
 	description: __( 'Create event queries', 'gatherpress' ),
 	scope: [ 'inserter', 'transform' ],
 	/*

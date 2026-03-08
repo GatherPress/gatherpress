@@ -79,6 +79,14 @@ class Event_Query {
 			sprintf( 'rest_%s_collection_params', Event::POST_TYPE ),
 			array( $this, 'rest_collection_params' )
 		);
+
+		// Integrate with Advanced Query Loop plugin to pass event query params through.
+		add_filter(
+			'aql_query_vars',
+			array( $this, 'aql_query_vars' ),
+			10,
+			3
+		);
 	}
 
 	/**
@@ -323,5 +331,57 @@ class Event_Query {
 		);
 
 		return $query_params;
+	}
+
+	/**
+	 * Filters Advanced Query Loop query vars to pass GatherPress event params through.
+	 *
+	 * When AQL is used with the gatherpress_event post type, this ensures that
+	 * GatherPress-specific query parameters (event type, unfinished events, datetime ordering)
+	 * are passed through to WP_Query, where the Event_Query class picks them up
+	 * via pre_get_posts for SQL modification.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param array $query_args  The query arguments being built.
+	 * @param array $block_query The block's query attributes.
+	 * @param bool  $inherited   Whether the query is inherited from the page context.
+	 * @return array Modified query arguments.
+	 *
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+	 */
+	public function aql_query_vars( // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed
+		array $query_args,
+		array $block_query,
+		bool $inherited
+	): array {
+		// Only process if querying GatherPress events.
+		$post_type = $block_query['postType'] ?? '';
+
+		if ( Event::POST_TYPE !== $post_type ) {
+			return $query_args;
+		}
+
+		// Pass through event query type (upcoming/past).
+		if ( ! empty( $block_query['gatherpress_event_query'] ) ) {
+			$query_args['gatherpress_event_query'] = $block_query['gatherpress_event_query'];
+		}
+
+		// Pass through include_unfinished setting.
+		if ( isset( $block_query['include_unfinished'] ) ) {
+			$query_args['include_unfinished'] = $block_query['include_unfinished'];
+		}
+
+		// Pass through GatherPress-specific ordering.
+		if ( ! empty( $block_query['orderBy'] ) ) {
+			$query_args['orderby'] = array( $block_query['orderBy'] );
+		}
+
+		// Pass through order direction.
+		if ( ! empty( $block_query['order'] ) ) {
+			$query_args['order'] = strtoupper( $block_query['order'] );
+		}
+
+		return $query_args;
 	}
 }

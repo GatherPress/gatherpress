@@ -5,6 +5,10 @@ import {
 	RangeControl,
 	SelectControl,
 	ToggleControl,
+	// eslint-disable-next-line @wordpress/no-unsafe-wp-apis
+	__experimentalToggleGroupControl as ToggleGroupControl,
+	// eslint-disable-next-line @wordpress/no-unsafe-wp-apis
+	__experimentalToggleGroupControlOption as ToggleGroupControlOption,
 } from '@wordpress/components';
 import { useSelect } from '@wordpress/data';
 import { __, _x, sprintf } from '@wordpress/i18n';
@@ -159,55 +163,54 @@ export const EventIncludeUnfinishedControls = ( {
  * EventListTypeControls component
  *
  * Lets the editor choose whether the query returns "upcoming" or "past" events.
- * Toggled via a ToggleControl between upcoming (future) or past (archived) events,
+ * Uses a ToggleGroupControl with "Upcoming" and "Past" options,
  * stored as `gatherpress_event_query` in attributes.
  *
  * @param {Object}   props
  * @param {Object}   props.attributes    Block attributes.
  * @param {Function} props.setAttributes Function to update block attributes.
- * @return {Element}                        ToggleControl for event list type.
+ * @return {Element}                     ToggleGroupControl for event list type.
  */
 export const EventListTypeControls = ( { attributes, setAttributes } ) => {
 	const {
 		query: { gatherpress_event_query: eventListType = 'upcoming' } = {},
 	} = attributes;
 
-	const currentPost = useSelect( ( select ) => {
-		return select( 'core/editor' ).getCurrentPost();
-	}, [] );
-
-	if ( ! currentPost ) {
-		return <div>{ __( 'Loading…', 'gatherpress' ) }</div>;
-	}
-
 	return (
-		<ToggleControl
-			label={ __( 'Upcoming or past events.', 'gatherpress' ) }
-			help={ sprintf(
-				/* translators: %s: 'upcoming' or 'past' */
-				_x(
-					'Currently shows %s events.',
-					"'upcoming' or 'past'",
-					'gatherpress',
-				),
-				eventListType,
-			) }
-			checked={ 'upcoming' === eventListType }
-			onChange={ ( value ) => {
-				// When switching event type, explicitly set include_unfinished to the
-				// default for the new event type to ensure WordPress recognizes the state change
-				const newEventType = value ? 'upcoming' : 'past';
-				const defaultIncludeUnfinished = ( 'upcoming' === newEventType ) ? 1 : 0;
+		<ToggleGroupControl
+			label={ __( 'Event List Type', 'gatherpress' ) }
+			value={ eventListType }
+			isBlock
+			__nextHasNoMarginBottom
+			__next40pxDefaultSize
+			onChange={ ( newEventType ) => {
+				// When switching event type, reset related defaults so the
+				// query immediately makes sense for the new type.
+				const isUpcoming = 'upcoming' === newEventType;
+				const updatedQuery = {
+					...attributes.query,
+					gatherpress_event_query: newEventType,
+					include_unfinished: isUpcoming ? 1 : 0,
+				};
 
-				setAttributes( {
-					query: {
-						...attributes.query,
-						gatherpress_event_query: newEventType,
-						include_unfinished: defaultIncludeUnfinished,
-					},
-				} );
+				// Only reset the sort direction when ordering by Event Date,
+				// so we don't override a manually chosen order for other fields.
+				if ( 'datetime' === attributes.query?.orderBy ) {
+					updatedQuery.order = isUpcoming ? 'asc' : 'desc';
+				}
+
+				setAttributes( { query: updatedQuery } );
 			} }
-		/>
+		>
+			<ToggleGroupControlOption
+				value="upcoming"
+				label={ __( 'Upcoming', 'gatherpress' ) }
+			/>
+			<ToggleGroupControlOption
+				value="past"
+				label={ __( 'Past', 'gatherpress' ) }
+			/>
+		</ToggleGroupControl>
 	);
 };
 
