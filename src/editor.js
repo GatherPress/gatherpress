@@ -4,12 +4,10 @@
 import domReady from '@wordpress/dom-ready';
 import { addQueryArgs } from '@wordpress/url';
 import { dispatch, select, subscribe } from '@wordpress/data';
-import { getBlockType, unregisterBlockType } from '@wordpress/blocks';
 
 /**
  * Internal dependencies.
  */
-import { getFromGlobal } from './helpers/globals';
 import { hasEventPastNotice } from './helpers/event';
 import EmailNotificationManager from './components/EmailNotificationManager';
 import './stores';
@@ -21,7 +19,7 @@ import './formats/tooltip';
  * Editor Initialization
  *
  * Ensures the editor sidebar is open, initializes the email notification manager,
- * displays a notice for past events, and removes unwanted blocks.
+ * and displays a notice for past events.
  *
  * @since 1.0.0
  */
@@ -51,15 +49,6 @@ domReady( () => {
 	}
 
 	hasEventPastNotice();
-
-	// Remove unwanted blocks from the localized array.
-	Object.keys( getFromGlobal( 'misc.unregisterBlocks' ) ).forEach( ( key ) => {
-		const blockName = getFromGlobal( 'misc.unregisterBlocks' )[ key ];
-
-		if ( blockName && 'undefined' !== typeof getBlockType( blockName ) ) {
-			unregisterBlockType( blockName );
-		}
-	} );
 } );
 
 /**

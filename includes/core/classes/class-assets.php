@@ -385,10 +385,9 @@ class Assets {
 		return array(
 			'eventDetails' => $event_details,
 			'misc'         => array(
-				'isAdmin'          => is_admin(),
-				'isUserLoggedIn'   => is_user_logged_in(),
-				'nonce'            => wp_create_nonce( 'wp_rest' ),
-				'unregisterBlocks' => $this->unregister_blocks(),
+				'isAdmin'        => is_admin(),
+				'isUserLoggedIn' => is_user_logged_in(),
+				'nonce'          => wp_create_nonce( 'wp_rest' ),
 			),
 			'settings'     => array(
 				'dateFormat'          => $settings->get_value( 'general', 'formatting', 'date_format' ),
@@ -416,42 +415,6 @@ class Assets {
 				'homeUrl'         => get_home_url(),
 			),
 		);
-	}
-
-	/**
-	 * Retrieve a list of blocks to unregister based on the current post type.
-	 *
-	 * This method determines which blocks should be unregistered on the current page
-	 * in the WordPress admin based on the post type. It returns an array of block names
-	 * that should be removed from the block editor for the given post type.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @return array An array of block names to unregister.
-	 */
-	protected function unregister_blocks(): array {
-		$blocks = array();
-
-		if ( ! is_admin() || ! get_post_type() ) {
-			return $blocks;
-		}
-
-		switch ( get_post_type() ) {
-			case Event::POST_TYPE:
-				break;
-			case Venue::POST_TYPE:
-				$blocks = array(
-					'gatherpress/online-event',
-				);
-				break;
-			default:
-				$blocks = array(
-					'gatherpress/online-event',
-					'gatherpress/venue',
-				);
-		}
-
-		return $blocks;
 	}
 
 	/**

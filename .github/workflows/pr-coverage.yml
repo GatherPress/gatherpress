@@ -134,4 +134,4 @@ jobs:
 
       - name: Stop WordPress environment
         if: always()
-        run: npm run wp-env stop
+        run: npm run wp-env -- stop --config .wp-env.test.json
