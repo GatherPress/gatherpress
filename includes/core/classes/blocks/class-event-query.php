@@ -350,7 +350,11 @@ class Event_Query {
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
 	 */
-	public function aql_query_vars( array $query_args, array $block_query, bool $inherited ): array { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed
+	public function aql_query_vars( // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed
+		array $query_args,
+		array $block_query,
+		bool $inherited
+	): array {
 		// Only process if querying GatherPress events.
 		$post_type = $block_query['postType'] ?? '';
 

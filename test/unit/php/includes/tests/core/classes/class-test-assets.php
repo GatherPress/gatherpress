@@ -776,6 +776,38 @@ class Test_Assets extends Base {
 	}
 
 	/**
+	 * Coverage for enqueue_aql_integration when AQL is active but asset file is missing.
+	 *
+	 * @covers ::enqueue_aql_integration
+	 *
+	 * @return void
+	 */
+	public function test_enqueue_aql_integration_missing_asset_file(): void {
+		$instance = Assets::get_instance();
+
+		// Register a fake AQL script to simulate the plugin being active.
+		wp_register_script( 'advanced-query-loop', 'https://example.com/aql.js', array(), '1.0.0', true );
+
+		// Use reflection to temporarily set path to a non-existent directory.
+		$reflection = new \ReflectionClass( $instance );
+		$property   = $reflection->getProperty( 'path' );
+		$property->setAccessible( true );
+		$original_path = $property->getValue( $instance );
+		$property->setValue( $instance, '/non/existent/path/' );
+
+		$instance->enqueue_aql_integration();
+
+		$this->assertFalse(
+			wp_script_is( 'gatherpress-aql-integration', 'enqueued' ),
+			'AQL integration should not be enqueued when asset file is missing.'
+		);
+
+		// Restore original path and clean up.
+		$property->setValue( $instance, $original_path );
+		wp_deregister_script( 'advanced-query-loop' );
+	}
+
+	/**
 	 * Coverage for enqueue_aql_integration when AQL is active.
 	 *
 	 * @covers ::enqueue_aql_integration
