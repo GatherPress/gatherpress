@@ -11,7 +11,7 @@ import edit from './edit';
 import metadata from './block.json';
 
 /**
- * Register the GatherPress Online Event v2 block.
+ * Register the GatherPress Online Event block.
  *
  * Container block for online event display with icon and link.
  *

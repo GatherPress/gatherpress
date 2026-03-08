@@ -1,4 +1,11 @@
 /**
+ * External dependencies.
+ */
+import 'leaflet/dist/leaflet.css';
+// eslint-disable-next-line import/no-extraneous-dependencies
+import 'leaflet-gesture-handling/dist/leaflet-gesture-handling.css';
+
+/**
  * WordPress dependencies.
  */
 import { registerBlockType } from '@wordpress/blocks';

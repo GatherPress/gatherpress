@@ -1,6 +1,6 @@
 <?php
 /**
- * Render Venue v2 block.
+ * Render Venue block.
  *
  * @package GatherPress\Core
  * @since 1.0.0

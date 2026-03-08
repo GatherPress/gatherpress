@@ -22,7 +22,7 @@ import { DISABLED_FIELD_OPACITY } from '../../helpers/event';
 import { TAX_VENUE, CPT_EVENT } from '../../helpers/namespace';
 
 /**
- * Edit component for the GatherPress Online Event v2 block.
+ * Edit component for the GatherPress Online Event block.
  *
  * Container block that holds an icon and online event link.
  * If a postId attribute is set (override), it provides that as context to children.

@@ -1,6 +1,6 @@
 <?php
 /**
- * Render Online Event v2 block.
+ * Render Online Event block.
  *
  * This block provides context-aware online event link display
  * for events with RSVP-aware URL handling.

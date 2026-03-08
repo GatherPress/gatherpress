@@ -81,7 +81,7 @@ class Test_Block extends Base {
 			'gatherpress/dropdown',
 			'gatherpress/dropdown-item',
 			'gatherpress/event-date',
-			'gatherpress/events-list',
+
 			'gatherpress/form-field',
 			'gatherpress/icon',
 			'gatherpress/modal',

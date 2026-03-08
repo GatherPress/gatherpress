@@ -13,7 +13,7 @@ import { store as editorStore } from '@wordpress/editor';
 import { CPT_EVENT } from '../../helpers/namespace';
 
 /**
- * Edit component for the GatherPress Online Event v2 block.
+ * Edit component for the GatherPress Online Event block.
  *
  * Provides inline editing of online event link with context-aware fetching:
  * - In event context: displays event's online link URL (frontend is RSVP-aware)

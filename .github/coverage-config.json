@@ -41,7 +41,6 @@
     "src/stores/index.js",
     "src/helpers/urlrewrite.js",
     "src/helpers/interactivity.js",
-    "src/blocks/events-list/events-list.js",
     "src/blocks/rsvp-response/rsvp-manager.js"
   ],
   "allowLowCoverage": [

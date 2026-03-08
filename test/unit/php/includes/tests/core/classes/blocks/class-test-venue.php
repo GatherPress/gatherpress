@@ -1,6 +1,6 @@
 <?php
 /**
- * Class handles unit tests for GatherPress\Core\Blocks\Venue_Block.
+ * Class handles unit tests for GatherPress\Core\Blocks\Venue.
  *
  * @package GatherPress\Core
  * @since 1.0.0
@@ -8,23 +8,23 @@
 
 namespace GatherPress\Tests\Core\Blocks;
 
-use GatherPress\Core\Blocks\Venue_Block;
+use GatherPress\Core\Blocks\Venue as Venue_Block;
 use GatherPress\Core\Event;
 use GatherPress\Core\Venue;
 use GatherPress\Tests\Base;
 use WP_Block;
 
 /**
- * Class Test_Venue_Block.
+ * Class Test_Venue.
  *
- * @coversDefaultClass \GatherPress\Core\Blocks\Venue_Block
+ * @coversDefaultClass \GatherPress\Core\Blocks\Venue
  */
-class Test_Venue_Block extends Base {
+class Test_Venue extends Base {
 	/**
 	 * Tests the setup_hooks method.
 	 *
 	 * Verifies that the appropriate filters are registered during setup,
-	 * ensuring the hooks are properly configured for the Venue_Block block.
+	 * ensuring the hooks are properly configured for the Venue block.
 	 *
 	 * @since 1.0.0
 	 * @covers ::__construct
