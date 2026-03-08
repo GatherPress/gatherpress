@@ -51,6 +51,12 @@ class Test_Event_Query extends Base {
 				'priority' => 10,
 				'callback' => array( $instance, 'rest_collection_params' ),
 			),
+			array(
+				'type'     => 'filter',
+				'name'     => 'aql_query_vars',
+				'priority' => 10,
+				'callback' => array( $instance, 'aql_query_vars' ),
+			),
 		);
 
 		$this->assert_hooks( $hooks, $instance );
@@ -560,6 +566,147 @@ class Test_Event_Query extends Base {
 		$this->assertArrayNotHasKey( 'gatherpress_event_query', $result );
 		$this->assertArrayNotHasKey( 'include_unfinished', $result );
 		$this->assertArrayNotHasKey( 'orderby', $result );
+	}
+
+	/**
+	 * Test aql_query_vars returns unchanged query for non-event post types.
+	 *
+	 * @since 1.0.0
+	 * @covers ::aql_query_vars
+	 *
+	 * @return void
+	 */
+	public function test_aql_query_vars_non_event_post_type(): void {
+		$instance = Event_Query::get_instance();
+
+		$query_args  = array( 'posts_per_page' => 10 );
+		$block_query = array( 'postType' => 'post' );
+
+		$result = $instance->aql_query_vars( $query_args, $block_query, false );
+
+		$this->assertSame( $query_args, $result, 'Should return unchanged query for non-event post types.' );
+	}
+
+	/**
+	 * Test aql_query_vars returns unchanged query when postType is missing.
+	 *
+	 * @since 1.0.0
+	 * @covers ::aql_query_vars
+	 *
+	 * @return void
+	 */
+	public function test_aql_query_vars_missing_post_type(): void {
+		$instance = Event_Query::get_instance();
+
+		$query_args  = array( 'posts_per_page' => 10 );
+		$block_query = array();
+
+		$result = $instance->aql_query_vars( $query_args, $block_query, false );
+
+		$this->assertSame( $query_args, $result, 'Should return unchanged query when postType is missing.' );
+	}
+
+	/**
+	 * Test aql_query_vars passes through all GatherPress event params.
+	 *
+	 * @since 1.0.0
+	 * @covers ::aql_query_vars
+	 *
+	 * @return void
+	 */
+	public function test_aql_query_vars_with_all_params(): void {
+		$instance = Event_Query::get_instance();
+
+		$query_args  = array( 'posts_per_page' => 10 );
+		$block_query = array(
+			'postType'                => 'gatherpress_event',
+			'gatherpress_event_query' => 'upcoming',
+			'include_unfinished'      => 1,
+			'orderBy'                 => 'datetime',
+			'order'                   => 'asc',
+		);
+
+		$result = $instance->aql_query_vars( $query_args, $block_query, false );
+
+		$this->assertSame( 'upcoming', $result['gatherpress_event_query'], 'Should pass through event query type.' );
+		$this->assertSame( 1, $result['include_unfinished'], 'Should pass through include_unfinished.' );
+		$this->assertSame( array( 'datetime' ), $result['orderby'], 'Should pass through orderBy as array.' );
+		$this->assertSame( 'ASC', $result['order'], 'Should uppercase the order direction.' );
+		$this->assertSame( 10, $result['posts_per_page'], 'Should preserve original query args.' );
+	}
+
+	/**
+	 * Test aql_query_vars with past events and descending order.
+	 *
+	 * @since 1.0.0
+	 * @covers ::aql_query_vars
+	 *
+	 * @return void
+	 */
+	public function test_aql_query_vars_past_events(): void {
+		$instance = Event_Query::get_instance();
+
+		$query_args  = array( 'posts_per_page' => 5 );
+		$block_query = array(
+			'postType'                => 'gatherpress_event',
+			'gatherpress_event_query' => 'past',
+			'include_unfinished'      => 0,
+			'orderBy'                 => 'datetime',
+			'order'                   => 'desc',
+		);
+
+		$result = $instance->aql_query_vars( $query_args, $block_query, false );
+
+		$this->assertSame( 'past', $result['gatherpress_event_query'], 'Should pass through past event query type.' );
+		$this->assertSame( 0, $result['include_unfinished'], 'Should preserve integer 0 value.' );
+		$this->assertSame( 'DESC', $result['order'], 'Should uppercase DESC.' );
+	}
+
+	/**
+	 * Test aql_query_vars with minimal params only passes set values.
+	 *
+	 * @since 1.0.0
+	 * @covers ::aql_query_vars
+	 *
+	 * @return void
+	 */
+	public function test_aql_query_vars_minimal_params(): void {
+		$instance = Event_Query::get_instance();
+
+		$query_args  = array( 'posts_per_page' => 10 );
+		$block_query = array(
+			'postType' => 'gatherpress_event',
+		);
+
+		$result = $instance->aql_query_vars( $query_args, $block_query, false );
+
+		$this->assertArrayNotHasKey( 'gatherpress_event_query', $result, 'Should not set empty event query type.' );
+		$this->assertArrayNotHasKey( 'include_unfinished', $result, 'Should not set unset include_unfinished.' );
+		$this->assertArrayNotHasKey( 'orderby', $result, 'Should not set empty orderBy.' );
+		$this->assertArrayNotHasKey( 'order', $result, 'Should not set empty order.' );
+	}
+
+	/**
+	 * Test aql_query_vars with inherited query parameter.
+	 *
+	 * @since 1.0.0
+	 * @covers ::aql_query_vars
+	 *
+	 * @return void
+	 */
+	public function test_aql_query_vars_inherited(): void {
+		$instance = Event_Query::get_instance();
+
+		$query_args  = array( 'posts_per_page' => 10 );
+		$block_query = array(
+			'postType'                => 'gatherpress_event',
+			'gatherpress_event_query' => 'upcoming',
+		);
+
+		// The $inherited parameter is accepted but not used.
+		$result = $instance->aql_query_vars( $query_args, $block_query, true );
+
+		$this->assertSame( 'upcoming', $result['gatherpress_event_query'], 'Should work with inherited flag true.' );
 	}
 
 	/**

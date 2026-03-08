@@ -297,6 +297,26 @@ class Test_Venue extends Base {
 		$instance->register_taxonomy();
 
 		$this->assertTrue( taxonomy_exists( Venue::TAXONOMY ), 'Failed to assert that taxonomy exists.' );
+
+		// Verify taxonomy properties needed for Query Loop block integration.
+		$taxonomy = get_taxonomy( Venue::TAXONOMY );
+
+		$this->assertTrue(
+			$taxonomy->publicly_queryable,
+			'Taxonomy should be publicly queryable for Query Loop block taxonomy filters.'
+		);
+		$this->assertFalse(
+			$taxonomy->rewrite,
+			'Taxonomy rewrite should be disabled to prevent public archive URLs.'
+		);
+		$this->assertTrue(
+			$taxonomy->show_in_rest,
+			'Taxonomy should be available in REST API.'
+		);
+		$this->assertFalse(
+			$taxonomy->show_ui,
+			'Taxonomy should remain hidden from admin UI as a shadow taxonomy.'
+		);
 	}
 
 	/**
