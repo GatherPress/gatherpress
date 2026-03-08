@@ -29,7 +29,7 @@ import {
 	updateDateTimeStart,
 	validateDateTimeEnd,
 	validateDateTimeStart,
-} from '../../../../../src/helpers/datetime';
+} from '@src/helpers/datetime';
 
 /**
  * Coverage for dateTimeLabelFormat.

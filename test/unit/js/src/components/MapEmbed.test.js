@@ -15,7 +15,7 @@ jest.mock( '@wordpress/data', () => ( {
 /**
  * Internal dependencies.
  */
-import MapEmbed from '../../../../../src/components/MapEmbed';
+import MapEmbed from '@src/components/MapEmbed';
 import { select } from '@wordpress/data';
 
 beforeEach( () => {

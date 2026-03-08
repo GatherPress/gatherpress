@@ -6,7 +6,7 @@ import { describe, expect, it } from '@jest/globals';
 /**
  * Internal dependencies.
  */
-import { calculateMode, getNewTaxonomyIds } from '../../../../../../src/blocks/venue/helpers';
+import { calculateMode, getNewTaxonomyIds } from '@src/blocks/venue/helpers';
 
 describe( 'venue helpers', () => {
 	describe( 'calculateMode', () => {

@@ -12,7 +12,7 @@ import {
 	toCamelCase,
 	safeHTML,
 	getUrlParam,
-} from '../../../../../src/helpers/globals';
+} from '@src/helpers/globals';
 
 /**
  * Coverage for getFromGlobal and setToGlobal.

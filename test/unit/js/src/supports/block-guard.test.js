@@ -73,7 +73,7 @@ import {
 	removeDragListeners,
 	createDropHandler,
 	applyListViewGuardForBlock,
-} from '../../../../../src/supports/block-guard';
+} from '@src/supports/block-guard';
 
 /**
  * Mock DOM setup for editor document detection.

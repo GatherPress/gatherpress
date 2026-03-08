@@ -12,7 +12,7 @@ import { useSelect } from '@wordpress/data';
 /**
  * Internal dependencies.
  */
-import { useIsBlockOrDescendantSelected } from '../../../../../../src/blocks/dropdown/helpers';
+import { useIsBlockOrDescendantSelected } from '@src/blocks/dropdown/helpers';
 
 // Mock @wordpress/data.
 jest.mock( '@wordpress/data', () => ( {

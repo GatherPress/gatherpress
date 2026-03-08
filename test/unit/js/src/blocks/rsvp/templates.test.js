@@ -6,12 +6,12 @@ import { describe, expect, it } from '@jest/globals';
 /**
  * Internal dependencies.
  */
-import TEMPLATES from '../../../../../../src/blocks/rsvp/templates';
-import ATTENDING from '../../../../../../src/blocks/rsvp/templates/attending';
-import NO_STATUS from '../../../../../../src/blocks/rsvp/templates/no-status';
-import NOT_ATTENDING from '../../../../../../src/blocks/rsvp/templates/not-attending';
-import WAITING_LIST from '../../../../../../src/blocks/rsvp/templates/waiting-list';
-import PAST from '../../../../../../src/blocks/rsvp/templates/past';
+import TEMPLATES from '@src/blocks/rsvp/templates';
+import ATTENDING from '@src/blocks/rsvp/templates/attending';
+import NO_STATUS from '@src/blocks/rsvp/templates/no-status';
+import NOT_ATTENDING from '@src/blocks/rsvp/templates/not-attending';
+import WAITING_LIST from '@src/blocks/rsvp/templates/waiting-list';
+import PAST from '@src/blocks/rsvp/templates/past';
 
 describe( 'RSVP Templates', () => {
 	it( 'exports an object with all template keys', () => {

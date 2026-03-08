@@ -7,7 +7,7 @@ import { render, screen } from '@testing-library/react';
 /**
  * Internal dependencies.
  */
-import AddressField from '../../../../../../../src/blocks/venue-detail/fields/address-field';
+import AddressField from '@src/blocks/venue-detail/fields/address-field';
 
 // Mock RichText component.
 jest.mock( '@wordpress/block-editor', () => ( {

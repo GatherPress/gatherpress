@@ -6,7 +6,7 @@ import { expect, jest, test } from '@jest/globals';
 /**
  * Internal dependencies.
  */
-import { Broadcaster, Listener } from '../../../../../src/helpers/broadcasting';
+import { Broadcaster, Listener } from '@src/helpers/broadcasting';
 
 /**
  * Coverage for Broadcaster.

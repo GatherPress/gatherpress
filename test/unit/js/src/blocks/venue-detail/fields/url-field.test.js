@@ -7,7 +7,7 @@ import { render, screen, fireEvent } from '@testing-library/react';
 /**
  * Internal dependencies.
  */
-import UrlField from '../../../../../../../src/blocks/venue-detail/fields/url-field';
+import UrlField from '@src/blocks/venue-detail/fields/url-field';
 
 // Mock WordPress dependencies.
 jest.mock( '@wordpress/i18n', () => ( {
@@ -102,7 +102,7 @@ jest.mock( '@wordpress/icons', () => ( {
 
 // Mock the helpers.
 jest.mock(
-	'../../../../../../../src/blocks/venue-detail/helpers',
+	'@src/blocks/venue-detail/helpers',
 	() => ( {
 		cleanUrlForDisplay: ( url ) => {
 			if ( ! url ) {

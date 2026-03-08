@@ -19,21 +19,21 @@ jest.mock( '@wordpress/components', () => ( {
 /**
  * Mock internal dependencies.
  */
-jest.mock( '../../../../../../src/components/VenueNavigator', () => {
+jest.mock( '@src/components/VenueNavigator', () => {
 	return function MockVenueNavigator() {
 		return <div data-testid="venue-navigator">VenueNavigator</div>;
 	};
 } );
 
-jest.mock( '../../../../../../src/helpers/event', () => ( {
+jest.mock( '@src/helpers/event', () => ( {
 	isEventPostType: jest.fn(),
 } ) );
 
 /**
  * Internal dependencies.
  */
-import VenueBlockPluginFill from '../../../../../../src/blocks/venue/slotfill';
-import { isEventPostType } from '../../../../../../src/helpers/event';
+import VenueBlockPluginFill from '@src/blocks/venue/slotfill';
+import { isEventPostType } from '@src/helpers/event';
 
 describe( 'VenueBlockPluginFill', () => {
 	beforeEach( () => {

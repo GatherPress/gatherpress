@@ -40,7 +40,7 @@ import {
 	getVenueTitle,
 	useVenueOptions,
 	usePopularVenues,
-} from '../../../../../src/helpers/venue';
+} from '@src/helpers/venue';
 
 /**
  * Coverage for isVenuePostType.

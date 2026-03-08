@@ -26,7 +26,7 @@ import {
 	getStartOfWeek,
 	hasValidBlockContext,
 	isInFSETemplate,
-} from '../../../../../src/helpers/editor';
+} from '@src/helpers/editor';
 
 describe( 'Editor helper functions', () => {
 	describe( 'enableSave', () => {

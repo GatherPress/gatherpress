@@ -15,7 +15,7 @@ jest.mock( '@wordpress/date', () => ( {
 /**
  * Internal dependencies.
  */
-import DateTimePreview from '../../../../../src/components/DateTimePreview';
+import DateTimePreview from '@src/components/DateTimePreview';
 import { format } from '@wordpress/date';
 
 /**

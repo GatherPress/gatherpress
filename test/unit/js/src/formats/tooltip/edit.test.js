@@ -85,7 +85,7 @@ jest.mock( '@wordpress/icons', () => ( {
 } ) );
 
 // Import after mocks.
-import { TooltipEdit } from '../../../../../../src/formats/tooltip/edit';
+import { TooltipEdit } from '@src/formats/tooltip/edit';
 
 describe( 'TooltipEdit component', () => {
 	const mockOnChange = jest.fn();
