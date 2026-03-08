@@ -10,7 +10,7 @@ import {
 	VENUE_FIELD_MAPPING,
 	cleanUrlForDisplay,
 	getJsonFieldName,
-} from '../../../../../../src/blocks/venue-detail/helpers';
+} from '@src/blocks/venue-detail/helpers';
 
 describe( 'Venue Detail helpers', () => {
 	describe( 'VENUE_FIELD_MAPPING', () => {

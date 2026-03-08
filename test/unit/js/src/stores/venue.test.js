@@ -12,7 +12,7 @@ import { select, dispatch } from '@wordpress/data';
  * Internal dependencies.
  */
 // Import the actual store to get coverage.
-import '../../../../../src/stores/venue';
+import '@src/stores/venue';
 
 describe( 'Venue store', () => {
 	const STORE_NAME = 'gatherpress/venue';

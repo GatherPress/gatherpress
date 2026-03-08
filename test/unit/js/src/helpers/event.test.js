@@ -32,8 +32,8 @@ import {
 	hasValidEventId,
 	getEventMeta,
 	hasOnlineEventTerm,
-} from '../../../../../src/helpers/event';
-import { dateTimeDatabaseFormat } from '../../../../../src/helpers/datetime';
+} from '@src/helpers/event';
+import { dateTimeDatabaseFormat } from '@src/helpers/datetime';
 
 /**
  * Coverage for isEventPostType.

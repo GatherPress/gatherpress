@@ -34,12 +34,12 @@ jest.mock( '@wordpress/components', () => ( {
 } ) );
 
 // Mock the style import.
-jest.mock( '../../../../../../src/formats/tooltip/style.scss', () => ( {} ) );
+jest.mock( '@src/formats/tooltip/style.scss', () => ( {} ) );
 
 describe( 'Tooltip format registration', () => {
 	beforeAll( async () => {
 		// Import the module to trigger registration.
-		await import( '../../../../../../src/formats/tooltip/index' );
+		await import( '@src/formats/tooltip/index' );
 	} );
 
 	it( 'registers the tooltip format type', () => {

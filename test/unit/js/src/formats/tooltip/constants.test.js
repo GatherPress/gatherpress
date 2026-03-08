@@ -6,7 +6,7 @@ import { describe, expect, it } from '@jest/globals';
 /**
  * Internal dependencies.
  */
-import { FORMAT_NAME, DEFAULT_COLORS } from '../../../../../../src/formats/tooltip/constants';
+import { FORMAT_NAME, DEFAULT_COLORS } from '@src/formats/tooltip/constants';
 
 describe( 'Tooltip constants', () => {
 	describe( 'FORMAT_NAME', () => {

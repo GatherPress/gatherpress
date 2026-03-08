@@ -5,6 +5,7 @@ module.exports = {
 	moduleNameMapper: {
 		'\\.(png|jpg|jpeg|gif|webp)$':
 			'<rootDir>/test/unit/js/__mocks__/fileMock.js',
+		'^@src/(.*)$': '<rootDir>/src/$1',
 		...defaultConfig.moduleNameMapper,
 	},
 	transformIgnorePatterns: [

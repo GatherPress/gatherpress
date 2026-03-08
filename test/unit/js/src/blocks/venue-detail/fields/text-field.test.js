@@ -7,7 +7,7 @@ import { render, screen } from '@testing-library/react';
 /**
  * Internal dependencies.
  */
-import TextField from '../../../../../../../src/blocks/venue-detail/fields/text-field';
+import TextField from '@src/blocks/venue-detail/fields/text-field';
 
 // Mock RichText component.
 jest.mock( '@wordpress/block-editor', () => ( {

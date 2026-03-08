@@ -11,22 +11,22 @@ import { select, dispatch } from '@wordpress/data';
 /**
  * Internal dependencies.
  */
-jest.mock( '../../../../../src/helpers/globals', () => ( {
+jest.mock( '@src/helpers/globals', () => ( {
 	getFromGlobal: jest.fn(),
 	setToGlobal: jest.fn(),
 } ) );
 
-jest.mock( '../../../../../src/helpers/datetime', () => ( {
+jest.mock( '@src/helpers/datetime', () => ( {
 	defaultDateTimeStart: '2025-01-15 18:00:00',
 	defaultDateTimeEnd: '2025-01-15 20:00:00',
 	getDateTimeOffset: jest.fn( () => 2 ),
 } ) );
 
-import { getFromGlobal, setToGlobal } from '../../../../../src/helpers/globals';
-import { getDateTimeOffset } from '../../../../../src/helpers/datetime';
+import { getFromGlobal, setToGlobal } from '@src/helpers/globals';
+import { getDateTimeOffset } from '@src/helpers/datetime';
 
 // Import the actual store to get coverage.
-import '../../../../../src/stores/datetime';
+import '@src/stores/datetime';
 
 describe( 'DateTime store', () => {
 	const STORE_NAME = 'gatherpress/datetime';

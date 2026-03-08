@@ -6,7 +6,7 @@ import { describe, expect, it } from '@jest/globals';
 /**
  * Internal dependencies.
  */
-import variations from '../../../../../../src/blocks/venue-detail/variations';
+import variations from '@src/blocks/venue-detail/variations';
 
 describe( 'venue-detail variations', () => {
 	it( 'exports an array of variations', () => {

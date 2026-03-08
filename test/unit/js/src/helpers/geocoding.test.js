@@ -17,7 +17,7 @@ import {
 	geocodeAddress,
 	clearGeocodeCache,
 	getGeocoCacheSize,
-} from '../../../../../src/helpers/geocoding';
+} from '@src/helpers/geocoding';
 
 // Mock apiFetch.
 jest.mock( '@wordpress/api-fetch', () => ( {
@@ -26,7 +26,7 @@ jest.mock( '@wordpress/api-fetch', () => ( {
 } ) );
 
 // Mock namespace.
-jest.mock( '../../../../../src/helpers/namespace', () => ( {
+jest.mock( '@src/helpers/namespace', () => ( {
 	REST_NAMESPACE: 'gatherpress/v1',
 } ) );
 

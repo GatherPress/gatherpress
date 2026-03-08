@@ -7,7 +7,7 @@ import { render, screen, fireEvent } from '@testing-library/react';
 /**
  * Internal dependencies.
  */
-import PhoneField from '../../../../../../../src/blocks/venue-detail/fields/phone-field';
+import PhoneField from '@src/blocks/venue-detail/fields/phone-field';
 
 // Mock RichText component.
 jest.mock( '@wordpress/block-editor', () => ( {

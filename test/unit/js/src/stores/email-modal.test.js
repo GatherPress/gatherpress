@@ -12,7 +12,7 @@ import { select, dispatch } from '@wordpress/data';
  * Internal dependencies.
  */
 // Import the actual store to get coverage.
-import '../../../../../src/stores/email-modal';
+import '@src/stores/email-modal';
 
 describe( 'Email Modal store', () => {
 	const STORE_NAME = 'gatherpress/email-modal';

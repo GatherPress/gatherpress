@@ -6,8 +6,8 @@ import { describe, expect, it } from '@jest/globals';
 /**
  * Internal dependencies.
  */
-import { getTooltipAttributes } from '../../../../../../src/formats/tooltip/helpers';
-import { DEFAULT_COLORS } from '../../../../../../src/formats/tooltip/constants';
+import { getTooltipAttributes } from '@src/formats/tooltip/helpers';
+import { DEFAULT_COLORS } from '@src/formats/tooltip/constants';
 
 describe( 'Tooltip helpers', () => {
 	describe( 'getTooltipAttributes', () => {

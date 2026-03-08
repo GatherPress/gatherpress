@@ -12,7 +12,7 @@ import FieldValue, {
 	getLabelWrapperStyles,
 	getOptionStyles,
 	getWrapperClasses,
-} from '../../../../../../src/blocks/form-field/helpers';
+} from '@src/blocks/form-field/helpers';
 
 /**
  * Mock WordPress i18n.
