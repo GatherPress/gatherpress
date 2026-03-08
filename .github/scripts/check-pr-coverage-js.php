@@ -122,11 +122,12 @@ function get_changed_js_files( string $base_ref ): array {
 		exit( 1 );
 	}
 
-	// Filter to only JavaScript/TypeScript files in src directory.
+	// Filter to only JavaScript/TypeScript files in src directory that still exist.
 	$js_files = array_filter(
 		$output,
 		function ( $file ) {
 			return ( str_starts_with( $file, 'src/' ) &&
+				file_exists( $file ) &&
 				( str_ends_with( $file, '.js' ) || str_ends_with( $file, '.jsx' ) ||
 					str_ends_with( $file, '.ts' ) || str_ends_with( $file, '.tsx' ) ) );
 		}

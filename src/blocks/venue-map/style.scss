@@ -2,6 +2,13 @@
 	// Create new stacking context to contain Leaflet's z-index values.
 	isolation: isolate;
 
+	// Contain Leaflet z-index values within a stacking context so the
+	// editor selection outline (::after with z-index: 1) renders on top.
+	.block-editor-inner-blocks {
+		position: relative;
+		z-index: 0;
+	}
+
 	&__placeholder {
 		padding: 2rem;
 		text-align: center;

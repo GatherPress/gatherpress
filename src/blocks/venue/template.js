@@ -1,5 +1,5 @@
 /**
- * Default template for the venue-v2 block.
+ * Default template for the venue block.
  */
 
 // Post title block (for events).

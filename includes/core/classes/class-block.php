@@ -109,7 +109,7 @@ class Block {
 		Blocks\Rsvp_Form::get_instance();
 		Blocks\Rsvp_Response::get_instance();
 		Blocks\Rsvp_Template::get_instance();
-		Blocks\Venue_V2::get_instance();
+		Blocks\Venue::get_instance();
 	}
 
 	/**
@@ -206,7 +206,7 @@ class Block {
 					// Even this block seems useless, it's not.
 					// It is the entry point for all our hooked blocks
 					// and as such absolutely important!
-					'content'  => '<!-- wp:gatherpress/venue-v2 /-->', // Other blocks are hooked-in here.
+					'content'  => '<!-- wp:gatherpress/venue /-->', // Other blocks are hooked-in here.
 					'inserter' => false,
 					'source'   => 'plugin',
 				),
@@ -262,8 +262,8 @@ class Block {
 			'after' === $relative_position
 		) {
 			$hooked_block_types[] = 'gatherpress/add-to-calendar';
-			$hooked_block_types[] = 'gatherpress/venue-v2';
-			$hooked_block_types[] = 'gatherpress/online-event-v2';
+			$hooked_block_types[] = 'gatherpress/venue';
+			$hooked_block_types[] = 'gatherpress/online-event';
 			$hooked_block_types[] = 'gatherpress/rsvp';
 			$hooked_block_types[] = 'core/paragraph';
 			$hooked_block_types[] = 'gatherpress/rsvp-response';
@@ -275,7 +275,7 @@ class Block {
 			'core/post-title' === $anchor_block_type &&
 			'after' === $relative_position
 		) {
-			$hooked_block_types[] = 'gatherpress/venue-v2';
+			$hooked_block_types[] = 'gatherpress/venue';
 		}
 
 		return $hooked_block_types;

@@ -10,7 +10,7 @@ import edit from './edit';
 import metadata from './block.json';
 
 /**
- * Register the GatherPress Online Event v2 block.
+ * Register the GatherPress Online Event block.
  *
  * This block provides context-aware online event link fetching with support for
  * both event and venue contexts, with smart fallback logic.

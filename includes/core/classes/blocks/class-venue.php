@@ -1,6 +1,6 @@
 <?php
 /**
- * The "Venue_V2" class handles the functionality of the Venue block,
+ * The "Venue" class handles the functionality of the Venue block,
  * ensuring proper rendering.
  *
  * ...
@@ -17,17 +17,17 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 use GatherPress\Core\Block;
 use GatherPress\Core\Event;
 use GatherPress\Core\Traits\Singleton;
-use GatherPress\Core\Venue;
+use GatherPress\Core\Venue as Venue_Core;
 use WP_Block;
 use WP_Post;
 
 /**
- * Class responsible for managing the "Venue_V2" block and its functionality,
+ * Class responsible for managing the "Venue" block and its functionality,
  * including dynamic rendering adjustments.
  *
  * @since 1.0.0
  */
-class Venue_V2 {
+class Venue {
 	/**
 	 * Enforces a single instance of this class.
 	 */
@@ -39,7 +39,7 @@ class Venue_V2 {
 	 * @since 1.0.0
 	 * @var string
 	 */
-	const BLOCK_NAME = 'gatherpress/venue-v2';
+	const BLOCK_NAME = 'gatherpress/venue';
 
 	/**
 	 * Class constructor.
@@ -114,7 +114,7 @@ class Venue_V2 {
 		if ( isset( $block['attrs']['selectedPostId'] ) && is_int( $block['attrs']['selectedPostId'] ) ) {
 			$venue_post = get_post( $block['attrs']['selectedPostId'] );
 
-			if ( $venue_post instanceof WP_Post && Venue::POST_TYPE === $venue_post->post_type ) {
+			if ( $venue_post instanceof WP_Post && Venue_Core::POST_TYPE === $venue_post->post_type ) {
 				return $venue_post;
 			}
 		}
@@ -124,13 +124,13 @@ class Venue_V2 {
 		$post_type = get_post_type( $post_id );
 
 		switch ( $post_type ) {
-			case Venue::POST_TYPE:
+			case Venue_Core::POST_TYPE:
 				return get_post( $post_id );
 
 			case Event::POST_TYPE:
-				$venue_post = Venue::get_instance()->get_venue_post_from_event_post_id( $post_id );
+				$venue_post = Venue_Core::get_instance()->get_venue_post_from_event_post_id( $post_id );
 
-				if ( $venue_post instanceof WP_Post && Venue::POST_TYPE === $venue_post->post_type ) {
+				if ( $venue_post instanceof WP_Post && Venue_Core::POST_TYPE === $venue_post->post_type ) {
 					return $venue_post;
 				}
 				// Fall through to default.
@@ -185,7 +185,7 @@ class Venue_V2 {
 		$post = $original_post; // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
 
 		// Build wrapper classes from block instance attributes.
-		$classes = array( 'wp-block-gatherpress-venue-v2' );
+		$classes = array( 'wp-block-gatherpress-venue' );
 
 		if ( ! empty( $instance->attributes['align'] ) ) {
 			$classes[] = 'align' . $instance->attributes['align'];

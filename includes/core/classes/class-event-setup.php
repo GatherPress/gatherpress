@@ -183,8 +183,8 @@ class Event_Setup {
 				'template'      => array(
 					array( 'gatherpress/event-date' ),
 					array( 'gatherpress/add-to-calendar' ),
-					array( 'gatherpress/venue-v2' ),
-					array( 'gatherpress/online-event-v2' ),
+					array( 'gatherpress/venue' ),
+					array( 'gatherpress/online-event' ),
 					array( 'gatherpress/rsvp' ),
 					array(
 						'core/paragraph',

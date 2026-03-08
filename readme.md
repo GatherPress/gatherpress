@@ -76,8 +76,6 @@ GatherPress is built by and for the community — contributions are always welco
 ## 🛠️ Third-Party Libraries
 
 - [Leaflet](https://leafletjs.com/) — interactive maps for venues
-- [React-Modal](https://github.com/reactjs/react-modal) — modal dialogs *(currently in use, but being phased out)*
-- [React-Tooltip](https://github.com/wwayne/react-tooltip) — tooltips *(currently in use, but being phased out)*
 
 ---
 

@@ -342,7 +342,7 @@ target cli: failed to solve: process did not complete successfully: exit code: 1
    - `src/components/GuestLimit.js` - Limit validation
    - `src/components/MaxAttendanceLimit.js` - Attendance calculations
 
-#### Components Without Tests (26 total)
+#### Components Without Tests (16 total)
 
 Most of these are UI-heavy React components that rely on WordPress hooks/state, making them harder to test. Focus on extracting pure functions from them rather than testing the components directly:
 
@@ -353,24 +353,14 @@ Most of these are UI-heavy React components that rely on WordPress hooks/state, 
 - DateTimeStart.js
 - Duration.js
 - EmailNotificationManager.js
-- EventItem.js
-- EventsList.js
 - GoogleMap.js
 - GuestLimit.js
 - MaxAttendanceLimit.js
 - OnlineEventLink.js
 - OpenStreetMap.js
-- Rsvp.js
-- RsvpResponseAvatarOnly.js
-- RsvpResponseCard.js
-- RsvpResponseContent.js
-- RsvpResponseEdit.js
-- RsvpStatusResponse.js
 - Timezone.js
 - UrlRewritePreview.js
-- Venue.js
 - VenueInformation.js
-- VenueOrOnlineEvent.js
 - VenueSelector.js
 
 #### Testing Strategy

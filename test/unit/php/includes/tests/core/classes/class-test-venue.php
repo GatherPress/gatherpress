@@ -740,9 +740,9 @@ class Test_Venue extends Base {
 		);
 
 		$this->assertStringContainsString(
-			'wp:gatherpress/venue-v2',
+			'wp:gatherpress/venue',
 			$updated_post->post_content,
-			'Template content should contain venue-v2 block.'
+			'Template content should contain venue block.'
 		);
 	}
 
@@ -856,7 +856,7 @@ class Test_Venue extends Base {
 			'gatherpress/venue-template',
 			array(
 				'title'    => 'Invisible Venue Template Block Pattern',
-				'content'  => '<!-- wp:gatherpress/venue-v2 /-->',
+				'content'  => '<!-- wp:gatherpress/venue /-->',
 				'inserter' => false,
 				'source'   => 'plugin',
 			)

@@ -1,6 +1,6 @@
 <?php
 /**
- * Class handles unit tests for GatherPress\Core\Blocks\Venue_V2.
+ * Class handles unit tests for GatherPress\Core\Blocks\Venue.
  *
  * @package GatherPress\Core
  * @since 1.0.0
@@ -8,23 +8,23 @@
 
 namespace GatherPress\Tests\Core\Blocks;
 
-use GatherPress\Core\Blocks\Venue_V2;
+use GatherPress\Core\Blocks\Venue as Venue_Block;
 use GatherPress\Core\Event;
 use GatherPress\Core\Venue;
 use GatherPress\Tests\Base;
 use WP_Block;
 
 /**
- * Class Test_Venue_V2.
+ * Class Test_Venue.
  *
- * @coversDefaultClass \GatherPress\Core\Blocks\Venue_V2
+ * @coversDefaultClass \GatherPress\Core\Blocks\Venue
  */
-class Test_Venue_V2 extends Base {
+class Test_Venue extends Base {
 	/**
 	 * Tests the setup_hooks method.
 	 *
 	 * Verifies that the appropriate filters are registered during setup,
-	 * ensuring the hooks are properly configured for the Venue_V2 block.
+	 * ensuring the hooks are properly configured for the Venue block.
 	 *
 	 * @since 1.0.0
 	 * @covers ::__construct
@@ -33,8 +33,8 @@ class Test_Venue_V2 extends Base {
 	 * @return void
 	 */
 	public function test_setup_hooks(): void {
-		$instance          = Venue_V2::get_instance();
-		$render_block_hook = sprintf( 'render_block_%s', Venue_V2::BLOCK_NAME );
+		$instance          = Venue_Block::get_instance();
+		$render_block_hook = sprintf( 'render_block_%s', Venue_Block::BLOCK_NAME );
 		$hooks             = array(
 			array(
 				'type'     => 'filter',
@@ -56,12 +56,12 @@ class Test_Venue_V2 extends Base {
 	 * @return void
 	 */
 	public function test_render_block_returns_empty_for_null_content(): void {
-		$instance = Venue_V2::get_instance();
+		$instance = Venue_Block::get_instance();
 
 		// Create a minimal WP_Block instance.
 		$block_instance = new WP_Block(
 			array(
-				'blockName'    => 'gatherpress/venue-v2',
+				'blockName'    => 'gatherpress/venue',
 				'attrs'        => array(),
 				'innerBlocks'  => array(),
 				'innerHTML'    => '',
@@ -87,12 +87,12 @@ class Test_Venue_V2 extends Base {
 	 * @return void
 	 */
 	public function test_render_block_returns_content_for_null_block(): void {
-		$instance = Venue_V2::get_instance();
+		$instance = Venue_Block::get_instance();
 
 		// Create a minimal WP_Block instance.
 		$block_instance = new WP_Block(
 			array(
-				'blockName'    => 'gatherpress/venue-v2',
+				'blockName'    => 'gatherpress/venue',
 				'attrs'        => array(),
 				'innerBlocks'  => array(),
 				'innerHTML'    => '',
@@ -119,7 +119,7 @@ class Test_Venue_V2 extends Base {
 	 * @return void
 	 */
 	public function test_render_block_returns_empty_when_no_venue(): void {
-		$instance = Venue_V2::get_instance();
+		$instance = Venue_Block::get_instance();
 
 		// Create a regular post (not an event).
 		$post_id = $this->factory->post->create();
@@ -127,7 +127,7 @@ class Test_Venue_V2 extends Base {
 
 		$block_instance = new WP_Block(
 			array(
-				'blockName'    => 'gatherpress/venue-v2',
+				'blockName'    => 'gatherpress/venue',
 				'attrs'        => array(),
 				'innerBlocks'  => array(),
 				'innerHTML'    => '',
@@ -157,7 +157,7 @@ class Test_Venue_V2 extends Base {
 	 * @return void
 	 */
 	public function test_render_block_returns_empty_for_non_event_post(): void {
-		$instance = Venue_V2::get_instance();
+		$instance = Venue_Block::get_instance();
 
 		// Create a page (not an event).
 		$post_id = $this->factory->post->create( array( 'post_type' => 'page' ) );
@@ -165,7 +165,7 @@ class Test_Venue_V2 extends Base {
 
 		$block_instance = new WP_Block(
 			array(
-				'blockName'    => 'gatherpress/venue-v2',
+				'blockName'    => 'gatherpress/venue',
 				'attrs'        => array(),
 				'innerBlocks'  => array(),
 				'innerHTML'    => '',
@@ -196,7 +196,7 @@ class Test_Venue_V2 extends Base {
 	 * @return void
 	 */
 	public function test_render_block_with_selected_post_id(): void {
-		$instance = Venue_V2::get_instance();
+		$instance = Venue_Block::get_instance();
 
 		// Create a venue post.
 		$venue_id = $this->factory->post->create(
@@ -208,7 +208,7 @@ class Test_Venue_V2 extends Base {
 
 		$block_instance = new WP_Block(
 			array(
-				'blockName'    => 'gatherpress/venue-v2',
+				'blockName'    => 'gatherpress/venue',
 				'attrs'        => array( 'selectedPostId' => $venue_id ),
 				'innerBlocks'  => array(
 					array(
@@ -247,7 +247,7 @@ class Test_Venue_V2 extends Base {
 	 * @return void
 	 */
 	public function test_render_block_returns_empty_for_non_venue_selected_post_id(): void {
-		$instance = Venue_V2::get_instance();
+		$instance = Venue_Block::get_instance();
 
 		// Create a regular post (not a venue).
 		$post_id = $this->factory->post->create( array( 'post_type' => 'post' ) );
@@ -255,7 +255,7 @@ class Test_Venue_V2 extends Base {
 
 		$block_instance = new WP_Block(
 			array(
-				'blockName'    => 'gatherpress/venue-v2',
+				'blockName'    => 'gatherpress/venue',
 				'attrs'        => array( 'selectedPostId' => $post_id ),
 				'innerBlocks'  => array(),
 				'innerHTML'    => '',
@@ -285,7 +285,7 @@ class Test_Venue_V2 extends Base {
 	 * @return void
 	 */
 	public function test_render_block_returns_empty_for_online_only_event(): void {
-		$instance = Venue_V2::get_instance();
+		$instance = Venue_Block::get_instance();
 
 		// Create an event post.
 		$event_id = $this->factory->post->create( array( 'post_type' => 'gatherpress_event' ) );
@@ -309,7 +309,7 @@ class Test_Venue_V2 extends Base {
 
 		$block_instance = new WP_Block(
 			array(
-				'blockName'    => 'gatherpress/venue-v2',
+				'blockName'    => 'gatherpress/venue',
 				'attrs'        => array(),
 				'innerBlocks'  => array(),
 				'innerHTML'    => '',
@@ -347,7 +347,7 @@ class Test_Venue_V2 extends Base {
 	 * @return void
 	 */
 	public function test_render_block_with_event_venue_term_no_post(): void {
-		$instance = Venue_V2::get_instance();
+		$instance = Venue_Block::get_instance();
 
 		// Create an event post.
 		$event_id = $this->factory->post->create(
@@ -373,7 +373,7 @@ class Test_Venue_V2 extends Base {
 
 		$block_instance = new WP_Block(
 			array(
-				'blockName'    => 'gatherpress/venue-v2',
+				'blockName'    => 'gatherpress/venue',
 				'attrs'        => array(),
 				'innerBlocks'  => array(),
 				'innerHTML'    => '',
@@ -404,7 +404,7 @@ class Test_Venue_V2 extends Base {
 	 * @return void
 	 */
 	public function test_render_block_returns_empty_for_event_with_no_terms(): void {
-		$instance = Venue_V2::get_instance();
+		$instance = Venue_Block::get_instance();
 
 		// Create an event post without any venue terms.
 		$event_id = $this->factory->post->create( array( 'post_type' => 'gatherpress_event' ) );
@@ -413,7 +413,7 @@ class Test_Venue_V2 extends Base {
 
 		$block_instance = new WP_Block(
 			array(
-				'blockName'    => 'gatherpress/venue-v2',
+				'blockName'    => 'gatherpress/venue',
 				'attrs'        => array(),
 				'innerBlocks'  => array(),
 				'innerHTML'    => '',
@@ -444,7 +444,7 @@ class Test_Venue_V2 extends Base {
 	 * @return void
 	 */
 	public function test_render_block_returns_empty_for_multiple_terms_no_venue_post(): void {
-		$instance = Venue_V2::get_instance();
+		$instance = Venue_Block::get_instance();
 
 		// Create an event post.
 		$event_id = $this->factory->post->create( array( 'post_type' => 'gatherpress_event' ) );
@@ -476,7 +476,7 @@ class Test_Venue_V2 extends Base {
 
 		$block_instance = new WP_Block(
 			array(
-				'blockName'    => 'gatherpress/venue-v2',
+				'blockName'    => 'gatherpress/venue',
 				'attrs'        => array(),
 				'innerBlocks'  => array(),
 				'innerHTML'    => '',
@@ -507,7 +507,7 @@ class Test_Venue_V2 extends Base {
 	 * @return void
 	 */
 	public function test_render_with_venue_context_restores_post(): void {
-		$instance = Venue_V2::get_instance();
+		$instance = Venue_Block::get_instance();
 
 		// Create original post and venue.
 		$original_post_id = $this->factory->post->create( array( 'post_title' => 'Original Post' ) );
@@ -527,7 +527,7 @@ class Test_Venue_V2 extends Base {
 
 		$block_instance = new WP_Block(
 			array(
-				'blockName'    => 'gatherpress/venue-v2',
+				'blockName'    => 'gatherpress/venue',
 				'attrs'        => array( 'selectedPostId' => $venue_id ),
 				'innerBlocks'  => array(
 					array(
@@ -567,7 +567,7 @@ class Test_Venue_V2 extends Base {
 	 * @return void
 	 */
 	public function test_render_with_venue_context_applies_correct_context(): void {
-		$instance = Venue_V2::get_instance();
+		$instance = Venue_Block::get_instance();
 
 		// Create a venue post with specific title.
 		$venue_id = $this->factory->post->create(
@@ -579,7 +579,7 @@ class Test_Venue_V2 extends Base {
 
 		$block_instance = new WP_Block(
 			array(
-				'blockName'    => 'gatherpress/venue-v2',
+				'blockName'    => 'gatherpress/venue',
 				'attrs'        => array( 'selectedPostId' => $venue_id ),
 				'innerBlocks'  => array(
 					array(
@@ -616,9 +616,9 @@ class Test_Venue_V2 extends Base {
 	 */
 	public function test_block_name_constant(): void {
 		$this->assertSame(
-			'gatherpress/venue-v2',
-			Venue_V2::BLOCK_NAME,
-			'BLOCK_NAME constant should be gatherpress/venue-v2.'
+			'gatherpress/venue',
+			Venue_Block::BLOCK_NAME,
+			'BLOCK_NAME constant should be gatherpress/venue.'
 		);
 	}
 
@@ -632,7 +632,7 @@ class Test_Venue_V2 extends Base {
 	 * @return void
 	 */
 	public function test_render_block_returns_empty_for_non_integer_selected_id(): void {
-		$instance = Venue_V2::get_instance();
+		$instance = Venue_Block::get_instance();
 
 		// Create a regular post for context.
 		$post_id = $this->factory->post->create();
@@ -640,7 +640,7 @@ class Test_Venue_V2 extends Base {
 
 		$block_instance = new WP_Block(
 			array(
-				'blockName'    => 'gatherpress/venue-v2',
+				'blockName'    => 'gatherpress/venue',
 				'attrs'        => array( 'selectedPostId' => 'not-an-integer' ),
 				'innerBlocks'  => array(),
 				'innerHTML'    => '',
@@ -675,7 +675,7 @@ class Test_Venue_V2 extends Base {
 	 * @return void
 	 */
 	public function test_render_block_with_event_linked_to_venue(): void {
-		$instance = Venue_V2::get_instance();
+		$instance = Venue_Block::get_instance();
 
 		// Create a venue post.
 		$venue_id = $this->factory->post->create(
@@ -712,7 +712,7 @@ class Test_Venue_V2 extends Base {
 
 		$block_instance = new WP_Block(
 			array(
-				'blockName'    => 'gatherpress/venue-v2',
+				'blockName'    => 'gatherpress/venue',
 				'attrs'        => array(),
 				'innerBlocks'  => array(
 					array(
@@ -750,7 +750,7 @@ class Test_Venue_V2 extends Base {
 	 * @return void
 	 */
 	public function test_render_block_event_with_non_venue_term(): void {
-		$instance = Venue_V2::get_instance();
+		$instance = Venue_Block::get_instance();
 
 		// Create an event post.
 		$event_id = $this->factory->post->create( array( 'post_type' => 'gatherpress_event' ) );
@@ -771,7 +771,7 @@ class Test_Venue_V2 extends Base {
 
 		$block_instance = new WP_Block(
 			array(
-				'blockName'    => 'gatherpress/venue-v2',
+				'blockName'    => 'gatherpress/venue',
 				'attrs'        => array(),
 				'innerBlocks'  => array(),
 				'innerHTML'    => '',
@@ -801,7 +801,7 @@ class Test_Venue_V2 extends Base {
 	 * @return void
 	 */
 	public function test_render_with_venue_context_applies_align_class(): void {
-		$instance = Venue_V2::get_instance();
+		$instance = Venue_Block::get_instance();
 
 		// Create a venue post.
 		$venue_id = $this->factory->post->create(
@@ -813,7 +813,7 @@ class Test_Venue_V2 extends Base {
 
 		$block_instance = new WP_Block(
 			array(
-				'blockName'    => 'gatherpress/venue-v2',
+				'blockName'    => 'gatherpress/venue',
 				'attrs'        => array(
 					'selectedPostId' => $venue_id,
 					'align'          => 'wide',
@@ -852,7 +852,7 @@ class Test_Venue_V2 extends Base {
 	 * @return void
 	 */
 	public function test_render_with_venue_context_applies_classname(): void {
-		$instance = Venue_V2::get_instance();
+		$instance = Venue_Block::get_instance();
 
 		// Create a venue post.
 		$venue_id = $this->factory->post->create(
@@ -864,7 +864,7 @@ class Test_Venue_V2 extends Base {
 
 		$block_instance = new WP_Block(
 			array(
-				'blockName'    => 'gatherpress/venue-v2',
+				'blockName'    => 'gatherpress/venue',
 				'attrs'        => array(
 					'selectedPostId' => $venue_id,
 					'className'      => 'custom-class another-class',
@@ -903,7 +903,7 @@ class Test_Venue_V2 extends Base {
 	 * @return void
 	 */
 	public function test_render_with_venue_context_applies_align_and_classname(): void {
-		$instance = Venue_V2::get_instance();
+		$instance = Venue_Block::get_instance();
 
 		// Create a venue post.
 		$venue_id = $this->factory->post->create(
@@ -915,7 +915,7 @@ class Test_Venue_V2 extends Base {
 
 		$block_instance = new WP_Block(
 			array(
-				'blockName'    => 'gatherpress/venue-v2',
+				'blockName'    => 'gatherpress/venue',
 				'attrs'        => array(
 					'selectedPostId' => $venue_id,
 					'align'          => 'full',
@@ -940,7 +940,7 @@ class Test_Venue_V2 extends Base {
 		$result = $instance->render_block( '<div>Test</div>', $block, $block_instance );
 
 		$this->assertStringContainsString(
-			'wp-block-gatherpress-venue-v2',
+			'wp-block-gatherpress-venue',
 			$result,
 			'Should include base wrapper class.'
 		);
@@ -969,7 +969,7 @@ class Test_Venue_V2 extends Base {
 	 * @return void
 	 */
 	public function test_get_venue_post_with_postid_override(): void {
-		$instance = Venue_V2::get_instance();
+		$instance = Venue_Block::get_instance();
 
 		// Create a venue post.
 		$venue_id = $this->factory->post->create(
@@ -1007,7 +1007,7 @@ class Test_Venue_V2 extends Base {
 		// Block attributes include postId override (query loop context).
 		$block_instance = new WP_Block(
 			array(
-				'blockName'    => 'gatherpress/venue-v2',
+				'blockName'    => 'gatherpress/venue',
 				'attrs'        => array(
 					'postId' => $event_id, // Override to event ID.
 				),
@@ -1051,7 +1051,7 @@ class Test_Venue_V2 extends Base {
 	 * @return void
 	 */
 	public function test_render_block_on_venue_post_context(): void {
-		$instance = Venue_V2::get_instance();
+		$instance = Venue_Block::get_instance();
 
 		// Create a venue post.
 		$venue_id = $this->factory->post->create(
@@ -1065,7 +1065,7 @@ class Test_Venue_V2 extends Base {
 
 		$block_instance = new WP_Block(
 			array(
-				'blockName'    => 'gatherpress/venue-v2',
+				'blockName'    => 'gatherpress/venue',
 				'attrs'        => array(),
 				'innerBlocks'  => array(
 					array(
@@ -1101,7 +1101,7 @@ class Test_Venue_V2 extends Base {
 	 * @return void
 	 */
 	public function test_get_venue_post_returns_null_for_non_event_postid_override(): void {
-		$instance = Venue_V2::get_instance();
+		$instance = Venue_Block::get_instance();
 
 		// Create a regular post (not an event).
 		$post_id = $this->factory->post->create( array( 'post_type' => 'post' ) );
@@ -1113,7 +1113,7 @@ class Test_Venue_V2 extends Base {
 		// Block attributes include postId override pointing to non-event.
 		$block_instance = new WP_Block(
 			array(
-				'blockName'    => 'gatherpress/venue-v2',
+				'blockName'    => 'gatherpress/venue',
 				'attrs'        => array(
 					'postId' => $post_id, // Override to non-event post ID.
 				),

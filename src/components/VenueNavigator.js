@@ -23,7 +23,7 @@ import { getCurrentContextualPostId } from '../helpers/editor';
 
 /**
  *
- * @param {Object} props Properties of the 'gatherpress/venue-v2'-block.
+ * @param {Object} props Properties of the 'gatherpress/venue'-block.
  * @return {Component} A Navigator component to be rendered.
  */
 export default function VenueNavigator( props = null ) {

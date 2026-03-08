@@ -7,6 +7,7 @@
 	"category": "gatherpress",
 	"icon": "location-alt",
 	"description": "Display a map for the venue location.",
+	"parent": ["gatherpress/venue"],
 	"usesContext": ["postId", "queryId"],
 	"attributes": {
 		"zoom": {
@@ -23,15 +24,13 @@
 		}
 	},
 	"supports": {
-		"gatherpress": {
-			"postIdOverride": true
-		},
 		"align": ["wide", "full"],
 		"html": false
 	},
 	"textdomain": "gatherpress",
 	"editorScript": "file:./index.js",
+	"editorStyle": "file:./index.css",
+	"viewScript": "file:./view.js",
 	"style": "file:./style-index.css",
-	"viewScript": "file:../venue/venue.js",
 	"render": "file:./render.php"
 }

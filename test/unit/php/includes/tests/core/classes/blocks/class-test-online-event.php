@@ -56,9 +56,9 @@ class Test_Online_Event extends Base {
 	 */
 	public function test_block_name_constant(): void {
 		$this->assertSame(
-			'gatherpress/online-event-v2',
+			'gatherpress/online-event',
 			Online_Event::BLOCK_NAME,
-			'BLOCK_NAME constant should be gatherpress/online-event-v2.'
+			'BLOCK_NAME constant should be gatherpress/online-event.'
 		);
 	}
 
@@ -75,7 +75,7 @@ class Test_Online_Event extends Base {
 
 		$block_instance = new WP_Block(
 			array(
-				'blockName'    => 'gatherpress/online-event-v2',
+				'blockName'    => 'gatherpress/online-event',
 				'attrs'        => array(),
 				'innerBlocks'  => array(),
 				'innerHTML'    => '',
@@ -105,7 +105,7 @@ class Test_Online_Event extends Base {
 
 		$block_instance = new WP_Block(
 			array(
-				'blockName'    => 'gatherpress/online-event-v2',
+				'blockName'    => 'gatherpress/online-event',
 				'attrs'        => array(),
 				'innerBlocks'  => array(),
 				'innerHTML'    => '',
@@ -135,7 +135,7 @@ class Test_Online_Event extends Base {
 
 		$block_instance = new WP_Block(
 			array(
-				'blockName'    => 'gatherpress/online-event-v2',
+				'blockName'    => 'gatherpress/online-event',
 				'attrs'        => array(),
 				'innerBlocks'  => array(),
 				'innerHTML'    => '',
@@ -170,7 +170,7 @@ class Test_Online_Event extends Base {
 
 		$block_instance = new WP_Block(
 			array(
-				'blockName'    => 'gatherpress/online-event-v2',
+				'blockName'    => 'gatherpress/online-event',
 				'attrs'        => array(),
 				'innerBlocks'  => array(),
 				'innerHTML'    => '',
@@ -208,7 +208,7 @@ class Test_Online_Event extends Base {
 
 		$block_instance = new WP_Block(
 			array(
-				'blockName'    => 'gatherpress/online-event-v2',
+				'blockName'    => 'gatherpress/online-event',
 				'attrs'        => array(),
 				'innerBlocks'  => array(),
 				'innerHTML'    => '',
@@ -257,7 +257,7 @@ class Test_Online_Event extends Base {
 
 		$block_instance = new WP_Block(
 			array(
-				'blockName'    => 'gatherpress/online-event-v2',
+				'blockName'    => 'gatherpress/online-event',
 				'attrs'        => array(),
 				'innerBlocks'  => array(),
 				'innerHTML'    => '',
@@ -310,7 +310,7 @@ class Test_Online_Event extends Base {
 
 		$block_instance = new WP_Block(
 			array(
-				'blockName'    => 'gatherpress/online-event-v2',
+				'blockName'    => 'gatherpress/online-event',
 				'attrs'        => array( 'postId' => $event_id ),
 				'innerBlocks'  => array(
 					array(
@@ -355,7 +355,7 @@ class Test_Online_Event extends Base {
 
 		$block_instance = new WP_Block(
 			array(
-				'blockName'    => 'gatherpress/online-event-v2',
+				'blockName'    => 'gatherpress/online-event',
 				'attrs'        => array( 'postId' => $event_id ),
 				'innerBlocks'  => array(),
 				'innerHTML'    => '',
@@ -405,7 +405,7 @@ class Test_Online_Event extends Base {
 
 		$block_instance = new WP_Block(
 			array(
-				'blockName'    => 'gatherpress/online-event-v2',
+				'blockName'    => 'gatherpress/online-event',
 				'attrs'        => array(),
 				'innerBlocks'  => array(),
 				'innerHTML'    => '',
@@ -465,7 +465,7 @@ class Test_Online_Event extends Base {
 
 		$block_instance = new WP_Block(
 			array(
-				'blockName'    => 'gatherpress/online-event-v2',
+				'blockName'    => 'gatherpress/online-event',
 				'attrs'        => array( 'postId' => $event_id ),
 				'innerBlocks'  => array(
 					array(
@@ -532,7 +532,7 @@ class Test_Online_Event extends Base {
 
 		$block_instance = new WP_Block(
 			array(
-				'blockName'    => 'gatherpress/online-event-v2',
+				'blockName'    => 'gatherpress/online-event',
 				'attrs'        => array( 'postId' => $page_id ),
 				'innerBlocks'  => array(
 					array(
@@ -597,7 +597,7 @@ class Test_Online_Event extends Base {
 
 		$block_instance = new WP_Block(
 			array(
-				'blockName'    => 'gatherpress/online-event-v2',
+				'blockName'    => 'gatherpress/online-event',
 				'attrs'        => array(),
 				'innerBlocks'  => array(),
 				'innerHTML'    => '',
@@ -644,7 +644,7 @@ class Test_Online_Event extends Base {
 
 		$block_instance = new WP_Block(
 			array(
-				'blockName'    => 'gatherpress/online-event-v2',
+				'blockName'    => 'gatherpress/online-event',
 				'attrs'        => array(),
 				'innerBlocks'  => array(),
 				'innerHTML'    => '',

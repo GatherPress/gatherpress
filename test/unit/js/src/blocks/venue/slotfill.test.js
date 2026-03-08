@@ -32,7 +32,7 @@ jest.mock( '../../../../../../src/helpers/event', () => ( {
 /**
  * Internal dependencies.
  */
-import VenueBlockPluginFill from '../../../../../../src/blocks/venue-v2/slotfill';
+import VenueBlockPluginFill from '../../../../../../src/blocks/venue/slotfill';
 import { isEventPostType } from '../../../../../../src/helpers/event';
 
 describe( 'VenueBlockPluginFill', () => {
