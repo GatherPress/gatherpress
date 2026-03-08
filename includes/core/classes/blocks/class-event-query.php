@@ -348,6 +348,7 @@ class Event_Query {
 	 * @param bool  $inherited   Whether the query is inherited from the page context.
 	 * @return array Modified query arguments.
 	 *
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
 	 * @phpcs:disable Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed
 	 */
 	public function aql_query_vars( array $query_args, array $block_query, bool $inherited ): array {
