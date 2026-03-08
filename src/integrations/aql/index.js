@@ -15,6 +15,7 @@ import {
 	EventIncludeUnfinishedControls,
 	EventOrderControls,
 } from '../../variations/core/query/components';
+import { CPT_EVENT } from '../../helpers/namespace';
 
 /**
  * Component that auto-sets GatherPress event defaults when the post type
@@ -31,7 +32,7 @@ const AQLEventDefaults = ( { attributes, setAttributes } ) => {
 	useEffect( () => {
 		// Set GatherPress defaults when post type is gatherpress_event
 		// but event query params haven't been set yet.
-		if ( 'gatherpress_event' === postType && ! eventQuery ) {
+		if ( CPT_EVENT === postType && ! eventQuery ) {
 			setAttributes( {
 				query: {
 					...attributes.query,
@@ -68,7 +69,7 @@ const withAQLEventControls = ( BlockEdit ) => ( props ) => {
 	}
 
 	const isEvent =
-		'gatherpress_event' === props.attributes.query?.postType;
+		CPT_EVENT === props.attributes.query?.postType;
 
 	// For AQL blocks with gatherpress_event post type, add the controls panel.
 	if ( isEvent ) {
