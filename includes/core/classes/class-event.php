@@ -737,7 +737,7 @@ class Event {
 	 * @return string The escaped text suitable for ICS content.
 	 */
 	protected function escape_ics_text( string $text ): string {
-		return addcslashes( $text, ",;\\n" );
+		return str_replace( array( "\\", ",", ";", "\n", "\r" ), array( "\\\\", "\\,", "\\;", "\\n", "" ), $text );
 	}
 
 	/**
