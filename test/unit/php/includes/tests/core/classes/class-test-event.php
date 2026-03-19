@@ -1119,6 +1119,14 @@ class Test_Event extends Base {
 		$result = $method->invoke( $event, 'Test, text' );
 		$this->assertStringContainsString( '\,', $result, 'Failed to escape commas.' );
 
+		// Test newline escaping.
+		$result = $method->invoke( $event, "Line 1\nLine 2" );
+		$this->assertStringContainsString( '\\n', $result, 'Failed to escape newline characters.' );
+
+		// Ensure lowercase n is not escaped.
+		$result = $method->invoke( $event, 'Berlin in June' );
+		$this->assertSame( 'Berlin in June', $result, 'Lowercase n should not be escaped.' );
+
 		// Test that method is callable.
 		$this->assertTrue( true );
 	}
