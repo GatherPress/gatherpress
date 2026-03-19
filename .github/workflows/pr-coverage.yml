@@ -1,7 +1,7 @@
 name: PR Coverage Check
 
 on:
-  pull_request:
+  pull_request_target:
     branches:
       - develop
       - main
@@ -30,10 +30,15 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Get PR merge commit
+        uses: suzuki-shunsuke/get-pr-action@v0.1.0
+        id: pr
+
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Fetch all history for all branches and tags
+          ref: ${{ steps.pr.outputs.merge_commit_sha }}
+          fetch-depth: 0  # Fetch all history for all branches and tags.
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
