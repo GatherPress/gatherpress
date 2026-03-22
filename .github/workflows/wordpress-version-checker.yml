@@ -22,7 +22,40 @@ jobs:
     if: github.repository_owner == 'GatherPress'
     runs-on: ubuntu-latest
     steps:
-      - name: WordPress Version Checker
-        uses: skaut/wordpress-version-checker@v2.2.2
-        with:
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Get tested up to version from readme.txt
+        id: readme
+        run: |
+          TESTED_UP_TO=$(grep -i "^Tested up to:" readme.txt | sed 's/Tested up to:\s*//' | tr -d '[:space:]')
+          echo "tested_up_to=$TESTED_UP_TO" >> "$GITHUB_OUTPUT"
+          echo "Tested up to: $TESTED_UP_TO"
+
+      - name: Get latest WordPress version
+        id: wp
+        run: |
+          LATEST=$(curl -s 'https://api.wordpress.org/core/version-check/1.7/' | jq -r '.offers[0].version')
+          LATEST_MINOR=$(echo "$LATEST" | cut -d. -f1,2)
+          echo "latest=$LATEST" >> "$GITHUB_OUTPUT"
+          echo "latest_minor=$LATEST_MINOR" >> "$GITHUB_OUTPUT"
+          echo "Latest WordPress: $LATEST (minor: $LATEST_MINOR)"
+
+      - name: Check version compatibility
+        run: |
+          TESTED="${{ steps.readme.outputs.tested_up_to }}"
+          LATEST_MINOR="${{ steps.wp.outputs.latest_minor }}"
+
+          if [ -z "$TESTED" ]; then
+            echo "::error::Could not find 'Tested up to' in readme.txt"
+            exit 1
+          fi
+
+          echo "Tested up to: $TESTED"
+          echo "Latest WordPress minor: $LATEST_MINOR"
+
+          if [ "$TESTED" = "$LATEST_MINOR" ]; then
+            echo "readme.txt is up to date with WordPress $LATEST_MINOR."
+          else
+            echo "::warning::readme.txt shows 'Tested up to: $TESTED' but latest WordPress is $LATEST_MINOR."
+          fi
