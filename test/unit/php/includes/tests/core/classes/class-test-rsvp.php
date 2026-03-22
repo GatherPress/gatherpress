@@ -83,7 +83,7 @@ class Test_Rsvp extends Base {
 			'Failed to assert no_status due to invalid user ID.'
 		);
 
-		$status = 'unittest';
+		$status = 'invalid_status';
 
 		$this->assertSame(
 			'no_status',
