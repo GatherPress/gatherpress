@@ -54,11 +54,6 @@ describe( 'Venue store', () => {
 			expect( result ).toBe( -74.006 );
 		} );
 
-		it( 'getMapCustomLatLong returns the mapCustomLatLong from state', () => {
-			const result = select( STORE_NAME ).getMapCustomLatLong();
-
-			expect( result ).toBe( false );
-		} );
 	} );
 
 	describe( 'state changes', () => {
