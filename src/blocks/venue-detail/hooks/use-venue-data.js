@@ -80,7 +80,7 @@ export function useVenueData( context, fieldType ) {
 				return {};
 			}
 
-			let venueInfoJson = '{}';
+			let venueInfoJson;
 
 			if ( isEditingCurrentPost ) {
 				const meta =
@@ -118,7 +118,7 @@ export function useVenueData( context, fieldType ) {
 				return;
 			}
 
-			let venueInfoJson = '{}';
+			let venueInfoJson;
 
 			if ( isEditingCurrentPost ) {
 				const meta =
