@@ -53,7 +53,6 @@ describe( 'Venue store', () => {
 
 			expect( result ).toBe( -74.006 );
 		} );
-
 	} );
 
 	describe( 'state changes', () => {
