@@ -115,16 +115,16 @@ class Test_Rsvp extends Base {
 		// Enable anonymous RSVP for this test.
 		update_post_meta( $post->ID, 'gatherpress_enable_anonymous_rsvp', true );
 
-		// When not_attending and anonymous, user record should be removed and marked no_status.
+		// Anonymous not_attending should preserve the record.
 		$this->assertSame(
 			'waiting_list',
 			$rsvp->save( $user_1_id, 'attending', 1 )['status'],
-			'Failed to assert that user 1 is attending'
+			'Failed to assert that user 1 is on waiting list.'
 		);
 		$this->assertSame(
-			'no_status',
+			'not_attending',
 			$rsvp->save( $user_1_id, 'not_attending', 1 )['status'],
-			'Failed to assert that user 1 is no_status.'
+			'Failed to assert that user 1 is not_attending.'
 		);
 
 		$user_2_id = $this->factory->user->create();
@@ -512,6 +512,49 @@ class Test_Rsvp extends Base {
 		// Verify email was stored.
 		$comment = get_comment( $data['comment_id'] );
 		$this->assertEquals( $email, $comment->comment_author_email );
+	}
+
+	/**
+	 * Test that anonymous RSVP is preserved when changing to not_attending.
+	 *
+	 * @covers ::save
+	 *
+	 * @return void
+	 */
+	public function test_save_anonymous_not_deleted_on_not_attending(): void {
+		$post  = $this->mock->post(
+			array(
+				'post_type' => Event::POST_TYPE,
+				'post_meta' => array(
+					'gatherpress_enable_anonymous_rsvp' => true,
+				),
+			)
+		)->get();
+		$rsvp  = new Rsvp( $post->ID );
+		$email = 'anonymous@example.com';
+
+		// Save an attending RSVP with anonymous flag.
+		$data = $rsvp->save( $email, 'attending', 1 );
+		$this->assertSame( 'attending', $data['status'], 'Failed to assert anonymous user is attending.' );
+
+		$comment_id = $data['comment_id'];
+
+		// Change RSVP to not_attending. The record should be preserved.
+		$data = $rsvp->save( $email, 'not_attending', 1 );
+
+		$this->assertSame(
+			'not_attending',
+			$data['status'],
+			'Failed to assert anonymous user is not_attending.'
+		);
+		$this->assertNotEmpty(
+			$data['comment_id'],
+			'Failed to assert comment was preserved for anonymous user.'
+		);
+
+		// Verify the comment still exists.
+		$comment = get_comment( $comment_id );
+		$this->assertNotNull( $comment, 'Failed to assert comment still exists after not_attending.' );
 	}
 
 	/**
