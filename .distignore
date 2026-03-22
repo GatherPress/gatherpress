@@ -21,6 +21,7 @@
 .typos.toml
 CLAUDE.md
 CODE_OF_CONDUCT.md
+README.md
 composer.json
 composer.lock
 dependencies.yml
