@@ -110,7 +110,7 @@ class Test_Rsvp extends Base {
 			'Failed to assert that user 2 is on waiting list.'
 		);
 
-		$user_3_id = $this->factory->user->create();
+		$user_1_id = $this->factory->user->create();
 
 		// Enable anonymous RSVP for this test.
 		update_post_meta( $post->ID, 'gatherpress_enable_anonymous_rsvp', true );
@@ -118,12 +118,12 @@ class Test_Rsvp extends Base {
 		// Anonymous not_attending should preserve the record.
 		$this->assertSame(
 			'waiting_list',
-			$rsvp->save( $user_3_id, 'attending', 1 )['status'],
+			$rsvp->save( $user_1_id, 'attending', 1 )['status'],
 			'Failed to assert that user 1 is on waiting list.'
 		);
 		$this->assertSame(
 			'not_attending',
-			$rsvp->save( $user_3_id, 'not_attending', 1 )['status'],
+			$rsvp->save( $user_1_id, 'not_attending', 1 )['status'],
 			'Failed to assert that user 1 is not_attending.'
 		);
 
