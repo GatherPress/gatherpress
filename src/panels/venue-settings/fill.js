@@ -18,7 +18,7 @@ import { PluginDocumentSettingPanel } from '@wordpress/editor';
  */
 import { VenuePluginDocumentSettings } from './slot';
 import { isEventPostType } from '../../helpers/event';
-import OnlineEventPanel from './online-link';
+import OnlineEventPanel from './online-event';
 
 export default function VenuePluginFill() {
 	return (
