@@ -33,8 +33,7 @@ describe( 'Email Modal store', () => {
 
 	describe( 'selectors', () => {
 		it( 'isModalOpen returns the isOpen state when true', () => {
-			// First set the state to true.
-			dispatch( STORE_NAME ).setModalOpen( true );
+			dispatch( STORE_NAME ).openModal();
 
 			const result = select( STORE_NAME ).isModalOpen();
 
@@ -42,7 +41,7 @@ describe( 'Email Modal store', () => {
 		} );
 
 		it( 'isModalOpen returns the isOpen state when false', () => {
-			dispatch( STORE_NAME ).setModalOpen( false );
+			dispatch( STORE_NAME ).closeModal();
 
 			const result = select( STORE_NAME ).isModalOpen();
 
@@ -82,16 +81,6 @@ describe( 'Email Modal store', () => {
 			const isOpen = select( STORE_NAME ).isModalOpen();
 
 			expect( isOpen ).toBe( false );
-		} );
-
-		it( 'setModalOpen updates isOpen state', () => {
-			dispatch( STORE_NAME ).setModalOpen( true );
-
-			expect( select( STORE_NAME ).isModalOpen() ).toBe( true );
-
-			dispatch( STORE_NAME ).setModalOpen( false );
-
-			expect( select( STORE_NAME ).isModalOpen() ).toBe( false );
 		} );
 
 		it( 'setSaving updates isSaving state', () => {

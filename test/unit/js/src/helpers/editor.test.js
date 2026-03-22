@@ -19,9 +19,7 @@ jest.mock( '@wordpress/core-data', () => ( {
  */
 import {
 	enableSave,
-	isGatherPressPostType,
 	getCurrentContextualPostId,
-	getCurrentContextualPostType,
 	getEditorDocument,
 	getStartOfWeek,
 	hasValidBlockContext,
@@ -56,72 +54,6 @@ describe( 'Editor helper functions', () => {
 
 			// Should not throw an error.
 			expect( () => enableSave() ).not.toThrow();
-		} );
-	} );
-
-	describe( 'isGatherPressPostType', () => {
-		beforeEach( () => {
-			jest.clearAllMocks();
-		} );
-
-		it( 'returns true when post type is gatherpress_event', () => {
-			select.mockReturnValue( {
-				getCurrentPostType: jest.fn().mockReturnValue( 'gatherpress_event' ),
-			} );
-
-			expect( isGatherPressPostType() ).toBe( true );
-		} );
-
-		it( 'returns true when post type is gatherpress_venue', () => {
-			select.mockReturnValue( {
-				getCurrentPostType: jest.fn().mockReturnValue( 'gatherpress_venue' ),
-			} );
-
-			expect( isGatherPressPostType() ).toBe( true );
-		} );
-
-		it( 'returns false when post type is post', () => {
-			select.mockReturnValue( {
-				getCurrentPostType: jest.fn().mockReturnValue( 'post' ),
-			} );
-
-			expect( isGatherPressPostType() ).toBe( false );
-		} );
-
-		it( 'returns false when post type is page', () => {
-			select.mockReturnValue( {
-				getCurrentPostType: jest.fn().mockReturnValue( 'page' ),
-			} );
-
-			expect( isGatherPressPostType() ).toBe( false );
-		} );
-
-		it( 'returns false when post type is wp_template', () => {
-			select.mockReturnValue( {
-				getCurrentPostType: jest.fn().mockReturnValue( 'wp_template' ),
-			} );
-
-			expect( isGatherPressPostType() ).toBe( false );
-		} );
-
-		it( 'returns false when select returns undefined', () => {
-			select.mockReturnValue( undefined );
-
-			expect( isGatherPressPostType() ).toBe( false );
-		} );
-
-		it( 'returns false when select returns null', () => {
-			select.mockReturnValue( null );
-
-			expect( isGatherPressPostType() ).toBe( false );
-		} );
-
-		it( 'returns false when getCurrentPostType returns undefined', () => {
-			select.mockReturnValue( {
-				getCurrentPostType: jest.fn().mockReturnValue( undefined ),
-			} );
-
-			expect( isGatherPressPostType() ).toBe( false );
 		} );
 	} );
 
@@ -292,50 +224,6 @@ describe( 'Editor helper functions', () => {
 			const result = getCurrentContextualPostId( 0 );
 
 			expect( result ).toBe( 999 );
-		} );
-	} );
-
-	describe( 'getCurrentContextualPostType', () => {
-		beforeEach( () => {
-			jest.clearAllMocks();
-		} );
-
-		it( 'returns provided postType when given', () => {
-			const result = getCurrentContextualPostType( 'gatherpress_event' );
-
-			expect( result ).toBe( 'gatherpress_event' );
-		} );
-
-		it( 'returns postType from editor when no postType provided', () => {
-			select.mockReturnValue( {
-				getCurrentPostType: jest.fn().mockReturnValue( 'post' ),
-			} );
-
-			const result = getCurrentContextualPostType();
-
-			expect( select ).toHaveBeenCalledWith( 'core/editor' );
-			expect( result ).toBe( 'post' );
-		} );
-
-		it( 'returns postType from editor when null is provided', () => {
-			select.mockReturnValue( {
-				getCurrentPostType: jest.fn().mockReturnValue( 'page' ),
-			} );
-
-			const result = getCurrentContextualPostType( null );
-
-			expect( result ).toBe( 'page' );
-		} );
-
-		it( 'returns postType from editor when empty string is provided', () => {
-			select.mockReturnValue( {
-				getCurrentPostType: jest.fn().mockReturnValue( 'gatherpress_venue' ),
-			} );
-
-			// Empty string is falsy, so it falls back to getCurrentPostType.
-			const result = getCurrentContextualPostType( '' );
-
-			expect( result ).toBe( 'gatherpress_venue' );
 		} );
 	} );
 
