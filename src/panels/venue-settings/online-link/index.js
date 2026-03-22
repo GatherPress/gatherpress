@@ -1,24 +1,24 @@
 /**
  * Internal dependencies.
  */
-import OnlineEventLink from '../../../components/OnlineEventLink';
+import OnlineEvent from '../../../components/OnlineEvent';
 
 /**
  * A panel component for managing the online event link.
  *
- * This component renders a section containing the `OnlineEventLink` component,
+ * This component renders a section containing the `OnlineEvent` component,
  * allowing users to set and manage the link for an online event.
  *
  * @since 1.0.0
  *
- * @return {JSX.Element} The JSX element for the OnlineEventLinkPanel.
+ * @return {JSX.Element} The JSX element for the OnlineEventPanel.
  */
-const OnlineEventLinkPanel = () => {
+const OnlineEventPanel = () => {
 	return (
 		<section>
-			<OnlineEventLink />
+			<OnlineEvent />
 		</section>
 	);
 };
 
-export default OnlineEventLinkPanel;
+export default OnlineEventPanel;
