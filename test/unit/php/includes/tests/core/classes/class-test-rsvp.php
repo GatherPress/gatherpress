@@ -83,7 +83,7 @@ class Test_Rsvp extends Base {
 			'Failed to assert no_status due to invalid user ID.'
 		);
 
-		$status = 'unittest';
+		$status = 'invalid_status';
 
 		$this->assertSame(
 			'no_status',
@@ -373,7 +373,7 @@ class Test_Rsvp extends Base {
 			$responses['all']['records'],
 			'Failed to assert all responses empty with non-event post type.'
 		);
-		$this->assertEquals( 0, $responses['count'], 'Failed to assert count is 0 with non-event post type.' );
+		$this->assertEquals( 0, $responses['all']['count'], 'Failed to assert count is 0 with non-event post type.' );
 
 		$this->mock->user( 'subscriber' );
 
