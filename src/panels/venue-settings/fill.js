@@ -18,7 +18,7 @@ import { PluginDocumentSettingPanel } from '@wordpress/editor';
  */
 import { VenuePluginDocumentSettings } from './slot';
 import { isEventPostType } from '../../helpers/event';
-import OnlineEventLinkPanel from './online-link';
+import OnlineEventPanel from './online-event';
 
 export default function VenuePluginFill() {
 	return (
@@ -30,7 +30,7 @@ export default function VenuePluginFill() {
 			>
 				<VStack spacing={ 6 }>
 					<VenuePluginDocumentSettings.Slot />
-					<OnlineEventLinkPanel />
+					<OnlineEventPanel />
 				</VStack>
 			</PluginDocumentSettingPanel>
 		)

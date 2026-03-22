@@ -9,22 +9,20 @@ import { useDispatch, useSelect } from '@wordpress/data';
 /**
  * Internal dependencies.
  */
-import { Broadcaster, Listener } from '../helpers/broadcasting';
-import { getFromGlobal } from '../helpers/globals';
 import { TAX_VENUE } from '../helpers/namespace';
 
 /**
- * OnlineEventLink component for GatherPress.
+ * OnlineEvent component for GatherPress.
  *
  * This component provides a toggle to mark an event as online, and when enabled,
  * shows a TextControl input for adding the online event link. It updates the post
- * meta, manages the online-event taxonomy term, and broadcasts changes to other components.
+ * meta and manages the online-event taxonomy term.
  *
  * @since 1.0.0
  *
  * @return {JSX.Element} The rendered React component.
  */
-const OnlineEventLink = () => {
+const OnlineEvent = () => {
 	const { editPost, unlockPostSaving } = useDispatch( 'core/editor' );
 
 	// Get the online event link from meta.
@@ -81,10 +79,6 @@ const OnlineEventLink = () => {
 
 		editPost( { meta } );
 		setOnlineEventLink( value );
-		Broadcaster(
-			{ setOnlineEventLink: value },
-			getFromGlobal( 'eventDetails.postId' ),
-		);
 		unlockPostSaving();
 	};
 
@@ -135,8 +129,6 @@ const OnlineEventLink = () => {
 		}
 	};
 
-	Listener( { setOnlineEventLink }, getFromGlobal( 'eventDetails.postId' ) );
-
 	return (
 		<>
 			<ToggleControl
@@ -158,4 +150,4 @@ const OnlineEventLink = () => {
 	);
 };
 
-export default OnlineEventLink;
+export default OnlineEvent;
