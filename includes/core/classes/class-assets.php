@@ -493,7 +493,7 @@ class Assets {
 			return;
 		}
 
-		$asset = include $asset_path;
+		$asset = include_once $asset_path;
 
 		// Add AQL as a dependency so our script loads after theirs.
 		$dependencies   = $asset['dependencies'] ?? array();
