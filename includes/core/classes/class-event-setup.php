@@ -18,6 +18,7 @@ use Exception;
 use GatherPress\Core\Traits\Singleton;
 use stdClass;
 use WP;
+use WP_Block;
 use WP_Post;
 use WP_Query;
 use WP_REST_Request;
@@ -105,8 +106,9 @@ class Event_Setup {
 		add_filter( 'query_vars', array( $this, 'query_vars' ) );
 		add_action( 'pre_get_posts', array( $this, 'handle_rsvp_sorting' ) );
 		add_action( 'pre_get_posts', array( $this, 'handle_venue_sorting' ) );
-		add_filter( 'get_the_date', array( $this, 'get_the_event_date' ) );
+		add_filter( 'get_the_date', array( $this, 'get_the_event_date' ), 10, 3 );
 		add_filter( 'the_time', array( $this, 'get_the_event_date' ) );
+		add_filter( 'render_block_core/post-date', array( $this, 'render_event_post_date_block' ), 10, 3 );
 		add_filter( 'display_post_states', array( $this, 'set_event_archive_labels' ), 10, 2 );
 		add_filter(
 			sprintf( 'manage_%s_posts_columns', Event::POST_TYPE ),
@@ -1145,28 +1147,93 @@ class Event_Setup {
 	 * Returns the event date instead of the publish date for events.
 	 *
 	 * This method retrieves the event date based on plugin settings, replacing the publish date
-	 * for event posts when appropriate.
+	 * for event posts when appropriate. When a specific date format is provided (e.g., 'c' for
+	 * ISO 8601), the event start datetime is returned in that format. This ensures compatibility
+	 * with the core/post-date block, which requests ISO 8601 format via block bindings.
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param string $the_date The formatted date.
+	 * @param string       $the_date The formatted date.
+	 * @param string       $format   PHP date format.
+	 * @param WP_Post|null $post     The post object.
 	 * @return string The event date as a formatted string.
 	 *
 	 * @throws Exception If initializing the Event object fails or event data cannot be retrieved.
 	 */
-	public function get_the_event_date( string $the_date ): string {
+	public function get_the_event_date( string $the_date, string $format = '', $post = null ): string {
 		$settings       = Settings::get_instance();
 		$use_event_date = $settings->get_value( 'general', 'general', 'post_or_event_date' );
 
+		// Determine the post type and ID from the post object or global context.
+		$post_type = $post instanceof \WP_Post ? $post->post_type : get_post_type();
+		$post_id   = $post instanceof \WP_Post ? $post->ID : get_the_ID();
+
 		// Check if the post is of the 'Event' post type and if event date should be used.
-		if ( Event::POST_TYPE !== get_post_type() || 1 !== intval( $use_event_date ) ) {
+		if ( Event::POST_TYPE !== $post_type || 1 !== intval( $use_event_date ) ) {
 			return $the_date;
 		}
 
-		// Get the event date and return it as the formatted date.
-		$event = new Event( get_the_ID() );
+		// Get the event date and return it in the requested format.
+		$event = new Event( $post_id );
+
+		// When a specific format is requested, return the event start datetime in that format.
+		// This ensures compatibility with the core/post-date block (which uses ISO 8601 'c' format).
+		if ( ! empty( $format ) ) {
+			return $event->get_datetime_start( $format );
+		}
 
 		return $event->get_display_datetime();
+	}
+
+	/**
+	 * Filters the rendered core/post-date block to display the event datetime.
+	 *
+	 * When the "Display event date instead of publish date for events" setting is enabled,
+	 * this method replaces the Post Date block output with the GatherPress-formatted event
+	 * datetime (using the event format settings for date, time, and timezone).
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string   $block_content The block content.
+	 * @param array    $block         The full block, including name and attributes.
+	 * @param WP_Block $instance      The block instance.
+	 * @return string The filtered block content with event datetime.
+	 */
+	public function render_event_post_date_block( string $block_content, array $block, WP_Block $instance ): string {
+		$post_id = $instance->context['postId'] ?? get_the_ID();
+
+		if ( ! $post_id || Event::POST_TYPE !== get_post_type( $post_id ) ) {
+			return $block_content;
+		}
+
+		$settings       = Settings::get_instance();
+		$use_event_date = $settings->get_value( 'general', 'general', 'post_or_event_date' );
+
+		if ( 1 !== intval( $use_event_date ) ) {
+			return $block_content;
+		}
+
+		$event        = new Event( $post_id );
+		$display_date = $event->get_display_datetime();
+		$iso_date     = $event->get_datetime_start( 'c' );
+
+		if ( empty( $display_date ) || '—' === $display_date ) {
+			return $block_content;
+		}
+
+		// Replace the datetime attribute and the displayed date text in the block output.
+		$block_content = preg_replace(
+			'/datetime="[^"]*"/',
+			'datetime="' . esc_attr( $iso_date ) . '"',
+			$block_content
+		);
+		$block_content = preg_replace(
+			'|(<time[^>]*>).*?(</time>)|s',
+			'$1' . esc_html( $display_date ) . '$2',
+			$block_content
+		);
+
+		return $block_content;
 	}
 
 	/**

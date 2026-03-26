@@ -1174,9 +1174,52 @@ class Test_Event_Setup extends Base {
 		// Set global post.
 		$this->go_to( get_permalink( $post_id ) );
 
-		$result = $instance->get_the_event_date( 'June 15, 2025' );
+		$post   = get_post( $post_id );
+		$result = $instance->get_the_event_date( 'June 15, 2025', '', $post );
 
 		$this->assertStringContainsString( 'June', $result, 'Should return event date.' );
+	}
+
+	/**
+	 * Coverage for get_the_event_date with ISO 8601 format for Post Date block compatibility.
+	 *
+	 * @covers ::get_the_event_date
+	 *
+	 * @return void
+	 */
+	public function test_get_the_event_date_iso_format(): void {
+		$instance = Event_Setup::get_instance();
+		$post_id  = $this->mock->post(
+			array( 'post_type' => Event::POST_TYPE )
+		)->get()->ID;
+
+		$event = new Event( $post_id );
+		$event->save_datetimes(
+			array(
+				'datetime_start' => '2025-06-15 10:00:00',
+				'datetime_end'   => '2025-06-15 14:00:00',
+				'timezone'       => 'America/New_York',
+			)
+		);
+
+		// Set setting to use event date.
+		update_option(
+			'gatherpress_general',
+			array(
+				'general' => array(
+					'post_or_event_date' => '1',
+				),
+			)
+		);
+
+		$this->go_to( get_permalink( $post_id ) );
+
+		$post   = get_post( $post_id );
+		$result = $instance->get_the_event_date( '2025-06-15T10:00:00-04:00', 'c', $post );
+
+		// Should return ISO 8601 formatted event start datetime.
+		$this->assertStringContainsString( '2025-06-15', $result, 'Should return ISO 8601 formatted event date.' );
+		$this->assertStringContainsString( 'T', $result, 'Should contain time separator for ISO 8601 format.' );
 	}
 
 	/**
@@ -1204,8 +1247,9 @@ class Test_Event_Setup extends Base {
 
 		$this->go_to( get_permalink( $post_id ) );
 
+		$post          = get_post( $post_id );
 		$original_date = 'June 15, 2025';
-		$result        = $instance->get_the_event_date( $original_date );
+		$result        = $instance->get_the_event_date( $original_date, '', $post );
 
 		$this->assertSame( $original_date, $result, 'Should return original post date.' );
 	}
@@ -1223,10 +1267,129 @@ class Test_Event_Setup extends Base {
 
 		$this->go_to( get_permalink( $post_id ) );
 
+		$post          = get_post( $post_id );
 		$original_date = 'June 15, 2025';
-		$result        = $instance->get_the_event_date( $original_date );
+		$result        = $instance->get_the_event_date( $original_date, '', $post );
 
 		$this->assertSame( $original_date, $result, 'Should return original date for non-event posts.' );
+	}
+
+	/**
+	 * Coverage for render_event_post_date_block method with event post and setting enabled.
+	 *
+	 * @covers ::render_event_post_date_block
+	 *
+	 * @return void
+	 */
+	public function test_render_event_post_date_block_with_event(): void {
+		$instance = Event_Setup::get_instance();
+		$post_id  = $this->mock->post(
+			array( 'post_type' => Event::POST_TYPE )
+		)->get()->ID;
+
+		$event = new Event( $post_id );
+		$event->save_datetimes(
+			array(
+				'datetime_start' => '2025-06-15 10:00:00',
+				'datetime_end'   => '2025-06-15 14:00:00',
+				'timezone'       => 'America/New_York',
+			)
+		);
+
+		// Set setting to use event date.
+		update_option(
+			'gatherpress_general',
+			array(
+				'general' => array(
+					'post_or_event_date' => '1',
+				),
+			)
+		);
+
+		$this->go_to( get_permalink( $post_id ) );
+
+		$block_content = '<div class="wp-block-post-date"><time datetime="2025-03-26T12:00:00+00:00">March 26, 2025</time></div>';
+		$block         = array(
+			'blockName' => 'core/post-date',
+			'attrs'     => array(),
+		);
+		$wp_block      = new \WP_Block(
+			$block,
+			array( 'postId' => $post_id )
+		);
+
+		$result = $instance->render_event_post_date_block( $block_content, $block, $wp_block );
+
+		$this->assertStringContainsString( 'June', $result, 'Should contain event date month.' );
+		$this->assertStringContainsString( '2025-06-15', $result, 'Should contain ISO event date in datetime attribute.' );
+	}
+
+	/**
+	 * Coverage for render_event_post_date_block method with setting disabled.
+	 *
+	 * @covers ::render_event_post_date_block
+	 *
+	 * @return void
+	 */
+	public function test_render_event_post_date_block_setting_disabled(): void {
+		$instance = Event_Setup::get_instance();
+		$post_id  = $this->mock->post(
+			array( 'post_type' => Event::POST_TYPE )
+		)->get()->ID;
+
+		// Set setting to use post date (disabled).
+		update_option(
+			'gatherpress_general',
+			array(
+				'general' => array(
+					'post_or_event_date' => '0',
+				),
+			)
+		);
+
+		$this->go_to( get_permalink( $post_id ) );
+
+		$block_content = '<div class="wp-block-post-date"><time datetime="2025-03-26T12:00:00+00:00">March 26, 2025</time></div>';
+		$block         = array(
+			'blockName' => 'core/post-date',
+			'attrs'     => array(),
+		);
+		$wp_block      = new \WP_Block(
+			$block,
+			array( 'postId' => $post_id )
+		);
+
+		$result = $instance->render_event_post_date_block( $block_content, $block, $wp_block );
+
+		$this->assertSame( $block_content, $result, 'Should return original block content when setting is disabled.' );
+	}
+
+	/**
+	 * Coverage for render_event_post_date_block method with non-event post.
+	 *
+	 * @covers ::render_event_post_date_block
+	 *
+	 * @return void
+	 */
+	public function test_render_event_post_date_block_non_event(): void {
+		$instance = Event_Setup::get_instance();
+		$post_id  = $this->mock->post()->get()->ID;
+
+		$this->go_to( get_permalink( $post_id ) );
+
+		$block_content = '<div class="wp-block-post-date"><time datetime="2025-03-26T12:00:00+00:00">March 26, 2025</time></div>';
+		$block         = array(
+			'blockName' => 'core/post-date',
+			'attrs'     => array(),
+		);
+		$wp_block      = new \WP_Block(
+			$block,
+			array( 'postId' => $post_id )
+		);
+
+		$result = $instance->render_event_post_date_block( $block_content, $block, $wp_block );
+
+		$this->assertSame( $block_content, $result, 'Should return original block content for non-event posts.' );
 	}
 
 	/**
