@@ -1165,8 +1165,8 @@ class Event_Setup {
 		$use_event_date = $settings->get_value( 'general', 'general', 'post_or_event_date' );
 
 		// Determine the post type and ID from the post object or global context.
-		$post_type = $post instanceof \WP_Post ? $post->post_type : get_post_type();
-		$post_id   = $post instanceof \WP_Post ? $post->ID : get_the_ID();
+		$post_type = $post instanceof WP_Post ? $post->post_type : get_post_type();
+		$post_id   = $post instanceof WP_Post ? $post->ID : get_the_ID();
 
 		// Check if the post is of the 'Event' post type and if event date should be used.
 		if ( Event::POST_TYPE !== $post_type || 1 !== intval( $use_event_date ) ) {

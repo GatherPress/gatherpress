@@ -8,7 +8,6 @@
 
 namespace GatherPress\Tests\Core;
 
-use Exception;
 use GatherPress\Core\Event;
 use GatherPress\Core\Event_Setup;
 use GatherPress\Core\Settings;
@@ -16,6 +15,7 @@ use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;
 use stdClass;
 use WP;
+use WP_Block;
 use WP_Query;
 use WP_REST_Request;
 
@@ -155,6 +155,12 @@ class Test_Event_Setup extends Base {
 				'name'     => 'the_time',
 				'priority' => 10,
 				'callback' => array( $instance, 'get_the_event_date' ),
+			),
+			array(
+				'type'     => 'filter',
+				'name'     => 'render_block_core/post-date',
+				'priority' => 10,
+				'callback' => array( $instance, 'render_event_post_date_block' ),
 			),
 			array(
 				'type'     => 'filter',
@@ -1313,7 +1319,7 @@ class Test_Event_Setup extends Base {
 			'blockName' => 'core/post-date',
 			'attrs'     => array(),
 		);
-		$wp_block      = new \WP_Block(
+		$wp_block      = new WP_Block(
 			$block,
 			array( 'postId' => $post_id )
 		);
@@ -1354,7 +1360,7 @@ class Test_Event_Setup extends Base {
 			'blockName' => 'core/post-date',
 			'attrs'     => array(),
 		);
-		$wp_block      = new \WP_Block(
+		$wp_block      = new WP_Block(
 			$block,
 			array( 'postId' => $post_id )
 		);
@@ -1382,7 +1388,7 @@ class Test_Event_Setup extends Base {
 			'blockName' => 'core/post-date',
 			'attrs'     => array(),
 		);
-		$wp_block      = new \WP_Block(
+		$wp_block      = new WP_Block(
 			$block,
 			array( 'postId' => $post_id )
 		);
