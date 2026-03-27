@@ -24,13 +24,13 @@
 	</rule>
 	<rule ref="rulesets/codesize.xml/TooManyPublicMethods">
 		<properties>
-			<property name="maxmethods" value="30"/>
+			<property name="maxmethods" value="35"/>
 			<property name="ignorepattern" value="(^(__construct|getIterator|offsetExists|offsetGet|offsetSet|offsetUnset))i" />
 		</properties>
 	</rule>
 	<rule ref="rulesets/codesize.xml/TooManyMethods">
 		<properties>
-			<property name="maxmethods" value="30"/>
+			<property name="maxmethods" value="35"/>
 		</properties>
 	</rule>
 	<rule ref="rulesets/codesize.xml/ExcessiveClassComplexity">

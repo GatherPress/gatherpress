@@ -100,7 +100,7 @@ class General extends Base {
 							'name' => __( 'Publish Date', 'gatherpress' ),
 						),
 						'field'  => array(
-							'label'   => __( 'Show publish date as event date for events.', 'gatherpress' ),
+							'label'   => __( 'Display event date instead of publish date for events.', 'gatherpress' ),
 							'type'    => 'checkbox',
 							'options' => array(
 								'default' => '1',
