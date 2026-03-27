@@ -1198,6 +1198,8 @@ class Event_Setup {
 	 * @param array    $block         The full block, including name and attributes.
 	 * @param WP_Block $instance      The block instance.
 	 * @return string The filtered block content with event datetime.
+	 *
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) -- $block is required by the render_block filter signature.
 	 */
 	public function render_event_post_date_block( string $block_content, array $block, WP_Block $instance ): string {
 		$post_id = $instance->context['postId'] ?? get_the_ID();

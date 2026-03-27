@@ -1314,6 +1314,7 @@ class Test_Event_Setup extends Base {
 
 		$this->go_to( get_permalink( $post_id ) );
 
+		// phpcs:ignore Generic.Files.LineLength.TooLong -- Block HTML fixture.
 		$block_content = '<div class="wp-block-post-date"><time datetime="2025-03-26T12:00:00+00:00">March 26, 2025</time></div>';
 		$block         = array(
 			'blockName' => 'core/post-date',
@@ -1327,7 +1328,11 @@ class Test_Event_Setup extends Base {
 		$result = $instance->render_event_post_date_block( $block_content, $block, $wp_block );
 
 		$this->assertStringContainsString( 'June', $result, 'Should contain event date month.' );
-		$this->assertStringContainsString( '2025-06-15', $result, 'Should contain ISO event date in datetime attribute.' );
+		$this->assertStringContainsString(
+			'2025-06-15',
+			$result,
+			'Should contain ISO event date in datetime attribute.'
+		);
 	}
 
 	/**
@@ -1355,6 +1360,7 @@ class Test_Event_Setup extends Base {
 
 		$this->go_to( get_permalink( $post_id ) );
 
+		// phpcs:ignore Generic.Files.LineLength.TooLong -- Block HTML fixture.
 		$block_content = '<div class="wp-block-post-date"><time datetime="2025-03-26T12:00:00+00:00">March 26, 2025</time></div>';
 		$block         = array(
 			'blockName' => 'core/post-date',
@@ -1383,6 +1389,7 @@ class Test_Event_Setup extends Base {
 
 		$this->go_to( get_permalink( $post_id ) );
 
+		// phpcs:ignore Generic.Files.LineLength.TooLong -- Block HTML fixture.
 		$block_content = '<div class="wp-block-post-date"><time datetime="2025-03-26T12:00:00+00:00">March 26, 2025</time></div>';
 		$block         = array(
 			'blockName' => 'core/post-date',
