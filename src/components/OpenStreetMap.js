@@ -128,6 +128,7 @@ const OpenStreetMap = ( props ) => {
 					__( '© %s contributors', 'gatherpress' ),
 					'<a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
 				),
+				referrerPolicy: 'no-referrer-when-downgrade',
 			},
 		).addTo( map );
 
