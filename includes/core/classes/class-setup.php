@@ -20,6 +20,7 @@ use GatherPress\Core\Settings\Events;
 use GatherPress\Core\Settings\Formatting;
 use GatherPress\Core\Settings\Roles;
 use GatherPress\Core\Settings\Rsvp_Settings;
+use GatherPress\Core\Settings\Tools;
 use GatherPress\Core\Traits\Singleton;
 use WP_Site;
 
@@ -80,6 +81,7 @@ class Setup {
 		Formatting::get_instance();
 		Roles::get_instance();
 		Rsvp_Settings::get_instance();
+		Tools::get_instance();
 		Settings::get_instance();
 		Topic::get_instance();
 		User::get_instance();

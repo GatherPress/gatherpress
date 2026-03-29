@@ -731,4 +731,136 @@ class Settings {
 
 		return $keys;
 	}
+
+	/**
+	 * Export current settings as a structured array.
+	 *
+	 * Returns only non-default values (what's actually stored),
+	 * along with version metadata.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return array Export data with version, timestamp, and settings.
+	 */
+	public function export_settings(): array {
+		return array(
+			'version'     => GATHERPRESS_VERSION,
+			'exported_at' => current_time( 'c' ),
+			'settings'    => get_option( self::OPTION_NAME, array() ),
+		);
+	}
+
+	/**
+	 * Validate import data without applying changes.
+	 *
+	 * Checks structure, version compatibility, and reports what
+	 * would change if the import were applied.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param array $data The parsed import data.
+	 * @return array Validation result with 'valid', 'changes', 'unknown', and 'warnings' keys.
+	 */
+	public function validate_import( array $data ): array {
+		$result = array(
+			'valid'    => true,
+			'changes'  => array(),
+			'unknown'  => array(),
+			'warnings' => array(),
+		);
+
+		if ( ! isset( $data['settings'] ) || ! is_array( $data['settings'] ) ) {
+			$result['valid']      = false;
+			$result['warnings'][] = __( 'Invalid import file: missing settings data.', 'gatherpress' );
+
+			return $result;
+		}
+
+		if ( isset( $data['version'] ) && $data['version'] !== GATHERPRESS_VERSION ) {
+			$result['warnings'][] = sprintf(
+				/* translators: 1: Export version, 2: Current version. */
+				__(
+					'Settings were exported from version %1$s (current: %2$s).',
+					'gatherpress'
+				),
+				$data['version'],
+				GATHERPRESS_VERSION
+			);
+		}
+
+		$field_type_map = $this->build_field_type_map( $this->get_sub_pages() );
+		$current        = get_option( self::OPTION_NAME, array() );
+
+		foreach ( $data['settings'] as $key => $value ) {
+			if ( ! isset( $field_type_map[ $key ] ) ) {
+				$result['unknown'][] = $key;
+				continue;
+			}
+
+			$current_value = $current[ $key ] ?? $this->get_flat_default( $key );
+
+			// phpcs:ignore Universal.Operators.StrictComparisons.LooseEqual
+			if ( $value != $current_value ) {
+				$result['changes'][] = $key;
+			}
+		}
+
+		return $result;
+	}
+
+	/**
+	 * Import settings from a parsed export file.
+	 *
+	 * Validates, sanitizes, and applies imported settings. Supports
+	 * merge (preserves existing) and replace (overwrites all) modes.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param array  $data The parsed import data.
+	 * @param string $mode Import mode: 'merge' or 'replace'.
+	 * @return array Result with 'success', 'imported', 'skipped', and 'warnings' keys.
+	 */
+	public function import_settings( array $data, string $mode = 'merge' ): array {
+		$result = array(
+			'success'  => false,
+			'imported' => array(),
+			'skipped'  => array(),
+			'warnings' => array(),
+		);
+
+		$validation = $this->validate_import( $data );
+
+		if ( ! $validation['valid'] ) {
+			$result['warnings'] = $validation['warnings'];
+
+			return $result;
+		}
+
+		$result['warnings'] = $validation['warnings'];
+		$result['skipped']  = $validation['unknown'];
+
+		$field_type_map = $this->build_field_type_map( $this->get_sub_pages() );
+		$sanitize       = $this->sanitize_page_settings( $field_type_map );
+
+		// Filter to only known keys.
+		$to_import = array_intersect_key(
+			$data['settings'],
+			$field_type_map
+		);
+
+		// Sanitize imported values.
+		if ( 'replace' === $mode ) {
+			// Replace mode: clear existing, only use imported values.
+			delete_option( self::OPTION_NAME );
+		}
+
+		$sanitized = $sanitize( $to_import );
+
+		update_option( self::OPTION_NAME, $sanitized );
+
+		$result['success']  = true;
+		$result['imported'] = array_keys( $to_import );
+
+		return $result;
+	}
 }
