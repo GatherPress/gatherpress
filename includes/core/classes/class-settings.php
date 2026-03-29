@@ -292,7 +292,7 @@ class Settings {
 				}
 
 				foreach ( (array) $section_settings['options'] as $option => $option_settings ) {
-					if ( isset( $map[ $option ] ) ) {
+					if ( isset( $map[ $option ] ) && ! in_array( $option, $duplicates, true ) ) {
 						$duplicates[] = $option;
 					}
 

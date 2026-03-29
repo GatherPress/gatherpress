@@ -559,7 +559,7 @@ class Event_Setup {
 				// Use the page title as the archive title.
 				add_filter(
 					'get_the_archive_title',
-					static function () use ( $page_title ) {
+					static function () use ( $page_title ): string {
 						return $page_title;
 					}
 				);
