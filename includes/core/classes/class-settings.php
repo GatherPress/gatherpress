@@ -281,7 +281,7 @@ class Settings {
 		$map        = array();
 		$duplicates = array();
 
-		foreach ( $sub_pages as $sub_page => $sub_page_settings ) {
+		foreach ( $sub_pages as $sub_page_settings ) {
 			if ( ! isset( $sub_page_settings['sections'] ) ) {
 				continue;
 			}
