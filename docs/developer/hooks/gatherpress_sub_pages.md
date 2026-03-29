@@ -35,4 +35,9 @@ apply_filters( 'gatherpress_sub_pages', array() )
 
 
 
+## See Also
+
+- [Settings API Overview](../settings/README.md)
+- [Extending Settings](../settings/extending-settings.md)
+
 [← All Hooks](Hooks.md)
