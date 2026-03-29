@@ -203,7 +203,7 @@ class Test_Event_Setup extends Base {
 		$settings = Settings::get_instance();
 
 		// Get the dynamic slug from settings (default is 'events' plural).
-		$rewrite_slug = $settings->get_value( 'events_url' );
+		$rewrite_slug = $settings->get( 'events_url' );
 
 		$instance->register_calendar_rewrite_rule();
 
@@ -3059,7 +3059,7 @@ class Test_Event_Setup extends Base {
 
 		// Get the rewrite slug from settings.
 		$settings     = Settings::get_instance();
-		$rewrite_slug = $settings->get_value( 'events_url' );
+		$rewrite_slug = $settings->get( 'events_url' );
 
 		// Create a page with the same slug as the events rewrite slug.
 		$page_id = wp_insert_post(
@@ -3103,7 +3103,7 @@ class Test_Event_Setup extends Base {
 
 		// Get the rewrite slug from settings.
 		$settings     = Settings::get_instance();
-		$rewrite_slug = $settings->get_value( 'events_url' );
+		$rewrite_slug = $settings->get( 'events_url' );
 
 		// Make sure no page exists with this slug.
 		$existing_page = get_page_by_path( $rewrite_slug );
@@ -3135,7 +3135,7 @@ class Test_Event_Setup extends Base {
 
 		// Get the rewrite slug from settings.
 		$settings     = Settings::get_instance();
-		$rewrite_slug = $settings->get_value( 'events_url' );
+		$rewrite_slug = $settings->get( 'events_url' );
 
 		// Create a draft page with the same slug.
 		$page_id = wp_insert_post(

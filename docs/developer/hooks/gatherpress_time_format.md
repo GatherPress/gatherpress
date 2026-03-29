@@ -5,16 +5,16 @@
 ```php
 add_filter(
    'gatherpress_time_format',
-    function( $get_value ) {
+    function( $get ) {
         // Your code here.
-        return $get_value;
+        return $get;
     }
 );
 ```
 
 ## Parameters
 
-- `$get_value`
+- `$get`
 
 ## Files
 
@@ -22,7 +22,7 @@ add_filter(
 ```php
 apply_filters(
 			'gatherpress_time_format',
-			$settings->get_value( 'general', 'formatting', 'time_format' )
+			$settings->get( 'time_format' )
 		)
 ```
 

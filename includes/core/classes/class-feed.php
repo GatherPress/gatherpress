@@ -92,7 +92,7 @@ class Feed {
 
 			// Get the rewrite slug from settings.
 			$settings     = Settings::get_instance();
-			$rewrite_slug = $settings->get_value( 'events_url' );
+			$rewrite_slug = $settings->get( 'events_url' );
 
 			// Check if this is the events feed URL.
 			if ( str_contains( $request_uri, '/' . $rewrite_slug . '/' . $GLOBALS['wp_rewrite']->feed_base ) ) {

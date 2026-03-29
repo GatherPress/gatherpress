@@ -375,11 +375,11 @@ class Test_Settings extends Base {
 	 * Test getting value with all parameters set.
 	 *
 	 * @since  1.0.0
-	 * @covers ::get_value
+	 * @covers ::get
 	 *
 	 * @return void
 	 */
-	public function test_get_value_with_all_parameters(): void {
+	public function test_get_with_all_parameters(): void {
 		$instance = Settings::get_instance();
 		$expected = 'test_value';
 
@@ -390,7 +390,7 @@ class Test_Settings extends Base {
 			)
 		);
 
-		$value = $instance->get_value( 'test_option' );
+		$value = $instance->get( 'test_option' );
 
 		$this->assertEquals(
 			$expected,
@@ -405,7 +405,7 @@ class Test_Settings extends Base {
 	 * Test getting default value when option is empty.
 	 *
 	 * @since  1.0.0
-	 * @covers ::get_value
+	 * @covers ::get
 	 *
 	 * @return void
 	 */
@@ -419,7 +419,7 @@ class Test_Settings extends Base {
 			)
 		);
 
-		$value = $instance->get_value( 'test_option' );
+		$value = $instance->get( 'test_option' );
 
 		// The actual default value will come from get_flat_default.
 		$default_value = $instance->get_flat_default( 'test_option' );
@@ -437,13 +437,13 @@ class Test_Settings extends Base {
 	 * Test getting value with empty section and option.
 	 *
 	 * @since  1.0.0
-	 * @covers ::get_value
+	 * @covers ::get
 	 *
 	 * @return void
 	 */
-	public function test_get_value_with_empty_section_option(): void {
+	public function test_get_with_empty_section_option(): void {
 		$instance = Settings::get_instance();
-		$value    = $instance->get_value( 'nonexistent_option' );
+		$value    = $instance->get( 'nonexistent_option' );
 
 		$this->assertEquals(
 			$instance->get_flat_default( 'nonexistent_option' ),
@@ -456,13 +456,13 @@ class Test_Settings extends Base {
 	 * Test getting value with non-existent sub-page.
 	 *
 	 * @since  1.0.0
-	 * @covers ::get_value
+	 * @covers ::get
 	 *
 	 * @return void
 	 */
-	public function test_get_value_with_non_existent_page(): void {
+	public function test_get_with_non_existent_page(): void {
 		$instance = Settings::get_instance();
-		$value    = $instance->get_value( 'nonexistent_option' );
+		$value    = $instance->get( 'nonexistent_option' );
 
 		$this->assertEquals(
 			$instance->get_flat_default( 'nonexistent_option' ),

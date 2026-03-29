@@ -111,12 +111,12 @@ class Rsvp_Cleanup {
 	 */
 	public function schedule_cleanup_cron() {
 		$settings = Settings::get_instance();
-		$switch   = $settings->get_value( 'rsvp_cleanup_switch' );
+		$switch   = $settings->get( 'rsvp_cleanup_switch' );
 
 		if ( 'on' === $switch ) {
 			if ( ! wp_next_scheduled( 'gatherpress_rsvp_cleanup' ) ) {
-				$frequency       = $settings->get_value( 'rsvp_cleanup_frequency' );
-				$interval        = $settings->get_value( 'rsvp_cleanup_interval' );
+				$frequency       = $settings->get( 'rsvp_cleanup_frequency' );
+				$interval        = $settings->get( 'rsvp_cleanup_interval' );
 				$time_in_seconds = $this->convert_to_seconds( $frequency, $interval );
 
 				wp_schedule_single_event( time() + $time_in_seconds, 'gatherpress_rsvp_cleanup' );

@@ -182,8 +182,8 @@ class Event_Query {
 			$settings = Settings::get_instance();
 
 			$archive_pages = array(
-				'past'     => json_decode( $settings->get_value( 'past_events' ) ),
-				'upcoming' => json_decode( $settings->get_value( 'upcoming_events' ) ),
+				'past'     => json_decode( $settings->get( 'past_events' ) ),
+				'upcoming' => json_decode( $settings->get( 'upcoming_events' ) ),
 			);
 
 			// Resolve the current page ID from query vars since

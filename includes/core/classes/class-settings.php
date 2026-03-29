@@ -441,7 +441,7 @@ class Settings {
 	public function render_field( string $option, array $option_settings ): void {
 		$type  = $option_settings['field']['type'] ?? '';
 		$name  = $this->get_name_field( $option );
-		$value = $this->get_value( $option );
+		$value = $this->get( $option );
 
 		$params = array(
 			'name'        => $name,
@@ -488,7 +488,7 @@ class Settings {
 	 * @param string $option The unique name of the option to retrieve.
 	 * @return mixed The value of the option or its default value.
 	 */
-	public function get_value( string $option ) {
+	public function get( string $option ) {
 		$options = get_option( self::OPTION_NAME, array() );
 
 		if ( isset( $options[ $option ] ) && '' !== $options[ $option ] ) {

@@ -128,7 +128,7 @@ class Roles extends Base {
 		$default    = __( 'Member', 'gatherpress' );
 
 		foreach ( array_keys( $user_roles ) as $role ) {
-			$users = $settings->get_value( $role );
+			$users = $settings->get( $role );
 
 			if ( empty( $users ) ) {
 				continue;

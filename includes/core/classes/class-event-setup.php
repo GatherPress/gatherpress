@@ -131,7 +131,7 @@ class Event_Setup {
 	 */
 	public function register_post_type(): void {
 		$settings     = Settings::get_instance();
-		$rewrite_slug = $settings->get_value( 'events_url' );
+		$rewrite_slug = $settings->get( 'events_url' );
 		register_post_type(
 			Event::POST_TYPE,
 			array(
@@ -232,7 +232,7 @@ class Event_Setup {
 	/**
 	 * Returns the post type slug localized for the site language and sanitized as URL part.
 	 *
-	 * Do not use this directly, use get_value( 'events_url' ) instead.
+	 * Do not use this directly, use get( 'events_url' ) instead.
 	 *
 	 * This method switches to the sites default language and gets the translation of 'events' for the loaded locale.
 	 * After that, the method sanitizes the string to be safely used within an URL,
@@ -411,7 +411,7 @@ class Event_Setup {
 	 */
 	public function register_calendar_rewrite_rule(): void {
 		$settings     = Settings::get_instance();
-		$rewrite_slug = sanitize_title( $settings->get_value( 'events_url' ) );
+		$rewrite_slug = sanitize_title( $settings->get( 'events_url' ) );
 
 		add_rewrite_rule(
 			sprintf( '^%s/([^/]+)\.ics$', $rewrite_slug ),
@@ -523,7 +523,7 @@ class Event_Setup {
 
 		// Get the configured rewrite slug for events.
 		$settings     = Settings::get_instance();
-		$rewrite_slug = $settings->get_value( 'events_url' );
+		$rewrite_slug = $settings->get( 'events_url' );
 
 		// Check if a page exists with this slug.
 		$page = get_page_by_path( $rewrite_slug );
@@ -537,8 +537,8 @@ class Event_Setup {
 
 		// Check if this page is designated as an upcoming or past events archive.
 		$archive_pages = array(
-			'upcoming' => json_decode( $settings->get_value( 'upcoming_events' ) ),
-			'past'     => json_decode( $settings->get_value( 'past_events' ) ),
+			'upcoming' => json_decode( $settings->get( 'upcoming_events' ) ),
+			'past'     => json_decode( $settings->get( 'past_events' ) ),
 		);
 
 		foreach ( $archive_pages as $key => $value ) {
@@ -1200,7 +1200,7 @@ class Event_Setup {
 	 */
 	public function get_the_event_date( string $the_date, string $format = '', $post = null ): string {
 		$settings       = Settings::get_instance();
-		$use_event_date = $settings->get_value( 'post_or_event_date' );
+		$use_event_date = $settings->get( 'post_or_event_date' );
 
 		// Determine the post type and ID from the post object or global context.
 		$post_type = $post instanceof WP_Post ? $post->post_type : get_post_type();
@@ -1247,7 +1247,7 @@ class Event_Setup {
 		}
 
 		$settings       = Settings::get_instance();
-		$use_event_date = $settings->get_value( 'post_or_event_date' );
+		$use_event_date = $settings->get( 'post_or_event_date' );
 
 		if ( 1 !== intval( $use_event_date ) ) {
 			return $block_content;
@@ -1293,8 +1293,8 @@ class Event_Setup {
 		// Retrieve archive page settings.
 		$settings      = Settings::get_instance();
 		$archive_pages = array(
-			'past_events'     => json_decode( $settings->get_value( 'past_events' ) ),
-			'upcoming_events' => json_decode( $settings->get_value( 'upcoming_events' ) ),
+			'past_events'     => json_decode( $settings->get( 'past_events' ) ),
+			'upcoming_events' => json_decode( $settings->get( 'upcoming_events' ) ),
 		);
 
 		// Check if the current post corresponds to any assigned archive page and add display states.
