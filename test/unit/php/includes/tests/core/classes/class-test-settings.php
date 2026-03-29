@@ -1257,4 +1257,317 @@ class Test_Settings extends Base {
 
 		remove_all_filters( 'gatherpress_sub_pages' );
 	}
+
+	/**
+	 * Coverage for export_settings.
+	 *
+	 * @covers ::export_settings
+	 *
+	 * @return void
+	 */
+	public function test_export_settings(): void {
+		$instance = Settings::get_instance();
+
+		// Set a value so export isn't empty.
+		update_option( 'gatherpress_settings', array( 'map_platform' => 'google' ) );
+
+		$export = $instance->export_settings();
+
+		$this->assertArrayHasKey( 'version', $export );
+		$this->assertArrayHasKey( 'exported_at', $export );
+		$this->assertArrayHasKey( 'settings', $export );
+		$this->assertSame( 'google', $export['settings']['map_platform'] );
+
+		delete_option( 'gatherpress_settings' );
+	}
+
+	/**
+	 * Coverage for export_settings with empty settings.
+	 *
+	 * @covers ::export_settings
+	 *
+	 * @return void
+	 */
+	public function test_export_settings_empty(): void {
+		$instance = Settings::get_instance();
+
+		delete_option( 'gatherpress_settings' );
+
+		$export = $instance->export_settings();
+
+		$this->assertEmpty( $export['settings'] );
+	}
+
+	/**
+	 * Coverage for validate_import with valid data.
+	 *
+	 * @covers ::validate_import
+	 *
+	 * @return void
+	 */
+	public function test_validate_import_valid(): void {
+		$instance = Settings::get_instance();
+
+		$data = array(
+			'version'  => GATHERPRESS_VERSION,
+			'settings' => array(
+				'map_platform' => 'google',
+			),
+		);
+
+		$result = $instance->validate_import( $data );
+
+		$this->assertTrue( $result['valid'] );
+		$this->assertContains( 'map_platform', $result['changes'] );
+		$this->assertEmpty( $result['unknown'] );
+	}
+
+	/**
+	 * Coverage for validate_import with missing settings key.
+	 *
+	 * @covers ::validate_import
+	 *
+	 * @return void
+	 */
+	public function test_validate_import_missing_settings(): void {
+		$instance = Settings::get_instance();
+
+		$result = $instance->validate_import( array( 'version' => '1.0.0' ) );
+
+		$this->assertFalse( $result['valid'] );
+		$this->assertNotEmpty( $result['warnings'] );
+	}
+
+	/**
+	 * Coverage for validate_import with unknown keys.
+	 *
+	 * @covers ::validate_import
+	 *
+	 * @return void
+	 */
+	public function test_validate_import_unknown_keys(): void {
+		$instance = Settings::get_instance();
+
+		$data = array(
+			'settings' => array(
+				'unknown_key' => 'value',
+			),
+		);
+
+		$result = $instance->validate_import( $data );
+
+		$this->assertTrue( $result['valid'] );
+		$this->assertContains( 'unknown_key', $result['unknown'] );
+	}
+
+	/**
+	 * Coverage for validate_import with version mismatch.
+	 *
+	 * @covers ::validate_import
+	 *
+	 * @return void
+	 */
+	public function test_validate_import_version_mismatch(): void {
+		$instance = Settings::get_instance();
+
+		$data = array(
+			'version'  => '0.0.1',
+			'settings' => array(
+				'map_platform' => 'google',
+			),
+		);
+
+		$result = $instance->validate_import( $data );
+
+		$this->assertTrue( $result['valid'] );
+		$this->assertNotEmpty( $result['warnings'] );
+	}
+
+	/**
+	 * Coverage for import_settings with merge mode.
+	 *
+	 * @covers ::import_settings
+	 *
+	 * @return void
+	 */
+	public function test_import_settings_merge(): void {
+		$instance = Settings::get_instance();
+
+		update_option( 'gatherpress_settings', array( 'map_platform' => 'google' ) );
+
+		$data = array(
+			'version'  => GATHERPRESS_VERSION,
+			'settings' => array(
+				'max_attendance_limit' => 100,
+			),
+		);
+
+		$result = $instance->import_settings( $data, 'merge' );
+
+		$this->assertTrue( $result['success'] );
+		$this->assertContains( 'max_attendance_limit', $result['imported'] );
+
+		$settings = get_option( 'gatherpress_settings' );
+		$this->assertSame( 'google', $settings['map_platform'], 'Existing value should be preserved in merge.' );
+		$this->assertSame( 100, $settings['max_attendance_limit'], 'Imported value should be set.' );
+
+		delete_option( 'gatherpress_settings' );
+	}
+
+	/**
+	 * Coverage for import_settings with replace mode.
+	 *
+	 * @covers ::import_settings
+	 *
+	 * @return void
+	 */
+	public function test_import_settings_replace(): void {
+		$instance = Settings::get_instance();
+
+		update_option( 'gatherpress_settings', array( 'map_platform' => 'google' ) );
+
+		$data = array(
+			'version'  => GATHERPRESS_VERSION,
+			'settings' => array(
+				'max_attendance_limit' => 100,
+			),
+		);
+
+		$result = $instance->import_settings( $data, 'replace' );
+
+		$this->assertTrue( $result['success'] );
+
+		$settings = get_option( 'gatherpress_settings' );
+		$this->assertArrayNotHasKey( 'map_platform', $settings, 'Old value should be gone in replace.' );
+		$this->assertSame( 100, $settings['max_attendance_limit'], 'Imported value should be set.' );
+
+		delete_option( 'gatherpress_settings' );
+	}
+
+	/**
+	 * Coverage for import_settings with invalid data.
+	 *
+	 * @covers ::import_settings
+	 *
+	 * @return void
+	 */
+	public function test_import_settings_invalid(): void {
+		$instance = Settings::get_instance();
+
+		$result = $instance->import_settings( array( 'version' => '1.0.0' ) );
+
+		$this->assertFalse( $result['success'] );
+		$this->assertNotEmpty( $result['warnings'] );
+	}
+
+	/**
+	 * Coverage for import_settings skipping unknown keys.
+	 *
+	 * @covers ::import_settings
+	 *
+	 * @return void
+	 */
+	public function test_import_settings_skips_unknown_keys(): void {
+		$instance = Settings::get_instance();
+
+		$data = array(
+			'version'  => GATHERPRESS_VERSION,
+			'settings' => array(
+				'unknown_key'  => 'value',
+				'map_platform' => 'google',
+			),
+		);
+
+		$result = $instance->import_settings( $data );
+
+		$this->assertTrue( $result['success'] );
+		$this->assertContains( 'unknown_key', $result['skipped'] );
+		$this->assertContains( 'map_platform', $result['imported'] );
+
+		delete_option( 'gatherpress_settings' );
+	}
+
+	/**
+	 * Coverage for get_defaults_map.
+	 *
+	 * @covers ::get_defaults_map
+	 *
+	 * @return void
+	 */
+	public function test_get_defaults_map(): void {
+		$instance = Settings::get_instance();
+
+		$defaults = Utility::invoke_hidden_method( $instance, 'get_defaults_map' );
+
+		$this->assertIsArray( $defaults );
+		$this->assertArrayHasKey( 'map_platform', $defaults );
+		$this->assertSame( 'osm', $defaults['map_platform'] );
+	}
+
+	/**
+	 * Coverage for get_rewrite_keys.
+	 *
+	 * @covers ::get_rewrite_keys
+	 *
+	 * @return void
+	 */
+	public function test_get_rewrite_keys(): void {
+		$instance = Settings::get_instance();
+
+		$keys = Utility::invoke_hidden_method( $instance, 'get_rewrite_keys' );
+
+		$this->assertIsArray( $keys );
+		$this->assertContains( 'events_url', $keys );
+		$this->assertContains( 'venues_url', $keys );
+		$this->assertContains( 'topics_url', $keys );
+	}
+
+	/**
+	 * Coverage for build_field_type_map.
+	 *
+	 * @covers ::build_field_type_map
+	 *
+	 * @return void
+	 */
+	public function test_build_field_type_map(): void {
+		$instance  = Settings::get_instance();
+		$sub_pages = $instance->get_sub_pages();
+
+		$map = Utility::invoke_hidden_method( $instance, 'build_field_type_map', array( $sub_pages ) );
+
+		$this->assertIsArray( $map );
+		$this->assertSame( 'select', $map['map_platform'] );
+		$this->assertSame( 'checkbox', $map['post_or_event_date'] );
+		$this->assertSame( 'number', $map['max_attendance_limit'] );
+		$this->assertSame( 'text', $map['date_format'] );
+		$this->assertSame( 'autocomplete', $map['organizer'] );
+	}
+
+	/**
+	 * Coverage for render_field with unknown type.
+	 *
+	 * @covers ::render_field
+	 *
+	 * @return void
+	 */
+	public function test_render_field_with_unknown_type(): void {
+		$instance = Settings::get_instance();
+
+		// An unknown type should attempt to render a template that doesn't exist.
+		// Utility::render_template handles missing templates gracefully.
+		$output = Utility::buffer_and_return(
+			array( $instance, 'render_field' ),
+			array(
+				'test_option',
+				array(
+					'field' => array(
+						'type' => 'nonexistent',
+					),
+				),
+			)
+		);
+
+		// Should produce empty output since the template doesn't exist.
+		$this->assertEmpty( $output, 'Unknown field type should produce no output.' );
+	}
 }

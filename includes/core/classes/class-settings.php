@@ -776,7 +776,7 @@ class Settings {
 			return $result;
 		}
 
-		if ( isset( $data['version'] ) && $data['version'] !== GATHERPRESS_VERSION ) {
+		if ( isset( $data['version'] ) && GATHERPRESS_VERSION !== $data['version'] ) {
 			$result['warnings'][] = sprintf(
 				/* translators: 1: Export version, 2: Current version. */
 				__(
@@ -799,8 +799,7 @@ class Settings {
 
 			$current_value = $current[ $key ] ?? $this->get_flat_default( $key );
 
-			// phpcs:ignore Universal.Operators.StrictComparisons.LooseEqual
-			if ( $value != $current_value ) {
+			if ( $value !== $current_value ) {
 				$result['changes'][] = $key;
 			}
 		}
