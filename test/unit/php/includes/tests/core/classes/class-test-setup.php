@@ -140,7 +140,7 @@ class Test_Setup extends Base {
 			'Failed to assert unit-test link matches.'
 		);
 		$expected_url = esc_url(
-			admin_url( 'edit.php?post_type=gatherpress_event&page=gatherpress_general' )
+			admin_url( 'edit.php?post_type=gatherpress_event&page=gatherpress_events' )
 		);
 		$this->assertSame(
 			'<a href="' . $expected_url . '">Settings</a>',

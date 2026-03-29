@@ -278,9 +278,10 @@ class Settings {
 	 * @return array Flat map of option_key => field_type.
 	 */
 	protected function build_field_type_map( array $sub_pages ): array {
-		$map = array();
+		$map        = array();
+		$duplicates = array();
 
-		foreach ( $sub_pages as $sub_page_settings ) {
+		foreach ( $sub_pages as $sub_page => $sub_page_settings ) {
 			if ( ! isset( $sub_page_settings['sections'] ) ) {
 				continue;
 			}
@@ -291,9 +292,34 @@ class Settings {
 				}
 
 				foreach ( (array) $section_settings['options'] as $option => $option_settings ) {
+					if ( isset( $map[ $option ] ) ) {
+						$duplicates[] = $option;
+					}
+
 					$map[ $option ] = $option_settings['field']['type'] ?? 'text';
 				}
 			}
+		}
+
+		if ( ! empty( $duplicates ) ) {
+			add_action(
+				'admin_notices',
+				static function () use ( $duplicates ) {
+					printf(
+						'<div class="notice notice-error"><p>%s</p></div>',
+						esc_html(
+							sprintf(
+								/* translators: %s: Comma-separated list of duplicate option keys. */
+								__(
+									'GatherPress: Duplicate settings keys found: %s. Each key must be unique.',
+									'gatherpress'
+								),
+								implode( ', ', $duplicates )
+							)
+						)
+					);
+				}
+			);
 		}
 
 		return $map;

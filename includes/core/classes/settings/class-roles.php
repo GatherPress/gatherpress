@@ -1,9 +1,9 @@
 <?php
 /**
- * Leadership settings page.
+ * Roles settings page for GatherPress.
  *
- * This class represents the Leadership settings page in the GatherPress plugin.
- * It provides options for customizing user roles and their labels.
+ * This class handles the "Roles" settings page in GatherPress, providing
+ * options for customizing user roles and their labels.
  *
  * @package GatherPress\Core
  * @since 1.0.0
@@ -16,49 +16,44 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Settings;
 use GatherPress\Core\Traits\Singleton;
-use GatherPress\Core\Utility;
 
 /**
- * Class Leadership.
+ * Class Roles.
  *
- * Represents the Leadership settings page for GatherPress.
+ * Handles the "Roles" settings page for GatherPress.
  *
  * @since 1.0.0
  */
-class Leadership extends Base {
+class Roles extends Base {
 	/**
 	 * Enforces a single instance of this class.
 	 */
 	use Singleton;
 
 	/**
-	 * Get the slug for the leadership section.
-	 *
-	 * This method returns the slug used to identify the leadership section.
+	 * Get the slug for the roles settings page.
 	 *
 	 * @since 1.0.0
 	 *
-	 * @return string The slug for the leadership section.
+	 * @return string The slug for the roles settings page.
 	 */
 	protected function get_slug(): string {
-		return 'leadership';
+		return 'roles';
 	}
 
 	/**
-	 * Get the name for the leadership section.
-	 *
-	 * This method returns the localized name for the leadership section.
+	 * Get the name for the roles settings page.
 	 *
 	 * @since 1.0.0
 	 *
-	 * @return string The localized name for the leadership section.
+	 * @return string The localized name for the roles settings page.
 	 */
 	protected function get_name(): string {
-		return __( 'Leadership', 'gatherpress' );
+		return __( 'Roles', 'gatherpress' );
 	}
 
 	/**
-	 * Get sections for the Leadership settings page.
+	 * Get sections for the Roles settings page.
 	 *
 	 * @since 1.0.0
 	 *
@@ -109,9 +104,6 @@ class Leadership extends Base {
 	/**
 	 * Retrieve a list of user roles.
 	 *
-	 * This method returns an array of user roles defined for GatherPress. User roles
-	 * are used to customize role labels to be more appropriate for events.
-	 *
 	 * @since 1.0.0
 	 *
 	 * @return array An array containing user roles and their corresponding settings.
@@ -119,13 +111,11 @@ class Leadership extends Base {
 	public function get_user_roles(): array {
 		$sub_pages = Settings::get_instance()->get_sub_pages();
 
-		return (array) $sub_pages['leadership']['sections']['roles']['options'];
+		return (array) $sub_pages['roles']['sections']['roles']['options'];
 	}
 
 	/**
 	 * Retrieve the role of a user.
-	 *
-	 * This method returns the role of a user identified by their User ID.
 	 *
 	 * @since 1.0.0
 	 *

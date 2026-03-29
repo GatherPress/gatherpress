@@ -95,7 +95,7 @@ class Test_Credits extends Base {
 		$instance = Credits::get_instance();
 		$response = Utility::buffer_and_return(
 			array( $instance, 'settings_section' ),
-			array( 'gatherpress_general' )
+			array( 'gatherpress_events' )
 		);
 
 		$this->assertEmpty( $response, 'Failed to assert no markup was returned.' );

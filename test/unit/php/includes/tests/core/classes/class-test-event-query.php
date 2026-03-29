@@ -293,6 +293,9 @@ class Test_Event_Query extends Base {
 			->method( 'get' )
 			->willReturnCallback(
 				function ( $key ) {
+					if ( 'page_id' === $key ) {
+						return 123;
+					}
 					return 'gatherpress_event_query' === $key ? 'past' : null;
 				}
 			);
@@ -456,7 +459,10 @@ class Test_Event_Query extends Base {
 		$query->expects( $this->any() )
 			->method( 'get' )
 			->willReturnCallback(
-				function ( $key ) {
+				function ( $key ) use ( $page_id ) {
+					if ( 'page_id' === $key ) {
+						return $page_id;
+					}
 					return 'gatherpress_event_query' === $key ? '' : null;
 				}
 			);
@@ -523,7 +529,10 @@ class Test_Event_Query extends Base {
 		$query->expects( $this->any() )
 			->method( 'get' )
 			->willReturnCallback(
-				function ( $key ) {
+				function ( $key ) use ( $page_id ) {
+					if ( 'page_id' === $key ) {
+						return $page_id;
+					}
 					return 'gatherpress_event_query' === $key ? '' : null;
 				}
 			);

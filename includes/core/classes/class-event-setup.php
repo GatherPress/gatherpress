@@ -15,6 +15,7 @@ namespace GatherPress\Core;
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use Exception;
+use GatherPress\Core\Event_Query;
 use GatherPress\Core\Traits\Singleton;
 use stdClass;
 use WP;
@@ -515,6 +516,11 @@ class Event_Setup {
 			return;
 		}
 
+		// Don't interfere if event-query already assigned this as an archive page.
+		if ( $wp_query->get( Event_Query::EVENT_QUERY_PARAM ) ) {
+			return;
+		}
+
 		// Get the configured rewrite slug for events.
 		$settings     = Settings::get_instance();
 		$rewrite_slug = $settings->get_value( 'events_url' );
@@ -522,23 +528,55 @@ class Event_Setup {
 		// Check if a page exists with this slug.
 		$page = get_page_by_path( $rewrite_slug );
 
-		if ( $page instanceof WP_Post && 'publish' === $page->post_status ) {
-			// Convert the archive query to serve the page instead.
-			// This avoids a redirect loop since /event/ resolves to the archive.
-			$wp_query->init();
-			$wp_query->query( array( 'page_id' => $page->ID ) );
-			$wp_query->is_post_type_archive = false;
-			$wp_query->is_archive           = false;
-			$wp_query->is_page              = true;
-			$wp_query->is_singular          = true;
-			$wp_query->queried_object       = $page;
-			$wp_query->queried_object_id    = $page->ID;
+		if ( ! ( $page instanceof WP_Post ) || 'publish' !== $page->post_status ) {
+			// No page exists with this slug, so trigger a 404.
+			$wp_query->set_404();
+			status_header( 404 );
 			return;
 		}
 
-		// No page exists with this slug, so trigger a 404.
-		$wp_query->set_404();
-		status_header( 404 );
+		// Check if this page is designated as an upcoming or past events archive.
+		$archive_pages = array(
+			'upcoming' => json_decode( $settings->get_value( 'upcoming_events' ) ),
+			'past'     => json_decode( $settings->get_value( 'past_events' ) ),
+		);
+
+		foreach ( $archive_pages as $key => $value ) {
+			if ( ! empty( $value ) && is_array( $value ) && $value[0]->id === $page->ID ) {
+				$page_title = get_the_title( $page->ID );
+
+				$wp_query->set( 'post_type', Event::POST_TYPE );
+				$wp_query->set( Event_Query::EVENT_QUERY_PARAM, $key );
+				$wp_query->is_page              = false;
+				$wp_query->is_singular          = false;
+				$wp_query->is_archive           = true;
+				$wp_query->is_post_type_archive = true;
+
+				// Preserve the page as queried object so admin bar "Edit Page" works.
+				$wp_query->queried_object    = $page;
+				$wp_query->queried_object_id = $page->ID;
+
+				// Use the page title as the archive title.
+				add_filter(
+					'get_the_archive_title',
+					static function () use ( $page_title ) {
+						return $page_title;
+					}
+				);
+
+				return;
+			}
+		}
+
+		// Page exists but is not an archive page — serve it as a regular page.
+		$wp_query->init();
+		$wp_query->query( array( 'page_id' => $page->ID ) );
+		$wp_query->is_post_type_archive = false;
+		$wp_query->is_archive           = false;
+		$wp_query->is_page              = true;
+		$wp_query->is_singular          = true;
+		$wp_query->queried_object       = $page;
+		$wp_query->queried_object_id    = $page->ID;
 	}
 
 	/**
@@ -1252,18 +1290,11 @@ class Event_Setup {
 	 * @return array An updated array of post display states with custom labels if applicable.
 	 */
 	public function set_event_archive_labels( array $post_states, WP_Post $post ): array {
-		// Retrieve plugin general settings.
-		$general = get_option( Utility::prefix_key( 'general' ) );
-		$pages   = $general['pages'] ?? '';
-
-		if ( empty( $pages ) || ! is_array( $pages ) ) {
-			return $post_states;
-		}
-
-		// Define archive pages for "Upcoming Events" and "Past Events".
+		// Retrieve archive page settings.
+		$settings      = Settings::get_instance();
 		$archive_pages = array(
-			'past_events'     => json_decode( $pages['past_events'] ),
-			'upcoming_events' => json_decode( $pages['upcoming_events'] ),
+			'past_events'     => json_decode( $settings->get_value( 'past_events' ) ),
+			'upcoming_events' => json_decode( $settings->get_value( 'upcoming_events' ) ),
 		);
 
 		// Check if the current post corresponds to any assigned archive page and add display states.

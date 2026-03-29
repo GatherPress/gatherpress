@@ -1,6 +1,6 @@
 <?php
 /**
- * Class handles unit tests for GatherPress\Core\Settings\Leadership.
+ * Class handles unit tests for GatherPress\Core\Settings\Roles.
  *
  * @package GatherPress\Core
  * @since 1.0.0
@@ -8,16 +8,16 @@
 
 namespace GatherPress\Tests\Core\Settings;
 
-use GatherPress\Core\Settings\Leadership;
+use GatherPress\Core\Settings\Roles;
 use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;
 
 /**
- * Class Test_Leadership.
+ * Class Test_Roles.
  *
- * @coversDefaultClass \GatherPress\Core\Settings\Leadership
+ * @coversDefaultClass \GatherPress\Core\Settings\Roles
  */
-class Test_Leadership extends Base {
+class Test_Roles extends Base {
 	/**
 	 * Coverage for get_slug method.
 	 *
@@ -26,10 +26,10 @@ class Test_Leadership extends Base {
 	 * @return void
 	 */
 	public function test_get_slug(): void {
-		$instance = Leadership::get_instance();
+		$instance = Roles::get_instance();
 		$slug     = Utility::invoke_hidden_method( $instance, 'get_slug' );
 
-		$this->assertSame( 'leadership', $slug, 'Failed to assert slug is leadership.' );
+		$this->assertSame( 'roles', $slug, 'Failed to assert slug is roles.' );
 	}
 
 	/**
@@ -40,10 +40,10 @@ class Test_Leadership extends Base {
 	 * @return void
 	 */
 	public function test_get_name(): void {
-		$instance = Leadership::get_instance();
+		$instance = Roles::get_instance();
 		$name     = Utility::invoke_hidden_method( $instance, 'get_name' );
 
-		$this->assertSame( 'Leadership', $name, 'Failed to assert name is Leadership.' );
+		$this->assertSame( 'Roles', $name, 'Failed to assert name is Roles.' );
 	}
 
 	/**
@@ -54,7 +54,7 @@ class Test_Leadership extends Base {
 	 * @return void
 	 */
 	public function test_get_priority(): void {
-		$instance = Leadership::get_instance();
+		$instance = Roles::get_instance();
 		$priority = Utility::invoke_hidden_method( $instance, 'get_priority' );
 
 		$this->assertEquals( 10, $priority, 'Failed to assert correct priority.' );
@@ -68,7 +68,7 @@ class Test_Leadership extends Base {
 	 * @return void
 	 */
 	public function test_get_sections(): void {
-		$instance = Leadership::get_instance();
+		$instance = Roles::get_instance();
 
 		$section = Utility::invoke_hidden_method( $instance, 'get_sections' );
 		$this->assertSame( 'Roles', $section['roles']['name'], 'Failed to assert name is Roles.' );
@@ -87,7 +87,7 @@ class Test_Leadership extends Base {
 	 * @return void
 	 */
 	public function test_get_user_roles(): void {
-		$instance   = Leadership::get_instance();
+		$instance   = Roles::get_instance();
 		$user_roles = $instance->get_user_roles();
 
 		$this->assertIsArray( $user_roles['organizer'], 'Failed to assert user role is an array.' );
@@ -101,7 +101,7 @@ class Test_Leadership extends Base {
 	 * @return void
 	 */
 	public function test_get_user_role(): void {
-		$instance = Leadership::get_instance();
+		$instance = Roles::get_instance();
 		$user     = $this->mock->user()->get();
 
 		$this->assertSame( 'Member', $instance->get_user_role( $user->ID ), 'Failed to assert user is Member.' );

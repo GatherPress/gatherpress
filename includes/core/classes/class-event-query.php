@@ -15,6 +15,7 @@ namespace GatherPress\Core;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
+use GatherPress\Core\Settings;
 use GatherPress\Core\Traits\Singleton;
 use WP_Query;
 
@@ -178,28 +179,34 @@ class Event_Query {
 		$events_query = $query->get( self::EVENT_QUERY_PARAM );
 
 		if ( ! is_admin() && $query->is_main_query() ) {
-			$general = get_option( Utility::prefix_key( 'general' ) );
-
-			if ( ! is_array( $general ) ) {
-				return;
-			}
-
-			$pages = $general['pages'] ?? '';
-
-			if ( empty( $pages ) || ! is_array( $pages ) ) {
-				return;
-			}
+			$settings = Settings::get_instance();
 
 			$archive_pages = array(
-				'past'     => json_decode( $pages['past_events'] ),
-				'upcoming' => json_decode( $pages['upcoming_events'] ),
+				'past'     => json_decode( $settings->get_value( 'past_events' ) ),
+				'upcoming' => json_decode( $settings->get_value( 'upcoming_events' ) ),
 			);
+
+			// Resolve the current page ID from query vars since
+			// queried_object_id is not yet populated during pre_get_posts.
+			$current_page_id = $query->get( 'page_id' );
+
+			if ( ! $current_page_id ) {
+				$pagename = $query->get( 'pagename' );
+
+				if ( $pagename ) {
+					$page_obj = get_page_by_path( $pagename );
+
+					if ( $page_obj ) {
+						$current_page_id = $page_obj->ID;
+					}
+				}
+			}
 
 			foreach ( $archive_pages as $key => $value ) {
 				if ( ! empty( $value ) && is_array( $value ) ) {
 					$page = $value[0];
 
-					if ( $page->id === $query->queried_object_id ) {
+					if ( $current_page_id && $page->id === $current_page_id ) {
 						$page_id      = $query->queried_object_id;
 						$events_query = $key;
 

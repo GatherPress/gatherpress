@@ -90,9 +90,9 @@ class Test_Settings extends Base {
 		Utility::invoke_hidden_method( $instance, 'set_main_sub_page' );
 
 		$this->assertSame(
-			'general',
+			'events',
 			Utility::get_hidden_property( $instance, 'main_sub_page' ),
-			'Failed to assert main sub page is set to general'
+			'Failed to assert main sub page is set to events'
 		);
 	}
 
@@ -111,13 +111,22 @@ class Test_Settings extends Base {
 			'Failed to assert current_page is empty.'
 		);
 
-		$this->mock->input(
-			array(
-				'GET' => array( 'page' => 'unit-test' ),
-			)
+		add_filter(
+			'gatherpress_pre_get_http_input',
+			static function ( $pre_value, $type, $var_name ) {
+				if ( INPUT_GET === $type && 'page' === $var_name ) {
+					return 'unit-test';
+				}
+
+				return null;
+			},
+			10,
+			3
 		);
 
 		Utility::invoke_hidden_method( $instance, 'set_current_page' );
+
+		remove_all_filters( 'gatherpress_pre_get_http_input' );
 
 		$this->assertSame(
 			'unit-test',
@@ -138,12 +147,12 @@ class Test_Settings extends Base {
 
 		$response = Utility::buffer_and_return(
 			array( $instance, 'render_settings_form' ),
-			array( 'gatherpress_general' )
+			array( 'gatherpress_events' )
 		);
 		$this->assertStringContainsString(
 			'value=\'gatherpress_settings\'',
 			$response,
-			'Failed to assert general form rendered.'
+			'Failed to assert settings form rendered.'
 		);
 	}
 
@@ -571,13 +580,15 @@ class Test_Settings extends Base {
 		$instance  = Settings::get_instance();
 		$sub_pages = $instance->get_sub_pages();
 
-		$this->assertIsArray( $sub_pages['general'], 'Failed to assert sub page is an array.' );
-		$this->assertIsArray( $sub_pages['leadership'], 'Failed to assert sub page is an array.' );
+		$this->assertIsArray( $sub_pages['events'], 'Failed to assert sub page is an array.' );
+		$this->assertIsArray( $sub_pages['rsvp_settings'], 'Failed to assert sub page is an array.' );
+		$this->assertIsArray( $sub_pages['formatting'], 'Failed to assert sub page is an array.' );
+		$this->assertIsArray( $sub_pages['roles'], 'Failed to assert sub page is an array.' );
 		$this->assertIsArray( $sub_pages['credits'], 'Failed to assert sub page is an array.' );
 		$this->assertSame(
-			'general',
+			'events',
 			array_key_first( $sub_pages ),
-			'Failed to assert that general is first key.'
+			'Failed to assert that events is first key.'
 		);
 		$this->assertSame(
 			'credits',
@@ -743,25 +754,31 @@ class Test_Settings extends Base {
 	public function test_render_field_select(): void {
 		$instance = Settings::get_instance();
 
-		// Just verify method executes without error.
-		$instance->render_field(
-			'option',
+		$select = Utility::buffer_and_return(
+			array( $instance, 'render_field' ),
 			array(
-				'field'       => array(
-					'type'    => 'select',
-					'label'   => 'Unit test',
-					'options' => array(
-						'items' => array(
-							'option1' => 'Option 1',
-							'option2' => 'Option 2',
+				'option',
+				array(
+					'field'       => array(
+						'type'    => 'select',
+						'label'   => 'Unit test',
+						'options' => array(
+							'items' => array(
+								'option1' => 'Option 1',
+								'option2' => 'Option 2',
+							),
 						),
 					),
+					'description' => 'unit test description',
 				),
-				'description' => 'unit test description',
 			)
 		);
 
-		$this->assertTrue( true, 'Select method executed successfully.' );
+		$this->assertStringContainsString(
+			'Unit test',
+			$select,
+			'Failed to assert that label matches.'
+		);
 	}
 
 	/**
@@ -893,70 +910,55 @@ class Test_Settings extends Base {
 	public function test_sanitize_page_settings(): void {
 		$instance = Settings::get_instance();
 
-		$sub_page_settings = array(
-			'sections' => array(
-				'test_section' => array(
-					'options' => array(
-						'checkbox_field'     => array(
-							'field' => array( 'type' => 'checkbox' ),
-						),
-						'number_field'       => array(
-							'field' => array( 'type' => 'number' ),
-						),
-						'text_field'         => array(
-							'field' => array( 'type' => 'text' ),
-						),
-						'select_field'       => array(
-							'field' => array( 'type' => 'select' ),
-						),
-						'autocomplete_field' => array(
-							'field' => array( 'type' => 'autocomplete' ),
-						),
-					),
-				),
-			),
+		// Ensure no existing option interferes with the merge behavior.
+		delete_option( 'gatherpress_settings' );
+
+		$field_type_map = array(
+			'checkbox_field'     => 'checkbox',
+			'number_field'       => 'number',
+			'text_field'         => 'text',
+			'select_field'       => 'select',
+			'autocomplete_field' => 'autocomplete',
 		);
 
-		$callback = $instance->sanitize_page_settings( $sub_page_settings );
+		$callback = $instance->sanitize_page_settings( $field_type_map );
 
 		$input = array(
-			'test_section' => array(
-				'checkbox_field'     => '1',
-				'number_field'       => '42',
-				'text_field'         => 'Test <strong>text</strong>',
-				'select_field'       => 'option1',
-				'autocomplete_field' => '[{"id":"3","slug":"test","value":"Test"}]',
-			),
+			'checkbox_field'     => '1',
+			'number_field'       => '42',
+			'text_field'         => 'Test <strong>text</strong>',
+			'select_field'       => 'option1',
+			'autocomplete_field' => '[{"id":"3","slug":"test","value":"Test"}]',
 		);
 
 		$result = $callback( $input );
 
 		$this->assertTrue(
-			$result['test_section']['checkbox_field'],
+			$result['checkbox_field'],
 			'Failed to assert checkbox was converted to boolean.'
 		);
 
 		$this->assertSame(
 			42,
-			$result['test_section']['number_field'],
+			$result['number_field'],
 			'Failed to assert number was converted to integer.'
 		);
 
 		$this->assertSame(
 			'Test text',
-			$result['test_section']['text_field'],
+			$result['text_field'],
 			'Failed to assert text was sanitized.'
 		);
 
 		$this->assertSame(
 			'option1',
-			$result['test_section']['select_field'],
+			$result['select_field'],
 			'Failed to assert select value was sanitized.'
 		);
 
 		$this->assertStringContainsString(
 			'"id":3',
-			$result['test_section']['autocomplete_field'],
+			$result['autocomplete_field'],
 			'Failed to assert autocomplete was sanitized.'
 		);
 	}

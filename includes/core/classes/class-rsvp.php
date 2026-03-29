@@ -14,7 +14,7 @@ namespace GatherPress\Core;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
-use GatherPress\Core\Settings\Leadership;
+use GatherPress\Core\Settings\Roles;
 use WP_Post;
 
 /**
@@ -552,7 +552,7 @@ class Rsvp {
 				'name'      => $display_name ? $display_name : __( 'Anonymous', 'gatherpress' ),
 				'photo'     => get_avatar_url( $record ),
 				'profile'   => $profile,
-				'role'      => Leadership::get_instance()->get_user_role( $user_id ),
+				'role'      => Roles::get_instance()->get_user_role( $user_id ),
 				'timestamp' => sanitize_text_field( $record->comment_date ),
 				'status'    => $user_status,
 				'guests'    => $user_guests,
@@ -610,7 +610,7 @@ class Rsvp {
 				static function ( $role ) {
 					return $role['labels']['singular_name'];
 				},
-				Leadership::get_instance()->get_user_roles()
+				Roles::get_instance()->get_user_roles()
 			)
 		);
 		$roles[]     = __( 'Member', 'gatherpress' );

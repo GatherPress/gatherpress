@@ -12,8 +12,6 @@ use GatherPress\Core\Event;
 use GatherPress\Core\Rsvp;
 use GatherPress\Core\Rsvp_Cleanup;
 use GatherPress\Core\Rsvp_Query;
-use GatherPress\Core\Settings;
-use GatherPress\Core\Utility;
 use GatherPress\Tests\Base;
 
 /**
@@ -66,9 +64,9 @@ class Test_RSVP_Cleanup extends Base {
 	 * @return void
 	 */
 	public function test_rsvp_cleanup_job_can_be_scheduled_hourly(): void {
-		$this->set_value( 'general', 'rsvp_cleanup', 'rsvp_cleanup_interval', 1 );
-		$this->set_value( 'general', 'rsvp_cleanup', 'rsvp_cleanup_switch', 'on' );
-		$this->set_value( 'general', 'rsvp_cleanup', 'rsvp_cleanup_frequency', 'hourly' );
+		$this->set_value( 'rsvp_cleanup_interval', 1 );
+		$this->set_value( 'rsvp_cleanup_switch', 'on' );
+		$this->set_value( 'rsvp_cleanup_frequency', 'hourly' );
 
 		Rsvp_Cleanup::get_instance();
 		$next_event = wp_next_scheduled( 'gatherpress_rsvp_cleanup' );
@@ -84,9 +82,9 @@ class Test_RSVP_Cleanup extends Base {
 	 * @return void
 	 */
 	public function test_rsvp_cleanup_job_can_be_scheduled_daily(): void {
-		$this->set_value( 'general', 'rsvp_cleanup', 'rsvp_cleanup_interval', 1 );
-		$this->set_value( 'general', 'rsvp_cleanup', 'rsvp_cleanup_switch', 'on' );
-		$this->set_value( 'general', 'rsvp_cleanup', 'rsvp_cleanup_frequency', 'daily' );
+		$this->set_value( 'rsvp_cleanup_interval', 1 );
+		$this->set_value( 'rsvp_cleanup_switch', 'on' );
+		$this->set_value( 'rsvp_cleanup_frequency', 'daily' );
 
 		Rsvp_Cleanup::get_instance();
 		$next_event = wp_next_scheduled( 'gatherpress_rsvp_cleanup' );
@@ -102,9 +100,9 @@ class Test_RSVP_Cleanup extends Base {
 	 * @return void
 	 */
 	public function test_rsvp_cleanup_job_can_be_scheduled_weekly(): void {
-		$this->set_value( 'general', 'rsvp_cleanup', 'rsvp_cleanup_interval', 1 );
-		$this->set_value( 'general', 'rsvp_cleanup', 'rsvp_cleanup_switch', 'on' );
-		$this->set_value( 'general', 'rsvp_cleanup', 'rsvp_cleanup_frequency', 'weekly' );
+		$this->set_value( 'rsvp_cleanup_interval', 1 );
+		$this->set_value( 'rsvp_cleanup_switch', 'on' );
+		$this->set_value( 'rsvp_cleanup_frequency', 'weekly' );
 
 		Rsvp_Cleanup::get_instance();
 		$next_event = wp_next_scheduled( 'gatherpress_rsvp_cleanup' );
@@ -120,9 +118,9 @@ class Test_RSVP_Cleanup extends Base {
 	 * @return void
 	 */
 	public function test_rsvp_cleanup_job_can_be_scheduled_yearly(): void {
-		$this->set_value( 'general', 'rsvp_cleanup', 'rsvp_cleanup_interval', 1 );
-		$this->set_value( 'general', 'rsvp_cleanup', 'rsvp_cleanup_switch', 'on' );
-		$this->set_value( 'general', 'rsvp_cleanup', 'rsvp_cleanup_frequency', 'yearly' );
+		$this->set_value( 'rsvp_cleanup_interval', 1 );
+		$this->set_value( 'rsvp_cleanup_switch', 'on' );
+		$this->set_value( 'rsvp_cleanup_frequency', 'yearly' );
 
 		Rsvp_Cleanup::get_instance();
 		$next_event = wp_next_scheduled( 'gatherpress_rsvp_cleanup' );
@@ -138,9 +136,9 @@ class Test_RSVP_Cleanup extends Base {
 	 * @return void
 	 */
 	public function test_rsvp_cleanup_job_can_be_scheduled_monthly(): void {
-		$this->set_value( 'general', 'rsvp_cleanup', 'rsvp_cleanup_interval', 1 );
-		$this->set_value( 'general', 'rsvp_cleanup', 'rsvp_cleanup_switch', 'on' );
-		$this->set_value( 'general', 'rsvp_cleanup', 'rsvp_cleanup_frequency', 'monthly' );
+		$this->set_value( 'rsvp_cleanup_interval', 1 );
+		$this->set_value( 'rsvp_cleanup_switch', 'on' );
+		$this->set_value( 'rsvp_cleanup_frequency', 'monthly' );
 
 		Rsvp_Cleanup::get_instance();
 		$next_event = wp_next_scheduled( 'gatherpress_rsvp_cleanup' );
@@ -155,9 +153,9 @@ class Test_RSVP_Cleanup extends Base {
 	 * @return void
 	 */
 	public function test_rsvp_cleanup_job_is_not_scheduled_if_switch_is_off(): void {
-		$this->set_value( 'general', 'rsvp_cleanup', 'rsvp_cleanup_interval', 1 );
-		$this->set_value( 'general', 'rsvp_cleanup', 'rsvp_cleanup_switch', 'off' );
-		$this->set_value( 'general', 'rsvp_cleanup', 'rsvp_cleanup_frequency', 'hourly' );
+		$this->set_value( 'rsvp_cleanup_interval', 1 );
+		$this->set_value( 'rsvp_cleanup_switch', 'off' );
+		$this->set_value( 'rsvp_cleanup_frequency', 'hourly' );
 
 		Rsvp_Cleanup::get_instance();
 		$next_event = wp_next_scheduled( 'gatherpress_rsvp_cleanup' );
@@ -173,14 +171,14 @@ class Test_RSVP_Cleanup extends Base {
 	 * @return void
 	 */
 	public function test_rsvp_cleanup_job_is_rescheduled_if_cleanup_settings_change(): void {
-		$this->set_value( 'general', 'rsvp_cleanup', 'rsvp_cleanup_interval', 1 );
-		$this->set_value( 'general', 'rsvp_cleanup', 'rsvp_cleanup_switch', 'on' );
-		$this->set_value( 'general', 'rsvp_cleanup', 'rsvp_cleanup_frequency', 'hourly' );
+		$this->set_value( 'rsvp_cleanup_interval', 1 );
+		$this->set_value( 'rsvp_cleanup_switch', 'on' );
+		$this->set_value( 'rsvp_cleanup_frequency', 'hourly' );
 
 		Rsvp_Cleanup::get_instance();
 		$next_event = wp_next_scheduled( 'gatherpress_rsvp_cleanup' );
 
-		$this->set_value( 'general', 'rsvp_cleanup', 'rsvp_cleanup_interval', 2 );
+		$this->set_value( 'rsvp_cleanup_interval', 2 );
 		$rescheduled_event = wp_next_scheduled( 'gatherpress_rsvp_cleanup' );
 
 		$this->assertNotEquals( $rescheduled_event, $next_event );
@@ -232,23 +230,19 @@ class Test_RSVP_Cleanup extends Base {
 	/**
 	 * Set the value of a specific option in plugin settings.
 	 *
-	 * This method sets/updates the value of a specific option in the plugin settings
-	 * based on the provided sub-page, section, and option names.
+	 * This method sets/updates the value of a specific option
+	 * in the flat gatherpress_settings option.
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param string $sub_page The sub-page associated with the value.
-	 * @param string $section  The section within the sub-page where the option is located.
-	 * @param string $option   The name of the option to retrieve.
-	 * @param mixed  $value The value to set or update.
+	 * @param string $option The name of the option to set.
+	 * @param mixed  $value  The value to set or update.
 	 * @return void
 	 */
-	public function set_value( string $sub_page, string $section, string $option, $value ): void {
-		$settings                       = Settings::get_instance();
-		$sub_page                       = Utility::prefix_key( $sub_page );
-		$options                        = $settings->get_options( $sub_page );
-		$options[ $section ][ $option ] = $value;
+	public function set_value( string $option, $value ): void {
+		$options            = get_option( 'gatherpress_settings', array() );
+		$options[ $option ] = $value;
 
-		update_option( $sub_page, $options );
+		update_option( 'gatherpress_settings', $options );
 	}
 }

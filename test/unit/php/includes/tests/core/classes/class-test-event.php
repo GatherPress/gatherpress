@@ -132,8 +132,14 @@ class Test_Event extends Base {
 	 * @return void
 	 */
 	public function test_get_display_datetime( array $params, string $expects ): void {
-		update_option( 'date_format', 'l, F j, Y' );
-		update_option( 'time_format', 'g:i A' );
+		update_option(
+			'gatherpress_settings',
+			array(
+				'date_format'   => 'l, F j, Y',
+				'time_format'   => 'g:i A',
+				'show_timezone' => true,
+			)
+		);
 
 		$post  = $this->mock->post(
 			array(
@@ -189,6 +195,8 @@ class Test_Event extends Base {
 			),
 			'Failed to assert display date times match.'
 		);
+
+		delete_option( 'gatherpress_settings' );
 	}
 
 	/**

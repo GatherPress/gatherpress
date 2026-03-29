@@ -16,8 +16,10 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use Exception;
 use GatherPress\Core\Settings\Credits;
-use GatherPress\Core\Settings\General;
-use GatherPress\Core\Settings\Leadership;
+use GatherPress\Core\Settings\Events;
+use GatherPress\Core\Settings\Formatting;
+use GatherPress\Core\Settings\Roles;
+use GatherPress\Core\Settings\Rsvp_Settings;
 use GatherPress\Core\Traits\Singleton;
 use WP_Site;
 
@@ -74,8 +76,10 @@ class Setup {
 		Rsvp_Query::get_instance();
 		Rsvp_Setup::get_instance();
 		Credits::get_instance();
-		General::get_instance();
-		Leadership::get_instance();
+		Events::get_instance();
+		Formatting::get_instance();
+		Roles::get_instance();
+		Rsvp_Settings::get_instance();
 		Settings::get_instance();
 		Topic::get_instance();
 		User::get_instance();
@@ -138,7 +142,7 @@ class Setup {
 		return array_merge(
 			array(
 				'settings' => '<a href="' .
-					esc_url( admin_url( 'edit.php?post_type=gatherpress_event&page=gatherpress_general' ) ) .
+					esc_url( admin_url( 'edit.php?post_type=gatherpress_event&page=gatherpress_events' ) ) .
 					'">' . esc_html__( 'Settings', 'gatherpress' ) . '</a>',
 			),
 			$actions
