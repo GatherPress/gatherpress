@@ -36,7 +36,7 @@ if ( ! isset( $name, $label, $option, $value, $description, $size, $preview ) ) 
 
 	if ( ! empty( $preview['template'] ) ) {
 		\GatherPress\Core\Utility::render_template(
-			sprintf( '%s/includes/templates/admin/settings/partials/%s.php', GATHERPRESS_CORE_PATH ),
+			sprintf( '%s/includes/templates/admin/settings/partials/%s.php', GATHERPRESS_CORE_PATH, $preview['template'] ),
 			array_merge(
 				array(
 					'name'  => $name,

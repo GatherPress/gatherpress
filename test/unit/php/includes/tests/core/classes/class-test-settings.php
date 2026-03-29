@@ -22,7 +22,6 @@ class Test_Settings extends Base {
 	 * Coverage for setup_hooks.
 	 *
 	 * @covers ::__construct
-	 * @covers ::instantiate_classes
 	 * @covers ::setup_hooks
 	 *
 	 * @return void
@@ -149,20 +148,21 @@ class Test_Settings extends Base {
 	}
 
 	/**
-	 * Coverage for text method.
+	 * Coverage for render_field with text type.
 	 *
-	 * @covers ::text
+	 * @covers ::render_field
 	 *
 	 * @return void
 	 */
-	public function test_text(): void {
+	public function test_render_field_text(): void {
 		$instance = Settings::get_instance();
 		$text     = Utility::buffer_and_return(
-			array( $instance, 'text' ),
+			array( $instance, 'render_field' ),
 			array(
 				'option',
 				array(
 					'field'       => array(
+						'type'  => 'text',
 						'label' => 'Unit test',
 					),
 					'description' => 'unit test description',
@@ -241,20 +241,21 @@ class Test_Settings extends Base {
 	}
 
 	/**
-	 * Coverage for checkbox method.
+	 * Coverage for render_field with checkbox type.
 	 *
-	 * @covers ::checkbox
+	 * @covers ::render_field
 	 *
 	 * @return void
 	 */
-	public function test_checkbox(): void {
+	public function test_render_field_checkbox(): void {
 		$instance = Settings::get_instance();
 		$checkbox = Utility::buffer_and_return(
-			array( $instance, 'checkbox' ),
+			array( $instance, 'render_field' ),
 			array(
 				'option',
 				array(
 					'field'       => array(
+						'type'  => 'checkbox',
 						'label' => 'Unit test',
 					),
 					'description' => 'unit test description',
@@ -285,20 +286,21 @@ class Test_Settings extends Base {
 	}
 
 	/**
-	 * Coverage for number method.
+	 * Coverage for render_field with number type.
 	 *
-	 * @covers ::number
+	 * @covers ::render_field
 	 *
 	 * @return void
 	 */
-	public function test_number(): void {
+	public function test_render_field_number(): void {
 		$instance = Settings::get_instance();
 		$text     = Utility::buffer_and_return(
-			array( $instance, 'number' ),
+			array( $instance, 'render_field' ),
 			array(
 				'option',
 				array(
 					'field' => array(
+						'type'    => 'number',
 						'label'   => 'Unit test',
 						'options' => array(
 							'default' => '2',
@@ -324,16 +326,16 @@ class Test_Settings extends Base {
 	}
 
 	/**
-	 * Coverage for autocomplete method.
+	 * Coverage for render_field with autocomplete type.
 	 *
-	 * @covers ::autocomplete
+	 * @covers ::render_field
 	 *
 	 * @return void
 	 */
-	public function test_autocomplete(): void {
+	public function test_render_field_autocomplete(): void {
 		$instance     = Settings::get_instance();
 		$autocomplete = Utility::buffer_and_return(
-			array( $instance, 'autocomplete' ),
+			array( $instance, 'render_field' ),
 			array(
 				'option',
 				array(
@@ -341,6 +343,7 @@ class Test_Settings extends Base {
 					'label' => 'Select unit test page',
 					'limit' => 2,
 					'field' => array(
+						'type'    => 'autocomplete',
 						'options' => array(
 							'unit' => 'test',
 						),
@@ -730,25 +733,28 @@ class Test_Settings extends Base {
 	}
 
 	/**
-	 * Test select field rendering.
+	 * Test render_field with select type.
 	 *
 	 * @since  1.0.0
-	 * @covers ::select
+	 * @covers ::render_field
 	 *
 	 * @return void
 	 */
-	public function test_select(): void {
+	public function test_render_field_select(): void {
 		$instance = Settings::get_instance();
 
 		// Just verify method executes without error.
-		$instance->select(
+		$instance->render_field(
 			'option',
 			array(
 				'field'       => array(
+					'type'    => 'select',
 					'label'   => 'Unit test',
 					'options' => array(
-						'option1' => 'Option 1',
-						'option2' => 'Option 2',
+						'items' => array(
+							'option1' => 'Option 1',
+							'option2' => 'Option 2',
+						),
 					),
 				),
 				'description' => 'unit test description',
@@ -773,11 +779,11 @@ class Test_Settings extends Base {
 		add_option( 'rewrite_rules', array( 'test' => 'value' ) );
 
 		$old_value = array(
-			'events' => 'events',
+			'events_url' => 'events',
 		);
 
 		$new_value = array(
-			'events' => 'gatherings',
+			'events_url' => 'gatherings',
 		);
 
 		$instance->maybe_flush_rewrite_rules( $old_value, $new_value );
@@ -803,11 +809,11 @@ class Test_Settings extends Base {
 		add_option( 'rewrite_rules', array( 'test' => 'value' ) );
 
 		$old_value = array(
-			'events' => 'events',
+			'events_url' => 'events',
 		);
 
 		$new_value = array(
-			'events' => 'events',
+			'events_url' => 'events',
 		);
 
 		$instance->maybe_flush_rewrite_rules( $old_value, $new_value );
@@ -837,7 +843,7 @@ class Test_Settings extends Base {
 		$old_value = array();
 
 		$new_value = array(
-			'events' => 'events',
+			'events_url' => 'events',
 		);
 
 		$instance->maybe_flush_rewrite_rules( $old_value, $new_value );
@@ -863,7 +869,7 @@ class Test_Settings extends Base {
 		add_option( 'rewrite_rules', array( 'test' => 'value' ) );
 
 		$old_value = array(
-			'events' => 'events',
+			'events_url' => 'events',
 		);
 
 		$new_value = array();

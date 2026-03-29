@@ -15,6 +15,9 @@ namespace GatherPress\Core;
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use Exception;
+use GatherPress\Core\Settings\Credits;
+use GatherPress\Core\Settings\General;
+use GatherPress\Core\Settings\Leadership;
 use GatherPress\Core\Traits\Singleton;
 use WP_Site;
 
@@ -70,6 +73,9 @@ class Setup {
 		Rsvp_Form::get_instance();
 		Rsvp_Query::get_instance();
 		Rsvp_Setup::get_instance();
+		Credits::get_instance();
+		General::get_instance();
+		Leadership::get_instance();
 		Settings::get_instance();
 		Topic::get_instance();
 		User::get_instance();

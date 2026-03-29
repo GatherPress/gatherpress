@@ -130,7 +130,7 @@ class Event_Setup {
 	 */
 	public function register_post_type(): void {
 		$settings     = Settings::get_instance();
-		$rewrite_slug = $settings->get_value( 'events' );
+		$rewrite_slug = $settings->get_value( 'events_url' );
 		register_post_type(
 			Event::POST_TYPE,
 			array(
@@ -231,7 +231,7 @@ class Event_Setup {
 	/**
 	 * Returns the post type slug localized for the site language and sanitized as URL part.
 	 *
-	 * Do not use this directly, use get_value( 'events' ) instead.
+	 * Do not use this directly, use get_value( 'events_url' ) instead.
 	 *
 	 * This method switches to the sites default language and gets the translation of 'events' for the loaded locale.
 	 * After that, the method sanitizes the string to be safely used within an URL,
@@ -410,7 +410,7 @@ class Event_Setup {
 	 */
 	public function register_calendar_rewrite_rule(): void {
 		$settings     = Settings::get_instance();
-		$rewrite_slug = sanitize_title( $settings->get_value( 'events' ) );
+		$rewrite_slug = sanitize_title( $settings->get_value( 'events_url' ) );
 
 		add_rewrite_rule(
 			sprintf( '^%s/([^/]+)\.ics$', $rewrite_slug ),
@@ -517,7 +517,7 @@ class Event_Setup {
 
 		// Get the configured rewrite slug for events.
 		$settings     = Settings::get_instance();
-		$rewrite_slug = $settings->get_value( 'events' );
+		$rewrite_slug = $settings->get_value( 'events_url' );
 
 		// Check if a page exists with this slug.
 		$page = get_page_by_path( $rewrite_slug );

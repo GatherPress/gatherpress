@@ -966,7 +966,7 @@ class Test_Feed extends Base {
 		update_option(
 			'gatherpress_settings',
 			array(
-				'events' => 'events',
+				'events_url' => 'events',
 			)
 		);
 
@@ -1019,7 +1019,7 @@ class Test_Feed extends Base {
 		update_option(
 			'gatherpress_settings',
 			array(
-				'events' => 'events',
+				'events_url' => 'events',
 			)
 		);
 

@@ -717,7 +717,7 @@ class Event {
 	 */
 	public function get_ics_download_link(): string {
 		$settings     = Settings::get_instance();
-		$rewrite_slug = $settings->get_value( 'events' );
+		$rewrite_slug = $settings->get_value( 'events_url' );
 
 		return home_url(
 			'/' . sanitize_title( $rewrite_slug ) . '/' . get_post_field( 'post_name', $this->event->ID ) . '.ics'

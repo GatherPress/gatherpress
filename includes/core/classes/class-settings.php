@@ -14,9 +14,6 @@ namespace GatherPress\Core;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
-use GatherPress\Core\Settings\Credits;
-use GatherPress\Core\Settings\General;
-use GatherPress\Core\Settings\Leadership;
 use GatherPress\Core\Traits\Singleton;
 
 /**
@@ -53,6 +50,14 @@ class Settings {
 	protected string $main_sub_page = '';
 
 	/**
+	 * Cached flat map of option keys to their default values.
+	 *
+	 * @since 1.0.0
+	 * @var array|null
+	 */
+	protected ?array $defaults_cache = null;
+
+	/**
 	 * Constructor for the Settings class.
 	 *
 	 * Initializes the settings object, sets the current page, and sets up hooks.
@@ -60,23 +65,8 @@ class Settings {
 	 * @since 1.0.0
 	 */
 	protected function __construct() {
-		$this->instantiate_classes();
 		$this->set_current_page();
 		$this->setup_hooks();
-	}
-
-	/**
-	 * Instantiate and initialize various settings classes.
-	 *
-	 * This method creates instances of the settings-related classes and initializes them.
-	 *
-	 * @since 1.0.0
-	 * @return void
-	 */
-	protected function instantiate_classes(): void {
-		Credits::get_instance();
-		General::get_instance();
-		Leadership::get_instance();
 	}
 
 	/**
@@ -256,20 +246,13 @@ class Settings {
 
 				if ( isset( $section_settings['options'] ) ) {
 					foreach ( (array) $section_settings['options'] as $option => $option_settings ) {
-						if (
-							$option_settings['field']['type']
-							&& method_exists( $this, $option_settings['field']['type'] )
+						$option_settings['callback'] = function () use (
+							$option,
+							$option_settings
 						) {
-							$option_settings['callback'] = function () use (
-								$option,
-								$option_settings
-							) {
-								$this->{$option_settings['field']['type']}(
-									$option,
-									$option_settings
-								);
-							};
-						}
+							$this->render_field( $option, $option_settings );
+						};
+
 						add_settings_field(
 							$option,
 							$option_settings['labels']['name'],
@@ -418,156 +401,51 @@ class Settings {
 	}
 
 	/**
-	 * Outputs a text input field for a settings option.
+	 * Renders a settings field based on its type.
 	 *
-	 * This method is responsible for rendering a text input field as a part of the plugin's settings page.
-	 * It takes the sub-page, section, option, and option settings as parameters and displays the input field
-	 * with the specified name, value, and description.
+	 * This method renders the appropriate template for a settings field by mapping
+	 * the field type to a template file and passing type-specific parameters.
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param string $option          The option key for the text field.
-	 * @param array  $option_settings The option settings.
+	 * @param string $option          The unique option key for the field.
+	 * @param array  $option_settings The option settings including field config.
 	 * @return void
 	 */
-	public function text( string $option, array $option_settings ): void {
+	public function render_field( string $option, array $option_settings ): void {
+		$type  = $option_settings['field']['type'] ?? '';
 		$name  = $this->get_name_field( $option );
 		$value = $this->get_value( $option );
 
-		Utility::render_template(
-			sprintf( '%s/includes/templates/admin/settings/fields/text.php', GATHERPRESS_CORE_PATH ),
-			array(
-				'name'        => $name,
-				'option'      => Utility::prefix_key( $option ),
-				'value'       => $value,
-				'label'       => $option_settings['field']['label'] ?? '',
-				'size'        => $option_settings['field']['size'] ?? 'regular',
-				'description' => $option_settings['description'] ?? '',
-				'preview'     => $option_settings['field']['preview'] ?? array(),
-			),
-			true
+		$params = array(
+			'name'        => $name,
+			'option'      => Utility::prefix_key( $option ),
+			'value'       => $value,
+			'label'       => $option_settings['field']['label'] ?? '',
+			'description' => $option_settings['description'] ?? '',
 		);
-	}
 
-	/**
-	 * Render a number input field in GatherPress settings.
-	 *
-	 * This method is responsible for rendering a number input field in GatherPress settings.
-	 * It generates the HTML markup for the input field, including labels, attributes, and descriptions.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param string $option          The option key for the number field.
-	 * @param array  $option_settings An array containing option settings.
-	 * @return void
-	 */
-	public function number( string $option, array $option_settings ): void {
-		$name  = $this->get_name_field( $option );
-		$value = $this->get_value( $option );
-
-		Utility::render_template(
-			sprintf( '%s/includes/templates/admin/settings/fields/number.php', GATHERPRESS_CORE_PATH ),
-			array(
-				'name'        => $name,
-				'option'      => Utility::prefix_key( $option ),
-				'value'       => $value,
-				'label'       => $option_settings['field']['label'] ?? '',
-				'size'        => $option_settings['field']['size'] ?? 'regular',
-				'min'         => $option_settings['field']['options']['min'] ?? '',
-				'max'         => $option_settings['field']['options']['max'] ?? '',
-				'description' => $option_settings['description'] ?? '',
-			),
-			true
-		);
-	}
-
-	/**
-	 * Outputs a checkbox input field for a settings option.
-	 *
-	 * This method is responsible for rendering a checkbox input field as a part of the plugin's settings page.
-	 * It takes the sub-page, section, option, and option settings as parameters and displays the checkbox input field
-	 * with the specified name, value, label, and description.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param string $option          The option key for the checkbox field.
-	 * @param array  $option_settings The option settings.
-	 * @return void
-	 */
-	public function checkbox( string $option, array $option_settings ): void {
-		$name  = $this->get_name_field( $option );
-		$value = $this->get_value( $option );
+		switch ( $type ) {
+			case 'text':
+				$params['size']    = $option_settings['field']['size'] ?? 'regular';
+				$params['preview'] = $option_settings['field']['preview'] ?? array();
+				break;
+			case 'number':
+				$params['size'] = $option_settings['field']['size'] ?? 'regular';
+				$params['min']  = $option_settings['field']['options']['min'] ?? '';
+				$params['max']  = $option_settings['field']['options']['max'] ?? '';
+				break;
+			case 'select':
+				$params['options'] = $option_settings['field']['options'] ?? '';
+				break;
+			case 'autocomplete':
+				$params['field_options'] = $option_settings['field']['options'] ?? array();
+				break;
+		}
 
 		Utility::render_template(
-			sprintf( '%s/includes/templates/admin/settings/fields/checkbox.php', GATHERPRESS_CORE_PATH ),
-			array(
-				'name'        => $name,
-				'option'      => Utility::prefix_key( $option ),
-				'value'       => $value,
-				'label'       => $option_settings['field']['label'] ?? '',
-				'description' => $option_settings['description'] ?? '',
-			),
-			true
-		);
-	}
-
-	/**
-	 * Outputs a select input field for a settings option.
-	 *
-	 * This method is responsible for rendering a select input field as a part of the plugin's settings page.
-	 * It takes the sub-page, section, option, and option settings as parameters and displays the select input field
-	 * with the specified name, value, label, and description.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param string $option          The option key for the select field.
-	 * @param array  $option_settings The option settings.
-	 * @return void
-	 */
-	public function select( string $option, array $option_settings ): void {
-		$name  = $this->get_name_field( $option );
-		$value = $this->get_value( $option );
-
-		Utility::render_template(
-			sprintf( '%s/includes/templates/admin/settings/fields/select.php', GATHERPRESS_CORE_PATH ),
-			array(
-				'name'        => $name,
-				'option'      => Utility::prefix_key( $option ),
-				'options'     => $option_settings['field']['options'] ?? '',
-				'value'       => $value,
-				'label'       => $option_settings['field']['label'] ?? '',
-				'description' => $option_settings['description'] ?? '',
-			),
-			true
-		);
-	}
-
-	/**
-	 * Outputs a dynamic select field for a type of content in the settings page.
-	 *
-	 * This method is responsible for rendering a dynamic select input field on the plugin's settings page.
-	 * It takes the sub-page, section, option, and option settings as parameters and displays the select input field
-	 * with the specified name, value, description, and field options.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param string $option          The option key for the autocomplete field.
-	 * @param array  $option_settings The option settings.
-	 * @return void
-	 */
-	public function autocomplete( string $option, array $option_settings ): void {
-		$name  = $this->get_name_field( $option );
-		$value = $this->get_value( $option );
-
-		Utility::render_template(
-			sprintf( '%s/includes/templates/admin/settings/fields/autocomplete.php', GATHERPRESS_CORE_PATH ),
-			array(
-				'name'          => $name,
-				'option'        => Utility::prefix_key( $option ),
-				'value'         => $value,
-				'description'   => $option_settings['description'] ?? '',
-				'field_options' => $option_settings['field']['options'] ?? array(),
-			),
+			sprintf( '%s/includes/templates/admin/settings/fields/%s.php', GATHERPRESS_CORE_PATH, $type ),
+			$params,
 			true
 		);
 	}
@@ -597,8 +475,8 @@ class Settings {
 	/**
 	 * Get the default value for a specific option from plugin settings.
 	 *
-	 * Searches all sub-pages' sections for the matching option key
-	 * and returns its configured default value.
+	 * Uses a cached defaults map built from all sub-pages' sections
+	 * to avoid repeated walks of the settings structure.
 	 *
 	 * @since 1.0.0
 	 *
@@ -606,7 +484,28 @@ class Settings {
 	 * @return mixed The default value of the option or an empty string if not defined.
 	 */
 	public function get_flat_default( string $option ) {
-		$sub_pages = $this->get_sub_pages();
+		$defaults = $this->get_defaults_map();
+
+		return $defaults[ $option ] ?? '';
+	}
+
+	/**
+	 * Build and cache a flat map of all option keys to their default values.
+	 *
+	 * Walks the sub-pages structure once and caches the result for the
+	 * duration of the request.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return array Flat map of option_key => default_value.
+	 */
+	protected function get_defaults_map(): array {
+		if ( null !== $this->defaults_cache ) {
+			return $this->defaults_cache;
+		}
+
+		$this->defaults_cache = array();
+		$sub_pages            = $this->get_sub_pages();
 
 		foreach ( $sub_pages as $sub_page_settings ) {
 			if ( ! isset( $sub_page_settings['sections'] ) ) {
@@ -614,15 +513,17 @@ class Settings {
 			}
 
 			foreach ( (array) $sub_page_settings['sections'] as $section_settings ) {
-				if ( ! isset( $section_settings['options'][ $option ] ) ) {
+				if ( ! isset( $section_settings['options'] ) ) {
 					continue;
 				}
 
-				return $section_settings['options'][ $option ]['field']['options']['default'] ?? '';
+				foreach ( (array) $section_settings['options'] as $option => $option_settings ) {
+					$this->defaults_cache[ $option ] = $option_settings['field']['options']['default'] ?? '';
+				}
 			}
 		}
 
-		return '';
+		return $this->defaults_cache;
 	}
 
 	/**
@@ -747,14 +648,10 @@ class Settings {
 	}
 
 	/**
-	 * Schedule rewrite rules flush when post type rewrite slugs change.
+	 * Schedule rewrite rules flush when rewrite-related settings change.
 	 *
-	 * Fires after the value of the 'gatherpress_general["urls"]' option-part has been successfully updated
-	 * and only if it has changed since before.
-	 *
-	 * Deletes the core rewrite_rules option to trigger WordPress's automatic
-	 * rewrite rule regeneration on the next request. This is more efficient
-	 * than using a custom flag option.
+	 * Checks all fields marked with 'rewrite' => true in their config and
+	 * flushes rewrite rules if any of their values changed.
 	 *
 	 * @since 1.0.0
 	 *
@@ -763,9 +660,7 @@ class Settings {
 	 * @return void
 	 */
 	public function maybe_flush_rewrite_rules( $old_value, $new_value ): void {
-		$url_keys = array( 'events', 'venues', 'topics' );
-
-		foreach ( $url_keys as $key ) {
+		foreach ( $this->get_rewrite_keys() as $key ) {
 			$old = $old_value[ $key ] ?? '';
 			$new = $new_value[ $key ] ?? '';
 
@@ -774,5 +669,40 @@ class Settings {
 				return;
 			}
 		}
+	}
+
+	/**
+	 * Get option keys that are flagged as affecting rewrite rules.
+	 *
+	 * Walks the settings config and returns keys for fields that have
+	 * 'rewrite' => true in their field definition.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return array List of option keys that affect rewrite rules.
+	 */
+	protected function get_rewrite_keys(): array {
+		$keys      = array();
+		$sub_pages = $this->get_sub_pages();
+
+		foreach ( $sub_pages as $sub_page_settings ) {
+			if ( ! isset( $sub_page_settings['sections'] ) ) {
+				continue;
+			}
+
+			foreach ( (array) $sub_page_settings['sections'] as $section_settings ) {
+				if ( ! isset( $section_settings['options'] ) ) {
+					continue;
+				}
+
+				foreach ( (array) $section_settings['options'] as $option => $option_settings ) {
+					if ( ! empty( $option_settings['field']['rewrite'] ) ) {
+						$keys[] = $option;
+					}
+				}
+			}
+		}
+
+		return $keys;
 	}
 }
