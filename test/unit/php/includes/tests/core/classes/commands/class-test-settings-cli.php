@@ -332,6 +332,85 @@ class Test_Settings_Cli extends Base {
 	}
 
 	/**
+	 * Coverage for export to an unwritable file path.
+	 *
+	 * @covers ::export
+	 *
+	 * @return void
+	 */
+	public function test_export_to_unwritable_file(): void {
+		$cli    = new Settings_Cli();
+		$output = Utility::buffer_and_return(
+			array( $cli, 'export' ),
+			array( array(), array( 'file' => '/nonexistent/directory/file.json' ) )
+		);
+
+		$this->assertStringContainsString( 'Failed to write', $output, 'Failed to assert unwritable file error.' );
+	}
+
+	/**
+	 * Coverage for dry-run import with version mismatch warnings.
+	 *
+	 * @covers ::import
+	 *
+	 * @return void
+	 */
+	public function test_import_dry_run_version_mismatch(): void {
+		$cli  = new Settings_Cli();
+		$file = tempnam( sys_get_temp_dir(), 'gp_test_' );
+
+		$data = array(
+			'version'  => '0.0.1',
+			'settings' => array( 'map_platform' => 'google' ),
+		);
+
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents
+		file_put_contents( $file, wp_json_encode( $data ) );
+
+		$output = Utility::buffer_and_return(
+			array( $cli, 'import' ),
+			array( array( $file ), array( 'dry-run' => true ) )
+		);
+
+		$this->assertStringContainsString( '0.0.1', $output, 'Failed to assert version mismatch warning in dry-run.' );
+
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.unlink_unlink
+		unlink( $file );
+	}
+
+	/**
+	 * Coverage for import with missing settings key.
+	 *
+	 * @covers ::import
+	 *
+	 * @return void
+	 */
+	public function test_import_missing_settings_key(): void {
+		$cli  = new Settings_Cli();
+		$file = tempnam( sys_get_temp_dir(), 'gp_test_' );
+
+		// Data has version but no settings key.
+		$data = array( 'version' => '1.0.0' );
+
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents
+		file_put_contents( $file, wp_json_encode( $data ) );
+
+		$output = Utility::buffer_and_return(
+			array( $cli, 'import' ),
+			array( array( $file ), array( 'mode' => 'merge' ) )
+		);
+
+		$this->assertStringContainsString(
+			'Invalid import file',
+			$output,
+			'Failed to assert missing settings key error.'
+		);
+
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.unlink_unlink
+		unlink( $file );
+	}
+
+	/**
 	 * Coverage for dry-run import with unknown keys.
 	 *
 	 * @covers ::import

@@ -138,8 +138,8 @@ class Test_Roles extends Base {
 	public function test_get_user_role_with_empty_role_data(): void {
 		$instance = Roles::get_instance();
 
-		// Set organizer to empty JSON array.
-		update_option( 'gatherpress_settings', array( 'organizer' => '[]' ) );
+		// Set organizer to empty string so empty() guard clause triggers.
+		update_option( 'gatherpress_settings', array( 'organizer' => '' ) );
 
 		$user = $this->mock->user()->get();
 

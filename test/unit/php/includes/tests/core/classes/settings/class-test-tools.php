@@ -274,6 +274,43 @@ class Test_Tools extends Base_Ajax {
 	}
 
 	/**
+	 * Coverage for ajax_import with data that fails import validation.
+	 *
+	 * Sends valid JSON with no 'settings' key, which passes json_decode
+	 * but fails import_settings validation.
+	 *
+	 * @covers ::ajax_import
+	 *
+	 * @return void
+	 */
+	public function test_ajax_import_failure(): void {
+		$user_id = $this->factory()->user->create( array( 'role' => 'administrator' ) );
+		wp_set_current_user( $user_id );
+
+		$_POST['nonce']         = wp_create_nonce( 'gatherpress_tools_nonce' );
+		$_POST['settings_json'] = wp_json_encode( array( 'version' => '1.0.0' ) );
+		// No 'settings' key means validation failure.
+
+		add_filter(
+			'gatherpress_pre_get_http_input',
+			static function ( $pre_value, $type, $var_name ) {
+				if ( INPUT_POST === $type && 'import_mode' === $var_name ) {
+					return 'merge';
+				}
+				return null;
+			},
+			10,
+			3
+		);
+
+		$response = $this->do_ajax( 'gatherpress_import_settings' );
+
+		$this->assertFalse( $response->success, 'Failed to assert import failure for missing settings key.' );
+
+		remove_all_filters( 'gatherpress_pre_get_http_input' );
+	}
+
+	/**
 	 * Coverage for ajax_import with invalid import mode defaulting to merge.
 	 *
 	 * @covers ::ajax_import
