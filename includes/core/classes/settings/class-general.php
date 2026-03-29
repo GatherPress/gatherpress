@@ -103,7 +103,7 @@ class General extends Base {
 							'label'   => __( 'Display event date instead of publish date for events.', 'gatherpress' ),
 							'type'    => 'checkbox',
 							'options' => array(
-								'default' => '1',
+								'default' => true,
 							),
 						),
 					),
@@ -139,7 +139,7 @@ class General extends Base {
 							'type'    => 'number',
 							'size'    => 'small',
 							'options' => array(
-								'default' => '50',
+								'default' => 50,
 							),
 						),
 					),
@@ -159,7 +159,7 @@ class General extends Base {
 							'type'    => 'number',
 							'size'    => 'small',
 							'options' => array(
-								'default' => '0',
+								'default' => 0,
 								'min'     => '0',
 								'max'     => '5',
 							),
@@ -177,7 +177,7 @@ class General extends Base {
 							'label'   => __( 'Enable Anonymous RSVP for New Events.', 'gatherpress' ),
 							'type'    => 'checkbox',
 							'options' => array(
-								'default' => 0,
+								'default' => false,
 							),
 						),
 					),
@@ -203,6 +203,9 @@ class General extends Base {
 							'options' => array(
 								'default' => get_option( 'date_format', 'l, F j, Y' ),
 							),
+							'preview' => array(
+								'template' => 'datetime-preview',
+							),
 						),
 					),
 					'time_format'   => array(
@@ -216,6 +219,9 @@ class General extends Base {
 							'options' => array(
 								'default' => get_option( 'time_format', 'g:i A' ),
 							),
+							'preview' => array(
+								'template' => 'datetime-preview',
+							),
 						),
 					),
 					'show_timezone' => array(
@@ -226,7 +232,7 @@ class General extends Base {
 							'label'   => __( 'Display the timezone for scheduled events.', 'gatherpress' ),
 							'type'    => 'checkbox',
 							'options' => array(
-								'default' => '1',
+								'default' => true,
 							),
 						),
 					),
@@ -246,9 +252,10 @@ class General extends Base {
 						'field'  => array(
 							'type'    => 'autocomplete',
 							'options' => array(
-								'type'  => 'page',
-								'label' => __( 'Select Upcoming Events Archive Page', 'gatherpress' ),
-								'limit' => 1,
+								'type'    => 'page',
+								'label'   => __( 'Select Upcoming Events Archive Page', 'gatherpress' ),
+								'limit'   => 1,
+								'default' => '[]',
 							),
 						),
 					),
@@ -259,9 +266,10 @@ class General extends Base {
 						'field'  => array(
 							'type'    => 'autocomplete',
 							'options' => array(
-								'type'  => 'page',
-								'label' => __( 'Select Past Events Archive Page', 'gatherpress' ),
-								'limit' => 1,
+								'type'    => 'page',
+								'label'   => __( 'Select Past Events Archive Page', 'gatherpress' ),
+								'limit'   => 1,
+								'default' => '[]',
 							),
 						),
 					),
@@ -281,6 +289,14 @@ class General extends Base {
 								'label'   => __( 'Permalink base of Events.', 'gatherpress' ),
 								'default' => Event_Setup::get_localized_post_type_slug(),
 							),
+							'preview' => array(
+								'template' => 'url-rewrite-preview',
+								'suffix'   => _x(
+									'sample-event',
+									'URL permalink structure example for events',
+									'gatherpress'
+								),
+							),
 						),
 					),
 					'venues' => array(
@@ -293,6 +309,14 @@ class General extends Base {
 								'label'   => __( 'Permalink base of Venues.', 'gatherpress' ),
 								'default' => Venue::get_localized_post_type_slug(),
 							),
+							'preview' => array(
+								'template' => 'url-rewrite-preview',
+								'suffix'   => _x(
+									'sample-venue',
+									'URL permalink structure example for venues',
+									'gatherpress'
+								),
+							),
 						),
 					),
 					'topics' => array(
@@ -304,6 +328,14 @@ class General extends Base {
 							'options' => array(
 								'label'   => __( 'Permalink base of Topics.', 'gatherpress' ),
 								'default' => Topic::get_localized_taxonomy_slug(),
+							),
+							'preview' => array(
+								'template' => 'url-rewrite-preview',
+								'suffix'   => _x(
+									'sample-topic-term',
+									'URL permalink structure example for topics',
+									'gatherpress'
+								),
 							),
 						),
 					),
@@ -341,7 +373,7 @@ class General extends Base {
 						'field'       => array(
 							'type'    => 'select',
 							'options' => array(
-								'default' => 'day',
+								'default' => 'daily',
 								'items'   => array(
 									'hourly'  => __( 'Hourly', 'gatherpress' ),
 									'daily'   => __( 'Daily', 'gatherpress' ),

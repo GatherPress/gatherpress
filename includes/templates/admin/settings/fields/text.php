@@ -19,7 +19,7 @@
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
-if ( ! isset( $name, $label, $option, $value, $description, $size ) ) {
+if ( ! isset( $name, $label, $option, $value, $description, $size, $preview ) ) {
 	return;
 }
 
@@ -34,6 +34,18 @@ if ( ! isset( $name, $label, $option, $value, $description, $size ) ) {
 		<?php
 	}
 
-	do_action( 'gatherpress_text_after', $name, $value );
+	if ( ! empty( $preview['template'] ) ) {
+		\GatherPress\Core\Utility::render_template(
+			sprintf( '%s/includes/templates/admin/settings/partials/%s.php', GATHERPRESS_CORE_PATH ),
+			array_merge(
+				array(
+					'name'  => $name,
+					'value' => $value,
+				),
+				$preview
+			),
+			true
+		);
+	}
 	?>
 </div>

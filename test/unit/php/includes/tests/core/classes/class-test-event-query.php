@@ -298,16 +298,14 @@ class Test_Event_Query extends Base {
 			);
 
 		$page_data = array(
-			'pages' => array(
-				'past_events' => wp_json_encode(
-					array(
-						(object) array( 'id' => 123 ),
-					)
-				),
+			'past_events' => wp_json_encode(
+				array(
+					(object) array( 'id' => 123 ),
+				)
 			),
 		);
 
-		add_option( 'gatherpress_general', $page_data );
+		add_option( 'gatherpress_settings', $page_data );
 
 		$instance->prepare_event_query_before_execution( $query );
 
@@ -331,7 +329,7 @@ class Test_Event_Query extends Base {
 			'Should set is_singular to false'
 		);
 
-		delete_option( 'gatherpress_general' );
+		delete_option( 'gatherpress_settings' );
 	}
 
 	/**
@@ -358,7 +356,7 @@ class Test_Event_Query extends Base {
 			->willReturn( true );
 
 		// Set invalid general option (not an array).
-		add_option( 'gatherpress_general', 'invalid' );
+		add_option( 'gatherpress_settings', 'invalid' );
 
 		$instance->prepare_event_query_before_execution( $query );
 
@@ -368,7 +366,7 @@ class Test_Event_Query extends Base {
 			'Method should return early when general option is not an array.'
 		);
 
-		delete_option( 'gatherpress_general' );
+		delete_option( 'gatherpress_settings' );
 	}
 
 	/**
@@ -395,12 +393,7 @@ class Test_Event_Query extends Base {
 			->willReturn( true );
 
 		// Test with empty pages.
-		add_option(
-			'gatherpress_general',
-			array(
-				'pages' => '',
-			)
-		);
+		add_option( 'gatherpress_settings', '' );
 
 		$instance->prepare_event_query_before_execution( $query );
 
@@ -410,15 +403,10 @@ class Test_Event_Query extends Base {
 			'Method should return early when pages is empty'
 		);
 
-		delete_option( 'gatherpress_general' );
+		delete_option( 'gatherpress_settings' );
 
 		// Test with pages not being an array.
-		add_option(
-			'gatherpress_general',
-			array(
-				'pages' => 'not-an-array',
-			)
-		);
+		add_option( 'gatherpress_settings', 'not-an-array' );
 
 		$instance->prepare_event_query_before_execution( $query );
 
@@ -428,7 +416,7 @@ class Test_Event_Query extends Base {
 			'Method should return early when pages is not an array'
 		);
 
-		delete_option( 'gatherpress_general' );
+		delete_option( 'gatherpress_settings' );
 	}
 
 	/**
@@ -474,16 +462,14 @@ class Test_Event_Query extends Base {
 			);
 
 		$page_data = array(
-			'pages' => array(
-				'upcoming_events' => wp_json_encode(
-					array(
-						(object) array( 'id' => $page_id ),
-					)
-				),
+			'upcoming_events' => wp_json_encode(
+				array(
+					(object) array( 'id' => $page_id ),
+				)
 			),
 		);
 
-		add_option( 'gatherpress_general', $page_data );
+		add_option( 'gatherpress_settings', $page_data );
 
 		$instance->prepare_event_query_before_execution( $query );
 
@@ -496,7 +482,7 @@ class Test_Event_Query extends Base {
 		$other_option = apply_filters( 'pre_option', 'original_value', 'some_other_option' );
 		$this->assertEquals( 'original_value', $other_option, 'Other options should return original pre value' );
 
-		delete_option( 'gatherpress_general' );
+		delete_option( 'gatherpress_settings' );
 		wp_delete_post( $page_id, true );
 	}
 
@@ -543,16 +529,14 @@ class Test_Event_Query extends Base {
 			);
 
 		$page_data = array(
-			'pages' => array(
-				'past_events' => wp_json_encode(
-					array(
-						(object) array( 'id' => $page_id ),
-					)
-				),
+			'past_events' => wp_json_encode(
+				array(
+					(object) array( 'id' => $page_id ),
+				)
 			),
 		);
 
-		add_option( 'gatherpress_general', $page_data );
+		add_option( 'gatherpress_settings', $page_data );
 
 		$instance->prepare_event_query_before_execution( $query );
 
@@ -561,7 +545,7 @@ class Test_Event_Query extends Base {
 		$archive_title = apply_filters( 'get_the_archive_title', 'Default Title' );
 		$this->assertEquals( 'Custom Archive Title', $archive_title, 'Archive title should be the page title' );
 
-		delete_option( 'gatherpress_general' );
+		delete_option( 'gatherpress_settings' );
 		wp_delete_post( $page_id, true );
 	}
 

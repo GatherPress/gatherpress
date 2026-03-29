@@ -75,8 +75,9 @@ class Leadership extends Base {
 				'field'  => array(
 					'type'    => 'autocomplete',
 					'options' => array(
-						'type'  => 'user',
-						'label' => __( 'Select Organizers', 'gatherpress' ),
+						'type'    => 'user',
+						'label'   => __( 'Select Organizers', 'gatherpress' ),
+						'default' => '[]',
 					),
 				),
 			),
@@ -132,16 +133,20 @@ class Leadership extends Base {
 	 * @return string The role of the user, or 'Member' if no matching role is found.
 	 */
 	public function get_user_role( int $user_id ): string {
-		$leadership = get_option( Utility::prefix_key( 'leadership' ) );
-		$roles      = $leadership['roles'] ?? array();
+		$settings   = Settings::get_instance();
+		$user_roles = $this->get_user_roles();
 		$default    = __( 'Member', 'gatherpress' );
 
-		foreach ( $roles as $role => $users ) {
+		foreach ( array_keys( $user_roles ) as $role ) {
+			$users = $settings->get_value( $role );
+
+			if ( empty( $users ) ) {
+				continue;
+			}
+
 			foreach ( json_decode( $users ) as $user ) {
 				if ( intval( $user->id ) === $user_id ) {
-					$roles = $this->get_user_roles();
-
-					return $roles[ $role ]['labels']['singular_name'] ?? $default;
+					return $user_roles[ $role ]['labels']['singular_name'] ?? $default;
 				}
 			}
 		}

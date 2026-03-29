@@ -391,26 +391,14 @@ class Assets {
 				'nonce'          => wp_create_nonce( 'wp_rest' ),
 			),
 			'settings'     => array(
-				'dateFormat'          => $settings->get_value( 'general', 'formatting', 'date_format' ),
-				'enableAnonymousRsvp' => ( 1 === (int) $settings->get_value(
-					'general',
-					'general',
-					'enable_anonymous_rsvp'
-				) ),
-				'mapPlatform'         => $settings->get_value( 'general', 'general', 'map_platform' ),
-				'maxAttendanceLimit'  => $settings->get_value( 'general', 'general', 'max_attendance_limit' ),
-				'maxGuestLimit'       => $settings->get_value( 'general', 'general', 'max_guest_limit' ),
-				'postOrEventDate'     => ( 1 === (int) $settings->get_value(
-					'general',
-					'general',
-					'post_or_event_date'
-				) ),
-				'showTimezone'        => ( 1 === (int) $settings->get_value(
-					'general',
-					'formatting',
-					'show_timezone'
-				) ),
-				'timeFormat'          => $settings->get_value( 'general', 'formatting', 'time_format' ),
+				'dateFormat'          => $settings->get_value( 'date_format' ),
+				'enableAnonymousRsvp' => ( 1 === (int) $settings->get_value( 'enable_anonymous_rsvp' ) ),
+				'mapPlatform'         => $settings->get_value( 'map_platform' ),
+				'maxAttendanceLimit'  => $settings->get_value( 'max_attendance_limit' ),
+				'maxGuestLimit'       => $settings->get_value( 'max_guest_limit' ),
+				'postOrEventDate'     => ( 1 === (int) $settings->get_value( 'post_or_event_date' ) ),
+				'showTimezone'        => ( 1 === (int) $settings->get_value( 'show_timezone' ) ),
+				'timeFormat'          => $settings->get_value( 'time_format' ),
 			),
 			'urls'         => array(
 				'pluginUrl'       => GATHERPRESS_CORE_URL,

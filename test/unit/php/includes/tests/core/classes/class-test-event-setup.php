@@ -203,7 +203,7 @@ class Test_Event_Setup extends Base {
 		$settings = Settings::get_instance();
 
 		// Get the dynamic slug from settings (default is 'events' plural).
-		$rewrite_slug = $settings->get_value( 'general', 'urls', 'events' );
+		$rewrite_slug = $settings->get_value( 'events' );
 
 		$instance->register_calendar_rewrite_rule();
 
@@ -1169,11 +1169,9 @@ class Test_Event_Setup extends Base {
 
 		// Set setting to use event date.
 		update_option(
-			'gatherpress_general',
+			'gatherpress_settings',
 			array(
-				'general' => array(
-					'post_or_event_date' => '1',
-				),
+				'post_or_event_date' => '1',
 			)
 		);
 
@@ -1210,11 +1208,9 @@ class Test_Event_Setup extends Base {
 
 		// Set setting to use event date.
 		update_option(
-			'gatherpress_general',
+			'gatherpress_settings',
 			array(
-				'general' => array(
-					'post_or_event_date' => '1',
-				),
+				'post_or_event_date' => '1',
 			)
 		);
 
@@ -1243,11 +1239,9 @@ class Test_Event_Setup extends Base {
 
 		// Set setting to use post date.
 		update_option(
-			'gatherpress_general',
+			'gatherpress_settings',
 			array(
-				'general' => array(
-					'post_or_event_date' => '0',
-				),
+				'post_or_event_date' => '0',
 			)
 		);
 
@@ -1304,11 +1298,9 @@ class Test_Event_Setup extends Base {
 
 		// Set setting to use event date.
 		update_option(
-			'gatherpress_general',
+			'gatherpress_settings',
 			array(
-				'general' => array(
-					'post_or_event_date' => '1',
-				),
+				'post_or_event_date' => '1',
 			)
 		);
 
@@ -1350,11 +1342,9 @@ class Test_Event_Setup extends Base {
 
 		// Set setting to use post date (disabled).
 		update_option(
-			'gatherpress_general',
+			'gatherpress_settings',
 			array(
-				'general' => array(
-					'post_or_event_date' => '0',
-				),
+				'post_or_event_date' => '0',
 			)
 		);
 
@@ -1415,7 +1405,7 @@ class Test_Event_Setup extends Base {
 	public function test_set_event_archive_labels_no_pages(): void {
 		$instance = Event_Setup::get_instance();
 
-		delete_option( 'gatherpress_general' );
+		delete_option( 'gatherpress_settings' );
 
 		$post        = $this->mock->post()->get();
 		$post_states = array( 'publish' => 'Published' );
@@ -1436,7 +1426,7 @@ class Test_Event_Setup extends Base {
 		$instance = Event_Setup::get_instance();
 
 		update_option(
-			'gatherpress_general',
+			'gatherpress_settings',
 			array(
 				'pages' => '',
 			)
@@ -1463,17 +1453,15 @@ class Test_Event_Setup extends Base {
 		$page_id = $this->mock->post( array( 'post_type' => 'page' ) )->get()->ID;
 
 		update_option(
-			'gatherpress_general',
+			'gatherpress_settings',
 			array(
-				'pages' => array(
-					'upcoming_events' => wp_json_encode(
-						array(
-							(object) array(
-								'id'    => $page_id,
-								'value' => 'Upcoming Events',
-							),
-						)
-					),
+				'upcoming_events' => wp_json_encode(
+					array(
+						(object) array(
+							'id'    => $page_id,
+							'value' => 'Upcoming Events',
+						),
+					)
 				),
 			)
 		);
@@ -1504,17 +1492,15 @@ class Test_Event_Setup extends Base {
 		$page_id = $this->mock->post( array( 'post_type' => 'page' ) )->get()->ID;
 
 		update_option(
-			'gatherpress_general',
+			'gatherpress_settings',
 			array(
-				'pages' => array(
-					'past_events' => wp_json_encode(
-						array(
-							(object) array(
-								'id'    => $page_id,
-								'value' => 'Past Events',
-							),
-						)
-					),
+				'past_events' => wp_json_encode(
+					array(
+						(object) array(
+							'id'    => $page_id,
+							'value' => 'Past Events',
+						),
+					)
 				),
 			)
 		);
@@ -3073,7 +3059,7 @@ class Test_Event_Setup extends Base {
 
 		// Get the rewrite slug from settings.
 		$settings     = Settings::get_instance();
-		$rewrite_slug = $settings->get_value( 'general', 'urls', 'events' );
+		$rewrite_slug = $settings->get_value( 'events' );
 
 		// Create a page with the same slug as the events rewrite slug.
 		$page_id = wp_insert_post(
@@ -3117,7 +3103,7 @@ class Test_Event_Setup extends Base {
 
 		// Get the rewrite slug from settings.
 		$settings     = Settings::get_instance();
-		$rewrite_slug = $settings->get_value( 'general', 'urls', 'events' );
+		$rewrite_slug = $settings->get_value( 'events' );
 
 		// Make sure no page exists with this slug.
 		$existing_page = get_page_by_path( $rewrite_slug );
@@ -3149,7 +3135,7 @@ class Test_Event_Setup extends Base {
 
 		// Get the rewrite slug from settings.
 		$settings     = Settings::get_instance();
-		$rewrite_slug = $settings->get_value( 'general', 'urls', 'events' );
+		$rewrite_slug = $settings->get_value( 'events' );
 
 		// Create a draft page with the same slug.
 		$page_id = wp_insert_post(

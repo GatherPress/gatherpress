@@ -48,7 +48,7 @@ class Test_RSVP_Cleanup extends Base {
 			),
 			array(
 				'type'     => 'action',
-				'name'     => 'update_option_gatherpress_general',
+				'name'     => 'update_option_gatherpress_settings',
 				'priority' => 10,
 				'callback' => array( $instance, 'reschedule_cleanup_cron' ),
 			),

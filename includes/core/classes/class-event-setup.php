@@ -130,7 +130,7 @@ class Event_Setup {
 	 */
 	public function register_post_type(): void {
 		$settings     = Settings::get_instance();
-		$rewrite_slug = $settings->get_value( 'general', 'urls', 'events' );
+		$rewrite_slug = $settings->get_value( 'events' );
 		register_post_type(
 			Event::POST_TYPE,
 			array(
@@ -231,7 +231,7 @@ class Event_Setup {
 	/**
 	 * Returns the post type slug localized for the site language and sanitized as URL part.
 	 *
-	 * Do not use this directly, use get_value( 'general', 'urls', 'events' ) instead.
+	 * Do not use this directly, use get_value( 'events' ) instead.
 	 *
 	 * This method switches to the sites default language and gets the translation of 'events' for the loaded locale.
 	 * After that, the method sanitizes the string to be safely used within an URL,
@@ -410,7 +410,7 @@ class Event_Setup {
 	 */
 	public function register_calendar_rewrite_rule(): void {
 		$settings     = Settings::get_instance();
-		$rewrite_slug = sanitize_title( $settings->get_value( 'general', 'urls', 'events' ) );
+		$rewrite_slug = sanitize_title( $settings->get_value( 'events' ) );
 
 		add_rewrite_rule(
 			sprintf( '^%s/([^/]+)\.ics$', $rewrite_slug ),
@@ -517,7 +517,7 @@ class Event_Setup {
 
 		// Get the configured rewrite slug for events.
 		$settings     = Settings::get_instance();
-		$rewrite_slug = $settings->get_value( 'general', 'urls', 'events' );
+		$rewrite_slug = $settings->get_value( 'events' );
 
 		// Check if a page exists with this slug.
 		$page = get_page_by_path( $rewrite_slug );
@@ -1162,7 +1162,7 @@ class Event_Setup {
 	 */
 	public function get_the_event_date( string $the_date, string $format = '', $post = null ): string {
 		$settings       = Settings::get_instance();
-		$use_event_date = $settings->get_value( 'general', 'general', 'post_or_event_date' );
+		$use_event_date = $settings->get_value( 'post_or_event_date' );
 
 		// Determine the post type and ID from the post object or global context.
 		$post_type = $post instanceof WP_Post ? $post->post_type : get_post_type();
@@ -1209,7 +1209,7 @@ class Event_Setup {
 		}
 
 		$settings       = Settings::get_instance();
-		$use_event_date = $settings->get_value( 'general', 'general', 'post_or_event_date' );
+		$use_event_date = $settings->get_value( 'post_or_event_date' );
 
 		if ( 1 !== intval( $use_event_date ) ) {
 			return $block_content;

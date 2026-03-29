@@ -62,19 +62,7 @@ class Test_Settings extends Base {
 			),
 			array(
 				'type'     => 'action',
-				'name'     => 'gatherpress_text_after',
-				'priority' => 10,
-				'callback' => array( $instance, 'datetime_preview' ),
-			),
-			array(
-				'type'     => 'action',
-				'name'     => 'gatherpress_text_after',
-				'priority' => 10,
-				'callback' => array( $instance, 'url_rewrite_preview' ),
-			),
-			array(
-				'type'     => 'action',
-				'name'     => 'update_option_gatherpress_general',
+				'name'     => 'update_option_gatherpress_settings',
 				'priority' => 10,
 				'callback' => array( $instance, 'maybe_flush_rewrite_rules' ),
 			),
@@ -154,7 +142,7 @@ class Test_Settings extends Base {
 			array( 'gatherpress_general' )
 		);
 		$this->assertStringContainsString(
-			'value=\'gatherpress_general\'',
+			'value=\'gatherpress_settings\'',
 			$response,
 			'Failed to assert general form rendered.'
 		);
@@ -172,8 +160,6 @@ class Test_Settings extends Base {
 		$text     = Utility::buffer_and_return(
 			array( $instance, 'text' ),
 			array(
-				'sub_page',
-				'section',
 				'option',
 				array(
 					'field'       => array(
@@ -190,7 +176,7 @@ class Test_Settings extends Base {
 			'Failed to assert that label matches.'
 		);
 		$this->assertStringContainsString(
-			'<input id="gatherpress_option" type="text" name="sub_page[section][option]" ' .
+			'<input id="gatherpress_option" type="text" name="gatherpress_settings[option]" ' .
 			'class="regular-text" value="" />',
 			$text,
 			'Failed to assert that input matches.'
@@ -266,8 +252,6 @@ class Test_Settings extends Base {
 		$checkbox = Utility::buffer_and_return(
 			array( $instance, 'checkbox' ),
 			array(
-				'sub_page',
-				'section',
 				'option',
 				array(
 					'field'       => array(
@@ -284,12 +268,12 @@ class Test_Settings extends Base {
 			'Failed to assert that label matches.'
 		);
 		$this->assertStringContainsString(
-			'<input id="gatherpress_option" type="checkbox" name="sub_page[section][option]" value="1"  />',
+			'<input id="gatherpress_option" type="checkbox" name="gatherpress_settings[option]" value="1"  />',
 			$checkbox,
 			'Failed to assert that input matches.'
 		);
 		$this->assertStringContainsString(
-			'<input type="hidden" name="sub_page[section][option]" value="0" />',
+			'<input type="hidden" name="gatherpress_settings[option]" value="0" />',
 			$checkbox,
 			'Failed to assert that hidden input matches.'
 		);
@@ -312,8 +296,6 @@ class Test_Settings extends Base {
 		$text     = Utility::buffer_and_return(
 			array( $instance, 'number' ),
 			array(
-				'sub_page',
-				'section',
 				'option',
 				array(
 					'field' => array(
@@ -334,7 +316,7 @@ class Test_Settings extends Base {
 			'Failed to assert that label matches.'
 		);
 		$this->assertStringContainsString(
-			'<input id="gatherpress_option" type="number" name="sub_page[section][option]" ' .
+			'<input id="gatherpress_option" type="number" name="gatherpress_settings[option]" ' .
 			'class="regular-text" value="" min="1" max="5" />',
 			$text,
 			'Failed to assert that input matches.'
@@ -353,8 +335,6 @@ class Test_Settings extends Base {
 		$autocomplete = Utility::buffer_and_return(
 			array( $instance, 'autocomplete' ),
 			array(
-				'sub_page',
-				'section',
 				'option',
 				array(
 					'type'  => 'page',
@@ -371,7 +351,7 @@ class Test_Settings extends Base {
 
 		$this->assertStringContainsString(
 			'<div class="regular-text" data-gatherpress_component_name="autocomplete" ' .
-			'data-gatherpress_component_attrs="{&quot;name&quot;:&quot;sub_page[section][option]&quot;,' .
+			'data-gatherpress_component_attrs="{&quot;name&quot;:&quot;gatherpress_settings[option]&quot;,' .
 			'&quot;option&quot;:&quot;gatherpress_option&quot;,&quot;value&quot;:&quot;[]&quot;,' .
 			'&quot;fieldOptions&quot;:{&quot;unit&quot;:&quot;test&quot;}}"></div>',
 			$autocomplete,
@@ -392,15 +372,13 @@ class Test_Settings extends Base {
 		$expected = 'test_value';
 
 		add_option(
-			'gatherpress_test_page',
+			'gatherpress_settings',
 			array(
-				'test_section' => array(
-					'test_option' => $expected,
-				),
+				'test_option' => $expected,
 			)
 		);
 
-		$value = $instance->get_value( 'test_page', 'test_section', 'test_option' );
+		$value = $instance->get_value( 'test_option' );
 
 		$this->assertEquals(
 			$expected,
@@ -408,7 +386,7 @@ class Test_Settings extends Base {
 			'Should return the correct value when all parameters are set'
 		);
 
-		delete_option( 'gatherpress_test_page' );
+		delete_option( 'gatherpress_settings' );
 	}
 
 	/**
@@ -423,18 +401,16 @@ class Test_Settings extends Base {
 		$instance = Settings::get_instance();
 
 		add_option(
-			'gatherpress_test_page',
+			'gatherpress_settings',
 			array(
-				'test_section' => array(
-					'test_option' => '',
-				),
+				'test_option' => '',
 			)
 		);
 
-		$value = $instance->get_value( 'test_page', 'test_section', 'test_option' );
+		$value = $instance->get_value( 'test_option' );
 
-		// The actual default value will come from get_default_value.
-		$default_value = $instance->get_default_value( 'test_page', 'test_section', 'test_option' );
+		// The actual default value will come from get_flat_default.
+		$default_value = $instance->get_flat_default( 'test_option' );
 
 		$this->assertEquals(
 			$default_value,
@@ -442,7 +418,7 @@ class Test_Settings extends Base {
 			'Should return default value when option is empty'
 		);
 
-		delete_option( 'gatherpress_test_page' );
+		delete_option( 'gatherpress_settings' );
 	}
 
 	/**
@@ -455,12 +431,12 @@ class Test_Settings extends Base {
 	 */
 	public function test_get_value_with_empty_section_option(): void {
 		$instance = Settings::get_instance();
-		$value    = $instance->get_value( 'test_page', '', '' );
+		$value    = $instance->get_value( 'nonexistent_option' );
 
 		$this->assertEquals(
-			$instance->get_default_value( 'test_page', '', '' ),
+			$instance->get_flat_default( 'nonexistent_option' ),
 			$value,
-			'Should handle empty section and option parameters'
+			'Should handle nonexistent option parameter'
 		);
 	}
 
@@ -474,24 +450,24 @@ class Test_Settings extends Base {
 	 */
 	public function test_get_value_with_non_existent_page(): void {
 		$instance = Settings::get_instance();
-		$value    = $instance->get_value( 'non_existent_page', 'test_section', 'test_option' );
+		$value    = $instance->get_value( 'nonexistent_option' );
 
 		$this->assertEquals(
-			$instance->get_default_value( 'non_existent_page', 'test_section', 'test_option' ),
+			$instance->get_flat_default( 'nonexistent_option' ),
 			$value,
-			'Should return default value for non-existent sub-page'
+			'Should return default value for non-existent option'
 		);
 	}
 
 	/**
-	 * Test getting default value with valid structure.
+	 * Test getting flat default value with valid structure.
 	 *
 	 * @since  1.0.0
-	 * @covers ::get_default_value
+	 * @covers ::get_flat_default
 	 *
 	 * @return void
 	 */
-	public function test_get_default_value_with_valid_structure(): void {
+	public function test_get_flat_default_with_valid_structure(): void {
 		$instance = $this->getMockBuilder( Settings::class )
 			->setMethods( array( 'get_sub_pages' ) )
 			->disableOriginalConstructor()
@@ -520,7 +496,7 @@ class Test_Settings extends Base {
 			)
 		);
 
-		$value = $instance->get_default_value( 'gatherpress_test_page', 'test_section', 'test_option' );
+		$value = $instance->get_flat_default( 'test_option' );
 
 		$this->assertEquals(
 			$expected,
@@ -530,290 +506,40 @@ class Test_Settings extends Base {
 	}
 
 	/**
-	 * Test getting default value with invalid page.
+	 * Test getting flat default value with nonexistent option.
 	 *
 	 * @since  1.0.0
-	 * @covers ::get_default_value
+	 * @covers ::get_flat_default
 	 *
 	 * @return void
 	 */
-	public function test_get_default_value_with_invalid_page(): void {
+	public function test_get_flat_default_with_nonexistent_option(): void {
 		$instance = Settings::get_instance();
 
-		$value = $instance->get_default_value( 'invalid_page', 'test_section', 'test_option' );
+		$value = $instance->get_flat_default( 'nonexistent_option' );
 
 		$this->assertEmpty(
 			$value,
-			'Should return empty string for invalid page'
+			'Should return empty string for nonexistent option'
 		);
 	}
 
 	/**
-	 * Test getting default value with empty parameters.
+	 * Test getting flat default value with empty option.
 	 *
 	 * @since  1.0.0
-	 * @covers ::get_default_value
+	 * @covers ::get_flat_default
 	 *
 	 * @return void
 	 */
-	public function test_get_default_value_with_empty_parameters(): void {
+	public function test_get_flat_default_with_empty_option(): void {
 		$instance = Settings::get_instance();
 
-		$value = $instance->get_default_value( '', '', '' );
+		$value = $instance->get_flat_default( '' );
 
 		$this->assertEmpty(
 			$value,
-			'Should return empty string when parameters are empty'
-		);
-	}
-
-	/**
-	 * Tests for the get_options method.
-	 *
-	 * @since  1.0.0
-	 * @covers ::get_options
-	 *
-	 * @return void
-	 */
-	public function test_get_options_with_existing_option(): void {
-		$instance    = Settings::get_instance();
-		$test_option = array( 'test' => 'value' );
-
-		add_option( 'gatherpress_test', $test_option );
-
-		$result = $instance->get_options( 'gatherpress_test' );
-
-		$this->assertEquals(
-			$test_option,
-			$result,
-			'Should return existing option when set and valid'
-		);
-
-		delete_option( 'gatherpress_test' );
-	}
-
-	/**
-	 * Test get_options returns defaults when option empty.
-	 *
-	 * @since  1.0.0
-	 * @covers ::get_options
-	 *
-	 * @return void
-	 */
-	public function test_get_options_returns_defaults_when_empty(): void {
-		$instance = $this->getMockBuilder( Settings::class )
-			->setMethods( array( 'get_option_defaults' ) )
-			->disableOriginalConstructor()
-			->getMock();
-
-		$default_options = array( 'default' => 'value' );
-
-		$instance->method( 'get_option_defaults' )
-			->willReturn( $default_options );
-
-		$result = $instance->get_options( 'gatherpress_test' );
-
-		$this->assertEquals(
-			$default_options,
-			$result,
-			'Should return defaults when option not set'
-		);
-	}
-
-	/**
-	 * Test get_options returns defaults when option not array.
-	 *
-	 * @since  1.0.0
-	 * @covers ::get_options
-	 *
-	 * @return void
-	 */
-	public function test_get_options_returns_defaults_when_not_array(): void {
-		$instance = $this->getMockBuilder( Settings::class )
-			->setMethods( array( 'get_option_defaults' ) )
-			->disableOriginalConstructor()
-			->getMock();
-
-		$default_options = array( 'default' => 'value' );
-
-		add_option( 'gatherpress_test', 'string_value' );
-
-		$instance->method( 'get_option_defaults' )
-			->willReturn( $default_options );
-
-		$result = $instance->get_options( 'gatherpress_test' );
-
-		$this->assertEquals(
-			$default_options,
-			$result,
-			'Should return defaults when option is not array'
-		);
-
-		delete_option( 'gatherpress_test' );
-	}
-
-	/**
-	 * Tests for the get_option_defaults method.
-	 *
-	 * @since  1.0.0
-	 * @covers ::get_option_defaults
-	 *
-	 * @return void
-	 */
-	public function test_get_option_defaults_with_valid_structure(): void {
-		$instance  = $this->getMockBuilder( Settings::class )
-			->setMethods( array( 'get_sub_pages' ) )
-			->disableOriginalConstructor()
-			->getMock();
-		$sub_pages = array(
-			'test_page' => array(
-				'sections' => array(
-					'section_one' => array(
-						'options' => array(
-							'option_one' => array(
-								'default' => 'default_one',
-							),
-							'option_two' => array(
-								'default' => 'default_two',
-							),
-						),
-					),
-					'section_two' => array(
-						'options' => array(
-							'option_three' => array(
-								'default' => 'default_three',
-							),
-						),
-					),
-				),
-			),
-		);
-
-		$instance->method( 'get_sub_pages' )
-			->willReturn( $sub_pages );
-
-		$expected = array(
-			'section_one' => array(
-				'option_one' => 'default_one',
-				'option_two' => 'default_two',
-			),
-			'section_two' => array(
-				'option_three' => 'default_three',
-			),
-		);
-
-		$result = $instance->get_option_defaults( 'gatherpress_test_page' );
-
-		$this->assertEquals(
-			$expected,
-			$result,
-			'Should return structured defaults from sub_pages configuration'
-		);
-	}
-
-	/**
-	 * Test getting defaults with invalid section options.
-	 *
-	 * @since  1.0.0
-	 * @covers ::get_option_defaults
-	 *
-	 * @return void
-	 */
-	public function test_get_option_defaults_with_invalid_section_options(): void {
-		$instance  = $this->getMockBuilder( Settings::class )
-			->setMethods( array( 'get_sub_pages' ) )
-			->disableOriginalConstructor()
-			->getMock();
-		$sub_pages = array(
-			'test_page' => array(
-				'sections' => array(
-					'section_one' => array(
-						'options' => 'invalid_options',
-					),
-				),
-			),
-		);
-
-		$instance->method( 'get_sub_pages' )
-			->willReturn( $sub_pages );
-
-		$result = $instance->get_option_defaults( 'gatherpress_test_page' );
-
-		$this->assertEmpty(
-			$result,
-			'Should return empty array when section options are invalid'
-		);
-	}
-
-
-	/**
-	 * Test getting defaults with non-existent page.
-	 *
-	 * @since  1.0.0
-	 * @covers ::get_option_defaults
-	 *
-	 * @return void
-	 */
-	public function test_get_option_defaults_with_nonexistent_page(): void {
-		$instance = $this->getMockBuilder( Settings::class )
-			->setMethods( array( 'get_sub_pages' ) )
-			->disableOriginalConstructor()
-			->getMock();
-
-		$instance->method( 'get_sub_pages' )
-			->willReturn( array() );
-
-		$result = $instance->get_option_defaults( 'gatherpress_nonexistent' );
-
-		$this->assertEmpty(
-			$result,
-			'Should return empty array for non-existent page'
-		);
-	}
-
-	/**
-	 * Test getting defaults with missing default values.
-	 *
-	 * @since  1.0.0
-	 * @covers ::get_option_defaults
-	 *
-	 * @return void
-	 */
-	public function test_get_option_defaults_with_missing_defaults(): void {
-		$instance  = $this->getMockBuilder( Settings::class )
-			->setMethods( array( 'get_sub_pages' ) )
-			->disableOriginalConstructor()
-			->getMock();
-		$sub_pages = array(
-			'test_page' => array(
-				'sections' => array(
-					'section_one' => array(
-						'options' => array(
-							'option_one' => array(),
-							'option_two' => array(
-								'default' => 'has_default',
-							),
-						),
-					),
-				),
-			),
-		);
-
-		$instance->method( 'get_sub_pages' )
-			->willReturn( $sub_pages );
-
-		$expected = array(
-			'section_one' => array(
-				'option_one' => '',
-				'option_two' => 'has_default',
-			),
-		);
-		$result   = $instance->get_option_defaults( 'gatherpress_test_page' );
-
-		$this->assertEquals(
-			$expected,
-			$result,
-			'Should handle missing default values correctly'
+			'Should return empty string when option is empty'
 		);
 	}
 
@@ -826,9 +552,9 @@ class Test_Settings extends Base {
 	 */
 	public function test_get_name_field(): void {
 		$instance = Settings::get_instance();
-		$expects  = 'sub_page[section][option]';
+		$expects  = 'gatherpress_settings[option]';
 
-		$this->assertSame( $expects, $instance->get_name_field( 'sub_page', 'section', 'option' ) );
+		$this->assertSame( $expects, $instance->get_name_field( 'option' ) );
 	}
 
 	/**
@@ -1016,8 +742,6 @@ class Test_Settings extends Base {
 
 		// Just verify method executes without error.
 		$instance->select(
-			'gatherpress_sub_page',
-			'section',
 			'option',
 			array(
 				'field'       => array(
@@ -1035,194 +759,6 @@ class Test_Settings extends Base {
 	}
 
 	/**
-	 * Test datetime_preview method with date format.
-	 *
-	 * @since  1.0.0
-	 * @covers ::datetime_preview
-	 *
-	 * @return void
-	 */
-	public function test_datetime_preview_with_date_format(): void {
-		$instance = Settings::get_instance();
-		$output   = Utility::buffer_and_return(
-			array( $instance, 'datetime_preview' ),
-			array(
-				'gatherpress_general[formatting][date_format]',
-				'F j, Y',
-			)
-		);
-
-		$this->assertStringContainsString(
-			'datetime-preview',
-			$output,
-			'Failed to assert preview is rendered for date format.'
-		);
-	}
-
-	/**
-	 * Test datetime_preview method with time format.
-	 *
-	 * @since  1.0.0
-	 * @covers ::datetime_preview
-	 *
-	 * @return void
-	 */
-	public function test_datetime_preview_with_time_format(): void {
-		$instance = Settings::get_instance();
-		$output   = Utility::buffer_and_return(
-			array( $instance, 'datetime_preview' ),
-			array(
-				'gatherpress_general[formatting][time_format]',
-				'g:i a',
-			)
-		);
-
-		$this->assertStringContainsString(
-			'datetime-preview',
-			$output,
-			'Failed to assert preview is rendered for time format.'
-		);
-	}
-
-	/**
-	 * Test datetime_preview method with non-datetime field.
-	 *
-	 * @since  1.0.0
-	 * @covers ::datetime_preview
-	 *
-	 * @return void
-	 */
-	public function test_datetime_preview_with_other_field(): void {
-		$instance = Settings::get_instance();
-		$output   = Utility::buffer_and_return(
-			array( $instance, 'datetime_preview' ),
-			array(
-				'gatherpress_general[other][field]',
-				'value',
-			)
-		);
-
-		$this->assertEmpty(
-			$output,
-			'Failed to assert no preview is rendered for non-datetime field.'
-		);
-	}
-
-	/**
-	 * Test url_rewrite_preview method with events URL.
-	 *
-	 * @since  1.0.0
-	 * @covers ::url_rewrite_preview
-	 *
-	 * @return void
-	 */
-	public function test_url_rewrite_preview_with_events(): void {
-		$instance = Settings::get_instance();
-		$output   = Utility::buffer_and_return(
-			array( $instance, 'url_rewrite_preview' ),
-			array(
-				'gatherpress_general[urls][events]',
-				'events',
-			)
-		);
-
-		$this->assertStringContainsString(
-			'urlrewrite-preview',
-			$output,
-			'Failed to assert preview is rendered for events URL.'
-		);
-		$this->assertStringContainsString(
-			'sample-event',
-			$output,
-			'Failed to assert preview contains sample-event.'
-		);
-	}
-
-	/**
-	 * Test url_rewrite_preview method with venues URL.
-	 *
-	 * @since  1.0.0
-	 * @covers ::url_rewrite_preview
-	 *
-	 * @return void
-	 */
-	public function test_url_rewrite_preview_with_venues(): void {
-		$instance = Settings::get_instance();
-		$output   = Utility::buffer_and_return(
-			array( $instance, 'url_rewrite_preview' ),
-			array(
-				'gatherpress_general[urls][venues]',
-				'venues',
-			)
-		);
-
-		$this->assertStringContainsString(
-			'urlrewrite-preview',
-			$output,
-			'Failed to assert preview is rendered for venues URL.'
-		);
-		$this->assertStringContainsString(
-			'sample-venue',
-			$output,
-			'Failed to assert preview contains sample-venue.'
-		);
-	}
-
-	/**
-	 * Test url_rewrite_preview method with topics URL.
-	 *
-	 * @since  1.0.0
-	 * @covers ::url_rewrite_preview
-	 *
-	 * @return void
-	 */
-	public function test_url_rewrite_preview_with_topics(): void {
-		$instance = Settings::get_instance();
-		$output   = Utility::buffer_and_return(
-			array( $instance, 'url_rewrite_preview' ),
-			array(
-				'gatherpress_general[urls][topics]',
-				'topics',
-			)
-		);
-
-		$this->assertStringContainsString(
-			'urlrewrite-preview',
-			$output,
-			'Failed to assert preview is rendered for topics URL.'
-		);
-		$this->assertStringContainsString(
-			'sample-topic-term',
-			$output,
-			'Failed to assert preview contains sample-topic-term.'
-		);
-	}
-
-	/**
-	 * Test url_rewrite_preview method with other field.
-	 *
-	 * @since  1.0.0
-	 * @covers ::url_rewrite_preview
-	 *
-	 * @return void
-	 */
-	public function test_url_rewrite_preview_with_other_field(): void {
-		$instance = Settings::get_instance();
-		$output   = Utility::buffer_and_return(
-			array( $instance, 'url_rewrite_preview' ),
-			array(
-				'gatherpress_general[other][field]',
-				'value',
-			)
-		);
-
-		$this->assertEmpty(
-			$output,
-			'Failed to assert no preview is rendered for non-url field.'
-		);
-	}
-
-	/**
 	 * Test maybe_flush_rewrite_rules when URLs change.
 	 *
 	 * @since  1.0.0
@@ -1237,15 +773,11 @@ class Test_Settings extends Base {
 		add_option( 'rewrite_rules', array( 'test' => 'value' ) );
 
 		$old_value = array(
-			'urls' => array(
-				'events' => 'events',
-			),
+			'events' => 'events',
 		);
 
 		$new_value = array(
-			'urls' => array(
-				'events' => 'gatherings',
-			),
+			'events' => 'gatherings',
 		);
 
 		$instance->maybe_flush_rewrite_rules( $old_value, $new_value );
@@ -1271,15 +803,11 @@ class Test_Settings extends Base {
 		add_option( 'rewrite_rules', array( 'test' => 'value' ) );
 
 		$old_value = array(
-			'urls' => array(
-				'events' => 'events',
-			),
+			'events' => 'events',
 		);
 
 		$new_value = array(
-			'urls' => array(
-				'events' => 'events',
-			),
+			'events' => 'events',
 		);
 
 		$instance->maybe_flush_rewrite_rules( $old_value, $new_value );
@@ -1309,9 +837,7 @@ class Test_Settings extends Base {
 		$old_value = array();
 
 		$new_value = array(
-			'urls' => array(
-				'events' => 'events',
-			),
+			'events' => 'events',
 		);
 
 		$instance->maybe_flush_rewrite_rules( $old_value, $new_value );
@@ -1337,9 +863,7 @@ class Test_Settings extends Base {
 		add_option( 'rewrite_rules', array( 'test' => 'value' ) );
 
 		$old_value = array(
-			'urls' => array(
-				'events' => 'events',
-			),
+			'events' => 'events',
 		);
 
 		$new_value = array();
@@ -1533,7 +1057,7 @@ class Test_Settings extends Base {
 		$instance->register_settings();
 
 		// Check that general settings were registered.
-		$this->assertArrayHasKey( 'gatherpress_general', $wp_registered_settings );
+		$this->assertArrayHasKey( 'gatherpress_settings', $wp_registered_settings );
 	}
 
 	/**

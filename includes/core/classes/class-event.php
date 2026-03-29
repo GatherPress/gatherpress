@@ -180,13 +180,13 @@ class Event {
 		$settings    = Settings::get_instance();
 		$date_format = apply_filters(
 			'gatherpress_date_format',
-			$settings->get_value( 'general', 'formatting', 'date_format' )
+			$settings->get_value( 'date_format' )
 		);
 		$time_format = apply_filters(
 			'gatherpress_time_format',
-			$settings->get_value( 'general', 'formatting', 'time_format' )
+			$settings->get_value( 'time_format' )
 		);
-		$timezone    = $settings->get_value( 'general', 'formatting', 'show_timezone' ) ? ' T' : '';
+		$timezone    = $settings->get_value( 'show_timezone' ) ? ' T' : '';
 
 		$show_start = $type
 			? in_array( $type, array( 'start', 'both' ), true )
@@ -717,7 +717,7 @@ class Event {
 	 */
 	public function get_ics_download_link(): string {
 		$settings     = Settings::get_instance();
-		$rewrite_slug = $settings->get_value( 'general', 'urls', 'events' );
+		$rewrite_slug = $settings->get_value( 'events' );
 
 		return home_url(
 			'/' . sanitize_title( $rewrite_slug ) . '/' . get_post_field( 'post_name', $this->event->ID ) . '.ics'

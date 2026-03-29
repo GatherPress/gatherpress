@@ -34,6 +34,7 @@ class Settings {
 	use Singleton;
 
 	const PARENT_SLUG = 'edit.php?post_type=gatherpress_event';
+	const OPTION_NAME = 'gatherpress_settings';
 
 	/**
 	 * The current page being accessed within the settings.
@@ -93,9 +94,7 @@ class Settings {
 		add_action( 'admin_head', array( $this, 'remove_sub_options' ) );
 		add_action( 'admin_init', array( $this, 'register_settings' ) );
 		add_action( 'gatherpress_settings_section', array( $this, 'render_settings_form' ) );
-		add_action( 'gatherpress_text_after', array( $this, 'datetime_preview' ), 10, 2 );
-		add_action( 'gatherpress_text_after', array( $this, 'url_rewrite_preview' ), 10, 2 );
-		add_action( 'update_option_gatherpress_general', array( $this, 'maybe_flush_rewrite_rules' ), 10, 2 );
+		add_action( 'update_option_' . self::OPTION_NAME, array( $this, 'maybe_flush_rewrite_rules' ), 10, 2 );
 
 		add_filter( 'submenu_file', array( $this, 'select_menu' ) );
 	}
@@ -124,12 +123,11 @@ class Settings {
 	 * @return void
 	 */
 	protected function set_current_page(): void {
-		// phpcs:disable WordPress.Security.NonceVerification.Recommended
-		if ( isset( $_GET['page'] ) ) {
-			$this->current_page = sanitize_text_field( wp_unslash( $_GET['page'] ) );
-		}
+		$page = Utility::get_http_input( INPUT_GET, 'page' );
 
-		// phpcs:enable WordPress.Security.NonceVerification.Recommended
+		if ( ! empty( $page ) ) {
+			$this->current_page = $page;
+		}
 	}
 
 	/**
@@ -226,61 +224,59 @@ class Settings {
 	 * @return void
 	 */
 	public function register_settings(): void {
-		$sub_pages = $this->get_sub_pages();
+		$sub_pages      = $this->get_sub_pages();
+		$field_type_map = $this->build_field_type_map( $sub_pages );
+
+		// phpcs:ignore PluginCheck.CodeAnalysis.SettingSanitization.register_settingDynamic
+		register_setting(
+			self::OPTION_NAME,
+			self::OPTION_NAME,
+			array(
+				'sanitize_callback' => $this->sanitize_page_settings( $field_type_map ),
+			)
+		);
 
 		foreach ( $sub_pages as $sub_page => $sub_page_settings ) {
-			// phpcs:ignore PluginCheck.CodeAnalysis.SettingSanitization.register_settingDynamic
-			register_setting(
-				Utility::prefix_key( $sub_page ),
-				Utility::prefix_key( $sub_page ),
-				array(
-					'sanitize_callback' => $this->sanitize_page_settings( $sub_page_settings ),
-				)
-			);
+			if ( ! isset( $sub_page_settings['sections'] ) ) {
+				continue;
+			}
 
-			if ( isset( $sub_page_settings['sections'] ) ) {
-				foreach ( (array) $sub_page_settings['sections'] as $section => $section_settings ) {
-					add_settings_section(
-						$section,
-						$section_settings['name'],
-						static function () use ( $section_settings ) {
-							if ( ! empty( $section_settings['description'] ) ) {
-								echo '<p class="description">'
-									. wp_kses_post( $section_settings['description'] ) . '</p>';
-							}
-						},
-						Utility::prefix_key( $sub_page )
-					);
+			foreach ( (array) $sub_page_settings['sections'] as $section => $section_settings ) {
+				add_settings_section(
+					$section,
+					$section_settings['name'],
+					static function () use ( $section_settings ) {
+						if ( ! empty( $section_settings['description'] ) ) {
+							echo '<p class="description">'
+								. wp_kses_post( $section_settings['description'] ) . '</p>';
+						}
+					},
+					Utility::prefix_key( $sub_page )
+				);
 
-					if ( isset( $section_settings['options'] ) ) {
-						foreach ( (array) $section_settings['options'] as $option => $option_settings ) {
-							if (
-								$option_settings['field']['type']
-								&& method_exists( $this, $option_settings['field']['type'] )
+				if ( isset( $section_settings['options'] ) ) {
+					foreach ( (array) $section_settings['options'] as $option => $option_settings ) {
+						if (
+							$option_settings['field']['type']
+							&& method_exists( $this, $option_settings['field']['type'] )
+						) {
+							$option_settings['callback'] = function () use (
+								$option,
+								$option_settings
 							) {
-								$option_settings['callback'] = function () use (
-									$sub_page,
-									$section,
+								$this->{$option_settings['field']['type']}(
 									$option,
 									$option_settings
-								) {
-									$sub_page = Utility::prefix_key( $sub_page );
-									$this->{$option_settings['field']['type']}(
-										$sub_page,
-										$section,
-										$option,
-										$option_settings
-									);
-								};
-							}
-							add_settings_field(
-								$option,
-								$option_settings['labels']['name'],
-								$option_settings['callback'],
-								Utility::prefix_key( $sub_page ),
-								$section
-							);
+								);
+							};
 						}
+						add_settings_field(
+							$option,
+							$option_settings['labels']['name'],
+							$option_settings['callback'],
+							Utility::prefix_key( $sub_page ),
+							$section
+						);
 					}
 				}
 			}
@@ -288,42 +284,88 @@ class Settings {
 	}
 
 	/**
+	 * Build a flat map of option keys to their field types.
+	 *
+	 * Iterates all sub-pages, sections, and options to produce
+	 * a flat associative array of option_key => field_type.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param array $sub_pages The sub-pages array from get_sub_pages().
+	 * @return array Flat map of option_key => field_type.
+	 */
+	protected function build_field_type_map( array $sub_pages ): array {
+		$map = array();
+
+		foreach ( $sub_pages as $sub_page_settings ) {
+			if ( ! isset( $sub_page_settings['sections'] ) ) {
+				continue;
+			}
+
+			foreach ( (array) $sub_page_settings['sections'] as $section_settings ) {
+				if ( ! isset( $section_settings['options'] ) ) {
+					continue;
+				}
+
+				foreach ( (array) $section_settings['options'] as $option => $option_settings ) {
+					$map[ $option ] = $option_settings['field']['type'] ?? 'text';
+				}
+			}
+		}
+
+		return $map;
+	}
+
+	/**
 	 * Creates a sanitization callback function for page settings.
 	 *
 	 * Generates a closure that sanitizes input values based on their defined field types
-	 * in the sub-page settings. Handles various input types including checkboxes, numbers,
-	 * autocomplete fields, text fields, and select dropdowns.
+	 * using a flat field type map. Merges sanitized input with existing saved values to
+	 * preserve settings from other tabs. Handles various input types including checkboxes,
+	 * numbers, autocomplete fields, text fields, and select dropdowns.
 	 *
-	 * @param array $sub_page_settings The settings configuration for the sub-page,
-	 *                                 containing sections and field type definitions.
+	 * @param array $field_type_map Flat map of option_key => field_type.
 	 * @return callable A callback function that sanitizes input based on field types.
 	 */
-	public function sanitize_page_settings( array $sub_page_settings ): callable {
-		return function ( $input ) use ( $sub_page_settings ): array {
-			foreach ( $input as $key => $value ) {
-				foreach ( $value as $k => $v ) {
-					$type = $sub_page_settings['sections'][ $key ]['options'][ $k ]['field']['type'];
+	public function sanitize_page_settings( array $field_type_map ): callable {
+		return function ( $input ) use ( $field_type_map ): array {
+			$sanitized = array();
 
-					switch ( $type ) {
-						case 'checkbox':
-							$input[ $key ][ $k ] = (bool) $v;
-							break;
-						case 'number':
-							$input[ $key ][ $k ] = intval( $v );
-							break;
-						case 'autocomplete':
-							$input[ $key ][ $k ] = $this->sanitize_autocomplete( $v );
-							break;
-						case 'text':
-						case 'select':
-						default:
-							$input[ $key ][ $k ] = sanitize_text_field( $v );
-							break;
-					}
+			foreach ( $input as $key => $value ) {
+				$type = $field_type_map[ $key ] ?? 'text';
+
+				switch ( $type ) {
+					case 'checkbox':
+						$sanitized[ $key ] = (bool) $value;
+						break;
+					case 'number':
+						$sanitized[ $key ] = intval( $value );
+						break;
+					case 'autocomplete':
+						$sanitized[ $key ] = $this->sanitize_autocomplete( $value );
+						break;
+					case 'text':
+					case 'select':
+					default:
+						$sanitized[ $key ] = sanitize_text_field( $value );
+						break;
 				}
 			}
 
-			return $input;
+			// Merge with existing values to preserve settings from other tabs.
+			$existing = get_option( self::OPTION_NAME, array() );
+			$merged   = array_merge( $existing, $sanitized );
+
+			// Remove values that match their defaults to keep the option lean.
+			foreach ( $merged as $key => $value ) {
+				$default = $this->get_flat_default( $key );
+
+				if ( $value === $default ) {
+					unset( $merged[ $key ] );
+				}
+			}
+
+			return $merged;
 		};
 	}
 
@@ -384,15 +426,13 @@ class Settings {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param string $sub_page        The sub page for the text field.
-	 * @param string $section         The section for the text field.
-	 * @param string $option          The option for the text field.
+	 * @param string $option          The option key for the text field.
 	 * @param array  $option_settings The option settings.
 	 * @return void
 	 */
-	public function text( string $sub_page, string $section, string $option, array $option_settings ): void {
-		$name  = $this->get_name_field( $sub_page, $section, $option );
-		$value = $this->get_value( $sub_page, $section, $option );
+	public function text( string $option, array $option_settings ): void {
+		$name  = $this->get_name_field( $option );
+		$value = $this->get_value( $option );
 
 		Utility::render_template(
 			sprintf( '%s/includes/templates/admin/settings/fields/text.php', GATHERPRESS_CORE_PATH ),
@@ -403,6 +443,7 @@ class Settings {
 				'label'       => $option_settings['field']['label'] ?? '',
 				'size'        => $option_settings['field']['size'] ?? 'regular',
 				'description' => $option_settings['description'] ?? '',
+				'preview'     => $option_settings['field']['preview'] ?? array(),
 			),
 			true
 		);
@@ -416,15 +457,13 @@ class Settings {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param string $sub_page        The slug of the sub-page within settings.
-	 * @param string $section         The slug of the settings section.
-	 * @param string $option          The name of the option.
+	 * @param string $option          The option key for the number field.
 	 * @param array  $option_settings An array containing option settings.
 	 * @return void
 	 */
-	public function number( string $sub_page, string $section, string $option, array $option_settings ): void {
-		$name  = $this->get_name_field( $sub_page, $section, $option );
-		$value = $this->get_value( $sub_page, $section, $option );
+	public function number( string $option, array $option_settings ): void {
+		$name  = $this->get_name_field( $option );
+		$value = $this->get_value( $option );
 
 		Utility::render_template(
 			sprintf( '%s/includes/templates/admin/settings/fields/number.php', GATHERPRESS_CORE_PATH ),
@@ -451,15 +490,13 @@ class Settings {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param string $sub_page        The sub page for the checkbox field.
-	 * @param string $section         The section for the checkbox field.
-	 * @param string $option          The option for the checkbox field.
+	 * @param string $option          The option key for the checkbox field.
 	 * @param array  $option_settings The option settings.
 	 * @return void
 	 */
-	public function checkbox( string $sub_page, string $section, string $option, array $option_settings ): void {
-		$name  = $this->get_name_field( $sub_page, $section, $option );
-		$value = $this->get_value( $sub_page, $section, $option );
+	public function checkbox( string $option, array $option_settings ): void {
+		$name  = $this->get_name_field( $option );
+		$value = $this->get_value( $option );
 
 		Utility::render_template(
 			sprintf( '%s/includes/templates/admin/settings/fields/checkbox.php', GATHERPRESS_CORE_PATH ),
@@ -483,15 +520,13 @@ class Settings {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param string $sub_page        The sub page for the select field.
-	 * @param string $section         The section for the select field.
-	 * @param string $option          The option for the select field.
+	 * @param string $option          The option key for the select field.
 	 * @param array  $option_settings The option settings.
 	 * @return void
 	 */
-	public function select( string $sub_page, string $section, string $option, array $option_settings ): void {
-		$name  = $this->get_name_field( $sub_page, $section, $option );
-		$value = $this->get_value( $sub_page, $section, $option );
+	public function select( string $option, array $option_settings ): void {
+		$name  = $this->get_name_field( $option );
+		$value = $this->get_value( $option );
 
 		Utility::render_template(
 			sprintf( '%s/includes/templates/admin/settings/fields/select.php', GATHERPRESS_CORE_PATH ),
@@ -516,15 +551,13 @@ class Settings {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param string $sub_page        The sub page for the select field.
-	 * @param string $section         The section for the select field.
-	 * @param string $option          The option for the select field.
+	 * @param string $option          The option key for the autocomplete field.
 	 * @param array  $option_settings The option settings.
 	 * @return void
 	 */
-	public function autocomplete( string $sub_page, string $section, string $option, array $option_settings ): void {
-		$name  = $this->get_name_field( $sub_page, $section, $option );
-		$value = $this->get_value( $sub_page, $section, $option );
+	public function autocomplete( string $option, array $option_settings ): void {
+		$name  = $this->get_name_field( $option );
+		$value = $this->get_value( $option );
 
 		Utility::render_template(
 			sprintf( '%s/includes/templates/admin/settings/fields/autocomplete.php', GATHERPRESS_CORE_PATH ),
@@ -542,123 +575,72 @@ class Settings {
 	/**
 	 * Get the value of a specific option from plugin settings.
 	 *
-	 * This method retrieves the value of a specific option from the plugin settings
-	 * based on the provided sub-page, section, and option names. If the option is set,
-	 * its value is returned; otherwise, the default value is returned.
+	 * This method retrieves the value of a specific option from the flat
+	 * gatherpress_settings option. If the option is set, its value is returned;
+	 * otherwise, the default value is returned.
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param string $sub_page The sub-page associated with the value.
-	 * @param string $section  The section within the sub-page where the option is located.
-	 * @param string $option   The name of the option to retrieve.
+	 * @param string $option The unique name of the option to retrieve.
 	 * @return mixed The value of the option or its default value.
 	 */
-	public function get_value( string $sub_page, string $section = '', string $option = '' ) {
-		$sub_page = Utility::prefix_key( $sub_page );
-		$options  = $this->get_options( $sub_page );
-		$default  = $this->get_default_value( $sub_page, $section, $option );
+	public function get_value( string $option ) {
+		$options = get_option( self::OPTION_NAME, array() );
 
-		return (
-			isset( $options[ $section ][ $option ] ) &&
-			'' !== $options[ $section ][ $option ]
-		) ? $options[ $section ][ $option ] : $default;
+		if ( isset( $options[ $option ] ) && '' !== $options[ $option ] ) {
+			return $options[ $option ];
+		}
+
+		return $this->get_flat_default( $option );
 	}
 
 	/**
 	 * Get the default value for a specific option from plugin settings.
 	 *
-	 * This method retrieves the default value of a specific option from the plugin settings
-	 * based on the provided sub-page, section, and option names. If a default value is defined
-	 * for the option, it will be returned; otherwise, an empty string is returned.
+	 * Searches all sub-pages' sections for the matching option key
+	 * and returns its configured default value.
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param string $sub_page The sub-page associated with the value.
-	 * @param string $section  The section within the sub-page where the option is located.
-	 * @param string $option   The name of the option to retrieve the default value for.
+	 * @param string $option The unique name of the option to retrieve the default value for.
 	 * @return mixed The default value of the option or an empty string if not defined.
 	 */
-	public function get_default_value( string $sub_page, string $section = '', string $option = '' ) {
+	public function get_flat_default( string $option ) {
 		$sub_pages = $this->get_sub_pages();
 
-		return $sub_pages[ Utility::unprefix_key( $sub_page ) ]['sections'][ $section ]['options']
-			[ $option ]['field']['options']['default'] ?? '';
-	}
+		foreach ( $sub_pages as $sub_page_settings ) {
+			if ( ! isset( $sub_page_settings['sections'] ) ) {
+				continue;
+			}
 
-	/**
-	 * Get the currently set options for a specific GatherPress sub-page.
-	 *
-	 * This method retrieves the options currently set for a GatherPress sub-page
-	 * from the WordPress database. If the options exist and are in an array format,
-	 * they will be returned. If the options are not set or not found in the database,
-	 * the default options for the sub-page will be returned.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param string $sub_page The sub-page for which to retrieve the options.
-	 * @return array An array of currently set options for the sub-page or its default options.
-	 */
-	public function get_options( string $sub_page ): array {
-		$option = get_option( $sub_page );
-
-		if ( ! empty( $option ) && is_array( $option ) ) {
-			return $option;
-		}
-
-		return $this->get_option_defaults( $sub_page );
-	}
-
-	/**
-	 * Retrieve the default options for a specific GatherPress sub-page.
-	 *
-	 * This method fetches the default options defined for a GatherPress sub-page
-	 * based on the provided option name. It compiles the default options from the
-	 * sub-page's sections and their associated options.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param string $option The option for which to retrieve default values.
-	 * @return array An array of default values for the specified sub-page option.
-	 */
-	public function get_option_defaults( string $option ): array {
-		$sub_pages = $this->get_sub_pages();
-		$option    = Utility::unprefix_key( $option );
-		$defaults  = array();
-
-		if ( ! empty( $sub_pages[ $option ]['sections'] ) && is_array( $sub_pages[ $option ]['sections'] ) ) {
-			foreach ( $sub_pages[ $option ]['sections'] as $section => $settings ) {
-				if ( ! is_array( $settings['options'] ) ) {
+			foreach ( (array) $sub_page_settings['sections'] as $section_settings ) {
+				if ( ! isset( $section_settings['options'][ $option ] ) ) {
 					continue;
 				}
 
-				foreach ( $settings['options'] as $option => $values ) {
-					$defaults[ $section ][ $option ] = $values['default'] ?? '';
-				}
+				return $section_settings['options'][ $option ]['field']['options']['default'] ?? '';
 			}
 		}
 
-		return $defaults;
+		return '';
 	}
 
 	/**
 	 * Generate the name attribute for a setting field.
 	 *
-	 * This method constructs the name attribute for a setting field based on the provided
-	 * sub-page, section, and option names. The resulting name attribute is used to associate
-	 * the field's value with its location within the settings structure.
+	 * This method constructs the name attribute for a setting field based on the
+	 * option name. The resulting name attribute is used to associate the field's
+	 * value with its location within the flat settings structure.
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param string $sub_page Sub-page of the setting field.
-	 * @param string $section  Section of the setting field.
-	 * @param string $option   Option of the setting field.
+	 * @param string $option Option of the setting field.
 	 * @return string The generated name attribute for the setting field.
 	 */
-	public function get_name_field( string $sub_page, string $section, string $option ): string {
+	public function get_name_field( string $option ): string {
 		return sprintf(
-			'%s[%s][%s]',
-			sanitize_key( $sub_page ),
-			sanitize_key( $section ),
+			'%s[%s]',
+			self::OPTION_NAME,
 			sanitize_key( $option )
 		);
 	}
@@ -765,88 +747,6 @@ class Settings {
 	}
 
 	/**
-	 * Display a preview of the formatted datetime based on the specified name and value.
-	 *
-	 * This method is used to display a preview of the formatted datetime based on the specified
-	 * name and value.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param string $name  The name of the datetime format option.
-	 * @param string $value The value of the datetime format option.
-	 * @return void
-	 */
-	public function datetime_preview( string $name, string $value ): void {
-		if (
-			'gatherpress_general[formatting][date_format]' === $name ||
-			'gatherpress_general[formatting][time_format]' === $name
-		) {
-			Utility::render_template(
-				sprintf( '%s/includes/templates/admin/settings/partials/datetime-preview.php', GATHERPRESS_CORE_PATH ),
-				array(
-					'name'  => $name,
-					'value' => $value,
-				),
-				true
-			);
-		}
-	}
-
-	/**
-	 * Display a preview of the rewritten URL based on the specified string.
-	 *
-	 * This method is used to display a preview of the rewritten URL based on the specified
-	 * string.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param string $name  The name of the url rewrite format option.
-	 * @param string $value The value of the url rewrite format option.
-	 * @return void
-	 */
-	public function url_rewrite_preview( string $name, string $value ): void {
-		if (
-			'gatherpress_general[urls][events]' === $name ||
-			'gatherpress_general[urls][venues]' === $name ||
-			'gatherpress_general[urls][topics]' === $name
-		) {
-			// Initialize suffix - all switch cases will override this.
-			$suffix = '';
-
-			switch ( $name ) {
-				case 'gatherpress_general[urls][events]':
-					$suffix = _x( 'sample-event', 'URL permalink structure example for events', 'gatherpress' );
-					break;
-				case 'gatherpress_general[urls][venues]':
-					$suffix = _x( 'sample-venue', 'URL permalink structure example for venues', 'gatherpress' );
-					break;
-				case 'gatherpress_general[urls][topics]':
-					$suffix = _x(
-						'sample-topic-term',
-						'URL permalink structure example for topics',
-						'gatherpress'
-					);
-					break;
-				default:
-					// Nothing to see here. All valid names are already handled.
-			}
-
-			Utility::render_template(
-				sprintf(
-					'%s/includes/templates/admin/settings/partials/url-rewrite-preview.php',
-					GATHERPRESS_CORE_PATH
-				),
-				array(
-					'name'   => $name,
-					'value'  => $value,
-					'suffix' => $suffix,
-				),
-				true
-			);
-		}
-	}
-
-	/**
 	 * Schedule rewrite rules flush when post type rewrite slugs change.
 	 *
 	 * Fires after the value of the 'gatherpress_general["urls"]' option-part has been successfully updated
@@ -863,12 +763,16 @@ class Settings {
 	 * @return void
 	 */
 	public function maybe_flush_rewrite_rules( $old_value, $new_value ): void {
-		if (
-			( ! isset( $old_value['urls'] ) && isset( $new_value['urls'] ) ) ||
-			( isset( $old_value['urls'] ) && ! isset( $new_value['urls'] ) ) ||
-			( $old_value['urls'] !== $new_value['urls'] )
-		) {
-			delete_option( 'rewrite_rules' );
+		$url_keys = array( 'events', 'venues', 'topics' );
+
+		foreach ( $url_keys as $key ) {
+			$old = $old_value[ $key ] ?? '';
+			$new = $new_value[ $key ] ?? '';
+
+			if ( $old !== $new ) {
+				delete_option( 'rewrite_rules' );
+				return;
+			}
 		}
 	}
 }
