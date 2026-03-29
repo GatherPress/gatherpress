@@ -124,4 +124,31 @@ class Test_Roles extends Base {
 
 		delete_option( 'gatherpress_settings' );
 	}
+
+	/**
+	 * Coverage for get_user_role with empty role data (guard clause).
+	 *
+	 * When a role setting contains an empty JSON array, the method
+	 * should skip it and return the default 'Member' role.
+	 *
+	 * @covers ::get_user_role
+	 *
+	 * @return void
+	 */
+	public function test_get_user_role_with_empty_role_data(): void {
+		$instance = Roles::get_instance();
+
+		// Set organizer to empty JSON array.
+		update_option( 'gatherpress_settings', array( 'organizer' => '[]' ) );
+
+		$user = $this->mock->user()->get();
+
+		$this->assertSame(
+			'Member',
+			$instance->get_user_role( $user->ID ),
+			'Failed to assert user is Member when role data is empty.'
+		);
+
+		delete_option( 'gatherpress_settings' );
+	}
 }

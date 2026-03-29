@@ -1570,4 +1570,273 @@ class Test_Settings extends Base {
 		// Should produce empty output since the template doesn't exist.
 		$this->assertEmpty( $output, 'Unknown field type should produce no output.' );
 	}
+
+	/**
+	 * Test register_settings skips a sub-page that has no sections key.
+	 *
+	 * @covers ::register_settings
+	 *
+	 * @return void
+	 */
+	public function test_register_settings_skip_sub_page_without_sections(): void {
+		$instance = Settings::get_instance();
+
+		add_filter(
+			'gatherpress_sub_pages',
+			static function ( $sub_pages ) {
+				// Add a sub-page with no 'sections' key alongside valid ones.
+				$sub_pages['no_sections_page'] = array(
+					'name'     => 'No Sections Page',
+					'priority' => 99,
+				);
+				return $sub_pages;
+			}
+		);
+
+		// Should not error when a sub-page has no sections.
+		$instance->register_settings();
+
+		$this->assertTrue(
+			true,
+			'register_settings should handle sub-pages without sections gracefully.'
+		);
+
+		remove_all_filters( 'gatherpress_sub_pages' );
+	}
+
+	/**
+	 * Test build_field_type_map guard clauses for missing sections and options.
+	 *
+	 * @covers ::build_field_type_map
+	 *
+	 * @return void
+	 */
+	public function test_build_field_type_map_guard_clauses(): void {
+		$instance = Settings::get_instance();
+
+		$sub_pages = array(
+			'no_sections' => array( 'name' => 'Test' ),
+			'no_options'  => array(
+				'sections' => array(
+					'section1' => array( 'name' => 'Test Section' ),
+				),
+			),
+			'valid'       => array(
+				'sections' => array(
+					'section1' => array(
+						'options' => array(
+							'test_key' => array( 'field' => array( 'type' => 'text' ) ),
+						),
+					),
+				),
+			),
+		);
+
+		$map = Utility::invoke_hidden_method( $instance, 'build_field_type_map', array( $sub_pages ) );
+
+		$this->assertSame(
+			array( 'test_key' => 'text' ),
+			$map,
+			'Should only contain option from the valid sub-page.'
+		);
+	}
+
+	/**
+	 * Test build_field_type_map detects duplicate keys and registers admin notice.
+	 *
+	 * @covers ::build_field_type_map
+	 *
+	 * @return void
+	 */
+	public function test_build_field_type_map_duplicate_keys(): void {
+		$instance = Settings::get_instance();
+
+		$sub_pages = array(
+			'page1' => array(
+				'sections' => array(
+					's1' => array(
+						'options' => array(
+							'dupe_key' => array( 'field' => array( 'type' => 'text' ) ),
+						),
+					),
+				),
+			),
+			'page2' => array(
+				'sections' => array(
+					's2' => array(
+						'options' => array(
+							'dupe_key' => array( 'field' => array( 'type' => 'checkbox' ) ),
+						),
+					),
+				),
+			),
+		);
+
+		Utility::invoke_hidden_method( $instance, 'build_field_type_map', array( $sub_pages ) );
+
+		$this->assertNotFalse(
+			has_action( 'admin_notices' ),
+			'An admin notice should be registered for duplicate keys.'
+		);
+
+		// Capture the admin notice output.
+		ob_start();
+		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- Testing WordPress core hook.
+		do_action( 'admin_notices' );
+		$output = ob_get_clean();
+
+		$this->assertStringContainsString(
+			'dupe_key',
+			$output,
+			'Admin notice should mention the duplicate key.'
+		);
+	}
+
+	/**
+	 * Test sanitize_page_settings strips values that match their defaults.
+	 *
+	 * @covers ::sanitize_page_settings
+	 *
+	 * @return void
+	 */
+	public function test_sanitize_page_settings_strips_defaults(): void {
+		$instance = Settings::get_instance();
+
+		// Ensure no existing option interferes.
+		delete_option( 'gatherpress_settings' );
+
+		// Use a real registered key with its actual default value.
+		$field_type_map = array(
+			'map_platform' => 'select',
+		);
+
+		$callback = $instance->sanitize_page_settings( $field_type_map );
+
+		// Pass the default value 'osm' for map_platform.
+		$result = $callback( array( 'map_platform' => 'osm' ) );
+
+		$this->assertArrayNotHasKey(
+			'map_platform',
+			$result,
+			'Value matching default should be stripped from the result.'
+		);
+
+		// Now pass a non-default value.
+		$result = $callback( array( 'map_platform' => 'google' ) );
+
+		$this->assertArrayHasKey(
+			'map_platform',
+			$result,
+			'Value not matching default should remain in the result.'
+		);
+		$this->assertSame(
+			'google',
+			$result['map_platform'],
+			'Non-default value should be preserved.'
+		);
+
+		delete_option( 'gatherpress_settings' );
+	}
+
+	/**
+	 * Test get_defaults_map builds and caches defaults.
+	 *
+	 * @covers ::get_defaults_map
+	 *
+	 * @return void
+	 */
+	public function test_get_defaults_map_cache_building(): void {
+		$instance = Settings::get_instance();
+
+		// Reset the cache to force a rebuild.
+		Utility::set_and_get_hidden_property( $instance, 'defaults_cache', null );
+
+		$defaults = Utility::invoke_hidden_method( $instance, 'get_defaults_map' );
+
+		$this->assertArrayHasKey(
+			'map_platform',
+			$defaults,
+			'Defaults should contain map_platform.'
+		);
+		$this->assertSame(
+			'osm',
+			$defaults['map_platform'],
+			'Default for map_platform should be osm.'
+		);
+
+		// Verify cache is set.
+		$cached = Utility::get_hidden_property( $instance, 'defaults_cache' );
+		$this->assertSame(
+			$defaults,
+			$cached,
+			'Defaults cache should match the returned defaults.'
+		);
+	}
+
+	/**
+	 * Test get_defaults_map guard clauses with missing sections and options.
+	 *
+	 * @covers ::get_defaults_map
+	 *
+	 * @return void
+	 */
+	public function test_get_defaults_map_guard_clauses(): void {
+		$instance = $this->getMockBuilder( Settings::class )
+			->setMethods( array( 'get_sub_pages' ) )
+			->disableOriginalConstructor()
+			->getMock();
+
+		// Reset the cache to force a rebuild.
+		Utility::set_and_get_hidden_property( $instance, 'defaults_cache', null );
+
+		$instance->method( 'get_sub_pages' )->willReturn(
+			array(
+				'no_sections' => array( 'name' => 'Test' ),
+				'no_options'  => array(
+					'sections' => array(
+						'section1' => array( 'name' => 'Test' ),
+					),
+				),
+			)
+		);
+
+		$defaults = Utility::invoke_hidden_method( $instance, 'get_defaults_map' );
+
+		$this->assertEmpty(
+			$defaults,
+			'Defaults should be empty when sub-pages have no sections or options.'
+		);
+	}
+
+	/**
+	 * Test get_rewrite_keys guard clauses with missing sections and options.
+	 *
+	 * @covers ::get_rewrite_keys
+	 *
+	 * @return void
+	 */
+	public function test_get_rewrite_keys_guard_clauses(): void {
+		$instance = $this->getMockBuilder( Settings::class )
+			->setMethods( array( 'get_sub_pages' ) )
+			->disableOriginalConstructor()
+			->getMock();
+
+		$instance->method( 'get_sub_pages' )->willReturn(
+			array(
+				'no_sections' => array( 'name' => 'Test' ),
+				'no_options'  => array(
+					'sections' => array(
+						'section1' => array( 'name' => 'Test' ),
+					),
+				),
+			)
+		);
+
+		$keys = Utility::invoke_hidden_method( $instance, 'get_rewrite_keys' );
+
+		$this->assertEmpty(
+			$keys,
+			'Rewrite keys should be empty when sub-pages have no sections or options.'
+		);
+	}
 }

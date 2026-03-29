@@ -65,6 +65,8 @@ class Settings_Cli extends WP_CLI {
 						$file
 					)
 				);
+
+				return;
 			}
 
 			static::success(
@@ -130,6 +132,8 @@ class Settings_Cli extends WP_CLI {
 					$file
 				)
 			);
+
+			return;
 		}
 
 		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
@@ -138,6 +142,8 @@ class Settings_Cli extends WP_CLI {
 
 		if ( ! is_array( $data ) ) {
 			static::error( __( 'Invalid JSON file.', 'gatherpress' ) );
+
+			return;
 		}
 
 		$settings = Settings::get_instance();
@@ -186,6 +192,8 @@ class Settings_Cli extends WP_CLI {
 				: __( 'Import failed.', 'gatherpress' );
 
 			static::error( $message );
+
+			return;
 		}
 
 		if ( ! empty( $result['warnings'] ) ) {
