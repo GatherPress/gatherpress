@@ -66,7 +66,7 @@ class Settings_Cli extends WP_CLI {
 					)
 				);
 
-				return;
+				return; // @phpstan-ignore deadCode.unreachable
 			}
 
 			static::success(
@@ -133,7 +133,7 @@ class Settings_Cli extends WP_CLI {
 				)
 			);
 
-			return;
+			return; // @phpstan-ignore deadCode.unreachable
 		}
 
 		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
@@ -143,7 +143,7 @@ class Settings_Cli extends WP_CLI {
 		if ( ! is_array( $data ) ) {
 			static::error( __( 'Invalid JSON file.', 'gatherpress' ) );
 
-			return;
+			return; // @phpstan-ignore deadCode.unreachable
 		}
 
 		$settings = Settings::get_instance();
@@ -187,13 +187,13 @@ class Settings_Cli extends WP_CLI {
 		$result = $settings->import_settings( $data, $mode );
 
 		if ( ! $result['success'] ) {
-			$message = ! empty( $result['warnings'] )
-				? implode( ' ', $result['warnings'] )
-				: __( 'Import failed.', 'gatherpress' );
+			static::error(
+				! empty( $result['warnings'] )
+					? implode( ' ', $result['warnings'] )
+					: __( 'Import failed.', 'gatherpress' )
+			);
 
-			static::error( $message );
-
-			return;
+			return; // @phpstan-ignore deadCode.unreachable
 		}
 
 		if ( ! empty( $result['warnings'] ) ) {
