@@ -51,6 +51,14 @@ class Event {
 	const POST_TYPE = 'gatherpress_event';
 
 	/**
+	 * Placeholder displayed when no datetime is set.
+	 *
+	 * @since 1.0.0
+	 * @var string
+	 */
+	const DATETIME_PLACEHOLDER = '—';
+
+	/**
 	 * Format for the database table name used by GatherPress events.
 	 *
 	 * @since 1.0.0
@@ -228,7 +236,7 @@ class Event {
 		);
 
 		// Stick the parts back together.
-		return $parts ? implode( ' ', $parts ) : '-';
+		return $parts ? implode( ' ', $parts ) : self::DATETIME_PLACEHOLDER;
 	}
 
 	/**

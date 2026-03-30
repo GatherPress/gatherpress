@@ -1257,7 +1257,7 @@ class Event_Setup {
 		$display_date = $event->get_display_datetime();
 		$iso_date     = $event->get_datetime_start( 'c' );
 
-		if ( empty( $display_date ) || '—' === $display_date ) {
+		if ( empty( $display_date ) || Event::DATETIME_PLACEHOLDER === $display_date ) {
 			return $block_content;
 		}
 

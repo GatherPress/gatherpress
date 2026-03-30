@@ -1397,6 +1397,61 @@ class Test_Event_Setup extends Base {
 	}
 
 	/**
+	 * Coverage for render_event_post_date_block with event that has no datetime.
+	 *
+	 * @covers ::render_event_post_date_block
+	 *
+	 * @return void
+	 */
+	public function test_render_event_post_date_block_empty_datetime(): void {
+		$instance = Event_Setup::get_instance();
+		$post_id  = $this->mock->post(
+			array( 'post_type' => Event::POST_TYPE )
+		)->get()->ID;
+
+		// Save empty/zero datetimes to trigger the em dash display.
+		$event = new Event( $post_id );
+		$event->save_datetimes(
+			array(
+				'datetime_start' => '0000-00-00 00:00:00',
+				'datetime_end'   => '0000-00-00 00:00:00',
+				'timezone'       => 'UTC',
+			)
+		);
+
+		// Set setting to use event date.
+		update_option(
+			'gatherpress_settings',
+			array(
+				'post_or_event_date' => '1',
+			)
+		);
+
+		$this->go_to( get_permalink( $post_id ) );
+
+		// phpcs:ignore Generic.Files.LineLength.TooLong -- Block HTML fixture.
+		$block_content = '<div class="wp-block-post-date"><time datetime="2025-03-26T12:00:00+00:00">March 26, 2025</time></div>';
+		$block         = array(
+			'blockName' => 'core/post-date',
+			'attrs'     => array(),
+		);
+		$wp_block      = new WP_Block(
+			$block,
+			array( 'postId' => $post_id )
+		);
+
+		$result = $instance->render_event_post_date_block( $block_content, $block, $wp_block );
+
+		$this->assertSame(
+			$block_content,
+			$result,
+			'Should return original block content when event datetime is empty.'
+		);
+
+		delete_option( 'gatherpress_settings' );
+	}
+
+	/**
 	 * Coverage for set_event_archive_labels method with no pages set.
 	 *
 	 * @covers ::set_event_archive_labels

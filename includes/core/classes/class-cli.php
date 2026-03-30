@@ -34,7 +34,7 @@ class Cli {
 	use Singleton;
 
 	/**
-	 * Constructor for the Setup class.
+	 * Constructor for the Cli class.
 	 *
 	 * Registers WP-CLI commands for GatherPress if WP-CLI is present.
 	 *
@@ -44,8 +44,8 @@ class Cli {
 	 */
 	protected function __construct() {
 		if ( defined( 'WP_CLI' ) && WP_CLI ) {
-			WP_CLI::add_command( 'gatherpress event', Event_Cli::class );
-			WP_CLI::add_command( 'gatherpress settings', Settings_Cli::class );
+			WP_CLI::add_command( 'gatherpress event', Event_Cli::class ); // @codeCoverageIgnore
+			WP_CLI::add_command( 'gatherpress settings', Settings_Cli::class ); // @codeCoverageIgnore
 		}
 	}
 }

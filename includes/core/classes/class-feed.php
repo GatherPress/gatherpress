@@ -129,7 +129,7 @@ class Feed {
 		$event_info       = array();
 		$display_datetime = $event->get_display_datetime();
 
-		if ( ! empty( $display_datetime ) && '—' !== $display_datetime ) {
+		if ( ! empty( $display_datetime ) && Event::DATETIME_PLACEHOLDER !== $display_datetime ) {
 			$event_info[] = sprintf(
 				/* translators: %s: Formatted date and time */
 				__( 'Date: %s', 'gatherpress' ),

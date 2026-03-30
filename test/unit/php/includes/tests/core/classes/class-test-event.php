@@ -76,7 +76,7 @@ class Test_Event extends Base {
 			),
 			array(
 				'params'  => array(),
-				'expects' => '-',
+				'expects' => '—',
 			),
 			array(
 				'params'  => array(
