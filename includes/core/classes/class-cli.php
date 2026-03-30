@@ -39,13 +39,11 @@ class Cli {
 	 * Registers WP-CLI commands for GatherPress if WP-CLI is present.
 	 *
 	 * @since 1.0.0
-	 *
-	 * @codeCoverageIgnore
 	 */
 	protected function __construct() {
 		if ( defined( 'WP_CLI' ) && WP_CLI ) {
-			WP_CLI::add_command( 'gatherpress event', Event_Cli::class ); // @codeCoverageIgnore
-			WP_CLI::add_command( 'gatherpress settings', Settings_Cli::class ); // @codeCoverageIgnore
+			WP_CLI::add_command( 'gatherpress event', Event_Cli::class );
+			WP_CLI::add_command( 'gatherpress settings', Settings_Cli::class );
 		}
 	}
 }
