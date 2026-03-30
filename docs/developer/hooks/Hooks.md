@@ -28,13 +28,13 @@
 
 - [`gatherpress_import`](gatherpress_import.md) Fires for every GatherPress data to be imported.
 
-## class-leadership.php
-
-- [`gatherpress_roles`](gatherpress_roles.md) Filter the list of roles for GatherPress.
-
 ## class-migrate.php
 
 - [`gatherpress_pseudopostmetas`](gatherpress_pseudopostmetas.md) Filters the list of data-names and their respective export- and import-callbacks.
+
+## class-roles.php
+
+- [`gatherpress_roles`](gatherpress_roles.md) Filter the list of roles for GatherPress.
 
 ## class-settings.php
 
@@ -56,7 +56,3 @@
 ## index.php
 
 - [`gatherpress_settings_section`](gatherpress_settings_section.md)
-
-## text.php
-
-- [`gatherpress_text_after`](gatherpress_text_after.md)
