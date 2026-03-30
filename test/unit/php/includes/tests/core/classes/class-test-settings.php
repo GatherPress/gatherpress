@@ -97,6 +97,23 @@ class Test_Settings extends Base {
 	}
 
 	/**
+	 * Coverage for get_main_sub_page method.
+	 *
+	 * @covers ::get_main_sub_page
+	 *
+	 * @return void
+	 */
+	public function test_get_main_sub_page(): void {
+		$instance = Settings::get_instance();
+
+		$this->assertSame(
+			'events',
+			$instance->get_main_sub_page(),
+			'Failed to assert main sub page is events.'
+		);
+	}
+
+	/**
 	 * Coverage for set_current_page method.
 	 *
 	 * @covers ::set_current_page

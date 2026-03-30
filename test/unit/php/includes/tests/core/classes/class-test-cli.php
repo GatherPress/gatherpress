@@ -10,7 +10,7 @@ namespace GatherPress\Tests\Core;
 
 use GatherPress\Core\Cli;
 use GatherPress\Tests\Base;
-use ReflectionClass;
+use PMC\Unit_Test\Utility;
 
 /**
  * Class Test_Cli.
@@ -29,11 +29,8 @@ class Test_Cli extends Base {
 	 * @return void
 	 */
 	public function test_constructor(): void {
-		// Reset the singleton static property so constructor re-runs.
-		$reflection = new ReflectionClass( Cli::class );
-		$property   = $reflection->getProperty( 'instance' );
-		$property->setAccessible( true );
-		$property->setValue( null, null );
+		// Reset the singleton so constructor re-runs.
+		Utility::set_and_get_hidden_property( Cli::get_instance(), 'instance', null );
 
 		$instance = Cli::get_instance();
 

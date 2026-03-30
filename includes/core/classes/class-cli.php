@@ -15,7 +15,6 @@ namespace GatherPress\Core;
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Commands\Event_Cli;
-use GatherPress\Core\Commands\Develop_Cli;
 use GatherPress\Core\Commands\Settings_Cli;
 use GatherPress\Core\Traits\Singleton;
 use WP_CLI;
