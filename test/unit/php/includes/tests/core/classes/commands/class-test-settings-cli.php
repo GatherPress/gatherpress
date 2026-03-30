@@ -102,7 +102,7 @@ class Test_Settings_Cli extends Base {
 
 		$output = Utility::buffer_and_return(
 			array( $cli, 'import' ),
-			array( array( $file ), array( 'mode' => 'merge' ) )
+			array( array( $file ), array( 'apply' => true ) )
 		);
 
 		$this->assertStringContainsString( 'imported successfully', $output, 'Failed to assert success message.' );
@@ -141,7 +141,13 @@ class Test_Settings_Cli extends Base {
 
 		$output = Utility::buffer_and_return(
 			array( $cli, 'import' ),
-			array( array( $file ), array( 'mode' => 'replace' ) )
+			array(
+				array( $file ),
+				array(
+					'apply' => true,
+					'mode'  => 'replace',
+				),
+			)
 		);
 
 		$this->assertStringContainsString( 'imported successfully', $output, 'Failed to assert success message.' );
@@ -178,7 +184,7 @@ class Test_Settings_Cli extends Base {
 
 		$output = Utility::buffer_and_return(
 			array( $cli, 'import' ),
-			array( array( $file ), array( 'dry-run' => true ) )
+			array( array( $file ), array() )
 		);
 
 		$this->assertStringContainsString( 'Would change', $output, 'Failed to assert dry-run output.' );
@@ -258,7 +264,7 @@ class Test_Settings_Cli extends Base {
 
 		$output = Utility::buffer_and_return(
 			array( $cli, 'import' ),
-			array( array( $file ), array( 'mode' => 'merge' ) )
+			array( array( $file ), array( 'apply' => true ) )
 		);
 
 		$this->assertStringContainsString( 'unknown_key', $output, 'Failed to assert unknown key warning.' );
@@ -290,7 +296,7 @@ class Test_Settings_Cli extends Base {
 
 		$output = Utility::buffer_and_return(
 			array( $cli, 'import' ),
-			array( array( $file ), array( 'mode' => 'merge' ) )
+			array( array( $file ), array( 'apply' => true ) )
 		);
 
 		$this->assertStringContainsString( '0.0.1', $output, 'Failed to assert version warning.' );
@@ -322,7 +328,7 @@ class Test_Settings_Cli extends Base {
 
 		$output = Utility::buffer_and_return(
 			array( $cli, 'import' ),
-			array( array( $file ), array( 'dry-run' => true ) )
+			array( array( $file ), array() )
 		);
 
 		$this->assertStringContainsString( 'No changes', $output, 'Failed to assert no changes message.' );
@@ -369,7 +375,7 @@ class Test_Settings_Cli extends Base {
 
 		$output = Utility::buffer_and_return(
 			array( $cli, 'import' ),
-			array( array( $file ), array( 'dry-run' => true ) )
+			array( array( $file ), array() )
 		);
 
 		$this->assertStringContainsString( '0.0.1', $output, 'Failed to assert version mismatch warning in dry-run.' );
@@ -397,7 +403,7 @@ class Test_Settings_Cli extends Base {
 
 		$output = Utility::buffer_and_return(
 			array( $cli, 'import' ),
-			array( array( $file ), array( 'mode' => 'merge' ) )
+			array( array( $file ), array( 'apply' => true ) )
 		);
 
 		$this->assertStringContainsString(
@@ -431,7 +437,7 @@ class Test_Settings_Cli extends Base {
 
 		$output = Utility::buffer_and_return(
 			array( $cli, 'import' ),
-			array( array( $file ), array( 'dry-run' => true ) )
+			array( array( $file ), array() )
 		);
 
 		$this->assertStringContainsString( 'unknown_key', $output, 'Failed to assert unknown key warning.' );

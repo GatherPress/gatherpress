@@ -77,14 +77,14 @@ Settings can be exported and imported via the Tools tab or WP-CLI:
 # Export settings to a file.
 wp gatherpress settings export --file=settings.json
 
-# Preview what an import would change.
-wp gatherpress settings import settings.json --dry-run
-
-# Import with merge (preserves existing settings not in the file).
+# Preview what an import would change (default behavior).
 wp gatherpress settings import settings.json
 
-# Import with replace (overwrites all settings).
-wp gatherpress settings import settings.json --mode=replace
+# Apply import with merge (preserves existing settings not in the file).
+wp gatherpress settings import settings.json --apply
+
+# Apply import with replace (overwrites all settings).
+wp gatherpress settings import settings.json --apply --mode=replace
 ```
 
 ## Further Reading

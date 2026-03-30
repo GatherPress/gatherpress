@@ -101,19 +101,19 @@ class Settings_Cli extends WP_CLI {
 	 *  - replace
 	 * ---
 	 *
-	 * [--dry-run]
-	 * : Preview what would change without applying.
+	 * [--apply]
+	 * : Apply changes. Without this flag, import runs as a dry-run preview.
 	 *
 	 * ## EXAMPLES
 	 *
-	 *    # Import with merge (default).
+	 *    # Preview what would change (default behavior).
 	 *    $ wp gatherpress settings import gatherpress-settings.json
 	 *
-	 *    # Import with replace.
-	 *    $ wp gatherpress settings import gatherpress-settings.json --mode=replace
+	 *    # Apply import with merge.
+	 *    $ wp gatherpress settings import gatherpress-settings.json --apply
 	 *
-	 *    # Preview changes without applying.
-	 *    $ wp gatherpress settings import gatherpress-settings.json --dry-run
+	 *    # Apply import with replace.
+	 *    $ wp gatherpress settings import gatherpress-settings.json --apply --mode=replace
 	 *
 	 * @since 1.0.0
 	 *
@@ -147,9 +147,11 @@ class Settings_Cli extends WP_CLI {
 		}
 
 		$settings = Settings::get_instance();
-		$dry_run  = isset( $assoc_args['dry-run'] );
+		$apply    = isset( $assoc_args['apply'] );
 
-		if ( $dry_run ) {
+		if ( ! $apply ) {
+			static::log( __( 'Dry run — no changes will be applied. Use --apply to import.', 'gatherpress' ) );
+
 			$validation = $settings->validate_import( $data );
 
 			if ( ! empty( $validation['warnings'] ) ) {
