@@ -1,6 +1,6 @@
 <?php
 /**
- * Class handles unit tests for GatherPress\Core\Settings\General.
+ * Class handles unit tests for GatherPress\Core\Settings\Events.
  *
  * @package GatherPress\Core
  * @since 1.0.0
@@ -8,16 +8,16 @@
 
 namespace GatherPress\Tests\Core\Settings;
 
-use GatherPress\Core\Settings\General;
+use GatherPress\Core\Settings\Events;
 use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;
 
 /**
- * Class Test_General.
+ * Class Test_Events.
  *
- * @coversDefaultClass \GatherPress\Core\Settings\General
+ * @coversDefaultClass \GatherPress\Core\Settings\Events
  */
-class Test_General extends Base {
+class Test_Events extends Base {
 	/**
 	 * Coverage for get_slug method.
 	 *
@@ -26,10 +26,10 @@ class Test_General extends Base {
 	 * @return void
 	 */
 	public function test_get_slug(): void {
-		$instance = General::get_instance();
+		$instance = Events::get_instance();
 		$slug     = Utility::invoke_hidden_method( $instance, 'get_slug' );
 
-		$this->assertSame( 'general', $slug, 'Failed to assert slug is general.' );
+		$this->assertSame( 'events', $slug, 'Failed to assert slug is events.' );
 	}
 
 	/**
@@ -40,10 +40,10 @@ class Test_General extends Base {
 	 * @return void
 	 */
 	public function test_get_name(): void {
-		$instance = General::get_instance();
+		$instance = Events::get_instance();
 		$name     = Utility::invoke_hidden_method( $instance, 'get_name' );
 
-		$this->assertSame( 'General', $name, 'Failed to assert name is General.' );
+		$this->assertSame( 'Events', $name, 'Failed to assert name is Events.' );
 	}
 
 	/**
@@ -54,7 +54,7 @@ class Test_General extends Base {
 	 * @return void
 	 */
 	public function test_get_priority(): void {
-		$instance = General::get_instance();
+		$instance = Events::get_instance();
 		$priority = Utility::invoke_hidden_method( $instance, 'get_priority' );
 
 		$this->assertEquals( PHP_INT_MIN, $priority, 'Failed to assert correct priority.' );
@@ -68,17 +68,21 @@ class Test_General extends Base {
 	 * @return void
 	 */
 	public function test_get_sections(): void {
-		$instance = General::get_instance();
+		$instance = Events::get_instance();
 
 		$section = Utility::invoke_hidden_method( $instance, 'get_sections' );
 		$this->assertSame(
-			'General Settings',
-			$section['general']['name'],
-			'Failed to assert name is General Settings.'
+			'Event Display',
+			$section['event_display']['name'],
+			'Failed to assert name is Event Display.'
 		);
 		$this->assertIsArray(
-			$section['pages'],
-			'Failed to assert sections is an array.'
+			$section['archive_pages'],
+			'Failed to assert archive_pages is an array.'
+		);
+		$this->assertIsArray(
+			$section['urls'],
+			'Failed to assert urls is an array.'
 		);
 	}
 }

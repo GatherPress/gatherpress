@@ -5,16 +5,16 @@
 ```php
 add_filter(
    'gatherpress_date_format',
-    function( $get_value ) {
+    function( $get ) {
         // Your code here.
-        return $get_value;
+        return $get;
     }
 );
 ```
 
 ## Parameters
 
-- `$get_value`
+- `$get`
 
 ## Files
 
@@ -22,7 +22,7 @@ add_filter(
 ```php
 apply_filters(
 			'gatherpress_date_format',
-			$settings->get_value( 'general', 'formatting', 'date_format' )
+			$settings->get( 'date_format' )
 		)
 ```
 

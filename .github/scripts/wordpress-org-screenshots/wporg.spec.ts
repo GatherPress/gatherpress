@@ -150,13 +150,13 @@ test.describe( 'Screenshots for the wordpress.org/plugins repository', () => {
     });
 
     // The test-description should match the caption for screenshot-# in the readme.md
-    test('General Settings', async ({
+    test('Events Settings', async ({
         page,
         admin,
     }) => {
         await admin.visitAdminPage(
             'edit.php',
-            'post_type=gatherpress_event&page=gatherpress_general'
+            'post_type=gatherpress_event&page=gatherpress_events'
         );
 
         // Wait for 2 seconds
@@ -169,13 +169,13 @@ test.describe( 'Screenshots for the wordpress.org/plugins repository', () => {
     });
 
     // The test-description should match the caption for screenshot-# in the readme.md
-    test('Leadership Settings', async ({
+    test('Roles Settings', async ({
         page,
         admin,
     }) => {
         await admin.visitAdminPage(
             'edit.php',
-            'post_type=gatherpress_event&page=gatherpress_leadership'
+            'post_type=gatherpress_event&page=gatherpress_roles'
         );
 
         // Wait for 2 seconds

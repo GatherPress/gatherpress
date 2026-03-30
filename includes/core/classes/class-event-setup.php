@@ -15,6 +15,7 @@ namespace GatherPress\Core;
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use Exception;
+use GatherPress\Core\Event_Query;
 use GatherPress\Core\Traits\Singleton;
 use stdClass;
 use WP;
@@ -130,7 +131,7 @@ class Event_Setup {
 	 */
 	public function register_post_type(): void {
 		$settings     = Settings::get_instance();
-		$rewrite_slug = $settings->get_value( 'general', 'urls', 'events' );
+		$rewrite_slug = $settings->get( 'events_url' );
 		register_post_type(
 			Event::POST_TYPE,
 			array(
@@ -231,7 +232,7 @@ class Event_Setup {
 	/**
 	 * Returns the post type slug localized for the site language and sanitized as URL part.
 	 *
-	 * Do not use this directly, use get_value( 'general', 'urls', 'events' ) instead.
+	 * Do not use this directly, use get( 'events_url' ) instead.
 	 *
 	 * This method switches to the sites default language and gets the translation of 'events' for the loaded locale.
 	 * After that, the method sanitizes the string to be safely used within an URL,
@@ -410,7 +411,7 @@ class Event_Setup {
 	 */
 	public function register_calendar_rewrite_rule(): void {
 		$settings     = Settings::get_instance();
-		$rewrite_slug = sanitize_title( $settings->get_value( 'general', 'urls', 'events' ) );
+		$rewrite_slug = sanitize_title( $settings->get( 'events_url' ) );
 
 		add_rewrite_rule(
 			sprintf( '^%s/([^/]+)\.ics$', $rewrite_slug ),
@@ -515,30 +516,67 @@ class Event_Setup {
 			return;
 		}
 
+		// Don't interfere if event-query already assigned this as an archive page.
+		if ( $wp_query->get( Event_Query::EVENT_QUERY_PARAM ) ) {
+			return;
+		}
+
 		// Get the configured rewrite slug for events.
 		$settings     = Settings::get_instance();
-		$rewrite_slug = $settings->get_value( 'general', 'urls', 'events' );
+		$rewrite_slug = $settings->get( 'events_url' );
 
 		// Check if a page exists with this slug.
 		$page = get_page_by_path( $rewrite_slug );
 
-		if ( $page instanceof WP_Post && 'publish' === $page->post_status ) {
-			// Convert the archive query to serve the page instead.
-			// This avoids a redirect loop since /event/ resolves to the archive.
-			$wp_query->init();
-			$wp_query->query( array( 'page_id' => $page->ID ) );
-			$wp_query->is_post_type_archive = false;
-			$wp_query->is_archive           = false;
-			$wp_query->is_page              = true;
-			$wp_query->is_singular          = true;
-			$wp_query->queried_object       = $page;
-			$wp_query->queried_object_id    = $page->ID;
+		if ( ! ( $page instanceof WP_Post ) || 'publish' !== $page->post_status ) {
+			// No page exists with this slug, so trigger a 404.
+			$wp_query->set_404();
+			status_header( 404 );
 			return;
 		}
 
-		// No page exists with this slug, so trigger a 404.
-		$wp_query->set_404();
-		status_header( 404 );
+		// Check if this page is designated as an upcoming or past events archive.
+		$archive_pages = array(
+			'upcoming' => json_decode( $settings->get( 'upcoming_events' ) ),
+			'past'     => json_decode( $settings->get( 'past_events' ) ),
+		);
+
+		foreach ( $archive_pages as $key => $value ) {
+			if ( ! empty( $value ) && is_array( $value ) && $value[0]->id === $page->ID ) {
+				$page_title = get_the_title( $page->ID );
+
+				$wp_query->set( 'post_type', Event::POST_TYPE );
+				$wp_query->set( Event_Query::EVENT_QUERY_PARAM, $key );
+				$wp_query->is_page              = false;
+				$wp_query->is_singular          = false;
+				$wp_query->is_archive           = true;
+				$wp_query->is_post_type_archive = true;
+
+				// Preserve the page as queried object so admin bar "Edit Page" works.
+				$wp_query->queried_object    = $page;
+				$wp_query->queried_object_id = $page->ID;
+
+				// Use the page title as the archive title.
+				add_filter(
+					'get_the_archive_title',
+					static function () use ( $page_title ): string {
+						return $page_title;
+					}
+				);
+
+				return;
+			}
+		}
+
+		// Page exists but is not an archive page — serve it as a regular page.
+		$wp_query->init();
+		$wp_query->query( array( 'page_id' => $page->ID ) );
+		$wp_query->is_post_type_archive = false;
+		$wp_query->is_archive           = false;
+		$wp_query->is_page              = true;
+		$wp_query->is_singular          = true;
+		$wp_query->queried_object       = $page;
+		$wp_query->queried_object_id    = $page->ID;
 	}
 
 	/**
@@ -1162,7 +1200,7 @@ class Event_Setup {
 	 */
 	public function get_the_event_date( string $the_date, string $format = '', $post = null ): string {
 		$settings       = Settings::get_instance();
-		$use_event_date = $settings->get_value( 'general', 'general', 'post_or_event_date' );
+		$use_event_date = $settings->get( 'post_or_event_date' );
 
 		// Determine the post type and ID from the post object or global context.
 		$post_type = $post instanceof WP_Post ? $post->post_type : get_post_type();
@@ -1209,7 +1247,7 @@ class Event_Setup {
 		}
 
 		$settings       = Settings::get_instance();
-		$use_event_date = $settings->get_value( 'general', 'general', 'post_or_event_date' );
+		$use_event_date = $settings->get( 'post_or_event_date' );
 
 		if ( 1 !== intval( $use_event_date ) ) {
 			return $block_content;
@@ -1219,7 +1257,7 @@ class Event_Setup {
 		$display_date = $event->get_display_datetime();
 		$iso_date     = $event->get_datetime_start( 'c' );
 
-		if ( empty( $display_date ) || '—' === $display_date ) {
+		if ( empty( $display_date ) || Event::DATETIME_PLACEHOLDER === $display_date ) {
 			return $block_content;
 		}
 
@@ -1252,18 +1290,11 @@ class Event_Setup {
 	 * @return array An updated array of post display states with custom labels if applicable.
 	 */
 	public function set_event_archive_labels( array $post_states, WP_Post $post ): array {
-		// Retrieve plugin general settings.
-		$general = get_option( Utility::prefix_key( 'general' ) );
-		$pages   = $general['pages'] ?? '';
-
-		if ( empty( $pages ) || ! is_array( $pages ) ) {
-			return $post_states;
-		}
-
-		// Define archive pages for "Upcoming Events" and "Past Events".
+		// Retrieve archive page settings.
+		$settings      = Settings::get_instance();
 		$archive_pages = array(
-			'past_events'     => json_decode( $pages['past_events'] ),
-			'upcoming_events' => json_decode( $pages['upcoming_events'] ),
+			'past_events'     => json_decode( $settings->get( 'past_events' ) ),
+			'upcoming_events' => json_decode( $settings->get( 'upcoming_events' ) ),
 		);
 
 		// Check if the current post corresponds to any assigned archive page and add display states.

@@ -964,11 +964,9 @@ class Test_Feed extends Base {
 
 		// Set up GatherPress settings with events rewrite slug.
 		update_option(
-			'gatherpress_general',
+			'gatherpress_settings',
 			array(
-				'urls' => array(
-					'events' => 'events',
-				),
+				'events_url' => 'events',
 			)
 		);
 
@@ -1002,7 +1000,7 @@ class Test_Feed extends Base {
 
 		// Clean up.
 		unset( $_SERVER['REQUEST_URI'] );
-		delete_option( 'gatherpress_general' );
+		delete_option( 'gatherpress_settings' );
 	}
 
 	/**
@@ -1019,11 +1017,9 @@ class Test_Feed extends Base {
 
 		// Set up GatherPress settings with events rewrite slug.
 		update_option(
-			'gatherpress_general',
+			'gatherpress_settings',
 			array(
-				'urls' => array(
-					'events' => 'events',
-				),
+				'events_url' => 'events',
 			)
 		);
 
@@ -1055,6 +1051,6 @@ class Test_Feed extends Base {
 		// Clean up.
 		unset( $_SERVER['REQUEST_URI'] );
 		unset( $_GET['type'] );
-		delete_option( 'gatherpress_general' );
+		delete_option( 'gatherpress_settings' );
 	}
 }

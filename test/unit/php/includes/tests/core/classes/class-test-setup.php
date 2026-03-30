@@ -10,7 +10,9 @@ namespace GatherPress\Tests\Core;
 
 use GatherPress\Core\Assets;
 use GatherPress\Core\Event;
+use GatherPress\Core\Settings;
 use GatherPress\Core\Setup;
+use GatherPress\Core\Utility as GatherPress_Utility;
 use GatherPress\Core\Venue;
 use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;
@@ -139,8 +141,10 @@ class Test_Setup extends Base {
 			$response['unit-test'],
 			'Failed to assert unit-test link matches.'
 		);
+		$settings     = Settings::get_instance();
+		$page         = GatherPress_Utility::prefix_key( $settings->get_main_sub_page() );
 		$expected_url = esc_url(
-			admin_url( 'edit.php?post_type=gatherpress_event&page=gatherpress_general' )
+			add_query_arg( 'page', $page, admin_url( Settings::PARENT_SLUG ) )
 		);
 		$this->assertSame(
 			'<a href="' . $expected_url . '">Settings</a>',

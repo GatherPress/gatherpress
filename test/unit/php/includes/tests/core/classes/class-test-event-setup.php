@@ -9,6 +9,7 @@
 namespace GatherPress\Tests\Core;
 
 use GatherPress\Core\Event;
+use GatherPress\Core\Event_Query;
 use GatherPress\Core\Event_Setup;
 use GatherPress\Core\Settings;
 use GatherPress\Tests\Base;
@@ -203,7 +204,7 @@ class Test_Event_Setup extends Base {
 		$settings = Settings::get_instance();
 
 		// Get the dynamic slug from settings (default is 'events' plural).
-		$rewrite_slug = $settings->get_value( 'general', 'urls', 'events' );
+		$rewrite_slug = $settings->get( 'events_url' );
 
 		$instance->register_calendar_rewrite_rule();
 
@@ -1169,11 +1170,9 @@ class Test_Event_Setup extends Base {
 
 		// Set setting to use event date.
 		update_option(
-			'gatherpress_general',
+			'gatherpress_settings',
 			array(
-				'general' => array(
-					'post_or_event_date' => '1',
-				),
+				'post_or_event_date' => '1',
 			)
 		);
 
@@ -1210,11 +1209,9 @@ class Test_Event_Setup extends Base {
 
 		// Set setting to use event date.
 		update_option(
-			'gatherpress_general',
+			'gatherpress_settings',
 			array(
-				'general' => array(
-					'post_or_event_date' => '1',
-				),
+				'post_or_event_date' => '1',
 			)
 		);
 
@@ -1243,11 +1240,9 @@ class Test_Event_Setup extends Base {
 
 		// Set setting to use post date.
 		update_option(
-			'gatherpress_general',
+			'gatherpress_settings',
 			array(
-				'general' => array(
-					'post_or_event_date' => '0',
-				),
+				'post_or_event_date' => '0',
 			)
 		);
 
@@ -1304,11 +1299,9 @@ class Test_Event_Setup extends Base {
 
 		// Set setting to use event date.
 		update_option(
-			'gatherpress_general',
+			'gatherpress_settings',
 			array(
-				'general' => array(
-					'post_or_event_date' => '1',
-				),
+				'post_or_event_date' => '1',
 			)
 		);
 
@@ -1350,11 +1343,9 @@ class Test_Event_Setup extends Base {
 
 		// Set setting to use post date (disabled).
 		update_option(
-			'gatherpress_general',
+			'gatherpress_settings',
 			array(
-				'general' => array(
-					'post_or_event_date' => '0',
-				),
+				'post_or_event_date' => '0',
 			)
 		);
 
@@ -1406,6 +1397,61 @@ class Test_Event_Setup extends Base {
 	}
 
 	/**
+	 * Coverage for render_event_post_date_block with event that has no datetime.
+	 *
+	 * @covers ::render_event_post_date_block
+	 *
+	 * @return void
+	 */
+	public function test_render_event_post_date_block_empty_datetime(): void {
+		$instance = Event_Setup::get_instance();
+		$post_id  = $this->mock->post(
+			array( 'post_type' => Event::POST_TYPE )
+		)->get()->ID;
+
+		// Save empty/zero datetimes to trigger the em dash display.
+		$event = new Event( $post_id );
+		$event->save_datetimes(
+			array(
+				'datetime_start' => '0000-00-00 00:00:00',
+				'datetime_end'   => '0000-00-00 00:00:00',
+				'timezone'       => 'UTC',
+			)
+		);
+
+		// Set setting to use event date.
+		update_option(
+			'gatherpress_settings',
+			array(
+				'post_or_event_date' => '1',
+			)
+		);
+
+		$this->go_to( get_permalink( $post_id ) );
+
+		// phpcs:ignore Generic.Files.LineLength.TooLong -- Block HTML fixture.
+		$block_content = '<div class="wp-block-post-date"><time datetime="2025-03-26T12:00:00+00:00">March 26, 2025</time></div>';
+		$block         = array(
+			'blockName' => 'core/post-date',
+			'attrs'     => array(),
+		);
+		$wp_block      = new WP_Block(
+			$block,
+			array( 'postId' => $post_id )
+		);
+
+		$result = $instance->render_event_post_date_block( $block_content, $block, $wp_block );
+
+		$this->assertSame(
+			$block_content,
+			$result,
+			'Should return original block content when event datetime is empty.'
+		);
+
+		delete_option( 'gatherpress_settings' );
+	}
+
+	/**
 	 * Coverage for set_event_archive_labels method with no pages set.
 	 *
 	 * @covers ::set_event_archive_labels
@@ -1415,7 +1461,7 @@ class Test_Event_Setup extends Base {
 	public function test_set_event_archive_labels_no_pages(): void {
 		$instance = Event_Setup::get_instance();
 
-		delete_option( 'gatherpress_general' );
+		delete_option( 'gatherpress_settings' );
 
 		$post        = $this->mock->post()->get();
 		$post_states = array( 'publish' => 'Published' );
@@ -1436,7 +1482,7 @@ class Test_Event_Setup extends Base {
 		$instance = Event_Setup::get_instance();
 
 		update_option(
-			'gatherpress_general',
+			'gatherpress_settings',
 			array(
 				'pages' => '',
 			)
@@ -1463,17 +1509,15 @@ class Test_Event_Setup extends Base {
 		$page_id = $this->mock->post( array( 'post_type' => 'page' ) )->get()->ID;
 
 		update_option(
-			'gatherpress_general',
+			'gatherpress_settings',
 			array(
-				'pages' => array(
-					'upcoming_events' => wp_json_encode(
-						array(
-							(object) array(
-								'id'    => $page_id,
-								'value' => 'Upcoming Events',
-							),
-						)
-					),
+				'upcoming_events' => wp_json_encode(
+					array(
+						(object) array(
+							'id'    => $page_id,
+							'value' => 'Upcoming Events',
+						),
+					)
 				),
 			)
 		);
@@ -1504,17 +1548,15 @@ class Test_Event_Setup extends Base {
 		$page_id = $this->mock->post( array( 'post_type' => 'page' ) )->get()->ID;
 
 		update_option(
-			'gatherpress_general',
+			'gatherpress_settings',
 			array(
-				'pages' => array(
-					'past_events' => wp_json_encode(
-						array(
-							(object) array(
-								'id'    => $page_id,
-								'value' => 'Past Events',
-							),
-						)
-					),
+				'past_events' => wp_json_encode(
+					array(
+						(object) array(
+							'id'    => $page_id,
+							'value' => 'Past Events',
+						),
+					)
 				),
 			)
 		);
@@ -3073,7 +3115,7 @@ class Test_Event_Setup extends Base {
 
 		// Get the rewrite slug from settings.
 		$settings     = Settings::get_instance();
-		$rewrite_slug = $settings->get_value( 'general', 'urls', 'events' );
+		$rewrite_slug = $settings->get( 'events_url' );
 
 		// Create a page with the same slug as the events rewrite slug.
 		$page_id = wp_insert_post(
@@ -3117,7 +3159,7 @@ class Test_Event_Setup extends Base {
 
 		// Get the rewrite slug from settings.
 		$settings     = Settings::get_instance();
-		$rewrite_slug = $settings->get_value( 'general', 'urls', 'events' );
+		$rewrite_slug = $settings->get( 'events_url' );
 
 		// Make sure no page exists with this slug.
 		$existing_page = get_page_by_path( $rewrite_slug );
@@ -3149,7 +3191,7 @@ class Test_Event_Setup extends Base {
 
 		// Get the rewrite slug from settings.
 		$settings     = Settings::get_instance();
-		$rewrite_slug = $settings->get_value( 'general', 'urls', 'events' );
+		$rewrite_slug = $settings->get( 'events_url' );
 
 		// Create a draft page with the same slug.
 		$page_id = wp_insert_post(
@@ -3199,5 +3241,101 @@ class Test_Event_Setup extends Base {
 		// Verify the archive state was not changed (feeds should pass through).
 		$this->assertTrue( $wp_query->is_post_type_archive, 'Should still be a post type archive.' );
 		$this->assertFalse( $wp_query->is_404(), 'Should not be 404 for feed requests.' );
+	}
+
+	/**
+	 * Tests handle_event_archive_redirect skips when event-query already assigned archive.
+	 *
+	 * @covers ::handle_event_archive_redirect
+	 *
+	 * @return void
+	 */
+	public function test_handle_event_archive_redirect_skips_event_query_param(): void {
+		global $wp_query;
+
+		$instance = Event_Setup::get_instance();
+
+		// Mock being on post type archive with EVENT_QUERY_PARAM set.
+		$wp_query->is_post_type_archive = true;
+		$wp_query->set( 'post_type', Event::POST_TYPE );
+		$wp_query->set( Event_Query::EVENT_QUERY_PARAM, 'past' );
+
+		$instance->handle_event_archive_redirect();
+
+		// Should return early — archive state preserved, no 404.
+		$this->assertTrue( $wp_query->is_post_type_archive, 'Should still be a post type archive.' );
+		$this->assertFalse( $wp_query->is_404(), 'Should not be 404 when event-query param is set.' );
+	}
+
+	/**
+	 * Tests handle_event_archive_redirect converts to archive when page is designated.
+	 *
+	 * @covers ::handle_event_archive_redirect
+	 *
+	 * @return void
+	 */
+	public function test_handle_event_archive_redirect_designated_archive_page(): void {
+		global $wp_query;
+
+		$instance = Event_Setup::get_instance();
+
+		// Get the rewrite slug from settings.
+		$settings     = Settings::get_instance();
+		$rewrite_slug = $settings->get( 'events_url' );
+
+		// Create a page with the same slug as the events rewrite slug.
+		$page_id = wp_insert_post(
+			array(
+				'post_type'   => 'page',
+				'post_name'   => $rewrite_slug,
+				'post_title'  => 'Past Events',
+				'post_status' => 'publish',
+			)
+		);
+
+		// Designate it as the past events archive.
+		$json = wp_json_encode(
+			array(
+				array(
+					'id'    => $page_id,
+					'slug'  => $rewrite_slug,
+					'value' => 'Past Events',
+				),
+			)
+		);
+
+		update_option( 'gatherpress_settings', array( 'past_events' => $json ) );
+
+		// Mock being on the post type archive.
+		$wp_query->is_post_type_archive = true;
+		$wp_query->set( 'post_type', Event::POST_TYPE );
+
+		$instance->handle_event_archive_redirect();
+
+		// Verify it was converted to an event archive.
+		$this->assertTrue( $wp_query->is_archive, 'Should be an archive.' );
+		$this->assertTrue( $wp_query->is_post_type_archive, 'Should be a post type archive.' );
+		$this->assertFalse( $wp_query->is_page, 'Should not be a page.' );
+		$this->assertSame(
+			'past',
+			$wp_query->get( Event_Query::EVENT_QUERY_PARAM ),
+			'Should have event query param set to past.'
+		);
+		$this->assertSame(
+			$page_id,
+			$wp_query->queried_object_id,
+			'Should preserve page as queried object.'
+		);
+
+		// Verify archive title filter was registered.
+		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound
+		$this->assertNotFalse(
+			has_filter( 'get_the_archive_title' ),
+			'Archive title filter should be registered.'
+		);
+
+		// Clean up.
+		wp_delete_post( $page_id, true );
+		delete_option( 'gatherpress_settings' );
 	}
 }

@@ -24,4 +24,9 @@ do_action( 'gatherpress_settings_section', $page )
 
 
 
+## See Also
+
+- [Settings API Overview](../settings/README.md)
+- [Custom (Non-Form) Tabs](../settings/extending-settings.md#custom-non-form-tabs)
+
 [← All Hooks](Hooks.md)

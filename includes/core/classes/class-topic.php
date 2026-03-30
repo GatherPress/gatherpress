@@ -73,7 +73,7 @@ class Topic {
 	 */
 	public function register_taxonomy(): void {
 		$settings     = Settings::get_instance();
-		$rewrite_slug = $settings->get_value( 'general', 'urls', 'topics' );
+		$rewrite_slug = $settings->get( 'topics_url' );
 		register_taxonomy(
 			self::TAXONOMY,
 			Event::POST_TYPE,
@@ -133,7 +133,7 @@ class Topic {
 	/**
 	 * Returns the taxonomy slug localized for the site language and sanitized as URL part.
 	 *
-	 * Do not use this directly, use get_value( 'general', 'urls', 'topics' ) instead.
+	 * Do not use this directly, use get( 'topics_url' ) instead.
 	 *
 	 * This method switches to the sites default language and gets the translation of 'topics' for the loaded locale.
 	 * After that, the method sanitizes the string to be safely used within an URL,

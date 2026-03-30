@@ -106,7 +106,7 @@ class Venue {
 	 */
 	public function register_post_type(): void {
 		$settings     = Settings::get_instance();
-		$rewrite_slug = $settings->get_value( 'general', 'urls', 'venues' );
+		$rewrite_slug = $settings->get( 'venues_url' );
 		register_post_type(
 			self::POST_TYPE,
 			array(
@@ -194,7 +194,7 @@ class Venue {
 	/**
 	 * Returns the post type slug localized for the site language and sanitized as URL part.
 	 *
-	 * Do not use this directly, use get_value( 'general', 'urls', 'venues' ) instead.
+	 * Do not use this directly, use get( 'venues_url' ) instead.
 	 *
 	 * This method switches to the sites default language and gets the translation of 'venues' for the loaded locale.
 	 * After that, the method sanitizes the string to be safely used within an URL,

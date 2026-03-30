@@ -92,7 +92,7 @@ class Feed {
 
 			// Get the rewrite slug from settings.
 			$settings     = Settings::get_instance();
-			$rewrite_slug = $settings->get_value( 'general', 'urls', 'events' );
+			$rewrite_slug = $settings->get( 'events_url' );
 
 			// Check if this is the events feed URL.
 			if ( str_contains( $request_uri, '/' . $rewrite_slug . '/' . $GLOBALS['wp_rewrite']->feed_base ) ) {
@@ -129,7 +129,7 @@ class Feed {
 		$event_info       = array();
 		$display_datetime = $event->get_display_datetime();
 
-		if ( ! empty( $display_datetime ) && '—' !== $display_datetime ) {
+		if ( ! empty( $display_datetime ) && Event::DATETIME_PLACEHOLDER !== $display_datetime ) {
 			$event_info[] = sprintf(
 				/* translators: %s: Formatted date and time */
 				__( 'Date: %s', 'gatherpress' ),

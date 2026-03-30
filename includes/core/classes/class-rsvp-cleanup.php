@@ -45,7 +45,7 @@ class Rsvp_Cleanup {
 	private function setup_hooks() {
 		add_action( 'init', array( $this, 'schedule_cleanup_cron' ) );
 		add_action( 'gatherpress_rsvp_cleanup', array( $this, 'rsvp_cleanup' ), 10, 0 );
-		add_action( 'update_option_gatherpress_general', array( $this, 'reschedule_cleanup_cron' ), 10, 2 );
+		add_action( 'update_option_gatherpress_settings', array( $this, 'reschedule_cleanup_cron' ), 10, 2 );
 	}
 
 	/**
@@ -111,12 +111,12 @@ class Rsvp_Cleanup {
 	 */
 	public function schedule_cleanup_cron() {
 		$settings = Settings::get_instance();
-		$switch   = $settings->get_value( 'general', 'rsvp_cleanup', 'rsvp_cleanup_switch' );
+		$switch   = $settings->get( 'rsvp_cleanup_switch' );
 
 		if ( 'on' === $switch ) {
 			if ( ! wp_next_scheduled( 'gatherpress_rsvp_cleanup' ) ) {
-				$frequency       = $settings->get_value( 'general', 'rsvp_cleanup', 'rsvp_cleanup_frequency' );
-				$interval        = $settings->get_value( 'general', 'rsvp_cleanup', 'rsvp_cleanup_interval' );
+				$frequency       = $settings->get( 'rsvp_cleanup_frequency' );
+				$interval        = $settings->get( 'rsvp_cleanup_interval' );
 				$time_in_seconds = $this->convert_to_seconds( $frequency, $interval );
 
 				wp_schedule_single_event( time() + $time_in_seconds, 'gatherpress_rsvp_cleanup' );
@@ -169,10 +169,10 @@ class Rsvp_Cleanup {
 	 * @return void
 	 */
 	public function reschedule_cleanup_cron( $old_value, $new_value ): void {
-		$old_interval  = $old_value['rsvp_cleanup']['rsvp_cleanup_interval'] ?? null;
-		$new_interval  = $new_value['rsvp_cleanup']['rsvp_cleanup_interval'] ?? null;
-		$old_frequency = $old_value['rsvp_cleanup']['rsvp_cleanup_frequency'] ?? null;
-		$new_frequency = $new_value['rsvp_cleanup']['rsvp_cleanup_frequency'] ?? null;
+		$old_interval  = $old_value['rsvp_cleanup_interval'] ?? null;
+		$new_interval  = $new_value['rsvp_cleanup_interval'] ?? null;
+		$old_frequency = $old_value['rsvp_cleanup_frequency'] ?? null;
+		$new_frequency = $new_value['rsvp_cleanup_frequency'] ?? null;
 
 		if ( $old_interval !== $new_interval || $old_frequency !== $new_frequency ) {
 			wp_clear_scheduled_hook( 'gatherpress_rsvp_cleanup' );

@@ -9,6 +9,11 @@
 
 // phpcs:disable Squiz.Commenting.FileComment.Missing
 
+// Enable WP-CLI stub so CLI code paths are covered in tests.
+if ( ! defined( 'WP_CLI' ) ) {
+	define( 'WP_CLI', true ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedConstantFound
+}
+
 $gatherpress_bootstrap_instance = PMC\Unit_Test\Bootstrap::get_instance();
 
 tests_add_filter(

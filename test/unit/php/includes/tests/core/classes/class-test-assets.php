@@ -678,7 +678,7 @@ class Test_Assets extends Base {
 		$instance = Assets::get_instance();
 
 		// Test with a settings page hook.
-		$hook = 'gatherpress_event_page_gatherpress_general';
+		$hook = 'gatherpress_event_page_gatherpress_events';
 
 		$this->assertFalse(
 			wp_style_is( 'gatherpress-settings-style', 'enqueued' ),

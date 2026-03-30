@@ -6,6 +6,7 @@
     "*/build/*",
     "build/*",
     "*/test/*",
+    "test/*",
     "*/tests/*",
     "*gatherpress.php",
     "*/class-autoloader.php",
