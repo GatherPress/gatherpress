@@ -28,16 +28,11 @@ add_filter(
 
 ## Files
 
-- [includes/core/classes/class-settings.php:690](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/class-settings.php#L690)
+- [includes/core/classes/class-settings.php:634](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/class-settings.php#L634)
 ```php
 apply_filters( 'gatherpress_sub_pages', array() )
 ```
 
 
-
-## See Also
-
-- [Settings API Overview](../settings/README.md)
-- [Extending Settings](../settings/extending-settings.md)
 
 [← All Hooks](Hooks.md)
