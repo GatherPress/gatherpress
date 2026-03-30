@@ -200,7 +200,7 @@ class Test_Tools extends Base_Ajax {
 		// Mock the HTTP input for import_mode.
 		add_filter(
 			'gatherpress_pre_get_http_input',
-			static function ( $pre_value, $type, $var_name ) {
+			static function ( $pre_value, $type, $var_name ): ?string {
 				if ( INPUT_POST === $type && 'import_mode' === $var_name ) {
 					return 'merge';
 				}
@@ -293,7 +293,7 @@ class Test_Tools extends Base_Ajax {
 
 		add_filter(
 			'gatherpress_pre_get_http_input',
-			static function ( $pre_value, $type, $var_name ) {
+			static function ( $pre_value, $type, $var_name ): ?string {
 				if ( INPUT_POST === $type && 'import_mode' === $var_name ) {
 					return 'merge';
 				}
@@ -332,7 +332,7 @@ class Test_Tools extends Base_Ajax {
 		// Mock the HTTP input for import_mode with invalid value.
 		add_filter(
 			'gatherpress_pre_get_http_input',
-			static function ( $pre_value, $type, $var_name ) {
+			static function ( $pre_value, $type, $var_name ): ?string {
 				if ( INPUT_POST === $type && 'import_mode' === $var_name ) {
 					return 'invalid';
 				}

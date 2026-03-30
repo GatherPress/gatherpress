@@ -104,6 +104,17 @@ class Settings {
 	}
 
 	/**
+	 * Get the main sub-page slug.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return string The main sub-page slug.
+	 */
+	public function get_main_sub_page(): string {
+		return $this->main_sub_page;
+	}
+
+	/**
 	 * Helper method to set the current page based on the 'page' query parameter.
 	 *
 	 * This method retrieves and sanitizes the 'page' query parameter from the request.
@@ -235,7 +246,7 @@ class Settings {
 				add_settings_section(
 					$section,
 					$section_settings['name'],
-					static function () use ( $section_settings ) {
+					static function () use ( $section_settings ): void {
 						if ( ! empty( $section_settings['description'] ) ) {
 							echo '<p class="description">'
 								. wp_kses_post( $section_settings['description'] ) . '</p>';
@@ -249,7 +260,7 @@ class Settings {
 						$option_settings['callback'] = function () use (
 							$option,
 							$option_settings
-						) {
+						): void {
 							$this->render_field( $option, $option_settings );
 						};
 
@@ -304,7 +315,7 @@ class Settings {
 		if ( ! empty( $duplicates ) ) {
 			add_action(
 				'admin_notices',
-				static function () use ( $duplicates ) {
+				static function () use ( $duplicates ): void {
 					printf(
 						'<div class="notice notice-error"><p>%s</p></div>',
 						esc_html(
@@ -474,6 +485,30 @@ class Settings {
 			$params,
 			true
 		);
+	}
+
+	/**
+	 * Set the value of a specific option in plugin settings.
+	 *
+	 * Updates the flat gatherpress_settings option with the given key-value pair.
+	 * If the value matches the default, the key is removed to keep the option lean.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $option The unique name of the option to set.
+	 * @param mixed  $value  The value to set.
+	 * @return void
+	 */
+	public function set( string $option, $value ): void {
+		$options = get_option( self::OPTION_NAME, array() );
+
+		if ( $value === $this->get_flat_default( $option ) ) {
+			unset( $options[ $option ] );
+		} else {
+			$options[ $option ] = $value;
+		}
+
+		update_option( self::OPTION_NAME, $options );
 	}
 
 	/**

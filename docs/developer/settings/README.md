@@ -2,7 +2,7 @@
 
 The GatherPress Settings API provides a structured way to manage plugin configuration. All settings are stored in a single flat WordPress option (`gatherpress_settings`) as key-value pairs. Only non-default values are persisted, keeping the database lean.
 
-## Reading Settings
+## Reading and Writing Settings
 
 ```php
 use GatherPress\Core\Settings;
@@ -12,6 +12,9 @@ $settings = Settings::get_instance();
 // Get a single setting (returns default if not set).
 $map_platform = $settings->get( 'map_platform' ); // 'osm'
 $max_limit    = $settings->get( 'max_attendance_limit' ); // 50
+
+// Set a single setting. Values matching the default are automatically removed.
+$settings->set( 'map_platform', 'google' );
 ```
 
 ## Settings Page Tabs

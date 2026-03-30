@@ -292,7 +292,7 @@ class Test_Event_Query extends Base {
 		$query->expects( $this->any() )
 			->method( 'get' )
 			->willReturnCallback(
-				function ( $key ) {
+				static function ( $key ) {
 					if ( 'page_id' === $key ) {
 						return 123;
 					}
@@ -385,7 +385,7 @@ class Test_Event_Query extends Base {
 		$query->expects( $this->any() )
 			->method( 'get' )
 			->willReturnCallback(
-				function ( $key ) {
+				static function ( $key ) {
 					if ( 'page_id' === $key ) {
 						return 0;
 					}
@@ -546,7 +546,7 @@ class Test_Event_Query extends Base {
 		$query->expects( $this->any() )
 			->method( 'get' )
 			->willReturnCallback(
-				function ( $key ) use ( $page_id ) {
+				static function ( $key ) use ( $page_id ) {
 					if ( 'page_id' === $key ) {
 						return $page_id;
 					}
@@ -616,7 +616,7 @@ class Test_Event_Query extends Base {
 		$query->expects( $this->any() )
 			->method( 'get' )
 			->willReturnCallback(
-				function ( $key ) use ( $page_id ) {
+				static function ( $key ) use ( $page_id ) {
 					if ( 'page_id' === $key ) {
 						return $page_id;
 					}

@@ -15,12 +15,6 @@ namespace GatherPress\Core;
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use Exception;
-use GatherPress\Core\Settings\Credits;
-use GatherPress\Core\Settings\Events;
-use GatherPress\Core\Settings\Formatting;
-use GatherPress\Core\Settings\Roles;
-use GatherPress\Core\Settings\Rsvp_Settings;
-use GatherPress\Core\Settings\Tools;
 use GatherPress\Core\Traits\Singleton;
 use WP_Site;
 
@@ -65,24 +59,24 @@ class Setup {
 		Assets::get_instance();
 		Block::get_instance();
 		Cli::get_instance();
-		Feed::get_instance();
 		Event_Query::get_instance();
 		Event_Rest_Api::get_instance();
 		Event_Setup::get_instance();
-		Geocoding::get_instance();
 		Export::get_instance();
+		Feed::get_instance();
+		Geocoding::get_instance();
 		Import::get_instance();
 		Rsvp_Cleanup::get_instance();
 		Rsvp_Form::get_instance();
 		Rsvp_Query::get_instance();
 		Rsvp_Setup::get_instance();
-		Credits::get_instance();
-		Events::get_instance();
-		Formatting::get_instance();
-		Roles::get_instance();
-		Rsvp_Settings::get_instance();
-		Tools::get_instance();
 		Settings::get_instance();
+		Settings\Credits::get_instance();
+		Settings\Events::get_instance();
+		Settings\Formatting::get_instance();
+		Settings\Roles::get_instance();
+		Settings\Rsvp_Settings::get_instance();
+		Settings\Tools::get_instance();
 		Topic::get_instance();
 		User::get_instance();
 		Venue::get_instance();
@@ -141,10 +135,15 @@ class Setup {
 	 * @return array An updated array of action links, including the 'Settings' link.
 	 */
 	public function filter_plugin_action_links( array $actions ): array {
+		$settings = Settings::get_instance();
+		$page     = Utility::prefix_key( $settings->get_main_sub_page() );
+
 		return array_merge(
 			array(
 				'settings' => '<a href="' .
-					esc_url( admin_url( 'edit.php?post_type=gatherpress_event&page=gatherpress_events' ) ) .
+					esc_url(
+						add_query_arg( 'page', $page, admin_url( Settings::PARENT_SLUG ) )
+					) .
 					'">' . esc_html__( 'Settings', 'gatherpress' ) . '</a>',
 			),
 			$actions

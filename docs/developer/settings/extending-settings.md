@@ -84,13 +84,19 @@ Your tab will appear in the GatherPress settings page, and your options are auto
 - Included in import/export
 - Stripped when matching their defaults
 
-## Reading Your Custom Settings
+## Reading and Writing Your Custom Settings
 
 ```php
 use GatherPress\Core\Settings;
 
-$notify = Settings::get_instance()->get( 'notify_on_rsvp' ); // false (default)
-$email  = Settings::get_instance()->get( 'admin_email' );     // '' (default)
+$settings = Settings::get_instance();
+
+// Read.
+$notify = $settings->get( 'notify_on_rsvp' ); // false (default)
+$email  = $settings->get( 'admin_email' );     // '' (default)
+
+// Write. Values matching the default are automatically removed.
+$settings->set( 'notify_on_rsvp', true );
 ```
 
 ## Field Types

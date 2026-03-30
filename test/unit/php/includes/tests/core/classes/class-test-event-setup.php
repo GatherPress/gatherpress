@@ -9,6 +9,7 @@
 namespace GatherPress\Tests\Core;
 
 use GatherPress\Core\Event;
+use GatherPress\Core\Event_Query;
 use GatherPress\Core\Event_Setup;
 use GatherPress\Core\Settings;
 use GatherPress\Tests\Base;
@@ -3185,5 +3186,101 @@ class Test_Event_Setup extends Base {
 		// Verify the archive state was not changed (feeds should pass through).
 		$this->assertTrue( $wp_query->is_post_type_archive, 'Should still be a post type archive.' );
 		$this->assertFalse( $wp_query->is_404(), 'Should not be 404 for feed requests.' );
+	}
+
+	/**
+	 * Tests handle_event_archive_redirect skips when event-query already assigned archive.
+	 *
+	 * @covers ::handle_event_archive_redirect
+	 *
+	 * @return void
+	 */
+	public function test_handle_event_archive_redirect_skips_event_query_param(): void {
+		global $wp_query;
+
+		$instance = Event_Setup::get_instance();
+
+		// Mock being on post type archive with EVENT_QUERY_PARAM set.
+		$wp_query->is_post_type_archive = true;
+		$wp_query->set( 'post_type', Event::POST_TYPE );
+		$wp_query->set( Event_Query::EVENT_QUERY_PARAM, 'past' );
+
+		$instance->handle_event_archive_redirect();
+
+		// Should return early — archive state preserved, no 404.
+		$this->assertTrue( $wp_query->is_post_type_archive, 'Should still be a post type archive.' );
+		$this->assertFalse( $wp_query->is_404(), 'Should not be 404 when event-query param is set.' );
+	}
+
+	/**
+	 * Tests handle_event_archive_redirect converts to archive when page is designated.
+	 *
+	 * @covers ::handle_event_archive_redirect
+	 *
+	 * @return void
+	 */
+	public function test_handle_event_archive_redirect_designated_archive_page(): void {
+		global $wp_query;
+
+		$instance = Event_Setup::get_instance();
+
+		// Get the rewrite slug from settings.
+		$settings     = Settings::get_instance();
+		$rewrite_slug = $settings->get( 'events_url' );
+
+		// Create a page with the same slug as the events rewrite slug.
+		$page_id = wp_insert_post(
+			array(
+				'post_type'   => 'page',
+				'post_name'   => $rewrite_slug,
+				'post_title'  => 'Past Events',
+				'post_status' => 'publish',
+			)
+		);
+
+		// Designate it as the past events archive.
+		$json = wp_json_encode(
+			array(
+				array(
+					'id'    => $page_id,
+					'slug'  => $rewrite_slug,
+					'value' => 'Past Events',
+				),
+			)
+		);
+
+		update_option( 'gatherpress_settings', array( 'past_events' => $json ) );
+
+		// Mock being on the post type archive.
+		$wp_query->is_post_type_archive = true;
+		$wp_query->set( 'post_type', Event::POST_TYPE );
+
+		$instance->handle_event_archive_redirect();
+
+		// Verify it was converted to an event archive.
+		$this->assertTrue( $wp_query->is_archive, 'Should be an archive.' );
+		$this->assertTrue( $wp_query->is_post_type_archive, 'Should be a post type archive.' );
+		$this->assertFalse( $wp_query->is_page, 'Should not be a page.' );
+		$this->assertSame(
+			'past',
+			$wp_query->get( Event_Query::EVENT_QUERY_PARAM ),
+			'Should have event query param set to past.'
+		);
+		$this->assertSame(
+			$page_id,
+			$wp_query->queried_object_id,
+			'Should preserve page as queried object.'
+		);
+
+		// Verify archive title filter was registered.
+		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound
+		$this->assertNotFalse(
+			has_filter( 'get_the_archive_title' ),
+			'Archive title filter should be registered.'
+		);
+
+		// Clean up.
+		wp_delete_post( $page_id, true );
+		delete_option( 'gatherpress_settings' );
 	}
 }

@@ -1839,4 +1839,56 @@ class Test_Settings extends Base {
 			'Rewrite keys should be empty when sub-pages have no sections or options.'
 		);
 	}
+
+	/**
+	 * Test set method stores a non-default value.
+	 *
+	 * @covers ::set
+	 *
+	 * @return void
+	 */
+	public function test_set(): void {
+		$instance = Settings::get_instance();
+
+		delete_option( 'gatherpress_settings' );
+
+		$instance->set( 'map_platform', 'google' );
+
+		$options = get_option( 'gatherpress_settings' );
+
+		$this->assertSame(
+			'google',
+			$options['map_platform'],
+			'Failed to assert value was set.'
+		);
+
+		delete_option( 'gatherpress_settings' );
+	}
+
+	/**
+	 * Test set method removes value when it matches default.
+	 *
+	 * @covers ::set
+	 *
+	 * @return void
+	 */
+	public function test_set_strips_default(): void {
+		$instance = Settings::get_instance();
+
+		// Set a non-default value first.
+		$instance->set( 'map_platform', 'google' );
+
+		// Now set it back to the default.
+		$instance->set( 'map_platform', 'osm' );
+
+		$options = get_option( 'gatherpress_settings', array() );
+
+		$this->assertArrayNotHasKey(
+			'map_platform',
+			$options,
+			'Failed to assert default value was stripped.'
+		);
+
+		delete_option( 'gatherpress_settings' );
+	}
 }
