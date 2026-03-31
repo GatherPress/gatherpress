@@ -16,6 +16,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use Exception;
 use GatherPress\Core\Traits\Singleton;
+use GatherPress\Integrations\Setup as Integrations;
 use WP_Site;
 
 /**
@@ -66,6 +67,7 @@ class Setup {
 		Feed::get_instance();
 		Geocoding::get_instance();
 		Import::get_instance();
+		Integrations::get_instance();
 		Rsvp_Cleanup::get_instance();
 		Rsvp_Form::get_instance();
 		Rsvp_Query::get_instance();
