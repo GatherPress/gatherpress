@@ -24,6 +24,7 @@
 	<coverage>
 		<include>
 			<directory suffix=".php">./includes/core/classes</directory>
+			<directory suffix=".php">./includes/integrations</directory>
 		</include>
 	</coverage>
 </phpunit>
