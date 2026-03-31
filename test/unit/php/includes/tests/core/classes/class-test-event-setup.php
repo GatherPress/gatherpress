@@ -3327,14 +3327,77 @@ class Test_Event_Setup extends Base {
 			'Should preserve page as queried object.'
 		);
 
-		// Verify archive title filter was registered.
-		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound
-		$this->assertNotFalse(
-			has_filter( 'get_the_archive_title' ),
-			'Archive title filter should be registered.'
+		// Verify archive title is set via the filter method.
+		$this->assertSame(
+			'Past Events',
+			$instance->filter_archive_title(),
+			'Archive title should be the page title.'
+		);
+
+		// Verify the query re-executed with the correct post type.
+		$this->assertSame(
+			Event::POST_TYPE,
+			$wp_query->get( 'post_type' ),
+			'Query should target the event post type.'
 		);
 
 		// Clean up.
+		wp_delete_post( $page_id, true );
+		delete_option( 'gatherpress_settings' );
+	}
+
+	/**
+	 * Tests handle_event_archive_redirect preserves pagination for archive pages.
+	 *
+	 * @covers ::handle_event_archive_redirect
+	 *
+	 * @return void
+	 */
+	public function test_handle_event_archive_redirect_preserves_pagination(): void {
+		global $wp_query;
+
+		$instance = Event_Setup::get_instance();
+
+		$settings     = Settings::get_instance();
+		$rewrite_slug = $settings->get( 'events_url' );
+
+		$page_id = wp_insert_post(
+			array(
+				'post_type'   => 'page',
+				'post_name'   => $rewrite_slug,
+				'post_title'  => 'Past Events',
+				'post_status' => 'publish',
+			)
+		);
+
+		$json = wp_json_encode(
+			array(
+				array(
+					'id'    => $page_id,
+					'slug'  => $rewrite_slug,
+					'value' => 'Past Events',
+				),
+			)
+		);
+
+		update_option( 'gatherpress_settings', array( 'past_events' => $json ) );
+
+		// Mock being on page 2 of the post type archive.
+		$wp_query->is_post_type_archive = true;
+		$wp_query->set( 'post_type', Event::POST_TYPE );
+		set_query_var( 'paged', 2 );
+
+		$instance->handle_event_archive_redirect();
+
+		// Verify pagination is preserved in the re-query.
+		$this->assertSame(
+			2,
+			(int) $wp_query->get( 'paged' ),
+			'Pagination should be preserved after archive redirect.'
+		);
+
+		// Clean up.
+		set_query_var( 'paged', 0 );
 		wp_delete_post( $page_id, true );
 		delete_option( 'gatherpress_settings' );
 	}
