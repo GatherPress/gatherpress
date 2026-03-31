@@ -3401,4 +3401,26 @@ class Test_Event_Setup extends Base {
 		wp_delete_post( $page_id, true );
 		delete_option( 'gatherpress_settings' );
 	}
+
+	/**
+	 * Tests filter_archive_title returns the stored archive title.
+	 *
+	 * @covers ::filter_archive_title
+	 *
+	 * @return void
+	 */
+	public function test_filter_archive_title(): void {
+		$instance = Event_Setup::get_instance();
+
+		Utility::set_and_get_hidden_property( $instance, 'archive_title', 'Test Title' );
+
+		$this->assertSame(
+			'Test Title',
+			$instance->filter_archive_title(),
+			'Archive title should return the stored value.'
+		);
+
+		// Clean up.
+		Utility::set_and_get_hidden_property( $instance, 'archive_title', '' );
+	}
 }
