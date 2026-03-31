@@ -33,17 +33,17 @@ $gatherpress_nonce = wp_create_nonce( 'gatherpress_tools_nonce' );
 
 <table class="form-table" role="presentation">
 	<tr>
-		<th scope="row">
+		<td>
 			<label for="gatherpress-import-file"><?php esc_html_e( 'Settings File', 'gatherpress' ); ?></label>
-		</th>
+		</td>
 		<td>
 			<input type="file" id="gatherpress-import-file" accept=".json" />
 		</td>
 	</tr>
 	<tr>
-		<th scope="row"><?php esc_html_e( 'Import Mode', 'gatherpress' ); ?></th>
-		<td>
+		<td colspan="2">
 			<fieldset>
+				<legend><?php esc_html_e( 'Import Mode', 'gatherpress' ); ?></legend>
 				<label>
 					<input type="radio" name="gatherpress_import_mode" value="merge" checked="checked" />
 					<?php esc_html_e( 'Merge: import values while keeping existing settings not in the file.', 'gatherpress' ); ?>

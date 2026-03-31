@@ -47,6 +47,15 @@ class Event_Setup {
 	protected ?array $event_counts = null;
 
 	/**
+	 * Title to use as the archive page title.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @var string
+	 */
+	protected string $archive_title = '';
+
+	/**
 	 * Class constructor.
 	 *
 	 * This method initializes the object and sets up necessary hooks.
@@ -545,8 +554,17 @@ class Event_Setup {
 			if ( ! empty( $value ) && is_array( $value ) && $value[0]->id === $page->ID ) {
 				$page_title = get_the_title( $page->ID );
 
-				$wp_query->set( 'post_type', Event::POST_TYPE );
-				$wp_query->set( Event_Query::EVENT_QUERY_PARAM, $key );
+				// Re-query as an event archive with proper sorting.
+				$paged = get_query_var( 'paged', 1 );
+
+				$wp_query->query(
+					array(
+						'post_type'                    => Event::POST_TYPE,
+						Event_Query::EVENT_QUERY_PARAM => $key,
+						'paged'                        => $paged,
+					)
+				);
+
 				$wp_query->is_page              = false;
 				$wp_query->is_singular          = false;
 				$wp_query->is_archive           = true;
@@ -557,12 +575,8 @@ class Event_Setup {
 				$wp_query->queried_object_id = $page->ID;
 
 				// Use the page title as the archive title.
-				add_filter(
-					'get_the_archive_title',
-					static function () use ( $page_title ): string {
-						return $page_title;
-					}
-				);
+				$this->archive_title = $page_title;
+				add_filter( 'get_the_archive_title', array( $this, 'filter_archive_title' ) );
 
 				return;
 			}
@@ -577,6 +591,17 @@ class Event_Setup {
 		$wp_query->is_singular          = true;
 		$wp_query->queried_object       = $page;
 		$wp_query->queried_object_id    = $page->ID;
+	}
+
+	/**
+	 * Filter the archive title to use the designated page title.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return string The archive page title.
+	 */
+	public function filter_archive_title(): string {
+		return $this->archive_title;
 	}
 
 	/**
