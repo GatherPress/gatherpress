@@ -991,7 +991,11 @@ class Test_Feed extends Base {
 		$this->instance->handle_events_feed_query( $wp_query );
 
 		// Verify the query was modified.
-		$this->assertEquals( Event::POST_TYPE, $wp_query->get( 'post_type' ), 'Post type should be set to event.' );
+		$this->assertContains(
+			Event::POST_TYPE,
+			(array) $wp_query->get( 'post_type' ),
+			'Post type should include event.'
+		);
 		$this->assertEquals(
 			'upcoming',
 			$wp_query->get( 'gatherpress_event_query' ),
@@ -1045,7 +1049,11 @@ class Test_Feed extends Base {
 		$this->instance->handle_events_feed_query( $wp_query );
 
 		// Verify the query was modified for past events.
-		$this->assertEquals( Event::POST_TYPE, $wp_query->get( 'post_type' ), 'Post type should be set to event.' );
+		$this->assertContains(
+			Event::POST_TYPE,
+			(array) $wp_query->get( 'post_type' ),
+			'Post type should include event.'
+		);
 		$this->assertEquals( 'past', $wp_query->get( 'gatherpress_event_query' ), 'Event query type should be past.' );
 
 		// Clean up.

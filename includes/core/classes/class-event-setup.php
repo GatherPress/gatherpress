@@ -29,6 +29,9 @@ use WP_REST_Request;
  *
  * Manages event-related functionalities, including registration of event post types and metadata.
  *
+ * @todo Refactor this class to reduce complexity (currently 104, threshold 105). Consider
+ *       extracting admin column/sorting methods or archive-related logic into separate classes.
+ *
  * @since 1.0.0
  */
 class Event_Setup {
@@ -95,7 +98,6 @@ class Event_Setup {
 		add_filter( 'submenu_file', array( $this, 'highlight_events_submenu' ) );
 
 		add_filter( 'redirect_canonical', array( $this, 'disable_ics_canonical_redirect' ), 10, 2 );
-		add_action( 'init', array( $this, 'register_event_date_hooks' ), 99 );
 		add_filter(
 			sprintf( 'manage_%s_posts_columns', Event::POST_TYPE ),
 			array( $this, 'set_custom_columns' )
@@ -335,6 +337,14 @@ class Event_Setup {
 					$args
 				);
 			}
+
+			// Filter read-only datetime meta from REST requests for this post type.
+			add_filter(
+				sprintf( 'rest_pre_insert_%s', $post_type ),
+				array( $this, 'filter_readonly_meta' ),
+				10,
+				2
+			);
 		}
 
 		// Non-datetime meta remains on the event post type only.
@@ -376,27 +386,6 @@ class Event_Setup {
 				Event::POST_TYPE,
 				$meta_key,
 				$args
-			);
-		}
-	}
-
-	/**
-	 * Register hooks for all post types that support event_date.
-	 *
-	 * This method runs on init at a late priority to ensure all post types
-	 * have been registered before we query for event_date support.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @return void
-	 */
-	public function register_event_date_hooks(): void {
-		foreach ( get_post_types_by_support( 'gatherpress-event-date' ) as $post_type ) {
-			add_filter(
-				sprintf( 'rest_pre_insert_%s', $post_type ),
-				array( $this, 'filter_readonly_meta' ),
-				10,
-				2
 			);
 		}
 	}
@@ -1265,10 +1254,10 @@ class Event_Setup {
 		$post_type = $post instanceof WP_Post ? $post->post_type : get_post_type();
 		$post_id   = $post instanceof WP_Post ? $post->ID : get_the_ID();
 
-		// Check if the post type supports gatherpress-event-date and if event date should be used.
-		$supports_event_date = post_type_supports( (string) $post_type, 'gatherpress-event-date' );
-
-		if ( ! $supports_event_date || 1 !== intval( $use_event_date ) ) {
+		if (
+			! post_type_supports( (string) $post_type, 'gatherpress-event-date' )
+			|| 1 !== intval( $use_event_date )
+		) {
 			return $the_date;
 		}
 

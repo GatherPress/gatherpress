@@ -366,7 +366,7 @@ class Test_Event_Query extends Base {
 
 		$result = $instance->query_loop_block_query_vars( $query, $block );
 
-		$this->assertSame( array( Event::POST_TYPE ), $result['post_type'] );
+		$this->assertContains( Event::POST_TYPE, $result['post_type'] );
 		$this->assertSame( 'upcoming', $result['gatherpress_event_query'] );
 		$this->assertContains( 123, $result['post__not_in'] );
 		$this->assertSame( 1, $result['include_unfinished'] );

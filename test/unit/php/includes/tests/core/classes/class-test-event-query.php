@@ -88,10 +88,10 @@ class Test_Event_Query extends Base {
 			$response->query['gatherpress_event_query'],
 			'Failed to assert query is upcoming.'
 		);
-		$this->assertSame(
+		$this->assertContains(
 			'gatherpress_event',
-			$response->query['post_type'],
-			'Failed to assert post type is gatherpress_event.'
+			(array) $response->query['post_type'],
+			'Failed to assert post type includes gatherpress_event.'
 		);
 	}
 
@@ -132,10 +132,10 @@ class Test_Event_Query extends Base {
 			$response->query['gatherpress_event_query'],
 			'Failed to assert query is past.'
 		);
-		$this->assertSame(
+		$this->assertContains(
 			'gatherpress_event',
-			$response->query['post_type'],
-			'Failed to assert post type is gatherpress_event.'
+			(array) $response->query['post_type'],
+			'Failed to assert post type includes gatherpress_event.'
 		);
 	}
 

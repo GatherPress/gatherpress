@@ -116,12 +116,6 @@ class Test_Event_Setup extends Base {
 				'callback' => array( $instance, 'disable_ics_canonical_redirect' ),
 			),
 			array(
-				'type'     => 'action',
-				'name'     => 'init',
-				'priority' => 99,
-				'callback' => array( $instance, 'register_event_date_hooks' ),
-			),
-			array(
 				'type'     => 'filter',
 				'name'     => sprintf( 'manage_%s_posts_columns', Event::POST_TYPE ),
 				'priority' => 10,
