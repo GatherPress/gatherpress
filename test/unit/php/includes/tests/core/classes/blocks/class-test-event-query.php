@@ -40,16 +40,10 @@ class Test_Event_Query extends Base {
 				'callback' => array( $instance, 'pre_render_block' ),
 			),
 			array(
-				'type'     => 'filter',
-				'name'     => sprintf( 'rest_%s_query', Event::POST_TYPE ),
-				'priority' => 10,
-				'callback' => array( $instance, 'rest_query' ),
-			),
-			array(
-				'type'     => 'filter',
-				'name'     => sprintf( 'rest_%s_collection_params', Event::POST_TYPE ),
-				'priority' => 10,
-				'callback' => array( $instance, 'rest_collection_params' ),
+				'type'     => 'action',
+				'name'     => 'init',
+				'priority' => 99,
+				'callback' => array( $instance, 'register_event_date_rest_hooks' ),
 			),
 			array(
 				'type'     => 'filter',

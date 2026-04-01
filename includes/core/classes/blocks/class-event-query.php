@@ -67,18 +67,8 @@ class Event_Query {
 			10,
 			2
 		);
-		// Updates the query vars for the Query Loop block in the block editor.
-		add_filter(
-			sprintf( 'rest_%s_query', Event::POST_TYPE ),
-			array( $this, 'rest_query' ),
-			10,
-			2
-		);
-		// We need more sortBy options.
-		add_filter(
-			sprintf( 'rest_%s_collection_params', Event::POST_TYPE ),
-			array( $this, 'rest_collection_params' )
-		);
+		// Register REST filters for all post types with event_date support.
+		add_action( 'init', array( $this, 'register_event_date_rest_hooks' ), 99 );
 
 		// Integrate with Advanced Query Loop plugin to pass event query params through.
 		add_filter(
@@ -87,6 +77,33 @@ class Event_Query {
 			10,
 			3
 		);
+	}
+
+	/**
+	 * Register REST hooks for all post types that support event_date.
+	 *
+	 * This method runs on init at a late priority to ensure all post types
+	 * have been registered before we query for event_date support.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return void
+	 */
+	public function register_event_date_rest_hooks(): void {
+		foreach ( get_post_types_by_support( 'gatherpress-event-date' ) as $post_type ) {
+			// Updates the query vars for the Query Loop block in the block editor.
+			add_filter(
+				sprintf( 'rest_%s_query', $post_type ),
+				array( $this, 'rest_query' ),
+				10,
+				2
+			);
+			// We need more sortBy options.
+			add_filter(
+				sprintf( 'rest_%s_collection_params', $post_type ),
+				array( $this, 'rest_collection_params' )
+			);
+		}
 	}
 
 	/**
@@ -196,7 +213,7 @@ class Event_Query {
 		$query_args = array();
 
 		// Post Related.
-		$query_args['post_type'] = array( Event::POST_TYPE );
+		$query_args['post_type'] = get_post_types_by_support( 'gatherpress-event-date' );
 
 		// Type of event list: 'upcoming' or 'past',
 		// @see wp-content/plugins/gatherpress/includes/core/classes/class-event-query.php.
@@ -358,7 +375,7 @@ class Event_Query {
 		// Only process if querying GatherPress events.
 		$post_type = $block_query['postType'] ?? '';
 
-		if ( Event::POST_TYPE !== $post_type ) {
+		if ( ! post_type_supports( $post_type, 'gatherpress-event-date' ) ) {
 			return $query_args;
 		}
 

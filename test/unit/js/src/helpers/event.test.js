@@ -36,6 +36,20 @@ import {
 import { dateTimeDatabaseFormat } from '@src/helpers/datetime';
 
 /**
+ * Helper to create a mock getPostType function.
+ * Returns supports.event_date: true for gatherpress_event, false for others.
+ *
+ * @param {string} slug The post type slug.
+ * @return {Object|null} The post type object with supports.
+ */
+function mockGetPostType( slug ) {
+	if ( 'gatherpress_event' === slug ) {
+		return { supports: { 'gatherpress-event-date': true } };
+	}
+	return { supports: {} };
+}
+
+/**
  * Coverage for isEventPostType.
  */
 describe( 'isEventPostType', () => {
@@ -45,6 +59,9 @@ describe( 'isEventPostType', () => {
 				return {
 					getCurrentPostType: () => 'gatherpress_event',
 				};
+			}
+			if ( 'core' === store ) {
+				return { getPostType: mockGetPostType };
 			}
 			return {};
 		} );
@@ -59,6 +76,9 @@ describe( 'isEventPostType', () => {
 					getCurrentPostType: () => 'post',
 				};
 			}
+			if ( 'core' === store ) {
+				return { getPostType: mockGetPostType };
+			}
 			return {};
 		} );
 
@@ -71,6 +91,9 @@ describe( 'isEventPostType', () => {
 				return {
 					getCurrentPostType: () => 'page',
 				};
+			}
+			if ( 'core' === store ) {
+				return { getPostType: mockGetPostType };
 			}
 			return {};
 		} );
@@ -91,6 +114,9 @@ describe( 'isEventPostType', () => {
 					getCurrentPostType: () => undefined,
 				};
 			}
+			if ( 'core' === store ) {
+				return { getPostType: mockGetPostType };
+			}
 			return {};
 		} );
 
@@ -98,17 +124,35 @@ describe( 'isEventPostType', () => {
 	} );
 
 	it( 'returns true when postType argument is gatherpress_event', () => {
-		// No select mock needed - uses argument directly.
+		require( '@wordpress/data' ).select.mockImplementation( ( store ) => {
+			if ( 'core' === store ) {
+				return { getPostType: mockGetPostType };
+			}
+			return {};
+		} );
+
 		expect( isEventPostType( 'gatherpress_event' ) ).toBe( true );
 	} );
 
 	it( 'returns false when postType argument is post', () => {
-		// No select mock needed - uses argument directly.
+		require( '@wordpress/data' ).select.mockImplementation( ( store ) => {
+			if ( 'core' === store ) {
+				return { getPostType: mockGetPostType };
+			}
+			return {};
+		} );
+
 		expect( isEventPostType( 'post' ) ).toBe( false );
 	} );
 
 	it( 'returns false when postType argument is page', () => {
-		// No select mock needed - uses argument directly.
+		require( '@wordpress/data' ).select.mockImplementation( ( store ) => {
+			if ( 'core' === store ) {
+				return { getPostType: mockGetPostType };
+			}
+			return {};
+		} );
+
 		expect( isEventPostType( 'page' ) ).toBe( false );
 	} );
 } );
@@ -124,6 +168,9 @@ describe( 'hasValidEventId', () => {
 					getCurrentPostType: () => 'gatherpress_event',
 				};
 			}
+			if ( 'core' === store ) {
+				return { getPostType: mockGetPostType };
+			}
 			return {};
 		} );
 
@@ -136,6 +183,9 @@ describe( 'hasValidEventId', () => {
 				return {
 					getCurrentPostType: () => 'post',
 				};
+			}
+			if ( 'core' === store ) {
+				return { getPostType: mockGetPostType };
 			}
 			return {};
 		} );
@@ -155,6 +205,7 @@ describe( 'hasValidEventId', () => {
 			}
 			if ( 'core' === store ) {
 				return {
+					getPostType: mockGetPostType,
 					getEntityRecord: ( postType, postTypeName, id ) => {
 						if ( 'gatherpress_event' === postTypeName && postId === id ) {
 							return {
@@ -185,6 +236,7 @@ describe( 'hasValidEventId', () => {
 			}
 			if ( 'core' === store ) {
 				return {
+					getPostType: mockGetPostType,
 					getEntityRecord: ( postType, postTypeName, id ) => {
 						if ( 'gatherpress_event' === postTypeName && postId === id ) {
 							return {
@@ -215,6 +267,7 @@ describe( 'hasValidEventId', () => {
 			}
 			if ( 'core' === store ) {
 				return {
+					getPostType: mockGetPostType,
 					getEntityRecord: ( postType, postTypeName, id ) => {
 						if ( 'gatherpress_event' === postTypeName && postId === id ) {
 							return {
@@ -244,6 +297,7 @@ describe( 'hasValidEventId', () => {
 			}
 			if ( 'core' === store ) {
 				return {
+					getPostType: mockGetPostType,
 					getEntityRecord: () => null,
 				};
 			}
@@ -265,6 +319,7 @@ describe( 'hasValidEventId', () => {
 			}
 			if ( 'core' === store ) {
 				return {
+					getPostType: mockGetPostType,
 					getEntityRecord: () => undefined,
 				};
 			}
@@ -287,6 +342,7 @@ describe( 'hasValidEventId', () => {
 			}
 			if ( 'core' === store ) {
 				return {
+					getPostType: mockGetPostType,
 					getEntityRecord: ( postType, postTypeName, id ) => {
 						if ( 'gatherpress_event' === postTypeName && postId === id ) {
 							return {
@@ -311,6 +367,9 @@ describe( 'hasValidEventId', () => {
 					getCurrentPostType: () => 'gatherpress_event',
 				};
 			}
+			if ( 'core' === store ) {
+				return { getPostType: mockGetPostType };
+			}
 			return {};
 		} );
 
@@ -326,6 +385,9 @@ describe( 'hasValidEventId', () => {
 					getCurrentPostId: () => postId,
 					getCurrentPostType: () => 'post', // Not an event.
 				};
+			}
+			if ( 'core' === store ) {
+				return { getPostType: mockGetPostType };
 			}
 			return {};
 		} );
@@ -343,6 +405,9 @@ describe( 'hasValidEventId', () => {
 					getCurrentPostType: () => 'gatherpress_event',
 				};
 			}
+			if ( 'core' === store ) {
+				return { getPostType: mockGetPostType };
+			}
 			return {};
 		} );
 
@@ -359,6 +424,9 @@ describe( 'hasValidEventId', () => {
 					getCurrentPostId: () => 999, // Different from postId.
 					getCurrentPostType: () => 'gatherpress_event',
 				};
+			}
+			if ( 'core' === store ) {
+				return { getPostType: mockGetPostType };
 			}
 			return {};
 		} );
@@ -384,10 +452,15 @@ describe( 'hasEventPast', () => {
 			},
 		};
 
-		require( '@wordpress/data' ).select.mockImplementation( ( store ) => ( {
-			getCurrentPostType: () =>
-				'core/editor' === store ? 'gatherpress_event' : null,
-		} ) );
+		require( '@wordpress/data' ).select.mockImplementation( ( store ) => {
+			if ( 'core/editor' === store ) {
+				return { getCurrentPostType: () => 'gatherpress_event' };
+			}
+			if ( 'core' === store ) {
+				return { getPostType: mockGetPostType };
+			}
+			return {};
+		} );
 
 		expect( hasEventPast() ).toBe( true );
 	} );
@@ -404,10 +477,15 @@ describe( 'hasEventPast', () => {
 			},
 		};
 
-		require( '@wordpress/data' ).select.mockImplementation( ( store ) => ( {
-			getCurrentPostType: () =>
-				'core/editor' === store ? 'gatherpress_event' : null,
-		} ) );
+		require( '@wordpress/data' ).select.mockImplementation( ( store ) => {
+			if ( 'core/editor' === store ) {
+				return { getCurrentPostType: () => 'gatherpress_event' };
+			}
+			if ( 'core' === store ) {
+				return { getPostType: mockGetPostType };
+			}
+			return {};
+		} );
 
 		expect( hasEventPast() ).toBe( false );
 	} );
@@ -435,10 +513,15 @@ describe( 'hasEventPastNotice', () => {
 			},
 		};
 
-		require( '@wordpress/data' ).select.mockImplementation( ( store ) => ( {
-			getCurrentPostType: () =>
-				'core/editor' === store ? 'gatherpress_event' : null,
-		} ) );
+		require( '@wordpress/data' ).select.mockImplementation( ( store ) => {
+			if ( 'core/editor' === store ) {
+				return { getCurrentPostType: () => 'gatherpress_event' };
+			}
+			if ( 'core' === store ) {
+				return { getPostType: mockGetPostType };
+			}
+			return {};
+		} );
 
 		hasEventPastNotice();
 
@@ -464,6 +547,7 @@ describe( 'getEventMeta', () => {
 		mockSelect = jest.fn( ( store ) => {
 			if ( 'core' === store ) {
 				return {
+					getPostType: mockGetPostType,
 					getEntityRecord: jest.fn(),
 				};
 			}
@@ -484,6 +568,9 @@ describe( 'getEventMeta', () => {
 					getCurrentPostType: jest.fn( () => 'post' ),
 					getEditedPostAttribute: jest.fn(),
 				};
+			}
+			if ( 'core' === store ) {
+				return { getPostType: mockGetPostType };
 			}
 			return {};
 		} );
@@ -512,6 +599,9 @@ describe( 'getEventMeta', () => {
 					} ),
 				};
 			}
+			if ( 'core' === store ) {
+				return { getPostType: mockGetPostType };
+			}
 			return {};
 		} );
 
@@ -539,6 +629,9 @@ describe( 'getEventMeta', () => {
 					} ),
 				};
 			}
+			if ( 'core' === store ) {
+				return { getPostType: mockGetPostType };
+			}
 			return {};
 		} );
 
@@ -555,6 +648,7 @@ describe( 'getEventMeta', () => {
 		mockSelect.mockImplementation( ( store ) => {
 			if ( 'core' === store ) {
 				return {
+					getPostType: mockGetPostType,
 					getEntityRecord: jest.fn( ( postType, slug, postId ) => {
 						if ( 'gatherpress_event' === slug && 456 === postId ) {
 							return {
@@ -590,6 +684,7 @@ describe( 'getEventMeta', () => {
 		mockSelect.mockImplementation( ( store ) => {
 			if ( 'core' === store ) {
 				return {
+					getPostType: mockGetPostType,
 					getEntityRecord: jest.fn( () => ( {
 						meta: {},
 					} ) ),
@@ -610,6 +705,7 @@ describe( 'getEventMeta', () => {
 		mockSelect.mockImplementation( ( store ) => {
 			if ( 'core' === store ) {
 				return {
+					getPostType: mockGetPostType,
 					getEntityRecord: jest.fn( () => null ),
 				};
 			}
@@ -640,6 +736,9 @@ describe( 'getEventMeta', () => {
 					} ),
 				};
 			}
+			if ( 'core' === store ) {
+				return { getPostType: mockGetPostType };
+			}
 			return {};
 		} );
 
@@ -664,6 +763,9 @@ describe( 'getEventMeta', () => {
 					} ),
 				};
 			}
+			if ( 'core' === store ) {
+				return { getPostType: mockGetPostType };
+			}
 			return {};
 		} );
 
@@ -681,6 +783,7 @@ describe( 'hasOnlineEventTerm', () => {
 		require( '@wordpress/data' ).select.mockImplementation( ( store ) => {
 			if ( 'core' === store ) {
 				return {
+					getPostType: mockGetPostType,
 					getEntityRecords: () => null,
 				};
 			}
@@ -694,6 +797,7 @@ describe( 'hasOnlineEventTerm', () => {
 		require( '@wordpress/data' ).select.mockImplementation( ( store ) => {
 			if ( 'core' === store ) {
 				return {
+					getPostType: mockGetPostType,
 					getEntityRecords: () => [],
 				};
 			}
@@ -707,6 +811,7 @@ describe( 'hasOnlineEventTerm', () => {
 		require( '@wordpress/data' ).select.mockImplementation( ( store ) => {
 			if ( 'core' === store ) {
 				return {
+					getPostType: mockGetPostType,
 					getEntityRecords: () => [ { id: 1 } ],
 					getEntityRecord: () => null,
 				};
@@ -721,6 +826,7 @@ describe( 'hasOnlineEventTerm', () => {
 		require( '@wordpress/data' ).select.mockImplementation( ( store ) => {
 			if ( 'core' === store ) {
 				return {
+					getPostType: mockGetPostType,
 					getEntityRecords: () => [ { id: 1 } ],
 					getEntityRecord: () => ( {
 						id: 123,
@@ -738,6 +844,7 @@ describe( 'hasOnlineEventTerm', () => {
 		require( '@wordpress/data' ).select.mockImplementation( ( store ) => {
 			if ( 'core' === store ) {
 				return {
+					getPostType: mockGetPostType,
 					getEntityRecords: () => [ { id: 1 } ],
 					getEntityRecord: () => ( {
 						id: 123,
@@ -756,6 +863,7 @@ describe( 'hasOnlineEventTerm', () => {
 		require( '@wordpress/data' ).select.mockImplementation( ( store ) => {
 			if ( 'core' === store ) {
 				return {
+					getPostType: mockGetPostType,
 					getEntityRecords: () => [ { id: onlineTermId } ],
 					getEntityRecord: () => ( {
 						id: 123,
@@ -773,6 +881,7 @@ describe( 'hasOnlineEventTerm', () => {
 		require( '@wordpress/data' ).select.mockImplementation( ( store ) => {
 			if ( 'core' === store ) {
 				return {
+					getPostType: mockGetPostType,
 					getEntityRecords: () => [ { id: 42 } ],
 					getEntityRecord: () => ( {
 						id: 123,
@@ -790,6 +899,7 @@ describe( 'hasOnlineEventTerm', () => {
 		require( '@wordpress/data' ).select.mockImplementation( ( store ) => {
 			if ( 'core' === store ) {
 				return {
+					getPostType: mockGetPostType,
 					getEntityRecords: () => [ { id: 42 } ],
 				};
 			}
@@ -808,6 +918,7 @@ describe( 'hasOnlineEventTerm', () => {
 		require( '@wordpress/data' ).select.mockImplementation( ( store ) => {
 			if ( 'core' === store ) {
 				return {
+					getPostType: mockGetPostType,
 					getEntityRecords: () => [ { id: 42 } ],
 				};
 			}
@@ -827,6 +938,7 @@ describe( 'hasOnlineEventTerm', () => {
 		require( '@wordpress/data' ).select.mockImplementation( ( store ) => {
 			if ( 'core' === store ) {
 				return {
+					getPostType: mockGetPostType,
 					getEntityRecords: () => [ { id: 42 } ],
 				};
 			}
@@ -848,6 +960,7 @@ describe( 'hasOnlineEventTerm', () => {
 		require( '@wordpress/data' ).select.mockImplementation( ( store ) => {
 			if ( 'core' === store ) {
 				return {
+					getPostType: mockGetPostType,
 					getEntityRecords: () => [ { id: onlineTermId } ],
 				};
 			}
@@ -867,6 +980,7 @@ describe( 'hasOnlineEventTerm', () => {
 		require( '@wordpress/data' ).select.mockImplementation( ( store ) => {
 			if ( 'core' === store ) {
 				return {
+					getPostType: mockGetPostType,
 					getEntityRecords: () => [ { id: 42 } ],
 				};
 			}
@@ -887,6 +1001,7 @@ describe( 'hasOnlineEventTerm', () => {
 		require( '@wordpress/data' ).select.mockImplementation( ( store ) => {
 			if ( 'core' === store ) {
 				return {
+					getPostType: mockGetPostType,
 					getEntityRecords: () => [ { id: 42 } ], // Number.
 				};
 			}
@@ -908,6 +1023,7 @@ describe( 'hasOnlineEventTerm', () => {
 		require( '@wordpress/data' ).select.mockImplementation( ( store ) => {
 			if ( 'core' === store ) {
 				return {
+					getPostType: mockGetPostType,
 					getEntityRecords: () => [ { id: onlineTermId } ],
 					getEntityRecord: () => ( {
 						id: 123,
