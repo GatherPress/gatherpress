@@ -67,8 +67,9 @@ class Event_Query {
 			10,
 			2
 		);
-		// Register REST filters for all post types with event_date support.
-		add_action( 'init', array( $this, 'register_event_date_rest_hooks' ), 99 );
+		// Priority 11 so post types (registered at default priority 10) exist
+		// when we query get_post_types_by_support( 'gatherpress-event-date' ).
+		add_action( 'init', array( $this, 'register_event_date_rest_hooks' ), 11 );
 
 		// Integrate with Advanced Query Loop plugin to pass event query params through.
 		add_filter(
