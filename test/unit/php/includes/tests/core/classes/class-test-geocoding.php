@@ -98,6 +98,11 @@ class Test_Geocoding extends Base {
 			$namespace[ sprintf( '/%s/geocode', GATHERPRESS_REST_NAMESPACE ) ],
 			'Failed to assert geocode endpoint is registered.'
 		);
+		$this->assertEquals(
+			1,
+			$namespace[ sprintf( '/%s/geocode/search', GATHERPRESS_REST_NAMESPACE ) ],
+			'Failed to assert geocode search endpoint is registered.'
+		);
 	}
 
 	/**
@@ -306,9 +311,11 @@ class Test_Geocoding extends Base {
 
 		$rest_server = rest_get_server();
 		$routes      = $rest_server->get_routes();
-		$route_key   = '/' . GATHERPRESS_REST_NAMESPACE . '/geocode';
+		$route_key        = '/' . GATHERPRESS_REST_NAMESPACE . '/geocode';
+		$route_search_key = '/' . GATHERPRESS_REST_NAMESPACE . '/geocode/search';
 
 		$this->assertArrayHasKey( $route_key, $routes, 'Failed to assert geocode route exists.' );
+		$this->assertArrayHasKey( $route_search_key, $routes, 'Failed to assert geocode search route exists.' );
 
 		// Get the permission callback.
 		$route_config        = $routes[ $route_key ][0];
@@ -526,5 +533,109 @@ class Test_Geocoding extends Base {
 			$captured_url,
 			'Failed to assert URL contains address query.'
 		);
+	}
+
+	/**
+	 * Coverage for search_addresses with empty query.
+	 *
+	 * @covers ::search_addresses
+	 *
+	 * @return void
+	 */
+	public function test_search_addresses_empty_query(): void {
+		$instance = Geocoding::get_instance();
+		$request  = new WP_REST_Request( 'GET' );
+		$request->set_param( 'q', '' );
+
+		$response = $instance->search_addresses( $request );
+
+		$this->assertInstanceOf( 'WP_Error', $response, 'Failed to assert response is WP_Error for empty query.' );
+		$this->assertEquals( 'missing_query', $response->get_error_code(), 'Failed to assert correct error code.' );
+	}
+
+	/**
+	 * Coverage for search_addresses with short query (returns empty suggestions).
+	 *
+	 * @covers ::search_addresses
+	 *
+	 * @return void
+	 */
+	public function test_search_addresses_short_query(): void {
+		$instance = Geocoding::get_instance();
+		$request  = new WP_REST_Request( 'GET' );
+		$request->set_param( 'q', 'a' );
+
+		$response = $instance->search_addresses( $request );
+
+		$this->assertInstanceOf( WP_REST_Response::class, $response, 'Failed to assert response is WP_REST_Response.' );
+		$data = $response->get_data();
+		$this->assertIsArray( $data['suggestions'] );
+		$this->assertCount( 0, $data['suggestions'] );
+	}
+
+	/**
+	 * Coverage for search_addresses with successful JSON array response.
+	 *
+	 * @covers ::search_addresses
+	 *
+	 * @return void
+	 */
+	public function test_search_addresses_success(): void {
+		$instance = Geocoding::get_instance();
+
+		$mock_body = array(
+			array(
+				'display_name' => 'Test City, Country',
+				'lat'          => '40.7128',
+				'lon'          => '-74.0060',
+			),
+		);
+
+		$this->http_mock->mock(
+			'*',
+			array(
+				'body' => wp_json_encode( $mock_body ),
+			)
+		);
+
+		$request = new WP_REST_Request( 'GET' );
+		$request->set_param( 'q', 'Test City' );
+
+		$response = $instance->search_addresses( $request );
+
+		$this->assertInstanceOf( WP_REST_Response::class, $response, 'Failed to assert response is WP_REST_Response.' );
+		$data = $response->get_data();
+		$this->assertCount( 1, $data['suggestions'] );
+		$this->assertSame( 'Test City, Country', $data['suggestions'][0]['label'] );
+		$this->assertSame( '40.7128', $data['suggestions'][0]['latitude'] );
+		$this->assertSame( '-74.0060', $data['suggestions'][0]['longitude'] );
+	}
+
+	/**
+	 * Coverage for search_addresses with non-array JSON body.
+	 *
+	 * @covers ::search_addresses
+	 *
+	 * @return void
+	 */
+	public function test_search_addresses_invalid_json(): void {
+		$instance = Geocoding::get_instance();
+
+		$this->http_mock->mock(
+			'*',
+			array(
+				'body' => '"not-an-array"',
+			)
+		);
+
+		$request = new WP_REST_Request( 'GET' );
+		$request->set_param( 'q', 'Somewhere' );
+
+		$response = $instance->search_addresses( $request );
+
+		$this->assertInstanceOf( WP_REST_Response::class, $response, 'Failed to assert response is WP_REST_Response.' );
+		$data = $response->get_data();
+		$this->assertIsArray( $data['suggestions'] );
+		$this->assertCount( 0, $data['suggestions'] );
 	}
 }

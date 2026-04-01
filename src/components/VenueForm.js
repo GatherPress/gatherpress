@@ -10,7 +10,8 @@ import {
 	__experimentalHStack as HStack,
 	useNavigator,
 } from '@wordpress/components';
-import { useState } from '@wordpress/element';
+import { useDebounce } from '@wordpress/compose';
+import { useCallback, useState } from '@wordpress/element';
 import { useSelect } from '@wordpress/data';
 import apiFetch from '@wordpress/api-fetch';
 import { useEntityProp, store as coreDataStore } from '@wordpress/core-data';
@@ -21,7 +22,133 @@ import { useEntityProp, store as coreDataStore } from '@wordpress/core-data';
 import { CPT_EVENT, CPT_VENUE, TAX_VENUE } from '../helpers/namespace';
 import { isEventPostType } from '../helpers/event';
 import { getCurrentContextualPostId } from '../helpers/editor';
-import { geocodeAddress } from '../helpers/geocoding';
+import {
+	fetchAddressSuggestions,
+	geocodeAddress,
+	primeGeocodeCache,
+} from '../helpers/geocoding';
+
+/**
+ * Full address field with OpenStreetMap (Nominatim) suggestions via the GatherPress REST proxy.
+ *
+ * @param {Object}   props          Props.
+ * @param {string}   props.value    Address value.
+ * @param {Function} props.onChange Called when address changes.
+ * @param {string}   props.help     Help text when not loading.
+ * @return {JSX.Element} Field with optional suggestion list.
+ */
+function AddressFieldWithSuggestions( { value, onChange, help } ) {
+	const [ suggestions, setSuggestions ] = useState( [] );
+	const [ isLoadingSuggestions, setIsLoadingSuggestions ] = useState( false );
+
+	const loadSuggestions = useDebounce(
+		useCallback( ( query ) => {
+			if ( ! query || query.trim().length < 3 ) {
+				setSuggestions( [] );
+				setIsLoadingSuggestions( false );
+				return;
+			}
+			setIsLoadingSuggestions( true );
+			fetchAddressSuggestions( query )
+				.then( ( items ) => {
+					setSuggestions( items );
+				} )
+				.catch( () => {
+					setSuggestions( [] );
+				} )
+				.finally( () => {
+					setIsLoadingSuggestions( false );
+				} );
+		}, [] ),
+		400
+	);
+
+	const handleChange = useCallback(
+		( next ) => {
+			onChange( next );
+			loadSuggestions( next );
+		},
+		[ onChange, loadSuggestions ]
+	);
+
+	const selectSuggestion = useCallback(
+		( item ) => {
+			primeGeocodeCache( item.label, item.latitude, item.longitude );
+			onChange( item.label );
+			setSuggestions( [] );
+		},
+		[ onChange ]
+	);
+
+	const onKeyDown = useCallback( ( event ) => {
+		if ( 'Escape' === event.code ) {
+			setSuggestions( [] );
+		}
+	}, [] );
+
+	const helpText = isLoadingSuggestions
+		? __( 'Searching for addresses…', 'gatherpress' )
+		: help;
+
+	return (
+		<div
+			className="gatherpress-address-autocomplete"
+			onKeyDown={ onKeyDown }
+			style={ { position: 'relative' } }
+		>
+			<TextControl
+				__next40pxDefaultSize
+				label={ __( 'Full Address', 'gatherpress' ) }
+				value={ value }
+				onChange={ handleChange }
+				help={ helpText }
+			/>
+			{ suggestions.length > 0 && (
+				<ul
+					className="gatherpress-address-autocomplete__list"
+					role="listbox"
+					aria-label={ __( 'Address suggestions', 'gatherpress' ) }
+					style={ {
+						position: 'absolute',
+						left: 0,
+						right: 0,
+						zIndex: 100000,
+						maxHeight: '220px',
+						overflowY: 'auto',
+						margin: '4px 0 0',
+						padding: 0,
+						listStyle: 'none',
+						background: '#fff',
+						border: '1px solid #949494',
+						boxShadow: '0 2px 6px rgba(0, 0, 0, 0.15)',
+					} }
+				>
+					{ suggestions.map( ( item, index ) => (
+						<li key={ `${ item.label }-${ index }` } role="none">
+							<button
+								type="button"
+								role="option"
+								className="gatherpress-address-autocomplete__option"
+								onClick={ () => selectSuggestion( item ) }
+								style={ {
+									display: 'block',
+									width: '100%',
+									textAlign: 'left',
+									padding: '8px 12px',
+									border: 'none',
+									background: 'transparent',
+									cursor: 'pointer',
+								} }
+							>
+								{ item.label }
+							</button>
+						</li>
+					) ) }
+				</ul>
+			) }
+		</div>
+	);
+}
 
 /**
  * Venue form component for creating or editing a venue.
@@ -71,9 +198,7 @@ function VenueForm( {
 					help={ titleError }
 					className={ titleError ? 'has-error' : '' }
 				/>
-				<TextControl
-					__next40pxDefaultSize
-					label={ __( 'Full Address', 'gatherpress' ) }
+				<AddressFieldWithSuggestions
 					value={ address }
 					onChange={ onChangeAddress }
 					help={ __(

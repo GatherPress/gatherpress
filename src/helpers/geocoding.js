@@ -36,6 +36,25 @@ export function getGeocoCacheSize() {
 }
 
 /**
+ * Primes the geocode cache so a later geocodeAddress() call skips the network.
+ *
+ * @param {string} address   Full address string (trimmed key).
+ * @param {string} latitude  Latitude.
+ * @param {string} longitude Longitude.
+ */
+export function primeGeocodeCache( address, latitude, longitude ) {
+	if ( ! address || '' === address.trim() ) {
+		return;
+	}
+	const trimmed = address.trim();
+	geocodeCache.set( trimmed, {
+		latitude: String( latitude ),
+		longitude: String( longitude ),
+		error: null,
+	} );
+}
+
+/**
  * Geocodes an address using the GatherPress REST API proxy.
  *
  * Uses memoization to cache results and avoid duplicate API calls
@@ -105,5 +124,39 @@ export async function geocodeAddress( address ) {
 				error.message ||
 				__( 'Geocoding request failed.', 'gatherpress' ),
 		};
+	}
+}
+
+/**
+ * Fetches address suggestions for autocomplete (Nominatim via GatherPress REST proxy).
+ *
+ * @param {string} query Partial address input.
+ * @return {Promise<Array<{ label: string, latitude: string, longitude: string }>>} Suggestion rows.
+ */
+export async function fetchAddressSuggestions( query ) {
+	if ( ! query || '' === query.trim() ) {
+		return [];
+	}
+
+	const trimmed = query.trim();
+
+	if ( trimmed.length < 3 ) {
+		return [];
+	}
+
+	try {
+		const response = await apiFetch( {
+			path: `/${ REST_NAMESPACE }/geocode/search?q=${ encodeURIComponent(
+				trimmed
+			) }`,
+		} );
+
+		if ( ! response?.suggestions || ! Array.isArray( response.suggestions ) ) {
+			return [];
+		}
+
+		return response.suggestions;
+	} catch {
+		return [];
 	}
 }

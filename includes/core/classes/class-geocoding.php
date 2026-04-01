@@ -90,6 +90,26 @@ class Geocoding {
 				),
 			)
 		);
+
+		register_rest_route(
+			GATHERPRESS_REST_NAMESPACE,
+			'/geocode/search',
+			array(
+				'methods'             => WP_REST_Server::READABLE,
+				'callback'            => array( $this, 'search_addresses' ),
+				'permission_callback' => static function (): bool {
+					return current_user_can( 'edit_posts' );
+				},
+				'args'                => array(
+					'q' => array(
+						'required'          => true,
+						'type'              => 'string',
+						'sanitize_callback' => 'sanitize_text_field',
+						'description'       => __( 'Address search query.', 'gatherpress' ),
+					),
+				),
+			)
+		);
 	}
 
 	/**
@@ -174,6 +194,113 @@ class Geocoding {
 				'latitude'  => '',
 				'longitude' => '',
 				'error'     => __( 'Could not find location. Please check the address and try again.', 'gatherpress' ),
+			),
+			200
+		);
+	}
+
+	/**
+	 * Returns address suggestions from Nominatim search (for editor autocomplete).
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param WP_REST_Request $request The REST request object.
+	 * @return WP_REST_Response|WP_Error Suggestions or error.
+	 */
+	public function search_addresses( WP_REST_Request $request ) {
+		$query = $request->get_param( 'q' );
+
+		if ( empty( $query ) || '' === trim( $query ) ) {
+			return new WP_Error(
+				'missing_query',
+				__( 'Search query is required.', 'gatherpress' ),
+				array( 'status' => 400 )
+			);
+		}
+
+		$query = mb_substr( trim( $query ), 0, 200 );
+
+		if ( mb_strlen( $query ) < 2 ) {
+			return new WP_REST_Response(
+				array(
+					'suggestions' => array(),
+				),
+				200
+			);
+		}
+
+		$url = add_query_arg(
+			array(
+				'q'               => $query,
+				'format'          => 'json',
+				'limit'           => 5,
+				'addressdetails'  => 0,
+				'accept-language' => $this->get_language_code(),
+			),
+			self::NOMINATIM_API_URL
+		);
+
+		$response = wp_safe_remote_get(
+			$url,
+			array(
+				'headers' => array(
+					'User-Agent' => $this->get_user_agent(),
+				),
+				'timeout' => 10,
+			)
+		);
+
+		if ( is_wp_error( $response ) ) {
+			return new WP_Error(
+				'geocoding_search_failed',
+				$response->get_error_message(),
+				array( 'status' => 500 )
+			);
+		}
+
+		$status_code = wp_remote_retrieve_response_code( $response );
+
+		if ( 200 !== $status_code ) {
+			return new WP_Error(
+				'geocoding_search_failed',
+				sprintf(
+					/* translators: %d: HTTP status code. */
+					__( 'Address search failed with status %d.', 'gatherpress' ),
+					$status_code
+				),
+				array( 'status' => $status_code )
+			);
+		}
+
+		$body = wp_remote_retrieve_body( $response );
+		$data = json_decode( $body, true );
+
+		if ( ! is_array( $data ) ) {
+			return new WP_REST_Response(
+				array(
+					'suggestions' => array(),
+				),
+				200
+			);
+		}
+
+		$suggestions = array();
+
+		foreach ( $data as $item ) {
+			if ( empty( $item['display_name'] ) || ! isset( $item['lat'], $item['lon'] ) ) {
+				continue;
+			}
+
+			$suggestions[] = array(
+				'label'     => $item['display_name'],
+				'latitude'  => (string) $item['lat'],
+				'longitude' => (string) $item['lon'],
+			);
+		}
+
+		return new WP_REST_Response(
+			array(
+				'suggestions' => $suggestions,
 			),
 			200
 		);

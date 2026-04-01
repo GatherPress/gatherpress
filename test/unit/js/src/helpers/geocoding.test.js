@@ -14,9 +14,11 @@ import {
  * Internal dependencies.
  */
 import {
+	fetchAddressSuggestions,
 	geocodeAddress,
 	clearGeocodeCache,
 	getGeocoCacheSize,
+	primeGeocodeCache,
 } from '@src/helpers/geocoding';
 
 // Mock apiFetch.
@@ -253,6 +255,74 @@ describe( 'Geocoding helpers', () => {
 				// Should only call apiFetch once (both addresses normalize to same key).
 				expect( apiFetch ).toHaveBeenCalledTimes( 1 );
 			} );
+		} );
+	} );
+
+	describe( 'fetchAddressSuggestions', () => {
+		it( 'returns empty array for short or empty query', async () => {
+			expect( await fetchAddressSuggestions( '' ) ).toEqual( [] );
+			expect( await fetchAddressSuggestions( '  ' ) ).toEqual( [] );
+			expect( await fetchAddressSuggestions( 'ab' ) ).toEqual( [] );
+			expect( apiFetch ).not.toHaveBeenCalled();
+		} );
+
+		it( 'returns suggestions from API', async () => {
+			apiFetch.mockResolvedValue( {
+				suggestions: [
+					{
+						label: 'Paris, France',
+						latitude: '48.8566',
+						longitude: '2.3522',
+					},
+				],
+			} );
+
+			const result = await fetchAddressSuggestions( 'Paris Fra' );
+
+			expect( result ).toHaveLength( 1 );
+			expect( result[ 0 ].label ).toBe( 'Paris, France' );
+			expect( apiFetch ).toHaveBeenCalledWith( {
+				path: expect.stringContaining( '/gatherpress/v1/geocode/search' ),
+			} );
+			expect( apiFetch ).toHaveBeenCalledWith( {
+				path: expect.stringContaining( 'q=Paris%20Fra' ),
+			} );
+		} );
+
+		it( 'returns empty array on API failure', async () => {
+			apiFetch.mockRejectedValue( new Error( 'fail' ) );
+
+			const result = await fetchAddressSuggestions( 'Some place' );
+
+			expect( result ).toEqual( [] );
+		} );
+
+		it( 'returns empty array when response has no suggestions', async () => {
+			apiFetch.mockResolvedValue( {} );
+
+			const result = await fetchAddressSuggestions( 'Somewhere' );
+
+			expect( result ).toEqual( [] );
+		} );
+	} );
+
+	describe( 'primeGeocodeCache', () => {
+		it( 'primes cache so geocodeAddress skips network', async () => {
+			apiFetch.mockResolvedValue( {
+				latitude: '99',
+				longitude: '88',
+				error: null,
+			} );
+
+			primeGeocodeCache( 'Primed St', '10.5', '-20.3' );
+			const result = await geocodeAddress( 'Primed St' );
+
+			expect( result ).toEqual( {
+				latitude: '10.5',
+				longitude: '-20.3',
+				error: null,
+			} );
+			expect( apiFetch ).not.toHaveBeenCalled();
 		} );
 	} );
 } );
