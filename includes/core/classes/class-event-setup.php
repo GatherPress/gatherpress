@@ -1112,10 +1112,15 @@ class Event_Setup {
 	public function rsvp_sorting_join_paged( string $join ): string {
 		global $wpdb;
 
-		$join .= " LEFT JOIN {$wpdb->comments} AS rsvp_sort_comments"
-		. " ON {$wpdb->posts}.ID = rsvp_sort_comments.comment_post_ID";
-		$join .= " AND rsvp_sort_comments.comment_type = 'gatherpress_rsvp'";
-		$join .= " AND rsvp_sort_comments.comment_approved = '1'";
+		$join .= $wpdb->prepare(
+			" LEFT JOIN %i AS rsvp_sort_comments"
+			. " ON %i.%i = rsvp_sort_comments.comment_post_ID"
+			. " AND rsvp_sort_comments.comment_type = 'gatherpress_rsvp'"
+			. " AND rsvp_sort_comments.comment_approved = '1'",
+			$wpdb->comments,
+			$wpdb->posts,
+			'ID'
+		);
 
 		return $join;
 	}
@@ -1132,7 +1137,7 @@ class Event_Setup {
 		global $wpdb;
 
 		if ( empty( $groupby ) ) {
-			$groupby = "{$wpdb->posts}.ID";
+			$groupby = $wpdb->prepare( '%i.ID', $wpdb->posts );
 		}
 
 		return $groupby;
@@ -1208,11 +1213,22 @@ class Event_Setup {
 	public function venue_sorting_join_paged( string $join ): string {
 		global $wpdb;
 
-		$join .= " LEFT JOIN {$wpdb->term_relationships} AS venue_tr ON {$wpdb->posts}.ID = venue_tr.object_id";
-		$join .= " LEFT JOIN {$wpdb->term_taxonomy} AS venue_tt"
-		. ' ON venue_tr.term_taxonomy_id = venue_tt.term_taxonomy_id'
-		. " AND venue_tt.taxonomy = '" . Venue::TAXONOMY . "'";
-		$join .= " LEFT JOIN {$wpdb->terms} AS venue_terms ON venue_tt.term_id = venue_terms.term_id";
+		$join .= $wpdb->prepare(
+			" LEFT JOIN %i AS venue_tr ON %i.ID = venue_tr.object_id",
+			$wpdb->term_relationships,
+			$wpdb->posts
+		);
+		$join .= $wpdb->prepare(
+			" LEFT JOIN %i AS venue_tt"
+			. " ON venue_tr.term_taxonomy_id = venue_tt.term_taxonomy_id"
+			. " AND venue_tt.taxonomy = %s",
+			$wpdb->term_taxonomy,
+			Venue::TAXONOMY
+		);
+		$join .= $wpdb->prepare(
+			" LEFT JOIN %i AS venue_terms ON venue_tt.term_id = venue_terms.term_id",
+			$wpdb->terms
+		);
 
 		return $join;
 	}
@@ -1229,7 +1245,7 @@ class Event_Setup {
 		global $wpdb;
 
 		if ( empty( $groupby ) ) {
-			$groupby = "{$wpdb->posts}.ID";
+			$groupby = $wpdb->prepare( '%i.ID', $wpdb->posts );
 		}
 
 		return $groupby;
