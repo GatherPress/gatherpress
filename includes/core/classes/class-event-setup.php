@@ -931,6 +931,8 @@ class Event_Setup {
 					array(
 						'gatherpress_event_query' => $key,
 						'post_type'               => Event::POST_TYPE,
+						'order'                   => 'upcoming' === $key ? 'asc' : 'desc',
+						'orderby'                 => 'datetime',
 					),
 					$base_url
 				),

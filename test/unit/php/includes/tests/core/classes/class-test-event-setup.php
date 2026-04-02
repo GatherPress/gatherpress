@@ -2620,6 +2620,18 @@ class Test_Event_Setup extends Base {
 			'Past link should have correct query arg.'
 		);
 
+		// Verify sort order: upcoming should be asc, past should be desc.
+		$this->assertStringContainsString(
+			'order=asc',
+			$result['upcoming'],
+			'Upcoming link should sort ascending.'
+		);
+		$this->assertStringContainsString(
+			'order=desc',
+			$result['past'],
+			'Past link should sort descending.'
+		);
+
 		// Verify the labels.
 		$this->assertStringContainsString( 'Upcoming', $result['upcoming'], 'Should contain Upcoming label.' );
 		$this->assertStringContainsString( 'Past', $result['past'], 'Should contain Past label.' );
