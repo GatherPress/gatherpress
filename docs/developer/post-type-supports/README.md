@@ -16,7 +16,7 @@ Enables event datetime storage and display for a post type. This includes:
 - RSS feed enrichment with event date information
 - Post date override with event date (when enabled in settings)
 
-#### Usage
+#### Usage for gatherpress-event-date
 
 ```php
 add_action( 'init', function() {
@@ -57,7 +57,7 @@ Enables the comment-based RSVP system for a post type. This includes:
 - RSVP token-based email verification for anonymous attendees
 - Comment count adjustment to reflect RSVP activity
 
-#### Usage
+#### Usage for gatherpress-rsvp
 
 ```php
 add_action( 'init', function() {
