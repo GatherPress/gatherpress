@@ -117,12 +117,6 @@ class Test_Event_Setup extends Base {
 			),
 			array(
 				'type'     => 'filter',
-				'name'     => sprintf( 'rest_pre_insert_%s', Event::POST_TYPE ),
-				'priority' => 10,
-				'callback' => array( $instance, 'filter_readonly_meta' ),
-			),
-			array(
-				'type'     => 'filter',
 				'name'     => sprintf( 'manage_%s_posts_columns', Event::POST_TYPE ),
 				'priority' => 10,
 				'callback' => array( $instance, 'set_custom_columns' ),

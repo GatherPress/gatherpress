@@ -29,6 +29,9 @@ use WP_REST_Request;
  *
  * Manages event-related functionalities, including registration of event post types and metadata.
  *
+ * @todo Refactor this class to reduce complexity (currently 104, threshold 105). Consider
+ *       extracting admin column/sorting methods or archive-related logic into separate classes.
+ *
  * @since 1.0.0
  */
 class Event_Setup {
@@ -95,12 +98,6 @@ class Event_Setup {
 		add_filter( 'submenu_file', array( $this, 'highlight_events_submenu' ) );
 
 		add_filter( 'redirect_canonical', array( $this, 'disable_ics_canonical_redirect' ), 10, 2 );
-		add_filter(
-			sprintf( 'rest_pre_insert_%s', Event::POST_TYPE ),
-			array( $this, 'filter_readonly_meta' ),
-			10,
-			2
-		);
 		add_filter(
 			sprintf( 'manage_%s_posts_columns', Event::POST_TYPE ),
 			array( $this, 'set_custom_columns' )
@@ -224,6 +221,7 @@ class Event_Setup {
 					'comments',
 					'revisions',
 					'custom-fields',
+					'gatherpress-event-date',
 				),
 				'menu_icon'     => 'dashicons-nametag',
 				// Note: has_archive must be true for event feed URLs (/event/feed/) to work.
@@ -284,48 +282,73 @@ class Event_Setup {
 	 * @return void
 	 */
 	public function register_post_meta(): void {
-		$post_meta = array(
-			'gatherpress_datetime'              => array(
+		// Datetime meta registered for all post types with event_date support.
+		$event_date_meta = array(
+			'gatherpress_datetime'           => array(
 				'auth_callback'     => array( $this, 'can_edit_posts_meta' ),
 				'sanitize_callback' => 'sanitize_text_field',
 				'show_in_rest'      => true,
 				'single'            => true,
 				'type'              => 'string',
 			),
-			'gatherpress_datetime_start'        => array(
+			'gatherpress_datetime_start'     => array(
 				'auth_callback'     => '__return_false', // Read-only: derived from gatherpress_datetime.
 				'sanitize_callback' => 'sanitize_text_field',
 				'show_in_rest'      => true,
 				'single'            => true,
 			),
-			'gatherpress_datetime_start_gmt'    => array(
-				'auth_callback'     => '__return_false', // Read-only: derived from gatherpress_datetime.
-				'sanitize_callback' => 'sanitize_text_field',
-				'show_in_rest'      => true,
-				'single'            => true,
-				'type'              => 'string',
-			),
-			'gatherpress_datetime_end'          => array(
+			'gatherpress_datetime_start_gmt' => array(
 				'auth_callback'     => '__return_false', // Read-only: derived from gatherpress_datetime.
 				'sanitize_callback' => 'sanitize_text_field',
 				'show_in_rest'      => true,
 				'single'            => true,
 				'type'              => 'string',
 			),
-			'gatherpress_datetime_end_gmt'      => array(
+			'gatherpress_datetime_end'       => array(
 				'auth_callback'     => '__return_false', // Read-only: derived from gatherpress_datetime.
 				'sanitize_callback' => 'sanitize_text_field',
 				'show_in_rest'      => true,
 				'single'            => true,
 				'type'              => 'string',
 			),
-			'gatherpress_timezone'              => array(
+			'gatherpress_datetime_end_gmt'   => array(
 				'auth_callback'     => '__return_false', // Read-only: derived from gatherpress_datetime.
 				'sanitize_callback' => 'sanitize_text_field',
 				'show_in_rest'      => true,
 				'single'            => true,
 				'type'              => 'string',
 			),
+			'gatherpress_timezone'           => array(
+				'auth_callback'     => '__return_false', // Read-only: derived from gatherpress_datetime.
+				'sanitize_callback' => 'sanitize_text_field',
+				'show_in_rest'      => true,
+				'single'            => true,
+				'type'              => 'string',
+			),
+		);
+
+		$event_date_post_types = get_post_types_by_support( 'gatherpress-event-date' );
+
+		foreach ( $event_date_post_types as $post_type ) {
+			foreach ( $event_date_meta as $meta_key => $args ) {
+				register_post_meta(
+					$post_type,
+					$meta_key,
+					$args
+				);
+			}
+
+			// Filter read-only datetime meta from REST requests for this post type.
+			add_filter(
+				sprintf( 'rest_pre_insert_%s', $post_type ),
+				array( $this, 'filter_readonly_meta' ),
+				10,
+				2
+			);
+		}
+
+		// Non-datetime meta remains on the event post type only.
+		$event_only_meta = array(
 			'gatherpress_max_guest_limit'       => array(
 				'auth_callback'     => array( $this, 'can_edit_posts_meta' ),
 				'sanitize_callback' => 'absint',
@@ -358,7 +381,7 @@ class Event_Setup {
 			),
 		);
 
-		foreach ( $post_meta as $meta_key => $args ) {
+		foreach ( $event_only_meta as $meta_key => $args ) {
 			register_post_meta(
 				Event::POST_TYPE,
 				$meta_key,
@@ -635,7 +658,7 @@ class Event_Setup {
 	public function delete_event( int $post_id ): void {
 		global $wpdb;
 
-		if ( Event::POST_TYPE !== get_post_type( $post_id ) ) {
+		if ( ! post_type_supports( (string) get_post_type( $post_id ), 'gatherpress-event-date' ) ) {
 			return;
 		}
 
@@ -1231,8 +1254,10 @@ class Event_Setup {
 		$post_type = $post instanceof WP_Post ? $post->post_type : get_post_type();
 		$post_id   = $post instanceof WP_Post ? $post->ID : get_the_ID();
 
-		// Check if the post is of the 'Event' post type and if event date should be used.
-		if ( Event::POST_TYPE !== $post_type || 1 !== intval( $use_event_date ) ) {
+		if (
+			! post_type_supports( (string) $post_type, 'gatherpress-event-date' )
+			|| 1 !== intval( $use_event_date )
+		) {
 			return $the_date;
 		}
 
@@ -1267,7 +1292,7 @@ class Event_Setup {
 	public function render_event_post_date_block( string $block_content, array $block, WP_Block $instance ): string {
 		$post_id = $instance->context['postId'] ?? get_the_ID();
 
-		if ( ! $post_id || Event::POST_TYPE !== get_post_type( $post_id ) ) {
+		if ( ! $post_id || ! post_type_supports( (string) get_post_type( $post_id ), 'gatherpress-event-date' ) ) {
 			return $block_content;
 		}
 
@@ -1350,7 +1375,7 @@ class Event_Setup {
 	 * @return void
 	 */
 	public function set_datetimes( int $post_id ): void {
-		if ( Event::POST_TYPE !== get_post_type( $post_id ) ) {
+		if ( ! post_type_supports( (string) get_post_type( $post_id ), 'gatherpress-event-date' ) ) {
 			return;
 		}
 

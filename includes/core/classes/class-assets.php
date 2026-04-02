@@ -346,7 +346,7 @@ class Assets {
 	 * @return void
 	 */
 	public function event_communication_modal(): void {
-		if ( get_post_type() === Event::POST_TYPE ) {
+		if ( post_type_supports( (string) get_post_type(), 'gatherpress-event-date' ) ) {
 			echo '<div id="gatherpress-event-communication-modal"></div>';
 		}
 	}

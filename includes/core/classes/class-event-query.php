@@ -120,7 +120,7 @@ class Event_Query {
 		$order = ( 'past' === $event_list_type ) ? 'DESC' : 'ASC';
 
 		$args = array(
-			'post_type'             => Event::POST_TYPE,
+			'post_type'             => get_post_types_by_support( 'gatherpress-event-date' ),
 			'fields'                => 'ids',
 			'no_found_rows'         => true,
 			'posts_per_page'        => $number,
@@ -210,7 +210,7 @@ class Event_Query {
 						$page_id      = $query->queried_object_id;
 						$events_query = $key;
 
-						$query->set( 'post_type', 'gatherpress_event' );
+						$query->set( 'post_type', get_post_types_by_support( 'gatherpress-event-date' ) );
 						$query->set( self::EVENT_QUERY_PARAM, $key );
 						$query->is_page              = false;
 						$query->is_singular          = false;

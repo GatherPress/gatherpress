@@ -40,16 +40,10 @@ class Test_Event_Query extends Base {
 				'callback' => array( $instance, 'pre_render_block' ),
 			),
 			array(
-				'type'     => 'filter',
-				'name'     => sprintf( 'rest_%s_query', Event::POST_TYPE ),
-				'priority' => 10,
-				'callback' => array( $instance, 'rest_query' ),
-			),
-			array(
-				'type'     => 'filter',
-				'name'     => sprintf( 'rest_%s_collection_params', Event::POST_TYPE ),
-				'priority' => 10,
-				'callback' => array( $instance, 'rest_collection_params' ),
+				'type'     => 'action',
+				'name'     => 'init',
+				'priority' => 11,
+				'callback' => array( $instance, 'register_event_date_rest_hooks' ),
 			),
 			array(
 				'type'     => 'filter',
@@ -60,6 +54,45 @@ class Test_Event_Query extends Base {
 		);
 
 		$this->assert_hooks( $hooks, $instance );
+	}
+
+	/**
+	 * Coverage for register_event_date_rest_hooks method.
+	 *
+	 * Verifies that REST filters are registered for all post types
+	 * that support gatherpress-event-date.
+	 *
+	 * @since 1.0.0
+	 * @covers ::register_event_date_rest_hooks
+	 *
+	 * @return void
+	 */
+	public function test_register_event_date_rest_hooks(): void {
+		$instance = Event_Query::get_instance();
+
+		// Remove any existing filters first.
+		remove_all_filters( sprintf( 'rest_%s_query', Event::POST_TYPE ) );
+		remove_all_filters( sprintf( 'rest_%s_collection_params', Event::POST_TYPE ) );
+
+		$instance->register_event_date_rest_hooks();
+
+		$this->assertSame(
+			10,
+			has_filter(
+				sprintf( 'rest_%s_query', Event::POST_TYPE ),
+				array( $instance, 'rest_query' )
+			),
+			'Failed to assert rest_query filter is registered for event post type.'
+		);
+
+		$this->assertSame(
+			10,
+			has_filter(
+				sprintf( 'rest_%s_collection_params', Event::POST_TYPE ),
+				array( $instance, 'rest_collection_params' )
+			),
+			'Failed to assert rest_collection_params filter is registered for event post type.'
+		);
 	}
 
 	/**
@@ -372,7 +405,7 @@ class Test_Event_Query extends Base {
 
 		$result = $instance->query_loop_block_query_vars( $query, $block );
 
-		$this->assertSame( array( Event::POST_TYPE ), $result['post_type'] );
+		$this->assertContains( Event::POST_TYPE, $result['post_type'] );
 		$this->assertSame( 'upcoming', $result['gatherpress_event_query'] );
 		$this->assertContains( 123, $result['post__not_in'] );
 		$this->assertSame( 1, $result['include_unfinished'] );

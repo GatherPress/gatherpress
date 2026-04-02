@@ -29,21 +29,28 @@ import { CPT_EVENT } from './namespace';
 export const DISABLED_FIELD_OPACITY = 0.3;
 
 /**
- * Checks if a post type is an event in the GatherPress application.
+ * Checks if a post type supports event_date in the GatherPress application.
  *
  * If a postType argument is provided, checks against that value.
  * Otherwise, queries the current post type using the `select` function from the `core/editor` package.
+ * Uses the WordPress data store to check post type supports.
  *
  * @since 1.0.0
  *
  * @param {string|null} postType Optional post type to check. If not provided, checks current editor post type.
- * @return {boolean} True if the post type is 'gatherpress_event', false otherwise.
+ * @return {boolean} True if the post type supports event_date, false otherwise.
  */
 export function isEventPostType( postType = null ) {
-	if ( postType ) {
-		return CPT_EVENT === postType;
+	const typeToCheck =
+		postType ?? select( 'core/editor' )?.getCurrentPostType();
+
+	if ( ! typeToCheck ) {
+		return false;
 	}
-	return CPT_EVENT === select( 'core/editor' )?.getCurrentPostType();
+
+	const postTypeObject = select( 'core' ).getPostType( typeToCheck );
+
+	return !! postTypeObject?.supports?.[ 'gatherpress-event-date' ];
 }
 
 /**
@@ -62,30 +69,42 @@ export function hasValidEventId( postId = null, postType = null ) {
 	// If postId is provided, verify it points to a valid, published event.
 	if ( postId ) {
 		// Check if this is the current post being edited in the editor.
-		const currentPostId = select( 'core/editor' )?.getCurrentPostId();
-		const currentPostType = select( 'core/editor' )?.getCurrentPostType();
-		const isCurrentPost = currentPostId && currentPostId === postId;
+		const currentPostId =
+			select( 'core/editor' )?.getCurrentPostId();
+		const currentPostType =
+			select( 'core/editor' )?.getCurrentPostType();
+		const isCurrentPost =
+			currentPostId && currentPostId === postId;
 
-		// If this is the current post, check if it's an event.
+		// If this is the current post, check if it supports event_date.
 		if ( isCurrentPost ) {
-			if ( CPT_EVENT !== currentPostType ) {
+			if ( ! isEventPostType( currentPostType ) ) {
 				return false;
 			}
-			const post = select( 'core' ).getEntityRecord( 'postType', CPT_EVENT, postId );
+			const post = select( 'core' ).getEntityRecord(
+				'postType',
+				currentPostType,
+				postId
+			);
 			return !! post;
 		}
 
-		// If postType is provided, verify it's an event before fetching.
-		if ( postType && CPT_EVENT !== postType ) {
+		// If postType is provided, verify it supports event_date before fetching.
+		if ( postType && ! isEventPostType( postType ) ) {
 			return false;
 		}
 
-		// Only fetch if we have reason to believe it's an event.
-		const post = select( 'core' ).getEntityRecord( 'postType', CPT_EVENT, postId );
+		// Use the provided postType or fall back to CPT_EVENT for entity lookup.
+		const lookupType = postType || CPT_EVENT;
+		const post = select( 'core' ).getEntityRecord(
+			'postType',
+			lookupType,
+			postId
+		);
 		return !! post && 'publish' === post.status;
 	}
 
-	// Otherwise, check if current post is an event (no publish check needed).
+	// Otherwise, check if current post supports event_date (no publish check needed).
 	return isEventPostType();
 }
 
@@ -111,8 +130,7 @@ export function hasEventPast() {
 	);
 
 	return (
-		'gatherpress_event' === select( 'core/editor' )?.getCurrentPostType() &&
-		now.valueOf() > dateTimeEnd.valueOf()
+		isEventPostType() && now.valueOf() > dateTimeEnd.valueOf()
 	);
 }
 
@@ -239,7 +257,7 @@ export function getEventMeta( selectFunc, postId, attributes ) {
 	} else {
 		// No override - check if current post is an event and use editor for live edits.
 		const currentPostType = selectFunc( 'core/editor' )?.getCurrentPostType();
-		const isCurrentPostEvent = 'gatherpress_event' === currentPostType;
+		const isCurrentPostEvent = isEventPostType( currentPostType );
 
 		if ( isCurrentPostEvent ) {
 			const meta = selectFunc( 'core/editor' ).getEditedPostAttribute( 'meta' );

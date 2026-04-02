@@ -95,6 +95,45 @@ The RSVP block uses a sophisticated template system (`src/blocks/rsvp/templates/
 - `past.js`
 - `no-status.js`
 
+### Post Type Supports (Extensibility)
+
+GatherPress uses custom `post_type_supports` to decouple features from specific post types. This allows developers to enable GatherPress features on their own custom post types.
+
+**Registered supports:**
+
+- `gatherpress-event-date` — Event datetime storage, the `gatherpress_events` DB table, date-based queries, timezone handling, and related blocks (event-date, add-to-calendar)
+
+**Planned supports (not yet implemented):**
+
+- `gatherpress-venue` — Venue taxonomy association and venue selector
+- `gatherpress-online-event` — Online event link meta and online-event term
+- `gatherpress-rsvp` — Comment-based RSVP system, attendee management, REST endpoints
+
+**How it works:**
+
+- `gatherpress_event` registers all supports during `register_post_type()`
+- PHP checks use `post_type_supports( $post_type, 'gatherpress-event-date' )` instead of `Event::POST_TYPE === $post_type`
+- Queries use `get_post_types_by_support( 'gatherpress-event-date' )` instead of hardcoded post type slugs
+- JS checks use `select('core').getPostType(slug)?.supports?.['gatherpress-event-date']` via the WordPress data store
+- Post-type-specific hooks (e.g., `rest_pre_insert_{post_type}`) are registered inside `register_post_meta()` which loops over supported post types
+
+**Developer usage:**
+
+```php
+// Enable event dates on a custom post type.
+add_post_type_support( 'my_custom_event', 'gatherpress-event-date' );
+```
+
+**When adding new post_type_supports:**
+
+1. Use kebab-case with `gatherpress-` prefix (e.g., `gatherpress-venue`)
+2. Add the support to the `supports` array in the relevant `register_post_type()` call
+3. Replace `Event::POST_TYPE === get_post_type()` checks with `post_type_supports()`
+4. Replace `'post_type' => Event::POST_TYPE` in queries with `get_post_types_by_support()`
+5. Register post-type-specific hooks inside `register_post_meta()` or similar `init` callbacks that loop over supported post types
+6. Update JS `isEventPostType()` or create equivalent helpers that check supports via the data store
+7. Update corresponding unit tests (PHP and JS mocks)
+
 ### Database Schema
 
 - Custom post types: `gatherpress_event`, `gatherpress_venue`
