@@ -1160,6 +1160,7 @@ class Event_Setup {
 
 		// Modify the query to sort by venue name alphabetically.
 		add_filter( 'posts_join_paged', array( $this, 'venue_sorting_join_paged' ) );
+		add_filter( 'posts_groupby', array( $this, 'venue_sorting_groupby' ) );
 		add_filter( 'posts_orderby', array( $this, 'venue_sorting_orderby' ) );
 
 		// Store the order for use in orderby method.
@@ -1187,6 +1188,24 @@ class Event_Setup {
 	}
 
 	/**
+	 * Group by post ID for venue sorting to prevent duplicate results.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $groupby The GROUP BY clause of the query.
+	 * @return string Modified GROUP BY clause.
+	 */
+	public function venue_sorting_groupby( string $groupby ): string {
+		global $wpdb;
+
+		if ( empty( $groupby ) ) {
+			$groupby = "{$wpdb->posts}.ID";
+		}
+
+		return $groupby;
+	}
+
+	/**
 	 * Modify the ORDER BY clause for venue sorting.
 	 *
 	 * @since 1.0.0
@@ -1200,6 +1219,7 @@ class Event_Setup {
 
 		// Remove the filters to prevent them from affecting other queries.
 		remove_filter( 'posts_join_paged', array( $this, 'venue_sorting_join_paged' ) );
+		remove_filter( 'posts_groupby', array( $this, 'venue_sorting_groupby' ) );
 		remove_filter( 'posts_orderby', array( $this, 'venue_sorting_orderby' ) );
 
 		// Sort by venue name, with NULL/empty values last.
