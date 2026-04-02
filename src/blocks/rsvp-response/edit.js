@@ -26,7 +26,7 @@ import { useState, useEffect } from '@wordpress/element';
 import RsvpManager from './rsvp-manager';
 import TEMPLATE from './template';
 import { getFromGlobal } from '../../helpers/globals';
-import { hasValidEventId, isEventPostType, DISABLED_FIELD_OPACITY } from '../../helpers/event';
+import { hasValidEventId, isPostTypeSupporting, DISABLED_FIELD_OPACITY } from '../../helpers/event';
 import { getEditorDocument, isInFSETemplate } from '../../helpers/editor';
 
 /**
@@ -65,9 +65,9 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 	const [ loading, setLoading ] = useState( true );
 	const [ error, setError ] = useState( null );
 
-	// Check if we're inside a query loop and if context is an event.
+	// Check if we're inside a query loop and if context is an RSVP-enabled post type.
 	const isDescendentOfQueryLoop = Number.isFinite( context?.queryId );
-	const isEventContext = isEventPostType( context?.postType );
+	const isEventContext = isPostTypeSupporting( 'gatherpress-rsvp', context?.postType );
 
 	// Only use postId if context is an event or have an explicit override.
 	const postId =
@@ -227,7 +227,7 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 						) }
 					</PanelBody>
 				</InspectorControls>
-				{ isEventPostType() && (
+				{ isPostTypeSupporting( 'gatherpress-rsvp' ) && (
 					<BlockControls>
 						<ToolbarGroup>
 							<ToolbarButton

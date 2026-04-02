@@ -152,8 +152,8 @@ class Rsvp_Form {
 		$email   = Utility::get_http_input( INPUT_POST, 'email', 'sanitize_email' );
 		$post_id = intval( $comment_data['comment_post_ID'] );
 
-		// Validate that the post is an event.
-		if ( Event::POST_TYPE !== get_post_type( $post_id ) ) {
+		// Validate that the post supports RSVP.
+		if ( ! post_type_supports( (string) get_post_type( $post_id ), 'gatherpress-rsvp' ) ) {
 			wp_die(
 				esc_html__( 'Invalid event ID.', 'gatherpress' ),
 				esc_html__( 'Invalid Request', 'gatherpress' ),

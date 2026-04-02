@@ -28,6 +28,7 @@ jest.mock( '@wordpress/core-data', () => ( {
 import {
 	hasEventPast,
 	hasEventPastNotice,
+	isPostTypeSupporting,
 	isEventPostType,
 	hasValidEventId,
 	getEventMeta,
@@ -44,10 +45,72 @@ import { dateTimeDatabaseFormat } from '@src/helpers/datetime';
  */
 function mockGetPostType( slug ) {
 	if ( 'gatherpress_event' === slug ) {
-		return { supports: { 'gatherpress-event-date': true } };
+		return {
+			supports: {
+				'gatherpress-event-date': true,
+				'gatherpress-rsvp': true,
+			},
+		};
 	}
 	return { supports: {} };
 }
+
+/**
+ * Coverage for isPostTypeSupporting.
+ */
+describe( 'isPostTypeSupporting', () => {
+	it( 'returns true when post type supports the given feature', () => {
+		require( '@wordpress/data' ).select.mockImplementation( ( store ) => {
+			if ( 'core/editor' === store ) {
+				return {
+					getCurrentPostType: () => 'gatherpress_event',
+				};
+			}
+			if ( 'core' === store ) {
+				return { getPostType: mockGetPostType };
+			}
+			return {};
+		} );
+
+		expect( isPostTypeSupporting( 'gatherpress-event-date' ) ).toBe( true );
+		expect( isPostTypeSupporting( 'gatherpress-rsvp' ) ).toBe( true );
+	} );
+
+	it( 'returns false when post type does not support the given feature', () => {
+		require( '@wordpress/data' ).select.mockImplementation( ( store ) => {
+			if ( 'core/editor' === store ) {
+				return {
+					getCurrentPostType: () => 'post',
+				};
+			}
+			if ( 'core' === store ) {
+				return { getPostType: mockGetPostType };
+			}
+			return {};
+		} );
+
+		expect( isPostTypeSupporting( 'gatherpress-event-date' ) ).toBe( false );
+		expect( isPostTypeSupporting( 'gatherpress-rsvp' ) ).toBe( false );
+	} );
+
+	it( 'returns true when postType argument supports the feature', () => {
+		require( '@wordpress/data' ).select.mockImplementation( ( store ) => {
+			if ( 'core' === store ) {
+				return { getPostType: mockGetPostType };
+			}
+			return {};
+		} );
+
+		expect( isPostTypeSupporting( 'gatherpress-rsvp', 'gatherpress_event' ) ).toBe( true );
+		expect( isPostTypeSupporting( 'gatherpress-rsvp', 'post' ) ).toBe( false );
+	} );
+
+	it( 'returns false when select returns undefined', () => {
+		require( '@wordpress/data' ).select.mockReturnValue( undefined );
+
+		expect( isPostTypeSupporting( 'gatherpress-rsvp' ) ).toBe( false );
+	} );
+} );
 
 /**
  * Coverage for isEventPostType.

@@ -17,7 +17,7 @@ import { createBlock, parse, serialize } from '@wordpress/blocks';
  * Internal dependencies.
  */
 import TEMPLATES from './templates';
-import { hasValidEventId, DISABLED_FIELD_OPACITY, getEventMeta, isEventPostType } from '../../helpers/event';
+import { hasValidEventId, DISABLED_FIELD_OPACITY, getEventMeta, isPostTypeSupporting } from '../../helpers/event';
 import { isInFSETemplate, getEditorDocument } from '../../helpers/editor';
 
 /**
@@ -53,9 +53,9 @@ const Edit = ( { attributes, setAttributes, clientId, context } ) => {
 	const { serializedInnerBlocks = '{}', selectedStatus } = attributes;
 	const { replaceInnerBlocks } = useDispatch( blockEditorStore );
 
-	// Check if we're inside a query loop and if context is an event.
+	// Check if we're inside a query loop and if context is an RSVP-enabled post type.
 	const isDescendentOfQueryLoop = Number.isFinite( context?.queryId );
-	const isEventContext = isEventPostType( context?.postType );
+	const isEventContext = isPostTypeSupporting( 'gatherpress-rsvp', context?.postType );
 
 	// Only use postId if context is an event or have an explicit override.
 	const postId =

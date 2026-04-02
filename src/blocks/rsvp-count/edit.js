@@ -11,7 +11,7 @@ import { useSelect } from '@wordpress/data';
  * Internal dependencies.
  */
 import { getFromGlobal } from '../../helpers/globals';
-import { hasValidEventId, DISABLED_FIELD_OPACITY, getEventMeta, isEventPostType } from '../../helpers/event';
+import { hasValidEventId, DISABLED_FIELD_OPACITY, getEventMeta, isPostTypeSupporting } from '../../helpers/event';
 import { isInFSETemplate } from '../../helpers/editor';
 
 /**
@@ -49,8 +49,8 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 	// Check if we're inside a query loop.
 	const isDescendentOfQueryLoop = Number.isFinite( context?.queryId );
 
-	// Check if context post type is an event.
-	const isEventContext = isEventPostType( context?.postType );
+	// Check if context post type supports RSVP.
+	const isEventContext = isPostTypeSupporting( 'gatherpress-rsvp', context?.postType );
 
 	// Only use postId if context is an event or have an explicit override.
 	const postId =

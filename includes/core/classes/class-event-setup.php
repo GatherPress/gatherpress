@@ -86,7 +86,7 @@ class Event_Setup {
 		add_action( 'template_redirect', array( $this, 'handle_event_archive_redirect' ) );
 		add_action( 'delete_post', array( $this, 'delete_event' ) );
 		add_action( 'wp_after_insert_post', array( $this, 'set_datetimes' ) );
-		add_action( sprintf( 'save_post_%s', Event::POST_TYPE ), array( $this, 'check_waiting_list' ) );
+		add_action( 'save_post', array( $this, 'check_waiting_list' ) );
 		add_action(
 			sprintf( 'manage_%s_posts_custom_column', Event::POST_TYPE ),
 			array( $this, 'custom_columns' ),
@@ -222,6 +222,7 @@ class Event_Setup {
 					'revisions',
 					'custom-fields',
 					'gatherpress-event-date',
+					'gatherpress-rsvp',
 				),
 				'menu_icon'     => 'dashicons-nametag',
 				// Note: has_archive must be true for event feed URLs (/event/feed/) to work.
@@ -639,6 +640,10 @@ class Event_Setup {
 	 * @return void
 	 */
 	public function check_waiting_list( int $post_id ): void {
+		if ( ! post_type_supports( (string) get_post_type( $post_id ), 'gatherpress-rsvp' ) ) {
+			return;
+		}
+
 		$rsvp = new Rsvp( $post_id );
 
 		$rsvp->check_waiting_list();
