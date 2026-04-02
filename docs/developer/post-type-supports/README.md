@@ -16,7 +16,7 @@ Enables event datetime storage and display for a post type. This includes:
 - RSS feed enrichment with event date information
 - Post date override with event date (when enabled in settings)
 
-#### Usage
+#### Usage for gatherpress-event-date
 
 ```php
 add_action( 'init', function() {
@@ -47,13 +47,39 @@ $event->save_datetimes( array(
 ) );
 ```
 
+### `gatherpress-rsvp`
+
+Enables the comment-based RSVP system for a post type. This includes:
+
+- RSVP response tracking (attending, not attending, waiting list)
+- Attendee management and waiting list processing
+- RSVP blocks rendering (rsvp, rsvp-form, rsvp-response, rsvp-template)
+- RSVP token-based email verification for anonymous attendees
+- Comment count adjustment to reflect RSVP activity
+
+#### Usage for gatherpress-rsvp
+
+```php
+add_action( 'init', function() {
+    add_post_type_support( 'my_custom_event', 'gatherpress-rsvp' );
+}, 11 );
+```
+
+Or include it in your `register_post_type()` call:
+
+```php
+register_post_type( 'my_custom_event', array(
+    'supports' => array( 'title', 'editor', 'gatherpress-event-date', 'gatherpress-rsvp' ),
+    // ... other args
+) );
+```
+
 ### Planned Supports
 
 The following supports are planned but not yet implemented:
 
 - **`gatherpress-venue`** - Physical venue association via the `_gatherpress_venue` taxonomy
 - **`gatherpress-online-event`** - Online event link meta field and online-event term
-- **`gatherpress-rsvp`** - Comment-based RSVP system, attendee management, and REST endpoints
 
 ## How It Works
 

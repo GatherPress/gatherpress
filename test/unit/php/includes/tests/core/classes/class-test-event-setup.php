@@ -81,7 +81,7 @@ class Test_Event_Setup extends Base {
 			),
 			array(
 				'type'     => 'action',
-				'name'     => sprintf( 'save_post_%s', Event::POST_TYPE ),
+				'name'     => 'save_post',
 				'priority' => 10,
 				'callback' => array( $instance, 'check_waiting_list' ),
 			),

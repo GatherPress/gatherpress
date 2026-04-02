@@ -29,7 +29,7 @@ import { CPT_EVENT } from './namespace';
 export const DISABLED_FIELD_OPACITY = 0.3;
 
 /**
- * Checks if a post type supports event_date in the GatherPress application.
+ * Checks if a post type has a given GatherPress post type support.
  *
  * If a postType argument is provided, checks against that value.
  * Otherwise, queries the current post type using the `select` function from the `core/editor` package.
@@ -37,10 +37,11 @@ export const DISABLED_FIELD_OPACITY = 0.3;
  *
  * @since 1.0.0
  *
+ * @param {string}      support  The post type support to check (e.g. 'gatherpress-event-date').
  * @param {string|null} postType Optional post type to check. If not provided, checks current editor post type.
- * @return {boolean} True if the post type supports event_date, false otherwise.
+ * @return {boolean} True if the post type has the given support, false otherwise.
  */
-export function isEventPostType( postType = null ) {
+export function isPostTypeSupporting( support, postType = null ) {
 	const typeToCheck =
 		postType ?? select( 'core/editor' )?.getCurrentPostType();
 
@@ -50,7 +51,19 @@ export function isEventPostType( postType = null ) {
 
 	const postTypeObject = select( 'core' ).getPostType( typeToCheck );
 
-	return !! postTypeObject?.supports?.[ 'gatherpress-event-date' ];
+	return !! postTypeObject?.supports?.[ support ];
+}
+
+/**
+ * Checks if a post type supports event_date in the GatherPress application.
+ *
+ * @since 1.0.0
+ *
+ * @param {string|null} postType Optional post type to check. If not provided, checks current editor post type.
+ * @return {boolean} True if the post type supports event_date, false otherwise.
+ */
+export function isEventPostType( postType = null ) {
+	return isPostTypeSupporting( 'gatherpress-event-date', postType );
 }
 
 /**
