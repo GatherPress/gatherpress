@@ -1071,34 +1071,53 @@ class Event_Setup {
 	 * @return void
 	 */
 	public function handle_rsvp_sorting( $query ): void {
+		$this->handle_column_sorting(
+			$query,
+			'rsvps',
+			array(
+				'posts_join_paged' => array( $this, 'rsvp_sorting_join_paged' ),
+				'posts_groupby'    => array( $this, 'sorting_groupby' ),
+				'posts_orderby'    => array( $this, 'rsvp_sorting_orderby' ),
+			),
+			'rsvp_sort_order'
+		);
+	}
+
+	/**
+	 * Handle column sorting for the admin events list table.
+	 *
+	 * Shared logic for sorting by custom columns (RSVP count, venue name, etc.).
+	 * Validates the query context, normalizes the sort order, registers the
+	 * provided SQL filter callbacks, and stores the order on the query object.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param WP_Query               $query     The WP_Query instance.
+	 * @param string                 $column    The column name to match against the orderby query var.
+	 * @param array<string,callable> $filters  Map of WordPress filter hook => callback to register.
+	 * @param string                 $order_key The query var key used to store the validated sort order.
+	 * @return void
+	 */
+	private function handle_column_sorting( WP_Query $query, string $column, array $filters, string $order_key ): void {
 		// Only proceed if we're in admin, on the main query, and dealing with events.
 		if ( ! is_admin() || ! $query->is_main_query() || Event::POST_TYPE !== $query->get( 'post_type' ) ) {
 			return;
 		}
 
-		$orderby = $query->get( 'orderby' );
-
-		// Only proceed if sorting by RSVPs.
-		if ( 'rsvps' !== $orderby ) {
+		if ( $column !== $query->get( 'orderby' ) ) {
 			return;
 		}
 
-		// Use WordPress's standard comment count sorting approach.
-		$order = $query->get( 'order', 'ASC' );
-		$order = strtoupper( $order );
-
-		// Ensure order is either ASC or DESC.
+		$order = strtoupper( $query->get( 'order', 'ASC' ) );
 		if ( ! in_array( $order, array( 'ASC', 'DESC' ), true ) ) {
 			$order = 'ASC';
 		}
 
-		// Modify the query to sort by approved RSVP count.
-		add_filter( 'posts_join_paged', array( $this, 'rsvp_sorting_join_paged' ) );
-		add_filter( 'posts_groupby', array( $this, 'rsvp_sorting_groupby' ) );
-		add_filter( 'posts_orderby', array( $this, 'rsvp_sorting_orderby' ) );
+		foreach ( $filters as $hook => $callback ) {
+			add_filter( $hook, $callback );
+		}
 
-		// Store the order for use in orderby method.
-		$query->set( 'rsvp_sort_order', $order );
+		$query->set( $order_key, $order );
 	}
 
 	/**
@@ -1113,8 +1132,8 @@ class Event_Setup {
 		global $wpdb;
 
 		$join .= $wpdb->prepare(
-			" LEFT JOIN %i AS rsvp_sort_comments"
-			. " ON %i.%i = rsvp_sort_comments.comment_post_ID"
+			' LEFT JOIN %i AS rsvp_sort_comments'
+			. ' ON %i.%i = rsvp_sort_comments.comment_post_ID'
 			. " AND rsvp_sort_comments.comment_type = 'gatherpress_rsvp'"
 			. " AND rsvp_sort_comments.comment_approved = '1'",
 			$wpdb->comments,
@@ -1126,18 +1145,20 @@ class Event_Setup {
 	}
 
 	/**
-	 * Group by post ID for RSVP sorting (WordPress style).
+	 * Group by post ID for column sorting to prevent duplicate results.
+	 *
+	 * Shared callback used by both RSVP and venue sorting.
 	 *
 	 * @since 1.0.0
 	 *
 	 * @param string $groupby The GROUP BY clause of the query.
 	 * @return string Modified GROUP BY clause.
 	 */
-	public function rsvp_sorting_groupby( string $groupby ): string {
+	public function sorting_groupby( string $groupby ): string {
 		global $wpdb;
 
 		if ( empty( $groupby ) ) {
-			$groupby = $wpdb->prepare( '%i.ID', $wpdb->posts );
+			$groupby = "{$wpdb->posts}.ID";
 		}
 
 		return $groupby;
@@ -1157,7 +1178,7 @@ class Event_Setup {
 
 		// Remove the filters to prevent them from affecting other queries.
 		remove_filter( 'posts_join_paged', array( $this, 'rsvp_sorting_join_paged' ) );
-		remove_filter( 'posts_groupby', array( $this, 'rsvp_sorting_groupby' ) );
+		remove_filter( 'posts_groupby', array( $this, 'sorting_groupby' ) );
 		remove_filter( 'posts_orderby', array( $this, 'rsvp_sorting_orderby' ) );
 
 		return "COUNT(rsvp_sort_comments.comment_ID) {$order}";
@@ -1175,31 +1196,16 @@ class Event_Setup {
 	 * @return void
 	 */
 	public function handle_venue_sorting( $query ): void {
-		// Only proceed if we're in admin, on the main query, and dealing with events.
-		if ( ! is_admin() || ! $query->is_main_query() || Event::POST_TYPE !== $query->get( 'post_type' ) ) {
-			return;
-		}
-
-		$orderby = $query->get( 'orderby' );
-
-		// Only proceed if sorting by venue.
-		if ( 'venue' !== $orderby ) {
-			return;
-		}
-
-		// Get the sort order (ASC or DESC).
-		$order = strtoupper( $query->get( 'order', 'ASC' ) );
-		if ( ! in_array( $order, array( 'ASC', 'DESC' ), true ) ) {
-			$order = 'ASC';
-		}
-
-		// Modify the query to sort by venue name alphabetically.
-		add_filter( 'posts_join_paged', array( $this, 'venue_sorting_join_paged' ) );
-		add_filter( 'posts_groupby', array( $this, 'venue_sorting_groupby' ) );
-		add_filter( 'posts_orderby', array( $this, 'venue_sorting_orderby' ) );
-
-		// Store the order for use in orderby method.
-		$query->set( 'venue_sort_order', $order );
+		$this->handle_column_sorting(
+			$query,
+			'venue',
+			array(
+				'posts_join_paged' => array( $this, 'venue_sorting_join_paged' ),
+				'posts_groupby'    => array( $this, 'sorting_groupby' ),
+				'posts_orderby'    => array( $this, 'venue_sorting_orderby' ),
+			),
+			'venue_sort_order'
+		);
 	}
 
 	/**
@@ -1214,41 +1220,23 @@ class Event_Setup {
 		global $wpdb;
 
 		$join .= $wpdb->prepare(
-			" LEFT JOIN %i AS venue_tr ON %i.ID = venue_tr.object_id",
+			' LEFT JOIN %i AS venue_tr ON %i.ID = venue_tr.object_id',
 			$wpdb->term_relationships,
 			$wpdb->posts
 		);
 		$join .= $wpdb->prepare(
-			" LEFT JOIN %i AS venue_tt"
-			. " ON venue_tr.term_taxonomy_id = venue_tt.term_taxonomy_id"
-			. " AND venue_tt.taxonomy = %s",
+			' LEFT JOIN %i AS venue_tt'
+			. ' ON venue_tr.term_taxonomy_id = venue_tt.term_taxonomy_id'
+			. ' AND venue_tt.taxonomy = %s',
 			$wpdb->term_taxonomy,
 			Venue::TAXONOMY
 		);
 		$join .= $wpdb->prepare(
-			" LEFT JOIN %i AS venue_terms ON venue_tt.term_id = venue_terms.term_id",
+			' LEFT JOIN %i AS venue_terms ON venue_tt.term_id = venue_terms.term_id',
 			$wpdb->terms
 		);
 
 		return $join;
-	}
-
-	/**
-	 * Group by post ID for venue sorting to prevent duplicate results.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param string $groupby The GROUP BY clause of the query.
-	 * @return string Modified GROUP BY clause.
-	 */
-	public function venue_sorting_groupby( string $groupby ): string {
-		global $wpdb;
-
-		if ( empty( $groupby ) ) {
-			$groupby = $wpdb->prepare( '%i.ID', $wpdb->posts );
-		}
-
-		return $groupby;
 	}
 
 	/**
@@ -1265,7 +1253,7 @@ class Event_Setup {
 
 		// Remove the filters to prevent them from affecting other queries.
 		remove_filter( 'posts_join_paged', array( $this, 'venue_sorting_join_paged' ) );
-		remove_filter( 'posts_groupby', array( $this, 'venue_sorting_groupby' ) );
+		remove_filter( 'posts_groupby', array( $this, 'sorting_groupby' ) );
 		remove_filter( 'posts_orderby', array( $this, 'venue_sorting_orderby' ) );
 
 		// Sort by venue name, with NULL/empty values last.

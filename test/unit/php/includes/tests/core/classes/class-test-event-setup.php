@@ -669,22 +669,22 @@ class Test_Event_Setup extends Base {
 	}
 
 	/**
-	 * Coverage for rsvp_sorting_groupby method.
+	 * Coverage for sorting_groupby method.
 	 *
-	 * @covers ::rsvp_sorting_groupby
+	 * @covers ::sorting_groupby
 	 *
 	 * @return void
 	 */
-	public function test_rsvp_sorting_groupby(): void {
+	public function test_sorting_groupby(): void {
 		global $wpdb;
 		$instance = Event_Setup::get_instance();
 
-		$result = $instance->rsvp_sorting_groupby( '' );
+		$result = $instance->sorting_groupby( '' );
 		$this->assertEquals( "{$wpdb->posts}.ID", $result );
 
 		// Test with existing groupby - should keep the existing value.
 		$existing_groupby = 'existing_group';
-		$result           = $instance->rsvp_sorting_groupby( $existing_groupby );
+		$result           = $instance->sorting_groupby( $existing_groupby );
 		$this->assertEquals( 'existing_group', $result );
 	}
 
@@ -808,26 +808,6 @@ class Test_Event_Setup extends Base {
 		$this->assertStringContainsString( $wpdb->terms, $result );
 		$this->assertStringContainsString( 'venue_terms', $result );
 		$this->assertStringContainsString( "'" . \GatherPress\Core\Venue::TAXONOMY . "'", $result );
-	}
-
-	/**
-	 * Coverage for venue_sorting_groupby method.
-	 *
-	 * @covers ::venue_sorting_groupby
-	 *
-	 * @return void
-	 */
-	public function test_venue_sorting_groupby(): void {
-		global $wpdb;
-		$instance = Event_Setup::get_instance();
-
-		$result = $instance->venue_sorting_groupby( '' );
-		$this->assertEquals( "{$wpdb->posts}.ID", $result );
-
-		// Test with existing groupby - should keep the existing value.
-		$existing_groupby = 'existing_group';
-		$result           = $instance->venue_sorting_groupby( $existing_groupby );
-		$this->assertEquals( 'existing_group', $result );
 	}
 
 	/**
@@ -1859,7 +1839,7 @@ class Test_Event_Setup extends Base {
 			'Should add posts_join_paged filter'
 		);
 		$this->assertNotFalse(
-			has_filter( 'posts_groupby', array( $instance, 'rsvp_sorting_groupby' ) ),
+			has_filter( 'posts_groupby', array( $instance, 'sorting_groupby' ) ),
 			'Should add posts_groupby filter'
 		);
 		$this->assertNotFalse(
@@ -1869,7 +1849,7 @@ class Test_Event_Setup extends Base {
 
 		// Clean up.
 		remove_filter( 'posts_join_paged', array( $instance, 'rsvp_sorting_join_paged' ) );
-		remove_filter( 'posts_groupby', array( $instance, 'rsvp_sorting_groupby' ) );
+		remove_filter( 'posts_groupby', array( $instance, 'sorting_groupby' ) );
 		remove_filter( 'posts_orderby', array( $instance, 'rsvp_sorting_orderby' ) );
 		set_current_screen( 'front' );
 	}
@@ -1909,7 +1889,7 @@ class Test_Event_Setup extends Base {
 
 		// Clean up.
 		remove_filter( 'posts_join_paged', array( $instance, 'rsvp_sorting_join_paged' ) );
-		remove_filter( 'posts_groupby', array( $instance, 'rsvp_sorting_groupby' ) );
+		remove_filter( 'posts_groupby', array( $instance, 'sorting_groupby' ) );
 		remove_filter( 'posts_orderby', array( $instance, 'rsvp_sorting_orderby' ) );
 		set_current_screen( 'front' );
 	}
@@ -1984,7 +1964,7 @@ class Test_Event_Setup extends Base {
 			'Should add posts_join_paged filter for venue sorting'
 		);
 		$this->assertNotFalse(
-			has_filter( 'posts_groupby', array( $instance, 'venue_sorting_groupby' ) ),
+			has_filter( 'posts_groupby', array( $instance, 'sorting_groupby' ) ),
 			'Should add posts_groupby filter for venue sorting'
 		);
 		$this->assertNotFalse(
@@ -1994,7 +1974,7 @@ class Test_Event_Setup extends Base {
 
 		// Clean up.
 		remove_filter( 'posts_join_paged', array( $instance, 'venue_sorting_join_paged' ) );
-		remove_filter( 'posts_groupby', array( $instance, 'venue_sorting_groupby' ) );
+		remove_filter( 'posts_groupby', array( $instance, 'sorting_groupby' ) );
 		remove_filter( 'posts_orderby', array( $instance, 'venue_sorting_orderby' ) );
 		set_current_screen( 'front' );
 	}
@@ -2034,7 +2014,7 @@ class Test_Event_Setup extends Base {
 
 		// Clean up.
 		remove_filter( 'posts_join_paged', array( $instance, 'venue_sorting_join_paged' ) );
-		remove_filter( 'posts_groupby', array( $instance, 'venue_sorting_groupby' ) );
+		remove_filter( 'posts_groupby', array( $instance, 'sorting_groupby' ) );
 		remove_filter( 'posts_orderby', array( $instance, 'venue_sorting_orderby' ) );
 		set_current_screen( 'front' );
 	}
