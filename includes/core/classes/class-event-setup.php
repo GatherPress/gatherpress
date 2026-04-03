@@ -1076,7 +1076,7 @@ class Event_Setup {
 			'rsvps',
 			array(
 				'posts_join_paged' => array( $this, 'rsvp_sorting_join_paged' ),
-				'posts_groupby'    => array( $this, 'sorting_groupby' ),
+				'posts_groupby'    => array( $this, 'sorting_groupby_post_id' ),
 				'posts_orderby'    => array( $this, 'rsvp_sorting_orderby' ),
 			),
 			'rsvp_sort_order'
@@ -1155,7 +1155,7 @@ class Event_Setup {
 	 * @param string $groupby The GROUP BY clause of the query.
 	 * @return string Modified GROUP BY clause.
 	 */
-	public function sorting_groupby( string $groupby ): string {
+	public function sorting_groupby_post_id( string $groupby ): string {
 		global $wpdb;
 
 		if ( empty( $groupby ) ) {
@@ -1179,7 +1179,7 @@ class Event_Setup {
 
 		// Remove the filters to prevent them from affecting other queries.
 		remove_filter( 'posts_join_paged', array( $this, 'rsvp_sorting_join_paged' ) );
-		remove_filter( 'posts_groupby', array( $this, 'sorting_groupby' ) );
+		remove_filter( 'posts_groupby', array( $this, 'sorting_groupby_post_id' ) );
 		remove_filter( 'posts_orderby', array( $this, 'rsvp_sorting_orderby' ) );
 
 		return "COUNT(rsvp_sort_comments.comment_ID) {$order}";
@@ -1202,7 +1202,7 @@ class Event_Setup {
 			'venue',
 			array(
 				'posts_join_paged' => array( $this, 'venue_sorting_join_paged' ),
-				'posts_groupby'    => array( $this, 'sorting_groupby' ),
+				'posts_groupby'    => array( $this, 'sorting_groupby_post_id' ),
 				'posts_orderby'    => array( $this, 'venue_sorting_orderby' ),
 			),
 			'venue_sort_order'
@@ -1255,7 +1255,7 @@ class Event_Setup {
 
 		// Remove the filters to prevent them from affecting other queries.
 		remove_filter( 'posts_join_paged', array( $this, 'venue_sorting_join_paged' ) );
-		remove_filter( 'posts_groupby', array( $this, 'sorting_groupby' ) );
+		remove_filter( 'posts_groupby', array( $this, 'sorting_groupby_post_id' ) );
 		remove_filter( 'posts_orderby', array( $this, 'venue_sorting_orderby' ) );
 
 		// Sort by venue name, with NULL/empty values last.
