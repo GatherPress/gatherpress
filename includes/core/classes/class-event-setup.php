@@ -1134,9 +1134,10 @@ class Event_Setup {
 		$join .= $wpdb->prepare(
 			' LEFT JOIN %i AS rsvp_sort_comments'
 			. " ON {$wpdb->posts}.ID = rsvp_sort_comments.comment_post_ID"
-			. " AND rsvp_sort_comments.comment_type = 'gatherpress_rsvp'"
+			. ' AND rsvp_sort_comments.comment_type = %s'
 			. " AND rsvp_sort_comments.comment_approved = '1'",
-			$wpdb->comments
+			$wpdb->comments,
+			Rsvp::COMMENT_TYPE
 		);
 
 		return $join;
