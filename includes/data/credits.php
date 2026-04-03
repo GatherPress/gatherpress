@@ -156,5 +156,14 @@ return array (
         96 => '//www.gravatar.com/avatar/35d97e8ebb19530c8cb46cb42f5e5c86?s=96&#038;r=g&#038;d=mm',
       ),
     ),
+    1 => 
+    array (
+      'code' => 'rest_user_invalid_slug',
+      'message' => 'Invalid user slug.',
+      'data' => 
+      array (
+        'status' => 404,
+      ),
+    ),
   ),
 );
