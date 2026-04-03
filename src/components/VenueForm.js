@@ -11,7 +11,7 @@ import {
 	useNavigator,
 } from '@wordpress/components';
 import { useDebounce } from '@wordpress/compose';
-import { useCallback, useState } from '@wordpress/element';
+import { useCallback, useEffect, useRef, useState } from '@wordpress/element';
 import { useSelect } from '@wordpress/data';
 import apiFetch from '@wordpress/api-fetch';
 import { useEntityProp, store as coreDataStore } from '@wordpress/core-data';
@@ -40,6 +40,49 @@ import {
 function AddressFieldWithSuggestions( { value, onChange, help } ) {
 	const [ suggestions, setSuggestions ] = useState( [] );
 	const [ isLoadingSuggestions, setIsLoadingSuggestions ] = useState( false );
+	const addressInputRef = useRef( null );
+	/**
+	 * Random id/name per mount so the browser cannot match this field to saved addresses.
+	 */
+	const [ fieldUid ] = useState(
+		() => `gp-vaddr-${ Math.random().toString( 36 ).slice( 2, 12 ) }`
+	);
+	/**
+	 * Blocks native browser autofill until first interaction. Chrome often ignores
+	 * autocomplete="off" for address-like fields; readonly-until-focus avoids that.
+	 */
+	const [ suppressNativeAutofill, setSuppressNativeAutofill ] = useState(
+		() => ! ( value && String( value ).trim() )
+	);
+
+	useEffect( () => {
+		if ( value && String( value ).trim() ) {
+			setSuppressNativeAutofill( false );
+		}
+	}, [ value ] );
+
+	/**
+	 * Reinforce anti-autofill on the real DOM node (some UAs ignore React props).
+	 */
+	useEffect( () => {
+		const el = addressInputRef.current;
+		if ( ! el ) {
+			return;
+		}
+		el.setAttribute( 'autocomplete', 'off' );
+		el.setAttribute( 'data-lpignore', 'true' );
+		el.setAttribute( 'data-1p-ignore', 'true' );
+		el.setAttribute( 'data-bwignore', 'true' );
+		el.setAttribute( 'data-form-type', 'other' );
+	}, [] );
+
+	const unlockAddressInput = useCallback( () => {
+		requestAnimationFrame( () => {
+			requestAnimationFrame( () => {
+				setSuppressNativeAutofill( false );
+			} );
+		} );
+	}, [] );
 
 	const loadSuggestions = useDebounce(
 		useCallback( ( query ) => {
@@ -86,65 +129,84 @@ function AddressFieldWithSuggestions( { value, onChange, help } ) {
 		}
 	}, [] );
 
-	const helpText = isLoadingSuggestions
-		? __( 'Searching for addresses…', 'gatherpress' )
-		: help;
+	const showSuggestionPanel = suggestions.length > 0;
+	const helpSlotText =
+		showSuggestionPanel || isLoadingSuggestions ? undefined : help;
 
 	return (
 		<div
 			className="gatherpress-address-autocomplete"
 			onKeyDown={ onKeyDown }
-			style={ { position: 'relative' } }
+			onMouseDown={ unlockAddressInput }
 		>
 			<TextControl
+				ref={ addressInputRef }
 				__next40pxDefaultSize
+				type="search"
+				autoComplete="off"
+				autoCapitalize="off"
+				autoCorrect="off"
+				spellCheck={ false }
+				readOnly={ suppressNativeAutofill }
+				onFocus={ unlockAddressInput }
+				id={ fieldUid }
 				label={ __( 'Full Address', 'gatherpress' ) }
 				value={ value }
 				onChange={ handleChange }
-				help={ helpText }
+				help={ helpSlotText }
+				name={ fieldUid }
 			/>
-			{ suggestions.length > 0 && (
-				<ul
-					className="gatherpress-address-autocomplete__list"
-					role="listbox"
-					aria-label={ __( 'Address suggestions', 'gatherpress' ) }
-					style={ {
-						position: 'absolute',
-						left: 0,
-						right: 0,
-						zIndex: 100000,
-						maxHeight: '220px',
-						overflowY: 'auto',
-						margin: '4px 0 0',
-						padding: 0,
-						listStyle: 'none',
-						background: '#fff',
-						border: '1px solid #949494',
-						boxShadow: '0 2px 6px rgba(0, 0, 0, 0.15)',
-					} }
+			{ isLoadingSuggestions && ! showSuggestionPanel && (
+				<p
+					id="gatherpress-address-suggestions-status"
+					className="components-base-control__help"
 				>
-					{ suggestions.map( ( item, index ) => (
-						<li key={ `${ item.label }-${ index }` } role="none">
-							<button
-								type="button"
-								role="option"
-								className="gatherpress-address-autocomplete__option"
-								onClick={ () => selectSuggestion( item ) }
-								style={ {
-									display: 'block',
-									width: '100%',
-									textAlign: 'left',
-									padding: '8px 12px',
-									border: 'none',
-									background: 'transparent',
-									cursor: 'pointer',
-								} }
-							>
-								{ item.label }
-							</button>
-						</li>
-					) ) }
-				</ul>
+					{ __( 'Searching for addresses…', 'gatherpress' ) }
+				</p>
+			) }
+			{ showSuggestionPanel && (
+				<div
+					id="gatherpress-address-suggestions-panel"
+					className="components-base-control__help gatherpress-address-autocomplete__panel"
+				>
+					<ul
+						className="gatherpress-address-autocomplete__list"
+						role="listbox"
+						aria-label={ __( 'Address suggestions', 'gatherpress' ) }
+						style={ {
+							maxHeight: '220px',
+							overflowY: 'auto',
+							margin: 0,
+							padding: 0,
+							listStyle: 'none',
+							border: '1px solid #949494',
+							borderRadius: '2px',
+							background: '#fff',
+						} }
+					>
+						{ suggestions.map( ( item, index ) => (
+							<li key={ `${ item.label }-${ index }` } role="none">
+								<button
+									type="button"
+									role="option"
+									className="gatherpress-address-autocomplete__option"
+									onClick={ () => selectSuggestion( item ) }
+									style={ {
+										display: 'block',
+										width: '100%',
+										textAlign: 'left',
+										padding: '8px 12px',
+										border: 'none',
+										background: 'transparent',
+										cursor: 'pointer',
+									} }
+								>
+									{ item.label }
+								</button>
+							</li>
+						) ) }
+					</ul>
+				</div>
 			) }
 		</div>
 	);

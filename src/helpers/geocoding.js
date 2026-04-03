@@ -155,7 +155,24 @@ export async function fetchAddressSuggestions( query ) {
 			return [];
 		}
 
-		return response.suggestions;
+		const rows = [];
+
+		for ( const raw of response.suggestions ) {
+			const label =
+				'string' === typeof raw.label ? raw.label.trim() : '';
+
+			if ( ! label ) {
+				continue;
+			}
+
+			rows.push( {
+				label,
+				latitude: String( raw.latitude ?? '' ),
+				longitude: String( raw.longitude ?? '' ),
+			} );
+		}
+
+		return rows;
 	} catch {
 		return [];
 	}

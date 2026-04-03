@@ -585,9 +585,16 @@ class Test_Geocoding extends Base {
 
 		$mock_body = array(
 			array(
-				'display_name' => 'Test City, Country',
-				'lat'          => '40.7128',
-				'lon'          => '-74.0060',
+				'lat'     => '40.7128',
+				'lon'     => '-74.0060',
+				'address' => array(
+					'house_number' => '1453',
+					'road'         => '3rd Avenue',
+					'city'         => 'New York',
+					'state'        => 'New York',
+					'postcode'     => '10028',
+					'country'      => 'United States',
+				),
 			),
 		);
 
@@ -599,16 +606,62 @@ class Test_Geocoding extends Base {
 		);
 
 		$request = new WP_REST_Request( 'GET' );
-		$request->set_param( 'q', 'Test City' );
+		$request->set_param( 'q', '1453 3rd' );
 
 		$response = $instance->search_addresses( $request );
 
 		$this->assertInstanceOf( WP_REST_Response::class, $response, 'Failed to assert response is WP_REST_Response.' );
 		$data = $response->get_data();
 		$this->assertCount( 1, $data['suggestions'] );
-		$this->assertSame( 'Test City, Country', $data['suggestions'][0]['label'] );
-		$this->assertSame( '40.7128', $data['suggestions'][0]['latitude'] );
-		$this->assertSame( '-74.0060', $data['suggestions'][0]['longitude'] );
+		$suggestion = $data['suggestions'][0];
+		$this->assertArrayHasKey( 'label', $suggestion );
+		$this->assertArrayNotHasKey( 'address', $suggestion );
+		$this->assertSame(
+			'1453 3rd Avenue, New York, 10028',
+			$suggestion['label']
+		);
+		$this->assertSame( '40.7128', $suggestion['latitude'] );
+		$this->assertSame( '-74.0060', $suggestion['longitude'] );
+	}
+
+	/**
+	 * Search uses display_name when structured address parts are empty; strips POI prefix.
+	 *
+	 * @covers ::search_addresses
+	 *
+	 * @return void
+	 */
+	public function test_search_addresses_uses_display_name_and_strips_poi_prefix(): void {
+		$instance = Geocoding::get_instance();
+
+		$mock_body = array(
+			array(
+				'lat'          => '48.8566',
+				'lon'          => '2.3522',
+				'display_name' => 'Some Café, Paris, France',
+				'address'      => array(
+					'amenity' => 'Some Café',
+					'country' => 'France',
+				),
+			),
+		);
+
+		$this->http_mock->mock(
+			'*',
+			array(
+				'body' => wp_json_encode( $mock_body ),
+			)
+		);
+
+		$request = new WP_REST_Request( 'GET' );
+		$request->set_param( 'q', 'Paris' );
+
+		$response = $instance->search_addresses( $request );
+
+		$this->assertInstanceOf( WP_REST_Response::class, $response, 'Failed to assert response is WP_REST_Response.' );
+		$data       = $response->get_data();
+		$suggestion = $data['suggestions'][0];
+		$this->assertSame( 'Paris, France', $suggestion['label'] );
 	}
 
 	/**

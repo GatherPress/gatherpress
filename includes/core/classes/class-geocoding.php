@@ -200,7 +200,9 @@ class Geocoding {
 	}
 
 	/**
-	 * Returns address suggestions from Nominatim search (for editor autocomplete).
+	 * Returns Nominatim search hits for editor autocomplete (formatted label + coordinates).
+	 *
+	 * Each row has `label` (postal-style, no POI/venue prefix), `latitude`, and `longitude`.
 	 *
 	 * @since 1.0.0
 	 *
@@ -234,7 +236,7 @@ class Geocoding {
 				'q'               => $query,
 				'format'          => 'json',
 				'limit'           => 5,
-				'addressdetails'  => 0,
+				'addressdetails'  => 1,
 				'accept-language' => $this->get_language_code(),
 			),
 			self::NOMINATIM_API_URL
@@ -287,12 +289,22 @@ class Geocoding {
 		$suggestions = array();
 
 		foreach ( $data as $item ) {
-			if ( empty( $item['display_name'] ) || ! isset( $item['lat'], $item['lon'] ) ) {
+			if ( ! isset( $item['lat'], $item['lon'] ) ) {
+				continue;
+			}
+
+			if ( ! is_array( $item ) ) {
+				continue;
+			}
+
+			$label = $this->format_nominatim_search_label( $item );
+
+			if ( '' === $label ) {
 				continue;
 			}
 
 			$suggestions[] = array(
-				'label'     => $item['display_name'],
+				'label'     => $label,
 				'latitude'  => (string) $item['lat'],
 				'longitude' => (string) $item['lon'],
 			);
@@ -304,6 +316,198 @@ class Geocoding {
 			),
 			200
 		);
+	}
+
+	/**
+	 * Builds a one-line postal-style label from a Nominatim search hit.
+	 *
+	 * Prefers structured `address` (no country). Falls back to `display_name` with a leading
+	 * POI/venue segment removed when it matches known `address` keys (amenity, shop, etc.).
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param array $item Raw Nominatim JSON object.
+	 * @return string Non-empty label or empty string.
+	 */
+	private function format_nominatim_search_label( array $item ): string {
+		$address = isset( $item['address'] ) && is_array( $item['address'] ) ? $item['address'] : array();
+
+		$from_structured = $this->build_nominatim_label_from_address( $address );
+
+		if ( '' !== $from_structured ) {
+			return $from_structured;
+		}
+
+		$display_name = isset( $item['display_name'] ) ? trim( (string) $item['display_name'] ) : '';
+
+		if ( '' === $display_name ) {
+			return '';
+		}
+
+		return $this->strip_nominatim_poi_prefix_from_display_name( $display_name, $address );
+	}
+
+	/**
+	 * Composes label from Nominatim `address` keys (excludes country).
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param array $address Nominatim address object.
+	 * @return string Label or empty when no usable parts.
+	 */
+	private function build_nominatim_label_from_address( array $address ): string {
+		if ( empty( $address ) ) {
+			return '';
+		}
+
+		$street_line = $this->build_nominatim_street_line( $address );
+		$locality    = $this->first_nominatim_address_field(
+			$address,
+			array( 'city', 'town', 'village', 'hamlet', 'municipality', 'suburb' )
+		);
+		$region = $this->first_nominatim_address_field(
+			$address,
+			array( 'state', 'region', 'county' )
+		);
+
+		$parts = array();
+
+		if ( '' !== $street_line ) {
+			$parts[] = $street_line;
+		}
+		if ( '' !== $locality ) {
+			$parts[] = $locality;
+		}
+		if ( '' !== $region && 0 !== strcasecmp( $region, $locality ) ) {
+			$parts[] = $region;
+		}
+		if ( ! empty( $address['postcode'] ) ) {
+			$parts[] = trim( (string) $address['postcode'] );
+		}
+
+		$parts = array_filter(
+			array_map( 'trim', $parts ),
+			static function ( $p ) {
+				return '' !== $p;
+			}
+		);
+
+		return implode( ', ', $parts );
+	}
+
+	/**
+	 * Builds house number + road (or equivalent) from Nominatim `address`.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param array $address Nominatim address object.
+	 * @return string Street line or empty.
+	 */
+	private function build_nominatim_street_line( array $address ): string {
+		$house = isset( $address['house_number'] ) ? trim( (string) $address['house_number'] ) : '';
+		$road  = $this->first_nominatim_address_field(
+			$address,
+			array( 'road', 'pedestrian', 'path', 'footway', 'residential' )
+		);
+
+		$chunks = array();
+		if ( '' !== $house ) {
+			$chunks[] = $house;
+		}
+		if ( '' !== $road ) {
+			$chunks[] = $road;
+		}
+
+		return trim( implode( ' ', $chunks ) );
+	}
+
+	/**
+	 * First non-empty string among ordered Nominatim address keys.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param array    $address Nominatim address object.
+	 * @param string[] $keys    Preferred key order.
+	 * @return string Value or empty.
+	 */
+	private function first_nominatim_address_field( array $address, array $keys ): string {
+		foreach ( $keys as $key ) {
+			if ( ! empty( $address[ $key ] ) ) {
+				return trim( (string) $address[ $key ] );
+			}
+		}
+
+		return '';
+	}
+
+	/**
+	 * Removes a leading POI/venue segment from display_name when it matches structured fields.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $display_name Nominatim display_name.
+	 * @param array  $address      Nominatim address object.
+	 * @return string Cleaned string.
+	 */
+	private function strip_nominatim_poi_prefix_from_display_name( string $display_name, array $address ): string {
+		$poi_keys = array(
+			'amenity',
+			'shop',
+			'tourism',
+			'office',
+			'leisure',
+			'craft',
+			'club',
+			'aerialway',
+			'historic',
+			'building',
+			'man_made',
+		);
+
+		$poi_values = array();
+
+		foreach ( $poi_keys as $key ) {
+			if ( empty( $address[ $key ] ) ) {
+				continue;
+			}
+			$val = trim( (string) $address[ $key ] );
+			if ( '' !== $val ) {
+				$poi_values[] = $val;
+			}
+		}
+
+		$poi_values = array_values( array_unique( $poi_values ) );
+
+		if ( empty( $poi_values ) ) {
+			return $display_name;
+		}
+
+		$segments = array_map( 'trim', explode( ',', $display_name ) );
+
+		if ( empty( $segments ) || '' === $segments[0] ) {
+			return $display_name;
+		}
+
+		$first = $segments[0];
+
+		foreach ( $poi_values as $poi ) {
+			if ( 0 === strcasecmp( $first, $poi ) ) {
+				array_shift( $segments );
+				$rest = implode(
+					', ',
+					array_filter(
+						array_map( 'trim', $segments ),
+						static function ( $s ) {
+							return '' !== $s;
+						}
+					)
+				);
+
+				return trim( $rest );
+			}
+		}
+
+		return $display_name;
 	}
 
 	/**
