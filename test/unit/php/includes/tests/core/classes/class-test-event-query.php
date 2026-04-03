@@ -833,6 +833,11 @@ class Test_Event_Query extends Base {
 		$retval = $instance->adjust_event_sql( array(), 'upcoming', 'desc', 'rand', false );
 
 		$this->assertStringContainsString( 'RAND()', $retval['orderby'] );
+
+		// Test default case: unrecognized orderby should not override the orderby clause.
+		$retval = $instance->adjust_event_sql( array(), 'all', 'ASC', 'rsvps' );
+
+		$this->assertEmpty( $retval['orderby'], 'Unrecognized orderby should not set orderby clause.' );
 	}
 
 	/**
