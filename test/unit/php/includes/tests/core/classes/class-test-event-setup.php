@@ -680,7 +680,7 @@ class Test_Event_Setup extends Base {
 		$instance = Event_Setup::get_instance();
 
 		$result = $instance->sorting_groupby( '' );
-		$this->assertEquals( "{$wpdb->posts}.ID", $result );
+		$this->assertEquals( "`{$wpdb->posts}`.`ID`", $result );
 
 		// Test with existing groupby - should keep the existing value.
 		$existing_groupby = 'existing_group';

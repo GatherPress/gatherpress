@@ -1133,10 +1133,12 @@ class Event_Setup {
 
 		$join .= $wpdb->prepare(
 			' LEFT JOIN %i AS rsvp_sort_comments'
-			. " ON {$wpdb->posts}.ID = rsvp_sort_comments.comment_post_ID"
+			. ' ON %i.%i = rsvp_sort_comments.comment_post_ID'
 			. ' AND rsvp_sort_comments.comment_type = %s'
 			. " AND rsvp_sort_comments.comment_approved = '1'",
 			$wpdb->comments,
+			$wpdb->posts,
+			'ID',
 			Rsvp::COMMENT_TYPE
 		);
 
@@ -1157,7 +1159,7 @@ class Event_Setup {
 		global $wpdb;
 
 		if ( empty( $groupby ) ) {
-			$groupby = "{$wpdb->posts}.ID";
+			$groupby = $wpdb->prepare( '%i.%i', $wpdb->posts, 'ID' );
 		}
 
 		return $groupby;
@@ -1219,8 +1221,10 @@ class Event_Setup {
 		global $wpdb;
 
 		$join .= $wpdb->prepare(
-			" LEFT JOIN %i AS venue_tr ON {$wpdb->posts}.ID = venue_tr.object_id",
-			$wpdb->term_relationships
+			' LEFT JOIN %i AS venue_tr ON %i.%i = venue_tr.object_id',
+			$wpdb->term_relationships,
+			$wpdb->posts,
+			'ID'
 		);
 		$join .= $wpdb->prepare(
 			' LEFT JOIN %i AS venue_tt'
