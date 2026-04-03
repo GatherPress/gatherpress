@@ -1729,6 +1729,7 @@ class Test_Event_Query extends Base {
 	 * Covers: RSVP sorting logic.
 	 *
 	 * @covers ::handle_rsvp_sorting
+	 * @covers ::handle_column_sorting
 	 * @return void
 	 */
 	public function test_rsvp_sorting_with_rsvp_orderby(): void {
@@ -1783,6 +1784,7 @@ class Test_Event_Query extends Base {
 	 * Covers: Order validation.
 	 *
 	 * @covers ::handle_rsvp_sorting
+	 * @covers ::handle_column_sorting
 	 * @return void
 	 */
 	public function test_rsvp_sorting_with_invalid_order(): void {
@@ -1821,6 +1823,7 @@ class Test_Event_Query extends Base {
 	 * Tests handle_rsvp_sorting early return when orderby is not 'rsvps'.
 	 *
 	 * @covers ::handle_rsvp_sorting
+	 * @covers ::handle_column_sorting
 	 * @return void
 	 */
 	public function test_rsvp_sorting_early_return_wrong_orderby(): void {
@@ -1854,6 +1857,7 @@ class Test_Event_Query extends Base {
 	 * Covers: Venue sorting logic.
 	 *
 	 * @covers ::handle_venue_sorting
+	 * @covers ::handle_column_sorting
 	 * @return void
 	 */
 	public function test_venue_sorting_with_venue_orderby(): void {
@@ -1906,6 +1910,7 @@ class Test_Event_Query extends Base {
 	 * Covers: Order validation in venue sorting.
 	 *
 	 * @covers ::handle_venue_sorting
+	 * @covers ::handle_column_sorting
 	 * @return void
 	 */
 	public function test_venue_sorting_with_invalid_order(): void {
@@ -1944,6 +1949,7 @@ class Test_Event_Query extends Base {
 	 * Tests handle_venue_sorting early return when orderby is not 'venue'.
 	 *
 	 * @covers ::handle_venue_sorting
+	 * @covers ::handle_column_sorting
 	 * @return void
 	 */
 	public function test_venue_sorting_early_return_wrong_orderby(): void {
