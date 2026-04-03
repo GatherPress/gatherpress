@@ -445,14 +445,12 @@ class Event_Query {
 				case 'rand':
 					$pieces['orderby'] = esc_sql( 'RAND()' );
 					break;
-				case 'rsvps':
-				case 'venue':
-					// Custom column sorting is handled by posts_orderby filters
-					// in Event_Setup; do not override their orderby clause.
-					break;
 				case 'datetime':
-				default:
 					$pieces['orderby'] = sprintf( esc_sql( $table ) . '.datetime_start_gmt %s', esc_sql( $order ) );
+					break;
+				default:
+					// Custom column sorting (e.g., rsvps, venue) is handled
+					// by posts_orderby filters; do not override their clause.
 					break;
 			}
 		}
