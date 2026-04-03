@@ -9,9 +9,8 @@ import { useCallback } from '@wordpress/element';
 /**
  * Custom hook for handling block insertion on Enter key.
  *
- * Provides keyboard handling for RichText fields that inserts
- * new paragraph blocks when Enter is pressed at the beginning
- * or end of the field.
+ * Provides keyboard handling for RichText and plain text inputs that inserts
+ * new paragraph blocks when Enter is pressed at the beginning or end of the field.
  *
  * @since 1.0.0
  *
@@ -30,7 +29,7 @@ export function useBlockInsertion( clientId, insertBlocksAfter ) {
 	);
 
 	/**
-	 * Handles Enter key press in RichText fields.
+	 * Handles Enter key press in RichText or INPUT/TEXTAREA elements.
 	 *
 	 * - At beginning: Inserts paragraph above
 	 * - At end: Inserts paragraph below
@@ -45,20 +44,36 @@ export function useBlockInsertion( clientId, insertBlocksAfter ) {
 				event.preventDefault();
 
 				const contentElement = event.currentTarget;
-				const selection =
-					contentElement.ownerDocument.defaultView.getSelection();
-				if ( ! selection.rangeCount ) {
-					return;
+				const isTextInput =
+					contentElement &&
+					( 'INPUT' === contentElement.nodeName ||
+						'TEXTAREA' === contentElement.nodeName );
+
+				let textContent = '';
+				let cursorPosition = 0;
+
+				if ( isTextInput ) {
+					textContent = contentElement.value || '';
+					cursorPosition =
+						null !== contentElement.selectionStart
+							? contentElement.selectionStart
+							: 0;
+				} else {
+					const selection =
+						contentElement.ownerDocument.defaultView.getSelection();
+					if ( ! selection.rangeCount ) {
+						return;
+					}
+
+					const range = selection.getRangeAt( 0 );
+					textContent = contentElement.textContent || '';
+
+					// Calculate cursor position.
+					const preRange = document.createRange();
+					preRange.selectNodeContents( contentElement );
+					preRange.setEnd( range.startContainer, range.startOffset );
+					cursorPosition = preRange.toString().length;
 				}
-
-				const range = selection.getRangeAt( 0 );
-				const textContent = contentElement.textContent || '';
-
-				// Calculate cursor position.
-				const preRange = document.createRange();
-				preRange.selectNodeContents( contentElement );
-				preRange.setEnd( range.startContainer, range.startOffset );
-				const cursorPosition = preRange.toString().length;
 
 				// At the beginning.
 				if ( 0 === cursorPosition ) {

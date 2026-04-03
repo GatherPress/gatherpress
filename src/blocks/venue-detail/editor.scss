@@ -1,10 +1,106 @@
 .wp-block-gatherpress-venue-detail {
 	margin: 0;
+	overflow: visible;
 
 	&__placeholder {
 		color: #757575;
 		opacity: 0.62;
 	}
+}
+
+// Address row is flex + icon + this block (see venue/template.js).
+.gatherpress--has-venue-address > .wp-block-gatherpress-venue-detail {
+	flex: 1 1 0;
+	min-width: 0;
+	overflow: visible;
+}
+
+.gatherpress-venue-detail__address-wrap {
+	display: block;
+	width: 100%;
+	min-width: 0;
+	box-sizing: border-box;
+}
+
+.gatherpress-venue-detail__address {
+	display: block;
+	width: 100%;
+	min-width: 0;
+	margin: 0;
+	box-sizing: border-box;
+}
+
+.gatherpress-venue-detail__address-input {
+	display: block;
+	margin: 0;
+	padding: 0;
+	width: 100%;
+	min-width: 0;
+	max-width: 100%;
+	box-sizing: border-box;
+	font: inherit;
+	line-height: 1.5;
+	color: inherit;
+	background: transparent;
+	border: none;
+	box-shadow: none;
+	outline: none;
+	vertical-align: baseline;
+	resize: none;
+	overflow-x: hidden;
+	overflow-y: auto;
+	white-space: pre-wrap;
+	overflow-wrap: anywhere;
+	word-break: break-word;
+}
+
+.gatherpress-venue-detail__address-input:focus {
+	outline: none;
+	box-shadow: none;
+}
+
+.gatherpress-venue-detail__address-popover .components-popover__content {
+	width: min(100vw - 32px, 28rem);
+	padding: 0;
+	overflow: hidden;
+}
+
+.gatherpress-venue-detail__address-popover-inner {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 12px 16px;
+}
+
+.gatherpress-venue-detail__address-loading {
+	font-size: 13px;
+}
+
+.gatherpress-venue-detail__address-suggestions {
+	margin: 0;
+	padding: 4px 0;
+	list-style: none;
+	max-height: 220px;
+	overflow-y: auto;
+}
+
+.gatherpress-venue-detail__address-suggestion {
+	display: block;
+	width: 100%;
+	margin: 0;
+	padding: 8px 12px;
+	text-align: left;
+	border: none;
+	background: transparent;
+	font: inherit;
+	line-height: 1.4;
+	cursor: pointer;
+	color: #1e1e1e;
+}
+
+.gatherpress-venue-detail__address-suggestion:hover,
+.gatherpress-venue-detail__address-suggestion.is-active {
+	background: #f0f0f0;
 }
 
 // Disabled state for venue-detail fields (no venue context).
