@@ -55,11 +55,10 @@ jest.mock( '@wordpress/compose', () => {
 /**
  * Mirrors a parent-controlled field so fireEvent.change updates `value` and suggestion UI can appear.
  *
- * @param {Object}   root0            Props for the controlled wrapper.
- * @param {string}   [root0.initialValue=''] Initial value.
- * @param {Function} root0.onChange   Change handler.
+ * @param {Object} props Props: initialValue, onChange, and remaining AddressField props.
  */
-function ControlledAddressField( { initialValue = '', onChange, ...rest } ) {
+function ControlledAddressField( props ) {
+	const { initialValue = '', onChange, ...rest } = props;
 	const [ value, setValue ] = useState( initialValue );
 
 	useEffect( () => {
