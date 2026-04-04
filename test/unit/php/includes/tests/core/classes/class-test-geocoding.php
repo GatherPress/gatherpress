@@ -12,6 +12,7 @@ use GatherPress\Core\Geocoding;
 use GatherPress\Tests\Base;
 use PMC\Unit_Test\Mocks\Http;
 use PMC\Unit_Test\Utility;
+use ReflectionMethod;
 use WP_REST_Request;
 use WP_REST_Response;
 use WP_REST_Server;
@@ -51,6 +52,21 @@ class Test_Geocoding extends Base {
 	public function tearDown(): void {
 		$this->http_mock->reset();
 		parent::tearDown();
+	}
+
+	/**
+	 * Invokes a private Geocoding method (for line coverage of label helpers under Xdebug).
+	 *
+	 * @param Geocoding $instance Instance.
+	 * @param string    $method   Method name.
+	 * @param array     $args     Arguments.
+	 * @return mixed
+	 */
+	private function invoke_geocoding_private( Geocoding $instance, string $method, array $args = array() ) {
+		$ref = new ReflectionMethod( Geocoding::class, $method );
+		$ref->setAccessible( true );
+
+		return $ref->invokeArgs( $instance, $args );
 	}
 
 	/**
@@ -1844,6 +1860,288 @@ class Test_Geocoding extends Base {
 
 		$this->assertStringContainsString( 'Portland', $data['suggestions'][0]['label'] );
 		$this->assertStringContainsString( 'Pacific Northwest', $data['suggestions'][0]['label'] );
+	}
+
+	/**
+	 * Private helpers get_language_code and get_user_agent (direct invocation for coverage).
+	 *
+	 * @covers \GatherPress\Core\Geocoding::get_language_code
+	 * @covers \GatherPress\Core\Geocoding::get_user_agent
+	 *
+	 * @return void
+	 */
+	public function test_geocoding_private_language_and_user_agent(): void {
+		$instance = Geocoding::get_instance();
+
+		$lang = $this->invoke_geocoding_private( $instance, 'get_language_code' );
+		$this->assertIsString( $lang );
+		$this->assertNotSame( '', $lang );
+
+		$ua = $this->invoke_geocoding_private( $instance, 'get_user_agent' );
+		$this->assertStringContainsString( 'GatherPress/', $ua );
+		$this->assertStringContainsString( 'WordPress/', $ua );
+	}
+
+	/**
+	 * first_nominatim_address_field: ordered keys, empty address, and no match.
+	 *
+	 * @covers \GatherPress\Core\Geocoding::first_nominatim_address_field
+	 *
+	 * @return void
+	 */
+	public function test_geocoding_private_first_nominatim_address_field(): void {
+		$instance = Geocoding::get_instance();
+
+		$second = $this->invoke_geocoding_private(
+			$instance,
+			'first_nominatim_address_field',
+			array(
+				array(
+					'city' => '',
+					'town' => 'Second Town',
+				),
+				array( 'city', 'town' ),
+			)
+		);
+		$this->assertSame( 'Second Town', $second );
+
+		$empty = $this->invoke_geocoding_private(
+			$instance,
+			'first_nominatim_address_field',
+			array(
+				array(),
+				array( 'city', 'town' ),
+			)
+		);
+		$this->assertSame( '', $empty );
+	}
+
+	/**
+	 * build_nominatim_street_line: house, road, pedestrian path, empty.
+	 *
+	 * @covers \GatherPress\Core\Geocoding::build_nominatim_street_line
+	 *
+	 * @return void
+	 */
+	public function test_geocoding_private_build_nominatim_street_line(): void {
+		$instance = Geocoding::get_instance();
+
+		$both = $this->invoke_geocoding_private(
+			$instance,
+			'build_nominatim_street_line',
+			array(
+				array(
+					'house_number' => '1',
+					'road'           => 'Main St',
+				),
+			)
+		);
+		$this->assertSame( '1 Main St', $both );
+
+		$ped = $this->invoke_geocoding_private(
+			$instance,
+			'build_nominatim_street_line',
+			array(
+				array(
+					'pedestrian' => 'Walkway',
+				),
+			)
+		);
+		$this->assertSame( 'Walkway', $ped );
+
+		$none = $this->invoke_geocoding_private(
+			$instance,
+			'build_nominatim_street_line',
+			array(
+				array(
+					'city' => 'Only City',
+				),
+			)
+		);
+		$this->assertSame( '', $none );
+	}
+
+	/**
+	 * build_nominatim_label_from_address: empty, full parts, region equals locality, postcode trim filter.
+	 *
+	 * @covers \GatherPress\Core\Geocoding::build_nominatim_label_from_address
+	 *
+	 * @return void
+	 */
+	public function test_geocoding_private_build_nominatim_label_from_address(): void {
+		$instance = Geocoding::get_instance();
+
+		$empty = $this->invoke_geocoding_private(
+			$instance,
+			'build_nominatim_label_from_address',
+			array( array() )
+		);
+		$this->assertSame( '', $empty );
+
+		$full = $this->invoke_geocoding_private(
+			$instance,
+			'build_nominatim_label_from_address',
+			array(
+				array(
+					'road'     => 'Oak',
+					'city'     => 'Oakton',
+					'state'    => 'Oak State',
+					'postcode' => '12345',
+				),
+			)
+		);
+		$this->assertStringContainsString( 'Oak', $full );
+		$this->assertStringContainsString( '12345', $full );
+
+		$same_locality = $this->invoke_geocoding_private(
+			$instance,
+			'build_nominatim_label_from_address',
+			array(
+				array(
+					'city'  => 'Dup',
+					'state' => 'Dup',
+				),
+			)
+		);
+		$this->assertStringNotContainsString( 'Dup, Dup', $same_locality );
+
+		$post_filter = $this->invoke_geocoding_private(
+			$instance,
+			'build_nominatim_label_from_address',
+			array(
+				array(
+					'city'     => 'Z',
+					'postcode' => '   ',
+				),
+			)
+		);
+		$this->assertStringContainsString( 'Z', $post_filter );
+	}
+
+	/**
+	 * strip_nominatim_poi_prefix_from_display_name: all branches.
+	 *
+	 * @covers \GatherPress\Core\Geocoding::strip_nominatim_poi_prefix_from_display_name
+	 *
+	 * @return void
+	 */
+	public function test_geocoding_private_strip_nominatim_poi_prefix_from_display_name(): void {
+		$instance = Geocoding::get_instance();
+
+		$no_poi = $this->invoke_geocoding_private(
+			$instance,
+			'strip_nominatim_poi_prefix_from_display_name',
+			array(
+				'A, B, C',
+				array(),
+			)
+		);
+		$this->assertSame( 'A, B, C', $no_poi );
+
+		$empty_first = $this->invoke_geocoding_private(
+			$instance,
+			'strip_nominatim_poi_prefix_from_display_name',
+			array(
+				', Paris, FR',
+				array( 'amenity' => 'Café' ),
+			)
+		);
+		$this->assertSame( ', Paris, FR', $empty_first );
+
+		$stripped = $this->invoke_geocoding_private(
+			$instance,
+			'strip_nominatim_poi_prefix_from_display_name',
+			array(
+				'Venue Name, Next, Last',
+				array(
+					'tourism' => 'Venue Name',
+					'leisure' => 'Venue Name',
+				),
+			)
+		);
+		$this->assertSame( 'Next, Last', $stripped );
+
+		$no_match = $this->invoke_geocoding_private(
+			$instance,
+			'strip_nominatim_poi_prefix_from_display_name',
+			array(
+				'Other, Place',
+				array( 'amenity' => 'Different' ),
+			)
+		);
+		$this->assertSame( 'Other, Place', $no_match );
+
+		$craft = $this->invoke_geocoding_private(
+			$instance,
+			'strip_nominatim_poi_prefix_from_display_name',
+			array(
+				'Craft Shop, Lane, Here',
+				array( 'craft' => 'Craft Shop' ),
+			)
+		);
+		$this->assertStringNotContainsString( 'Craft Shop, Lane', $craft );
+	}
+
+	/**
+	 * format_nominatim_search_label: structured, non-array address, display_name only, empty display.
+	 *
+	 * @covers \GatherPress\Core\Geocoding::format_nominatim_search_label
+	 *
+	 * @return void
+	 */
+	public function test_geocoding_private_format_nominatim_search_label(): void {
+		$instance = Geocoding::get_instance();
+
+		$structured = $this->invoke_geocoding_private(
+			$instance,
+			'format_nominatim_search_label',
+			array(
+				array(
+					'address' => array(
+						'city' => 'Solo City',
+					),
+				),
+			)
+		);
+		$this->assertSame( 'Solo City', $structured );
+
+		$not_array_addr = $this->invoke_geocoding_private(
+			$instance,
+			'format_nominatim_search_label',
+			array(
+				array(
+					'address'      => 'bad',
+					'display_name' => 'Fallback Label',
+				),
+			)
+		);
+		$this->assertSame( 'Fallback Label', $not_array_addr );
+
+		$empty_display = $this->invoke_geocoding_private(
+			$instance,
+			'format_nominatim_search_label',
+			array(
+				array(
+					'address'      => array(),
+					'display_name' => '',
+				),
+			)
+		);
+		$this->assertSame( '', $empty_display );
+
+		$strip = $this->invoke_geocoding_private(
+			$instance,
+			'format_nominatim_search_label',
+			array(
+				array(
+					'address'      => array(
+						'building' => 'Tower',
+					),
+					'display_name' => 'Tower, City, Land',
+				),
+			)
+		);
+		$this->assertStringContainsString( 'City', $strip );
 	}
 
 	/**
