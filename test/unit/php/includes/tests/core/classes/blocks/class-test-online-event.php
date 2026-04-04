@@ -17,6 +17,7 @@ use WP_Block;
 /**
  * Class Test_Online_Event.
  *
+ * @group multisite
  * @coversDefaultClass \GatherPress\Core\Blocks\Online_Event
  */
 class Test_Online_Event extends Base {

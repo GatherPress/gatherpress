@@ -15,6 +15,7 @@ use GatherPress\Tests\Base;
 /**
  * Class Test_General_Block.
  *
+ * @group multisite
  * @coversDefaultClass \GatherPress\Core\Blocks\General_Block
  */
 class Test_General_Block extends Base {

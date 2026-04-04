@@ -17,6 +17,7 @@ use WP_Block;
 /**
  * Class Test_Venue.
  *
+ * @group multisite
  * @coversDefaultClass \GatherPress\Core\Blocks\Venue
  */
 class Test_Venue extends Base {

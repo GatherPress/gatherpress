@@ -16,6 +16,7 @@ use WP_Block_Patterns_Registry;
 /**
  * Class Test_Venue.
  *
+ * @group multisite
  * @coversDefaultClass \GatherPress\Core\Venue
  */
 class Test_Venue extends Base {
@@ -57,7 +58,7 @@ class Test_Venue extends Base {
 			array(
 				'type'     => 'action',
 				'name'     => 'init',
-				'priority' => 10,
+				'priority' => 11,
 				'callback' => array( $instance, 'register_taxonomy' ),
 			),
 			array(
@@ -881,5 +882,40 @@ class Test_Venue extends Base {
 				'source'   => 'plugin',
 			)
 		);
+	}
+
+	/**
+	 * Coverage for get_venue_post_type method.
+	 *
+	 * @covers ::get_venue_post_type
+	 *
+	 * @return void
+	 */
+	public function test_get_venue_post_type(): void {
+		// Default returns the built-in venue post type.
+		$this->assertSame(
+			Venue::POST_TYPE,
+			Venue::get_venue_post_type(),
+			'Failed to assert that get_venue_post_type returns the default venue post type.'
+		);
+	}
+
+	/**
+	 * Coverage for get_venue_post_type method with filter override.
+	 *
+	 * @covers ::get_venue_post_type
+	 *
+	 * @return void
+	 */
+	public function test_get_venue_post_type_with_filter(): void {
+		add_filter( 'gatherpress_venue_post_type', fn() => 'custom_venue_type' );
+
+		$this->assertSame(
+			'custom_venue_type',
+			Venue::get_venue_post_type(),
+			'Failed to assert that get_venue_post_type returns the filtered post type.'
+		);
+
+		remove_all_filters( 'gatherpress_venue_post_type' );
 	}
 }
