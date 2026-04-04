@@ -140,7 +140,7 @@ export async function fetchAddressSuggestions( query ) {
 
 	const trimmed = query.trim();
 
-	if ( trimmed.length < 3 ) {
+	if ( 3 > trimmed.length ) {
 		return [];
 	}
 

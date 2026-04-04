@@ -309,8 +309,8 @@ class Test_Geocoding extends Base {
 		// Register endpoints to access route config.
 		$instance->register_endpoints();
 
-		$rest_server = rest_get_server();
-		$routes      = $rest_server->get_routes();
+		$rest_server      = rest_get_server();
+		$routes           = $rest_server->get_routes();
 		$route_key        = '/' . GATHERPRESS_REST_NAMESPACE . '/geocode';
 		$route_search_key = '/' . GATHERPRESS_REST_NAMESPACE . '/geocode/search';
 
@@ -690,5 +690,305 @@ class Test_Geocoding extends Base {
 		$data = $response->get_data();
 		$this->assertIsArray( $data['suggestions'] );
 		$this->assertCount( 0, $data['suggestions'] );
+	}
+
+	/**
+	 * Whitespace-only query is treated as missing (same as empty string).
+	 *
+	 * @covers ::search_addresses
+	 *
+	 * @return void
+	 */
+	public function test_search_addresses_whitespace_only_query(): void {
+		$instance = Geocoding::get_instance();
+		$request  = new WP_REST_Request( 'GET' );
+		$request->set_param( 'q', '   ' );
+
+		$response = $instance->search_addresses( $request );
+
+		$this->assertInstanceOf( 'WP_Error', $response, 'Failed to assert response is WP_Error for whitespace-only query.' );
+		$this->assertEquals( 'missing_query', $response->get_error_code(), 'Failed to assert correct error code.' );
+	}
+
+	/**
+	 * Network failure returns geocoding_search_failed.
+	 *
+	 * @covers ::search_addresses
+	 *
+	 * @return void
+	 */
+	public function test_search_addresses_network_error(): void {
+		$instance = Geocoding::get_instance();
+
+		add_filter(
+			'pre_http_request',
+			static function () {
+				return new \WP_Error( 'http_request_failed', 'Search network error' );
+			},
+			999
+		);
+
+		$request = new WP_REST_Request( 'GET' );
+		$request->set_param( 'q', 'Paris' );
+
+		$response = $instance->search_addresses( $request );
+
+		remove_all_filters( 'pre_http_request' );
+
+		$this->assertInstanceOf( 'WP_Error', $response, 'Failed to assert response is WP_Error for search network error.' );
+		$this->assertEquals( 'geocoding_search_failed', $response->get_error_code(), 'Failed to assert correct error code.' );
+		$this->assertStringContainsString(
+			'Search network error',
+			$response->get_error_message(),
+			'Failed to assert error message.'
+		);
+	}
+
+	/**
+	 * Non-200 HTTP status returns geocoding_search_failed.
+	 *
+	 * @covers ::search_addresses
+	 *
+	 * @return void
+	 */
+	public function test_search_addresses_non_200_status(): void {
+		$instance = Geocoding::get_instance();
+
+		add_filter(
+			'pre_http_request',
+			static function () {
+				return array(
+					'response' => array(
+						'code'    => 503,
+						'message' => 'Service Unavailable',
+					),
+					'body'     => '',
+					'headers'  => array(),
+				);
+			},
+			999
+		);
+
+		$request = new WP_REST_Request( 'GET' );
+		$request->set_param( 'q', 'Berlin' );
+
+		$response = $instance->search_addresses( $request );
+
+		remove_all_filters( 'pre_http_request' );
+
+		$this->assertInstanceOf( 'WP_Error', $response, 'Failed to assert response is WP_Error for 503 search.' );
+		$this->assertEquals( 'geocoding_search_failed', $response->get_error_code(), 'Failed to assert correct error code.' );
+		$this->assertStringContainsString(
+			'503',
+			$response->get_error_message(),
+			'Failed to assert error message contains status code.'
+		);
+	}
+
+	/**
+	 * Search URL uses json format, limit, and addressdetails (captured from request).
+	 *
+	 * @covers ::search_addresses
+	 *
+	 * @return void
+	 */
+	public function test_search_addresses_url_params(): void {
+		$instance      = Geocoding::get_instance();
+		$captured_url  = '';
+		$mock_response = array(
+			array(
+				'lat'     => '1',
+				'lon'     => '2',
+				'address' => array(
+					'city' => 'X',
+				),
+			),
+		);
+
+		$this->http_mock->mock(
+			'*',
+			array(
+				'body' => static function ( &$headers, $url ) use ( &$captured_url, $mock_response ) {
+					$captured_url = $url;
+					$headers      = 'HTTP/1.1 200 OK';
+					return wp_json_encode( $mock_response );
+				},
+			)
+		);
+
+		$request = new WP_REST_Request( 'GET' );
+		$request->set_param( 'q', 'Test Query' );
+
+		$instance->search_addresses( $request );
+
+		$this->assertStringContainsString(
+			'nominatim.openstreetmap.org',
+			$captured_url,
+			'Failed to assert URL contains Nominatim domain.'
+		);
+		$this->assertStringContainsString( 'format=json', $captured_url, 'Failed to assert format=json.' );
+		$this->assertStringContainsString( 'limit=5', $captured_url, 'Failed to assert limit=5.' );
+		$this->assertStringContainsString( 'addressdetails=1', $captured_url, 'Failed to assert addressdetails=1.' );
+		$this->assertStringContainsString( 'accept-language=', $captured_url, 'Failed to assert accept-language.' );
+		$this->assertStringContainsString( 'q=Test', $captured_url, 'Failed to assert query string.' );
+	}
+
+	/**
+	 * Non-array rows and rows without lat/lon are skipped; valid row still returned.
+	 *
+	 * @covers ::search_addresses
+	 *
+	 * @return void
+	 */
+	public function test_search_addresses_skips_malformed_rows(): void {
+		$instance = Geocoding::get_instance();
+
+		$mock_body = array(
+			'not-an-object',
+			array(
+				'lat' => '10',
+				// Missing lon.
+			),
+			array(
+				'lat'     => '40.7128',
+				'lon'     => '-74.0060',
+				'address' => array(
+					'city' => 'NYC',
+				),
+			),
+		);
+
+		$this->http_mock->mock(
+			'*',
+			array(
+				'body' => wp_json_encode( $mock_body ),
+			)
+		);
+
+		$request = new WP_REST_Request( 'GET' );
+		$request->set_param( 'q', 'NYC test' );
+
+		$response = $instance->search_addresses( $request );
+
+		$this->assertInstanceOf( WP_REST_Response::class, $response, 'Failed to assert response is WP_REST_Response.' );
+		$data = $response->get_data();
+		$this->assertCount( 1, $data['suggestions'] );
+		$this->assertSame( 'NYC', $data['suggestions'][0]['label'] );
+	}
+
+	/**
+	 * When state matches city, region is not duplicated in the label.
+	 *
+	 * @covers ::search_addresses
+	 *
+	 * @return void
+	 */
+	public function test_search_addresses_does_not_duplicate_region_when_same_as_locality(): void {
+		$instance = Geocoding::get_instance();
+
+		$mock_body = array(
+			array(
+				'lat'     => '1',
+				'lon'     => '2',
+				'address' => array(
+					'road'         => 'Main St',
+					'city'         => 'Springfield',
+					'state'        => 'Springfield',
+					'postcode'     => '62701',
+				),
+			),
+		);
+
+		$this->http_mock->mock(
+			'*',
+			array(
+				'body' => wp_json_encode( $mock_body ),
+			)
+		);
+
+		$request = new WP_REST_Request( 'GET' );
+		$request->set_param( 'q', 'Spring' );
+
+		$response = $instance->search_addresses( $request );
+
+		$data       = $response->get_data();
+		$suggestion = $data['suggestions'][0];
+		$this->assertStringNotContainsString(
+			'Springfield, Springfield',
+			$suggestion['label'],
+			'Failed to assert region is not duplicated when equal to locality.'
+		);
+		$this->assertStringContainsString( 'Springfield', $suggestion['label'] );
+		$this->assertStringContainsString( '62701', $suggestion['label'] );
+	}
+
+	/**
+	 * Street line can use pedestrian when road is absent.
+	 *
+	 * @covers ::search_addresses
+	 *
+	 * @return void
+	 */
+	public function test_search_addresses_street_line_uses_pedestrian(): void {
+		$instance = Geocoding::get_instance();
+
+		$mock_body = array(
+			array(
+				'lat'     => '1',
+				'lon'     => '2',
+				'address' => array(
+					'house_number' => '10',
+					'pedestrian'   => 'Promenade',
+					'city'         => 'Nice',
+				),
+			),
+		);
+
+		$this->http_mock->mock(
+			'*',
+			array(
+				'body' => wp_json_encode( $mock_body ),
+			)
+		);
+
+		$request = new WP_REST_Request( 'GET' );
+		$request->set_param( 'q', 'Nice walk' );
+
+		$response = $instance->search_addresses( $request );
+
+		$data = $response->get_data();
+		$this->assertStringContainsString(
+			'10 Promenade',
+			$data['suggestions'][0]['label'],
+			'Failed to assert pedestrian used in street line.'
+		);
+	}
+
+	/**
+	 * Permission callback on /geocode/search matches /geocode (edit_posts).
+	 *
+	 * @covers ::register_endpoints
+	 *
+	 * @return void
+	 */
+	public function test_search_route_permission_callback(): void {
+		$instance = Geocoding::get_instance();
+		$instance->register_endpoints();
+
+		$rest_server = rest_get_server();
+		$routes      = $rest_server->get_routes();
+		$search_key  = '/' . GATHERPRESS_REST_NAMESPACE . '/geocode/search';
+
+		$this->assertArrayHasKey( $search_key, $routes, 'Failed to assert search route exists.' );
+
+		$permission_callback = $routes[ $search_key ][0]['permission_callback'];
+
+		$editor_id = $this->factory->user->create( array( 'role' => 'editor' ) );
+		wp_set_current_user( $editor_id );
+		$this->assertTrue( call_user_func( $permission_callback ), 'Failed for editor.' );
+
+		$subscriber_id = $this->factory->user->create( array( 'role' => 'subscriber' ) );
+		wp_set_current_user( $subscriber_id );
+		$this->assertFalse( call_user_func( $permission_callback ), 'Failed for subscriber.' );
 	}
 }

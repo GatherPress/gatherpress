@@ -86,7 +86,7 @@ function AddressFieldWithSuggestions( { value, onChange, help } ) {
 
 	const loadSuggestions = useDebounce(
 		useCallback( ( query ) => {
-			if ( ! query || query.trim().length < 3 ) {
+			if ( ! query || 3 > query.trim().length ) {
 				setSuggestions( [] );
 				setIsLoadingSuggestions( false );
 				return;
@@ -129,16 +129,12 @@ function AddressFieldWithSuggestions( { value, onChange, help } ) {
 		}
 	}, [] );
 
-	const showSuggestionPanel = suggestions.length > 0;
+	const showSuggestionPanel = 0 < suggestions.length;
 	const helpSlotText =
 		showSuggestionPanel || isLoadingSuggestions ? undefined : help;
 
 	return (
-		<div
-			className="gatherpress-address-autocomplete"
-			onKeyDown={ onKeyDown }
-			onMouseDown={ unlockAddressInput }
-		>
+		<div className="gatherpress-address-autocomplete">
 			<TextControl
 				ref={ addressInputRef }
 				__next40pxDefaultSize
@@ -149,6 +145,8 @@ function AddressFieldWithSuggestions( { value, onChange, help } ) {
 				spellCheck={ false }
 				readOnly={ suppressNativeAutofill }
 				onFocus={ unlockAddressInput }
+				onKeyDown={ onKeyDown }
+				onMouseDown={ unlockAddressInput }
 				id={ fieldUid }
 				label={ __( 'Full Address', 'gatherpress' ) }
 				value={ value }

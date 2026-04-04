@@ -23,7 +23,7 @@ import {
 /**
  * Address field for venue details in the block editor.
  *
- * Uses a textarea (wraps long lines; auto-grows) with Nominatim suggestions in a Popover.
+ * Uses a textarea (wraps long lines; auto-grows) with Nominatim suggestions in a Popover
  * so autocomplete works reliably in the canvas.
  *
  * @since 1.0.0
@@ -65,8 +65,8 @@ const AddressField = ( {
 	);
 
 	const showSuggestionUi =
-		suggestions.length > 0 ||
-		( isLoadingSuggestions && String( value || '' ).trim().length >= 3 );
+		0 < suggestions.length ||
+		( isLoadingSuggestions && 3 <= String( value || '' ).trim().length );
 
 	useEffect( () => {
 		if ( value && String( value ).trim() ) {
@@ -126,7 +126,7 @@ const AddressField = ( {
 
 	const loadSuggestions = useDebounce(
 		useCallback( ( query ) => {
-			if ( ! query || query.trim().length < 3 ) {
+			if ( ! query || 3 > query.trim().length ) {
 				setSuggestions( [] );
 				setIsLoadingSuggestions( false );
 				return;
@@ -170,7 +170,7 @@ const AddressField = ( {
 
 	const handleKeyDown = useCallback(
 		( event ) => {
-			const hasList = suggestions.length > 0;
+			const hasList = 0 < suggestions.length;
 
 			if ( 'Escape' === event.key ) {
 				if ( hasList || isLoadingSuggestions ) {
@@ -184,14 +184,14 @@ const AddressField = ( {
 				if ( 'ArrowDown' === event.key ) {
 					event.preventDefault();
 					setActiveIndex( ( i ) =>
-						i + 1 >= suggestions.length ? 0 : i + 1
+						suggestions.length <= i + 1 ? 0 : i + 1
 					);
 					return;
 				}
 				if ( 'ArrowUp' === event.key ) {
 					event.preventDefault();
 					setActiveIndex( ( i ) =>
-						i - 1 < 0 ? suggestions.length - 1 : i - 1
+						0 > i - 1 ? suggestions.length - 1 : i - 1
 					);
 					return;
 				}
@@ -231,10 +231,7 @@ const AddressField = ( {
 	}
 
 	return (
-		<div
-			className="gatherpress-venue-detail__address-wrap"
-			onMouseDown={ unlockAddressInput }
-		>
+		<div className="gatherpress-venue-detail__address-wrap">
 			<address className={ baseClass }>
 				<textarea
 					ref={ inputRef }
@@ -246,13 +243,11 @@ const AddressField = ( {
 					onChange={ ( e ) => handleChange( e.target.value ) }
 					onKeyDown={ handleKeyDown }
 					onFocus={ unlockAddressInput }
+					onMouseDown={ unlockAddressInput }
 					placeholder={ placeholder }
 					readOnly={ suppressNativeAutofill }
 					aria-label={ __( 'Venue address', 'gatherpress' ) }
 					aria-autocomplete="list"
-					aria-expanded={ showSuggestionUi }
-					aria-controls={ showSuggestionUi ? listboxId : undefined }
-					aria-haspopup="listbox"
 				/>
 			</address>
 			{ showSuggestionUi && inputRef.current && (
@@ -264,7 +259,7 @@ const AddressField = ( {
 					onClose={ closeSuggestions }
 					className="gatherpress-venue-detail__address-popover"
 				>
-					{ isLoadingSuggestions && suggestions.length === 0 && (
+					{ isLoadingSuggestions && 0 === suggestions.length && (
 						<div className="gatherpress-venue-detail__address-popover-inner">
 							<Spinner />
 							<span className="gatherpress-venue-detail__address-loading">
@@ -272,7 +267,7 @@ const AddressField = ( {
 							</span>
 						</div>
 					) }
-					{ suggestions.length > 0 && (
+					{ 0 < suggestions.length && (
 						<ul
 							id={ listboxId }
 							className="gatherpress-venue-detail__address-suggestions"
@@ -288,9 +283,9 @@ const AddressField = ( {
 										type="button"
 										role="option"
 										tabIndex={ -1 }
-										aria-selected={ index === activeIndex }
+										aria-selected={ activeIndex === index }
 										className={
-											index === activeIndex
+											activeIndex === index
 												? 'gatherpress-venue-detail__address-suggestion is-active'
 												: 'gatherpress-venue-detail__address-suggestion'
 										}

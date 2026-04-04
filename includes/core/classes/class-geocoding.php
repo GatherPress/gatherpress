@@ -289,11 +289,11 @@ class Geocoding {
 		$suggestions = array();
 
 		foreach ( $data as $item ) {
-			if ( ! isset( $item['lat'], $item['lon'] ) ) {
+			if ( ! is_array( $item ) ) {
 				continue;
 			}
 
-			if ( ! is_array( $item ) ) {
+			if ( ! isset( $item['lat'], $item['lon'] ) ) {
 				continue;
 			}
 
@@ -365,7 +365,7 @@ class Geocoding {
 			$address,
 			array( 'city', 'town', 'village', 'hamlet', 'municipality', 'suburb' )
 		);
-		$region = $this->first_nominatim_address_field(
+		$region      = $this->first_nominatim_address_field(
 			$address,
 			array( 'state', 'region', 'county' )
 		);

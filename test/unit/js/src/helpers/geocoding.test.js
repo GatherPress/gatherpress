@@ -304,6 +304,49 @@ describe( 'Geocoding helpers', () => {
 
 			expect( result ).toEqual( [] );
 		} );
+
+		it( 'skips suggestions with empty or non-string labels', async () => {
+			apiFetch.mockResolvedValue( {
+				suggestions: [
+					{ label: '', latitude: '1', longitude: '2' },
+					{ label: 123, latitude: '3', longitude: '4' },
+					{
+						label: '  Valid Row  ',
+						latitude: '5',
+						longitude: '6',
+					},
+				],
+			} );
+
+			const result = await fetchAddressSuggestions( 'Some query' );
+
+			expect( result ).toHaveLength( 1 );
+			expect( result[ 0 ] ).toEqual( {
+				label: 'Valid Row',
+				latitude: '5',
+				longitude: '6',
+			} );
+		} );
+
+		it( 'stringifies latitude and longitude including when missing', async () => {
+			apiFetch.mockResolvedValue( {
+				suggestions: [
+					{
+						label: 'A',
+						latitude: null,
+						longitude: undefined,
+					},
+				],
+			} );
+
+			const result = await fetchAddressSuggestions( 'Some query' );
+
+			expect( result[ 0 ] ).toEqual( {
+				label: 'A',
+				latitude: '',
+				longitude: '',
+			} );
+		} );
 	} );
 
 	describe( 'primeGeocodeCache', () => {
@@ -323,6 +366,12 @@ describe( 'Geocoding helpers', () => {
 				error: null,
 			} );
 			expect( apiFetch ).not.toHaveBeenCalled();
+		} );
+
+		it( 'does nothing when address is empty or whitespace', () => {
+			primeGeocodeCache( '', '1', '2' );
+			primeGeocodeCache( '   ', '1', '2' );
+			expect( getGeocoCacheSize() ).toBe( 0 );
 		} );
 	} );
 } );
