@@ -570,7 +570,7 @@ class Test_Geocoding extends Base {
 	}
 
 	/**
-	 * Coverage for search_addresses with short query (returns empty suggestions).
+	 * Coverage for search_addresses with short query (returns empty suggestions; min length matches JS).
 	 *
 	 * @covers ::search_addresses
 	 *
@@ -579,7 +579,7 @@ class Test_Geocoding extends Base {
 	public function test_search_addresses_short_query(): void {
 		$instance = Geocoding::get_instance();
 		$request  = new WP_REST_Request( 'GET' );
-		$request->set_param( 'q', 'a' );
+		$request->set_param( 'q', 'ab' );
 
 		$response = $instance->search_addresses( $request );
 

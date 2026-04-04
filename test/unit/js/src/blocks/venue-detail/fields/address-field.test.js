@@ -15,15 +15,20 @@ import {
  */
 import { useEffect, useState } from '@wordpress/element';
 import AddressField from '@src/blocks/venue-detail/fields/address-field';
+import AddressAutocompleteField from '@src/components/AddressAutocompleteField';
 import {
 	fetchAddressSuggestions,
 	primeGeocodeCache,
 } from '@src/helpers/geocoding';
 
-jest.mock( '@src/helpers/geocoding', () => ( {
-	fetchAddressSuggestions: jest.fn().mockResolvedValue( [] ),
-	primeGeocodeCache: jest.fn(),
-} ) );
+jest.mock( '@src/helpers/geocoding', () => {
+	const actual = jest.requireActual( '@src/helpers/geocoding' );
+	return {
+		...actual,
+		fetchAddressSuggestions: jest.fn().mockResolvedValue( [] ),
+		primeGeocodeCache: jest.fn(),
+	};
+} );
 
 jest.mock( '@wordpress/components', () => {
 	const components = jest.requireActual( '@wordpress/components' );
@@ -534,5 +539,164 @@ describe( 'AddressField', () => {
 		expect(
 			screen.queryByRole( 'option', { name: 'Escape City' } )
 		).toBeNull();
+	} );
+} );
+
+/**
+ * @param {Object} props Props.
+ */
+function ControlledSettingsAddressField( props ) {
+	const { initialValue = '', onChange, ...rest } = props;
+	const [ value, setValue ] = useState( initialValue );
+
+	useEffect( () => {
+		setValue( initialValue );
+	}, [ initialValue ] );
+
+	return (
+		<AddressAutocompleteField
+			variant="settings"
+			{ ...rest }
+			value={ value }
+			onChange={ ( v ) => {
+				setValue( v );
+				onChange( v );
+			} }
+		/>
+	);
+}
+
+describe( 'AddressAutocompleteField (settings variant)', () => {
+	let settingsProps;
+
+	beforeEach( () => {
+		settingsProps = {
+			initialValue: '',
+			onChange: jest.fn(),
+			help: 'Help text for address.',
+		};
+		jest.clearAllMocks();
+		global.requestAnimationFrame = jest.fn( ( cb ) => {
+			cb();
+			return 0;
+		} );
+	} );
+
+	const flushMicrotasks = async () => {
+		await act( async () => {
+			await Promise.resolve();
+		} );
+	};
+
+	it( 'renders labeled search field', () => {
+		render( <ControlledSettingsAddressField { ...settingsProps } /> );
+
+		expect(
+			screen.getByRole( 'searchbox', { name: /full address/i } )
+		).toBeTruthy();
+	} );
+
+	it( 'navigates suggestions with arrow keys and selects with Enter', async () => {
+		fetchAddressSuggestions.mockResolvedValue( [
+			{
+				label: 'First St',
+				latitude: '1',
+				longitude: '2',
+			},
+			{
+				label: 'Second Ave',
+				latitude: '3',
+				longitude: '4',
+			},
+		] );
+
+		render( <ControlledSettingsAddressField { ...settingsProps } /> );
+		const field = screen.getByRole( 'searchbox', { name: /full address/i } );
+
+		fireEvent.change( field, { target: { value: 'Find me' } } );
+		await flushMicrotasks();
+
+		const opt1 = await screen.findByRole( 'option', {
+			name: 'First St',
+		} );
+		const opt2 = await screen.findByRole( 'option', {
+			name: 'Second Ave',
+		} );
+
+		expect( opt1.getAttribute( 'aria-selected' ) ).toBe( 'true' );
+
+		fireEvent.keyDown( field, { key: 'ArrowDown', code: 'ArrowDown' } );
+		expect( opt2.getAttribute( 'aria-selected' ) ).toBe( 'true' );
+
+		fireEvent.keyDown( field, { key: 'Enter', code: 'Enter', shiftKey: false } );
+
+		expect( primeGeocodeCache ).toHaveBeenCalledWith(
+			'Second Ave',
+			'3',
+			'4'
+		);
+		expect( settingsProps.onChange ).toHaveBeenCalledWith( 'Second Ave' );
+	} );
+
+	it( 'closes suggestions on Escape when list is open', async () => {
+		fetchAddressSuggestions.mockResolvedValue( [
+			{
+				label: 'Escape City',
+				latitude: '1',
+				longitude: '1',
+			},
+		] );
+
+		render( <ControlledSettingsAddressField { ...settingsProps } /> );
+		const field = screen.getByRole( 'searchbox', { name: /full address/i } );
+
+		fireEvent.change( field, { target: { value: 'Escape query' } } );
+		await flushMicrotasks();
+
+		await screen.findByRole( 'option', { name: 'Escape City' } );
+
+		fireEvent.keyDown( field, { key: 'Escape', code: 'Escape' } );
+
+		expect(
+			screen.queryByRole( 'option', { name: 'Escape City' } )
+		).toBeNull();
+	} );
+
+	it( 'shows loading state then suggestions', async () => {
+		let resolveFetch;
+		fetchAddressSuggestions.mockImplementation(
+			() =>
+				new Promise( ( resolve ) => {
+					resolveFetch = resolve;
+				} )
+		);
+
+		render( <ControlledSettingsAddressField { ...settingsProps } /> );
+		const field = screen.getByRole( 'searchbox', { name: /full address/i } );
+
+		fireEvent.change( field, { target: { value: 'NYC query' } } );
+		await flushMicrotasks();
+
+		await waitFor( () => {
+			expect(
+				screen.getByText( 'Searching for addresses…' )
+			).toBeTruthy();
+		} );
+
+		await act( async () => {
+			resolveFetch( [
+				{
+					label: 'New York, NY',
+					latitude: '40',
+					longitude: '-74',
+				},
+			] );
+		} );
+
+		await waitFor( () => {
+			expect(
+				screen.getByRole( 'option', { name: 'New York, NY' } )
+			).toBeTruthy();
+		} );
 	} );
 } );

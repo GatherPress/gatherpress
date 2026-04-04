@@ -14,6 +14,7 @@ import {
  * Internal dependencies.
  */
 import {
+	ADDRESS_SEARCH_MIN_QUERY_LENGTH,
 	fetchAddressSuggestions,
 	geocodeAddress,
 	clearGeocodeCache,
@@ -34,6 +35,10 @@ jest.mock( '@src/helpers/namespace', () => ( {
 
 describe( 'Geocoding helpers', () => {
 	let apiFetch;
+
+	it( 'exports address search min length aligned with PHP', () => {
+		expect( ADDRESS_SEARCH_MIN_QUERY_LENGTH ).toBe( 3 );
+	} );
 
 	beforeEach( async () => {
 		// Get the mocked apiFetch.

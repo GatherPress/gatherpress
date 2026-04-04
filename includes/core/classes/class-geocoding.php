@@ -42,6 +42,14 @@ class Geocoding {
 	const NOMINATIM_API_URL = 'https://nominatim.openstreetmap.org/search';
 
 	/**
+	 * Minimum trimmed query length before calling Nominatim for search.
+	 * Matches JS `ADDRESS_SEARCH_MIN_QUERY_LENGTH` in `src/helpers/geocoding.js`.
+	 *
+	 * @since 1.0.0
+	 */
+	private const ADDRESS_SEARCH_MIN_QUERY_LENGTH = 3;
+
+	/**
 	 * Class constructor.
 	 *
 	 * This method initializes the object and sets up necessary hooks.
@@ -222,7 +230,7 @@ class Geocoding {
 
 		$query = mb_substr( trim( $query ), 0, 200 );
 
-		if ( mb_strlen( $query ) < 2 ) {
+		if ( mb_strlen( $query ) < self::ADDRESS_SEARCH_MIN_QUERY_LENGTH ) {
 			return new WP_REST_Response(
 				array(
 					'suggestions' => array(),

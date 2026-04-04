@@ -3,15 +3,14 @@
  */
 import { __ } from '@wordpress/i18n';
 import {
-	Spinner,
 	Button,
-	TextControl,
 	// eslint-disable-next-line @wordpress/no-unsafe-wp-apis
 	__experimentalHStack as HStack,
+	Spinner,
+	TextControl,
 	useNavigator,
 } from '@wordpress/components';
-import { useDebounce } from '@wordpress/compose';
-import { useCallback, useEffect, useRef, useState } from '@wordpress/element';
+import { useState } from '@wordpress/element';
 import { useSelect } from '@wordpress/data';
 import apiFetch from '@wordpress/api-fetch';
 import { useEntityProp, store as coreDataStore } from '@wordpress/core-data';
@@ -22,193 +21,8 @@ import { useEntityProp, store as coreDataStore } from '@wordpress/core-data';
 import { CPT_EVENT, CPT_VENUE, TAX_VENUE } from '../helpers/namespace';
 import { isEventPostType } from '../helpers/event';
 import { getCurrentContextualPostId } from '../helpers/editor';
-import {
-	fetchAddressSuggestions,
-	geocodeAddress,
-	primeGeocodeCache,
-} from '../helpers/geocoding';
-
-/**
- * Full address field with OpenStreetMap (Nominatim) suggestions via the GatherPress REST proxy.
- *
- * @param {Object}   props          Props.
- * @param {string}   props.value    Address value.
- * @param {Function} props.onChange Called when address changes.
- * @param {string}   props.help     Help text when not loading.
- * @return {JSX.Element} Field with optional suggestion list.
- */
-function AddressFieldWithSuggestions( { value, onChange, help } ) {
-	const [ suggestions, setSuggestions ] = useState( [] );
-	const [ isLoadingSuggestions, setIsLoadingSuggestions ] = useState( false );
-	const addressInputRef = useRef( null );
-	/**
-	 * Random id/name per mount so the browser cannot match this field to saved addresses.
-	 */
-	const [ fieldUid ] = useState(
-		() => `gp-vaddr-${ Math.random().toString( 36 ).slice( 2, 12 ) }`
-	);
-	/**
-	 * Blocks native browser autofill until first interaction. Chrome often ignores
-	 * autocomplete="off" for address-like fields; readonly-until-focus avoids that.
-	 */
-	const [ suppressNativeAutofill, setSuppressNativeAutofill ] = useState(
-		() => ! ( value && String( value ).trim() )
-	);
-
-	useEffect( () => {
-		if ( value && String( value ).trim() ) {
-			setSuppressNativeAutofill( false );
-		}
-	}, [ value ] );
-
-	/**
-	 * Reinforce anti-autofill on the real DOM node (some UAs ignore React props).
-	 */
-	useEffect( () => {
-		const el = addressInputRef.current;
-		if ( ! el ) {
-			return;
-		}
-		el.setAttribute( 'autocomplete', 'off' );
-		el.setAttribute( 'data-lpignore', 'true' );
-		el.setAttribute( 'data-1p-ignore', 'true' );
-		el.setAttribute( 'data-bwignore', 'true' );
-		el.setAttribute( 'data-form-type', 'other' );
-	}, [] );
-
-	const unlockAddressInput = useCallback( () => {
-		requestAnimationFrame( () => {
-			requestAnimationFrame( () => {
-				setSuppressNativeAutofill( false );
-			} );
-		} );
-	}, [] );
-
-	const loadSuggestions = useDebounce(
-		useCallback( ( query ) => {
-			if ( ! query || 3 > query.trim().length ) {
-				setSuggestions( [] );
-				setIsLoadingSuggestions( false );
-				return;
-			}
-			setIsLoadingSuggestions( true );
-			fetchAddressSuggestions( query )
-				.then( ( items ) => {
-					setSuggestions( items );
-				} )
-				.catch( () => {
-					setSuggestions( [] );
-				} )
-				.finally( () => {
-					setIsLoadingSuggestions( false );
-				} );
-		}, [] ),
-		400
-	);
-
-	const handleChange = useCallback(
-		( next ) => {
-			onChange( next );
-			loadSuggestions( next );
-		},
-		[ onChange, loadSuggestions ]
-	);
-
-	const selectSuggestion = useCallback(
-		( item ) => {
-			primeGeocodeCache( item.label, item.latitude, item.longitude );
-			onChange( item.label );
-			setSuggestions( [] );
-		},
-		[ onChange ]
-	);
-
-	const onKeyDown = useCallback( ( event ) => {
-		if ( 'Escape' === event.code ) {
-			setSuggestions( [] );
-		}
-	}, [] );
-
-	const showSuggestionPanel = 0 < suggestions.length;
-	const helpSlotText =
-		showSuggestionPanel || isLoadingSuggestions ? undefined : help;
-
-	return (
-		<div className="gatherpress-address-autocomplete">
-			<TextControl
-				ref={ addressInputRef }
-				__next40pxDefaultSize
-				type="search"
-				autoComplete="off"
-				autoCapitalize="off"
-				autoCorrect="off"
-				spellCheck={ false }
-				readOnly={ suppressNativeAutofill }
-				onFocus={ unlockAddressInput }
-				onKeyDown={ onKeyDown }
-				onMouseDown={ unlockAddressInput }
-				id={ fieldUid }
-				label={ __( 'Full Address', 'gatherpress' ) }
-				value={ value }
-				onChange={ handleChange }
-				help={ helpSlotText }
-				name={ fieldUid }
-			/>
-			{ isLoadingSuggestions && ! showSuggestionPanel && (
-				<p
-					id="gatherpress-address-suggestions-status"
-					className="components-base-control__help"
-				>
-					{ __( 'Searching for addresses…', 'gatherpress' ) }
-				</p>
-			) }
-			{ showSuggestionPanel && (
-				<div
-					id="gatherpress-address-suggestions-panel"
-					className="components-base-control__help gatherpress-address-autocomplete__panel"
-				>
-					<ul
-						className="gatherpress-address-autocomplete__list"
-						role="listbox"
-						aria-label={ __( 'Address suggestions', 'gatherpress' ) }
-						style={ {
-							maxHeight: '220px',
-							overflowY: 'auto',
-							margin: 0,
-							padding: 0,
-							listStyle: 'none',
-							border: '1px solid #949494',
-							borderRadius: '2px',
-							background: '#fff',
-						} }
-					>
-						{ suggestions.map( ( item, index ) => (
-							<li key={ `${ item.label }-${ index }` } role="none">
-								<button
-									type="button"
-									role="option"
-									className="gatherpress-address-autocomplete__option"
-									onClick={ () => selectSuggestion( item ) }
-									style={ {
-										display: 'block',
-										width: '100%',
-										textAlign: 'left',
-										padding: '8px 12px',
-										border: 'none',
-										background: 'transparent',
-										cursor: 'pointer',
-									} }
-								>
-									{ item.label }
-								</button>
-							</li>
-						) ) }
-					</ul>
-				</div>
-			) }
-		</div>
-	);
-}
+import { geocodeAddress } from '../helpers/geocoding';
+import AddressAutocompleteField from './AddressAutocompleteField';
 
 /**
  * Venue form component for creating or editing a venue.
@@ -258,7 +72,8 @@ function VenueForm( {
 					help={ titleError }
 					className={ titleError ? 'has-error' : '' }
 				/>
-				<AddressFieldWithSuggestions
+				<AddressAutocompleteField
+					variant="settings"
 					value={ address }
 					onChange={ onChangeAddress }
 					help={ __(

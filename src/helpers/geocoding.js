@@ -10,6 +10,14 @@ import apiFetch from '@wordpress/api-fetch';
 import { REST_NAMESPACE } from './namespace';
 
 /**
+ * Minimum trimmed query length before calling the address search REST route.
+ * Kept in sync with PHP `search_addresses` short-query handling.
+ *
+ * @type {number}
+ */
+export const ADDRESS_SEARCH_MIN_QUERY_LENGTH = 3;
+
+/**
  * In-memory cache for geocoding results (memoization).
  * Maps address strings to their geocoding results.
  *
@@ -140,7 +148,7 @@ export async function fetchAddressSuggestions( query ) {
 
 	const trimmed = query.trim();
 
-	if ( 3 > trimmed.length ) {
+	if ( ADDRESS_SEARCH_MIN_QUERY_LENGTH > trimmed.length ) {
 		return [];
 	}
 
