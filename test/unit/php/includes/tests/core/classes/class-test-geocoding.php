@@ -1640,9 +1640,9 @@ class Test_Geocoding extends Base {
 				'lat'     => '1',
 				'lon'     => '2',
 				'address' => array(
-					'road'          => 'Main',
-					'municipality'  => 'Muni Name',
-					'postcode'      => '11111',
+					'road'         => 'Main',
+					'municipality' => 'Muni Name',
+					'postcode'     => '11111',
 				),
 			),
 		);
@@ -1883,7 +1883,7 @@ class Test_Geocoding extends Base {
 	}
 
 	/**
-	 * first_nominatim_address_field: ordered keys, empty address, and no match.
+	 * Tests first_nominatim_address_field: ordered keys, empty address, and no match.
 	 *
 	 * @covers \GatherPress\Core\Geocoding::first_nominatim_address_field
 	 *
@@ -1917,7 +1917,7 @@ class Test_Geocoding extends Base {
 	}
 
 	/**
-	 * build_nominatim_street_line: house, road, pedestrian path, empty.
+	 * Tests build_nominatim_street_line: house, road, pedestrian path, empty.
 	 *
 	 * @covers \GatherPress\Core\Geocoding::build_nominatim_street_line
 	 *
@@ -1932,7 +1932,7 @@ class Test_Geocoding extends Base {
 			array(
 				array(
 					'house_number' => '1',
-					'road'           => 'Main St',
+					'road'         => 'Main St',
 				),
 			)
 		);
@@ -1962,7 +1962,7 @@ class Test_Geocoding extends Base {
 	}
 
 	/**
-	 * build_nominatim_label_from_address: empty, full parts, region equals locality, postcode trim filter.
+	 * Tests build_nominatim_label_from_address: empty, full parts, region equals locality, postcode trim filter.
 	 *
 	 * @covers \GatherPress\Core\Geocoding::build_nominatim_label_from_address
 	 *
@@ -2019,7 +2019,7 @@ class Test_Geocoding extends Base {
 	}
 
 	/**
-	 * strip_nominatim_poi_prefix_from_display_name: all branches.
+	 * Tests strip_nominatim_poi_prefix_from_display_name: all branches.
 	 *
 	 * @covers \GatherPress\Core\Geocoding::strip_nominatim_poi_prefix_from_display_name
 	 *
@@ -2083,7 +2083,7 @@ class Test_Geocoding extends Base {
 	}
 
 	/**
-	 * format_nominatim_search_label: structured, non-array address, display_name only, empty display.
+	 * Tests format_nominatim_search_label: structured, non-array address, display_name only, empty display.
 	 *
 	 * @covers \GatherPress\Core\Geocoding::format_nominatim_search_label
 	 *
