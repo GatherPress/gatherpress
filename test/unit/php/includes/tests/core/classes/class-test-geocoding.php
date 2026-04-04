@@ -985,6 +985,868 @@ class Test_Geocoding extends Base {
 	}
 
 	/**
+	 * Rows that produce an empty label are skipped; later valid rows still appear.
+	 *
+	 * @covers ::search_addresses
+	 *
+	 * @return void
+	 */
+	public function test_search_addresses_skips_row_when_computed_label_empty(): void {
+		$instance = Geocoding::get_instance();
+
+		$mock_body = array(
+			array(
+				'lat'          => '1',
+				'lon'          => '2',
+				'address'      => array(),
+				'display_name' => '',
+			),
+			array(
+				'lat'     => '3',
+				'lon'     => '4',
+				'address' => array(
+					'city' => 'Kept City',
+				),
+			),
+		);
+
+		$this->http_mock->mock(
+			'*',
+			array(
+				'body' => wp_json_encode( $mock_body ),
+			)
+		);
+
+		$request = new WP_REST_Request( 'GET' );
+		$request->set_param( 'q', 'Kept' );
+
+		$response = $instance->search_addresses( $request );
+		$data     = $response->get_data();
+
+		$this->assertCount( 1, $data['suggestions'] );
+		$this->assertSame( 'Kept City', $data['suggestions'][0]['label'] );
+	}
+
+	/**
+	 * Non-array `address` falls back to `display_name` for labeling.
+	 *
+	 * @covers ::search_addresses
+	 *
+	 * @return void
+	 */
+	public function test_search_addresses_non_array_address_uses_display_name(): void {
+		$instance = Geocoding::get_instance();
+
+		$mock_body = array(
+			array(
+				'lat'          => '1',
+				'lon'          => '2',
+				'address'      => 'not-an-array',
+				'display_name' => 'Berlin, Germany',
+			),
+		);
+
+		$this->http_mock->mock(
+			'*',
+			array(
+				'body' => wp_json_encode( $mock_body ),
+			)
+		);
+
+		$request = new WP_REST_Request( 'GET' );
+		$request->set_param( 'q', 'Berlin' );
+
+		$response = $instance->search_addresses( $request );
+		$data     = $response->get_data();
+
+		$this->assertSame( 'Berlin, Germany', $data['suggestions'][0]['label'] );
+	}
+
+	/**
+	 * When there is no `address` key, `display_name` alone is used (no POI keys to strip).
+	 *
+	 * @covers ::search_addresses
+	 *
+	 * @return void
+	 */
+	public function test_search_addresses_display_name_only_without_address_key(): void {
+		$instance = Geocoding::get_instance();
+
+		$mock_body = array(
+			array(
+				'lat'          => '9',
+				'lon'          => '9',
+				'display_name' => 'Only Display, Somewhere',
+			),
+		);
+
+		$this->http_mock->mock(
+			'*',
+			array(
+				'body' => wp_json_encode( $mock_body ),
+			)
+		);
+
+		$request = new WP_REST_Request( 'GET' );
+		$request->set_param( 'q', 'Only' );
+
+		$response = $instance->search_addresses( $request );
+		$data     = $response->get_data();
+
+		$this->assertSame( 'Only Display, Somewhere', $data['suggestions'][0]['label'] );
+	}
+
+	/**
+	 * With no POI fields in `address`, display_name is returned unchanged from POI stripping.
+	 *
+	 * @covers ::search_addresses
+	 *
+	 * @return void
+	 */
+	public function test_search_addresses_poi_strip_with_no_poi_fields_returns_display_name(): void {
+		$instance = Geocoding::get_instance();
+
+		$mock_body = array(
+			array(
+				'lat'          => '1',
+				'lon'          => '2',
+				'display_name' => 'Road 1, Town, 12345',
+				'address'      => array(
+					'country' => 'US',
+				),
+			),
+		);
+
+		$this->http_mock->mock(
+			'*',
+			array(
+				'body' => wp_json_encode( $mock_body ),
+			)
+		);
+
+		$request = new WP_REST_Request( 'GET' );
+		$request->set_param( 'q', 'Road' );
+
+		$response = $instance->search_addresses( $request );
+		$data     = $response->get_data();
+
+		$this->assertSame( 'Road 1, Town, 12345', $data['suggestions'][0]['label'] );
+	}
+
+	/**
+	 * Leading empty segment in display_name leaves the string unchanged.
+	 *
+	 * @covers ::search_addresses
+	 *
+	 * @return void
+	 */
+	public function test_search_addresses_poi_leading_empty_segment_unchanged(): void {
+		$instance = Geocoding::get_instance();
+
+		$mock_body = array(
+			array(
+				'lat'          => '1',
+				'lon'          => '2',
+				'display_name' => ', Paris, France',
+				'address'      => array(
+					'amenity' => 'Café',
+				),
+			),
+		);
+
+		$this->http_mock->mock(
+			'*',
+			array(
+				'body' => wp_json_encode( $mock_body ),
+			)
+		);
+
+		$request = new WP_REST_Request( 'GET' );
+		$request->set_param( 'q', 'Paris' );
+
+		$response = $instance->search_addresses( $request );
+		$data     = $response->get_data();
+
+		$this->assertSame( ', Paris, France', $data['suggestions'][0]['label'] );
+	}
+
+	/**
+	 * When the first comma segment does not match any POI value, display_name is unchanged.
+	 *
+	 * @covers ::search_addresses
+	 *
+	 * @return void
+	 */
+	public function test_search_addresses_poi_first_segment_no_match_returns_full_display_name(): void {
+		$instance = Geocoding::get_instance();
+
+		$mock_body = array(
+			array(
+				'lat'          => '1',
+				'lon'          => '2',
+				'display_name' => 'Random Block, Paris, France',
+				'address'      => array(
+					'amenity' => 'Different POI',
+				),
+			),
+		);
+
+		$this->http_mock->mock(
+			'*',
+			array(
+				'body' => wp_json_encode( $mock_body ),
+			)
+		);
+
+		$request = new WP_REST_Request( 'GET' );
+		$request->set_param( 'q', 'Random' );
+
+		$response = $instance->search_addresses( $request );
+		$data     = $response->get_data();
+
+		$this->assertSame( 'Random Block, Paris, France', $data['suggestions'][0]['label'] );
+	}
+
+	/**
+	 * POI stripping uses `shop` and removes the matching first segment.
+	 *
+	 * @covers ::search_addresses
+	 *
+	 * @return void
+	 */
+	public function test_search_addresses_poi_shop_key_strips_first_segment(): void {
+		$instance = Geocoding::get_instance();
+
+		$mock_body = array(
+			array(
+				'lat'          => '1',
+				'lon'          => '2',
+				'display_name' => 'Corner Store, Lyon, France',
+				'address'      => array(
+					'shop' => 'Corner Store',
+				),
+			),
+		);
+
+		$this->http_mock->mock(
+			'*',
+			array(
+				'body' => wp_json_encode( $mock_body ),
+			)
+		);
+
+		$request = new WP_REST_Request( 'GET' );
+		$request->set_param( 'q', 'Corner' );
+
+		$response = $instance->search_addresses( $request );
+		$data     = $response->get_data();
+
+		$this->assertStringNotContainsString(
+			'Corner Store, Lyon',
+			$data['suggestions'][0]['label'],
+			'Failed to assert first segment removed when matching shop.'
+		);
+		$this->assertStringContainsString( 'Lyon', $data['suggestions'][0]['label'] );
+	}
+
+	/**
+	 * Street line can use `path` when road and pedestrian are absent.
+	 *
+	 * @covers ::search_addresses
+	 *
+	 * @return void
+	 */
+	public function test_search_addresses_street_line_uses_path_key(): void {
+		$instance = Geocoding::get_instance();
+
+		$mock_body = array(
+			array(
+				'lat'     => '1',
+				'lon'     => '2',
+				'address' => array(
+					'path' => 'Trailhead Path',
+					'city' => 'Trail Town',
+				),
+			),
+		);
+
+		$this->http_mock->mock(
+			'*',
+			array(
+				'body' => wp_json_encode( $mock_body ),
+			)
+		);
+
+		$request = new WP_REST_Request( 'GET' );
+		$request->set_param( 'q', 'Trail' );
+
+		$response = $instance->search_addresses( $request );
+		$data     = $response->get_data();
+
+		$this->assertStringContainsString(
+			'Trailhead Path',
+			$data['suggestions'][0]['label'],
+			'Failed to assert path used in street line.'
+		);
+	}
+
+	/**
+	 * Street line with house number only (no road).
+	 *
+	 * @covers ::search_addresses
+	 *
+	 * @return void
+	 */
+	public function test_search_addresses_street_line_house_only(): void {
+		$instance = Geocoding::get_instance();
+
+		$mock_body = array(
+			array(
+				'lat'     => '1',
+				'lon'     => '2',
+				'address' => array(
+					'house_number' => '42',
+					'city'         => 'Num City',
+				),
+			),
+		);
+
+		$this->http_mock->mock(
+			'*',
+			array(
+				'body' => wp_json_encode( $mock_body ),
+			)
+		);
+
+		$request = new WP_REST_Request( 'GET' );
+		$request->set_param( 'q', 'Num' );
+
+		$response = $instance->search_addresses( $request );
+		$data     = $response->get_data();
+
+		$this->assertStringStartsWith(
+			'42, Num City',
+			$data['suggestions'][0]['label'],
+			'Failed to assert house-only street line.'
+		);
+	}
+
+	/**
+	 * Street line with road only (no house number).
+	 *
+	 * @covers ::search_addresses
+	 *
+	 * @return void
+	 */
+	public function test_search_addresses_street_line_road_only(): void {
+		$instance = Geocoding::get_instance();
+
+		$mock_body = array(
+			array(
+				'lat'     => '1',
+				'lon'     => '2',
+				'address' => array(
+					'road' => 'Elm Street',
+					'city' => 'Elm City',
+				),
+			),
+		);
+
+		$this->http_mock->mock(
+			'*',
+			array(
+				'body' => wp_json_encode( $mock_body ),
+			)
+		);
+
+		$request = new WP_REST_Request( 'GET' );
+		$request->set_param( 'q', 'Elm' );
+
+		$response = $instance->search_addresses( $request );
+		$data     = $response->get_data();
+
+		$this->assertStringStartsWith(
+			'Elm Street, Elm City',
+			$data['suggestions'][0]['label'],
+			'Failed to assert road-only street line.'
+		);
+	}
+
+	/**
+	 * Locality prefers `village` when city keys are absent.
+	 *
+	 * @covers ::search_addresses
+	 *
+	 * @return void
+	 */
+	public function test_search_addresses_locality_from_village(): void {
+		$instance = Geocoding::get_instance();
+
+		$mock_body = array(
+			array(
+				'lat'     => '1',
+				'lon'     => '2',
+				'address' => array(
+					'road'    => 'High St',
+					'village' => 'Littleton',
+					'state'   => 'VT',
+				),
+			),
+		);
+
+		$this->http_mock->mock(
+			'*',
+			array(
+				'body' => wp_json_encode( $mock_body ),
+			)
+		);
+
+		$request = new WP_REST_Request( 'GET' );
+		$request->set_param( 'q', 'Little' );
+
+		$response = $instance->search_addresses( $request );
+		$data     = $response->get_data();
+
+		$this->assertStringContainsString( 'Littleton', $data['suggestions'][0]['label'] );
+		$this->assertStringContainsString( 'VT', $data['suggestions'][0]['label'] );
+	}
+
+	/**
+	 * Locality can come from `hamlet`.
+	 *
+	 * @covers ::search_addresses
+	 *
+	 * @return void
+	 */
+	public function test_search_addresses_locality_from_hamlet(): void {
+		$instance = Geocoding::get_instance();
+
+		$mock_body = array(
+			array(
+				'lat'     => '1',
+				'lon'     => '2',
+				'address' => array(
+					'hamlet' => 'Tiny Hamlet',
+					'county' => 'Big County',
+				),
+			),
+		);
+
+		$this->http_mock->mock(
+			'*',
+			array(
+				'body' => wp_json_encode( $mock_body ),
+			)
+		);
+
+		$request = new WP_REST_Request( 'GET' );
+		$request->set_param( 'q', 'Tiny' );
+
+		$response = $instance->search_addresses( $request );
+		$data     = $response->get_data();
+
+		$this->assertStringContainsString( 'Tiny Hamlet', $data['suggestions'][0]['label'] );
+		$this->assertStringContainsString( 'Big County', $data['suggestions'][0]['label'] );
+	}
+
+	/**
+	 * Region can come from `county` when state is absent.
+	 *
+	 * @covers ::search_addresses
+	 *
+	 * @return void
+	 */
+	public function test_search_addresses_region_from_county(): void {
+		$instance = Geocoding::get_instance();
+
+		$mock_body = array(
+			array(
+				'lat'     => '1',
+				'lon'     => '2',
+				'address' => array(
+					'city'   => 'Metro',
+					'county' => 'Metro County',
+				),
+			),
+		);
+
+		$this->http_mock->mock(
+			'*',
+			array(
+				'body' => wp_json_encode( $mock_body ),
+			)
+		);
+
+		$request = new WP_REST_Request( 'GET' );
+		$request->set_param( 'q', 'Metro' );
+
+		$response = $instance->search_addresses( $request );
+		$data     = $response->get_data();
+
+		$this->assertStringContainsString( 'Metro', $data['suggestions'][0]['label'] );
+		$this->assertStringContainsString( 'Metro County', $data['suggestions'][0]['label'] );
+	}
+
+	/**
+	 * Postcode-only trimming: whitespace postcode still yields a label part then filters empties.
+	 *
+	 * @covers ::search_addresses
+	 *
+	 * @return void
+	 */
+	public function test_search_addresses_postcode_whitespace_trims_to_empty_in_parts(): void {
+		$instance = Geocoding::get_instance();
+
+		$mock_body = array(
+			array(
+				'lat'     => '1',
+				'lon'     => '2',
+				'address' => array(
+					'road'     => 'Oak',
+					'city'     => 'Oakville',
+					'postcode' => '   ',
+				),
+			),
+		);
+
+		$this->http_mock->mock(
+			'*',
+			array(
+				'body' => wp_json_encode( $mock_body ),
+			)
+		);
+
+		$request = new WP_REST_Request( 'GET' );
+		$request->set_param( 'q', 'Oak' );
+
+		$response = $instance->search_addresses( $request );
+		$data     = $response->get_data();
+
+		$this->assertStringContainsString( 'Oak', $data['suggestions'][0]['label'] );
+		$this->assertStringContainsString( 'Oakville', $data['suggestions'][0]['label'] );
+	}
+
+	/**
+	 * Duplicate POI values are de-duplicated before matching the first segment.
+	 *
+	 * @covers ::search_addresses
+	 *
+	 * @return void
+	 */
+	public function test_search_addresses_poi_duplicate_values_still_strip_first_segment(): void {
+		$instance = Geocoding::get_instance();
+
+		$mock_body = array(
+			array(
+				'lat'          => '1',
+				'lon'          => '2',
+				'display_name' => 'Twin Shop, City, Land',
+				'address'      => array(
+					'shop'    => 'Twin Shop',
+					'tourism' => 'Twin Shop',
+				),
+			),
+		);
+
+		$this->http_mock->mock(
+			'*',
+			array(
+				'body' => wp_json_encode( $mock_body ),
+			)
+		);
+
+		$request = new WP_REST_Request( 'GET' );
+		$request->set_param( 'q', 'Twin' );
+
+		$response = $instance->search_addresses( $request );
+		$data     = $response->get_data();
+
+		$this->assertStringNotContainsString(
+			'Twin Shop, City',
+			$data['suggestions'][0]['label'],
+			'Failed to assert duplicate POI values still allow strip.'
+		);
+	}
+
+	/**
+	 * Additional POI keys (office, leisure) contribute to strip list.
+	 *
+	 * @covers ::search_addresses
+	 *
+	 * @return void
+	 */
+	public function test_search_addresses_poi_office_key_strips_first_segment(): void {
+		$instance = Geocoding::get_instance();
+
+		$mock_body = array(
+			array(
+				'lat'          => '1',
+				'lon'          => '2',
+				'display_name' => 'Office Tower, District, Country',
+				'address'      => array(
+					'office' => 'Office Tower',
+				),
+			),
+		);
+
+		$this->http_mock->mock(
+			'*',
+			array(
+				'body' => wp_json_encode( $mock_body ),
+			)
+		);
+
+		$request = new WP_REST_Request( 'GET' );
+		$request->set_param( 'q', 'Office' );
+
+		$response = $instance->search_addresses( $request );
+		$data     = $response->get_data();
+
+		$this->assertStringNotContainsString(
+			'Office Tower, District',
+			$data['suggestions'][0]['label'],
+			'Failed to assert office POI stripped.'
+		);
+	}
+
+	/**
+	 * `municipality` is used as locality when city keys are absent.
+	 *
+	 * @covers ::search_addresses
+	 *
+	 * @return void
+	 */
+	public function test_search_addresses_locality_from_municipality(): void {
+		$instance = Geocoding::get_instance();
+
+		$mock_body = array(
+			array(
+				'lat'     => '1',
+				'lon'     => '2',
+				'address' => array(
+					'road'          => 'Main',
+					'municipality'  => 'Muni Name',
+					'postcode'      => '11111',
+				),
+			),
+		);
+
+		$this->http_mock->mock(
+			'*',
+			array(
+				'body' => wp_json_encode( $mock_body ),
+			)
+		);
+
+		$request = new WP_REST_Request( 'GET' );
+		$request->set_param( 'q', 'Muni' );
+
+		$response = $instance->search_addresses( $request );
+		$data     = $response->get_data();
+
+		$this->assertStringContainsString( 'Muni Name', $data['suggestions'][0]['label'] );
+		$this->assertStringContainsString( '11111', $data['suggestions'][0]['label'] );
+	}
+
+	/**
+	 * `suburb` is used as locality when earlier keys are absent.
+	 *
+	 * @covers ::search_addresses
+	 *
+	 * @return void
+	 */
+	public function test_search_addresses_locality_from_suburb(): void {
+		$instance = Geocoding::get_instance();
+
+		$mock_body = array(
+			array(
+				'lat'     => '1',
+				'lon'     => '2',
+				'address' => array(
+					'suburb' => 'West End',
+					'state'  => 'CA',
+				),
+			),
+		);
+
+		$this->http_mock->mock(
+			'*',
+			array(
+				'body' => wp_json_encode( $mock_body ),
+			)
+		);
+
+		$request = new WP_REST_Request( 'GET' );
+		$request->set_param( 'q', 'West' );
+
+		$response = $instance->search_addresses( $request );
+		$data     = $response->get_data();
+
+		$this->assertStringContainsString( 'West End', $data['suggestions'][0]['label'] );
+	}
+
+	/**
+	 * `residential` is used for street line when road-like keys are absent.
+	 *
+	 * @covers ::search_addresses
+	 *
+	 * @return void
+	 */
+	public function test_search_addresses_street_line_uses_residential_key(): void {
+		$instance = Geocoding::get_instance();
+
+		$mock_body = array(
+			array(
+				'lat'     => '1',
+				'lon'     => '2',
+				'address' => array(
+					'residential' => 'Crescent Close',
+					'city'        => 'Suburbia',
+				),
+			),
+		);
+
+		$this->http_mock->mock(
+			'*',
+			array(
+				'body' => wp_json_encode( $mock_body ),
+			)
+		);
+
+		$request = new WP_REST_Request( 'GET' );
+		$request->set_param( 'q', 'Crescent' );
+
+		$response = $instance->search_addresses( $request );
+		$data     = $response->get_data();
+
+		$this->assertStringContainsString(
+			'Crescent Close',
+			$data['suggestions'][0]['label'],
+			'Failed to assert residential used in street line.'
+		);
+	}
+
+	/**
+	 * `footway` is used for street line when earlier keys are absent.
+	 *
+	 * @covers ::search_addresses
+	 *
+	 * @return void
+	 */
+	public function test_search_addresses_street_line_uses_footway_key(): void {
+		$instance = Geocoding::get_instance();
+
+		$mock_body = array(
+			array(
+				'lat'     => '1',
+				'lon'     => '2',
+				'address' => array(
+					'footway' => 'River Walk',
+					'town'    => 'River Town',
+				),
+			),
+		);
+
+		$this->http_mock->mock(
+			'*',
+			array(
+				'body' => wp_json_encode( $mock_body ),
+			)
+		);
+
+		$request = new WP_REST_Request( 'GET' );
+		$request->set_param( 'q', 'River' );
+
+		$response = $instance->search_addresses( $request );
+		$data     = $response->get_data();
+
+		$this->assertStringContainsString(
+			'River Walk',
+			$data['suggestions'][0]['label'],
+			'Failed to assert footway used in street line.'
+		);
+	}
+
+	/**
+	 * Remaining POI keys (craft, club, aerialway, historic, building, man_made) are collected.
+	 *
+	 * @covers ::search_addresses
+	 *
+	 * @return void
+	 */
+	public function test_search_addresses_poi_historic_key_strips_first_segment(): void {
+		$instance = Geocoding::get_instance();
+
+		$mock_body = array(
+			array(
+				'lat'          => '1',
+				'lon'          => '2',
+				'display_name' => 'Old Fort, Plains, Nation',
+				'address'      => array(
+					'historic' => 'Old Fort',
+				),
+			),
+		);
+
+		$this->http_mock->mock(
+			'*',
+			array(
+				'body' => wp_json_encode( $mock_body ),
+			)
+		);
+
+		$request = new WP_REST_Request( 'GET' );
+		$request->set_param( 'q', 'Old' );
+
+		$response = $instance->search_addresses( $request );
+		$data     = $response->get_data();
+
+		$this->assertStringNotContainsString(
+			'Old Fort, Plains',
+			$data['suggestions'][0]['label'],
+			'Failed to assert historic POI stripped.'
+		);
+	}
+
+	/**
+	 * `region` from `region` key (not duplicate of locality).
+	 *
+	 * @covers ::search_addresses
+	 *
+	 * @return void
+	 */
+	public function test_search_addresses_region_from_region_key(): void {
+		$instance = Geocoding::get_instance();
+
+		$mock_body = array(
+			array(
+				'lat'     => '1',
+				'lon'     => '2',
+				'address' => array(
+					'city'   => 'Portland',
+					'region' => 'Pacific Northwest',
+				),
+			),
+		);
+
+		$this->http_mock->mock(
+			'*',
+			array(
+				'body' => wp_json_encode( $mock_body ),
+			)
+		);
+
+		$request = new WP_REST_Request( 'GET' );
+		$request->set_param( 'q', 'Port' );
+
+		$response = $instance->search_addresses( $request );
+		$data     = $response->get_data();
+
+		$this->assertStringContainsString( 'Portland', $data['suggestions'][0]['label'] );
+		$this->assertStringContainsString( 'Pacific Northwest', $data['suggestions'][0]['label'] );
+	}
+
+	/**
 	 * Permission callback on /geocode/search matches /geocode (edit_posts).
 	 *
 	 * @covers ::register_endpoints
