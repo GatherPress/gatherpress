@@ -484,7 +484,7 @@ class Geocoding {
 
 		$segments = array_map( 'trim', explode( ',', $display_name ) );
 
-		if ( empty( $segments ) || '' === $segments[0] ) {
+		if ( '' === $segments[0] ) {
 			return $display_name;
 		}
 
