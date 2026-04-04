@@ -47,11 +47,9 @@
 	outline: none;
 	vertical-align: baseline;
 	resize: none;
-	overflow-x: hidden;
-	overflow-y: auto;
+	overflow: hidden auto;
 	white-space: pre-wrap;
 	overflow-wrap: anywhere;
-	word-break: break-word;
 }
 
 .gatherpress-venue-detail__address-input:focus {
