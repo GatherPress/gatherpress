@@ -28,9 +28,6 @@ use WP_REST_Request;
  *
  * Manages event-related functionalities, including registration of event post types and metadata.
  *
- * @todo Refactor this class to reduce complexity (currently 104, threshold 105). Consider
- *       extracting admin column/sorting methods or archive-related logic into separate classes.
- *
  * @since 1.0.0
  */
 class Event_Setup {
@@ -77,28 +74,11 @@ class Event_Setup {
 		add_action( 'delete_post', array( $this, 'delete_event' ) );
 		add_action( 'wp_after_insert_post', array( $this, 'set_datetimes' ) );
 		add_action( 'save_post', array( $this, 'check_waiting_list' ) );
-		add_action(
-			sprintf( 'manage_%s_posts_custom_column', Event::POST_TYPE ),
-			array( $this, 'custom_columns' ),
-			10,
-			2
-		);
-		add_action( 'admin_menu', array( $this, 'modify_all_events_menu_link' ) );
-		add_filter( 'submenu_file', array( $this, 'highlight_events_submenu' ) );
-
 		add_filter( 'redirect_canonical', array( $this, 'disable_ics_canonical_redirect' ), 10, 2 );
-		add_filter(
-			sprintf( 'manage_%s_posts_columns', Event::POST_TYPE ),
-			array( $this, 'set_custom_columns' )
-		);
 		add_filter( 'get_the_date', array( $this, 'get_the_event_date' ), 10, 3 );
 		add_filter( 'the_time', array( $this, 'get_the_event_date' ) );
 		add_filter( 'render_block_core/post-date', array( $this, 'render_event_post_date_block' ), 10, 3 );
 		add_filter( 'display_post_states', array( $this, 'set_event_archive_labels' ), 10, 2 );
-		add_filter(
-			sprintf( 'manage_%s_posts_columns', Event::POST_TYPE ),
-			array( $this, 'remove_comments_column' )
-		);
 	}
 
 	/**
@@ -657,181 +637,6 @@ class Event_Setup {
 	}
 
 	/**
-	 * Populate custom columns for Event post type in the admin dashboard.
-	 *
-	 * Displays additional information, like event datetime and RSVP count, for Event post types.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param string $column  The name of the column to display.
-	 * @param int    $post_id The current post ID.
-	 * @return void
-	 *
-	 * @throws Exception If initializing Event or Rsvp object fails, due to invalid post ID or database issues.
-	 */
-	public function custom_columns( string $column, int $post_id ): void {
-		if ( 'datetime' === $column ) {
-			$event = new Event( $post_id );
-			echo esc_html( $event->get_display_datetime() );
-		}
-
-		if ( 'venue' === $column ) {
-			$event             = new Event( $post_id );
-			$venue_information = $event->get_venue_information();
-			$venue_name        = $venue_information['name'];
-
-			if ( $venue_information['is_online_event'] ) {
-				echo '<span class="dashicons dashicons-video-alt3"></span> ';
-			}
-
-			if ( ! empty( $venue_name ) ) {
-				echo esc_html( $venue_name );
-			} else {
-				echo '—';
-			}
-		}
-
-		if ( 'rsvps' === $column ) {
-			$rsvp_query = Rsvp_Query::get_instance();
-
-			// Get approved RSVPs (standard display).
-			$approved_rsvps = $rsvp_query->get_rsvps(
-				array(
-					'post_id' => $post_id,
-					'status'  => 'approve',
-					'count'   => true,
-				)
-			);
-
-			// Get unapproved RSVPs (pending approval).
-			$unapproved_rsvps = $rsvp_query->get_rsvps(
-				array(
-					'post_id' => $post_id,
-					'status'  => 'hold',
-					'count'   => true,
-				)
-			);
-
-			// If no RSVPs at all, show dash.
-			if ( 0 === $approved_rsvps && 0 === $unapproved_rsvps ) {
-				echo '—';
-				return;
-			}
-
-			// Create link to filtered RSVPs page for approved RSVPs.
-			$approved_rsvp_url = add_query_arg(
-				array(
-					'post_type' => Event::POST_TYPE,
-					'page'      => Rsvp::COMMENT_TYPE,
-					'post_id'   => $post_id,
-					'status'    => 'approved',
-				),
-				admin_url( 'edit.php' )
-			);
-
-			// Display approved RSVP count with rounded box.
-			echo '<span class="gatherpress-rsvp-container">';
-			printf(
-				'<a href="%s" class="gatherpress-rsvp-approved"><span class="gatherpress-rsvp-icon">%d</span></a>',
-				esc_url( $approved_rsvp_url ),
-				(int) $approved_rsvps
-			);
-
-			// Show unapproved RSVPs indicator if there are any unapproved.
-			if ( $unapproved_rsvps > 0 ) {
-				$unapproved_rsvp_url = add_query_arg(
-					array(
-						'post_type' => Event::POST_TYPE,
-						'page'      => Rsvp::COMMENT_TYPE,
-						'post_id'   => $post_id,
-						'status'    => 'pending',
-					),
-					admin_url( 'edit.php' )
-				);
-
-				printf(
-					'<a href="%s" class="gatherpress-rsvp-pending" title="%s">%d</a>',
-					esc_url( $unapproved_rsvp_url ),
-					esc_attr( __( 'Unapproved RSVPs', 'gatherpress' ) ),
-					(int) $unapproved_rsvps
-				);
-			}
-
-			echo '</span>';
-		}
-	}
-
-	/**
-	 * Set custom columns for Event post type in the admin dashboard.
-	 *
-	 * This method is used to define custom columns for Event post types in the WordPress admin dashboard.
-	 * It adds additional columns for displaying event date and time, and RSVP count.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param array $columns An associative array of column headings.
-	 * @return array An updated array of column headings, including the custom columns.
-	 */
-	public function set_custom_columns( array $columns ): array {
-		// Remove the author column.
-		unset( $columns['author'] );
-
-		$placement = 2;
-		$insert    = array(
-			'datetime' => __( 'Event date &amp; time', 'gatherpress' ),
-			'venue'    => __( 'Venue', 'gatherpress' ),
-			'rsvps'    => __( 'RSVPs', 'gatherpress' ),
-		);
-
-		return array_slice( $columns, 0, $placement, true ) + $insert + array_slice( $columns, $placement, null, true );
-	}
-
-	/**
-	 * Modify the "Upcoming Events" admin submenu link to default to upcoming events.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @return void
-	 */
-	public function modify_all_events_menu_link(): void {
-		global $submenu;
-
-		$menu_slug = sprintf( 'edit.php?post_type=%s', Event::POST_TYPE );
-
-		if ( empty( $submenu[ $menu_slug ] ) ) {
-			return;
-		}
-
-		foreach ( $submenu[ $menu_slug ] as &$item ) {
-			if ( $menu_slug === $item[2] ) {
-				$item[2] = add_query_arg( 'gatherpress_event_query', 'upcoming', $item[2] );
-				break;
-			}
-		}
-	}
-
-	/**
-	 * Highlight the "Upcoming Events" submenu when viewing events with query filters.
-	 *
-	 * WordPress cannot match the modified submenu URL against the current page,
-	 * so this filter ensures the correct submenu item stays highlighted.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param string|null $submenu_file The current submenu file.
-	 * @return string|null The submenu file to highlight.
-	 */
-	public function highlight_events_submenu( $submenu_file ) {
-		$menu_slug = sprintf( 'edit.php?post_type=%s', Event::POST_TYPE );
-
-		if ( $menu_slug === $submenu_file ) {
-			return add_query_arg( 'gatherpress_event_query', 'upcoming', $menu_slug );
-		}
-
-		return $submenu_file;
-	}
-
-	/**
 	 * Returns the event date instead of the publish date for events.
 	 *
 	 * This method retrieves the event date based on plugin settings, replacing the publish date
@@ -998,28 +803,5 @@ class Event_Setup {
 		);
 
 		$event->save_datetimes( $params );
-	}
-
-	/**
-	 * Remove the comments column from the events list table.
-	 *
-	 * This method removes the comments column from the events list table in the WordPress admin
-	 * to avoid confusion between regular comments and RSVP submissions. The comment count
-	 * bubble can be misleading as it combines unapproved comments and RSVPs without
-	 * distinguishing their types.
-	 *
-	 * @todo Address limitations in WordPress core get_pending_comments_num function that is too
-	 *       generic and does not take custom comment types into account. It just looks for
-	 *       unapproved comments of any type.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param array $columns An array of column names.
-	 * @return array The modified array of column names without the comments column.
-	 */
-	public function remove_comments_column( array $columns ): array {
-		unset( $columns['comments'] );
-
-		return $columns;
 	}
 }
