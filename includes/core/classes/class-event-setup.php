@@ -181,6 +181,8 @@ class Event_Setup {
 					'custom-fields',
 					'gatherpress-event-date',
 					'gatherpress-rsvp',
+					'gatherpress-venue',
+					'gatherpress-online-event',
 				),
 				'menu_icon'     => 'dashicons-nametag',
 				// Note: has_archive must be true for event feed URLs (/event/feed/) to work.

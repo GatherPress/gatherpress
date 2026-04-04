@@ -18,8 +18,8 @@ import { __ } from '@wordpress/i18n';
  */
 import TEMPLATE from './template';
 import { hasValidBlockContext, isInFSETemplate } from '../../helpers/editor';
-import { DISABLED_FIELD_OPACITY } from '../../helpers/event';
-import { TAX_VENUE, CPT_EVENT } from '../../helpers/namespace';
+import { isPostTypeSupporting, DISABLED_FIELD_OPACITY } from '../../helpers/event';
+import { TAX_VENUE } from '../../helpers/namespace';
 
 /**
  * Edit component for the GatherPress Online Event block.
@@ -59,14 +59,14 @@ const Edit = ( { attributes, context } ) => {
 		[]
 	);
 
-	const isEditingEvent = CPT_EVENT === currentPostType;
+	const isEditingEvent = isPostTypeSupporting( 'gatherpress-online-event', currentPostType );
 	const showControls =
 		! isDescendentOfQueryLoop && ! isInFSETemplate() && isEditingEvent;
 
 	// Get venue taxonomy IDs for the current event.
 	const [ venueTaxonomyIds, updateVenueTaxonomyIds ] = useEntityProp(
 		'postType',
-		CPT_EVENT,
+		currentPostType,
 		TAX_VENUE,
 		isEditingEvent ? currentPostId : undefined
 	);
@@ -139,7 +139,9 @@ const Edit = ( { attributes, context } ) => {
 			const editorPostId = select( 'core/editor' )?.getCurrentPostId();
 			const editorPostType = select( 'core/editor' )?.getCurrentPostType();
 			const isCurrentPost = eventId && editorPostId === eventId;
-			const isEditorEvent = CPT_EVENT === editorPostType;
+			const isEditorEvent =
+				!! select( 'core' ).getPostType( editorPostType )
+					?.supports?.[ 'gatherpress-online-event' ];
 
 			let venueTermIds;
 
@@ -148,10 +150,11 @@ const Edit = ( { attributes, context } ) => {
 				venueTermIds =
 					select( 'core/editor' ).getEditedPostAttribute( TAX_VENUE );
 			} else if ( eventId ) {
-				// Fetch from saved post data.
+				// Fetch from saved post data using context or editor post type.
+				const postType = context?.postType || editorPostType;
 				const post = select( 'core' ).getEntityRecord(
 					'postType',
-					CPT_EVENT,
+					postType,
 					eventId
 				);
 				venueTermIds = post?.[ TAX_VENUE ];
@@ -167,7 +170,7 @@ const Edit = ( { attributes, context } ) => {
 				( id ) => String( id ) === String( onlineTermId )
 			);
 		},
-		[ eventId, onlineEventTerm ]
+		[ eventId, onlineEventTerm, context?.postType ]
 	);
 
 	// Dim the block when not an online event or no valid context.
@@ -176,7 +179,7 @@ const Edit = ( { attributes, context } ) => {
 			opacity: hasValidBlockContext( {
 				isDescendentOfQueryLoop,
 				postType: context?.postType,
-				expectedPostType: CPT_EVENT,
+				support: 'gatherpress-online-event',
 				hasData: isOnlineEvent,
 			} )
 				? 1

@@ -26,22 +26,22 @@ jest.mock( '@src/components/VenueNavigator', () => {
 } );
 
 jest.mock( '@src/helpers/event', () => ( {
-	isEventPostType: jest.fn(),
+	isPostTypeSupporting: jest.fn(),
 } ) );
 
 /**
  * Internal dependencies.
  */
 import VenueBlockPluginFill from '@src/blocks/venue/slotfill';
-import { isEventPostType } from '@src/helpers/event';
+import { isPostTypeSupporting } from '@src/helpers/event';
 
 describe( 'VenueBlockPluginFill', () => {
 	beforeEach( () => {
 		jest.clearAllMocks();
 	} );
 
-	it( 'should render Fill with VenueNavigator when isEventPostType returns true', () => {
-		isEventPostType.mockReturnValue( true );
+	it( 'should render Fill with VenueNavigator when isPostTypeSupporting returns true', () => {
+		isPostTypeSupporting.mockReturnValue( true );
 
 		const { getByTestId } = render( <VenueBlockPluginFill /> );
 
@@ -56,8 +56,8 @@ describe( 'VenueBlockPluginFill', () => {
 		expect( fill ).toContainElement( venueNavigator );
 	} );
 
-	it( 'should return null when isEventPostType returns false', () => {
-		isEventPostType.mockReturnValue( false );
+	it( 'should return null when isPostTypeSupporting returns false', () => {
+		isPostTypeSupporting.mockReturnValue( false );
 
 		const { container } = render( <VenueBlockPluginFill /> );
 
@@ -65,11 +65,11 @@ describe( 'VenueBlockPluginFill', () => {
 		expect( container.firstChild ).toBeNull();
 	} );
 
-	it( 'should call isEventPostType on render', () => {
-		isEventPostType.mockReturnValue( true );
+	it( 'should call isPostTypeSupporting with gatherpress-venue on render', () => {
+		isPostTypeSupporting.mockReturnValue( true );
 
 		render( <VenueBlockPluginFill /> );
 
-		expect( isEventPostType ).toHaveBeenCalled();
+		expect( isPostTypeSupporting ).toHaveBeenCalledWith( 'gatherpress-venue' );
 	} );
 } );

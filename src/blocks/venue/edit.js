@@ -16,7 +16,7 @@ import { useSelect } from '@wordpress/data';
  * Internal dependencies
  */
 import { getCurrentContextualPostId, hasValidBlockContext } from '../../helpers/editor';
-import { isEventPostType, DISABLED_FIELD_OPACITY } from '../../helpers/event';
+import { isPostTypeSupporting, DISABLED_FIELD_OPACITY } from '../../helpers/event';
 import { GetVenuePostFromTermId, GetVenuePostFromEventId } from '../../helpers/venue';
 import VenueNavigator from '../../components/VenueNavigator';
 import { CPT_EVENT, CPT_VENUE, TAX_VENUE } from '../../helpers/namespace';
@@ -26,13 +26,13 @@ const Edit = ( props ) => {
 	const { context } = props;
 
 	const isDescendentOfQueryLoop = Number.isFinite( context?.queryId );
-	const isEventContext = isEventPostType( context?.postType );
+	const isEventContext = isPostTypeSupporting( 'gatherpress-venue', context?.postType );
 	const isVenueContext = CPT_VENUE === context?.postType;
 
 	const eventId = getCurrentContextualPostId( context?.postId );
 	const [ venueTaxonomyIds ] = useEntityProp(
 		'postType',
-		CPT_EVENT,
+		context?.postType || CPT_EVENT,
 		TAX_VENUE,
 		isVenueContext ? 0 : eventId
 	);
@@ -99,7 +99,7 @@ const Edit = ( props ) => {
 			opacity: hasValidBlockContext( {
 				isDescendentOfQueryLoop,
 				postType: context?.postType,
-				expectedPostType: CPT_EVENT,
+				support: 'gatherpress-venue',
 				hasData: hasVenue,
 			} )
 				? 1

@@ -16,7 +16,6 @@ namespace GatherPress\Core\Blocks;
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Block;
-use GatherPress\Core\Event;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Utility;
 use GatherPress\Core\Venue;
@@ -269,10 +268,10 @@ class General_Block {
 		$block_instance = Block::get_instance();
 		$post_id        = $block_instance->get_post_id( $block );
 
-		// Only process if we have a valid event post.
+		// Only process if the post type supports RSVP.
 		// Only check publish status if not in preview mode.
 		if (
-			Event::POST_TYPE !== get_post_type( $post_id ) ||
+			! post_type_supports( (string) get_post_type( $post_id ), 'gatherpress-rsvp' ) ||
 			( ! is_preview() && 'publish' !== get_post_status( $post_id ) )
 		) {
 			return $block_content;
@@ -317,10 +316,10 @@ class General_Block {
 		$block_instance = Block::get_instance();
 		$post_id        = $block_instance->get_post_id( $block );
 
-		// Only process if we have a valid event post.
+		// Only process if the post type supports RSVP.
 		// Only check publish status if not in preview mode.
 		if (
-			Event::POST_TYPE !== get_post_type( $post_id ) ||
+			! post_type_supports( (string) get_post_type( $post_id ), 'gatherpress-rsvp' ) ||
 			( ! is_preview() && 'publish' !== get_post_status( $post_id ) )
 		) {
 			return $block_content;

@@ -86,9 +86,31 @@ class Venue {
 		);
 		add_action( 'init', array( $this, 'register_post_type' ) );
 		add_action( 'init', array( $this, 'register_post_meta' ) );
-		add_action( 'init', array( $this, 'register_taxonomy' ) );
+		// Priority 11 so post types registered at default priority 10 are available for get_post_types_by_support().
+		add_action( 'init', array( $this, 'register_taxonomy' ), 11 );
 		add_action( 'post_updated', array( $this, 'maybe_update_term_slug' ), 10, 3 );
 		add_action( 'delete_post', array( $this, 'delete_venue_term' ) );
+	}
+
+	/**
+	 * Returns the post type used as the venue, applying the gatherpress_venue_post_type filter.
+	 *
+	 * Defaults to the built-in gatherpress_venue post type. Developers can override this
+	 * via the filter to designate a custom post type as the venue for a given context.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return string The venue post type slug.
+	 */
+	public static function get_venue_post_type(): string {
+		/**
+		 * Filters the post type used as the venue.
+		 *
+		 * @since 1.0.0
+		 *
+		 * @param string $post_type The venue post type slug. Default 'gatherpress_venue'.
+		 */
+		return (string) apply_filters( 'gatherpress_venue_post_type', self::POST_TYPE );
 	}
 
 	/**
@@ -295,7 +317,7 @@ class Venue {
 	public function register_taxonomy(): void {
 		register_taxonomy(
 			self::TAXONOMY,
-			Event::POST_TYPE,
+			array(),
 			array(
 				'labels'             => array(
 					'name'          => _x( 'Venues', 'Admin menu and taxonomy general name', 'gatherpress' ),
@@ -311,8 +333,11 @@ class Venue {
 				'show_in_rest'       => true,
 			)
 		);
-		// It is necessary to make this taxonomy visible on event posts, within REST responses.
-		register_taxonomy_for_object_type( self::TAXONOMY, Event::POST_TYPE );
+
+		// Register the taxonomy for all post types that support gatherpress-venue.
+		foreach ( get_post_types_by_support( 'gatherpress-venue' ) as $post_type ) {
+			register_taxonomy_for_object_type( self::TAXONOMY, $post_type );
+		}
 	}
 
 	/**
@@ -584,7 +609,7 @@ class Venue {
 		$venue_meta['isOnlineEventTerm'] = false;
 		$venue_meta['onlineEventLink']   = '';
 
-		if ( Event::POST_TYPE === $post_type ) {
+		if ( post_type_supports( $post_type, 'gatherpress-venue' ) ) {
 			$event       = new Event( $post_id );
 			$venue_terms = get_the_terms( $post_id, self::TAXONOMY );
 
