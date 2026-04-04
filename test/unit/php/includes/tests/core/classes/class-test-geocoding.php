@@ -706,7 +706,11 @@ class Test_Geocoding extends Base {
 
 		$response = $instance->search_addresses( $request );
 
-		$this->assertInstanceOf( 'WP_Error', $response, 'Failed to assert response is WP_Error for whitespace-only query.' );
+		$this->assertInstanceOf(
+			'WP_Error',
+			$response,
+			'Failed to assert response is WP_Error for whitespace-only query.'
+		);
 		$this->assertEquals( 'missing_query', $response->get_error_code(), 'Failed to assert correct error code.' );
 	}
 
@@ -735,8 +739,16 @@ class Test_Geocoding extends Base {
 
 		remove_all_filters( 'pre_http_request' );
 
-		$this->assertInstanceOf( 'WP_Error', $response, 'Failed to assert response is WP_Error for search network error.' );
-		$this->assertEquals( 'geocoding_search_failed', $response->get_error_code(), 'Failed to assert correct error code.' );
+		$this->assertInstanceOf(
+			'WP_Error',
+			$response,
+			'Failed to assert response is WP_Error for search network error.'
+		);
+		$this->assertEquals(
+			'geocoding_search_failed',
+			$response->get_error_code(),
+			'Failed to assert correct error code.'
+		);
 		$this->assertStringContainsString(
 			'Search network error',
 			$response->get_error_message(),
@@ -776,8 +788,16 @@ class Test_Geocoding extends Base {
 
 		remove_all_filters( 'pre_http_request' );
 
-		$this->assertInstanceOf( 'WP_Error', $response, 'Failed to assert response is WP_Error for 503 search.' );
-		$this->assertEquals( 'geocoding_search_failed', $response->get_error_code(), 'Failed to assert correct error code.' );
+		$this->assertInstanceOf(
+			'WP_Error',
+			$response,
+			'Failed to assert response is WP_Error for 503 search.'
+		);
+		$this->assertEquals(
+			'geocoding_search_failed',
+			$response->get_error_code(),
+			'Failed to assert correct error code.'
+		);
 		$this->assertStringContainsString(
 			'503',
 			$response->get_error_message(),
@@ -891,10 +911,10 @@ class Test_Geocoding extends Base {
 				'lat'     => '1',
 				'lon'     => '2',
 				'address' => array(
-					'road'         => 'Main St',
-					'city'         => 'Springfield',
-					'state'        => 'Springfield',
-					'postcode'     => '62701',
+					'road'     => 'Main St',
+					'city'     => 'Springfield',
+					'state'    => 'Springfield',
+					'postcode' => '62701',
 				),
 			),
 		);
