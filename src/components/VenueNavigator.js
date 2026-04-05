@@ -14,11 +14,11 @@ import { useState, useCallback, useMemo } from '@wordpress/element';
 /**
  * Internal dependencies
  */
-import { CPT_VENUE, CPT_EVENT, TAX_VENUE } from '../helpers/namespace';
+import { CPT_VENUE, TAX_VENUE } from '../helpers/namespace';
 import CreateVenueForm from './VenueForm';
 import { VenueComboboxProvider } from './VenueComboboxProvider';
 import PopularVenues from './PopularVenues';
-import { isEventPostType } from '../helpers/event';
+import { isPostTypeSupporting } from '../helpers/event';
 import { getCurrentContextualPostId } from '../helpers/editor';
 
 /**
@@ -41,17 +41,24 @@ export default function VenueNavigator( props = null ) {
 
 	const [ search, setSearch ] = useState( '' );
 
-	// Check if we're in an event context to show popular venues.
+	// Check if we're in a venue-supporting context to show popular venues.
 	// When used in panel context, props may be null, so check current editor post type.
-	const isEventContext = props?.context?.postType
-		? isEventPostType( props.context.postType )
-		: isEventPostType();
+	const isEventContext = isPostTypeSupporting( 'gatherpress-venue', props?.context?.postType );
 
 	// Get current venue and update function for event context.
 	const cId = getCurrentContextualPostId( props?.context?.postId );
+
+	// Use context post type if provided, otherwise fall back to the editor's current post type.
+	const currentPostType = useSelect(
+		( select ) =>
+			props?.context?.postType ||
+			select( 'core/editor' )?.getCurrentPostType(),
+		[ props?.context?.postType ]
+	);
+
 	const [ venueTaxonomyIds, updateVenueTaxonomyIds ] = useEntityProp(
 		'postType',
-		CPT_EVENT,
+		currentPostType,
 		TAX_VENUE,
 		cId
 	);

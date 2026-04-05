@@ -67,7 +67,8 @@ class Event_Setup {
 	 */
 	protected function setup_hooks(): void {
 		add_action( 'init', array( $this, 'register_post_type' ) );
-		add_action( 'init', array( $this, 'register_post_meta' ) );
+		// Priority 11 ensures third-party CPTs are discoverable via get_post_types_by_support().
+		add_action( 'init', array( $this, 'register_post_meta' ), 11 );
 		add_action( 'init', array( $this, 'register_calendar_rewrite_rule' ) );
 		add_action( 'parse_request', array( $this, 'handle_calendar_ics_request' ) );
 		add_action( 'template_redirect', array( $this, 'handle_event_archive_redirect' ) );

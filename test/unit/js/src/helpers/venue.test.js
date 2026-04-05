@@ -251,14 +251,19 @@ describe( 'GetVenuePostFromEventId', () => {
 		const mockEventPost = { id: 100, _gatherpress_venue: [] };
 
 		useSelect.mockImplementation( ( callback ) => {
-			const wpSelect = jest.fn( () => ( {
-				getEntityRecord: jest.fn( () => mockEventPost ),
-				getEntityRecords: jest.fn( () => [] ),
-			} ) );
+			const wpSelect = jest.fn( ( store ) => {
+				if ( 'core/editor' === store ) {
+					return { getCurrentPostType: () => 'gatherpress_event' };
+				}
+				return {
+					getEntityRecord: jest.fn( () => mockEventPost ),
+					getEntityRecords: jest.fn( () => [] ),
+				};
+			} );
 			return callback( wpSelect );
 		} );
 
-		const { result } = renderHook( () => GetVenuePostFromEventId( 100 ) );
+		const { result } = renderHook( () => GetVenuePostFromEventId( 100, 'gatherpress_event' ) );
 		// Returns undefined because termId is null.
 		expect( result.current ).toEqual( undefined );
 	} );
@@ -287,7 +292,34 @@ describe( 'GetVenuePostFromEventId', () => {
 			return callback( wpSelect );
 		} );
 
-		const { result } = renderHook( () => GetVenuePostFromEventId( 100 ) );
+		const { result } = renderHook( () => GetVenuePostFromEventId( 100, 'gatherpress_event' ) );
+		expect( result.current ).toEqual( mockVenuePost );
+	} );
+
+	it( 'works with custom post type that supports event-date', () => {
+		const mockEventPost = { id: 200, _gatherpress_venue: [ 9 ] };
+		const mockVenueTerm = { id: 9, slug: '_custom-venue' };
+		const mockVenuePost = [ { id: 90, title: 'Custom Venue' } ];
+
+		let callCount = 0;
+		useSelect.mockImplementation( ( callback ) => {
+			callCount++;
+			if ( 1 === callCount ) {
+				// First call: GetVenuePostFromEventId fetches by gp_shindig post type.
+				const wpSelect = jest.fn( () => ( {
+					getEntityRecord: jest.fn( () => mockEventPost ),
+				} ) );
+				return callback( wpSelect );
+			}
+			// Second call: GetVenuePostFromTermId.
+			const wpSelect = jest.fn( () => ( {
+				getEntityRecord: jest.fn( () => mockVenueTerm ),
+				getEntityRecords: jest.fn( () => mockVenuePost ),
+			} ) );
+			return callback( wpSelect );
+		} );
+
+		const { result } = renderHook( () => GetVenuePostFromEventId( 200, 'gp_shindig' ) );
 		expect( result.current ).toEqual( mockVenuePost );
 	} );
 
@@ -314,21 +346,42 @@ describe( 'GetVenuePostFromEventId', () => {
 			return callback( wpSelect );
 		} );
 
-		const { result } = renderHook( () => GetVenuePostFromEventId( 100 ) );
+		const { result } = renderHook( () => GetVenuePostFromEventId( 100, 'gatherpress_event' ) );
 		// Should return venue post for the first term ID (7).
 		expect( result.current ).toEqual( mockVenuePost );
 	} );
 
 	it( 'returns null when eventPost is undefined', () => {
 		useSelect.mockImplementation( ( callback ) => {
-			const wpSelect = jest.fn( () => ( {
-				getEntityRecord: jest.fn( () => undefined ),
-				getEntityRecords: jest.fn( () => [] ),
-			} ) );
+			const wpSelect = jest.fn( ( store ) => {
+				if ( 'core/editor' === store ) {
+					return { getCurrentPostType: () => 'gatherpress_event' };
+				}
+				return {
+					getEntityRecord: jest.fn( () => undefined ),
+					getEntityRecords: jest.fn( () => [] ),
+				};
+			} );
 			return callback( wpSelect );
 		} );
 
-		const { result } = renderHook( () => GetVenuePostFromEventId( 999 ) );
+		const { result } = renderHook( () => GetVenuePostFromEventId( 999, 'gatherpress_event' ) );
+		expect( result.current ).toEqual( undefined );
+	} );
+
+	it( 'returns null when no postType and no editor post type available', () => {
+		useSelect.mockImplementation( ( callback ) => {
+			const wpSelect = jest.fn( ( store ) => {
+				if ( 'core/editor' === store ) {
+					return { getCurrentPostType: () => null };
+				}
+				return { getEntityRecord: jest.fn(), getEntityRecords: jest.fn( () => [] ) };
+			} );
+			return callback( wpSelect );
+		} );
+
+		const { result } = renderHook( () => GetVenuePostFromEventId( 100 ) );
+		// Returns undefined because resolvedPostType is null — early return.
 		expect( result.current ).toEqual( undefined );
 	} );
 } );

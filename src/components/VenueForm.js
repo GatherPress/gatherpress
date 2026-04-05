@@ -18,8 +18,8 @@ import { useEntityProp, store as coreDataStore } from '@wordpress/core-data';
 /**
  * Internal dependencies.
  */
-import { CPT_EVENT, CPT_VENUE, TAX_VENUE } from '../helpers/namespace';
-import { isEventPostType } from '../helpers/event';
+import { CPT_VENUE, TAX_VENUE } from '../helpers/namespace';
+import { isPostTypeSupporting } from '../helpers/event';
 import { getCurrentContextualPostId } from '../helpers/editor';
 import { geocodeAddress } from '../helpers/geocoding';
 
@@ -178,9 +178,17 @@ function CreateVenueForm( { search, ...props } ) {
 
 	const cId = getCurrentContextualPostId( props?.context?.postId );
 
+	// Use context post type if provided, otherwise fall back to the editor's current post type.
+	const currentPostType = useSelect(
+		( select ) =>
+			props?.context?.postType ||
+			select( 'core/editor' )?.getCurrentPostType(),
+		[ props?.context?.postType ]
+	);
+
 	const [ , updateVenueTaxonomyIds ] = useEntityProp(
 		'postType',
-		CPT_EVENT,
+		currentPostType,
 		TAX_VENUE,
 		cId
 	);
@@ -338,7 +346,7 @@ function CreateVenueForm( { search, ...props } ) {
 	 * This function is called when the save button is clicked.
 	 */
 	const saveBogus = async () => {
-		if ( isEventPostType() ) {
+		if ( isPostTypeSupporting( 'gatherpress-venue' ) ) {
 			// This should only run for the VenueTermsCombobox.
 			await updateVenueTermOnEventPost();
 		} else {

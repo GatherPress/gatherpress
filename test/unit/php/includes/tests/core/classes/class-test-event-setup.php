@@ -45,7 +45,7 @@ class Test_Event_Setup extends Base {
 			array(
 				'type'     => 'action',
 				'name'     => 'init',
-				'priority' => 10,
+				'priority' => 11,
 				'callback' => array( $instance, 'register_post_meta' ),
 			),
 			array(

@@ -3,10 +3,10 @@
  */
 import { VenueTermsCombobox } from './VenueTermsCombobox';
 import { VenuePostsCombobox } from './VenuePostsCombobox';
-import { isEventPostType } from '../helpers/event';
+import { isPostTypeSupporting } from '../helpers/event';
 
 export const VenueComboboxProvider = ( { search, setSearch, ...props } ) => {
-	const isEventContext = isEventPostType( props?.context?.postType );
+	const isEventContext = isPostTypeSupporting( 'gatherpress-venue', props?.context?.postType );
 	return (
 		<>
 			{ isEventContext && (

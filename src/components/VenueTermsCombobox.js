@@ -13,7 +13,7 @@ import { __ } from '@wordpress/i18n';
  */
 import { getCurrentContextualPostId } from '../helpers/editor';
 import { useVenueOptions } from '../helpers/venue';
-import { CPT_EVENT, TAX_VENUE } from '../helpers/namespace';
+import { TAX_VENUE } from '../helpers/namespace';
 
 /**
  * VenueTermsCombobox component.
@@ -36,9 +36,18 @@ import { CPT_EVENT, TAX_VENUE } from '../helpers/namespace';
 export const VenueTermsCombobox = ( { search, setSearch, ...props } ) => {
 	// Get the current contextual post ID, falling back to editor post ID if not passed.
 	const cId = getCurrentContextualPostId( props?.context?.postId );
+
+	// Use context post type if provided, otherwise fall back to the editor's current post type.
+	const currentPostType = useSelect(
+		( select ) =>
+			props?.context?.postType ||
+			select( 'core/editor' )?.getCurrentPostType(),
+		[ props?.context?.postType ]
+	);
+
 	const [ venueTaxonomyIds, updateVenueTaxonomyIds ] = useEntityProp(
 		'postType',
-		CPT_EVENT,
+		currentPostType,
 		TAX_VENUE,
 		cId
 	);

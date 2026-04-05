@@ -74,12 +74,48 @@ register_post_type( 'my_custom_event', array(
 ) );
 ```
 
-### Planned Supports
+### `gatherpress-venue`
 
-The following supports are planned but not yet implemented:
+Enables physical venue association for a post type. This includes:
 
-- **`gatherpress-venue`** - Physical venue association via the `_gatherpress_venue` taxonomy
-- **`gatherpress-online-event`** - Online event link meta field and online-event term
+- Registration of the `_gatherpress_venue` taxonomy for the post type
+- Venue selector in the block editor
+- Venue block rendering (name, address, map, phone, website)
+- Venue detail field visibility (hides empty address/phone/website blocks)
+
+#### Usage for gatherpress-venue
+
+```php
+add_action( 'init', function() {
+    add_post_type_support( 'my_custom_event', 'gatherpress-venue' );
+}, 11 );
+```
+
+> **Note:** Use priority 11 or later so the `_gatherpress_venue` taxonomy is registered for your post type correctly.
+
+You can also override the venue post type used for lookups via the `gatherpress_venue_post_type` filter:
+
+```php
+add_filter( 'gatherpress_venue_post_type', function( $post_type ) {
+    return 'my_custom_venue';
+} );
+```
+
+### `gatherpress-online-event`
+
+Enables online event functionality for a post type. This includes:
+
+- Online event toggle and link field in the block editor inspector
+- Online Event block rendering (icon and link)
+- Association with the `online-event` term in the `_gatherpress_venue` taxonomy
+
+#### Usage for gatherpress-online-event
+
+```php
+add_action( 'init', function() {
+    add_post_type_support( 'my_custom_event', 'gatherpress-online-event' );
+}, 11 );
+```
 
 ## How It Works
 
@@ -121,5 +157,5 @@ All GatherPress supports use the following naming convention:
 ## Important Notes
 
 - The `gatherpress_events` database table stores data by `post_id` and is post-type agnostic. Any post type with `gatherpress-event-date` support can store datetime data in this table.
-- Supports must be registered before or during `init` (priority 10). GatherPress registers post-type-specific hooks inside `register_post_meta()` which loops over all post types with the relevant support.
+- Supports must be registered before or during `init`. Use **priority 10** (the default) for your `register_post_type()` call. GatherPress itself runs its meta registration and taxonomy setup at priority 11 — this ordering ensures your post type is discoverable via `get_post_types_by_support()` when those hooks fire. For `gatherpress-venue`, a priority of 11 or later is required on any additional `add_post_type_support()` calls (not `register_post_type()` itself) because the venue taxonomy registration loop runs at priority 11.
 - The `Event::POST_TYPE` constant still exists and refers to `gatherpress_event`. It is used for GatherPress's own post type registration but should not be used for feature checks.

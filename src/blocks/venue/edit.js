@@ -19,7 +19,7 @@ import { getCurrentContextualPostId, hasValidBlockContext } from '../../helpers/
 import { isPostTypeSupporting, DISABLED_FIELD_OPACITY } from '../../helpers/event';
 import { GetVenuePostFromTermId, GetVenuePostFromEventId } from '../../helpers/venue';
 import VenueNavigator from '../../components/VenueNavigator';
-import { CPT_EVENT, CPT_VENUE, TAX_VENUE } from '../../helpers/namespace';
+import { CPT_VENUE, TAX_VENUE } from '../../helpers/namespace';
 import { TEMPLATE_WITH_TITLE, TEMPLATE_WITHOUT_TITLE } from './template';
 
 const Edit = ( props ) => {
@@ -29,10 +29,17 @@ const Edit = ( props ) => {
 	const isEventContext = isPostTypeSupporting( 'gatherpress-venue', context?.postType );
 	const isVenueContext = CPT_VENUE === context?.postType;
 
+	// Resolve the effective post type from context or the current editor post type.
+	const currentEditorPostType = useSelect(
+		( select ) => select( 'core/editor' )?.getCurrentPostType(),
+		[]
+	);
+	const effectivePostType = context?.postType || currentEditorPostType;
+
 	const eventId = getCurrentContextualPostId( context?.postId );
 	const [ venueTaxonomyIds ] = useEntityProp(
 		'postType',
-		context?.postType || CPT_EVENT,
+		effectivePostType,
 		TAX_VENUE,
 		isVenueContext ? 0 : eventId
 	);
@@ -70,7 +77,8 @@ const Edit = ( props ) => {
 	// Fetch venue post - use different methods for Query Loop vs direct editing.
 	const venuePostFromTerm = GetVenuePostFromTermId( venueTermId );
 	const venuePostFromEvent = GetVenuePostFromEventId(
-		isDescendentOfQueryLoop ? context?.postId : null
+		isDescendentOfQueryLoop ? context?.postId : null,
+		context?.postType
 	);
 
 	// Use Query Loop result if available, otherwise use direct editing result.

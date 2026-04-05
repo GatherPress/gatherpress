@@ -110,9 +110,9 @@ class Online_Event {
 	 * @return bool True if the event has the online-event term, false otherwise.
 	 */
 	private function has_online_event_term( int $post_id ): bool {
-		// Only check for post types that support online events.
+		// Only render for post types that support online events.
 		if ( ! post_type_supports( (string) get_post_type( $post_id ), 'gatherpress-online-event' ) ) {
-			return true;
+			return false;
 		}
 
 		$venue_terms = get_the_terms( $post_id, Venue::TAXONOMY );

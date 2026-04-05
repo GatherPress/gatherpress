@@ -40,7 +40,6 @@ import DateTimeRange from '../../components/DateTimeRange';
 import { getFromGlobal } from '../../helpers/globals';
 import { isEventPostType, hasValidEventId } from '../../helpers/event';
 import { isInFSETemplate } from '../../helpers/editor';
-import { CPT_EVENT } from '../../helpers/namespace';
 
 const globalDateFormat = getFromGlobal( 'settings.dateFormat' );
 const globalTimeFormat = getFromGlobal( 'settings.timeFormat' );
@@ -234,10 +233,17 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 				};
 			}
 
-			// For Query Loop context, fetch from entity record.
+			// Resolve the post type from context or fall back to the editor's current post type.
+			// This ensures custom post types with gatherpress-event-date support work correctly
+			// in Query Loop blocks and postId override scenarios.
+			const postType =
+				context?.postType ||
+				select( 'core/editor' )?.getCurrentPostType();
+
+			// For Query Loop and override contexts, fetch from entity record.
 			const hasResolved = select( 'core' ).hasFinishedResolution(
 				'getEntityRecord',
-				[ 'postType', CPT_EVENT, postId ]
+				[ 'postType', postType, postId ]
 			);
 
 			if ( ! hasResolved ) {
@@ -246,7 +252,7 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 
 			const meta = select( 'core' ).getEntityRecord(
 				'postType',
-				CPT_EVENT,
+				postType,
 				postId
 			)?.meta;
 
@@ -256,7 +262,7 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 				timezone: meta?.gatherpress_timezone,
 			};
 		},
-		[ postId ]
+		[ postId, context?.postType ]
 	);
 
 	// Show spinner only while loading, not on 404.

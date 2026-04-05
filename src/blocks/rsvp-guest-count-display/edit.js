@@ -10,8 +10,7 @@ import { useEffect } from '@wordpress/element';
  * Internal dependencies.
  */
 import { getEditorDocument } from '../../helpers/editor';
-import { DISABLED_FIELD_OPACITY, isEventPostType } from '../../helpers/event';
-import { CPT_EVENT } from '../../helpers/namespace';
+import { DISABLED_FIELD_OPACITY, isPostTypeSupporting } from '../../helpers/event';
 
 /**
  * Edit function for the RSVP Guest Count Display Block.
@@ -32,8 +31,8 @@ const Edit = ( { context, clientId } ) => {
 	const contextPostId = context?.postId;
 	const rsvpResponses = context?.[ 'gatherpress/rsvpResponses' ] ?? null;
 
-	// Check if context post type is an event.
-	const isEventContext = isEventPostType( context?.postType );
+	// Check if context post type supports RSVP.
+	const isEventContext = isPostTypeSupporting( 'gatherpress-rsvp', context?.postType );
 
 	// Example guest count.
 	let guestCount = 1;
@@ -75,23 +74,26 @@ const Edit = ( { context, clientId } ) => {
 			}
 
 			// If we have a Post ID override, fetch from that post.
+			// Use context post type if available; it corresponds to the same post type as the override.
 			if ( postIdOverride ) {
-				const post = select( 'core' ).getEntityRecord( 'postType', CPT_EVENT, postIdOverride );
+				const overridePostType =
+					context?.postType ||
+					select( 'core/editor' )?.getCurrentPostType();
+				const post = select( 'core' ).getEntityRecord( 'postType', overridePostType, postIdOverride );
 				return post?.meta?.gatherpress_max_guest_limit || 0;
 			}
 
 			// Otherwise check current post.
 			const currentPostType = select( 'core/editor' )?.getCurrentPostType();
-			const isCurrentPostEvent = CPT_EVENT === currentPostType;
 
-			if ( isCurrentPostEvent ) {
+			if ( isPostTypeSupporting( 'gatherpress-rsvp', currentPostType ) ) {
 				return select( 'core/editor' ).getEditedPostAttribute( 'meta' )
 					?.gatherpress_max_guest_limit || 0;
 			}
 
 			return 0;
 		},
-		[ clientId, contextPostId, isEventContext ],
+		[ clientId, contextPostId, isEventContext, context?.postType ],
 	);
 
 	// Apply dimming via CSS when max attendance limit is 0.

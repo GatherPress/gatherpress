@@ -9,7 +9,7 @@ import { store as coreStore } from '@wordpress/core-data';
 /**
  * Internal dependencies
  */
-import { CPT_EVENT, CPT_VENUE, TAX_VENUE } from './namespace';
+import { CPT_VENUE, TAX_VENUE } from './namespace';
 
 /**
  * Check if the current post type is a venue.
@@ -114,24 +114,33 @@ export function GetVenueTermFromPostId( postId = null ) {
 }
 
 /**
- * Retrieves a 'gatherpress_venue' post object from a given 'gatherpress_event' post ID.
+ * Retrieves a 'gatherpress_venue' post object from a given event post ID.
  *
- * Uses the WordPress data store to get the Event post entity from the REST API,
+ * Uses the WordPress data store to get the event post entity from the REST API,
  * extracts the related Venue term ID from its `_gatherpress_venue` taxonomy field,
  * and fetches the corresponding Venue post via `GetVenuePostFromTermId()`.
  *
  * @since 1.0.0
  *
- * @param {number} eventId The ID of the GatherPress event post.
+ * @param {number} eventId  The ID of the event post.
+ * @param {string} postType The post type of the event (defaults to the current editor post type).
  * @return {Object|null} The related Venue post object, or null if none is found.
  */
-export function GetVenuePostFromEventId( eventId ) {
+export function GetVenuePostFromEventId( eventId, postType = null ) {
 	const { termId } = useSelect(
 		( wpSelect ) => {
+			// Resolve the post type: use provided value or fall back to the current editor post type.
+			const resolvedPostType =
+				postType || wpSelect( 'core/editor' )?.getCurrentPostType();
+
+			if ( ! resolvedPostType ) {
+				return { termId: null };
+			}
+
 			// Retrieve the event post entity from the core store.
 			const eventPost = wpSelect( 'core' ).getEntityRecord(
 				'postType',
-				CPT_EVENT,
+				resolvedPostType,
 				eventId
 			);
 			// Extract the venue term ID if available; otherwise return null.
@@ -142,7 +151,7 @@ export function GetVenuePostFromEventId( eventId ) {
 						: null,
 			};
 		},
-		[ eventId ]
+		[ eventId, postType ]
 	);
 
 	// Fetch and return the related Venue post using the term ID.
