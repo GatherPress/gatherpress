@@ -280,6 +280,33 @@ class Test_General_Block extends Base {
 	}
 
 	/**
+	 * Test registration URL placeholder is replaced in anchor tag href.
+	 *
+	 * @since  1.0.0
+	 * @covers ::process_registration_block
+	 *
+	 * @return void
+	 */
+	public function test_registration_url_replaced_in_anchor_href(): void {
+		$general_block = General_Block::get_instance();
+
+		// Enable user registration.
+		update_option( 'users_can_register', 1 );
+
+		// Block without the registration URL class so early return is bypassed.
+		$block_content = '<a href="#gatherpress-registration-url">Register</a>';
+		$block         = array( 'attrs' => array() );
+
+		$result = $general_block->process_registration_block( $block_content, $block );
+
+		$this->assertStringNotContainsString(
+			'#gatherpress-registration-url',
+			$result,
+			'Registration URL placeholder should be replaced in anchor href.'
+		);
+	}
+
+	/**
 	 * Test block content remains when registration is disabled but block doesn't have registration URL class.
 	 *
 	 * @since  1.0.0
