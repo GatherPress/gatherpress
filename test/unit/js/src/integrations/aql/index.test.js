@@ -177,11 +177,11 @@ describe( 'AQL Integration', () => {
 		} );
 
 		it( 'renders event controls panel for AQL blocks with custom event-date-supporting post type', () => {
-			// Mock gp_shindig as a post type that supports gatherpress-event-date.
+			// Mock gatherpress_shindig as a post type that supports gatherpress-event-date.
 			isPostTypeSupporting.mockImplementation(
 				( support, postType ) =>
 					'gatherpress-event-date' === support &&
-					'gp_shindig' === postType
+					'gatherpress_shindig' === postType
 			);
 
 			const MockBlockEdit = () => (
@@ -194,7 +194,7 @@ describe( 'AQL Integration', () => {
 					name="core/query"
 					attributes={ {
 						namespace: 'advanced-query-loop',
-						query: { postType: 'gp_shindig' },
+						query: { postType: 'gatherpress_shindig' },
 					} }
 					setAttributes={ jest.fn() }
 				/>

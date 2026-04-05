@@ -60,7 +60,7 @@ describe( 'getVenueTaxonomy', () => {
 	} );
 
 	it( 'prepends underscore to any given post type slug', () => {
-		expect( getVenueTaxonomy( 'gp_location' ) ).toBe( '_gp_location' );
+		expect( getVenueTaxonomy( 'gatherpress_location' ) ).toBe( '_gatherpress_location' );
 	} );
 } );
 
@@ -371,7 +371,7 @@ describe( 'GetVenuePostFromEventId', () => {
 	} );
 
 	it( 'works with custom post type that uses a custom venue post type', () => {
-		const mockEventPost = { id: 200, _gp_location: [ 9 ] };
+		const mockEventPost = { id: 200, _gatherpress_location: [ 9 ] };
 		const mockVenueTerm = { id: 9, slug: '_custom-venue' };
 		const mockVenuePost = [ { id: 90, title: 'Custom Venue' } ];
 
@@ -379,14 +379,14 @@ describe( 'GetVenuePostFromEventId', () => {
 		useSelect.mockImplementation( ( callback ) => {
 			callCount++;
 			if ( 1 === callCount ) {
-				// First call: GetVenuePostFromEventId fetches by gp_shindig post type.
+				// First call: GetVenuePostFromEventId fetches by gatherpress_shindig post type.
 				const wpSelect = jest.fn( ( store ) => {
 					if ( 'core/editor' === store ) {
 						return {
-							getCurrentPostType: () => 'gp_shindig',
+							getCurrentPostType: () => 'gatherpress_shindig',
 							getEditorSettings: () => ( {
 								gatherpress: {
-									venuePostTypes: { gp_shindig: 'gp_location' },
+									venuePostTypes: { gatherpress_shindig: 'gatherpress_location' },
 								},
 							} ),
 						};
@@ -403,7 +403,7 @@ describe( 'GetVenuePostFromEventId', () => {
 			return callback( wpSelect );
 		} );
 
-		const { result } = renderHook( () => GetVenuePostFromEventId( 200, 'gp_shindig' ) );
+		const { result } = renderHook( () => GetVenuePostFromEventId( 200, 'gatherpress_shindig' ) );
 		expect( result.current ).toEqual( mockVenuePost );
 	} );
 
