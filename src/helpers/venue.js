@@ -163,17 +163,18 @@ export function GetVenueTermFromPostId( postId = null, venuePostType = DEFAULT_V
 }
 
 /**
- * Retrieves a 'gatherpress_venue' post object from a given event post ID.
+ * Retrieves a venue post object from a given event post ID.
  *
- * Uses the WordPress data store to get the event post entity from the REST API,
- * extracts the related Venue term ID from its `_gatherpress_venue` taxonomy field,
- * and fetches the corresponding Venue post via `GetVenuePostFromTermId()`.
+ * Queries the venue taxonomy terms associated with the event post directly
+ * via the REST API (using the `post` parameter on the terms endpoint), avoiding
+ * a separate context=edit fetch of the event post itself. Falls back to the
+ * first non-online-event term and fetches the corresponding venue post.
  *
  * @since 1.0.0
  *
  * @param {number} eventId  The ID of the event post.
  * @param {string} postType The post type of the event (defaults to the current editor post type).
- * @return {Object|null} The related Venue post object, or null if none is found.
+ * @return {Object|null} The related venue post object, or null if none is found.
  */
 export function GetVenuePostFromEventId( eventId, postType = null ) {
 	const { termId, venuePostType } = useSelect(
@@ -182,16 +183,9 @@ export function GetVenuePostFromEventId( eventId, postType = null ) {
 			const resolvedPostType =
 				postType || wpSelect( 'core/editor' )?.getCurrentPostType();
 
-			if ( ! resolvedPostType ) {
+			if ( ! resolvedPostType || ! eventId ) {
 				return { termId: null, venuePostType: DEFAULT_VENUE_POST_TYPE };
 			}
-
-			// Retrieve the event post entity from the core store.
-			const eventPost = wpSelect( 'core' ).getEntityRecord(
-				'postType',
-				resolvedPostType,
-				eventId
-			);
 
 			// Resolve the venue post type for this event post type from editor settings.
 			const venuePostTypeMap =
@@ -201,16 +195,23 @@ export function GetVenuePostFromEventId( eventId, postType = null ) {
 			const resolvedVenuePostType =
 				venuePostTypeMap[ resolvedPostType ] ?? DEFAULT_VENUE_POST_TYPE;
 
-			// Derive the taxonomy key from the venue post type and extract the venue term ID.
+			// Query venue taxonomy terms associated with this event post directly.
+			// This avoids fetching the event post with context=edit, which would fail
+			// for custom post types in query loop contexts.
 			const venueTax = getVenueTaxonomy( resolvedVenuePostType );
-			const venueTaxonomyIds = eventPost?.[ venueTax ];
+			const venueTerms = wpSelect( 'core' ).getEntityRecords(
+				'taxonomy',
+				venueTax,
+				{ post: eventId, per_page: 10, context: 'view' }
+			);
 
-			// Extract the venue term ID if available; otherwise return null.
+			// Find the first non-online-event term.
+			const venueTerm = venueTerms?.find(
+				( term ) => 'online-event' !== term.slug
+			);
+
 			return {
-				termId:
-					eventPost && 1 <= venueTaxonomyIds?.length
-						? venueTaxonomyIds?.[ 0 ]
-						: null,
+				termId: venueTerm?.id ?? null,
 				venuePostType: resolvedVenuePostType,
 			};
 		},
