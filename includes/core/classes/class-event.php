@@ -540,8 +540,9 @@ class Event {
 		);
 
 		$event_post_type = (string) get_post_type( $this->event );
-		$term            = current( (array) get_the_terms( $this->event, Venue::get_taxonomy( Venue::get_venue_post_type( $event_post_type ) ) ) );
-		$venue = null;
+		$taxonomy        = Venue::get_taxonomy( Venue::get_venue_post_type( $event_post_type ) );
+		$term            = current( (array) get_the_terms( $this->event, $taxonomy ) );
+		$venue           = null;
 
 		if ( ! empty( $term ) && is_a( $term, 'WP_Term' ) ) {
 			$venue_information['name'] = $term->name;

@@ -112,9 +112,24 @@ class Venue {
 	 * @return string The taxonomy slug for the given venue post type.
 	 */
 	public static function get_taxonomy( string $venue_post_type = '' ): string {
-		return '_' . ( $venue_post_type ?: self::POST_TYPE );
+		if ( ! $venue_post_type ) {
+			$venue_post_type = self::POST_TYPE;
+		}
+
+		return '_' . $venue_post_type;
 	}
 
+	/**
+	 * Get the venue post type slug for a given event post type.
+	 *
+	 * Applies the 'gatherpress_venue_post_type' filter so developers can map
+	 * custom event post types to their own venue post types.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $event_post_type The event post type requesting a venue post type.
+	 * @return string The venue post type slug.
+	 */
 	public static function get_venue_post_type( string $event_post_type = '' ): string {
 		/**
 		 * Filters the post type used as the venue.
@@ -658,7 +673,8 @@ class Venue {
 	 */
 	public function get_venue_post_from_event_post_id( int $post_id ): ?WP_Post {
 		$event_post_type = (string) get_post_type( $post_id );
-		$venue_terms     = get_the_terms( $post_id, self::get_taxonomy( self::get_venue_post_type( $event_post_type ) ) );
+		$taxonomy        = self::get_taxonomy( self::get_venue_post_type( $event_post_type ) );
+		$venue_terms     = get_the_terms( $post_id, $taxonomy );
 		if ( ! is_array( $venue_terms ) || empty( $venue_terms ) ) {
 			return null;
 		}
