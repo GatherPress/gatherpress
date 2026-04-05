@@ -395,7 +395,7 @@ class Geocoding {
 
 		$parts = array_filter(
 			array_map( 'trim', $parts ),
-			static function ( $p ) {
+			static function ( $p ) : bool {
 				return '' !== $p;
 			}
 		);
@@ -505,7 +505,7 @@ class Geocoding {
 					', ',
 					array_filter(
 						array_map( 'trim', $segments ),
-						static function ( $s ) {
+						static function ( $s ) : bool {
 							return '' !== $s;
 						}
 					)
