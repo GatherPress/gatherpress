@@ -9,7 +9,6 @@ import { store as coreStore } from '@wordpress/core-data';
 /**
  * Internal dependencies
  */
-import { TAX_VENUE } from './namespace';
 
 /**
  * Default venue post type slug used as a fallback when no override is configured.
@@ -19,6 +18,22 @@ import { TAX_VENUE } from './namespace';
  * @type {string}
  */
 const DEFAULT_VENUE_POST_TYPE = 'gatherpress_venue';
+
+/**
+ * Returns the venue taxonomy slug for a given venue post type.
+ *
+ * The taxonomy is derived by prepending an underscore to the venue post type slug,
+ * following the convention established in PHP via Venue::get_taxonomy().
+ * For example, 'gatherpress_venue' becomes '_gatherpress_venue'.
+ *
+ * @since 1.0.0
+ *
+ * @param {string} [venuePostType='gatherpress_venue'] The venue post type slug.
+ * @return {string} The taxonomy slug for the given venue post type.
+ */
+export function getVenueTaxonomy( venuePostType = DEFAULT_VENUE_POST_TYPE ) {
+	return '_' + venuePostType;
+}
 
 /**
  * Retrieves the venue post type slug for a given event post type.
@@ -34,7 +49,7 @@ const DEFAULT_VENUE_POST_TYPE = 'gatherpress_venue';
  */
 export function getVenuePostType( eventPostType = '' ) {
 	const map =
-		select( 'core/editor' )?.getEditorSettings()?.gatherpress
+		select( 'core/editor' )?.getEditorSettings?.()?.gatherpress
 			?.venuePostTypes ?? {};
 	return map[ eventPostType ] ?? DEFAULT_VENUE_POST_TYPE;
 }
@@ -76,10 +91,10 @@ export function GetVenuePostFromTermId( termId, venuePostType = DEFAULT_VENUE_PO
 			if ( null === termId ) {
 				return [];
 			}
-			// Get the term object from the '_gatherpress_venue' taxonomy.
+			// Get the term object from the venue taxonomy derived from the venue post type.
 			const venueTerm = wpSelect( 'core' ).getEntityRecord(
 				'taxonomy',
-				TAX_VENUE,
+				getVenueTaxonomy( venuePostType ),
 				termId
 			);
 			// If term object exists, strip any leading underscore from its slug.
@@ -103,18 +118,19 @@ export function GetVenuePostFromTermId( termId, venuePostType = DEFAULT_VENUE_PO
 }
 
 /**
- * Retrieves the '_gatherpress_venue' term object associated with a given 'gatherpress_venue' post ID.
+ * Retrieves the venue taxonomy term object associated with a given venue post ID.
  *
- * Looks up the Venue post by ID from the `core` data store, prefixes its slug with an underscore
- * (to match the related taxonomy term format), and retrieves the term object from the '_gatherpress_venue' taxonomy.
+ * Looks up the venue post by ID from the `core` data store, prefixes its slug with an underscore
+ * (to match the related taxonomy term format), and retrieves the term object from the derived
+ * venue taxonomy.
  *
  * @since 1.0.0
  *
- * @param {number|null} postId The ID of the GatherPress venue post.
- *                             Defaults to null, in which case no term is retrieved.
- * @return {Object[]|Array}    An array of matching term objects, or an empty array if no matching term is found.
+ * @param {number|null} postId        The ID of the venue post. Defaults to null, in which case no term is retrieved.
+ * @param {string}      venuePostType The venue post type slug. Defaults to 'gatherpress_venue'.
+ * @return {Object[]|Array}           An array of matching term objects, or an empty array if no matching term is found.
  */
-export function GetVenueTermFromPostId( postId = null ) {
+export function GetVenueTermFromPostId( postId = null, venuePostType = DEFAULT_VENUE_POST_TYPE ) {
 	const { venueTerm } = useSelect(
 		( wpSelect ) => {
 			if ( null === postId ) {
@@ -123,16 +139,16 @@ export function GetVenueTermFromPostId( postId = null ) {
 			// Retrieve the venue post entity from the WordPress data store.
 			const venuePost = wpSelect( 'core' ).getEntityRecord(
 				'postType',
-				DEFAULT_VENUE_POST_TYPE,
+				venuePostType,
 				postId
 			);
 			// Prefix the slug with an underscore to match taxonomy term format.
 			const venueSlug = '_' + venuePost.slug;
-			// Fetch the '_gatherpress_venue' taxonomy term matching this slug.
+			// Fetch the venue taxonomy term matching this slug.
 			return {
 				venueTerm: wpSelect( 'core' ).getEntityRecords(
 					'taxonomy',
-					TAX_VENUE,
+					getVenueTaxonomy( venuePostType ),
 					{
 						per_page: 1,
 						slug: venueSlug,
@@ -140,7 +156,7 @@ export function GetVenueTermFromPostId( postId = null ) {
 				),
 			};
 		},
-		[ postId ]
+		[ postId, venuePostType ]
 	);
 
 	return venueTerm;
@@ -179,16 +195,23 @@ export function GetVenuePostFromEventId( eventId, postType = null ) {
 
 			// Resolve the venue post type for this event post type from editor settings.
 			const venuePostTypeMap =
-				wpSelect( 'core/editor' )?.getEditorSettings()?.gatherpress
+				wpSelect( 'core/editor' )?.getEditorSettings?.()?.gatherpress
 					?.venuePostTypes ?? {};
+
+			const resolvedVenuePostType =
+				venuePostTypeMap[ resolvedPostType ] ?? DEFAULT_VENUE_POST_TYPE;
+
+			// Derive the taxonomy key from the venue post type and extract the venue term ID.
+			const venueTax = getVenueTaxonomy( resolvedVenuePostType );
+			const venueTaxonomyIds = eventPost?.[ venueTax ];
 
 			// Extract the venue term ID if available; otherwise return null.
 			return {
 				termId:
-					eventPost && 1 <= eventPost._gatherpress_venue.length
-						? eventPost?._gatherpress_venue?.[ 0 ]
+					eventPost && 1 <= venueTaxonomyIds?.length
+						? venueTaxonomyIds?.[ 0 ]
 						: null,
-				venuePostType: venuePostTypeMap[ resolvedPostType ] ?? DEFAULT_VENUE_POST_TYPE,
+				venuePostType: resolvedVenuePostType,
 			};
 		},
 		[ eventId, postType ]
@@ -236,7 +259,7 @@ export function useVenueOptions(
 	search,
 	venueId,
 	kind = 'taxonomy',
-	name = TAX_VENUE
+	name = getVenueTaxonomy( DEFAULT_VENUE_POST_TYPE )
 ) {
 	const { venue, venues } = useSelect(
 		( wpSelect ) => {
@@ -311,11 +334,12 @@ export function useVenueOptions(
  *
  * @since 1.0.0
  *
- * @param {number} limit Maximum number of popular venues to fetch (default: 3).
+ * @param {number} limit         Maximum number of popular venues to fetch (default: 3).
+ * @param {string} venuePostType Venue post type slug used to derive the taxonomy (default: 'gatherpress_venue').
  *
  * @return {Array} Array of popular venue terms with id, name, and count properties.
  */
-export function usePopularVenues( limit = 3 ) {
+export function usePopularVenues( limit = 3, venuePostType = DEFAULT_VENUE_POST_TYPE ) {
 	const popularVenues = useSelect(
 		( wpSelect ) => {
 			const { getEntityRecords } = wpSelect( coreStore );
@@ -328,13 +352,17 @@ export function usePopularVenues( limit = 3 ) {
 				hide_empty: true, // Only show venues that are actually used.
 			};
 
-			const venues = getEntityRecords( 'taxonomy', TAX_VENUE, query );
+			const venues = getEntityRecords(
+				'taxonomy',
+				getVenueTaxonomy( venuePostType ),
+				query
+			);
 			// Filter out the online-event term since it's controlled by a separate toggle.
 			return venues
 				?.filter( ( venue ) => 'online-event' !== venue.slug )
 				.slice( 0, limit );
 		},
-		[ limit ]
+		[ limit, venuePostType ]
 	);
 
 	return popularVenues ?? [];

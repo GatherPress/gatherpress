@@ -14,8 +14,7 @@ import { useState, useCallback, useMemo } from '@wordpress/element';
 /**
  * Internal dependencies
  */
-import { TAX_VENUE } from '../helpers/namespace';
-import { getVenuePostType } from '../helpers/venue';
+import { getVenuePostType, getVenueTaxonomy } from '../helpers/venue';
 import CreateVenueForm from './VenueForm';
 import { VenueComboboxProvider } from './VenueComboboxProvider';
 import PopularVenues from './PopularVenues';
@@ -31,6 +30,7 @@ export default function VenueNavigator( props = null ) {
 	const addNewItemLabel = __( 'Add New Venue', 'gatherpress' );
 
 	const venuePostType = getVenuePostType( props?.context?.postType );
+	const venueTaxonomy = getVenueTaxonomy( venuePostType );
 
 	/**
 	 * Check if user can CREATE new venues.
@@ -64,18 +64,18 @@ export default function VenueNavigator( props = null ) {
 	const [ venueTaxonomyIds, updateVenueTaxonomyIds ] = useEntityProp(
 		'postType',
 		currentPostType,
-		TAX_VENUE,
+		venueTaxonomy,
 		cId
 	);
 
 	// Get the online-event term to preserve it when selecting a venue.
 	const onlineEventTermId = useSelect( ( wpSelect ) => {
-		const terms = wpSelect( 'core' ).getEntityRecords( 'taxonomy', TAX_VENUE, {
+		const terms = wpSelect( 'core' ).getEntityRecords( 'taxonomy', venueTaxonomy, {
 			slug: 'online-event',
 			per_page: 1,
 		} );
 		return terms?.[ 0 ]?.id || null;
-	}, [] );
+	}, [ venueTaxonomy ] );
 
 	// Check if online-event term is currently assigned.
 	const hasOnlineEventTerm = useMemo( () => {
@@ -123,6 +123,7 @@ export default function VenueNavigator( props = null ) {
 					<PopularVenues
 						onSelect={ handlePopularVenueSelect }
 						currentId={ venueTaxonomyIds?.[ 0 ] }
+						venuePostType={ venuePostType }
 					/>
 				) }
 				{ userCanEdit && (

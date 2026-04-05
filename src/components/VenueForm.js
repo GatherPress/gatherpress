@@ -18,8 +18,7 @@ import { useEntityProp, store as coreDataStore } from '@wordpress/core-data';
 /**
  * Internal dependencies.
  */
-import { TAX_VENUE } from '../helpers/namespace';
-import { getVenuePostType } from '../helpers/venue';
+import { getVenuePostType, getVenueTaxonomy } from '../helpers/venue';
 import { isPostTypeSupporting } from '../helpers/event';
 import { getCurrentContextualPostId } from '../helpers/editor';
 import { geocodeAddress } from '../helpers/geocoding';
@@ -134,6 +133,7 @@ function CreateVenueForm( { search, ...props } ) {
 	const [ titleError, setTitleError ] = useState( '' );
 
 	const venuePostType = getVenuePostType( props?.context?.postType );
+	const venueTaxonomy = getVenueTaxonomy( venuePostType );
 
 	const { lastError, isSaving } = useSelect(
 		( select ) => ( {
@@ -200,7 +200,7 @@ function CreateVenueForm( { search, ...props } ) {
 	const [ , updateVenueTaxonomyIds ] = useEntityProp(
 		'postType',
 		currentPostType,
-		TAX_VENUE,
+		venueTaxonomy,
 		cId
 	);
 
@@ -288,7 +288,7 @@ function CreateVenueForm( { search, ...props } ) {
 	) => {
 		try {
 			const terms = await apiFetch( {
-				path: `/wp/v2/${ TAX_VENUE }?slug=${ newPostSlug }`,
+				path: `/wp/v2/${ venueTaxonomy }?slug=${ newPostSlug }`,
 			} );
 
 			if ( 0 < terms.length ) {

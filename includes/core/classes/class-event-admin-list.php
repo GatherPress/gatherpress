@@ -471,7 +471,7 @@ class Event_Admin_List {
 			. ' ON venue_tr.term_taxonomy_id = venue_tt.term_taxonomy_id'
 			. ' AND venue_tt.taxonomy = %s',
 			$wpdb->term_taxonomy,
-			Venue::TAXONOMY
+			Venue::get_taxonomy( Venue::get_venue_post_type( Event::POST_TYPE ) )
 		);
 		$join .= $wpdb->prepare(
 			' LEFT JOIN %i AS venue_terms ON venue_tt.term_id = venue_terms.term_id',

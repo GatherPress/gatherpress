@@ -99,6 +99,22 @@ class Venue {
 	 * @param string $event_post_type The event post type requesting a venue post type. Default empty string.
 	 * @return string The venue post type slug.
 	 */
+	/**
+	 * Returns the taxonomy slug for a given venue post type.
+	 *
+	 * The taxonomy slug is always derived by prepending an underscore to the venue
+	 * post type slug — for example, 'gatherpress_venue' uses '_gatherpress_venue'.
+	 * Custom venue post types follow the same convention automatically.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $venue_post_type The venue post type slug. Defaults to the built-in venue post type.
+	 * @return string The taxonomy slug for the given venue post type.
+	 */
+	public static function get_taxonomy( string $venue_post_type = '' ): string {
+		return '_' . ( $venue_post_type ?: self::POST_TYPE );
+	}
+
 	public static function get_venue_post_type( string $event_post_type = '' ): string {
 		/**
 		 * Filters the post type used as the venue.
@@ -366,28 +382,30 @@ class Venue {
 	 * @return void
 	 */
 	public function register_taxonomy(): void {
-		register_taxonomy(
-			self::TAXONOMY,
-			array(),
-			array(
-				'labels'             => array(
-					'name'          => _x( 'Venues', 'Admin menu and taxonomy general name', 'gatherpress' ),
-					'singular_name' => _x( 'Venue', 'Admin menu and taxonomy singular name', 'gatherpress' ),
-				),
-				'hierarchical'       => false,
-				'public'             => true,
-				'show_ui'            => false,
-				'show_admin_column'  => false,
-				'query_var'          => true,
-				'publicly_queryable' => true,
-				'rewrite'            => false,
-				'show_in_rest'       => true,
-			)
+		$taxonomy_args = array(
+			'labels'             => array(
+				'name'          => _x( 'Venues', 'Admin menu and taxonomy general name', 'gatherpress' ),
+				'singular_name' => _x( 'Venue', 'Admin menu and taxonomy singular name', 'gatherpress' ),
+			),
+			'hierarchical'       => false,
+			'public'             => true,
+			'show_ui'            => false,
+			'show_admin_column'  => false,
+			'query_var'          => true,
+			'publicly_queryable' => true,
+			'rewrite'            => false,
+			'show_in_rest'       => true,
 		);
 
-		// Register the taxonomy for all post types that support gatherpress-venue.
-		foreach ( get_post_types_by_support( 'gatherpress-venue' ) as $post_type ) {
-			register_taxonomy_for_object_type( self::TAXONOMY, $post_type );
+		// Register one taxonomy per venue post type: '_' . venue_post_type_slug.
+		foreach ( get_post_types_by_support( 'gatherpress-venue-information' ) as $venue_post_type ) {
+			register_taxonomy( self::get_taxonomy( $venue_post_type ), array(), $taxonomy_args );
+		}
+
+		// Register each event post type with the taxonomy of its resolved venue post type.
+		foreach ( get_post_types_by_support( 'gatherpress-venue' ) as $event_post_type ) {
+			$venue_post_type = self::get_venue_post_type( $event_post_type );
+			register_taxonomy_for_object_type( self::get_taxonomy( $venue_post_type ), $event_post_type );
 		}
 	}
 
@@ -420,12 +438,13 @@ class Venue {
 		) {
 			$term_slug = $this->get_venue_term_slug( $post->post_name );
 			$title     = html_entity_decode( get_the_title( $post_id ) );
-			$term      = term_exists( $term_slug, self::TAXONOMY );
+			$taxonomy  = self::get_taxonomy( $post->post_type );
+			$term      = term_exists( $term_slug, $taxonomy );
 
 			if ( empty( $term ) ) {
 				wp_insert_term(
 					$title,
-					self::TAXONOMY,
+					$taxonomy,
 					array(
 						'slug' => $term_slug,
 					)
@@ -531,13 +550,15 @@ class Venue {
 			// Decode the title to ensure special characters are handled correctly.
 			$title = html_entity_decode( get_the_title( $post_id ) );
 
+			$taxonomy = self::get_taxonomy( (string) get_post_type( $post_id ) );
+
 			// Check if the old term exists, and if not, insert the new term.
-			$term = term_exists( $old_term_slug, self::TAXONOMY );
+			$term = term_exists( $old_term_slug, $taxonomy );
 
 			if ( empty( $term ) ) {
 				wp_insert_term(
 					$title,
-					self::TAXONOMY,
+					$taxonomy,
 					array(
 						'slug' => $new_term_slug,
 					)
@@ -546,7 +567,7 @@ class Venue {
 				// Update the existing term with the new name and slug.
 				wp_update_term(
 					intval( $term['term_id'] ),
-					self::TAXONOMY,
+					$taxonomy,
 					array(
 						'name' => $title,
 						'slug' => $new_term_slug,
@@ -578,11 +599,12 @@ class Venue {
 			$term_slug = $this->get_venue_term_slug( $post->post_name );
 
 			// Get the term by slug.
-			$term = get_term_by( 'slug', $term_slug, self::TAXONOMY );
+			$taxonomy = self::get_taxonomy( (string) get_post_type( $post_id ) );
+			$term     = get_term_by( 'slug', $term_slug, $taxonomy );
 
 			// Check if the term exists and delete it.
 			if ( is_a( $term, '\WP_Term' ) ) {
-				wp_delete_term( $term->term_id, self::TAXONOMY );
+				wp_delete_term( $term->term_id, $taxonomy );
 			}
 		}
 	}
@@ -635,12 +657,11 @@ class Venue {
 	 * @return null|WP_Post The Venue post object if found; otherwise, null.
 	 */
 	public function get_venue_post_from_event_post_id( int $post_id ): ?WP_Post {
-		$venue_terms = get_the_terms( $post_id, self::TAXONOMY );
+		$event_post_type = (string) get_post_type( $post_id );
+		$venue_terms     = get_the_terms( $post_id, self::get_taxonomy( self::get_venue_post_type( $event_post_type ) ) );
 		if ( ! is_array( $venue_terms ) || empty( $venue_terms ) ) {
 			return null;
 		}
-
-		$event_post_type = (string) get_post_type( $post_id );
 
 		// Assuming that we have only ONE venue related.
 		return $this->get_venue_post_from_term_slug( $venue_terms[0]->slug, $event_post_type );
@@ -670,7 +691,7 @@ class Venue {
 
 		if ( post_type_supports( $post_type, 'gatherpress-venue' ) ) {
 			$event       = new Event( $post_id );
-			$venue_terms = get_the_terms( $post_id, self::TAXONOMY );
+			$venue_terms = get_the_terms( $post_id, self::get_taxonomy( self::get_venue_post_type( $post_type ) ) );
 
 			if ( ! empty( $venue_terms ) && is_array( $venue_terms ) ) {
 				$venue_term = $venue_terms[0];

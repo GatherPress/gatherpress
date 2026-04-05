@@ -539,7 +539,8 @@ class Event {
 			'is_online_event' => false,
 		);
 
-		$term  = current( (array) get_the_terms( $this->event, Venue::TAXONOMY ) );
+		$event_post_type = (string) get_post_type( $this->event );
+		$term            = current( (array) get_the_terms( $this->event, Venue::get_taxonomy( Venue::get_venue_post_type( $event_post_type ) ) ) );
 		$venue = null;
 
 		if ( ! empty( $term ) && is_a( $term, 'WP_Term' ) ) {

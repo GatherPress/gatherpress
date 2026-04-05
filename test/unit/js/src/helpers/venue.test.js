@@ -34,6 +34,7 @@ import { select, useSelect } from '@wordpress/data';
  */
 import {
 	isVenuePostType,
+	getVenueTaxonomy,
 	GetVenuePostFromTermId,
 	GetVenueTermFromPostId,
 	GetVenuePostFromEventId,
@@ -41,6 +42,27 @@ import {
 	useVenueOptions,
 	usePopularVenues,
 } from '@src/helpers/venue';
+
+/**
+ * Coverage for getVenueTaxonomy.
+ */
+describe( 'getVenueTaxonomy', () => {
+	it( 'returns _gatherpress_venue for default venue post type', () => {
+		expect( getVenueTaxonomy() ).toBe( '_gatherpress_venue' );
+	} );
+
+	it( 'returns _gatherpress_venue when passed gatherpress_venue', () => {
+		expect( getVenueTaxonomy( 'gatherpress_venue' ) ).toBe( '_gatherpress_venue' );
+	} );
+
+	it( 'returns _my_custom_venue for a custom venue post type', () => {
+		expect( getVenueTaxonomy( 'my_custom_venue' ) ).toBe( '_my_custom_venue' );
+	} );
+
+	it( 'prepends underscore to any given post type slug', () => {
+		expect( getVenueTaxonomy( 'gp_location' ) ).toBe( '_gp_location' );
+	} );
+} );
 
 /**
  * Coverage for isVenuePostType.
@@ -349,7 +371,7 @@ describe( 'GetVenuePostFromEventId', () => {
 	} );
 
 	it( 'works with custom post type that uses a custom venue post type', () => {
-		const mockEventPost = { id: 200, _gatherpress_venue: [ 9 ] };
+		const mockEventPost = { id: 200, _gp_location: [ 9 ] };
 		const mockVenueTerm = { id: 9, slug: '_custom-venue' };
 		const mockVenuePost = [ { id: 90, title: 'Custom Venue' } ];
 

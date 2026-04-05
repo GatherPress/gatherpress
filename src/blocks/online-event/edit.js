@@ -19,7 +19,7 @@ import { __ } from '@wordpress/i18n';
 import TEMPLATE from './template';
 import { hasValidBlockContext, isInFSETemplate } from '../../helpers/editor';
 import { isPostTypeSupporting, DISABLED_FIELD_OPACITY } from '../../helpers/event';
-import { TAX_VENUE } from '../../helpers/namespace';
+import { getVenuePostType, getVenueTaxonomy } from '../../helpers/venue';
 
 /**
  * Edit component for the GatherPress Online Event block.
@@ -46,16 +46,21 @@ const Edit = ( { attributes, context } ) => {
 	const { editPost, unlockPostSaving } = useDispatch( 'core/editor' );
 
 	// Get the current post info and venue taxonomy.
-	const { currentPostId, currentPostType, onlineEventTerm } = useSelect(
-		( select ) => ( {
-			currentPostId: select( 'core/editor' )?.getCurrentPostId(),
-			currentPostType: select( 'core/editor' )?.getCurrentPostType(),
-			onlineEventTerm:
-				select( 'core' ).getEntityRecords( 'taxonomy', TAX_VENUE, {
-					slug: 'online-event',
-					per_page: 1,
-				} )?.[ 0 ] || null,
-		} ),
+	const { currentPostId, currentPostType, venueTaxonomy, onlineEventTerm } = useSelect(
+		( select ) => {
+			const editorPostType = select( 'core/editor' )?.getCurrentPostType();
+			const tax = getVenueTaxonomy( getVenuePostType( editorPostType ) );
+			return {
+				currentPostId: select( 'core/editor' )?.getCurrentPostId(),
+				currentPostType: editorPostType,
+				venueTaxonomy: tax,
+				onlineEventTerm:
+					select( 'core' ).getEntityRecords( 'taxonomy', tax, {
+						slug: 'online-event',
+						per_page: 1,
+					} )?.[ 0 ] || null,
+			};
+		},
 		[]
 	);
 
@@ -67,7 +72,7 @@ const Edit = ( { attributes, context } ) => {
 	const [ venueTaxonomyIds, updateVenueTaxonomyIds ] = useEntityProp(
 		'postType',
 		currentPostType,
-		TAX_VENUE,
+		venueTaxonomy,
 		isEditingEvent ? currentPostId : undefined
 	);
 
@@ -148,7 +153,7 @@ const Edit = ( { attributes, context } ) => {
 			if ( isCurrentPost || ( ! eventId && isEditorEvent ) ) {
 				// Use live editor data for current post.
 				venueTermIds =
-					select( 'core/editor' ).getEditedPostAttribute( TAX_VENUE );
+					select( 'core/editor' ).getEditedPostAttribute( venueTaxonomy );
 			} else if ( eventId ) {
 				// Fetch from saved post data using context or editor post type.
 				const postType = context?.postType || editorPostType;
@@ -157,7 +162,7 @@ const Edit = ( { attributes, context } ) => {
 					postType,
 					eventId
 				);
-				venueTermIds = post?.[ TAX_VENUE ];
+				venueTermIds = post?.[ venueTaxonomy ];
 			} else {
 				return false;
 			}
@@ -170,7 +175,7 @@ const Edit = ( { attributes, context } ) => {
 				( id ) => String( id ) === String( onlineTermId )
 			);
 		},
-		[ eventId, onlineEventTerm, context?.postType ]
+		[ eventId, onlineEventTerm, context?.postType, venueTaxonomy ]
 	);
 
 	// Dim the block when not an online event or no valid context.

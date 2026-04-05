@@ -17,9 +17,8 @@ import { useSelect } from '@wordpress/data';
  */
 import { getCurrentContextualPostId, hasValidBlockContext } from '../../helpers/editor';
 import { isPostTypeSupporting, DISABLED_FIELD_OPACITY } from '../../helpers/event';
-import { GetVenuePostFromTermId, GetVenuePostFromEventId, getVenuePostType } from '../../helpers/venue';
+import { GetVenuePostFromTermId, GetVenuePostFromEventId, getVenuePostType, getVenueTaxonomy } from '../../helpers/venue';
 import VenueNavigator from '../../components/VenueNavigator';
-import { TAX_VENUE } from '../../helpers/namespace';
 import { TEMPLATE_WITH_TITLE, TEMPLATE_WITHOUT_TITLE } from './template';
 
 const Edit = ( props ) => {
@@ -41,7 +40,7 @@ const Edit = ( props ) => {
 	const [ venueTaxonomyIds ] = useEntityProp(
 		'postType',
 		effectivePostType,
-		TAX_VENUE,
+		getVenueTaxonomy( venuePostType ),
 		isVenueContext ? 0 : eventId
 	);
 
@@ -61,13 +60,13 @@ const Edit = ( props ) => {
 				.map( ( termId ) =>
 					wpSelect( 'core' ).getEntityRecord(
 						'taxonomy',
-						TAX_VENUE,
+						getVenueTaxonomy( venuePostType ),
 						termId
 					)
 				)
 				.filter( Boolean );
 		},
-		[ isEditableEventContext, venueTaxonomyIds ]
+		[ isEditableEventContext, venueTaxonomyIds, venuePostType ]
 	);
 
 	// Find venue term ID (excluding online-event).

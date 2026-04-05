@@ -115,7 +115,8 @@ class Online_Event {
 			return false;
 		}
 
-		$venue_terms = get_the_terms( $post_id, Venue::TAXONOMY );
+		$event_post_type = (string) get_post_type( $post_id );
+		$venue_terms     = get_the_terms( $post_id, Venue::get_taxonomy( Venue::get_venue_post_type( $event_post_type ) ) );
 
 		if ( ! is_array( $venue_terms ) ) {
 			return false;
