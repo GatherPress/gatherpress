@@ -14,7 +14,8 @@ import { useState, useCallback, useMemo } from '@wordpress/element';
 /**
  * Internal dependencies
  */
-import { CPT_VENUE, TAX_VENUE } from '../helpers/namespace';
+import { TAX_VENUE } from '../helpers/namespace';
+import { getVenuePostType } from '../helpers/venue';
 import CreateVenueForm from './VenueForm';
 import { VenueComboboxProvider } from './VenueComboboxProvider';
 import PopularVenues from './PopularVenues';
@@ -29,6 +30,8 @@ import { getCurrentContextualPostId } from '../helpers/editor';
 export default function VenueNavigator( props = null ) {
 	const addNewItemLabel = __( 'Add New Venue', 'gatherpress' );
 
+	const venuePostType = getVenuePostType( props?.context?.postType );
+
 	/**
 	 * Check if user can CREATE new venues.
 	 *
@@ -36,8 +39,10 @@ export default function VenueNavigator( props = null ) {
 	 *       https://developer.wordpress.org/block-editor/reference-guides/packages/packages-core-data/#useresourcepermissions
 	 */
 	const userCanEdit = useSelect( ( select ) => {
-		return select( coreDataStore ).canUser( 'create', CPT_VENUE + 's' ); // needs to be plural, because canUser currently only supports resources in the wp/v2 namespace.
-	}, [] );
+		const venuePostTypeObj = select( 'core' ).getPostType( venuePostType );
+		const restBase = venuePostTypeObj?.rest_base || venuePostType + 's';
+		return select( coreDataStore ).canUser( 'create', restBase ); // needs to be plural, because canUser currently only supports resources in the wp/v2 namespace.
+	}, [ venuePostType ] );
 
 	const [ search, setSearch ] = useState( '' );
 

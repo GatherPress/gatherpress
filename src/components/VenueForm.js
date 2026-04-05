@@ -18,7 +18,8 @@ import { useEntityProp, store as coreDataStore } from '@wordpress/core-data';
 /**
  * Internal dependencies.
  */
-import { CPT_VENUE, TAX_VENUE } from '../helpers/namespace';
+import { TAX_VENUE } from '../helpers/namespace';
+import { getVenuePostType } from '../helpers/venue';
 import { isPostTypeSupporting } from '../helpers/event';
 import { getCurrentContextualPostId } from '../helpers/editor';
 import { geocodeAddress } from '../helpers/geocoding';
@@ -132,18 +133,20 @@ function CreateVenueForm( { search, ...props } ) {
 	const [ address, setAddress ] = useState( '' );
 	const [ titleError, setTitleError ] = useState( '' );
 
+	const venuePostType = getVenuePostType( props?.context?.postType );
+
 	const { lastError, isSaving } = useSelect(
 		( select ) => ( {
 			lastError: select( coreDataStore ).getLastEntitySaveError(
 				'postType',
-				CPT_VENUE
+				venuePostType
 			),
 			isSaving: select( coreDataStore ).isSavingEntityRecord(
 				'postType',
-				CPT_VENUE
+				venuePostType
 			),
 		} ),
-		[]
+		[ venuePostType ]
 	);
 
 	/**
@@ -186,6 +189,14 @@ function CreateVenueForm( { search, ...props } ) {
 		[ props?.context?.postType ]
 	);
 
+	const venueRestBase = useSelect(
+		( select ) => {
+			const venuePostTypeObj = select( 'core' ).getPostType( venuePostType );
+			return venuePostTypeObj?.rest_base || venuePostType + 's';
+		},
+		[ venuePostType ]
+	);
+
 	const [ , updateVenueTaxonomyIds ] = useEntityProp(
 		'postType',
 		currentPostType,
@@ -213,7 +224,7 @@ function CreateVenueForm( { search, ...props } ) {
 			const newAttributes = {
 				...blockProps.attributes,
 				selectedPostId: postId,
-				selectedPostType: CPT_VENUE,
+				selectedPostType: venuePostType,
 			};
 			blockProps.setAttributes( newAttributes );
 		}
@@ -239,7 +250,7 @@ function CreateVenueForm( { search, ...props } ) {
 	) => {
 		try {
 			const newPost = await apiFetch( {
-				path: `/wp/v2/${ CPT_VENUE }s`, // !! Watch out & beware of the 's' at the end. // @TODO Make this nicer.
+				path: `/wp/v2/${ venueRestBase }`,
 				method: 'POST',
 				data: {
 					title,

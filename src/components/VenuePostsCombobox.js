@@ -9,8 +9,7 @@ import { __ } from '@wordpress/i18n';
 /**
  * Internal dependencies.
  */
-import { useVenueOptions } from '../helpers/venue';
-import { CPT_VENUE } from '../helpers/namespace';
+import { useVenueOptions, getVenuePostType } from '../helpers/venue';
 
 /**
  * VenuePostsCombobox component.
@@ -31,12 +30,14 @@ export const VenuePostsCombobox = ( { search, setSearch, ...props } ) => {
 	// Get the currently selected venue post ID from block attributes.
 	const venueId = props?.attributes?.selectedPostId;
 
+	const venuePostType = getVenuePostType( props?.context?.postType );
+
 	// Fetch available venue options using a custom query hook.
 	const { venueOptions } = useVenueOptions(
 		search,
 		venueId,
 		'postType',
-		CPT_VENUE
+		venuePostType
 	);
 
 	/**
@@ -51,11 +52,11 @@ export const VenuePostsCombobox = ( { search, setSearch, ...props } ) => {
 			const newAttributes = {
 				...props.attributes,
 				selectedPostId: value,
-				selectedPostType: CPT_VENUE,
+				selectedPostType: venuePostType,
 			};
 			props.setAttributes( newAttributes );
 		},
-		[ props ]
+		[ props, venuePostType ]
 	);
 
 	/**

@@ -14,7 +14,6 @@ import { __ } from '@wordpress/i18n';
  */
 import { createMomentWithTimezone, getTimezone } from './datetime';
 import { getFromGlobal } from './globals';
-import { CPT_EVENT } from './namespace';
 
 /**
  * Opacity value for disabled form fields and elements.
@@ -107,8 +106,8 @@ export function hasValidEventId( postId = null, postType = null ) {
 			return false;
 		}
 
-		// Use the provided postType or fall back to CPT_EVENT for entity lookup.
-		const lookupType = postType || CPT_EVENT;
+		// Use the provided postType or fall back to the current editor post type.
+		const lookupType = postType || select( 'core/editor' )?.getCurrentPostType();
 		const post = select( 'core' ).getEntityRecord(
 			'postType',
 			lookupType,

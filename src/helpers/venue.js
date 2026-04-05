@@ -9,7 +9,16 @@ import { store as coreStore } from '@wordpress/core-data';
 /**
  * Internal dependencies
  */
-import { CPT_VENUE, TAX_VENUE } from './namespace';
+import { TAX_VENUE } from './namespace';
+
+/**
+ * Default venue post type slug used as a fallback when no override is configured.
+ *
+ * @since 1.0.0
+ *
+ * @type {string}
+ */
+const DEFAULT_VENUE_POST_TYPE = 'gatherpress_venue';
 
 /**
  * Retrieves the venue post type slug for a given event post type.
@@ -27,7 +36,7 @@ export function getVenuePostType( eventPostType = '' ) {
 	const map =
 		select( 'core/editor' )?.getEditorSettings()?.gatherpress
 			?.venuePostTypes ?? {};
-	return map[ eventPostType ] ?? CPT_VENUE;
+	return map[ eventPostType ] ?? DEFAULT_VENUE_POST_TYPE;
 }
 
 /**
@@ -61,7 +70,7 @@ export function isVenuePostType() {
  * @param {string}      venuePostType The post type to query for the venue post. Defaults to 'gatherpress_venue'.
  * @return {Object[]|Array}           An array of matching venue post objects, or an empty array if none is found.
  */
-export function GetVenuePostFromTermId( termId, venuePostType = CPT_VENUE ) {
+export function GetVenuePostFromTermId( termId, venuePostType = DEFAULT_VENUE_POST_TYPE ) {
 	const { venuePost } = useSelect(
 		( wpSelect ) => {
 			if ( null === termId ) {
@@ -114,7 +123,7 @@ export function GetVenueTermFromPostId( postId = null ) {
 			// Retrieve the venue post entity from the WordPress data store.
 			const venuePost = wpSelect( 'core' ).getEntityRecord(
 				'postType',
-				CPT_VENUE,
+				DEFAULT_VENUE_POST_TYPE,
 				postId
 			);
 			// Prefix the slug with an underscore to match taxonomy term format.
@@ -158,7 +167,7 @@ export function GetVenuePostFromEventId( eventId, postType = null ) {
 				postType || wpSelect( 'core/editor' )?.getCurrentPostType();
 
 			if ( ! resolvedPostType ) {
-				return { termId: null, venuePostType: CPT_VENUE };
+				return { termId: null, venuePostType: DEFAULT_VENUE_POST_TYPE };
 			}
 
 			// Retrieve the event post entity from the core store.
@@ -179,7 +188,7 @@ export function GetVenuePostFromEventId( eventId, postType = null ) {
 					eventPost && 1 <= eventPost._gatherpress_venue.length
 						? eventPost?._gatherpress_venue?.[ 0 ]
 						: null,
-				venuePostType: venuePostTypeMap[ resolvedPostType ] ?? CPT_VENUE,
+				venuePostType: venuePostTypeMap[ resolvedPostType ] ?? DEFAULT_VENUE_POST_TYPE,
 			};
 		},
 		[ eventId, postType ]

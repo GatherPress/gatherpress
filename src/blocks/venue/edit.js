@@ -17,9 +17,9 @@ import { useSelect } from '@wordpress/data';
  */
 import { getCurrentContextualPostId, hasValidBlockContext } from '../../helpers/editor';
 import { isPostTypeSupporting, DISABLED_FIELD_OPACITY } from '../../helpers/event';
-import { GetVenuePostFromTermId, GetVenuePostFromEventId } from '../../helpers/venue';
+import { GetVenuePostFromTermId, GetVenuePostFromEventId, getVenuePostType } from '../../helpers/venue';
 import VenueNavigator from '../../components/VenueNavigator';
-import { CPT_VENUE, TAX_VENUE } from '../../helpers/namespace';
+import { TAX_VENUE } from '../../helpers/namespace';
 import { TEMPLATE_WITH_TITLE, TEMPLATE_WITHOUT_TITLE } from './template';
 
 const Edit = ( props ) => {
@@ -27,7 +27,7 @@ const Edit = ( props ) => {
 
 	const isDescendentOfQueryLoop = Number.isFinite( context?.queryId );
 	const isEventContext = isPostTypeSupporting( 'gatherpress-venue', context?.postType );
-	const isVenueContext = CPT_VENUE === context?.postType;
+	const isVenueContext = isPostTypeSupporting( 'gatherpress-venue-information', context?.postType );
 
 	// Resolve the effective post type from context or the current editor post type.
 	const currentEditorPostType = useSelect(
@@ -35,6 +35,7 @@ const Edit = ( props ) => {
 		[]
 	);
 	const effectivePostType = context?.postType || currentEditorPostType;
+	const venuePostType = getVenuePostType( effectivePostType );
 
 	const eventId = getCurrentContextualPostId( context?.postId );
 	const [ venueTaxonomyIds ] = useEntityProp(
@@ -123,7 +124,7 @@ const Edit = ( props ) => {
 			<BlockContextProvider
 				value={ {
 					postId: venuePostId,
-					postType: CPT_VENUE,
+					postType: venuePostType,
 				} }
 			>
 				<InnerBlocks template={ template } templateLock={ false } />
