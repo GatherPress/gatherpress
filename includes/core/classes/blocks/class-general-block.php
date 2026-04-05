@@ -18,7 +18,6 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 use GatherPress\Core\Block;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Utility;
-use GatherPress\Core\Venue;
 use WP_HTML_Tag_Processor;
 
 /**
@@ -179,8 +178,8 @@ class General_Block {
 		// First try to get it from block context, then fall back to current post.
 		$venue_post_id = $block['attrs']['postId'] ?? get_the_ID();
 
-		// Verify this is actually a venue post.
-		if ( Venue::POST_TYPE !== get_post_type( $venue_post_id ) ) {
+		// Verify this is actually a venue post type.
+		if ( ! post_type_supports( (string) get_post_type( $venue_post_id ), 'gatherpress-venue-information' ) ) {
 			return $block_content;
 		}
 

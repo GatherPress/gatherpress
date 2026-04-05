@@ -50,24 +50,59 @@ describe( 'isVenuePostType', () => {
 		jest.clearAllMocks();
 	} );
 
-	it( 'returns false when there is no current post type', () => {
+	it( 'returns false when select returns undefined', () => {
 		select.mockReturnValue( undefined );
 		expect( isVenuePostType() ).toBe( false );
 	} );
 
-	it( 'returns false when current post type is gatherpress_event', () => {
-		select.mockImplementation( ( store ) => ( {
-			getCurrentPostType: () =>
-				'core/editor' === store ? 'gatherpress_event' : null,
-		} ) );
+	it( 'returns false when post type does not have gatherpress-venue-information support', () => {
+		select.mockImplementation( ( store ) => {
+			if ( 'core/editor' === store ) {
+				return { getCurrentPostType: () => 'gatherpress_event' };
+			}
+			if ( 'core' === store ) {
+				return {
+					getPostType: () => ( {
+						supports: { 'gatherpress-event-date': true },
+					} ),
+				};
+			}
+			return {};
+		} );
 		expect( isVenuePostType() ).toBe( false );
 	} );
 
-	it( 'returns true when current post type is gatherpress_venue', () => {
-		select.mockImplementation( ( store ) => ( {
-			getCurrentPostType: () =>
-				'core/editor' === store ? 'gatherpress_venue' : null,
-		} ) );
+	it( 'returns true when post type has gatherpress-venue-information support', () => {
+		select.mockImplementation( ( store ) => {
+			if ( 'core/editor' === store ) {
+				return { getCurrentPostType: () => 'gatherpress_venue' };
+			}
+			if ( 'core' === store ) {
+				return {
+					getPostType: () => ( {
+						supports: { 'gatherpress-venue-information': true },
+					} ),
+				};
+			}
+			return {};
+		} );
+		expect( isVenuePostType() ).toBe( true );
+	} );
+
+	it( 'returns true for a custom venue post type with gatherpress-venue-information support', () => {
+		select.mockImplementation( ( store ) => {
+			if ( 'core/editor' === store ) {
+				return { getCurrentPostType: () => 'my_custom_venue' };
+			}
+			if ( 'core' === store ) {
+				return {
+					getPostType: () => ( {
+						supports: { 'gatherpress-venue-information': true },
+					} ),
+				};
+			}
+			return {};
+		} );
 		expect( isVenuePostType() ).toBe( true );
 	} );
 } );
@@ -253,7 +288,14 @@ describe( 'GetVenuePostFromEventId', () => {
 		useSelect.mockImplementation( ( callback ) => {
 			const wpSelect = jest.fn( ( store ) => {
 				if ( 'core/editor' === store ) {
-					return { getCurrentPostType: () => 'gatherpress_event' };
+					return {
+						getCurrentPostType: () => 'gatherpress_event',
+						getEditorSettings: () => ( {
+							gatherpress: {
+								venuePostTypes: { gatherpress_event: 'gatherpress_venue' },
+							},
+						} ),
+					};
 				}
 				return {
 					getEntityRecord: jest.fn( () => mockEventPost ),
@@ -279,9 +321,19 @@ describe( 'GetVenuePostFromEventId', () => {
 			callCount++;
 			if ( 1 === callCount ) {
 				// First call: GetVenuePostFromEventId.
-				const wpSelect = jest.fn( () => ( {
-					getEntityRecord: jest.fn( () => mockEventPost ),
-				} ) );
+				const wpSelect = jest.fn( ( store ) => {
+					if ( 'core/editor' === store ) {
+						return {
+							getCurrentPostType: () => 'gatherpress_event',
+							getEditorSettings: () => ( {
+								gatherpress: {
+									venuePostTypes: { gatherpress_event: 'gatherpress_venue' },
+								},
+							} ),
+						};
+					}
+					return { getEntityRecord: jest.fn( () => mockEventPost ) };
+				} );
 				return callback( wpSelect );
 			}
 			// Second call: GetVenuePostFromTermId.
@@ -296,7 +348,7 @@ describe( 'GetVenuePostFromEventId', () => {
 		expect( result.current ).toEqual( mockVenuePost );
 	} );
 
-	it( 'works with custom post type that supports event-date', () => {
+	it( 'works with custom post type that uses a custom venue post type', () => {
 		const mockEventPost = { id: 200, _gatherpress_venue: [ 9 ] };
 		const mockVenueTerm = { id: 9, slug: '_custom-venue' };
 		const mockVenuePost = [ { id: 90, title: 'Custom Venue' } ];
@@ -306,9 +358,19 @@ describe( 'GetVenuePostFromEventId', () => {
 			callCount++;
 			if ( 1 === callCount ) {
 				// First call: GetVenuePostFromEventId fetches by gp_shindig post type.
-				const wpSelect = jest.fn( () => ( {
-					getEntityRecord: jest.fn( () => mockEventPost ),
-				} ) );
+				const wpSelect = jest.fn( ( store ) => {
+					if ( 'core/editor' === store ) {
+						return {
+							getCurrentPostType: () => 'gp_shindig',
+							getEditorSettings: () => ( {
+								gatherpress: {
+									venuePostTypes: { gp_shindig: 'gp_location' },
+								},
+							} ),
+						};
+					}
+					return { getEntityRecord: jest.fn( () => mockEventPost ) };
+				} );
 				return callback( wpSelect );
 			}
 			// Second call: GetVenuePostFromTermId.
@@ -333,9 +395,19 @@ describe( 'GetVenuePostFromEventId', () => {
 			callCount++;
 			if ( 1 === callCount ) {
 				// First call: GetVenuePostFromEventId extracts term ID.
-				const wpSelect = jest.fn( () => ( {
-					getEntityRecord: jest.fn( () => mockEventPost ),
-				} ) );
+				const wpSelect = jest.fn( ( store ) => {
+					if ( 'core/editor' === store ) {
+						return {
+							getCurrentPostType: () => 'gatherpress_event',
+							getEditorSettings: () => ( {
+								gatherpress: {
+									venuePostTypes: { gatherpress_event: 'gatherpress_venue' },
+								},
+							} ),
+						};
+					}
+					return { getEntityRecord: jest.fn( () => mockEventPost ) };
+				} );
 				return callback( wpSelect );
 			}
 			// Second call: GetVenuePostFromTermId uses term ID 7.
@@ -355,7 +427,14 @@ describe( 'GetVenuePostFromEventId', () => {
 		useSelect.mockImplementation( ( callback ) => {
 			const wpSelect = jest.fn( ( store ) => {
 				if ( 'core/editor' === store ) {
-					return { getCurrentPostType: () => 'gatherpress_event' };
+					return {
+						getCurrentPostType: () => 'gatherpress_event',
+						getEditorSettings: () => ( {
+							gatherpress: {
+								venuePostTypes: { gatherpress_event: 'gatherpress_venue' },
+							},
+						} ),
+					};
 				}
 				return {
 					getEntityRecord: jest.fn( () => undefined ),
@@ -373,7 +452,10 @@ describe( 'GetVenuePostFromEventId', () => {
 		useSelect.mockImplementation( ( callback ) => {
 			const wpSelect = jest.fn( ( store ) => {
 				if ( 'core/editor' === store ) {
-					return { getCurrentPostType: () => null };
+					return {
+						getCurrentPostType: () => null,
+						getEditorSettings: () => ( {} ),
+					};
 				}
 				return { getEntityRecord: jest.fn(), getEntityRecords: jest.fn( () => [] ) };
 			} );

@@ -12,32 +12,56 @@ import { store as coreStore } from '@wordpress/core-data';
 import { CPT_VENUE, TAX_VENUE } from './namespace';
 
 /**
+ * Retrieves the venue post type slug for a given event post type.
+ *
+ * Reads the venuePostTypes map from the block editor settings exposed by PHP
+ * via the block_editor_settings_all filter. Falls back to 'gatherpress_venue'
+ * if the map is unavailable or the event post type is not found.
+ *
+ * @since 1.0.0
+ *
+ * @param {string} [eventPostType=''] The event post type slug to look up.
+ * @return {string} The venue post type slug for the given event post type.
+ */
+export function getVenuePostType( eventPostType = '' ) {
+	const map =
+		select( 'core/editor' )?.getEditorSettings()?.gatherpress
+			?.venuePostTypes ?? {};
+	return map[ eventPostType ] ?? CPT_VENUE;
+}
+
+/**
  * Check if the current post type is a venue.
  *
- * This function determines whether the current post type in the WordPress editor
- * is associated with venue content.
+ * Uses the WordPress data store to check whether the current editor post type
+ * declares the 'gatherpress-venue-information' support, which is the identifier
+ * for all venue post types.
  *
  * @since 1.0.0
  *
  * @return {boolean} True if the current post type is a venue; false otherwise.
  */
 export function isVenuePostType() {
-	return 'gatherpress_venue' === select( 'core/editor' )?.getCurrentPostType();
+	const postType = select( 'core/editor' )?.getCurrentPostType();
+	return !! select( 'core' )
+		?.getPostType( postType )
+		?.supports?.[ 'gatherpress-venue-information' ];
 }
 
 /**
- * Retrieves a 'gatherpress_venue' post object from a given '_gatherpress_venue' term ID.
+ * Retrieves a venue post object from a given '_gatherpress_venue' term ID.
  *
  * Uses the taxonomy term ID to find the corresponding term object,
  * strips any leading underscore from the slug, and fetches the related
- * Venue post whose slug matches the term. Returns the first matching post.
+ * venue post whose slug matches the term. Returns the first matching post.
  *
  * @since 1.0.0
  *
- * @param {number|null} termId The ID of the '_gatherpress_venue' term. If null, no post is retrieved.
- * @return {Object[]|Array}     An array of matching Venue post objects, or an empty array if none is found.
+ * @param {number|null} termId        The ID of the '_gatherpress_venue' term. If null, no post is retrieved.
+ * @param {string}      venuePostType The post type to query for the venue post. Defaults to 'gatherpress_venue'.
+ * @return {Object[]|Array}           An array of matching venue post objects, or an empty array if none is found.
  */
-export function GetVenuePostFromTermId( termId ) {
+export function GetVenuePostFromTermId( termId, venuePostType = CPT_VENUE ) {
 	const { venuePost } = useSelect(
 		( wpSelect ) => {
 			if ( null === termId ) {
@@ -51,11 +75,11 @@ export function GetVenuePostFromTermId( termId ) {
 			);
 			// If term object exists, strip any leading underscore from its slug.
 			const venueSlug = venueTerm?.slug.replace( /^_/, '' );
-			// Query for one Venue post with the matching slug.
+			// Query for one venue post with the matching slug.
 			return {
 				venuePost: wpSelect( 'core' ).getEntityRecords(
 					'postType',
-					CPT_VENUE,
+					venuePostType,
 					{
 						per_page: 1,
 						slug: venueSlug,
@@ -63,7 +87,7 @@ export function GetVenuePostFromTermId( termId ) {
 				),
 			};
 		},
-		[ termId ]
+		[ termId, venuePostType ]
 	);
 
 	return venuePost;
@@ -127,14 +151,14 @@ export function GetVenueTermFromPostId( postId = null ) {
  * @return {Object|null} The related Venue post object, or null if none is found.
  */
 export function GetVenuePostFromEventId( eventId, postType = null ) {
-	const { termId } = useSelect(
+	const { termId, venuePostType } = useSelect(
 		( wpSelect ) => {
 			// Resolve the post type: use provided value or fall back to the current editor post type.
 			const resolvedPostType =
 				postType || wpSelect( 'core/editor' )?.getCurrentPostType();
 
 			if ( ! resolvedPostType ) {
-				return { termId: null };
+				return { termId: null, venuePostType: CPT_VENUE };
 			}
 
 			// Retrieve the event post entity from the core store.
@@ -143,19 +167,26 @@ export function GetVenuePostFromEventId( eventId, postType = null ) {
 				resolvedPostType,
 				eventId
 			);
+
+			// Resolve the venue post type for this event post type from editor settings.
+			const venuePostTypeMap =
+				wpSelect( 'core/editor' )?.getEditorSettings()?.gatherpress
+					?.venuePostTypes ?? {};
+
 			// Extract the venue term ID if available; otherwise return null.
 			return {
 				termId:
 					eventPost && 1 <= eventPost._gatherpress_venue.length
 						? eventPost?._gatherpress_venue?.[ 0 ]
 						: null,
+				venuePostType: venuePostTypeMap[ resolvedPostType ] ?? CPT_VENUE,
 			};
 		},
 		[ eventId, postType ]
 	);
 
-	// Fetch and return the related Venue post using the term ID.
-	return GetVenuePostFromTermId( termId );
+	// Fetch and return the related venue post using the term ID and resolved venue post type.
+	return GetVenuePostFromTermId( termId, venuePostType );
 }
 
 /**

@@ -33,7 +33,7 @@ class Test_Venue extends Base {
 		$hooks    = array(
 			array(
 				'type'     => 'action',
-				'name'     => sprintf( 'save_post_%s', Venue::POST_TYPE ),
+				'name'     => 'save_post',
 				'priority' => 10,
 				'callback' => array( $instance, 'add_venue_term' ),
 			),
@@ -52,7 +52,8 @@ class Test_Venue extends Base {
 			array(
 				'type'     => 'action',
 				'name'     => 'init',
-				'priority' => 10,
+				// Priority 11 ensures custom venue post types are discoverable via get_post_types_by_support().
+				'priority' => 11,
 				'callback' => array( $instance, 'register_post_meta' ),
 			),
 			array(
@@ -72,6 +73,12 @@ class Test_Venue extends Base {
 				'name'     => 'delete_post',
 				'priority' => 10,
 				'callback' => array( $instance, 'delete_venue_term' ),
+			),
+			array(
+				'type'     => 'filter',
+				'name'     => 'block_editor_settings_all',
+				'priority' => 10,
+				'callback' => array( $instance, 'add_editor_settings' ),
 			),
 		);
 
@@ -233,6 +240,7 @@ class Test_Venue extends Base {
 		$instance = Venue::get_instance();
 
 		unregister_post_meta( Venue::POST_TYPE, 'gatherpress_venue_information' );
+		unregister_post_meta( Venue::POST_TYPE, 'gatherpress_venue_map_show' );
 
 		$meta = get_registered_meta_keys( 'post', Venue::POST_TYPE );
 
@@ -242,6 +250,12 @@ class Test_Venue extends Base {
 			'Failed to assert that gatherpress_venue_information does not exist.'
 		);
 
+		$this->assertArrayNotHasKey(
+			'gatherpress_venue_map_show',
+			$meta,
+			'Failed to assert that gatherpress_venue_map_show does not exist.'
+		);
+
 		$instance->register_post_meta();
 
 		$meta = get_registered_meta_keys( 'post', Venue::POST_TYPE );
@@ -249,7 +263,13 @@ class Test_Venue extends Base {
 		$this->assertArrayHasKey(
 			'gatherpress_venue_information',
 			$meta,
-			'Failed to assert that gatherpress_venue_information does exist.'
+			'Failed to assert that gatherpress_venue_information exists for gatherpress-venue-information support.'
+		);
+
+		$this->assertArrayHasKey(
+			'gatherpress_venue_map_show',
+			$meta,
+			'Failed to assert that gatherpress_venue_map_show exists for gatherpress-venue-map support.'
 		);
 	}
 
