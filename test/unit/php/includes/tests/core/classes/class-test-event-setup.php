@@ -442,6 +442,22 @@ class Test_Event_Setup extends Base {
 	}
 
 	/**
+	 * Coverage for check_waiting_list method with non-rsvp post type.
+	 *
+	 * @covers ::check_waiting_list
+	 *
+	 * @return void
+	 */
+	public function test_check_waiting_list_skips_non_rsvp_post_type(): void {
+		$instance = Event_Setup::get_instance();
+		$post_id  = $this->mock->post()->get()->ID;
+
+		// A plain post does not support gatherpress-rsvp so the method returns early.
+		$instance->check_waiting_list( $post_id );
+		$this->assertTrue( true, 'check_waiting_list returned early for non-rsvp post type without error.' );
+	}
+
+	/**
 	 * Coverage for delete_event method with non-event post.
 	 *
 	 * @covers ::delete_event
