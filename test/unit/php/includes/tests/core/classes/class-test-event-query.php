@@ -805,6 +805,57 @@ class Test_Event_Query extends Base {
 	}
 
 	/**
+	 * Coverage for build_venue_tax_query method.
+	 *
+	 * @covers ::build_venue_tax_query
+	 *
+	 * @return void
+	 */
+	public function test_build_venue_tax_query(): void {
+		$instance = Event_Query::get_instance();
+		$venues   = array( '_unit-test-venue', '_another-venue' );
+
+		$tax_query = Utility::invoke_hidden_method( $instance, 'build_venue_tax_query', array( $venues ) );
+
+		$this->assertIsArray(
+			$tax_query,
+			'Failed to assert that tax query is an array.'
+		);
+		$this->assertSame(
+			'OR',
+			$tax_query['relation'],
+			'Failed to assert OR relation in venue tax query.'
+		);
+
+		// Expect one entry per registered venue post type (plus the relation key).
+		$venue_post_types = get_post_types_by_support( 'gatherpress-venue-information' );
+		$expected_count   = count( $venue_post_types ) + 1;
+		$this->assertCount(
+			$expected_count,
+			$tax_query,
+			'Failed to assert the correct count of entries in the venue tax query.'
+		);
+
+		// Verify the first condition uses the correct taxonomy, field, and terms.
+		$first_condition = $tax_query[0];
+		$this->assertSame(
+			'slug',
+			$first_condition['field'],
+			'Failed to assert that the field is slug.'
+		);
+		$this->assertSame(
+			$venues,
+			$first_condition['terms'],
+			'Failed to assert that terms match the provided venues.'
+		);
+		$this->assertSame(
+			Venue::get_taxonomy( Venue::POST_TYPE ),
+			$first_condition['taxonomy'],
+			'Failed to assert the taxonomy matches the built-in venue taxonomy.'
+		);
+	}
+
+	/**
 	 * Coverage for get_datetime_comparison_column method.
 	 *
 	 * @covers ::get_datetime_comparison_column

@@ -905,6 +905,128 @@ class Test_Venue extends Base {
 	}
 
 	/**
+	 * Coverage for get_taxonomy method with empty string argument.
+	 *
+	 * @covers ::get_taxonomy
+	 *
+	 * @return void
+	 */
+	public function test_get_taxonomy(): void {
+		// No argument falls back to the default venue post type.
+		$this->assertSame(
+			'_' . Venue::POST_TYPE,
+			Venue::get_taxonomy(),
+			'Failed to assert that get_taxonomy defaults to the built-in venue taxonomy.'
+		);
+
+		// Empty string also falls back to the default venue post type.
+		$this->assertSame(
+			'_' . Venue::POST_TYPE,
+			Venue::get_taxonomy( '' ),
+			'Failed to assert that get_taxonomy with empty string defaults to the built-in venue taxonomy.'
+		);
+
+		// Custom venue post type returns the correctly prefixed taxonomy.
+		$this->assertSame(
+			'_custom_venue_type',
+			Venue::get_taxonomy( 'custom_venue_type' ),
+			'Failed to assert that get_taxonomy prepends an underscore for a custom venue post type.'
+		);
+	}
+
+	/**
+	 * Coverage for get_venue_post_type_map method.
+	 *
+	 * @covers ::get_venue_post_type_map
+	 *
+	 * @return void
+	 */
+	public function test_get_venue_post_type_map(): void {
+		$map = Venue::get_venue_post_type_map();
+
+		$this->assertIsArray(
+			$map,
+			'Failed to assert that the venue post type map is an array.'
+		);
+		$this->assertArrayHasKey(
+			Event::POST_TYPE,
+			$map,
+			'Failed to assert that the map contains the default event post type.'
+		);
+		$this->assertSame(
+			Venue::POST_TYPE,
+			$map[ Event::POST_TYPE ],
+			'Failed to assert that the default event post type maps to the default venue post type.'
+		);
+	}
+
+	/**
+	 * Coverage for add_editor_settings method.
+	 *
+	 * @covers ::add_editor_settings
+	 *
+	 * @return void
+	 */
+	public function test_add_editor_settings(): void {
+		$instance = Venue::get_instance();
+
+		// Test with an empty settings array.
+		$result = $instance->add_editor_settings( array() );
+
+		$this->assertArrayHasKey(
+			'gatherpress',
+			$result,
+			'Failed to assert that the gatherpress key is added to an empty settings array.'
+		);
+		$this->assertArrayHasKey(
+			'venuePostTypes',
+			$result['gatherpress'],
+			'Failed to assert that venuePostTypes is present in gatherpress settings.'
+		);
+		$this->assertIsArray(
+			$result['gatherpress']['venuePostTypes'],
+			'Failed to assert that venuePostTypes is an array.'
+		);
+
+		// Test that existing gatherpress settings are preserved and venuePostTypes is appended.
+		$settings = array(
+			'gatherpress' => array( 'existingKey' => 'existingValue' ),
+		);
+		$result   = $instance->add_editor_settings( $settings );
+
+		$this->assertSame(
+			'existingValue',
+			$result['gatherpress']['existingKey'],
+			'Failed to assert that existing gatherpress settings are preserved.'
+		);
+		$this->assertArrayHasKey(
+			'venuePostTypes',
+			$result['gatherpress'],
+			'Failed to assert that venuePostTypes is added alongside existing gatherpress settings.'
+		);
+	}
+
+	/**
+	 * Coverage for add_venue_term when post type does not support gatherpress-venue-information.
+	 *
+	 * @covers ::add_venue_term
+	 *
+	 * @return void
+	 */
+	public function test_add_venue_term_unsupported_post_type(): void {
+		$instance = Venue::get_instance();
+		$post     = $this->mock->post( array( 'post_type' => 'post' ) )->get();
+
+		// Calling add_venue_term on a standard 'post' should return early and create no term.
+		$instance->add_venue_term( $post->ID, $post, false );
+
+		$this->assertNull(
+			term_exists( $instance->get_venue_term_slug( $post->post_name ), Venue::TAXONOMY ),
+			'Failed to assert that no venue term was created for a post type without venue-information support.'
+		);
+	}
+
+	/**
 	 * Coverage for get_venue_post_type method.
 	 *
 	 * @covers ::get_venue_post_type
