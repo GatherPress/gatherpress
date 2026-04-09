@@ -8,7 +8,7 @@ import { PanelBody, SelectControl } from '@wordpress/components';
 /**
  * Internal dependencies.
  */
-import { useVenueData, useGeocoding } from './hooks';
+import { useVenueData, useGeocoding, useBlockInsertion } from './hooks';
 import { AddressField, PhoneField, UrlField, TextField } from './fields';
 
 /**
@@ -19,13 +19,21 @@ import { AddressField, PhoneField, UrlField, TextField } from './fields';
  *
  * @since 1.0.0
  *
- * @param {Object}   props               - Component properties.
- * @param {Object}   props.attributes    - Block attributes.
- * @param {Function} props.setAttributes - Function to set block attributes.
- * @param {Object}   props.context       - Block context.
+ * @param {Object}   props                   - Component properties.
+ * @param {Object}   props.attributes        - Block attributes.
+ * @param {Function} props.setAttributes     - Function to set block attributes.
+ * @param {Object}   props.context           - Block context.
+ * @param {string}   props.clientId          - Block client ID.
+ * @param {Function} props.insertBlocksAfter - Function to insert blocks after this block.
  * @return {JSX.Element} The rendered React component.
  */
-const Edit = ( { attributes, setAttributes, context } ) => {
+const Edit = ( {
+	attributes,
+	setAttributes,
+	context,
+	clientId,
+	insertBlocksAfter,
+} ) => {
 	const { placeholder, fieldType, linkTarget, cleanUrl } = attributes;
 	const blockProps = useBlockProps();
 
@@ -41,6 +49,9 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 	// Handle geocoding for address fields.
 	useGeocoding( fieldType, fieldValue, updateVenueField );
 
+	// Handle Enter key block insertion.
+	const { handleKeyDown } = useBlockInsertion( clientId, insertBlocksAfter );
+
 	// Default placeholder text.
 	const placeholderText = placeholder || __( 'Venue detail…', 'gatherpress' );
 
@@ -53,6 +64,7 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 			value: fieldValue,
 			onChange: isDisabled ? () => {} : updateFieldValue,
 			placeholder: placeholderText,
+			onKeyDown: isDisabled ? () => {} : handleKeyDown,
 			disabled: isDisabled,
 		};
 
