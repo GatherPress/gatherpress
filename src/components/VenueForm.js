@@ -3,11 +3,11 @@
  */
 import { __ } from '@wordpress/i18n';
 import {
+	Spinner,
 	Button,
+	TextControl,
 	// eslint-disable-next-line @wordpress/no-unsafe-wp-apis
 	__experimentalHStack as HStack,
-	Spinner,
-	TextControl,
 	useNavigator,
 } from '@wordpress/components';
 import { useState } from '@wordpress/element';
