@@ -19,7 +19,6 @@ import {
 	shouldShowAddressSuggestionUi,
 	useAddressAutocomplete,
 } from '../hooks/use-address-autocomplete';
-import './address-autocomplete-field.scss';
 
 /**
  * Address field with Nominatim suggestions (block: textarea + canvas; settings: TextControl + form).
