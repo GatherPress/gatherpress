@@ -11,6 +11,7 @@ namespace GatherPress\Tests\Core;
 use GatherPress\Core\Event;
 use GatherPress\Core\Venue;
 use GatherPress\Tests\Base;
+use WP_Block_Patterns_Registry;
 
 /**
  * Class Test_Venue.
@@ -34,6 +35,12 @@ class Test_Venue extends Base {
 				'name'     => sprintf( 'save_post_%s', Venue::POST_TYPE ),
 				'priority' => 10,
 				'callback' => array( $instance, 'add_venue_term' ),
+			),
+			array(
+				'type'     => 'action',
+				'name'     => sprintf( 'save_post_%s', Venue::POST_TYPE ),
+				'priority' => 10,
+				'callback' => array( $instance, 'maybe_apply_venue_template' ),
 			),
 			array(
 				'type'     => 'action',
@@ -126,8 +133,8 @@ class Test_Venue extends Base {
 		// Restore default locale for following tests.
 		switch_to_locale( 'en_US' );
 
-		// This also checks that the post type is still registered with the same 'Admin menu and post type singular name' label,
-		// which is used by the method under test and the test itself.
+		// This checks that the post type is still registered with the same
+		// 'Admin menu and post type singular name' label, used by the method under test.
 		$filter = static function ( string $translation, string $text, string $context ): string {
 			if ( 'Venue' !== $text || 'Admin menu and post type singular name' !== $context ) {
 				return $translation;
@@ -155,6 +162,63 @@ class Test_Venue extends Base {
 		);
 
 		remove_filter( 'gettext_with_context_gatherpress', $filter );
+
+		// Test restore_previous_locale() path by switching to a different locale first.
+		switch_to_locale( 'es_ES' );
+		$this->assertSame(
+			'venue',
+			Venue::get_localized_post_type_slug(),
+			'Failed to assert post type slug is "venue" after locale restore.'
+		);
+		// Verify we're back to Spanish after the method restored the previous locale.
+		$this->assertSame(
+			'es_ES',
+			determine_locale(),
+			'Failed to assert locale was restored to Spanish.'
+		);
+
+		// Clean up: restore to en_US for other tests.
+		restore_previous_locale();
+	}
+
+	/**
+	 * Coverage for get_localized_post_type_slug with locale restoration.
+	 *
+	 * Tests that restore_previous_locale() is called when switch_to_locale() succeeds.
+	 * This test creates a scenario where the global locale differs from get_locale().
+	 *
+	 * @covers ::get_localized_post_type_slug
+	 *
+	 * @return void
+	 */
+	public function test_get_localized_post_type_slug_restores_locale(): void {
+		// Create a scenario where get_locale() returns a different value.
+		// than the current global locale by using the locale filter.
+		// phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.Found -- Intentionally overriding locale.
+		$locale_filter = static function ( $locale ) {
+			return 'de_DE';
+		};
+
+		add_filter( 'locale', $locale_filter );
+
+		// Now get_locale() will return 'de_DE', but the global locale is still 'en_US'.
+		// When the method calls switch_to_locale(get_locale()), it will actually switch.
+		// to 'de_DE' and return true, triggering the restore_previous_locale() path.
+		$slug = Venue::get_localized_post_type_slug();
+
+		// Verify the slug was generated.
+		$this->assertNotEmpty( $slug, 'Failed to assert slug is not empty.' );
+
+		// The method should have called restore_previous_locale() since.
+		// switch_to_locale() returned true.
+		// We should be back to en_US (with the filter still active).
+		remove_filter( 'locale', $locale_filter );
+
+		$this->assertSame(
+			'en_US',
+			determine_locale(),
+			'Failed to assert locale was restored after method execution.'
+		);
 	}
 
 	/**
@@ -171,13 +235,49 @@ class Test_Venue extends Base {
 
 		$meta = get_registered_meta_keys( 'post', Venue::POST_TYPE );
 
-		$this->assertArrayNotHasKey( 'gatherpress_venue_information', $meta, 'Failed to assert that gatherpress_venue_information does not exist.' );
+		$this->assertArrayNotHasKey(
+			'gatherpress_venue_information',
+			$meta,
+			'Failed to assert that gatherpress_venue_information does not exist.'
+		);
 
 		$instance->register_post_meta();
 
 		$meta = get_registered_meta_keys( 'post', Venue::POST_TYPE );
 
-		$this->assertArrayHasKey( 'gatherpress_venue_information', $meta, 'Failed to assert that gatherpress_venue_information does exist.' );
+		$this->assertArrayHasKey(
+			'gatherpress_venue_information',
+			$meta,
+			'Failed to assert that gatherpress_venue_information does exist.'
+		);
+	}
+
+	/**
+	 * Tests can_edit_posts_meta authorization callback.
+	 *
+	 * @covers ::can_edit_posts_meta
+	 *
+	 * @return void
+	 */
+	public function test_can_edit_posts_meta(): void {
+		$instance = Venue::get_instance();
+
+		// Test with user who can edit posts.
+		$editor_id = $this->factory->user->create( array( 'role' => 'editor' ) );
+		wp_set_current_user( $editor_id );
+
+		$this->assertTrue( $instance->can_edit_posts_meta(), 'Editor should be able to edit post meta.' );
+
+		// Test with user who cannot edit posts.
+		$subscriber_id = $this->factory->user->create( array( 'role' => 'subscriber' ) );
+		wp_set_current_user( $subscriber_id );
+
+		$this->assertFalse( $instance->can_edit_posts_meta(), 'Subscriber should not be able to edit post meta.' );
+
+		// Test with logged-out user.
+		wp_set_current_user( 0 );
+
+		$this->assertFalse( $instance->can_edit_posts_meta(), 'Logged-out user should not be able to edit post meta.' );
 	}
 
 	/**
@@ -197,6 +297,26 @@ class Test_Venue extends Base {
 		$instance->register_taxonomy();
 
 		$this->assertTrue( taxonomy_exists( Venue::TAXONOMY ), 'Failed to assert that taxonomy exists.' );
+
+		// Verify taxonomy properties needed for Query Loop block integration.
+		$taxonomy = get_taxonomy( Venue::TAXONOMY );
+
+		$this->assertTrue(
+			$taxonomy->publicly_queryable,
+			'Taxonomy should be publicly queryable for Query Loop block taxonomy filters.'
+		);
+		$this->assertFalse(
+			$taxonomy->rewrite,
+			'Taxonomy rewrite should be disabled to prevent public archive URLs.'
+		);
+		$this->assertTrue(
+			$taxonomy->show_in_rest,
+			'Taxonomy should be available in REST API.'
+		);
+		$this->assertFalse(
+			$taxonomy->show_ui,
+			'Taxonomy should remain hidden from admin UI as a shadow taxonomy.'
+		);
 	}
 
 	/**
@@ -442,7 +562,6 @@ class Test_Venue extends Base {
 
 		// Generic test for an in person event.
 		$this->assertFalse( $venue_meta['isOnlineEventTerm'] );
-		$this->assertEmpty( $venue_meta['onlineEventLink'] );
 
 		$venue_title = 'Unit Test Venue';
 
@@ -461,6 +580,306 @@ class Test_Venue extends Base {
 			$venue_title,
 			$venue_meta['name'],
 			'Failed to assert venue title matches the venue meta title.'
+		);
+	}
+
+	/**
+	 * Coverage for get_venue_meta method with valid JSON venue information.
+	 *
+	 * @covers ::get_venue_meta
+	 *
+	 * @return void
+	 */
+	public function test_get_venue_meta_with_venue_info_json(): void {
+		$venue_title = 'Unit Test Venue With Info';
+
+		$venue = $this->mock->post(
+			array(
+				'post_type'  => Venue::POST_TYPE,
+				'post_name'  => 'unit-test-venue-with-info',
+				'post_title' => $venue_title,
+			)
+		)->get();
+
+		// Add venue information as JSON.
+		$venue_info = array(
+			'fullAddress' => '123 Test Street, Test City, TS 12345',
+			'phoneNumber' => '555-123-4567',
+			'website'     => 'https://example.com',
+			'latitude'    => '40.7128',
+			'longitude'   => '-74.0060',
+		);
+		add_post_meta( $venue->ID, 'gatherpress_venue_information', wp_json_encode( $venue_info ) );
+
+		$venue_meta = Venue::get_instance()->get_venue_meta( $venue->ID, Venue::POST_TYPE );
+
+		// Test that venue information is correctly extracted from JSON.
+		$this->assertEquals(
+			$venue_title,
+			$venue_meta['name'],
+			'Failed to assert venue title matches.'
+		);
+		$this->assertEquals(
+			'123 Test Street, Test City, TS 12345',
+			$venue_meta['fullAddress'],
+			'Failed to assert fullAddress matches.'
+		);
+		$this->assertEquals(
+			'555-123-4567',
+			$venue_meta['phoneNumber'],
+			'Failed to assert phoneNumber matches.'
+		);
+		$this->assertEquals(
+			'https://example.com',
+			$venue_meta['website'],
+			'Failed to assert website matches.'
+		);
+		$this->assertEquals(
+			'40.7128',
+			$venue_meta['latitude'],
+			'Failed to assert latitude matches.'
+		);
+		$this->assertEquals(
+			'-74.0060',
+			$venue_meta['longitude'],
+			'Failed to assert longitude matches.'
+		);
+	}
+
+	/**
+	 * Coverage for get_venue_post_from_event_post_id method.
+	 *
+	 * @covers ::get_venue_post_from_event_post_id
+	 *
+	 * @return void
+	 */
+	public function test_get_venue_post_from_event_post_id(): void {
+		// Create a venue post.
+		$venue = $this->mock->post(
+			array(
+				'post_type'  => Venue::POST_TYPE,
+				'post_name'  => 'test-venue-for-event',
+				'post_title' => 'Test Venue For Event',
+			)
+		)->get();
+
+		// Create the venue term with the correct slug format.
+		$term_slug = Venue::get_instance()->get_venue_term_slug( $venue->post_name );
+		wp_insert_term(
+			'Test Venue For Event',
+			Venue::TAXONOMY,
+			array( 'slug' => $term_slug )
+		);
+
+		// Create an event post.
+		$event = $this->mock->post(
+			array(
+				'post_type' => Event::POST_TYPE,
+				'post_name' => 'test-event-with-venue',
+			)
+		)->get();
+
+		// Associate the event with the venue term.
+		wp_set_post_terms( $event->ID, $term_slug, Venue::TAXONOMY );
+
+		// Get the venue post from the event.
+		$result = Venue::get_instance()->get_venue_post_from_event_post_id( $event->ID );
+
+		// The result should be the venue post.
+		$this->assertInstanceOf(
+			'WP_Post',
+			$result,
+			'Should return a WP_Post instance.'
+		);
+		$this->assertEquals(
+			$venue->ID,
+			$result->ID,
+			'Should return the correct venue post.'
+		);
+	}
+
+	/**
+	 * Coverage for get_venue_post_from_event_post_id when event has no venue terms.
+	 *
+	 * @covers ::get_venue_post_from_event_post_id
+	 *
+	 * @return void
+	 */
+	public function test_get_venue_post_from_event_post_id_no_terms(): void {
+		// Create an event post without any venue terms.
+		$event = $this->mock->post(
+			array(
+				'post_type' => Event::POST_TYPE,
+				'post_name' => 'test-event-no-venue',
+			)
+		)->get();
+
+		// Get the venue post from the event.
+		$result = Venue::get_instance()->get_venue_post_from_event_post_id( $event->ID );
+
+		// The result should be null since there are no venue terms.
+		$this->assertNull(
+			$result,
+			'Should return null when event has no venue terms.'
+		);
+	}
+
+	/**
+	 * Coverage for maybe_apply_venue_template method.
+	 *
+	 * Verifies that the venue template content is applied when a venue
+	 * is saved with empty content (e.g., created via REST API).
+	 *
+	 * @covers ::maybe_apply_venue_template
+	 *
+	 * @return void
+	 */
+	public function test_maybe_apply_venue_template(): void {
+		$instance = Venue::get_instance();
+
+		// Create a venue post with empty content (simulating REST API creation).
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type'    => Venue::POST_TYPE,
+				'post_status'  => 'publish',
+				'post_content' => '',
+			)
+		);
+
+		$post = get_post( $post_id );
+
+		// Call the method directly.
+		$instance->maybe_apply_venue_template( $post_id, $post );
+
+		// Refresh the post data.
+		$updated_post = get_post( $post_id );
+
+		$this->assertNotEmpty(
+			$updated_post->post_content,
+			'Venue with empty content should have template applied.'
+		);
+
+		$this->assertStringContainsString(
+			'wp:gatherpress/venue',
+			$updated_post->post_content,
+			'Template content should contain venue block.'
+		);
+	}
+
+	/**
+	 * Coverage for maybe_apply_venue_template skipping non-empty content.
+	 *
+	 * Verifies that the template is NOT applied when venue already has content.
+	 *
+	 * @covers ::maybe_apply_venue_template
+	 *
+	 * @return void
+	 */
+	public function test_maybe_apply_venue_template_skips_non_empty(): void {
+		$instance         = Venue::get_instance();
+		$existing_content = '<!-- wp:paragraph --><p>Existing content.</p><!-- /wp:paragraph -->';
+
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type'    => Venue::POST_TYPE,
+				'post_status'  => 'publish',
+				'post_content' => $existing_content,
+			)
+		);
+
+		$post = get_post( $post_id );
+
+		$instance->maybe_apply_venue_template( $post_id, $post );
+
+		// Content should remain unchanged.
+		$updated_post = get_post( $post_id );
+
+		$this->assertSame(
+			$existing_content,
+			$updated_post->post_content,
+			'Venue with existing content should not be modified.'
+		);
+	}
+
+	/**
+	 * Coverage for maybe_apply_venue_template skipping draft posts.
+	 *
+	 * Verifies that the template is NOT applied to draft venues.
+	 *
+	 * @covers ::maybe_apply_venue_template
+	 *
+	 * @return void
+	 */
+	public function test_maybe_apply_venue_template_skips_drafts(): void {
+		$instance = Venue::get_instance();
+
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type'    => Venue::POST_TYPE,
+				'post_status'  => 'draft',
+				'post_content' => '',
+			)
+		);
+
+		$post = get_post( $post_id );
+
+		$instance->maybe_apply_venue_template( $post_id, $post );
+
+		// Content should remain empty for drafts.
+		$updated_post = get_post( $post_id );
+
+		$this->assertEmpty(
+			$updated_post->post_content,
+			'Draft venue should not have template applied.'
+		);
+	}
+
+	/**
+	 * Coverage for maybe_apply_venue_template when pattern is not registered.
+	 *
+	 * Verifies that the method returns early when the venue-template
+	 * pattern is not found in the registry.
+	 *
+	 * @covers ::maybe_apply_venue_template
+	 *
+	 * @return void
+	 */
+	public function test_maybe_apply_venue_template_skips_unregistered_pattern(): void {
+		$instance = Venue::get_instance();
+		$registry = WP_Block_Patterns_Registry::get_instance();
+
+		// Unregister the venue-template pattern.
+		$registry->unregister( 'gatherpress/venue-template' );
+
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type'    => Venue::POST_TYPE,
+				'post_status'  => 'publish',
+				'post_content' => '',
+			)
+		);
+
+		$post = get_post( $post_id );
+
+		$instance->maybe_apply_venue_template( $post_id, $post );
+
+		// Content should remain empty when pattern is not registered.
+		$updated_post = get_post( $post_id );
+
+		$this->assertEmpty(
+			$updated_post->post_content,
+			'Venue should not have template applied when pattern is unregistered.'
+		);
+
+		// Re-register the pattern for other tests.
+		$registry->register(
+			'gatherpress/venue-template',
+			array(
+				'title'    => 'Invisible Venue Template Block Pattern',
+				'content'  => '<!-- wp:gatherpress/venue /-->',
+				'inserter' => false,
+				'source'   => 'plugin',
+			)
 		);
 	}
 }

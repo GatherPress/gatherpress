@@ -28,8 +28,8 @@ jobs:
           coverage: none
           tools: wp-cli
 
-      - name: Install latest version of dist-archive-command
-        run: wp package install wp-cli/dist-archive-command:dev-main
+      - name: Install dist-archive-command
+        run: wp package install wp-cli/dist-archive-command:^2
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -58,6 +58,7 @@ jobs:
       # Creating a short lived node_modules cache
       - uses: actions/cache/save@v4
         if: steps.node_modules-cache.outputs.cache-hit != 'true'
+        continue-on-error: true
         with:
           path: |
             ./node_modules
@@ -71,7 +72,7 @@ jobs:
           unzip gatherpress.zip -d tmp-build
 
       - name: Run plugin check
-        uses: wordpress/plugin-check-action@v1
+        uses: wordpress/plugin-check-action@v1.1.5
         with:
           build-dir: './tmp-build/gatherpress'
-          wp-version: 'trunk'
+          wp-version: 'latest'

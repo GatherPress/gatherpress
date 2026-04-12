@@ -15,6 +15,7 @@ namespace GatherPress\Core;
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Traits\Singleton;
+use WP_Block_Patterns_Registry;
 use WP_Post;
 
 /**
@@ -77,6 +78,12 @@ class Venue {
 			10,
 			3
 		);
+		add_action(
+			sprintf( 'save_post_%s', self::POST_TYPE ),
+			array( $this, 'maybe_apply_venue_template' ),
+			10,
+			2
+		);
 		add_action( 'init', array( $this, 'register_post_type' ) );
 		add_action( 'init', array( $this, 'register_post_meta' ) );
 		add_action( 'init', array( $this, 'register_taxonomy' ) );
@@ -99,13 +106,21 @@ class Venue {
 	 */
 	public function register_post_type(): void {
 		$settings     = Settings::get_instance();
-		$rewrite_slug = $settings->get_value( 'general', 'urls', 'venues' );
+		$rewrite_slug = $settings->get( 'venues_url' );
 		register_post_type(
 			self::POST_TYPE,
 			array(
 				'labels'       => array(
-					'name'                     => _x( 'Venues', 'Admin menu and post type general name', 'gatherpress' ),
-					'singular_name'            => _x( 'Venue', 'Admin menu and post type singular name', 'gatherpress' ),
+					'name'                     => _x(
+						'Venues',
+						'Admin menu and post type general name',
+						'gatherpress'
+					),
+					'singular_name'            => _x(
+						'Venue',
+						'Admin menu and post type singular name',
+						'gatherpress'
+					),
 					'add_new'                  => __( 'Add New', 'gatherpress' ),
 					'add_new_item'             => __( 'Add New Venue', 'gatherpress' ),
 					'edit_item'                => __( 'Edit Venue', 'gatherpress' ),
@@ -133,7 +148,11 @@ class Venue {
 					'item_scheduled'           => __( 'Venue scheduled.', 'gatherpress' ),
 					'item_updated'             => __( 'Venue updated.', 'gatherpress' ),
 					'item_link'                => _x( 'Venue Link', 'Block editor link label', 'gatherpress' ),
-					'item_link_description'    => _x( 'A link to a venue.', 'Block editor link description', 'gatherpress' ),
+					'item_link_description'    => _x(
+						'A link to a venue.',
+						'Block editor link description',
+						'gatherpress'
+					),
 				),
 				'show_in_rest' => true,
 				'rest_base'    => 'gatherpress_venues',
@@ -162,9 +181,20 @@ class Venue {
 	}
 
 	/**
+	 * Authorization callback for post meta that requires edit_posts capability.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return bool True if user can edit posts, false otherwise.
+	 */
+	public function can_edit_posts_meta(): bool {
+		return current_user_can( 'edit_posts' );
+	}
+
+	/**
 	 * Returns the post type slug localized for the site language and sanitized as URL part.
 	 *
-	 * Do not use this directly, use get_value( 'general', 'urls', 'venues' ) instead.
+	 * Do not use this directly, use get( 'venues_url' ) instead.
 	 *
 	 * This method switches to the sites default language and gets the translation of 'venues' for the loaded locale.
 	 * After that, the method sanitizes the string to be safely used within an URL,
@@ -201,14 +231,39 @@ class Venue {
 	 */
 	public function register_post_meta(): void {
 		$post_meta = array(
+			// Venue information stored as JSON.
 			'gatherpress_venue_information' => array(
-				'auth_callback'     => static function () {
-					return current_user_can( 'edit_posts' ); // @codeCoverageIgnore
-				},
+				'auth_callback'     => array( $this, 'can_edit_posts_meta' ),
 				'sanitize_callback' => 'sanitize_text_field',
 				'show_in_rest'      => true,
 				'single'            => true,
 				'type'              => 'string',
+				'default'           => '',
+			),
+			// Map display settings.
+			'gatherpress_venue_map_show'    => array(
+				'auth_callback'     => array( $this, 'can_edit_posts_meta' ),
+				'sanitize_callback' => 'rest_sanitize_boolean',
+				'show_in_rest'      => true,
+				'single'            => true,
+				'type'              => 'boolean',
+				'default'           => true,
+			),
+			'gatherpress_venue_map_zoom'    => array(
+				'auth_callback'     => array( $this, 'can_edit_posts_meta' ),
+				'sanitize_callback' => 'absint',
+				'show_in_rest'      => true,
+				'single'            => true,
+				'type'              => 'integer',
+				'default'           => 10,
+			),
+			'gatherpress_venue_map_height'  => array(
+				'auth_callback'     => array( $this, 'can_edit_posts_meta' ),
+				'sanitize_callback' => 'absint',
+				'show_in_rest'      => true,
+				'single'            => true,
+				'type'              => 'integer',
+				'default'           => 300,
 			),
 		);
 
@@ -227,7 +282,11 @@ class Venue {
 	 * This taxonomy, programmatically managed and linked to the Venue post type, is hidden from users
 	 * and designed for internal purposes only. Slugs for taxonomy terms are prefixed with an underscore,
 	 * emphasizing their programmatic nature and ensuring they remain uneditable through the WordPress UI.
-	 * It supports query var and REST API interactions but is entirely excluded from the admin UI and user-facing interfaces.
+	 * It supports query var and REST API interactions but is entirely excluded from the admin UI
+	 * and user-facing interfaces.
+	 *
+	 * The taxonomy is publicly queryable so that it appears in the Query Loop block's taxonomy
+	 * filter controls, while rewrite rules are disabled to prevent public archive URLs.
 	 *
 	 * @since 1.0.0
 	 *
@@ -245,9 +304,10 @@ class Venue {
 				'hierarchical'       => false,
 				'public'             => true,
 				'show_ui'            => false,
-				'show_admin_column'  => true,
+				'show_admin_column'  => false,
 				'query_var'          => true,
-				'publicly_queryable' => false,
+				'publicly_queryable' => true,
+				'rewrite'            => false,
 				'show_in_rest'       => true,
 			)
 		);
@@ -292,6 +352,59 @@ class Venue {
 				);
 			}
 		}
+	}
+
+	/**
+	 * Apply the venue template content when a venue is saved with empty content.
+	 *
+	 * When a venue is created via the REST API (e.g., the "Add New Venue" button
+	 * in the Event editor), no content is sent. This method populates the post
+	 * content from the registered venue template pattern, including any hooked blocks.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param int     $post_id Post ID of the venue post.
+	 * @param WP_Post $post    The venue post object.
+	 * @return void
+	 */
+	public function maybe_apply_venue_template( int $post_id, WP_Post $post ): void {
+		if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) { // @codeCoverageIgnore
+			return; // @codeCoverageIgnore
+		}
+
+		// Only apply template to published venues with empty content.
+		if ( 'publish' !== $post->post_status || ! empty( $post->post_content ) ) {
+			return;
+		}
+
+		$registry = WP_Block_Patterns_Registry::get_instance();
+		$pattern  = $registry->get_registered( 'gatherpress/venue-template' );
+
+		if ( ! $pattern || empty( $pattern['content'] ) ) {
+			return;
+		}
+
+		$content = apply_block_hooks_to_content( $pattern['content'], $pattern );
+
+		// Prevent infinite recursion when updating the post.
+		remove_action(
+			sprintf( 'save_post_%s', self::POST_TYPE ),
+			array( $this, 'maybe_apply_venue_template' )
+		);
+
+		wp_update_post(
+			array(
+				'ID'           => $post_id,
+				'post_content' => $content,
+			)
+		);
+
+		add_action(
+			sprintf( 'save_post_%s', self::POST_TYPE ),
+			array( $this, 'maybe_apply_venue_template' ),
+			10,
+			2
+		);
 	}
 
 	/**
@@ -429,6 +542,27 @@ class Venue {
 	}
 
 	/**
+	 * Retrieves the Venue Custom Post Type (CPT) from a given Event post ID.
+	 *
+	 * This method fetches the terms attached to the Event post in the Venue taxonomy,
+	 * and returns the post associated with the first related Venue term.
+	 * Returns null if no Venue is found.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param int $post_id Event post ID to get the first venue from.
+	 * @return null|WP_Post The Venue post object if found; otherwise, null.
+	 */
+	public function get_venue_post_from_event_post_id( int $post_id ): ?WP_Post {
+		$venue_terms = get_the_terms( $post_id, self::TAXONOMY );
+		if ( ! is_array( $venue_terms ) || empty( $venue_terms ) ) {
+			return null;
+		}
+		// Assuming that we have only ONE venue related.
+		return $this->get_venue_post_from_term_slug( $venue_terms[0]->slug );
+	}
+
+	/**
 	 * Retrieve venue information from meta data.
 	 *
 	 * This method retrieves and assembles venue-related information from meta data
@@ -457,10 +591,7 @@ class Venue {
 			if ( ! empty( $venue_terms ) && is_array( $venue_terms ) ) {
 				$venue_term = $venue_terms[0];
 				$venue_slug = $venue_term->slug;
-
-				if ( is_a( $venue_term, 'WP_Term' ) ) {
-					$venue_post = $this->get_venue_post_from_term_slug( $venue_slug );
-				}
+				$venue_post = $this->get_venue_post_from_term_slug( $venue_slug );
 			}
 
 			$venue_meta['isOnlineEventTerm'] = ( 'online-event' === $venue_slug );
@@ -473,10 +604,25 @@ class Venue {
 
 		if ( is_a( $venue_post, 'WP_Post' ) ) {
 			$venue_meta['name'] = get_the_title( $venue_post );
-			$venue_meta         = array_merge(
-				$venue_meta,
-				(array) json_decode( get_post_meta( $venue_post->ID, 'gatherpress_venue_information', true ) )
-			);
+
+			// Get venue information from JSON field.
+			$venue_info_json = get_post_meta( $venue_post->ID, 'gatherpress_venue_information', true );
+			$venue_info      = json_decode( $venue_info_json, true );
+
+			if ( is_array( $venue_info ) ) {
+				$venue_meta['fullAddress'] = $venue_info['fullAddress'] ?? '';
+				$venue_meta['phoneNumber'] = $venue_info['phoneNumber'] ?? '';
+				$venue_meta['website']     = $venue_info['website'] ?? '';
+				$venue_meta['latitude']    = $venue_info['latitude'] ?? '';
+				$venue_meta['longitude']   = $venue_info['longitude'] ?? '';
+			} else {
+				// Fallback to empty values if JSON parse fails.
+				$venue_meta['fullAddress'] = '';
+				$venue_meta['phoneNumber'] = '';
+				$venue_meta['website']     = '';
+				$venue_meta['latitude']    = '';
+				$venue_meta['longitude']   = '';
+			}
 		}
 
 		return $venue_meta;

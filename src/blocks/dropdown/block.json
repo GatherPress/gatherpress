@@ -44,7 +44,7 @@
 		},
 		"dropdownZIndex": {
 			"type": "number",
-			"default": 10
+			"default": 1001
 		},
 		"itemBgColor": {
 			"type": "string",

@@ -1,0 +1,88 @@
+# This script is intended for WordPress plugins that provide hooks,
+# that can be used by other plugins.
+# By parsing its source code, it creates a documentation in a GitHub wiki (style).
+
+name: Extract WordPress Hooks into /docs
+
+on:
+  push:
+    branches: [ develop ]
+    paths: [ '**.php' ]
+  workflow_dispatch:
+
+permissions:
+  pull-requests: write
+  contents: write  # Grant write permissions for the contents scope to allow pushing changes
+
+jobs:
+  extract-hooks:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 2 # Modify the checkout step to fetch at least two commits (e.g., fetch-depth: 2) so that HEAD^ exists for the 'check-for-changes' step.
+
+    - name: Setup PHP
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: 7.4
+        extensions: dom, iconv, json, libxml, zip
+        coverage: none
+
+    - name: Composer Install
+      run: composer install --optimize-autoloader --prefer-dist
+
+    - name: Log debug information
+      run: |
+        git --version
+        php --version
+        composer --version
+
+    - name: Running extract-wp-hooks
+      if: ${{ success() || failure() }}
+      run: |
+        vendor/bin/extract-wp-hooks.php
+
+    - name: Check for changes
+      id: check-for-changes
+      run: |
+        git add -A
+        if git diff --staged --quiet; then
+          echo "changed=false" >> $GITHUB_OUTPUT
+        else
+          echo "changed=true" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Checkout new branch
+      if: ${{ steps.check-for-changes.outputs.changed == 'true' }}
+      run: |
+        git checkout -b fix/extract-wp-hooks-${{ github.sha }}
+
+    - name: Commit updated docs
+      if: ${{ steps.check-for-changes.outputs.changed == 'true' }}
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+
+        git commit -m "Hook docs updated!"
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Push new branch to origin
+      if: ${{ steps.check-for-changes.outputs.changed == 'true' }}
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+
+        git push origin fix/extract-wp-hooks-${{ github.sha }}
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Create a Pull Request
+      if: ${{ steps.check-for-changes.outputs.changed == 'true' }}
+      # Using GitHub CLI in Workflows
+      # https://docs.github.com/en/actions/using-workflows/using-github-cli-in-workflows
+      # https://cli.github.com/manual/gh_pr_create
+      run: gh pr create -B develop -H fix/extract-wp-hooks-${{ github.sha }} --title 'Update hook docs automatically' --body 'Created with ❤️ by extract-wp-hooks & GitHub action'
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

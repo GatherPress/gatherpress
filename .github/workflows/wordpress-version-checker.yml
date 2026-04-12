@@ -4,10 +4,6 @@ on:
     branches:
       - develop
       - main
-  pull_request:
-    branches:
-      - develop
-      - main
   schedule:
     - cron: '0 0 * * 1'
 
@@ -23,6 +19,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: WordPress Version Checker
-        uses: skaut/wordpress-version-checker@v2.2.2
+        uses: skaut/wordpress-version-checker@v2.2.3
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}

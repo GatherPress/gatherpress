@@ -17,28 +17,28 @@
  *
  * @return {JSX.Element} The rendered React component.
  */
-const GoogleMap = (props) => {
+const GoogleMap = ( props ) => {
 	const { zoom, type, className, location, latitude, longitude, height } =
 		props;
 
 	const style = { border: 0, height, width: '100%' };
 	const baseUrl = 'https://maps.google.com/maps';
 
-	const params = new URLSearchParams({
+	const params = new URLSearchParams( {
 		q: latitude + ',' + longitude,
 		z: zoom || 10,
 		t: type || 'm',
 		output: 'embed',
-	});
+	} );
 
 	const srcURL = baseUrl + '?' + params.toString();
 
 	return (
 		<iframe
-			src={srcURL}
-			style={style}
-			className={className}
-			title={location}
+			src={ srcURL }
+			style={ style }
+			className={ className }
+			title={ location }
 		></iframe>
 	);
 };

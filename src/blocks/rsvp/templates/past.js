@@ -13,7 +13,7 @@ const PAST = [
 				name: _x(
 					'Call to Action',
 					'Block name displayed in the editor',
-					'gatherpress'
+					'gatherpress',
 				),
 			},
 		},
@@ -24,7 +24,7 @@ const PAST = [
 					text: _x(
 						'Past Event',
 						'Button label for past RSVP',
-						'gatherpress'
+						'gatherpress',
 					),
 					tagName: 'button',
 					className: 'gatherpress--is-disabled',
@@ -32,7 +32,7 @@ const PAST = [
 						name: _x(
 							'RSVP Button',
 							'Block name displayed in the editor',
-							'gatherpress'
+							'gatherpress',
 						),
 					},
 				},

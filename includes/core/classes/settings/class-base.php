@@ -22,7 +22,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
  *
  * @since 1.0.0
  */
-class Base {
+abstract class Base {
 	/**
 	 * The slug used to identify the settings page.
 	 *
@@ -68,26 +68,26 @@ class Base {
 	}
 
 	/**
-	 * Get the default slug.
+	 * Get the slug for this settings page.
+	 *
+	 * Child classes must implement this method to provide a unique slug identifier.
 	 *
 	 * @since 1.0.0
 	 *
 	 * @return string
 	 */
-	protected function get_slug(): string {
-		return '';
-	}
+	abstract protected function get_slug(): string;
 
 	/**
-	 * Get the default name.
+	 * Get the name for this settings page.
+	 *
+	 * Child classes must implement this method to provide a localized name.
 	 *
 	 * @since 1.0.0
 	 *
 	 * @return string
 	 */
-	protected function get_name(): string {
-		return '';
-	}
+	abstract protected function get_name(): string;
 
 	/**
 	 * Get the default priority.

@@ -1,0 +1,130 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "gatherpress/form-field",
+	"version": "1.0.0",
+	"title": "Form Field",
+	"category": "gatherpress",
+	"icon": "text",
+	"example": {},
+	"description": "A flexible form field that can be configured as various input types.",
+	"attributes": {
+		"fieldType": {
+			"type": "string",
+			"default": "text"
+		},
+		"fieldName": {
+			"type": "string",
+			"default": ""
+		},
+		"fieldValue": {
+			"type": ["string", "boolean"],
+			"default": ""
+		},
+		"label": {
+			"type": "string",
+			"default": ""
+		},
+		"placeholder": {
+			"type": "string",
+			"default": ""
+		},
+		"required": {
+			"type": "boolean",
+			"default": false
+		},
+		"requiredText": {
+			"type": "string",
+			"default": "(required)"
+		},
+		"minValue": {
+			"type": "number"
+		},
+		"maxValue": {
+			"type": "number"
+		},
+		"radioOptions": {
+			"type": "array",
+			"default": [
+				{
+					"label": "",
+					"value": ""
+				}
+			]
+		},
+		"inlineLayout": {
+			"type": "boolean",
+			"default": false
+		},
+		"fieldWidth": {
+			"type": "number",
+			"default": 100
+		},
+		"labelTextColor": {
+			"type": "string"
+		},
+		"fieldTextColor": {
+			"type": "string"
+		},
+		"requiredTextColor": {
+			"type": "string"
+		},
+		"fieldBackgroundColor": {
+			"type": "string"
+		},
+		"borderColor": {
+			"type": "string"
+		},
+		"optionTextColor": {
+			"type": "string"
+		},
+		"labelFontSize": {
+			"type": "string"
+		},
+		"labelLineHeight": {
+			"type": "number",
+			"default": 1.5
+		},
+		"optionFontSize": {
+			"type": "string"
+		},
+		"optionLineHeight": {
+			"type": "number",
+			"default": 1.5
+		},
+		"inputFontSize": {
+			"type": "string"
+		},
+		"inputLineHeight": {
+			"type": "number",
+			"default": 1.5
+		},
+		"inputPadding": {
+			"type": "number",
+			"default": 16
+		},
+		"inputBorderWidth": {
+			"type": "number",
+			"default": 1
+		},
+		"inputBorderRadius": {
+			"type": "number",
+			"default": 0
+		},
+		"textareaRows": {
+			"type": "number",
+			"default": 4
+		},
+		"autocomplete": {
+			"type": "string",
+			"default": "on"
+		}
+	},
+	"supports": {
+		"html": false
+	},
+	"textdomain": "gatherpress",
+	"editorScript": "file:./index.js",
+	"style": "file:./style-index.css",
+	"render": "file:./render.php"
+}

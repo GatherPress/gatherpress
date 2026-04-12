@@ -1,8 +1,17 @@
 {
+	"$schema": "https://schemas.wp.org/trunk/wp-env.json",
+	"testsEnvironment": false,
 	"plugins": [
 		"."
 	],
+	"themes": [
+		"WordPress/twentytwentyfive"
+	],
 	"config": {
+		"WP_DEBUG": true,
 		"WP_DEBUG_LOG": true
+	},
+	"mappings": {
+		"wp-content/plugins/gatherpress": "."
 	}
 }

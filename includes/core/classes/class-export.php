@@ -183,12 +183,14 @@ class Export extends Migrate {
 
 		$value = call_user_func( $callbacks['export_callback'], $post );
 
+		// phpcs:disable WordPress.Security.EscapeOutput.OutputNotEscaped -- wxr_cdata handles escaping.
 		?>
 		<wp:postmeta>
-			<wp:meta_key><?php echo wxr_cdata( $key ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></wp:meta_key>
-			<wp:meta_value><?php echo wxr_cdata( $value ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></wp:meta_value>
+			<wp:meta_key><?php echo wxr_cdata( $key ); ?></wp:meta_key>
+			<wp:meta_value><?php echo wxr_cdata( $value ); ?></wp:meta_value>
 		</wp:postmeta>
 		<?php
+		// phpcs:enable WordPress.Security.EscapeOutput.OutputNotEscaped
 	}
 
 	/**

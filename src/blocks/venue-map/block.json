@@ -1,0 +1,36 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "gatherpress/venue-map",
+	"version": "1.0.0",
+	"title": "Venue Map",
+	"category": "gatherpress",
+	"icon": "location-alt",
+	"description": "Display a map for the venue location.",
+	"parent": ["gatherpress/venue"],
+	"usesContext": ["postId", "queryId"],
+	"attributes": {
+		"zoom": {
+			"type": "number",
+			"default": 18
+		},
+		"type": {
+			"type": "string",
+			"default": "roadmap"
+		},
+		"height": {
+			"type": "number",
+			"default": 300
+		}
+	},
+	"supports": {
+		"align": ["wide", "full"],
+		"html": false
+	},
+	"textdomain": "gatherpress",
+	"editorScript": "file:./index.js",
+	"editorStyle": "file:./index.css",
+	"viewScript": "file:./view.js",
+	"style": "file:./style-index.css",
+	"render": "file:./render.php"
+}

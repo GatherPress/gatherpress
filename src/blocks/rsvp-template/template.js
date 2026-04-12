@@ -16,7 +16,7 @@ const TEMPLATE = [
 				name: _x(
 					'RSVP User Info',
 					'Block name displayed in the editor',
-					'gatherpress'
+					'gatherpress',
 				),
 			},
 		},
@@ -35,7 +35,7 @@ const TEMPLATE = [
 						name: _x(
 							'Display Name',
 							'Block name displayed in the editor',
-							'gatherpress'
+							'gatherpress',
 						),
 					},
 					textAlign: 'center',

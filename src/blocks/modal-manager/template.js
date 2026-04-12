@@ -14,8 +14,8 @@ const TEMPLATE = [
 			[
 				'core/button',
 				{
-					text: __('Click Me!', 'gatherpress'),
-					className: 'gatherpress--open-modal',
+					text: __( 'Click Me!', 'gatherpress' ),
+					className: 'gatherpress-modal--trigger-open',
 					tagName: 'button',
 				},
 			],
@@ -34,7 +34,7 @@ const TEMPLATE = [
 						{
 							content: __(
 								'Hello! This is a modal. You can customize this content or add blocks here.',
-								'gatherpress'
+								'gatherpress',
 							),
 						},
 					],
@@ -51,8 +51,8 @@ const TEMPLATE = [
 							[
 								'core/button',
 								{
-									text: __('Close', 'gatherpress'),
-									className: 'gatherpress--close-modal',
+									text: __( 'Close', 'gatherpress' ),
+									className: 'gatherpress-modal--trigger-close',
 									tagName: 'button',
 								},
 							],

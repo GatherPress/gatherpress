@@ -1,1 +1,0 @@
-"use strict";(globalThis.webpackChunkgatherpress=globalThis.webpackChunkgatherpress||[]).push([[5567],{5567:(s,e,h)=>{h.r(e)}}]);

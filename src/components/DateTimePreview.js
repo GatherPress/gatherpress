@@ -20,21 +20,21 @@ import { useState } from '@wordpress/element';
  *
  * @return {JSX.Element} The rendered React component.
  */
-const DateTimePreview = (props) => {
+const DateTimePreview = ( props ) => {
 	const { name, value } = props.attrs;
-	const [dateTimeFormat, setDateTimeFormat] = useState(value);
+	const [ dateTimeFormat, setDateTimeFormat ] = useState( value );
 
-	const input = document.querySelector(`[name="${name}"]`);
+	const input = document.querySelector( `[name="${ name }"]` );
 
 	input.addEventListener(
 		'input',
-		(e) => {
-			setDateTimeFormat(e.target.value);
+		( e ) => {
+			setDateTimeFormat( e.target.value );
 		},
-		{ once: true }
+		{ once: true },
 	);
 
-	return <>{dateTimeFormat && format(dateTimeFormat)}</>;
+	return <>{ dateTimeFormat && format( dateTimeFormat ) }</>;
 };
 
 export default DateTimePreview;

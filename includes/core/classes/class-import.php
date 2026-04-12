@@ -55,7 +55,7 @@ class Import extends Migrate {
 			/**
 			 * Setup for WordPress Importer (v2).
 			 *
-			 * @see https://github.com/humanmade/Wordpress-Importer
+			 * @see https://github.com/humanmade/WordPress-Importer
 			 */
 			$hook_name = 'wxr_importer.pre_process.post';
 		} else {
@@ -98,7 +98,8 @@ class Import extends Migrate {
 	 * Checks if the currently imported post is of type 'gatherpress_event'.
 	 *
 	 * @param  array $post_data_raw The result of 'wp_import_post_data_raw'.
-	 * @return bool                 True, when the currently imported post is of type 'gatherpress_event', false otherwise.
+	 * @return bool                 True, when the currently imported post is of type 'gatherpress_event',
+	 *                              false otherwise.
 	 */
 	protected function validate( array $post_data_raw ): bool {
 		return ( isset( $post_data_raw['post_type'] ) && Event::POST_TYPE === $post_data_raw['post_type'] );
@@ -110,7 +111,7 @@ class Import extends Migrate {
 	 * @return void
 	 */
 	public function extend(): void {
-		add_filter( 'add_post_metadata', array( $this, 'run' ), 10, 5 );
+		add_filter( 'add_post_metadata', array( $this, 'run' ), 10, 4 );
 	}
 
 	/**
@@ -132,10 +133,12 @@ class Import extends Migrate {
 	 * @param  int       $object_id  ID of the object metadata is for.
 	 * @param  string    $meta_key   Metadata key.
 	 * @param  mixed     $meta_value Metadata value. Must be serializable if non-scalar.
-	 * @param  bool      $unique     Whether the specified meta key should be unique for the object.
-	 * @return null|bool             Returning a non-null value will effectively short-circuit the saving of 'normal' meta data.
+	 * @return null|bool             Returning a non-null value will effectively short-circuit the saving
+	 *                               of 'normal' meta data.
+	 *
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
 	 */
-	public function run( ?bool $check, int $object_id, string $meta_key, $meta_value, bool $unique ): ?bool {
+	public function run( ?bool $check, int $object_id, string $meta_key, $meta_value ): ?bool {
 		$pseudopostmetas = $this->get_pseudopostmetas();
 
 		if ( ! isset( $pseudopostmetas[ $meta_key ] ) ) {

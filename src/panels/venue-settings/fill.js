@@ -1,24 +1,38 @@
 /**
- * Fill the "Venue Settings" slot into the "Event Settings" slot by default,
+ * Create a separate "Venue settings" panel when editing events,
  * so that venue changes can be made from within an event context.
  */
 
 /**
  * WordPress dependencies
  */
-import { Fill } from '@wordpress/components';
+import { __ } from '@wordpress/i18n';
+import {
+	// eslint-disable-next-line @wordpress/no-unsafe-wp-apis
+	__experimentalVStack as VStack,
+} from '@wordpress/components';
+import { PluginDocumentSettingPanel } from '@wordpress/editor';
 
 /**
  * Internal dependencies
  */
 import { VenuePluginDocumentSettings } from './slot';
+import { isEventPostType } from '../../helpers/event';
+import OnlineEventPanel from './online-event';
 
 export default function VenuePluginFill() {
 	return (
-		<>
-			<Fill name="EventPluginDocumentSettings">
-				<VenuePluginDocumentSettings.Slot />
-			</Fill>
-		</>
+		isEventPostType() && (
+			<PluginDocumentSettingPanel
+				name="gatherpress-venue-settings-at-events"
+				title={ __( 'Venue settings', 'gatherpress' ) }
+				className="gatherpress-venue-settings"
+			>
+				<VStack spacing={ 6 }>
+					<VenuePluginDocumentSettings.Slot />
+					<OnlineEventPanel />
+				</VStack>
+			</PluginDocumentSettingPanel>
+		)
 	);
 }

@@ -20,18 +20,18 @@ import './style.scss';
  *
  * @return {JSX.Element} The rendered React component.
  */
-registerBlockType(metadata, {
+registerBlockType( metadata, {
 	edit,
-	save: ({ attributes }) => {
+	save: ( { attributes } ) => {
 		const { style } = attributes;
 
-		const blockProps = useBlockProps.save({
+		const blockProps = useBlockProps.save( {
 			style: style?.dimensions, // Apply width dynamically in save output
-		});
+		} );
 		return (
-			<div {...blockProps}>
+			<div { ...blockProps }>
 				<InnerBlocks.Content />
 			</div>
 		);
 	},
-});
+} );

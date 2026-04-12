@@ -1,0 +1,32 @@
+{
+	"extends": [
+		"plugin:@wordpress/eslint-plugin/recommended-with-formatting"
+	],
+	"env": {
+		"browser": true
+	},
+	"rules": {
+		"@wordpress/i18n-text-domain": [
+			"error",
+			{
+				"allowedTextDomain": "gatherpress"
+			}
+		],
+		"jsdoc/no-undefined-types": [
+			"error",
+			{
+				"definedTypes": [
+					"JSX",
+					"Component"
+				]
+			}
+		],
+		"yoda": [
+			"error",
+			"always",
+			{
+				"exceptRange": true
+			}
+		]
+	}
+}

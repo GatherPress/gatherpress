@@ -25,59 +25,59 @@ import { getFromGlobal } from '../helpers/globals';
  * @return {JSX.Element} A number input control for setting the maximum number of guests.
  */
 const GuestLimit = () => {
-	const { editPost, unlockPostSaving } = useDispatch('core/editor');
-	const isNewEvent = useSelect((select) => {
-		return select('core/editor').isCleanNewPost();
-	}, []);
+	const { editPost, unlockPostSaving } = useDispatch( 'core/editor' );
+	const isNewEvent = useSelect( ( select ) => {
+		return select( 'core/editor' ).isCleanNewPost();
+	}, [] );
 
-	let defaultGuestLimit = useSelect((select) => {
-		return select('core/editor').getEditedPostAttribute('meta')
+	let defaultGuestLimit = useSelect( ( select ) => {
+		return select( 'core/editor' ).getEditedPostAttribute( 'meta' )
 			.gatherpress_max_guest_limit;
-	}, []);
+	}, [] );
 
-	if (isNewEvent) {
-		defaultGuestLimit = getFromGlobal('settings.maxGuestLimit');
+	if ( isNewEvent ) {
+		defaultGuestLimit = getFromGlobal( 'settings.maxGuestLimit' );
 	}
 
-	if (false === defaultGuestLimit) {
+	if ( false === defaultGuestLimit ) {
 		defaultGuestLimit = 0;
 	}
 
-	const [guestLimit, setGuestLimit] = useState(defaultGuestLimit);
+	const [ guestLimit, setGuestLimit ] = useState( defaultGuestLimit );
 
 	const updateGuestLimit = useCallback(
-		(value) => {
-			const meta = { gatherpress_max_guest_limit: Number(value) };
+		( value ) => {
+			const meta = { gatherpress_max_guest_limit: Number( value ) };
 
-			setGuestLimit(value);
-			editPost({ meta });
+			setGuestLimit( value );
+			editPost( { meta } );
 			unlockPostSaving();
 		},
-		[editPost, unlockPostSaving]
+		[ editPost, unlockPostSaving ],
 	);
 
-	useEffect(() => {
-		if (isNewEvent && 0 !== defaultGuestLimit) {
-			updateGuestLimit(defaultGuestLimit);
+	useEffect( () => {
+		if ( isNewEvent && 0 !== defaultGuestLimit ) {
+			updateGuestLimit( defaultGuestLimit );
 		}
-	}, [isNewEvent, defaultGuestLimit, updateGuestLimit]);
+	}, [ isNewEvent, defaultGuestLimit, updateGuestLimit ] );
 
 	return (
 		<>
 			<NumberControl
-				label={__('Maximum Number of Guests', 'gatherpress')}
-				value={guestLimit}
-				min={0}
-				max={5}
-				onChange={(value) => {
-					updateGuestLimit(value);
-				}}
+				label={ __( 'Maximum Number of Guests', 'gatherpress' ) }
+				value={ guestLimit }
+				min={ 0 }
+				max={ 5 }
+				onChange={ ( value ) => {
+					updateGuestLimit( value );
+				} }
 			/>
 			<p className="description">
-				{__(
+				{ __(
 					'Maximum number of additional people each attendee can bring.',
-					'gatherpress'
-				)}
+					'gatherpress',
+				) }
 			</p>
 		</>
 	);

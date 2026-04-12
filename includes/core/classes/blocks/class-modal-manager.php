@@ -15,8 +15,8 @@ namespace GatherPress\Core\Blocks;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
-use GatherPress\Core\Block;
 use GatherPress\Core\Traits\Singleton;
+use GatherPress\Core\Utility;
 use WP_HTML_Tag_Processor;
 
 /**
@@ -67,9 +67,9 @@ class Modal_Manager {
 	}
 
 	/**
-	 * Attaches modal open behavior to elements with the class 'gatherpress--open-modal'.
+	 * Attaches modal open behavior to elements with the class 'gatherpress-modal--trigger-open'.
 	 *
-	 * This method scans the block content for elements containing the 'gatherpress--open-modal'
+	 * This method scans the block content for elements containing the 'gatherpress-modal--trigger-open'
 	 * class. If such elements are found, it applies the appropriate interactivity attributes
 	 * for opening modals. If the target element is not a link (`<a>`) or button (`<button>`),
 	 * it modifies the element to behave as a button by adding relevant ARIA and keyboard support.
@@ -88,25 +88,37 @@ class Modal_Manager {
 	public function attach_modal_open_behavior( string $block_content ): string {
 		$tag = new WP_HTML_Tag_Processor( $block_content );
 
-		// Process only tags with the specific class 'gatherpress--open-modal'.
+		// Process only tags with the specific class 'gatherpress-modal--trigger-open'.
 		while ( $tag->next_tag() ) {
 			$class_attr = $tag->get_attribute( 'class' );
 
-			if ( $class_attr && false !== strpos( $class_attr, 'gatherpress--open-modal' ) ) {
-				if (
-					// @phpstan-ignore-next-line
-					$tag->next_tag() &&
-					in_array( $tag->get_tag(), array( 'A' ), true )
-				) {
-					$tag->set_attribute( 'role', 'button' ); // For links acting as buttons.
-				} else {
-					$tag->set_attribute( 'data-wp-on--keydown', 'actions.openModalOnEnter' );
-					$tag->set_attribute( 'tabindex', '0' );
-					$tag->set_attribute( 'role', 'button' );
+			if ( Utility::has_css_class( $class_attr, 'gatherpress-modal--trigger-open' ) ) {
+				// Check if current element is an anchor or button.
+				$is_actionable_element = in_array( $tag->get_tag(), array( 'A', 'BUTTON' ), true );
+
+				if ( ! $is_actionable_element ) {
+					// If not, check if the next element is an anchor or button.
+					// @phpstan-ignore-next-line.
+					$is_actionable_element = $tag->next_tag()
+					&& in_array( $tag->get_tag(), array( 'A', 'BUTTON' ), true );
 				}
 
-				$tag->set_attribute( 'data-wp-interactive', 'gatherpress' );
-				$tag->set_attribute( 'data-wp-on--click', 'actions.openModal' );
+				$target_found = $is_actionable_element;
+
+				// Apply modal attributes if target was found.
+				if ( $target_found ) {
+					// Links only get role="button", others get full keyboard handling.
+					if ( 'A' === $tag->get_tag() ) {
+						$tag->set_attribute( 'role', 'button' ); // For links acting as buttons.
+					} else {
+						$tag->set_attribute( 'data-wp-on--keydown', 'actions.openModalOnEnter' );
+						$tag->set_attribute( 'tabindex', '0' );
+						$tag->set_attribute( 'role', 'button' );
+					}
+
+					$tag->set_attribute( 'data-wp-interactive', 'gatherpress' );
+					$tag->set_attribute( 'data-wp-on--click', 'actions.openModal' );
+				}
 			}
 		}
 
@@ -114,9 +126,9 @@ class Modal_Manager {
 	}
 
 	/**
-	 * Attaches modal close behavior to elements with the class 'gatherpress--close-modal'.
+	 * Attaches modal close behavior to elements with the class 'gatherpress-modal--trigger-close'.
 	 *
-	 * This method scans the block content for elements containing the 'gatherpress--close-modal'
+	 * This method scans the block content for elements containing the 'gatherpress-modal--trigger-close'
 	 * class. If such elements are found, it applies the appropriate interactivity attributes
 	 * for closing modals. If the target element is not a link (`<a>`) or button (`<button>`),
 	 * it modifies the element to behave as a button by adding relevant ARIA and keyboard support.
@@ -135,11 +147,11 @@ class Modal_Manager {
 	public function attach_modal_close_behavior( string $block_content ): string {
 		$tag = new WP_HTML_Tag_Processor( $block_content );
 
-		// Process only tags with the specific class 'gatherpress--close-modal'.
+		// Process only tags with the specific class 'gatherpress-modal--trigger-close'.
 		while ( $tag->next_tag() ) {
 			$class_attr = $tag->get_attribute( 'class' );
 
-			if ( $class_attr && false !== strpos( $class_attr, 'gatherpress--close-modal' ) ) {
+			if ( Utility::has_css_class( $class_attr, 'gatherpress-modal--trigger-close' ) ) {
 				if (
 					// @phpstan-ignore-next-line
 					$tag->next_tag() &&
@@ -154,6 +166,7 @@ class Modal_Manager {
 
 				$tag->set_attribute( 'data-wp-interactive', 'gatherpress' );
 				$tag->set_attribute( 'data-wp-on--click', 'actions.closeModal' );
+				$tag->set_attribute( 'data-close-modal', true );
 			}
 		}
 

@@ -96,8 +96,8 @@ class Test_Topic extends Base {
 		// Restore default locale for following tests.
 		switch_to_locale( 'en_US' );
 
-		// This also checks that the taxonomy is still registered with the same 'Admin menu and taxonomy singular name' label,
-		// which is used by the method under test and the test itself.
+		// This also checks that the taxonomy is still registered with the same
+		// 'Admin menu and taxonomy singular name' label, which is used by the method under test and the test itself.
 		$filter = static function ( string $translation, string $text, string $context ): string {
 			if ( 'Topic' !== $text || 'Admin menu and taxonomy singular name' !== $context ) {
 				return $translation;
@@ -125,5 +125,81 @@ class Test_Topic extends Base {
 		);
 
 		remove_filter( 'gettext_with_context_gatherpress', $filter );
+
+		// Test restore_previous_locale() path by switching to a different locale first.
+		switch_to_locale( 'es_ES' );
+		$this->assertSame(
+			'topic',
+			Topic::get_localized_taxonomy_slug(),
+			'Failed to assert taxonomy slug is "topic" after locale restore.'
+		);
+		// Verify we're back to Spanish after the method restored the previous locale.
+		$this->assertSame(
+			'es_ES',
+			determine_locale(),
+			'Failed to assert locale was restored to Spanish.'
+		);
+
+		// Clean up: restore to en_US for other tests.
+		restore_previous_locale();
+	}
+
+	/**
+	 * Coverage for get_localized_taxonomy_slug when locale doesn't switch.
+	 *
+	 * @covers ::get_localized_taxonomy_slug
+	 *
+	 * @return void
+	 */
+	public function test_get_localized_taxonomy_slug_no_locale_switch(): void {
+		// When switch_to_locale returns false (already on that locale), restore shouldn't be called.
+		// This tests the else branch of the if ( $switched_locale ) condition.
+		$current_locale = get_locale();
+
+		// Switch to the current locale (should return false).
+		$result = Topic::get_localized_taxonomy_slug();
+
+		$this->assertIsString( $result );
+		$this->assertEquals( $current_locale, get_locale(), 'Locale should remain unchanged.' );
+	}
+
+	/**
+	 * Coverage for get_localized_taxonomy_slug with locale restoration.
+	 *
+	 * Tests that restore_previous_locale() is called when switch_to_locale() succeeds.
+	 * This test creates a scenario where the global locale differs from get_locale().
+	 *
+	 * @covers ::get_localized_taxonomy_slug
+	 *
+	 * @return void
+	 */
+	public function test_get_localized_taxonomy_slug_restores_locale(): void {
+		// Create a scenario where get_locale() returns a different value.
+		// than the current global locale by using the locale filter.
+		// phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.Found -- Intentionally overriding locale.
+		$locale_filter = static function ( $locale ) {
+			return 'de_DE';
+		};
+
+		add_filter( 'locale', $locale_filter );
+
+		// Now get_locale() will return 'de_DE', but the global locale is still 'en_US'.
+		// When the method calls switch_to_locale(get_locale()), it will actually switch.
+		// to 'de_DE' and return true, triggering the restore_previous_locale() path.
+		$slug = Topic::get_localized_taxonomy_slug();
+
+		// Verify the slug was generated.
+		$this->assertNotEmpty( $slug, 'Failed to assert slug is not empty.' );
+
+		// The method should have called restore_previous_locale() since.
+		// switch_to_locale() returned true.
+		// We should be back to en_US (with the filter still active).
+		remove_filter( 'locale', $locale_filter );
+
+		$this->assertSame(
+			'en_US',
+			determine_locale(),
+			'Failed to assert locale was restored after method execution.'
+		);
 	}
 }

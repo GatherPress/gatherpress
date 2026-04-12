@@ -7,6 +7,10 @@
 		{
 			"type": "vcs",
 			"url": "git@github.com:penske-media-corp/pmc-unit-test.git"
+		},
+		{
+			"type": "vcs",
+			"url": "git@github.com:akirk/extract-wp-hooks.git"
 		}
 	],
 	"require": {
@@ -17,9 +21,12 @@
 		"dealerdirect/phpcodesniffer-composer-installer": "*",
 		"wp-coding-standards/wpcs": "*",
 		"phpcompatibility/phpcompatibility-wp": "*",
-		"phpunit/phpunit": "*",
+		"phpunit/phpunit": "^9.0",
+		"doctrine/instantiator": "^1.5",
 		"yoast/phpunit-polyfills": "*",
-		"szepeviktor/phpstan-wordpress": "^1.3"
+		"szepeviktor/phpstan-wordpress": "^1.3",
+		"akirk/extract-wp-hooks": "dev-main",
+		"phpmd/phpmd": "^2.9"
 	},
 	"suggest": {
 		"wp-cli/wp-cli-bundle": "Combines the most common WP-CLI commands, including the wp-cli/i18n-command which should be used to create translation-files."
@@ -29,8 +36,10 @@
 		"format": "@php ./vendor/squizlabs/php_codesniffer/bin/phpcbf --report=summary,source",
 		"lint": "@php ./vendor/squizlabs/php_codesniffer/bin/phpcs --report=summary,source",
 		"lint:errors": "@lint -n",
+		"test:phpmd": "phpmd . text phpmd.xml",
 		"test": "@php ./vendor/phpunit/phpunit/phpunit",
-		"test:phpstan": "@php ./vendor/bin/phpstan analyze -vv --memory-limit=2G"
+		"test:phpstan": "@php ./vendor/bin/phpstan analyze -vv --memory-limit=2G",
+		"hooks": "@php ./vendor/bin/extract-wp-hooks.php"
 	},
 	"config": {
 		"allow-plugins": {

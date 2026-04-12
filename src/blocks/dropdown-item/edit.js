@@ -21,60 +21,59 @@ import { dispatch, select } from '@wordpress/data';
  * @param {Function} props.insertBlocksAfter Function to insert blocks after this block.
  * @return {JSX.Element} The rendered edit component.
  */
-const Edit = ({ attributes, setAttributes, clientId, insertBlocksAfter }) => {
+const Edit = ( { attributes, setAttributes, clientId, insertBlocksAfter } ) => {
 	const { text } = attributes;
 	const blockProps = useBlockProps();
 
 	return (
 		<>
 			<InspectorControls>
-				<PanelBody title={__('Dropdown Item Settings', 'gatherpress')}>
+				<PanelBody title={ __( 'Dropdown Item Settings', 'gatherpress' ) }>
 					<p>
-						{__(
+						{ __(
 							'This item behaves like a button if the link is set to "#".',
-							'gatherpress'
-						)}
+							'gatherpress',
+						) }
 					</p>
 				</PanelBody>
 			</InspectorControls>
 			<RichText
-				{...blockProps}
+				{ ...blockProps }
 				tagName="div"
-				value={text}
-				onChange={(value) => {
+				value={ text }
+				onChange={ ( value ) => {
 					// Parse the content and clean it up.
 					const parser = new DOMParser();
 					const parsedDoc = parser.parseFromString(
 						value,
-						'text/html'
+						'text/html',
 					);
-					const anchors = parsedDoc.querySelectorAll('a');
+					const anchors = parsedDoc.querySelectorAll( 'a' );
 
 					// Default fallback anchor tag.
 					let openingTag = '<a href="#">';
 					const closingTag = '</a>';
-					let newText = value.trim();
 
-					if (anchors.length > 0) {
+					if ( 0 < anchors.length ) {
 						// Extract the opening tag from the first anchor.
-						const firstAnchor = anchors[0];
+						const firstAnchor = anchors[ 0 ];
 
 						// Capture attributes.
-						const href = firstAnchor.getAttribute('href') || '#';
-						const rel = firstAnchor.getAttribute('rel');
-						const target = firstAnchor.getAttribute('target');
+						const href = firstAnchor.getAttribute( 'href' ) || '#';
+						const rel = firstAnchor.getAttribute( 'rel' );
+						const target = firstAnchor.getAttribute( 'target' );
 
 						// Start building the opening tag.
-						openingTag = `<a href="${href}"`;
+						openingTag = `<a href="${ href }"`;
 
 						// Add rel attribute if it exits.
-						if (rel) {
-							openingTag += ` rel="${rel}"`;
+						if ( rel ) {
+							openingTag += ` rel="${ rel }"`;
 						}
 
 						// Add target attribute if it exists.
-						if (target) {
-							openingTag += ` target="${target}"`;
+						if ( target ) {
+							openingTag += ` target="${ target }"`;
 						}
 
 						// Close the opening tag.
@@ -85,71 +84,72 @@ const Edit = ({ attributes, setAttributes, clientId, insertBlocksAfter }) => {
 					const cleanText = parsedDoc.body.textContent.trim();
 
 					// Wrap the clean text with the anchor tags.
-					if (cleanText) {
-						newText = `${openingTag}${cleanText}${closingTag}`;
+					let newText;
+					if ( cleanText ) {
+						newText = `${ openingTag }${ cleanText }${ closingTag }`;
 					} else {
 						newText = '';
 					}
 
 					// Update attributes with the cleaned-up values.
-					setAttributes({ text: newText });
+					setAttributes( { text: newText } );
 
 					// Update metadata for List View.
-					dispatch('core/block-editor').updateBlockAttributes(
+					dispatch( 'core/block-editor' ).updateBlockAttributes(
 						clientId,
 						{
 							metadata: {
 								name:
 									cleanText ||
-									__('Dropdown Item', 'gatherpress'),
+									__( 'Dropdown Item', 'gatherpress' ),
 							},
-						}
+						},
 					);
-				}}
-				placeholder={__('Item Text…', 'gatherpress')}
-				allowedFormats={['core/link']}
-				onSplit={(before, after) => {
-					const newBlock = createBlock('gatherpress/dropdown-item', {
+				} }
+				placeholder={ __( 'Item Text…', 'gatherpress' ) }
+				allowedFormats={ [ 'core/link' ] }
+				onSplit={ ( before, after ) => {
+					const newBlock = createBlock( 'gatherpress/dropdown-item', {
 						text: after,
-					});
-					insertBlocksAfter([newBlock]);
-					setAttributes({ text: before });
-				}}
-				onKeyDown={(event) => {
-					if (event.key === 'Enter') {
+					} );
+					insertBlocksAfter( [ newBlock ] );
+					setAttributes( { text: before } );
+				} }
+				onKeyDown={ ( event ) => {
+					if ( 'Enter' === event.key ) {
 						event.preventDefault();
 						const newBlock = createBlock(
 							'gatherpress/dropdown-item',
-							{ text: '' }
+							{ text: '' },
 						);
-						insertBlocksAfter([newBlock]);
+						insertBlocksAfter( [ newBlock ] );
 					}
 
-					if (event.key === 'Backspace' && !attributes.text) {
+					if ( 'Backspace' === event.key && ! attributes.text ) {
 						event.preventDefault();
 
 						// Retrieve block order and index.
 						const { getBlockOrder, getBlockIndex } =
-							select('core/block-editor');
+							select( 'core/block-editor' );
 						const { removeBlock, selectBlock } =
-							dispatch('core/block-editor');
+							dispatch( 'core/block-editor' );
 
 						const blockOrder = getBlockOrder();
-						const currentIndex = getBlockIndex(clientId);
+						const currentIndex = getBlockIndex( clientId );
 
 						// Check if there's a previous block.
-						if (currentIndex > 0) {
+						if ( 0 < currentIndex ) {
 							const previousBlockId =
-								blockOrder[currentIndex - 1];
+								blockOrder[ currentIndex - 1 ];
 
 							// Focus the previous block and set the caret to the end.
-							selectBlock(previousBlockId, -1);
+							selectBlock( previousBlockId, -1 );
 
 							// Remove the current block.
-							removeBlock(clientId);
+							removeBlock( clientId );
 						}
 					}
-				}}
+				} }
 			/>
 		</>
 	);
