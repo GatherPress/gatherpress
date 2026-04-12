@@ -1198,6 +1198,143 @@ class Test_Geocoding extends Base {
 	}
 
 	/**
+	 * GeoJSON `features` may contain null entries; those are skipped like non-arrays.
+	 *
+	 * @covers ::search_addresses
+	 *
+	 * @return void
+	 */
+	public function test_search_addresses_skips_null_feature(): void {
+		$instance = Geocoding::get_instance();
+
+		$mock_body = array(
+			'features' => array(
+				null,
+				array(
+					'geometry'   => array(
+						'coordinates' => array( 3.0, 4.0 ),
+					),
+					'properties' => array(
+						'city' => 'After Null',
+					),
+				),
+			),
+		);
+
+		$this->http_mock->mock(
+			'*',
+			array(
+				'body' => wp_json_encode( $mock_body ),
+			)
+		);
+
+		$request = new WP_REST_Request( 'GET' );
+		$request->set_param( 'q', 'Nul' );
+
+		$response = $instance->search_addresses( $request );
+		$data     = $response->get_data();
+
+		$this->assertCount( 1, $data['suggestions'] );
+		$this->assertSame( 'After Null', $data['suggestions'][0]['label'] );
+	}
+
+	/**
+	 * When `properties` is present but not an array, label building uses an empty array.
+	 *
+	 * @covers ::search_addresses
+	 *
+	 * @return void
+	 */
+	public function test_search_addresses_non_array_properties_uses_empty_label_parts(): void {
+		$instance = Geocoding::get_instance();
+
+		$mock_body = array(
+			'features' => array(
+				array(
+					'geometry'   => array(
+						'coordinates' => array( 5.0, 6.0 ),
+					),
+					'properties' => 'not-an-array',
+				),
+				array(
+					'geometry'   => array(
+						'coordinates' => array( 7.0, 8.0 ),
+					),
+					'properties' => array(
+						'city' => 'Valid Row',
+					),
+				),
+			),
+		);
+
+		$this->http_mock->mock(
+			'*',
+			array(
+				'body' => wp_json_encode( $mock_body ),
+			)
+		);
+
+		$request = new WP_REST_Request( 'GET' );
+		$request->set_param( 'q', 'Val' );
+
+		$response = $instance->search_addresses( $request );
+		$data     = $response->get_data();
+
+		$this->assertCount( 1, $data['suggestions'] );
+		$this->assertSame( 'Valid Row', $data['suggestions'][0]['label'] );
+	}
+
+	/**
+	 * `gatherpress_photon_api_url` runs during real geocode requests (covers filter + URL helper).
+	 *
+	 * @covers ::geocode_address
+	 * @covers \GatherPress\Core\Geocoding::get_photon_api_url
+	 *
+	 * @return void
+	 */
+	public function test_geocode_address_uses_filtered_photon_api_url(): void {
+		$instance     = Geocoding::get_instance();
+		$captured_url = '';
+
+		add_filter(
+			'gatherpress_photon_api_url',
+			static function (): string {
+				return 'https://photon.custom.test/api';
+			}
+		);
+
+		$mock_response = array(
+			'features' => array(
+				array(
+					'geometry' => array(
+						'coordinates' => array( -1.0, 2.0 ),
+					),
+				),
+			),
+		);
+
+		$this->http_mock->mock(
+			'*',
+			array(
+				'body' => static function ( &$headers, $url ) use ( &$captured_url, $mock_response ) {
+					$captured_url = $url;
+					$headers      = 'HTTP/1.1 200 OK';
+					return wp_json_encode( $mock_response );
+				},
+			)
+		);
+
+		$request = new WP_REST_Request( 'GET' );
+		$request->set_param( 'address', 'Somewhere' );
+
+		$instance->geocode_address( $request );
+
+		remove_all_filters( 'gatherpress_photon_api_url' );
+
+		$this->assertStringContainsString( 'photon.custom.test', $captured_url );
+	}
+
+	/**
 	 * Permission callback on /geocode/search matches /geocode (edit_posts).
 	 *
 	 * @covers ::register_endpoints
