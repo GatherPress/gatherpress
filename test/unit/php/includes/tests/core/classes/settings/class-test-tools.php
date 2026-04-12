@@ -321,36 +321,40 @@ class Test_Tools extends Base_Ajax {
 		$user_id = $this->factory()->user->create( array( 'role' => 'administrator' ) );
 		wp_set_current_user( $user_id );
 
-		$_POST['nonce']         = wp_create_nonce( 'gatherpress_tools_nonce' );
-		$_POST['settings_json'] = wp_json_encode(
-			array(
-				'version'  => GATHERPRESS_VERSION,
-				'settings' => array( 'map_platform' => 'google' ),
-			)
-		);
+		try {
+			// Mock the HTTP input for import_mode with invalid value.
+			add_filter(
+				'gatherpress_pre_get_http_input',
+				static function ( $pre_value, $type, $var_name ): ?string {
+					if ( INPUT_POST === $type && 'import_mode' === $var_name ) {
+						return 'invalid';
+					}
+					return null;
+				},
+				10,
+				3
+			);
 
-		// Mock the HTTP input for import_mode with invalid value.
-		add_filter(
-			'gatherpress_pre_get_http_input',
-			static function ( $pre_value, $type, $var_name ): ?string {
-				if ( INPUT_POST === $type && 'import_mode' === $var_name ) {
-					return 'invalid';
-				}
-				return null;
-			},
-			10,
-			3
-		);
+			$_POST['nonce']         = wp_create_nonce( 'gatherpress_tools_nonce' );
+			$_POST['settings_json'] = wp_json_encode(
+				array(
+					'version'  => GATHERPRESS_VERSION,
+					'settings' => array( 'map_platform' => 'google' ),
+				)
+			);
 
-		// Should default to merge and succeed.
-		$response = $this->do_ajax( 'gatherpress_import_settings' );
+			// Should default to merge and succeed.
+			$response = $this->do_ajax( 'gatherpress_import_settings' );
 
-		$this->assertTrue(
-			$response->success,
-			'Failed to assert import succeeded with invalid mode defaulting to merge.'
-		);
-
-		remove_all_filters( 'gatherpress_pre_get_http_input' );
-		delete_option( 'gatherpress_settings' );
+			$this->assertTrue(
+				$response->success,
+				'Failed to assert import succeeded with invalid mode defaulting to merge. Response: '
+				. wp_json_encode( $response )
+			);
+		} finally {
+			remove_all_filters( 'gatherpress_pre_get_http_input' );
+			delete_option( 'gatherpress_settings' );
+			unset( $_POST['nonce'], $_POST['settings_json'] );
+		}
 	}
 }

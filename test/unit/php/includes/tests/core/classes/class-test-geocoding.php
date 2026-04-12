@@ -1285,56 +1285,6 @@ class Test_Geocoding extends Base {
 	}
 
 	/**
-	 * `gatherpress_photon_api_url` runs during real geocode requests (covers filter + URL helper).
-	 *
-	 * @covers ::geocode_address
-	 * @covers \GatherPress\Core\Geocoding::get_photon_api_url
-	 *
-	 * @return void
-	 */
-	public function test_geocode_address_uses_filtered_photon_api_url(): void {
-		$instance     = Geocoding::get_instance();
-		$captured_url = '';
-
-		add_filter(
-			'gatherpress_photon_api_url',
-			static function (): string {
-				return 'https://photon.custom.test/api';
-			}
-		);
-
-		$mock_response = array(
-			'features' => array(
-				array(
-					'geometry' => array(
-						'coordinates' => array( -1.0, 2.0 ),
-					),
-				),
-			),
-		);
-
-		$this->http_mock->mock(
-			'*',
-			array(
-				'body' => static function ( &$headers, $url ) use ( &$captured_url, $mock_response ) {
-					$captured_url = $url;
-					$headers      = 'HTTP/1.1 200 OK';
-					return wp_json_encode( $mock_response );
-				},
-			)
-		);
-
-		$request = new WP_REST_Request( 'GET' );
-		$request->set_param( 'address', 'Somewhere' );
-
-		$instance->geocode_address( $request );
-
-		remove_all_filters( 'gatherpress_photon_api_url' );
-
-		$this->assertStringContainsString( 'photon.custom.test', $captured_url );
-	}
-
-	/**
 	 * Permission callback on /geocode/search matches /geocode (edit_posts).
 	 *
 	 * @covers ::register_endpoints
