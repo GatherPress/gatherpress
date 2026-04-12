@@ -121,7 +121,7 @@ const Edit = ( props ) => {
 				<InnerBlocks template={ template } templateLock={ false } />
 			</BlockContextProvider>
 			<InspectorControls>
-				{ ! isDescendentOfQueryLoop && isEventContext && (
+				{ ! isDescendentOfQueryLoop && isEventContext && eventId && (
 					<PanelBody
 						title={ __( 'Venue settings', 'gatherpress' ) }
 						initialOpen={ true }
