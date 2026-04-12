@@ -36,7 +36,6 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 	const { isEditingThisVenue, venueInfoJson } = useSelect(
 		( select ) => {
 			const currentPostId = select( 'core/editor' )?.getCurrentPostId();
-			const currentPostType = select( 'core/editor' )?.getCurrentPostType();
 			const contextPostId = context?.postId || 0;
 
 			// If we're editing a venue post directly and context doesn't provide a valid ID,
@@ -67,10 +66,12 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 			}
 
 			// Read from core store for a different venue post.
+			// Use context?.postType (the venue post type from BlockContextProvider),
+			// not currentPostType (the event post type), to avoid requesting the wrong endpoint.
 			const { getEditedEntityRecord } = select( 'core' );
 			const venuePost = getEditedEntityRecord(
 				'postType',
-				currentPostType,
+				context?.postType,
 				effectiveVenuePostId
 			);
 
@@ -79,7 +80,7 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 				venueInfoJson: venuePost?.meta?.gatherpress_venue_information || '{}',
 			};
 		},
-		[ context?.postId ]
+		[ context?.postId, context?.postType ]
 	);
 
 	// For live preview when editing the venue, read lat/long from venue store.

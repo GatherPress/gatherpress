@@ -2,8 +2,7 @@
  * WordPress dependencies
  */
 import { ComboboxControl } from '@wordpress/components';
-import { useEntityProp } from '@wordpress/core-data';
-import { useSelect } from '@wordpress/data';
+import { useSelect, useDispatch } from '@wordpress/data';
 import { useCallback, useMemo } from '@wordpress/element';
 import { useDebounce } from '@wordpress/compose';
 import { __ } from '@wordpress/i18n';
@@ -47,11 +46,35 @@ export const VenueTermsCombobox = ( { search, setSearch, ...props } ) => {
 	// Derive the venue taxonomy from the event post type.
 	const venueTaxonomy = getVenueTaxonomy( getVenuePostType( currentPostType ) );
 
-	const [ venueTaxonomyIds, updateVenueTaxonomyIds ] = useEntityProp(
-		'postType',
-		currentPostType,
-		venueTaxonomy,
-		cId
+	const { editPost } = useDispatch( 'core/editor' );
+
+	// Read venue taxonomy IDs without triggering context=edit REST requests.
+	const venueTaxonomyIds = useSelect(
+		( wpSelect ) => {
+			// Try editor in-memory state first (PHP preload data + pending edits).
+			const editorAttr = wpSelect( 'core/editor' )?.getEditedPostAttribute( venueTaxonomy );
+			if ( Array.isArray( editorAttr ) ) {
+				return editorAttr;
+			}
+
+			if ( ! cId ) {
+				return undefined;
+			}
+
+			// Fallback: query taxonomy terms with context=view (no edit permissions needed).
+			const terms = wpSelect( 'core' ).getEntityRecords(
+				'taxonomy',
+				venueTaxonomy,
+				{ post: cId, per_page: 100, context: 'view' }
+			);
+			return terms?.map( ( t ) => t.id );
+		},
+		[ venueTaxonomy, cId ]
+	);
+
+	const updateVenueTaxonomyIds = useCallback(
+		( newIds ) => editPost( { [ venueTaxonomy ]: newIds } ),
+		[ editPost, venueTaxonomy ]
 	);
 
 	// Get the online-event term to exclude it from venue selection.

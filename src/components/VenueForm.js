@@ -11,16 +11,15 @@ import {
 	useNavigator,
 } from '@wordpress/components';
 import { useState } from '@wordpress/element';
-import { useSelect } from '@wordpress/data';
+import { useSelect, useDispatch } from '@wordpress/data';
 import apiFetch from '@wordpress/api-fetch';
-import { useEntityProp, store as coreDataStore } from '@wordpress/core-data';
+import { store as coreDataStore } from '@wordpress/core-data';
 
 /**
  * Internal dependencies.
  */
 import { getVenuePostType, getVenueTaxonomy } from '../helpers/venue';
 import { isPostTypeSupporting } from '../helpers/event';
-import { getCurrentContextualPostId } from '../helpers/editor';
 import { geocodeAddress } from '../helpers/geocoding';
 
 /**
@@ -179,16 +178,6 @@ function CreateVenueForm( { search, ...props } ) {
 		setTitleError( error );
 	};
 
-	const cId = getCurrentContextualPostId( props?.context?.postId );
-
-	// Use context post type if provided, otherwise fall back to the editor's current post type.
-	const currentPostType = useSelect(
-		( select ) =>
-			props?.context?.postType ||
-			select( 'core/editor' )?.getCurrentPostType(),
-		[ props?.context?.postType ]
-	);
-
 	const venueRestBase = useSelect(
 		( select ) => {
 			const venuePostTypeObj = select( 'core' ).getPostType( venuePostType );
@@ -197,12 +186,9 @@ function CreateVenueForm( { search, ...props } ) {
 		[ venuePostType ]
 	);
 
-	const [ , updateVenueTaxonomyIds ] = useEntityProp(
-		'postType',
-		currentPostType,
-		venueTaxonomy,
-		cId
-	);
+	const { editPost } = useDispatch( 'core/editor' );
+	const updateVenueTaxonomyIds = ( newIds ) =>
+		editPost( { [ venueTaxonomy ]: newIds } );
 
 	const { goTo } = useNavigator();
 

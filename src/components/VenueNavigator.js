@@ -7,8 +7,8 @@ import {
 	__experimentalNavigatorProvider as NavigatorProvider,
 	Navigator,
 } from '@wordpress/components';
-import { store as coreDataStore, useEntityProp } from '@wordpress/core-data';
-import { useSelect } from '@wordpress/data';
+import { store as coreDataStore } from '@wordpress/core-data';
+import { useSelect, useDispatch } from '@wordpress/data';
 import { useState, useCallback, useMemo } from '@wordpress/element';
 
 /**
@@ -53,19 +53,35 @@ export default function VenueNavigator( props = null ) {
 	// Get current venue and update function for event context.
 	const cId = getCurrentContextualPostId( props?.context?.postId );
 
-	// Use context post type if provided, otherwise fall back to the editor's current post type.
-	const currentPostType = useSelect(
-		( select ) =>
-			props?.context?.postType ||
-			select( 'core/editor' )?.getCurrentPostType(),
-		[ props?.context?.postType ]
+	const { editPost } = useDispatch( 'core/editor' );
+
+	// Read venue taxonomy IDs without triggering context=edit REST requests.
+	const venueTaxonomyIds = useSelect(
+		( wpSelect ) => {
+			// Try editor in-memory state first (PHP preload data + pending edits).
+			const editorAttr = wpSelect( 'core/editor' )?.getEditedPostAttribute( venueTaxonomy );
+			if ( Array.isArray( editorAttr ) ) {
+				return editorAttr;
+			}
+
+			if ( ! cId ) {
+				return undefined;
+			}
+
+			// Fallback: query taxonomy terms with context=view (no edit permissions needed).
+			const terms = wpSelect( 'core' ).getEntityRecords(
+				'taxonomy',
+				venueTaxonomy,
+				{ post: cId, per_page: 100, context: 'view' }
+			);
+			return terms?.map( ( t ) => t.id );
+		},
+		[ venueTaxonomy, cId ]
 	);
 
-	const [ venueTaxonomyIds, updateVenueTaxonomyIds ] = useEntityProp(
-		'postType',
-		currentPostType,
-		venueTaxonomy,
-		cId
+	const updateVenueTaxonomyIds = useCallback(
+		( newIds ) => editPost( { [ venueTaxonomy ]: newIds } ),
+		[ editPost, venueTaxonomy ]
 	);
 
 	// Get the online-event term to preserve it when selecting a venue.

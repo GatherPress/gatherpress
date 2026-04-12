@@ -9,7 +9,6 @@ import {
 } from '@wordpress/block-editor';
 import { __ } from '@wordpress/i18n';
 import { PanelBody, PanelRow } from '@wordpress/components';
-import { useEntityProp } from '@wordpress/core-data';
 import { useSelect } from '@wordpress/data';
 
 /**
@@ -37,11 +36,34 @@ const Edit = ( props ) => {
 	const venuePostType = getVenuePostType( effectivePostType );
 
 	const eventId = getCurrentContextualPostId( context?.postId );
-	const [ venueTaxonomyIds ] = useEntityProp(
-		'postType',
-		effectivePostType,
-		getVenueTaxonomy( venuePostType ),
-		isVenueContext ? 0 : eventId
+	const venueTaxonomy = getVenueTaxonomy( venuePostType );
+
+	// Read venue taxonomy IDs without triggering context=edit REST requests.
+	const venueTaxonomyIds = useSelect(
+		( wpSelect ) => {
+			if ( isVenueContext || isDescendentOfQueryLoop ) {
+				return undefined;
+			}
+
+			// Try editor in-memory state first (PHP preload data + pending edits).
+			const editorAttr = wpSelect( 'core/editor' )?.getEditedPostAttribute( venueTaxonomy );
+			if ( Array.isArray( editorAttr ) ) {
+				return editorAttr;
+			}
+
+			if ( ! eventId ) {
+				return undefined;
+			}
+
+			// Fallback: query taxonomy terms with context=view (no edit permissions needed).
+			const terms = wpSelect( 'core' ).getEntityRecords(
+				'taxonomy',
+				venueTaxonomy,
+				{ post: eventId, per_page: 100, context: 'view' }
+			);
+			return terms?.map( ( t ) => t.id );
+		},
+		[ isVenueContext, isDescendentOfQueryLoop, eventId, venueTaxonomy ]
 	);
 
 	const isEditableEventContext =
@@ -60,13 +82,13 @@ const Edit = ( props ) => {
 				.map( ( termId ) =>
 					wpSelect( 'core' ).getEntityRecord(
 						'taxonomy',
-						getVenueTaxonomy( venuePostType ),
+						venueTaxonomy,
 						termId
 					)
 				)
 				.filter( Boolean );
 		},
-		[ isEditableEventContext, venueTaxonomyIds, venuePostType ]
+		[ isEditableEventContext, venueTaxonomyIds, venueTaxonomy ]
 	);
 
 	// Find venue term ID (excluding online-event).

@@ -9,7 +9,6 @@ import {
 } from '@wordpress/block-editor';
 import { PanelBody, TextControl, ToggleControl } from '@wordpress/components';
 import { useSelect, useDispatch } from '@wordpress/data';
-import { useEntityProp } from '@wordpress/core-data';
 import { useState, useEffect } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
 
@@ -68,13 +67,36 @@ const Edit = ( { attributes, context } ) => {
 	const showControls =
 		! isDescendentOfQueryLoop && ! isInFSETemplate() && isEditingEvent;
 
-	// Get venue taxonomy IDs for the current event.
-	const [ venueTaxonomyIds, updateVenueTaxonomyIds ] = useEntityProp(
-		'postType',
-		currentPostType,
-		venueTaxonomy,
-		isEditingEvent ? currentPostId : undefined
+	// Read venue taxonomy IDs without triggering context=edit REST requests.
+	const venueTaxonomyIds = useSelect(
+		( wpSelect ) => {
+			if ( ! isEditingEvent ) {
+				return undefined;
+			}
+
+			// Try editor in-memory state first (PHP preload data + pending edits).
+			const editorAttr = wpSelect( 'core/editor' )?.getEditedPostAttribute( venueTaxonomy );
+			if ( Array.isArray( editorAttr ) ) {
+				return editorAttr;
+			}
+
+			if ( ! currentPostId ) {
+				return undefined;
+			}
+
+			// Fallback: query taxonomy terms with context=view (no edit permissions needed).
+			const terms = wpSelect( 'core' ).getEntityRecords(
+				'taxonomy',
+				venueTaxonomy,
+				{ post: currentPostId, per_page: 100, context: 'view' }
+			);
+			return terms?.map( ( t ) => t.id );
+		},
+		[ isEditingEvent, venueTaxonomy, currentPostId ]
 	);
+
+	const updateVenueTaxonomyIds = ( newIds ) =>
+		editPost( { [ venueTaxonomy ]: newIds } );
 
 	// Get online event link from meta.
 	const onlineEventLinkMeta = useSelect(
@@ -155,14 +177,13 @@ const Edit = ( { attributes, context } ) => {
 				venueTermIds =
 					select( 'core/editor' ).getEditedPostAttribute( venueTaxonomy );
 			} else if ( eventId ) {
-				// Fetch from saved post data using context or editor post type.
-				const postType = context?.postType || editorPostType;
-				const post = select( 'core' ).getEntityRecord(
-					'postType',
-					postType,
-					eventId
+				// Query taxonomy terms with context=view to avoid context=edit requests.
+				const terms = select( 'core' ).getEntityRecords(
+					'taxonomy',
+					venueTaxonomy,
+					{ post: eventId, per_page: 100, context: 'view' }
 				);
-				venueTermIds = post?.[ venueTaxonomy ];
+				venueTermIds = terms?.map( ( t ) => t.id );
 			} else {
 				return false;
 			}
@@ -175,7 +196,7 @@ const Edit = ( { attributes, context } ) => {
 				( id ) => String( id ) === String( onlineTermId )
 			);
 		},
-		[ eventId, onlineEventTerm, context?.postType, venueTaxonomy ]
+		[ eventId, onlineEventTerm, venueTaxonomy ]
 	);
 
 	// Dim the block when not an online event or no valid context.
