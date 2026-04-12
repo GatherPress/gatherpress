@@ -66,8 +66,8 @@ export function primeGeocodeCache( address, latitude, longitude ) {
  * Geocodes an address using the GatherPress REST API proxy.
  *
  * Uses memoization to cache results and avoid duplicate API calls
- * for the same address. The PHP backend proxies requests to Nominatim
- * to avoid CORS issues and comply with Nominatim's usage policy.
+ * for the same address. The PHP backend proxies requests to Photon
+ * (OpenStreetMap-based) so the editor does not call third-party APIs directly.
  *
  * @since 1.0.0
  *
@@ -136,7 +136,7 @@ export async function geocodeAddress( address ) {
 }
 
 /**
- * Fetches address suggestions for autocomplete (Nominatim via GatherPress REST proxy).
+ * Fetches address suggestions for autocomplete (Photon via GatherPress REST proxy).
  *
  * @param {string} query Partial address input.
  * @return {Promise<Array<{ label: string, latitude: string, longitude: string }>>} Suggestion rows.

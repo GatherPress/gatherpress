@@ -36,7 +36,7 @@ export function shouldShowAddressSuggestionUi(
 }
 
 /**
- * Shared state and handlers for Nominatim-backed address autocomplete (editor + settings UI).
+ * Shared state and handlers for Photon-backed address autocomplete (editor + settings UI).
  *
  * @param {Object}   options                  - Options.
  * @param {Function} options.onChange         - Called with the full address string when the value or selection changes.

@@ -21,7 +21,7 @@ import {
 } from '../hooks/use-address-autocomplete';
 
 /**
- * Address field with Nominatim suggestions (block: textarea + canvas; settings: TextControl + form).
+ * Address field with Photon-backed suggestions (block: textarea + canvas; settings: TextControl + form).
  *
  * @param {Object}             props               - Props.
  * @param {'block'|'settings'} props.variant       - Block canvas (textarea) vs. venue form (TextControl).

@@ -2,8 +2,9 @@
 /**
  * Handles geocoding functionality via REST API.
  *
- * Proxies requests to Nominatim OpenStreetMap API to avoid CORS issues
- * and comply with Nominatim's usage policy (proper User-Agent header).
+ * Proxies forward search and geocoding to Photon (OpenStreetMap-based) so the
+ * plugin does not use the public OSMF Nominatim service for autocomplete-style
+ * traffic. Requests run server-side with a valid User-Agent.
  *
  * @package GatherPress\Core
  * @since 1.0.0
@@ -23,7 +24,7 @@ use WP_REST_Server;
 /**
  * Class Geocoding.
  *
- * Provides a REST API endpoint for geocoding addresses using Nominatim.
+ * Provides REST API endpoints for geocoding and address search.
  *
  * @since 1.0.0
  */
@@ -34,15 +35,15 @@ class Geocoding {
 	use Singleton;
 
 	/**
-	 * Nominatim API URL.
+	 * Default Photon API base URL (forward search / geocode).
 	 *
 	 * @since 1.0.0
 	 * @var string
 	 */
-	const NOMINATIM_API_URL = 'https://nominatim.openstreetmap.org/search';
+	const PHOTON_API_URL = 'https://photon.komoot.io/api';
 
 	/**
-	 * Minimum trimmed query length before calling Nominatim for search.
+	 * Minimum trimmed query length before calling Photon for search.
 	 * Matches JS `ADDRESS_SEARCH_MIN_QUERY_LENGTH` in `src/helpers/geocoding.js`.
 	 *
 	 * @since 1.0.0
@@ -121,7 +122,7 @@ class Geocoding {
 	}
 
 	/**
-	 * Geocodes an address using Nominatim API.
+	 * Geocodes an address using the Photon API (GeoJSON).
 	 *
 	 * @since 1.0.0
 	 *
@@ -141,12 +142,11 @@ class Geocoding {
 
 		$url = add_query_arg(
 			array(
-				'q'               => $address,
-				'format'          => 'geojson',
-				'limit'           => 1,
-				'accept-language' => $this->get_language_code(),
+				'q'     => $address,
+				'limit' => 1,
+				'lang'  => $this->get_language_code(),
 			),
-			self::NOMINATIM_API_URL
+			$this->get_photon_api_url()
 		);
 
 		$response = wp_safe_remote_get(
@@ -208,9 +208,9 @@ class Geocoding {
 	}
 
 	/**
-	 * Returns Nominatim search hits for editor autocomplete (formatted label + coordinates).
+	 * Returns Photon search hits for editor autocomplete (formatted label + coordinates).
 	 *
-	 * Each row has `label` (postal-style, no POI/venue prefix), `latitude`, and `longitude`.
+	 * Each row has `label` (postal-style), `latitude`, and `longitude`.
 	 *
 	 * @since 1.0.0
 	 *
@@ -241,13 +241,11 @@ class Geocoding {
 
 		$url = add_query_arg(
 			array(
-				'q'               => $query,
-				'format'          => 'json',
-				'limit'           => 5,
-				'addressdetails'  => 1,
-				'accept-language' => $this->get_language_code(),
+				'q'     => $query,
+				'limit' => 5,
+				'lang'  => $this->get_language_code(),
 			),
-			self::NOMINATIM_API_URL
+			$this->get_photon_api_url()
 		);
 
 		$response = wp_safe_remote_get(
@@ -285,7 +283,7 @@ class Geocoding {
 		$body = wp_remote_retrieve_body( $response );
 		$data = json_decode( $body, true );
 
-		if ( ! is_array( $data ) ) {
+		if ( ! is_array( $data ) || empty( $data['features'] ) || ! is_array( $data['features'] ) ) {
 			return new WP_REST_Response(
 				array(
 					'suggestions' => array(),
@@ -296,16 +294,21 @@ class Geocoding {
 
 		$suggestions = array();
 
-		foreach ( $data as $item ) {
-			if ( ! is_array( $item ) ) {
+		foreach ( $data['features'] as $feature ) {
+			if ( ! is_array( $feature ) ) {
 				continue;
 			}
 
-			if ( ! isset( $item['lat'], $item['lon'] ) ) {
+			$coords = $feature['geometry']['coordinates'] ?? null;
+			if ( ! is_array( $coords ) || count( $coords ) < 2 ) {
 				continue;
 			}
 
-			$label = $this->format_nominatim_search_label( $item );
+			$properties = isset( $feature['properties'] ) && is_array( $feature['properties'] )
+				? $feature['properties']
+				: array();
+
+			$label = $this->format_photon_feature_label( $properties );
 
 			if ( '' === $label ) {
 				continue;
@@ -313,8 +316,8 @@ class Geocoding {
 
 			$suggestions[] = array(
 				'label'     => $label,
-				'latitude'  => (string) $item['lat'],
-				'longitude' => (string) $item['lon'],
+				'latitude'  => (string) $coords[1],
+				'longitude' => (string) $coords[0],
 			);
 		}
 
@@ -327,56 +330,32 @@ class Geocoding {
 	}
 
 	/**
-	 * Builds a one-line postal-style label from a Nominatim search hit.
-	 *
-	 * Prefers structured `address` (no country). Falls back to `display_name` with a leading
-	 * POI/venue segment removed when it matches known `address` keys (amenity, shop, etc.).
+	 * Builds a one-line label from Photon GeocodeJson properties (country omitted).
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param array $item Raw Nominatim JSON object.
+	 * @param array $properties Photon `properties` object.
 	 * @return string Non-empty label or empty string.
 	 */
-	private function format_nominatim_search_label( array $item ): string {
-		$address = isset( $item['address'] ) && is_array( $item['address'] ) ? $item['address'] : array();
+	private function format_photon_feature_label( array $properties ): string {
+		$housenumber = isset( $properties['housenumber'] ) ? trim( (string) $properties['housenumber'] ) : '';
+		$street      = isset( $properties['street'] ) ? trim( (string) $properties['street'] ) : '';
+		$name        = isset( $properties['name'] ) ? trim( (string) $properties['name'] ) : '';
 
-		$from_structured = $this->build_nominatim_label_from_address( $address );
-
-		if ( '' !== $from_structured ) {
-			return $from_structured;
+		$street_line = trim( $housenumber . ' ' . $street );
+		if ( '' === $street_line ) {
+			$street_line = $name;
 		}
 
-		$display_name = isset( $item['display_name'] ) ? trim( (string) $item['display_name'] ) : '';
-
-		if ( '' === $display_name ) {
-			return '';
+		$locality = '';
+		foreach ( array( 'city', 'district', 'county' ) as $key ) {
+			if ( ! empty( $properties[ $key ] ) ) {
+				$locality = trim( (string) $properties[ $key ] );
+				break;
+			}
 		}
 
-		return $this->strip_nominatim_poi_prefix_from_display_name( $display_name, $address );
-	}
-
-	/**
-	 * Composes label from Nominatim `address` keys (excludes country).
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param array $address Nominatim address object.
-	 * @return string Label or empty when no usable parts.
-	 */
-	private function build_nominatim_label_from_address( array $address ): string {
-		if ( empty( $address ) ) {
-			return '';
-		}
-
-		$street_line = $this->build_nominatim_street_line( $address );
-		$locality    = $this->first_nominatim_address_field(
-			$address,
-			array( 'city', 'town', 'village', 'hamlet', 'municipality', 'suburb' )
-		);
-		$region      = $this->first_nominatim_address_field(
-			$address,
-			array( 'state', 'region', 'county' )
-		);
+		$region = isset( $properties['state'] ) ? trim( (string) $properties['state'] ) : '';
 
 		$parts = array();
 
@@ -389,8 +368,11 @@ class Geocoding {
 		if ( '' !== $region && 0 !== strcasecmp( $region, $locality ) ) {
 			$parts[] = $region;
 		}
-		if ( ! empty( $address['postcode'] ) ) {
-			$parts[] = trim( (string) $address['postcode'] );
+		if ( ! empty( $properties['postcode'] ) ) {
+			$postcode = trim( (string) $properties['postcode'] );
+			if ( '' !== $postcode ) {
+				$parts[] = $postcode;
+			}
 		}
 
 		$parts = array_filter(
@@ -404,122 +386,25 @@ class Geocoding {
 	}
 
 	/**
-	 * Builds house number + road (or equivalent) from Nominatim `address`.
+	 * Photon API base URL (filterable for self-hosted instances).
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param array $address Nominatim address object.
-	 * @return string Street line or empty.
+	 * @return string Base URL for Photon `/api` requests.
 	 */
-	private function build_nominatim_street_line( array $address ): string {
-		$house = isset( $address['house_number'] ) ? trim( (string) $address['house_number'] ) : '';
-		$road  = $this->first_nominatim_address_field(
-			$address,
-			array( 'road', 'pedestrian', 'path', 'footway', 'residential' )
-		);
-
-		$chunks = array();
-		if ( '' !== $house ) {
-			$chunks[] = $house;
-		}
-		if ( '' !== $road ) {
-			$chunks[] = $road;
-		}
-
-		return trim( implode( ' ', $chunks ) );
+	private function get_photon_api_url(): string {
+		/**
+		 * Filters the Photon API base URL used for geocoding and address search.
+		 *
+		 * @since 1.0.0
+		 *
+		 * @param string $url Default Photon API URL (e.g. https://photon.komoot.io/api).
+		 */
+		return (string) apply_filters( 'gatherpress_photon_api_url', self::PHOTON_API_URL );
 	}
 
 	/**
-	 * First non-empty string among ordered Nominatim address keys.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param array    $address Nominatim address object.
-	 * @param string[] $keys    Preferred key order.
-	 * @return string Value or empty.
-	 */
-	private function first_nominatim_address_field( array $address, array $keys ): string {
-		foreach ( $keys as $key ) {
-			if ( ! empty( $address[ $key ] ) ) {
-				return trim( (string) $address[ $key ] );
-			}
-		}
-
-		return '';
-	}
-
-	/**
-	 * Removes a leading POI/venue segment from display_name when it matches structured fields.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param string $display_name Nominatim display_name.
-	 * @param array  $address      Nominatim address object.
-	 * @return string Cleaned string.
-	 */
-	private function strip_nominatim_poi_prefix_from_display_name( string $display_name, array $address ): string {
-		$poi_keys = array(
-			'amenity',
-			'shop',
-			'tourism',
-			'office',
-			'leisure',
-			'craft',
-			'club',
-			'aerialway',
-			'historic',
-			'building',
-			'man_made',
-		);
-
-		$poi_values = array();
-
-		foreach ( $poi_keys as $key ) {
-			if ( empty( $address[ $key ] ) ) {
-				continue;
-			}
-			$val = trim( (string) $address[ $key ] );
-			if ( '' !== $val ) {
-				$poi_values[] = $val;
-			}
-		}
-
-		$poi_values = array_values( array_unique( $poi_values ) );
-
-		if ( empty( $poi_values ) ) {
-			return $display_name;
-		}
-
-		$segments = array_map( 'trim', explode( ',', $display_name ) );
-
-		if ( '' === $segments[0] ) {
-			return $display_name;
-		}
-
-		$first = $segments[0];
-
-		foreach ( $poi_values as $poi ) {
-			if ( 0 === strcasecmp( $first, $poi ) ) {
-				array_shift( $segments );
-				$rest = implode(
-					', ',
-					array_filter(
-						array_map( 'trim', $segments ),
-						static function ( $s ): bool {
-							return '' !== $s;
-						}
-					)
-				);
-
-				return trim( $rest );
-			}
-		}
-
-		return $display_name;
-	}
-
-	/**
-	 * Gets the language code for Accept-Language header.
+	 * Gets the language code for Photon `lang` parameter.
 	 *
 	 * @since 1.0.0
 	 *
@@ -533,9 +418,7 @@ class Geocoding {
 	}
 
 	/**
-	 * Gets the User-Agent string for Nominatim requests.
-	 *
-	 * Nominatim requires a valid User-Agent header identifying the application.
+	 * Gets the User-Agent string for outbound geocoding requests.
 	 *
 	 * @since 1.0.0
 	 *
