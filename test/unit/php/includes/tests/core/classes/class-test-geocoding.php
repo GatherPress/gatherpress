@@ -635,7 +635,7 @@ class Test_Geocoding extends Base {
 			$suggestion['label']
 		);
 		$this->assertSame( '40.7128', $suggestion['latitude'] );
-		// JSON round-trip normalizes floats; PHP string cast matches that form.
+		// JSON float round-trip matches PHP's string cast of the coordinate value.
 		$this->assertSame( '-74.006', $suggestion['longitude'] );
 	}
 
@@ -1088,7 +1088,115 @@ class Test_Geocoding extends Base {
 			)
 		);
 		$this->assertStringContainsString( 'Z', $post_only );
+
+		$district_only = $this->invoke_geocoding_private(
+			$instance,
+			'format_photon_feature_label',
+			array(
+				array(
+					'district' => 'Brooklyn',
+					'state'    => 'NY',
+					'postcode' => '11201',
+				),
+			)
+		);
+		$this->assertStringContainsString( 'Brooklyn', $district_only );
+		$this->assertStringContainsString( 'NY', $district_only );
+
+		$county_only = $this->invoke_geocoding_private(
+			$instance,
+			'format_photon_feature_label',
+			array(
+				array(
+					'county' => 'Westchester',
+					'state'  => 'NY',
+				),
+			)
+		);
+		$this->assertStringContainsString( 'Westchester', $county_only );
+
+		$housenumber_street = $this->invoke_geocoding_private(
+			$instance,
+			'format_photon_feature_label',
+			array(
+				array(
+					'housenumber' => '10',
+					'street'      => 'Main Road',
+					'city'        => 'Townsville',
+				),
+			)
+		);
+		$this->assertStringContainsString( '10 Main Road', $housenumber_street );
+		$this->assertStringContainsString( 'Townsville', $housenumber_street );
 	}
+
+	/**
+	 * Default and filtered Photon API base URL.
+	 *
+	 * @covers \GatherPress\Core\Geocoding::get_photon_api_url
+	 *
+	 * @return void
+	 */
+	public function test_geocoding_private_get_photon_api_url(): void {
+		$instance = Geocoding::get_instance();
+
+		$default = $this->invoke_geocoding_private( $instance, 'get_photon_api_url' );
+		$this->assertSame( 'https://photon.komoot.io/api', $default );
+
+		add_filter(
+			'gatherpress_photon_api_url',
+			static function (): string {
+				return 'https://photon.example.test/api';
+			}
+		);
+
+		$filtered = $this->invoke_geocoding_private( $instance, 'get_photon_api_url' );
+		$this->assertSame( 'https://photon.example.test/api', $filtered );
+
+		remove_all_filters( 'gatherpress_photon_api_url' );
+	}
+
+	/**
+	 * Non-array entries in GeoJSON features are ignored.
+	 *
+	 * @covers ::search_addresses
+	 *
+	 * @return void
+	 */
+	public function test_search_addresses_skips_non_array_features(): void {
+		$instance = Geocoding::get_instance();
+
+		$mock_body = array(
+			'features' => array(
+				'not-a-feature',
+				array(
+					'geometry'   => array(
+						'coordinates' => array( 1.0, 2.0 ),
+					),
+					'properties' => array(
+						'city' => 'Kept',
+					),
+				),
+			),
+		);
+
+		$this->http_mock->mock(
+			'*',
+			array(
+				'body' => wp_json_encode( $mock_body ),
+			)
+		);
+
+		$request = new WP_REST_Request( 'GET' );
+		$request->set_param( 'q', 'Kee' );
+
+		$response = $instance->search_addresses( $request );
+		$data     = $response->get_data();
+
+		$this->assertCount( 1, $data['suggestions'] );
+		$this->assertSame( 'Kept', $data['suggestions'][0]['label'] );
+	}
+
 	/**
 	 * Permission callback on /geocode/search matches /geocode (edit_posts).
 	 *
