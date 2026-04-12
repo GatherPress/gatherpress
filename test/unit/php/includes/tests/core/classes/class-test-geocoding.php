@@ -635,7 +635,8 @@ class Test_Geocoding extends Base {
 			$suggestion['label']
 		);
 		$this->assertSame( '40.7128', $suggestion['latitude'] );
-		$this->assertSame( '-74.0060', $suggestion['longitude'] );
+		// JSON round-trip normalizes floats; PHP string cast matches that form.
+		$this->assertSame( '-74.006', $suggestion['longitude'] );
 	}
 
 	/**
