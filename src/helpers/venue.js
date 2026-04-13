@@ -129,7 +129,7 @@ export function GetVenuePostFromEventId( eventId ) {
 	const { termId } = useSelect(
 		( wpSelect ) => {
 			// Skip API call if eventId is not a valid positive number.
-			if ( ! Number.isFinite( eventId ) || eventId <= 0 ) {
+			if ( ! Number.isFinite( eventId ) || 0 >= eventId ) {
 				return { termId: null };
 			}
 
