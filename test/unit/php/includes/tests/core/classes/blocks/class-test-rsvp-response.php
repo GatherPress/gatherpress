@@ -629,4 +629,147 @@ class Test_Rsvp_Response extends Base {
 			'Ancestor array should remain empty for non-comment author blocks'
 		);
 	}
+
+	/**
+	 * Tests has-responses section becomes visible when attendees exist.
+	 *
+	 * @since 1.0.0
+	 * @covers ::transform_block_content
+	 *
+	 * @return void
+	 */
+	public function test_transform_block_content_show_has_responses_with_attendees(): void {
+		$instance = Rsvp_Response::get_instance();
+		$post_id  = $this->factory()->post->create(
+			array(
+				'post_type' => 'gatherpress_event',
+			)
+		);
+		$user_id  = $this->factory()->user->create();
+		$rsvp     = new Rsvp( $post_id );
+
+		$rsvp->save( $user_id, 'attending' );
+
+		$block         = array(
+			'blockName' => 'gatherpress/rsvp-response',
+			'attrs'     => array(
+				'postId' => $post_id,
+			),
+		);
+		$block_content = '<div class="wp-block-gatherpress-rsvp-response">' .
+			'<div class="gatherpress-rsvp-response--has-responses gatherpress--is-hidden">Responses</div>' .
+			'</div>';
+		$result        = $instance->transform_block_content( $block_content, $block );
+
+		$this->assertStringContainsString(
+			'gatherpress--is-visible',
+			$result,
+			'Has-responses section should have visible class when attendees exist.'
+		);
+		$this->assertStringNotContainsString(
+			'gatherpress--is-hidden',
+			$result,
+			'Has-responses section should not have hidden class when attendees exist.'
+		);
+	}
+
+	/**
+	 * Tests has-responses section becomes hidden when no attendees exist.
+	 *
+	 * @since 1.0.0
+	 * @covers ::transform_block_content
+	 *
+	 * @return void
+	 */
+	public function test_transform_block_content_hide_has_responses_without_attendees(): void {
+		$instance      = Rsvp_Response::get_instance();
+		$post_id       = $this->factory()->post->create(
+			array(
+				'post_type' => 'gatherpress_event',
+			)
+		);
+		$block         = array(
+			'blockName' => 'gatherpress/rsvp-response',
+			'attrs'     => array(
+				'postId' => $post_id,
+			),
+		);
+		$block_content = '<div class="wp-block-gatherpress-rsvp-response">' .
+			'<div class="gatherpress-rsvp-response--has-responses gatherpress--is-visible">Responses</div>' .
+			'</div>';
+		$result        = $instance->transform_block_content( $block_content, $block );
+
+		$this->assertStringContainsString(
+			'gatherpress--is-hidden',
+			$result,
+			'Has-responses section should have hidden class when no attendees exist.'
+		);
+		$this->assertStringNotContainsString(
+			'gatherpress--is-visible',
+			$result,
+			'Has-responses section should not have visible class when no attendees exist.'
+		);
+	}
+
+	/**
+	 * Tests extra_attr with a style attribute is preserved and other attributes stripped.
+	 *
+	 * @since 1.0.0
+	 * @covers ::modify_avatar_for_gatherpress_rsvp
+	 *
+	 * @return void
+	 */
+	public function test_modify_avatar_extra_attr_with_style(): void {
+		$instance   = Rsvp_Response::get_instance();
+		$user_id    = $this->factory()->user->create();
+		$comment_id = $this->factory()->comment->create(
+			array(
+				'user_id'      => $user_id,
+				'comment_type' => 'gatherpress_rsvp',
+			)
+		);
+		$comment    = get_comment( $comment_id );
+		$args       = array(
+			'url'        => '',
+			'extra_attr' => 'style="border-radius:50%" data-foo="bar"',
+		);
+		$result     = $instance->modify_avatar_for_gatherpress_rsvp( $args, $comment );
+
+		$this->assertSame(
+			'style="border-radius:50%"',
+			$result['extra_attr'],
+			'Only the style attribute should be preserved in extra_attr when a style is present.'
+		);
+	}
+
+	/**
+	 * Tests extra_attr without a style attribute is cleared entirely.
+	 *
+	 * @since 1.0.0
+	 * @covers ::modify_avatar_for_gatherpress_rsvp
+	 *
+	 * @return void
+	 */
+	public function test_modify_avatar_extra_attr_without_style(): void {
+		$instance   = Rsvp_Response::get_instance();
+		$user_id    = $this->factory()->user->create();
+		$comment_id = $this->factory()->comment->create(
+			array(
+				'user_id'      => $user_id,
+				'comment_type' => 'gatherpress_rsvp',
+			)
+		);
+		$comment    = get_comment( $comment_id );
+		$args       = array(
+			'url'        => '',
+			'extra_attr' => 'data-foo="bar"',
+		);
+		$result     = $instance->modify_avatar_for_gatherpress_rsvp( $args, $comment );
+
+		$this->assertSame(
+			'',
+			$result['extra_attr'],
+			'extra_attr should be cleared to an empty string when no style attribute is present.'
+		);
+	}
 }

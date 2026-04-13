@@ -1422,4 +1422,236 @@ class Test_Event_Query extends Base {
 			'Future event should not appear in past events query'
 		);
 	}
+
+	/**
+	 * Test venue filter sets tax_query when on a venue singular page.
+	 *
+	 * Covers the venue_filter block when venue_filter is non-empty,
+	 * is_singular returns true for a venue post type, the queried object
+	 * is a WP_Post, and no existing tax_query is present.
+	 *
+	 * @covers ::prepare_event_query_before_execution
+	 *
+	 * @return void
+	 */
+	public function test_prepare_query_venue_filter_sets_tax_query(): void {
+		$instance = Event_Query::get_instance();
+
+		// Create a venue post to establish proper singular context.
+		$venue_post_id = $this->factory->post->create(
+			array(
+				'post_type' => Venue::POST_TYPE,
+				'post_name' => 'test-venue',
+			)
+		);
+
+		// Navigate to the venue page so is_singular() and get_queried_object() work correctly.
+		$this->go_to( get_permalink( $venue_post_id ) );
+
+		// Build a mock query with venue_filter set and no existing tax_query.
+		$query = $this->getMockBuilder( 'WP_Query' )
+			->setMethods( array( 'is_main_query', 'get', 'set' ) )
+			->getMock();
+
+		$query->expects( $this->any() )
+			->method( 'is_main_query' )
+			->willReturn( true );
+
+		$captured_tax_query = null;
+
+		$query->expects( $this->any() )
+			->method( 'get' )
+			->willReturnCallback(
+				static function ( $key ) {
+					if ( 'venue_filter' === $key ) {
+						return true;
+					}
+					// Return null for tax_query so existing_tax_query is initialized as an empty array.
+					return null;
+				}
+			);
+
+		$query->expects( $this->any() )
+			->method( 'set' )
+			->willReturnCallback(
+				static function ( $key, $value ) use ( &$captured_tax_query ) {
+					if ( 'tax_query' === $key ) {
+						$captured_tax_query = $value;
+					}
+				}
+			);
+
+		$instance->prepare_event_query_before_execution( $query );
+
+		// Assert that set() was called with tax_query containing the venue term.
+		$this->assertIsArray( $captured_tax_query, 'tax_query should have been set as an array.' );
+		$this->assertCount( 1, $captured_tax_query, 'tax_query should contain exactly one entry.' );
+		$this->assertSame(
+			Venue::TAXONOMY,
+			$captured_tax_query[0]['taxonomy'],
+			'tax_query taxonomy should be the venue taxonomy.'
+		);
+		$this->assertSame( 'slug', $captured_tax_query[0]['field'], 'tax_query field should be slug.' );
+		$this->assertContains(
+			'_test-venue',
+			$captured_tax_query[0]['terms'],
+			'tax_query terms should contain the venue term slug.'
+		);
+
+		wp_delete_post( $venue_post_id, true );
+	}
+
+	/**
+	 * Test venue filter merges with an existing tax_query on a venue singular page.
+	 *
+	 * Covers the branch where $existing_tax_query is already an array so that the
+	 * venue entry is appended rather than replacing it.
+	 *
+	 * @covers ::prepare_event_query_before_execution
+	 *
+	 * @return void
+	 */
+	public function test_prepare_query_venue_filter_merges_with_existing_tax_query(): void {
+		$instance = Event_Query::get_instance();
+
+		// Create a venue post to establish proper singular context.
+		$venue_post_id = $this->factory->post->create(
+			array(
+				'post_type' => Venue::POST_TYPE,
+				'post_name' => 'merge-venue',
+			)
+		);
+
+		// Navigate to the venue page so is_singular() and get_queried_object() work correctly.
+		$this->go_to( get_permalink( $venue_post_id ) );
+
+		// Pre-existing tax_query entry to verify merging behavior.
+		$pre_existing_entry = array(
+			'taxonomy' => 'category',
+			'field'    => 'slug',
+			'terms'    => array( 'existing-term' ),
+		);
+
+		// Build a mock query with venue_filter set and a pre-existing tax_query.
+		$query = $this->getMockBuilder( 'WP_Query' )
+			->setMethods( array( 'is_main_query', 'get', 'set' ) )
+			->getMock();
+
+		$query->expects( $this->any() )
+			->method( 'is_main_query' )
+			->willReturn( true );
+
+		$captured_tax_query = null;
+
+		$query->expects( $this->any() )
+			->method( 'get' )
+			->willReturnCallback(
+				static function ( $key ) use ( $pre_existing_entry ) {
+					if ( 'venue_filter' === $key ) {
+						return true;
+					}
+					if ( 'tax_query' === $key ) {
+						// Return an existing tax_query array to trigger the merge path.
+						return array( $pre_existing_entry );
+					}
+					return null;
+				}
+			);
+
+		$query->expects( $this->any() )
+			->method( 'set' )
+			->willReturnCallback(
+				static function ( $key, $value ) use ( &$captured_tax_query ) {
+					if ( 'tax_query' === $key ) {
+						$captured_tax_query = $value;
+					}
+				}
+			);
+
+		$instance->prepare_event_query_before_execution( $query );
+
+		// Assert that both the pre-existing entry and the new venue entry are present.
+		$this->assertIsArray( $captured_tax_query, 'tax_query should have been set as an array.' );
+		$this->assertCount(
+			2,
+			$captured_tax_query,
+			'tax_query should contain the pre-existing entry plus the venue entry.'
+		);
+		$this->assertSame(
+			'category',
+			$captured_tax_query[0]['taxonomy'],
+			'First tax_query entry should be the pre-existing one.'
+		);
+		$this->assertSame(
+			Venue::TAXONOMY,
+			$captured_tax_query[1]['taxonomy'],
+			'Second tax_query entry should be the venue taxonomy.'
+		);
+		$this->assertSame( 'slug', $captured_tax_query[1]['field'], 'Venue tax_query field should be slug.' );
+		$this->assertContains(
+			'_merge-venue',
+			$captured_tax_query[1]['terms'],
+			'Venue tax_query terms should contain the expected term slug.'
+		);
+
+		wp_delete_post( $venue_post_id, true );
+	}
+
+	/**
+	 * Test venue filter is skipped when venue_filter query var is empty.
+	 *
+	 * Covers the early-exit branch of the venue filter block when venue_filter
+	 * is not set so that tax_query is never modified.
+	 *
+	 * @covers ::prepare_event_query_before_execution
+	 *
+	 * @return void
+	 */
+	public function test_prepare_query_venue_filter_skipped_when_empty(): void {
+		$instance = Event_Query::get_instance();
+
+		// Create a venue post to establish proper singular context.
+		$venue_post_id = $this->factory->post->create(
+			array(
+				'post_type' => Venue::POST_TYPE,
+				'post_name' => 'skip-venue',
+			)
+		);
+
+		// Navigate to the venue page so the singular context is active.
+		$this->go_to( get_permalink( $venue_post_id ) );
+
+		// Build a mock query with venue_filter intentionally absent.
+		$query = $this->getMockBuilder( 'WP_Query' )
+			->setMethods( array( 'is_main_query', 'get', 'set' ) )
+			->getMock();
+
+		$query->expects( $this->any() )
+			->method( 'is_main_query' )
+			->willReturn( true );
+
+		$query->expects( $this->any() )
+			->method( 'get' )
+			->willReturn( null );
+
+		$set_called_with_tax_query = false;
+
+		$query->expects( $this->any() )
+			->method( 'set' )
+			->willReturnCallback(
+				static function ( $key, $value ) use ( &$set_called_with_tax_query ) {
+					unset( $value );
+					if ( 'tax_query' === $key ) {
+						$set_called_with_tax_query = true;
+					}
+				}
+			);
+
+		$instance->prepare_event_query_before_execution( $query );
+
+		// Assert that tax_query was never touched because the venue_filter is empty.
+		$this->assertFalse( $set_called_with_tax_query, 'tax_query should not be set when venue_filter is empty.' );
+
+		wp_delete_post( $venue_post_id, true );
+	}
 }

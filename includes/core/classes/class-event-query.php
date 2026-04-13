@@ -18,6 +18,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 use GatherPress\Core\Settings;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Venue;
+use WP_Post;
 use WP_Query;
 
 /**
@@ -248,6 +249,32 @@ class Event_Query {
 						);
 					}
 				}
+			}
+		}
+
+		// Filter events by venue when the venue filter is enabled and we're on a venue page.
+		$venue_filter = $query->get( 'venue_filter' );
+		if ( ! empty( $venue_filter ) && is_singular( Venue::POST_TYPE ) ) {
+			$venue_post = get_queried_object();
+
+			if ( $venue_post instanceof WP_Post ) {
+				$venue     = Venue::get_instance();
+				$term_slug = $venue->get_venue_term_slug( $venue_post->post_name );
+
+				// Merge with any existing tax_query.
+				$existing_tax_query = $query->get( 'tax_query' );
+				if ( ! is_array( $existing_tax_query ) ) {
+					$existing_tax_query = array();
+				}
+
+				$existing_tax_query[] = array(
+					'taxonomy' => Venue::TAXONOMY,
+					'field'    => 'slug',
+					'terms'    => array( $term_slug ),
+				);
+
+				// phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query
+				$query->set( 'tax_query', $existing_tax_query );
 			}
 		}
 

@@ -205,7 +205,7 @@ class Rsvp_Template {
 				$parsed_block,
 				array( 'commentId' => $response_id )
 			)
-		)->render( array( 'dynamic' => false ) );
+		)->render( array( 'dynamic' => true ) );
 
 		// Re-add the filter after rendering to ensure it continues to apply to other blocks.
 		add_filter( $render_block_hook, array( $this, 'generate_rsvp_template_block' ), 10, 3 );

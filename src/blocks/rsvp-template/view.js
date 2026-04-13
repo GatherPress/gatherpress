@@ -53,12 +53,18 @@ const { state } = store( 'gatherpress', {
 							);
 
 						if ( emptyRsvpMessageElement ) {
-							if (
+							// Default to 'attending' to match the fetch status default above.
+							const rsvpSelection =
+								state.posts[ context.postId ]
+									?.rsvpSelection || 'attending';
+
+							const hasNoAttendees =
 								[ 'attending', 'no_status' ].includes(
-									state.posts[ context.postId ]?.rsvpSelection,
+									rsvpSelection,
 								) &&
-								0 === res.responses.attending.count
-							) {
+								0 === res.responses.attending.count;
+
+							if ( hasNoAttendees ) {
 								emptyRsvpMessageElement.classList.add(
 									'gatherpress--is-visible',
 								);
@@ -72,6 +78,30 @@ const { state } = store( 'gatherpress', {
 								emptyRsvpMessageElement.classList.remove(
 									'gatherpress--is-visible',
 								);
+							}
+
+							// Toggle the inverse has-responses element.
+							const hasResponsesElement =
+								grandParent.querySelector(
+									'.gatherpress-rsvp-response--has-responses',
+								);
+
+							if ( hasResponsesElement ) {
+								if ( hasNoAttendees ) {
+									hasResponsesElement.classList.add(
+										'gatherpress--is-hidden',
+									);
+									hasResponsesElement.classList.remove(
+										'gatherpress--is-visible',
+									);
+								} else {
+									hasResponsesElement.classList.add(
+										'gatherpress--is-visible',
+									);
+									hasResponsesElement.classList.remove(
+										'gatherpress--is-hidden',
+									);
+								}
 							}
 						}
 

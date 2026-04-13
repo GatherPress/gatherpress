@@ -220,6 +220,18 @@ class Form_Field {
 			$this->add_style( $styles, 'input_border_radius', 'border-radius:%dpx' );
 			$this->add_style( $styles, 'field_text_color', self::CSS_COLOR );
 			$this->add_style( $styles, 'field_background_color', 'background-color:%s' );
+
+			// Match editor JS fallback: use transparent when no background color is set
+			// to prevent browser default white input background.
+			if ( empty( $this->attributes['field_background_color'] ) ) {
+				$styles[] = 'background-color:transparent';
+			}
+
+			// Match editor JS fallback: inherit text color when none is set.
+			if ( empty( $this->attributes['field_text_color'] ) ) {
+				$styles[] = 'color:inherit';
+			}
+
 			$this->add_style( $styles, 'field_width', 'width:%s%%' );
 			$this->add_style( $styles, 'input_border_width', 'border-width:%dpx' );
 			$this->add_style( $styles, 'border_color', 'border-color:%s' );
