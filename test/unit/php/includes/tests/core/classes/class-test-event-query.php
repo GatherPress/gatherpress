@@ -1466,7 +1466,7 @@ class Test_Event_Query extends Base {
 					if ( 'venue_filter' === $key ) {
 						return true;
 					}
-					// Return null for tax_query so existing_tax_query is initialised as an empty array.
+					// Return null for tax_query so existing_tax_query is initialized as an empty array.
 					return null;
 				}
 			);
@@ -1525,7 +1525,7 @@ class Test_Event_Query extends Base {
 		// Navigate to the venue page so is_singular() and get_queried_object() work correctly.
 		$this->go_to( get_permalink( $venue_post_id ) );
 
-		// Pre-existing tax_query entry to verify merging behaviour.
+		// Pre-existing tax_query entry to verify merging behavior.
 		$pre_existing_entry = array(
 			'taxonomy' => 'category',
 			'field'    => 'slug',
