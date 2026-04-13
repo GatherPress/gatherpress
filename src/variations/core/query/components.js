@@ -229,7 +229,7 @@ export const EventListTypeControls = ( { attributes, setAttributes } ) => {
  */
 export const VenueFilterControls = ( { attributes, setAttributes } ) => {
 	const {
-		query: { gatherpress_venue_filter: venueFilter } = {},
+		query: { venue_filter: venueFilter } = {},
 	} = attributes;
 
 	return (
@@ -244,7 +244,7 @@ export const VenueFilterControls = ( { attributes, setAttributes } ) => {
 				setAttributes( {
 					query: {
 						...attributes.query,
-						gatherpress_venue_filter: value ? 1 : 0,
+						venue_filter: value ? 1 : 0,
 					},
 				} );
 			} }
