@@ -231,6 +231,10 @@ class Event_Query {
 			$query_args['include_unfinished'] = $block_query['include_unfinished'];
 		}
 
+		if ( ! empty( $block_query['gatherpress_venue_filter'] ) ) {
+			$query_args['gatherpress_venue_filter'] = $block_query['gatherpress_venue_filter'];
+		}
+
 		// Order By.
 		if ( isset( $block_query['orderBy'] ) ) {
 			$query_args['orderby'] = array( $block_query['orderBy'] );
@@ -291,6 +295,11 @@ class Event_Query {
 
 		$custom_args['orderby'] = $request->get_param( 'orderby' );
 
+		$gatherpress_venue_filter = $request->get_param( 'gatherpress_venue_filter' );
+		if ( null !== $gatherpress_venue_filter ) {
+			$custom_args['gatherpress_venue_filter'] = $gatherpress_venue_filter;
+		}
+
 		/** This filter is documented in includes/query-loop.php */
 		$filtered_query_args = apply_filters(
 			'gatherpress_query_vars',
@@ -348,6 +357,12 @@ class Event_Query {
 			'type'        => 'integer',
 		);
 
+		$query_params['gatherpress_venue_filter'] = array(
+			'description' => __( 'Whether to filter events by the current venue context', 'gatherpress' ),
+			'type'        => 'integer',
+			'enum'        => array( 0, 1 ),
+		);
+
 		return $query_params;
 	}
 
@@ -398,6 +413,11 @@ class Event_Query {
 		// Pass through order direction.
 		if ( ! empty( $block_query['order'] ) ) {
 			$query_args['order'] = strtoupper( $block_query['order'] );
+		}
+
+		// Pass through venue filter setting.
+		if ( ! empty( $block_query['gatherpress_venue_filter'] ) ) {
+			$query_args['gatherpress_venue_filter'] = $block_query['gatherpress_venue_filter'];
 		}
 
 		return $query_args;

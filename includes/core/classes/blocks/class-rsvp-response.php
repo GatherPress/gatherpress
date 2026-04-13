@@ -130,7 +130,7 @@ class Rsvp_Response {
 			$tag->set_attribute( 'data-counts', wp_json_encode( $counts ) );
 
 			do {
-				$class_attr = $tag->get_attribute( 'class' );
+				$class_attr    = $tag->get_attribute( 'class' );
 				$has_responses = ! empty( $counts['attending'] ) || ! empty( $counts['waiting_list'] );
 
 				if ( Utility::has_css_class( $class_attr, 'gatherpress-rsvp-response--no-responses' ) ) {
