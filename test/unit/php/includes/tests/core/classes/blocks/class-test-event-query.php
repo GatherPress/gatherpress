@@ -785,4 +785,95 @@ class Test_Event_Query extends Base {
 		$this->assertArrayNotHasKey( 'gatherpress_event_query', $result );
 		$this->assertArrayNotHasKey( 'orderby', $result );
 	}
+
+	/**
+	 * Test query_loop_block_query_vars passes venue_filter through to query args.
+	 *
+	 * @since 1.0.0
+	 * @covers ::query_loop_block_query_vars
+	 *
+	 * @return void
+	 */
+	public function test_query_loop_block_query_vars_with_venue_filter(): void {
+		$instance = Event_Query::get_instance();
+
+		$query = array( 'posts_per_page' => 10 );
+		$block = $this->createMock( \WP_Block::class );
+
+		$block->context = array(
+			'query' => array(
+				'gatherpress_event_query' => 'upcoming',
+				'venue_filter'            => 1,
+			),
+		);
+
+		$result = $instance->query_loop_block_query_vars( $query, $block );
+
+		$this->assertSame( 1, $result['venue_filter'], 'Should pass venue_filter through to query args.' );
+	}
+
+	/**
+	 * Test rest_query passes venue_filter through to custom args.
+	 *
+	 * @since 1.0.0
+	 * @covers ::rest_query
+	 *
+	 * @return void
+	 */
+	public function test_rest_query_with_venue_filter(): void {
+		$instance = Event_Query::get_instance();
+
+		$request = $this->createMock( \WP_REST_Request::class );
+
+		$param_map = array(
+			array( 'gatherpress_event_query', 'upcoming' ),
+			array( 'exclude_current', null ),
+			array( 'include_unfinished', null ),
+			array( 'orderby', null ),
+			array( 'venue_filter', 1 ),
+		);
+
+		$request->expects( $this->exactly( 5 ) )
+			->method( 'get_param' )
+			->willReturnMap( $param_map );
+
+		$request->expects( $this->once() )
+			->method( 'get_params' )
+			->willReturn(
+				array(
+					'gatherpress_event_query' => 'upcoming',
+					'venue_filter'            => 1,
+				)
+			);
+
+		$initial_args = array(
+			'post_type' => Event::POST_TYPE,
+		);
+
+		$result = $instance->rest_query( $initial_args, $request );
+
+		$this->assertSame( 1, $result['venue_filter'], 'Should pass venue_filter through to custom args.' );
+	}
+
+	/**
+	 * Test aql_query_vars passes venue_filter through to query args.
+	 *
+	 * @since 1.0.0
+	 * @covers ::aql_query_vars
+	 *
+	 * @return void
+	 */
+	public function test_aql_query_vars_with_venue_filter(): void {
+		$instance = Event_Query::get_instance();
+
+		$query_args  = array( 'posts_per_page' => 10 );
+		$block_query = array(
+			'postType'     => 'gatherpress_event',
+			'venue_filter' => 1,
+		);
+
+		$result = $instance->aql_query_vars( $query_args, $block_query, false );
+
+		$this->assertSame( 1, $result['venue_filter'], 'Should pass venue_filter through to query args.' );
+	}
 }
