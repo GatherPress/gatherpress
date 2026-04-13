@@ -118,9 +118,10 @@ class Test_Event_Query extends Base {
 			array( 'include_unfinished', 0 ), // Integer 0 - the critical test case.
 			array( 'exclude_current', null ),
 			array( 'orderby', 'datetime' ),
+			array( 'gatherpress_venue_filter', null ),
 		);
 
-		$request->expects( $this->exactly( 4 ) )
+		$request->expects( $this->exactly( 5 ) )
 			->method( 'get_param' )
 			->willReturnMap( $param_map );
 
@@ -486,9 +487,10 @@ class Test_Event_Query extends Base {
 			array( 'exclude_current', 456 ),
 			array( 'include_unfinished', null ),
 			array( 'orderby', 'datetime' ),
+			array( 'gatherpress_venue_filter', null ),
 		);
 
-		$request->expects( $this->exactly( 4 ) )
+		$request->expects( $this->exactly( 5 ) )
 			->method( 'get_param' )
 			->willReturnMap( $param_map );
 
@@ -530,9 +532,10 @@ class Test_Event_Query extends Base {
 			array( 'exclude_current', null ),
 			array( 'include_unfinished', 1 ),
 			array( 'orderby', 'date' ),
+			array( 'gatherpress_venue_filter', null ),
 		);
 
-		$request->expects( $this->exactly( 4 ) )
+		$request->expects( $this->exactly( 5 ) )
 			->method( 'get_param' )
 			->willReturnMap( $param_map );
 
@@ -578,9 +581,10 @@ class Test_Event_Query extends Base {
 			array( 'exclude_current', null ),
 			array( 'include_unfinished', null ),
 			array( 'orderby', null ),
+			array( 'gatherpress_venue_filter', null ),
 		);
 
-		$request->expects( $this->exactly( 4 ) )
+		$request->expects( $this->exactly( 5 ) )
 			->method( 'get_param' )
 			->willReturnMap( $param_map );
 
@@ -760,9 +764,10 @@ class Test_Event_Query extends Base {
 			array( 'exclude_current', null ),
 			array( 'include_unfinished', null ),
 			array( 'orderby', '' ),
+			array( 'gatherpress_venue_filter', null ),
 		);
 
-		$request->expects( $this->exactly( 4 ) )
+		$request->expects( $this->exactly( 5 ) )
 			->method( 'get_param' )
 			->willReturnMap( $param_map );
 
