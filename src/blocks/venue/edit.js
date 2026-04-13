@@ -14,7 +14,7 @@ import { useSelect } from '@wordpress/data';
 /**
  * Internal dependencies
  */
-import { getCurrentContextualPostId, hasValidBlockContext } from '../../helpers/editor';
+import { getCurrentContextualPostId, hasValidBlockContext, isInFSETemplate } from '../../helpers/editor';
 import { isPostTypeSupporting, DISABLED_FIELD_OPACITY } from '../../helpers/event';
 import { GetVenuePostFromTermId, GetVenuePostFromEventId, getVenuePostType, getVenueTaxonomy } from '../../helpers/venue';
 import VenueNavigator from '../../components/VenueNavigator';
@@ -151,7 +151,7 @@ const Edit = ( props ) => {
 				<InnerBlocks template={ template } templateLock={ false } />
 			</BlockContextProvider>
 			<InspectorControls>
-				{ ! isDescendentOfQueryLoop && isEventContext && (
+				{ ! isDescendentOfQueryLoop && ! isInFSETemplate() && isEventContext && (
 					<PanelBody
 						title={ __( 'Venue settings', 'gatherpress' ) }
 						initialOpen={ true }

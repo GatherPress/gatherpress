@@ -1113,4 +1113,35 @@ class Test_Form_Field extends Base {
 			'Onclick handlers should be stripped from span tags.'
 		);
 	}
+
+	/**
+	 * Tests get_input_styles fallback values for text fields without colors.
+	 *
+	 * @since 1.0.0
+	 * @covers ::get_input_styles
+	 * @covers ::add_style
+	 * @covers ::compile_styles
+	 *
+	 * @return void
+	 */
+	public function test_get_input_styles_text_field_no_colors(): void {
+		$form_field = new Form_Field(
+			array(
+				'fieldType' => 'text',
+			)
+		);
+
+		$styles = $form_field->get_input_styles();
+
+		$this->assertStringContainsString(
+			'background-color:transparent',
+			$styles,
+			'Failed to assert fallback transparent background for text field without background color.'
+		);
+		$this->assertStringContainsString(
+			'color:inherit',
+			$styles,
+			'Failed to assert fallback inherit color for text field without text color.'
+		);
+	}
 }

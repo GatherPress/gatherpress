@@ -6,7 +6,7 @@ import moment from 'moment';
 /**
  * WordPress dependencies.
  */
-import { __, sprintf } from '@wordpress/i18n';
+import { __ } from '@wordpress/i18n';
 import {
 	BlockControls,
 	InspectorControls,
@@ -17,9 +17,9 @@ import {
 	__experimentalVStack as VStack,
 	PanelBody,
 	RadioControl,
-	SelectControl,
 	Spinner,
 	TextControl,
+	ToggleControl,
 	ToolbarButton,
 	ToolbarGroup,
 } from '@wordpress/components';
@@ -336,37 +336,6 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 						<VStack spacing={ 4 }>
 							<DateTimeRange />
 						</VStack>
-						<div style={ { height: '1rem' } } />
-						<SelectControl
-							label={ __( 'Show time zone', 'gatherpress' ) }
-							value={ showTimezone }
-							options={ [
-								{
-									label: sprintf(
-										/* translators: %s: Plugin "show timezone" setting */
-										__(
-											'%s (plugin setting)',
-											'gatherpress'
-										),
-										globalShowTimezone
-											? __( 'Yes', 'gatherpress' )
-											: __( 'No', 'gatherpress' )
-									),
-									value: '',
-								},
-								{
-									label: __( 'Yes', 'gatherpress' ),
-									value: 'yes',
-								},
-								{
-									label: __( 'No', 'gatherpress' ),
-									value: 'no',
-								},
-							] }
-							onChange={ ( value ) =>
-								setAttributes( { showTimezone: value } )
-							}
-						/>
 					</PanelBody>
 				</InspectorControls>
 			) }
@@ -441,6 +410,20 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 							) }
 						</a>
 					</p>
+					<ToggleControl
+						__nextHasNoMarginBottom
+						label={ __( 'Append time zone', 'gatherpress' ) }
+						checked={
+							showTimezone
+								? 'yes' === showTimezone
+								: globalShowTimezone
+						}
+						onChange={ ( value ) =>
+							setAttributes( {
+								showTimezone: value ? 'yes' : 'no',
+							} )
+						}
+					/>
 				</PanelBody>
 			</InspectorControls>
 		</div>
