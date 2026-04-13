@@ -319,6 +319,24 @@ describe( 'GetVenuePostFromEventId', () => {
 		expect( result.current ).toEqual( mockVenuePost );
 	} );
 
+	it( 'skips API call and returns undefined when eventId is zero', () => {
+		useSelect.mockImplementation( ( callback ) => {
+			const wpSelect = jest.fn( () => ( {
+				getEntityRecord: jest.fn(),
+				getEntityRecords: jest.fn( () => [] ),
+			} ) );
+			const result = callback( wpSelect );
+			// Ensure getEntityRecord was never called.
+			expect(
+				wpSelect().getEntityRecord
+			).not.toHaveBeenCalled();
+			return result;
+		} );
+
+		const { result } = renderHook( () => GetVenuePostFromEventId( 0 ) );
+		expect( result.current ).toEqual( undefined );
+	} );
+
 	it( 'returns null when eventPost is undefined', () => {
 		useSelect.mockImplementation( ( callback ) => {
 			const wpSelect = jest.fn( () => ( {
