@@ -128,6 +128,11 @@ export function GetVenueTermFromPostId( postId = null ) {
 export function GetVenuePostFromEventId( eventId ) {
 	const { termId } = useSelect(
 		( wpSelect ) => {
+			// Skip API call if eventId is not a valid positive number.
+			if ( ! Number.isFinite( eventId ) || eventId <= 0 ) {
+				return { termId: null };
+			}
+
 			// Retrieve the event post entity from the core store.
 			const eventPost = wpSelect( 'core' ).getEntityRecord(
 				'postType',
