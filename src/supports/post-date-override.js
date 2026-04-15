@@ -9,7 +9,7 @@ import { useBlockProps } from '@wordpress/block-editor';
 /**
  * Internal dependencies.
  */
-import { getFromGlobal } from '../helpers/globals';
+import { getFromSettings } from '../helpers/editor-settings';
 import { isEventPostType } from '../helpers/event';
 import {
 	convertPHPToMomentFormat,
@@ -21,11 +21,6 @@ import {
 } from '../helpers/datetime';
 import { __ } from '@wordpress/i18n';
 
-const globalDateFormat = getFromGlobal( 'settings.dateFormat' );
-const globalTimeFormat = getFromGlobal( 'settings.timeFormat' );
-const globalShowTimezone = getFromGlobal( 'settings.showTimezone' );
-const defaultFormat = `${ globalDateFormat } ${ globalTimeFormat }`;
-
 /**
  * Formats event datetime for display, matching the PHP get_display_datetime output.
  *
@@ -35,11 +30,16 @@ const defaultFormat = `${ globalDateFormat } ${ globalTimeFormat }`;
  * @return {string} Formatted display datetime.
  */
 const formatEventDateTime = ( dateTimeStart, dateTimeEnd, timezone ) => {
+	const dateFormat = getFromSettings( 'dateFormat' );
+	const timeFormat = getFromSettings( 'timeFormat' );
+	const showTimezone = getFromSettings( 'showTimezone' );
+	const fullFormat = `${ dateFormat } ${ timeFormat }`;
+
 	timezone = getTimezone( timezone );
 	let sameStartEndDay = false;
 
 	if ( dateTimeStart && dateTimeEnd ) {
-		const sameDayFormat = convertPHPToMomentFormat( globalDateFormat );
+		const sameDayFormat = convertPHPToMomentFormat( dateFormat );
 		sameStartEndDay =
 			createMomentWithTimezone( dateTimeStart, timezone ).format(
 				sameDayFormat
@@ -53,7 +53,7 @@ const formatEventDateTime = ( dateTimeStart, dateTimeEnd, timezone ) => {
 
 	// Add start date/time.
 	if ( dateTimeStart ) {
-		const startFormat = convertPHPToMomentFormat( defaultFormat );
+		const startFormat = convertPHPToMomentFormat( fullFormat );
 		parts.push(
 			createMomentWithTimezone( dateTimeStart, timezone ).format(
 				startFormat
@@ -62,7 +62,7 @@ const formatEventDateTime = ( dateTimeStart, dateTimeEnd, timezone ) => {
 	}
 
 	// Determine end format.
-	let endFormat = defaultFormat;
+	let endFormat = fullFormat;
 	let showEnd = true;
 
 	if ( dateTimeEnd ) {
@@ -91,7 +91,7 @@ const formatEventDateTime = ( dateTimeStart, dateTimeEnd, timezone ) => {
 	}
 
 	// Add timezone.
-	if ( globalShowTimezone ) {
+	if ( showTimezone ) {
 		if ( isManualOffset( timezone ) ) {
 			const sign = timezone.charAt( 0 );
 			const offset = timezone.substring( 1 ).replace( ':', '' );
@@ -131,8 +131,8 @@ const withEventPostDateOverride = createHigherOrderComponent(
 			}
 
 			// Check if the setting is enabled and we are editing an event.
-			const postOrEventDate = getFromGlobal(
-				'settings.postOrEventDate'
+			const postOrEventDate = getFromSettings(
+				'postOrEventDate'
 			);
 
 			if ( ! postOrEventDate || ! isEventPostType() ) {

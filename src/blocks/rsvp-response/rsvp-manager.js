@@ -12,6 +12,7 @@ import { store as coreStore } from '@wordpress/core-data';
  * Internal dependencies.
  */
 import { getFromGlobal, setToGlobal } from '../../helpers/globals';
+import { EVENT_REST_API } from '../../helpers/namespace';
 
 /**
  * Component for displaying and managing RSVP responses.
@@ -71,7 +72,7 @@ const RsvpManager = ( { defaultStatus, setDefaultStatus } ) => {
 	 */
 	const updateRsvpStatus = ( userId, status = 'attending' ) => {
 		apiFetch( {
-			path: getFromGlobal( 'urls.eventApiPath' ) + '/rsvp',
+			path: EVENT_REST_API + '/rsvp',
 			method: 'POST',
 			data: {
 				post_id: postId,

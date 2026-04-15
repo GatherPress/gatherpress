@@ -80,6 +80,12 @@ class Test_Assets extends Base {
 			),
 			array(
 				'type'     => 'action',
+				'name'     => 'wp_head',
+				'priority' => 10,
+				'callback' => array( $instance, 'add_interactivity_state' ),
+			),
+			array(
+				'type'     => 'action',
 				'name'     => 'admin_footer',
 				'priority' => 11,
 				'callback' => array( $instance, 'event_communication_modal' ),
@@ -226,10 +232,30 @@ class Test_Assets extends Base {
 			$output['eventDetails']['dateTime'],
 			'Failed to assert that datetime array matches.'
 		);
-		$this->assertEquals(
-			1,
-			$output['eventDetails']['hasEventPast'],
-			'Failed to assert that has_event_past is true'
+		$this->assertArrayNotHasKey(
+			'hasEventPast',
+			$output['eventDetails'],
+			'Failed to assert that hasEventPast is not localized.'
+		);
+		$this->assertArrayNotHasKey(
+			'currentUser',
+			$output['eventDetails'],
+			'Failed to assert that currentUser is not localized.'
+		);
+		$this->assertArrayNotHasKey(
+			'misc',
+			$output,
+			'Failed to assert that misc is not localized.'
+		);
+		$this->assertArrayNotHasKey(
+			'settings',
+			$output,
+			'Failed to assert that settings is not localized.'
+		);
+		$this->assertArrayNotHasKey(
+			'urls',
+			$output,
+			'Failed to assert that urls is not localized.'
 		);
 		$this->assertEquals( $event_id, $output['eventDetails']['postId'], 'Failed to assert that post_id matches.' );
 	}

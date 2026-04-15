@@ -7,6 +7,11 @@ import 'moment-timezone';
 /**
  * Internal dependencies.
  */
+import { getFromSettings } from '@src/helpers/editor-settings';
+
+jest.mock( '@src/helpers/editor-settings', () => ( {
+	getFromSettings: jest.fn(),
+} ) );
 import {
 	convertPHPToMomentFormat,
 	createMomentWithTimezone,
@@ -35,12 +40,13 @@ import {
  * Coverage for dateTimeLabelFormat.
  */
 test( 'dateTimeLabelFormat returns correct format', () => {
-	global.GatherPress = {
-		settings: {
+	getFromSettings.mockImplementation( ( key ) => {
+		const settings = {
 			dateFormat: 'F j, Y',
 			timeFormat: 'g:i a',
-		},
-	};
+		};
+		return settings[ key ];
+	} );
 
 	expect( dateTimeLabelFormat() ).toBe( 'MMMM D, YYYY h:mm a' );
 } );

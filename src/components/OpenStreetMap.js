@@ -13,7 +13,7 @@ import { select } from '@wordpress/data';
 /**
  * Internal dependencies.
  */
-import { getFromGlobal } from '../helpers/globals';
+import { getFromSettings } from '../helpers/editor-settings';
 
 /**
  * OpenStreetMap component for GatherPress.
@@ -41,6 +41,7 @@ const OpenStreetMap = ( props ) => {
 		height = 300,
 		latitude,
 		longitude,
+		pluginUrl,
 	} = props;
 	const [ Leaflet, setLeaflet ] = useState( null );
 	const mapId = `map-${ uuidv4() }`;
@@ -118,7 +119,8 @@ const OpenStreetMap = ( props ) => {
 		mapInstanceRef.current = map;
 
 		Leaflet.Icon.Default.imagePath =
-			getFromGlobal( 'urls.pluginUrl' ) + 'build/images/';
+			( pluginUrl || getFromSettings( 'pluginUrl' ) ) +
+			'build/images/';
 
 		Leaflet.tileLayer(
 			'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
@@ -140,7 +142,7 @@ const OpenStreetMap = ( props ) => {
 				mapInstanceRef.current = null;
 			}
 		};
-	}, [ Leaflet, latitude, location, longitude, zoom ] );
+	}, [ Leaflet, latitude, location, longitude, pluginUrl, zoom ] );
 
 	// Check for valid latitude and longitude before rendering.
 	const validLat = latitude && '' !== latitude && ! isNaN( parseFloat( latitude ) );

@@ -19,15 +19,16 @@ import {
 	Spinner,
 } from '@wordpress/components';
 import { useState, useEffect } from '@wordpress/element';
+import apiFetch from '@wordpress/api-fetch';
 
 /**
  * Internal dependencies.
  */
 import RsvpManager from './rsvp-manager';
 import TEMPLATE from './template';
-import { getFromGlobal } from '../../helpers/globals';
 import { hasValidEventId, isPostTypeSupporting, DISABLED_FIELD_OPACITY } from '../../helpers/event';
 import { getEditorDocument, isInFSETemplate } from '../../helpers/editor';
+import { EVENT_REST_API } from '../../helpers/namespace';
 
 /**
  * Fetch RSVP responses from the API.
@@ -36,10 +37,9 @@ import { getEditorDocument, isInFSETemplate } from '../../helpers/editor';
  * @return {Promise<Object>} The RSVP responses data.
  */
 async function fetchRsvpResponses( postId ) {
-	const apiUrl = getFromGlobal( 'urls.eventApiUrl' );
-	const response = await fetch( `${ apiUrl }/rsvp-responses?post_id=${ postId }` );
-
-	return response.json();
+	return apiFetch( {
+		path: `${ EVENT_REST_API }/rsvp-responses?post_id=${ postId }`,
+	} );
 }
 
 /**

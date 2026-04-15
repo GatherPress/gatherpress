@@ -14,6 +14,7 @@ import { applyFilters } from '@wordpress/hooks';
  * Internal dependencies.
  */
 import { getFromGlobal, setToGlobal } from './globals';
+import { getFromSettings } from './editor-settings';
 import { enableSave } from './editor';
 import DateTimePreview from '../components/DateTimePreview';
 
@@ -177,10 +178,10 @@ export function getDateTimeOffset() {
  */
 export function dateTimeLabelFormat() {
 	const dateFormat = convertPHPToMomentFormat(
-		getFromGlobal( 'settings.dateFormat' ),
+		getFromSettings( 'dateFormat' ),
 	);
 	const timeFormat = convertPHPToMomentFormat(
-		getFromGlobal( 'settings.timeFormat' ),
+		getFromSettings( 'timeFormat' ),
 	);
 
 	return dateFormat + ' ' + timeFormat;

@@ -89,6 +89,18 @@ class Utility {
 	}
 
 	/**
+	 * Convert a snake_case string to camelCase.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $key The snake_case string to convert.
+	 * @return string The converted camelCase string.
+	 */
+	public static function snake_to_camel( string $key ): string {
+		return lcfirst( str_replace( '_', '', ucwords( $key, '_' ) ) );
+	}
+
+	/**
 	 * Retrieve an array of time zone choices.
 	 *
 	 * This method converts the Time Zone markup returned by WordPress into an associative array

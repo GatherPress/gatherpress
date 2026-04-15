@@ -92,6 +92,7 @@ class Assets {
 		add_action( 'enqueue_block_editor_assets', array( $this, 'enqueue_aql_integration' ) );
 		add_action( 'init', array( $this, 'register_variation_assets' ) );
 		add_action( 'wp_head', array( $this, 'add_global_object' ), PHP_INT_MIN );
+		add_action( 'wp_head', array( $this, 'add_interactivity_state' ) );
 		// Set priority to 11 to not conflict with media modal.
 		add_action( 'admin_footer', array( $this, 'event_communication_modal' ), 11 );
 
@@ -114,6 +115,28 @@ class Assets {
 		?>
 		<script>window.GatherPress = <?php echo wp_json_encode( $this->localize( intval( get_the_ID() ) ) ); ?></script>
 		<?php
+	}
+
+	/**
+	 * Set initial interactivity state for frontend blocks.
+	 *
+	 * Provides the REST API URL to the gatherpress interactivity store
+	 * so that frontend view scripts can make API requests without
+	 * relying on window globals.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return void
+	 */
+	public function add_interactivity_state(): void {
+		$event_rest_api_slug = sprintf( '%s/event', GATHERPRESS_REST_NAMESPACE );
+
+		wp_interactivity_state(
+			'gatherpress',
+			array(
+				'eventApiUrl' => home_url( 'wp-json/' . $event_rest_api_slug ),
+			)
+		);
 	}
 
 	/**
@@ -326,12 +349,6 @@ class Assets {
 
 		wp_enqueue_style( 'gatherpress-utility-style' );
 
-		wp_add_inline_script(
-			'gatherpress-editor',
-			'GatherPress.misc.timezoneChoices = ' . wp_json_encode( Utility::timezone_choices() ),
-			'before'
-		);
-
 		wp_set_script_translations( 'gatherpress-editor', 'gatherpress' );
 	}
 
@@ -364,50 +381,19 @@ class Assets {
 	 * @return array An associative array containing localized data for JavaScript.
 	 */
 	protected function localize( int $post_id ): array {
-		$event               = new Event( $post_id );
-		$settings            = Settings::get_instance();
-		$event_details       = array();
-		$event_rest_api_slug = sprintf( '%s/event', GATHERPRESS_REST_NAMESPACE );
-		$user_identifier     = Rsvp_Setup::get_instance()->get_user_identifier();
+		$event         = new Event( $post_id );
+		$event_details = array();
 
 		if ( ! empty( $event->event ) ) {
 			$event_details = array(
-				'currentUser'         => $event->rsvp->get( $user_identifier ),
-				'dateTime'            => $event->get_datetime(),
-				'enableAnonymousRsvp' => (bool) get_post_meta( $post_id, 'gatherpress_enable_anonymous_rsvp', true ),
-				'maxAttendanceLimit'  => (int) get_post_meta( $post_id, 'gatherpress_max_attendance_limit', true ),
-				'maxGuestLimit'       => (int) get_post_meta( $post_id, 'gatherpress_max_guest_limit', true ),
-				'hasEventPast'        => $event->has_event_past(),
-				'postId'              => $post_id,
-				'responses'           => $event->rsvp->responses(),
+				'dateTime'  => $event->get_datetime(),
+				'postId'    => $post_id,
+				'responses' => $event->rsvp->responses(),
 			);
 		}
 
 		return array(
 			'eventDetails' => $event_details,
-			'misc'         => array(
-				'isAdmin'        => is_admin(),
-				'isUserLoggedIn' => is_user_logged_in(),
-				'nonce'          => wp_create_nonce( 'wp_rest' ),
-			),
-			'settings'     => array(
-				'dateFormat'          => $settings->get( 'date_format' ),
-				'enableAnonymousRsvp' => ( 1 === (int) $settings->get( 'enable_anonymous_rsvp' ) ),
-				'mapPlatform'         => $settings->get( 'map_platform' ),
-				'maxAttendanceLimit'  => $settings->get( 'max_attendance_limit' ),
-				'maxGuestLimit'       => $settings->get( 'max_guest_limit' ),
-				'postOrEventDate'     => ( 1 === (int) $settings->get( 'post_or_event_date' ) ),
-				'showTimezone'        => ( 1 === (int) $settings->get( 'show_timezone' ) ),
-				'timeFormat'          => $settings->get( 'time_format' ),
-			),
-			'urls'         => array(
-				'pluginUrl'       => GATHERPRESS_CORE_URL,
-				'eventApiPath'    => '/' . $event_rest_api_slug,
-				'eventApiUrl'     => home_url( 'wp-json/' . $event_rest_api_slug ),
-				'loginUrl'        => Utility::get_login_url( $post_id ),
-				'registrationUrl' => Utility::get_registration_url( $post_id ),
-				'homeUrl'         => get_home_url(),
-			),
 		);
 	}
 

@@ -9,7 +9,7 @@ import { useDispatch, useSelect } from '@wordpress/data';
 /**
  * Internal dependencies.
  */
-import { getFromGlobal } from '../helpers/globals';
+import { getFromSettings } from '../helpers/editor-settings';
 
 /**
  * AnonymousRsvp component.
@@ -36,7 +36,7 @@ const AnonymousRsvp = () => {
 	}, [] );
 
 	if ( isNewEvent ) {
-		defaultAnonymousRsvp = getFromGlobal( 'settings.enableAnonymousRsvp' );
+		defaultAnonymousRsvp = getFromSettings( 'enableAnonymousRsvp' );
 	}
 
 	const [ anonymousRsvp, setAnonymousRsvp ] = useState( defaultAnonymousRsvp );

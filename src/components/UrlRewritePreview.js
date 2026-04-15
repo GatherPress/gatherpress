@@ -6,7 +6,7 @@ import { useState } from '@wordpress/element';
 /**
  * Internal dependencies.
  */
-import { getFromGlobal } from '../helpers/globals';
+import { getFromSettings } from '../helpers/editor-settings';
 
 /**
  * UrlRewritePreview component for GatherPress.
@@ -30,7 +30,7 @@ const UrlRewritePreview = ( props ) => {
 
 	const input = document.querySelector( `[name="${ name }"]` );
 
-	const homeUrl = getFromGlobal( 'urls.homeUrl' );
+	const homeUrl = getFromSettings( 'homeUrl' );
 
 	input.addEventListener(
 		'input',

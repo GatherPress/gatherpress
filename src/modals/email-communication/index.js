@@ -19,6 +19,7 @@ import { useSelect, useDispatch } from '@wordpress/data';
  * Internal dependencies.
  */
 import { getFromGlobal } from '../../helpers/globals';
+import { EVENT_REST_API } from '../../helpers/namespace';
 
 /**
  * A modal component for notifying event members via email.
@@ -50,7 +51,7 @@ const EventCommunicationModal = () => {
 			window.confirm( __( 'Confirm you are ready to send?', 'gatherpress' ) )
 		) {
 			apiFetch( {
-				path: getFromGlobal( 'urls.eventApiPath' ) + '/email',
+				path: EVENT_REST_API + '/email',
 				method: 'POST',
 				data: {
 					post_id: getFromGlobal( 'eventDetails.postId' ),

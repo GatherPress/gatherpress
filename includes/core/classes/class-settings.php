@@ -87,6 +87,41 @@ class Settings {
 		add_action( 'update_option_' . self::OPTION_NAME, array( $this, 'maybe_flush_rewrite_rules' ), 10, 2 );
 
 		add_filter( 'submenu_file', array( $this, 'select_menu' ) );
+		add_filter( 'block_editor_settings_all', array( $this, 'add_editor_settings' ) );
+	}
+
+	/**
+	 * Expose plugin settings to the block editor.
+	 *
+	 * Adds GatherPress settings under settings['gatherpress']['settings']
+	 * so that editor components can access them via
+	 * select('core/editor').getEditorSettings().gatherpress.settings
+	 * without relying on window globals.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param array $settings The block editor settings array.
+	 * @return array The modified block editor settings array.
+	 */
+	public function add_editor_settings( array $settings ): array {
+		if ( ! isset( $settings['gatherpress'] ) ) {
+			$settings['gatherpress'] = array();
+		}
+
+		$gatherpress_settings = array();
+
+		foreach ( array_keys( $this->get_defaults_map() ) as $option ) {
+			$camel_key                          = Utility::snake_to_camel( $option );
+			$gatherpress_settings[ $camel_key ] = $this->get( $option );
+		}
+
+		$gatherpress_settings['timezoneChoices'] = Utility::timezone_choices();
+		$gatherpress_settings['pluginUrl']       = GATHERPRESS_CORE_URL;
+		$gatherpress_settings['homeUrl']         = get_home_url();
+
+		$settings['gatherpress']['settings'] = $gatherpress_settings;
+
+		return $settings;
 	}
 
 	/**

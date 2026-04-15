@@ -1,7 +1,9 @@
 /**
- * Internal dependencies.
+ * WordPress dependencies.
  */
-import { getFromGlobal } from './globals';
+import { store } from '@wordpress/interactivity';
+
+const { state: gatherPressState } = store( 'gatherpress' );
 
 /**
  * Initializes the post context within the application state.
@@ -99,7 +101,7 @@ export const getNonce = ( () => {
 			return noncePromise;
 		}
 
-		noncePromise = fetch( getFromGlobal( 'urls.eventApiUrl' ) + '/nonce', {
+		noncePromise = fetch( gatherPressState.eventApiUrl + '/nonce', {
 			method: 'GET',
 			credentials: 'same-origin',
 		} )
@@ -184,7 +186,7 @@ export async function sendRsvpApiRequest(
 		}
 
 		const response = await fetch(
-			getFromGlobal( 'urls.eventApiUrl' ) + '/rsvp',
+			gatherPressState.eventApiUrl + '/rsvp',
 			{
 				method: 'POST',
 				headers: {

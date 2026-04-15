@@ -9,6 +9,7 @@
 namespace GatherPress\Tests\Core;
 
 use GatherPress\Core\Settings;
+use GatherPress\Core\Utility as GatherPress_Utility;
 use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;
 
@@ -71,6 +72,12 @@ class Test_Settings extends Base {
 				'priority' => 10,
 				'callback' => array( $instance, 'select_menu' ),
 			),
+			array(
+				'type'     => 'filter',
+				'name'     => 'block_editor_settings_all',
+				'priority' => 10,
+				'callback' => array( $instance, 'add_editor_settings' ),
+			),
 		);
 
 		$this->assert_hooks( $hooks, $instance );
@@ -93,6 +100,65 @@ class Test_Settings extends Base {
 			'events',
 			Utility::get_hidden_property( $instance, 'main_sub_page' ),
 			'Failed to assert main sub page is set to events'
+		);
+	}
+
+	/**
+	 * Coverage for add_editor_settings method.
+	 *
+	 * @covers ::add_editor_settings
+	 *
+	 * @return void
+	 */
+	public function test_add_editor_settings(): void {
+		$instance = Settings::get_instance();
+		$settings = $instance->add_editor_settings( array() );
+
+		$this->assertArrayHasKey(
+			'gatherpress',
+			$settings,
+			'Failed to assert gatherpress key exists in editor settings.'
+		);
+		$this->assertArrayHasKey(
+			'settings',
+			$settings['gatherpress'],
+			'Failed to assert settings key exists in gatherpress editor settings.'
+		);
+
+		// Verify all defaults map keys are present as camelCase.
+		$defaults_map = Utility::invoke_hidden_method( $instance, 'get_defaults_map' );
+
+		foreach ( array_keys( $defaults_map ) as $option ) {
+			$camel_key = GatherPress_Utility::snake_to_camel( $option );
+			$this->assertArrayHasKey(
+				$camel_key,
+				$settings['gatherpress']['settings'],
+				sprintf( 'Failed to assert %s key exists in editor settings.', $camel_key )
+			);
+		}
+
+		$this->assertNotEmpty(
+			$settings['gatherpress']['settings'],
+			'Failed to assert editor settings are not empty.'
+		);
+
+		// Verify it preserves existing gatherpress settings.
+		$existing = array(
+			'gatherpress' => array(
+				'venuePostTypes' => array( 'gatherpress_event' => 'gatherpress_venue' ),
+			),
+		);
+		$merged   = $instance->add_editor_settings( $existing );
+
+		$this->assertArrayHasKey(
+			'venuePostTypes',
+			$merged['gatherpress'],
+			'Failed to assert existing gatherpress settings are preserved.'
+		);
+		$this->assertArrayHasKey(
+			'settings',
+			$merged['gatherpress'],
+			'Failed to assert settings were added alongside existing gatherpress settings.'
 		);
 	}
 

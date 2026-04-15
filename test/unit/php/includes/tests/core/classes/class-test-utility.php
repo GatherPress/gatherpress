@@ -88,6 +88,20 @@ class Test_Utility extends Base {
 	}
 
 	/**
+	 * Coverage for snake_to_camel method.
+	 *
+	 * @covers ::snake_to_camel
+	 *
+	 * @return void
+	 */
+	public function test_snake_to_camel(): void {
+		$this->assertSame( 'dateFormat', Utility::snake_to_camel( 'date_format' ) );
+		$this->assertSame( 'enableAnonymousRsvp', Utility::snake_to_camel( 'enable_anonymous_rsvp' ) );
+		$this->assertSame( 'postOrEventDate', Utility::snake_to_camel( 'post_or_event_date' ) );
+		$this->assertSame( 'simple', Utility::snake_to_camel( 'simple' ) );
+	}
+
+	/**
 	 * Coverage for timezone_choices method.
 	 *
 	 * @covers ::timezone_choices

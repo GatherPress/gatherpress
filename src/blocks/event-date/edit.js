@@ -37,14 +37,9 @@ import {
 	removeNonTimePHPFormatChars,
 } from '../../helpers/datetime';
 import DateTimeRange from '../../components/DateTimeRange';
-import { getFromGlobal } from '../../helpers/globals';
+import { getFromSettings } from '../../helpers/editor-settings';
 import { isEventPostType, hasValidEventId } from '../../helpers/event';
 import { isInFSETemplate } from '../../helpers/editor';
-
-const globalDateFormat = getFromGlobal( 'settings.dateFormat' );
-const globalTimeFormat = getFromGlobal( 'settings.timeFormat' );
-const globalShowTimezone = getFromGlobal( 'settings.showTimezone' );
-const defaultFormat = `${ globalDateFormat } ${ globalTimeFormat }`;
 
 /**
  * Similar to get_display_datetime method in class-event.php.
@@ -67,13 +62,18 @@ const displayDateTime = (
 	separator,
 	showTimezone
 ) => {
+	const dateFormat = getFromSettings( 'dateFormat' );
+	const timeFormat = getFromSettings( 'timeFormat' );
+	const globalShowTimezone = getFromSettings( 'showTimezone' );
+	const fullFormat = `${ dateFormat } ${ timeFormat }`;
+
 	timezone = getTimezone( timezone );
 	let sameStartEndDay = false;
 
 	// Check for default formatting with same event day before applying
 	// attribute-specific formats.
 	if ( dateTimeStart && dateTimeEnd ) {
-		const sameDayFormat = convertPHPToMomentFormat( globalDateFormat );
+		const sameDayFormat = convertPHPToMomentFormat( dateFormat );
 		sameStartEndDay =
 			createMomentWithTimezone( dateTimeStart, timezone ).format( sameDayFormat ) ===
 			createMomentWithTimezone( dateTimeEnd, timezone ).format( sameDayFormat );
@@ -84,7 +84,7 @@ const displayDateTime = (
 	// Add start date/time.
 	if ( dateTimeStart ) {
 		startFormat = convertPHPToMomentFormat(
-			startFormat || defaultFormat
+			startFormat || fullFormat
 		);
 		parts.push( createMomentWithTimezone( dateTimeStart, timezone ).format( startFormat ) );
 	}
@@ -92,7 +92,7 @@ const displayDateTime = (
 	// Determine end date/time.
 	if ( dateTimeEnd ) {
 		// Fall formatting back to default.
-		endFormat = endFormat || defaultFormat;
+		endFormat = endFormat || fullFormat;
 
 		// Remove non-time characters from PHP date format if start and end
 		// are on the same day.
@@ -194,6 +194,10 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 		separator,
 		showTimezone,
 	} = attributes;
+
+	const dateFormat = getFromSettings( 'dateFormat' );
+	const timeFormat = getFromSettings( 'timeFormat' );
+	const defaultShowTimezone = getFromSettings( 'showTimezone' );
 
 	// Check if we're inside a query loop and if context is an event.
 	const isDescendentOfQueryLoop = Number.isFinite( context?.queryId );
@@ -382,7 +386,7 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 						<TextControl
 							label={ __( 'Start date format', 'gatherpress' ) }
 							value={ startDateFormat }
-							placeholder={ `${ globalDateFormat } ${ globalTimeFormat }` }
+							placeholder={ `${ dateFormat } ${ timeFormat }` }
 							onChange={ ( value ) =>
 								setAttributes( { startDateFormat: value } )
 							}
@@ -392,7 +396,7 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 						<TextControl
 							label={ __( 'End date format', 'gatherpress' ) }
 							value={ endDateFormat }
-							placeholder={ `${ globalDateFormat } ${ globalTimeFormat }` }
+							placeholder={ `${ dateFormat } ${ timeFormat }` }
 							onChange={ ( value ) =>
 								setAttributes( { endDateFormat: value } )
 							}
@@ -416,7 +420,7 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 						checked={
 							showTimezone
 								? 'yes' === showTimezone
-								: globalShowTimezone
+								: defaultShowTimezone
 						}
 						onChange={ ( value ) =>
 							setAttributes( {

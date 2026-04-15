@@ -10,6 +10,7 @@ import { useDispatch, useSelect } from '@wordpress/data';
  * Internal dependencies.
  */
 import { getFromGlobal } from '../helpers/globals';
+import { getFromSettings } from '../helpers/editor-settings';
 import { enableSave } from '../helpers/editor';
 import {
 	maybeConvertUtcOffsetForDatabase,
@@ -35,7 +36,7 @@ const Timezone = () => {
 		[],
 	);
 	const { setTimezone } = useDispatch( 'gatherpress/datetime' );
-	const choices = getFromGlobal( 'misc.timezoneChoices' );
+	const choices = getFromSettings( 'timezoneChoices' );
 
 	// Run only once.
 	useEffect( () => {
