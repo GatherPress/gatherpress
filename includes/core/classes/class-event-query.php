@@ -140,11 +140,7 @@ class Event_Query {
 					'field'    => 'slug',
 					'terms'    => $topics,
 				),
-				array(
-					'taxonomy' => Venue::TAXONOMY,
-					'field'    => 'slug',
-					'terms'    => $venues,
-				),
+				$this->build_venue_tax_query( $venues ),
 			);
 		} elseif ( ! empty( $topics ) ) {
 			$tax_query[] = array(
@@ -153,11 +149,7 @@ class Event_Query {
 				'terms'    => $topics,
 			);
 		} elseif ( ! empty( $venues ) ) {
-			$tax_query[] = array(
-				'taxonomy' => Venue::TAXONOMY,
-				'field'    => 'slug',
-				'terms'    => $venues,
-			);
+			$tax_query[] = $this->build_venue_tax_query( $venues );
 		}
 
 		$args['tax_query'] = $tax_query; //phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query
@@ -517,6 +509,31 @@ class Event_Query {
 		}
 
 		return $pieces;
+	}
+
+	/**
+	 * Builds a WP_Query compatible tax_query array for filtering events by venue slugs.
+	 *
+	 * Creates an OR relation across all registered venue post type taxonomies, allowing
+	 * events to be filtered by venue regardless of which venue post type they use.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param array $venues Array of venue slugs to filter by.
+	 * @return array WP_Query compatible tax_query array.
+	 */
+	private function build_venue_tax_query( array $venues ): array {
+		$venue_tax_query = array( 'relation' => 'OR' );
+
+		foreach ( get_post_types_by_support( 'gatherpress-venue-information' ) as $venue_post_type ) {
+			$venue_tax_query[] = array(
+				'taxonomy' => Venue::get_taxonomy( $venue_post_type ),
+				'field'    => 'slug',
+				'terms'    => $venues,
+			);
+		}
+
+		return $venue_tax_query;
 	}
 
 	/**

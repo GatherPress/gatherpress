@@ -5,6 +5,11 @@ import { dispatch, select } from '@wordpress/data';
 import { store as coreStore } from '@wordpress/core-data';
 
 /**
+ * Internal dependencies.
+ */
+import { isPostTypeSupporting } from './event';
+
+/**
  * Enable the Save buttons after making an update.
  *
  * This function uses a hacky approach to trigger a change in the post's meta, which prompts
@@ -87,14 +92,14 @@ export function isInFSETemplate() {
  * @param {Object}  options                         Options for determining visibility.
  * @param {boolean} options.isDescendentOfQueryLoop Whether the block is inside a Query Loop.
  * @param {string}  options.postType                The post type from block context.
- * @param {string}  options.expectedPostType        The expected post type for this block.
+ * @param {string}  options.support                 The post type support to check (e.g. 'gatherpress-venue').
  * @param {boolean} [options.hasData=false]         Whether the block has its specific data.
  * @return {boolean} True if the block should be fully visible, false if it should be dimmed.
  */
 export function hasValidBlockContext( {
 	isDescendentOfQueryLoop,
 	postType,
-	expectedPostType,
+	support,
 	hasData = false,
 } ) {
 	// Always visible in FSE templates for design/preview purposes.
@@ -102,9 +107,9 @@ export function hasValidBlockContext( {
 		return true;
 	}
 
-	// In Query Loop, require both valid post type context AND data.
+	// In Query Loop, require both valid post type support AND data.
 	if ( isDescendentOfQueryLoop ) {
-		return postType === expectedPostType && hasData;
+		return isPostTypeSupporting( support, postType ) && hasData;
 	}
 
 	// When editing directly, just check if we have data.

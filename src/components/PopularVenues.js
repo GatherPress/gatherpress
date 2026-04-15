@@ -18,14 +18,15 @@ import { usePopularVenues, getVenueTitle } from '../helpers/venue';
  *
  * @since 1.0.0
  *
- * @param {Object}   props           Component props.
- * @param {Function} props.onSelect  Callback function when a venue is selected.
- * @param {number}   props.currentId Currently selected venue ID (to highlight/disable it).
+ * @param {Object}   props               Component props.
+ * @param {Function} props.onSelect      Callback function when a venue is selected.
+ * @param {number}   props.currentId     Currently selected venue ID (to highlight/disable it).
+ * @param {string}   props.venuePostType Venue post type slug used to derive the taxonomy.
  *
  * @return {JSX.Element|null} Popular venues list or null if no venues.
  */
-export default function PopularVenues( { onSelect, currentId } ) {
-	const popularVenues = usePopularVenues( 3 );
+export default function PopularVenues( { onSelect, currentId, venuePostType } ) {
+	const popularVenues = usePopularVenues( 3, venuePostType );
 
 	// Don't render if there are no popular venues.
 	if ( ! popularVenues || 0 === popularVenues.length ) {

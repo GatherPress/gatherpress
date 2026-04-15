@@ -10,7 +10,7 @@ import { useCallback } from '@wordpress/element';
 /**
  * Internal dependencies.
  */
-import { CPT_VENUE } from '../../../helpers/namespace';
+import { isPostTypeSupporting } from '../../../helpers/event';
 import { getJsonFieldName } from '../helpers';
 
 /**
@@ -35,24 +35,15 @@ export function useVenueData( context, fieldType ) {
 				selectData( 'core/editor' )?.getCurrentPostType();
 			const contextPostId = context?.postId || 0;
 
-			// Check if the context post is actually a venue.
-			let contextPostIsVenue = false;
-			if ( contextPostId ) {
-				const contextPost = selectData( coreStore ).getEntityRecord(
-					'postType',
-					CPT_VENUE,
-					contextPostId
-				);
-				// If we got a record from the venue post type, it's a venue.
-				contextPostIsVenue = !! contextPost;
-			}
+			// Check if the context post type is a venue via its registered supports.
+			const contextPostIsVenue = !! contextPostId && isPostTypeSupporting( 'gatherpress-venue-information', context?.postType );
 
 			// Only use contextPostId if it's actually a venue post.
 			// Otherwise, check if we're editing a venue directly.
 			let effectiveVenuePostId = 0;
 			if ( contextPostIsVenue ) {
 				effectiveVenuePostId = contextPostId;
-			} else if ( currentPostType === CPT_VENUE ) {
+			} else if ( isPostTypeSupporting( 'gatherpress-venue-information', currentPostType ) ) {
 				effectiveVenuePostId = currentPostId;
 			}
 
@@ -60,10 +51,10 @@ export function useVenueData( context, fieldType ) {
 				venuePostId: effectiveVenuePostId,
 				isEditingCurrentPost:
 					currentPostId === effectiveVenuePostId &&
-					currentPostType === CPT_VENUE,
+					isPostTypeSupporting( 'gatherpress-venue-information', currentPostType ),
 			};
 		},
-		[ context?.postId ]
+		[ context?.postId, context?.postType ]
 	);
 
 	// Map field type to JSON field name.
@@ -92,7 +83,7 @@ export function useVenueData( context, fieldType ) {
 				const { getEditedEntityRecord } = selectData( coreStore );
 				const venuePost = getEditedEntityRecord(
 					'postType',
-					CPT_VENUE,
+					context?.postType,
 					venuePostId
 				);
 				venueInfoJson =
@@ -105,7 +96,7 @@ export function useVenueData( context, fieldType ) {
 				return {};
 			}
 		},
-		[ venuePostId, isEditingCurrentPost ]
+		[ venuePostId, isEditingCurrentPost, context?.postType ]
 	);
 
 	const fieldValue = jsonFieldName ? venueInfo[ jsonFieldName ] || '' : '';
@@ -128,7 +119,7 @@ export function useVenueData( context, fieldType ) {
 			} else {
 				const currentVenueInfo = select(
 					coreStore
-				)?.getEditedEntityRecord( 'postType', CPT_VENUE, venuePostId );
+				)?.getEditedEntityRecord( 'postType', context?.postType, venuePostId );
 				venueInfoJson =
 					currentVenueInfo?.meta?.gatherpress_venue_information ||
 					'{}';
@@ -156,7 +147,7 @@ export function useVenueData( context, fieldType ) {
 					},
 				} );
 			} else {
-				editEntityRecord( 'postType', CPT_VENUE, venuePostId, {
+				editEntityRecord( 'postType', context?.postType, venuePostId, {
 					meta: {
 						gatherpress_venue_information:
 							JSON.stringify( updatedVenueInfo ),
@@ -164,7 +155,7 @@ export function useVenueData( context, fieldType ) {
 				} );
 			}
 		},
-		[ venuePostId, isEditingCurrentPost, editEntityRecord, editPost ]
+		[ venuePostId, isEditingCurrentPost, editEntityRecord, editPost, context?.postType ]
 	);
 
 	// Update the current field value (strips HTML tags).

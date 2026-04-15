@@ -306,7 +306,7 @@ describe( 'Editor helper functions', () => {
 			const result = hasValidBlockContext( {
 				isDescendentOfQueryLoop: false,
 				postType: 'post',
-				expectedPostType: 'gatherpress_event',
+				support: 'gatherpress-event-date',
 				hasData: false,
 			} );
 
@@ -321,7 +321,7 @@ describe( 'Editor helper functions', () => {
 			const result = hasValidBlockContext( {
 				isDescendentOfQueryLoop: false,
 				postType: 'post',
-				expectedPostType: 'gatherpress_event',
+				support: 'gatherpress-event-date',
 				hasData: false,
 			} );
 
@@ -329,14 +329,25 @@ describe( 'Editor helper functions', () => {
 		} );
 
 		it( 'returns true when in Query Loop with matching post type and hasData', () => {
-			select.mockReturnValue( {
-				getCurrentPostType: jest.fn().mockReturnValue( 'post' ),
+			select.mockImplementation( ( store ) => {
+				if ( 'core/editor' === store ) {
+					return { getCurrentPostType: jest.fn().mockReturnValue( 'post' ) };
+				}
+				if ( 'core' === store ) {
+					return {
+						getPostType: ( slug ) =>
+							'gatherpress_event' === slug
+								? { supports: { 'gatherpress-event-date': true } }
+								: { supports: {} },
+					};
+				}
+				return {};
 			} );
 
 			const result = hasValidBlockContext( {
 				isDescendentOfQueryLoop: true,
 				postType: 'gatherpress_event',
-				expectedPostType: 'gatherpress_event',
+				support: 'gatherpress-event-date',
 				hasData: true,
 			} );
 
@@ -344,14 +355,25 @@ describe( 'Editor helper functions', () => {
 		} );
 
 		it( 'returns false when in Query Loop with matching post type but no hasData', () => {
-			select.mockReturnValue( {
-				getCurrentPostType: jest.fn().mockReturnValue( 'post' ),
+			select.mockImplementation( ( store ) => {
+				if ( 'core/editor' === store ) {
+					return { getCurrentPostType: jest.fn().mockReturnValue( 'post' ) };
+				}
+				if ( 'core' === store ) {
+					return {
+						getPostType: ( slug ) =>
+							'gatherpress_event' === slug
+								? { supports: { 'gatherpress-event-date': true } }
+								: { supports: {} },
+					};
+				}
+				return {};
 			} );
 
 			const result = hasValidBlockContext( {
 				isDescendentOfQueryLoop: true,
 				postType: 'gatherpress_event',
-				expectedPostType: 'gatherpress_event',
+				support: 'gatherpress-event-date',
 				hasData: false,
 			} );
 
@@ -359,14 +381,25 @@ describe( 'Editor helper functions', () => {
 		} );
 
 		it( 'returns false when in Query Loop with non-matching post type', () => {
-			select.mockReturnValue( {
-				getCurrentPostType: jest.fn().mockReturnValue( 'post' ),
+			select.mockImplementation( ( store ) => {
+				if ( 'core/editor' === store ) {
+					return { getCurrentPostType: jest.fn().mockReturnValue( 'post' ) };
+				}
+				if ( 'core' === store ) {
+					return {
+						getPostType: ( slug ) =>
+							'gatherpress_event' === slug
+								? { supports: { 'gatherpress-event-date': true } }
+								: { supports: {} },
+					};
+				}
+				return {};
 			} );
 
 			const result = hasValidBlockContext( {
 				isDescendentOfQueryLoop: true,
 				postType: 'post',
-				expectedPostType: 'gatherpress_event',
+				support: 'gatherpress-event-date',
 				hasData: true,
 			} );
 
@@ -381,7 +414,7 @@ describe( 'Editor helper functions', () => {
 			const result = hasValidBlockContext( {
 				isDescendentOfQueryLoop: false,
 				postType: 'gatherpress_event',
-				expectedPostType: 'gatherpress_event',
+				support: 'gatherpress-event-date',
 				hasData: true,
 			} );
 
@@ -396,7 +429,7 @@ describe( 'Editor helper functions', () => {
 			const result = hasValidBlockContext( {
 				isDescendentOfQueryLoop: false,
 				postType: 'gatherpress_event',
-				expectedPostType: 'gatherpress_event',
+				support: 'gatherpress-event-date',
 				hasData: false,
 			} );
 
@@ -411,21 +444,32 @@ describe( 'Editor helper functions', () => {
 			const result = hasValidBlockContext( {
 				isDescendentOfQueryLoop: false,
 				postType: 'gatherpress_event',
-				expectedPostType: 'gatherpress_event',
+				support: 'gatherpress-event-date',
 			} );
 
 			expect( result ).toBe( false );
 		} );
 
-		it( 'works with venue post type', () => {
-			select.mockReturnValue( {
-				getCurrentPostType: jest.fn().mockReturnValue( 'post' ),
+		it( 'works with venue support', () => {
+			select.mockImplementation( ( store ) => {
+				if ( 'core/editor' === store ) {
+					return { getCurrentPostType: jest.fn().mockReturnValue( 'post' ) };
+				}
+				if ( 'core' === store ) {
+					return {
+						getPostType: ( slug ) =>
+							'gatherpress_event' === slug
+								? { supports: { 'gatherpress-venue': true } }
+								: { supports: {} },
+					};
+				}
+				return {};
 			} );
 
 			const result = hasValidBlockContext( {
 				isDescendentOfQueryLoop: true,
-				postType: 'gatherpress_venue',
-				expectedPostType: 'gatherpress_venue',
+				postType: 'gatherpress_event',
+				support: 'gatherpress-venue',
 				hasData: true,
 			} );
 

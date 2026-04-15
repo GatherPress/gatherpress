@@ -11,16 +11,15 @@ import {
 	useNavigator,
 } from '@wordpress/components';
 import { useState } from '@wordpress/element';
-import { useSelect } from '@wordpress/data';
+import { useSelect, useDispatch } from '@wordpress/data';
 import apiFetch from '@wordpress/api-fetch';
-import { useEntityProp, store as coreDataStore } from '@wordpress/core-data';
+import { store as coreDataStore } from '@wordpress/core-data';
 
 /**
  * Internal dependencies.
  */
-import { CPT_EVENT, CPT_VENUE, TAX_VENUE } from '../helpers/namespace';
-import { isEventPostType } from '../helpers/event';
-import { getCurrentContextualPostId } from '../helpers/editor';
+import { getVenuePostType, getVenueTaxonomy } from '../helpers/venue';
+import { isPostTypeSupporting } from '../helpers/event';
 import { geocodeAddress } from '../helpers/geocoding';
 
 /**
@@ -132,18 +131,29 @@ function CreateVenueForm( { search, ...props } ) {
 	const [ address, setAddress ] = useState( '' );
 	const [ titleError, setTitleError ] = useState( '' );
 
+	// Use context post type if provided, otherwise fall back to the editor's current post type.
+	// This is necessary because CreateVenueForm can be rendered from slotfill.js without any props.
+	const currentPostType = useSelect(
+		( select ) =>
+			props?.context?.postType ||
+			select( 'core/editor' )?.getCurrentPostType(),
+		[ props?.context?.postType ]
+	);
+	const venuePostType = getVenuePostType( currentPostType );
+	const venueTaxonomy = getVenueTaxonomy( venuePostType );
+
 	const { lastError, isSaving } = useSelect(
 		( select ) => ( {
 			lastError: select( coreDataStore ).getLastEntitySaveError(
 				'postType',
-				CPT_VENUE
+				venuePostType
 			),
 			isSaving: select( coreDataStore ).isSavingEntityRecord(
 				'postType',
-				CPT_VENUE
+				venuePostType
 			),
 		} ),
-		[]
+		[ venuePostType ]
 	);
 
 	/**
@@ -176,14 +186,17 @@ function CreateVenueForm( { search, ...props } ) {
 		setTitleError( error );
 	};
 
-	const cId = getCurrentContextualPostId( props?.context?.postId );
-
-	const [ , updateVenueTaxonomyIds ] = useEntityProp(
-		'postType',
-		CPT_EVENT,
-		TAX_VENUE,
-		cId
+	const venueRestBase = useSelect(
+		( select ) => {
+			const venuePostTypeObj = select( 'core' ).getPostType( venuePostType );
+			return venuePostTypeObj?.rest_base || venuePostType + 's';
+		},
+		[ venuePostType ]
 	);
+
+	const { editPost } = useDispatch( 'core/editor' );
+	const updateVenueTaxonomyIds = ( newIds ) =>
+		editPost( { [ venueTaxonomy ]: newIds } );
 
 	const { goTo } = useNavigator();
 
@@ -205,7 +218,7 @@ function CreateVenueForm( { search, ...props } ) {
 			const newAttributes = {
 				...blockProps.attributes,
 				selectedPostId: postId,
-				selectedPostType: CPT_VENUE,
+				selectedPostType: venuePostType,
 			};
 			blockProps.setAttributes( newAttributes );
 		}
@@ -231,7 +244,7 @@ function CreateVenueForm( { search, ...props } ) {
 	) => {
 		try {
 			const newPost = await apiFetch( {
-				path: `/wp/v2/${ CPT_VENUE }s`, // !! Watch out & beware of the 's' at the end. // @TODO Make this nicer.
+				path: `/wp/v2/${ venueRestBase }`,
 				method: 'POST',
 				data: {
 					title,
@@ -269,7 +282,7 @@ function CreateVenueForm( { search, ...props } ) {
 	) => {
 		try {
 			const terms = await apiFetch( {
-				path: `/wp/v2/${ TAX_VENUE }?slug=${ newPostSlug }`,
+				path: `/wp/v2/${ venueTaxonomy }?slug=${ newPostSlug }`,
 			} );
 
 			if ( 0 < terms.length ) {
@@ -338,7 +351,7 @@ function CreateVenueForm( { search, ...props } ) {
 	 * This function is called when the save button is clicked.
 	 */
 	const saveBogus = async () => {
-		if ( isEventPostType() ) {
+		if ( isPostTypeSupporting( 'gatherpress-venue' ) ) {
 			// This should only run for the VenueTermsCombobox.
 			await updateVenueTermOnEventPost();
 		} else {

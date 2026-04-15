@@ -17,6 +17,7 @@ use WP_Block;
 /**
  * Class Test_Online_Event.
  *
+ * @group multisite
  * @coversDefaultClass \GatherPress\Core\Blocks\Online_Event
  */
 class Test_Online_Event extends Base {
@@ -199,10 +200,10 @@ class Test_Online_Event extends Base {
 	 *
 	 * @return void
 	 */
-	public function test_render_block_returns_content_for_non_event_post(): void {
+	public function test_render_block_returns_empty_for_non_supporting_post_type(): void {
 		$instance = Online_Event::get_instance();
 
-		// Create a regular page (not an event).
+		// Create a regular page (does not support gatherpress-online-event).
 		$post_id = $this->factory->post->create( array( 'post_type' => 'page' ) );
 		$this->go_to( get_permalink( $post_id ) );
 
@@ -222,9 +223,9 @@ class Test_Online_Event extends Base {
 		$result = $instance->render_block( $block_content, $block, $block_instance );
 
 		$this->assertSame(
-			$block_content,
+			'',
 			$result,
-			'Should return block content unchanged for non-event post types.'
+			'Should return empty string for post types that do not support gatherpress-online-event.'
 		);
 	}
 
@@ -507,22 +508,21 @@ class Test_Online_Event extends Base {
 	}
 
 	/**
-	 * Tests render_block returns content for override with non-event post type.
+	 * Tests render_block returns empty for override with non-supporting post type.
 	 *
-	 * When the postId attribute points to a non-event post type,
-	 * has_online_event_term returns true, so it should render with context.
+	 * When the postId attribute points to a post type that does not support
+	 * gatherpress-online-event, the block should not render.
 	 *
 	 * @since 1.0.0
 	 * @covers ::render_block
 	 * @covers ::has_online_event_term
-	 * @covers ::render_with_post_context
 	 *
 	 * @return void
 	 */
-	public function test_render_block_with_non_event_override_renders_content(): void {
+	public function test_render_block_with_non_supporting_override_returns_empty(): void {
 		$instance = Online_Event::get_instance();
 
-		// Create a page (not an event).
+		// Create a page (does not support gatherpress-online-event).
 		$page_id = $this->factory->post->create(
 			array(
 				'post_type'  => 'page',
@@ -534,17 +534,9 @@ class Test_Online_Event extends Base {
 			array(
 				'blockName'    => 'gatherpress/online-event',
 				'attrs'        => array( 'postId' => $page_id ),
-				'innerBlocks'  => array(
-					array(
-						'blockName'    => 'core/paragraph',
-						'attrs'        => array(),
-						'innerBlocks'  => array(),
-						'innerHTML'    => '<p>Page inner content</p>',
-						'innerContent' => array( '<p>Page inner content</p>' ),
-					),
-				),
+				'innerBlocks'  => array(),
 				'innerHTML'    => '',
-				'innerContent' => array( null ),
+				'innerContent' => array(),
 			)
 		);
 
@@ -553,10 +545,10 @@ class Test_Online_Event extends Base {
 
 		$result = $instance->render_block( $block_content, $block, $block_instance );
 
-		$this->assertStringContainsString(
-			'Page inner content',
+		$this->assertSame(
+			'',
 			$result,
-			'Should render inner blocks for non-event post type override.'
+			'Should return empty string for post types that do not support gatherpress-online-event.'
 		);
 	}
 

@@ -17,20 +17,24 @@ import { PluginDocumentSettingPanel } from '@wordpress/editor';
  * Internal dependencies
  */
 import { VenuePluginDocumentSettings } from './slot';
-import { isEventPostType } from '../../helpers/event';
+import { isPostTypeSupporting } from '../../helpers/event';
 import OnlineEventPanel from './online-event';
 
 export default function VenuePluginFill() {
+	const showVenueSection = isPostTypeSupporting( 'gatherpress-venue' );
+	const showOnlineEventSection = isPostTypeSupporting( 'gatherpress-online-event' );
+	const showPanel = showVenueSection || showOnlineEventSection;
+
 	return (
-		isEventPostType() && (
+		showPanel && (
 			<PluginDocumentSettingPanel
 				name="gatherpress-venue-settings-at-events"
 				title={ __( 'Venue settings', 'gatherpress' ) }
 				className="gatherpress-venue-settings"
 			>
 				<VStack spacing={ 6 }>
-					<VenuePluginDocumentSettings.Slot />
-					<OnlineEventPanel />
+					{ showVenueSection && <VenuePluginDocumentSettings.Slot /> }
+					{ showOnlineEventSection && <OnlineEventPanel /> }
 				</VStack>
 			</PluginDocumentSettingPanel>
 		)

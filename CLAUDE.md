@@ -99,40 +99,59 @@ The RSVP block uses a sophisticated template system (`src/blocks/rsvp/templates/
 
 GatherPress uses custom `post_type_supports` to decouple features from specific post types. This allows developers to enable GatherPress features on their own custom post types.
 
-**Registered supports:**
+**Event post type supports** (declared on post types that act as events):
 
-- `gatherpress-event-date` — Event datetime storage, the `gatherpress_events` DB table, date-based queries, timezone handling, and related blocks (event-date, add-to-calendar)
+- `gatherpress-event-date` — **Core event identifier.** Datetime storage, the `gatherpress_events` DB table, date-based queries, timezone handling, and related blocks (event-date, add-to-calendar)
 - `gatherpress-rsvp` — Comment-based RSVP system, attendee management, waiting list, RSVP blocks (rsvp, rsvp-form, rsvp-response, rsvp-template)
+- `gatherpress-venue` — Association with a venue post type via the `_gatherpress_venue` taxonomy, venue selector in the editor, and venue block rendering
+- `gatherpress-online-event` — Online event link meta (stored on the event), online-event term in the taxonomy, and online-event block rendering
 
-**Planned supports (not yet implemented):**
+**Venue post type supports** (declared on post types that act as venues):
 
-- `gatherpress-venue` — Venue taxonomy association and venue selector
-- `gatherpress-online-event` — Online event link meta and online-event term
+- `gatherpress-venue-information` — **Core venue identifier.** Address, phone, website, lat/lng meta (JSON), venue detail blocks, and automatic `_gatherpress_venue` taxonomy term management. Declaring this support is what makes a post type a venue source.
+- `gatherpress-venue-map` — Map display meta (show/zoom/height) and the venue map block
 
 **How it works:**
 
-- `gatherpress_event` registers all supports during `register_post_type()`
+- `gatherpress_event` registers all event supports during `register_post_type()`
+- `gatherpress_venue` registers all venue supports during `register_post_type()`
 - PHP checks use `post_type_supports( $post_type, 'gatherpress-event-date' )` instead of `Event::POST_TYPE === $post_type`
-- Queries use `get_post_types_by_support( 'gatherpress-event-date' )` instead of hardcoded post type slugs
+- PHP checks use `post_type_supports( $post_type, 'gatherpress-venue-information' )` instead of `Venue::POST_TYPE === $post_type`
+- Queries use `get_post_types_by_support( 'gatherpress-event-date' )` or `get_post_types_by_support( 'gatherpress-venue-information' )` instead of hardcoded post type slugs
 - JS checks use `select('core').getPostType(slug)?.supports?.['gatherpress-event-date']` via the WordPress data store
-- Post-type-specific hooks (e.g., `rest_pre_insert_{post_type}`) are registered inside `register_post_meta()` which loops over supported post types
+- JS venue post type resolution uses `select('core/editor').getEditorSettings()?.gatherpress?.venuePostTypes` (exposed via `block_editor_settings_all` filter)
+- Post-type-specific hooks are registered inside `register_post_meta()` or similar `init` callbacks that loop over supported post types at priority 11
 
 **Developer usage:**
 
 ```php
-// Enable event dates on a custom post type.
+// Enable event dates on a custom event post type.
 add_post_type_support( 'my_custom_event', 'gatherpress-event-date' );
+
+// Create a custom venue post type.
+register_post_type( 'my_custom_venue', array(
+    'supports' => array( 'title', 'editor', 'gatherpress-venue-information', 'gatherpress-venue-map' ),
+) );
+
+// Map a custom event post type to a custom venue post type.
+add_filter( 'gatherpress_venue_post_type', function( $post_type, $event_post_type ) {
+    if ( 'my_custom_event' === $event_post_type ) {
+        return 'my_custom_venue';
+    }
+    return $post_type;
+}, 10, 2 );
 ```
 
 **When adding new post_type_supports:**
 
-1. Use kebab-case with `gatherpress-` prefix (e.g., `gatherpress-venue`)
+1. Use kebab-case with `gatherpress-` prefix (e.g., `gatherpress-venue-map`)
 2. Add the support to the `supports` array in the relevant `register_post_type()` call
-3. Replace `Event::POST_TYPE === get_post_type()` checks with `post_type_supports()`
-4. Replace `'post_type' => Event::POST_TYPE` in queries with `get_post_types_by_support()`
-5. Register post-type-specific hooks inside `register_post_meta()` or similar `init` callbacks that loop over supported post types
-6. Update JS `isEventPostType()` or create equivalent helpers that check supports via the data store
-7. Update corresponding unit tests (PHP and JS mocks)
+3. Replace `Event::POST_TYPE === get_post_type()` checks with `post_type_supports( ..., 'gatherpress-event-date' )`
+4. Replace `Venue::POST_TYPE === get_post_type()` checks with `post_type_supports( ..., 'gatherpress-venue-information' )`
+5. Replace `'post_type' => Event::POST_TYPE` in queries with `get_post_types_by_support( 'gatherpress-event-date' )`
+6. Register post-type-specific hooks inside `register_post_meta()` or similar `init` callbacks at priority 11 that loop over supported post types
+7. Update JS helpers to check supports via `select('core').getPostType(slug)?.supports`
+8. Update corresponding unit tests (PHP and JS mocks)
 
 ### Database Schema
 
@@ -219,6 +238,12 @@ Based on WordPress Coding Standards (WPCS), always ensure:
     - Cast types explicitly when needed: `(int) $comment->comment_post_ID`
 
 ### PHP Testing Guidelines
+
+**Multisite test group**: GatherPress runs two separate PHPUnit test suites in CI — a standard single-site run and a multisite run. Tests that require a multisite WordPress environment are annotated with `@group multisite`. The standard `phpunit.xml.dist` excludes this group so it does not run locally via `npm run test:unit:php`, but CI runs it separately and merges the coverage data before the PR coverage check.
+
+- **Never remove `@group multisite`** from test classes that carry it — those tests exist and run in CI.
+- **Never add `@codeCoverageIgnore`** to multisite-only code paths (e.g., `switch_to_blog`, `get_sites`, `is_plugin_active_for_network` branches) — those lines are covered by the multisite test run.
+- If the PR coverage check shows 0% for a class whose tests are in `@group multisite`, the most likely cause is that the multisite test suite is **failing** (e.g., a `test_setup_hooks` assertion no longer matches after a hook was changed). Fix the failing test rather than suppressing coverage.
 
 When writing PHPUnit tests that need WordPress post context:
 

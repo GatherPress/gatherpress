@@ -44,6 +44,10 @@ jest.mock( '@wordpress/i18n', () => ( {
 /**
  * Mock internal dependencies.
  */
+jest.mock( '@src/helpers/event', () => ( {
+	isPostTypeSupporting: jest.fn(),
+} ) );
+
 jest.mock( '@src/variations/core/query/components', () => ( {
 	EventListTypeControls: () => (
 		<div data-testid="event-list-type-controls" />
@@ -59,6 +63,7 @@ jest.mock( '@src/variations/core/query/components', () => ( {
  */
 import { addFilter } from '@wordpress/hooks';
 import { useEffect } from '@wordpress/element';
+import { isPostTypeSupporting } from '@src/helpers/event';
 
 // Import the module to trigger the addFilter side effect.
 import '@src/integrations/aql/index';
@@ -75,6 +80,12 @@ describe( 'AQL Integration', () => {
 		useEffect.mockClear();
 		// Restore default useEffect behavior for each test.
 		useEffect.mockImplementation( ( fn ) => fn() );
+		// Default: return true only for gatherpress_event post type.
+		isPostTypeSupporting.mockImplementation(
+			( support, postType ) =>
+				'gatherpress-event-date' === support &&
+				'gatherpress_event' === postType
+		);
 	} );
 
 	describe( 'addFilter registration', () => {
@@ -165,6 +176,35 @@ describe( 'AQL Integration', () => {
 			).toBeInTheDocument();
 		} );
 
+		it( 'renders event controls panel for AQL blocks with custom event-date-supporting post type', () => {
+			// Mock gatherpress_shindig as a post type that supports gatherpress-event-date.
+			isPostTypeSupporting.mockImplementation(
+				( support, postType ) =>
+					'gatherpress-event-date' === support &&
+					'gatherpress_shindig' === postType
+			);
+
+			const MockBlockEdit = () => (
+				<div data-testid="block-edit">Original</div>
+			);
+			const Enhanced = withAQLEventControls( MockBlockEdit );
+
+			const { getByTestId } = render(
+				<Enhanced
+					name="core/query"
+					attributes={ {
+						namespace: 'advanced-query-loop',
+						query: { postType: 'gatherpress_shindig' },
+					} }
+					setAttributes={ jest.fn() }
+				/>
+			);
+
+			expect( getByTestId( 'block-edit' ) ).toBeInTheDocument();
+			expect( getByTestId( 'inspector-controls' ) ).toBeInTheDocument();
+			expect( getByTestId( 'event-list-type-controls' ) ).toBeInTheDocument();
+		} );
+
 		it( 'renders BlockEdit without controls for AQL blocks with non-event post type', () => {
 			const MockBlockEdit = () => (
 				<div data-testid="block-edit">Original</div>
@@ -190,7 +230,7 @@ describe( 'AQL Integration', () => {
 	} );
 
 	describe( 'AQLEventDefaults auto-defaults', () => {
-		it( 'sets GatherPress defaults when post type is gatherpress_event and event query is not set', () => {
+		it( 'sets GatherPress defaults when post type supports event-date and event query is not set', () => {
 			const mockSetAttributes = jest.fn();
 			const MockBlockEdit = () => (
 				<div data-testid="block-edit">Original</div>

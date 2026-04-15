@@ -1078,6 +1078,36 @@ class Test_Event_Admin_List extends Base {
 	}
 
 	/**
+	 * Coverage for venue_sorting_join_paged when the venue taxonomy is not registered.
+	 *
+	 * Verifies that the method returns the original $join string unchanged when
+	 * taxonomy_exists() returns false for the derived taxonomy slug, avoiding
+	 * invalid SQL from being appended.
+	 *
+	 * @covers ::venue_sorting_join_paged
+	 *
+	 * @return void
+	 */
+	public function test_venue_sorting_join_paged_unregistered_taxonomy(): void {
+		$instance      = Event_Admin_List::get_instance();
+		$original_join = 'ORIGINAL_JOIN';
+
+		// Temporarily unregister the venue taxonomy so taxonomy_exists() returns false.
+		unregister_taxonomy( Venue::TAXONOMY );
+
+		$result = $instance->venue_sorting_join_paged( $original_join );
+
+		// Re-register the taxonomy so subsequent tests are not affected.
+		Venue::get_instance()->register_taxonomy();
+
+		$this->assertSame(
+			$original_join,
+			$result,
+			'Failed to assert that venue_sorting_join_paged returns the original join.'
+		);
+	}
+
+	/**
 	 * Coverage for venue_sorting_orderby method.
 	 *
 	 * Note: This method relies on the global $wp_query, so we test the method's structure

@@ -12,7 +12,6 @@ namespace GatherPress\Core\Blocks;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
-use GatherPress\Core\Event;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Venue;
 use WP_Block;
@@ -111,12 +110,14 @@ class Online_Event {
 	 * @return bool True if the event has the online-event term, false otherwise.
 	 */
 	private function has_online_event_term( int $post_id ): bool {
-		// Only check for event post types.
-		if ( Event::POST_TYPE !== get_post_type( $post_id ) ) {
-			return true;
+		// Only render for post types that support online events.
+		if ( ! post_type_supports( (string) get_post_type( $post_id ), 'gatherpress-online-event' ) ) {
+			return false;
 		}
 
-		$venue_terms = get_the_terms( $post_id, Venue::TAXONOMY );
+		$event_post_type = (string) get_post_type( $post_id );
+		$taxonomy        = Venue::get_taxonomy( Venue::get_venue_post_type( $event_post_type ) );
+		$venue_terms     = get_the_terms( $post_id, $taxonomy );
 
 		if ( ! is_array( $venue_terms ) ) {
 			return false;
