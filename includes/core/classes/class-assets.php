@@ -1,7 +1,6 @@
 <?php
 /**
- * Class is responsible for loading and managing static assets like stylesheets and JavaScript files,
- * as well as localizing data as JavaScript objects on the page.
+ * Class is responsible for loading and managing static assets like stylesheets and JavaScript files.
  *
  * @package GatherPress\Core
  * @since 1.0.0
@@ -84,37 +83,18 @@ class Assets {
 	 * @return void
 	 */
 	protected function setup_hooks(): void {
-		add_action( 'admin_print_scripts', array( $this, 'add_global_object' ), PHP_INT_MIN );
 		add_action( 'admin_enqueue_scripts', array( $this, 'admin_enqueue_scripts' ) );
 		add_action( 'enqueue_block_assets', array( $this, 'block_enqueue_scripts' ) );
 		add_action( 'enqueue_block_editor_assets', array( $this, 'editor_enqueue_scripts' ) );
 		add_action( 'enqueue_block_editor_assets', array( $this, 'enqueue_variation_assets' ) );
 		add_action( 'enqueue_block_editor_assets', array( $this, 'enqueue_aql_integration' ) );
 		add_action( 'init', array( $this, 'register_variation_assets' ) );
-		add_action( 'wp_head', array( $this, 'add_global_object' ), PHP_INT_MIN );
 		add_action( 'wp_head', array( $this, 'add_interactivity_state' ) );
 		// Set priority to 11 to not conflict with media modal.
 		add_action( 'admin_footer', array( $this, 'event_communication_modal' ), 11 );
 
 		add_filter( 'render_block', array( $this, 'maybe_enqueue_styles' ), 10, 2 );
 		add_filter( 'render_block', array( $this, 'maybe_enqueue_tooltip_assets' ) );
-	}
-
-	/**
-	 * Localize the global GatherPress JavaScript object for use in build scripts.
-	 *
-	 * This method generates JavaScript code to create a global 'GatherPress' object containing localized data.
-	 * This object is made available for use in JavaScript build scripts, enabling seamless integration of
-	 * server-side data with client-side functionality.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @return void
-	 */
-	public function add_global_object(): void {
-		?>
-		<script>window.GatherPress = <?php echo wp_json_encode( $this->localize( intval( get_the_ID() ) ) ); ?></script>
-		<?php
 	}
 
 	/**
@@ -366,35 +346,6 @@ class Assets {
 		if ( post_type_supports( (string) get_post_type(), 'gatherpress-event-date' ) ) {
 			echo '<div id="gatherpress-event-communication-modal"></div>';
 		}
-	}
-
-	/**
-	 * Localize data for JavaScript usage.
-	 *
-	 * This method prepares and localizes data for use in JavaScript scripts. It collects various event-related
-	 * information and settings, making them available in the client-side context. The localized data includes
-	 * response details, current user information, time zone settings, event properties, and more.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param int $post_id The Post ID for an event.
-	 * @return array An associative array containing localized data for JavaScript.
-	 */
-	protected function localize( int $post_id ): array {
-		$event         = new Event( $post_id );
-		$event_details = array();
-
-		if ( ! empty( $event->event ) ) {
-			$event_details = array(
-				'dateTime'  => $event->get_datetime(),
-				'postId'    => $post_id,
-				'responses' => $event->rsvp->responses(),
-			);
-		}
-
-		return array(
-			'eventDetails' => $event_details,
-		);
 	}
 
 	/**

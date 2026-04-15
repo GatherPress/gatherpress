@@ -1,12 +1,11 @@
 /**
  * WordPress dependencies.
  */
-import { createReduxStore, register } from '@wordpress/data';
+import { createReduxStore, dispatch, register, select, subscribe } from '@wordpress/data';
 
 /**
  * Internal dependencies.
  */
-import { getFromGlobal, setToGlobal } from '../helpers/globals';
 import {
 	defaultDateTimeEnd,
 	defaultDateTimeStart,
@@ -14,28 +13,20 @@ import {
 } from '../helpers/datetime';
 
 const DEFAULT_STATE = {
-	dateTimeStart: getFromGlobal( 'eventDetails.dateTime.datetime_start' )
-		? getFromGlobal( 'eventDetails.dateTime.datetime_start' )
-		: defaultDateTimeStart,
-	dateTimeEnd: getFromGlobal( 'eventDetails.dateTime.datetime_end' )
-		? getFromGlobal( 'eventDetails.dateTime.datetime_end' )
-		: defaultDateTimeEnd,
+	dateTimeStart: defaultDateTimeStart,
+	dateTimeEnd: defaultDateTimeEnd,
 	duration: null,
-	timezone: getFromGlobal( 'eventDetails.dateTime.timezone' ),
+	timezone: '',
 };
 
 const actions = {
 	setDateTimeStart( dateTimeStart ) {
-		setToGlobal( 'eventDetails.dateTime.datetime_start', dateTimeStart );
-
 		return {
 			type: 'SET_DATETIME_START',
 			dateTimeStart,
 		};
 	},
 	setDateTimeEnd( dateTimeEnd ) {
-		setToGlobal( 'eventDetails.dateTime.datetime_end', dateTimeEnd );
-
 		return {
 			type: 'SET_DATETIME_END',
 			dateTimeEnd,
@@ -48,8 +39,6 @@ const actions = {
 		};
 	},
 	setTimezone( timezone ) {
-		setToGlobal( 'eventDetails.dateTime.timezone', timezone );
-
 		return {
 			type: 'SET_TIMEZONE',
 			timezone,
@@ -85,3 +74,26 @@ const store = createReduxStore( 'gatherpress/datetime', {
 } );
 
 register( store );
+
+// Initialize store from post meta once the editor is ready.
+const unsubscribe = subscribe( () => {
+	const meta = select( 'core/editor' )?.getEditedPostAttribute?.( 'meta' );
+
+	if ( ! meta ) {
+		return;
+	}
+
+	unsubscribe();
+
+	const gpDispatch = dispatch( 'gatherpress/datetime' );
+
+	if ( meta.gatherpress_datetime_start ) {
+		gpDispatch.setDateTimeStart( meta.gatherpress_datetime_start );
+	}
+	if ( meta.gatherpress_datetime_end ) {
+		gpDispatch.setDateTimeEnd( meta.gatherpress_datetime_end );
+	}
+	if ( meta.gatherpress_timezone ) {
+		gpDispatch.setTimezone( meta.gatherpress_timezone );
+	}
+} );

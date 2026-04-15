@@ -1,7 +1,7 @@
 /**
  * WordPress dependencies.
  */
-import { useState } from '@wordpress/element';
+import { useState, useEffect } from '@wordpress/element';
 import { __, _x } from '@wordpress/i18n';
 import { FormTokenField, SelectControl } from '@wordpress/components';
 import apiFetch from '@wordpress/api-fetch';
@@ -11,7 +11,6 @@ import { store as coreStore } from '@wordpress/core-data';
 /**
  * Internal dependencies.
  */
-import { getFromGlobal, setToGlobal } from '../../helpers/globals';
 import { EVENT_REST_API } from '../../helpers/namespace';
 
 /**
@@ -30,17 +29,18 @@ import { EVENT_REST_API } from '../../helpers/namespace';
  * @return {JSX.Element} The rendered RSVP response component.
  */
 const RsvpManager = ( { defaultStatus, setDefaultStatus } ) => {
-	const responses = getFromGlobal( 'eventDetails.responses' );
-	const postId = getFromGlobal( 'eventDetails.postId' );
-	const [ rsvpResponse, setRsvpResponse ] = useState( responses );
-	const attendees = rsvpResponse[ defaultStatus ].records;
+	const postId = useSelect(
+		( wpSelect ) => wpSelect( 'core/editor' ).getCurrentPostId(),
+		[],
+	);
+	const [ rsvpResponse, setRsvpResponse ] = useState( null );
 
 	/**
 	 * Fetches user records from the core store via getEntityRecords.
 	 * Returns userList containing the list of user records.
 	 */
-	const { userList } = useSelect( ( select ) => {
-		const { getEntityRecords } = select( coreStore );
+	const { userList } = useSelect( ( wpSel ) => {
+		const { getEntityRecords } = wpSel( coreStore );
 
 		const users = getEntityRecords( 'root', 'user', {
 			per_page: -1,
@@ -50,6 +50,22 @@ const RsvpManager = ( { defaultStatus, setDefaultStatus } ) => {
 			userList: users,
 		};
 	}, [] );
+
+	useEffect( () => {
+		if ( postId ) {
+			apiFetch( {
+				path: `${ EVENT_REST_API }/rsvp-responses?post_id=${ postId }`,
+			} ).then( ( res ) => {
+				setRsvpResponse( res );
+			} );
+		}
+	}, [ postId ] );
+
+	if ( ! rsvpResponse ) {
+		return null;
+	}
+
+	const attendees = rsvpResponse[ defaultStatus ].records;
 
 	/**
 	 * Reduces the userList to an object mapping usernames to user objects.
@@ -81,7 +97,6 @@ const RsvpManager = ( { defaultStatus, setDefaultStatus } ) => {
 			},
 		} ).then( ( res ) => {
 			setRsvpResponse( res.responses );
-			setToGlobal( 'eventDetails.responses', res.responses );
 		} );
 	};
 

@@ -32,12 +32,6 @@ class Test_Assets extends Base {
 		$hooks    = array(
 			array(
 				'type'     => 'action',
-				'name'     => 'admin_print_scripts',
-				'priority' => PHP_INT_MIN,
-				'callback' => array( $instance, 'add_global_object' ),
-			),
-			array(
-				'type'     => 'action',
 				'name'     => 'admin_enqueue_scripts',
 				'priority' => 10,
 				'callback' => array( $instance, 'admin_enqueue_scripts' ),
@@ -75,12 +69,6 @@ class Test_Assets extends Base {
 			array(
 				'type'     => 'action',
 				'name'     => 'wp_head',
-				'priority' => PHP_INT_MIN,
-				'callback' => array( $instance, 'add_global_object' ),
-			),
-			array(
-				'type'     => 'action',
-				'name'     => 'wp_head',
 				'priority' => 10,
 				'callback' => array( $instance, 'add_interactivity_state' ),
 			),
@@ -106,27 +94,6 @@ class Test_Assets extends Base {
 		);
 
 		$this->assert_hooks( $hooks, $instance );
-	}
-
-	/**
-	 * Coverage for add_global_object method.
-	 *
-	 * @covers ::add_global_object
-	 *
-	 * @return void
-	 */
-	public function test_add_global_object(): void {
-		$instance = Assets::get_instance();
-		$event_id = $this->mock->post(
-			array( 'post_type' => Event::POST_TYPE )
-		)->get()->ID;
-		$object   = Utility::buffer_and_return( array( $instance, 'add_global_object' ) );
-
-		$this->assertMatchesRegularExpression(
-			'#<script>window.GatherPress = {.*}</script>#',
-			$object,
-			'Failed to assert regex of global object matches.'
-		);
 	}
 
 	/**
@@ -195,69 +162,6 @@ class Test_Assets extends Base {
 		$this->assertFalse( wp_script_is( 'gatherpress-profile', 'enqueued' ) );
 		$instance->admin_enqueue_scripts( 'profile.php' );
 		$this->assertTrue( wp_script_is( 'gatherpress-profile', 'enqueued' ) );
-	}
-
-	/**
-	 * Coverage for localize method.
-	 *
-	 * @covers ::localize
-	 *
-	 * @return void
-	 */
-	public function test_localize(): void {
-		$instance = Assets::get_instance();
-		$event_id = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get()->ID;
-		$event    = new Event( $event_id );
-
-		$event->save_datetimes(
-			array(
-				'datetime_start' => '2020-05-11 15:00:00',
-				'datetime_end'   => '2020-05-12 17:00:00',
-				'timezone'       => 'America/New_York',
-			)
-		);
-
-		$output = Utility::invoke_hidden_method( $instance, 'localize', array( $event_id ) );
-
-		$expected_datetime = array(
-			'datetime_start'     => '2020-05-11 15:00:00',
-			'datetime_start_gmt' => '2020-05-11 19:00:00',
-			'datetime_end'       => '2020-05-12 17:00:00',
-			'datetime_end_gmt'   => '2020-05-12 21:00:00',
-			'timezone'           => 'America/New_York',
-		);
-
-		$this->assertSame(
-			$expected_datetime,
-			$output['eventDetails']['dateTime'],
-			'Failed to assert that datetime array matches.'
-		);
-		$this->assertArrayNotHasKey(
-			'hasEventPast',
-			$output['eventDetails'],
-			'Failed to assert that hasEventPast is not localized.'
-		);
-		$this->assertArrayNotHasKey(
-			'currentUser',
-			$output['eventDetails'],
-			'Failed to assert that currentUser is not localized.'
-		);
-		$this->assertArrayNotHasKey(
-			'misc',
-			$output,
-			'Failed to assert that misc is not localized.'
-		);
-		$this->assertArrayNotHasKey(
-			'settings',
-			$output,
-			'Failed to assert that settings is not localized.'
-		);
-		$this->assertArrayNotHasKey(
-			'urls',
-			$output,
-			'Failed to assert that urls is not localized.'
-		);
-		$this->assertEquals( $event_id, $output['eventDetails']['postId'], 'Failed to assert that post_id matches.' );
 	}
 
 	/**
