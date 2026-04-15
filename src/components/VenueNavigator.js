@@ -29,7 +29,15 @@ import { getCurrentContextualPostId } from '../helpers/editor';
 export default function VenueNavigator( props = null ) {
 	const addNewItemLabel = __( 'Add New Venue', 'gatherpress' );
 
-	const venuePostType = getVenuePostType( props?.context?.postType );
+	// Use context post type if provided, otherwise fall back to the editor's current post type.
+	// This is necessary because VenueNavigator can be rendered from slotfill.js without any props.
+	const currentPostType = useSelect(
+		( select ) =>
+			props?.context?.postType ||
+			select( 'core/editor' )?.getCurrentPostType(),
+		[ props?.context?.postType ]
+	);
+	const venuePostType = getVenuePostType( currentPostType );
 	const venueTaxonomy = getVenueTaxonomy( venuePostType );
 
 	/**

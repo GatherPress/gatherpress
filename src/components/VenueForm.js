@@ -131,7 +131,15 @@ function CreateVenueForm( { search, ...props } ) {
 	const [ address, setAddress ] = useState( '' );
 	const [ titleError, setTitleError ] = useState( '' );
 
-	const venuePostType = getVenuePostType( props?.context?.postType );
+	// Use context post type if provided, otherwise fall back to the editor's current post type.
+	// This is necessary because CreateVenueForm can be rendered from slotfill.js without any props.
+	const currentPostType = useSelect(
+		( select ) =>
+			props?.context?.postType ||
+			select( 'core/editor' )?.getCurrentPostType(),
+		[ props?.context?.postType ]
+	);
+	const venuePostType = getVenuePostType( currentPostType );
 	const venueTaxonomy = getVenueTaxonomy( venuePostType );
 
 	const { lastError, isSaving } = useSelect(
