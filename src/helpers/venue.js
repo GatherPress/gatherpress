@@ -328,6 +328,54 @@ export function useVenueOptions(
 }
 
 /**
+ * Reads the venue taxonomy term IDs for a given post.
+ *
+ * Tries the editor in-memory state first (PHP preload data + pending edits via
+ * getEditedPostAttribute), then falls back to a REST context=view query when
+ * the in-memory state is not yet an array. This avoids triggering context=edit
+ * REST requests that would fail for custom post types without edit permissions.
+ *
+ * Returns undefined when skipped or when postId is absent and the editor
+ * attribute has not yet loaded.
+ *
+ * @since 1.0.0
+ *
+ * @param {string}      venueTaxonomy Taxonomy slug (e.g. '_gatherpress_venue').
+ * @param {number|null} postId        The event post whose terms should be fetched.
+ * @param {boolean}     skip          When true, skip all lookups and return undefined.
+ * @return {number[]|undefined} Array of term IDs, or undefined when not yet resolved.
+ */
+export function useVenueTaxonomyIds( venueTaxonomy, postId, skip = false ) {
+	return useSelect(
+		( wpSelect ) => {
+			if ( skip ) {
+				return undefined;
+			}
+
+			// Try editor in-memory state first (PHP preload data + pending edits).
+			const editorAttr =
+				wpSelect( 'core/editor' )?.getEditedPostAttribute( venueTaxonomy );
+			if ( Array.isArray( editorAttr ) ) {
+				return editorAttr;
+			}
+
+			if ( ! postId ) {
+				return undefined;
+			}
+
+			// Fallback: query taxonomy terms with context=view (no edit permissions needed).
+			const terms = wpSelect( 'core' ).getEntityRecords(
+				'taxonomy',
+				venueTaxonomy,
+				{ post: postId, per_page: 100, context: 'view' }
+			);
+			return terms?.map( ( t ) => t.id );
+		},
+		[ skip, venueTaxonomy, postId ]
+	);
+}
+
+/**
  * Hook to fetch the most popular venues (based on usage count).
  *
  * Retrieves venue taxonomy terms ordered by count (number of events using that venue)

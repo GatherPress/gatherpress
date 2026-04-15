@@ -33,12 +33,6 @@ class Test_Venue extends Base {
 		$hooks    = array(
 			array(
 				'type'     => 'action',
-				'name'     => 'save_post',
-				'priority' => 10,
-				'callback' => array( $instance, 'add_venue_term' ),
-			),
-			array(
-				'type'     => 'action',
 				'name'     => sprintf( 'save_post_%s', Venue::POST_TYPE ),
 				'priority' => 10,
 				'callback' => array( $instance, 'maybe_apply_venue_template' ),
@@ -48,6 +42,13 @@ class Test_Venue extends Base {
 				'name'     => 'init',
 				'priority' => 10,
 				'callback' => array( $instance, 'register_post_type' ),
+			),
+			array(
+				'type'     => 'action',
+				'name'     => 'init',
+				// Priority 11: post types at priority 10 are available via get_post_types_by_support().
+				'priority' => 11,
+				'callback' => array( $instance, 'register_post_save_hooks' ),
 			),
 			array(
 				'type'     => 'action',
@@ -83,6 +84,32 @@ class Test_Venue extends Base {
 		);
 
 		$this->assert_hooks( $hooks, $instance );
+	}
+
+	/**
+	 * Coverage for register_post_save_hooks method.
+	 *
+	 * Verifies that a save_post_{$type} action is registered for each post type
+	 * that declares the 'gatherpress-venue-information' support.
+	 *
+	 * @covers ::register_post_save_hooks
+	 *
+	 * @return void
+	 */
+	public function test_register_post_save_hooks(): void {
+		$instance = Venue::get_instance();
+		$instance->register_post_save_hooks();
+
+		foreach ( get_post_types_by_support( 'gatherpress-venue-information' ) as $post_type ) {
+			$this->assertSame(
+				10,
+				has_action(
+					sprintf( 'save_post_%s', $post_type ),
+					array( $instance, 'add_venue_term' )
+				),
+				sprintf( 'Failed to assert that save_post_%s has the add_venue_term action.', $post_type )
+			);
+		}
 	}
 
 	/**
@@ -1052,9 +1079,11 @@ class Test_Venue extends Base {
 	public function test_get_venue_post_type_with_filter(): void {
 		add_filter( 'gatherpress_venue_post_type', fn() => 'custom_venue_type' );
 
+		// Pass a unique event post type to avoid returning a cached result from a prior
+		// test run that used the default (empty-string) key.
 		$this->assertSame(
 			'custom_venue_type',
-			Venue::get_venue_post_type(),
+			Venue::get_venue_post_type( 'test_custom_event_type' ),
 			'Failed to assert that get_venue_post_type returns the filtered post type.'
 		);
 

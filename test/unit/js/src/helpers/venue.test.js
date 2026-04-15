@@ -41,6 +41,7 @@ import {
 	getVenueTitle,
 	useVenueOptions,
 	usePopularVenues,
+	useVenueTaxonomyIds,
 } from '@src/helpers/venue';
 
 /**
@@ -794,5 +795,124 @@ describe( 'usePopularVenues', () => {
 		renderHook( () => usePopularVenues() );
 
 		expect( capturedTaxonomy ).toBe( '_gatherpress_venue' );
+	} );
+} );
+
+/**
+ * Coverage for useVenueTaxonomyIds.
+ */
+describe( 'useVenueTaxonomyIds', () => {
+	beforeEach( () => {
+		jest.clearAllMocks();
+	} );
+
+	it( 'returns undefined when skip is true', () => {
+		useSelect.mockImplementation( ( callback ) => {
+			const wpSelect = jest.fn( () => ( {
+				getEditedPostAttribute: jest.fn(),
+				getEntityRecords: jest.fn(),
+			} ) );
+			return callback( wpSelect );
+		} );
+
+		const { result } = renderHook( () =>
+			useVenueTaxonomyIds( '_gatherpress_venue', 42, true )
+		);
+		expect( result.current ).toBeUndefined();
+	} );
+
+	it( 'returns editor attribute when it is an array', () => {
+		useSelect.mockImplementation( ( callback ) => {
+			const wpSelect = jest.fn( ( store ) => {
+				if ( 'core/editor' === store ) {
+					return { getEditedPostAttribute: jest.fn( () => [ 1, 2, 3 ] ) };
+				}
+				return { getEntityRecords: jest.fn() };
+			} );
+			return callback( wpSelect );
+		} );
+
+		const { result } = renderHook( () =>
+			useVenueTaxonomyIds( '_gatherpress_venue', 42 )
+		);
+		expect( result.current ).toEqual( [ 1, 2, 3 ] );
+	} );
+
+	it( 'returns undefined when editor attribute is not an array and postId is absent', () => {
+		useSelect.mockImplementation( ( callback ) => {
+			const wpSelect = jest.fn( ( store ) => {
+				if ( 'core/editor' === store ) {
+					return { getEditedPostAttribute: jest.fn( () => undefined ) };
+				}
+				return { getEntityRecords: jest.fn() };
+			} );
+			return callback( wpSelect );
+		} );
+
+		const { result } = renderHook( () =>
+			useVenueTaxonomyIds( '_gatherpress_venue', null )
+		);
+		expect( result.current ).toBeUndefined();
+	} );
+
+	it( 'falls back to getEntityRecords and maps term IDs when editor attribute is missing', () => {
+		const mockTerms = [ { id: 10 }, { id: 20 } ];
+
+		useSelect.mockImplementation( ( callback ) => {
+			const wpSelect = jest.fn( ( store ) => {
+				if ( 'core/editor' === store ) {
+					return { getEditedPostAttribute: jest.fn( () => undefined ) };
+				}
+				return {
+					getEntityRecords: jest.fn( () => mockTerms ),
+				};
+			} );
+			return callback( wpSelect );
+		} );
+
+		const { result } = renderHook( () =>
+			useVenueTaxonomyIds( '_gatherpress_venue', 42 )
+		);
+		expect( result.current ).toEqual( [ 10, 20 ] );
+	} );
+
+	it( 'returns undefined when getEntityRecords has not resolved yet', () => {
+		useSelect.mockImplementation( ( callback ) => {
+			const wpSelect = jest.fn( ( store ) => {
+				if ( 'core/editor' === store ) {
+					return { getEditedPostAttribute: jest.fn( () => undefined ) };
+				}
+				return { getEntityRecords: jest.fn( () => null ) };
+			} );
+			return callback( wpSelect );
+		} );
+
+		const { result } = renderHook( () =>
+			useVenueTaxonomyIds( '_gatherpress_venue', 42 )
+		);
+		expect( result.current ).toBeUndefined();
+	} );
+
+	it( 'uses context=view in the fallback query', () => {
+		let capturedQuery = null;
+
+		useSelect.mockImplementation( ( callback ) => {
+			const wpSelect = jest.fn( ( store ) => {
+				if ( 'core/editor' === store ) {
+					return { getEditedPostAttribute: jest.fn( () => undefined ) };
+				}
+				return {
+					getEntityRecords: jest.fn( ( kind, taxonomy, query ) => {
+						capturedQuery = query;
+						return [];
+					} ),
+				};
+			} );
+			return callback( wpSelect );
+		} );
+
+		renderHook( () => useVenueTaxonomyIds( '_gatherpress_venue', 42 ) );
+
+		expect( capturedQuery ).toMatchObject( { context: 'view', post: 42 } );
 	} );
 } );

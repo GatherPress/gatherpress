@@ -136,6 +136,14 @@ class Venue {
 	 * Applies the 'gatherpress_venue_post_type' filter so developers can map
 	 * custom event post types to their own venue post types.
 	 *
+	 * Results are cached in a static array for the lifetime of the request to
+	 * avoid repeated filter invocations. If a plugin adds or removes the
+	 * 'gatherpress_venue_post_type' filter after this method has already been
+	 * called for a given event post type, the cached value will be returned
+	 * rather than the updated filter result. This is an unlikely edge case in
+	 * normal WordPress request flow, where filters are registered before any
+	 * post-type lookups occur.
+	 *
 	 * @since 1.0.0
 	 *
 	 * @param string $event_post_type The event post type requesting a venue post type.

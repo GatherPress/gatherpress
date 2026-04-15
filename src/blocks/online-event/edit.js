@@ -18,7 +18,7 @@ import { __ } from '@wordpress/i18n';
 import TEMPLATE from './template';
 import { hasValidBlockContext, isInFSETemplate } from '../../helpers/editor';
 import { isPostTypeSupporting, DISABLED_FIELD_OPACITY } from '../../helpers/event';
-import { getVenuePostType, getVenueTaxonomy } from '../../helpers/venue';
+import { getVenuePostType, getVenueTaxonomy, useVenueTaxonomyIds } from '../../helpers/venue';
 
 /**
  * Edit component for the GatherPress Online Event block.
@@ -68,31 +68,10 @@ const Edit = ( { attributes, context } ) => {
 		! isDescendentOfQueryLoop && ! isInFSETemplate() && isEditingEvent;
 
 	// Read venue taxonomy IDs without triggering context=edit REST requests.
-	const venueTaxonomyIds = useSelect(
-		( wpSelect ) => {
-			if ( ! isEditingEvent ) {
-				return undefined;
-			}
-
-			// Try editor in-memory state first (PHP preload data + pending edits).
-			const editorAttr = wpSelect( 'core/editor' )?.getEditedPostAttribute( venueTaxonomy );
-			if ( Array.isArray( editorAttr ) ) {
-				return editorAttr;
-			}
-
-			if ( ! currentPostId ) {
-				return undefined;
-			}
-
-			// Fallback: query taxonomy terms with context=view (no edit permissions needed).
-			const terms = wpSelect( 'core' ).getEntityRecords(
-				'taxonomy',
-				venueTaxonomy,
-				{ post: currentPostId, per_page: 100, context: 'view' }
-			);
-			return terms?.map( ( t ) => t.id );
-		},
-		[ isEditingEvent, venueTaxonomy, currentPostId ]
+	const venueTaxonomyIds = useVenueTaxonomyIds(
+		venueTaxonomy,
+		currentPostId,
+		! isEditingEvent
 	);
 
 	const updateVenueTaxonomyIds = ( newIds ) =>

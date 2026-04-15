@@ -14,7 +14,7 @@ import { useState, useCallback, useMemo } from '@wordpress/element';
 /**
  * Internal dependencies
  */
-import { getVenuePostType, getVenueTaxonomy } from '../helpers/venue';
+import { getVenuePostType, getVenueTaxonomy, useVenueTaxonomyIds } from '../helpers/venue';
 import CreateVenueForm from './VenueForm';
 import { VenueComboboxProvider } from './VenueComboboxProvider';
 import PopularVenues from './PopularVenues';
@@ -56,28 +56,7 @@ export default function VenueNavigator( props = null ) {
 	const { editPost } = useDispatch( 'core/editor' );
 
 	// Read venue taxonomy IDs without triggering context=edit REST requests.
-	const venueTaxonomyIds = useSelect(
-		( wpSelect ) => {
-			// Try editor in-memory state first (PHP preload data + pending edits).
-			const editorAttr = wpSelect( 'core/editor' )?.getEditedPostAttribute( venueTaxonomy );
-			if ( Array.isArray( editorAttr ) ) {
-				return editorAttr;
-			}
-
-			if ( ! cId ) {
-				return undefined;
-			}
-
-			// Fallback: query taxonomy terms with context=view (no edit permissions needed).
-			const terms = wpSelect( 'core' ).getEntityRecords(
-				'taxonomy',
-				venueTaxonomy,
-				{ post: cId, per_page: 100, context: 'view' }
-			);
-			return terms?.map( ( t ) => t.id );
-		},
-		[ venueTaxonomy, cId ]
-	);
+	const venueTaxonomyIds = useVenueTaxonomyIds( venueTaxonomy, cId );
 
 	const updateVenueTaxonomyIds = useCallback(
 		( newIds ) => editPost( { [ venueTaxonomy ]: newIds } ),

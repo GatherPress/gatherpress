@@ -239,6 +239,12 @@ Based on WordPress Coding Standards (WPCS), always ensure:
 
 ### PHP Testing Guidelines
 
+**Multisite test group**: GatherPress runs two separate PHPUnit test suites in CI — a standard single-site run and a multisite run. Tests that require a multisite WordPress environment are annotated with `@group multisite`. The standard `phpunit.xml.dist` excludes this group so it does not run locally via `npm run test:unit:php`, but CI runs it separately and merges the coverage data before the PR coverage check.
+
+- **Never remove `@group multisite`** from test classes that carry it — those tests exist and run in CI.
+- **Never add `@codeCoverageIgnore`** to multisite-only code paths (e.g., `switch_to_blog`, `get_sites`, `is_plugin_active_for_network` branches) — those lines are covered by the multisite test run.
+- If the PR coverage check shows 0% for a class whose tests are in `@group multisite`, the most likely cause is that the multisite test suite is **failing** (e.g., a `test_setup_hooks` assertion no longer matches after a hook was changed). Fix the failing test rather than suppressing coverage.
+
 When writing PHPUnit tests that need WordPress post context:
 
 - **Global variable override**: Never directly assign to `$GLOBALS['post']` - WordPress Coding Standards prohibit this

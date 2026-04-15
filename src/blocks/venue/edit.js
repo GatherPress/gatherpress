@@ -16,7 +16,7 @@ import { useSelect } from '@wordpress/data';
  */
 import { getCurrentContextualPostId, hasValidBlockContext, isInFSETemplate } from '../../helpers/editor';
 import { isPostTypeSupporting, DISABLED_FIELD_OPACITY } from '../../helpers/event';
-import { GetVenuePostFromTermId, GetVenuePostFromEventId, getVenuePostType, getVenueTaxonomy } from '../../helpers/venue';
+import { GetVenuePostFromTermId, GetVenuePostFromEventId, getVenuePostType, getVenueTaxonomy, useVenueTaxonomyIds } from '../../helpers/venue';
 import VenueNavigator from '../../components/VenueNavigator';
 import { TEMPLATE_WITH_TITLE, TEMPLATE_WITHOUT_TITLE } from './template';
 
@@ -39,31 +39,10 @@ const Edit = ( props ) => {
 	const venueTaxonomy = getVenueTaxonomy( venuePostType );
 
 	// Read venue taxonomy IDs without triggering context=edit REST requests.
-	const venueTaxonomyIds = useSelect(
-		( wpSelect ) => {
-			if ( isVenueContext || isDescendentOfQueryLoop ) {
-				return undefined;
-			}
-
-			// Try editor in-memory state first (PHP preload data + pending edits).
-			const editorAttr = wpSelect( 'core/editor' )?.getEditedPostAttribute( venueTaxonomy );
-			if ( Array.isArray( editorAttr ) ) {
-				return editorAttr;
-			}
-
-			if ( ! eventId ) {
-				return undefined;
-			}
-
-			// Fallback: query taxonomy terms with context=view (no edit permissions needed).
-			const terms = wpSelect( 'core' ).getEntityRecords(
-				'taxonomy',
-				venueTaxonomy,
-				{ post: eventId, per_page: 100, context: 'view' }
-			);
-			return terms?.map( ( t ) => t.id );
-		},
-		[ isVenueContext, isDescendentOfQueryLoop, eventId, venueTaxonomy ]
+	const venueTaxonomyIds = useVenueTaxonomyIds(
+		venueTaxonomy,
+		eventId,
+		isVenueContext || isDescendentOfQueryLoop
 	);
 
 	const isEditableEventContext =
