@@ -53,6 +53,10 @@
 - [`gatherpress_pre_get_http_input`](gatherpress_pre_get_http_input.md) Short-circuit filter for HTTP input retrieval during testing.
 - [`gatherpress_pre_get_wp_referer`](gatherpress_pre_get_wp_referer.md) Short-circuit filter for wp_get_referer() during testing.
 
+## class-venue.php
+
+- [`gatherpress_venue_post_type`](gatherpress_venue_post_type.md) Filters the post type used as the venue.
+
 ## index.php
 
 - [`gatherpress_settings_section`](gatherpress_settings_section.md)
