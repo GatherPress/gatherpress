@@ -439,6 +439,28 @@ describe( 'GetVenuePostFromEventId', () => {
 		expect( result.current ).toEqual( mockVenuePost );
 	} );
 
+	it( 'skips API call and returns undefined when eventId is zero', () => {
+		useSelect.mockImplementation( ( callback ) => {
+			const wpSelect = jest.fn( ( store ) => {
+				if ( 'core/editor' === store ) {
+					return {
+						getCurrentPostType: () => 'gatherpress_event',
+						getEditorSettings: () => ( {
+							gatherpress: {
+								venuePostTypes: { gatherpress_event: 'gatherpress_venue' },
+							},
+						} ),
+					};
+				}
+				return { getEntityRecords: jest.fn( () => [] ) };
+			} );
+			return callback( wpSelect );
+		} );
+
+		const { result } = renderHook( () => GetVenuePostFromEventId( 0 ) );
+		expect( result.current ).toEqual( undefined );
+	} );
+
 	it( 'returns null when venue terms are null', () => {
 		useSelect.mockImplementation( ( callback ) => {
 			const wpSelect = jest.fn( ( store ) => {

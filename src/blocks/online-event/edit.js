@@ -166,9 +166,10 @@ const Edit = ( { attributes, context } ) => {
 			const editorPostId = select( 'core/editor' )?.getCurrentPostId();
 			const editorPostType = select( 'core/editor' )?.getCurrentPostType();
 			const isCurrentPost = eventId && editorPostId === eventId;
-			const isEditorEvent =
-				!! select( 'core' ).getPostType( editorPostType )
-					?.supports?.[ 'gatherpress-online-event' ];
+			const isEditorEvent = isPostTypeSupporting(
+				'gatherpress-online-event',
+				editorPostType
+			);
 
 			let venueTermIds;
 

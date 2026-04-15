@@ -72,7 +72,6 @@ class Venue {
 	 * @return void
 	 */
 	protected function setup_hooks(): void {
-		add_action( 'save_post', array( $this, 'add_venue_term' ), 10, 3 );
 		add_action(
 			sprintf( 'save_post_%s', self::POST_TYPE ),
 			array( $this, 'maybe_apply_venue_template' ),
@@ -81,6 +80,7 @@ class Venue {
 		);
 		add_action( 'init', array( $this, 'register_post_type' ) );
 		// Priority 11 so post types registered at default priority 10 are available for get_post_types_by_support().
+		add_action( 'init', array( $this, 'register_post_save_hooks' ), 11 );
 		add_action( 'init', array( $this, 'register_post_meta' ), 11 );
 		add_action( 'init', array( $this, 'register_taxonomy' ), 11 );
 		add_action( 'post_updated', array( $this, 'maybe_update_term_slug' ), 10, 3 );
@@ -89,16 +89,27 @@ class Venue {
 	}
 
 	/**
-	 * Returns the post type used as the venue for a given event post type.
+	 * Register save_post_{$type} hooks for all venue post types.
 	 *
-	 * Defaults to the built-in gatherpress_venue post type. Developers can override this
-	 * via the filter to designate a custom post type as the venue for a given event post type.
+	 * Called at init priority 11 so that venue post types registered at default
+	 * priority 10 are discoverable via get_post_types_by_support(). This avoids
+	 * hooking the global save_post action, which fires on every post save site-wide.
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param string $event_post_type The event post type requesting a venue post type. Default empty string.
-	 * @return string The venue post type slug.
+	 * @return void
 	 */
+	public function register_post_save_hooks(): void {
+		foreach ( get_post_types_by_support( 'gatherpress-venue-information' ) as $post_type ) {
+			add_action(
+				sprintf( 'save_post_%s', $post_type ),
+				array( $this, 'add_venue_term' ),
+				10,
+				3
+			);
+		}
+	}
+
 	/**
 	 * Returns the taxonomy slug for a given venue post type.
 	 *
@@ -131,6 +142,12 @@ class Venue {
 	 * @return string The venue post type slug.
 	 */
 	public static function get_venue_post_type( string $event_post_type = '' ): string {
+		static $cache = array();
+
+		if ( isset( $cache[ $event_post_type ] ) ) {
+			return $cache[ $event_post_type ];
+		}
+
 		/**
 		 * Filters the post type used as the venue.
 		 *
@@ -139,7 +156,13 @@ class Venue {
 		 * @param string $post_type       The venue post type slug. Default 'gatherpress_venue'.
 		 * @param string $event_post_type The event post type requesting a venue post type.
 		 */
-		return (string) apply_filters( 'gatherpress_venue_post_type', self::POST_TYPE, $event_post_type );
+		$cache[ $event_post_type ] = (string) apply_filters(
+			'gatherpress_venue_post_type',
+			self::POST_TYPE,
+			$event_post_type
+		);
+
+		return $cache[ $event_post_type ];
 	}
 
 	/**

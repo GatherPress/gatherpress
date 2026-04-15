@@ -460,6 +460,13 @@ class Event_Admin_List {
 	public function venue_sorting_join_paged( string $join ): string {
 		global $wpdb;
 
+		$venue_taxonomy = Venue::get_taxonomy( Venue::get_venue_post_type( Event::POST_TYPE ) );
+
+		// Bail early if the derived taxonomy is not registered to avoid invalid SQL.
+		if ( ! taxonomy_exists( $venue_taxonomy ) ) {
+			return $join;
+		}
+
 		$join .= $wpdb->prepare(
 			' LEFT JOIN %i AS venue_tr ON %i.%i = venue_tr.object_id',
 			$wpdb->term_relationships,
@@ -471,7 +478,7 @@ class Event_Admin_List {
 			. ' ON venue_tr.term_taxonomy_id = venue_tt.term_taxonomy_id'
 			. ' AND venue_tt.taxonomy = %s',
 			$wpdb->term_taxonomy,
-			Venue::get_taxonomy( Venue::get_venue_post_type( Event::POST_TYPE ) )
+			$venue_taxonomy
 		);
 		$join .= $wpdb->prepare(
 			' LEFT JOIN %i AS venue_terms ON venue_tt.term_id = venue_terms.term_id',
