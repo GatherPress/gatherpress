@@ -11,7 +11,7 @@ import apiFetch from '@wordpress/api-fetch';
 /**
  * Internal dependencies.
  */
-import { hasValidEventId, DISABLED_FIELD_OPACITY, getEventMeta, isPostTypeSupporting } from '../../helpers/event';
+import { hasValidEventId, DISABLED_FIELD_OPACITY, getEventMeta, isPostTypeSupporting, isRsvpEnabledForEvent } from '../../helpers/event';
 import { EVENT_REST_API } from '../../helpers/namespace';
 import { isInFSETemplate } from '../../helpers/editor';
 import { getFromSettings } from '../../helpers/editor-settings';
@@ -84,9 +84,7 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 		style: {
 			opacity:
 				isInFSETemplate() ||
-				( isValidEvent &&
-					'disabled' !== rsvpMode &&
-					( ( 'per_event_on' !== rsvpMode && 'per_event_off' !== rsvpMode ) || enableRsvp ) )
+				( isValidEvent && isRsvpEnabledForEvent( rsvpMode, enableRsvp ) )
 					? 1
 					: DISABLED_FIELD_OPACITY,
 		},

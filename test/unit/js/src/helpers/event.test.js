@@ -33,6 +33,8 @@ import {
 	hasValidEventId,
 	getEventMeta,
 	hasOnlineEventTerm,
+	isPerEventRsvpMode,
+	isRsvpEnabledForEvent,
 } from '@src/helpers/event';
 import { dateTimeDatabaseFormat } from '@src/helpers/datetime';
 
@@ -1101,5 +1103,57 @@ describe( 'hasOnlineEventTerm', () => {
 		} );
 
 		expect( hasOnlineEventTerm( 123 ) ).toBe( true );
+	} );
+} );
+
+/**
+ * Coverage for isPerEventRsvpMode.
+ */
+describe( 'isPerEventRsvpMode', () => {
+	it( 'returns true for per_event_on', () => {
+		expect( isPerEventRsvpMode( 'per_event_on' ) ).toBe( true );
+	} );
+
+	it( 'returns true for per_event_off', () => {
+		expect( isPerEventRsvpMode( 'per_event_off' ) ).toBe( true );
+	} );
+
+	it( 'returns false for all_on', () => {
+		expect( isPerEventRsvpMode( 'all_on' ) ).toBe( false );
+	} );
+
+	it( 'returns false for disabled', () => {
+		expect( isPerEventRsvpMode( 'disabled' ) ).toBe( false );
+	} );
+} );
+
+/**
+ * Coverage for isRsvpEnabledForEvent.
+ */
+describe( 'isRsvpEnabledForEvent', () => {
+	it( 'returns true for all_on mode regardless of enableRsvp', () => {
+		expect( isRsvpEnabledForEvent( 'all_on', true ) ).toBe( true );
+		expect( isRsvpEnabledForEvent( 'all_on', false ) ).toBe( true );
+	} );
+
+	it( 'returns true for per_event_on when enableRsvp is true', () => {
+		expect( isRsvpEnabledForEvent( 'per_event_on', true ) ).toBe( true );
+	} );
+
+	it( 'returns false for per_event_on when enableRsvp is false', () => {
+		expect( isRsvpEnabledForEvent( 'per_event_on', false ) ).toBe( false );
+	} );
+
+	it( 'returns true for per_event_off when enableRsvp is true', () => {
+		expect( isRsvpEnabledForEvent( 'per_event_off', true ) ).toBe( true );
+	} );
+
+	it( 'returns false for per_event_off when enableRsvp is false', () => {
+		expect( isRsvpEnabledForEvent( 'per_event_off', false ) ).toBe( false );
+	} );
+
+	it( 'returns false for disabled mode regardless of enableRsvp', () => {
+		expect( isRsvpEnabledForEvent( 'disabled', true ) ).toBe( false );
+		expect( isRsvpEnabledForEvent( 'disabled', false ) ).toBe( false );
 	} );
 } );

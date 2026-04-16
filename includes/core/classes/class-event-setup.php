@@ -313,7 +313,7 @@ class Event_Setup {
 		// Always register gatherpress_enable_rsvp so it can be written in all modes.
 		// Missing meta is treated as "on"; only an explicit 0 disables RSVP per event.
 		$event_only_meta = array(
-			'gatherpress_enable_rsvp' => array(
+			'gatherpress_enable_rsvp'           => array(
 				'auth_callback'     => array( $this, 'can_edit_posts_meta' ),
 				'sanitize_callback' => 'absint',
 				'show_in_rest'      => true,
@@ -321,39 +321,38 @@ class Event_Setup {
 				'type'              => 'integer',
 				'default'           => 1,
 			),
-		);
-
-		$event_only_meta['gatherpress_max_guest_limit']       = array(
-			'auth_callback'     => array( $this, 'can_edit_posts_meta' ),
-			'sanitize_callback' => 'absint',
-			'show_in_rest'      => true,
-			'single'            => true,
-			'type'              => 'integer',
-			'default'           => (int) Settings::get_instance()->get( 'max_guest_limit' ),
-		);
-		$event_only_meta['gatherpress_enable_anonymous_rsvp'] = array(
-			'auth_callback'     => array( $this, 'can_edit_posts_meta' ),
-			'sanitize_callback' => 'rest_sanitize_boolean',
-			'show_in_rest'      => true,
-			'single'            => true,
-			'type'              => 'boolean',
-			'default'           => (bool) Settings::get_instance()->get( 'enable_anonymous_rsvp' ),
-		);
-		$event_only_meta['gatherpress_online_event_link']     = array(
-			'auth_callback'     => array( $this, 'can_edit_posts_meta' ),
-			'sanitize_callback' => 'sanitize_url',
-			'show_in_rest'      => true,
-			'single'            => true,
-			'type'              => 'string',
-			'default'           => '',
-		);
-		$event_only_meta['gatherpress_max_attendance_limit']  = array(
-			'auth_callback'     => array( $this, 'can_edit_posts_meta' ),
-			'sanitize_callback' => 'absint',
-			'show_in_rest'      => true,
-			'single'            => true,
-			'type'              => 'integer',
-			'default'           => (int) Settings::get_instance()->get( 'max_attendance_limit' ),
+			'gatherpress_max_guest_limit'       => array(
+				'auth_callback'     => array( $this, 'can_edit_posts_meta' ),
+				'sanitize_callback' => 'absint',
+				'show_in_rest'      => true,
+				'single'            => true,
+				'type'              => 'integer',
+				'default'           => (int) Settings::get_instance()->get( 'max_guest_limit' ),
+			),
+			'gatherpress_enable_anonymous_rsvp' => array(
+				'auth_callback'     => array( $this, 'can_edit_posts_meta' ),
+				'sanitize_callback' => 'rest_sanitize_boolean',
+				'show_in_rest'      => true,
+				'single'            => true,
+				'type'              => 'boolean',
+				'default'           => (bool) Settings::get_instance()->get( 'enable_anonymous_rsvp' ),
+			),
+			'gatherpress_online_event_link'     => array(
+				'auth_callback'     => array( $this, 'can_edit_posts_meta' ),
+				'sanitize_callback' => 'sanitize_url',
+				'show_in_rest'      => true,
+				'single'            => true,
+				'type'              => 'string',
+				'default'           => '',
+			),
+			'gatherpress_max_attendance_limit'  => array(
+				'auth_callback'     => array( $this, 'can_edit_posts_meta' ),
+				'sanitize_callback' => 'absint',
+				'show_in_rest'      => true,
+				'single'            => true,
+				'type'              => 'integer',
+				'default'           => (int) Settings::get_instance()->get( 'max_attendance_limit' ),
+			),
 		);
 
 		foreach ( $event_only_meta as $meta_key => $args ) {

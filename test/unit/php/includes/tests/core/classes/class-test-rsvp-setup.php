@@ -838,6 +838,65 @@ class Test_Rsvp_Setup extends Base {
 	}
 
 	/**
+	 * Coverage for is_rsvp_enabled_for_event method.
+	 *
+	 * @covers ::is_rsvp_enabled_for_event
+	 *
+	 * @return void
+	 */
+	public function test_is_rsvp_enabled_for_event(): void {
+		$post_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
+
+		// Returns false when mode is per_event_on and meta is '0'.
+		Settings::get_instance()->set( 'rsvp_mode', 'per_event_on' );
+		update_post_meta( $post_id, 'gatherpress_enable_rsvp', '0' );
+		$this->assertFalse(
+			Rsvp_Setup::is_rsvp_enabled_for_event( $post_id ),
+			'Should return false when mode is per_event_on and meta is 0.'
+		);
+
+		// Returns false when mode is per_event_off and meta is '0'.
+		Settings::get_instance()->set( 'rsvp_mode', 'per_event_off' );
+		$this->assertFalse(
+			Rsvp_Setup::is_rsvp_enabled_for_event( $post_id ),
+			'Should return false when mode is per_event_off and meta is 0.'
+		);
+
+		// Returns true when mode is per_event_on and meta is '1'.
+		Settings::get_instance()->set( 'rsvp_mode', 'per_event_on' );
+		update_post_meta( $post_id, 'gatherpress_enable_rsvp', '1' );
+		$this->assertTrue(
+			Rsvp_Setup::is_rsvp_enabled_for_event( $post_id ),
+			'Should return true when mode is per_event_on and meta is 1.'
+		);
+
+		// Returns true when mode is per_event_on and meta is '' (never set).
+		delete_post_meta( $post_id, 'gatherpress_enable_rsvp' );
+		$this->assertTrue(
+			Rsvp_Setup::is_rsvp_enabled_for_event( $post_id ),
+			'Should return true when mode is per_event_on and meta is empty (never set).'
+		);
+
+		// Returns true when mode is all_on and meta is '0'.
+		Settings::get_instance()->set( 'rsvp_mode', 'all_on' );
+		update_post_meta( $post_id, 'gatherpress_enable_rsvp', '0' );
+		$this->assertTrue(
+			Rsvp_Setup::is_rsvp_enabled_for_event( $post_id ),
+			'Should return true when mode is all_on regardless of meta.'
+		);
+
+		// Returns true when mode is disabled and meta is '0'.
+		Settings::get_instance()->set( 'rsvp_mode', 'disabled' );
+		$this->assertTrue(
+			Rsvp_Setup::is_rsvp_enabled_for_event( $post_id ),
+			'Should return true when mode is disabled regardless of meta.'
+		);
+
+		// Restore default setting.
+		Settings::get_instance()->set( 'rsvp_mode', 'all_on' );
+	}
+
+	/**
 	 * Test maybe_set_rsvp_meta_default writes meta in all_on mode when meta is unset.
 	 *
 	 * @covers ::maybe_set_rsvp_meta_default

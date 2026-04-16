@@ -16,7 +16,7 @@ import { getBlockTypes } from '@wordpress/blocks';
  * Internal dependencies.
  */
 import TEMPLATE from './template';
-import { hasValidEventId, DISABLED_FIELD_OPACITY, getEventMeta } from '../../helpers/event';
+import { hasValidEventId, DISABLED_FIELD_OPACITY, getEventMeta, isRsvpEnabledForEvent } from '../../helpers/event';
 import { isInFSETemplate, getEditorDocument } from '../../helpers/editor';
 import { getFromSettings } from '../../helpers/editor-settings';
 import { shouldHideBlock } from './visibility';
@@ -183,9 +183,7 @@ const Edit = ( { attributes, clientId, context } ) => {
 		style: {
 			opacity:
 				isInFSETemplate() ||
-				( isValidEvent &&
-					'disabled' !== rsvpMode &&
-					( ( 'per_event_on' !== rsvpMode && 'per_event_off' !== rsvpMode ) || enableRsvp ) )
+				( isValidEvent && isRsvpEnabledForEvent( rsvpMode, enableRsvp ) )
 					? 1
 					: DISABLED_FIELD_OPACITY,
 		},

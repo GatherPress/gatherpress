@@ -14,7 +14,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Block;
 use GatherPress\Core\Event;
-use GatherPress\Core\Settings;
+use GatherPress\Core\Rsvp_Setup;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Utility;
 use WP_Block;
@@ -134,12 +134,7 @@ class Rsvp_Template {
 			return $block_content;
 		}
 
-		// Only process if RSVP is enabled for this event.
-		// Empty string means meta was never set; only '0' means explicitly disabled.
-		if (
-			in_array( Settings::get_instance()->get( 'rsvp_mode' ), array( 'per_event_on', 'per_event_off' ), true ) &&
-			'0' === get_post_meta( $post_id, 'gatherpress_enable_rsvp', true )
-		) {
+		if ( ! Rsvp_Setup::is_rsvp_enabled_for_event( $post_id ) ) {
 			return '';
 		}
 

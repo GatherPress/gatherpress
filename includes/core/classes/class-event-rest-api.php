@@ -669,12 +669,7 @@ class Event_Rest_Api {
 					'featured_image'           => get_the_post_thumbnail( $post_id, 'medium' ),
 					'featured_image_large'     => get_the_post_thumbnail( $post_id, 'large' ),
 					'featured_image_thumbnail' => get_the_post_thumbnail( $post_id, 'thumbnail' ),
-					'enable_rsvp'              => 'disabled' !== Settings::get_instance()->get( 'rsvp_mode' ) &&
-						(
-							// phpcs:ignore Generic.Files.LineLength.TooLong
-							! in_array( Settings::get_instance()->get( 'rsvp_mode' ), array( 'per_event_on', 'per_event_off' ), true ) ||
-							'0' !== get_post_meta( $post_id, 'gatherpress_enable_rsvp', true )
-						),
+					'enable_rsvp'              => Rsvp_Setup::is_rsvp_enabled_for_event( $post_id ),
 					'enable_anonymous_rsvp'    => (bool) get_post_meta(
 						$post_id,
 						'gatherpress_enable_anonymous_rsvp',

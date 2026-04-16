@@ -12,7 +12,7 @@ import { PluginDocumentSettingPanel } from '@wordpress/editor';
 /**
  * Internal dependencies.
  */
-import { isEventPostType } from '../../helpers/event';
+import { isEventPostType, isPerEventRsvpMode } from '../../helpers/event';
 import { getFromSettings } from '../../helpers/editor-settings';
 import AnonymousRsvpPanel from './anonymous-rsvp';
 import EnableRsvpPanel from './enable-rsvp';
@@ -47,7 +47,7 @@ const RsvpSettings = () => {
 				<RsvpPluginDocumentSettings.Slot />
 
 				<VStack spacing={ 4 }>
-					{ ( 'per_event_on' === rsvpMode || 'per_event_off' === rsvpMode ) && <EnableRsvpPanel /> }
+					{ isPerEventRsvpMode( rsvpMode ) && <EnableRsvpPanel /> }
 					<GuestLimitPanel />
 					<MaxAttendanceLimitPanel />
 					<AnonymousRsvpPanel />

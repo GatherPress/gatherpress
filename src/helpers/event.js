@@ -239,6 +239,35 @@ export function hasOnlineEventTerm( postId = null ) {
 }
 
 /**
+ * Determines whether the current RSVP mode is a per-event mode.
+ *
+ * @param {string} rsvpMode The current RSVP mode setting.
+ *
+ * @return {boolean} True if the mode is per_event_on or per_event_off.
+ */
+export function isPerEventRsvpMode( rsvpMode ) {
+	return 'per_event_on' === rsvpMode || 'per_event_off' === rsvpMode;
+}
+
+/**
+ * Determines whether RSVP is enabled for a specific event.
+ *
+ * In per-event modes, RSVP is enabled only if the event's enableRsvp flag is true.
+ * In all_on mode RSVP is always enabled. In disabled mode it is never enabled.
+ *
+ * @param {string}  rsvpMode   The current RSVP mode setting.
+ * @param {boolean} enableRsvp Whether RSVP is enabled for this specific event.
+ *
+ * @return {boolean} True if RSVP is enabled for this event, false otherwise.
+ */
+export function isRsvpEnabledForEvent( rsvpMode, enableRsvp ) {
+	return (
+		'disabled' !== rsvpMode &&
+		( ! isPerEventRsvpMode( rsvpMode ) || enableRsvp )
+	);
+}
+
+/**
  * Gets event meta data (max guest limit, RSVP enabled flag, and anonymous RSVP setting).
  *
  * This function retrieves event meta data either from the current post being edited

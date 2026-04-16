@@ -17,7 +17,7 @@ import { createBlock, parse, serialize } from '@wordpress/blocks';
  * Internal dependencies.
  */
 import TEMPLATES from './templates';
-import { hasValidEventId, DISABLED_FIELD_OPACITY, getEventMeta, isPostTypeSupporting } from '../../helpers/event';
+import { hasValidEventId, DISABLED_FIELD_OPACITY, getEventMeta, isPostTypeSupporting, isRsvpEnabledForEvent } from '../../helpers/event';
 import { isInFSETemplate, getEditorDocument } from '../../helpers/editor';
 import { getFromSettings } from '../../helpers/editor-settings';
 
@@ -88,9 +88,7 @@ const Edit = ( { attributes, setAttributes, clientId, context } ) => {
 		style: {
 			opacity:
 				isInFSETemplate() ||
-				( isValidEvent &&
-					'disabled' !== rsvpMode &&
-					( ( 'per_event_on' !== rsvpMode && 'per_event_off' !== rsvpMode ) || enableRsvp ) )
+				( isValidEvent && isRsvpEnabledForEvent( rsvpMode, enableRsvp ) )
 					? 1
 					: DISABLED_FIELD_OPACITY,
 		},
