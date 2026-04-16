@@ -22,6 +22,26 @@ use PMC\Unit_Test\Utility;
  */
 class Test_Rsvp_Form extends Base {
 	/**
+	 * Enable open RSVP for all tests in this class since most exercise the form rendering path.
+	 *
+	 * @return void
+	 */
+	public function setUp(): void {
+		parent::setUp();
+		Settings::get_instance()->set( 'enable_open_rsvp', true );
+	}
+
+	/**
+	 * Restore open RSVP to its default disabled state after each test.
+	 *
+	 * @return void
+	 */
+	public function tearDown(): void {
+		Settings::get_instance()->set( 'enable_open_rsvp', true );
+		parent::tearDown();
+	}
+
+	/**
 	 * Tests the setup_hooks method.
 	 *
 	 * Verifies that the appropriate filters are registered during setup,
@@ -2820,5 +2840,65 @@ class Test_Rsvp_Form extends Base {
 
 		delete_post_meta( $post_id, 'gatherpress_enable_rsvp' );
 		Settings::get_instance()->set( 'rsvp_mode', 'all_on' );
+	}
+
+	/**
+	 * Tests that transform_block_content returns empty string when open RSVP is disabled sitewide.
+	 *
+	 * @covers ::transform_block_content
+	 *
+	 * @return void
+	 */
+	public function test_transform_block_content_open_rsvp_disabled(): void {
+		$instance = Rsvp_Form::get_instance();
+		$post_id  = $this->factory()->post->create(
+			array(
+				'post_type'   => Event::POST_TYPE,
+				'post_status' => 'publish',
+			)
+		);
+
+		// Disable open RSVP sitewide (override the setUp default).
+		Settings::get_instance()->set( 'enable_open_rsvp', false );
+
+		$block_content = '<div class="wp-block-gatherpress-rsvp-form">RSVP Form Content</div>';
+		$block         = array(
+			'blockName' => 'gatherpress/rsvp-form',
+			'attrs'     => array( 'postId' => $post_id ),
+		);
+
+		$result = $instance->transform_block_content( $block_content, $block );
+
+		$this->assertSame( '', $result, 'Should return empty string when open RSVP is disabled sitewide.' );
+	}
+
+	/**
+	 * Tests that transform_block_content returns empty string when open RSVP is disabled per event.
+	 *
+	 * @covers ::transform_block_content
+	 *
+	 * @return void
+	 */
+	public function test_transform_block_content_open_rsvp_disabled_per_event(): void {
+		$instance = Rsvp_Form::get_instance();
+		$post_id  = $this->factory()->post->create(
+			array(
+				'post_type'   => Event::POST_TYPE,
+				'post_status' => 'publish',
+			)
+		);
+
+		// Sitewide open RSVP is enabled (setUp default), but disabled for this event.
+		update_post_meta( $post_id, 'gatherpress_enable_open_rsvp', 0 );
+
+		$block_content = '<div class="wp-block-gatherpress-rsvp-form">RSVP Form Content</div>';
+		$block         = array(
+			'blockName' => 'gatherpress/rsvp-form',
+			'attrs'     => array( 'postId' => $post_id ),
+		);
+
+		$result = $instance->transform_block_content( $block_content, $block );
+
+		$this->assertSame( '', $result, 'Should return empty string when open RSVP is disabled for this event.' );
 	}
 }

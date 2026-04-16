@@ -127,6 +127,10 @@ class Rsvp_Form {
 			return '';
 		}
 
+		if ( ! ( new Rsvp( $post_id ) )->is_open_rsvp_enabled() ) {
+			return '';
+		}
+
 		$unique_form_id = $this->generate_form_id();
 		$schema_form_id = $this->get_form_schema_id( $post_id, $block );
 

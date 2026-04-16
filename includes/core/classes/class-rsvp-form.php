@@ -162,6 +162,14 @@ class Rsvp_Form {
 			);
 		}
 
+		if ( ! ( new Rsvp( $post_id ) )->is_open_rsvp_enabled() ) {
+			wp_die(
+				esc_html__( 'Open RSVP is disabled for this site.', 'gatherpress' ),
+				esc_html__( 'Open RSVP Disabled', 'gatherpress' ),
+				403
+			);
+		}
+
 		// Validate that the post supports RSVP.
 		if ( ! post_type_supports( (string) get_post_type( $post_id ), 'gatherpress-rsvp' ) ) {
 			wp_die(

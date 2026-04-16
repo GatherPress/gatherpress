@@ -12,9 +12,10 @@ import { PluginDocumentSettingPanel } from '@wordpress/editor';
 /**
  * Internal dependencies.
  */
-import { isEventPostType, isPerEventRsvpMode } from '../../helpers/event';
+import { isEventPostType, isOpenRsvpEnabled, isPerEventRsvpMode } from '../../helpers/event';
 import { getFromSettings } from '../../helpers/editor-settings';
 import AnonymousRsvpPanel from './anonymous-rsvp';
+import EnableOpenRsvpPanel from './enable-open-rsvp';
 import EnableRsvpPanel from './enable-rsvp';
 import GuestLimitPanel from './guest-limit';
 import MaxAttendanceLimitPanel from './max-attendance-limit';
@@ -35,6 +36,7 @@ import { RsvpPluginDocumentSettings } from './slot';
 const RsvpSettings = () => {
 	// Only show per-event RSVP toggle when the admin has set rsvp_mode to per_event.
 	const rsvpMode = getFromSettings( 'rsvpMode' ) ?? 'all_on';
+	const enableOpenRsvp = getFromSettings( 'enableOpenRsvp' ) ?? true;
 
 	return (
 		isEventPostType() && 'disabled' !== rsvpMode && (
@@ -48,6 +50,9 @@ const RsvpSettings = () => {
 
 				<VStack spacing={ 4 }>
 					{ isPerEventRsvpMode( rsvpMode ) && <EnableRsvpPanel /> }
+					{ isOpenRsvpEnabled( enableOpenRsvp ) && (
+						<EnableOpenRsvpPanel />
+					) }
 					<GuestLimitPanel />
 					<MaxAttendanceLimitPanel />
 					<AnonymousRsvpPanel />

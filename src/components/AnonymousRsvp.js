@@ -62,6 +62,10 @@ const AnonymousRsvp = () => {
 	return (
 		<CheckboxControl
 			label={ __( 'Enable Anonymous RSVP', 'gatherpress' ) }
+			help={ __(
+				'Allow attendees to hide their name and avatar from the public attendee list. Administrators can still see their details.',
+				'gatherpress',
+			) }
 			checked={ anonymousRsvp }
 			onChange={ ( value ) => {
 				updateAnonymousRsvp( value );

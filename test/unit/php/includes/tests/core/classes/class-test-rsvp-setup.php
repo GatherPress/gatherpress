@@ -943,16 +943,22 @@ class Test_Rsvp_Setup extends Base {
 	 * @return void
 	 */
 	public function test_filter_rsvp_block_types_when_enabled(): void {
-		$instance      = Rsvp_Setup::get_instance();
-		$initial_value = true;
+		$instance = Rsvp_Setup::get_instance();
 
-		$result = $instance->filter_rsvp_block_types( $initial_value );
+		// Both rsvp_mode and enable_open_rsvp must be active for no filtering to occur.
+		Settings::get_instance()->set( 'enable_open_rsvp', true );
+
+		$initial_value = true;
+		$result        = $instance->filter_rsvp_block_types( $initial_value );
 
 		$this->assertSame(
 			$initial_value,
 			$result,
-			'When RSVP is enabled, block types should be returned unchanged.'
+			'When both RSVP mode and open RSVP are enabled, block types should be returned unchanged.'
 		);
+
+		// Restore setting.
+		Settings::get_instance()->set( 'enable_open_rsvp', false );
 	}
 
 	/**
@@ -1055,6 +1061,106 @@ class Test_Rsvp_Setup extends Base {
 		$this->assertFalse( $result, 'Non-array, non-true value should be returned unchanged.' );
 
 		Settings::get_instance()->set( 'rsvp_mode', 'all_on' );
+	}
+
+	/**
+	 * Tests filter_rsvp_block_types removes only rsvp-form when open RSVP is disabled.
+	 *
+	 * @covers ::filter_rsvp_block_types
+	 *
+	 * @return void
+	 */
+	public function test_filter_rsvp_block_types_removes_rsvp_form_when_open_rsvp_disabled(): void {
+		$instance = Rsvp_Setup::get_instance();
+
+		Settings::get_instance()->set( 'enable_open_rsvp', false );
+
+		$block_list = array(
+			'core/paragraph',
+			'gatherpress/rsvp',
+			'gatherpress/rsvp-form',
+			'gatherpress/rsvp-response',
+			'gatherpress/event-date',
+		);
+
+		$result = $instance->filter_rsvp_block_types( $block_list );
+
+		// Only gatherpress/rsvp-form should be removed.
+		$this->assertNotContains(
+			'gatherpress/rsvp-form',
+			$result,
+			'gatherpress/rsvp-form should be removed when open RSVP is disabled.'
+		);
+
+		// Other RSVP blocks should remain.
+		$this->assertContains(
+			'gatherpress/rsvp',
+			$result,
+			'gatherpress/rsvp block should remain when only open RSVP is disabled.'
+		);
+		$this->assertContains(
+			'gatherpress/rsvp-response',
+			$result,
+			'gatherpress/rsvp-response block should remain when only open RSVP is disabled.'
+		);
+		$this->assertContains(
+			'core/paragraph',
+			$result,
+			'core/paragraph block should remain when only open RSVP is disabled.'
+		);
+
+		// Restore setting.
+		Settings::get_instance()->set( 'enable_open_rsvp', true );
+	}
+
+	/**
+	 * Tests filter_rsvp_block_types expands true to array and removes only rsvp-form when open RSVP is disabled.
+	 *
+	 * @covers ::filter_rsvp_block_types
+	 *
+	 * @return void
+	 */
+	public function test_filter_rsvp_block_types_expands_true_when_open_rsvp_disabled(): void {
+		$instance = Rsvp_Setup::get_instance();
+
+		Settings::get_instance()->set( 'enable_open_rsvp', false );
+
+		$result = $instance->filter_rsvp_block_types( true );
+
+		$this->assertIsArray( $result, 'Result should be an array when all blocks were allowed.' );
+		$this->assertNotContains(
+			'gatherpress/rsvp-form',
+			$result,
+			'gatherpress/rsvp-form should be removed when open RSVP is disabled.'
+		);
+		$this->assertContains(
+			'gatherpress/rsvp',
+			$result,
+			'gatherpress/rsvp block should remain when only open RSVP is disabled.'
+		);
+
+		// Restore setting.
+		Settings::get_instance()->set( 'enable_open_rsvp', true );
+	}
+
+	/**
+	 * Tests filter_rsvp_block_types returns non-array value unchanged when only open RSVP is disabled.
+	 *
+	 * @covers ::filter_rsvp_block_types
+	 *
+	 * @return void
+	 */
+	public function test_filter_rsvp_block_types_returns_non_array_unchanged_when_open_rsvp_disabled(): void {
+		$instance = Rsvp_Setup::get_instance();
+
+		Settings::get_instance()->set( 'enable_open_rsvp', false );
+
+		$result = $instance->filter_rsvp_block_types( false );
+
+		$this->assertFalse( $result, 'Non-array, non-true value should be returned unchanged.' );
+
+		// Restore setting.
+		Settings::get_instance()->set( 'enable_open_rsvp', true );
 	}
 
 	/**

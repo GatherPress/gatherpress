@@ -337,6 +337,16 @@ class Event_Setup {
 				'type'              => 'boolean',
 				'default'           => (bool) Settings::get_instance()->get( 'enable_anonymous_rsvp' ),
 			),
+			// Always register so it can be written regardless of open RSVP mode.
+			// Stored as integer (1 = enabled, 0 = disabled); an unset meta (empty string) is treated as enabled.
+			'gatherpress_enable_open_rsvp'      => array(
+				'auth_callback'     => array( $this, 'can_edit_posts_meta' ),
+				'sanitize_callback' => 'absint',
+				'show_in_rest'      => true,
+				'single'            => true,
+				'type'              => 'integer',
+				'default'           => 1,
+			),
 			'gatherpress_online_event_link'     => array(
 				'auth_callback'     => array( $this, 'can_edit_posts_meta' ),
 				'sanitize_callback' => 'sanitize_url',

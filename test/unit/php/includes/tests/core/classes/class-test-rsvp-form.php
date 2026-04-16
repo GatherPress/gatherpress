@@ -21,6 +21,25 @@ use PMC\Unit_Test\Utility;
  * @coversDefaultClass \GatherPress\Core\Rsvp_Form
  */
 class Test_Rsvp_Form extends Base {
+	/**
+	 * Enable open RSVP for all tests in this class so form processing paths are exercisable.
+	 *
+	 * @return void
+	 */
+	public function setUp(): void {
+		parent::setUp();
+		Settings::get_instance()->set( 'enable_open_rsvp', true );
+	}
+
+	/**
+	 * Restore open RSVP to its default disabled state after each test.
+	 *
+	 * @return void
+	 */
+	public function tearDown(): void {
+		Settings::get_instance()->set( 'enable_open_rsvp', true );
+		parent::tearDown();
+	}
 
 	/**
 	 * Coverage for setup_hooks.
@@ -1013,6 +1032,92 @@ class Test_Rsvp_Form extends Base {
 
 		// Restore the setting for other tests.
 		Settings::get_instance()->set( 'rsvp_mode', 'all_on' );
+	}
+
+	/**
+	 * Tests preprocess_rsvp_comment when open RSVP is disabled sitewide.
+	 *
+	 * @covers ::preprocess_rsvp_comment
+	 *
+	 * @return void
+	 */
+	public function test_preprocess_rsvp_comment_open_rsvp_disabled(): void {
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		);
+
+		// Disable open RSVP sitewide (overrides setUp default).
+		Settings::get_instance()->set( 'enable_open_rsvp', false );
+
+		add_filter(
+			'gatherpress_pre_get_http_input',
+			function ( $pre_value, $type, $var_name ) {
+				if ( INPUT_POST === $type && 'author' === $var_name ) {
+					return 'Test Author';
+				}
+				if ( INPUT_POST === $type && 'email' === $var_name ) {
+					return 'test@example.com';
+				}
+				return '';
+			},
+			10,
+			3
+		);
+
+		$instance     = Rsvp_Form::get_instance();
+		$comment_data = array(
+			'comment_post_ID' => $post_id,
+		);
+
+		$this->expectException( 'WPDieException' );
+		$instance->preprocess_rsvp_comment( $comment_data );
+
+		remove_all_filters( 'gatherpress_pre_get_http_input' );
+	}
+
+	/**
+	 * Tests preprocess_rsvp_comment when open RSVP is disabled per event.
+	 *
+	 * @covers ::preprocess_rsvp_comment
+	 *
+	 * @return void
+	 */
+	public function test_preprocess_rsvp_comment_open_rsvp_disabled_per_event(): void {
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		);
+
+		// Sitewide open RSVP is enabled (setUp default), but disabled for this event.
+		update_post_meta( $post_id, 'gatherpress_enable_open_rsvp', 0 );
+
+		add_filter(
+			'gatherpress_pre_get_http_input',
+			function ( $pre_value, $type, $var_name ) {
+				if ( INPUT_POST === $type && 'author' === $var_name ) {
+					return 'Test Author';
+				}
+				if ( INPUT_POST === $type && 'email' === $var_name ) {
+					return 'test@example.com';
+				}
+				return '';
+			},
+			10,
+			3
+		);
+
+		$instance     = Rsvp_Form::get_instance();
+		$comment_data = array(
+			'comment_post_ID' => $post_id,
+		);
+
+		$this->expectException( 'WPDieException' );
+		$instance->preprocess_rsvp_comment( $comment_data );
+
+		remove_all_filters( 'gatherpress_pre_get_http_input' );
 	}
 
 	/**

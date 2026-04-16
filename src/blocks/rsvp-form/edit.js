@@ -16,7 +16,7 @@ import { getBlockTypes } from '@wordpress/blocks';
  * Internal dependencies.
  */
 import TEMPLATE from './template';
-import { hasValidEventId, DISABLED_FIELD_OPACITY, getEventMeta, isRsvpEnabledForEvent } from '../../helpers/event';
+import { hasValidEventId, DISABLED_FIELD_OPACITY, getEventMeta, isRsvpEnabledForEvent, isOpenRsvpEnabled } from '../../helpers/event';
 import { isInFSETemplate, getEditorDocument } from '../../helpers/editor';
 import { getFromSettings } from '../../helpers/editor-settings';
 import { shouldHideBlock } from './visibility';
@@ -36,6 +36,13 @@ const Edit = ( { attributes, clientId, context } ) => {
 		( select ) => getEventMeta( select, postId, attributes ),
 		[ postId, attributes ]
 	);
+
+	// Read per-event open RSVP setting (integer 0/1; undefined/null defaults to enabled).
+	const enableOpenRsvpPerEvent = useSelect( ( select ) => {
+		const meta = select( 'core/editor' )?.getEditedPostAttribute( 'meta' );
+		const rawValue = meta?.gatherpress_enable_open_rsvp;
+		return rawValue === undefined || null === rawValue ? true : 0 !== rawValue;
+	}, [] );
 
 	// Check if block has a valid event connection.
 	const isValidEvent = hasValidEventId( postId );
@@ -178,12 +185,16 @@ const Edit = ( { attributes, clientId, context } ) => {
 	}, [ maxAttendanceLimit, enableAnonymousRsvp, clientId ] );
 
 	const rsvpMode = getFromSettings( 'rsvpMode' ) ?? 'all_on';
+	const enableOpenRsvp = getFromSettings( 'enableOpenRsvp' ) ?? true;
 
 	const blockProps = useBlockProps( {
 		style: {
 			opacity:
 				isInFSETemplate() ||
-				( isValidEvent && isRsvpEnabledForEvent( rsvpMode, enableRsvp ) )
+				( isValidEvent &&
+					isRsvpEnabledForEvent( rsvpMode, enableRsvp ) &&
+					isOpenRsvpEnabled( enableOpenRsvp ) &&
+					enableOpenRsvpPerEvent )
 					? 1
 					: DISABLED_FIELD_OPACITY,
 		},

@@ -99,6 +99,25 @@ class Rsvp_Settings extends Base {
 							),
 						),
 					),
+					'enable_open_rsvp'      => array(
+						'labels'      => array(
+							'name' => __( 'Open RSVP', 'gatherpress' ),
+						),
+						'description' => __(
+							'Allow visitors to RSVP without a site account using email verification.',
+							'gatherpress'
+						),
+						'field'       => array(
+							'label'   => __(
+								'Enable Open RSVP for events.',
+								'gatherpress'
+							),
+							'type'    => 'checkbox',
+							'options' => array(
+								'default' => true,
+							),
+						),
+					),
 					'max_attendance_limit'  => array(
 						'labels'      => array(
 							'name' => __( 'Maximum Attendance Limit', 'gatherpress' ),

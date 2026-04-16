@@ -51,6 +51,7 @@ The settings page is organized into tabs, each managed by its own class:
 | `max_attendance_limit` | number | `50` | Maximum attendees per event (0 = unlimited) |
 | `max_guest_limit` | number | `0` | Maximum guests per attendee (0-5) |
 | `enable_anonymous_rsvp` | checkbox | `false` | Allow anonymous RSVPs |
+| `enable_open_rsvp` | checkbox | `true` | Allow visitors to RSVP without a site account (email verification). Enabled by default. |
 | `rsvp_cleanup_switch` | select | `'off'` | Enable/disable RSVP cleanup |
 | `rsvp_cleanup_frequency` | select | `'daily'` | Cleanup frequency (hourly, daily, weekly, monthly, yearly) |
 | `rsvp_cleanup_interval` | number | `1` | Interval multiplier for cleanup frequency |
