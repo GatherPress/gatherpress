@@ -79,6 +79,7 @@ class Rsvp_Setup {
 	protected function setup_hooks(): void {
 		add_action( 'init', array( $this, 'register_taxonomy' ) );
 		add_action( 'init', array( $this, 'handle_rsvp_token' ) );
+		// Priority 11 ensures post types are already registered (priority 10) before removing RSVP support.
 		add_action( 'init', array( $this, 'maybe_disable_rsvp' ), 11 );
 		add_action( 'wp_after_insert_post', array( $this, 'maybe_process_waiting_list' ) );
 		add_action( 'wp_after_insert_post', array( $this, 'maybe_set_rsvp_meta_default' ) );
@@ -173,7 +174,7 @@ class Rsvp_Setup {
 				array_filter(
 					$allowed_block_types,
 					static function ( $name ): bool {
-						return ! is_string( $name ) || 0 !== strpos( $name, 'gatherpress/rsvp' );
+						return ! str_contains( $name, 'gatherpress/rsvp' );
 					}
 				)
 			);
