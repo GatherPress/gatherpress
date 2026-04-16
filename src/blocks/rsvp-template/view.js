@@ -6,7 +6,7 @@ import { store, getContext, getElement } from '@wordpress/interactivity';
 /**
  * Internal dependencies.
  */
-import { getFromGlobal, safeHTML } from '../../helpers/globals';
+import { safeHTML } from '../../helpers/globals';
 
 const { state } = store( 'gatherpress', {
 	callbacks: {
@@ -16,7 +16,7 @@ const { state } = store( 'gatherpress', {
 			const rsvpResponseElement = element.ref.closest(
 				'.wp-block-gatherpress-rsvp-response',
 			);
-			fetch( getFromGlobal( 'urls.eventApiUrl' ) + '/rsvp-status-html', {
+			fetch( state.eventApiUrl + '/rsvp-status-html', {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json',

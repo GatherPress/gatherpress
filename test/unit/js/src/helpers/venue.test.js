@@ -313,7 +313,7 @@ describe( 'GetVenuePostFromEventId', () => {
 						getCurrentPostType: () => 'gatherpress_event',
 						getEditorSettings: () => ( {
 							gatherpress: {
-								venuePostTypes: { gatherpress_event: 'gatherpress_venue' },
+								config: { venuePostTypes: { gatherpress_event: 'gatherpress_venue' } },
 							},
 						} ),
 					};
@@ -345,7 +345,7 @@ describe( 'GetVenuePostFromEventId', () => {
 							getCurrentPostType: () => 'gatherpress_event',
 							getEditorSettings: () => ( {
 								gatherpress: {
-									venuePostTypes: { gatherpress_event: 'gatherpress_venue' },
+									config: { venuePostTypes: { gatherpress_event: 'gatherpress_venue' } },
 								},
 							} ),
 						};
@@ -381,7 +381,7 @@ describe( 'GetVenuePostFromEventId', () => {
 							getCurrentPostType: () => 'gatherpress_shindig',
 							getEditorSettings: () => ( {
 								gatherpress: {
-									venuePostTypes: { gatherpress_shindig: 'gatherpress_location' },
+									config: { venuePostTypes: { gatherpress_shindig: 'gatherpress_location' } },
 								},
 							} ),
 						};
@@ -418,7 +418,7 @@ describe( 'GetVenuePostFromEventId', () => {
 							getCurrentPostType: () => 'gatherpress_event',
 							getEditorSettings: () => ( {
 								gatherpress: {
-									venuePostTypes: { gatherpress_event: 'gatherpress_venue' },
+									config: { venuePostTypes: { gatherpress_event: 'gatherpress_venue' } },
 								},
 							} ),
 						};
@@ -448,7 +448,7 @@ describe( 'GetVenuePostFromEventId', () => {
 						getCurrentPostType: () => 'gatherpress_event',
 						getEditorSettings: () => ( {
 							gatherpress: {
-								venuePostTypes: { gatherpress_event: 'gatherpress_venue' },
+								config: { venuePostTypes: { gatherpress_event: 'gatherpress_venue' } },
 							},
 						} ),
 					};
@@ -470,7 +470,7 @@ describe( 'GetVenuePostFromEventId', () => {
 						getCurrentPostType: () => 'gatherpress_event',
 						getEditorSettings: () => ( {
 							gatherpress: {
-								venuePostTypes: { gatherpress_event: 'gatherpress_venue' },
+								config: { venuePostTypes: { gatherpress_event: 'gatherpress_venue' } },
 							},
 						} ),
 					};
@@ -513,7 +513,7 @@ describe( 'GetVenuePostFromEventId', () => {
 						getCurrentPostType: () => 'gatherpress_event',
 						getEditorSettings: () => ( {
 							gatherpress: {
-								venuePostTypes: { gatherpress_event: 'gatherpress_venue' },
+								config: { venuePostTypes: { gatherpress_event: 'gatherpress_venue' } },
 							},
 						} ),
 					};

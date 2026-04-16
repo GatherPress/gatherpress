@@ -12,3 +12,12 @@
  * @type {string}
  */
 export const REST_NAMESPACE = 'gatherpress/v1';
+
+/**
+ * The REST API path for event endpoints.
+ *
+ * @since 1.0.0
+ *
+ * @type {string}
+ */
+export const EVENT_REST_API = `/${ REST_NAMESPACE }/event`;

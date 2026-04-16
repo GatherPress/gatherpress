@@ -2,14 +2,13 @@
  * WordPress dependencies.
  */
 import { PanelRow, SelectControl } from '@wordpress/components';
-import { useEffect } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
 import { useDispatch, useSelect } from '@wordpress/data';
 
 /**
  * Internal dependencies.
  */
-import { getFromGlobal } from '../helpers/globals';
+import { getFromConfig } from '../helpers/editor-settings';
 import { enableSave } from '../helpers/editor';
 import {
 	maybeConvertUtcOffsetForDatabase,
@@ -35,12 +34,7 @@ const Timezone = () => {
 		[],
 	);
 	const { setTimezone } = useDispatch( 'gatherpress/datetime' );
-	const choices = getFromGlobal( 'misc.timezoneChoices' );
-
-	// Run only once.
-	useEffect( () => {
-		setTimezone( getFromGlobal( 'eventDetails.dateTime.timezone' ) );
-	}, [ setTimezone ] );
+	const choices = getFromConfig( 'timezoneChoices' );
 
 	return (
 		<PanelRow>

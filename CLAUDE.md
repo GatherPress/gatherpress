@@ -119,7 +119,7 @@ GatherPress uses custom `post_type_supports` to decouple features from specific 
 - PHP checks use `post_type_supports( $post_type, 'gatherpress-venue-information' )` instead of `Venue::POST_TYPE === $post_type`
 - Queries use `get_post_types_by_support( 'gatherpress-event-date' )` or `get_post_types_by_support( 'gatherpress-venue-information' )` instead of hardcoded post type slugs
 - JS checks use `select('core').getPostType(slug)?.supports?.['gatherpress-event-date']` via the WordPress data store
-- JS venue post type resolution uses `select('core/editor').getEditorSettings()?.gatherpress?.venuePostTypes` (exposed via `block_editor_settings_all` filter)
+- JS venue post type resolution uses `select('core/editor').getEditorSettings()?.gatherpress?.config?.venuePostTypes` (exposed via `block_editor_settings_all` filter)
 - Post-type-specific hooks are registered inside `register_post_meta()` or similar `init` callbacks that loop over supported post types at priority 11
 
 **Developer usage:**

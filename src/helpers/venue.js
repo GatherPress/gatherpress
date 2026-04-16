@@ -50,7 +50,7 @@ export function getVenueTaxonomy( venuePostType = DEFAULT_VENUE_POST_TYPE ) {
 export function getVenuePostType( eventPostType = '' ) {
 	const map =
 		select( 'core/editor' )?.getEditorSettings?.()?.gatherpress
-			?.venuePostTypes ?? {};
+			?.config?.venuePostTypes ?? {};
 	return map[ eventPostType ] ?? DEFAULT_VENUE_POST_TYPE;
 }
 
@@ -190,7 +190,7 @@ export function GetVenuePostFromEventId( eventId, postType = null ) {
 			// Resolve the venue post type for this event post type from editor settings.
 			const venuePostTypeMap =
 				wpSelect( 'core/editor' )?.getEditorSettings?.()?.gatherpress
-					?.venuePostTypes ?? {};
+					?.config?.venuePostTypes ?? {};
 
 			const resolvedVenuePostType =
 				venuePostTypeMap[ resolvedPostType ] ?? DEFAULT_VENUE_POST_TYPE;

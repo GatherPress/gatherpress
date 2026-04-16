@@ -158,6 +158,60 @@ Applies imported settings with two modes:
 
 Both modes filter out unknown keys and run the full sanitization pipeline.
 
+## Block Editor Integration
+
+Settings are exposed to the block editor via the `block_editor_settings_all` filter in `Settings::add_editor_settings()`. The data is organized into two namespaces under `gatherpress`:
+
+```text
+select('core/editor').getEditorSettings().gatherpress
+├── settings   — User-configurable values from the Settings API
+│   ├── dateFormat
+│   ├── timeFormat
+│   ├── showTimezone
+│   ├── mapPlatform
+│   ├── maxAttendanceLimit
+│   ├── maxGuestLimit
+│   ├── enableAnonymousRsvp
+│   ├── postOrEventDate
+│   └── ... (any new settings are added automatically)
+└── config     — Infrastructure values (not user-configurable)
+    ├── pluginUrl
+    ├── homeUrl
+    ├── siteTimezone
+    ├── timezoneChoices
+    └── venuePostTypes (added by Venue::add_editor_settings)
+```
+
+### Accessing in JavaScript
+
+Two helpers in `src/helpers/editor-settings.js` provide safe access:
+
+```javascript
+import { getFromSettings } from '../helpers/editor-settings';
+import { getFromConfig } from '../helpers/editor-settings';
+
+// User-configurable settings (from Settings API).
+const dateFormat = getFromSettings( 'dateFormat' );
+const mapPlatform = getFromSettings( 'mapPlatform' );
+
+// Infrastructure config values.
+const pluginUrl = getFromConfig( 'pluginUrl' );
+const siteTimezone = getFromConfig( 'siteTimezone' );
+```
+
+**Important:** These helpers import `@wordpress/data` and must NOT be used in view scripts (`viewScriptModule` entries). WordPress script modules cannot import `@wordpress/data`. For frontend data, use `wp_interactivity_state()` or block data attributes instead.
+
+### How Settings Are Added Automatically
+
+`add_editor_settings()` iterates all keys from `get_defaults_map()` and converts them to camelCase using `Utility::snake_to_camel()`. This means any new setting registered via the `gatherpress_sub_pages` filter is automatically available in the editor without additional code.
+
+### Frontend Data
+
+For frontend view scripts, data is provided through:
+
+- **`wp_interactivity_state('gatherpress', ...)`** in `Assets::add_interactivity_state()` — provides the REST API URL to the interactivity store
+- **Block data attributes** in `render.php` — provides per-block values like `mapPlatform` and `pluginUrl` for the venue map
+
 ## Key Files
 
 | File | Purpose |
@@ -172,3 +226,4 @@ Both modes filter out unknown keys and run the full sanitization pipeline.
 | `includes/core/classes/settings/class-credits.php` | Credits tab |
 | `includes/core/classes/commands/class-settings-cli.php` | WP-CLI commands |
 | `includes/templates/admin/settings/` | Templates for settings UI |
+| `src/helpers/editor-settings.js` | `getFromSettings()` and `getFromConfig()` JS helpers |

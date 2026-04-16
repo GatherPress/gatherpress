@@ -12,7 +12,7 @@ import { useDispatch, useSelect } from '@wordpress/data';
 /**
  * Internal dependencies.
  */
-import { getFromGlobal } from '../helpers/globals';
+import { getFromSettings } from '../helpers/editor-settings';
 
 /**
  * MaxAttendance component.
@@ -36,8 +36,8 @@ const MaxAttendanceLimit = () => {
 	}, [] );
 
 	if ( isNewEvent ) {
-		defaultMaxAttendanceLimit = getFromGlobal(
-			'settings.maxAttendanceLimit',
+		defaultMaxAttendanceLimit = getFromSettings(
+			'maxAttendanceLimit',
 		);
 	}
 

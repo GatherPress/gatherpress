@@ -6,12 +6,13 @@ import { useBlockProps, InspectorControls } from '@wordpress/block-editor';
 import { PanelBody, SelectControl, TextControl, Spinner } from '@wordpress/components';
 import { useState, useEffect } from '@wordpress/element';
 import { useSelect } from '@wordpress/data';
+import apiFetch from '@wordpress/api-fetch';
 
 /**
  * Internal dependencies.
  */
-import { getFromGlobal } from '../../helpers/globals';
 import { hasValidEventId, DISABLED_FIELD_OPACITY, getEventMeta, isPostTypeSupporting } from '../../helpers/event';
+import { EVENT_REST_API } from '../../helpers/namespace';
 import { isInFSETemplate } from '../../helpers/editor';
 
 /**
@@ -21,10 +22,9 @@ import { isInFSETemplate } from '../../helpers/editor';
  * @return {Promise<Object>} The RSVP responses data.
  */
 async function fetchRsvpResponses( postId ) {
-	const apiUrl = getFromGlobal( 'urls.eventApiUrl' );
-	const response = await fetch( `${ apiUrl }/rsvp-responses?post_id=${ postId }` );
-
-	return response.json();
+	return apiFetch( {
+		path: `${ EVENT_REST_API }/rsvp-responses?post_id=${ postId }`,
+	} );
 }
 
 /**

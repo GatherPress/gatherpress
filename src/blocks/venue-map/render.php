@@ -27,6 +27,8 @@ if ( empty( $gatherpress_venue_address ) ) {
 	return;
 }
 
+use GatherPress\Core\Settings;
+
 // Prepare attributes for the map.
 $gatherpress_map_attrs = array(
 	'fullAddress'  => $gatherpress_venue_address,
@@ -35,6 +37,8 @@ $gatherpress_map_attrs = array(
 	'mapZoomLevel' => $attributes['zoom'] ?? 18,
 	'mapType'      => $attributes['type'] ?? 'roadmap',
 	'mapHeight'    => $attributes['height'] ?? 300,
+	'mapPlatform'  => Settings::get_instance()->get( 'map_platform' ),
+	'pluginUrl'    => GATHERPRESS_CORE_URL,
 );
 
 ?>

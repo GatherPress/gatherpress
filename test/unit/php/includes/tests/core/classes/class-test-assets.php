@@ -32,12 +32,6 @@ class Test_Assets extends Base {
 		$hooks    = array(
 			array(
 				'type'     => 'action',
-				'name'     => 'admin_print_scripts',
-				'priority' => PHP_INT_MIN,
-				'callback' => array( $instance, 'add_global_object' ),
-			),
-			array(
-				'type'     => 'action',
 				'name'     => 'admin_enqueue_scripts',
 				'priority' => 10,
 				'callback' => array( $instance, 'admin_enqueue_scripts' ),
@@ -75,8 +69,8 @@ class Test_Assets extends Base {
 			array(
 				'type'     => 'action',
 				'name'     => 'wp_head',
-				'priority' => PHP_INT_MIN,
-				'callback' => array( $instance, 'add_global_object' ),
+				'priority' => 10,
+				'callback' => array( $instance, 'add_interactivity_state' ),
 			),
 			array(
 				'type'     => 'action',
@@ -103,23 +97,44 @@ class Test_Assets extends Base {
 	}
 
 	/**
-	 * Coverage for add_global_object method.
+	 * Coverage for add_interactivity_state method.
 	 *
-	 * @covers ::add_global_object
+	 * @covers ::add_interactivity_state
 	 *
 	 * @return void
 	 */
-	public function test_add_global_object(): void {
+	public function test_add_interactivity_state(): void {
 		$instance = Assets::get_instance();
-		$event_id = $this->mock->post(
-			array( 'post_type' => Event::POST_TYPE )
-		)->get()->ID;
-		$object   = Utility::buffer_and_return( array( $instance, 'add_global_object' ) );
 
-		$this->assertMatchesRegularExpression(
-			'#<script>window.GatherPress = {.*}</script>#',
-			$object,
-			'Failed to assert regex of global object matches.'
+		// Should not set state on a non-event singular page.
+		$post = $this->mock->post( array( 'post_type' => 'post' ) )->get();
+		$this->go_to( get_permalink( $post->ID ) );
+
+		$instance->add_interactivity_state();
+		$state = wp_interactivity_state( 'gatherpress' );
+
+		$this->assertArrayNotHasKey(
+			'eventApiUrl',
+			$state,
+			'Failed to assert interactivity state is not set for non-event post types.'
+		);
+
+		// Should set state on an event singular page.
+		$event = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get();
+		$this->go_to( get_permalink( $event->ID ) );
+
+		$instance->add_interactivity_state();
+		$state = wp_interactivity_state( 'gatherpress' );
+
+		$this->assertArrayHasKey(
+			'eventApiUrl',
+			$state,
+			'Failed to assert eventApiUrl is set in interactivity state.'
+		);
+		$this->assertStringContainsString(
+			'wp-json/gatherpress/v1/event',
+			$state['eventApiUrl'],
+			'Failed to assert eventApiUrl contains the correct REST API path.'
 		);
 	}
 
@@ -189,49 +204,6 @@ class Test_Assets extends Base {
 		$this->assertFalse( wp_script_is( 'gatherpress-profile', 'enqueued' ) );
 		$instance->admin_enqueue_scripts( 'profile.php' );
 		$this->assertTrue( wp_script_is( 'gatherpress-profile', 'enqueued' ) );
-	}
-
-	/**
-	 * Coverage for localize method.
-	 *
-	 * @covers ::localize
-	 *
-	 * @return void
-	 */
-	public function test_localize(): void {
-		$instance = Assets::get_instance();
-		$event_id = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get()->ID;
-		$event    = new Event( $event_id );
-
-		$event->save_datetimes(
-			array(
-				'datetime_start' => '2020-05-11 15:00:00',
-				'datetime_end'   => '2020-05-12 17:00:00',
-				'timezone'       => 'America/New_York',
-			)
-		);
-
-		$output = Utility::invoke_hidden_method( $instance, 'localize', array( $event_id ) );
-
-		$expected_datetime = array(
-			'datetime_start'     => '2020-05-11 15:00:00',
-			'datetime_start_gmt' => '2020-05-11 19:00:00',
-			'datetime_end'       => '2020-05-12 17:00:00',
-			'datetime_end_gmt'   => '2020-05-12 21:00:00',
-			'timezone'           => 'America/New_York',
-		);
-
-		$this->assertSame(
-			$expected_datetime,
-			$output['eventDetails']['dateTime'],
-			'Failed to assert that datetime array matches.'
-		);
-		$this->assertEquals(
-			1,
-			$output['eventDetails']['hasEventPast'],
-			'Failed to assert that has_event_past is true'
-		);
-		$this->assertEquals( $event_id, $output['eventDetails']['postId'], 'Failed to assert that post_id matches.' );
 	}
 
 	/**

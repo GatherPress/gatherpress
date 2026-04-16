@@ -9,11 +9,12 @@ import moment from 'moment';
 import { __ } from '@wordpress/i18n';
 import { createRoot } from '@wordpress/element';
 import { applyFilters } from '@wordpress/hooks';
+import { select } from '@wordpress/data';
 
 /**
  * Internal dependencies.
  */
-import { getFromGlobal, setToGlobal } from './globals';
+import { getFromSettings } from './editor-settings';
 import { enableSave } from './editor';
 import DateTimePreview from '../components/DateTimePreview';
 
@@ -177,10 +178,10 @@ export function getDateTimeOffset() {
  */
 export function dateTimeLabelFormat() {
 	const dateFormat = convertPHPToMomentFormat(
-		getFromGlobal( 'settings.dateFormat' ),
+		getFromSettings( 'dateFormat' ),
 	);
 	const timeFormat = convertPHPToMomentFormat(
-		getFromGlobal( 'settings.timeFormat' ),
+		getFromSettings( 'timeFormat' ),
 	);
 
 	return dateFormat + ' ' + timeFormat;
@@ -236,7 +237,7 @@ export function createMomentWithTimezone( datetime, timezone ) {
  * @return {string} The retrieved timezone, or 'GMT' if the provided timezone is invalid.
  */
 export function getTimezone(
-	timezone = getFromGlobal( 'eventDetails.dateTime.timezone' ),
+	timezone = select( 'gatherpress/datetime' )?.getTimezone?.() ?? '',
 ) {
 	// Manual offsets (like +05:00) are valid, return as-is.
 	if ( isManualOffset( timezone ) ) {
@@ -265,7 +266,8 @@ export function getUtcOffset( timezone ) {
 	timezone = getTimezone( timezone );
 
 	if ( __( 'GMT', 'gatherpress' ) === timezone ) {
-		const offset = getFromGlobal( 'eventDetails.dateTime.timezone' );
+		const offset =
+			select( 'gatherpress/datetime' )?.getTimezone?.() ?? '';
 
 		return maybeConvertUtcOffsetForDisplay( offset );
 	}
@@ -362,18 +364,14 @@ export function maybeConvertUtcOffsetForSelect( offset = '' ) {
  * @return {string} The formatted start date and time for the event.
  */
 export function getDateTimeStart() {
-	let dateTime = getFromGlobal( 'eventDetails.dateTime.datetime_start' );
+	const dateTime =
+		select( 'gatherpress/datetime' )?.getDateTimeStart?.() ?? '';
 
-	dateTime =
-		'' === dateTime
-			? defaultDateTimeStart
-			: createMomentWithTimezone( dateTime, getTimezone() ).format(
-				dateTimeDatabaseFormat,
-			);
-
-	setToGlobal( 'eventDetails.dateTime.datetime_start', dateTime );
-
-	return dateTime;
+	return '' === dateTime
+		? defaultDateTimeStart
+		: createMomentWithTimezone( dateTime, getTimezone() ).format(
+			dateTimeDatabaseFormat,
+		);
 }
 
 /**
@@ -386,18 +384,14 @@ export function getDateTimeStart() {
  * @return {string} The formatted end date and time for the event.
  */
 export function getDateTimeEnd() {
-	let dateTime = getFromGlobal( 'eventDetails.dateTime.datetime_end' );
+	const dateTime =
+		select( 'gatherpress/datetime' )?.getDateTimeEnd?.() ?? '';
 
-	dateTime =
-		'' === dateTime
-			? defaultDateTimeEnd
-			: createMomentWithTimezone( dateTime, getTimezone() ).format(
-				dateTimeDatabaseFormat,
-			);
-
-	setToGlobal( 'eventDetails.dateTime.datetime_end', dateTime );
-
-	return dateTime;
+	return '' === dateTime
+		? defaultDateTimeEnd
+		: createMomentWithTimezone( dateTime, getTimezone() ).format(
+			dateTimeDatabaseFormat,
+		);
 }
 
 /**
@@ -423,8 +417,6 @@ export function updateDateTimeStart(
 ) {
 	// Store the current duration before updating the start time.
 	const currentDuration = getDateTimeOffset();
-
-	setToGlobal( 'eventDetails.dateTime.datetime_start', date );
 
 	// If in relative mode (duration is numeric), always update the end time to maintain the offset.
 	if ( 'number' === typeof currentDuration ) {
@@ -469,8 +461,6 @@ export function updateDateTimeEnd(
 ) {
 	validateDateTimeEnd( date, setDateTimeStart );
 
-	setToGlobal( 'eventDetails.dateTime.datetime_end', date );
-
 	if ( null !== setDateTimeEnd ) {
 		setDateTimeEnd( date );
 	}
@@ -498,7 +488,7 @@ export function updateDateTimeEnd(
 export function validateDateTimeStart( dateTimeStart, setDateTimeEnd = null, currentDuration = null ) {
 	const tz = getTimezone();
 	const dateTimeEndNumeric = createMomentWithTimezone(
-		getFromGlobal( 'eventDetails.dateTime.datetime_end' ),
+		select( 'gatherpress/datetime' )?.getDateTimeEnd?.() ?? '',
 		tz,
 	).valueOf();
 	const dateTimeStartNumeric = createMomentWithTimezone(
@@ -538,7 +528,7 @@ export function validateDateTimeStart( dateTimeStart, setDateTimeEnd = null, cur
 export function validateDateTimeEnd( dateTimeEnd, setDateTimeStart = null ) {
 	const tz = getTimezone();
 	const dateTimeStartNumeric = createMomentWithTimezone(
-		getFromGlobal( 'eventDetails.dateTime.datetime_start' ),
+		select( 'gatherpress/datetime' )?.getDateTimeStart?.() ?? '',
 		tz,
 	).valueOf();
 	const dateTimeEndNumeric = createMomentWithTimezone(

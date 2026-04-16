@@ -13,7 +13,6 @@ import { __ } from '@wordpress/i18n';
  * Internal dependencies.
  */
 import { createMomentWithTimezone, getTimezone } from './datetime';
-import { getFromGlobal } from './globals';
 import { getVenueTaxonomy, getVenuePostType } from './venue';
 
 /**
@@ -132,7 +131,7 @@ export function hasValidEventId( postId = null, postType = null ) {
 export function hasEventPast() {
 	const timezone = getTimezone();
 	const dateTimeEnd = createMomentWithTimezone(
-		getFromGlobal( 'eventDetails.dateTime.datetime_end' ),
+		select( 'gatherpress/datetime' )?.getDateTimeEnd?.() ?? '',
 		timezone,
 	);
 

@@ -197,7 +197,7 @@ class Venue {
 	/**
 	 * Adds GatherPress venue configuration to the block editor settings.
 	 *
-	 * Exposes the venue post type map under settings['gatherpress']['venuePostTypes']
+	 * Exposes the venue post type map under settings['gatherpress']['config']['venuePostTypes']
 	 * so that the block editor can resolve the correct venue post type for each
 	 * event post type without relying on window globals.
 	 *
@@ -211,7 +211,11 @@ class Venue {
 			$settings['gatherpress'] = array();
 		}
 
-		$settings['gatherpress']['venuePostTypes'] = self::get_venue_post_type_map();
+		if ( ! isset( $settings['gatherpress']['config'] ) ) {
+			$settings['gatherpress']['config'] = array();
+		}
+
+		$settings['gatherpress']['config']['venuePostTypes'] = self::get_venue_post_type_map();
 
 		return $settings;
 	}

@@ -504,18 +504,17 @@ describe( 'hasValidEventId', () => {
  */
 describe( 'hasEventPast', () => {
 	it( 'returns true', () => {
-		global.GatherPress = {
-			eventDetails: {
-				dateTime: {
-					datetime_end: moment()
-						.subtract( 1, 'days' )
-						.format( dateTimeDatabaseFormat ),
-					timezone: 'America/New_York',
-				},
-			},
-		};
+		const pastEnd = moment()
+			.subtract( 1, 'days' )
+			.format( dateTimeDatabaseFormat );
 
 		require( '@wordpress/data' ).select.mockImplementation( ( store ) => {
+			if ( 'gatherpress/datetime' === store ) {
+				return {
+					getDateTimeEnd: () => pastEnd,
+					getTimezone: () => 'America/New_York',
+				};
+			}
 			if ( 'core/editor' === store ) {
 				return { getCurrentPostType: () => 'gatherpress_event' };
 			}
@@ -529,18 +528,17 @@ describe( 'hasEventPast', () => {
 	} );
 
 	it( 'returns false', () => {
-		global.GatherPress = {
-			eventDetails: {
-				dateTime: {
-					datetime_end: moment()
-						.add( 1, 'days' )
-						.format( dateTimeDatabaseFormat ),
-					timezone: 'America/New_York',
-				},
-			},
-		};
+		const futureEnd = moment()
+			.add( 1, 'days' )
+			.format( dateTimeDatabaseFormat );
 
 		require( '@wordpress/data' ).select.mockImplementation( ( store ) => {
+			if ( 'gatherpress/datetime' === store ) {
+				return {
+					getDateTimeEnd: () => futureEnd,
+					getTimezone: () => 'America/New_York',
+				};
+			}
 			if ( 'core/editor' === store ) {
 				return { getCurrentPostType: () => 'gatherpress_event' };
 			}
@@ -565,18 +563,17 @@ describe( 'hasEventPastNotice', () => {
 	} );
 
 	it( 'notice is set', () => {
-		global.GatherPress = {
-			eventDetails: {
-				dateTime: {
-					datetime_end: moment()
-						.subtract( 1, 'days' )
-						.format( dateTimeDatabaseFormat ),
-					timezone: 'America/New_York',
-				},
-			},
-		};
+		const pastEnd = moment()
+			.subtract( 1, 'days' )
+			.format( dateTimeDatabaseFormat );
 
 		require( '@wordpress/data' ).select.mockImplementation( ( store ) => {
+			if ( 'gatherpress/datetime' === store ) {
+				return {
+					getDateTimeEnd: () => pastEnd,
+					getTimezone: () => 'America/New_York',
+				};
+			}
 			if ( 'core/editor' === store ) {
 				return { getCurrentPostType: () => 'gatherpress_event' };
 			}

@@ -36,6 +36,8 @@ domReady( () => {
 				zoom={ attrs.mapZoomLevel }
 				type={ attrs.mapType }
 				height={ attrs.mapHeight }
+				mapPlatform={ attrs.mapPlatform }
+				pluginUrl={ attrs.pluginUrl }
 			/>
 		);
 	}
