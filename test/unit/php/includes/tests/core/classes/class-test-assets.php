@@ -97,6 +97,48 @@ class Test_Assets extends Base {
 	}
 
 	/**
+	 * Coverage for add_interactivity_state method.
+	 *
+	 * @covers ::add_interactivity_state
+	 *
+	 * @return void
+	 */
+	public function test_add_interactivity_state(): void {
+		$instance = Assets::get_instance();
+
+		// Should not set state on a non-event singular page.
+		$post = $this->mock->post( array( 'post_type' => 'post' ) )->get();
+		$this->go_to( get_permalink( $post->ID ) );
+
+		$instance->add_interactivity_state();
+		$state = wp_interactivity_state( 'gatherpress' );
+
+		$this->assertArrayNotHasKey(
+			'eventApiUrl',
+			$state,
+			'Failed to assert interactivity state is not set for non-event post types.'
+		);
+
+		// Should set state on an event singular page.
+		$event = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get();
+		$this->go_to( get_permalink( $event->ID ) );
+
+		$instance->add_interactivity_state();
+		$state = wp_interactivity_state( 'gatherpress' );
+
+		$this->assertArrayHasKey(
+			'eventApiUrl',
+			$state,
+			'Failed to assert eventApiUrl is set in interactivity state.'
+		);
+		$this->assertStringContainsString(
+			'wp-json/gatherpress/v1/event',
+			$state['eventApiUrl'],
+			'Failed to assert eventApiUrl contains the correct REST API path.'
+		);
+	}
+
+	/**
 	 * Coverage for event_communication_modal method.
 	 *
 	 * @covers ::event_communication_modal
