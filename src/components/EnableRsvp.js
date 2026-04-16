@@ -46,7 +46,7 @@ const EnableRsvp = () => {
 
 	const [ enableRsvp, setEnableRsvp ] = useState( defaultEnableRsvp );
 
-	// Guard ensures the new-event meta initialisation fires exactly once.
+	// Guard ensures the new-event meta initialization fires exactly once.
 	const initialized = useRef( false );
 
 	const updateEnableRsvp = useCallback(
