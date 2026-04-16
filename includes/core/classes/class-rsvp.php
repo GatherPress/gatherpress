@@ -224,7 +224,7 @@ class Rsvp {
 	 *
 	 * @return bool True if Open RSVP is enabled for this event, false otherwise.
 	 */
-	public function is_open_rsvp_enabled(): bool {
+	public function allows_open_rsvp(): bool {
 		$post_id = $this->event->ID ?? 0;
 
 		// Sitewide gate: if open RSVP is globally disabled, always return false.

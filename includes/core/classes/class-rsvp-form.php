@@ -162,7 +162,7 @@ class Rsvp_Form {
 			);
 		}
 
-		if ( ! ( new Rsvp( $post_id ) )->is_open_rsvp_enabled() ) {
+		if ( ! ( new Rsvp( $post_id ) )->allows_open_rsvp() ) {
 			wp_die(
 				esc_html__( 'Open RSVP is disabled for this site.', 'gatherpress' ),
 				esc_html__( 'Open RSVP Disabled', 'gatherpress' ),

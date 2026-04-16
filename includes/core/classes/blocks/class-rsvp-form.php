@@ -127,7 +127,7 @@ class Rsvp_Form {
 			return '';
 		}
 
-		if ( ! ( new Rsvp( $post_id ) )->is_open_rsvp_enabled() ) {
+		if ( ! ( new Rsvp( $post_id ) )->allows_open_rsvp() ) {
 			return '';
 		}
 

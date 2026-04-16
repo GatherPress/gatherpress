@@ -909,7 +909,7 @@ class Event_Rest_Api {
 			}
 		}
 
-		if ( ! ( new Rsvp( $data['post_id'] ) )->is_open_rsvp_enabled() ) {
+		if ( ! ( new Rsvp( $data['post_id'] ) )->allows_open_rsvp() ) {
 			$response = array(
 				'success' => false,
 				'message' => __( 'Open RSVP is disabled for this event.', 'gatherpress' ),
