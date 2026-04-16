@@ -35,13 +35,13 @@ class Event_Admin_List {
 	use Singleton;
 
 	/**
-	 * Cached event counts for the current request.
+	 * Cached event counts keyed by post type for the current request.
 	 *
 	 * @since 1.0.0
 	 *
-	 * @var array<string, int>|null
+	 * @var array<string, array<string, int>>
 	 */
-	protected ?array $event_counts = null;
+	protected array $event_counts = array();
 
 	/**
 	 * Class constructor.
@@ -67,30 +67,47 @@ class Event_Admin_List {
 		add_action( 'load-edit.php', array( $this, 'default_sort' ) );
 		add_action( 'pre_get_posts', array( $this, 'handle_rsvp_sorting' ) );
 		add_action( 'pre_get_posts', array( $this, 'handle_venue_sorting' ) );
-		add_filter(
-			sprintf( 'manage_edit-%s_sortable_columns', Event::POST_TYPE ),
-			array( $this, 'sortable_columns' )
-		);
-		add_filter(
-			sprintf( 'views_edit-%s', Event::POST_TYPE ),
-			array( $this, 'views_edit' )
-		);
 		add_filter( 'query_vars', array( $this, 'query_vars' ) );
+		add_action( 'init', array( $this, 'register_post_type_hooks' ), 11 );
+	}
 
-		add_action(
-			sprintf( 'manage_%s_posts_custom_column', Event::POST_TYPE ),
-			array( $this, 'custom_columns' ),
-			10,
-			2
-		);
-		add_filter(
-			sprintf( 'manage_%s_posts_columns', Event::POST_TYPE ),
-			array( $this, 'set_custom_columns' )
-		);
-		add_filter(
-			sprintf( 'manage_%s_posts_columns', Event::POST_TYPE ),
-			array( $this, 'remove_comments_column' )
-		);
+	/**
+	 * Registers admin list table hooks for all event post types.
+	 *
+	 * Called at init priority 11 to ensure all custom post types with
+	 * gatherpress-event-date support have been registered first.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return void
+	 */
+	public function register_post_type_hooks(): void {
+		$post_types = get_post_types_by_support( 'gatherpress-event-date' );
+
+		foreach ( $post_types as $post_type ) {
+			add_filter(
+				sprintf( 'manage_edit-%s_sortable_columns', $post_type ),
+				array( $this, 'sortable_columns' )
+			);
+			add_filter(
+				sprintf( 'views_edit-%s', $post_type ),
+				array( $this, 'views_edit' )
+			);
+			add_action(
+				sprintf( 'manage_%s_posts_custom_column', $post_type ),
+				array( $this, 'custom_columns' ),
+				10,
+				2
+			);
+			add_filter(
+				sprintf( 'manage_%s_posts_columns', $post_type ),
+				array( $this, 'set_custom_columns' )
+			);
+			add_filter(
+				sprintf( 'manage_%s_posts_columns', $post_type ),
+				array( $this, 'remove_comments_column' )
+			);
+		}
 	}
 
 	/**
@@ -104,8 +121,13 @@ class Event_Admin_List {
 	 * @return void
 	 */
 	public function default_sort(): void {
-		$screen_id = sprintf( 'edit-%s', Event::POST_TYPE );
-		if ( ! function_exists( 'get_current_screen' ) || get_current_screen()->id !== $screen_id ) {
+		if ( ! function_exists( 'get_current_screen' ) ) {
+			return;
+		}
+
+		$screen = get_current_screen();
+
+		if ( ! $screen || ! post_type_supports( $screen->post_type, 'gatherpress-event-date' ) ) {
 			return;
 		}
 
@@ -154,13 +176,16 @@ class Event_Admin_List {
 	 * @return array Updated list table views.
 	 */
 	public function views_edit( array $view_links ): array {
+		$screen    = function_exists( 'get_current_screen' ) ? get_current_screen() : null;
+		$post_type = $screen ? $screen->post_type : Event::POST_TYPE;
+
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		$current_view = isset( $_GET['gatherpress_event_query'] )
 			// phpcs:ignore WordPress.Security.NonceVerification.Recommended
 			? sanitize_text_field( wp_unslash( $_GET['gatherpress_event_query'] ) )
 			: '';
 
-		$counts    = $this->get_event_counts();
+		$counts    = $this->get_event_counts( $post_type );
 		$placement = 1;
 		$inserts   = array(
 			'upcoming' => __( 'Upcoming', 'gatherpress' ),
@@ -175,7 +200,7 @@ class Event_Admin_List {
 				add_query_arg(
 					array(
 						'gatherpress_event_query' => $key,
-						'post_type'               => Event::POST_TYPE,
+						'post_type'               => $post_type,
 						'order'                   => 'upcoming' === $key ? 'asc' : 'desc',
 						'orderby'                 => 'datetime',
 					),
@@ -213,7 +238,7 @@ class Event_Admin_List {
 	}
 
 	/**
-	 * Get counts of upcoming and past events.
+	 * Get counts of upcoming and past events for a given post type.
 	 *
 	 * Uses the same datetime comparison logic as Event_Query::adjust_event_sql()
 	 * with inclusive=true: upcoming uses datetime_end_gmt (includes running events),
@@ -221,11 +246,12 @@ class Event_Admin_List {
 	 *
 	 * @since 1.0.0
 	 *
+	 * @param string $post_type The event post type to count.
 	 * @return array<string, int> Associative array with 'upcoming' and 'past' counts.
 	 */
-	protected function get_event_counts(): array {
-		if ( null !== $this->event_counts ) {
-			return $this->event_counts;
+	protected function get_event_counts( string $post_type = Event::POST_TYPE ): array {
+		if ( isset( $this->event_counts[ $post_type ] ) ) {
+			return $this->event_counts[ $post_type ];
 		}
 
 		global $wpdb;
@@ -247,7 +273,7 @@ class Event_Admin_List {
 				$wpdb->posts,
 				$table,
 				$wpdb->posts,
-				Event::POST_TYPE,
+				$post_type,
 				$wpdb->posts,
 				$table,
 				$current,
@@ -269,7 +295,7 @@ class Event_Admin_List {
 				$wpdb->posts,
 				$table,
 				$wpdb->posts,
-				Event::POST_TYPE,
+				$post_type,
 				$wpdb->posts,
 				$table,
 				$current,
@@ -277,12 +303,12 @@ class Event_Admin_List {
 			)
 		);
 
-		$this->event_counts = array(
+		$this->event_counts[ $post_type ] = array(
 			'upcoming' => $upcoming,
 			'past'     => $past,
 		);
 
-		return $this->event_counts;
+		return $this->event_counts[ $post_type ];
 	}
 
 	/**
@@ -363,8 +389,11 @@ class Event_Admin_List {
 	 * @return void
 	 */
 	private function handle_column_sorting( WP_Query $query, string $column, array $filters, string $order_key ): void {
-		// Only proceed if we're in admin, on the main query, and dealing with events.
-		if ( ! is_admin() || ! $query->is_main_query() || Event::POST_TYPE !== $query->get( 'post_type' ) ) {
+		$post_type = $query->get( 'post_type' );
+
+		// Only proceed if we're in admin, on the main query, and dealing with an event post type.
+		if ( ! is_admin() || ! $query->is_main_query()
+			|| ! post_type_supports( $post_type, 'gatherpress-event-date' ) ) {
 			return;
 		}
 
@@ -458,9 +487,10 @@ class Event_Admin_List {
 	 * @return string Modified JOIN clause.
 	 */
 	public function venue_sorting_join_paged( string $join ): string {
-		global $wpdb;
+		global $wpdb, $wp_query;
 
-		$venue_taxonomy = Venue::get_taxonomy( Venue::get_venue_post_type( Event::POST_TYPE ) );
+		$post_type      = $wp_query ? $wp_query->get( 'post_type' ) : Event::POST_TYPE;
+		$venue_taxonomy = Venue::get_taxonomy( Venue::get_venue_post_type( $post_type ) );
 
 		// Bail early if the derived taxonomy is not registered to avoid invalid SQL.
 		if ( ! taxonomy_exists( $venue_taxonomy ) ) {
@@ -571,10 +601,12 @@ class Event_Admin_List {
 				return;
 			}
 
+			$event_post_type = get_post_type( $post_id ) ? get_post_type( $post_id ) : Event::POST_TYPE;
+
 			// Create link to filtered RSVPs page for approved RSVPs.
 			$approved_rsvp_url = add_query_arg(
 				array(
-					'post_type' => Event::POST_TYPE,
+					'post_type' => $event_post_type,
 					'page'      => Rsvp::COMMENT_TYPE,
 					'post_id'   => $post_id,
 					'status'    => 'approved',
@@ -594,7 +626,7 @@ class Event_Admin_List {
 			if ( $unapproved_rsvps > 0 ) {
 				$unapproved_rsvp_url = add_query_arg(
 					array(
-						'post_type' => Event::POST_TYPE,
+						'post_type' => $event_post_type,
 						'page'      => Rsvp::COMMENT_TYPE,
 						'post_id'   => $post_id,
 						'status'    => 'pending',

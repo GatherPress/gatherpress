@@ -53,43 +53,69 @@ class Test_Event_Admin_List extends Base {
 			),
 			array(
 				'type'     => 'filter',
-				'name'     => sprintf( 'manage_edit-%s_sortable_columns', Event::POST_TYPE ),
-				'priority' => 10,
-				'callback' => array( $instance, 'sortable_columns' ),
-			),
-			array(
-				'type'     => 'filter',
-				'name'     => sprintf( 'views_edit-%s', Event::POST_TYPE ),
-				'priority' => 10,
-				'callback' => array( $instance, 'views_edit' ),
-			),
-			array(
-				'type'     => 'filter',
 				'name'     => 'query_vars',
 				'priority' => 10,
 				'callback' => array( $instance, 'query_vars' ),
 			),
 			array(
 				'type'     => 'action',
-				'name'     => sprintf( 'manage_%s_posts_custom_column', Event::POST_TYPE ),
-				'priority' => 10,
-				'callback' => array( $instance, 'custom_columns' ),
-			),
-			array(
-				'type'     => 'filter',
-				'name'     => sprintf( 'manage_%s_posts_columns', Event::POST_TYPE ),
-				'priority' => 10,
-				'callback' => array( $instance, 'set_custom_columns' ),
-			),
-			array(
-				'type'     => 'filter',
-				'name'     => sprintf( 'manage_%s_posts_columns', Event::POST_TYPE ),
-				'priority' => 10,
-				'callback' => array( $instance, 'remove_comments_column' ),
+				'name'     => 'init',
+				'priority' => 11,
+				'callback' => array( $instance, 'register_post_type_hooks' ),
 			),
 		);
 
 		$this->assert_hooks( $hooks, $instance );
+	}
+
+	/**
+	 * Coverage for register_post_type_hooks method.
+	 *
+	 * @covers ::register_post_type_hooks
+	 *
+	 * @return void
+	 */
+	public function test_register_post_type_hooks(): void {
+		$instance = Event_Admin_List::get_instance();
+		$test_pt  = 'gp_test_event_admin';
+
+		// Register a temporary post type with gatherpress-event-date support.
+		register_post_type(
+			$test_pt,
+			array(
+				'label'    => 'Test Events',
+				'public'   => false,
+				'supports' => array( 'title', 'gatherpress-event-date' ),
+			)
+		);
+
+		// Call the method directly (normally called via init hook at priority 11).
+		$instance->register_post_type_hooks();
+
+		// Verify per-post-type hooks were registered for the test post type.
+		$this->assertNotFalse(
+			has_filter( sprintf( 'manage_edit-%s_sortable_columns', $test_pt ), array( $instance, 'sortable_columns' ) ), // phpcs:ignore Generic.Files.LineLength.TooLong
+			'Should register sortable_columns filter for event post type.'
+		);
+		$this->assertNotFalse(
+			has_filter( sprintf( 'views_edit-%s', $test_pt ), array( $instance, 'views_edit' ) ),
+			'Should register views_edit filter for event post type.'
+		);
+		$this->assertNotFalse(
+			has_action( sprintf( 'manage_%s_posts_custom_column', $test_pt ), array( $instance, 'custom_columns' ) ),
+			'Should register custom_columns action for event post type.'
+		);
+		$this->assertNotFalse(
+			has_filter( sprintf( 'manage_%s_posts_columns', $test_pt ), array( $instance, 'set_custom_columns' ) ),
+			'Should register set_custom_columns filter for event post type.'
+		);
+		$this->assertNotFalse(
+			has_filter( sprintf( 'manage_%s_posts_columns', $test_pt ), array( $instance, 'remove_comments_column' ) ),
+			'Should register remove_comments_column filter for event post type.'
+		);
+
+		// Clean up the temporary post type.
+		unregister_post_type( $test_pt );
 	}
 
 	/**
@@ -492,7 +518,7 @@ class Test_Event_Admin_List extends Base {
 		);
 
 		// Reset cached counts after event creation so fresh queries run.
-		Utility::set_and_get_hidden_property( $instance, 'event_counts', null );
+		Utility::set_and_get_hidden_property( $instance, 'event_counts', array() );
 
 		$view_links = array(
 			'all' => '<a href="#">All</a>',
@@ -526,7 +552,7 @@ class Test_Event_Admin_List extends Base {
 		$instance = Event_Admin_List::get_instance();
 
 		// Reset cached counts and invoke the protected method.
-		Utility::set_and_get_hidden_property( $instance, 'event_counts', null );
+		Utility::set_and_get_hidden_property( $instance, 'event_counts', array() );
 
 		$counts = Utility::invoke_hidden_method( $instance, 'get_event_counts' );
 
@@ -564,7 +590,7 @@ class Test_Event_Admin_List extends Base {
 		);
 
 		// Reset cached counts before querying.
-		Utility::set_and_get_hidden_property( $instance, 'event_counts', null );
+		Utility::set_and_get_hidden_property( $instance, 'event_counts', array() );
 
 		$counts = Utility::invoke_hidden_method( $instance, 'get_event_counts' );
 
@@ -600,7 +626,7 @@ class Test_Event_Admin_List extends Base {
 		);
 
 		// Reset cached counts before querying.
-		Utility::set_and_get_hidden_property( $instance, 'event_counts', null );
+		Utility::set_and_get_hidden_property( $instance, 'event_counts', array() );
 
 		$counts = Utility::invoke_hidden_method( $instance, 'get_event_counts' );
 
@@ -670,7 +696,7 @@ class Test_Event_Admin_List extends Base {
 		);
 
 		// Reset cached counts before querying.
-		Utility::set_and_get_hidden_property( $instance, 'event_counts', null );
+		Utility::set_and_get_hidden_property( $instance, 'event_counts', array() );
 
 		$counts = Utility::invoke_hidden_method( $instance, 'get_event_counts' );
 
@@ -710,7 +736,7 @@ class Test_Event_Admin_List extends Base {
 		);
 
 		// Reset cached counts before querying.
-		Utility::set_and_get_hidden_property( $instance, 'event_counts', null );
+		Utility::set_and_get_hidden_property( $instance, 'event_counts', array() );
 
 		$counts = Utility::invoke_hidden_method( $instance, 'get_event_counts' );
 
@@ -733,7 +759,7 @@ class Test_Event_Admin_List extends Base {
 		$instance = Event_Admin_List::get_instance();
 
 		// Reset cached counts.
-		Utility::set_and_get_hidden_property( $instance, 'event_counts', null );
+		Utility::set_and_get_hidden_property( $instance, 'event_counts', array() );
 
 		// Create an event without setting any dates.
 		$this->mock->post(
@@ -762,16 +788,15 @@ class Test_Event_Admin_List extends Base {
 		$instance = Event_Admin_List::get_instance();
 
 		// Reset cached counts.
-		Utility::set_and_get_hidden_property( $instance, 'event_counts', null );
+		Utility::set_and_get_hidden_property( $instance, 'event_counts', array() );
 
 		// First call should query the database and cache.
 		$counts = Utility::invoke_hidden_method( $instance, 'get_event_counts' );
 		$this->assertSame( 0, $counts['upcoming'], 'Should have 0 upcoming events.' );
 
-		// Verify the property is now cached.
-		$cached = Utility::set_and_get_hidden_property( $instance, 'event_counts', $counts );
-		$this->assertNotNull( $cached, 'Property should be cached after first call.' );
-		$this->assertSame( $counts, $cached, 'Cached value should match returned value.' );
+		// Verify caching: a second call should return the same result without re-querying.
+		$counts_second = Utility::invoke_hidden_method( $instance, 'get_event_counts' );
+		$this->assertSame( $counts['upcoming'], $counts_second['upcoming'], 'Second call should return the cached value.' ); // phpcs:ignore Generic.Files.LineLength.TooLong
 
 		// Create an event after the first call.
 		$post_id = $this->mock->post(
@@ -795,7 +820,7 @@ class Test_Event_Admin_List extends Base {
 		$this->assertSame( 0, $counts_cached['upcoming'], 'Cached call should still return 0.' );
 
 		// After resetting the cache, should reflect the new event.
-		Utility::set_and_get_hidden_property( $instance, 'event_counts', null );
+		Utility::set_and_get_hidden_property( $instance, 'event_counts', array() );
 		$counts_fresh = Utility::invoke_hidden_method( $instance, 'get_event_counts' );
 		$this->assertSame( 1, $counts_fresh['upcoming'], 'Fresh call should return 1 after cache reset.' );
 	}
