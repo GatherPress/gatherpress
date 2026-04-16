@@ -407,6 +407,7 @@ class Rsvp {
 					'comment_author'       => '',
 					'comment_author_email' => '',
 					'comment_author_url'   => '',
+					'comment_author_IP'    => '127.0.0.1',
 					'comment_content'      => '',
 				),
 				$args

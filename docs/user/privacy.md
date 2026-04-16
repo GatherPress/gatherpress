@@ -31,3 +31,10 @@ add_filter( 'pre_comment_user_agent', static function () {
 ```
 
 Drop the snippet into a must-use plugin, a site-specific plugin, or your theme's `functions.php`. It applies to all RSVP paths — form submissions, REST/AJAX submissions, and waiting-list promotions.
+
+The same mechanism exposes the rest of WordPress's comment-data filters to RSVPs, should you want to sanitize or override them:
+
+- `pre_comment_author_name`
+- `pre_comment_author_email`
+- `pre_comment_author_url`
+- `pre_comment_content`
