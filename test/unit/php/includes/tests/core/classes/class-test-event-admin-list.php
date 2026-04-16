@@ -119,6 +119,35 @@ class Test_Event_Admin_List extends Base {
 	}
 
 	/**
+	 * Coverage for default_sort method when no screen is available.
+	 *
+	 * Exercises the ! $screen early return, which can occur in multisite
+	 * contexts where get_current_screen() returns null before any screen is set.
+	 *
+	 * @covers ::default_sort
+	 *
+	 * @return void
+	 */
+	public function test_default_sort_no_screen(): void {
+		$instance = Event_Admin_List::get_instance();
+
+		// Ensure no screen is set so get_current_screen() returns null.
+		unset( $GLOBALS['current_screen'] );
+
+		// Ensure $_GET is clean.
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		unset( $_GET['orderby'], $_GET['order'] );
+
+		$instance->default_sort();
+
+		// Should return early without modifying $_GET.
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$this->assertArrayNotHasKey( 'orderby', $_GET, 'Should not set orderby when no screen.' );
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$this->assertArrayNotHasKey( 'order', $_GET, 'Should not set order when no screen.' );
+	}
+
+	/**
 	 * Coverage for default_sort method when on the wrong screen.
 	 *
 	 * @covers ::default_sort
@@ -1103,6 +1132,30 @@ class Test_Event_Admin_List extends Base {
 	}
 
 	/**
+	 * Coverage for venue_sorting_join_paged method with a current screen set.
+	 *
+	 * Exercises the $screen->post_type branch, where the venue taxonomy is derived
+	 * from the currently active admin screen rather than falling back to the default.
+	 *
+	 * @covers ::venue_sorting_join_paged
+	 *
+	 * @return void
+	 */
+	public function test_venue_sorting_join_paged_with_screen(): void {
+		global $wpdb;
+		$instance = Event_Admin_List::get_instance();
+
+		set_current_screen( 'edit-' . Event::POST_TYPE );
+
+		$original_join = "LEFT JOIN {$wpdb->posts} AS posts ON posts.ID = {$wpdb->posts}.ID";
+		$result        = $instance->venue_sorting_join_paged( $original_join );
+
+		set_current_screen( 'front' );
+
+		$this->assertStringContainsString( "'" . Venue::TAXONOMY . "'", $result );
+	}
+
+	/**
 	 * Coverage for venue_sorting_join_paged method.
 	 *
 	 * @covers ::venue_sorting_join_paged
@@ -1112,6 +1165,9 @@ class Test_Event_Admin_List extends Base {
 	public function test_venue_sorting_join_paged(): void {
 		global $wpdb;
 		$instance = Event_Admin_List::get_instance();
+
+		// Ensure no screen is set so the method falls back to the default post type.
+		unset( $GLOBALS['current_screen'] );
 
 		$original_join = "LEFT JOIN {$wpdb->posts} AS posts ON posts.ID = {$wpdb->posts}.ID";
 		$result        = $instance->venue_sorting_join_paged( $original_join );
