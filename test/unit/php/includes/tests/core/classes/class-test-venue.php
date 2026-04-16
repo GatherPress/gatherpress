@@ -76,6 +76,12 @@ class Test_Venue extends Base {
 				'callback' => array( $instance, 'delete_venue_term' ),
 			),
 			array(
+				'type'     => 'action',
+				'name'     => 'wp_after_insert_post',
+				'priority' => 10,
+				'callback' => array( $instance, 'set_geodata' ),
+			),
+			array(
 				'type'     => 'filter',
 				'name'     => 'block_editor_settings_all',
 				'priority' => 10,
@@ -268,6 +274,10 @@ class Test_Venue extends Base {
 
 		unregister_post_meta( Venue::POST_TYPE, 'gatherpress_venue_information' );
 		unregister_post_meta( Venue::POST_TYPE, 'gatherpress_venue_map_show' );
+		unregister_post_meta( Venue::POST_TYPE, 'geo_latitude' );
+		unregister_post_meta( Venue::POST_TYPE, 'geo_longitude' );
+		unregister_post_meta( Venue::POST_TYPE, 'geo_address' );
+		unregister_post_meta( Venue::POST_TYPE, 'geo_public' );
 
 		$meta = get_registered_meta_keys( 'post', Venue::POST_TYPE );
 
@@ -281,6 +291,12 @@ class Test_Venue extends Base {
 			'gatherpress_venue_map_show',
 			$meta,
 			'Failed to assert that gatherpress_venue_map_show does not exist.'
+		);
+
+		$this->assertArrayNotHasKey(
+			'geo_latitude',
+			$meta,
+			'Failed to assert that geo_latitude does not exist.'
 		);
 
 		$instance->register_post_meta();
@@ -297,6 +313,191 @@ class Test_Venue extends Base {
 			'gatherpress_venue_map_show',
 			$meta,
 			'Failed to assert that gatherpress_venue_map_show exists for gatherpress-venue-map support.'
+		);
+
+		foreach ( array( 'geo_latitude', 'geo_longitude', 'geo_address', 'geo_public' ) as $key ) {
+			$this->assertArrayHasKey(
+				$key,
+				$meta,
+				sprintf( 'Failed to assert that %s is registered for gatherpress-venue-information support.', $key )
+			);
+		}
+	}
+
+	/**
+	 * Coverage for set_geodata method.
+	 *
+	 * Verifies that the WordPress Geodata standard meta keys are derived from
+	 * gatherpress_venue_information JSON and written as individual post_meta entries.
+	 *
+	 * @covers ::set_geodata
+	 *
+	 * @return void
+	 */
+	public function test_set_geodata(): void {
+		$instance = Venue::get_instance();
+
+		$venue_id = $this->factory->post->create(
+			array(
+				'post_type'   => Venue::POST_TYPE,
+				'post_status' => 'publish',
+			)
+		);
+
+		$venue_information = wp_json_encode(
+			array(
+				'fullAddress' => '123 Main St, Paris',
+				'latitude'    => '48.856613',
+				'longitude'   => '2.352222',
+			)
+		);
+
+		update_post_meta( $venue_id, 'gatherpress_venue_information', $venue_information );
+
+		$instance->set_geodata( $venue_id );
+
+		$this->assertSame(
+			'48.856613',
+			get_post_meta( $venue_id, 'geo_latitude', true ),
+			'Failed to assert that geo_latitude was set from the JSON meta.'
+		);
+		$this->assertSame(
+			'2.352222',
+			get_post_meta( $venue_id, 'geo_longitude', true ),
+			'Failed to assert that geo_longitude was set from the JSON meta.'
+		);
+		$this->assertSame(
+			'123 Main St, Paris',
+			get_post_meta( $venue_id, 'geo_address', true ),
+			'Failed to assert that geo_address was set from the JSON meta.'
+		);
+		$this->assertSame(
+			'1',
+			get_post_meta( $venue_id, 'geo_public', true ),
+			'Failed to assert that geo_public is 1 for a published venue.'
+		);
+	}
+
+	/**
+	 * Tests that set_geodata returns early for post types without venue information support.
+	 *
+	 * @covers ::set_geodata
+	 *
+	 * @return void
+	 */
+	public function test_set_geodata_unsupported_post_type(): void {
+		$instance = Venue::get_instance();
+
+		$post_id = $this->factory->post->create( array( 'post_type' => 'post' ) );
+
+		$instance->set_geodata( $post_id );
+
+		$this->assertSame(
+			'',
+			get_post_meta( $post_id, 'geo_latitude', true ),
+			'Failed to assert that geo_latitude is not written for unsupported post types.'
+		);
+	}
+
+	/**
+	 * Tests that geo_public is 0 for non-published venues.
+	 *
+	 * @covers ::set_geodata
+	 *
+	 * @return void
+	 */
+	public function test_set_geodata_private_post(): void {
+		$instance = Venue::get_instance();
+
+		$venue_id = $this->factory->post->create(
+			array(
+				'post_type'   => Venue::POST_TYPE,
+				'post_status' => 'draft',
+			)
+		);
+
+		$instance->set_geodata( $venue_id );
+
+		$this->assertSame(
+			'0',
+			get_post_meta( $venue_id, 'geo_public', true ),
+			'Failed to assert that geo_public is 0 for a non-published venue.'
+		);
+	}
+
+	/**
+	 * Tests that invalid JSON in gatherpress_venue_information is handled gracefully.
+	 *
+	 * @covers ::set_geodata
+	 *
+	 * @return void
+	 */
+	public function test_set_geodata_invalid_json(): void {
+		$instance = Venue::get_instance();
+
+		$venue_id = $this->factory->post->create(
+			array(
+				'post_type'   => Venue::POST_TYPE,
+				'post_status' => 'publish',
+			)
+		);
+
+		update_post_meta( $venue_id, 'gatherpress_venue_information', 'not-valid-json' );
+
+		$instance->set_geodata( $venue_id );
+
+		$this->assertSame(
+			'',
+			get_post_meta( $venue_id, 'geo_latitude', true ),
+			'Failed to assert geo_latitude is empty when JSON is invalid.'
+		);
+		$this->assertSame(
+			'',
+			get_post_meta( $venue_id, 'geo_address', true ),
+			'Failed to assert geo_address is empty when JSON is invalid.'
+		);
+	}
+
+	/**
+	 * Coverage for filter_readonly_meta.
+	 *
+	 * Verifies that geo_* meta keys are stripped from REST API meta payloads
+	 * so the editor cannot write derived values directly.
+	 *
+	 * @covers ::filter_readonly_meta
+	 *
+	 * @return void
+	 */
+	public function test_filter_readonly_meta(): void {
+		$instance = Venue::get_instance();
+		$request  = new \WP_REST_Request();
+
+		$request->set_param(
+			'meta',
+			array(
+				'geo_latitude'                  => '99.99',
+				'geo_longitude'                 => '99.99',
+				'geo_address'                   => 'Hack St',
+				'geo_public'                    => 0,
+				'gatherpress_venue_information' => '{"fullAddress":"Real St"}',
+			)
+		);
+
+		$prepared = new \stdClass();
+		$result   = $instance->filter_readonly_meta( $prepared, $request );
+
+		$this->assertSame( $prepared, $result, 'Filter must return the prepared post object.' );
+
+		$meta = $request->get_param( 'meta' );
+
+		$this->assertArrayNotHasKey( 'geo_latitude', $meta, 'geo_latitude should be stripped.' );
+		$this->assertArrayNotHasKey( 'geo_longitude', $meta, 'geo_longitude should be stripped.' );
+		$this->assertArrayNotHasKey( 'geo_address', $meta, 'geo_address should be stripped.' );
+		$this->assertArrayNotHasKey( 'geo_public', $meta, 'geo_public should be stripped.' );
+		$this->assertArrayHasKey(
+			'gatherpress_venue_information',
+			$meta,
+			'Non-geo meta keys should pass through untouched.'
 		);
 	}
 
