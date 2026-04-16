@@ -317,6 +317,7 @@ class Event_Setup {
 				'show_in_rest'      => true,
 				'single'            => true,
 				'type'              => 'integer',
+				'default'           => (int) Settings::get_instance()->get( 'max_guest_limit' ),
 			),
 			'gatherpress_enable_anonymous_rsvp' => array(
 				'auth_callback'     => array( $this, 'can_edit_posts_meta' ),
@@ -324,7 +325,7 @@ class Event_Setup {
 				'show_in_rest'      => true,
 				'single'            => true,
 				'type'              => 'boolean',
-				'default'           => false,
+				'default'           => (bool) Settings::get_instance()->get( 'enable_anonymous_rsvp' ),
 			),
 			'gatherpress_online_event_link'     => array(
 				'auth_callback'     => array( $this, 'can_edit_posts_meta' ),
@@ -340,6 +341,7 @@ class Event_Setup {
 				'show_in_rest'      => true,
 				'single'            => true,
 				'type'              => 'integer',
+				'default'           => (int) Settings::get_instance()->get( 'max_attendance_limit' ),
 			),
 		);
 
