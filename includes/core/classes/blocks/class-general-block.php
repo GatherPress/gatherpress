@@ -16,6 +16,7 @@ namespace GatherPress\Core\Blocks;
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Block;
+use GatherPress\Core\Settings;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Utility;
 use WP_HTML_Tag_Processor;
@@ -276,6 +277,15 @@ class General_Block {
 			return $block_content;
 		}
 
+		// Only process if RSVP is enabled for this event.
+		// Empty string means meta was never set; only '0' means explicitly disabled.
+		if (
+			in_array( Settings::get_instance()->get( 'rsvp_mode' ), array( 'per_event_on', 'per_event_off' ), true ) &&
+			'0' === get_post_meta( $post_id, 'gatherpress_enable_rsvp', true )
+		) {
+			return '';
+		}
+
 		// Get max guest limit from event settings.
 		$max_guest_limit = (int) get_post_meta( $post_id, 'gatherpress_max_guest_limit', true );
 
@@ -322,6 +332,15 @@ class General_Block {
 			( ! is_preview() && 'publish' !== get_post_status( $post_id ) )
 		) {
 			return $block_content;
+		}
+
+		// Only process if RSVP is enabled for this event.
+		// Empty string means meta was never set; only '0' means explicitly disabled.
+		if (
+			in_array( Settings::get_instance()->get( 'rsvp_mode' ), array( 'per_event_on', 'per_event_off' ), true ) &&
+			'0' === get_post_meta( $post_id, 'gatherpress_enable_rsvp', true )
+		) {
+			return '';
 		}
 
 		// Get anonymous RSVP setting from event.

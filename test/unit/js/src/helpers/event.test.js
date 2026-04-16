@@ -639,6 +639,7 @@ describe( 'getEventMeta', () => {
 
 		expect( result ).toEqual( {
 			maxGuestLimit: 0,
+			enableRsvp: true,
 			enableAnonymousRsvp: false,
 		} );
 	} );
@@ -669,6 +670,7 @@ describe( 'getEventMeta', () => {
 
 		expect( result ).toEqual( {
 			maxGuestLimit: 5,
+			enableRsvp: true,
 			enableAnonymousRsvp: true,
 		} );
 	} );
@@ -700,6 +702,7 @@ describe( 'getEventMeta', () => {
 
 		expect( result ).toEqual( {
 			maxGuestLimit: 10,
+			enableRsvp: true,
 			enableAnonymousRsvp: false,
 		} );
 	} );
@@ -736,6 +739,7 @@ describe( 'getEventMeta', () => {
 
 		expect( result ).toEqual( {
 			maxGuestLimit: 20,
+			enableRsvp: true,
 			enableAnonymousRsvp: true,
 		} );
 	} );
@@ -757,6 +761,7 @@ describe( 'getEventMeta', () => {
 
 		expect( result ).toEqual( {
 			maxGuestLimit: 0,
+			enableRsvp: true,
 			enableAnonymousRsvp: false,
 		} );
 	} );
@@ -776,6 +781,7 @@ describe( 'getEventMeta', () => {
 
 		expect( result ).toEqual( {
 			maxGuestLimit: 0,
+			enableRsvp: true,
 			enableAnonymousRsvp: false,
 		} );
 	} );

@@ -13,7 +13,9 @@ import { PluginDocumentSettingPanel } from '@wordpress/editor';
  * Internal dependencies.
  */
 import { isEventPostType } from '../../helpers/event';
+import { getFromSettings } from '../../helpers/editor-settings';
 import AnonymousRsvpPanel from './anonymous-rsvp';
+import EnableRsvpPanel from './enable-rsvp';
 import GuestLimitPanel from './guest-limit';
 import MaxAttendanceLimitPanel from './max-attendance-limit';
 import { RsvpPluginDocumentSettings } from './slot';
@@ -31,8 +33,11 @@ import { RsvpPluginDocumentSettings } from './slot';
  * the current post type is an event; otherwise, returns null.
  */
 const RsvpSettings = () => {
+	// Only show per-event RSVP toggle when the admin has set rsvp_mode to per_event.
+	const rsvpMode = getFromSettings( 'rsvpMode' ) ?? 'all_on';
+
 	return (
-		isEventPostType() && (
+		isEventPostType() && 'disabled' !== rsvpMode && (
 			<PluginDocumentSettingPanel
 				name="gatherpress-rsvp-settings"
 				title={ __( 'RSVP settings', 'gatherpress' ) }
@@ -42,6 +47,7 @@ const RsvpSettings = () => {
 				<RsvpPluginDocumentSettings.Slot />
 
 				<VStack spacing={ 4 }>
+					{ ( 'per_event_on' === rsvpMode || 'per_event_off' === rsvpMode ) && <EnableRsvpPanel /> }
 					<GuestLimitPanel />
 					<MaxAttendanceLimitPanel />
 					<AnonymousRsvpPanel />

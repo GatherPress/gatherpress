@@ -239,7 +239,7 @@ export function hasOnlineEventTerm( postId = null ) {
 }
 
 /**
- * Gets event meta data (max guest limit and anonymous RSVP setting).
+ * Gets event meta data (max guest limit, RSVP enabled flag, and anonymous RSVP setting).
  *
  * This function retrieves event meta data either from the current post being edited
  * (for live updates) or from a specific post (for overrides). It handles three scenarios:
@@ -252,10 +252,11 @@ export function hasOnlineEventTerm( postId = null ) {
  * @param {Object}      selectFunc WordPress data select function.
  * @param {number|null} postId     Post ID from context or null.
  * @param {Object}      attributes Block attributes (may contain explicit postId override).
- * @return {Object} Object containing maxGuestLimit and enableAnonymousRsvp.
+ * @return {Object} Object containing maxGuestLimit, enableRsvp, and enableAnonymousRsvp.
  */
 export function getEventMeta( selectFunc, postId, attributes ) {
 	let maxLimit;
+	let enableRsvp;
 	let enableAnonymous;
 
 	// Check if there's an explicit postId override in attributes.
@@ -267,6 +268,8 @@ export function getEventMeta( selectFunc, postId, attributes ) {
 		// Explicit override - fetch from post via core data store.
 		const post = selectFunc( 'core' ).getEntityRecord( 'postType', 'gatherpress_event', postId );
 		maxLimit = post?.meta?.gatherpress_max_guest_limit;
+		// Stored as integer (0/1); undefined means not yet set, default to enabled.
+		enableRsvp = 0 !== post?.meta?.gatherpress_enable_rsvp;
 		enableAnonymous = Boolean( post?.meta?.gatherpress_enable_anonymous_rsvp );
 	} else {
 		// No override - check if current post is an event and use editor for live edits.
@@ -276,12 +279,15 @@ export function getEventMeta( selectFunc, postId, attributes ) {
 		if ( isCurrentPostEvent ) {
 			const meta = selectFunc( 'core/editor' ).getEditedPostAttribute( 'meta' );
 			maxLimit = meta?.gatherpress_max_guest_limit;
+			// Stored as integer (0/1); undefined means not yet set, default to enabled.
+			enableRsvp = 0 !== meta?.gatherpress_enable_rsvp;
 			enableAnonymous = Boolean( meta?.gatherpress_enable_anonymous_rsvp );
 		}
 	}
 
 	return {
 		maxGuestLimit: maxLimit ?? 0,
+		enableRsvp: enableRsvp ?? true,
 		enableAnonymousRsvp: enableAnonymous ?? false,
 	};
 }

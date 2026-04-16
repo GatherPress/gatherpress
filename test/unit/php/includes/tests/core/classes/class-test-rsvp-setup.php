@@ -63,15 +63,33 @@ class Test_Rsvp_Setup extends Base {
 			),
 			array(
 				'type'     => 'action',
+				'name'     => 'init',
+				'priority' => 11,
+				'callback' => array( $instance, 'maybe_disable_rsvp' ),
+			),
+			array(
+				'type'     => 'action',
 				'name'     => 'wp_after_insert_post',
 				'priority' => 10,
 				'callback' => array( $instance, 'maybe_process_waiting_list' ),
 			),
 			array(
 				'type'     => 'action',
+				'name'     => 'wp_after_insert_post',
+				'priority' => 10,
+				'callback' => array( $instance, 'maybe_set_rsvp_meta_default' ),
+			),
+			array(
+				'type'     => 'action',
 				'name'     => 'admin_menu',
 				'priority' => 10,
 				'callback' => array( $instance, 'add_rsvp_submenu_page' ),
+			),
+			array(
+				'type'     => 'filter',
+				'name'     => 'allowed_block_types_all',
+				'priority' => 10,
+				'callback' => array( $instance, 'filter_rsvp_block_types' ),
 			),
 			array(
 				'type'     => 'filter',
@@ -816,5 +834,221 @@ class Test_Rsvp_Setup extends Base {
 		$instance->render_rsvp_admin_page();
 
 		wp_set_current_user( 0 );
+	}
+
+	/**
+	 * Test maybe_set_rsvp_meta_default writes meta in all_on mode when meta is unset.
+	 *
+	 * @covers ::maybe_set_rsvp_meta_default
+	 *
+	 * @return void
+	 */
+	public function test_maybe_set_rsvp_meta_default_writes_meta_in_all_on_mode(): void {
+		$instance = Rsvp_Setup::get_instance();
+		$post_id  = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
+
+		// Confirm meta is not set initially.
+		$this->assertSame( '', get_post_meta( $post_id, 'gatherpress_enable_rsvp', true ) );
+
+		// Default mode is all_on; calling the method should write 1.
+		$instance->maybe_set_rsvp_meta_default( $post_id );
+
+		$this->assertSame(
+			'1',
+			get_post_meta( $post_id, 'gatherpress_enable_rsvp', true ),
+			'Meta should be written as 1 in all_on mode when not previously set.'
+		);
+	}
+
+	/**
+	 * Test maybe_set_rsvp_meta_default does not overwrite an existing meta value.
+	 *
+	 * @covers ::maybe_set_rsvp_meta_default
+	 *
+	 * @return void
+	 */
+	public function test_maybe_set_rsvp_meta_default_does_not_overwrite_existing_meta(): void {
+		$instance = Rsvp_Setup::get_instance();
+		$post_id  = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
+
+		// Pre-set meta to 0 (RSVP disabled for this event).
+		update_post_meta( $post_id, 'gatherpress_enable_rsvp', 0 );
+
+		// Default mode is all_on; method should not overwrite the existing value.
+		$instance->maybe_set_rsvp_meta_default( $post_id );
+
+		$this->assertSame(
+			'0',
+			get_post_meta( $post_id, 'gatherpress_enable_rsvp', true ),
+			'Existing meta value should not be overwritten.'
+		);
+	}
+
+	/**
+	 * Test maybe_set_rsvp_meta_default is a no-op outside all_on mode.
+	 *
+	 * @covers ::maybe_set_rsvp_meta_default
+	 *
+	 * @return void
+	 */
+	public function test_maybe_set_rsvp_meta_default_skips_non_all_on_modes(): void {
+		$instance = Rsvp_Setup::get_instance();
+		$post_id  = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
+
+		// Switch to per_event_on mode.
+		$option = get_option( 'gatherpress_settings', array() );
+		$option['rsvp_settings']['rsvp_defaults']['rsvp_mode'] = 'per_event_on';
+		update_option( 'gatherpress_settings', $option );
+
+		$instance->maybe_set_rsvp_meta_default( $post_id );
+
+		// Meta should remain unset; per-event mode manages it via the editor UI.
+		$this->assertSame(
+			'',
+			get_post_meta( $post_id, 'gatherpress_enable_rsvp', true ),
+			'Meta should not be written when mode is per_event_on.'
+		);
+
+		// Restore setting.
+		$option['rsvp_settings']['rsvp_defaults']['rsvp_mode'] = 'all_on';
+		update_option( 'gatherpress_settings', $option );
+	}
+
+	/**
+	 * Test maybe_disable_rsvp when rsvp_mode is not disabled.
+	 *
+	 * @covers ::maybe_disable_rsvp
+	 *
+	 * @return void
+	 */
+	public function test_maybe_disable_rsvp_when_enabled(): void {
+		$instance = Rsvp_Setup::get_instance();
+
+		// Verify that the event post type supports RSVP before the call.
+		$this->assertTrue(
+			post_type_supports( Event::POST_TYPE, 'gatherpress-rsvp' ),
+			'Event post type should support gatherpress-rsvp before disabling.'
+		);
+
+		// With rsvp_mode defaulting to all_on, this should be a no-op.
+		$instance->maybe_disable_rsvp();
+
+		// Verify support is still present.
+		$this->assertTrue(
+			post_type_supports( Event::POST_TYPE, 'gatherpress-rsvp' ),
+			'Event post type should still support gatherpress-rsvp when RSVP is enabled.'
+		);
+	}
+
+	/**
+	 * Test maybe_disable_rsvp removes post type support when setting is disabled.
+	 *
+	 * @covers ::maybe_disable_rsvp
+	 *
+	 * @return void
+	 */
+	public function test_maybe_disable_rsvp_when_disabled(): void {
+		$instance = Rsvp_Setup::get_instance();
+
+		// Temporarily set rsvp_mode to disabled via the settings option.
+		$option = get_option( 'gatherpress_settings', array() );
+		$option['rsvp_settings']['rsvp_defaults']['rsvp_mode'] = 'disabled';
+		update_option( 'gatherpress_settings', $option );
+
+		// Ensure the event post type currently supports RSVP.
+		add_post_type_support( Event::POST_TYPE, 'gatherpress-rsvp' );
+
+		$instance->maybe_disable_rsvp();
+
+		// Verify support has been removed.
+		$this->assertFalse(
+			post_type_supports( Event::POST_TYPE, 'gatherpress-rsvp' ),
+			'Event post type should no longer support gatherpress-rsvp when RSVP is disabled.'
+		);
+
+		// Restore the setting and support for other tests.
+		$option['rsvp_settings']['rsvp_defaults']['rsvp_mode'] = 'all_on';
+		update_option( 'gatherpress_settings', $option );
+		add_post_type_support( Event::POST_TYPE, 'gatherpress-rsvp' );
+	}
+
+	/**
+	 * Test filter_rsvp_block_types returns all blocks unchanged when RSVP is enabled.
+	 *
+	 * @covers ::filter_rsvp_block_types
+	 *
+	 * @return void
+	 */
+	public function test_filter_rsvp_block_types_when_enabled(): void {
+		$instance      = Rsvp_Setup::get_instance();
+		$initial_value = true;
+
+		$result = $instance->filter_rsvp_block_types( $initial_value );
+
+		$this->assertSame(
+			$initial_value,
+			$result,
+			'When RSVP is enabled, block types should be returned unchanged.'
+		);
+	}
+
+	/**
+	 * Test filter_rsvp_block_types removes RSVP blocks when RSVP is disabled.
+	 *
+	 * @covers ::filter_rsvp_block_types
+	 *
+	 * @return void
+	 */
+	public function test_filter_rsvp_block_types_when_disabled(): void {
+		$instance = Rsvp_Setup::get_instance();
+
+		// Temporarily set rsvp_mode to disabled via the settings option.
+		$option = get_option( 'gatherpress_settings', array() );
+		$option['rsvp_settings']['rsvp_defaults']['rsvp_mode'] = 'disabled';
+		update_option( 'gatherpress_settings', $option );
+
+		// Pass a known array containing RSVP and non-RSVP block names.
+		$block_list = array(
+			'core/paragraph',
+			'gatherpress/rsvp',
+			'gatherpress/rsvp-form',
+			'gatherpress/event-date',
+			'gatherpress/rsvp-response',
+		);
+
+		$result = $instance->filter_rsvp_block_types( $block_list );
+
+		// RSVP blocks should have been removed.
+		$this->assertNotContains(
+			'gatherpress/rsvp',
+			$result,
+			'gatherpress/rsvp block should be removed when RSVP is disabled.'
+		);
+		$this->assertNotContains(
+			'gatherpress/rsvp-form',
+			$result,
+			'gatherpress/rsvp-form block should be removed when RSVP is disabled.'
+		);
+		$this->assertNotContains(
+			'gatherpress/rsvp-response',
+			$result,
+			'gatherpress/rsvp-response block should be removed when RSVP is disabled.'
+		);
+
+		// Non-RSVP blocks should remain.
+		$this->assertContains(
+			'core/paragraph',
+			$result,
+			'core/paragraph block should remain when RSVP is disabled.'
+		);
+		$this->assertContains(
+			'gatherpress/event-date',
+			$result,
+			'gatherpress/event-date block should remain when RSVP is disabled.'
+		);
+
+		// Restore the setting for other tests.
+		$option['rsvp_settings']['rsvp_defaults']['rsvp_mode'] = 'all_on';
+		update_option( 'gatherpress_settings', $option );
 	}
 }

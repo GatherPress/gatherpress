@@ -492,6 +492,38 @@ class Test_Rsvp extends Base {
 	}
 
 	/**
+	 * Test save method returns default data when RSVP is disabled for the event.
+	 *
+	 * @covers ::save
+	 */
+	public function test_save_rsvp_disabled(): void {
+		$post = $this->mock->post(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		)->get();
+
+		// Set rsvp_mode to per_event_on so that per-event disabling is respected.
+		$option = get_option( 'gatherpress_settings', array() );
+		$option['rsvp_settings']['rsvp_defaults']['rsvp_mode'] = 'per_event_on';
+		update_option( 'gatherpress_settings', $option );
+
+		// Explicitly disable RSVP for this event.
+		update_post_meta( $post->ID, 'gatherpress_enable_rsvp', 0 );
+
+		$rsvp    = new Rsvp( $post->ID );
+		$user_id = $this->factory->user->create();
+		$result  = $rsvp->save( $user_id, 'attending' );
+
+		$this->assertSame( 0, $result['post_id'], 'Should return default data when RSVP is disabled.' );
+		$this->assertSame( 'no_status', $result['status'], 'Should return no_status when RSVP is disabled.' );
+
+		// Restore the setting for other tests.
+		$option['rsvp_settings']['rsvp_defaults']['rsvp_mode'] = 'all_on';
+		update_option( 'gatherpress_settings', $option );
+	}
+
+	/**
 	 * Test save method with email identifier.
 	 *
 	 * @covers ::save

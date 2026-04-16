@@ -161,6 +161,19 @@ class Rsvp_Form {
 			);
 		}
 
+		// Check if RSVP is enabled for this event.
+		// Empty string means meta was never set; only '0' means explicitly disabled.
+		if (
+			in_array( Settings::get_instance()->get( 'rsvp_mode' ), array( 'per_event_on', 'per_event_off' ), true ) &&
+			'0' === get_post_meta( $post_id, 'gatherpress_enable_rsvp', true )
+		) {
+			wp_die(
+				esc_html__( 'RSVP is disabled for this event.', 'gatherpress' ),
+				esc_html__( 'RSVP Disabled', 'gatherpress' ),
+				403
+			);
+		}
+
 		// Check if event has passed - prevent RSVPs to past events.
 		$event = new Event( $post_id );
 		if ( $event->has_event_past() ) {

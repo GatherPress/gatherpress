@@ -18,6 +18,7 @@ import { getBlockTypes } from '@wordpress/blocks';
 import TEMPLATE from './template';
 import { hasValidEventId, DISABLED_FIELD_OPACITY, getEventMeta } from '../../helpers/event';
 import { isInFSETemplate, getEditorDocument } from '../../helpers/editor';
+import { getFromSettings } from '../../helpers/editor-settings';
 import { shouldHideBlock } from './visibility';
 
 const Edit = ( { attributes, clientId, context } ) => {
@@ -31,7 +32,7 @@ const Edit = ( { attributes, clientId, context } ) => {
 		.filter( ( name ) => 'gatherpress/rsvp-form' !== name );
 
 	// Get event data - either from override postId or current post.
-	const { maxGuestLimit: maxAttendanceLimit, enableAnonymousRsvp } = useSelect(
+	const { maxGuestLimit: maxAttendanceLimit, enableRsvp, enableAnonymousRsvp } = useSelect(
 		( select ) => getEventMeta( select, postId, attributes ),
 		[ postId, attributes ]
 	);
@@ -176,9 +177,17 @@ const Edit = ( { attributes, clientId, context } ) => {
 		};
 	}, [ maxAttendanceLimit, enableAnonymousRsvp, clientId ] );
 
+	const rsvpMode = getFromSettings( 'rsvpMode' ) ?? 'all_on';
+
 	const blockProps = useBlockProps( {
 		style: {
-			opacity: ( isInFSETemplate() || isValidEvent ) ? 1 : DISABLED_FIELD_OPACITY,
+			opacity:
+				isInFSETemplate() ||
+				( isValidEvent &&
+					'disabled' !== rsvpMode &&
+					( ( 'per_event_on' !== rsvpMode && 'per_event_off' !== rsvpMode ) || enableRsvp ) )
+					? 1
+					: DISABLED_FIELD_OPACITY,
 		},
 	} );
 

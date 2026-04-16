@@ -967,6 +967,57 @@ class Test_Rsvp_Form extends Base {
 	}
 
 	/**
+	 * Tests preprocess_rsvp_comment when RSVP is disabled for the event.
+	 *
+	 * @covers ::preprocess_rsvp_comment
+	 */
+	public function test_preprocess_rsvp_comment_rsvp_disabled(): void {
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		);
+
+		// Set rsvp_mode to per_event_on so that per-event disabling is respected.
+		$option = get_option( 'gatherpress_settings', array() );
+		$option['rsvp_settings']['rsvp_defaults']['rsvp_mode'] = 'per_event_on';
+		update_option( 'gatherpress_settings', $option );
+
+		// Explicitly disable RSVP for this event.
+		update_post_meta( $post_id, 'gatherpress_enable_rsvp', 0 );
+
+		add_filter(
+			'gatherpress_pre_get_http_input',
+			function ( $pre_value, $type, $var_name ) {
+				if ( INPUT_POST === $type && 'author' === $var_name ) {
+					return 'Test Author';
+				}
+				if ( INPUT_POST === $type && 'email' === $var_name ) {
+					return 'test@example.com';
+				}
+				return '';
+			},
+			10,
+			3
+		);
+
+		$instance = Rsvp_Form::get_instance();
+
+		$comment_data = array(
+			'comment_post_ID' => $post_id,
+		);
+
+		$this->expectException( 'WPDieException' );
+		$instance->preprocess_rsvp_comment( $comment_data );
+
+		remove_all_filters( 'gatherpress_pre_get_http_input' );
+
+		// Restore the setting for other tests.
+		$option['rsvp_settings']['rsvp_defaults']['rsvp_mode'] = 'all_on';
+		update_option( 'gatherpress_settings', $option );
+	}
+
+	/**
 	 * Tests preprocess_rsvp_comment with duplicate RSVP.
 	 *
 	 * @covers ::preprocess_rsvp_comment
