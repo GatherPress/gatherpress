@@ -2,15 +2,24 @@
 
 This section explains how RSVPs work from both the visitor and organizer perspectives.
 
+## RSVP Mode
+
+Site administrators can control how RSVP works across the entire site from **Events → Settings → RSVP**. Four modes are available:
+
+- **All events** — RSVP is enabled for every event. No per-event toggle is shown in the editor. This is the default behavior.
+- **Per event (default on)** — A toggle appears in the block editor sidebar for each event. New events default to RSVP enabled; editors can disable it per event.
+- **Per event (default off)** — Same as above, but new events default to RSVP disabled. Editors must explicitly enable RSVP for each event.
+- **Disabled** — RSVP is turned off sitewide. RSVP blocks are removed from the block inserter, the RSVPs admin menu is hidden, and the RSVP Settings panel no longer appears in the editor.
+
 ## RSVP functionality
 
-RSVPs are configured per event.
+RSVPs are configured per event when using a per-event mode.
 
 What is known and visible in the UI:
 
 * The presence of the RSVP block allows users to RSVP  
 * Default RSVP behavior comes from GatherPress settings.  
-* Event-level settings override global defaults.
+* Event-level settings override global defaults when a per-event mode is active.
 
 ## RSVP without an account
 

@@ -47,12 +47,36 @@ The settings page is organized into tabs, each managed by its own class:
 
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
+| `rsvp_mode` | select | `'all_on'` | Controls sitewide RSVP availability. See [RSVP Mode](#rsvp-mode) below. |
 | `max_attendance_limit` | number | `50` | Maximum attendees per event (0 = unlimited) |
 | `max_guest_limit` | number | `0` | Maximum guests per attendee (0-5) |
 | `enable_anonymous_rsvp` | checkbox | `false` | Allow anonymous RSVPs |
 | `rsvp_cleanup_switch` | select | `'off'` | Enable/disable RSVP cleanup |
 | `rsvp_cleanup_frequency` | select | `'daily'` | Cleanup frequency (hourly, daily, weekly, monthly, yearly) |
 | `rsvp_cleanup_interval` | number | `1` | Interval multiplier for cleanup frequency |
+
+#### RSVP Mode
+
+The `rsvp_mode` setting controls how RSVP availability is determined across the site.
+
+| Value | Label | Behavior |
+|-------|-------|----------|
+| `all_on` | All events | RSVP is enabled for every event. No per-event toggle is shown. This is the default. |
+| `per_event_on` | Per event (default on) | A per-event toggle appears in the block editor. New events default to RSVP enabled. |
+| `per_event_off` | Per event (default off) | A per-event toggle appears in the block editor. New events default to RSVP disabled. |
+| `disabled` | Disabled | RSVP is turned off sitewide. RSVP blocks are hidden from the inserter, the RSVPs admin submenu is removed, and the RSVP Settings editor panel is hidden. |
+
+**Per-event meta convention:** the `gatherpress_enable_rsvp` post meta stores the per-event state as an integer (`1` = enabled, `0` = disabled). An unset meta value (empty string) is treated as enabled — only an explicit `0` disables RSVP for an individual event. When mode is `all_on`, this meta is explicitly written as `1` on save so that switching to a per-event mode later produces predictable results.
+
+```php
+use GatherPress\Core\Settings;
+
+// Read the current RSVP mode.
+$mode = Settings::get_instance()->get( 'rsvp_mode' ); // 'all_on'
+
+// Check whether RSVP is enabled for a specific event post.
+$enabled = ( new \GatherPress\Core\Rsvp( $post_id ) )->is_enabled();
+```
 
 ### Formatting Tab
 
