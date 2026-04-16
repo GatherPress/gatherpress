@@ -669,7 +669,7 @@ class Event_Rest_Api {
 					'featured_image'           => get_the_post_thumbnail( $post_id, 'medium' ),
 					'featured_image_large'     => get_the_post_thumbnail( $post_id, 'large' ),
 					'featured_image_thumbnail' => get_the_post_thumbnail( $post_id, 'thumbnail' ),
-					'enable_rsvp'              => ( new Rsvp( $post_id ) )->is_rsvp_enabled(),
+					'enable_rsvp'              => ( new Rsvp( $post_id ) )->is_enabled(),
 					'enable_anonymous_rsvp'    => (bool) get_post_meta(
 						$post_id,
 						'gatherpress_enable_anonymous_rsvp',

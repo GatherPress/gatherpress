@@ -111,7 +111,7 @@ class Rsvp {
 			return '';
 		}
 
-		if ( ! ( new Core_Rsvp( $post_id ) )->is_rsvp_enabled() ) {
+		if ( ! ( new Core_Rsvp( $post_id ) )->is_enabled() ) {
 			return '';
 		}
 

@@ -161,7 +161,7 @@ class Rsvp_Form {
 			);
 		}
 
-		if ( ! ( new Rsvp( $post_id ) )->is_rsvp_enabled() ) {
+		if ( ! ( new Rsvp( $post_id ) )->is_enabled() ) {
 			wp_die(
 				esc_html__( 'RSVP is disabled for this event.', 'gatherpress' ),
 				esc_html__( 'RSVP Disabled', 'gatherpress' ),

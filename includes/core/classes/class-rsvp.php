@@ -188,12 +188,39 @@ class Rsvp {
 	 *
 	 * @return bool True if RSVP is enabled for this event, false otherwise.
 	 */
-	public function is_rsvp_enabled(): bool {
+	public function is_enabled(): bool {
 		$post_id   = $this->event->ID ?? 0;
 		$rsvp_mode = Settings::get_instance()->get( 'rsvp_mode' );
 
 		return ! in_array( $rsvp_mode, array( 'per_event_on', 'per_event_off' ), true ) ||
 			'0' !== get_post_meta( $post_id, 'gatherpress_enable_rsvp', true );
+	}
+
+	/**
+	 * Writes an explicit enabled value when RSVP mode is all_on and meta is unset.
+	 *
+	 * Ensures that if an admin later switches to a per-event mode, events created
+	 * under all_on already have meta = 1 and appear correctly as enabled.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return void
+	 */
+	public function initialize_enabled(): void {
+		$post_id = $this->event->ID ?? 0;
+
+		if ( 'all_on' !== Settings::get_instance()->get( 'rsvp_mode' ) ) {
+			return;
+		}
+
+		if ( ! post_type_supports( (string) get_post_type( $post_id ), 'gatherpress-rsvp' ) ) {
+			return;
+		}
+
+		// Only write if meta has never been explicitly set.
+		if ( '' === get_post_meta( $post_id, 'gatherpress_enable_rsvp', true ) ) {
+			update_post_meta( $post_id, 'gatherpress_enable_rsvp', 1 );
+		}
 	}
 
 	/**
@@ -261,7 +288,7 @@ class Rsvp {
 			return $data;
 		}
 
-		if ( ! $this->is_rsvp_enabled() ) {
+		if ( ! $this->is_enabled() ) {
 			return $data;
 		}
 

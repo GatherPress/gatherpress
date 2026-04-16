@@ -248,12 +248,7 @@ class Rsvp_Setup {
 	}
 
 	/**
-	 * Writes an explicit gatherpress_enable_rsvp = 1 value when RSVP mode is all_on.
-	 *
-	 * This ensures that if an admin later switches to a per-event mode, all events
-	 * created under all_on mode already have meta = 1 and appear correctly as enabled.
-	 * Events without the meta are also treated as on (missing = on convention), but
-	 * writing it explicitly makes the state unambiguous.
+	 * Delegates to Rsvp::initialize_enabled() for the wp_after_insert_post hook.
 	 *
 	 * @since 1.0.0
 	 *
@@ -262,18 +257,7 @@ class Rsvp_Setup {
 	 * @return void
 	 */
 	public function maybe_set_rsvp_meta_default( int $post_id ): void {
-		if ( 'all_on' !== Settings::get_instance()->get( 'rsvp_mode' ) ) {
-			return;
-		}
-
-		if ( ! post_type_supports( (string) get_post_type( $post_id ), 'gatherpress-rsvp' ) ) {
-			return;
-		}
-
-		// Only write if meta has never been explicitly set.
-		if ( '' === get_post_meta( $post_id, 'gatherpress_enable_rsvp', true ) ) {
-			update_post_meta( $post_id, 'gatherpress_enable_rsvp', 1 );
-		}
+		( new Rsvp( $post_id ) )->initialize_enabled();
 	}
 
 	/**

@@ -277,7 +277,7 @@ class General_Block {
 			return $block_content;
 		}
 
-		if ( ! ( new Rsvp( $post_id ) )->is_rsvp_enabled() ) {
+		if ( ! ( new Rsvp( $post_id ) )->is_enabled() ) {
 			return '';
 		}
 
@@ -329,7 +329,7 @@ class General_Block {
 			return $block_content;
 		}
 
-		if ( ! ( new Rsvp( $post_id ) )->is_rsvp_enabled() ) {
+		if ( ! ( new Rsvp( $post_id ) )->is_enabled() ) {
 			return '';
 		}
 

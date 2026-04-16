@@ -123,7 +123,7 @@ class Rsvp_Form {
 			return '';
 		}
 
-		if ( ! ( new Rsvp( $post_id ) )->is_rsvp_enabled() ) {
+		if ( ! ( new Rsvp( $post_id ) )->is_enabled() ) {
 			return '';
 		}
 

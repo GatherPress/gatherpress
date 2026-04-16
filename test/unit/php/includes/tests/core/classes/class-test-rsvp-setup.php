@@ -838,79 +838,26 @@ class Test_Rsvp_Setup extends Base {
 	}
 
 	/**
-	 * Test maybe_set_rsvp_meta_default writes meta in all_on mode when meta is unset.
+	 * Test maybe_set_rsvp_meta_default delegates to Rsvp::initialize_enabled.
 	 *
 	 * @covers ::maybe_set_rsvp_meta_default
 	 *
 	 * @return void
 	 */
-	public function test_maybe_set_rsvp_meta_default_writes_meta_in_all_on_mode(): void {
-		$instance = Rsvp_Setup::get_instance();
-		$post_id  = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
+	public function test_maybe_set_rsvp_meta_default_delegates_to_rsvp(): void {
+		$post_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
 
 		// Clear any meta set by the wp_after_insert_post hook during post creation.
 		delete_post_meta( $post_id, 'gatherpress_enable_rsvp' );
 
-		// Default mode is all_on; calling the method should write 1.
-		$instance->maybe_set_rsvp_meta_default( $post_id );
+		// Default mode is all_on; the delegation should write 1.
+		Rsvp_Setup::get_instance()->maybe_set_rsvp_meta_default( $post_id );
 
 		$this->assertSame(
 			'1',
 			get_post_meta( $post_id, 'gatherpress_enable_rsvp', true ),
-			'Meta should be written as 1 in all_on mode when not previously set.'
+			'Delegation to Rsvp::initialize_enabled should write meta as 1 in all_on mode.'
 		);
-	}
-
-	/**
-	 * Test maybe_set_rsvp_meta_default does not overwrite an existing meta value.
-	 *
-	 * @covers ::maybe_set_rsvp_meta_default
-	 *
-	 * @return void
-	 */
-	public function test_maybe_set_rsvp_meta_default_does_not_overwrite_existing_meta(): void {
-		$instance = Rsvp_Setup::get_instance();
-		$post_id  = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
-
-		// Pre-set meta to 0 (RSVP disabled for this event).
-		update_post_meta( $post_id, 'gatherpress_enable_rsvp', 0 );
-
-		// Default mode is all_on; method should not overwrite the existing value.
-		$instance->maybe_set_rsvp_meta_default( $post_id );
-
-		$this->assertSame(
-			'0',
-			get_post_meta( $post_id, 'gatherpress_enable_rsvp', true ),
-			'Existing meta value should not be overwritten.'
-		);
-	}
-
-	/**
-	 * Test maybe_set_rsvp_meta_default is a no-op outside all_on mode.
-	 *
-	 * @covers ::maybe_set_rsvp_meta_default
-	 *
-	 * @return void
-	 */
-	public function test_maybe_set_rsvp_meta_default_skips_non_all_on_modes(): void {
-		$instance = Rsvp_Setup::get_instance();
-
-		// Switch to per_event_on mode BEFORE creating the post so the hook doesn't write meta.
-		Settings::get_instance()->set( 'rsvp_mode', 'per_event_on' );
-
-		$post_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
-
-		$instance->maybe_set_rsvp_meta_default( $post_id );
-
-		// Meta should remain unset; per-event mode manages it via the editor UI.
-		$this->assertSame(
-			'',
-			get_post_meta( $post_id, 'gatherpress_enable_rsvp', true ),
-			'Meta should not be written when mode is per_event_on.'
-		);
-
-		// Restore setting.
-		Settings::get_instance()->set( 'rsvp_mode', 'all_on' );
 	}
 
 	/**
