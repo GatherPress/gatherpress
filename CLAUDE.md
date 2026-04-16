@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Language
 
-Always use **US English** spelling in all code, comments, and documentation. Examples: "initialization" not "initialisation", "color" not "colour", "customize" not "customise".
+Always use **US English** spelling in all code, comments, and documentation. When in doubt, use the spelling WordPress core uses.
 
 ## Development Commands
 
