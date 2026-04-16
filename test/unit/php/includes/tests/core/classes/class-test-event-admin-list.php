@@ -261,6 +261,28 @@ class Test_Event_Admin_List extends Base {
 	}
 
 	/**
+	 * Coverage for views_edit method when no screen is available.
+	 *
+	 * Exercises the ! $screen early return, which can occur in multisite contexts
+	 * where get_current_screen() returns null before any screen is set.
+	 *
+	 * @covers ::views_edit
+	 *
+	 * @return void
+	 */
+	public function test_views_edit_no_screen(): void {
+		$instance = Event_Admin_List::get_instance();
+
+		// Ensure no screen is set so get_current_screen() returns null.
+		unset( $GLOBALS['current_screen'] );
+
+		$view_links = array( 'all' => '<a href="#">All</a>' );
+		$result     = $instance->views_edit( $view_links );
+
+		$this->assertSame( $view_links, $result, 'Should return view_links unchanged when no screen.' );
+	}
+
+	/**
 	 * Coverage for views_edit method with no events.
 	 *
 	 * @covers ::views_edit
@@ -1339,6 +1361,41 @@ class Test_Event_Admin_List extends Base {
 		remove_filter( 'posts_join_paged', array( $instance, 'rsvp_sorting_join_paged' ) );
 		remove_filter( 'posts_groupby', array( $instance, 'sorting_groupby_post_id' ) );
 		remove_filter( 'posts_orderby', array( $instance, 'rsvp_sorting_orderby' ) );
+		set_current_screen( 'front' );
+	}
+
+	/**
+	 * Tests handle_rsvp_sorting early return when post_type is an array.
+	 *
+	 * Exercises the is_array($post_type) guard in handle_column_sorting(),
+	 * which prevents sorting logic from running on multi-post-type queries.
+	 *
+	 * @covers ::handle_rsvp_sorting
+	 * @covers ::handle_column_sorting
+	 * @return void
+	 */
+	public function test_rsvp_sorting_early_return_array_post_type(): void {
+		global $wp_the_query;
+
+		// Create a WP_Query with multiple post types (array).
+		$query = new WP_Query(
+			array(
+				'post_type' => array( Event::POST_TYPE, 'post' ),
+				'orderby'   => 'rsvps',
+			)
+		);
+
+		// phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited -- Necessary for testing query modifications.
+		$wp_the_query = $query;
+
+		set_current_screen( 'edit-gatherpress_event' );
+
+		$instance = Event_Admin_List::get_instance();
+		$instance->handle_rsvp_sorting( $query );
+
+		// Should return early — rsvp_sort_order must not be set.
+		$this->assertEmpty( $query->get( 'rsvp_sort_order' ), 'Should not set rsvp_sort_order for array post_type.' );
+
 		set_current_screen( 'front' );
 	}
 
