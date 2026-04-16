@@ -348,6 +348,10 @@ class Rsvp_Form {
 		// Prepare comment data.
 		$comment_data = $this->prepare_comment_data( $post_id, $author, $email );
 
+		// Run WordPress-native comment filters so sites can honor
+		// pre_comment_user_ip, pre_comment_user_agent, etc. for privacy.
+		$comment_data = wp_filter_comment( $comment_data );
+
 		// Insert the comment.
 		$comment_id_result = wp_insert_comment( $comment_data );
 
