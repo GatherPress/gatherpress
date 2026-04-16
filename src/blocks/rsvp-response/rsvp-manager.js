@@ -39,8 +39,8 @@ const RsvpManager = ( { defaultStatus, setDefaultStatus } ) => {
 	 * Fetches user records from the core store via getEntityRecords.
 	 * Returns userList containing the list of user records.
 	 */
-	const { userList } = useSelect( ( wpSel ) => {
-		const { getEntityRecords } = wpSel( coreStore );
+	const { userList } = useSelect( ( wpSelect ) => {
+		const { getEntityRecords } = wpSelect( coreStore );
 
 		const users = getEntityRecords( 'root', 'user', {
 			per_page: -1,
