@@ -125,26 +125,6 @@ class Rsvp_Setup {
 	}
 
 	/**
-	 * Determines whether RSVP is enabled for a specific event.
-	 *
-	 * In per-event modes (`per_event_on` or `per_event_off`), RSVP is enabled
-	 * for an individual event when its `gatherpress_enable_rsvp` meta is not
-	 * explicitly set to `'0'`. An empty string (meta never set) is treated as enabled.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param int $post_id The post ID to check.
-	 *
-	 * @return bool True if RSVP is enabled for this event, false otherwise.
-	 */
-	public static function is_rsvp_enabled_for_event( int $post_id ): bool {
-		$rsvp_mode = Settings::get_instance()->get( 'rsvp_mode' );
-
-		return ! in_array( $rsvp_mode, array( 'per_event_on', 'per_event_off' ), true ) ||
-			'0' !== get_post_meta( $post_id, 'gatherpress_enable_rsvp', true );
-	}
-
-	/**
 	 * Disables RSVP sitewide when the master RSVP switch is turned off.
 	 *
 	 * Removes the `gatherpress-rsvp` post type support from all post types

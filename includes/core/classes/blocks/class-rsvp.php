@@ -16,6 +16,7 @@ use GatherPress\Core\Block;
 use GatherPress\Core\Blocks\Form_Field;
 use GatherPress\Core\Blocks\General_Block;
 use GatherPress\Core\Event;
+use GatherPress\Core\Rsvp as Core_Rsvp;
 use GatherPress\Core\Rsvp_Setup;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Utility;
@@ -110,7 +111,7 @@ class Rsvp {
 			return '';
 		}
 
-		if ( ! Rsvp_Setup::is_rsvp_enabled_for_event( $post_id ) ) {
+		if ( ! ( new Core_Rsvp( $post_id ) )->is_rsvp_enabled() ) {
 			return '';
 		}
 

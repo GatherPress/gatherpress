@@ -14,6 +14,7 @@ namespace GatherPress\Core;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
+use GatherPress\Core\Settings;
 use GatherPress\Core\Settings\Roles;
 use WP_Post;
 
@@ -177,6 +178,25 @@ class Rsvp {
 	}
 
 	/**
+	 * Determines whether RSVP is enabled for this event.
+	 *
+	 * In per-event modes (`per_event_on` or `per_event_off`), RSVP is enabled
+	 * when the `gatherpress_enable_rsvp` meta is not explicitly set to `'0'`.
+	 * An empty string (meta never set) is treated as enabled.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return bool True if RSVP is enabled for this event, false otherwise.
+	 */
+	public function is_rsvp_enabled(): bool {
+		$post_id   = $this->event->ID ?? 0;
+		$rsvp_mode = Settings::get_instance()->get( 'rsvp_mode' );
+
+		return ! in_array( $rsvp_mode, array( 'per_event_on', 'per_event_off' ), true ) ||
+			'0' !== get_post_meta( $post_id, 'gatherpress_enable_rsvp', true );
+	}
+
+	/**
 	 * Saves a user's RSVP status for an event.
 	 *
 	 * Allows assigning one of the specified RSVP statuses to a user for an event. The user can be marked
@@ -241,7 +261,7 @@ class Rsvp {
 			return $data;
 		}
 
-		if ( ! Rsvp_Setup::is_rsvp_enabled_for_event( $post_id ) ) {
+		if ( ! $this->is_rsvp_enabled() ) {
 			return $data;
 		}
 
