@@ -325,6 +325,46 @@ class Test_Venue extends Base {
 	}
 
 	/**
+	 * Coverage for register_post_meta when the venue post type does not support revisions.
+	 *
+	 * Registers a throwaway venue post type that declares gatherpress-venue-information
+	 * support but omits WordPress revisions support. Verifies that register_post_meta
+	 * silently drops revisions_enabled for that post type and still registers the meta
+	 * without triggering a WordPress _doing_it_wrong notice.
+	 *
+	 * @covers ::register_post_meta
+	 *
+	 * @return void
+	 */
+	public function test_register_post_meta_without_revisions_support(): void {
+		$instance = Venue::get_instance();
+		$test_pt  = 'gp_test_venue_no_rev';
+
+		register_post_type(
+			$test_pt,
+			array(
+				'label'    => 'Test Venues (no revisions)',
+				'public'   => false,
+				'supports' => array( 'title', 'gatherpress-venue-information' ),
+			)
+		);
+
+		$instance->register_post_meta();
+
+		$meta = get_registered_meta_keys( 'post', $test_pt );
+
+		foreach ( array( 'gatherpress_venue_information', 'geo_latitude', 'geo_longitude', 'geo_address', 'geo_public' ) as $key ) {
+			$this->assertArrayHasKey(
+				$key,
+				$meta,
+				sprintf( 'Failed to assert %s is registered for a venue post type without revisions support.', $key )
+			);
+		}
+
+		unregister_post_type( $test_pt );
+	}
+
+	/**
 	 * Coverage for set_geodata method.
 	 *
 	 * Verifies that the WordPress Geodata standard meta keys are derived from
