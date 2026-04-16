@@ -53,43 +53,98 @@ class Test_Event_Admin_List extends Base {
 			),
 			array(
 				'type'     => 'filter',
-				'name'     => sprintf( 'manage_edit-%s_sortable_columns', Event::POST_TYPE ),
-				'priority' => 10,
-				'callback' => array( $instance, 'sortable_columns' ),
-			),
-			array(
-				'type'     => 'filter',
-				'name'     => sprintf( 'views_edit-%s', Event::POST_TYPE ),
-				'priority' => 10,
-				'callback' => array( $instance, 'views_edit' ),
-			),
-			array(
-				'type'     => 'filter',
 				'name'     => 'query_vars',
 				'priority' => 10,
 				'callback' => array( $instance, 'query_vars' ),
 			),
 			array(
 				'type'     => 'action',
-				'name'     => sprintf( 'manage_%s_posts_custom_column', Event::POST_TYPE ),
-				'priority' => 10,
-				'callback' => array( $instance, 'custom_columns' ),
-			),
-			array(
-				'type'     => 'filter',
-				'name'     => sprintf( 'manage_%s_posts_columns', Event::POST_TYPE ),
-				'priority' => 10,
-				'callback' => array( $instance, 'set_custom_columns' ),
-			),
-			array(
-				'type'     => 'filter',
-				'name'     => sprintf( 'manage_%s_posts_columns', Event::POST_TYPE ),
-				'priority' => 10,
-				'callback' => array( $instance, 'remove_comments_column' ),
+				'name'     => 'init',
+				'priority' => 11,
+				'callback' => array( $instance, 'register_post_type_hooks' ),
 			),
 		);
 
 		$this->assert_hooks( $hooks, $instance );
+	}
+
+	/**
+	 * Coverage for register_post_type_hooks method.
+	 *
+	 * @covers ::register_post_type_hooks
+	 *
+	 * @return void
+	 */
+	public function test_register_post_type_hooks(): void {
+		$instance = Event_Admin_List::get_instance();
+		$test_pt  = 'gp_test_event_admin';
+
+		// Register a temporary post type with gatherpress-event-date support.
+		register_post_type(
+			$test_pt,
+			array(
+				'label'    => 'Test Events',
+				'public'   => false,
+				'supports' => array( 'title', 'gatherpress-event-date' ),
+			)
+		);
+
+		// Call the method directly (normally called via init hook at priority 11).
+		$instance->register_post_type_hooks();
+
+		// Verify per-post-type hooks were registered for the test post type.
+		$this->assertNotFalse(
+			has_filter( sprintf( 'manage_edit-%s_sortable_columns', $test_pt ), array( $instance, 'sortable_columns' ) ), // phpcs:ignore Generic.Files.LineLength.TooLong
+			'Should register sortable_columns filter for event post type.'
+		);
+		$this->assertNotFalse(
+			has_filter( sprintf( 'views_edit-%s', $test_pt ), array( $instance, 'views_edit' ) ),
+			'Should register views_edit filter for event post type.'
+		);
+		$this->assertNotFalse(
+			has_action( sprintf( 'manage_%s_posts_custom_column', $test_pt ), array( $instance, 'custom_columns' ) ),
+			'Should register custom_columns action for event post type.'
+		);
+		$this->assertNotFalse(
+			has_filter( sprintf( 'manage_%s_posts_columns', $test_pt ), array( $instance, 'set_custom_columns' ) ),
+			'Should register set_custom_columns filter for event post type.'
+		);
+		$this->assertNotFalse(
+			has_filter( sprintf( 'manage_%s_posts_columns', $test_pt ), array( $instance, 'remove_comments_column' ) ),
+			'Should register remove_comments_column filter for event post type.'
+		);
+
+		// Clean up the temporary post type.
+		unregister_post_type( $test_pt );
+	}
+
+	/**
+	 * Coverage for default_sort method when no screen is available.
+	 *
+	 * Exercises the ! $screen early return, which can occur in multisite
+	 * contexts where get_current_screen() returns null before any screen is set.
+	 *
+	 * @covers ::default_sort
+	 *
+	 * @return void
+	 */
+	public function test_default_sort_no_screen(): void {
+		$instance = Event_Admin_List::get_instance();
+
+		// Ensure no screen is set so get_current_screen() returns null.
+		unset( $GLOBALS['current_screen'] );
+
+		// Ensure $_GET is clean.
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		unset( $_GET['orderby'], $_GET['order'] );
+
+		$instance->default_sort();
+
+		// Should return early without modifying $_GET.
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$this->assertArrayNotHasKey( 'orderby', $_GET, 'Should not set orderby when no screen.' );
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$this->assertArrayNotHasKey( 'order', $_GET, 'Should not set order when no screen.' );
 	}
 
 	/**
@@ -206,6 +261,28 @@ class Test_Event_Admin_List extends Base {
 	}
 
 	/**
+	 * Coverage for views_edit method when no screen is available.
+	 *
+	 * Exercises the ! $screen early return, which can occur in multisite contexts
+	 * where get_current_screen() returns null before any screen is set.
+	 *
+	 * @covers ::views_edit
+	 *
+	 * @return void
+	 */
+	public function test_views_edit_no_screen(): void {
+		$instance = Event_Admin_List::get_instance();
+
+		// Ensure no screen is set so get_current_screen() returns null.
+		unset( $GLOBALS['current_screen'] );
+
+		$view_links = array( 'all' => '<a href="#">All</a>' );
+		$result     = $instance->views_edit( $view_links );
+
+		$this->assertSame( $view_links, $result, 'Should return view_links unchanged when no screen.' );
+	}
+
+	/**
 	 * Coverage for views_edit method with no events.
 	 *
 	 * @covers ::views_edit
@@ -215,6 +292,8 @@ class Test_Event_Admin_List extends Base {
 	public function test_views_edit_adds_links(): void {
 		$instance = Event_Admin_List::get_instance();
 
+		set_current_screen( 'edit-' . Event::POST_TYPE );
+
 		$view_links = array(
 			'all'     => '<a href="#">All</a>',
 			'publish' => '<a href="#">Published</a>',
@@ -222,6 +301,8 @@ class Test_Event_Admin_List extends Base {
 		);
 
 		$result = $instance->views_edit( $view_links );
+
+		set_current_screen( 'front' );
 
 		// Should have original links plus upcoming and past.
 		$this->assertArrayHasKey( 'upcoming', $result, 'Should have upcoming link.' );
@@ -283,6 +364,8 @@ class Test_Event_Admin_List extends Base {
 	public function test_views_edit_placement(): void {
 		$instance = Event_Admin_List::get_instance();
 
+		set_current_screen( 'edit-' . Event::POST_TYPE );
+
 		$view_links = array(
 			'all'     => '<a href="#">All</a>',
 			'publish' => '<a href="#">Published</a>',
@@ -295,6 +378,8 @@ class Test_Event_Admin_List extends Base {
 		$this->assertEquals( 'upcoming', $keys[1], 'Second link should be upcoming.' );
 		$this->assertEquals( 'past', $keys[2], 'Third link should be past.' );
 		$this->assertEquals( 'publish', $keys[3], 'Fourth link should be publish.' );
+
+		set_current_screen( 'front' );
 	}
 
 	/**
@@ -306,6 +391,8 @@ class Test_Event_Admin_List extends Base {
 	 */
 	public function test_views_edit_active_upcoming(): void {
 		$instance = Event_Admin_List::get_instance();
+
+		set_current_screen( 'edit-' . Event::POST_TYPE );
 
 		// Simulate an active upcoming view via GET parameter.
 		$_GET['gatherpress_event_query'] = 'upcoming'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
@@ -345,6 +432,7 @@ class Test_Event_Admin_List extends Base {
 		// Clean up.
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		unset( $_GET['gatherpress_event_query'] );
+		set_current_screen( 'front' );
 	}
 
 	/**
@@ -356,6 +444,8 @@ class Test_Event_Admin_List extends Base {
 	 */
 	public function test_views_edit_active_past(): void {
 		$instance = Event_Admin_List::get_instance();
+
+		set_current_screen( 'edit-' . Event::POST_TYPE );
 
 		// Simulate an active past view via GET parameter.
 		$_GET['gatherpress_event_query'] = 'past'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
@@ -382,6 +472,7 @@ class Test_Event_Admin_List extends Base {
 		// Clean up.
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		unset( $_GET['gatherpress_event_query'] );
+		set_current_screen( 'front' );
 	}
 
 	/**
@@ -393,6 +484,8 @@ class Test_Event_Admin_List extends Base {
 	 */
 	public function test_views_edit_no_active_filter(): void {
 		$instance = Event_Admin_List::get_instance();
+
+		set_current_screen( 'edit-' . Event::POST_TYPE );
 
 		// Ensure no event query filter is set.
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
@@ -423,6 +516,8 @@ class Test_Event_Admin_List extends Base {
 			$result['all'],
 			'All link should keep current class when no filter is active.'
 		);
+
+		set_current_screen( 'front' );
 	}
 
 	/**
@@ -437,6 +532,8 @@ class Test_Event_Admin_List extends Base {
 	 */
 	public function test_views_edit_all_gets_current_when_missing(): void {
 		$instance = Event_Admin_List::get_instance();
+
+		set_current_screen( 'edit-' . Event::POST_TYPE );
 
 		// Ensure no event query filter is set.
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
@@ -461,6 +558,8 @@ class Test_Event_Admin_List extends Base {
 			$result['all'],
 			'All link should get aria-current when no filter is active.'
 		);
+
+		set_current_screen( 'front' );
 	}
 
 	/**
@@ -492,13 +591,17 @@ class Test_Event_Admin_List extends Base {
 		);
 
 		// Reset cached counts after event creation so fresh queries run.
-		Utility::set_and_get_hidden_property( $instance, 'event_counts', null );
+		Utility::set_and_get_hidden_property( $instance, 'event_counts', array() );
+
+		set_current_screen( 'edit-' . Event::POST_TYPE );
 
 		$view_links = array(
 			'all' => '<a href="#">All</a>',
 		);
 
 		$result = $instance->views_edit( $view_links );
+
+		set_current_screen( 'front' );
 
 		// Upcoming should show count of 1.
 		$this->assertStringContainsString(
@@ -526,7 +629,7 @@ class Test_Event_Admin_List extends Base {
 		$instance = Event_Admin_List::get_instance();
 
 		// Reset cached counts and invoke the protected method.
-		Utility::set_and_get_hidden_property( $instance, 'event_counts', null );
+		Utility::set_and_get_hidden_property( $instance, 'event_counts', array() );
 
 		$counts = Utility::invoke_hidden_method( $instance, 'get_event_counts' );
 
@@ -564,7 +667,7 @@ class Test_Event_Admin_List extends Base {
 		);
 
 		// Reset cached counts before querying.
-		Utility::set_and_get_hidden_property( $instance, 'event_counts', null );
+		Utility::set_and_get_hidden_property( $instance, 'event_counts', array() );
 
 		$counts = Utility::invoke_hidden_method( $instance, 'get_event_counts' );
 
@@ -600,7 +703,7 @@ class Test_Event_Admin_List extends Base {
 		);
 
 		// Reset cached counts before querying.
-		Utility::set_and_get_hidden_property( $instance, 'event_counts', null );
+		Utility::set_and_get_hidden_property( $instance, 'event_counts', array() );
 
 		$counts = Utility::invoke_hidden_method( $instance, 'get_event_counts' );
 
@@ -670,7 +773,7 @@ class Test_Event_Admin_List extends Base {
 		);
 
 		// Reset cached counts before querying.
-		Utility::set_and_get_hidden_property( $instance, 'event_counts', null );
+		Utility::set_and_get_hidden_property( $instance, 'event_counts', array() );
 
 		$counts = Utility::invoke_hidden_method( $instance, 'get_event_counts' );
 
@@ -710,7 +813,7 @@ class Test_Event_Admin_List extends Base {
 		);
 
 		// Reset cached counts before querying.
-		Utility::set_and_get_hidden_property( $instance, 'event_counts', null );
+		Utility::set_and_get_hidden_property( $instance, 'event_counts', array() );
 
 		$counts = Utility::invoke_hidden_method( $instance, 'get_event_counts' );
 
@@ -733,7 +836,7 @@ class Test_Event_Admin_List extends Base {
 		$instance = Event_Admin_List::get_instance();
 
 		// Reset cached counts.
-		Utility::set_and_get_hidden_property( $instance, 'event_counts', null );
+		Utility::set_and_get_hidden_property( $instance, 'event_counts', array() );
 
 		// Create an event without setting any dates.
 		$this->mock->post(
@@ -762,16 +865,15 @@ class Test_Event_Admin_List extends Base {
 		$instance = Event_Admin_List::get_instance();
 
 		// Reset cached counts.
-		Utility::set_and_get_hidden_property( $instance, 'event_counts', null );
+		Utility::set_and_get_hidden_property( $instance, 'event_counts', array() );
 
 		// First call should query the database and cache.
 		$counts = Utility::invoke_hidden_method( $instance, 'get_event_counts' );
 		$this->assertSame( 0, $counts['upcoming'], 'Should have 0 upcoming events.' );
 
-		// Verify the property is now cached.
-		$cached = Utility::set_and_get_hidden_property( $instance, 'event_counts', $counts );
-		$this->assertNotNull( $cached, 'Property should be cached after first call.' );
-		$this->assertSame( $counts, $cached, 'Cached value should match returned value.' );
+		// Verify caching: a second call should return the same result without re-querying.
+		$counts_second = Utility::invoke_hidden_method( $instance, 'get_event_counts' );
+		$this->assertSame( $counts['upcoming'], $counts_second['upcoming'], 'Second call should return the cached value.' ); // phpcs:ignore Generic.Files.LineLength.TooLong
 
 		// Create an event after the first call.
 		$post_id = $this->mock->post(
@@ -795,7 +897,7 @@ class Test_Event_Admin_List extends Base {
 		$this->assertSame( 0, $counts_cached['upcoming'], 'Cached call should still return 0.' );
 
 		// After resetting the cache, should reflect the new event.
-		Utility::set_and_get_hidden_property( $instance, 'event_counts', null );
+		Utility::set_and_get_hidden_property( $instance, 'event_counts', array() );
 		$counts_fresh = Utility::invoke_hidden_method( $instance, 'get_event_counts' );
 		$this->assertSame( 1, $counts_fresh['upcoming'], 'Fresh call should return 1 after cache reset.' );
 	}
@@ -1052,6 +1154,30 @@ class Test_Event_Admin_List extends Base {
 	}
 
 	/**
+	 * Coverage for venue_sorting_join_paged method with a current screen set.
+	 *
+	 * Exercises the $screen->post_type branch, where the venue taxonomy is derived
+	 * from the currently active admin screen rather than falling back to the default.
+	 *
+	 * @covers ::venue_sorting_join_paged
+	 *
+	 * @return void
+	 */
+	public function test_venue_sorting_join_paged_with_screen(): void {
+		global $wpdb;
+		$instance = Event_Admin_List::get_instance();
+
+		set_current_screen( 'edit-' . Event::POST_TYPE );
+
+		$original_join = "LEFT JOIN {$wpdb->posts} AS posts ON posts.ID = {$wpdb->posts}.ID";
+		$result        = $instance->venue_sorting_join_paged( $original_join );
+
+		set_current_screen( 'front' );
+
+		$this->assertStringContainsString( "'" . Venue::TAXONOMY . "'", $result );
+	}
+
+	/**
 	 * Coverage for venue_sorting_join_paged method.
 	 *
 	 * @covers ::venue_sorting_join_paged
@@ -1061,6 +1187,9 @@ class Test_Event_Admin_List extends Base {
 	public function test_venue_sorting_join_paged(): void {
 		global $wpdb;
 		$instance = Event_Admin_List::get_instance();
+
+		// Ensure no screen is set so the method falls back to the default post type.
+		unset( $GLOBALS['current_screen'] );
 
 		$original_join = "LEFT JOIN {$wpdb->posts} AS posts ON posts.ID = {$wpdb->posts}.ID";
 		$result        = $instance->venue_sorting_join_paged( $original_join );
@@ -1232,6 +1361,41 @@ class Test_Event_Admin_List extends Base {
 		remove_filter( 'posts_join_paged', array( $instance, 'rsvp_sorting_join_paged' ) );
 		remove_filter( 'posts_groupby', array( $instance, 'sorting_groupby_post_id' ) );
 		remove_filter( 'posts_orderby', array( $instance, 'rsvp_sorting_orderby' ) );
+		set_current_screen( 'front' );
+	}
+
+	/**
+	 * Tests handle_rsvp_sorting early return when post_type is an array.
+	 *
+	 * Exercises the is_array($post_type) guard in handle_column_sorting(),
+	 * which prevents sorting logic from running on multi-post-type queries.
+	 *
+	 * @covers ::handle_rsvp_sorting
+	 * @covers ::handle_column_sorting
+	 * @return void
+	 */
+	public function test_rsvp_sorting_early_return_array_post_type(): void {
+		global $wp_the_query;
+
+		// Create a WP_Query with multiple post types (array).
+		$query = new WP_Query(
+			array(
+				'post_type' => array( Event::POST_TYPE, 'post' ),
+				'orderby'   => 'rsvps',
+			)
+		);
+
+		// phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited -- Necessary for testing query modifications.
+		$wp_the_query = $query;
+
+		set_current_screen( 'edit-gatherpress_event' );
+
+		$instance = Event_Admin_List::get_instance();
+		$instance->handle_rsvp_sorting( $query );
+
+		// Should return early — rsvp_sort_order must not be set.
+		$this->assertEmpty( $query->get( 'rsvp_sort_order' ), 'Should not set rsvp_sort_order for array post_type.' );
+
 		set_current_screen( 'front' );
 	}
 
