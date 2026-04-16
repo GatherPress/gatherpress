@@ -121,10 +121,6 @@ class Event_Admin_List {
 	 * @return void
 	 */
 	public function default_sort(): void {
-		if ( ! function_exists( 'get_current_screen' ) ) {
-			return;
-		}
-
 		$screen = get_current_screen();
 
 		if ( ! $screen || ! post_type_supports( $screen->post_type, 'gatherpress-event-date' ) ) {
@@ -176,8 +172,13 @@ class Event_Admin_List {
 	 * @return array Updated list table views.
 	 */
 	public function views_edit( array $view_links ): array {
-		$screen    = function_exists( 'get_current_screen' ) ? get_current_screen() : null;
-		$post_type = $screen ? $screen->post_type : Event::POST_TYPE;
+		$screen = get_current_screen();
+
+		if ( ! $screen ) {
+			return $view_links;
+		}
+
+		$post_type = $screen->post_type;
 
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		$current_view = isset( $_GET['gatherpress_event_query'] )
@@ -391,6 +392,11 @@ class Event_Admin_List {
 	private function handle_column_sorting( WP_Query $query, string $column, array $filters, string $order_key ): void {
 		$post_type = $query->get( 'post_type' );
 
+		// Bail if post_type is an array (multiple post types queried) — not a single event screen.
+		if ( is_array( $post_type ) ) {
+			return;
+		}
+
 		// Only proceed if we're in admin, on the main query, and dealing with an event post type.
 		if ( ! is_admin() || ! $query->is_main_query()
 			|| ! post_type_supports( $post_type, 'gatherpress-event-date' ) ) {
@@ -487,9 +493,10 @@ class Event_Admin_List {
 	 * @return string Modified JOIN clause.
 	 */
 	public function venue_sorting_join_paged( string $join ): string {
-		global $wpdb, $wp_query;
+		global $wpdb;
 
-		$post_type      = $wp_query ? $wp_query->get( 'post_type' ) : Event::POST_TYPE;
+		$screen         = get_current_screen();
+		$post_type      = $screen ? $screen->post_type : Event::POST_TYPE;
 		$venue_taxonomy = Venue::get_taxonomy( Venue::get_venue_post_type( $post_type ) );
 
 		// Bail early if the derived taxonomy is not registered to avoid invalid SQL.
@@ -601,7 +608,8 @@ class Event_Admin_List {
 				return;
 			}
 
-			$event_post_type = get_post_type( $post_id ) ? get_post_type( $post_id ) : Event::POST_TYPE;
+			$retrieved_post_type = get_post_type( $post_id );
+			$event_post_type     = $retrieved_post_type ? $retrieved_post_type : Event::POST_TYPE;
 
 			// Create link to filtered RSVPs page for approved RSVPs.
 			$approved_rsvp_url = add_query_arg(

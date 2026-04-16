@@ -241,6 +241,8 @@ class Test_Event_Admin_List extends Base {
 	public function test_views_edit_adds_links(): void {
 		$instance = Event_Admin_List::get_instance();
 
+		set_current_screen( 'edit-' . Event::POST_TYPE );
+
 		$view_links = array(
 			'all'     => '<a href="#">All</a>',
 			'publish' => '<a href="#">Published</a>',
@@ -248,6 +250,8 @@ class Test_Event_Admin_List extends Base {
 		);
 
 		$result = $instance->views_edit( $view_links );
+
+		set_current_screen( 'front' );
 
 		// Should have original links plus upcoming and past.
 		$this->assertArrayHasKey( 'upcoming', $result, 'Should have upcoming link.' );
@@ -309,6 +313,8 @@ class Test_Event_Admin_List extends Base {
 	public function test_views_edit_placement(): void {
 		$instance = Event_Admin_List::get_instance();
 
+		set_current_screen( 'edit-' . Event::POST_TYPE );
+
 		$view_links = array(
 			'all'     => '<a href="#">All</a>',
 			'publish' => '<a href="#">Published</a>',
@@ -321,6 +327,8 @@ class Test_Event_Admin_List extends Base {
 		$this->assertEquals( 'upcoming', $keys[1], 'Second link should be upcoming.' );
 		$this->assertEquals( 'past', $keys[2], 'Third link should be past.' );
 		$this->assertEquals( 'publish', $keys[3], 'Fourth link should be publish.' );
+
+		set_current_screen( 'front' );
 	}
 
 	/**
@@ -332,6 +340,8 @@ class Test_Event_Admin_List extends Base {
 	 */
 	public function test_views_edit_active_upcoming(): void {
 		$instance = Event_Admin_List::get_instance();
+
+		set_current_screen( 'edit-' . Event::POST_TYPE );
 
 		// Simulate an active upcoming view via GET parameter.
 		$_GET['gatherpress_event_query'] = 'upcoming'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
@@ -371,6 +381,7 @@ class Test_Event_Admin_List extends Base {
 		// Clean up.
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		unset( $_GET['gatherpress_event_query'] );
+		set_current_screen( 'front' );
 	}
 
 	/**
@@ -382,6 +393,8 @@ class Test_Event_Admin_List extends Base {
 	 */
 	public function test_views_edit_active_past(): void {
 		$instance = Event_Admin_List::get_instance();
+
+		set_current_screen( 'edit-' . Event::POST_TYPE );
 
 		// Simulate an active past view via GET parameter.
 		$_GET['gatherpress_event_query'] = 'past'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
@@ -408,6 +421,7 @@ class Test_Event_Admin_List extends Base {
 		// Clean up.
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		unset( $_GET['gatherpress_event_query'] );
+		set_current_screen( 'front' );
 	}
 
 	/**
@@ -419,6 +433,8 @@ class Test_Event_Admin_List extends Base {
 	 */
 	public function test_views_edit_no_active_filter(): void {
 		$instance = Event_Admin_List::get_instance();
+
+		set_current_screen( 'edit-' . Event::POST_TYPE );
 
 		// Ensure no event query filter is set.
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
@@ -449,6 +465,8 @@ class Test_Event_Admin_List extends Base {
 			$result['all'],
 			'All link should keep current class when no filter is active.'
 		);
+
+		set_current_screen( 'front' );
 	}
 
 	/**
@@ -463,6 +481,8 @@ class Test_Event_Admin_List extends Base {
 	 */
 	public function test_views_edit_all_gets_current_when_missing(): void {
 		$instance = Event_Admin_List::get_instance();
+
+		set_current_screen( 'edit-' . Event::POST_TYPE );
 
 		// Ensure no event query filter is set.
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
@@ -487,6 +507,8 @@ class Test_Event_Admin_List extends Base {
 			$result['all'],
 			'All link should get aria-current when no filter is active.'
 		);
+
+		set_current_screen( 'front' );
 	}
 
 	/**
@@ -520,11 +542,15 @@ class Test_Event_Admin_List extends Base {
 		// Reset cached counts after event creation so fresh queries run.
 		Utility::set_and_get_hidden_property( $instance, 'event_counts', array() );
 
+		set_current_screen( 'edit-' . Event::POST_TYPE );
+
 		$view_links = array(
 			'all' => '<a href="#">All</a>',
 		);
 
 		$result = $instance->views_edit( $view_links );
+
+		set_current_screen( 'front' );
 
 		// Upcoming should show count of 1.
 		$this->assertStringContainsString(
