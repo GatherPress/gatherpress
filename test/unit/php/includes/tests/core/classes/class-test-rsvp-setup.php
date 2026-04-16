@@ -991,4 +991,79 @@ class Test_Rsvp_Setup extends Base {
 		// Restore the setting for other tests.
 		Settings::get_instance()->set( 'rsvp_mode', 'all_on' );
 	}
+
+	/**
+	 * Tests filter_rsvp_block_types expands true to array and removes RSVP blocks when disabled.
+	 *
+	 * @covers ::filter_rsvp_block_types
+	 *
+	 * @return void
+	 */
+	public function test_filter_rsvp_block_types_expands_true_when_disabled(): void {
+		$instance = Rsvp_Setup::get_instance();
+
+		Settings::get_instance()->set( 'rsvp_mode', 'disabled' );
+
+		// Pass true (all blocks allowed) — should expand and filter out RSVP blocks.
+		$result = $instance->filter_rsvp_block_types( true );
+
+		$this->assertIsArray( $result, 'Result should be an array when all blocks were allowed.' );
+		$this->assertNotContains(
+			'gatherpress/rsvp',
+			$result,
+			'gatherpress/rsvp block should be removed when RSVP is disabled.'
+		);
+
+		Settings::get_instance()->set( 'rsvp_mode', 'all_on' );
+	}
+
+	/**
+	 * Tests filter_rsvp_block_types returns non-array value unchanged when disabled.
+	 *
+	 * @covers ::filter_rsvp_block_types
+	 *
+	 * @return void
+	 */
+	public function test_filter_rsvp_block_types_returns_non_array_unchanged_when_disabled(): void {
+		$instance = Rsvp_Setup::get_instance();
+
+		Settings::get_instance()->set( 'rsvp_mode', 'disabled' );
+
+		// Pass false (not true, not array) — should be returned as-is.
+		$result = $instance->filter_rsvp_block_types( false );
+
+		$this->assertFalse( $result, 'Non-array, non-true value should be returned unchanged.' );
+
+		Settings::get_instance()->set( 'rsvp_mode', 'all_on' );
+	}
+
+	/**
+	 * Tests add_rsvp_submenu_page returns early when RSVP is globally disabled.
+	 *
+	 * @covers ::add_rsvp_submenu_page
+	 *
+	 * @return void
+	 */
+	public function test_add_rsvp_submenu_page_skips_when_disabled(): void {
+		global $submenu;
+
+		if ( ! is_array( $submenu ) ) {
+			$submenu = array(); // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
+		}
+
+		$submenu_before = $submenu;
+
+		Settings::get_instance()->set( 'rsvp_mode', 'disabled' );
+
+		Rsvp_Setup::get_instance()->add_rsvp_submenu_page();
+
+		// Submenu should be unchanged since the method returns early.
+		$this->assertSame(
+			$submenu_before,
+			$submenu,
+			'No submenu page should be added when RSVP is globally disabled.'
+		);
+
+		Settings::get_instance()->set( 'rsvp_mode', 'all_on' );
+	}
 }

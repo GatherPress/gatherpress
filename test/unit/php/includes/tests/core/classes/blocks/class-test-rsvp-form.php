@@ -11,6 +11,7 @@ namespace GatherPress\Tests\Core\Blocks;
 use GatherPress\Core\Blocks\Rsvp_Form;
 use GatherPress\Core\Event;
 use GatherPress\Core\Rsvp;
+use GatherPress\Core\Settings;
 use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;
 
@@ -2786,5 +2787,38 @@ class Test_Rsvp_Form extends Base {
 			$result,
 			'Should return null when visibility rules object is empty.'
 		);
+	}
+
+	/**
+	 * Tests that transform_block_content returns empty string when per-event RSVP is disabled.
+	 *
+	 * @covers ::transform_block_content
+	 *
+	 * @return void
+	 */
+	public function test_transform_block_content_rsvp_disabled_per_event(): void {
+		$instance = Rsvp_Form::get_instance();
+		$post_id  = $this->factory()->post->create(
+			array(
+				'post_type'   => Event::POST_TYPE,
+				'post_status' => 'publish',
+			)
+		);
+
+		Settings::get_instance()->set( 'rsvp_mode', 'per_event_on' );
+		update_post_meta( $post_id, 'gatherpress_enable_rsvp', 0 );
+
+		$block_content = '<div class="wp-block-gatherpress-rsvp-form">RSVP Form Content</div>';
+		$block         = array(
+			'blockName' => 'gatherpress/rsvp-form',
+			'attrs'     => array( 'postId' => $post_id ),
+		);
+
+		$result = $instance->transform_block_content( $block_content, $block );
+
+		$this->assertSame( '', $result, 'Should return empty string when per-event RSVP is disabled.' );
+
+		delete_post_meta( $post_id, 'gatherpress_enable_rsvp' );
+		Settings::get_instance()->set( 'rsvp_mode', 'all_on' );
 	}
 }

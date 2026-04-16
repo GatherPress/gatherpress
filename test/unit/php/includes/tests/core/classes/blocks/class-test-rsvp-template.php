@@ -11,6 +11,7 @@ namespace GatherPress\Tests\Core\Blocks;
 use GatherPress\Core\Blocks\Rsvp_Template;
 use GatherPress\Core\Event;
 use GatherPress\Core\Rsvp;
+use GatherPress\Core\Settings;
 use GatherPress\Tests\Base;
 use WP_Block;
 use WP_Block_Type_Registry;
@@ -757,5 +758,29 @@ class Test_Rsvp_Template extends Base {
 			$result,
 			'Failed to assert output was generated with responses.'
 		);
+	}
+
+	/**
+	 * Tests that generate_rsvp_template_block returns empty string when per-event RSVP is disabled.
+	 *
+	 * @covers ::generate_rsvp_template_block
+	 *
+	 * @return void
+	 */
+	public function test_generate_rsvp_template_block_rsvp_disabled_per_event(): void {
+		$instance = Rsvp_Template::get_instance();
+		$post     = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get();
+		$post_id  = $post->ID;
+
+		Settings::get_instance()->set( 'rsvp_mode', 'per_event_on' );
+		update_post_meta( $post_id, 'gatherpress_enable_rsvp', 0 );
+
+		$wp_block = new WP_Block( array(), array( 'postId' => $post_id ) );
+		$result   = $instance->generate_rsvp_template_block( '<div>Original content</div>', array(), $wp_block );
+
+		$this->assertSame( '', $result, 'Should return empty string when per-event RSVP is disabled.' );
+
+		delete_post_meta( $post_id, 'gatherpress_enable_rsvp' );
+		Settings::get_instance()->set( 'rsvp_mode', 'all_on' );
 	}
 }

@@ -750,6 +750,34 @@ class Test_Rsvp extends Base {
 	 *
 	 * @return void
 	 */
+	/**
+	 * Coverage for initialize_enabled method.
+	 *
+	 * @covers ::initialize_enabled
+	 *
+	 * @return void
+	 */
+	public function test_initialize_enabled_skips_non_rsvp_post_type(): void {
+		// Use a standard post type that does not support gatherpress-rsvp.
+		$post_id = $this->factory->post->create( array( 'post_type' => 'post' ) );
+
+		( new Rsvp( $post_id ) )->initialize_enabled();
+
+		// Meta should remain unset since the post type is not an RSVP-capable event.
+		$this->assertSame(
+			'',
+			get_post_meta( $post_id, 'gatherpress_enable_rsvp', true ),
+			'Meta should not be written for post types that do not support gatherpress-rsvp.'
+		);
+	}
+
+	/**
+	 * Coverage for initialize_enabled method.
+	 *
+	 * @covers ::initialize_enabled
+	 *
+	 * @return void
+	 */
 	public function test_initialize_enabled_skips_non_all_on_modes(): void {
 		// Switch to per_event_on mode BEFORE creating the post so the hook does not write meta.
 		Settings::get_instance()->set( 'rsvp_mode', 'per_event_on' );
