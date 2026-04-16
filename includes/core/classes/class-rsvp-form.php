@@ -152,6 +152,16 @@ class Rsvp_Form {
 		$email   = Utility::get_http_input( INPUT_POST, 'email', 'sanitize_email' );
 		$post_id = intval( $comment_data['comment_post_ID'] );
 
+		// Check sitewide/per-event RSVP setting before any post-type check so that
+		// globally-disabled mode returns the correct 403 rather than a misleading 400.
+		if ( ! ( new Rsvp( $post_id ) )->is_enabled() ) {
+			wp_die(
+				esc_html__( 'RSVP is disabled for this event.', 'gatherpress' ),
+				esc_html__( 'RSVP Disabled', 'gatherpress' ),
+				403
+			);
+		}
+
 		// Validate that the post supports RSVP.
 		if ( ! post_type_supports( (string) get_post_type( $post_id ), 'gatherpress-rsvp' ) ) {
 			wp_die(

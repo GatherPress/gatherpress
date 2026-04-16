@@ -2,6 +2,10 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Language
+
+Always use **US English** spelling in all code, comments, and documentation. When in doubt, use the spelling WordPress core uses.
+
 ## Development Commands
 
 ### PHP Development

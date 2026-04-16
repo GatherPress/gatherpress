@@ -11,9 +11,10 @@ import apiFetch from '@wordpress/api-fetch';
 /**
  * Internal dependencies.
  */
-import { hasValidEventId, DISABLED_FIELD_OPACITY, getEventMeta, isPostTypeSupporting } from '../../helpers/event';
+import { hasValidEventId, DISABLED_FIELD_OPACITY, getEventMeta, isPostTypeSupporting, isRsvpEnabledForEvent } from '../../helpers/event';
 import { EVENT_REST_API } from '../../helpers/namespace';
 import { isInFSETemplate } from '../../helpers/editor';
+import { getFromSettings } from '../../helpers/editor-settings';
 
 /**
  * Fetch RSVP responses from the API.
@@ -61,12 +62,12 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 	// Subscribe to event data to trigger re-renders when data loads.
 	// This ensures hasValidEventId works correctly after async data fetch.
 	// Only subscribe if we have a valid postId from event context.
-	useSelect(
+	const { enableRsvp } = useSelect(
 		( select ) => {
 			if ( postId && ( isDescendentOfQueryLoop || isEventContext ) ) {
 				return getEventMeta( select, postId, attributes );
 			}
-			return null;
+			return { enableRsvp: true };
 		},
 		[ postId, attributes, isDescendentOfQueryLoop, isEventContext ]
 	);
@@ -77,9 +78,15 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 		( isDescendentOfQueryLoop || isEventContext ) &&
 		hasValidEventId( postId, context?.postType );
 
+	const rsvpMode = getFromSettings( 'rsvpMode' ) ?? 'all_on';
+
 	const blockProps = useBlockProps( {
 		style: {
-			opacity: ( isInFSETemplate() || isValidEvent ) ? 1 : DISABLED_FIELD_OPACITY,
+			opacity:
+				isInFSETemplate() ||
+				( isValidEvent && isRsvpEnabledForEvent( rsvpMode, enableRsvp ) )
+					? 1
+					: DISABLED_FIELD_OPACITY,
 		},
 	} );
 

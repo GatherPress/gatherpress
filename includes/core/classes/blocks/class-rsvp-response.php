@@ -100,6 +100,10 @@ class Rsvp_Response {
 			return '';
 		}
 
+		if ( ! ( new Rsvp( $post_id ) )->is_enabled() ) {
+			return '';
+		}
+
 		$rsvp               = new Rsvp( $post_id );
 		$tag                = new WP_HTML_Tag_Processor( $block_content );
 		$rsvp_limit_enabled = isset( $block['attrs']['rsvpLimitEnabled'] ) ?

@@ -14,6 +14,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Block;
 use GatherPress\Core\Event;
+use GatherPress\Core\Rsvp;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Utility;
 use WP_Block;
@@ -131,6 +132,10 @@ class Rsvp_Template {
 			( ! is_preview() && 'publish' !== get_post_status( $post_id ) )
 		) {
 			return $block_content;
+		}
+
+		if ( ! ( new Rsvp( $post_id ) )->is_enabled() ) {
+			return '';
 		}
 
 		$responses     = $event->rsvp->responses()['attending']['records'];

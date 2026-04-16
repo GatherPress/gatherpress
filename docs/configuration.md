@@ -7,6 +7,7 @@ Once activated, GatherPress can be configured from your WordPress dashboard unde
 Customize how GatherPress behaves across your site:
 
 - Use publish date as event date (optional)
+- **RSVP Mode** — choose between All events, Per event (default on), Per event (default off), or Disabled (see [RSVP system](user/rsvp-system.md#rsvp-mode))
 - Default RSVP limit
 - Enable or disable anonymous RSVPs
 - Date and time formats

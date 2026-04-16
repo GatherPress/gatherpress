@@ -19,6 +19,7 @@ import {
 	Spinner,
 } from '@wordpress/components';
 import { useState, useEffect } from '@wordpress/element';
+import { useSelect } from '@wordpress/data';
 import apiFetch from '@wordpress/api-fetch';
 
 /**
@@ -26,8 +27,9 @@ import apiFetch from '@wordpress/api-fetch';
  */
 import RsvpManager from './rsvp-manager';
 import TEMPLATE from './template';
-import { hasValidEventId, isPostTypeSupporting, DISABLED_FIELD_OPACITY } from '../../helpers/event';
+import { hasValidEventId, isPostTypeSupporting, DISABLED_FIELD_OPACITY, getEventMeta, isRsvpEnabledForEvent } from '../../helpers/event';
 import { getEditorDocument, isInFSETemplate } from '../../helpers/editor';
+import { getFromSettings } from '../../helpers/editor-settings';
 import { EVENT_REST_API } from '../../helpers/namespace';
 
 /**
@@ -82,9 +84,20 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 		( isDescendentOfQueryLoop || isEventContext ) &&
 		hasValidEventId( postId, context?.postType );
 
+	const { enableRsvp } = useSelect(
+		( select ) => getEventMeta( select, postId, attributes ),
+		[ postId, attributes ]
+	);
+
+	const rsvpMode = getFromSettings( 'rsvpMode' ) ?? 'all_on';
+
 	const blockProps = useBlockProps( {
 		style: {
-			opacity: ( isInFSETemplate() || isValidEvent ) ? 1 : DISABLED_FIELD_OPACITY,
+			opacity:
+				isInFSETemplate() ||
+				( isValidEvent && isRsvpEnabledForEvent( rsvpMode, enableRsvp ) )
+					? 1
+					: DISABLED_FIELD_OPACITY,
 		},
 	} );
 

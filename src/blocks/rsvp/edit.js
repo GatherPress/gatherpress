@@ -17,8 +17,9 @@ import { createBlock, parse, serialize } from '@wordpress/blocks';
  * Internal dependencies.
  */
 import TEMPLATES from './templates';
-import { hasValidEventId, DISABLED_FIELD_OPACITY, getEventMeta, isPostTypeSupporting } from '../../helpers/event';
+import { hasValidEventId, DISABLED_FIELD_OPACITY, getEventMeta, isPostTypeSupporting, isRsvpEnabledForEvent } from '../../helpers/event';
 import { isInFSETemplate, getEditorDocument } from '../../helpers/editor';
+import { getFromSettings } from '../../helpers/editor-settings';
 
 /**
  * Helper function to convert a template to blocks.
@@ -69,12 +70,6 @@ const Edit = ( { attributes, setAttributes, clientId, context } ) => {
 		( isDescendentOfQueryLoop || isEventContext ) &&
 		hasValidEventId( postId, context?.postType );
 
-	const blockProps = useBlockProps( {
-		style: {
-			opacity: ( isInFSETemplate() || isValidEvent ) ? 1 : DISABLED_FIELD_OPACITY,
-		},
-	} );
-
 	// Get the current inner blocks
 	const innerBlocks = useSelect(
 		( select ) => select( blockEditorStore ).getBlocks( clientId ),
@@ -82,10 +77,22 @@ const Edit = ( { attributes, setAttributes, clientId, context } ) => {
 	);
 
 	// Get event data - either from override postId or current post.
-	const { maxGuestLimit: maxNumberOfGuests, enableAnonymousRsvp } = useSelect(
+	const { maxGuestLimit: maxNumberOfGuests, enableRsvp, enableAnonymousRsvp } = useSelect(
 		( select ) => getEventMeta( select, postId, attributes ),
 		[ postId, attributes ]
 	);
+
+	const rsvpMode = getFromSettings( 'rsvpMode' ) ?? 'all_on';
+
+	const blockProps = useBlockProps( {
+		style: {
+			opacity:
+				isInFSETemplate() ||
+				( isValidEvent && isRsvpEnabledForEvent( rsvpMode, enableRsvp ) )
+					? 1
+					: DISABLED_FIELD_OPACITY,
+		},
+	} );
 	/**
 	 * Apply conditional visibility class to form fields based on event settings.
 	 *

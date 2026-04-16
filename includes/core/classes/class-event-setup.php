@@ -310,7 +310,17 @@ class Event_Setup {
 		}
 
 		// Non-datetime meta remains on the event post type only.
+		// Always register gatherpress_enable_rsvp so it can be written in all modes.
+		// Missing meta is treated as "on"; only an explicit 0 disables RSVP per event.
 		$event_only_meta = array(
+			'gatherpress_enable_rsvp'           => array(
+				'auth_callback'     => array( $this, 'can_edit_posts_meta' ),
+				'sanitize_callback' => 'absint',
+				'show_in_rest'      => true,
+				'single'            => true,
+				'type'              => 'integer',
+				'default'           => 1,
+			),
 			'gatherpress_max_guest_limit'       => array(
 				'auth_callback'     => array( $this, 'can_edit_posts_meta' ),
 				'sanitize_callback' => 'absint',

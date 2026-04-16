@@ -16,6 +16,7 @@ namespace GatherPress\Core\Blocks;
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Block;
+use GatherPress\Core\Rsvp;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Utility;
 use WP_HTML_Tag_Processor;
@@ -276,6 +277,10 @@ class General_Block {
 			return $block_content;
 		}
 
+		if ( ! ( new Rsvp( $post_id ) )->is_enabled() ) {
+			return '';
+		}
+
 		// Get max guest limit from event settings.
 		$max_guest_limit = (int) get_post_meta( $post_id, 'gatherpress_max_guest_limit', true );
 
@@ -322,6 +327,10 @@ class General_Block {
 			( ! is_preview() && 'publish' !== get_post_status( $post_id ) )
 		) {
 			return $block_content;
+		}
+
+		if ( ! ( new Rsvp( $post_id ) )->is_enabled() ) {
+			return '';
 		}
 
 		// Get anonymous RSVP setting from event.

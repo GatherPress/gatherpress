@@ -9,6 +9,8 @@
 namespace GatherPress\Tests\Core\Blocks;
 
 use GatherPress\Core\Blocks\General_Block;
+use GatherPress\Core\Rsvp;
+use GatherPress\Core\Settings;
 use GatherPress\Core\Utility;
 use GatherPress\Tests\Base;
 
@@ -1201,5 +1203,65 @@ class Test_General_Block extends Base {
 
 		// Verify normal field is not affected.
 		$this->assertStringNotContainsString( 'normal-field gatherpress--is-hidden', $final_result );
+	}
+
+	/**
+	 * Tests process_guests_field returns empty string when per-event RSVP is disabled.
+	 *
+	 * @covers ::process_guests_field
+	 *
+	 * @return void
+	 */
+	public function test_process_guests_field_rsvp_disabled_per_event(): void {
+		$general_block = General_Block::get_instance();
+		$post_id       = $this->factory->post->create(
+			array(
+				'post_type'   => 'gatherpress_event',
+				'post_status' => 'publish',
+			)
+		);
+
+		Settings::get_instance()->set( 'rsvp_mode', 'per_event_on' );
+		update_post_meta( $post_id, 'gatherpress_enable_rsvp', 0 );
+
+		$block_content = '<div class="gatherpress-rsvp-field-guests">Guests</div>';
+		$block         = array( 'attrs' => array( 'postId' => $post_id ) );
+
+		$result = $general_block->process_guests_field( $block_content, $block );
+
+		$this->assertSame( '', $result, 'Should return empty string when per-event RSVP is disabled.' );
+
+		delete_post_meta( $post_id, 'gatherpress_enable_rsvp' );
+		Settings::get_instance()->set( 'rsvp_mode', 'all_on' );
+	}
+
+	/**
+	 * Tests process_anonymous_field returns empty string when per-event RSVP is disabled.
+	 *
+	 * @covers ::process_anonymous_field
+	 *
+	 * @return void
+	 */
+	public function test_process_anonymous_field_rsvp_disabled_per_event(): void {
+		$general_block = General_Block::get_instance();
+		$post_id       = $this->factory->post->create(
+			array(
+				'post_type'   => 'gatherpress_event',
+				'post_status' => 'publish',
+			)
+		);
+
+		Settings::get_instance()->set( 'rsvp_mode', 'per_event_on' );
+		update_post_meta( $post_id, 'gatherpress_enable_rsvp', 0 );
+
+		$block_content = '<div class="gatherpress-rsvp-field-anonymous">Anonymous</div>';
+		$block         = array( 'attrs' => array( 'postId' => $post_id ) );
+
+		$result = $general_block->process_anonymous_field( $block_content, $block );
+
+		$this->assertSame( '', $result, 'Should return empty string when per-event RSVP is disabled.' );
+
+		delete_post_meta( $post_id, 'gatherpress_enable_rsvp' );
+		Settings::get_instance()->set( 'rsvp_mode', 'all_on' );
 	}
 }
