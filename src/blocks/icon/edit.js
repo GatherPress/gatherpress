@@ -10,14 +10,14 @@ import {
 } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
 
-import { getFromSettings } from '../../helpers/editor-settings';
+import { getFromConfig } from '../../helpers/editor-settings';
 import { useEffect, useState } from '@wordpress/element';
 
 const Edit = ( { attributes, setAttributes } ) => {
 	const blockProps = useBlockProps();
 	const { icon, iconColor, iconSize } = attributes;
 	const [ svgContent, setSvgContent ] = useState( '' );
-	const svgBaseUrl = `${ getFromSettings( 'pluginUrl' ) }includes/assets/svg/`;
+	const svgBaseUrl = `${ getFromConfig( 'pluginUrl' ) }includes/assets/svg/`;
 
 	// Icon original source: https://github.com/WordPress/dashicons/tree/master/svg-min.
 	const ICON_OPTIONS = [

@@ -11,7 +11,6 @@ import {
 	defaultDateTimeStart,
 	getDateTimeOffset,
 } from '../helpers/datetime';
-
 const DEFAULT_STATE = {
 	dateTimeStart: defaultDateTimeStart,
 	dateTimeEnd: defaultDateTimeEnd,
@@ -78,8 +77,10 @@ register( store );
 // Initialize store from post meta once the editor is ready.
 const unsubscribe = subscribe( () => {
 	const meta = select( 'core/editor' )?.getEditedPostAttribute?.( 'meta' );
+	const config =
+		select( 'core/editor' )?.getEditorSettings?.()?.gatherpress?.config;
 
-	if ( ! meta ) {
+	if ( ! meta || ! config ) {
 		return;
 	}
 
@@ -93,7 +94,7 @@ const unsubscribe = subscribe( () => {
 	if ( meta.gatherpress_datetime_end ) {
 		gpDispatch.setDateTimeEnd( meta.gatherpress_datetime_end );
 	}
-	if ( meta.gatherpress_timezone ) {
-		gpDispatch.setTimezone( meta.gatherpress_timezone );
-	}
+	gpDispatch.setTimezone(
+		meta.gatherpress_timezone || config.siteTimezone || '',
+	);
 } );

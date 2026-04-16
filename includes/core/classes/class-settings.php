@@ -91,12 +91,15 @@ class Settings {
 	}
 
 	/**
-	 * Expose plugin settings to the block editor.
+	 * Expose plugin settings and config to the block editor.
 	 *
-	 * Adds GatherPress settings under settings['gatherpress']['settings']
-	 * so that editor components can access them via
-	 * select('core/editor').getEditorSettings().gatherpress.settings
-	 * without relying on window globals.
+	 * Adds two namespaced keys under settings['gatherpress']:
+	 * - 'settings': User-configurable values from the GatherPress Settings API.
+	 * - 'config':   Infrastructure values (URLs, timezone data) that are not user-configurable.
+	 *
+	 * Editor JS accesses these via:
+	 * - getFromSettings( key ) for Settings API values.
+	 * - getFromConfig( key ) for infrastructure values.
 	 *
 	 * @since 1.0.0
 	 *
@@ -108,6 +111,7 @@ class Settings {
 			$settings['gatherpress'] = array();
 		}
 
+		// User-configurable settings from the Settings API.
 		$gatherpress_settings = array();
 
 		foreach ( array_keys( $this->get_defaults_map() ) as $option ) {
@@ -115,11 +119,15 @@ class Settings {
 			$gatherpress_settings[ $camel_key ] = $this->get( $option );
 		}
 
-		$gatherpress_settings['timezoneChoices'] = Utility::timezone_choices();
-		$gatherpress_settings['pluginUrl']       = GATHERPRESS_CORE_URL;
-		$gatherpress_settings['homeUrl']         = get_home_url();
-
 		$settings['gatherpress']['settings'] = $gatherpress_settings;
+
+		// Infrastructure config values (not user-configurable).
+		$settings['gatherpress']['config'] = array(
+			'timezoneChoices' => Utility::timezone_choices(),
+			'siteTimezone'    => Utility::get_system_timezone(),
+			'pluginUrl'       => GATHERPRESS_CORE_URL,
+			'homeUrl'         => get_home_url(),
+		);
 
 		return $settings;
 	}

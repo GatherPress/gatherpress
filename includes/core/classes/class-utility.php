@@ -91,6 +91,9 @@ class Utility {
 	/**
 	 * Convert a snake_case string to camelCase.
 	 *
+	 * Expects standard snake_case input (lowercase words separated by single underscores).
+	 * Leading underscores or consecutive underscores may produce unexpected results.
+	 *
 	 * @since 1.0.0
 	 *
 	 * @param string $key The snake_case string to convert.

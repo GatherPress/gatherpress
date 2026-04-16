@@ -18,8 +18,7 @@ use Error;
  * Class Assets.
  *
  * This class handles the loading and management of static assets, including stylesheets and JavaScript files.
- * Additionally, it provides a mechanism for localizing data as JavaScript objects,
- * enabling seamless integration of server-side data with client-side scripts.
+ * It also provides frontend interactivity state via the WordPress Interactivity API.
  *
  * @since 1.0.0
  */
@@ -109,6 +108,12 @@ class Assets {
 	 * @return void
 	 */
 	public function add_interactivity_state(): void {
+		$event_post_types = get_post_types_by_support( 'gatherpress-event-date' );
+
+		if ( ! is_singular( $event_post_types ) ) {
+			return;
+		}
+
 		$event_rest_api_slug = sprintf( '%s/event', GATHERPRESS_REST_NAMESPACE );
 
 		wp_interactivity_state(

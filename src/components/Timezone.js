@@ -8,7 +8,7 @@ import { useDispatch, useSelect } from '@wordpress/data';
 /**
  * Internal dependencies.
  */
-import { getFromSettings } from '../helpers/editor-settings';
+import { getFromConfig } from '../helpers/editor-settings';
 import { enableSave } from '../helpers/editor';
 import {
 	maybeConvertUtcOffsetForDatabase,
@@ -34,7 +34,7 @@ const Timezone = () => {
 		[],
 	);
 	const { setTimezone } = useDispatch( 'gatherpress/datetime' );
-	const choices = getFromSettings( 'timezoneChoices' );
+	const choices = getFromConfig( 'timezoneChoices' );
 
 	return (
 		<PanelRow>

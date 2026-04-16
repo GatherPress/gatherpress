@@ -56,7 +56,9 @@ const RsvpManager = ( { defaultStatus, setDefaultStatus } ) => {
 			apiFetch( {
 				path: `${ EVENT_REST_API }/rsvp-responses?post_id=${ postId }`,
 			} ).then( ( res ) => {
-				setRsvpResponse( res );
+				if ( res?.success && res?.data ) {
+					setRsvpResponse( res.data );
+				}
 			} );
 		}
 	}, [ postId ] );

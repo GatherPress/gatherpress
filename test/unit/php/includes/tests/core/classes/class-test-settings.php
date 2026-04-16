@@ -142,23 +142,50 @@ class Test_Settings extends Base {
 			'Failed to assert editor settings are not empty.'
 		);
 
-		// Verify it preserves existing gatherpress settings.
+		// Verify config keys are separate from settings.
+		$this->assertArrayHasKey(
+			'config',
+			$settings['gatherpress'],
+			'Failed to assert config key exists in gatherpress editor settings.'
+		);
+
+		$expected_config_keys = array( 'timezoneChoices', 'siteTimezone', 'pluginUrl', 'homeUrl' );
+
+		foreach ( $expected_config_keys as $key ) {
+			$this->assertArrayHasKey(
+				$key,
+				$settings['gatherpress']['config'],
+				sprintf( 'Failed to assert %s key exists in editor config.', $key )
+			);
+			$this->assertArrayNotHasKey(
+				$key,
+				$settings['gatherpress']['settings'],
+				sprintf( 'Failed to assert %s is not in settings (should be in config).', $key )
+			);
+		}
+
+		// Verify it preserves existing gatherpress keys.
 		$existing = array(
 			'gatherpress' => array(
-				'venuePostTypes' => array( 'gatherpress_event' => 'gatherpress_venue' ),
+				'customKey' => 'customValue',
 			),
 		);
 		$merged   = $instance->add_editor_settings( $existing );
 
-		$this->assertArrayHasKey(
-			'venuePostTypes',
-			$merged['gatherpress'],
-			'Failed to assert existing gatherpress settings are preserved.'
+		$this->assertSame(
+			'customValue',
+			$merged['gatherpress']['customKey'],
+			'Failed to assert existing gatherpress keys are preserved.'
 		);
 		$this->assertArrayHasKey(
 			'settings',
 			$merged['gatherpress'],
-			'Failed to assert settings were added alongside existing gatherpress settings.'
+			'Failed to assert settings were added alongside existing gatherpress keys.'
+		);
+		$this->assertArrayHasKey(
+			'config',
+			$merged['gatherpress'],
+			'Failed to assert config were added alongside existing gatherpress keys.'
 		);
 	}
 

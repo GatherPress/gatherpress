@@ -13,7 +13,7 @@ import { select } from '@wordpress/data';
 /**
  * Internal dependencies.
  */
-import { getFromSettings } from '../helpers/editor-settings';
+import { getFromConfig } from '../helpers/editor-settings';
 
 /**
  * OpenStreetMap component for GatherPress.
@@ -119,7 +119,7 @@ const OpenStreetMap = ( props ) => {
 		mapInstanceRef.current = map;
 
 		Leaflet.Icon.Default.imagePath =
-			( pluginUrl || getFromSettings( 'pluginUrl' ) ) +
+			( pluginUrl || getFromConfig( 'pluginUrl' ) ) +
 			'build/images/';
 
 		Leaflet.tileLayer(

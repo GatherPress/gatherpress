@@ -1006,12 +1006,17 @@ class Test_Venue extends Base {
 			'Failed to assert that the gatherpress key is added to an empty settings array.'
 		);
 		$this->assertArrayHasKey(
-			'venuePostTypes',
+			'config',
 			$result['gatherpress'],
-			'Failed to assert that venuePostTypes is present in gatherpress settings.'
+			'Failed to assert that config key is present in gatherpress settings.'
+		);
+		$this->assertArrayHasKey(
+			'venuePostTypes',
+			$result['gatherpress']['config'],
+			'Failed to assert that venuePostTypes is present in gatherpress config.'
 		);
 		$this->assertIsArray(
-			$result['gatherpress']['venuePostTypes'],
+			$result['gatherpress']['config']['venuePostTypes'],
 			'Failed to assert that venuePostTypes is an array.'
 		);
 
@@ -1028,7 +1033,7 @@ class Test_Venue extends Base {
 		);
 		$this->assertArrayHasKey(
 			'venuePostTypes',
-			$result['gatherpress'],
+			$result['gatherpress']['config'],
 			'Failed to assert that venuePostTypes is added alongside existing gatherpress settings.'
 		);
 	}

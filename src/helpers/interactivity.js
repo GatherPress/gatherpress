@@ -9,8 +9,8 @@ const { state: gatherPressState } = store( 'gatherpress' );
  * Initializes the post context within the application state.
  *
  * This function ensures that the given `postId` has an entry in the `state.posts` object.
- * If no entry exists, it creates one using the `eventDetails` global, which provides
- * initial data for event responses, the current user's RSVP status, and other RSVP-related details.
+ * If no entry exists, it creates one with default values for event responses,
+ * the current user's RSVP status, and other RSVP-related details.
  *
  * @since 1.0.0
  *
