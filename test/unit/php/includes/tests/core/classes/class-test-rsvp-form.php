@@ -11,6 +11,7 @@ namespace GatherPress\Tests\Core;
 use GatherPress\Core\Event;
 use GatherPress\Core\Rsvp;
 use GatherPress\Core\Rsvp_Form;
+use GatherPress\Core\Settings;
 use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;
 
@@ -979,9 +980,7 @@ class Test_Rsvp_Form extends Base {
 		);
 
 		// Set rsvp_mode to per_event_on so that per-event disabling is respected.
-		$option = get_option( 'gatherpress_settings', array() );
-		$option['rsvp_settings']['rsvp_defaults']['rsvp_mode'] = 'per_event_on';
-		update_option( 'gatherpress_settings', $option );
+		Settings::get_instance()->set( 'rsvp_mode', 'per_event_on' );
 
 		// Explicitly disable RSVP for this event.
 		update_post_meta( $post_id, 'gatherpress_enable_rsvp', 0 );
@@ -1013,8 +1012,7 @@ class Test_Rsvp_Form extends Base {
 		remove_all_filters( 'gatherpress_pre_get_http_input' );
 
 		// Restore the setting for other tests.
-		$option['rsvp_settings']['rsvp_defaults']['rsvp_mode'] = 'all_on';
-		update_option( 'gatherpress_settings', $option );
+		Settings::get_instance()->set( 'rsvp_mode', 'all_on' );
 	}
 
 	/**

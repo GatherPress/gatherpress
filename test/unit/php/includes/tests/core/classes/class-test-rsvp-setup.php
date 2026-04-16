@@ -13,6 +13,7 @@ use GatherPress\Core\Rsvp;
 use GatherPress\Core\Rsvp_List_Table;
 use GatherPress\Core\Rsvp_Setup;
 use GatherPress\Core\Rsvp_Token;
+use GatherPress\Core\Settings;
 use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;
 
@@ -847,8 +848,8 @@ class Test_Rsvp_Setup extends Base {
 		$instance = Rsvp_Setup::get_instance();
 		$post_id  = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
 
-		// Confirm meta is not set initially.
-		$this->assertSame( '', get_post_meta( $post_id, 'gatherpress_enable_rsvp', true ) );
+		// Clear any meta set by the wp_after_insert_post hook during post creation.
+		delete_post_meta( $post_id, 'gatherpress_enable_rsvp' );
 
 		// Default mode is all_on; calling the method should write 1.
 		$instance->maybe_set_rsvp_meta_default( $post_id );
@@ -893,12 +894,11 @@ class Test_Rsvp_Setup extends Base {
 	 */
 	public function test_maybe_set_rsvp_meta_default_skips_non_all_on_modes(): void {
 		$instance = Rsvp_Setup::get_instance();
-		$post_id  = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
 
-		// Switch to per_event_on mode.
-		$option = get_option( 'gatherpress_settings', array() );
-		$option['rsvp_settings']['rsvp_defaults']['rsvp_mode'] = 'per_event_on';
-		update_option( 'gatherpress_settings', $option );
+		// Switch to per_event_on mode BEFORE creating the post so the hook doesn't write meta.
+		Settings::get_instance()->set( 'rsvp_mode', 'per_event_on' );
+
+		$post_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
 
 		$instance->maybe_set_rsvp_meta_default( $post_id );
 
@@ -910,8 +910,7 @@ class Test_Rsvp_Setup extends Base {
 		);
 
 		// Restore setting.
-		$option['rsvp_settings']['rsvp_defaults']['rsvp_mode'] = 'all_on';
-		update_option( 'gatherpress_settings', $option );
+		Settings::get_instance()->set( 'rsvp_mode', 'all_on' );
 	}
 
 	/**
@@ -951,9 +950,7 @@ class Test_Rsvp_Setup extends Base {
 		$instance = Rsvp_Setup::get_instance();
 
 		// Temporarily set rsvp_mode to disabled via the settings option.
-		$option = get_option( 'gatherpress_settings', array() );
-		$option['rsvp_settings']['rsvp_defaults']['rsvp_mode'] = 'disabled';
-		update_option( 'gatherpress_settings', $option );
+		Settings::get_instance()->set( 'rsvp_mode', 'disabled' );
 
 		// Ensure the event post type currently supports RSVP.
 		add_post_type_support( Event::POST_TYPE, 'gatherpress-rsvp' );
@@ -967,8 +964,7 @@ class Test_Rsvp_Setup extends Base {
 		);
 
 		// Restore the setting and support for other tests.
-		$option['rsvp_settings']['rsvp_defaults']['rsvp_mode'] = 'all_on';
-		update_option( 'gatherpress_settings', $option );
+		Settings::get_instance()->set( 'rsvp_mode', 'all_on' );
 		add_post_type_support( Event::POST_TYPE, 'gatherpress-rsvp' );
 	}
 
@@ -1003,9 +999,7 @@ class Test_Rsvp_Setup extends Base {
 		$instance = Rsvp_Setup::get_instance();
 
 		// Temporarily set rsvp_mode to disabled via the settings option.
-		$option = get_option( 'gatherpress_settings', array() );
-		$option['rsvp_settings']['rsvp_defaults']['rsvp_mode'] = 'disabled';
-		update_option( 'gatherpress_settings', $option );
+		Settings::get_instance()->set( 'rsvp_mode', 'disabled' );
 
 		// Pass a known array containing RSVP and non-RSVP block names.
 		$block_list = array(
@@ -1048,7 +1042,6 @@ class Test_Rsvp_Setup extends Base {
 		);
 
 		// Restore the setting for other tests.
-		$option['rsvp_settings']['rsvp_defaults']['rsvp_mode'] = 'all_on';
-		update_option( 'gatherpress_settings', $option );
+		Settings::get_instance()->set( 'rsvp_mode', 'all_on' );
 	}
 }

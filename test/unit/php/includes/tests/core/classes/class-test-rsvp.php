@@ -10,6 +10,7 @@ namespace GatherPress\Tests\Core;
 
 use GatherPress\Core\Event;
 use GatherPress\Core\Rsvp;
+use GatherPress\Core\Settings;
 use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;
 use WP_Error;
@@ -504,9 +505,7 @@ class Test_Rsvp extends Base {
 		)->get();
 
 		// Set rsvp_mode to per_event_on so that per-event disabling is respected.
-		$option = get_option( 'gatherpress_settings', array() );
-		$option['rsvp_settings']['rsvp_defaults']['rsvp_mode'] = 'per_event_on';
-		update_option( 'gatherpress_settings', $option );
+		Settings::get_instance()->set( 'rsvp_mode', 'per_event_on' );
 
 		// Explicitly disable RSVP for this event.
 		update_post_meta( $post->ID, 'gatherpress_enable_rsvp', 0 );
@@ -519,8 +518,7 @@ class Test_Rsvp extends Base {
 		$this->assertSame( 'no_status', $result['status'], 'Should return no_status when RSVP is disabled.' );
 
 		// Restore the setting for other tests.
-		$option['rsvp_settings']['rsvp_defaults']['rsvp_mode'] = 'all_on';
-		update_option( 'gatherpress_settings', $option );
+		Settings::get_instance()->set( 'rsvp_mode', 'all_on' );
 	}
 
 	/**
