@@ -401,6 +401,21 @@ class Rsvp {
 		}
 
 		if ( empty( $rsvp ) ) {
+			// Ensure keys that wp_filter_comment accesses without isset() are present.
+			$args = array_merge(
+				array(
+					'comment_author'       => '',
+					'comment_author_email' => '',
+					'comment_author_url'   => '',
+					'comment_author_IP'    => '127.0.0.1',
+					'comment_content'      => '',
+				),
+				$args
+			);
+
+			// Run WordPress-native comment filters so sites can honor
+			// pre_comment_user_ip, pre_comment_user_agent, etc. for privacy.
+			$args       = wp_filter_comment( $args );
 			$comment_id = wp_insert_comment( $args );
 		} else {
 			$comment_id               = $rsvp->comment_ID;

@@ -657,6 +657,51 @@ class Test_Rsvp extends Base {
 	}
 
 	/**
+	 * Test that save() runs wp_filter_comment so WordPress-native
+	 * privacy filters like pre_comment_user_ip and pre_comment_user_agent
+	 * are honored on inserted RSVPs.
+	 *
+	 * @covers ::save
+	 *
+	 * @return void
+	 */
+	public function test_save_applies_comment_privacy_filters(): void {
+		$post    = $this->mock->post(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		)->get();
+		$rsvp    = new Rsvp( $post->ID );
+		$user_id = $this->factory->user->create();
+
+		$_SERVER['REMOTE_ADDR']     = '203.0.113.42';
+		$_SERVER['HTTP_USER_AGENT'] = 'Mozilla/5.0 (test browser)';
+
+		$redact_ip    = static function () {
+			return '127.0.0.1';
+		};
+		$redact_agent = static function () {
+			return '';
+		};
+		add_filter( 'pre_comment_user_ip', $redact_ip );
+		add_filter( 'pre_comment_user_agent', $redact_agent );
+
+		try {
+			$data = $rsvp->save( $user_id, 'attending' );
+
+			$this->assertSame( 'attending', $data['status'] );
+
+			$comment = get_comment( $data['comment_id'] );
+			$this->assertSame( '127.0.0.1', $comment->comment_author_IP );
+			$this->assertSame( '', $comment->comment_agent );
+		} finally {
+			remove_filter( 'pre_comment_user_ip', $redact_ip );
+			remove_filter( 'pre_comment_user_agent', $redact_agent );
+			unset( $_SERVER['REMOTE_ADDR'], $_SERVER['HTTP_USER_AGENT'] );
+		}
+	}
+
+	/**
 	 * Test check_waiting_list when not enough people on waiting list.
 	 *
 	 * @covers ::check_waiting_list

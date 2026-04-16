@@ -16,3 +16,25 @@ With the help of contributors this prepared text may even be already translated 
 
 Go to `Settings > Privacy > Policy Guide` to find a new '*GatherPress*' dropdown in the 'Policies' list
 
+## Redacting RSVP IP addresses and user agents
+
+RSVPs are stored as WordPress comments, so the visitor's IP address and browser user agent are recorded by default. To help comply with GDPR/DSGVO or other privacy regulations, you can redact this information with the same WordPress-native filters that apply to regular comments:
+
+```php
+add_filter( 'pre_comment_user_ip', static function () {
+    return '127.0.0.1';
+} );
+
+add_filter( 'pre_comment_user_agent', static function () {
+    return '';
+} );
+```
+
+Drop the snippet into a must-use plugin, a site-specific plugin, or your theme's `functions.php`. It applies to all RSVP paths — form submissions, REST/AJAX submissions, and waiting-list promotions.
+
+The same mechanism exposes the rest of WordPress's comment-data filters to RSVPs, should you want to sanitize or override them:
+
+- `pre_comment_author_name`
+- `pre_comment_author_email`
+- `pre_comment_author_url`
+- `pre_comment_content`
