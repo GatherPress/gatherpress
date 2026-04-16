@@ -71,6 +71,10 @@ const EnableRsvp = () => {
 	return (
 		<CheckboxControl
 			label={ __( 'Enable RSVP', 'gatherpress' ) }
+			help={ __(
+				'When disabled, RSVP blocks are hidden and registration is unavailable for this event.',
+				'gatherpress',
+			) }
 			checked={ enableRsvp }
 			onChange={ ( value ) => {
 				updateEnableRsvp( value );

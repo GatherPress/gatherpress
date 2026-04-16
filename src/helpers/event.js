@@ -268,6 +268,17 @@ export function isRsvpEnabledForEvent( rsvpMode, enableRsvp ) {
 }
 
 /**
+ * Determines whether Open RSVP (email/token, non-logged-in) is enabled sitewide.
+ *
+ * @param {boolean} enableOpenRsvp The sitewide Open RSVP setting value.
+ *
+ * @return {boolean} True if Open RSVP is enabled sitewide, false otherwise.
+ */
+export function isOpenRsvpEnabled( enableOpenRsvp ) {
+	return true === enableOpenRsvp;
+}
+
+/**
  * Gets event meta data (max guest limit, RSVP enabled flag, and anonymous RSVP setting).
  *
  * This function retrieves event meta data either from the current post being edited

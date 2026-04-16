@@ -21,9 +21,17 @@ What is known and visible in the UI:
 - Default RSVP behavior comes from GatherPress settings.  
 - Event-level settings override global defaults when a per-event mode is active.
 
-## RSVP without an account
+## Open RSVP (without an account)
 
-This feature is under development and requires, for now, manual addition of a RSVP Form in the RSVP modal content. This allows visitors to RSVP without an account, and triggers an email handshake with a confirmation link sent to the visitor. The RSVP is only confirmed after the link is clicked or if an administrator approves the RSVP.
+Open RSVP is enabled by default. Site administrators can disable it from **Events - Settings - RSVP** by unchecking **Enable Open RSVP for events**.
+
+When enabled, visitors can RSVP using only their name and email address. An email with a confirmation link is sent to the visitor, and the RSVP is only confirmed after the link is clicked or an administrator approves it manually.
+
+When disabled:
+
+- The RSVP Form block is removed from the block inserter.
+- Any RSVP Form blocks already placed on an event render nothing on the frontend.
+- Direct form POST or REST API submissions return a 403 response.
 
 ## Managing RSVPs
 

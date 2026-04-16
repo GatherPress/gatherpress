@@ -160,7 +160,11 @@ class Rsvp_Setup {
 	 * @return bool|string[] Filtered allowed block types.
 	 */
 	public function filter_rsvp_block_types( $allowed_block_types ) {
-		if ( 'disabled' !== Settings::get_instance()->get( 'rsvp_mode' ) ) {
+		$settings         = Settings::get_instance();
+		$remove_all_rsvp  = 'disabled' === $settings->get( 'rsvp_mode' );
+		$remove_open_form = ! $settings->get( 'enable_open_rsvp' );
+
+		if ( ! $remove_all_rsvp && ! $remove_open_form ) {
 			return $allowed_block_types;
 		}
 
@@ -173,8 +177,14 @@ class Rsvp_Setup {
 			return array_values(
 				array_filter(
 					$allowed_block_types,
-					static function ( $name ): bool {
-						return ! str_contains( $name, 'gatherpress/rsvp' );
+					static function ( $name ) use ( $remove_all_rsvp, $remove_open_form ): bool {
+						if ( $remove_all_rsvp && str_contains( $name, 'gatherpress/rsvp' ) ) {
+							return false;
+						}
+						if ( $remove_open_form && 'gatherpress/rsvp-form' === $name ) {
+							return false;
+						}
+						return true;
 					}
 				)
 			);

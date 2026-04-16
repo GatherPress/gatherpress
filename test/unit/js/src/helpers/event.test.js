@@ -35,6 +35,7 @@ import {
 	hasOnlineEventTerm,
 	isPerEventRsvpMode,
 	isRsvpEnabledForEvent,
+	isOpenRsvpEnabled,
 } from '@src/helpers/event';
 import { dateTimeDatabaseFormat } from '@src/helpers/datetime';
 
@@ -1124,6 +1125,28 @@ describe( 'isPerEventRsvpMode', () => {
 
 	it( 'returns false for disabled', () => {
 		expect( isPerEventRsvpMode( 'disabled' ) ).toBe( false );
+	} );
+} );
+
+/**
+ * Coverage for isOpenRsvpEnabled.
+ */
+describe( 'isOpenRsvpEnabled', () => {
+	it( 'returns true when enableOpenRsvp is true', () => {
+		expect( isOpenRsvpEnabled( true ) ).toBe( true );
+	} );
+
+	it( 'returns false when enableOpenRsvp is false', () => {
+		expect( isOpenRsvpEnabled( false ) ).toBe( false );
+	} );
+
+	it( 'returns false when enableOpenRsvp is undefined', () => {
+		expect( isOpenRsvpEnabled( undefined ) ).toBe( false );
+	} );
+
+	it( 'returns false for truthy non-boolean values', () => {
+		expect( isOpenRsvpEnabled( 1 ) ).toBe( false );
+		expect( isOpenRsvpEnabled( 'true' ) ).toBe( false );
 	} );
 } );
 

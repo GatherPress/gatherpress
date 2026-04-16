@@ -864,4 +864,48 @@ class Test_Rsvp extends Base {
 		// Restore setting.
 		Settings::get_instance()->set( 'rsvp_mode', 'all_on' );
 	}
+
+	/**
+	 * Coverage for allows_open_rsvp method.
+	 *
+	 * @covers ::allows_open_rsvp
+	 *
+	 * @return void
+	 */
+	public function test_allows_open_rsvp(): void {
+		$post_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
+
+		// Sitewide disabled returns false regardless of per-event meta.
+		Settings::get_instance()->set( 'enable_open_rsvp', false );
+		update_post_meta( $post_id, 'gatherpress_enable_open_rsvp', 1 );
+		$this->assertFalse(
+			( new Rsvp( $post_id ) )->allows_open_rsvp(),
+			'Should return false when sitewide enable_open_rsvp is false, even with per-event meta enabled.'
+		);
+
+		// Sitewide enabled and meta not set defaults to true.
+		Settings::get_instance()->set( 'enable_open_rsvp', true );
+		delete_post_meta( $post_id, 'gatherpress_enable_open_rsvp' );
+		$this->assertTrue(
+			( new Rsvp( $post_id ) )->allows_open_rsvp(),
+			'Should return true when sitewide is enabled and per-event meta is not set.'
+		);
+
+		// Sitewide enabled and per-event meta explicitly enabled returns true.
+		update_post_meta( $post_id, 'gatherpress_enable_open_rsvp', 1 );
+		$this->assertTrue(
+			( new Rsvp( $post_id ) )->allows_open_rsvp(),
+			'Should return true when sitewide is enabled and per-event meta is explicitly enabled.'
+		);
+
+		// Sitewide enabled and per-event meta explicitly disabled returns false.
+		update_post_meta( $post_id, 'gatherpress_enable_open_rsvp', 0 );
+		$this->assertFalse(
+			( new Rsvp( $post_id ) )->allows_open_rsvp(),
+			'Should return false when sitewide is enabled but per-event meta is explicitly disabled.'
+		);
+
+		// Restore the sitewide setting for other tests.
+		Settings::get_instance()->set( 'enable_open_rsvp', true );
+	}
 }

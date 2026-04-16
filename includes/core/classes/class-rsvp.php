@@ -214,6 +214,36 @@ class Rsvp {
 	}
 
 	/**
+	 * Determines whether Open RSVP (email/token, non-logged-in) is enabled for this event.
+	 *
+	 * Returns false immediately if the sitewide `enable_open_rsvp` setting is off.
+	 * When sitewide is on, consults the per-event `gatherpress_enable_open_rsvp` post meta.
+	 * An unset meta (empty string) is treated as enabled (the default).
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return bool True if Open RSVP is enabled for this event, false otherwise.
+	 */
+	public function allows_open_rsvp(): bool {
+		$post_id = $this->event->ID ?? 0;
+
+		// Sitewide gate: if open RSVP is globally disabled, always return false.
+		if ( ! Settings::get_instance()->get( 'enable_open_rsvp' ) ) {
+			return false;
+		}
+
+		// Per-event override; stored as integer (1 = enabled, 0 = disabled).
+		$meta = get_post_meta( $post_id, 'gatherpress_enable_open_rsvp', true );
+
+		// Not explicitly set defaults to enabled.
+		if ( '' === $meta ) {
+			return true;
+		}
+
+		return '0' !== (string) $meta;
+	}
+
+	/**
 	 * Writes an explicit enabled value on first save, based on the active RSVP mode.
 	 *
 	 * Ensures that programmatically created events (e.g. via WP-CLI or imports)
