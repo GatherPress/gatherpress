@@ -180,9 +180,12 @@ class Rsvp {
 	/**
 	 * Determines whether RSVP is enabled for this event.
 	 *
-	 * In per-event modes (`per_event_on` or `per_event_off`), RSVP is enabled
-	 * when the `gatherpress_enable_rsvp` meta is not explicitly set to `'0'`.
-	 * An empty string (meta never set) is treated as enabled.
+	 * Returns false immediately when the sitewide mode is `disabled`.
+	 * Returns true when the mode is `all_on` (every event has RSVP).
+	 * In per-event modes (`per_event_on` or `per_event_off`), the
+	 * `gatherpress_enable_rsvp` post meta is consulted. An unset meta
+	 * (empty string) falls back to the mode default: `per_event_on`
+	 * defaults to enabled, `per_event_off` defaults to disabled.
 	 *
 	 * @since 1.0.0
 	 *
@@ -192,24 +195,43 @@ class Rsvp {
 		$post_id   = $this->event->ID ?? 0;
 		$rsvp_mode = Settings::get_instance()->get( 'rsvp_mode' );
 
-		return ! in_array( $rsvp_mode, array( 'per_event_on', 'per_event_off' ), true ) ||
-			'0' !== get_post_meta( $post_id, 'gatherpress_enable_rsvp', true );
+		if ( 'disabled' === $rsvp_mode ) {
+			return false;
+		}
+
+		if ( ! in_array( $rsvp_mode, array( 'per_event_on', 'per_event_off' ), true ) ) {
+			return true;
+		}
+
+		$meta = get_post_meta( $post_id, 'gatherpress_enable_rsvp', true );
+
+		// Empty meta falls back to the mode default.
+		if ( '' === $meta ) {
+			return 'per_event_on' === $rsvp_mode;
+		}
+
+		return '0' !== $meta;
 	}
 
 	/**
-	 * Writes an explicit enabled value when RSVP mode is all_on and meta is unset.
+	 * Writes an explicit enabled value on first save, based on the active RSVP mode.
 	 *
-	 * Ensures that if an admin later switches to a per-event mode, events created
-	 * under all_on already have meta = 1 and appear correctly as enabled.
+	 * Ensures that programmatically created events (e.g. via WP-CLI or imports)
+	 * carry predictable meta regardless of which mode was active at creation time:
+	 * - `all_on`: writes meta = 1 so switching to a per-event mode later is safe.
+	 * - `per_event_on`: writes meta = 1 (default-on intent).
+	 * - `per_event_off`: writes meta = 0 (default-off intent).
+	 * - `disabled`: no meta is written.
 	 *
 	 * @since 1.0.0
 	 *
 	 * @return void
 	 */
 	public function initialize_enabled(): void {
-		$post_id = $this->event->ID ?? 0;
+		$post_id   = $this->event->ID ?? 0;
+		$rsvp_mode = Settings::get_instance()->get( 'rsvp_mode' );
 
-		if ( 'all_on' !== Settings::get_instance()->get( 'rsvp_mode' ) ) {
+		if ( 'disabled' === $rsvp_mode ) {
 			return;
 		}
 
@@ -218,9 +240,12 @@ class Rsvp {
 		}
 
 		// Only write if meta has never been explicitly set.
-		if ( '' === get_post_meta( $post_id, 'gatherpress_enable_rsvp', true ) ) {
-			update_post_meta( $post_id, 'gatherpress_enable_rsvp', 1 );
+		if ( '' !== get_post_meta( $post_id, 'gatherpress_enable_rsvp', true ) ) {
+			return;
 		}
+
+		$default_value = ( 'per_event_off' === $rsvp_mode ) ? 0 : 1;
+		update_post_meta( $post_id, 'gatherpress_enable_rsvp', $default_value );
 	}
 
 	/**

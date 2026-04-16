@@ -861,6 +861,26 @@ class Test_Rsvp_Setup extends Base {
 	}
 
 	/**
+	 * Test maybe_set_rsvp_meta_default skips non-event post types.
+	 *
+	 * @covers ::maybe_set_rsvp_meta_default
+	 *
+	 * @return void
+	 */
+	public function test_maybe_set_rsvp_meta_default_skips_non_event_post_type(): void {
+		$post_id = $this->factory->post->create( array( 'post_type' => 'post' ) );
+
+		// Standard post type does not support gatherpress-rsvp; meta should not be written.
+		Rsvp_Setup::get_instance()->maybe_set_rsvp_meta_default( $post_id );
+
+		$this->assertSame(
+			'',
+			get_post_meta( $post_id, 'gatherpress_enable_rsvp', true ),
+			'Meta should not be written for non-event post types.'
+		);
+	}
+
+	/**
 	 * Test maybe_disable_rsvp when rsvp_mode is not disabled.
 	 *
 	 * @covers ::maybe_disable_rsvp

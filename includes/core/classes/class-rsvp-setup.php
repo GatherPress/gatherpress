@@ -257,6 +257,11 @@ class Rsvp_Setup {
 	 * @return void
 	 */
 	public function maybe_set_rsvp_meta_default( int $post_id ): void {
+		// Skip non-event post types early to avoid an unnecessary Rsvp instantiation.
+		if ( ! post_type_supports( (string) get_post_type( $post_id ), 'gatherpress-rsvp' ) ) {
+			return;
+		}
+
 		( new Rsvp( $post_id ) )->initialize_enabled();
 	}
 

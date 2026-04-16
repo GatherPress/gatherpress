@@ -3,7 +3,7 @@
  */
 import { __ } from '@wordpress/i18n';
 import { CheckboxControl } from '@wordpress/components';
-import { useState, useEffect, useCallback } from '@wordpress/element';
+import { useState, useEffect, useCallback, useMemo, useRef } from '@wordpress/element';
 import { useDispatch, useSelect } from '@wordpress/data';
 
 /**
@@ -26,7 +26,7 @@ const EnableRsvp = () => {
 		return select( 'core/editor' ).isCleanNewPost();
 	}, [] );
 
-	let defaultEnableRsvp = useSelect( ( select ) => {
+	const metaDefault = useSelect( ( select ) => {
 		const meta = select( 'core/editor' ).getEditedPostAttribute( 'meta' );
 		const rawValue = meta?.gatherpress_enable_rsvp;
 
@@ -34,12 +34,20 @@ const EnableRsvp = () => {
 		return rawValue === undefined || null === rawValue ? true : 0 !== rawValue;
 	}, [] );
 
-	if ( isNewEvent ) {
-		// Default based on rsvp_mode: per_event_off defaults to disabled, per_event_on defaults to enabled.
-		defaultEnableRsvp = 'per_event_off' !== ( getFromSettings( 'rsvpMode' ) ?? 'all_on' );
-	}
+	// Compute the default once: new events use the global rsvp_mode setting;
+	// existing events use the per-event meta value.
+	const defaultEnableRsvp = useMemo( () => {
+		if ( isNewEvent ) {
+			// Default based on rsvp_mode: per_event_off defaults to disabled, all others default to enabled.
+			return 'per_event_off' !== ( getFromSettings( 'rsvpMode' ) ?? 'all_on' );
+		}
+		return metaDefault;
+	}, [ isNewEvent, metaDefault ] );
 
 	const [ enableRsvp, setEnableRsvp ] = useState( defaultEnableRsvp );
+
+	// Guard ensures the new-event meta initialisation fires exactly once.
+	const initialized = useRef( false );
 
 	const updateEnableRsvp = useCallback(
 		( value ) => {
@@ -54,7 +62,8 @@ const EnableRsvp = () => {
 	);
 
 	useEffect( () => {
-		if ( isNewEvent ) {
+		if ( isNewEvent && ! initialized.current ) {
+			initialized.current = true;
 			updateEnableRsvp( defaultEnableRsvp );
 		}
 	}, [ isNewEvent, defaultEnableRsvp, updateEnableRsvp ] );
