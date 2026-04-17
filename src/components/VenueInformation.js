@@ -11,6 +11,7 @@ import { useDebounce } from '@wordpress/compose';
  * Internal dependencies.
  */
 import { geocodeAddress } from '../helpers/geocoding';
+import AddressAutocompleteField from './AddressAutocompleteField';
 
 /**
  * Parse venue information from JSON meta field.
@@ -161,7 +162,10 @@ const VenueInformation = () => {
 		updateVenueField,
 	] ); // fullAddress removed - read from ref instead.
 
-	const debouncedGetData = useDebounce( getData, 300 );
+	// Longer debounce than autocomplete: geocoding is not user-visible during
+	// typing (only the map preview and stored lat/long depend on it) so we let
+	// the address settle for a second before hitting the upstream Photon API.
+	const debouncedGetData = useDebounce( getData, 1000 );
 
 	useEffect( () => {
 		debouncedGetData();
@@ -170,8 +174,8 @@ const VenueInformation = () => {
 
 	return (
 		<>
-			<TextControl
-				label={ __( 'Full Address', 'gatherpress' ) }
+			<AddressAutocompleteField
+				variant="settings"
 				value={ fullAddress }
 				onChange={ ( value ) => {
 					updateVenueField( 'fullAddress', value );

@@ -14,11 +14,12 @@ import {
 /**
  * Internal dependencies.
  */
-import { useAddressFieldAntiAutofill } from '../hooks/use-address-field-anti-autofill';
+import { useAddressFieldAntiAutofill } from './use-address-field-anti-autofill';
 import {
 	shouldShowAddressSuggestionUi,
 	useAddressAutocomplete,
-} from '../hooks/use-address-autocomplete';
+} from './use-address-autocomplete';
+import './index.scss';
 
 /**
  * Address field with Photon-backed suggestions (block: textarea + canvas; settings: TextControl + form).
@@ -60,6 +61,7 @@ export default function AddressAutocompleteField( {
 		activeIndex,
 		setActiveIndex,
 		isLoadingSuggestions,
+		suggestionError,
 		handleChange,
 		closeSuggestions,
 		selectSuggestion,
@@ -72,9 +74,19 @@ export default function AddressAutocompleteField( {
 	const showSuggestionUi = shouldShowAddressSuggestionUi(
 		value,
 		suggestions,
-		isLoadingSuggestions
+		isLoadingSuggestions,
+		suggestionError
 	);
 	const showSuggestionPanel = 0 < suggestions.length;
+	const showSuggestionError =
+		Boolean( suggestionError ) && ! showSuggestionPanel && ! isLoadingSuggestions;
+
+	// Stable per-option id for the combobox `aria-activedescendant` pattern.
+	const optionId = ( index ) => `${ listboxId }-opt-${ index }`;
+	const activeDescendantId =
+		showSuggestionPanel && 0 <= activeIndex && activeIndex < suggestions.length
+			? optionId( activeIndex )
+			: undefined;
 
 	const adjustTextareaHeight = useCallback( () => {
 		const el = inputRef.current;
@@ -115,20 +127,28 @@ export default function AddressAutocompleteField( {
 				shift
 				focusOnMount={ false }
 				onClose={ closeSuggestions }
-				className="gatherpress-venue-detail__address-popover"
+				className="gatherpress-address-autocomplete__popover"
 			>
 				{ isLoadingSuggestions && ! showSuggestionPanel && (
-					<div className="gatherpress-venue-detail__address-popover-inner">
+					<div className="gatherpress-address-autocomplete__popover-inner">
 						<Spinner />
-						<span className="gatherpress-venue-detail__address-loading">
+						<span className="gatherpress-address-autocomplete__loading">
 							{ __( 'Searching for addresses…', 'gatherpress' ) }
 						</span>
+					</div>
+				) }
+				{ showSuggestionError && (
+					<div
+						className="gatherpress-address-autocomplete__popover-inner gatherpress-address-autocomplete__error"
+						role="status"
+					>
+						<span>{ suggestionError }</span>
 					</div>
 				) }
 				{ showSuggestionPanel && (
 					<ul
 						id={ listboxId }
-						className="gatherpress-venue-detail__address-suggestions"
+						className="gatherpress-address-autocomplete__suggestions"
 						role="listbox"
 						aria-label={ __( 'Address suggestions', 'gatherpress' ) }
 					>
@@ -136,13 +156,14 @@ export default function AddressAutocompleteField( {
 							<li key={ `${ item.label }-${ index }` } role="none">
 								<button
 									type="button"
+									id={ optionId( index ) }
 									role="option"
 									tabIndex={ -1 }
 									aria-selected={ activeIndex === index }
 									className={
 										activeIndex === index
-											? 'gatherpress-venue-detail__address-suggestion is-active'
-											: 'gatherpress-venue-detail__address-suggestion'
+											? 'gatherpress-address-autocomplete__suggestion is-active'
+											: 'gatherpress-address-autocomplete__suggestion'
 									}
 									onClick={ () => selectSuggestion( item ) }
 									onMouseEnter={ () => setActiveIndex( index ) }
@@ -184,11 +205,14 @@ export default function AddressAutocompleteField( {
 						onMouseDown={ unlockAddressInput }
 						placeholder={ placeholder }
 						readOnly={ suppressNativeAutofill }
+						role="combobox"
 						aria-label={ __( 'Venue address', 'gatherpress' ) }
 						aria-autocomplete="list"
+						aria-expanded={ showSuggestionPanel }
 						aria-controls={
 							showSuggestionPanel ? listboxId : undefined
 						}
+						aria-activedescendant={ activeDescendantId }
 					/>
 				</address>
 				{ suggestionPopover }
@@ -219,8 +243,11 @@ export default function AddressAutocompleteField( {
 				onChange={ handleChange }
 				help={ helpSlotText }
 				name={ fieldUid }
+				role="combobox"
 				aria-autocomplete="list"
+				aria-expanded={ showSuggestionPanel }
 				aria-controls={ showSuggestionPanel ? listboxId : undefined }
+				aria-activedescendant={ activeDescendantId }
 			/>
 			{ suggestionPopover }
 		</div>

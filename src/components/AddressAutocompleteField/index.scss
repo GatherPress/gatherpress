@@ -1,0 +1,56 @@
+// Address autocomplete popover + suggestions.
+// Used by the venue-detail block canvas, the VenueInformation sidebar panel,
+// and the CreateVenueForm — so the styles live with the component, not the block.
+.gatherpress-address-autocomplete {
+	&__popover .components-popover__content {
+		width: min(100vw - 32px, 28rem);
+		padding: 0;
+		overflow: hidden;
+	}
+
+	&__popover-inner {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		padding: 12px 16px;
+	}
+
+	&__loading {
+		font-size: 13px;
+	}
+
+	&__error {
+		font-size: 13px;
+	}
+
+	&__suggestions {
+		margin: 0;
+		padding: 4px 0;
+		list-style: none;
+		max-height: 220px;
+		overflow-y: auto;
+	}
+
+	&__suggestion {
+		display: block;
+		width: 100%;
+		margin: 0;
+		padding: 8px 12px;
+		text-align: left;
+		border: none;
+		background: transparent;
+		font: inherit;
+		line-height: 1.4;
+		cursor: pointer;
+		// Inherit the Popover's text color so user admin color schemes (and any
+		// future theming) drive the readable contrast rather than a fixed shade.
+		color: inherit;
+
+		&:hover,
+		&.is-active {
+			// Translucent overlay — reads correctly on both light surfaces and
+			// the occasional dark-themed popover without locking to a hex value.
+			background: rgb(0 0 0 / 6%);
+		}
+	}
+}

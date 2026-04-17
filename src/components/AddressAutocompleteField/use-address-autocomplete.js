@@ -2,36 +2,47 @@
  * WordPress dependencies.
  */
 import { useDebounce } from '@wordpress/compose';
-import { useCallback, useEffect, useState } from '@wordpress/element';
+import {
+	useCallback,
+	useEffect,
+	useRef,
+	useState,
+} from '@wordpress/element';
+import { __ } from '@wordpress/i18n';
 
 /**
  * Internal dependencies.
  */
 import {
-	ADDRESS_SEARCH_MIN_QUERY_LENGTH,
 	fetchAddressSuggestions,
+	getAddressSearchMinQueryLength,
 	primeGeocodeCache,
-} from '../helpers/geocoding';
+} from '../../helpers/geocoding';
 
 /**
- * Returns whether the suggestion UI (list or loading) should be visible.
+ * Returns whether the suggestion UI (list, loading, or error) should be visible.
  *
  * @param {string}  value                - Current input value.
  * @param {Array}   suggestions          - Loaded suggestions.
  * @param {boolean} isLoadingSuggestions - Whether a fetch is in flight.
+ * @param {string}  [suggestionError]    - Error message when the last fetch failed.
  *
  * @return {boolean} True when the UI should show.
  */
 export function shouldShowAddressSuggestionUi(
 	value,
 	suggestions,
-	isLoadingSuggestions
+	isLoadingSuggestions,
+	suggestionError
 ) {
+	const meetsMinLength =
+		getAddressSearchMinQueryLength() <=
+		String( value || '' ).trim().length;
+
 	return (
 		0 < suggestions.length ||
-		( isLoadingSuggestions &&
-			ADDRESS_SEARCH_MIN_QUERY_LENGTH <=
-				String( value || '' ).trim().length )
+		( isLoadingSuggestions && meetsMinLength ) ||
+		( Boolean( suggestionError ) && meetsMinLength )
 	);
 }
 
@@ -53,31 +64,74 @@ export function useAddressAutocomplete( {
 	const [ suggestions, setSuggestions ] = useState( [] );
 	const [ activeIndex, setActiveIndex ] = useState( 0 );
 	const [ isLoadingSuggestions, setIsLoadingSuggestions ] = useState( false );
+	const [ suggestionError, setSuggestionError ] = useState( '' );
+	const abortControllerRef = useRef( null );
 
 	useEffect( () => {
 		setActiveIndex( 0 );
 	}, [ suggestions ] );
 
+	// Abort any in-flight suggestion request on unmount.
+	useEffect( () => {
+		return () => {
+			if ( abortControllerRef.current ) {
+				abortControllerRef.current.abort();
+				abortControllerRef.current = null;
+			}
+		};
+	}, [] );
+
 	const loadSuggestions = useDebounce(
 		useCallback( ( query ) => {
+			// Supersede any in-flight request so stale responses cannot clobber newer ones.
+			if ( abortControllerRef.current ) {
+				abortControllerRef.current.abort();
+				abortControllerRef.current = null;
+			}
+
 			if (
 				! query ||
-				ADDRESS_SEARCH_MIN_QUERY_LENGTH > query.trim().length
+				getAddressSearchMinQueryLength() > query.trim().length
 			) {
 				setSuggestions( [] );
+				setSuggestionError( '' );
 				setIsLoadingSuggestions( false );
 				return;
 			}
+
+			const controller = new AbortController();
+			abortControllerRef.current = controller;
 			setIsLoadingSuggestions( true );
-			fetchAddressSuggestions( query )
+			setSuggestionError( '' );
+
+			fetchAddressSuggestions( query, { signal: controller.signal } )
 				.then( ( items ) => {
+					if ( controller.signal.aborted ) {
+						return;
+					}
 					setSuggestions( items );
 				} )
-				.catch( () => {
+				.catch( ( error ) => {
+					if ( 'AbortError' === error?.name ) {
+						return;
+					}
+					// Surface a generic, non-alarming message; low-level details go to the console via apiFetch.
 					setSuggestions( [] );
+					setSuggestionError(
+						__(
+							'Address search is temporarily unavailable.',
+							'gatherpress'
+						)
+					);
 				} )
 				.finally( () => {
+					if ( controller.signal.aborted ) {
+						return;
+					}
 					setIsLoadingSuggestions( false );
+					if ( abortControllerRef.current === controller ) {
+						abortControllerRef.current = null;
+					}
 				} );
 		}, [] ),
 		debounceMs
@@ -92,7 +146,12 @@ export function useAddressAutocomplete( {
 	);
 
 	const closeSuggestions = useCallback( () => {
+		if ( abortControllerRef.current ) {
+			abortControllerRef.current.abort();
+			abortControllerRef.current = null;
+		}
 		setSuggestions( [] );
+		setSuggestionError( '' );
 		setIsLoadingSuggestions( false );
 	}, [] );
 
@@ -162,6 +221,7 @@ export function useAddressAutocomplete( {
 		activeIndex,
 		setActiveIndex,
 		isLoadingSuggestions,
+		suggestionError,
 		handleChange,
 		closeSuggestions,
 		selectSuggestion,

@@ -7,30 +7,111 @@ import apiFetch from '@wordpress/api-fetch';
 /**
  * Internal dependencies.
  */
+import { getFromConfig } from './editor-settings';
 import { REST_NAMESPACE } from './namespace';
 
 /**
- * Minimum trimmed query length before calling the address search REST route.
- * Kept in sync with PHP `search_addresses` short-query handling.
+ * Fallback minimum trimmed query length when the editor config is unavailable.
+ * Kept at 3 to match the PHP default; the live value is read from
+ * `gatherpress.config.addressSearchMinQueryLength`.
  *
  * @type {number}
  */
-export const ADDRESS_SEARCH_MIN_QUERY_LENGTH = 3;
+const ADDRESS_SEARCH_MIN_QUERY_LENGTH_FALLBACK = 3;
+
+/**
+ * Minimum trimmed query length before calling the address search REST route.
+ * Resolved dynamically from the block editor config (PHP source of truth),
+ * with a 3-char fallback when the config value is not yet available.
+ *
+ * @return {number} Minimum query length.
+ */
+export function getAddressSearchMinQueryLength() {
+	const configured = getFromConfig( 'addressSearchMinQueryLength' );
+	return 'number' === typeof configured && 0 < configured
+		? configured
+		: ADDRESS_SEARCH_MIN_QUERY_LENGTH_FALLBACK;
+}
+
+/**
+ * Back-compat export retained for existing imports. Prefer
+ * `getAddressSearchMinQueryLength()` which reflects the live config value.
+ *
+ * @type {number}
+ */
+export const ADDRESS_SEARCH_MIN_QUERY_LENGTH =
+	ADDRESS_SEARCH_MIN_QUERY_LENGTH_FALLBACK;
+
+/**
+ * Maximum number of entries retained by the in-memory geocode cache.
+ * Long editing sessions would otherwise grow the cache without bound.
+ *
+ * @type {number}
+ */
+const GEOCODE_CACHE_MAX_SIZE = 200;
 
 /**
  * In-memory cache for geocoding results (memoization).
  * Maps address strings to their geocoding results.
+ *
+ * Insertion order is maintained so the oldest entries can be evicted (LRU).
  *
  * @type {Map<string, Object>}
  */
 const geocodeCache = new Map();
 
 /**
- * Clears the geocoding cache.
+ * Promises for geocode requests currently in flight, keyed by trimmed address.
+ * Allows concurrent callers for the same address to share a single network call.
+ *
+ * @type {Map<string, Promise<Object>>}
+ */
+const geocodeInFlight = new Map();
+
+/**
+ * Stores a geocode result, updating recency and enforcing the size cap.
+ *
+ * @param {string} key   Trimmed address key.
+ * @param {Object} value Result record ({ latitude, longitude, error }).
+ */
+function setGeocodeCacheEntry( key, value ) {
+	if ( geocodeCache.has( key ) ) {
+		geocodeCache.delete( key );
+	}
+	geocodeCache.set( key, value );
+	while ( geocodeCache.size > GEOCODE_CACHE_MAX_SIZE ) {
+		const oldest = geocodeCache.keys().next().value;
+		/* istanbul ignore if -- defensive guard; unreachable because size > 0 here. */
+		if ( undefined === oldest ) {
+			break;
+		}
+		geocodeCache.delete( oldest );
+	}
+}
+
+/**
+ * Retrieves a cached geocode result, marking it as recently used.
+ *
+ * @param {string} key Trimmed address key.
+ * @return {Object|undefined} Cached record if present.
+ */
+function getGeocodeCacheEntry( key ) {
+	if ( ! geocodeCache.has( key ) ) {
+		return undefined;
+	}
+	const value = geocodeCache.get( key );
+	geocodeCache.delete( key );
+	geocodeCache.set( key, value );
+	return value;
+}
+
+/**
+ * Clears the geocoding cache and any tracked in-flight requests.
  * Useful for testing or when cache needs to be invalidated.
  */
 export function clearGeocodeCache() {
 	geocodeCache.clear();
+	geocodeInFlight.clear();
 }
 
 /**
@@ -39,7 +120,7 @@ export function clearGeocodeCache() {
  *
  * @return {number} Number of cached entries.
  */
-export function getGeocoCacheSize() {
+export function getGeocodeCacheSize() {
 	return geocodeCache.size;
 }
 
@@ -55,7 +136,7 @@ export function primeGeocodeCache( address, latitude, longitude ) {
 		return;
 	}
 	const trimmed = address.trim();
-	geocodeCache.set( trimmed, {
+	setGeocodeCacheEntry( trimmed, {
 		latitude: String( latitude ),
 		longitude: String( longitude ),
 		error: null,
@@ -83,105 +164,127 @@ export async function geocodeAddress( address ) {
 
 	const trimmedAddress = address.trim();
 
+	// Skip the network for partial inputs; matches the search route's minimum.
+	if ( getAddressSearchMinQueryLength() > trimmedAddress.length ) {
+		return { latitude: '', longitude: '', error: null };
+	}
+
 	// Check cache first (memoization).
-	if ( geocodeCache.has( trimmedAddress ) ) {
-		return geocodeCache.get( trimmedAddress );
+	const cached = getGeocodeCacheEntry( trimmedAddress );
+	if ( undefined !== cached ) {
+		return cached;
 	}
 
-	try {
-		const response = await apiFetch( {
-			path: `/${ REST_NAMESPACE }/geocode?address=${ encodeURIComponent(
-				trimmedAddress
-			) }`,
-		} );
+	// Reuse any in-flight request for the same address (concurrent callers share one fetch).
+	const existing = geocodeInFlight.get( trimmedAddress );
+	if ( existing ) {
+		return existing;
+	}
 
-		// The REST API returns the result directly.
-		if ( response.latitude && response.longitude ) {
-			const result = {
-				latitude: response.latitude,
-				longitude: response.longitude,
-				error: null,
+	const request = ( async () => {
+		try {
+			const response = await apiFetch( {
+				path: `/${ REST_NAMESPACE }/geocode?address=${ encodeURIComponent(
+					trimmedAddress
+				) }`,
+			} );
+
+			// The REST API returns the result directly.
+			if ( response.latitude && response.longitude ) {
+				const result = {
+					latitude: response.latitude,
+					longitude: response.longitude,
+					error: null,
+				};
+				// Cache successful results.
+				setGeocodeCacheEntry( trimmedAddress, result );
+				return result;
+			}
+
+			// No results found or error from API.
+			const noResultsResponse = {
+				latitude: '',
+				longitude: '',
+				error:
+					response.error ||
+					__(
+						'Could not find location. Please check the address and try again.',
+						'gatherpress'
+					),
 			};
-			// Cache successful results.
-			geocodeCache.set( trimmedAddress, result );
-			return result;
+			// Cache "not found" results since the address won't suddenly exist.
+			if ( ! response.error ) {
+				setGeocodeCacheEntry( trimmedAddress, noResultsResponse );
+			}
+			return noResultsResponse;
+		} catch ( error ) {
+			// Don't cache network errors - allow retry.
+			return {
+				latitude: '',
+				longitude: '',
+				error:
+					error.message ||
+					__( 'Geocoding request failed.', 'gatherpress' ),
+			};
+		} finally {
+			geocodeInFlight.delete( trimmedAddress );
 		}
+	} )();
 
-		// No results found or error from API.
-		const noResultsResponse = {
-			latitude: '',
-			longitude: '',
-			error:
-				response.error ||
-				__(
-					'Could not find location. Please check the address and try again.',
-					'gatherpress'
-				),
-		};
-		// Cache "not found" results since the address won't suddenly exist.
-		if ( ! response.error ) {
-			geocodeCache.set( trimmedAddress, noResultsResponse );
-		}
-		return noResultsResponse;
-	} catch ( error ) {
-		// Don't cache network errors - allow retry.
-		return {
-			latitude: '',
-			longitude: '',
-			error:
-				error.message ||
-				__( 'Geocoding request failed.', 'gatherpress' ),
-		};
-	}
+	geocodeInFlight.set( trimmedAddress, request );
+	return request;
 }
 
 /**
  * Fetches address suggestions for autocomplete (Photon via GatherPress REST proxy).
  *
- * @param {string} query Partial address input.
+ * Network / REST failures are propagated to the caller so the UI can surface a
+ * distinct "search unavailable" state instead of silently rendering an empty
+ * dropdown (which is indistinguishable from "no matches"). `AbortError` also
+ * propagates so the hook can bail on superseded requests.
+ *
+ * @param {string}      query            Partial address input.
+ * @param {Object}      [options]        Request options.
+ * @param {AbortSignal} [options.signal] Signal used to abort the request when a newer one supersedes it.
  * @return {Promise<Array<{ label: string, latitude: string, longitude: string }>>} Suggestion rows.
  */
-export async function fetchAddressSuggestions( query ) {
+export async function fetchAddressSuggestions( query, { signal } = {} ) {
 	if ( ! query || '' === query.trim() ) {
 		return [];
 	}
 
 	const trimmed = query.trim();
 
-	if ( ADDRESS_SEARCH_MIN_QUERY_LENGTH > trimmed.length ) {
+	if ( getAddressSearchMinQueryLength() > trimmed.length ) {
 		return [];
 	}
 
-	try {
-		const response = await apiFetch( {
-			path: `/${ REST_NAMESPACE }/geocode/search?q=${ encodeURIComponent(
-				trimmed
-			) }`,
+	const response = await apiFetch( {
+		path: `/${ REST_NAMESPACE }/geocode/search?q=${ encodeURIComponent(
+			trimmed
+		) }`,
+		signal,
+	} );
+
+	if ( ! response?.suggestions || ! Array.isArray( response.suggestions ) ) {
+		return [];
+	}
+
+	const rows = [];
+
+	for ( const raw of response.suggestions ) {
+		const label = 'string' === typeof raw.label ? raw.label.trim() : '';
+
+		if ( ! label ) {
+			continue;
+		}
+
+		rows.push( {
+			label,
+			latitude: String( raw.latitude ?? '' ),
+			longitude: String( raw.longitude ?? '' ),
 		} );
-
-		if ( ! response?.suggestions || ! Array.isArray( response.suggestions ) ) {
-			return [];
-		}
-
-		const rows = [];
-
-		for ( const raw of response.suggestions ) {
-			const label =
-				'string' === typeof raw.label ? raw.label.trim() : '';
-
-			if ( ! label ) {
-				continue;
-			}
-
-			rows.push( {
-				label,
-				latitude: String( raw.latitude ?? '' ),
-				longitude: String( raw.longitude ?? '' ),
-			} );
-		}
-
-		return rows;
-	} catch {
-		return [];
 	}
+
+	return rows;
 }

@@ -18,7 +18,7 @@ import {
 	fetchAddressSuggestions,
 	geocodeAddress,
 	clearGeocodeCache,
-	getGeocoCacheSize,
+	getGeocodeCacheSize,
 	primeGeocodeCache,
 } from '@src/helpers/geocoding';
 
@@ -62,10 +62,73 @@ describe( 'Geocoding helpers', () => {
 			} );
 
 			await geocodeAddress( 'Test Address' );
-			expect( getGeocoCacheSize() ).toBe( 1 );
+			expect( getGeocodeCacheSize() ).toBe( 1 );
 
 			clearGeocodeCache();
-			expect( getGeocoCacheSize() ).toBe( 0 );
+			expect( getGeocodeCacheSize() ).toBe( 0 );
+		} );
+	} );
+
+	describe( 'cache eviction', () => {
+		it( 'caps the cache at the maximum size and evicts the oldest entry first', async () => {
+			apiFetch.mockImplementation( ( { path } ) => {
+				// Return unique coordinates per address so entries differ.
+				const address = decodeURIComponent(
+					path.split( 'address=' )[ 1 ] || ''
+				);
+				return Promise.resolve( {
+					latitude: `lat-${ address }`,
+					longitude: `lng-${ address }`,
+					error: null,
+				} );
+			} );
+
+			// 200 is the implementation cap; fill it then push one more.
+			for ( let i = 0; 200 > i; i++ ) {
+				await geocodeAddress( `Address ${ i }` );
+			}
+			expect( getGeocodeCacheSize() ).toBe( 200 );
+
+			await geocodeAddress( 'Address 200' );
+			expect( getGeocodeCacheSize() ).toBe( 200 );
+
+			// The oldest entry ('Address 0') should have been evicted — a second
+			// lookup must therefore re-hit apiFetch.
+			const callsBeforeReLookup = apiFetch.mock.calls.length;
+			await geocodeAddress( 'Address 0' );
+			expect( apiFetch.mock.calls.length ).toBe( callsBeforeReLookup + 1 );
+		} );
+
+		it( 'treats a cache hit as recently used so it is not evicted next', async () => {
+			apiFetch.mockImplementation( ( { path } ) => {
+				const address = decodeURIComponent(
+					path.split( 'address=' )[ 1 ] || ''
+				);
+				return Promise.resolve( {
+					latitude: `lat-${ address }`,
+					longitude: `lng-${ address }`,
+					error: null,
+				} );
+			} );
+
+			for ( let i = 0; 200 > i; i++ ) {
+				await geocodeAddress( `Address ${ i }` );
+			}
+
+			// Touch the oldest entry so it becomes most-recently used.
+			await geocodeAddress( 'Address 0' );
+
+			// Inserting a new entry should now evict 'Address 1' instead of 'Address 0'.
+			await geocodeAddress( 'Address 200' );
+
+			const callsBeforeReLookup = apiFetch.mock.calls.length;
+			await geocodeAddress( 'Address 0' );
+			// Still cached — no new network call.
+			expect( apiFetch.mock.calls.length ).toBe( callsBeforeReLookup );
+
+			await geocodeAddress( 'Address 1' );
+			// Evicted — network call was made.
+			expect( apiFetch.mock.calls.length ).toBe( callsBeforeReLookup + 1 );
 		} );
 	} );
 
@@ -112,6 +175,65 @@ describe( 'Geocoding helpers', () => {
 				error: null,
 			} );
 			expect( apiFetch ).not.toHaveBeenCalled();
+		} );
+
+		it( 'skips the network for inputs shorter than the minimum query length', async () => {
+			const result = await geocodeAddress( 'ab' );
+
+			expect( result ).toEqual( {
+				latitude: '',
+				longitude: '',
+				error: null,
+			} );
+			expect( apiFetch ).not.toHaveBeenCalled();
+		} );
+
+		it( 'deduplicates concurrent calls for the same address into one request', async () => {
+			let resolveFetch;
+			apiFetch.mockImplementation(
+				() =>
+					new Promise( ( resolve ) => {
+						resolveFetch = resolve;
+					} )
+			);
+
+			const address = 'Shared Address';
+			const promiseA = geocodeAddress( address );
+			const promiseB = geocodeAddress( address );
+
+			expect( apiFetch ).toHaveBeenCalledTimes( 1 );
+
+			resolveFetch( {
+				latitude: '10',
+				longitude: '20',
+				error: null,
+			} );
+
+			const [ resultA, resultB ] = await Promise.all( [
+				promiseA,
+				promiseB,
+			] );
+
+			expect( resultA ).toEqual( resultB );
+			expect( resultA ).toEqual( {
+				latitude: '10',
+				longitude: '20',
+				error: null,
+			} );
+		} );
+
+		it( 'allows a new fetch after an in-flight request completes', async () => {
+			apiFetch.mockResolvedValue( {
+				latitude: '1',
+				longitude: '2',
+				error: null,
+			} );
+
+			await geocodeAddress( 'Serial Address' );
+			clearGeocodeCache();
+			await geocodeAddress( 'Serial Address' );
+
+			expect( apiFetch ).toHaveBeenCalledTimes( 2 );
 		} );
 
 		it( 'returns coordinates for successful geocoding', async () => {
@@ -294,12 +416,39 @@ describe( 'Geocoding helpers', () => {
 			} );
 		} );
 
-		it( 'returns empty array on API failure', async () => {
-			apiFetch.mockRejectedValue( new Error( 'fail' ) );
+		it( 'propagates API failures so callers can surface an error state', async () => {
+			const failure = new Error( 'Service unavailable' );
+			apiFetch.mockRejectedValue( failure );
 
-			const result = await fetchAddressSuggestions( 'Some place' );
+			await expect(
+				fetchAddressSuggestions( 'Some place' )
+			).rejects.toBe( failure );
+		} );
 
-			expect( result ).toEqual( [] );
+		it( 'forwards an AbortSignal to apiFetch when provided', async () => {
+			apiFetch.mockResolvedValue( { suggestions: [] } );
+
+			const controller = new AbortController();
+			await fetchAddressSuggestions( 'Somewhere', {
+				signal: controller.signal,
+			} );
+
+			expect( apiFetch ).toHaveBeenCalledWith(
+				expect.objectContaining( {
+					signal: controller.signal,
+				} )
+			);
+		} );
+
+		it( 'rethrows AbortError so callers can distinguish cancellation', async () => {
+			const abortError = Object.assign( new Error( 'aborted' ), {
+				name: 'AbortError',
+			} );
+			apiFetch.mockRejectedValue( abortError );
+
+			await expect(
+				fetchAddressSuggestions( 'Some place' )
+			).rejects.toBe( abortError );
 		} );
 
 		it( 'returns empty array when response has no suggestions', async () => {
@@ -376,7 +525,22 @@ describe( 'Geocoding helpers', () => {
 		it( 'does nothing when address is empty or whitespace', () => {
 			primeGeocodeCache( '', '1', '2' );
 			primeGeocodeCache( '   ', '1', '2' );
-			expect( getGeocoCacheSize() ).toBe( 0 );
+			expect( getGeocodeCacheSize() ).toBe( 0 );
+		} );
+
+		it( 'replaces an existing entry when primed again', async () => {
+			primeGeocodeCache( 'Reprime St', '1.0', '2.0' );
+			primeGeocodeCache( 'Reprime St', '9.0', '8.0' );
+
+			const result = await geocodeAddress( 'Reprime St' );
+
+			expect( result ).toEqual( {
+				latitude: '9.0',
+				longitude: '8.0',
+				error: null,
+			} );
+			expect( getGeocodeCacheSize() ).toBe( 1 );
+			expect( apiFetch ).not.toHaveBeenCalled();
 		} );
 	} );
 } );

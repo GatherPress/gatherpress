@@ -1269,8 +1269,8 @@ class Test_Venue extends Base {
 
 		$post = get_post( $post_id );
 
-		// Call the method directly.
-		$instance->maybe_apply_venue_template( $post_id, $post );
+		// Call the method directly (simulating initial REST insert).
+		$instance->maybe_apply_venue_template( $post_id, $post, false );
 
 		// Refresh the post data.
 		$updated_post = get_post( $post_id );
@@ -1284,6 +1284,53 @@ class Test_Venue extends Base {
 			'wp:gatherpress/venue',
 			$updated_post->post_content,
 			'Template content should contain venue block.'
+		);
+	}
+
+	/**
+	 * Coverage for maybe_apply_venue_template skipping updates to existing venues.
+	 *
+	 * When a user intentionally clears the content of an existing venue and saves,
+	 * the template must NOT silently re-seed the content.
+	 *
+	 * @covers ::maybe_apply_venue_template
+	 *
+	 * @return void
+	 */
+	public function test_maybe_apply_venue_template_skips_updates(): void {
+		$instance = Venue::get_instance();
+
+		// Factory creation triggers the save_post hook with $update=false which
+		// seeds the template. Reset content directly to simulate the user having
+		// cleared an existing venue and re-saved it.
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type'    => Venue::POST_TYPE,
+				'post_status'  => 'publish',
+				'post_content' => '',
+			)
+		);
+		wp_update_post(
+			array(
+				'ID'           => $post_id,
+				'post_content' => '',
+			)
+		);
+
+		$post = get_post( $post_id );
+		$this->assertEmpty(
+			$post->post_content,
+			'Test setup failure: content should be empty before the update call.'
+		);
+
+		// Simulate an update (user saved an existing venue after clearing its content).
+		$instance->maybe_apply_venue_template( $post_id, $post, true );
+
+		$updated_post = get_post( $post_id );
+
+		$this->assertEmpty(
+			$updated_post->post_content,
+			'Updates to an existing venue must not re-seed the template.'
 		);
 	}
 
@@ -1310,7 +1357,7 @@ class Test_Venue extends Base {
 
 		$post = get_post( $post_id );
 
-		$instance->maybe_apply_venue_template( $post_id, $post );
+		$instance->maybe_apply_venue_template( $post_id, $post, false );
 
 		// Content should remain unchanged.
 		$updated_post = get_post( $post_id );
@@ -1344,7 +1391,7 @@ class Test_Venue extends Base {
 
 		$post = get_post( $post_id );
 
-		$instance->maybe_apply_venue_template( $post_id, $post );
+		$instance->maybe_apply_venue_template( $post_id, $post, false );
 
 		// Content should remain empty for drafts.
 		$updated_post = get_post( $post_id );
@@ -1382,7 +1429,7 @@ class Test_Venue extends Base {
 
 		$post = get_post( $post_id );
 
-		$instance->maybe_apply_venue_template( $post_id, $post );
+		$instance->maybe_apply_venue_template( $post_id, $post, false );
 
 		// Content should remain empty when pattern is not registered.
 		$updated_post = get_post( $post_id );

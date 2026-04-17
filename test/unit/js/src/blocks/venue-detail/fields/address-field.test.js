@@ -121,13 +121,13 @@ describe( 'AddressField', () => {
 	it( 'renders textarea inside address with correct classes', () => {
 		render( <ControlledAddressField { ...defaultProps } /> );
 
-		const address = screen.getByRole( 'textbox' ).closest( 'address' );
+		const address = screen.getByRole( 'combobox' ).closest( 'address' );
 		expect( address ).toBeTruthy();
 		expect( address.className ).toBe(
 			'gatherpress-venue-detail__address'
 		);
 
-		const field = screen.getByRole( 'textbox' );
+		const field = screen.getByRole( 'combobox' );
 		expect( field.className ).toBe(
 			'gatherpress-venue-detail__address-input'
 		);
@@ -136,7 +136,7 @@ describe( 'AddressField', () => {
 	it( 'does not set inline display on address (layout from editor styles)', () => {
 		render( <ControlledAddressField { ...defaultProps } /> );
 
-		const address = screen.getByRole( 'textbox' ).closest( 'address' );
+		const address = screen.getByRole( 'combobox' ).closest( 'address' );
 		expect( address.style.display ).toBe( '' );
 	} );
 
@@ -148,14 +148,14 @@ describe( 'AddressField', () => {
 			/>
 		);
 
-		const field = screen.getByRole( 'textbox' );
+		const field = screen.getByRole( 'combobox' );
 		expect( field.value ).toBe( '123 Main St' );
 	} );
 
 	it( 'displays placeholder when no value', () => {
 		render( <ControlledAddressField { ...defaultProps } /> );
 
-		const field = screen.getByRole( 'textbox' );
+		const field = screen.getByRole( 'combobox' );
 		expect( field.getAttribute( 'placeholder' ) ).toBe(
 			'Enter address…'
 		);
@@ -183,14 +183,14 @@ describe( 'AddressField', () => {
 
 	it( 'sets anti-autofill attributes on the textarea after mount', () => {
 		render( <ControlledAddressField { ...defaultProps } /> );
-		const field = screen.getByRole( 'textbox' );
+		const field = screen.getByRole( 'combobox' );
 		expect( field.getAttribute( 'autocomplete' ) ).toBe( 'off' );
 		expect( field.getAttribute( 'data-lpignore' ) ).toBe( 'true' );
 	} );
 
 	it( 'starts readOnly when empty and clears after non-empty value', () => {
 		const { rerender } = render( <ControlledAddressField { ...defaultProps } /> );
-		let field = screen.getByRole( 'textbox' );
+		let field = screen.getByRole( 'combobox' );
 		expect( field.readOnly ).toBe( true );
 
 		rerender(
@@ -199,13 +199,13 @@ describe( 'AddressField', () => {
 				initialValue="Something"
 			/>
 		);
-		field = screen.getByRole( 'textbox' );
+		field = screen.getByRole( 'combobox' );
 		expect( field.readOnly ).toBe( false );
 	} );
 
 	it( 'clears readOnly after focus via unlock (double rAF)', () => {
 		render( <ControlledAddressField { ...defaultProps } /> );
-		const field = screen.getByRole( 'textbox' );
+		const field = screen.getByRole( 'combobox' );
 		expect( field.readOnly ).toBe( true );
 
 		fireEvent.focus( field );
@@ -215,14 +215,14 @@ describe( 'AddressField', () => {
 
 	it( 'clears readOnly on mouseDown', () => {
 		render( <ControlledAddressField { ...defaultProps } /> );
-		const field = screen.getByRole( 'textbox' );
+		const field = screen.getByRole( 'combobox' );
 		fireEvent.mouseDown( field );
 		expect( field.readOnly ).toBe( false );
 	} );
 
 	it( 'does not call fetch for queries shorter than 3 characters after debounce', async () => {
 		render( <ControlledAddressField { ...defaultProps } /> );
-		const field = screen.getByRole( 'textbox' );
+		const field = screen.getByRole( 'combobox' );
 
 		fireEvent.change( field, { target: { value: 'ab' } } );
 		await flushMicrotasks();
@@ -233,7 +233,7 @@ describe( 'AddressField', () => {
 	it( 'calls fetchAddressSuggestions after debounce when query is long enough', async () => {
 		fetchAddressSuggestions.mockResolvedValue( [] );
 		render( <ControlledAddressField { ...defaultProps } /> );
-		const field = screen.getByRole( 'textbox' );
+		const field = screen.getByRole( 'combobox' );
 
 		fireEvent.change( field, {
 			target: { value: '123 Main Street' },
@@ -242,15 +242,18 @@ describe( 'AddressField', () => {
 
 		await waitFor( () => {
 			expect( fetchAddressSuggestions ).toHaveBeenCalledWith(
-				'123 Main Street'
+				'123 Main Street',
+				expect.objectContaining( {
+					signal: expect.any( AbortSignal ),
+				} )
 			);
 		} );
 	} );
 
-	it( 'clears suggestions when fetch rejects', async () => {
+	it( 'surfaces an error message when fetch rejects', async () => {
 		fetchAddressSuggestions.mockRejectedValueOnce( new Error( 'fail' ) );
 		render( <ControlledAddressField { ...defaultProps } /> );
-		const field = screen.getByRole( 'textbox' );
+		const field = screen.getByRole( 'combobox' );
 
 		fireEvent.change( field, { target: { value: 'Paris Fra' } } );
 		await flushMicrotasks();
@@ -258,6 +261,15 @@ describe( 'AddressField', () => {
 		await waitFor( () => {
 			expect( fetchAddressSuggestions ).toHaveBeenCalled();
 		} );
+
+		await waitFor( () => {
+			expect(
+				screen.getByText( /temporarily unavailable/i )
+			).toBeTruthy();
+		} );
+
+		// No option rows should render in the error state.
+		expect( screen.queryAllByRole( 'option' ) ).toHaveLength( 0 );
 	} );
 
 	it( 'shows loading state then suggestions', async () => {
@@ -270,7 +282,7 @@ describe( 'AddressField', () => {
 		);
 
 		render( <ControlledAddressField { ...defaultProps } /> );
-		const field = screen.getByRole( 'textbox' );
+		const field = screen.getByRole( 'combobox' );
 
 		fireEvent.change( field, { target: { value: 'NYC query' } } );
 		await flushMicrotasks();
@@ -308,7 +320,7 @@ describe( 'AddressField', () => {
 		);
 
 		render( <ControlledAddressField { ...defaultProps } /> );
-		const field = screen.getByRole( 'textbox' );
+		const field = screen.getByRole( 'combobox' );
 
 		fireEvent.change( field, { target: { value: 'Wait for it' } } );
 		await flushMicrotasks();
@@ -332,6 +344,80 @@ describe( 'AddressField', () => {
 		} );
 	} );
 
+	it( 'aborts an in-flight request when a newer query is entered', async () => {
+		const deferreds = [];
+		fetchAddressSuggestions.mockImplementation( ( _query, options ) => {
+			return new Promise( ( resolve ) => {
+				deferreds.push( { resolve, signal: options?.signal } );
+			} );
+		} );
+
+		render( <ControlledAddressField { ...defaultProps } /> );
+		const field = screen.getByRole( 'combobox' );
+
+		fireEvent.change( field, { target: { value: 'first query' } } );
+		await flushMicrotasks();
+
+		fireEvent.change( field, { target: { value: 'second query' } } );
+		await flushMicrotasks();
+
+		expect( deferreds.length ).toBe( 2 );
+		expect( deferreds[ 0 ].signal.aborted ).toBe( true );
+		expect( deferreds[ 1 ].signal.aborted ).toBe( false );
+
+		// A slow response from the superseded first query must not populate the list.
+		await act( async () => {
+			deferreds[ 0 ].resolve( [
+				{
+					label: 'Stale Result',
+					latitude: '0',
+					longitude: '0',
+				},
+			] );
+		} );
+
+		expect(
+			screen.queryByRole( 'option', { name: 'Stale Result' } )
+		).toBeNull();
+
+		await act( async () => {
+			deferreds[ 1 ].resolve( [
+				{
+					label: 'Fresh Result',
+					latitude: '1',
+					longitude: '1',
+				},
+			] );
+		} );
+
+		await waitFor( () => {
+			expect(
+				screen.getByRole( 'option', { name: 'Fresh Result' } )
+			).toBeTruthy();
+		} );
+	} );
+
+	it( 'aborts the in-flight request when closed via Escape', async () => {
+		let capturedSignal;
+		fetchAddressSuggestions.mockImplementation( ( _query, options ) => {
+			capturedSignal = options?.signal;
+			return new Promise( () => {} );
+		} );
+
+		render( <ControlledAddressField { ...defaultProps } /> );
+		const field = screen.getByRole( 'combobox' );
+
+		fireEvent.change( field, { target: { value: 'pending query' } } );
+		await flushMicrotasks();
+
+		expect( capturedSignal ).toBeDefined();
+		expect( capturedSignal.aborted ).toBe( false );
+
+		fireEvent.keyDown( field, { key: 'Escape', code: 'Escape' } );
+
+		expect( capturedSignal.aborted ).toBe( true );
+	} );
+
 	it( 'navigates suggestions with arrow keys and selects with Enter', async () => {
 		fetchAddressSuggestions.mockResolvedValue( [
 			{
@@ -347,7 +433,7 @@ describe( 'AddressField', () => {
 		] );
 
 		render( <ControlledAddressField { ...defaultProps } /> );
-		const field = screen.getByRole( 'textbox' );
+		const field = screen.getByRole( 'combobox' );
 
 		fireEvent.change( field, { target: { value: 'Find me' } } );
 		await flushMicrotasks();
@@ -393,7 +479,7 @@ describe( 'AddressField', () => {
 		] );
 
 		render( <ControlledAddressField { ...defaultProps } /> );
-		const field = screen.getByRole( 'textbox' );
+		const field = screen.getByRole( 'combobox' );
 
 		fireEvent.change( field, { target: { value: 'query here' } } );
 		await flushMicrotasks();
@@ -412,7 +498,7 @@ describe( 'AddressField', () => {
 
 	it( 'calls onKeyDown when list is empty', () => {
 		render( <ControlledAddressField { ...defaultProps } /> );
-		const field = screen.getByRole( 'textbox' );
+		const field = screen.getByRole( 'combobox' );
 
 		fireEvent.keyDown( field, { key: 'x', code: 'KeyX' } );
 
@@ -429,7 +515,7 @@ describe( 'AddressField', () => {
 		] );
 
 		render( <ControlledAddressField { ...defaultProps } /> );
-		const field = screen.getByRole( 'textbox' );
+		const field = screen.getByRole( 'combobox' );
 
 		fireEvent.change( field, { target: { value: 'click test' } } );
 		await flushMicrotasks();
@@ -462,7 +548,7 @@ describe( 'AddressField', () => {
 		] );
 
 		render( <ControlledAddressField { ...defaultProps } /> );
-		const field = screen.getByRole( 'textbox' );
+		const field = screen.getByRole( 'combobox' );
 
 		fireEvent.change( field, { target: { value: 'multi opt' } } );
 		await flushMicrotasks();
@@ -486,7 +572,7 @@ describe( 'AddressField', () => {
 		] );
 
 		render( <ControlledAddressField { ...defaultProps } /> );
-		const field = screen.getByRole( 'textbox' );
+		const field = screen.getByRole( 'combobox' );
 
 		fireEvent.change( field, { target: { value: 'close me' } } );
 		await flushMicrotasks();
@@ -504,7 +590,7 @@ describe( 'AddressField', () => {
 		render(
 			<ControlledAddressField { ...defaultProps } initialValue="hello" />
 		);
-		const field = screen.getByRole( 'textbox' );
+		const field = screen.getByRole( 'combobox' );
 
 		await waitFor( () => {
 			expect( resizeObserverCallback ).toEqual( expect.any( Function ) );
@@ -527,7 +613,7 @@ describe( 'AddressField', () => {
 		] );
 
 		render( <ControlledAddressField { ...defaultProps } /> );
-		const field = screen.getByRole( 'textbox' );
+		const field = screen.getByRole( 'combobox' );
 
 		fireEvent.change( field, { target: { value: 'Escape query' } } );
 		await flushMicrotasks();
@@ -592,7 +678,7 @@ describe( 'AddressAutocompleteField (settings variant)', () => {
 		render( <ControlledSettingsAddressField { ...settingsProps } /> );
 
 		expect(
-			screen.getByRole( 'searchbox', { name: /full address/i } )
+			screen.getByRole( 'combobox', { name: /full address/i } )
 		).toBeTruthy();
 	} );
 
@@ -611,7 +697,7 @@ describe( 'AddressAutocompleteField (settings variant)', () => {
 		] );
 
 		render( <ControlledSettingsAddressField { ...settingsProps } /> );
-		const field = screen.getByRole( 'searchbox', { name: /full address/i } );
+		const field = screen.getByRole( 'combobox', { name: /full address/i } );
 
 		fireEvent.change( field, { target: { value: 'Find me' } } );
 		await flushMicrotasks();
@@ -648,7 +734,7 @@ describe( 'AddressAutocompleteField (settings variant)', () => {
 		] );
 
 		render( <ControlledSettingsAddressField { ...settingsProps } /> );
-		const field = screen.getByRole( 'searchbox', { name: /full address/i } );
+		const field = screen.getByRole( 'combobox', { name: /full address/i } );
 
 		fireEvent.change( field, { target: { value: 'Escape query' } } );
 		await flushMicrotasks();
@@ -672,7 +758,7 @@ describe( 'AddressAutocompleteField (settings variant)', () => {
 		);
 
 		render( <ControlledSettingsAddressField { ...settingsProps } /> );
-		const field = screen.getByRole( 'searchbox', { name: /full address/i } );
+		const field = screen.getByRole( 'combobox', { name: /full address/i } );
 
 		fireEvent.change( field, { target: { value: 'NYC query' } } );
 		await flushMicrotasks();

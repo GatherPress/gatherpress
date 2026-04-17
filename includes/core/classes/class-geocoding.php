@@ -44,11 +44,42 @@ class Geocoding {
 
 	/**
 	 * Minimum trimmed query length before calling Photon for search.
-	 * Matches JS `ADDRESS_SEARCH_MIN_QUERY_LENGTH` in `src/helpers/geocoding.js`.
+	 *
+	 * This value is the single source of truth: it is also exposed to the block
+	 * editor via `block_editor_settings_all` so the JS short-query guard stays
+	 * in lockstep with the server without a second hardcoded copy.
 	 *
 	 * @since 1.0.0
 	 */
-	private const ADDRESS_SEARCH_MIN_QUERY_LENGTH = 3;
+	public const ADDRESS_SEARCH_MIN_QUERY_LENGTH = 3;
+
+	/**
+	 * Transient key prefix for cached Photon search results.
+	 *
+	 * @since 1.0.0
+	 */
+	private const SEARCH_CACHE_PREFIX = 'gatherpress_photon_search_';
+
+	/**
+	 * Time-to-live for cached Photon search results, in seconds.
+	 *
+	 * @since 1.0.0
+	 */
+	private const SEARCH_CACHE_TTL = 15 * MINUTE_IN_SECONDS;
+
+	/**
+	 * Transient key prefix for cached Photon geocode (address → lat/long) results.
+	 *
+	 * @since 1.0.0
+	 */
+	private const GEOCODE_CACHE_PREFIX = 'gatherpress_photon_geocode_';
+
+	/**
+	 * Time-to-live for cached Photon geocode results, in seconds.
+	 *
+	 * @since 1.0.0
+	 */
+	private const GEOCODE_CACHE_TTL = 15 * MINUTE_IN_SECONDS;
 
 	/**
 	 * Class constructor.
@@ -70,6 +101,33 @@ class Geocoding {
 	 */
 	protected function setup_hooks(): void {
 		add_action( 'rest_api_init', array( $this, 'register_endpoints' ) );
+		add_filter( 'block_editor_settings_all', array( $this, 'add_editor_settings' ) );
+	}
+
+	/**
+	 * Exposes geocoding-related config to the block editor.
+	 *
+	 * Publishes `addressSearchMinQueryLength` under `settings.gatherpress.config`
+	 * so the JS `geocodeAddress` / `fetchAddressSuggestions` helpers can read the
+	 * same minimum query length the REST endpoints enforce.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param array $settings The block editor settings array.
+	 * @return array The modified settings.
+	 */
+	public function add_editor_settings( array $settings ): array {
+		if ( ! isset( $settings['gatherpress'] ) ) {
+			$settings['gatherpress'] = array();
+		}
+		if ( ! isset( $settings['gatherpress']['config'] ) ) {
+			$settings['gatherpress']['config'] = array();
+		}
+
+		$settings['gatherpress']['config']['addressSearchMinQueryLength'] =
+			self::ADDRESS_SEARCH_MIN_QUERY_LENGTH;
+
+		return $settings;
 	}
 
 	/**
@@ -140,11 +198,22 @@ class Geocoding {
 			);
 		}
 
+		// Cap oversize input for parity with search_addresses(); protects upstream from pathological requests.
+		$address = mb_substr( trim( $address ), 0, 200 );
+
+		$language  = $this->get_language_code();
+		$cache_key = self::GEOCODE_CACHE_PREFIX . md5( $address . '|' . $language );
+		$cached    = get_transient( $cache_key );
+
+		if ( is_array( $cached ) ) {
+			return new WP_REST_Response( $cached, 200 );
+		}
+
 		$url = add_query_arg(
 			array(
 				'q'     => $address,
 				'limit' => 1,
-				'lang'  => $this->get_language_code(),
+				'lang'  => $language,
 			),
 			$this->get_photon_api_url()
 		);
@@ -184,27 +253,30 @@ class Geocoding {
 		$body = wp_remote_retrieve_body( $response );
 		$data = json_decode( $body, true );
 
+		$this->maybe_log_json_decode_failure( $body, $data, 'geocode_address' );
+
 		if ( ! empty( $data['features'] ) && isset( $data['features'][0]['geometry']['coordinates'] ) ) {
 			$coordinates = $data['features'][0]['geometry']['coordinates'];
-
-			return new WP_REST_Response(
-				array(
-					'latitude'  => (string) $coordinates[1],
-					'longitude' => (string) $coordinates[0],
-					'error'     => null,
-				),
-				200
+			$result      = array(
+				'latitude'  => (string) $coordinates[1],
+				'longitude' => (string) $coordinates[0],
+				'error'     => null,
 			);
+
+			set_transient( $cache_key, $result, self::GEOCODE_CACHE_TTL );
+
+			return new WP_REST_Response( $result, 200 );
 		}
 
-		return new WP_REST_Response(
-			array(
-				'latitude'  => '',
-				'longitude' => '',
-				'error'     => __( 'Could not find location. Please check the address and try again.', 'gatherpress' ),
-			),
-			200
+		$not_found = array(
+			'latitude'  => '',
+			'longitude' => '',
+			'error'     => __( 'Could not find location. Please check the address and try again.', 'gatherpress' ),
 		);
+
+		set_transient( $cache_key, $not_found, self::GEOCODE_CACHE_TTL );
+
+		return new WP_REST_Response( $not_found, 200 );
 	}
 
 	/**
@@ -239,11 +311,24 @@ class Geocoding {
 			);
 		}
 
+		$language  = $this->get_language_code();
+		$cache_key = self::SEARCH_CACHE_PREFIX . md5( $query . '|' . $language );
+		$cached    = get_transient( $cache_key );
+
+		if ( is_array( $cached ) ) {
+			return new WP_REST_Response(
+				array(
+					'suggestions' => $cached,
+				),
+				200
+			);
+		}
+
 		$url = add_query_arg(
 			array(
 				'q'     => $query,
 				'limit' => 5,
-				'lang'  => $this->get_language_code(),
+				'lang'  => $language,
 			),
 			$this->get_photon_api_url()
 		);
@@ -283,7 +368,11 @@ class Geocoding {
 		$body = wp_remote_retrieve_body( $response );
 		$data = json_decode( $body, true );
 
+		$this->maybe_log_json_decode_failure( $body, $data, 'search_addresses' );
+
 		if ( ! is_array( $data ) || empty( $data['features'] ) || ! is_array( $data['features'] ) ) {
+			set_transient( $cache_key, array(), self::SEARCH_CACHE_TTL );
+
 			return new WP_REST_Response(
 				array(
 					'suggestions' => array(),
@@ -320,6 +409,8 @@ class Geocoding {
 				'longitude' => (string) $coords[0],
 			);
 		}
+
+		set_transient( $cache_key, $suggestions, self::SEARCH_CACHE_TTL );
 
 		return new WP_REST_Response(
 			array(
@@ -386,6 +477,40 @@ class Geocoding {
 	}
 
 	/**
+	 * Emits a `WP_DEBUG` log line when Photon returns a body that could not be JSON-decoded.
+	 *
+	 * The endpoint handlers already fall through to an empty-suggestions / not-found
+	 * response when the body is unusable, so callers see graceful behavior; this
+	 * line is only meant to aid triage when an upstream incident is suspected.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $body    Raw response body.
+	 * @param mixed  $decoded Result of json_decode (null when decode failed).
+	 * @param string $context Short label identifying the caller ('geocode_address', 'search_addresses').
+	 * @return void
+	 */
+	private function maybe_log_json_decode_failure( string $body, $decoded, string $context ): void {
+		if ( null !== $decoded ) {
+			return;
+		}
+		if ( '' === trim( $body ) ) {
+			return;
+		}
+		if ( ! ( defined( 'WP_DEBUG' ) && WP_DEBUG ) ) {
+			return;
+		}
+
+		error_log( // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
+			sprintf(
+				'GatherPress geocoding: %s received non-JSON body (first 200 chars): %s',
+				$context,
+				mb_substr( $body, 0, 200 )
+			)
+		);
+	}
+
+	/**
 	 * Photon API base URL (filterable for self-hosted instances).
 	 *
 	 * @since 1.0.0
@@ -400,7 +525,15 @@ class Geocoding {
 		 *
 		 * @param string $url Default Photon API URL (e.g. https://photon.komoot.io/api).
 		 */
-		return (string) apply_filters( 'gatherpress_photon_api_url', self::PHOTON_API_URL );
+		$filtered = (string) apply_filters( 'gatherpress_photon_api_url', self::PHOTON_API_URL );
+
+		// Fall back to the default when a filter produces an unusable URL; keeps
+		// outbound requests routed through wp_safe_remote_get against a real host.
+		if ( '' === $filtered || false === wp_http_validate_url( $filtered ) ) {
+			return self::PHOTON_API_URL;
+		}
+
+		return $filtered;
 	}
 
 	/**

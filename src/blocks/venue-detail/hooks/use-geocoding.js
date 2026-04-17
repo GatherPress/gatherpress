@@ -22,9 +22,10 @@ import { geocodeAddress } from '../../../helpers/geocoding';
  * @param {string}   fieldType        - The type of field (only 'address' triggers geocoding).
  * @param {string}   fieldValue       - The current field value.
  * @param {Function} updateVenueField - Function to update venue meta fields.
+ * @param {boolean}  [enabled=true]   - When false, the hook skips firing geocode requests. Callers pass false in contexts where another component (e.g. the VenueInformation sidebar panel) already geocodes the same address, to avoid double requests.
  * @return {Object} Geocoding state and handlers.
  */
-export function useGeocoding( fieldType, fieldValue, updateVenueField ) {
+export function useGeocoding( fieldType, fieldValue, updateVenueField, enabled = true ) {
 	// Get dispatch functions for venue store.
 	const { updateVenueLatitude, updateVenueLongitude } =
 		useDispatch( 'gatherpress/venue' );
@@ -86,15 +87,18 @@ export function useGeocoding( fieldType, fieldValue, updateVenueField ) {
 		updateVenueField,
 	] );
 
-	const debouncedGeocode = useDebounce( handleGeocode, 300 );
+	// Longer debounce than autocomplete: geocoding is not user-visible during
+	// typing (only the map preview and stored lat/long depend on it) so we let
+	// the address settle for a second before hitting the upstream Photon API.
+	const debouncedGeocode = useDebounce( handleGeocode, 1000 );
 
 	// Trigger geocoding when address field value changes.
 	useEffect( () => {
-		if ( 'address' === fieldType ) {
+		if ( enabled && 'address' === fieldType ) {
 			debouncedGeocode();
 		}
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [ fieldValue, fieldType ] );
+	}, [ fieldValue, fieldType, enabled ] );
 
 	return {
 		mapCustomLatLong,

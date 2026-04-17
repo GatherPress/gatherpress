@@ -86,6 +86,12 @@ class Test_Geocoding extends Base {
 				'priority' => 10,
 				'callback' => array( $instance, 'register_endpoints' ),
 			),
+			array(
+				'type'     => 'filter',
+				'name'     => 'block_editor_settings_all',
+				'priority' => 10,
+				'callback' => array( $instance, 'add_editor_settings' ),
+			),
 		);
 
 		$this->assert_hooks( $hooks, $instance );
@@ -547,6 +553,142 @@ class Test_Geocoding extends Base {
 	}
 
 	/**
+	 * Returns the transient key used for a given geocode lookup.
+	 *
+	 * @param string $address Address value.
+	 * @return string Transient key.
+	 */
+	private function geocode_cache_key( string $address ): string {
+		$language = explode( '_', get_locale() )[0];
+
+		return 'gatherpress_photon_geocode_' . md5( $address . '|' . $language );
+	}
+
+	/**
+	 * Successful Photon geocode response is stored in a transient for reuse.
+	 *
+	 * @covers ::geocode_address
+	 *
+	 * @return void
+	 */
+	public function test_geocode_address_caches_successful_response(): void {
+		$instance  = Geocoding::get_instance();
+		$cache_key = $this->geocode_cache_key( 'geocode-cache-success' );
+		delete_transient( $cache_key );
+
+		$this->http_mock->mock(
+			'*',
+			array(
+				'body' => wp_json_encode(
+					array(
+						'features' => array(
+							array(
+								'geometry' => array( 'coordinates' => array( -74.006, 40.7128 ) ),
+							),
+						),
+					)
+				),
+			)
+		);
+
+		$request = new WP_REST_Request( 'GET' );
+		$request->set_param( 'address', 'geocode-cache-success' );
+
+		$instance->geocode_address( $request );
+
+		$cached = get_transient( $cache_key );
+		$this->assertIsArray( $cached );
+		$this->assertSame( '40.7128', $cached['latitude'] );
+		$this->assertSame( '-74.006', $cached['longitude'] );
+		$this->assertNull( $cached['error'] );
+
+		delete_transient( $cache_key );
+	}
+
+	/**
+	 * Cached geocode result short-circuits the outbound Photon request.
+	 *
+	 * @covers ::geocode_address
+	 *
+	 * @return void
+	 */
+	public function test_geocode_address_returns_cached_without_http_call(): void {
+		$instance  = Geocoding::get_instance();
+		$cache_key = $this->geocode_cache_key( 'geocode-cache-hit' );
+
+		set_transient(
+			$cache_key,
+			array(
+				'latitude'  => '1.23',
+				'longitude' => '4.56',
+				'error'     => null,
+			),
+			MINUTE_IN_SECONDS
+		);
+
+		// If the HTTP layer were reached this mock would return different coordinates.
+		$this->http_mock->mock(
+			'*',
+			array(
+				'body' => wp_json_encode(
+					array(
+						'features' => array(
+							array(
+								'geometry' => array( 'coordinates' => array( 99, 99 ) ),
+							),
+						),
+					)
+				),
+			)
+		);
+
+		$request = new WP_REST_Request( 'GET' );
+		$request->set_param( 'address', 'geocode-cache-hit' );
+
+		$response = $instance->geocode_address( $request );
+		$data     = $response->get_data();
+
+		$this->assertSame( '1.23', $data['latitude'] );
+		$this->assertSame( '4.56', $data['longitude'] );
+		$this->assertNull( $data['error'] );
+
+		delete_transient( $cache_key );
+	}
+
+	/**
+	 * Not-found geocode responses are also cached so repeat bad addresses stop hitting upstream.
+	 *
+	 * @covers ::geocode_address
+	 *
+	 * @return void
+	 */
+	public function test_geocode_address_caches_not_found_response(): void {
+		$instance  = Geocoding::get_instance();
+		$cache_key = $this->geocode_cache_key( 'geocode-cache-missing' );
+		delete_transient( $cache_key );
+
+		$this->http_mock->mock(
+			'*',
+			array(
+				'body' => wp_json_encode( array( 'features' => array() ) ),
+			)
+		);
+
+		$request = new WP_REST_Request( 'GET' );
+		$request->set_param( 'address', 'geocode-cache-missing' );
+
+		$instance->geocode_address( $request );
+
+		$cached = get_transient( $cache_key );
+		$this->assertIsArray( $cached );
+		$this->assertSame( '', $cached['latitude'] );
+		$this->assertSame( '', $cached['longitude'] );
+		$this->assertNotNull( $cached['error'] );
+
+		delete_transient( $cache_key );
+	}
+
+	/**
 	 * Coverage for search_addresses with empty query.
 	 *
 	 * @covers ::search_addresses
@@ -582,6 +724,151 @@ class Test_Geocoding extends Base {
 		$data = $response->get_data();
 		$this->assertIsArray( $data['suggestions'] );
 		$this->assertCount( 0, $data['suggestions'] );
+	}
+
+	/**
+	 * Returns the transient key used for a given search query.
+	 *
+	 * @param string $query Search query (already trimmed as it would arrive at the cache check).
+	 * @return string Transient key.
+	 */
+	private function search_cache_key( string $query ): string {
+		$language = explode( '_', get_locale() )[0];
+
+		return 'gatherpress_photon_search_' . md5( $query . '|' . $language );
+	}
+
+	/**
+	 * Successful Photon response is stored in a transient for reuse.
+	 *
+	 * @covers ::search_addresses
+	 *
+	 * @return void
+	 */
+	public function test_search_addresses_caches_successful_response(): void {
+		$instance  = Geocoding::get_instance();
+		$cache_key = $this->search_cache_key( 'cache-success-query' );
+		delete_transient( $cache_key );
+
+		$this->http_mock->mock(
+			'*',
+			array(
+				'body' => wp_json_encode(
+					array(
+						'features' => array(
+							array(
+								'geometry'   => array( 'coordinates' => array( 2.3522, 48.8566 ) ),
+								'properties' => array(
+									'name' => 'Eiffel Tower',
+									'city' => 'Paris',
+								),
+							),
+						),
+					)
+				),
+			)
+		);
+
+		$request = new WP_REST_Request( 'GET' );
+		$request->set_param( 'q', 'cache-success-query' );
+
+		$instance->search_addresses( $request );
+
+		$cached = get_transient( $cache_key );
+		$this->assertIsArray( $cached, 'Failed to assert successful response is cached.' );
+		$this->assertCount( 1, $cached, 'Failed to assert cached suggestions count.' );
+		$this->assertSame( 'Eiffel Tower, Paris', $cached[0]['label'] );
+
+		delete_transient( $cache_key );
+	}
+
+	/**
+	 * Cached suggestions short-circuit the outbound Photon request.
+	 *
+	 * @covers ::search_addresses
+	 *
+	 * @return void
+	 */
+	public function test_search_addresses_returns_cached_without_http_call(): void {
+		$instance  = Geocoding::get_instance();
+		$cache_key = $this->search_cache_key( 'cache-hit-query' );
+
+		set_transient(
+			$cache_key,
+			array(
+				array(
+					'label'     => 'Cached Place',
+					'latitude'  => '10',
+					'longitude' => '20',
+				),
+			),
+			MINUTE_IN_SECONDS
+		);
+
+		// If HTTP were actually called this mock would produce a different label,
+		// so a cache hit is visible in the assertions below.
+		$this->http_mock->mock(
+			'*',
+			array(
+				'body' => wp_json_encode(
+					array(
+						'features' => array(
+							array(
+								'geometry'   => array( 'coordinates' => array( 0, 0 ) ),
+								'properties' => array(
+									'name' => 'Should Not Be Used',
+									'city' => 'Wrong',
+								),
+							),
+						),
+					)
+				),
+			)
+		);
+
+		$request = new WP_REST_Request( 'GET' );
+		$request->set_param( 'q', 'cache-hit-query' );
+
+		$response = $instance->search_addresses( $request );
+		$data     = $response->get_data();
+
+		$this->assertCount( 1, $data['suggestions'] );
+		$this->assertSame( 'Cached Place', $data['suggestions'][0]['label'] );
+		$this->assertSame( '10', $data['suggestions'][0]['latitude'] );
+		$this->assertSame( '20', $data['suggestions'][0]['longitude'] );
+
+		delete_transient( $cache_key );
+	}
+
+	/**
+	 * Empty Photon feature lists are also cached to avoid hammering upstream on dead-end queries.
+	 *
+	 * @covers ::search_addresses
+	 *
+	 * @return void
+	 */
+	public function test_search_addresses_caches_empty_features_response(): void {
+		$instance  = Geocoding::get_instance();
+		$cache_key = $this->search_cache_key( 'cache-empty-query' );
+		delete_transient( $cache_key );
+
+		$this->http_mock->mock(
+			'*',
+			array(
+				'body' => wp_json_encode( array( 'features' => array() ) ),
+			)
+		);
+
+		$request = new WP_REST_Request( 'GET' );
+		$request->set_param( 'q', 'cache-empty-query' );
+
+		$instance->search_addresses( $request );
+
+		$cached = get_transient( $cache_key );
+		$this->assertIsArray( $cached, 'Failed to assert empty response is cached.' );
+		$this->assertCount( 0, $cached );
+
+		delete_transient( $cache_key );
 	}
 
 	/**
@@ -1143,15 +1430,28 @@ class Test_Geocoding extends Base {
 		$default = $this->invoke_geocoding_private( $instance, 'get_photon_api_url' );
 		$this->assertSame( 'https://photon.komoot.io/api', $default );
 
+		// IANA-reserved `example.com` resolves via DNS, so wp_http_validate_url() accepts it.
 		add_filter(
 			'gatherpress_photon_api_url',
 			static function (): string {
-				return 'https://photon.example.test/api';
+				return 'https://example.com/api';
 			}
 		);
 
 		$filtered = $this->invoke_geocoding_private( $instance, 'get_photon_api_url' );
-		$this->assertSame( 'https://photon.example.test/api', $filtered );
+		$this->assertSame( 'https://example.com/api', $filtered );
+
+		remove_all_filters( 'gatherpress_photon_api_url' );
+
+		// A filter that produces an invalid URL must fall back to the default.
+		add_filter(
+			'gatherpress_photon_api_url',
+			static function (): string {
+				return 'not-a-url';
+			}
+		);
+		$fallback = $this->invoke_geocoding_private( $instance, 'get_photon_api_url' );
+		$this->assertSame( 'https://photon.komoot.io/api', $fallback );
 
 		remove_all_filters( 'gatherpress_photon_api_url' );
 	}
