@@ -122,17 +122,25 @@ const OpenStreetMap = ( props ) => {
 			( pluginUrl || getFromConfig( 'pluginUrl' ) ) +
 			'build/images/';
 
-		Leaflet.tileLayer(
-			'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-			{
-				attribution: sprintf(
-					/* translators: %s: Link to OpenStreetMap contributors. */
-					__( '© %s contributors', 'gatherpress' ),
-					'<a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-				),
-				referrerPolicy: 'no-referrer-when-downgrade',
-			},
-		).addTo( map );
+		// Default to CartoDB "Positron" because OSMF's public tile server prohibits
+		// third-party plugin distribution and was intermittently blocking requests.
+		// The PHP `gatherpress_map_tile_url` / `gatherpress_map_tile_attribution`
+		// filters let sites point at their own provider (self-hosted, MapTiler, etc.).
+		const tileUrl =
+			getFromConfig( 'mapTileUrl' ) ||
+			'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png';
+		const tileAttribution =
+			getFromConfig( 'mapTileAttribution' ) ||
+			sprintf(
+				/* translators: %1$s: OpenStreetMap credit link; %2$s: CARTO credit link. */
+				__( '© %1$s contributors © %2$s', 'gatherpress' ),
+				'<a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+				'<a href="https://carto.com/attributions">CARTO</a>'
+			);
+
+		Leaflet.tileLayer( tileUrl, {
+			attribution: tileAttribution,
+		} ).addTo( map );
 
 		Leaflet.marker( [ latitude, longitude ] ).addTo( map ).bindPopup( location );
 

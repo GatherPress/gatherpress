@@ -59,9 +59,20 @@ GatherPress is built by and for the community -- contributions are always welcom
 
 [Contributor Guide](https://github.com/GatherPress/gatherpress/blob/main/docs/contributing.md)
 
-## Third-Party Libraries
+## Third-Party Libraries & Services
+
+### Libraries
 
 - [Leaflet](https://leafletjs.com/) -- interactive maps for venues
+
+### External services
+
+GatherPress calls the following services when editing venues or displaying maps. Each can be overridden or swapped out via a filter; see links for filter names.
+
+- **[Photon](https://photon.komoot.io/)** (operated by Komoot) -- powers address autocomplete and geocoding. The plugin's REST routes (`/gatherpress/v1/geocode` and `/gatherpress/v1/geocode/search`) proxy the editor's query to Photon server-side with a User-Agent identifying the site. Responses are cached as transients for 15 minutes. Override with the `gatherpress_photon_api_url` filter (for a self-hosted Photon, for example).
+- **[CARTO Basemaps](https://carto.com/basemaps/)** -- default map tile provider when the OpenStreetMap map platform is selected. The visitor's browser loads raster tiles directly from `basemaps.cartocdn.com`. Override with `gatherpress_map_tile_url` and `gatherpress_map_tile_attribution`.
+- **[Google Maps](https://www.google.com/maps/)** -- alternative map platform, enabled when a site chooses "Google Maps" in GatherPress settings. The visitor's browser embeds `maps.google.com`.
+- Map and address data are sourced from [OpenStreetMap contributors](https://www.openstreetmap.org/copyright).
 
 ## More Information
 
