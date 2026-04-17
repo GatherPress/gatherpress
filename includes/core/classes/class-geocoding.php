@@ -497,7 +497,25 @@ class Geocoding {
 		if ( '' === trim( $body ) ) {
 			return;
 		}
-		if ( ! ( defined( 'WP_DEBUG' ) && WP_DEBUG ) ) {
+
+		/**
+		 * Filters whether to write a PHP error-log line when Photon returns a body
+		 * that can't be JSON-decoded.
+		 *
+		 * Defaults to `WP_DEBUG` so production sites stay quiet, but can be
+		 * force-enabled (e.g. for tests, or in staging) via:
+		 *
+		 *     add_filter( 'gatherpress_log_geocoding_errors', '__return_true' );
+		 *
+		 * @since 1.0.0
+		 *
+		 * @param bool $should_log Default: value of WP_DEBUG.
+		 */
+		$should_log = (bool) apply_filters(
+			'gatherpress_log_geocoding_errors',
+			defined( 'WP_DEBUG' ) && WP_DEBUG
+		);
+		if ( ! $should_log ) {
 			return;
 		}
 

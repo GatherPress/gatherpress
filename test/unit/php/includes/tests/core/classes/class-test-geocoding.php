@@ -143,10 +143,9 @@ class Test_Geocoding extends Base {
 	/**
 	 * Coverage for the private JSON-decode-failure logger.
 	 *
-	 * Exercises every branch so the coverage tool sees them executed. The actual
-	 * error_log write is suppressed here because WP_DEBUG is on in the test
-	 * environment; capturing it would require fragile ini_set / filesystem
-	 * gymnastics that aren't worth the upkeep just to assert a log line shape.
+	 * Exercises every branch (including the error_log path). The `gatherpress_log_geocoding_errors`
+	 * filter is flipped on and off explicitly so this test behaves identically whether
+	 * WP_DEBUG is on (local) or off (CI default).
 	 *
 	 * @covers ::maybe_log_json_decode_failure
 	 *
@@ -169,14 +168,25 @@ class Test_Geocoding extends Base {
 			array( '   ', null, 'search_addresses' )
 		);
 
-		// Branch 3: all guard conditions fall through and the log path runs.
-		// With WP_DEBUG on (default in the test environment), this reaches error_log();
-		// the emitted line goes to the PHP error log and does not affect PHPUnit output.
+		// Branch 3: guard filter returns false → early return.
+		add_filter( 'gatherpress_log_geocoding_errors', '__return_false' );
 		$this->invoke_geocoding_private(
 			$instance,
 			'maybe_log_json_decode_failure',
 			array( 'not json at all', null, 'geocode_address' )
 		);
+		remove_filter( 'gatherpress_log_geocoding_errors', '__return_false' );
+
+		// Branch 4: all conditions met → reaches error_log(). Force the filter on so this
+		// path runs regardless of WP_DEBUG's value in the current environment. The emitted
+		// line goes to the PHP error log and does not affect PHPUnit output.
+		add_filter( 'gatherpress_log_geocoding_errors', '__return_true' );
+		$this->invoke_geocoding_private(
+			$instance,
+			'maybe_log_json_decode_failure',
+			array( 'not json at all', null, 'geocode_address' )
+		);
+		remove_filter( 'gatherpress_log_geocoding_errors', '__return_true' );
 
 		$this->assertTrue( true, 'All branches of maybe_log_json_decode_failure executed without error.' );
 	}
