@@ -14,6 +14,7 @@ import { useSelect } from '@wordpress/data';
  * Internal dependencies.
  */
 import { isVenuePostType } from '../../helpers/venue';
+import { getFromSettings } from '../../helpers/editor-settings';
 import MapEmbed from '../../components/MapEmbed';
 
 /**
@@ -29,7 +30,7 @@ import MapEmbed from '../../components/MapEmbed';
  * @return {JSX.Element} The rendered React component.
  */
 const Edit = ( { attributes, setAttributes, context } ) => {
-	const { zoom, type, height } = attributes;
+	const { zoom, type, height, renderMode } = attributes;
 	const blockProps = useBlockProps();
 
 	// Determine the venue post ID and get venue info.
@@ -115,10 +116,34 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 		longitude = null !== storeLng && storeLng !== undefined ? String( storeLng ) : longitude;
 	}
 
+	// Map type is a Google Maps–only concept; only expose the selector when
+	// the map platform is Google and we're rendering interactively on the
+	// front-end. The OSM/Leaflet and static-image paths both ignore it.
+	const showMapTypeControl =
+		'interactive' === renderMode &&
+		'google' === getFromSettings( 'mapPlatform' );
+
 	return (
 		<>
 			<InspectorControls>
 				<PanelBody title={ __( 'Map settings', 'gatherpress' ) }>
+					<SelectControl
+						label={ __( 'Render mode', 'gatherpress' ) }
+						value={ renderMode }
+						options={ [
+							{
+								label: __( 'Interactive', 'gatherpress' ),
+								value: 'interactive',
+							},
+							{
+								label: __( 'Static image', 'gatherpress' ),
+								value: 'static',
+							},
+						] }
+						onChange={ ( value ) =>
+							setAttributes( { renderMode: value } )
+						}
+					/>
 					<RangeControl
 						label={ __( 'Zoom level', 'gatherpress' ) }
 						value={ zoom }
@@ -128,29 +153,33 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 						min={ 1 }
 						max={ 20 }
 					/>
-					<SelectControl
-						label={ __( 'Map type', 'gatherpress' ) }
-						value={ type }
-						options={ [
-							{
-								label: __( 'Roadmap', 'gatherpress' ),
-								value: 'roadmap',
-							},
-							{
-								label: __( 'Satellite', 'gatherpress' ),
-								value: 'satellite',
-							},
-							{
-								label: __( 'Hybrid', 'gatherpress' ),
-								value: 'hybrid',
-							},
-							{
-								label: __( 'Terrain', 'gatherpress' ),
-								value: 'terrain',
-							},
-						] }
-						onChange={ ( value ) => setAttributes( { type: value } ) }
-					/>
+					{ showMapTypeControl && (
+						<SelectControl
+							label={ __( 'Map type', 'gatherpress' ) }
+							value={ type }
+							options={ [
+								{
+									label: __( 'Roadmap', 'gatherpress' ),
+									value: 'roadmap',
+								},
+								{
+									label: __( 'Satellite', 'gatherpress' ),
+									value: 'satellite',
+								},
+								{
+									label: __( 'Hybrid', 'gatherpress' ),
+									value: 'hybrid',
+								},
+								{
+									label: __( 'Terrain', 'gatherpress' ),
+									value: 'terrain',
+								},
+							] }
+							onChange={ ( value ) =>
+								setAttributes( { type: value } )
+							}
+						/>
+					) }
 					<RangeControl
 						label={ __( 'Height (px)', 'gatherpress' ) }
 						value={ height }

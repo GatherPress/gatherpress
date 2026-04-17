@@ -81,6 +81,7 @@ class Setup {
 		Topic::get_instance();
 		User::get_instance();
 		Venue_Setup::get_instance();
+		Venue_Static_Map::get_instance();
 	}
 
 	/**

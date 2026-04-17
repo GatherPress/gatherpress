@@ -1226,7 +1226,7 @@ class Test_Venue_Setup extends Base {
 		$registry->register(
 			'gatherpress/venue-template',
 			array(
-				'title'    => 'Invisible Venue Template Block Pattern',
+				'title'    => 'Venue Post Default Content',
 				'content'  => '<!-- wp:gatherpress/venue /-->',
 				'inserter' => false,
 				'source'   => 'plugin',
