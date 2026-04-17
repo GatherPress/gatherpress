@@ -280,6 +280,20 @@ test( 'getUtcOffset returns offset when timezone string is invalid and falls bac
 	expect( getUtcOffset( 'InvalidTimezone' ) ).toBe( '+0200' );
 } );
 
+test( 'getUtcOffset returns empty when GMT branch fires and store yields undefined', () => {
+	// Drives both `?? ''` fallbacks in this code path: the default arg of
+	// getTimezone() and the inner select(...).getTimezone() lookup. When the
+	// store's selector returns undefined the helper resolves the timezone to
+	// "GMT" with an empty offset string instead of throwing.
+	global.__gpDatetime = {
+		timezone: undefined,
+		dateTimeStart: '',
+		dateTimeEnd: '',
+	};
+
+	expect( getUtcOffset() ).toBe( '' );
+} );
+
 /**
  * Coverage for maybeConvertUtcOffsetForDisplay.
  */
@@ -384,6 +398,19 @@ test( 'getDateTimeStart converts format of date/time start from default', () => 
 	expect( getDateTimeStart() ).toBe( defaultDateTimeStart );
 } );
 
+test( 'getDateTimeStart falls back to default when store yields undefined', () => {
+	// Exercises the `?? ''` branch on the optional-chained store call: when the
+	// store selector returns undefined (e.g. before the store has hydrated) the
+	// helper should still return the documented default rather than crashing.
+	global.__gpDatetime = {
+		dateTimeStart: undefined,
+		dateTimeEnd: '',
+		timezone: '',
+	};
+
+	expect( getDateTimeStart() ).toBe( defaultDateTimeStart );
+} );
+
 /**
  * Coverage for getDateTimeEnd.
  */
@@ -400,6 +427,17 @@ test( 'getDateTimeEnd converts format of date/time end from global', () => {
 test( 'getDateTimeEnd converts format of date/time end from default', () => {
 	global.__gpDatetime = {
 		dateTimeEnd: '',
+		dateTimeStart: '',
+		timezone: '',
+	};
+
+	expect( getDateTimeEnd() ).toBe( defaultDateTimeEnd );
+} );
+
+test( 'getDateTimeEnd falls back to default when store yields undefined', () => {
+	// Same `?? ''` fallback case as getDateTimeStart, exercised on the end side.
+	global.__gpDatetime = {
+		dateTimeEnd: undefined,
 		dateTimeStart: '',
 		timezone: '',
 	};
@@ -611,6 +649,22 @@ describe( 'Relative mode duration tests', () => {
 		expect( setDateTimeEnd ).toHaveBeenCalledWith( '2023-11-30 20:00:00' );
 	} );
 
+	test( 'validateDateTimeStart tolerates an undefined stored end (?? fallback)', () => {
+		// Drives the `?? ''` fallback on the optional-chained store call inside
+		// validateDateTimeStart. With `dateTimeEnd` undefined the helper falls
+		// back to an empty string, which moment() treats as an invalid date — all
+		// numeric comparisons against NaN are false so no adjustment is made and
+		// the function returns without throwing.
+		const setDateTimeEnd = jest.fn();
+		global.__gpDatetime.dateTimeStart = '2023-11-30 14:00:00';
+		global.__gpDatetime.dateTimeEnd = undefined;
+
+		expect( () =>
+			validateDateTimeStart( '2023-11-30 18:00:00', setDateTimeEnd, 2 )
+		).not.toThrow();
+		expect( setDateTimeEnd ).not.toHaveBeenCalled();
+	} );
+
 	test( 'relative mode works with different duration values', () => {
 		const setDateTimeStart = jest.fn( ( val ) => {
 			global.__gpDatetime.dateTimeStart = val;
@@ -694,6 +748,21 @@ describe( 'validateDateTimeEnd', () => {
 
 		// End is after start, so no adjustment is needed.
 		validateDateTimeEnd( '2023-11-30 16:00:00' );
+	} );
+
+	test( 'validateDateTimeEnd tolerates an undefined stored start (?? fallback)', () => {
+		// Drives the `?? ''` fallback on the optional-chained store call inside
+		// validateDateTimeEnd. With `dateTimeStart` undefined the helper falls
+		// back to an empty string; moment('') is invalid so the start-adjustment
+		// branch is skipped and the function returns without throwing.
+		const setDateTimeStart = jest.fn();
+		global.__gpDatetime.dateTimeStart = undefined;
+		global.__gpDatetime.dateTimeEnd = '2023-11-30 18:17:00';
+
+		expect( () =>
+			validateDateTimeEnd( '2023-11-30 16:00:00', setDateTimeStart )
+		).not.toThrow();
+		expect( setDateTimeStart ).not.toHaveBeenCalled();
 	} );
 
 	test( 'validateDateTimeEnd does not update start when end > start', () => {
