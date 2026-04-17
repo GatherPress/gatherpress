@@ -1,13 +1,19 @@
 <?php
 /**
- * Generates and stores a pre-rendered static map image for a venue.
+ * Home for venue map server-side concerns.
  *
- * Fetches a small set of CartoDB basemap tiles around the venue's coordinates,
- * composites them into a single PNG with a marker stamped at the venue's exact
- * position, and stores the result under `wp-content/uploads/gatherpress/static-maps/`.
- * The file path/URL and an input-hash are persisted in venue post meta so the
- * front-end can serve the image directly and so subsequent saves regenerate
- * only when inputs (address, coordinates, tile URL, size) actually change.
+ * Today this singleton owns the pre-rendered static-map PNG pipeline:
+ * fetching a small set of CartoDB basemap tiles around the venue's
+ * coordinates, compositing them into a single PNG with a marker stamped at
+ * the venue's exact position, and storing the result under
+ * `wp-content/uploads/gatherpress/static-maps/`. The file URL and an
+ * input-hash are persisted (per zoom) in venue post meta so the front-end
+ * can serve the image directly and so subsequent saves regenerate only when
+ * inputs (address, coordinates, tile URL, size) actually change.
+ *
+ * The class is named for its broader role — venue-map — so future
+ * map-related additions (REST endpoint for the editor preview, interactive
+ * map server-side bits, async regeneration, etc.) have a natural home.
  *
  * @package GatherPress\Core
  * @since 1.0.0
@@ -22,18 +28,68 @@ use GatherPress\Core\Traits\Singleton;
 use GdImage;
 
 /**
- * Class Venue_Static_Map.
+ * Class Venue_Map.
  *
- * Singleton responsible for (re)generating the per-venue static-map PNG, keyed
- * by a hash of the generator inputs so unchanged saves are cheap no-ops.
+ * Singleton hosting the venue map server-side pipeline. Currently owns the
+ * static PNG cache keyed by zoom; structured so that additional map-related
+ * methods (REST, async jobs, etc.) can land here without proliferating
+ * classes.
  *
  * @since 1.0.0
  */
-class Venue_Static_Map {
+class Venue_Map {
 	/**
 	 * Enforces a single instance of this class.
 	 */
 	use Singleton;
+
+	/**
+	 * Default `renderMode` attribute for the venue-map block.
+	 *
+	 * Must mirror the default declared in the block's `block.json`. `render.php`
+	 * and any other caller that resolves the block attribute should read the
+	 * constant rather than hardcoding the string.
+	 *
+	 * @since 1.0.0
+	 * @var string
+	 */
+	const DEFAULT_RENDER_MODE = 'interactive';
+
+	/**
+	 * Default `zoom` attribute for the venue-map block.
+	 *
+	 * Note this is distinct from {@see self::DEFAULT_ZOOM} — the latter is the
+	 * fallback used by the generator when a caller requests a map without
+	 * specifying a zoom; the block-level default is what a fresh block saves
+	 * with, matching the `block.json` declaration.
+	 *
+	 * @since 1.0.0
+	 * @var int
+	 */
+	const DEFAULT_BLOCK_ZOOM = 18;
+
+	/**
+	 * Default `height` attribute (in pixels) for the venue-map block wrapper.
+	 *
+	 * The generated PNG is always 600×400; this is the DOM height applied to
+	 * the wrapper so the static image (with `object-fit: cover`) fills it.
+	 *
+	 * @since 1.0.0
+	 * @var int
+	 */
+	const DEFAULT_BLOCK_HEIGHT = 300;
+
+	/**
+	 * Default `type` attribute for the venue-map block.
+	 *
+	 * Google Maps–specific (roadmap / satellite / hybrid / terrain). Ignored by
+	 * the static renderer and by Leaflet/OSM, but preserved as a block-level
+	 * default so Google Maps users get a sensible first value.
+	 *
+	 * @since 1.0.0
+	 * @var string
+	 */
+	const DEFAULT_MAP_TYPE = 'roadmap';
 
 	/**
 	 * Slippy-tile dimension in pixels. CartoDB basemaps use 256×256.
@@ -117,6 +173,50 @@ class Venue_Static_Map {
 		// derived geo_latitude/longitude from the venue information JSON.
 		add_action( 'wp_after_insert_post', array( $this, 'maybe_generate' ), 20 );
 		add_action( 'registered_post_type', array( $this, 'maybe_register_delete_hook' ) );
+		add_filter( 'block_type_metadata', array( $this, 'apply_block_attribute_defaults' ) );
+	}
+
+	/**
+	 * Override the venue-map block's attribute defaults with user-chosen values
+	 * from Settings → Venues → Maps.
+	 *
+	 * Runs once per block registration. Because Gutenberg only consults the
+	 * defaults when an attribute isn't present on a saved block, this affects
+	 * newly inserted blocks and preserves explicit customizations on existing
+	 * ones — changing the setting won't retroactively rewrite old content.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param array $metadata Parsed `block.json` metadata for the block being registered.
+	 * @return array The metadata array, potentially with updated attribute defaults.
+	 */
+	public function apply_block_attribute_defaults( array $metadata ): array {
+		if ( 'gatherpress/venue-map' !== ( $metadata['name'] ?? '' ) ) {
+			return $metadata;
+		}
+
+		$settings = Settings::get_instance();
+		$defaults = array(
+			'renderMode' => (string) $settings->get( 'venue_map_default_render_mode' ),
+			'zoom'       => (int) $settings->get( 'venue_map_default_zoom' ),
+			'height'     => (int) $settings->get( 'venue_map_default_height' ),
+			'type'       => (string) $settings->get( 'venue_map_default_type' ),
+		);
+
+		foreach ( $defaults as $attr => $value ) {
+			// Guard against a Settings row that's never been written — keep
+			// the block.json default rather than stamping on an empty string
+			// or zero that the UI would silently accept.
+			if ( '' === $value || 0 === $value ) {
+				continue;
+			}
+
+			if ( isset( $metadata['attributes'][ $attr ] ) ) {
+				$metadata['attributes'][ $attr ]['default'] = $value;
+			}
+		}
+
+		return $metadata;
 	}
 
 	/**
@@ -176,10 +276,13 @@ class Venue_Static_Map {
 
 		// Regenerate every zoom the venue is already known at, so a content
 		// change (new address/coords) cascades to all cached variants. For a
-		// fresh venue with nothing stored, seed the default zoom.
+		// fresh venue with nothing stored, seed the zoom that newly-inserted
+		// venue-map blocks will actually request — otherwise the editor falls
+		// back to the interactive preview on the very first save because
+		// cache[18] is missing but block.zoom = 18.
 		$zooms = array_keys( $this->get_all_descriptors( $post_id ) );
 		if ( empty( $zooms ) ) {
-			$zooms = array( $this->get_zoom() );
+			$zooms = array( $this->get_block_default_zoom() );
 		}
 
 		foreach ( $zooms as $zoom ) {
@@ -247,7 +350,11 @@ class Venue_Static_Map {
 			return '';
 		}
 
-		$descriptor = $this->ensure_descriptor_for_zoom( $venue_post_id, $info, $zoom ?? $this->get_zoom() );
+		$descriptor = $this->ensure_descriptor_for_zoom(
+			$venue_post_id,
+			$info,
+			$zoom ?? $this->get_block_default_zoom()
+		);
 
 		return null === $descriptor ? '' : $descriptor['url'];
 	}
@@ -266,7 +373,7 @@ class Venue_Static_Map {
 	public function get_stored_descriptor( int $post_id ): ?array {
 		$all = $this->get_all_descriptors( $post_id );
 
-		return $all[ $this->get_zoom() ] ?? null;
+		return $all[ $this->get_block_default_zoom() ] ?? null;
 	}
 
 	/**
@@ -651,6 +758,24 @@ class Venue_Static_Map {
 		 * @param int $zoom Default zoom level.
 		 */
 		return (int) apply_filters( 'gatherpress_venue_static_map_zoom', self::DEFAULT_ZOOM );
+	}
+
+	/**
+	 * Zoom level that newly-inserted venue-map blocks request.
+	 *
+	 * Used by {@see self::maybe_generate()} when seeding a fresh venue so the
+	 * initial cache entry matches the zoom those blocks will actually ask for.
+	 * Prefers the site-wide setting; falls back to the block-level constant
+	 * when the setting has never been written.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return int
+	 */
+	protected function get_block_default_zoom(): int {
+		$setting = (int) Settings::get_instance()->get( 'venue_map_default_zoom' );
+
+		return $setting > 0 ? $setting : self::DEFAULT_BLOCK_ZOOM;
 	}
 
 	/**

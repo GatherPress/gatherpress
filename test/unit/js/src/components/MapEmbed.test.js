@@ -146,7 +146,7 @@ test( 'MapEmbed returns address in source when location, zoom, map type, height,
 			latitude="40.8117036"
 			longitude="-74.2187738"
 			zoom={ 20 }
-			type="k"
+			type="satellite"
 			className="unit-test"
 			height={ 100 }
 		/>,

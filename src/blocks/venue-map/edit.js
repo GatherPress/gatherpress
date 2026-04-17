@@ -33,8 +33,8 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 	const { zoom, type, height, renderMode } = attributes;
 	const blockProps = useBlockProps();
 
-	// Determine the venue post ID and get venue info.
-	const { isEditingThisVenue, venueInfoJson } = useSelect(
+	// Determine the venue post ID and get venue info + static-map descriptors.
+	const { isEditingThisVenue, venueInfoJson, staticMapDescriptors } = useSelect(
 		( select ) => {
 			const currentPostId = select( 'core/editor' )?.getCurrentPostId();
 			const contextPostId = context?.postId || 0;
@@ -49,6 +49,7 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 				return {
 					isEditingThisVenue: false,
 					venueInfoJson: '{}',
+					staticMapDescriptors: {},
 				};
 			}
 
@@ -63,6 +64,8 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 				return {
 					isEditingThisVenue: true,
 					venueInfoJson: meta?.gatherpress_venue_information || '{}',
+					staticMapDescriptors:
+						meta?.gatherpress_venue_static_map || {},
 				};
 			}
 
@@ -79,6 +82,8 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 			return {
 				isEditingThisVenue: false,
 				venueInfoJson: venuePost?.meta?.gatherpress_venue_information || '{}',
+				staticMapDescriptors:
+					venuePost?.meta?.gatherpress_venue_static_map || {},
 			};
 		},
 		[ context?.postId, context?.postType ]
@@ -122,6 +127,19 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 	const showMapTypeControl =
 		'interactive' === renderMode &&
 		'google' === getFromSettings( 'mapPlatform' );
+
+	// When the block is in static mode we show one of two previews in place of
+	// the interactive MapEmbed: (a) the actual cached PNG for this venue+zoom
+	// if it's been generated, or (b) a placeholder surface noting that the
+	// image will be generated on the next save. The interactive MapEmbed only
+	// renders when the user explicitly picked Interactive.
+	const staticMapDescriptor =
+		staticMapDescriptors?.[ String( zoom ) ] ||
+		staticMapDescriptors?.[ zoom ];
+	const staticMapUrl = staticMapDescriptor?.url || '';
+	const isStaticMode = 'static' === renderMode;
+	const showStaticImage = isStaticMode && '' !== staticMapUrl;
+	const showStaticPlaceholder = isStaticMode && '' === staticMapUrl;
 
 	return (
 		<>
@@ -193,14 +211,43 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 			</InspectorControls>
 			<div { ...blockProps }>
 				<div className="block-editor-inner-blocks">
-					<MapEmbed
-						location={ fullAddress }
-						latitude={ latitude }
-						longitude={ longitude }
-						zoom={ zoom }
-						type={ type }
-						height={ height }
-					/>
+					{ showStaticImage && (
+						<div
+							className="gatherpress-venue-map gatherpress-venue-map--static"
+							style={ { height: `${ height }px` } }
+						>
+							<img
+								className="gatherpress-venue-map__image"
+								src={ staticMapUrl }
+								alt={ fullAddress
+									? `${ __( 'Map of', 'gatherpress' ) } ${ fullAddress }`
+									: __( 'Venue map', 'gatherpress' ) }
+							/>
+						</div>
+					) }
+					{ showStaticPlaceholder && (
+						<div
+							className="gatherpress-venue-map gatherpress-venue-map--static"
+							style={ { height: `${ height }px` } }
+						>
+							<div className="gatherpress-venue-map__placeholder">
+								{ __(
+									'Static map preview appears after venue is saved.',
+									'gatherpress'
+								) }
+							</div>
+						</div>
+					) }
+					{ ! isStaticMode && (
+						<MapEmbed
+							location={ fullAddress }
+							latitude={ latitude }
+							longitude={ longitude }
+							zoom={ zoom }
+							type={ type }
+							height={ height }
+						/>
+					) }
 				</div>
 			</div>
 		</>

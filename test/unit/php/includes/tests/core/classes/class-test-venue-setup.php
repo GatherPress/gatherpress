@@ -173,6 +173,7 @@ class Test_Venue_Setup extends Base {
 
 		unregister_post_meta( Venue::POST_TYPE, 'gatherpress_venue_information' );
 		unregister_post_meta( Venue::POST_TYPE, 'gatherpress_venue_map_show' );
+		unregister_post_meta( Venue::POST_TYPE, 'gatherpress_venue_static_map' );
 		unregister_post_meta( Venue::POST_TYPE, 'geo_latitude' );
 		unregister_post_meta( Venue::POST_TYPE, 'geo_longitude' );
 		unregister_post_meta( Venue::POST_TYPE, 'geo_address' );
@@ -214,7 +215,14 @@ class Test_Venue_Setup extends Base {
 			'Failed to assert that gatherpress_venue_map_show exists for gatherpress-venue-map support.'
 		);
 
-		foreach ( array( 'geo_latitude', 'geo_longitude', 'geo_address', 'geo_public' ) as $key ) {
+		$expected_keys = array(
+			'geo_latitude',
+			'geo_longitude',
+			'geo_address',
+			'geo_public',
+			'gatherpress_venue_static_map',
+		);
+		foreach ( $expected_keys as $key ) {
 			$this->assertArrayHasKey(
 				$key,
 				$meta,
@@ -628,6 +636,12 @@ class Test_Venue_Setup extends Base {
 				'geo_longitude'                 => '99.99',
 				'geo_address'                   => 'Hack St',
 				'geo_public'                    => 0,
+				'gatherpress_venue_static_map'  => array(
+					'15' => array(
+						'url'  => 'evil.png',
+						'hash' => 'x',
+					),
+				),
 				'gatherpress_venue_information' => '{"fullAddress":"Real St"}',
 			)
 		);
@@ -643,10 +657,15 @@ class Test_Venue_Setup extends Base {
 		$this->assertArrayNotHasKey( 'geo_longitude', $meta, 'geo_longitude should be stripped.' );
 		$this->assertArrayNotHasKey( 'geo_address', $meta, 'geo_address should be stripped.' );
 		$this->assertArrayNotHasKey( 'geo_public', $meta, 'geo_public should be stripped.' );
+		$this->assertArrayNotHasKey(
+			'gatherpress_venue_static_map',
+			$meta,
+			'gatherpress_venue_static_map is server-generated and must not be writable via REST.'
+		);
 		$this->assertArrayHasKey(
 			'gatherpress_venue_information',
 			$meta,
-			'Non-geo meta keys should pass through untouched.'
+			'Non-readonly meta keys should pass through untouched.'
 		);
 	}
 

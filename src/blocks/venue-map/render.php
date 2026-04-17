@@ -18,7 +18,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Settings;
 use GatherPress\Core\Venue_Setup;
-use GatherPress\Core\Venue_Static_Map;
+use GatherPress\Core\Venue_Map;
 
 if ( ! isset( $attributes ) || ! is_array( $attributes ) ) {
 	return;
@@ -35,10 +35,12 @@ if ( '' === $gatherpress_address ) {
 	return;
 }
 
-$gatherpress_render_mode    = 'static' === ( $attributes['renderMode'] ?? 'interactive' ) ? 'static' : 'interactive';
-$gatherpress_zoom           = (int) ( $attributes['zoom'] ?? 18 );
-$gatherpress_height         = (int) ( $attributes['height'] ?? 300 );
-$gatherpress_static_map_url = Venue_Static_Map::get_instance()->get_url_for_post(
+$gatherpress_render_mode    = 'static' === ( $attributes['renderMode'] ?? Venue_Map::DEFAULT_RENDER_MODE )
+	? 'static'
+	: 'interactive';
+$gatherpress_zoom           = (int) ( $attributes['zoom'] ?? Venue_Map::DEFAULT_BLOCK_ZOOM );
+$gatherpress_height         = (int) ( $attributes['height'] ?? Venue_Map::DEFAULT_BLOCK_HEIGHT );
+$gatherpress_static_map_url = Venue_Map::get_instance()->get_url_for_post(
 	$gatherpress_post_id,
 	$gatherpress_post_type,
 	$gatherpress_zoom
@@ -61,9 +63,9 @@ if ( 'interactive' === $gatherpress_render_mode ) {
 		'fullAddress'  => $gatherpress_address,
 		'latitude'     => (string) ( $gatherpress_venue_meta['latitude'] ?? '' ),
 		'longitude'    => (string) ( $gatherpress_venue_meta['longitude'] ?? '' ),
-		'mapZoomLevel' => $attributes['zoom'] ?? 18,
-		'mapType'      => $attributes['type'] ?? 'roadmap',
-		'mapHeight'    => $attributes['height'] ?? 300,
+		'mapZoomLevel' => $attributes['zoom'] ?? Venue_Map::DEFAULT_BLOCK_ZOOM,
+		'mapType'      => $attributes['type'] ?? Venue_Map::DEFAULT_MAP_TYPE,
+		'mapHeight'    => $attributes['height'] ?? Venue_Map::DEFAULT_BLOCK_HEIGHT,
 		'mapPlatform'  => Settings::get_instance()->get( 'map_platform' ),
 		'pluginUrl'    => GATHERPRESS_CORE_URL,
 	);
