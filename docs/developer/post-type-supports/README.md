@@ -124,6 +124,7 @@ These supports are declared on post types that act as **venues**. `gatherpress-v
 The core identifier for venue post types. Enables venue address and contact data. This includes:
 
 - Registration of the `gatherpress_venue_information` meta field (JSON: address, phone, website, lat/lng)
+- Registration of [WordPress Geodata standard](https://codex.wordpress.org/Geodata) meta keys (`geo_latitude`, `geo_longitude`, `geo_address`, `geo_public`) as read-only post meta. These are derived from `gatherpress_venue_information` on `wp_after_insert_post` and exposed so any plugin that follows the standard (e.g. [Simple Location](https://wordpress.org/plugins/simple-location/)) can interoperate with GatherPress venues without parsing our JSON. `geo_public` is bound to `post_status` (`1` when published, `0` otherwise). Meta revisions are enabled automatically when your venue post type declares `revisions` in its `supports` array.
 - Venue detail blocks (address, phone number, website)
 - Automatic creation and management of the corresponding `_gatherpress_venue` taxonomy term
 - `post_type_supports( $type, 'gatherpress-venue-information' )` is the canonical check for "is this a venue?"
@@ -136,6 +137,8 @@ register_post_type( 'my_custom_venue', array(
     // ... other args
 ) );
 ```
+
+> **Note:** The `geo_*` meta keys are derived — do not write to them directly. Update `gatherpress_venue_information` and the geo meta will be rewritten on the next save. REST API writes to `geo_latitude`, `geo_longitude`, `geo_address`, or `geo_public` are silently stripped.
 
 ### `gatherpress-venue-map`
 

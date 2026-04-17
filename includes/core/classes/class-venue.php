@@ -15,8 +15,10 @@ namespace GatherPress\Core;
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Traits\Singleton;
+use stdClass;
 use WP_Block_Patterns_Registry;
 use WP_Post;
+use WP_REST_Request;
 
 /**
  * Class Venue.
@@ -85,6 +87,7 @@ class Venue {
 		add_action( 'init', array( $this, 'register_taxonomy' ), 11 );
 		add_action( 'post_updated', array( $this, 'maybe_update_term_slug' ), 10, 3 );
 		add_action( 'delete_post', array( $this, 'delete_venue_term' ) );
+		add_action( 'wp_after_insert_post', array( $this, 'set_geodata' ) );
 		add_filter( 'block_editor_settings_all', array( $this, 'add_editor_settings' ) );
 	}
 
@@ -371,6 +374,43 @@ class Venue {
 				'single'            => true,
 				'type'              => 'string',
 				'default'           => '',
+				'revisions_enabled' => true,
+			),
+			// WordPress Geodata standard: https://codex.wordpress.org/Geodata.
+			// Derived from gatherpress_venue_information JSON on save. Read-only via REST.
+			'geo_latitude'                  => array(
+				'auth_callback'     => '__return_false',
+				'sanitize_callback' => 'sanitize_text_field',
+				'show_in_rest'      => true,
+				'single'            => true,
+				'type'              => 'string',
+				'revisions_enabled' => true,
+			),
+			'geo_longitude'                 => array(
+				'auth_callback'     => '__return_false',
+				'sanitize_callback' => 'sanitize_text_field',
+				'show_in_rest'      => true,
+				'single'            => true,
+				'type'              => 'string',
+				'revisions_enabled' => true,
+			),
+			'geo_address'                   => array(
+				'auth_callback'     => '__return_false',
+				'sanitize_callback' => 'sanitize_text_field',
+				'show_in_rest'      => true,
+				'single'            => true,
+				'type'              => 'string',
+				'revisions_enabled' => true,
+			),
+			// Bound to post_status: 1 when published, 0 otherwise.
+			'geo_public'                    => array(
+				'auth_callback'     => '__return_false',
+				'sanitize_callback' => 'absint',
+				'show_in_rest'      => true,
+				'single'            => true,
+				'type'              => 'integer',
+				'default'           => 1,
+				'revisions_enabled' => true,
 			),
 		);
 
@@ -403,9 +443,28 @@ class Venue {
 		);
 
 		foreach ( get_post_types_by_support( 'gatherpress-venue-information' ) as $post_type ) {
+			$supports_revisions = post_type_supports( $post_type, 'revisions' );
+
 			foreach ( $venue_information_meta as $meta_key => $args ) {
+				// revisions_enabled is only valid when the post type supports revisions.
+				// Silently drop it for venue post types that opt out (e.g. companion plugins
+				// registering a minimal venue post type without revisions support).
+				if ( ! $supports_revisions ) {
+					unset( $args['revisions_enabled'] );
+				}
+
 				register_post_meta( $post_type, $meta_key, $args );
 			}
+
+			// Strip derived geo meta from REST requests so the editor can't write it directly.
+			// Venue post types registered after init:11 inherit the same timing constraint as the
+			// meta registration above — they won't pick up this filter and should declare their own.
+			add_filter(
+				sprintf( 'rest_pre_insert_%s', $post_type ),
+				array( $this, 'filter_readonly_meta' ),
+				10,
+				2
+			);
 		}
 
 		foreach ( get_post_types_by_support( 'gatherpress-venue-map' ) as $post_type ) {
@@ -413,6 +472,97 @@ class Venue {
 				register_post_meta( $post_type, $meta_key, $args );
 			}
 		}
+	}
+
+	/**
+	 * Filter out read-only geo meta from REST API requests.
+	 *
+	 * The geo_* meta keys are derived from gatherpress_venue_information on save via
+	 * set_geodata(), so any values submitted through REST should be silently discarded
+	 * rather than triggering a permission error from the __return_false auth callback.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param stdClass        $prepared_post An object representing a single post prepared for inserting or updating.
+	 * @param WP_REST_Request $request       Request object.
+	 * @return stdClass The prepared post object.
+	 */
+	public function filter_readonly_meta( stdClass $prepared_post, WP_REST_Request $request ): stdClass {
+		$readonly_keys = array(
+			'geo_latitude',
+			'geo_longitude',
+			'geo_address',
+			'geo_public',
+		);
+
+		$meta = $request->get_param( 'meta' );
+
+		if ( is_array( $meta ) ) {
+			foreach ( $readonly_keys as $key ) {
+				unset( $meta[ $key ] );
+			}
+
+			$request->set_param( 'meta', $meta );
+		}
+
+		return $prepared_post;
+	}
+
+	/**
+	 * Derive WordPress Geodata standard meta from gatherpress_venue_information JSON.
+	 *
+	 * Parses the JSON venue information meta and writes the individual geo_latitude,
+	 * geo_longitude, geo_address, and geo_public meta keys following the WordPress
+	 * Geodata standard (https://codex.wordpress.org/Geodata). This lets other plugins
+	 * that adhere to the standard interoperate with GatherPress venues without reading
+	 * our JSON format.
+	 *
+	 * Non-numeric latitude or longitude values in the JSON are stored as empty strings
+	 * rather than passed through, so downstream consumers that expect floats (e.g.
+	 * Simple Location) don't choke on legacy or imported garbage data.
+	 *
+	 * Note on geo_public: the WP Geodata codex defines geo_public as an opt-in privacy
+	 * flag (1 public, 0 private). GatherPress intentionally binds it to publication
+	 * status — 1 when post_status is 'publish', 0 otherwise — because a venue that
+	 * isn't published is not publicly accessible anywhere in the site. Plugins that
+	 * need a separate user-facing privacy toggle can filter the value.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param int $post_id The ID of the post being saved.
+	 * @return void
+	 */
+	public function set_geodata( int $post_id ): void {
+		// wp_after_insert_post fires for revisions and autosaves; skip both to avoid
+		// writing derived meta onto revision posts where it's not useful.
+		if ( wp_is_post_revision( $post_id ) || wp_is_post_autosave( $post_id ) ) {
+			return;
+		}
+
+		$post_type = (string) get_post_type( $post_id );
+
+		if ( ! post_type_supports( $post_type, 'gatherpress-venue-information' ) ) {
+			return;
+		}
+
+		$data = json_decode(
+			(string) get_post_meta( $post_id, 'gatherpress_venue_information', true ),
+			true
+		);
+
+		if ( ! is_array( $data ) ) {
+			$data = array();
+		}
+
+		$latitude  = isset( $data['latitude'] ) && is_numeric( $data['latitude'] ) ? (string) $data['latitude'] : '';
+		$longitude = isset( $data['longitude'] ) && is_numeric( $data['longitude'] ) ? (string) $data['longitude'] : '';
+		$address   = isset( $data['fullAddress'] ) ? (string) $data['fullAddress'] : '';
+		$public    = ( 'publish' === get_post_status( $post_id ) ) ? 1 : 0;
+
+		update_post_meta( $post_id, 'geo_latitude', $latitude );
+		update_post_meta( $post_id, 'geo_longitude', $longitude );
+		update_post_meta( $post_id, 'geo_address', $address );
+		update_post_meta( $post_id, 'geo_public', $public );
 	}
 
 	/**
