@@ -505,7 +505,7 @@ class Venue_Setup {
 			! empty( $post->post_name ) &&
 			'publish' === $post->post_status
 		) {
-			$term_slug = $this->get_venue_term_slug( $post->post_name );
+			$term_slug = ( new Venue( $post_id ) )->get_term_slug();
 			$title     = html_entity_decode( get_the_title( $post_id ) );
 			$taxonomy  = Venue::get_taxonomy( $post->post_type );
 			$term      = term_exists( $term_slug, $taxonomy );
@@ -621,9 +621,11 @@ class Venue_Setup {
 			$post_before->post_name !== $post_after->post_name ||
 			$post_before->post_title !== $post_after->post_title
 		) {
-			// Calculate the old and new term slugs.
-			$old_term_slug = $this->get_venue_term_slug( $post_before->post_name );
-			$new_term_slug = $this->get_venue_term_slug( $post_after->post_name );
+			// Calculate the old and new term slugs. Use explicit post_name args
+			// since the old name isn't available from the current instance state.
+			$venue         = new Venue( $post_id );
+			$old_term_slug = $venue->get_term_slug( $post_before->post_name );
+			$new_term_slug = $venue->get_term_slug( $post_after->post_name );
 
 			// Decode the title to ensure special characters are handled correctly.
 			$title = html_entity_decode( get_the_title( $post_id ) );
@@ -669,81 +671,25 @@ class Venue_Setup {
 	 */
 	public function delete_venue_term( int $post_id ): void {
 		// Only process venue post types.
-		if ( post_type_supports( (string) get_post_type( $post_id ), 'gatherpress-venue-information' ) ) {
-			// Retrieve the post object.
-			$post = get_post( $post_id );
-
-			// Generate the term slug associated with the Venue post.
-			$term_slug = $this->get_venue_term_slug( $post->post_name );
-
-			// Get the term by slug.
-			$taxonomy = Venue::get_taxonomy( (string) get_post_type( $post_id ) );
-			$term     = get_term_by( 'slug', $term_slug, $taxonomy );
-
-			// Check if the term exists and delete it.
-			if ( is_a( $term, '\WP_Term' ) ) {
-				wp_delete_term( $term->term_id, $taxonomy );
-			}
-		}
-	}
-
-	/**
-	 * Generate a term slug for the Venue taxonomy based on the post slug of a Venue post.
-	 *
-	 * This method generates a unique term slug for the Venue taxonomy by incorporating
-	 * the post slug of a Venue post. It is used to create and identify the corresponding
-	 * venue term associated with a Venue post.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param string $post_name Post name (slug) of the Venue post.
-	 * @return string The generated term slug.
-	 */
-	public function get_venue_term_slug( string $post_name ): string {
-		// Generate the term slug by prefixing it with an underscore.
-		return sprintf( '_%s', $post_name );
-	}
-
-	/**
-	 * Retrieve the Venue Custom Post Type (CPT) from a Venue taxonomy slug.
-	 *
-	 * This method retrieves the Venue Custom Post Type (CPT) associated with a given
-	 * Venue taxonomy slug. It allows you to obtain the Venue post object based on the
-	 * taxonomy slug used for venues.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param string $slug            Slug of the Venue taxonomy to retrieve the Venue post.
-	 * @param string $event_post_type The event post type context for venue post type resolution. Default empty string.
-	 * @return null|WP_Post The Venue post object if found; otherwise, null.
-	 */
-	public function get_venue_post_from_term_slug( string $slug, string $event_post_type = '' ): ?WP_Post {
-		// Remove any leading underscores from the slug and retrieve the corresponding Venue post.
-		return get_page_by_path( ltrim( $slug, '_' ), OBJECT, Venue::get_venue_post_type( $event_post_type ) );
-	}
-
-	/**
-	 * Retrieves the Venue Custom Post Type (CPT) from a given Event post ID.
-	 *
-	 * This method fetches the terms attached to the Event post in the Venue taxonomy,
-	 * and returns the post associated with the first related Venue term.
-	 * Returns null if no Venue is found.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param int $post_id Event post ID to get the first venue from.
-	 * @return null|WP_Post The Venue post object if found; otherwise, null.
-	 */
-	public function get_venue_post_from_event_post_id( int $post_id ): ?WP_Post {
-		$event_post_type = (string) get_post_type( $post_id );
-		$taxonomy        = Venue::get_taxonomy( Venue::get_venue_post_type( $event_post_type ) );
-		$venue_terms     = get_the_terms( $post_id, $taxonomy );
-		if ( ! is_array( $venue_terms ) || empty( $venue_terms ) ) {
-			return null;
+		if ( ! post_type_supports( (string) get_post_type( $post_id ), 'gatherpress-venue-information' ) ) {
+			return;
 		}
 
-		// Assuming that we have only ONE venue related.
-		return $this->get_venue_post_from_term_slug( $venue_terms[0]->slug, $event_post_type );
+		// Guard against the race where the post has already been fully removed
+		// between the hook firing and this callback running.
+		$post = get_post( $post_id );
+		if ( ! $post instanceof WP_Post ) {
+			return;
+		}
+
+		$term_slug = ( new Venue( $post_id ) )->get_term_slug( $post->post_name );
+		$taxonomy  = Venue::get_taxonomy( (string) get_post_type( $post_id ) );
+		$term      = get_term_by( 'slug', $term_slug, $taxonomy );
+
+		// Check if the term exists and delete it.
+		if ( is_a( $term, '\WP_Term' ) ) {
+			wp_delete_term( $term->term_id, $taxonomy );
+		}
 	}
 
 	/**
@@ -775,7 +721,7 @@ class Venue_Setup {
 			if ( ! empty( $venue_terms ) && is_array( $venue_terms ) ) {
 				$venue_term = $venue_terms[0];
 				$venue_slug = $venue_term->slug;
-				$venue_post = $this->get_venue_post_from_term_slug( $venue_slug, $post_type );
+				$venue_post = ( new Venue() )->get_post_from_term_slug( $venue_slug, $post_type );
 			}
 
 			$venue_meta['isOnlineEventTerm'] = ( 'online-event' === $venue_slug );
@@ -788,25 +734,10 @@ class Venue_Setup {
 
 		if ( is_a( $venue_post, 'WP_Post' ) ) {
 			$venue_meta['name'] = get_the_title( $venue_post );
-
-			// Get venue information from JSON field.
-			$venue_info_json = get_post_meta( $venue_post->ID, 'gatherpress_venue_information', true );
-			$venue_info      = json_decode( $venue_info_json, true );
-
-			if ( is_array( $venue_info ) ) {
-				$venue_meta['fullAddress'] = $venue_info['fullAddress'] ?? '';
-				$venue_meta['phoneNumber'] = $venue_info['phoneNumber'] ?? '';
-				$venue_meta['website']     = $venue_info['website'] ?? '';
-				$venue_meta['latitude']    = $venue_info['latitude'] ?? '';
-				$venue_meta['longitude']   = $venue_info['longitude'] ?? '';
-			} else {
-				// Fallback to empty values if JSON parse fails.
-				$venue_meta['fullAddress'] = '';
-				$venue_meta['phoneNumber'] = '';
-				$venue_meta['website']     = '';
-				$venue_meta['latitude']    = '';
-				$venue_meta['longitude']   = '';
-			}
+			$venue_meta         = array_merge(
+				$venue_meta,
+				( new Venue( $venue_post->ID ) )->get_information()
+			);
 		}
 
 		return $venue_meta;

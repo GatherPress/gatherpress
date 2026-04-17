@@ -57,7 +57,7 @@ class Test_Venues extends Base {
 		$instance = Venues::get_instance();
 		$priority = Utility::invoke_hidden_method( $instance, 'get_priority' );
 
-		$this->assertEquals( 2, $priority, 'Failed to assert correct priority.' );
+		$this->assertEquals( 1, $priority, 'Failed to assert correct priority.' );
 	}
 
 	/**

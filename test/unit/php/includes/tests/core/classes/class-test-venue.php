@@ -345,4 +345,120 @@ class Test_Venue extends Base {
 			'Failed to assert that the default event post type maps to the default venue post type.'
 		);
 	}
+
+	/**
+	 * Coverage for get_term_slug with an explicit post_name argument.
+	 *
+	 * @covers ::get_term_slug
+	 *
+	 * @return void
+	 */
+	public function test_get_term_slug(): void {
+		$this->assertSame(
+			'_unit-test',
+			( new Venue() )->get_term_slug( 'unit-test' ),
+			'Failed to assert that term slugs match.'
+		);
+	}
+
+	/**
+	 * Coverage for get_post_from_term_slug method.
+	 *
+	 * @covers ::get_post_from_term_slug
+	 *
+	 * @return void
+	 */
+	public function test_get_post_from_term_slug(): void {
+		$venue                = $this->mock->post(
+			array(
+				'post_type' => Venue::POST_TYPE,
+				'post_name' => 'unit-test',
+			)
+		)->get();
+		$venue_from_term_slug = ( new Venue() )->get_post_from_term_slug( '_unit-test' );
+
+		$this->assertEquals(
+			$venue->ID,
+			$venue_from_term_slug->ID,
+			'Failed to assert that IDs match.'
+		);
+	}
+
+	/**
+	 * Coverage for get_post_from_event_post_id method.
+	 *
+	 * @covers ::get_post_from_event_post_id
+	 *
+	 * @return void
+	 */
+	public function test_get_post_from_event_post_id(): void {
+		// Create a venue post.
+		$venue = $this->mock->post(
+			array(
+				'post_type'  => Venue::POST_TYPE,
+				'post_name'  => 'test-venue-for-event',
+				'post_title' => 'Test Venue For Event',
+			)
+		)->get();
+
+		// Create the venue term with the correct slug format.
+		$term_slug = ( new Venue( $venue->ID ) )->get_term_slug();
+		wp_insert_term(
+			'Test Venue For Event',
+			Venue::TAXONOMY,
+			array( 'slug' => $term_slug )
+		);
+
+		// Create an event post.
+		$event = $this->mock->post(
+			array(
+				'post_type' => Event::POST_TYPE,
+				'post_name' => 'test-event-with-venue',
+			)
+		)->get();
+
+		// Associate the event with the venue term.
+		wp_set_post_terms( $event->ID, $term_slug, Venue::TAXONOMY );
+
+		// Get the venue post from the event.
+		$result = ( new Venue() )->get_post_from_event_post_id( $event->ID );
+
+		// The result should be the venue post.
+		$this->assertInstanceOf(
+			'WP_Post',
+			$result,
+			'Should return a WP_Post instance.'
+		);
+		$this->assertEquals(
+			$venue->ID,
+			$result->ID,
+			'Should return the correct venue post.'
+		);
+	}
+
+	/**
+	 * Coverage for get_post_from_event_post_id when event has no venue terms.
+	 *
+	 * @covers ::get_post_from_event_post_id
+	 *
+	 * @return void
+	 */
+	public function test_get_post_from_event_post_id_no_terms(): void {
+		// Create an event post without any venue terms.
+		$event = $this->mock->post(
+			array(
+				'post_type' => Event::POST_TYPE,
+				'post_name' => 'test-event-no-venue',
+			)
+		)->get();
+
+		// Get the venue post from the event.
+		$result = ( new Venue() )->get_post_from_event_post_id( $event->ID );
+
+		// The result should be null since there are no venue terms.
+		$this->assertNull(
+			$result,
+			'Should return null when event has no venue terms.'
+		);
+	}
 }

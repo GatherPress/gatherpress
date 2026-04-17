@@ -9,6 +9,7 @@
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
+use GatherPress\Core\Settings;
 use GatherPress\Core\Venue_Setup;
 
 if ( ! isset( $attributes ) || ! is_array( $attributes ) ) {
@@ -26,8 +27,6 @@ $gatherpress_venue_longitude = $gatherpress_venue_meta['longitude'] ?? '';
 if ( empty( $gatherpress_venue_address ) ) {
 	return;
 }
-
-use GatherPress\Core\Settings;
 
 // Prepare attributes for the map.
 $gatherpress_map_attrs = array(

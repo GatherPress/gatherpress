@@ -11,7 +11,6 @@ namespace GatherPress\Tests\Core\Blocks;
 use GatherPress\Core\Blocks\Venue as Venue_Block;
 use GatherPress\Core\Event;
 use GatherPress\Core\Venue;
-use GatherPress\Core\Venue_Setup;
 use GatherPress\Tests\Base;
 use WP_Block;
 
@@ -692,7 +691,7 @@ class Test_Venue extends Base {
 		$venue_post = get_post( $venue_id );
 
 		// Create the venue term with the correct slug format.
-		$term_slug = Venue_Setup::get_instance()->get_venue_term_slug( $venue_post->post_name );
+		$term_slug = ( new Venue( $venue_post->ID ) )->get_term_slug();
 		wp_insert_term(
 			'Linked Venue For Event Test',
 			Venue::TAXONOMY,
@@ -986,7 +985,7 @@ class Test_Venue extends Base {
 		$venue_post = get_post( $venue_id );
 
 		// Create the venue term with the correct slug format.
-		$term_slug = Venue_Setup::get_instance()->get_venue_term_slug( $venue_post->post_name );
+		$term_slug = ( new Venue( $venue_post->ID ) )->get_term_slug();
 		wp_insert_term(
 			'Override Venue Test',
 			Venue::TAXONOMY,

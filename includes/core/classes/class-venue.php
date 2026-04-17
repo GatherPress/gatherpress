@@ -21,6 +21,8 @@ namespace GatherPress\Core;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
+use WP_Post;
+
 /**
  * Class Venue.
  *
@@ -57,11 +59,15 @@ class Venue {
 	/**
 	 * Construct a Venue around a specific post ID.
 	 *
+	 * The argument is optional so callers can invoke lookup-style methods
+	 * ({@see get_post_from_term_slug()}, {@see get_post_from_event_post_id()})
+	 * without needing a concrete venue in hand.
+	 *
 	 * @since 1.0.0
 	 *
-	 * @param int $post_id The ID of the venue post.
+	 * @param int $post_id The ID of the venue post. Defaults to 0 for lookup-only callers.
 	 */
-	public function __construct( int $post_id ) {
+	public function __construct( int $post_id = 0 ) {
 		$this->post_id = $post_id;
 	}
 
@@ -108,6 +114,78 @@ class Venue {
 			'latitude'    => isset( $parsed['latitude'] ) ? (string) $parsed['latitude'] : '',
 			'longitude'   => isset( $parsed['longitude'] ) ? (string) $parsed['longitude'] : '',
 		);
+	}
+
+	/**
+	 * Returns the Venue taxonomy term slug for this venue (or for an explicitly
+	 * supplied post_name).
+	 *
+	 * The slug is always derived by prefixing an underscore to the venue post's
+	 * slug — e.g. a venue with post_name `my-venue` becomes the term slug
+	 * `_my-venue`. Pre-update hook callers that need the *old* slug can pass it
+	 * explicitly; all other callers use the instance's current post_name.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string|null $post_name Optional explicit post name to use instead
+	 *                               of reading the instance's current one. Useful
+	 *                               for comparing old vs. new slugs during a rename.
+	 * @return string The taxonomy term slug.
+	 */
+	public function get_term_slug( ?string $post_name = null ): string {
+		if ( null === $post_name ) {
+			$post_name = (string) get_post_field( 'post_name', $this->post_id );
+		}
+
+		return sprintf( '_%s', $post_name );
+	}
+
+	/**
+	 * Retrieve a venue post by its taxonomy term slug.
+	 *
+	 * Strips the leading underscore from the taxonomy slug and looks up the
+	 * corresponding venue post via `get_page_by_path()`. Returns null when no
+	 * matching post exists.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $slug            The venue taxonomy term slug (e.g. `_my-venue`).
+	 * @param string $event_post_type Optional event post-type context, used when
+	 *                                mapping custom event post types to a non-default
+	 *                                venue post type via the `gatherpress_venue_post_type` filter.
+	 * @return WP_Post|null The matching venue post, or null.
+	 */
+	public function get_post_from_term_slug( string $slug, string $event_post_type = '' ): ?WP_Post {
+		return get_page_by_path(
+			ltrim( $slug, '_' ),
+			OBJECT,
+			self::get_venue_post_type( $event_post_type )
+		);
+	}
+
+	/**
+	 * Retrieve the venue post associated with a given event post.
+	 *
+	 * Reads the first term attached to the event in the venue taxonomy and
+	 * returns its corresponding venue post. Returns null when the event has
+	 * no linked venue.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param int $event_post_id The event post ID.
+	 * @return WP_Post|null The linked venue post, or null.
+	 */
+	public function get_post_from_event_post_id( int $event_post_id ): ?WP_Post {
+		$event_post_type = (string) get_post_type( $event_post_id );
+		$taxonomy        = self::get_taxonomy( self::get_venue_post_type( $event_post_type ) );
+		$venue_terms     = get_the_terms( $event_post_id, $taxonomy );
+
+		if ( ! is_array( $venue_terms ) || empty( $venue_terms ) ) {
+			return null;
+		}
+
+		// Assuming that we have only ONE venue related.
+		return $this->get_post_from_term_slug( $venue_terms[0]->slug, $event_post_type );
 	}
 
 	/**

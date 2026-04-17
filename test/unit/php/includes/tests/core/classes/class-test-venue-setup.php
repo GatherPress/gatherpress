@@ -743,7 +743,7 @@ class Test_Venue_Setup extends Base {
 	public function test_add_venue_term(): void {
 		$instance = Venue_Setup::get_instance();
 		$venue    = $this->mock->post( array( 'post_type' => Venue::POST_TYPE ) )->get();
-		$term     = term_exists( $instance->get_venue_term_slug( $venue->post_name ), Venue::TAXONOMY );
+		$term     = term_exists( ( new Venue() )->get_term_slug( $venue->post_name ), Venue::TAXONOMY );
 
 		$this->assertIsArray(
 			$term,
@@ -760,7 +760,7 @@ class Test_Venue_Setup extends Base {
 
 		$instance->add_venue_term( $venue->ID, $venue, true );
 
-		$term = term_exists( $instance->get_venue_term_slug( $venue->post_name ), Venue::TAXONOMY );
+		$term = term_exists( ( new Venue() )->get_term_slug( $venue->post_name ), Venue::TAXONOMY );
 
 		$this->assertNull(
 			term_exists( $term['term_id'], Venue::TAXONOMY ),
@@ -769,7 +769,7 @@ class Test_Venue_Setup extends Base {
 
 		$instance->add_venue_term( $venue->ID, $venue, false );
 
-		$term = term_exists( $instance->get_venue_term_slug( $venue->post_name ), Venue::TAXONOMY );
+		$term = term_exists( ( new Venue() )->get_term_slug( $venue->post_name ), Venue::TAXONOMY );
 
 		$this->assertIsArray(
 			$term,
@@ -793,11 +793,11 @@ class Test_Venue_Setup extends Base {
 
 		$instance->maybe_update_term_slug( $post_before->ID, $post_after, $post_before );
 		$this->assertNull(
-			term_exists( $instance->get_venue_term_slug( $post_before->post_name ), Venue::TAXONOMY ),
+			term_exists( ( new Venue() )->get_term_slug( $post_before->post_name ), Venue::TAXONOMY ),
 			'Failed to assert that term does not exist.'
 		);
 		$this->assertNull(
-			term_exists( $instance->get_venue_term_slug( $post_after->post_name ), Venue::TAXONOMY ),
+			term_exists( ( new Venue() )->get_term_slug( $post_after->post_name ), Venue::TAXONOMY ),
 			'Failed to assert that term does not exist.'
 		);
 
@@ -808,7 +808,7 @@ class Test_Venue_Setup extends Base {
 
 		$instance->maybe_update_term_slug( $venue_before->ID, $venue_after, $venue_before );
 
-		$term = term_exists( $instance->get_venue_term_slug( $venue_after->post_name ), Venue::TAXONOMY );
+		$term = term_exists( ( new Venue() )->get_term_slug( $venue_after->post_name ), Venue::TAXONOMY );
 
 		$this->assertIsArray(
 			$term,
@@ -819,7 +819,7 @@ class Test_Venue_Setup extends Base {
 
 		$this->assertSame(
 			$term_object->slug,
-			$instance->get_venue_term_slug( $venue_after->post_name ),
+			( new Venue() )->get_term_slug( $venue_after->post_name ),
 			'Failed to assert that slugs match.'
 		);
 
@@ -838,7 +838,7 @@ class Test_Venue_Setup extends Base {
 
 		$instance->maybe_update_term_slug( $venue_before->ID, $venue_after, $venue_before );
 
-		$term = term_exists( $instance->get_venue_term_slug( $venue_after->post_name ), Venue::TAXONOMY );
+		$term = term_exists( ( new Venue() )->get_term_slug( $venue_after->post_name ), Venue::TAXONOMY );
 
 		$this->assertIsArray(
 			$term,
@@ -849,7 +849,7 @@ class Test_Venue_Setup extends Base {
 
 		$this->assertSame(
 			$term_object->slug,
-			$instance->get_venue_term_slug( $venue_after->post_name ),
+			( new Venue() )->get_term_slug( $venue_after->post_name ),
 			'Failed to assert that slugs match.'
 		);
 
@@ -865,7 +865,7 @@ class Test_Venue_Setup extends Base {
 
 		$this->assertNotSame(
 			$term_object->slug,
-			$instance->get_venue_term_slug( $venue_after->post_name ),
+			( new Venue() )->get_term_slug( $venue_after->post_name ),
 			'Failed to assert that slugs do not match.'
 		);
 
@@ -877,7 +877,7 @@ class Test_Venue_Setup extends Base {
 
 		$this->assertSame(
 			$term_object->slug,
-			$instance->get_venue_term_slug( $venue_after->post_name ),
+			( new Venue() )->get_term_slug( $venue_after->post_name ),
 			'Failed to assert that slugs match.'
 		);
 
@@ -889,7 +889,7 @@ class Test_Venue_Setup extends Base {
 
 		$this->assertSame(
 			$term_object->slug,
-			$instance->get_venue_term_slug( $venue_after->post_name ),
+			( new Venue() )->get_term_slug( $venue_after->post_name ),
 			'Failed to assert that slugs match.'
 		);
 	}
@@ -906,53 +906,15 @@ class Test_Venue_Setup extends Base {
 		$venue    = $this->mock->post( array( 'post_type' => Venue::POST_TYPE ) )->get();
 
 		$this->assertIsArray(
-			term_exists( $instance->get_venue_term_slug( $venue->post_name ), Venue::TAXONOMY ),
+			term_exists( ( new Venue() )->get_term_slug( $venue->post_name ), Venue::TAXONOMY ),
 			'Failed to assert that term exists'
 		);
 
 		$instance->delete_venue_term( $venue->ID );
 
 		$this->assertNull(
-			term_exists( $instance->get_venue_term_slug( $venue->post_name ), Venue::TAXONOMY ),
+			term_exists( ( new Venue() )->get_term_slug( $venue->post_name ), Venue::TAXONOMY ),
 			'Failed to assert that term was deleted.'
-		);
-	}
-
-	/**
-	 * Coverage for get_venue_term_slug method.
-	 *
-	 * @covers ::get_venue_term_slug
-	 *
-	 * @return void
-	 */
-	public function test_get_venue_term_slug(): void {
-		$this->assertSame(
-			'_unit-test',
-			Venue_Setup::get_instance()->get_venue_term_slug( 'unit-test' ),
-			'Failed to assert that term slugs match.'
-		);
-	}
-
-	/**
-	 * Coverage for get_venue_post_from_term_slug method.
-	 *
-	 * @covers ::get_venue_post_from_term_slug
-	 *
-	 * @return void
-	 */
-	public function test_get_venue_post_from_term_slug(): void {
-		$venue                = $this->mock->post(
-			array(
-				'post_type' => Venue::POST_TYPE,
-				'post_name' => 'unit-test',
-			)
-		)->get();
-		$venue_from_term_slug = Venue_Setup::get_instance()->get_venue_post_from_term_slug( '_unit-test' );
-
-		$this->assertEquals(
-			$venue->ID,
-			$venue_from_term_slug->ID,
-			'Failed to assert that IDs match.'
 		);
 	}
 
@@ -1057,84 +1019,6 @@ class Test_Venue_Setup extends Base {
 			'-74.0060',
 			$venue_meta['longitude'],
 			'Failed to assert longitude matches.'
-		);
-	}
-
-	/**
-	 * Coverage for get_venue_post_from_event_post_id method.
-	 *
-	 * @covers ::get_venue_post_from_event_post_id
-	 *
-	 * @return void
-	 */
-	public function test_get_venue_post_from_event_post_id(): void {
-		// Create a venue post.
-		$venue = $this->mock->post(
-			array(
-				'post_type'  => Venue::POST_TYPE,
-				'post_name'  => 'test-venue-for-event',
-				'post_title' => 'Test Venue For Event',
-			)
-		)->get();
-
-		// Create the venue term with the correct slug format.
-		$term_slug = Venue_Setup::get_instance()->get_venue_term_slug( $venue->post_name );
-		wp_insert_term(
-			'Test Venue For Event',
-			Venue::TAXONOMY,
-			array( 'slug' => $term_slug )
-		);
-
-		// Create an event post.
-		$event = $this->mock->post(
-			array(
-				'post_type' => Event::POST_TYPE,
-				'post_name' => 'test-event-with-venue',
-			)
-		)->get();
-
-		// Associate the event with the venue term.
-		wp_set_post_terms( $event->ID, $term_slug, Venue::TAXONOMY );
-
-		// Get the venue post from the event.
-		$result = Venue_Setup::get_instance()->get_venue_post_from_event_post_id( $event->ID );
-
-		// The result should be the venue post.
-		$this->assertInstanceOf(
-			'WP_Post',
-			$result,
-			'Should return a WP_Post instance.'
-		);
-		$this->assertEquals(
-			$venue->ID,
-			$result->ID,
-			'Should return the correct venue post.'
-		);
-	}
-
-	/**
-	 * Coverage for get_venue_post_from_event_post_id when event has no venue terms.
-	 *
-	 * @covers ::get_venue_post_from_event_post_id
-	 *
-	 * @return void
-	 */
-	public function test_get_venue_post_from_event_post_id_no_terms(): void {
-		// Create an event post without any venue terms.
-		$event = $this->mock->post(
-			array(
-				'post_type' => Event::POST_TYPE,
-				'post_name' => 'test-event-no-venue',
-			)
-		)->get();
-
-		// Get the venue post from the event.
-		$result = Venue_Setup::get_instance()->get_venue_post_from_event_post_id( $event->ID );
-
-		// The result should be null since there are no venue terms.
-		$this->assertNull(
-			$result,
-			'Should return null when event has no venue terms.'
 		);
 	}
 
@@ -1410,7 +1294,7 @@ class Test_Venue_Setup extends Base {
 		$instance->add_venue_term( $post->ID, $post, false );
 
 		$this->assertNull(
-			term_exists( $instance->get_venue_term_slug( $post->post_name ), Venue::TAXONOMY ),
+			term_exists( ( new Venue() )->get_term_slug( $post->post_name ), Venue::TAXONOMY ),
 			'Failed to assert that no venue term was created for a post type without venue-information support.'
 		);
 	}
