@@ -224,6 +224,7 @@ describe( 'AddressField', () => {
 		render( <ControlledAddressField { ...defaultProps } /> );
 		const field = screen.getByRole( 'combobox' );
 
+		fireEvent.focus( field );
 		fireEvent.change( field, { target: { value: 'ab' } } );
 		await flushMicrotasks();
 
@@ -235,6 +236,7 @@ describe( 'AddressField', () => {
 		render( <ControlledAddressField { ...defaultProps } /> );
 		const field = screen.getByRole( 'combobox' );
 
+		fireEvent.focus( field );
 		fireEvent.change( field, {
 			target: { value: '123 Main Street' },
 		} );
@@ -255,6 +257,7 @@ describe( 'AddressField', () => {
 		render( <ControlledAddressField { ...defaultProps } /> );
 		const field = screen.getByRole( 'combobox' );
 
+		fireEvent.focus( field );
 		fireEvent.change( field, { target: { value: 'Paris Fra' } } );
 		await flushMicrotasks();
 
@@ -284,6 +287,7 @@ describe( 'AddressField', () => {
 		render( <ControlledAddressField { ...defaultProps } /> );
 		const field = screen.getByRole( 'combobox' );
 
+		fireEvent.focus( field );
 		fireEvent.change( field, { target: { value: 'NYC query' } } );
 		await flushMicrotasks();
 
@@ -322,6 +326,7 @@ describe( 'AddressField', () => {
 		render( <ControlledAddressField { ...defaultProps } /> );
 		const field = screen.getByRole( 'combobox' );
 
+		fireEvent.focus( field );
 		fireEvent.change( field, { target: { value: 'Wait for it' } } );
 		await flushMicrotasks();
 
@@ -355,9 +360,11 @@ describe( 'AddressField', () => {
 		render( <ControlledAddressField { ...defaultProps } /> );
 		const field = screen.getByRole( 'combobox' );
 
+		fireEvent.focus( field );
 		fireEvent.change( field, { target: { value: 'first query' } } );
 		await flushMicrotasks();
 
+		fireEvent.focus( field );
 		fireEvent.change( field, { target: { value: 'second query' } } );
 		await flushMicrotasks();
 
@@ -407,6 +414,7 @@ describe( 'AddressField', () => {
 		render( <ControlledAddressField { ...defaultProps } /> );
 		const field = screen.getByRole( 'combobox' );
 
+		fireEvent.focus( field );
 		fireEvent.change( field, { target: { value: 'pending query' } } );
 		await flushMicrotasks();
 
@@ -435,6 +443,7 @@ describe( 'AddressField', () => {
 		render( <ControlledAddressField { ...defaultProps } /> );
 		const field = screen.getByRole( 'combobox' );
 
+		fireEvent.focus( field );
 		fireEvent.change( field, { target: { value: 'Find me' } } );
 		await flushMicrotasks();
 
@@ -481,6 +490,7 @@ describe( 'AddressField', () => {
 		render( <ControlledAddressField { ...defaultProps } /> );
 		const field = screen.getByRole( 'combobox' );
 
+		fireEvent.focus( field );
 		fireEvent.change( field, { target: { value: 'query here' } } );
 		await flushMicrotasks();
 
@@ -517,6 +527,7 @@ describe( 'AddressField', () => {
 		render( <ControlledAddressField { ...defaultProps } /> );
 		const field = screen.getByRole( 'combobox' );
 
+		fireEvent.focus( field );
 		fireEvent.change( field, { target: { value: 'click test' } } );
 		await flushMicrotasks();
 
@@ -550,6 +561,7 @@ describe( 'AddressField', () => {
 		render( <ControlledAddressField { ...defaultProps } /> );
 		const field = screen.getByRole( 'combobox' );
 
+		fireEvent.focus( field );
 		fireEvent.change( field, { target: { value: 'multi opt' } } );
 		await flushMicrotasks();
 
@@ -574,6 +586,7 @@ describe( 'AddressField', () => {
 		render( <ControlledAddressField { ...defaultProps } /> );
 		const field = screen.getByRole( 'combobox' );
 
+		fireEvent.focus( field );
 		fireEvent.change( field, { target: { value: 'close me' } } );
 		await flushMicrotasks();
 
@@ -615,6 +628,7 @@ describe( 'AddressField', () => {
 		render( <ControlledAddressField { ...defaultProps } /> );
 		const field = screen.getByRole( 'combobox' );
 
+		fireEvent.focus( field );
 		fireEvent.change( field, { target: { value: 'Escape query' } } );
 		await flushMicrotasks();
 
@@ -699,6 +713,7 @@ describe( 'AddressAutocompleteField (settings variant)', () => {
 		render( <ControlledSettingsAddressField { ...settingsProps } /> );
 		const field = screen.getByRole( 'combobox', { name: /full address/i } );
 
+		fireEvent.focus( field );
 		fireEvent.change( field, { target: { value: 'Find me' } } );
 		await flushMicrotasks();
 
@@ -736,6 +751,7 @@ describe( 'AddressAutocompleteField (settings variant)', () => {
 		render( <ControlledSettingsAddressField { ...settingsProps } /> );
 		const field = screen.getByRole( 'combobox', { name: /full address/i } );
 
+		fireEvent.focus( field );
 		fireEvent.change( field, { target: { value: 'Escape query' } } );
 		await flushMicrotasks();
 
@@ -760,6 +776,7 @@ describe( 'AddressAutocompleteField (settings variant)', () => {
 		render( <ControlledSettingsAddressField { ...settingsProps } /> );
 		const field = screen.getByRole( 'combobox', { name: /full address/i } );
 
+		fireEvent.focus( field );
 		fireEvent.change( field, { target: { value: 'NYC query' } } );
 		await flushMicrotasks();
 
