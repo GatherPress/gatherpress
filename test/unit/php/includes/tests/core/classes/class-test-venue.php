@@ -353,7 +353,15 @@ class Test_Venue extends Base {
 
 		$meta = get_registered_meta_keys( 'post', $test_pt );
 
-		foreach ( array( 'gatherpress_venue_information', 'geo_latitude', 'geo_longitude', 'geo_address', 'geo_public' ) as $key ) {
+		$expected_keys = array(
+			'gatherpress_venue_information',
+			'geo_latitude',
+			'geo_longitude',
+			'geo_address',
+			'geo_public',
+		);
+
+		foreach ( $expected_keys as $key ) {
 			$this->assertArrayHasKey(
 				$key,
 				$meta,
