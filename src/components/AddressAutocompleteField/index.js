@@ -9,6 +9,7 @@ import {
 	useEffect,
 	useLayoutEffect,
 	useRef,
+	useState,
 } from '@wordpress/element';
 
 /**
@@ -51,6 +52,10 @@ export default function AddressAutocompleteField( {
 	const instanceId = useInstanceId( AddressAutocompleteField );
 	const fieldUid = `gatherpress-address-${ instanceId }`;
 	const listboxId = `${ fieldUid }-suggest`;
+	// Track focus so the suggestion popover only shows while the field is
+	// focused. Clicks on suggestion buttons preventDefault on mousedown below
+	// so they don't steal focus and unnecessarily close the popover.
+	const [ isFieldFocused, setIsFieldFocused ] = useState( false );
 
 	const { suppressNativeAutofill, unlockAddressInput } =
 		useAddressFieldAntiAutofill( value, inputRef );
@@ -70,12 +75,14 @@ export default function AddressAutocompleteField( {
 		onKeyDown: 'block' === variant ? onKeyDown : undefined,
 	} );
 
-	const showSuggestionUi = shouldShowAddressSuggestionUi(
-		value,
-		suggestions,
-		isLoadingSuggestions,
-		suggestionError
-	);
+	const showSuggestionUi =
+		isFieldFocused &&
+		shouldShowAddressSuggestionUi(
+			value,
+			suggestions,
+			isLoadingSuggestions,
+			suggestionError
+		);
 	const showSuggestionPanel = 0 < suggestions.length;
 	const showSuggestionError =
 		Boolean( suggestionError ) && ! showSuggestionPanel && ! isLoadingSuggestions;
@@ -164,6 +171,12 @@ export default function AddressAutocompleteField( {
 											? 'gatherpress-address-autocomplete__suggestion is-active'
 											: 'gatherpress-address-autocomplete__suggestion'
 									}
+									// Prevent the input from blurring on
+									// mousedown so the popover doesn't flicker
+									// shut before the click lands.
+									onMouseDown={ ( event ) =>
+										event.preventDefault()
+									}
 									onClick={ () => selectSuggestion( item ) }
 									onMouseEnter={ () => setActiveIndex( index ) }
 								>
@@ -200,7 +213,11 @@ export default function AddressAutocompleteField( {
 						value={ value }
 						onChange={ ( e ) => handleChange( e.target.value ) }
 						onKeyDown={ handleKeyDown }
-						onFocus={ unlockAddressInput }
+						onFocus={ () => {
+							unlockAddressInput();
+							setIsFieldFocused( true );
+						} }
+						onBlur={ () => setIsFieldFocused( false ) }
 						onMouseDown={ unlockAddressInput }
 						placeholder={ placeholder }
 						readOnly={ suppressNativeAutofill }
@@ -233,7 +250,11 @@ export default function AddressAutocompleteField( {
 				autoCorrect="off"
 				spellCheck={ false }
 				readOnly={ suppressNativeAutofill }
-				onFocus={ unlockAddressInput }
+				onFocus={ () => {
+					unlockAddressInput();
+					setIsFieldFocused( true );
+				} }
+				onBlur={ () => setIsFieldFocused( false ) }
 				onKeyDown={ handleKeyDown }
 				onMouseDown={ unlockAddressInput }
 				id={ fieldUid }
