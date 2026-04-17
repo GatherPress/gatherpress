@@ -78,6 +78,46 @@ class Rsvp_Settings extends Base {
 					'gatherpress'
 				),
 				'options'     => array(
+					'rsvp_mode'             => array(
+						'labels'      => array(
+							'name' => __( 'RSVP Mode', 'gatherpress' ),
+						),
+						'description' => __(
+							'Control how RSVP works across your site.',
+							'gatherpress'
+						),
+						'field'       => array(
+							'type'    => 'select',
+							'options' => array(
+								'default' => 'all_on',
+								'items'   => array(
+									'all_on'        => __( 'All events', 'gatherpress' ),
+									'per_event_on'  => __( 'Per event (default on)', 'gatherpress' ),
+									'per_event_off' => __( 'Per event (default off)', 'gatherpress' ),
+									'disabled'      => __( 'Disabled', 'gatherpress' ),
+								),
+							),
+						),
+					),
+					'enable_open_rsvp'      => array(
+						'labels'      => array(
+							'name' => __( 'Open RSVP', 'gatherpress' ),
+						),
+						'description' => __(
+							'Allow visitors to RSVP without a site account using email verification.',
+							'gatherpress'
+						),
+						'field'       => array(
+							'label'   => __(
+								'Enable Open RSVP for events.',
+								'gatherpress'
+							),
+							'type'    => 'checkbox',
+							'options' => array(
+								'default' => true,
+							),
+						),
+					),
 					'max_attendance_limit'  => array(
 						'labels'      => array(
 							'name' => __( 'Maximum Attendance Limit', 'gatherpress' ),

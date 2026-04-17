@@ -14,6 +14,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Block;
 use GatherPress\Core\Event;
+use GatherPress\Core\Rsvp;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Utility;
 use WP_Block;
@@ -124,13 +125,17 @@ class Rsvp_Template {
 		$post_id = (int) $instance->context['postId'];
 		$event   = new Event( $post_id );
 
-		// Only process if we have a valid event post.
+		// Only process if the post type supports RSVP.
 		// Only check publish status if not in preview mode.
 		if (
-			Event::POST_TYPE !== get_post_type( $post_id ) ||
+			! post_type_supports( (string) get_post_type( $post_id ), 'gatherpress-rsvp' ) ||
 			( ! is_preview() && 'publish' !== get_post_status( $post_id ) )
 		) {
 			return $block_content;
+		}
+
+		if ( ! ( new Rsvp( $post_id ) )->is_enabled() ) {
+			return '';
 		}
 
 		$responses     = $event->rsvp->responses()['attending']['records'];
@@ -205,7 +210,7 @@ class Rsvp_Template {
 				$parsed_block,
 				array( 'commentId' => $response_id )
 			)
-		)->render( array( 'dynamic' => false ) );
+		)->render( array( 'dynamic' => true ) );
 
 		// Re-add the filter after rendering to ensure it continues to apply to other blocks.
 		add_filter( $render_block_hook, array( $this, 'generate_rsvp_template_block' ), 10, 3 );

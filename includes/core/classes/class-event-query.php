@@ -17,6 +17,8 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Settings;
 use GatherPress\Core\Traits\Singleton;
+use GatherPress\Core\Venue;
+use WP_Post;
 use WP_Query;
 
 /**
@@ -120,7 +122,7 @@ class Event_Query {
 		$order = ( 'past' === $event_list_type ) ? 'DESC' : 'ASC';
 
 		$args = array(
-			'post_type'             => Event::POST_TYPE,
+			'post_type'             => get_post_types_by_support( 'gatherpress-event-date' ),
 			'fields'                => 'ids',
 			'no_found_rows'         => true,
 			'posts_per_page'        => $number,
@@ -138,11 +140,7 @@ class Event_Query {
 					'field'    => 'slug',
 					'terms'    => $topics,
 				),
-				array(
-					'taxonomy' => Venue::TAXONOMY,
-					'field'    => 'slug',
-					'terms'    => $venues,
-				),
+				$this->build_venue_tax_query( $venues ),
 			);
 		} elseif ( ! empty( $topics ) ) {
 			$tax_query[] = array(
@@ -151,11 +149,7 @@ class Event_Query {
 				'terms'    => $topics,
 			);
 		} elseif ( ! empty( $venues ) ) {
-			$tax_query[] = array(
-				'taxonomy' => Venue::TAXONOMY,
-				'field'    => 'slug',
-				'terms'    => $venues,
-			);
+			$tax_query[] = $this->build_venue_tax_query( $venues );
 		}
 
 		$args['tax_query'] = $tax_query; //phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query
@@ -210,7 +204,7 @@ class Event_Query {
 						$page_id      = $query->queried_object_id;
 						$events_query = $key;
 
-						$query->set( 'post_type', 'gatherpress_event' );
+						$query->set( 'post_type', get_post_types_by_support( 'gatherpress-event-date' ) );
 						$query->set( self::EVENT_QUERY_PARAM, $key );
 						$query->is_page              = false;
 						$query->is_singular          = false;
@@ -247,6 +241,32 @@ class Event_Query {
 						);
 					}
 				}
+			}
+		}
+
+		// Filter events by venue when the venue filter is enabled and we're on a venue page.
+		$venue_filter = $query->get( 'venue_filter' );
+		if ( ! empty( $venue_filter ) && is_singular( Venue::POST_TYPE ) ) {
+			$venue_post = get_queried_object();
+
+			if ( $venue_post instanceof WP_Post ) {
+				$venue     = Venue::get_instance();
+				$term_slug = $venue->get_venue_term_slug( $venue_post->post_name );
+
+				// Merge with any existing tax_query.
+				$existing_tax_query = $query->get( 'tax_query' );
+				if ( ! is_array( $existing_tax_query ) ) {
+					$existing_tax_query = array();
+				}
+
+				$existing_tax_query[] = array(
+					'taxonomy' => Venue::TAXONOMY,
+					'field'    => 'slug',
+					'terms'    => array( $term_slug ),
+				);
+
+				// phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query
+				$query->set( 'tax_query', $existing_tax_query );
 			}
 		}
 
@@ -446,8 +466,11 @@ class Event_Query {
 					$pieces['orderby'] = esc_sql( 'RAND()' );
 					break;
 				case 'datetime':
-				default:
 					$pieces['orderby'] = sprintf( esc_sql( $table ) . '.datetime_start_gmt %s', esc_sql( $order ) );
+					break;
+				default:
+					// Custom column sorting (e.g., rsvps, venue) is handled
+					// by posts_orderby filters; do not override their clause.
 					break;
 			}
 		}
@@ -486,6 +509,31 @@ class Event_Query {
 		}
 
 		return $pieces;
+	}
+
+	/**
+	 * Builds a WP_Query compatible tax_query array for filtering events by venue slugs.
+	 *
+	 * Creates an OR relation across all registered venue post type taxonomies, allowing
+	 * events to be filtered by venue regardless of which venue post type they use.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param array $venues Array of venue slugs to filter by.
+	 * @return array WP_Query compatible tax_query array.
+	 */
+	private function build_venue_tax_query( array $venues ): array {
+		$venue_tax_query = array( 'relation' => 'OR' );
+
+		foreach ( get_post_types_by_support( 'gatherpress-venue-information' ) as $venue_post_type ) {
+			$venue_tax_query[] = array(
+				'taxonomy' => Venue::get_taxonomy( $venue_post_type ),
+				'field'    => 'slug',
+				'terms'    => $venues,
+			);
+		}
+
+		return $venue_tax_query;
 	}
 
 	/**

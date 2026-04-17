@@ -28,12 +28,92 @@ jest.mock( '@wordpress/core-data', () => ( {
 import {
 	hasEventPast,
 	hasEventPastNotice,
+	isPostTypeSupporting,
 	isEventPostType,
 	hasValidEventId,
 	getEventMeta,
 	hasOnlineEventTerm,
+	isPerEventRsvpMode,
+	isRsvpEnabledForEvent,
+	isOpenRsvpEnabled,
 } from '@src/helpers/event';
 import { dateTimeDatabaseFormat } from '@src/helpers/datetime';
+
+/**
+ * Helper to create a mock getPostType function.
+ * Returns supports.event_date: true for gatherpress_event, false for others.
+ *
+ * @param {string} slug The post type slug.
+ * @return {Object|null} The post type object with supports.
+ */
+function mockGetPostType( slug ) {
+	if ( 'gatherpress_event' === slug ) {
+		return {
+			supports: {
+				'gatherpress-event-date': true,
+				'gatherpress-rsvp': true,
+			},
+		};
+	}
+	return { supports: {} };
+}
+
+/**
+ * Coverage for isPostTypeSupporting.
+ */
+describe( 'isPostTypeSupporting', () => {
+	it( 'returns true when post type supports the given feature', () => {
+		require( '@wordpress/data' ).select.mockImplementation( ( store ) => {
+			if ( 'core/editor' === store ) {
+				return {
+					getCurrentPostType: () => 'gatherpress_event',
+				};
+			}
+			if ( 'core' === store ) {
+				return { getPostType: mockGetPostType };
+			}
+			return {};
+		} );
+
+		expect( isPostTypeSupporting( 'gatherpress-event-date' ) ).toBe( true );
+		expect( isPostTypeSupporting( 'gatherpress-rsvp' ) ).toBe( true );
+	} );
+
+	it( 'returns false when post type does not support the given feature', () => {
+		require( '@wordpress/data' ).select.mockImplementation( ( store ) => {
+			if ( 'core/editor' === store ) {
+				return {
+					getCurrentPostType: () => 'post',
+				};
+			}
+			if ( 'core' === store ) {
+				return { getPostType: mockGetPostType };
+			}
+			return {};
+		} );
+
+		expect( isPostTypeSupporting( 'gatherpress-event-date' ) ).toBe( false );
+		expect( isPostTypeSupporting( 'gatherpress-rsvp' ) ).toBe( false );
+	} );
+
+	it( 'returns true when postType argument supports the feature', () => {
+		require( '@wordpress/data' ).select.mockImplementation( ( store ) => {
+			if ( 'core' === store ) {
+				return { getPostType: mockGetPostType };
+			}
+			return {};
+		} );
+
+		expect( isPostTypeSupporting( 'gatherpress-rsvp', 'gatherpress_event' ) ).toBe( true );
+		expect( isPostTypeSupporting( 'gatherpress-rsvp', 'post' ) ).toBe( false );
+	} );
+
+	it( 'returns false when select returns undefined', () => {
+		require( '@wordpress/data' ).select.mockReturnValue( undefined );
+
+		expect( isPostTypeSupporting( 'gatherpress-rsvp' ) ).toBe( false );
+	} );
+} );
 
 /**
  * Coverage for isEventPostType.
@@ -45,6 +125,9 @@ describe( 'isEventPostType', () => {
 				return {
 					getCurrentPostType: () => 'gatherpress_event',
 				};
+			}
+			if ( 'core' === store ) {
+				return { getPostType: mockGetPostType };
 			}
 			return {};
 		} );
@@ -59,6 +142,9 @@ describe( 'isEventPostType', () => {
 					getCurrentPostType: () => 'post',
 				};
 			}
+			if ( 'core' === store ) {
+				return { getPostType: mockGetPostType };
+			}
 			return {};
 		} );
 
@@ -71,6 +157,9 @@ describe( 'isEventPostType', () => {
 				return {
 					getCurrentPostType: () => 'page',
 				};
+			}
+			if ( 'core' === store ) {
+				return { getPostType: mockGetPostType };
 			}
 			return {};
 		} );
@@ -91,6 +180,9 @@ describe( 'isEventPostType', () => {
 					getCurrentPostType: () => undefined,
 				};
 			}
+			if ( 'core' === store ) {
+				return { getPostType: mockGetPostType };
+			}
 			return {};
 		} );
 
@@ -98,17 +190,35 @@ describe( 'isEventPostType', () => {
 	} );
 
 	it( 'returns true when postType argument is gatherpress_event', () => {
-		// No select mock needed - uses argument directly.
+		require( '@wordpress/data' ).select.mockImplementation( ( store ) => {
+			if ( 'core' === store ) {
+				return { getPostType: mockGetPostType };
+			}
+			return {};
+		} );
+
 		expect( isEventPostType( 'gatherpress_event' ) ).toBe( true );
 	} );
 
 	it( 'returns false when postType argument is post', () => {
-		// No select mock needed - uses argument directly.
+		require( '@wordpress/data' ).select.mockImplementation( ( store ) => {
+			if ( 'core' === store ) {
+				return { getPostType: mockGetPostType };
+			}
+			return {};
+		} );
+
 		expect( isEventPostType( 'post' ) ).toBe( false );
 	} );
 
 	it( 'returns false when postType argument is page', () => {
-		// No select mock needed - uses argument directly.
+		require( '@wordpress/data' ).select.mockImplementation( ( store ) => {
+			if ( 'core' === store ) {
+				return { getPostType: mockGetPostType };
+			}
+			return {};
+		} );
+
 		expect( isEventPostType( 'page' ) ).toBe( false );
 	} );
 } );
@@ -124,6 +234,9 @@ describe( 'hasValidEventId', () => {
 					getCurrentPostType: () => 'gatherpress_event',
 				};
 			}
+			if ( 'core' === store ) {
+				return { getPostType: mockGetPostType };
+			}
 			return {};
 		} );
 
@@ -136,6 +249,9 @@ describe( 'hasValidEventId', () => {
 				return {
 					getCurrentPostType: () => 'post',
 				};
+			}
+			if ( 'core' === store ) {
+				return { getPostType: mockGetPostType };
 			}
 			return {};
 		} );
@@ -155,6 +271,7 @@ describe( 'hasValidEventId', () => {
 			}
 			if ( 'core' === store ) {
 				return {
+					getPostType: mockGetPostType,
 					getEntityRecord: ( postType, postTypeName, id ) => {
 						if ( 'gatherpress_event' === postTypeName && postId === id ) {
 							return {
@@ -185,6 +302,7 @@ describe( 'hasValidEventId', () => {
 			}
 			if ( 'core' === store ) {
 				return {
+					getPostType: mockGetPostType,
 					getEntityRecord: ( postType, postTypeName, id ) => {
 						if ( 'gatherpress_event' === postTypeName && postId === id ) {
 							return {
@@ -215,6 +333,7 @@ describe( 'hasValidEventId', () => {
 			}
 			if ( 'core' === store ) {
 				return {
+					getPostType: mockGetPostType,
 					getEntityRecord: ( postType, postTypeName, id ) => {
 						if ( 'gatherpress_event' === postTypeName && postId === id ) {
 							return {
@@ -244,6 +363,7 @@ describe( 'hasValidEventId', () => {
 			}
 			if ( 'core' === store ) {
 				return {
+					getPostType: mockGetPostType,
 					getEntityRecord: () => null,
 				};
 			}
@@ -265,6 +385,7 @@ describe( 'hasValidEventId', () => {
 			}
 			if ( 'core' === store ) {
 				return {
+					getPostType: mockGetPostType,
 					getEntityRecord: () => undefined,
 				};
 			}
@@ -287,6 +408,7 @@ describe( 'hasValidEventId', () => {
 			}
 			if ( 'core' === store ) {
 				return {
+					getPostType: mockGetPostType,
 					getEntityRecord: ( postType, postTypeName, id ) => {
 						if ( 'gatherpress_event' === postTypeName && postId === id ) {
 							return {
@@ -311,6 +433,9 @@ describe( 'hasValidEventId', () => {
 					getCurrentPostType: () => 'gatherpress_event',
 				};
 			}
+			if ( 'core' === store ) {
+				return { getPostType: mockGetPostType };
+			}
 			return {};
 		} );
 
@@ -327,6 +452,9 @@ describe( 'hasValidEventId', () => {
 					getCurrentPostType: () => 'post', // Not an event.
 				};
 			}
+			if ( 'core' === store ) {
+				return { getPostType: mockGetPostType };
+			}
 			return {};
 		} );
 
@@ -342,6 +470,9 @@ describe( 'hasValidEventId', () => {
 					getCurrentPostId: () => 999, // Different from postId.
 					getCurrentPostType: () => 'gatherpress_event',
 				};
+			}
+			if ( 'core' === store ) {
+				return { getPostType: mockGetPostType };
 			}
 			return {};
 		} );
@@ -360,6 +491,9 @@ describe( 'hasValidEventId', () => {
 					getCurrentPostType: () => 'gatherpress_event',
 				};
 			}
+			if ( 'core' === store ) {
+				return { getPostType: mockGetPostType };
+			}
 			return {};
 		} );
 
@@ -373,41 +507,49 @@ describe( 'hasValidEventId', () => {
  */
 describe( 'hasEventPast', () => {
 	it( 'returns true', () => {
-		global.GatherPress = {
-			eventDetails: {
-				dateTime: {
-					datetime_end: moment()
-						.subtract( 1, 'days' )
-						.format( dateTimeDatabaseFormat ),
-					timezone: 'America/New_York',
-				},
-			},
-		};
+		const pastEnd = moment()
+			.subtract( 1, 'days' )
+			.format( dateTimeDatabaseFormat );
 
-		require( '@wordpress/data' ).select.mockImplementation( ( store ) => ( {
-			getCurrentPostType: () =>
-				'core/editor' === store ? 'gatherpress_event' : null,
-		} ) );
+		require( '@wordpress/data' ).select.mockImplementation( ( store ) => {
+			if ( 'gatherpress/datetime' === store ) {
+				return {
+					getDateTimeEnd: () => pastEnd,
+					getTimezone: () => 'America/New_York',
+				};
+			}
+			if ( 'core/editor' === store ) {
+				return { getCurrentPostType: () => 'gatherpress_event' };
+			}
+			if ( 'core' === store ) {
+				return { getPostType: mockGetPostType };
+			}
+			return {};
+		} );
 
 		expect( hasEventPast() ).toBe( true );
 	} );
 
 	it( 'returns false', () => {
-		global.GatherPress = {
-			eventDetails: {
-				dateTime: {
-					datetime_end: moment()
-						.add( 1, 'days' )
-						.format( dateTimeDatabaseFormat ),
-					timezone: 'America/New_York',
-				},
-			},
-		};
+		const futureEnd = moment()
+			.add( 1, 'days' )
+			.format( dateTimeDatabaseFormat );
 
-		require( '@wordpress/data' ).select.mockImplementation( ( store ) => ( {
-			getCurrentPostType: () =>
-				'core/editor' === store ? 'gatherpress_event' : null,
-		} ) );
+		require( '@wordpress/data' ).select.mockImplementation( ( store ) => {
+			if ( 'gatherpress/datetime' === store ) {
+				return {
+					getDateTimeEnd: () => futureEnd,
+					getTimezone: () => 'America/New_York',
+				};
+			}
+			if ( 'core/editor' === store ) {
+				return { getCurrentPostType: () => 'gatherpress_event' };
+			}
+			if ( 'core' === store ) {
+				return { getPostType: mockGetPostType };
+			}
+			return {};
+		} );
 
 		expect( hasEventPast() ).toBe( false );
 	} );
@@ -424,21 +566,25 @@ describe( 'hasEventPastNotice', () => {
 	} );
 
 	it( 'notice is set', () => {
-		global.GatherPress = {
-			eventDetails: {
-				dateTime: {
-					datetime_end: moment()
-						.subtract( 1, 'days' )
-						.format( dateTimeDatabaseFormat ),
-					timezone: 'America/New_York',
-				},
-			},
-		};
+		const pastEnd = moment()
+			.subtract( 1, 'days' )
+			.format( dateTimeDatabaseFormat );
 
-		require( '@wordpress/data' ).select.mockImplementation( ( store ) => ( {
-			getCurrentPostType: () =>
-				'core/editor' === store ? 'gatherpress_event' : null,
-		} ) );
+		require( '@wordpress/data' ).select.mockImplementation( ( store ) => {
+			if ( 'gatherpress/datetime' === store ) {
+				return {
+					getDateTimeEnd: () => pastEnd,
+					getTimezone: () => 'America/New_York',
+				};
+			}
+			if ( 'core/editor' === store ) {
+				return { getCurrentPostType: () => 'gatherpress_event' };
+			}
+			if ( 'core' === store ) {
+				return { getPostType: mockGetPostType };
+			}
+			return {};
+		} );
 
 		hasEventPastNotice();
 
@@ -464,6 +610,7 @@ describe( 'getEventMeta', () => {
 		mockSelect = jest.fn( ( store ) => {
 			if ( 'core' === store ) {
 				return {
+					getPostType: mockGetPostType,
 					getEntityRecord: jest.fn(),
 				};
 			}
@@ -485,6 +632,9 @@ describe( 'getEventMeta', () => {
 					getEditedPostAttribute: jest.fn(),
 				};
 			}
+			if ( 'core' === store ) {
+				return { getPostType: mockGetPostType };
+			}
 			return {};
 		} );
 
@@ -492,6 +642,7 @@ describe( 'getEventMeta', () => {
 
 		expect( result ).toEqual( {
 			maxGuestLimit: 0,
+			enableRsvp: true,
 			enableAnonymousRsvp: false,
 		} );
 	} );
@@ -512,6 +663,9 @@ describe( 'getEventMeta', () => {
 					} ),
 				};
 			}
+			if ( 'core' === store ) {
+				return { getPostType: mockGetPostType };
+			}
 			return {};
 		} );
 
@@ -519,6 +673,7 @@ describe( 'getEventMeta', () => {
 
 		expect( result ).toEqual( {
 			maxGuestLimit: 5,
+			enableRsvp: true,
 			enableAnonymousRsvp: true,
 		} );
 	} );
@@ -539,6 +694,9 @@ describe( 'getEventMeta', () => {
 					} ),
 				};
 			}
+			if ( 'core' === store ) {
+				return { getPostType: mockGetPostType };
+			}
 			return {};
 		} );
 
@@ -547,6 +705,7 @@ describe( 'getEventMeta', () => {
 
 		expect( result ).toEqual( {
 			maxGuestLimit: 10,
+			enableRsvp: true,
 			enableAnonymousRsvp: false,
 		} );
 	} );
@@ -555,6 +714,7 @@ describe( 'getEventMeta', () => {
 		mockSelect.mockImplementation( ( store ) => {
 			if ( 'core' === store ) {
 				return {
+					getPostType: mockGetPostType,
 					getEntityRecord: jest.fn( ( postType, slug, postId ) => {
 						if ( 'gatherpress_event' === slug && 456 === postId ) {
 							return {
@@ -582,6 +742,7 @@ describe( 'getEventMeta', () => {
 
 		expect( result ).toEqual( {
 			maxGuestLimit: 20,
+			enableRsvp: true,
 			enableAnonymousRsvp: true,
 		} );
 	} );
@@ -590,6 +751,7 @@ describe( 'getEventMeta', () => {
 		mockSelect.mockImplementation( ( store ) => {
 			if ( 'core' === store ) {
 				return {
+					getPostType: mockGetPostType,
 					getEntityRecord: jest.fn( () => ( {
 						meta: {},
 					} ) ),
@@ -602,6 +764,7 @@ describe( 'getEventMeta', () => {
 
 		expect( result ).toEqual( {
 			maxGuestLimit: 0,
+			enableRsvp: true,
 			enableAnonymousRsvp: false,
 		} );
 	} );
@@ -610,6 +773,7 @@ describe( 'getEventMeta', () => {
 		mockSelect.mockImplementation( ( store ) => {
 			if ( 'core' === store ) {
 				return {
+					getPostType: mockGetPostType,
 					getEntityRecord: jest.fn( () => null ),
 				};
 			}
@@ -620,6 +784,7 @@ describe( 'getEventMeta', () => {
 
 		expect( result ).toEqual( {
 			maxGuestLimit: 0,
+			enableRsvp: true,
 			enableAnonymousRsvp: false,
 		} );
 	} );
@@ -639,6 +804,9 @@ describe( 'getEventMeta', () => {
 						return null;
 					} ),
 				};
+			}
+			if ( 'core' === store ) {
+				return { getPostType: mockGetPostType };
 			}
 			return {};
 		} );
@@ -664,6 +832,9 @@ describe( 'getEventMeta', () => {
 					} ),
 				};
 			}
+			if ( 'core' === store ) {
+				return { getPostType: mockGetPostType };
+			}
 			return {};
 		} );
 
@@ -681,6 +852,7 @@ describe( 'hasOnlineEventTerm', () => {
 		require( '@wordpress/data' ).select.mockImplementation( ( store ) => {
 			if ( 'core' === store ) {
 				return {
+					getPostType: mockGetPostType,
 					getEntityRecords: () => null,
 				};
 			}
@@ -694,6 +866,7 @@ describe( 'hasOnlineEventTerm', () => {
 		require( '@wordpress/data' ).select.mockImplementation( ( store ) => {
 			if ( 'core' === store ) {
 				return {
+					getPostType: mockGetPostType,
 					getEntityRecords: () => [],
 				};
 			}
@@ -707,6 +880,7 @@ describe( 'hasOnlineEventTerm', () => {
 		require( '@wordpress/data' ).select.mockImplementation( ( store ) => {
 			if ( 'core' === store ) {
 				return {
+					getPostType: mockGetPostType,
 					getEntityRecords: () => [ { id: 1 } ],
 					getEntityRecord: () => null,
 				};
@@ -721,6 +895,7 @@ describe( 'hasOnlineEventTerm', () => {
 		require( '@wordpress/data' ).select.mockImplementation( ( store ) => {
 			if ( 'core' === store ) {
 				return {
+					getPostType: mockGetPostType,
 					getEntityRecords: () => [ { id: 1 } ],
 					getEntityRecord: () => ( {
 						id: 123,
@@ -738,6 +913,7 @@ describe( 'hasOnlineEventTerm', () => {
 		require( '@wordpress/data' ).select.mockImplementation( ( store ) => {
 			if ( 'core' === store ) {
 				return {
+					getPostType: mockGetPostType,
 					getEntityRecords: () => [ { id: 1 } ],
 					getEntityRecord: () => ( {
 						id: 123,
@@ -756,6 +932,7 @@ describe( 'hasOnlineEventTerm', () => {
 		require( '@wordpress/data' ).select.mockImplementation( ( store ) => {
 			if ( 'core' === store ) {
 				return {
+					getPostType: mockGetPostType,
 					getEntityRecords: () => [ { id: onlineTermId } ],
 					getEntityRecord: () => ( {
 						id: 123,
@@ -773,6 +950,7 @@ describe( 'hasOnlineEventTerm', () => {
 		require( '@wordpress/data' ).select.mockImplementation( ( store ) => {
 			if ( 'core' === store ) {
 				return {
+					getPostType: mockGetPostType,
 					getEntityRecords: () => [ { id: 42 } ],
 					getEntityRecord: () => ( {
 						id: 123,
@@ -790,6 +968,7 @@ describe( 'hasOnlineEventTerm', () => {
 		require( '@wordpress/data' ).select.mockImplementation( ( store ) => {
 			if ( 'core' === store ) {
 				return {
+					getPostType: mockGetPostType,
 					getEntityRecords: () => [ { id: 42 } ],
 				};
 			}
@@ -808,6 +987,7 @@ describe( 'hasOnlineEventTerm', () => {
 		require( '@wordpress/data' ).select.mockImplementation( ( store ) => {
 			if ( 'core' === store ) {
 				return {
+					getPostType: mockGetPostType,
 					getEntityRecords: () => [ { id: 42 } ],
 				};
 			}
@@ -827,6 +1007,7 @@ describe( 'hasOnlineEventTerm', () => {
 		require( '@wordpress/data' ).select.mockImplementation( ( store ) => {
 			if ( 'core' === store ) {
 				return {
+					getPostType: mockGetPostType,
 					getEntityRecords: () => [ { id: 42 } ],
 				};
 			}
@@ -848,6 +1029,7 @@ describe( 'hasOnlineEventTerm', () => {
 		require( '@wordpress/data' ).select.mockImplementation( ( store ) => {
 			if ( 'core' === store ) {
 				return {
+					getPostType: mockGetPostType,
 					getEntityRecords: () => [ { id: onlineTermId } ],
 				};
 			}
@@ -867,6 +1049,7 @@ describe( 'hasOnlineEventTerm', () => {
 		require( '@wordpress/data' ).select.mockImplementation( ( store ) => {
 			if ( 'core' === store ) {
 				return {
+					getPostType: mockGetPostType,
 					getEntityRecords: () => [ { id: 42 } ],
 				};
 			}
@@ -887,6 +1070,7 @@ describe( 'hasOnlineEventTerm', () => {
 		require( '@wordpress/data' ).select.mockImplementation( ( store ) => {
 			if ( 'core' === store ) {
 				return {
+					getPostType: mockGetPostType,
 					getEntityRecords: () => [ { id: 42 } ], // Number.
 				};
 			}
@@ -908,6 +1092,7 @@ describe( 'hasOnlineEventTerm', () => {
 		require( '@wordpress/data' ).select.mockImplementation( ( store ) => {
 			if ( 'core' === store ) {
 				return {
+					getPostType: mockGetPostType,
 					getEntityRecords: () => [ { id: onlineTermId } ],
 					getEntityRecord: () => ( {
 						id: 123,
@@ -919,5 +1104,79 @@ describe( 'hasOnlineEventTerm', () => {
 		} );
 
 		expect( hasOnlineEventTerm( 123 ) ).toBe( true );
+	} );
+} );
+
+/**
+ * Coverage for isPerEventRsvpMode.
+ */
+describe( 'isPerEventRsvpMode', () => {
+	it( 'returns true for per_event_on', () => {
+		expect( isPerEventRsvpMode( 'per_event_on' ) ).toBe( true );
+	} );
+
+	it( 'returns true for per_event_off', () => {
+		expect( isPerEventRsvpMode( 'per_event_off' ) ).toBe( true );
+	} );
+
+	it( 'returns false for all_on', () => {
+		expect( isPerEventRsvpMode( 'all_on' ) ).toBe( false );
+	} );
+
+	it( 'returns false for disabled', () => {
+		expect( isPerEventRsvpMode( 'disabled' ) ).toBe( false );
+	} );
+} );
+
+/**
+ * Coverage for isOpenRsvpEnabled.
+ */
+describe( 'isOpenRsvpEnabled', () => {
+	it( 'returns true when enableOpenRsvp is true', () => {
+		expect( isOpenRsvpEnabled( true ) ).toBe( true );
+	} );
+
+	it( 'returns false when enableOpenRsvp is false', () => {
+		expect( isOpenRsvpEnabled( false ) ).toBe( false );
+	} );
+
+	it( 'returns false when enableOpenRsvp is undefined', () => {
+		expect( isOpenRsvpEnabled( undefined ) ).toBe( false );
+	} );
+
+	it( 'returns false for truthy non-boolean values', () => {
+		expect( isOpenRsvpEnabled( 1 ) ).toBe( false );
+		expect( isOpenRsvpEnabled( 'true' ) ).toBe( false );
+	} );
+} );
+
+/**
+ * Coverage for isRsvpEnabledForEvent.
+ */
+describe( 'isRsvpEnabledForEvent', () => {
+	it( 'returns true for all_on mode regardless of enableRsvp', () => {
+		expect( isRsvpEnabledForEvent( 'all_on', true ) ).toBe( true );
+		expect( isRsvpEnabledForEvent( 'all_on', false ) ).toBe( true );
+	} );
+
+	it( 'returns true for per_event_on when enableRsvp is true', () => {
+		expect( isRsvpEnabledForEvent( 'per_event_on', true ) ).toBe( true );
+	} );
+
+	it( 'returns false for per_event_on when enableRsvp is false', () => {
+		expect( isRsvpEnabledForEvent( 'per_event_on', false ) ).toBe( false );
+	} );
+
+	it( 'returns true for per_event_off when enableRsvp is true', () => {
+		expect( isRsvpEnabledForEvent( 'per_event_off', true ) ).toBe( true );
+	} );
+
+	it( 'returns false for per_event_off when enableRsvp is false', () => {
+		expect( isRsvpEnabledForEvent( 'per_event_off', false ) ).toBe( false );
+	} );
+
+	it( 'returns false for disabled mode regardless of enableRsvp', () => {
+		expect( isRsvpEnabledForEvent( 'disabled', true ) ).toBe( false );
+		expect( isRsvpEnabledForEvent( 'disabled', false ) ).toBe( false );
 	} );
 } );

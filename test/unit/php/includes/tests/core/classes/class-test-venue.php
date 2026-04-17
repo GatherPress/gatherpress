@@ -16,6 +16,7 @@ use WP_Block_Patterns_Registry;
 /**
  * Class Test_Venue.
  *
+ * @group multisite
  * @coversDefaultClass \GatherPress\Core\Venue
  */
 class Test_Venue extends Base {
@@ -34,12 +35,6 @@ class Test_Venue extends Base {
 				'type'     => 'action',
 				'name'     => sprintf( 'save_post_%s', Venue::POST_TYPE ),
 				'priority' => 10,
-				'callback' => array( $instance, 'add_venue_term' ),
-			),
-			array(
-				'type'     => 'action',
-				'name'     => sprintf( 'save_post_%s', Venue::POST_TYPE ),
-				'priority' => 10,
 				'callback' => array( $instance, 'maybe_apply_venue_template' ),
 			),
 			array(
@@ -51,13 +46,21 @@ class Test_Venue extends Base {
 			array(
 				'type'     => 'action',
 				'name'     => 'init',
-				'priority' => 10,
+				// Priority 11: post types at priority 10 are available via get_post_types_by_support().
+				'priority' => 11,
+				'callback' => array( $instance, 'register_post_save_hooks' ),
+			),
+			array(
+				'type'     => 'action',
+				'name'     => 'init',
+				// Priority 11 ensures custom venue post types are discoverable via get_post_types_by_support().
+				'priority' => 11,
 				'callback' => array( $instance, 'register_post_meta' ),
 			),
 			array(
 				'type'     => 'action',
 				'name'     => 'init',
-				'priority' => 10,
+				'priority' => 11,
 				'callback' => array( $instance, 'register_taxonomy' ),
 			),
 			array(
@@ -72,9 +75,47 @@ class Test_Venue extends Base {
 				'priority' => 10,
 				'callback' => array( $instance, 'delete_venue_term' ),
 			),
+			array(
+				'type'     => 'action',
+				'name'     => 'wp_after_insert_post',
+				'priority' => 10,
+				'callback' => array( $instance, 'set_geodata' ),
+			),
+			array(
+				'type'     => 'filter',
+				'name'     => 'block_editor_settings_all',
+				'priority' => 10,
+				'callback' => array( $instance, 'add_editor_settings' ),
+			),
 		);
 
 		$this->assert_hooks( $hooks, $instance );
+	}
+
+	/**
+	 * Coverage for register_post_save_hooks method.
+	 *
+	 * Verifies that a save_post_{$type} action is registered for each post type
+	 * that declares the 'gatherpress-venue-information' support.
+	 *
+	 * @covers ::register_post_save_hooks
+	 *
+	 * @return void
+	 */
+	public function test_register_post_save_hooks(): void {
+		$instance = Venue::get_instance();
+		$instance->register_post_save_hooks();
+
+		foreach ( get_post_types_by_support( 'gatherpress-venue-information' ) as $post_type ) {
+			$this->assertSame(
+				10,
+				has_action(
+					sprintf( 'save_post_%s', $post_type ),
+					array( $instance, 'add_venue_term' )
+				),
+				sprintf( 'Failed to assert that save_post_%s has the add_venue_term action.', $post_type )
+			);
+		}
 	}
 
 	/**
@@ -232,6 +273,11 @@ class Test_Venue extends Base {
 		$instance = Venue::get_instance();
 
 		unregister_post_meta( Venue::POST_TYPE, 'gatherpress_venue_information' );
+		unregister_post_meta( Venue::POST_TYPE, 'gatherpress_venue_map_show' );
+		unregister_post_meta( Venue::POST_TYPE, 'geo_latitude' );
+		unregister_post_meta( Venue::POST_TYPE, 'geo_longitude' );
+		unregister_post_meta( Venue::POST_TYPE, 'geo_address' );
+		unregister_post_meta( Venue::POST_TYPE, 'geo_public' );
 
 		$meta = get_registered_meta_keys( 'post', Venue::POST_TYPE );
 
@@ -241,6 +287,18 @@ class Test_Venue extends Base {
 			'Failed to assert that gatherpress_venue_information does not exist.'
 		);
 
+		$this->assertArrayNotHasKey(
+			'gatherpress_venue_map_show',
+			$meta,
+			'Failed to assert that gatherpress_venue_map_show does not exist.'
+		);
+
+		$this->assertArrayNotHasKey(
+			'geo_latitude',
+			$meta,
+			'Failed to assert that geo_latitude does not exist.'
+		);
+
 		$instance->register_post_meta();
 
 		$meta = get_registered_meta_keys( 'post', Venue::POST_TYPE );
@@ -248,8 +306,471 @@ class Test_Venue extends Base {
 		$this->assertArrayHasKey(
 			'gatherpress_venue_information',
 			$meta,
-			'Failed to assert that gatherpress_venue_information does exist.'
+			'Failed to assert that gatherpress_venue_information exists for gatherpress-venue-information support.'
 		);
+
+		$this->assertArrayHasKey(
+			'gatherpress_venue_map_show',
+			$meta,
+			'Failed to assert that gatherpress_venue_map_show exists for gatherpress-venue-map support.'
+		);
+
+		foreach ( array( 'geo_latitude', 'geo_longitude', 'geo_address', 'geo_public' ) as $key ) {
+			$this->assertArrayHasKey(
+				$key,
+				$meta,
+				sprintf( 'Failed to assert that %s is registered for gatherpress-venue-information support.', $key )
+			);
+		}
+	}
+
+	/**
+	 * Coverage for register_post_meta when the venue post type does not support revisions.
+	 *
+	 * Registers a throwaway venue post type that declares gatherpress-venue-information
+	 * support but omits WordPress revisions support. Verifies that register_post_meta
+	 * silently drops revisions_enabled for that post type and still registers the meta
+	 * without triggering a WordPress _doing_it_wrong notice.
+	 *
+	 * @covers ::register_post_meta
+	 *
+	 * @return void
+	 */
+	public function test_register_post_meta_without_revisions_support(): void {
+		$instance = Venue::get_instance();
+		$test_pt  = 'gp_test_venue_no_rev';
+
+		register_post_type(
+			$test_pt,
+			array(
+				'label'    => 'Test Venues (no revisions)',
+				'public'   => false,
+				'supports' => array( 'title', 'gatherpress-venue-information' ),
+			)
+		);
+
+		$instance->register_post_meta();
+
+		$meta = get_registered_meta_keys( 'post', $test_pt );
+
+		$expected_keys = array(
+			'gatherpress_venue_information',
+			'geo_latitude',
+			'geo_longitude',
+			'geo_address',
+			'geo_public',
+		);
+
+		foreach ( $expected_keys as $key ) {
+			$this->assertArrayHasKey(
+				$key,
+				$meta,
+				sprintf( 'Failed to assert %s is registered for a venue post type without revisions support.', $key )
+			);
+		}
+
+		unregister_post_type( $test_pt );
+	}
+
+	/**
+	 * Coverage for set_geodata method.
+	 *
+	 * Verifies that the WordPress Geodata standard meta keys are derived from
+	 * gatherpress_venue_information JSON and written as individual post_meta entries.
+	 *
+	 * @covers ::set_geodata
+	 *
+	 * @return void
+	 */
+	public function test_set_geodata(): void {
+		$instance = Venue::get_instance();
+
+		$venue_id = $this->factory->post->create(
+			array(
+				'post_type'   => Venue::POST_TYPE,
+				'post_status' => 'publish',
+			)
+		);
+
+		$venue_information = wp_json_encode(
+			array(
+				'fullAddress' => '123 Main St, Paris',
+				'latitude'    => '48.856613',
+				'longitude'   => '2.352222',
+			)
+		);
+
+		update_post_meta( $venue_id, 'gatherpress_venue_information', $venue_information );
+
+		$instance->set_geodata( $venue_id );
+
+		$this->assertSame(
+			'48.856613',
+			get_post_meta( $venue_id, 'geo_latitude', true ),
+			'Failed to assert that geo_latitude was set from the JSON meta.'
+		);
+		$this->assertSame(
+			'2.352222',
+			get_post_meta( $venue_id, 'geo_longitude', true ),
+			'Failed to assert that geo_longitude was set from the JSON meta.'
+		);
+		$this->assertSame(
+			'123 Main St, Paris',
+			get_post_meta( $venue_id, 'geo_address', true ),
+			'Failed to assert that geo_address was set from the JSON meta.'
+		);
+		$this->assertSame(
+			'1',
+			get_post_meta( $venue_id, 'geo_public', true ),
+			'Failed to assert that geo_public is 1 for a published venue.'
+		);
+	}
+
+	/**
+	 * Tests that set_geodata returns early for post types without venue information support.
+	 *
+	 * @covers ::set_geodata
+	 *
+	 * @return void
+	 */
+	public function test_set_geodata_unsupported_post_type(): void {
+		$instance = Venue::get_instance();
+
+		$post_id = $this->factory->post->create( array( 'post_type' => 'post' ) );
+
+		$instance->set_geodata( $post_id );
+
+		$this->assertSame(
+			'',
+			get_post_meta( $post_id, 'geo_latitude', true ),
+			'Failed to assert that geo_latitude is not written for unsupported post types.'
+		);
+	}
+
+	/**
+	 * Tests that geo_public is 0 for non-published venues.
+	 *
+	 * @covers ::set_geodata
+	 *
+	 * @return void
+	 */
+	public function test_set_geodata_private_post(): void {
+		$instance = Venue::get_instance();
+
+		$venue_id = $this->factory->post->create(
+			array(
+				'post_type'   => Venue::POST_TYPE,
+				'post_status' => 'draft',
+			)
+		);
+
+		$instance->set_geodata( $venue_id );
+
+		$this->assertSame(
+			'0',
+			get_post_meta( $venue_id, 'geo_public', true ),
+			'Failed to assert that geo_public is 0 for a non-published venue.'
+		);
+	}
+
+	/**
+	 * Tests that invalid JSON in gatherpress_venue_information is handled gracefully.
+	 *
+	 * @covers ::set_geodata
+	 *
+	 * @return void
+	 */
+	public function test_set_geodata_invalid_json(): void {
+		$instance = Venue::get_instance();
+
+		$venue_id = $this->factory->post->create(
+			array(
+				'post_type'   => Venue::POST_TYPE,
+				'post_status' => 'publish',
+			)
+		);
+
+		update_post_meta( $venue_id, 'gatherpress_venue_information', 'not-valid-json' );
+
+		$instance->set_geodata( $venue_id );
+
+		$this->assertSame(
+			'',
+			get_post_meta( $venue_id, 'geo_latitude', true ),
+			'Failed to assert geo_latitude is empty when JSON is invalid.'
+		);
+		$this->assertSame(
+			'',
+			get_post_meta( $venue_id, 'geo_address', true ),
+			'Failed to assert geo_address is empty when JSON is invalid.'
+		);
+	}
+
+	/**
+	 * Tests that partial JSON (missing keys or non-numeric lat/lng) is handled gracefully.
+	 *
+	 * The isset() + is_numeric() fallbacks are the main path for messy real-world data
+	 * (legacy venues, partial imports). This exercises each combination: a present but
+	 * non-numeric latitude is stored empty, a missing longitude is stored empty, and a
+	 * present fullAddress still flows through.
+	 *
+	 * @covers ::set_geodata
+	 *
+	 * @return void
+	 */
+	public function test_set_geodata_partial_json(): void {
+		$instance = Venue::get_instance();
+
+		$venue_id = $this->factory->post->create(
+			array(
+				'post_type'   => Venue::POST_TYPE,
+				'post_status' => 'publish',
+			)
+		);
+
+		update_post_meta(
+			$venue_id,
+			'gatherpress_venue_information',
+			wp_json_encode(
+				array(
+					'latitude'    => 'not-a-number',
+					'fullAddress' => '123 Main St',
+				)
+			)
+		);
+
+		$instance->set_geodata( $venue_id );
+
+		$this->assertSame(
+			'',
+			get_post_meta( $venue_id, 'geo_latitude', true ),
+			'Failed to assert non-numeric latitude is stored empty.'
+		);
+		$this->assertSame(
+			'',
+			get_post_meta( $venue_id, 'geo_longitude', true ),
+			'Failed to assert missing longitude is stored empty.'
+		);
+		$this->assertSame(
+			'123 Main St',
+			get_post_meta( $venue_id, 'geo_address', true ),
+			'Failed to assert fullAddress flows through when lat/lng are invalid.'
+		);
+	}
+
+	/**
+	 * Tests that set_geodata skips revision posts.
+	 *
+	 * The wp_after_insert_post hook fires for revisions; set_geodata must not write
+	 * derived meta onto the revision itself since the parent post is the authoritative
+	 * source.
+	 *
+	 * @covers ::set_geodata
+	 *
+	 * @return void
+	 */
+	public function test_set_geodata_skips_revisions(): void {
+		$instance = Venue::get_instance();
+
+		$venue_id = $this->factory->post->create(
+			array(
+				'post_type'   => Venue::POST_TYPE,
+				'post_status' => 'publish',
+			)
+		);
+
+		update_post_meta(
+			$venue_id,
+			'gatherpress_venue_information',
+			wp_json_encode(
+				array(
+					'latitude'  => '48.856613',
+					'longitude' => '2.352222',
+				)
+			)
+		);
+
+		$revision_id = wp_save_post_revision( $venue_id );
+
+		$this->assertIsInt( $revision_id, 'wp_save_post_revision should return a revision ID.' );
+
+		$instance->set_geodata( (int) $revision_id );
+
+		$this->assertSame(
+			'',
+			get_post_meta( (int) $revision_id, 'geo_latitude', true ),
+			'Failed to assert revision posts are skipped (no geo_latitude written).'
+		);
+	}
+
+	/**
+	 * Tests that set_geodata skips autosave posts.
+	 *
+	 * The wp_after_insert_post hook fires for autosaves as well as revisions;
+	 * set_geodata must skip both so derived meta isn't written onto draft copies.
+	 *
+	 * @covers ::set_geodata
+	 *
+	 * @return void
+	 */
+	public function test_set_geodata_skips_autosaves(): void {
+		$instance = Venue::get_instance();
+
+		$author_id = $this->factory->user->create( array( 'role' => 'editor' ) );
+		wp_set_current_user( $author_id );
+
+		$venue_id = $this->factory->post->create(
+			array(
+				'post_type'   => Venue::POST_TYPE,
+				'post_status' => 'publish',
+				'post_author' => $author_id,
+			)
+		);
+
+		update_post_meta(
+			$venue_id,
+			'gatherpress_venue_information',
+			wp_json_encode(
+				array(
+					'latitude'  => '48.856613',
+					'longitude' => '2.352222',
+				)
+			)
+		);
+
+		$autosave_id = wp_create_post_autosave(
+			array(
+				'post_ID'      => $venue_id,
+				'post_content' => 'Autosave draft.',
+				'post_title'   => 'Autosave Title',
+			)
+		);
+
+		$this->assertIsInt( $autosave_id, 'wp_create_post_autosave should return an autosave ID.' );
+
+		$instance->set_geodata( (int) $autosave_id );
+
+		$this->assertSame(
+			'',
+			get_post_meta( (int) $autosave_id, 'geo_latitude', true ),
+			'Failed to assert autosave posts are skipped (no geo_latitude written).'
+		);
+	}
+
+	/**
+	 * End-to-end coverage: verifies set_geodata is wired to wp_after_insert_post.
+	 *
+	 * Inserts a venue via wp_insert_post with venue information meta, then confirms
+	 * the derived geo_* keys are populated without an explicit call to set_geodata().
+	 *
+	 * @covers ::set_geodata
+	 *
+	 * @return void
+	 */
+	public function test_set_geodata_runs_on_wp_after_insert_post(): void {
+		// Ensure the Venue singleton is instantiated so its hooks are registered.
+		Venue::get_instance();
+
+		$venue_id = wp_insert_post(
+			array(
+				'post_type'   => Venue::POST_TYPE,
+				'post_status' => 'publish',
+				'post_title'  => 'End to End Venue',
+				'meta_input'  => array(
+					'gatherpress_venue_information' => wp_json_encode(
+						array(
+							'fullAddress' => '1600 Pennsylvania Ave NW',
+							'latitude'    => '38.8977',
+							'longitude'   => '-77.0365',
+						)
+					),
+				),
+			)
+		);
+
+		$this->assertIsInt( $venue_id, 'wp_insert_post should return a venue post ID.' );
+		$this->assertGreaterThan( 0, $venue_id, 'wp_insert_post should return a positive post ID.' );
+
+		$this->assertSame(
+			'38.8977',
+			get_post_meta( $venue_id, 'geo_latitude', true ),
+			'Failed to assert geo_latitude was set via wp_after_insert_post.'
+		);
+		$this->assertSame(
+			'-77.0365',
+			get_post_meta( $venue_id, 'geo_longitude', true ),
+			'Failed to assert geo_longitude was set via wp_after_insert_post.'
+		);
+		$this->assertSame(
+			'1600 Pennsylvania Ave NW',
+			get_post_meta( $venue_id, 'geo_address', true ),
+			'Failed to assert geo_address was set via wp_after_insert_post.'
+		);
+	}
+
+	/**
+	 * Coverage for filter_readonly_meta.
+	 *
+	 * Verifies that geo_* meta keys are stripped from REST API meta payloads
+	 * so the editor cannot write derived values directly.
+	 *
+	 * @covers ::filter_readonly_meta
+	 *
+	 * @return void
+	 */
+	public function test_filter_readonly_meta(): void {
+		$instance = Venue::get_instance();
+		$request  = new \WP_REST_Request();
+
+		$request->set_param(
+			'meta',
+			array(
+				'geo_latitude'                  => '99.99',
+				'geo_longitude'                 => '99.99',
+				'geo_address'                   => 'Hack St',
+				'geo_public'                    => 0,
+				'gatherpress_venue_information' => '{"fullAddress":"Real St"}',
+			)
+		);
+
+		$prepared = new \stdClass();
+		$result   = $instance->filter_readonly_meta( $prepared, $request );
+
+		$this->assertSame( $prepared, $result, 'Filter must return the prepared post object.' );
+
+		$meta = $request->get_param( 'meta' );
+
+		$this->assertArrayNotHasKey( 'geo_latitude', $meta, 'geo_latitude should be stripped.' );
+		$this->assertArrayNotHasKey( 'geo_longitude', $meta, 'geo_longitude should be stripped.' );
+		$this->assertArrayNotHasKey( 'geo_address', $meta, 'geo_address should be stripped.' );
+		$this->assertArrayNotHasKey( 'geo_public', $meta, 'geo_public should be stripped.' );
+		$this->assertArrayHasKey(
+			'gatherpress_venue_information',
+			$meta,
+			'Non-geo meta keys should pass through untouched.'
+		);
+	}
+
+	/**
+	 * Tests that filter_readonly_meta handles a REST request with no meta param.
+	 *
+	 * Exercises the is_array() guard: when the request has no meta (or a non-array
+	 * value), the filter must return the prepared post object unchanged without
+	 * mutating the request.
+	 *
+	 * @covers ::filter_readonly_meta
+	 *
+	 * @return void
+	 */
+	public function test_filter_readonly_meta_no_meta_param(): void {
+		$instance = Venue::get_instance();
+		$request  = new \WP_REST_Request();
+		$prepared = new \stdClass();
+
+		$result = $instance->filter_readonly_meta( $prepared, $request );
+
+		$this->assertSame( $prepared, $result, 'Filter must return the prepared post object unchanged.' );
+		$this->assertNull( $request->get_param( 'meta' ), 'Missing meta param should remain null.' );
 	}
 
 	/**
@@ -881,5 +1402,169 @@ class Test_Venue extends Base {
 				'source'   => 'plugin',
 			)
 		);
+	}
+
+	/**
+	 * Coverage for get_taxonomy method with empty string argument.
+	 *
+	 * @covers ::get_taxonomy
+	 *
+	 * @return void
+	 */
+	public function test_get_taxonomy(): void {
+		// No argument falls back to the default venue post type.
+		$this->assertSame(
+			'_' . Venue::POST_TYPE,
+			Venue::get_taxonomy(),
+			'Failed to assert that get_taxonomy defaults to the built-in venue taxonomy.'
+		);
+
+		// Empty string also falls back to the default venue post type.
+		$this->assertSame(
+			'_' . Venue::POST_TYPE,
+			Venue::get_taxonomy( '' ),
+			'Failed to assert that get_taxonomy with empty string defaults to the built-in venue taxonomy.'
+		);
+
+		// Custom venue post type returns the correctly prefixed taxonomy.
+		$this->assertSame(
+			'_custom_venue_type',
+			Venue::get_taxonomy( 'custom_venue_type' ),
+			'Failed to assert that get_taxonomy prepends an underscore for a custom venue post type.'
+		);
+	}
+
+	/**
+	 * Coverage for get_venue_post_type_map method.
+	 *
+	 * @covers ::get_venue_post_type_map
+	 *
+	 * @return void
+	 */
+	public function test_get_venue_post_type_map(): void {
+		$map = Venue::get_venue_post_type_map();
+
+		$this->assertIsArray(
+			$map,
+			'Failed to assert that the venue post type map is an array.'
+		);
+		$this->assertArrayHasKey(
+			Event::POST_TYPE,
+			$map,
+			'Failed to assert that the map contains the default event post type.'
+		);
+		$this->assertSame(
+			Venue::POST_TYPE,
+			$map[ Event::POST_TYPE ],
+			'Failed to assert that the default event post type maps to the default venue post type.'
+		);
+	}
+
+	/**
+	 * Coverage for add_editor_settings method.
+	 *
+	 * @covers ::add_editor_settings
+	 *
+	 * @return void
+	 */
+	public function test_add_editor_settings(): void {
+		$instance = Venue::get_instance();
+
+		// Test with an empty settings array.
+		$result = $instance->add_editor_settings( array() );
+
+		$this->assertArrayHasKey(
+			'gatherpress',
+			$result,
+			'Failed to assert that the gatherpress key is added to an empty settings array.'
+		);
+		$this->assertArrayHasKey(
+			'config',
+			$result['gatherpress'],
+			'Failed to assert that config key is present in gatherpress settings.'
+		);
+		$this->assertArrayHasKey(
+			'venuePostTypes',
+			$result['gatherpress']['config'],
+			'Failed to assert that venuePostTypes is present in gatherpress config.'
+		);
+		$this->assertIsArray(
+			$result['gatherpress']['config']['venuePostTypes'],
+			'Failed to assert that venuePostTypes is an array.'
+		);
+
+		// Test that existing gatherpress settings are preserved and venuePostTypes is appended.
+		$settings = array(
+			'gatherpress' => array( 'existingKey' => 'existingValue' ),
+		);
+		$result   = $instance->add_editor_settings( $settings );
+
+		$this->assertSame(
+			'existingValue',
+			$result['gatherpress']['existingKey'],
+			'Failed to assert that existing gatherpress settings are preserved.'
+		);
+		$this->assertArrayHasKey(
+			'venuePostTypes',
+			$result['gatherpress']['config'],
+			'Failed to assert that venuePostTypes is added alongside existing gatherpress settings.'
+		);
+	}
+
+	/**
+	 * Coverage for add_venue_term when post type does not support gatherpress-venue-information.
+	 *
+	 * @covers ::add_venue_term
+	 *
+	 * @return void
+	 */
+	public function test_add_venue_term_unsupported_post_type(): void {
+		$instance = Venue::get_instance();
+		$post     = $this->mock->post( array( 'post_type' => 'post' ) )->get();
+
+		// Calling add_venue_term on a standard 'post' should return early and create no term.
+		$instance->add_venue_term( $post->ID, $post, false );
+
+		$this->assertNull(
+			term_exists( $instance->get_venue_term_slug( $post->post_name ), Venue::TAXONOMY ),
+			'Failed to assert that no venue term was created for a post type without venue-information support.'
+		);
+	}
+
+	/**
+	 * Coverage for get_venue_post_type method.
+	 *
+	 * @covers ::get_venue_post_type
+	 *
+	 * @return void
+	 */
+	public function test_get_venue_post_type(): void {
+		// Default returns the built-in venue post type.
+		$this->assertSame(
+			Venue::POST_TYPE,
+			Venue::get_venue_post_type(),
+			'Failed to assert that get_venue_post_type returns the default venue post type.'
+		);
+	}
+
+	/**
+	 * Coverage for get_venue_post_type method with filter override.
+	 *
+	 * @covers ::get_venue_post_type
+	 *
+	 * @return void
+	 */
+	public function test_get_venue_post_type_with_filter(): void {
+		add_filter( 'gatherpress_venue_post_type', fn() => 'custom_venue_type' );
+
+		// Pass a unique event post type to avoid returning a cached result from a prior
+		// test run that used the default (empty-string) key.
+		$this->assertSame(
+			'custom_venue_type',
+			Venue::get_venue_post_type( 'test_custom_event_type' ),
+			'Failed to assert that get_venue_post_type returns the filtered post type.'
+		);
+
+		remove_all_filters( 'gatherpress_venue_post_type' );
 	}
 }

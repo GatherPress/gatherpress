@@ -4,11 +4,11 @@ import { Fill } from '@wordpress/components';
  * Internal dependencies
  */
 import VenueNavigator from '../../components/VenueNavigator';
-import { isEventPostType } from '../../helpers/event';
+import { isPostTypeSupporting } from '../../helpers/event';
 
 export default function VenueBlockPluginFill() {
 	return (
-		isEventPostType() && (
+		isPostTypeSupporting( 'gatherpress-venue' ) && (
 			<>
 				<Fill name="VenuePluginDocumentSettings">
 					<VenueNavigator />

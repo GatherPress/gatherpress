@@ -215,6 +215,44 @@ export const EventListTypeControls = ( { attributes, setAttributes } ) => {
 };
 
 /**
+ * VenueFilterControls component
+ *
+ * Renders a ToggleControl to filter the event query by the
+ * current venue context. When enabled on a venue page, only
+ * events associated with that venue are shown. When not on a
+ * venue page, the filter is gracefully ignored.
+ *
+ * @param {Object}   props
+ * @param {Object}   props.attributes    Block attributes.
+ * @param {Function} props.setAttributes Function to update block attributes.
+ * @return {Element}                     ToggleControl for venue filtering.
+ */
+export const VenueFilterControls = ( { attributes, setAttributes } ) => {
+	const {
+		query: { venue_filter: venueFilter } = {},
+	} = attributes;
+
+	return (
+		<ToggleControl
+			label={ __( 'Filter by current venue', 'gatherpress' ) }
+			help={ __(
+				'When placed on a venue page, only shows events at that venue.',
+				'gatherpress'
+			) }
+			checked={ !! venueFilter }
+			onChange={ ( value ) => {
+				setAttributes( {
+					query: {
+						...attributes.query,
+						venue_filter: value ? 1 : 0,
+					},
+				} );
+			} }
+		/>
+	);
+};
+
+/**
  * EventOffsetControls component
  *
  * Provides a RangeControl for defining the query's result offset,
@@ -340,6 +378,7 @@ export const GatherPressQueryControlsSlotFill = () => {
 					<EventIncludeUnfinishedControls { ...props } />
 
 					{ isEventContext && <EventExcludeControls { ...props } /> }
+					<VenueFilterControls { ...props } />
 					<EventCountControls { ...props } />
 					<EventOffsetControls { ...props } />
 					<EventOrderControls { ...props } />

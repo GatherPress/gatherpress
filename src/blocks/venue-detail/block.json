@@ -8,7 +8,7 @@
 	"icon": "location",
 	"description": "Display venue details like address, phone, or website.",
 	"parent": ["gatherpress/venue"],
-	"usesContext": ["postId", "queryId"],
+	"usesContext": ["postId", "postType", "queryId"],
 	"attributes": {
 		"content": {
 			"type": "string",

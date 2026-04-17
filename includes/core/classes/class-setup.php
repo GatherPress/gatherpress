@@ -59,6 +59,7 @@ class Setup {
 		Assets::get_instance();
 		Block::get_instance();
 		Cli::get_instance();
+		Event_Admin_List::get_instance();
 		Event_Query::get_instance();
 		Event_Rest_Api::get_instance();
 		Event_Setup::get_instance();
@@ -348,25 +349,30 @@ class Setup {
 
 		$term_name = __( 'Online event', 'gatherpress' );
 		$term_slug = 'online-event';
-		$term      = term_exists( $term_slug, Venue::TAXONOMY );
 
-		if ( ! $term ) {
-			wp_insert_term(
-				$term_name,
-				Venue::TAXONOMY,
-				array(
-					'slug' => $term_slug,
-				)
-			);
-		} else {
-			wp_update_term(
-				intval( $term['term_id'] ),
-				Venue::TAXONOMY,
-				array(
-					'name' => $term_name,
-					'slug' => $term_slug,
-				),
-			);
+		// Ensure the online-event term exists in each registered venue taxonomy.
+		foreach ( get_post_types_by_support( 'gatherpress-venue-information' ) as $venue_post_type ) {
+			$taxonomy = Venue::get_taxonomy( $venue_post_type );
+			$term     = term_exists( $term_slug, $taxonomy );
+
+			if ( ! $term ) {
+				wp_insert_term(
+					$term_name,
+					$taxonomy,
+					array(
+						'slug' => $term_slug,
+					)
+				);
+			} else {
+				wp_update_term(
+					intval( $term['term_id'] ),
+					$taxonomy,
+					array(
+						'name' => $term_name,
+						'slug' => $term_slug,
+					),
+				);
+			}
 		}
 	}
 

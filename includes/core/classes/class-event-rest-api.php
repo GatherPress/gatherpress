@@ -16,6 +16,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use Exception;
 use GatherPress\Core\Blocks\Rsvp_Template;
+use GatherPress\Core\Rsvp;
 use GatherPress\Core\Rsvp_Form as Rsvp_Form_Core;
 use GatherPress\Core\Traits\Singleton;
 use WP_REST_Request;
@@ -669,6 +670,7 @@ class Event_Rest_Api {
 					'featured_image'           => get_the_post_thumbnail( $post_id, 'medium' ),
 					'featured_image_large'     => get_the_post_thumbnail( $post_id, 'large' ),
 					'featured_image_thumbnail' => get_the_post_thumbnail( $post_id, 'thumbnail' ),
+					'enable_rsvp'              => ( new Rsvp( $post_id ) )->is_enabled(),
 					'enable_anonymous_rsvp'    => (bool) get_post_meta(
 						$post_id,
 						'gatherpress_enable_anonymous_rsvp',
@@ -905,6 +907,15 @@ class Event_Rest_Api {
 					}
 				}
 			}
+		}
+
+		if ( ! ( new Rsvp( $data['post_id'] ) )->allows_open_rsvp() ) {
+			$response = array(
+				'success' => false,
+				'message' => __( 'Open RSVP is disabled for this event.', 'gatherpress' ),
+			);
+
+			return new WP_REST_Response( $response, 403 );
 		}
 
 		// Check if event has passed - prevent RSVPs to past events.

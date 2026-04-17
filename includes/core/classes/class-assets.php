@@ -1,7 +1,6 @@
 <?php
 /**
- * Class is responsible for loading and managing static assets like stylesheets and JavaScript files,
- * as well as localizing data as JavaScript objects on the page.
+ * Class is responsible for loading and managing static assets like stylesheets and JavaScript files.
  *
  * @package GatherPress\Core
  * @since 1.0.0
@@ -19,8 +18,7 @@ use Error;
  * Class Assets.
  *
  * This class handles the loading and management of static assets, including stylesheets and JavaScript files.
- * Additionally, it provides a mechanism for localizing data as JavaScript objects,
- * enabling seamless integration of server-side data with client-side scripts.
+ * It also provides frontend interactivity state via the WordPress Interactivity API.
  *
  * @since 1.0.0
  */
@@ -84,14 +82,13 @@ class Assets {
 	 * @return void
 	 */
 	protected function setup_hooks(): void {
-		add_action( 'admin_print_scripts', array( $this, 'add_global_object' ), PHP_INT_MIN );
 		add_action( 'admin_enqueue_scripts', array( $this, 'admin_enqueue_scripts' ) );
 		add_action( 'enqueue_block_assets', array( $this, 'block_enqueue_scripts' ) );
 		add_action( 'enqueue_block_editor_assets', array( $this, 'editor_enqueue_scripts' ) );
 		add_action( 'enqueue_block_editor_assets', array( $this, 'enqueue_variation_assets' ) );
 		add_action( 'enqueue_block_editor_assets', array( $this, 'enqueue_aql_integration' ) );
 		add_action( 'init', array( $this, 'register_variation_assets' ) );
-		add_action( 'wp_head', array( $this, 'add_global_object' ), PHP_INT_MIN );
+		add_action( 'wp_head', array( $this, 'add_interactivity_state' ) );
 		// Set priority to 11 to not conflict with media modal.
 		add_action( 'admin_footer', array( $this, 'event_communication_modal' ), 11 );
 
@@ -100,20 +97,31 @@ class Assets {
 	}
 
 	/**
-	 * Localize the global GatherPress JavaScript object for use in build scripts.
+	 * Set initial interactivity state for frontend blocks.
 	 *
-	 * This method generates JavaScript code to create a global 'GatherPress' object containing localized data.
-	 * This object is made available for use in JavaScript build scripts, enabling seamless integration of
-	 * server-side data with client-side functionality.
+	 * Provides the REST API URL to the gatherpress interactivity store
+	 * so that frontend view scripts can make API requests without
+	 * relying on window globals.
 	 *
 	 * @since 1.0.0
 	 *
 	 * @return void
 	 */
-	public function add_global_object(): void {
-		?>
-		<script>window.GatherPress = <?php echo wp_json_encode( $this->localize( intval( get_the_ID() ) ) ); ?></script>
-		<?php
+	public function add_interactivity_state(): void {
+		$event_post_types = get_post_types_by_support( 'gatherpress-event-date' );
+
+		if ( ! is_singular( $event_post_types ) ) {
+			return;
+		}
+
+		$event_rest_api_slug = sprintf( '%s/event', GATHERPRESS_REST_NAMESPACE );
+
+		wp_interactivity_state(
+			'gatherpress',
+			array(
+				'eventApiUrl' => home_url( 'wp-json/' . $event_rest_api_slug ),
+			)
+		);
 	}
 
 	/**
@@ -326,12 +334,6 @@ class Assets {
 
 		wp_enqueue_style( 'gatherpress-utility-style' );
 
-		wp_add_inline_script(
-			'gatherpress-editor',
-			'GatherPress.misc.timezoneChoices = ' . wp_json_encode( Utility::timezone_choices() ),
-			'before'
-		);
-
 		wp_set_script_translations( 'gatherpress-editor', 'gatherpress' );
 	}
 
@@ -346,69 +348,9 @@ class Assets {
 	 * @return void
 	 */
 	public function event_communication_modal(): void {
-		if ( get_post_type() === Event::POST_TYPE ) {
+		if ( post_type_supports( (string) get_post_type(), 'gatherpress-event-date' ) ) {
 			echo '<div id="gatherpress-event-communication-modal"></div>';
 		}
-	}
-
-	/**
-	 * Localize data for JavaScript usage.
-	 *
-	 * This method prepares and localizes data for use in JavaScript scripts. It collects various event-related
-	 * information and settings, making them available in the client-side context. The localized data includes
-	 * response details, current user information, time zone settings, event properties, and more.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param int $post_id The Post ID for an event.
-	 * @return array An associative array containing localized data for JavaScript.
-	 */
-	protected function localize( int $post_id ): array {
-		$event               = new Event( $post_id );
-		$settings            = Settings::get_instance();
-		$event_details       = array();
-		$event_rest_api_slug = sprintf( '%s/event', GATHERPRESS_REST_NAMESPACE );
-		$user_identifier     = Rsvp_Setup::get_instance()->get_user_identifier();
-
-		if ( ! empty( $event->event ) ) {
-			$event_details = array(
-				'currentUser'         => $event->rsvp->get( $user_identifier ),
-				'dateTime'            => $event->get_datetime(),
-				'enableAnonymousRsvp' => (bool) get_post_meta( $post_id, 'gatherpress_enable_anonymous_rsvp', true ),
-				'maxAttendanceLimit'  => (int) get_post_meta( $post_id, 'gatherpress_max_attendance_limit', true ),
-				'maxGuestLimit'       => (int) get_post_meta( $post_id, 'gatherpress_max_guest_limit', true ),
-				'hasEventPast'        => $event->has_event_past(),
-				'postId'              => $post_id,
-				'responses'           => $event->rsvp->responses(),
-			);
-		}
-
-		return array(
-			'eventDetails' => $event_details,
-			'misc'         => array(
-				'isAdmin'        => is_admin(),
-				'isUserLoggedIn' => is_user_logged_in(),
-				'nonce'          => wp_create_nonce( 'wp_rest' ),
-			),
-			'settings'     => array(
-				'dateFormat'          => $settings->get( 'date_format' ),
-				'enableAnonymousRsvp' => ( 1 === (int) $settings->get( 'enable_anonymous_rsvp' ) ),
-				'mapPlatform'         => $settings->get( 'map_platform' ),
-				'maxAttendanceLimit'  => $settings->get( 'max_attendance_limit' ),
-				'maxGuestLimit'       => $settings->get( 'max_guest_limit' ),
-				'postOrEventDate'     => ( 1 === (int) $settings->get( 'post_or_event_date' ) ),
-				'showTimezone'        => ( 1 === (int) $settings->get( 'show_timezone' ) ),
-				'timeFormat'          => $settings->get( 'time_format' ),
-			),
-			'urls'         => array(
-				'pluginUrl'       => GATHERPRESS_CORE_URL,
-				'eventApiPath'    => '/' . $event_rest_api_slug,
-				'eventApiUrl'     => home_url( 'wp-json/' . $event_rest_api_slug ),
-				'loginUrl'        => Utility::get_login_url( $post_id ),
-				'registrationUrl' => Utility::get_registration_url( $post_id ),
-				'homeUrl'         => get_home_url(),
-			),
-		);
 	}
 
 	/**

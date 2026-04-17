@@ -14,6 +14,7 @@ namespace GatherPress\Core;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
+use GatherPress\Core\Settings;
 use GatherPress\Core\Settings\Roles;
 use WP_Post;
 
@@ -177,6 +178,107 @@ class Rsvp {
 	}
 
 	/**
+	 * Determines whether RSVP is enabled for this event.
+	 *
+	 * Returns false immediately when the sitewide mode is `disabled`.
+	 * Returns true when the mode is `all_on` (every event has RSVP).
+	 * In per-event modes (`per_event_on` or `per_event_off`), the
+	 * `gatherpress_enable_rsvp` post meta is consulted. An unset meta
+	 * (empty string) falls back to the mode default: `per_event_on`
+	 * defaults to enabled, `per_event_off` defaults to disabled.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return bool True if RSVP is enabled for this event, false otherwise.
+	 */
+	public function is_enabled(): bool {
+		$post_id   = $this->event->ID ?? 0;
+		$rsvp_mode = Settings::get_instance()->get( 'rsvp_mode' );
+
+		if ( 'disabled' === $rsvp_mode ) {
+			return false;
+		}
+
+		if ( ! in_array( $rsvp_mode, array( 'per_event_on', 'per_event_off' ), true ) ) {
+			return true;
+		}
+
+		$meta = get_post_meta( $post_id, 'gatherpress_enable_rsvp', true );
+
+		// Empty meta falls back to the mode default.
+		if ( '' === $meta ) {
+			return 'per_event_on' === $rsvp_mode;
+		}
+
+		return '0' !== $meta;
+	}
+
+	/**
+	 * Determines whether Open RSVP (email/token, non-logged-in) is enabled for this event.
+	 *
+	 * Returns false immediately if the sitewide `enable_open_rsvp` setting is off.
+	 * When sitewide is on, consults the per-event `gatherpress_enable_open_rsvp` post meta.
+	 * An unset meta (empty string) is treated as enabled (the default).
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return bool True if Open RSVP is enabled for this event, false otherwise.
+	 */
+	public function allows_open_rsvp(): bool {
+		$post_id = $this->event->ID ?? 0;
+
+		// Sitewide gate: if open RSVP is globally disabled, always return false.
+		if ( ! Settings::get_instance()->get( 'enable_open_rsvp' ) ) {
+			return false;
+		}
+
+		// Per-event override; stored as integer (1 = enabled, 0 = disabled).
+		$meta = get_post_meta( $post_id, 'gatherpress_enable_open_rsvp', true );
+
+		// Not explicitly set defaults to enabled.
+		if ( '' === $meta ) {
+			return true;
+		}
+
+		return '0' !== (string) $meta;
+	}
+
+	/**
+	 * Writes an explicit enabled value on first save, based on the active RSVP mode.
+	 *
+	 * Ensures that programmatically created events (e.g. via WP-CLI or imports)
+	 * carry predictable meta regardless of which mode was active at creation time:
+	 * - `all_on`: writes meta = 1 so switching to a per-event mode later is safe.
+	 * - `per_event_on`: writes meta = 1 (default-on intent).
+	 * - `per_event_off`: writes meta = 0 (default-off intent).
+	 * - `disabled`: no meta is written.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return void
+	 */
+	public function initialize_enabled(): void {
+		$post_id   = $this->event->ID ?? 0;
+		$rsvp_mode = Settings::get_instance()->get( 'rsvp_mode' );
+
+		if ( 'disabled' === $rsvp_mode ) {
+			return;
+		}
+
+		if ( ! post_type_supports( (string) get_post_type( $post_id ), 'gatherpress-rsvp' ) ) {
+			return;
+		}
+
+		// Only write if meta has never been explicitly set.
+		if ( '' !== get_post_meta( $post_id, 'gatherpress_enable_rsvp', true ) ) {
+			return;
+		}
+
+		$default_value = ( 'per_event_off' === $rsvp_mode ) ? 0 : 1;
+		update_post_meta( $post_id, 'gatherpress_enable_rsvp', $default_value );
+	}
+
+	/**
 	 * Saves a user's RSVP status for an event.
 	 *
 	 * Allows assigning one of the specified RSVP statuses to a user for an event. The user can be marked
@@ -241,6 +343,10 @@ class Rsvp {
 			return $data;
 		}
 
+		if ( ! $this->is_enabled() ) {
+			return $data;
+		}
+
 		$args = array(
 			'post_id' => $post_id,
 		);
@@ -295,6 +401,21 @@ class Rsvp {
 		}
 
 		if ( empty( $rsvp ) ) {
+			// Ensure keys that wp_filter_comment accesses without isset() are present.
+			$args = array_merge(
+				array(
+					'comment_author'       => '',
+					'comment_author_email' => '',
+					'comment_author_url'   => '',
+					'comment_author_IP'    => '127.0.0.1',
+					'comment_content'      => '',
+				),
+				$args
+			);
+
+			// Run WordPress-native comment filters so sites can honor
+			// pre_comment_user_ip, pre_comment_user_agent, etc. for privacy.
+			$args       = wp_filter_comment( $args );
 			$comment_id = wp_insert_comment( $args );
 		} else {
 			$comment_id               = $rsvp->comment_ID;
@@ -476,7 +597,7 @@ class Rsvp {
 			),
 		);
 
-		if ( Event::POST_TYPE !== get_post_type( $post_id ) ) {
+		if ( ! post_type_supports( (string) get_post_type( $post_id ), 'gatherpress-rsvp' ) ) {
 			return $retval;
 		}
 

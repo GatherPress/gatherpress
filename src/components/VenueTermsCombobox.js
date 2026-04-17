@@ -2,8 +2,7 @@
  * WordPress dependencies
  */
 import { ComboboxControl } from '@wordpress/components';
-import { useEntityProp } from '@wordpress/core-data';
-import { useSelect } from '@wordpress/data';
+import { useSelect, useDispatch } from '@wordpress/data';
 import { useCallback, useMemo } from '@wordpress/element';
 import { useDebounce } from '@wordpress/compose';
 import { __ } from '@wordpress/i18n';
@@ -12,8 +11,7 @@ import { __ } from '@wordpress/i18n';
  * Internal dependencies.
  */
 import { getCurrentContextualPostId } from '../helpers/editor';
-import { useVenueOptions } from '../helpers/venue';
-import { CPT_EVENT, TAX_VENUE } from '../helpers/namespace';
+import { getVenuePostType, getVenueTaxonomy, useVenueOptions, useVenueTaxonomyIds } from '../helpers/venue';
 
 /**
  * VenueTermsCombobox component.
@@ -36,21 +34,36 @@ import { CPT_EVENT, TAX_VENUE } from '../helpers/namespace';
 export const VenueTermsCombobox = ( { search, setSearch, ...props } ) => {
 	// Get the current contextual post ID, falling back to editor post ID if not passed.
 	const cId = getCurrentContextualPostId( props?.context?.postId );
-	const [ venueTaxonomyIds, updateVenueTaxonomyIds ] = useEntityProp(
-		'postType',
-		CPT_EVENT,
-		TAX_VENUE,
-		cId
+
+	// Use context post type if provided, otherwise fall back to the editor's current post type.
+	const currentPostType = useSelect(
+		( select ) =>
+			props?.context?.postType ||
+			select( 'core/editor' )?.getCurrentPostType(),
+		[ props?.context?.postType ]
+	);
+
+	// Derive the venue taxonomy from the event post type.
+	const venueTaxonomy = getVenueTaxonomy( getVenuePostType( currentPostType ) );
+
+	const { editPost } = useDispatch( 'core/editor' );
+
+	// Read venue taxonomy IDs without triggering context=edit REST requests.
+	const venueTaxonomyIds = useVenueTaxonomyIds( venueTaxonomy, cId );
+
+	const updateVenueTaxonomyIds = useCallback(
+		( newIds ) => editPost( { [ venueTaxonomy ]: newIds } ),
+		[ editPost, venueTaxonomy ]
 	);
 
 	// Get the online-event term to exclude it from venue selection.
 	const onlineEventTermId = useSelect( ( wpSelect ) => {
-		const terms = wpSelect( 'core' ).getEntityRecords( 'taxonomy', TAX_VENUE, {
+		const terms = wpSelect( 'core' ).getEntityRecords( 'taxonomy', venueTaxonomy, {
 			slug: 'online-event',
 			per_page: 1,
 		} );
 		return terms?.[ 0 ]?.id || null;
-	}, [] );
+	}, [ venueTaxonomy ] );
 
 	// Filter out the online-event term to get only physical venue IDs.
 	const physicalVenueIds = useMemo( () => {
@@ -63,7 +76,7 @@ export const VenueTermsCombobox = ( { search, setSearch, ...props } ) => {
 
 	// The currently selected physical venue term ID (if any).
 	const venueId = physicalVenueIds?.[ 0 ];
-	const { venueOptions } = useVenueOptions( search, venueId );
+	const { venueOptions } = useVenueOptions( search, venueId, 'taxonomy', venueTaxonomy );
 
 	/**
 	 * Debounced setter for the search input to avoid excessive queries.

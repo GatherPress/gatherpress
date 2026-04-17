@@ -12,6 +12,7 @@ use GatherPress\Core\Event;
 use GatherPress\Core\Event_Rest_Api;
 use GatherPress\Core\Rsvp;
 use GatherPress\Core\Rsvp_Token;
+use GatherPress\Core\Settings;
 use GatherPress\Core\Setup;
 use GatherPress\Core\Topic;
 use GatherPress\Core\Venue;
@@ -27,6 +28,26 @@ use WP_REST_Server;
  * @coversDefaultClass \GatherPress\Core\Event_Rest_Api
  */
 class Test_Event_Rest_Api extends Base {
+	/**
+	 * Enable open RSVP for all tests in this class so RSVP form submission paths are exercisable.
+	 *
+	 * @return void
+	 */
+	public function setUp(): void {
+		parent::setUp();
+		Settings::get_instance()->set( 'enable_open_rsvp', true );
+	}
+
+	/**
+	 * Restore open RSVP to its default disabled state after each test.
+	 *
+	 * @return void
+	 */
+	public function tearDown(): void {
+		Settings::get_instance()->set( 'enable_open_rsvp', true );
+		parent::tearDown();
+	}
+
 	/**
 	 * Coverage for setup_hooks method.
 	 *
@@ -890,6 +911,70 @@ class Test_Event_Rest_Api extends Base {
 		$data = $response->get_data();
 		$this->assertFalse( $data['success'] );
 		$this->assertStringContainsString( 'closed', $data['message'] );
+	}
+
+	/**
+	 * Tests handle_rsvp_form_submission returns 403 when open RSVP is disabled sitewide.
+	 *
+	 * @covers ::handle_rsvp_form_submission
+	 *
+	 * @return void
+	 */
+	public function test_handle_rsvp_form_submission_open_rsvp_disabled(): void {
+		$instance = Event_Rest_Api::get_instance();
+		$post_id  = $this->factory()->post->create(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		);
+
+		// Disable open RSVP sitewide (overrides setUp default).
+		Settings::get_instance()->set( 'enable_open_rsvp', false );
+
+		$request = new WP_REST_Request( 'POST' );
+		$request->set_param( 'comment_post_ID', $post_id );
+		$request->set_param( 'author', 'Test Author' );
+		$request->set_param( 'email', 'test@example.com' );
+
+		$response = $instance->handle_rsvp_form_submission( $request );
+
+		$this->assertEquals( 403, $response->get_status() );
+
+		$data = $response->get_data();
+		$this->assertFalse( $data['success'] );
+		$this->assertStringContainsString( 'Open RSVP', $data['message'] );
+	}
+
+	/**
+	 * Tests handle_rsvp_form_submission returns 403 when open RSVP is disabled per event.
+	 *
+	 * @covers ::handle_rsvp_form_submission
+	 *
+	 * @return void
+	 */
+	public function test_handle_rsvp_form_submission_open_rsvp_disabled_per_event(): void {
+		$instance = Event_Rest_Api::get_instance();
+		$post_id  = $this->factory()->post->create(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		);
+
+		// Sitewide open RSVP is enabled (setUp default), but disabled for this event.
+		update_post_meta( $post_id, 'gatherpress_enable_open_rsvp', 0 );
+
+		$request = new WP_REST_Request( 'POST' );
+		$request->set_param( 'comment_post_ID', $post_id );
+		$request->set_param( 'author', 'Test Author' );
+		$request->set_param( 'email', 'test@example.com' );
+
+		$response = $instance->handle_rsvp_form_submission( $request );
+
+		$this->assertEquals( 403, $response->get_status() );
+
+		$data = $response->get_data();
+		$this->assertFalse( $data['success'] );
+		$this->assertStringContainsString( 'Open RSVP', $data['message'] );
 	}
 
 	/**

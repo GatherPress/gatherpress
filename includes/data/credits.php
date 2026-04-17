@@ -145,6 +145,19 @@ return array (
   array (
     0 => 
     array (
+      'id' => 148148,
+      'name' => 'Dion Hulse',
+      'link' => 'https://profiles.wordpress.org/dd32/',
+      'slug' => 'dd32',
+      'avatar_urls' => 
+      array (
+        24 => '//www.gravatar.com/avatar/019f95633d5ea08e39d8d5dab9bed527?s=24&#038;r=g&#038;d=mm',
+        48 => '//www.gravatar.com/avatar/019f95633d5ea08e39d8d5dab9bed527?s=48&#038;r=g&#038;d=mm',
+        96 => '//www.gravatar.com/avatar/019f95633d5ea08e39d8d5dab9bed527?s=96&#038;r=g&#038;d=mm',
+      ),
+    ),
+    1 => 
+    array (
       'id' => 15768524,
       'name' => 'Kofi Mokome',
       'link' => 'https://profiles.wordpress.org/kofimokome/',
@@ -154,6 +167,19 @@ return array (
         24 => '//www.gravatar.com/avatar/35d97e8ebb19530c8cb46cb42f5e5c86?s=24&#038;r=g&#038;d=mm',
         48 => '//www.gravatar.com/avatar/35d97e8ebb19530c8cb46cb42f5e5c86?s=48&#038;r=g&#038;d=mm',
         96 => '//www.gravatar.com/avatar/35d97e8ebb19530c8cb46cb42f5e5c86?s=96&#038;r=g&#038;d=mm',
+      ),
+    ),
+    2 => 
+    array (
+      'id' => 14685954,
+      'name' => 'richsalvucci',
+      'link' => 'https://profiles.wordpress.org/richsalvucci/',
+      'slug' => 'richsalvucci',
+      'avatar_urls' => 
+      array (
+        24 => '//www.gravatar.com/avatar/fa01ba22f1911653a65d50ccb265ba5d?s=24&#038;r=g&#038;d=mm',
+        48 => '//www.gravatar.com/avatar/fa01ba22f1911653a65d50ccb265ba5d?s=48&#038;r=g&#038;d=mm',
+        96 => '//www.gravatar.com/avatar/fa01ba22f1911653a65d50ccb265ba5d?s=96&#038;r=g&#038;d=mm',
       ),
     ),
   ),

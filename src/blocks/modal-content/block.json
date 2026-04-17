@@ -13,6 +13,9 @@
 		"style": {
 			"type": "object",
 			"default": {
+				"color": {
+					"background": "#ffffff"
+				},
 				"spacing": {
 					"padding": "20px"
 				},
@@ -20,14 +23,6 @@
 					"maxWidth": "400px"
 				}
 			}
-		},
-		"backgroundColor": {
-			"type": "string",
-			"default": "white"
-		},
-		"textColor": {
-			"type": "string",
-			"default": "contrast"
 		}
 	},
 	"supports": {

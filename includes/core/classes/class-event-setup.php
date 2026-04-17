@@ -21,7 +21,6 @@ use stdClass;
 use WP;
 use WP_Block;
 use WP_Post;
-use WP_Query;
 use WP_REST_Request;
 
 /**
@@ -36,15 +35,6 @@ class Event_Setup {
 	 * Enforces a single instance of this class.
 	 */
 	use Singleton;
-
-	/**
-	 * Cached event counts for the current request.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @var array<string, int>|null
-	 */
-	protected ?array $event_counts = null;
 
 	/**
 	 * Title to use as the archive page title.
@@ -77,53 +67,19 @@ class Event_Setup {
 	 */
 	protected function setup_hooks(): void {
 		add_action( 'init', array( $this, 'register_post_type' ) );
-		add_action( 'init', array( $this, 'register_post_meta' ) );
+		// Priority 11 ensures third-party CPTs are discoverable via get_post_types_by_support().
+		add_action( 'init', array( $this, 'register_post_meta' ), 11 );
 		add_action( 'init', array( $this, 'register_calendar_rewrite_rule' ) );
 		add_action( 'parse_request', array( $this, 'handle_calendar_ics_request' ) );
 		add_action( 'template_redirect', array( $this, 'handle_event_archive_redirect' ) );
 		add_action( 'delete_post', array( $this, 'delete_event' ) );
 		add_action( 'wp_after_insert_post', array( $this, 'set_datetimes' ) );
-		add_action( sprintf( 'save_post_%s', Event::POST_TYPE ), array( $this, 'check_waiting_list' ) );
-		add_action(
-			sprintf( 'manage_%s_posts_custom_column', Event::POST_TYPE ),
-			array( $this, 'custom_columns' ),
-			10,
-			2
-		);
-		add_action( 'load-edit.php', array( $this, 'default_sort' ) );
-		add_action( 'admin_menu', array( $this, 'modify_all_events_menu_link' ) );
-		add_filter( 'submenu_file', array( $this, 'highlight_events_submenu' ) );
-
+		add_action( 'save_post', array( $this, 'check_waiting_list' ) );
 		add_filter( 'redirect_canonical', array( $this, 'disable_ics_canonical_redirect' ), 10, 2 );
-		add_filter(
-			sprintf( 'rest_pre_insert_%s', Event::POST_TYPE ),
-			array( $this, 'filter_readonly_meta' ),
-			10,
-			2
-		);
-		add_filter(
-			sprintf( 'manage_%s_posts_columns', Event::POST_TYPE ),
-			array( $this, 'set_custom_columns' )
-		);
-		add_filter(
-			sprintf( 'manage_edit-%s_sortable_columns', Event::POST_TYPE ),
-			array( $this, 'sortable_columns' )
-		);
-		add_filter(
-			sprintf( 'views_edit-%s', Event::POST_TYPE ),
-			array( $this, 'views_edit' )
-		);
-		add_filter( 'query_vars', array( $this, 'query_vars' ) );
-		add_action( 'pre_get_posts', array( $this, 'handle_rsvp_sorting' ) );
-		add_action( 'pre_get_posts', array( $this, 'handle_venue_sorting' ) );
 		add_filter( 'get_the_date', array( $this, 'get_the_event_date' ), 10, 3 );
 		add_filter( 'the_time', array( $this, 'get_the_event_date' ) );
 		add_filter( 'render_block_core/post-date', array( $this, 'render_event_post_date_block' ), 10, 3 );
 		add_filter( 'display_post_states', array( $this, 'set_event_archive_labels' ), 10, 2 );
-		add_filter(
-			sprintf( 'manage_%s_posts_columns', Event::POST_TYPE ),
-			array( $this, 'remove_comments_column' )
-		);
 	}
 
 	/**
@@ -224,6 +180,10 @@ class Event_Setup {
 					'comments',
 					'revisions',
 					'custom-fields',
+					'gatherpress-event-date',
+					'gatherpress-rsvp',
+					'gatherpress-venue',
+					'gatherpress-online-event',
 				),
 				'menu_icon'     => 'dashicons-nametag',
 				// Note: has_archive must be true for event feed URLs (/event/feed/) to work.
@@ -284,47 +244,82 @@ class Event_Setup {
 	 * @return void
 	 */
 	public function register_post_meta(): void {
-		$post_meta = array(
-			'gatherpress_datetime'              => array(
+		// Datetime meta registered for all post types with event_date support.
+		$event_date_meta = array(
+			'gatherpress_datetime'           => array(
 				'auth_callback'     => array( $this, 'can_edit_posts_meta' ),
 				'sanitize_callback' => 'sanitize_text_field',
 				'show_in_rest'      => true,
 				'single'            => true,
 				'type'              => 'string',
 			),
-			'gatherpress_datetime_start'        => array(
+			'gatherpress_datetime_start'     => array(
 				'auth_callback'     => '__return_false', // Read-only: derived from gatherpress_datetime.
 				'sanitize_callback' => 'sanitize_text_field',
 				'show_in_rest'      => true,
 				'single'            => true,
 			),
-			'gatherpress_datetime_start_gmt'    => array(
+			'gatherpress_datetime_start_gmt' => array(
 				'auth_callback'     => '__return_false', // Read-only: derived from gatherpress_datetime.
 				'sanitize_callback' => 'sanitize_text_field',
 				'show_in_rest'      => true,
 				'single'            => true,
 				'type'              => 'string',
 			),
-			'gatherpress_datetime_end'          => array(
+			'gatherpress_datetime_end'       => array(
 				'auth_callback'     => '__return_false', // Read-only: derived from gatherpress_datetime.
 				'sanitize_callback' => 'sanitize_text_field',
 				'show_in_rest'      => true,
 				'single'            => true,
 				'type'              => 'string',
 			),
-			'gatherpress_datetime_end_gmt'      => array(
+			'gatherpress_datetime_end_gmt'   => array(
 				'auth_callback'     => '__return_false', // Read-only: derived from gatherpress_datetime.
 				'sanitize_callback' => 'sanitize_text_field',
 				'show_in_rest'      => true,
 				'single'            => true,
 				'type'              => 'string',
 			),
-			'gatherpress_timezone'              => array(
+			'gatherpress_timezone'           => array(
 				'auth_callback'     => '__return_false', // Read-only: derived from gatherpress_datetime.
 				'sanitize_callback' => 'sanitize_text_field',
 				'show_in_rest'      => true,
 				'single'            => true,
 				'type'              => 'string',
+			),
+		);
+
+		$event_date_post_types = get_post_types_by_support( 'gatherpress-event-date' );
+
+		foreach ( $event_date_post_types as $post_type ) {
+			foreach ( $event_date_meta as $meta_key => $args ) {
+				register_post_meta(
+					$post_type,
+					$meta_key,
+					$args
+				);
+			}
+
+			// Filter read-only datetime meta from REST requests for this post type.
+			add_filter(
+				sprintf( 'rest_pre_insert_%s', $post_type ),
+				array( $this, 'filter_readonly_meta' ),
+				10,
+				2
+			);
+		}
+
+		// Non-datetime meta remains on the event post type only.
+		// Always register gatherpress_enable_rsvp so it can be written in all modes.
+		// Missing meta is treated as "on"; only an explicit 0 disables RSVP per event.
+		$event_only_meta = array(
+			'gatherpress_enable_rsvp'           => array(
+				'auth_callback'     => array( $this, 'can_edit_posts_meta' ),
+				'sanitize_callback' => 'absint',
+				'show_in_rest'      => true,
+				'single'            => true,
+				'type'              => 'integer',
+				'default'           => 1,
 			),
 			'gatherpress_max_guest_limit'       => array(
 				'auth_callback'     => array( $this, 'can_edit_posts_meta' ),
@@ -332,6 +327,7 @@ class Event_Setup {
 				'show_in_rest'      => true,
 				'single'            => true,
 				'type'              => 'integer',
+				'default'           => (int) Settings::get_instance()->get( 'max_guest_limit' ),
 			),
 			'gatherpress_enable_anonymous_rsvp' => array(
 				'auth_callback'     => array( $this, 'can_edit_posts_meta' ),
@@ -339,7 +335,17 @@ class Event_Setup {
 				'show_in_rest'      => true,
 				'single'            => true,
 				'type'              => 'boolean',
-				'default'           => false,
+				'default'           => (bool) Settings::get_instance()->get( 'enable_anonymous_rsvp' ),
+			),
+			// Always register so it can be written regardless of open RSVP mode.
+			// Stored as integer (1 = enabled, 0 = disabled); an unset meta (empty string) is treated as enabled.
+			'gatherpress_enable_open_rsvp'      => array(
+				'auth_callback'     => array( $this, 'can_edit_posts_meta' ),
+				'sanitize_callback' => 'absint',
+				'show_in_rest'      => true,
+				'single'            => true,
+				'type'              => 'integer',
+				'default'           => 1,
 			),
 			'gatherpress_online_event_link'     => array(
 				'auth_callback'     => array( $this, 'can_edit_posts_meta' ),
@@ -355,10 +361,11 @@ class Event_Setup {
 				'show_in_rest'      => true,
 				'single'            => true,
 				'type'              => 'integer',
+				'default'           => (int) Settings::get_instance()->get( 'max_attendance_limit' ),
 			),
 		);
 
-		foreach ( $post_meta as $meta_key => $args ) {
+		foreach ( $event_only_meta as $meta_key => $args ) {
 			register_post_meta(
 				Event::POST_TYPE,
 				$meta_key,
@@ -616,6 +623,10 @@ class Event_Setup {
 	 * @return void
 	 */
 	public function check_waiting_list( int $post_id ): void {
+		if ( ! post_type_supports( (string) get_post_type( $post_id ), 'gatherpress-rsvp' ) ) {
+			return;
+		}
+
 		$rsvp = new Rsvp( $post_id );
 
 		$rsvp->check_waiting_list();
@@ -635,7 +646,7 @@ class Event_Setup {
 	public function delete_event( int $post_id ): void {
 		global $wpdb;
 
-		if ( Event::POST_TYPE !== get_post_type( $post_id ) ) {
+		if ( ! post_type_supports( (string) get_post_type( $post_id ), 'gatherpress-event-date' ) ) {
 			return;
 		}
 
@@ -648,562 +659,6 @@ class Event_Setup {
 				'post_id' => $post_id,
 			)
 		);
-	}
-
-	/**
-	 * Populate custom columns for Event post type in the admin dashboard.
-	 *
-	 * Displays additional information, like event datetime and RSVP count, for Event post types.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param string $column  The name of the column to display.
-	 * @param int    $post_id The current post ID.
-	 * @return void
-	 *
-	 * @throws Exception If initializing Event or Rsvp object fails, due to invalid post ID or database issues.
-	 */
-	public function custom_columns( string $column, int $post_id ): void {
-		if ( 'datetime' === $column ) {
-			$event = new Event( $post_id );
-			echo esc_html( $event->get_display_datetime() );
-		}
-
-		if ( 'venue' === $column ) {
-			$event             = new Event( $post_id );
-			$venue_information = $event->get_venue_information();
-			$venue_name        = $venue_information['name'];
-
-			if ( $venue_information['is_online_event'] ) {
-				echo '<span class="dashicons dashicons-video-alt3"></span> ';
-			}
-
-			if ( ! empty( $venue_name ) ) {
-				echo esc_html( $venue_name );
-			} else {
-				echo '—';
-			}
-		}
-
-		if ( 'rsvps' === $column ) {
-			$rsvp_query = Rsvp_Query::get_instance();
-
-			// Get approved RSVPs (standard display).
-			$approved_rsvps = $rsvp_query->get_rsvps(
-				array(
-					'post_id' => $post_id,
-					'status'  => 'approve',
-					'count'   => true,
-				)
-			);
-
-			// Get unapproved RSVPs (pending approval).
-			$unapproved_rsvps = $rsvp_query->get_rsvps(
-				array(
-					'post_id' => $post_id,
-					'status'  => 'hold',
-					'count'   => true,
-				)
-			);
-
-			// If no RSVPs at all, show dash.
-			if ( 0 === $approved_rsvps && 0 === $unapproved_rsvps ) {
-				echo '—';
-				return;
-			}
-
-			// Create link to filtered RSVPs page for approved RSVPs.
-			$approved_rsvp_url = add_query_arg(
-				array(
-					'post_type' => Event::POST_TYPE,
-					'page'      => Rsvp::COMMENT_TYPE,
-					'post_id'   => $post_id,
-					'status'    => 'approved',
-				),
-				admin_url( 'edit.php' )
-			);
-
-			// Display approved RSVP count with rounded box.
-			echo '<span class="gatherpress-rsvp-container">';
-			printf(
-				'<a href="%s" class="gatherpress-rsvp-approved"><span class="gatherpress-rsvp-icon">%d</span></a>',
-				esc_url( $approved_rsvp_url ),
-				(int) $approved_rsvps
-			);
-
-			// Show unapproved RSVPs indicator if there are any unapproved.
-			if ( $unapproved_rsvps > 0 ) {
-				$unapproved_rsvp_url = add_query_arg(
-					array(
-						'post_type' => Event::POST_TYPE,
-						'page'      => Rsvp::COMMENT_TYPE,
-						'post_id'   => $post_id,
-						'status'    => 'pending',
-					),
-					admin_url( 'edit.php' )
-				);
-
-				printf(
-					'<a href="%s" class="gatherpress-rsvp-pending" title="%s">%d</a>',
-					esc_url( $unapproved_rsvp_url ),
-					esc_attr( __( 'Unapproved RSVPs', 'gatherpress' ) ),
-					(int) $unapproved_rsvps
-				);
-			}
-
-			echo '</span>';
-		}
-	}
-
-	/**
-	 * Set custom columns for Event post type in the admin dashboard.
-	 *
-	 * This method is used to define custom columns for Event post types in the WordPress admin dashboard.
-	 * It adds additional columns for displaying event date and time, and RSVP count.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param array $columns An associative array of column headings.
-	 * @return array An updated array of column headings, including the custom columns.
-	 */
-	public function set_custom_columns( array $columns ): array {
-		// Remove the author column.
-		unset( $columns['author'] );
-
-		$placement = 2;
-		$insert    = array(
-			'datetime' => __( 'Event date &amp; time', 'gatherpress' ),
-			'venue'    => __( 'Venue', 'gatherpress' ),
-			'rsvps'    => __( 'RSVPs', 'gatherpress' ),
-		);
-
-		return array_slice( $columns, 0, $placement, true ) + $insert + array_slice( $columns, $placement, null, true );
-	}
-
-	/**
-	 * Sets the default sort field and sort order on the event post type admin screen, to order by event date.
-	 *
-	 * @author John Blackbourn @johnbillion
-	 * @source https://github.com/johnbillion/extended-cpts/blob/20b7e9773b60f7301cd59ee520affa0ff63f90e6/src/PostTypeAdmin.php#L160-L178
-	 *
-	 * @since 1.0.0
-	 *
-	 * @return void
-	 */
-	public function default_sort(): void {
-		$screen_id = sprintf( 'edit-%s', Event::POST_TYPE );
-		if ( ! function_exists( 'get_current_screen' ) || get_current_screen()->id !== $screen_id ) {
-			return;
-		}
-
-		// If the screen is already ordered, bail out.
-		if ( isset( $_GET['orderby'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-			return;
-		}
-
-		// Default to sorting by event date ascending.
-		$_GET['orderby'] = 'datetime';
-		$_GET['order']   = 'asc';
-	}
-
-	/**
-	 * Modify the "Upcoming Events" admin submenu link to default to upcoming events.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @return void
-	 */
-	public function modify_all_events_menu_link(): void {
-		global $submenu;
-
-		$menu_slug = sprintf( 'edit.php?post_type=%s', Event::POST_TYPE );
-
-		if ( empty( $submenu[ $menu_slug ] ) ) {
-			return;
-		}
-
-		foreach ( $submenu[ $menu_slug ] as &$item ) {
-			if ( $menu_slug === $item[2] ) {
-				$item[2] = add_query_arg( 'gatherpress_event_query', 'upcoming', $item[2] );
-				break;
-			}
-		}
-	}
-
-	/**
-	 * Highlight the "Upcoming Events" submenu when viewing events with query filters.
-	 *
-	 * WordPress cannot match the modified submenu URL against the current page,
-	 * so this filter ensures the correct submenu item stays highlighted.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param string|null $submenu_file The current submenu file.
-	 * @return string|null The submenu file to highlight.
-	 */
-	public function highlight_events_submenu( $submenu_file ) {
-		$menu_slug = sprintf( 'edit.php?post_type=%s', Event::POST_TYPE );
-
-		if ( $menu_slug === $submenu_file ) {
-			return add_query_arg( 'gatherpress_event_query', 'upcoming', $menu_slug );
-		}
-
-		return $submenu_file;
-	}
-
-	/**
-	 * Make custom columns sortable for Event post type in the admin dashboard.
-	 *
-	 * This method allows the custom columns, including the 'Event date & time' and 'RSVPs' columns,
-	 * to be sortable in the WordPress admin dashboard for Event post types.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param array $columns An array of sortable columns.
-	 * @return array An updated array of sortable columns.
-	 */
-	public function sortable_columns( array $columns ): array {
-		// Add 'datetime' as a sortable column.
-		$columns['datetime'] = 'datetime';
-		// Add 'venue' as a sortable column.
-		$columns['venue'] = 'venue';
-		// Add 'rsvps' as a sortable column.
-		$columns['rsvps'] = 'rsvps';
-
-		return $columns;
-	}
-
-	/**
-	 * Add 'Upcoming' & 'Past' to the available admin event list table views.
-	 *
-	 * This method adds links to filter the shown events in the admin list,
-	 * the filtering allows to show 'upcoming' or 'past' events.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param array $view_links An array of available list table views.
-	 *
-	 * @return array Updated list table views.
-	 */
-	public function views_edit( array $view_links ): array {
-		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		$current_view = isset( $_GET['gatherpress_event_query'] )
-			// phpcs:ignore WordPress.Security.NonceVerification.Recommended
-			? sanitize_text_field( wp_unslash( $_GET['gatherpress_event_query'] ) )
-			: '';
-
-		$counts    = $this->get_event_counts();
-		$placement = 1;
-		$inserts   = array(
-			'upcoming' => __( 'Upcoming', 'gatherpress' ),
-			'past'     => __( 'Past', 'gatherpress' ),
-		);
-		$base_url  = admin_url( 'edit.php' );
-
-		foreach ( $inserts as $key => $value ) {
-			$count           = isset( $counts[ $key ] ) ? $counts[ $key ] : 0;
-			$inserts[ $key ] = sprintf(
-				'<a href="%s"%s>%s <span class="count">(%s)</span></a>',
-				add_query_arg(
-					array(
-						'gatherpress_event_query' => $key,
-						'post_type'               => Event::POST_TYPE,
-					),
-					$base_url
-				),
-				$key === $current_view ? ' class="current" aria-current="page"' : '',
-				$value,
-				number_format_i18n( $count )
-			);
-		}
-
-		if ( isset( $view_links['all'] ) ) {
-			if ( $current_view ) {
-				// Remove the "current" class from "All" when an event query filter is active.
-				$view_links['all'] = str_replace(
-					array( ' class="current"', ' aria-current="page"' ),
-					'',
-					$view_links['all']
-				);
-			} elseif ( false === strpos( $view_links['all'], 'class="current"' ) ) {
-				// Add "current" class to "All" when no filter is active.
-				// default_sort() adds orderby/order to $_GET which prevents
-				// WordPress from detecting this as a base request.
-				$view_links['all'] = str_replace(
-					'<a ',
-					'<a class="current" aria-current="page" ',
-					$view_links['all']
-				);
-			}
-		}
-
-		return array_slice( $view_links, 0, $placement, true )
-			+ $inserts
-			+ array_slice( $view_links, $placement, null, true );
-	}
-
-	/**
-	 * Get counts of upcoming and past events.
-	 *
-	 * Uses the same datetime comparison logic as Event_Query::adjust_event_sql()
-	 * with inclusive=true: upcoming uses datetime_end_gmt (includes running events),
-	 * past uses datetime_start_gmt (excludes running events).
-	 *
-	 * @since 1.0.0
-	 *
-	 * @return array<string, int> Associative array with 'upcoming' and 'past' counts.
-	 */
-	protected function get_event_counts(): array {
-		if ( null !== $this->event_counts ) {
-			return $this->event_counts;
-		}
-
-		global $wpdb;
-
-		$table   = sprintf( Event::TABLE_FORMAT, $wpdb->prefix );
-		$current = gmdate( Event::DATETIME_FORMAT, time() );
-
-		// Upcoming: events whose end time is still in the future (includes currently running),
-		// or events with no row in the events table (no date set yet).
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-		$upcoming = (int) $wpdb->get_var(
-			$wpdb->prepare(
-				'SELECT COUNT(1) FROM %i LEFT JOIN %i ON %i.ID = %i.post_id'
-				. ' WHERE %i.post_type = %s AND %i.post_status NOT IN'
-				. " ('trash', 'auto-draft') AND (%i.datetime_end_gmt >= %s"
-				. ' OR %i.post_id IS NULL)',
-				$wpdb->posts,
-				$table,
-				$wpdb->posts,
-				$table,
-				$wpdb->posts,
-				Event::POST_TYPE,
-				$wpdb->posts,
-				$table,
-				$current,
-				$table
-			)
-		);
-
-		// Past: events whose start time is in the past (excludes currently running),
-		// excluding events with no row in the events table.
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-		$past = (int) $wpdb->get_var(
-			$wpdb->prepare(
-				'SELECT COUNT(1) FROM %i LEFT JOIN %i ON %i.ID = %i.post_id'
-				. ' WHERE %i.post_type = %s AND %i.post_status NOT IN'
-				. " ('trash', 'auto-draft') AND %i.datetime_start_gmt < %s"
-				. ' AND %i.post_id IS NOT NULL',
-				$wpdb->posts,
-				$table,
-				$wpdb->posts,
-				$table,
-				$wpdb->posts,
-				Event::POST_TYPE,
-				$wpdb->posts,
-				$table,
-				$current,
-				$table
-			)
-		);
-
-		$this->event_counts = array(
-			'upcoming' => $upcoming,
-			'past'     => $past,
-		);
-
-		return $this->event_counts;
-	}
-
-	/**
-	 * Allowlist for additional query parameters.
-	 *
-	 * Adds 'gatherpress_event_query' to the list of allowed query variables,
-	 * to be able to request 'upcoming' or 'past' events in the admin list view.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param  string[] $query_vars List of allowed query variables.
-	 *
-	 * @return string[] Updated list of allowed query variables.
-	 */
-	public function query_vars( array $query_vars ) {
-		$query_vars[] = 'gatherpress_event_query';
-		return $query_vars;
-	}
-
-	/**
-	 * Handle RSVP column sorting in the events list.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param WP_Query $query The WP_Query instance.
-	 * @return void
-	 */
-	public function handle_rsvp_sorting( $query ): void {
-		// Only proceed if we're in admin, on the main query, and dealing with events.
-		if ( ! is_admin() || ! $query->is_main_query() || Event::POST_TYPE !== $query->get( 'post_type' ) ) {
-			return;
-		}
-
-		$orderby = $query->get( 'orderby' );
-
-		// Only proceed if sorting by RSVPs.
-		if ( 'rsvps' !== $orderby ) {
-			return;
-		}
-
-		// Use WordPress's standard comment count sorting approach.
-		$order = $query->get( 'order', 'ASC' );
-		$order = strtoupper( $order );
-
-		// Ensure order is either ASC or DESC.
-		if ( ! in_array( $order, array( 'ASC', 'DESC' ), true ) ) {
-			$order = 'ASC';
-		}
-
-		// Modify the query to sort by approved RSVP count.
-		add_filter( 'posts_join_paged', array( $this, 'rsvp_sorting_join_paged' ) );
-		add_filter( 'posts_groupby', array( $this, 'rsvp_sorting_groupby' ) );
-		add_filter( 'posts_orderby', array( $this, 'rsvp_sorting_orderby' ) );
-
-		// Store the order for use in orderby method.
-		$query->set( 'rsvp_sort_order', $order );
-	}
-
-	/**
-	 * Join comments table for RSVP sorting (WordPress style).
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param string $join The JOIN clause of the query.
-	 * @return string Modified JOIN clause.
-	 */
-	public function rsvp_sorting_join_paged( string $join ): string {
-		global $wpdb;
-
-		$join .= " LEFT JOIN {$wpdb->comments} AS rsvp_sort_comments"
-		. " ON {$wpdb->posts}.ID = rsvp_sort_comments.comment_post_ID";
-		$join .= " AND rsvp_sort_comments.comment_type = 'gatherpress_rsvp'";
-		$join .= " AND rsvp_sort_comments.comment_approved = '1'";
-
-		return $join;
-	}
-
-	/**
-	 * Group by post ID for RSVP sorting (WordPress style).
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param string $groupby The GROUP BY clause of the query.
-	 * @return string Modified GROUP BY clause.
-	 */
-	public function rsvp_sorting_groupby( string $groupby ): string {
-		global $wpdb;
-
-		if ( empty( $groupby ) ) {
-			$groupby = "{$wpdb->posts}.ID";
-		}
-
-		return $groupby;
-	}
-
-	/**
-	 * Order by RSVP count for RSVP sorting (WordPress style).
-	 *
-	 * @since 1.0.0
-	 *
-	 * @return string Modified ORDER BY clause.
-	 */
-	public function rsvp_sorting_orderby(): string {
-		global $wp_query;
-
-		$order = $wp_query->get( 'rsvp_sort_order', 'ASC' );
-
-		// Remove the filters to prevent them from affecting other queries.
-		remove_filter( 'posts_join_paged', array( $this, 'rsvp_sorting_join_paged' ) );
-		remove_filter( 'posts_groupby', array( $this, 'rsvp_sorting_groupby' ) );
-		remove_filter( 'posts_orderby', array( $this, 'rsvp_sorting_orderby' ) );
-
-		return "COUNT(rsvp_sort_comments.comment_ID) {$order}";
-	}
-
-	/**
-	 * Handle venue sorting in the admin list table.
-	 *
-	 * This method modifies the query to sort events by venue name alphabetically.
-	 * Similar to how WordPress core handles taxonomy sorting.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param WP_Query $query The WP_Query instance.
-	 * @return void
-	 */
-	public function handle_venue_sorting( $query ): void {
-		// Only proceed if we're in admin, on the main query, and dealing with events.
-		if ( ! is_admin() || ! $query->is_main_query() || Event::POST_TYPE !== $query->get( 'post_type' ) ) {
-			return;
-		}
-
-		$orderby = $query->get( 'orderby' );
-
-		// Only proceed if sorting by venue.
-		if ( 'venue' !== $orderby ) {
-			return;
-		}
-
-		// Get the sort order (ASC or DESC).
-		$order = strtoupper( $query->get( 'order', 'ASC' ) );
-		if ( ! in_array( $order, array( 'ASC', 'DESC' ), true ) ) {
-			$order = 'ASC';
-		}
-
-		// Modify the query to sort by venue name alphabetically.
-		add_filter( 'posts_join_paged', array( $this, 'venue_sorting_join_paged' ) );
-		add_filter( 'posts_orderby', array( $this, 'venue_sorting_orderby' ) );
-
-		// Store the order for use in orderby method.
-		$query->set( 'venue_sort_order', $order );
-	}
-
-	/**
-	 * Join term relationships and terms tables for venue sorting.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param string $join The JOIN clause of the query.
-	 * @return string Modified JOIN clause.
-	 */
-	public function venue_sorting_join_paged( string $join ): string {
-		global $wpdb;
-
-		$join .= " LEFT JOIN {$wpdb->term_relationships} AS venue_tr ON {$wpdb->posts}.ID = venue_tr.object_id";
-		$join .= " LEFT JOIN {$wpdb->term_taxonomy} AS venue_tt"
-		. ' ON venue_tr.term_taxonomy_id = venue_tt.term_taxonomy_id'
-		. " AND venue_tt.taxonomy = '" . Venue::TAXONOMY . "'";
-		$join .= " LEFT JOIN {$wpdb->terms} AS venue_terms ON venue_tt.term_id = venue_terms.term_id";
-
-		return $join;
-	}
-
-	/**
-	 * Modify the ORDER BY clause for venue sorting.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @return string Modified ORDER BY clause.
-	 */
-	public function venue_sorting_orderby(): string {
-		global $wp_query;
-
-		$order = $wp_query->get( 'venue_sort_order', 'ASC' );
-
-		// Remove the filters to prevent them from affecting other queries.
-		remove_filter( 'posts_join_paged', array( $this, 'venue_sorting_join_paged' ) );
-		remove_filter( 'posts_orderby', array( $this, 'venue_sorting_orderby' ) );
-
-		// Sort by venue name, with NULL/empty values last.
-		return "CASE WHEN venue_terms.name IS NULL THEN 1 ELSE 0 END ASC, venue_terms.name {$order}";
 	}
 
 	/**
@@ -1231,8 +686,10 @@ class Event_Setup {
 		$post_type = $post instanceof WP_Post ? $post->post_type : get_post_type();
 		$post_id   = $post instanceof WP_Post ? $post->ID : get_the_ID();
 
-		// Check if the post is of the 'Event' post type and if event date should be used.
-		if ( Event::POST_TYPE !== $post_type || 1 !== intval( $use_event_date ) ) {
+		if (
+			! post_type_supports( (string) $post_type, 'gatherpress-event-date' )
+			|| 1 !== intval( $use_event_date )
+		) {
 			return $the_date;
 		}
 
@@ -1267,7 +724,7 @@ class Event_Setup {
 	public function render_event_post_date_block( string $block_content, array $block, WP_Block $instance ): string {
 		$post_id = $instance->context['postId'] ?? get_the_ID();
 
-		if ( ! $post_id || Event::POST_TYPE !== get_post_type( $post_id ) ) {
+		if ( ! $post_id || ! post_type_supports( (string) get_post_type( $post_id ), 'gatherpress-event-date' ) ) {
 			return $block_content;
 		}
 
@@ -1350,7 +807,7 @@ class Event_Setup {
 	 * @return void
 	 */
 	public function set_datetimes( int $post_id ): void {
-		if ( Event::POST_TYPE !== get_post_type( $post_id ) ) {
+		if ( ! post_type_supports( (string) get_post_type( $post_id ), 'gatherpress-event-date' ) ) {
 			return;
 		}
 
@@ -1371,28 +828,5 @@ class Event_Setup {
 		);
 
 		$event->save_datetimes( $params );
-	}
-
-	/**
-	 * Remove the comments column from the events list table.
-	 *
-	 * This method removes the comments column from the events list table in the WordPress admin
-	 * to avoid confusion between regular comments and RSVP submissions. The comment count
-	 * bubble can be misleading as it combines unapproved comments and RSVPs without
-	 * distinguishing their types.
-	 *
-	 * @todo Address limitations in WordPress core get_pending_comments_num function that is too
-	 *       generic and does not take custom comment types into account. It just looks for
-	 *       unapproved comments of any type.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param array $columns An array of column names.
-	 * @return array The modified array of column names without the comments column.
-	 */
-	public function remove_comments_column( array $columns ): array {
-		unset( $columns['comments'] );
-
-		return $columns;
 	}
 }

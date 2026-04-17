@@ -242,7 +242,7 @@ class Rsvp_Token {
 
 		$post = get_post( (int) $comment->comment_post_ID );
 
-		if ( ! $post || Event::POST_TYPE !== get_post_type( $post ) ) {
+		if ( ! $post || ! post_type_supports( (string) get_post_type( $post ), 'gatherpress-rsvp' ) ) {
 			return null;
 		}
 

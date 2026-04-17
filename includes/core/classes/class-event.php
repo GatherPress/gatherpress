@@ -152,7 +152,7 @@ class Event {
 	 * @param int $post_id The event post ID.
 	 */
 	public function __construct( int $post_id ) {
-		if ( self::POST_TYPE === get_post_type( $post_id ) ) {
+		if ( post_type_supports( (string) get_post_type( $post_id ), 'gatherpress-event-date' ) ) {
 			$this->event = get_post( $post_id );
 			$this->rsvp  = new Rsvp( $post_id );
 		}
@@ -539,8 +539,10 @@ class Event {
 			'is_online_event' => false,
 		);
 
-		$term  = current( (array) get_the_terms( $this->event, Venue::TAXONOMY ) );
-		$venue = null;
+		$event_post_type = (string) get_post_type( $this->event );
+		$taxonomy        = Venue::get_taxonomy( Venue::get_venue_post_type( $event_post_type ) );
+		$term            = current( (array) get_the_terms( $this->event, $taxonomy ) );
+		$venue           = null;
 
 		if ( ! empty( $term ) && is_a( $term, 'WP_Term' ) ) {
 			$venue_information['name'] = $term->name;

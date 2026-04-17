@@ -152,8 +152,26 @@ class Rsvp_Form {
 		$email   = Utility::get_http_input( INPUT_POST, 'email', 'sanitize_email' );
 		$post_id = intval( $comment_data['comment_post_ID'] );
 
-		// Validate that the post is an event.
-		if ( Event::POST_TYPE !== get_post_type( $post_id ) ) {
+		// Check sitewide/per-event RSVP setting before any post-type check so that
+		// globally-disabled mode returns the correct 403 rather than a misleading 400.
+		if ( ! ( new Rsvp( $post_id ) )->is_enabled() ) {
+			wp_die(
+				esc_html__( 'RSVP is disabled for this event.', 'gatherpress' ),
+				esc_html__( 'RSVP Disabled', 'gatherpress' ),
+				403
+			);
+		}
+
+		if ( ! ( new Rsvp( $post_id ) )->allows_open_rsvp() ) {
+			wp_die(
+				esc_html__( 'Open RSVP is disabled for this site.', 'gatherpress' ),
+				esc_html__( 'Open RSVP Disabled', 'gatherpress' ),
+				403
+			);
+		}
+
+		// Validate that the post supports RSVP.
+		if ( ! post_type_supports( (string) get_post_type( $post_id ), 'gatherpress-rsvp' ) ) {
 			wp_die(
 				esc_html__( 'Invalid event ID.', 'gatherpress' ),
 				esc_html__( 'Invalid Request', 'gatherpress' ),
@@ -329,6 +347,10 @@ class Rsvp_Form {
 
 		// Prepare comment data.
 		$comment_data = $this->prepare_comment_data( $post_id, $author, $email );
+
+		// Run WordPress-native comment filters so sites can honor
+		// pre_comment_user_ip, pre_comment_user_agent, etc. for privacy.
+		$comment_data = wp_filter_comment( $comment_data );
 
 		// Insert the comment.
 		$comment_id_result = wp_insert_comment( $comment_data );

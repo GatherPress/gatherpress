@@ -117,8 +117,8 @@ const Edit = ( { attributes, setAttributes, clientId } ) => {
 	useEffect( () => {
 		const currentLabel = label || __( 'Dropdown', 'gatherpress' );
 		const currentMetadata =
-			select( 'core/block-editor' ).getBlockAttributes( clientId ).metadata ||
-			{};
+			select( 'core/block-editor' ).getBlockAttributes( clientId )
+				?.metadata || {};
 
 		// Only update if the metadata name differs from the current label.
 		if ( currentMetadata.name !== currentLabel ) {

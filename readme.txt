@@ -1,5 +1,5 @@
 === GatherPress ===
-Contributors: mauteri, patricia70, hrmervin, jmarx75, stephenerdelyi, carstenbach, jordanpak, mahimadave, tusharaddweb, pkbhatt, kofimokome
+Contributors: mauteri, patricia70, hrmervin, jmarx75, stephenerdelyi, carstenbach, jordanpak, mahimadave, tusharaddweb, pkbhatt, dd32, kofimokome, richsalvucci
 Tags: events, event, meetup, community
 Tested up to: 6.9
 Stable tag: 0.34.0-alpha.2

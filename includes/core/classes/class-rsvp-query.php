@@ -114,7 +114,7 @@ class Rsvp_Query {
 	 */
 	public function get_rsvps( array $args ) {
 		$args['type']         = Rsvp::COMMENT_TYPE;
-		$args['post_type']    = Event::POST_TYPE;
+		$args['post_type']    = array_values( get_post_types_by_support( 'gatherpress-rsvp' ) );
 		$args['type__in']     = array();
 		$args['type__not_in'] = array();
 

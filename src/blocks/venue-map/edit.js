@@ -13,7 +13,7 @@ import { useSelect } from '@wordpress/data';
 /**
  * Internal dependencies.
  */
-import { CPT_VENUE } from '../../helpers/namespace';
+import { isVenuePostType } from '../../helpers/venue';
 import MapEmbed from '../../components/MapEmbed';
 
 /**
@@ -36,14 +36,13 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 	const { isEditingThisVenue, venueInfoJson } = useSelect(
 		( select ) => {
 			const currentPostId = select( 'core/editor' )?.getCurrentPostId();
-			const currentPostType = select( 'core/editor' )?.getCurrentPostType();
 			const contextPostId = context?.postId || 0;
 
 			// If we're editing a venue post directly and context doesn't provide a valid ID,
 			// use the current post ID.
 			const effectiveVenuePostId =
 				contextPostId ||
-				( currentPostType === CPT_VENUE ? currentPostId : 0 );
+				( isVenuePostType() ? currentPostId : 0 );
 
 			if ( ! effectiveVenuePostId ) {
 				return {
@@ -54,7 +53,7 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 
 			const isEditing =
 				currentPostId === effectiveVenuePostId &&
-				currentPostType === CPT_VENUE;
+				isVenuePostType();
 
 			if ( isEditing ) {
 				// Read from core/editor store for the current post being edited.
@@ -67,10 +66,12 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 			}
 
 			// Read from core store for a different venue post.
+			// Use context?.postType (the venue post type from BlockContextProvider),
+			// not currentPostType (the event post type), to avoid requesting the wrong endpoint.
 			const { getEditedEntityRecord } = select( 'core' );
 			const venuePost = getEditedEntityRecord(
 				'postType',
-				CPT_VENUE,
+				context?.postType,
 				effectiveVenuePostId
 			);
 
@@ -79,7 +80,7 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 				venueInfoJson: venuePost?.meta?.gatherpress_venue_information || '{}',
 			};
 		},
-		[ context?.postId ]
+		[ context?.postId, context?.postType ]
 	);
 
 	// For live preview when editing the venue, read lat/long from venue store.

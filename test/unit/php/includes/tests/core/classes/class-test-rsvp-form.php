@@ -11,6 +11,7 @@ namespace GatherPress\Tests\Core;
 use GatherPress\Core\Event;
 use GatherPress\Core\Rsvp;
 use GatherPress\Core\Rsvp_Form;
+use GatherPress\Core\Settings;
 use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;
 
@@ -20,6 +21,25 @@ use PMC\Unit_Test\Utility;
  * @coversDefaultClass \GatherPress\Core\Rsvp_Form
  */
 class Test_Rsvp_Form extends Base {
+	/**
+	 * Enable open RSVP for all tests in this class so form processing paths are exercisable.
+	 *
+	 * @return void
+	 */
+	public function setUp(): void {
+		parent::setUp();
+		Settings::get_instance()->set( 'enable_open_rsvp', true );
+	}
+
+	/**
+	 * Restore open RSVP to its default disabled state after each test.
+	 *
+	 * @return void
+	 */
+	public function tearDown(): void {
+		Settings::get_instance()->set( 'enable_open_rsvp', true );
+		parent::tearDown();
+	}
 
 	/**
 	 * Coverage for setup_hooks.
@@ -967,6 +987,140 @@ class Test_Rsvp_Form extends Base {
 	}
 
 	/**
+	 * Tests preprocess_rsvp_comment when RSVP is disabled for the event.
+	 *
+	 * @covers ::preprocess_rsvp_comment
+	 */
+	public function test_preprocess_rsvp_comment_rsvp_disabled(): void {
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		);
+
+		// Set rsvp_mode to per_event_on so that per-event disabling is respected.
+		Settings::get_instance()->set( 'rsvp_mode', 'per_event_on' );
+
+		// Explicitly disable RSVP for this event.
+		update_post_meta( $post_id, 'gatherpress_enable_rsvp', 0 );
+
+		add_filter(
+			'gatherpress_pre_get_http_input',
+			function ( $pre_value, $type, $var_name ) {
+				if ( INPUT_POST === $type && 'author' === $var_name ) {
+					return 'Test Author';
+				}
+				if ( INPUT_POST === $type && 'email' === $var_name ) {
+					return 'test@example.com';
+				}
+				return '';
+			},
+			10,
+			3
+		);
+
+		$instance = Rsvp_Form::get_instance();
+
+		$comment_data = array(
+			'comment_post_ID' => $post_id,
+		);
+
+		$this->expectException( 'WPDieException' );
+		$instance->preprocess_rsvp_comment( $comment_data );
+
+		remove_all_filters( 'gatherpress_pre_get_http_input' );
+
+		// Restore the setting for other tests.
+		Settings::get_instance()->set( 'rsvp_mode', 'all_on' );
+	}
+
+	/**
+	 * Tests preprocess_rsvp_comment when open RSVP is disabled sitewide.
+	 *
+	 * @covers ::preprocess_rsvp_comment
+	 *
+	 * @return void
+	 */
+	public function test_preprocess_rsvp_comment_open_rsvp_disabled(): void {
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		);
+
+		// Disable open RSVP sitewide (overrides setUp default).
+		Settings::get_instance()->set( 'enable_open_rsvp', false );
+
+		add_filter(
+			'gatherpress_pre_get_http_input',
+			function ( $pre_value, $type, $var_name ) {
+				if ( INPUT_POST === $type && 'author' === $var_name ) {
+					return 'Test Author';
+				}
+				if ( INPUT_POST === $type && 'email' === $var_name ) {
+					return 'test@example.com';
+				}
+				return '';
+			},
+			10,
+			3
+		);
+
+		$instance     = Rsvp_Form::get_instance();
+		$comment_data = array(
+			'comment_post_ID' => $post_id,
+		);
+
+		$this->expectException( 'WPDieException' );
+		$instance->preprocess_rsvp_comment( $comment_data );
+
+		remove_all_filters( 'gatherpress_pre_get_http_input' );
+	}
+
+	/**
+	 * Tests preprocess_rsvp_comment when open RSVP is disabled per event.
+	 *
+	 * @covers ::preprocess_rsvp_comment
+	 *
+	 * @return void
+	 */
+	public function test_preprocess_rsvp_comment_open_rsvp_disabled_per_event(): void {
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		);
+
+		// Sitewide open RSVP is enabled (setUp default), but disabled for this event.
+		update_post_meta( $post_id, 'gatherpress_enable_open_rsvp', 0 );
+
+		add_filter(
+			'gatherpress_pre_get_http_input',
+			function ( $pre_value, $type, $var_name ) {
+				if ( INPUT_POST === $type && 'author' === $var_name ) {
+					return 'Test Author';
+				}
+				if ( INPUT_POST === $type && 'email' === $var_name ) {
+					return 'test@example.com';
+				}
+				return '';
+			},
+			10,
+			3
+		);
+
+		$instance     = Rsvp_Form::get_instance();
+		$comment_data = array(
+			'comment_post_ID' => $post_id,
+		);
+
+		$this->expectException( 'WPDieException' );
+		$instance->preprocess_rsvp_comment( $comment_data );
+
+		remove_all_filters( 'gatherpress_pre_get_http_input' );
+	}
+
+	/**
 	 * Tests preprocess_rsvp_comment with duplicate RSVP.
 	 *
 	 * @covers ::preprocess_rsvp_comment
@@ -1251,6 +1405,56 @@ class Test_Rsvp_Form extends Base {
 
 		// Clean up.
 		unset( $_SERVER['REMOTE_ADDR'] );
+	}
+
+	/**
+	 * Tests that process_rsvp runs wp_filter_comment so WordPress-native
+	 * privacy filters like pre_comment_user_ip and pre_comment_user_agent
+	 * are honored on the stored RSVP.
+	 *
+	 * @covers ::process_rsvp
+	 *
+	 * @return void
+	 */
+	public function test_process_rsvp_applies_comment_privacy_filters(): void {
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		);
+
+		$_SERVER['REMOTE_ADDR']     = '203.0.113.42';
+		$_SERVER['HTTP_USER_AGENT'] = 'Mozilla/5.0 (test browser)';
+
+		$redact_ip    = static function () {
+			return '127.0.0.1';
+		};
+		$redact_agent = static function () {
+			return '';
+		};
+		add_filter( 'pre_comment_user_ip', $redact_ip );
+		add_filter( 'pre_comment_user_agent', $redact_agent );
+
+		try {
+			$data = array(
+				'post_id' => $post_id,
+				'author'  => 'Privacy User',
+				'email'   => 'privacy@example.com',
+			);
+
+			$instance = Rsvp_Form::get_instance();
+			$result   = $instance->process_rsvp( $data );
+
+			$this->assertTrue( $result['success'] );
+
+			$comment = get_comment( $result['comment_id'] );
+			$this->assertSame( '127.0.0.1', $comment->comment_author_IP );
+			$this->assertSame( '', $comment->comment_agent );
+		} finally {
+			remove_filter( 'pre_comment_user_ip', $redact_ip );
+			remove_filter( 'pre_comment_user_agent', $redact_agent );
+			unset( $_SERVER['REMOTE_ADDR'], $_SERVER['HTTP_USER_AGENT'] );
+		}
 	}
 
 	/**

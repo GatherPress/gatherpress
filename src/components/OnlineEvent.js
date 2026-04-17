@@ -9,7 +9,7 @@ import { useDispatch, useSelect } from '@wordpress/data';
 /**
  * Internal dependencies.
  */
-import { TAX_VENUE } from '../helpers/namespace';
+import { getVenuePostType, getVenueTaxonomy } from '../helpers/venue';
 
 /**
  * OnlineEvent component for GatherPress.
@@ -32,19 +32,25 @@ const OnlineEvent = () => {
 				.gatherpress_online_event_link,
 	);
 
+	// Derive the venue taxonomy from the current editor post type.
+	const venueTaxonomy = useSelect( ( select ) => {
+		const editorPostType = select( 'core/editor' )?.getCurrentPostType();
+		return getVenueTaxonomy( getVenuePostType( editorPostType ) );
+	}, [] );
+
 	// Get current venue taxonomy terms.
 	const venueTermIds = useSelect( ( select ) =>
-		select( 'core/editor' ).getEditedPostAttribute( TAX_VENUE ),
+		select( 'core/editor' ).getEditedPostAttribute( venueTaxonomy ),
 	);
 
 	// Get the online-event term to find its ID.
 	const onlineEventTerm = useSelect( ( select ) => {
-		const terms = select( 'core' ).getEntityRecords( 'taxonomy', TAX_VENUE, {
+		const terms = select( 'core' ).getEntityRecords( 'taxonomy', venueTaxonomy, {
 			slug: 'online-event',
 			per_page: 1,
 		} );
 		return terms?.[ 0 ] || null;
-	}, [] );
+	}, [ venueTaxonomy ] );
 
 	// Check if online-event term is currently assigned.
 	// Term IDs may be strings or numbers depending on source, so compare as strings.
@@ -116,7 +122,7 @@ const OnlineEvent = () => {
 			);
 		}
 
-		editPost( { [ TAX_VENUE ]: newTerms } );
+		editPost( { [ venueTaxonomy ]: newTerms } );
 		unlockPostSaving();
 	};
 

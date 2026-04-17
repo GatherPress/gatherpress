@@ -11,6 +11,7 @@ namespace GatherPress\Tests\Core\Blocks;
 use GatherPress\Core\Blocks\Rsvp;
 use GatherPress\Core\Event;
 use GatherPress\Core\Event_Setup;
+use GatherPress\Core\Settings;
 use GatherPress\Tests\Base;
 
 /**
@@ -886,6 +887,50 @@ class Test_Rsvp extends Base {
 			$result,
 			'Should return empty string for non-event post.'
 		);
+	}
+
+	/**
+	 * Test transform_block_content returns empty string when RSVP is disabled for the event.
+	 *
+	 * @covers ::transform_block_content
+	 *
+	 * @return void
+	 */
+	public function test_transform_block_content_rsvp_disabled(): void {
+		$instance = Rsvp::get_instance();
+		$post     = $this->mock->post(
+			array(
+				'post_type'   => \GatherPress\Core\Event::POST_TYPE,
+				'post_status' => 'publish',
+			)
+		)->get();
+
+		// Set rsvp_mode to per_event_on so that per-event disabling is respected.
+		Settings::get_instance()->set( 'rsvp_mode', 'per_event_on' );
+
+		// Explicitly disable RSVP for this event.
+		update_post_meta( $post->ID, 'gatherpress_enable_rsvp', 0 );
+
+		$block_content = '<div class="wp-block-gatherpress-rsvp"></div>';
+		$block         = array(
+			'blockName' => 'gatherpress/rsvp-v2',
+			'attrs'     => array(
+				'postId' => $post->ID,
+			),
+		);
+
+		$result = $instance->transform_block_content( $block_content, $block );
+
+		$this->assertSame(
+			'',
+			$result,
+			'Should return empty string when RSVP is disabled for the event.'
+		);
+
+		delete_post_meta( $post->ID, 'gatherpress_enable_rsvp' );
+
+		// Restore the setting for other tests.
+		Settings::get_instance()->set( 'rsvp_mode', 'all_on' );
 	}
 
 	/**

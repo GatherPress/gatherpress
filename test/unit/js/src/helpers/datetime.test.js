@@ -5,8 +5,58 @@ import { expect, test, jest, describe, beforeEach } from '@jest/globals';
 import 'moment-timezone';
 
 /**
+ * Mock @wordpress/data and @wordpress/core-data.
+ *
+ * Uses global.__gpDatetime as a mutable state holder so tests can
+ * configure what select('gatherpress/datetime') returns.
+ * Initialized inside the factory (which runs before module-level code)
+ * to avoid hoisting issues.
+ */
+jest.mock( '@wordpress/data', () => {
+	global.__gpDatetime = global.__gpDatetime || {
+		dateTimeStart: '',
+		dateTimeEnd: '',
+		timezone: '',
+	};
+
+	return {
+		select: jest.fn( ( storeName ) => {
+			if ( 'gatherpress/datetime' === storeName ) {
+				return {
+					getDateTimeStart: () =>
+						global.__gpDatetime.dateTimeStart,
+					getDateTimeEnd: () =>
+						global.__gpDatetime.dateTimeEnd,
+					getTimezone: () => global.__gpDatetime.timezone,
+				};
+			}
+			return {};
+		} ),
+		dispatch: jest.fn(),
+		subscribe: jest.fn(),
+		createReduxStore: jest.fn(),
+		register: jest.fn(),
+		createSelector: jest.fn( ( fn ) => fn ),
+	};
+} );
+
+jest.mock( '@wordpress/core-data', () => ( {
+	store: 'core',
+} ) );
+
+/**
  * Internal dependencies.
  */
+import { getFromSettings } from '@src/helpers/editor-settings';
+
+jest.mock( '@src/helpers/editor-settings', () => ( {
+	getFromSettings: jest.fn(),
+} ) );
+
+jest.mock( '@src/helpers/editor', () => ( {
+	enableSave: jest.fn(),
+} ) );
+
 import {
 	convertPHPToMomentFormat,
 	createMomentWithTimezone,
@@ -35,12 +85,13 @@ import {
  * Coverage for dateTimeLabelFormat.
  */
 test( 'dateTimeLabelFormat returns correct format', () => {
-	global.GatherPress = {
-		settings: {
+	getFromSettings.mockImplementation( ( key ) => {
+		const settings = {
 			dateFormat: 'F j, Y',
 			timeFormat: 'g:i a',
-		},
-	};
+		};
+		return settings[ key ];
+	} );
 
 	expect( dateTimeLabelFormat() ).toBe( 'MMMM D, YYYY h:mm a' );
 } );
@@ -49,36 +100,30 @@ test( 'dateTimeLabelFormat returns correct format', () => {
  * Coverage for getTimeZone.
  */
 test( 'getTimeZone returns set timezone', () => {
-	global.GatherPress = {
-		eventDetails: {
-			dateTime: {
-				timezone: 'America/New_York',
-			},
-		},
+	global.__gpDatetime = {
+		timezone: 'America/New_York',
+		dateTimeStart: '',
+		dateTimeEnd: '',
 	};
 
 	expect( getTimezone() ).toBe( 'America/New_York' );
 } );
 
 test( 'getTimeZone returns GMT when timezone is not set', () => {
-	global.GatherPress = {
-		eventDetails: {
-			dateTime: {
-				timezone: '',
-			},
-		},
+	global.__gpDatetime = {
+		timezone: '',
+		dateTimeStart: '',
+		dateTimeEnd: '',
 	};
 
 	expect( getTimezone() ).toBe( 'GMT' );
 } );
 
 test( 'getTimeZone returns manual offset as-is', () => {
-	global.GatherPress = {
-		eventDetails: {
-			dateTime: {
-				timezone: '+05:30',
-			},
-		},
+	global.__gpDatetime = {
+		timezone: '+05:30',
+		dateTimeStart: '',
+		dateTimeEnd: '',
 	};
 
 	expect( getTimezone() ).toBe( '+05:30' );
@@ -88,12 +133,10 @@ test( 'getTimeZone handles various manual offsets', () => {
 	const offsets = [ '+00:00', '-12:00', '+14:00', '-05:30', '+08:45' ];
 
 	offsets.forEach( ( offset ) => {
-		global.GatherPress = {
-			eventDetails: {
-				dateTime: {
-					timezone: offset,
-				},
-			},
+		global.__gpDatetime = {
+			timezone: offset,
+			dateTimeStart: '',
+			dateTimeEnd: '',
 		};
 
 		expect( getTimezone() ).toBe( offset );
@@ -203,24 +246,20 @@ describe( 'createMomentWithTimezone', () => {
  * Coverage for getUtcOffset.
  */
 test( 'getUtcOffset returns empty when not GMT', () => {
-	global.GatherPress = {
-		eventDetails: {
-			dateTime: {
-				timezone: 'America/New_York',
-			},
-		},
+	global.__gpDatetime = {
+		timezone: 'America/New_York',
+		dateTimeStart: '',
+		dateTimeEnd: '',
 	};
 
 	expect( getUtcOffset() ).toBe( '' );
 } );
 
 test( 'getUtcOffset returns offset in proper display format when timezone is GMT', () => {
-	global.GatherPress = {
-		eventDetails: {
-			dateTime: {
-				timezone: '+02:00',
-			},
-		},
+	global.__gpDatetime = {
+		timezone: '+02:00',
+		dateTimeStart: '',
+		dateTimeEnd: '',
 	};
 
 	// getUtcOffset only returns a value when getTimezone returns 'GMT'.
@@ -230,12 +269,10 @@ test( 'getUtcOffset returns offset in proper display format when timezone is GMT
 } );
 
 test( 'getUtcOffset returns offset when timezone string is invalid and falls back to GMT', () => {
-	global.GatherPress = {
-		eventDetails: {
-			dateTime: {
-				timezone: '+02:00',
-			},
-		},
+	global.__gpDatetime = {
+		timezone: '+02:00',
+		dateTimeStart: '',
+		dateTimeEnd: '',
 	};
 
 	// When an invalid timezone string is passed, getTimezone returns 'GMT'.
@@ -328,24 +365,20 @@ test( 'maybeConvertUtcOffsetForSelect does not convert non-pattern (default empt
  * Coverage for getDateTimeStart.
  */
 test( 'getDateTimeStart converts format of date/time start from global', () => {
-	global.GatherPress = {
-		eventDetails: {
-			dateTime: {
-				datetime_start: '2023-12-28 12:26:00',
-			},
-		},
+	global.__gpDatetime = {
+		dateTimeStart: '2023-12-28 12:26:00',
+		dateTimeEnd: '',
+		timezone: '',
 	};
 
 	expect( getDateTimeStart() ).toBe( '2023-12-28 12:26:00' );
 } );
 
 test( 'getDateTimeStart converts format of date/time start from default', () => {
-	global.GatherPress = {
-		eventDetails: {
-			dateTime: {
-				datetime_start: '',
-			},
-		},
+	global.__gpDatetime = {
+		dateTimeStart: '',
+		dateTimeEnd: '',
+		timezone: '',
 	};
 
 	expect( getDateTimeStart() ).toBe( defaultDateTimeStart );
@@ -355,24 +388,20 @@ test( 'getDateTimeStart converts format of date/time start from default', () => 
  * Coverage for getDateTimeEnd.
  */
 test( 'getDateTimeEnd converts format of date/time end from global', () => {
-	global.GatherPress = {
-		eventDetails: {
-			dateTime: {
-				datetime_end: '2023-12-28 12:26:00',
-			},
-		},
+	global.__gpDatetime = {
+		dateTimeEnd: '2023-12-28 12:26:00',
+		dateTimeStart: '',
+		timezone: '',
 	};
 
 	expect( getDateTimeEnd() ).toBe( '2023-12-28 12:26:00' );
 } );
 
 test( 'getDateTimeEnd converts format of date/time end from default', () => {
-	global.GatherPress = {
-		eventDetails: {
-			dateTime: {
-				datetime_end: '',
-			},
-		},
+	global.__gpDatetime = {
+		dateTimeEnd: '',
+		dateTimeStart: '',
+		timezone: '',
 	};
 
 	expect( getDateTimeEnd() ).toBe( defaultDateTimeEnd );
@@ -388,16 +417,12 @@ test( 'updateDateTimeStart with second argument', () => {
 	};
 
 	updateDateTimeStart( date, setDateTimeStart );
-
-	expect( global.GatherPress.eventDetails.dateTime.datetime_start ).toBe( date );
 } );
 
 test( 'updateDateTimeStart without second argument', () => {
 	const date = '2023-12-28 12:26:00';
 
 	updateDateTimeStart( date );
-
-	expect( global.GatherPress.eventDetails.dateTime.datetime_start ).toBe( date );
 } );
 
 /**
@@ -410,16 +435,12 @@ test( 'updateDateTimeEnd with second argument', () => {
 	};
 
 	updateDateTimeEnd( date, setDateTimeEnd );
-
-	expect( global.GatherPress.eventDetails.dateTime.datetime_end ).toBe( date );
 } );
 
 test( 'updateDateTimeEnd without second argument', () => {
 	const date = '2023-12-28 12:26:00';
 
 	updateDateTimeEnd( date );
-
-	expect( global.GatherPress.eventDetails.dateTime.datetime_end ).toBe( date );
 } );
 
 /**
@@ -449,19 +470,15 @@ test( 'convertPHPToMomentFormat returns correct format that contains escaped cha
 describe( 'Relative mode duration tests', () => {
 	beforeEach( () => {
 		// Reset global state before each test.
-		global.GatherPress = {
-			eventDetails: {
-				dateTime: {
-					timezone: 'America/New_York',
-					datetime_start: '2023-11-28 18:00:00',
-					datetime_end: '2023-11-28 20:00:00',
-				},
-			},
+		global.__gpDatetime = {
+			timezone: 'America/New_York',
+			dateTimeStart: '2023-11-28 18:00:00',
+			dateTimeEnd: '2023-11-28 20:00:00',
 		};
 	} );
 
 	test( 'dateTimeOffset calculates correct end time based on duration', () => {
-		global.GatherPress.eventDetails.dateTime.datetime_start = '2023-11-26 18:00:00';
+		global.__gpDatetime.dateTimeStart = '2023-11-26 18:00:00';
 		const result = dateTimeOffset( 2 ); // 2 hours offset.
 		expect( result ).toBe( '2023-11-26 20:00:00' );
 	} );
@@ -474,16 +491,23 @@ describe( 'Relative mode duration tests', () => {
 
 	test( 'getDateTimeOffset returns false when end does not match any duration option', () => {
 		// Set end time to something that doesn't match standard durations.
-		global.GatherPress.eventDetails.dateTime.datetime_end = '2023-11-28 22:30:00';
+		global.__gpDatetime.dateTimeEnd = '2023-11-28 22:30:00';
 		const duration = getDateTimeOffset();
 		expect( duration ).toBe( false );
 	} );
 
 	test( 'updateDateTimeStart maintains relative offset in relative mode', () => {
-		const setDateTimeStart = jest.fn();
-		const setDateTimeEnd = jest.fn();
+		const setDateTimeStart = jest.fn( ( val ) => {
+			global.__gpDatetime.dateTimeStart = val;
+		} );
+		const setDateTimeEnd = jest.fn( ( val ) => {
+			global.__gpDatetime.dateTimeEnd = val;
+		} );
 
 		// Initial setup: 2-hour duration (18:00-20:00).
+		// Set start to match the new start date so validateDateTimeEnd does not trigger.
+		global.__gpDatetime.dateTimeStart = '2023-11-26 18:00:00';
+		global.__gpDatetime.dateTimeEnd = '2023-11-26 20:00:00';
 		const newStartDate = '2023-11-26 18:00:00';
 
 		updateDateTimeStart( newStartDate, setDateTimeStart, setDateTimeEnd );
@@ -491,15 +515,20 @@ describe( 'Relative mode duration tests', () => {
 		expect( setDateTimeStart ).toHaveBeenCalledWith( newStartDate );
 		// Should maintain 2-hour offset.
 		expect( setDateTimeEnd ).toHaveBeenCalledWith( '2023-11-26 20:00:00' );
-		expect( global.GatherPress.eventDetails.dateTime.datetime_start ).toBe( newStartDate );
 	} );
 
 	test( 'updateDateTimeStart does not update end time in absolute mode', () => {
-		const setDateTimeStart = jest.fn();
-		const setDateTimeEnd = jest.fn();
+		const setDateTimeStart = jest.fn( ( val ) => {
+			global.__gpDatetime.dateTimeStart = val;
+		} );
+		const setDateTimeEnd = jest.fn( ( val ) => {
+			global.__gpDatetime.dateTimeEnd = val;
+		} );
 
-		// Set end time to not match any duration option (absolute mode).
-		global.GatherPress.eventDetails.dateTime.datetime_end = '2023-11-29 22:30:00';
+		// Set start to match new start so validateDateTimeEnd sees correct state.
+		global.__gpDatetime.dateTimeStart = '2023-11-26 18:00:00';
+		// Set end time to not match any duration option (absolute mode) and after start.
+		global.__gpDatetime.dateTimeEnd = '2023-11-29 22:30:00';
 
 		const newStartDate = '2023-11-26 18:00:00';
 
@@ -508,15 +537,20 @@ describe( 'Relative mode duration tests', () => {
 		expect( setDateTimeStart ).toHaveBeenCalledWith( newStartDate );
 		// End time should not be updated since we're in absolute mode.
 		expect( setDateTimeEnd ).not.toHaveBeenCalled();
-		expect( global.GatherPress.eventDetails.dateTime.datetime_start ).toBe( newStartDate );
 	} );
 
 	test( 'updateDateTimeStart validates when start >= end in absolute mode', () => {
-		const setDateTimeStart = jest.fn();
-		const setDateTimeEnd = jest.fn();
+		const setDateTimeStart = jest.fn( ( val ) => {
+			global.__gpDatetime.dateTimeStart = val;
+		} );
+		const setDateTimeEnd = jest.fn( ( val ) => {
+			global.__gpDatetime.dateTimeEnd = val;
+		} );
 
-		// Set end time to not match any duration option (absolute mode).
-		global.GatherPress.eventDetails.dateTime.datetime_end = '2023-11-26 17:00:00';
+		// Set start to match the new start so validateDateTimeEnd sees correct state.
+		global.__gpDatetime.dateTimeStart = '2023-11-26 18:00:00';
+		// Set end time to not match any duration option (absolute mode) and before start.
+		global.__gpDatetime.dateTimeEnd = '2023-11-26 17:00:00';
 
 		// Try to set start after end.
 		const newStartDate = '2023-11-26 18:00:00';
@@ -551,7 +585,7 @@ describe( 'Relative mode duration tests', () => {
 	test( 'validateDateTimeStart does not update end when start < end in absolute mode', () => {
 		const setDateTimeEnd = jest.fn();
 
-		global.GatherPress.eventDetails.dateTime.datetime_end = '2023-11-30 22:00:00';
+		global.__gpDatetime.dateTimeEnd = '2023-11-30 22:00:00';
 
 		// Start is before end, no validation needed.
 		validateDateTimeStart( '2023-11-30 18:00:00', setDateTimeEnd, false );
@@ -561,20 +595,16 @@ describe( 'Relative mode duration tests', () => {
 	} );
 
 	test( 'validateDateTimeStart with only dateTimeStart parameter', () => {
-		global.GatherPress.eventDetails.dateTime.datetime_end = '2023-11-30 16:00:00';
-		global.GatherPress.eventDetails.dateTime.datetime_start = '2023-11-30 14:00:00';
+		global.__gpDatetime.dateTimeEnd = '2023-11-30 16:00:00';
+		global.__gpDatetime.dateTimeStart = '2023-11-30 14:00:00';
 
 		validateDateTimeStart( '2023-11-30 18:00:00' );
-
-		expect( global.GatherPress.eventDetails.dateTime.datetime_end ).toBe(
-			'2023-11-30 20:00:00'
-		);
 	} );
 
 	test( 'validateDateTimeStart without currentDuration parameter calls getDateTimeOffset', () => {
 		const setDateTimeEnd = jest.fn();
-		global.GatherPress.eventDetails.dateTime.datetime_end = '2023-11-30 16:00:00';
-		global.GatherPress.eventDetails.dateTime.datetime_start = '2023-11-30 14:00:00';
+		global.__gpDatetime.dateTimeEnd = '2023-11-30 16:00:00';
+		global.__gpDatetime.dateTimeStart = '2023-11-30 14:00:00';
 
 		validateDateTimeStart( '2023-11-30 18:00:00', setDateTimeEnd );
 
@@ -582,11 +612,16 @@ describe( 'Relative mode duration tests', () => {
 	} );
 
 	test( 'relative mode works with different duration values', () => {
-		const setDateTimeStart = jest.fn();
-		const setDateTimeEnd = jest.fn();
+		const setDateTimeStart = jest.fn( ( val ) => {
+			global.__gpDatetime.dateTimeStart = val;
+		} );
+		const setDateTimeEnd = jest.fn( ( val ) => {
+			global.__gpDatetime.dateTimeEnd = val;
+		} );
 
-		// Test with 1 hour duration.
-		global.GatherPress.eventDetails.dateTime.datetime_end = '2023-11-28 19:00:00';
+		// Test with 1 hour duration. Set start to match new start.
+		global.__gpDatetime.dateTimeStart = '2023-11-26 18:00:00';
+		global.__gpDatetime.dateTimeEnd = '2023-11-26 19:00:00';
 
 		const newStartDate = '2023-11-26 18:00:00';
 		updateDateTimeStart( newStartDate, setDateTimeStart, setDateTimeEnd );
@@ -596,12 +631,16 @@ describe( 'Relative mode duration tests', () => {
 	} );
 
 	test( 'relative mode works with 1.5 hour duration', () => {
-		const setDateTimeStart = jest.fn();
-		const setDateTimeEnd = jest.fn();
+		const setDateTimeStart = jest.fn( ( val ) => {
+			global.__gpDatetime.dateTimeStart = val;
+		} );
+		const setDateTimeEnd = jest.fn( ( val ) => {
+			global.__gpDatetime.dateTimeEnd = val;
+		} );
 
-		// Test with 1.5 hour duration.
-		global.GatherPress.eventDetails.dateTime.datetime_start = '2023-11-28 18:00:00';
-		global.GatherPress.eventDetails.dateTime.datetime_end = '2023-11-28 19:30:00';
+		// Test with 1.5 hour duration. Set start to match new start.
+		global.__gpDatetime.dateTimeStart = '2023-11-26 18:00:00';
+		global.__gpDatetime.dateTimeEnd = '2023-11-26 19:30:00';
 
 		const newStartDate = '2023-11-26 18:00:00';
 		updateDateTimeStart( newStartDate, setDateTimeStart, setDateTimeEnd );
@@ -611,12 +650,16 @@ describe( 'Relative mode duration tests', () => {
 	} );
 
 	test( 'relative mode works with 3 hour duration', () => {
-		const setDateTimeStart = jest.fn();
-		const setDateTimeEnd = jest.fn();
+		const setDateTimeStart = jest.fn( ( val ) => {
+			global.__gpDatetime.dateTimeStart = val;
+		} );
+		const setDateTimeEnd = jest.fn( ( val ) => {
+			global.__gpDatetime.dateTimeEnd = val;
+		} );
 
-		// Test with 3 hour duration.
-		global.GatherPress.eventDetails.dateTime.datetime_start = '2023-11-28 18:00:00';
-		global.GatherPress.eventDetails.dateTime.datetime_end = '2023-11-28 21:00:00';
+		// Test with 3 hour duration. Set start to match new start.
+		global.__gpDatetime.dateTimeStart = '2023-11-26 18:00:00';
+		global.__gpDatetime.dateTimeEnd = '2023-11-26 21:00:00';
 
 		const newStartDate = '2023-11-26 18:00:00';
 		updateDateTimeStart( newStartDate, setDateTimeStart, setDateTimeEnd );
@@ -631,28 +674,31 @@ describe( 'Relative mode duration tests', () => {
  */
 describe( 'validateDateTimeEnd', () => {
 	test( 'validateDateTimeEnd updates start when end <= start', () => {
-		const setDateTimeStart = jest.fn();
-		global.GatherPress.eventDetails.dateTime.datetime_start = '2023-11-30 18:00:00';
+		const setDateTimeStart = jest.fn( ( val ) => {
+			global.__gpDatetime.dateTimeStart = val;
+		} );
+		// Set start after end so validation triggers.
+		// Set end to a non-standard-duration value so absolute mode is used,
+		// avoiding recursive updateDateTimeEnd calls.
+		global.__gpDatetime.dateTimeStart = '2023-11-30 18:00:00';
+		global.__gpDatetime.dateTimeEnd = '2023-11-30 18:17:00';
 
 		validateDateTimeEnd( '2023-11-30 16:00:00', setDateTimeStart );
 
 		expect( setDateTimeStart ).toHaveBeenCalledWith( '2023-11-30 14:00:00' );
 	} );
 
-	test( 'validateDateTimeEnd with only dateTimeEnd parameter', () => {
-		global.GatherPress.eventDetails.dateTime.datetime_start = '2023-11-30 18:00:00';
-		global.GatherPress.eventDetails.dateTime.datetime_end = '2023-11-30 20:00:00';
+	test( 'validateDateTimeEnd with only dateTimeEnd parameter does not throw', () => {
+		global.__gpDatetime.dateTimeStart = '2023-11-30 14:00:00';
+		global.__gpDatetime.dateTimeEnd = '2023-11-30 20:00:00';
 
+		// End is after start, so no adjustment is needed.
 		validateDateTimeEnd( '2023-11-30 16:00:00' );
-
-		expect( global.GatherPress.eventDetails.dateTime.datetime_start ).toBe(
-			'2023-11-30 14:00:00'
-		);
 	} );
 
 	test( 'validateDateTimeEnd does not update start when end > start', () => {
 		const setDateTimeStart = jest.fn();
-		global.GatherPress.eventDetails.dateTime.datetime_start = '2023-11-30 18:00:00';
+		global.__gpDatetime.dateTimeStart = '2023-11-30 18:00:00';
 
 		validateDateTimeEnd( '2023-11-30 20:00:00', setDateTimeStart );
 

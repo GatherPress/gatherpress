@@ -6,7 +6,7 @@ import moment from 'moment';
 /**
  * WordPress dependencies.
  */
-import { __, sprintf } from '@wordpress/i18n';
+import { __ } from '@wordpress/i18n';
 import {
 	BlockControls,
 	InspectorControls,
@@ -17,9 +17,9 @@ import {
 	__experimentalVStack as VStack,
 	PanelBody,
 	RadioControl,
-	SelectControl,
 	Spinner,
 	TextControl,
+	ToggleControl,
 	ToolbarButton,
 	ToolbarGroup,
 } from '@wordpress/components';
@@ -37,15 +37,9 @@ import {
 	removeNonTimePHPFormatChars,
 } from '../../helpers/datetime';
 import DateTimeRange from '../../components/DateTimeRange';
-import { getFromGlobal } from '../../helpers/globals';
+import { getFromSettings } from '../../helpers/editor-settings';
 import { isEventPostType, hasValidEventId } from '../../helpers/event';
 import { isInFSETemplate } from '../../helpers/editor';
-import { CPT_EVENT } from '../../helpers/namespace';
-
-const globalDateFormat = getFromGlobal( 'settings.dateFormat' );
-const globalTimeFormat = getFromGlobal( 'settings.timeFormat' );
-const globalShowTimezone = getFromGlobal( 'settings.showTimezone' );
-const defaultFormat = `${ globalDateFormat } ${ globalTimeFormat }`;
 
 /**
  * Similar to get_display_datetime method in class-event.php.
@@ -68,13 +62,18 @@ const displayDateTime = (
 	separator,
 	showTimezone
 ) => {
+	const dateFormat = getFromSettings( 'dateFormat' );
+	const timeFormat = getFromSettings( 'timeFormat' );
+	const globalShowTimezone = getFromSettings( 'showTimezone' );
+	const fullFormat = `${ dateFormat } ${ timeFormat }`;
+
 	timezone = getTimezone( timezone );
 	let sameStartEndDay = false;
 
 	// Check for default formatting with same event day before applying
 	// attribute-specific formats.
 	if ( dateTimeStart && dateTimeEnd ) {
-		const sameDayFormat = convertPHPToMomentFormat( globalDateFormat );
+		const sameDayFormat = convertPHPToMomentFormat( dateFormat );
 		sameStartEndDay =
 			createMomentWithTimezone( dateTimeStart, timezone ).format( sameDayFormat ) ===
 			createMomentWithTimezone( dateTimeEnd, timezone ).format( sameDayFormat );
@@ -85,7 +84,7 @@ const displayDateTime = (
 	// Add start date/time.
 	if ( dateTimeStart ) {
 		startFormat = convertPHPToMomentFormat(
-			startFormat || defaultFormat
+			startFormat || fullFormat
 		);
 		parts.push( createMomentWithTimezone( dateTimeStart, timezone ).format( startFormat ) );
 	}
@@ -93,7 +92,7 @@ const displayDateTime = (
 	// Determine end date/time.
 	if ( dateTimeEnd ) {
 		// Fall formatting back to default.
-		endFormat = endFormat || defaultFormat;
+		endFormat = endFormat || fullFormat;
 
 		// Remove non-time characters from PHP date format if start and end
 		// are on the same day.
@@ -196,6 +195,10 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 		showTimezone,
 	} = attributes;
 
+	const dateFormat = getFromSettings( 'dateFormat' );
+	const timeFormat = getFromSettings( 'timeFormat' );
+	const defaultShowTimezone = getFromSettings( 'showTimezone' );
+
 	// Check if we're inside a query loop and if context is an event.
 	const isDescendentOfQueryLoop = Number.isFinite( context?.queryId );
 	const isEventContext = isEventPostType( context?.postType );
@@ -234,10 +237,17 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 				};
 			}
 
-			// For Query Loop context, fetch from entity record.
+			// Resolve the post type from context or fall back to the editor's current post type.
+			// This ensures custom post types with gatherpress-event-date support work correctly
+			// in Query Loop blocks and postId override scenarios.
+			const postType =
+				context?.postType ||
+				select( 'core/editor' )?.getCurrentPostType();
+
+			// For Query Loop and override contexts, fetch from entity record.
 			const hasResolved = select( 'core' ).hasFinishedResolution(
 				'getEntityRecord',
-				[ 'postType', CPT_EVENT, postId ]
+				[ 'postType', postType, postId ]
 			);
 
 			if ( ! hasResolved ) {
@@ -246,7 +256,7 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 
 			const meta = select( 'core' ).getEntityRecord(
 				'postType',
-				CPT_EVENT,
+				postType,
 				postId
 			)?.meta;
 
@@ -256,7 +266,7 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 				timezone: meta?.gatherpress_timezone,
 			};
 		},
-		[ postId ]
+		[ postId, context?.postType ]
 	);
 
 	// Show spinner only while loading, not on 404.
@@ -330,37 +340,6 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 						<VStack spacing={ 4 }>
 							<DateTimeRange />
 						</VStack>
-						<div style={ { height: '1rem' } } />
-						<SelectControl
-							label={ __( 'Show time zone', 'gatherpress' ) }
-							value={ showTimezone }
-							options={ [
-								{
-									label: sprintf(
-										/* translators: %s: Plugin "show timezone" setting */
-										__(
-											'%s (plugin setting)',
-											'gatherpress'
-										),
-										globalShowTimezone
-											? __( 'Yes', 'gatherpress' )
-											: __( 'No', 'gatherpress' )
-									),
-									value: '',
-								},
-								{
-									label: __( 'Yes', 'gatherpress' ),
-									value: 'yes',
-								},
-								{
-									label: __( 'No', 'gatherpress' ),
-									value: 'no',
-								},
-							] }
-							onChange={ ( value ) =>
-								setAttributes( { showTimezone: value } )
-							}
-						/>
 					</PanelBody>
 				</InspectorControls>
 			) }
@@ -407,7 +386,7 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 						<TextControl
 							label={ __( 'Start date format', 'gatherpress' ) }
 							value={ startDateFormat }
-							placeholder={ `${ globalDateFormat } ${ globalTimeFormat }` }
+							placeholder={ `${ dateFormat } ${ timeFormat }` }
 							onChange={ ( value ) =>
 								setAttributes( { startDateFormat: value } )
 							}
@@ -417,7 +396,7 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 						<TextControl
 							label={ __( 'End date format', 'gatherpress' ) }
 							value={ endDateFormat }
-							placeholder={ `${ globalDateFormat } ${ globalTimeFormat }` }
+							placeholder={ `${ dateFormat } ${ timeFormat }` }
 							onChange={ ( value ) =>
 								setAttributes( { endDateFormat: value } )
 							}
@@ -435,6 +414,20 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 							) }
 						</a>
 					</p>
+					<ToggleControl
+						__nextHasNoMarginBottom
+						label={ __( 'Append time zone', 'gatherpress' ) }
+						checked={
+							showTimezone
+								? 'yes' === showTimezone
+								: defaultShowTimezone
+						}
+						onChange={ ( value ) =>
+							setAttributes( {
+								showTimezone: value ? 'yes' : 'no',
+							} )
+						}
+					/>
 				</PanelBody>
 			</InspectorControls>
 		</div>

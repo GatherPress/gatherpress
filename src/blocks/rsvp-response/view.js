@@ -239,7 +239,8 @@ const { state, actions } = store( 'gatherpress', {
 			const rsvpSelection = toCamelCase(
 				state.posts[ postId ]?.rsvpSelection ?? 'attending',
 			);
-			const count = state.posts[ postId ].eventResponses[ rsvpSelection ];
+			const count =
+				state.posts[ postId ]?.eventResponses?.[ rsvpSelection ] ?? 0;
 			const limit = parseInt( rsvpResponseElement.dataset.limit, 10 ) || 8;
 
 			// If the count is less than or equal to the limit, apply the class.

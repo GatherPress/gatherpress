@@ -9,32 +9,40 @@ import {
 } from '@wordpress/block-editor';
 import { __ } from '@wordpress/i18n';
 import { PanelBody, PanelRow } from '@wordpress/components';
-import { useEntityProp } from '@wordpress/core-data';
 import { useSelect } from '@wordpress/data';
 
 /**
  * Internal dependencies
  */
-import { getCurrentContextualPostId, hasValidBlockContext } from '../../helpers/editor';
-import { isEventPostType, DISABLED_FIELD_OPACITY } from '../../helpers/event';
-import { GetVenuePostFromTermId, GetVenuePostFromEventId } from '../../helpers/venue';
+import { getCurrentContextualPostId, hasValidBlockContext, isInFSETemplate } from '../../helpers/editor';
+import { isPostTypeSupporting, DISABLED_FIELD_OPACITY } from '../../helpers/event';
+import { GetVenuePostFromTermId, GetVenuePostFromEventId, getVenuePostType, getVenueTaxonomy, useVenueTaxonomyIds } from '../../helpers/venue';
 import VenueNavigator from '../../components/VenueNavigator';
-import { CPT_EVENT, CPT_VENUE, TAX_VENUE } from '../../helpers/namespace';
 import { TEMPLATE_WITH_TITLE, TEMPLATE_WITHOUT_TITLE } from './template';
 
 const Edit = ( props ) => {
 	const { context } = props;
 
 	const isDescendentOfQueryLoop = Number.isFinite( context?.queryId );
-	const isEventContext = isEventPostType( context?.postType );
-	const isVenueContext = CPT_VENUE === context?.postType;
+	const isEventContext = isPostTypeSupporting( 'gatherpress-venue', context?.postType );
+	const isVenueContext = isPostTypeSupporting( 'gatherpress-venue-information', context?.postType );
+
+	// Resolve the effective post type from context or the current editor post type.
+	const currentEditorPostType = useSelect(
+		( select ) => select( 'core/editor' )?.getCurrentPostType(),
+		[]
+	);
+	const effectivePostType = context?.postType || currentEditorPostType;
+	const venuePostType = getVenuePostType( effectivePostType );
 
 	const eventId = getCurrentContextualPostId( context?.postId );
-	const [ venueTaxonomyIds ] = useEntityProp(
-		'postType',
-		CPT_EVENT,
-		TAX_VENUE,
-		isVenueContext ? 0 : eventId
+	const venueTaxonomy = getVenueTaxonomy( venuePostType );
+
+	// Read venue taxonomy IDs without triggering context=edit REST requests.
+	const venueTaxonomyIds = useVenueTaxonomyIds(
+		venueTaxonomy,
+		eventId,
+		isVenueContext || isDescendentOfQueryLoop
 	);
 
 	const isEditableEventContext =
@@ -53,13 +61,13 @@ const Edit = ( props ) => {
 				.map( ( termId ) =>
 					wpSelect( 'core' ).getEntityRecord(
 						'taxonomy',
-						TAX_VENUE,
+						venueTaxonomy,
 						termId
 					)
 				)
 				.filter( Boolean );
 		},
-		[ isEditableEventContext, venueTaxonomyIds ]
+		[ isEditableEventContext, venueTaxonomyIds, venueTaxonomy ]
 	);
 
 	// Find venue term ID (excluding online-event).
@@ -70,7 +78,8 @@ const Edit = ( props ) => {
 	// Fetch venue post - use different methods for Query Loop vs direct editing.
 	const venuePostFromTerm = GetVenuePostFromTermId( venueTermId );
 	const venuePostFromEvent = GetVenuePostFromEventId(
-		isDescendentOfQueryLoop ? context?.postId : null
+		isDescendentOfQueryLoop ? context?.postId : null,
+		context?.postType
 	);
 
 	// Use Query Loop result if available, otherwise use direct editing result.
@@ -99,7 +108,7 @@ const Edit = ( props ) => {
 			opacity: hasValidBlockContext( {
 				isDescendentOfQueryLoop,
 				postType: context?.postType,
-				expectedPostType: CPT_EVENT,
+				support: 'gatherpress-venue',
 				hasData: hasVenue,
 			} )
 				? 1
@@ -115,13 +124,13 @@ const Edit = ( props ) => {
 			<BlockContextProvider
 				value={ {
 					postId: venuePostId,
-					postType: CPT_VENUE,
+					postType: venuePostType,
 				} }
 			>
 				<InnerBlocks template={ template } templateLock={ false } />
 			</BlockContextProvider>
 			<InspectorControls>
-				{ ! isDescendentOfQueryLoop && isEventContext && (
+				{ ! isDescendentOfQueryLoop && ! isInFSETemplate() && isEventContext && (
 					<PanelBody
 						title={ __( 'Venue settings', 'gatherpress' ) }
 						initialOpen={ true }

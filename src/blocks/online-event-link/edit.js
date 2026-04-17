@@ -10,7 +10,7 @@ import { store as editorStore } from '@wordpress/editor';
 /**
  * Internal dependencies.
  */
-import { CPT_EVENT } from '../../helpers/namespace';
+import { isPostTypeSupporting } from '../../helpers/event';
 
 /**
  * Edit component for the GatherPress Online Event block.
@@ -48,26 +48,26 @@ const Edit = ( { context, attributes, setAttributes } ) => {
 		[]
 	);
 
-	// Determine which post and meta field to use (only events have online links).
+	// Determine which post and meta field to use (only online-event-supporting types have online links).
 	const { postId, postType, metaKey } = useSelect(
 		( select ) => {
-			// If we have context, check if it's an event.
+			// If we have context, check if the context post type supports online events.
 			if ( contextPostId ) {
 				const { getEntityRecord } = select( coreStore );
 				const contextPost = getEntityRecord( 'postType', 'any', contextPostId );
 				const contextType = contextPost?.type;
 
-				if ( CPT_EVENT === contextType ) {
+				if ( contextType && isPostTypeSupporting( 'gatherpress-online-event', contextType ) ) {
 					return {
 						postId: contextPostId,
-						postType: CPT_EVENT,
+						postType: contextType,
 						metaKey: 'gatherpress_online_event_link',
 					};
 				}
 			}
 
-			// Fall back to current editor post if it's an event.
-			if ( CPT_EVENT === currentPostType ) {
+			// Fall back to current editor post if it supports online events.
+			if ( isPostTypeSupporting( 'gatherpress-online-event', currentPostType ) ) {
 				return {
 					postId: currentPostId,
 					postType: currentPostType,
@@ -75,7 +75,7 @@ const Edit = ( { context, attributes, setAttributes } ) => {
 				};
 			}
 
-			// Not an event context - no online link.
+			// Not an online-event context - no online link.
 			return {
 				postId: null,
 				postType: null,

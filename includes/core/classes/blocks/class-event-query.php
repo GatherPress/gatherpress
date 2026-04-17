@@ -67,18 +67,9 @@ class Event_Query {
 			10,
 			2
 		);
-		// Updates the query vars for the Query Loop block in the block editor.
-		add_filter(
-			sprintf( 'rest_%s_query', Event::POST_TYPE ),
-			array( $this, 'rest_query' ),
-			10,
-			2
-		);
-		// We need more sortBy options.
-		add_filter(
-			sprintf( 'rest_%s_collection_params', Event::POST_TYPE ),
-			array( $this, 'rest_collection_params' )
-		);
+		// Priority 11 so post types (registered at default priority 10) exist
+		// when we query get_post_types_by_support( 'gatherpress-event-date' ).
+		add_action( 'init', array( $this, 'register_event_date_rest_hooks' ), 11 );
 
 		// Integrate with Advanced Query Loop plugin to pass event query params through.
 		add_filter(
@@ -87,6 +78,33 @@ class Event_Query {
 			10,
 			3
 		);
+	}
+
+	/**
+	 * Register REST hooks for all post types that support event_date.
+	 *
+	 * This method runs on init at a late priority to ensure all post types
+	 * have been registered before we query for event_date support.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return void
+	 */
+	public function register_event_date_rest_hooks(): void {
+		foreach ( get_post_types_by_support( 'gatherpress-event-date' ) as $post_type ) {
+			// Updates the query vars for the Query Loop block in the block editor.
+			add_filter(
+				sprintf( 'rest_%s_query', $post_type ),
+				array( $this, 'rest_query' ),
+				10,
+				2
+			);
+			// We need more sortBy options.
+			add_filter(
+				sprintf( 'rest_%s_collection_params', $post_type ),
+				array( $this, 'rest_collection_params' )
+			);
+		}
 	}
 
 	/**
@@ -196,7 +214,7 @@ class Event_Query {
 		$query_args = array();
 
 		// Post Related.
-		$query_args['post_type'] = array( Event::POST_TYPE );
+		$query_args['post_type'] = get_post_types_by_support( 'gatherpress-event-date' );
 
 		// Type of event list: 'upcoming' or 'past',
 		// @see wp-content/plugins/gatherpress/includes/core/classes/class-event-query.php.
@@ -211,6 +229,10 @@ class Event_Query {
 
 		if ( isset( $block_query['include_unfinished'] ) ) {
 			$query_args['include_unfinished'] = $block_query['include_unfinished'];
+		}
+
+		if ( ! empty( $block_query['venue_filter'] ) ) {
+			$query_args['venue_filter'] = $block_query['venue_filter'];
 		}
 
 		// Order By.
@@ -273,6 +295,11 @@ class Event_Query {
 
 		$custom_args['orderby'] = $request->get_param( 'orderby' );
 
+		$venue_filter = $request->get_param( 'venue_filter' );
+		if ( null !== $venue_filter ) {
+			$custom_args['venue_filter'] = $venue_filter;
+		}
+
 		/** This filter is documented in includes/query-loop.php */
 		$filtered_query_args = apply_filters(
 			'gatherpress_query_vars',
@@ -330,6 +357,12 @@ class Event_Query {
 			'type'        => 'integer',
 		);
 
+		$query_params['venue_filter'] = array(
+			'description' => __( 'Whether to filter events by the current venue context', 'gatherpress' ),
+			'type'        => 'integer',
+			'enum'        => array( 0, 1 ),
+		);
+
 		return $query_params;
 	}
 
@@ -358,7 +391,7 @@ class Event_Query {
 		// Only process if querying GatherPress events.
 		$post_type = $block_query['postType'] ?? '';
 
-		if ( Event::POST_TYPE !== $post_type ) {
+		if ( ! post_type_supports( $post_type, 'gatherpress-event-date' ) ) {
 			return $query_args;
 		}
 
@@ -380,6 +413,11 @@ class Event_Query {
 		// Pass through order direction.
 		if ( ! empty( $block_query['order'] ) ) {
 			$query_args['order'] = strtoupper( $block_query['order'] );
+		}
+
+		// Pass through venue filter setting.
+		if ( ! empty( $block_query['venue_filter'] ) ) {
+			$query_args['venue_filter'] = $block_query['venue_filter'];
 		}
 
 		return $query_args;
