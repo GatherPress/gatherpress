@@ -413,20 +413,14 @@ class Venue_Setup {
 			return;
 		}
 
-		$venue = new Venue( $post_id );
-
-		if ( ! $venue->venue instanceof WP_Post ) {
-			return;
-		}
-
-		$info      = $venue->get_information();
+		$info      = ( new Venue( $post_id ) )->get_information();
 		$latitude  = is_numeric( $info['latitude'] ) ? $info['latitude'] : '';
 		$longitude = is_numeric( $info['longitude'] ) ? $info['longitude'] : '';
 
 		update_post_meta( $post_id, 'geo_latitude', $latitude );
 		update_post_meta( $post_id, 'geo_longitude', $longitude );
 		update_post_meta( $post_id, 'geo_address', $info['fullAddress'] );
-		update_post_meta( $post_id, 'geo_public', ( 'publish' === $venue->venue->post_status ) ? 1 : 0 );
+		update_post_meta( $post_id, 'geo_public', ( 'publish' === get_post_status( $post_id ) ) ? 1 : 0 );
 	}
 
 	/**
@@ -499,12 +493,7 @@ class Venue_Setup {
 			return;
 		}
 
-		$venue = new Venue( $post_id );
-
-		if ( ! $venue->venue instanceof WP_Post ) {
-			return;
-		}
-
+		$venue     = new Venue( $post_id );
 		$term_slug = $venue->get_term_slug();
 		$taxonomy  = $venue->get_taxonomy();
 
@@ -613,10 +602,6 @@ class Venue_Setup {
 
 		$venue = new Venue( $post_id );
 
-		if ( ! $venue->venue instanceof WP_Post ) {
-			return;
-		}
-
 		// Derive both slugs from the hook-supplied post objects rather than
 		// re-reading from the DB: the hook already gives us the trusted pre/post
 		// state, and we avoid a race where a concurrent save would leak into the
@@ -665,14 +650,7 @@ class Venue_Setup {
 		}
 
 		$venue = new Venue( $post_id );
-
-		// Guard against the race where the post has already been fully removed
-		// between the hook firing and this callback running.
-		if ( ! $venue->venue instanceof WP_Post ) {
-			return;
-		}
-
-		$term = $venue->get_term();
+		$term  = $venue->get_term();
 
 		if ( $term instanceof WP_Term ) {
 			wp_delete_term( $term->term_id, $venue->get_taxonomy() );

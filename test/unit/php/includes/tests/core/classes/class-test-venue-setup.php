@@ -1659,4 +1659,153 @@ class Test_Venue_Setup extends Base {
 			'Failed to assert locale was restored after method execution.'
 		);
 	}
+
+	/**
+	 * Coverage for add_venue_term's early return when the term already exists.
+	 *
+	 * @covers ::add_venue_term
+	 *
+	 * @return void
+	 */
+	public function test_add_venue_term_skips_when_term_already_exists(): void {
+		$instance = Venue_Setup::get_instance();
+		$venue    = $this->mock->post( array( 'post_type' => Venue::POST_TYPE ) )->get();
+
+		// First save creates the term.
+		$term = term_exists( $instance->term_slug_from_post_name( $venue->post_name ), Venue::TAXONOMY );
+
+		$this->assertIsArray( $term, 'Expected term to be created on first save.' );
+
+		$term_id = $term['term_id'];
+
+		// Second call with $update=false should detect the existing term and bail.
+		$instance->add_venue_term( $venue->ID, $venue, false );
+
+		$term_after = term_exists( $instance->term_slug_from_post_name( $venue->post_name ), Venue::TAXONOMY );
+
+		$this->assertSame(
+			$term_id,
+			$term_after['term_id'],
+			'Expected the existing term to be untouched rather than replaced.'
+		);
+	}
+
+	/**
+	 * Coverage for maybe_update_term_slug's no-change early return.
+	 *
+	 * @covers ::maybe_update_term_slug
+	 *
+	 * @return void
+	 */
+	public function test_maybe_update_term_slug_no_changes(): void {
+		$instance = Venue_Setup::get_instance();
+		$venue    = $this->mock->post( array( 'post_type' => Venue::POST_TYPE ) )->get();
+
+		// Call with identical before/after — neither slug nor title changed.
+		$instance->maybe_update_term_slug( $venue->ID, $venue, $venue );
+
+		$term = term_exists( $instance->term_slug_from_post_name( $venue->post_name ), Venue::TAXONOMY );
+
+		$this->assertIsArray(
+			$term,
+			'Expected the original term to still exist — no-change path should leave terms untouched.'
+		);
+	}
+
+	/**
+	 * Coverage for delete_venue_term's early return when the post type does not
+	 * declare gatherpress-venue-information support.
+	 *
+	 * @covers ::delete_venue_term
+	 *
+	 * @return void
+	 */
+	public function test_delete_venue_term_unsupported_post_type(): void {
+		$instance = Venue_Setup::get_instance();
+		$post     = $this->mock->post( array( 'post_type' => 'post' ) )->get();
+
+		// Calling delete_venue_term on a standard post should no-op.
+		$instance->delete_venue_term( $post->ID );
+
+		// Nothing to assert about terms — the guarantee is that no error is thrown
+		// and the method returns silently. A terminal assertion keeps PHPUnit happy.
+		$this->assertTrue( true );
+	}
+
+	/**
+	 * Coverage for get_venue_meta when the event post has a linked venue.
+	 *
+	 * @covers ::get_venue_meta
+	 *
+	 * @return void
+	 */
+	public function test_get_venue_meta_event_with_linked_venue(): void {
+		$instance    = Venue_Setup::get_instance();
+		$venue_title = 'Linked Venue';
+		$venue       = $this->mock->post(
+			array(
+				'post_type'  => Venue::POST_TYPE,
+				'post_name'  => 'linked-venue-for-meta',
+				'post_title' => $venue_title,
+			)
+		)->get();
+
+		// Attach the venue to the event via the taxonomy.
+		$term_slug = $instance->term_slug_from_post_name( $venue->post_name );
+		$event     = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get();
+
+		wp_set_post_terms( $event->ID, $term_slug, Venue::TAXONOMY );
+
+		add_post_meta(
+			$venue->ID,
+			'gatherpress_venue_information',
+			wp_json_encode(
+				array(
+					'fullAddress' => '1 Library Lane',
+					'phoneNumber' => '555-1234',
+					'website'     => 'https://example.test',
+					'latitude'    => '40.0',
+					'longitude'   => '-70.0',
+				)
+			)
+		);
+
+		$venue_meta = $instance->get_venue_meta( $event->ID, Event::POST_TYPE );
+
+		$this->assertSame(
+			$venue_title,
+			$venue_meta['name'],
+			'Expected venue name to come from the linked venue post.'
+		);
+		$this->assertSame( '1 Library Lane', $venue_meta['fullAddress'] );
+		$this->assertFalse( $venue_meta['isOnlineEventTerm'] );
+	}
+
+	/**
+	 * Coverage for get_venue_post_from_event_post_id when all attached terms are
+	 * non-`_`-prefixed sentinels (e.g. only `online-event`).
+	 *
+	 * Exercises the `continue` and the post-loop `return null` fallthrough.
+	 *
+	 * @covers ::get_venue_post_from_event_post_id
+	 *
+	 * @return void
+	 */
+	public function test_get_venue_post_from_event_post_id_only_sentinel_terms(): void {
+		$instance = Venue_Setup::get_instance();
+
+		if ( ! term_exists( 'online-event', Venue::TAXONOMY ) ) {
+			wp_insert_term( 'Online event', Venue::TAXONOMY, array( 'slug' => 'online-event' ) );
+		}
+
+		$event = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get();
+
+		// Attach only the online-event sentinel — no `_`-prefixed venue term.
+		wp_set_post_terms( $event->ID, array( 'online-event' ), Venue::TAXONOMY );
+
+		$this->assertNull(
+			$instance->get_venue_post_from_event_post_id( $event->ID ),
+			'Expected null when the only attached term is the non-venue sentinel.'
+		);
+	}
 }

@@ -169,9 +169,67 @@ class Test_Venue extends Base {
 		);
 		$this->assertSame( 0, $venue->get_post_id() );
 		$this->assertSame( '', $venue->get_post_type() );
-		$this->assertSame( '', $venue->get_taxonomy() );
-		$this->assertSame( '', $venue->get_term_slug() );
-		$this->assertNull( $venue->get_term() );
+	}
+
+	/**
+	 * get_taxonomy returns '' when wrapping a non-venue post.
+	 *
+	 * @covers ::get_taxonomy
+	 *
+	 * @return void
+	 */
+	public function test_get_taxonomy_returns_empty_for_unsupported_post(): void {
+		$post_id = $this->factory->post->create( array( 'post_type' => 'post' ) );
+
+		$this->assertSame( '', ( new Venue( $post_id ) )->get_taxonomy() );
+	}
+
+	/**
+	 * get_term_slug returns '' when wrapping a non-venue post.
+	 *
+	 * @covers ::get_term_slug
+	 *
+	 * @return void
+	 */
+	public function test_get_term_slug_returns_empty_for_unsupported_post(): void {
+		$post_id = $this->factory->post->create( array( 'post_type' => 'post' ) );
+
+		$this->assertSame( '', ( new Venue( $post_id ) )->get_term_slug() );
+	}
+
+	/**
+	 * get_term returns null when wrapping a non-venue post.
+	 *
+	 * @covers ::get_term
+	 *
+	 * @return void
+	 */
+	public function test_get_term_returns_null_for_unsupported_post(): void {
+		$post_id = $this->factory->post->create( array( 'post_type' => 'post' ) );
+
+		$this->assertNull( ( new Venue( $post_id ) )->get_term() );
+	}
+
+	/**
+	 * get_information returns the default empty shape when wrapping a non-venue post.
+	 *
+	 * @covers ::get_information
+	 *
+	 * @return void
+	 */
+	public function test_get_information_returns_empty_shape_for_unsupported_post(): void {
+		$post_id = $this->factory->post->create( array( 'post_type' => 'post' ) );
+
+		$this->assertSame(
+			array(
+				'fullAddress' => '',
+				'phoneNumber' => '',
+				'website'     => '',
+				'latitude'    => '',
+				'longitude'   => '',
+			),
+			( new Venue( $post_id ) )->get_information()
+		);
 	}
 
 	/**
