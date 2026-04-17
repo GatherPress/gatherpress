@@ -61,28 +61,32 @@ class Venue_Setup {
 			3
 		);
 		add_action( 'init', array( $this, 'register_post_type' ) );
-		add_action( 'registered_post_type', array( $this, 'maybe_register_post_save_hook' ) );
+		add_action( 'registered_post_type', array( $this, 'maybe_register_post_type_hooks' ) );
 		add_action( 'registered_post_type', array( $this, 'maybe_register_post_meta' ) );
 		// Priority 11 so post types registered at default priority 10 are available for get_post_types_by_support().
 		add_action( 'init', array( $this, 'register_taxonomy' ), 11 );
+		// post_updated has no per-type variant in WP core, and we need $post_before
+		// for the old/new post_name diff, so this stays on the global hook.
 		add_action( 'post_updated', array( $this, 'maybe_update_term_slug' ), 10, 3 );
-		add_action( 'delete_post', array( $this, 'delete_venue_term' ) );
 		add_action( 'wp_after_insert_post', array( $this, 'set_geodata' ) );
 		add_filter( 'block_editor_settings_all', array( $this, 'add_editor_settings' ) );
 	}
 
 	/**
-	 * Register save_post_{$type} → add_venue_term when a venue post type registers.
+	 * Wire per-post-type lifecycle hooks when a venue post type registers.
 	 *
-	 * Avoids hooking the global `save_post` action, which fires on every post
-	 * save site-wide.
+	 * Registration is gated on `gatherpress-venue-information` support so any
+	 * post type that declares that support — including companion-plugin
+	 * post types — automatically gets the venue term wired to its save and
+	 * delete lifecycle, without needing to hook the site-wide
+	 * `save_post`/`delete_post` actions.
 	 *
 	 * @since 1.0.0
 	 *
 	 * @param string $post_type The post type that was just registered.
 	 * @return void
 	 */
-	public function maybe_register_post_save_hook( string $post_type ): void {
+	public function maybe_register_post_type_hooks( string $post_type ): void {
 		if ( ! post_type_supports( $post_type, 'gatherpress-venue-information' ) ) {
 			return;
 		}
@@ -92,6 +96,10 @@ class Venue_Setup {
 			array( $this, 'add_venue_term' ),
 			10,
 			3
+		);
+		add_action(
+			sprintf( 'delete_post_%s', $post_type ),
+			array( $this, 'delete_venue_term' )
 		);
 	}
 
@@ -681,7 +689,7 @@ class Venue_Setup {
 
 		if ( post_type_supports( $post_type, 'gatherpress-venue' ) ) {
 			$event       = new Event( $post_id );
-			$venue_terms = get_the_terms( $post_id, $this->get_taxonomy( $this->get_venue_post_type( $post_type ) ) );
+			$venue_terms = get_the_terms( $post_id, $this->taxonomy_for_event_post_type( $post_type ) );
 			$venue_slug  = ( is_array( $venue_terms ) && ! empty( $venue_terms ) ) ? $venue_terms[0]->slug : null;
 
 			$venue_meta['isOnlineEventTerm'] = ( 'online-event' === $venue_slug );
@@ -696,8 +704,8 @@ class Venue_Setup {
 			$venue = new Venue( $post_id );
 		}
 
-		if ( $venue instanceof Venue && $venue->venue instanceof WP_Post ) {
-			$venue_meta['name'] = get_the_title( $venue->venue );
+		if ( $venue instanceof Venue && $venue->get_post_id() > 0 ) {
+			$venue_meta['name'] = get_the_title( $venue->get_post_id() );
 			$venue_meta         = array_merge( $venue_meta, $venue->get_information() );
 		}
 
@@ -742,7 +750,7 @@ class Venue_Setup {
 	 */
 	public function get_venue_post_from_event_post_id( int $event_post_id ): ?WP_Post {
 		$event_post_type = (string) get_post_type( $event_post_id );
-		$taxonomy        = $this->get_taxonomy( $this->get_venue_post_type( $event_post_type ) );
+		$taxonomy        = $this->taxonomy_for_event_post_type( $event_post_type );
 		$venue_terms     = get_the_terms( $event_post_id, $taxonomy );
 
 		if ( ! is_array( $venue_terms ) || empty( $venue_terms ) ) {
@@ -750,10 +758,7 @@ class Venue_Setup {
 		}
 
 		foreach ( $venue_terms as $term ) {
-			// Real venue term slugs always carry a leading underscore; sentinels
-			// like `online-event` don't. Skip anything without the prefix so
-			// sentinels never win over an actual venue when both are attached.
-			if ( ! str_starts_with( $term->slug, '_' ) ) {
+			if ( ! $this->is_venue_term_slug( $term->slug ) ) {
 				continue;
 			}
 
@@ -765,6 +770,39 @@ class Venue_Setup {
 		}
 
 		return null;
+	}
+
+	/**
+	 * Returns true when `$slug` is a real venue taxonomy term slug.
+	 *
+	 * Real venue terms always carry a leading underscore — the auto-generated
+	 * prefix added by {@see self::term_slug_from_post_name()}. Sentinels like
+	 * `online-event` deliberately don't, so this predicate filters them out
+	 * and keeps venue-resolution logic from treating sentinels as venues.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $slug The term slug to test.
+	 * @return bool
+	 */
+	public function is_venue_term_slug( string $slug ): bool {
+		return str_starts_with( $slug, '_' );
+	}
+
+	/**
+	 * Returns the venue taxonomy slug that corresponds to an event post type.
+	 *
+	 * Convenience wrapper that collapses
+	 * `$setup->get_taxonomy( $setup->get_venue_post_type( $pt ) )` — the most
+	 * common lookup at call sites that need to tag/query events by venue.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $event_post_type The event post type.
+	 * @return string The venue taxonomy slug.
+	 */
+	public function taxonomy_for_event_post_type( string $event_post_type = '' ): string {
+		return $this->get_taxonomy( $this->get_venue_post_type( $event_post_type ) );
 	}
 
 	/**

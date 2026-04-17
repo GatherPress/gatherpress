@@ -540,8 +540,7 @@ class Event {
 		);
 
 		$event_post_type = (string) get_post_type( $this->event );
-		$venue_setup     = Venue_Setup::get_instance();
-		$taxonomy        = $venue_setup->get_taxonomy( $venue_setup->get_venue_post_type( $event_post_type ) );
+		$taxonomy        = Venue_Setup::get_instance()->taxonomy_for_event_post_type( $event_post_type );
 		$term            = current( (array) get_the_terms( $this->event, $taxonomy ) );
 		$venue           = null;
 

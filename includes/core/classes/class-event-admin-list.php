@@ -496,8 +496,7 @@ class Event_Admin_List {
 
 		$screen         = get_current_screen();
 		$post_type      = $screen ? $screen->post_type : Event::POST_TYPE;
-		$venue_setup    = Venue_Setup::get_instance();
-		$venue_taxonomy = $venue_setup->get_taxonomy( $venue_setup->get_venue_post_type( $post_type ) );
+		$venue_taxonomy = Venue_Setup::get_instance()->taxonomy_for_event_post_type( $post_type );
 
 		// Bail early if the derived taxonomy is not registered to avoid invalid SQL.
 		if ( ! taxonomy_exists( $venue_taxonomy ) ) {

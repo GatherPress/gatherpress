@@ -116,8 +116,7 @@ class Online_Event {
 		}
 
 		$event_post_type = (string) get_post_type( $post_id );
-		$venue_setup     = Venue_Setup::get_instance();
-		$taxonomy        = $venue_setup->get_taxonomy( $venue_setup->get_venue_post_type( $event_post_type ) );
+		$taxonomy        = Venue_Setup::get_instance()->taxonomy_for_event_post_type( $event_post_type );
 		$venue_terms     = get_the_terms( $post_id, $taxonomy );
 
 		if ( ! is_array( $venue_terms ) ) {

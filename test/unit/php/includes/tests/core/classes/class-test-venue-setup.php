@@ -48,7 +48,7 @@ class Test_Venue_Setup extends Base {
 				'type'     => 'action',
 				'name'     => 'registered_post_type',
 				'priority' => 10,
-				'callback' => array( $instance, 'maybe_register_post_save_hook' ),
+				'callback' => array( $instance, 'maybe_register_post_type_hooks' ),
 			),
 			array(
 				'type'     => 'action',
@@ -70,12 +70,6 @@ class Test_Venue_Setup extends Base {
 			),
 			array(
 				'type'     => 'action',
-				'name'     => 'delete_post',
-				'priority' => 10,
-				'callback' => array( $instance, 'delete_venue_term' ),
-			),
-			array(
-				'type'     => 'action',
 				'name'     => 'wp_after_insert_post',
 				'priority' => 10,
 				'callback' => array( $instance, 'set_geodata' ),
@@ -92,20 +86,20 @@ class Test_Venue_Setup extends Base {
 	}
 
 	/**
-	 * Coverage for maybe_register_post_save_hook method.
+	 * Coverage for maybe_register_post_type_hooks method.
 	 *
-	 * Verifies that a save_post_{$type} action is registered when the given
-	 * post type declares the 'gatherpress-venue-information' support.
+	 * Verifies that per-post-type save and delete actions are registered when
+	 * the given post type declares the 'gatherpress-venue-information' support.
 	 *
-	 * @covers ::maybe_register_post_save_hook
+	 * @covers ::maybe_register_post_type_hooks
 	 *
 	 * @return void
 	 */
-	public function test_maybe_register_post_save_hook(): void {
+	public function test_maybe_register_post_type_hooks(): void {
 		$instance = Venue_Setup::get_instance();
 
 		foreach ( get_post_types_by_support( 'gatherpress-venue-information' ) as $post_type ) {
-			$instance->maybe_register_post_save_hook( $post_type );
+			$instance->maybe_register_post_type_hooks( $post_type );
 			$this->assertSame(
 				10,
 				has_action(
@@ -114,24 +108,36 @@ class Test_Venue_Setup extends Base {
 				),
 				sprintf( 'Failed to assert that save_post_%s has the add_venue_term action.', $post_type )
 			);
+			$this->assertSame(
+				10,
+				has_action(
+					sprintf( 'delete_post_%s', $post_type ),
+					array( $instance, 'delete_venue_term' )
+				),
+				sprintf( 'Failed to assert that delete_post_%s has the delete_venue_term action.', $post_type )
+			);
 		}
 	}
 
 	/**
 	 * Bails when the post type does not declare venue-information support.
 	 *
-	 * @covers ::maybe_register_post_save_hook
+	 * @covers ::maybe_register_post_type_hooks
 	 *
 	 * @return void
 	 */
-	public function test_maybe_register_post_save_hook_skips_unsupported_post_type(): void {
+	public function test_maybe_register_post_type_hooks_skips_unsupported_post_type(): void {
 		$instance = Venue_Setup::get_instance();
 
-		$instance->maybe_register_post_save_hook( 'post' );
+		$instance->maybe_register_post_type_hooks( 'post' );
 
 		$this->assertFalse(
 			has_action( 'save_post_post', array( $instance, 'add_venue_term' ) ),
 			'Failed to assert no save hook is registered for a post type without venue-information support.'
+		);
+		$this->assertFalse(
+			has_action( 'delete_post_post', array( $instance, 'delete_venue_term' ) ),
+			'Failed to assert no delete hook is registered for a post type without venue-information support.'
 		);
 	}
 
@@ -1722,14 +1728,20 @@ class Test_Venue_Setup extends Base {
 	 */
 	public function test_delete_venue_term_unsupported_post_type(): void {
 		$instance = Venue_Setup::get_instance();
-		$post     = $this->mock->post( array( 'post_type' => 'post' ) )->get();
 
-		// Calling delete_venue_term on a standard post should no-op.
+		// Seed a sentinel term so we can prove the method didn't touch it.
+		if ( ! term_exists( 'online-event', Venue::TAXONOMY ) ) {
+			wp_insert_term( 'Online event', Venue::TAXONOMY, array( 'slug' => 'online-event' ) );
+		}
+
+		$post = $this->mock->post( array( 'post_type' => 'post' ) )->get();
+
 		$instance->delete_venue_term( $post->ID );
 
-		// Nothing to assert about terms — the guarantee is that no error is thrown
-		// and the method returns silently. A terminal assertion keeps PHPUnit happy.
-		$this->assertTrue( true );
+		$this->assertNotNull(
+			term_exists( 'online-event', Venue::TAXONOMY ),
+			'The sentinel term must not be affected when delete_venue_term is called on a non-venue post.'
+		);
 	}
 
 	/**
@@ -1779,6 +1791,46 @@ class Test_Venue_Setup extends Base {
 		);
 		$this->assertSame( '1 Library Lane', $venue_meta['fullAddress'] );
 		$this->assertFalse( $venue_meta['isOnlineEventTerm'] );
+	}
+
+	/**
+	 * Coverage for get_venue_post_from_event_post_id when all attached terms are
+	 * non-`_`-prefixed sentinels (e.g. only `online-event`).
+	 *
+	 * Exercises the `continue` and the post-loop `return null` fallthrough.
+	 *
+	 * @covers ::get_venue_post_from_event_post_id
+	 *
+	 * @return void
+	 */
+	/**
+	 * Coverage for is_venue_term_slug.
+	 *
+	 * @covers ::is_venue_term_slug
+	 *
+	 * @return void
+	 */
+	public function test_is_venue_term_slug(): void {
+		$instance = Venue_Setup::get_instance();
+
+		$this->assertTrue( $instance->is_venue_term_slug( '_my-venue' ) );
+		$this->assertFalse( $instance->is_venue_term_slug( 'online-event' ) );
+		$this->assertFalse( $instance->is_venue_term_slug( '' ) );
+	}
+
+	/**
+	 * Coverage for taxonomy_for_event_post_type.
+	 *
+	 * @covers ::taxonomy_for_event_post_type
+	 *
+	 * @return void
+	 */
+	public function test_taxonomy_for_event_post_type(): void {
+		$this->assertSame(
+			Venue::TAXONOMY,
+			Venue_Setup::get_instance()->taxonomy_for_event_post_type( Event::POST_TYPE ),
+			'Expected the default event post type to resolve to the default venue taxonomy.'
+		);
 	}
 
 	/**
