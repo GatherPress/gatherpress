@@ -16,7 +16,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Event_Setup;
-use GatherPress\Core\Venue;
+use GatherPress\Core\Venue_Setup;
 use GatherPress\Core\Topic;
 
 /**
@@ -227,7 +227,7 @@ class Events extends Base {
 							'rewrite' => true,
 							'options' => array(
 								'label'   => __( 'Permalink base of Venues.', 'gatherpress' ),
-								'default' => Venue::get_localized_post_type_slug(),
+								'default' => Venue_Setup::get_instance()->get_localized_post_type_slug(),
 							),
 							'preview' => array(
 								'template' => 'url-rewrite-preview',

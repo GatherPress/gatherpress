@@ -2,9 +2,9 @@
 /**
  * Class handles unit tests for GatherPress\Core\Venue.
  *
- * Covers the instance class (constructor, per-post accessors) and the static
- * utilities that live alongside it. WordPress integration (registering the
- * post type, save hooks, etc.) is covered by `Test_Venue_Setup`.
+ * Covers the instance class — constructor and per-post accessors. Anything
+ * that isn't tied to a specific venue instance (WP integration, post-type-level
+ * utilities, lookups) is covered by `Test_Venue_Setup`.
  *
  * @package GatherPress\Core
  * @since 1.0.0
@@ -12,9 +12,9 @@
 
 namespace GatherPress\Tests\Core;
 
-use GatherPress\Core\Event;
 use GatherPress\Core\Venue;
 use GatherPress\Tests\Base;
+use WP_Term;
 
 /**
  * Class Test_Venue.
@@ -129,336 +129,131 @@ class Test_Venue extends Base {
 	}
 
 	/**
-	 * Coverage for get_localized_post_type_slug method.
-	 *
-	 * @covers ::get_localized_post_type_slug
-	 *
-	 * @return void
-	 */
-	public function test_get_localized_post_type_slug(): void {
-		$this->assertSame(
-			'venue',
-			Venue::get_localized_post_type_slug(),
-			'Failed to assert English post type slug is "venue".'
-		);
-
-		$user_id = $this->factory->user->create();
-		update_user_meta( $user_id, 'locale', 'es_ES' );
-		switch_to_user_locale( $user_id );
-
-		// @todo This assertion CAN NOT FAIL,
-		// until real translations do exist in the wp-env instance.
-		// Because WordPress doesn't have any translation files to load,
-		// it will return the string in English.
-		$this->assertSame(
-			'venue',
-			Venue::get_localized_post_type_slug(),
-			'Failed to assert post type slug is "venue", even the locale is not English anymore.'
-		);
-		// But at least the restoring of the user locale can be tested, without .po files.
-		$this->assertSame(
-			'es_ES',
-			determine_locale(),
-			'Failed to assert locale was reset to Spanish, after switching to ~ and restoring from English.'
-		);
-
-		// Restore default locale for following tests.
-		switch_to_locale( 'en_US' );
-
-		// This checks that the post type is still registered with the same
-		// 'Admin menu and post type singular name' label, used by the method under test.
-		$filter = static function ( string $translation, string $text, string $context ): string {
-			if ( 'Venue' !== $text || 'Admin menu and post type singular name' !== $context ) {
-				return $translation;
-			}
-			return 'Ünit Tést';
-		};
-
-		/**
-		 * Instead of loading additional languages into the unit test suite,
-		 * we just filter the translated value, to mock different languages.
-		 *
-		 * Filters text with its translation based on context information for a domain.
-		 *
-		 * @param string $translation Translated text.
-		 * @param string $text        Text to translate.
-		 * @param string $context     Context information for the translators.
-		 * @return string Translated text.
-		 */
-		add_filter( 'gettext_with_context_gatherpress', $filter, 10, 3 );
-
-		$this->assertSame(
-			'unit-test',
-			Venue::get_localized_post_type_slug(),
-			'Failed to assert the post type slug is "unit-test".'
-		);
-
-		remove_filter( 'gettext_with_context_gatherpress', $filter );
-
-		// Test restore_previous_locale() path by switching to a different locale first.
-		switch_to_locale( 'es_ES' );
-		$this->assertSame(
-			'venue',
-			Venue::get_localized_post_type_slug(),
-			'Failed to assert post type slug is "venue" after locale restore.'
-		);
-		// Verify we're back to Spanish after the method restored the previous locale.
-		$this->assertSame(
-			'es_ES',
-			determine_locale(),
-			'Failed to assert locale was restored to Spanish.'
-		);
-
-		// Clean up: restore to en_US for other tests.
-		restore_previous_locale();
-	}
-
-	/**
-	 * Coverage for get_localized_post_type_slug with locale restoration.
-	 *
-	 * Tests that restore_previous_locale() is called when switch_to_locale() succeeds.
-	 * This test creates a scenario where the global locale differs from get_locale().
-	 *
-	 * @covers ::get_localized_post_type_slug
-	 *
-	 * @return void
-	 */
-	public function test_get_localized_post_type_slug_restores_locale(): void {
-		// Create a scenario where get_locale() returns a different value.
-		// than the current global locale by using the locale filter.
-		// phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.Found -- Intentionally overriding locale.
-		$locale_filter = static function ( $locale ) {
-			return 'de_DE';
-		};
-
-		add_filter( 'locale', $locale_filter );
-
-		// Now get_locale() will return 'de_DE', but the global locale is still 'en_US'.
-		// When the method calls switch_to_locale(get_locale()), it will actually switch.
-		// to 'de_DE' and return true, triggering the restore_previous_locale() path.
-		$slug = Venue::get_localized_post_type_slug();
-
-		// Verify the slug was generated.
-		$this->assertNotEmpty( $slug, 'Failed to assert slug is not empty.' );
-
-		// The method should have called restore_previous_locale() since.
-		// switch_to_locale() returned true.
-		// We should be back to en_US (with the filter still active).
-		remove_filter( 'locale', $locale_filter );
-
-		$this->assertSame(
-			'en_US',
-			determine_locale(),
-			'Failed to assert locale was restored after method execution.'
-		);
-	}
-
-	/**
-	 * Coverage for get_taxonomy method with empty string argument.
-	 *
-	 * @covers ::get_taxonomy
-	 *
-	 * @return void
-	 */
-	public function test_get_taxonomy(): void {
-		// No argument falls back to the default venue post type.
-		$this->assertSame(
-			'_' . Venue::POST_TYPE,
-			Venue::get_taxonomy(),
-			'Failed to assert that get_taxonomy defaults to the built-in venue taxonomy.'
-		);
-
-		// Empty string also falls back to the default venue post type.
-		$this->assertSame(
-			'_' . Venue::POST_TYPE,
-			Venue::get_taxonomy( '' ),
-			'Failed to assert that get_taxonomy with empty string defaults to the built-in venue taxonomy.'
-		);
-
-		// Custom venue post type returns the correctly prefixed taxonomy.
-		$this->assertSame(
-			'_custom_venue_type',
-			Venue::get_taxonomy( 'custom_venue_type' ),
-			'Failed to assert that get_taxonomy prepends an underscore for a custom venue post type.'
-		);
-	}
-
-	/**
-	 * Coverage for get_venue_post_type method.
-	 *
-	 * @covers ::get_venue_post_type
-	 *
-	 * @return void
-	 */
-	public function test_get_venue_post_type(): void {
-		// Default returns the built-in venue post type.
-		$this->assertSame(
-			Venue::POST_TYPE,
-			Venue::get_venue_post_type(),
-			'Failed to assert that get_venue_post_type returns the default venue post type.'
-		);
-	}
-
-	/**
-	 * Coverage for get_venue_post_type method with filter override.
-	 *
-	 * @covers ::get_venue_post_type
-	 *
-	 * @return void
-	 */
-	public function test_get_venue_post_type_with_filter(): void {
-		add_filter( 'gatherpress_venue_post_type', fn() => 'custom_venue_type' );
-
-		// Pass a unique event post type to avoid returning a cached result from a prior
-		// test run that used the default (empty-string) key.
-		$this->assertSame(
-			'custom_venue_type',
-			Venue::get_venue_post_type( 'test_custom_event_type' ),
-			'Failed to assert that get_venue_post_type returns the filtered post type.'
-		);
-
-		remove_all_filters( 'gatherpress_venue_post_type' );
-	}
-
-	/**
-	 * Coverage for get_venue_post_type_map method.
-	 *
-	 * @covers ::get_venue_post_type_map
-	 *
-	 * @return void
-	 */
-	public function test_get_venue_post_type_map(): void {
-		$map = Venue::get_venue_post_type_map();
-
-		$this->assertIsArray(
-			$map,
-			'Failed to assert that the venue post type map is an array.'
-		);
-		$this->assertArrayHasKey(
-			Event::POST_TYPE,
-			$map,
-			'Failed to assert that the map contains the default event post type.'
-		);
-		$this->assertSame(
-			Venue::POST_TYPE,
-			$map[ Event::POST_TYPE ],
-			'Failed to assert that the default event post type maps to the default venue post type.'
-		);
-	}
-
-	/**
-	 * Coverage for get_term_slug with an explicit post_name argument.
+	 * Coverage for get_term_slug — derives the slug from the instance's post_name.
 	 *
 	 * @covers ::get_term_slug
 	 *
 	 * @return void
 	 */
 	public function test_get_term_slug(): void {
-		$this->assertSame(
-			'_unit-test',
-			( new Venue() )->get_term_slug( 'unit-test' ),
-			'Failed to assert that term slugs match.'
-		);
-	}
-
-	/**
-	 * Coverage for get_post_from_term_slug method.
-	 *
-	 * @covers ::get_post_from_term_slug
-	 *
-	 * @return void
-	 */
-	public function test_get_post_from_term_slug(): void {
-		$venue                = $this->mock->post(
+		$venue = $this->mock->post(
 			array(
 				'post_type' => Venue::POST_TYPE,
 				'post_name' => 'unit-test',
 			)
 		)->get();
-		$venue_from_term_slug = ( new Venue() )->get_post_from_term_slug( '_unit-test' );
 
-		$this->assertEquals(
-			$venue->ID,
-			$venue_from_term_slug->ID,
-			'Failed to assert that IDs match.'
+		$this->assertSame(
+			'_unit-test',
+			( new Venue( $venue->ID ) )->get_term_slug(),
+			'Failed to assert that term slug is derived from the venue post_name.'
 		);
 	}
 
 	/**
-	 * Coverage for get_post_from_event_post_id method.
+	 * Constructor leaves `$venue` null when the post type doesn't declare
+	 * gatherpress-venue-information support, so callers can guard safely.
 	 *
-	 * @covers ::get_post_from_event_post_id
+	 * @covers ::__construct
 	 *
 	 * @return void
 	 */
-	public function test_get_post_from_event_post_id(): void {
-		// Create a venue post.
-		$venue = $this->mock->post(
+	public function test_construct_leaves_venue_null_for_unsupported_post_type(): void {
+		$post_id = $this->factory->post->create( array( 'post_type' => 'post' ) );
+
+		$venue = new Venue( $post_id );
+
+		$this->assertNull(
+			$venue->venue,
+			'Expected $venue property to be null when post type lacks gatherpress-venue-information support.'
+		);
+		$this->assertSame( 0, $venue->get_post_id() );
+		$this->assertSame( '', $venue->get_post_type() );
+		$this->assertSame( '', $venue->get_taxonomy() );
+		$this->assertSame( '', $venue->get_term_slug() );
+		$this->assertNull( $venue->get_term() );
+	}
+
+	/**
+	 * Returns the post type slug of the wrapped venue.
+	 *
+	 * @covers ::get_post_type
+	 *
+	 * @return void
+	 */
+	public function test_get_post_type(): void {
+		$post_id = $this->factory->post->create(
+			array( 'post_type' => Venue::POST_TYPE )
+		);
+
+		$this->assertSame(
+			Venue::POST_TYPE,
+			( new Venue( $post_id ) )->get_post_type(),
+			'Failed to assert that get_post_type returns the wrapped post type.'
+		);
+	}
+
+	/**
+	 * Returns the taxonomy derived from the wrapped venue's post type.
+	 *
+	 * @covers ::get_taxonomy
+	 *
+	 * @return void
+	 */
+	public function test_get_taxonomy(): void {
+		$post_id = $this->factory->post->create(
+			array( 'post_type' => Venue::POST_TYPE )
+		);
+
+		$this->assertSame(
+			Venue::TAXONOMY,
+			( new Venue( $post_id ) )->get_taxonomy(),
+			'Failed to assert that get_taxonomy returns the taxonomy for the wrapped venue.'
+		);
+	}
+
+	/**
+	 * Returns the existing taxonomy term for the wrapped venue.
+	 *
+	 * @covers ::get_term
+	 *
+	 * @return void
+	 */
+	public function test_get_term_returns_existing_term(): void {
+		$post = $this->mock->post(
 			array(
 				'post_type'  => Venue::POST_TYPE,
-				'post_name'  => 'test-venue-for-event',
-				'post_title' => 'Test Venue For Event',
+				'post_name'  => 'term-lookup-venue',
+				'post_title' => 'Term Lookup Venue',
 			)
 		)->get();
 
-		// Create the venue term with the correct slug format.
-		$term_slug = ( new Venue( $venue->ID ) )->get_term_slug();
-		wp_insert_term(
-			'Test Venue For Event',
-			Venue::TAXONOMY,
-			array( 'slug' => $term_slug )
-		);
+		$venue = new Venue( $post->ID );
+		$term  = $venue->get_term();
 
-		// Create an event post.
-		$event = $this->mock->post(
-			array(
-				'post_type' => Event::POST_TYPE,
-				'post_name' => 'test-event-with-venue',
-			)
-		)->get();
-
-		// Associate the event with the venue term.
-		wp_set_post_terms( $event->ID, $term_slug, Venue::TAXONOMY );
-
-		// Get the venue post from the event.
-		$result = ( new Venue() )->get_post_from_event_post_id( $event->ID );
-
-		// The result should be the venue post.
-		$this->assertInstanceOf(
-			'WP_Post',
-			$result,
-			'Should return a WP_Post instance.'
-		);
-		$this->assertEquals(
-			$venue->ID,
-			$result->ID,
-			'Should return the correct venue post.'
-		);
+		$this->assertInstanceOf( WP_Term::class, $term, 'Expected get_term to return a WP_Term instance.' );
+		$this->assertSame( '_term-lookup-venue', $term->slug, 'Expected term slug to match the venue.' );
 	}
 
 	/**
-	 * Coverage for get_post_from_event_post_id when event has no venue terms.
+	 * Returns null when no taxonomy term exists for the wrapped venue.
 	 *
-	 * @covers ::get_post_from_event_post_id
+	 * @covers ::get_term
 	 *
 	 * @return void
 	 */
-	public function test_get_post_from_event_post_id_no_terms(): void {
-		// Create an event post without any venue terms.
-		$event = $this->mock->post(
+	public function test_get_term_returns_null_when_missing(): void {
+		$post_id = $this->factory->post->create(
 			array(
-				'post_type' => Event::POST_TYPE,
-				'post_name' => 'test-event-no-venue',
+				'post_type'   => Venue::POST_TYPE,
+				'post_name'   => 'no-term-yet',
+				'post_status' => 'draft',
 			)
-		)->get();
+		);
 
-		// Get the venue post from the event.
-		$result = ( new Venue() )->get_post_from_event_post_id( $event->ID );
-
-		// The result should be null since there are no venue terms.
 		$this->assertNull(
-			$result,
-			'Should return null when event has no venue terms.'
+			( new Venue( $post_id ) )->get_term(),
+			'Expected get_term to return null when no matching term exists.'
 		);
 	}
 }

@@ -21,6 +21,7 @@ use stdClass;
 use WP_Block_Patterns_Registry;
 use WP_Post;
 use WP_REST_Request;
+use WP_Term;
 
 /**
  * Class Venue_Setup.
@@ -115,7 +116,7 @@ class Venue_Setup {
 			$settings['gatherpress']['config'] = array();
 		}
 
-		$settings['gatherpress']['config']['venuePostTypes'] = Venue::get_venue_post_type_map();
+		$settings['gatherpress']['config']['venuePostTypes'] = $this->get_venue_post_type_map();
 
 		return $settings;
 	}
@@ -408,30 +409,24 @@ class Venue_Setup {
 			return;
 		}
 
-		$post_type = (string) get_post_type( $post_id );
-
-		if ( ! post_type_supports( $post_type, 'gatherpress-venue-information' ) ) {
+		if ( ! post_type_supports( (string) get_post_type( $post_id ), 'gatherpress-venue-information' ) ) {
 			return;
 		}
 
-		$data = json_decode(
-			(string) get_post_meta( $post_id, 'gatherpress_venue_information', true ),
-			true
-		);
+		$venue = new Venue( $post_id );
 
-		if ( ! is_array( $data ) ) {
-			$data = array();
+		if ( ! $venue->venue instanceof WP_Post ) {
+			return;
 		}
 
-		$latitude  = isset( $data['latitude'] ) && is_numeric( $data['latitude'] ) ? (string) $data['latitude'] : '';
-		$longitude = isset( $data['longitude'] ) && is_numeric( $data['longitude'] ) ? (string) $data['longitude'] : '';
-		$address   = isset( $data['fullAddress'] ) ? (string) $data['fullAddress'] : '';
-		$public    = ( 'publish' === get_post_status( $post_id ) ) ? 1 : 0;
+		$info      = $venue->get_information();
+		$latitude  = is_numeric( $info['latitude'] ) ? $info['latitude'] : '';
+		$longitude = is_numeric( $info['longitude'] ) ? $info['longitude'] : '';
 
 		update_post_meta( $post_id, 'geo_latitude', $latitude );
 		update_post_meta( $post_id, 'geo_longitude', $longitude );
-		update_post_meta( $post_id, 'geo_address', $address );
-		update_post_meta( $post_id, 'geo_public', $public );
+		update_post_meta( $post_id, 'geo_address', $info['fullAddress'] );
+		update_post_meta( $post_id, 'geo_public', ( 'publish' === $venue->venue->post_status ) ? 1 : 0 );
 	}
 
 	/**
@@ -468,13 +463,13 @@ class Venue_Setup {
 
 		// Register one taxonomy per venue post type: '_' . venue_post_type_slug.
 		foreach ( get_post_types_by_support( 'gatherpress-venue-information' ) as $venue_post_type ) {
-			register_taxonomy( Venue::get_taxonomy( $venue_post_type ), array(), $taxonomy_args );
+			register_taxonomy( $this->get_taxonomy( $venue_post_type ), array(), $taxonomy_args );
 		}
 
 		// Register each event post type with the taxonomy of its resolved venue post type.
 		foreach ( get_post_types_by_support( 'gatherpress-venue' ) as $event_post_type ) {
-			$venue_post_type = Venue::get_venue_post_type( $event_post_type );
-			register_taxonomy_for_object_type( Venue::get_taxonomy( $venue_post_type ), $event_post_type );
+			$venue_post_type = $this->get_venue_post_type( $event_post_type );
+			register_taxonomy_for_object_type( $this->get_taxonomy( $venue_post_type ), $event_post_type );
 		}
 	}
 
@@ -500,26 +495,28 @@ class Venue_Setup {
 			return;
 		}
 
-		if (
-			! $update &&
-			! empty( $post->post_name ) &&
-			'publish' === $post->post_status
-		) {
-			$term_slug = ( new Venue( $post_id ) )->get_term_slug();
-			$title     = html_entity_decode( get_the_title( $post_id ) );
-			$taxonomy  = Venue::get_taxonomy( $post->post_type );
-			$term      = term_exists( $term_slug, $taxonomy );
-
-			if ( empty( $term ) ) {
-				wp_insert_term(
-					$title,
-					$taxonomy,
-					array(
-						'slug' => $term_slug,
-					)
-				);
-			}
+		if ( $update || empty( $post->post_name ) || 'publish' !== $post->post_status ) {
+			return;
 		}
+
+		$venue = new Venue( $post_id );
+
+		if ( ! $venue->venue instanceof WP_Post ) {
+			return;
+		}
+
+		$term_slug = $venue->get_term_slug();
+		$taxonomy  = $venue->get_taxonomy();
+
+		if ( term_exists( $term_slug, $taxonomy ) ) {
+			return;
+		}
+
+		wp_insert_term(
+			html_entity_decode( get_the_title( $post_id ) ),
+			$taxonomy,
+			array( 'slug' => $term_slug )
+		);
 	}
 
 	/**
@@ -599,62 +596,55 @@ class Venue_Setup {
 	 * @return void
 	 */
 	public function maybe_update_term_slug( int $post_id, WP_Post $post_after, WP_Post $post_before ): void {
-		// Only process venue post types.
 		if ( ! post_type_supports( (string) get_post_type( $post_id ), 'gatherpress-venue-information' ) ) {
 			return;
 		}
 
-		// Only proceed if the venue post is being published or trashed.
-		if ( ! in_array(
-			$post_after->post_status,
-			array(
-				'publish',
-				'trash',
-			),
-			true
-		) ) {
+		if ( ! in_array( $post_after->post_status, array( 'publish', 'trash' ), true ) ) {
 			return;
 		}
 
-		// Check if the post slug or title has changed.
 		if (
-			$post_before->post_name !== $post_after->post_name ||
-			$post_before->post_title !== $post_after->post_title
+			$post_before->post_name === $post_after->post_name &&
+			$post_before->post_title === $post_after->post_title
 		) {
-			// Calculate the old and new term slugs. Use explicit post_name args
-			// since the old name isn't available from the current instance state.
-			$venue         = new Venue( $post_id );
-			$old_term_slug = $venue->get_term_slug( $post_before->post_name );
-			$new_term_slug = $venue->get_term_slug( $post_after->post_name );
-
-			// Decode the title to ensure special characters are handled correctly.
-			$title = html_entity_decode( get_the_title( $post_id ) );
-
-			$taxonomy = Venue::get_taxonomy( (string) get_post_type( $post_id ) );
-
-			// Check if the old term exists, and if not, insert the new term.
-			$term = term_exists( $old_term_slug, $taxonomy );
-
-			if ( empty( $term ) ) {
-				wp_insert_term(
-					$title,
-					$taxonomy,
-					array(
-						'slug' => $new_term_slug,
-					)
-				);
-			} else {
-				// Update the existing term with the new name and slug.
-				wp_update_term(
-					intval( $term['term_id'] ),
-					$taxonomy,
-					array(
-						'name' => $title,
-						'slug' => $new_term_slug,
-					)
-				);
-			}
+			return;
 		}
+
+		$venue = new Venue( $post_id );
+
+		if ( ! $venue->venue instanceof WP_Post ) {
+			return;
+		}
+
+		// Derive both slugs from the hook-supplied post objects rather than
+		// re-reading from the DB: the hook already gives us the trusted pre/post
+		// state, and we avoid a race where a concurrent save would leak into the
+		// slug calculation.
+		$old_term_slug = $this->term_slug_from_post_name( $post_before->post_name );
+		$new_term_slug = $this->term_slug_from_post_name( $post_after->post_name );
+		$taxonomy      = $venue->get_taxonomy();
+		$title         = html_entity_decode( get_the_title( $post_id ) );
+
+		$term = term_exists( $old_term_slug, $taxonomy );
+
+		if ( empty( $term ) ) {
+			wp_insert_term(
+				$title,
+				$taxonomy,
+				array( 'slug' => $new_term_slug )
+			);
+			return;
+		}
+
+		wp_update_term(
+			intval( $term['term_id'] ),
+			$taxonomy,
+			array(
+				'name' => $title,
+				'slug' => $new_term_slug,
+			)
+		);
 	}
 
 	/**
@@ -670,25 +660,22 @@ class Venue_Setup {
 	 * @return void
 	 */
 	public function delete_venue_term( int $post_id ): void {
-		// Only process venue post types.
 		if ( ! post_type_supports( (string) get_post_type( $post_id ), 'gatherpress-venue-information' ) ) {
 			return;
 		}
 
+		$venue = new Venue( $post_id );
+
 		// Guard against the race where the post has already been fully removed
 		// between the hook firing and this callback running.
-		$post = get_post( $post_id );
-		if ( ! $post instanceof WP_Post ) {
+		if ( ! $venue->venue instanceof WP_Post ) {
 			return;
 		}
 
-		$term_slug = ( new Venue( $post_id ) )->get_term_slug( $post->post_name );
-		$taxonomy  = Venue::get_taxonomy( (string) get_post_type( $post_id ) );
-		$term      = get_term_by( 'slug', $term_slug, $taxonomy );
+		$term = $venue->get_term();
 
-		// Check if the term exists and delete it.
-		if ( is_a( $term, '\WP_Term' ) ) {
-			wp_delete_term( $term->term_id, $taxonomy );
+		if ( $term instanceof WP_Term ) {
+			wp_delete_term( $term->term_id, $venue->get_taxonomy() );
 		}
 	}
 
@@ -707,39 +694,223 @@ class Venue_Setup {
 	 * @return array An array containing venue-related information.
 	 */
 	public function get_venue_meta( int $post_id, string $post_type ): array {
-		$venue_post = null;
-		$venue_slug = null;
-		$venue_meta = array();
+		$venue_meta = array(
+			'isOnlineEventTerm' => false,
+			'onlineEventLink'   => '',
+		);
 
-		$venue_meta['isOnlineEventTerm'] = false;
-		$venue_meta['onlineEventLink']   = '';
+		$venue = null;
 
 		if ( post_type_supports( $post_type, 'gatherpress-venue' ) ) {
 			$event       = new Event( $post_id );
-			$venue_terms = get_the_terms( $post_id, Venue::get_taxonomy( Venue::get_venue_post_type( $post_type ) ) );
-
-			if ( ! empty( $venue_terms ) && is_array( $venue_terms ) ) {
-				$venue_term = $venue_terms[0];
-				$venue_slug = $venue_term->slug;
-				$venue_post = ( new Venue() )->get_post_from_term_slug( $venue_slug, $post_type );
-			}
+			$venue_terms = get_the_terms( $post_id, $this->get_taxonomy( $this->get_venue_post_type( $post_type ) ) );
+			$venue_slug  = ( is_array( $venue_terms ) && ! empty( $venue_terms ) ) ? $venue_terms[0]->slug : null;
 
 			$venue_meta['isOnlineEventTerm'] = ( 'online-event' === $venue_slug );
 			$venue_meta['onlineEventLink']   = $event->maybe_get_online_event_link();
+
+			$venue_post = $this->get_venue_post_from_event_post_id( $post_id );
+
+			if ( $venue_post instanceof WP_Post ) {
+				$venue = new Venue( $venue_post->ID );
+			}
+		} elseif ( post_type_supports( $post_type, 'gatherpress-venue-information' ) ) {
+			$venue = new Venue( $post_id );
 		}
 
-		if ( post_type_supports( $post_type, 'gatherpress-venue-information' ) ) {
-			$venue_post = get_post( $post_id );
-		}
-
-		if ( is_a( $venue_post, 'WP_Post' ) ) {
-			$venue_meta['name'] = get_the_title( $venue_post );
-			$venue_meta         = array_merge(
-				$venue_meta,
-				( new Venue( $venue_post->ID ) )->get_information()
-			);
+		if ( $venue instanceof Venue && $venue->venue instanceof WP_Post ) {
+			$venue_meta['name'] = get_the_title( $venue->venue );
+			$venue_meta         = array_merge( $venue_meta, $venue->get_information() );
 		}
 
 		return $venue_meta;
+	}
+
+	/**
+	 * Retrieve a venue post by its taxonomy term slug.
+	 *
+	 * Strips the leading underscore from the taxonomy slug and looks up the
+	 * corresponding venue post via `get_page_by_path()`. Returns null when no
+	 * matching post exists.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $slug            The venue taxonomy term slug (e.g. `_my-venue`).
+	 * @param string $event_post_type Optional event post-type context, used when
+	 *                                mapping custom event post types to a non-default
+	 *                                venue post type via the `gatherpress_venue_post_type` filter.
+	 * @return WP_Post|null The matching venue post, or null.
+	 */
+	public function get_venue_post_from_term_slug( string $slug, string $event_post_type = '' ): ?WP_Post {
+		return get_page_by_path(
+			ltrim( $slug, '_' ),
+			OBJECT,
+			$this->get_venue_post_type( $event_post_type )
+		);
+	}
+
+	/**
+	 * Retrieve the venue post associated with a given event post.
+	 *
+	 * Events may carry both a physical-venue term and a sentinel term (e.g.
+	 * `online-event`) at the same time. Real venue terms always carry a leading
+	 * underscore — the sentinels do not — so we filter on that invariant and
+	 * return the first term that resolves to an actual venue post.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param int $event_post_id The event post ID.
+	 * @return WP_Post|null The linked venue post, or null.
+	 */
+	public function get_venue_post_from_event_post_id( int $event_post_id ): ?WP_Post {
+		$event_post_type = (string) get_post_type( $event_post_id );
+		$taxonomy        = $this->get_taxonomy( $this->get_venue_post_type( $event_post_type ) );
+		$venue_terms     = get_the_terms( $event_post_id, $taxonomy );
+
+		if ( ! is_array( $venue_terms ) || empty( $venue_terms ) ) {
+			return null;
+		}
+
+		foreach ( $venue_terms as $term ) {
+			// Real venue term slugs always carry a leading underscore; sentinels
+			// like `online-event` don't. Skip anything without the prefix so
+			// sentinels never win over an actual venue when both are attached.
+			if ( ! str_starts_with( $term->slug, '_' ) ) {
+				continue;
+			}
+
+			$venue_post = $this->get_venue_post_from_term_slug( $term->slug, $event_post_type );
+
+			if ( $venue_post instanceof WP_Post ) {
+				return $venue_post;
+			}
+		}
+
+		return null;
+	}
+
+	/**
+	 * Format a venue taxonomy term slug from a post_name.
+	 *
+	 * Pure formatter — prepends an underscore to the given post_name. Used by
+	 * callers that already have the name in hand (e.g. rename-diff callers
+	 * comparing old vs. new post_name during a save-post transition).
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $post_name The venue post's post_name (e.g. `my-venue`).
+	 * @return string The taxonomy term slug (e.g. `_my-venue`).
+	 */
+	public function term_slug_from_post_name( string $post_name ): string {
+		return sprintf( '_%s', $post_name );
+	}
+
+	/**
+	 * Returns the taxonomy slug for a given venue post type.
+	 *
+	 * The taxonomy slug is always derived by prepending an underscore to the venue
+	 * post type slug — for example, 'gatherpress_venue' uses '_gatherpress_venue'.
+	 * Custom venue post types follow the same convention automatically.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $venue_post_type The venue post type slug. Defaults to the built-in venue post type.
+	 * @return string The taxonomy slug for the given venue post type.
+	 */
+	public function get_taxonomy( string $venue_post_type = '' ): string {
+		if ( ! $venue_post_type ) {
+			$venue_post_type = Venue::POST_TYPE;
+		}
+
+		return '_' . $venue_post_type;
+	}
+
+	/**
+	 * Get the venue post type slug for a given event post type.
+	 *
+	 * Applies the 'gatherpress_venue_post_type' filter so developers can map
+	 * custom event post types to their own venue post types.
+	 *
+	 * Results are cached in a static array for the lifetime of the request to
+	 * avoid repeated filter invocations. If a plugin adds or removes the
+	 * 'gatherpress_venue_post_type' filter after this method has already been
+	 * called for a given event post type, the cached value will be returned
+	 * rather than the updated filter result. This is an unlikely edge case in
+	 * normal WordPress request flow, where filters are registered before any
+	 * post-type lookups occur.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $event_post_type The event post type requesting a venue post type.
+	 * @return string The venue post type slug.
+	 */
+	public function get_venue_post_type( string $event_post_type = '' ): string {
+		static $cache = array();
+
+		if ( isset( $cache[ $event_post_type ] ) ) {
+			return $cache[ $event_post_type ];
+		}
+
+		/**
+		 * Filters the post type used as the venue.
+		 *
+		 * @since 1.0.0
+		 *
+		 * @param string $post_type       The venue post type slug. Default 'gatherpress_venue'.
+		 * @param string $event_post_type The event post type requesting a venue post type.
+		 */
+		$cache[ $event_post_type ] = (string) apply_filters(
+			'gatherpress_venue_post_type',
+			Venue::POST_TYPE,
+			$event_post_type
+		);
+
+		return $cache[ $event_post_type ];
+	}
+
+	/**
+	 * Returns a map of event post types to their corresponding venue post types.
+	 *
+	 * Iterates over all post types that support 'gatherpress-venue' and resolves
+	 * the venue post type for each via get_venue_post_type(). This map is used
+	 * to expose the per-event-type venue post type to the block editor.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return array<string, string> Map of event post type slug to venue post type slug.
+	 */
+	public function get_venue_post_type_map(): array {
+		$map = array();
+
+		foreach ( get_post_types_by_support( 'gatherpress-venue' ) as $event_post_type ) {
+			$map[ $event_post_type ] = $this->get_venue_post_type( $event_post_type );
+		}
+
+		return $map;
+	}
+
+	/**
+	 * Returns the post type slug localized for the site language and sanitized as URL part.
+	 *
+	 * Do not use this directly, use get( 'venues_url' ) instead.
+	 *
+	 * This method switches to the sites default language and gets the translation of 'venues' for the loaded locale.
+	 * After that, the method sanitizes the string to be safely used within an URL,
+	 * by removing accents, replacing special characters and replacing whitespace with dashes.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return string
+	 */
+	public function get_localized_post_type_slug(): string {
+		$switched_locale = switch_to_locale( get_locale() );
+		$slug            = _x( 'Venue', 'Admin menu and post type singular name', 'gatherpress' );
+		$slug            = sanitize_title( $slug );
+
+		if ( $switched_locale ) {
+			restore_previous_locale();
+		}
+
+		return $slug;
 	}
 }

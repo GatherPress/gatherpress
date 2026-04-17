@@ -13,6 +13,7 @@ use GatherPress\Core\Event;
 use GatherPress\Core\Event_Query;
 use GatherPress\Core\Topic;
 use GatherPress\Core\Venue;
+use GatherPress\Core\Venue_Setup;
 use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;
 use WP_Query;
@@ -849,7 +850,7 @@ class Test_Event_Query extends Base {
 			'Failed to assert that terms match the provided venues.'
 		);
 		$this->assertSame(
-			Venue::get_taxonomy( Venue::POST_TYPE ),
+			Venue_Setup::get_instance()->get_taxonomy( Venue::POST_TYPE ),
 			$first_condition['taxonomy'],
 			'Failed to assert the taxonomy matches the built-in venue taxonomy.'
 		);

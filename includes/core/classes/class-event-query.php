@@ -526,7 +526,7 @@ class Event_Query {
 
 		foreach ( get_post_types_by_support( 'gatherpress-venue-information' ) as $venue_post_type ) {
 			$venue_tax_query[] = array(
-				'taxonomy' => Venue::get_taxonomy( $venue_post_type ),
+				'taxonomy' => Venue_Setup::get_instance()->get_taxonomy( $venue_post_type ),
 				'field'    => 'slug',
 				'terms'    => $venues,
 			);
