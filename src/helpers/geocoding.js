@@ -176,9 +176,8 @@ export async function geocodeAddress( address ) {
 	}
 
 	// Reuse any in-flight request for the same address (concurrent callers share one fetch).
-	const existing = geocodeInFlight.get( trimmedAddress );
-	if ( existing ) {
-		return existing;
+	if ( geocodeInFlight.has( trimmedAddress ) ) {
+		return geocodeInFlight.get( trimmedAddress );
 	}
 
 	const request = ( async () => {
