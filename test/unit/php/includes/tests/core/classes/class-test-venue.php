@@ -172,7 +172,7 @@ class Test_Venue extends Base {
 	}
 
 	/**
-	 * get_taxonomy returns '' when wrapping a non-venue post.
+	 * Returns '' from get_taxonomy when wrapping a non-venue post.
 	 *
 	 * @covers ::get_taxonomy
 	 *
@@ -185,7 +185,7 @@ class Test_Venue extends Base {
 	}
 
 	/**
-	 * get_term_slug returns '' when wrapping a non-venue post.
+	 * Returns '' from get_term_slug when wrapping a non-venue post.
 	 *
 	 * @covers ::get_term_slug
 	 *
@@ -198,7 +198,7 @@ class Test_Venue extends Base {
 	}
 
 	/**
-	 * get_term returns null when wrapping a non-venue post.
+	 * Returns null from get_term when wrapping a non-venue post.
 	 *
 	 * @covers ::get_term
 	 *
@@ -211,7 +211,7 @@ class Test_Venue extends Base {
 	}
 
 	/**
-	 * get_information returns the default empty shape when wrapping a non-venue post.
+	 * Returns the default empty shape from get_information when wrapping a non-venue post.
 	 *
 	 * @covers ::get_information
 	 *

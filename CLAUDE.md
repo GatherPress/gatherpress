@@ -237,6 +237,9 @@ Based on WordPress Coding Standards (WPCS), always ensure:
         ```
 
     - ❌ Bad: `/** @var int|false|\WP_Error $result - WordPress may return WP_Error via filters. */`
+- **PHPDoc short description must start with a capital letter** (`Generic.Commenting.DocComment.ShortNotCapital`). This trips most often when a test/method docblock starts with the bare method name being described — since method names are lowercase, the line starts lowercase and lint fails. Reword as a proper sentence.
+    - ✅ Good: `Returns '' from get_taxonomy when wrapping a non-venue post.`
+    - ❌ Bad: `get_taxonomy returns '' when wrapping a non-venue post.`
 - **Type handling**: WordPress functions may return multiple types; handle all cases with proper type checking
     - Use `is_wp_error()`, `is_numeric()`, and similar WordPress/PHP functions
     - Cast types explicitly when needed: `(int) $comment->comment_post_ID`
