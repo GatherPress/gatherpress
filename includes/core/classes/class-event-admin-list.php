@@ -68,6 +68,9 @@ class Event_Admin_List {
 		add_action( 'pre_get_posts', array( $this, 'handle_rsvp_sorting' ) );
 		add_action( 'pre_get_posts', array( $this, 'handle_venue_sorting' ) );
 		add_filter( 'query_vars', array( $this, 'query_vars' ) );
+		// Priority 11 so post types registered at the default priority 10 (including
+		// any third-party post type that opts in via add_post_type_support()) are
+		// already available to get_post_types_by_support() when the loop runs.
 		add_action( 'init', array( $this, 'register_post_type_hooks' ), 11 );
 	}
 
