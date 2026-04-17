@@ -78,7 +78,7 @@ class Venue {
 			sprintf( 'save_post_%s', self::POST_TYPE ),
 			array( $this, 'maybe_apply_venue_template' ),
 			10,
-			2
+			3
 		);
 		add_action( 'init', array( $this, 'register_post_type' ) );
 		// Priority 11 so post types registered at default priority 10 are available for get_post_types_by_support().
@@ -654,21 +654,30 @@ class Venue {
 	}
 
 	/**
-	 * Apply the venue template content when a venue is saved with empty content.
+	 * Apply the venue template content when a venue is first created with empty content.
 	 *
 	 * When a venue is created via the REST API (e.g., the "Add New Venue" button
 	 * in the Event editor), no content is sent. This method populates the post
 	 * content from the registered venue template pattern, including any hooked blocks.
 	 *
+	 * Only runs on insert (`$update` false) so a user who intentionally clears
+	 * the content of an existing venue and saves is not silently re-seeded.
+	 *
 	 * @since 1.0.0
 	 *
 	 * @param int     $post_id Post ID of the venue post.
 	 * @param WP_Post $post    The venue post object.
+	 * @param bool    $update  True when updating an existing post, false on initial insert.
 	 * @return void
 	 */
-	public function maybe_apply_venue_template( int $post_id, WP_Post $post ): void {
+	public function maybe_apply_venue_template( int $post_id, WP_Post $post, bool $update ): void {
 		if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) { // @codeCoverageIgnore
 			return; // @codeCoverageIgnore
+		}
+
+		// Respect intentional edits: do not re-seed content on updates.
+		if ( $update ) {
+			return;
 		}
 
 		// Only apply template to published venues with empty content.
@@ -702,7 +711,7 @@ class Venue {
 			sprintf( 'save_post_%s', self::POST_TYPE ),
 			array( $this, 'maybe_apply_venue_template' ),
 			10,
-			2
+			3
 		);
 	}
 

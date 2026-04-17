@@ -77,7 +77,7 @@ class Test_Event_Admin_List extends Base {
 	 */
 	public function test_register_post_type_hooks(): void {
 		$instance = Event_Admin_List::get_instance();
-		$test_pt  = 'gp_test_event_admin';
+		$test_pt  = 'test_event_admin';
 
 		// Register a temporary post type with gatherpress-event-date support.
 		register_post_type(

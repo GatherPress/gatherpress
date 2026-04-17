@@ -40,6 +40,7 @@ const Edit = ( {
 	// Get venue data and update functions.
 	const {
 		venuePostId,
+		isEditingCurrentPost,
 		fieldValue,
 		updateFieldValue,
 		updateWebsiteUrl,
@@ -47,7 +48,15 @@ const Edit = ( {
 	} = useVenueData( context, fieldType );
 
 	// Handle geocoding for address fields.
-	useGeocoding( fieldType, fieldValue, updateVenueField );
+	// Skip when the block edits the same venue post the user is already editing:
+	// in that context the VenueInformation sidebar owns the geocoding and running
+	// it here too would double-fire the network call for every keystroke.
+	useGeocoding(
+		fieldType,
+		fieldValue,
+		updateVenueField,
+		! isEditingCurrentPost
+	);
 
 	// Handle Enter key block insertion.
 	const { handleKeyDown } = useBlockInsertion( clientId, insertBlocksAfter );

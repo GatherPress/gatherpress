@@ -149,7 +149,14 @@ class Test_Settings extends Base {
 			'Failed to assert config key exists in gatherpress editor settings.'
 		);
 
-		$expected_config_keys = array( 'timezoneChoices', 'siteTimezone', 'pluginUrl', 'homeUrl' );
+		$expected_config_keys = array(
+			'timezoneChoices',
+			'siteTimezone',
+			'pluginUrl',
+			'homeUrl',
+			'mapTileUrl',
+			'mapTileAttribution',
+		);
 
 		foreach ( $expected_config_keys as $key ) {
 			$this->assertArrayHasKey(
@@ -187,6 +194,65 @@ class Test_Settings extends Base {
 			$merged['gatherpress'],
 			'Failed to assert config were added alongside existing gatherpress keys.'
 		);
+	}
+
+	/**
+	 * Default map tile URL matches the CartoDB Positron template and is filterable.
+	 *
+	 * @covers ::get_map_tile_url
+	 *
+	 * @return void
+	 */
+	public function test_get_map_tile_url_default_and_filter(): void {
+		$this->assertSame( Settings::MAP_TILE_URL, Settings::get_map_tile_url() );
+
+		add_filter(
+			'gatherpress_map_tile_url',
+			static function (): string {
+				return 'https://tiles.example.com/{z}/{x}/{y}.png';
+			}
+		);
+
+		$this->assertSame(
+			'https://tiles.example.com/{z}/{x}/{y}.png',
+			Settings::get_map_tile_url(),
+			'Filter should replace the default tile URL.'
+		);
+
+		remove_all_filters( 'gatherpress_map_tile_url' );
+
+		// An empty filter value falls back to the default rather than breaking Leaflet.
+		add_filter( 'gatherpress_map_tile_url', '__return_empty_string' );
+		$this->assertSame( Settings::MAP_TILE_URL, Settings::get_map_tile_url() );
+		remove_all_filters( 'gatherpress_map_tile_url' );
+	}
+
+	/**
+	 * Default map attribution is filterable.
+	 *
+	 * @covers ::get_map_tile_attribution
+	 *
+	 * @return void
+	 */
+	public function test_get_map_tile_attribution_default_and_filter(): void {
+		// Default is built via sprintf() + __() so the "contributors" word is translatable;
+		// assert it contains both provider credits rather than matching a frozen string.
+		$default = Settings::get_map_tile_attribution();
+		$this->assertStringContainsString( 'OpenStreetMap', $default );
+		$this->assertStringContainsString( Settings::MAP_TILE_ATTRIBUTION_OSM_URL, $default );
+		$this->assertStringContainsString( 'CARTO', $default );
+		$this->assertStringContainsString( Settings::MAP_TILE_ATTRIBUTION_CARTO_URL, $default );
+
+		add_filter(
+			'gatherpress_map_tile_attribution',
+			static function (): string {
+				return 'Custom attribution';
+			}
+		);
+
+		$this->assertSame( 'Custom attribution', Settings::get_map_tile_attribution() );
+
+		remove_all_filters( 'gatherpress_map_tile_attribution' );
 	}
 
 	/**

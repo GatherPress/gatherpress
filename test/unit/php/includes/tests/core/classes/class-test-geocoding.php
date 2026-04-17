@@ -12,6 +12,7 @@ use GatherPress\Core\Geocoding;
 use GatherPress\Tests\Base;
 use PMC\Unit_Test\Mocks\Http;
 use PMC\Unit_Test\Utility;
+use ReflectionMethod;
 use WP_REST_Request;
 use WP_REST_Response;
 use WP_REST_Server;
@@ -54,6 +55,21 @@ class Test_Geocoding extends Base {
 	}
 
 	/**
+	 * Invokes a private Geocoding method (for line coverage of label helpers under Xdebug).
+	 *
+	 * @param Geocoding $instance Instance.
+	 * @param string    $method   Method name.
+	 * @param array     $args     Arguments.
+	 * @return mixed
+	 */
+	private function invoke_geocoding_private( Geocoding $instance, string $method, array $args = array() ) {
+		$ref = new ReflectionMethod( Geocoding::class, $method );
+		$ref->setAccessible( true );
+
+		return $ref->invokeArgs( $instance, $args );
+	}
+
+	/**
 	 * Coverage for setup_hooks method.
 	 *
 	 * @covers ::__construct
@@ -70,9 +86,109 @@ class Test_Geocoding extends Base {
 				'priority' => 10,
 				'callback' => array( $instance, 'register_endpoints' ),
 			),
+			array(
+				'type'     => 'filter',
+				'name'     => 'block_editor_settings_all',
+				'priority' => 10,
+				'callback' => array( $instance, 'add_editor_settings' ),
+			),
 		);
 
 		$this->assert_hooks( $hooks, $instance );
+	}
+
+	/**
+	 * Coverage for add_editor_settings: publishes the min-query-length under gatherpress.config.
+	 *
+	 * @covers ::add_editor_settings
+	 *
+	 * @return void
+	 */
+	public function test_add_editor_settings_publishes_min_query_length(): void {
+		$instance = Geocoding::get_instance();
+
+		// With no prior settings, the method seeds both the namespace and the config sub-array.
+		$seeded = $instance->add_editor_settings( array() );
+		$this->assertSame(
+			3,
+			$seeded['gatherpress']['config']['addressSearchMinQueryLength'],
+			'Failed to assert the minimum query length is exposed under gatherpress.config.'
+		);
+
+		// With an existing gatherpress namespace but no config key, the config sub-array is created.
+		$with_namespace = $instance->add_editor_settings(
+			array( 'gatherpress' => array( 'customKey' => 'customValue' ) )
+		);
+		$this->assertSame(
+			'customValue',
+			$with_namespace['gatherpress']['customKey'],
+			'Failed to preserve existing gatherpress keys.'
+		);
+		$this->assertSame(
+			3,
+			$with_namespace['gatherpress']['config']['addressSearchMinQueryLength']
+		);
+
+		// With an existing config sub-array, the min-length is merged alongside other keys.
+		$with_config = $instance->add_editor_settings(
+			array( 'gatherpress' => array( 'config' => array( 'existing' => 'value' ) ) )
+		);
+		$this->assertSame( 'value', $with_config['gatherpress']['config']['existing'] );
+		$this->assertSame(
+			3,
+			$with_config['gatherpress']['config']['addressSearchMinQueryLength']
+		);
+	}
+
+	/**
+	 * Coverage for the private JSON-decode-failure logger.
+	 *
+	 * Exercises every branch (including the error_log path). The `gatherpress_log_geocoding_errors`
+	 * filter is flipped on and off explicitly so this test behaves identically whether
+	 * WP_DEBUG is on (local) or off (CI default).
+	 *
+	 * @covers ::maybe_log_json_decode_failure
+	 *
+	 * @return void
+	 */
+	public function test_maybe_log_json_decode_failure_branches(): void {
+		$instance = Geocoding::get_instance();
+
+		// Branch 1: decoded value is non-null → early return.
+		$this->invoke_geocoding_private(
+			$instance,
+			'maybe_log_json_decode_failure',
+			array( '{"ok":true}', array( 'ok' => true ), 'geocode_address' )
+		);
+
+		// Branch 2: body is whitespace-only → early return.
+		$this->invoke_geocoding_private(
+			$instance,
+			'maybe_log_json_decode_failure',
+			array( '   ', null, 'search_addresses' )
+		);
+
+		// Branch 3: guard filter returns false → early return.
+		add_filter( 'gatherpress_log_geocoding_errors', '__return_false' );
+		$this->invoke_geocoding_private(
+			$instance,
+			'maybe_log_json_decode_failure',
+			array( 'not json at all', null, 'geocode_address' )
+		);
+		remove_filter( 'gatherpress_log_geocoding_errors', '__return_false' );
+
+		// Branch 4: all conditions met → reaches error_log(). Force the filter on so this
+		// path runs regardless of WP_DEBUG's value in the current environment. The emitted
+		// line goes to the PHP error log and does not affect PHPUnit output.
+		add_filter( 'gatherpress_log_geocoding_errors', '__return_true' );
+		$this->invoke_geocoding_private(
+			$instance,
+			'maybe_log_json_decode_failure',
+			array( 'not json at all', null, 'geocode_address' )
+		);
+		remove_filter( 'gatherpress_log_geocoding_errors', '__return_true' );
+
+		$this->assertTrue( true, 'All branches of maybe_log_json_decode_failure executed without error.' );
 	}
 
 	/**
@@ -97,6 +213,11 @@ class Test_Geocoding extends Base {
 			1,
 			$namespace[ sprintf( '/%s/geocode', GATHERPRESS_REST_NAMESPACE ) ],
 			'Failed to assert geocode endpoint is registered.'
+		);
+		$this->assertEquals(
+			1,
+			$namespace[ sprintf( '/%s/geocode/search', GATHERPRESS_REST_NAMESPACE ) ],
+			'Failed to assert geocode search endpoint is registered.'
 		);
 	}
 
@@ -128,7 +249,7 @@ class Test_Geocoding extends Base {
 	public function test_geocode_address_success(): void {
 		$instance = Geocoding::get_instance();
 
-		// Mock the Nominatim API response.
+		// Mock the Photon API response (GeoJSON).
 		$mock_response = array(
 			'features' => array(
 				array(
@@ -304,11 +425,13 @@ class Test_Geocoding extends Base {
 		// Register endpoints to access route config.
 		$instance->register_endpoints();
 
-		$rest_server = rest_get_server();
-		$routes      = $rest_server->get_routes();
-		$route_key   = '/' . GATHERPRESS_REST_NAMESPACE . '/geocode';
+		$rest_server      = rest_get_server();
+		$routes           = $rest_server->get_routes();
+		$route_key        = '/' . GATHERPRESS_REST_NAMESPACE . '/geocode';
+		$route_search_key = '/' . GATHERPRESS_REST_NAMESPACE . '/geocode/search';
 
 		$this->assertArrayHasKey( $route_key, $routes, 'Failed to assert geocode route exists.' );
+		$this->assertArrayHasKey( $route_search_key, $routes, 'Failed to assert geocode search route exists.' );
 
 		// Get the permission callback.
 		$route_config        = $routes[ $route_key ][0];
@@ -330,15 +453,15 @@ class Test_Geocoding extends Base {
 	}
 
 	/**
-	 * Test NOMINATIM_API_URL constant value.
+	 * Test PHOTON_API_URL constant value.
 	 *
 	 * @return void
 	 */
-	public function test_nominatim_api_url_constant(): void {
-		$this->assertEquals(
-			'https://nominatim.openstreetmap.org/search',
-			Geocoding::NOMINATIM_API_URL,
-			'Failed to assert correct Nominatim API URL.'
+	public function test_photon_api_url_constant(): void {
+		$this->assertSame(
+			'https://photon.komoot.io/api',
+			Geocoding::PHOTON_API_URL,
+			'Failed to assert correct Photon API URL.'
 		);
 	}
 
@@ -502,14 +625,9 @@ class Test_Geocoding extends Base {
 		$instance->geocode_address( $request );
 
 		$this->assertStringContainsString(
-			'nominatim.openstreetmap.org',
+			'photon.komoot.io',
 			$captured_url,
-			'Failed to assert URL contains Nominatim domain.'
-		);
-		$this->assertStringContainsString(
-			'format=geojson',
-			$captured_url,
-			'Failed to assert URL contains format parameter.'
+			'Failed to assert URL contains Photon domain.'
 		);
 		$this->assertStringContainsString(
 			'limit=1',
@@ -517,14 +635,1074 @@ class Test_Geocoding extends Base {
 			'Failed to assert URL contains limit parameter.'
 		);
 		$this->assertStringContainsString(
-			'accept-language=',
+			'lang=',
 			$captured_url,
-			'Failed to assert URL contains accept-language parameter.'
+			'Failed to assert URL contains lang parameter.'
 		);
 		$this->assertStringContainsString(
 			'q=123',
 			$captured_url,
 			'Failed to assert URL contains address query.'
 		);
+	}
+
+	/**
+	 * Returns the transient key used for a given geocode lookup.
+	 *
+	 * @param string $address Address value.
+	 * @return string Transient key.
+	 */
+	private function geocode_cache_key( string $address ): string {
+		$language = explode( '_', get_locale() )[0];
+
+		return 'gatherpress_photon_geocode_' . md5( $address . '|' . $language );
+	}
+
+	/**
+	 * Successful Photon geocode response is stored in a transient for reuse.
+	 *
+	 * @covers ::geocode_address
+	 *
+	 * @return void
+	 */
+	public function test_geocode_address_caches_successful_response(): void {
+		$instance  = Geocoding::get_instance();
+		$cache_key = $this->geocode_cache_key( 'geocode-cache-success' );
+		delete_transient( $cache_key );
+
+		$this->http_mock->mock(
+			'*',
+			array(
+				'body' => wp_json_encode(
+					array(
+						'features' => array(
+							array(
+								'geometry' => array( 'coordinates' => array( -74.006, 40.7128 ) ),
+							),
+						),
+					)
+				),
+			)
+		);
+
+		$request = new WP_REST_Request( 'GET' );
+		$request->set_param( 'address', 'geocode-cache-success' );
+
+		$instance->geocode_address( $request );
+
+		$cached = get_transient( $cache_key );
+		$this->assertIsArray( $cached );
+		$this->assertSame( '40.7128', $cached['latitude'] );
+		$this->assertSame( '-74.006', $cached['longitude'] );
+		$this->assertNull( $cached['error'] );
+
+		delete_transient( $cache_key );
+	}
+
+	/**
+	 * Cached geocode result short-circuits the outbound Photon request.
+	 *
+	 * @covers ::geocode_address
+	 *
+	 * @return void
+	 */
+	public function test_geocode_address_returns_cached_without_http_call(): void {
+		$instance  = Geocoding::get_instance();
+		$cache_key = $this->geocode_cache_key( 'geocode-cache-hit' );
+
+		set_transient(
+			$cache_key,
+			array(
+				'latitude'  => '1.23',
+				'longitude' => '4.56',
+				'error'     => null,
+			),
+			MINUTE_IN_SECONDS
+		);
+
+		// If the HTTP layer were reached this mock would return different coordinates.
+		$this->http_mock->mock(
+			'*',
+			array(
+				'body' => wp_json_encode(
+					array(
+						'features' => array(
+							array(
+								'geometry' => array( 'coordinates' => array( 99, 99 ) ),
+							),
+						),
+					)
+				),
+			)
+		);
+
+		$request = new WP_REST_Request( 'GET' );
+		$request->set_param( 'address', 'geocode-cache-hit' );
+
+		$response = $instance->geocode_address( $request );
+		$data     = $response->get_data();
+
+		$this->assertSame( '1.23', $data['latitude'] );
+		$this->assertSame( '4.56', $data['longitude'] );
+		$this->assertNull( $data['error'] );
+
+		delete_transient( $cache_key );
+	}
+
+	/**
+	 * Not-found geocode responses are also cached so repeat bad addresses stop hitting upstream.
+	 *
+	 * @covers ::geocode_address
+	 *
+	 * @return void
+	 */
+	public function test_geocode_address_caches_not_found_response(): void {
+		$instance  = Geocoding::get_instance();
+		$cache_key = $this->geocode_cache_key( 'geocode-cache-missing' );
+		delete_transient( $cache_key );
+
+		$this->http_mock->mock(
+			'*',
+			array(
+				'body' => wp_json_encode( array( 'features' => array() ) ),
+			)
+		);
+
+		$request = new WP_REST_Request( 'GET' );
+		$request->set_param( 'address', 'geocode-cache-missing' );
+
+		$instance->geocode_address( $request );
+
+		$cached = get_transient( $cache_key );
+		$this->assertIsArray( $cached );
+		$this->assertSame( '', $cached['latitude'] );
+		$this->assertSame( '', $cached['longitude'] );
+		$this->assertNotNull( $cached['error'] );
+
+		delete_transient( $cache_key );
+	}
+
+	/**
+	 * Coverage for search_addresses with empty query.
+	 *
+	 * @covers ::search_addresses
+	 *
+	 * @return void
+	 */
+	public function test_search_addresses_empty_query(): void {
+		$instance = Geocoding::get_instance();
+		$request  = new WP_REST_Request( 'GET' );
+		$request->set_param( 'q', '' );
+
+		$response = $instance->search_addresses( $request );
+
+		$this->assertInstanceOf( 'WP_Error', $response, 'Failed to assert response is WP_Error for empty query.' );
+		$this->assertEquals( 'missing_query', $response->get_error_code(), 'Failed to assert correct error code.' );
+	}
+
+	/**
+	 * Coverage for search_addresses with short query (returns empty suggestions; min length matches JS).
+	 *
+	 * @covers ::search_addresses
+	 *
+	 * @return void
+	 */
+	public function test_search_addresses_short_query(): void {
+		$instance = Geocoding::get_instance();
+		$request  = new WP_REST_Request( 'GET' );
+		$request->set_param( 'q', 'ab' );
+
+		$response = $instance->search_addresses( $request );
+
+		$this->assertInstanceOf( WP_REST_Response::class, $response, 'Failed to assert response is WP_REST_Response.' );
+		$data = $response->get_data();
+		$this->assertIsArray( $data['suggestions'] );
+		$this->assertCount( 0, $data['suggestions'] );
+	}
+
+	/**
+	 * Returns the transient key used for a given search query.
+	 *
+	 * @param string $query Search query (already trimmed as it would arrive at the cache check).
+	 * @return string Transient key.
+	 */
+	private function search_cache_key( string $query ): string {
+		$language = explode( '_', get_locale() )[0];
+
+		return 'gatherpress_photon_search_' . md5( $query . '|' . $language );
+	}
+
+	/**
+	 * Successful Photon response is stored in a transient for reuse.
+	 *
+	 * @covers ::search_addresses
+	 *
+	 * @return void
+	 */
+	public function test_search_addresses_caches_successful_response(): void {
+		$instance  = Geocoding::get_instance();
+		$cache_key = $this->search_cache_key( 'cache-success-query' );
+		delete_transient( $cache_key );
+
+		$this->http_mock->mock(
+			'*',
+			array(
+				'body' => wp_json_encode(
+					array(
+						'features' => array(
+							array(
+								'geometry'   => array( 'coordinates' => array( 2.3522, 48.8566 ) ),
+								'properties' => array(
+									'name' => 'Eiffel Tower',
+									'city' => 'Paris',
+								),
+							),
+						),
+					)
+				),
+			)
+		);
+
+		$request = new WP_REST_Request( 'GET' );
+		$request->set_param( 'q', 'cache-success-query' );
+
+		$instance->search_addresses( $request );
+
+		$cached = get_transient( $cache_key );
+		$this->assertIsArray( $cached, 'Failed to assert successful response is cached.' );
+		$this->assertCount( 1, $cached, 'Failed to assert cached suggestions count.' );
+		$this->assertSame( 'Eiffel Tower, Paris', $cached[0]['label'] );
+
+		delete_transient( $cache_key );
+	}
+
+	/**
+	 * Cached suggestions short-circuit the outbound Photon request.
+	 *
+	 * @covers ::search_addresses
+	 *
+	 * @return void
+	 */
+	public function test_search_addresses_returns_cached_without_http_call(): void {
+		$instance  = Geocoding::get_instance();
+		$cache_key = $this->search_cache_key( 'cache-hit-query' );
+
+		set_transient(
+			$cache_key,
+			array(
+				array(
+					'label'     => 'Cached Place',
+					'latitude'  => '10',
+					'longitude' => '20',
+				),
+			),
+			MINUTE_IN_SECONDS
+		);
+
+		// If HTTP were actually called this mock would produce a different label,
+		// so a cache hit is visible in the assertions below.
+		$this->http_mock->mock(
+			'*',
+			array(
+				'body' => wp_json_encode(
+					array(
+						'features' => array(
+							array(
+								'geometry'   => array( 'coordinates' => array( 0, 0 ) ),
+								'properties' => array(
+									'name' => 'Should Not Be Used',
+									'city' => 'Wrong',
+								),
+							),
+						),
+					)
+				),
+			)
+		);
+
+		$request = new WP_REST_Request( 'GET' );
+		$request->set_param( 'q', 'cache-hit-query' );
+
+		$response = $instance->search_addresses( $request );
+		$data     = $response->get_data();
+
+		$this->assertCount( 1, $data['suggestions'] );
+		$this->assertSame( 'Cached Place', $data['suggestions'][0]['label'] );
+		$this->assertSame( '10', $data['suggestions'][0]['latitude'] );
+		$this->assertSame( '20', $data['suggestions'][0]['longitude'] );
+
+		delete_transient( $cache_key );
+	}
+
+	/**
+	 * Empty Photon feature lists are also cached to avoid hammering upstream on dead-end queries.
+	 *
+	 * @covers ::search_addresses
+	 *
+	 * @return void
+	 */
+	public function test_search_addresses_caches_empty_features_response(): void {
+		$instance  = Geocoding::get_instance();
+		$cache_key = $this->search_cache_key( 'cache-empty-query' );
+		delete_transient( $cache_key );
+
+		$this->http_mock->mock(
+			'*',
+			array(
+				'body' => wp_json_encode( array( 'features' => array() ) ),
+			)
+		);
+
+		$request = new WP_REST_Request( 'GET' );
+		$request->set_param( 'q', 'cache-empty-query' );
+
+		$instance->search_addresses( $request );
+
+		$cached = get_transient( $cache_key );
+		$this->assertIsArray( $cached, 'Failed to assert empty response is cached.' );
+		$this->assertCount( 0, $cached );
+
+		delete_transient( $cache_key );
+	}
+
+	/**
+	 * Search returns Photon GeoJSON features as suggestions.
+	 *
+	 * @covers ::search_addresses
+	 *
+	 * @return void
+	 */
+	public function test_search_addresses_success(): void {
+		$instance = Geocoding::get_instance();
+
+		$mock_body = array(
+			'features' => array(
+				array(
+					'type'       => 'Feature',
+					'geometry'   => array(
+						'type'        => 'Point',
+						'coordinates' => array( -74.0060, 40.7128 ),
+					),
+					'properties' => array(
+						'housenumber' => '1453',
+						'street'      => '3rd Avenue',
+						'city'        => 'New York',
+						'state'       => 'New York',
+						'postcode'    => '10028',
+					),
+				),
+			),
+		);
+
+		$this->http_mock->mock(
+			'*',
+			array(
+				'body' => wp_json_encode( $mock_body ),
+			)
+		);
+
+		$request = new WP_REST_Request( 'GET' );
+		$request->set_param( 'q', '1453 3rd' );
+
+		$response = $instance->search_addresses( $request );
+
+		$this->assertInstanceOf( WP_REST_Response::class, $response, 'Failed to assert response is WP_REST_Response.' );
+		$data = $response->get_data();
+		$this->assertCount( 1, $data['suggestions'] );
+		$suggestion = $data['suggestions'][0];
+		$this->assertArrayHasKey( 'label', $suggestion );
+		$this->assertSame(
+			'1453 3rd Avenue, New York, 10028',
+			$suggestion['label']
+		);
+		$this->assertSame( '40.7128', $suggestion['latitude'] );
+		// JSON float round-trip matches PHP's string cast of the coordinate value.
+		$this->assertSame( '-74.006', $suggestion['longitude'] );
+	}
+
+	/**
+	 * POI-style result uses name when street is absent.
+	 *
+	 * @covers ::search_addresses
+	 *
+	 * @return void
+	 */
+	public function test_search_addresses_uses_name_when_no_street(): void {
+		$instance = Geocoding::get_instance();
+
+		$mock_body = array(
+			'features' => array(
+				array(
+					'geometry'   => array(
+						'coordinates' => array( 2.3522, 48.8566 ),
+					),
+					'properties' => array(
+						'name'    => 'Some Café',
+						'city'    => 'Paris',
+						'country' => 'France',
+					),
+				),
+			),
+		);
+
+		$this->http_mock->mock(
+			'*',
+			array(
+				'body' => wp_json_encode( $mock_body ),
+			)
+		);
+
+		$request = new WP_REST_Request( 'GET' );
+		$request->set_param( 'q', 'Paris' );
+
+		$response = $instance->search_addresses( $request );
+		$data     = $response->get_data();
+		$this->assertSame( 'Some Café, Paris', $data['suggestions'][0]['label'] );
+	}
+
+	/**
+	 * Coverage for search_addresses with non-array JSON body.
+	 *
+	 * @covers ::search_addresses
+	 *
+	 * @return void
+	 */
+	public function test_search_addresses_invalid_json(): void {
+		$instance = Geocoding::get_instance();
+
+		$this->http_mock->mock(
+			'*',
+			array(
+				'body' => '"not-an-array"',
+			)
+		);
+
+		$request = new WP_REST_Request( 'GET' );
+		$request->set_param( 'q', 'Somewhere' );
+
+		$response = $instance->search_addresses( $request );
+
+		$this->assertInstanceOf( WP_REST_Response::class, $response, 'Failed to assert response is WP_REST_Response.' );
+		$data = $response->get_data();
+		$this->assertIsArray( $data['suggestions'] );
+		$this->assertCount( 0, $data['suggestions'] );
+	}
+
+	/**
+	 * Whitespace-only query is treated as missing (same as empty string).
+	 *
+	 * @covers ::search_addresses
+	 *
+	 * @return void
+	 */
+	public function test_search_addresses_whitespace_only_query(): void {
+		$instance = Geocoding::get_instance();
+		$request  = new WP_REST_Request( 'GET' );
+		$request->set_param( 'q', '   ' );
+
+		$response = $instance->search_addresses( $request );
+
+		$this->assertInstanceOf(
+			'WP_Error',
+			$response,
+			'Failed to assert response is WP_Error for whitespace-only query.'
+		);
+		$this->assertEquals( 'missing_query', $response->get_error_code(), 'Failed to assert correct error code.' );
+	}
+
+	/**
+	 * Network failure returns geocoding_search_failed.
+	 *
+	 * @covers ::search_addresses
+	 *
+	 * @return void
+	 */
+	public function test_search_addresses_network_error(): void {
+		$instance = Geocoding::get_instance();
+
+		add_filter(
+			'pre_http_request',
+			static function () {
+				return new \WP_Error( 'http_request_failed', 'Search network error' );
+			},
+			999
+		);
+
+		$request = new WP_REST_Request( 'GET' );
+		$request->set_param( 'q', 'Paris' );
+
+		$response = $instance->search_addresses( $request );
+
+		remove_all_filters( 'pre_http_request' );
+
+		$this->assertInstanceOf(
+			'WP_Error',
+			$response,
+			'Failed to assert response is WP_Error for search network error.'
+		);
+		$this->assertEquals(
+			'geocoding_search_failed',
+			$response->get_error_code(),
+			'Failed to assert correct error code.'
+		);
+		$this->assertStringContainsString(
+			'Search network error',
+			$response->get_error_message(),
+			'Failed to assert error message.'
+		);
+	}
+
+	/**
+	 * Non-200 HTTP status returns geocoding_search_failed.
+	 *
+	 * @covers ::search_addresses
+	 *
+	 * @return void
+	 */
+	public function test_search_addresses_non_200_status(): void {
+		$instance = Geocoding::get_instance();
+
+		add_filter(
+			'pre_http_request',
+			static function () {
+				return array(
+					'response' => array(
+						'code'    => 503,
+						'message' => 'Service Unavailable',
+					),
+					'body'     => '',
+					'headers'  => array(),
+				);
+			},
+			999
+		);
+
+		$request = new WP_REST_Request( 'GET' );
+		$request->set_param( 'q', 'Berlin' );
+
+		$response = $instance->search_addresses( $request );
+
+		remove_all_filters( 'pre_http_request' );
+
+		$this->assertInstanceOf(
+			'WP_Error',
+			$response,
+			'Failed to assert response is WP_Error for 503 search.'
+		);
+		$this->assertEquals(
+			'geocoding_search_failed',
+			$response->get_error_code(),
+			'Failed to assert correct error code.'
+		);
+		$this->assertStringContainsString(
+			'503',
+			$response->get_error_message(),
+			'Failed to assert error message contains status code.'
+		);
+	}
+
+	/**
+	 * Search URL targets Photon with limit and lang.
+	 *
+	 * @covers ::search_addresses
+	 *
+	 * @return void
+	 */
+	public function test_search_addresses_url_params(): void {
+		$instance      = Geocoding::get_instance();
+		$captured_url  = '';
+		$mock_response = array(
+			'features' => array(
+				array(
+					'geometry'   => array(
+						'coordinates' => array( 0.0, 0.0 ),
+					),
+					'properties' => array(
+						'name' => 'X',
+						'city' => 'Y',
+					),
+				),
+			),
+		);
+
+		$this->http_mock->mock(
+			'*',
+			array(
+				'body' => static function ( &$headers, $url ) use ( &$captured_url, $mock_response ) {
+					$captured_url = $url;
+					$headers      = 'HTTP/1.1 200 OK';
+					return wp_json_encode( $mock_response );
+				},
+			)
+		);
+
+		$request = new WP_REST_Request( 'GET' );
+		$request->set_param( 'q', 'Test Query' );
+
+		$instance->search_addresses( $request );
+
+		$this->assertStringContainsString(
+			'photon.komoot.io',
+			$captured_url,
+			'Failed to assert URL contains Photon domain.'
+		);
+		$this->assertStringContainsString( 'limit=5', $captured_url, 'Failed to assert limit=5.' );
+		$this->assertStringContainsString( 'lang=', $captured_url, 'Failed to assert lang.' );
+		$this->assertStringContainsString( 'q=Test', $captured_url, 'Failed to assert query string.' );
+	}
+
+	/**
+	 * Features without coordinates or with empty labels are skipped.
+	 *
+	 * @covers ::search_addresses
+	 *
+	 * @return void
+	 */
+	public function test_search_addresses_skips_malformed_rows(): void {
+		$instance = Geocoding::get_instance();
+
+		$mock_body = array(
+			'features' => array(
+				array(
+					'type'       => 'Feature',
+					'properties' => array(
+						'name' => 'Skip',
+					),
+				),
+				array(
+					'type'       => 'Feature',
+					'geometry'   => array(
+						'coordinates' => array( -74.0060, 40.7128 ),
+					),
+					'properties' => array(
+						'city' => 'NYC',
+					),
+				),
+			),
+		);
+
+		$this->http_mock->mock(
+			'*',
+			array(
+				'body' => wp_json_encode( $mock_body ),
+			)
+		);
+
+		$request = new WP_REST_Request( 'GET' );
+		$request->set_param( 'q', 'NYC test' );
+
+		$response = $instance->search_addresses( $request );
+
+		$this->assertInstanceOf( WP_REST_Response::class, $response, 'Failed to assert response is WP_REST_Response.' );
+		$data = $response->get_data();
+		$this->assertCount( 1, $data['suggestions'] );
+		$this->assertSame( 'NYC', $data['suggestions'][0]['label'] );
+	}
+
+	/**
+	 * When state matches city, region is not duplicated in the label.
+	 *
+	 * @covers ::search_addresses
+	 *
+	 * @return void
+	 */
+	public function test_search_addresses_does_not_duplicate_region_when_same_as_locality(): void {
+		$instance = Geocoding::get_instance();
+
+		$mock_body = array(
+			'features' => array(
+				array(
+					'geometry'   => array(
+						'coordinates' => array( 0.0, 0.0 ),
+					),
+					'properties' => array(
+						'street'   => 'Main St',
+						'city'     => 'Springfield',
+						'state'    => 'Springfield',
+						'postcode' => '62701',
+					),
+				),
+			),
+		);
+
+		$this->http_mock->mock(
+			'*',
+			array(
+				'body' => wp_json_encode( $mock_body ),
+			)
+		);
+
+		$request = new WP_REST_Request( 'GET' );
+		$request->set_param( 'q', 'Spring' );
+
+		$response = $instance->search_addresses( $request );
+
+		$data       = $response->get_data();
+		$suggestion = $data['suggestions'][0];
+		$this->assertStringNotContainsString(
+			'Springfield, Springfield',
+			$suggestion['label'],
+			'Failed to assert region is not duplicated when equal to locality.'
+		);
+		$this->assertStringContainsString( 'Springfield', $suggestion['label'] );
+		$this->assertStringContainsString( '62701', $suggestion['label'] );
+	}
+
+	/**
+	 * Rows that produce an empty label are skipped; later valid rows still appear.
+	 *
+	 * @covers ::search_addresses
+	 *
+	 * @return void
+	 */
+	public function test_search_addresses_skips_row_when_computed_label_empty(): void {
+		$instance = Geocoding::get_instance();
+
+		$mock_body = array(
+			'features' => array(
+				array(
+					'geometry'   => array(
+						'coordinates' => array( 1.0, 1.0 ),
+					),
+					'properties' => array(),
+				),
+				array(
+					'geometry'   => array(
+						'coordinates' => array( 2.0, 2.0 ),
+					),
+					'properties' => array(
+						'city' => 'Kept City',
+					),
+				),
+			),
+		);
+
+		$this->http_mock->mock(
+			'*',
+			array(
+				'body' => wp_json_encode( $mock_body ),
+			)
+		);
+
+		$request = new WP_REST_Request( 'GET' );
+		$request->set_param( 'q', 'Kept' );
+
+		$response = $instance->search_addresses( $request );
+		$data     = $response->get_data();
+
+		$this->assertCount( 1, $data['suggestions'] );
+		$this->assertSame( 'Kept City', $data['suggestions'][0]['label'] );
+	}
+
+	/**
+	 * Private helpers get_language_code and get_user_agent (direct invocation for coverage).
+	 *
+	 * @covers \GatherPress\Core\Geocoding::get_language_code
+	 * @covers \GatherPress\Core\Geocoding::get_user_agent
+	 *
+	 * @return void
+	 */
+	public function test_geocoding_private_language_and_user_agent(): void {
+		$instance = Geocoding::get_instance();
+
+		$lang = $this->invoke_geocoding_private( $instance, 'get_language_code' );
+		$this->assertIsString( $lang );
+		$this->assertNotSame( '', $lang );
+
+		$ua = $this->invoke_geocoding_private( $instance, 'get_user_agent' );
+		$this->assertStringContainsString( 'GatherPress/', $ua );
+		$this->assertStringContainsString( 'WordPress/', $ua );
+	}
+
+	/**
+	 * Tests format_photon_feature_label: structured, empty, duplicate locality/state.
+	 *
+	 * @covers \GatherPress\Core\Geocoding::format_photon_feature_label
+	 *
+	 * @return void
+	 */
+	public function test_geocoding_private_format_photon_feature_label(): void {
+		$instance = Geocoding::get_instance();
+
+		$full = $this->invoke_geocoding_private(
+			$instance,
+			'format_photon_feature_label',
+			array(
+				array(
+					'street'   => 'Oak',
+					'city'     => 'Oakton',
+					'state'    => 'Oak State',
+					'postcode' => '12345',
+				),
+			)
+		);
+		$this->assertStringContainsString( 'Oak', $full );
+		$this->assertStringContainsString( '12345', $full );
+
+		$empty = $this->invoke_geocoding_private(
+			$instance,
+			'format_photon_feature_label',
+			array( array() )
+		);
+		$this->assertSame( '', $empty );
+
+		$same_locality = $this->invoke_geocoding_private(
+			$instance,
+			'format_photon_feature_label',
+			array(
+				array(
+					'city'  => 'Dup',
+					'state' => 'Dup',
+				),
+			)
+		);
+		$this->assertStringNotContainsString( 'Dup, Dup', $same_locality );
+
+		$post_only = $this->invoke_geocoding_private(
+			$instance,
+			'format_photon_feature_label',
+			array(
+				array(
+					'city'     => 'Z',
+					'postcode' => '   ',
+				),
+			)
+		);
+		$this->assertStringContainsString( 'Z', $post_only );
+
+		$district_only = $this->invoke_geocoding_private(
+			$instance,
+			'format_photon_feature_label',
+			array(
+				array(
+					'district' => 'Brooklyn',
+					'state'    => 'NY',
+					'postcode' => '11201',
+				),
+			)
+		);
+		$this->assertStringContainsString( 'Brooklyn', $district_only );
+		$this->assertStringContainsString( 'NY', $district_only );
+
+		$county_only = $this->invoke_geocoding_private(
+			$instance,
+			'format_photon_feature_label',
+			array(
+				array(
+					'county' => 'Westchester',
+					'state'  => 'NY',
+				),
+			)
+		);
+		$this->assertStringContainsString( 'Westchester', $county_only );
+
+		$housenumber_street = $this->invoke_geocoding_private(
+			$instance,
+			'format_photon_feature_label',
+			array(
+				array(
+					'housenumber' => '10',
+					'street'      => 'Main Road',
+					'city'        => 'Townsville',
+				),
+			)
+		);
+		$this->assertStringContainsString( '10 Main Road', $housenumber_street );
+		$this->assertStringContainsString( 'Townsville', $housenumber_street );
+	}
+
+	/**
+	 * Default and filtered Photon API base URL.
+	 *
+	 * @covers \GatherPress\Core\Geocoding::get_photon_api_url
+	 *
+	 * @return void
+	 */
+	public function test_geocoding_private_get_photon_api_url(): void {
+		$instance = Geocoding::get_instance();
+
+		$default = $this->invoke_geocoding_private( $instance, 'get_photon_api_url' );
+		$this->assertSame( 'https://photon.komoot.io/api', $default );
+
+		// IANA-reserved `example.com` resolves via DNS, so wp_http_validate_url() accepts it.
+		add_filter(
+			'gatherpress_photon_api_url',
+			static function (): string {
+				return 'https://example.com/api';
+			}
+		);
+
+		$filtered = $this->invoke_geocoding_private( $instance, 'get_photon_api_url' );
+		$this->assertSame( 'https://example.com/api', $filtered );
+
+		remove_all_filters( 'gatherpress_photon_api_url' );
+
+		// A filter that produces an invalid URL must fall back to the default.
+		add_filter(
+			'gatherpress_photon_api_url',
+			static function (): string {
+				return 'not-a-url';
+			}
+		);
+		$fallback = $this->invoke_geocoding_private( $instance, 'get_photon_api_url' );
+		$this->assertSame( 'https://photon.komoot.io/api', $fallback );
+
+		remove_all_filters( 'gatherpress_photon_api_url' );
+	}
+
+	/**
+	 * Non-array entries in GeoJSON features are ignored.
+	 *
+	 * @covers ::search_addresses
+	 *
+	 * @return void
+	 */
+	public function test_search_addresses_skips_non_array_features(): void {
+		$instance = Geocoding::get_instance();
+
+		$mock_body = array(
+			'features' => array(
+				'not-a-feature',
+				array(
+					'geometry'   => array(
+						'coordinates' => array( 1.0, 2.0 ),
+					),
+					'properties' => array(
+						'city' => 'Kept',
+					),
+				),
+			),
+		);
+
+		$this->http_mock->mock(
+			'*',
+			array(
+				'body' => wp_json_encode( $mock_body ),
+			)
+		);
+
+		$request = new WP_REST_Request( 'GET' );
+		$request->set_param( 'q', 'Kee' );
+
+		$response = $instance->search_addresses( $request );
+		$data     = $response->get_data();
+
+		$this->assertCount( 1, $data['suggestions'] );
+		$this->assertSame( 'Kept', $data['suggestions'][0]['label'] );
+	}
+
+	/**
+	 * GeoJSON `features` may contain null entries; those are skipped like non-arrays.
+	 *
+	 * @covers ::search_addresses
+	 *
+	 * @return void
+	 */
+	public function test_search_addresses_skips_null_feature(): void {
+		$instance = Geocoding::get_instance();
+
+		$mock_body = array(
+			'features' => array(
+				null,
+				array(
+					'geometry'   => array(
+						'coordinates' => array( 3.0, 4.0 ),
+					),
+					'properties' => array(
+						'city' => 'After Null',
+					),
+				),
+			),
+		);
+
+		$this->http_mock->mock(
+			'*',
+			array(
+				'body' => wp_json_encode( $mock_body ),
+			)
+		);
+
+		$request = new WP_REST_Request( 'GET' );
+		$request->set_param( 'q', 'Nul' );
+
+		$response = $instance->search_addresses( $request );
+		$data     = $response->get_data();
+
+		$this->assertCount( 1, $data['suggestions'] );
+		$this->assertSame( 'After Null', $data['suggestions'][0]['label'] );
+	}
+
+	/**
+	 * When `properties` is present but not an array, label building uses an empty array.
+	 *
+	 * @covers ::search_addresses
+	 *
+	 * @return void
+	 */
+	public function test_search_addresses_non_array_properties_uses_empty_label_parts(): void {
+		$instance = Geocoding::get_instance();
+
+		$mock_body = array(
+			'features' => array(
+				array(
+					'geometry'   => array(
+						'coordinates' => array( 5.0, 6.0 ),
+					),
+					'properties' => 'not-an-array',
+				),
+				array(
+					'geometry'   => array(
+						'coordinates' => array( 7.0, 8.0 ),
+					),
+					'properties' => array(
+						'city' => 'Valid Row',
+					),
+				),
+			),
+		);
+
+		$this->http_mock->mock(
+			'*',
+			array(
+				'body' => wp_json_encode( $mock_body ),
+			)
+		);
+
+		$request = new WP_REST_Request( 'GET' );
+		$request->set_param( 'q', 'Val' );
+
+		$response = $instance->search_addresses( $request );
+		$data     = $response->get_data();
+
+		$this->assertCount( 1, $data['suggestions'] );
+		$this->assertSame( 'Valid Row', $data['suggestions'][0]['label'] );
+	}
+
+	/**
+	 * Permission callback on /geocode/search matches /geocode (edit_posts).
+	 *
+	 * @covers ::register_endpoints
+	 *
+	 * @return void
+	 */
+	public function test_search_route_permission_callback(): void {
+		$instance = Geocoding::get_instance();
+		$instance->register_endpoints();
+
+		$rest_server = rest_get_server();
+		$routes      = $rest_server->get_routes();
+		$search_key  = '/' . GATHERPRESS_REST_NAMESPACE . '/geocode/search';
+
+		$this->assertArrayHasKey( $search_key, $routes, 'Failed to assert search route exists.' );
+
+		$permission_callback = $routes[ $search_key ][0]['permission_callback'];
+
+		$editor_id = $this->factory->user->create( array( 'role' => 'editor' ) );
+		wp_set_current_user( $editor_id );
+		$this->assertTrue( call_user_func( $permission_callback ), 'Failed for editor.' );
+
+		$subscriber_id = $this->factory->user->create( array( 'role' => 'subscriber' ) );
+		wp_set_current_user( $subscriber_id );
+		$this->assertFalse( call_user_func( $permission_callback ), 'Failed for subscriber.' );
 	}
 }

@@ -8,6 +8,8 @@ import { registerPlugin } from '@wordpress/plugins';
 /**
  * Internal dependencies
  */
+// Address autocomplete in VenueNavigator shares venue-detail address + popover styles.
+import '../venue-detail/editor.scss';
 import VenueBlockPluginFill from './slotfill';
 import Edit from './edit';
 import metadata from './block.json';

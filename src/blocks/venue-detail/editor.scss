@@ -1,5 +1,9 @@
+// Styles for the venue-detail block in the editor canvas.
+// Shared address-autocomplete UI (popover, suggestion list, etc.) lives with
+// the component at src/components/AddressAutocompleteField/index.scss.
 .wp-block-gatherpress-venue-detail {
 	margin: 0;
+	overflow: visible;
 
 	&__placeholder {
 		color: #757575;
@@ -7,9 +11,64 @@
 	}
 }
 
-// Disabled state for venue-detail fields (no venue context).
-.gatherpress-venue-detail--disabled {
-	pointer-events: none;
-	cursor: not-allowed;
-	user-select: none;
+// When the venue template wraps the address in a flex row with an icon,
+// let the editable block shrink/grow inside it.
+.gatherpress--has-venue-address > .wp-block-gatherpress-venue-detail {
+	flex: 1 1 0;
+	min-width: 0;
+	overflow: visible;
+}
+
+// Address field (block variant: textarea inside an <address> element).
+// These selectors are block-specific — the frontend render.php emits the same
+// `.gatherpress-venue-detail__address` wrapper.
+.gatherpress-venue-detail {
+	&__address-wrap {
+		display: block;
+		width: 100%;
+		min-width: 0;
+		box-sizing: border-box;
+	}
+
+	&__address {
+		display: block;
+		width: 100%;
+		min-width: 0;
+		margin: 0;
+		box-sizing: border-box;
+	}
+
+	&__address-input {
+		display: block;
+		margin: 0;
+		padding: 0;
+		width: 100%;
+		min-width: 0;
+		max-width: 100%;
+		box-sizing: border-box;
+		font: inherit;
+		line-height: 1.5;
+		color: inherit;
+		background: transparent;
+		border: none;
+		box-shadow: none;
+		outline: none;
+		vertical-align: baseline;
+		resize: none;
+		overflow: hidden auto;
+		white-space: pre-wrap;
+		overflow-wrap: anywhere;
+
+		&:focus {
+			outline: none;
+			box-shadow: none;
+		}
+	}
+
+	// Disabled state for venue-detail fields (no venue context).
+	&--disabled {
+		pointer-events: none;
+		cursor: not-allowed;
+		user-select: none;
+	}
 }

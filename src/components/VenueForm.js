@@ -21,6 +21,7 @@ import { store as coreDataStore } from '@wordpress/core-data';
 import { getVenuePostType, getVenueTaxonomy } from '../helpers/venue';
 import { isPostTypeSupporting } from '../helpers/event';
 import { geocodeAddress } from '../helpers/geocoding';
+import AddressAutocompleteField from './AddressAutocompleteField';
 
 /**
  * Venue form component for creating or editing a venue.
@@ -70,9 +71,8 @@ function VenueForm( {
 					help={ titleError }
 					className={ titleError ? 'has-error' : '' }
 				/>
-				<TextControl
-					__next40pxDefaultSize
-					label={ __( 'Full Address', 'gatherpress' ) }
+				<AddressAutocompleteField
+					variant="settings"
 					value={ address }
 					onChange={ onChangeAddress }
 					help={ __(
