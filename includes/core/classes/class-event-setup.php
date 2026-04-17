@@ -67,8 +67,8 @@ class Event_Setup {
 	 */
 	protected function setup_hooks(): void {
 		add_action( 'init', array( $this, 'register_post_type' ) );
-		// Priority 11 ensures third-party CPTs are discoverable via get_post_types_by_support().
-		add_action( 'init', array( $this, 'register_post_meta' ), 11 );
+		add_action( 'init', array( $this, 'register_event_only_meta' ) );
+		add_action( 'registered_post_type', array( $this, 'maybe_register_event_date_meta' ) );
 		add_action( 'init', array( $this, 'register_calendar_rewrite_rule' ) );
 		add_action( 'parse_request', array( $this, 'handle_calendar_ics_request' ) );
 		add_action( 'template_redirect', array( $this, 'handle_event_archive_redirect' ) );
@@ -233,18 +233,19 @@ class Event_Setup {
 	}
 
 	/**
-	 * Registers post meta for the Event custom post type.
-	 *
-	 * This method sets up custom metadata fields associated with Event posts, including
-	 * an online event link and an option to enable anonymous RSVPs. Each meta field is configured
-	 * with authorization, sanitization callbacks, visibility in the REST API, and data type specifications.
+	 * Registers datetime meta + the read-only REST filter when a post type
+	 * declares gatherpress-event-date support.
 	 *
 	 * @since 1.0.0
 	 *
+	 * @param string $post_type The post type that was just registered.
 	 * @return void
 	 */
-	public function register_post_meta(): void {
-		// Datetime meta registered for all post types with event_date support.
+	public function maybe_register_event_date_meta( string $post_type ): void {
+		if ( ! post_type_supports( $post_type, 'gatherpress-event-date' ) ) {
+			return;
+		}
+
 		$event_date_meta = array(
 			'gatherpress_datetime'           => array(
 				'auth_callback'     => array( $this, 'can_edit_posts_meta' ),
@@ -289,27 +290,28 @@ class Event_Setup {
 			),
 		);
 
-		$event_date_post_types = get_post_types_by_support( 'gatherpress-event-date' );
-
-		foreach ( $event_date_post_types as $post_type ) {
-			foreach ( $event_date_meta as $meta_key => $args ) {
-				register_post_meta(
-					$post_type,
-					$meta_key,
-					$args
-				);
-			}
-
-			// Filter read-only datetime meta from REST requests for this post type.
-			add_filter(
-				sprintf( 'rest_pre_insert_%s', $post_type ),
-				array( $this, 'filter_readonly_meta' ),
-				10,
-				2
-			);
+		foreach ( $event_date_meta as $meta_key => $args ) {
+			register_post_meta( $post_type, $meta_key, $args );
 		}
 
-		// Non-datetime meta remains on the event post type only.
+		// Filter read-only datetime meta from REST requests for this post type.
+		add_filter(
+			sprintf( 'rest_pre_insert_%s', $post_type ),
+			array( $this, 'filter_readonly_meta' ),
+			10,
+			2
+		);
+	}
+
+	/**
+	 * Registers meta that only lives on the built-in event post type (RSVP
+	 * toggles, guest / attendance limits, online event link).
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return void
+	 */
+	public function register_event_only_meta(): void {
 		// Always register gatherpress_enable_rsvp so it can be written in all modes.
 		// Missing meta is treated as "on"; only an explicit 0 disables RSVP per event.
 		$event_only_meta = array(
@@ -366,11 +368,7 @@ class Event_Setup {
 		);
 
 		foreach ( $event_only_meta as $meta_key => $args ) {
-			register_post_meta(
-				Event::POST_TYPE,
-				$meta_key,
-				$args
-			);
+			register_post_meta( Event::POST_TYPE, $meta_key, $args );
 		}
 	}
 

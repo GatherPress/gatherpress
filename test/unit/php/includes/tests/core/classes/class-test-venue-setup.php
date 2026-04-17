@@ -46,17 +46,15 @@ class Test_Venue_Setup extends Base {
 			),
 			array(
 				'type'     => 'action',
-				'name'     => 'init',
-				// Priority 11: post types at priority 10 are available via get_post_types_by_support().
-				'priority' => 11,
-				'callback' => array( $instance, 'register_post_save_hooks' ),
+				'name'     => 'registered_post_type',
+				'priority' => 10,
+				'callback' => array( $instance, 'maybe_register_post_save_hook' ),
 			),
 			array(
 				'type'     => 'action',
-				'name'     => 'init',
-				// Priority 11 ensures custom venue post types are discoverable via get_post_types_by_support().
-				'priority' => 11,
-				'callback' => array( $instance, 'register_post_meta' ),
+				'name'     => 'registered_post_type',
+				'priority' => 10,
+				'callback' => array( $instance, 'maybe_register_post_meta' ),
 			),
 			array(
 				'type'     => 'action',
@@ -94,20 +92,20 @@ class Test_Venue_Setup extends Base {
 	}
 
 	/**
-	 * Coverage for register_post_save_hooks method.
+	 * Coverage for maybe_register_post_save_hook method.
 	 *
-	 * Verifies that a save_post_{$type} action is registered for each post type
-	 * that declares the 'gatherpress-venue-information' support.
+	 * Verifies that a save_post_{$type} action is registered when the given
+	 * post type declares the 'gatherpress-venue-information' support.
 	 *
-	 * @covers ::register_post_save_hooks
+	 * @covers ::maybe_register_post_save_hook
 	 *
 	 * @return void
 	 */
-	public function test_register_post_save_hooks(): void {
+	public function test_maybe_register_post_save_hook(): void {
 		$instance = Venue_Setup::get_instance();
-		$instance->register_post_save_hooks();
 
 		foreach ( get_post_types_by_support( 'gatherpress-venue-information' ) as $post_type ) {
+			$instance->maybe_register_post_save_hook( $post_type );
 			$this->assertSame(
 				10,
 				has_action(
@@ -117,6 +115,24 @@ class Test_Venue_Setup extends Base {
 				sprintf( 'Failed to assert that save_post_%s has the add_venue_term action.', $post_type )
 			);
 		}
+	}
+
+	/**
+	 * Bails when the post type does not declare venue-information support.
+	 *
+	 * @covers ::maybe_register_post_save_hook
+	 *
+	 * @return void
+	 */
+	public function test_maybe_register_post_save_hook_skips_unsupported_post_type(): void {
+		$instance = Venue_Setup::get_instance();
+
+		$instance->maybe_register_post_save_hook( 'post' );
+
+		$this->assertFalse(
+			has_action( 'save_post_post', array( $instance, 'add_venue_term' ) ),
+			'Failed to assert no save hook is registered for a post type without venue-information support.'
+		);
 	}
 
 	/**
@@ -140,13 +156,13 @@ class Test_Venue_Setup extends Base {
 
 
 	/**
-	 * Coverage for register_post_meta method.
+	 * Coverage for maybe_register_post_meta method.
 	 *
-	 * @covers ::register_post_meta
+	 * @covers ::maybe_register_post_meta
 	 *
 	 * @return void
 	 */
-	public function test_register_post_meta(): void {
+	public function test_maybe_register_post_meta(): void {
 		$instance = Venue_Setup::get_instance();
 
 		unregister_post_meta( Venue::POST_TYPE, 'gatherpress_venue_information' );
@@ -176,7 +192,7 @@ class Test_Venue_Setup extends Base {
 			'Failed to assert that geo_latitude does not exist.'
 		);
 
-		$instance->register_post_meta();
+		$instance->maybe_register_post_meta( Venue::POST_TYPE );
 
 		$meta = get_registered_meta_keys( 'post', Venue::POST_TYPE );
 
@@ -202,18 +218,18 @@ class Test_Venue_Setup extends Base {
 	}
 
 	/**
-	 * Coverage for register_post_meta when the venue post type does not support revisions.
+	 * Coverage for maybe_register_post_meta when the venue post type does not support revisions.
 	 *
 	 * Registers a throwaway venue post type that declares gatherpress-venue-information
-	 * support but omits WordPress revisions support. Verifies that register_post_meta
+	 * support but omits WordPress revisions support. Verifies that maybe_register_post_meta
 	 * silently drops revisions_enabled for that post type and still registers the meta
 	 * without triggering a WordPress _doing_it_wrong notice.
 	 *
-	 * @covers ::register_post_meta
+	 * @covers ::maybe_register_post_meta
 	 *
 	 * @return void
 	 */
-	public function test_register_post_meta_without_revisions_support(): void {
+	public function test_maybe_register_post_meta_without_revisions_support(): void {
 		$instance = Venue_Setup::get_instance();
 		$test_pt  = 'test_venue_no_rev';
 
@@ -226,7 +242,7 @@ class Test_Venue_Setup extends Base {
 			)
 		);
 
-		$instance->register_post_meta();
+		$instance->maybe_register_post_meta( $test_pt );
 
 		$meta = get_registered_meta_keys( 'post', $test_pt );
 

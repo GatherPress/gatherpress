@@ -60,9 +60,9 @@ class Test_Event_Admin_List extends Base {
 			),
 			array(
 				'type'     => 'action',
-				'name'     => 'init',
-				'priority' => 11,
-				'callback' => array( $instance, 'register_post_type_hooks' ),
+				'name'     => 'registered_post_type',
+				'priority' => 10,
+				'callback' => array( $instance, 'maybe_register_post_type_hooks' ),
 			),
 		);
 
@@ -70,13 +70,13 @@ class Test_Event_Admin_List extends Base {
 	}
 
 	/**
-	 * Coverage for register_post_type_hooks method.
+	 * Coverage for maybe_register_post_type_hooks method.
 	 *
-	 * @covers ::register_post_type_hooks
+	 * @covers ::maybe_register_post_type_hooks
 	 *
 	 * @return void
 	 */
-	public function test_register_post_type_hooks(): void {
+	public function test_maybe_register_post_type_hooks(): void {
 		$instance = Event_Admin_List::get_instance();
 		$test_pt  = 'test_event_admin';
 
@@ -90,8 +90,8 @@ class Test_Event_Admin_List extends Base {
 			)
 		);
 
-		// Call the method directly (normally called via init hook at priority 11).
-		$instance->register_post_type_hooks();
+		// Call the method directly (normally fired via the registered_post_type action).
+		$instance->maybe_register_post_type_hooks( $test_pt );
 
 		// Verify per-post-type hooks were registered for the test post type.
 		$this->assertNotFalse(
@@ -117,6 +117,25 @@ class Test_Event_Admin_List extends Base {
 
 		// Clean up the temporary post type.
 		unregister_post_type( $test_pt );
+	}
+
+	/**
+	 * Bails when the post type does not declare gatherpress-event-date support.
+	 *
+	 * @covers ::maybe_register_post_type_hooks
+	 *
+	 * @return void
+	 */
+	public function test_maybe_register_post_type_hooks_skips_unsupported_post_type(): void {
+		$instance = Event_Admin_List::get_instance();
+
+		// Standard 'post' does not declare gatherpress-event-date support.
+		$instance->maybe_register_post_type_hooks( 'post' );
+
+		$this->assertFalse(
+			has_filter( 'manage_edit-post_sortable_columns', array( $instance, 'sortable_columns' ) ),
+			'Should not register event-admin hooks for post types without gatherpress-event-date support.'
+		);
 	}
 
 	/**

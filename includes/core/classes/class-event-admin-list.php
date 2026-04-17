@@ -68,49 +68,45 @@ class Event_Admin_List {
 		add_action( 'pre_get_posts', array( $this, 'handle_rsvp_sorting' ) );
 		add_action( 'pre_get_posts', array( $this, 'handle_venue_sorting' ) );
 		add_filter( 'query_vars', array( $this, 'query_vars' ) );
-		// Priority 11 so post types registered at the default priority 10 (including
-		// any third-party post type that opts in via add_post_type_support()) are
-		// already available to get_post_types_by_support() when the loop runs.
-		add_action( 'init', array( $this, 'register_post_type_hooks' ), 11 );
+		add_action( 'registered_post_type', array( $this, 'maybe_register_post_type_hooks' ) );
 	}
 
 	/**
-	 * Registers admin list table hooks for all event post types.
-	 *
-	 * Called at init priority 11 to ensure all custom post types with
-	 * gatherpress-event-date support have been registered first.
+	 * Registers admin list table hooks when a post type that declares
+	 * gatherpress-event-date support finishes registering.
 	 *
 	 * @since 1.0.0
 	 *
+	 * @param string $post_type The post type that was just registered.
 	 * @return void
 	 */
-	public function register_post_type_hooks(): void {
-		$post_types = get_post_types_by_support( 'gatherpress-event-date' );
-
-		foreach ( $post_types as $post_type ) {
-			add_filter(
-				sprintf( 'manage_edit-%s_sortable_columns', $post_type ),
-				array( $this, 'sortable_columns' )
-			);
-			add_filter(
-				sprintf( 'views_edit-%s', $post_type ),
-				array( $this, 'views_edit' )
-			);
-			add_action(
-				sprintf( 'manage_%s_posts_custom_column', $post_type ),
-				array( $this, 'custom_columns' ),
-				10,
-				2
-			);
-			add_filter(
-				sprintf( 'manage_%s_posts_columns', $post_type ),
-				array( $this, 'set_custom_columns' )
-			);
-			add_filter(
-				sprintf( 'manage_%s_posts_columns', $post_type ),
-				array( $this, 'remove_comments_column' )
-			);
+	public function maybe_register_post_type_hooks( string $post_type ): void {
+		if ( ! post_type_supports( $post_type, 'gatherpress-event-date' ) ) {
+			return;
 		}
+
+		add_filter(
+			sprintf( 'manage_edit-%s_sortable_columns', $post_type ),
+			array( $this, 'sortable_columns' )
+		);
+		add_filter(
+			sprintf( 'views_edit-%s', $post_type ),
+			array( $this, 'views_edit' )
+		);
+		add_action(
+			sprintf( 'manage_%s_posts_custom_column', $post_type ),
+			array( $this, 'custom_columns' ),
+			10,
+			2
+		);
+		add_filter(
+			sprintf( 'manage_%s_posts_columns', $post_type ),
+			array( $this, 'set_custom_columns' )
+		);
+		add_filter(
+			sprintf( 'manage_%s_posts_columns', $post_type ),
+			array( $this, 'remove_comments_column' )
+		);
 	}
 
 	/**

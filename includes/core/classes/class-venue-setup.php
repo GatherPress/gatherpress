@@ -60,9 +60,9 @@ class Venue_Setup {
 			3
 		);
 		add_action( 'init', array( $this, 'register_post_type' ) );
+		add_action( 'registered_post_type', array( $this, 'maybe_register_post_save_hook' ) );
+		add_action( 'registered_post_type', array( $this, 'maybe_register_post_meta' ) );
 		// Priority 11 so post types registered at default priority 10 are available for get_post_types_by_support().
-		add_action( 'init', array( $this, 'register_post_save_hooks' ), 11 );
-		add_action( 'init', array( $this, 'register_post_meta' ), 11 );
 		add_action( 'init', array( $this, 'register_taxonomy' ), 11 );
 		add_action( 'post_updated', array( $this, 'maybe_update_term_slug' ), 10, 3 );
 		add_action( 'delete_post', array( $this, 'delete_venue_term' ) );
@@ -71,25 +71,27 @@ class Venue_Setup {
 	}
 
 	/**
-	 * Register save_post_{$type} hooks for all venue post types.
+	 * Register save_post_{$type} → add_venue_term when a venue post type registers.
 	 *
-	 * Called at init priority 11 so that venue post types registered at default
-	 * priority 10 are discoverable via get_post_types_by_support(). This avoids
-	 * hooking the global save_post action, which fires on every post save site-wide.
+	 * Avoids hooking the global `save_post` action, which fires on every post
+	 * save site-wide.
 	 *
 	 * @since 1.0.0
 	 *
+	 * @param string $post_type The post type that was just registered.
 	 * @return void
 	 */
-	public function register_post_save_hooks(): void {
-		foreach ( get_post_types_by_support( 'gatherpress-venue-information' ) as $post_type ) {
-			add_action(
-				sprintf( 'save_post_%s', $post_type ),
-				array( $this, 'add_venue_term' ),
-				10,
-				3
-			);
+	public function maybe_register_post_save_hook( string $post_type ): void {
+		if ( ! post_type_supports( $post_type, 'gatherpress-venue-information' ) ) {
+			return;
 		}
+
+		add_action(
+			sprintf( 'save_post_%s', $post_type ),
+			array( $this, 'add_venue_term' ),
+			10,
+			3
+		);
 	}
 
 	/**
@@ -221,20 +223,19 @@ class Venue_Setup {
 	}
 
 	/**
-	 * Registers custom meta fields for all venue post types.
+	 * Registers venue meta fields when a post type declares venue support.
 	 *
-	 * Meta fields are registered per support:
-	 * - gatherpress-venue-information: venue address, phone, website, and lat/lng as JSON.
+	 * Meta is registered per support:
+	 * - gatherpress-venue-information: address/phone/website/lat/lng as JSON, plus
+	 *   WP Geodata standard fields (derived from the JSON).
 	 * - gatherpress-venue-map: map display settings (show, zoom, height).
-	 *
-	 * Runs at priority 11 so custom venue post types registered at priority 10 are
-	 * discoverable via get_post_types_by_support() when this hook fires.
 	 *
 	 * @since 1.0.0
 	 *
+	 * @param string $post_type The post type that was just registered.
 	 * @return void
 	 */
-	public function register_post_meta(): void {
+	public function maybe_register_post_meta( string $post_type ): void {
 		$venue_information_meta = array(
 			// Venue information stored as JSON.
 			'gatherpress_venue_information' => array(
@@ -312,7 +313,7 @@ class Venue_Setup {
 			),
 		);
 
-		foreach ( get_post_types_by_support( 'gatherpress-venue-information' ) as $post_type ) {
+		if ( post_type_supports( $post_type, 'gatherpress-venue-information' ) ) {
 			$supports_revisions = post_type_supports( $post_type, 'revisions' );
 
 			foreach ( $venue_information_meta as $meta_key => $args ) {
@@ -327,8 +328,6 @@ class Venue_Setup {
 			}
 
 			// Strip derived geo meta from REST requests so the editor can't write it directly.
-			// Venue post types registered after init:11 inherit the same timing constraint as the
-			// meta registration above — they won't pick up this filter and should declare their own.
 			add_filter(
 				sprintf( 'rest_pre_insert_%s', $post_type ),
 				array( $this, 'filter_readonly_meta' ),
@@ -337,7 +336,7 @@ class Venue_Setup {
 			);
 		}
 
-		foreach ( get_post_types_by_support( 'gatherpress-venue-map' ) as $post_type ) {
+		if ( post_type_supports( $post_type, 'gatherpress-venue-map' ) ) {
 			foreach ( $venue_map_meta as $meta_key => $args ) {
 				register_post_meta( $post_type, $meta_key, $args );
 			}

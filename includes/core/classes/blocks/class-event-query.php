@@ -67,9 +67,7 @@ class Event_Query {
 			10,
 			2
 		);
-		// Priority 11 so post types (registered at default priority 10) exist
-		// when we query get_post_types_by_support( 'gatherpress-event-date' ).
-		add_action( 'init', array( $this, 'register_event_date_rest_hooks' ), 11 );
+		add_action( 'registered_post_type', array( $this, 'maybe_register_event_date_rest_hooks' ) );
 
 		// Integrate with Advanced Query Loop plugin to pass event query params through.
 		add_filter(
@@ -81,30 +79,30 @@ class Event_Query {
 	}
 
 	/**
-	 * Register REST hooks for all post types that support event_date.
-	 *
-	 * This method runs on init at a late priority to ensure all post types
-	 * have been registered before we query for event_date support.
+	 * Register REST hooks when a post type declares gatherpress-event-date support.
 	 *
 	 * @since 1.0.0
 	 *
+	 * @param string $post_type The post type that was just registered.
 	 * @return void
 	 */
-	public function register_event_date_rest_hooks(): void {
-		foreach ( get_post_types_by_support( 'gatherpress-event-date' ) as $post_type ) {
-			// Updates the query vars for the Query Loop block in the block editor.
-			add_filter(
-				sprintf( 'rest_%s_query', $post_type ),
-				array( $this, 'rest_query' ),
-				10,
-				2
-			);
-			// We need more sortBy options.
-			add_filter(
-				sprintf( 'rest_%s_collection_params', $post_type ),
-				array( $this, 'rest_collection_params' )
-			);
+	public function maybe_register_event_date_rest_hooks( string $post_type ): void {
+		if ( ! post_type_supports( $post_type, 'gatherpress-event-date' ) ) {
+			return;
 		}
+
+		// Updates the query vars for the Query Loop block in the block editor.
+		add_filter(
+			sprintf( 'rest_%s_query', $post_type ),
+			array( $this, 'rest_query' ),
+			10,
+			2
+		);
+		// We need more sortBy options.
+		add_filter(
+			sprintf( 'rest_%s_collection_params', $post_type ),
+			array( $this, 'rest_collection_params' )
+		);
 	}
 
 	/**
