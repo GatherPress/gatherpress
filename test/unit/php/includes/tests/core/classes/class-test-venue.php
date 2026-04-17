@@ -507,6 +507,208 @@ class Test_Venue extends Base {
 	}
 
 	/**
+	 * Tests that partial JSON (missing keys or non-numeric lat/lng) is handled gracefully.
+	 *
+	 * The isset() + is_numeric() fallbacks are the main path for messy real-world data
+	 * (legacy venues, partial imports). This exercises each combination: a present but
+	 * non-numeric latitude is stored empty, a missing longitude is stored empty, and a
+	 * present fullAddress still flows through.
+	 *
+	 * @covers ::set_geodata
+	 *
+	 * @return void
+	 */
+	public function test_set_geodata_partial_json(): void {
+		$instance = Venue::get_instance();
+
+		$venue_id = $this->factory->post->create(
+			array(
+				'post_type'   => Venue::POST_TYPE,
+				'post_status' => 'publish',
+			)
+		);
+
+		update_post_meta(
+			$venue_id,
+			'gatherpress_venue_information',
+			wp_json_encode(
+				array(
+					'latitude'    => 'not-a-number',
+					'fullAddress' => '123 Main St',
+				)
+			)
+		);
+
+		$instance->set_geodata( $venue_id );
+
+		$this->assertSame(
+			'',
+			get_post_meta( $venue_id, 'geo_latitude', true ),
+			'Failed to assert non-numeric latitude is stored empty.'
+		);
+		$this->assertSame(
+			'',
+			get_post_meta( $venue_id, 'geo_longitude', true ),
+			'Failed to assert missing longitude is stored empty.'
+		);
+		$this->assertSame(
+			'123 Main St',
+			get_post_meta( $venue_id, 'geo_address', true ),
+			'Failed to assert fullAddress flows through when lat/lng are invalid.'
+		);
+	}
+
+	/**
+	 * Tests that set_geodata skips revision posts.
+	 *
+	 * The wp_after_insert_post hook fires for revisions; set_geodata must not write
+	 * derived meta onto the revision itself since the parent post is the authoritative
+	 * source.
+	 *
+	 * @covers ::set_geodata
+	 *
+	 * @return void
+	 */
+	public function test_set_geodata_skips_revisions(): void {
+		$instance = Venue::get_instance();
+
+		$venue_id = $this->factory->post->create(
+			array(
+				'post_type'   => Venue::POST_TYPE,
+				'post_status' => 'publish',
+			)
+		);
+
+		update_post_meta(
+			$venue_id,
+			'gatherpress_venue_information',
+			wp_json_encode(
+				array(
+					'latitude'  => '48.856613',
+					'longitude' => '2.352222',
+				)
+			)
+		);
+
+		$revision_id = wp_save_post_revision( $venue_id );
+
+		$this->assertIsInt( $revision_id, 'wp_save_post_revision should return a revision ID.' );
+
+		$instance->set_geodata( (int) $revision_id );
+
+		$this->assertSame(
+			'',
+			get_post_meta( (int) $revision_id, 'geo_latitude', true ),
+			'Failed to assert revision posts are skipped (no geo_latitude written).'
+		);
+	}
+
+	/**
+	 * Tests that set_geodata skips autosave posts.
+	 *
+	 * The wp_after_insert_post hook fires for autosaves as well as revisions;
+	 * set_geodata must skip both so derived meta isn't written onto draft copies.
+	 *
+	 * @covers ::set_geodata
+	 *
+	 * @return void
+	 */
+	public function test_set_geodata_skips_autosaves(): void {
+		$instance = Venue::get_instance();
+
+		$author_id = $this->factory->user->create( array( 'role' => 'editor' ) );
+		wp_set_current_user( $author_id );
+
+		$venue_id = $this->factory->post->create(
+			array(
+				'post_type'   => Venue::POST_TYPE,
+				'post_status' => 'publish',
+				'post_author' => $author_id,
+			)
+		);
+
+		update_post_meta(
+			$venue_id,
+			'gatherpress_venue_information',
+			wp_json_encode(
+				array(
+					'latitude'  => '48.856613',
+					'longitude' => '2.352222',
+				)
+			)
+		);
+
+		$autosave_id = wp_create_post_autosave(
+			array(
+				'post_ID'      => $venue_id,
+				'post_content' => 'Autosave draft.',
+				'post_title'   => 'Autosave Title',
+			)
+		);
+
+		$this->assertIsInt( $autosave_id, 'wp_create_post_autosave should return an autosave ID.' );
+
+		$instance->set_geodata( (int) $autosave_id );
+
+		$this->assertSame(
+			'',
+			get_post_meta( (int) $autosave_id, 'geo_latitude', true ),
+			'Failed to assert autosave posts are skipped (no geo_latitude written).'
+		);
+	}
+
+	/**
+	 * End-to-end coverage: verifies set_geodata is wired to wp_after_insert_post.
+	 *
+	 * Inserts a venue via wp_insert_post with venue information meta, then confirms
+	 * the derived geo_* keys are populated without an explicit call to set_geodata().
+	 *
+	 * @covers ::set_geodata
+	 *
+	 * @return void
+	 */
+	public function test_set_geodata_runs_on_wp_after_insert_post(): void {
+		// Ensure the Venue singleton is instantiated so its hooks are registered.
+		Venue::get_instance();
+
+		$venue_id = wp_insert_post(
+			array(
+				'post_type'   => Venue::POST_TYPE,
+				'post_status' => 'publish',
+				'post_title'  => 'End to End Venue',
+				'meta_input'  => array(
+					'gatherpress_venue_information' => wp_json_encode(
+						array(
+							'fullAddress' => '1600 Pennsylvania Ave NW',
+							'latitude'    => '38.8977',
+							'longitude'   => '-77.0365',
+						)
+					),
+				),
+			)
+		);
+
+		$this->assertIsInt( $venue_id, 'wp_insert_post should return a venue post ID.' );
+		$this->assertGreaterThan( 0, $venue_id, 'wp_insert_post should return a positive post ID.' );
+
+		$this->assertSame(
+			'38.8977',
+			get_post_meta( $venue_id, 'geo_latitude', true ),
+			'Failed to assert geo_latitude was set via wp_after_insert_post.'
+		);
+		$this->assertSame(
+			'-77.0365',
+			get_post_meta( $venue_id, 'geo_longitude', true ),
+			'Failed to assert geo_longitude was set via wp_after_insert_post.'
+		);
+		$this->assertSame(
+			'1600 Pennsylvania Ave NW',
+			get_post_meta( $venue_id, 'geo_address', true ),
+			'Failed to assert geo_address was set via wp_after_insert_post.'
+		);
+	}
+
+	/**
 	 * Coverage for filter_readonly_meta.
 	 *
 	 * Verifies that geo_* meta keys are stripped from REST API meta payloads
@@ -547,6 +749,28 @@ class Test_Venue extends Base {
 			$meta,
 			'Non-geo meta keys should pass through untouched.'
 		);
+	}
+
+	/**
+	 * Tests that filter_readonly_meta handles a REST request with no meta param.
+	 *
+	 * Exercises the is_array() guard: when the request has no meta (or a non-array
+	 * value), the filter must return the prepared post object unchanged without
+	 * mutating the request.
+	 *
+	 * @covers ::filter_readonly_meta
+	 *
+	 * @return void
+	 */
+	public function test_filter_readonly_meta_no_meta_param(): void {
+		$instance = Venue::get_instance();
+		$request  = new \WP_REST_Request();
+		$prepared = new \stdClass();
+
+		$result = $instance->filter_readonly_meta( $prepared, $request );
+
+		$this->assertSame( $prepared, $result, 'Filter must return the prepared post object unchanged.' );
+		$this->assertNull( $request->get_param( 'meta' ), 'Missing meta param should remain null.' );
 	}
 
 	/**

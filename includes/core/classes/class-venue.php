@@ -457,6 +457,8 @@ class Venue {
 			}
 
 			// Strip derived geo meta from REST requests so the editor can't write it directly.
+			// Venue post types registered after init:11 inherit the same timing constraint as the
+			// meta registration above — they won't pick up this filter and should declare their own.
 			add_filter(
 				sprintf( 'rest_pre_insert_%s', $post_type ),
 				array( $this, 'filter_readonly_meta' ),
@@ -515,7 +517,15 @@ class Venue {
 	 * that adhere to the standard interoperate with GatherPress venues without reading
 	 * our JSON format.
 	 *
-	 * geo_public is bound to post_status: 1 when published, 0 otherwise.
+	 * Non-numeric latitude or longitude values in the JSON are stored as empty strings
+	 * rather than passed through, so downstream consumers that expect floats (e.g.
+	 * Simple Location) don't choke on legacy or imported garbage data.
+	 *
+	 * Note on geo_public: the WP Geodata codex defines geo_public as an opt-in privacy
+	 * flag (1 public, 0 private). GatherPress intentionally binds it to publication
+	 * status — 1 when post_status is 'publish', 0 otherwise — because a venue that
+	 * isn't published is not publicly accessible anywhere in the site. Plugins that
+	 * need a separate user-facing privacy toggle can filter the value.
 	 *
 	 * @since 1.0.0
 	 *
@@ -523,6 +533,12 @@ class Venue {
 	 * @return void
 	 */
 	public function set_geodata( int $post_id ): void {
+		// wp_after_insert_post fires for revisions and autosaves; skip both to avoid
+		// writing derived meta onto revision posts where it's not useful.
+		if ( wp_is_post_revision( $post_id ) || wp_is_post_autosave( $post_id ) ) {
+			return;
+		}
+
 		$post_type = (string) get_post_type( $post_id );
 
 		if ( ! post_type_supports( $post_type, 'gatherpress-venue-information' ) ) {
@@ -538,8 +554,8 @@ class Venue {
 			$data = array();
 		}
 
-		$latitude  = isset( $data['latitude'] ) ? (string) $data['latitude'] : '';
-		$longitude = isset( $data['longitude'] ) ? (string) $data['longitude'] : '';
+		$latitude  = isset( $data['latitude'] ) && is_numeric( $data['latitude'] ) ? (string) $data['latitude'] : '';
+		$longitude = isset( $data['longitude'] ) && is_numeric( $data['longitude'] ) ? (string) $data['longitude'] : '';
 		$address   = isset( $data['fullAddress'] ) ? (string) $data['fullAddress'] : '';
 		$public    = ( 'publish' === get_post_status( $post_id ) ) ? 1 : 0;
 
