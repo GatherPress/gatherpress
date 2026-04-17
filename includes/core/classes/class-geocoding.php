@@ -202,7 +202,7 @@ class Geocoding {
 		$address = mb_substr( trim( $address ), 0, 200 );
 
 		$language  = $this->get_language_code();
-		$cache_key = self::GEOCODE_CACHE_PREFIX . md5( $address . '|' . $language );
+		$cache_key = self::GEOCODE_CACHE_PREFIX . md5( $address . '|' . $language ); // NOSONAR.
 		$cached    = get_transient( $cache_key );
 
 		if ( is_array( $cached ) ) {
@@ -312,7 +312,7 @@ class Geocoding {
 		}
 
 		$language  = $this->get_language_code();
-		$cache_key = self::SEARCH_CACHE_PREFIX . md5( $query . '|' . $language );
+		$cache_key = self::SEARCH_CACHE_PREFIX . md5( $query . '|' . $language ); // NOSONAR.
 		$cached    = get_transient( $cache_key );
 
 		if ( is_array( $cached ) ) {

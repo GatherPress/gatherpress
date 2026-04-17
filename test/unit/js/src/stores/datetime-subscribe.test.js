@@ -139,4 +139,20 @@ describe( 'DateTime store subscribe initialization', () => {
 			'Europe/London',
 		);
 	} );
+
+	it( 'falls back to an empty string when both meta timezone and siteTimezone are missing', () => {
+		// Final branch of `meta.gatherpress_timezone || config.siteTimezone || ''`.
+		// Existing tests cover (1) meta wins and (2) config wins; this covers the
+		// last-resort empty string when both upstream sources are falsy.
+		global.__testMockMeta = {
+			gatherpress_datetime_start: '',
+			gatherpress_datetime_end: '',
+			gatherpress_timezone: '',
+		};
+		global.__testMockConfig = { siteTimezone: '' };
+
+		global.__testSubscribeCallback();
+
+		expect( global.__testMockDispatchFns.setTimezone ).toHaveBeenCalledWith( '' );
+	} );
 } );

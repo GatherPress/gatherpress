@@ -17,6 +17,7 @@ import {
 	ADDRESS_SEARCH_MIN_QUERY_LENGTH,
 	fetchAddressSuggestions,
 	geocodeAddress,
+	getAddressSearchMinQueryLength,
 	clearGeocodeCache,
 	getGeocodeCacheSize,
 	primeGeocodeCache,
@@ -33,11 +34,49 @@ jest.mock( '@src/helpers/namespace', () => ( {
 	REST_NAMESPACE: 'gatherpress/v1',
 } ) );
 
+// Mock editor-settings so we can control what getFromConfig() returns.
+jest.mock( '@src/helpers/editor-settings', () => ( {
+	getFromConfig: jest.fn(),
+} ) );
+
 describe( 'Geocoding helpers', () => {
 	let apiFetch;
 
 	it( 'exports address search min length aligned with PHP', () => {
 		expect( ADDRESS_SEARCH_MIN_QUERY_LENGTH ).toBe( 3 );
+	} );
+
+	describe( 'getAddressSearchMinQueryLength', () => {
+		let getFromConfig;
+
+		beforeEach( async () => {
+			getFromConfig = (
+				await import( '@src/helpers/editor-settings' )
+			).getFromConfig;
+			getFromConfig.mockReset();
+		} );
+
+		it( 'returns the configured value when it is a positive number', () => {
+			getFromConfig.mockReturnValue( 5 );
+			expect( getAddressSearchMinQueryLength() ).toBe( 5 );
+		} );
+
+		it( 'falls back to the hardcoded default when the configured value is zero', () => {
+			// Covers the `0 < configured` half of the guard — a zero would
+			// effectively disable the min-length check, so the fallback wins.
+			getFromConfig.mockReturnValue( 0 );
+			expect( getAddressSearchMinQueryLength() ).toBe( 3 );
+		} );
+
+		it( 'falls back to the hardcoded default when the configured value is not a number', () => {
+			getFromConfig.mockReturnValue( '5' );
+			expect( getAddressSearchMinQueryLength() ).toBe( 3 );
+		} );
+
+		it( 'falls back to the hardcoded default when nothing is configured', () => {
+			getFromConfig.mockReturnValue( undefined );
+			expect( getAddressSearchMinQueryLength() ).toBe( 3 );
+		} );
 	} );
 
 	beforeEach( async () => {

@@ -34,6 +34,7 @@ import { select, useSelect } from '@wordpress/data';
  */
 import {
 	isVenuePostType,
+	getVenuePostType,
 	getVenueTaxonomy,
 	GetVenuePostFromTermId,
 	GetVenueTermFromPostId,
@@ -43,6 +44,72 @@ import {
 	usePopularVenues,
 	useVenueTaxonomyIds,
 } from '@src/helpers/venue';
+
+/**
+ * Coverage for getVenuePostType.
+ */
+describe( 'getVenuePostType', () => {
+	beforeEach( () => {
+		jest.clearAllMocks();
+	} );
+
+	it( 'returns the mapped venue post type when the editor config provides one', () => {
+		select.mockReturnValue( {
+			getEditorSettings: () => ( {
+				gatherpress: {
+					config: {
+						venuePostTypes: { gatherpress_event: 'gatherpress_venue' },
+					},
+				},
+			} ),
+		} );
+		expect( getVenuePostType( 'gatherpress_event' ) ).toBe(
+			'gatherpress_venue'
+		);
+	} );
+
+	it( 'falls back to the default when the resolved post type has no mapping', () => {
+		// Drives the `venuePostTypeMap[ key ] ?? DEFAULT_VENUE_POST_TYPE` branch:
+		// the map exists but doesn't contain the requested post type.
+		select.mockReturnValue( {
+			getEditorSettings: () => ( {
+				gatherpress: {
+					config: {
+						venuePostTypes: { gatherpress_event: 'gatherpress_venue' },
+					},
+				},
+			} ),
+		} );
+		expect( getVenuePostType( 'unknown_event_type' ) ).toBe(
+			'gatherpress_venue'
+		);
+	} );
+
+	it( 'falls back to an empty map when editor config is missing', () => {
+		// Drives the `?? {}` branch: optional chain bottoms out when there is no
+		// gatherpress config, then the lookup falls through to the default.
+		select.mockReturnValue( {
+			getEditorSettings: () => ( {} ),
+		} );
+		expect( getVenuePostType( 'gatherpress_event' ) ).toBe(
+			'gatherpress_venue'
+		);
+	} );
+
+	it( 'returns the default when called without an event post type argument', () => {
+		// Exercises the `eventPostType = ''` default parameter path.
+		select.mockReturnValue( {
+			getEditorSettings: () => ( {
+				gatherpress: {
+					config: {
+						venuePostTypes: { gatherpress_event: 'gatherpress_venue' },
+					},
+				},
+			} ),
+		} );
+		expect( getVenuePostType() ).toBe( 'gatherpress_venue' );
+	} );
+} );
 
 /**
  * Coverage for getVenueTaxonomy.
@@ -525,6 +592,64 @@ describe( 'GetVenuePostFromEventId', () => {
 
 		const { result } = renderHook( () => GetVenuePostFromEventId( null, 'gatherpress_event' ) );
 		// Returns undefined because eventId is null — early return.
+		expect( result.current ).toEqual( undefined );
+	} );
+
+	it( 'falls back to an empty venue-post-type map when editor config is missing', () => {
+		// Drives the `?? {}` fallback on venuePostTypes. With no gatherpress config
+		// at all, the lookup `venuePostTypeMap[ resolvedPostType ]` becomes undefined
+		// and `?? DEFAULT_VENUE_POST_TYPE` then resolves to the default — both
+		// fallback branches are exercised in one pass.
+		useSelect.mockImplementation( ( callback ) => {
+			const wpSelect = jest.fn( ( store ) => {
+				if ( 'core/editor' === store ) {
+					return {
+						getCurrentPostType: () => 'gatherpress_event',
+						// No `gatherpress.config.venuePostTypes` at all.
+						getEditorSettings: () => ( {} ),
+					};
+				}
+				return { getEntityRecords: jest.fn( () => [] ) };
+			} );
+			return callback( wpSelect );
+		} );
+
+		const { result } = renderHook( () =>
+			GetVenuePostFromEventId( 100, 'gatherpress_event' )
+		);
+		// No venue terms returned, so result is undefined; the value we care
+		// about is that the helper traversed the fallback paths without throwing.
+		expect( result.current ).toEqual( undefined );
+	} );
+
+	it( 'uses the default venue post type when the map has no entry for the resolved post type', () => {
+		// Drives just the `venuePostTypeMap[ key ] ?? DEFAULT_VENUE_POST_TYPE`
+		// fallback: a non-empty map that doesn't include the current post type.
+		useSelect.mockImplementation( ( callback ) => {
+			const wpSelect = jest.fn( ( store ) => {
+				if ( 'core/editor' === store ) {
+					return {
+						getCurrentPostType: () => 'unknown_event_type',
+						getEditorSettings: () => ( {
+							gatherpress: {
+								config: {
+									venuePostTypes: {
+										// Map present but does not contain `unknown_event_type`.
+										gatherpress_event: 'gatherpress_venue',
+									},
+								},
+							},
+						} ),
+					};
+				}
+				return { getEntityRecords: jest.fn( () => [] ) };
+			} );
+			return callback( wpSelect );
+		} );
+
+		const { result } = renderHook( () =>
+			GetVenuePostFromEventId( 100, 'unknown_event_type' )
+		);
 		expect( result.current ).toEqual( undefined );
 	} );
 } );

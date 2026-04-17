@@ -553,6 +553,30 @@ describe( 'hasEventPast', () => {
 
 		expect( hasEventPast() ).toBe( false );
 	} );
+
+	it( 'returns false when the stored end is undefined (?? fallback)', () => {
+		// Drives the `?? ''` fallback on the optional-chained store call. With
+		// getDateTimeEnd returning undefined, the helper falls back to '' which
+		// moment() treats as Invalid Date — `now > NaN` is false, so the past
+		// check resolves to false rather than throwing.
+		require( '@wordpress/data' ).select.mockImplementation( ( store ) => {
+			if ( 'gatherpress/datetime' === store ) {
+				return {
+					getDateTimeEnd: () => undefined,
+					getTimezone: () => 'America/New_York',
+				};
+			}
+			if ( 'core/editor' === store ) {
+				return { getCurrentPostType: () => 'gatherpress_event' };
+			}
+			if ( 'core' === store ) {
+				return { getPostType: mockGetPostType };
+			}
+			return {};
+		} );
+
+		expect( hasEventPast() ).toBe( false );
+	} );
 } );
 
 /**

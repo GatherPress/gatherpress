@@ -3,12 +3,12 @@
  */
 import { __ } from '@wordpress/i18n';
 import { Popover, Spinner, TextControl } from '@wordpress/components';
+import { useInstanceId } from '@wordpress/compose';
 import {
 	useCallback,
 	useEffect,
 	useLayoutEffect,
 	useRef,
-	useState,
 } from '@wordpress/element';
 
 /**
@@ -45,14 +45,12 @@ export default function AddressAutocompleteField( {
 	help,
 } ) {
 	const inputRef = useRef( null );
-	const [ listboxId ] = useState(
-		() =>
-			`gatherpress-address-suggest-${ Math.random().toString( 36 ).slice( 2, 11 ) }`
-	);
-	const [ fieldUid ] = useState(
-		() =>
-			`gatherpress-address-${ Math.random().toString( 36 ).slice( 2, 12 ) }`
-	);
+	// Stable, deterministic per-instance id from @wordpress/compose. Avoids
+	// Math.random() (flagged by SonarCloud as a weak PRNG) and matches WP's
+	// idiom for generating unique DOM ids inside React components.
+	const instanceId = useInstanceId( AddressAutocompleteField );
+	const fieldUid = `gatherpress-address-${ instanceId }`;
+	const listboxId = `${ fieldUid }-suggest`;
 
 	const { suppressNativeAutofill, unlockAddressInput } =
 		useAddressFieldAntiAutofill( value, inputRef );
