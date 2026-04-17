@@ -250,7 +250,7 @@ class Event_Query {
 			$venue_post = get_queried_object();
 
 			if ( $venue_post instanceof WP_Post ) {
-				$venue     = Venue::get_instance();
+				$venue     = Venue_Setup::get_instance();
 				$term_slug = $venue->get_venue_term_slug( $venue_post->post_name );
 
 				// Merge with any existing tax_query.

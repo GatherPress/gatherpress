@@ -9,13 +9,13 @@
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
-use GatherPress\Core\Venue;
+use GatherPress\Core\Venue_Setup;
 
 if ( ! isset( $attributes ) || ! is_array( $attributes ) ) {
 	return;
 }
 
-$gatherpress_venue      = Venue::get_instance();
+$gatherpress_venue      = Venue_Setup::get_instance();
 $gatherpress_venue_meta = $gatherpress_venue->get_venue_meta( get_the_ID(), get_post_type() );
 
 // Get venue data.

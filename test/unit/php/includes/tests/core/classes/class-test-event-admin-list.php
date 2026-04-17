@@ -12,6 +12,7 @@ use GatherPress\Core\Event;
 use GatherPress\Core\Event_Admin_List;
 use GatherPress\Core\Rsvp;
 use GatherPress\Core\Venue;
+use GatherPress\Core\Venue_Setup;
 use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;
 use WP_Query;
@@ -1227,7 +1228,7 @@ class Test_Event_Admin_List extends Base {
 		$result = $instance->venue_sorting_join_paged( $original_join );
 
 		// Re-register the taxonomy so subsequent tests are not affected.
-		Venue::get_instance()->register_taxonomy();
+		Venue_Setup::get_instance()->register_taxonomy();
 
 		$this->assertSame(
 			$original_join,

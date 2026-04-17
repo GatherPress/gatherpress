@@ -220,7 +220,7 @@ For frontend view scripts, data is provided through:
 | `includes/core/classes/settings/class-base.php` | Abstract base for sub-page classes |
 | `includes/core/classes/settings/class-events.php` | Events tab |
 | `includes/core/classes/settings/class-rsvp-settings.php` | RSVP tab |
-| `includes/core/classes/settings/class-formatting.php` | Formatting tab |
+| `includes/core/classes/settings/class-venues.php` | Venues tab |
 | `includes/core/classes/settings/class-roles.php` | Roles tab |
 | `includes/core/classes/settings/class-tools.php` | Tools tab (import/export) |
 | `includes/core/classes/settings/class-credits.php` | Credits tab |

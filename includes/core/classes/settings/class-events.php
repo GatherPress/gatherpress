@@ -74,6 +74,64 @@ class Events extends Base {
 	 */
 	protected function get_sections(): array {
 		return array(
+			'date_time'     => array(
+				'name'        => __( 'Date & Time', 'gatherpress' ),
+				'description' => __(
+					// phpcs:disable Generic.Files.LineLength.TooLong
+					'For more information read the <a href="https://wordpress.org/documentation/article/customize-date-and-time-format/">Documentation on date and time formatting</a>.',
+					// phpcs:enable Generic.Files.LineLength.TooLong
+					'gatherpress'
+				),
+				'options'     => array(
+					'date_format'   => array(
+						'labels' => array(
+							'name' => __( 'Date Format', 'gatherpress' ),
+						),
+						'field'  => array(
+							'label'   => __( 'Format of date for scheduled events.', 'gatherpress' ),
+							'type'    => 'text',
+							'size'    => 'regular',
+							'options' => array(
+								'default' => get_option( 'date_format', 'l, F j, Y' ),
+							),
+							'preview' => array(
+								'template' => 'datetime-preview',
+							),
+						),
+					),
+					'time_format'   => array(
+						'labels' => array(
+							'name' => __( 'Time Format', 'gatherpress' ),
+						),
+						'field'  => array(
+							'label'   => __( 'Format of time for scheduled events.', 'gatherpress' ),
+							'type'    => 'text',
+							'size'    => 'regular',
+							'options' => array(
+								'default' => get_option( 'time_format', 'g:i A' ),
+							),
+							'preview' => array(
+								'template' => 'datetime-preview',
+							),
+						),
+					),
+					'show_timezone' => array(
+						'labels' => array(
+							'name' => __( 'Show Timezone', 'gatherpress' ),
+						),
+						'field'  => array(
+							'label'   => __(
+								'Display the timezone for scheduled events.',
+								'gatherpress'
+							),
+							'type'    => 'checkbox',
+							'options' => array(
+								'default' => true,
+							),
+						),
+					),
+				),
+			),
 			'event_display' => array(
 				'name'        => __( 'Event Display', 'gatherpress' ),
 				'description' => __(
