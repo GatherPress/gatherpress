@@ -133,6 +133,12 @@ export function useAddressAutocomplete( {
 						abortControllerRef.current = null;
 					}
 				} );
+			// Everything this callback closes over is stable: `abortControllerRef` is a ref,
+			// the state setters are stable by React guarantee, and `fetchAddressSuggestions` /
+			// `getAddressSearchMinQueryLength` / `__` are module-level imports. If you add a
+			// prop or non-setter state reference to this body, drop the disable and let the
+			// exhaustive-deps rule flag it rather than silently going stale.
+			// eslint-disable-next-line react-hooks/exhaustive-deps
 		}, [] ),
 		debounceMs
 	);
