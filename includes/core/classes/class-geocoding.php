@@ -468,8 +468,8 @@ class Geocoding {
 
 		$parts = array_filter(
 			array_map( 'trim', $parts ),
-			static function ( $p ): bool {
-				return '' !== $p;
+			static function ( $part ): bool {
+				return '' !== $part;
 			}
 		);
 

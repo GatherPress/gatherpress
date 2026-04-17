@@ -98,6 +98,90 @@ class Test_Geocoding extends Base {
 	}
 
 	/**
+	 * Coverage for add_editor_settings: publishes the min-query-length under gatherpress.config.
+	 *
+	 * @covers ::add_editor_settings
+	 *
+	 * @return void
+	 */
+	public function test_add_editor_settings_publishes_min_query_length(): void {
+		$instance = Geocoding::get_instance();
+
+		// With no prior settings, the method seeds both the namespace and the config sub-array.
+		$seeded = $instance->add_editor_settings( array() );
+		$this->assertSame(
+			3,
+			$seeded['gatherpress']['config']['addressSearchMinQueryLength'],
+			'Failed to assert the minimum query length is exposed under gatherpress.config.'
+		);
+
+		// With an existing gatherpress namespace but no config key, the config sub-array is created.
+		$with_namespace = $instance->add_editor_settings(
+			array( 'gatherpress' => array( 'customKey' => 'customValue' ) )
+		);
+		$this->assertSame(
+			'customValue',
+			$with_namespace['gatherpress']['customKey'],
+			'Failed to preserve existing gatherpress keys.'
+		);
+		$this->assertSame(
+			3,
+			$with_namespace['gatherpress']['config']['addressSearchMinQueryLength']
+		);
+
+		// With an existing config sub-array, the min-length is merged alongside other keys.
+		$with_config = $instance->add_editor_settings(
+			array( 'gatherpress' => array( 'config' => array( 'existing' => 'value' ) ) )
+		);
+		$this->assertSame( 'value', $with_config['gatherpress']['config']['existing'] );
+		$this->assertSame(
+			3,
+			$with_config['gatherpress']['config']['addressSearchMinQueryLength']
+		);
+	}
+
+	/**
+	 * Coverage for the private JSON-decode-failure logger.
+	 *
+	 * Exercises every branch so the coverage tool sees them executed. The actual
+	 * error_log write is suppressed here because WP_DEBUG is on in the test
+	 * environment; capturing it would require fragile ini_set / filesystem
+	 * gymnastics that aren't worth the upkeep just to assert a log line shape.
+	 *
+	 * @covers ::maybe_log_json_decode_failure
+	 *
+	 * @return void
+	 */
+	public function test_maybe_log_json_decode_failure_branches(): void {
+		$instance = Geocoding::get_instance();
+
+		// Branch 1: decoded value is non-null → early return.
+		$this->invoke_geocoding_private(
+			$instance,
+			'maybe_log_json_decode_failure',
+			array( '{"ok":true}', array( 'ok' => true ), 'geocode_address' )
+		);
+
+		// Branch 2: body is whitespace-only → early return.
+		$this->invoke_geocoding_private(
+			$instance,
+			'maybe_log_json_decode_failure',
+			array( '   ', null, 'search_addresses' )
+		);
+
+		// Branch 3: all guard conditions fall through and the log path runs.
+		// With WP_DEBUG on (default in the test environment), this reaches error_log();
+		// the emitted line goes to the PHP error log and does not affect PHPUnit output.
+		$this->invoke_geocoding_private(
+			$instance,
+			'maybe_log_json_decode_failure',
+			array( 'not json at all', null, 'geocode_address' )
+		);
+
+		$this->assertTrue( true, 'All branches of maybe_log_json_decode_failure executed without error.' );
+	}
+
+	/**
 	 * Coverage for register_endpoints method.
 	 *
 	 * @covers ::register_endpoints

@@ -338,7 +338,7 @@ class Test_Venue extends Base {
 	 */
 	public function test_register_post_meta_without_revisions_support(): void {
 		$instance = Venue::get_instance();
-		$test_pt  = 'gp_test_venue_no_rev';
+		$test_pt  = 'test_venue_no_rev';
 
 		register_post_type(
 			$test_pt,

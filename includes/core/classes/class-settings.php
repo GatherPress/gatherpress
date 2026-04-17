@@ -50,16 +50,18 @@ class Settings {
 	const MAP_TILE_URL = 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png';
 
 	/**
-	 * Default attribution string rendered with the map.
-	 *
-	 * Credits both the OpenStreetMap data contributors and CARTO (the tile host),
-	 * which CARTO's terms require. Override with `gatherpress_map_tile_attribution`
-	 * when supplying a different provider.
+	 * URL used in the default map attribution credit to OpenStreetMap.
 	 *
 	 * @since 1.0.0
 	 */
-	const MAP_TILE_ATTRIBUTION =
-		'© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors © <a href="https://carto.com/attributions">CARTO</a>';
+	const MAP_TILE_ATTRIBUTION_OSM_URL = 'https://www.openstreetmap.org/copyright';
+
+	/**
+	 * URL used in the default map attribution credit to CARTO.
+	 *
+	 * @since 1.0.0
+	 */
+	const MAP_TILE_ATTRIBUTION_CARTO_URL = 'https://carto.com/attributions';
 
 	/**
 	 * The current page being accessed within the settings.
@@ -190,6 +192,19 @@ class Settings {
 	 * @return string HTML attribution credit shown on the map.
 	 */
 	public static function get_map_tile_attribution(): string {
+		$default = sprintf(
+			/* translators: 1: OpenStreetMap credit link, 2: CARTO credit link. */
+			__( '© %1$s contributors © %2$s', 'gatherpress' ),
+			sprintf(
+				'<a href="%s">OpenStreetMap</a>',
+				esc_url( self::MAP_TILE_ATTRIBUTION_OSM_URL )
+			),
+			sprintf(
+				'<a href="%s">CARTO</a>',
+				esc_url( self::MAP_TILE_ATTRIBUTION_CARTO_URL )
+			)
+		);
+
 		/**
 		 * Filters the attribution HTML rendered with the venue map.
 		 *
@@ -200,9 +215,9 @@ class Settings {
 		 *
 		 * @param string $attribution Default attribution HTML.
 		 */
-		$filtered = (string) apply_filters( 'gatherpress_map_tile_attribution', self::MAP_TILE_ATTRIBUTION );
+		$filtered = (string) apply_filters( 'gatherpress_map_tile_attribution', $default );
 
-		return '' !== $filtered ? $filtered : self::MAP_TILE_ATTRIBUTION;
+		return '' !== $filtered ? $filtered : $default;
 	}
 
 	/**

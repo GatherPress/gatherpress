@@ -54,7 +54,7 @@ class Test_Settings_Cli extends Base {
 	 */
 	public function test_export_to_file(): void {
 		$cli  = new Settings_Cli();
-		$file = tempnam( sys_get_temp_dir(), 'gp_test_' );
+		$file = tempnam( sys_get_temp_dir(), 'gatherpress_test_' );
 
 		update_option( 'gatherpress_settings', array( 'map_platform' => 'google' ) );
 
@@ -86,7 +86,7 @@ class Test_Settings_Cli extends Base {
 	 */
 	public function test_import_merge(): void {
 		$cli  = new Settings_Cli();
-		$file = tempnam( sys_get_temp_dir(), 'gp_test_' );
+		$file = tempnam( sys_get_temp_dir(), 'gatherpress_test_' );
 
 		// Set existing setting.
 		update_option( 'gatherpress_settings', array( 'map_platform' => 'google' ) );
@@ -127,7 +127,7 @@ class Test_Settings_Cli extends Base {
 	 */
 	public function test_import_replace(): void {
 		$cli  = new Settings_Cli();
-		$file = tempnam( sys_get_temp_dir(), 'gp_test_' );
+		$file = tempnam( sys_get_temp_dir(), 'gatherpress_test_' );
 
 		update_option( 'gatherpress_settings', array( 'map_platform' => 'google' ) );
 
@@ -172,7 +172,7 @@ class Test_Settings_Cli extends Base {
 	 */
 	public function test_import_dry_run(): void {
 		$cli  = new Settings_Cli();
-		$file = tempnam( sys_get_temp_dir(), 'gp_test_' );
+		$file = tempnam( sys_get_temp_dir(), 'gatherpress_test_' );
 
 		$data = array(
 			'version'  => GATHERPRESS_VERSION,
@@ -224,7 +224,7 @@ class Test_Settings_Cli extends Base {
 	 */
 	public function test_import_invalid_json(): void {
 		$cli  = new Settings_Cli();
-		$file = tempnam( sys_get_temp_dir(), 'gp_test_' );
+		$file = tempnam( sys_get_temp_dir(), 'gatherpress_test_' );
 
 		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents
 		file_put_contents( $file, 'not valid json{' );
@@ -249,7 +249,7 @@ class Test_Settings_Cli extends Base {
 	 */
 	public function test_import_with_unknown_keys(): void {
 		$cli  = new Settings_Cli();
-		$file = tempnam( sys_get_temp_dir(), 'gp_test_' );
+		$file = tempnam( sys_get_temp_dir(), 'gatherpress_test_' );
 
 		$data = array(
 			'version'  => GATHERPRESS_VERSION,
@@ -284,7 +284,7 @@ class Test_Settings_Cli extends Base {
 	 */
 	public function test_import_version_mismatch(): void {
 		$cli  = new Settings_Cli();
-		$file = tempnam( sys_get_temp_dir(), 'gp_test_' );
+		$file = tempnam( sys_get_temp_dir(), 'gatherpress_test_' );
 
 		$data = array(
 			'version'  => '0.0.1',
@@ -315,7 +315,7 @@ class Test_Settings_Cli extends Base {
 	 */
 	public function test_import_dry_run_no_changes(): void {
 		$cli  = new Settings_Cli();
-		$file = tempnam( sys_get_temp_dir(), 'gp_test_' );
+		$file = tempnam( sys_get_temp_dir(), 'gatherpress_test_' );
 
 		// Import settings that match defaults — no changes.
 		$data = array(
@@ -363,7 +363,7 @@ class Test_Settings_Cli extends Base {
 	 */
 	public function test_import_dry_run_version_mismatch(): void {
 		$cli  = new Settings_Cli();
-		$file = tempnam( sys_get_temp_dir(), 'gp_test_' );
+		$file = tempnam( sys_get_temp_dir(), 'gatherpress_test_' );
 
 		$data = array(
 			'version'  => '0.0.1',
@@ -393,7 +393,7 @@ class Test_Settings_Cli extends Base {
 	 */
 	public function test_import_missing_settings_key(): void {
 		$cli  = new Settings_Cli();
-		$file = tempnam( sys_get_temp_dir(), 'gp_test_' );
+		$file = tempnam( sys_get_temp_dir(), 'gatherpress_test_' );
 
 		// Data has version but no settings key.
 		$data = array( 'version' => '1.0.0' );
@@ -425,7 +425,7 @@ class Test_Settings_Cli extends Base {
 	 */
 	public function test_import_dry_run_unknown_keys(): void {
 		$cli  = new Settings_Cli();
-		$file = tempnam( sys_get_temp_dir(), 'gp_test_' );
+		$file = tempnam( sys_get_temp_dir(), 'gatherpress_test_' );
 
 		$data = array(
 			'version'  => GATHERPRESS_VERSION,

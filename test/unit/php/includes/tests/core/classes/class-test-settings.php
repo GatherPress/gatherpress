@@ -235,7 +235,13 @@ class Test_Settings extends Base {
 	 * @return void
 	 */
 	public function test_get_map_tile_attribution_default_and_filter(): void {
-		$this->assertSame( Settings::MAP_TILE_ATTRIBUTION, Settings::get_map_tile_attribution() );
+		// Default is built via sprintf() + __() so the "contributors" word is translatable;
+		// assert it contains both provider credits rather than matching a frozen string.
+		$default = Settings::get_map_tile_attribution();
+		$this->assertStringContainsString( 'OpenStreetMap', $default );
+		$this->assertStringContainsString( Settings::MAP_TILE_ATTRIBUTION_OSM_URL, $default );
+		$this->assertStringContainsString( 'CARTO', $default );
+		$this->assertStringContainsString( Settings::MAP_TILE_ATTRIBUTION_CARTO_URL, $default );
 
 		add_filter(
 			'gatherpress_map_tile_attribution',

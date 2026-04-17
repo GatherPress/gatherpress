@@ -47,10 +47,11 @@ export default function AddressAutocompleteField( {
 	const inputRef = useRef( null );
 	const [ listboxId ] = useState(
 		() =>
-			`gp-addr-suggest-${ Math.random().toString( 36 ).slice( 2, 11 ) }`
+			`gatherpress-address-suggest-${ Math.random().toString( 36 ).slice( 2, 11 ) }`
 	);
 	const [ fieldUid ] = useState(
-		() => `gp-addr-${ Math.random().toString( 36 ).slice( 2, 12 ) }`
+		() =>
+			`gatherpress-address-${ Math.random().toString( 36 ).slice( 2, 12 ) }`
 	);
 
 	const { suppressNativeAutofill, unlockAddressInput } =

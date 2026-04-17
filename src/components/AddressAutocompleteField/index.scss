@@ -11,23 +11,23 @@
 	&__popover-inner {
 		display: flex;
 		align-items: center;
-		gap: 8px;
-		padding: 12px 16px;
+		gap: 0.5rem;
+		padding: 0.75rem 1rem;
 	}
 
 	&__loading {
-		font-size: 13px;
+		font-size: 0.8125rem;
 	}
 
 	&__error {
-		font-size: 13px;
+		font-size: 0.8125rem;
 	}
 
 	&__suggestions {
 		margin: 0;
-		padding: 4px 0;
+		padding: 0.25rem 0;
 		list-style: none;
-		max-height: 220px;
+		max-height: 13.75rem;
 		overflow-y: auto;
 	}
 
@@ -35,7 +35,7 @@
 		display: block;
 		width: 100%;
 		margin: 0;
-		padding: 8px 12px;
+		padding: 0.5rem 0.75rem;
 		text-align: left;
 		border: none;
 		background: transparent;
