@@ -24,6 +24,11 @@
 - [`gatherpress_event_feed_content`](gatherpress_event_feed_content.md) Filters the event content in feeds.
 - [`gatherpress_event_feed_excerpt`](gatherpress_event_feed_excerpt.md) Filters the event excerpt in feeds.
 
+## class-geocoding.php
+
+- [`gatherpress_log_geocoding_errors`](gatherpress_log_geocoding_errors.md) Filters whether to write a PHP error-log line when Photon returns a body
+- [`gatherpress_photon_api_url`](gatherpress_photon_api_url.md) Filters the Photon API base URL used for geocoding and address search.
+
 ## class-import.php
 
 - [`gatherpress_import`](gatherpress_import.md) Fires for every GatherPress data to be imported.
@@ -38,6 +43,8 @@
 
 ## class-settings.php
 
+- [`gatherpress_map_tile_attribution`](gatherpress_map_tile_attribution.md) Filters the attribution HTML rendered with the venue map.
+- [`gatherpress_map_tile_url`](gatherpress_map_tile_url.md) Filters the Leaflet tile layer URL used by the venue map.
 - [`gatherpress_sub_pages`](gatherpress_sub_pages.md) Filters the list of GatherPress sub pages.
 
 ## class-setup.php
