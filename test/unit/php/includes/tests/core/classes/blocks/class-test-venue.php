@@ -691,7 +691,7 @@ class Test_Venue extends Base {
 		$venue_post = get_post( $venue_id );
 
 		// Create the venue term with the correct slug format.
-		$term_slug = Venue::get_instance()->get_venue_term_slug( $venue_post->post_name );
+		$term_slug = ( new Venue( $venue_post->ID ) )->get_term_slug();
 		wp_insert_term(
 			'Linked Venue For Event Test',
 			Venue::TAXONOMY,
@@ -985,7 +985,7 @@ class Test_Venue extends Base {
 		$venue_post = get_post( $venue_id );
 
 		// Create the venue term with the correct slug format.
-		$term_slug = Venue::get_instance()->get_venue_term_slug( $venue_post->post_name );
+		$term_slug = ( new Venue( $venue_post->ID ) )->get_term_slug();
 		wp_insert_term(
 			'Override Venue Test',
 			Venue::TAXONOMY,

@@ -20,13 +20,7 @@ The core identifier for event post types. Enables event datetime storage and dis
 
 #### Usage for gatherpress-event-date
 
-```php
-add_action( 'init', function() {
-    add_post_type_support( 'my_custom_event', 'gatherpress-event-date' );
-}, 11 );
-```
-
-Or include it in your `register_post_type()` call:
+Declare the support inside your `register_post_type()` call:
 
 ```php
 register_post_type( 'my_custom_event', array(
@@ -34,6 +28,8 @@ register_post_type( 'my_custom_event', array(
     // ... other args
 ) );
 ```
+
+> **Declare supports on registration, not after.** GatherPress wires its meta registration, admin-list columns, REST filters, and other per-post-type hooks on the `registered_post_type` action — i.e. at the moment your post type finishes registering. Calling `add_post_type_support( 'my_custom_event', 'gatherpress-event-date' )` *after* `register_post_type()` will make `post_type_supports()` return true, but GatherPress's internal wiring won't run for your post type. Always include the support in the `supports` array.
 
 Once registered, you can use the `Event` class with your custom post type:
 
@@ -62,9 +58,10 @@ Enables the comment-based RSVP system for a post type. This includes:
 #### Usage for gatherpress-rsvp
 
 ```php
-add_action( 'init', function() {
-    add_post_type_support( 'my_custom_event', 'gatherpress-rsvp' );
-}, 11 );
+register_post_type( 'my_custom_event', array(
+    'supports' => array( 'title', 'editor', 'gatherpress-event-date', 'gatherpress-rsvp' ),
+    // ... other args
+) );
 ```
 
 ### `gatherpress-venue`
@@ -79,12 +76,11 @@ Enables physical venue association for a post type. This includes:
 #### Usage for gatherpress-venue
 
 ```php
-add_action( 'init', function() {
-    add_post_type_support( 'my_custom_event', 'gatherpress-venue' );
-}, 11 );
+register_post_type( 'my_custom_event', array(
+    'supports' => array( 'title', 'editor', 'gatherpress-event-date', 'gatherpress-venue' ),
+    // ... other args
+) );
 ```
-
-> **Note:** Register `gatherpress-venue` support at priority 10 (the default for `register_post_type()`) so GatherPress's priority-11 taxonomy registration can discover your post type via `get_post_types_by_support()`. For standalone `add_post_type_support()` calls after registration, use priority 11 or later.
 
 You can also override the venue post type used for lookups via the `gatherpress_venue_post_type` filter. The filter receives the event post type as a second argument, enabling per-event-type venue post type overrides:
 
@@ -108,9 +104,10 @@ Enables online event functionality for a post type. This includes:
 #### Usage for gatherpress-online-event
 
 ```php
-add_action( 'init', function() {
-    add_post_type_support( 'my_custom_event', 'gatherpress-online-event' );
-}, 11 );
+register_post_type( 'my_custom_event', array(
+    'supports' => array( 'title', 'editor', 'gatherpress-event-date', 'gatherpress-online-event' ),
+    // ... other args
+) );
 ```
 
 ---
@@ -224,7 +221,7 @@ All GatherPress supports use the following naming convention:
 ## Important Notes
 
 - The `gatherpress_events` database table stores data by `post_id` and is post-type agnostic. Any post type with `gatherpress-event-date` support can store datetime data in this table.
-- Supports must be registered before or during `init`. Use **priority 10** (the default) for your `register_post_type()` call. GatherPress itself runs its meta registration and taxonomy setup at priority 11 — this ordering ensures your post type is discoverable via `get_post_types_by_support()` when those hooks fire.
+- **Declare supports in your `register_post_type()` call, not via a later `add_post_type_support()`.** GatherPress registers its per-post-type hooks (meta fields, admin-list columns, REST query filters, venue save hooks) on the `registered_post_type` action, which only fires when `register_post_type()` runs. A support added afterwards will pass `post_type_supports()` checks but won't trigger any of GatherPress's internal wiring.
 - The `Event::POST_TYPE` constant still exists and refers to `gatherpress_event`. It is used for GatherPress's own post type registration but should not be used for feature checks.
 - The `Venue::POST_TYPE` constant still exists and refers to `gatherpress_venue`. It is used for GatherPress's own post type registration but should not be used for feature checks.
 - The `venuePostTypes` map is exposed to the block editor via `block_editor_settings_all` under `settings.gatherpress.venuePostTypes`. It maps event post type slugs to their corresponding venue post type slugs, resolved via the `gatherpress_venue_post_type` filter.

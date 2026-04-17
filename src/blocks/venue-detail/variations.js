@@ -19,6 +19,10 @@ const variations = [
 			placeholder: __( 'Venue address…', 'gatherpress' ),
 			fieldType: 'address',
 		},
+		// Match the active variation by comparing the `fieldType` attribute so
+		// the toolbar/inspector highlights the variation that corresponds to
+		// the current value (otherwise it always shows the default).
+		isActive: [ 'fieldType' ],
 		scope: [ 'inserter', 'transform' ],
 	},
 	{
@@ -30,6 +34,7 @@ const variations = [
 			placeholder: __( 'Venue phone…', 'gatherpress' ),
 			fieldType: 'phone',
 		},
+		isActive: [ 'fieldType' ],
 		scope: [ 'inserter', 'transform' ],
 	},
 	{
@@ -41,6 +46,7 @@ const variations = [
 			placeholder: __( 'Venue website…', 'gatherpress' ),
 			fieldType: 'url',
 		},
+		isActive: [ 'fieldType' ],
 		scope: [ 'inserter', 'transform' ],
 	},
 ];

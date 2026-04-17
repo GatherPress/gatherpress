@@ -39,29 +39,23 @@ const PhoneField = ( {
 		);
 	}
 
-	const commonProps = {
-		value,
-		onChange,
-		placeholder,
-		allowedFormats: [],
-		onKeyDown,
-		className: baseClass,
-	};
-
-	// Render as a link with tel: href when value exists.
-	if ( value ) {
-		return (
-			<RichText
-				{ ...commonProps }
-				tagName="a"
-				href={ `tel:${ value }` }
-				onClick={ ( e ) => e.preventDefault() }
-			/>
-		);
-	}
-
-	// Render as a span when empty.
-	return <RichText { ...commonProps } tagName="span" />;
+	// Keep `tagName` stable across edits: flipping between `span` and `a` as the
+	// value goes from empty to non-empty causes React to unmount/remount the
+	// contenteditable element, which drops the cursor after the first keystroke.
+	// The frontend in render.php still emits the proper `tel:` anchor.
+	return (
+		<RichText
+			tagName="a"
+			href={ value ? `tel:${ value }` : '#' }
+			className={ baseClass }
+			value={ value }
+			onChange={ onChange }
+			placeholder={ placeholder }
+			allowedFormats={ [] }
+			onKeyDown={ onKeyDown }
+			onClick={ ( e ) => e.preventDefault() }
+		/>
+	);
 };
 
 export default PhoneField;

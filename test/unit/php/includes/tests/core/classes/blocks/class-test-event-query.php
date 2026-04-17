@@ -41,9 +41,9 @@ class Test_Event_Query extends Base {
 			),
 			array(
 				'type'     => 'action',
-				'name'     => 'init',
-				'priority' => 11,
-				'callback' => array( $instance, 'register_event_date_rest_hooks' ),
+				'name'     => 'registered_post_type',
+				'priority' => 10,
+				'callback' => array( $instance, 'maybe_register_event_date_rest_hooks' ),
 			),
 			array(
 				'type'     => 'filter',
@@ -57,24 +57,24 @@ class Test_Event_Query extends Base {
 	}
 
 	/**
-	 * Coverage for register_event_date_rest_hooks method.
+	 * Coverage for maybe_register_event_date_rest_hooks method.
 	 *
-	 * Verifies that REST filters are registered for all post types
-	 * that support gatherpress-event-date.
+	 * Verifies that REST filters are registered when a post type declares
+	 * gatherpress-event-date support and skipped otherwise.
 	 *
 	 * @since 1.0.0
-	 * @covers ::register_event_date_rest_hooks
+	 * @covers ::maybe_register_event_date_rest_hooks
 	 *
 	 * @return void
 	 */
-	public function test_register_event_date_rest_hooks(): void {
+	public function test_maybe_register_event_date_rest_hooks(): void {
 		$instance = Event_Query::get_instance();
 
 		// Remove any existing filters first.
 		remove_all_filters( sprintf( 'rest_%s_query', Event::POST_TYPE ) );
 		remove_all_filters( sprintf( 'rest_%s_collection_params', Event::POST_TYPE ) );
 
-		$instance->register_event_date_rest_hooks();
+		$instance->maybe_register_event_date_rest_hooks( Event::POST_TYPE );
 
 		$this->assertSame(
 			10,
@@ -92,6 +92,25 @@ class Test_Event_Query extends Base {
 				array( $instance, 'rest_collection_params' )
 			),
 			'Failed to assert rest_collection_params filter is registered for event post type.'
+		);
+	}
+
+	/**
+	 * Bails when the post type does not declare event-date support.
+	 *
+	 * @since 1.0.0
+	 * @covers ::maybe_register_event_date_rest_hooks
+	 *
+	 * @return void
+	 */
+	public function test_maybe_register_event_date_rest_hooks_skips_unsupported_post_type(): void {
+		$instance = Event_Query::get_instance();
+
+		$instance->maybe_register_event_date_rest_hooks( 'post' );
+
+		$this->assertFalse(
+			has_filter( 'rest_post_query', array( $instance, 'rest_query' ) ),
+			'Failed to assert that no REST filters are registered for a post type without event-date support.'
 		);
 	}
 

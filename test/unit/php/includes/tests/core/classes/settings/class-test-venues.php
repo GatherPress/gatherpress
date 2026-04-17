@@ -1,6 +1,6 @@
 <?php
 /**
- * Class handles unit tests for GatherPress\Core\Settings\Formatting.
+ * Class handles unit tests for GatherPress\Core\Settings\Venues.
  *
  * @package GatherPress\Core
  * @since 1.0.0
@@ -8,16 +8,16 @@
 
 namespace GatherPress\Tests\Core\Settings;
 
-use GatherPress\Core\Settings\Formatting;
+use GatherPress\Core\Settings\Venues;
 use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;
 
 /**
- * Class Test_Formatting.
+ * Class Test_Venues.
  *
- * @coversDefaultClass \GatherPress\Core\Settings\Formatting
+ * @coversDefaultClass \GatherPress\Core\Settings\Venues
  */
-class Test_Formatting extends Base {
+class Test_Venues extends Base {
 	/**
 	 * Coverage for get_slug method.
 	 *
@@ -26,10 +26,10 @@ class Test_Formatting extends Base {
 	 * @return void
 	 */
 	public function test_get_slug(): void {
-		$instance = Formatting::get_instance();
+		$instance = Venues::get_instance();
 		$slug     = Utility::invoke_hidden_method( $instance, 'get_slug' );
 
-		$this->assertSame( 'formatting', $slug, 'Failed to assert slug is formatting.' );
+		$this->assertSame( 'venues', $slug, 'Failed to assert slug is venues.' );
 	}
 
 	/**
@@ -40,10 +40,10 @@ class Test_Formatting extends Base {
 	 * @return void
 	 */
 	public function test_get_name(): void {
-		$instance = Formatting::get_instance();
+		$instance = Venues::get_instance();
 		$name     = Utility::invoke_hidden_method( $instance, 'get_name' );
 
-		$this->assertSame( 'Formatting', $name, 'Failed to assert name is Formatting.' );
+		$this->assertSame( 'Venues', $name, 'Failed to assert name is Venues.' );
 	}
 
 	/**
@@ -54,10 +54,10 @@ class Test_Formatting extends Base {
 	 * @return void
 	 */
 	public function test_get_priority(): void {
-		$instance = Formatting::get_instance();
+		$instance = Venues::get_instance();
 		$priority = Utility::invoke_hidden_method( $instance, 'get_priority' );
 
-		$this->assertEquals( 3, $priority, 'Failed to assert correct priority.' );
+		$this->assertEquals( 1, $priority, 'Failed to assert correct priority.' );
 	}
 
 	/**
@@ -68,17 +68,23 @@ class Test_Formatting extends Base {
 	 * @return void
 	 */
 	public function test_get_sections(): void {
-		$instance = Formatting::get_instance();
+		$instance = Venues::get_instance();
 
 		$section = Utility::invoke_hidden_method( $instance, 'get_sections' );
 		$this->assertSame(
-			'Date & Time',
-			$section['date_time']['name'],
-			'Failed to assert name is Date & Time.'
+			'Maps',
+			$section['maps']['name'],
+			'Failed to assert name is Maps (moved here from the removed Formatting tab).'
 		);
-		$this->assertIsArray(
-			$section['maps'],
-			'Failed to assert maps is an array.'
+		$this->assertArrayHasKey(
+			'map_platform',
+			$section['maps']['options'],
+			'Failed to assert map_platform option is present.'
+		);
+		$this->assertSame(
+			'osm',
+			$section['maps']['options']['map_platform']['field']['options']['default'],
+			'Failed to assert map_platform defaults to osm.'
 		);
 	}
 }

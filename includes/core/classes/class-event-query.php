@@ -250,8 +250,7 @@ class Event_Query {
 			$venue_post = get_queried_object();
 
 			if ( $venue_post instanceof WP_Post ) {
-				$venue     = Venue::get_instance();
-				$term_slug = $venue->get_venue_term_slug( $venue_post->post_name );
+				$term_slug = ( new Venue( $venue_post->ID ) )->get_term_slug();
 
 				// Merge with any existing tax_query.
 				$existing_tax_query = $query->get( 'tax_query' );
@@ -527,7 +526,7 @@ class Event_Query {
 
 		foreach ( get_post_types_by_support( 'gatherpress-venue-information' ) as $venue_post_type ) {
 			$venue_tax_query[] = array(
-				'taxonomy' => Venue::get_taxonomy( $venue_post_type ),
+				'taxonomy' => Venue_Setup::get_instance()->get_taxonomy( $venue_post_type ),
 				'field'    => 'slug',
 				'terms'    => $venues,
 			);

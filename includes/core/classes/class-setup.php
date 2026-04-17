@@ -74,13 +74,13 @@ class Setup {
 		Settings::get_instance();
 		Settings\Credits::get_instance();
 		Settings\Events::get_instance();
-		Settings\Formatting::get_instance();
 		Settings\Roles::get_instance();
 		Settings\Rsvp_Settings::get_instance();
 		Settings\Tools::get_instance();
+		Settings\Venues::get_instance();
 		Topic::get_instance();
 		User::get_instance();
-		Venue::get_instance();
+		Venue_Setup::get_instance();
 	}
 
 	/**
@@ -345,14 +345,14 @@ class Setup {
 	 * @return void
 	 */
 	public function add_online_event_term(): void {
-		Venue::get_instance()->register_taxonomy();
+		Venue_Setup::get_instance()->register_taxonomy();
 
 		$term_name = __( 'Online event', 'gatherpress' );
 		$term_slug = 'online-event';
 
 		// Ensure the online-event term exists in each registered venue taxonomy.
 		foreach ( get_post_types_by_support( 'gatherpress-venue-information' ) as $venue_post_type ) {
-			$taxonomy = Venue::get_taxonomy( $venue_post_type );
+			$taxonomy = Venue_Setup::get_instance()->get_taxonomy( $venue_post_type );
 			$term     = term_exists( $term_slug, $taxonomy );
 
 			if ( ! $term ) {

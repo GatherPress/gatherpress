@@ -758,7 +758,7 @@ class Test_Settings extends Base {
 
 		$this->assertIsArray( $sub_pages['events'], 'Failed to assert sub page is an array.' );
 		$this->assertIsArray( $sub_pages['rsvp_settings'], 'Failed to assert sub page is an array.' );
-		$this->assertIsArray( $sub_pages['formatting'], 'Failed to assert sub page is an array.' );
+		$this->assertIsArray( $sub_pages['venues'], 'Failed to assert sub page is an array.' );
 		$this->assertIsArray( $sub_pages['roles'], 'Failed to assert sub page is an array.' );
 		$this->assertIsArray( $sub_pages['credits'], 'Failed to assert sub page is an array.' );
 		$this->assertSame(

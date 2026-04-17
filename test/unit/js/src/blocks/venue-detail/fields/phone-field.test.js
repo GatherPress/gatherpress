@@ -40,25 +40,28 @@ describe( 'PhoneField', () => {
 		onKeyDown: jest.fn(),
 	};
 
-	it( 'renders as span when no value', () => {
-		render( <PhoneField { ...defaultProps } /> );
+	it( 'always renders as an anchor so the contenteditable element does not remount on first keystroke', () => {
+		const { rerender } = render( <PhoneField { ...defaultProps } /> );
+		expect( screen.getByTestId( 'rich-text' ).tagName.toLowerCase() ).toBe(
+			'a'
+		);
 
-		const element = screen.getByTestId( 'rich-text' );
-		expect( element.tagName.toLowerCase() ).toBe( 'span' );
+		rerender( <PhoneField { ...defaultProps } value="555-1234" /> );
+		expect( screen.getByTestId( 'rich-text' ).tagName.toLowerCase() ).toBe(
+			'a'
+		);
 	} );
 
-	it( 'renders as anchor when value exists', () => {
-		render( <PhoneField { ...defaultProps } value="555-1234" /> );
+	it( 'uses a placeholder href when empty and a tel: href when populated', () => {
+		const { rerender } = render( <PhoneField { ...defaultProps } /> );
+		expect( screen.getByTestId( 'rich-text' ).getAttribute( 'href' ) ).toBe(
+			'#'
+		);
 
-		const element = screen.getByTestId( 'rich-text' );
-		expect( element.tagName.toLowerCase() ).toBe( 'a' );
-	} );
-
-	it( 'has tel: href when value exists', () => {
-		render( <PhoneField { ...defaultProps } value="555-1234" /> );
-
-		const element = screen.getByTestId( 'rich-text' );
-		expect( element.getAttribute( 'href' ) ).toBe( 'tel:555-1234' );
+		rerender( <PhoneField { ...defaultProps } value="555-1234" /> );
+		expect( screen.getByTestId( 'rich-text' ).getAttribute( 'href' ) ).toBe(
+			'tel:555-1234'
+		);
 	} );
 
 	it( 'has correct class name', () => {

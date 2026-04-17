@@ -72,6 +72,26 @@ class Test_Events extends Base {
 
 		$section = Utility::invoke_hidden_method( $instance, 'get_sections' );
 		$this->assertSame(
+			'Date & Time',
+			$section['date_time']['name'],
+			'Failed to assert name is Date & Time (moved here from the removed Formatting tab).'
+		);
+		$this->assertArrayHasKey(
+			'date_format',
+			$section['date_time']['options'],
+			'Failed to assert date_format option is present.'
+		);
+		$this->assertArrayHasKey(
+			'time_format',
+			$section['date_time']['options'],
+			'Failed to assert time_format option is present.'
+		);
+		$this->assertArrayHasKey(
+			'show_timezone',
+			$section['date_time']['options'],
+			'Failed to assert show_timezone option is present.'
+		);
+		$this->assertSame(
 			'Event Display',
 			$section['event_display']['name'],
 			'Failed to assert name is Event Display.'

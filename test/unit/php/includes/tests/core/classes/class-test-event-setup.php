@@ -45,8 +45,14 @@ class Test_Event_Setup extends Base {
 			array(
 				'type'     => 'action',
 				'name'     => 'init',
-				'priority' => 11,
-				'callback' => array( $instance, 'register_post_meta' ),
+				'priority' => 10,
+				'callback' => array( $instance, 'register_event_only_meta' ),
+			),
+			array(
+				'type'     => 'action',
+				'name'     => 'registered_post_type',
+				'priority' => 10,
+				'callback' => array( $instance, 'maybe_register_event_date_meta' ),
 			),
 			array(
 				'type'     => 'action',
@@ -297,13 +303,13 @@ class Test_Event_Setup extends Base {
 	}
 
 	/**
-	 * Coverage for register_post_meta method.
+	 * Coverage for register_event_only_meta method.
 	 *
-	 * @covers ::register_post_meta
+	 * @covers ::register_event_only_meta
 	 *
 	 * @return void
 	 */
-	public function test_register_post_meta(): void {
+	public function test_register_event_only_meta(): void {
 		$instance = Event_Setup::get_instance();
 
 		unregister_post_meta( Event::POST_TYPE, 'gatherpress_online_event_link' );
@@ -332,7 +338,7 @@ class Test_Event_Setup extends Base {
 			'Failed to assert that max_guest_limit does not exist.'
 		);
 
-		$instance->register_post_meta();
+		$instance->register_event_only_meta();
 
 		$meta = get_registered_meta_keys( 'post', Event::POST_TYPE );
 
@@ -355,6 +361,70 @@ class Test_Event_Setup extends Base {
 			'gatherpress_max_guest_limit',
 			$meta,
 			'Failed to assert that gatherpress_max_guest_limit does exist.'
+		);
+	}
+
+	/**
+	 * Coverage for maybe_register_event_date_meta method.
+	 *
+	 * Registers datetime meta + the read-only REST filter for any post type
+	 * that declares gatherpress-event-date support. Unsupported post types are
+	 * skipped entirely.
+	 *
+	 * @covers ::maybe_register_event_date_meta
+	 *
+	 * @return void
+	 */
+	public function test_maybe_register_event_date_meta(): void {
+		$instance = Event_Setup::get_instance();
+		$test_pt  = 'test_event_date_meta';
+
+		register_post_type(
+			$test_pt,
+			array(
+				'label'    => 'Test Event Date Meta',
+				'public'   => false,
+				'supports' => array( 'title', 'gatherpress-event-date' ),
+			)
+		);
+
+		$instance->maybe_register_event_date_meta( $test_pt );
+
+		$meta = get_registered_meta_keys( 'post', $test_pt );
+
+		$this->assertArrayHasKey(
+			'gatherpress_datetime',
+			$meta,
+			'Failed to assert that gatherpress_datetime is registered for a post type with event-date support.'
+		);
+		$this->assertArrayHasKey(
+			'gatherpress_datetime_start',
+			$meta,
+			'Failed to assert that gatherpress_datetime_start is registered.'
+		);
+		$this->assertNotFalse(
+			has_filter( sprintf( 'rest_pre_insert_%s', $test_pt ), array( $instance, 'filter_readonly_meta' ) ),
+			'Failed to assert that the read-only REST filter is registered for a post type with event-date support.'
+		);
+
+		unregister_post_type( $test_pt );
+	}
+
+	/**
+	 * Bails when the post type does not declare event-date support.
+	 *
+	 * @covers ::maybe_register_event_date_meta
+	 *
+	 * @return void
+	 */
+	public function test_maybe_register_event_date_meta_skips_unsupported_post_type(): void {
+		$instance = Event_Setup::get_instance();
+
+		$instance->maybe_register_event_date_meta( 'post' );
+
+		$this->assertFalse(
+			has_filter( 'rest_pre_insert_post', array( $instance, 'filter_readonly_meta' ) ),
+			'Failed to assert that no hooks are registered for a post type without event-date support.'
 		);
 	}
 
@@ -993,7 +1063,8 @@ class Test_Event_Setup extends Base {
 	 *
 	 * Covers: auth_callback returns.
 	 *
-	 * @covers ::register_post_meta
+	 * @covers ::register_event_only_meta
+	 * @covers ::maybe_register_event_date_meta
 	 * @covers ::can_edit_posts_meta
 	 * @return void
 	 */

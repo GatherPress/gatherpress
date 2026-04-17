@@ -122,15 +122,16 @@ const UrlField = ( {
 				</Popover>
 			) }
 			<RichText
-				tagName={ value ? 'a' : 'span' }
-				href={ value || undefined }
-				target={
-					value && '_blank' === linkTarget ? '_blank' : undefined
-				}
+				// Keep `tagName` stable across edits: flipping between `span`
+				// and `a` as the value goes from empty to non-empty causes
+				// React to unmount/remount the contenteditable element, which
+				// drops the cursor after the first keystroke. The frontend in
+				// render.php still emits the proper anchor with target/rel.
+				tagName="a"
+				href={ value || '#' }
+				target={ '_blank' === linkTarget ? '_blank' : undefined }
 				rel={
-					value && '_blank' === linkTarget
-						? 'noopener noreferrer'
-						: undefined
+					'_blank' === linkTarget ? 'noopener noreferrer' : undefined
 				}
 				className={ baseClass }
 				value={ displayValue }
@@ -140,7 +141,7 @@ const UrlField = ( {
 				onKeyDown={ onKeyDown }
 				onFocus={ () => setIsUrlFieldFocused( true ) }
 				onBlur={ () => setIsUrlFieldFocused( false ) }
-				onClick={ ( e ) => value && e.preventDefault() }
+				onClick={ ( e ) => e.preventDefault() }
 			/>
 		</>
 	);

@@ -23,9 +23,9 @@ The settings page is organized into tabs, each managed by its own class:
 
 | Tab | Class | Description |
 |-----|-------|-------------|
-| Events | `Settings\Events` | Event display, archive pages, permalinks |
+| Events | `Settings\Events` | Date/time formats, event display, archive pages, permalinks |
 | RSVP | `Settings\Rsvp_Settings` | Attendance limits, guest limits, anonymous RSVP, cleanup |
-| Formatting | `Settings\Formatting` | Date/time formats, timezone display, map platform |
+| Venues | `Settings\Venues` | Map platform (and future venue-specific config) |
 | Roles | `Settings\Roles` | Organizer role assignment |
 | Tools | `Settings\Tools` | Import and export settings |
 | Credits | `Settings\Credits` | Plugin contributors |
@@ -36,6 +36,9 @@ The settings page is organized into tabs, each managed by its own class:
 
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
+| `date_format` | text | WordPress date format | Date format for events |
+| `time_format` | text | WordPress time format | Time format for events |
+| `show_timezone` | checkbox | `true` | Display timezone for events |
 | `post_or_event_date` | checkbox | `true` | Display event date instead of publish date |
 | `upcoming_events` | autocomplete | `[]` | Page for upcoming events archive |
 | `past_events` | autocomplete | `[]` | Page for past events archive |
@@ -79,13 +82,10 @@ $mode = Settings::get_instance()->get( 'rsvp_mode' ); // 'all_on'
 $enabled = ( new \GatherPress\Core\Rsvp( $post_id ) )->is_enabled();
 ```
 
-### Formatting Tab
+### Venues Tab
 
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
-| `date_format` | text | WordPress date format | Date format for events |
-| `time_format` | text | WordPress time format | Time format for events |
-| `show_timezone` | checkbox | `true` | Display timezone for events |
 | `map_platform` | select | `'osm'` | Map provider (osm or google) |
 
 ### Roles Tab

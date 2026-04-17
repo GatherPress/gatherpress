@@ -540,13 +540,13 @@ class Event {
 		);
 
 		$event_post_type = (string) get_post_type( $this->event );
-		$taxonomy        = Venue::get_taxonomy( Venue::get_venue_post_type( $event_post_type ) );
+		$taxonomy        = Venue_Setup::get_instance()->taxonomy_for_event_post_type( $event_post_type );
 		$term            = current( (array) get_the_terms( $this->event, $taxonomy ) );
 		$venue           = null;
 
 		if ( ! empty( $term ) && is_a( $term, 'WP_Term' ) ) {
 			$venue_information['name'] = $term->name;
-			$venue                     = Venue::get_instance()->get_venue_post_from_term_slug( $term->slug );
+			$venue                     = Venue_Setup::get_instance()->get_venue_post_from_term_slug( $term->slug );
 
 			if ( 'online-event' === $term->slug ) {
 				$venue_information['is_online_event'] = true;
