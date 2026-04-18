@@ -121,7 +121,7 @@ class Venue_Map {
 	const META_KEY = 'gatherpress_venue_static_map';
 
 	/**
-	 * Subdirectory of `wp-content/uploads` where generated PNGs are written.
+	 * Subdirectory of `wp-content/uploads` where generated PNG files are written.
 	 *
 	 * @since 1.0.0
 	 * @var string

@@ -445,9 +445,9 @@ class Test_Venue_Map extends Base {
 			'gatherpress_venue_information',
 			wp_json_encode(
 				array(
-					'fullAddress' => '1600 Amphitheatre Parkway',
-					'latitude'    => '37.4220',
-					'longitude'   => '-122.0841',
+					'fullAddress' => '60 29th Street #343, San Francisco, CA 94110',
+					'latitude'    => '37.7573',
+					'longitude'   => '-122.4132',
 				)
 			)
 		);
@@ -792,9 +792,9 @@ class Test_Venue_Map extends Base {
 			'gatherpress_venue_information',
 			wp_json_encode(
 				array(
-					'fullAddress' => '1600 Amphitheatre Parkway',
-					'latitude'    => '37.4220',
-					'longitude'   => '-122.0841',
+					'fullAddress' => '60 29th Street #343, San Francisco, CA 94110',
+					'latitude'    => '37.7573',
+					'longitude'   => '-122.4132',
 				)
 			)
 		);
