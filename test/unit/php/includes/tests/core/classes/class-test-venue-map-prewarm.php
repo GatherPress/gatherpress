@@ -359,4 +359,248 @@ class Test_Venue_Map_Prewarm extends Base {
 		$instance->process_warm_job( 0, 15, 600, 300, '2/1' );
 		$this->assertTrue( true );
 	}
+
+	/**
+	 * Saving an FSE template (wp_template) fans the template's combos
+	 * out across every known venue — one cron job per (venue, combo).
+	 *
+	 * @covers ::on_post_saved
+	 * @covers ::enqueue_for_all_venues
+	 *
+	 * @return void
+	 */
+	public function test_on_post_saved_fan_outs_template_save_to_all_venues(): void {
+		$instance = Venue_Map_Prewarm::get_instance();
+
+		$venue_a = $this->factory->post->create(
+			array(
+				'post_type'   => Venue::POST_TYPE,
+				'post_status' => 'publish',
+			)
+		);
+		$venue_b = $this->factory->post->create(
+			array(
+				'post_type'   => Venue::POST_TYPE,
+				'post_status' => 'publish',
+			)
+		);
+
+		$template_id = $this->factory->post->create(
+			array(
+				'post_type'    => 'wp_template',
+				'post_status'  => 'publish',
+				'post_content' => '<!-- wp:gatherpress/venue-map '
+					. '{"zoom":15,"width":800,"height":400,"aspectRatio":"2/1"} /-->',
+			)
+		);
+
+		$instance->on_post_saved( $template_id, get_post( $template_id ) );
+
+		$this->assertNotFalse(
+			wp_next_scheduled(
+				Venue_Map_Prewarm::CRON_ACTION,
+				array( $venue_a, 15, 800, 400, '2/1' )
+			),
+			'Venue A received a warm job for the template combo.'
+		);
+		$this->assertNotFalse(
+			wp_next_scheduled(
+				Venue_Map_Prewarm::CRON_ACTION,
+				array( $venue_b, 15, 800, 400, '2/1' )
+			),
+			'Venue B received a warm job for the template combo.'
+		);
+	}
+
+	/**
+	 * Saving a template without a venue-map block enqueues nothing — the
+	 * early-return path on an empty combo list.
+	 *
+	 * @covers ::on_post_saved
+	 * @covers ::enqueue_for_all_venues
+	 *
+	 * @return void
+	 */
+	public function test_on_post_saved_skips_template_without_venue_map(): void {
+		$instance = Venue_Map_Prewarm::get_instance();
+
+		$this->factory->post->create(
+			array(
+				'post_type'   => Venue::POST_TYPE,
+				'post_status' => 'publish',
+			)
+		);
+
+		$template_id = $this->factory->post->create(
+			array(
+				'post_type'    => 'wp_template',
+				'post_status'  => 'publish',
+				'post_content' => '<!-- wp:paragraph --><p>No map here.</p><!-- /wp:paragraph -->',
+			)
+		);
+
+		$instance->on_post_saved( $template_id, get_post( $template_id ) );
+
+		$this->assertFalse(
+			(bool) wp_next_scheduled( Venue_Map_Prewarm::CRON_ACTION ),
+			'Templates without venue-map blocks enqueue nothing.'
+		);
+	}
+
+	/**
+	 * Triggers a full rescan against every venue on theme switch — even
+	 * with no templates, the handler runs without error.
+	 *
+	 * @covers ::on_theme_switched
+	 * @covers ::collect_all_template_combos
+	 * @covers ::get_venue_post_ids
+	 *
+	 * @return void
+	 */
+	public function test_on_theme_switched_runs_without_error(): void {
+		$instance = Venue_Map_Prewarm::get_instance();
+
+		$this->factory->post->create(
+			array(
+				'post_type'   => Venue::POST_TYPE,
+				'post_status' => 'publish',
+			)
+		);
+
+		$instance->on_theme_switched();
+
+		// No assertion beyond "doesn't throw" — without a template that
+		// references a combo, there's nothing to enqueue, but the full code
+		// path is now exercised for coverage (collect + get_venue_post_ids).
+		$this->assertTrue( true );
+	}
+
+	/**
+	 * Returns published venue post IDs only.
+	 *
+	 * @covers ::get_venue_post_ids
+	 *
+	 * @return void
+	 */
+	public function test_get_venue_post_ids_returns_published_venues(): void {
+		$instance = Venue_Map_Prewarm::get_instance();
+
+		$published = $this->factory->post->create(
+			array(
+				'post_type'   => Venue::POST_TYPE,
+				'post_status' => 'publish',
+			)
+		);
+		// A draft should NOT appear in the warm-eligible set.
+		$this->factory->post->create(
+			array(
+				'post_type'   => Venue::POST_TYPE,
+				'post_status' => 'draft',
+			)
+		);
+
+		$ids = Utility::invoke_hidden_method( $instance, 'get_venue_post_ids' );
+
+		$this->assertContains( $published, $ids );
+	}
+
+	/**
+	 * Saving an event post with an embedded venue-map enqueues warm jobs
+	 * against the associated venue (via the `_gatherpress_venue` taxonomy),
+	 * not the event itself.
+	 *
+	 * @covers ::on_post_saved
+	 *
+	 * @return void
+	 */
+	public function test_on_post_saved_event_enqueues_via_linked_venue(): void {
+		$instance    = Venue_Map_Prewarm::get_instance();
+		$venue_setup = \GatherPress\Core\Venue_Setup::get_instance();
+
+		$venue_post_id = $this->factory->post->create(
+			array(
+				'post_type'   => Venue::POST_TYPE,
+				'post_name'   => 'some-venue',
+				'post_status' => 'publish',
+			)
+		);
+
+		$term_slug = $venue_setup->term_slug_from_post_name( 'some-venue' );
+		wp_insert_term( 'Some Venue', Venue::TAXONOMY, array( 'slug' => $term_slug ) );
+
+		$event_post_id = $this->factory->post->create(
+			array(
+				'post_type'    => 'gatherpress_event',
+				'post_status'  => 'publish',
+				'post_content' => '<!-- wp:gatherpress/venue-map '
+					. '{"zoom":12,"width":600,"height":300,"aspectRatio":"2/1"} /-->',
+			)
+		);
+		wp_set_post_terms( $event_post_id, $term_slug, Venue::TAXONOMY );
+
+		$instance->on_post_saved( $event_post_id, get_post( $event_post_id ) );
+
+		$this->assertNotFalse(
+			wp_next_scheduled(
+				Venue_Map_Prewarm::CRON_ACTION,
+				array( $venue_post_id, 12, 600, 300, '2/1' )
+			),
+			'Event save enqueues a warm job against the linked venue.'
+		);
+	}
+
+	/**
+	 * An event post with no linked venue — the term lookup short-circuits
+	 * and no cron jobs are scheduled.
+	 *
+	 * @covers ::on_post_saved
+	 *
+	 * @return void
+	 */
+	public function test_on_post_saved_event_skips_when_no_venue_term(): void {
+		$instance = Venue_Map_Prewarm::get_instance();
+
+		$event_post_id = $this->factory->post->create(
+			array(
+				'post_type'    => 'gatherpress_event',
+				'post_status'  => 'publish',
+				'post_content' => '<!-- wp:gatherpress/venue-map '
+					. '{"zoom":12,"width":600,"height":300,"aspectRatio":"2/1"} /-->',
+			)
+		);
+
+		$instance->on_post_saved( $event_post_id, get_post( $event_post_id ) );
+
+		$this->assertFalse(
+			(bool) wp_next_scheduled( Venue_Map_Prewarm::CRON_ACTION ),
+			'Event with no venue term enqueues nothing.'
+		);
+	}
+
+	/**
+	 * Saving an event post without any venue-map block early-returns before
+	 * the term lookup runs.
+	 *
+	 * @covers ::on_post_saved
+	 *
+	 * @return void
+	 */
+	public function test_on_post_saved_event_skips_when_no_combos(): void {
+		$instance = Venue_Map_Prewarm::get_instance();
+
+		$event_post_id = $this->factory->post->create(
+			array(
+				'post_type'    => 'gatherpress_event',
+				'post_status'  => 'publish',
+				'post_content' => '<!-- wp:paragraph --><p>no map</p><!-- /wp:paragraph -->',
+			)
+		);
+
+		$instance->on_post_saved( $event_post_id, get_post( $event_post_id ) );
+
+		$this->assertFalse(
+			(bool) wp_next_scheduled( Venue_Map_Prewarm::CRON_ACTION ),
+			'No combos in event content means no cron jobs.'
+		);
+	}
 }

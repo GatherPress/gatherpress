@@ -127,16 +127,7 @@ class Venue_Map_Prewarm {
 				return;
 			}
 
-			$venue_setup = Venue_Setup::get_instance();
-			$taxonomy    = $venue_setup->taxonomy_for_event_post_type( $post->post_type );
-			$terms       = get_the_terms( $post_id, $taxonomy );
-
-			if ( empty( $terms ) || is_wp_error( $terms ) ) {
-				return;
-			}
-
-			$term  = current( $terms );
-			$venue = $venue_setup->get_venue_post_from_term_slug( $term->slug );
+			$venue = Venue_Setup::get_instance()->get_venue_post_from_event_post_id( $post_id );
 
 			if ( $venue instanceof WP_Post ) {
 				foreach ( $combos as $combo ) {

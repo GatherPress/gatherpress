@@ -50,20 +50,15 @@ export const RegenerateMapButton = ( {
 
 	// Non-reactive selector lookups — we only need the current record at
 	// the moment of the click to merge fresh meta into it, not on every
-	// render.
+	// render. handleClick already bails on missing venuePostId/venuePostType
+	// before invoking this, so the inner closure doesn't need to re-guard.
 	const getCurrentEntityRecord = useSelect(
-		( select ) => {
-			return () => {
-				if ( ! venuePostType || ! venuePostId ) {
-					return null;
-				}
-				return select( 'core' ).getEntityRecord(
-					'postType',
-					venuePostType,
-					venuePostId
-				);
-			};
-		},
+		( select ) => () =>
+			select( 'core' ).getEntityRecord(
+				'postType',
+				venuePostType,
+				venuePostId
+			),
 		[ venuePostType, venuePostId ]
 	);
 
@@ -149,7 +144,7 @@ export const RegenerateMapButton = ( {
  *
  * Mirrors the server-side `Venue_Map::parse_aspect_ratio()` so the editor
  * can derive auto dimensions from the ratio without a round-trip to PHP.
- * Returns null for unparseable input.
+ * Returns null for unparsable input.
  *
  * @since 1.0.0
  *

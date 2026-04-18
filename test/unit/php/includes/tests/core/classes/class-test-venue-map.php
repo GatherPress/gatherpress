@@ -96,6 +96,24 @@ class Test_Venue_Map extends Base {
 	}
 
 	/**
+	 * Resolve an uploads-subdir URL back to its filesystem path for test
+	 * assertions. Mirrors the security-sensitive url_to_path() logic that
+	 * used to live on the class, scoped down to what tests need.
+	 *
+	 * @param string $url Stored descriptor URL.
+	 * @return string Absolute filesystem path.
+	 */
+	protected function path_for_url( string $url ): string {
+		$dirs = wp_get_upload_dir();
+
+		return str_replace(
+			trailingslashit( $dirs['baseurl'] ),
+			trailingslashit( $dirs['basedir'] ),
+			$url
+		);
+	}
+
+	/**
 	 * Coverage for setup_hooks.
 	 *
 	 * @covers ::__construct
@@ -218,7 +236,7 @@ class Test_Venue_Map extends Base {
 
 		$settings->set( 'venue_map_default_render_mode', '' );
 		$settings->set( 'venue_map_default_zoom', 0 );
-		$settings->set( 'venue_map_default_height', 0 );
+		$settings->set( 'venue_map_default_height', '' );
 		$settings->set( 'venue_map_default_type', '' );
 
 		$metadata = array(
@@ -302,18 +320,17 @@ class Test_Venue_Map extends Base {
 	 */
 	public function test_hash_for_detects_relevant_input_changes(): void {
 		$instance = Venue_Map::get_instance();
-		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
 		$info     = array(
 			'fullAddress' => '1 Infinite Loop',
 			'latitude'    => '37.3318',
 			'longitude'   => '-122.0312',
 		);
 
-		$baseline = $instance->hash_for( $post_id, $info, 15, 800, 400, Venue_Map::DEFAULT_TILE_URL );
+		$baseline = $instance->hash_for( $info, 15, 800, 400, Venue_Map::DEFAULT_TILE_URL );
 
 		$this->assertSame(
 			$baseline,
-			$instance->hash_for( $post_id, $info, 15, 800, 400, Venue_Map::DEFAULT_TILE_URL ),
+			$instance->hash_for( $info, 15, 800, 400, Venue_Map::DEFAULT_TILE_URL ),
 			'Hash should be stable when every input is identical.'
 		);
 
@@ -323,35 +340,34 @@ class Test_Venue_Map extends Base {
 
 		$this->assertNotSame(
 			$baseline,
-			$instance->hash_for( $post_id, $moved_info, 15, 800, 400, Venue_Map::DEFAULT_TILE_URL ),
+			$instance->hash_for( $moved_info, 15, 800, 400, Venue_Map::DEFAULT_TILE_URL ),
 			'Hash should change when coordinates change.'
 		);
 
 		$this->assertNotSame(
 			$baseline,
-			$instance->hash_for( $post_id, $info, 14, 800, 400, Venue_Map::DEFAULT_TILE_URL ),
+			$instance->hash_for( $info, 14, 800, 400, Venue_Map::DEFAULT_TILE_URL ),
 			'Hash should change when the zoom level changes.'
 		);
 
 		$this->assertNotSame(
 			$baseline,
-			$instance->hash_for( $post_id, $info, 15, 600, 400, Venue_Map::DEFAULT_TILE_URL ),
+			$instance->hash_for( $info, 15, 600, 400, Venue_Map::DEFAULT_TILE_URL ),
 			'Hash should change when the width changes.'
 		);
 
 		$this->assertNotSame(
 			$baseline,
-			$instance->hash_for( $post_id, $info, 15, 800, 500, Venue_Map::DEFAULT_TILE_URL ),
+			$instance->hash_for( $info, 15, 800, 500, Venue_Map::DEFAULT_TILE_URL ),
 			'Hash should change when the height changes.'
 		);
 
-		// Different venue → different salt → different hash even with
-		// identical address/coords.
-		$other_post_id = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
-		$this->assertNotSame(
+		// Same address + coords hash identically, regardless of post —
+		// filenames dedupe across venues at the same location.
+		$this->assertSame(
 			$baseline,
-			$instance->hash_for( $other_post_id, $info, 15, 800, 400, Venue_Map::DEFAULT_TILE_URL ),
-			'Hash should differ between venues because each has its own salt.'
+			$instance->hash_for( $info, 15, 800, 400, Venue_Map::DEFAULT_TILE_URL ),
+			'Hash is address-scoped, not post-scoped.'
 		);
 	}
 
@@ -391,7 +407,7 @@ class Test_Venue_Map extends Base {
 		$this->assertNotEmpty( $descriptor['url'], 'Descriptor URL should be populated.' );
 		$this->assertSame( 32, strlen( $descriptor['hash'] ), 'Descriptor hash should be an MD5 hex string.' );
 
-		$path = $instance->url_to_path( $descriptor['url'] );
+		$path = $this->path_for_url( $descriptor['url'] );
 
 		$this->assertNotNull( $path, 'Saved URL should map back to a filesystem path.' );
 		$this->assertFileExists( $path, 'The static-map PNG should exist on disk.' );
@@ -422,7 +438,7 @@ class Test_Venue_Map extends Base {
 
 		$instance->maybe_generate( $post_id );
 		$first_descriptor = $instance->get_stored_descriptor( $post_id );
-		$path             = $instance->url_to_path( $first_descriptor['url'] );
+		$path             = $this->path_for_url( $first_descriptor['url'] );
 		$mtime_first      = filemtime( $path );
 
 		// Force the filesystem mtime to change so a regeneration would be detectable.
@@ -484,15 +500,13 @@ class Test_Venue_Map extends Base {
 		$this->assertNotSame(
 			$first['url'],
 			$second['url'],
-			'URL should change because the filename includes the hash.'
+			'URL should change because the address slug is part of the filename.'
 		);
 
-		$old_path = $instance->url_to_path( $first['url'] );
-
-		$this->assertFileDoesNotExist(
-			$old_path,
-			'The previous static-map PNG should be cleaned up when regenerating.'
-		);
+		// Both the old and the new file exist on disk — with address-based
+		// naming the same file can be shared, so GC of the superseded file
+		// is deferred.
+		$this->assertFileExists( $this->path_for_url( $second['url'] ) );
 	}
 
 	/**
@@ -524,7 +538,7 @@ class Test_Venue_Map extends Base {
 		$descriptor = $instance->get_stored_descriptor( $post_id );
 
 		$this->assertIsArray( $descriptor, 'Sanity: initial save should have produced a descriptor.' );
-		$path = $instance->url_to_path( $descriptor['url'] );
+		$path = $this->path_for_url( $descriptor['url'] );
 		$this->assertFileExists( $path );
 
 		// Now clear the coordinates (e.g. address changed to something un-geocodable).
@@ -545,10 +559,10 @@ class Test_Venue_Map extends Base {
 			$instance->get_stored_descriptor( $post_id ),
 			'Descriptor meta should be cleared when coordinates become un-geocodable.'
 		);
-		$this->assertFileDoesNotExist(
-			(string) $path,
-			'Orphaned PNG should be removed when coordinates disappear.'
-		);
+		// PNG is intentionally left on disk — the file may be shared with
+		// another venue at the same address. A future GC pass sweeps truly
+		// orphaned files.
+		unset( $path );
 	}
 
 	/**
@@ -617,13 +631,15 @@ class Test_Venue_Map extends Base {
 	}
 
 	/**
-	 * Removes the PNG and the descriptor meta for the venue.
+	 * Clears the descriptor meta for the venue but leaves the PNG on disk
+	 * — the file may be shared with another venue at the same address, so
+	 * on-delete cleanup is deferred to a future GC pass.
 	 *
 	 * @covers ::delete_stored_image
 	 *
 	 * @return void
 	 */
-	public function test_delete_stored_image_removes_file_and_meta(): void {
+	public function test_delete_stored_image_clears_meta(): void {
 		$instance = Venue_Map::get_instance();
 		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
 
@@ -641,61 +657,13 @@ class Test_Venue_Map extends Base {
 		$instance->maybe_generate( $post_id );
 
 		$descriptor = $instance->get_stored_descriptor( $post_id );
-		$path       = $instance->url_to_path( $descriptor['url'] );
-
-		$this->assertFileExists( $path );
+		$this->assertNotNull( $descriptor, 'Precondition: venue has a descriptor.' );
 
 		$instance->delete_stored_image( $post_id );
 
-		$this->assertFileDoesNotExist( $path, 'PNG should be removed by delete_stored_image.' );
 		$this->assertNull(
 			$instance->get_stored_descriptor( $post_id ),
 			'Descriptor meta should be cleared after delete_stored_image.'
-		);
-	}
-
-	/**
-	 * Rejects URLs that sit outside of the plugin's uploads subdir.
-	 *
-	 * @covers ::url_to_path
-	 *
-	 * @return void
-	 */
-	public function test_url_to_path_rejects_external_urls(): void {
-		$instance = Venue_Map::get_instance();
-
-		$this->assertNull(
-			$instance->url_to_path( 'https://example.com/evil.png' ),
-			'External URLs must not resolve to a filesystem path.'
-		);
-	}
-
-	/**
-	 * A URL whose origin matches the plugin uploads subdir but whose
-	 * filename contains path-traversal segments (`..`) must not resolve —
-	 * otherwise delete_file_by_url() could be steered at arbitrary files
-	 * if the meta were ever writable.
-	 *
-	 * @covers ::url_to_path
-	 *
-	 * @return void
-	 */
-	public function test_url_to_path_rejects_traversal_in_plugin_subdir_url(): void {
-		$instance = Venue_Map::get_instance();
-		$dirs     = wp_get_upload_dir();
-		$base_url = trailingslashit( $dirs['baseurl'] ) . Venue_Map::UPLOADS_SUBDIR . '/';
-
-		$this->assertNull(
-			$instance->url_to_path( $base_url . '../../../wp-config.php' ),
-			'Traversal segments in the relative portion must not resolve.'
-		);
-		$this->assertNull(
-			$instance->url_to_path( $base_url . '42-notahex.png' ),
-			'Filenames not matching the `{post_id}-{md5}.png` shape must not resolve.'
-		);
-		$this->assertNull(
-			$instance->url_to_path( $base_url . 'subdir/42-abcdef0123456789abcdef0123456789.png' ),
-			'Nested filenames (with slashes) must not resolve.'
 		);
 	}
 
@@ -1012,26 +980,32 @@ class Test_Venue_Map extends Base {
 			'Second-combo hash should change with new coordinates.'
 		);
 
-		// Old files should be gone.
-		$this->assertFileDoesNotExist(
-			(string) $instance->url_to_path( $before[ $default_key ]['url'] )
+		// New files exist at the updated address slug. Old files aren't
+		// deleted — with address-based naming they may be shared, and GC is
+		// deferred to a follow-up pass.
+		$this->assertFileExists(
+			(string) $this->path_for_url( $after[ $default_key ]['url'] )
 		);
-		$this->assertFileDoesNotExist(
-			(string) $instance->url_to_path( $before[ $second_key ]['url'] )
+		$this->assertFileExists(
+			(string) $this->path_for_url( $after[ $second_key ]['url'] )
+		);
+		$this->assertNotSame(
+			$before[ $default_key ]['url'],
+			$after[ $default_key ]['url'],
+			'Address change produces a different URL via the slug.'
 		);
 	}
 
 	/**
-	 * If the meta write after save_image() is dropped (e.g. under an
-	 * object-cache outage or a filter that suppresses the update),
-	 * ensure_descriptor_for_combo() must unlink the just-saved PNG and
-	 * return null so we don't leave an orphan on disk.
+	 * When the meta write after save_image() is dropped, the method returns
+	 * null so callers know the descriptor didn't persist. The PNG is left on
+	 * disk — GC handles orphans; files may be shared with other venues.
 	 *
 	 * @covers ::ensure_descriptor_for_combo
 	 *
 	 * @return void
 	 */
-	public function test_ensure_descriptor_for_combo_unlinks_orphan_when_meta_write_dropped(): void {
+	public function test_ensure_descriptor_for_combo_returns_null_when_meta_write_dropped(): void {
 		$instance = Venue_Map::get_instance();
 		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
 
@@ -1047,9 +1021,6 @@ class Test_Venue_Map extends Base {
 			)
 		);
 
-		// Short-circuit update_post_metadata so the map descriptor write
-		// never reaches the DB. The filter returns a non-null value for
-		// META_KEY only, leaving other meta writes alone.
 		$suppress = static function ( $check, $object_id, $meta_key ) {
 			if ( Venue_Map::META_KEY === $meta_key ) {
 				return true; // Pretend the update happened.
@@ -1076,150 +1047,8 @@ class Test_Venue_Map extends Base {
 
 		$this->assertNull(
 			$result,
-			'Orphan-guard must return null when the meta write was suppressed.'
+			'Returns null when the meta write was suppressed.'
 		);
-
-		$dirs     = wp_get_upload_dir();
-		$base_dir = trailingslashit( $dirs['basedir'] ) . Venue_Map::UPLOADS_SUBDIR;
-
-		$this->assertEmpty(
-			(array) glob( $base_dir . sprintf( '/%d-*.png', $post_id ) ),
-			'The orphan PNG should have been unlinked.'
-		);
-	}
-
-	/**
-	 * Direct coverage for salt_for — lazily generates a salt on first
-	 * access and returns the same value on subsequent calls.
-	 *
-	 * @covers ::salt_for
-	 *
-	 * @return void
-	 */
-	public function test_salt_for_generates_and_caches(): void {
-		$instance = Venue_Map::get_instance();
-		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
-
-		$this->assertSame(
-			'',
-			(string) get_post_meta( $post_id, Venue_Map::SALT_META_KEY, true ),
-			'Precondition: freshly created venue has no salt meta.'
-		);
-
-		$first = Utility::invoke_hidden_method( $instance, 'salt_for', array( $post_id ) );
-
-		$this->assertIsString( $first );
-		$this->assertSame( 32, strlen( $first ), 'Salt should be 32 characters.' );
-		$this->assertSame(
-			$first,
-			(string) get_post_meta( $post_id, Venue_Map::SALT_META_KEY, true ),
-			'Salt should be persisted to meta on first access.'
-		);
-
-		$second = Utility::invoke_hidden_method( $instance, 'salt_for', array( $post_id ) );
-
-		$this->assertSame(
-			$first,
-			$second,
-			'Subsequent calls should return the same cached salt.'
-		);
-	}
-
-	/**
-	 * Simulates two concurrent first-touch callers by forcing add_post_meta
-	 * to fail for the losing request (meaning another request just wrote
-	 * the salt between our read and write). salt_for() must then re-read
-	 * and return the winner's value, not its own abandoned candidate —
-	 * otherwise the loser's PNG filename won't match what any subsequent
-	 * request computes.
-	 *
-	 * @covers ::salt_for
-	 *
-	 * @return void
-	 */
-	public function test_salt_for_recovers_from_lost_race(): void {
-		$instance = Venue_Map::get_instance();
-		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
-		$winner   = 'winnerwinnerwinnerwinnerwinner12';
-
-		// Hook `add_post_metadata` to simulate another request winning the
-		// race between our read and our write: right before our
-		// add_post_meta() lands, the hook writes the winner value straight
-		// to the DB and returns false to tell add_post_meta() "already
-		// exists, didn't write". salt_for() must recover by re-reading the
-		// winner. The write goes through $wpdb directly so it doesn't fire
-		// add_post_metadata again and recurse.
-		global $wpdb;
-		$force_race_loss = static function ( $check, $object_id, $meta_key ) use ( $winner, $post_id, $wpdb ) {
-			if ( Venue_Map::SALT_META_KEY !== $meta_key || $object_id !== $post_id ) {
-				return $check;
-			}
-			// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.SlowDBQuery.slow_db_query_meta_key, WordPress.DB.SlowDBQuery.slow_db_query_meta_value -- Test fixture bypasses add_post_meta() to avoid recursing into the filter we're inside.
-			$wpdb->insert(
-				$wpdb->postmeta,
-				array(
-					'post_id'    => $post_id,
-					'meta_key'   => Venue_Map::SALT_META_KEY,
-					'meta_value' => $winner,
-				)
-			);
-			// phpcs:enable
-			wp_cache_delete( $post_id, 'post_meta' );
-			return false;
-		};
-		add_filter( 'add_post_metadata', $force_race_loss, 10, 3 );
-
-		$resolved = Utility::invoke_hidden_method( $instance, 'salt_for', array( $post_id ) );
-
-		remove_filter( 'add_post_metadata', $force_race_loss, 10 );
-
-		$this->assertSame(
-			$winner,
-			$resolved,
-			'Losing request must re-read the winner salt, not return its own candidate.'
-		);
-	}
-
-	/**
-	 * Direct coverage for delete_file_by_url — unlinks only when the URL
-	 * resolves to a path inside the plugin's uploads subdir.
-	 *
-	 * @covers ::delete_file_by_url
-	 *
-	 * @return void
-	 */
-	public function test_delete_file_by_url_unlinks_in_scope(): void {
-		$instance = Venue_Map::get_instance();
-
-		// Create a fixture file the method is allowed to delete.
-		$dirs     = wp_get_upload_dir();
-		$base_dir = trailingslashit( $dirs['basedir'] ) . Venue_Map::UPLOADS_SUBDIR;
-		wp_mkdir_p( $base_dir );
-
-		// Use a filename in the `{post_id}-{md5}.png` shape url_to_path()
-		// accepts. A fake hex string stands in for a real MD5 digest.
-		$filename = '99-abcdef0123456789abcdef0123456789.png';
-		$path     = $base_dir . '/' . $filename;
-		$url      = trailingslashit( $dirs['baseurl'] )
-			. Venue_Map::UPLOADS_SUBDIR . '/' . $filename;
-		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents -- Fixture write inside the test-only uploads dir.
-		file_put_contents( $path, 'stub' );
-
-		$this->assertFileExists( $path );
-
-		Utility::invoke_hidden_method( $instance, 'delete_file_by_url', array( $url ) );
-
-		$this->assertFileDoesNotExist( $path, 'In-scope file should be removed.' );
-
-		// Out-of-scope URL should no-op (url_to_path returns null).
-		Utility::invoke_hidden_method(
-			$instance,
-			'delete_file_by_url',
-			array( 'https://example.test/outside.png' )
-		);
-		// Terminal assertion to keep PHPUnit happy — the real guarantee is
-		// that no exception is thrown and no unexpected side effects occur.
-		$this->assertTrue( true );
 	}
 
 	/**
@@ -1287,7 +1116,7 @@ class Test_Venue_Map extends Base {
 		);
 
 		$first  = $instance->get_url_for_post( $post_id, Venue::POST_TYPE, 17 );
-		$path   = (string) $instance->url_to_path( $first );
+		$path   = (string) $this->path_for_url( $first );
 		$mtime1 = filemtime( $path );
 
 		sleep( 1 );
@@ -1450,25 +1279,6 @@ class Test_Venue_Map extends Base {
 	}
 
 	/**
-	 * Resolves a URL inside the plugin's uploads subdir back to a path.
-	 *
-	 * @covers ::url_to_path
-	 *
-	 * @return void
-	 */
-	public function test_url_to_path_resolves_plugin_subdir_url(): void {
-		$instance = Venue_Map::get_instance();
-		$dirs     = wp_get_upload_dir();
-		$filename = '42-abcdef0123456789abcdef0123456789.png';
-		$url      = trailingslashit( $dirs['baseurl'] )
-			. Venue_Map::UPLOADS_SUBDIR . '/' . $filename;
-		$expected = trailingslashit( $dirs['basedir'] )
-			. Venue_Map::UPLOADS_SUBDIR . '/' . $filename;
-
-		$this->assertSame( $expected, $instance->url_to_path( $url ) );
-	}
-
-	/**
 	 * Bails silently when called on a non-venue post type.
 	 *
 	 * @covers ::maybe_generate
@@ -1621,16 +1431,14 @@ class Test_Venue_Map extends Base {
 		$instance = Venue_Map::get_instance();
 		$canvas   = imagecreatetruecolor( 10, 10 );
 
-		// Use a 32-char hex hash matching what hash_for() produces; the
-		// url_to_path allow-list rejects anything else.
-		$hash = str_repeat( 'a', 32 );
-		$url  = $instance->save_image( $canvas, 99, $hash );
+		$url = $instance->save_image( $canvas, '1 Infinite Loop', 15, 800, 400 );
 		imagedestroy( $canvas );
 
 		$this->assertNotNull( $url, 'save_image should return a URL on success.' );
 		$this->assertStringContainsString( Venue_Map::UPLOADS_SUBDIR, $url );
+		$this->assertStringEndsWith( '1-infinite-loop-15-800-400.png', $url );
 
-		$path = $instance->url_to_path( $url );
+		$path = $this->path_for_url( $url );
 		$this->assertFileExists( $path );
 	}
 
@@ -2035,7 +1843,7 @@ class Test_Venue_Map extends Base {
 		};
 		add_filter( 'upload_dir', $force_error );
 
-		$url = $instance->save_image( $canvas, 99, 'abc' );
+		$url = $instance->save_image( $canvas, 'test address', 15, 800, 400 );
 
 		remove_filter( 'upload_dir', $force_error );
 		imagedestroy( $canvas );
@@ -2220,7 +2028,7 @@ class Test_Venue_Map extends Base {
 		$this->assertSame( Venue_Map::DEFAULT_HEIGHT * 2, $both_auto['width'] );
 		$this->assertSame( Venue_Map::DEFAULT_HEIGHT, $both_auto['height'] );
 
-		// Unparseable ratio string still resolves cleanly — falls back to
+		// Unparsable ratio string still resolves cleanly — falls back to
 		// the default ratio rather than stranding the generator.
 		$bad_ratio = Utility::invoke_hidden_method(
 			$instance,
@@ -2277,7 +2085,7 @@ class Test_Venue_Map extends Base {
 		// is the signal that the tile fetch + compositing ran again.
 		$pre_mtimes = array();
 		foreach ( $before as $combo_key => $descriptor ) {
-			$path                     = (string) $instance->url_to_path( $descriptor['url'] );
+			$path                     = (string) $this->path_for_url( $descriptor['url'] );
 			$pre_mtimes[ $combo_key ] = filemtime( $path );
 		}
 		sleep( 1 );
@@ -2292,7 +2100,7 @@ class Test_Venue_Map extends Base {
 
 		foreach ( $before as $combo_key => $old ) {
 			$this->assertArrayHasKey( $combo_key, $result );
-			$path = (string) $instance->url_to_path( $result[ $combo_key ]['url'] );
+			$path = (string) $this->path_for_url( $result[ $combo_key ]['url'] );
 			$this->assertFileExists(
 				$path,
 				sprintf( 'Post-regenerate PNG for %s should exist on disk.', $combo_key )

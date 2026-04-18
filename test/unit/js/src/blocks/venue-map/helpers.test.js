@@ -232,7 +232,7 @@ describe( 'parseAspectRatio', () => {
 	it( 'accepts the colon form "4:3"', () => {
 		expect( parseAspectRatio( '4:3' ) ).toBeCloseTo( 4 / 3, 4 );
 	} );
-	it( 'returns null for unparseable input', () => {
+	it( 'returns null for unparsable input', () => {
 		expect( parseAspectRatio( 'nonsense' ) ).toBeNull();
 		expect( parseAspectRatio( '' ) ).toBeNull();
 		expect( parseAspectRatio( null ) ).toBeNull();
@@ -286,7 +286,7 @@ describe( 'resolveDimensions', () => {
 			} )
 		).toEqual( { width: 600, height: 300 } );
 	} );
-	it( 'falls back to a 2:1 ratio when the aspect string is unparseable', () => {
+	it( 'falls back to a 2:1 ratio when the aspect string is unparsable', () => {
 		expect(
 			resolveDimensions( {
 				...defaults,

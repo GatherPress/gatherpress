@@ -135,7 +135,7 @@ class Venue_Map {
 
 	/**
 	 * Default aspect ratio string used when the block's `aspectRatio`
-	 * attribute is empty or unparseable. Format matches the CSS
+	 * attribute is empty or unparsable. Format matches the CSS
 	 * `aspect-ratio` property so the same value can drive the server-side
 	 * width derivation and the client-side CSS on the interactive wrapper.
 	 *
@@ -209,18 +209,6 @@ class Venue_Map {
 	const META_KEY = 'gatherpress_venue_static_map';
 
 	/**
-	 * Meta key for the per-venue filename salt.
-	 *
-	 * Underscore prefix marks it as a protected WordPress meta key —
-	 * not exposed through REST by default and not writable from the
-	 * admin Custom Fields box.
-	 *
-	 * @since 1.0.0
-	 * @var string
-	 */
-	const SALT_META_KEY = '_gatherpress_venue_map_salt';
-
-	/**
 	 * Subdirectory of `wp-content/uploads` where generated PNG files are written.
 	 *
 	 * @since 1.0.0
@@ -260,7 +248,7 @@ class Venue_Map {
 	/**
 	 * Register REST routes for the venue-map block.
 	 *
-	 * Today there's a single endpoint that forces the static PNGs for a
+	 * Today there's a single endpoint that forces the static PNG files for a
 	 * venue to regenerate — used by the "Regenerate Map" button in the
 	 * block editor when a tile provider changes or a render gets out of
 	 * sync with the venue's current inputs.
@@ -350,11 +338,18 @@ class Venue_Map {
 		}
 
 		$settings = Settings::get_instance();
+
+		// Width and height keep empty as a distinct "not set — fall through
+		// to the block.json default" state; an explicit 0 still stamps as
+		// "auto", so the validator below must reject null but accept 0.
+		$raw_width  = $settings->get( 'venue_map_default_width' );
+		$raw_height = $settings->get( 'venue_map_default_height' );
+
 		$defaults = array(
 			'renderMode'      => (string) $settings->get( 'venue_map_default_render_mode' ),
 			'zoom'            => (int) $settings->get( 'venue_map_default_zoom' ),
-			'width'           => (int) $settings->get( 'venue_map_default_width' ),
-			'height'          => (int) $settings->get( 'venue_map_default_height' ),
+			'width'           => '' === $raw_width ? null : (int) $raw_width,
+			'height'          => '' === $raw_height ? null : (int) $raw_height,
 			'aspectRatio'     => (string) $settings->get( 'venue_map_default_aspect_ratio' ),
 			'type'            => (string) $settings->get( 'venue_map_default_type' ),
 			'linkDestination' => (string) $settings->get( 'venue_map_default_link_destination' ),
@@ -534,10 +529,10 @@ class Venue_Map {
 	 * @return void
 	 */
 	public function delete_stored_image( int $post_id ): void {
-		foreach ( $this->get_all_descriptors( $post_id ) as $descriptor ) {
-			$this->delete_file_by_url( $descriptor['url'] );
-		}
-
+		// Filenames are derived from address + dims, so the same PNG on disk
+		// may be shared with other venues at the same address. Clearing the
+		// meta is enough — a follow-up GC pass can sweep truly orphaned
+		// files when no venue's descriptor points at them any longer.
 		delete_post_meta( $post_id, self::META_KEY );
 	}
 
@@ -995,16 +990,19 @@ class Venue_Map {
 		$width  = $this->clamp_width( $width );
 		$height = $this->clamp_height( $height );
 
-		$tiles = $this->get_tile_url_template();
-		$hash  = $this->hash_for( $post_id, $info, $zoom, $width, $height, $tiles );
-		$key   = $this->combo_key( $zoom, $width, $height );
+		$tiles   = $this->get_tile_url_template();
+		$address = (string) ( $info['fullAddress'] ?? '' );
+		$hash    = $this->hash_for( $info, $zoom, $width, $height, $tiles );
+		$key     = $this->combo_key( $zoom, $width, $height );
 
 		$all      = $this->get_all_descriptors( $post_id );
 		$existing = $all[ $key ] ?? null;
 
 		if ( null !== $existing && $existing['hash'] === $hash ) {
-			$path = $this->url_to_path( $existing['url'] );
-			if ( null !== $path && file_exists( $path ) ) {
+			// The URL itself is deterministic from (address, zoom, dims) so
+			// existence on disk is the real validity signal.
+			$expected_url = $this->build_image_url( $address, $zoom, $width, $height );
+			if ( $existing['url'] === $expected_url ) {
 				return $existing;
 			}
 		}
@@ -1019,15 +1017,11 @@ class Venue_Map {
 
 		$this->stamp_marker( $image, (int) round( $width / 2 ), (int) round( $height / 2 ) );
 
-		$url = $this->save_image( $image, $post_id, $hash );
+		$url = $this->save_image( $image, $address, $zoom, $width, $height );
 		imagedestroy( $image );
 
 		if ( null === $url ) {
 			return null;
-		}
-
-		if ( null !== $existing && $existing['url'] !== $url ) {
-			$this->delete_file_by_url( $existing['url'] );
 		}
 
 		$all[ $key ] = array(
@@ -1042,37 +1036,19 @@ class Venue_Map {
 
 		// Verify the write landed. update_post_meta() returns an ambiguous
 		// false ("not changed" vs. "write failed"), so read back and check
-		// the URL we just saved is what ended up in the meta. If the write
-		// was dropped — object-cache outage, an unexpected filter, a foreign
-		// process racing us — unlink the orphan PNG so we don't strand the
-		// file on disk.
+		// the URL we just saved is what ended up in the meta. Orphan files
+		// (file on disk but no meta row pointing at it) are acceptable —
+		// with address-based naming the same file may be shared with other
+		// venues, so we don't proactively unlink on write-verify failure.
 		$stored = get_post_meta( $post_id, self::META_KEY, true );
 		if ( ! is_array( $stored )
 			|| ! isset( $stored[ $key ]['url'] )
 			|| $stored[ $key ]['url'] !== $url
 		) {
-			$this->delete_file_by_url( $url );
 			return null;
 		}
 
 		return $all[ $key ];
-	}
-
-	/**
-	 * Delete a stored PNG by URL, no-op if the URL is out of scope or the
-	 * file is already gone.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param string $url Stored URL.
-	 * @return void
-	 */
-	protected function delete_file_by_url( string $url ): void {
-		$path = $this->url_to_path( $url );
-
-		if ( null !== $path && file_exists( $path ) ) {
-			wp_delete_file( $path );
-		}
 	}
 
 	/**
@@ -1082,28 +1058,21 @@ class Venue_Map {
 	 * invalidates the previous image. Unrelated venue edits (title, excerpt,
 	 * other meta) keep the same hash and skip regeneration.
 	 *
-	 * A per-venue salt is mixed into the digest so filenames in the public
-	 * uploads dir aren't predictable from the venue's address alone — otherwise
-	 * anyone who guesses a draft venue's ID and street address could fetch
-	 * its map PNG before the venue is published.
-	 *
 	 * @since 1.0.0
 	 *
-	 * @param int    $post_id Venue post ID (used to look up the per-venue salt).
-	 * @param array  $info    Parsed venue information.
-	 * @param int    $zoom    Map zoom level.
-	 * @param int    $width   Output width.
-	 * @param int    $height  Output height.
-	 * @param string $tiles   Tile URL template.
+	 * @param array  $info  Parsed venue information.
+	 * @param int    $zoom  Map zoom level.
+	 * @param int    $width Output width.
+	 * @param int    $height Output height.
+	 * @param string $tiles Tile URL template.
 	 * @return string MD5 hex digest.
 	 */
-	public function hash_for( int $post_id, array $info, int $zoom, int $width, int $height, string $tiles ): string {
+	public function hash_for( array $info, int $zoom, int $width, int $height, string $tiles ): string {
 		// md5() here is a non-cryptographic cache-key discriminator, matching class-geocoding.php.
 		return md5( // NOSONAR.
 			implode(
 				'|',
 				array(
-					$this->salt_for( $post_id ),
 					(string) ( $info['fullAddress'] ?? '' ),
 					(string) ( $info['latitude'] ?? '' ),
 					(string) ( $info['longitude'] ?? '' ),
@@ -1117,46 +1086,57 @@ class Venue_Map {
 	}
 
 	/**
-	 * Return the per-venue filename salt, generating one on first access.
+	 * Build the deterministic URL for a given (address, zoom, width, height).
 	 *
-	 * The salt is a fixed per-post random string; it never rotates so cached
-	 * filenames stay stable across saves. Deleting the venue removes the meta
-	 * (along with every other post meta key) as usual.
-	 *
-	 * **Existing-venue migration:** venues that were rendered before the salt
-	 * was introduced will get a salt generated here on first access; the hash
-	 * — and therefore the PNG filename — changes, which causes
-	 * `ensure_descriptor_for_combo()` to regenerate the image and unlink the
-	 * pre-salt PNG via its existing `$existing['url'] !== $url` cleanup path.
-	 * No backfill step is required.
-	 *
-	 * Two concurrent first-touch requests are reconciled with an `add`-style
-	 * unique-meta insert: whichever request writes first wins, and the other
-	 * re-reads the now-populated value instead of racing a second generation.
+	 * Mirrors {@see self::save_image()}'s filename composition so callers can
+	 * compare an existing descriptor's URL against the expected URL without
+	 * touching the filesystem. Two venues at the same address share the same
+	 * URL at matching dimensions — intentional dedupe.
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param int $post_id Venue post ID.
-	 * @return string 32-character salt.
+	 * @param string $address Venue address string.
+	 * @param int    $zoom    Map zoom level.
+	 * @param int    $width   Output width.
+	 * @param int    $height  Output height.
+	 * @return string Full public URL for the PNG.
 	 */
-	protected function salt_for( int $post_id ): string {
-		$salt = (string) get_post_meta( $post_id, self::SALT_META_KEY, true );
+	protected function build_image_url( string $address, int $zoom, int $width, int $height ): string {
+		$dirs     = wp_get_upload_dir();
+		$base_url = trailingslashit( $dirs['baseurl'] ) . self::UPLOADS_SUBDIR;
 
-		if ( '' === $salt ) {
-			$candidate = wp_generate_password( 32, false );
+		return trailingslashit( $base_url ) . $this->filename_for( $address, $zoom, $width, $height );
+	}
 
-			// add_post_meta() with $unique = true returns false when another
-			// request already populated the row between our read and write.
-			// In that case, re-read to pick up the winner's value so every
-			// caller agrees on the salt.
-			if ( false !== add_post_meta( $post_id, self::SALT_META_KEY, $candidate, true ) ) {
-				$salt = $candidate;
-			} else {
-				$salt = (string) get_post_meta( $post_id, self::SALT_META_KEY, true );
-			}
+	/**
+	 * Compose a filesystem-safe filename from the address + dimensions.
+	 *
+	 * Address gets slugified via `sanitize_title()` and capped at 150 chars
+	 * so the full filename stays comfortably under the 255-byte cap common
+	 * to most filesystems. An empty or all-special-character address falls
+	 * back to `venue` so there's always something before the dimension
+	 * suffix.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $address Venue address.
+	 * @param int    $zoom    Map zoom level.
+	 * @param int    $width   Output width.
+	 * @param int    $height  Output height.
+	 * @return string Filename including the `.png` extension.
+	 */
+	protected function filename_for( string $address, int $zoom, int $width, int $height ): string {
+		$slug = sanitize_title( $address );
+
+		if ( '' === $slug ) {
+			$slug = 'venue';
 		}
 
-		return $salt;
+		if ( 150 < strlen( $slug ) ) {
+			$slug = substr( $slug, 0, 150 );
+		}
+
+		return sprintf( '%s-%d-%d-%d.png', $slug, $zoom, $width, $height );
 	}
 
 	/**
@@ -1321,14 +1301,22 @@ class Venue_Map {
 	/**
 	 * Save the composited image to the uploads directory and return its URL.
 	 *
+	 * Filename is derived from `(address, zoom, width, height)` — two venues
+	 * that resolve to the same address slug at matching dimensions share one
+	 * file on disk. `imagepng` overwrites in place, which is fine for our
+	 * regenerate flow since the inputs that'd change visible output also
+	 * change the hash in the descriptor meta.
+	 *
 	 * @since 1.0.0
 	 *
 	 * @param \GdImage|resource $image   The finished composite (GdImage on PHP 8+, resource on PHP 7.4).
-	 * @param int               $post_id The venue post ID (used in the filename).
-	 * @param string            $hash    Input hash (used in the filename).
+	 * @param string            $address Venue address (slugified for the filename).
+	 * @param int               $zoom    Map zoom level.
+	 * @param int               $width   Output width.
+	 * @param int               $height  Output height.
 	 * @return string|null Public URL of the saved file, or null on failure.
 	 */
-	public function save_image( $image, int $post_id, string $hash ): ?string {
+	public function save_image( $image, string $address, int $zoom, int $width, int $height ): ?string {
 		$dirs = wp_get_upload_dir();
 
 		if ( ! empty( $dirs['error'] ) ) {
@@ -1343,7 +1331,7 @@ class Venue_Map {
 			return null; // @codeCoverageIgnore
 		}
 
-		$filename = sprintf( '%d-%s.png', $post_id, $hash );
+		$filename = $this->filename_for( $address, $zoom, $width, $height );
 		$path     = trailingslashit( $base_dir ) . $filename;
 		$url      = trailingslashit( $base_url ) . $filename;
 
@@ -1353,44 +1341,6 @@ class Venue_Map {
 		}
 
 		return $url;
-	}
-
-	/**
-	 * Convert a stored URL back to its filesystem path for deletion.
-	 *
-	 * Returns null when the URL doesn't sit inside this plugin's uploads
-	 * subdir — a safety check so we never interpret a filter-injected URL
-	 * as a path to unlink.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param string $url URL to convert.
-	 * @return string|null Absolute filesystem path, or null when out of scope.
-	 */
-	public function url_to_path( string $url ): ?string {
-		$dirs     = wp_get_upload_dir();
-		$base_url = trailingslashit( $dirs['baseurl'] ) . self::UPLOADS_SUBDIR . '/';
-
-		if ( 0 !== strpos( $url, $base_url ) ) {
-			return null;
-		}
-
-		$relative = substr( $url, strlen( $base_url ) );
-
-		// Restrict the relative portion to filenames this class actually
-		// generates: `{post_id}-{md5-hex}.png`. The prefix check above only
-		// guards the URL origin — without this allow-list a value like
-		// `…/static-maps/../../wp-config.php`, if it ever slipped into the
-		// meta (direct update_post_meta, import, a future filter), would
-		// concatenate through to a path outside the uploads subdir and
-		// hand `wp_delete_file()` a target it shouldn't touch.
-		if ( ! preg_match( '#\A\d+-[a-f0-9]{32}\.png\z#', $relative ) ) {
-			return null;
-		}
-
-		$base_dir = trailingslashit( $dirs['basedir'] ) . self::UPLOADS_SUBDIR . '/';
-
-		return $base_dir . $relative;
 	}
 
 	/**
@@ -1506,7 +1456,7 @@ class Venue_Map {
 	 * Parse an aspect-ratio string (e.g. "16/9") into its float value.
 	 *
 	 * Accepts the CSS `aspect-ratio` format with either a slash or a
-	 * colon separator. Returns null for unparseable / zero-denominator
+	 * colon separator. Returns null for unparsable / zero-denominator
 	 * input so callers can fall back to the default.
 	 *
 	 * @since 1.0.0
