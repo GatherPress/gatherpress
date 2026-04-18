@@ -27,6 +27,9 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Traits\Singleton;
 use WP_Post;
+use WP_REST_Request;
+use WP_REST_Response;
+use WP_REST_Server;
 
 /**
  * Class Venue_Map.
@@ -218,7 +221,70 @@ class Venue_Map {
 		// ordering surprises.
 		add_action( 'wp_after_insert_post', array( $this, 'maybe_generate' ), 11 );
 		add_action( 'registered_post_type', array( $this, 'maybe_register_delete_hook' ) );
+		add_action( 'rest_api_init', array( $this, 'register_rest_routes' ) );
 		add_filter( 'block_type_metadata', array( $this, 'apply_block_attribute_defaults' ) );
+	}
+
+	/**
+	 * Register REST routes for the venue-map block.
+	 *
+	 * Today there's a single endpoint that forces the static PNGs for a
+	 * venue to regenerate — used by the "Regenerate Map" button in the
+	 * block editor when a tile provider changes or a render gets out of
+	 * sync with the venue's current inputs.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return void
+	 */
+	public function register_rest_routes(): void {
+		register_rest_route(
+			GATHERPRESS_REST_NAMESPACE,
+			'/venue/(?P<id>\d+)/regenerate-map',
+			array(
+				'methods'             => WP_REST_Server::CREATABLE,
+				'callback'            => array( $this, 'rest_regenerate' ),
+				'permission_callback' => static function ( WP_REST_Request $request ): bool {
+					$post_id = (int) $request['id'];
+
+					// Permission scope is the venue post itself — anyone who can
+					// edit the venue can force its map to regenerate. Admins with
+					// edit_others_posts go through the same check.
+					return current_user_can( 'edit_post', $post_id );
+				},
+				'args'                => array(
+					'id'     => array(
+						'required'          => true,
+						'type'              => 'integer',
+						'sanitize_callback' => 'absint',
+						'validate_callback' => static function ( $value ): bool {
+							$post_id = (int) $value;
+
+							return $post_id > 0
+								&& post_type_supports(
+									(string) get_post_type( $post_id ),
+									'gatherpress-venue-information'
+								);
+						},
+					),
+					// Optional: the combo the client is currently displaying. If
+					// provided, that combo is added to the regenerate list so a
+					// "Generate" click from the block placeholder produces a PNG
+					// for the active (zoom, height) even when that combo has never
+					// been rendered before.
+					'zoom'   => array(
+						'required'          => false,
+						'type'              => 'integer',
+						'sanitize_callback' => 'absint',
+					),
+					'height' => array(
+						'required'          => false,
+						'type'              => 'integer',
+						'sanitize_callback' => 'absint',
+					),
+				),
+			)
+		);
 	}
 
 	/**
@@ -390,6 +456,144 @@ class Venue_Map {
 		}
 
 		delete_post_meta( $post_id, self::META_KEY );
+	}
+
+	/**
+	 * Force-regenerate the static maps for a venue.
+	 *
+	 * Clears every cached descriptor + PNG, then runs the normal
+	 * `maybe_generate()` flow to recreate images for each combo the venue
+	 * was previously cached at. When the caller supplies an extra
+	 * `(zoom, height)` — typically the combo the block editor is currently
+	 * displaying — that combo is added to the list so a "Generate" click
+	 * from the placeholder produces a PNG for it even if the combo has
+	 * never been cached before. For a venue that has no cached combos
+	 * and no caller-supplied one, the site-default combo seeds the run.
+	 *
+	 * Returns the fresh descriptor map so the caller — typically the block
+	 * editor's "Regenerate Map" REST endpoint — can hand the new URLs
+	 * straight back to the client without a second DB round-trip.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param int      $post_id      The venue post ID.
+	 * @param int|null $extra_zoom   Optional extra zoom to include.
+	 * @param int|null $extra_height Optional extra height to include.
+	 * @return array<string, array{url: string, hash: string, zoom: int, height: int}>
+	 */
+	public function regenerate( int $post_id, ?int $extra_zoom = null, ?int $extra_height = null ): array {
+		// Cache the combos we want to rebuild before wiping meta —
+		// delete_stored_image() clears META_KEY, which is where
+		// get_cached_combos() reads from.
+		$combos = $this->get_cached_combos( $post_id );
+
+		// Merge the caller-supplied combo in, dedup by combo_key.
+		if ( null !== $extra_zoom && null !== $extra_height ) {
+			$combos[] = array(
+				'zoom'   => $extra_zoom,
+				'height' => $extra_height,
+			);
+		}
+
+		$seen   = array();
+		$unique = array();
+		foreach ( $combos as $combo ) {
+			$key = $this->combo_key(
+				$this->clamp_zoom( (int) $combo['zoom'] ),
+				$this->clamp_height( (int) $combo['height'] )
+			);
+
+			if ( isset( $seen[ $key ] ) ) {
+				continue;
+			}
+
+			$seen[ $key ] = true;
+			$unique[]     = $combo;
+		}
+		$combos = $unique;
+
+		$this->delete_stored_image( $post_id );
+
+		if ( empty( $combos ) ) {
+			// Seed the site-default combo so a never-rendered venue still
+			// ends up with a PNG after an explicit regenerate click.
+			$combos = array(
+				array(
+					'zoom'   => $this->get_zoom(),
+					'height' => $this->get_height(),
+				),
+			);
+		}
+
+		$venue = new Venue( $post_id );
+		$info  = $venue->get_information();
+
+		if ( null === $this->parse_coord( $info['latitude'] ) ||
+			null === $this->parse_coord( $info['longitude'] ) ) {
+			return array();
+		}
+
+		foreach ( $combos as $combo ) {
+			$this->ensure_descriptor_for_combo(
+				$post_id,
+				$info,
+				$combo['zoom'],
+				$combo['height']
+			);
+		}
+
+		return $this->get_all_descriptors( $post_id );
+	}
+
+	/**
+	 * REST handler for `POST /venue/{id}/regenerate-map`.
+	 *
+	 * Returns the fresh descriptor map on success. When the venue has no
+	 * usable coordinates yet (address hasn't geocoded), returns an empty
+	 * descriptors array and a structured `reason` so the client can show
+	 * the right placeholder instead of a generic error.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param WP_REST_Request $request The REST request.
+	 * @return WP_REST_Response
+	 */
+	public function rest_regenerate( WP_REST_Request $request ): WP_REST_Response {
+		nocache_headers();
+
+		$post_id     = (int) $request['id'];
+		$venue       = new Venue( $post_id );
+		$info        = $venue->get_information();
+		$latitude    = $this->parse_coord( $info['latitude'] );
+		$longitude   = $this->parse_coord( $info['longitude'] );
+		$has_address = '' !== trim( (string) $info['fullAddress'] );
+
+		if ( ! $has_address || null === $latitude || null === $longitude ) {
+			return new WP_REST_Response(
+				array(
+					'descriptors' => (object) array(),
+					'reason'      => $has_address ? 'awaiting_geocode' : 'no_address',
+				),
+				200
+			);
+		}
+
+		// Pass the block's current combo through so its PNG is generated
+		// even when the venue has never been rendered at those dimensions.
+		$raw_zoom     = $request['zoom'] ?? null;
+		$raw_height   = $request['height'] ?? null;
+		$extra_zoom   = ( null !== $raw_zoom && (int) $raw_zoom > 0 ) ? (int) $raw_zoom : null;
+		$extra_height = ( null !== $raw_height && (int) $raw_height > 0 ) ? (int) $raw_height : null;
+
+		$descriptors = $this->regenerate( $post_id, $extra_zoom, $extra_height );
+
+		return new WP_REST_Response(
+			array(
+				'descriptors' => empty( $descriptors ) ? (object) array() : $descriptors,
+				'reason'      => '',
+			),
+			200
+		);
 	}
 
 	/**

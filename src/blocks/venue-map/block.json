@@ -28,7 +28,7 @@
 		}
 	},
 	"supports": {
-		"align": ["wide", "full"],
+		"align": ["left", "center", "right", "wide", "full"],
 		"html": false
 	},
 	"textdomain": "gatherpress",

@@ -26,6 +26,11 @@
 		"html": false,
 		"interactivity": {
 			"clientNavigation": true
+		},
+		"layout": {
+			"default": {
+				"type": "constrained"
+			}
 		}
 	},
 	"textdomain": "gatherpress",

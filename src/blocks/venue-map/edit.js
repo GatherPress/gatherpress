@@ -16,6 +16,7 @@ import { useSelect } from '@wordpress/data';
 import { isVenuePostType } from '../../helpers/venue';
 import { getFromSettings } from '../../helpers/editor-settings';
 import MapEmbed from '../../components/MapEmbed';
+import RegenerateMapButton from './regenerate-button';
 
 /**
  * Edit component for the Venue Map block.
@@ -42,6 +43,8 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 		venueInfoJson,
 		savedVenueInfoJson,
 		staticMapDescriptors,
+		venuePostId,
+		venuePostType,
 	} = useSelect(
 		( select ) => {
 			const currentPostId = select( 'core/editor' )?.getCurrentPostId();
@@ -53,12 +56,23 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 				contextPostId ||
 				( isVenuePostType() ? currentPostId : 0 );
 
+			// The venue's post type: prefer the BlockContext value when the
+			// block is rendered inside a venue parent (event editing), and
+			// fall back to the current post's type when the venue itself is
+			// being edited.
+			const resolvedVenuePostType =
+				context?.postType ||
+				select( 'core/editor' )?.getCurrentPostType() ||
+				'';
+
 			if ( ! effectiveVenuePostId ) {
 				return {
 					isEditingThisVenue: false,
 					venueInfoJson: '{}',
 					savedVenueInfoJson: '{}',
 					staticMapDescriptors: {},
+					venuePostId: 0,
+					venuePostType: '',
 				};
 			}
 
@@ -79,6 +93,8 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 						savedPost?.meta?.gatherpress_venue_information || '{}',
 					staticMapDescriptors:
 						meta?.gatherpress_venue_static_map || {},
+					venuePostId: effectiveVenuePostId,
+					venuePostType: resolvedVenuePostType,
 				};
 			}
 
@@ -101,6 +117,8 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 				savedVenueInfoJson: venueInfo,
 				staticMapDescriptors:
 					venuePost?.meta?.gatherpress_venue_static_map || {},
+				venuePostId: effectiveVenuePostId,
+				venuePostType: context?.postType || '',
 			};
 		},
 		[ context?.postId, context?.postType ]
@@ -245,6 +263,17 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 						min={ 100 }
 						max={ 800 }
 					/>
+					{ isStaticMode && showStaticImage && 0 < venuePostId && (
+						<RegenerateMapButton
+							venuePostId={ venuePostId }
+							venuePostType={ venuePostType }
+							zoom={ zoom }
+							height={ height }
+							disabled={
+								! fullAddress || hasUnsavedMapInputs
+							}
+						/>
+					) }
 				</PanelBody>
 			</InspectorControls>
 			<div { ...blockProps }>
@@ -269,9 +298,39 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 							style={ { height: `${ height }px` } }
 						>
 							<div className="gatherpress-venue-map__placeholder">
-								{ __(
-									'Static map preview appears after venue is saved.',
-									'gatherpress'
+								{ ! fullAddress &&
+									__(
+										'Add an address to generate the map.',
+										'gatherpress'
+									) }
+								{ fullAddress &&
+									hasUnsavedMapInputs &&
+									__(
+										'Save the venue first.',
+										'gatherpress'
+									) }
+								{ fullAddress &&
+									! hasUnsavedMapInputs &&
+									0 < venuePostId && (
+									<>
+										<span>
+											{ __(
+												'Ready to generate the map.',
+												'gatherpress'
+											) }
+										</span>
+										<RegenerateMapButton
+											venuePostId={ venuePostId }
+											venuePostType={ venuePostType }
+											zoom={ zoom }
+											height={ height }
+											label={ __(
+												'Generate map',
+												'gatherpress'
+											) }
+											variant="primary"
+										/>
+									</>
 								) }
 							</div>
 						</div>

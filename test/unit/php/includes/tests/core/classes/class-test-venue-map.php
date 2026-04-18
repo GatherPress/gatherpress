@@ -119,6 +119,12 @@ class Test_Venue_Map extends Base {
 				'callback' => array( $instance, 'maybe_register_delete_hook' ),
 			),
 			array(
+				'type'     => 'action',
+				'name'     => 'rest_api_init',
+				'priority' => 10,
+				'callback' => array( $instance, 'register_rest_routes' ),
+			),
+			array(
 				'type'     => 'filter',
 				'name'     => 'block_type_metadata',
 				'priority' => 10,
@@ -2012,5 +2018,359 @@ class Test_Venue_Map extends Base {
 			Utility::invoke_hidden_method( $instance, 'lat_to_world_pixel', array( 0.0, 0 ) ),
 			0.000001
 		);
+	}
+
+	/**
+	 * Wipes cached descriptors + PNG files and rebuilds entries for every
+	 * combo the venue was previously cached at, returning the fresh
+	 * descriptor map.
+	 *
+	 * @covers ::regenerate
+	 *
+	 * @return void
+	 */
+	public function test_regenerate_rebuilds_cached_combos(): void {
+		$instance = Venue_Map::get_instance();
+		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
+
+		add_post_meta(
+			$post_id,
+			'gatherpress_venue_information',
+			wp_json_encode(
+				array(
+					'fullAddress' => '1 Infinite Loop',
+					'latitude'    => '37.3318',
+					'longitude'   => '-122.0312',
+				)
+			)
+		);
+		$instance->maybe_generate( $post_id );
+		// Warm a second combo so regenerate has two variants to cover.
+		$instance->get_url_for_post( $post_id, Venue::POST_TYPE, 14, 500 );
+
+		$before = $instance->get_all_descriptors( $post_id );
+		$this->assertCount( 2, $before );
+
+		// Mark the pre-regenerate files so we can detect rewrites below.
+		// When inputs are unchanged the hash (and therefore the filename)
+		// stays the same, so we can't rely on url comparison alone — mtime
+		// is the signal that the tile fetch + compositing ran again.
+		$pre_mtimes = array();
+		foreach ( $before as $combo_key => $descriptor ) {
+			$path                     = (string) $instance->url_to_path( $descriptor['url'] );
+			$pre_mtimes[ $combo_key ] = filemtime( $path );
+		}
+		sleep( 1 );
+
+		$result = $instance->regenerate( $post_id );
+
+		$this->assertCount(
+			2,
+			$result,
+			'regenerate() should return a descriptor for each previously cached combo.'
+		);
+
+		foreach ( $before as $combo_key => $old ) {
+			$this->assertArrayHasKey( $combo_key, $result );
+			$path = (string) $instance->url_to_path( $result[ $combo_key ]['url'] );
+			$this->assertFileExists(
+				$path,
+				sprintf( 'Post-regenerate PNG for %s should exist on disk.', $combo_key )
+			);
+			$this->assertGreaterThan(
+				$pre_mtimes[ $combo_key ],
+				filemtime( $path ),
+				sprintf( 'Post-regenerate PNG for %s should have been rewritten.', $combo_key )
+			);
+		}
+	}
+
+	/**
+	 * When the caller supplies an extra (zoom, height), regenerate() adds
+	 * that combo to the rebuild list so the block editor's current combo
+	 * always gets a PNG on an explicit Generate click — even if the venue
+	 * was previously cached at different combos only.
+	 *
+	 * @covers ::regenerate
+	 *
+	 * @return void
+	 */
+	public function test_regenerate_includes_caller_supplied_combo(): void {
+		$instance = Venue_Map::get_instance();
+		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
+
+		add_post_meta(
+			$post_id,
+			'gatherpress_venue_information',
+			wp_json_encode(
+				array(
+					'fullAddress' => '1 Infinite Loop',
+					'latitude'    => '37.3318',
+					'longitude'   => '-122.0312',
+				)
+			)
+		);
+		// Seed one cached combo the venue "already had".
+		$instance->maybe_generate( $post_id );
+
+		$result = $instance->regenerate( $post_id, 8, 295 );
+
+		$expected_key = '8x295';
+		$this->assertArrayHasKey(
+			$expected_key,
+			$result,
+			'The caller-supplied combo must be included in the rebuild.'
+		);
+		$this->assertSame( 8, $result[ $expected_key ]['zoom'] );
+		$this->assertSame( 295, $result[ $expected_key ]['height'] );
+	}
+
+	/**
+	 * When the caller-supplied combo duplicates one that's already cached,
+	 * it's deduped and only rendered once — no double-work.
+	 *
+	 * @covers ::regenerate
+	 *
+	 * @return void
+	 */
+	public function test_regenerate_dedupes_caller_combo_against_cache(): void {
+		$instance = Venue_Map::get_instance();
+		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
+
+		add_post_meta(
+			$post_id,
+			'gatherpress_venue_information',
+			wp_json_encode(
+				array(
+					'fullAddress' => '1 Infinite Loop',
+					'latitude'    => '37.3318',
+					'longitude'   => '-122.0312',
+				)
+			)
+		);
+		$instance->maybe_generate( $post_id );
+
+		$result = $instance->regenerate(
+			$post_id,
+			Venue_Map::DEFAULT_ZOOM,
+			Venue_Map::DEFAULT_HEIGHT
+		);
+
+		$this->assertCount(
+			1,
+			$result,
+			'Supplying the already-cached combo should not add a duplicate entry.'
+		);
+	}
+
+	/**
+	 * Calling regenerate() on a venue that has never been rendered seeds
+	 * the site-default combo, so an explicit "Generate" click on a fresh
+	 * venue still produces a PNG.
+	 *
+	 * @covers ::regenerate
+	 *
+	 * @return void
+	 */
+	public function test_regenerate_seeds_default_combo_when_nothing_cached(): void {
+		$instance = Venue_Map::get_instance();
+		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
+
+		add_post_meta(
+			$post_id,
+			'gatherpress_venue_information',
+			wp_json_encode(
+				array(
+					'fullAddress' => '1 Infinite Loop',
+					'latitude'    => '37.3318',
+					'longitude'   => '-122.0312',
+				)
+			)
+		);
+
+		$this->assertEmpty( $instance->get_all_descriptors( $post_id ) );
+
+		$result = $instance->regenerate( $post_id );
+
+		$default_key = sprintf(
+			'%dx%d',
+			Venue_Map::DEFAULT_ZOOM,
+			Venue_Map::DEFAULT_HEIGHT
+		);
+		$this->assertArrayHasKey( $default_key, $result );
+	}
+
+	/**
+	 * Without usable coordinates, regenerate() returns an empty map and
+	 * does not attempt to render — the button on the client side stays in
+	 * its "Add an address to generate the map" placeholder state.
+	 *
+	 * @covers ::regenerate
+	 *
+	 * @return void
+	 */
+	public function test_regenerate_returns_empty_when_no_coordinates(): void {
+		$instance = Venue_Map::get_instance();
+		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
+
+		add_post_meta(
+			$post_id,
+			'gatherpress_venue_information',
+			wp_json_encode(
+				array(
+					'fullAddress' => 'Somewhere, somewhere',
+					'latitude'    => '',
+					'longitude'   => '',
+				)
+			)
+		);
+
+		$this->assertSame( array(), $instance->regenerate( $post_id ) );
+	}
+
+	/**
+	 * The POST /venue/{id}/regenerate-map endpoint requires edit_post on
+	 * the target venue — anonymous callers receive 401/403.
+	 *
+	 * @covers ::register_rest_routes
+	 *
+	 * @return void
+	 */
+	public function test_rest_regenerate_requires_edit_post(): void {
+		$instance = Venue_Map::get_instance();
+		$instance->register_rest_routes();
+
+		$post_id = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
+
+		wp_set_current_user( 0 );
+
+		$request  = new \WP_REST_Request(
+			'POST',
+			sprintf( '/%s/venue/%d/regenerate-map', GATHERPRESS_REST_NAMESPACE, $post_id )
+		);
+		$response = rest_do_request( $request );
+
+		$this->assertGreaterThanOrEqual( 400, $response->get_status() );
+		$this->assertLessThan( 500, $response->get_status() );
+	}
+
+	/**
+	 * Happy-path REST call: an editor-level user regenerates a venue with
+	 * usable coordinates and gets the fresh descriptor map in the response.
+	 *
+	 * @covers ::register_rest_routes
+	 * @covers ::rest_regenerate
+	 *
+	 * @return void
+	 */
+	public function test_rest_regenerate_returns_fresh_descriptors(): void {
+		$instance = Venue_Map::get_instance();
+		$instance->register_rest_routes();
+
+		$editor_id = $this->factory->user->create( array( 'role' => 'editor' ) );
+		$post_id   = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
+
+		add_post_meta(
+			$post_id,
+			'gatherpress_venue_information',
+			wp_json_encode(
+				array(
+					'fullAddress' => '1 Infinite Loop',
+					'latitude'    => '37.3318',
+					'longitude'   => '-122.0312',
+				)
+			)
+		);
+
+		wp_set_current_user( $editor_id );
+
+		$request  = new \WP_REST_Request(
+			'POST',
+			sprintf( '/%s/venue/%d/regenerate-map', GATHERPRESS_REST_NAMESPACE, $post_id )
+		);
+		$response = rest_do_request( $request );
+
+		$this->assertSame( 200, $response->get_status() );
+
+		$data = $response->get_data();
+		$this->assertArrayHasKey( 'descriptors', $data );
+		$this->assertSame( '', $data['reason'] );
+
+		$default_key = sprintf(
+			'%dx%d',
+			Venue_Map::DEFAULT_ZOOM,
+			Venue_Map::DEFAULT_HEIGHT
+		);
+		$this->assertArrayHasKey( $default_key, (array) $data['descriptors'] );
+	}
+
+	/**
+	 * When the venue has no address, the REST endpoint returns a 200 with
+	 * a structured reason so the client can render the appropriate
+	 * placeholder rather than a generic error state.
+	 *
+	 * @covers ::rest_regenerate
+	 *
+	 * @return void
+	 */
+	public function test_rest_regenerate_reports_no_address_reason(): void {
+		$instance = Venue_Map::get_instance();
+		$instance->register_rest_routes();
+
+		$editor_id = $this->factory->user->create( array( 'role' => 'editor' ) );
+		$post_id   = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
+
+		wp_set_current_user( $editor_id );
+
+		$request  = new \WP_REST_Request(
+			'POST',
+			sprintf( '/%s/venue/%d/regenerate-map', GATHERPRESS_REST_NAMESPACE, $post_id )
+		);
+		$response = rest_do_request( $request );
+
+		$this->assertSame( 200, $response->get_status() );
+		$data = $response->get_data();
+		$this->assertSame( 'no_address', $data['reason'] );
+	}
+
+	/**
+	 * When the address is set but not yet geocoded (empty lat/lng), the
+	 * endpoint reports `awaiting_geocode` so the client shows the "Save
+	 * the venue first" placeholder instead of treating it as a failure.
+	 *
+	 * @covers ::rest_regenerate
+	 *
+	 * @return void
+	 */
+	public function test_rest_regenerate_reports_awaiting_geocode_reason(): void {
+		$instance = Venue_Map::get_instance();
+		$instance->register_rest_routes();
+
+		$editor_id = $this->factory->user->create( array( 'role' => 'editor' ) );
+		$post_id   = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
+
+		add_post_meta(
+			$post_id,
+			'gatherpress_venue_information',
+			wp_json_encode(
+				array(
+					'fullAddress' => 'Somewhere',
+					'latitude'    => '',
+					'longitude'   => '',
+				)
+			)
+		);
+
+		wp_set_current_user( $editor_id );
+
+		$request  = new \WP_REST_Request(
+			'POST',
+			sprintf( '/%s/venue/%d/regenerate-map', GATHERPRESS_REST_NAMESPACE, $post_id )
+		);
+		$response = rest_do_request( $request );
+
+		$this->assertSame( 200, $response->get_status() );
+		$data = $response->get_data();
+		$this->assertSame( 'awaiting_geocode', $data['reason'] );
 	}
 }
