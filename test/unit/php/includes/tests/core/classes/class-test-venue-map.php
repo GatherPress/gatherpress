@@ -1409,6 +1409,47 @@ class Test_Venue_Map extends Base {
 	}
 
 	/**
+	 * Returns null from warm() for a non-existent or zero venue post ID
+	 * without attempting to render a tile.
+	 *
+	 * @covers ::warm
+	 *
+	 * @return void
+	 */
+	public function test_warm_returns_null_for_invalid_post_id(): void {
+		$instance = Venue_Map::get_instance();
+
+		$this->assertNull( $instance->warm( 0, 15, 800, 400, '2/1' ) );
+	}
+
+	/**
+	 * Returns null from warm() when the venue has no valid coordinates —
+	 * short circuits before the tile compositing stage.
+	 *
+	 * @covers ::warm
+	 *
+	 * @return void
+	 */
+	public function test_warm_returns_null_when_venue_has_no_coordinates(): void {
+		$instance = Venue_Map::get_instance();
+		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
+
+		add_post_meta(
+			$post_id,
+			'gatherpress_venue_information',
+			wp_json_encode(
+				array(
+					'fullAddress' => '1 Infinite Loop, Cupertino CA',
+					'latitude'    => '',
+					'longitude'   => '',
+				)
+			)
+		);
+
+		$this->assertNull( $instance->warm( $post_id, 15, 800, 400, '2/1' ) );
+	}
+
+	/**
 	 * Resolves a URL inside the plugin's uploads subdir back to a path.
 	 *
 	 * @covers ::url_to_path

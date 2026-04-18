@@ -160,7 +160,7 @@ class Venues extends Base {
 							'options'     => array(
 								'default' => '',
 								'min'     => '0',
-								'max'     => '4000',
+								'max'     => (string) Venue_Map::HEIGHT_MAX,
 							),
 						),
 					),
@@ -181,7 +181,7 @@ class Venues extends Base {
 							'options'     => array(
 								'default' => '',
 								'min'     => '0',
-								'max'     => '4000',
+								'max'     => (string) Venue_Map::WIDTH_MAX,
 							),
 						),
 					),
@@ -190,7 +190,7 @@ class Venues extends Base {
 							'name' => __( 'Default Aspect Ratio', 'gatherpress' ),
 						),
 						'description' => __(
-							'Default aspect ratio for new venue map blocks. Used to derive any auto width or height dimension.',
+							'Default aspect ratio for new venue map blocks. Used to derive any auto dimension.',
 							'gatherpress'
 						),
 						'field'       => array(
@@ -213,7 +213,7 @@ class Venues extends Base {
 							'name' => __( 'Default Link Destination', 'gatherpress' ),
 						),
 						'description' => __(
-							'Default link wrapped around static maps. Only applies to static mode; interactive maps own their pan-and-zoom interaction.',
+							'Default link wrapped around static maps. Only applies to static mode.',
 							'gatherpress'
 						),
 						'field'       => array(

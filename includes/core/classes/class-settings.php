@@ -490,7 +490,13 @@ class Settings {
 						$sanitized[ $key ] = (bool) $value;
 						break;
 					case 'number':
-						$sanitized[ $key ] = intval( $value );
+						// Preserve empty submissions as '' instead of
+						// coercing to 0 via intval — so a field that
+						// accepts empty (e.g. Width/Height "Auto") can
+						// round-trip blank without silently saving 0.
+						$sanitized[ $key ] = ( '' === $value || null === $value )
+							? ''
+							: intval( $value );
 						break;
 					case 'autocomplete':
 						$sanitized[ $key ] = $this->sanitize_autocomplete( $value );

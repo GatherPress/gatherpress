@@ -345,8 +345,12 @@ class Venue_Map_Prewarm {
 		return array(
 			'zoom'         => isset( $attrs['zoom'] ) ? (int) $attrs['zoom'] : Venue_Map::DEFAULT_ZOOM,
 			'width'        => isset( $attrs['width'] ) ? (int) $attrs['width'] : 0,
-			'height'       => isset( $attrs['height'] ) ? (int) $attrs['height'] : Venue_Map::DEFAULT_HEIGHT,
-			'aspect_ratio' => isset( $attrs['aspectRatio'] ) ? (string) $attrs['aspectRatio'] : Venue_Map::DEFAULT_ASPECT_RATIO,
+			'height'       => isset( $attrs['height'] )
+				? (int) $attrs['height']
+				: Venue_Map::DEFAULT_HEIGHT,
+			'aspect_ratio' => isset( $attrs['aspectRatio'] )
+				? (string) $attrs['aspectRatio']
+				: Venue_Map::DEFAULT_ASPECT_RATIO,
 		);
 	}
 

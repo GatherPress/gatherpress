@@ -975,7 +975,13 @@ class Venue_Map {
 	 * @param int   $height  Pixel height of the PNG.
 	 * @return array{url: string, hash: string, zoom: int, width: int, height: int}|null
 	 */
-	protected function ensure_descriptor_for_combo( int $post_id, array $info, int $zoom, int $width, int $height ): ?array {
+	protected function ensure_descriptor_for_combo(
+		int $post_id,
+		array $info,
+		int $zoom,
+		int $width,
+		int $height
+	): ?array {
 		// Callers (maybe_generate, get_url_for_post) must have validated the
 		// coordinates via parse_coord() already — cast directly.
 		$latitude  = (float) $info['latitude'];
@@ -1548,7 +1554,8 @@ class Venue_Map {
 		$parsed = $this->parse_aspect_ratio( '' !== $ratio ? $ratio : self::DEFAULT_ASPECT_RATIO );
 
 		if ( null === $parsed ) {
-			$parsed = $this->parse_aspect_ratio( self::DEFAULT_ASPECT_RATIO ) ?: self::IMAGE_ASPECT_RATIO;
+			$fallback = $this->parse_aspect_ratio( self::DEFAULT_ASPECT_RATIO );
+			$parsed   = null !== $fallback ? $fallback : self::IMAGE_ASPECT_RATIO;
 		}
 
 		if ( $width <= 0 && $height <= 0 ) {
