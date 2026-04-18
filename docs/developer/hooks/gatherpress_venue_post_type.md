@@ -22,16 +22,16 @@ add_filter(
 
 ## Parameters
 
-- `string` $post_type       The venue post type slug. Default 'gatherpress_venue'. Other variable names: `self::POST_TYPE`
+- `string` $post_type       The venue post type slug. Default 'gatherpress_venue'. Other variable names: `Venue::POST_TYPE`
 - *`string`* `$event_post_type` The event post type requesting a venue post type.
 
 ## Files
 
-- [includes/core/classes/class-venue.php:170](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/class-venue.php#L170)
+- [includes/core/classes/class-venue-setup.php:878](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/class-venue-setup.php#L878)
 ```php
 apply_filters(
 			'gatherpress_venue_post_type',
-			self::POST_TYPE,
+			Venue::POST_TYPE,
 			$event_post_type
 		)
 ```
