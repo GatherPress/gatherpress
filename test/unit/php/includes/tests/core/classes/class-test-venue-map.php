@@ -296,17 +296,18 @@ class Test_Venue_Map extends Base {
 	 */
 	public function test_hash_for_detects_relevant_input_changes(): void {
 		$instance = Venue_Map::get_instance();
+		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
 		$info     = array(
 			'fullAddress' => '1 Infinite Loop',
 			'latitude'    => '37.3318',
 			'longitude'   => '-122.0312',
 		);
 
-		$baseline = $instance->hash_for( $info, 15, 400, Venue_Map::DEFAULT_TILE_URL );
+		$baseline = $instance->hash_for( $post_id, $info, 15, 400, Venue_Map::DEFAULT_TILE_URL );
 
 		$this->assertSame(
 			$baseline,
-			$instance->hash_for( $info, 15, 400, Venue_Map::DEFAULT_TILE_URL ),
+			$instance->hash_for( $post_id, $info, 15, 400, Venue_Map::DEFAULT_TILE_URL ),
 			'Hash should be stable when every input is identical.'
 		);
 
@@ -316,20 +317,29 @@ class Test_Venue_Map extends Base {
 
 		$this->assertNotSame(
 			$baseline,
-			$instance->hash_for( $moved_info, 15, 400, Venue_Map::DEFAULT_TILE_URL ),
+			$instance->hash_for( $post_id, $moved_info, 15, 400, Venue_Map::DEFAULT_TILE_URL ),
 			'Hash should change when coordinates change.'
 		);
 
 		$this->assertNotSame(
 			$baseline,
-			$instance->hash_for( $info, 14, 400, Venue_Map::DEFAULT_TILE_URL ),
+			$instance->hash_for( $post_id, $info, 14, 400, Venue_Map::DEFAULT_TILE_URL ),
 			'Hash should change when the zoom level changes.'
 		);
 
 		$this->assertNotSame(
 			$baseline,
-			$instance->hash_for( $info, 15, 500, Venue_Map::DEFAULT_TILE_URL ),
+			$instance->hash_for( $post_id, $info, 15, 500, Venue_Map::DEFAULT_TILE_URL ),
 			'Hash should change when the height changes.'
+		);
+
+		// Different venue → different salt → different hash even with
+		// identical address/coords.
+		$other_post_id = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
+		$this->assertNotSame(
+			$baseline,
+			$instance->hash_for( $other_post_id, $info, 15, 400, Venue_Map::DEFAULT_TILE_URL ),
+			'Hash should differ between venues because each has its own salt.'
 		);
 	}
 

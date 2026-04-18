@@ -580,25 +580,29 @@ class Venue_Setup {
 
 		$content = apply_block_hooks_to_content( $pattern['content'], $pattern );
 
-		// Prevent infinite recursion when updating the post.
-		remove_action(
-			sprintf( 'save_post_%s', Venue::POST_TYPE ),
-			array( $this, 'maybe_apply_venue_template' )
-		);
+		// Prevent infinite recursion when updating the post. If
+		// wp_update_post() throws (strict-typed hook listeners on PHP 8+,
+		// a misbehaving filter, etc.), the try/finally guarantees the
+		// hook is put back for subsequent saves in the same request.
+		$hook = sprintf( 'save_post_%s', Venue::POST_TYPE );
 
-		wp_update_post(
-			array(
-				'ID'           => $post_id,
-				'post_content' => $content,
-			)
-		);
+		remove_action( $hook, array( $this, 'maybe_apply_venue_template' ) );
 
-		add_action(
-			sprintf( 'save_post_%s', Venue::POST_TYPE ),
-			array( $this, 'maybe_apply_venue_template' ),
-			10,
-			3
-		);
+		try {
+			wp_update_post(
+				array(
+					'ID'           => $post_id,
+					'post_content' => $content,
+				)
+			);
+		} finally {
+			add_action(
+				$hook,
+				array( $this, 'maybe_apply_venue_template' ),
+				10,
+				3
+			);
+		}
 	}
 
 	/**

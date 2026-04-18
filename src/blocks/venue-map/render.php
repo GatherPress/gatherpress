@@ -72,10 +72,8 @@ if ( 'interactive' === $gatherpress_render_mode ) {
 	);
 
 	$gatherpress_wrapper_attr_args['data-gatherpress_block_name']  = 'map-embed';
-	$gatherpress_wrapper_attr_args['data-gatherpress_block_attrs'] = htmlspecialchars(
-		(string) wp_json_encode( $gatherpress_block_attrs ),
-		ENT_QUOTES,
-		'UTF-8'
+	$gatherpress_wrapper_attr_args['data-gatherpress_block_attrs'] = esc_attr(
+		(string) wp_json_encode( $gatherpress_block_attrs )
 	);
 }
 
