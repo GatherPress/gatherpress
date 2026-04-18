@@ -599,9 +599,11 @@ class Settings {
 				$params['preview'] = $option_settings['field']['preview'] ?? array();
 				break;
 			case 'number':
-				$params['size'] = $option_settings['field']['size'] ?? 'regular';
-				$params['min']  = $option_settings['field']['options']['min'] ?? '';
-				$params['max']  = $option_settings['field']['options']['max'] ?? '';
+				$params['size']        = $option_settings['field']['size'] ?? 'regular';
+				$params['min']         = $option_settings['field']['options']['min'] ?? '';
+				$params['max']         = $option_settings['field']['options']['max'] ?? '';
+				$params['placeholder'] = $option_settings['field']['placeholder'] ?? '';
+				$params['allow_empty'] = (bool) ( $option_settings['field']['allow_empty'] ?? false );
 				break;
 			case 'select':
 				$params['options'] = $option_settings['field']['options'] ?? '';

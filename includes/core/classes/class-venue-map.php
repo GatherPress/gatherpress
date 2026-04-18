@@ -285,7 +285,7 @@ class Venue_Map {
 					return current_user_can( 'edit_post', $post_id );
 				},
 				'args'                => array(
-					'id'     => array(
+					'id'           => array(
 						'required'          => true,
 						'type'              => 'integer',
 						'sanitize_callback' => 'absint',

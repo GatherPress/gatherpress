@@ -53,7 +53,28 @@
 	},
 	"supports": {
 		"align": ["left", "center", "right", "wide", "full"],
-		"html": false
+		"html": false,
+		"spacing": {
+			"margin": true,
+			"padding": true,
+			"__experimentalDefaultControls": {
+				"margin": false,
+				"padding": false
+			}
+		},
+		"__experimentalBorder": {
+			"color": true,
+			"radius": true,
+			"style": true,
+			"width": true,
+			"__experimentalDefaultControls": {
+				"color": true,
+				"radius": true,
+				"style": true,
+				"width": true
+			}
+		},
+		"shadow": true
 	},
 	"textdomain": "gatherpress",
 	"editorScript": "file:./index.js",

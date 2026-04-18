@@ -20,6 +20,16 @@
 	position: relative;
 	overflow: hidden;
 
+	// Inherit the wrapper's border-radius (the `border` block support
+	// stamps radius onto the block wrapper) so inner elements — static
+	// <img>, Leaflet container, placeholder — get clipped to the same
+	// rounded corners instead of poking out square-edged.
+	&__image,
+	&__placeholder,
+	.leaflet-container {
+		border-radius: inherit;
+	}
+
 	&__image {
 		display: block;
 		width: 100%;
@@ -41,6 +51,13 @@
 		border: 1px dashed #ccc;
 		color: #666;
 		box-sizing: border-box;
+	}
+
+	// Soften the map-marker icon surfaced inside the FSE template
+	// placeholder — the default SVG fills with black, which is heavier
+	// than the #666 placeholder text next to it.
+	&__placeholder-icon {
+		fill: #b0b0b0;
 	}
 
 	// CartoDB/OSM attribution — mirrors the bottom-right placement Leaflet

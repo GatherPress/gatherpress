@@ -74,17 +74,17 @@ $gatherpress_wrapper_attr_args = array(
 );
 
 // Sizing rules:
-//   - Explicit height → inline height in px.
-//   - Explicit width  → inline width in px (but NOT when the block is
-//     aligned wide or full — then the alignment owns the horizontal space
-//     via the `.alignwide` / `.alignfull` CSS rules, and a hard pixel
-//     width would fight those classes).
-//   - Any auto dimension → CSS `aspect-ratio` stamp so the container can
-//     still give the block its shape as its surrounding width changes
-//     (aligned block, responsive container, etc.). Static <img> inside
-//     uses object-fit: cover so the raster stays crisp at any size.
-$gatherpress_styles = array();
-$gatherpress_align  = (string) ( $attributes['align'] ?? '' );
+// - Explicit height → inline height in px.
+// - Explicit width  → inline width in px (but NOT when the block is
+// aligned wide or full — then the alignment owns the horizontal space
+// via the `.alignwide` / `.alignfull` CSS rules, and a hard pixel
+// width would fight those classes).
+// - Any auto dimension → CSS `aspect-ratio` stamp so the container can
+// still give the block its shape as its surrounding width changes
+// (aligned block, responsive container, etc.). Static <img> inside
+// uses object-fit: cover so the raster stays crisp at any size.
+$gatherpress_styles          = array();
+$gatherpress_align           = (string) ( $attributes['align'] ?? '' );
 $gatherpress_is_wide_or_full = in_array( $gatherpress_align, array( 'wide', 'full' ), true );
 
 if ( 0 < $gatherpress_raw_height ) {

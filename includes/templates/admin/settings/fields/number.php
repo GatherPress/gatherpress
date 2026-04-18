@@ -14,6 +14,8 @@
  * @param int    $value       The current value for the input field.
  * @param string $description An optional description for the input field.
  * @param string $size        The size class for styling (e.g., 'regular', 'large', or 'small').
+ * @param string $placeholder Optional placeholder shown when the input is empty.
+ * @param bool   $allow_empty When true, render a stored zero as empty so the placeholder can surface.
  */
 
 // Exit if accessed directly.
@@ -23,10 +25,18 @@ if ( ! isset( $name, $label, $option, $value, $description, $size, $min, $max ) 
 	return;
 }
 
+$placeholder = $placeholder ?? '';
+$allow_empty = $allow_empty ?? false;
+
+// Treat a stored 0 as "empty" when allow_empty is on. Legacy option rows
+// still have 0 written from before the field accepted empty as a value, so
+// this normalization lets the placeholder surface immediately.
+$display_value = ( $allow_empty && '' !== $value && 0 === (int) $value ) ? '' : $value;
+
 ?>
 <div class="form-wrap">
 	<label for="<?php echo esc_attr( $option ); ?>"><?php echo esc_html( $label ); ?></label>
-	<input id="<?php echo esc_attr( $option ); ?>" type="number" name="<?php echo esc_attr( $name ); ?>" class="<?php echo esc_attr( $size . '-text' ); ?>" value="<?php echo esc_attr( $value ); ?>" min="<?php echo esc_attr( $min ); ?>" max="<?php echo esc_attr( $max ); ?>" />
+	<input id="<?php echo esc_attr( $option ); ?>" type="number" name="<?php echo esc_attr( $name ); ?>" class="<?php echo esc_attr( $size . '-text' ); ?>" value="<?php echo esc_attr( $display_value ); ?>" min="<?php echo esc_attr( $min ); ?>" max="<?php echo esc_attr( $max ); ?>"<?php echo '' !== $placeholder ? ' placeholder="' . esc_attr( $placeholder ) . '"' : ''; ?> />
 	<?php
 	if ( ! empty( $description ) ) {
 		?>

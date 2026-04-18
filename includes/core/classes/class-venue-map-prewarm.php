@@ -213,8 +213,8 @@ class Venue_Map_Prewarm {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param int                                                           $venue_post_id Venue post ID.
-	 * @param array{zoom:int,width:int,height:int,aspect_ratio:string}      $combo         Combo to warm.
+	 * @param int                                                      $venue_post_id Venue post ID.
+	 * @param array{zoom:int,width:int,height:int,aspect_ratio:string} $combo         Combo to warm.
 	 * @return void
 	 */
 	protected function enqueue_warm_job( int $venue_post_id, array $combo ): void {

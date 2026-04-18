@@ -84,7 +84,7 @@ class Venues extends Base {
 					'gatherpress'
 				),
 				'options'     => array(
-					'map_platform'                  => array(
+					'map_platform'                       => array(
 						'labels'      => array(
 							'name' => __( 'Mapping Platform', 'gatherpress' ),
 						),
@@ -104,7 +104,7 @@ class Venues extends Base {
 							),
 						),
 					),
-					'venue_map_default_render_mode' => array(
+					'venue_map_default_render_mode'      => array(
 						'labels'      => array(
 							'name' => __( 'Default Render Mode', 'gatherpress' ),
 						),
@@ -124,7 +124,7 @@ class Venues extends Base {
 							),
 						),
 					),
-					'venue_map_default_zoom'        => array(
+					'venue_map_default_zoom'             => array(
 						'labels'      => array(
 							'name' => __( 'Default Zoom Level', 'gatherpress' ),
 						),
@@ -143,45 +143,49 @@ class Venues extends Base {
 							),
 						),
 					),
-					'venue_map_default_height'      => array(
+					'venue_map_default_height'           => array(
 						'labels'      => array(
 							'name' => __( 'Default Height', 'gatherpress' ),
 						),
 						'description' => __(
-							'Default pixel height applied to new venue map blocks. 0 = auto — height is derived from width and the aspect ratio.',
+							'Default pixel height for new venue map blocks. Leave empty for auto.',
 							'gatherpress'
 						),
 						'field'       => array(
-							'label'   => __( 'Height for new blocks (px):', 'gatherpress' ),
-							'type'    => 'number',
-							'size'    => 'small',
-							'options' => array(
-								'default' => Venue_Map::DEFAULT_HEIGHT,
+							'label'       => __( 'Height for new blocks (px):', 'gatherpress' ),
+							'type'        => 'number',
+							'size'        => 'small',
+							'placeholder' => __( 'Auto', 'gatherpress' ),
+							'allow_empty' => true,
+							'options'     => array(
+								'default' => '',
 								'min'     => '0',
-								'max'     => '800',
+								'max'     => '4000',
 							),
 						),
 					),
-					'venue_map_default_width'       => array(
+					'venue_map_default_width'            => array(
 						'labels'      => array(
 							'name' => __( 'Default Width', 'gatherpress' ),
 						),
 						'description' => __(
-							'Default pixel width applied to new venue map blocks. 0 = auto — width is derived from height and the aspect ratio.',
+							'Default pixel width for new venue map blocks. Leave empty for auto.',
 							'gatherpress'
 						),
 						'field'       => array(
-							'label'   => __( 'Width for new blocks (px):', 'gatherpress' ),
-							'type'    => 'number',
-							'size'    => 'small',
-							'options' => array(
-								'default' => 0,
+							'label'       => __( 'Width for new blocks (px):', 'gatherpress' ),
+							'type'        => 'number',
+							'size'        => 'small',
+							'placeholder' => __( 'Auto', 'gatherpress' ),
+							'allow_empty' => true,
+							'options'     => array(
+								'default' => '',
 								'min'     => '0',
-								'max'     => '1600',
+								'max'     => '4000',
 							),
 						),
 					),
-					'venue_map_default_aspect_ratio' => array(
+					'venue_map_default_aspect_ratio'     => array(
 						'labels'      => array(
 							'name' => __( 'Default Aspect Ratio', 'gatherpress' ),
 						),
@@ -225,7 +229,7 @@ class Venues extends Base {
 							),
 						),
 					),
-					'venue_map_default_link_target' => array(
+					'venue_map_default_link_target'      => array(
 						'labels'      => array(
 							'name' => __( 'Open Links in New Tab', 'gatherpress' ),
 						),
@@ -241,7 +245,7 @@ class Venues extends Base {
 							),
 						),
 					),
-					'venue_map_default_type'        => array(
+					'venue_map_default_type'             => array(
 						'labels'      => array(
 							'name' => __( 'Default Map Type', 'gatherpress' ),
 						),

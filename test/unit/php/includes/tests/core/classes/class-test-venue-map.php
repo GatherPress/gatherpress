@@ -978,7 +978,7 @@ class Test_Venue_Map extends Base {
 			Venue_Map::DEFAULT_HEIGHT
 		);
 		// Second combo: zoom=14, height=500, auto width at 2:1 = 1000×500.
-		$second_key  = '14x1000x500';
+		$second_key = '14x1000x500';
 
 		$before = $instance->get_all_descriptors( $post_id );
 

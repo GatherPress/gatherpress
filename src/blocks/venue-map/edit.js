@@ -19,6 +19,8 @@ import {
 	ToggleControl,
 	ToolbarButton,
 	ToolbarGroup,
+	// eslint-disable-next-line @wordpress/no-unsafe-wp-apis
+	__experimentalToolsPanelItem as ToolsPanelItem,
 } from '@wordpress/components';
 import { useSelect } from '@wordpress/data';
 import { useEffect } from '@wordpress/element';
@@ -51,11 +53,11 @@ const DEFAULT_HEIGHT = 300;
 // server-side `Venue_Map::DEFAULT_ASPECT_RATIO` (2/1) so freshly inserted
 // blocks keep the behavior that shipped in the first round of static maps.
 const ASPECT_RATIO_PRESETS = [
-	{ label: __( '2:1 (landscape)', 'gatherpress' ), value: '2/1' },
-	{ label: __( '16:9 (wide)', 'gatherpress' ), value: '16/9' },
-	{ label: __( '3:2 (classic)', 'gatherpress' ), value: '3/2' },
-	{ label: __( '4:3 (standard)', 'gatherpress' ), value: '4/3' },
-	{ label: __( '1:1 (square)', 'gatherpress' ), value: '1/1' },
+	{ label: __( 'Landscape - 2:1', 'gatherpress' ), value: '2/1' },
+	{ label: __( 'Wide - 16:9', 'gatherpress' ), value: '16/9' },
+	{ label: __( 'Classic - 3:2', 'gatherpress' ), value: '3/2' },
+	{ label: __( 'Standard - 4:3', 'gatherpress' ), value: '4/3' },
+	{ label: __( 'Square - 1:1', 'gatherpress' ), value: '1/1' },
 	{ label: __( 'Custom', 'gatherpress' ), value: 'custom' },
 ];
 
@@ -520,7 +522,7 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 	return (
 		<>
 			<InspectorControls>
-				<PanelBody title={ __( 'Map settings', 'gatherpress' ) }>
+				<PanelBody>
 					<SelectControl
 						label={ __( 'Render mode', 'gatherpress' ) }
 						value={ renderMode }
@@ -574,6 +576,31 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 							}
 						/>
 					) }
+					{ isStaticMode && showStaticImage && 0 < venuePostId && (
+						<RegenerateMapButton
+							venuePostId={ venuePostId }
+							venuePostType={ venuePostType }
+							zoom={ zoom }
+							width={ width }
+							height={ height }
+							aspectRatio={ aspectRatio }
+							disabled={
+								! fullAddress || hasUnsavedMapInputs
+							}
+						/>
+					) }
+				</PanelBody>
+			</InspectorControls>
+			<InspectorControls group="dimensions">
+				<ToolsPanelItem
+					label={ __( 'Width & height', 'gatherpress' ) }
+					hasValue={ () => 0 < width || 0 < height }
+					onDeselect={ () =>
+						setAttributes( { width: 0, height: 0 } )
+					}
+					isShownByDefault
+					panelId={ clientId }
+				>
 					<Flex gap={ 2 } align="flex-end">
 						<FlexItem isBlock>
 							<TextControl
@@ -594,11 +621,22 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 							/>
 						</FlexItem>
 					</Flex>
+				</ToolsPanelItem>
+				<ToolsPanelItem
+					label={ __( 'Aspect ratio', 'gatherpress' ) }
+					hasValue={ () =>
+						'' !== ( aspectRatio ?? '' ) &&
+						'2/1' !== aspectRatio
+					}
+					onDeselect={ () =>
+						setAttributes( { aspectRatio: '2/1' } )
+					}
+					isShownByDefault
+					panelId={ clientId }
+				>
 					<SelectControl
 						label={ __( 'Aspect ratio', 'gatherpress' ) }
-						value={
-							isCustomAspectRatio ? 'custom' : aspectRatio
-						}
+						value={ isCustomAspectRatio ? 'custom' : aspectRatio }
 						options={ ASPECT_RATIO_PRESETS }
 						onChange={ ( value ) => {
 							if ( 'custom' === value ) {
@@ -634,20 +672,7 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 							}
 						/>
 					) }
-					{ isStaticMode && showStaticImage && 0 < venuePostId && (
-						<RegenerateMapButton
-							venuePostId={ venuePostId }
-							venuePostType={ venuePostType }
-							zoom={ zoom }
-							width={ width }
-							height={ height }
-							aspectRatio={ aspectRatio }
-							disabled={
-								! fullAddress || hasUnsavedMapInputs
-							}
-						/>
-					) }
-				</PanelBody>
+				</ToolsPanelItem>
 			</InspectorControls>
 			{ isStaticMode && (
 				<BlockControls>
