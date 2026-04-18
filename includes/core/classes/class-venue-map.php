@@ -785,6 +785,55 @@ class Venue_Map {
 	}
 
 	/**
+	 * Ensure a static-map descriptor exists for the given combo.
+	 *
+	 * Thin public wrapper around {@see self::ensure_descriptor_for_combo()} for
+	 * prewarming callers (cron, CLI). Resolves venue info from the post,
+	 * validates coordinates, derives any auto dimension via the aspect ratio,
+	 * and returns the descriptor (or null when the venue has no usable
+	 * coordinates yet or generation failed).
+	 *
+	 * Idempotent — when the hash matches an already-cached PNG the call is a
+	 * no-op DB read, so it's safe to enqueue the same (venue, combo) job
+	 * multiple times while a site is churning saves.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param int    $post_id      Venue post ID.
+	 * @param int    $zoom         Zoom level.
+	 * @param int    $width        Pixel width (0 = auto).
+	 * @param int    $height       Pixel height (0 = auto).
+	 * @param string $aspect_ratio Aspect-ratio string (e.g. "16/9").
+	 * @return array{url: string, hash: string, zoom: int, width: int, height: int}|null
+	 */
+	public function warm( int $post_id, int $zoom, int $width, int $height, string $aspect_ratio = '' ): ?array {
+		if ( 0 >= $post_id ) {
+			return null;
+		}
+
+		$info = ( new Venue( $post_id ) )->get_information();
+
+		if ( null === $this->parse_coord( $info['latitude'] ) ||
+			null === $this->parse_coord( $info['longitude'] ) ) {
+			return null;
+		}
+
+		$resolved = $this->resolve_dimensions(
+			$width,
+			$height,
+			'' !== $aspect_ratio ? $aspect_ratio : self::DEFAULT_ASPECT_RATIO
+		);
+
+		return $this->ensure_descriptor_for_combo(
+			$post_id,
+			$info,
+			$zoom,
+			$resolved['width'],
+			$resolved['height']
+		);
+	}
+
+	/**
 	 * Return the descriptor for the default (zoom, width, height) combo, or
 	 * null if nothing is stored.
 	 *

@@ -22,12 +22,13 @@ import {
 } from '@wordpress/components';
 import { useSelect } from '@wordpress/data';
 import { useEffect } from '@wordpress/element';
-import { link as linkIcon } from '@wordpress/icons';
+import { Icon, link as linkIcon, mapMarker } from '@wordpress/icons';
 
 /**
  * Internal dependencies.
  */
 import { isVenuePostType } from '../../helpers/venue';
+import { isInFSETemplate } from '../../helpers/editor';
 import { getFromSettings } from '../../helpers/editor-settings';
 import MapEmbed from '../../components/MapEmbed';
 import {
@@ -451,7 +452,15 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 					style={ wrapperStyle }
 				>
 					<div className="gatherpress-venue-map__placeholder">
+						{ ! fullAddress && isInFSETemplate() && (
+							<Icon
+								icon={ mapMarker }
+								size={ 48 }
+								className="gatherpress-venue-map__placeholder-icon"
+							/>
+						) }
 						{ ! fullAddress &&
+							! isInFSETemplate() &&
 							__(
 								'Add an address to generate the map.',
 								'gatherpress'
