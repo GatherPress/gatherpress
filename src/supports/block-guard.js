@@ -6,7 +6,7 @@ import { createHigherOrderComponent } from '@wordpress/compose';
 import { InspectorControls } from '@wordpress/block-editor';
 import { PanelBody, ToggleControl } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
-import { addFilter } from '@wordpress/hooks';
+import { addFilter, hasFilter } from '@wordpress/hooks';
 import { useState, useEffect } from '@wordpress/element';
 
 /**
@@ -570,7 +570,15 @@ const withBlockGuard = createHigherOrderComponent( ( BlockEdit ) => {
  *
  * @see https://developer.wordpress.org/block-editor/reference-guides/filters/block-filters/
  */
-addFilter( 'editor.BlockEdit', 'gatherpress/with-block-guard', withBlockGuard );
+// This module is imported both as a side-effect from `src/editor.js` and as
+// named exports from block edits (e.g. venue-map), so it lands in multiple
+// webpack chunks that all evaluate on the editor page. WP's addFilter doesn't
+// dedupe by namespace — every evaluation would otherwise append a second
+// handler and render duplicate Block Guard toggles. hasFilter returns the
+// handler's priority when registered, `false` when absent.
+if ( false === hasFilter( 'editor.BlockEdit', 'gatherpress/with-block-guard' ) ) {
+	addFilter( 'editor.BlockEdit', 'gatherpress/with-block-guard', withBlockGuard );
+}
 
 // Export functions for testing.
 export {

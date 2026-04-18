@@ -1252,6 +1252,69 @@ class Test_Venue_Map extends Base {
 	}
 
 	/**
+	 * Successful warm() run — returns the descriptor, stores meta, and
+	 * lands the PNG on disk at the deterministic slug-based filename.
+	 *
+	 * @covers ::warm
+	 * @covers ::build_image_url
+	 * @covers ::filename_for
+	 *
+	 * @return void
+	 */
+	public function test_warm_generates_descriptor_on_valid_input(): void {
+		$instance = Venue_Map::get_instance();
+		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
+
+		add_post_meta(
+			$post_id,
+			'gatherpress_venue_information',
+			wp_json_encode(
+				array(
+					'fullAddress' => '1 Infinite Loop',
+					'latitude'    => '37.3318',
+					'longitude'   => '-122.0312',
+				)
+			)
+		);
+
+		$descriptor = $instance->warm( $post_id, 15, 800, 400, '2/1' );
+
+		$this->assertIsArray( $descriptor );
+		$this->assertSame( 15, $descriptor['zoom'] );
+		$this->assertSame( 800, $descriptor['width'] );
+		$this->assertSame( 400, $descriptor['height'] );
+		$this->assertStringEndsWith( '1-infinite-loop-15-800-400.png', $descriptor['url'] );
+	}
+
+	/**
+	 * An empty/special-only address still produces a valid filename via the
+	 * `venue` fallback; a very long address gets truncated to 150 chars.
+	 *
+	 * @covers ::filename_for
+	 *
+	 * @return void
+	 */
+	public function test_filename_for_handles_edge_cases(): void {
+		$instance = Venue_Map::get_instance();
+
+		// Empty string → fallback slug.
+		$empty = Utility::invoke_hidden_method( $instance, 'filename_for', array( '', 15, 800, 400 ) );
+		$this->assertSame( 'venue-15-800-400.png', $empty );
+
+		// All-special-char input sanitize_title strips to '' → fallback.
+		$weird = Utility::invoke_hidden_method( $instance, 'filename_for', array( '!!!', 15, 800, 400 ) );
+		$this->assertSame( 'venue-15-800-400.png', $weird );
+
+		// Long slugs get truncated so the full filename stays under fs caps.
+		$long    = str_repeat( 'a', 300 );
+		$result  = Utility::invoke_hidden_method( $instance, 'filename_for', array( $long, 18, 600, 300 ) );
+		$matches = array();
+		preg_match( '/^([a-z]+)-18-600-300\.png$/', $result, $matches );
+		$this->assertNotEmpty( $matches, 'Truncated filename still matches the expected pattern.' );
+		$this->assertSame( 150, strlen( $matches[1] ), 'Slug is capped at 150 characters.' );
+	}
+
+	/**
 	 * Returns null from warm() when the venue has no valid coordinates —
 	 * short circuits before the tile compositing stage.
 	 *

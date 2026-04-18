@@ -578,6 +578,171 @@ class Test_Venue_Map_Prewarm extends Base {
 	}
 
 	/**
+	 * Batch-size filter lets callers override SCAN_BATCH_SIZE; values below
+	 * 1 are clamped up to 1 to avoid an infinite empty-batch loop.
+	 *
+	 * @covers ::get_scan_batch_size
+	 *
+	 * @return void
+	 */
+	public function test_get_scan_batch_size_applies_filter_and_clamps(): void {
+		$instance = Venue_Map_Prewarm::get_instance();
+
+		$this->assertSame(
+			Venue_Map_Prewarm::SCAN_BATCH_SIZE,
+			Utility::invoke_hidden_method( $instance, 'get_scan_batch_size' ),
+			'Default matches the SCAN_BATCH_SIZE constant.'
+		);
+
+		$override = static function () {
+			return 25;
+		};
+		add_filter( 'gatherpress_venue_map_prewarm_batch_size', $override );
+
+		$this->assertSame(
+			25,
+			Utility::invoke_hidden_method( $instance, 'get_scan_batch_size' ),
+			'Filter-supplied value replaces the default.'
+		);
+
+		remove_filter( 'gatherpress_venue_map_prewarm_batch_size', $override );
+
+		$clamp = static function () {
+			return 0;
+		};
+		add_filter( 'gatherpress_venue_map_prewarm_batch_size', $clamp );
+
+		$this->assertSame(
+			1,
+			Utility::invoke_hidden_method( $instance, 'get_scan_batch_size' ),
+			'Values below 1 clamp up to 1.'
+		);
+
+		remove_filter( 'gatherpress_venue_map_prewarm_batch_size', $clamp );
+	}
+
+	/**
+	 * Pagination actually iterates — with a batch size of 1 and three
+	 * published venues, a template save enqueues warm jobs for all three,
+	 * exercising the multi-page loop tail.
+	 *
+	 * @covers ::enqueue_for_all_venues
+	 *
+	 * @return void
+	 */
+	public function test_enqueue_for_all_venues_paginates(): void {
+		$instance = Venue_Map_Prewarm::get_instance();
+
+		$venue_ids = array(
+			$this->factory->post->create(
+				array(
+					'post_type'   => Venue::POST_TYPE,
+					'post_status' => 'publish',
+				)
+			),
+			$this->factory->post->create(
+				array(
+					'post_type'   => Venue::POST_TYPE,
+					'post_status' => 'publish',
+				)
+			),
+			$this->factory->post->create(
+				array(
+					'post_type'   => Venue::POST_TYPE,
+					'post_status' => 'publish',
+				)
+			),
+		);
+
+		$one_per_page = static function () {
+			return 1;
+		};
+		add_filter( 'gatherpress_venue_map_prewarm_batch_size', $one_per_page );
+
+		$template_id = $this->factory->post->create(
+			array(
+				'post_type'    => 'wp_template',
+				'post_status'  => 'publish',
+				'post_content' => '<!-- wp:gatherpress/venue-map '
+					. '{"zoom":11,"width":500,"height":250,"aspectRatio":"2/1"} /-->',
+			)
+		);
+
+		$instance->on_post_saved( $template_id, get_post( $template_id ) );
+
+		remove_filter( 'gatherpress_venue_map_prewarm_batch_size', $one_per_page );
+
+		foreach ( $venue_ids as $venue_post_id ) {
+			$this->assertNotFalse(
+				wp_next_scheduled(
+					Venue_Map_Prewarm::CRON_ACTION,
+					array( $venue_post_id, 11, 500, 250, '2/1' )
+				),
+				sprintf( 'Venue %d received a warm job through the paginated loop.', $venue_post_id )
+			);
+		}
+	}
+
+	/**
+	 * Pagination through collect_all_template_combos + get_venue_post_ids —
+	 * shrinks the batch so the loop tails run with only a couple of fixtures.
+	 *
+	 * @covers ::collect_all_template_combos
+	 * @covers ::get_venue_post_ids
+	 *
+	 * @return void
+	 */
+	public function test_collect_and_get_ids_paginate(): void {
+		$instance = Venue_Map_Prewarm::get_instance();
+
+		$this->factory->post->create(
+			array(
+				'post_type'    => 'gatherpress_event',
+				'post_status'  => 'publish',
+				'post_content' => '<!-- wp:gatherpress/venue-map '
+					. '{"zoom":8,"width":200,"height":100,"aspectRatio":"2/1"} /-->',
+			)
+		);
+		$this->factory->post->create(
+			array(
+				'post_type'    => 'gatherpress_event',
+				'post_status'  => 'publish',
+				'post_content' => '<!-- wp:gatherpress/venue-map '
+					. '{"zoom":9,"width":300,"height":150,"aspectRatio":"2/1"} /-->',
+			)
+		);
+		$venue_ids = array(
+			$this->factory->post->create(
+				array(
+					'post_type'   => Venue::POST_TYPE,
+					'post_status' => 'publish',
+				)
+			),
+			$this->factory->post->create(
+				array(
+					'post_type'   => Venue::POST_TYPE,
+					'post_status' => 'publish',
+				)
+			),
+		);
+
+		$one_per_page = static function () {
+			return 1;
+		};
+		add_filter( 'gatherpress_venue_map_prewarm_batch_size', $one_per_page );
+
+		$combos = Utility::invoke_hidden_method( $instance, 'collect_all_template_combos' );
+		$ids    = Utility::invoke_hidden_method( $instance, 'get_venue_post_ids' );
+
+		remove_filter( 'gatherpress_venue_map_prewarm_batch_size', $one_per_page );
+
+		$this->assertCount( 2, $combos, 'Both event combos collected through the paginated event loop.' );
+		foreach ( $venue_ids as $venue_post_id ) {
+			$this->assertContains( $venue_post_id, $ids, 'Venue collected through the paginated ID loop.' );
+		}
+	}
+
+	/**
 	 * Saving an event post without any venue-map block early-returns before
 	 * the term lookup runs.
 	 *
