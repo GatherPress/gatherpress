@@ -490,7 +490,13 @@ class Settings {
 						$sanitized[ $key ] = (bool) $value;
 						break;
 					case 'number':
-						$sanitized[ $key ] = intval( $value );
+						// Preserve empty submissions as '' instead of
+						// coercing to 0 via intval — so a field that
+						// accepts empty (e.g. Width/Height "Auto") can
+						// round-trip blank without silently saving 0.
+						$sanitized[ $key ] = ( '' === $value || null === $value )
+							? ''
+							: intval( $value );
 						break;
 					case 'autocomplete':
 						$sanitized[ $key ] = $this->sanitize_autocomplete( $value );
@@ -599,9 +605,11 @@ class Settings {
 				$params['preview'] = $option_settings['field']['preview'] ?? array();
 				break;
 			case 'number':
-				$params['size'] = $option_settings['field']['size'] ?? 'regular';
-				$params['min']  = $option_settings['field']['options']['min'] ?? '';
-				$params['max']  = $option_settings['field']['options']['max'] ?? '';
+				$params['size']        = $option_settings['field']['size'] ?? 'regular';
+				$params['min']         = $option_settings['field']['options']['min'] ?? '';
+				$params['max']         = $option_settings['field']['options']['max'] ?? '';
+				$params['placeholder'] = $option_settings['field']['placeholder'] ?? '';
+				$params['allow_empty'] = (bool) ( $option_settings['field']['allow_empty'] ?? false );
 				break;
 			case 'select':
 				$params['options'] = $option_settings['field']['options'] ?? '';

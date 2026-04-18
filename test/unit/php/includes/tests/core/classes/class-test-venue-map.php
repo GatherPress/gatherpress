@@ -96,6 +96,24 @@ class Test_Venue_Map extends Base {
 	}
 
 	/**
+	 * Resolve an uploads-subdir URL back to its filesystem path for test
+	 * assertions. Mirrors the security-sensitive url_to_path() logic that
+	 * used to live on the class, scoped down to what tests need.
+	 *
+	 * @param string $url Stored descriptor URL.
+	 * @return string Absolute filesystem path.
+	 */
+	protected function path_for_url( string $url ): string {
+		$dirs = wp_get_upload_dir();
+
+		return str_replace(
+			trailingslashit( $dirs['baseurl'] ),
+			trailingslashit( $dirs['basedir'] ),
+			$url
+		);
+	}
+
+	/**
 	 * Coverage for setup_hooks.
 	 *
 	 * @covers ::__construct
@@ -117,6 +135,12 @@ class Test_Venue_Map extends Base {
 				'name'     => 'registered_post_type',
 				'priority' => 10,
 				'callback' => array( $instance, 'maybe_register_delete_hook' ),
+			),
+			array(
+				'type'     => 'action',
+				'name'     => 'rest_api_init',
+				'priority' => 10,
+				'callback' => array( $instance, 'register_rest_routes' ),
 			),
 			array(
 				'type'     => 'filter',
@@ -212,7 +236,7 @@ class Test_Venue_Map extends Base {
 
 		$settings->set( 'venue_map_default_render_mode', '' );
 		$settings->set( 'venue_map_default_zoom', 0 );
-		$settings->set( 'venue_map_default_height', 0 );
+		$settings->set( 'venue_map_default_height', '' );
 		$settings->set( 'venue_map_default_type', '' );
 
 		$metadata = array(
@@ -296,18 +320,17 @@ class Test_Venue_Map extends Base {
 	 */
 	public function test_hash_for_detects_relevant_input_changes(): void {
 		$instance = Venue_Map::get_instance();
-		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
 		$info     = array(
 			'fullAddress' => '1 Infinite Loop',
 			'latitude'    => '37.3318',
 			'longitude'   => '-122.0312',
 		);
 
-		$baseline = $instance->hash_for( $post_id, $info, 15, 400, Venue_Map::DEFAULT_TILE_URL );
+		$baseline = $instance->hash_for( $info, 15, 800, 400, Venue_Map::DEFAULT_TILE_URL );
 
 		$this->assertSame(
 			$baseline,
-			$instance->hash_for( $post_id, $info, 15, 400, Venue_Map::DEFAULT_TILE_URL ),
+			$instance->hash_for( $info, 15, 800, 400, Venue_Map::DEFAULT_TILE_URL ),
 			'Hash should be stable when every input is identical.'
 		);
 
@@ -317,29 +340,34 @@ class Test_Venue_Map extends Base {
 
 		$this->assertNotSame(
 			$baseline,
-			$instance->hash_for( $post_id, $moved_info, 15, 400, Venue_Map::DEFAULT_TILE_URL ),
+			$instance->hash_for( $moved_info, 15, 800, 400, Venue_Map::DEFAULT_TILE_URL ),
 			'Hash should change when coordinates change.'
 		);
 
 		$this->assertNotSame(
 			$baseline,
-			$instance->hash_for( $post_id, $info, 14, 400, Venue_Map::DEFAULT_TILE_URL ),
+			$instance->hash_for( $info, 14, 800, 400, Venue_Map::DEFAULT_TILE_URL ),
 			'Hash should change when the zoom level changes.'
 		);
 
 		$this->assertNotSame(
 			$baseline,
-			$instance->hash_for( $post_id, $info, 15, 500, Venue_Map::DEFAULT_TILE_URL ),
+			$instance->hash_for( $info, 15, 600, 400, Venue_Map::DEFAULT_TILE_URL ),
+			'Hash should change when the width changes.'
+		);
+
+		$this->assertNotSame(
+			$baseline,
+			$instance->hash_for( $info, 15, 800, 500, Venue_Map::DEFAULT_TILE_URL ),
 			'Hash should change when the height changes.'
 		);
 
-		// Different venue → different salt → different hash even with
-		// identical address/coords.
-		$other_post_id = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
-		$this->assertNotSame(
+		// Same address + coords hash identically, regardless of post —
+		// filenames dedupe across venues at the same location.
+		$this->assertSame(
 			$baseline,
-			$instance->hash_for( $other_post_id, $info, 15, 400, Venue_Map::DEFAULT_TILE_URL ),
-			'Hash should differ between venues because each has its own salt.'
+			$instance->hash_for( $info, 15, 800, 400, Venue_Map::DEFAULT_TILE_URL ),
+			'Hash is address-scoped, not post-scoped.'
 		);
 	}
 
@@ -379,7 +407,7 @@ class Test_Venue_Map extends Base {
 		$this->assertNotEmpty( $descriptor['url'], 'Descriptor URL should be populated.' );
 		$this->assertSame( 32, strlen( $descriptor['hash'] ), 'Descriptor hash should be an MD5 hex string.' );
 
-		$path = $instance->url_to_path( $descriptor['url'] );
+		$path = $this->path_for_url( $descriptor['url'] );
 
 		$this->assertNotNull( $path, 'Saved URL should map back to a filesystem path.' );
 		$this->assertFileExists( $path, 'The static-map PNG should exist on disk.' );
@@ -410,7 +438,7 @@ class Test_Venue_Map extends Base {
 
 		$instance->maybe_generate( $post_id );
 		$first_descriptor = $instance->get_stored_descriptor( $post_id );
-		$path             = $instance->url_to_path( $first_descriptor['url'] );
+		$path             = $this->path_for_url( $first_descriptor['url'] );
 		$mtime_first      = filemtime( $path );
 
 		// Force the filesystem mtime to change so a regeneration would be detectable.
@@ -472,15 +500,13 @@ class Test_Venue_Map extends Base {
 		$this->assertNotSame(
 			$first['url'],
 			$second['url'],
-			'URL should change because the filename includes the hash.'
+			'URL should change because the address slug is part of the filename.'
 		);
 
-		$old_path = $instance->url_to_path( $first['url'] );
-
-		$this->assertFileDoesNotExist(
-			$old_path,
-			'The previous static-map PNG should be cleaned up when regenerating.'
-		);
+		// Both the old and the new file exist on disk — with address-based
+		// naming the same file can be shared, so GC of the superseded file
+		// is deferred.
+		$this->assertFileExists( $this->path_for_url( $second['url'] ) );
 	}
 
 	/**
@@ -512,7 +538,7 @@ class Test_Venue_Map extends Base {
 		$descriptor = $instance->get_stored_descriptor( $post_id );
 
 		$this->assertIsArray( $descriptor, 'Sanity: initial save should have produced a descriptor.' );
-		$path = $instance->url_to_path( $descriptor['url'] );
+		$path = $this->path_for_url( $descriptor['url'] );
 		$this->assertFileExists( $path );
 
 		// Now clear the coordinates (e.g. address changed to something un-geocodable).
@@ -533,10 +559,10 @@ class Test_Venue_Map extends Base {
 			$instance->get_stored_descriptor( $post_id ),
 			'Descriptor meta should be cleared when coordinates become un-geocodable.'
 		);
-		$this->assertFileDoesNotExist(
-			(string) $path,
-			'Orphaned PNG should be removed when coordinates disappear.'
-		);
+		// PNG is intentionally left on disk — the file may be shared with
+		// another venue at the same address. A future GC pass sweeps truly
+		// orphaned files.
+		unset( $path );
 	}
 
 	/**
@@ -605,13 +631,15 @@ class Test_Venue_Map extends Base {
 	}
 
 	/**
-	 * Removes the PNG and the descriptor meta for the venue.
+	 * Clears the descriptor meta for the venue but leaves the PNG on disk
+	 * — the file may be shared with another venue at the same address, so
+	 * on-delete cleanup is deferred to a future GC pass.
 	 *
 	 * @covers ::delete_stored_image
 	 *
 	 * @return void
 	 */
-	public function test_delete_stored_image_removes_file_and_meta(): void {
+	public function test_delete_stored_image_clears_meta(): void {
 		$instance = Venue_Map::get_instance();
 		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
 
@@ -629,61 +657,13 @@ class Test_Venue_Map extends Base {
 		$instance->maybe_generate( $post_id );
 
 		$descriptor = $instance->get_stored_descriptor( $post_id );
-		$path       = $instance->url_to_path( $descriptor['url'] );
-
-		$this->assertFileExists( $path );
+		$this->assertNotNull( $descriptor, 'Precondition: venue has a descriptor.' );
 
 		$instance->delete_stored_image( $post_id );
 
-		$this->assertFileDoesNotExist( $path, 'PNG should be removed by delete_stored_image.' );
 		$this->assertNull(
 			$instance->get_stored_descriptor( $post_id ),
 			'Descriptor meta should be cleared after delete_stored_image.'
-		);
-	}
-
-	/**
-	 * Rejects URLs that sit outside of the plugin's uploads subdir.
-	 *
-	 * @covers ::url_to_path
-	 *
-	 * @return void
-	 */
-	public function test_url_to_path_rejects_external_urls(): void {
-		$instance = Venue_Map::get_instance();
-
-		$this->assertNull(
-			$instance->url_to_path( 'https://example.com/evil.png' ),
-			'External URLs must not resolve to a filesystem path.'
-		);
-	}
-
-	/**
-	 * A URL whose origin matches the plugin uploads subdir but whose
-	 * filename contains path-traversal segments (`..`) must not resolve —
-	 * otherwise delete_file_by_url() could be steered at arbitrary files
-	 * if the meta were ever writable.
-	 *
-	 * @covers ::url_to_path
-	 *
-	 * @return void
-	 */
-	public function test_url_to_path_rejects_traversal_in_plugin_subdir_url(): void {
-		$instance = Venue_Map::get_instance();
-		$dirs     = wp_get_upload_dir();
-		$base_url = trailingslashit( $dirs['baseurl'] ) . Venue_Map::UPLOADS_SUBDIR . '/';
-
-		$this->assertNull(
-			$instance->url_to_path( $base_url . '../../../wp-config.php' ),
-			'Traversal segments in the relative portion must not resolve.'
-		);
-		$this->assertNull(
-			$instance->url_to_path( $base_url . '42-notahex.png' ),
-			'Filenames not matching the `{post_id}-{md5}.png` shape must not resolve.'
-		);
-		$this->assertNull(
-			$instance->url_to_path( $base_url . 'subdir/42-abcdef0123456789abcdef0123456789.png' ),
-			'Nested filenames (with slashes) must not resolve.'
 		);
 	}
 
@@ -716,33 +696,36 @@ class Test_Venue_Map extends Base {
 			$post_id,
 			Venue_Map::META_KEY,
 			array(
-				'15x300'        => array(
+				'15x600x300'    => array(
 					'url'    => 'https://example.test/a.png',
 					'hash'   => 'abc',
 					'zoom'   => 15,
+					'width'  => 600,
 					'height' => 300,
 				),
-				'18x400'        => 'not-an-array',
-				'20x500'        => array(
+				'18x800x400'    => 'not-an-array',
+				'20x1000x500'   => array(
 					'url'    => 'https://example.test/b.png',
 					'zoom'   => 20,
+					'width'  => 1000,
 					'height' => 500,
 				), // Missing hash.
 				'missing-shape' => array(
 					'url'  => 'https://example.test/c.png',
 					'hash' => 'def',
-				), // Missing zoom/height.
+				), // Missing zoom/width/height.
 			)
 		);
 
 		$descriptors = $instance->get_all_descriptors( $post_id );
 
-		$this->assertArrayHasKey( '15x300', $descriptors );
-		$this->assertArrayNotHasKey( '18x400', $descriptors );
-		$this->assertArrayNotHasKey( '20x500', $descriptors );
+		$this->assertArrayHasKey( '15x600x300', $descriptors );
+		$this->assertArrayNotHasKey( '18x800x400', $descriptors );
+		$this->assertArrayNotHasKey( '20x1000x500', $descriptors );
 		$this->assertArrayNotHasKey( 'missing-shape', $descriptors );
-		$this->assertSame( 15, $descriptors['15x300']['zoom'] );
-		$this->assertSame( 300, $descriptors['15x300']['height'] );
+		$this->assertSame( 15, $descriptors['15x600x300']['zoom'] );
+		$this->assertSame( 600, $descriptors['15x600x300']['width'] );
+		$this->assertSame( 300, $descriptors['15x600x300']['height'] );
 
 		// Read path must not mutate the meta — writing on every render would
 		// thrash the post-meta cache and churn the DB. Cleanup is deferred
@@ -805,15 +788,16 @@ class Test_Venue_Map extends Base {
 		$this->assertArrayNotHasKey( 'no-hash', $stored );
 
 		$default_key = sprintf(
-			'%dx%d',
+			'%dx%dx%d',
 			Venue_Map::DEFAULT_ZOOM,
+			Venue_Map::DEFAULT_HEIGHT * 2,
 			Venue_Map::DEFAULT_HEIGHT
 		);
 		$this->assertArrayHasKey( $default_key, $stored );
 	}
 
 	/**
-	 * Requesting a previously-uncached (zoom, height) combo triggers
+	 * Requesting a previously-uncached (zoom, width, height) combo triggers
 	 * synchronous generation and caches the result for next time.
 	 *
 	 * @covers ::get_url_for_post
@@ -839,8 +823,9 @@ class Test_Venue_Map extends Base {
 		$instance->maybe_generate( $post_id );
 
 		$default_key = sprintf(
-			'%dx%d',
+			'%dx%dx%d',
 			Venue_Map::DEFAULT_ZOOM,
+			Venue_Map::DEFAULT_HEIGHT * 2,
 			Venue_Map::DEFAULT_HEIGHT
 		);
 
@@ -849,13 +834,25 @@ class Test_Venue_Map extends Base {
 		$this->assertCount(
 			1,
 			$descriptors_before,
-			'Initial save should seed only the default (zoom, height) combo.'
+			'Initial save should seed only the default combo.'
 		);
 		$this->assertArrayHasKey( $default_key, $descriptors_before );
 
 		// Request a different zoom — simulates a block customized to zoom 14.
-		$new_key = sprintf( '14x%d', Venue_Map::DEFAULT_HEIGHT );
-		$url     = $instance->get_url_for_post( $post_id, Venue::POST_TYPE, 14 );
+		// Auto width at 2:1 ratio against DEFAULT_HEIGHT → DEFAULT_HEIGHT*2.
+		$new_key = sprintf(
+			'14x%dx%d',
+			Venue_Map::DEFAULT_HEIGHT * 2,
+			Venue_Map::DEFAULT_HEIGHT
+		);
+		$url     = $instance->get_url_for_post(
+			$post_id,
+			Venue::POST_TYPE,
+			14,
+			0,
+			Venue_Map::DEFAULT_HEIGHT,
+			''
+		);
 
 		$this->assertNotEmpty( $url, 'Lazy generation should return a non-empty URL.' );
 
@@ -896,16 +893,20 @@ class Test_Venue_Map extends Base {
 			$post_id,
 			Venue::POST_TYPE,
 			Venue_Map::DEFAULT_ZOOM,
-			500
+			0,
+			500,
+			''
 		);
 
 		$this->assertNotEmpty( $tall_url );
 
-		$key = sprintf( '%dx500', Venue_Map::DEFAULT_ZOOM );
+		// Auto width at 2:1 ratio on height=500 → 1000.
+		$key = sprintf( '%dx1000x500', Venue_Map::DEFAULT_ZOOM );
 		$all = $instance->get_all_descriptors( $post_id );
 
 		$this->assertArrayHasKey( $key, $all, 'Tall-height combo should be cached under its own key.' );
 		$this->assertSame( 500, $all[ $key ]['height'] );
+		$this->assertSame( 1000, $all[ $key ]['width'] );
 	}
 
 	/**
@@ -935,14 +936,17 @@ class Test_Venue_Map extends Base {
 		);
 		$instance->maybe_generate( $post_id );
 		// Warm a second combo (not the default seed) so we have two variants.
-		$instance->get_url_for_post( $post_id, Venue::POST_TYPE, 14, 500 );
+		$instance->get_url_for_post( $post_id, Venue::POST_TYPE, 14, 0, 500, '' );
 
+		// Default combo from DEFAULT_HEIGHT + auto width at 2:1 = 600×300.
 		$default_key = sprintf(
-			'%dx%d',
+			'%dx%dx%d',
 			Venue_Map::DEFAULT_ZOOM,
+			Venue_Map::DEFAULT_HEIGHT * 2,
 			Venue_Map::DEFAULT_HEIGHT
 		);
-		$second_key  = '14x500';
+		// Second combo: zoom=14, height=500, auto width at 2:1 = 1000×500.
+		$second_key = '14x1000x500';
 
 		$before = $instance->get_all_descriptors( $post_id );
 
@@ -976,26 +980,32 @@ class Test_Venue_Map extends Base {
 			'Second-combo hash should change with new coordinates.'
 		);
 
-		// Old files should be gone.
-		$this->assertFileDoesNotExist(
-			(string) $instance->url_to_path( $before[ $default_key ]['url'] )
+		// New files exist at the updated address slug. Old files aren't
+		// deleted — with address-based naming they may be shared, and GC is
+		// deferred to a follow-up pass.
+		$this->assertFileExists(
+			(string) $this->path_for_url( $after[ $default_key ]['url'] )
 		);
-		$this->assertFileDoesNotExist(
-			(string) $instance->url_to_path( $before[ $second_key ]['url'] )
+		$this->assertFileExists(
+			(string) $this->path_for_url( $after[ $second_key ]['url'] )
+		);
+		$this->assertNotSame(
+			$before[ $default_key ]['url'],
+			$after[ $default_key ]['url'],
+			'Address change produces a different URL via the slug.'
 		);
 	}
 
 	/**
-	 * If the meta write after save_image() is dropped (e.g. under an
-	 * object-cache outage or a filter that suppresses the update),
-	 * ensure_descriptor_for_combo() must unlink the just-saved PNG and
-	 * return null so we don't leave an orphan on disk.
+	 * When the meta write after save_image() is dropped, the method returns
+	 * null so callers know the descriptor didn't persist. The PNG is left on
+	 * disk — GC handles orphans; files may be shared with other venues.
 	 *
 	 * @covers ::ensure_descriptor_for_combo
 	 *
 	 * @return void
 	 */
-	public function test_ensure_descriptor_for_combo_unlinks_orphan_when_meta_write_dropped(): void {
+	public function test_ensure_descriptor_for_combo_returns_null_when_meta_write_dropped(): void {
 		$instance = Venue_Map::get_instance();
 		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
 
@@ -1011,9 +1021,6 @@ class Test_Venue_Map extends Base {
 			)
 		);
 
-		// Short-circuit update_post_metadata so the map descriptor write
-		// never reaches the DB. The filter returns a non-null value for
-		// META_KEY only, leaving other meta writes alone.
 		$suppress = static function ( $check, $object_id, $meta_key ) {
 			if ( Venue_Map::META_KEY === $meta_key ) {
 				return true; // Pretend the update happened.
@@ -1027,157 +1034,21 @@ class Test_Venue_Map extends Base {
 		$result = Utility::invoke_hidden_method(
 			$instance,
 			'ensure_descriptor_for_combo',
-			array( $post_id, $info, Venue_Map::DEFAULT_ZOOM, Venue_Map::DEFAULT_HEIGHT )
+			array(
+				$post_id,
+				$info,
+				Venue_Map::DEFAULT_ZOOM,
+				Venue_Map::DEFAULT_HEIGHT * 2,
+				Venue_Map::DEFAULT_HEIGHT,
+			)
 		);
 
 		remove_filter( 'update_post_metadata', $suppress, 10 );
 
 		$this->assertNull(
 			$result,
-			'Orphan-guard must return null when the meta write was suppressed.'
+			'Returns null when the meta write was suppressed.'
 		);
-
-		$dirs     = wp_get_upload_dir();
-		$base_dir = trailingslashit( $dirs['basedir'] ) . Venue_Map::UPLOADS_SUBDIR;
-
-		$this->assertEmpty(
-			(array) glob( $base_dir . sprintf( '/%d-*.png', $post_id ) ),
-			'The orphan PNG should have been unlinked.'
-		);
-	}
-
-	/**
-	 * Direct coverage for salt_for — lazily generates a salt on first
-	 * access and returns the same value on subsequent calls.
-	 *
-	 * @covers ::salt_for
-	 *
-	 * @return void
-	 */
-	public function test_salt_for_generates_and_caches(): void {
-		$instance = Venue_Map::get_instance();
-		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
-
-		$this->assertSame(
-			'',
-			(string) get_post_meta( $post_id, Venue_Map::SALT_META_KEY, true ),
-			'Precondition: freshly created venue has no salt meta.'
-		);
-
-		$first = Utility::invoke_hidden_method( $instance, 'salt_for', array( $post_id ) );
-
-		$this->assertIsString( $first );
-		$this->assertSame( 32, strlen( $first ), 'Salt should be 32 characters.' );
-		$this->assertSame(
-			$first,
-			(string) get_post_meta( $post_id, Venue_Map::SALT_META_KEY, true ),
-			'Salt should be persisted to meta on first access.'
-		);
-
-		$second = Utility::invoke_hidden_method( $instance, 'salt_for', array( $post_id ) );
-
-		$this->assertSame(
-			$first,
-			$second,
-			'Subsequent calls should return the same cached salt.'
-		);
-	}
-
-	/**
-	 * Simulates two concurrent first-touch callers by forcing add_post_meta
-	 * to fail for the losing request (meaning another request just wrote
-	 * the salt between our read and write). salt_for() must then re-read
-	 * and return the winner's value, not its own abandoned candidate —
-	 * otherwise the loser's PNG filename won't match what any subsequent
-	 * request computes.
-	 *
-	 * @covers ::salt_for
-	 *
-	 * @return void
-	 */
-	public function test_salt_for_recovers_from_lost_race(): void {
-		$instance = Venue_Map::get_instance();
-		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
-		$winner   = 'winnerwinnerwinnerwinnerwinner12';
-
-		// Hook `add_post_metadata` to simulate another request winning the
-		// race between our read and our write: right before our
-		// add_post_meta() lands, the hook writes the winner value straight
-		// to the DB and returns false to tell add_post_meta() "already
-		// exists, didn't write". salt_for() must recover by re-reading the
-		// winner. The write goes through $wpdb directly so it doesn't fire
-		// add_post_metadata again and recurse.
-		global $wpdb;
-		$force_race_loss = static function ( $check, $object_id, $meta_key ) use ( $winner, $post_id, $wpdb ) {
-			if ( Venue_Map::SALT_META_KEY !== $meta_key || $object_id !== $post_id ) {
-				return $check;
-			}
-			// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.SlowDBQuery.slow_db_query_meta_key, WordPress.DB.SlowDBQuery.slow_db_query_meta_value -- Test fixture bypasses add_post_meta() to avoid recursing into the filter we're inside.
-			$wpdb->insert(
-				$wpdb->postmeta,
-				array(
-					'post_id'    => $post_id,
-					'meta_key'   => Venue_Map::SALT_META_KEY,
-					'meta_value' => $winner,
-				)
-			);
-			// phpcs:enable
-			wp_cache_delete( $post_id, 'post_meta' );
-			return false;
-		};
-		add_filter( 'add_post_metadata', $force_race_loss, 10, 3 );
-
-		$resolved = Utility::invoke_hidden_method( $instance, 'salt_for', array( $post_id ) );
-
-		remove_filter( 'add_post_metadata', $force_race_loss, 10 );
-
-		$this->assertSame(
-			$winner,
-			$resolved,
-			'Losing request must re-read the winner salt, not return its own candidate.'
-		);
-	}
-
-	/**
-	 * Direct coverage for delete_file_by_url — unlinks only when the URL
-	 * resolves to a path inside the plugin's uploads subdir.
-	 *
-	 * @covers ::delete_file_by_url
-	 *
-	 * @return void
-	 */
-	public function test_delete_file_by_url_unlinks_in_scope(): void {
-		$instance = Venue_Map::get_instance();
-
-		// Create a fixture file the method is allowed to delete.
-		$dirs     = wp_get_upload_dir();
-		$base_dir = trailingslashit( $dirs['basedir'] ) . Venue_Map::UPLOADS_SUBDIR;
-		wp_mkdir_p( $base_dir );
-
-		// Use a filename in the `{post_id}-{md5}.png` shape url_to_path()
-		// accepts. A fake hex string stands in for a real MD5 digest.
-		$filename = '99-abcdef0123456789abcdef0123456789.png';
-		$path     = $base_dir . '/' . $filename;
-		$url      = trailingslashit( $dirs['baseurl'] )
-			. Venue_Map::UPLOADS_SUBDIR . '/' . $filename;
-		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents -- Fixture write inside the test-only uploads dir.
-		file_put_contents( $path, 'stub' );
-
-		$this->assertFileExists( $path );
-
-		Utility::invoke_hidden_method( $instance, 'delete_file_by_url', array( $url ) );
-
-		$this->assertFileDoesNotExist( $path, 'In-scope file should be removed.' );
-
-		// Out-of-scope URL should no-op (url_to_path returns null).
-		Utility::invoke_hidden_method(
-			$instance,
-			'delete_file_by_url',
-			array( 'https://example.test/outside.png' )
-		);
-		// Terminal assertion to keep PHPUnit happy — the real guarantee is
-		// that no exception is thrown and no unexpected side effects occur.
-		$this->assertTrue( true );
 	}
 
 	/**
@@ -1210,6 +1081,7 @@ class Test_Venue_Map extends Base {
 					'longitude'   => '-122.0312',
 				),
 				15,
+				600,
 				300,
 			)
 		);
@@ -1244,7 +1116,7 @@ class Test_Venue_Map extends Base {
 		);
 
 		$first  = $instance->get_url_for_post( $post_id, Venue::POST_TYPE, 17 );
-		$path   = (string) $instance->url_to_path( $first );
+		$path   = (string) $this->path_for_url( $first );
 		$mtime1 = filemtime( $path );
 
 		sleep( 1 );
@@ -1366,22 +1238,139 @@ class Test_Venue_Map extends Base {
 	}
 
 	/**
-	 * Resolves a URL inside the plugin's uploads subdir back to a path.
+	 * Returns null from warm() for a non-existent or zero venue post ID
+	 * without attempting to render a tile.
 	 *
-	 * @covers ::url_to_path
+	 * @covers ::warm
 	 *
 	 * @return void
 	 */
-	public function test_url_to_path_resolves_plugin_subdir_url(): void {
+	public function test_warm_returns_null_for_invalid_post_id(): void {
 		$instance = Venue_Map::get_instance();
-		$dirs     = wp_get_upload_dir();
-		$filename = '42-abcdef0123456789abcdef0123456789.png';
-		$url      = trailingslashit( $dirs['baseurl'] )
-			. Venue_Map::UPLOADS_SUBDIR . '/' . $filename;
-		$expected = trailingslashit( $dirs['basedir'] )
-			. Venue_Map::UPLOADS_SUBDIR . '/' . $filename;
 
-		$this->assertSame( $expected, $instance->url_to_path( $url ) );
+		$this->assertNull( $instance->warm( 0, 15, 800, 400, '2/1' ) );
+	}
+
+	/**
+	 * Successful warm() run — returns the descriptor, stores meta, and
+	 * lands the PNG on disk at the deterministic slug-based filename.
+	 *
+	 * @covers ::warm
+	 * @covers ::build_image_url
+	 * @covers ::filename_for
+	 *
+	 * @return void
+	 */
+	public function test_warm_generates_descriptor_on_valid_input(): void {
+		$instance = Venue_Map::get_instance();
+		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
+
+		add_post_meta(
+			$post_id,
+			'gatherpress_venue_information',
+			wp_json_encode(
+				array(
+					'fullAddress' => '1 Infinite Loop',
+					'latitude'    => '37.3318',
+					'longitude'   => '-122.0312',
+				)
+			)
+		);
+
+		$descriptor = $instance->warm( $post_id, 15, 800, 400, '2/1' );
+
+		$this->assertIsArray( $descriptor );
+		$this->assertSame( 15, $descriptor['zoom'] );
+		$this->assertSame( 800, $descriptor['width'] );
+		$this->assertSame( 400, $descriptor['height'] );
+		$this->assertStringEndsWith( '1-infinite-loop-15-800-400.png', $descriptor['url'] );
+	}
+
+	/**
+	 * A second warm() at the same combo hits the cache-hit branch —
+	 * returns the existing descriptor unchanged via build_image_url's
+	 * deterministic URL check, without re-compositing tiles.
+	 *
+	 * @covers ::warm
+	 * @covers ::build_image_url
+	 *
+	 * @return void
+	 */
+	public function test_warm_reuses_descriptor_on_cache_hit(): void {
+		$instance = Venue_Map::get_instance();
+		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
+
+		add_post_meta(
+			$post_id,
+			'gatherpress_venue_information',
+			wp_json_encode(
+				array(
+					'fullAddress' => '1 Infinite Loop',
+					'latitude'    => '37.3318',
+					'longitude'   => '-122.0312',
+				)
+			)
+		);
+
+		$first  = $instance->warm( $post_id, 15, 800, 400, '2/1' );
+		$second = $instance->warm( $post_id, 15, 800, 400, '2/1' );
+
+		$this->assertSame( $first, $second, 'Second warm returns the cached descriptor.' );
+	}
+
+	/**
+	 * An empty/special-only address still produces a valid filename via the
+	 * `venue` fallback; a very long address gets truncated to 150 chars.
+	 *
+	 * @covers ::filename_for
+	 *
+	 * @return void
+	 */
+	public function test_filename_for_handles_edge_cases(): void {
+		$instance = Venue_Map::get_instance();
+
+		// Empty string → fallback slug.
+		$empty = Utility::invoke_hidden_method( $instance, 'filename_for', array( '', 15, 800, 400 ) );
+		$this->assertSame( 'venue-15-800-400.png', $empty );
+
+		// All-special-char input sanitize_title strips to '' → fallback.
+		$weird = Utility::invoke_hidden_method( $instance, 'filename_for', array( '!!!', 15, 800, 400 ) );
+		$this->assertSame( 'venue-15-800-400.png', $weird );
+
+		// Long slugs get truncated so the full filename stays under fs caps.
+		$long    = str_repeat( 'a', 300 );
+		$result  = Utility::invoke_hidden_method( $instance, 'filename_for', array( $long, 18, 600, 300 ) );
+		$matches = array();
+		preg_match( '/^([a-z]+)-18-600-300\.png$/', $result, $matches );
+		$this->assertNotEmpty( $matches, 'Truncated filename still matches the expected pattern.' );
+		$this->assertSame( 150, strlen( $matches[1] ), 'Slug is capped at 150 characters.' );
+	}
+
+	/**
+	 * Returns null from warm() when the venue has no valid coordinates —
+	 * short circuits before the tile compositing stage.
+	 *
+	 * @covers ::warm
+	 *
+	 * @return void
+	 */
+	public function test_warm_returns_null_when_venue_has_no_coordinates(): void {
+		$instance = Venue_Map::get_instance();
+		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
+
+		add_post_meta(
+			$post_id,
+			'gatherpress_venue_information',
+			wp_json_encode(
+				array(
+					'fullAddress' => '1 Infinite Loop, Cupertino CA',
+					'latitude'    => '',
+					'longitude'   => '',
+				)
+			)
+		);
+
+		$this->assertNull( $instance->warm( $post_id, 15, 800, 400, '2/1' ) );
 	}
 
 	/**
@@ -1491,12 +1480,12 @@ class Test_Venue_Map extends Base {
 			37.3318,
 			-122.0312,
 			15,
+			512,
 			256,
 			Venue_Map::DEFAULT_TILE_URL
 		);
 
 		$this->assertInstanceOf( \GdImage::class, $image );
-		// Width is derived from height via IMAGE_ASPECT_RATIO (2.0) → 512×256.
 		$this->assertSame( 512, imagesx( $image ) );
 		$this->assertSame( 256, imagesy( $image ) );
 
@@ -1537,16 +1526,14 @@ class Test_Venue_Map extends Base {
 		$instance = Venue_Map::get_instance();
 		$canvas   = imagecreatetruecolor( 10, 10 );
 
-		// Use a 32-char hex hash matching what hash_for() produces; the
-		// url_to_path allow-list rejects anything else.
-		$hash = str_repeat( 'a', 32 );
-		$url  = $instance->save_image( $canvas, 99, $hash );
+		$url = $instance->save_image( $canvas, '1 Infinite Loop', 15, 800, 400 );
 		imagedestroy( $canvas );
 
 		$this->assertNotNull( $url, 'save_image should return a URL on success.' );
 		$this->assertStringContainsString( Venue_Map::UPLOADS_SUBDIR, $url );
+		$this->assertStringEndsWith( '1-infinite-loop-15-800-400.png', $url );
 
-		$path = $instance->url_to_path( $url );
+		$path = $this->path_for_url( $url );
 		$this->assertFileExists( $path );
 	}
 
@@ -1708,23 +1695,28 @@ class Test_Venue_Map extends Base {
 	}
 
 	/**
-	 * Coverage for combo_key — formats `{zoom}x{height}`.
+	 * Coverage for combo_key — formats `{zoom}x{width}x{height}`.
 	 *
 	 * @covers ::combo_key
 	 *
 	 * @return void
 	 */
-	public function test_combo_key_formats_zoom_and_height(): void {
+	public function test_combo_key_formats_zoom_width_and_height(): void {
 		$instance = Venue_Map::get_instance();
 
 		$this->assertSame(
-			'14x500',
-			Utility::invoke_hidden_method( $instance, 'combo_key', array( 14, 500 ) )
+			'14x800x500',
+			Utility::invoke_hidden_method(
+				$instance,
+				'combo_key',
+				array( 14, 800, 500 )
+			)
 		);
 	}
 
 	/**
-	 * Coverage for get_cached_combos — returns unique (zoom, height) combos.
+	 * Coverage for get_cached_combos — returns unique (zoom, width, height)
+	 * combos.
 	 *
 	 * @covers ::get_cached_combos
 	 *
@@ -1744,16 +1736,18 @@ class Test_Venue_Map extends Base {
 			$post_id,
 			Venue_Map::META_KEY,
 			array(
-				'15x300' => array(
+				'15x600x300'  => array(
 					'url'    => 'https://example.test/a.png',
 					'hash'   => 'abc',
 					'zoom'   => 15,
+					'width'  => 600,
 					'height' => 300,
 				),
-				'18x500' => array(
+				'18x1000x500' => array(
 					'url'    => 'https://example.test/b.png',
 					'hash'   => 'def',
 					'zoom'   => 18,
+					'width'  => 1000,
 					'height' => 500,
 				),
 			)
@@ -1765,6 +1759,7 @@ class Test_Venue_Map extends Base {
 		$this->assertContains(
 			array(
 				'zoom'   => 15,
+				'width'  => 600,
 				'height' => 300,
 			),
 			$combos
@@ -1772,6 +1767,7 @@ class Test_Venue_Map extends Base {
 		$this->assertContains(
 			array(
 				'zoom'   => 18,
+				'width'  => 1000,
 				'height' => 500,
 			),
 			$combos
@@ -1819,6 +1815,7 @@ class Test_Venue_Map extends Base {
 			37.3318,
 			-122.0312,
 			15,
+			512,
 			256,
 			Venue_Map::DEFAULT_TILE_URL
 		);
@@ -1865,6 +1862,7 @@ class Test_Venue_Map extends Base {
 			37.3318,
 			-122.0312,
 			15,
+			512,
 			256,
 			Venue_Map::DEFAULT_TILE_URL
 		);
@@ -1910,6 +1908,7 @@ class Test_Venue_Map extends Base {
 			37.3318,
 			-122.0312,
 			15,
+			512,
 			256,
 			Venue_Map::DEFAULT_TILE_URL
 		);
@@ -1939,7 +1938,7 @@ class Test_Venue_Map extends Base {
 		};
 		add_filter( 'upload_dir', $force_error );
 
-		$url = $instance->save_image( $canvas, 99, 'abc' );
+		$url = $instance->save_image( $canvas, 'test address', 15, 800, 400 );
 
 		remove_filter( 'upload_dir', $force_error );
 		imagedestroy( $canvas );
@@ -2012,5 +2011,561 @@ class Test_Venue_Map extends Base {
 			Utility::invoke_hidden_method( $instance, 'lat_to_world_pixel', array( 0.0, 0 ) ),
 			0.000001
 		);
+	}
+
+	/**
+	 * Coverage for parse_aspect_ratio — valid inputs return the float
+	 * ratio, garbage returns null.
+	 *
+	 * @covers ::parse_aspect_ratio
+	 *
+	 * @return void
+	 */
+	public function test_parse_aspect_ratio(): void {
+		$instance = Venue_Map::get_instance();
+
+		$this->assertEqualsWithDelta(
+			2.0,
+			Utility::invoke_hidden_method( $instance, 'parse_aspect_ratio', array( '2/1' ) ),
+			0.0001
+		);
+		$this->assertEqualsWithDelta(
+			16 / 9,
+			Utility::invoke_hidden_method( $instance, 'parse_aspect_ratio', array( '16/9' ) ),
+			0.0001
+		);
+		// Colon separator is also accepted so the same string can come
+		// straight from a CSS value like "16:9".
+		$this->assertEqualsWithDelta(
+			16 / 9,
+			Utility::invoke_hidden_method( $instance, 'parse_aspect_ratio', array( '16:9' ) ),
+			0.0001
+		);
+		$this->assertNull(
+			Utility::invoke_hidden_method( $instance, 'parse_aspect_ratio', array( '' ) ),
+			'Empty input should return null.'
+		);
+		$this->assertNull(
+			Utility::invoke_hidden_method( $instance, 'parse_aspect_ratio', array( 'not-a-ratio' ) ),
+			'Non-numeric input should return null.'
+		);
+		$this->assertNull(
+			Utility::invoke_hidden_method( $instance, 'parse_aspect_ratio', array( '4/0' ) ),
+			'Zero denominator should return null.'
+		);
+	}
+
+	/**
+	 * Coverage for clamp_width — enforces the WIDTH_MIN..WIDTH_MAX bounds.
+	 *
+	 * @covers ::clamp_width
+	 *
+	 * @return void
+	 */
+	public function test_clamp_width(): void {
+		$instance = Venue_Map::get_instance();
+
+		$this->assertSame(
+			Venue_Map::WIDTH_MIN,
+			Utility::invoke_hidden_method( $instance, 'clamp_width', array( 0 ) )
+		);
+		$this->assertSame(
+			Venue_Map::WIDTH_MAX,
+			Utility::invoke_hidden_method( $instance, 'clamp_width', array( 99999 ) )
+		);
+		$this->assertSame(
+			600,
+			Utility::invoke_hidden_method( $instance, 'clamp_width', array( 600 ) )
+		);
+	}
+
+	/**
+	 * Coverage for resolve_dimensions — derives the missing side from the
+	 * aspect ratio when either width or height is 0 ("auto"), falls back
+	 * to DEFAULT_HEIGHT when both are auto, and clamps both outputs.
+	 *
+	 * @covers ::resolve_dimensions
+	 *
+	 * @return void
+	 */
+	public function test_resolve_dimensions(): void {
+		$instance = Venue_Map::get_instance();
+
+		$both = Utility::invoke_hidden_method(
+			$instance,
+			'resolve_dimensions',
+			array( 800, 400, '2/1' )
+		);
+		$this->assertSame( 800, $both['width'] );
+		$this->assertSame( 400, $both['height'] );
+
+		$auto_w = Utility::invoke_hidden_method(
+			$instance,
+			'resolve_dimensions',
+			array( 0, 400, '2/1' )
+		);
+		$this->assertSame( 800, $auto_w['width'], 'Auto width = height × ratio.' );
+		$this->assertSame( 400, $auto_w['height'] );
+
+		$auto_h = Utility::invoke_hidden_method(
+			$instance,
+			'resolve_dimensions',
+			array( 900, 0, '3/2' )
+		);
+		$this->assertSame( 900, $auto_h['width'] );
+		$this->assertSame( 600, $auto_h['height'], 'Auto height = width ÷ ratio.' );
+
+		$both_auto = Utility::invoke_hidden_method(
+			$instance,
+			'resolve_dimensions',
+			array( 0, 0, '2/1' )
+		);
+		$this->assertSame( Venue_Map::DEFAULT_HEIGHT * 2, $both_auto['width'] );
+		$this->assertSame( Venue_Map::DEFAULT_HEIGHT, $both_auto['height'] );
+
+		// Unparsable ratio string still resolves cleanly — falls back to
+		// the default ratio rather than stranding the generator.
+		$bad_ratio = Utility::invoke_hidden_method(
+			$instance,
+			'resolve_dimensions',
+			array( 0, 400, 'garbage' )
+		);
+		$this->assertSame( 800, $bad_ratio['width'] );
+		$this->assertSame( 400, $bad_ratio['height'] );
+
+		// Out-of-range inputs get clamped to the supported bounds.
+		$too_big = Utility::invoke_hidden_method(
+			$instance,
+			'resolve_dimensions',
+			array( 99999, 99999, '2/1' )
+		);
+		$this->assertSame( Venue_Map::WIDTH_MAX, $too_big['width'] );
+		$this->assertSame( Venue_Map::HEIGHT_MAX, $too_big['height'] );
+	}
+
+	/**
+	 * Wipes cached descriptors + PNG files and rebuilds entries for every
+	 * combo the venue was previously cached at, returning the fresh
+	 * descriptor map.
+	 *
+	 * @covers ::regenerate
+	 *
+	 * @return void
+	 */
+	public function test_regenerate_rebuilds_cached_combos(): void {
+		$instance = Venue_Map::get_instance();
+		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
+
+		add_post_meta(
+			$post_id,
+			'gatherpress_venue_information',
+			wp_json_encode(
+				array(
+					'fullAddress' => '1 Infinite Loop',
+					'latitude'    => '37.3318',
+					'longitude'   => '-122.0312',
+				)
+			)
+		);
+		$instance->maybe_generate( $post_id );
+		// Warm a second combo so regenerate has two variants to cover.
+		$instance->get_url_for_post( $post_id, Venue::POST_TYPE, 14, 0, 500, '' );
+
+		$before = $instance->get_all_descriptors( $post_id );
+		$this->assertCount( 2, $before );
+
+		// Mark the pre-regenerate files so we can detect rewrites below.
+		// When inputs are unchanged the hash (and therefore the filename)
+		// stays the same, so we can't rely on url comparison alone — mtime
+		// is the signal that the tile fetch + compositing ran again.
+		$pre_mtimes = array();
+		foreach ( $before as $combo_key => $descriptor ) {
+			$path                     = (string) $this->path_for_url( $descriptor['url'] );
+			$pre_mtimes[ $combo_key ] = filemtime( $path );
+		}
+		sleep( 1 );
+
+		$result = $instance->regenerate( $post_id );
+
+		$this->assertCount(
+			2,
+			$result,
+			'regenerate() should return a descriptor for each previously cached combo.'
+		);
+
+		foreach ( $before as $combo_key => $old ) {
+			$this->assertArrayHasKey( $combo_key, $result );
+			$path = (string) $this->path_for_url( $result[ $combo_key ]['url'] );
+			$this->assertFileExists(
+				$path,
+				sprintf( 'Post-regenerate PNG for %s should exist on disk.', $combo_key )
+			);
+			$this->assertGreaterThan(
+				$pre_mtimes[ $combo_key ],
+				filemtime( $path ),
+				sprintf( 'Post-regenerate PNG for %s should have been rewritten.', $combo_key )
+			);
+		}
+	}
+
+	/**
+	 * When the caller supplies an extra (zoom, height), regenerate() adds
+	 * that combo to the rebuild list so the block editor's current combo
+	 * always gets a PNG on an explicit Generate click — even if the venue
+	 * was previously cached at different combos only.
+	 *
+	 * @covers ::regenerate
+	 *
+	 * @return void
+	 */
+	public function test_regenerate_includes_caller_supplied_combo(): void {
+		$instance = Venue_Map::get_instance();
+		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
+
+		add_post_meta(
+			$post_id,
+			'gatherpress_venue_information',
+			wp_json_encode(
+				array(
+					'fullAddress' => '1 Infinite Loop',
+					'latitude'    => '37.3318',
+					'longitude'   => '-122.0312',
+				)
+			)
+		);
+		// Seed one cached combo the venue "already had".
+		$instance->maybe_generate( $post_id );
+
+		$result = $instance->regenerate( $post_id, 8, 0, 295, '' );
+
+		// Auto-width at 2:1 on height 295 → 590.
+		$expected_key = '8x590x295';
+		$this->assertArrayHasKey(
+			$expected_key,
+			$result,
+			'The caller-supplied combo must be included in the rebuild.'
+		);
+		$this->assertSame( 8, $result[ $expected_key ]['zoom'] );
+		$this->assertSame( 590, $result[ $expected_key ]['width'] );
+		$this->assertSame( 295, $result[ $expected_key ]['height'] );
+	}
+
+	/**
+	 * When the caller-supplied combo duplicates one that's already cached,
+	 * it's deduped and only rendered once — no double-work.
+	 *
+	 * @covers ::regenerate
+	 *
+	 * @return void
+	 */
+	public function test_regenerate_dedupes_caller_combo_against_cache(): void {
+		$instance = Venue_Map::get_instance();
+		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
+
+		add_post_meta(
+			$post_id,
+			'gatherpress_venue_information',
+			wp_json_encode(
+				array(
+					'fullAddress' => '1 Infinite Loop',
+					'latitude'    => '37.3318',
+					'longitude'   => '-122.0312',
+				)
+			)
+		);
+		$instance->maybe_generate( $post_id );
+
+		$result = $instance->regenerate(
+			$post_id,
+			Venue_Map::DEFAULT_ZOOM,
+			Venue_Map::DEFAULT_HEIGHT * 2,
+			Venue_Map::DEFAULT_HEIGHT,
+			''
+		);
+
+		$this->assertCount(
+			1,
+			$result,
+			'Supplying the already-cached combo should not add a duplicate entry.'
+		);
+	}
+
+	/**
+	 * Calling regenerate() on a venue that has never been rendered seeds
+	 * the site-default combo, so an explicit "Generate" click on a fresh
+	 * venue still produces a PNG.
+	 *
+	 * @covers ::regenerate
+	 *
+	 * @return void
+	 */
+	public function test_regenerate_seeds_default_combo_when_nothing_cached(): void {
+		$instance = Venue_Map::get_instance();
+		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
+
+		add_post_meta(
+			$post_id,
+			'gatherpress_venue_information',
+			wp_json_encode(
+				array(
+					'fullAddress' => '1 Infinite Loop',
+					'latitude'    => '37.3318',
+					'longitude'   => '-122.0312',
+				)
+			)
+		);
+
+		$this->assertEmpty( $instance->get_all_descriptors( $post_id ) );
+
+		$result = $instance->regenerate( $post_id );
+
+		$default_key = sprintf(
+			'%dx%dx%d',
+			Venue_Map::DEFAULT_ZOOM,
+			Venue_Map::DEFAULT_HEIGHT * 2,
+			Venue_Map::DEFAULT_HEIGHT
+		);
+		$this->assertArrayHasKey( $default_key, $result );
+	}
+
+	/**
+	 * Without usable coordinates, regenerate() returns an empty map and
+	 * does not attempt to render — the button on the client side stays in
+	 * its "Add an address to generate the map" placeholder state.
+	 *
+	 * @covers ::regenerate
+	 *
+	 * @return void
+	 */
+	public function test_regenerate_returns_empty_when_no_coordinates(): void {
+		$instance = Venue_Map::get_instance();
+		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
+
+		add_post_meta(
+			$post_id,
+			'gatherpress_venue_information',
+			wp_json_encode(
+				array(
+					'fullAddress' => 'Somewhere, somewhere',
+					'latitude'    => '',
+					'longitude'   => '',
+				)
+			)
+		);
+
+		$this->assertSame( array(), $instance->regenerate( $post_id ) );
+	}
+
+	/**
+	 * The POST /venue/{id}/regenerate-map endpoint requires edit_post on
+	 * the target venue — anonymous callers receive 401/403.
+	 *
+	 * @covers ::register_rest_routes
+	 *
+	 * @return void
+	 */
+	public function test_rest_regenerate_requires_edit_post(): void {
+		$instance = Venue_Map::get_instance();
+		$instance->register_rest_routes();
+
+		$post_id = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
+
+		wp_set_current_user( 0 );
+
+		$request  = new \WP_REST_Request(
+			'POST',
+			sprintf( '/%s/venue/%d/regenerate-map', GATHERPRESS_REST_NAMESPACE, $post_id )
+		);
+		$response = rest_do_request( $request );
+
+		$this->assertGreaterThanOrEqual( 400, $response->get_status() );
+		$this->assertLessThan( 500, $response->get_status() );
+	}
+
+	/**
+	 * Happy-path REST call: an editor-level user regenerates a venue with
+	 * usable coordinates and gets the fresh descriptor map in the response.
+	 *
+	 * @covers ::register_rest_routes
+	 * @covers ::rest_regenerate
+	 *
+	 * @return void
+	 */
+	public function test_rest_regenerate_returns_fresh_descriptors(): void {
+		$instance = Venue_Map::get_instance();
+		$instance->register_rest_routes();
+
+		$editor_id = $this->factory->user->create( array( 'role' => 'editor' ) );
+		$post_id   = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
+
+		add_post_meta(
+			$post_id,
+			'gatherpress_venue_information',
+			wp_json_encode(
+				array(
+					'fullAddress' => '1 Infinite Loop',
+					'latitude'    => '37.3318',
+					'longitude'   => '-122.0312',
+				)
+			)
+		);
+
+		wp_set_current_user( $editor_id );
+
+		$request  = new \WP_REST_Request(
+			'POST',
+			sprintf( '/%s/venue/%d/regenerate-map', GATHERPRESS_REST_NAMESPACE, $post_id )
+		);
+		$response = rest_do_request( $request );
+
+		$this->assertSame( 200, $response->get_status() );
+
+		$data = $response->get_data();
+		$this->assertArrayHasKey( 'descriptors', $data );
+		$this->assertSame( '', $data['reason'] );
+
+		$default_key = sprintf(
+			'%dx%dx%d',
+			Venue_Map::DEFAULT_ZOOM,
+			Venue_Map::DEFAULT_HEIGHT * 2,
+			Venue_Map::DEFAULT_HEIGHT
+		);
+		$this->assertArrayHasKey( $default_key, (array) $data['descriptors'] );
+	}
+
+	/**
+	 * When the venue has no address, the REST endpoint returns a 200 with
+	 * a structured reason so the client can render the appropriate
+	 * placeholder rather than a generic error state.
+	 *
+	 * @covers ::rest_regenerate
+	 *
+	 * @return void
+	 */
+	public function test_rest_regenerate_reports_no_address_reason(): void {
+		$instance = Venue_Map::get_instance();
+		$instance->register_rest_routes();
+
+		$editor_id = $this->factory->user->create( array( 'role' => 'editor' ) );
+		$post_id   = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
+
+		wp_set_current_user( $editor_id );
+
+		$request  = new \WP_REST_Request(
+			'POST',
+			sprintf( '/%s/venue/%d/regenerate-map', GATHERPRESS_REST_NAMESPACE, $post_id )
+		);
+		$response = rest_do_request( $request );
+
+		$this->assertSame( 200, $response->get_status() );
+		$data = $response->get_data();
+		$this->assertSame( 'no_address', $data['reason'] );
+	}
+
+	/**
+	 * When the address is set but not yet geocoded (empty lat/lng), the
+	 * endpoint reports `awaiting_geocode` so the client shows the "Save
+	 * the venue first" placeholder instead of treating it as a failure.
+	 *
+	 * @covers ::rest_regenerate
+	 *
+	 * @return void
+	 */
+	/**
+	 * Reports a `generation_failed` reason when the venue has coordinates
+	 * but every combo's PNG write fails. Simulated here by putting the
+	 * uploads dir in an error state so `save_image` returns null and the
+	 * regenerate() call comes back with an empty descriptor map.
+	 *
+	 * @covers ::rest_regenerate
+	 *
+	 * @return void
+	 */
+	public function test_rest_regenerate_reports_generation_failed_when_saves_fail(): void {
+		$instance = Venue_Map::get_instance();
+		$instance->register_rest_routes();
+
+		$editor_id = $this->factory->user->create( array( 'role' => 'editor' ) );
+		$post_id   = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
+
+		add_post_meta(
+			$post_id,
+			'gatherpress_venue_information',
+			wp_json_encode(
+				array(
+					'fullAddress' => '1 Infinite Loop',
+					'latitude'    => '37.3318',
+					'longitude'   => '-122.0312',
+				)
+			)
+		);
+
+		wp_set_current_user( $editor_id );
+
+		// Force save_image to fail for every combo so regenerate() returns
+		// an empty array and the REST handler enters the generation_failed
+		// branch.
+		$force_error = static function ( $dirs ) {
+			$dirs['error'] = 'Simulated uploads failure.';
+			return $dirs;
+		};
+		add_filter( 'upload_dir', $force_error );
+
+		$request = new \WP_REST_Request(
+			'POST',
+			sprintf( '/%s/venue/%d/regenerate-map', GATHERPRESS_REST_NAMESPACE, $post_id )
+		);
+		$request->set_param( 'zoom', 15 );
+		$request->set_param( 'width', 800 );
+		$request->set_param( 'height', 400 );
+		$request->set_param( 'aspect_ratio', '2/1' );
+
+		$response = rest_do_request( $request );
+
+		remove_filter( 'upload_dir', $force_error );
+
+		$this->assertSame( 200, $response->get_status() );
+		$data = $response->get_data();
+		$this->assertSame( 'generation_failed', $data['reason'] );
+	}
+
+	/**
+	 * Reports the `awaiting_geocode` reason when the venue has an address
+	 * but no resolved coordinates yet.
+	 *
+	 * @covers ::rest_regenerate
+	 *
+	 * @return void
+	 */
+	public function test_rest_regenerate_reports_awaiting_geocode_reason(): void {
+		$instance = Venue_Map::get_instance();
+		$instance->register_rest_routes();
+
+		$editor_id = $this->factory->user->create( array( 'role' => 'editor' ) );
+		$post_id   = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
+
+		add_post_meta(
+			$post_id,
+			'gatherpress_venue_information',
+			wp_json_encode(
+				array(
+					'fullAddress' => 'Somewhere',
+					'latitude'    => '',
+					'longitude'   => '',
+				)
+			)
+		);
+
+		wp_set_current_user( $editor_id );
+
+		$request  = new \WP_REST_Request(
+			'POST',
+			sprintf( '/%s/venue/%d/regenerate-map', GATHERPRESS_REST_NAMESPACE, $post_id )
+		);
+		$response = rest_do_request( $request );
+
+		$this->assertSame( 200, $response->get_status() );
+		$data = $response->get_data();
+		$this->assertSame( 'awaiting_geocode', $data['reason'] );
 	}
 }

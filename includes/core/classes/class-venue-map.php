@@ -27,6 +27,9 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Traits\Singleton;
 use WP_Post;
+use WP_REST_Request;
+use WP_REST_Response;
+use WP_REST_Server;
 
 /**
  * Class Venue_Map.
@@ -107,7 +110,39 @@ class Venue_Map {
 	 * @since 1.0.0
 	 * @var int
 	 */
-	const HEIGHT_MAX = 800;
+	const HEIGHT_MAX = 4000;
+
+	/**
+	 * Bounds for the pixel width. Mirror of HEIGHT_MIN / HEIGHT_MAX but
+	 * scaled to the 2:1 default ratio — a venue map that's 800 tall can
+	 * be up to 1600 wide. The block exposes both dimensions so users can
+	 * pick any concrete width, but the generator still refuses values
+	 * that would allocate gigabytes of GD memory or fetch hundreds of
+	 * tiles.
+	 *
+	 * @since 1.0.0
+	 * @var int
+	 */
+	const WIDTH_MIN = 100;
+
+	/**
+	 * See self::WIDTH_MIN.
+	 *
+	 * @since 1.0.0
+	 * @var int
+	 */
+	const WIDTH_MAX = 4000;
+
+	/**
+	 * Default aspect ratio string used when the block's `aspectRatio`
+	 * attribute is empty or unparsable. Format matches the CSS
+	 * `aspect-ratio` property so the same value can drive the server-side
+	 * width derivation and the client-side CSS on the interactive wrapper.
+	 *
+	 * @since 1.0.0
+	 * @var string
+	 */
+	const DEFAULT_ASPECT_RATIO = '2/1';
 
 	/**
 	 * Total wall-clock budget (in seconds) for a single composite_image()
@@ -174,18 +209,6 @@ class Venue_Map {
 	const META_KEY = 'gatherpress_venue_static_map';
 
 	/**
-	 * Meta key for the per-venue filename salt.
-	 *
-	 * Underscore prefix marks it as a protected WordPress meta key —
-	 * not exposed through REST by default and not writable from the
-	 * admin Custom Fields box.
-	 *
-	 * @since 1.0.0
-	 * @var string
-	 */
-	const SALT_META_KEY = '_gatherpress_venue_map_salt';
-
-	/**
 	 * Subdirectory of `wp-content/uploads` where generated PNG files are written.
 	 *
 	 * @since 1.0.0
@@ -218,7 +241,81 @@ class Venue_Map {
 		// ordering surprises.
 		add_action( 'wp_after_insert_post', array( $this, 'maybe_generate' ), 11 );
 		add_action( 'registered_post_type', array( $this, 'maybe_register_delete_hook' ) );
+		add_action( 'rest_api_init', array( $this, 'register_rest_routes' ) );
 		add_filter( 'block_type_metadata', array( $this, 'apply_block_attribute_defaults' ) );
+	}
+
+	/**
+	 * Register REST routes for the venue-map block.
+	 *
+	 * Today there's a single endpoint that forces the static PNG files for a
+	 * venue to regenerate — used by the "Regenerate Map" button in the
+	 * block editor when a tile provider changes or a render gets out of
+	 * sync with the venue's current inputs.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return void
+	 */
+	public function register_rest_routes(): void {
+		register_rest_route(
+			GATHERPRESS_REST_NAMESPACE,
+			'/venue/(?P<id>\d+)/regenerate-map',
+			array(
+				'methods'             => WP_REST_Server::CREATABLE,
+				'callback'            => array( $this, 'rest_regenerate' ),
+				'permission_callback' => static function ( WP_REST_Request $request ): bool {
+					$post_id = (int) $request['id'];
+
+					// Permission scope is the venue post itself — anyone who can
+					// edit the venue can force its map to regenerate. Admins with
+					// edit_others_posts go through the same check.
+					return current_user_can( 'edit_post', $post_id );
+				},
+				'args'                => array(
+					'id'           => array(
+						'required'          => true,
+						'type'              => 'integer',
+						'sanitize_callback' => 'absint',
+						'validate_callback' => static function ( $value ): bool {
+							$post_id = (int) $value;
+
+							return $post_id > 0
+								&& post_type_supports(
+									(string) get_post_type( $post_id ),
+									'gatherpress-venue-information'
+								);
+						},
+					),
+					// Optional: the combo the client is currently displaying. If
+					// provided, that combo is added to the regenerate list so a
+					// "Generate" click from the block placeholder produces a PNG
+					// for the active (zoom, width, height) combo even when it has
+					// never been rendered before. `width` and `height` may be 0
+					// ("auto") — the aspect-ratio hint then drives derivation.
+					'zoom'         => array(
+						'required'          => false,
+						'type'              => 'integer',
+						'sanitize_callback' => 'absint',
+					),
+					'width'        => array(
+						'required'          => false,
+						'type'              => 'integer',
+						'sanitize_callback' => 'absint',
+					),
+					'height'       => array(
+						'required'          => false,
+						'type'              => 'integer',
+						'sanitize_callback' => 'absint',
+					),
+					'aspect_ratio' => array(
+						'required'          => false,
+						'type'              => 'string',
+						'sanitize_callback' => 'sanitize_text_field',
+					),
+				),
+			)
+		);
 	}
 
 	/**
@@ -241,11 +338,20 @@ class Venue_Map {
 		}
 
 		$settings = Settings::get_instance();
+
+		// Width and height keep empty as a distinct "not set — fall through
+		// to the block.json default" state; an explicit 0 still stamps as
+		// "auto", so the validator below must reject null but accept 0.
+		$raw_width  = $settings->get( 'venue_map_default_width' );
+		$raw_height = $settings->get( 'venue_map_default_height' );
+
 		$defaults = array(
-			'renderMode' => (string) $settings->get( 'venue_map_default_render_mode' ),
-			'zoom'       => (int) $settings->get( 'venue_map_default_zoom' ),
-			'height'     => (int) $settings->get( 'venue_map_default_height' ),
-			'type'       => (string) $settings->get( 'venue_map_default_type' ),
+			'renderMode'  => (string) $settings->get( 'venue_map_default_render_mode' ),
+			'zoom'        => (int) $settings->get( 'venue_map_default_zoom' ),
+			'width'       => '' === $raw_width ? null : (int) $raw_width,
+			'height'      => '' === $raw_height ? null : (int) $raw_height,
+			'aspectRatio' => (string) $settings->get( 'venue_map_default_aspect_ratio' ),
+			'type'        => (string) $settings->get( 'venue_map_default_type' ),
 		);
 
 		// Per-attribute validators so a never-written Settings row (empty
@@ -256,20 +362,31 @@ class Venue_Map {
 		// it would have accepted e.g. `renderMode = '0'`. All closures are
 		// static because none of them capture `$this`.
 		$validators = array(
-			'renderMode' => static function ( $value ): bool {
+			'renderMode'  => static function ( $value ): bool {
 				return in_array( $value, array( 'interactive', 'static' ), true );
 			},
-			'zoom'       => static function ( $value ): bool {
+			'zoom'        => static function ( $value ): bool {
 				return is_int( $value )
 					&& $value >= self::ZOOM_MIN
 					&& $value <= self::ZOOM_MAX;
 			},
-			'height'     => static function ( $value ): bool {
+			'width'       => static function ( $value ): bool {
+				// 0 means "auto" and is a valid default value.
 				return is_int( $value )
-					&& $value >= self::HEIGHT_MIN
+					&& $value >= 0
+					&& $value <= self::WIDTH_MAX;
+			},
+			'height'      => static function ( $value ): bool {
+				// 0 means "auto" and is a valid default value.
+				return is_int( $value )
+					&& $value >= 0
 					&& $value <= self::HEIGHT_MAX;
 			},
-			'type'       => static function ( $value ): bool {
+			'aspectRatio' => function ( $value ): bool {
+				return is_string( $value )
+					&& null !== $this->parse_aspect_ratio( $value );
+			},
+			'type'        => static function ( $value ): bool {
 				return in_array(
 					$value,
 					array( 'roadmap', 'satellite', 'hybrid', 'terrain' ),
@@ -355,24 +472,37 @@ class Venue_Map {
 			return;
 		}
 
-		// Regenerate every (zoom, height) combo the venue is already cached
-		// at so a content change (new address/coords) cascades to all cached
-		// variants. For a fresh venue with nothing stored, seed the default
-		// combo that newly-inserted venue-map blocks will actually request —
-		// otherwise the editor falls back to the interactive preview on the
-		// very first save because the default cache entry is missing.
+		// Regenerate every (zoom, width, height) combo the venue is already
+		// cached at so a content change (new address/coords) cascades to
+		// all cached variants. For a fresh venue with nothing stored, seed
+		// the default combo that newly-inserted venue-map blocks will
+		// actually request — otherwise the editor falls back to the
+		// interactive preview on the very first save because the default
+		// cache entry is missing.
 		$combos = $this->get_cached_combos( $post_id );
 		if ( empty( $combos ) ) {
-			$combos = array(
+			$default = $this->resolve_dimensions(
+				0,
+				$this->get_height(),
+				self::DEFAULT_ASPECT_RATIO
+			);
+			$combos  = array(
 				array(
 					'zoom'   => $this->get_zoom(),
-					'height' => $this->get_height(),
+					'width'  => $default['width'],
+					'height' => $default['height'],
 				),
 			);
 		}
 
 		foreach ( $combos as $combo ) {
-			$this->ensure_descriptor_for_combo( $post_id, $info, $combo['zoom'], $combo['height'] );
+			$this->ensure_descriptor_for_combo(
+				$post_id,
+				$info,
+				$combo['zoom'],
+				$combo['width'],
+				$combo['height']
+			);
 		}
 	}
 
@@ -385,11 +515,197 @@ class Venue_Map {
 	 * @return void
 	 */
 	public function delete_stored_image( int $post_id ): void {
-		foreach ( $this->get_all_descriptors( $post_id ) as $descriptor ) {
-			$this->delete_file_by_url( $descriptor['url'] );
+		// Filenames are derived from address + dims, so the same PNG on disk
+		// may be shared with other venues at the same address. Clearing the
+		// meta is enough — a follow-up GC pass can sweep truly orphaned
+		// files when no venue's descriptor points at them any longer.
+		delete_post_meta( $post_id, self::META_KEY );
+	}
+
+	/**
+	 * Force-regenerate the static maps for a venue.
+	 *
+	 * Clears every cached descriptor + PNG, then runs the normal
+	 * `maybe_generate()` flow to recreate images for each combo the venue
+	 * was previously cached at. When the caller supplies an extra
+	 * `(zoom, height)` — typically the combo the block editor is currently
+	 * displaying — that combo is added to the list so a "Generate" click
+	 * from the placeholder produces a PNG for it even if the combo has
+	 * never been cached before. For a venue that has no cached combos
+	 * and no caller-supplied one, the site-default combo seeds the run.
+	 *
+	 * Returns the fresh descriptor map so the caller — typically the block
+	 * editor's "Regenerate Map" REST endpoint — can hand the new URLs
+	 * straight back to the client without a second DB round-trip.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param int      $post_id            The venue post ID.
+	 * @param int|null $extra_zoom         Optional extra zoom to include.
+	 * @param int|null $extra_width        Optional extra width (0 = auto).
+	 * @param int|null $extra_height       Optional extra height (0 = auto).
+	 * @param string   $extra_aspect_ratio Optional aspect ratio hint for the extra combo.
+	 * @return array<string, array{url: string, hash: string, zoom: int, width: int, height: int}>
+	 */
+	public function regenerate(
+		int $post_id,
+		?int $extra_zoom = null,
+		?int $extra_width = null,
+		?int $extra_height = null,
+		string $extra_aspect_ratio = ''
+	): array {
+		// Cache the combos we want to rebuild before wiping meta —
+		// delete_stored_image() clears META_KEY, which is where
+		// get_cached_combos() reads from.
+		$combos = $this->get_cached_combos( $post_id );
+
+		// Merge the caller-supplied combo in, resolving dims when either
+		// width or height is left as "auto".
+		if ( null !== $extra_zoom ) {
+			$resolved = $this->resolve_dimensions(
+				(int) ( $extra_width ?? 0 ),
+				(int) ( $extra_height ?? 0 ),
+				$extra_aspect_ratio
+			);
+			$combos[] = array(
+				'zoom'   => (int) $extra_zoom,
+				'width'  => $resolved['width'],
+				'height' => $resolved['height'],
+			);
 		}
 
-		delete_post_meta( $post_id, self::META_KEY );
+		$seen   = array();
+		$unique = array();
+		foreach ( $combos as $combo ) {
+			$key = $this->combo_key(
+				$this->clamp_zoom( (int) $combo['zoom'] ),
+				$this->clamp_width( (int) $combo['width'] ),
+				$this->clamp_height( (int) $combo['height'] )
+			);
+
+			if ( isset( $seen[ $key ] ) ) {
+				continue;
+			}
+
+			$seen[ $key ] = true;
+			$unique[]     = $combo;
+		}
+		$combos = $unique;
+
+		$this->delete_stored_image( $post_id );
+
+		if ( empty( $combos ) ) {
+			// Seed the site-default combo so a never-rendered venue still
+			// ends up with a PNG after an explicit regenerate click.
+			$default = $this->resolve_dimensions(
+				0,
+				$this->get_height(),
+				self::DEFAULT_ASPECT_RATIO
+			);
+			$combos  = array(
+				array(
+					'zoom'   => $this->get_zoom(),
+					'width'  => $default['width'],
+					'height' => $default['height'],
+				),
+			);
+		}
+
+		$venue = new Venue( $post_id );
+		$info  = $venue->get_information();
+
+		if ( null === $this->parse_coord( $info['latitude'] ) ||
+			null === $this->parse_coord( $info['longitude'] ) ) {
+			return array();
+		}
+
+		foreach ( $combos as $combo ) {
+			$this->ensure_descriptor_for_combo(
+				$post_id,
+				$info,
+				$combo['zoom'],
+				$combo['width'],
+				$combo['height']
+			);
+		}
+
+		return $this->get_all_descriptors( $post_id );
+	}
+
+	/**
+	 * REST handler for `POST /venue/{id}/regenerate-map`.
+	 *
+	 * Returns the fresh descriptor map on success. When the venue has no
+	 * usable coordinates yet (address hasn't geocoded), returns an empty
+	 * descriptors array and a structured `reason` so the client can show
+	 * the right placeholder instead of a generic error.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param WP_REST_Request $request The REST request.
+	 * @return WP_REST_Response
+	 */
+	public function rest_regenerate( WP_REST_Request $request ): WP_REST_Response {
+		nocache_headers();
+
+		$post_id     = (int) $request['id'];
+		$venue       = new Venue( $post_id );
+		$info        = $venue->get_information();
+		$latitude    = $this->parse_coord( $info['latitude'] );
+		$longitude   = $this->parse_coord( $info['longitude'] );
+		$has_address = '' !== trim( (string) $info['fullAddress'] );
+
+		if ( ! $has_address || null === $latitude || null === $longitude ) {
+			return new WP_REST_Response(
+				array(
+					'descriptors' => (object) array(),
+					'reason'      => $has_address ? 'awaiting_geocode' : 'no_address',
+				),
+				200
+			);
+		}
+
+		// Pass the block's current combo through so its PNG is generated
+		// even when the venue has never been rendered at those dimensions.
+		// `width` and `height` may be 0 / omitted (meaning "auto") — the
+		// aspect-ratio hint then drives whichever dimension is missing.
+		$raw_zoom     = $request['zoom'] ?? null;
+		$raw_width    = $request['width'] ?? null;
+		$raw_height   = $request['height'] ?? null;
+		$extra_zoom   = ( null !== $raw_zoom && (int) $raw_zoom > 0 ) ? (int) $raw_zoom : null;
+		$extra_width  = ( null !== $raw_width && (int) $raw_width >= 0 ) ? (int) $raw_width : null;
+		$extra_height = ( null !== $raw_height && (int) $raw_height >= 0 ) ? (int) $raw_height : null;
+		$aspect       = (string) ( $request['aspect_ratio'] ?? '' );
+
+		$descriptors = $this->regenerate(
+			$post_id,
+			$extra_zoom,
+			$extra_width,
+			$extra_height,
+			$aspect
+		);
+
+		// An empty descriptor map for a geocoded venue means every combo
+		// failed — disk write error, GD missing, tile host unreachable past
+		// COMPOSITE_TIME_BUDGET. Surface it with a distinct reason so the
+		// UI can flag the failure instead of rendering as a silent success.
+		if ( empty( $descriptors ) ) {
+			return new WP_REST_Response(
+				array(
+					'descriptors' => (object) array(),
+					'reason'      => 'generation_failed',
+				),
+				200
+			);
+		}
+
+		return new WP_REST_Response(
+			array(
+				'descriptors' => $descriptors,
+				'reason'      => '',
+			),
+			200
+		);
 	}
 
 	/**
@@ -407,17 +723,21 @@ class Venue_Map {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param int      $post_id   Event or venue post ID.
-	 * @param string   $post_type The post type of `$post_id`.
-	 * @param int|null $zoom      Desired zoom level. Null falls back to the default.
-	 * @param int|null $height    Desired pixel height. Null falls back to the default.
+	 * @param int      $post_id      Event or venue post ID.
+	 * @param string   $post_type    The post type of `$post_id`.
+	 * @param int|null $zoom         Desired zoom level. Null falls back to the default.
+	 * @param int|null $width        Desired pixel width (0/null = auto).
+	 * @param int|null $height       Desired pixel height (0/null = auto).
+	 * @param string   $aspect_ratio Aspect-ratio hint used to derive any auto dimension.
 	 * @return string Static map URL, or '' when unavailable.
 	 */
 	public function get_url_for_post(
 		int $post_id,
 		string $post_type,
 		?int $zoom = null,
-		?int $height = null
+		?int $width = null,
+		?int $height = null,
+		string $aspect_ratio = ''
 	): string {
 		$venue_post_id = 0;
 
@@ -442,19 +762,75 @@ class Venue_Map {
 			return '';
 		}
 
+		$resolved = $this->resolve_dimensions(
+			(int) ( $width ?? 0 ),
+			(int) ( $height ?? $this->get_height() ),
+			'' !== $aspect_ratio ? $aspect_ratio : self::DEFAULT_ASPECT_RATIO
+		);
+
 		$descriptor = $this->ensure_descriptor_for_combo(
 			$venue_post_id,
 			$info,
 			$zoom ?? $this->get_zoom(),
-			$height ?? $this->get_height()
+			$resolved['width'],
+			$resolved['height']
 		);
 
 		return null === $descriptor ? '' : $descriptor['url'];
 	}
 
 	/**
-	 * Return the descriptor for the default (zoom, height) combo, or null if
-	 * nothing is stored.
+	 * Ensure a static-map descriptor exists for the given combo.
+	 *
+	 * Thin public wrapper around {@see self::ensure_descriptor_for_combo()} for
+	 * prewarming callers (cron, CLI). Resolves venue info from the post,
+	 * validates coordinates, derives any auto dimension via the aspect ratio,
+	 * and returns the descriptor (or null when the venue has no usable
+	 * coordinates yet or generation failed).
+	 *
+	 * Idempotent — when the hash matches an already-cached PNG the call is a
+	 * no-op DB read, so it's safe to enqueue the same (venue, combo) job
+	 * multiple times while a site is churning saves.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param int    $post_id      Venue post ID.
+	 * @param int    $zoom         Zoom level.
+	 * @param int    $width        Pixel width (0 = auto).
+	 * @param int    $height       Pixel height (0 = auto).
+	 * @param string $aspect_ratio Aspect-ratio string (e.g. "16/9").
+	 * @return array{url: string, hash: string, zoom: int, width: int, height: int}|null
+	 */
+	public function warm( int $post_id, int $zoom, int $width, int $height, string $aspect_ratio = '' ): ?array {
+		if ( 0 >= $post_id ) {
+			return null;
+		}
+
+		$info = ( new Venue( $post_id ) )->get_information();
+
+		if ( null === $this->parse_coord( $info['latitude'] ) ||
+			null === $this->parse_coord( $info['longitude'] ) ) {
+			return null;
+		}
+
+		$resolved = $this->resolve_dimensions(
+			$width,
+			$height,
+			'' !== $aspect_ratio ? $aspect_ratio : self::DEFAULT_ASPECT_RATIO
+		);
+
+		return $this->ensure_descriptor_for_combo(
+			$post_id,
+			$info,
+			$zoom,
+			$resolved['width'],
+			$resolved['height']
+		);
+	}
+
+	/**
+	 * Return the descriptor for the default (zoom, width, height) combo, or
+	 * null if nothing is stored.
 	 *
 	 * Convenience for the common "has this venue been rendered at the site
 	 * defaults yet?" question — production render paths resolve a specific
@@ -464,16 +840,26 @@ class Venue_Map {
 	 * @since 1.0.0
 	 *
 	 * @param int $post_id The venue post ID.
-	 * @return array{url: string, hash: string, zoom: int, height: int}|null
+	 * @return array{url: string, hash: string, zoom: int, width: int, height: int}|null
 	 */
 	public function get_stored_descriptor( int $post_id ): ?array {
-		$all = $this->get_all_descriptors( $post_id );
+		$all      = $this->get_all_descriptors( $post_id );
+		$defaults = $this->resolve_dimensions(
+			0,
+			$this->get_height(),
+			self::DEFAULT_ASPECT_RATIO
+		);
 
-		return $all[ $this->combo_key( $this->get_zoom(), $this->get_height() ) ] ?? null;
+		return $all[ $this->combo_key(
+			$this->get_zoom(),
+			$defaults['width'],
+			$defaults['height']
+		) ] ?? null;
 	}
 
 	/**
-	 * Return every stored descriptor for the venue, keyed by `{zoom}x{height}`.
+	 * Return every stored descriptor for the venue, keyed by
+	 * `{zoom}x{width}x{height}`.
 	 *
 	 * Filters out malformed entries so callers can iterate without defensive
 	 * shape checks. The read path itself does not persist the cleaned map —
@@ -485,7 +871,7 @@ class Venue_Map {
 	 * @since 1.0.0
 	 *
 	 * @param int $post_id The venue post ID.
-	 * @return array<string, array{url: string, hash: string, zoom: int, height: int}>
+	 * @return array<string, array{url: string, hash: string, zoom: int, width: int, height: int}>
 	 */
 	public function get_all_descriptors( int $post_id ): array {
 		$raw = get_post_meta( $post_id, self::META_KEY, true );
@@ -502,11 +888,13 @@ class Venue_Map {
 			}
 
 			$zoom   = isset( $entry['zoom'] ) ? (int) $entry['zoom'] : 0;
+			$width  = isset( $entry['width'] ) ? (int) $entry['width'] : 0;
 			$height = isset( $entry['height'] ) ? (int) $entry['height'] : 0;
 
-			// Without a zoom/height on the entry there's no way to know which
-			// block configuration the file belongs to — skip rather than guess.
-			if ( $zoom <= 0 || $height <= 0 ) {
+			// Without concrete zoom/width/height on the entry there's no way
+			// to know which block configuration the file belongs to — skip
+			// rather than guess.
+			if ( $zoom <= 0 || $width <= 0 || $height <= 0 ) {
 				continue;
 			}
 
@@ -514,6 +902,7 @@ class Venue_Map {
 				'url'    => (string) $entry['url'],
 				'hash'   => (string) $entry['hash'],
 				'zoom'   => $zoom,
+				'width'  => $width,
 				'height' => $height,
 			);
 		}
@@ -522,7 +911,8 @@ class Venue_Map {
 	}
 
 	/**
-	 * Parse stored meta into the list of (zoom, height) combos already cached.
+	 * Parse stored meta into the list of (zoom, width, height) combos
+	 * already cached.
 	 *
 	 * Used by {@see self::maybe_generate()} to cascade content changes (new
 	 * address, new coordinates) across every variant a venue has ever been
@@ -532,7 +922,7 @@ class Venue_Map {
 	 * @since 1.0.0
 	 *
 	 * @param int $post_id Venue post ID.
-	 * @return array<int, array{zoom: int, height: int}>
+	 * @return array<int, array{zoom: int, width: int, height: int}>
 	 */
 	public function get_cached_combos( int $post_id ): array {
 		$combos = array();
@@ -540,6 +930,7 @@ class Venue_Map {
 		foreach ( $this->get_all_descriptors( $post_id ) as $descriptor ) {
 			$combos[] = array(
 				'zoom'   => $descriptor['zoom'],
+				'width'  => $descriptor['width'],
 				'height' => $descriptor['height'],
 			);
 		}
@@ -548,20 +939,22 @@ class Venue_Map {
 	}
 
 	/**
-	 * Build the meta-storage key for a (zoom, height) combo.
+	 * Build the meta-storage key for a (zoom, width, height) combo.
 	 *
 	 * @since 1.0.0
 	 *
 	 * @param int $zoom   Zoom level.
+	 * @param int $width  Pixel width.
 	 * @param int $height Pixel height.
 	 * @return string
 	 */
-	protected function combo_key( int $zoom, int $height ): string {
-		return sprintf( '%dx%d', $zoom, $height );
+	protected function combo_key( int $zoom, int $width, int $height ): string {
+		return sprintf( '%dx%dx%d', $zoom, $width, $height );
 	}
 
 	/**
-	 * Ensure a descriptor exists for the `($zoom, $height)` combo and return it.
+	 * Ensure a descriptor exists for the `($zoom, $width, $height)` combo
+	 * and return it.
 	 *
 	 * Hits the filesystem cache when the stored hash already matches the
 	 * current inputs and the PNG is still on disk; otherwise composites a
@@ -573,10 +966,17 @@ class Venue_Map {
 	 * @param int   $post_id Venue post ID.
 	 * @param array $info    Parsed venue information.
 	 * @param int   $zoom    Zoom level to render at.
-	 * @param int   $height  Pixel height of the PNG. Width is derived via IMAGE_ASPECT_RATIO.
-	 * @return array{url: string, hash: string, zoom: int, height: int}|null
+	 * @param int   $width   Pixel width of the PNG.
+	 * @param int   $height  Pixel height of the PNG.
+	 * @return array{url: string, hash: string, zoom: int, width: int, height: int}|null
 	 */
-	protected function ensure_descriptor_for_combo( int $post_id, array $info, int $zoom, int $height ): ?array {
+	protected function ensure_descriptor_for_combo(
+		int $post_id,
+		array $info,
+		int $zoom,
+		int $width,
+		int $height
+	): ?array {
 		// Callers (maybe_generate, get_url_for_post) must have validated the
 		// coordinates via parse_coord() already — cast directly.
 		$latitude  = (float) $info['latitude'];
@@ -587,23 +987,27 @@ class Venue_Map {
 		// within range, but a hand-edited block, a filter that mutates the
 		// attribute, or bad meta could sneak an out-of-range value in.
 		$zoom   = $this->clamp_zoom( $zoom );
+		$width  = $this->clamp_width( $width );
 		$height = $this->clamp_height( $height );
 
-		$tiles = $this->get_tile_url_template();
-		$hash  = $this->hash_for( $post_id, $info, $zoom, $height, $tiles );
-		$key   = $this->combo_key( $zoom, $height );
+		$tiles   = $this->get_tile_url_template();
+		$address = (string) ( $info['fullAddress'] ?? '' );
+		$hash    = $this->hash_for( $info, $zoom, $width, $height, $tiles );
+		$key     = $this->combo_key( $zoom, $width, $height );
 
 		$all      = $this->get_all_descriptors( $post_id );
 		$existing = $all[ $key ] ?? null;
 
 		if ( null !== $existing && $existing['hash'] === $hash ) {
-			$path = $this->url_to_path( $existing['url'] );
-			if ( null !== $path && file_exists( $path ) ) {
+			// The URL itself is deterministic from (address, zoom, dims) so
+			// existence on disk is the real validity signal.
+			$expected_url = $this->build_image_url( $address, $zoom, $width, $height );
+			if ( $existing['url'] === $expected_url ) {
 				return $existing;
 			}
 		}
 
-		$image = $this->composite_image( $latitude, $longitude, $zoom, $height, $tiles );
+		$image = $this->composite_image( $latitude, $longitude, $zoom, $width, $height, $tiles );
 
 		// Downstream of the GD-missing branch in composite_image(); only
 		// reached on PHP builds without the GD extension.
@@ -611,24 +1015,20 @@ class Venue_Map {
 			return null; // @codeCoverageIgnore
 		}
 
-		$width = (int) round( $height * self::IMAGE_ASPECT_RATIO );
 		$this->stamp_marker( $image, (int) round( $width / 2 ), (int) round( $height / 2 ) );
 
-		$url = $this->save_image( $image, $post_id, $hash );
+		$url = $this->save_image( $image, $address, $zoom, $width, $height );
 		imagedestroy( $image );
 
 		if ( null === $url ) {
 			return null;
 		}
 
-		if ( null !== $existing && $existing['url'] !== $url ) {
-			$this->delete_file_by_url( $existing['url'] );
-		}
-
 		$all[ $key ] = array(
 			'url'    => $url,
 			'hash'   => $hash,
 			'zoom'   => $zoom,
+			'width'  => $width,
 			'height' => $height,
 		);
 
@@ -636,16 +1036,15 @@ class Venue_Map {
 
 		// Verify the write landed. update_post_meta() returns an ambiguous
 		// false ("not changed" vs. "write failed"), so read back and check
-		// the URL we just saved is what ended up in the meta. If the write
-		// was dropped — object-cache outage, an unexpected filter, a foreign
-		// process racing us — unlink the orphan PNG so we don't strand the
-		// file on disk.
+		// the URL we just saved is what ended up in the meta. Orphan files
+		// (file on disk but no meta row pointing at it) are acceptable —
+		// with address-based naming the same file may be shared with other
+		// venues, so we don't proactively unlink on write-verify failure.
 		$stored = get_post_meta( $post_id, self::META_KEY, true );
 		if ( ! is_array( $stored )
 			|| ! isset( $stored[ $key ]['url'] )
 			|| $stored[ $key ]['url'] !== $url
 		) {
-			$this->delete_file_by_url( $url );
 			return null;
 		}
 
@@ -653,56 +1052,32 @@ class Venue_Map {
 	}
 
 	/**
-	 * Delete a stored PNG by URL, no-op if the URL is out of scope or the
-	 * file is already gone.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param string $url Stored URL.
-	 * @return void
-	 */
-	protected function delete_file_by_url( string $url ): void {
-		$path = $this->url_to_path( $url );
-
-		if ( null !== $path && file_exists( $path ) ) {
-			wp_delete_file( $path );
-		}
-	}
-
-	/**
 	 * Compute a stable hash from the inputs that determine the rendered PNG.
 	 *
-	 * Any change to address, coords, zoom, height, or tile provider invalidates
-	 * the previous image. Width is fully derived from height via
-	 * {@see self::IMAGE_ASPECT_RATIO} so it doesn't need to go into the hash.
-	 * Unrelated venue edits (title, excerpt, other meta) keep the same hash
-	 * and skip regeneration.
-	 *
-	 * A per-venue salt is mixed into the digest so filenames in the public
-	 * uploads dir aren't predictable from the venue's address alone — otherwise
-	 * anyone who guesses a draft venue's ID and street address could fetch
-	 * its map PNG before the venue is published.
+	 * Any change to address, coords, zoom, width, height, or tile provider
+	 * invalidates the previous image. Unrelated venue edits (title, excerpt,
+	 * other meta) keep the same hash and skip regeneration.
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param int    $post_id Venue post ID (used to look up the per-venue salt).
-	 * @param array  $info    Parsed venue information.
-	 * @param int    $zoom    Map zoom level.
-	 * @param int    $height  Output height.
-	 * @param string $tiles   Tile URL template.
+	 * @param array  $info  Parsed venue information.
+	 * @param int    $zoom  Map zoom level.
+	 * @param int    $width Output width.
+	 * @param int    $height Output height.
+	 * @param string $tiles Tile URL template.
 	 * @return string MD5 hex digest.
 	 */
-	public function hash_for( int $post_id, array $info, int $zoom, int $height, string $tiles ): string {
+	public function hash_for( array $info, int $zoom, int $width, int $height, string $tiles ): string {
 		// md5() here is a non-cryptographic cache-key discriminator, matching class-geocoding.php.
 		return md5( // NOSONAR.
 			implode(
 				'|',
 				array(
-					$this->salt_for( $post_id ),
 					(string) ( $info['fullAddress'] ?? '' ),
 					(string) ( $info['latitude'] ?? '' ),
 					(string) ( $info['longitude'] ?? '' ),
 					(string) $zoom,
+					(string) $width,
 					(string) $height,
 					$tiles,
 				)
@@ -711,46 +1086,61 @@ class Venue_Map {
 	}
 
 	/**
-	 * Return the per-venue filename salt, generating one on first access.
+	 * Build the deterministic URL for a given (address, zoom, width, height).
 	 *
-	 * The salt is a fixed per-post random string; it never rotates so cached
-	 * filenames stay stable across saves. Deleting the venue removes the meta
-	 * (along with every other post meta key) as usual.
-	 *
-	 * **Existing-venue migration:** venues that were rendered before the salt
-	 * was introduced will get a salt generated here on first access; the hash
-	 * — and therefore the PNG filename — changes, which causes
-	 * `ensure_descriptor_for_combo()` to regenerate the image and unlink the
-	 * pre-salt PNG via its existing `$existing['url'] !== $url` cleanup path.
-	 * No backfill step is required.
-	 *
-	 * Two concurrent first-touch requests are reconciled with an `add`-style
-	 * unique-meta insert: whichever request writes first wins, and the other
-	 * re-reads the now-populated value instead of racing a second generation.
+	 * Mirrors {@see self::save_image()}'s filename composition so callers can
+	 * compare an existing descriptor's URL against the expected URL without
+	 * touching the filesystem. Two venues at the same address share the same
+	 * URL at matching dimensions — intentional dedupe.
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param int $post_id Venue post ID.
-	 * @return string 32-character salt.
+	 * @param string $address Venue address string.
+	 * @param int    $zoom    Map zoom level.
+	 * @param int    $width   Output width.
+	 * @param int    $height  Output height.
+	 * @return string Full public URL for the PNG.
 	 */
-	protected function salt_for( int $post_id ): string {
-		$salt = (string) get_post_meta( $post_id, self::SALT_META_KEY, true );
+	protected function build_image_url( string $address, int $zoom, int $width, int $height ): string {
+		$dirs     = wp_get_upload_dir();
+		$base_url = trailingslashit( $dirs['baseurl'] ) . self::UPLOADS_SUBDIR;
 
-		if ( '' === $salt ) {
-			$candidate = wp_generate_password( 32, false );
+		return trailingslashit( $base_url ) . $this->filename_for( $address, $zoom, $width, $height );
+	}
 
-			// add_post_meta() with $unique = true returns false when another
-			// request already populated the row between our read and write.
-			// In that case, re-read to pick up the winner's value so every
-			// caller agrees on the salt.
-			if ( false !== add_post_meta( $post_id, self::SALT_META_KEY, $candidate, true ) ) {
-				$salt = $candidate;
-			} else {
-				$salt = (string) get_post_meta( $post_id, self::SALT_META_KEY, true );
-			}
+	/**
+	 * Compose a filesystem-safe filename from the address + dimensions.
+	 *
+	 * Address gets slugified via `sanitize_title()` and capped at 150 chars
+	 * so the full filename stays comfortably under the 255-byte cap common
+	 * to most filesystems. An empty or all-special-character address falls
+	 * back to `venue` so there's always something before the dimension
+	 * suffix.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $address Venue address.
+	 * @param int    $zoom    Map zoom level.
+	 * @param int    $width   Output width.
+	 * @param int    $height  Output height.
+	 * @return string Filename including the `.png` extension.
+	 */
+	protected function filename_for( string $address, int $zoom, int $width, int $height ): string {
+		// `sanitize_title()` URL-slugifies; pass the result through
+		// `sanitize_file_name()` as defense-in-depth so any path-sensitive
+		// characters that slip past (or future changes to sanitize_title's
+		// allowed set) can't escape the filename segment.
+		$slug = sanitize_file_name( sanitize_title( $address ) );
+
+		if ( '' === $slug ) {
+			$slug = 'venue';
 		}
 
-		return $salt;
+		if ( 150 < strlen( $slug ) ) {
+			$slug = substr( $slug, 0, 150 );
+		}
+
+		return sprintf( '%s-%d-%d-%d.png', $slug, $zoom, $width, $height );
 	}
 
 	/**
@@ -805,7 +1195,8 @@ class Venue_Map {
 	 * @param float  $lat    Latitude in degrees.
 	 * @param float  $lng    Longitude in degrees.
 	 * @param int    $zoom   Zoom level (same zoom Leaflet would use for the same CSS viewport).
-	 * @param int    $height Output pixel height. Width is derived via IMAGE_ASPECT_RATIO.
+	 * @param int    $width  Output pixel width.
+	 * @param int    $height Output pixel height.
 	 * @param string $tiles  Tile URL template.
 	 * @return \GdImage|resource|null Composited image, or null when GD is unavailable.
 	 *                                GdImage on PHP 8+, resource on PHP 7.4.
@@ -814,6 +1205,7 @@ class Venue_Map {
 		float $lat,
 		float $lng,
 		int $zoom,
+		int $width,
 		int $height,
 		string $tiles
 	) {
@@ -821,8 +1213,6 @@ class Venue_Map {
 		if ( ! function_exists( 'imagecreatetruecolor' ) ) { // @codeCoverageIgnore
 			return null; // @codeCoverageIgnore
 		}
-
-		$width = (int) round( $height * self::IMAGE_ASPECT_RATIO );
 
 		$venue_world_x = $this->lng_to_world_pixel( $lng, $zoom );
 		$venue_world_y = $this->lat_to_world_pixel( $lat, $zoom );
@@ -915,14 +1305,22 @@ class Venue_Map {
 	/**
 	 * Save the composited image to the uploads directory and return its URL.
 	 *
+	 * Filename is derived from `(address, zoom, width, height)` — two venues
+	 * that resolve to the same address slug at matching dimensions share one
+	 * file on disk. `imagepng` overwrites in place, which is fine for our
+	 * regenerate flow since the inputs that'd change visible output also
+	 * change the hash in the descriptor meta.
+	 *
 	 * @since 1.0.0
 	 *
 	 * @param \GdImage|resource $image   The finished composite (GdImage on PHP 8+, resource on PHP 7.4).
-	 * @param int               $post_id The venue post ID (used in the filename).
-	 * @param string            $hash    Input hash (used in the filename).
+	 * @param string            $address Venue address (slugified for the filename).
+	 * @param int               $zoom    Map zoom level.
+	 * @param int               $width   Output width.
+	 * @param int               $height  Output height.
 	 * @return string|null Public URL of the saved file, or null on failure.
 	 */
-	public function save_image( $image, int $post_id, string $hash ): ?string {
+	public function save_image( $image, string $address, int $zoom, int $width, int $height ): ?string {
 		$dirs = wp_get_upload_dir();
 
 		if ( ! empty( $dirs['error'] ) ) {
@@ -937,7 +1335,7 @@ class Venue_Map {
 			return null; // @codeCoverageIgnore
 		}
 
-		$filename = sprintf( '%d-%s.png', $post_id, $hash );
+		$filename = $this->filename_for( $address, $zoom, $width, $height );
 		$path     = trailingslashit( $base_dir ) . $filename;
 		$url      = trailingslashit( $base_url ) . $filename;
 
@@ -947,44 +1345,6 @@ class Venue_Map {
 		}
 
 		return $url;
-	}
-
-	/**
-	 * Convert a stored URL back to its filesystem path for deletion.
-	 *
-	 * Returns null when the URL doesn't sit inside this plugin's uploads
-	 * subdir — a safety check so we never interpret a filter-injected URL
-	 * as a path to unlink.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param string $url URL to convert.
-	 * @return string|null Absolute filesystem path, or null when out of scope.
-	 */
-	public function url_to_path( string $url ): ?string {
-		$dirs     = wp_get_upload_dir();
-		$base_url = trailingslashit( $dirs['baseurl'] ) . self::UPLOADS_SUBDIR . '/';
-
-		if ( 0 !== strpos( $url, $base_url ) ) {
-			return null;
-		}
-
-		$relative = substr( $url, strlen( $base_url ) );
-
-		// Restrict the relative portion to filenames this class actually
-		// generates: `{post_id}-{md5-hex}.png`. The prefix check above only
-		// guards the URL origin — without this allow-list a value like
-		// `…/static-maps/../../wp-config.php`, if it ever slipped into the
-		// meta (direct update_post_meta, import, a future filter), would
-		// concatenate through to a path outside the uploads subdir and
-		// hand `wp_delete_file()` a target it shouldn't touch.
-		if ( ! preg_match( '#\A\d+-[a-f0-9]{32}\.png\z#', $relative ) ) {
-			return null;
-		}
-
-		$base_dir = trailingslashit( $dirs['basedir'] ) . self::UPLOADS_SUBDIR . '/';
-
-		return $base_dir . $relative;
 	}
 
 	/**
@@ -1082,6 +1442,89 @@ class Venue_Map {
 	 */
 	protected function clamp_height( int $height ): int {
 		return max( self::HEIGHT_MIN, min( self::HEIGHT_MAX, $height ) );
+	}
+
+	/**
+	 * Clamp a pixel width to the supported range.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param int $width Raw width value.
+	 * @return int
+	 */
+	protected function clamp_width( int $width ): int {
+		return max( self::WIDTH_MIN, min( self::WIDTH_MAX, $width ) );
+	}
+
+	/**
+	 * Parse an aspect-ratio string (e.g. "16/9") into its float value.
+	 *
+	 * Accepts the CSS `aspect-ratio` format with either a slash or a
+	 * colon separator. Returns null for unparsable / zero-denominator
+	 * input so callers can fall back to the default.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $ratio Raw aspect-ratio string.
+	 * @return float|null
+	 */
+	protected function parse_aspect_ratio( string $ratio ): ?float {
+		if ( ! preg_match( '#\A(\d+)\s*[/:]\s*(\d+)\z#', trim( $ratio ), $matches ) ) {
+			return null;
+		}
+
+		$numerator   = (int) $matches[1];
+		$denominator = (int) $matches[2];
+
+		if ( $numerator <= 0 || $denominator <= 0 ) {
+			return null;
+		}
+
+		return $numerator / $denominator;
+	}
+
+	/**
+	 * Resolve a (width, height) pair from block attribute values.
+	 *
+	 * Either dimension can be passed as `0` meaning "auto" — in which
+	 * case the method derives the missing side from the other side and
+	 * the aspect-ratio string. When both are auto, the site default
+	 * height drives the calculation. When both are explicit, the caller
+	 * wins and the aspect-ratio hint is ignored (the rendered PNG just
+	 * honors the literal pixel dimensions).
+	 *
+	 * Both returned values are clamped to the supported ranges so a
+	 * hand-edited block attribute or filter override can't drive the
+	 * generator outside of sane bounds.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param int    $width   Block width (0 = auto).
+	 * @param int    $height  Block height (0 = auto).
+	 * @param string $ratio   Aspect-ratio string (e.g. "16/9").
+	 * @return array{width: int, height: int}
+	 */
+	protected function resolve_dimensions( int $width, int $height, string $ratio ): array {
+		$parsed = $this->parse_aspect_ratio( '' !== $ratio ? $ratio : self::DEFAULT_ASPECT_RATIO );
+
+		if ( null === $parsed ) {
+			$fallback = $this->parse_aspect_ratio( self::DEFAULT_ASPECT_RATIO );
+			$parsed   = null !== $fallback ? $fallback : self::IMAGE_ASPECT_RATIO;
+		}
+
+		if ( $width <= 0 && $height <= 0 ) {
+			$height = self::DEFAULT_HEIGHT;
+			$width  = (int) round( $height * $parsed );
+		} elseif ( $width <= 0 ) {
+			$width = (int) round( $height * $parsed );
+		} elseif ( $height <= 0 ) {
+			$height = (int) round( $width / $parsed );
+		}
+
+		return array(
+			'width'  => $this->clamp_width( $width ),
+			'height' => $this->clamp_height( $height ),
+		);
 	}
 
 	/**

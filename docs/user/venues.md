@@ -48,7 +48,21 @@ Every venue with a real address ships with a map, rendered in one of two modes s
 - **Interactive** — a live, pan-and-zoom map powered by Leaflet (OpenStreetMap) or Google Maps, depending on the mapping platform you pick under `Settings > GatherPress > Venues > Maps`. Requires JavaScript on the visitor's side.
 - **Static image** — a pre-rendered PNG of the map, composited server-side from OpenStreetMap tiles on the first save and cached under `wp-content/uploads/gatherpress/static-maps/`. No JavaScript required, which makes it the right choice for email previews, reader modes, cached HTML, and visitors who block scripts. Attribution for OpenStreetMap and CartoDB is rendered alongside the image automatically.
 
-The block's inspector sidebar lets you pick the render mode, zoom level (1–20), and height (100–800 px). You can mix modes across events — one event can show the static image, another the interactive map, both pointing at the same venue.
+The block's inspector sidebar lets you pick the render mode, zoom level (1–20), width (100–1600 px or auto), height (100–800 px or auto), and aspect ratio (2:1 default, 16:9, 3:2, 4:3, 1:1, or a custom value like `21/9`). Leaving width or height on `0` means "auto" — the missing side is derived from the aspect ratio so the block keeps its shape when the container shrinks. Dragging the resize handles on the block canvas updates both dimensions; holding the preset aspect-ratio value locks the drag to that ratio. You can mix modes across events — one event can show the static image, another the interactive map, both pointing at the same venue.
+
+### Linking the static image
+
+Static maps can be wrapped in a link from the Inspector's **Link settings** panel (static mode only; the interactive map already owns pan-and-zoom interactions). The "Link to" dropdown offers four options:
+
+- **None** — no link wrapper.
+- **OpenStreetMap** — sends visitors to `openstreetmap.org` centered on the venue's coordinates at the block's zoom level.
+- **Google Maps** — same idea, `google.com/maps`.
+- **Custom URL** — free-form URL input. Use this for anything else (a venue's parking page, a ticket link, etc.).
+
+Two toggles apply to any link destination except "None":
+
+- **Open in new tab** — adds `target="_blank"` and auto-appends `rel="noopener noreferrer"` for safety.
+- **Link rel** — free-form space-separated tokens that ride alongside the automatic ones, e.g. `nofollow sponsored`.
 
 ### Sitewide defaults
 

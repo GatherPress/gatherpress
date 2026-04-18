@@ -9,6 +9,19 @@
  * new venue that hasn't been geocoded — a short placeholder surfaces the
  * "map coming soon" state in place of the image.
  *
+ * The wrapper sizing is driven by three block attributes:
+ *
+ *   - `width` / `height`: explicit pixel dimensions. Either can be `0`
+ *     meaning "auto" — in which case it's derived from the other side and
+ *     `aspectRatio`. When both are auto, the block fills its container
+ *     width and computes height from the ratio (CSS aspect-ratio on the
+ *     interactive wrapper; the static PNG is composed at the effective
+ *     pixel size).
+ *   - `aspectRatio`: CSS-style string (e.g. "16/9"). Drives auto-
+ *     dimension math on the server and also lands as a CSS
+ *     `aspect-ratio` hint on the wrapper so an aligned block that
+ *     shrinks stays at the right shape.
+ *
  * @package GatherPress\Core
  * @since 1.0.0
  */
@@ -35,16 +48,21 @@ if ( '' === $gatherpress_address ) {
 	return;
 }
 
-$gatherpress_render_mode    = 'static' === ( $attributes['renderMode'] ?? Venue_Map::DEFAULT_RENDER_MODE )
+$gatherpress_render_mode = 'static' === ( $attributes['renderMode'] ?? Venue_Map::DEFAULT_RENDER_MODE )
 	? 'static'
 	: 'interactive';
-$gatherpress_zoom           = (int) ( $attributes['zoom'] ?? Venue_Map::DEFAULT_ZOOM );
-$gatherpress_height         = (int) ( $attributes['height'] ?? Venue_Map::DEFAULT_HEIGHT );
+$gatherpress_zoom        = (int) ( $attributes['zoom'] ?? Venue_Map::DEFAULT_ZOOM );
+$gatherpress_raw_width   = (int) ( $attributes['width'] ?? 0 );
+$gatherpress_raw_height  = (int) ( $attributes['height'] ?? Venue_Map::DEFAULT_HEIGHT );
+$gatherpress_ratio       = (string) ( $attributes['aspectRatio'] ?? Venue_Map::DEFAULT_ASPECT_RATIO );
+
 $gatherpress_static_map_url = Venue_Map::get_instance()->get_url_for_post(
 	$gatherpress_post_id,
 	$gatherpress_post_type,
 	$gatherpress_zoom,
-	$gatherpress_height
+	$gatherpress_raw_width,
+	$gatherpress_raw_height,
+	$gatherpress_ratio
 );
 
 // Hydration data sits on the outer wrapper so view.js can replace the
@@ -53,11 +71,40 @@ $gatherpress_static_map_url = Venue_Map::get_instance()->get_url_for_post(
 $gatherpress_wrapper_attr_args = array(
 	'class'            => sprintf( 'gatherpress-venue-map gatherpress-venue-map--%s', $gatherpress_render_mode ),
 	'data-render-mode' => $gatherpress_render_mode,
-	// Apply the block-level height to the wrapper so the static <img> (with
-	// object-fit: cover) fills it, and so the interactive Leaflet container
-	// gets the exact same footprint after hydration.
-	'style'            => sprintf( 'height:%dpx;', $gatherpress_height ),
 );
+
+// Sizing rules:
+// - Explicit height → inline height in px.
+// - Explicit width  → inline width in px (but NOT when the block is
+// aligned wide or full — then the alignment owns the horizontal space
+// via the `.alignwide` / `.alignfull` CSS rules, and a hard pixel
+// width would fight those classes).
+// - Any auto dimension → CSS `aspect-ratio` stamp so the container can
+// still give the block its shape as its surrounding width changes
+// (aligned block, responsive container, etc.). Static <img> inside
+// uses object-fit: cover so the raster stays crisp at any size.
+$gatherpress_styles          = array();
+$gatherpress_align           = (string) ( $attributes['align'] ?? '' );
+$gatherpress_is_wide_or_full = in_array( $gatherpress_align, array( 'wide', 'full' ), true );
+
+if ( 0 < $gatherpress_raw_height ) {
+	$gatherpress_styles[] = sprintf( 'height:%dpx', $gatherpress_raw_height );
+}
+
+if ( 0 < $gatherpress_raw_width && ! $gatherpress_is_wide_or_full ) {
+	$gatherpress_styles[] = sprintf( 'width:%dpx', $gatherpress_raw_width );
+}
+
+if ( 0 === $gatherpress_raw_width || 0 === $gatherpress_raw_height || $gatherpress_is_wide_or_full ) {
+	$gatherpress_styles[] = sprintf(
+		'aspect-ratio:%s',
+		'' !== $gatherpress_ratio ? $gatherpress_ratio : Venue_Map::DEFAULT_ASPECT_RATIO
+	);
+}
+
+if ( ! empty( $gatherpress_styles ) ) {
+	$gatherpress_wrapper_attr_args['style'] = implode( ';', $gatherpress_styles ) . ';';
+}
 
 if ( 'interactive' === $gatherpress_render_mode ) {
 	$gatherpress_block_attrs = array(
@@ -84,13 +131,41 @@ printf(
 
 if ( '' !== $gatherpress_static_map_url ) {
 	/* translators: %s: full address of the venue. */
-	$gatherpress_alt = sprintf( __( 'Map of %s', 'gatherpress' ), $gatherpress_address );
+	$gatherpress_alt    = sprintf( __( 'Map of %s', 'gatherpress' ), $gatherpress_address );
+	$gatherpress_href   = (string) ( $attributes['href'] ?? '' );
+	$gatherpress_target = (string) ( $attributes['linkTarget'] ?? '' );
+	$gatherpress_rel    = (string) ( $attributes['rel'] ?? '' );
+
+	if ( '_blank' === $gatherpress_target ) {
+		// Auto-append the safety `noopener noreferrer` tokens so a user
+		// only has to think about semantic rel values (nofollow, sponsored).
+		$gatherpress_existing_rel = preg_split( '/\s+/', trim( $gatherpress_rel ), -1, PREG_SPLIT_NO_EMPTY );
+		foreach ( array( 'noopener', 'noreferrer' ) as $gatherpress_safety_token ) {
+			if ( ! in_array( $gatherpress_safety_token, $gatherpress_existing_rel, true ) ) {
+				$gatherpress_existing_rel[] = $gatherpress_safety_token;
+			}
+		}
+		$gatherpress_rel = implode( ' ', $gatherpress_existing_rel );
+	}
+
+	if ( '' !== $gatherpress_href ) {
+		printf(
+			'<a href="%s"%s%s>',
+			esc_url( $gatherpress_href ),
+			'_blank' === $gatherpress_target ? ' target="_blank"' : '',
+			'' !== $gatherpress_rel ? sprintf( ' rel="%s"', esc_attr( $gatherpress_rel ) ) : ''
+		);
+	}
 
 	printf(
 		'<img class="gatherpress-venue-map__image" src="%s" alt="%s" loading="lazy" />',
 		esc_url( $gatherpress_static_map_url ),
 		esc_attr( $gatherpress_alt )
 	);
+
+	if ( '' !== $gatherpress_href ) {
+		echo '</a>';
+	}
 
 	// CartoDB + OpenStreetMap attribution is required whenever the static
 	// image is on display. Leaflet ships its own attribution control, so when

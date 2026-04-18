@@ -1140,6 +1140,50 @@ class Test_Settings extends Base {
 	}
 
 	/**
+	 * Empty-string submissions for number fields round-trip as '' instead
+	 * of getting coerced to 0 via intval — a field that accepts empty (e.g.
+	 * Width/Height "Auto") would otherwise silently save 0 on every post.
+	 * Explicit "0" submissions must still be kept as int 0, distinct from
+	 * empty, so callers can tell "unset" from "set to zero".
+	 *
+	 * @since 1.0.0
+	 * @covers ::sanitize_page_settings
+	 *
+	 * @return void
+	 */
+	public function test_sanitize_page_settings_preserves_empty_number(): void {
+		$instance = Settings::get_instance();
+
+		delete_option( 'gatherpress_settings' );
+
+		$callback = $instance->sanitize_page_settings(
+			array(
+				'empty_number' => 'number',
+				'zero_number'  => 'number',
+			)
+		);
+
+		$result = $callback(
+			array(
+				'empty_number' => '',
+				'zero_number'  => '0',
+			)
+		);
+
+		// Explicit "0" is preserved as int 0 (distinct from empty).
+		$this->assertSame( 0, $result['zero_number'], 'Explicit "0" is kept as int 0.' );
+
+		// Empty string matches the '' default for an unregistered option
+		// and gets stripped from the saved array — effectively "unset",
+		// which is the desired auto sentinel.
+		$this->assertArrayNotHasKey(
+			'empty_number',
+			$result,
+			'Empty submission is stripped (matches "" default).'
+		);
+	}
+
+	/**
 	 * Test settings_page method.
 	 *
 	 * @since  1.0.0

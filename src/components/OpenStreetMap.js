@@ -23,13 +23,12 @@ import { getFromConfig } from '../helpers/editor-settings';
  *
  * @since 1.0.0
  *
- * @param {Object} props              - Component properties.
- * @param {string} props.location     - The location to be displayed on the map.
- * @param {string} props.latitude     - The latitude of the location to be displayed on the map.
- * @param {string} props.longitude    - The longitude of the location to be displayed on the map.
- * @param {number} [props.zoom=10]    - The zoom level of the map.
- * @param {number} [props.height=300] - The height of the map container.
- * @param {string} [props.className]  - Additional CSS class names for styling.
+ * @param {Object} props             - Component properties.
+ * @param {string} props.location    - The location to be displayed on the map.
+ * @param {string} props.latitude    - The latitude of the location to be displayed on the map.
+ * @param {string} props.longitude   - The longitude of the location to be displayed on the map.
+ * @param {number} [props.zoom=10]   - The zoom level of the map.
+ * @param {string} [props.className] - Additional CSS class names for styling.
  *
  * @return {JSX.Element} The rendered React component.
  */
@@ -38,7 +37,6 @@ const OpenStreetMap = ( props ) => {
 		zoom = 10,
 		className,
 		location,
-		height = 300,
 		latitude,
 		longitude,
 		pluginUrl,
@@ -47,7 +45,11 @@ const OpenStreetMap = ( props ) => {
 	const mapId = `map-${ uuidv4() }`;
 	const mapRef = useRef( null );
 	const mapInstanceRef = useRef( null );
-	const style = { height };
+	// Fill the parent — the venue-map wrapper sizes itself via CSS
+	// aspect-ratio / inline width+height, and the Leaflet container must
+	// match so marker placement stays centered on the visible viewport
+	// rather than the inner container's own (larger) center.
+	const style = { width: '100%', height: '100%' };
 	const isPostEditor = Boolean( select( 'core/edit-post' ) );
 
 	useEffect( () => {
@@ -142,9 +144,50 @@ const OpenStreetMap = ( props ) => {
 			attribution: tileAttribution,
 		} ).addTo( map );
 
-		Leaflet.marker( [ latitude, longitude ] ).addTo( map ).bindPopup( location );
+		// Center the marker icon on the coord (both axes) so the pin's
+		// visual center matches the map center — mirrors the static map's
+		// centered dot. Leaflet's default anchor is the pin tip, which
+		// leaves the body floating above center.
+		const centeredIcon = new Leaflet.Icon.Default( {
+			iconAnchor: [ 12, 20 ],
+			popupAnchor: [ 0, -20 ],
+			shadowAnchor: [ 12, 20 ],
+		} );
+		Leaflet.marker( [ latitude, longitude ], { icon: centeredIcon } )
+			.addTo( map )
+			.bindPopup( location );
+
+		// Leaflet reads the container's size at init time. When the wrapper
+		// relies on CSS aspect-ratio (height derived from container width)
+		// that size can be stale by the time the map mounts, so the
+		// computed center drifts. invalidateSize() tells Leaflet to re-read
+		// the container and re-center — once after the next frame for the
+		// initial layout, and again whenever the container's box changes.
+		requestAnimationFrame( () => {
+			if ( mapInstanceRef.current ) {
+				mapInstanceRef.current.invalidateSize();
+				mapInstanceRef.current.setView( [ latitude, longitude ], zoom );
+			}
+		} );
+
+		let resizeObserver = null;
+		if ( 'undefined' !== typeof ResizeObserver ) {
+			resizeObserver = new ResizeObserver( () => {
+				if ( mapInstanceRef.current ) {
+					mapInstanceRef.current.invalidateSize();
+					mapInstanceRef.current.setView(
+						[ latitude, longitude ],
+						zoom
+					);
+				}
+			} );
+			resizeObserver.observe( mapRef.current );
+		}
 
 		return () => {
+			if ( resizeObserver ) {
+				resizeObserver.disconnect();
+			}
 			if ( mapInstanceRef.current ) {
 				mapInstanceRef.current.remove();
 				mapInstanceRef.current = null;

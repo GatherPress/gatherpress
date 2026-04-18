@@ -22,14 +22,59 @@
 			"type": "number",
 			"default": 300
 		},
+		"width": {
+			"type": "number",
+			"default": 0
+		},
+		"aspectRatio": {
+			"type": "string",
+			"default": "2/1"
+		},
 		"renderMode": {
 			"type": "string",
 			"default": "interactive"
+		},
+		"href": {
+			"type": "string",
+			"default": ""
+		},
+		"linkDestination": {
+			"type": "string",
+			"default": "none"
+		},
+		"linkTarget": {
+			"type": "string",
+			"default": ""
+		},
+		"rel": {
+			"type": "string",
+			"default": ""
 		}
 	},
 	"supports": {
-		"align": ["wide", "full"],
-		"html": false
+		"align": ["left", "center", "right", "wide", "full"],
+		"html": false,
+		"spacing": {
+			"margin": true,
+			"padding": true,
+			"__experimentalDefaultControls": {
+				"margin": false,
+				"padding": false
+			}
+		},
+		"__experimentalBorder": {
+			"color": true,
+			"radius": true,
+			"style": true,
+			"width": true,
+			"__experimentalDefaultControls": {
+				"color": true,
+				"radius": true,
+				"style": true,
+				"width": true
+			}
+		},
+		"shadow": true
 	},
 	"textdomain": "gatherpress",
 	"editorScript": "file:./index.js",

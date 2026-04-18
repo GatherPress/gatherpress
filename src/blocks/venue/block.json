@@ -22,10 +22,15 @@
 			"blockGuard": true,
 			"postIdOverride": true
 		},
-		"align": [ "wide" ],
+		"align": [ "wide", "full" ],
 		"html": false,
 		"interactivity": {
 			"clientNavigation": true
+		},
+		"layout": {
+			"default": {
+				"type": "constrained"
+			}
 		}
 	},
 	"textdomain": "gatherpress",
