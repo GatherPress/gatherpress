@@ -296,17 +296,18 @@ class Test_Venue_Map extends Base {
 	 */
 	public function test_hash_for_detects_relevant_input_changes(): void {
 		$instance = Venue_Map::get_instance();
+		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
 		$info     = array(
 			'fullAddress' => '1 Infinite Loop',
 			'latitude'    => '37.3318',
 			'longitude'   => '-122.0312',
 		);
 
-		$baseline = $instance->hash_for( $info, 15, 400, Venue_Map::DEFAULT_TILE_URL );
+		$baseline = $instance->hash_for( $post_id, $info, 15, 400, Venue_Map::DEFAULT_TILE_URL );
 
 		$this->assertSame(
 			$baseline,
-			$instance->hash_for( $info, 15, 400, Venue_Map::DEFAULT_TILE_URL ),
+			$instance->hash_for( $post_id, $info, 15, 400, Venue_Map::DEFAULT_TILE_URL ),
 			'Hash should be stable when every input is identical.'
 		);
 
@@ -316,20 +317,29 @@ class Test_Venue_Map extends Base {
 
 		$this->assertNotSame(
 			$baseline,
-			$instance->hash_for( $moved_info, 15, 400, Venue_Map::DEFAULT_TILE_URL ),
+			$instance->hash_for( $post_id, $moved_info, 15, 400, Venue_Map::DEFAULT_TILE_URL ),
 			'Hash should change when coordinates change.'
 		);
 
 		$this->assertNotSame(
 			$baseline,
-			$instance->hash_for( $info, 14, 400, Venue_Map::DEFAULT_TILE_URL ),
+			$instance->hash_for( $post_id, $info, 14, 400, Venue_Map::DEFAULT_TILE_URL ),
 			'Hash should change when the zoom level changes.'
 		);
 
 		$this->assertNotSame(
 			$baseline,
-			$instance->hash_for( $info, 15, 500, Venue_Map::DEFAULT_TILE_URL ),
+			$instance->hash_for( $post_id, $info, 15, 500, Venue_Map::DEFAULT_TILE_URL ),
 			'Hash should change when the height changes.'
+		);
+
+		// Different venue → different salt → different hash even with
+		// identical address/coords.
+		$other_post_id = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
+		$this->assertNotSame(
+			$baseline,
+			$instance->hash_for( $other_post_id, $info, 15, 400, Venue_Map::DEFAULT_TILE_URL ),
+			'Hash should differ between venues because each has its own salt.'
 		);
 	}
 
@@ -733,6 +743,73 @@ class Test_Venue_Map extends Base {
 		$this->assertArrayNotHasKey( 'missing-shape', $descriptors );
 		$this->assertSame( 15, $descriptors['15x300']['zoom'] );
 		$this->assertSame( 300, $descriptors['15x300']['height'] );
+
+		// Read path must not mutate the meta — writing on every render would
+		// thrash the post-meta cache and churn the DB. Cleanup is deferred
+		// to the next save path.
+		$raw_after_read = get_post_meta( $post_id, Venue_Map::META_KEY, true );
+		$this->assertCount(
+			4,
+			$raw_after_read,
+			'get_all_descriptors() must not rewrite meta on read.'
+		);
+	}
+
+	/**
+	 * The next write through ensure_descriptor_for_combo() rebuilds meta
+	 * from the filtered descriptor map, so any malformed entries that were
+	 * silently skipped on read are dropped from storage at that point.
+	 * Confirms the read-path's deferred-cleanup strategy actually cleans up.
+	 *
+	 * @covers ::ensure_descriptor_for_combo
+	 * @covers ::get_all_descriptors
+	 *
+	 * @return void
+	 */
+	public function test_ensure_descriptor_for_combo_drops_malformed_entries_on_write(): void {
+		$instance = Venue_Map::get_instance();
+		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
+
+		add_post_meta(
+			$post_id,
+			'gatherpress_venue_information',
+			wp_json_encode(
+				array(
+					'fullAddress' => '1 Infinite Loop',
+					'latitude'    => '37.3318',
+					'longitude'   => '-122.0312',
+				)
+			)
+		);
+
+		// Seed meta with a mix of good and malformed entries.
+		update_post_meta(
+			$post_id,
+			Venue_Map::META_KEY,
+			array(
+				'junk-row' => 'not-an-array',
+				'no-hash'  => array(
+					'url'    => 'https://example.test/b.png',
+					'zoom'   => 20,
+					'height' => 500,
+				),
+			)
+		);
+
+		$instance->maybe_generate( $post_id );
+
+		$stored = get_post_meta( $post_id, Venue_Map::META_KEY, true );
+
+		$this->assertIsArray( $stored );
+		$this->assertArrayNotHasKey( 'junk-row', $stored );
+		$this->assertArrayNotHasKey( 'no-hash', $stored );
+
+		$default_key = sprintf(
+			'%dx%d',
+			Venue_Map::DEFAULT_ZOOM,
+			Venue_Map::DEFAULT_HEIGHT
+		);
+		$this->assertArrayHasKey( $default_key, $stored );
 	}
 
 	/**
@@ -905,6 +982,159 @@ class Test_Venue_Map extends Base {
 		);
 		$this->assertFileDoesNotExist(
 			(string) $instance->url_to_path( $before[ $second_key ]['url'] )
+		);
+	}
+
+	/**
+	 * If the meta write after save_image() is dropped (e.g. under an
+	 * object-cache outage or a filter that suppresses the update),
+	 * ensure_descriptor_for_combo() must unlink the just-saved PNG and
+	 * return null so we don't leave an orphan on disk.
+	 *
+	 * @covers ::ensure_descriptor_for_combo
+	 *
+	 * @return void
+	 */
+	public function test_ensure_descriptor_for_combo_unlinks_orphan_when_meta_write_dropped(): void {
+		$instance = Venue_Map::get_instance();
+		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
+
+		add_post_meta(
+			$post_id,
+			'gatherpress_venue_information',
+			wp_json_encode(
+				array(
+					'fullAddress' => '1 Infinite Loop',
+					'latitude'    => '37.3318',
+					'longitude'   => '-122.0312',
+				)
+			)
+		);
+
+		// Short-circuit update_post_metadata so the map descriptor write
+		// never reaches the DB. The filter returns a non-null value for
+		// META_KEY only, leaving other meta writes alone.
+		$suppress = static function ( $check, $object_id, $meta_key ) {
+			if ( Venue_Map::META_KEY === $meta_key ) {
+				return true; // Pretend the update happened.
+			}
+			return $check;
+		};
+		add_filter( 'update_post_metadata', $suppress, 10, 3 );
+
+		$info = ( new Venue( $post_id ) )->get_information();
+
+		$result = Utility::invoke_hidden_method(
+			$instance,
+			'ensure_descriptor_for_combo',
+			array( $post_id, $info, Venue_Map::DEFAULT_ZOOM, Venue_Map::DEFAULT_HEIGHT )
+		);
+
+		remove_filter( 'update_post_metadata', $suppress, 10 );
+
+		$this->assertNull(
+			$result,
+			'Orphan-guard must return null when the meta write was suppressed.'
+		);
+
+		$dirs     = wp_get_upload_dir();
+		$base_dir = trailingslashit( $dirs['basedir'] ) . Venue_Map::UPLOADS_SUBDIR;
+
+		$this->assertEmpty(
+			(array) glob( $base_dir . sprintf( '/%d-*.png', $post_id ) ),
+			'The orphan PNG should have been unlinked.'
+		);
+	}
+
+	/**
+	 * Direct coverage for salt_for — lazily generates a salt on first
+	 * access and returns the same value on subsequent calls.
+	 *
+	 * @covers ::salt_for
+	 *
+	 * @return void
+	 */
+	public function test_salt_for_generates_and_caches(): void {
+		$instance = Venue_Map::get_instance();
+		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
+
+		$this->assertSame(
+			'',
+			(string) get_post_meta( $post_id, Venue_Map::SALT_META_KEY, true ),
+			'Precondition: freshly created venue has no salt meta.'
+		);
+
+		$first = Utility::invoke_hidden_method( $instance, 'salt_for', array( $post_id ) );
+
+		$this->assertIsString( $first );
+		$this->assertSame( 32, strlen( $first ), 'Salt should be 32 characters.' );
+		$this->assertSame(
+			$first,
+			(string) get_post_meta( $post_id, Venue_Map::SALT_META_KEY, true ),
+			'Salt should be persisted to meta on first access.'
+		);
+
+		$second = Utility::invoke_hidden_method( $instance, 'salt_for', array( $post_id ) );
+
+		$this->assertSame(
+			$first,
+			$second,
+			'Subsequent calls should return the same cached salt.'
+		);
+	}
+
+	/**
+	 * Simulates two concurrent first-touch callers by forcing add_post_meta
+	 * to fail for the losing request (meaning another request just wrote
+	 * the salt between our read and write). salt_for() must then re-read
+	 * and return the winner's value, not its own abandoned candidate —
+	 * otherwise the loser's PNG filename won't match what any subsequent
+	 * request computes.
+	 *
+	 * @covers ::salt_for
+	 *
+	 * @return void
+	 */
+	public function test_salt_for_recovers_from_lost_race(): void {
+		$instance = Venue_Map::get_instance();
+		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
+		$winner   = 'winnerwinnerwinnerwinnerwinner12';
+
+		// Hook `add_post_metadata` to simulate another request winning the
+		// race between our read and our write: right before our
+		// add_post_meta() lands, the hook writes the winner value straight
+		// to the DB and returns false to tell add_post_meta() "already
+		// exists, didn't write". salt_for() must recover by re-reading the
+		// winner. The write goes through $wpdb directly so it doesn't fire
+		// add_post_metadata again and recurse.
+		global $wpdb;
+		$force_race_loss = static function ( $check, $object_id, $meta_key ) use ( $winner, $post_id, $wpdb ) {
+			if ( Venue_Map::SALT_META_KEY !== $meta_key || $object_id !== $post_id ) {
+				return $check;
+			}
+			// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.SlowDBQuery.slow_db_query_meta_key, WordPress.DB.SlowDBQuery.slow_db_query_meta_value -- Test fixture bypasses add_post_meta() to avoid recursing into the filter we're inside.
+			$wpdb->insert(
+				$wpdb->postmeta,
+				array(
+					'post_id'    => $post_id,
+					'meta_key'   => Venue_Map::SALT_META_KEY,
+					'meta_value' => $winner,
+				)
+			);
+			// phpcs:enable
+			wp_cache_delete( $post_id, 'post_meta' );
+			return false;
+		};
+		add_filter( 'add_post_metadata', $force_race_loss, 10, 3 );
+
+		$resolved = Utility::invoke_hidden_method( $instance, 'salt_for', array( $post_id ) );
+
+		remove_filter( 'add_post_metadata', $force_race_loss, 10 );
+
+		$this->assertSame(
+			$winner,
+			$resolved,
+			'Losing request must re-read the winner salt, not return its own candidate.'
 		);
 	}
 

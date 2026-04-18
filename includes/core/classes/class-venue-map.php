@@ -174,6 +174,18 @@ class Venue_Map {
 	const META_KEY = 'gatherpress_venue_static_map';
 
 	/**
+	 * Meta key for the per-venue filename salt.
+	 *
+	 * Underscore prefix marks it as a protected WordPress meta key —
+	 * not exposed through REST by default and not writable from the
+	 * admin Custom Fields box.
+	 *
+	 * @since 1.0.0
+	 * @var string
+	 */
+	const SALT_META_KEY = '_gatherpress_venue_map_salt';
+
+	/**
 	 * Subdirectory of `wp-content/uploads` where generated PNG files are written.
 	 *
 	 * @since 1.0.0
@@ -236,16 +248,49 @@ class Venue_Map {
 			'type'       => (string) $settings->get( 'venue_map_default_type' ),
 		);
 
-		foreach ( $defaults as $attr => $value ) {
-			// Guard against a Settings row that's never been written — keep
-			// the block.json default rather than stamping on an empty string
-			// or zero that the UI would silently accept.
-			if ( '' === $value || 0 === $value ) {
+		// Per-attribute validators so a never-written Settings row (empty
+		// strings, zero ints) or a value that's since become invalid (e.g.
+		// an out-of-range zoom left over from before the clamp was added)
+		// falls through to the block.json default rather than stamping on
+		// garbage. A blanket `'' === $v || 0 === $v` guard was too loose —
+		// it would have accepted e.g. `renderMode = '0'`. All closures are
+		// static because none of them capture `$this`.
+		$validators = array(
+			'renderMode' => static function ( $value ): bool {
+				return in_array( $value, array( 'interactive', 'static' ), true );
+			},
+			'zoom'       => static function ( $value ): bool {
+				return is_int( $value )
+					&& $value >= self::ZOOM_MIN
+					&& $value <= self::ZOOM_MAX;
+			},
+			'height'     => static function ( $value ): bool {
+				return is_int( $value )
+					&& $value >= self::HEIGHT_MIN
+					&& $value <= self::HEIGHT_MAX;
+			},
+			'type'       => static function ( $value ): bool {
+				return in_array(
+					$value,
+					array( 'roadmap', 'satellite', 'hybrid', 'terrain' ),
+					true
+				);
+			},
+		);
+
+		// Iterate $validators (the authoritative list) rather than $defaults,
+		// so adding a new key to $defaults without a matching validator just
+		// falls through instead of triggering an undefined-offset warning.
+		// The reverse case (validator without default) is guarded by the
+		// static shape of $defaults above — PHPStan treats the array literal
+		// as a fixed key set.
+		foreach ( $validators as $attr => $validator ) {
+			if ( ! $validator( $defaults[ $attr ] ) ) {
 				continue;
 			}
 
 			if ( isset( $metadata['attributes'][ $attr ] ) ) {
-				$metadata['attributes'][ $attr ]['default'] = $value;
+				$metadata['attributes'][ $attr ]['default'] = $defaults[ $attr ];
 			}
 		}
 
@@ -411,9 +456,10 @@ class Venue_Map {
 	 * Return the descriptor for the default (zoom, height) combo, or null if
 	 * nothing is stored.
 	 *
-	 * Kept for callers that only care about "has this venue been rendered at
-	 * all?" — the richer per-combo map lives behind
-	 * {@see self::get_all_descriptors()}.
+	 * Convenience for the common "has this venue been rendered at the site
+	 * defaults yet?" question — production render paths resolve a specific
+	 * combo through {@see self::get_url_for_post()}, and code iterating
+	 * every cached variant should use {@see self::get_all_descriptors()}.
 	 *
 	 * @since 1.0.0
 	 *
@@ -429,8 +475,12 @@ class Venue_Map {
 	/**
 	 * Return every stored descriptor for the venue, keyed by `{zoom}x{height}`.
 	 *
-	 * Silently filters out malformed entries so callers can iterate without
-	 * defensive shape checks.
+	 * Filters out malformed entries so callers can iterate without defensive
+	 * shape checks. The read path itself does not persist the cleaned map —
+	 * writing on every front-end render would invalidate the post-meta cache
+	 * and churn the DB. Dropped entries are removed opportunistically the
+	 * next time a descriptor is saved, because `ensure_descriptor_for_combo()`
+	 * reuses the filtered map as the basis for its `update_post_meta()` call.
 	 *
 	 * @since 1.0.0
 	 *
@@ -540,7 +590,7 @@ class Venue_Map {
 		$height = $this->clamp_height( $height );
 
 		$tiles = $this->get_tile_url_template();
-		$hash  = $this->hash_for( $info, $zoom, $height, $tiles );
+		$hash  = $this->hash_for( $post_id, $info, $zoom, $height, $tiles );
 		$key   = $this->combo_key( $zoom, $height );
 
 		$all      = $this->get_all_descriptors( $post_id );
@@ -584,6 +634,21 @@ class Venue_Map {
 
 		update_post_meta( $post_id, self::META_KEY, $all );
 
+		// Verify the write landed. update_post_meta() returns an ambiguous
+		// false ("not changed" vs. "write failed"), so read back and check
+		// the URL we just saved is what ended up in the meta. If the write
+		// was dropped — object-cache outage, an unexpected filter, a foreign
+		// process racing us — unlink the orphan PNG so we don't strand the
+		// file on disk.
+		$stored = get_post_meta( $post_id, self::META_KEY, true );
+		if ( ! is_array( $stored )
+			|| ! isset( $stored[ $key ]['url'] )
+			|| $stored[ $key ]['url'] !== $url
+		) {
+			$this->delete_file_by_url( $url );
+			return null;
+		}
+
 		return $all[ $key ];
 	}
 
@@ -613,20 +678,27 @@ class Venue_Map {
 	 * Unrelated venue edits (title, excerpt, other meta) keep the same hash
 	 * and skip regeneration.
 	 *
+	 * A per-venue salt is mixed into the digest so filenames in the public
+	 * uploads dir aren't predictable from the venue's address alone — otherwise
+	 * anyone who guesses a draft venue's ID and street address could fetch
+	 * its map PNG before the venue is published.
+	 *
 	 * @since 1.0.0
 	 *
-	 * @param array  $info   Parsed venue information.
-	 * @param int    $zoom   Map zoom level.
-	 * @param int    $height Output height.
-	 * @param string $tiles  Tile URL template.
+	 * @param int    $post_id Venue post ID (used to look up the per-venue salt).
+	 * @param array  $info    Parsed venue information.
+	 * @param int    $zoom    Map zoom level.
+	 * @param int    $height  Output height.
+	 * @param string $tiles   Tile URL template.
 	 * @return string MD5 hex digest.
 	 */
-	public function hash_for( array $info, int $zoom, int $height, string $tiles ): string {
+	public function hash_for( int $post_id, array $info, int $zoom, int $height, string $tiles ): string {
 		// md5() here is a non-cryptographic cache-key discriminator, matching class-geocoding.php.
 		return md5( // NOSONAR.
 			implode(
 				'|',
 				array(
+					$this->salt_for( $post_id ),
 					(string) ( $info['fullAddress'] ?? '' ),
 					(string) ( $info['latitude'] ?? '' ),
 					(string) ( $info['longitude'] ?? '' ),
@@ -636,6 +708,49 @@ class Venue_Map {
 				)
 			)
 		);
+	}
+
+	/**
+	 * Return the per-venue filename salt, generating one on first access.
+	 *
+	 * The salt is a fixed per-post random string; it never rotates so cached
+	 * filenames stay stable across saves. Deleting the venue removes the meta
+	 * (along with every other post meta key) as usual.
+	 *
+	 * **Existing-venue migration:** venues that were rendered before the salt
+	 * was introduced will get a salt generated here on first access; the hash
+	 * — and therefore the PNG filename — changes, which causes
+	 * `ensure_descriptor_for_combo()` to regenerate the image and unlink the
+	 * pre-salt PNG via its existing `$existing['url'] !== $url` cleanup path.
+	 * No backfill step is required.
+	 *
+	 * Two concurrent first-touch requests are reconciled with an `add`-style
+	 * unique-meta insert: whichever request writes first wins, and the other
+	 * re-reads the now-populated value instead of racing a second generation.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param int $post_id Venue post ID.
+	 * @return string 32-character salt.
+	 */
+	protected function salt_for( int $post_id ): string {
+		$salt = (string) get_post_meta( $post_id, self::SALT_META_KEY, true );
+
+		if ( '' === $salt ) {
+			$candidate = wp_generate_password( 32, false );
+
+			// add_post_meta() with $unique = true returns false when another
+			// request already populated the row between our read and write.
+			// In that case, re-read to pick up the winner's value so every
+			// caller agrees on the salt.
+			if ( false !== add_post_meta( $post_id, self::SALT_META_KEY, $candidate, true ) ) {
+				$salt = $candidate;
+			} else {
+				$salt = (string) get_post_meta( $post_id, self::SALT_META_KEY, true );
+			}
+		}
+
+		return $salt;
 	}
 
 	/**
