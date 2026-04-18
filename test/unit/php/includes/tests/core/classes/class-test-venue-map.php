@@ -109,7 +109,7 @@ class Test_Venue_Map extends Base {
 			array(
 				'type'     => 'action',
 				'name'     => 'wp_after_insert_post',
-				'priority' => 20,
+				'priority' => 11,
 				'callback' => array( $instance, 'maybe_generate' ),
 			),
 			array(
@@ -475,7 +475,7 @@ class Test_Venue_Map extends Base {
 
 	/**
 	 * A previously-geocoded venue whose address is edited to something
-	 * un-geocodable must have its stored PNGs purged so stale images
+	 * un-geocodable must have its stored PNG files purged so stale images
 	 * don't keep serving under the new (wrong) address.
 	 *
 	 * @covers ::maybe_generate
@@ -1546,6 +1546,73 @@ class Test_Venue_Map extends Base {
 			),
 			$combos
 		);
+	}
+
+	/**
+	 * When the composite time budget is exhausted, the inner loop breaks
+	 * out and the canvas is returned with the pre-painted gray background
+	 * intact — no tiles fetched. Filter-driven so we don't have to wait
+	 * COMPOSITE_TIME_BUDGET seconds to exercise the branch.
+	 *
+	 * @covers ::composite_image
+	 *
+	 * @return void
+	 */
+	public function test_composite_image_aborts_when_time_budget_exhausted(): void {
+		$instance = Venue_Map::get_instance();
+
+		$fetches = 0;
+		$counter = static function () use ( &$fetches ) {
+			++$fetches;
+			return array(
+				'headers'  => array(),
+				'body'     => '',
+				'response' => array(
+					'code'    => 200,
+					'message' => 'OK',
+				),
+				'cookies'  => array(),
+				'filename' => null,
+			);
+		};
+		$budget  = static function () {
+			// A negative budget makes the deadline sit in the past from
+			// the first iteration, forcing break 2 before any fetch runs.
+			return -1;
+		};
+
+		remove_filter( 'pre_http_request', array( $this, 'short_circuit_tile_requests' ), 10 );
+		add_filter( 'pre_http_request', $counter, 10 );
+		add_filter( 'gatherpress_venue_map_composite_time_budget', $budget );
+
+		$image = $instance->composite_image(
+			37.3318,
+			-122.0312,
+			15,
+			256,
+			Venue_Map::DEFAULT_TILE_URL
+		);
+
+		remove_filter( 'gatherpress_venue_map_composite_time_budget', $budget );
+		remove_filter( 'pre_http_request', $counter, 10 );
+		add_filter( 'pre_http_request', array( $this, 'short_circuit_tile_requests' ), 10, 3 );
+
+		$this->assertInstanceOf(
+			\GdImage::class,
+			$image,
+			'Canvas should still be returned when the budget is exhausted.'
+		);
+		$this->assertSame( 0, $fetches, 'No tiles should be fetched when the deadline is already in the past.' );
+
+		// Center pixel should remain the neutral-gray background color since
+		// no tile was drawn.
+		$index = imagecolorat( $image, 128, 64 );
+		$rgb   = imagecolorsforindex( $image, $index );
+		$this->assertSame( 238, $rgb['red'] );
+		$this->assertSame( 238, $rgb['green'] );
+		$this->assertSame( 238, $rgb['blue'] );
+
+		imagedestroy( $image );
 	}
 
 	/**

@@ -198,9 +198,13 @@ class Venue_Map {
 	 * @return void
 	 */
 	protected function setup_hooks(): void {
-		// Priority 20 so Venue_Setup::set_geodata (priority 10) has already
-		// derived geo_latitude/longitude from the venue information JSON.
-		add_action( 'wp_after_insert_post', array( $this, 'maybe_generate' ), 20 );
+		// Priority 11 — just after the default-10 batch, so any other
+		// wp_after_insert_post callback touching venue meta during the
+		// same save has already run. We read `gatherpress_venue_information`
+		// directly, so there's no hard dependency on any specific hook, but
+		// trailing the default batch is the cheapest guard against future
+		// ordering surprises.
+		add_action( 'wp_after_insert_post', array( $this, 'maybe_generate' ), 11 );
 		add_action( 'registered_post_type', array( $this, 'maybe_register_delete_hook' ) );
 		add_filter( 'block_type_metadata', array( $this, 'apply_block_attribute_defaults' ) );
 	}
@@ -299,8 +303,8 @@ class Venue_Map {
 			null === $this->parse_coord( $info['longitude'] ) ) {
 			// No usable coordinates — the address was edited to something
 			// un-geocodable, or cleared entirely. Purge any previously
-			// generated PNGs so stale images don't keep serving on the
-			// front end; the placeholder will surface the "no address"
+			// generated PNG files so stale images don't keep serving on
+			// the front end; the placeholder will surface the "no address"
 			// state until geocoding succeeds again.
 			$this->delete_stored_image( $post_id );
 			return;
@@ -722,7 +726,21 @@ class Venue_Map {
 		$bg = imagecolorallocate( $canvas, 238, 238, 238 );
 		imagefilledrectangle( $canvas, 0, 0, $width - 1, $height - 1, $bg );
 
-		$deadline = microtime( true ) + self::COMPOSITE_TIME_BUDGET;
+		/**
+		 * Filter the wall-clock budget (in seconds) for a single
+		 * composite_image() call. When the deadline is exceeded mid-loop,
+		 * remaining tiles are skipped and the gray background shows
+		 * through. Accepts int or float.
+		 *
+		 * @since 1.0.0
+		 *
+		 * @param float $budget Default budget from COMPOSITE_TIME_BUDGET.
+		 */
+		$budget   = (float) apply_filters(
+			'gatherpress_venue_map_composite_time_budget',
+			self::COMPOSITE_TIME_BUDGET
+		);
+		$deadline = microtime( true ) + $budget;
 
 		for ( $tx = $left_tile; $tx <= $right_tile; $tx++ ) {
 			for ( $ty = $top_tile; $ty <= $bottom_tile; $ty++ ) {
