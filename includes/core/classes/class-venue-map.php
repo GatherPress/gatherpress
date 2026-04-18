@@ -669,25 +669,39 @@ class Venue_Map {
 		// even when the venue has never been rendered at those dimensions.
 		// `width` and `height` may be 0 / omitted (meaning "auto") — the
 		// aspect-ratio hint then drives whichever dimension is missing.
-		$raw_zoom    = $request['zoom'] ?? null;
-		$raw_width   = $request['width'] ?? null;
-		$raw_height  = $request['height'] ?? null;
-		$extra_zoom  = ( null !== $raw_zoom && (int) $raw_zoom > 0 ) ? (int) $raw_zoom : null;
-		$extra_width = ( null !== $raw_width && (int) $raw_width >= 0 ) ? (int) $raw_width : null;
-		$extra_hgt   = ( null !== $raw_height && (int) $raw_height >= 0 ) ? (int) $raw_height : null;
-		$aspect      = (string) ( $request['aspect_ratio'] ?? '' );
+		$raw_zoom     = $request['zoom'] ?? null;
+		$raw_width    = $request['width'] ?? null;
+		$raw_height   = $request['height'] ?? null;
+		$extra_zoom   = ( null !== $raw_zoom && (int) $raw_zoom > 0 ) ? (int) $raw_zoom : null;
+		$extra_width  = ( null !== $raw_width && (int) $raw_width >= 0 ) ? (int) $raw_width : null;
+		$extra_height = ( null !== $raw_height && (int) $raw_height >= 0 ) ? (int) $raw_height : null;
+		$aspect       = (string) ( $request['aspect_ratio'] ?? '' );
 
 		$descriptors = $this->regenerate(
 			$post_id,
 			$extra_zoom,
 			$extra_width,
-			$extra_hgt,
+			$extra_height,
 			$aspect
 		);
 
+		// An empty descriptor map for a geocoded venue means every combo
+		// failed — disk write error, GD missing, tile host unreachable past
+		// COMPOSITE_TIME_BUDGET. Surface it with a distinct reason so the
+		// UI can flag the failure instead of rendering as a silent success.
+		if ( empty( $descriptors ) ) {
+			return new WP_REST_Response(
+				array(
+					'descriptors' => (object) array(),
+					'reason'      => 'generation_failed',
+				),
+				200
+			);
+		}
+
 		return new WP_REST_Response(
 			array(
-				'descriptors' => empty( $descriptors ) ? (object) array() : $descriptors,
+				'descriptors' => $descriptors,
 				'reason'      => '',
 			),
 			200
@@ -1112,7 +1126,11 @@ class Venue_Map {
 	 * @return string Filename including the `.png` extension.
 	 */
 	protected function filename_for( string $address, int $zoom, int $width, int $height ): string {
-		$slug = sanitize_title( $address );
+		// `sanitize_title()` URL-slugifies; pass the result through
+		// `sanitize_file_name()` as defense-in-depth so any path-sensitive
+		// characters that slip past (or future changes to sanitize_title's
+		// allowed set) can't escape the filename segment.
+		$slug = sanitize_file_name( sanitize_title( $address ) );
 
 		if ( '' === $slug ) {
 			$slug = 'venue';

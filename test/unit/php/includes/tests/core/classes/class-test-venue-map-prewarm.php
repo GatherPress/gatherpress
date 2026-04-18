@@ -801,32 +801,35 @@ class Test_Venue_Map_Prewarm extends Base {
 	public function test_scans_short_circuit_without_venue_types(): void {
 		$instance = Venue_Map_Prewarm::get_instance();
 
-		$hide_supports = static function ( $post_types, $feature ) {
-			if ( 'gatherpress-venue-information' === $feature ) {
-				return array();
+		// Temporarily unregister the venue-information support so the
+		// gatherpress-venue-information feature has no matching post types.
+		$supported = get_post_types_by_support( 'gatherpress-venue-information' );
+		foreach ( $supported as $post_type ) {
+			remove_post_type_support( $post_type, 'gatherpress-venue-information' );
+		}
+
+		try {
+			$combos = array(
+				array(
+					'zoom'         => 15,
+					'width'        => 800,
+					'height'       => 400,
+					'aspect_ratio' => '2/1',
+				),
+			);
+
+			Utility::invoke_hidden_method(
+				$instance,
+				'enqueue_for_all_venues',
+				array( $combos )
+			);
+
+			$ids = Utility::invoke_hidden_method( $instance, 'get_venue_post_ids' );
+		} finally {
+			foreach ( $supported as $post_type ) {
+				add_post_type_support( $post_type, 'gatherpress-venue-information' );
 			}
-			return $post_types;
-		};
-		add_filter( 'get_post_types_by_support_args', $hide_supports, 10, 2 );
-
-		$combos = array(
-			array(
-				'zoom'         => 15,
-				'width'        => 800,
-				'height'       => 400,
-				'aspect_ratio' => '2/1',
-			),
-		);
-
-		Utility::invoke_hidden_method(
-			$instance,
-			'enqueue_for_all_venues',
-			array( $combos )
-		);
-
-		$ids = Utility::invoke_hidden_method( $instance, 'get_venue_post_ids' );
-
-		remove_filter( 'get_post_types_by_support_args', $hide_supports, 10 );
+		}
 
 		$this->assertFalse(
 			(bool) wp_next_scheduled( Venue_Map_Prewarm::CRON_ACTION ),

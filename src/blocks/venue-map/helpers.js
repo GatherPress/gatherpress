@@ -47,6 +47,7 @@ export const RegenerateMapButton = ( {
 	const [ isBusy, setIsBusy ] = useState( false );
 	const { receiveEntityRecords, invalidateResolution } =
 		useDispatch( 'core' );
+	const { createErrorNotice } = useDispatch( 'core/notices' );
 
 	// Non-reactive selector lookups — we only need the current record at
 	// the moment of the click to merge fresh meta into it, not on every
@@ -69,8 +70,9 @@ export const RegenerateMapButton = ( {
 
 		setIsBusy( true );
 
+		let response;
 		try {
-			const response = await apiFetch( {
+			response = await apiFetch( {
 				path: `/${ REST_NAMESPACE }/venue/${ venuePostId }/regenerate-map`,
 				method: 'POST',
 				data: {
@@ -83,6 +85,37 @@ export const RegenerateMapButton = ( {
 							: undefined,
 				},
 			} );
+		} catch ( error ) {
+			// Network / permission failure (403, 500, offline). Keep the
+			// cached descriptor intact so the preview doesn't flash blank,
+			// surface the failure as an admin notice, and re-enable the
+			// button so the user can retry.
+			createErrorNotice?.(
+				error?.message ||
+					__(
+						'Could not regenerate the map. Please try again.',
+						'gatherpress'
+					),
+				{ type: 'snackbar' }
+			);
+			setIsBusy( false );
+			return;
+		}
+
+		try {
+			// Server reached but every combo failed to render (disk / GD /
+			// tile host). Treat as an error: leave the cached descriptor
+			// intact and surface a notice.
+			if ( 'generation_failed' === response?.reason ) {
+				createErrorNotice?.(
+					__(
+						'The map server could not render the image. Check the tile provider and try again.',
+						'gatherpress'
+					),
+					{ type: 'snackbar' }
+				);
+				return;
+			}
 
 			if ( ! venuePostType ) {
 				return;
