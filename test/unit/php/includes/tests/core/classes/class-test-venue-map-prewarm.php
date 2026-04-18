@@ -343,6 +343,35 @@ class Test_Venue_Map_Prewarm extends Base {
 	}
 
 	/**
+	 * Draft / trashed venue saves skip the enqueue path — only published
+	 * posts are reachable from the front-end and contribute to the cache
+	 * set, so unpublished saves shouldn't spend cron cycles on them.
+	 *
+	 * @covers ::on_post_saved
+	 *
+	 * @return void
+	 */
+	public function test_on_post_saved_skips_non_published_posts(): void {
+		$instance = Venue_Map_Prewarm::get_instance();
+
+		foreach ( array( 'draft', 'auto-draft', 'trash' ) as $status ) {
+			$venue_post_id = $this->factory->post->create(
+				array(
+					'post_type'   => Venue::POST_TYPE,
+					'post_status' => $status,
+				)
+			);
+
+			$instance->on_post_saved( $venue_post_id, get_post( $venue_post_id ) );
+		}
+
+		$this->assertFalse(
+			(bool) wp_next_scheduled( Venue_Map_Prewarm::CRON_ACTION ),
+			'Non-published saves enqueue nothing.'
+		);
+	}
+
+	/**
 	 * Delegates to Venue_Map::warm from the cron handler — this test only
 	 * verifies it tolerates a missing venue ID without throwing
 	 * (Venue_Map::warm returns null for invalid input).
@@ -575,6 +604,59 @@ class Test_Venue_Map_Prewarm extends Base {
 			(bool) wp_next_scheduled( Venue_Map_Prewarm::CRON_ACTION ),
 			'Event with no venue term enqueues nothing.'
 		);
+	}
+
+	/**
+	 * Batch-size filter lets callers override SCAN_BATCH_SIZE; values below
+	 * 1 are clamped up to 1 to avoid an infinite empty-batch loop.
+	 *
+	 * @covers ::get_scan_batch_size
+	 *
+	 * @return void
+	 */
+	/**
+	 * Content-scan batch size is separately filterable so an extender can
+	 * shrink the post_content-loading loop without touching the ID-only
+	 * venue scan. Clamps to at least 1.
+	 *
+	 * @covers ::get_content_scan_batch_size
+	 *
+	 * @return void
+	 */
+	public function test_get_content_scan_batch_size_applies_filter_and_clamps(): void {
+		$instance = Venue_Map_Prewarm::get_instance();
+
+		$this->assertSame(
+			Venue_Map_Prewarm::CONTENT_SCAN_BATCH_SIZE,
+			Utility::invoke_hidden_method( $instance, 'get_content_scan_batch_size' ),
+			'Default matches the CONTENT_SCAN_BATCH_SIZE constant.'
+		);
+
+		$override = static function () {
+			return 7;
+		};
+		add_filter( 'gatherpress_venue_map_prewarm_content_batch_size', $override );
+
+		$this->assertSame(
+			7,
+			Utility::invoke_hidden_method( $instance, 'get_content_scan_batch_size' ),
+			'Filter-supplied value replaces the default.'
+		);
+
+		remove_filter( 'gatherpress_venue_map_prewarm_content_batch_size', $override );
+
+		$clamp = static function () {
+			return -5;
+		};
+		add_filter( 'gatherpress_venue_map_prewarm_content_batch_size', $clamp );
+
+		$this->assertSame(
+			1,
+			Utility::invoke_hidden_method( $instance, 'get_content_scan_batch_size' ),
+			'Values below 1 clamp up to 1.'
+		);
+
+		remove_filter( 'gatherpress_venue_map_prewarm_content_batch_size', $clamp );
 	}
 
 	/**

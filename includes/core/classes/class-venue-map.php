@@ -312,6 +312,21 @@ class Venue_Map {
 						'required'          => false,
 						'type'              => 'string',
 						'sanitize_callback' => 'sanitize_text_field',
+						// Accept empty ("use server default") or an
+						// integer-separated pair matching the block's
+						// aspect-ratio format. parse_aspect_ratio()
+						// downstream still has to handle odd inputs for
+						// the non-REST call sites, but surfacing a 400
+						// here is cheaper than silently falling back.
+						'validate_callback' => static function ( $value ): bool {
+							if ( '' === $value || null === $value ) {
+								return true;
+							}
+							return (bool) preg_match(
+								'#\A\s*\d+\s*[/:]\s*\d+\s*\z#',
+								(string) $value
+							);
+						},
 					),
 				),
 			)
@@ -907,7 +922,21 @@ class Venue_Map {
 			);
 		}
 
-		return $descriptors;
+		/**
+		 * Filter the parsed descriptor map for a venue.
+		 *
+		 * Companion plugins, multi-locale setups, or storage-layer overrides
+		 * can use this to drop entries they consider stale, add synthetic
+		 * descriptors (e.g. pre-rendered PNGs in a CDN), or rewrite URLs.
+		 * Callers of this method already tolerate empty maps, so returning
+		 * `[]` is a valid "suppress all" escape hatch.
+		 *
+		 * @since 1.0.0
+		 *
+		 * @param array<string, array<string, mixed>> $descriptors Parsed descriptor map keyed by combo.
+		 * @param int                                 $post_id     Venue post ID.
+		 */
+		return (array) apply_filters( 'gatherpress_venue_map_descriptor', $descriptors, $post_id );
 	}
 
 	/**

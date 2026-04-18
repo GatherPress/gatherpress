@@ -72,6 +72,18 @@ class Venue_Map_Prewarm {
 	const SCAN_BATCH_SIZE = 500;
 
 	/**
+	 * Batch size for scans that load full post objects (post_content
+	 * included). FSE-rich pages can make post_content multi-megabyte, so
+	 * we pull fewer rows per round-trip than the ID-only venue scan
+	 * (SCAN_BATCH_SIZE). Filterable via
+	 * `gatherpress_venue_map_prewarm_content_batch_size`.
+	 *
+	 * @since 1.0.0
+	 * @var int
+	 */
+	const CONTENT_SCAN_BATCH_SIZE = 100;
+
+	/**
 	 * Class constructor — wires hooks.
 	 *
 	 * @since 1.0.0
@@ -100,6 +112,34 @@ class Venue_Map_Prewarm {
 		 * @param int $size Number of posts loaded per batch during prewarm scans.
 		 */
 		$size = (int) apply_filters( 'gatherpress_venue_map_prewarm_batch_size', self::SCAN_BATCH_SIZE );
+
+		return max( 1, $size );
+	}
+
+	/**
+	 * Return the batch size used by paginated content scans.
+	 *
+	 * Separate from {@see self::get_scan_batch_size()} because content
+	 * scans load full post rows (post_content can be megabytes on
+	 * FSE-rich pages), where the ID-only venue scan can afford a larger
+	 * batch. Clamped to at least 1.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return int
+	 */
+	protected function get_content_scan_batch_size(): int {
+		/**
+		 * Filter the venue-map prewarm content-scan batch size.
+		 *
+		 * @since 1.0.0
+		 *
+		 * @param int $size Number of posts loaded per batch during content scans.
+		 */
+		$size = (int) apply_filters(
+			'gatherpress_venue_map_prewarm_content_batch_size',
+			self::CONTENT_SCAN_BATCH_SIZE
+		);
 
 		return max( 1, $size );
 	}
@@ -138,6 +178,16 @@ class Venue_Map_Prewarm {
 	 */
 	public function on_post_saved( int $post_id, WP_Post $post ): void {
 		if ( wp_is_post_revision( $post_id ) || wp_is_post_autosave( $post_id ) ) {
+			return;
+		}
+
+		// Only published posts contribute to the cached render set — a
+		// draft/auto-draft venue hasn't been seen by any front-end request,
+		// a trashed one shouldn't get new warm jobs scheduled against it,
+		// and an unpublished template won't render. The scan paths reading
+		// venue / event content already filter `post_status => publish`, so
+		// this gate keeps the save-hook path consistent.
+		if ( 'publish' !== $post->post_status ) {
 			return;
 		}
 
@@ -322,7 +372,10 @@ class Venue_Map_Prewarm {
 
 		$venue_carrying_types = get_post_types_by_support( 'gatherpress-venue' );
 		if ( ! empty( $venue_carrying_types ) ) {
-			$batch_size = $this->get_scan_batch_size();
+			// Full post rows (for post_content) — use the smaller
+			// content-scan batch. FSE-rich events can carry MBs of
+			// content; the ID-only venue scan can afford a larger batch.
+			$batch_size = $this->get_content_scan_batch_size();
 			$page       = 1;
 
 			// Paginate rather than `posts_per_page => -1` — a site with
