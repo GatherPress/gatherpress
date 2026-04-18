@@ -80,6 +80,7 @@ class Setup {
 		Settings\Venues::get_instance();
 		Topic::get_instance();
 		User::get_instance();
+		Venue_Map::get_instance();
 		Venue_Setup::get_instance();
 	}
 

@@ -21,3 +21,52 @@
 		}
 	}
 }
+
+.gatherpress-venue-map {
+	// The wrapper owns the block-level height (set inline by render.php); the
+	// static <img> fills that box via object-fit: cover so the image stays
+	// crisp and cropped rather than stretched when the block's aspect ratio
+	// differs from the 600×400 generator default.
+	position: relative;
+	overflow: hidden;
+
+	&__image {
+		display: block;
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+	}
+
+	&__placeholder {
+		display: flex;
+		width: 100%;
+		height: 100%;
+		align-items: center;
+		justify-content: center;
+		padding: 1rem;
+		text-align: center;
+		background: #f0f0f0;
+		border: 1px dashed #ccc;
+		color: #666;
+		box-sizing: border-box;
+	}
+
+	// CartoDB/OSM attribution — mirrors the bottom-right placement Leaflet
+	// uses so static + interactive modes look consistent. Semi-transparent
+	// background keeps the text readable against any basemap underneath.
+	&__attribution {
+		position: absolute;
+		right: 0;
+		bottom: 0;
+		padding: 0.1rem 0.5rem;
+		background: rgb(255 255 255 / 75%);
+		color: #333;
+		font-size: 0.65rem;
+		line-height: 1.4;
+
+		a {
+			color: inherit;
+			text-decoration: underline;
+		}
+	}
+}

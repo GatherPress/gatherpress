@@ -186,41 +186,46 @@ class Block {
 			)
 		);
 
+		// Descriptive note shown to developers who enumerate registered
+		// patterns (REST API, pattern registry). These patterns exist as
+		// anchors for the Block Hooks API so other plugins can hook blocks
+		// before/after the canonical event/venue block — they are not
+		// user-facing design patterns, hence `'inserter' => false`.
+		$hook_anchor_description = __(
+			// phpcs:ignore Generic.Files.LineLength.TooLong -- Translator-facing sentence; keep it on one line for the .pot extractor.
+			'Default content seeded into a new post. Anchors the Block Hooks API so other plugins can inject blocks around the core GatherPress block.',
+			'gatherpress'
+		);
+
 		$block_patterns = array(
 			array(
 				'gatherpress/event-template',
 				array(
-					'title'    => __( 'Invisible Event Template Block Pattern', 'gatherpress' ),
-					// Even this paragraph seems useless, it's not.
-					// It is the entry point for all our hooked blocks
-					// and as such absolutely important!
-					'content'  => '<!-- wp:gatherpress/event-date /-->', // Other blocks are hooked-in here.
-					'inserter' => false,
-					'source'   => 'plugin',
+					'title'       => __( 'Event Post Default Content', 'gatherpress' ),
+					'description' => $hook_anchor_description,
+					'content'     => '<!-- wp:gatherpress/event-date /-->',
+					'inserter'    => false,
+					'source'      => 'plugin',
 				),
 			),
 			array(
 				'gatherpress/venue-template',
 				array(
-					'title'    => __( 'Invisible Venue Template Block Pattern', 'gatherpress' ),
-					// Even this block seems useless, it's not.
-					// It is the entry point for all our hooked blocks
-					// and as such absolutely important!
-					'content'  => '<!-- wp:gatherpress/venue /-->', // Other blocks are hooked-in here.
-					'inserter' => false,
-					'source'   => 'plugin',
+					'title'       => __( 'Venue Post Default Content', 'gatherpress' ),
+					'description' => $hook_anchor_description,
+					'content'     => '<!-- wp:gatherpress/venue /-->',
+					'inserter'    => false,
+					'source'      => 'plugin',
 				),
 			),
 			array(
 				'gatherpress/venue-details',
 				array(
-					'title'    => __( 'Invisible Venue Details Block Pattern', 'gatherpress' ),
-					// Even this post-title seems useless, it's not.
-					// It is the entry point for all our hooked blocks
-					// and as such absolutely important!
-					'content'  => '<!-- wp:post-title /-->', // Other blocks are hooked-in here.
-					'inserter' => false,
-					'source'   => 'plugin',
+					'title'       => __( 'Venue Details Default Content', 'gatherpress' ),
+					'description' => $hook_anchor_description,
+					'content'     => '<!-- wp:post-title /-->',
+					'inserter'    => false,
+					'source'      => 'plugin',
 				),
 			),
 		);

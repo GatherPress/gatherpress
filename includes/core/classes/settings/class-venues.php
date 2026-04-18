@@ -16,6 +16,7 @@ namespace GatherPress\Core\Settings;
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Traits\Singleton;
+use GatherPress\Core\Venue_Map;
 
 /**
  * Class Venues.
@@ -79,11 +80,11 @@ class Venues extends Base {
 			'maps' => array(
 				'name'        => __( 'Maps', 'gatherpress' ),
 				'description' => __(
-					'Configure the mapping platform used for venue display.',
+					'Configure the mapping platform and defaults applied to new venue map blocks.',
 					'gatherpress'
 				),
 				'options'     => array(
-					'map_platform' => array(
+					'map_platform'                  => array(
 						'labels'      => array(
 							'name' => __( 'Mapping Platform', 'gatherpress' ),
 						),
@@ -99,6 +100,87 @@ class Venues extends Base {
 								'items'   => array(
 									'osm'    => __( 'OpenStreetMap', 'gatherpress' ),
 									'google' => __( 'Google Maps', 'gatherpress' ),
+								),
+							),
+						),
+					),
+					'venue_map_default_render_mode' => array(
+						'labels'      => array(
+							'name' => __( 'Default Render Mode', 'gatherpress' ),
+						),
+						'description' => __(
+							'Default rendering mode applied to new venue map blocks.',
+							'gatherpress'
+						),
+						'field'       => array(
+							'label'   => __( 'Render mode for new blocks:', 'gatherpress' ),
+							'type'    => 'select',
+							'options' => array(
+								'default' => Venue_Map::DEFAULT_RENDER_MODE,
+								'items'   => array(
+									'interactive' => __( 'Interactive', 'gatherpress' ),
+									'static'      => __( 'Static image', 'gatherpress' ),
+								),
+							),
+						),
+					),
+					'venue_map_default_zoom'        => array(
+						'labels'      => array(
+							'name' => __( 'Default Zoom Level', 'gatherpress' ),
+						),
+						'description' => __(
+							'Default zoom applied to new venue map blocks.',
+							'gatherpress'
+						),
+						'field'       => array(
+							'label'   => __( 'Zoom level for new blocks:', 'gatherpress' ),
+							'type'    => 'number',
+							'size'    => 'small',
+							'options' => array(
+								'default' => Venue_Map::DEFAULT_ZOOM,
+								'min'     => '1',
+								'max'     => '20',
+							),
+						),
+					),
+					'venue_map_default_height'      => array(
+						'labels'      => array(
+							'name' => __( 'Default Height', 'gatherpress' ),
+						),
+						'description' => __(
+							'Default pixel height applied to new venue map blocks.',
+							'gatherpress'
+						),
+						'field'       => array(
+							'label'   => __( 'Height for new blocks (px):', 'gatherpress' ),
+							'type'    => 'number',
+							'size'    => 'small',
+							'options' => array(
+								'default' => Venue_Map::DEFAULT_HEIGHT,
+								'min'     => '100',
+								'max'     => '800',
+							),
+						),
+					),
+					'venue_map_default_type'        => array(
+						'labels'      => array(
+							'name' => __( 'Default Map Type', 'gatherpress' ),
+						),
+						'description' => __(
+							// phpcs:ignore Generic.Files.LineLength.TooLong -- Single translator-facing sentence; keep on one line for .pot extractor.
+							'Default map type for new venue map blocks. Only rendered by Google Maps; OpenStreetMap and static images ignore this value.',
+							'gatherpress'
+						),
+						'field'       => array(
+							'label'   => __( 'Map type for new blocks:', 'gatherpress' ),
+							'type'    => 'select',
+							'options' => array(
+								'default' => Venue_Map::DEFAULT_MAP_TYPE,
+								'items'   => array(
+									'roadmap'   => __( 'Roadmap', 'gatherpress' ),
+									'satellite' => __( 'Satellite', 'gatherpress' ),
+									'hybrid'    => __( 'Hybrid', 'gatherpress' ),
+									'terrain'   => __( 'Terrain', 'gatherpress' ),
 								),
 							),
 						),

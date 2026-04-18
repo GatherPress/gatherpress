@@ -86,5 +86,25 @@ class Test_Venues extends Base {
 			$section['maps']['options']['map_platform']['field']['options']['default'],
 			'Failed to assert map_platform defaults to osm.'
 		);
+
+		// New block-default settings feed the venue-map block.json defaults
+		// via Venue_Map::apply_block_attribute_defaults().
+		foreach ( array(
+			'venue_map_default_render_mode' => 'interactive',
+			'venue_map_default_zoom'        => 18,
+			'venue_map_default_height'      => 300,
+			'venue_map_default_type'        => 'roadmap',
+		) as $key => $expected ) {
+			$this->assertArrayHasKey(
+				$key,
+				$section['maps']['options'],
+				sprintf( 'Failed to assert %s option is present.', $key )
+			);
+			$this->assertSame(
+				$expected,
+				$section['maps']['options'][ $key ]['field']['options']['default'],
+				sprintf( 'Failed to assert default value for %s.', $key )
+			);
+		}
 	}
 }

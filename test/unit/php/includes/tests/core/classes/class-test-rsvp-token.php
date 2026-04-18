@@ -346,6 +346,49 @@ class Test_Rsvp_Token extends Base {
 	}
 
 	/**
+	 * Calling approve_comment() on an already-approved comment must not
+	 * fire wp_transition_comment_status again — the token URL sticks in
+	 * the browser and revisits would otherwise re-run the transition on
+	 * every request.
+	 *
+	 * @covers ::approve_comment
+	 *
+	 * @return void
+	 */
+	public function test_approve_comment_skips_already_approved_comment(): void {
+		$post = $this->mock->post(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		)->get();
+
+		$comment_id = $this->factory->comment->create(
+			array(
+				'comment_post_ID'  => $post->ID,
+				'comment_type'     => Rsvp::COMMENT_TYPE,
+				'comment_approved' => '1',
+			)
+		);
+
+		$transition_count = 0;
+		$spy              = static function () use ( &$transition_count ) {
+			++$transition_count;
+		};
+		add_action( 'wp_transition_comment_status', $spy );
+
+		$token = new Rsvp_Token( $comment_id );
+		$token->approve_comment();
+
+		remove_action( 'wp_transition_comment_status', $spy );
+
+		$this->assertSame(
+			0,
+			$transition_count,
+			'wp_transition_comment_status must not re-fire for already-approved comments.'
+		);
+	}
+
+	/**
 	 * Coverage for get_comment method.
 	 *
 	 * @covers ::get_comment

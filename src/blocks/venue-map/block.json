@@ -21,6 +21,10 @@
 		"height": {
 			"type": "number",
 			"default": 300
+		},
+		"renderMode": {
+			"type": "string",
+			"default": "interactive"
 		}
 	},
 	"supports": {

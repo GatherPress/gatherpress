@@ -14,6 +14,7 @@ import { useSelect } from '@wordpress/data';
  * Internal dependencies.
  */
 import { isVenuePostType } from '../../helpers/venue';
+import { getFromSettings } from '../../helpers/editor-settings';
 import MapEmbed from '../../components/MapEmbed';
 
 /**
@@ -29,11 +30,19 @@ import MapEmbed from '../../components/MapEmbed';
  * @return {JSX.Element} The rendered React component.
  */
 const Edit = ( { attributes, setAttributes, context } ) => {
-	const { zoom, type, height } = attributes;
+	const { zoom, type, height, renderMode } = attributes;
 	const blockProps = useBlockProps();
 
-	// Determine the venue post ID and get venue info.
-	const { isEditingThisVenue, venueInfoJson } = useSelect(
+	// Determine the venue post ID and get venue info + static-map descriptors.
+	// `savedVenueInfoJson` reflects what's persisted server-side — compared
+	// against the edited JSON below to detect unsaved address/coord changes
+	// and force the placeholder until the next save regenerates the PNG.
+	const {
+		isEditingThisVenue,
+		venueInfoJson,
+		savedVenueInfoJson,
+		staticMapDescriptors,
+	} = useSelect(
 		( select ) => {
 			const currentPostId = select( 'core/editor' )?.getCurrentPostId();
 			const contextPostId = context?.postId || 0;
@@ -48,6 +57,8 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 				return {
 					isEditingThisVenue: false,
 					venueInfoJson: '{}',
+					savedVenueInfoJson: '{}',
+					staticMapDescriptors: {},
 				};
 			}
 
@@ -59,9 +70,15 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 				// Read from core/editor store for the current post being edited.
 				const meta =
 					select( 'core/editor' )?.getEditedPostAttribute( 'meta' ) || {};
+				const savedPost =
+					select( 'core/editor' )?.getCurrentPost() || {};
 				return {
 					isEditingThisVenue: true,
 					venueInfoJson: meta?.gatherpress_venue_information || '{}',
+					savedVenueInfoJson:
+						savedPost?.meta?.gatherpress_venue_information || '{}',
+					staticMapDescriptors:
+						meta?.gatherpress_venue_static_map || {},
 				};
 			}
 
@@ -75,9 +92,15 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 				effectiveVenuePostId
 			);
 
+			const venueInfo =
+				venuePost?.meta?.gatherpress_venue_information || '{}';
+
 			return {
 				isEditingThisVenue: false,
-				venueInfoJson: venuePost?.meta?.gatherpress_venue_information || '{}',
+				venueInfoJson: venueInfo,
+				savedVenueInfoJson: venueInfo,
+				staticMapDescriptors:
+					venuePost?.meta?.gatherpress_venue_static_map || {},
 			};
 		},
 		[ context?.postId, context?.postType ]
@@ -115,10 +138,68 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 		longitude = null !== storeLng && storeLng !== undefined ? String( storeLng ) : longitude;
 	}
 
+	// Map type is a Google Maps–only concept; only expose the selector when
+	// the map platform is Google and we're rendering interactively on the
+	// front-end. The OSM/Leaflet and static-image paths both ignore it.
+	const showMapTypeControl =
+		'interactive' === renderMode &&
+		'google' === getFromSettings( 'mapPlatform' );
+
+	// When the block is in static mode we show one of two previews in place of
+	// the interactive MapEmbed: (a) the actual cached PNG for this venue's
+	// (zoom, height) combo if it's been generated, or (b) a placeholder
+	// noting that the image will be generated on the next save. The
+	// interactive MapEmbed only renders when the user explicitly picked
+	// Interactive.
+	//
+	// While the venue is being edited we compare the edited address/coords
+	// against the last-saved snapshot so the cached PNG doesn't linger as a
+	// stale preview after the user types a new address — the placeholder
+	// takes over until the next save regenerates the image.
+	let savedVenueInfo = {};
+	try {
+		savedVenueInfo = JSON.parse( savedVenueInfoJson );
+	} catch ( e ) {
+		savedVenueInfo = {};
+	}
+	const hasUnsavedMapInputs =
+		isEditingThisVenue &&
+		( ( venueInfo.fullAddress || '' ) !==
+			( savedVenueInfo.fullAddress || '' ) ||
+			( venueInfo.latitude || '' ) !==
+				( savedVenueInfo.latitude || '' ) ||
+			( venueInfo.longitude || '' ) !==
+				( savedVenueInfo.longitude || '' ) );
+
+	const comboKey = `${ zoom }x${ height }`;
+	const staticMapDescriptor = staticMapDescriptors?.[ comboKey ];
+	const staticMapUrl = staticMapDescriptor?.url || '';
+	const isStaticMode = 'static' === renderMode;
+	const showStaticImage =
+		isStaticMode && '' !== staticMapUrl && ! hasUnsavedMapInputs;
+	const showStaticPlaceholder = isStaticMode && ! showStaticImage;
+
 	return (
 		<>
 			<InspectorControls>
 				<PanelBody title={ __( 'Map settings', 'gatherpress' ) }>
+					<SelectControl
+						label={ __( 'Render mode', 'gatherpress' ) }
+						value={ renderMode }
+						options={ [
+							{
+								label: __( 'Interactive', 'gatherpress' ),
+								value: 'interactive',
+							},
+							{
+								label: __( 'Static image', 'gatherpress' ),
+								value: 'static',
+							},
+						] }
+						onChange={ ( value ) =>
+							setAttributes( { renderMode: value } )
+						}
+					/>
 					<RangeControl
 						label={ __( 'Zoom level', 'gatherpress' ) }
 						value={ zoom }
@@ -128,29 +209,33 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 						min={ 1 }
 						max={ 20 }
 					/>
-					<SelectControl
-						label={ __( 'Map type', 'gatherpress' ) }
-						value={ type }
-						options={ [
-							{
-								label: __( 'Roadmap', 'gatherpress' ),
-								value: 'roadmap',
-							},
-							{
-								label: __( 'Satellite', 'gatherpress' ),
-								value: 'satellite',
-							},
-							{
-								label: __( 'Hybrid', 'gatherpress' ),
-								value: 'hybrid',
-							},
-							{
-								label: __( 'Terrain', 'gatherpress' ),
-								value: 'terrain',
-							},
-						] }
-						onChange={ ( value ) => setAttributes( { type: value } ) }
-					/>
+					{ showMapTypeControl && (
+						<SelectControl
+							label={ __( 'Map type', 'gatherpress' ) }
+							value={ type }
+							options={ [
+								{
+									label: __( 'Roadmap', 'gatherpress' ),
+									value: 'roadmap',
+								},
+								{
+									label: __( 'Satellite', 'gatherpress' ),
+									value: 'satellite',
+								},
+								{
+									label: __( 'Hybrid', 'gatherpress' ),
+									value: 'hybrid',
+								},
+								{
+									label: __( 'Terrain', 'gatherpress' ),
+									value: 'terrain',
+								},
+							] }
+							onChange={ ( value ) =>
+								setAttributes( { type: value } )
+							}
+						/>
+					) }
 					<RangeControl
 						label={ __( 'Height (px)', 'gatherpress' ) }
 						value={ height }
@@ -164,14 +249,43 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 			</InspectorControls>
 			<div { ...blockProps }>
 				<div className="block-editor-inner-blocks">
-					<MapEmbed
-						location={ fullAddress }
-						latitude={ latitude }
-						longitude={ longitude }
-						zoom={ zoom }
-						type={ type }
-						height={ height }
-					/>
+					{ showStaticImage && (
+						<div
+							className="gatherpress-venue-map gatherpress-venue-map--static"
+							style={ { height: `${ height }px` } }
+						>
+							<img
+								className="gatherpress-venue-map__image"
+								src={ staticMapUrl }
+								alt={ fullAddress
+									? `${ __( 'Map of', 'gatherpress' ) } ${ fullAddress }`
+									: __( 'Venue map', 'gatherpress' ) }
+							/>
+						</div>
+					) }
+					{ showStaticPlaceholder && (
+						<div
+							className="gatherpress-venue-map gatherpress-venue-map--static"
+							style={ { height: `${ height }px` } }
+						>
+							<div className="gatherpress-venue-map__placeholder">
+								{ __(
+									'Static map preview appears after venue is saved.',
+									'gatherpress'
+								) }
+							</div>
+						</div>
+					) }
+					{ ! isStaticMode && (
+						<MapEmbed
+							location={ fullAddress }
+							latitude={ latitude }
+							longitude={ longitude }
+							zoom={ zoom }
+							type={ type }
+							height={ height }
+						/>
+					) }
 				</div>
 			</div>
 		</>

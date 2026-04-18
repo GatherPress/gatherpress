@@ -10,11 +10,13 @@ import { createRoot } from '@wordpress/element';
 import MapEmbed from '../../components/MapEmbed';
 
 /**
- * Render GatherPress Map Embed blocks on the frontend.
+ * Upgrade venue-map blocks marked `data-render-mode="interactive"` into a live
+ * Leaflet map.
  *
- * This code initializes the rendering of Map Embed blocks by identifying
- * containers using the 'data-gatherpress_block_name' attribute, extracting
- * block attributes from the dataset, and rendering the MapEmbed component.
+ * Static-mode wrappers are left alone — their pre-rendered `<img>` is the
+ * final output. For interactive wrappers we read the JSON payload that
+ * render.php emitted on the outer `<div>`, replace the wrapper's static
+ * children with a React root, and mount `MapEmbed` (which drives Leaflet).
  *
  * @since 1.0.0
  *
@@ -22,11 +24,17 @@ import MapEmbed from '../../components/MapEmbed';
  */
 domReady( () => {
 	const containers = document.querySelectorAll(
-		`[data-gatherpress_block_name="map-embed"]`
+		'[data-render-mode="interactive"][data-gatherpress_block_name="map-embed"]'
 	);
 
 	for ( const container of containers ) {
-		const attrs = JSON.parse( container.dataset.gatherpress_block_attrs );
+		let attrs;
+		try {
+			attrs = JSON.parse( container.dataset.gatherpress_block_attrs );
+		} catch ( e ) {
+			// Malformed JSON — leave the static baseline in place.
+			continue;
+		}
 
 		createRoot( container ).render(
 			<MapEmbed

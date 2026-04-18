@@ -292,6 +292,28 @@ class Venue_Setup {
 				'default'           => 1,
 				'revisions_enabled' => true,
 			),
+			// Venue_Map keeps a per-zoom descriptor map here: { "15": { url,
+			// hash }, ... }. Exposed read-only via REST so the block editor
+			// can preview the cached static image when the user picks
+			// renderMode="static". Writes are denied ­— the server-side
+			// pipeline is the only thing allowed to populate this meta.
+			Venue_Map::META_KEY             => array(
+				'auth_callback' => '__return_false',
+				'show_in_rest'  => array(
+					'schema' => array(
+						'type'                 => 'object',
+						'additionalProperties' => array(
+							'type'       => 'object',
+							'properties' => array(
+								'url'  => array( 'type' => 'string' ),
+								'hash' => array( 'type' => 'string' ),
+							),
+						),
+					),
+				),
+				'single'        => true,
+				'type'          => 'object',
+			),
 		);
 
 		$venue_map_meta = array(
@@ -371,6 +393,7 @@ class Venue_Setup {
 			'geo_longitude',
 			'geo_address',
 			'geo_public',
+			Venue_Map::META_KEY,
 		);
 
 		$meta = $request->get_param( 'meta' );
