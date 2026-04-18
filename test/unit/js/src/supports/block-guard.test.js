@@ -53,6 +53,7 @@ jest.mock( '@wordpress/i18n', () => ( {
 
 jest.mock( '@wordpress/hooks', () => ( {
 	addFilter: jest.fn(),
+	hasFilter: jest.fn( () => false ),
 } ) );
 
 jest.mock( '@wordpress/element', () => ( {

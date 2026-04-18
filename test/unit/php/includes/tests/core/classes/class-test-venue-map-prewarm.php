@@ -743,6 +743,146 @@ class Test_Venue_Map_Prewarm extends Base {
 	}
 
 	/**
+	 * Iterates the combo list collected from templates and events from
+	 * enqueue_for_venue, scheduling a job for each — covers the inner loop
+	 * body on the non-empty combo path.
+	 *
+	 * @covers ::enqueue_for_venue
+	 *
+	 * @return void
+	 */
+	public function test_enqueue_for_venue_schedules_jobs_for_each_combo(): void {
+		$instance = Venue_Map_Prewarm::get_instance();
+
+		$venue_post_id = $this->factory->post->create(
+			array(
+				'post_type'   => Venue::POST_TYPE,
+				'post_status' => 'publish',
+			)
+		);
+
+		// Seed an event whose content contributes a combo to the
+		// collect_all_template_combos pool.
+		$this->factory->post->create(
+			array(
+				'post_type'    => 'gatherpress_event',
+				'post_status'  => 'publish',
+				'post_content' => '<!-- wp:gatherpress/venue-map '
+					. '{"zoom":13,"width":700,"height":350,"aspectRatio":"2/1"} /-->',
+			)
+		);
+
+		Utility::invoke_hidden_method(
+			$instance,
+			'enqueue_for_venue',
+			array( $venue_post_id )
+		);
+
+		$this->assertNotFalse(
+			wp_next_scheduled(
+				Venue_Map_Prewarm::CRON_ACTION,
+				array( $venue_post_id, 13, 700, 350, '2/1' )
+			),
+			'Venue received a warm job for the combo surfaced via enqueue_for_venue.'
+		);
+	}
+
+	/**
+	 * When no post type supports gatherpress-venue-information,
+	 * enqueue_for_all_venues and get_venue_post_ids short-circuit without
+	 * scheduling anything. Filters the supports list to simulate a site
+	 * where nothing registers as a venue source.
+	 *
+	 * @covers ::enqueue_for_all_venues
+	 * @covers ::get_venue_post_ids
+	 *
+	 * @return void
+	 */
+	public function test_scans_short_circuit_without_venue_types(): void {
+		$instance = Venue_Map_Prewarm::get_instance();
+
+		$hide_supports = static function ( $post_types, $feature ) {
+			if ( 'gatherpress-venue-information' === $feature ) {
+				return array();
+			}
+			return $post_types;
+		};
+		add_filter( 'get_post_types_by_support_args', $hide_supports, 10, 2 );
+
+		$combos = array(
+			array(
+				'zoom'         => 15,
+				'width'        => 800,
+				'height'       => 400,
+				'aspect_ratio' => '2/1',
+			),
+		);
+
+		Utility::invoke_hidden_method(
+			$instance,
+			'enqueue_for_all_venues',
+			array( $combos )
+		);
+
+		$ids = Utility::invoke_hidden_method( $instance, 'get_venue_post_ids' );
+
+		remove_filter( 'get_post_types_by_support_args', $hide_supports, 10 );
+
+		$this->assertFalse(
+			(bool) wp_next_scheduled( Venue_Map_Prewarm::CRON_ACTION ),
+			'No venue types means no scheduled warm jobs.'
+		);
+		$this->assertSame( array(), $ids, 'get_venue_post_ids returns [] when no venue types are registered.' );
+	}
+
+	/**
+	 * A saved wp_template carrying a venue-map block contributes its combo
+	 * to collect_all_template_combos — covers the DB-template scan branch.
+	 *
+	 * @covers ::collect_all_template_combos
+	 *
+	 * @return void
+	 */
+	public function test_collect_all_template_combos_scans_db_templates(): void {
+		$instance = Venue_Map_Prewarm::get_instance();
+
+		$this->factory->post->create(
+			array(
+				'post_type'    => 'wp_template',
+				'post_status'  => 'publish',
+				'post_content' => '<!-- wp:gatherpress/venue-map '
+					. '{"zoom":7,"width":400,"height":200,"aspectRatio":"2/1"} /-->',
+			)
+		);
+		$this->factory->post->create(
+			array(
+				'post_type'    => 'wp_template_part',
+				'post_status'  => 'publish',
+				'post_content' => '<!-- wp:gatherpress/venue-map '
+					. '{"zoom":6,"width":350,"height":175,"aspectRatio":"2/1"} /-->',
+			)
+		);
+
+		$combos = Utility::invoke_hidden_method( $instance, 'collect_all_template_combos' );
+
+		$keys = array_map(
+			static function ( $combo ) {
+				return sprintf(
+					'%d-%d-%d-%s',
+					(int) $combo['zoom'],
+					(int) $combo['width'],
+					(int) $combo['height'],
+					(string) $combo['aspect_ratio']
+				);
+			},
+			$combos
+		);
+
+		$this->assertContains( '7-400-200-2/1', $keys, 'Template combo surfaced through the DB-template branch.' );
+		$this->assertContains( '6-350-175-2/1', $keys, 'Template-part combo surfaced through the DB branch.' );
+	}
+
+	/**
 	 * Saving an event post without any venue-map block early-returns before
 	 * the term lookup runs.
 	 *

@@ -1287,6 +1287,38 @@ class Test_Venue_Map extends Base {
 	}
 
 	/**
+	 * A second warm() at the same combo hits the cache-hit branch —
+	 * returns the existing descriptor unchanged via build_image_url's
+	 * deterministic URL check, without re-compositing tiles.
+	 *
+	 * @covers ::warm
+	 * @covers ::build_image_url
+	 *
+	 * @return void
+	 */
+	public function test_warm_reuses_descriptor_on_cache_hit(): void {
+		$instance = Venue_Map::get_instance();
+		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
+
+		add_post_meta(
+			$post_id,
+			'gatherpress_venue_information',
+			wp_json_encode(
+				array(
+					'fullAddress' => '1 Infinite Loop',
+					'latitude'    => '37.3318',
+					'longitude'   => '-122.0312',
+				)
+			)
+		);
+
+		$first  = $instance->warm( $post_id, 15, 800, 400, '2/1' );
+		$second = $instance->warm( $post_id, 15, 800, 400, '2/1' );
+
+		$this->assertSame( $first, $second, 'Second warm returns the cached descriptor.' );
+	}
+
+	/**
 	 * An empty/special-only address still produces a valid filename via the
 	 * `venue` fallback; a very long address gets truncated to 150 chars.
 	 *
