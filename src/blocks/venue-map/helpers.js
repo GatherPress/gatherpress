@@ -25,17 +25,21 @@ import { REST_NAMESPACE } from '../../helpers/namespace';
  * @param {number}  props.venuePostId   The venue post ID whose map to regenerate.
  * @param {string}  props.venuePostType The venue's post type slug (for the core store invalidation).
  * @param {number}  props.zoom          Current block zoom — passed through so the server renders this combo.
- * @param {number}  props.height        Current block height — passed through so the server renders this combo.
+ * @param {number}  [props.width]       Current block width (0 = auto) — forwarded to the server.
+ * @param {number}  [props.height]      Current block height (0 = auto) — forwarded to the server.
+ * @param {string}  [props.aspectRatio] Current block aspect ratio (e.g. "16/9") — forwarded so the server can derive any auto dimension consistently with the client.
  * @param {boolean} props.disabled      When true, the button is disabled regardless of internal state.
  * @param {string}  [props.label]       Override the default "Regenerate map" label.
  * @param {string}  [props.variant]     Underlying Button variant (e.g. 'primary', 'secondary', 'link').
  * @return {JSX.Element} The button.
  */
-const RegenerateMapButton = ( {
+export const RegenerateMapButton = ( {
 	venuePostId,
 	venuePostType,
 	zoom,
+	width,
 	height,
+	aspectRatio,
 	disabled = false,
 	label,
 	variant = 'secondary',
@@ -48,14 +52,18 @@ const RegenerateMapButton = ( {
 	// the moment of the click to merge fresh meta into it, not on every
 	// render.
 	const getCurrentEntityRecord = useSelect(
-		( select ) => () =>
-			venuePostType && venuePostId
-				? select( 'core' ).getEntityRecord(
-						'postType',
-						venuePostType,
-						venuePostId
-				  )
-				: null,
+		( select ) => {
+			return () => {
+				if ( ! venuePostType || ! venuePostId ) {
+					return null;
+				}
+				return select( 'core' ).getEntityRecord(
+					'postType',
+					venuePostType,
+					venuePostId
+				);
+			};
+		},
 		[ venuePostType, venuePostId ]
 	);
 
@@ -72,9 +80,12 @@ const RegenerateMapButton = ( {
 				method: 'POST',
 				data: {
 					zoom: Number.isInteger( zoom ) ? zoom : undefined,
-					height: Number.isInteger( height )
-						? height
-						: undefined,
+					width: Number.isInteger( width ) ? width : undefined,
+					height: Number.isInteger( height ) ? height : undefined,
+					aspect_ratio:
+						'string' === typeof aspectRatio && '' !== aspectRatio
+							? aspectRatio
+							: undefined,
 				},
 			} );
 
@@ -133,4 +144,74 @@ const RegenerateMapButton = ( {
 	);
 };
 
-export default RegenerateMapButton;
+/**
+ * Parse an aspect-ratio string (e.g. "16/9" or "4:3") into a float.
+ *
+ * Mirrors the server-side `Venue_Map::parse_aspect_ratio()` so the editor
+ * can derive auto dimensions from the ratio without a round-trip to PHP.
+ * Returns null for unparseable input.
+ *
+ * @since 1.0.0
+ *
+ * @param {string} ratio Raw aspect-ratio string.
+ * @return {number|null} Parsed ratio, or null if the input is invalid.
+ */
+export const parseAspectRatio = ( ratio ) => {
+	if ( 'string' !== typeof ratio ) {
+		return null;
+	}
+	const match = ratio.trim().match( /^(\d+)\s*[/:]\s*(\d+)$/ );
+	if ( ! match ) {
+		return null;
+	}
+	const numerator = parseInt( match[ 1 ], 10 );
+	const denominator = parseInt( match[ 2 ], 10 );
+	if ( 0 >= numerator || 0 >= denominator ) {
+		return null;
+	}
+	return numerator / denominator;
+};
+
+/**
+ * Resolve a (width, height) pair from block attribute values.
+ *
+ * Mirrors `Venue_Map::resolve_dimensions()` so the editor renders the map
+ * at the same effective pixel size the server will compose. Either
+ * dimension can be 0 ("auto") and will be derived from the other side and
+ * the aspect ratio. When both are auto, `DEFAULT_HEIGHT` seeds the math.
+ *
+ * @since 1.0.0
+ *
+ * @param {Object} args               Derivation inputs.
+ * @param {number} args.width         Raw width (0 = auto).
+ * @param {number} args.height        Raw height (0 = auto).
+ * @param {string} args.aspectRatio   Aspect-ratio string.
+ * @param {number} args.defaultHeight Fallback height for the both-auto case.
+ * @return {{width: number, height: number}} Concrete pixel dimensions.
+ */
+export const resolveDimensions = ( {
+	width,
+	height,
+	aspectRatio,
+	defaultHeight,
+} ) => {
+	const ratio = parseAspectRatio( aspectRatio ) ?? 2;
+	let w = Number.isInteger( width ) && 0 < width ? width : 0;
+	let h = Number.isInteger( height ) && 0 < height ? height : 0;
+
+	if ( 0 === w && 0 === h ) {
+		h = defaultHeight;
+		w = Math.round( h * ratio );
+	} else if ( 0 === w ) {
+		w = Math.round( h * ratio );
+	} else if ( 0 === h ) {
+		h = Math.round( w / ratio );
+	}
+
+	// Mirror the server's clamp_width / clamp_height so the editor's cache
+	// key matches the key the server stored the descriptor under.
+	w = Math.max( 100, Math.min( 4000, w ) );
+	h = Math.max( 100, Math.min( 4000, h ) );
+
+	return { width: w, height: h };
+};

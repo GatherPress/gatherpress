@@ -8,52 +8,17 @@
 		position: relative;
 		z-index: 0;
 	}
-
-	&__placeholder {
-		padding: 2rem;
-		text-align: center;
-		background: #f0f0f0;
-		border: 1px dashed #ccc;
-		color: #666;
-
-		p {
-			margin: 0;
-		}
-	}
 }
 
 .gatherpress-venue-map {
-	// The wrapper owns the block-level height (set inline by render.php); the
-	// static <img> fills that box via object-fit: cover so the image stays
-	// crisp and cropped rather than stretched when the block's aspect ratio
-	// differs from the 600×400 generator default.
+	// When the block has an explicit pixel width and height, render.php
+	// stamps those as inline styles. When either side is "auto", an inline
+	// `aspect-ratio` CSS property takes over so the wrapper keeps its
+	// shape as its container shrinks (floated/aligned contexts, responsive
+	// layouts). The static <img> inside uses object-fit: cover so the
+	// raster stays crisp at any size.
 	position: relative;
 	overflow: hidden;
-
-	// Alignment support — applies identically to static and interactive
-	// modes because both render inside this same wrapper element. `wide`
-	// and `full` are width hints theme CSS handles (via
-	// .alignwide / .alignfull). Floated modes need an explicit cap so
-	// the map doesn't take the full row, and centered mode needs a cap
-	// for `margin: auto` to have room to work. `50%` is a default — the
-	// theme is free to override.
-	&.alignleft {
-		float: left;
-		max-width: 50%;
-		margin: 0 1em 1em 0;
-	}
-
-	&.alignright {
-		float: right;
-		max-width: 50%;
-		margin: 0 0 1em 1em;
-	}
-
-	&.aligncenter {
-		max-width: 75%;
-		margin-left: auto;
-		margin-right: auto;
-	}
 
 	&__image {
 		display: block;

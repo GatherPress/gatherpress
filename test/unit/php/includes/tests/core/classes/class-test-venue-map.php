@@ -309,11 +309,11 @@ class Test_Venue_Map extends Base {
 			'longitude'   => '-122.0312',
 		);
 
-		$baseline = $instance->hash_for( $post_id, $info, 15, 400, Venue_Map::DEFAULT_TILE_URL );
+		$baseline = $instance->hash_for( $post_id, $info, 15, 800, 400, Venue_Map::DEFAULT_TILE_URL );
 
 		$this->assertSame(
 			$baseline,
-			$instance->hash_for( $post_id, $info, 15, 400, Venue_Map::DEFAULT_TILE_URL ),
+			$instance->hash_for( $post_id, $info, 15, 800, 400, Venue_Map::DEFAULT_TILE_URL ),
 			'Hash should be stable when every input is identical.'
 		);
 
@@ -323,19 +323,25 @@ class Test_Venue_Map extends Base {
 
 		$this->assertNotSame(
 			$baseline,
-			$instance->hash_for( $post_id, $moved_info, 15, 400, Venue_Map::DEFAULT_TILE_URL ),
+			$instance->hash_for( $post_id, $moved_info, 15, 800, 400, Venue_Map::DEFAULT_TILE_URL ),
 			'Hash should change when coordinates change.'
 		);
 
 		$this->assertNotSame(
 			$baseline,
-			$instance->hash_for( $post_id, $info, 14, 400, Venue_Map::DEFAULT_TILE_URL ),
+			$instance->hash_for( $post_id, $info, 14, 800, 400, Venue_Map::DEFAULT_TILE_URL ),
 			'Hash should change when the zoom level changes.'
 		);
 
 		$this->assertNotSame(
 			$baseline,
-			$instance->hash_for( $post_id, $info, 15, 500, Venue_Map::DEFAULT_TILE_URL ),
+			$instance->hash_for( $post_id, $info, 15, 600, 400, Venue_Map::DEFAULT_TILE_URL ),
+			'Hash should change when the width changes.'
+		);
+
+		$this->assertNotSame(
+			$baseline,
+			$instance->hash_for( $post_id, $info, 15, 800, 500, Venue_Map::DEFAULT_TILE_URL ),
 			'Hash should change when the height changes.'
 		);
 
@@ -344,7 +350,7 @@ class Test_Venue_Map extends Base {
 		$other_post_id = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
 		$this->assertNotSame(
 			$baseline,
-			$instance->hash_for( $other_post_id, $info, 15, 400, Venue_Map::DEFAULT_TILE_URL ),
+			$instance->hash_for( $other_post_id, $info, 15, 800, 400, Venue_Map::DEFAULT_TILE_URL ),
 			'Hash should differ between venues because each has its own salt.'
 		);
 	}
@@ -722,33 +728,36 @@ class Test_Venue_Map extends Base {
 			$post_id,
 			Venue_Map::META_KEY,
 			array(
-				'15x300'        => array(
+				'15x600x300'    => array(
 					'url'    => 'https://example.test/a.png',
 					'hash'   => 'abc',
 					'zoom'   => 15,
+					'width'  => 600,
 					'height' => 300,
 				),
-				'18x400'        => 'not-an-array',
-				'20x500'        => array(
+				'18x800x400'    => 'not-an-array',
+				'20x1000x500'   => array(
 					'url'    => 'https://example.test/b.png',
 					'zoom'   => 20,
+					'width'  => 1000,
 					'height' => 500,
 				), // Missing hash.
 				'missing-shape' => array(
 					'url'  => 'https://example.test/c.png',
 					'hash' => 'def',
-				), // Missing zoom/height.
+				), // Missing zoom/width/height.
 			)
 		);
 
 		$descriptors = $instance->get_all_descriptors( $post_id );
 
-		$this->assertArrayHasKey( '15x300', $descriptors );
-		$this->assertArrayNotHasKey( '18x400', $descriptors );
-		$this->assertArrayNotHasKey( '20x500', $descriptors );
+		$this->assertArrayHasKey( '15x600x300', $descriptors );
+		$this->assertArrayNotHasKey( '18x800x400', $descriptors );
+		$this->assertArrayNotHasKey( '20x1000x500', $descriptors );
 		$this->assertArrayNotHasKey( 'missing-shape', $descriptors );
-		$this->assertSame( 15, $descriptors['15x300']['zoom'] );
-		$this->assertSame( 300, $descriptors['15x300']['height'] );
+		$this->assertSame( 15, $descriptors['15x600x300']['zoom'] );
+		$this->assertSame( 600, $descriptors['15x600x300']['width'] );
+		$this->assertSame( 300, $descriptors['15x600x300']['height'] );
 
 		// Read path must not mutate the meta — writing on every render would
 		// thrash the post-meta cache and churn the DB. Cleanup is deferred
@@ -811,15 +820,16 @@ class Test_Venue_Map extends Base {
 		$this->assertArrayNotHasKey( 'no-hash', $stored );
 
 		$default_key = sprintf(
-			'%dx%d',
+			'%dx%dx%d',
 			Venue_Map::DEFAULT_ZOOM,
+			Venue_Map::DEFAULT_HEIGHT * 2,
 			Venue_Map::DEFAULT_HEIGHT
 		);
 		$this->assertArrayHasKey( $default_key, $stored );
 	}
 
 	/**
-	 * Requesting a previously-uncached (zoom, height) combo triggers
+	 * Requesting a previously-uncached (zoom, width, height) combo triggers
 	 * synchronous generation and caches the result for next time.
 	 *
 	 * @covers ::get_url_for_post
@@ -845,8 +855,9 @@ class Test_Venue_Map extends Base {
 		$instance->maybe_generate( $post_id );
 
 		$default_key = sprintf(
-			'%dx%d',
+			'%dx%dx%d',
 			Venue_Map::DEFAULT_ZOOM,
+			Venue_Map::DEFAULT_HEIGHT * 2,
 			Venue_Map::DEFAULT_HEIGHT
 		);
 
@@ -855,13 +866,25 @@ class Test_Venue_Map extends Base {
 		$this->assertCount(
 			1,
 			$descriptors_before,
-			'Initial save should seed only the default (zoom, height) combo.'
+			'Initial save should seed only the default combo.'
 		);
 		$this->assertArrayHasKey( $default_key, $descriptors_before );
 
 		// Request a different zoom — simulates a block customized to zoom 14.
-		$new_key = sprintf( '14x%d', Venue_Map::DEFAULT_HEIGHT );
-		$url     = $instance->get_url_for_post( $post_id, Venue::POST_TYPE, 14 );
+		// Auto width at 2:1 ratio against DEFAULT_HEIGHT → DEFAULT_HEIGHT*2.
+		$new_key = sprintf(
+			'14x%dx%d',
+			Venue_Map::DEFAULT_HEIGHT * 2,
+			Venue_Map::DEFAULT_HEIGHT
+		);
+		$url     = $instance->get_url_for_post(
+			$post_id,
+			Venue::POST_TYPE,
+			14,
+			0,
+			Venue_Map::DEFAULT_HEIGHT,
+			''
+		);
 
 		$this->assertNotEmpty( $url, 'Lazy generation should return a non-empty URL.' );
 
@@ -902,16 +925,20 @@ class Test_Venue_Map extends Base {
 			$post_id,
 			Venue::POST_TYPE,
 			Venue_Map::DEFAULT_ZOOM,
-			500
+			0,
+			500,
+			''
 		);
 
 		$this->assertNotEmpty( $tall_url );
 
-		$key = sprintf( '%dx500', Venue_Map::DEFAULT_ZOOM );
+		// Auto width at 2:1 ratio on height=500 → 1000.
+		$key = sprintf( '%dx1000x500', Venue_Map::DEFAULT_ZOOM );
 		$all = $instance->get_all_descriptors( $post_id );
 
 		$this->assertArrayHasKey( $key, $all, 'Tall-height combo should be cached under its own key.' );
 		$this->assertSame( 500, $all[ $key ]['height'] );
+		$this->assertSame( 1000, $all[ $key ]['width'] );
 	}
 
 	/**
@@ -941,14 +968,17 @@ class Test_Venue_Map extends Base {
 		);
 		$instance->maybe_generate( $post_id );
 		// Warm a second combo (not the default seed) so we have two variants.
-		$instance->get_url_for_post( $post_id, Venue::POST_TYPE, 14, 500 );
+		$instance->get_url_for_post( $post_id, Venue::POST_TYPE, 14, 0, 500, '' );
 
+		// Default combo from DEFAULT_HEIGHT + auto width at 2:1 = 600×300.
 		$default_key = sprintf(
-			'%dx%d',
+			'%dx%dx%d',
 			Venue_Map::DEFAULT_ZOOM,
+			Venue_Map::DEFAULT_HEIGHT * 2,
 			Venue_Map::DEFAULT_HEIGHT
 		);
-		$second_key  = '14x500';
+		// Second combo: zoom=14, height=500, auto width at 2:1 = 1000×500.
+		$second_key  = '14x1000x500';
 
 		$before = $instance->get_all_descriptors( $post_id );
 
@@ -1033,7 +1063,13 @@ class Test_Venue_Map extends Base {
 		$result = Utility::invoke_hidden_method(
 			$instance,
 			'ensure_descriptor_for_combo',
-			array( $post_id, $info, Venue_Map::DEFAULT_ZOOM, Venue_Map::DEFAULT_HEIGHT )
+			array(
+				$post_id,
+				$info,
+				Venue_Map::DEFAULT_ZOOM,
+				Venue_Map::DEFAULT_HEIGHT * 2,
+				Venue_Map::DEFAULT_HEIGHT,
+			)
 		);
 
 		remove_filter( 'update_post_metadata', $suppress, 10 );
@@ -1216,6 +1252,7 @@ class Test_Venue_Map extends Base {
 					'longitude'   => '-122.0312',
 				),
 				15,
+				600,
 				300,
 			)
 		);
@@ -1497,12 +1534,12 @@ class Test_Venue_Map extends Base {
 			37.3318,
 			-122.0312,
 			15,
+			512,
 			256,
 			Venue_Map::DEFAULT_TILE_URL
 		);
 
 		$this->assertInstanceOf( \GdImage::class, $image );
-		// Width is derived from height via IMAGE_ASPECT_RATIO (2.0) → 512×256.
 		$this->assertSame( 512, imagesx( $image ) );
 		$this->assertSame( 256, imagesy( $image ) );
 
@@ -1714,23 +1751,28 @@ class Test_Venue_Map extends Base {
 	}
 
 	/**
-	 * Coverage for combo_key — formats `{zoom}x{height}`.
+	 * Coverage for combo_key — formats `{zoom}x{width}x{height}`.
 	 *
 	 * @covers ::combo_key
 	 *
 	 * @return void
 	 */
-	public function test_combo_key_formats_zoom_and_height(): void {
+	public function test_combo_key_formats_zoom_width_and_height(): void {
 		$instance = Venue_Map::get_instance();
 
 		$this->assertSame(
-			'14x500',
-			Utility::invoke_hidden_method( $instance, 'combo_key', array( 14, 500 ) )
+			'14x800x500',
+			Utility::invoke_hidden_method(
+				$instance,
+				'combo_key',
+				array( 14, 800, 500 )
+			)
 		);
 	}
 
 	/**
-	 * Coverage for get_cached_combos — returns unique (zoom, height) combos.
+	 * Coverage for get_cached_combos — returns unique (zoom, width, height)
+	 * combos.
 	 *
 	 * @covers ::get_cached_combos
 	 *
@@ -1750,16 +1792,18 @@ class Test_Venue_Map extends Base {
 			$post_id,
 			Venue_Map::META_KEY,
 			array(
-				'15x300' => array(
+				'15x600x300'  => array(
 					'url'    => 'https://example.test/a.png',
 					'hash'   => 'abc',
 					'zoom'   => 15,
+					'width'  => 600,
 					'height' => 300,
 				),
-				'18x500' => array(
+				'18x1000x500' => array(
 					'url'    => 'https://example.test/b.png',
 					'hash'   => 'def',
 					'zoom'   => 18,
+					'width'  => 1000,
 					'height' => 500,
 				),
 			)
@@ -1771,6 +1815,7 @@ class Test_Venue_Map extends Base {
 		$this->assertContains(
 			array(
 				'zoom'   => 15,
+				'width'  => 600,
 				'height' => 300,
 			),
 			$combos
@@ -1778,6 +1823,7 @@ class Test_Venue_Map extends Base {
 		$this->assertContains(
 			array(
 				'zoom'   => 18,
+				'width'  => 1000,
 				'height' => 500,
 			),
 			$combos
@@ -1825,6 +1871,7 @@ class Test_Venue_Map extends Base {
 			37.3318,
 			-122.0312,
 			15,
+			512,
 			256,
 			Venue_Map::DEFAULT_TILE_URL
 		);
@@ -1871,6 +1918,7 @@ class Test_Venue_Map extends Base {
 			37.3318,
 			-122.0312,
 			15,
+			512,
 			256,
 			Venue_Map::DEFAULT_TILE_URL
 		);
@@ -1916,6 +1964,7 @@ class Test_Venue_Map extends Base {
 			37.3318,
 			-122.0312,
 			15,
+			512,
 			256,
 			Venue_Map::DEFAULT_TILE_URL
 		);
@@ -2021,6 +2070,136 @@ class Test_Venue_Map extends Base {
 	}
 
 	/**
+	 * Coverage for parse_aspect_ratio — valid inputs return the float
+	 * ratio, garbage returns null.
+	 *
+	 * @covers ::parse_aspect_ratio
+	 *
+	 * @return void
+	 */
+	public function test_parse_aspect_ratio(): void {
+		$instance = Venue_Map::get_instance();
+
+		$this->assertEqualsWithDelta(
+			2.0,
+			Utility::invoke_hidden_method( $instance, 'parse_aspect_ratio', array( '2/1' ) ),
+			0.0001
+		);
+		$this->assertEqualsWithDelta(
+			16 / 9,
+			Utility::invoke_hidden_method( $instance, 'parse_aspect_ratio', array( '16/9' ) ),
+			0.0001
+		);
+		// Colon separator is also accepted so the same string can come
+		// straight from a CSS value like "16:9".
+		$this->assertEqualsWithDelta(
+			16 / 9,
+			Utility::invoke_hidden_method( $instance, 'parse_aspect_ratio', array( '16:9' ) ),
+			0.0001
+		);
+		$this->assertNull(
+			Utility::invoke_hidden_method( $instance, 'parse_aspect_ratio', array( '' ) ),
+			'Empty input should return null.'
+		);
+		$this->assertNull(
+			Utility::invoke_hidden_method( $instance, 'parse_aspect_ratio', array( 'not-a-ratio' ) ),
+			'Non-numeric input should return null.'
+		);
+		$this->assertNull(
+			Utility::invoke_hidden_method( $instance, 'parse_aspect_ratio', array( '4/0' ) ),
+			'Zero denominator should return null.'
+		);
+	}
+
+	/**
+	 * Coverage for clamp_width — enforces the WIDTH_MIN..WIDTH_MAX bounds.
+	 *
+	 * @covers ::clamp_width
+	 *
+	 * @return void
+	 */
+	public function test_clamp_width(): void {
+		$instance = Venue_Map::get_instance();
+
+		$this->assertSame(
+			Venue_Map::WIDTH_MIN,
+			Utility::invoke_hidden_method( $instance, 'clamp_width', array( 0 ) )
+		);
+		$this->assertSame(
+			Venue_Map::WIDTH_MAX,
+			Utility::invoke_hidden_method( $instance, 'clamp_width', array( 99999 ) )
+		);
+		$this->assertSame(
+			600,
+			Utility::invoke_hidden_method( $instance, 'clamp_width', array( 600 ) )
+		);
+	}
+
+	/**
+	 * Coverage for resolve_dimensions — derives the missing side from the
+	 * aspect ratio when either width or height is 0 ("auto"), falls back
+	 * to DEFAULT_HEIGHT when both are auto, and clamps both outputs.
+	 *
+	 * @covers ::resolve_dimensions
+	 *
+	 * @return void
+	 */
+	public function test_resolve_dimensions(): void {
+		$instance = Venue_Map::get_instance();
+
+		$both = Utility::invoke_hidden_method(
+			$instance,
+			'resolve_dimensions',
+			array( 800, 400, '2/1' )
+		);
+		$this->assertSame( 800, $both['width'] );
+		$this->assertSame( 400, $both['height'] );
+
+		$auto_w = Utility::invoke_hidden_method(
+			$instance,
+			'resolve_dimensions',
+			array( 0, 400, '2/1' )
+		);
+		$this->assertSame( 800, $auto_w['width'], 'Auto width = height × ratio.' );
+		$this->assertSame( 400, $auto_w['height'] );
+
+		$auto_h = Utility::invoke_hidden_method(
+			$instance,
+			'resolve_dimensions',
+			array( 900, 0, '3/2' )
+		);
+		$this->assertSame( 900, $auto_h['width'] );
+		$this->assertSame( 600, $auto_h['height'], 'Auto height = width ÷ ratio.' );
+
+		$both_auto = Utility::invoke_hidden_method(
+			$instance,
+			'resolve_dimensions',
+			array( 0, 0, '2/1' )
+		);
+		$this->assertSame( Venue_Map::DEFAULT_HEIGHT * 2, $both_auto['width'] );
+		$this->assertSame( Venue_Map::DEFAULT_HEIGHT, $both_auto['height'] );
+
+		// Unparseable ratio string still resolves cleanly — falls back to
+		// the default ratio rather than stranding the generator.
+		$bad_ratio = Utility::invoke_hidden_method(
+			$instance,
+			'resolve_dimensions',
+			array( 0, 400, 'garbage' )
+		);
+		$this->assertSame( 800, $bad_ratio['width'] );
+		$this->assertSame( 400, $bad_ratio['height'] );
+
+		// Out-of-range inputs get clamped to the supported bounds.
+		$too_big = Utility::invoke_hidden_method(
+			$instance,
+			'resolve_dimensions',
+			array( 99999, 99999, '2/1' )
+		);
+		$this->assertSame( Venue_Map::WIDTH_MAX, $too_big['width'] );
+		$this->assertSame( Venue_Map::HEIGHT_MAX, $too_big['height'] );
+	}
+
+	/**
 	 * Wipes cached descriptors + PNG files and rebuilds entries for every
 	 * combo the venue was previously cached at, returning the fresh
 	 * descriptor map.
@@ -2046,7 +2225,7 @@ class Test_Venue_Map extends Base {
 		);
 		$instance->maybe_generate( $post_id );
 		// Warm a second combo so regenerate has two variants to cover.
-		$instance->get_url_for_post( $post_id, Venue::POST_TYPE, 14, 500 );
+		$instance->get_url_for_post( $post_id, Venue::POST_TYPE, 14, 0, 500, '' );
 
 		$before = $instance->get_all_descriptors( $post_id );
 		$this->assertCount( 2, $before );
@@ -2113,15 +2292,17 @@ class Test_Venue_Map extends Base {
 		// Seed one cached combo the venue "already had".
 		$instance->maybe_generate( $post_id );
 
-		$result = $instance->regenerate( $post_id, 8, 295 );
+		$result = $instance->regenerate( $post_id, 8, 0, 295, '' );
 
-		$expected_key = '8x295';
+		// Auto-width at 2:1 on height 295 → 590.
+		$expected_key = '8x590x295';
 		$this->assertArrayHasKey(
 			$expected_key,
 			$result,
 			'The caller-supplied combo must be included in the rebuild.'
 		);
 		$this->assertSame( 8, $result[ $expected_key ]['zoom'] );
+		$this->assertSame( 590, $result[ $expected_key ]['width'] );
 		$this->assertSame( 295, $result[ $expected_key ]['height'] );
 	}
 
@@ -2153,7 +2334,9 @@ class Test_Venue_Map extends Base {
 		$result = $instance->regenerate(
 			$post_id,
 			Venue_Map::DEFAULT_ZOOM,
-			Venue_Map::DEFAULT_HEIGHT
+			Venue_Map::DEFAULT_HEIGHT * 2,
+			Venue_Map::DEFAULT_HEIGHT,
+			''
 		);
 
 		$this->assertCount(
@@ -2193,8 +2376,9 @@ class Test_Venue_Map extends Base {
 		$result = $instance->regenerate( $post_id );
 
 		$default_key = sprintf(
-			'%dx%d',
+			'%dx%dx%d',
 			Venue_Map::DEFAULT_ZOOM,
+			Venue_Map::DEFAULT_HEIGHT * 2,
 			Venue_Map::DEFAULT_HEIGHT
 		);
 		$this->assertArrayHasKey( $default_key, $result );
@@ -2297,8 +2481,9 @@ class Test_Venue_Map extends Base {
 		$this->assertSame( '', $data['reason'] );
 
 		$default_key = sprintf(
-			'%dx%d',
+			'%dx%dx%d',
 			Venue_Map::DEFAULT_ZOOM,
+			Venue_Map::DEFAULT_HEIGHT * 2,
 			Venue_Map::DEFAULT_HEIGHT
 		);
 		$this->assertArrayHasKey( $default_key, (array) $data['descriptors'] );

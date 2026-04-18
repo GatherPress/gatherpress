@@ -148,7 +148,7 @@ class Venues extends Base {
 							'name' => __( 'Default Height', 'gatherpress' ),
 						),
 						'description' => __(
-							'Default pixel height applied to new venue map blocks.',
+							'Default pixel height applied to new venue map blocks. 0 = auto — height is derived from width and the aspect ratio.',
 							'gatherpress'
 						),
 						'field'       => array(
@@ -157,8 +157,87 @@ class Venues extends Base {
 							'size'    => 'small',
 							'options' => array(
 								'default' => Venue_Map::DEFAULT_HEIGHT,
-								'min'     => '100',
+								'min'     => '0',
 								'max'     => '800',
+							),
+						),
+					),
+					'venue_map_default_width'       => array(
+						'labels'      => array(
+							'name' => __( 'Default Width', 'gatherpress' ),
+						),
+						'description' => __(
+							'Default pixel width applied to new venue map blocks. 0 = auto — width is derived from height and the aspect ratio.',
+							'gatherpress'
+						),
+						'field'       => array(
+							'label'   => __( 'Width for new blocks (px):', 'gatherpress' ),
+							'type'    => 'number',
+							'size'    => 'small',
+							'options' => array(
+								'default' => 0,
+								'min'     => '0',
+								'max'     => '1600',
+							),
+						),
+					),
+					'venue_map_default_aspect_ratio' => array(
+						'labels'      => array(
+							'name' => __( 'Default Aspect Ratio', 'gatherpress' ),
+						),
+						'description' => __(
+							'Default aspect ratio for new venue map blocks. Used to derive any auto width or height dimension.',
+							'gatherpress'
+						),
+						'field'       => array(
+							'label'   => __( 'Aspect ratio for new blocks:', 'gatherpress' ),
+							'type'    => 'select',
+							'options' => array(
+								'default' => Venue_Map::DEFAULT_ASPECT_RATIO,
+								'items'   => array(
+									'2/1'  => __( '2:1 (landscape)', 'gatherpress' ),
+									'16/9' => __( '16:9 (wide)', 'gatherpress' ),
+									'3/2'  => __( '3:2 (classic)', 'gatherpress' ),
+									'4/3'  => __( '4:3 (standard)', 'gatherpress' ),
+									'1/1'  => __( '1:1 (square)', 'gatherpress' ),
+								),
+							),
+						),
+					),
+					'venue_map_default_link_destination' => array(
+						'labels'      => array(
+							'name' => __( 'Default Link Destination', 'gatherpress' ),
+						),
+						'description' => __(
+							'Default link wrapped around static maps. Only applies to static mode; interactive maps own their pan-and-zoom interaction.',
+							'gatherpress'
+						),
+						'field'       => array(
+							'label'   => __( 'Link new static maps to:', 'gatherpress' ),
+							'type'    => 'select',
+							'options' => array(
+								'default' => 'none',
+								'items'   => array(
+									'none'          => __( 'None', 'gatherpress' ),
+									'openstreetmap' => __( 'OpenStreetMap', 'gatherpress' ),
+									'google'        => __( 'Google Maps', 'gatherpress' ),
+								),
+							),
+						),
+					),
+					'venue_map_default_link_target' => array(
+						'labels'      => array(
+							'name' => __( 'Open Links in New Tab', 'gatherpress' ),
+						),
+						'description' => __(
+							'When enabled, the default static-map link opens in a new browser tab.',
+							'gatherpress'
+						),
+						'field'       => array(
+							'label'   => __( 'Open in new tab by default.', 'gatherpress' ),
+							'type'    => 'checkbox',
+							'options' => array(
+								'default' => false,
 							),
 						),
 					),

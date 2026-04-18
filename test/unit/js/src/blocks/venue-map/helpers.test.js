@@ -44,7 +44,11 @@ jest.mock( '@wordpress/components', () => ( {
 /**
  * Internal dependencies.
  */
-import RegenerateMapButton from '@src/blocks/venue-map/regenerate-button';
+import {
+	RegenerateMapButton,
+	parseAspectRatio,
+	resolveDimensions,
+} from '@src/blocks/venue-map/helpers';
 
 describe( 'RegenerateMapButton', () => {
 	const defaultProps = {
@@ -98,12 +102,14 @@ describe( 'RegenerateMapButton', () => {
 		} );
 	} );
 
-	it( 'forwards current zoom/height in the POST body so the server renders this combo', async () => {
+	it( 'forwards current zoom/width/height/aspect_ratio in the POST body so the server renders this combo', async () => {
 		render(
 			<RegenerateMapButton
 				{ ...defaultProps }
 				zoom={ 8 }
+				width={ 0 }
 				height={ 295 }
+				aspectRatio="16/9"
 			/>
 		);
 		fireEvent.click( screen.getByRole( 'button' ) );
@@ -111,7 +117,12 @@ describe( 'RegenerateMapButton', () => {
 		await waitFor( () => {
 			expect( mockApiFetch ).toHaveBeenCalledWith(
 				expect.objectContaining( {
-					data: { zoom: 8, height: 295 },
+					data: {
+						zoom: 8,
+						width: 0,
+						height: 295,
+						aspect_ratio: '16/9',
+					},
 				} )
 			);
 		} );
@@ -211,5 +222,78 @@ describe( 'RegenerateMapButton', () => {
 		await waitFor( () => {
 			expect( mockApiFetch ).toHaveBeenCalledTimes( 1 );
 		} );
+	} );
+} );
+
+describe( 'parseAspectRatio', () => {
+	it( 'parses the slash form "16/9" into a float', () => {
+		expect( parseAspectRatio( '16/9' ) ).toBeCloseTo( 16 / 9, 4 );
+	} );
+	it( 'accepts the colon form "4:3"', () => {
+		expect( parseAspectRatio( '4:3' ) ).toBeCloseTo( 4 / 3, 4 );
+	} );
+	it( 'returns null for unparseable input', () => {
+		expect( parseAspectRatio( 'nonsense' ) ).toBeNull();
+		expect( parseAspectRatio( '' ) ).toBeNull();
+		expect( parseAspectRatio( null ) ).toBeNull();
+	} );
+	it( 'returns null when either side is zero', () => {
+		expect( parseAspectRatio( '0/1' ) ).toBeNull();
+		expect( parseAspectRatio( '4/0' ) ).toBeNull();
+	} );
+} );
+
+describe( 'resolveDimensions', () => {
+	const defaults = { defaultHeight: 300 };
+
+	it( 'returns both sides unchanged when both are explicit', () => {
+		expect(
+			resolveDimensions( {
+				...defaults,
+				width: 800,
+				height: 400,
+				aspectRatio: '2/1',
+			} )
+		).toEqual( { width: 800, height: 400 } );
+	} );
+	it( 'derives width from height × ratio when width is auto', () => {
+		expect(
+			resolveDimensions( {
+				...defaults,
+				width: 0,
+				height: 400,
+				aspectRatio: '2/1',
+			} )
+		).toEqual( { width: 800, height: 400 } );
+	} );
+	it( 'derives height from width ÷ ratio when height is auto', () => {
+		expect(
+			resolveDimensions( {
+				...defaults,
+				width: 900,
+				height: 0,
+				aspectRatio: '3/2',
+			} )
+		).toEqual( { width: 900, height: 600 } );
+	} );
+	it( 'seeds from defaultHeight when both sides are auto', () => {
+		expect(
+			resolveDimensions( {
+				...defaults,
+				width: 0,
+				height: 0,
+				aspectRatio: '2/1',
+			} )
+		).toEqual( { width: 600, height: 300 } );
+	} );
+	it( 'falls back to a 2:1 ratio when the aspect string is unparseable', () => {
+		expect(
+			resolveDimensions( {
+				...defaults,
+				width: 0,
+				height: 400,
+				aspectRatio: 'garbage',
+			} )
+		).toEqual( { width: 800, height: 400 } );
 	} );
 } );

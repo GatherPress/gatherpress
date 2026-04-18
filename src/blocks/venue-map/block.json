@@ -22,9 +22,33 @@
 			"type": "number",
 			"default": 300
 		},
+		"width": {
+			"type": "number",
+			"default": 0
+		},
+		"aspectRatio": {
+			"type": "string",
+			"default": "2/1"
+		},
 		"renderMode": {
 			"type": "string",
 			"default": "interactive"
+		},
+		"href": {
+			"type": "string",
+			"default": ""
+		},
+		"linkDestination": {
+			"type": "string",
+			"default": "none"
+		},
+		"linkTarget": {
+			"type": "string",
+			"default": ""
+		},
+		"rel": {
+			"type": "string",
+			"default": ""
 		}
 	},
 	"supports": {

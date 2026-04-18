@@ -22,14 +22,16 @@
 			"blockGuard": true,
 			"postIdOverride": true
 		},
-		"align": [ "wide" ],
+		"align": [ "wide", "full" ],
 		"html": false,
 		"interactivity": {
 			"clientNavigation": true
 		},
 		"layout": {
 			"default": {
-				"type": "constrained"
+				"type": "constrained",
+				"wideSize": "1200px",
+				"contentSize": "820px"
 			}
 		}
 	},

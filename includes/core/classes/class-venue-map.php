@@ -110,7 +110,39 @@ class Venue_Map {
 	 * @since 1.0.0
 	 * @var int
 	 */
-	const HEIGHT_MAX = 800;
+	const HEIGHT_MAX = 4000;
+
+	/**
+	 * Bounds for the pixel width. Mirror of HEIGHT_MIN / HEIGHT_MAX but
+	 * scaled to the 2:1 default ratio — a venue map that's 800 tall can
+	 * be up to 1600 wide. The block exposes both dimensions so users can
+	 * pick any concrete width, but the generator still refuses values
+	 * that would allocate gigabytes of GD memory or fetch hundreds of
+	 * tiles.
+	 *
+	 * @since 1.0.0
+	 * @var int
+	 */
+	const WIDTH_MIN = 100;
+
+	/**
+	 * See self::WIDTH_MIN.
+	 *
+	 * @since 1.0.0
+	 * @var int
+	 */
+	const WIDTH_MAX = 4000;
+
+	/**
+	 * Default aspect ratio string used when the block's `aspectRatio`
+	 * attribute is empty or unparseable. Format matches the CSS
+	 * `aspect-ratio` property so the same value can drive the server-side
+	 * width derivation and the client-side CSS on the interactive wrapper.
+	 *
+	 * @since 1.0.0
+	 * @var string
+	 */
+	const DEFAULT_ASPECT_RATIO = '2/1';
 
 	/**
 	 * Total wall-clock budget (in seconds) for a single composite_image()
@@ -270,17 +302,28 @@ class Venue_Map {
 					// Optional: the combo the client is currently displaying. If
 					// provided, that combo is added to the regenerate list so a
 					// "Generate" click from the block placeholder produces a PNG
-					// for the active (zoom, height) even when that combo has never
-					// been rendered before.
-					'zoom'   => array(
+					// for the active (zoom, width, height) combo even when it has
+					// never been rendered before. `width` and `height` may be 0
+					// ("auto") — the aspect-ratio hint then drives derivation.
+					'zoom'         => array(
 						'required'          => false,
 						'type'              => 'integer',
 						'sanitize_callback' => 'absint',
 					),
-					'height' => array(
+					'width'        => array(
 						'required'          => false,
 						'type'              => 'integer',
 						'sanitize_callback' => 'absint',
+					),
+					'height'       => array(
+						'required'          => false,
+						'type'              => 'integer',
+						'sanitize_callback' => 'absint',
+					),
+					'aspect_ratio' => array(
+						'required'          => false,
+						'type'              => 'string',
+						'sanitize_callback' => 'sanitize_text_field',
 					),
 				),
 			)
@@ -308,10 +351,16 @@ class Venue_Map {
 
 		$settings = Settings::get_instance();
 		$defaults = array(
-			'renderMode' => (string) $settings->get( 'venue_map_default_render_mode' ),
-			'zoom'       => (int) $settings->get( 'venue_map_default_zoom' ),
-			'height'     => (int) $settings->get( 'venue_map_default_height' ),
-			'type'       => (string) $settings->get( 'venue_map_default_type' ),
+			'renderMode'      => (string) $settings->get( 'venue_map_default_render_mode' ),
+			'zoom'            => (int) $settings->get( 'venue_map_default_zoom' ),
+			'width'           => (int) $settings->get( 'venue_map_default_width' ),
+			'height'          => (int) $settings->get( 'venue_map_default_height' ),
+			'aspectRatio'     => (string) $settings->get( 'venue_map_default_aspect_ratio' ),
+			'type'            => (string) $settings->get( 'venue_map_default_type' ),
+			'linkDestination' => (string) $settings->get( 'venue_map_default_link_destination' ),
+			'linkTarget'      => (bool) $settings->get( 'venue_map_default_link_target' )
+				? '_blank'
+				: '',
 		);
 
 		// Per-attribute validators so a never-written Settings row (empty
@@ -322,25 +371,46 @@ class Venue_Map {
 		// it would have accepted e.g. `renderMode = '0'`. All closures are
 		// static because none of them capture `$this`.
 		$validators = array(
-			'renderMode' => static function ( $value ): bool {
+			'renderMode'      => static function ( $value ): bool {
 				return in_array( $value, array( 'interactive', 'static' ), true );
 			},
-			'zoom'       => static function ( $value ): bool {
+			'zoom'            => static function ( $value ): bool {
 				return is_int( $value )
 					&& $value >= self::ZOOM_MIN
 					&& $value <= self::ZOOM_MAX;
 			},
-			'height'     => static function ( $value ): bool {
+			'width'           => static function ( $value ): bool {
+				// 0 means "auto" and is a valid default value.
 				return is_int( $value )
-					&& $value >= self::HEIGHT_MIN
+					&& $value >= 0
+					&& $value <= self::WIDTH_MAX;
+			},
+			'height'          => static function ( $value ): bool {
+				// 0 means "auto" and is a valid default value.
+				return is_int( $value )
+					&& $value >= 0
 					&& $value <= self::HEIGHT_MAX;
 			},
-			'type'       => static function ( $value ): bool {
+			'aspectRatio'     => function ( $value ): bool {
+				return is_string( $value )
+					&& null !== $this->parse_aspect_ratio( $value );
+			},
+			'type'            => static function ( $value ): bool {
 				return in_array(
 					$value,
 					array( 'roadmap', 'satellite', 'hybrid', 'terrain' ),
 					true
 				);
+			},
+			'linkDestination' => static function ( $value ): bool {
+				return in_array(
+					$value,
+					array( 'none', 'openstreetmap', 'google', 'custom' ),
+					true
+				);
+			},
+			'linkTarget'      => static function ( $value ): bool {
+				return '' === $value || '_blank' === $value;
 			},
 		);
 
@@ -421,24 +491,37 @@ class Venue_Map {
 			return;
 		}
 
-		// Regenerate every (zoom, height) combo the venue is already cached
-		// at so a content change (new address/coords) cascades to all cached
-		// variants. For a fresh venue with nothing stored, seed the default
-		// combo that newly-inserted venue-map blocks will actually request —
-		// otherwise the editor falls back to the interactive preview on the
-		// very first save because the default cache entry is missing.
+		// Regenerate every (zoom, width, height) combo the venue is already
+		// cached at so a content change (new address/coords) cascades to
+		// all cached variants. For a fresh venue with nothing stored, seed
+		// the default combo that newly-inserted venue-map blocks will
+		// actually request — otherwise the editor falls back to the
+		// interactive preview on the very first save because the default
+		// cache entry is missing.
 		$combos = $this->get_cached_combos( $post_id );
 		if ( empty( $combos ) ) {
-			$combos = array(
+			$default = $this->resolve_dimensions(
+				0,
+				$this->get_height(),
+				self::DEFAULT_ASPECT_RATIO
+			);
+			$combos  = array(
 				array(
 					'zoom'   => $this->get_zoom(),
-					'height' => $this->get_height(),
+					'width'  => $default['width'],
+					'height' => $default['height'],
 				),
 			);
 		}
 
 		foreach ( $combos as $combo ) {
-			$this->ensure_descriptor_for_combo( $post_id, $info, $combo['zoom'], $combo['height'] );
+			$this->ensure_descriptor_for_combo(
+				$post_id,
+				$info,
+				$combo['zoom'],
+				$combo['width'],
+				$combo['height']
+			);
 		}
 	}
 
@@ -476,22 +559,37 @@ class Venue_Map {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param int      $post_id      The venue post ID.
-	 * @param int|null $extra_zoom   Optional extra zoom to include.
-	 * @param int|null $extra_height Optional extra height to include.
-	 * @return array<string, array{url: string, hash: string, zoom: int, height: int}>
+	 * @param int      $post_id            The venue post ID.
+	 * @param int|null $extra_zoom         Optional extra zoom to include.
+	 * @param int|null $extra_width        Optional extra width (0 = auto).
+	 * @param int|null $extra_height       Optional extra height (0 = auto).
+	 * @param string   $extra_aspect_ratio Optional aspect ratio hint for the extra combo.
+	 * @return array<string, array{url: string, hash: string, zoom: int, width: int, height: int}>
 	 */
-	public function regenerate( int $post_id, ?int $extra_zoom = null, ?int $extra_height = null ): array {
+	public function regenerate(
+		int $post_id,
+		?int $extra_zoom = null,
+		?int $extra_width = null,
+		?int $extra_height = null,
+		string $extra_aspect_ratio = ''
+	): array {
 		// Cache the combos we want to rebuild before wiping meta —
 		// delete_stored_image() clears META_KEY, which is where
 		// get_cached_combos() reads from.
 		$combos = $this->get_cached_combos( $post_id );
 
-		// Merge the caller-supplied combo in, dedup by combo_key.
-		if ( null !== $extra_zoom && null !== $extra_height ) {
+		// Merge the caller-supplied combo in, resolving dims when either
+		// width or height is left as "auto".
+		if ( null !== $extra_zoom ) {
+			$resolved = $this->resolve_dimensions(
+				(int) ( $extra_width ?? 0 ),
+				(int) ( $extra_height ?? 0 ),
+				$extra_aspect_ratio
+			);
 			$combos[] = array(
-				'zoom'   => $extra_zoom,
-				'height' => $extra_height,
+				'zoom'   => (int) $extra_zoom,
+				'width'  => $resolved['width'],
+				'height' => $resolved['height'],
 			);
 		}
 
@@ -500,6 +598,7 @@ class Venue_Map {
 		foreach ( $combos as $combo ) {
 			$key = $this->combo_key(
 				$this->clamp_zoom( (int) $combo['zoom'] ),
+				$this->clamp_width( (int) $combo['width'] ),
 				$this->clamp_height( (int) $combo['height'] )
 			);
 
@@ -517,10 +616,16 @@ class Venue_Map {
 		if ( empty( $combos ) ) {
 			// Seed the site-default combo so a never-rendered venue still
 			// ends up with a PNG after an explicit regenerate click.
-			$combos = array(
+			$default = $this->resolve_dimensions(
+				0,
+				$this->get_height(),
+				self::DEFAULT_ASPECT_RATIO
+			);
+			$combos  = array(
 				array(
 					'zoom'   => $this->get_zoom(),
-					'height' => $this->get_height(),
+					'width'  => $default['width'],
+					'height' => $default['height'],
 				),
 			);
 		}
@@ -538,6 +643,7 @@ class Venue_Map {
 				$post_id,
 				$info,
 				$combo['zoom'],
+				$combo['width'],
 				$combo['height']
 			);
 		}
@@ -580,12 +686,23 @@ class Venue_Map {
 
 		// Pass the block's current combo through so its PNG is generated
 		// even when the venue has never been rendered at those dimensions.
-		$raw_zoom     = $request['zoom'] ?? null;
-		$raw_height   = $request['height'] ?? null;
-		$extra_zoom   = ( null !== $raw_zoom && (int) $raw_zoom > 0 ) ? (int) $raw_zoom : null;
-		$extra_height = ( null !== $raw_height && (int) $raw_height > 0 ) ? (int) $raw_height : null;
+		// `width` and `height` may be 0 / omitted (meaning "auto") — the
+		// aspect-ratio hint then drives whichever dimension is missing.
+		$raw_zoom    = $request['zoom'] ?? null;
+		$raw_width   = $request['width'] ?? null;
+		$raw_height  = $request['height'] ?? null;
+		$extra_zoom  = ( null !== $raw_zoom && (int) $raw_zoom > 0 ) ? (int) $raw_zoom : null;
+		$extra_width = ( null !== $raw_width && (int) $raw_width >= 0 ) ? (int) $raw_width : null;
+		$extra_hgt   = ( null !== $raw_height && (int) $raw_height >= 0 ) ? (int) $raw_height : null;
+		$aspect      = (string) ( $request['aspect_ratio'] ?? '' );
 
-		$descriptors = $this->regenerate( $post_id, $extra_zoom, $extra_height );
+		$descriptors = $this->regenerate(
+			$post_id,
+			$extra_zoom,
+			$extra_width,
+			$extra_hgt,
+			$aspect
+		);
 
 		return new WP_REST_Response(
 			array(
@@ -611,17 +728,21 @@ class Venue_Map {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param int      $post_id   Event or venue post ID.
-	 * @param string   $post_type The post type of `$post_id`.
-	 * @param int|null $zoom      Desired zoom level. Null falls back to the default.
-	 * @param int|null $height    Desired pixel height. Null falls back to the default.
+	 * @param int      $post_id      Event or venue post ID.
+	 * @param string   $post_type    The post type of `$post_id`.
+	 * @param int|null $zoom         Desired zoom level. Null falls back to the default.
+	 * @param int|null $width        Desired pixel width (0/null = auto).
+	 * @param int|null $height       Desired pixel height (0/null = auto).
+	 * @param string   $aspect_ratio Aspect-ratio hint used to derive any auto dimension.
 	 * @return string Static map URL, or '' when unavailable.
 	 */
 	public function get_url_for_post(
 		int $post_id,
 		string $post_type,
 		?int $zoom = null,
-		?int $height = null
+		?int $width = null,
+		?int $height = null,
+		string $aspect_ratio = ''
 	): string {
 		$venue_post_id = 0;
 
@@ -646,19 +767,26 @@ class Venue_Map {
 			return '';
 		}
 
+		$resolved = $this->resolve_dimensions(
+			(int) ( $width ?? 0 ),
+			(int) ( $height ?? $this->get_height() ),
+			'' !== $aspect_ratio ? $aspect_ratio : self::DEFAULT_ASPECT_RATIO
+		);
+
 		$descriptor = $this->ensure_descriptor_for_combo(
 			$venue_post_id,
 			$info,
 			$zoom ?? $this->get_zoom(),
-			$height ?? $this->get_height()
+			$resolved['width'],
+			$resolved['height']
 		);
 
 		return null === $descriptor ? '' : $descriptor['url'];
 	}
 
 	/**
-	 * Return the descriptor for the default (zoom, height) combo, or null if
-	 * nothing is stored.
+	 * Return the descriptor for the default (zoom, width, height) combo, or
+	 * null if nothing is stored.
 	 *
 	 * Convenience for the common "has this venue been rendered at the site
 	 * defaults yet?" question — production render paths resolve a specific
@@ -668,16 +796,26 @@ class Venue_Map {
 	 * @since 1.0.0
 	 *
 	 * @param int $post_id The venue post ID.
-	 * @return array{url: string, hash: string, zoom: int, height: int}|null
+	 * @return array{url: string, hash: string, zoom: int, width: int, height: int}|null
 	 */
 	public function get_stored_descriptor( int $post_id ): ?array {
-		$all = $this->get_all_descriptors( $post_id );
+		$all      = $this->get_all_descriptors( $post_id );
+		$defaults = $this->resolve_dimensions(
+			0,
+			$this->get_height(),
+			self::DEFAULT_ASPECT_RATIO
+		);
 
-		return $all[ $this->combo_key( $this->get_zoom(), $this->get_height() ) ] ?? null;
+		return $all[ $this->combo_key(
+			$this->get_zoom(),
+			$defaults['width'],
+			$defaults['height']
+		) ] ?? null;
 	}
 
 	/**
-	 * Return every stored descriptor for the venue, keyed by `{zoom}x{height}`.
+	 * Return every stored descriptor for the venue, keyed by
+	 * `{zoom}x{width}x{height}`.
 	 *
 	 * Filters out malformed entries so callers can iterate without defensive
 	 * shape checks. The read path itself does not persist the cleaned map —
@@ -689,7 +827,7 @@ class Venue_Map {
 	 * @since 1.0.0
 	 *
 	 * @param int $post_id The venue post ID.
-	 * @return array<string, array{url: string, hash: string, zoom: int, height: int}>
+	 * @return array<string, array{url: string, hash: string, zoom: int, width: int, height: int}>
 	 */
 	public function get_all_descriptors( int $post_id ): array {
 		$raw = get_post_meta( $post_id, self::META_KEY, true );
@@ -706,11 +844,13 @@ class Venue_Map {
 			}
 
 			$zoom   = isset( $entry['zoom'] ) ? (int) $entry['zoom'] : 0;
+			$width  = isset( $entry['width'] ) ? (int) $entry['width'] : 0;
 			$height = isset( $entry['height'] ) ? (int) $entry['height'] : 0;
 
-			// Without a zoom/height on the entry there's no way to know which
-			// block configuration the file belongs to — skip rather than guess.
-			if ( $zoom <= 0 || $height <= 0 ) {
+			// Without concrete zoom/width/height on the entry there's no way
+			// to know which block configuration the file belongs to — skip
+			// rather than guess.
+			if ( $zoom <= 0 || $width <= 0 || $height <= 0 ) {
 				continue;
 			}
 
@@ -718,6 +858,7 @@ class Venue_Map {
 				'url'    => (string) $entry['url'],
 				'hash'   => (string) $entry['hash'],
 				'zoom'   => $zoom,
+				'width'  => $width,
 				'height' => $height,
 			);
 		}
@@ -726,7 +867,8 @@ class Venue_Map {
 	}
 
 	/**
-	 * Parse stored meta into the list of (zoom, height) combos already cached.
+	 * Parse stored meta into the list of (zoom, width, height) combos
+	 * already cached.
 	 *
 	 * Used by {@see self::maybe_generate()} to cascade content changes (new
 	 * address, new coordinates) across every variant a venue has ever been
@@ -736,7 +878,7 @@ class Venue_Map {
 	 * @since 1.0.0
 	 *
 	 * @param int $post_id Venue post ID.
-	 * @return array<int, array{zoom: int, height: int}>
+	 * @return array<int, array{zoom: int, width: int, height: int}>
 	 */
 	public function get_cached_combos( int $post_id ): array {
 		$combos = array();
@@ -744,6 +886,7 @@ class Venue_Map {
 		foreach ( $this->get_all_descriptors( $post_id ) as $descriptor ) {
 			$combos[] = array(
 				'zoom'   => $descriptor['zoom'],
+				'width'  => $descriptor['width'],
 				'height' => $descriptor['height'],
 			);
 		}
@@ -752,20 +895,22 @@ class Venue_Map {
 	}
 
 	/**
-	 * Build the meta-storage key for a (zoom, height) combo.
+	 * Build the meta-storage key for a (zoom, width, height) combo.
 	 *
 	 * @since 1.0.0
 	 *
 	 * @param int $zoom   Zoom level.
+	 * @param int $width  Pixel width.
 	 * @param int $height Pixel height.
 	 * @return string
 	 */
-	protected function combo_key( int $zoom, int $height ): string {
-		return sprintf( '%dx%d', $zoom, $height );
+	protected function combo_key( int $zoom, int $width, int $height ): string {
+		return sprintf( '%dx%dx%d', $zoom, $width, $height );
 	}
 
 	/**
-	 * Ensure a descriptor exists for the `($zoom, $height)` combo and return it.
+	 * Ensure a descriptor exists for the `($zoom, $width, $height)` combo
+	 * and return it.
 	 *
 	 * Hits the filesystem cache when the stored hash already matches the
 	 * current inputs and the PNG is still on disk; otherwise composites a
@@ -777,10 +922,11 @@ class Venue_Map {
 	 * @param int   $post_id Venue post ID.
 	 * @param array $info    Parsed venue information.
 	 * @param int   $zoom    Zoom level to render at.
-	 * @param int   $height  Pixel height of the PNG. Width is derived via IMAGE_ASPECT_RATIO.
-	 * @return array{url: string, hash: string, zoom: int, height: int}|null
+	 * @param int   $width   Pixel width of the PNG.
+	 * @param int   $height  Pixel height of the PNG.
+	 * @return array{url: string, hash: string, zoom: int, width: int, height: int}|null
 	 */
-	protected function ensure_descriptor_for_combo( int $post_id, array $info, int $zoom, int $height ): ?array {
+	protected function ensure_descriptor_for_combo( int $post_id, array $info, int $zoom, int $width, int $height ): ?array {
 		// Callers (maybe_generate, get_url_for_post) must have validated the
 		// coordinates via parse_coord() already — cast directly.
 		$latitude  = (float) $info['latitude'];
@@ -791,11 +937,12 @@ class Venue_Map {
 		// within range, but a hand-edited block, a filter that mutates the
 		// attribute, or bad meta could sneak an out-of-range value in.
 		$zoom   = $this->clamp_zoom( $zoom );
+		$width  = $this->clamp_width( $width );
 		$height = $this->clamp_height( $height );
 
 		$tiles = $this->get_tile_url_template();
-		$hash  = $this->hash_for( $post_id, $info, $zoom, $height, $tiles );
-		$key   = $this->combo_key( $zoom, $height );
+		$hash  = $this->hash_for( $post_id, $info, $zoom, $width, $height, $tiles );
+		$key   = $this->combo_key( $zoom, $width, $height );
 
 		$all      = $this->get_all_descriptors( $post_id );
 		$existing = $all[ $key ] ?? null;
@@ -807,7 +954,7 @@ class Venue_Map {
 			}
 		}
 
-		$image = $this->composite_image( $latitude, $longitude, $zoom, $height, $tiles );
+		$image = $this->composite_image( $latitude, $longitude, $zoom, $width, $height, $tiles );
 
 		// Downstream of the GD-missing branch in composite_image(); only
 		// reached on PHP builds without the GD extension.
@@ -815,7 +962,6 @@ class Venue_Map {
 			return null; // @codeCoverageIgnore
 		}
 
-		$width = (int) round( $height * self::IMAGE_ASPECT_RATIO );
 		$this->stamp_marker( $image, (int) round( $width / 2 ), (int) round( $height / 2 ) );
 
 		$url = $this->save_image( $image, $post_id, $hash );
@@ -833,6 +979,7 @@ class Venue_Map {
 			'url'    => $url,
 			'hash'   => $hash,
 			'zoom'   => $zoom,
+			'width'  => $width,
 			'height' => $height,
 		);
 
@@ -876,11 +1023,9 @@ class Venue_Map {
 	/**
 	 * Compute a stable hash from the inputs that determine the rendered PNG.
 	 *
-	 * Any change to address, coords, zoom, height, or tile provider invalidates
-	 * the previous image. Width is fully derived from height via
-	 * {@see self::IMAGE_ASPECT_RATIO} so it doesn't need to go into the hash.
-	 * Unrelated venue edits (title, excerpt, other meta) keep the same hash
-	 * and skip regeneration.
+	 * Any change to address, coords, zoom, width, height, or tile provider
+	 * invalidates the previous image. Unrelated venue edits (title, excerpt,
+	 * other meta) keep the same hash and skip regeneration.
 	 *
 	 * A per-venue salt is mixed into the digest so filenames in the public
 	 * uploads dir aren't predictable from the venue's address alone — otherwise
@@ -892,11 +1037,12 @@ class Venue_Map {
 	 * @param int    $post_id Venue post ID (used to look up the per-venue salt).
 	 * @param array  $info    Parsed venue information.
 	 * @param int    $zoom    Map zoom level.
+	 * @param int    $width   Output width.
 	 * @param int    $height  Output height.
 	 * @param string $tiles   Tile URL template.
 	 * @return string MD5 hex digest.
 	 */
-	public function hash_for( int $post_id, array $info, int $zoom, int $height, string $tiles ): string {
+	public function hash_for( int $post_id, array $info, int $zoom, int $width, int $height, string $tiles ): string {
 		// md5() here is a non-cryptographic cache-key discriminator, matching class-geocoding.php.
 		return md5( // NOSONAR.
 			implode(
@@ -907,6 +1053,7 @@ class Venue_Map {
 					(string) ( $info['latitude'] ?? '' ),
 					(string) ( $info['longitude'] ?? '' ),
 					(string) $zoom,
+					(string) $width,
 					(string) $height,
 					$tiles,
 				)
@@ -1009,7 +1156,8 @@ class Venue_Map {
 	 * @param float  $lat    Latitude in degrees.
 	 * @param float  $lng    Longitude in degrees.
 	 * @param int    $zoom   Zoom level (same zoom Leaflet would use for the same CSS viewport).
-	 * @param int    $height Output pixel height. Width is derived via IMAGE_ASPECT_RATIO.
+	 * @param int    $width  Output pixel width.
+	 * @param int    $height Output pixel height.
 	 * @param string $tiles  Tile URL template.
 	 * @return \GdImage|resource|null Composited image, or null when GD is unavailable.
 	 *                                GdImage on PHP 8+, resource on PHP 7.4.
@@ -1018,6 +1166,7 @@ class Venue_Map {
 		float $lat,
 		float $lng,
 		int $zoom,
+		int $width,
 		int $height,
 		string $tiles
 	) {
@@ -1025,8 +1174,6 @@ class Venue_Map {
 		if ( ! function_exists( 'imagecreatetruecolor' ) ) { // @codeCoverageIgnore
 			return null; // @codeCoverageIgnore
 		}
-
-		$width = (int) round( $height * self::IMAGE_ASPECT_RATIO );
 
 		$venue_world_x = $this->lng_to_world_pixel( $lng, $zoom );
 		$venue_world_y = $this->lat_to_world_pixel( $lat, $zoom );
@@ -1286,6 +1433,88 @@ class Venue_Map {
 	 */
 	protected function clamp_height( int $height ): int {
 		return max( self::HEIGHT_MIN, min( self::HEIGHT_MAX, $height ) );
+	}
+
+	/**
+	 * Clamp a pixel width to the supported range.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param int $width Raw width value.
+	 * @return int
+	 */
+	protected function clamp_width( int $width ): int {
+		return max( self::WIDTH_MIN, min( self::WIDTH_MAX, $width ) );
+	}
+
+	/**
+	 * Parse an aspect-ratio string (e.g. "16/9") into its float value.
+	 *
+	 * Accepts the CSS `aspect-ratio` format with either a slash or a
+	 * colon separator. Returns null for unparseable / zero-denominator
+	 * input so callers can fall back to the default.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $ratio Raw aspect-ratio string.
+	 * @return float|null
+	 */
+	protected function parse_aspect_ratio( string $ratio ): ?float {
+		if ( ! preg_match( '#\A(\d+)\s*[/:]\s*(\d+)\z#', trim( $ratio ), $matches ) ) {
+			return null;
+		}
+
+		$numerator   = (int) $matches[1];
+		$denominator = (int) $matches[2];
+
+		if ( $numerator <= 0 || $denominator <= 0 ) {
+			return null;
+		}
+
+		return $numerator / $denominator;
+	}
+
+	/**
+	 * Resolve a (width, height) pair from block attribute values.
+	 *
+	 * Either dimension can be passed as `0` meaning "auto" — in which
+	 * case the method derives the missing side from the other side and
+	 * the aspect-ratio string. When both are auto, the site default
+	 * height drives the calculation. When both are explicit, the caller
+	 * wins and the aspect-ratio hint is ignored (the rendered PNG just
+	 * honors the literal pixel dimensions).
+	 *
+	 * Both returned values are clamped to the supported ranges so a
+	 * hand-edited block attribute or filter override can't drive the
+	 * generator outside of sane bounds.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param int    $width   Block width (0 = auto).
+	 * @param int    $height  Block height (0 = auto).
+	 * @param string $ratio   Aspect-ratio string (e.g. "16/9").
+	 * @return array{width: int, height: int}
+	 */
+	protected function resolve_dimensions( int $width, int $height, string $ratio ): array {
+		$parsed = $this->parse_aspect_ratio( '' !== $ratio ? $ratio : self::DEFAULT_ASPECT_RATIO );
+
+		if ( null === $parsed ) {
+			$parsed = $this->parse_aspect_ratio( self::DEFAULT_ASPECT_RATIO ) ?: self::IMAGE_ASPECT_RATIO;
+		}
+
+		if ( $width <= 0 && $height <= 0 ) {
+			$height = self::DEFAULT_HEIGHT;
+			$width  = (int) round( $height * $parsed );
+		} elseif ( $width <= 0 ) {
+			$width = (int) round( $height * $parsed );
+		} elseif ( $height <= 0 ) {
+			$height = (int) round( $width / $parsed );
+		}
+
+		return array(
+			'width'  => $this->clamp_width( $width ),
+			'height' => $this->clamp_height( $height ),
+		);
 	}
 
 	/**
