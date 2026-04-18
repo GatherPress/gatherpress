@@ -919,6 +919,104 @@ class Test_Venue_Map extends Base {
 	}
 
 	/**
+	 * If the meta write after save_image() is dropped (e.g. under an
+	 * object-cache outage or a filter that suppresses the update),
+	 * ensure_descriptor_for_combo() must unlink the just-saved PNG and
+	 * return null so we don't leave an orphan on disk.
+	 *
+	 * @covers ::ensure_descriptor_for_combo
+	 *
+	 * @return void
+	 */
+	public function test_ensure_descriptor_for_combo_unlinks_orphan_when_meta_write_dropped(): void {
+		$instance = Venue_Map::get_instance();
+		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
+
+		add_post_meta(
+			$post_id,
+			'gatherpress_venue_information',
+			wp_json_encode(
+				array(
+					'fullAddress' => '1 Infinite Loop',
+					'latitude'    => '37.3318',
+					'longitude'   => '-122.0312',
+				)
+			)
+		);
+
+		// Short-circuit update_post_metadata so the map descriptor write
+		// never reaches the DB. The filter returns a non-null value for
+		// META_KEY only, leaving other meta writes alone.
+		$suppress = static function ( $check, $object_id, $meta_key ) {
+			if ( Venue_Map::META_KEY === $meta_key ) {
+				return true; // Pretend the update happened.
+			}
+			return $check;
+		};
+		add_filter( 'update_post_metadata', $suppress, 10, 3 );
+
+		$info = ( new Venue( $post_id ) )->get_information();
+
+		$result = Utility::invoke_hidden_method(
+			$instance,
+			'ensure_descriptor_for_combo',
+			array( $post_id, $info, Venue_Map::DEFAULT_ZOOM, Venue_Map::DEFAULT_HEIGHT )
+		);
+
+		remove_filter( 'update_post_metadata', $suppress, 10 );
+
+		$this->assertNull(
+			$result,
+			'Orphan-guard must return null when the meta write was suppressed.'
+		);
+
+		$dirs     = wp_get_upload_dir();
+		$base_dir = trailingslashit( $dirs['basedir'] ) . Venue_Map::UPLOADS_SUBDIR;
+
+		$this->assertEmpty(
+			(array) glob( $base_dir . sprintf( '/%d-*.png', $post_id ) ),
+			'The orphan PNG should have been unlinked.'
+		);
+	}
+
+	/**
+	 * Direct coverage for salt_for — lazily generates a salt on first
+	 * access and returns the same value on subsequent calls.
+	 *
+	 * @covers ::salt_for
+	 *
+	 * @return void
+	 */
+	public function test_salt_for_generates_and_caches(): void {
+		$instance = Venue_Map::get_instance();
+		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
+
+		$this->assertSame(
+			'',
+			(string) get_post_meta( $post_id, Venue_Map::SALT_META_KEY, true ),
+			'Precondition: freshly created venue has no salt meta.'
+		);
+
+		$first = Utility::invoke_hidden_method( $instance, 'salt_for', array( $post_id ) );
+
+		$this->assertIsString( $first );
+		$this->assertSame( 32, strlen( $first ), 'Salt should be 32 characters.' );
+		$this->assertSame(
+			$first,
+			(string) get_post_meta( $post_id, Venue_Map::SALT_META_KEY, true ),
+			'Salt should be persisted to meta on first access.'
+		);
+
+		$second = Utility::invoke_hidden_method( $instance, 'salt_for', array( $post_id ) );
+
+		$this->assertSame(
+			$first,
+			$second,
+			'Subsequent calls should return the same cached salt.'
+		);
+	}
+
+	/**
 	 * Direct coverage for delete_file_by_url — unlinks only when the URL
 	 * resolves to a path inside the plugin's uploads subdir.
 	 *
