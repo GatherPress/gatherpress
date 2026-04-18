@@ -11,6 +11,7 @@ import '@testing-library/jest-dom';
 const mockApiFetch = jest.fn();
 const mockInvalidateResolution = jest.fn();
 const mockReceiveEntityRecords = jest.fn();
+const mockCreateErrorNotice = jest.fn();
 let mockCurrentEntityRecord;
 
 jest.mock( '@wordpress/api-fetch', () => ( {
@@ -19,10 +20,15 @@ jest.mock( '@wordpress/api-fetch', () => ( {
 } ) );
 
 jest.mock( '@wordpress/data', () => ( {
-	useDispatch: () => ( {
-		invalidateResolution: mockInvalidateResolution,
-		receiveEntityRecords: mockReceiveEntityRecords,
-	} ),
+	useDispatch: ( store ) => {
+		if ( 'core/notices' === store ) {
+			return { createErrorNotice: mockCreateErrorNotice };
+		}
+		return {
+			invalidateResolution: mockInvalidateResolution,
+			receiveEntityRecords: mockReceiveEntityRecords,
+		};
+	},
 	useSelect: ( callback ) =>
 		callback( () => ( {
 			getEntityRecord: () => mockCurrentEntityRecord,
@@ -60,6 +66,7 @@ describe( 'RegenerateMapButton', () => {
 		mockApiFetch.mockReset();
 		mockInvalidateResolution.mockReset();
 		mockReceiveEntityRecords.mockReset();
+		mockCreateErrorNotice.mockReset();
 		mockApiFetch.mockResolvedValue( { descriptors: {}, reason: '' } );
 		mockCurrentEntityRecord = {
 			id: 42,
@@ -222,6 +229,48 @@ describe( 'RegenerateMapButton', () => {
 		await waitFor( () => {
 			expect( mockApiFetch ).toHaveBeenCalledTimes( 1 );
 		} );
+	} );
+
+	it( 'surfaces an error notice and re-enables the button when apiFetch rejects', async () => {
+		mockApiFetch.mockRejectedValueOnce( new Error( 'Network down' ) );
+
+		render( <RegenerateMapButton { ...defaultProps } /> );
+		const button = screen.getByRole( 'button' );
+		fireEvent.click( button );
+
+		await waitFor( () => {
+			expect( mockCreateErrorNotice ).toHaveBeenCalledWith(
+				'Network down',
+				{ type: 'snackbar' }
+			);
+		} );
+
+		// Cached descriptor preserved — the store patch must not fire on failure.
+		expect( mockReceiveEntityRecords ).not.toHaveBeenCalled();
+		expect( mockInvalidateResolution ).not.toHaveBeenCalled();
+		// Button is no longer busy — next click can retry.
+		expect( button ).not.toBeDisabled();
+	} );
+
+	it( 'surfaces an error notice when the server reports generation_failed', async () => {
+		mockApiFetch.mockResolvedValueOnce( {
+			descriptors: {},
+			reason: 'generation_failed',
+		} );
+
+		render( <RegenerateMapButton { ...defaultProps } /> );
+		fireEvent.click( screen.getByRole( 'button' ) );
+
+		await waitFor( () => {
+			expect( mockCreateErrorNotice ).toHaveBeenCalledWith(
+				expect.stringContaining( 'could not render' ),
+				{ type: 'snackbar' }
+			);
+		} );
+
+		// Don't overwrite the cached descriptor with an empty map.
+		expect( mockReceiveEntityRecords ).not.toHaveBeenCalled();
+		expect( mockInvalidateResolution ).not.toHaveBeenCalled();
 	} );
 } );
 

@@ -2471,6 +2471,72 @@ class Test_Venue_Map extends Base {
 	 *
 	 * @return void
 	 */
+	/**
+	 * Reports a `generation_failed` reason when the venue has coordinates
+	 * but every combo's PNG write fails. Simulated here by putting the
+	 * uploads dir in an error state so `save_image` returns null and the
+	 * regenerate() call comes back with an empty descriptor map.
+	 *
+	 * @covers ::rest_regenerate
+	 *
+	 * @return void
+	 */
+	public function test_rest_regenerate_reports_generation_failed_when_saves_fail(): void {
+		$instance = Venue_Map::get_instance();
+		$instance->register_rest_routes();
+
+		$editor_id = $this->factory->user->create( array( 'role' => 'editor' ) );
+		$post_id   = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
+
+		add_post_meta(
+			$post_id,
+			'gatherpress_venue_information',
+			wp_json_encode(
+				array(
+					'fullAddress' => '1 Infinite Loop',
+					'latitude'    => '37.3318',
+					'longitude'   => '-122.0312',
+				)
+			)
+		);
+
+		wp_set_current_user( $editor_id );
+
+		// Force save_image to fail for every combo so regenerate() returns
+		// an empty array and the REST handler enters the generation_failed
+		// branch.
+		$force_error = static function ( $dirs ) {
+			$dirs['error'] = 'Simulated uploads failure.';
+			return $dirs;
+		};
+		add_filter( 'upload_dir', $force_error );
+
+		$request = new \WP_REST_Request(
+			'POST',
+			sprintf( '/%s/venue/%d/regenerate-map', GATHERPRESS_REST_NAMESPACE, $post_id )
+		);
+		$request->set_param( 'zoom', 15 );
+		$request->set_param( 'width', 800 );
+		$request->set_param( 'height', 400 );
+		$request->set_param( 'aspect_ratio', '2/1' );
+
+		$response = rest_do_request( $request );
+
+		remove_filter( 'upload_dir', $force_error );
+
+		$this->assertSame( 200, $response->get_status() );
+		$data = $response->get_data();
+		$this->assertSame( 'generation_failed', $data['reason'] );
+	}
+
+	/**
+	 * Reports the `awaiting_geocode` reason when the venue has an address
+	 * but no resolved coordinates yet.
+	 *
+	 * @covers ::rest_regenerate
+	 *
+	 * @return void
+	 */
 	public function test_rest_regenerate_reports_awaiting_geocode_reason(): void {
 		$instance = Venue_Map::get_instance();
 		$instance->register_rest_routes();
