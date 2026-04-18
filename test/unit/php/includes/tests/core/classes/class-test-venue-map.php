@@ -302,11 +302,11 @@ class Test_Venue_Map extends Base {
 			'longitude'   => '-122.0312',
 		);
 
-		$baseline = $instance->hash_for( $info, 15, 600, 400, Venue_Map::DEFAULT_TILE_URL );
+		$baseline = $instance->hash_for( $info, 15, 400, Venue_Map::DEFAULT_TILE_URL );
 
 		$this->assertSame(
 			$baseline,
-			$instance->hash_for( $info, 15, 600, 400, Venue_Map::DEFAULT_TILE_URL ),
+			$instance->hash_for( $info, 15, 400, Venue_Map::DEFAULT_TILE_URL ),
 			'Hash should be stable when every input is identical.'
 		);
 
@@ -316,20 +316,20 @@ class Test_Venue_Map extends Base {
 
 		$this->assertNotSame(
 			$baseline,
-			$instance->hash_for( $moved_info, 15, 600, 400, Venue_Map::DEFAULT_TILE_URL ),
+			$instance->hash_for( $moved_info, 15, 400, Venue_Map::DEFAULT_TILE_URL ),
 			'Hash should change when coordinates change.'
 		);
 
 		$this->assertNotSame(
 			$baseline,
-			$instance->hash_for( $info, 14, 600, 400, Venue_Map::DEFAULT_TILE_URL ),
+			$instance->hash_for( $info, 14, 400, Venue_Map::DEFAULT_TILE_URL ),
 			'Hash should change when the zoom level changes.'
 		);
 
 		$this->assertNotSame(
 			$baseline,
-			$instance->hash_for( $info, 15, 800, 400, Venue_Map::DEFAULT_TILE_URL ),
-			'Hash should change when the width changes.'
+			$instance->hash_for( $info, 15, 500, Venue_Map::DEFAULT_TILE_URL ),
+			'Hash should change when the height changes.'
 		);
 	}
 
@@ -367,7 +367,7 @@ class Test_Venue_Map extends Base {
 
 		$this->assertIsArray( $descriptor, 'Expected a descriptor array after generation.' );
 		$this->assertNotEmpty( $descriptor['url'], 'Descriptor URL should be populated.' );
-		$this->assertSame( 40, strlen( $descriptor['hash'] ), 'Descriptor hash should be a SHA-1 hex string.' );
+		$this->assertSame( 32, strlen( $descriptor['hash'] ), 'Descriptor hash should be an MD5 hex string.' );
 
 		$path = $instance->url_to_path( $descriptor['url'] );
 
@@ -621,32 +621,45 @@ class Test_Venue_Map extends Base {
 			$post_id,
 			Venue_Map::META_KEY,
 			array(
-				'15' => array(
-					'url'  => 'https://example.test/a.png',
-					'hash' => 'abc',
+				'15x300'        => array(
+					'url'    => 'https://example.test/a.png',
+					'hash'   => 'abc',
+					'zoom'   => 15,
+					'height' => 300,
 				),
-				'18' => 'not-an-array',
-				'20' => array( 'url' => 'https://example.test/b.png' ), // Missing hash.
+				'18x400'        => 'not-an-array',
+				'20x500'        => array(
+					'url'    => 'https://example.test/b.png',
+					'zoom'   => 20,
+					'height' => 500,
+				), // Missing hash.
+				'missing-shape' => array(
+					'url'  => 'https://example.test/c.png',
+					'hash' => 'def',
+				), // Missing zoom/height.
 			)
 		);
 
 		$descriptors = $instance->get_all_descriptors( $post_id );
 
-		$this->assertArrayHasKey( 15, $descriptors );
-		$this->assertArrayNotHasKey( 18, $descriptors );
-		$this->assertArrayNotHasKey( 20, $descriptors );
+		$this->assertArrayHasKey( '15x300', $descriptors );
+		$this->assertArrayNotHasKey( '18x400', $descriptors );
+		$this->assertArrayNotHasKey( '20x500', $descriptors );
+		$this->assertArrayNotHasKey( 'missing-shape', $descriptors );
+		$this->assertSame( 15, $descriptors['15x300']['zoom'] );
+		$this->assertSame( 300, $descriptors['15x300']['height'] );
 	}
 
 	/**
-	 * Requesting a previously-uncached zoom triggers synchronous generation
-	 * and caches the result for next time.
+	 * Requesting a previously-uncached (zoom, height) combo triggers
+	 * synchronous generation and caches the result for next time.
 	 *
 	 * @covers ::get_url_for_post
-	 * @covers ::ensure_descriptor_for_zoom
+	 * @covers ::ensure_descriptor_for_combo
 	 *
 	 * @return void
 	 */
-	public function test_get_url_for_post_lazily_generates_new_zoom(): void {
+	public function test_get_url_for_post_lazily_generates_new_combo(): void {
 		$instance = Venue_Map::get_instance();
 		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
 
@@ -663,36 +676,87 @@ class Test_Venue_Map extends Base {
 		);
 		$instance->maybe_generate( $post_id );
 
+		$default_key = sprintf(
+			'%dx%d',
+			Venue_Map::DEFAULT_ZOOM,
+			Venue_Map::DEFAULT_HEIGHT
+		);
+
 		$descriptors_before = $instance->get_all_descriptors( $post_id );
 
 		$this->assertCount(
 			1,
 			$descriptors_before,
-			'Initial save should seed only the block-default zoom.'
+			'Initial save should seed only the default (zoom, height) combo.'
 		);
-		$this->assertArrayHasKey( Venue_Map::DEFAULT_BLOCK_ZOOM, $descriptors_before );
+		$this->assertArrayHasKey( $default_key, $descriptors_before );
 
 		// Request a different zoom — simulates a block customized to zoom 14.
-		$url = $instance->get_url_for_post( $post_id, Venue::POST_TYPE, 14 );
+		$new_key = sprintf( '14x%d', Venue_Map::DEFAULT_HEIGHT );
+		$url     = $instance->get_url_for_post( $post_id, Venue::POST_TYPE, 14 );
 
 		$this->assertNotEmpty( $url, 'Lazy generation should return a non-empty URL.' );
 
 		$descriptors_after = $instance->get_all_descriptors( $post_id );
 
-		$this->assertCount( 2, $descriptors_after, 'New zoom should have been cached.' );
-		$this->assertArrayHasKey( 14, $descriptors_after );
-		$this->assertSame( $url, $descriptors_after[14]['url'] );
+		$this->assertCount( 2, $descriptors_after, 'New combo should have been cached.' );
+		$this->assertArrayHasKey( $new_key, $descriptors_after );
+		$this->assertSame( $url, $descriptors_after[ $new_key ]['url'] );
 	}
 
 	/**
-	 * A content change (e.g. new coordinates) regenerates every known zoom.
+	 * Requesting a combo with a different height from the default also caches
+	 * a new descriptor — the PNG is rendered at exactly that block height.
 	 *
-	 * @covers ::maybe_generate
-	 * @covers ::ensure_descriptor_for_zoom
+	 * @covers ::get_url_for_post
+	 * @covers ::ensure_descriptor_for_combo
 	 *
 	 * @return void
 	 */
-	public function test_maybe_generate_cascades_content_changes_to_all_cached_zooms(): void {
+	public function test_get_url_for_post_lazily_generates_new_height(): void {
+		$instance = Venue_Map::get_instance();
+		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
+
+		add_post_meta(
+			$post_id,
+			'gatherpress_venue_information',
+			wp_json_encode(
+				array(
+					'fullAddress' => '1 Infinite Loop',
+					'latitude'    => '37.3318',
+					'longitude'   => '-122.0312',
+				)
+			)
+		);
+		$instance->maybe_generate( $post_id );
+
+		$tall_url = $instance->get_url_for_post(
+			$post_id,
+			Venue::POST_TYPE,
+			Venue_Map::DEFAULT_ZOOM,
+			500
+		);
+
+		$this->assertNotEmpty( $tall_url );
+
+		$key = sprintf( '%dx500', Venue_Map::DEFAULT_ZOOM );
+		$all = $instance->get_all_descriptors( $post_id );
+
+		$this->assertArrayHasKey( $key, $all, 'Tall-height combo should be cached under its own key.' );
+		$this->assertSame( 500, $all[ $key ]['height'] );
+	}
+
+	/**
+	 * A content change (e.g. new coordinates) regenerates every cached
+	 * (zoom, height) combo.
+	 *
+	 * @covers ::maybe_generate
+	 * @covers ::ensure_descriptor_for_combo
+	 * @covers ::get_cached_combos
+	 *
+	 * @return void
+	 */
+	public function test_maybe_generate_cascades_content_changes_to_all_cached_combos(): void {
 		$instance = Venue_Map::get_instance();
 		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
 
@@ -708,14 +772,21 @@ class Test_Venue_Map extends Base {
 			)
 		);
 		$instance->maybe_generate( $post_id );
-		// Warm a second zoom (not the block-default seed) so we have two variants.
-		$instance->get_url_for_post( $post_id, Venue::POST_TYPE, 14 );
+		// Warm a second combo (not the default seed) so we have two variants.
+		$instance->get_url_for_post( $post_id, Venue::POST_TYPE, 14, 500 );
+
+		$default_key = sprintf(
+			'%dx%d',
+			Venue_Map::DEFAULT_ZOOM,
+			Venue_Map::DEFAULT_HEIGHT
+		);
+		$second_key  = '14x500';
 
 		$before = $instance->get_all_descriptors( $post_id );
 
 		$this->assertCount( 2, $before );
 
-		// Change the address. maybe_generate should regenerate both zooms.
+		// Change the address. maybe_generate should regenerate both combos.
 		update_post_meta(
 			$post_id,
 			'gatherpress_venue_information',
@@ -731,26 +802,24 @@ class Test_Venue_Map extends Base {
 
 		$after = $instance->get_all_descriptors( $post_id );
 
-		$this->assertCount( 2, $after, 'Both zooms should still be present after regeneration.' );
+		$this->assertCount( 2, $after, 'Both combos should still be present after regeneration.' );
 		$this->assertNotSame(
-			$before[ Venue_Map::DEFAULT_BLOCK_ZOOM ]['hash'],
-			$after[ Venue_Map::DEFAULT_BLOCK_ZOOM ]['hash'],
-			'Block-default-zoom hash should change with new coordinates.'
+			$before[ $default_key ]['hash'],
+			$after[ $default_key ]['hash'],
+			'Default-combo hash should change with new coordinates.'
 		);
 		$this->assertNotSame(
-			$before[14]['hash'],
-			$after[14]['hash'],
-			'Zoom-14 hash should change with new coordinates.'
+			$before[ $second_key ]['hash'],
+			$after[ $second_key ]['hash'],
+			'Second-combo hash should change with new coordinates.'
 		);
 
 		// Old files should be gone.
 		$this->assertFileDoesNotExist(
-			(string) $instance->url_to_path(
-				$before[ Venue_Map::DEFAULT_BLOCK_ZOOM ]['url']
-			)
+			(string) $instance->url_to_path( $before[ $default_key ]['url'] )
 		);
 		$this->assertFileDoesNotExist(
-			(string) $instance->url_to_path( $before[14]['url'] )
+			(string) $instance->url_to_path( $before[ $second_key ]['url'] )
 		);
 	}
 
@@ -794,16 +863,16 @@ class Test_Venue_Map extends Base {
 	}
 
 	/**
-	 * Direct coverage for ensure_descriptor_for_zoom when save_image fails.
+	 * Direct coverage for ensure_descriptor_for_combo when save_image fails.
 	 *
 	 * Exercising it through the public API (maybe_generate) leaves this
 	 * branch uncredited by xdebug, so we invoke the protected method directly.
 	 *
-	 * @covers ::ensure_descriptor_for_zoom
+	 * @covers ::ensure_descriptor_for_combo
 	 *
 	 * @return void
 	 */
-	public function test_ensure_descriptor_for_zoom_returns_null_when_save_fails(): void {
+	public function test_ensure_descriptor_for_combo_returns_null_when_save_fails(): void {
 		$instance = Venue_Map::get_instance();
 
 		$force_error = static function ( $dirs ) {
@@ -814,7 +883,7 @@ class Test_Venue_Map extends Base {
 
 		$result = Utility::invoke_hidden_method(
 			$instance,
-			'ensure_descriptor_for_zoom',
+			'ensure_descriptor_for_combo',
 			array(
 				42,
 				array(
@@ -823,6 +892,7 @@ class Test_Venue_Map extends Base {
 					'longitude'   => '-122.0312',
 				),
 				15,
+				300,
 			)
 		);
 
@@ -832,10 +902,10 @@ class Test_Venue_Map extends Base {
 	}
 
 	/**
-	 * Second call to get_url_for_post for the same zoom hits the filesystem
+	 * Second call to get_url_for_post for the same combo hits the filesystem
 	 * cache (no PNG rewrite).
 	 *
-	 * @covers ::ensure_descriptor_for_zoom
+	 * @covers ::ensure_descriptor_for_combo
 	 *
 	 * @return void
 	 */
@@ -1103,12 +1173,12 @@ class Test_Venue_Map extends Base {
 			-122.0312,
 			15,
 			256,
-			256,
 			Venue_Map::DEFAULT_TILE_URL
 		);
 
 		$this->assertInstanceOf( \GdImage::class, $image );
-		$this->assertSame( 256, imagesx( $image ) );
+		// Width is derived from height via IMAGE_ASPECT_RATIO (2.0) → 512×256.
+		$this->assertSame( 512, imagesx( $image ) );
 		$this->assertSame( 256, imagesy( $image ) );
 
 		imagedestroy( $image );
@@ -1181,59 +1251,143 @@ class Test_Venue_Map extends Base {
 	}
 
 	/**
-	 * Coverage for get_block_default_zoom — Settings wins, falls back to constant.
+	 * Coverage for get_zoom — prefers Settings, falls back to constant,
+	 * then passes through the filter.
 	 *
-	 * @covers ::get_block_default_zoom
+	 * @covers ::get_zoom
 	 *
 	 * @return void
 	 */
-	public function test_get_block_default_zoom(): void {
+	public function test_get_zoom(): void {
 		$instance = Venue_Map::get_instance();
 		$settings = \GatherPress\Core\Settings::get_instance();
 
 		$settings->set( 'venue_map_default_zoom', 13 );
 		$this->assertSame(
 			13,
-			Utility::invoke_hidden_method( $instance, 'get_block_default_zoom' ),
+			Utility::invoke_hidden_method( $instance, 'get_zoom' ),
 			'Should prefer the stored Settings value.'
 		);
 
 		$settings->set( 'venue_map_default_zoom', 0 );
 		$this->assertSame(
-			Venue_Map::DEFAULT_BLOCK_ZOOM,
-			Utility::invoke_hidden_method( $instance, 'get_block_default_zoom' ),
-			'Should fall back to DEFAULT_BLOCK_ZOOM when the setting is unset/zero.'
+			Venue_Map::DEFAULT_ZOOM,
+			Utility::invoke_hidden_method( $instance, 'get_zoom' ),
+			'Should fall back to DEFAULT_ZOOM when the setting is unset/zero.'
 		);
 	}
 
 	/**
-	 * Coverage for the filterable getters.
+	 * Coverage for get_height — prefers Settings, falls back to constant,
+	 * then passes through the filter. Mirrors test_get_zoom.
 	 *
-	 * @covers ::get_zoom
-	 * @covers ::get_width
 	 * @covers ::get_height
+	 *
+	 * @return void
+	 */
+	public function test_get_height(): void {
+		$instance = Venue_Map::get_instance();
+		$settings = \GatherPress\Core\Settings::get_instance();
+
+		$settings->set( 'venue_map_default_height', 450 );
+		$this->assertSame(
+			450,
+			Utility::invoke_hidden_method( $instance, 'get_height' ),
+			'Should prefer the stored Settings value.'
+		);
+
+		$settings->set( 'venue_map_default_height', 0 );
+		$this->assertSame(
+			Venue_Map::DEFAULT_HEIGHT,
+			Utility::invoke_hidden_method( $instance, 'get_height' ),
+			'Should fall back to DEFAULT_HEIGHT when the setting is unset/zero.'
+		);
+	}
+
+	/**
+	 * Coverage for the generator's tile URL getter.
+	 *
 	 * @covers ::get_tile_url_template
 	 *
 	 * @return void
 	 */
-	public function test_filterable_getters(): void {
+	public function test_get_tile_url_template(): void {
 		$instance = Venue_Map::get_instance();
 
 		$this->assertSame(
-			Venue_Map::DEFAULT_ZOOM,
-			Utility::invoke_hidden_method( $instance, 'get_zoom' )
-		);
-		$this->assertSame(
-			Venue_Map::DEFAULT_WIDTH,
-			Utility::invoke_hidden_method( $instance, 'get_width' )
-		);
-		$this->assertSame(
-			Venue_Map::DEFAULT_HEIGHT,
-			Utility::invoke_hidden_method( $instance, 'get_height' )
-		);
-		$this->assertSame(
 			Venue_Map::DEFAULT_TILE_URL,
 			Utility::invoke_hidden_method( $instance, 'get_tile_url_template' )
+		);
+	}
+
+	/**
+	 * Coverage for combo_key — formats `{zoom}x{height}`.
+	 *
+	 * @covers ::combo_key
+	 *
+	 * @return void
+	 */
+	public function test_combo_key_formats_zoom_and_height(): void {
+		$instance = Venue_Map::get_instance();
+
+		$this->assertSame(
+			'14x500',
+			Utility::invoke_hidden_method( $instance, 'combo_key', array( 14, 500 ) )
+		);
+	}
+
+	/**
+	 * Coverage for get_cached_combos — returns unique (zoom, height) combos.
+	 *
+	 * @covers ::get_cached_combos
+	 *
+	 * @return void
+	 */
+	public function test_get_cached_combos(): void {
+		$instance = Venue_Map::get_instance();
+		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
+
+		$this->assertSame(
+			array(),
+			$instance->get_cached_combos( $post_id ),
+			'Empty meta should yield zero combos.'
+		);
+
+		update_post_meta(
+			$post_id,
+			Venue_Map::META_KEY,
+			array(
+				'15x300' => array(
+					'url'    => 'https://example.test/a.png',
+					'hash'   => 'abc',
+					'zoom'   => 15,
+					'height' => 300,
+				),
+				'18x500' => array(
+					'url'    => 'https://example.test/b.png',
+					'hash'   => 'def',
+					'zoom'   => 18,
+					'height' => 500,
+				),
+			)
+		);
+
+		$combos = $instance->get_cached_combos( $post_id );
+
+		$this->assertCount( 2, $combos );
+		$this->assertContains(
+			array(
+				'zoom'   => 15,
+				'height' => 300,
+			),
+			$combos
+		);
+		$this->assertContains(
+			array(
+				'zoom'   => 18,
+				'height' => 500,
+			),
+			$combos
 		);
 	}
 
@@ -1257,7 +1411,6 @@ class Test_Venue_Map extends Base {
 			37.3318,
 			-122.0312,
 			15,
-			256,
 			256,
 			Venue_Map::DEFAULT_TILE_URL
 		);
@@ -1303,7 +1456,6 @@ class Test_Venue_Map extends Base {
 			37.3318,
 			-122.0312,
 			15,
-			256,
 			256,
 			Venue_Map::DEFAULT_TILE_URL
 		);

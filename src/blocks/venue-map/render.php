@@ -38,12 +38,13 @@ if ( '' === $gatherpress_address ) {
 $gatherpress_render_mode    = 'static' === ( $attributes['renderMode'] ?? Venue_Map::DEFAULT_RENDER_MODE )
 	? 'static'
 	: 'interactive';
-$gatherpress_zoom           = (int) ( $attributes['zoom'] ?? Venue_Map::DEFAULT_BLOCK_ZOOM );
-$gatherpress_height         = (int) ( $attributes['height'] ?? Venue_Map::DEFAULT_BLOCK_HEIGHT );
+$gatherpress_zoom           = (int) ( $attributes['zoom'] ?? Venue_Map::DEFAULT_ZOOM );
+$gatherpress_height         = (int) ( $attributes['height'] ?? Venue_Map::DEFAULT_HEIGHT );
 $gatherpress_static_map_url = Venue_Map::get_instance()->get_url_for_post(
 	$gatherpress_post_id,
 	$gatherpress_post_type,
-	$gatherpress_zoom
+	$gatherpress_zoom,
+	$gatherpress_height
 );
 
 // Hydration data sits on the outer wrapper so view.js can replace the
@@ -63,9 +64,9 @@ if ( 'interactive' === $gatherpress_render_mode ) {
 		'fullAddress'  => $gatherpress_address,
 		'latitude'     => (string) ( $gatherpress_venue_meta['latitude'] ?? '' ),
 		'longitude'    => (string) ( $gatherpress_venue_meta['longitude'] ?? '' ),
-		'mapZoomLevel' => $attributes['zoom'] ?? Venue_Map::DEFAULT_BLOCK_ZOOM,
+		'mapZoomLevel' => $attributes['zoom'] ?? Venue_Map::DEFAULT_ZOOM,
 		'mapType'      => $attributes['type'] ?? Venue_Map::DEFAULT_MAP_TYPE,
-		'mapHeight'    => $attributes['height'] ?? Venue_Map::DEFAULT_BLOCK_HEIGHT,
+		'mapHeight'    => $attributes['height'] ?? Venue_Map::DEFAULT_HEIGHT,
 		'mapPlatform'  => Settings::get_instance()->get( 'map_platform' ),
 		'pluginUrl'    => GATHERPRESS_CORE_URL,
 	);
@@ -112,7 +113,7 @@ if ( '' !== $gatherpress_static_map_url ) {
 } else {
 	printf(
 		'<div class="gatherpress-venue-map__placeholder">%s</div>',
-		esc_html__( 'Map is being prepared — check back in a moment.', 'gatherpress' )
+		esc_html__( 'Map is being prepared, check back in a moment.', 'gatherpress' )
 	);
 }
 

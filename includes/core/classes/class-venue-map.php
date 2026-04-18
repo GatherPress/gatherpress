@@ -7,9 +7,10 @@
  * coordinates, compositing them into a single PNG with a marker stamped at
  * the venue's exact position, and storing the result under
  * `wp-content/uploads/gatherpress/static-maps/`. The file URL and an
- * input-hash are persisted (per zoom) in venue post meta so the front-end
- * can serve the image directly and so subsequent saves regenerate only when
- * inputs (address, coordinates, tile URL, size) actually change.
+ * input-hash are persisted (per zoom+height combo) in venue post meta so
+ * the front-end can serve the image directly and so subsequent saves
+ * regenerate only when inputs (address, coordinates, tile URL, size)
+ * actually change.
  *
  * The class is named for its broader role — venue-map — so future
  * map-related additions (REST endpoint for the editor preview, interactive
@@ -26,14 +27,15 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Traits\Singleton;
 use GdImage;
+use WP_Post;
 
 /**
  * Class Venue_Map.
  *
  * Singleton hosting the venue map server-side pipeline. Currently owns the
- * static PNG cache keyed by zoom; structured so that additional map-related
- * methods (REST, async jobs, etc.) can land here without proliferating
- * classes.
+ * static PNG cache keyed by (zoom, height) combo; structured so that
+ * additional map-related methods (REST, async jobs, etc.) can land here
+ * without proliferating classes.
  *
  * @since 1.0.0
  */
@@ -46,45 +48,32 @@ class Venue_Map {
 	/**
 	 * Default `renderMode` attribute for the venue-map block.
 	 *
-	 * Must mirror the default declared in the block's `block.json`. `render.php`
-	 * and any other caller that resolves the block attribute should read the
-	 * constant rather than hardcoding the string.
-	 *
 	 * @since 1.0.0
 	 * @var string
 	 */
 	const DEFAULT_RENDER_MODE = 'interactive';
 
 	/**
-	 * Default `zoom` attribute for the venue-map block.
-	 *
-	 * Note this is distinct from {@see self::DEFAULT_ZOOM} — the latter is the
-	 * fallback used by the generator when a caller requests a map without
-	 * specifying a zoom; the block-level default is what a fresh block saves
-	 * with, matching the `block.json` declaration.
+	 * Default zoom level. Used by the generator and the block.
 	 *
 	 * @since 1.0.0
 	 * @var int
 	 */
-	const DEFAULT_BLOCK_ZOOM = 18;
+	const DEFAULT_ZOOM = 18;
 
 	/**
-	 * Default `height` attribute (in pixels) for the venue-map block wrapper.
-	 *
-	 * The generated PNG is always 600×400; this is the DOM height applied to
-	 * the wrapper so the static image (with `object-fit: cover`) fills it.
+	 * Default height (in pixels). Used by the generator and the block.
 	 *
 	 * @since 1.0.0
 	 * @var int
 	 */
-	const DEFAULT_BLOCK_HEIGHT = 300;
+	const DEFAULT_HEIGHT = 300;
 
 	/**
 	 * Default `type` attribute for the venue-map block.
 	 *
 	 * Google Maps–specific (roadmap / satellite / hybrid / terrain). Ignored by
-	 * the static renderer and by Leaflet/OSM, but preserved as a block-level
-	 * default so Google Maps users get a sensible first value.
+	 * the static renderer and by Leaflet/OSM.
 	 *
 	 * @since 1.0.0
 	 * @var string
@@ -100,31 +89,18 @@ class Venue_Map {
 	const TILE_SIZE = 256;
 
 	/**
-	 * Default zoom level for generated static maps.
+	 * PNG aspect ratio (width ÷ height).
 	 *
-	 * Street-level context without zooming so far in that neighborhood
-	 * landmarks fall outside the crop.
-	 *
-	 * @since 1.0.0
-	 * @var int
-	 */
-	const DEFAULT_ZOOM = 15;
-
-	/**
-	 * Default output image width in pixels.
+	 * The block exposes height but not width (blocks render 100% of their
+	 * container). We still need *some* pixel width for the PNG, so the
+	 * generator derives it from the block's chosen height at this ratio —
+	 * 2:1 by default, which gives a comfortably landscape map without the
+	 * venue marker feeling tight against the edges.
 	 *
 	 * @since 1.0.0
-	 * @var int
+	 * @var float
 	 */
-	const DEFAULT_WIDTH = 600;
-
-	/**
-	 * Default output image height in pixels.
-	 *
-	 * @since 1.0.0
-	 * @var int
-	 */
-	const DEFAULT_HEIGHT = 400;
+	const IMAGE_ASPECT_RATIO = 2.0;
 
 	/**
 	 * CartoDB Positron tile URL template. `{z}`, `{x}`, `{y}` are substituted.
@@ -274,19 +250,24 @@ class Venue_Map {
 			return;
 		}
 
-		// Regenerate every zoom the venue is already known at, so a content
-		// change (new address/coords) cascades to all cached variants. For a
-		// fresh venue with nothing stored, seed the zoom that newly-inserted
-		// venue-map blocks will actually request — otherwise the editor falls
-		// back to the interactive preview on the very first save because
-		// cache[18] is missing but block.zoom = 18.
-		$zooms = array_keys( $this->get_all_descriptors( $post_id ) );
-		if ( empty( $zooms ) ) {
-			$zooms = array( $this->get_block_default_zoom() );
+		// Regenerate every (zoom, height) combo the venue is already cached
+		// at so a content change (new address/coords) cascades to all cached
+		// variants. For a fresh venue with nothing stored, seed the default
+		// combo that newly-inserted venue-map blocks will actually request —
+		// otherwise the editor falls back to the interactive preview on the
+		// very first save because the default cache entry is missing.
+		$combos = $this->get_cached_combos( $post_id );
+		if ( empty( $combos ) ) {
+			$combos = array(
+				array(
+					'zoom'   => $this->get_zoom(),
+					'height' => $this->get_height(),
+				),
+			);
 		}
 
-		foreach ( $zooms as $zoom ) {
-			$this->ensure_descriptor_for_zoom( $post_id, $info, (int) $zoom );
+		foreach ( $combos as $combo ) {
+			$this->ensure_descriptor_for_combo( $post_id, $info, $combo['zoom'], $combo['height'] );
 		}
 	}
 
@@ -312,9 +293,9 @@ class Venue_Map {
 	 * Accepts either a venue post ID (supports `gatherpress-venue-information`)
 	 * or an event post ID (supports `gatherpress-venue`) and returns the URL
 	 * of the stored static map for the corresponding venue at the requested
-	 * zoom. When the cache doesn't yet have an image for that zoom, the method
-	 * generates one synchronously — first render pays the cost, subsequent
-	 * renders hit the cache.
+	 * zoom and height. When the cache doesn't yet have an image for that
+	 * combo, the method generates one synchronously — first render pays the
+	 * cost, subsequent renders hit the cache.
 	 *
 	 * Returns '' when the post isn't venue-related, the venue has no
 	 * coordinates, or the on-demand generation failed.
@@ -324,9 +305,15 @@ class Venue_Map {
 	 * @param int      $post_id   Event or venue post ID.
 	 * @param string   $post_type The post type of `$post_id`.
 	 * @param int|null $zoom      Desired zoom level. Null falls back to the default.
+	 * @param int|null $height    Desired pixel height. Null falls back to the default.
 	 * @return string Static map URL, or '' when unavailable.
 	 */
-	public function get_url_for_post( int $post_id, string $post_type, ?int $zoom = null ): string {
+	public function get_url_for_post(
+		int $post_id,
+		string $post_type,
+		?int $zoom = null,
+		?int $height = null
+	): string {
 		$venue_post_id = 0;
 
 		if ( post_type_supports( $post_type, 'gatherpress-venue-information' ) ) {
@@ -334,7 +321,7 @@ class Venue_Map {
 		} elseif ( post_type_supports( $post_type, 'gatherpress-venue' ) ) {
 			$venue_post = Venue_Setup::get_instance()->get_venue_post_from_event_post_id( $post_id );
 
-			if ( $venue_post instanceof \WP_Post ) {
+			if ( $venue_post instanceof WP_Post ) {
 				$venue_post_id = $venue_post->ID;
 			}
 		}
@@ -350,34 +337,37 @@ class Venue_Map {
 			return '';
 		}
 
-		$descriptor = $this->ensure_descriptor_for_zoom(
+		$descriptor = $this->ensure_descriptor_for_combo(
 			$venue_post_id,
 			$info,
-			$zoom ?? $this->get_block_default_zoom()
+			$zoom ?? $this->get_zoom(),
+			$height ?? $this->get_height()
 		);
 
 		return null === $descriptor ? '' : $descriptor['url'];
 	}
 
 	/**
-	 * Return the descriptor for the default zoom, or null if nothing is stored.
+	 * Return the descriptor for the default (zoom, height) combo, or null if
+	 * nothing is stored.
 	 *
 	 * Kept for callers that only care about "has this venue been rendered at
-	 * all?" — the richer per-zoom map lives behind {@see self::get_all_descriptors()}.
+	 * all?" — the richer per-combo map lives behind
+	 * {@see self::get_all_descriptors()}.
 	 *
 	 * @since 1.0.0
 	 *
 	 * @param int $post_id The venue post ID.
-	 * @return array{url: string, hash: string}|null
+	 * @return array{url: string, hash: string, zoom: int, height: int}|null
 	 */
 	public function get_stored_descriptor( int $post_id ): ?array {
 		$all = $this->get_all_descriptors( $post_id );
 
-		return $all[ $this->get_block_default_zoom() ] ?? null;
+		return $all[ $this->combo_key( $this->get_zoom(), $this->get_height() ) ] ?? null;
 	}
 
 	/**
-	 * Return every stored descriptor for the venue, keyed by zoom level.
+	 * Return every stored descriptor for the venue, keyed by `{zoom}x{height}`.
 	 *
 	 * Silently filters out malformed entries so callers can iterate without
 	 * defensive shape checks.
@@ -385,7 +375,7 @@ class Venue_Map {
 	 * @since 1.0.0
 	 *
 	 * @param int $post_id The venue post ID.
-	 * @return array<int, array{url: string, hash: string}>
+	 * @return array<string, array{url: string, hash: string, zoom: int, height: int}>
 	 */
 	public function get_all_descriptors( int $post_id ): array {
 		$raw = get_post_meta( $post_id, self::META_KEY, true );
@@ -396,14 +386,25 @@ class Venue_Map {
 
 		$descriptors = array();
 
-		foreach ( $raw as $zoom => $entry ) {
+		foreach ( $raw as $key => $entry ) {
 			if ( ! is_array( $entry ) || empty( $entry['url'] ) || empty( $entry['hash'] ) ) {
 				continue;
 			}
 
-			$descriptors[ (int) $zoom ] = array(
-				'url'  => (string) $entry['url'],
-				'hash' => (string) $entry['hash'],
+			$zoom   = isset( $entry['zoom'] ) ? (int) $entry['zoom'] : 0;
+			$height = isset( $entry['height'] ) ? (int) $entry['height'] : 0;
+
+			// Without a zoom/height on the entry there's no way to know which
+			// block configuration the file belongs to — skip rather than guess.
+			if ( $zoom <= 0 || $height <= 0 ) {
+				continue;
+			}
+
+			$descriptors[ (string) $key ] = array(
+				'url'    => (string) $entry['url'],
+				'hash'   => (string) $entry['hash'],
+				'zoom'   => $zoom,
+				'height' => $height,
 			);
 		}
 
@@ -411,33 +412,72 @@ class Venue_Map {
 	}
 
 	/**
-	 * Ensure a descriptor exists for `$zoom` and return it.
+	 * Parse stored meta into the list of (zoom, height) combos already cached.
+	 *
+	 * Used by {@see self::maybe_generate()} to cascade content changes (new
+	 * address, new coordinates) across every variant a venue has ever been
+	 * rendered at, so blocks pointing at a non-default combo aren't stranded
+	 * with a stale image.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param int $post_id Venue post ID.
+	 * @return array<int, array{zoom: int, height: int}>
+	 */
+	public function get_cached_combos( int $post_id ): array {
+		$combos = array();
+
+		foreach ( $this->get_all_descriptors( $post_id ) as $descriptor ) {
+			$combos[] = array(
+				'zoom'   => $descriptor['zoom'],
+				'height' => $descriptor['height'],
+			);
+		}
+
+		return $combos;
+	}
+
+	/**
+	 * Build the meta-storage key for a (zoom, height) combo.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param int $zoom   Zoom level.
+	 * @param int $height Pixel height.
+	 * @return string
+	 */
+	protected function combo_key( int $zoom, int $height ): string {
+		return sprintf( '%dx%d', $zoom, $height );
+	}
+
+	/**
+	 * Ensure a descriptor exists for the `($zoom, $height)` combo and return it.
 	 *
 	 * Hits the filesystem cache when the stored hash already matches the
 	 * current inputs and the PNG is still on disk; otherwise composites a
 	 * fresh image, saves it, updates the meta, and removes the old PNG for
-	 * that zoom (if any).
+	 * that combo (if any).
 	 *
 	 * @since 1.0.0
 	 *
 	 * @param int   $post_id Venue post ID.
 	 * @param array $info    Parsed venue information.
 	 * @param int   $zoom    Zoom level to render at.
-	 * @return array{url: string, hash: string}|null
+	 * @param int   $height  Pixel height of the PNG. Width is derived via IMAGE_ASPECT_RATIO.
+	 * @return array{url: string, hash: string, zoom: int, height: int}|null
 	 */
-	protected function ensure_descriptor_for_zoom( int $post_id, array $info, int $zoom ): ?array {
+	protected function ensure_descriptor_for_combo( int $post_id, array $info, int $zoom, int $height ): ?array {
 		// Callers (maybe_generate, get_url_for_post) must have validated the
 		// coordinates via parse_coord() already — cast directly.
 		$latitude  = (float) $info['latitude'];
 		$longitude = (float) $info['longitude'];
 
-		$width  = $this->get_width();
-		$height = $this->get_height();
-		$tiles  = $this->get_tile_url_template();
-		$hash   = $this->hash_for( $info, $zoom, $width, $height, $tiles );
+		$tiles = $this->get_tile_url_template();
+		$hash  = $this->hash_for( $info, $zoom, $height, $tiles );
+		$key   = $this->combo_key( $zoom, $height );
 
 		$all      = $this->get_all_descriptors( $post_id );
-		$existing = $all[ $zoom ] ?? null;
+		$existing = $all[ $key ] ?? null;
 
 		if ( null !== $existing && $existing['hash'] === $hash ) {
 			$path = $this->url_to_path( $existing['url'] );
@@ -446,7 +486,7 @@ class Venue_Map {
 			}
 		}
 
-		$image = $this->composite_image( $latitude, $longitude, $zoom, $width, $height, $tiles );
+		$image = $this->composite_image( $latitude, $longitude, $zoom, $height, $tiles );
 
 		// Downstream of the GD-missing branch in composite_image(); only
 		// reached on PHP builds without the GD extension.
@@ -454,6 +494,7 @@ class Venue_Map {
 			return null; // @codeCoverageIgnore
 		}
 
+		$width = (int) round( $height * self::IMAGE_ASPECT_RATIO );
 		$this->stamp_marker( $image, (int) round( $width / 2 ), (int) round( $height / 2 ) );
 
 		$url = $this->save_image( $image, $post_id, $hash );
@@ -467,18 +508,16 @@ class Venue_Map {
 			$this->delete_file_by_url( $existing['url'] );
 		}
 
-		$all[ $zoom ]   = array(
-			'url'  => $url,
-			'hash' => $hash,
+		$all[ $key ] = array(
+			'url'    => $url,
+			'hash'   => $hash,
+			'zoom'   => $zoom,
+			'height' => $height,
 		);
-		$sanitized_meta = array();
-		foreach ( $all as $z => $descriptor ) {
-			$sanitized_meta[ (string) $z ] = $descriptor;
-		}
 
-		update_post_meta( $post_id, self::META_KEY, $sanitized_meta );
+		update_post_meta( $post_id, self::META_KEY, $all );
 
-		return $all[ $zoom ];
+		return $all[ $key ];
 	}
 
 	/**
@@ -501,21 +540,23 @@ class Venue_Map {
 	/**
 	 * Compute a stable hash from the inputs that determine the rendered PNG.
 	 *
-	 * Any change to address, coords, zoom, size, or tile provider invalidates
-	 * the previous image. Unrelated venue edits (title, excerpt, other meta)
-	 * keep the same hash and skip regeneration.
+	 * Any change to address, coords, zoom, height, or tile provider invalidates
+	 * the previous image. Width is fully derived from height via
+	 * {@see self::IMAGE_ASPECT_RATIO} so it doesn't need to go into the hash.
+	 * Unrelated venue edits (title, excerpt, other meta) keep the same hash
+	 * and skip regeneration.
 	 *
 	 * @since 1.0.0
 	 *
 	 * @param array  $info   Parsed venue information.
 	 * @param int    $zoom   Map zoom level.
-	 * @param int    $width  Output width.
 	 * @param int    $height Output height.
 	 * @param string $tiles  Tile URL template.
-	 * @return string SHA-1 hex digest.
+	 * @return string MD5 hex digest.
 	 */
-	public function hash_for( array $info, int $zoom, int $width, int $height, string $tiles ): string {
-		return sha1(
+	public function hash_for( array $info, int $zoom, int $height, string $tiles ): string {
+		// md5() here is a non-cryptographic cache-key discriminator, matching class-geocoding.php.
+		return md5( // NOSONAR.
 			implode(
 				'|',
 				array(
@@ -523,7 +564,6 @@ class Venue_Map {
 					(string) ( $info['latitude'] ?? '' ),
 					(string) ( $info['longitude'] ?? '' ),
 					(string) $zoom,
-					(string) $width,
 					(string) $height,
 					$tiles,
 				)
@@ -582,9 +622,8 @@ class Venue_Map {
 	 *
 	 * @param float  $lat    Latitude in degrees.
 	 * @param float  $lng    Longitude in degrees.
-	 * @param int    $zoom   Zoom level.
-	 * @param int    $width  Output width in pixels.
-	 * @param int    $height Output height in pixels.
+	 * @param int    $zoom   Zoom level (same zoom Leaflet would use for the same CSS viewport).
+	 * @param int    $height Output pixel height. Width is derived via IMAGE_ASPECT_RATIO.
 	 * @param string $tiles  Tile URL template.
 	 * @return GdImage|null Composited image, or null when GD is unavailable.
 	 */
@@ -592,7 +631,6 @@ class Venue_Map {
 		float $lat,
 		float $lng,
 		int $zoom,
-		int $width,
 		int $height,
 		string $tiles
 	): ?GdImage {
@@ -600,6 +638,8 @@ class Venue_Map {
 		if ( ! function_exists( 'imagecreatetruecolor' ) ) { // @codeCoverageIgnore
 			return null; // @codeCoverageIgnore
 		}
+
+		$width = (int) round( $height * self::IMAGE_ASPECT_RATIO );
 
 		$venue_world_x = $this->lng_to_world_pixel( $lng, $zoom );
 		$venue_world_y = $this->lat_to_world_pixel( $lat, $zoom );
@@ -743,13 +783,21 @@ class Venue_Map {
 	}
 
 	/**
-	 * Zoom level to render at. Filterable.
+	 * Zoom level used by the generator and by the block.
+	 *
+	 * Prefers the site-wide setting; falls back to {@see self::DEFAULT_ZOOM}
+	 * when the setting is unset or zero. Result is piped through the
+	 * `gatherpress_venue_map_zoom` filter so code-level overrides
+	 * (themes, site-specific plugins) can still take precedence.
 	 *
 	 * @since 1.0.0
 	 *
 	 * @return int
 	 */
 	protected function get_zoom(): int {
+		$setting = (int) Settings::get_instance()->get( 'venue_map_default_zoom' );
+		$default = $setting > 0 ? $setting : self::DEFAULT_ZOOM;
+
 		/**
 		 * Filter the zoom level used when rendering the static venue map.
 		 *
@@ -757,61 +805,35 @@ class Venue_Map {
 		 *
 		 * @param int $zoom Default zoom level.
 		 */
-		return (int) apply_filters( 'gatherpress_venue_static_map_zoom', self::DEFAULT_ZOOM );
+		return (int) apply_filters( 'gatherpress_venue_map_zoom', $default );
 	}
 
 	/**
-	 * Zoom level that newly-inserted venue-map blocks request.
+	 * Height (in pixels) used by the generator and by the block.
 	 *
-	 * Used by {@see self::maybe_generate()} when seeding a fresh venue so the
-	 * initial cache entry matches the zoom those blocks will actually ask for.
-	 * Prefers the site-wide setting; falls back to the block-level constant
-	 * when the setting has never been written.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @return int
-	 */
-	protected function get_block_default_zoom(): int {
-		$setting = (int) Settings::get_instance()->get( 'venue_map_default_zoom' );
-
-		return $setting > 0 ? $setting : self::DEFAULT_BLOCK_ZOOM;
-	}
-
-	/**
-	 * Output image width in pixels. Filterable.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @return int
-	 */
-	protected function get_width(): int {
-		/**
-		 * Filter the width of the rendered static venue map.
-		 *
-		 * @since 1.0.0
-		 *
-		 * @param int $width Default width in pixels.
-		 */
-		return (int) apply_filters( 'gatherpress_venue_static_map_width', self::DEFAULT_WIDTH );
-	}
-
-	/**
-	 * Output image height in pixels. Filterable.
+	 * Mirrors {@see self::get_zoom()} — Settings value wins, falls back to
+	 * {@see self::DEFAULT_HEIGHT}, then runs through
+	 * `gatherpress_venue_map_height` for code-level overrides. Because the
+	 * PNG is rendered at exactly this height (no oversampling), the generator
+	 * and the block see the same value and Leaflet's zoom matches the
+	 * static map's zoom visually.
 	 *
 	 * @since 1.0.0
 	 *
 	 * @return int
 	 */
 	protected function get_height(): int {
+		$setting = (int) Settings::get_instance()->get( 'venue_map_default_height' );
+		$default = $setting > 0 ? $setting : self::DEFAULT_HEIGHT;
+
 		/**
-		 * Filter the height of the rendered static venue map.
+		 * Filter the height used when rendering the static venue map.
 		 *
 		 * @since 1.0.0
 		 *
 		 * @param int $height Default height in pixels.
 		 */
-		return (int) apply_filters( 'gatherpress_venue_static_map_height', self::DEFAULT_HEIGHT );
+		return (int) apply_filters( 'gatherpress_venue_map_height', $default );
 	}
 
 	/**
@@ -829,7 +851,7 @@ class Venue_Map {
 		 *
 		 * @param string $template Tile URL with `{z}`, `{x}`, `{y}` placeholders.
 		 */
-		return (string) apply_filters( 'gatherpress_venue_static_map_tile_url', self::DEFAULT_TILE_URL );
+		return (string) apply_filters( 'gatherpress_venue_map_tile_url', self::DEFAULT_TILE_URL );
 	}
 
 	/**

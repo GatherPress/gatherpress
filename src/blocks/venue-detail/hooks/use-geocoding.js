@@ -8,7 +8,7 @@ import { useDebounce } from '@wordpress/compose';
 /**
  * Internal dependencies.
  */
-import { geocodeAddress } from '../../../helpers/geocoding';
+import { geocodeAddress, GEOCODE_LOCK_NAME } from '../../../helpers/geocoding';
 
 /**
  * Custom hook for geocoding address fields.
@@ -29,6 +29,12 @@ export function useGeocoding( fieldType, fieldValue, updateVenueField, enabled =
 	// Get dispatch functions for venue store.
 	const { updateVenueLatitude, updateVenueLongitude } =
 		useDispatch( 'gatherpress/venue' );
+
+	// Dispatches used to block Save while geocoding is pending — prevents
+	// the "saved new address with stale lat/long" race that otherwise bakes
+	// a wrong-location static map until the next save.
+	const { lockPostSaving, unlockPostSaving } =
+		useDispatch( 'core/editor' );
 
 	// Get mapCustomLatLong setting from venue store.
 	const { mapCustomLatLong } = useSelect(
@@ -53,31 +59,35 @@ export function useGeocoding( fieldType, fieldValue, updateVenueField, enabled =
 			return;
 		}
 
-		// If address is empty, clear lat/long.
-		if ( ! address ) {
-			if ( ! mapCustomLatLong ) {
-				// Clear venue store for live preview.
-				updateVenueLatitude( '' );
-				updateVenueLongitude( '' );
+		try {
+			// If address is empty, clear lat/long.
+			if ( ! address ) {
+				if ( ! mapCustomLatLong ) {
+					// Clear venue store for live preview.
+					updateVenueLatitude( '' );
+					updateVenueLongitude( '' );
 
-				// Clear meta for the venue post.
-				updateVenueField( { latitude: '', longitude: '' } );
+					// Clear meta for the venue post.
+					updateVenueField( { latitude: '', longitude: '' } );
+				}
+				return;
 			}
-			return;
-		}
 
-		const { latitude, longitude } = await geocodeAddress( address );
+			const { latitude, longitude } = await geocodeAddress( address );
 
-		if ( ! mapCustomLatLong ) {
-			// Update venue store for live preview.
-			updateVenueLatitude( latitude || null );
-			updateVenueLongitude( longitude || null );
+			if ( ! mapCustomLatLong ) {
+				// Update venue store for live preview.
+				updateVenueLatitude( latitude || null );
+				updateVenueLongitude( longitude || null );
 
-			// Update meta for the venue post.
-			updateVenueField( {
-				latitude: latitude || '',
-				longitude: longitude || '',
-			} );
+				// Update meta for the venue post.
+				updateVenueField( {
+					latitude: latitude || '',
+					longitude: longitude || '',
+				} );
+			}
+		} finally {
+			unlockPostSaving( GEOCODE_LOCK_NAME );
 		}
 	}, [
 		fieldType,
@@ -85,6 +95,7 @@ export function useGeocoding( fieldType, fieldValue, updateVenueField, enabled =
 		updateVenueLatitude,
 		updateVenueLongitude,
 		updateVenueField,
+		unlockPostSaving,
 	] );
 
 	// Longer debounce than autocomplete: geocoding is not user-visible during
@@ -95,8 +106,15 @@ export function useGeocoding( fieldType, fieldValue, updateVenueField, enabled =
 	// Trigger geocoding when address field value changes.
 	useEffect( () => {
 		if ( enabled && 'address' === fieldType ) {
+			lockPostSaving( GEOCODE_LOCK_NAME );
 			debouncedGeocode();
+
+			return () => {
+				unlockPostSaving( GEOCODE_LOCK_NAME );
+			};
 		}
+
+		return undefined;
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [ fieldValue, fieldType, enabled ] );
 

@@ -16,6 +16,7 @@ namespace GatherPress\Core\Settings;
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Traits\Singleton;
+use GatherPress\Core\Venue_Map;
 
 /**
  * Class Venues.
@@ -115,7 +116,7 @@ class Venues extends Base {
 							'label'   => __( 'Render mode for new blocks:', 'gatherpress' ),
 							'type'    => 'select',
 							'options' => array(
-								'default' => 'interactive',
+								'default' => Venue_Map::DEFAULT_RENDER_MODE,
 								'items'   => array(
 									'interactive' => __( 'Interactive', 'gatherpress' ),
 									'static'      => __( 'Static image', 'gatherpress' ),
@@ -136,7 +137,7 @@ class Venues extends Base {
 							'type'    => 'number',
 							'size'    => 'small',
 							'options' => array(
-								'default' => 18,
+								'default' => Venue_Map::DEFAULT_ZOOM,
 								'min'     => '1',
 								'max'     => '20',
 							),
@@ -155,7 +156,7 @@ class Venues extends Base {
 							'type'    => 'number',
 							'size'    => 'small',
 							'options' => array(
-								'default' => 300,
+								'default' => Venue_Map::DEFAULT_HEIGHT,
 								'min'     => '100',
 								'max'     => '800',
 							),
@@ -174,7 +175,7 @@ class Venues extends Base {
 							'label'   => __( 'Map type for new blocks:', 'gatherpress' ),
 							'type'    => 'select',
 							'options' => array(
-								'default' => 'roadmap',
+								'default' => Venue_Map::DEFAULT_MAP_TYPE,
 								'items'   => array(
 									'roadmap'   => __( 'Roadmap', 'gatherpress' ),
 									'satellite' => __( 'Satellite', 'gatherpress' ),

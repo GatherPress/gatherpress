@@ -10,7 +10,7 @@ import { useDebounce } from '@wordpress/compose';
 /**
  * Internal dependencies.
  */
-import { geocodeAddress } from '../helpers/geocoding';
+import { geocodeAddress, GEOCODE_LOCK_NAME } from '../helpers/geocoding';
 import AddressAutocompleteField from './AddressAutocompleteField';
 
 /**
@@ -74,7 +74,8 @@ const getUpdatedVenueInfo = ( fields ) => {
  * @return {JSX.Element} The rendered React component.
  */
 const VenueInformation = () => {
-	const { editPost } = useDispatch( 'core/editor' );
+	const { editPost, lockPostSaving, unlockPostSaving } =
+		useDispatch( 'core/editor' );
 
 	const { updateVenueLatitude, updateVenueLongitude } =
 		useDispatch( 'gatherpress/venue' );
@@ -135,31 +136,38 @@ const VenueInformation = () => {
 		// Read current address from ref to avoid recreating this callback.
 		const address = fullAddressRef.current;
 
-		// If address is empty, clear lat/long.
-		if ( ! address ) {
-			if ( ! mapCustomLatLong ) {
-				updateVenueLatitude( '' );
-				updateVenueLongitude( '' );
-				updateVenueField( { latitude: '', longitude: '' } );
+		try {
+			// If address is empty, clear lat/long.
+			if ( ! address ) {
+				if ( ! mapCustomLatLong ) {
+					updateVenueLatitude( '' );
+					updateVenueLongitude( '' );
+					updateVenueField( { latitude: '', longitude: '' } );
+				}
+				return;
 			}
-			return;
-		}
 
-		const { latitude, longitude } = await geocodeAddress( address );
+			const { latitude, longitude } = await geocodeAddress( address );
 
-		if ( ! mapCustomLatLong ) {
-			updateVenueLatitude( latitude || null );
-			updateVenueLongitude( longitude || null );
-			updateVenueField( {
-				latitude: latitude || '',
-				longitude: longitude || '',
-			} );
+			if ( ! mapCustomLatLong ) {
+				updateVenueLatitude( latitude || null );
+				updateVenueLongitude( longitude || null );
+				updateVenueField( {
+					latitude: latitude || '',
+					longitude: longitude || '',
+				} );
+			}
+		} finally {
+			// Release the save lock even when geocoding throws — otherwise
+			// the editor would be stuck in the locked state forever.
+			unlockPostSaving( GEOCODE_LOCK_NAME );
 		}
 	}, [
 		mapCustomLatLong,
 		updateVenueLatitude,
 		updateVenueLongitude,
 		updateVenueField,
+		unlockPostSaving,
 	] ); // fullAddress removed - read from ref instead.
 
 	// Longer debounce than autocomplete: geocoding is not user-visible during
@@ -168,7 +176,19 @@ const VenueInformation = () => {
 	const debouncedGetData = useDebounce( getData, 1000 );
 
 	useEffect( () => {
+		// Block the Save button while the address is being geocoded. Without
+		// this, a quick save persists the new address with the previous
+		// lat/long and Venue_Map bakes the static PNG at the wrong coords
+		// until a second save rebuilds it. lockPostSaving is idempotent on
+		// the same lock name, so repeat keystrokes don't stack locks.
+		lockPostSaving( GEOCODE_LOCK_NAME );
 		debouncedGetData();
+
+		return () => {
+			// If the component unmounts mid-geocode, release the lock so the
+			// editor doesn't stay wedged.
+			unlockPostSaving( GEOCODE_LOCK_NAME );
+		};
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [ fullAddress ] ); // Only depend on fullAddress, not debouncedGetData.
 

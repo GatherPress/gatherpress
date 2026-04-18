@@ -20,6 +20,20 @@ import { REST_NAMESPACE } from './namespace';
 const ADDRESS_SEARCH_MIN_QUERY_LENGTH_FALLBACK = 3;
 
 /**
+ * Post-saving lock name held while a venue geocode is pending.
+ *
+ * Address changes debounce for a second before hitting Photon. If the user
+ * saves inside that window, the post persists a new address with stale
+ * lat/long — and the venue-map generator then bakes a PNG at the wrong
+ * coords until a second save fires. Callers pass this lock name to
+ * `lockPostSaving` / `unlockPostSaving` on `core/editor` so the Save button
+ * stays disabled until geocoding resolves.
+ *
+ * @type {string}
+ */
+export const GEOCODE_LOCK_NAME = 'gatherpress/venue-geocoding';
+
+/**
  * Minimum trimmed query length before calling the address search REST route.
  * Resolved dynamically from the block editor config (PHP source of truth),
  * with a 3-char fallback when the config value is not yet available.
