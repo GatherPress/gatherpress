@@ -174,6 +174,18 @@ class Venue_Map {
 	const META_KEY = 'gatherpress_venue_static_map';
 
 	/**
+	 * Meta key for the per-venue filename salt.
+	 *
+	 * Underscore prefix marks it as a protected WordPress meta key —
+	 * not exposed through REST by default and not writable from the
+	 * admin Custom Fields box.
+	 *
+	 * @since 1.0.0
+	 * @var string
+	 */
+	const SALT_META_KEY = '_gatherpress_venue_map_salt';
+
+	/**
 	 * Subdirectory of `wp-content/uploads` where generated PNG files are written.
 	 *
 	 * @since 1.0.0
@@ -241,17 +253,18 @@ class Venue_Map {
 		// an out-of-range zoom left over from before the clamp was added)
 		// falls through to the block.json default rather than stamping on
 		// garbage. A blanket `'' === $v || 0 === $v` guard was too loose —
-		// it would have accepted e.g. `renderMode = '0'`.
+		// it would have accepted e.g. `renderMode = '0'`. All closures are
+		// static because none of them capture `$this`.
 		$validators = array(
 			'renderMode' => static function ( $value ): bool {
 				return in_array( $value, array( 'interactive', 'static' ), true );
 			},
-			'zoom'       => function ( $value ): bool {
+			'zoom'       => static function ( $value ): bool {
 				return is_int( $value )
 					&& $value >= self::ZOOM_MIN
 					&& $value <= self::ZOOM_MAX;
 			},
-			'height'     => function ( $value ): bool {
+			'height'     => static function ( $value ): bool {
 				return is_int( $value )
 					&& $value >= self::HEIGHT_MIN
 					&& $value <= self::HEIGHT_MAX;
@@ -265,13 +278,19 @@ class Venue_Map {
 			},
 		);
 
-		foreach ( $defaults as $attr => $value ) {
-			if ( ! $validators[ $attr ]( $value ) ) {
+		// Iterate $validators (the authoritative list) rather than $defaults,
+		// so adding a new key to $defaults without a matching validator just
+		// falls through instead of triggering an undefined-offset warning.
+		// The reverse case (validator without default) is guarded by the
+		// static shape of $defaults above — PHPStan treats the array literal
+		// as a fixed key set.
+		foreach ( $validators as $attr => $validator ) {
+			if ( ! $validator( $defaults[ $attr ] ) ) {
 				continue;
 			}
 
 			if ( isset( $metadata['attributes'][ $attr ] ) ) {
-				$metadata['attributes'][ $attr ]['default'] = $value;
+				$metadata['attributes'][ $attr ]['default'] = $defaults[ $attr ];
 			}
 		}
 
@@ -457,9 +476,11 @@ class Venue_Map {
 	 * Return every stored descriptor for the venue, keyed by `{zoom}x{height}`.
 	 *
 	 * Filters out malformed entries so callers can iterate without defensive
-	 * shape checks. When any entries were dropped — a legacy shape from an
-	 * earlier plugin version, a failed write, hand-edited meta — the cleaned
-	 * map is written back so the noise doesn't accumulate on every read.
+	 * shape checks. The read path itself does not persist the cleaned map —
+	 * writing on every front-end render would invalidate the post-meta cache
+	 * and churn the DB. Dropped entries are removed opportunistically the
+	 * next time a descriptor is saved, because `ensure_descriptor_for_combo()`
+	 * reuses the filtered map as the basis for its `update_post_meta()` call.
 	 *
 	 * @since 1.0.0
 	 *
@@ -495,13 +516,6 @@ class Venue_Map {
 				'zoom'   => $zoom,
 				'height' => $height,
 			);
-		}
-
-		// Opportunistic cleanup: rewrite meta when we dropped any entries,
-		// so subsequent reads don't keep filtering the same stale rows.
-		// Converges to a no-op once the meta is clean.
-		if ( count( $raw ) !== count( $descriptors ) ) {
-			update_post_meta( $post_id, self::META_KEY, $descriptors );
 		}
 
 		return $descriptors;
@@ -697,23 +711,22 @@ class Venue_Map {
 	}
 
 	/**
-	 * Meta key for the per-venue filename salt.
-	 *
-	 * Underscore prefix marks it as a protected WordPress meta key —
-	 * not exposed through REST by default and not writable from the
-	 * admin Custom Fields box.
-	 *
-	 * @since 1.0.0
-	 * @var string
-	 */
-	const SALT_META_KEY = '_gatherpress_venue_map_salt';
-
-	/**
 	 * Return the per-venue filename salt, generating one on first access.
 	 *
 	 * The salt is a fixed per-post random string; it never rotates so cached
 	 * filenames stay stable across saves. Deleting the venue removes the meta
 	 * (along with every other post meta key) as usual.
+	 *
+	 * **Existing-venue migration:** venues that were rendered before the salt
+	 * was introduced will get a salt generated here on first access; the hash
+	 * — and therefore the PNG filename — changes, which causes
+	 * `ensure_descriptor_for_combo()` to regenerate the image and unlink the
+	 * pre-salt PNG via its existing `$existing['url'] !== $url` cleanup path.
+	 * No backfill step is required.
+	 *
+	 * Two concurrent first-touch requests are reconciled with an `add`-style
+	 * unique-meta insert: whichever request writes first wins, and the other
+	 * re-reads the now-populated value instead of racing a second generation.
 	 *
 	 * @since 1.0.0
 	 *
@@ -724,8 +737,17 @@ class Venue_Map {
 		$salt = (string) get_post_meta( $post_id, self::SALT_META_KEY, true );
 
 		if ( '' === $salt ) {
-			$salt = wp_generate_password( 32, false );
-			update_post_meta( $post_id, self::SALT_META_KEY, $salt );
+			$candidate = wp_generate_password( 32, false );
+
+			// add_post_meta() with $unique = true returns false when another
+			// request already populated the row between our read and write.
+			// In that case, re-read to pick up the winner's value so every
+			// caller agrees on the salt.
+			if ( false !== add_post_meta( $post_id, self::SALT_META_KEY, $candidate, true ) ) {
+				$salt = $candidate;
+			} else {
+				$salt = (string) get_post_meta( $post_id, self::SALT_META_KEY, true );
+			}
 		}
 
 		return $salt;
