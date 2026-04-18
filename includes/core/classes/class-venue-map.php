@@ -26,7 +26,6 @@ namespace GatherPress\Core;
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Traits\Singleton;
-use GdImage;
 use WP_Post;
 
 /**
@@ -490,7 +489,7 @@ class Venue_Map {
 
 		// Downstream of the GD-missing branch in composite_image(); only
 		// reached on PHP builds without the GD extension.
-		if ( ! $image instanceof GdImage ) { // @codeCoverageIgnore
+		if ( null === $image ) { // @codeCoverageIgnore
 			return null; // @codeCoverageIgnore
 		}
 
@@ -625,7 +624,8 @@ class Venue_Map {
 	 * @param int    $zoom   Zoom level (same zoom Leaflet would use for the same CSS viewport).
 	 * @param int    $height Output pixel height. Width is derived via IMAGE_ASPECT_RATIO.
 	 * @param string $tiles  Tile URL template.
-	 * @return GdImage|null Composited image, or null when GD is unavailable.
+	 * @return \GdImage|resource|null Composited image, or null when GD is unavailable.
+	 *                                GdImage on PHP 8+, resource on PHP 7.4.
 	 */
 	public function composite_image(
 		float $lat,
@@ -633,7 +633,7 @@ class Venue_Map {
 		int $zoom,
 		int $height,
 		string $tiles
-	): ?GdImage {
+	) {
 		// PHP built without the GD extension. Can't simulate in a unit test without making the runtime itself broken.
 		if ( ! function_exists( 'imagecreatetruecolor' ) ) { // @codeCoverageIgnore
 			return null; // @codeCoverageIgnore
@@ -668,7 +668,7 @@ class Venue_Map {
 
 				$tile = imagecreatefromstring( $tile_png );
 
-				if ( ! $tile instanceof GdImage ) {
+				if ( false === $tile ) {
 					continue;
 				}
 
@@ -688,12 +688,12 @@ class Venue_Map {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param GdImage $canvas Destination canvas.
-	 * @param int     $x      Pixel X position (marker center).
-	 * @param int     $y      Pixel Y position (marker center).
+	 * @param \GdImage|resource $canvas Destination canvas (GdImage on PHP 8+, resource on PHP 7.4).
+	 * @param int               $x      Pixel X position (marker center).
+	 * @param int               $y      Pixel Y position (marker center).
 	 * @return void
 	 */
-	public function stamp_marker( GdImage $canvas, int $x, int $y ): void {
+	public function stamp_marker( $canvas, int $x, int $y ): void {
 		$white = imagecolorallocate( $canvas, 255, 255, 255 );
 		$red   = imagecolorallocate( $canvas, 220, 53, 69 );
 		$dark  = imagecolorallocate( $canvas, 30, 30, 30 );
@@ -709,12 +709,12 @@ class Venue_Map {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param GdImage $image   The finished composite.
-	 * @param int     $post_id The venue post ID (used in the filename).
-	 * @param string  $hash    Input hash (used in the filename).
+	 * @param \GdImage|resource $image   The finished composite (GdImage on PHP 8+, resource on PHP 7.4).
+	 * @param int               $post_id The venue post ID (used in the filename).
+	 * @param string            $hash    Input hash (used in the filename).
 	 * @return string|null Public URL of the saved file, or null on failure.
 	 */
-	public function save_image( GdImage $image, int $post_id, string $hash ): ?string {
+	public function save_image( $image, int $post_id, string $hash ): ?string {
 		$dirs = wp_get_upload_dir();
 
 		if ( ! empty( $dirs['error'] ) ) {
