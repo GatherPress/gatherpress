@@ -62,12 +62,46 @@ class Venue_Map_Prewarm {
 	const BLOCK_NAME = 'gatherpress/venue-map';
 
 	/**
+	 * Batch size for paginated post scans — small enough that a single
+	 * batch fits comfortably in memory even when post_content is large,
+	 * big enough that pagination overhead stays cheap.
+	 *
+	 * @since 1.0.0
+	 * @var int
+	 */
+	const SCAN_BATCH_SIZE = 500;
+
+	/**
 	 * Class constructor — wires hooks.
 	 *
 	 * @since 1.0.0
 	 */
 	protected function __construct() {
 		$this->setup_hooks();
+	}
+
+	/**
+	 * Return the batch size used by paginated scans.
+	 *
+	 * Wraps the `SCAN_BATCH_SIZE` constant in a filter so tests (and power
+	 * users on unusual installs) can shrink the batch without touching the
+	 * class. Clamped to at least 1 to avoid an infinite-empty-batch loop.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return int
+	 */
+	protected function get_scan_batch_size(): int {
+		/**
+		 * Filter the venue-map prewarm scan batch size.
+		 *
+		 * @since 1.0.0
+		 *
+		 * @param int $size Number of posts loaded per batch during prewarm scans.
+		 */
+		$size = (int) apply_filters( 'gatherpress_venue_map_prewarm_batch_size', self::SCAN_BATCH_SIZE );
+
+		return max( 1, $size );
 	}
 
 	/**
@@ -192,10 +226,44 @@ class Venue_Map_Prewarm {
 			return;
 		}
 
-		foreach ( $this->get_venue_post_ids() as $venue_post_id ) {
-			foreach ( $combos as $combo ) {
-				$this->enqueue_warm_job( $venue_post_id, $combo );
+		$types = get_post_types_by_support( 'gatherpress-venue-information' );
+		if ( empty( $types ) ) {
+			return;
+		}
+
+		// Stream venues in batches so a site with thousands of venues never
+		// loads the full ID set into memory on the save hook.
+		$batch_size = $this->get_scan_batch_size();
+		$page       = 1;
+		while ( true ) {
+			$batch = get_posts(
+				array(
+					'post_type'      => $types,
+					'post_status'    => 'publish',
+					'posts_per_page' => $batch_size,
+					'paged'          => $page,
+					'fields'         => 'ids',
+					'orderby'        => 'ID',
+					'order'          => 'ASC',
+					'no_found_rows'  => true,
+				)
+			);
+
+			if ( empty( $batch ) ) {
+				break;
 			}
+
+			foreach ( $batch as $venue_post_id ) {
+				foreach ( $combos as $combo ) {
+					$this->enqueue_warm_job( (int) $venue_post_id, $combo );
+				}
+			}
+
+			if ( count( $batch ) < $batch_size ) {
+				break;
+			}
+
+			++$page;
 		}
 	}
 
@@ -254,24 +322,42 @@ class Venue_Map_Prewarm {
 
 		$venue_carrying_types = get_post_types_by_support( 'gatherpress-venue' );
 		if ( ! empty( $venue_carrying_types ) ) {
-			$posts = get_posts(
-				array(
-					'post_type'      => $venue_carrying_types,
-					'post_status'    => 'publish',
-					'posts_per_page' => -1,
-					'fields'         => 'ids',
-					'no_found_rows'  => true,
-				)
-			);
-			foreach ( $posts as $post_id ) {
-				$post = get_post( $post_id );
-				if ( ! $post instanceof WP_Post ) {
-					continue;
-				}
-				$combos = array_merge(
-					$combos,
-					$this->collect_combos_from_content( $post->post_content )
+			$batch_size = $this->get_scan_batch_size();
+			$page       = 1;
+
+			// Paginate rather than `posts_per_page => -1` — a site with
+			// thousands of events would otherwise load every post into
+			// memory at once on the hook that triggered us (venue save,
+			// template save, theme switch).
+			while ( true ) {
+				$batch = get_posts(
+					array(
+						'post_type'      => $venue_carrying_types,
+						'post_status'    => 'publish',
+						'posts_per_page' => $batch_size,
+						'paged'          => $page,
+						'orderby'        => 'ID',
+						'order'          => 'ASC',
+						'no_found_rows'  => true,
+					)
 				);
+
+				if ( empty( $batch ) ) {
+					break;
+				}
+
+				foreach ( $batch as $post ) {
+					$combos = array_merge(
+						$combos,
+						$this->collect_combos_from_content( $post->post_content )
+					);
+				}
+
+				if ( count( $batch ) < $batch_size ) {
+					break;
+				}
+
+				++$page;
 			}
 		}
 
@@ -378,6 +464,11 @@ class Venue_Map_Prewarm {
 	/**
 	 * Every post ID whose post type is a venue source.
 	 *
+	 * Intended for small-scale contexts (tests, on-demand scans where the
+	 * caller knows the venue count is bounded). Production fan-out paths
+	 * use `enqueue_for_all_venues()` instead, which streams through the
+	 * venue set in batches without ever holding the full list in memory.
+	 *
 	 * @since 1.0.0
 	 *
 	 * @return int[]
@@ -388,16 +479,39 @@ class Venue_Map_Prewarm {
 			return array();
 		}
 
-		$ids = get_posts(
-			array(
-				'post_type'      => $types,
-				'post_status'    => 'publish',
-				'posts_per_page' => -1,
-				'fields'         => 'ids',
-				'no_found_rows'  => true,
-			)
-		);
+		$ids        = array();
+		$batch_size = $this->get_scan_batch_size();
+		$page       = 1;
 
-		return array_map( 'intval', $ids );
+		while ( true ) {
+			$batch = get_posts(
+				array(
+					'post_type'      => $types,
+					'post_status'    => 'publish',
+					'posts_per_page' => $batch_size,
+					'paged'          => $page,
+					'fields'         => 'ids',
+					'orderby'        => 'ID',
+					'order'          => 'ASC',
+					'no_found_rows'  => true,
+				)
+			);
+
+			if ( empty( $batch ) ) {
+				break;
+			}
+
+			foreach ( $batch as $id ) {
+				$ids[] = (int) $id;
+			}
+
+			if ( count( $batch ) < $batch_size ) {
+				break;
+			}
+
+			++$page;
+		}
+
+		return $ids;
 	}
 }

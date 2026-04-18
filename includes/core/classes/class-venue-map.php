@@ -346,16 +346,12 @@ class Venue_Map {
 		$raw_height = $settings->get( 'venue_map_default_height' );
 
 		$defaults = array(
-			'renderMode'      => (string) $settings->get( 'venue_map_default_render_mode' ),
-			'zoom'            => (int) $settings->get( 'venue_map_default_zoom' ),
-			'width'           => '' === $raw_width ? null : (int) $raw_width,
-			'height'          => '' === $raw_height ? null : (int) $raw_height,
-			'aspectRatio'     => (string) $settings->get( 'venue_map_default_aspect_ratio' ),
-			'type'            => (string) $settings->get( 'venue_map_default_type' ),
-			'linkDestination' => (string) $settings->get( 'venue_map_default_link_destination' ),
-			'linkTarget'      => (bool) $settings->get( 'venue_map_default_link_target' )
-				? '_blank'
-				: '',
+			'renderMode'  => (string) $settings->get( 'venue_map_default_render_mode' ),
+			'zoom'        => (int) $settings->get( 'venue_map_default_zoom' ),
+			'width'       => '' === $raw_width ? null : (int) $raw_width,
+			'height'      => '' === $raw_height ? null : (int) $raw_height,
+			'aspectRatio' => (string) $settings->get( 'venue_map_default_aspect_ratio' ),
+			'type'        => (string) $settings->get( 'venue_map_default_type' ),
 		);
 
 		// Per-attribute validators so a never-written Settings row (empty
@@ -366,46 +362,36 @@ class Venue_Map {
 		// it would have accepted e.g. `renderMode = '0'`. All closures are
 		// static because none of them capture `$this`.
 		$validators = array(
-			'renderMode'      => static function ( $value ): bool {
+			'renderMode'  => static function ( $value ): bool {
 				return in_array( $value, array( 'interactive', 'static' ), true );
 			},
-			'zoom'            => static function ( $value ): bool {
+			'zoom'        => static function ( $value ): bool {
 				return is_int( $value )
 					&& $value >= self::ZOOM_MIN
 					&& $value <= self::ZOOM_MAX;
 			},
-			'width'           => static function ( $value ): bool {
+			'width'       => static function ( $value ): bool {
 				// 0 means "auto" and is a valid default value.
 				return is_int( $value )
 					&& $value >= 0
 					&& $value <= self::WIDTH_MAX;
 			},
-			'height'          => static function ( $value ): bool {
+			'height'      => static function ( $value ): bool {
 				// 0 means "auto" and is a valid default value.
 				return is_int( $value )
 					&& $value >= 0
 					&& $value <= self::HEIGHT_MAX;
 			},
-			'aspectRatio'     => function ( $value ): bool {
+			'aspectRatio' => function ( $value ): bool {
 				return is_string( $value )
 					&& null !== $this->parse_aspect_ratio( $value );
 			},
-			'type'            => static function ( $value ): bool {
+			'type'        => static function ( $value ): bool {
 				return in_array(
 					$value,
 					array( 'roadmap', 'satellite', 'hybrid', 'terrain' ),
 					true
 				);
-			},
-			'linkDestination' => static function ( $value ): bool {
-				return in_array(
-					$value,
-					array( 'none', 'openstreetmap', 'google', 'custom' ),
-					true
-				);
-			},
-			'linkTarget'      => static function ( $value ): bool {
-				return '' === $value || '_blank' === $value;
 			},
 		);
 

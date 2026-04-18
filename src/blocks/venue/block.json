@@ -29,9 +29,7 @@
 		},
 		"layout": {
 			"default": {
-				"type": "constrained",
-				"wideSize": "1200px",
-				"contentSize": "820px"
+				"type": "constrained"
 			}
 		}
 	},

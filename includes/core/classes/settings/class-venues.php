@@ -84,7 +84,7 @@ class Venues extends Base {
 					'gatherpress'
 				),
 				'options'     => array(
-					'map_platform'                       => array(
+					'map_platform'                   => array(
 						'labels'      => array(
 							'name' => __( 'Mapping Platform', 'gatherpress' ),
 						),
@@ -104,7 +104,7 @@ class Venues extends Base {
 							),
 						),
 					),
-					'venue_map_default_render_mode'      => array(
+					'venue_map_default_render_mode'  => array(
 						'labels'      => array(
 							'name' => __( 'Default Render Mode', 'gatherpress' ),
 						),
@@ -124,7 +124,7 @@ class Venues extends Base {
 							),
 						),
 					),
-					'venue_map_default_zoom'             => array(
+					'venue_map_default_zoom'         => array(
 						'labels'      => array(
 							'name' => __( 'Default Zoom Level', 'gatherpress' ),
 						),
@@ -143,7 +143,7 @@ class Venues extends Base {
 							),
 						),
 					),
-					'venue_map_default_height'           => array(
+					'venue_map_default_height'       => array(
 						'labels'      => array(
 							'name' => __( 'Default Height', 'gatherpress' ),
 						),
@@ -164,7 +164,7 @@ class Venues extends Base {
 							),
 						),
 					),
-					'venue_map_default_width'            => array(
+					'venue_map_default_width'        => array(
 						'labels'      => array(
 							'name' => __( 'Default Width', 'gatherpress' ),
 						),
@@ -185,7 +185,7 @@ class Venues extends Base {
 							),
 						),
 					),
-					'venue_map_default_aspect_ratio'     => array(
+					'venue_map_default_aspect_ratio' => array(
 						'labels'      => array(
 							'name' => __( 'Default Aspect Ratio', 'gatherpress' ),
 						),
@@ -208,44 +208,7 @@ class Venues extends Base {
 							),
 						),
 					),
-					'venue_map_default_link_destination' => array(
-						'labels'      => array(
-							'name' => __( 'Default Link Destination', 'gatherpress' ),
-						),
-						'description' => __(
-							'Default link wrapped around static maps. Only applies to static mode.',
-							'gatherpress'
-						),
-						'field'       => array(
-							'label'   => __( 'Link new static maps to:', 'gatherpress' ),
-							'type'    => 'select',
-							'options' => array(
-								'default' => 'none',
-								'items'   => array(
-									'none'          => __( 'None', 'gatherpress' ),
-									'openstreetmap' => __( 'OpenStreetMap', 'gatherpress' ),
-									'google'        => __( 'Google Maps', 'gatherpress' ),
-								),
-							),
-						),
-					),
-					'venue_map_default_link_target'      => array(
-						'labels'      => array(
-							'name' => __( 'Open Links in New Tab', 'gatherpress' ),
-						),
-						'description' => __(
-							'When enabled, the default static-map link opens in a new browser tab.',
-							'gatherpress'
-						),
-						'field'       => array(
-							'label'   => __( 'Open in new tab by default.', 'gatherpress' ),
-							'type'    => 'checkbox',
-							'options' => array(
-								'default' => false,
-							),
-						),
-					),
-					'venue_map_default_type'             => array(
+					'venue_map_default_type'         => array(
 						'labels'      => array(
 							'name' => __( 'Default Map Type', 'gatherpress' ),
 						),
