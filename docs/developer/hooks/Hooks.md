@@ -60,6 +60,13 @@
 - [`gatherpress_pre_get_http_input`](gatherpress_pre_get_http_input.md) Short-circuit filter for HTTP input retrieval during testing.
 - [`gatherpress_pre_get_wp_referer`](gatherpress_pre_get_wp_referer.md) Short-circuit filter for wp_get_referer() during testing.
 
+## class-venue-map.php
+
+- [`gatherpress_venue_map_composite_time_budget`](gatherpress_venue_map_composite_time_budget.md) Filter the wall-clock budget (in seconds) for a single
+- [`gatherpress_venue_map_height`](gatherpress_venue_map_height.md) Filter the height used when rendering the static venue map.
+- [`gatherpress_venue_map_tile_url`](gatherpress_venue_map_tile_url.md) Filter the tile URL template used by the static venue map.
+- [`gatherpress_venue_map_zoom`](gatherpress_venue_map_zoom.md) Filter the zoom level used when rendering the static venue map.
+
 ## class-venue-setup.php
 
 - [`gatherpress_venue_post_type`](gatherpress_venue_post_type.md) Filters the post type used as the venue.
