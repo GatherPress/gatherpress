@@ -60,6 +60,10 @@
 - [`gatherpress_pre_get_http_input`](gatherpress_pre_get_http_input.md) Short-circuit filter for HTTP input retrieval during testing.
 - [`gatherpress_pre_get_wp_referer`](gatherpress_pre_get_wp_referer.md) Short-circuit filter for wp_get_referer() during testing.
 
+## class-venue-map-prewarm.php
+
+- [`gatherpress_venue_map_prewarm_batch_size`](gatherpress_venue_map_prewarm_batch_size.md) Filter the venue-map prewarm scan batch size.
+
 ## class-venue-map.php
 
 - [`gatherpress_venue_map_composite_time_budget`](gatherpress_venue_map_composite_time_budget.md) Filter the wall-clock budget (in seconds) for a single
