@@ -23,4 +23,16 @@ namespace {
      * @return string
      */
     function wxr_cdata( string $str ): string {}
+
+    /**
+     * GD image resource. Introduced in PHP 8.0; on PHP 7.4 the GD extension
+     * returns a plain `resource`. Stubbed here so PHPStan recognizes the
+     * class name in docblocks such as `@return \GdImage|resource|null` —
+     * GatherPress never instantiates it directly. Guarded with class_exists
+     * because this file is loaded as a bootstrap on PHP 8+, where the real
+     * class already exists and redeclaring would fatal.
+     */
+    if ( ! class_exists( '\GdImage', false ) ) {
+        class GdImage {}
+    }
 }
