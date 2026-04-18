@@ -836,34 +836,46 @@ class Test_Venue_Map_Prewarm extends Base {
 	}
 
 	/**
-	 * A saved wp_template carrying a venue-map block contributes its combo
-	 * to collect_all_template_combos — covers the DB-template scan branch.
+	 * Feeds combos into collect_all_template_combos when
+	 * get_block_templates() returns venue-map-bearing templates — covers
+	 * the DB-template + template-part scan branches. Factory posts don't
+	 * register as block templates the way theme resolution does, so we
+	 * inject the results through the `get_block_templates` filter.
 	 *
 	 * @covers ::collect_all_template_combos
 	 *
 	 * @return void
 	 */
 	public function test_collect_all_template_combos_scans_db_templates(): void {
+		if ( ! class_exists( 'WP_Block_Template' ) ) {
+			$this->markTestSkipped( 'WP_Block_Template not available in this environment.' );
+		}
+
 		$instance = Venue_Map_Prewarm::get_instance();
 
-		$this->factory->post->create(
-			array(
-				'post_type'    => 'wp_template',
-				'post_status'  => 'publish',
-				'post_content' => '<!-- wp:gatherpress/venue-map '
-					. '{"zoom":7,"width":400,"height":200,"aspectRatio":"2/1"} /-->',
-			)
-		);
-		$this->factory->post->create(
-			array(
-				'post_type'    => 'wp_template_part',
-				'post_status'  => 'publish',
-				'post_content' => '<!-- wp:gatherpress/venue-map '
-					. '{"zoom":6,"width":350,"height":175,"aspectRatio":"2/1"} /-->',
-			)
-		);
+		$template          = new \WP_Block_Template();
+		$template->content = '<!-- wp:gatherpress/venue-map '
+			. '{"zoom":7,"width":400,"height":200,"aspectRatio":"2/1"} /-->';
+
+		$part          = new \WP_Block_Template();
+		$part->content = '<!-- wp:gatherpress/venue-map '
+			. '{"zoom":6,"width":350,"height":175,"aspectRatio":"2/1"} /-->';
+
+		$inject = static function ( $query_result, $query, $template_type ) use ( $template, $part ) {
+			unset( $query );
+			if ( 'wp_template' === $template_type ) {
+				return array( $template );
+			}
+			if ( 'wp_template_part' === $template_type ) {
+				return array( $part );
+			}
+			return $query_result;
+		};
+		add_filter( 'get_block_templates', $inject, 10, 3 );
 
 		$combos = Utility::invoke_hidden_method( $instance, 'collect_all_template_combos' );
+
+		remove_filter( 'get_block_templates', $inject, 10 );
 
 		$keys = array_map(
 			static function ( $combo ) {
