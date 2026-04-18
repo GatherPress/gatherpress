@@ -69,6 +69,60 @@ class Venue_Map {
 	const DEFAULT_HEIGHT = 300;
 
 	/**
+	 * Bounds for the zoom level.
+	 *
+	 * Matches what the block's editor RangeControl exposes. Enforced
+	 * server-side as well so a filter override, hand-edited block attribute,
+	 * or bad Settings row can't drive the generator to render a useless
+	 * world-view (zoom 0) or crash out on a value the tile provider won't
+	 * serve (zoom 30).
+	 *
+	 * @since 1.0.0
+	 * @var int
+	 */
+	const ZOOM_MIN = 1;
+
+	/**
+	 * See self::ZOOM_MIN.
+	 *
+	 * @since 1.0.0
+	 * @var int
+	 */
+	const ZOOM_MAX = 20;
+
+	/**
+	 * Bounds for the pixel height. Mirrors the block's RangeControl so
+	 * out-of-range Settings / filter values can't produce an absurd canvas
+	 * (a 10,000-px-tall image would allocate gigabytes of GD memory and
+	 * fetch hundreds of tiles).
+	 *
+	 * @since 1.0.0
+	 * @var int
+	 */
+	const HEIGHT_MIN = 100;
+
+	/**
+	 * See self::HEIGHT_MIN.
+	 *
+	 * @since 1.0.0
+	 * @var int
+	 */
+	const HEIGHT_MAX = 800;
+
+	/**
+	 * Total wall-clock budget (in seconds) for a single composite_image()
+	 * call. CartoDB typically serves tiles in well under 500ms, but a slow
+	 * tile host, a DNS hiccup, or a bad proxy can chain wp_safe_remote_get()
+	 * timeouts together and pin a save for tens of seconds. When the
+	 * budget is exceeded mid-composite, remaining tiles are skipped and the
+	 * gray background shows through instead — degraded, not hung.
+	 *
+	 * @since 1.0.0
+	 * @var int
+	 */
+	const COMPOSITE_TIME_BUDGET = 10;
+
+	/**
 	 * Default `type` attribute for the venue-map block.
 	 *
 	 * Google Maps–specific (roadmap / satellite / hybrid / terrain). Ignored by
@@ -243,9 +297,12 @@ class Venue_Map {
 
 		if ( null === $this->parse_coord( $info['latitude'] ) ||
 			null === $this->parse_coord( $info['longitude'] ) ) {
-			// No usable coordinates — leave any previously-generated images
-			// alone and bail. The front-end placeholder will surface the
-			// "no address" state for the user.
+			// No usable coordinates — the address was edited to something
+			// un-geocodable, or cleared entirely. Purge any previously
+			// generated PNGs so stale images don't keep serving on the
+			// front end; the placeholder will surface the "no address"
+			// state until geocoding succeeds again.
+			$this->delete_stored_image( $post_id );
 			return;
 		}
 
@@ -471,6 +528,13 @@ class Venue_Map {
 		$latitude  = (float) $info['latitude'];
 		$longitude = (float) $info['longitude'];
 
+		// Clamp caller-provided values before they influence the cache key
+		// or the canvas. Block attributes come from the editor already
+		// within range, but a hand-edited block, a filter that mutates the
+		// attribute, or bad meta could sneak an out-of-range value in.
+		$zoom   = $this->clamp_zoom( $zoom );
+		$height = $this->clamp_height( $height );
+
 		$tiles = $this->get_tile_url_template();
 		$hash  = $this->hash_for( $info, $zoom, $height, $tiles );
 		$key   = $this->combo_key( $zoom, $height );
@@ -658,8 +722,19 @@ class Venue_Map {
 		$bg = imagecolorallocate( $canvas, 238, 238, 238 );
 		imagefilledrectangle( $canvas, 0, 0, $width - 1, $height - 1, $bg );
 
+		$deadline = microtime( true ) + self::COMPOSITE_TIME_BUDGET;
+
 		for ( $tx = $left_tile; $tx <= $right_tile; $tx++ ) {
 			for ( $ty = $top_tile; $ty <= $bottom_tile; $ty++ ) {
+				// Budget guard: once the total wall-clock time for this
+				// composite exceeds COMPOSITE_TIME_BUDGET, stop fetching
+				// and let the gray background show through for any tiles
+				// we haven't filled in yet. Bounds the worst-case stall
+				// from a slow tile host.
+				if ( microtime( true ) >= $deadline ) {
+					break 2;
+				}
+
 				$tile_png = $this->fetch_tile( $zoom, $tx, $ty, $tiles );
 
 				if ( null === $tile_png ) {
@@ -762,6 +837,18 @@ class Venue_Map {
 		}
 
 		$relative = substr( $url, strlen( $base_url ) );
+
+		// Restrict the relative portion to filenames this class actually
+		// generates: `{post_id}-{md5-hex}.png`. The prefix check above only
+		// guards the URL origin — without this allow-list a value like
+		// `…/static-maps/../../wp-config.php`, if it ever slipped into the
+		// meta (direct update_post_meta, import, a future filter), would
+		// concatenate through to a path outside the uploads subdir and
+		// hand `wp_delete_file()` a target it shouldn't touch.
+		if ( ! preg_match( '#\A\d+-[a-f0-9]{32}\.png\z#', $relative ) ) {
+			return null;
+		}
+
 		$base_dir = trailingslashit( $dirs['basedir'] ) . self::UPLOADS_SUBDIR . '/';
 
 		return $base_dir . $relative;
@@ -805,7 +892,9 @@ class Venue_Map {
 		 *
 		 * @param int $zoom Default zoom level.
 		 */
-		return (int) apply_filters( 'gatherpress_venue_map_zoom', $default );
+		$zoom = (int) apply_filters( 'gatherpress_venue_map_zoom', $default );
+
+		return $this->clamp_zoom( $zoom );
 	}
 
 	/**
@@ -833,7 +922,33 @@ class Venue_Map {
 		 *
 		 * @param int $height Default height in pixels.
 		 */
-		return (int) apply_filters( 'gatherpress_venue_map_height', $default );
+		$height = (int) apply_filters( 'gatherpress_venue_map_height', $default );
+
+		return $this->clamp_height( $height );
+	}
+
+	/**
+	 * Clamp a zoom level to the supported range.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param int $zoom Raw zoom value.
+	 * @return int
+	 */
+	protected function clamp_zoom( int $zoom ): int {
+		return max( self::ZOOM_MIN, min( self::ZOOM_MAX, $zoom ) );
+	}
+
+	/**
+	 * Clamp a pixel height to the supported range.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param int $height Raw height value.
+	 * @return int
+	 */
+	protected function clamp_height( int $height ): int {
+		return max( self::HEIGHT_MIN, min( self::HEIGHT_MAX, $height ) );
 	}
 
 	/**

@@ -474,6 +474,62 @@ class Test_Venue_Map extends Base {
 	}
 
 	/**
+	 * A previously-geocoded venue whose address is edited to something
+	 * un-geocodable must have its stored PNGs purged so stale images
+	 * don't keep serving under the new (wrong) address.
+	 *
+	 * @covers ::maybe_generate
+	 *
+	 * @return void
+	 */
+	public function test_maybe_generate_purges_when_coordinates_disappear(): void {
+		$instance = Venue_Map::get_instance();
+		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
+
+		update_post_meta(
+			$post_id,
+			'gatherpress_venue_information',
+			wp_json_encode(
+				array(
+					'fullAddress' => '1 Infinite Loop',
+					'latitude'    => '37.3318',
+					'longitude'   => '-122.0312',
+				)
+			)
+		);
+		$instance->maybe_generate( $post_id );
+
+		$descriptor = $instance->get_stored_descriptor( $post_id );
+
+		$this->assertIsArray( $descriptor, 'Sanity: initial save should have produced a descriptor.' );
+		$path = $instance->url_to_path( $descriptor['url'] );
+		$this->assertFileExists( $path );
+
+		// Now clear the coordinates (e.g. address changed to something un-geocodable).
+		update_post_meta(
+			$post_id,
+			'gatherpress_venue_information',
+			wp_json_encode(
+				array(
+					'fullAddress' => 'Nonexistent Place',
+					'latitude'    => '',
+					'longitude'   => '',
+				)
+			)
+		);
+		$instance->maybe_generate( $post_id );
+
+		$this->assertNull(
+			$instance->get_stored_descriptor( $post_id ),
+			'Descriptor meta should be cleared when coordinates become un-geocodable.'
+		);
+		$this->assertFileDoesNotExist(
+			(string) $path,
+			'Orphaned PNG should be removed when coordinates disappear.'
+		);
+	}
+
+	/**
 	 * No image is written when the venue lacks usable coordinates.
 	 *
 	 * @covers ::maybe_generate
@@ -589,6 +645,35 @@ class Test_Venue_Map extends Base {
 		$this->assertNull(
 			$instance->url_to_path( 'https://example.com/evil.png' ),
 			'External URLs must not resolve to a filesystem path.'
+		);
+	}
+
+	/**
+	 * A URL whose origin matches the plugin uploads subdir but whose
+	 * filename contains path-traversal segments (`..`) must not resolve —
+	 * otherwise delete_file_by_url() could be steered at arbitrary files
+	 * if the meta were ever writable.
+	 *
+	 * @covers ::url_to_path
+	 *
+	 * @return void
+	 */
+	public function test_url_to_path_rejects_traversal_in_plugin_subdir_url(): void {
+		$instance = Venue_Map::get_instance();
+		$dirs     = wp_get_upload_dir();
+		$base_url = trailingslashit( $dirs['baseurl'] ) . Venue_Map::UPLOADS_SUBDIR . '/';
+
+		$this->assertNull(
+			$instance->url_to_path( $base_url . '../../../wp-config.php' ),
+			'Traversal segments in the relative portion must not resolve.'
+		);
+		$this->assertNull(
+			$instance->url_to_path( $base_url . '42-notahex.png' ),
+			'Filenames not matching the `{post_id}-{md5}.png` shape must not resolve.'
+		);
+		$this->assertNull(
+			$instance->url_to_path( $base_url . 'subdir/42-abcdef0123456789abcdef0123456789.png' ),
+			'Nested filenames (with slashes) must not resolve.'
 		);
 	}
 
@@ -839,9 +924,12 @@ class Test_Venue_Map extends Base {
 		$base_dir = trailingslashit( $dirs['basedir'] ) . Venue_Map::UPLOADS_SUBDIR;
 		wp_mkdir_p( $base_dir );
 
-		$path = $base_dir . '/delete-me.png';
-		$url  = trailingslashit( $dirs['baseurl'] )
-			. Venue_Map::UPLOADS_SUBDIR . '/delete-me.png';
+		// Use a filename in the `{post_id}-{md5}.png` shape url_to_path()
+		// accepts. A fake hex string stands in for a real MD5 digest.
+		$filename = '99-abcdef0123456789abcdef0123456789.png';
+		$path     = $base_dir . '/' . $filename;
+		$url      = trailingslashit( $dirs['baseurl'] )
+			. Venue_Map::UPLOADS_SUBDIR . '/' . $filename;
 		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents -- Fixture write inside the test-only uploads dir.
 		file_put_contents( $path, 'stub' );
 
@@ -1057,10 +1145,11 @@ class Test_Venue_Map extends Base {
 	public function test_url_to_path_resolves_plugin_subdir_url(): void {
 		$instance = Venue_Map::get_instance();
 		$dirs     = wp_get_upload_dir();
+		$filename = '42-abcdef0123456789abcdef0123456789.png';
 		$url      = trailingslashit( $dirs['baseurl'] )
-			. Venue_Map::UPLOADS_SUBDIR . '/42-abc.png';
+			. Venue_Map::UPLOADS_SUBDIR . '/' . $filename;
 		$expected = trailingslashit( $dirs['basedir'] )
-			. Venue_Map::UPLOADS_SUBDIR . '/42-abc.png';
+			. Venue_Map::UPLOADS_SUBDIR . '/' . $filename;
 
 		$this->assertSame( $expected, $instance->url_to_path( $url ) );
 	}
@@ -1218,7 +1307,10 @@ class Test_Venue_Map extends Base {
 		$instance = Venue_Map::get_instance();
 		$canvas   = imagecreatetruecolor( 10, 10 );
 
-		$url = $instance->save_image( $canvas, 99, 'deadbeef' );
+		// Use a 32-char hex hash matching what hash_for() produces; the
+		// url_to_path allow-list rejects anything else.
+		$hash = str_repeat( 'a', 32 );
+		$url  = $instance->save_image( $canvas, 99, $hash );
 		imagedestroy( $canvas );
 
 		$this->assertNotNull( $url, 'save_image should return a URL on success.' );
@@ -1275,6 +1367,71 @@ class Test_Venue_Map extends Base {
 			Utility::invoke_hidden_method( $instance, 'get_zoom' ),
 			'Should fall back to DEFAULT_ZOOM when the setting is unset/zero.'
 		);
+	}
+
+	/**
+	 * Clamps out-of-range zoom values from the Settings row or filter to
+	 * the supported range. Otherwise a stale/hand-edited setting or filter
+	 * override could drive the generator to render a useless world-view
+	 * (zoom 0) or crash out on a value the tile provider won't serve
+	 * (zoom 30+).
+	 *
+	 * @covers ::get_zoom
+	 * @covers ::clamp_zoom
+	 *
+	 * @return void
+	 */
+	public function test_get_zoom_clamps_out_of_range_values(): void {
+		$instance = Venue_Map::get_instance();
+		$settings = \GatherPress\Core\Settings::get_instance();
+
+		$settings->set( 'venue_map_default_zoom', 0 );
+		$too_high = static function () {
+			return 99;
+		};
+		add_filter( 'gatherpress_venue_map_zoom', $too_high );
+		$this->assertSame(
+			Venue_Map::ZOOM_MAX,
+			Utility::invoke_hidden_method( $instance, 'get_zoom' ),
+			'Zoom beyond ZOOM_MAX must clamp down.'
+		);
+		remove_filter( 'gatherpress_venue_map_zoom', $too_high );
+
+		$too_low = static function () {
+			return 0;
+		};
+		add_filter( 'gatherpress_venue_map_zoom', $too_low );
+		$this->assertSame(
+			Venue_Map::ZOOM_MIN,
+			Utility::invoke_hidden_method( $instance, 'get_zoom' ),
+			'Zoom below ZOOM_MIN must clamp up.'
+		);
+		remove_filter( 'gatherpress_venue_map_zoom', $too_low );
+	}
+
+	/**
+	 * Same coverage for get_height — clamps Settings + filter overrides.
+	 *
+	 * @covers ::get_height
+	 * @covers ::clamp_height
+	 *
+	 * @return void
+	 */
+	public function test_get_height_clamps_out_of_range_values(): void {
+		$instance = Venue_Map::get_instance();
+		$settings = \GatherPress\Core\Settings::get_instance();
+
+		$settings->set( 'venue_map_default_height', 0 );
+		$too_big = static function () {
+			return 9999;
+		};
+		add_filter( 'gatherpress_venue_map_height', $too_big );
+		$this->assertSame(
+			Venue_Map::HEIGHT_MAX,
+			Utility::invoke_hidden_method( $instance, 'get_height' ),
+			'Height beyond HEIGHT_MAX must clamp down.'
+		);
+		remove_filter( 'gatherpress_venue_map_height', $too_big );
 	}
 
 	/**
