@@ -740,7 +740,7 @@ class Test_Venue_Map extends Base {
 
 	/**
 	 * Downstream code can shape the descriptor map through the
-	 * `gatherpress_venue_map_descriptor` filter — companion plugins, CDN
+	 * `gatherpress_venue_map_descriptors` filter — companion plugins, CDN
 	 * layers, or multi-locale setups get a single hook point to suppress,
 	 * override, or augment entries without patching core.
 	 *
@@ -774,11 +774,11 @@ class Test_Venue_Map extends Base {
 			}
 			return $descriptors;
 		};
-		add_filter( 'gatherpress_venue_map_descriptor', $override, 10, 2 );
+		add_filter( 'gatherpress_venue_map_descriptors', $override, 10, 2 );
 
 		$descriptors = $instance->get_all_descriptors( $post_id );
 
-		remove_filter( 'gatherpress_venue_map_descriptor', $override, 10 );
+		remove_filter( 'gatherpress_venue_map_descriptors', $override, 10 );
 
 		$this->assertSame(
 			sprintf( 'https://cdn.test/%d-15x600x300.png', $post_id ),
@@ -794,7 +794,7 @@ class Test_Venue_Map extends Base {
 		$suppress_all = static function () {
 			return array();
 		};
-		add_filter( 'gatherpress_venue_map_descriptor', $suppress_all );
+		add_filter( 'gatherpress_venue_map_descriptors', $suppress_all );
 
 		$this->assertSame(
 			array(),
@@ -802,7 +802,7 @@ class Test_Venue_Map extends Base {
 			'Filter can suppress the entire map by returning an empty array.'
 		);
 
-		remove_filter( 'gatherpress_venue_map_descriptor', $suppress_all );
+		remove_filter( 'gatherpress_venue_map_descriptors', $suppress_all );
 	}
 
 	/**
@@ -2669,6 +2669,30 @@ class Test_Venue_Map extends Base {
 			200,
 			rest_do_request( $empty )->get_status(),
 			'Empty aspect ratio is treated as "use server default" and passes.'
+		);
+
+		// Degenerate `0/X` / `X/0` values that CSS would treat as auto
+		// must still be rejected — the block never emits a zero side.
+		$zero_numerator = new \WP_REST_Request(
+			'POST',
+			sprintf( '/%s/venue/%d/regenerate-map', GATHERPRESS_REST_NAMESPACE, $post_id )
+		);
+		$zero_numerator->set_param( 'aspect_ratio', '0/9' );
+		$this->assertSame(
+			400,
+			rest_do_request( $zero_numerator )->get_status(),
+			'Zero numerator is rejected by the tightened [1-9] rule.'
+		);
+
+		$zero_denominator = new \WP_REST_Request(
+			'POST',
+			sprintf( '/%s/venue/%d/regenerate-map', GATHERPRESS_REST_NAMESPACE, $post_id )
+		);
+		$zero_denominator->set_param( 'aspect_ratio', '9/0' );
+		$this->assertSame(
+			400,
+			rest_do_request( $zero_denominator )->get_status(),
+			'Zero denominator is rejected by the tightened [1-9] rule.'
 		);
 	}
 

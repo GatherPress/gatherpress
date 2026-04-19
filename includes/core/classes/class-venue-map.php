@@ -145,6 +145,18 @@ class Venue_Map {
 	const DEFAULT_ASPECT_RATIO = '2/1';
 
 	/**
+	 * Anchored regex matching a CSS-style aspect-ratio value (e.g. `16/9`
+	 * or `4:3`). Used by both the REST `aspect_ratio` validator and the
+	 * render template so the two can never drift apart. Requires at least
+	 * one non-zero digit on each side so a degenerate `0/9` / `9/0` — which
+	 * CSS would treat as `auto` — can't slip through.
+	 *
+	 * @since 1.0.0
+	 * @var string
+	 */
+	const ASPECT_RATIO_PATTERN = '#\A\s*[1-9][0-9]*\s*[/:]\s*[1-9][0-9]*\s*\z#';
+
+	/**
 	 * Total wall-clock budget (in seconds) for a single composite_image()
 	 * call. CartoDB typically serves tiles in well under 500ms, but a slow
 	 * tile host, a DNS hiccup, or a bad proxy can chain wp_safe_remote_get()
@@ -323,7 +335,7 @@ class Venue_Map {
 								return true;
 							}
 							return (bool) preg_match(
-								'#\A\s*\d+\s*[/:]\s*\d+\s*\z#',
+								self::ASPECT_RATIO_PATTERN,
 								(string) $value
 							);
 						},
@@ -923,7 +935,7 @@ class Venue_Map {
 		}
 
 		/**
-		 * Filter the parsed descriptor map for a venue.
+		 * Filters the parsed descriptor map for a venue.
 		 *
 		 * Companion plugins, multi-locale setups, or storage-layer overrides
 		 * can use this to drop entries they consider stale, add synthetic
@@ -936,7 +948,7 @@ class Venue_Map {
 		 * @param array<string, array<string, mixed>> $descriptors Parsed descriptor map keyed by combo.
 		 * @param int                                 $post_id     Venue post ID.
 		 */
-		return (array) apply_filters( 'gatherpress_venue_map_descriptor', $descriptors, $post_id );
+		return (array) apply_filters( 'gatherpress_venue_map_descriptors', $descriptors, $post_id );
 	}
 
 	/**

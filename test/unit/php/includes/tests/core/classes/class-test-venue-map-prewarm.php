@@ -705,6 +705,19 @@ class Test_Venue_Map_Prewarm extends Base {
 		);
 
 		remove_filter( 'gatherpress_venue_map_prewarm_content_batch_size', $clamp );
+
+		$ceiling = static function () {
+			return PHP_INT_MAX;
+		};
+		add_filter( 'gatherpress_venue_map_prewarm_content_batch_size', $ceiling );
+
+		$this->assertSame(
+			1000,
+			Utility::invoke_hidden_method( $instance, 'get_content_scan_batch_size' ),
+			'Values above 1000 clamp down so a misbehaving filter can\'t load every event at once.'
+		);
+
+		remove_filter( 'gatherpress_venue_map_prewarm_content_batch_size', $ceiling );
 	}
 
 	/**

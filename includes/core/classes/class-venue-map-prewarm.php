@@ -122,7 +122,9 @@ class Venue_Map_Prewarm {
 	 * Separate from {@see self::get_scan_batch_size()} because content
 	 * scans load full post rows (post_content can be megabytes on
 	 * FSE-rich pages), where the ID-only venue scan can afford a larger
-	 * batch. Clamped to at least 1.
+	 * batch. Clamped to [1, 1000] — the floor avoids an infinite empty-
+	 * batch loop, and the ceiling caps a misbehaving filter that would
+	 * otherwise try to load every event into memory in a single query.
 	 *
 	 * @since 1.0.0
 	 *
@@ -141,7 +143,7 @@ class Venue_Map_Prewarm {
 			self::CONTENT_SCAN_BATCH_SIZE
 		);
 
-		return max( 1, $size );
+		return min( 1000, max( 1, $size ) );
 	}
 
 	/**
