@@ -29,12 +29,15 @@ if ( ! isset( $name, $label, $option, $value, $description, $size, $min, $max ) 
 // values — both render literally. The flag is preserved so downstream
 // code can distinguish "numeric-only" inputs from "optional numeric" ones.
 $gatherpress_placeholder = $placeholder ?? '';
-$gatherpress_disabled    = ! empty( $disabled ) ? ' disabled' : '';
+// Use `readonly` rather than `disabled` so the field still submits its
+// value; `disabled` inputs are omitted from the POST payload, which would
+// drop inherited values out of the blog option on save.
+$gatherpress_readonly = ! empty( $disabled ) ? ' readonly' : '';
 
 ?>
 <div class="form-wrap">
 	<label for="<?php echo esc_attr( $option ); ?>"><?php echo esc_html( $label ); ?></label>
-	<input id="<?php echo esc_attr( $option ); ?>" type="number" name="<?php echo esc_attr( $name ); ?>" class="<?php echo esc_attr( $size . '-text' ); ?>" value="<?php echo esc_attr( $value ); ?>" min="<?php echo esc_attr( $min ); ?>" max="<?php echo esc_attr( $max ); ?>"<?php echo '' !== $gatherpress_placeholder ? ' placeholder="' . esc_attr( $gatherpress_placeholder ) . '"' : ''; ?><?php echo $gatherpress_disabled; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static value. ?> />
+	<input id="<?php echo esc_attr( $option ); ?>" type="number" name="<?php echo esc_attr( $name ); ?>" class="<?php echo esc_attr( $size . '-text' ); ?>" value="<?php echo esc_attr( $value ); ?>" min="<?php echo esc_attr( $min ); ?>" max="<?php echo esc_attr( $max ); ?>"<?php echo '' !== $gatherpress_placeholder ? ' placeholder="' . esc_attr( $gatherpress_placeholder ) . '"' : ''; ?><?php echo $gatherpress_readonly; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static value. ?> />
 	<?php
 	if ( ! empty( $description ) ) {
 		?>

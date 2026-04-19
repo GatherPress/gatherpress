@@ -23,8 +23,13 @@ if ( ! isset( $name, $label, $option, $options, $options['items'], $value, $desc
 }
 
 $gatherpress_disabled = ! empty( $disabled ) ? ' disabled' : '';
+// Selects can't use `readonly`. When disabled the field is omitted from
+// the POST, so the trailing hidden input's value is what lands in
+// `$_POST[$name]` — carry the current (possibly inherited) value so the
+// saved value matches what the UI displayed.
+$gatherpress_fallback = ! empty( $disabled ) ? (string) $value : '0';
 ?>
-<input type="hidden" name="<?php echo esc_attr( $name ); ?>" value="0" />
+<input type="hidden" name="<?php echo esc_attr( $name ); ?>" value="<?php echo esc_attr( $gatherpress_fallback ); ?>" />
 <label for="<?php echo esc_attr( $option ); ?>"><?php echo esc_html( $label ); ?></label><br/>
 <select id="<?php echo esc_attr( $option ); ?>" name="<?php echo esc_attr( $name ); ?>"<?php echo $gatherpress_disabled; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static value. ?>>
 	<?php
