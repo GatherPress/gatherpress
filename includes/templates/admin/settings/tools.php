@@ -12,11 +12,18 @@
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 $gatherpress_nonce = wp_create_nonce( 'gatherpress_tools_nonce' );
+$gatherpress_scope = isset( $scope ) && 'network' === $scope ? 'network' : 'blog';
 ?>
 
 <h2><?php esc_html_e( 'Export Settings', 'gatherpress' ); ?></h2>
 <p class="description">
-	<?php esc_html_e( 'Download your current GatherPress settings as a JSON file. Only non-default values are exported.', 'gatherpress' ); ?>
+	<?php
+	if ( 'network' === $gatherpress_scope ) {
+		esc_html_e( 'Download the network-wide GatherPress settings (values set on the other tabs at Network Admin) as a JSON file.', 'gatherpress' );
+	} else {
+		esc_html_e( 'Download your current GatherPress settings as a JSON file. Only non-default values are exported.', 'gatherpress' );
+	}
+	?>
 </p>
 <p>
 	<button id="gatherpress-export" class="button button-primary">
@@ -79,6 +86,7 @@ $gatherpress_nonce = wp_create_nonce( 'gatherpress_tools_nonce' );
 <script>
 (function() {
 	const nonce = '<?php echo esc_js( $gatherpress_nonce ); ?>';
+	const scope = '<?php echo esc_js( $gatherpress_scope ); ?>';
 	let importData = null;
 
 	// Export handler.
@@ -87,7 +95,8 @@ $gatherpress_nonce = wp_create_nonce( 'gatherpress_tools_nonce' );
 
 		const data = new URLSearchParams({
 			action: 'gatherpress_export_settings',
-			nonce: nonce
+			nonce: nonce,
+			scope: scope
 		});
 
 		fetch(window.ajaxurl, {
@@ -196,6 +205,7 @@ $gatherpress_nonce = wp_create_nonce( 'gatherpress_tools_nonce' );
 		const data = new URLSearchParams({
 			action: 'gatherpress_import_settings',
 			nonce: nonce,
+			scope: scope,
 			settings_json: JSON.stringify(importData),
 			import_mode: mode
 		});

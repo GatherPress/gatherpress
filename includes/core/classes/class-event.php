@@ -16,6 +16,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use DateTimeZone;
 use Exception;
+use GatherPress\Core\Utility;
 use WP_Post;
 
 /**
@@ -413,7 +414,7 @@ class Event {
 			&& ! empty( $dt['timezone'] )
 			&& in_array( $dt['timezone'], Utility::list_timezone_and_utc_offsets(), true )
 		) {
-			$tz = new DateTimeZone( $dt['timezone'] );
+			$tz = new DateTimeZone( Utility::normalize_timezone_string( (string) $dt['timezone'] ) );
 		} elseif ( false === $local ) {
 			$tz = new DateTimeZone( 'GMT+0000' );
 		}
@@ -875,7 +876,7 @@ class Event {
 		}
 
 		$fields['timezone'] = ( ! empty( $fields['timezone'] ) ) ? $fields['timezone'] : wp_timezone_string();
-		$timezone           = new DateTimeZone( $fields['timezone'] );
+		$timezone           = new DateTimeZone( Utility::normalize_timezone_string( (string) $fields['timezone'] ) );
 
 		$fields['datetime_start_gmt'] = $this->get_gmt_datetime( (string) $fields['datetime_start'], $timezone );
 		$fields['datetime_end_gmt']   = $this->get_gmt_datetime( (string) $fields['datetime_end'], $timezone );

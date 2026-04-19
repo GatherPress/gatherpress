@@ -116,3 +116,4 @@ wp gatherpress settings import settings.json --apply --mode=replace
 
 - [Extending Settings](extending-settings.md) -- How to add custom tabs, sections, and fields
 - [Architecture](architecture.md) -- Storage, sanitization, defaults, and caching internals
+- [Multisite Network Settings](multisite.md) -- Network-wide values and per-option inheritance on WordPress Multisite

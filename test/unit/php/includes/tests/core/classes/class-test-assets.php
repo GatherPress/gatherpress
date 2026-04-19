@@ -79,6 +79,18 @@ class Test_Assets extends Base {
 				'callback' => array( $instance, 'event_communication_modal' ),
 			),
 			array(
+				'type'     => 'action',
+				'name'     => 'admin_enqueue_scripts',
+				'priority' => 10,
+				'callback' => array( $instance, 'enqueue_timezone_shim' ),
+			),
+			array(
+				'type'     => 'action',
+				'name'     => 'wp_enqueue_scripts',
+				'priority' => 10,
+				'callback' => array( $instance, 'enqueue_timezone_shim' ),
+			),
+			array(
 				'type'     => 'filter',
 				'name'     => 'render_block',
 				'priority' => 10,
@@ -94,6 +106,58 @@ class Test_Assets extends Base {
 		);
 
 		$this->assert_hooks( $hooks, $instance );
+	}
+
+	/**
+	 * Coverage for enqueue_timezone_shim when wp-date isn't registered.
+	 *
+	 * @covers ::enqueue_timezone_shim
+	 *
+	 * @return void
+	 */
+	public function test_enqueue_timezone_shim_bails_without_wp_date(): void {
+		$instance       = Assets::get_instance();
+		$was_registered = wp_script_is( 'wp-date', 'registered' );
+
+		if ( $was_registered ) {
+			wp_deregister_script( 'wp-date' );
+		}
+
+		$instance->enqueue_timezone_shim();
+
+		$this->assertFalse( wp_script_is( 'wp-date', 'enqueued' ) );
+
+		// Leave the global script registry as we found it.
+		if ( $was_registered ) {
+			wp_default_packages_scripts( wp_scripts() );
+		}
+	}
+
+	/**
+	 * Coverage for enqueue_timezone_shim when wp-date is registered — enqueues
+	 * the shim and attaches the inline script that normalizes `UTC+0` / `UTC-0`.
+	 *
+	 * @covers ::enqueue_timezone_shim
+	 *
+	 * @return void
+	 */
+	public function test_enqueue_timezone_shim_enqueues_and_attaches_inline_script(): void {
+		$instance = Assets::get_instance();
+
+		if ( ! wp_script_is( 'wp-date', 'registered' ) ) {
+			// phpcs:ignore WordPress.WP.EnqueuedResourceParameters.NoExplicitVersion -- Test registration; no real asset.
+			wp_register_script( 'wp-date', '', array(), '1', false );
+		}
+
+		$instance->enqueue_timezone_shim();
+
+		$this->assertTrue( wp_script_is( 'wp-date', 'enqueued' ) );
+
+		$inline = wp_scripts()->get_data( 'wp-date', 'after' );
+		$joined = is_array( $inline ) ? implode( "\n", $inline ) : (string) $inline;
+
+		$this->assertStringContainsString( 'wp.date.setSettings', $joined );
+		$this->assertStringContainsString( 'UTC', $joined );
 	}
 
 	/**

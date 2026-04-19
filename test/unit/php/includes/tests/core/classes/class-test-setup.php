@@ -647,6 +647,39 @@ class Test_Setup extends Base {
 	}
 
 	/**
+	 * Coverage for on_site_create bail path when GatherPress is not
+	 * network-active — no tables should be created on the new site.
+	 *
+	 * @group multisite
+	 * @covers ::on_site_create
+	 *
+	 * @return void
+	 */
+	public function test_on_site_create_bails_when_not_network_active(): void {
+		global $wpdb;
+
+		// Ensure the plugin is NOT listed in active_sitewide_plugins.
+		$active_sitewide_plugins = get_site_option( 'active_sitewide_plugins', array() );
+		unset( $active_sitewide_plugins['gatherpress/gatherpress.php'] );
+		update_site_option( 'active_sitewide_plugins', $active_sitewide_plugins );
+
+		$new_site_id = $this->factory()->blog->create();
+
+		switch_to_blog( $new_site_id );
+
+		$table = sprintf( Event::TABLE_FORMAT, $wpdb->prefix );
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery -- Required for testing table absence.
+		$table_exists = $wpdb->get_var( "SHOW TABLES LIKE '{$table}'" );
+
+		restore_current_blog();
+
+		$this->assertNull(
+			$table_exists,
+			'Table should not be created when plugin is not network-active.'
+		);
+	}
+
+	/**
 	 * Coverage for on_site_create method when new site is created in multisite.
 	 *
 	 * @group multisite

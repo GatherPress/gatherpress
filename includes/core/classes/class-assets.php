@@ -91,9 +91,54 @@ class Assets {
 		add_action( 'wp_head', array( $this, 'add_interactivity_state' ) );
 		// Set priority to 11 to not conflict with media modal.
 		add_action( 'admin_footer', array( $this, 'event_communication_modal' ), 11 );
+		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_timezone_shim' ) );
+		add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_timezone_shim' ) );
 
 		add_filter( 'render_block', array( $this, 'maybe_enqueue_styles' ), 10, 2 );
 		add_filter( 'render_block', array( $this, 'maybe_enqueue_tooltip_assets' ) );
+	}
+
+	/**
+	 * Patch `wp.date`'s timezone when WordPress hands Moment Timezone a bogus
+	 * `UTC+0` (or `UTC-0`) string.
+	 *
+	 * On a fresh WordPress install the Settings → General timezone is
+	 * unset (no `timezone_string`, `gmt_offset` of 0), so WP core emits
+	 * `wp.date.setSettings({ timezone: { string: 'UTC+0' } })`. That is
+	 * not a valid IANA zone, which triggers a stream of
+	 * "Moment Timezone has no data for UTC+0" console warnings from the
+	 * block editor's panels and any plugin using `@wordpress/date`.
+	 *
+	 * We can't reach into WP core, but we can append an inline script
+	 * after its `setSettings` call to re-call it with a valid zone. We
+	 * only normalize the zero-offset case; non-zero UTC offsets are
+	 * rarer and surface a different warning that users fix by choosing
+	 * an IANA zone in Settings → General.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return void
+	 */
+	public function enqueue_timezone_shim(): void {
+		if ( ! wp_script_is( 'wp-date', 'registered' ) ) {
+			return;
+		}
+
+		$script_path = GATHERPRESS_CORE_PATH . '/includes/templates/admin/timezone-shim.js';
+
+		// The shim file ships with the plugin; this guard is defensive in case
+		// someone strips template assets from a distribution.
+		// phpcs:ignore Squiz.Commenting.InlineComment.InvalidEndChar -- PHPUnit annotation must match exactly.
+		// @codeCoverageIgnoreStart
+		if ( ! file_exists( $script_path ) ) {
+			return;
+		}
+		// phpcs:ignore Squiz.Commenting.InlineComment.InvalidEndChar -- PHPUnit annotation must match exactly.
+		// @codeCoverageIgnoreEnd
+
+		wp_enqueue_script( 'wp-date' );
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Reading a plugin-local static file.
+		wp_add_inline_script( 'wp-date', file_get_contents( $script_path ), 'after' );
 	}
 
 	/**

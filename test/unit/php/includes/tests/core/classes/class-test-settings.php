@@ -541,7 +541,7 @@ class Test_Settings extends Base {
 			'<div class="regular-text" data-gatherpress_component_name="autocomplete" ' .
 			'data-gatherpress_component_attrs="{&quot;name&quot;:&quot;gatherpress_settings[option]&quot;,' .
 			'&quot;option&quot;:&quot;gatherpress_option&quot;,&quot;value&quot;:&quot;[]&quot;,' .
-			'&quot;fieldOptions&quot;:{&quot;unit&quot;:&quot;test&quot;}}"></div>',
+			'&quot;fieldOptions&quot;:{&quot;unit&quot;:&quot;test&quot;},&quot;disabled&quot;:false}"></div>',
 			$autocomplete,
 			'Failed to assert that markup matches.'
 		);
@@ -2110,5 +2110,373 @@ class Test_Settings extends Base {
 		);
 
 		delete_option( 'gatherpress_settings' );
+	}
+
+	/**
+	 * Coverage for is_option_inherited on single-site (not multisite).
+	 *
+	 * @covers ::is_option_inherited
+	 *
+	 * @return void
+	 */
+	public function test_is_option_inherited_returns_false_single_site(): void {
+		if ( is_multisite() ) {
+			$this->markTestSkipped( 'Single-site only.' );
+		}
+
+		$this->assertFalse( Settings::get_instance()->is_option_inherited( 'date_format' ) );
+	}
+
+	/**
+	 * Coverage for is_option_inherited filter — can force `true` even when
+	 * the network config would otherwise say no.
+	 *
+	 * @covers ::is_option_inherited
+	 *
+	 * @return void
+	 */
+	public function test_is_option_inherited_filter_can_force_true(): void {
+		$filter = static function (): bool {
+			return true;
+		};
+		add_filter( 'gatherpress_network_is_option_inherited', $filter );
+
+		$this->assertTrue( Settings::get_instance()->is_option_inherited( 'date_format' ) );
+
+		remove_filter( 'gatherpress_network_is_option_inherited', $filter );
+	}
+
+	/**
+	 * Coverage for is_option_inherited when multisite + network config forces it.
+	 *
+	 * @covers ::is_option_inherited
+	 *
+	 * @group   multisite
+	 *
+	 * @return void
+	 */
+	public function test_is_option_inherited_respects_network_config(): void {
+		if ( ! is_multisite() ) {
+			$this->markTestSkipped( 'Requires multisite.' );
+		}
+
+		update_site_option(
+			'gatherpress_network_settings',
+			array(
+				'enabled'   => true,
+				'inherited' => array( 'date_format' ),
+			)
+		);
+		\GatherPress\Core\Settings\Network::flush_config_cache();
+
+		$this->assertTrue( Settings::get_instance()->is_option_inherited( 'date_format' ) );
+		$this->assertFalse( Settings::get_instance()->is_option_inherited( 'time_format' ) );
+
+		delete_site_option( 'gatherpress_network_settings' );
+		\GatherPress\Core\Settings\Network::flush_config_cache();
+	}
+
+	/**
+	 * Coverage for get() inheritance branch — reads the network site option
+	 * when the option is flagged as inherited.
+	 *
+	 * @covers ::get
+	 *
+	 * @return void
+	 */
+	public function test_get_reads_network_value_when_inherited(): void {
+		update_site_option( 'gatherpress_settings', array( 'date_format' => 'Y-m-d' ) );
+
+		$filter = static function (): bool {
+			return true;
+		};
+		add_filter( 'gatherpress_network_is_option_inherited', $filter );
+
+		$this->assertSame( 'Y-m-d', Settings::get_instance()->get( 'date_format' ) );
+
+		remove_filter( 'gatherpress_network_is_option_inherited', $filter );
+		delete_site_option( 'gatherpress_settings' );
+	}
+
+	/**
+	 * Coverage for get() falling back to default when inherited but the
+	 * network site option has nothing for this key.
+	 *
+	 * @covers ::get
+	 *
+	 * @return void
+	 */
+	public function test_get_falls_back_to_default_when_inherited_and_network_empty(): void {
+		delete_site_option( 'gatherpress_settings' );
+
+		$filter = static function (): bool {
+			return true;
+		};
+		add_filter( 'gatherpress_network_is_option_inherited', $filter );
+
+		// `show_timezone` defaults to true.
+		$this->assertTrue( Settings::get_instance()->get( 'show_timezone' ) );
+
+		remove_filter( 'gatherpress_network_is_option_inherited', $filter );
+	}
+
+	/**
+	 * Coverage for render_field wrapping output with the inherited marker +
+	 * the super-admin variant of the note (link included).
+	 *
+	 * @covers ::render_field
+	 *
+	 * @return void
+	 */
+	public function test_render_field_wraps_when_inherited_for_super_admin(): void {
+		$instance = Settings::get_instance();
+		$user_id  = $this->factory()->user->create( array( 'role' => 'administrator' ) );
+		$user     = get_user_by( 'id', $user_id );
+		$user->add_cap( 'manage_network_options' );
+		wp_set_current_user( $user_id );
+
+		$filter = static function (): bool {
+			return true;
+		};
+		add_filter( 'gatherpress_network_is_option_inherited', $filter );
+
+		$output = Utility::buffer_and_return(
+			array( $instance, 'render_field' ),
+			array(
+				'date_format',
+				array(
+					'field' => array(
+						'type'    => 'text',
+						'size'    => 'regular',
+						'options' => array( 'default' => 'F j, Y' ),
+					),
+				),
+			)
+		);
+
+		remove_filter( 'gatherpress_network_is_option_inherited', $filter );
+		wp_delete_user( $user_id );
+
+		$this->assertStringContainsString( 'gatherpress-field-inherited', $output );
+		$this->assertStringContainsString( 'settings.php?page=gatherpress-network-settings', $output );
+	}
+
+	/**
+	 * Coverage for render_field wrapping output with the inherited marker +
+	 * the regular-admin variant (no link).
+	 *
+	 * @covers ::render_field
+	 *
+	 * @return void
+	 */
+	public function test_render_field_wraps_when_inherited_for_regular_admin(): void {
+		$instance = Settings::get_instance();
+		$user_id  = $this->factory()->user->create( array( 'role' => 'editor' ) );
+		wp_set_current_user( $user_id );
+
+		$filter = static function (): bool {
+			return true;
+		};
+		add_filter( 'gatherpress_network_is_option_inherited', $filter );
+
+		$output = Utility::buffer_and_return(
+			array( $instance, 'render_field' ),
+			array(
+				'date_format',
+				array(
+					'field' => array(
+						'type'    => 'text',
+						'size'    => 'regular',
+						'options' => array( 'default' => 'F j, Y' ),
+					),
+				),
+			)
+		);
+
+		remove_filter( 'gatherpress_network_is_option_inherited', $filter );
+		wp_delete_user( $user_id );
+
+		$this->assertStringContainsString( 'gatherpress-field-inherited', $output );
+		$this->assertStringContainsString( 'Inherited from the network.', $output );
+		$this->assertStringNotContainsString( 'settings.php?page=gatherpress-network-settings', $output );
+	}
+
+	/**
+	 * Coverage for read_stored_options — blog-scope branch reads from the
+	 * standard blog option.
+	 *
+	 * @covers ::read_stored_options
+	 *
+	 * @return void
+	 */
+	public function test_read_stored_options_blog_scope(): void {
+		update_option( Settings::OPTION_NAME, array( 'map_platform' => 'google' ) );
+
+		$result = Utility::invoke_hidden_method(
+			Settings::get_instance(),
+			'read_stored_options',
+			array( 'blog' )
+		);
+
+		delete_option( Settings::OPTION_NAME );
+
+		$this->assertSame( array( 'map_platform' => 'google' ), $result );
+	}
+
+	/**
+	 * Coverage for read_stored_options — network-scope branch reads the
+	 * network-wide site option.
+	 *
+	 * @covers ::read_stored_options
+	 *
+	 * @group   multisite
+	 *
+	 * @return void
+	 */
+	public function test_read_stored_options_network_scope(): void {
+		if ( ! is_multisite() ) {
+			$this->markTestSkipped( 'Requires multisite.' );
+		}
+
+		update_site_option( Settings::OPTION_NAME, array( 'map_platform' => 'google' ) );
+
+		$result = Utility::invoke_hidden_method(
+			Settings::get_instance(),
+			'read_stored_options',
+			array( 'network' )
+		);
+
+		delete_site_option( Settings::OPTION_NAME );
+
+		$this->assertSame( array( 'map_platform' => 'google' ), $result );
+	}
+
+	/**
+	 * Coverage for write_stored_options — both scope branches.
+	 *
+	 * @covers ::write_stored_options
+	 *
+	 * @return void
+	 */
+	public function test_write_stored_options_blog_scope(): void {
+		Utility::invoke_hidden_method(
+			Settings::get_instance(),
+			'write_stored_options',
+			array( 'blog', array( 'map_platform' => 'osm' ) )
+		);
+
+		$this->assertSame(
+			array( 'map_platform' => 'osm' ),
+			get_option( Settings::OPTION_NAME )
+		);
+
+		delete_option( Settings::OPTION_NAME );
+	}
+
+	/**
+	 * Coverage for write_stored_options network scope.
+	 *
+	 * @covers ::write_stored_options
+	 *
+	 * @group   multisite
+	 *
+	 * @return void
+	 */
+	public function test_write_stored_options_network_scope(): void {
+		if ( ! is_multisite() ) {
+			$this->markTestSkipped( 'Requires multisite.' );
+		}
+
+		Utility::invoke_hidden_method(
+			Settings::get_instance(),
+			'write_stored_options',
+			array( 'network', array( 'map_platform' => 'osm' ) )
+		);
+
+		$this->assertSame(
+			array( 'map_platform' => 'osm' ),
+			get_site_option( Settings::OPTION_NAME )
+		);
+
+		delete_site_option( Settings::OPTION_NAME );
+	}
+
+	/**
+	 * Coverage for delete_stored_options — both scope branches.
+	 *
+	 * @covers ::delete_stored_options
+	 *
+	 * @return void
+	 */
+	public function test_delete_stored_options_blog_scope(): void {
+		update_option( Settings::OPTION_NAME, array( 'map_platform' => 'osm' ) );
+
+		Utility::invoke_hidden_method(
+			Settings::get_instance(),
+			'delete_stored_options',
+			array( 'blog' )
+		);
+
+		$this->assertFalse( get_option( Settings::OPTION_NAME ) );
+	}
+
+	/**
+	 * Coverage for delete_stored_options network scope.
+	 *
+	 * @covers ::delete_stored_options
+	 *
+	 * @group   multisite
+	 *
+	 * @return void
+	 */
+	public function test_delete_stored_options_network_scope(): void {
+		if ( ! is_multisite() ) {
+			$this->markTestSkipped( 'Requires multisite.' );
+		}
+
+		update_site_option( Settings::OPTION_NAME, array( 'map_platform' => 'osm' ) );
+
+		Utility::invoke_hidden_method(
+			Settings::get_instance(),
+			'delete_stored_options',
+			array( 'network' )
+		);
+
+		$this->assertFalse( get_site_option( Settings::OPTION_NAME ) );
+	}
+
+	/**
+	 * Coverage for import_settings with replace mode in network scope — covers
+	 * the Network::flush_config_cache() call path at the tail of import.
+	 *
+	 * @covers ::import_settings
+	 *
+	 * @group   multisite
+	 *
+	 * @return void
+	 */
+	public function test_import_settings_replace_network_scope(): void {
+		if ( ! is_multisite() ) {
+			$this->markTestSkipped( 'Requires multisite.' );
+		}
+
+		update_site_option( Settings::OPTION_NAME, array( 'map_platform' => 'osm' ) );
+		\GatherPress\Core\Settings\Network::flush_config_cache();
+
+		$data = array(
+			'version'  => GATHERPRESS_VERSION,
+			'settings' => array( 'map_platform' => 'google' ),
+		);
+
+		$result = Settings::get_instance()->import_settings( $data, 'replace', 'network' );
+
+		$this->assertTrue( $result['success'] );
+		$this->assertSame(
+			array( 'map_platform' => 'google' ),
+			get_site_option( Settings::OPTION_NAME )
+		);
+
+		delete_site_option( Settings::OPTION_NAME );
+		\GatherPress\Core\Settings\Network::flush_config_cache();
 	}
 }

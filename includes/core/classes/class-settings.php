@@ -14,6 +14,7 @@ namespace GatherPress\Core;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
+use GatherPress\Core\Settings\Network;
 use GatherPress\Core\Traits\Singleton;
 
 /**
@@ -475,11 +476,20 @@ class Settings {
 	 * preserve settings from other tabs. Handles various input types including checkboxes,
 	 * numbers, autocomplete fields, text fields, and select dropdowns.
 	 *
-	 * @param array $field_type_map Flat map of option_key => field_type.
+	 * Values that equal their configured default are stripped from the merged
+	 * result to keep the stored option lean. This means the option cannot
+	 * represent "explicitly set to the default" vs "unset" — both collapse
+	 * to the same state. Consumers rely on `get_flat_default()` as the
+	 * authoritative source of defaults in both read paths.
+	 *
+	 * @param array  $field_type_map Flat map of option_key => field_type.
+	 * @param string $scope          Storage scope: 'blog' (default) or 'network'.
+	 *                               Determines which option store the closure
+	 *                               reads from when merging with existing values.
 	 * @return callable A callback function that sanitizes input based on field types.
 	 */
-	public function sanitize_page_settings( array $field_type_map ): callable {
-		return function ( $input ) use ( $field_type_map ): array {
+	public function sanitize_page_settings( array $field_type_map, string $scope = 'blog' ): callable {
+		return function ( $input ) use ( $field_type_map, $scope ): array {
 			$sanitized = array();
 
 			foreach ( $input as $key => $value ) {
@@ -510,7 +520,7 @@ class Settings {
 			}
 
 			// Merge with existing values to preserve settings from other tabs.
-			$existing = get_option( self::OPTION_NAME, array() );
+			$existing = $this->read_stored_options( $scope );
 			$merged   = array_merge( $existing, $sanitized );
 
 			// Remove values that match their defaults to keep the option lean.
@@ -587,9 +597,10 @@ class Settings {
 	 * @return void
 	 */
 	public function render_field( string $option, array $option_settings ): void {
-		$type  = $option_settings['field']['type'] ?? '';
-		$name  = $this->get_name_field( $option );
-		$value = $this->get( $option );
+		$type      = $option_settings['field']['type'] ?? '';
+		$name      = $this->get_name_field( $option );
+		$value     = $this->get( $option );
+		$inherited = $this->is_option_inherited( $option );
 
 		$params = array(
 			'name'        => $name,
@@ -597,6 +608,7 @@ class Settings {
 			'value'       => $value,
 			'label'       => $option_settings['field']['label'] ?? '',
 			'description' => $option_settings['description'] ?? '',
+			'disabled'    => $inherited,
 		);
 
 		switch ( $type ) {
@@ -619,11 +631,42 @@ class Settings {
 				break;
 		}
 
+		if ( $inherited ) {
+			echo '<div class="gatherpress-field-inherited" aria-disabled="true">';
+		}
+
 		Utility::render_template(
 			sprintf( '%s/includes/templates/admin/settings/fields/%s.php', GATHERPRESS_CORE_PATH, $type ),
 			$params,
 			true
 		);
+
+		if ( $inherited ) {
+			if ( current_user_can( 'manage_network_options' ) ) {
+				$inherited_message = wp_kses(
+					sprintf(
+						/* translators: %s: link to the network admin GatherPress settings page. */
+						__( 'Inherited from the %s. Edit there to change this value.', 'gatherpress' ),
+						sprintf(
+							'<a href="%s">%s</a>',
+							esc_url(
+								network_admin_url(
+									sprintf( 'settings.php?page=%s', Network::PAGE_SLUG )
+								)
+							),
+							esc_html__( 'network', 'gatherpress' )
+						)
+					),
+					array( 'a' => array( 'href' => true ) )
+				);
+			} else {
+				$inherited_message = esc_html__( 'Inherited from the network.', 'gatherpress' );
+			}
+
+			// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped via wp_kses / esc_html above.
+			echo '<p class="description gatherpress-field-inherited__note">' . $inherited_message . '</p>';
+			echo '</div>';
+		}
 	}
 
 	/**
@@ -657,12 +700,29 @@ class Settings {
 	 * gatherpress_settings option. If the option is set, its value is returned;
 	 * otherwise, the default value is returned.
 	 *
+	 * On a multisite subsite, options that are flagged as network-inherited
+	 * are read from the main site instead of the local site.
+	 *
 	 * @since 1.0.0
 	 *
 	 * @param string $option The unique name of the option to retrieve.
 	 * @return mixed The value of the option or its default value.
 	 */
 	public function get( string $option ) {
+		if ( $this->is_option_inherited( $option ) ) {
+			$network_options = get_site_option( self::OPTION_NAME, array() );
+
+			if (
+				is_array( $network_options )
+				&& isset( $network_options[ $option ] )
+				&& '' !== $network_options[ $option ]
+			) {
+				return $network_options[ $option ];
+			}
+
+			return $this->get_flat_default( $option );
+		}
+
 		$options = get_option( self::OPTION_NAME, array() );
 
 		if ( isset( $options[ $option ] ) && '' !== $options[ $option ] ) {
@@ -670,6 +730,56 @@ class Settings {
 		}
 
 		return $this->get_flat_default( $option );
+	}
+
+	/**
+	 * Whether a given option is inherited from the network.
+	 *
+	 * Returns true when we're on a subsite of a multisite install, the
+	 * network inheritance feature is enabled, and the option is listed as
+	 * inherited in the network config. The result passes through the
+	 * `gatherpress_network_is_option_inherited` filter so a companion plugin or
+	 * site-specific code can override the decision for an individual site.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $option The option key to check.
+	 * @return bool
+	 */
+	public function is_option_inherited( string $option ): bool {
+		$inherited = false;
+
+		// Apply inheritance on any site in the network (including the main site)
+		// so the UI reflects the network config everywhere. The only exemption
+		// is the network admin settings page itself, where super admins edit
+		// the network values — fields there must remain fully editable.
+		if ( is_multisite() && ! is_network_admin() ) {
+			$config = Network::get_config();
+
+			if ( ! empty( $config['enabled'] ) ) {
+				$inherited = in_array( $option, (array) ( $config['inherited'] ?? array() ), true );
+			}
+		}
+
+		/**
+		 * Filters whether a specific GatherPress option is inherited from the network.
+		 *
+		 * Returning false exempts the current site from network-level inheritance
+		 * for that option; returning true forces inheritance even if the network
+		 * config would otherwise leave it site-editable.
+		 *
+		 * @since 1.0.0
+		 *
+		 * @param bool   $inherited Whether the option is inherited from the network.
+		 * @param string $option    The option key being resolved.
+		 * @param int    $blog_id   The current site ID.
+		 */
+		return (bool) apply_filters(
+			'gatherpress_network_is_option_inherited',
+			$inherited,
+			$option,
+			get_current_blog_id()
+		);
 	}
 
 	/**
@@ -914,14 +1024,69 @@ class Settings {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @return array Export data with version, timestamp, and settings.
+	 * @param string $scope Storage scope: 'blog' (default) or 'network'.
+	 *                      'network' reads the network-wide site option,
+	 *                      used when exporting from Network Admin.
+	 * @return array Export data with version, timestamp, scope, and settings.
 	 */
-	public function export_settings(): array {
+	public function export_settings( string $scope = 'blog' ): array {
 		return array(
 			'version'     => GATHERPRESS_VERSION,
 			'exported_at' => current_time( 'c' ),
-			'settings'    => get_option( self::OPTION_NAME, array() ),
+			'scope'       => $scope,
+			'settings'    => $this->read_stored_options( $scope ),
 		);
+	}
+
+	/**
+	 * Read the stored settings option in the given storage scope.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $scope Storage scope: 'blog' or 'network'.
+	 * @return array
+	 */
+	protected function read_stored_options( string $scope ): array {
+		if ( 'network' === $scope ) {
+			return (array) get_site_option( self::OPTION_NAME, array() );
+		}
+
+		return (array) get_option( self::OPTION_NAME, array() );
+	}
+
+	/**
+	 * Write the stored settings option in the given storage scope.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $scope   Storage scope: 'blog' or 'network'.
+	 * @param array  $options Options array to persist.
+	 * @return void
+	 */
+	protected function write_stored_options( string $scope, array $options ): void {
+		if ( 'network' === $scope ) {
+			update_site_option( self::OPTION_NAME, $options );
+			return;
+		}
+
+		update_option( self::OPTION_NAME, $options );
+	}
+
+	/**
+	 * Delete the stored settings option in the given storage scope.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $scope Storage scope: 'blog' or 'network'.
+	 * @return void
+	 */
+	protected function delete_stored_options( string $scope ): void {
+		if ( 'network' === $scope ) {
+			delete_site_option( self::OPTION_NAME );
+			return;
+		}
+
+		delete_option( self::OPTION_NAME );
 	}
 
 	/**
@@ -932,10 +1097,11 @@ class Settings {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param array $data The parsed import data.
+	 * @param array  $data  The parsed import data.
+	 * @param string $scope Storage scope: 'blog' (default) or 'network'.
 	 * @return array Validation result with 'valid', 'changes', 'unknown', and 'warnings' keys.
 	 */
-	public function validate_import( array $data ): array {
+	public function validate_import( array $data, string $scope = 'blog' ): array {
 		$result = array(
 			'valid'    => true,
 			'changes'  => array(),
@@ -963,7 +1129,7 @@ class Settings {
 		}
 
 		$field_type_map = $this->build_field_type_map( $this->get_sub_pages() );
-		$current        = get_option( self::OPTION_NAME, array() );
+		$current        = $this->read_stored_options( $scope );
 
 		foreach ( $data['settings'] as $key => $value ) {
 			if ( ! isset( $field_type_map[ $key ] ) ) {
@@ -989,11 +1155,12 @@ class Settings {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param array  $data The parsed import data.
-	 * @param string $mode Import mode: 'merge' or 'replace'.
+	 * @param array  $data  The parsed import data.
+	 * @param string $mode  Import mode: 'merge' or 'replace'.
+	 * @param string $scope Storage scope: 'blog' (default) or 'network'.
 	 * @return array Result with 'success', 'imported', 'skipped', and 'warnings' keys.
 	 */
-	public function import_settings( array $data, string $mode = 'merge' ): array {
+	public function import_settings( array $data, string $mode = 'merge', string $scope = 'blog' ): array {
 		$result = array(
 			'success'  => false,
 			'imported' => array(),
@@ -1001,7 +1168,7 @@ class Settings {
 			'warnings' => array(),
 		);
 
-		$validation = $this->validate_import( $data );
+		$validation = $this->validate_import( $data, $scope );
 
 		if ( ! $validation['valid'] ) {
 			$result['warnings'] = $validation['warnings'];
@@ -1013,7 +1180,7 @@ class Settings {
 		$result['skipped']  = $validation['unknown'];
 
 		$field_type_map = $this->build_field_type_map( $this->get_sub_pages() );
-		$sanitize       = $this->sanitize_page_settings( $field_type_map );
+		$sanitize       = $this->sanitize_page_settings( $field_type_map, $scope );
 
 		// Filter to only known keys.
 		$to_import = array_intersect_key(
@@ -1024,12 +1191,16 @@ class Settings {
 		// Sanitize imported values.
 		if ( 'replace' === $mode ) {
 			// Replace mode: clear existing, only use imported values.
-			delete_option( self::OPTION_NAME );
+			$this->delete_stored_options( $scope );
 		}
 
 		$sanitized = $sanitize( $to_import );
 
-		update_option( self::OPTION_NAME, $sanitized );
+		$this->write_stored_options( $scope, $sanitized );
+
+		if ( 'network' === $scope ) {
+			Network::flush_config_cache();
+		}
 
 		$result['success']  = true;
 		$result['imported'] = array_keys( $to_import );
