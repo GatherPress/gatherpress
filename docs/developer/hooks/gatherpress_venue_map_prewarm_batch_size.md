@@ -21,7 +21,7 @@ add_filter(
 
 ## Files
 
-- [includes/core/classes/class-venue-map-prewarm.php:102](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/class-venue-map-prewarm.php#L102)
+- [includes/core/classes/class-venue-map-prewarm.php:114](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/class-venue-map-prewarm.php#L114)
 ```php
 apply_filters( 'gatherpress_venue_map_prewarm_batch_size', self::SCAN_BATCH_SIZE )
 ```

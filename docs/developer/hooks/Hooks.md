@@ -63,10 +63,12 @@
 ## class-venue-map-prewarm.php
 
 - [`gatherpress_venue_map_prewarm_batch_size`](gatherpress_venue_map_prewarm_batch_size.md) Filter the venue-map prewarm scan batch size.
+- [`gatherpress_venue_map_prewarm_content_batch_size`](gatherpress_venue_map_prewarm_content_batch_size.md) Filter the venue-map prewarm content-scan batch size.
 
 ## class-venue-map.php
 
 - [`gatherpress_venue_map_composite_time_budget`](gatherpress_venue_map_composite_time_budget.md) Filter the wall-clock budget (in seconds) for a single
+- [`gatherpress_venue_map_descriptors`](gatherpress_venue_map_descriptors.md) Filters the parsed descriptor map for a venue.
 - [`gatherpress_venue_map_height`](gatherpress_venue_map_height.md) Filter the height used when rendering the static venue map.
 - [`gatherpress_venue_map_tile_url`](gatherpress_venue_map_tile_url.md) Filter the tile URL template used by the static venue map.
 - [`gatherpress_venue_map_zoom`](gatherpress_venue_map_zoom.md) Filter the zoom level used when rendering the static venue map.
