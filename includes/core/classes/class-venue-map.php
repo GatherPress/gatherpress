@@ -232,9 +232,14 @@ class Venue_Map {
 	const DEFAULT_TILE_URL = 'https://cartodb-basemaps-a.global.ssl.fastly.net/light_all/{z}/{x}/{y}.png';
 
 	/**
-	 * Post meta key under which the static-map descriptor is stored.
+	 * Post meta key under which the static-map descriptors are stored.
 	 *
-	 * Value shape: `array{ url: string, hash: string }`.
+	 * Stored value is an associative array keyed by `{zoom}x{width}x{height}`
+	 * with entries of shape
+	 * `array{ url: string, url_2x: string, hash: string, zoom: int, width: int, height: int }`.
+	 * `url_2x` is empty string when the retina variant is disabled or failed
+	 * to generate; pre-retina descriptors written by older versions omit the
+	 * key entirely and are normalized by {@see self::get_all_descriptors()}.
 	 *
 	 * @since 1.0.0
 	 * @var string
@@ -597,7 +602,7 @@ class Venue_Map {
 	 * @param int|null $extra_width        Optional extra width (0 = auto).
 	 * @param int|null $extra_height       Optional extra height (0 = auto).
 	 * @param string   $extra_aspect_ratio Optional aspect ratio hint for the extra combo.
-	 * @return array<string, array{url: string, hash: string, zoom: int, width: int, height: int}>
+	 * @return array<string, array{url: string, url_2x: string, hash: string, zoom: int, width: int, height: int}>
 	 */
 	public function regenerate(
 		int $post_id,
@@ -761,17 +766,80 @@ class Venue_Map {
 	}
 
 	/**
-	 * Resolve the static map URL for any GatherPress post context.
+	 * Resolve the static-map descriptor for any GatherPress post context.
 	 *
 	 * Accepts either a venue post ID (supports `gatherpress-venue-information`)
-	 * or an event post ID (supports `gatherpress-venue`) and returns the URL
-	 * of the stored static map for the corresponding venue at the requested
-	 * zoom and height. When the cache doesn't yet have an image for that
-	 * combo, the method generates one synchronously — first render pays the
-	 * cost, subsequent renders hit the cache.
+	 * or an event post ID (supports `gatherpress-venue`) and returns the full
+	 * descriptor — both 1× and 2× URLs plus the bookkeeping fields — for the
+	 * corresponding venue at the requested zoom and height. When the cache
+	 * doesn't yet have an image for that combo, the method generates one
+	 * synchronously; first render pays the cost, subsequent renders hit the
+	 * cache. Returns null when the post isn't venue-related, the venue has
+	 * no coordinates, or generation failed.
 	 *
-	 * Returns '' when the post isn't venue-related, the venue has no
-	 * coordinates, or the on-demand generation failed.
+	 * @since 1.0.0
+	 *
+	 * @param int      $post_id      Event or venue post ID.
+	 * @param string   $post_type    The post type of `$post_id`.
+	 * @param int|null $zoom         Desired zoom level. Null falls back to the default.
+	 * @param int|null $width        Desired pixel width (0/null = auto).
+	 * @param int|null $height       Desired pixel height (0/null = auto).
+	 * @param string   $aspect_ratio Aspect-ratio hint used to derive any auto dimension.
+	 * @return array{url: string, url_2x: string, hash: string, zoom: int, width: int, height: int}|null
+	 */
+	public function get_descriptor_for_post(
+		int $post_id,
+		string $post_type,
+		?int $zoom = null,
+		?int $width = null,
+		?int $height = null,
+		string $aspect_ratio = ''
+	): ?array {
+		$venue_post_id = 0;
+
+		if ( post_type_supports( $post_type, 'gatherpress-venue-information' ) ) {
+			$venue_post_id = $post_id;
+		} elseif ( post_type_supports( $post_type, 'gatherpress-venue' ) ) {
+			$venue_post = Venue_Setup::get_instance()->get_venue_post_from_event_post_id( $post_id );
+
+			if ( $venue_post instanceof WP_Post ) {
+				$venue_post_id = $venue_post->ID;
+			}
+		}
+
+		if ( 0 === $venue_post_id ) {
+			return null;
+		}
+
+		$info = ( new Venue( $venue_post_id ) )->get_information();
+
+		if ( null === $this->parse_coord( $info['latitude'] ) ||
+			null === $this->parse_coord( $info['longitude'] ) ) {
+			return null;
+		}
+
+		$resolved = $this->resolve_dimensions(
+			(int) ( $width ?? 0 ),
+			(int) ( $height ?? $this->get_height() ),
+			'' !== $aspect_ratio ? $aspect_ratio : self::DEFAULT_ASPECT_RATIO
+		);
+
+		return $this->ensure_descriptor_for_combo(
+			$venue_post_id,
+			$info,
+			$zoom ?? $this->get_zoom(),
+			$resolved['width'],
+			$resolved['height']
+		);
+	}
+
+	/**
+	 * Resolve the static-map URL for any GatherPress post context.
+	 *
+	 * Thin wrapper around {@see self::get_descriptor_for_post()} that returns
+	 * just the 1× URL, preserved for callers that only need the baseline
+	 * image. For render paths that want the retina variant too, call
+	 * `get_descriptor_for_post()` directly.
 	 *
 	 * @since 1.0.0
 	 *
@@ -791,42 +859,7 @@ class Venue_Map {
 		?int $height = null,
 		string $aspect_ratio = ''
 	): string {
-		$venue_post_id = 0;
-
-		if ( post_type_supports( $post_type, 'gatherpress-venue-information' ) ) {
-			$venue_post_id = $post_id;
-		} elseif ( post_type_supports( $post_type, 'gatherpress-venue' ) ) {
-			$venue_post = Venue_Setup::get_instance()->get_venue_post_from_event_post_id( $post_id );
-
-			if ( $venue_post instanceof WP_Post ) {
-				$venue_post_id = $venue_post->ID;
-			}
-		}
-
-		if ( 0 === $venue_post_id ) {
-			return '';
-		}
-
-		$info = ( new Venue( $venue_post_id ) )->get_information();
-
-		if ( null === $this->parse_coord( $info['latitude'] ) ||
-			null === $this->parse_coord( $info['longitude'] ) ) {
-			return '';
-		}
-
-		$resolved = $this->resolve_dimensions(
-			(int) ( $width ?? 0 ),
-			(int) ( $height ?? $this->get_height() ),
-			'' !== $aspect_ratio ? $aspect_ratio : self::DEFAULT_ASPECT_RATIO
-		);
-
-		$descriptor = $this->ensure_descriptor_for_combo(
-			$venue_post_id,
-			$info,
-			$zoom ?? $this->get_zoom(),
-			$resolved['width'],
-			$resolved['height']
-		);
+		$descriptor = $this->get_descriptor_for_post( $post_id, $post_type, $zoom, $width, $height, $aspect_ratio );
 
 		return null === $descriptor ? '' : $descriptor['url'];
 	}
@@ -851,7 +884,7 @@ class Venue_Map {
 	 * @param int    $width        Pixel width (0 = auto).
 	 * @param int    $height       Pixel height (0 = auto).
 	 * @param string $aspect_ratio Aspect-ratio string (e.g. "16/9").
-	 * @return array{url: string, hash: string, zoom: int, width: int, height: int}|null
+	 * @return array{url: string, url_2x: string, hash: string, zoom: int, width: int, height: int}|null
 	 */
 	public function warm( int $post_id, int $zoom, int $width, int $height, string $aspect_ratio = '' ): ?array {
 		if ( 0 >= $post_id ) {
@@ -892,7 +925,7 @@ class Venue_Map {
 	 * @since 1.0.0
 	 *
 	 * @param int $post_id The venue post ID.
-	 * @return array{url: string, hash: string, zoom: int, width: int, height: int}|null
+	 * @return array{url: string, url_2x: string, hash: string, zoom: int, width: int, height: int}|null
 	 */
 	public function get_stored_descriptor( int $post_id ): ?array {
 		$all      = $this->get_all_descriptors( $post_id );
@@ -923,7 +956,7 @@ class Venue_Map {
 	 * @since 1.0.0
 	 *
 	 * @param int $post_id The venue post ID.
-	 * @return array<string, array{url: string, hash: string, zoom: int, width: int, height: int}>
+	 * @return array<string, array{url: string, url_2x: string, hash: string, zoom: int, width: int, height: int}>
 	 */
 	public function get_all_descriptors( int $post_id ): array {
 		$raw = get_post_meta( $post_id, self::META_KEY, true );
@@ -950,8 +983,13 @@ class Venue_Map {
 				continue;
 			}
 
+			// `url_2x` is nullable for back-compat: pre-retina descriptors
+			// written before this plugin version don't carry the key at all.
+			// Normalize to an empty string so downstream callers can check
+			// with a single `'' !== $url_2x` branch.
 			$descriptors[ (string) $key ] = array(
 				'url'    => (string) $entry['url'],
+				'url_2x' => isset( $entry['url_2x'] ) ? (string) $entry['url_2x'] : '',
 				'hash'   => (string) $entry['hash'],
 				'zoom'   => $zoom,
 				'width'  => $width,
@@ -1034,7 +1072,7 @@ class Venue_Map {
 	 * @param int   $zoom    Zoom level to render at.
 	 * @param int   $width   Pixel width of the PNG.
 	 * @param int   $height  Pixel height of the PNG.
-	 * @return array{url: string, hash: string, zoom: int, width: int, height: int}|null
+	 * @return array{url: string, url_2x: string, hash: string, zoom: int, width: int, height: int}|null
 	 */
 	protected function ensure_descriptor_for_combo(
 		int $post_id,
@@ -1066,9 +1104,14 @@ class Venue_Map {
 
 		if ( null !== $existing && $existing['hash'] === $hash ) {
 			// The URL itself is deterministic from (address, zoom, dims) so
-			// existence on disk is the real validity signal.
+			// existence on disk is the real validity signal. If the retina
+			// variant is enabled but missing from this descriptor it's a
+			// pre-retina entry (`get_all_descriptors()` normalizes missing
+			// `url_2x` to an empty string) — fall through to regenerate so
+			// the 2× actually gets produced.
 			$expected_url = $this->build_image_url( $address, $zoom, $width, $height );
-			if ( $existing['url'] === $expected_url ) {
+			$needs_retina = $this->should_generate_retina() && '' === $existing['url_2x'];
+			if ( $existing['url'] === $expected_url && ! $needs_retina ) {
 				return $existing;
 			}
 		}
@@ -1090,8 +1133,28 @@ class Venue_Map {
 			return null;
 		}
 
+		// Retina variant: separate composite at 2× density (zoom+1 tiles,
+		// double-sized canvas) with its own wall-clock budget. Failure here
+		// is non-fatal — we keep the 1× URL and just leave `url_2x` empty so
+		// the front-end falls back to a plain `src`. Reuses the same hash:
+		// the 2× is fully derived from the same inputs.
+		$url_2x = '';
+		if ( $this->should_generate_retina() ) {
+			$image_2x = $this->composite_image( $latitude, $longitude, $zoom, $width, $height, $tiles, 2 );
+			if ( null !== $image_2x ) {
+				$this->stamp_marker( $image_2x, $width, $height, 2.0 );
+
+				$saved_2x = $this->save_image( $image_2x, $address, $zoom, $width, $height, 2 );
+				imagedestroy( $image_2x );
+				if ( null !== $saved_2x ) {
+					$url_2x = $saved_2x;
+				}
+			}
+		}
+
 		$all[ $key ] = array(
 			'url'    => $url,
+			'url_2x' => $url_2x,
 			'hash'   => $hash,
 			'zoom'   => $zoom,
 			'width'  => $width,
@@ -1115,6 +1178,33 @@ class Venue_Map {
 		}
 
 		return $all[ $key ];
+	}
+
+	/**
+	 * Whether the compositor should emit a retina (2×) variant alongside the 1× image.
+	 *
+	 * Default on — site owners who want to save disk can return false from
+	 * the filter. Called per-combo so a filter can even target specific
+	 * contexts (`is_admin()`, per-post, per-current-user).
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return bool True when the retina variant should be generated.
+	 */
+	protected function should_generate_retina(): bool {
+		/**
+		 * Filter whether to generate the retina (2×) static-map variant.
+		 *
+		 * Disabling this halves the on-disk footprint at the cost of
+		 * losing true retina sharpness on HiDPI displays — the browser
+		 * will still upscale the 1× PNG, but labels and road lines will
+		 * look softer than a native 2× render. Default true.
+		 *
+		 * @since 1.0.0
+		 *
+		 * @param bool $enabled Whether to generate the 2× variant.
+		 */
+		return (bool) apply_filters( 'gatherpress_venue_map_generate_2x', true );
 	}
 
 	/**
@@ -1157,21 +1247,29 @@ class Venue_Map {
 	 * Mirrors {@see self::save_image()}'s filename composition so callers can
 	 * compare an existing descriptor's URL against the expected URL without
 	 * touching the filesystem. Two venues at the same address share the same
-	 * URL at matching dimensions — intentional dedupe.
+	 * URL at matching dimensions — intentional dedupe. `$density > 1` appends
+	 * the `@{density}x` suffix used by the retina variants.
 	 *
 	 * @since 1.0.0
 	 *
 	 * @param string $address Venue address string.
 	 * @param int    $zoom    Map zoom level.
-	 * @param int    $width   Output width.
-	 * @param int    $height  Output height.
+	 * @param int    $width   Output width (at density 1).
+	 * @param int    $height  Output height (at density 1).
+	 * @param int    $density Pixel-density multiplier. 1 = standard, 2 = retina.
 	 * @return string Full public URL for the PNG.
 	 */
-	protected function build_image_url( string $address, int $zoom, int $width, int $height ): string {
+	protected function build_image_url(
+		string $address,
+		int $zoom,
+		int $width,
+		int $height,
+		int $density = 1
+	): string {
 		$dirs     = wp_get_upload_dir();
 		$base_url = trailingslashit( $dirs['baseurl'] ) . self::UPLOADS_SUBDIR;
 
-		return trailingslashit( $base_url ) . $this->filename_for( $address, $zoom, $width, $height );
+		return trailingslashit( $base_url ) . $this->filename_for( $address, $zoom, $width, $height, $density );
 	}
 
 	/**
@@ -1181,17 +1279,19 @@ class Venue_Map {
 	 * so the full filename stays comfortably under the 255-byte cap common
 	 * to most filesystems. An empty or all-special-character address falls
 	 * back to `venue` so there's always something before the dimension
-	 * suffix.
+	 * suffix. `$density > 1` appends the `@{density}x` suffix used by the
+	 * retina variants, e.g. `venue-12-800-300@2x.png`.
 	 *
 	 * @since 1.0.0
 	 *
 	 * @param string $address Venue address.
 	 * @param int    $zoom    Map zoom level.
-	 * @param int    $width   Output width.
-	 * @param int    $height  Output height.
+	 * @param int    $width   Output width (at density 1).
+	 * @param int    $height  Output height (at density 1).
+	 * @param int    $density Pixel-density multiplier. 1 = standard, 2 = retina.
 	 * @return string Filename including the `.png` extension.
 	 */
-	protected function filename_for( string $address, int $zoom, int $width, int $height ): string {
+	protected function filename_for( string $address, int $zoom, int $width, int $height, int $density = 1 ): string {
 		// `sanitize_title()` URL-slugifies; pass the result through
 		// `sanitize_file_name()` as defense-in-depth so any path-sensitive
 		// characters that slip past (or future changes to sanitize_title's
@@ -1206,7 +1306,9 @@ class Venue_Map {
 			$slug = substr( $slug, 0, 150 );
 		}
 
-		return sprintf( '%s-%d-%d-%d.png', $slug, $zoom, $width, $height );
+		$suffix = $density > 1 ? sprintf( '@%dx', $density ) : '';
+
+		return sprintf( '%s-%d-%d-%d%s.png', $slug, $zoom, $width, $height, $suffix );
 	}
 
 	/**
@@ -1256,14 +1358,22 @@ class Venue_Map {
 	 * bounds intersect the canvas window, and copies each into its correct
 	 * pixel offset. Caller is responsible for `imagedestroy()` on the result.
 	 *
+	 * At `$density > 1` the method produces a retina variant: tiles are
+	 * fetched at `zoom + log2($density)` (so a 2× pass uses `zoom + 1` tiles)
+	 * and the canvas is sized at `$width * $density` × `$height * $density`.
+	 * That's true retina detail — the denser zoom level renders labels and
+	 * road lines at native 2× resolution rather than just upscaling the 1×
+	 * tile set. `$density` must be a power of two.
+	 *
 	 * @since 1.0.0
 	 *
-	 * @param float  $lat    Latitude in degrees.
-	 * @param float  $lng    Longitude in degrees.
-	 * @param int    $zoom   Zoom level (same zoom Leaflet would use for the same CSS viewport).
-	 * @param int    $width  Output pixel width.
-	 * @param int    $height Output pixel height.
-	 * @param string $tiles  Tile URL template.
+	 * @param float  $lat     Latitude in degrees.
+	 * @param float  $lng     Longitude in degrees.
+	 * @param int    $zoom    Zoom level (same zoom Leaflet would use for the same CSS viewport).
+	 * @param int    $width   Output pixel width at density 1.
+	 * @param int    $height  Output pixel height at density 1.
+	 * @param string $tiles   Tile URL template.
+	 * @param int    $density Pixel-density multiplier. 1 = standard, 2 = retina.
 	 * @return \GdImage|resource|null Composited image, or null when GD is unavailable.
 	 *                                GdImage on PHP 8+, resource on PHP 7.4.
 	 */
@@ -1273,29 +1383,41 @@ class Venue_Map {
 		int $zoom,
 		int $width,
 		int $height,
-		string $tiles
+		string $tiles,
+		int $density = 1
 	) {
 		// PHP built without the GD extension. Can't simulate in a unit test without making the runtime itself broken.
 		if ( ! function_exists( 'imagecreatetruecolor' ) ) { // @codeCoverageIgnore
 			return null; // @codeCoverageIgnore
 		}
 
-		$venue_world_x = $this->lng_to_world_pixel( $lng, $zoom );
-		$venue_world_y = $this->lat_to_world_pixel( $lat, $zoom );
+		$density = max( 1, $density );
 
-		$left_pixel = (int) round( $venue_world_x - $width / 2 );
-		$top_pixel  = (int) round( $venue_world_y - $height / 2 );
+		// Tile zoom climbs with density so the retina variant renders true
+		// zoom+1 detail (sharp labels and lines) rather than upscaled 1×
+		// pixels. For the only values we currently support (1, 2) this
+		// resolves to zoom or zoom+1.
+		$tile_zoom = $zoom + (int) log( $density, 2 );
+
+		$canvas_width  = $width * $density;
+		$canvas_height = $height * $density;
+
+		$venue_world_x = $this->lng_to_world_pixel( $lng, $tile_zoom );
+		$venue_world_y = $this->lat_to_world_pixel( $lat, $tile_zoom );
+
+		$left_pixel = (int) round( $venue_world_x - $canvas_width / 2 );
+		$top_pixel  = (int) round( $venue_world_y - $canvas_height / 2 );
 
 		$left_tile   = (int) floor( $left_pixel / self::TILE_SIZE );
 		$top_tile    = (int) floor( $top_pixel / self::TILE_SIZE );
-		$right_tile  = (int) floor( ( $left_pixel + $width - 1 ) / self::TILE_SIZE );
-		$bottom_tile = (int) floor( ( $top_pixel + $height - 1 ) / self::TILE_SIZE );
+		$right_tile  = (int) floor( ( $left_pixel + $canvas_width - 1 ) / self::TILE_SIZE );
+		$bottom_tile = (int) floor( ( $top_pixel + $canvas_height - 1 ) / self::TILE_SIZE );
 
-		$canvas = imagecreatetruecolor( $width, $height );
+		$canvas = imagecreatetruecolor( $canvas_width, $canvas_height );
 
 		// Background: neutral gray so missing tiles blend rather than glaring black.
 		$bg = imagecolorallocate( $canvas, 238, 238, 238 );
-		imagefilledrectangle( $canvas, 0, 0, $width - 1, $height - 1, $bg );
+		imagefilledrectangle( $canvas, 0, 0, $canvas_width - 1, $canvas_height - 1, $bg );
 
 		/**
 		 * Filter the wall-clock budget (in seconds) for a single
@@ -1324,7 +1446,7 @@ class Venue_Map {
 					break 2;
 				}
 
-				$tile_png = $this->fetch_tile( $zoom, $tx, $ty, $tiles );
+				$tile_png = $this->fetch_tile( $tile_zoom, $tx, $ty, $tiles );
 
 				if ( null === $tile_png ) {
 					continue;
@@ -1350,22 +1472,31 @@ class Venue_Map {
 	/**
 	 * Draw a simple pin marker at the given pixel coordinates.
 	 *
+	 * Passing `$scale > 1` proportionally scales the marker's three concentric
+	 * ellipses so a retina (2×) composite keeps the marker visually the same
+	 * size as the 1× render rather than shrinking to a pinprick.
+	 *
 	 * @since 1.0.0
 	 *
 	 * @param \GdImage|resource $canvas Destination canvas (GdImage on PHP 8+, resource on PHP 7.4).
 	 * @param int               $x      Pixel X position (marker center).
 	 * @param int               $y      Pixel Y position (marker center).
+	 * @param float             $scale  Multiplier applied to the marker radii. 1.0 keeps the original size.
 	 * @return void
 	 */
-	public function stamp_marker( $canvas, int $x, int $y ): void {
+	public function stamp_marker( $canvas, int $x, int $y, float $scale = 1.0 ): void {
 		$white = imagecolorallocate( $canvas, 255, 255, 255 );
 		$red   = imagecolorallocate( $canvas, 220, 53, 69 );
 		$dark  = imagecolorallocate( $canvas, 30, 30, 30 );
 
-		imagefilledellipse( $canvas, $x, $y, 20, 20, $white );
-		imagefilledellipse( $canvas, $x, $y, 16, 16, $red );
-		imageellipse( $canvas, $x, $y, 16, 16, $dark );
-		imagefilledellipse( $canvas, $x, $y, 6, 6, $white );
+		$outer = max( 1, (int) round( 20 * $scale ) );
+		$inner = max( 1, (int) round( 16 * $scale ) );
+		$dot   = max( 1, (int) round( 6 * $scale ) );
+
+		imagefilledellipse( $canvas, $x, $y, $outer, $outer, $white );
+		imagefilledellipse( $canvas, $x, $y, $inner, $inner, $red );
+		imageellipse( $canvas, $x, $y, $inner, $inner, $dark );
+		imagefilledellipse( $canvas, $x, $y, $dot, $dot, $white );
 	}
 
 	/**
@@ -1382,11 +1513,19 @@ class Venue_Map {
 	 * @param \GdImage|resource $image   The finished composite (GdImage on PHP 8+, resource on PHP 7.4).
 	 * @param string            $address Venue address (slugified for the filename).
 	 * @param int               $zoom    Map zoom level.
-	 * @param int               $width   Output width.
-	 * @param int               $height  Output height.
+	 * @param int               $width   Output width (at density 1).
+	 * @param int               $height  Output height (at density 1).
+	 * @param int               $density Pixel-density multiplier. 1 = standard, 2 = retina.
 	 * @return string|null Public URL of the saved file, or null on failure.
 	 */
-	public function save_image( $image, string $address, int $zoom, int $width, int $height ): ?string {
+	public function save_image(
+		$image,
+		string $address,
+		int $zoom,
+		int $width,
+		int $height,
+		int $density = 1
+	): ?string {
 		$dirs = wp_get_upload_dir();
 
 		if ( ! empty( $dirs['error'] ) ) {
@@ -1401,7 +1540,7 @@ class Venue_Map {
 			return null; // @codeCoverageIgnore
 		}
 
-		$filename = $this->filename_for( $address, $zoom, $width, $height );
+		$filename = $this->filename_for( $address, $zoom, $width, $height, $density );
 		$path     = trailingslashit( $base_dir ) . $filename;
 		$url      = trailingslashit( $base_url ) . $filename;
 

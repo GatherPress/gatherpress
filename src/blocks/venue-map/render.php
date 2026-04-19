@@ -65,7 +65,7 @@ $gatherpress_scale           = in_array( $gatherpress_scale_candidate, Venue_Map
 	? $gatherpress_scale_candidate
 	: Venue_Map::DEFAULT_SCALE;
 
-$gatherpress_static_map_url = Venue_Map::get_instance()->get_url_for_post(
+$gatherpress_static_map_descriptor = Venue_Map::get_instance()->get_descriptor_for_post(
 	$gatherpress_post_id,
 	$gatherpress_post_type,
 	$gatherpress_zoom,
@@ -73,6 +73,13 @@ $gatherpress_static_map_url = Venue_Map::get_instance()->get_url_for_post(
 	$gatherpress_raw_height,
 	$gatherpress_ratio
 );
+
+$gatherpress_static_map_url    = null !== $gatherpress_static_map_descriptor
+	? $gatherpress_static_map_descriptor['url']
+	: '';
+$gatherpress_static_map_url_2x = null !== $gatherpress_static_map_descriptor
+	? $gatherpress_static_map_descriptor['url_2x']
+	: '';
 
 // Hydration data sits on the outer wrapper so view.js can replace the
 // wrapper's children with a live Leaflet map (the `<img>` inside is a void
@@ -180,12 +187,27 @@ if ( '' !== $gatherpress_static_map_url ) {
 		);
 	}
 
-	printf(
-		'<img class="gatherpress-venue-map__image" src="%s" alt="%s" loading="lazy" style="object-fit:%s;" />',
-		esc_url( $gatherpress_static_map_url ),
-		esc_attr( $gatherpress_alt ),
-		esc_attr( $gatherpress_scale )
-	);
+	// Emit `srcset` only when the retina variant is actually present —
+	// pre-retina descriptors and sites that filtered the 2× off keep the
+	// existing plain `src` output so the browser doesn't try to resolve
+	// an empty 2× URL.
+	if ( '' !== $gatherpress_static_map_url_2x ) {
+		printf(
+			'<img class="gatherpress-venue-map__image" src="%s" srcset="%s 1x, %s 2x" alt="%s" loading="lazy" style="object-fit:%s;" />',
+			esc_url( $gatherpress_static_map_url ),
+			esc_url( $gatherpress_static_map_url ),
+			esc_url( $gatherpress_static_map_url_2x ),
+			esc_attr( $gatherpress_alt ),
+			esc_attr( $gatherpress_scale )
+		);
+	} else {
+		printf(
+			'<img class="gatherpress-venue-map__image" src="%s" alt="%s" loading="lazy" style="object-fit:%s;" />',
+			esc_url( $gatherpress_static_map_url ),
+			esc_attr( $gatherpress_alt ),
+			esc_attr( $gatherpress_scale )
+		);
+	}
 
 	if ( '' !== $gatherpress_href ) {
 		echo '</a>';
