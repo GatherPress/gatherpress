@@ -446,4 +446,30 @@ describe( 'usePlaceholderPolling', () => {
 		jest.advanceTimersByTime( POLL_INTERVAL_MS * 3 );
 		expect( mockInvalidateResolution ).toHaveBeenCalledTimes( 1 );
 	} );
+
+	it( 'restarts cleanly with a fresh poll count when venuePostId changes', () => {
+		const { rerender } = render( <Harness { ...activeProps } /> );
+
+		// Run halfway to the MAX_POLLS cap against venue 42.
+		jest.advanceTimersByTime( POLL_INTERVAL_MS * ( MAX_POLLS / 2 ) );
+		expect( mockInvalidateResolution ).toHaveBeenCalledTimes(
+			MAX_POLLS / 2
+		);
+
+		// Switch to a new venue — the interval should tear down and restart
+		// with a fresh pollCount targeting the new ID, not inherit the
+		// old counter (which would cap polling prematurely).
+		rerender( <Harness { ...activeProps } venuePostId={ 99 } /> );
+
+		// Drive another full MAX_POLLS cycle against venue 99; all should
+		// fire with the new ID and then cap out.
+		jest.advanceTimersByTime( POLL_INTERVAL_MS * ( MAX_POLLS + 2 ) );
+		expect( mockInvalidateResolution ).toHaveBeenCalledTimes(
+			( MAX_POLLS / 2 ) + MAX_POLLS
+		);
+		expect( mockInvalidateResolution ).toHaveBeenLastCalledWith(
+			'getEntityRecord',
+			[ 'postType', 'gatherpress_venue', 99 ]
+		);
+	} );
 } );

@@ -292,17 +292,23 @@ export const usePlaceholderPolling = ( {
 		let pollCount = 0;
 		const interval = setInterval( () => {
 			pollCount += 1;
-			if ( pollCount > MAX_POLLS ) {
-				clearInterval( interval );
-				return;
-			}
 			invalidateResolution( 'getEntityRecord', [
 				'postType',
 				venuePostType,
 				venuePostId,
 			] );
+			// Stop on the MAX_POLLS'th tick rather than letting a (MAX_POLLS + 1)th
+			// tick fire just to clear — matches the cap literally.
+			if ( pollCount >= MAX_POLLS ) {
+				clearInterval( interval );
+			}
 		}, POLL_INTERVAL_MS );
 
 		return () => clearInterval( interval );
-	}, [ active, venuePostId, venuePostType, invalidateResolution ] );
+		// `invalidateResolution` is a bound dispatch action; @wordpress/data
+		// returns a stable reference for it across renders, so omitting it
+		// from the deps is safe and avoids a spurious restart-on-rerender
+		// if that contract ever regresses.
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [ active, venuePostId, venuePostType ] );
 };
