@@ -45,6 +45,7 @@
 
 - [`gatherpress_map_tile_attribution`](gatherpress_map_tile_attribution.md) Filters the attribution HTML rendered with the venue map.
 - [`gatherpress_map_tile_url`](gatherpress_map_tile_url.md) Filters the Leaflet tile layer URL used by the venue map.
+- [`gatherpress_network_is_option_inherited`](gatherpress_network_is_option_inherited.md) Filters whether a specific GatherPress option is inherited from the network.
 - [`gatherpress_sub_pages`](gatherpress_sub_pages.md) Filters the list of GatherPress sub pages.
 
 ## class-setup.php
@@ -78,6 +79,6 @@
 
 - [`gatherpress_venue_post_type`](gatherpress_venue_post_type.md) Filters the post type used as the venue.
 
-## index.php
+## network-page.php
 
-- [`gatherpress_settings_section`](gatherpress_settings_section.md)
+- [`gatherpress_settings_section`](gatherpress_settings_section.md) Fires so tabs that render via the GatherPress settings section action
