@@ -96,7 +96,7 @@ class Tools extends Base {
 
 			Utility::render_template(
 				sprintf( '%s/includes/templates/admin/settings/tools.php', GATHERPRESS_CORE_PATH ),
-				array(),
+				array( 'scope' => is_network_admin() ? 'network' : 'blog' ),
 				true
 			);
 		}
@@ -112,7 +112,9 @@ class Tools extends Base {
 	 * @return void
 	 */
 	public function ajax_export(): void {
-		if ( ! current_user_can( 'manage_options' ) ) {
+		$scope = $this->resolve_scope();
+
+		if ( ! current_user_can( $this->capability_for_scope( $scope ) ) ) {
 			wp_send_json_error(
 				array( 'message' => __( 'Permission denied.', 'gatherpress' ) )
 			);
@@ -122,7 +124,33 @@ class Tools extends Base {
 
 		$settings = Settings::get_instance();
 
-		wp_send_json_success( $settings->export_settings() );
+		wp_send_json_success( $settings->export_settings( $scope ) );
+	}
+
+	/**
+	 * Resolve the storage scope from the AJAX POST.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return string 'network' or 'blog'.
+	 */
+	protected function resolve_scope(): string {
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- nonce checked elsewhere in the handler.
+		$raw = isset( $_POST['scope'] ) ? sanitize_key( wp_unslash( $_POST['scope'] ) ) : 'blog';
+
+		return 'network' === $raw ? 'network' : 'blog';
+	}
+
+	/**
+	 * Minimum capability required to act in the given scope.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $scope 'network' or 'blog'.
+	 * @return string
+	 */
+	protected function capability_for_scope( string $scope ): string {
+		return 'network' === $scope ? 'manage_network_options' : 'manage_options';
 	}
 
 	/**
@@ -136,7 +164,9 @@ class Tools extends Base {
 	 * @return void
 	 */
 	public function ajax_import(): void {
-		if ( ! current_user_can( 'manage_options' ) ) {
+		$scope = $this->resolve_scope();
+
+		if ( ! current_user_can( $this->capability_for_scope( $scope ) ) ) {
 			wp_send_json_error(
 				array( 'message' => __( 'Permission denied.', 'gatherpress' ) )
 			);
@@ -168,7 +198,7 @@ class Tools extends Base {
 		}
 
 		$settings = Settings::get_instance();
-		$result   = $settings->import_settings( $data, $mode );
+		$result   = $settings->import_settings( $data, $mode, $scope );
 
 		if ( $result['success'] ) {
 			wp_send_json_success( $result );

@@ -482,11 +482,14 @@ class Settings {
 	 * to the same state. Consumers rely on `get_flat_default()` as the
 	 * authoritative source of defaults in both read paths.
 	 *
-	 * @param array $field_type_map Flat map of option_key => field_type.
+	 * @param array  $field_type_map Flat map of option_key => field_type.
+	 * @param string $scope          Storage scope: 'blog' (default) or 'network'.
+	 *                               Determines which option store the closure
+	 *                               reads from when merging with existing values.
 	 * @return callable A callback function that sanitizes input based on field types.
 	 */
-	public function sanitize_page_settings( array $field_type_map ): callable {
-		return function ( $input ) use ( $field_type_map ): array {
+	public function sanitize_page_settings( array $field_type_map, string $scope = 'blog' ): callable {
+		return function ( $input ) use ( $field_type_map, $scope ): array {
 			$sanitized = array();
 
 			foreach ( $input as $key => $value ) {
@@ -517,7 +520,7 @@ class Settings {
 			}
 
 			// Merge with existing values to preserve settings from other tabs.
-			$existing = get_option( self::OPTION_NAME, array() );
+			$existing = $this->read_stored_options( $scope );
 			$merged   = array_merge( $existing, $sanitized );
 
 			// Remove values that match their defaults to keep the option lean.
@@ -1021,14 +1024,69 @@ class Settings {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @return array Export data with version, timestamp, and settings.
+	 * @param string $scope Storage scope: 'blog' (default) or 'network'.
+	 *                      'network' reads the network-wide site option,
+	 *                      used when exporting from Network Admin.
+	 * @return array Export data with version, timestamp, scope, and settings.
 	 */
-	public function export_settings(): array {
+	public function export_settings( string $scope = 'blog' ): array {
 		return array(
 			'version'     => GATHERPRESS_VERSION,
 			'exported_at' => current_time( 'c' ),
-			'settings'    => get_option( self::OPTION_NAME, array() ),
+			'scope'       => $scope,
+			'settings'    => $this->read_stored_options( $scope ),
 		);
+	}
+
+	/**
+	 * Read the stored settings option in the given storage scope.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $scope Storage scope: 'blog' or 'network'.
+	 * @return array
+	 */
+	protected function read_stored_options( string $scope ): array {
+		if ( 'network' === $scope ) {
+			return (array) get_site_option( self::OPTION_NAME, array() );
+		}
+
+		return (array) get_option( self::OPTION_NAME, array() );
+	}
+
+	/**
+	 * Write the stored settings option in the given storage scope.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $scope   Storage scope: 'blog' or 'network'.
+	 * @param array  $options Options array to persist.
+	 * @return void
+	 */
+	protected function write_stored_options( string $scope, array $options ): void {
+		if ( 'network' === $scope ) {
+			update_site_option( self::OPTION_NAME, $options );
+			return;
+		}
+
+		update_option( self::OPTION_NAME, $options );
+	}
+
+	/**
+	 * Delete the stored settings option in the given storage scope.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $scope Storage scope: 'blog' or 'network'.
+	 * @return void
+	 */
+	protected function delete_stored_options( string $scope ): void {
+		if ( 'network' === $scope ) {
+			delete_site_option( self::OPTION_NAME );
+			return;
+		}
+
+		delete_option( self::OPTION_NAME );
 	}
 
 	/**
@@ -1039,10 +1097,11 @@ class Settings {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param array $data The parsed import data.
+	 * @param array  $data  The parsed import data.
+	 * @param string $scope Storage scope: 'blog' (default) or 'network'.
 	 * @return array Validation result with 'valid', 'changes', 'unknown', and 'warnings' keys.
 	 */
-	public function validate_import( array $data ): array {
+	public function validate_import( array $data, string $scope = 'blog' ): array {
 		$result = array(
 			'valid'    => true,
 			'changes'  => array(),
@@ -1070,7 +1129,7 @@ class Settings {
 		}
 
 		$field_type_map = $this->build_field_type_map( $this->get_sub_pages() );
-		$current        = get_option( self::OPTION_NAME, array() );
+		$current        = $this->read_stored_options( $scope );
 
 		foreach ( $data['settings'] as $key => $value ) {
 			if ( ! isset( $field_type_map[ $key ] ) ) {
@@ -1096,11 +1155,12 @@ class Settings {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param array  $data The parsed import data.
-	 * @param string $mode Import mode: 'merge' or 'replace'.
+	 * @param array  $data  The parsed import data.
+	 * @param string $mode  Import mode: 'merge' or 'replace'.
+	 * @param string $scope Storage scope: 'blog' (default) or 'network'.
 	 * @return array Result with 'success', 'imported', 'skipped', and 'warnings' keys.
 	 */
-	public function import_settings( array $data, string $mode = 'merge' ): array {
+	public function import_settings( array $data, string $mode = 'merge', string $scope = 'blog' ): array {
 		$result = array(
 			'success'  => false,
 			'imported' => array(),
@@ -1108,7 +1168,7 @@ class Settings {
 			'warnings' => array(),
 		);
 
-		$validation = $this->validate_import( $data );
+		$validation = $this->validate_import( $data, $scope );
 
 		if ( ! $validation['valid'] ) {
 			$result['warnings'] = $validation['warnings'];
@@ -1120,7 +1180,7 @@ class Settings {
 		$result['skipped']  = $validation['unknown'];
 
 		$field_type_map = $this->build_field_type_map( $this->get_sub_pages() );
-		$sanitize       = $this->sanitize_page_settings( $field_type_map );
+		$sanitize       = $this->sanitize_page_settings( $field_type_map, $scope );
 
 		// Filter to only known keys.
 		$to_import = array_intersect_key(
@@ -1131,12 +1191,16 @@ class Settings {
 		// Sanitize imported values.
 		if ( 'replace' === $mode ) {
 			// Replace mode: clear existing, only use imported values.
-			delete_option( self::OPTION_NAME );
+			$this->delete_stored_options( $scope );
 		}
 
 		$sanitized = $sanitize( $to_import );
 
-		update_option( self::OPTION_NAME, $sanitized );
+		$this->write_stored_options( $scope, $sanitized );
+
+		if ( 'network' === $scope ) {
+			Network::flush_config_cache();
+		}
 
 		$result['success']  = true;
 		$result['imported'] = array_keys( $to_import );

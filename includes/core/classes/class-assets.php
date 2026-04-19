@@ -91,7 +91,6 @@ class Assets {
 		add_action( 'wp_head', array( $this, 'add_interactivity_state' ) );
 		// Set priority to 11 to not conflict with media modal.
 		add_action( 'admin_footer', array( $this, 'event_communication_modal' ), 11 );
-
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_timezone_shim' ) );
 		add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_timezone_shim' ) );
 
@@ -125,23 +124,15 @@ class Assets {
 			return;
 		}
 
+		$script_path = GATHERPRESS_CORE_PATH . '/includes/templates/admin/timezone-shim.js';
+
+		if ( ! file_exists( $script_path ) ) {
+			return; // @codeCoverageIgnore -- template ships with the plugin.
+		}
+
 		wp_enqueue_script( 'wp-date' );
-		wp_add_inline_script(
-			'wp-date',
-			// Keep the shim tight — it runs on every admin and front-end request.
-			// Only acts when the default timezone is literally `UTC+0` / `UTC-0`.
-			'( function () {'
-			. ' if ( ! window.wp || ! window.wp.date ) { return; }'
-			. ' if ( "function" !== typeof window.wp.date.getSettings ) { return; }'
-			. ' var settings = window.wp.date.getSettings();'
-			. ' if ( ! settings || ! settings.timezone || ! settings.timezone.string ) { return; }'
-			. ' if ( /^UTC[+-]0$/.test( settings.timezone.string ) ) {'
-			. '  settings.timezone.string = "UTC";'
-			. '  window.wp.date.setSettings( settings );'
-			. ' }'
-			. '} )();',
-			'after'
-		);
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Reading a plugin-local static file.
+		wp_add_inline_script( 'wp-date', file_get_contents( $script_path ), 'after' );
 	}
 
 	/**

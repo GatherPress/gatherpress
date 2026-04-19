@@ -73,6 +73,15 @@ class Network {
 	const VALUES_EDIT_ACTION  = 'gatherpress_network_values';
 
 	/**
+	 * Capability required for any network-scope GatherPress action:
+	 * viewing/saving the Network Admin Settings page, importing or
+	 * exporting network values, etc.
+	 *
+	 * @since 1.0.0
+	 */
+	const CAPABILITY = 'manage_network_options';
+
+	/**
 	 * Per-request cache for get_config() — see get_config() for rationale.
 	 *
 	 * @since 1.0.0
@@ -192,7 +201,7 @@ class Network {
 
 		// Append the network-admin link only for users who can actually
 		// follow it — regular site admins would hit a dead end.
-		if ( current_user_can( 'manage_network_options' ) ) {
+		if ( current_user_can( self::CAPABILITY ) ) {
 			$link = sprintf(
 				'<a href="%s">%s</a>',
 				esc_url(
@@ -231,7 +240,7 @@ class Network {
 			'settings.php',
 			__( 'GatherPress Network Settings', 'gatherpress' ),
 			__( 'GatherPress', 'gatherpress' ),
-			'manage_network_options',
+			self::CAPABILITY,
 			self::PAGE_SLUG,
 			array( $this, 'render_page' )
 		);
@@ -309,7 +318,7 @@ class Network {
 	 * @return void
 	 */
 	public function render_page(): void {
-		if ( ! current_user_can( 'manage_network_options' ) ) {
+		if ( ! current_user_can( self::CAPABILITY ) ) {
 			wp_die( esc_html__( 'You do not have permission to access this page.', 'gatherpress' ) );
 		}
 
@@ -337,8 +346,6 @@ class Network {
 	 */
 	protected function get_network_sub_pages(): array {
 		$sub_pages = Settings::get_instance()->get_sub_pages();
-
-		unset( $sub_pages['tools'] );
 
 		$sub_pages[ self::NETWORK_TAB ] = array(
 			'name'     => __( 'Network', 'gatherpress' ),
@@ -379,7 +386,7 @@ class Network {
 	 * @return void
 	 */
 	public function handle_save(): void {
-		if ( ! current_user_can( 'manage_network_options' ) ) {
+		if ( ! current_user_can( self::CAPABILITY ) ) {
 			wp_die( esc_html__( 'You do not have permission to perform this action.', 'gatherpress' ) );
 		}
 
@@ -417,7 +424,7 @@ class Network {
 	 * @return void
 	 */
 	public function handle_values_save(): void {
-		if ( ! current_user_can( 'manage_network_options' ) ) {
+		if ( ! current_user_can( self::CAPABILITY ) ) {
 			wp_die( esc_html__( 'You do not have permission to perform this action.', 'gatherpress' ) );
 		}
 

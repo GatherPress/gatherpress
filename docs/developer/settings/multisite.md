@@ -7,9 +7,9 @@ On a WordPress Multisite install, GatherPress can expose settings at the network
 Two separate surfaces render the Settings form:
 
 - **Per-site** (unchanged) — `Dashboard → Events → Settings` on each site. Writes to the site's own `gatherpress_settings` blog option.
-- **Network-wide** (new) — `Network Admin → Settings → GatherPress`. Renders the same Events / Venues / Roles / RSVP / Credits tabs plus an additional **Network** tab. Writes to the network-wide `gatherpress_settings` *site* option via `update_site_option()`. Requires the `manage_network_options` capability.
+- **Network-wide** (new) — `Network Admin → Settings → GatherPress`. Renders the same Events / Venues / Roles / RSVP / Credits / Tools tabs plus an additional **Network** tab. Writes to the network-wide `gatherpress_settings` *site* option via `update_site_option()`. Requires the `manage_network_options` capability.
 
-The Tools tab (import / export) stays per-site only — import / export is blog-scoped.
+The Tools tab (import / export) is available at both scopes. In per-site admin it operates on the blog option; in network admin it reads and writes the network-wide site option. A hidden `scope` value on the Tools form (and in the `gatherpress_export_settings` / `gatherpress_import_settings` AJAX payload) tells the handler which store to target, and capability is gated per-scope (`manage_options` for blog, `manage_network_options` for network).
 
 ## The Network Tab
 
@@ -84,3 +84,10 @@ Returning `true` forces inheritance for an option that wasn't in the allowlist. 
 
 - Viewing and saving the Network Admin → Settings → GatherPress page requires `manage_network_options`. The save handlers (`network_admin_edit_gatherpress_network_settings` and `network_admin_edit_gatherpress_network_values`) re-check the capability and a per-action nonce.
 - Per-site Settings pages remain gated by the existing `manage_options` capability.
+- The Tools tab's AJAX handlers (`gatherpress_export_settings` / `gatherpress_import_settings`) scope the required capability to match the requested store: `manage_options` for a blog-scoped export/import, `manage_network_options` for a network-scoped one.
+
+## Import / Export Scope
+
+`Settings::export_settings()`, `Settings::validate_import()`, and `Settings::import_settings()` each accept a trailing `string $scope = 'blog'` parameter. When `'network'` is passed, the methods read from and write to the network-wide site option instead of the blog option, and `import_settings()` flushes `Network::get_config()` so subsequent reads see the new values.
+
+The JSON produced by `export_settings()` includes a `"scope"` field so an import can be routed to the right store even if the operator picks the wrong UI by accident. The Tools template and its AJAX handlers use the current screen (`is_network_admin()`) to set the scope when the tab is rendered at network admin.

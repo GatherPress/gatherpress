@@ -357,4 +357,95 @@ class Test_Tools extends Base_Ajax {
 			unset( $_POST['nonce'], $_POST['settings_json'] );
 		}
 	}
+
+	/**
+	 * Coverage for ajax_export in the network scope — reads the network
+	 * site option rather than the blog option.
+	 *
+	 * @covers ::ajax_export
+	 * @covers ::resolve_scope
+	 * @covers ::capability_for_scope
+	 *
+	 * @group   multisite
+	 *
+	 * @return void
+	 */
+	public function test_ajax_export_network_scope(): void {
+		if ( ! is_multisite() ) {
+			$this->markTestSkipped( 'Requires multisite.' );
+		}
+
+		$user_id = $this->factory()->user->create( array( 'role' => 'administrator' ) );
+		grant_super_admin( $user_id );
+		wp_set_current_user( $user_id );
+
+		update_site_option( 'gatherpress_settings', array( 'map_platform' => 'google' ) );
+
+		$_POST['nonce'] = wp_create_nonce( 'gatherpress_tools_nonce' );
+		$_POST['scope'] = 'network';
+
+		$response = $this->do_ajax( 'gatherpress_export_settings' );
+
+		$this->assertTrue( $response->success, 'Network-scope export should succeed.' );
+		$this->assertSame( 'network', $response->data->scope, 'Response should reflect network scope.' );
+		$this->assertSame(
+			'google',
+			$response->data->settings->map_platform,
+			'Exported value should come from the site option.'
+		);
+
+		delete_site_option( 'gatherpress_settings' );
+		revoke_super_admin( $user_id );
+		wp_delete_user( $user_id );
+		unset( $_POST['nonce'], $_POST['scope'] );
+	}
+
+	/**
+	 * Coverage for ajax_import in the network scope — writes to the site
+	 * option, not the blog option, and flushes the Network config cache.
+	 *
+	 * @covers ::ajax_import
+	 * @covers ::resolve_scope
+	 *
+	 * @group   multisite
+	 *
+	 * @return void
+	 */
+	public function test_ajax_import_network_scope(): void {
+		if ( ! is_multisite() ) {
+			$this->markTestSkipped( 'Requires multisite.' );
+		}
+
+		$user_id = $this->factory()->user->create( array( 'role' => 'administrator' ) );
+		grant_super_admin( $user_id );
+		wp_set_current_user( $user_id );
+
+		$payload = array(
+			'version'     => '1.0.0',
+			'exported_at' => '2026-01-01T00:00:00Z',
+			'scope'       => 'network',
+			'settings'    => array( 'map_platform' => 'google' ),
+		);
+
+		$_POST['nonce']         = wp_create_nonce( 'gatherpress_tools_nonce' );
+		$_POST['scope']         = 'network';
+		$_POST['settings_json'] = wp_json_encode( $payload );
+		$_POST['import_mode']   = 'merge';
+
+		$response = $this->do_ajax( 'gatherpress_import_settings' );
+
+		$this->assertTrue( $response->success, 'Network-scope import should succeed.' );
+
+		$stored = get_site_option( 'gatherpress_settings' );
+		$this->assertSame(
+			'google',
+			$stored['map_platform'] ?? null,
+			'Imported value should be written to the site option.'
+		);
+
+		delete_site_option( 'gatherpress_settings' );
+		revoke_super_admin( $user_id );
+		wp_delete_user( $user_id );
+		unset( $_POST['nonce'], $_POST['scope'], $_POST['settings_json'], $_POST['import_mode'] );
+	}
 }

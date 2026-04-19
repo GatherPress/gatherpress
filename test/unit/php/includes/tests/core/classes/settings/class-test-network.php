@@ -316,13 +316,15 @@ class Test_Network extends Base {
 	}
 
 	/**
-	 * Coverage for get_network_sub_pages — drops Tools and injects Network tab.
+	 * Coverage for get_network_sub_pages — adds the Network tab alongside
+	 * the existing sub-pages (including Tools, which operates in network
+	 * scope at this level).
 	 *
 	 * @covers ::get_network_sub_pages
 	 *
 	 * @return void
 	 */
-	public function test_get_network_sub_pages_drops_tools_and_adds_network(): void {
+	public function test_get_network_sub_pages_adds_network_tab(): void {
 		$instance   = Network::get_instance();
 		$reflection = new ReflectionClass( $instance );
 		$method     = $reflection->getMethod( 'get_network_sub_pages' );
@@ -347,7 +349,8 @@ class Test_Network extends Base {
 		$result = $method->invoke( $instance );
 		remove_filter( 'gatherpress_sub_pages', $filter, 100 );
 
-		$this->assertArrayNotHasKey( 'tools', $result );
+		$this->assertArrayHasKey( 'events', $result );
+		$this->assertArrayHasKey( 'tools', $result );
 		$this->assertArrayHasKey( 'network', $result );
 	}
 
