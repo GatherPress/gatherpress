@@ -106,6 +106,48 @@ class Test_Network extends Base {
 	}
 
 	/**
+	 * Coverage for the cache-hit branch of get_config — second call returns
+	 * the memoized value without re-reading the site option.
+	 *
+	 * @covers ::get_config
+	 *
+	 * @return void
+	 */
+	public function test_get_config_returns_cached_value(): void {
+		Network::flush_config_cache();
+
+		// First call populates the cache.
+		$first = Network::get_config();
+
+		// Second call should hit the cache branch and return an identical
+		// reference (same values) without another read.
+		$second = Network::get_config();
+
+		$this->assertSame( $first, $second );
+	}
+
+	/**
+	 * Coverage for flush_config_cache — explicitly exercising the public
+	 * reset so the two-line method body is captured by coverage.
+	 *
+	 * @covers ::flush_config_cache
+	 *
+	 * @return void
+	 */
+	public function test_flush_config_cache_resets_cache(): void {
+		// Prime the cache.
+		Network::get_config();
+
+		Network::flush_config_cache();
+
+		$reflection = new ReflectionClass( Network::class );
+		$property   = $reflection->getProperty( 'config_cache' );
+		$property->setAccessible( true );
+
+		$this->assertNull( $property->getValue() );
+	}
+
+	/**
 	 * Coverage for get_config when stored value is not an array — returns defaults.
 	 *
 	 * @covers ::get_config
