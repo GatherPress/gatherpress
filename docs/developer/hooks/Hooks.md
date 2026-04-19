@@ -69,6 +69,7 @@
 
 - [`gatherpress_venue_map_composite_time_budget`](gatherpress_venue_map_composite_time_budget.md) Filter the wall-clock budget (in seconds) for a single
 - [`gatherpress_venue_map_descriptors`](gatherpress_venue_map_descriptors.md) Filters the parsed descriptor map for a venue.
+- [`gatherpress_venue_map_generate_2x`](gatherpress_venue_map_generate_2x.md) Filter whether to generate the retina (2×) static-map variant.
 - [`gatherpress_venue_map_height`](gatherpress_venue_map_height.md) Filter the height used when rendering the static venue map.
 - [`gatherpress_venue_map_tile_url`](gatherpress_venue_map_tile_url.md) Filter the tile URL template used by the static venue map.
 - [`gatherpress_venue_map_zoom`](gatherpress_venue_map_zoom.md) Filter the zoom level used when rendering the static venue map.
