@@ -402,7 +402,12 @@ class Setup {
 			// Load the admin-only helper when the site is created from a
 			// context that hasn't pulled it in (e.g. WP-CLI, REST, or the
 			// `wp_initialize_site` path before wp-admin bootstraps).
-			require_once ABSPATH . 'wp-admin/includes/plugin.php'; // NOSONAR.
+			$plugin_php = ABSPATH . 'wp-admin/includes/plugin.php';
+
+			if ( file_exists( $plugin_php ) ) {
+				// @phpstan-ignore requireOnce.fileNotFound
+				require_once $plugin_php; // NOSONAR.
+			}
 		}
 
 		if ( ! is_plugin_active_for_network( plugin_basename( GATHERPRESS_CORE_FILE ) ) ) {
