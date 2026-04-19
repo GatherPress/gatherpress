@@ -24,7 +24,7 @@ add_filter(
 
 ## Files
 
-- [includes/core/classes/class-venue-map.php:1285](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/class-venue-map.php#L1285)
+- [includes/core/classes/class-venue-map.php:1310](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/class-venue-map.php#L1310)
 ```php
 apply_filters(
 			'gatherpress_venue_map_composite_time_budget',
