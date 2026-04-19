@@ -3119,4 +3119,85 @@ class Test_Venue_Map extends Base {
 
 		$this->assertNull( $instance->get_descriptor_for_post( $post_id, 'post' ) );
 	}
+
+	/**
+	 * Walks event → linked venue when called with an event post ID, mirroring
+	 * the same resolution path `get_url_for_post()` used before the
+	 * descriptor refactor. Locks the event-side branch in so a regression
+	 * can't silently reduce `get_descriptor_for_post()` to venue-only input.
+	 *
+	 * @covers ::get_descriptor_for_post
+	 *
+	 * @return void
+	 */
+	public function test_get_descriptor_for_post_resolves_event_via_linked_venue(): void {
+		$instance    = Venue_Map::get_instance();
+		$venue_setup = \GatherPress\Core\Venue_Setup::get_instance();
+
+		$venue = $this->mock->post(
+			array(
+				'post_type'  => Venue::POST_TYPE,
+				'post_name'  => 'venue-for-descriptor-helper',
+				'post_title' => 'Venue For Descriptor Helper',
+			)
+		)->get();
+
+		$event = $this->mock->post(
+			array(
+				'post_type' => \GatherPress\Core\Event::POST_TYPE,
+				'post_name' => 'event-for-descriptor-helper',
+			)
+		)->get();
+
+		$term_slug = $venue_setup->term_slug_from_post_name( $venue->post_name );
+		wp_set_post_terms( $event->ID, $term_slug, Venue::TAXONOMY );
+
+		update_post_meta(
+			$venue->ID,
+			'gatherpress_venue_information',
+			wp_json_encode(
+				array(
+					'fullAddress' => '1 Infinite Loop',
+					'latitude'    => '37.3318',
+					'longitude'   => '-122.0312',
+				)
+			)
+		);
+		$instance->maybe_generate( $venue->ID );
+
+		$expected = $instance->get_stored_descriptor( $venue->ID );
+		$actual   = $instance->get_descriptor_for_post( $event->ID, \GatherPress\Core\Event::POST_TYPE );
+
+		$this->assertIsArray( $actual );
+		$this->assertSame( $expected['url'], $actual['url'] );
+		$this->assertSame( $expected['url_2x'], $actual['url_2x'] );
+	}
+
+	/**
+	 * Returns null when the resolved venue has no parsable coordinates —
+	 * the renderer's cue to fall through to the "coming soon" placeholder
+	 * instead of emitting an `<img>` at all.
+	 *
+	 * @covers ::get_descriptor_for_post
+	 *
+	 * @return void
+	 */
+	public function test_get_descriptor_for_post_returns_null_when_venue_has_no_coordinates(): void {
+		$instance = Venue_Map::get_instance();
+		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
+
+		add_post_meta(
+			$post_id,
+			'gatherpress_venue_information',
+			wp_json_encode(
+				array(
+					'fullAddress' => 'Somewhere',
+					'latitude'    => '',
+					'longitude'   => '',
+				)
+			)
+		);
+
+		$this->assertNull( $instance->get_descriptor_for_post( $post_id, Venue::POST_TYPE ) );
+	}
 }

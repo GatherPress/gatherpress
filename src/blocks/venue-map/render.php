@@ -193,8 +193,7 @@ if ( '' !== $gatherpress_static_map_url ) {
 	// an empty 2× URL.
 	if ( '' !== $gatherpress_static_map_url_2x ) {
 		printf(
-			'<img class="gatherpress-venue-map__image" src="%s" srcset="%s 1x, %s 2x" alt="%s" loading="lazy" style="object-fit:%s;" />',
-			esc_url( $gatherpress_static_map_url ),
+			'<img class="gatherpress-venue-map__image" src="%1$s" srcset="%1$s 1x, %2$s 2x" alt="%3$s" loading="lazy" style="object-fit:%4$s;" />',
 			esc_url( $gatherpress_static_map_url ),
 			esc_url( $gatherpress_static_map_url_2x ),
 			esc_attr( $gatherpress_alt ),
