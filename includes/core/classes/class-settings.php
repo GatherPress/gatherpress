@@ -14,6 +14,7 @@ namespace GatherPress\Core;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
+use GatherPress\Core\Settings\Network;
 use GatherPress\Core\Traits\Singleton;
 
 /**
@@ -587,9 +588,10 @@ class Settings {
 	 * @return void
 	 */
 	public function render_field( string $option, array $option_settings ): void {
-		$type  = $option_settings['field']['type'] ?? '';
-		$name  = $this->get_name_field( $option );
-		$value = $this->get( $option );
+		$type      = $option_settings['field']['type'] ?? '';
+		$name      = $this->get_name_field( $option );
+		$value     = $this->get( $option );
+		$inherited = $this->is_option_inherited( $option );
 
 		$params = array(
 			'name'        => $name,
@@ -597,6 +599,7 @@ class Settings {
 			'value'       => $value,
 			'label'       => $option_settings['field']['label'] ?? '',
 			'description' => $option_settings['description'] ?? '',
+			'disabled'    => $inherited,
 		);
 
 		switch ( $type ) {
@@ -619,11 +622,42 @@ class Settings {
 				break;
 		}
 
+		if ( $inherited ) {
+			echo '<div class="gatherpress-field-inherited" aria-disabled="true">';
+		}
+
 		Utility::render_template(
 			sprintf( '%s/includes/templates/admin/settings/fields/%s.php', GATHERPRESS_CORE_PATH, $type ),
 			$params,
 			true
 		);
+
+		if ( $inherited ) {
+			if ( current_user_can( 'manage_network_options' ) ) {
+				$inherited_message = wp_kses(
+					sprintf(
+						/* translators: %s: link to the network admin GatherPress settings page. */
+						__( 'Inherited from the %s. Edit there to change this value.', 'gatherpress' ),
+						sprintf(
+							'<a href="%s">%s</a>',
+							esc_url(
+								network_admin_url(
+									sprintf( 'settings.php?page=%s', Network::PAGE_SLUG )
+								)
+							),
+							esc_html__( 'network', 'gatherpress' )
+						)
+					),
+					array( 'a' => array( 'href' => true ) )
+				);
+			} else {
+				$inherited_message = esc_html__( 'Inherited from the network.', 'gatherpress' );
+			}
+
+			// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped via wp_kses / esc_html above.
+			echo '<p class="description gatherpress-field-inherited__note">' . $inherited_message . '</p>';
+			echo '</div>';
+		}
 	}
 
 	/**
@@ -657,12 +691,29 @@ class Settings {
 	 * gatherpress_settings option. If the option is set, its value is returned;
 	 * otherwise, the default value is returned.
 	 *
+	 * On a multisite subsite, options that are flagged as network-inherited
+	 * are read from the main site instead of the local site.
+	 *
 	 * @since 1.0.0
 	 *
 	 * @param string $option The unique name of the option to retrieve.
 	 * @return mixed The value of the option or its default value.
 	 */
 	public function get( string $option ) {
+		if ( $this->is_option_inherited( $option ) ) {
+			$network_options = get_site_option( self::OPTION_NAME, array() );
+
+			if (
+				is_array( $network_options )
+				&& isset( $network_options[ $option ] )
+				&& '' !== $network_options[ $option ]
+			) {
+				return $network_options[ $option ];
+			}
+
+			return $this->get_flat_default( $option );
+		}
+
 		$options = get_option( self::OPTION_NAME, array() );
 
 		if ( isset( $options[ $option ] ) && '' !== $options[ $option ] ) {
@@ -670,6 +721,52 @@ class Settings {
 		}
 
 		return $this->get_flat_default( $option );
+	}
+
+	/**
+	 * Whether a given option is inherited from the network.
+	 *
+	 * Returns true when we're on a subsite of a multisite install, the
+	 * network inheritance feature is enabled, and the option is listed as
+	 * inherited in the network config. The result passes through the
+	 * `gatherpress_network_is_option_inherited` filter so a companion plugin or
+	 * site-specific code can override the decision for an individual site.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $option The option key to check.
+	 * @return bool
+	 */
+	public function is_option_inherited( string $option ): bool {
+		$inherited = false;
+
+		if ( is_multisite() && ! is_main_site() ) {
+			$config = Network::get_config();
+
+			if ( ! empty( $config['enabled'] ) ) {
+				$inherited = in_array( $option, (array) ( $config['inherited'] ?? array() ), true );
+			}
+		}
+
+		/**
+		 * Filters whether a specific GatherPress option is inherited from the network.
+		 *
+		 * Returning false exempts the current site from network-level inheritance
+		 * for that option; returning true forces inheritance even if the network
+		 * config would otherwise leave it site-editable.
+		 *
+		 * @since 1.0.0
+		 *
+		 * @param bool   $inherited Whether the option is inherited from the network.
+		 * @param string $option    The option key being resolved.
+		 * @param int    $blog_id   The current site ID.
+		 */
+		return (bool) apply_filters(
+			'gatherpress_network_is_option_inherited',
+			$inherited,
+			$option,
+			get_current_blog_id()
+		);
 	}
 
 	/**

@@ -62,7 +62,7 @@ class Events extends Base {
 	 * @return int The priority for displaying the events settings page.
 	 */
 	protected function get_priority(): int {
-		return PHP_INT_MIN;
+		return PHP_INT_MIN + 1;
 	}
 
 	/**

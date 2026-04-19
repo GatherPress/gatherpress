@@ -20,9 +20,11 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 if ( ! isset( $name, $label, $option, $value, $description ) ) {
 	return;
 }
+
+$gatherpress_disabled = ! empty( $disabled ) ? ' disabled' : '';
 ?>
 <input type="hidden" name="<?php echo esc_attr( $name ); ?>" value="0" />
-<input id="<?php echo esc_attr( $option ); ?>" type="checkbox" name="<?php echo esc_attr( $name ); ?>" value="1" <?php checked( 1, rest_sanitize_boolean( $value ), true ); ?> />
+<input id="<?php echo esc_attr( $option ); ?>" type="checkbox" name="<?php echo esc_attr( $name ); ?>" value="1" <?php checked( 1, rest_sanitize_boolean( $value ), true ); ?><?php echo $gatherpress_disabled; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static value. ?> />
 <label for="<?php echo esc_attr( $option ); ?>"><?php echo esc_html( $label ); ?></label>
 
 <?php

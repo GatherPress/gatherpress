@@ -255,7 +255,7 @@ class Utility {
 	 *                Falls back to a UTC offset representation if a named timezone string is not set.
 	 */
 	public static function get_system_timezone(): string {
-		$gmt_offset      = intval( get_option( 'gmt_offset' ) );
+		$gmt_offset      = get_option( 'gmt_offset' );
 		$timezone_string = get_option( 'timezone_string' );
 
 		// Remove old Etc mappings. Fallback to gmt_offset.
@@ -263,17 +263,96 @@ class Utility {
 			$timezone_string = '';
 		}
 
-		if ( empty( $timezone_string ) ) { // Create a UTC+- zone if no timezone string exists.
-			if ( 0 === $gmt_offset ) {
-				$timezone_string = 'UTC+0';
-			} elseif ( $gmt_offset < 0 ) {
-				$timezone_string = 'UTC' . $gmt_offset;
-			} else {
-				$timezone_string = 'UTC+' . $gmt_offset;
-			}
+		if ( empty( $timezone_string ) ) {
+			$timezone_string = self::offset_to_timezone_string( (float) $gmt_offset );
 		}
 
 		return $timezone_string;
+	}
+
+	/**
+	 * Convert a gmt_offset (in hours) into a DateTimeZone-compatible string.
+	 *
+	 * WordPress stores the gmt_offset as a decimal hour (e.g. 5.5 for
+	 * IST, -3.5 for Newfoundland). PHP's DateTimeZone rejects WP's display
+	 * strings like `UTC+0` or `UTC+5` but accepts `UTC` and `+HH:MM` /
+	 * `-HH:MM` offsets, so normalize here.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param float $offset Decimal-hour offset from UTC.
+	 * @return string PHP-valid timezone identifier.
+	 */
+	public static function offset_to_timezone_string( float $offset ): string {
+		if ( 0.0 === $offset ) {
+			return 'UTC';
+		}
+
+		$sign    = $offset < 0 ? '-' : '+';
+		$abs     = abs( $offset );
+		$hours   = (int) $abs;
+		$minutes = (int) round( ( $abs - $hours ) * 60 );
+
+		return sprintf( '%s%02d:%02d', $sign, $hours, $minutes );
+	}
+
+	/**
+	 * Normalize a timezone string to a PHP `DateTimeZone`-compatible form.
+	 *
+	 * Accepts anything WordPress / GatherPress might have stored (IANA,
+	 * `+HH:MM`, `UTC`, `UTC+N`, `UTC-N`, decimal UTC like `UTC+5.5`) and
+	 * returns a string that `new DateTimeZone(...)` will accept.
+	 *
+	 * Unknown values pass through unchanged so downstream error handling
+	 * can surface anything genuinely unexpected.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $timezone Raw timezone string.
+	 * @return string
+	 */
+	public static function normalize_timezone_string( string $timezone ): string {
+		$timezone = trim( $timezone );
+
+		if ( '' === $timezone ) {
+			return 'UTC';
+		}
+
+		// Already in +HH:MM / -HH:MM form — DateTimeZone accepts these.
+		if ( preg_match( '/^[+-]\d{2}:\d{2}$/', $timezone ) ) {
+			return $timezone;
+		}
+
+		// WP-style display strings: UTC, UTC+0, UTC-5, UTC+5.5, UTC+5:30.
+		if ( preg_match( '/^UTC([+-])(\d+(?:\.\d+)?|\d+:\d{2})?$/i', $timezone, $matches ) ) {
+			if ( empty( $matches[2] ) ) {
+				return 'UTC';
+			}
+
+			$sign    = $matches[1];
+			$value   = $matches[2];
+			$hours   = 0;
+			$minutes = 0;
+
+			if ( false !== strpos( $value, ':' ) ) {
+				list( $hours, $minutes ) = array_map( 'intval', explode( ':', $value ) );
+			} elseif ( false !== strpos( $value, '.' ) ) {
+				$hours   = (int) $value;
+				$minutes = (int) round( ( (float) $value - $hours ) * 60 );
+			} else {
+				$hours = (int) $value;
+			}
+
+			if ( 0 === $hours && 0 === $minutes ) {
+				return 'UTC';
+			}
+
+			return sprintf( '%s%02d:%02d', $sign, $hours, $minutes );
+		}
+
+		// Assume anything else is a valid IANA identifier (America/New_York,
+		// Europe/London, etc.) — passthrough.
+		return $timezone;
 	}
 
 	/**

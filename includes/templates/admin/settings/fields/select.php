@@ -21,10 +21,12 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 if ( ! isset( $name, $label, $option, $options, $options['items'], $value, $description ) ) {
 	return;
 }
+
+$gatherpress_disabled = ! empty( $disabled ) ? ' disabled' : '';
 ?>
 <input type="hidden" name="<?php echo esc_attr( $name ); ?>" value="0" />
 <label for="<?php echo esc_attr( $option ); ?>"><?php echo esc_html( $label ); ?></label><br/>
-<select id="<?php echo esc_attr( $option ); ?>" name="<?php echo esc_attr( $name ); ?>">
+<select id="<?php echo esc_attr( $option ); ?>" name="<?php echo esc_attr( $name ); ?>"<?php echo $gatherpress_disabled; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static value. ?>>
 	<?php
 	foreach ( $options['items'] as $gatherpress_key => $gatherpress_label ) :
 		// phpcs:ignore Generic.Files.LineLength.TooLong -- Template output formatting.

@@ -74,6 +74,7 @@ class Setup {
 		Settings::get_instance();
 		Settings\Credits::get_instance();
 		Settings\Events::get_instance();
+		Settings\Network::get_instance();
 		Settings\Roles::get_instance();
 		Settings\Rsvp_Settings::get_instance();
 		Settings\Tools::get_instance();
@@ -223,6 +224,11 @@ class Setup {
 		$current_version = GATHERPRESS_VERSION;
 
 		if ( $stored_version !== $current_version ) {
+			// Ensure per-blog tables exist — covers multisite cases where a
+			// subsite's table was never created (e.g. site created before
+			// plugin activation, or an `on_site_create` race). dbDelta is
+			// idempotent so re-running here is safe.
+			$this->create_tables();
 			$this->schedule_rewrite_flush();
 			update_option( 'gatherpress_version', $current_version );
 		}
@@ -392,11 +398,20 @@ class Setup {
 	 * @return void
 	 */
 	public function on_site_create( WP_Site $new_site ): void {
-		if ( is_plugin_active_for_network( 'gatherpress/gatherpress.php' ) ) {
-			switch_to_blog( intval( $new_site->blog_id ) );
-			$this->create_tables();
-			restore_current_blog();
+		if ( ! function_exists( 'is_plugin_active_for_network' ) ) {
+			// Load the admin-only helper when the site is created from a
+			// context that hasn't pulled it in (e.g. WP-CLI, REST, or the
+			// `wp_initialize_site` path before wp-admin bootstraps).
+			require_once ABSPATH . 'wp-admin/includes/plugin.php'; // NOSONAR.
 		}
+
+		if ( ! is_plugin_active_for_network( plugin_basename( GATHERPRESS_CORE_FILE ) ) ) {
+			return;
+		}
+
+		switch_to_blog( intval( $new_site->blog_id ) );
+		$this->create_tables();
+		restore_current_blog();
 	}
 
 	/**

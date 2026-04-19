@@ -92,8 +92,56 @@ class Assets {
 		// Set priority to 11 to not conflict with media modal.
 		add_action( 'admin_footer', array( $this, 'event_communication_modal' ), 11 );
 
+		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_timezone_shim' ) );
+		add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_timezone_shim' ) );
+
 		add_filter( 'render_block', array( $this, 'maybe_enqueue_styles' ), 10, 2 );
 		add_filter( 'render_block', array( $this, 'maybe_enqueue_tooltip_assets' ) );
+	}
+
+	/**
+	 * Patch `wp.date`'s timezone when WordPress hands Moment Timezone a bogus
+	 * `UTC+0` (or `UTC-0`) string.
+	 *
+	 * On a fresh WordPress install the Settings → General timezone is
+	 * unset (no `timezone_string`, `gmt_offset` of 0), so WP core emits
+	 * `wp.date.setSettings({ timezone: { string: 'UTC+0' } })`. That is
+	 * not a valid IANA zone, which triggers a stream of
+	 * "Moment Timezone has no data for UTC+0" console warnings from the
+	 * block editor's panels and any plugin using `@wordpress/date`.
+	 *
+	 * We can't reach into WP core, but we can append an inline script
+	 * after its `setSettings` call to re-call it with a valid zone. We
+	 * only normalize the zero-offset case; non-zero UTC offsets are
+	 * rarer and surface a different warning that users fix by choosing
+	 * an IANA zone in Settings → General.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return void
+	 */
+	public function enqueue_timezone_shim(): void {
+		if ( ! wp_script_is( 'wp-date', 'registered' ) ) {
+			return;
+		}
+
+		wp_enqueue_script( 'wp-date' );
+		wp_add_inline_script(
+			'wp-date',
+			// Keep the shim tight — it runs on every admin and front-end request.
+			// Only acts when the default timezone is literally `UTC+0` / `UTC-0`.
+			'( function () {'
+			. ' if ( ! window.wp || ! window.wp.date ) { return; }'
+			. ' if ( "function" !== typeof window.wp.date.getSettings ) { return; }'
+			. ' var settings = window.wp.date.getSettings();'
+			. ' if ( ! settings || ! settings.timezone || ! settings.timezone.string ) { return; }'
+			. ' if ( /^UTC[+-]0$/.test( settings.timezone.string ) ) {'
+			. '  settings.timezone.string = "UTC";'
+			. '  window.wp.date.setSettings( settings );'
+			. ' }'
+			. '} )();',
+			'after'
+		);
 	}
 
 	/**
