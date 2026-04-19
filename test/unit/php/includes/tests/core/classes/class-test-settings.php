@@ -541,7 +541,7 @@ class Test_Settings extends Base {
 			'<div class="regular-text" data-gatherpress_component_name="autocomplete" ' .
 			'data-gatherpress_component_attrs="{&quot;name&quot;:&quot;gatherpress_settings[option]&quot;,' .
 			'&quot;option&quot;:&quot;gatherpress_option&quot;,&quot;value&quot;:&quot;[]&quot;,' .
-			'&quot;fieldOptions&quot;:{&quot;unit&quot;:&quot;test&quot;}}"></div>',
+			'&quot;fieldOptions&quot;:{&quot;unit&quot;:&quot;test&quot;},&quot;disabled&quot;:false}"></div>',
 			$autocomplete,
 			'Failed to assert that markup matches.'
 		);

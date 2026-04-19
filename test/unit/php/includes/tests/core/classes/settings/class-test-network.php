@@ -109,9 +109,15 @@ class Test_Network extends Base {
 	 *
 	 * @covers ::get_config
 	 *
+	 * @group   multisite
+	 *
 	 * @return void
 	 */
 	public function test_get_config_returns_defaults_when_stored_is_not_array(): void {
+		if ( ! is_multisite() ) {
+			$this->markTestSkipped( 'Requires multisite.' );
+		}
+
 		update_site_option( Network::OPTION_NAME, 'not-an-array' );
 
 		$this->assertSame( Network::get_default_config(), Network::get_config() );
@@ -122,9 +128,15 @@ class Test_Network extends Base {
 	 *
 	 * @covers ::get_config
 	 *
+	 * @group   multisite
+	 *
 	 * @return void
 	 */
 	public function test_get_config_merges_stored_over_defaults(): void {
+		if ( ! is_multisite() ) {
+			$this->markTestSkipped( 'Requires multisite.' );
+		}
+
 		update_site_option(
 			Network::OPTION_NAME,
 			array(

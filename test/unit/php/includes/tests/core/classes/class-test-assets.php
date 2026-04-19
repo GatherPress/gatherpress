@@ -79,6 +79,18 @@ class Test_Assets extends Base {
 				'callback' => array( $instance, 'event_communication_modal' ),
 			),
 			array(
+				'type'     => 'action',
+				'name'     => 'admin_enqueue_scripts',
+				'priority' => 10,
+				'callback' => array( $instance, 'enqueue_timezone_shim' ),
+			),
+			array(
+				'type'     => 'action',
+				'name'     => 'wp_enqueue_scripts',
+				'priority' => 10,
+				'callback' => array( $instance, 'enqueue_timezone_shim' ),
+			),
+			array(
 				'type'     => 'filter',
 				'name'     => 'render_block',
 				'priority' => 10,

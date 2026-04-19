@@ -274,7 +274,7 @@ class Utility {
 	 * Convert a gmt_offset (in hours) into a DateTimeZone-compatible string.
 	 *
 	 * WordPress stores the gmt_offset as a decimal hour (e.g. 5.5 for
-	 * IST, -3.5 for Newfoundland). PHP's DateTimeZone rejects WP's display
+	 * India, -3.5 for Newfoundland). PHP's DateTimeZone rejects WP's display
 	 * strings like `UTC+0` or `UTC+5` but accepts `UTC` and `+HH:MM` /
 	 * `-HH:MM` offsets, so normalize here.
 	 *

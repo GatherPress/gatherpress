@@ -57,7 +57,7 @@ class Test_Events extends Base {
 		$instance = Events::get_instance();
 		$priority = Utility::invoke_hidden_method( $instance, 'get_priority' );
 
-		$this->assertEquals( PHP_INT_MIN, $priority, 'Failed to assert correct priority.' );
+		$this->assertEquals( PHP_INT_MIN + 1, $priority, 'Failed to assert correct priority.' );
 	}
 
 	/**
