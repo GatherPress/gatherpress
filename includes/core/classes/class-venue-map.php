@@ -210,6 +210,36 @@ class Venue_Map {
 	const TILE_SIZE = 256;
 
 	/**
+	 * Pixel-density multiplier for the retina (2×) static-map variant.
+	 *
+	 * Drives the `@{density}x` filename suffix, the canvas-size multiplier
+	 * in `composite_image()`, the marker-scale argument in `stamp_marker()`,
+	 * and the zoom offset when fetching tiles (tiles are pulled from
+	 * `base_zoom + log2(RETINA_DENSITY)` for true 2× detail rather than
+	 * upscaled pixels). Kept as a constant so the generator and the
+	 * filename composer can never drift out of lock-step — any future bump
+	 * (3×, 4×) lands in one place.
+	 *
+	 * @since 1.0.0
+	 * @var int
+	 */
+	const RETINA_DENSITY = 2;
+
+	/**
+	 * Densities `composite_image()` knows how to produce.
+	 *
+	 * The tile-zoom offset is `log2($density)`, so only power-of-two values
+	 * give a whole-number zoom delta. Anything outside this allow-list is
+	 * coerced back to 1 so a caller can't accidentally generate a
+	 * canvas-doubled-but-tile-zoom-unchanged image (which would be a cheap
+	 * upscale and waste disk).
+	 *
+	 * @since 1.0.0
+	 * @var int[]
+	 */
+	const SUPPORTED_DENSITIES = array( 1, self::RETINA_DENSITY );
+
+	/**
 	 * PNG aspect ratio (width ÷ height).
 	 *
 	 * The block exposes height but not width (blocks render 100% of their
@@ -1102,35 +1132,48 @@ class Venue_Map {
 		$all      = $this->get_all_descriptors( $post_id );
 		$existing = $all[ $key ] ?? null;
 
-		if ( null !== $existing && $existing['hash'] === $hash ) {
-			// The URL itself is deterministic from (address, zoom, dims) so
-			// existence on disk is the real validity signal. If the retina
-			// variant is enabled but missing from this descriptor it's a
-			// pre-retina entry (`get_all_descriptors()` normalizes missing
-			// `url_2x` to an empty string) — fall through to regenerate so
-			// the 2× actually gets produced.
-			$expected_url = $this->build_image_url( $address, $zoom, $width, $height );
-			$needs_retina = $this->should_generate_retina() && '' === $existing['url_2x'];
-			if ( $existing['url'] === $expected_url && ! $needs_retina ) {
-				return $existing;
+		// Retina generation requires a zoom level with tiles available at
+		// `zoom + log2(RETINA_DENSITY)`. At the zoom ceiling the derived
+		// tile zoom would exceed what the provider serves, every fetch
+		// 404s, and we'd persist a solid-gray PNG — skip instead.
+		// Cached locally so we never invoke the filter twice per call.
+		$retina_enabled = $this->should_generate_retina()
+			&& ( $zoom + (int) log( self::RETINA_DENSITY, 2 ) ) <= self::ZOOM_MAX;
+
+		$expected_url = $this->build_image_url( $address, $zoom, $width, $height );
+		$has_valid_1x = null !== $existing
+			&& $existing['hash'] === $hash
+			&& $existing['url'] === $expected_url;
+		$needs_retina = $retina_enabled && ( null === $existing || '' === $existing['url_2x'] );
+
+		if ( $has_valid_1x && ! $needs_retina ) {
+			return $existing;
+		}
+
+		// Only recomposite the 1× when it's genuinely missing or stale.
+		// Legacy descriptors (pre-retina) land on the `has_valid_1x &&
+		// needs_retina` path — their 1× PNG is still valid so we skip the
+		// redundant fetch/save and only fill in the retina sibling.
+		$url = null;
+		if ( $has_valid_1x ) {
+			$url = $existing['url'];
+		} else {
+			$image = $this->composite_image( $latitude, $longitude, $zoom, $width, $height, $tiles );
+
+			// Downstream of the GD-missing branch in composite_image(); only
+			// reached on PHP builds without the GD extension.
+			if ( null === $image ) { // @codeCoverageIgnore
+				return null; // @codeCoverageIgnore
 			}
-		}
 
-		$image = $this->composite_image( $latitude, $longitude, $zoom, $width, $height, $tiles );
+			$this->stamp_marker( $image, (int) round( $width / 2 ), (int) round( $height / 2 ) );
 
-		// Downstream of the GD-missing branch in composite_image(); only
-		// reached on PHP builds without the GD extension.
-		if ( null === $image ) { // @codeCoverageIgnore
-			return null; // @codeCoverageIgnore
-		}
+			$url = $this->save_image( $image, $address, $zoom, $width, $height );
+			imagedestroy( $image );
 
-		$this->stamp_marker( $image, (int) round( $width / 2 ), (int) round( $height / 2 ) );
-
-		$url = $this->save_image( $image, $address, $zoom, $width, $height );
-		imagedestroy( $image );
-
-		if ( null === $url ) {
-			return null;
+			if ( null === $url ) {
+				return null;
+			}
 		}
 
 		// Retina variant: separate composite at 2× density (zoom+1 tiles,
@@ -1139,12 +1182,38 @@ class Venue_Map {
 		// the front-end falls back to a plain `src`. Reuses the same hash:
 		// the 2× is fully derived from the same inputs.
 		$url_2x = '';
-		if ( $this->should_generate_retina() ) {
-			$image_2x = $this->composite_image( $latitude, $longitude, $zoom, $width, $height, $tiles, 2 );
+		if ( $retina_enabled ) {
+			$canvas_width  = $width * self::RETINA_DENSITY;
+			$canvas_height = $height * self::RETINA_DENSITY;
+			$image_2x      = $this->composite_image(
+				$latitude,
+				$longitude,
+				$zoom,
+				$width,
+				$height,
+				$tiles,
+				self::RETINA_DENSITY
+			);
 			if ( null !== $image_2x ) {
-				$this->stamp_marker( $image_2x, $width, $height, 2.0 );
+				// Use the same `round( canvas / 2 )` pattern as the 1× call
+				// so both paths share a single marker-center convention;
+				// even canvas sizes make the results identical, the
+				// symmetry is for maintenance.
+				$this->stamp_marker(
+					$image_2x,
+					(int) round( $canvas_width / 2 ),
+					(int) round( $canvas_height / 2 ),
+					(float) self::RETINA_DENSITY
+				);
 
-				$saved_2x = $this->save_image( $image_2x, $address, $zoom, $width, $height, 2 );
+				$saved_2x = $this->save_image(
+					$image_2x,
+					$address,
+					$zoom,
+					$width,
+					$height,
+					self::RETINA_DENSITY
+				);
 				imagedestroy( $image_2x );
 				if ( null !== $saved_2x ) {
 					$url_2x = $saved_2x;
@@ -1391,13 +1460,22 @@ class Venue_Map {
 			return null; // @codeCoverageIgnore
 		}
 
-		$density = max( 1, $density );
+		// Coerce unsupported densities back to 1. Allowing, say, density=3
+		// with `(int) log(3, 2) === 1` would paint a 3×-sized canvas using
+		// only 2× tiles — a cheap upscale that wastes disk for no gain.
+		// Allow-listing keeps the tile-zoom offset a whole number.
+		if ( ! in_array( $density, self::SUPPORTED_DENSITIES, true ) ) {
+			$density = 1;
+		}
 
 		// Tile zoom climbs with density so the retina variant renders true
 		// zoom+1 detail (sharp labels and lines) rather than upscaled 1×
-		// pixels. For the only values we currently support (1, 2) this
-		// resolves to zoom or zoom+1.
-		$tile_zoom = $zoom + (int) log( $density, 2 );
+		// pixels. Clamp to ZOOM_MAX as defense-in-depth: at the zoom
+		// ceiling the caller should have skipped retina generation
+		// upstream, but if we're ever invoked directly at high zoom we'd
+		// rather render a degraded upscale than hit the tile server with
+		// zoom-beyond-max requests (every fetch 404s → gray canvas).
+		$tile_zoom = min( self::ZOOM_MAX, $zoom + (int) log( $density, 2 ) );
 
 		$canvas_width  = $width * $density;
 		$canvas_height = $height * $density;
