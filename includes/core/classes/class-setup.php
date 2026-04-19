@@ -398,6 +398,7 @@ class Setup {
 	 * @return void
 	 */
 	public function on_site_create( WP_Site $new_site ): void {
+		// @codeCoverageIgnoreStart -- Defensive shim: wp-admin/includes/plugin.php is always loaded under PHPUnit.
 		if ( ! function_exists( 'is_plugin_active_for_network' ) ) {
 			// Load the admin-only helper when the site is created from a
 			// context that hasn't pulled it in (e.g. WP-CLI, REST, or the
@@ -409,6 +410,7 @@ class Setup {
 				require_once $plugin_php; // NOSONAR.
 			}
 		}
+		// @codeCoverageIgnoreEnd
 
 		if ( ! is_plugin_active_for_network( plugin_basename( GATHERPRESS_CORE_FILE ) ) ) {
 			return;

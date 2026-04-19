@@ -2111,4 +2111,191 @@ class Test_Settings extends Base {
 
 		delete_option( 'gatherpress_settings' );
 	}
+
+	/**
+	 * Coverage for is_option_inherited on single-site (not multisite).
+	 *
+	 * @covers ::is_option_inherited
+	 *
+	 * @return void
+	 */
+	public function test_is_option_inherited_returns_false_single_site(): void {
+		if ( is_multisite() ) {
+			$this->markTestSkipped( 'Single-site only.' );
+		}
+
+		$this->assertFalse( Settings::get_instance()->is_option_inherited( 'date_format' ) );
+	}
+
+	/**
+	 * Coverage for is_option_inherited filter — can force `true` even when
+	 * the network config would otherwise say no.
+	 *
+	 * @covers ::is_option_inherited
+	 *
+	 * @return void
+	 */
+	public function test_is_option_inherited_filter_can_force_true(): void {
+		$filter = static function (): bool {
+			return true;
+		};
+		add_filter( 'gatherpress_network_is_option_inherited', $filter );
+
+		$this->assertTrue( Settings::get_instance()->is_option_inherited( 'date_format' ) );
+
+		remove_filter( 'gatherpress_network_is_option_inherited', $filter );
+	}
+
+	/**
+	 * Coverage for is_option_inherited when multisite + network config forces it.
+	 *
+	 * @covers ::is_option_inherited
+	 *
+	 * @group   multisite
+	 *
+	 * @return void
+	 */
+	public function test_is_option_inherited_respects_network_config(): void {
+		if ( ! is_multisite() ) {
+			$this->markTestSkipped( 'Requires multisite.' );
+		}
+
+		update_site_option(
+			'gatherpress_network_settings',
+			array(
+				'enabled'   => true,
+				'inherited' => array( 'date_format' ),
+			)
+		);
+
+		$this->assertTrue( Settings::get_instance()->is_option_inherited( 'date_format' ) );
+		$this->assertFalse( Settings::get_instance()->is_option_inherited( 'time_format' ) );
+
+		delete_site_option( 'gatherpress_network_settings' );
+	}
+
+	/**
+	 * Coverage for get() inheritance branch — reads the network site option
+	 * when the option is flagged as inherited.
+	 *
+	 * @covers ::get
+	 *
+	 * @return void
+	 */
+	public function test_get_reads_network_value_when_inherited(): void {
+		update_site_option( 'gatherpress_settings', array( 'date_format' => 'Y-m-d' ) );
+
+		$filter = static function (): bool {
+			return true;
+		};
+		add_filter( 'gatherpress_network_is_option_inherited', $filter );
+
+		$this->assertSame( 'Y-m-d', Settings::get_instance()->get( 'date_format' ) );
+
+		remove_filter( 'gatherpress_network_is_option_inherited', $filter );
+		delete_site_option( 'gatherpress_settings' );
+	}
+
+	/**
+	 * Coverage for get() falling back to default when inherited but the
+	 * network site option has nothing for this key.
+	 *
+	 * @covers ::get
+	 *
+	 * @return void
+	 */
+	public function test_get_falls_back_to_default_when_inherited_and_network_empty(): void {
+		delete_site_option( 'gatherpress_settings' );
+
+		$filter = static function (): bool {
+			return true;
+		};
+		add_filter( 'gatherpress_network_is_option_inherited', $filter );
+
+		// `show_timezone` defaults to true.
+		$this->assertTrue( Settings::get_instance()->get( 'show_timezone' ) );
+
+		remove_filter( 'gatherpress_network_is_option_inherited', $filter );
+	}
+
+	/**
+	 * Coverage for render_field wrapping output with the inherited marker +
+	 * the super-admin variant of the note (link included).
+	 *
+	 * @covers ::render_field
+	 *
+	 * @return void
+	 */
+	public function test_render_field_wraps_when_inherited_for_super_admin(): void {
+		$instance = Settings::get_instance();
+		$user_id  = $this->factory()->user->create( array( 'role' => 'administrator' ) );
+		$user     = get_user_by( 'id', $user_id );
+		$user->add_cap( 'manage_network_options' );
+		wp_set_current_user( $user_id );
+
+		$filter = static function (): bool {
+			return true;
+		};
+		add_filter( 'gatherpress_network_is_option_inherited', $filter );
+
+		$output = Utility::buffer_and_return(
+			array( $instance, 'render_field' ),
+			array(
+				'date_format',
+				array(
+					'field' => array(
+						'type'    => 'text',
+						'size'    => 'regular',
+						'options' => array( 'default' => 'F j, Y' ),
+					),
+				),
+			)
+		);
+
+		remove_filter( 'gatherpress_network_is_option_inherited', $filter );
+		wp_delete_user( $user_id );
+
+		$this->assertStringContainsString( 'gatherpress-field-inherited', $output );
+		$this->assertStringContainsString( 'settings.php?page=gatherpress-network-settings', $output );
+	}
+
+	/**
+	 * Coverage for render_field wrapping output with the inherited marker +
+	 * the regular-admin variant (no link).
+	 *
+	 * @covers ::render_field
+	 *
+	 * @return void
+	 */
+	public function test_render_field_wraps_when_inherited_for_regular_admin(): void {
+		$instance = Settings::get_instance();
+		$user_id  = $this->factory()->user->create( array( 'role' => 'editor' ) );
+		wp_set_current_user( $user_id );
+
+		$filter = static function (): bool {
+			return true;
+		};
+		add_filter( 'gatherpress_network_is_option_inherited', $filter );
+
+		$output = Utility::buffer_and_return(
+			array( $instance, 'render_field' ),
+			array(
+				'date_format',
+				array(
+					'field' => array(
+						'type'    => 'text',
+						'size'    => 'regular',
+						'options' => array( 'default' => 'F j, Y' ),
+					),
+				),
+			)
+		);
+
+		remove_filter( 'gatherpress_network_is_option_inherited', $filter );
+		wp_delete_user( $user_id );
+
+		$this->assertStringContainsString( 'gatherpress-field-inherited', $output );
+		$this->assertStringContainsString( 'Inherited from the network.', $output );
+		$this->assertStringNotContainsString( 'settings.php?page=gatherpress-network-settings', $output );
+	}
 }

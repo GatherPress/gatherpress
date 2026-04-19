@@ -132,7 +132,13 @@ class Network {
 	 * @return void
 	 */
 	public function subsite_inheritance_notice(): void {
-		if ( ! is_multisite() || is_main_site() ) {
+		if ( ! is_multisite() ) {
+			return;
+		}
+
+		// The notice should not render on the network admin settings page
+		// itself — that's where super admins edit the inherited values.
+		if ( is_network_admin() ) {
 			return;
 		}
 
@@ -235,6 +241,9 @@ class Network {
 			return;
 		}
 
+		// wp_safe_redirect + exit is a terminator; can't run under PHPUnit without a subprocess.
+		// phpcs:ignore Squiz.Commenting.InlineComment.InvalidEndChar -- PHPUnit annotation must match exactly.
+		// @codeCoverageIgnoreStart
 		wp_safe_redirect(
 			add_query_arg(
 				array(
@@ -245,6 +254,7 @@ class Network {
 			)
 		);
 		exit;
+		// @codeCoverageIgnoreEnd
 	}
 
 	/**
@@ -461,6 +471,9 @@ class Network {
 	 * @return void
 	 */
 	protected function redirect_to_tab( string $tab ): void {
+		// wp_safe_redirect + exit is a terminator; can't run under PHPUnit without a subprocess.
+		// phpcs:ignore Squiz.Commenting.InlineComment.InvalidEndChar -- PHPUnit annotation must match exactly.
+		// @codeCoverageIgnoreStart
 		wp_safe_redirect(
 			add_query_arg(
 				array(
@@ -472,6 +485,7 @@ class Network {
 			)
 		);
 		exit;
+		// @codeCoverageIgnoreEnd
 	}
 
 	/**

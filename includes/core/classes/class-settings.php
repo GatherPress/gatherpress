@@ -740,7 +740,11 @@ class Settings {
 	public function is_option_inherited( string $option ): bool {
 		$inherited = false;
 
-		if ( is_multisite() && ! is_main_site() ) {
+		// Apply inheritance on any site in the network (including the main site)
+		// so the UI reflects the network config everywhere. The only exemption
+		// is the network admin settings page itself, where super admins edit
+		// the network values — fields there must remain fully editable.
+		if ( is_multisite() && ! is_network_admin() ) {
 			$config = Network::get_config();
 
 			if ( ! empty( $config['enabled'] ) ) {

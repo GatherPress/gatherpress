@@ -351,17 +351,15 @@ class Test_Network extends Base {
 	}
 
 	/**
-	 * Coverage for subsite_inheritance_notice on the main site (never shows).
+	 * Coverage for subsite_inheritance_notice when not on multisite.
 	 *
 	 * @covers ::subsite_inheritance_notice
 	 *
-	 * @group   multisite
-	 *
 	 * @return void
 	 */
-	public function test_subsite_inheritance_notice_bails_on_main_site(): void {
-		if ( ! is_multisite() ) {
-			$this->markTestSkipped( 'Requires multisite.' );
+	public function test_subsite_inheritance_notice_bails_when_not_multisite(): void {
+		if ( is_multisite() ) {
+			$this->markTestSkipped( 'Single-site only.' );
 		}
 
 		$instance = Network::get_instance();
@@ -447,4 +445,281 @@ class Test_Network extends Base {
 			array( $instance, 'route_read_to_site_option' )
 		);
 	}
+
+	/**
+	 * Coverage for subsite_inheritance_notice rendering for a super admin — the
+	 * second sentence (network link) should be present.
+	 *
+	 * @covers ::subsite_inheritance_notice
+	 *
+	 * @group   multisite
+	 *
+	 * @return void
+	 */
+	public function test_subsite_inheritance_notice_renders_for_super_admin(): void {
+		if ( ! is_multisite() ) {
+			$this->markTestSkipped( 'Requires multisite.' );
+		}
+
+		update_site_option(
+			Network::OPTION_NAME,
+			array(
+				'enabled'   => true,
+				'inherited' => array( 'date_format' ),
+			)
+		);
+
+		$user_id = $this->factory()->user->create( array( 'role' => 'administrator' ) );
+		grant_super_admin( $user_id );
+		wp_set_current_user( $user_id );
+
+		$_GET['page'] = 'gatherpress_general';
+
+		$instance = Network::get_instance();
+		$output   = PMC_Utility::buffer_and_return( array( $instance, 'subsite_inheritance_notice' ) );
+
+		unset( $_GET['page'] );
+		revoke_super_admin( $user_id );
+		wp_delete_user( $user_id );
+
+		$this->assertStringContainsString(
+			'Some GatherPress settings on this site are inherited from the network.',
+			$output
+		);
+		$this->assertStringContainsString( 'Network Admin → Settings → GatherPress', $output );
+	}
+
+	/**
+	 * Coverage for subsite_inheritance_notice rendering for a regular admin —
+	 * first sentence only (no link, since they can't act on it).
+	 *
+	 * @covers ::subsite_inheritance_notice
+	 *
+	 * @group   multisite
+	 *
+	 * @return void
+	 */
+	public function test_subsite_inheritance_notice_renders_for_regular_admin(): void {
+		if ( ! is_multisite() ) {
+			$this->markTestSkipped( 'Requires multisite.' );
+		}
+
+		update_site_option(
+			Network::OPTION_NAME,
+			array(
+				'enabled'   => true,
+				'inherited' => array( 'date_format' ),
+			)
+		);
+
+		$user_id = $this->factory()->user->create( array( 'role' => 'administrator' ) );
+		wp_set_current_user( $user_id );
+
+		$_GET['page'] = 'gatherpress_general';
+
+		$instance = Network::get_instance();
+		$output   = PMC_Utility::buffer_and_return( array( $instance, 'subsite_inheritance_notice' ) );
+
+		unset( $_GET['page'] );
+		wp_delete_user( $user_id );
+
+		$this->assertStringContainsString(
+			'Some GatherPress settings on this site are inherited from the network.',
+			$output
+		);
+		$this->assertStringNotContainsString( 'Network Admin → Settings → GatherPress', $output );
+	}
+
+	/**
+	 * Coverage for subsite_inheritance_notice when no options actually resolve
+	 * as locked for the current site — nothing to tell the user, so bail.
+	 *
+	 * @covers ::subsite_inheritance_notice
+	 *
+	 * @group   multisite
+	 *
+	 * @return void
+	 */
+	public function test_subsite_inheritance_notice_bails_when_nothing_locked(): void {
+		if ( ! is_multisite() ) {
+			$this->markTestSkipped( 'Requires multisite.' );
+		}
+
+		update_site_option(
+			Network::OPTION_NAME,
+			array(
+				'enabled'   => true,
+				'inherited' => array( 'date_format' ),
+			)
+		);
+
+		$_GET['page'] = 'gatherpress_general';
+
+		// Filter exempts every option so `is_option_inherited` always returns
+		// false for this site.
+		$filter = static function (): bool {
+			return false;
+		};
+		add_filter( 'gatherpress_network_is_option_inherited', $filter );
+
+		$instance = Network::get_instance();
+		$output   = PMC_Utility::buffer_and_return( array( $instance, 'subsite_inheritance_notice' ) );
+
+		remove_filter( 'gatherpress_network_is_option_inherited', $filter );
+		unset( $_GET['page'] );
+
+		$this->assertSame( '', $output );
+	}
+
+	/**
+	 * Coverage for subsite_inheritance_notice when the feature is disabled.
+	 *
+	 * @covers ::subsite_inheritance_notice
+	 *
+	 * @group   multisite
+	 *
+	 * @return void
+	 */
+	public function test_subsite_inheritance_notice_bails_when_feature_disabled(): void {
+		if ( ! is_multisite() ) {
+			$this->markTestSkipped( 'Requires multisite.' );
+		}
+
+		update_site_option(
+			Network::OPTION_NAME,
+			array(
+				'enabled'   => false,
+				'inherited' => array( 'date_format' ),
+			)
+		);
+
+		$_GET['page'] = 'gatherpress_general';
+
+		$instance = Network::get_instance();
+		$output   = PMC_Utility::buffer_and_return( array( $instance, 'subsite_inheritance_notice' ) );
+
+		unset( $_GET['page'] );
+
+		$this->assertSame( '', $output );
+	}
+
+	/**
+	 * Coverage for register_page — adds the Network Admin submenu.
+	 *
+	 * @covers ::register_page
+	 *
+	 * @group   multisite
+	 *
+	 * @return void
+	 */
+	public function test_register_page_adds_submenu(): void {
+		if ( ! is_multisite() ) {
+			$this->markTestSkipped( 'Requires multisite.' );
+		}
+
+		$user_id = $this->factory()->user->create( array( 'role' => 'administrator' ) );
+		grant_super_admin( $user_id );
+		wp_set_current_user( $user_id );
+
+		global $submenu;
+		$submenu = array(); // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited -- Isolate test state.
+
+		$instance = Network::get_instance();
+		$instance->register_page();
+
+		$this->assertArrayHasKey( 'settings.php', $submenu );
+
+		$slugs = array_column( $submenu['settings.php'], 2 );
+		$this->assertContains( Network::PAGE_SLUG, $slugs );
+
+		revoke_super_admin( $user_id );
+		wp_delete_user( $user_id );
+	}
+
+	/**
+	 * Coverage for maybe_redirect_to_default_tab when a tab is already set —
+	 * method returns without redirecting.
+	 *
+	 * @covers ::maybe_redirect_to_default_tab
+	 *
+	 * @return void
+	 */
+	public function test_maybe_redirect_to_default_tab_skips_when_tab_set(): void {
+		$_GET['tab'] = 'events';
+
+		$instance = Network::get_instance();
+		$instance->maybe_redirect_to_default_tab(); // Does not exit.
+
+		unset( $_GET['tab'] );
+
+		$this->assertTrue( true ); // Reached — no exit.
+	}
+
+	/**
+	 * Coverage for render_page when the current user lacks the required
+	 * capability — calls wp_die.
+	 *
+	 * @covers ::render_page
+	 *
+	 * @return void
+	 */
+	public function test_render_page_wp_dies_without_capability(): void {
+		$user_id = $this->factory()->user->create( array( 'role' => 'subscriber' ) );
+		wp_set_current_user( $user_id );
+
+		$instance = Network::get_instance();
+
+		$this->expectException( \WPDieException::class );
+
+		try {
+			$instance->render_page();
+		} finally {
+			wp_delete_user( $user_id );
+		}
+	}
+
+	/**
+	 * Coverage for handle_save wp_die path (no capability).
+	 *
+	 * @covers ::handle_save
+	 *
+	 * @return void
+	 */
+	public function test_handle_save_wp_dies_without_capability(): void {
+		$user_id = $this->factory()->user->create( array( 'role' => 'subscriber' ) );
+		wp_set_current_user( $user_id );
+
+		$instance = Network::get_instance();
+
+		$this->expectException( \WPDieException::class );
+
+		try {
+			$instance->handle_save();
+		} finally {
+			wp_delete_user( $user_id );
+		}
+	}
+
+	/**
+	 * Coverage for handle_values_save wp_die path (no capability).
+	 *
+	 * @covers ::handle_values_save
+	 *
+	 * @return void
+	 */
+	public function test_handle_values_save_wp_dies_without_capability(): void {
+		$user_id = $this->factory()->user->create( array( 'role' => 'subscriber' ) );
+		wp_set_current_user( $user_id );
+
+		$instance = Network::get_instance();
+
+		$this->expectException( \WPDieException::class );
+
+		try {
+			$instance->handle_values_save();
+		} finally {
+			wp_delete_user( $user_id );
+		}
+	}
+
 }
