@@ -96,9 +96,23 @@ if ( 0 < $gatherpress_raw_width && ! $gatherpress_is_wide_or_full ) {
 }
 
 if ( 0 === $gatherpress_raw_width || 0 === $gatherpress_raw_height || $gatherpress_is_wide_or_full ) {
-	$gatherpress_styles[] = sprintf(
+	// The `aspectRatio` block attr lands directly in an inline style.
+	// get_block_wrapper_attributes() doesn't sanitize individual CSS
+	// values, so an editor-role attacker with edit_posts could otherwise
+	// stamp a payload like `1/1;background:url(...)`. Accept only the
+	// narrow `N/N` or `N:N` form the block ever emits; anything else
+	// falls back to the server default. The pattern is shared with the
+	// REST validator so the two can never drift apart.
+	$gatherpress_ratio_candidate = '' !== $gatherpress_ratio
+		? $gatherpress_ratio
+		: Venue_Map::DEFAULT_ASPECT_RATIO;
+	$gatherpress_ratio_is_valid  = (bool) preg_match(
+		Venue_Map::ASPECT_RATIO_PATTERN,
+		$gatherpress_ratio_candidate
+	);
+	$gatherpress_styles[]        = sprintf(
 		'aspect-ratio:%s',
-		'' !== $gatherpress_ratio ? $gatherpress_ratio : Venue_Map::DEFAULT_ASPECT_RATIO
+		$gatherpress_ratio_is_valid ? $gatherpress_ratio_candidate : Venue_Map::DEFAULT_ASPECT_RATIO
 	);
 }
 

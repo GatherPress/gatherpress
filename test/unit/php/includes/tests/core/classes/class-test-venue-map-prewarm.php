@@ -343,6 +343,35 @@ class Test_Venue_Map_Prewarm extends Base {
 	}
 
 	/**
+	 * Draft / trashed venue saves skip the enqueue path — only published
+	 * posts are reachable from the front-end and contribute to the cache
+	 * set, so unpublished saves shouldn't spend cron cycles on them.
+	 *
+	 * @covers ::on_post_saved
+	 *
+	 * @return void
+	 */
+	public function test_on_post_saved_skips_non_published_posts(): void {
+		$instance = Venue_Map_Prewarm::get_instance();
+
+		foreach ( array( 'draft', 'auto-draft', 'trash' ) as $status ) {
+			$venue_post_id = $this->factory->post->create(
+				array(
+					'post_type'   => Venue::POST_TYPE,
+					'post_status' => $status,
+				)
+			);
+
+			$instance->on_post_saved( $venue_post_id, get_post( $venue_post_id ) );
+		}
+
+		$this->assertFalse(
+			(bool) wp_next_scheduled( Venue_Map_Prewarm::CRON_ACTION ),
+			'Non-published saves enqueue nothing.'
+		);
+	}
+
+	/**
 	 * Delegates to Venue_Map::warm from the cron handler — this test only
 	 * verifies it tolerates a missing venue ID without throwing
 	 * (Venue_Map::warm returns null for invalid input).
@@ -575,6 +604,120 @@ class Test_Venue_Map_Prewarm extends Base {
 			(bool) wp_next_scheduled( Venue_Map_Prewarm::CRON_ACTION ),
 			'Event with no venue term enqueues nothing.'
 		);
+	}
+
+	/**
+	 * Content scan paginates through event-post batches — with a batch
+	 * size of 1 and two events contributing combos, the loop must tick
+	 * past its full-batch branch (the ++$page path) to reach the second
+	 * event.
+	 *
+	 * @covers ::collect_all_template_combos
+	 *
+	 * @return void
+	 */
+	public function test_collect_all_template_combos_paginates_event_content(): void {
+		$instance = Venue_Map_Prewarm::get_instance();
+
+		$this->factory->post->create(
+			array(
+				'post_type'    => 'gatherpress_event',
+				'post_status'  => 'publish',
+				'post_content' => '<!-- wp:gatherpress/venue-map '
+					. '{"zoom":5,"width":150,"height":75,"aspectRatio":"2/1"} /-->',
+			)
+		);
+		$this->factory->post->create(
+			array(
+				'post_type'    => 'gatherpress_event',
+				'post_status'  => 'publish',
+				'post_content' => '<!-- wp:gatherpress/venue-map '
+					. '{"zoom":4,"width":120,"height":60,"aspectRatio":"2/1"} /-->',
+			)
+		);
+
+		$one_per_page = static function () {
+			return 1;
+		};
+		add_filter( 'gatherpress_venue_map_prewarm_content_batch_size', $one_per_page );
+
+		$combos = Utility::invoke_hidden_method( $instance, 'collect_all_template_combos' );
+
+		remove_filter( 'gatherpress_venue_map_prewarm_content_batch_size', $one_per_page );
+
+		$keys = array_map(
+			static function ( $combo ) {
+				return sprintf(
+					'%d-%d-%d-%s',
+					(int) $combo['zoom'],
+					(int) $combo['width'],
+					(int) $combo['height'],
+					(string) $combo['aspect_ratio']
+				);
+			},
+			$combos
+		);
+
+		$this->assertContains( '5-150-75-2/1', $keys, 'First event combo surfaced.' );
+		$this->assertContains( '4-120-60-2/1', $keys, 'Second event combo surfaced through the ++$page tail.' );
+	}
+
+	/**
+	 * Content-scan batch size is separately filterable so an extender can
+	 * shrink the post_content-loading loop without touching the ID-only
+	 * venue scan. Clamps to at least 1.
+	 *
+	 * @covers ::get_content_scan_batch_size
+	 *
+	 * @return void
+	 */
+	public function test_get_content_scan_batch_size_applies_filter_and_clamps(): void {
+		$instance = Venue_Map_Prewarm::get_instance();
+
+		$this->assertSame(
+			Venue_Map_Prewarm::CONTENT_SCAN_BATCH_SIZE,
+			Utility::invoke_hidden_method( $instance, 'get_content_scan_batch_size' ),
+			'Default matches the CONTENT_SCAN_BATCH_SIZE constant.'
+		);
+
+		$override = static function () {
+			return 7;
+		};
+		add_filter( 'gatherpress_venue_map_prewarm_content_batch_size', $override );
+
+		$this->assertSame(
+			7,
+			Utility::invoke_hidden_method( $instance, 'get_content_scan_batch_size' ),
+			'Filter-supplied value replaces the default.'
+		);
+
+		remove_filter( 'gatherpress_venue_map_prewarm_content_batch_size', $override );
+
+		$clamp = static function () {
+			return -5;
+		};
+		add_filter( 'gatherpress_venue_map_prewarm_content_batch_size', $clamp );
+
+		$this->assertSame(
+			1,
+			Utility::invoke_hidden_method( $instance, 'get_content_scan_batch_size' ),
+			'Values below 1 clamp up to 1.'
+		);
+
+		remove_filter( 'gatherpress_venue_map_prewarm_content_batch_size', $clamp );
+
+		$ceiling = static function () {
+			return PHP_INT_MAX;
+		};
+		add_filter( 'gatherpress_venue_map_prewarm_content_batch_size', $ceiling );
+
+		$this->assertSame(
+			1000,
+			Utility::invoke_hidden_method( $instance, 'get_content_scan_batch_size' ),
+			'Values above 1000 clamp down so a misbehaving filter can\'t load every event at once.'
+		);
+
+		remove_filter( 'gatherpress_venue_map_prewarm_content_batch_size', $ceiling );
 	}
 
 	/**

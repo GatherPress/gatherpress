@@ -739,6 +739,73 @@ class Test_Venue_Map extends Base {
 	}
 
 	/**
+	 * Downstream code can shape the descriptor map through the
+	 * `gatherpress_venue_map_descriptors` filter — companion plugins, CDN
+	 * layers, or multi-locale setups get a single hook point to suppress,
+	 * override, or augment entries without patching core.
+	 *
+	 * @covers ::get_all_descriptors
+	 *
+	 * @return void
+	 */
+	public function test_get_all_descriptors_runs_through_filter(): void {
+		$instance = Venue_Map::get_instance();
+		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
+
+		update_post_meta(
+			$post_id,
+			Venue_Map::META_KEY,
+			array(
+				'15x600x300' => array(
+					'url'    => 'https://example.test/a.png',
+					'hash'   => 'abc',
+					'zoom'   => 15,
+					'width'  => 600,
+					'height' => 300,
+				),
+			)
+		);
+
+		$override = static function ( $descriptors, $filtered_post_id ) {
+			// Verify the filter receives both documented arguments.
+			foreach ( $descriptors as $key => $entry ) {
+				$descriptors[ $key ]['url']     = 'https://cdn.test/' . $filtered_post_id . '-' . $key . '.png';
+				$descriptors[ $key ]['post_id'] = $filtered_post_id;
+			}
+			return $descriptors;
+		};
+		add_filter( 'gatherpress_venue_map_descriptors', $override, 10, 2 );
+
+		$descriptors = $instance->get_all_descriptors( $post_id );
+
+		remove_filter( 'gatherpress_venue_map_descriptors', $override, 10 );
+
+		$this->assertSame(
+			sprintf( 'https://cdn.test/%d-15x600x300.png', $post_id ),
+			$descriptors['15x600x300']['url'],
+			'Filter can rewrite a URL.'
+		);
+		$this->assertSame(
+			$post_id,
+			$descriptors['15x600x300']['post_id'],
+			'Filter receives the venue post ID as its second argument.'
+		);
+
+		$suppress_all = static function () {
+			return array();
+		};
+		add_filter( 'gatherpress_venue_map_descriptors', $suppress_all );
+
+		$this->assertSame(
+			array(),
+			$instance->get_all_descriptors( $post_id ),
+			'Filter can suppress the entire map by returning an empty array.'
+		);
+
+		remove_filter( 'gatherpress_venue_map_descriptors', $suppress_all );
+	}
+
+	/**
 	 * The next write through ensure_descriptor_for_combo() rebuilds meta
 	 * from the filtered descriptor map, so any malformed entries that were
 	 * silently skipped on read are dropped from storage at that point.
@@ -2527,6 +2594,106 @@ class Test_Venue_Map extends Base {
 		$this->assertSame( 200, $response->get_status() );
 		$data = $response->get_data();
 		$this->assertSame( 'generation_failed', $data['reason'] );
+	}
+
+	/**
+	 * Rejects a malformed `aspect_ratio` parameter at the REST boundary
+	 * with a 400 instead of silently falling back. Empty / valid values
+	 * (slash or colon form) pass through.
+	 *
+	 * @covers ::register_rest_routes
+	 *
+	 * @return void
+	 */
+	public function test_rest_regenerate_aspect_ratio_validator(): void {
+		$instance = Venue_Map::get_instance();
+		$instance->register_rest_routes();
+
+		$editor_id = $this->factory->user->create( array( 'role' => 'editor' ) );
+		$post_id   = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
+
+		add_post_meta(
+			$post_id,
+			'gatherpress_venue_information',
+			wp_json_encode(
+				array(
+					'fullAddress' => '1 Infinite Loop',
+					'latitude'    => '37.3318',
+					'longitude'   => '-122.0312',
+				)
+			)
+		);
+
+		wp_set_current_user( $editor_id );
+
+		$invalid = new \WP_REST_Request(
+			'POST',
+			sprintf( '/%s/venue/%d/regenerate-map', GATHERPRESS_REST_NAMESPACE, $post_id )
+		);
+		$invalid->set_param( 'aspect_ratio', 'not-a-ratio' );
+
+		$this->assertSame(
+			400,
+			rest_do_request( $invalid )->get_status(),
+			'A malformed aspect_ratio string is rejected at the REST boundary.'
+		);
+
+		$valid_slash = new \WP_REST_Request(
+			'POST',
+			sprintf( '/%s/venue/%d/regenerate-map', GATHERPRESS_REST_NAMESPACE, $post_id )
+		);
+		$valid_slash->set_param( 'aspect_ratio', '16/9' );
+		$this->assertSame(
+			200,
+			rest_do_request( $valid_slash )->get_status(),
+			'Slash-form aspect ratio passes.'
+		);
+
+		$valid_colon = new \WP_REST_Request(
+			'POST',
+			sprintf( '/%s/venue/%d/regenerate-map', GATHERPRESS_REST_NAMESPACE, $post_id )
+		);
+		$valid_colon->set_param( 'aspect_ratio', '4:3' );
+		$this->assertSame(
+			200,
+			rest_do_request( $valid_colon )->get_status(),
+			'Colon-form aspect ratio passes.'
+		);
+
+		$empty = new \WP_REST_Request(
+			'POST',
+			sprintf( '/%s/venue/%d/regenerate-map', GATHERPRESS_REST_NAMESPACE, $post_id )
+		);
+		$empty->set_param( 'aspect_ratio', '' );
+		$this->assertSame(
+			200,
+			rest_do_request( $empty )->get_status(),
+			'Empty aspect ratio is treated as "use server default" and passes.'
+		);
+
+		// Degenerate `0/X` / `X/0` values that CSS would treat as auto
+		// must still be rejected — the block never emits a zero side.
+		$zero_numerator = new \WP_REST_Request(
+			'POST',
+			sprintf( '/%s/venue/%d/regenerate-map', GATHERPRESS_REST_NAMESPACE, $post_id )
+		);
+		$zero_numerator->set_param( 'aspect_ratio', '0/9' );
+		$this->assertSame(
+			400,
+			rest_do_request( $zero_numerator )->get_status(),
+			'Zero numerator is rejected by the tightened [1-9] rule.'
+		);
+
+		$zero_denominator = new \WP_REST_Request(
+			'POST',
+			sprintf( '/%s/venue/%d/regenerate-map', GATHERPRESS_REST_NAMESPACE, $post_id )
+		);
+		$zero_denominator->set_param( 'aspect_ratio', '9/0' );
+		$this->assertSame(
+			400,
+			rest_do_request( $zero_denominator )->get_status(),
+			'Zero denominator is rejected by the tightened [1-9] rule.'
+		);
 	}
 
 	/**
