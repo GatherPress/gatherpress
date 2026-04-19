@@ -927,7 +927,7 @@ class Venue_Map {
 		 *
 		 * Companion plugins, multi-locale setups, or storage-layer overrides
 		 * can use this to drop entries they consider stale, add synthetic
-		 * descriptors (e.g. pre-rendered PNGs in a CDN), or rewrite URLs.
+		 * descriptors (e.g. pre-rendered PNG files in a CDN), or rewrite URLs.
 		 * Callers of this method already tolerate empty maps, so returning
 		 * `[]` is a valid "suppress all" escape hatch.
 		 *

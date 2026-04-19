@@ -607,13 +607,61 @@ class Test_Venue_Map_Prewarm extends Base {
 	}
 
 	/**
-	 * Batch-size filter lets callers override SCAN_BATCH_SIZE; values below
-	 * 1 are clamped up to 1 to avoid an infinite empty-batch loop.
+	 * Content scan paginates through event-post batches — with a batch
+	 * size of 1 and two events contributing combos, the loop must tick
+	 * past its full-batch branch (the ++$page path) to reach the second
+	 * event.
 	 *
-	 * @covers ::get_scan_batch_size
+	 * @covers ::collect_all_template_combos
 	 *
 	 * @return void
 	 */
+	public function test_collect_all_template_combos_paginates_event_content(): void {
+		$instance = Venue_Map_Prewarm::get_instance();
+
+		$this->factory->post->create(
+			array(
+				'post_type'    => 'gatherpress_event',
+				'post_status'  => 'publish',
+				'post_content' => '<!-- wp:gatherpress/venue-map '
+					. '{"zoom":5,"width":150,"height":75,"aspectRatio":"2/1"} /-->',
+			)
+		);
+		$this->factory->post->create(
+			array(
+				'post_type'    => 'gatherpress_event',
+				'post_status'  => 'publish',
+				'post_content' => '<!-- wp:gatherpress/venue-map '
+					. '{"zoom":4,"width":120,"height":60,"aspectRatio":"2/1"} /-->',
+			)
+		);
+
+		$one_per_page = static function () {
+			return 1;
+		};
+		add_filter( 'gatherpress_venue_map_prewarm_content_batch_size', $one_per_page );
+
+		$combos = Utility::invoke_hidden_method( $instance, 'collect_all_template_combos' );
+
+		remove_filter( 'gatherpress_venue_map_prewarm_content_batch_size', $one_per_page );
+
+		$keys = array_map(
+			static function ( $combo ) {
+				return sprintf(
+					'%d-%d-%d-%s',
+					(int) $combo['zoom'],
+					(int) $combo['width'],
+					(int) $combo['height'],
+					(string) $combo['aspect_ratio']
+				);
+			},
+			$combos
+		);
+
+		$this->assertContains( '5-150-75-2/1', $keys, 'First event combo surfaced.' );
+		$this->assertContains( '4-120-60-2/1', $keys, 'Second event combo surfaced through the ++$page tail.' );
+	}
+
 	/**
 	 * Content-scan batch size is separately filterable so an extender can
 	 * shrink the post_content-loading loop without touching the ID-only
