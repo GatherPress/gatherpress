@@ -721,5 +721,4 @@ class Test_Network extends Base {
 			wp_delete_user( $user_id );
 		}
 	}
-
 }
