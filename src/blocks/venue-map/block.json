@@ -32,6 +32,7 @@
 		},
 		"scale": {
 			"type": "string",
+			"enum": ["cover", "contain", "fill"],
 			"default": "cover"
 		},
 		"renderMode": {
