@@ -3395,6 +3395,15 @@ class Test_Venue_Map extends Base {
 		);
 	}
 
+	/**
+	 * Returns null when the resolved venue has no parsable coordinates —
+	 * the renderer's cue to fall through to the "coming soon" placeholder
+	 * instead of emitting an `<img>` at all.
+	 *
+	 * @covers ::get_descriptor_for_post
+	 *
+	 * @return void
+	 */
 	public function test_get_descriptor_for_post_returns_null_when_venue_has_no_coordinates(): void {
 		$instance = Venue_Map::get_instance();
 		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
