@@ -255,6 +255,73 @@ describe( 'RegenerateMapButton', () => {
 		expect( button ).not.toBeDisabled();
 	} );
 
+	it( 'falls back to a translated message when the rejected error has no .message', async () => {
+		// `{}` has no `message` so `error?.message || __( 'Could not …' )`
+		// must pick the translated fallback — the branch we missed last PR.
+		mockApiFetch.mockRejectedValueOnce( {} );
+
+		render( <RegenerateMapButton { ...defaultProps } /> );
+		fireEvent.click( screen.getByRole( 'button' ) );
+
+		await waitFor( () => {
+			expect( mockCreateErrorNotice ).toHaveBeenCalledWith(
+				expect.stringContaining( 'Could not regenerate' ),
+				{ type: 'snackbar' }
+			);
+		} );
+	} );
+
+	it( 'patches fresh descriptors into an empty meta object when current.meta is missing', async () => {
+		// A cached entity record that never got a `meta` key yet forces the
+		// `...( current.meta || {} )` spread to fall through to `{}`.
+		mockCurrentEntityRecord = { id: 42 };
+		mockApiFetch.mockResolvedValueOnce( {
+			descriptors: {
+				'18x300': {
+					url: 'https://example.test/42-abc.png',
+					hash: 'abc',
+					zoom: 18,
+					height: 300,
+				},
+			},
+			reason: '',
+		} );
+
+		render( <RegenerateMapButton { ...defaultProps } /> );
+		fireEvent.click( screen.getByRole( 'button' ) );
+
+		await waitFor( () => {
+			expect( mockReceiveEntityRecords ).toHaveBeenCalledTimes( 1 );
+		} );
+
+		const [ , , records ] = mockReceiveEntityRecords.mock.calls[ 0 ];
+		expect( records[ 0 ].meta.gatherpress_venue_static_map ).toEqual( {
+			'18x300': {
+				url: 'https://example.test/42-abc.png',
+				hash: 'abc',
+				zoom: 18,
+				height: 300,
+			},
+		} );
+	} );
+
+	it( 'stores an empty descriptor map when the response omits descriptors', async () => {
+		// A success response that forgets the `descriptors` key exercises the
+		// `response?.descriptors || {}` fallback so we never serialize
+		// `undefined` into the entity-record meta.
+		mockApiFetch.mockResolvedValueOnce( { reason: '' } );
+
+		render( <RegenerateMapButton { ...defaultProps } /> );
+		fireEvent.click( screen.getByRole( 'button' ) );
+
+		await waitFor( () => {
+			expect( mockReceiveEntityRecords ).toHaveBeenCalledTimes( 1 );
+		} );
+
+		const [ , , records ] = mockReceiveEntityRecords.mock.calls[ 0 ];
+		expect( records[ 0 ].meta.gatherpress_venue_static_map ).toEqual( {} );
+	} );
+
 	it( 'surfaces an error notice when the server reports generation_failed', async () => {
 		mockApiFetch.mockResolvedValueOnce( {
 			descriptors: {},

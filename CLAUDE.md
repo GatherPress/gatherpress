@@ -195,6 +195,15 @@ When working with this codebase:
 4. Test both PHP and JavaScript components
 5. Consider block editor compatibility when making changes
 
+### Auto-generated developer hook docs
+
+`docs/developer/hooks/` is regenerated automatically by CI — the `extract-wp-hooks-as-docs.yml` workflow runs on every push to `develop` that touches a `.php` file, runs `vendor/bin/extract-wp-hooks.php`, and opens a dedicated `fix/extract-wp-hooks-{sha}` PR titled "Hook docs updated!" with the regen.
+
+- **Do not commit changes under `docs/developer/hooks/` in feature PRs.** Add the new filter/action with a correct `@since` / `@param` / description docblock, and let CI regenerate the markdown on merge. Committing regen in a feature PR just creates duplicate diffs and churn when the auto-PR lands.
+- If you regenerated locally to sanity-check a docblock, revert before committing: `git checkout -- docs/developer/hooks/` and `rm` any newly-created hook markdown files.
+- The exception is a `fix/extract-wp-hooks-{sha}` branch itself — regen is the point of that branch. Merge-conflict resolution there is also fair game (take develop's version for any conflict, then re-run `vendor/bin/extract-wp-hooks.php` against the merged state).
+- This applies only to `docs/developer/hooks/`. `docs/user/` and the rest of `docs/developer/` are hand-maintained.
+
 ### JavaScript/TypeScript Guidelines
 
 - **No console.log statements**: JavaScript linting will fail if `console.log()` statements are present in the code. For debugging purposes, use proper debugging tools or remove all console statements before committing.
@@ -244,7 +253,16 @@ Based on WordPress Coding Standards (WPCS), always ensure:
     - Use `is_wp_error()`, `is_numeric()`, and similar WordPress/PHP functions
     - Cast types explicitly when needed: `(int) $comment->comment_post_ID`
 
-### PHP Testing Guidelines
+### Test Coverage
+
+**Full coverage is the bar — partial branch coverage does not count.** When you add or touch code, cover every branch: each side of a ternary, each arm of `||` / `??` fallbacks, each `if` / `else`, each optional-chain short-circuit, each falsy-default spread. If a line like `error?.message || __( 'fallback' )` has a test for the truthy side but not the falsy side, the PR is incomplete — add the missing case.
+
+- ✅ Good: a test for `error?.message` present *and* a test where `.message` is absent so the `__( 'fallback' )` branch executes.
+- ✅ Good: a test for `current.meta` being populated *and* a test where it's undefined so `( current.meta || {} )` spreads the empty default.
+- ✅ Good: a test where `response.descriptors` arrives *and* a test where it's missing so `response?.descriptors || {}` falls through.
+- ❌ Bad: shipping with the coverage tool reporting "1/2" on a branch and calling it done.
+
+Coverage gaps flagged by SonarCloud or the `test:unit:js` / `test:unit:php` coverage reports must be closed before merging — add the tests, don't suppress. `@codeCoverageIgnore` is reserved for genuinely unreachable/untestable code (the existing uses on missing-GD branches, unwritable filesystem branches) and is not a shortcut for "I didn't write the test yet."
 
 **Multisite test group**: GatherPress runs two separate PHPUnit test suites in CI — a standard single-site run and a multisite run. Tests that require a multisite WordPress environment are annotated with `@group multisite`. The standard `phpunit.xml.dist` excludes this group so it does not run locally via `npm run test:unit:php`, but CI runs it separately and merges the coverage data before the PR coverage check.
 

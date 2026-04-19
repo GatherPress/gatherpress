@@ -2775,4 +2775,651 @@ class Test_Venue_Map extends Base {
 		$data = $response->get_data();
 		$this->assertSame( 'awaiting_geocode', $data['reason'] );
 	}
+
+	/**
+	 * Appends the `@{density}x` suffix when density > 1 so the retina
+	 * variant lands at a sibling filename, and leaves the 1× filename
+	 * exactly as before.
+	 *
+	 * @covers ::filename_for
+	 *
+	 * @return void
+	 */
+	public function test_filename_for_appends_density_suffix_for_retina(): void {
+		$instance = Venue_Map::get_instance();
+
+		$one_x = Utility::invoke_hidden_method(
+			$instance,
+			'filename_for',
+			array( '1 Infinite Loop', 15, 800, 400, 1 )
+		);
+		$two_x = Utility::invoke_hidden_method(
+			$instance,
+			'filename_for',
+			array( '1 Infinite Loop', 15, 800, 400, 2 )
+		);
+
+		$this->assertSame( '1-infinite-loop-15-800-400.png', $one_x );
+		$this->assertSame( '1-infinite-loop-15-800-400@2x.png', $two_x );
+	}
+
+	/**
+	 * Passing `density=2` doubles the canvas dimensions and pulls tiles
+	 * from `zoom+1` so the retina variant contains true 2× detail rather
+	 * than upscaled 1× pixels. The 1× default is unchanged.
+	 *
+	 * @covers ::composite_image
+	 *
+	 * @return void
+	 */
+	public function test_composite_image_density_two_doubles_canvas(): void {
+		$instance = Venue_Map::get_instance();
+
+		// `short_circuit_tile_requests` (installed in setUp) stubs every
+		// outbound tile request with the shared 1×1 PNG, so this call
+		// never touches CartoDB — we only care that the *canvas* GD hands
+		// back is sized correctly, not what it was composited from.
+		$image = $instance->composite_image(
+			37.3318,
+			-122.0312,
+			15,
+			400,
+			200,
+			Venue_Map::DEFAULT_TILE_URL,
+			2
+		);
+
+		$this->assertInstanceOf( \GdImage::class, $image );
+		$this->assertSame( 800, imagesx( $image ), 'Retina canvas width is 2× the 1× value.' );
+		$this->assertSame( 400, imagesy( $image ), 'Retina canvas height is 2× the 1× value.' );
+
+		imagedestroy( $image );
+	}
+
+	/**
+	 * Density=2 must fetch tiles at `zoom + 1`. If the compositor uses
+	 * zoom+1 coords against zoom-N tile URLs the server 404s every request
+	 * and the canvas renders as gray — the bug this test locks down.
+	 *
+	 * @covers ::composite_image
+	 *
+	 * @return void
+	 */
+	public function test_composite_image_density_two_fetches_zoom_plus_one_tiles(): void {
+		$instance = Venue_Map::get_instance();
+
+		$zooms_seen = array();
+		$spy        = function ( $preempt, $args, $url ) use ( &$zooms_seen ) {
+			unset( $args );
+			$path = (string) wp_parse_url( $url, PHP_URL_PATH );
+			// CartoDB template: /light_all/{z}/{x}/{y}.png — the `{z}`
+			// segment is what composite_image() is supposed to bump by 1
+			// when density > 1.
+			if ( preg_match( '#/light_all/(\d+)/\d+/\d+\.png$#', $path, $m ) ) {
+				$zooms_seen[] = (int) $m[1];
+			}
+
+			return array(
+				'headers'  => array(),
+				'body'     => $this->tile_png,
+				'response' => array(
+					'code'    => 200,
+					'message' => 'OK',
+				),
+				'cookies'  => array(),
+				'filename' => null,
+			);
+		};
+
+		remove_filter( 'pre_http_request', array( $this, 'short_circuit_tile_requests' ), 10 );
+		add_filter( 'pre_http_request', $spy, 10, 3 );
+
+		$image = $instance->composite_image(
+			37.3318,
+			-122.0312,
+			15,
+			400,
+			200,
+			Venue_Map::DEFAULT_TILE_URL,
+			2
+		);
+
+		remove_filter( 'pre_http_request', $spy, 10 );
+		add_filter( 'pre_http_request', array( $this, 'short_circuit_tile_requests' ), 10, 3 );
+
+		imagedestroy( $image );
+
+		$this->assertNotEmpty( $zooms_seen, 'Retina composite must attempt at least one tile fetch.' );
+		$this->assertSame(
+			array( 16 ),
+			array_values( array_unique( $zooms_seen ) ),
+			'All retina tile requests must go to zoom + 1.'
+		);
+	}
+
+	/**
+	 * `$scale > 1` proportionally grows the marker so a retina composite
+	 * doesn't shrink the pin to a pinprick. Checks the "outer white halo"
+	 * radius by sampling a pixel that is outside the 1× marker but inside
+	 * the 2× marker.
+	 *
+	 * @covers ::stamp_marker
+	 *
+	 * @return void
+	 */
+	public function test_stamp_marker_scales_radii(): void {
+		$instance = Venue_Map::get_instance();
+		$canvas   = imagecreatetruecolor( 80, 80 );
+
+		// Seed the canvas with a distinctive background so we can tell a
+		// stamped pixel from an untouched one.
+		$bg = imagecolorallocate( $canvas, 0, 0, 0 );
+		imagefilledrectangle( $canvas, 0, 0, 79, 79, $bg );
+
+		$instance->stamp_marker( $canvas, 40, 40, 2.0 );
+
+		// 15px from center: outside the 1× halo (radius ~10), inside the 2×
+		// halo (radius ~20). Any non-background pixel here proves the scale
+		// factor actually grew the marker.
+		$index = imagecolorat( $canvas, 40, 25 );
+		$rgb   = imagecolorsforindex( $canvas, $index );
+
+		$this->assertNotSame(
+			array( 0, 0, 0 ),
+			array( $rgb['red'], $rgb['green'], $rgb['blue'] ),
+			'A pixel 15px above the marker center is only painted when the marker is scaled.'
+		);
+
+		imagedestroy( $canvas );
+	}
+
+	/**
+	 * With the default (filter unchanged) the retina variant is generated
+	 * alongside the 1× image: the descriptor carries a non-empty `url_2x`
+	 * whose filename ends in the `@2x.png` sibling convention.
+	 *
+	 * @covers ::ensure_descriptor_for_combo
+	 * @covers ::should_generate_retina
+	 *
+	 * @return void
+	 */
+	public function test_ensure_descriptor_for_combo_emits_retina_variant(): void {
+		$instance = Venue_Map::get_instance();
+		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
+
+		add_post_meta(
+			$post_id,
+			'gatherpress_venue_information',
+			wp_json_encode(
+				array(
+					'fullAddress' => '1 Infinite Loop',
+					'latitude'    => '37.3318',
+					'longitude'   => '-122.0312',
+				)
+			)
+		);
+
+		$instance->maybe_generate( $post_id );
+		$descriptor = $instance->get_stored_descriptor( $post_id );
+
+		$this->assertIsArray( $descriptor );
+		$this->assertNotEmpty( $descriptor['url'], '1× URL must be populated.' );
+		$this->assertNotEmpty( $descriptor['url_2x'], '2× URL must be populated by default.' );
+		$this->assertStringEndsWith(
+			'@2x.png',
+			$descriptor['url_2x'],
+			'Retina filename uses the @2x sibling convention.'
+		);
+		$this->assertFileExists(
+			$this->path_for_url( $descriptor['url_2x'] ),
+			'The retina PNG must exist on disk.'
+		);
+	}
+
+	/**
+	 * Filtering `gatherpress_venue_map_generate_2x` to false halves the
+	 * on-disk footprint: the descriptor keeps its 1× URL but `url_2x`
+	 * stays empty, and no `@2x.png` file is written.
+	 *
+	 * @covers ::ensure_descriptor_for_combo
+	 * @covers ::should_generate_retina
+	 *
+	 * @return void
+	 */
+	public function test_ensure_descriptor_for_combo_skips_retina_when_filter_disables(): void {
+		$instance = Venue_Map::get_instance();
+		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
+
+		add_post_meta(
+			$post_id,
+			'gatherpress_venue_information',
+			wp_json_encode(
+				array(
+					'fullAddress' => '1 Infinite Loop',
+					'latitude'    => '37.3318',
+					'longitude'   => '-122.0312',
+				)
+			)
+		);
+
+		$disable = static fn() => false;
+		add_filter( 'gatherpress_venue_map_generate_2x', $disable );
+
+		$instance->maybe_generate( $post_id );
+		$descriptor = $instance->get_stored_descriptor( $post_id );
+
+		remove_filter( 'gatherpress_venue_map_generate_2x', $disable );
+
+		$this->assertIsArray( $descriptor );
+		$this->assertNotEmpty( $descriptor['url'], '1× URL must still be populated when the filter disables 2×.' );
+		$this->assertSame( '', $descriptor['url_2x'], '2× URL must be empty when the filter disables generation.' );
+
+		// No sibling @2x.png was ever written.
+		$dirs     = wp_get_upload_dir();
+		$base_dir = trailingslashit( $dirs['basedir'] ) . Venue_Map::UPLOADS_SUBDIR;
+		$retina   = glob( $base_dir . '/*@2x.png' );
+
+		$this->assertEmpty( $retina, 'Disabling the filter must not leave any @2x files on disk.' );
+	}
+
+	/**
+	 * Pre-retina descriptors written before this plugin version omit the
+	 * `url_2x` key entirely. The read path normalizes the missing key to an
+	 * empty string so front-end callers can branch with a single
+	 * `'' !== $url_2x` check regardless of storage vintage.
+	 *
+	 * @covers ::get_all_descriptors
+	 *
+	 * @return void
+	 */
+	public function test_get_all_descriptors_normalizes_missing_url_2x(): void {
+		$instance = Venue_Map::get_instance();
+		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
+
+		update_post_meta(
+			$post_id,
+			Venue_Map::META_KEY,
+			array(
+				'15x600x300' => array(
+					'url'    => 'https://example.test/legacy.png',
+					'hash'   => 'abc',
+					'zoom'   => 15,
+					'width'  => 600,
+					'height' => 300,
+				),
+			)
+		);
+
+		$descriptors = $instance->get_all_descriptors( $post_id );
+
+		$this->assertArrayHasKey(
+			'url_2x',
+			$descriptors['15x600x300'],
+			'Legacy descriptors still expose url_2x to callers.'
+		);
+		$this->assertSame(
+			'',
+			$descriptors['15x600x300']['url_2x'],
+			'Missing url_2x normalizes to empty string.'
+		);
+	}
+
+	/**
+	 * `get_descriptor_for_post()` is the render-path accessor — it returns
+	 * the full descriptor (1× + 2× URLs) rather than just the 1× URL string
+	 * that `get_url_for_post()` exposes, so the block renderer can emit a
+	 * `srcset` without a second round-trip.
+	 *
+	 * @covers ::get_descriptor_for_post
+	 *
+	 * @return void
+	 */
+	public function test_get_descriptor_for_post_returns_full_descriptor(): void {
+		$instance = Venue_Map::get_instance();
+		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
+
+		add_post_meta(
+			$post_id,
+			'gatherpress_venue_information',
+			wp_json_encode(
+				array(
+					'fullAddress' => '1 Infinite Loop',
+					'latitude'    => '37.3318',
+					'longitude'   => '-122.0312',
+				)
+			)
+		);
+
+		$descriptor = $instance->get_descriptor_for_post(
+			$post_id,
+			Venue::POST_TYPE,
+			15,
+			800,
+			400,
+			'2/1'
+		);
+
+		$this->assertIsArray( $descriptor );
+		$this->assertSame( 15, $descriptor['zoom'] );
+		$this->assertSame( 800, $descriptor['width'] );
+		$this->assertSame( 400, $descriptor['height'] );
+		$this->assertNotEmpty( $descriptor['url'] );
+		$this->assertNotEmpty( $descriptor['url_2x'] );
+	}
+
+	/**
+	 * Returning `null` from `get_descriptor_for_post()` on a post that
+	 * isn't venue-related mirrors `get_url_for_post()`'s empty-string
+	 * contract — the renderer falls through to the "coming soon"
+	 * placeholder without attempting srcset emission.
+	 *
+	 * @covers ::get_descriptor_for_post
+	 *
+	 * @return void
+	 */
+	public function test_get_descriptor_for_post_returns_null_for_unrelated_post(): void {
+		$instance = Venue_Map::get_instance();
+		$post_id  = $this->factory->post->create( array( 'post_type' => 'post' ) );
+
+		$this->assertNull( $instance->get_descriptor_for_post( $post_id, 'post' ) );
+	}
+
+	/**
+	 * Walks event → linked venue when called with an event post ID, mirroring
+	 * the same resolution path `get_url_for_post()` used before the
+	 * descriptor refactor. Locks the event-side branch in so a regression
+	 * can't silently reduce `get_descriptor_for_post()` to venue-only input.
+	 *
+	 * @covers ::get_descriptor_for_post
+	 *
+	 * @return void
+	 */
+	public function test_get_descriptor_for_post_resolves_event_via_linked_venue(): void {
+		$instance    = Venue_Map::get_instance();
+		$venue_setup = \GatherPress\Core\Venue_Setup::get_instance();
+
+		$venue = $this->mock->post(
+			array(
+				'post_type'  => Venue::POST_TYPE,
+				'post_name'  => 'venue-for-descriptor-helper',
+				'post_title' => 'Venue For Descriptor Helper',
+			)
+		)->get();
+
+		$event = $this->mock->post(
+			array(
+				'post_type' => \GatherPress\Core\Event::POST_TYPE,
+				'post_name' => 'event-for-descriptor-helper',
+			)
+		)->get();
+
+		$term_slug = $venue_setup->term_slug_from_post_name( $venue->post_name );
+		wp_set_post_terms( $event->ID, $term_slug, Venue::TAXONOMY );
+
+		update_post_meta(
+			$venue->ID,
+			'gatherpress_venue_information',
+			wp_json_encode(
+				array(
+					'fullAddress' => '1 Infinite Loop',
+					'latitude'    => '37.3318',
+					'longitude'   => '-122.0312',
+				)
+			)
+		);
+		$instance->maybe_generate( $venue->ID );
+
+		$expected = $instance->get_stored_descriptor( $venue->ID );
+		$actual   = $instance->get_descriptor_for_post( $event->ID, \GatherPress\Core\Event::POST_TYPE );
+
+		$this->assertIsArray( $actual );
+		$this->assertSame( $expected['url'], $actual['url'] );
+		$this->assertSame( $expected['url_2x'], $actual['url_2x'] );
+	}
+
+	/**
+	 * Returns null when the resolved venue has no parsable coordinates —
+	 * the renderer's cue to fall through to the "coming soon" placeholder
+	 * instead of emitting an `<img>` at all.
+	 *
+	 * @covers ::get_descriptor_for_post
+	 *
+	 * @return void
+	 */
+	/**
+	 * At `zoom = ZOOM_MAX` the derived retina tile zoom would exceed what
+	 * the provider serves, so the retina variant must be skipped entirely
+	 * (empty `url_2x`, no `@2x.png` on disk). Generating it anyway would
+	 * 404 every tile request and persist a solid-gray PNG — the blocker
+	 * this test locks down.
+	 *
+	 * @covers ::ensure_descriptor_for_combo
+	 *
+	 * @return void
+	 */
+	public function test_ensure_descriptor_for_combo_skips_retina_at_zoom_ceiling(): void {
+		$instance = Venue_Map::get_instance();
+		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
+
+		add_post_meta(
+			$post_id,
+			'gatherpress_venue_information',
+			wp_json_encode(
+				array(
+					'fullAddress' => '1 Infinite Loop',
+					'latitude'    => '37.3318',
+					'longitude'   => '-122.0312',
+				)
+			)
+		);
+
+		$descriptor = $instance->get_descriptor_for_post(
+			$post_id,
+			Venue::POST_TYPE,
+			Venue_Map::ZOOM_MAX,
+			800,
+			400,
+			'2/1'
+		);
+
+		$this->assertIsArray( $descriptor );
+		$this->assertNotEmpty( $descriptor['url'], '1× must still render at the zoom ceiling.' );
+		$this->assertSame( '', $descriptor['url_2x'], 'Retina must be skipped at the zoom ceiling.' );
+
+		// Scope the on-disk check to this venue's slug — other tests in
+		// the run may have left their own @2x files behind that tearDown
+		// hasn't swept yet (tests share the uploads filesystem within a
+		// test class).
+		$expected_1x_path = $this->path_for_url( $descriptor['url'] );
+		$expected_2x_path = preg_replace( '/\.png$/', '@2x.png', $expected_1x_path );
+
+		$this->assertFileExists( $expected_1x_path, '1× file must be on disk at the ceiling.' );
+		$this->assertFileDoesNotExist(
+			$expected_2x_path,
+			'No @2x file must be written when the tile zoom would exceed the provider ceiling.'
+		);
+	}
+
+	/**
+	 * `composite_image()` clamps `tile_zoom` to `ZOOM_MAX` as
+	 * defense-in-depth. When a caller invokes it directly at the ceiling
+	 * the retina pass still returns a canvas — degraded (same zoom as 1×,
+	 * just larger) but not the broken all-gray PNG you'd get if we let
+	 * zoom+1 requests sail past the provider's max.
+	 *
+	 * @covers ::composite_image
+	 *
+	 * @return void
+	 */
+	public function test_composite_image_clamps_tile_zoom_to_ceiling(): void {
+		$instance = Venue_Map::get_instance();
+
+		$zooms_seen = array();
+		$spy        = function ( $preempt, $args, $url ) use ( &$zooms_seen ) {
+			unset( $args );
+			$path = (string) wp_parse_url( $url, PHP_URL_PATH );
+			if ( preg_match( '#/light_all/(\d+)/\d+/\d+\.png$#', $path, $m ) ) {
+				$zooms_seen[] = (int) $m[1];
+			}
+
+			return array(
+				'headers'  => array(),
+				'body'     => $this->tile_png,
+				'response' => array(
+					'code'    => 200,
+					'message' => 'OK',
+				),
+				'cookies'  => array(),
+				'filename' => null,
+			);
+		};
+
+		remove_filter( 'pre_http_request', array( $this, 'short_circuit_tile_requests' ), 10 );
+		add_filter( 'pre_http_request', $spy, 10, 3 );
+
+		$image = $instance->composite_image(
+			37.3318,
+			-122.0312,
+			Venue_Map::ZOOM_MAX,
+			400,
+			200,
+			Venue_Map::DEFAULT_TILE_URL,
+			Venue_Map::RETINA_DENSITY
+		);
+
+		remove_filter( 'pre_http_request', $spy, 10 );
+		add_filter( 'pre_http_request', array( $this, 'short_circuit_tile_requests' ), 10, 3 );
+
+		imagedestroy( $image );
+
+		$this->assertNotEmpty( $zooms_seen, 'Retina composite at the ceiling must still attempt tile fetches.' );
+		$this->assertSame(
+			array( Venue_Map::ZOOM_MAX ),
+			array_values( array_unique( $zooms_seen ) ),
+			'Tile fetches must clamp to ZOOM_MAX instead of overshooting to zoom+1 above the provider ceiling.'
+		);
+	}
+
+	/**
+	 * Densities outside the supported allow-list (1, 2) are coerced back
+	 * to 1. Without this `(int) log(3, 2) === 1` would produce a
+	 * canvas-tripled-but-only-zoom+1-tiles image — a cheap upscale that
+	 * wastes disk for no retina win.
+	 *
+	 * @covers ::composite_image
+	 *
+	 * @return void
+	 */
+	public function test_composite_image_coerces_unsupported_density_back_to_one(): void {
+		$instance = Venue_Map::get_instance();
+
+		$image = $instance->composite_image(
+			37.3318,
+			-122.0312,
+			15,
+			400,
+			200,
+			Venue_Map::DEFAULT_TILE_URL,
+			3
+		);
+
+		$this->assertSame(
+			400,
+			imagesx( $image ),
+			'Unsupported density must fall back to 1× canvas width.'
+		);
+		$this->assertSame(
+			200,
+			imagesy( $image ),
+			'Unsupported density must fall back to 1× canvas height.'
+		);
+
+		imagedestroy( $image );
+	}
+
+	/**
+	 * When a legacy (pre-retina) descriptor's 1× PNG is already on disk
+	 * and the hash is still valid, `ensure_descriptor_for_combo()` must
+	 * only regenerate the retina sibling — not burn a round-trip
+	 * recompositing the 1× from scratch. Confirms the
+	 * `$has_valid_1x && $needs_retina` short-circuit by checking that the
+	 * 1× filesystem mtime stays put while the 2× sibling appears.
+	 *
+	 * @covers ::ensure_descriptor_for_combo
+	 *
+	 * @return void
+	 */
+	public function test_ensure_descriptor_for_combo_reuses_valid_1x_when_filling_in_retina(): void {
+		$instance = Venue_Map::get_instance();
+		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
+
+		add_post_meta(
+			$post_id,
+			'gatherpress_venue_information',
+			wp_json_encode(
+				array(
+					'fullAddress' => '1 Infinite Loop',
+					'latitude'    => '37.3318',
+					'longitude'   => '-122.0312',
+				)
+			)
+		);
+
+		// Seed a legacy-shape descriptor: valid 1× on disk, no url_2x.
+		// Suppressing retina for this first pass gets us exactly the
+		// pre-retina-upgrade state the short-circuit is designed for.
+		$suppress_retina = static fn() => false;
+		add_filter( 'gatherpress_venue_map_generate_2x', $suppress_retina );
+		$instance->maybe_generate( $post_id );
+		remove_filter( 'gatherpress_venue_map_generate_2x', $suppress_retina );
+
+		$legacy = $instance->get_stored_descriptor( $post_id );
+		$this->assertSame( '', $legacy['url_2x'], 'Setup: legacy descriptor has no retina URL.' );
+
+		$one_x_path  = $this->path_for_url( $legacy['url'] );
+		$mtime_first = filemtime( $one_x_path );
+
+		// Force fs mtime to change if imagepng runs again.
+		sleep( 1 );
+
+		// Second call with retina back on — the 1× is still valid, only
+		// the retina sibling should be written.
+		$instance->maybe_generate( $post_id );
+
+		$upgraded = $instance->get_stored_descriptor( $post_id );
+		$this->assertNotEmpty( $upgraded['url_2x'], 'Retina fill-in must populate url_2x.' );
+		$this->assertSame(
+			$mtime_first,
+			filemtime( $one_x_path ),
+			'The valid 1× PNG must not be recomposited when only the retina sibling is missing.'
+		);
+	}
+
+	/**
+	 * Returns null when the resolved venue has no parsable coordinates —
+	 * the renderer's cue to fall through to the "coming soon" placeholder
+	 * instead of emitting an `<img>` at all.
+	 *
+	 * @covers ::get_descriptor_for_post
+	 *
+	 * @return void
+	 */
+	public function test_get_descriptor_for_post_returns_null_when_venue_has_no_coordinates(): void {
+		$instance = Venue_Map::get_instance();
+		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
+
+		add_post_meta(
+			$post_id,
+			'gatherpress_venue_information',
+			wp_json_encode(
+				array(
+					'fullAddress' => 'Somewhere',
+					'latitude'    => '',
+					'longitude'   => '',
+				)
+			)
+		);
+
+		$this->assertNull( $instance->get_descriptor_for_post( $post_id, Venue::POST_TYPE ) );
+	}
 }
