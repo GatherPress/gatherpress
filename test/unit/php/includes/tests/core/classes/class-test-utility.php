@@ -217,32 +217,116 @@ class Test_Utility extends Base {
 	 */
 	public function data_get_system_timezone(): array {
 		return array(
+			// No gmt_offset and no timezone_string → defaults to UTC.
 			array(
 				false,
 				false,
-				'UTC+0',
+				'UTC',
 			),
+			// Whole positive offset.
 			array(
 				5,
 				false,
-				'UTC+5',
+				'+05:00',
 			),
+			// Whole negative offset.
 			array(
 				-4,
 				false,
-				'UTC-4',
+				'-04:00',
 			),
+			// Fractional offset (e.g. India).
+			array(
+				5.5,
+				false,
+				'+05:30',
+			),
+			// IANA passthrough.
 			array(
 				false,
 				'Europe/London',
 				'Europe/London',
 			),
+			// Etc/GMT is stripped; falls back to gmt_offset.
 			array(
-				false,
+				-3,
 				'Etc/GMT+3',
-				'UTC-3',
+				'-03:00',
 			),
 		);
+	}
+
+	/**
+	 * Data provider for test_offset_to_timezone_string.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return array
+	 */
+	public function data_offset_to_timezone_string(): array {
+		return array(
+			'zero returns UTC'                  => array( 0.0, 'UTC' ),
+			'positive whole hour'               => array( 5.0, '+05:00' ),
+			'negative whole hour'               => array( -8.0, '-08:00' ),
+			'positive half hour (India)'        => array( 5.5, '+05:30' ),
+			'negative half hour (Newfoundland)' => array( -3.5, '-03:30' ),
+			'positive quarter hour (Kathmandu)' => array( 5.75, '+05:45' ),
+		);
+	}
+
+	/**
+	 * Coverage for offset_to_timezone_string.
+	 *
+	 * @dataProvider data_offset_to_timezone_string
+	 *
+	 * @covers ::offset_to_timezone_string
+	 *
+	 * @param float  $offset   Decimal hour offset from UTC.
+	 * @param string $expected Expected DateTimeZone-compatible string.
+	 * @return void
+	 */
+	public function test_offset_to_timezone_string( float $offset, string $expected ): void {
+		$this->assertSame( $expected, Utility::offset_to_timezone_string( $offset ) );
+	}
+
+	/**
+	 * Data provider for test_normalize_timezone_string.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return array
+	 */
+	public function data_normalize_timezone_string(): array {
+		return array(
+			'empty string becomes UTC'           => array( '', 'UTC' ),
+			'whitespace-only string becomes UTC' => array( '   ', 'UTC' ),
+			'offset +HH:MM passes through'       => array( '+05:30', '+05:30' ),
+			'offset -HH:MM passes through'       => array( '-08:00', '-08:00' ),
+			'literal UTC passes through'         => array( 'UTC', 'UTC' ),
+			'UTC+0 normalizes to UTC'            => array( 'UTC+0', 'UTC' ),
+			'UTC-0 normalizes to UTC'            => array( 'UTC-0', 'UTC' ),
+			'UTC+5 becomes +05:00'               => array( 'UTC+5', '+05:00' ),
+			'UTC-8 becomes -08:00'               => array( 'UTC-8', '-08:00' ),
+			'UTC+5.5 becomes +05:30'             => array( 'UTC+5.5', '+05:30' ),
+			'UTC+5:30 becomes +05:30'            => array( 'UTC+5:30', '+05:30' ),
+			'UTC with zero colon form'           => array( 'UTC+0:00', 'UTC' ),
+			'IANA identifier passes through'     => array( 'America/New_York', 'America/New_York' ),
+		);
+	}
+
+	/**
+	 * Coverage for normalize_timezone_string.
+	 *
+	 * @dataProvider data_normalize_timezone_string
+	 *
+	 * @covers ::normalize_timezone_string
+	 *
+	 * @param string $input    Input timezone string.
+	 * @param string $expected Expected normalized output.
+	 * @return void
+	 */
+	public function test_normalize_timezone_string( string $input, string $expected ): void {
+		$this->assertSame( $expected, Utility::normalize_timezone_string( $input ) );
 	}
 
 	/**

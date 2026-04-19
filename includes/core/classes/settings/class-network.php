@@ -110,7 +110,7 @@ class Network {
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only page check.
 		$page = isset( $_GET['page'] ) ? sanitize_key( wp_unslash( $_GET['page'] ) ) : '';
 
-		if ( '' === $page || 0 !== strpos( $page, 'gatherpress_' ) ) {
+		if ( '' === $page || ! str_starts_with( $page, 'gatherpress_' ) ) {
 			return;
 		}
 
@@ -136,16 +136,10 @@ class Network {
 			return;
 		}
 
-		// Only surface the notice to users who can actually act on the link.
-		// Regular site admins get per-field notes instead (no dead-end link).
-		if ( ! current_user_can( 'manage_network_options' ) ) {
-			return;
-		}
-
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only page check.
 		$page = isset( $_GET['page'] ) ? sanitize_key( wp_unslash( $_GET['page'] ) ) : '';
 
-		if ( '' === $page || 0 !== strpos( $page, 'gatherpress_' ) ) {
+		if ( '' === $page || ! str_starts_with( $page, 'gatherpress_' ) ) {
 			return;
 		}
 
@@ -169,32 +163,37 @@ class Network {
 			return;
 		}
 
-		$link = sprintf(
-			'<a href="%s">%s</a>',
-			esc_url(
-				network_admin_url(
-					sprintf( 'settings.php?page=%s', self::PAGE_SLUG )
-				)
-			),
-			esc_html__( 'Network Admin → Settings → GatherPress', 'gatherpress' )
+		// Shown to every admin who can reach the settings page.
+		$message = esc_html__(
+			'Some GatherPress settings on this site are inherited from the network.',
+			'gatherpress'
 		);
 
-		printf(
-			'<div class="notice notice-info"><p>%s</p></div>',
-			wp_kses(
+		// Append the network-admin link only for users who can actually
+		// follow it — regular site admins would hit a dead end.
+		if ( current_user_can( 'manage_network_options' ) ) {
+			$link = sprintf(
+				'<a href="%s">%s</a>',
+				esc_url(
+					network_admin_url(
+						sprintf( 'settings.php?page=%s', self::PAGE_SLUG )
+					)
+				),
+				esc_html__( 'Network Admin → Settings → GatherPress', 'gatherpress' )
+			);
+
+			$message .= ' ' . wp_kses(
 				sprintf(
 					/* translators: %s: link to the network admin GatherPress settings page. */
-					__(
-						// phpcs:disable Generic.Files.LineLength.TooLong
-						'Some GatherPress settings on this site are inherited from the network. Locked fields can only be changed from %s.',
-						// phpcs:enable Generic.Files.LineLength.TooLong
-						'gatherpress'
-					),
+					__( 'Locked fields can only be changed from %s.', 'gatherpress' ),
 					$link
 				),
 				array( 'a' => array( 'href' => true ) )
-			)
-		);
+			);
+		}
+
+		// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Both halves escaped above.
+		printf( '<div class="notice notice-info"><p>%s</p></div>', $message );
 	}
 
 	/**
