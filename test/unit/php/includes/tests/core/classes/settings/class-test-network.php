@@ -27,6 +27,7 @@ class Test_Network extends Base {
 	 */
 	public function tearDown(): void {
 		delete_site_option( Network::OPTION_NAME );
+		Network::flush_config_cache();
 		parent::tearDown();
 	}
 
@@ -674,6 +675,96 @@ class Test_Network extends Base {
 		try {
 			$instance->render_page();
 		} finally {
+			wp_delete_user( $user_id );
+		}
+	}
+
+	/**
+	 * Coverage for render_page when the current user has the required
+	 * capability — renders the template without dying.
+	 *
+	 * @covers ::render_page
+	 *
+	 * @group   multisite
+	 *
+	 * @return void
+	 */
+	public function test_render_page_renders_template_for_super_admin(): void {
+		if ( ! is_multisite() ) {
+			$this->markTestSkipped( 'Requires multisite.' );
+		}
+
+		$user_id = $this->factory()->user->create( array( 'role' => 'administrator' ) );
+		grant_super_admin( $user_id );
+		wp_set_current_user( $user_id );
+
+		$instance = Network::get_instance();
+		$output   = PMC_Utility::buffer_and_return( array( $instance, 'render_page' ) );
+
+		revoke_super_admin( $user_id );
+		wp_delete_user( $user_id );
+
+		$this->assertStringContainsString( 'GatherPress Network Settings', $output );
+	}
+
+	/**
+	 * Coverage for handle_save when the nonce is missing or invalid —
+	 * check_admin_referer calls wp_die.
+	 *
+	 * @covers ::handle_save
+	 *
+	 * @group   multisite
+	 *
+	 * @return void
+	 */
+	public function test_handle_save_wp_dies_on_invalid_nonce(): void {
+		if ( ! is_multisite() ) {
+			$this->markTestSkipped( 'Requires multisite.' );
+		}
+
+		$user_id = $this->factory()->user->create( array( 'role' => 'administrator' ) );
+		grant_super_admin( $user_id );
+		wp_set_current_user( $user_id );
+
+		$instance = Network::get_instance();
+
+		$this->expectException( \WPDieException::class );
+
+		try {
+			$instance->handle_save();
+		} finally {
+			revoke_super_admin( $user_id );
+			wp_delete_user( $user_id );
+		}
+	}
+
+	/**
+	 * Coverage for handle_values_save when the nonce is missing or invalid —
+	 * check_admin_referer calls wp_die.
+	 *
+	 * @covers ::handle_values_save
+	 *
+	 * @group   multisite
+	 *
+	 * @return void
+	 */
+	public function test_handle_values_save_wp_dies_on_invalid_nonce(): void {
+		if ( ! is_multisite() ) {
+			$this->markTestSkipped( 'Requires multisite.' );
+		}
+
+		$user_id = $this->factory()->user->create( array( 'role' => 'administrator' ) );
+		grant_super_admin( $user_id );
+		wp_set_current_user( $user_id );
+
+		$instance = Network::get_instance();
+
+		$this->expectException( \WPDieException::class );
+
+		try {
+			$instance->handle_values_save();
+		} finally {
+			revoke_super_admin( $user_id );
 			wp_delete_user( $user_id );
 		}
 	}

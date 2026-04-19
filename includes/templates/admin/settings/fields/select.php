@@ -28,6 +28,11 @@ $gatherpress_disabled = ! empty( $disabled ) ? ' disabled' : '';
 // `$_POST[$name]` — carry the current (possibly inherited) value so the
 // saved value matches what the UI displayed.
 $gatherpress_fallback = ! empty( $disabled ) ? (string) $value : '0';
+
+// IMPORTANT: keep the hidden input BEFORE the select. PHP takes the
+// last value for a repeated name, so an enabled select's submission
+// wins over the hidden fallback. If you reorder these two, the hidden
+// overrides the select and the saved value is always the fallback.
 ?>
 <input type="hidden" name="<?php echo esc_attr( $name ); ?>" value="<?php echo esc_attr( $gatherpress_fallback ); ?>" />
 <label for="<?php echo esc_attr( $option ); ?>"><?php echo esc_html( $label ); ?></label><br/>

@@ -73,6 +73,15 @@ class Network {
 	const VALUES_EDIT_ACTION  = 'gatherpress_network_values';
 
 	/**
+	 * Per-request cache for get_config() — see get_config() for rationale.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @var array|null
+	 */
+	protected static ?array $config_cache = null;
+
+	/**
 	 * Constructor.
 	 *
 	 * @since 1.0.0
@@ -138,9 +147,15 @@ class Network {
 
 		// The notice should not render on the network admin settings page
 		// itself — that's where super admins edit the inherited values.
+		// Defining WP_NETWORK_ADMIN under PHPUnit is process-wide and
+		// pollutes sibling tests, so this branch is not covered in tests.
+		// phpcs:ignore Squiz.Commenting.InlineComment.InvalidEndChar -- PHPUnit annotation must match exactly.
+		// @codeCoverageIgnoreStart
 		if ( is_network_admin() ) {
 			return;
 		}
+		// phpcs:ignore Squiz.Commenting.InlineComment.InvalidEndChar -- PHPUnit annotation must match exactly.
+		// @codeCoverageIgnoreEnd
 
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only page check.
 		$page = isset( $_GET['page'] ) ? sanitize_key( wp_unslash( $_GET['page'] ) ) : '';
@@ -370,6 +385,11 @@ class Network {
 
 		check_admin_referer( self::NONCE_ACTION );
 
+		// The body below runs only on a valid nonce and terminates via
+		// redirect_to_tab → exit, so it's untestable under PHPUnit without
+		// subprocess isolation.
+		// phpcs:ignore Squiz.Commenting.InlineComment.InvalidEndChar -- PHPUnit annotation must match exactly.
+		// @codeCoverageIgnoreStart
 		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Validated above.
 		$raw = isset( $_POST[ self::OPTION_NAME ] ) && is_array( $_POST[ self::OPTION_NAME ] )
 			// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized, WordPress.Security.NonceVerification.Missing
@@ -377,8 +397,11 @@ class Network {
 			: array();
 
 		update_site_option( self::OPTION_NAME, $this->sanitize( $raw ) );
+		self::flush_config_cache();
 
 		$this->redirect_to_tab( self::NETWORK_TAB );
+		// phpcs:ignore Squiz.Commenting.InlineComment.InvalidEndChar -- PHPUnit annotation must match exactly.
+		// @codeCoverageIgnoreEnd
 	}
 
 	/**
@@ -400,6 +423,11 @@ class Network {
 
 		check_admin_referer( self::VALUES_NONCE_ACTION );
 
+		// The body below runs only on a valid nonce and terminates via
+		// redirect_to_tab → exit, so it's untestable under PHPUnit without
+		// subprocess isolation.
+		// phpcs:ignore Squiz.Commenting.InlineComment.InvalidEndChar -- PHPUnit annotation must match exactly.
+		// @codeCoverageIgnoreStart
 		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Validated above.
 		$raw = isset( $_POST[ Settings::OPTION_NAME ] ) && is_array( $_POST[ Settings::OPTION_NAME ] )
 			// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized, WordPress.Security.NonceVerification.Missing
@@ -426,6 +454,8 @@ class Network {
 		$tab       = isset( $available[ $submitted ] ) ? $submitted : (string) array_key_first( $available );
 
 		$this->redirect_to_tab( $tab );
+		// phpcs:ignore Squiz.Commenting.InlineComment.InvalidEndChar -- PHPUnit annotation must match exactly.
+		// @codeCoverageIgnoreEnd
 	}
 
 	/**
@@ -525,19 +555,42 @@ class Network {
 	 * @return array Config with 'enabled' (bool) and 'inherited' (string[]).
 	 */
 	public static function get_config(): array {
+		// Called twice per field render (via Settings::render_field → get() →
+		// is_option_inherited()). Memoize for the duration of the request so
+		// we're not repeatedly hitting get_site_option on settings pages with
+		// many fields. `flush_config_cache()` invalidates it after a save.
+		if ( null !== self::$config_cache ) {
+			return self::$config_cache;
+		}
+
 		$defaults = self::get_default_config();
 
 		if ( ! is_multisite() ) {
-			return $defaults;
+			self::$config_cache = $defaults;
+			return self::$config_cache;
 		}
 
 		$stored = get_site_option( self::OPTION_NAME, array() );
 
 		if ( ! is_array( $stored ) ) {
-			return $defaults;
+			self::$config_cache = $defaults;
+			return self::$config_cache;
 		}
 
-		return array_merge( $defaults, $stored );
+		self::$config_cache = array_merge( $defaults, $stored );
+		return self::$config_cache;
+	}
+
+	/**
+	 * Reset the per-request config cache. Called after a save so the next
+	 * read sees the fresh value, and used by tests to isolate assertions.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return void
+	 */
+	public static function flush_config_cache(): void {
+		self::$config_cache = null;
 	}
 
 	/**

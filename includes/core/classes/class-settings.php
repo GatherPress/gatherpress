@@ -476,6 +476,12 @@ class Settings {
 	 * preserve settings from other tabs. Handles various input types including checkboxes,
 	 * numbers, autocomplete fields, text fields, and select dropdowns.
 	 *
+	 * Values that equal their configured default are stripped from the merged
+	 * result to keep the stored option lean. This means the option cannot
+	 * represent "explicitly set to the default" vs "unset" — both collapse
+	 * to the same state. Consumers rely on `get_flat_default()` as the
+	 * authoritative source of defaults in both read paths.
+	 *
 	 * @param array $field_type_map Flat map of option_key => field_type.
 	 * @return callable A callback function that sanitizes input based on field types.
 	 */

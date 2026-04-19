@@ -2167,11 +2167,13 @@ class Test_Settings extends Base {
 				'inherited' => array( 'date_format' ),
 			)
 		);
+		\GatherPress\Core\Settings\Network::flush_config_cache();
 
 		$this->assertTrue( Settings::get_instance()->is_option_inherited( 'date_format' ) );
 		$this->assertFalse( Settings::get_instance()->is_option_inherited( 'time_format' ) );
 
 		delete_site_option( 'gatherpress_network_settings' );
+		\GatherPress\Core\Settings\Network::flush_config_cache();
 	}
 
 	/**

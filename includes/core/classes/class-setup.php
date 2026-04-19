@@ -228,6 +228,11 @@ class Setup {
 			// subsite's table was never created (e.g. site created before
 			// plugin activation, or an `on_site_create` race). dbDelta is
 			// idempotent so re-running here is safe.
+			//
+			// Note: create_tables() also re-adds the online-event term and
+			// schedules a rewrite flush. Those side effects are intentional on
+			// a version change — don't split the self-heal out without
+			// accounting for them.
 			$this->create_tables();
 			$this->schedule_rewrite_flush();
 			update_option( 'gatherpress_version', $current_version );
@@ -398,11 +403,13 @@ class Setup {
 	 * @return void
 	 */
 	public function on_site_create( WP_Site $new_site ): void {
-		// @codeCoverageIgnoreStart -- Defensive shim: wp-admin/includes/plugin.php is always loaded under PHPUnit.
+		// Defensive shim for contexts where wp-admin/includes/plugin.php
+		// hasn't been loaded (WP-CLI, REST, early wp_initialize_site paths).
+		// Under PHPUnit this file is always loaded, so the branch below is
+		// unreachable — the whole block is flagged @codeCoverageIgnore.
+		// phpcs:ignore Squiz.Commenting.InlineComment.InvalidEndChar -- PHPUnit annotation must match exactly.
+		// @codeCoverageIgnoreStart
 		if ( ! function_exists( 'is_plugin_active_for_network' ) ) {
-			// Load the admin-only helper when the site is created from a
-			// context that hasn't pulled it in (e.g. WP-CLI, REST, or the
-			// `wp_initialize_site` path before wp-admin bootstraps).
 			$plugin_php = ABSPATH . 'wp-admin/includes/plugin.php';
 
 			if ( file_exists( $plugin_php ) ) {
@@ -410,6 +417,7 @@ class Setup {
 				require_once $plugin_php; // NOSONAR.
 			}
 		}
+		// phpcs:ignore Squiz.Commenting.InlineComment.InvalidEndChar -- PHPUnit annotation must match exactly.
 		// @codeCoverageIgnoreEnd
 
 		if ( ! is_plugin_active_for_network( plugin_basename( GATHERPRESS_CORE_FILE ) ) ) {
