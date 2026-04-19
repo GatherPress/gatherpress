@@ -127,7 +127,7 @@ const ATTENDING = [
 				[
 					[
 						'gatherpress/modal-content',
-						{},
+						{ backgroundColor: 'white' },
 						[
 							[
 								'core/paragraph',

@@ -114,7 +114,7 @@ const WAITING_LIST = [
 				[
 					[
 						'gatherpress/modal-content',
-						{},
+						{ backgroundColor: 'white' },
 						[
 							[
 								'core/paragraph',

@@ -58,7 +58,7 @@ const NO_STATUS = [
 				[
 					[
 						'gatherpress/modal-content',
-						{},
+						{ backgroundColor: 'white' },
 						[
 							[
 								'core/paragraph',
@@ -212,7 +212,7 @@ const NO_STATUS = [
 				[
 					[
 						'gatherpress/modal-content',
-						{},
+						{ backgroundColor: 'white' },
 						[
 							[
 								'core/paragraph',
