@@ -5,7 +5,7 @@ import { __ } from '@wordpress/i18n';
 import apiFetch from '@wordpress/api-fetch';
 import { Button, Spinner } from '@wordpress/components';
 import { useDispatch, useSelect } from '@wordpress/data';
-import { useState } from '@wordpress/element';
+import { useEffect, useState } from '@wordpress/element';
 
 /**
  * Internal dependencies.
@@ -242,4 +242,67 @@ export const resolveDimensions = ( {
 	h = Math.max( 100, Math.min( 4000, h ) );
 
 	return { width: w, height: h };
+};
+
+/**
+ * Poll cadence (ms) and cap for {@link usePlaceholderPolling}. Exported so
+ * tests can reference them without duplicating the constants.
+ *
+ * @since 1.0.0
+ */
+export const POLL_INTERVAL_MS = 15000;
+export const MAX_POLLS = 20;
+
+/**
+ * While the venue-map static placeholder is visible, periodically
+ * invalidate the venue's `core` entity record so background-generated
+ * descriptors (WP-Cron prewarm tick, out-of-band meta writes) surface in
+ * the editor without a manual reload.
+ *
+ * The hook only schedules an interval when `active` is true AND the
+ * venue is fully addressable (post id + type + resolved coordinates).
+ * Stops polling after {@link MAX_POLLS} ticks so a persistently failing
+ * generation doesn't pin the editor into forever polling; tears down
+ * on unmount or when any dep transitions to a falsy state.
+ *
+ * Scheduling only — no server-side changes here. The same behavior works
+ * whether generation runs via WP-Cron (today) or Action Scheduler (when
+ * #1487 lands).
+ *
+ * @since 1.0.0
+ *
+ * @param {Object}  args               Hook arguments.
+ * @param {boolean} args.active        Whether polling should run (typically `showStaticPlaceholder` gated on coords).
+ * @param {number}  args.venuePostId   Venue post ID.
+ * @param {string}  args.venuePostType Venue post type slug.
+ * @return {void}
+ */
+export const usePlaceholderPolling = ( {
+	active,
+	venuePostId,
+	venuePostType,
+} ) => {
+	const { invalidateResolution } = useDispatch( 'core' );
+
+	useEffect( () => {
+		if ( ! active || ! venuePostId || ! venuePostType ) {
+			return undefined;
+		}
+
+		let pollCount = 0;
+		const interval = setInterval( () => {
+			pollCount += 1;
+			if ( pollCount > MAX_POLLS ) {
+				clearInterval( interval );
+				return;
+			}
+			invalidateResolution( 'getEntityRecord', [
+				'postType',
+				venuePostType,
+				venuePostId,
+			] );
+		}, POLL_INTERVAL_MS );
+
+		return () => clearInterval( interval );
+	}, [ active, venuePostId, venuePostType, invalidateResolution ] );
 };

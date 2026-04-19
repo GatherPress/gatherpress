@@ -13,9 +13,6 @@
 		"style": {
 			"type": "object",
 			"default": {
-				"color": {
-					"background": "#ffffff"
-				},
 				"spacing": {
 					"padding": "20px"
 				},

@@ -114,7 +114,7 @@ const NOT_ATTENDING = [
 				[
 					[
 						'gatherpress/modal-content',
-						{},
+						{ backgroundColor: 'white' },
 						[
 							[
 								'core/paragraph',

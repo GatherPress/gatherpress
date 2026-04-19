@@ -51,9 +51,12 @@ jest.mock( '@wordpress/components', () => ( {
  * Internal dependencies.
  */
 import {
+	MAX_POLLS,
+	POLL_INTERVAL_MS,
 	RegenerateMapButton,
 	parseAspectRatio,
 	resolveDimensions,
+	usePlaceholderPolling,
 } from '@src/blocks/venue-map/helpers';
 
 describe( 'RegenerateMapButton', () => {
@@ -344,5 +347,103 @@ describe( 'resolveDimensions', () => {
 				aspectRatio: 'garbage',
 			} )
 		).toEqual( { width: 800, height: 400 } );
+	} );
+} );
+
+describe( 'usePlaceholderPolling', () => {
+	// Minimal test harness that invokes the hook inside a React component.
+	// The component renders nothing — it exists only to run the effect and
+	// let us drive re-renders / unmounts via props.
+	const Harness = ( props ) => {
+		usePlaceholderPolling( props );
+		return null;
+	};
+
+	beforeEach( () => {
+		mockInvalidateResolution.mockReset();
+		jest.useFakeTimers();
+	} );
+
+	afterEach( () => {
+		jest.useRealTimers();
+	} );
+
+	const activeProps = {
+		active: true,
+		venuePostId: 42,
+		venuePostType: 'gatherpress_venue',
+	};
+
+	it( 'does not schedule an interval when active is false', () => {
+		render( <Harness { ...activeProps } active={ false } /> );
+
+		jest.advanceTimersByTime( POLL_INTERVAL_MS * 3 );
+
+		expect( mockInvalidateResolution ).not.toHaveBeenCalled();
+	} );
+
+	it( 'does not schedule when venuePostId is missing', () => {
+		render( <Harness { ...activeProps } venuePostId={ 0 } /> );
+
+		jest.advanceTimersByTime( POLL_INTERVAL_MS * 3 );
+
+		expect( mockInvalidateResolution ).not.toHaveBeenCalled();
+	} );
+
+	it( 'does not schedule when venuePostType is missing', () => {
+		render( <Harness { ...activeProps } venuePostType="" /> );
+
+		jest.advanceTimersByTime( POLL_INTERVAL_MS * 3 );
+
+		expect( mockInvalidateResolution ).not.toHaveBeenCalled();
+	} );
+
+	it( 'ticks on the expected cadence and forwards the resolver args', () => {
+		render( <Harness { ...activeProps } /> );
+
+		jest.advanceTimersByTime( POLL_INTERVAL_MS - 1 );
+		expect( mockInvalidateResolution ).not.toHaveBeenCalled();
+
+		jest.advanceTimersByTime( 1 );
+		expect( mockInvalidateResolution ).toHaveBeenCalledTimes( 1 );
+		expect( mockInvalidateResolution ).toHaveBeenLastCalledWith(
+			'getEntityRecord',
+			[ 'postType', 'gatherpress_venue', 42 ]
+		);
+
+		jest.advanceTimersByTime( POLL_INTERVAL_MS );
+		expect( mockInvalidateResolution ).toHaveBeenCalledTimes( 2 );
+	} );
+
+	it( 'stops polling after MAX_POLLS ticks', () => {
+		render( <Harness { ...activeProps } /> );
+
+		// Advance one tick past the cap. The pre-increment guard clears the
+		// interval on the tick that would push pollCount over MAX_POLLS, so
+		// exactly MAX_POLLS invalidations fire before the stop.
+		jest.advanceTimersByTime( POLL_INTERVAL_MS * ( MAX_POLLS + 5 ) );
+
+		expect( mockInvalidateResolution ).toHaveBeenCalledTimes( MAX_POLLS );
+	} );
+
+	it( 'clears the interval on unmount', () => {
+		const { unmount } = render( <Harness { ...activeProps } /> );
+
+		unmount();
+
+		jest.advanceTimersByTime( POLL_INTERVAL_MS * 3 );
+		expect( mockInvalidateResolution ).not.toHaveBeenCalled();
+	} );
+
+	it( 'clears the interval when active flips back to false', () => {
+		const { rerender } = render( <Harness { ...activeProps } /> );
+
+		jest.advanceTimersByTime( POLL_INTERVAL_MS );
+		expect( mockInvalidateResolution ).toHaveBeenCalledTimes( 1 );
+
+		rerender( <Harness { ...activeProps } active={ false } /> );
+
+		jest.advanceTimersByTime( POLL_INTERVAL_MS * 3 );
+		expect( mockInvalidateResolution ).toHaveBeenCalledTimes( 1 );
 	} );
 } );
