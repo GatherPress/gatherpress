@@ -2300,4 +2300,183 @@ class Test_Settings extends Base {
 		$this->assertStringContainsString( 'Inherited from the network.', $output );
 		$this->assertStringNotContainsString( 'settings.php?page=gatherpress-network-settings', $output );
 	}
+
+	/**
+	 * Coverage for read_stored_options — blog-scope branch reads from the
+	 * standard blog option.
+	 *
+	 * @covers ::read_stored_options
+	 *
+	 * @return void
+	 */
+	public function test_read_stored_options_blog_scope(): void {
+		update_option( Settings::OPTION_NAME, array( 'map_platform' => 'google' ) );
+
+		$result = Utility::invoke_hidden_method(
+			Settings::get_instance(),
+			'read_stored_options',
+			array( 'blog' )
+		);
+
+		delete_option( Settings::OPTION_NAME );
+
+		$this->assertSame( array( 'map_platform' => 'google' ), $result );
+	}
+
+	/**
+	 * Coverage for read_stored_options — network-scope branch reads the
+	 * network-wide site option.
+	 *
+	 * @covers ::read_stored_options
+	 *
+	 * @group   multisite
+	 *
+	 * @return void
+	 */
+	public function test_read_stored_options_network_scope(): void {
+		if ( ! is_multisite() ) {
+			$this->markTestSkipped( 'Requires multisite.' );
+		}
+
+		update_site_option( Settings::OPTION_NAME, array( 'map_platform' => 'google' ) );
+
+		$result = Utility::invoke_hidden_method(
+			Settings::get_instance(),
+			'read_stored_options',
+			array( 'network' )
+		);
+
+		delete_site_option( Settings::OPTION_NAME );
+
+		$this->assertSame( array( 'map_platform' => 'google' ), $result );
+	}
+
+	/**
+	 * Coverage for write_stored_options — both scope branches.
+	 *
+	 * @covers ::write_stored_options
+	 *
+	 * @return void
+	 */
+	public function test_write_stored_options_blog_scope(): void {
+		Utility::invoke_hidden_method(
+			Settings::get_instance(),
+			'write_stored_options',
+			array( 'blog', array( 'map_platform' => 'osm' ) )
+		);
+
+		$this->assertSame(
+			array( 'map_platform' => 'osm' ),
+			get_option( Settings::OPTION_NAME )
+		);
+
+		delete_option( Settings::OPTION_NAME );
+	}
+
+	/**
+	 * Coverage for write_stored_options network scope.
+	 *
+	 * @covers ::write_stored_options
+	 *
+	 * @group   multisite
+	 *
+	 * @return void
+	 */
+	public function test_write_stored_options_network_scope(): void {
+		if ( ! is_multisite() ) {
+			$this->markTestSkipped( 'Requires multisite.' );
+		}
+
+		Utility::invoke_hidden_method(
+			Settings::get_instance(),
+			'write_stored_options',
+			array( 'network', array( 'map_platform' => 'osm' ) )
+		);
+
+		$this->assertSame(
+			array( 'map_platform' => 'osm' ),
+			get_site_option( Settings::OPTION_NAME )
+		);
+
+		delete_site_option( Settings::OPTION_NAME );
+	}
+
+	/**
+	 * Coverage for delete_stored_options — both scope branches.
+	 *
+	 * @covers ::delete_stored_options
+	 *
+	 * @return void
+	 */
+	public function test_delete_stored_options_blog_scope(): void {
+		update_option( Settings::OPTION_NAME, array( 'map_platform' => 'osm' ) );
+
+		Utility::invoke_hidden_method(
+			Settings::get_instance(),
+			'delete_stored_options',
+			array( 'blog' )
+		);
+
+		$this->assertFalse( get_option( Settings::OPTION_NAME ) );
+	}
+
+	/**
+	 * Coverage for delete_stored_options network scope.
+	 *
+	 * @covers ::delete_stored_options
+	 *
+	 * @group   multisite
+	 *
+	 * @return void
+	 */
+	public function test_delete_stored_options_network_scope(): void {
+		if ( ! is_multisite() ) {
+			$this->markTestSkipped( 'Requires multisite.' );
+		}
+
+		update_site_option( Settings::OPTION_NAME, array( 'map_platform' => 'osm' ) );
+
+		Utility::invoke_hidden_method(
+			Settings::get_instance(),
+			'delete_stored_options',
+			array( 'network' )
+		);
+
+		$this->assertFalse( get_site_option( Settings::OPTION_NAME ) );
+	}
+
+	/**
+	 * Coverage for import_settings with replace mode in network scope — covers
+	 * the Network::flush_config_cache() call path at the tail of import.
+	 *
+	 * @covers ::import_settings
+	 *
+	 * @group   multisite
+	 *
+	 * @return void
+	 */
+	public function test_import_settings_replace_network_scope(): void {
+		if ( ! is_multisite() ) {
+			$this->markTestSkipped( 'Requires multisite.' );
+		}
+
+		update_site_option( Settings::OPTION_NAME, array( 'map_platform' => 'osm' ) );
+		\GatherPress\Core\Settings\Network::flush_config_cache();
+
+		$data = array(
+			'version'  => GATHERPRESS_VERSION,
+			'settings' => array( 'map_platform' => 'google' ),
+		);
+
+		$result = Settings::get_instance()->import_settings( $data, 'replace', 'network' );
+
+		$this->assertTrue( $result['success'] );
+		$this->assertSame(
+			array( 'map_platform' => 'google' ),
+			get_site_option( Settings::OPTION_NAME )
+		);
+
+		delete_site_option( Settings::OPTION_NAME );
+		\GatherPress\Core\Settings\Network::flush_config_cache();
+	}
 }

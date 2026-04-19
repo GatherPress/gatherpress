@@ -120,6 +120,7 @@ class Test_Network extends Base {
 		}
 
 		update_site_option( Network::OPTION_NAME, 'not-an-array' );
+		Network::flush_config_cache();
 
 		$this->assertSame( Network::get_default_config(), Network::get_config() );
 	}
@@ -145,6 +146,7 @@ class Test_Network extends Base {
 				'inherited' => array( 'date_format' ),
 			)
 		);
+		Network::flush_config_cache();
 
 		$this->assertSame(
 			array(
@@ -377,9 +379,15 @@ class Test_Network extends Base {
 	 *
 	 * @covers ::subsite_inheritance_notice
 	 *
+	 * @group   multisite
+	 *
 	 * @return void
 	 */
 	public function test_subsite_inheritance_notice_bails_on_non_gatherpress_page(): void {
+		if ( ! is_multisite() ) {
+			$this->markTestSkipped( 'Requires multisite.' );
+		}
+
 		$instance = Network::get_instance();
 
 		$_GET['page'] = 'something-else';

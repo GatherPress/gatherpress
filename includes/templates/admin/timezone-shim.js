@@ -12,7 +12,7 @@
  * Non-zero UTC offsets are left untouched — operators with those configured
  * should pick an IANA zone in Settings → General.
  */
-( function () {
+( function() {
 	if ( ! window.wp || ! window.wp.date ) {
 		return;
 	}
@@ -21,7 +21,7 @@
 		return;
 	}
 
-	var settings = window.wp.date.getSettings();
+	const settings = window.wp.date.getSettings();
 
 	if ( ! settings || ! settings.timezone || ! settings.timezone.string ) {
 		return;
@@ -31,4 +31,4 @@
 		settings.timezone.string = 'UTC';
 		window.wp.date.setSettings( settings );
 	}
-} )();
+}() );

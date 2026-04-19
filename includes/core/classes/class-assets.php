@@ -126,9 +126,15 @@ class Assets {
 
 		$script_path = GATHERPRESS_CORE_PATH . '/includes/templates/admin/timezone-shim.js';
 
+		// The shim file ships with the plugin; this guard is defensive in case
+		// someone strips template assets from a distribution.
+		// phpcs:ignore Squiz.Commenting.InlineComment.InvalidEndChar -- PHPUnit annotation must match exactly.
+		// @codeCoverageIgnoreStart
 		if ( ! file_exists( $script_path ) ) {
-			return; // @codeCoverageIgnore -- template ships with the plugin.
+			return;
 		}
+		// phpcs:ignore Squiz.Commenting.InlineComment.InvalidEndChar -- PHPUnit annotation must match exactly.
+		// @codeCoverageIgnoreEnd
 
 		wp_enqueue_script( 'wp-date' );
 		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Reading a plugin-local static file.
