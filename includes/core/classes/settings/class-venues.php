@@ -208,6 +208,27 @@ class Venues extends Base {
 							),
 						),
 					),
+					'venue_map_default_scale'        => array(
+						'labels'      => array(
+							'name' => __( 'Default Scale', 'gatherpress' ),
+						),
+						'description' => __(
+							'Default fit for static map images. Interactive maps fill their container automatically.',
+							'gatherpress'
+						),
+						'field'       => array(
+							'label'   => __( 'Scale for new blocks:', 'gatherpress' ),
+							'type'    => 'select',
+							'options' => array(
+								'default' => Venue_Map::DEFAULT_SCALE,
+								'items'   => array(
+									'cover'   => __( 'Cover', 'gatherpress' ),
+									'contain' => __( 'Contain', 'gatherpress' ),
+									'fill'    => __( 'Fill', 'gatherpress' ),
+								),
+							),
+						),
+					),
 					'venue_map_default_type'         => array(
 						'labels'      => array(
 							'name' => __( 'Default Map Type', 'gatherpress' ),

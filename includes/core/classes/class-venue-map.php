@@ -145,6 +145,27 @@ class Venue_Map {
 	const DEFAULT_ASPECT_RATIO = '2/1';
 
 	/**
+	 * Default `scale` (CSS `object-fit`) applied to the static map image.
+	 * `cover` crops the PNG to fill the wrapper without distortion — same
+	 * behavior the block shipped with before the attribute was exposed.
+	 *
+	 * @since 1.0.0
+	 * @var string
+	 */
+	const DEFAULT_SCALE = 'cover';
+
+	/**
+	 * Allow-listed values for the `scale` block attribute — mirrors the
+	 * three `object-fit` keywords the block's Inspector exposes. Any other
+	 * value falls back to `DEFAULT_SCALE` at render time so a hand-edited
+	 * block attribute can't smuggle arbitrary CSS into the inline style.
+	 *
+	 * @since 1.0.0
+	 * @var string[]
+	 */
+	const SCALE_OPTIONS = array( 'cover', 'contain', 'fill' );
+
+	/**
 	 * Anchored regex matching a CSS-style aspect-ratio value (e.g. `16/9`
 	 * or `4:3`). Used by both the REST `aspect_ratio` validator and the
 	 * render template so the two can never drift apart. Requires at least
@@ -378,6 +399,7 @@ class Venue_Map {
 			'width'       => '' === $raw_width ? null : (int) $raw_width,
 			'height'      => '' === $raw_height ? null : (int) $raw_height,
 			'aspectRatio' => (string) $settings->get( 'venue_map_default_aspect_ratio' ),
+			'scale'       => (string) $settings->get( 'venue_map_default_scale' ),
 			'type'        => (string) $settings->get( 'venue_map_default_type' ),
 		);
 
@@ -412,6 +434,9 @@ class Venue_Map {
 			'aspectRatio' => function ( $value ): bool {
 				return is_string( $value )
 					&& null !== $this->parse_aspect_ratio( $value );
+			},
+			'scale'       => static function ( $value ): bool {
+				return in_array( $value, self::SCALE_OPTIONS, true );
 			},
 			'type'        => static function ( $value ): bool {
 				return in_array(

@@ -30,11 +30,14 @@
 		border-radius: inherit;
 	}
 
+	// The `object-fit` value is stamped inline from the block's `scale`
+	// attribute (render.php) so it can be `cover` / `contain` / `fill`
+	// per-block. No fallback here on purpose — the server always emits a
+	// valid value from the SCALE_OPTIONS allow-list.
 	&__image {
 		display: block;
 		width: 100%;
 		height: 100%;
-		object-fit: cover;
 	}
 
 	&__placeholder {

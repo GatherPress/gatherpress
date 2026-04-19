@@ -168,6 +168,7 @@ class Test_Venue_Map extends Base {
 		$settings->set( 'venue_map_default_render_mode', 'static' );
 		$settings->set( 'venue_map_default_zoom', 12 );
 		$settings->set( 'venue_map_default_height', 450 );
+		$settings->set( 'venue_map_default_scale', 'contain' );
 		$settings->set( 'venue_map_default_type', 'satellite' );
 
 		$metadata = array(
@@ -185,6 +186,10 @@ class Test_Venue_Map extends Base {
 					'type'    => 'number',
 					'default' => 300,
 				),
+				'scale'      => array(
+					'type'    => 'string',
+					'default' => 'cover',
+				),
 				'type'       => array(
 					'type'    => 'string',
 					'default' => 'roadmap',
@@ -197,7 +202,42 @@ class Test_Venue_Map extends Base {
 		$this->assertSame( 'static', $result['attributes']['renderMode']['default'] );
 		$this->assertSame( 12, $result['attributes']['zoom']['default'] );
 		$this->assertSame( 450, $result['attributes']['height']['default'] );
+		$this->assertSame( 'contain', $result['attributes']['scale']['default'] );
 		$this->assertSame( 'satellite', $result['attributes']['type']['default'] );
+	}
+
+	/**
+	 * A scale value outside the allow-list falls through — the block.json
+	 * default stays in place. Guards against a stale or hand-edited Settings
+	 * row smuggling an unexpected CSS keyword into `object-fit`.
+	 *
+	 * @covers ::apply_block_attribute_defaults
+	 *
+	 * @return void
+	 */
+	public function test_apply_block_attribute_defaults_rejects_invalid_scale(): void {
+		$instance = Venue_Map::get_instance();
+		$settings = \GatherPress\Core\Settings::get_instance();
+
+		$settings->set( 'venue_map_default_scale', 'none' );
+
+		$metadata = array(
+			'name'       => 'gatherpress/venue-map',
+			'attributes' => array(
+				'scale' => array(
+					'type'    => 'string',
+					'default' => 'cover',
+				),
+			),
+		);
+
+		$result = $instance->apply_block_attribute_defaults( $metadata );
+
+		$this->assertSame(
+			'cover',
+			$result['attributes']['scale']['default'],
+			'Block.json default sticks when Settings carries an invalid scale value.'
+		);
 	}
 
 	/**

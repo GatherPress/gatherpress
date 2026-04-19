@@ -56,6 +56,15 @@ $gatherpress_raw_width   = (int) ( $attributes['width'] ?? 0 );
 $gatherpress_raw_height  = (int) ( $attributes['height'] ?? Venue_Map::DEFAULT_HEIGHT );
 $gatherpress_ratio       = (string) ( $attributes['aspectRatio'] ?? Venue_Map::DEFAULT_ASPECT_RATIO );
 
+// Allow-list for the `scale` block attribute. Anything outside this set
+// (a hand-edited block attr, a filter that mutates the value, a migration
+// miss) falls back to `cover` so the inline style stays safe and
+// predictable.
+$gatherpress_scale_candidate = (string) ( $attributes['scale'] ?? Venue_Map::DEFAULT_SCALE );
+$gatherpress_scale           = in_array( $gatherpress_scale_candidate, Venue_Map::SCALE_OPTIONS, true )
+	? $gatherpress_scale_candidate
+	: Venue_Map::DEFAULT_SCALE;
+
 $gatherpress_static_map_url = Venue_Map::get_instance()->get_url_for_post(
 	$gatherpress_post_id,
 	$gatherpress_post_type,
@@ -172,9 +181,10 @@ if ( '' !== $gatherpress_static_map_url ) {
 	}
 
 	printf(
-		'<img class="gatherpress-venue-map__image" src="%s" alt="%s" loading="lazy" />',
+		'<img class="gatherpress-venue-map__image" src="%s" alt="%s" loading="lazy" style="object-fit:%s;" />',
 		esc_url( $gatherpress_static_map_url ),
-		esc_attr( $gatherpress_alt )
+		esc_attr( $gatherpress_alt ),
+		esc_attr( $gatherpress_scale )
 	);
 
 	if ( '' !== $gatherpress_href ) {
