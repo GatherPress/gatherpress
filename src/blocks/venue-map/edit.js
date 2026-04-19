@@ -43,6 +43,7 @@ import {
 	RegenerateMapButton,
 	parseAspectRatio,
 	resolveDimensions,
+	usePlaceholderPolling,
 } from './helpers';
 
 const WIDTH_MIN = 100;
@@ -373,6 +374,18 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 			aspectRatio: '',
 		} );
 	};
+
+	// Close the "async descriptor arrived while placeholder is showing"
+	// gap — see `usePlaceholderPolling` for the cadence + bail-out logic.
+	usePlaceholderPolling( {
+		active:
+			showStaticPlaceholder &&
+			Boolean( fullAddress ) &&
+			Boolean( latitude ) &&
+			Boolean( longitude ),
+		venuePostId,
+		venuePostType,
+	} );
 
 	// Keep the href in sync with a preset link destination so toggling the
 	// dropdown doesn't leave a stale URL behind. We only auto-write when a
