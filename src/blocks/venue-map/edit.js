@@ -20,6 +20,8 @@ import {
 	ToolbarButton,
 	ToolbarGroup,
 	// eslint-disable-next-line @wordpress/no-unsafe-wp-apis
+	__experimentalToolsPanel as ToolsPanel,
+	// eslint-disable-next-line @wordpress/no-unsafe-wp-apis
 	__experimentalToolsPanelItem as ToolsPanelItem,
 } from '@wordpress/components';
 import { useSelect } from '@wordpress/data';
@@ -60,6 +62,18 @@ const ASPECT_RATIO_PRESETS = [
 	{ label: __( 'Square - 1:1', 'gatherpress' ), value: '1/1' },
 	{ label: __( 'Custom', 'gatherpress' ), value: 'custom' },
 ];
+
+// Allow-list for the `scale` block attribute — mirrors
+// `Venue_Map::SCALE_OPTIONS` so JS and PHP can't drift. The Scale
+// SelectControl options are derived from this list; the guard that
+// hides the control when render mode is interactive reads from it too.
+const SCALE_OPTIONS = [ 'cover', 'contain', 'fill' ];
+const SCALE_DEFAULT = 'cover';
+const SCALE_LABELS = {
+	cover: __( 'Cover', 'gatherpress' ),
+	contain: __( 'Contain', 'gatherpress' ),
+	fill: __( 'Fill', 'gatherpress' ),
+};
 
 const LINK_DESTINATION_NONE = 'none';
 const LINK_DESTINATION_OPENSTREETMAP = 'openstreetmap';
@@ -109,6 +123,7 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 		width,
 		height,
 		aspectRatio,
+		scale,
 		renderMode,
 		align,
 		href,
@@ -242,6 +257,15 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 	}
 
 	const mapPlatform = getFromSettings( 'mapPlatform' );
+
+	// Resolve the site-wide scale default from Settings so "Reset all"
+	// and the "has value" check on the Scale ToolsPanelItem mirror what
+	// apply_block_attribute_defaults() stamps on the block. Fall back to
+	// SCALE_DEFAULT if Settings carries anything outside the allow-list.
+	const rawSiteScale = getFromSettings( 'venueMapDefaultScale' );
+	const siteScaleDefault = SCALE_OPTIONS.includes( rawSiteScale )
+		? rawSiteScale
+		: SCALE_DEFAULT;
 	const showMapTypeControl =
 		'interactive' === renderMode && 'google' === mapPlatform;
 
@@ -445,6 +469,11 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 								? `${ __( 'Map of', 'gatherpress' ) } ${ fullAddress }`
 								: __( 'Venue map', 'gatherpress' )
 						}
+						style={ {
+							objectFit: SCALE_OPTIONS.includes( scale )
+								? scale
+								: siteScaleDefault,
+						} }
 					/>
 				</div>
 			) }
@@ -591,88 +620,127 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 					) }
 				</PanelBody>
 			</InspectorControls>
-			<InspectorControls group="dimensions">
-				<ToolsPanelItem
-					label={ __( 'Width & height', 'gatherpress' ) }
-					hasValue={ () => 0 < width || 0 < height }
-					onDeselect={ () =>
-						setAttributes( { width: 0, height: 0 } )
+			<InspectorControls>
+				<ToolsPanel
+					label={ __( 'Dimensions', 'gatherpress' ) }
+					resetAll={ () =>
+						setAttributes( {
+							width: 0,
+							height: 0,
+							aspectRatio: '2/1',
+							scale: siteScaleDefault,
+						} )
 					}
-					isShownByDefault
 					panelId={ clientId }
 				>
-					<Flex gap={ 2 } align="flex-end">
-						<FlexItem isBlock>
-							<TextControl
-								label={ __( 'Width', 'gatherpress' ) }
-								type="number"
-								placeholder={ __( 'Auto', 'gatherpress' ) }
-								value={ 0 < width ? String( width ) : '' }
-								onChange={ handleWidthInput }
-							/>
-						</FlexItem>
-						<FlexItem isBlock>
-							<TextControl
-								label={ __( 'Height', 'gatherpress' ) }
-								type="number"
-								placeholder={ __( 'Auto', 'gatherpress' ) }
-								value={ 0 < height ? String( height ) : '' }
-								onChange={ handleHeightInput }
-							/>
-						</FlexItem>
-					</Flex>
-				</ToolsPanelItem>
-				<ToolsPanelItem
-					label={ __( 'Aspect ratio', 'gatherpress' ) }
-					hasValue={ () =>
-						'' !== ( aspectRatio ?? '' ) &&
-						'2/1' !== aspectRatio
-					}
-					onDeselect={ () =>
-						setAttributes( { aspectRatio: '2/1' } )
-					}
-					isShownByDefault
-					panelId={ clientId }
-				>
-					<SelectControl
+					<ToolsPanelItem
+						label={ __( 'Width & height', 'gatherpress' ) }
+						hasValue={ () => 0 < width || 0 < height }
+						onDeselect={ () =>
+							setAttributes( { width: 0, height: 0 } )
+						}
+						isShownByDefault
+						panelId={ clientId }
+					>
+						<Flex gap={ 2 } align="flex-end">
+							<FlexItem isBlock>
+								<TextControl
+									label={ __( 'Width', 'gatherpress' ) }
+									type="number"
+									placeholder={ __( 'Auto', 'gatherpress' ) }
+									value={ 0 < width ? String( width ) : '' }
+									onChange={ handleWidthInput }
+								/>
+							</FlexItem>
+							<FlexItem isBlock>
+								<TextControl
+									label={ __( 'Height', 'gatherpress' ) }
+									type="number"
+									placeholder={ __( 'Auto', 'gatherpress' ) }
+									value={ 0 < height ? String( height ) : '' }
+									onChange={ handleHeightInput }
+								/>
+							</FlexItem>
+						</Flex>
+					</ToolsPanelItem>
+					<ToolsPanelItem
 						label={ __( 'Aspect ratio', 'gatherpress' ) }
-						value={ isCustomAspectRatio ? 'custom' : aspectRatio }
-						options={ ASPECT_RATIO_PRESETS }
-						onChange={ ( value ) => {
-							if ( 'custom' === value ) {
+						hasValue={ () =>
+							'' !== ( aspectRatio ?? '' ) &&
+						'2/1' !== aspectRatio
+						}
+						onDeselect={ () =>
+							setAttributes( { aspectRatio: '2/1' } )
+						}
+						isShownByDefault
+						panelId={ clientId }
+					>
+						<SelectControl
+							label={ __( 'Aspect ratio', 'gatherpress' ) }
+							value={ isCustomAspectRatio ? 'custom' : aspectRatio }
+							options={ ASPECT_RATIO_PRESETS }
+							onChange={ ( value ) => {
+								if ( 'custom' === value ) {
 								// Clear so the Custom text field below owns
 								// the value. If the user typed nothing, the
 								// server falls back to DEFAULT_ASPECT_RATIO
 								// for dimension derivation.
-								setAttributes( { aspectRatio: '' } );
-								return;
-							}
-							// Picking a preset resets height to auto so the
-							// new ratio drives the rendered shape — the
-							// user's stored width (if any) is preserved.
-							setAttributes( {
-								aspectRatio: value,
-								height: 0,
-							} );
-						} }
-					/>
-					{ isCustomAspectRatio && (
-						<TextControl
-							label={ __(
-								'Custom aspect ratio',
-								'gatherpress'
-							) }
-							help={ __(
-								'Format: "16/9" or "4:3".',
-								'gatherpress'
-							) }
-							value={ aspectRatio || '' }
-							onChange={ ( value ) =>
-								setAttributes( { aspectRatio: value } )
-							}
+									setAttributes( { aspectRatio: '' } );
+									return;
+								}
+								// Picking a preset resets height to auto so the
+								// new ratio drives the rendered shape — the
+								// user's stored width (if any) is preserved.
+								setAttributes( {
+									aspectRatio: value,
+									height: 0,
+								} );
+							} }
 						/>
+						{ isCustomAspectRatio && (
+							<TextControl
+								label={ __(
+									'Custom aspect ratio',
+									'gatherpress'
+								) }
+								help={ __(
+									'Format: "16/9" or "4:3".',
+									'gatherpress'
+								) }
+								value={ aspectRatio || '' }
+								onChange={ ( value ) =>
+									setAttributes( { aspectRatio: value } )
+								}
+							/>
+						) }
+					</ToolsPanelItem>
+					{ isStaticMode && (
+						<ToolsPanelItem
+							label={ __( 'Scale', 'gatherpress' ) }
+							hasValue={ () =>
+								siteScaleDefault !==
+								( scale ?? siteScaleDefault )
+							}
+							onDeselect={ () =>
+								setAttributes( { scale: siteScaleDefault } )
+							}
+							isShownByDefault
+							panelId={ clientId }
+						>
+							<SelectControl
+								label={ __( 'Scale', 'gatherpress' ) }
+								value={ scale ?? siteScaleDefault }
+								options={ SCALE_OPTIONS.map( ( value ) => ( {
+									label: SCALE_LABELS[ value ],
+									value,
+								} ) ) }
+								onChange={ ( value ) =>
+									setAttributes( { scale: value } )
+								}
+							/>
+						</ToolsPanelItem>
 					) }
-				</ToolsPanelItem>
+				</ToolsPanel>
 			</InspectorControls>
 			{ isStaticMode && (
 				<BlockControls>

@@ -30,6 +30,11 @@
 			"type": "string",
 			"default": "2/1"
 		},
+		"scale": {
+			"type": "string",
+			"enum": ["cover", "contain", "fill"],
+			"default": "cover"
+		},
 		"renderMode": {
 			"type": "string",
 			"default": "interactive"

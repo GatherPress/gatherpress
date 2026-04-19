@@ -93,6 +93,7 @@ class Test_Venues extends Base {
 			'venue_map_default_render_mode' => 'interactive',
 			'venue_map_default_zoom'        => 18,
 			'venue_map_default_height'      => '',
+			'venue_map_default_scale'       => 'cover',
 			'venue_map_default_type'        => 'roadmap',
 		) as $key => $expected ) {
 			$this->assertArrayHasKey(
