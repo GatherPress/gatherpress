@@ -9,6 +9,7 @@
 namespace GatherPress\Tests\Core;
 
 use GatherPress\Core\Settings;
+use GatherPress\Core\Settings\Credits;
 use GatherPress\Core\Utility as GatherPress_Utility;
 use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;
@@ -40,7 +41,7 @@ class Test_Settings extends Base {
 			10,
 			has_action(
 				'admin_init',
-				array( \GatherPress\Core\Settings\Credits::get_instance(), 'init' )
+				array( Credits::get_instance(), 'init' )
 			),
 			'Settings::instantiate_classes() must instantiate each subclass so its hooks register.'
 		);

@@ -277,7 +277,7 @@ class Test_Venue_Map_Prewarm extends Base {
 	}
 
 	/**
-	 * A non-null return from the `gatherpress_pre_prewarm_enqueue_job`
+	 * A non-null return from the `gatherpress_venue_map_prewarm_pre_enqueue_job`
 	 * filter must suppress the default WP-Cron enqueue so a companion
 	 * plugin can route the fanout through its own queue (e.g. Action
 	 * Scheduler). The filter receives the hook name and args for routing
@@ -307,11 +307,11 @@ class Test_Venue_Map_Prewarm extends Base {
 			// action ID or similar; core only cares that it's not null.
 			return 'handled-by-companion';
 		};
-		add_filter( 'gatherpress_pre_prewarm_enqueue_job', $spy, 10, 3 );
+		add_filter( 'gatherpress_venue_map_prewarm_pre_enqueue_job', $spy, 10, 3 );
 
 		Utility::invoke_hidden_method( $instance, 'enqueue_warm_job', array( $venue_post_id, $combo ) );
 
-		remove_filter( 'gatherpress_pre_prewarm_enqueue_job', $spy, 10 );
+		remove_filter( 'gatherpress_venue_map_prewarm_pre_enqueue_job', $spy, 10 );
 
 		$this->assertFalse(
 			wp_next_scheduled(
@@ -351,11 +351,11 @@ class Test_Venue_Map_Prewarm extends Base {
 		$passthrough = static function ( $short_circuit ) {
 			return $short_circuit;
 		};
-		add_filter( 'gatherpress_pre_prewarm_enqueue_job', $passthrough );
+		add_filter( 'gatherpress_venue_map_prewarm_pre_enqueue_job', $passthrough );
 
 		Utility::invoke_hidden_method( $instance, 'enqueue_warm_job', array( $venue_post_id, $combo ) );
 
-		remove_filter( 'gatherpress_pre_prewarm_enqueue_job', $passthrough );
+		remove_filter( 'gatherpress_venue_map_prewarm_pre_enqueue_job', $passthrough );
 
 		$this->assertNotFalse(
 			wp_next_scheduled(
