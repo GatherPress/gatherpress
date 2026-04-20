@@ -20,6 +20,33 @@ use PMC\Unit_Test\Utility;
  */
 class Test_Settings extends Base {
 	/**
+	 * Settings now owns the instantiation of every settings-page subclass
+	 * (Credits, Events, Network, Roles, Rsvp_Settings, Tools, Venues) so
+	 * `Setup::instantiate_classes()` can hand off with a single
+	 * `Settings::get_instance()` call. Checks the subclass registrations
+	 * landed — `Credits` is the proxy: its constructor wires an
+	 * `admin_init` action, and that action is only present if
+	 * `Settings::instantiate_classes()` instantiated it.
+	 *
+	 * @covers ::__construct
+	 * @covers ::instantiate_classes
+	 *
+	 * @return void
+	 */
+	public function test_instantiate_classes_registers_subclasses(): void {
+		Settings::get_instance();
+
+		$this->assertSame(
+			10,
+			has_action(
+				'admin_init',
+				array( \GatherPress\Core\Settings\Credits::get_instance(), 'init' )
+			),
+			'Settings::instantiate_classes() must instantiate each subclass so its hooks register.'
+		);
+	}
+
+	/**
 	 * Coverage for setup_hooks.
 	 *
 	 * @covers ::__construct

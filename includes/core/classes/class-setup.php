@@ -72,13 +72,6 @@ class Setup {
 		Rsvp_Query::get_instance();
 		Rsvp_Setup::get_instance();
 		Settings::get_instance();
-		Settings\Credits::get_instance();
-		Settings\Events::get_instance();
-		Settings\Network::get_instance();
-		Settings\Roles::get_instance();
-		Settings\Rsvp_Settings::get_instance();
-		Settings\Tools::get_instance();
-		Settings\Venues::get_instance();
 		Topic::get_instance();
 		User::get_instance();
 		Venue_Map::get_instance();

@@ -14,7 +14,6 @@ namespace GatherPress\Core;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
-use GatherPress\Core\Settings\Network;
 use GatherPress\Core\Traits\Singleton;
 
 /**
@@ -97,7 +96,32 @@ class Settings {
 	 */
 	protected function __construct() {
 		$this->set_current_page();
+		$this->instantiate_classes();
 		$this->setup_hooks();
+	}
+
+	/**
+	 * Instantiate each settings-page subclass.
+	 *
+	 * Method name mirrors `Setup::instantiate_classes()` so the pattern
+	 * is consistent top-to-bottom: every class that owns a set of
+	 * singletons calls them `instantiate_classes()`. Keeps
+	 * `Setup::instantiate_classes()` slim — a new settings page lands as
+	 * a single added line here rather than edits to Setup. Each subclass
+	 * is a singleton, so repeat calls are safe.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return void
+	 */
+	protected function instantiate_classes(): void {
+		Settings\Credits::get_instance();
+		Settings\Events::get_instance();
+		Settings\Network::get_instance();
+		Settings\Roles::get_instance();
+		Settings\Rsvp_Settings::get_instance();
+		Settings\Tools::get_instance();
+		Settings\Venues::get_instance();
 	}
 
 	/**
@@ -651,7 +675,7 @@ class Settings {
 							'<a href="%s">%s</a>',
 							esc_url(
 								network_admin_url(
-									sprintf( 'settings.php?page=%s', Network::PAGE_SLUG )
+									sprintf( 'settings.php?page=%s', Settings\Network::PAGE_SLUG )
 								)
 							),
 							esc_html__( 'network', 'gatherpress' )
@@ -754,7 +778,7 @@ class Settings {
 		// is the network admin settings page itself, where super admins edit
 		// the network values — fields there must remain fully editable.
 		if ( is_multisite() && ! is_network_admin() ) {
-			$config = Network::get_config();
+			$config = Settings\Network::get_config();
 
 			if ( ! empty( $config['enabled'] ) ) {
 				$inherited = in_array( $option, (array) ( $config['inherited'] ?? array() ), true );
@@ -1199,7 +1223,7 @@ class Settings {
 		$this->write_stored_options( $scope, $sanitized );
 
 		if ( 'network' === $scope ) {
-			Network::flush_config_cache();
+			Settings\Network::flush_config_cache();
 		}
 
 		$result['success']  = true;
