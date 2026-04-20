@@ -65,6 +65,7 @@
 
 - [`gatherpress_venue_map_prewarm_batch_size`](gatherpress_venue_map_prewarm_batch_size.md) Filter the venue-map prewarm scan batch size.
 - [`gatherpress_venue_map_prewarm_content_batch_size`](gatherpress_venue_map_prewarm_content_batch_size.md) Filter the venue-map prewarm content-scan batch size.
+- [`gatherpress_venue_map_prewarm_pre_enqueue_job`](gatherpress_venue_map_prewarm_pre_enqueue_job.md) Filter the prewarm enqueue call to take over scheduling.
 
 ## class-venue-map.php
 
