@@ -22,6 +22,12 @@ parameters:
     paths:
         - includes/
 
+    excludePaths:
+        # Vendored third-party library — drop-in copy that must stay
+        # byte-for-byte upstream so `bin/update-action-scheduler.sh`
+        # diffs stay clean.
+        - includes/libraries/*
+
     ignoreErrors:
         # includes/core/classes/class-setup.php
         #

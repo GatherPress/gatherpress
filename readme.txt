@@ -69,3 +69,18 @@ Alternative map provider, only used when a site opts in by choosing "Google Maps
 - Google privacy policy: https://policies.google.com/privacy
 
 Map and address data used by Photon and CARTO are sourced from OpenStreetMap contributors (https://www.openstreetmap.org/copyright).
+
+== Bundled Third-Party Libraries ==
+
+GatherPress ships the following third-party library inside the plugin zip so the plugin is self-contained and does not require a separate install step. No external HTTP requests are made by the bundled library.
+
+= Action Scheduler (by Automattic) =
+
+A persistent, retry-capable job queue used to run background work (such as pre-rendering static venue maps) without relying on WP-Cron. Activating GatherPress adds a **Tools > Scheduled Actions** admin page — this page is provided by the Action Scheduler library and is a safe place to monitor, retry, or cancel background jobs GatherPress has queued.
+
+- Version: 3.9.3
+- Homepage: https://actionscheduler.org/
+- Source & license (GPLv3): https://github.com/woocommerce/action-scheduler
+- Bundled under: `includes/libraries/action-scheduler/`
+
+Action Scheduler self-registers across all plugins that bundle it and loads the highest version available on the site, so GatherPress will not conflict with WooCommerce, WP Job Manager, GiveWP, the standalone Action Scheduler plugin, or any other plugin that ships its own copy. If another active plugin ships a newer version of Action Scheduler, that newer version is the one all plugins on the site will use — our bundled copy stays on disk but stays silent.

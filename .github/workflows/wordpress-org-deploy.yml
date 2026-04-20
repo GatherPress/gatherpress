@@ -11,6 +11,19 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
+    - name: Setup PHP
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: 7.4
+        tools: composer
+        coverage: none
+    - name: Install vendored libraries
+      # Composer's `installer-paths` stanza lands `woocommerce/action-scheduler`
+      # under `includes/libraries/action-scheduler/`, where the plugin's
+      # bootstrap loads it from. `--no-dev` keeps test tooling out of the
+      # `vendor/` tree for production builds (the zip excludes `vendor/`
+      # anyway, but this keeps the install fast and the footprint tight).
+      run: composer install --no-dev --optimize-autoloader --prefer-dist --no-interaction
     - name: Build
       run: |
         npm install

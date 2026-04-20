@@ -35,6 +35,14 @@ typings
 vendor
 phpstan.neon
 
+# Vendored third-party libraries #
+##########
+# Composer-managed libraries (e.g. Action Scheduler) land under
+# `includes/libraries/` via `composer/installers` + the `installer-paths`
+# stanza in composer.json. Pinned by composer.lock — no library source
+# goes into git, same way `vendor/` and `node_modules/` stay out.
+includes/libraries/
+
 # .wp-env #
 ##########
 wp-core

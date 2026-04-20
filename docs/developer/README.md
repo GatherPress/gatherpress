@@ -93,9 +93,9 @@ In fact, after the initial setup, you may notice that in your code editor, there
 1. Install the version of Node in `.nvmrc.`. [NVM](https://github.com/nvm-sh/nvm) can be used to achieve this.
 2. Install [Composer](https://getcomposer.org/doc/00-intro.md)
 3. In your terminal window, `cd` to the `gatherpress` directory
-4. Run `npm install` to get node dependencies
-5. Run `npm run build` to compile scripts and styles
-6. Run `composer install` to get PHPUnit dependencies
+4. Run `composer install` to get PHP dependencies, including PHPUnit and the vendored [Action Scheduler](./action-scheduler.md) library (installed under `includes/libraries/action-scheduler/`)
+5. Run `npm install` to get node dependencies
+6. Run `npm run build` to compile scripts and styles
 
 ### To shut down your development session
 

@@ -16,6 +16,23 @@ if ( ! defined( 'WP_CLI' ) ) {
 
 $gatherpress_bootstrap_instance = PMC\Unit_Test\Bootstrap::get_instance();
 
+// Load the vendored Action Scheduler library on `plugins_loaded` at a
+// negative priority so its own priority-0 / priority-1 self-registration
+// hooks get added before the action steps through those priorities. In
+// production `wp-settings.php` loads the plugin file before firing
+// `plugins_loaded`, and the `Action_Scheduler` class's constructor
+// (invoked from `Setup::instantiate_classes()`) handles the require.
+// The WP test framework defers plugin loading to `plugins_loaded`
+// priority 10, past AS's registration window — so we load the library
+// here at priority -1 to replicate the production timing.
+tests_add_filter(
+	'plugins_loaded',
+	static function () {
+		require_once __DIR__ . '/../../../includes/libraries/action-scheduler/action-scheduler.php';
+	},
+	-1
+);
+
 tests_add_filter(
 	'plugins_loaded',
 	static function () {

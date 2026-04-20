@@ -13,6 +13,8 @@
 	<exclude-pattern>/build/</exclude-pattern>
 	<exclude-pattern>/wp-core/</exclude-pattern>
 	<exclude-pattern>/languages/</exclude-pattern>
+	<!-- Vendored third-party libraries — drop-in copies that must stay byte-for-byte upstream so bin/update-*.sh diffs stay clean. -->
+	<exclude-pattern>/includes/libraries/</exclude-pattern>
 
 	<!-- How to scan -->
 	<!-- Usage instructions: https://github.com/squizlabs/PHP_CodeSniffer/wiki/Usage -->

@@ -195,6 +195,19 @@ When working with this codebase:
 4. Test both PHP and JavaScript components
 5. Consider block editor compatibility when making changes
 
+### Bundled Action Scheduler library
+
+GatherPress uses [Action Scheduler](https://actionscheduler.org/) for persistent background jobs in place of WP-Cron. The library is installed as a **Composer dependency** (`woocommerce/action-scheduler`, currently pinned to **3.9.3**) and routed to `includes/libraries/action-scheduler/` via `composer/installers` + the `installer-paths` stanza in `composer.json`. It's wrapped by the `GatherPress\Core\Action_Scheduler` singleton (loaded from `Setup::instantiate_classes()`) which requires the entry file during bootstrap and renders a non-fatal admin notice when the library is missing.
+
+- **Do not commit anything under `includes/libraries/`** — the whole path is gitignored. If you see those files in `git status`, something went wrong with `.gitignore`.
+- **Fresh clones**: run `composer install` as part of the standard two-step setup (`composer install` + `npm install`). `npm run plugin-zip` also invokes `composer install --no-dev` via the `libraries:install` npm script, so the zip always contains AS even if someone forgot the composer step.
+- **Bumping the version**: `composer require woocommerce/action-scheduler:3.9.4`. Commit `composer.json` + `composer.lock`. Update the pinned version in `readme.txt`, `docs/developer/action-scheduler.md`, and this entry. CI and the deploy workflow converge on the new version automatically.
+- **Adding another vendored library**: add it to `composer.json`, include it in the `installer-paths` stanza, and add a line to `readme.txt`'s Bundled Third-Party Libraries section. No script or workflow changes needed.
+- When introducing new background work anywhere in the plugin, prefer `as_enqueue_async_action()` / `as_schedule_single_action()` / `as_schedule_recurring_action()` over `wp_schedule_single_event()` / `wp_schedule_event()`. Always gate the enqueue call on `GatherPress\Core\Action_Scheduler::is_available()` so a rare botched deploy (library directory missing) doesn't fatal the plugin.
+- Use a `gatherpress_`-prefixed group string per subsystem (`gatherpress_prewarm`, `gatherpress_rsvp_emails`, etc.) so the Tools → Scheduled Actions admin page groups related jobs cleanly under one filter.
+- Multi-plugin compatibility is handled by AS itself, not by us: every bundled copy (WooCommerce, WP Job Manager, the standalone AS plugin, ours) registers on `plugins_loaded` priority 0 and the library picks the highest version for the whole site on priority 1. Zero collision-handling code on our side — if we ship 3.9.3 and WooCommerce ships 3.10.0, WooCommerce's copy runs and ours stays silent.
+- See `docs/developer/action-scheduler.md` for the full usage guide.
+
 ### Auto-generated developer hook docs
 
 `docs/developer/hooks/` is regenerated automatically by CI — the `extract-wp-hooks-as-docs.yml` workflow runs on every push to `develop` that touches a `.php` file, runs `vendor/bin/extract-wp-hooks.php`, and opens a dedicated `fix/extract-wp-hooks-{sha}` PR titled "Hook docs updated!" with the regen.

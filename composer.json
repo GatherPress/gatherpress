@@ -14,8 +14,17 @@
 		}
 	],
 	"require": {
+		"composer/installers": "^2.0",
+		"woocommerce/action-scheduler": "3.9.3",
 		"pmc/unit-test": "dev-main",
 		"php": ">=7.4"
+	},
+	"extra": {
+		"installer-paths": {
+			"includes/libraries/{$name}/": [
+				"woocommerce/action-scheduler"
+			]
+		}
 	},
 	"require-dev": {
 		"dealerdirect/phpcodesniffer-composer-installer": "*",
@@ -43,6 +52,7 @@
 	},
 	"config": {
 		"allow-plugins": {
+			"composer/installers": true,
 			"dealerdirect/phpcodesniffer-composer-installer": true
 		}
 	}

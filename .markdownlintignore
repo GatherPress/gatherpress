@@ -9,3 +9,6 @@ node_modules
 playwright-report
 vendor
 wp-core
+
+# Vendored third-party libraries — drop-in copies that must stay byte-for-byte upstream.
+includes/libraries

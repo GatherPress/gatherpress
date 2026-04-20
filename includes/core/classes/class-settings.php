@@ -14,7 +14,13 @@ namespace GatherPress\Core;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
+use GatherPress\Core\Settings\Credits;
+use GatherPress\Core\Settings\Events;
 use GatherPress\Core\Settings\Network;
+use GatherPress\Core\Settings\Roles;
+use GatherPress\Core\Settings\Rsvp_Settings;
+use GatherPress\Core\Settings\Tools;
+use GatherPress\Core\Settings\Venues;
 use GatherPress\Core\Traits\Singleton;
 
 /**
@@ -97,7 +103,29 @@ class Settings {
 	 */
 	protected function __construct() {
 		$this->set_current_page();
+		$this->load_settings_pages();
 		$this->setup_hooks();
+	}
+
+	/**
+	 * Instantiate each settings-page subclass.
+	 *
+	 * Keeps `Setup::instantiate_classes()` slim — a new settings page
+	 * lands as a single added line here rather than edits to Setup.
+	 * Each subclass is a singleton, so repeat calls are safe.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return void
+	 */
+	protected function load_settings_pages(): void {
+		Credits::get_instance();
+		Events::get_instance();
+		Network::get_instance();
+		Roles::get_instance();
+		Rsvp_Settings::get_instance();
+		Tools::get_instance();
+		Venues::get_instance();
 	}
 
 	/**
