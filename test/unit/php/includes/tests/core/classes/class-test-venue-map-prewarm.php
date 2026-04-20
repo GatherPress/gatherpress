@@ -330,6 +330,53 @@ class Test_Venue_Map_Prewarm extends Base {
 	}
 
 	/**
+	 * Every non-null return value — including falsy ones like `false`,
+	 * `0`, and `''` — must suppress the default enqueue. Mirrors the
+	 * WordPress `pre_*` filter contract (only `null` means "pass
+	 * through") and locks the contract in so a future accident where
+	 * the check becomes e.g. `if ( $short_circuit )` instead of
+	 * `if ( null !== $short_circuit )` fails the suite.
+	 *
+	 * @covers ::enqueue_warm_job
+	 *
+	 * @return void
+	 */
+	public function test_enqueue_warm_job_filter_falsy_non_null_values_still_short_circuit(): void {
+		$instance = Venue_Map_Prewarm::get_instance();
+
+		foreach ( array( false, 0, '' ) as $index => $falsy_return ) {
+			$venue_post_id = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
+			$combo         = array(
+				'zoom'         => 15,
+				// Unique per iteration so dedup can't mask a missing short-circuit.
+				'width'        => 800 + $index,
+				'height'       => 400,
+				'aspect_ratio' => '2/1',
+			);
+
+			$callback = static function () use ( $falsy_return ) {
+				return $falsy_return;
+			};
+			add_filter( 'gatherpress_venue_map_prewarm_pre_enqueue_job', $callback );
+
+			Utility::invoke_hidden_method( $instance, 'enqueue_warm_job', array( $venue_post_id, $combo ) );
+
+			remove_filter( 'gatherpress_venue_map_prewarm_pre_enqueue_job', $callback );
+
+			$this->assertFalse(
+				wp_next_scheduled(
+					Venue_Map_Prewarm::CRON_ACTION,
+					array( $venue_post_id, 15, 800 + $index, 400, '2/1' )
+				),
+				sprintf(
+					'Filter returning %s (non-null) must suppress the default WP-Cron path.',
+					var_export( $falsy_return, true )
+				)
+			);
+		}
+	}
+
+	/**
 	 * Returning `null` (the default) from the filter must leave the
 	 * default WP-Cron behavior untouched — the whole point of the filter
 	 * is to be a no-op when nothing hooks it.

@@ -347,15 +347,21 @@ class Venue_Map_Prewarm {
 		/**
 		 * Filter the prewarm enqueue call to take over scheduling.
 		 *
-		 * Return any non-null value from this filter to suppress the
-		 * default WP-Cron path so a companion plugin can enqueue the
-		 * same work through Action Scheduler or another persistent
-		 * queue. The returned value is not used by core — it's only
-		 * inspected for `null` vs. non-null — so a callback can return
-		 * anything meaningful to itself (e.g. an AS action ID).
+		 * Return any non-null value from this filter to suppress both
+		 * the WP-Cron dedup check below and the `wp_schedule_single_event()`
+		 * call — a companion plugin that hooks this filter owns the
+		 * full scheduling path end-to-end (including its own dedup,
+		 * since the fanout by-passes `wp_next_scheduled()`). Mirrors
+		 * the core `pre_*` filter convention: `null` means "pass
+		 * through to the default"; everything else, including falsy
+		 * values like `false`, `0`, and `''`, short-circuits.
 		 *
-		 * Mirrors the core `pre_*` filter convention (`pre_update_option`,
-		 * `pre_set_site_transient`, etc.).
+		 * Core ignores the return value past the null check, so a
+		 * callback is free to return whatever is useful to itself —
+		 * the established convention is a scheduler-specific
+		 * identifier (e.g. the Action Scheduler action ID returned by
+		 * `as_enqueue_async_action()`) so other filters / debug
+		 * tooling downstream can correlate the job.
 		 *
 		 * @since 1.0.0
 		 *
