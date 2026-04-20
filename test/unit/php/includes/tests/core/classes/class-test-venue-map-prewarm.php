@@ -370,7 +370,7 @@ class Test_Venue_Map_Prewarm extends Base {
 				),
 				sprintf(
 					'Filter returning %s (non-null) must suppress the default WP-Cron path.',
-					var_export( $falsy_return, true )
+					wp_json_encode( $falsy_return )
 				)
 			);
 		}
