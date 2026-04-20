@@ -9,6 +9,7 @@
 namespace GatherPress\Tests\Core;
 
 use GatherPress\Core\Settings;
+use GatherPress\Core\Settings\Credits;
 use GatherPress\Core\Utility as GatherPress_Utility;
 use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;
@@ -19,6 +20,37 @@ use PMC\Unit_Test\Utility;
  * @coversDefaultClass \GatherPress\Core\Settings
  */
 class Test_Settings extends Base {
+	/**
+	 * Settings now owns the instantiation of every settings-page subclass
+	 * (Credits, Events, Network, Roles, Rsvp_Settings, Tools, Venues) so
+	 * `Setup::instantiate_classes()` can hand off with a single
+	 * `Settings::get_instance()` call. Checks the subclass registrations
+	 * landed — `Credits` is the proxy: its constructor wires an
+	 * `admin_init` action, and that action is only present if
+	 * `Settings::instantiate_classes()` instantiated it.
+	 *
+	 * @covers ::__construct
+	 * @covers ::instantiate_classes
+	 *
+	 * @return void
+	 */
+	public function test_instantiate_classes_registers_subclasses(): void {
+		// Force the method to run inside the test's coverage window —
+		// Settings is a singleton cached during plugin bootstrap, so
+		// `get_instance()` here just returns the cached instance and
+		// doesn't re-fire the constructor.
+		Utility::invoke_hidden_method( Settings::get_instance(), 'instantiate_classes' );
+
+		$this->assertSame(
+			10,
+			has_action(
+				'admin_init',
+				array( Credits::get_instance(), 'init' )
+			),
+			'Settings::instantiate_classes() must instantiate each subclass so its hooks register.'
+		);
+	}
+
 	/**
 	 * Coverage for setup_hooks.
 	 *

@@ -277,6 +277,96 @@ class Test_Venue_Map_Prewarm extends Base {
 	}
 
 	/**
+	 * A non-null return from the `gatherpress_venue_map_prewarm_pre_enqueue_job`
+	 * filter must suppress the default WP-Cron enqueue so a companion
+	 * plugin can route the fanout through its own queue (e.g. Action
+	 * Scheduler). The filter receives the hook name and args for routing
+	 * decisions.
+	 *
+	 * @covers ::enqueue_warm_job
+	 *
+	 * @return void
+	 */
+	public function test_enqueue_warm_job_filter_short_circuits_wp_cron_path(): void {
+		$instance      = Venue_Map_Prewarm::get_instance();
+		$venue_post_id = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
+		$combo         = array(
+			'zoom'         => 15,
+			'width'        => 800,
+			'height'       => 400,
+			'aspect_ratio' => '2/1',
+		);
+
+		$seen = array();
+		$spy  = static function ( $short_circuit, $hook, $args ) use ( &$seen ) {
+			$seen[] = array(
+				'hook' => $hook,
+				'args' => $args,
+			);
+			// Non-null return value. Companion plugins would return an AS
+			// action ID or similar; core only cares that it's not null.
+			return 'handled-by-companion';
+		};
+		add_filter( 'gatherpress_venue_map_prewarm_pre_enqueue_job', $spy, 10, 3 );
+
+		Utility::invoke_hidden_method( $instance, 'enqueue_warm_job', array( $venue_post_id, $combo ) );
+
+		remove_filter( 'gatherpress_venue_map_prewarm_pre_enqueue_job', $spy, 10 );
+
+		$this->assertFalse(
+			wp_next_scheduled(
+				Venue_Map_Prewarm::CRON_ACTION,
+				array( $venue_post_id, 15, 800, 400, '2/1' )
+			),
+			'Default WP-Cron path must be suppressed when the filter returns non-null.'
+		);
+		$this->assertCount( 1, $seen, 'Filter is invoked exactly once per enqueue call.' );
+		$this->assertSame( Venue_Map_Prewarm::CRON_ACTION, $seen[0]['hook'] );
+		$this->assertSame(
+			array( $venue_post_id, 15, 800, 400, '2/1' ),
+			$seen[0]['args'],
+			'Filter receives the same args that the hook would have fired with.'
+		);
+	}
+
+	/**
+	 * Returning `null` (the default) from the filter must leave the
+	 * default WP-Cron behavior untouched — the whole point of the filter
+	 * is to be a no-op when nothing hooks it.
+	 *
+	 * @covers ::enqueue_warm_job
+	 *
+	 * @return void
+	 */
+	public function test_enqueue_warm_job_filter_returning_null_preserves_default_path(): void {
+		$instance      = Venue_Map_Prewarm::get_instance();
+		$venue_post_id = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
+		$combo         = array(
+			'zoom'         => 15,
+			'width'        => 800,
+			'height'       => 400,
+			'aspect_ratio' => '2/1',
+		);
+
+		$passthrough = static function ( $short_circuit ) {
+			return $short_circuit;
+		};
+		add_filter( 'gatherpress_venue_map_prewarm_pre_enqueue_job', $passthrough );
+
+		Utility::invoke_hidden_method( $instance, 'enqueue_warm_job', array( $venue_post_id, $combo ) );
+
+		remove_filter( 'gatherpress_venue_map_prewarm_pre_enqueue_job', $passthrough );
+
+		$this->assertNotFalse(
+			wp_next_scheduled(
+				Venue_Map_Prewarm::CRON_ACTION,
+				array( $venue_post_id, 15, 800, 400, '2/1' )
+			),
+			'Null return from the filter must fall through to wp_schedule_single_event().'
+		);
+	}
+
+	/**
 	 * Saving a venue post enqueues a warm job for that venue when any
 	 * template in the site references a venue-map combo. We simulate the
 	 * template existence by saving a wp_template first.

@@ -322,6 +322,13 @@ class Venue_Map_Prewarm {
 	/**
 	 * Schedule a single warm job, deduped via wp_next_scheduled().
 	 *
+	 * The actual scheduling is wrapped in the
+	 * {@see 'gatherpress_venue_map_prewarm_pre_enqueue_job'} short-circuit filter so
+	 * a companion plugin (e.g. "GatherPress at Scale") can intercept and
+	 * route the fanout through Action Scheduler — or any other queue —
+	 * without touching core. Returning a non-null value from the filter
+	 * suppresses the default WP-Cron path.
+	 *
 	 * @since 1.0.0
 	 *
 	 * @param int                                                      $venue_post_id Venue post ID.
@@ -336,6 +343,37 @@ class Venue_Map_Prewarm {
 			(int) $combo['height'],
 			(string) $combo['aspect_ratio'],
 		);
+
+		/**
+		 * Filter the prewarm enqueue call to take over scheduling.
+		 *
+		 * Return any non-null value from this filter to suppress the
+		 * default WP-Cron path so a companion plugin can enqueue the
+		 * same work through Action Scheduler or another persistent
+		 * queue. The returned value is not used by core — it's only
+		 * inspected for `null` vs. non-null — so a callback can return
+		 * anything meaningful to itself (e.g. an AS action ID).
+		 *
+		 * Mirrors the core `pre_*` filter convention (`pre_update_option`,
+		 * `pre_set_site_transient`, etc.).
+		 *
+		 * @since 1.0.0
+		 *
+		 * @param mixed  $short_circuit Non-null to suppress the default enqueue.
+		 * @param string $hook          Action hook name fired when the job runs.
+		 * @param array  $args          Args passed to the action hook when the job runs:
+		 *                              `array( $venue_post_id, $zoom, $width, $height, $aspect_ratio )`.
+		 */
+		$short_circuit = apply_filters(
+			'gatherpress_venue_map_prewarm_pre_enqueue_job',
+			null,
+			self::CRON_ACTION,
+			$args
+		);
+
+		if ( null !== $short_circuit ) {
+			return;
+		}
 
 		if ( false !== wp_next_scheduled( self::CRON_ACTION, $args ) ) {
 			return;
