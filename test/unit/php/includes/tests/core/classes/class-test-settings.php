@@ -35,7 +35,11 @@ class Test_Settings extends Base {
 	 * @return void
 	 */
 	public function test_instantiate_classes_registers_subclasses(): void {
-		Settings::get_instance();
+		// Force the method to run inside the test's coverage window —
+		// Settings is a singleton cached during plugin bootstrap, so
+		// `get_instance()` here just returns the cached instance and
+		// doesn't re-fire the constructor.
+		Utility::invoke_hidden_method( Settings::get_instance(), 'instantiate_classes' );
 
 		$this->assertSame(
 			10,
