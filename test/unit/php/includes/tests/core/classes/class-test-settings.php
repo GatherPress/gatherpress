@@ -10,6 +10,12 @@ namespace GatherPress\Tests\Core;
 
 use GatherPress\Core\Settings;
 use GatherPress\Core\Settings\Credits;
+use GatherPress\Core\Settings\Events;
+use GatherPress\Core\Settings\Network;
+use GatherPress\Core\Settings\Roles;
+use GatherPress\Core\Settings\Rsvp_Settings;
+use GatherPress\Core\Settings\Tools;
+use GatherPress\Core\Settings\Venues;
 use GatherPress\Core\Utility as GatherPress_Utility;
 use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;
@@ -41,14 +47,31 @@ class Test_Settings extends Base {
 		// doesn't re-fire the constructor.
 		Utility::invoke_hidden_method( Settings::get_instance(), 'instantiate_classes' );
 
-		$this->assertSame(
-			10,
-			has_action(
-				'admin_init',
-				array( Credits::get_instance(), 'init' )
-			),
-			'Settings::instantiate_classes() must instantiate each subclass so its hooks register.'
+		// Asserting per-subclass proof-of-construction catches the case
+		// where a single subclass silently drops out of
+		// `Settings::instantiate_classes()` — testing only one subclass
+		// (Credits, say) lets Tools / Venues regressions slip through.
+		// Most subclasses inherit `Settings\Base`'s `admin_init → init`
+		// wiring; `Network` overrides `setup_hooks()` and uses
+		// `network_admin_menu → register_page` instead.
+		$expected_hooks = array(
+			Credits::class       => array( 'admin_init', array( Credits::get_instance(), 'init' ) ),
+			Events::class        => array( 'admin_init', array( Events::get_instance(), 'init' ) ),
+			Network::class       => array( 'network_admin_menu', array( Network::get_instance(), 'register_page' ) ),
+			Roles::class         => array( 'admin_init', array( Roles::get_instance(), 'init' ) ),
+			Rsvp_Settings::class => array( 'admin_init', array( Rsvp_Settings::get_instance(), 'init' ) ),
+			Tools::class         => array( 'admin_init', array( Tools::get_instance(), 'init' ) ),
+			Venues::class        => array( 'admin_init', array( Venues::get_instance(), 'init' ) ),
 		);
+
+		foreach ( $expected_hooks as $class_name => $expected ) {
+			list( $hook, $callback ) = $expected;
+			$this->assertSame(
+				10,
+				has_action( $hook, $callback ),
+				sprintf( '%s must be instantiated so its %s hook registers.', $class_name, $hook )
+			);
+		}
 	}
 
 	/**
