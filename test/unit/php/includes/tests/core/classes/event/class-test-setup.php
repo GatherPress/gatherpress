@@ -48,9 +48,18 @@ class Test_Setup extends Base {
 		Utility::invoke_hidden_method( Setup::get_instance(), 'instantiate_classes' );
 
 		$expected_hooks = array(
-			Admin_List::class => array( 'load-edit.php', array( Admin_List::get_instance(), 'default_sort' ) ),
-			Query::class      => array( 'pre_get_posts', array( Query::get_instance(), 'prepare_event_query_before_execution' ) ),
-			Rest_Api::class   => array( 'rest_api_init', array( Rest_Api::get_instance(), 'register_endpoints' ) ),
+			Admin_List::class => array(
+				'load-edit.php',
+				array( Admin_List::get_instance(), 'default_sort' ),
+			),
+			Query::class      => array(
+				'pre_get_posts',
+				array( Query::get_instance(), 'prepare_event_query_before_execution' ),
+			),
+			Rest_Api::class   => array(
+				'rest_api_init',
+				array( Rest_Api::get_instance(), 'register_endpoints' ),
+			),
 		);
 
 		foreach ( $expected_hooks as $class_name => $expected ) {
