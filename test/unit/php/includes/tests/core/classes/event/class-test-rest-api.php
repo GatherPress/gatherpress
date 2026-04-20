@@ -1,15 +1,15 @@
 <?php
 /**
- * Class handles unit tests for GatherPress\Core\Event_Rest_Api.
+ * Class handles unit tests for GatherPress\Core\Event\Rest_Api.
  *
- * @package GatherPress\Core
+ * @package GatherPress\Core\Event
  * @since 1.0.0
  */
 
-namespace GatherPress\Tests\Core;
+namespace GatherPress\Tests\Core\Event;
 
 use GatherPress\Core\Event;
-use GatherPress\Core\Event_Rest_Api;
+use GatherPress\Core\Event\Rest_Api;
 use GatherPress\Core\Rsvp;
 use GatherPress\Core\Rsvp_Token;
 use GatherPress\Core\Settings;
@@ -23,11 +23,11 @@ use WP_REST_Response;
 use WP_REST_Server;
 
 /**
- * Class Test_Event_Rest_Api.
+ * Class Test_Rest_Api.
  *
- * @coversDefaultClass \GatherPress\Core\Event_Rest_Api
+ * @coversDefaultClass \GatherPress\Core\Event\Rest_Api
  */
-class Test_Event_Rest_Api extends Base {
+class Test_Rest_Api extends Base {
 	/**
 	 * Enable open RSVP for all tests in this class so RSVP form submission paths are exercisable.
 	 *
@@ -57,7 +57,7 @@ class Test_Event_Rest_Api extends Base {
 	 * @return void
 	 */
 	public function test_setup_hooks(): void {
-		$instance = Event_Rest_Api::get_instance();
+		$instance = Rest_Api::get_instance();
 		$hooks    = array(
 			array(
 				'type'     => 'action',
@@ -90,7 +90,7 @@ class Test_Event_Rest_Api extends Base {
 	 * @return void
 	 */
 	public function test_register_endpoints(): void {
-		$instance = Event_Rest_Api::get_instance();
+		$instance = Rest_Api::get_instance();
 
 		$instance->register_endpoints();
 
@@ -133,7 +133,7 @@ class Test_Event_Rest_Api extends Base {
 	 * @return void
 	 */
 	public function test_get_event_routes(): void {
-		$instance = Event_Rest_Api::get_instance();
+		$instance = Rest_Api::get_instance();
 		$routes   = Utility::invoke_hidden_method( $instance, 'get_event_routes' );
 
 		$this->assertSame( 'email', $routes[0]['route'], 'Failed to assert route is email.' );
@@ -184,7 +184,7 @@ class Test_Event_Rest_Api extends Base {
 	public function test_email(): void {
 		add_filter( 'pre_wp_mail', '__return_false' );
 
-		$instance = Event_Rest_Api::get_instance();
+		$instance = Rest_Api::get_instance();
 		$request  = new WP_REST_Request( 'POST' );
 		$event_id = $this->mock->post(
 			array( 'post_type' => Event::POST_TYPE )
@@ -218,7 +218,7 @@ class Test_Event_Rest_Api extends Base {
 	public function test_send_email(): void {
 		add_filter( 'pre_wp_mail', '__return_false' );
 
-		$instance = Event_Rest_Api::get_instance();
+		$instance = Rest_Api::get_instance();
 		$event_id = $this->mock->post(
 			array( 'post_type' => Event::POST_TYPE )
 		)->get()->ID;
@@ -255,7 +255,7 @@ class Test_Event_Rest_Api extends Base {
 	 * @return void
 	 */
 	public function test_get_recipients_with_no_send_options(): void {
-		$instance = Event_Rest_Api::get_instance();
+		$instance = Rest_Api::get_instance();
 		$event_id = $this->mock->post(
 			array( 'post_type' => Event::POST_TYPE )
 		)->get()->ID;
@@ -280,7 +280,7 @@ class Test_Event_Rest_Api extends Base {
 	 * @return void
 	 */
 	public function test_get_recipients_with_all_users_only(): void {
-		$instance = Event_Rest_Api::get_instance();
+		$instance = Rest_Api::get_instance();
 		$event_id = $this->mock->post(
 			array( 'post_type' => Event::POST_TYPE )
 		)->get()->ID;
@@ -319,7 +319,7 @@ class Test_Event_Rest_Api extends Base {
 	 * @return void
 	 */
 	public function test_get_recipients_with_attending_filter(): void {
-		$instance = Event_Rest_Api::get_instance();
+		$instance = Rest_Api::get_instance();
 		$event_id = $this->mock->post(
 			array( 'post_type' => Event::POST_TYPE )
 		)->get()->ID;
@@ -397,7 +397,7 @@ class Test_Event_Rest_Api extends Base {
 	 * @return void
 	 */
 	public function test_get_recipients_with_mixed_recipients(): void {
-		$instance = Event_Rest_Api::get_instance();
+		$instance = Rest_Api::get_instance();
 		$event_id = $this->mock->post(
 			array( 'post_type' => Event::POST_TYPE )
 		)->get()->ID;
@@ -530,7 +530,7 @@ class Test_Event_Rest_Api extends Base {
 	 * @return void
 	 */
 	public function test_events_list(): void {
-		$instance          = Event_Rest_Api::get_instance();
+		$instance          = Rest_Api::get_instance();
 		$request           = new WP_REST_Request( 'POST' );
 		$upcoming_event_id = $this->mock->post(
 			array( 'post_type' => Event::POST_TYPE )
@@ -606,7 +606,7 @@ class Test_Event_Rest_Api extends Base {
 	 * @return void
 	 */
 	public function test_max_number(): void {
-		$instance = Event_Rest_Api::get_instance();
+		$instance = Rest_Api::get_instance();
 
 		$this->assertEquals(
 			5,
@@ -628,7 +628,7 @@ class Test_Event_Rest_Api extends Base {
 	 * @return void
 	 */
 	public function test_update_rsvp(): void {
-		$instance = Event_Rest_Api::get_instance();
+		$instance = Rest_Api::get_instance();
 		$request  = new WP_REST_Request( 'POST' );
 		$user_id  = $this->factory->user->create( array( 'role' => 'administrator' ) );
 
@@ -683,7 +683,7 @@ class Test_Event_Rest_Api extends Base {
 	 * @return void
 	 */
 	public function test_rsvp_form_route(): void {
-		$instance = Event_Rest_Api::get_instance();
+		$instance = Rest_Api::get_instance();
 		$route    = Utility::invoke_hidden_method( $instance, 'rsvp_form_route' );
 
 		$this->assertEquals( 'rsvp-form', $route['route'] );
@@ -715,7 +715,7 @@ class Test_Event_Rest_Api extends Base {
 	 * @return void
 	 */
 	public function test_handle_rsvp_form_submission_success(): void {
-		$instance = Event_Rest_Api::get_instance();
+		$instance = Rest_Api::get_instance();
 		$post_id  = $this->factory()->post->create(
 			array(
 				'post_type' => Event::POST_TYPE,
@@ -785,7 +785,7 @@ class Test_Event_Rest_Api extends Base {
 	 * @return void
 	 */
 	public function test_handle_rsvp_form_submission_duplicate(): void {
-		$instance = Event_Rest_Api::get_instance();
+		$instance = Rest_Api::get_instance();
 		$post_id  = $this->factory()->post->create(
 			array(
 				'post_type' => Event::POST_TYPE,
@@ -836,7 +836,7 @@ class Test_Event_Rest_Api extends Base {
 	 * @return void
 	 */
 	public function test_handle_rsvp_form_submission_logged_in_user(): void {
-		$instance = Event_Rest_Api::get_instance();
+		$instance = Rest_Api::get_instance();
 		$post_id  = $this->factory()->post->create(
 			array(
 				'post_type' => Event::POST_TYPE,
@@ -882,7 +882,7 @@ class Test_Event_Rest_Api extends Base {
 	 * @return void
 	 */
 	public function test_handle_rsvp_form_submission_past_event(): void {
-		$instance = Event_Rest_Api::get_instance();
+		$instance = Rest_Api::get_instance();
 		$post_id  = $this->factory()->post->create(
 			array(
 				'post_type' => Event::POST_TYPE,
@@ -921,7 +921,7 @@ class Test_Event_Rest_Api extends Base {
 	 * @return void
 	 */
 	public function test_handle_rsvp_form_submission_open_rsvp_disabled(): void {
-		$instance = Event_Rest_Api::get_instance();
+		$instance = Rest_Api::get_instance();
 		$post_id  = $this->factory()->post->create(
 			array(
 				'post_type' => Event::POST_TYPE,
@@ -953,7 +953,7 @@ class Test_Event_Rest_Api extends Base {
 	 * @return void
 	 */
 	public function test_handle_rsvp_form_submission_open_rsvp_disabled_per_event(): void {
-		$instance = Event_Rest_Api::get_instance();
+		$instance = Rest_Api::get_instance();
 		$post_id  = $this->factory()->post->create(
 			array(
 				'post_type' => Event::POST_TYPE,
@@ -985,7 +985,7 @@ class Test_Event_Rest_Api extends Base {
 	 * @return void
 	 */
 	public function test_handle_email_send_action(): void {
-		$instance = Event_Rest_Api::get_instance();
+		$instance = Rest_Api::get_instance();
 		$post_id  = $this->factory()->post->create(
 			array(
 				'post_type' => Event::POST_TYPE,
@@ -1010,7 +1010,7 @@ class Test_Event_Rest_Api extends Base {
 	 * @return void
 	 */
 	public function test_rsvp_responses(): void {
-		$instance = Event_Rest_Api::get_instance();
+		$instance = Rest_Api::get_instance();
 		$post_id  = $this->factory()->post->create(
 			array(
 				'post_type' => Event::POST_TYPE,
@@ -1041,7 +1041,7 @@ class Test_Event_Rest_Api extends Base {
 	 * @return void
 	 */
 	public function test_rsvp_responses_non_event_post(): void {
-		$instance = Event_Rest_Api::get_instance();
+		$instance = Rest_Api::get_instance();
 		$post_id  = $this->factory()->post->create();
 
 		$request = new WP_REST_Request( 'GET' );
@@ -1062,7 +1062,7 @@ class Test_Event_Rest_Api extends Base {
 	 * @return void
 	 */
 	public function test_rsvp_status_html(): void {
-		$instance = Event_Rest_Api::get_instance();
+		$instance = Rest_Api::get_instance();
 		$post_id  = $this->factory()->post->create(
 			array(
 				'post_type' => Event::POST_TYPE,
@@ -1104,7 +1104,7 @@ class Test_Event_Rest_Api extends Base {
 	 * @return void
 	 */
 	public function test_rsvp_status_html_no_responses(): void {
-		$instance = Event_Rest_Api::get_instance();
+		$instance = Rest_Api::get_instance();
 		$post_id  = $this->factory()->post->create(
 			array(
 				'post_type' => Event::POST_TYPE,
@@ -1135,7 +1135,7 @@ class Test_Event_Rest_Api extends Base {
 	 * @return void
 	 */
 	public function test_prepare_event_data(): void {
-		$instance = Event_Rest_Api::get_instance();
+		$instance = Rest_Api::get_instance();
 		$post_id  = $this->factory()->post->create(
 			array(
 				'post_type' => Event::POST_TYPE,
@@ -1165,7 +1165,7 @@ class Test_Event_Rest_Api extends Base {
 	 * @return void
 	 */
 	public function test_events_list_with_topics(): void {
-		$instance = Event_Rest_Api::get_instance();
+		$instance = Rest_Api::get_instance();
 		$post_id  = $this->factory()->post->create(
 			array(
 				'post_type' => Event::POST_TYPE,
@@ -1204,7 +1204,7 @@ class Test_Event_Rest_Api extends Base {
 	 * @return void
 	 */
 	public function test_events_list_with_venues(): void {
-		$instance = Event_Rest_Api::get_instance();
+		$instance = Rest_Api::get_instance();
 		$post_id  = $this->factory()->post->create(
 			array(
 				'post_type' => Event::POST_TYPE,
@@ -1243,7 +1243,7 @@ class Test_Event_Rest_Api extends Base {
 	 * @return void
 	 */
 	public function test_events_list_custom_datetime_format(): void {
-		$instance = Event_Rest_Api::get_instance();
+		$instance = Rest_Api::get_instance();
 		$post_id  = $this->factory()->post->create(
 			array(
 				'post_type' => Event::POST_TYPE,
@@ -1281,7 +1281,7 @@ class Test_Event_Rest_Api extends Base {
 	 * @return void
 	 */
 	public function test_update_rsvp_with_token(): void {
-		$instance = Event_Rest_Api::get_instance();
+		$instance = Rest_Api::get_instance();
 		$post_id  = $this->factory()->post->create(
 			array(
 				'post_type' => Event::POST_TYPE,
@@ -1326,7 +1326,7 @@ class Test_Event_Rest_Api extends Base {
 	 * @return void
 	 */
 	public function test_update_rsvp_past_event(): void {
-		$instance = Event_Rest_Api::get_instance();
+		$instance = Rest_Api::get_instance();
 		$post_id  = $this->factory()->post->create(
 			array(
 				'post_type' => Event::POST_TYPE,
@@ -1363,7 +1363,7 @@ class Test_Event_Rest_Api extends Base {
 	 * @return void
 	 */
 	public function test_send_emails_non_event_post(): void {
-		$instance = Event_Rest_Api::get_instance();
+		$instance = Rest_Api::get_instance();
 		$post_id  = $this->factory()->post->create();
 
 		$result = $instance->send_emails( $post_id, array( 'all' => true ), '' );
@@ -1381,7 +1381,7 @@ class Test_Event_Rest_Api extends Base {
 	public function test_send_emails_with_opted_out_user(): void {
 		add_filter( 'pre_wp_mail', '__return_false' );
 
-		$instance = Event_Rest_Api::get_instance();
+		$instance = Rest_Api::get_instance();
 		$event_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
 		$user_id  = $this->factory->user->create();
 
@@ -1412,7 +1412,7 @@ class Test_Event_Rest_Api extends Base {
 	public function test_send_emails_with_opted_out_non_user(): void {
 		add_filter( 'pre_wp_mail', '__return_false' );
 
-		$instance = Event_Rest_Api::get_instance();
+		$instance = Rest_Api::get_instance();
 		$event_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
 
 		// Create anonymous RSVP.
@@ -1454,7 +1454,7 @@ class Test_Event_Rest_Api extends Base {
 	public function test_send_emails_with_no_email(): void {
 		add_filter( 'pre_wp_mail', '__return_false' );
 
-		$instance = Event_Rest_Api::get_instance();
+		$instance = Rest_Api::get_instance();
 		$event_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
 
 		// Create RSVP with no email.
@@ -1490,7 +1490,7 @@ class Test_Event_Rest_Api extends Base {
 	 * @return void
 	 */
 	public function test_get_recipients_skips_empty_email(): void {
-		$instance = Event_Rest_Api::get_instance();
+		$instance = Rest_Api::get_instance();
 		$event_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
 
 		// Create RSVP with empty email.
@@ -1527,7 +1527,7 @@ class Test_Event_Rest_Api extends Base {
 	public function test_send_emails_with_locale_switching(): void {
 		add_filter( 'pre_wp_mail', '__return_false' );
 
-		$instance = Event_Rest_Api::get_instance();
+		$instance = Rest_Api::get_instance();
 		$event_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
 		$user_id  = $this->factory->user->create();
 
@@ -1556,7 +1556,7 @@ class Test_Event_Rest_Api extends Base {
 	 * @covers ::nonce_route
 	 */
 	public function test_nonce_route(): void {
-		$instance = Event_Rest_Api::get_instance();
+		$instance = Rest_Api::get_instance();
 
 		$route = Utility::invoke_hidden_method( $instance, 'nonce_route' );
 
@@ -1577,7 +1577,7 @@ class Test_Event_Rest_Api extends Base {
 	 * @covers ::nonce_route
 	 */
 	public function test_nonce_route_callback(): void {
-		$instance = Event_Rest_Api::get_instance();
+		$instance = Rest_Api::get_instance();
 		$route    = Utility::invoke_hidden_method( $instance, 'nonce_route' );
 
 		// Create a logged-in user.
@@ -1607,7 +1607,7 @@ class Test_Event_Rest_Api extends Base {
 	 * @covers ::email_route
 	 */
 	public function test_email_route_permission_callback_can_edit(): void {
-		$instance = Event_Rest_Api::get_instance();
+		$instance = Rest_Api::get_instance();
 		$route    = Utility::invoke_hidden_method( $instance, 'email_route' );
 
 		// Create an editor who can edit posts.
@@ -1629,7 +1629,7 @@ class Test_Event_Rest_Api extends Base {
 	 * @covers ::email_route
 	 */
 	public function test_email_route_permission_callback_cannot_edit(): void {
-		$instance = Event_Rest_Api::get_instance();
+		$instance = Rest_Api::get_instance();
 		$route    = Utility::invoke_hidden_method( $instance, 'email_route' );
 
 		// Create a subscriber who cannot edit posts.
@@ -1651,7 +1651,7 @@ class Test_Event_Rest_Api extends Base {
 	 * @covers ::rsvp_route
 	 */
 	public function test_rsvp_route_permission_callback_with_token(): void {
-		$instance = Event_Rest_Api::get_instance();
+		$instance = Rest_Api::get_instance();
 		$route    = Utility::invoke_hidden_method( $instance, 'rsvp_route' );
 
 		$post_id = $this->factory->post->create(
@@ -1690,7 +1690,7 @@ class Test_Event_Rest_Api extends Base {
 	 * @covers ::rsvp_route
 	 */
 	public function test_rsvp_route_permission_callback_logged_out(): void {
-		$instance = Event_Rest_Api::get_instance();
+		$instance = Rest_Api::get_instance();
 		$route    = Utility::invoke_hidden_method( $instance, 'rsvp_route' );
 
 		// Ensure user is logged out.
@@ -1717,7 +1717,7 @@ class Test_Event_Rest_Api extends Base {
 	 * @covers ::rsvp_route
 	 */
 	public function test_rsvp_route_token_validate_callback_empty(): void {
-		$instance = Event_Rest_Api::get_instance();
+		$instance = Rest_Api::get_instance();
 		$route    = Utility::invoke_hidden_method( $instance, 'rsvp_route' );
 
 		$validate_callback = $route['args']['args']['rsvp_token']['validate_callback'];
@@ -1734,7 +1734,7 @@ class Test_Event_Rest_Api extends Base {
 	 * @covers ::rsvp_form_route
 	 */
 	public function test_rsvp_form_route_author_validate_callback_empty(): void {
-		$instance = Event_Rest_Api::get_instance();
+		$instance = Rest_Api::get_instance();
 		$route    = Utility::invoke_hidden_method( $instance, 'rsvp_form_route' );
 
 		$validate_callback = $route['args']['args']['author']['validate_callback'];
@@ -1756,7 +1756,7 @@ class Test_Event_Rest_Api extends Base {
 	 * @covers ::rsvp_form_route
 	 */
 	public function test_rsvp_form_route_email_validate_callback(): void {
-		$instance = Event_Rest_Api::get_instance();
+		$instance = Rest_Api::get_instance();
 		$route    = Utility::invoke_hidden_method( $instance, 'rsvp_form_route' );
 
 		$validate_callback = $route['args']['args']['email']['validate_callback'];
@@ -1778,7 +1778,7 @@ class Test_Event_Rest_Api extends Base {
 	 * @covers ::rsvp_form_route
 	 */
 	public function test_rsvp_form_route_form_schema_id_validate_callback(): void {
-		$instance = Event_Rest_Api::get_instance();
+		$instance = Rest_Api::get_instance();
 		$route    = Utility::invoke_hidden_method( $instance, 'rsvp_form_route' );
 
 		$validate_callback = $route['args']['args']['gatherpress_form_schema_id']['validate_callback'];
@@ -1806,7 +1806,7 @@ class Test_Event_Rest_Api extends Base {
 	 * @covers ::rsvp_status_html_route
 	 */
 	public function test_rsvp_status_html_route(): void {
-		$instance = Event_Rest_Api::get_instance();
+		$instance = Rest_Api::get_instance();
 
 		$route = Utility::invoke_hidden_method( $instance, 'rsvp_status_html_route' );
 
@@ -1825,7 +1825,7 @@ class Test_Event_Rest_Api extends Base {
 	 * @covers ::rsvp_responses_route
 	 */
 	public function test_rsvp_responses_route(): void {
-		$instance = Event_Rest_Api::get_instance();
+		$instance = Rest_Api::get_instance();
 
 		$route = Utility::invoke_hidden_method( $instance, 'rsvp_responses_route' );
 
@@ -1846,7 +1846,7 @@ class Test_Event_Rest_Api extends Base {
 	 * @covers ::send_emails
 	 */
 	public function test_send_emails_skip_non_user_opt_out(): void {
-		$instance = Event_Rest_Api::get_instance();
+		$instance = Rest_Api::get_instance();
 
 		$post_id = $this->factory->post->create(
 			array(
@@ -1889,7 +1889,7 @@ class Test_Event_Rest_Api extends Base {
 	 * @covers ::send_emails
 	 */
 	public function test_send_emails_restore_locale(): void {
-		$instance = Event_Rest_Api::get_instance();
+		$instance = Rest_Api::get_instance();
 
 		$user_id = $this->factory->user->create(
 			array(
@@ -1941,7 +1941,7 @@ class Test_Event_Rest_Api extends Base {
 	 * @covers ::get_recipients
 	 */
 	public function test_get_recipients_skip_empty_email(): void {
-		$instance = Event_Rest_Api::get_instance();
+		$instance = Rest_Api::get_instance();
 
 		$post_id = $this->factory->post->create(
 			array(
@@ -1978,7 +1978,7 @@ class Test_Event_Rest_Api extends Base {
 	 * @covers ::update_rsvp
 	 */
 	public function test_update_rsvp_non_admin_cannot_add_others(): void {
-		$instance = Event_Rest_Api::get_instance();
+		$instance = Rest_Api::get_instance();
 
 		// Create a subscriber (no edit_posts capability).
 		$subscriber_id = $this->factory->user->create( array( 'role' => 'subscriber' ) );
@@ -2013,7 +2013,7 @@ class Test_Event_Rest_Api extends Base {
 	 * @covers ::rsvp_status_html
 	 */
 	public function test_rsvp_status_html_nocache_when_logged_in(): void {
-		$instance = Event_Rest_Api::get_instance();
+		$instance = Rest_Api::get_instance();
 
 		// Create and log in a user.
 		$user_id = $this->factory->user->create();
@@ -2045,7 +2045,7 @@ class Test_Event_Rest_Api extends Base {
 	 * @covers ::handle_rsvp_form_submission
 	 */
 	public function test_handle_rsvp_form_submission_custom_fields(): void {
-		$instance = Event_Rest_Api::get_instance();
+		$instance = Rest_Api::get_instance();
 
 		$user_id = $this->factory->user->create(
 			array(
@@ -2086,7 +2086,7 @@ class Test_Event_Rest_Api extends Base {
 	 * @covers ::rsvp_responses
 	 */
 	public function test_rsvp_responses_nocache_when_logged_in(): void {
-		$instance = Event_Rest_Api::get_instance();
+		$instance = Rest_Api::get_instance();
 
 		// Create and log in a user.
 		$user_id = $this->factory->user->create();
@@ -2120,7 +2120,7 @@ class Test_Event_Rest_Api extends Base {
 	 * @return void
 	 */
 	public function test_update_rsvp_adds_user_to_blog_multisite(): void {
-		$instance = Event_Rest_Api::get_instance();
+		$instance = Rest_Api::get_instance();
 
 		// Create a user on site 1.
 		$user_id = $this->factory->user->create(

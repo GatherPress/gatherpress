@@ -1,16 +1,16 @@
 <?php
 /**
- * Class handles unit tests for GatherPress\Core\Event_Query.
+ * Class handles unit tests for GatherPress\Core\Event\Query.
  *
- * @package GatherPress\Core
+ * @package GatherPress\Core\Event
  * @since 1.0.0
  */
 
-namespace GatherPress\Tests\Core;
+namespace GatherPress\Tests\Core\Event;
 
 use DateTime;
 use GatherPress\Core\Event;
-use GatherPress\Core\Event_Query;
+use GatherPress\Core\Event\Query;
 use GatherPress\Core\Topic;
 use GatherPress\Core\Venue;
 use GatherPress\Core\Venue_Setup;
@@ -19,11 +19,11 @@ use PMC\Unit_Test\Utility;
 use WP_Query;
 
 /**
- * Class Test_Event_Query.
+ * Class Test_Query.
  *
- * @coversDefaultClass \GatherPress\Core\Event_Query
+ * @coversDefaultClass \GatherPress\Core\Event\Query
  */
-class Test_Event_Query extends Base {
+class Test_Query extends Base {
 	/**
 	 * Coverage for setup_hooks method.
 	 *
@@ -33,7 +33,7 @@ class Test_Event_Query extends Base {
 	 * @return void
 	 */
 	public function test_setup_hooks(): void {
-		$instance = Event_Query::get_instance();
+		$instance = Query::get_instance();
 		$hooks    = array(
 			array(
 				'type'     => 'action',
@@ -62,7 +62,7 @@ class Test_Event_Query extends Base {
 	 * @return void
 	 */
 	public function test_get_upcoming_events(): void {
-		$instance = Event_Query::get_instance();
+		$instance = Query::get_instance();
 		$response = $instance->get_upcoming_events();
 
 		$this->assertEmpty( $response->posts, 'Failed to assert that posts array is empty.' );
@@ -106,7 +106,7 @@ class Test_Event_Query extends Base {
 	 * @return void
 	 */
 	public function test_get_past_events(): void {
-		$instance = Event_Query::get_instance();
+		$instance = Query::get_instance();
 		$response = $instance->get_past_events();
 
 		$this->assertEmpty( $response->posts, 'Failed to assert that posts array is empty.' );
@@ -148,7 +148,7 @@ class Test_Event_Query extends Base {
 	 * @return void
 	 */
 	public function test_get_events_list(): void {
-		$instance = Event_Query::get_instance();
+		$instance = Query::get_instance();
 		$post_1   = $this->mock->post( array( 'post_type' => 'gatherpress_event' ) )->get();
 		$post_2   = $this->mock->post( array( 'post_type' => 'gatherpress_event' ) )->get();
 		$event_1  = new Event( $post_1->ID );
@@ -219,7 +219,7 @@ class Test_Event_Query extends Base {
 	 * @return void
 	 */
 	public function test_prepare_query_for_upcoming_events(): void {
-		$instance = Event_Query::get_instance();
+		$instance = Query::get_instance();
 		$query    = new WP_Query();
 
 		$query->set( 'post_type', 'gatherpress_event' );
@@ -247,7 +247,7 @@ class Test_Event_Query extends Base {
 	 * @return void
 	 */
 	public function test_prepare_query_for_past_events(): void {
-		$instance = Event_Query::get_instance();
+		$instance = Query::get_instance();
 		$query    = new WP_Query();
 
 		$query->set( 'post_type', 'gatherpress_event' );
@@ -275,7 +275,7 @@ class Test_Event_Query extends Base {
 	 * @return void
 	 */
 	public function test_prepare_query_for_archive_page(): void {
-		$instance = Event_Query::get_instance();
+		$instance = Query::get_instance();
 
 		// Mock WP_Query with necessary properties.
 		$query = $this->getMockBuilder( 'WP_Query' )
@@ -348,7 +348,7 @@ class Test_Event_Query extends Base {
 	 * @return void
 	 */
 	public function test_prepare_query_resolves_page_by_pagename(): void {
-		$instance = Event_Query::get_instance();
+		$instance = Query::get_instance();
 
 		// Create a real page with a known slug.
 		$page_id = $this->factory->post->create(
@@ -434,7 +434,7 @@ class Test_Event_Query extends Base {
 	 * @return void
 	 */
 	public function test_prepare_query_with_invalid_general_options(): void {
-		$instance = Event_Query::get_instance();
+		$instance = Query::get_instance();
 
 		// Mock WP_Query with necessary properties.
 		$query = $this->getMockBuilder( 'WP_Query' )
@@ -471,7 +471,7 @@ class Test_Event_Query extends Base {
 	 * @return void
 	 */
 	public function test_prepare_query_with_empty_pages(): void {
-		$instance = Event_Query::get_instance();
+		$instance = Query::get_instance();
 
 		// Mock WP_Query with necessary properties.
 		$query = $this->getMockBuilder( 'WP_Query' )
@@ -521,7 +521,7 @@ class Test_Event_Query extends Base {
 	 * @return void
 	 */
 	public function test_prepare_query_pre_option_filters(): void {
-		$instance = Event_Query::get_instance();
+		$instance = Query::get_instance();
 
 		// Create a page to use as the archive page.
 		$page_id = $this->factory->post->create(
@@ -591,7 +591,7 @@ class Test_Event_Query extends Base {
 	 * @return void
 	 */
 	public function test_prepare_query_archive_title_filter(): void {
-		$instance = Event_Query::get_instance();
+		$instance = Query::get_instance();
 
 		// Create a page to use as the archive page.
 		$page_id = $this->factory->post->create(
@@ -655,7 +655,7 @@ class Test_Event_Query extends Base {
 	 * @return void
 	 */
 	public function test_prepare_query_with_no_event_type(): void {
-		$instance = Event_Query::get_instance();
+		$instance = Query::get_instance();
 		$query    = new WP_Query();
 
 		$instance->prepare_event_query_before_execution( $query );
@@ -679,7 +679,7 @@ class Test_Event_Query extends Base {
 	 * @return void
 	 */
 	public function test_adjust_admin_event_sorting(): void {
-		$instance = Event_Query::get_instance();
+		$instance = Query::get_instance();
 		$wp_query = new WP_Query();
 
 		$this->mock->user( false, 'admin' );
@@ -728,7 +728,7 @@ class Test_Event_Query extends Base {
 	 * @return void
 	 */
 	public function test_adjust_admin_event_sorting_wrong_screen(): void {
-		$instance     = Event_Query::get_instance();
+		$instance     = Query::get_instance();
 		$wp_query     = new WP_Query();
 		$query_pieces = array( 'orderby' => 'post_date' );
 
@@ -760,7 +760,7 @@ class Test_Event_Query extends Base {
 	public function test_adjust_event_sql(): void {
 		global $wpdb;
 
-		$instance = Event_Query::get_instance();
+		$instance = Query::get_instance();
 
 		$table  = sprintf( Event::TABLE_FORMAT, $wpdb->prefix );
 		$retval = $instance->adjust_event_sql( array(), 'all', 'DESC' );
@@ -813,7 +813,7 @@ class Test_Event_Query extends Base {
 	 * @return void
 	 */
 	public function test_build_venue_tax_query(): void {
-		$instance = Event_Query::get_instance();
+		$instance = Query::get_instance();
 		$venues   = array( '_unit-test-venue', '_another-venue' );
 
 		$tax_query = Utility::invoke_hidden_method( $instance, 'build_venue_tax_query', array( $venues ) );
@@ -864,7 +864,7 @@ class Test_Event_Query extends Base {
 	 * @return void
 	 */
 	public function test_get_datetime_comparison_column(): void {
-		$instance = Event_Query::get_instance();
+		$instance = Query::get_instance();
 
 		$this->assertSame(
 			'datetime_end_gmt',
@@ -898,7 +898,7 @@ class Test_Event_Query extends Base {
 	 * @return void
 	 */
 	public function test_past_events_order(): void {
-		$instance = Event_Query::get_instance();
+		$instance = Query::get_instance();
 
 		// Create multiple past events with different dates.
 		$oldest_post  = $this->mock->post( array( 'post_type' => 'gatherpress_event' ) )->get();
@@ -968,7 +968,7 @@ class Test_Event_Query extends Base {
 	 * @return void
 	 */
 	public function test_upcoming_events_order(): void {
-		$instance = Event_Query::get_instance();
+		$instance = Query::get_instance();
 
 		// Create multiple upcoming events with different dates.
 		$soon_post  = $this->mock->post( array( 'post_type' => 'gatherpress_event' ) )->get();
@@ -1037,7 +1037,7 @@ class Test_Event_Query extends Base {
 	 * @return void
 	 */
 	public function test_include_unfinished_parameter_for_past_events(): void {
-		$instance = Event_Query::get_instance();
+		$instance = Query::get_instance();
 
 		// Create a currently running event.
 		$running_post  = $this->mock->post( array( 'post_type' => 'gatherpress_event' ) )->get();
@@ -1055,10 +1055,10 @@ class Test_Event_Query extends Base {
 		// Default behavior: currently running events should NOT appear in past events.
 		$query = new WP_Query(
 			array(
-				'post_type'                    => Event::POST_TYPE,
-				'posts_per_page'               => 10,
-				'fields'                       => 'ids',
-				Event_Query::EVENT_QUERY_PARAM => 'past',
+				'post_type'              => Event::POST_TYPE,
+				'posts_per_page'         => 10,
+				'fields'                 => 'ids',
+				Query::EVENT_QUERY_PARAM => 'past',
 			)
 		);
 		$instance->prepare_event_query_before_execution( $query );
@@ -1073,11 +1073,11 @@ class Test_Event_Query extends Base {
 		// With include_unfinished=true: currently running events SHOULD appear.
 		$query = new WP_Query(
 			array(
-				'post_type'                    => Event::POST_TYPE,
-				'posts_per_page'               => 10,
-				'fields'                       => 'ids',
-				Event_Query::EVENT_QUERY_PARAM => 'past',
-				'include_unfinished'           => true,
+				'post_type'              => Event::POST_TYPE,
+				'posts_per_page'         => 10,
+				'fields'                 => 'ids',
+				Query::EVENT_QUERY_PARAM => 'past',
+				'include_unfinished'     => true,
 			)
 		);
 		$instance->prepare_event_query_before_execution( $query );
@@ -1102,7 +1102,7 @@ class Test_Event_Query extends Base {
 	 * @return void
 	 */
 	public function test_include_unfinished_integer_values(): void {
-		$instance = Event_Query::get_instance();
+		$instance = Query::get_instance();
 
 		// Create a currently running event (using exact same pattern as working test).
 		$running_post  = $this->mock->post( array( 'post_type' => 'gatherpress_event' ) )->get();
@@ -1120,11 +1120,11 @@ class Test_Event_Query extends Base {
 		// First verify that boolean true works (like the original test).
 		$query = new WP_Query(
 			array(
-				'post_type'                    => Event::POST_TYPE,
-				'posts_per_page'               => 10,
-				'fields'                       => 'ids',
-				Event_Query::EVENT_QUERY_PARAM => 'past',
-				'include_unfinished'           => true, // Boolean true.
+				'post_type'              => Event::POST_TYPE,
+				'posts_per_page'         => 10,
+				'fields'                 => 'ids',
+				Query::EVENT_QUERY_PARAM => 'past',
+				'include_unfinished'     => true, // Boolean true.
 			)
 		);
 		$instance->prepare_event_query_before_execution( $query );
@@ -1139,11 +1139,11 @@ class Test_Event_Query extends Base {
 		// Now test integer 1 (should work the same as boolean true).
 		$query = new WP_Query(
 			array(
-				'post_type'                    => Event::POST_TYPE,
-				'posts_per_page'               => 10,
-				'fields'                       => 'ids',
-				Event_Query::EVENT_QUERY_PARAM => 'past',
-				'include_unfinished'           => 1, // Integer 1.
+				'post_type'              => Event::POST_TYPE,
+				'posts_per_page'         => 10,
+				'fields'                 => 'ids',
+				Query::EVENT_QUERY_PARAM => 'past',
+				'include_unfinished'     => 1, // Integer 1.
 			)
 		);
 		$instance->prepare_event_query_before_execution( $query );
@@ -1162,11 +1162,11 @@ class Test_Event_Query extends Base {
 		// Test integer 0 value (exclude unfinished).
 		$query = new WP_Query(
 			array(
-				'post_type'                    => Event::POST_TYPE,
-				'posts_per_page'               => 10,
-				'fields'                       => 'ids',
-				Event_Query::EVENT_QUERY_PARAM => 'past',
-				'include_unfinished'           => 0, // Integer 0.
+				'post_type'              => Event::POST_TYPE,
+				'posts_per_page'         => 10,
+				'fields'                 => 'ids',
+				Query::EVENT_QUERY_PARAM => 'past',
+				'include_unfinished'     => 0, // Integer 0.
 			)
 		);
 		$instance->prepare_event_query_before_execution( $query );
@@ -1181,11 +1181,11 @@ class Test_Event_Query extends Base {
 		// Test for upcoming events with integer 0 (should exclude).
 		$query = new WP_Query(
 			array(
-				'post_type'                    => Event::POST_TYPE,
-				'posts_per_page'               => 10,
-				'fields'                       => 'ids',
-				Event_Query::EVENT_QUERY_PARAM => 'upcoming',
-				'include_unfinished'           => 0, // Integer 0.
+				'post_type'              => Event::POST_TYPE,
+				'posts_per_page'         => 10,
+				'fields'                 => 'ids',
+				Query::EVENT_QUERY_PARAM => 'upcoming',
+				'include_unfinished'     => 0, // Integer 0.
 			)
 		);
 		$instance->prepare_event_query_before_execution( $query );
@@ -1200,11 +1200,11 @@ class Test_Event_Query extends Base {
 		// Test for upcoming events with integer 1 (should include).
 		$query = new WP_Query(
 			array(
-				'post_type'                    => Event::POST_TYPE,
-				'posts_per_page'               => 10,
-				'fields'                       => 'ids',
-				Event_Query::EVENT_QUERY_PARAM => 'upcoming',
-				'include_unfinished'           => 1, // Integer 1.
+				'post_type'              => Event::POST_TYPE,
+				'posts_per_page'         => 10,
+				'fields'                 => 'ids',
+				Query::EVENT_QUERY_PARAM => 'upcoming',
+				'include_unfinished'     => 1, // Integer 1.
 			)
 		);
 		$instance->prepare_event_query_before_execution( $query );
@@ -1229,7 +1229,7 @@ class Test_Event_Query extends Base {
 	 * @return void
 	 */
 	public function test_include_unfinished_defaults(): void {
-		$instance = Event_Query::get_instance();
+		$instance = Query::get_instance();
 
 		// Create a currently running event.
 		$running_post  = $this->mock->post( array( 'post_type' => 'gatherpress_event' ) )->get();
@@ -1246,10 +1246,10 @@ class Test_Event_Query extends Base {
 		// Test upcoming events default behavior (should include currently running).
 		$query = new WP_Query(
 			array(
-				'post_type'                    => Event::POST_TYPE,
-				'posts_per_page'               => 10,
-				'fields'                       => 'ids',
-				Event_Query::EVENT_QUERY_PARAM => 'upcoming',
+				'post_type'              => Event::POST_TYPE,
+				'posts_per_page'         => 10,
+				'fields'                 => 'ids',
+				Query::EVENT_QUERY_PARAM => 'upcoming',
 				// No include_unfinished parameter - test default.
 			)
 		);
@@ -1265,10 +1265,10 @@ class Test_Event_Query extends Base {
 		// Test past events default behavior (should exclude currently running).
 		$query = new WP_Query(
 			array(
-				'post_type'                    => Event::POST_TYPE,
-				'posts_per_page'               => 10,
-				'fields'                       => 'ids',
-				Event_Query::EVENT_QUERY_PARAM => 'past',
+				'post_type'              => Event::POST_TYPE,
+				'posts_per_page'         => 10,
+				'fields'                 => 'ids',
+				Query::EVENT_QUERY_PARAM => 'past',
 				// No include_unfinished parameter - test default.
 			)
 		);
@@ -1296,7 +1296,7 @@ class Test_Event_Query extends Base {
 	public function test_events_without_dates_in_admin_upcoming(): void {
 		global $wpdb;
 
-		$instance = Event_Query::get_instance();
+		$instance = Query::get_instance();
 		$table    = sprintf( Event::TABLE_FORMAT, $wpdb->prefix );
 
 		// Create an event without setting any dates (no row in gatherpress_events).
@@ -1396,7 +1396,7 @@ class Test_Event_Query extends Base {
 	 * @return void
 	 */
 	public function test_currently_running_events_in_upcoming_query(): void {
-		$instance = Event_Query::get_instance();
+		$instance = Query::get_instance();
 
 		// Create an event that started yesterday and ends tomorrow (currently running).
 		$running_post  = $this->mock->post( array( 'post_type' => 'gatherpress_event' ) )->get();
@@ -1487,7 +1487,7 @@ class Test_Event_Query extends Base {
 	 * @return void
 	 */
 	public function test_prepare_query_venue_filter_sets_tax_query(): void {
-		$instance = Event_Query::get_instance();
+		$instance = Query::get_instance();
 
 		// Create a venue post to establish proper singular context.
 		$venue_post_id = $this->factory->post->create(
@@ -1564,7 +1564,7 @@ class Test_Event_Query extends Base {
 	 * @return void
 	 */
 	public function test_prepare_query_venue_filter_merges_with_existing_tax_query(): void {
-		$instance = Event_Query::get_instance();
+		$instance = Query::get_instance();
 
 		// Create a venue post to establish proper singular context.
 		$venue_post_id = $this->factory->post->create(
@@ -1660,7 +1660,7 @@ class Test_Event_Query extends Base {
 	 * @return void
 	 */
 	public function test_prepare_query_venue_filter_skipped_when_empty(): void {
-		$instance = Event_Query::get_instance();
+		$instance = Query::get_instance();
 
 		// Create a venue post to establish proper singular context.
 		$venue_post_id = $this->factory->post->create(

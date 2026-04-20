@@ -5,18 +5,22 @@
  * This class is responsible for integrating events into the WordPress environment, including the creation
  * of the custom post type for events, managing event metadata, and enhancing the admin dashboard for event management.
  *
- * @package GatherPress\Core
+ * @package GatherPress\Core\Event
  * @since 1.0.0
  */
 
-namespace GatherPress\Core;
+namespace GatherPress\Core\Event;
 
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use Exception;
-use GatherPress\Core\Event_Query;
+use GatherPress\Core\Event;
+use GatherPress\Core\Feed;
+use GatherPress\Core\Rsvp;
+use GatherPress\Core\Settings;
 use GatherPress\Core\Traits\Singleton;
+use GatherPress\Core\Utility;
 use stdClass;
 use WP;
 use WP_Block;
@@ -24,13 +28,13 @@ use WP_Post;
 use WP_REST_Request;
 
 /**
- * Class Event_Setup.
+ * Class Setup.
  *
  * Manages event-related functionalities, including registration of event post types and metadata.
  *
  * @since 1.0.0
  */
-class Event_Setup {
+class Setup {
 	/**
 	 * Enforces a single instance of this class.
 	 */
@@ -48,12 +52,33 @@ class Event_Setup {
 	/**
 	 * Class constructor.
 	 *
-	 * This method initializes the object and sets up necessary hooks.
+	 * Instantiates the sibling Event\* singletons before wiring hooks so
+	 * `Setup::instantiate_classes()` can hand off the whole event
+	 * subsystem with a single `Event\Setup::get_instance()` line — same
+	 * shape as `Settings::instantiate_classes()`.
 	 *
 	 * @since 1.0.0
 	 */
 	public function __construct() {
+		$this->instantiate_classes();
 		$this->setup_hooks();
+	}
+
+	/**
+	 * Instantiate each Event\* sibling singleton.
+	 *
+	 * Keeps the outer `Setup::instantiate_classes()` slim — adding a new
+	 * Event\* class lands as a single line here rather than edits to
+	 * Setup. Each subclass is a singleton, so repeat calls are safe.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return void
+	 */
+	protected function instantiate_classes(): void {
+		Admin_List::get_instance();
+		Query::get_instance();
+		Rest_Api::get_instance();
 	}
 
 	/**
@@ -531,7 +556,7 @@ class Event_Setup {
 		}
 
 		// Don't interfere if event-query already assigned this as an archive page.
-		if ( $wp_query->get( Event_Query::EVENT_QUERY_PARAM ) ) {
+		if ( $wp_query->get( Query::EVENT_QUERY_PARAM ) ) {
 			return;
 		}
 
@@ -564,9 +589,9 @@ class Event_Setup {
 
 				$wp_query->query(
 					array(
-						'post_type'                    => Event::POST_TYPE,
-						Event_Query::EVENT_QUERY_PARAM => $key,
-						'paged'                        => $paged,
+						'post_type'              => Event::POST_TYPE,
+						Query::EVENT_QUERY_PARAM => $key,
+						'paged'                  => $paged,
 					)
 				);
 
