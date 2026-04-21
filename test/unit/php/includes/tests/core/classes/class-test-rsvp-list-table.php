@@ -592,6 +592,28 @@ class Test_RSVP_List_Table extends Base {
 	}
 
 	/**
+	 * Tests single_row method with pending/unapproved status.
+	 *
+	 * @covers ::single_row
+	 * @return void
+	 */
+	public function test_single_row_pending(): void {
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
+
+		$this->rsvp['comment_approved'] = '0';
+
+		ob_start();
+		$this->list_table->single_row( $this->rsvp );
+		$output = ob_get_clean();
+
+		$this->assertStringContainsString(
+			'unapproved',
+			$output,
+			'Failed to assert single_row includes unapproved class.'
+		);
+	}
+
+	/**
 	 * Tests single_row method without capability.
 	 *
 	 * @covers ::single_row
@@ -628,9 +650,31 @@ class Test_RSVP_List_Table extends Base {
 	}
 
 	/**
+	 * Tests process_bulk_action with empty rsvp_ids.
+	 *
+	 * @covers ::process_bulk_action
+	 * @return void
+	 */
+	public function test_process_bulk_action_empty_ids(): void {
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
+
+		$_REQUEST['_wpnonce'] = wp_create_nonce( Rsvp::COMMENT_TYPE );
+		// Don't set any rsvp_ids - they'll be empty.
+
+		// Should not throw any errors.
+		$this->list_table->process_bulk_action();
+
+		$this->assertTrue(
+			true,
+			'Failed to assert process_bulk_action handles empty rsvp_ids gracefully.'
+		);
+	}
+
+	/**
 	 * Tests get_views method.
 	 *
 	 * @covers ::get_views
+	 * @covers ::get_current_class_attr
 	 * @return void
 	 */
 	public function test_get_views(): void {
@@ -647,6 +691,46 @@ class Test_RSVP_List_Table extends Base {
 			$views,
 			'Failed to assert views contain all.'
 		);
+	}
+
+	/**
+	 * Tests get_current_class_attr method.
+	 *
+	 * @covers ::get_current_class_attr
+	 * @return void
+	 */
+	public function test_get_current_class_attr(): void {
+		// Test when status matches current.
+		$result = Utility::invoke_hidden_method(
+			$this->list_table,
+			'get_current_class_attr',
+			array( 'pending', 'pending' )
+		);
+		$this->assertEquals( ' class="current"', $result );
+
+		// Test when status does not match current.
+		$result = Utility::invoke_hidden_method(
+			$this->list_table,
+			'get_current_class_attr',
+			array( 'pending', 'approved' )
+		);
+		$this->assertEquals( '', $result );
+
+		// Test with 'all' status.
+		$result = Utility::invoke_hidden_method(
+			$this->list_table,
+			'get_current_class_attr',
+			array( 'all', 'all' )
+		);
+		$this->assertEquals( ' class="current"', $result );
+
+		// Test with 'mine' status.
+		$result = Utility::invoke_hidden_method(
+			$this->list_table,
+			'get_current_class_attr',
+			array( 'mine', 'spam' )
+		);
+		$this->assertEquals( '', $result );
 	}
 
 	/**
@@ -1076,5 +1160,511 @@ class Test_RSVP_List_Table extends Base {
 			$output,
 			'Failed to assert unknown response returns dash.'
 		);
+	}
+
+	/**
+	 * Tests get_views with status filter.
+	 *
+	 * @covers ::get_views
+	 * @return void
+	 */
+	public function test_get_views_with_status_filter(): void {
+		$_REQUEST['_wpnonce'] = wp_create_nonce( Rsvp::COMMENT_TYPE );
+		$_REQUEST['status']   = 'attending';
+
+		$views = $this->list_table->get_views();
+
+		$this->assertIsArray( $views, 'Failed to assert get_views returns an array with status filter.' );
+
+		unset( $_REQUEST['status'] );
+	}
+
+	/**
+	 * Tests process_bulk_action with delete action and invalid nonce.
+	 *
+	 * @covers ::process_bulk_action
+	 * @return void
+	 */
+	public function test_process_bulk_action_delete_with_invalid_nonce(): void {
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
+
+		$_REQUEST['gatherpress_rsvp_id'] = array( $this->rsvp['comment_ID'] );
+		$_REQUEST['action']              = 'delete';
+		$_REQUEST['_wpnonce']            = 'invalid_nonce';
+
+		$this->list_table->process_bulk_action();
+
+		// Verify comment still exists since nonce was invalid.
+		$comment = get_comment( $this->rsvp['comment_ID'] );
+		$this->assertNotNull( $comment, 'Failed to assert comment still exists after delete with invalid nonce.' );
+
+		unset( $_REQUEST['gatherpress_rsvp_id'], $_REQUEST['action'], $_REQUEST['_wpnonce'] );
+	}
+
+	/**
+	 * Tests prepare_items with text search.
+	 *
+	 * @covers ::prepare_items
+	 * @covers ::get_rsvps
+	 * @return void
+	 */
+	public function test_prepare_items_with_text_search(): void {
+		set_current_screen( 'gatherpress_event_page_gatherpress_rsvp' );
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
+
+		$_REQUEST['s'] = 'Test';
+
+		$this->list_table->prepare_items();
+
+		$this->assertIsArray(
+			$this->list_table->items,
+			'Failed to assert items is an array after prepare_items with search.'
+		);
+
+		unset( $_REQUEST['s'] );
+	}
+
+	/**
+	 * Tests prepare_items with IP address search.
+	 *
+	 * @covers ::prepare_items
+	 * @covers ::get_rsvps
+	 * @return void
+	 */
+	public function test_prepare_items_with_ip_search(): void {
+		set_current_screen( 'gatherpress_event_page_gatherpress_rsvp' );
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
+
+		$_REQUEST['s'] = '192.168.1.1';
+
+		$this->list_table->prepare_items();
+
+		$this->assertIsArray(
+			$this->list_table->items,
+			'Failed to assert items is an array after prepare_items with IP search.'
+		);
+
+		unset( $_REQUEST['s'] );
+	}
+
+	/**
+	 * Tests prepare_items with user_id filter.
+	 *
+	 * @covers ::prepare_items
+	 * @covers ::get_rsvps
+	 * @return void
+	 */
+	public function test_prepare_items_with_user_id_filter(): void {
+		set_current_screen( 'gatherpress_event_page_gatherpress_rsvp' );
+		$user_id = $this->factory->user->create( array( 'role' => 'administrator' ) );
+		wp_set_current_user( $user_id );
+
+		$_REQUEST['user_id'] = $user_id;
+
+		$this->list_table->prepare_items();
+
+		$this->assertIsArray(
+			$this->list_table->items,
+			'Failed to assert items is an array after prepare_items with user_id filter.'
+		);
+
+		unset( $_REQUEST['user_id'] );
+	}
+
+	/**
+	 * Tests prepare_items with post_id filter.
+	 *
+	 * @covers ::prepare_items
+	 * @covers ::get_rsvps
+	 * @return void
+	 */
+	public function test_prepare_items_with_post_id_filter(): void {
+		set_current_screen( 'gatherpress_event_page_gatherpress_rsvp' );
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
+
+		$_REQUEST['post_id'] = $this->event_id;
+
+		$this->list_table->prepare_items();
+
+		$this->assertIsArray(
+			$this->list_table->items,
+			'Failed to assert items is an array after prepare_items with post_id filter.'
+		);
+
+		unset( $_REQUEST['post_id'] );
+	}
+
+	/**
+	 * Tests prepare_items with event filter.
+	 *
+	 * @covers ::prepare_items
+	 * @covers ::get_rsvps
+	 * @return void
+	 */
+	public function test_prepare_items_with_event_filter(): void {
+		set_current_screen( 'gatherpress_event_page_gatherpress_rsvp' );
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
+
+		$_REQUEST['event'] = $this->event_id;
+
+		$this->list_table->prepare_items();
+
+		$this->assertIsArray(
+			$this->list_table->items,
+			'Failed to assert items is an array after prepare_items with event filter.'
+		);
+
+		unset( $_REQUEST['event'] );
+	}
+
+	/**
+	 * Tests prepare_items with approved status filter.
+	 *
+	 * @covers ::prepare_items
+	 * @covers ::get_rsvps
+	 * @return void
+	 */
+	public function test_prepare_items_with_approved_status_filter(): void {
+		set_current_screen( 'gatherpress_event_page_gatherpress_rsvp' );
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
+
+		$_REQUEST['status'] = 'approved';
+
+		$this->list_table->prepare_items();
+
+		$this->assertIsArray(
+			$this->list_table->items,
+			'Failed to assert items is an array after prepare_items with approved status filter.'
+		);
+
+		unset( $_REQUEST['status'] );
+	}
+
+	/**
+	 * Tests prepare_items with pending status filter.
+	 *
+	 * @covers ::prepare_items
+	 * @covers ::get_rsvps
+	 * @return void
+	 */
+	public function test_prepare_items_with_pending_status_filter(): void {
+		set_current_screen( 'gatherpress_event_page_gatherpress_rsvp' );
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
+
+		$_REQUEST['status'] = 'pending';
+
+		$this->list_table->prepare_items();
+
+		$this->assertIsArray(
+			$this->list_table->items,
+			'Failed to assert items is an array after prepare_items with pending status filter.'
+		);
+
+		unset( $_REQUEST['status'] );
+	}
+
+	/**
+	 * Tests prepare_items with spam status filter.
+	 *
+	 * @covers ::prepare_items
+	 * @covers ::get_rsvps
+	 * @return void
+	 */
+	public function test_prepare_items_with_spam_status_filter(): void {
+		set_current_screen( 'gatherpress_event_page_gatherpress_rsvp' );
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
+
+		$_REQUEST['status'] = 'spam';
+
+		$this->list_table->prepare_items();
+
+		$this->assertIsArray(
+			$this->list_table->items,
+			'Failed to assert items is an array after prepare_items with spam status filter.'
+		);
+
+		unset( $_REQUEST['status'] );
+	}
+
+	/**
+	 * Tests prepare_items with custom orderby and order.
+	 *
+	 * @covers ::prepare_items
+	 * @covers ::get_rsvps
+	 * @return void
+	 */
+	public function test_prepare_items_with_custom_order(): void {
+		set_current_screen( 'gatherpress_event_page_gatherpress_rsvp' );
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
+
+		$_REQUEST['orderby'] = 'comment_author';
+		$_REQUEST['order']   = 'ASC';
+
+		$this->list_table->prepare_items();
+
+		$this->assertIsArray(
+			$this->list_table->items,
+			'Failed to assert items is an array after prepare_items with custom order.'
+		);
+
+		unset( $_REQUEST['orderby'], $_REQUEST['order'] );
+	}
+
+	/**
+	 * Tests get_rsvps with null per_page parameter.
+	 *
+	 * Covers: Fallback to DEFAULT_PER_PAGE when per_page is null.
+	 *
+	 * @covers ::get_rsvps
+	 * @return void
+	 */
+	public function test_get_rsvps_null_per_page(): void {
+		$result = Utility::invoke_hidden_method(
+			$this->list_table,
+			'get_rsvps',
+			array( null, 1 )
+		);
+
+		$this->assertIsArray(
+			$result,
+			'Failed to assert get_rsvps returns an array with null per_page.'
+		);
+	}
+
+	/**
+	 * Tests get_rsvp_count method directly.
+	 *
+	 * Covers get_rsvp_count method (private method).
+	 *
+	 * @covers ::get_rsvp_count
+	 * @return void
+	 */
+	public function test_get_rsvp_count(): void {
+		$count = Utility::invoke_hidden_method(
+			$this->list_table,
+			'get_rsvp_count'
+		);
+
+		$this->assertIsInt(
+			$count,
+			'Failed to assert get_rsvp_count returns an integer.'
+		);
+		$this->assertGreaterThanOrEqual(
+			0,
+			$count,
+			'Failed to assert get_rsvp_count returns a non-negative number.'
+		);
+	}
+
+	/**
+	 * Tests get_rsvp_count with user_id filter.
+	 *
+	 * @covers ::get_rsvp_count
+	 * @return void
+	 */
+	public function test_get_rsvp_count_with_user_id_filter(): void {
+		$user_id = $this->factory->user->create();
+
+		$_REQUEST['user_id'] = $user_id;
+
+		$count = Utility::invoke_hidden_method(
+			$this->list_table,
+			'get_rsvp_count'
+		);
+
+		$this->assertIsInt(
+			$count,
+			'Failed to assert get_rsvp_count returns an integer with user_id filter.'
+		);
+
+		unset( $_REQUEST['user_id'] );
+	}
+
+	/**
+	 * Tests get_rsvp_count with search parameter.
+	 *
+	 * @covers ::get_rsvp_count
+	 * @return void
+	 */
+	public function test_get_rsvp_count_with_search(): void {
+		$_REQUEST['s'] = 'test search';
+
+		$count = Utility::invoke_hidden_method(
+			$this->list_table,
+			'get_rsvp_count'
+		);
+
+		$this->assertIsInt(
+			$count,
+			'Failed to assert get_rsvp_count returns an integer with search.'
+		);
+
+		unset( $_REQUEST['s'] );
+	}
+
+	/**
+	 * Tests get_rsvp_count with post_id filter.
+	 *
+	 * @covers ::get_rsvp_count
+	 * @return void
+	 */
+	public function test_get_rsvp_count_with_post_id_filter(): void {
+		$_REQUEST['post_id'] = $this->event_id;
+
+		$count = Utility::invoke_hidden_method(
+			$this->list_table,
+			'get_rsvp_count'
+		);
+
+		$this->assertIsInt(
+			$count,
+			'Failed to assert get_rsvp_count returns an integer with post_id filter.'
+		);
+
+		unset( $_REQUEST['post_id'] );
+	}
+
+	/**
+	 * Tests get_rsvp_count with event filter.
+	 *
+	 * @covers ::get_rsvp_count
+	 * @return void
+	 */
+	public function test_get_rsvp_count_with_event_filter(): void {
+		$_REQUEST['event'] = $this->event_id;
+
+		$count = Utility::invoke_hidden_method(
+			$this->list_table,
+			'get_rsvp_count'
+		);
+
+		$this->assertIsInt(
+			$count,
+			'Failed to assert get_rsvp_count returns an integer with event filter.'
+		);
+
+		unset( $_REQUEST['event'] );
+	}
+
+	/**
+	 * Tests get_rsvp_count with approved status filter.
+	 *
+	 * @covers ::get_rsvp_count
+	 * @return void
+	 */
+	public function test_get_rsvp_count_with_approved_status(): void {
+		$_REQUEST['status'] = 'approved';
+
+		$count = Utility::invoke_hidden_method(
+			$this->list_table,
+			'get_rsvp_count'
+		);
+
+		$this->assertIsInt(
+			$count,
+			'Failed to assert get_rsvp_count returns an integer with approved status filter.'
+		);
+
+		unset( $_REQUEST['status'] );
+	}
+
+	/**
+	 * Tests get_rsvp_count with spam status filter.
+	 *
+	 * @covers ::get_rsvp_count
+	 * @return void
+	 */
+	public function test_get_rsvp_count_with_spam_status(): void {
+		$_REQUEST['status'] = 'spam';
+
+		$count = Utility::invoke_hidden_method(
+			$this->list_table,
+			'get_rsvp_count'
+		);
+
+		$this->assertIsInt(
+			$count,
+			'Failed to assert get_rsvp_count returns an integer with spam status filter.'
+		);
+
+		unset( $_REQUEST['status'] );
+	}
+
+	/**
+	 * Tests get_rsvp_count with pending status filter.
+	 *
+	 * Covers: Sets args['status'] to 'hold' for pending status in get_rsvp_count.
+	 *
+	 * @covers ::get_rsvp_count
+	 * @return void
+	 */
+	public function test_get_rsvp_count_with_pending_status(): void {
+		$_REQUEST['status'] = 'pending';
+
+		$count = Utility::invoke_hidden_method(
+			$this->list_table,
+			'get_rsvp_count'
+		);
+
+		$this->assertIsInt(
+			$count,
+			'Failed to assert get_rsvp_count returns an integer with pending status filter.'
+		);
+
+		unset( $_REQUEST['status'] );
+	}
+
+	/**
+	 * Tests get_views with valid post_id filter.
+	 *
+	 * Covers: post_id filter handling in get_views.
+	 *
+	 * @covers ::get_views
+	 * @return void
+	 */
+	public function test_get_views_with_valid_post_id_filter(): void {
+		$_REQUEST['_wpnonce'] = wp_create_nonce( Rsvp::COMMENT_TYPE );
+		$_REQUEST['post_id']  = $this->event_id;
+
+		$views = $this->list_table->get_views();
+
+		$this->assertIsArray(
+			$views,
+			'Failed to assert get_views returns an array with valid post_id filter.'
+		);
+
+		// Verify that post_id is included in the view URLs.
+		$this->assertStringContainsString(
+			'post_id=' . $this->event_id,
+			$views['all'],
+			'Failed to assert all view contains post_id parameter.'
+		);
+
+		unset( $_REQUEST['_wpnonce'], $_REQUEST['post_id'] );
+	}
+
+	/**
+	 * Tests get_rsvps with pending status filter.
+	 *
+	 * Covers: Sets args['status'] to 'hold' for pending status.
+	 *
+	 * @covers ::get_rsvps
+	 * @return void
+	 */
+	public function test_get_rsvps_with_pending_status(): void {
+		$_REQUEST['status'] = 'pending';
+
+		$result = Utility::invoke_hidden_method(
+			$this->list_table,
+			'get_rsvps',
+			array( 10, 1 )
+		);
+
+		$this->assertIsArray(
+			$result,
+			'Failed to assert get_rsvps returns an array with pending status filter.'
+		);
+
+		unset( $_REQUEST['status'] );
 	}
 }

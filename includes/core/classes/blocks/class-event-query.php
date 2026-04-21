@@ -67,16 +67,40 @@ class Event_Query {
 			10,
 			2
 		);
+		add_action( 'registered_post_type', array( $this, 'maybe_register_event_date_rest_hooks' ) );
+
+		// Integrate with Advanced Query Loop plugin to pass event query params through.
+		add_filter(
+			'aql_query_vars',
+			array( $this, 'aql_query_vars' ),
+			10,
+			3
+		);
+	}
+
+	/**
+	 * Register REST hooks when a post type declares gatherpress-event-date support.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $post_type The post type that was just registered.
+	 * @return void
+	 */
+	public function maybe_register_event_date_rest_hooks( string $post_type ): void {
+		if ( ! post_type_supports( $post_type, 'gatherpress-event-date' ) ) {
+			return;
+		}
+
 		// Updates the query vars for the Query Loop block in the block editor.
 		add_filter(
-			sprintf( 'rest_%s_query', Event::POST_TYPE ),
+			sprintf( 'rest_%s_query', $post_type ),
 			array( $this, 'rest_query' ),
 			10,
 			2
 		);
 		// We need more sortBy options.
 		add_filter(
-			sprintf( 'rest_%s_collection_params', Event::POST_TYPE ),
+			sprintf( 'rest_%s_collection_params', $post_type ),
 			array( $this, 'rest_collection_params' )
 		);
 	}
@@ -93,8 +117,15 @@ class Event_Query {
 	 * @return string|null The pre-rendered content. Default null.
 	 */
 	public function pre_render_block( ?string $pre_render, array $parsed_block ): ?string {
-		if ( isset( $parsed_block['attrs']['namespace'] ) && self::BLOCK_NAME === $parsed_block['attrs']['namespace'] ) {
-			if ( isset( $parsed_block['attrs']['query']['inherit'] ) && true === $parsed_block['attrs']['query']['inherit'] ) {
+		// Check if this is our event query block by verifying the namespace attribute.
+		if (
+			isset( $parsed_block['attrs']['namespace'] ) &&
+			self::BLOCK_NAME === $parsed_block['attrs']['namespace']
+		) {
+			if (
+				isset( $parsed_block['attrs']['query']['inherit'] ) &&
+				true === $parsed_block['attrs']['query']['inherit']
+			) {
 				global $wp_query;
 
 				$query_args = array_merge(
@@ -126,7 +157,8 @@ class Event_Query {
 					true,
 				);
 				// "Hijack the global query. It's a hack, but it works." Ryan Welcher.
-				$wp_query = new WP_Query( $filtered_query_args ); // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
+				// phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
+				$wp_query = new WP_Query( $filtered_query_args );
 			} else {
 				add_filter(
 					'query_loop_block_query_vars',
@@ -180,7 +212,7 @@ class Event_Query {
 		$query_args = array();
 
 		// Post Related.
-		$query_args['post_type'] = array( Event::POST_TYPE );
+		$query_args['post_type'] = get_post_types_by_support( 'gatherpress-event-date' );
 
 		// Type of event list: 'upcoming' or 'past',
 		// @see wp-content/plugins/gatherpress/includes/core/classes/class-event-query.php.
@@ -189,15 +221,22 @@ class Event_Query {
 		// Exclude Posts.
 		$exclude_ids = $this->get_exclude_ids( $block_query );
 		if ( ! empty( $exclude_ids ) ) {
-			$query_args['post__not_in'] = $exclude_ids; // phpcs:ignore WordPressVIPMinimum.Performance.WPQueryParams.PostNotIn_post__not_in
+			// phpcs:ignore WordPressVIPMinimum.Performance.WPQueryParams.PostNotIn_post__not_in
+			$query_args['post__not_in'] = $exclude_ids;
 		}
 
 		if ( isset( $block_query['include_unfinished'] ) ) {
 			$query_args['include_unfinished'] = $block_query['include_unfinished'];
 		}
 
+		if ( ! empty( $block_query['venue_filter'] ) ) {
+			$query_args['venue_filter'] = $block_query['venue_filter'];
+		}
+
 		// Order By.
-		$query_args['orderby'] = array( $block_query['orderBy'] );
+		if ( isset( $block_query['orderBy'] ) ) {
+			$query_args['orderby'] = array( $block_query['orderBy'] );
+		}
 
 		// Order
 		// can be NULL, when ASC.
@@ -240,10 +279,11 @@ class Event_Query {
 		// Exclusion Related.
 		$exclude_current = $request->get_param( 'exclude_current' );
 		if ( $exclude_current ) {
-			$attributes                  = array(
+			$attributes = array(
 				'exclude_current' => $exclude_current,
 			);
-			$custom_args['post__not_in'] = $this->get_exclude_ids( $attributes ); // phpcs:ignore WordPressVIPMinimum.Performance.WPQueryParams.PostNotIn_post__not_in
+			// phpcs:ignore WordPressVIPMinimum.Performance.WPQueryParams.PostNotIn_post__not_in
+			$custom_args['post__not_in'] = $this->get_exclude_ids( $attributes );
 		}
 
 		$include_unfinished = $request->get_param( 'include_unfinished' );
@@ -252,6 +292,11 @@ class Event_Query {
 		}
 
 		$custom_args['orderby'] = $request->get_param( 'orderby' );
+
+		$venue_filter = $request->get_param( 'venue_filter' );
+		if ( null !== $venue_filter ) {
+			$custom_args['venue_filter'] = $venue_filter;
+		}
 
 		/** This filter is documented in includes/query-loop.php */
 		$filtered_query_args = apply_filters(
@@ -310,6 +355,69 @@ class Event_Query {
 			'type'        => 'integer',
 		);
 
+		$query_params['venue_filter'] = array(
+			'description' => __( 'Whether to filter events by the current venue context', 'gatherpress' ),
+			'type'        => 'integer',
+			'enum'        => array( 0, 1 ),
+		);
+
 		return $query_params;
+	}
+
+	/**
+	 * Filters Advanced Query Loop query vars to pass GatherPress event params through.
+	 *
+	 * When AQL is used with the gatherpress_event post type, this ensures that
+	 * GatherPress-specific query parameters (event type, unfinished events, datetime ordering)
+	 * are passed through to WP_Query, where the Event_Query class picks them up
+	 * via pre_get_posts for SQL modification.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param array $query_args  The query arguments being built.
+	 * @param array $block_query The block's query attributes.
+	 * @param bool  $inherited   Whether the query is inherited from the page context.
+	 * @return array Modified query arguments.
+	 *
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+	 */
+	public function aql_query_vars( // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed
+		array $query_args,
+		array $block_query,
+		bool $inherited
+	): array {
+		// Only process if querying GatherPress events.
+		$post_type = $block_query['postType'] ?? '';
+
+		if ( ! post_type_supports( $post_type, 'gatherpress-event-date' ) ) {
+			return $query_args;
+		}
+
+		// Pass through event query type (upcoming/past).
+		if ( ! empty( $block_query['gatherpress_event_query'] ) ) {
+			$query_args['gatherpress_event_query'] = $block_query['gatherpress_event_query'];
+		}
+
+		// Pass through include_unfinished setting.
+		if ( isset( $block_query['include_unfinished'] ) ) {
+			$query_args['include_unfinished'] = $block_query['include_unfinished'];
+		}
+
+		// Pass through GatherPress-specific ordering.
+		if ( ! empty( $block_query['orderBy'] ) ) {
+			$query_args['orderby'] = array( $block_query['orderBy'] );
+		}
+
+		// Pass through order direction.
+		if ( ! empty( $block_query['order'] ) ) {
+			$query_args['order'] = strtoupper( $block_query['order'] );
+		}
+
+		// Pass through venue filter setting.
+		if ( ! empty( $block_query['venue_filter'] ) ) {
+			$query_args['venue_filter'] = $block_query['venue_filter'];
+		}
+
+		return $query_args;
 	}
 }

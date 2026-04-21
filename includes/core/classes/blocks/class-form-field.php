@@ -42,6 +42,30 @@ class Form_Field {
 	const BLOCK_NAME = 'gatherpress/form-field';
 
 	/**
+	 * CSS property format for color.
+	 *
+	 * @since 1.0.0
+	 * @var string
+	 */
+	const CSS_COLOR = 'color:%s';
+
+	/**
+	 * CSS property format for font size.
+	 *
+	 * @since 1.0.0
+	 * @var string
+	 */
+	const CSS_FONT_SIZE = 'font-size:%s';
+
+	/**
+	 * CSS property format for line height.
+	 *
+	 * @since 1.0.0
+	 * @var string
+	 */
+	const CSS_LINE_HEIGHT = 'line-height:%s';
+
+	/**
 	 * FormField constructor.
 	 *
 	 * Initializes a FormField object with the provided block attributes.
@@ -190,12 +214,24 @@ class Form_Field {
 
 		// Text-based input styles.
 		if ( ! in_array( $field_type, $non_text_based_fields, true ) ) {
-			$this->add_style( $styles, 'input_font_size', 'font-size:%s' );
-			$this->add_style( $styles, 'input_line_height', 'line-height:%s' );
+			$this->add_style( $styles, 'input_font_size', self::CSS_FONT_SIZE );
+			$this->add_style( $styles, 'input_line_height', self::CSS_LINE_HEIGHT );
 			$this->add_style( $styles, 'input_padding', 'padding:%dpx' );
 			$this->add_style( $styles, 'input_border_radius', 'border-radius:%dpx' );
-			$this->add_style( $styles, 'field_text_color', 'color:%s' );
+			$this->add_style( $styles, 'field_text_color', self::CSS_COLOR );
 			$this->add_style( $styles, 'field_background_color', 'background-color:%s' );
+
+			// Match editor JS fallback: use transparent when no background color is set
+			// to prevent browser default white input background.
+			if ( empty( $this->attributes['field_background_color'] ) ) {
+				$styles[] = 'background-color:transparent';
+			}
+
+			// Match editor JS fallback: inherit text color when none is set.
+			if ( empty( $this->attributes['field_text_color'] ) ) {
+				$styles[] = 'color:inherit';
+			}
+
 			$this->add_style( $styles, 'field_width', 'width:%s%%' );
 			$this->add_style( $styles, 'input_border_width', 'border-width:%dpx' );
 			$this->add_style( $styles, 'border_color', 'border-color:%s' );
@@ -218,7 +254,7 @@ class Form_Field {
 	public function get_label_styles(): string {
 		$styles = array();
 
-		$this->add_style( $styles, 'label_text_color', 'color:%s' );
+		$this->add_style( $styles, 'label_text_color', self::CSS_COLOR );
 
 		return $this->compile_styles( $styles );
 	}
@@ -237,8 +273,8 @@ class Form_Field {
 	public function get_label_wrapper_styles(): string {
 		$styles = array();
 
-		$this->add_style( $styles, 'label_font_size', 'font-size:%s' );
-		$this->add_style( $styles, 'label_line_height', 'line-height:%s' );
+		$this->add_style( $styles, 'label_font_size', self::CSS_FONT_SIZE );
+		$this->add_style( $styles, 'label_line_height', self::CSS_LINE_HEIGHT );
 
 		return $this->compile_styles( $styles );
 	}
@@ -256,7 +292,7 @@ class Form_Field {
 	public function get_required_styles(): string {
 		$styles = array();
 
-		$this->add_style( $styles, 'required_text_color', 'color:%s' );
+		$this->add_style( $styles, 'required_text_color', self::CSS_COLOR );
 
 		return $this->compile_styles( $styles );
 	}
@@ -274,9 +310,9 @@ class Form_Field {
 	public function get_option_styles(): string {
 		$styles = array();
 
-		$this->add_style( $styles, 'option_font_size', 'font-size:%s' );
-		$this->add_style( $styles, 'option_line_height', 'line-height:%s' );
-		$this->add_style( $styles, 'option_text_color', 'color:%s' );
+		$this->add_style( $styles, 'option_font_size', self::CSS_FONT_SIZE );
+		$this->add_style( $styles, 'option_line_height', self::CSS_LINE_HEIGHT );
+		$this->add_style( $styles, 'option_text_color', self::CSS_COLOR );
 
 		return $this->compile_styles( $styles );
 	}
@@ -304,12 +340,6 @@ class Form_Field {
 			$classes[] = 'gatherpress-inline-layout';
 		}
 
-		// Add custom className from block attributes.
-		if ( ! empty( $this->attributes['className'] ) ) {
-			$custom_classes = explode( ' ', $this->attributes['className'] );
-			$classes        = array_merge( $classes, $custom_classes );
-		}
-
 		return $classes;
 	}
 
@@ -329,18 +359,6 @@ class Form_Field {
 
 		// Build wrapper arguments.
 		$wrapper_args = array( 'class' => implode( ' ', $classes ) );
-
-		// If there's a className in attributes, pass it to WordPress directly too.
-		if ( ! empty( $this->attributes['className'] ) ) {
-			$wrapper_args['className'] = $this->attributes['className'];
-		}
-
-		// Add any data attributes from block attributes.
-		foreach ( $this->attributes as $key => $value ) {
-			if ( 0 === strpos( $key, 'data-' ) ) {
-				$wrapper_args[ $key ] = $value;
-			}
-		}
 
 		return get_block_wrapper_attributes( $wrapper_args );
 	}

@@ -14,7 +14,8 @@ namespace GatherPress\Core;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
-use GatherPress\Core\Settings\Leadership;
+use GatherPress\Core\Settings;
+use GatherPress\Core\Settings\Roles;
 use WP_Post;
 
 /**
@@ -113,9 +114,9 @@ class Rsvp {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param int|string $user_identifier The user ID or email address of the person whose RSVP information is being retrieved.
-	 *                                    If an integer is provided, it's treated as a user ID. If a string is provided,
-	 *                                    it's treated as an email address.
+	 * @param int|string $user_identifier The user ID or email address of the person whose RSVP information
+	 *                                    is being retrieved. If an integer is provided, it's treated as a user ID.
+	 *                                    If a string is provided, it's treated as an email address.
 	 *
 	 * @return array An array containing RSVP information.
 	 */
@@ -160,8 +161,12 @@ class Rsvp {
 			$data['comment_id'] = $rsvp->comment_ID;
 			$data['user_id']    = $rsvp->user_id;
 			$data['timestamp']  = $rsvp->comment_date;
-			$data['anonymous']  = intval( get_comment_meta( intval( $rsvp->comment_ID ), 'gatherpress_rsvp_anonymous', true ) );
-			$data['guests']     = intval( get_comment_meta( intval( $rsvp->comment_ID ), 'gatherpress_rsvp_guests', true ) );
+			$data['anonymous']  = intval(
+				get_comment_meta( intval( $rsvp->comment_ID ), 'gatherpress_rsvp_anonymous', true )
+			);
+			$data['guests']     = intval(
+				get_comment_meta( intval( $rsvp->comment_ID ), 'gatherpress_rsvp_guests', true )
+			);
 			$terms              = wp_get_object_terms( intval( $rsvp->comment_ID ), self::TAXONOMY );
 
 			if ( ! empty( $terms ) && is_array( $terms ) ) {
@@ -173,30 +178,134 @@ class Rsvp {
 	}
 
 	/**
+	 * Determines whether RSVP is enabled for this event.
+	 *
+	 * Returns false immediately when the sitewide mode is `disabled`.
+	 * Returns true when the mode is `all_on` (every event has RSVP).
+	 * In per-event modes (`per_event_on` or `per_event_off`), the
+	 * `gatherpress_enable_rsvp` post meta is consulted. An unset meta
+	 * (empty string) falls back to the mode default: `per_event_on`
+	 * defaults to enabled, `per_event_off` defaults to disabled.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return bool True if RSVP is enabled for this event, false otherwise.
+	 */
+	public function is_enabled(): bool {
+		$post_id   = $this->event->ID ?? 0;
+		$rsvp_mode = Settings::get_instance()->get( 'rsvp_mode' );
+
+		if ( 'disabled' === $rsvp_mode ) {
+			return false;
+		}
+
+		if ( ! in_array( $rsvp_mode, array( 'per_event_on', 'per_event_off' ), true ) ) {
+			return true;
+		}
+
+		$meta = get_post_meta( $post_id, 'gatherpress_enable_rsvp', true );
+
+		// Empty meta falls back to the mode default.
+		if ( '' === $meta ) {
+			return 'per_event_on' === $rsvp_mode;
+		}
+
+		return '0' !== $meta;
+	}
+
+	/**
+	 * Determines whether Open RSVP (email/token, non-logged-in) is enabled for this event.
+	 *
+	 * Returns false immediately if the sitewide `enable_open_rsvp` setting is off.
+	 * When sitewide is on, consults the per-event `gatherpress_enable_open_rsvp` post meta.
+	 * An unset meta (empty string) is treated as enabled (the default).
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return bool True if Open RSVP is enabled for this event, false otherwise.
+	 */
+	public function allows_open_rsvp(): bool {
+		$post_id = $this->event->ID ?? 0;
+
+		// Sitewide gate: if open RSVP is globally disabled, always return false.
+		if ( ! Settings::get_instance()->get( 'enable_open_rsvp' ) ) {
+			return false;
+		}
+
+		// Per-event override; stored as integer (1 = enabled, 0 = disabled).
+		$meta = get_post_meta( $post_id, 'gatherpress_enable_open_rsvp', true );
+
+		// Not explicitly set defaults to enabled.
+		if ( '' === $meta ) {
+			return true;
+		}
+
+		return '0' !== (string) $meta;
+	}
+
+	/**
+	 * Writes an explicit enabled value on first save, based on the active RSVP mode.
+	 *
+	 * Ensures that programmatically created events (e.g. via WP-CLI or imports)
+	 * carry predictable meta regardless of which mode was active at creation time:
+	 * - `all_on`: writes meta = 1 so switching to a per-event mode later is safe.
+	 * - `per_event_on`: writes meta = 1 (default-on intent).
+	 * - `per_event_off`: writes meta = 0 (default-off intent).
+	 * - `disabled`: no meta is written.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return void
+	 */
+	public function initialize_enabled(): void {
+		$post_id   = $this->event->ID ?? 0;
+		$rsvp_mode = Settings::get_instance()->get( 'rsvp_mode' );
+
+		if ( 'disabled' === $rsvp_mode ) {
+			return;
+		}
+
+		if ( ! post_type_supports( (string) get_post_type( $post_id ), 'gatherpress-rsvp' ) ) {
+			return;
+		}
+
+		// Only write if meta has never been explicitly set.
+		if ( '' !== get_post_meta( $post_id, 'gatherpress_enable_rsvp', true ) ) {
+			return;
+		}
+
+		$default_value = ( 'per_event_off' === $rsvp_mode ) ? 0 : 1;
+		update_post_meta( $post_id, 'gatherpress_enable_rsvp', $default_value );
+	}
+
+	/**
 	 * Saves a user's RSVP status for an event.
 	 *
-	 * Allows assigning one of the specified RSVP statuses to a user for an event. The user can be marked as 'attending',
-	 * 'not_attending', or placed on a 'waiting_list'. Additionally, users can specify the number of guests they plan to bring
-	 * along and whether their RSVP should be considered anonymous. This method updates the database accordingly to reflect the
-	 * new RSVP status.
+	 * Allows assigning one of the specified RSVP statuses to a user for an event. The user can be marked
+	 * as 'attending', 'not_attending', or placed on a 'waiting_list'. Additionally, users can specify
+	 * the number of guests they plan to bring along and whether their RSVP should be considered anonymous.
+	 * This method updates the database accordingly to reflect the new RSVP status.
 	 *
 	 * @since 1.0.0
 	 *
 	 * @param int|string $user_identifier The user ID or email address of the person whose RSVP status is being updated.
 	 *                                    If an integer is provided, it's treated as a user ID. If a string is provided,
 	 *                                    it's treated as an email address.
-	 * @param string     $status          The new RSVP status for the user. Acceptable values are 'attending', 'not_attending', or
-	 *                                    'waiting_list'.
-	 * @param int        $anonymous       Optional. Whether the RSVP is to be marked as anonymous. Accepts 1 for true (anonymous)
-	 *                                    and 0 for false (not anonymous). Default 0.
+	 * @param string     $status          The new RSVP status for the user. Acceptable values are 'attending',
+	 *                                    'not_attending', or 'waiting_list'.
+	 * @param int        $anonymous       Optional. Whether the RSVP is to be marked as anonymous.
+	 *                                    Accepts 1 for true (anonymous) and 0 for false (not anonymous). Default 0.
 	 * @param int        $guests          Optional. The number of guests the user plans to bring along. Default 0.
 	 *
-	 * @return array Associative array containing the event ID ('post_id'), user ID ('user_id'), RSVP timestamp ('timestamp'),
-	 *               RSVP status ('status'), number of guests ('guests'), and anonymity flag ('anonymous'). Returns a default
-	 *               array with 'post_id' and 'user_id' set to 0, 'timestamp' to '0000-00-00 00:00:00', 'status' to 'no_status',
-	 *               'guests' to 0, and 'anonymous' to 0 if the post ID or user identifier is not valid, or if the status is not one of
-	 *               the acceptable values. If the attending limit is reached, 'status' may be automatically set to 'waiting_list',
-	 *               and 'guests' to 0, depending on the context.
+	 * @return array Associative array containing the event ID ('post_id'), user ID ('user_id'),
+	 *               RSVP timestamp ('timestamp'), RSVP status ('status'), number of guests ('guests'),
+	 *               and anonymity flag ('anonymous'). Returns a default array with 'post_id' and 'user_id'
+	 *               set to 0, 'timestamp' to '0000-00-00 00:00:00', 'status' to 'no_status', 'guests' to 0,
+	 *               and 'anonymous' to 0 if the post ID or user identifier is not valid, or if the status
+	 *               is not one of the acceptable values. If the attending limit is reached, 'status' may be
+	 *               automatically set to 'waiting_list', and 'guests' to 0, depending on the context.
+	 *
+	 * @SuppressWarnings(PHPMD.NPathComplexity)
 	 */
 	public function save( $user_identifier, string $status, int $anonymous = 0, int $guests = 0 ): array {
 		$rsvp_query      = Rsvp_Query::get_instance();
@@ -231,6 +340,10 @@ class Rsvp {
 		$post_id = $this->event->ID;
 
 		if ( 1 > $post_id || ( empty( $user_id ) && empty( $email ) ) ) {
+			return $data;
+		}
+
+		if ( ! $this->is_enabled() ) {
 			return $data;
 		}
 
@@ -288,6 +401,21 @@ class Rsvp {
 		}
 
 		if ( empty( $rsvp ) ) {
+			// Ensure keys that wp_filter_comment accesses without isset() are present.
+			$args = array_merge(
+				array(
+					'comment_author'       => '',
+					'comment_author_email' => '',
+					'comment_author_url'   => '',
+					'comment_author_IP'    => '127.0.0.1',
+					'comment_content'      => '',
+				),
+				$args
+			);
+
+			// Run WordPress-native comment filters so sites can honor
+			// pre_comment_user_ip, pre_comment_user_agent, etc. for privacy.
+			$args       = wp_filter_comment( $args );
 			$comment_id = wp_insert_comment( $args );
 		} else {
 			$comment_id               = $rsvp->comment_ID;
@@ -301,8 +429,8 @@ class Rsvp {
 			return $data;
 		}
 
-		// If not attending and anonymous or status is 'no_status', remove the record.
-		if ( ( 'not_attending' === $status && $anonymous ) || 'no_status' === $status ) {
+		// If status is 'no_status', remove the record.
+		if ( 'no_status' === $status ) {
 			wp_delete_comment( $comment_id, true );
 
 			wp_cache_delete( sprintf( self::CACHE_KEY, $post_id ), GATHERPRESS_CACHE_GROUP );
@@ -469,7 +597,7 @@ class Rsvp {
 			),
 		);
 
-		if ( Event::POST_TYPE !== get_post_type( $post_id ) ) {
+		if ( ! post_type_supports( (string) get_post_type( $post_id ), 'gatherpress-rsvp' ) ) {
 			return $retval;
 		}
 
@@ -545,7 +673,7 @@ class Rsvp {
 				'name'      => $display_name ? $display_name : __( 'Anonymous', 'gatherpress' ),
 				'photo'     => get_avatar_url( $record ),
 				'profile'   => $profile,
-				'role'      => Leadership::get_instance()->get_user_role( $user_id ),
+				'role'      => Roles::get_instance()->get_user_role( $user_id ),
 				'timestamp' => sanitize_text_field( $record->comment_date ),
 				'status'    => $user_status,
 				'guests'    => $user_guests,
@@ -603,7 +731,7 @@ class Rsvp {
 				static function ( $role ) {
 					return $role['labels']['singular_name'];
 				},
-				Leadership::get_instance()->get_user_roles()
+				Roles::get_instance()->get_user_roles()
 			)
 		);
 		$roles[]     = __( 'Member', 'gatherpress' );

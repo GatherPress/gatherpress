@@ -15,13 +15,8 @@ import { PluginDocumentSettingPanel } from '@wordpress/editor';
  * Internal dependencies.
  */
 import { isEventPostType } from '../../helpers/event';
-import AnonymousRsvpPanel from './anonymous-rsvp';
 import DateTimeRangePanel from './datetime-range';
-import GuestLimitPanel from './guest-limit';
-import MaxAttendanceLimitPanel from './max-attendance-limit';
 import NotifyMembersPanel from './notify-members';
-import OnlineEventLinkPanel from './online-link';
-import VenueSelectorPanel from './venue-selector';
 import { EventPluginDocumentSettings } from './slot';
 
 /**
@@ -49,11 +44,6 @@ const EventSettings = () => {
 
 				<VStack spacing={ 4 }>
 					<DateTimeRangePanel />
-					<VenueSelectorPanel />
-					<OnlineEventLinkPanel />
-					<GuestLimitPanel />
-					<MaxAttendanceLimitPanel />
-					<AnonymousRsvpPanel />
 					<NotifyMembersPanel />
 				</VStack>
 			</PluginDocumentSettingPanel>

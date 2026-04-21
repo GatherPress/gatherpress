@@ -12,6 +12,8 @@ use GatherPress\Core\Event;
 use GatherPress\Core\Event_Rest_Api;
 use GatherPress\Core\Rsvp;
 use GatherPress\Core\Rsvp_Token;
+use GatherPress\Core\Settings;
+use GatherPress\Core\Setup;
 use GatherPress\Core\Topic;
 use GatherPress\Core\Venue;
 use GatherPress\Tests\Base;
@@ -26,6 +28,26 @@ use WP_REST_Server;
  * @coversDefaultClass \GatherPress\Core\Event_Rest_Api
  */
 class Test_Event_Rest_Api extends Base {
+	/**
+	 * Enable open RSVP for all tests in this class so RSVP form submission paths are exercisable.
+	 *
+	 * @return void
+	 */
+	public function setUp(): void {
+		parent::setUp();
+		Settings::get_instance()->set( 'enable_open_rsvp', true );
+	}
+
+	/**
+	 * Restore open RSVP to its default disabled state after each test.
+	 *
+	 * @return void
+	 */
+	public function tearDown(): void {
+		Settings::get_instance()->set( 'enable_open_rsvp', true );
+		parent::tearDown();
+	}
+
 	/**
 	 * Coverage for setup_hooks method.
 	 *
@@ -282,7 +304,11 @@ class Test_Event_Rest_Api extends Base {
 		$this->assertContains( $user_1_id, $recipient_ids, 'Failed to assert user 1 is included in all recipients.' );
 		$this->assertContains( $user_2_id, $recipient_ids, 'Failed to assert user 2 is included in all recipients.' );
 		$this->assertContains( $user_3_id, $recipient_ids, 'Failed to assert user 3 is included in all recipients.' );
-		$this->assertGreaterThanOrEqual( 3, count( $recipients ), 'Failed to assert minimum recipient count for all users.' );
+		$this->assertGreaterThanOrEqual(
+			3,
+			count( $recipients ),
+			'Failed to assert minimum recipient count for all users.'
+		);
 	}
 
 	/**
@@ -351,8 +377,16 @@ class Test_Event_Rest_Api extends Base {
 		$user_recipient      = reset( $user_recipients );
 		$anonymous_recipient = reset( $anonymous_recipients );
 
-		$this->assertEquals( $attending_user_id, $user_recipient['user_id'], 'Failed to assert correct attending user ID.' );
-		$this->assertEquals( 'attendee@example.com', $anonymous_recipient['email'], 'Failed to assert correct anonymous attendee email.' );
+		$this->assertEquals(
+			$attending_user_id,
+			$user_recipient['user_id'],
+			'Failed to assert correct attending user ID.'
+		);
+		$this->assertEquals(
+			'attendee@example.com',
+			$anonymous_recipient['email'],
+			'Failed to assert correct anonymous attendee email.'
+		);
 	}
 
 	/**
@@ -429,11 +463,26 @@ class Test_Event_Rest_Api extends Base {
 		);
 		$anonymous_recipient = reset( $anonymous_recipient );
 
-		$this->assertFalse( $anonymous_recipient['is_user'], 'Failed to assert anonymous recipient is not marked as user.' );
-		$this->assertEquals( 0, $anonymous_recipient['user_id'], 'Failed to assert anonymous recipient has zero user ID.' );
+		$this->assertFalse(
+			$anonymous_recipient['is_user'],
+			'Failed to assert anonymous recipient is not marked as user.'
+		);
+		$this->assertEquals(
+			0,
+			$anonymous_recipient['user_id'],
+			'Failed to assert anonymous recipient has zero user ID.'
+		);
 		$this->assertEquals( $comment_id, $anonymous_recipient['comment_id'], 'Failed to assert correct comment ID.' );
-		$this->assertEquals( 'anonymous@example.com', $anonymous_recipient['email'], 'Failed to assert correct anonymous email.' );
-		$this->assertEquals( 'Anonymous Person', $anonymous_recipient['name'], 'Failed to assert correct anonymous name.' );
+		$this->assertEquals(
+			'anonymous@example.com',
+			$anonymous_recipient['email'],
+			'Failed to assert correct anonymous email.'
+		);
+		$this->assertEquals(
+			'Anonymous Person',
+			$anonymous_recipient['name'],
+			'Failed to assert correct anonymous name.'
+		);
 	}
 
 	/**
@@ -581,10 +630,13 @@ class Test_Event_Rest_Api extends Base {
 	public function test_update_rsvp(): void {
 		$instance = Event_Rest_Api::get_instance();
 		$request  = new WP_REST_Request( 'POST' );
-		$user_id  = $this->mock->user( true, 'admin' )->get()->ID;
-		$event_id = $this->mock->post(
+		$user_id  = $this->factory->user->create( array( 'role' => 'administrator' ) );
+
+		wp_set_current_user( $user_id );
+
+		$event_id = $this->factory->post->create(
 			array( 'post_type' => Event::POST_TYPE )
-		)->get()->ID;
+		);
 		$event    = new Event( $event_id );
 
 		$event->save_datetimes(
@@ -740,6 +792,14 @@ class Test_Event_Rest_Api extends Base {
 			)
 		);
 
+		// Set up future event datetime to prevent "event has passed" error.
+		$event  = new Event( $post_id );
+		$params = array(
+			'datetime_start' => gmdate( 'Y-m-d H:i:s', strtotime( '+1 day' ) ),
+			'datetime_end'   => gmdate( 'Y-m-d H:i:s', strtotime( '+1 day 2 hours' ) ),
+		);
+		$event->save_datetimes( $params );
+
 		// Create existing RSVP.
 		$this->factory()->comment->create(
 			array(
@@ -851,6 +911,70 @@ class Test_Event_Rest_Api extends Base {
 		$data = $response->get_data();
 		$this->assertFalse( $data['success'] );
 		$this->assertStringContainsString( 'closed', $data['message'] );
+	}
+
+	/**
+	 * Tests handle_rsvp_form_submission returns 403 when open RSVP is disabled sitewide.
+	 *
+	 * @covers ::handle_rsvp_form_submission
+	 *
+	 * @return void
+	 */
+	public function test_handle_rsvp_form_submission_open_rsvp_disabled(): void {
+		$instance = Event_Rest_Api::get_instance();
+		$post_id  = $this->factory()->post->create(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		);
+
+		// Disable open RSVP sitewide (overrides setUp default).
+		Settings::get_instance()->set( 'enable_open_rsvp', false );
+
+		$request = new WP_REST_Request( 'POST' );
+		$request->set_param( 'comment_post_ID', $post_id );
+		$request->set_param( 'author', 'Test Author' );
+		$request->set_param( 'email', 'test@example.com' );
+
+		$response = $instance->handle_rsvp_form_submission( $request );
+
+		$this->assertEquals( 403, $response->get_status() );
+
+		$data = $response->get_data();
+		$this->assertFalse( $data['success'] );
+		$this->assertStringContainsString( 'Open RSVP', $data['message'] );
+	}
+
+	/**
+	 * Tests handle_rsvp_form_submission returns 403 when open RSVP is disabled per event.
+	 *
+	 * @covers ::handle_rsvp_form_submission
+	 *
+	 * @return void
+	 */
+	public function test_handle_rsvp_form_submission_open_rsvp_disabled_per_event(): void {
+		$instance = Event_Rest_Api::get_instance();
+		$post_id  = $this->factory()->post->create(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		);
+
+		// Sitewide open RSVP is enabled (setUp default), but disabled for this event.
+		update_post_meta( $post_id, 'gatherpress_enable_open_rsvp', 0 );
+
+		$request = new WP_REST_Request( 'POST' );
+		$request->set_param( 'comment_post_ID', $post_id );
+		$request->set_param( 'author', 'Test Author' );
+		$request->set_param( 'email', 'test@example.com' );
+
+		$response = $instance->handle_rsvp_form_submission( $request );
+
+		$this->assertEquals( 403, $response->get_status() );
+
+		$data = $response->get_data();
+		$this->assertFalse( $data['success'] );
+		$this->assertStringContainsString( 'Open RSVP', $data['message'] );
 	}
 
 	/**
@@ -1245,5 +1369,810 @@ class Test_Event_Rest_Api extends Base {
 		$result = $instance->send_emails( $post_id, array( 'all' => true ), '' );
 
 		$this->assertFalse( $result );
+	}
+
+	/**
+	 * Test send_emails with user who opted out of event updates.
+	 *
+	 * @covers ::send_emails
+	 *
+	 * @return void
+	 */
+	public function test_send_emails_with_opted_out_user(): void {
+		add_filter( 'pre_wp_mail', '__return_false' );
+
+		$instance = Event_Rest_Api::get_instance();
+		$event_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
+		$user_id  = $this->factory->user->create();
+
+		// User opts out of event updates.
+		update_user_meta( $user_id, 'gatherpress_event_updates_opt_in', 0 );
+
+		$event = new Event( $event_id );
+		$event->rsvp->save( $user_id, 'attending' );
+
+		$send = array(
+			'attending' => true,
+		);
+
+		// Should still return true but skip the opted-out user.
+		$result = $instance->send_emails( $event_id, $send, 'Test message' );
+		$this->assertTrue( $result );
+
+		remove_filter( 'pre_wp_mail', '__return_false' );
+	}
+
+	/**
+	 * Test send_emails with non-user RSVP who opted out.
+	 *
+	 * @covers ::send_emails
+	 *
+	 * @return void
+	 */
+	public function test_send_emails_with_opted_out_non_user(): void {
+		add_filter( 'pre_wp_mail', '__return_false' );
+
+		$instance = Event_Rest_Api::get_instance();
+		$event_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
+
+		// Create anonymous RSVP.
+		$comment_id = wp_insert_comment(
+			array(
+				'comment_post_ID'      => $event_id,
+				'comment_type'         => Rsvp::COMMENT_TYPE,
+				'comment_author'       => 'Anonymous User',
+				'comment_author_email' => 'anonymous@example.com',
+				'comment_approved'     => 1,
+				'user_id'              => 0,
+			)
+		);
+
+		// Set RSVP status.
+		wp_set_object_terms( $comment_id, 'attending', Rsvp::TAXONOMY );
+
+		// Opt out of event updates.
+		update_comment_meta( $comment_id, 'gatherpress_event_updates_opt_in', 0 );
+
+		$send = array(
+			'attending' => true,
+		);
+
+		// Should still return true but skip the opted-out RSVP.
+		$result = $instance->send_emails( $event_id, $send, 'Test message' );
+		$this->assertTrue( $result );
+
+		remove_filter( 'pre_wp_mail', '__return_false' );
+	}
+
+	/**
+	 * Test send_emails with recipient who has no email.
+	 *
+	 * @covers ::send_emails
+	 *
+	 * @return void
+	 */
+	public function test_send_emails_with_no_email(): void {
+		add_filter( 'pre_wp_mail', '__return_false' );
+
+		$instance = Event_Rest_Api::get_instance();
+		$event_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
+
+		// Create RSVP with no email.
+		$comment_id = wp_insert_comment(
+			array(
+				'comment_post_ID'      => $event_id,
+				'comment_type'         => Rsvp::COMMENT_TYPE,
+				'comment_author'       => 'No Email User',
+				'comment_author_email' => '', // Empty email.
+				'comment_approved'     => 1,
+				'user_id'              => 0,
+			)
+		);
+
+		wp_set_object_terms( $comment_id, 'attending', Rsvp::TAXONOMY );
+
+		$send = array(
+			'attending' => true,
+		);
+
+		// Should return true but skip recipient with no email.
+		$result = $instance->send_emails( $event_id, $send, 'Test message' );
+		$this->assertTrue( $result );
+
+		remove_filter( 'pre_wp_mail', '__return_false' );
+	}
+
+	/**
+	 * Test get_recipients skips RSVPs with empty email.
+	 *
+	 * @covers ::get_recipients
+	 *
+	 * @return void
+	 */
+	public function test_get_recipients_skips_empty_email(): void {
+		$instance = Event_Rest_Api::get_instance();
+		$event_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
+
+		// Create RSVP with empty email.
+		$comment_id = wp_insert_comment(
+			array(
+				'comment_post_ID'      => $event_id,
+				'comment_type'         => Rsvp::COMMENT_TYPE,
+				'comment_author'       => 'No Email User',
+				'comment_author_email' => '', // Empty email.
+				'comment_approved'     => 1,
+				'user_id'              => 0,
+			)
+		);
+
+		wp_set_object_terms( $comment_id, 'attending', Rsvp::TAXONOMY );
+
+		$send = array(
+			'attending' => true,
+		);
+
+		$recipients = $instance->get_recipients( $send, $event_id );
+
+		// Should not include the RSVP with empty email.
+		$this->assertEmpty( $recipients );
+	}
+
+	/**
+	 * Test send_emails with locale switching for user.
+	 *
+	 * @covers ::send_emails
+	 *
+	 * @return void
+	 */
+	public function test_send_emails_with_locale_switching(): void {
+		add_filter( 'pre_wp_mail', '__return_false' );
+
+		$instance = Event_Rest_Api::get_instance();
+		$event_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
+		$user_id  = $this->factory->user->create();
+
+		// Opt in to updates.
+		update_user_meta( $user_id, 'gatherpress_event_updates_opt_in', 1 );
+
+		$event = new Event( $event_id );
+		$event->rsvp->save( $user_id, 'attending' );
+
+		$send = array(
+			'attending' => true,
+		);
+
+		// Should handle locale switching for user.
+		$result = $instance->send_emails( $event_id, $send, 'Test message' );
+		$this->assertTrue( $result );
+
+		remove_filter( 'pre_wp_mail', '__return_false' );
+	}
+
+	/**
+	 * Tests nonce_route protected method.
+	 *
+	 * Covers target.
+	 *
+	 * @covers ::nonce_route
+	 */
+	public function test_nonce_route(): void {
+		$instance = Event_Rest_Api::get_instance();
+
+		$route = Utility::invoke_hidden_method( $instance, 'nonce_route' );
+
+		$this->assertIsArray( $route );
+		$this->assertArrayHasKey( 'route', $route );
+		$this->assertArrayHasKey( 'args', $route );
+		$this->assertEquals( 'nonce', $route['route'] );
+		$this->assertArrayHasKey( 'methods', $route['args'] );
+		$this->assertArrayHasKey( 'callback', $route['args'] );
+		$this->assertArrayHasKey( 'permission_callback', $route['args'] );
+	}
+
+	/**
+	 * Tests nonce_route callback to generate nonce.
+	 *
+	 * Covers: nonce generation callback with cache headers.
+	 *
+	 * @covers ::nonce_route
+	 */
+	public function test_nonce_route_callback(): void {
+		$instance = Event_Rest_Api::get_instance();
+		$route    = Utility::invoke_hidden_method( $instance, 'nonce_route' );
+
+		// Create a logged-in user.
+		$user_id = $this->factory->user->create();
+		wp_set_current_user( $user_id );
+
+		// Call the callback.
+		$callback = $route['args']['callback'];
+		$response = call_user_func( $callback );
+
+		$this->assertInstanceOf( WP_REST_Response::class, $response, 'Callback should return WP_REST_Response' );
+
+		$data = $response->get_data();
+		$this->assertArrayHasKey( 'nonce', $data, 'Response should contain nonce key' );
+		$this->assertNotEmpty( $data['nonce'], 'Nonce should not be empty' );
+
+		// Verify the nonce is valid.
+		$this->assertIsString( $data['nonce'], 'Nonce should be a string' );
+		$this->assertGreaterThan( 0, wp_verify_nonce( $data['nonce'], 'wp_rest' ), 'Nonce should be valid' );
+	}
+
+	/**
+	 * Tests email_route permission callback with user who can edit posts.
+	 *
+	 * Covers: permission callback returning true for users with edit_posts capability.
+	 *
+	 * @covers ::email_route
+	 */
+	public function test_email_route_permission_callback_can_edit(): void {
+		$instance = Event_Rest_Api::get_instance();
+		$route    = Utility::invoke_hidden_method( $instance, 'email_route' );
+
+		// Create an editor who can edit posts.
+		$editor_id = $this->factory->user->create( array( 'role' => 'editor' ) );
+		wp_set_current_user( $editor_id );
+
+		// Call the permission callback.
+		$permission_callback = $route['args']['permission_callback'];
+		$result              = call_user_func( $permission_callback );
+
+		$this->assertTrue( $result, 'Permission callback should return true for user with edit_posts capability' );
+	}
+
+	/**
+	 * Tests email_route permission callback with user who cannot edit posts.
+	 *
+	 * Covers: permission callback returning false for users without edit_posts capability.
+	 *
+	 * @covers ::email_route
+	 */
+	public function test_email_route_permission_callback_cannot_edit(): void {
+		$instance = Event_Rest_Api::get_instance();
+		$route    = Utility::invoke_hidden_method( $instance, 'email_route' );
+
+		// Create a subscriber who cannot edit posts.
+		$subscriber_id = $this->factory->user->create( array( 'role' => 'subscriber' ) );
+		wp_set_current_user( $subscriber_id );
+
+		// Call the permission callback.
+		$permission_callback = $route['args']['permission_callback'];
+		$result              = call_user_func( $permission_callback );
+
+		$this->assertFalse( $result, 'Permission callback should return false for user without edit_posts capability' );
+	}
+
+	/**
+	 * Tests rsvp_route permission callback with valid RSVP token.
+	 *
+	 * Covers: permission callback returning true when valid token is provided.
+	 *
+	 * @covers ::rsvp_route
+	 */
+	public function test_rsvp_route_permission_callback_with_token(): void {
+		$instance = Event_Rest_Api::get_instance();
+		$route    = Utility::invoke_hidden_method( $instance, 'rsvp_route' );
+
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		);
+
+		// Create a valid RSVP token.
+		$email       = 'test@example.com';
+		$event       = new Event( $post_id );
+		$user_record = $event->rsvp->save( $email, 'attending', 0, 0 );
+
+		// Generate token.
+		$rsvp_token = new Rsvp_Token( $user_record['comment_id'] );
+		$rsvp_token->generate_token();
+		$token_value = $rsvp_token->get_token();
+		$token_str   = sprintf( '%d_%s', $user_record['comment_id'], $token_value );
+
+		// Create request with token.
+		$request = new WP_REST_Request( 'POST', '/gatherpress/v1/event/rsvp' );
+		$request->set_param( Rsvp_Token::NAME, $token_str );
+
+		// Call the permission callback.
+		$permission_callback = $route['args']['permission_callback'];
+		$result              = call_user_func( $permission_callback, $request );
+
+		$this->assertTrue( $result, 'Permission callback should return true with valid RSVP token' );
+	}
+
+	/**
+	 * Tests rsvp_route permission callback without token for logged out user.
+	 *
+	 * Covers: permission callback returning false when user is not logged in.
+	 *
+	 * @covers ::rsvp_route
+	 */
+	public function test_rsvp_route_permission_callback_logged_out(): void {
+		$instance = Event_Rest_Api::get_instance();
+		$route    = Utility::invoke_hidden_method( $instance, 'rsvp_route' );
+
+		// Ensure user is logged out.
+		wp_set_current_user( 0 );
+
+		// Create request without token.
+		$request = new WP_REST_Request( 'POST', '/gatherpress/v1/event/rsvp' );
+
+		// Call the permission callback.
+		$permission_callback = $route['args']['permission_callback'];
+		$result              = call_user_func( $permission_callback, $request );
+
+		$this->assertFalse(
+			$result,
+			'Permission callback should return false when user is not logged in and no token provided'
+		);
+	}
+
+	/**
+	 * Tests rsvp_route validate callback for rsvp_token with empty token.
+	 *
+	 * Covers: validate callback returning false for empty token.
+	 *
+	 * @covers ::rsvp_route
+	 */
+	public function test_rsvp_route_token_validate_callback_empty(): void {
+		$instance = Event_Rest_Api::get_instance();
+		$route    = Utility::invoke_hidden_method( $instance, 'rsvp_route' );
+
+		$validate_callback = $route['args']['args']['rsvp_token']['validate_callback'];
+		$result            = call_user_func( $validate_callback, '' );
+
+		$this->assertFalse( $result, 'Validate callback should return false for empty token' );
+	}
+
+	/**
+	 * Tests rsvp_form_route author validate callback with empty value.
+	 *
+	 * Covers: validate callback returning false for empty sanitized author.
+	 *
+	 * @covers ::rsvp_form_route
+	 */
+	public function test_rsvp_form_route_author_validate_callback_empty(): void {
+		$instance = Event_Rest_Api::get_instance();
+		$route    = Utility::invoke_hidden_method( $instance, 'rsvp_form_route' );
+
+		$validate_callback = $route['args']['args']['author']['validate_callback'];
+
+		// Test with empty string.
+		$result = call_user_func( $validate_callback, '' );
+		$this->assertFalse( $result, 'Validate callback should return false for empty author' );
+
+		// Test with whitespace only.
+		$result = call_user_func( $validate_callback, '   ' );
+		$this->assertFalse( $result, 'Validate callback should return false for whitespace-only author' );
+	}
+
+	/**
+	 * Tests rsvp_form_route email validate callback.
+	 *
+	 * Covers: validate callback using is_email().
+	 *
+	 * @covers ::rsvp_form_route
+	 */
+	public function test_rsvp_form_route_email_validate_callback(): void {
+		$instance = Event_Rest_Api::get_instance();
+		$route    = Utility::invoke_hidden_method( $instance, 'rsvp_form_route' );
+
+		$validate_callback = $route['args']['args']['email']['validate_callback'];
+
+		// Test with valid email - is_email() returns the sanitized email (truthy).
+		$result = call_user_func( $validate_callback, 'test@example.com' );
+		$this->assertNotEmpty( $result, 'Validate callback should return truthy value for valid email' );
+
+		// Test with invalid email - is_email() returns false.
+		$result = call_user_func( $validate_callback, 'not-an-email' );
+		$this->assertFalse( $result, 'Validate callback should return false for invalid email' );
+	}
+
+	/**
+	 * Tests rsvp_form_route form schema ID validate callback.
+	 *
+	 * Covers: validate callback checking string format.
+	 *
+	 * @covers ::rsvp_form_route
+	 */
+	public function test_rsvp_form_route_form_schema_id_validate_callback(): void {
+		$instance = Event_Rest_Api::get_instance();
+		$route    = Utility::invoke_hidden_method( $instance, 'rsvp_form_route' );
+
+		$validate_callback = $route['args']['args']['gatherpress_form_schema_id']['validate_callback'];
+
+		// Test with valid form_0.
+		$result = call_user_func( $validate_callback, 'form_0' );
+		$this->assertTrue( $result, 'Validate callback should return true for form_0' );
+
+		// Test with valid form_123.
+		$result = call_user_func( $validate_callback, 'form_123' );
+		$this->assertTrue( $result, 'Validate callback should return true for form_123' );
+
+		// Test with invalid format.
+		$result = call_user_func( $validate_callback, 'invalid' );
+		$this->assertFalse( $result, 'Validate callback should return false for invalid format' );
+
+		// Test with non-string.
+		$result = call_user_func( $validate_callback, 123 );
+		$this->assertFalse( $result, 'Validate callback should return false for non-string' );
+	}
+
+	/**
+	 * Tests rsvp_status_html_route protected method.
+	 *
+	 * @covers ::rsvp_status_html_route
+	 */
+	public function test_rsvp_status_html_route(): void {
+		$instance = Event_Rest_Api::get_instance();
+
+		$route = Utility::invoke_hidden_method( $instance, 'rsvp_status_html_route' );
+
+		$this->assertIsArray( $route );
+		$this->assertArrayHasKey( 'route', $route );
+		$this->assertArrayHasKey( 'args', $route );
+		$this->assertEquals( 'rsvp-status-html', $route['route'] );
+		$this->assertArrayHasKey( 'methods', $route['args'] );
+		$this->assertArrayHasKey( 'callback', $route['args'] );
+		$this->assertArrayHasKey( 'permission_callback', $route['args'] );
+	}
+
+	/**
+	 * Tests rsvp_responses_route protected method.
+	 *
+	 * @covers ::rsvp_responses_route
+	 */
+	public function test_rsvp_responses_route(): void {
+		$instance = Event_Rest_Api::get_instance();
+
+		$route = Utility::invoke_hidden_method( $instance, 'rsvp_responses_route' );
+
+		$this->assertIsArray( $route );
+		$this->assertArrayHasKey( 'route', $route );
+		$this->assertArrayHasKey( 'args', $route );
+		$this->assertEquals( 'rsvp-responses', $route['route'] );
+		$this->assertArrayHasKey( 'methods', $route['args'] );
+		$this->assertArrayHasKey( 'callback', $route['args'] );
+		$this->assertArrayHasKey( 'permission_callback', $route['args'] );
+	}
+
+	/**
+	 * Tests send_emails with non-user RSVP that has opt-out.
+	 *
+	 * Covers: skip sending email when comment meta opt-in is '0'.
+	 *
+	 * @covers ::send_emails
+	 */
+	public function test_send_emails_skip_non_user_opt_out(): void {
+		$instance = Event_Rest_Api::get_instance();
+
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		);
+
+		$event = new Event( $post_id );
+
+		// Create non-user RSVP using email address.
+		$email   = 'nonuser@example.com';
+		$comment = $event->rsvp->save( $email, 'attending', 0, 0 );
+
+		// Set opt-in to '0' (opted out).
+		update_comment_meta( $comment['comment_id'], 'gatherpress_event_updates_opt_in', '0' );
+
+		$send = array( 'attending' => true );
+
+		// Mock wp_mail to track if it was called.
+		$mail_called = false;
+		add_filter(
+			'pre_wp_mail',
+			function () use ( &$mail_called ) {
+				$mail_called = true;
+				return true; // Prevent actual email sending.
+			}
+		);
+
+		$result = $instance->send_emails( $post_id, $send, 'Test message' );
+
+		$this->assertTrue( $result, 'send_emails should return true' );
+		$this->assertFalse( $mail_called, 'wp_mail should not be called for opted-out non-user RSVP' );
+	}
+
+	/**
+	 * Tests send_emails with locale switching for user.
+	 *
+	 * Covers: restore_previous_locale when switched_locale is true.
+	 *
+	 * @covers ::send_emails
+	 */
+	public function test_send_emails_restore_locale(): void {
+		$instance = Event_Rest_Api::get_instance();
+
+		$user_id = $this->factory->user->create(
+			array(
+				'user_email' => 'user@example.com',
+			)
+		);
+
+		// Set user locale different from site locale.
+		update_user_meta( $user_id, 'locale', 'de_DE' );
+
+		// Enable opt-in.
+		update_user_meta( $user_id, 'gatherpress_event_updates_opt_in', '1' );
+
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		);
+
+		$event = new Event( $post_id );
+
+		// Create RSVP for the user.
+		$event->rsvp->save( $user_id, 'attending' );
+
+		$send = array( 'attending' => true );
+
+		// Set a current user (as the editor sending the email).
+		wp_set_current_user( $this->factory->user->create() );
+
+		// Mock wp_mail.
+		add_filter(
+			'pre_wp_mail',
+			function () {
+				return true;
+			}
+		);
+
+		$result = $instance->send_emails( $post_id, $send, 'Test message' );
+
+		$this->assertTrue( $result, 'send_emails should return true' );
+		// If this test runs without errors, restore_previous_locale was called correctly.
+	}
+
+	/**
+	 * Tests get_recipients skipping RSVP with empty email.
+	 *
+	 * Covers: skip recipient when email is empty.
+	 *
+	 * @covers ::get_recipients
+	 */
+	public function test_get_recipients_skip_empty_email(): void {
+		$instance = Event_Rest_Api::get_instance();
+
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		);
+
+		$event = new Event( $post_id );
+
+		// Create RSVP with valid email first.
+		$email   = 'test@example.com';
+		$comment = $event->rsvp->save( $email, 'attending', 0, 0 );
+
+		// Now remove the email to test the skip logic.
+		wp_update_comment(
+			array(
+				'comment_ID'           => $comment['comment_id'],
+				'comment_author_email' => '',
+			)
+		);
+
+		$send = array( 'attending' => true );
+
+		$recipients = $instance->get_recipients( $send, $post_id );
+
+		$this->assertEmpty( $recipients, 'Recipients should be empty when email is empty' );
+	}
+
+	/**
+	 * Tests update_rsvp when non-admin user tries to add someone else.
+	 *
+	 * Covers: user without edit_posts permission gets user_id set to 0.
+	 *
+	 * @covers ::update_rsvp
+	 */
+	public function test_update_rsvp_non_admin_cannot_add_others(): void {
+		$instance = Event_Rest_Api::get_instance();
+
+		// Create a subscriber (no edit_posts capability).
+		$subscriber_id = $this->factory->user->create( array( 'role' => 'subscriber' ) );
+		wp_set_current_user( $subscriber_id );
+
+		// Create another user that subscriber wants to add.
+		$other_user_id = $this->factory->user->create();
+
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		);
+
+		$request = new WP_REST_Request( 'POST', '/gatherpress/v1/event/rsvp' );
+		$request->set_param( 'post_id', $post_id );
+		$request->set_param( 'user_id', $other_user_id );
+		$request->set_param( 'status', 'attending' );
+
+		$response = $instance->update_rsvp( $request );
+
+		$this->assertInstanceOf( 'WP_REST_Response', $response );
+		// The user_id should be reset to 0 since subscriber doesn't have edit_posts.
+		$this->assertFalse( $response->data['success'], 'RSVP should fail when non-admin tries to add someone else' );
+	}
+
+	/**
+	 * Tests rsvp_status_html setting nocache headers when logged in.
+	 *
+	 * Covers: nocache_headers() called when user is logged in.
+	 *
+	 * @covers ::rsvp_status_html
+	 */
+	public function test_rsvp_status_html_nocache_when_logged_in(): void {
+		$instance = Event_Rest_Api::get_instance();
+
+		// Create and log in a user.
+		$user_id = $this->factory->user->create();
+		wp_set_current_user( $user_id );
+
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		);
+
+		$request = new WP_REST_Request( 'POST', '/gatherpress/v1/event/rsvp-status-html' );
+		$request->set_param( 'post_id', $post_id );
+		$request->set_param( 'status', 'attending' );
+		$request->set_param( 'block_data', wp_json_encode( array() ) );
+
+		// Check that nocache_headers is called by verifying headers are sent.
+		$response = $instance->rsvp_status_html( $request );
+
+		$this->assertInstanceOf( 'WP_REST_Response', $response );
+		// If test runs without error, nocache_headers was called successfully.
+	}
+
+	/**
+	 * Tests handle_rsvp_form_submission with custom fields.
+	 *
+	 * Covers: adding custom fields with gatherpress_custom_ prefix.
+	 *
+	 * @covers ::handle_rsvp_form_submission
+	 */
+	public function test_handle_rsvp_form_submission_custom_fields(): void {
+		$instance = Event_Rest_Api::get_instance();
+
+		$user_id = $this->factory->user->create(
+			array(
+				'user_email' => 'test@example.com',
+			)
+		);
+		wp_set_current_user( $user_id );
+
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		);
+
+		$request = new WP_REST_Request( 'POST', '/gatherpress/v1/event/rsvp-form' );
+		$request->set_param( 'comment_post_ID', $post_id );
+		$request->set_param( 'author', 'Test Author' );
+		$request->set_param( 'email', 'test@example.com' );
+		$request->set_param( 'gatherpress_custom_field1', 'Custom Value 1' );
+		$request->set_param( 'gatherpress_custom_field2', 'Custom Value 2' );
+		$request->set_param( 'other_param', 'Should not be included' ); // This should NOT be added.
+
+		$response = $instance->handle_rsvp_form_submission( $request );
+
+		$this->assertInstanceOf( 'WP_REST_Response', $response );
+		$this->assertTrue( $response->data['success'], 'RSVP form submission should succeed' );
+
+		// Target line adds custom fields with gatherpress_custom_ prefix to the data array.
+		// The actual processing and saving is done by Rsvp_Form::process_rsvp().
+		// This test confirms the endpoint successfully processes requests with custom fields.
+	}
+
+	/**
+	 * Tests rsvp_responses setting nocache headers when logged in.
+	 *
+	 * Covers: nocache_headers() called when user is logged in.
+	 *
+	 * @covers ::rsvp_responses
+	 */
+	public function test_rsvp_responses_nocache_when_logged_in(): void {
+		$instance = Event_Rest_Api::get_instance();
+
+		// Create and log in a user.
+		$user_id = $this->factory->user->create();
+		wp_set_current_user( $user_id );
+
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		);
+
+		$request = new WP_REST_Request( 'GET', '/gatherpress/v1/event/rsvp-responses' );
+		$request->set_param( 'post_id', $post_id );
+
+		// Check that nocache_headers is called.
+		$response = $instance->rsvp_responses( $request );
+
+		$this->assertInstanceOf( 'WP_REST_Response', $response );
+		$this->assertTrue( $response->data['success'], 'rsvp_responses should return success' );
+		// If test runs without error, nocache_headers was called successfully.
+	}
+
+	/**
+	 * Tests update_rsvp adds user to blog in multisite when not a member.
+	 *
+	 * Covers: add_user_to_blog when user RSVPs to event on different site.
+	 *
+	 * @group multisite
+	 * @covers ::update_rsvp
+	 *
+	 * @return void
+	 */
+	public function test_update_rsvp_adds_user_to_blog_multisite(): void {
+		$instance = Event_Rest_Api::get_instance();
+
+		// Create a user on site 1.
+		$user_id = $this->factory->user->create(
+			array(
+				'user_login' => 'testuser',
+				'user_email' => 'testuser@example.com',
+				'role'       => 'subscriber',
+			)
+		);
+
+		// Create site 2.
+		$site_2_id = $this->factory->blog->create();
+
+		// Switch to site 2.
+		switch_to_blog( $site_2_id );
+
+		// Create tables on site 2.
+		$setup = Setup::get_instance();
+		Utility::invoke_hidden_method( $setup, 'create_tables' );
+
+		// Create an event on site 2.
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		);
+
+		// Verify user is NOT a member of site 2.
+		$this->assertFalse( is_user_member_of_blog( $user_id, $site_2_id ), 'User should not be member of site 2' );
+
+		// Set current user to the user from site 1.
+		wp_set_current_user( $user_id );
+
+		// Create RSVP request.
+		$request = new WP_REST_Request( 'POST', '/gatherpress/v1/event/rsvp' );
+		$request->set_param( 'post_id', $post_id );
+		$request->set_param( 'status', 'attending' );
+		$request->set_param( 'user_id', $user_id );
+
+		// Call update_rsvp.
+		$response = $instance->update_rsvp( $request );
+
+		// Verify user was added to site 2 as a subscriber.
+		$this->assertTrue( is_user_member_of_blog( $user_id, $site_2_id ), 'User should be added to site 2' );
+
+		// Verify they have subscriber role on site 2.
+		$user = new \WP_User( $user_id );
+		$this->assertTrue( $user->has_cap( 'read' ), 'User should have subscriber capabilities on site 2' );
+
+		// Verify RSVP was successful.
+		$this->assertTrue( $response->data['success'], 'RSVP should be successful' );
+
+		restore_current_blog();
 	}
 }

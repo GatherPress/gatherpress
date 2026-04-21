@@ -70,6 +70,16 @@ module.exports = [
 				'style.scss',
 			),
 			utility_style: path.resolve( process.cwd(), 'src', 'utility.scss' ),
+			tooltip_view: path.resolve(
+				process.cwd(),
+				'src/formats/tooltip',
+				'view.js'
+			),
+			'integrations/aql/index': path.resolve(
+				process.cwd(),
+				'src/integrations/aql',
+				'index.js'
+			),
 			...getVariationEntries(),
 		},
 		module: {

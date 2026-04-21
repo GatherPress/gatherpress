@@ -33,11 +33,11 @@ add_filter(
 
 ## Files
 
-- [includes/core/classes/class-utility.php:383](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/class-utility.php#L383)
+- [includes/core/classes/class-utility.php:480](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/class-utility.php#L480)
 ```php
 apply_filters( 'gatherpress_pre_get_http_input', null, $type, $var_name )
 ```
 
 
 
-[← All Hooks](Hooks)
+[← All Hooks](Hooks.md)

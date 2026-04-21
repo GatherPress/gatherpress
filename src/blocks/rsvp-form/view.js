@@ -7,8 +7,6 @@ import { store, getElement, getContext } from '@wordpress/interactivity';
  * Internal dependencies.
  */
 import { initPostContext, getNonce } from '../../helpers/interactivity';
-import { getFromGlobal } from '../../helpers/globals';
-
 const { state } = store( 'gatherpress', {
 	state: {
 		posts: {},
@@ -83,7 +81,7 @@ const { state } = store( 'gatherpress', {
 				}
 
 				const response = await fetch(
-					getFromGlobal( 'urls.eventApiUrl' ) + '/rsvp-form',
+					state.eventApiUrl + '/rsvp-form',
 					{
 						method: 'POST',
 						headers: {
@@ -107,19 +105,22 @@ const { state } = store( 'gatherpress', {
 			try {
 				const result = await makeRequest();
 
-				if ( result && result.success ) {
+				if ( result?.success ) {
 					// Handle blocks with form visibility attributes.
 					const blocksWithVisibility = form.querySelectorAll( '[data-gatherpress-rsvp-form-visibility]' );
-					const isPast = 'past' === form.getAttribute( 'data-gatherpress-event-state' );
+					const isPast = 'past' === form.dataset.gatherpressEventState;
 
 					blocksWithVisibility.forEach( ( block ) => {
-						const visibilityAttr = block.getAttribute( 'data-gatherpress-rsvp-form-visibility' );
+						const visibilityAttr = block.dataset.gatherpressRsvpFormVisibility;
 						let visibility = {};
 
 						try {
 							visibility = JSON.parse( visibilityAttr );
 						} catch ( e ) {
 							// Invalid JSON, treat as no visibility rules (always visible).
+							// eslint-disable-next-line no-console
+							console.warn( 'Failed to parse RSVP form visibility JSON:', e );
+							visibility = {};
 						}
 
 						const { onSuccess, whenPast } = visibility;
@@ -206,18 +207,21 @@ const { state } = store( 'gatherpress', {
 			// Check if this is a success page (form was just submitted).
 			const urlParams = new URLSearchParams( window.location.search );
 			const isSuccess = 'true' === urlParams.get( 'gatherpress_rsvp_success' );
-			const isPast = 'past' === form.getAttribute( 'data-gatherpress-event-state' );
+			const isPast = 'past' === form.dataset.gatherpressEventState;
 
 			// Set initial visibility for blocks based on their attributes and current state.
 			const blocksWithVisibility = form.querySelectorAll( '[data-gatherpress-rsvp-form-visibility]' );
 			blocksWithVisibility.forEach( ( block ) => {
-				const visibilityAttr = block.getAttribute( 'data-gatherpress-rsvp-form-visibility' );
+				const visibilityAttr = block.dataset.gatherpressRsvpFormVisibility;
 				let visibility = {};
 
 				try {
 					visibility = JSON.parse( visibilityAttr );
 				} catch ( e ) {
 					// Invalid JSON, treat as no visibility rules (always visible).
+					// eslint-disable-next-line no-console
+					console.warn( 'Failed to parse RSVP form visibility JSON:', e );
+					visibility = {};
 				}
 
 				const { onSuccess, whenPast } = visibility;

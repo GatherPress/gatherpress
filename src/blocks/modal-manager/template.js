@@ -27,7 +27,10 @@ const TEMPLATE = [
 		[
 			[
 				'gatherpress/modal-content',
-				{},
+				{
+					backgroundColor: 'white',
+					textColor: 'contrast',
+				},
 				[
 					[
 						'core/paragraph',

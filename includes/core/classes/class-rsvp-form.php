@@ -61,6 +61,17 @@ class Rsvp_Form {
 	}
 
 	/**
+	 * Get the duplicate RSVP error message.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return string The translated error message.
+	 */
+	private function get_duplicate_rsvp_message(): string {
+		return __( "You've already RSVP'd to this event.", 'gatherpress' );
+	}
+
+	/**
 	 * Check if this is an RSVP form submission.
 	 *
 	 * This method determines if the current request is an RSVP form submission
@@ -72,7 +83,9 @@ class Rsvp_Form {
 	 */
 	public function is_rsvp_form_submission(): bool {
 		// phpcs:disable WordPress.Security.NonceVerification.Missing
-		$request_method = isset( $_SERVER['REQUEST_METHOD'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REQUEST_METHOD'] ) ) : '';
+		$request_method = isset( $_SERVER['REQUEST_METHOD'] )
+			? sanitize_text_field( wp_unslash( $_SERVER['REQUEST_METHOD'] ) )
+			: '';
 		return (
 			'POST' === $request_method &&
 			! empty( Utility::get_http_input( INPUT_POST, 'comment_post_ID' ) ) &&
@@ -112,9 +125,7 @@ class Rsvp_Form {
 
 		add_filter(
 			'comment_duplicate_message',
-			static function (): string {
-				return __( "You've already RSVP'd to this event.", 'gatherpress' );
-			}
+			array( $this, 'get_duplicate_rsvp_message' )
 		);
 
 		add_filter(
@@ -141,20 +152,50 @@ class Rsvp_Form {
 		$email   = Utility::get_http_input( INPUT_POST, 'email', 'sanitize_email' );
 		$post_id = intval( $comment_data['comment_post_ID'] );
 
-		// Validate that the post is an event.
-		if ( Event::POST_TYPE !== get_post_type( $post_id ) ) {
-			wp_die( esc_html__( 'Invalid event ID.', 'gatherpress' ), esc_html__( 'Invalid Request', 'gatherpress' ), 400 );
+		// Check sitewide/per-event RSVP setting before any post-type check so that
+		// globally-disabled mode returns the correct 403 rather than a misleading 400.
+		if ( ! ( new Rsvp( $post_id ) )->is_enabled() ) {
+			wp_die(
+				esc_html__( 'RSVP is disabled for this event.', 'gatherpress' ),
+				esc_html__( 'RSVP Disabled', 'gatherpress' ),
+				403
+			);
+		}
+
+		if ( ! ( new Rsvp( $post_id ) )->allows_open_rsvp() ) {
+			wp_die(
+				esc_html__( 'Open RSVP is disabled for this site.', 'gatherpress' ),
+				esc_html__( 'Open RSVP Disabled', 'gatherpress' ),
+				403
+			);
+		}
+
+		// Validate that the post supports RSVP.
+		if ( ! post_type_supports( (string) get_post_type( $post_id ), 'gatherpress-rsvp' ) ) {
+			wp_die(
+				esc_html__( 'Invalid event ID.', 'gatherpress' ),
+				esc_html__( 'Invalid Request', 'gatherpress' ),
+				400
+			);
 		}
 
 		// Check if event has passed - prevent RSVPs to past events.
 		$event = new Event( $post_id );
 		if ( $event->has_event_past() ) {
-			wp_die( esc_html__( 'Registration for this event is now closed.', 'gatherpress' ), esc_html__( 'Event Has Passed', 'gatherpress' ), 400 );
+			wp_die(
+				esc_html__( 'Registration for this event is now closed.', 'gatherpress' ),
+				esc_html__( 'Event Has Passed', 'gatherpress' ),
+				400
+			);
 		}
 
 		// Check for duplicate RSVP.
 		if ( $this->has_duplicate_rsvp( $post_id, $email ) ) {
-			wp_die( esc_html__( "You've already RSVP'd to this event.", 'gatherpress' ), esc_html__( 'Duplicate RSVP', 'gatherpress' ), 409 );
+			wp_die(
+				esc_html( $this->get_duplicate_rsvp_message() ),
+				esc_html__( 'Duplicate RSVP', 'gatherpress' ),
+				409
+			);
 		}
 
 		// Prepare comment data for WordPress processing.
@@ -192,16 +233,21 @@ class Rsvp_Form {
 	 */
 	public function handle_rsvp_comment_post( int $comment_id ): void {
 		if ( Rsvp::COMMENT_TYPE === get_comment_type( $comment_id ) ) {
-			// Get the event post ID from the comment.
-			$comment = get_comment( $comment_id );
-			$post_id = $comment ? $comment->comment_post_ID : 0;
-
 			// Prepare data for meta processing.
 			// phpcs:disable WordPress.Security.NonceVerification.Missing
 			$data = array(
-				'gatherpress_event_updates_opt_in' => Utility::get_http_input( INPUT_POST, 'gatherpress_event_updates_opt_in' ),
-				'gatherpress_rsvp_guests'          => Utility::get_http_input( INPUT_POST, 'gatherpress_rsvp_form_guests' ),
-				'gatherpress_rsvp_anonymous'       => Utility::get_http_input( INPUT_POST, 'gatherpress_rsvp_form_anonymous' ),
+				'gatherpress_event_updates_opt_in' => Utility::get_http_input(
+					INPUT_POST,
+					'gatherpress_event_updates_opt_in'
+				),
+				'gatherpress_rsvp_guests'          => Utility::get_http_input(
+					INPUT_POST,
+					'gatherpress_rsvp_form_guests'
+				),
+				'gatherpress_rsvp_anonymous'       => Utility::get_http_input(
+					INPUT_POST,
+					'gatherpress_rsvp_form_anonymous'
+				),
 			);
 
 			// Add custom fields to data.
@@ -293,7 +339,7 @@ class Rsvp_Form {
 		if ( $this->has_duplicate_rsvp( $post_id, $email ) ) {
 			return array(
 				'success'    => false,
-				'message'    => __( "You've already RSVP'd to this event.", 'gatherpress' ),
+				'message'    => $this->get_duplicate_rsvp_message(),
 				'comment_id' => 0,
 				'error_code' => 409,
 			);
@@ -302,36 +348,14 @@ class Rsvp_Form {
 		// Prepare comment data.
 		$comment_data = $this->prepare_comment_data( $post_id, $author, $email );
 
+		// Run WordPress-native comment filters so sites can honor
+		// pre_comment_user_ip, pre_comment_user_agent, etc. for privacy.
+		$comment_data = wp_filter_comment( $comment_data );
+
 		// Insert the comment.
 		$comment_id_result = wp_insert_comment( $comment_data );
 
-		// Handle failure case.
-		if ( ! $comment_id_result ) {
-			return array(
-				'success'    => false,
-				'message'    => __( 'Failed to create RSVP.', 'gatherpress' ),
-				'comment_id' => 0,
-				'error_code' => 500,
-			);
-		}
-
-		$comment_id = (int) $comment_id_result;
-
-		// Set RSVP status to attending.
-		wp_set_object_terms( $comment_id, 'attending', Rsvp::TAXONOMY );
-
-		// Process all fields.
-		$this->process_fields( $comment_id, $data );
-
-		// Generate and send confirmation email.
-		$rsvp_token = new Rsvp_Token( $comment_id );
-		$rsvp_token->generate_token()->send_rsvp_confirmation_email();
-
-		return array(
-			'success'    => true,
-			'message'    => __( 'Your RSVP has been submitted successfully! Please check your email for a confirmation link.', 'gatherpress' ),
-			'comment_id' => $comment_id,
-		);
+		return $this->handle_rsvp_creation( $comment_id_result, $data );
 	}
 
 	/**
@@ -354,21 +378,28 @@ class Rsvp_Form {
 		$existing_user = get_user_by( 'email', $email );
 
 		if ( $existing_user instanceof WP_User ) {
-			$query          = "SELECT COUNT(*) FROM {$wpdb->comments} WHERE comment_post_ID = %d AND comment_type = %s AND (comment_author_email = %s OR user_id = %d)";
+			$query          = "SELECT COUNT(*) FROM {$wpdb->comments}
+				WHERE comment_post_ID = %d AND comment_type = %s
+				AND (comment_author_email = %s OR user_id = %d)";
 			$prepare_values = array( $post_id, Rsvp::COMMENT_TYPE, $email, $existing_user->ID );
 		} else {
-			$query          = "SELECT COUNT(*) FROM {$wpdb->comments} WHERE comment_post_ID = %d AND comment_type = %s AND comment_author_email = %s";
+			$query          = "SELECT COUNT(*) FROM {$wpdb->comments}
+				WHERE comment_post_ID = %d AND comment_type = %s AND comment_author_email = %s";
 			$prepare_values = array( $post_id, Rsvp::COMMENT_TYPE, $email );
 		}
 
-		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.NoCaching
+		// phpcs:disable WordPress.DB.PreparedSQL.NotPrepared
 		$count = $wpdb->get_var(
 			$wpdb->prepare(
 				$query,
 				...$prepare_values
 			)
 		);
-		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery.NoCaching
+		// phpcs:enable WordPress.DB.PreparedSQL.NotPrepared
 
 		return (int) $count > 0;
 	}
@@ -548,6 +579,11 @@ class Rsvp_Form {
 
 		// Process each custom field.
 		foreach ( $fields as $field_name => $field_config ) {
+			// Skip built-in fields - they are handled by process_meta_fields().
+			if ( in_array( $field_name, Rsvp_Form_Block::BUILT_IN_FIELDS, true ) ) {
+				continue;
+			}
+
 			if ( ! isset( $data[ $field_name ] ) ) {
 				continue;
 			}
@@ -561,5 +597,51 @@ class Rsvp_Form {
 			$meta_key = 'gatherpress_custom_' . sanitize_key( $field_name );
 			update_comment_meta( $comment_id, $meta_key, $sanitized_value );
 		}
+	}
+
+	/**
+	 * Handle the result of RSVP comment creation.
+	 *
+	 * Processes the result of wp_insert_comment, handling both success and failure cases.
+	 * On success, sets the RSVP status, processes custom fields, and sends confirmation email.
+	 * On failure, returns an error response.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param int|false $comment_id_result The result from wp_insert_comment (comment ID or false).
+	 * @param array     $data              RSVP submission data.
+	 * @return array{success: bool, message: string, comment_id: int, error_code?: int} Processing result.
+	 */
+	private function handle_rsvp_creation( $comment_id_result, array $data ): array {
+		// Handle failure case.
+		if ( ! $comment_id_result ) {
+			return array(
+				'success'    => false,
+				'message'    => __( 'Failed to create RSVP.', 'gatherpress' ),
+				'comment_id' => 0,
+				'error_code' => 500,
+			);
+		}
+
+		$comment_id = (int) $comment_id_result;
+
+		// Set RSVP status to attending.
+		wp_set_object_terms( $comment_id, 'attending', Rsvp::TAXONOMY );
+
+		// Process all fields.
+		$this->process_fields( $comment_id, $data );
+
+		// Generate and send confirmation email.
+		$rsvp_token = new Rsvp_Token( $comment_id );
+		$rsvp_token->generate_token()->send_rsvp_confirmation_email();
+
+		return array(
+			'success'    => true,
+			'message'    => __(
+				'Your RSVP has been submitted successfully! Please check your email for a confirmation link.',
+				'gatherpress'
+			),
+			'comment_id' => $comment_id,
+		);
 	}
 }

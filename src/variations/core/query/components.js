@@ -5,6 +5,10 @@ import {
 	RangeControl,
 	SelectControl,
 	ToggleControl,
+	// eslint-disable-next-line @wordpress/no-unsafe-wp-apis
+	__experimentalToggleGroupControl as ToggleGroupControl,
+	// eslint-disable-next-line @wordpress/no-unsafe-wp-apis
+	__experimentalToggleGroupControlOption as ToggleGroupControlOption,
 } from '@wordpress/components';
 import { useSelect } from '@wordpress/data';
 import { __, _x, sprintf } from '@wordpress/i18n';
@@ -75,20 +79,18 @@ export const EventExcludeControls = ( { attributes, setAttributes } ) => {
 	}
 
 	return (
-		<>
-			<ToggleControl
-				label={ __( 'Exclude Current Event', 'gatherpress' ) }
-				checked={ !! excludeCurrent }
-				onChange={ ( value ) => {
-					setAttributes( {
-						query: {
-							...attributes.query,
-							exclude_current: value ? currentPost.id : 0,
-						},
-					} );
-				} }
-			/>
-		</>
+		<ToggleControl
+			label={ __( 'Exclude Current Event', 'gatherpress' ) }
+			checked={ !! excludeCurrent }
+			onChange={ ( value ) => {
+				setAttributes( {
+					query: {
+						...attributes.query,
+						exclude_current: value ? currentPost.id : 0,
+					},
+				} );
+			} }
+		/>
 	);
 };
 
@@ -130,32 +132,30 @@ export const EventIncludeUnfinishedControls = ( {
 	}
 
 	return (
-		<>
-			<ToggleControl
-				label={ __( 'Include unfinished events', 'gatherpress' ) }
-				help={ sprintf(
-					/* translators: %s: 'upcoming' or 'past' */
-					_x(
-						'%s events that have started but are not yet finished.',
-						"'Shows' or 'Hides'",
-						'gatherpress',
-					),
-					effectiveValue
-						? __( 'Shows', 'gatherpress' )
-						: __( 'Hides', 'gatherpress' ),
-				) }
-				checked={ effectiveValue }
-				onChange={ ( value ) => {
-					const newValue = value ? 1 : 0;
-					setAttributes( {
-						query: {
-							...attributes.query,
-							include_unfinished: newValue,
-						},
-					} );
-				} }
-			/>
-		</>
+		<ToggleControl
+			label={ __( 'Include unfinished events', 'gatherpress' ) }
+			help={ sprintf(
+				/* translators: %s: 'upcoming' or 'past' */
+				_x(
+					'%s events that have started but are not yet finished.',
+					"'Shows' or 'Hides'",
+					'gatherpress',
+				),
+				effectiveValue
+					? __( 'Shows', 'gatherpress' )
+					: __( 'Hides', 'gatherpress' ),
+			) }
+			checked={ effectiveValue }
+			onChange={ ( value ) => {
+				const newValue = value ? 1 : 0;
+				setAttributes( {
+					query: {
+						...attributes.query,
+						include_unfinished: newValue,
+					},
+				} );
+			} }
+		/>
 	);
 };
 
@@ -163,51 +163,88 @@ export const EventIncludeUnfinishedControls = ( {
  * EventListTypeControls component
  *
  * Lets the editor choose whether the query returns "upcoming" or "past" events.
- * Toggled via a ToggleControl between upcoming (future) or past (archived) events,
+ * Uses a ToggleGroupControl with "Upcoming" and "Past" options,
  * stored as `gatherpress_event_query` in attributes.
  *
  * @param {Object}   props
  * @param {Object}   props.attributes    Block attributes.
  * @param {Function} props.setAttributes Function to update block attributes.
- * @return {Element}                        ToggleControl for event list type.
+ * @return {Element}                     ToggleGroupControl for event list type.
  */
 export const EventListTypeControls = ( { attributes, setAttributes } ) => {
 	const {
 		query: { gatherpress_event_query: eventListType = 'upcoming' } = {},
 	} = attributes;
 
-	const currentPost = useSelect( ( select ) => {
-		return select( 'core/editor' ).getCurrentPost();
-	}, [] );
+	return (
+		<ToggleGroupControl
+			label={ __( 'Event List Type', 'gatherpress' ) }
+			value={ eventListType }
+			isBlock
+			__nextHasNoMarginBottom
+			__next40pxDefaultSize
+			onChange={ ( newEventType ) => {
+				// When switching event type, reset related defaults so the
+				// query immediately makes sense for the new type.
+				const isUpcoming = 'upcoming' === newEventType;
+				const updatedQuery = {
+					...attributes.query,
+					gatherpress_event_query: newEventType,
+					include_unfinished: isUpcoming ? 1 : 0,
+				};
 
-	if ( ! currentPost ) {
-		return <div>{ __( 'Loading…', 'gatherpress' ) }</div>;
-	}
+				// Only reset the sort direction when ordering by Event Date,
+				// so we don't override a manually chosen order for other fields.
+				if ( 'datetime' === attributes.query?.orderBy ) {
+					updatedQuery.order = isUpcoming ? 'asc' : 'desc';
+				}
+
+				setAttributes( { query: updatedQuery } );
+			} }
+		>
+			<ToggleGroupControlOption
+				value="upcoming"
+				label={ __( 'Upcoming', 'gatherpress' ) }
+			/>
+			<ToggleGroupControlOption
+				value="past"
+				label={ __( 'Past', 'gatherpress' ) }
+			/>
+		</ToggleGroupControl>
+	);
+};
+
+/**
+ * VenueFilterControls component
+ *
+ * Renders a ToggleControl to filter the event query by the
+ * current venue context. When enabled on a venue page, only
+ * events associated with that venue are shown. When not on a
+ * venue page, the filter is gracefully ignored.
+ *
+ * @param {Object}   props
+ * @param {Object}   props.attributes    Block attributes.
+ * @param {Function} props.setAttributes Function to update block attributes.
+ * @return {Element}                     ToggleControl for venue filtering.
+ */
+export const VenueFilterControls = ( { attributes, setAttributes } ) => {
+	const {
+		query: { venue_filter: venueFilter } = {},
+	} = attributes;
 
 	return (
 		<ToggleControl
-			label={ __( 'Upcoming or past events.', 'gatherpress' ) }
-			help={ sprintf(
-				/* translators: %s: 'upcoming' or 'past' */
-				_x(
-					'Currently shows %s events.',
-					"'upcoming' or 'past'",
-					'gatherpress',
-				),
-				eventListType,
+			label={ __( 'Filter by current venue', 'gatherpress' ) }
+			help={ __(
+				'When placed on a venue page, only shows events at that venue.',
+				'gatherpress'
 			) }
-			checked={ 'upcoming' === eventListType }
+			checked={ !! venueFilter }
 			onChange={ ( value ) => {
-				// When switching event type, explicitly set include_unfinished to the
-				// default for the new event type to ensure WordPress recognizes the state change
-				const newEventType = value ? 'upcoming' : 'past';
-				const defaultIncludeUnfinished = ( 'upcoming' === newEventType ) ? 1 : 0;
-
 				setAttributes( {
 					query: {
 						...attributes.query,
-						gatherpress_event_query: newEventType,
-						include_unfinished: defaultIncludeUnfinished,
+						venue_filter: value ? 1 : 0,
 					},
 				} );
 			} }
@@ -341,6 +378,7 @@ export const GatherPressQueryControlsSlotFill = () => {
 					<EventIncludeUnfinishedControls { ...props } />
 
 					{ isEventContext && <EventExcludeControls { ...props } /> }
+					<VenueFilterControls { ...props } />
 					<EventCountControls { ...props } />
 					<EventOffsetControls { ...props } />
 					<EventOrderControls { ...props } />

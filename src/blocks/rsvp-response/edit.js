@@ -19,15 +19,18 @@ import {
 	Spinner,
 } from '@wordpress/components';
 import { useState, useEffect } from '@wordpress/element';
+import { useSelect } from '@wordpress/data';
+import apiFetch from '@wordpress/api-fetch';
 
 /**
  * Internal dependencies.
  */
 import RsvpManager from './rsvp-manager';
 import TEMPLATE from './template';
-import { getFromGlobal } from '../../helpers/globals';
-import { hasValidEventId, isEventPostType, DISABLED_FIELD_OPACITY } from '../../helpers/event';
+import { hasValidEventId, isPostTypeSupporting, DISABLED_FIELD_OPACITY, getEventMeta, isRsvpEnabledForEvent } from '../../helpers/event';
 import { getEditorDocument, isInFSETemplate } from '../../helpers/editor';
+import { getFromSettings } from '../../helpers/editor-settings';
+import { EVENT_REST_API } from '../../helpers/namespace';
 
 /**
  * Fetch RSVP responses from the API.
@@ -36,10 +39,9 @@ import { getEditorDocument, isInFSETemplate } from '../../helpers/editor';
  * @return {Promise<Object>} The RSVP responses data.
  */
 async function fetchRsvpResponses( postId ) {
-	const apiUrl = getFromGlobal( 'urls.eventApiUrl' );
-	const response = await fetch( `${ apiUrl }/rsvp-responses?post_id=${ postId }` );
-
-	return response.json();
+	return apiFetch( {
+		path: `${ EVENT_REST_API }/rsvp-responses?post_id=${ postId }`,
+	} );
 }
 
 /**
@@ -64,16 +66,38 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 	const [ responses, setResponses ] = useState( null );
 	const [ loading, setLoading ] = useState( true );
 	const [ error, setError ] = useState( null );
-	// Normalize empty strings to null so fallback to context.postId works correctly.
-	const postId = ( attributes?.postId || null ) ?? context?.postId ?? null;
+
+	// Check if we're inside a query loop and if context is an RSVP-enabled post type.
+	const isDescendentOfQueryLoop = Number.isFinite( context?.queryId );
+	const isEventContext = isPostTypeSupporting( 'gatherpress-rsvp', context?.postType );
+
+	// Only use postId if context is an event or have an explicit override.
+	const postId =
+		( attributes?.postId || null ) ??
+		( ( isDescendentOfQueryLoop || isEventContext ) ? context?.postId : null ) ??
+		null;
 	const { rsvpLimitEnabled, rsvpLimit } = attributes;
 
 	// Check if block has a valid event connection.
-	const isValidEvent = hasValidEventId( postId );
+	// Only check if we're in an event context.
+	const isValidEvent =
+		( isDescendentOfQueryLoop || isEventContext ) &&
+		hasValidEventId( postId, context?.postType );
+
+	const { enableRsvp } = useSelect(
+		( select ) => getEventMeta( select, postId, attributes ),
+		[ postId, attributes ]
+	);
+
+	const rsvpMode = getFromSettings( 'rsvpMode' ) ?? 'all_on';
 
 	const blockProps = useBlockProps( {
 		style: {
-			opacity: ( isInFSETemplate() || isValidEvent ) ? 1 : DISABLED_FIELD_OPACITY,
+			opacity:
+				isInFSETemplate() ||
+				( isValidEvent && isRsvpEnabledForEvent( rsvpMode, enableRsvp ) )
+					? 1
+					: DISABLED_FIELD_OPACITY,
 		},
 	} );
 
@@ -96,10 +120,10 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 				);
 			} );
 			responseBlocks.forEach( ( block ) => {
-				if ( ! showEmptyRsvpBlock ) {
-					block.style.removeProperty( 'display' );
-				} else {
+				if ( showEmptyRsvpBlock ) {
 					block.style.setProperty( 'display', 'none', 'important' );
+				} else {
+					block.style.removeProperty( 'display' );
 				}
 			} );
 		};
@@ -216,7 +240,7 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 						) }
 					</PanelBody>
 				</InspectorControls>
-				{ isEventPostType() && (
+				{ isPostTypeSupporting( 'gatherpress-rsvp' ) && (
 					<BlockControls>
 						<ToolbarGroup>
 							<ToolbarButton

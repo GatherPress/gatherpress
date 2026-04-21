@@ -10,7 +10,7 @@ import { useEffect } from '@wordpress/element';
  * Internal dependencies.
  */
 import { getEditorDocument } from '../../helpers/editor';
-import { DISABLED_FIELD_OPACITY } from '../../helpers/event';
+import { DISABLED_FIELD_OPACITY, isPostTypeSupporting } from '../../helpers/event';
 
 /**
  * Edit function for the RSVP Guest Count Display Block.
@@ -30,6 +30,9 @@ const Edit = ( { context, clientId } ) => {
 	const { commentId } = context;
 	const contextPostId = context?.postId;
 	const rsvpResponses = context?.[ 'gatherpress/rsvpResponses' ] ?? null;
+
+	// Check if context post type supports RSVP.
+	const isEventContext = isPostTypeSupporting( 'gatherpress-rsvp', context?.postType );
 
 	// Example guest count.
 	let guestCount = 1;
@@ -54,40 +57,43 @@ const Edit = ( { context, clientId } ) => {
 			if ( parentBlocks && 0 < parentBlocks.length ) {
 				for ( const parentId of parentBlocks ) {
 					const parent = select( 'core/block-editor' ).getBlock( parentId );
-					if ( parent && 'gatherpress/rsvp' === parent.name && parent.attributes?.postId ) {
+					if ( 'gatherpress/rsvp' === parent?.name && parent.attributes?.postId ) {
 						postIdOverride = parent.attributes.postId;
 						break;
 					}
-					if ( parent && 'gatherpress/rsvp-response' === parent.name && parent.attributes?.postId ) {
+					if ( 'gatherpress/rsvp-response' === parent?.name && parent.attributes?.postId ) {
 						postIdOverride = parent.attributes.postId;
 						break;
 					}
 				}
 			}
 
-			// If no parent block postId, check context postId.
-			if ( ! postIdOverride && contextPostId ) {
+			// If no parent block postId, check context postId only if it's an event.
+			if ( ! postIdOverride && contextPostId && isEventContext ) {
 				postIdOverride = contextPostId;
 			}
 
 			// If we have a Post ID override, fetch from that post.
+			// Use context post type if available; it corresponds to the same post type as the override.
 			if ( postIdOverride ) {
-				const post = select( 'core' ).getEntityRecord( 'postType', 'gatherpress_event', postIdOverride );
+				const overridePostType =
+					context?.postType ||
+					select( 'core/editor' )?.getCurrentPostType();
+				const post = select( 'core' ).getEntityRecord( 'postType', overridePostType, postIdOverride );
 				return post?.meta?.gatherpress_max_guest_limit || 0;
 			}
 
 			// Otherwise check current post.
 			const currentPostType = select( 'core/editor' )?.getCurrentPostType();
-			const isCurrentPostEvent = 'gatherpress_event' === currentPostType;
 
-			if ( isCurrentPostEvent ) {
+			if ( isPostTypeSupporting( 'gatherpress-rsvp', currentPostType ) ) {
 				return select( 'core/editor' ).getEditedPostAttribute( 'meta' )
 					?.gatherpress_max_guest_limit || 0;
 			}
 
 			return 0;
 		},
-		[ clientId, contextPostId ],
+		[ clientId, contextPostId, isEventContext, context?.postType ],
 	);
 
 	// Apply dimming via CSS when max attendance limit is 0.
@@ -112,9 +118,7 @@ const Edit = ( { context, clientId } ) => {
 
 		// Cleanup on unmount.
 		return () => {
-			if ( styleElement && styleElement.parentNode ) {
-				styleElement.parentNode.removeChild( styleElement );
-			}
+			styleElement?.remove();
 		};
 	}, [ shouldDim, clientId ] );
 

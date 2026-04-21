@@ -70,7 +70,7 @@ export default function TextareaField( {
 					value={ label }
 					onChange={ ( value ) => setAttributes( { label: value } ) }
 					onBlur={ () => handleLabelBlur( label ) }
-					allowedFormats={ [] }
+					allowedFormats={ [ 'gatherpress/tooltip' ] }
 					style={ getLabelStyles( attributes ) }
 				/>
 				{ required && (

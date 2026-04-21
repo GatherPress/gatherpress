@@ -5,24 +5,27 @@
 ```php
 add_filter(
    'gatherpress_time_format',
-    function( $get_value ) {
+    function( $get ) {
         // Your code here.
-        return $get_value;
+        return $get;
     }
 );
 ```
 
 ## Parameters
 
-- `$get_value`
+- `$get`
 
 ## Files
 
-- [includes/core/classes/class-event.php:162](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/class-event.php#L162)
+- [includes/core/classes/class-event.php:194](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/class-event.php#L194)
 ```php
-apply_filters( 'gatherpress_time_format', $settings->get_value( 'general', 'formatting', 'time_format' ) )
+apply_filters(
+			'gatherpress_time_format',
+			$settings->get( 'time_format' )
+		)
 ```
 
 
 
-[← All Hooks](Hooks)
+[← All Hooks](Hooks.md)

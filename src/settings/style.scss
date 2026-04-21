@@ -54,3 +54,13 @@
 		background: #fff;
 	}
 }
+
+.gatherpress-field-inherited {
+	opacity: 0.6;
+	pointer-events: none;
+
+	&__note {
+		font-style: italic;
+		pointer-events: auto;
+	}
+}

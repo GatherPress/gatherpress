@@ -92,20 +92,22 @@ class Feed {
 
 			// Get the rewrite slug from settings.
 			$settings     = Settings::get_instance();
-			$rewrite_slug = $settings->get_value( 'general', 'urls', 'events' );
+			$rewrite_slug = $settings->get( 'events_url' );
 
 			// Check if this is the events feed URL.
 			if ( str_contains( $request_uri, '/' . $rewrite_slug . '/' . $GLOBALS['wp_rewrite']->feed_base ) ) {
 				// Set the post type and let Event_Query handle the rest.
-				$query->set( 'post_type', Event::POST_TYPE );
+				$query->set( 'post_type', get_post_types_by_support( 'gatherpress-event-date' ) );
 
 				// Check for type parameter to determine if we want past or upcoming events.
 				$event_type = 'upcoming';
 				// Default to upcoming events.
+				// phpcs:disable WordPress.Security.NonceVerification.Recommended -- Public feed URL parameter.
 				if (
-					isset( $_GET['type'] ) && // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Public feed URL parameter, nonce not required.
-					'past' === sanitize_text_field( wp_unslash( $_GET['type'] ) ) // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Public feed URL parameter, nonce not required.
+					isset( $_GET['type'] ) &&
+					'past' === sanitize_text_field( wp_unslash( $_GET['type'] ) )
 				) {
+					// phpcs:enable WordPress.Security.NonceVerification.Recommended
 					// Nonce verification not required for public feed URLs.
 					$event_type = 'past';
 				}
@@ -127,7 +129,7 @@ class Feed {
 		$event_info       = array();
 		$display_datetime = $event->get_display_datetime();
 
-		if ( ! empty( $display_datetime ) && '—' !== $display_datetime ) {
+		if ( ! empty( $display_datetime ) && Event::DATETIME_PLACEHOLDER !== $display_datetime ) {
 			$event_info[] = sprintf(
 				/* translators: %s: Formatted date and time */
 				__( 'Date: %s', 'gatherpress' ),
@@ -148,7 +150,7 @@ class Feed {
 	 */
 	public function get_default_event_excerpt( string $excerpt ): string {
 		// Only apply to events.
-		if ( Event::POST_TYPE !== get_post_type() ) {
+		if ( ! post_type_supports( (string) get_post_type(), 'gatherpress-event-date' ) ) {
 			return $excerpt;
 		}
 
@@ -197,7 +199,7 @@ class Feed {
 	 */
 	public function get_default_event_content( string $content ): string {
 		// Only apply to events.
-		if ( Event::POST_TYPE !== get_post_type() ) {
+		if ( ! post_type_supports( (string) get_post_type(), 'gatherpress-event-date' ) ) {
 			return $content;
 		}
 
@@ -245,7 +247,7 @@ class Feed {
 	 */
 	public function apply_event_excerpt( string $excerpt ): string {
 		// Only apply to events.
-		if ( Event::POST_TYPE !== get_post_type() ) {
+		if ( ! post_type_supports( (string) get_post_type(), 'gatherpress-event-date' ) ) {
 			return $excerpt;
 		}
 
@@ -287,7 +289,7 @@ class Feed {
 	 */
 	public function apply_event_content( string $content ): string {
 		// Only apply to events.
-		if ( Event::POST_TYPE !== get_post_type() ) {
+		if ( ! post_type_supports( (string) get_post_type(), 'gatherpress-event-date' ) ) {
 			return $content;
 		}
 

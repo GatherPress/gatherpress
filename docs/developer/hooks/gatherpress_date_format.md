@@ -5,24 +5,27 @@
 ```php
 add_filter(
    'gatherpress_date_format',
-    function( $get_value ) {
+    function( $get ) {
         // Your code here.
-        return $get_value;
+        return $get;
     }
 );
 ```
 
 ## Parameters
 
-- `$get_value`
+- `$get`
 
 ## Files
 
-- [includes/core/classes/class-event.php:161](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/class-event.php#L161)
+- [includes/core/classes/class-event.php:190](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/class-event.php#L190)
 ```php
-apply_filters( 'gatherpress_date_format', $settings->get_value( 'general', 'formatting', 'date_format' ) )
+apply_filters(
+			'gatherpress_date_format',
+			$settings->get( 'date_format' )
+		)
 ```
 
 
 
-[← All Hooks](Hooks)
+[← All Hooks](Hooks.md)

@@ -53,7 +53,6 @@ const Edit = ( { attributes, setAttributes, clientId, insertBlocksAfter } ) => {
 					// Default fallback anchor tag.
 					let openingTag = '<a href="#">';
 					const closingTag = '</a>';
-					let newText = value.trim();
 
 					if ( 0 < anchors.length ) {
 						// Extract the opening tag from the first anchor.
@@ -85,6 +84,7 @@ const Edit = ( { attributes, setAttributes, clientId, insertBlocksAfter } ) => {
 					const cleanText = parsedDoc.body.textContent.trim();
 
 					// Wrap the clean text with the anchor tags.
+					let newText;
 					if ( cleanText ) {
 						newText = `${ openingTag }${ cleanText }${ closingTag }`;
 					} else {

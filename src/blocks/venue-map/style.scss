@@ -1,0 +1,84 @@
+.wp-block-gatherpress-venue-map {
+	// Create new stacking context to contain Leaflet's z-index values.
+	isolation: isolate;
+
+	// Contain Leaflet z-index values within a stacking context so the
+	// editor selection outline (::after with z-index: 1) renders on top.
+	.block-editor-inner-blocks {
+		position: relative;
+		z-index: 0;
+	}
+}
+
+.gatherpress-venue-map {
+	// When the block has an explicit pixel width and height, render.php
+	// stamps those as inline styles. When either side is "auto", an inline
+	// `aspect-ratio` CSS property takes over so the wrapper keeps its
+	// shape as its container shrinks (floated/aligned contexts, responsive
+	// layouts). The static <img> inside uses object-fit: cover so the
+	// raster stays crisp at any size.
+	position: relative;
+	overflow: hidden;
+
+	// Inherit the wrapper's border-radius (the `border` block support
+	// stamps radius onto the block wrapper) so inner elements — static
+	// <img>, Leaflet container, placeholder — get clipped to the same
+	// rounded corners instead of poking out square-edged.
+	&__image,
+	&__placeholder,
+	.leaflet-container {
+		border-radius: inherit;
+	}
+
+	// The `object-fit` value is stamped inline from the block's `scale`
+	// attribute (render.php) so it can be `cover` / `contain` / `fill`
+	// per-block. No fallback here on purpose — the server always emits a
+	// valid value from the SCALE_OPTIONS allow-list.
+	&__image {
+		display: block;
+		width: 100%;
+		height: 100%;
+	}
+
+	&__placeholder {
+		display: flex;
+		flex-direction: column;
+		gap: 0.75rem;
+		width: 100%;
+		height: 100%;
+		align-items: center;
+		justify-content: center;
+		padding: 1rem;
+		text-align: center;
+		background: #f0f0f0;
+		border: 1px dashed #ccc;
+		color: #666;
+		box-sizing: border-box;
+	}
+
+	// Soften the map-marker icon surfaced inside the FSE template
+	// placeholder — the default SVG fills with black, which is heavier
+	// than the #666 placeholder text next to it.
+	&__placeholder-icon {
+		fill: #b0b0b0;
+	}
+
+	// CartoDB/OSM attribution — mirrors the bottom-right placement Leaflet
+	// uses so static + interactive modes look consistent. Semi-transparent
+	// background keeps the text readable against any basemap underneath.
+	&__attribution {
+		position: absolute;
+		right: 0;
+		bottom: 0;
+		padding: 0.1rem 0.5rem;
+		background: rgb(255 255 255 / 75%);
+		color: #333;
+		font-size: 0.65rem;
+		line-height: 1.4;
+
+		a {
+			color: inherit;
+			text-decoration: underline;
+		}
+	}
+}

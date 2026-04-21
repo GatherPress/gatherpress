@@ -8,17 +8,15 @@ const Save = ( { attributes } ) => {
 	const { label } = attributes;
 
 	return (
-		<>
-			<div { ...blockProps }>
-				{ /* eslint-disable-next-line jsx-a11y/anchor-is-valid */ }
-				<a href="#" className="wp-block-gatherpress-dropdown__trigger">
-					{ label }
-				</a>
-				<div className="wp-block-gatherpress-dropdown__menu">
-					<InnerBlocks.Content />
-				</div>
+		<div { ...blockProps }>
+			{ /* eslint-disable-next-line jsx-a11y/anchor-is-valid */ }
+			<a href="#" className="wp-block-gatherpress-dropdown__trigger">
+				{ label }
+			</a>
+			<div className="wp-block-gatherpress-dropdown__menu">
+				<InnerBlocks.Content />
 			</div>
-		</>
+		</div>
 	);
 };
 

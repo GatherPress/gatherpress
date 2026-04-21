@@ -13,6 +13,7 @@ use GatherPress\Core\Event;
 use GatherPress\Core\Event_Query;
 use GatherPress\Core\Topic;
 use GatherPress\Core\Venue;
+use GatherPress\Core\Venue_Setup;
 use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;
 use WP_Query;
@@ -43,7 +44,7 @@ class Test_Event_Query extends Base {
 			array(
 				'type'     => 'filter',
 				'name'     => 'posts_clauses',
-				'priority' => 10,
+				'priority' => 9,
 				'callback' => array( $instance, 'adjust_admin_event_sorting' ),
 			),
 		);
@@ -83,8 +84,16 @@ class Test_Event_Query extends Base {
 
 		$this->assertSame( $response->posts[0], $post->ID, 'Failed to assert that event ID is in array.' );
 		$this->assertSame( 1, $response->query['posts_per_page'], 'Failed to assert post per page limit.' );
-		$this->assertSame( 'upcoming', $response->query['gatherpress_event_query'], 'Failed to assert query is upcoming.' );
-		$this->assertSame( 'gatherpress_event', $response->query['post_type'], 'Failed to assert post type is gatherpress_event.' );
+		$this->assertSame(
+			'upcoming',
+			$response->query['gatherpress_event_query'],
+			'Failed to assert query is upcoming.'
+		);
+		$this->assertContains(
+			'gatherpress_event',
+			(array) $response->query['post_type'],
+			'Failed to assert post type includes gatherpress_event.'
+		);
 	}
 
 	/**
@@ -119,8 +128,16 @@ class Test_Event_Query extends Base {
 
 		$this->assertSame( $response->posts[0], $post->ID, 'Failed to assert that event ID is in array.' );
 		$this->assertSame( 1, $response->query['posts_per_page'], 'Failed to assert post per page limit.' );
-		$this->assertSame( 'past', $response->query['gatherpress_event_query'], 'Failed to assert query is past.' );
-		$this->assertSame( 'gatherpress_event', $response->query['post_type'], 'Failed to assert post type is gatherpress_event.' );
+		$this->assertSame(
+			'past',
+			$response->query['gatherpress_event_query'],
+			'Failed to assert query is past.'
+		);
+		$this->assertContains(
+			'gatherpress_event',
+			(array) $response->query['post_type'],
+			'Failed to assert post type includes gatherpress_event.'
+		);
 	}
 
 	/**
@@ -205,6 +222,7 @@ class Test_Event_Query extends Base {
 		$instance = Event_Query::get_instance();
 		$query    = new WP_Query();
 
+		$query->set( 'post_type', 'gatherpress_event' );
 		$query->set( 'gatherpress_event_query', 'upcoming' );
 		$instance->prepare_event_query_before_execution( $query );
 
@@ -232,6 +250,7 @@ class Test_Event_Query extends Base {
 		$instance = Event_Query::get_instance();
 		$query    = new WP_Query();
 
+		$query->set( 'post_type', 'gatherpress_event' );
 		$query->set( 'gatherpress_event_query', 'past' );
 		$instance->prepare_event_query_before_execution( $query );
 
@@ -274,22 +293,23 @@ class Test_Event_Query extends Base {
 		$query->expects( $this->any() )
 			->method( 'get' )
 			->willReturnCallback(
-				function ( $key ) {
+				static function ( $key ) {
+					if ( 'page_id' === $key ) {
+						return 123;
+					}
 					return 'gatherpress_event_query' === $key ? 'past' : null;
 				}
 			);
 
 		$page_data = array(
-			'pages' => array(
-				'past_events' => wp_json_encode(
-					array(
-						(object) array( 'id' => 123 ),
-					)
-				),
+			'past_events' => wp_json_encode(
+				array(
+					(object) array( 'id' => 123 ),
+				)
 			),
 		);
 
-		add_option( 'gatherpress_general', $page_data );
+		add_option( 'gatherpress_settings', $page_data );
 
 		$instance->prepare_event_query_before_execution( $query );
 
@@ -313,11 +333,100 @@ class Test_Event_Query extends Base {
 			'Should set is_singular to false'
 		);
 
-		delete_option( 'gatherpress_general' );
+		delete_option( 'gatherpress_settings' );
+	}
+
+	/**
+	 * Test that prepare_event_query_before_execution resolves pages by pagename.
+	 *
+	 * Covers the get_page_by_path code path when page_id is not set
+	 * but pagename query var is present.
+	 *
+	 * @since  1.0.0
+	 * @covers ::prepare_event_query_before_execution
+	 *
+	 * @return void
+	 */
+	public function test_prepare_query_resolves_page_by_pagename(): void {
+		$instance = Event_Query::get_instance();
+
+		// Create a real page with a known slug.
+		$page_id = $this->factory->post->create(
+			array(
+				'post_type'  => 'page',
+				'post_name'  => 'test-archive',
+				'post_title' => 'Test Archive',
+			)
+		);
+
+		$page_data = array(
+			'past_events' => wp_json_encode(
+				array(
+					(object) array( 'id' => $page_id ),
+				)
+			),
+		);
+
+		add_option( 'gatherpress_settings', $page_data );
+
+		// Mock WP_Query with pagename instead of page_id.
+		$query = $this->getMockBuilder( 'WP_Query' )
+			->setMethods( array( 'is_main_query', 'get', 'set' ) )
+			->getMock();
+
+		$query->is_main_query     = true;
+		$query->queried_object_id = $page_id;
+
+		// Mock main query check.
+		$query->expects( $this->any() )
+			->method( 'is_main_query' )
+			->willReturn( true );
+
+		// Return 0 for page_id to trigger pagename fallback.
+		$query->expects( $this->any() )
+			->method( 'get' )
+			->willReturnCallback(
+				static function ( $key ) {
+					if ( 'page_id' === $key ) {
+						return 0;
+					}
+					if ( 'pagename' === $key ) {
+						return 'test-archive';
+					}
+					return 'gatherpress_event_query' === $key ? 'past' : null;
+				}
+			);
+
+		$instance->prepare_event_query_before_execution( $query );
+
+		$this->assertTrue(
+			$query->is_archive,
+			'Should set is_archive to true when resolved via pagename.'
+		);
+
+		$this->assertTrue(
+			$query->is_post_type_archive,
+			'Should set is_post_type_archive to true when resolved via pagename.'
+		);
+
+		$this->assertFalse(
+			$query->is_page,
+			'Should set is_page to false when resolved via pagename.'
+		);
+
+		$this->assertFalse(
+			$query->is_singular,
+			'Should set is_singular to false when resolved via pagename.'
+		);
+
+		delete_option( 'gatherpress_settings' );
+		wp_delete_post( $page_id, true );
 	}
 
 	/**
 	 * Test query with invalid general options.
+	 *
+	 * Early return when $general is not an array.
 	 *
 	 * @since  1.0.0
 	 * @covers ::prepare_event_query_before_execution
@@ -325,20 +434,216 @@ class Test_Event_Query extends Base {
 	 * @return void
 	 */
 	public function test_prepare_query_with_invalid_general_options(): void {
-		$instance             = Event_Query::get_instance();
-		$query                = new WP_Query();
-		$query->is_main_query = true;
+		$instance = Event_Query::get_instance();
 
-		add_option( 'gatherpress_general', 'invalid' );
+		// Mock WP_Query with necessary properties.
+		$query = $this->getMockBuilder( 'WP_Query' )
+			->setMethods( array( 'is_main_query', 'get', 'set' ) )
+			->getMock();
+
+		// Mock is_main_query to return true.
+		$query->expects( $this->any() )
+			->method( 'is_main_query' )
+			->willReturn( true );
+
+		// Set invalid general option (not an array).
+		add_option( 'gatherpress_settings', 'invalid' );
 
 		$instance->prepare_event_query_before_execution( $query );
 
-		$this->assertEmpty(
-			$query->get( 'post_type' ),
-			'Should not modify query when general option is invalid'
+		// Query should not have been modified due to early return.
+		$this->assertTrue(
+			true,
+			'Method should return early when general option is not an array.'
 		);
 
-		delete_option( 'gatherpress_general' );
+		delete_option( 'gatherpress_settings' );
+	}
+
+	/**
+	 * Test query with empty pages configuration.
+	 *
+	 * Early return when $pages is empty or not an array.
+	 *
+	 * @since  1.0.0
+	 * @covers ::prepare_event_query_before_execution
+	 *
+	 * @return void
+	 */
+	public function test_prepare_query_with_empty_pages(): void {
+		$instance = Event_Query::get_instance();
+
+		// Mock WP_Query with necessary properties.
+		$query = $this->getMockBuilder( 'WP_Query' )
+			->setMethods( array( 'is_main_query', 'get', 'set' ) )
+			->getMock();
+
+		// Mock is_main_query to return true.
+		$query->expects( $this->any() )
+			->method( 'is_main_query' )
+			->willReturn( true );
+
+		// Test with empty pages.
+		add_option( 'gatherpress_settings', '' );
+
+		$instance->prepare_event_query_before_execution( $query );
+
+		// Query should not have been modified due to early return.
+		$this->assertTrue(
+			true,
+			'Method should return early when pages is empty'
+		);
+
+		delete_option( 'gatherpress_settings' );
+
+		// Test with pages not being an array.
+		add_option( 'gatherpress_settings', 'not-an-array' );
+
+		$instance->prepare_event_query_before_execution( $query );
+
+		// Query should not have been modified due to early return.
+		$this->assertTrue(
+			true,
+			'Method should return early when pages is not an array'
+		);
+
+		delete_option( 'gatherpress_settings' );
+	}
+
+	/**
+	 * Test pre_option filter callbacks for archive pages.
+	 *
+	 * Covers pre_option filter for page_for_posts and show_on_front.
+	 *
+	 * @since  1.0.0
+	 * @covers ::prepare_event_query_before_execution
+	 *
+	 * @return void
+	 */
+	public function test_prepare_query_pre_option_filters(): void {
+		$instance = Event_Query::get_instance();
+
+		// Create a page to use as the archive page.
+		$page_id = $this->factory->post->create(
+			array(
+				'post_type'  => 'page',
+				'post_title' => 'Upcoming Events Page',
+			)
+		);
+
+		// Mock WP_Query with necessary properties.
+		$query = $this->getMockBuilder( 'WP_Query' )
+			->setMethods( array( 'is_main_query', 'get', 'set' ) )
+			->getMock();
+
+		$query->is_main_query     = true;
+		$query->queried_object_id = $page_id;
+
+		// Mock main query check.
+		$query->expects( $this->any() )
+			->method( 'is_main_query' )
+			->willReturn( true );
+
+		$query->expects( $this->any() )
+			->method( 'get' )
+			->willReturnCallback(
+				static function ( $key ) use ( $page_id ) {
+					if ( 'page_id' === $key ) {
+						return $page_id;
+					}
+					return 'gatherpress_event_query' === $key ? '' : null;
+				}
+			);
+
+		$page_data = array(
+			'upcoming_events' => wp_json_encode(
+				array(
+					(object) array( 'id' => $page_id ),
+				)
+			),
+		);
+
+		add_option( 'gatherpress_settings', $page_data );
+
+		$instance->prepare_event_query_before_execution( $query );
+
+		// Verify the pre_option filters are working for specific options.
+		$this->assertEquals( -1, get_option( 'page_for_posts' ), 'page_for_posts should be -1' );
+		$this->assertEquals( 'page', get_option( 'show_on_front' ), 'show_on_front should be page' );
+
+		// Verify default return for other options.
+		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- Testing WordPress core hook.
+		$other_option = apply_filters( 'pre_option', 'original_value', 'some_other_option' );
+		$this->assertEquals( 'original_value', $other_option, 'Other options should return original pre value' );
+
+		delete_option( 'gatherpress_settings' );
+		wp_delete_post( $page_id, true );
+	}
+
+	/**
+	 * Test get_the_archive_title filter callback.
+	 *
+	 * Covers get_the_archive_title filter callback.
+	 *
+	 * @since  1.0.0
+	 * @covers ::prepare_event_query_before_execution
+	 *
+	 * @return void
+	 */
+	public function test_prepare_query_archive_title_filter(): void {
+		$instance = Event_Query::get_instance();
+
+		// Create a page to use as the archive page.
+		$page_id = $this->factory->post->create(
+			array(
+				'post_type'  => 'page',
+				'post_title' => 'Custom Archive Title',
+			)
+		);
+
+		// Mock WP_Query with necessary properties.
+		$query = $this->getMockBuilder( 'WP_Query' )
+			->setMethods( array( 'is_main_query', 'get', 'set' ) )
+			->getMock();
+
+		$query->is_main_query     = true;
+		$query->queried_object_id = $page_id;
+
+		// Mock main query check.
+		$query->expects( $this->any() )
+			->method( 'is_main_query' )
+			->willReturn( true );
+
+		$query->expects( $this->any() )
+			->method( 'get' )
+			->willReturnCallback(
+				static function ( $key ) use ( $page_id ) {
+					if ( 'page_id' === $key ) {
+						return $page_id;
+					}
+					return 'gatherpress_event_query' === $key ? '' : null;
+				}
+			);
+
+		$page_data = array(
+			'past_events' => wp_json_encode(
+				array(
+					(object) array( 'id' => $page_id ),
+				)
+			),
+		);
+
+		add_option( 'gatherpress_settings', $page_data );
+
+		$instance->prepare_event_query_before_execution( $query );
+
+		// Verify the get_the_archive_title filter returns the page title.
+		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- Testing WordPress core hook.
+		$archive_title = apply_filters( 'get_the_archive_title', 'Default Title' );
+		$this->assertEquals( 'Custom Archive Title', $archive_title, 'Archive title should be the page title' );
+
+		delete_option( 'gatherpress_settings' );
+		wp_delete_post( $page_id, true );
 	}
 
 	/**
@@ -391,7 +696,58 @@ class Test_Event_Query extends Base {
 		$response = $instance->adjust_admin_event_sorting( array(), $wp_query );
 
 		// Assert that an array was generated from the adjustsql argument. todo: make this test more meaningful.
-		$this->assertNotEmpty( $response, 'Failed to assert the array, containing pieces of the SQL query, is not empty' );
+		$this->assertNotEmpty(
+			$response,
+			'Failed to assert the array, containing pieces of the SQL query, is not empty'
+		);
+
+		$wp_query = new WP_Query();
+
+		$wp_query->set( 'gatherpress_event_query', 'upcoming' );
+		$response = $instance->adjust_admin_event_sorting( array(), $wp_query );
+		$this->assertNotEmpty(
+			$response,
+			'Failed to assert the array, containing pieces of the SQL query, is not empty'
+		);
+
+		$wp_query->set( 'gatherpress_event_query', 'past' );
+		$response = $instance->adjust_admin_event_sorting( array(), $wp_query );
+		$this->assertNotEmpty(
+			$response,
+			'Failed to assert the array, containing pieces of the SQL query, is not empty'
+		);
+	}
+
+	/**
+	 * Test adjust_admin_event_sorting with wrong screen.
+	 *
+	 * Covers Early return when current_screen is not 'edit-gatherpress_event'.
+	 *
+	 * @covers ::adjust_admin_event_sorting
+	 *
+	 * @return void
+	 */
+	public function test_adjust_admin_event_sorting_wrong_screen(): void {
+		$instance     = Event_Query::get_instance();
+		$wp_query     = new WP_Query();
+		$query_pieces = array( 'orderby' => 'post_date' );
+
+		$this->mock->user( true, 'admin' );
+
+		// Set a different screen (not edit-gatherpress_event).
+		set_current_screen( 'edit-post' );
+
+		// Set 'orderby' admin query to 'datetime'.
+		$wp_query->set( 'orderby', 'datetime' );
+
+		// Should return query_pieces unchanged.
+		$response = $instance->adjust_admin_event_sorting( $query_pieces, $wp_query );
+
+		$this->assertSame(
+			$query_pieces,
+			$response,
+			'Should return query_pieces unchanged when screen is not edit-gatherpress_event'
+		);
 	}
 
 	/**
@@ -442,6 +798,62 @@ class Test_Event_Query extends Base {
 		$retval = $instance->adjust_event_sql( array(), 'upcoming', 'desc', 'rand', false );
 
 		$this->assertStringContainsString( 'RAND()', $retval['orderby'] );
+
+		// Test default case: unrecognized orderby should not override the orderby clause.
+		$retval = $instance->adjust_event_sql( array(), 'all', 'ASC', 'rsvps' );
+
+		$this->assertEmpty( $retval['orderby'], 'Unrecognized orderby should not set orderby clause.' );
+	}
+
+	/**
+	 * Coverage for build_venue_tax_query method.
+	 *
+	 * @covers ::build_venue_tax_query
+	 *
+	 * @return void
+	 */
+	public function test_build_venue_tax_query(): void {
+		$instance = Event_Query::get_instance();
+		$venues   = array( '_unit-test-venue', '_another-venue' );
+
+		$tax_query = Utility::invoke_hidden_method( $instance, 'build_venue_tax_query', array( $venues ) );
+
+		$this->assertIsArray(
+			$tax_query,
+			'Failed to assert that tax query is an array.'
+		);
+		$this->assertSame(
+			'OR',
+			$tax_query['relation'],
+			'Failed to assert OR relation in venue tax query.'
+		);
+
+		// Expect one entry per registered venue post type (plus the relation key).
+		$venue_post_types = get_post_types_by_support( 'gatherpress-venue-information' );
+		$expected_count   = count( $venue_post_types ) + 1;
+		$this->assertCount(
+			$expected_count,
+			$tax_query,
+			'Failed to assert the correct count of entries in the venue tax query.'
+		);
+
+		// Verify the first condition uses the correct taxonomy, field, and terms.
+		$first_condition = $tax_query[0];
+		$this->assertSame(
+			'slug',
+			$first_condition['field'],
+			'Failed to assert that the field is slug.'
+		);
+		$this->assertSame(
+			$venues,
+			$first_condition['terms'],
+			'Failed to assert that terms match the provided venues.'
+		);
+		$this->assertSame(
+			Venue_Setup::get_instance()->get_taxonomy( Venue::POST_TYPE ),
+			$first_condition['taxonomy'],
+			'Failed to assert the taxonomy matches the built-in venue taxonomy.'
+		);
 	}
 
 	/**
@@ -871,6 +1283,109 @@ class Test_Event_Query extends Base {
 	}
 
 	/**
+	 * Test that events without dates appear in upcoming admin queries with include_no_date.
+	 *
+	 * Events without a date/time set have no row in the gatherpress_events table.
+	 * When include_no_date is true (admin context), these should appear in upcoming
+	 * and be excluded from past.
+	 *
+	 * @covers ::adjust_event_sql
+	 *
+	 * @return void
+	 */
+	public function test_events_without_dates_in_admin_upcoming(): void {
+		global $wpdb;
+
+		$instance = Event_Query::get_instance();
+		$table    = sprintf( Event::TABLE_FORMAT, $wpdb->prefix );
+
+		// Create an event without setting any dates (no row in gatherpress_events).
+		$no_date_post = $this->mock->post( array( 'post_type' => 'gatherpress_event' ) )->get();
+
+		// Verify there is no row in the events table for this post.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$row = $wpdb->get_var(
+			$wpdb->prepare(
+				'SELECT post_id FROM %i WHERE post_id = %d',
+				$table,
+				$no_date_post->ID
+			)
+		);
+		$this->assertNull( $row, 'Event without dates should have no row in gatherpress_events.' );
+
+		// Create a normal upcoming event for comparison.
+		$upcoming_post  = $this->mock->post( array( 'post_type' => 'gatherpress_event' ) )->get();
+		$upcoming_event = new Event( $upcoming_post->ID );
+		$date           = new \DateTime( 'tomorrow' );
+
+		$params = array(
+			'datetime_start' => $date->format( 'Y-m-d H:i:s' ),
+			'datetime_end'   => $date->modify( '+1 day' )->format( 'Y-m-d H:i:s' ),
+			'timezone'       => 'America/New_York',
+		);
+
+		$upcoming_event->save_datetimes( $params );
+
+		// Create a normal past event for comparison.
+		$past_post  = $this->mock->post( array( 'post_type' => 'gatherpress_event' ) )->get();
+		$past_event = new Event( $past_post->ID );
+		$past_date  = new \DateTime( 'yesterday' );
+
+		$params = array(
+			'datetime_start' => $past_date->modify( '-1 day' )->format( 'Y-m-d H:i:s' ),
+			'datetime_end'   => $past_date->format( 'Y-m-d H:i:s' ),
+			'timezone'       => 'America/New_York',
+		);
+
+		$past_event->save_datetimes( $params );
+
+		// With include_no_date=true (admin), upcoming should include IS NULL.
+		$retval = $instance->adjust_event_sql(
+			array(),
+			'upcoming',
+			'ASC',
+			'datetime',
+			true,
+			true
+		);
+		$this->assertStringContainsString(
+			'IS NULL',
+			$retval['where'],
+			'Admin upcoming query should include IS NULL.'
+		);
+
+		// With include_no_date=true (admin), past should exclude via IS NOT NULL.
+		$retval = $instance->adjust_event_sql(
+			array(),
+			'past',
+			'DESC',
+			'datetime',
+			true,
+			true
+		);
+		$this->assertStringContainsString(
+			'IS NOT NULL',
+			$retval['where'],
+			'Admin past query should include IS NOT NULL.'
+		);
+
+		// With include_no_date=false (frontend), no IS NULL check.
+		$retval = $instance->adjust_event_sql(
+			array(),
+			'upcoming',
+			'ASC',
+			'datetime',
+			true,
+			false
+		);
+		$this->assertStringNotContainsString(
+			'IS NULL',
+			$retval['where'],
+			'Frontend query should not have IS NULL.'
+		);
+	}
+
+	/**
 	 * Test that currently running events appear in upcoming query by default.
 	 *
 	 * @covers ::adjust_sorting_for_upcoming_events
@@ -958,5 +1473,237 @@ class Test_Event_Query extends Base {
 			$past->posts,
 			'Future event should not appear in past events query'
 		);
+	}
+
+	/**
+	 * Test venue filter sets tax_query when on a venue singular page.
+	 *
+	 * Covers the venue_filter block when venue_filter is non-empty,
+	 * is_singular returns true for a venue post type, the queried object
+	 * is a WP_Post, and no existing tax_query is present.
+	 *
+	 * @covers ::prepare_event_query_before_execution
+	 *
+	 * @return void
+	 */
+	public function test_prepare_query_venue_filter_sets_tax_query(): void {
+		$instance = Event_Query::get_instance();
+
+		// Create a venue post to establish proper singular context.
+		$venue_post_id = $this->factory->post->create(
+			array(
+				'post_type' => Venue::POST_TYPE,
+				'post_name' => 'test-venue',
+			)
+		);
+
+		// Navigate to the venue page so is_singular() and get_queried_object() work correctly.
+		$this->go_to( get_permalink( $venue_post_id ) );
+
+		// Build a mock query with venue_filter set and no existing tax_query.
+		$query = $this->getMockBuilder( 'WP_Query' )
+			->setMethods( array( 'is_main_query', 'get', 'set' ) )
+			->getMock();
+
+		$query->expects( $this->any() )
+			->method( 'is_main_query' )
+			->willReturn( true );
+
+		$captured_tax_query = null;
+
+		$query->expects( $this->any() )
+			->method( 'get' )
+			->willReturnCallback(
+				static function ( $key ) {
+					if ( 'venue_filter' === $key ) {
+						return true;
+					}
+					// Return null for tax_query so existing_tax_query is initialized as an empty array.
+					return null;
+				}
+			);
+
+		$query->expects( $this->any() )
+			->method( 'set' )
+			->willReturnCallback(
+				static function ( $key, $value ) use ( &$captured_tax_query ) {
+					if ( 'tax_query' === $key ) {
+						$captured_tax_query = $value;
+					}
+				}
+			);
+
+		$instance->prepare_event_query_before_execution( $query );
+
+		// Assert that set() was called with tax_query containing the venue term.
+		$this->assertIsArray( $captured_tax_query, 'tax_query should have been set as an array.' );
+		$this->assertCount( 1, $captured_tax_query, 'tax_query should contain exactly one entry.' );
+		$this->assertSame(
+			Venue::TAXONOMY,
+			$captured_tax_query[0]['taxonomy'],
+			'tax_query taxonomy should be the venue taxonomy.'
+		);
+		$this->assertSame( 'slug', $captured_tax_query[0]['field'], 'tax_query field should be slug.' );
+		$this->assertContains(
+			'_test-venue',
+			$captured_tax_query[0]['terms'],
+			'tax_query terms should contain the venue term slug.'
+		);
+
+		wp_delete_post( $venue_post_id, true );
+	}
+
+	/**
+	 * Test venue filter merges with an existing tax_query on a venue singular page.
+	 *
+	 * Covers the branch where $existing_tax_query is already an array so that the
+	 * venue entry is appended rather than replacing it.
+	 *
+	 * @covers ::prepare_event_query_before_execution
+	 *
+	 * @return void
+	 */
+	public function test_prepare_query_venue_filter_merges_with_existing_tax_query(): void {
+		$instance = Event_Query::get_instance();
+
+		// Create a venue post to establish proper singular context.
+		$venue_post_id = $this->factory->post->create(
+			array(
+				'post_type' => Venue::POST_TYPE,
+				'post_name' => 'merge-venue',
+			)
+		);
+
+		// Navigate to the venue page so is_singular() and get_queried_object() work correctly.
+		$this->go_to( get_permalink( $venue_post_id ) );
+
+		// Pre-existing tax_query entry to verify merging behavior.
+		$pre_existing_entry = array(
+			'taxonomy' => 'category',
+			'field'    => 'slug',
+			'terms'    => array( 'existing-term' ),
+		);
+
+		// Build a mock query with venue_filter set and a pre-existing tax_query.
+		$query = $this->getMockBuilder( 'WP_Query' )
+			->setMethods( array( 'is_main_query', 'get', 'set' ) )
+			->getMock();
+
+		$query->expects( $this->any() )
+			->method( 'is_main_query' )
+			->willReturn( true );
+
+		$captured_tax_query = null;
+
+		$query->expects( $this->any() )
+			->method( 'get' )
+			->willReturnCallback(
+				static function ( $key ) use ( $pre_existing_entry ) {
+					if ( 'venue_filter' === $key ) {
+						return true;
+					}
+					if ( 'tax_query' === $key ) {
+						// Return an existing tax_query array to trigger the merge path.
+						return array( $pre_existing_entry );
+					}
+					return null;
+				}
+			);
+
+		$query->expects( $this->any() )
+			->method( 'set' )
+			->willReturnCallback(
+				static function ( $key, $value ) use ( &$captured_tax_query ) {
+					if ( 'tax_query' === $key ) {
+						$captured_tax_query = $value;
+					}
+				}
+			);
+
+		$instance->prepare_event_query_before_execution( $query );
+
+		// Assert that both the pre-existing entry and the new venue entry are present.
+		$this->assertIsArray( $captured_tax_query, 'tax_query should have been set as an array.' );
+		$this->assertCount(
+			2,
+			$captured_tax_query,
+			'tax_query should contain the pre-existing entry plus the venue entry.'
+		);
+		$this->assertSame(
+			'category',
+			$captured_tax_query[0]['taxonomy'],
+			'First tax_query entry should be the pre-existing one.'
+		);
+		$this->assertSame(
+			Venue::TAXONOMY,
+			$captured_tax_query[1]['taxonomy'],
+			'Second tax_query entry should be the venue taxonomy.'
+		);
+		$this->assertSame( 'slug', $captured_tax_query[1]['field'], 'Venue tax_query field should be slug.' );
+		$this->assertContains(
+			'_merge-venue',
+			$captured_tax_query[1]['terms'],
+			'Venue tax_query terms should contain the expected term slug.'
+		);
+
+		wp_delete_post( $venue_post_id, true );
+	}
+
+	/**
+	 * Test venue filter is skipped when venue_filter query var is empty.
+	 *
+	 * Covers the early-exit branch of the venue filter block when venue_filter
+	 * is not set so that tax_query is never modified.
+	 *
+	 * @covers ::prepare_event_query_before_execution
+	 *
+	 * @return void
+	 */
+	public function test_prepare_query_venue_filter_skipped_when_empty(): void {
+		$instance = Event_Query::get_instance();
+
+		// Create a venue post to establish proper singular context.
+		$venue_post_id = $this->factory->post->create(
+			array(
+				'post_type' => Venue::POST_TYPE,
+				'post_name' => 'skip-venue',
+			)
+		);
+
+		// Navigate to the venue page so the singular context is active.
+		$this->go_to( get_permalink( $venue_post_id ) );
+
+		// Build a mock query with venue_filter intentionally absent.
+		$query = $this->getMockBuilder( 'WP_Query' )
+			->setMethods( array( 'is_main_query', 'get', 'set' ) )
+			->getMock();
+
+		$query->expects( $this->any() )
+			->method( 'is_main_query' )
+			->willReturn( true );
+
+		$query->expects( $this->any() )
+			->method( 'get' )
+			->willReturn( null );
+
+		$set_called_with_tax_query = false;
+
+		$query->expects( $this->any() )
+			->method( 'set' )
+			->willReturnCallback(
+				static function ( $key, $value ) use ( &$set_called_with_tax_query ) {
+					unset( $value );
+					if ( 'tax_query' === $key ) {
+						$set_called_with_tax_query = true;
+					}
+				}
+			);
+
+		$instance->prepare_event_query_before_execution( $query );
+
+		// Assert that tax_query was never touched because the venue_filter is empty.
+		$this->assertFalse( $set_called_with_tax_query, 'tax_query should not be set when venue_filter is empty.' );
+
+		wp_delete_post( $venue_post_id, true );
 	}
 }

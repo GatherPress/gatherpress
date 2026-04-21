@@ -2,6 +2,12 @@
  * WordPress dependencies.
  */
 import { dispatch, select } from '@wordpress/data';
+import { store as coreStore } from '@wordpress/core-data';
+
+/**
+ * Internal dependencies.
+ */
+import { isPostTypeSupporting } from './event';
 
 /**
  * Enable the Save buttons after making an update.
@@ -21,21 +27,18 @@ export function enableSave() {
 }
 
 /**
- * Checks if the current post type is a GatherPress event or venue.
+ * Retrieves the current contextual post ID.
  *
- * This function determines if the post type being edited in the WordPress block editor
- * is either 'gatherpress_event' or 'gatherpress_venue', which are custom post types
- * related to GatherPress. It is used to ensure that specific actions or functionality
- * are applied only to these post types.
+ * If a `postId` argument is provided, that value is returned.
+ * If not, falls back to the current post ID from the block editor's `core/editor` store.
  *
  * @since 1.0.0
  *
- * @return {boolean} True if the current post type is 'gatherpress_event' or 'gatherpress_venue', false otherwise.
+ * @param {number|null} postId Optional. A specific post ID to return instead of detecting the current one. Defaults to null.
+ * @return {number|null}                 The post ID, or null if it cannot be determined.
  */
-export function isGatherPressPostType() {
-	const postType = select( 'core/editor' )?.getCurrentPostType();
-
-	return 'gatherpress_event' === postType || 'gatherpress_venue' === postType;
+export function getCurrentContextualPostId( postId = null ) {
+	return postId || select( 'core/editor' ).getCurrentPostId();
 }
 
 /**
@@ -48,7 +51,7 @@ export function isGatherPressPostType() {
  * @return {Document} The document object containing the block editor content.
  */
 export function getEditorDocument() {
-	const iframe = global.document.querySelector(
+	const iframe = document.querySelector(
 		'iframe[name="editor-canvas"]',
 	);
 
@@ -56,7 +59,7 @@ export function getEditorDocument() {
 		return iframe.contentDocument;
 	}
 
-	return global.document;
+	return document;
 }
 
 /**
@@ -73,4 +76,58 @@ export function isInFSETemplate() {
 	const postType = select( 'core/editor' )?.getCurrentPostType();
 
 	return [ 'wp_template', 'wp_template_part' ].includes( postType );
+}
+
+/**
+ * Determines if a block should display at full opacity based on its context.
+ *
+ * Use this helper to consistently apply dimming logic across GatherPress blocks.
+ * A block is fully visible (not dimmed) when:
+ * - It's in an FSE template (always visible for preview)
+ * - It's in a Query Loop with valid post type context AND has data
+ * - It's editing a post directly AND has data
+ *
+ * @since 1.0.0
+ *
+ * @param {Object}  options                         Options for determining visibility.
+ * @param {boolean} options.isDescendentOfQueryLoop Whether the block is inside a Query Loop.
+ * @param {string}  options.postType                The post type from block context.
+ * @param {string}  options.support                 The post type support to check (e.g. 'gatherpress-venue').
+ * @param {boolean} [options.hasData=false]         Whether the block has its specific data.
+ * @return {boolean} True if the block should be fully visible, false if it should be dimmed.
+ */
+export function hasValidBlockContext( {
+	isDescendentOfQueryLoop,
+	postType,
+	support,
+	hasData = false,
+} ) {
+	// Always visible in FSE templates for design/preview purposes.
+	if ( isInFSETemplate() ) {
+		return true;
+	}
+
+	// In Query Loop, require both valid post type support AND data.
+	if ( isDescendentOfQueryLoop ) {
+		return isPostTypeSupporting( support, postType ) && hasData;
+	}
+
+	// When editing directly, just check if we have data.
+	return hasData;
+}
+
+/**
+ * Gets the site's configured start of the week.
+ *
+ * This function retrieves the start of the week setting from the site's
+ * configuration, which indicates which day is considered the first day of the week.
+ *
+ * @since 1.0.0
+ *
+ * @return {number} The start of the week (0 for Sunday, 1 for Monday, etc.).
+ */
+export function getStartOfWeek() {
+	const { getSite } = select( coreStore );
+	const site = getSite();
+	return site?.start_of_week || 0;
 }

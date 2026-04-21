@@ -175,7 +175,7 @@ async function createPreviewLinksComment(github, context) {
 	const prText         = `for PR#${prNumber}`;  // Descriptive text for the PR
 
 	// Retrieve PHP versions from environment variable (JSON string)
-	const phpVersionsEnv = process.env.PHP_VERSIONS || '["8.3","7.4"]';  // Default to common versions if not set
+	const phpVersionsEnv = process.env.PHP_VERSIONS || '["8.4","8.2","7.4"]';  // Default to common versions if not set
 	const phpVersions    = JSON.parse( phpVersionsEnv );  // Parse the JSON string into an array
 
 	// Generate preview links for each PHP version

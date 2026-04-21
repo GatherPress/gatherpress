@@ -1,0 +1,134 @@
+/**
+ * Tooltip Format Styles
+ *
+ * Styles for the GatherPress tooltip format type.
+ * Works in both editor preview and frontend display.
+ *
+ * Theme Integration:
+ * Themes can customize tooltip colors by setting these CSS custom properties:
+ *
+ *   --gatherpress--gatherpress-tooltip--text-color: #fff;
+ *   --gatherpress--gatherpress-tooltip--background-color: #333;
+ *
+ * If not set, tooltips will use WordPress global styles (--wp--preset--color--*)
+ * or fall back to colors that provide good contrast.
+ *
+ * @since 1.0.0
+ */
+
+// CSS custom properties with theme-aware defaults.
+// Priority: 1) Inline styles 2) GatherPress theme vars 3) WP global styles 4) Fallback
+.gatherpress-tooltip {
+	--gatherpress-tooltip-text-color: var(
+		--gatherpress--gatherpress-tooltip--text-color,
+		var(--wp--preset--color--base, var(--wp--preset--color--background, #fff))
+	);
+	--gatherpress-tooltip-bg-color: var(
+		--gatherpress--gatherpress-tooltip--background-color,
+		var(--wp--preset--color--contrast, var(--wp--preset--color--primary, #333))
+	);
+	--gatherpress-tooltip-padding: 8px 12px;
+	--gatherpress-tooltip-border-radius: 4px;
+	--gatherpress-tooltip-font-size: 0.875em;
+	--gatherpress-tooltip-arrow-size: 6px;
+	--gatherpress-tooltip-offset: 8px;
+	--gatherpress-tooltip-bg-opacity: 90%;
+
+	position: relative;
+	border-bottom: 1px dotted currentcolor;
+	cursor: help;
+
+	// Tooltip bubble (using ::after for content).
+	&::before,
+	&::after {
+		position: absolute;
+		opacity: 0;
+		visibility: hidden;
+		transition: opacity 0.2s ease, visibility 0.2s ease;
+		pointer-events: none;
+		z-index: 9999;
+	}
+
+	// Arrow (downward pointing caret).
+	&::before {
+		content: "";
+		bottom: calc(100% + var(--gatherpress-tooltip-offset) - var(--gatherpress-tooltip-arrow-size));
+		left: 50%;
+		transform: translateX(-50%);
+		border: var(--gatherpress-tooltip-arrow-size) solid transparent;
+		border-top-color: color-mix(in srgb, var(--gatherpress-tooltip-bg-color) var(--gatherpress-tooltip-bg-opacity), transparent);
+	}
+
+	// Tooltip content.
+	&::after {
+		content: attr(data-gatherpress-tooltip);
+		bottom: calc(100% + var(--gatherpress-tooltip-offset) + var(--gatherpress-tooltip-arrow-size));
+		left: 50%;
+		transform: translateX(-50%);
+		padding: var(--gatherpress-tooltip-padding);
+		background-color: color-mix(in srgb, var(--gatherpress-tooltip-bg-color) var(--gatherpress-tooltip-bg-opacity), transparent);
+		color: var(--gatherpress-tooltip-text-color);
+		font-size: var(--gatherpress-tooltip-font-size);
+		line-height: 1.4;
+		white-space: nowrap;
+		border-radius: var(--gatherpress-tooltip-border-radius);
+		text-align: center;
+		box-shadow: 0 2px 8px rgb(0 0 0 / 15%);
+	}
+
+	// Show tooltip on hover/focus.
+	&:hover,
+	&:focus {
+		&::before,
+		&::after {
+			opacity: 1;
+			visibility: visible;
+			pointer-events: auto;
+		}
+	}
+
+	// Disable tooltip styling when inside a link.
+	a & {
+		border-bottom: none;
+		cursor: inherit;
+
+		&::before,
+		&::after {
+			display: none;
+		}
+	}
+}
+
+// Preview state in popover (always visible).
+.gatherpress-tooltip--preview {
+	display: inline-block;
+	margin-top: 8px;
+
+	&::before,
+	&::after {
+		opacity: 1;
+		visibility: visible;
+	}
+}
+
+// Popover styles.
+.gatherpress-tooltip-popover {
+	.gatherpress-tooltip-popover__content {
+		padding: 16px;
+		min-width: 300px;
+	}
+
+	.gatherpress-tooltip-popover__preview {
+		background: #f0f0f0;
+		padding: 24px 16px 48px;
+		border-radius: 4px;
+		text-align: center;
+	}
+
+	.gatherpress-tooltip-popover__preview-label {
+		display: block;
+		font-size: 12px;
+		color: #757575;
+		margin-bottom: 8px;
+	}
+}

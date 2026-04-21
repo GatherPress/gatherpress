@@ -25,14 +25,14 @@ export function urlRewritePreview() {
 	);
 
 	// Iterate through each matched element and initialize UrlRewritePreview component.
-	for ( let i = 0; i < urlRewritePreviewContainers.length; i++ ) {
+	for ( const container of urlRewritePreviewContainers ) {
 		// Parse attributes from the 'data-gatherpress_component_attrs' attribute.
 		const attrs = JSON.parse(
-			urlRewritePreviewContainers[ i ].dataset.gatherpress_component_attrs,
+			container.dataset.gatherpress_component_attrs,
 		);
 
 		// Create a root element and render the UrlRewritePreview component with the parsed attributes.
-		createRoot( urlRewritePreviewContainers[ i ] ).render(
+		createRoot( container ).render(
 			<UrlRewritePreview attrs={ attrs } />,
 		);
 	}

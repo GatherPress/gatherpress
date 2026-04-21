@@ -36,7 +36,8 @@ const isGatherPressQueryLoop = ( props ) => {
 /**
  * Watches the Query block's `postType` attribute and, if changed to "gatherpress_event",
  * automatically transforms it into a GatherPress "Event Query" variation by updating
- * relevant attributes.
+ * relevant attributes. Only transforms blocks without an existing namespace (plain core/query),
+ * so blocks belonging to other variations (e.g., Advanced Query Loop) are not hijacked.
  *
  * @param {Object}   props
  * @param {Object}   props.attributes    - Block attributes.
@@ -45,8 +46,11 @@ const isGatherPressQueryLoop = ( props ) => {
  */
 const QueryPosttypeObserver = ( { attributes, setAttributes } ) => {
 	const { postType } = attributes.query;
+	const { namespace } = attributes;
 	useEffect( () => {
-		if ( 'gatherpress_event' === postType ) {
+		// Only auto-transform blocks without a namespace set.
+		// Blocks with an existing namespace (e.g., 'advanced-query-loop') should not be overwritten.
+		if ( 'gatherpress_event' === postType && ! namespace ) {
 			const newAttributes = {
 				...attributes,
 				namespace: NAME,
@@ -62,8 +66,8 @@ const QueryPosttypeObserver = ( { attributes, setAttributes } ) => {
 			setAttributes( newAttributes );
 		}
 		// Dependency array ensures this runs
-		// whenever postType, attributes, or setAttributes changes.
-	}, [ postType, attributes, setAttributes ] );
+		// whenever postType, namespace, attributes, or setAttributes changes.
+	}, [ postType, namespace, attributes, setAttributes ] );
 };
 
 /**

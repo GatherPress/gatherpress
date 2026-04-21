@@ -53,6 +53,7 @@ jobs:
       # Creating a short lived node_modules cache
       - uses: actions/cache/save@v4
         if: steps.node_modules-cache.outputs.cache-hit != 'true'
+        continue-on-error: true
         with:
           path: |
             ./node_modules
@@ -105,6 +106,7 @@ jobs:
       # Creating a short lived node_modules cache
       - uses: actions/cache/save@v4
         if: steps.node_modules-cache.outputs.cache-hit != 'true'
+        continue-on-error: true
         with:
           path: |
             ./node_modules

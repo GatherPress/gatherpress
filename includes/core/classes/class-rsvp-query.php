@@ -114,7 +114,7 @@ class Rsvp_Query {
 	 */
 	public function get_rsvps( array $args ) {
 		$args['type']         = Rsvp::COMMENT_TYPE;
-		$args['post_type']    = Event::POST_TYPE;
+		$args['post_type']    = array_values( get_post_types_by_support( 'gatherpress-rsvp' ) );
 		$args['type__in']     = array();
 		$args['type__not_in'] = array();
 
@@ -205,6 +205,8 @@ class Rsvp_Query {
 	 * @param int        $id      The comment ID.
 	 * @param WP_Comment $comment The comment object.
 	 * @return void
+	 *
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
 	 */
 	public function maybe_invalidate_comment_types_cache( int $id, WP_Comment $comment ): void {
 		// Skip if it's an empty comment type (regular comment).
@@ -241,7 +243,9 @@ class Rsvp_Query {
 
 		if ( ! empty( $current_comment_types ) ) {
 			if ( is_array( $current_comment_types ) ) {
-				$current_comment_types = array_values( array_diff( $current_comment_types, array( Rsvp::COMMENT_TYPE ) ) );
+				$current_comment_types = array_values(
+					array_diff( $current_comment_types, array( Rsvp::COMMENT_TYPE ) )
+				);
 			} elseif ( Rsvp::COMMENT_TYPE === $current_comment_types ) {
 				$current_comment_types = '';
 			}
@@ -258,7 +262,9 @@ class Rsvp_Query {
 
 		if ( ! empty( $current_comment_types_in ) ) {
 			if ( is_array( $current_comment_types_in ) ) {
-				$current_comment_types_in = array_values( array_diff( $current_comment_types_in, array( Rsvp::COMMENT_TYPE ) ) );
+				$current_comment_types_in = array_values(
+					array_diff( $current_comment_types_in, array( Rsvp::COMMENT_TYPE ) )
+				);
 			} elseif ( Rsvp::COMMENT_TYPE === $current_comment_types_in ) {
 				$current_comment_types_in = '';
 			}

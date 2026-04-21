@@ -2,482 +2,316 @@
 /**
  * Class handles unit tests for GatherPress\Core\Venue.
  *
+ * Covers the instance class — constructor and per-post accessors. Anything
+ * that isn't tied to a specific venue instance (WP integration, post-type-level
+ * utilities, lookups) is covered by `Test_Venue_Setup`.
+ *
  * @package GatherPress\Core
  * @since 1.0.0
  */
 
 namespace GatherPress\Tests\Core;
 
-use GatherPress\Core\Event;
 use GatherPress\Core\Venue;
 use GatherPress\Tests\Base;
+use WP_Term;
 
 /**
  * Class Test_Venue.
  *
+ * @group multisite
  * @coversDefaultClass \GatherPress\Core\Venue
  */
 class Test_Venue extends Base {
 	/**
-	 * Coverage for __construct and setup_hooks.
+	 * Construct a Venue instance from a post ID and read it back.
 	 *
 	 * @covers ::__construct
-	 * @covers ::setup_hooks
+	 * @covers ::get_post_id
 	 *
 	 * @return void
 	 */
-	public function test_setup_hooks(): void {
-		$instance = Venue::get_instance();
-		$hooks    = array(
+	public function test_construct_and_get_post_id(): void {
+		$post_id = $this->factory->post->create(
+			array( 'post_type' => Venue::POST_TYPE )
+		);
+
+		$venue = new Venue( $post_id );
+
+		$this->assertSame(
+			$post_id,
+			$venue->get_post_id(),
+			'Failed to assert that the Venue exposes the post ID it was constructed with.'
+		);
+	}
+
+	/**
+	 * Returns parsed venue information when JSON meta is present.
+	 *
+	 * @covers ::get_information
+	 *
+	 * @return void
+	 */
+	public function test_get_information_reads_meta_json(): void {
+		$post_id = $this->factory->post->create(
+			array( 'post_type' => Venue::POST_TYPE )
+		);
+		add_post_meta(
+			$post_id,
+			'gatherpress_venue_information',
+			wp_json_encode(
+				array(
+					'fullAddress' => '123 Main St',
+					'phoneNumber' => '555-0100',
+					'website'     => 'https://example.com',
+					'latitude'    => '40.7128',
+					'longitude'   => '-74.0060',
+				)
+			)
+		);
+
+		$info = ( new Venue( $post_id ) )->get_information();
+
+		$this->assertSame( '123 Main St', $info['fullAddress'] );
+		$this->assertSame( '555-0100', $info['phoneNumber'] );
+		$this->assertSame( 'https://example.com', $info['website'] );
+		$this->assertSame( '40.7128', $info['latitude'] );
+		$this->assertSame( '-74.0060', $info['longitude'] );
+	}
+
+	/**
+	 * Returns a fully-populated empty-string shape when no JSON meta exists.
+	 *
+	 * The array shape is stable so callers can index into it without guards.
+	 *
+	 * @covers ::get_information
+	 *
+	 * @return void
+	 */
+	public function test_get_information_returns_empty_shape_when_meta_absent(): void {
+		$post_id = $this->factory->post->create(
+			array( 'post_type' => Venue::POST_TYPE )
+		);
+
+		$info = ( new Venue( $post_id ) )->get_information();
+
+		$this->assertSame(
 			array(
-				'type'     => 'action',
-				'name'     => sprintf( 'save_post_%s', Venue::POST_TYPE ),
-				'priority' => 10,
-				'callback' => array( $instance, 'add_venue_term' ),
+				'fullAddress' => '',
+				'phoneNumber' => '',
+				'website'     => '',
+				'latitude'    => '',
+				'longitude'   => '',
 			),
-			array(
-				'type'     => 'action',
-				'name'     => 'init',
-				'priority' => 10,
-				'callback' => array( $instance, 'register_post_type' ),
-			),
-			array(
-				'type'     => 'action',
-				'name'     => 'init',
-				'priority' => 10,
-				'callback' => array( $instance, 'register_post_meta' ),
-			),
-			array(
-				'type'     => 'action',
-				'name'     => 'init',
-				'priority' => 10,
-				'callback' => array( $instance, 'register_taxonomy' ),
-			),
-			array(
-				'type'     => 'action',
-				'name'     => 'post_updated',
-				'priority' => 10,
-				'callback' => array( $instance, 'maybe_update_term_slug' ),
-			),
-			array(
-				'type'     => 'action',
-				'name'     => 'delete_post',
-				'priority' => 10,
-				'callback' => array( $instance, 'delete_venue_term' ),
-			),
-		);
-
-		$this->assert_hooks( $hooks, $instance );
-	}
-
-	/**
-	 * Coverage for register_post_type method.
-	 *
-	 * @covers ::register_post_type
-	 *
-	 * @return void
-	 */
-	public function test_register_post_type(): void {
-		$instance = Venue::get_instance();
-
-		unregister_post_type( Venue::POST_TYPE );
-
-		$this->assertFalse( post_type_exists( Venue::POST_TYPE ), 'Failed to assert that post type does not exist.' );
-
-		$instance->register_post_type();
-
-		$this->assertTrue( post_type_exists( Venue::POST_TYPE ), 'Failed to assert that post type exists.' );
-	}
-
-	/**
-	 * Coverage for get_localized_post_type_slug method.
-	 *
-	 * @covers ::get_localized_post_type_slug
-	 *
-	 * @return void
-	 */
-	public function test_get_localized_post_type_slug(): void {
-		$this->assertSame(
-			'venue',
-			Venue::get_localized_post_type_slug(),
-			'Failed to assert English post type slug is "venue".'
-		);
-
-		$user_id = $this->factory->user->create();
-		update_user_meta( $user_id, 'locale', 'es_ES' );
-		switch_to_user_locale( $user_id );
-
-		// @todo This assertion CAN NOT FAIL,
-		// until real translations do exist in the wp-env instance.
-		// Because WordPress doesn't have any translation files to load,
-		// it will return the string in English.
-		$this->assertSame(
-			'venue',
-			Venue::get_localized_post_type_slug(),
-			'Failed to assert post type slug is "venue", even the locale is not English anymore.'
-		);
-		// But at least the restoring of the user locale can be tested, without .po files.
-		$this->assertSame(
-			'es_ES',
-			determine_locale(),
-			'Failed to assert locale was reset to Spanish, after switching to ~ and restoring from English.'
-		);
-
-		// Restore default locale for following tests.
-		switch_to_locale( 'en_US' );
-
-		// This also checks that the post type is still registered with the same 'Admin menu and post type singular name' label,
-		// which is used by the method under test and the test itself.
-		$filter = static function ( string $translation, string $text, string $context ): string {
-			if ( 'Venue' !== $text || 'Admin menu and post type singular name' !== $context ) {
-				return $translation;
-			}
-			return 'Ünit Tést';
-		};
-
-		/**
-		 * Instead of loading additional languages into the unit test suite,
-		 * we just filter the translated value, to mock different languages.
-		 *
-		 * Filters text with its translation based on context information for a domain.
-		 *
-		 * @param string $translation Translated text.
-		 * @param string $text        Text to translate.
-		 * @param string $context     Context information for the translators.
-		 * @return string Translated text.
-		 */
-		add_filter( 'gettext_with_context_gatherpress', $filter, 10, 3 );
-
-		$this->assertSame(
-			'unit-test',
-			Venue::get_localized_post_type_slug(),
-			'Failed to assert the post type slug is "unit-test".'
-		);
-
-		remove_filter( 'gettext_with_context_gatherpress', $filter );
-
-		// Test restore_previous_locale() path by switching to a different locale first.
-		switch_to_locale( 'es_ES' );
-		$this->assertSame(
-			'venue',
-			Venue::get_localized_post_type_slug(),
-			'Failed to assert post type slug is "venue" after locale restore.'
-		);
-		// Verify we're back to Spanish after the method restored the previous locale.
-		$this->assertSame(
-			'es_ES',
-			determine_locale(),
-			'Failed to assert locale was restored to Spanish.'
-		);
-
-		// Clean up: restore to en_US for other tests.
-		restore_previous_locale();
-	}
-
-	/**
-	 * Coverage for register_post_meta method.
-	 *
-	 * @covers ::register_post_meta
-	 *
-	 * @return void
-	 */
-	public function test_register_post_meta(): void {
-		$instance = Venue::get_instance();
-
-		unregister_post_meta( Venue::POST_TYPE, 'gatherpress_venue_information' );
-
-		$meta = get_registered_meta_keys( 'post', Venue::POST_TYPE );
-
-		$this->assertArrayNotHasKey( 'gatherpress_venue_information', $meta, 'Failed to assert that gatherpress_venue_information does not exist.' );
-
-		$instance->register_post_meta();
-
-		$meta = get_registered_meta_keys( 'post', Venue::POST_TYPE );
-
-		$this->assertArrayHasKey( 'gatherpress_venue_information', $meta, 'Failed to assert that gatherpress_venue_information does exist.' );
-	}
-
-	/**
-	 * Coverage for register_taxonomy method.
-	 *
-	 * @covers ::register_taxonomy
-	 *
-	 * @return void
-	 */
-	public function test_register_taxonomy(): void {
-		$instance = Venue::get_instance();
-
-		unregister_taxonomy( Venue::TAXONOMY );
-
-		$this->assertFalse( taxonomy_exists( Venue::TAXONOMY ), 'Failed to assert that taxonomy does not exist.' );
-
-		$instance->register_taxonomy();
-
-		$this->assertTrue( taxonomy_exists( Venue::TAXONOMY ), 'Failed to assert that taxonomy exists.' );
-	}
-
-	/**
-	 * Coverage for add_venue_term.
-	 *
-	 * @covers ::add_venue_term
-	 *
-	 * @return void
-	 */
-	public function test_add_venue_term(): void {
-		$instance = Venue::get_instance();
-		$venue    = $this->mock->post( array( 'post_type' => Venue::POST_TYPE ) )->get();
-		$term     = term_exists( $instance->get_venue_term_slug( $venue->post_name ), Venue::TAXONOMY );
-
-		$this->assertIsArray(
-			$term,
-			'Failed to assert that term exists.'
-		);
-
-		// Delete term to ensure add_venue_term re-creates it.
-		wp_delete_term( $term['term_id'], Venue::TAXONOMY );
-
-		$this->assertNull(
-			term_exists( $term['term_id'], Venue::TAXONOMY ),
-			'Failed to assert that term does not exist after being deleted.'
-		);
-
-		$instance->add_venue_term( $venue->ID, $venue, true );
-
-		$term = term_exists( $instance->get_venue_term_slug( $venue->post_name ), Venue::TAXONOMY );
-
-		$this->assertNull(
-			term_exists( $term['term_id'], Venue::TAXONOMY ),
-			'Failed to assert that term does not exist when $update is true.'
-		);
-
-		$instance->add_venue_term( $venue->ID, $venue, false );
-
-		$term = term_exists( $instance->get_venue_term_slug( $venue->post_name ), Venue::TAXONOMY );
-
-		$this->assertIsArray(
-			$term,
-			'Failed to assert that term exists.'
+			$info,
+			'Failed to assert the empty-state default shape when no venue meta is stored.'
 		);
 	}
 
 	/**
-	 * Coverage for maybe_update_term_slug.
+	 * Malformed JSON meta falls back to the empty shape rather than throwing.
 	 *
-	 * @covers ::maybe_update_term_slug
+	 * @covers ::get_information
 	 *
 	 * @return void
 	 */
-	public function test_maybe_update_term_slug(): void {
-		$instance    = Venue::get_instance();
-		$post_before = $this->mock->post()->get();
-		$post_after  = clone $post_before;
-
-		$post_after->post_name .= '-after';
-
-		$instance->maybe_update_term_slug( $post_before->ID, $post_after, $post_before );
-		$this->assertNull(
-			term_exists( $instance->get_venue_term_slug( $post_before->post_name ), Venue::TAXONOMY ),
-			'Failed to assert that term does not exist.'
+	public function test_get_information_handles_invalid_json(): void {
+		$post_id = $this->factory->post->create(
+			array( 'post_type' => Venue::POST_TYPE )
 		);
-		$this->assertNull(
-			term_exists( $instance->get_venue_term_slug( $post_after->post_name ), Venue::TAXONOMY ),
-			'Failed to assert that term does not exist.'
-		);
+		add_post_meta( $post_id, 'gatherpress_venue_information', 'not json' );
 
-		$venue_before = $this->mock->post( array( 'post_type' => Venue::POST_TYPE ) )->get();
-		$venue_after  = clone $venue_before;
+		$info = ( new Venue( $post_id ) )->get_information();
 
-		$venue_after->post_name .= '-first';
-
-		$instance->maybe_update_term_slug( $venue_before->ID, $venue_after, $venue_before );
-
-		$term = term_exists( $instance->get_venue_term_slug( $venue_after->post_name ), Venue::TAXONOMY );
-
-		$this->assertIsArray(
-			$term,
-			'Failed to assert that term exists.'
-		);
-
-		$term_object = get_term( $term['term_id'] );
-
-		$this->assertSame(
-			$term_object->slug,
-			$instance->get_venue_term_slug( $venue_after->post_name ),
-			'Failed to assert that slugs match.'
-		);
-
-		$venue_before = clone $venue_after;
-		$venue_after  = clone $venue_before;
-
-		// Delete term to ensure maybe_update_term_slug re-creates it.
-		wp_delete_term( $term['term_id'], Venue::TAXONOMY );
-
-		$this->assertNull(
-			term_exists( $term['term_id'], Venue::TAXONOMY ),
-			'Failed to assert that term does not exist after being deleted.'
-		);
-
-		$venue_after->post_name .= '-second';
-
-		$instance->maybe_update_term_slug( $venue_before->ID, $venue_after, $venue_before );
-
-		$term = term_exists( $instance->get_venue_term_slug( $venue_after->post_name ), Venue::TAXONOMY );
-
-		$this->assertIsArray(
-			$term,
-			'Failed to assert that term exists.'
-		);
-
-		$term_object = get_term( $term['term_id'] );
-
-		$this->assertSame(
-			$term_object->slug,
-			$instance->get_venue_term_slug( $venue_after->post_name ),
-			'Failed to assert that slugs match.'
-		);
-
-		$venue_before = clone $venue_after;
-
-		$venue_after->post_name .= '-third';
-
-		// Setting to draft should not update term.
-		$venue_after->post_status = 'draft';
-		$instance->maybe_update_term_slug( $venue_before->ID, $venue_after, $venue_before );
-
-		$term_object = get_term( $term['term_id'] );
-
-		$this->assertNotSame(
-			$term_object->slug,
-			$instance->get_venue_term_slug( $venue_after->post_name ),
-			'Failed to assert that slugs do not match.'
-		);
-
-		// Setting back to trash should update the term.
-		$venue_after->post_status = 'trash';
-		$instance->maybe_update_term_slug( $venue_before->ID, $venue_after, $venue_before );
-
-		$term_object = get_term( $term['term_id'] );
-
-		$this->assertSame(
-			$term_object->slug,
-			$instance->get_venue_term_slug( $venue_after->post_name ),
-			'Failed to assert that slugs match.'
-		);
-
-		// Setting back to publish should update the term.
-		$venue_after->post_status = 'publish';
-		$instance->maybe_update_term_slug( $venue_before->ID, $venue_after, $venue_before );
-
-		$term_object = get_term( $term['term_id'] );
-
-		$this->assertSame(
-			$term_object->slug,
-			$instance->get_venue_term_slug( $venue_after->post_name ),
-			'Failed to assert that slugs match.'
-		);
+		$this->assertSame( '', $info['fullAddress'] );
+		$this->assertSame( '', $info['latitude'] );
+		$this->assertSame( '', $info['longitude'] );
 	}
 
 	/**
-	 * Coverage for delete_venue_term.
+	 * Coverage for get_term_slug — derives the slug from the instance's post_name.
 	 *
-	 * @covers ::delete_venue_term
-	 *
-	 * @return void
-	 */
-	public function test_delete_venue_term(): void {
-		$instance = Venue::get_instance();
-		$venue    = $this->mock->post( array( 'post_type' => Venue::POST_TYPE ) )->get();
-
-		$this->assertIsArray(
-			term_exists( $instance->get_venue_term_slug( $venue->post_name ), Venue::TAXONOMY ),
-			'Failed to assert that term exists'
-		);
-
-		$instance->delete_venue_term( $venue->ID );
-
-		$this->assertNull(
-			term_exists( $instance->get_venue_term_slug( $venue->post_name ), Venue::TAXONOMY ),
-			'Failed to assert that term was deleted.'
-		);
-	}
-
-	/**
-	 * Coverage for get_venue_term_slug method.
-	 *
-	 * @covers ::get_venue_term_slug
+	 * @covers ::get_term_slug
 	 *
 	 * @return void
 	 */
-	public function test_get_venue_term_slug(): void {
-		$this->assertSame(
-			'_unit-test',
-			Venue::get_instance()->get_venue_term_slug( 'unit-test' ),
-			'Failed to assert that term slugs match.'
-		);
-	}
-
-	/**
-	 * Coverage for get_venue_post_from_term_slug method.
-	 *
-	 * @covers ::get_venue_post_from_term_slug
-	 *
-	 * @return void
-	 */
-	public function test_get_venue_post_from_term_slug(): void {
-		$venue                = $this->mock->post(
+	public function test_get_term_slug(): void {
+		$venue = $this->mock->post(
 			array(
 				'post_type' => Venue::POST_TYPE,
 				'post_name' => 'unit-test',
 			)
 		)->get();
-		$venue_from_term_slug = Venue::get_instance()->get_venue_post_from_term_slug( '_unit-test' );
 
-		$this->assertEquals(
-			$venue->ID,
-			$venue_from_term_slug->ID,
-			'Failed to assert that IDs match.'
+		$this->assertSame(
+			'_unit-test',
+			( new Venue( $venue->ID ) )->get_term_slug(),
+			'Failed to assert that term slug is derived from the venue post_name.'
 		);
 	}
 
 	/**
-	 * Coverage for get_venue_meta method.
+	 * Constructor leaves `$venue` null when the post type doesn't declare
+	 * gatherpress-venue-information support, so callers can guard safely.
 	 *
-	 * @covers ::get_venue_meta
+	 * @covers ::__construct
 	 *
 	 * @return void
 	 */
-	public function test_get_venue_meta(): void {
-		$event = $this->mock->post(
+	public function test_construct_leaves_venue_null_for_unsupported_post_type(): void {
+		$post_id = $this->factory->post->create( array( 'post_type' => 'post' ) );
+
+		$venue = new Venue( $post_id );
+
+		$this->assertNull(
+			$venue->venue,
+			'Expected $venue property to be null when post type lacks gatherpress-venue-information support.'
+		);
+		$this->assertSame( 0, $venue->get_post_id() );
+		$this->assertSame( '', $venue->get_post_type() );
+	}
+
+	/**
+	 * Returns '' from get_taxonomy when wrapping a non-venue post.
+	 *
+	 * @covers ::get_taxonomy
+	 *
+	 * @return void
+	 */
+	public function test_get_taxonomy_returns_empty_for_unsupported_post(): void {
+		$post_id = $this->factory->post->create( array( 'post_type' => 'post' ) );
+
+		$this->assertSame( '', ( new Venue( $post_id ) )->get_taxonomy() );
+	}
+
+	/**
+	 * Returns '' from get_term_slug when wrapping a non-venue post.
+	 *
+	 * @covers ::get_term_slug
+	 *
+	 * @return void
+	 */
+	public function test_get_term_slug_returns_empty_for_unsupported_post(): void {
+		$post_id = $this->factory->post->create( array( 'post_type' => 'post' ) );
+
+		$this->assertSame( '', ( new Venue( $post_id ) )->get_term_slug() );
+	}
+
+	/**
+	 * Returns null from get_term when wrapping a non-venue post.
+	 *
+	 * @covers ::get_term
+	 *
+	 * @return void
+	 */
+	public function test_get_term_returns_null_for_unsupported_post(): void {
+		$post_id = $this->factory->post->create( array( 'post_type' => 'post' ) );
+
+		$this->assertNull( ( new Venue( $post_id ) )->get_term() );
+	}
+
+	/**
+	 * Returns the default empty shape from get_information when wrapping a non-venue post.
+	 *
+	 * @covers ::get_information
+	 *
+	 * @return void
+	 */
+	public function test_get_information_returns_empty_shape_for_unsupported_post(): void {
+		$post_id = $this->factory->post->create( array( 'post_type' => 'post' ) );
+
+		$this->assertSame(
 			array(
-				'post_type' => Event::POST_TYPE,
-				'post_name' => 'unit-test-event',
-			)
-		)->get();
-		wp_set_post_terms( $event->ID, 'dummy-venue', Venue::TAXONOMY );
+				'fullAddress' => '',
+				'phoneNumber' => '',
+				'website'     => '',
+				'latitude'    => '',
+				'longitude'   => '',
+			),
+			( new Venue( $post_id ) )->get_information()
+		);
+	}
 
-		$venue_meta = Venue::get_instance()->get_venue_meta( $event->ID, Event::POST_TYPE );
+	/**
+	 * Returns the post type slug of the wrapped venue.
+	 *
+	 * @covers ::get_post_type
+	 *
+	 * @return void
+	 */
+	public function test_get_post_type(): void {
+		$post_id = $this->factory->post->create(
+			array( 'post_type' => Venue::POST_TYPE )
+		);
 
-		// Generic test for an in person event.
-		$this->assertFalse( $venue_meta['isOnlineEventTerm'] );
-		$this->assertEmpty( $venue_meta['onlineEventLink'] );
+		$this->assertSame(
+			Venue::POST_TYPE,
+			( new Venue( $post_id ) )->get_post_type(),
+			'Failed to assert that get_post_type returns the wrapped post type.'
+		);
+	}
 
-		$venue_title = 'Unit Test Venue';
+	/**
+	 * Returns the taxonomy derived from the wrapped venue's post type.
+	 *
+	 * @covers ::get_taxonomy
+	 *
+	 * @return void
+	 */
+	public function test_get_taxonomy(): void {
+		$post_id = $this->factory->post->create(
+			array( 'post_type' => Venue::POST_TYPE )
+		);
 
-		$venue = $this->mock->post(
+		$this->assertSame(
+			Venue::TAXONOMY,
+			( new Venue( $post_id ) )->get_taxonomy(),
+			'Failed to assert that get_taxonomy returns the taxonomy for the wrapped venue.'
+		);
+	}
+
+	/**
+	 * Returns the existing taxonomy term for the wrapped venue.
+	 *
+	 * @covers ::get_term
+	 *
+	 * @return void
+	 */
+	public function test_get_term_returns_existing_term(): void {
+		$post = $this->mock->post(
 			array(
 				'post_type'  => Venue::POST_TYPE,
-				'post_name'  => 'unit-test-venue',
-				'post_title' => $venue_title,
+				'post_name'  => 'term-lookup-venue',
+				'post_title' => 'Term Lookup Venue',
 			)
 		)->get();
 
-		$venue_meta = Venue::get_instance()->get_venue_meta( $venue->ID, Venue::POST_TYPE );
+		$venue = new Venue( $post->ID );
+		$term  = $venue->get_term();
 
-		// Test for a venue post.
-		$this->assertEquals(
-			$venue_title,
-			$venue_meta['name'],
-			'Failed to assert venue title matches the venue meta title.'
+		$this->assertInstanceOf( WP_Term::class, $term, 'Expected get_term to return a WP_Term instance.' );
+		$this->assertSame( '_term-lookup-venue', $term->slug, 'Expected term slug to match the venue.' );
+	}
+
+	/**
+	 * Returns null when no taxonomy term exists for the wrapped venue.
+	 *
+	 * @covers ::get_term
+	 *
+	 * @return void
+	 */
+	public function test_get_term_returns_null_when_missing(): void {
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type'   => Venue::POST_TYPE,
+				'post_name'   => 'no-term-yet',
+				'post_status' => 'draft',
+			)
+		);
+
+		$this->assertNull(
+			( new Venue( $post_id ) )->get_term(),
+			'Expected get_term to return null when no matching term exists.'
 		);
 	}
 }

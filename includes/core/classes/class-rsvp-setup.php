@@ -18,6 +18,7 @@ use GatherPress\Core\Blocks\Rsvp_Form;
 use GatherPress\Core\Rsvp_Token;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Utility;
+use WP_Block_Type_Registry;
 use WP_Comment;
 use WP_User;
 
@@ -37,6 +38,14 @@ class Rsvp_Setup {
 	use Singleton;
 
 	/**
+	 * The RSVP list table instance.
+	 *
+	 * @since 1.0.0
+	 * @var RSVP_List_Table|null
+	 */
+	protected $list_table = null;
+
+	/**
 	 * Class constructor.
 	 *
 	 * This method initializes the object and sets up necessary hooks.
@@ -45,6 +54,17 @@ class Rsvp_Setup {
 	 */
 	protected function __construct() {
 		$this->setup_hooks();
+	}
+
+	/**
+	 * Gets the per page option name for RSVP list table.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return string The per page option name.
+	 */
+	private function get_per_page_option(): string {
+		return sprintf( '%s_per_page', Rsvp::COMMENT_TYPE );
 	}
 
 	/**
@@ -59,8 +79,12 @@ class Rsvp_Setup {
 	protected function setup_hooks(): void {
 		add_action( 'init', array( $this, 'register_taxonomy' ) );
 		add_action( 'init', array( $this, 'handle_rsvp_token' ) );
+		// Priority 11 ensures post types are already registered (priority 10) before removing RSVP support.
+		add_action( 'init', array( $this, 'maybe_disable_rsvp' ), 11 );
 		add_action( 'wp_after_insert_post', array( $this, 'maybe_process_waiting_list' ) );
+		add_action( 'wp_after_insert_post', array( $this, 'maybe_set_rsvp_meta_default' ) );
 		add_action( 'admin_menu', array( $this, 'add_rsvp_submenu_page' ) );
+		add_filter( 'allowed_block_types_all', array( $this, 'filter_rsvp_block_types' ) );
 		add_filter( 'comment_notification_recipients', array( $this, 'remove_rsvp_notification_emails' ), 10, 2 );
 
 		add_filter(
@@ -77,7 +101,8 @@ class Rsvp_Setup {
 	/**
 	 * Register custom comment taxonomy for RSVPs.
 	 *
-	 * Registers a custom taxonomy 'gatherpress_rsvp' for managing RSVP related functionalities specifically for comments.
+	 * Registers a custom taxonomy 'gatherpress_rsvp' for managing RSVP related functionalities
+	 * specifically for comments.
 	 *
 	 * @since 1.0.0
 	 *
@@ -100,7 +125,73 @@ class Rsvp_Setup {
 		);
 	}
 
+	/**
+	 * Disables RSVP sitewide when the master RSVP switch is turned off.
+	 *
+	 * Removes the `gatherpress-rsvp` post type support from all post types
+	 * that currently support it. This causes all existing `post_type_supports()`
+	 * guards throughout the plugin to return false, effectively disabling RSVP
+	 * functionality without requiring individual checks everywhere.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return void
+	 */
+	public function maybe_disable_rsvp(): void {
+		if ( 'disabled' !== Settings::get_instance()->get( 'rsvp_mode' ) ) {
+			return;
+		}
 
+		foreach ( get_post_types_by_support( 'gatherpress-rsvp' ) as $post_type ) {
+			remove_post_type_support( $post_type, 'gatherpress-rsvp' );
+		}
+	}
+
+	/**
+	 * Filters RSVP blocks out of the allowed block types when RSVP is globally disabled.
+	 *
+	 * Removes all `gatherpress/rsvp*` blocks from the block inserter while leaving
+	 * existing RSVP blocks already placed in posts fully intact for editing.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param bool|string[] $allowed_block_types Array of block type slugs or true for all blocks.
+	 *
+	 * @return bool|string[] Filtered allowed block types.
+	 */
+	public function filter_rsvp_block_types( $allowed_block_types ) {
+		$settings         = Settings::get_instance();
+		$remove_all_rsvp  = 'disabled' === $settings->get( 'rsvp_mode' );
+		$remove_open_form = ! $settings->get( 'enable_open_rsvp' );
+
+		if ( ! $remove_all_rsvp && ! $remove_open_form ) {
+			return $allowed_block_types;
+		}
+
+		// Build list from all registered blocks when all are currently allowed.
+		if ( true === $allowed_block_types ) {
+			$allowed_block_types = array_keys( WP_Block_Type_Registry::get_instance()->get_all_registered() );
+		}
+
+		if ( is_array( $allowed_block_types ) ) {
+			return array_values(
+				array_filter(
+					$allowed_block_types,
+					static function ( $name ) use ( $remove_all_rsvp, $remove_open_form ): bool {
+						if ( $remove_all_rsvp && str_contains( $name, 'gatherpress/rsvp' ) ) {
+							return false;
+						}
+						if ( $remove_open_form && 'gatherpress/rsvp-form' === $name ) {
+							return false;
+						}
+						return true;
+					}
+				)
+			);
+		}
+
+		return $allowed_block_types;
+	}
 
 	/**
 	 * Get user identifier for RSVP operations.
@@ -136,7 +227,7 @@ class Rsvp_Setup {
 	 * @return int Adjusted number of comments.
 	 */
 	public function adjust_comments_number( int $comments_number, int $post_id ): int {
-		if ( Event::POST_TYPE !== get_post_type( $post_id ) ) {
+		if ( ! post_type_supports( (string) get_post_type( $post_id ), 'gatherpress-rsvp' ) ) {
 			return $comments_number;
 		}
 
@@ -158,13 +249,31 @@ class Rsvp_Setup {
 	 * @return void
 	 */
 	public function maybe_process_waiting_list( int $post_id ): void {
-		if ( Event::POST_TYPE !== get_post_type( $post_id ) ) {
+		if ( ! post_type_supports( (string) get_post_type( $post_id ), 'gatherpress-rsvp' ) ) {
 			return;
 		}
 
 		$rsvp = new Rsvp( $post_id );
 
 		$rsvp->check_waiting_list();
+	}
+
+	/**
+	 * Delegates to Rsvp::initialize_enabled() for the wp_after_insert_post hook.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param int $post_id The ID of the post being saved.
+	 *
+	 * @return void
+	 */
+	public function maybe_set_rsvp_meta_default( int $post_id ): void {
+		// Skip non-event post types early to avoid an unnecessary Rsvp instantiation.
+		if ( ! post_type_supports( (string) get_post_type( $post_id ), 'gatherpress-rsvp' ) ) {
+			return;
+		}
+
+		( new Rsvp( $post_id ) )->initialize_enabled();
 	}
 
 	/**
@@ -180,6 +289,11 @@ class Rsvp_Setup {
 	 * @return void
 	 */
 	public function add_rsvp_submenu_page(): void {
+		// Do not show the RSVPs submenu when RSVP is globally disabled.
+		if ( 'disabled' === Settings::get_instance()->get( 'rsvp_mode' ) ) {
+			return;
+		}
+
 		$hook = add_submenu_page(
 			sprintf( 'edit.php?post_type=%s', Event::POST_TYPE ),
 			__( 'RSVPs', 'gatherpress' ),
@@ -190,23 +304,35 @@ class Rsvp_Setup {
 			2
 		);
 
-		$list_table = new RSVP_List_Table();
+		$this->list_table = new RSVP_List_Table();
 
 		add_action(
-			"load-$hook",
-			static function () use ( $list_table ) {
-				add_screen_option(
-					'per_page',
-					array(
-						'label'   => __( 'RSVPs per page', 'gatherpress' ),
-						'default' => RSVP_List_Table::DEFAULT_PER_PAGE,
-						'option'  => sprintf( '%s_per_page', Rsvp::COMMENT_TYPE ),
-					)
-				);
-
-				$list_table->register_column_options();
-			}
+			sprintf( 'load-%s', $hook ),
+			array( $this, 'setup_rsvp_list_table_screen_options' )
 		);
+	}
+
+	/**
+	 * Sets up screen options for the RSVP list table.
+	 *
+	 * This method registers the per-page screen option and column options
+	 * for the RSVP list table in the WordPress admin.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return void
+	 */
+	public function setup_rsvp_list_table_screen_options(): void {
+		add_screen_option(
+			'per_page',
+			array(
+				'label'   => __( 'RSVPs per page', 'gatherpress' ),
+				'default' => RSVP_List_Table::DEFAULT_PER_PAGE,
+				'option'  => $this->get_per_page_option(),
+			)
+		);
+
+		$this->list_table->register_column_options();
 	}
 
 	/**
@@ -292,7 +418,7 @@ class Rsvp_Setup {
 			array(
 				'label'   => __( 'RSVPs per page', 'gatherpress' ),
 				'default' => RSVP_List_Table::DEFAULT_PER_PAGE,
-				'option'  => sprintf( '%s_per_page', Rsvp::COMMENT_TYPE ),
+				'option'  => $this->get_per_page_option(),
 			)
 		);
 
@@ -320,7 +446,7 @@ class Rsvp_Setup {
 	 * @return mixed The screen option value or false to use default.
 	 */
 	public function set_rsvp_screen_options( $status, $option, $value ) {
-		if ( sprintf( '%s_per_page', Rsvp::COMMENT_TYPE ) === $option ) {
+		if ( $this->get_per_page_option() === $option ) {
 			return $value;
 		}
 

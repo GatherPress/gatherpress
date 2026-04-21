@@ -16,7 +16,7 @@ namespace GatherPress\Core\Blocks;
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Block;
-use GatherPress\Core\Event;
+use GatherPress\Core\Rsvp;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Utility;
 use WP_HTML_Tag_Processor;
@@ -59,6 +59,7 @@ class General_Block {
 	protected function setup_hooks(): void {
 		add_filter( 'render_block', array( $this, 'process_login_block' ), 10, 2 );
 		add_filter( 'render_block', array( $this, 'process_registration_block' ), 10, 2 );
+		add_filter( 'render_block', array( $this, 'process_venue_detail_field' ), 10, 2 );
 		add_filter( 'render_block_core/button', array( $this, 'convert_submit_button' ), 10, 2 );
 	}
 
@@ -79,27 +80,21 @@ class General_Block {
 	 */
 	public function process_login_block( string $block_content, array $block ): string {
 		if (
-			false !== strpos( $block['attrs']['className'] ?? '', 'gatherpress--has-login-url' ) &&
+			Utility::has_css_class( $block['attrs']['className'] ?? '', 'gatherpress--has-login-url' ) &&
 			is_user_logged_in()
 		) {
 			return '';
 		}
 
-		if (
-			false !== strpos( $block['attrs']['className'] ?? '', 'gatherpress--has-login-url' )
-		) {
-			$tag = new WP_HTML_Tag_Processor( $block_content );
+		$tag = new WP_HTML_Tag_Processor( $block_content );
 
-			while ( $tag->next_tag( array( 'tag_name' => 'a' ) ) ) {
-				if ( '#gatherpress-login-url' === $tag->get_attribute( 'href' ) ) {
-					$tag->set_attribute( 'href', Utility::get_login_url() );
-				}
+		while ( $tag->next_tag( array( 'tag_name' => 'a' ) ) ) {
+			if ( '#gatherpress-login-url' === $tag->get_attribute( 'href' ) ) {
+				$tag->set_attribute( 'href', Utility::get_login_url() );
 			}
-
-			$block_content = $tag->get_updated_html();
 		}
 
-		return $block_content;
+		return $tag->get_updated_html();
 	}
 
 	/**
@@ -119,7 +114,7 @@ class General_Block {
 	 */
 	public function process_registration_block( string $block_content, array $block ): string {
 		if (
-			false !== strpos( $block['attrs']['className'] ?? '', 'gatherpress--has-registration-url' ) &&
+			Utility::has_css_class( $block['attrs']['className'] ?? '', 'gatherpress--has-registration-url' ) &&
 			! get_option( 'users_can_register' )
 		) {
 			return '';
@@ -133,7 +128,77 @@ class General_Block {
 			}
 		}
 
-		$block_content = $tag->get_updated_html();
+		return $tag->get_updated_html();
+	}
+
+	/**
+	 * Processes blocks with venue conditional classes.
+	 *
+	 * This method hides blocks (and their contents) when the associated venue field
+	 * is empty. It uses a naming convention to automatically map class names to JSON fields:
+	 *
+	 * - Class: `gatherpress--has-venue-phone` → JSON field: `phoneNumber`
+	 * - Class: `gatherpress--has-venue-address` → JSON field: `fullAddress`
+	 * - Class: `gatherpress--has-venue-website` → JSON field: `website`
+	 *
+	 * This allows wrapper blocks (like Groups/Rows) containing icons and venue-detail blocks
+	 * to be hidden together when the field has no value.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $block_content The HTML content of the block.
+	 * @param array  $block         The parsed block data.
+	 *
+	 * @return string The modified block content or an empty string if the block should be removed.
+	 */
+	public function process_venue_detail_field( string $block_content, array $block ): string {
+		$class_name = $block['attrs']['className'] ?? '';
+
+		// Check if the block has a venue conditional class.
+		if ( ! preg_match( '/gatherpress--has-venue-([a-z-]+)/', $class_name, $matches ) ) {
+			return $block_content;
+		}
+
+		// Extract field name from class (e.g., "phone" from "gatherpress--has-venue-phone").
+		$field_name = $matches[1];
+
+		// Map class name to JSON field name.
+		$field_mapping = array(
+			'phone'   => 'phoneNumber',
+			'address' => 'fullAddress',
+			'website' => 'website',
+		);
+
+		if ( ! isset( $field_mapping[ $field_name ] ) ) {
+			return $block_content;
+		}
+
+		$json_field = $field_mapping[ $field_name ];
+
+		// Get the venue post ID from the current context.
+		// First try to get it from block context, then fall back to current post.
+		$venue_post_id = $block['attrs']['postId'] ?? get_the_ID();
+
+		// Verify this is actually a venue post type.
+		if ( ! post_type_supports( (string) get_post_type( $venue_post_id ), 'gatherpress-venue-information' ) ) {
+			return $block_content;
+		}
+
+		// Get the venue information JSON and parse it.
+		$venue_info_json = get_post_meta( $venue_post_id, 'gatherpress_venue_information', true );
+		$venue_info      = json_decode( $venue_info_json, true );
+
+		if ( ! is_array( $venue_info ) ) {
+			return '';
+		}
+
+		// Check if the specific field is empty.
+		$field_value = $venue_info[ $json_field ] ?? '';
+
+		// If the field is empty, hide the entire block.
+		if ( empty( $field_value ) ) {
+			return '';
+		}
 
 		return $block_content;
 	}
@@ -154,8 +219,7 @@ class General_Block {
 	 */
 	public function convert_submit_button( string $block_content, array $block ): string {
 		// Check if the button has the gatherpress-submit-button class.
-		if ( ! isset( $block['attrs']['className'] ) ||
-			false === strpos( $block['attrs']['className'], 'gatherpress-submit-button' ) ) {
+		if ( ! Utility::has_css_class( $block['attrs']['className'] ?? '', 'gatherpress-submit-button' ) ) {
 			return $block_content;
 		}
 
@@ -173,7 +237,7 @@ class General_Block {
 				// Replace tag names.
 				$content = $processor->get_updated_html();
 				$content = preg_replace( '/<a\b/', '<button', $content );
-				$content = preg_replace( '/<\/a>/', '</button>', $content );
+				$content = str_replace( '</a>', '</button>', $content );
 
 				return $content;
 			} elseif ( 'BUTTON' === $tag_name ) {
@@ -204,13 +268,17 @@ class General_Block {
 		$block_instance = Block::get_instance();
 		$post_id        = $block_instance->get_post_id( $block );
 
-		// Only process if we have a valid event post.
+		// Only process if the post type supports RSVP.
 		// Only check publish status if not in preview mode.
 		if (
-			Event::POST_TYPE !== get_post_type( $post_id ) ||
+			! post_type_supports( (string) get_post_type( $post_id ), 'gatherpress-rsvp' ) ||
 			( ! is_preview() && 'publish' !== get_post_status( $post_id ) )
 		) {
 			return $block_content;
+		}
+
+		if ( ! ( new Rsvp( $post_id ) )->is_enabled() ) {
+			return '';
 		}
 
 		// Get max guest limit from event settings.
@@ -252,13 +320,17 @@ class General_Block {
 		$block_instance = Block::get_instance();
 		$post_id        = $block_instance->get_post_id( $block );
 
-		// Only process if we have a valid event post.
+		// Only process if the post type supports RSVP.
 		// Only check publish status if not in preview mode.
 		if (
-			Event::POST_TYPE !== get_post_type( $post_id ) ||
+			! post_type_supports( (string) get_post_type( $post_id ), 'gatherpress-rsvp' ) ||
 			( ! is_preview() && 'publish' !== get_post_status( $post_id ) )
 		) {
 			return $block_content;
+		}
+
+		if ( ! ( new Rsvp( $post_id ) )->is_enabled() ) {
+			return '';
 		}
 
 		// Get anonymous RSVP setting from event.

@@ -123,6 +123,12 @@ class Rsvp_Token {
 			return '';
 		}
 
+		// Reject token if the comment is more than 24 hours old.
+		$diff = strtotime( 'now' ) - strtotime( $this->comment->comment_date );
+		if ( $diff >= HOUR_IN_SECONDS * 24 ) {
+			return '';
+		}
+
 		$token = (string) get_comment_meta(
 			(int) $this->comment->comment_ID,
 			$this->get_meta_key(),
@@ -140,12 +146,25 @@ class Rsvp_Token {
 	 * Changes the comment status from pending to approved, typically used
 	 * when a user clicks a verification link in their email.
 	 *
+	 * No-ops when the comment is already approved. The token URL is sticky
+	 * — the user's browser keeps `?gatherpress_rsvp_token=…` on reload and
+	 * on every subsequent click inside the event page — so `init` would
+	 * otherwise re-run `wp_set_comment_status()` on each request. WordPress
+	 * only fires `wp_transition_comment_status` on actual status changes,
+	 * but third-party listeners on that hook (e.g. ActivityPub) can crash
+	 * on marginal inputs, and there's no reason to give them a repeat
+	 * opportunity once the comment is already approved.
+	 *
 	 * @since 1.0.0
 	 *
 	 * @return void
 	 */
 	public function approve_comment(): void {
 		if ( ! $this->comment ) {
+			return;
+		}
+
+		if ( '1' === (string) $this->comment->comment_approved ) {
 			return;
 		}
 
@@ -236,7 +255,7 @@ class Rsvp_Token {
 
 		$post = get_post( (int) $comment->comment_post_ID );
 
-		if ( ! $post || Event::POST_TYPE !== get_post_type( $post ) ) {
+		if ( ! $post || ! post_type_supports( (string) get_post_type( $post ), 'gatherpress-rsvp' ) ) {
 			return null;
 		}
 

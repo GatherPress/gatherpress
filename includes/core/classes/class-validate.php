@@ -62,7 +62,7 @@ class Validate {
 	public static function event_post_id( $param ): bool {
 		return (
 			static::positive_number( $param ) &&
-			Event::POST_TYPE === get_post_type( $param )
+			post_type_supports( (string) get_post_type( $param ), 'gatherpress-event-date' )
 		);
 	}
 

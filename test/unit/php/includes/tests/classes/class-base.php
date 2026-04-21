@@ -37,7 +37,11 @@ abstract class Base extends PMC_Base {
 	 *
 	 * @return void
 	 */
-	public function assert_hooks( array $hooks, $class_instance_closure = null, array $maybe_invoke_methods = array() ): void {
+	public function assert_hooks(
+		array $hooks,
+		$class_instance_closure = null,
+		array $maybe_invoke_methods = array()
+	): void {
 		parent::assert_hooks( $hooks, $class_instance_closure, $maybe_invoke_methods );
 
 		// Get class name from instance.

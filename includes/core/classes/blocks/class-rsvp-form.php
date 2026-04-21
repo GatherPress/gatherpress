@@ -114,19 +114,20 @@ class Rsvp_Form {
 		$block_instance = Block::get_instance();
 		$post_id        = $block_instance->get_post_id( $block );
 
-		// Validate that the post ID is an actual event post type.
+		// Validate that the post type supports RSVP.
 		// Only check publish status if not in preview mode.
 		if (
-			Event::POST_TYPE !== get_post_type( $post_id ) ||
+			! post_type_supports( (string) get_post_type( $post_id ), 'gatherpress-rsvp' ) ||
 			( ! is_preview() && 'publish' !== get_post_status( $post_id ) )
 		) {
 			return '';
 		}
 
-		$event = new Event( $post_id );
+		if ( ! ( new Rsvp( $post_id ) )->is_enabled() ) {
+			return '';
+		}
 
-		// Double-check that the event object was created successfully.
-		if ( ! $event->event ) {
+		if ( ! ( new Rsvp( $post_id ) )->allows_open_rsvp() ) {
 			return '';
 		}
 
@@ -156,6 +157,8 @@ class Rsvp_Form {
 		$tag->set_attribute( 'data-wp-init', 'callbacks.initRsvpForm' );
 		$tag->set_attribute( 'data-wp-on--submit', 'actions.handleRsvpFormSubmit' );
 		$tag->set_attribute( 'data-wp-context', wp_json_encode( array( 'postId' => $post_id ) ) );
+
+		$event = new Event( $post_id );
 
 		// Add event state if the event has passed.
 		if ( $event->has_event_past() ) {
@@ -316,7 +319,12 @@ class Rsvp_Form {
 	 * @param bool                  $is_past         Whether the event has passed.
 	 * @return void
 	 */
-	private function apply_visibility_rule( WP_HTML_Tag_Processor $tag, ?string $visibility_rule, bool $is_success, bool $is_past ): void {
+	private function apply_visibility_rule(
+		WP_HTML_Tag_Processor $tag,
+		?string $visibility_rule,
+		bool $is_success,
+		bool $is_past
+	): void {
 		if ( ! $visibility_rule ) {
 			return;
 		}
@@ -510,6 +518,8 @@ class Rsvp_Form {
 						case 'textarea':
 							$field_config['max_length'] = intval( $attrs['maxLength'] ?? 1000 );
 							break;
+						default:
+							// Nothing to see here. Other field types don't need special handling.
 					}
 
 					$fields[ $field_config['name'] ] = $field_config;
@@ -565,11 +575,12 @@ class Rsvp_Form {
 	 */
 	private function find_form_index_in_blocks( array $blocks, array $target_block, int $base_index = 0 ): int {
 		foreach ( $blocks as $index => $block ) {
-			if ( self::BLOCK_NAME === $block['blockName'] ) {
+			if (
+				self::BLOCK_NAME === $block['blockName'] &&
+				$this->blocks_match( $block, $target_block )
+			) {
 				// Compare block content or attributes to identify the same block.
-				if ( $this->blocks_match( $block, $target_block ) ) {
-					return $base_index + $index;
-				}
+				return $base_index + $index;
 			}
 
 			// Check nested blocks.

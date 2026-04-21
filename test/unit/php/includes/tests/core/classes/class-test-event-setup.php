@@ -9,11 +9,18 @@
 namespace GatherPress\Tests\Core;
 
 use GatherPress\Core\Event;
+use GatherPress\Core\Event_Query;
 use GatherPress\Core\Event_Setup;
+use GatherPress\Core\Settings;
 use GatherPress\Tests\Base;
+use PMC\Unit_Test\Utility;
+use stdClass;
+use WP;
+use WP_Block;
+use WP_REST_Request;
 
 /**
- * Class Test_Event_Query.
+ * Class Test_Event_Setup.
  *
  * @coversDefaultClass \GatherPress\Core\Event_Setup
  */
@@ -39,7 +46,13 @@ class Test_Event_Setup extends Base {
 				'type'     => 'action',
 				'name'     => 'init',
 				'priority' => 10,
-				'callback' => array( $instance, 'register_post_meta' ),
+				'callback' => array( $instance, 'register_event_only_meta' ),
+			),
+			array(
+				'type'     => 'action',
+				'name'     => 'registered_post_type',
+				'priority' => 10,
+				'callback' => array( $instance, 'maybe_register_event_date_meta' ),
 			),
 			array(
 				'type'     => 'action',
@@ -55,6 +68,12 @@ class Test_Event_Setup extends Base {
 			),
 			array(
 				'type'     => 'action',
+				'name'     => 'template_redirect',
+				'priority' => 10,
+				'callback' => array( $instance, 'handle_event_archive_redirect' ),
+			),
+			array(
+				'type'     => 'action',
 				'name'     => 'delete_post',
 				'priority' => 10,
 				'callback' => array( $instance, 'delete_event' ),
@@ -67,33 +86,15 @@ class Test_Event_Setup extends Base {
 			),
 			array(
 				'type'     => 'action',
-				'name'     => sprintf( 'save_post_%s', Event::POST_TYPE ),
+				'name'     => 'save_post',
 				'priority' => 10,
 				'callback' => array( $instance, 'check_waiting_list' ),
-			),
-			array(
-				'type'     => 'action',
-				'name'     => sprintf( 'manage_%s_posts_custom_column', Event::POST_TYPE ),
-				'priority' => 10,
-				'callback' => array( $instance, 'custom_columns' ),
 			),
 			array(
 				'type'     => 'filter',
 				'name'     => 'redirect_canonical',
 				'priority' => 10,
 				'callback' => array( $instance, 'disable_ics_canonical_redirect' ),
-			),
-			array(
-				'type'     => 'filter',
-				'name'     => sprintf( 'manage_%s_posts_columns', Event::POST_TYPE ),
-				'priority' => 10,
-				'callback' => array( $instance, 'set_custom_columns' ),
-			),
-			array(
-				'type'     => 'filter',
-				'name'     => sprintf( 'manage_edit-%s_sortable_columns', Event::POST_TYPE ),
-				'priority' => 10,
-				'callback' => array( $instance, 'sortable_columns' ),
 			),
 			array(
 				'type'     => 'filter',
@@ -109,27 +110,15 @@ class Test_Event_Setup extends Base {
 			),
 			array(
 				'type'     => 'filter',
-				'name'     => 'display_post_states',
+				'name'     => 'render_block_core/post-date',
 				'priority' => 10,
-				'callback' => array( $instance, 'set_event_archive_labels' ),
+				'callback' => array( $instance, 'render_event_post_date_block' ),
 			),
 			array(
 				'type'     => 'filter',
-				'name'     => sprintf( 'manage_%s_posts_columns', Event::POST_TYPE ),
+				'name'     => 'display_post_states',
 				'priority' => 10,
-				'callback' => array( $instance, 'remove_comments_column' ),
-			),
-			array(
-				'type'     => 'action',
-				'name'     => 'pre_get_posts',
-				'priority' => 10,
-				'callback' => array( $instance, 'handle_rsvp_sorting' ),
-			),
-			array(
-				'type'     => 'action',
-				'name'     => 'pre_get_posts',
-				'priority' => 10,
-				'callback' => array( $instance, 'handle_venue_sorting' ),
+				'callback' => array( $instance, 'set_event_archive_labels' ),
 			),
 		);
 
@@ -137,7 +126,7 @@ class Test_Event_Setup extends Base {
 	}
 
 	/**
-	 * Test that the calendar rewrite rule is registered correctly.
+	 * Test that the calendar rewrite rule is registered correctly with default slug.
 	 *
 	 * @covers ::register_calendar_rewrite_rule
 	 *
@@ -145,6 +134,10 @@ class Test_Event_Setup extends Base {
 	 */
 	public function test_register_calendar_rewrite_rule(): void {
 		$instance = Event_Setup::get_instance();
+		$settings = Settings::get_instance();
+
+		// Get the dynamic slug from settings (default is 'events' plural).
+		$rewrite_slug = $settings->get( 'events_url' );
 
 		$instance->register_calendar_rewrite_rule();
 
@@ -157,22 +150,29 @@ class Test_Event_Setup extends Base {
 		// Get the current rewrite rules.
 		$rules = $wp_rewrite->rewrite_rules();
 
-		// Build the expected rule pattern.
-		$expected_rule_pattern     = '^event/([^/]+)\.ics$';
-		$expected_rule_replacement = sprintf( 'index.php?post_type=%s&name=$matches[1]&gatherpress_ics=1', Event::POST_TYPE );
+		// Build the expected rule pattern using dynamic slug.
+		$expected_rule_pattern     = sprintf( '^%s/([^/]+)\.ics$', $rewrite_slug );
+		$expected_rule_replacement = sprintf(
+			'index.php?post_type=%s&name=$matches[1]&gatherpress_ics=1',
+			Event::POST_TYPE
+		);
 
 		// Check that our specific rule pattern exists.
 		$this->assertArrayHasKey(
 			$expected_rule_pattern,
 			$rules,
-			"Expected rewrite rule pattern '^event/([^/]+)\\.ics$' was not found in WordPress rewrite rules"
+			sprintf(
+				"Expected rewrite rule pattern '^%s/([^/]+)\\.ics$' was not found in WordPress rewrite rules",
+				$rewrite_slug
+			)
 		);
 
 		// Check that the rule maps to the correct replacement.
 		$this->assertEquals(
 			$expected_rule_replacement,
 			$rules[ $expected_rule_pattern ],
-			'The rewrite rule replacement does not match the expected format - should map event .ics requests to the correct query vars'
+			'The rewrite rule replacement does not match the expected format -
+			should map event .ics requests to the correct query vars'
 		);
 
 		// Verify that the gatherpress_ics parameter appears in the rules.
@@ -303,13 +303,13 @@ class Test_Event_Setup extends Base {
 	}
 
 	/**
-	 * Coverage for register_post_meta method.
+	 * Coverage for register_event_only_meta method.
 	 *
-	 * @covers ::register_post_meta
+	 * @covers ::register_event_only_meta
 	 *
 	 * @return void
 	 */
-	public function test_register_post_meta(): void {
+	public function test_register_event_only_meta(): void {
 		$instance = Event_Setup::get_instance();
 
 		unregister_post_meta( Event::POST_TYPE, 'gatherpress_online_event_link' );
@@ -317,42 +317,114 @@ class Test_Event_Setup extends Base {
 
 		$meta = get_registered_meta_keys( 'post', Event::POST_TYPE );
 
-		$this->assertArrayNotHasKey( 'online_event_link', $meta, 'Failed to assert that online_event_link does not exist.' );
-		$this->assertArrayNotHasKey( 'enable_anonymous_rsvp', $meta, 'Failed to assert that enable_anonymous_rsvp does not exist.' );
-		$this->assertArrayNotHasKey( 'max_attendance_limit', $meta, 'Failed to assert that max_guest_limit does not exist.' );
-		$this->assertArrayNotHasKey( 'max_guest_limit', $meta, 'Failed to assert that max_guest_limit does not exist.' );
+		$this->assertArrayNotHasKey(
+			'online_event_link',
+			$meta,
+			'Failed to assert that online_event_link does not exist.'
+		);
+		$this->assertArrayNotHasKey(
+			'enable_anonymous_rsvp',
+			$meta,
+			'Failed to assert that enable_anonymous_rsvp does not exist.'
+		);
+		$this->assertArrayNotHasKey(
+			'max_attendance_limit',
+			$meta,
+			'Failed to assert that max_guest_limit does not exist.'
+		);
+		$this->assertArrayNotHasKey(
+			'max_guest_limit',
+			$meta,
+			'Failed to assert that max_guest_limit does not exist.'
+		);
 
-		$instance->register_post_meta();
+		$instance->register_event_only_meta();
 
 		$meta = get_registered_meta_keys( 'post', Event::POST_TYPE );
 
-		$this->assertArrayHasKey( 'gatherpress_online_event_link', $meta, 'Failed to assert that gatherpress_online_event_link does exist.' );
-		$this->assertArrayHasKey( 'gatherpress_enable_anonymous_rsvp', $meta, 'Failed to assert that gatherpress_enable_anonymous_rsvp does exist.' );
-		$this->assertArrayHasKey( 'gatherpress_max_attendance_limit', $meta, 'Failed to assert that max_guest_limit does exist.' );
-		$this->assertArrayHasKey( 'gatherpress_max_guest_limit', $meta, 'Failed to assert that gatherpress_max_guest_limit does exist.' );
+		$this->assertArrayHasKey(
+			'gatherpress_online_event_link',
+			$meta,
+			'Failed to assert that gatherpress_online_event_link does exist.'
+		);
+		$this->assertArrayHasKey(
+			'gatherpress_enable_anonymous_rsvp',
+			$meta,
+			'Failed to assert that gatherpress_enable_anonymous_rsvp does exist.'
+		);
+		$this->assertArrayHasKey(
+			'gatherpress_max_attendance_limit',
+			$meta,
+			'Failed to assert that max_guest_limit does exist.'
+		);
+		$this->assertArrayHasKey(
+			'gatherpress_max_guest_limit',
+			$meta,
+			'Failed to assert that gatherpress_max_guest_limit does exist.'
+		);
 	}
 
 	/**
-	 * Coverage for sortable_columns method.
+	 * Coverage for maybe_register_event_date_meta method.
 	 *
-	 * @covers ::sortable_columns
+	 * Registers datetime meta + the read-only REST filter for any post type
+	 * that declares gatherpress-event-date support. Unsupported post types are
+	 * skipped entirely.
+	 *
+	 * @covers ::maybe_register_event_date_meta
 	 *
 	 * @return void
 	 */
-	public function test_sortable_columns(): void {
+	public function test_maybe_register_event_date_meta(): void {
 		$instance = Event_Setup::get_instance();
-		$default  = array( 'unit' => 'test' );
-		$expects  = array(
-			'unit'     => 'test',
-			'datetime' => 'datetime',
-			'venue'    => 'venue',
-			'rsvps'    => 'rsvps',
+		$test_pt  = 'test_event_date_meta';
+
+		register_post_type(
+			$test_pt,
+			array(
+				'label'    => 'Test Event Date Meta',
+				'public'   => false,
+				'supports' => array( 'title', 'gatherpress-event-date' ),
+			)
 		);
 
-		$this->assertSame(
-			$expects,
-			$instance->sortable_columns( $default ),
-			'Failed to assert correct sortable columns.'
+		$instance->maybe_register_event_date_meta( $test_pt );
+
+		$meta = get_registered_meta_keys( 'post', $test_pt );
+
+		$this->assertArrayHasKey(
+			'gatherpress_datetime',
+			$meta,
+			'Failed to assert that gatherpress_datetime is registered for a post type with event-date support.'
+		);
+		$this->assertArrayHasKey(
+			'gatherpress_datetime_start',
+			$meta,
+			'Failed to assert that gatherpress_datetime_start is registered.'
+		);
+		$this->assertNotFalse(
+			has_filter( sprintf( 'rest_pre_insert_%s', $test_pt ), array( $instance, 'filter_readonly_meta' ) ),
+			'Failed to assert that the read-only REST filter is registered for a post type with event-date support.'
+		);
+
+		unregister_post_type( $test_pt );
+	}
+
+	/**
+	 * Bails when the post type does not declare event-date support.
+	 *
+	 * @covers ::maybe_register_event_date_meta
+	 *
+	 * @return void
+	 */
+	public function test_maybe_register_event_date_meta_skips_unsupported_post_type(): void {
+		$instance = Event_Setup::get_instance();
+
+		$instance->maybe_register_event_date_meta( 'post' );
+
+		$this->assertFalse(
+			has_filter( 'rest_pre_insert_post', array( $instance, 'filter_readonly_meta' ) ),
+			'Failed to assert that no hooks are registered for a post type without event-date support.'
 		);
 	}
 
@@ -387,7 +459,8 @@ class Test_Event_Setup extends Base {
 			array(
 				'post_type' => Event::POST_TYPE,
 				'post_meta' => array(
-					'gatherpress_datetime' => '{"dateTimeStart":"2019-09-18 18:00:00","dateTimeEnd":"2019-09-18 20:00:00","timezone":"America/New_York"}',
+					'gatherpress_datetime' => '{"dateTimeStart":"2019-09-18 18:00:00",
+					"dateTimeEnd":"2019-09-18 20:00:00","timezone":"America/New_York"}',
 				),
 			)
 		)->get()->ID;
@@ -421,334 +494,6 @@ class Test_Event_Setup extends Base {
 	}
 
 	/**
-	 * Coverage for remove_comments_column method.
-	 *
-	 * @covers ::remove_comments_column
-	 *
-	 * @return void
-	 */
-	public function test_remove_comments_column(): void {
-		$instance = Event_Setup::get_instance();
-
-		// Test with columns that include comments.
-		$columns_with_comments = array(
-			'cb'       => '<input type="checkbox" />',
-			'title'    => 'Title',
-			'comments' => 'Comments',
-			'date'     => 'Date',
-		);
-
-		$result = $instance->remove_comments_column( $columns_with_comments );
-
-		$expected = array(
-			'cb'    => '<input type="checkbox" />',
-			'title' => 'Title',
-			'date'  => 'Date',
-		);
-
-		$this->assertEquals(
-			$expected,
-			$result,
-			'Failed to assert that comments column is removed from the columns array.'
-		);
-
-		$this->assertArrayNotHasKey(
-			'comments',
-			$result,
-			'Failed to assert that comments key does not exist in result.'
-		);
-
-		// Test with columns that do not include comments.
-		$columns_without_comments = array(
-			'cb'    => '<input type="checkbox" />',
-			'title' => 'Title',
-			'date'  => 'Date',
-		);
-
-		$result = $instance->remove_comments_column( $columns_without_comments );
-
-		$this->assertEquals(
-			$columns_without_comments,
-			$result,
-			'Failed to assert that columns without comments remain unchanged.'
-		);
-
-		// Test with empty array.
-		$empty_columns = array();
-		$result        = $instance->remove_comments_column( $empty_columns );
-
-		$this->assertEquals(
-			$empty_columns,
-			$result,
-			'Failed to assert that empty array remains unchanged.'
-		);
-	}
-
-	/**
-	 * Coverage for handle_rsvp_sorting method.
-	 *
-	 * @covers ::handle_rsvp_sorting
-	 *
-	 * @return void
-	 */
-	public function test_handle_rsvp_sorting(): void {
-		$instance = Event_Setup::get_instance();
-
-		// Create a mock query.
-		$query = $this->createMock( \WP_Query::class );
-
-		// Test non-admin context (is_admin() returns false by default in tests).
-		$query->method( 'is_main_query' )->willReturn( true );
-		$query->method( 'get' )->willReturnMap(
-			array(
-				array( 'post_type', null, Event::POST_TYPE ),
-				array( 'orderby', null, 'rsvps' ),
-			)
-		);
-
-		// Should return early due to non-admin context.
-		$instance->handle_rsvp_sorting( $query );
-
-		// Test different post type - should return early.
-		$query = $this->createMock( \WP_Query::class );
-		$query->method( 'is_main_query' )->willReturn( true );
-		$query->method( 'get' )->willReturnMap(
-			array(
-				array( 'post_type', null, 'post' ),
-				array( 'orderby', null, 'rsvps' ),
-			)
-		);
-
-		$instance->handle_rsvp_sorting( $query );
-
-		// Test non-main query - should return early.
-		$query = $this->createMock( \WP_Query::class );
-		$query->method( 'is_main_query' )->willReturn( false );
-		$query->method( 'get' )->willReturnMap(
-			array(
-				array( 'post_type', null, Event::POST_TYPE ),
-				array( 'orderby', null, 'rsvps' ),
-			)
-		);
-
-		$instance->handle_rsvp_sorting( $query );
-
-		// Test different orderby - should return early.
-		$query = $this->createMock( \WP_Query::class );
-		$query->method( 'is_main_query' )->willReturn( true );
-		$query->method( 'get' )->willReturnMap(
-			array(
-				array( 'post_type', null, Event::POST_TYPE ),
-				array( 'orderby', null, 'title' ),
-			)
-		);
-
-		$instance->handle_rsvp_sorting( $query );
-
-		// Since the method primarily adds filters and sets query vars,
-		// and we can't easily test is_admin() in unit tests,
-		// we'll focus on testing the individual components.
-		$this->assertTrue( true ); // Method completed without errors.
-	}
-
-	/**
-	 * Coverage for rsvp_sorting_join_paged method.
-	 *
-	 * @covers ::rsvp_sorting_join_paged
-	 *
-	 * @return void
-	 */
-	public function test_rsvp_sorting_join_paged(): void {
-		global $wpdb;
-		$instance = Event_Setup::get_instance();
-
-		$original_join = "LEFT JOIN {$wpdb->posts} AS posts ON posts.ID = {$wpdb->posts}.ID";
-		$result        = $instance->rsvp_sorting_join_paged( $original_join );
-
-		// Should contain the original join plus the RSVP join.
-		$this->assertStringContainsString( $original_join, $result );
-		$this->assertStringContainsString( 'LEFT JOIN', $result );
-		$this->assertStringContainsString( $wpdb->comments, $result );
-		$this->assertStringContainsString( 'rsvp_sort_comments', $result );
-		$this->assertStringContainsString( "comment_type = 'gatherpress_rsvp'", $result );
-		$this->assertStringContainsString( "comment_approved = '1'", $result );
-	}
-
-	/**
-	 * Coverage for rsvp_sorting_groupby method.
-	 *
-	 * @covers ::rsvp_sorting_groupby
-	 *
-	 * @return void
-	 */
-	public function test_rsvp_sorting_groupby(): void {
-		global $wpdb;
-		$instance = Event_Setup::get_instance();
-
-		$result = $instance->rsvp_sorting_groupby( '' );
-		$this->assertEquals( "{$wpdb->posts}.ID", $result );
-
-		// Test with existing groupby - should keep the existing value.
-		$existing_groupby = 'existing_group';
-		$result           = $instance->rsvp_sorting_groupby( $existing_groupby );
-		$this->assertEquals( 'existing_group', $result );
-	}
-
-	/**
-	 * Coverage for rsvp_sorting_orderby method.
-	 *
-	 * Note: This method relies on the global $wp_query, so we test the method's structure
-	 * and ensure it returns a proper ORDER BY clause with expected patterns.
-	 *
-	 * @covers ::rsvp_sorting_orderby
-	 *
-	 * @return void
-	 */
-	public function test_rsvp_sorting_orderby(): void {
-		$instance = Event_Setup::get_instance();
-
-		$result = $instance->rsvp_sorting_orderby( 'original_orderby' );
-
-		// Should contain the expected COUNT structure.
-		$this->assertStringContainsString( 'COUNT(rsvp_sort_comments.comment_ID)', $result );
-
-		// Should contain either ASC or DESC (defaults to ASC).
-		$this->assertTrue(
-			strpos( $result, 'ASC' ) !== false || strpos( $result, 'DESC' ) !== false,
-			'ORDER BY clause should contain ASC or DESC'
-		);
-
-		// Verify the method returns a string (basic type check).
-		$this->assertIsString( $result );
-		$this->assertNotEmpty( $result );
-	}
-
-	/**
-	 * Coverage for handle_venue_sorting method.
-	 *
-	 * @covers ::handle_venue_sorting
-	 *
-	 * @return void
-	 */
-	public function test_handle_venue_sorting(): void {
-		$instance = Event_Setup::get_instance();
-
-		// Create a mock query.
-		$query = $this->createMock( \WP_Query::class );
-
-		// Test non-admin context (is_admin() returns false by default in tests).
-		$query->method( 'is_main_query' )->willReturn( true );
-		$query->method( 'get' )->willReturnMap(
-			array(
-				array( 'post_type', null, Event::POST_TYPE ),
-				array( 'orderby', null, 'venue' ),
-			)
-		);
-
-		// Should return early due to non-admin context.
-		$instance->handle_venue_sorting( $query );
-
-		// Test different post type - should return early.
-		$query = $this->createMock( \WP_Query::class );
-		$query->method( 'is_main_query' )->willReturn( true );
-		$query->method( 'get' )->willReturnMap(
-			array(
-				array( 'post_type', null, 'post' ),
-				array( 'orderby', null, 'venue' ),
-			)
-		);
-
-		$instance->handle_venue_sorting( $query );
-
-		// Test non-main query - should return early.
-		$query = $this->createMock( \WP_Query::class );
-		$query->method( 'is_main_query' )->willReturn( false );
-		$query->method( 'get' )->willReturnMap(
-			array(
-				array( 'post_type', null, Event::POST_TYPE ),
-				array( 'orderby', null, 'venue' ),
-			)
-		);
-
-		$instance->handle_venue_sorting( $query );
-
-		// Test different orderby - should return early.
-		$query = $this->createMock( \WP_Query::class );
-		$query->method( 'is_main_query' )->willReturn( true );
-		$query->method( 'get' )->willReturnMap(
-			array(
-				array( 'post_type', null, Event::POST_TYPE ),
-				array( 'orderby', null, 'title' ),
-			)
-		);
-
-		$instance->handle_venue_sorting( $query );
-
-		// Since the method primarily adds filters and sets query vars,
-		// and we can't easily test is_admin() in unit tests,
-		// we'll focus on testing the individual components.
-		$this->assertTrue( true ); // Method completed without errors.
-	}
-
-	/**
-	 * Coverage for venue_sorting_join_paged method.
-	 *
-	 * @covers ::venue_sorting_join_paged
-	 *
-	 * @return void
-	 */
-	public function test_venue_sorting_join_paged(): void {
-		global $wpdb;
-		$instance = Event_Setup::get_instance();
-
-		$original_join = "LEFT JOIN {$wpdb->posts} AS posts ON posts.ID = {$wpdb->posts}.ID";
-		$result        = $instance->venue_sorting_join_paged( $original_join );
-
-		// Should contain the original join plus the venue joins.
-		$this->assertStringContainsString( $original_join, $result );
-		$this->assertStringContainsString( 'LEFT JOIN', $result );
-		$this->assertStringContainsString( $wpdb->term_relationships, $result );
-		$this->assertStringContainsString( 'venue_tr', $result );
-		$this->assertStringContainsString( $wpdb->term_taxonomy, $result );
-		$this->assertStringContainsString( 'venue_tt', $result );
-		$this->assertStringContainsString( $wpdb->terms, $result );
-		$this->assertStringContainsString( 'venue_terms', $result );
-		$this->assertStringContainsString( "'" . \GatherPress\Core\Venue::TAXONOMY . "'", $result );
-	}
-
-	/**
-	 * Coverage for venue_sorting_orderby method.
-	 *
-	 * Note: This method relies on the global $wp_query, so we test the method's structure
-	 * and ensure it returns a proper ORDER BY clause with expected patterns.
-	 *
-	 * @covers ::venue_sorting_orderby
-	 *
-	 * @return void
-	 */
-	public function test_venue_sorting_orderby(): void {
-		$instance = Event_Setup::get_instance();
-
-		$result = $instance->venue_sorting_orderby( 'original_orderby' );
-
-		// Should contain the expected CASE structure for NULL handling.
-		$this->assertStringContainsString( 'CASE WHEN venue_terms.name IS NULL THEN 1 ELSE 0 END ASC', $result );
-
-		// Should contain venue_terms.name in the ORDER BY.
-		$this->assertStringContainsString( 'venue_terms.name', $result );
-
-		// Should contain either ASC or DESC (defaults to ASC).
-		$this->assertTrue(
-			strpos( $result, 'ASC' ) !== false || strpos( $result, 'DESC' ) !== false,
-			'ORDER BY clause should contain ASC or DESC'
-		);
-
-		// Verify the method returns a string (basic type check).
-		$this->assertIsString( $result );
-		$this->assertNotEmpty( $result );
-	}
-
-	/**
 	 * Coverage for check_waiting_list method.
 	 *
 	 * @covers ::check_waiting_list
@@ -764,6 +509,22 @@ class Test_Event_Setup extends Base {
 		// Method should execute without error.
 		$instance->check_waiting_list( $post_id );
 		$this->assertTrue( true, 'check_waiting_list executed without error.' );
+	}
+
+	/**
+	 * Coverage for check_waiting_list method with non-rsvp post type.
+	 *
+	 * @covers ::check_waiting_list
+	 *
+	 * @return void
+	 */
+	public function test_check_waiting_list_skips_non_rsvp_post_type(): void {
+		$instance = Event_Setup::get_instance();
+		$post_id  = $this->mock->post()->get()->ID;
+
+		// A plain post does not support gatherpress-rsvp so the method returns early.
+		$instance->check_waiting_list( $post_id );
+		$this->assertTrue( true, 'check_waiting_list returned early for non-rsvp post type without error.' );
 	}
 
 	/**
@@ -823,226 +584,6 @@ class Test_Event_Setup extends Base {
 	}
 
 	/**
-	 * Coverage for custom_columns method with datetime column.
-	 *
-	 * @covers ::custom_columns
-	 *
-	 * @return void
-	 */
-	public function test_custom_columns_datetime(): void {
-		$instance = Event_Setup::get_instance();
-		$post_id  = $this->mock->post(
-			array( 'post_type' => Event::POST_TYPE )
-		)->get()->ID;
-
-		$event = new Event( $post_id );
-		$event->save_datetimes(
-			array(
-				'datetime_start' => '2025-06-15 10:00:00',
-				'datetime_end'   => '2025-06-15 14:00:00',
-				'timezone'       => 'America/New_York',
-			)
-		);
-
-		ob_start();
-		$instance->custom_columns( 'datetime', $post_id );
-		$output = ob_get_clean();
-
-		$this->assertNotEmpty( $output, 'Datetime column should produce output.' );
-		$this->assertStringContainsString( 'June', $output, 'Datetime output should contain month name.' );
-	}
-
-	/**
-	 * Coverage for custom_columns method with venue column.
-	 *
-	 * @covers ::custom_columns
-	 *
-	 * @return void
-	 */
-	public function test_custom_columns_venue_with_name(): void {
-		$instance = Event_Setup::get_instance();
-		$post_id  = $this->mock->post(
-			array( 'post_type' => Event::POST_TYPE )
-		)->get()->ID;
-
-		// Create a venue term and associate it with the event.
-		$venue_name = 'Test Venue';
-		$term       = wp_insert_term( $venue_name, \GatherPress\Core\Venue::TAXONOMY );
-		wp_set_post_terms( $post_id, array( $term['term_id'] ), \GatherPress\Core\Venue::TAXONOMY );
-
-		ob_start();
-		$instance->custom_columns( 'venue', $post_id );
-		$output = ob_get_clean();
-
-		$this->assertStringContainsString( $venue_name, $output, 'Venue column should contain venue name.' );
-	}
-
-	/**
-	 * Coverage for custom_columns method with venue column and no venue.
-	 *
-	 * @covers ::custom_columns
-	 *
-	 * @return void
-	 */
-	public function test_custom_columns_venue_no_venue(): void {
-		$instance = Event_Setup::get_instance();
-		$post_id  = $this->mock->post(
-			array( 'post_type' => Event::POST_TYPE )
-		)->get()->ID;
-
-		ob_start();
-		$instance->custom_columns( 'venue', $post_id );
-		$output = ob_get_clean();
-
-		$this->assertStringContainsString( '—', $output, 'Venue column should show em dash when no venue.' );
-	}
-
-	/**
-	 * Coverage for custom_columns method with venue column and online event.
-	 *
-	 * @covers ::custom_columns
-	 *
-	 * @return void
-	 */
-	public function test_custom_columns_venue_online_event(): void {
-		$instance = Event_Setup::get_instance();
-		$post_id  = $this->mock->post(
-			array( 'post_type' => Event::POST_TYPE )
-		)->get()->ID;
-
-		// Set online event link.
-		update_post_meta( $post_id, 'gatherpress_online_event_link', 'https://example.com/meeting' );
-
-		ob_start();
-		$instance->custom_columns( 'venue', $post_id );
-		$output = ob_get_clean();
-
-		// The method should execute without error for online events.
-		$this->assertNotEmpty( $output, 'Online event column should produce output.' );
-	}
-
-	/**
-	 * Coverage for custom_columns method with rsvps column (no RSVPs).
-	 *
-	 * @covers ::custom_columns
-	 *
-	 * @return void
-	 */
-	public function test_custom_columns_rsvps_no_rsvps(): void {
-		$instance = Event_Setup::get_instance();
-		$post_id  = $this->mock->post(
-			array( 'post_type' => Event::POST_TYPE )
-		)->get()->ID;
-
-		ob_start();
-		$instance->custom_columns( 'rsvps', $post_id );
-		$output = ob_get_clean();
-
-		$this->assertStringContainsString( '—', $output, 'RSVPs column should show em dash when no RSVPs.' );
-	}
-
-	/**
-	 * Coverage for custom_columns method with rsvps column (with approved RSVPs).
-	 *
-	 * @covers ::custom_columns
-	 *
-	 * @return void
-	 */
-	public function test_custom_columns_rsvps_with_approved(): void {
-		$instance = Event_Setup::get_instance();
-		$post_id  = $this->mock->post(
-			array( 'post_type' => Event::POST_TYPE )
-		)->get()->ID;
-
-		// Create approved RSVP.
-		$this->factory->comment->create(
-			array(
-				'comment_post_ID'  => $post_id,
-				'comment_type'     => \GatherPress\Core\Rsvp::COMMENT_TYPE,
-				'comment_approved' => 1,
-			)
-		);
-
-		ob_start();
-		$instance->custom_columns( 'rsvps', $post_id );
-		$output = ob_get_clean();
-
-		$this->assertStringContainsString( 'gatherpress-rsvp-approved', $output, 'Should show approved RSVP count.' );
-		$this->assertStringContainsString( '>1<', $output, 'Should show count of 1.' );
-	}
-
-	/**
-	 * Coverage for custom_columns method with rsvps column (with unapproved RSVPs).
-	 *
-	 * @covers ::custom_columns
-	 *
-	 * @return void
-	 */
-	public function test_custom_columns_rsvps_with_unapproved(): void {
-		$instance = Event_Setup::get_instance();
-		$post_id  = $this->mock->post(
-			array( 'post_type' => Event::POST_TYPE )
-		)->get()->ID;
-
-		// Create approved and unapproved RSVPs.
-		$this->factory->comment->create(
-			array(
-				'comment_post_ID'  => $post_id,
-				'comment_type'     => \GatherPress\Core\Rsvp::COMMENT_TYPE,
-				'comment_approved' => 1,
-			)
-		);
-		$this->factory->comment->create(
-			array(
-				'comment_post_ID'  => $post_id,
-				'comment_type'     => \GatherPress\Core\Rsvp::COMMENT_TYPE,
-				'comment_approved' => 0,
-			)
-		);
-
-		ob_start();
-		$instance->custom_columns( 'rsvps', $post_id );
-		$output = ob_get_clean();
-
-		$this->assertStringContainsString( 'gatherpress-rsvp-pending', $output, 'Should show unapproved RSVP indicator.' );
-		$this->assertStringContainsString( 'Unapproved RSVPs', $output, 'Should contain title for unapproved.' );
-	}
-
-	/**
-	 * Coverage for set_custom_columns method.
-	 *
-	 * @covers ::set_custom_columns
-	 *
-	 * @return void
-	 */
-	public function test_set_custom_columns(): void {
-		$instance = Event_Setup::get_instance();
-
-		$default_columns = array(
-			'cb'     => '<input type="checkbox" />',
-			'title'  => 'Title',
-			'author' => 'Author',
-			'date'   => 'Date',
-		);
-
-		$result = $instance->set_custom_columns( $default_columns );
-
-		// Should not contain author column.
-		$this->assertArrayNotHasKey( 'author', $result, 'Author column should be removed.' );
-
-		// Should contain custom columns.
-		$this->assertArrayHasKey( 'datetime', $result, 'Should have datetime column.' );
-		$this->assertArrayHasKey( 'venue', $result, 'Should have venue column.' );
-		$this->assertArrayHasKey( 'rsvps', $result, 'Should have rsvps column.' );
-
-		// Verify order (custom columns should be inserted after title).
-		$keys = array_keys( $result );
-		$this->assertEquals( 'cb', $keys[0], 'First column should be cb.' );
-		$this->assertEquals( 'title', $keys[1], 'Second column should be title.' );
-		$this->assertEquals( 'datetime', $keys[2], 'Third column should be datetime.' );
-	}
-
-	/**
 	 * Coverage for get_the_event_date method when event date should be used.
 	 *
 	 * @covers ::get_the_event_date
@@ -1066,20 +607,59 @@ class Test_Event_Setup extends Base {
 
 		// Set setting to use event date.
 		update_option(
-			'gatherpress_general',
+			'gatherpress_settings',
 			array(
-				'general' => array(
-					'post_or_event_date' => '1',
-				),
+				'post_or_event_date' => '1',
 			)
 		);
 
 		// Set global post.
 		$this->go_to( get_permalink( $post_id ) );
 
-		$result = $instance->get_the_event_date( 'June 15, 2025' );
+		$post   = get_post( $post_id );
+		$result = $instance->get_the_event_date( 'June 15, 2025', '', $post );
 
 		$this->assertStringContainsString( 'June', $result, 'Should return event date.' );
+	}
+
+	/**
+	 * Coverage for get_the_event_date with ISO 8601 format for Post Date block compatibility.
+	 *
+	 * @covers ::get_the_event_date
+	 *
+	 * @return void
+	 */
+	public function test_get_the_event_date_iso_format(): void {
+		$instance = Event_Setup::get_instance();
+		$post_id  = $this->mock->post(
+			array( 'post_type' => Event::POST_TYPE )
+		)->get()->ID;
+
+		$event = new Event( $post_id );
+		$event->save_datetimes(
+			array(
+				'datetime_start' => '2025-06-15 10:00:00',
+				'datetime_end'   => '2025-06-15 14:00:00',
+				'timezone'       => 'America/New_York',
+			)
+		);
+
+		// Set setting to use event date.
+		update_option(
+			'gatherpress_settings',
+			array(
+				'post_or_event_date' => '1',
+			)
+		);
+
+		$this->go_to( get_permalink( $post_id ) );
+
+		$post   = get_post( $post_id );
+		$result = $instance->get_the_event_date( '2025-06-15T10:00:00-04:00', 'c', $post );
+
+		// Should return ISO 8601 formatted event start datetime.
+		$this->assertStringContainsString( '2025-06-15', $result, 'Should return ISO 8601 formatted event date.' );
+		$this->assertStringContainsString( 'T', $result, 'Should contain time separator for ISO 8601 format.' );
 	}
 
 	/**
@@ -1097,18 +677,17 @@ class Test_Event_Setup extends Base {
 
 		// Set setting to use post date.
 		update_option(
-			'gatherpress_general',
+			'gatherpress_settings',
 			array(
-				'general' => array(
-					'post_or_event_date' => '0',
-				),
+				'post_or_event_date' => '0',
 			)
 		);
 
 		$this->go_to( get_permalink( $post_id ) );
 
+		$post          = get_post( $post_id );
 		$original_date = 'June 15, 2025';
-		$result        = $instance->get_the_event_date( $original_date );
+		$result        = $instance->get_the_event_date( $original_date, '', $post );
 
 		$this->assertSame( $original_date, $result, 'Should return original post date.' );
 	}
@@ -1126,10 +705,187 @@ class Test_Event_Setup extends Base {
 
 		$this->go_to( get_permalink( $post_id ) );
 
+		$post          = get_post( $post_id );
 		$original_date = 'June 15, 2025';
-		$result        = $instance->get_the_event_date( $original_date );
+		$result        = $instance->get_the_event_date( $original_date, '', $post );
 
 		$this->assertSame( $original_date, $result, 'Should return original date for non-event posts.' );
+	}
+
+	/**
+	 * Coverage for render_event_post_date_block method with event post and setting enabled.
+	 *
+	 * @covers ::render_event_post_date_block
+	 *
+	 * @return void
+	 */
+	public function test_render_event_post_date_block_with_event(): void {
+		$instance = Event_Setup::get_instance();
+		$post_id  = $this->mock->post(
+			array( 'post_type' => Event::POST_TYPE )
+		)->get()->ID;
+
+		$event = new Event( $post_id );
+		$event->save_datetimes(
+			array(
+				'datetime_start' => '2025-06-15 10:00:00',
+				'datetime_end'   => '2025-06-15 14:00:00',
+				'timezone'       => 'America/New_York',
+			)
+		);
+
+		// Set setting to use event date.
+		update_option(
+			'gatherpress_settings',
+			array(
+				'post_or_event_date' => '1',
+			)
+		);
+
+		$this->go_to( get_permalink( $post_id ) );
+
+		// phpcs:ignore Generic.Files.LineLength.TooLong -- Block HTML fixture.
+		$block_content = '<div class="wp-block-post-date"><time datetime="2025-03-26T12:00:00+00:00">March 26, 2025</time></div>';
+		$block         = array(
+			'blockName' => 'core/post-date',
+			'attrs'     => array(),
+		);
+		$wp_block      = new WP_Block(
+			$block,
+			array( 'postId' => $post_id )
+		);
+
+		$result = $instance->render_event_post_date_block( $block_content, $block, $wp_block );
+
+		$this->assertStringContainsString( 'June', $result, 'Should contain event date month.' );
+		$this->assertStringContainsString(
+			'2025-06-15',
+			$result,
+			'Should contain ISO event date in datetime attribute.'
+		);
+	}
+
+	/**
+	 * Coverage for render_event_post_date_block method with setting disabled.
+	 *
+	 * @covers ::render_event_post_date_block
+	 *
+	 * @return void
+	 */
+	public function test_render_event_post_date_block_setting_disabled(): void {
+		$instance = Event_Setup::get_instance();
+		$post_id  = $this->mock->post(
+			array( 'post_type' => Event::POST_TYPE )
+		)->get()->ID;
+
+		// Set setting to use post date (disabled).
+		update_option(
+			'gatherpress_settings',
+			array(
+				'post_or_event_date' => '0',
+			)
+		);
+
+		$this->go_to( get_permalink( $post_id ) );
+
+		// phpcs:ignore Generic.Files.LineLength.TooLong -- Block HTML fixture.
+		$block_content = '<div class="wp-block-post-date"><time datetime="2025-03-26T12:00:00+00:00">March 26, 2025</time></div>';
+		$block         = array(
+			'blockName' => 'core/post-date',
+			'attrs'     => array(),
+		);
+		$wp_block      = new WP_Block(
+			$block,
+			array( 'postId' => $post_id )
+		);
+
+		$result = $instance->render_event_post_date_block( $block_content, $block, $wp_block );
+
+		$this->assertSame( $block_content, $result, 'Should return original block content when setting is disabled.' );
+	}
+
+	/**
+	 * Coverage for render_event_post_date_block method with non-event post.
+	 *
+	 * @covers ::render_event_post_date_block
+	 *
+	 * @return void
+	 */
+	public function test_render_event_post_date_block_non_event(): void {
+		$instance = Event_Setup::get_instance();
+		$post_id  = $this->mock->post()->get()->ID;
+
+		$this->go_to( get_permalink( $post_id ) );
+
+		// phpcs:ignore Generic.Files.LineLength.TooLong -- Block HTML fixture.
+		$block_content = '<div class="wp-block-post-date"><time datetime="2025-03-26T12:00:00+00:00">March 26, 2025</time></div>';
+		$block         = array(
+			'blockName' => 'core/post-date',
+			'attrs'     => array(),
+		);
+		$wp_block      = new WP_Block(
+			$block,
+			array( 'postId' => $post_id )
+		);
+
+		$result = $instance->render_event_post_date_block( $block_content, $block, $wp_block );
+
+		$this->assertSame( $block_content, $result, 'Should return original block content for non-event posts.' );
+	}
+
+	/**
+	 * Coverage for render_event_post_date_block with event that has no datetime.
+	 *
+	 * @covers ::render_event_post_date_block
+	 *
+	 * @return void
+	 */
+	public function test_render_event_post_date_block_empty_datetime(): void {
+		$instance = Event_Setup::get_instance();
+		$post_id  = $this->mock->post(
+			array( 'post_type' => Event::POST_TYPE )
+		)->get()->ID;
+
+		// Save empty/zero datetimes to trigger the em dash display.
+		$event = new Event( $post_id );
+		$event->save_datetimes(
+			array(
+				'datetime_start' => '0000-00-00 00:00:00',
+				'datetime_end'   => '0000-00-00 00:00:00',
+				'timezone'       => 'UTC',
+			)
+		);
+
+		// Set setting to use event date.
+		update_option(
+			'gatherpress_settings',
+			array(
+				'post_or_event_date' => '1',
+			)
+		);
+
+		$this->go_to( get_permalink( $post_id ) );
+
+		// phpcs:ignore Generic.Files.LineLength.TooLong -- Block HTML fixture.
+		$block_content = '<div class="wp-block-post-date"><time datetime="2025-03-26T12:00:00+00:00">March 26, 2025</time></div>';
+		$block         = array(
+			'blockName' => 'core/post-date',
+			'attrs'     => array(),
+		);
+		$wp_block      = new WP_Block(
+			$block,
+			array( 'postId' => $post_id )
+		);
+
+		$result = $instance->render_event_post_date_block( $block_content, $block, $wp_block );
+
+		$this->assertSame(
+			$block_content,
+			$result,
+			'Should return original block content when event datetime is empty.'
+		);
+
+		delete_option( 'gatherpress_settings' );
 	}
 
 	/**
@@ -1142,7 +898,7 @@ class Test_Event_Setup extends Base {
 	public function test_set_event_archive_labels_no_pages(): void {
 		$instance = Event_Setup::get_instance();
 
-		delete_option( 'gatherpress_general' );
+		delete_option( 'gatherpress_settings' );
 
 		$post        = $this->mock->post()->get();
 		$post_states = array( 'publish' => 'Published' );
@@ -1163,7 +919,7 @@ class Test_Event_Setup extends Base {
 		$instance = Event_Setup::get_instance();
 
 		update_option(
-			'gatherpress_general',
+			'gatherpress_settings',
 			array(
 				'pages' => '',
 			)
@@ -1190,17 +946,15 @@ class Test_Event_Setup extends Base {
 		$page_id = $this->mock->post( array( 'post_type' => 'page' ) )->get()->ID;
 
 		update_option(
-			'gatherpress_general',
+			'gatherpress_settings',
 			array(
-				'pages' => array(
-					'upcoming_events' => wp_json_encode(
-						array(
-							(object) array(
-								'id'    => $page_id,
-								'value' => 'Upcoming Events',
-							),
-						)
-					),
+				'upcoming_events' => wp_json_encode(
+					array(
+						(object) array(
+							'id'    => $page_id,
+							'value' => 'Upcoming Events',
+						),
+					)
 				),
 			)
 		);
@@ -1211,7 +965,11 @@ class Test_Event_Setup extends Base {
 		$result = $instance->set_event_archive_labels( $post_states, $post );
 
 		$this->assertArrayHasKey( 'gatherpress_upcoming_events', $result, 'Should have upcoming events label.' );
-		$this->assertStringContainsString( 'GatherPress', $result['gatherpress_upcoming_events'], 'Label should contain GatherPress.' );
+		$this->assertStringContainsString(
+			'GatherPress',
+			$result['gatherpress_upcoming_events'],
+			'Label should contain GatherPress.'
+		);
 	}
 
 	/**
@@ -1227,17 +985,15 @@ class Test_Event_Setup extends Base {
 		$page_id = $this->mock->post( array( 'post_type' => 'page' ) )->get()->ID;
 
 		update_option(
-			'gatherpress_general',
+			'gatherpress_settings',
 			array(
-				'pages' => array(
-					'past_events' => wp_json_encode(
-						array(
-							(object) array(
-								'id'    => $page_id,
-								'value' => 'Past Events',
-							),
-						)
-					),
+				'past_events' => wp_json_encode(
+					array(
+						(object) array(
+							'id'    => $page_id,
+							'value' => 'Past Events',
+						),
+					)
 				),
 			)
 		);
@@ -1248,7 +1004,11 @@ class Test_Event_Setup extends Base {
 		$result = $instance->set_event_archive_labels( $post_states, $post );
 
 		$this->assertArrayHasKey( 'gatherpress_past_events', $result, 'Should have past events label.' );
-		$this->assertStringContainsString( 'GatherPress', $result['gatherpress_past_events'], 'Label should contain GatherPress.' );
+		$this->assertStringContainsString(
+			'GatherPress',
+			$result['gatherpress_past_events'],
+			'Label should contain GatherPress.'
+		);
 	}
 
 	/**
@@ -1269,5 +1029,737 @@ class Test_Event_Setup extends Base {
 			get_post_meta( $post_id, 'gatherpress_datetime_start', true ),
 			'Should not set datetime meta for non-event posts.'
 		);
+	}
+
+	/**
+	 * Tests that restore_previous_locale() is called in get_localized_post_type_slug().
+	 *
+	 * Covers: restore_previous_locale when locale is switched.
+	 *
+	 * @covers ::get_localized_post_type_slug
+	 * @return void
+	 */
+	public function test_get_localized_post_type_slug_restores_locale(): void {
+		// Create a scenario where get_locale() returns a different value.
+		// than the current global locale by using the locale filter.
+		// phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.Found -- Intentionally overriding locale.
+		$locale_filter = static function ( $locale ) {
+			return 'de_DE';
+		};
+
+		add_filter( 'locale', $locale_filter );
+
+		// Now get_locale() will return 'de_DE', triggering switch and restore.
+		$slug = Event_Setup::get_localized_post_type_slug();
+
+		// If no error occurs, restore_previous_locale was called correctly.
+		$this->assertIsString( $slug, 'Should return a string slug' );
+
+		remove_filter( 'locale', $locale_filter );
+	}
+
+	/**
+	 * Tests auth callbacks for post meta registration.
+	 *
+	 * Covers: auth_callback returns.
+	 *
+	 * @covers ::register_event_only_meta
+	 * @covers ::maybe_register_event_date_meta
+	 * @covers ::can_edit_posts_meta
+	 * @return void
+	 */
+	public function test_register_post_meta_auth_callbacks(): void {
+		// Set current user as editor.
+		$user_id = $this->factory->user->create( array( 'role' => 'editor' ) );
+		wp_set_current_user( $user_id );
+
+		$post_id = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get()->ID;
+
+		// Test that meta can be updated when user has edit_posts capability.
+		$result = update_post_meta( $post_id, 'gatherpress_datetime_start', '2024-01-01 10:00:00' );
+		$this->assertNotFalse( $result, 'Should allow meta update with edit_posts capability' );
+
+		$result = update_post_meta( $post_id, 'gatherpress_datetime_start_gmt', '2024-01-01 10:00:00' );
+		$this->assertNotFalse( $result, 'Should allow meta update for datetime_start_gmt' );
+
+		$result = update_post_meta( $post_id, 'gatherpress_datetime_end', '2024-01-01 12:00:00' );
+		$this->assertNotFalse( $result, 'Should allow meta update for datetime_end' );
+
+		$result = update_post_meta( $post_id, 'gatherpress_datetime_end_gmt', '2024-01-01 12:00:00' );
+		$this->assertNotFalse( $result, 'Should allow meta update for datetime_end_gmt' );
+
+		$result = update_post_meta( $post_id, 'gatherpress_timezone', 'America/New_York' );
+		$this->assertNotFalse( $result, 'Should allow meta update for timezone' );
+
+		$result = update_post_meta( $post_id, 'gatherpress_max_guest_limit', 5 );
+		$this->assertNotFalse( $result, 'Should allow meta update for max_guest_limit' );
+
+		$result = update_post_meta( $post_id, 'gatherpress_enable_anonymous_rsvp', true );
+		$this->assertNotFalse( $result, 'Should allow meta update for enable_anonymous_rsvp' );
+
+		$result = update_post_meta( $post_id, 'gatherpress_online_event_link', 'https://example.com' );
+		$this->assertNotFalse( $result, 'Should allow meta update for online_event_link' );
+
+		$result = update_post_meta( $post_id, 'gatherpress_max_attendance_limit', 100 );
+		$this->assertNotFalse( $result, 'Should allow meta update for max_attendance_limit' );
+	}
+
+	/**
+	 * Tests can_edit_posts_meta authorization callback.
+	 *
+	 * @covers ::can_edit_posts_meta
+	 *
+	 * @return void
+	 */
+	public function test_can_edit_posts_meta(): void {
+		$instance = Event_Setup::get_instance();
+
+		// Test with user who can edit posts.
+		$editor_id = $this->factory->user->create( array( 'role' => 'editor' ) );
+		wp_set_current_user( $editor_id );
+
+		$this->assertTrue( $instance->can_edit_posts_meta(), 'Editor should be able to edit post meta' );
+
+		// Test with user who cannot edit posts.
+		$subscriber_id = $this->factory->user->create( array( 'role' => 'subscriber' ) );
+		wp_set_current_user( $subscriber_id );
+
+		$this->assertFalse( $instance->can_edit_posts_meta(), 'Subscriber should not be able to edit post meta' );
+
+		// Test with logged-out user.
+		wp_set_current_user( 0 );
+
+		$this->assertFalse( $instance->can_edit_posts_meta(), 'Logged-out user should not be able to edit post meta' );
+	}
+
+	/**
+	 * Tests handle_calendar_ics_request with event not found.
+	 *
+	 * @covers ::handle_calendar_ics_request
+	 * @return void
+	 */
+	public function test_handle_calendar_ics_request_event_not_found(): void {
+		$wp             = new WP();
+		$wp->query_vars = array(
+			'gatherpress_ics' => true,
+			'name'            => 'non-existent-event',
+		);
+
+		$instance = Event_Setup::get_instance();
+
+		$this->expectException( 'WPDieException' );
+		$this->expectExceptionMessage( 'Event not found.' );
+
+		$instance->handle_calendar_ics_request( $wp );
+	}
+
+
+	/**
+	 * Tests handle_calendar_ics_request with ICS generation.
+	 *
+	 * @covers ::handle_calendar_ics_request
+	 * @return void
+	 */
+	public function test_handle_calendar_ics_request_with_ics_output(): void {
+		// Create event post directly with wp_insert_post.
+		$post_id = wp_insert_post(
+			array(
+				'post_type'   => Event::POST_TYPE,
+				'post_name'   => 'test-ics-download',
+				'post_title'  => 'Test ICS Download',
+				'post_status' => 'publish',
+			),
+			true
+		);
+
+		$this->assertIsInt( $post_id, 'Post should be created successfully' );
+
+		// Set event datetime so ICS has valid content.
+		$event = new Event( $post_id );
+		$event->save_datetimes(
+			array(
+				'datetime_start' => '2025-12-25 10:00:00',
+				'datetime_end'   => '2025-12-25 12:00:00',
+				'timezone'       => 'America/New_York',
+			)
+		);
+
+		// Set up global WP object with proper query_vars.
+		global $wp;
+
+		if ( ! ( $wp instanceof WP ) ) {
+			// phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited -- Required for testing ICS request handling.
+			$wp = new WP();
+		}
+
+		$wp->query_vars = array(
+			'gatherpress_ics' => true,
+			'name'            => 'test-ics-download',
+		);
+
+		$instance = Event_Setup::get_instance();
+
+		// Buffer output to capture ICS content without displaying it.
+		$output = Utility::buffer_and_return(
+			static function () use ( $instance, $wp ) {
+				$instance->handle_calendar_ics_request( $wp );
+			}
+		);
+
+		// Verify ICS content is generated correctly.
+		$this->assertStringContainsString( 'BEGIN:VCALENDAR', $output );
+		$this->assertStringContainsString( 'VERSION:2.0', $output );
+		$this->assertStringContainsString( 'BEGIN:VEVENT', $output );
+		$this->assertStringContainsString( 'END:VEVENT', $output );
+		$this->assertStringContainsString( 'END:VCALENDAR', $output );
+	}
+
+	/**
+	 * Tests filter_readonly_meta removes read-only meta keys from REST request.
+	 *
+	 * @covers ::filter_readonly_meta
+	 * @return void
+	 */
+	public function test_filter_readonly_meta_removes_readonly_keys(): void {
+		$instance = Event_Setup::get_instance();
+
+		// Create a mock REST request with all readonly keys plus a writable key.
+		$request = new WP_REST_Request( 'POST', '/wp/v2/gatherpress_event' );
+		$request->set_param(
+			'meta',
+			array(
+				'gatherpress_datetime'           => '{"dateTimeStart":"2025-01-01 10:00:00"}',
+				'gatherpress_datetime_start'     => '2025-01-01 10:00:00',
+				'gatherpress_datetime_start_gmt' => '2025-01-01 15:00:00',
+				'gatherpress_datetime_end'       => '2025-01-01 12:00:00',
+				'gatherpress_datetime_end_gmt'   => '2025-01-01 17:00:00',
+				'gatherpress_timezone'           => 'America/New_York',
+				'gatherpress_online_event_link'  => 'https://example.com',
+			)
+		);
+
+		$prepared_post     = new stdClass();
+		$prepared_post->ID = 123;
+
+		$result = $instance->filter_readonly_meta( $prepared_post, $request );
+
+		// Verify prepared_post is returned unchanged.
+		$this->assertSame( $prepared_post, $result, 'Should return the same prepared_post object.' );
+		$this->assertEquals( 123, $result->ID, 'Prepared post ID should be unchanged.' );
+
+		// Verify readonly keys were removed from request meta.
+		$filtered_meta = $request->get_param( 'meta' );
+
+		$this->assertArrayNotHasKey(
+			'gatherpress_datetime_start',
+			$filtered_meta,
+			'Should remove gatherpress_datetime_start.'
+		);
+		$this->assertArrayNotHasKey(
+			'gatherpress_datetime_start_gmt',
+			$filtered_meta,
+			'Should remove gatherpress_datetime_start_gmt.'
+		);
+		$this->assertArrayNotHasKey(
+			'gatherpress_datetime_end',
+			$filtered_meta,
+			'Should remove gatherpress_datetime_end.'
+		);
+		$this->assertArrayNotHasKey(
+			'gatherpress_datetime_end_gmt',
+			$filtered_meta,
+			'Should remove gatherpress_datetime_end_gmt.'
+		);
+		$this->assertArrayNotHasKey(
+			'gatherpress_timezone',
+			$filtered_meta,
+			'Should remove gatherpress_timezone.'
+		);
+
+		// Verify writable keys are preserved.
+		$this->assertArrayHasKey(
+			'gatherpress_datetime',
+			$filtered_meta,
+			'Should preserve gatherpress_datetime (writable).'
+		);
+		$this->assertArrayHasKey(
+			'gatherpress_online_event_link',
+			$filtered_meta,
+			'Should preserve gatherpress_online_event_link (writable).'
+		);
+	}
+
+	/**
+	 * Tests filter_readonly_meta with null meta parameter.
+	 *
+	 * @covers ::filter_readonly_meta
+	 * @return void
+	 */
+	public function test_filter_readonly_meta_with_null_meta(): void {
+		$instance = Event_Setup::get_instance();
+
+		// Create a REST request without meta parameter.
+		$request = new WP_REST_Request( 'POST', '/wp/v2/gatherpress_event' );
+		// Do not set meta parameter - it will be null.
+
+		$prepared_post       = new stdClass();
+		$prepared_post->ID   = 456;
+		$prepared_post->name = 'Test Event';
+
+		$result = $instance->filter_readonly_meta( $prepared_post, $request );
+
+		// Verify prepared_post is returned unchanged.
+		$this->assertSame( $prepared_post, $result, 'Should return the same prepared_post object.' );
+		$this->assertEquals( 456, $result->ID, 'Prepared post ID should be unchanged.' );
+		$this->assertEquals( 'Test Event', $result->name, 'Prepared post name should be unchanged.' );
+
+		// Verify meta is still null.
+		$this->assertNull( $request->get_param( 'meta' ), 'Meta should remain null.' );
+	}
+
+	/**
+	 * Tests filter_readonly_meta with empty meta array.
+	 *
+	 * @covers ::filter_readonly_meta
+	 * @return void
+	 */
+	public function test_filter_readonly_meta_with_empty_meta(): void {
+		$instance = Event_Setup::get_instance();
+
+		// Create a REST request with empty meta array.
+		$request = new WP_REST_Request( 'POST', '/wp/v2/gatherpress_event' );
+		$request->set_param( 'meta', array() );
+
+		$prepared_post     = new stdClass();
+		$prepared_post->ID = 789;
+
+		$result = $instance->filter_readonly_meta( $prepared_post, $request );
+
+		// Verify prepared_post is returned unchanged.
+		$this->assertSame( $prepared_post, $result, 'Should return the same prepared_post object.' );
+
+		// Verify meta is still an empty array.
+		$filtered_meta = $request->get_param( 'meta' );
+		$this->assertIsArray( $filtered_meta, 'Meta should still be an array.' );
+		$this->assertEmpty( $filtered_meta, 'Meta should still be empty.' );
+	}
+
+	/**
+	 * Tests filter_readonly_meta with only writable keys.
+	 *
+	 * @covers ::filter_readonly_meta
+	 * @return void
+	 */
+	public function test_filter_readonly_meta_with_only_writable_keys(): void {
+		$instance = Event_Setup::get_instance();
+
+		// Create a REST request with only writable meta keys.
+		$request = new WP_REST_Request( 'POST', '/wp/v2/gatherpress_event' );
+		$request->set_param(
+			'meta',
+			array(
+				'gatherpress_datetime'              => '{"dateTimeStart":"2025-01-01 10:00:00"}',
+				'gatherpress_online_event_link'     => 'https://example.com/meeting',
+				'gatherpress_enable_anonymous_rsvp' => true,
+				'gatherpress_max_guest_limit'       => 5,
+				'gatherpress_max_attendance_limit'  => 100,
+			)
+		);
+
+		$prepared_post     = new stdClass();
+		$prepared_post->ID = 101;
+
+		$result = $instance->filter_readonly_meta( $prepared_post, $request );
+
+		// Verify prepared_post is returned unchanged.
+		$this->assertSame( $prepared_post, $result, 'Should return the same prepared_post object.' );
+
+		// Verify all writable keys are preserved.
+		$filtered_meta = $request->get_param( 'meta' );
+
+		$this->assertCount( 5, $filtered_meta, 'Should have all 5 writable keys.' );
+		$this->assertArrayHasKey( 'gatherpress_datetime', $filtered_meta );
+		$this->assertArrayHasKey( 'gatherpress_online_event_link', $filtered_meta );
+		$this->assertArrayHasKey( 'gatherpress_enable_anonymous_rsvp', $filtered_meta );
+		$this->assertArrayHasKey( 'gatherpress_max_guest_limit', $filtered_meta );
+		$this->assertArrayHasKey( 'gatherpress_max_attendance_limit', $filtered_meta );
+	}
+
+	/**
+	 * Tests filter_readonly_meta with only readonly keys.
+	 *
+	 * @covers ::filter_readonly_meta
+	 * @return void
+	 */
+	public function test_filter_readonly_meta_with_only_readonly_keys(): void {
+		$instance = Event_Setup::get_instance();
+
+		// Create a REST request with only readonly meta keys.
+		$request = new WP_REST_Request( 'POST', '/wp/v2/gatherpress_event' );
+		$request->set_param(
+			'meta',
+			array(
+				'gatherpress_datetime_start'     => '2025-01-01 10:00:00',
+				'gatherpress_datetime_start_gmt' => '2025-01-01 15:00:00',
+				'gatherpress_datetime_end'       => '2025-01-01 12:00:00',
+				'gatherpress_datetime_end_gmt'   => '2025-01-01 17:00:00',
+				'gatherpress_timezone'           => 'America/New_York',
+			)
+		);
+
+		$prepared_post     = new stdClass();
+		$prepared_post->ID = 202;
+
+		$result = $instance->filter_readonly_meta( $prepared_post, $request );
+
+		// Verify prepared_post is returned unchanged.
+		$this->assertSame( $prepared_post, $result, 'Should return the same prepared_post object.' );
+
+		// Verify all readonly keys were removed.
+		$filtered_meta = $request->get_param( 'meta' );
+
+		$this->assertIsArray( $filtered_meta, 'Meta should still be an array.' );
+		$this->assertEmpty( $filtered_meta, 'Meta should be empty after removing all readonly keys.' );
+	}
+
+	/**
+	 * Tests handle_event_archive_redirect returns early when not on post type archive.
+	 *
+	 * @covers ::handle_event_archive_redirect
+	 * @return void
+	 */
+	public function test_handle_event_archive_redirect_not_archive(): void {
+		$instance = Event_Setup::get_instance();
+
+		// Create an event and go to its single page.
+		$post_id = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get()->ID;
+		$this->go_to( get_permalink( $post_id ) );
+
+		// This should return early without setting 404.
+		$instance->handle_event_archive_redirect();
+
+		$this->assertFalse( is_404(), 'Should not be 404 when on single event page.' );
+	}
+
+	/**
+	 * Tests handle_event_archive_redirect serves page when page exists with same slug.
+	 *
+	 * @covers ::handle_event_archive_redirect
+	 * @return void
+	 */
+	public function test_handle_event_archive_redirect_with_page(): void {
+		global $wp_query;
+
+		$instance = Event_Setup::get_instance();
+
+		// Get the rewrite slug from settings.
+		$settings     = Settings::get_instance();
+		$rewrite_slug = $settings->get( 'events_url' );
+
+		// Create a page with the same slug as the events rewrite slug.
+		$page_id = wp_insert_post(
+			array(
+				'post_type'   => 'page',
+				'post_name'   => $rewrite_slug,
+				'post_title'  => 'Events Page',
+				'post_status' => 'publish',
+			)
+		);
+
+		$this->assertIsInt( $page_id, 'Page should be created successfully.' );
+
+		// Mock being on the post type archive by setting WP_Query properties directly.
+		$wp_query->is_post_type_archive = true;
+		$wp_query->set( 'post_type', Event::POST_TYPE );
+
+		$instance->handle_event_archive_redirect();
+
+		// Verify the query was modified to serve the page.
+		$this->assertTrue( $wp_query->is_page, 'Should be a page query.' );
+		$this->assertTrue( $wp_query->is_singular, 'Should be a singular query.' );
+		$this->assertFalse( $wp_query->is_post_type_archive, 'Should not be a post type archive.' );
+		$this->assertFalse( $wp_query->is_archive, 'Should not be an archive.' );
+		$this->assertSame( $page_id, $wp_query->queried_object_id, 'Queried object should be the page.' );
+
+		// Clean up.
+		wp_delete_post( $page_id, true );
+	}
+
+	/**
+	 * Tests handle_event_archive_redirect sets 404 when no page exists.
+	 *
+	 * @covers ::handle_event_archive_redirect
+	 * @return void
+	 */
+	public function test_handle_event_archive_redirect_no_page_404(): void {
+		global $wp_query;
+
+		$instance = Event_Setup::get_instance();
+
+		// Get the rewrite slug from settings.
+		$settings     = Settings::get_instance();
+		$rewrite_slug = $settings->get( 'events_url' );
+
+		// Make sure no page exists with this slug.
+		$existing_page = get_page_by_path( $rewrite_slug );
+		if ( $existing_page ) {
+			wp_delete_post( $existing_page->ID, true );
+		}
+
+		// Mock being on the post type archive by setting WP_Query properties directly.
+		$wp_query->is_post_type_archive = true;
+		$wp_query->set( 'post_type', Event::POST_TYPE );
+
+		// Call the method.
+		$instance->handle_event_archive_redirect();
+
+		// Verify 404 was set.
+		$this->assertTrue( $wp_query->is_404(), 'Should be 404 when no page exists with the same slug.' );
+	}
+
+	/**
+	 * Tests handle_event_archive_redirect does not redirect to draft page.
+	 *
+	 * @covers ::handle_event_archive_redirect
+	 * @return void
+	 */
+	public function test_handle_event_archive_redirect_draft_page_404(): void {
+		global $wp_query;
+
+		$instance = Event_Setup::get_instance();
+
+		// Get the rewrite slug from settings.
+		$settings     = Settings::get_instance();
+		$rewrite_slug = $settings->get( 'events_url' );
+
+		// Create a draft page with the same slug.
+		$page_id = wp_insert_post(
+			array(
+				'post_type'   => 'page',
+				'post_name'   => $rewrite_slug,
+				'post_title'  => 'Events Page Draft',
+				'post_status' => 'draft',
+			)
+		);
+
+		$this->assertIsInt( $page_id, 'Page should be created successfully.' );
+
+		// Mock being on the post type archive by setting WP_Query properties directly.
+		$wp_query->is_post_type_archive = true;
+		$wp_query->set( 'post_type', Event::POST_TYPE );
+
+		// Call the method.
+		$instance->handle_event_archive_redirect();
+
+		// Verify 404 was set (draft page should not trigger redirect).
+		$this->assertTrue( $wp_query->is_404(), 'Should be 404 when page exists but is not published.' );
+
+		// Clean up.
+		wp_delete_post( $page_id, true );
+	}
+
+	/**
+	 * Tests handle_event_archive_redirect does not interfere with feed requests.
+	 *
+	 * @covers ::handle_event_archive_redirect
+	 * @return void
+	 */
+	public function test_handle_event_archive_redirect_feed_not_affected(): void {
+		global $wp_query;
+
+		$instance = Event_Setup::get_instance();
+
+		// Mock being on the post type archive feed.
+		$wp_query->is_post_type_archive = true;
+		$wp_query->is_feed              = true;
+		$wp_query->set( 'post_type', Event::POST_TYPE );
+
+		// Call the method.
+		$instance->handle_event_archive_redirect();
+
+		// Verify the archive state was not changed (feeds should pass through).
+		$this->assertTrue( $wp_query->is_post_type_archive, 'Should still be a post type archive.' );
+		$this->assertFalse( $wp_query->is_404(), 'Should not be 404 for feed requests.' );
+	}
+
+	/**
+	 * Tests handle_event_archive_redirect skips when event-query already assigned archive.
+	 *
+	 * @covers ::handle_event_archive_redirect
+	 *
+	 * @return void
+	 */
+	public function test_handle_event_archive_redirect_skips_event_query_param(): void {
+		global $wp_query;
+
+		$instance = Event_Setup::get_instance();
+
+		// Mock being on post type archive with EVENT_QUERY_PARAM set.
+		$wp_query->is_post_type_archive = true;
+		$wp_query->set( 'post_type', Event::POST_TYPE );
+		$wp_query->set( Event_Query::EVENT_QUERY_PARAM, 'past' );
+
+		$instance->handle_event_archive_redirect();
+
+		// Should return early — archive state preserved, no 404.
+		$this->assertTrue( $wp_query->is_post_type_archive, 'Should still be a post type archive.' );
+		$this->assertFalse( $wp_query->is_404(), 'Should not be 404 when event-query param is set.' );
+	}
+
+	/**
+	 * Tests handle_event_archive_redirect converts to archive when page is designated.
+	 *
+	 * @covers ::handle_event_archive_redirect
+	 *
+	 * @return void
+	 */
+	public function test_handle_event_archive_redirect_designated_archive_page(): void {
+		global $wp_query;
+
+		$instance = Event_Setup::get_instance();
+
+		// Get the rewrite slug from settings.
+		$settings     = Settings::get_instance();
+		$rewrite_slug = $settings->get( 'events_url' );
+
+		// Create a page with the same slug as the events rewrite slug.
+		$page_id = wp_insert_post(
+			array(
+				'post_type'   => 'page',
+				'post_name'   => $rewrite_slug,
+				'post_title'  => 'Past Events',
+				'post_status' => 'publish',
+			)
+		);
+
+		// Designate it as the past events archive.
+		$json = wp_json_encode(
+			array(
+				array(
+					'id'    => $page_id,
+					'slug'  => $rewrite_slug,
+					'value' => 'Past Events',
+				),
+			)
+		);
+
+		update_option( 'gatherpress_settings', array( 'past_events' => $json ) );
+
+		// Mock being on the post type archive.
+		$wp_query->is_post_type_archive = true;
+		$wp_query->set( 'post_type', Event::POST_TYPE );
+
+		$instance->handle_event_archive_redirect();
+
+		// Verify it was converted to an event archive.
+		$this->assertTrue( $wp_query->is_archive, 'Should be an archive.' );
+		$this->assertTrue( $wp_query->is_post_type_archive, 'Should be a post type archive.' );
+		$this->assertFalse( $wp_query->is_page, 'Should not be a page.' );
+		$this->assertSame(
+			'past',
+			$wp_query->get( Event_Query::EVENT_QUERY_PARAM ),
+			'Should have event query param set to past.'
+		);
+		$this->assertSame(
+			$page_id,
+			$wp_query->queried_object_id,
+			'Should preserve page as queried object.'
+		);
+
+		// Verify archive title is set via the filter method.
+		$this->assertSame(
+			'Past Events',
+			$instance->filter_archive_title(),
+			'Archive title should be the page title.'
+		);
+
+		// Verify the query re-executed with the correct post type.
+		$this->assertSame(
+			Event::POST_TYPE,
+			$wp_query->get( 'post_type' ),
+			'Query should target the event post type.'
+		);
+
+		// Clean up.
+		wp_delete_post( $page_id, true );
+		delete_option( 'gatherpress_settings' );
+	}
+
+	/**
+	 * Tests handle_event_archive_redirect preserves pagination for archive pages.
+	 *
+	 * @covers ::handle_event_archive_redirect
+	 *
+	 * @return void
+	 */
+	public function test_handle_event_archive_redirect_preserves_pagination(): void {
+		global $wp_query;
+
+		$instance = Event_Setup::get_instance();
+
+		$settings     = Settings::get_instance();
+		$rewrite_slug = $settings->get( 'events_url' );
+
+		$page_id = wp_insert_post(
+			array(
+				'post_type'   => 'page',
+				'post_name'   => $rewrite_slug,
+				'post_title'  => 'Past Events',
+				'post_status' => 'publish',
+			)
+		);
+
+		$json = wp_json_encode(
+			array(
+				array(
+					'id'    => $page_id,
+					'slug'  => $rewrite_slug,
+					'value' => 'Past Events',
+				),
+			)
+		);
+
+		update_option( 'gatherpress_settings', array( 'past_events' => $json ) );
+
+		// Mock being on page 2 of the post type archive.
+		$wp_query->is_post_type_archive = true;
+		$wp_query->set( 'post_type', Event::POST_TYPE );
+		set_query_var( 'paged', 2 );
+
+		$instance->handle_event_archive_redirect();
+
+		// Verify pagination is preserved in the re-query.
+		$this->assertSame(
+			2,
+			(int) $wp_query->get( 'paged' ),
+			'Pagination should be preserved after archive redirect.'
+		);
+
+		// Clean up.
+		set_query_var( 'paged', 0 );
+		wp_delete_post( $page_id, true );
+		delete_option( 'gatherpress_settings' );
+	}
+
+	/**
+	 * Tests filter_archive_title returns the stored archive title.
+	 *
+	 * @covers ::filter_archive_title
+	 *
+	 * @return void
+	 */
+	public function test_filter_archive_title(): void {
+		$instance = Event_Setup::get_instance();
+
+		Utility::set_and_get_hidden_property( $instance, 'archive_title', 'Test Title' );
+
+		$this->assertSame(
+			'Test Title',
+			$instance->filter_archive_title(),
+			'Archive title should return the stored value.'
+		);
+
+		// Clean up.
+		Utility::set_and_get_hidden_property( $instance, 'archive_title', '' );
 	}
 }

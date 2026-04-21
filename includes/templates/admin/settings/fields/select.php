@@ -21,12 +21,25 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 if ( ! isset( $name, $label, $option, $options, $options['items'], $value, $description ) ) {
 	return;
 }
+
+$gatherpress_disabled = ! empty( $disabled ) ? ' disabled' : '';
+// Selects can't use `readonly`. When disabled the field is omitted from
+// the POST, so the trailing hidden input's value is what lands in
+// `$_POST[$name]` — carry the current (possibly inherited) value so the
+// saved value matches what the UI displayed.
+$gatherpress_fallback = ! empty( $disabled ) ? (string) $value : '0';
+
+// IMPORTANT: keep the hidden input BEFORE the select. PHP takes the
+// last value for a repeated name, so an enabled select's submission
+// wins over the hidden fallback. If you reorder these two, the hidden
+// overrides the select and the saved value is always the fallback.
 ?>
-<input type="hidden" name="<?php echo esc_attr( $name ); ?>" value="0" />
+<input type="hidden" name="<?php echo esc_attr( $name ); ?>" value="<?php echo esc_attr( $gatherpress_fallback ); ?>" />
 <label for="<?php echo esc_attr( $option ); ?>"><?php echo esc_html( $label ); ?></label><br/>
-<select id="<?php echo esc_attr( $option ); ?>" name="<?php echo esc_attr( $name ); ?>">
+<select id="<?php echo esc_attr( $option ); ?>" name="<?php echo esc_attr( $name ); ?>"<?php echo $gatherpress_disabled; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static value. ?>>
 	<?php
 	foreach ( $options['items'] as $gatherpress_key => $gatherpress_label ) :
+		// phpcs:ignore Generic.Files.LineLength.TooLong -- Template output formatting.
 		?>
 		<option value="<?php echo esc_attr( $gatherpress_key ); ?>" <?php selected( $gatherpress_key, $value, true ); ?>>
 			<?php echo esc_html( $gatherpress_label ); ?>

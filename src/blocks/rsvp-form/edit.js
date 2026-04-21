@@ -16,8 +16,9 @@ import { getBlockTypes } from '@wordpress/blocks';
  * Internal dependencies.
  */
 import TEMPLATE from './template';
-import { hasValidEventId, DISABLED_FIELD_OPACITY } from '../../helpers/event';
+import { hasValidEventId, DISABLED_FIELD_OPACITY, getEventMeta, isRsvpEnabledForEvent, isOpenRsvpEnabled } from '../../helpers/event';
 import { isInFSETemplate, getEditorDocument } from '../../helpers/editor';
+import { getFromSettings } from '../../helpers/editor-settings';
 import { shouldHideBlock } from './visibility';
 
 const Edit = ( { attributes, clientId, context } ) => {
@@ -31,36 +32,17 @@ const Edit = ( { attributes, clientId, context } ) => {
 		.filter( ( name ) => 'gatherpress/rsvp-form' !== name );
 
 	// Get event data - either from override postId or current post.
-	const { maxAttendanceLimit, enableAnonymousRsvp } = useSelect(
-		( select ) => {
-			let maxLimit;
-			let enableAnonymous;
-
-			// Check if we have a postId override.
-			if ( postId ) {
-				// Fetch from specific post via core data store.
-				const post = select( 'core' ).getEntityRecord( 'postType', 'gatherpress_event', postId );
-				maxLimit = post?.meta?.gatherpress_max_guest_limit;
-				enableAnonymous = Boolean( post?.meta?.gatherpress_enable_anonymous_rsvp );
-			} else {
-				// Check if current post is an event.
-				const currentPostType = select( 'core/editor' )?.getCurrentPostType();
-				const isCurrentPostEvent = 'gatherpress_event' === currentPostType;
-
-				if ( isCurrentPostEvent ) {
-					const meta = select( 'core/editor' ).getEditedPostAttribute( 'meta' );
-					maxLimit = meta?.gatherpress_max_guest_limit;
-					enableAnonymous = Boolean( meta?.gatherpress_enable_anonymous_rsvp );
-				}
-			}
-
-			return {
-				maxAttendanceLimit: maxLimit,
-				enableAnonymousRsvp: enableAnonymous,
-			};
-		},
-		[ postId ]
+	const { maxGuestLimit: maxAttendanceLimit, enableRsvp, enableAnonymousRsvp } = useSelect(
+		( select ) => getEventMeta( select, postId, attributes ),
+		[ postId, attributes ]
 	);
+
+	// Read per-event open RSVP setting (integer 0/1; undefined/null defaults to enabled).
+	const enableOpenRsvpPerEvent = useSelect( ( select ) => {
+		const meta = select( 'core/editor' )?.getEditedPostAttribute( 'meta' );
+		const rawValue = meta?.gatherpress_enable_open_rsvp;
+		return rawValue === undefined || null === rawValue ? true : 0 !== rawValue;
+	}, [] );
 
 	// Check if block has a valid event connection.
 	const isValidEvent = hasValidEventId( postId );
@@ -166,9 +148,7 @@ const Edit = ( { attributes, clientId, context } ) => {
 
 		// Cleanup on unmount.
 		return () => {
-			if ( styleElement && styleElement.parentNode ) {
-				styleElement.parentNode.removeChild( styleElement );
-			}
+			styleElement?.remove();
 		};
 	}, [ formState, innerBlocks, clientId, collectVisibilityStyles ] );
 
@@ -200,15 +180,23 @@ const Edit = ( { attributes, clientId, context } ) => {
 
 		// Cleanup on unmount.
 		return () => {
-			if ( styleElement && styleElement.parentNode ) {
-				styleElement.parentNode.removeChild( styleElement );
-			}
+			styleElement?.remove();
 		};
 	}, [ maxAttendanceLimit, enableAnonymousRsvp, clientId ] );
 
+	const rsvpMode = getFromSettings( 'rsvpMode' ) ?? 'all_on';
+	const enableOpenRsvp = getFromSettings( 'enableOpenRsvp' ) ?? true;
+
 	const blockProps = useBlockProps( {
 		style: {
-			opacity: ( isInFSETemplate() || isValidEvent ) ? 1 : DISABLED_FIELD_OPACITY,
+			opacity:
+				isInFSETemplate() ||
+				( isValidEvent &&
+					isRsvpEnabledForEvent( rsvpMode, enableRsvp ) &&
+					isOpenRsvpEnabled( enableOpenRsvp ) &&
+					enableOpenRsvpPerEvent )
+					? 1
+					: DISABLED_FIELD_OPACITY,
 		},
 	} );
 

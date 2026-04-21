@@ -6,7 +6,7 @@ import { describe, expect, it } from '@jest/globals';
 /**
  * Internal dependencies.
  */
-import { shouldHideBlock } from '../../../../../../src/blocks/rsvp-form/visibility';
+import { shouldHideBlock } from '@src/blocks/rsvp-form/visibility';
 
 describe( 'RSVP Form Visibility', () => {
 	describe( 'shouldHideBlock', () => {

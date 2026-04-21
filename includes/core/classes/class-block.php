@@ -104,10 +104,12 @@ class Block {
 		Blocks\General_Block::get_instance();
 		Blocks\Modal::get_instance();
 		Blocks\Modal_Manager::get_instance();
+		Blocks\Online_Event::get_instance();
 		Blocks\Rsvp::get_instance();
 		Blocks\Rsvp_Form::get_instance();
 		Blocks\Rsvp_Response::get_instance();
 		Blocks\Rsvp_Template::get_instance();
+		Blocks\Venue::get_instance();
 	}
 
 	/**
@@ -176,51 +178,59 @@ class Block {
 	 * @return void
 	 */
 	public function register_block_patterns(): void {
+		// Register GatherPress pattern category.
+		register_block_pattern_category(
+			'gatherpress',
+			array(
+				'label' => __( 'GatherPress', 'gatherpress' ),
+			)
+		);
+
+		// Descriptive note shown to developers who enumerate registered
+		// patterns (REST API, pattern registry). These patterns exist as
+		// anchors for the Block Hooks API so other plugins can hook blocks
+		// before/after the canonical event/venue block — they are not
+		// user-facing design patterns, hence `'inserter' => false`.
+		$hook_anchor_description = __(
+			// phpcs:ignore Generic.Files.LineLength.TooLong -- Translator-facing sentence; keep it on one line for the .pot extractor.
+			'Default content seeded into a new post. Anchors the Block Hooks API so other plugins can inject blocks around the core GatherPress block.',
+			'gatherpress'
+		);
+
 		$block_patterns = array(
 			array(
 				'gatherpress/event-template',
 				array(
-					'title'    => __( 'Invisible Event Template Block Pattern', 'gatherpress' ),
-					// Even this paragraph seems useless, it's not.
-					// It is the entry point for all our hooked blocks
-					// and as such absolutely important!
-					'content'  => '<!-- wp:gatherpress/event-date /-->', // Other blocks are hooked-in here.
-					'inserter' => false,
-					'source'   => 'plugin',
+					'title'       => __( 'Event Post Default Content', 'gatherpress' ),
+					'description' => $hook_anchor_description,
+					'content'     => '<!-- wp:gatherpress/event-date /-->',
+					'inserter'    => false,
+					'source'      => 'plugin',
 				),
 			),
 			array(
 				'gatherpress/venue-template',
 				array(
-					'title'    => __( 'Invisible Venue Template Block Pattern', 'gatherpress' ),
-					// Even this paragraph seems useless, it's not.
-					// It is the entry point for all our hooked blocks
-					// and as such absolutely important!
-					'content'  => '<!-- wp:post-featured-image /--><!-- wp:paragraph {"placeholder":"Add some infos about the venue and maybe a nice picture."} --><p></p><!-- /wp:paragraph -->', // Other blocks are hooked-in here.
-					'inserter' => false,
-					'source'   => 'plugin',
+					'title'       => __( 'Venue Post Default Content', 'gatherpress' ),
+					'description' => $hook_anchor_description,
+					'content'     => '<!-- wp:gatherpress/venue /-->',
+					'inserter'    => false,
+					'source'      => 'plugin',
 				),
 			),
 			array(
 				'gatherpress/venue-details',
 				array(
-					'title'    => __( 'Invisible Venue Details Block Pattern', 'gatherpress' ),
-					// Even this post-title seems useless, it's not.
-					// It is the entry point for all our hooked blocks
-					// and as such absolutely important!
-					'content'  => '<!-- wp:post-title /-->', // Other blocks are hooked-in here.
-					'inserter' => false,
-					'source'   => 'plugin',
+					'title'       => __( 'Venue Details Default Content', 'gatherpress' ),
+					'description' => $hook_anchor_description,
+					'content'     => '<!-- wp:post-title /-->',
+					'inserter'    => false,
+					'source'      => 'plugin',
 				),
 			),
 		);
 
 		foreach ( $block_patterns as $block_pattern ) {
-			/**
-			 * Made to be used with the 'template' parameter
-			 * when registering the 'gatherpress_event' post type
-			 * and will not be visible to the editor at any point.
-			 */
 			register_block_pattern( $block_pattern[0], $block_pattern[1] );
 		}
 	}
@@ -231,12 +241,20 @@ class Block {
 	 * @see https://developer.wordpress.org/reference/hooks/hooked_block_types/
 	 *
 	 * @param string[]                $hooked_block_types The list of hooked block types.
-	 * @param string                  $relative_position  The relative position of the hooked blocks. Can be one of 'before', 'after', 'first_child', or 'last_child'.
+	 * @param string                  $relative_position  The relative position of the hooked blocks.
+	 *                                                    Can be one of 'before', 'after',
+	 *                                                    'first_child', or 'last_child'.
 	 * @param string                  $anchor_block_type  The anchor block type.
-	 * @param WP_Block_Template|array $context            The block template, template part, or pattern that the anchor block belongs to.
+	 * @param WP_Block_Template|array $context            The block template, template part, or pattern
+	 *                                                    that the anchor block belongs to.
 	 * @return string[]               The list of hooked block types.
 	 */
-	public function hook_blocks_into_patterns( array $hooked_block_types, string $relative_position, ?string $anchor_block_type, $context ): array {
+	public function hook_blocks_into_patterns(
+		array $hooked_block_types,
+		string $relative_position,
+		?string $anchor_block_type,
+		$context
+	): array {
 		// Check that the place to hook into is a pattern.
 		if ( ! is_array( $context ) || ! isset( $context['name'] ) ) {
 			return $hooked_block_types;
@@ -249,22 +267,17 @@ class Block {
 			'after' === $relative_position
 		) {
 			$hooked_block_types[] = 'gatherpress/add-to-calendar';
-
-			// @todo As soon as the new venue block is in place,
-			// load 'core/patterns' here
-			// and fill it with {"slug":"gatherpress/venue-details"} in modify_hooked_blocks_in_patterns() later
-			// instead of loading the (old) venue block.
 			$hooked_block_types[] = 'gatherpress/venue';
-
+			$hooked_block_types[] = 'gatherpress/online-event';
 			$hooked_block_types[] = 'gatherpress/rsvp';
 			$hooked_block_types[] = 'core/paragraph';
 			$hooked_block_types[] = 'gatherpress/rsvp-response';
 		}
 
-		// Hook blocks into the "gatherpress/venue-template" pattern.
+		// Hook blocks into the "gatherpress/venue-details" pattern.
 		if (
-			'gatherpress/venue-template' === $context['name'] &&
-			'core/paragraph' === $anchor_block_type &&
+			'gatherpress/venue-details' === $context['name'] &&
+			'core/post-title' === $anchor_block_type &&
 			'after' === $relative_position
 		) {
 			$hooked_block_types[] = 'gatherpress/venue';
@@ -278,15 +291,24 @@ class Block {
 	 *
 	 * @see https://developer.wordpress.org/reference/hooks/hooked_block_hooked_block_type/
 	 *
-	 * @param array|null                      $parsed_hooked_block The parsed block array for the given hooked block type, or null to suppress the block.
+	 * @param array|null                      $parsed_hooked_block The parsed block array for the given
+	 *                                                             hooked block type, or null to suppress the block.
 	 * @param string                          $hooked_block_type   The hooked block type name.
 	 * @param string                          $relative_position   The relative position of the hooked block.
 	 * @param array                           $parsed_anchor_block The anchor block, in parsed block array format.
-	 * @param WP_Block_Template|WP_Post|array $context             The block template, template part, `wp_navigation` post type,
-	 *                                                             or pattern that the anchor block belongs to.
-	 * @return array|null                     The parsed block array for the given hooked block type, or null to suppress the block.
+	 * @param WP_Block_Template|WP_Post|array $context             The block template, template part,
+	 *                                                             `wp_navigation` post type, or pattern
+	 *                                                             that the anchor block belongs to.
+	 * @return array|null                     The parsed block array for the given hooked block type,
+	 *                                        or null to suppress the block.
 	 */
-	public function modify_hooked_blocks_in_patterns( ?array $parsed_hooked_block, string $hooked_block_type, string $relative_position, array $parsed_anchor_block, $context ): ?array {
+	public function modify_hooked_blocks_in_patterns(
+		?array $parsed_hooked_block,
+		string $hooked_block_type,
+		string $relative_position,
+		array $parsed_anchor_block,
+		$context
+	): ?array {
 		// Has the hooked block been suppressed by a previous filter?
 		if ( is_null( $parsed_hooked_block ) ) {
 			return $parsed_hooked_block;
@@ -309,6 +331,7 @@ class Block {
 		// The opener text for new Events... a paragraph block.
 		if ( 'core/paragraph' === $hooked_block_type ) {
 			$parsed_hooked_block['attrs']['placeholder'] = __(
+				// phpcs:ignore Generic.Files.LineLength.TooLong
 				'Add a description of the event and let people know what to expect, including the agenda, what they need to bring, and how to find the group.',
 				'gatherpress'
 			);

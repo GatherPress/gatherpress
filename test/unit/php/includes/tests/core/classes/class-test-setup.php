@@ -9,7 +9,10 @@
 namespace GatherPress\Tests\Core;
 
 use GatherPress\Core\Assets;
+use GatherPress\Core\Event;
+use GatherPress\Core\Settings;
 use GatherPress\Core\Setup;
+use GatherPress\Core\Utility as GatherPress_Utility;
 use GatherPress\Core\Venue;
 use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;
@@ -32,6 +35,12 @@ class Test_Setup extends Base {
 	public function test_setup_hooks(): void {
 		$instance = Setup::get_instance();
 		$hooks    = array(
+			array(
+				'type'     => 'action',
+				'name'     => 'admin_init',
+				'priority' => 10,
+				'callback' => array( $instance, 'check_plugin_version' ),
+			),
 			array(
 				'type'     => 'action',
 				'name'     => 'admin_init',
@@ -82,15 +91,29 @@ class Test_Setup extends Base {
 			),
 			array(
 				'type'     => 'filter',
-				'name'     => sprintf( 'plugin_action_links_%s/%s', basename( GATHERPRESS_CORE_PATH ), basename( GATHERPRESS_CORE_FILE ) ),
+				'name'     => sprintf(
+					'plugin_action_links_%s/%s',
+					basename( GATHERPRESS_CORE_PATH ),
+					basename( GATHERPRESS_CORE_FILE )
+				),
 				'priority' => 10,
 				'callback' => array( $instance, 'filter_plugin_action_links' ),
 			),
 			array(
 				'type'     => 'filter',
-				'name'     => sprintf( 'network_admin_plugin_action_links_%s/%s', basename( GATHERPRESS_CORE_PATH ), basename( GATHERPRESS_CORE_FILE ) ),
+				'name'     => sprintf(
+					'network_admin_plugin_action_links_%s/%s',
+					basename( GATHERPRESS_CORE_PATH ),
+					basename( GATHERPRESS_CORE_FILE )
+				),
 				'priority' => 10,
 				'callback' => array( $instance, 'filter_plugin_action_links' ),
+			),
+			array(
+				'type'     => 'filter',
+				'name'     => 'is_protected_meta',
+				'priority' => 10,
+				'callback' => array( $instance, 'protect_gatherpress_meta' ),
 			),
 		);
 
@@ -118,8 +141,13 @@ class Test_Setup extends Base {
 			$response['unit-test'],
 			'Failed to assert unit-test link matches.'
 		);
+		$settings     = Settings::get_instance();
+		$page         = GatherPress_Utility::prefix_key( $settings->get_main_sub_page() );
+		$expected_url = esc_url(
+			add_query_arg( 'page', $page, admin_url( Settings::PARENT_SLUG ) )
+		);
 		$this->assertSame(
-			'<a href="' . esc_url( admin_url( 'edit.php?post_type=gatherpress_event&page=gatherpress_general' ) ) . '">Settings</a>',
+			'<a href="' . $expected_url . '">Settings</a>',
 			$response['settings'],
 			'Failed to assert settings link matches.'
 		);
@@ -294,6 +322,121 @@ class Test_Setup extends Base {
 	}
 
 	/**
+	 * Coverage for check_plugin_version method when version changes.
+	 *
+	 * Verifies that rewrite rules are flushed when the plugin version changes.
+	 *
+	 * @covers ::check_plugin_version
+	 *
+	 * @return void
+	 */
+	public function test_check_plugin_version_when_version_changes(): void {
+		$instance = Setup::get_instance();
+
+		// Set up an old version in the database.
+		update_option( 'gatherpress_version', '0.1.0' );
+
+		// Set up rewrite_rules option to verify it gets deleted.
+		add_option( 'rewrite_rules', array( 'test' => 'rules' ) );
+
+		$this->assertNotFalse(
+			get_option( 'rewrite_rules' ),
+			'Failed to assert that rewrite_rules option exists before version check.'
+		);
+
+		// Run the version check.
+		$instance->check_plugin_version();
+
+		// Verify rewrite_rules were scheduled to flush.
+		$this->assertFalse(
+			get_option( 'rewrite_rules' ),
+			'Failed to assert that rewrite_rules option was deleted when version changed.'
+		);
+
+		// Verify version was updated.
+		$this->assertSame(
+			GATHERPRESS_VERSION,
+			get_option( 'gatherpress_version' ),
+			'Failed to assert that plugin version was updated in options.'
+		);
+	}
+
+	/**
+	 * Coverage for check_plugin_version method when version is unchanged.
+	 *
+	 * Verifies that rewrite rules are not flushed when the plugin version hasn't changed.
+	 *
+	 * @covers ::check_plugin_version
+	 *
+	 * @return void
+	 */
+	public function test_check_plugin_version_when_version_unchanged(): void {
+		$instance = Setup::get_instance();
+
+		// Set current version in the database.
+		update_option( 'gatherpress_version', GATHERPRESS_VERSION );
+
+		// Set up rewrite_rules option to verify it doesn't get deleted.
+		add_option( 'rewrite_rules', array( 'test' => 'rules' ) );
+
+		$this->assertNotFalse(
+			get_option( 'rewrite_rules' ),
+			'Failed to assert that rewrite_rules option exists before version check.'
+		);
+
+		// Run the version check.
+		$instance->check_plugin_version();
+
+		// Verify rewrite_rules were NOT deleted.
+		$this->assertNotFalse(
+			get_option( 'rewrite_rules' ),
+			'Failed to assert that rewrite_rules option was not deleted when version unchanged.'
+		);
+
+		// Verify version is still the same.
+		$this->assertSame(
+			GATHERPRESS_VERSION,
+			get_option( 'gatherpress_version' ),
+			'Failed to assert that plugin version remains unchanged.'
+		);
+	}
+
+	/**
+	 * Coverage for check_plugin_version method on first install.
+	 *
+	 * Verifies that version is set and rewrite rules are flushed on first install.
+	 *
+	 * @covers ::check_plugin_version
+	 *
+	 * @return void
+	 */
+	public function test_check_plugin_version_on_first_install(): void {
+		$instance = Setup::get_instance();
+
+		// Delete version option to simulate first install.
+		delete_option( 'gatherpress_version' );
+
+		// Set up rewrite_rules option to verify it gets deleted.
+		add_option( 'rewrite_rules', array( 'test' => 'rules' ) );
+
+		// Run the version check.
+		$instance->check_plugin_version();
+
+		// Verify rewrite_rules were scheduled to flush.
+		$this->assertFalse(
+			get_option( 'rewrite_rules' ),
+			'Failed to assert that rewrite_rules option was deleted on first install.'
+		);
+
+		// Verify version was set.
+		$this->assertSame(
+			GATHERPRESS_VERSION,
+			get_option( 'gatherpress_version' ),
+			'Failed to assert that plugin version was set on first install.'
+		);
+	}
+
+	/**
 	 * Coverage for add_privacy_policy_content method.
 	 *
 	 * Verifies that the method adds privacy policy content when the function exists.
@@ -335,7 +478,7 @@ class Test_Setup extends Base {
 
 		$result = $instance->on_site_delete( $tables );
 
-		$expected_table = sprintf( \GatherPress\Core\Event::TABLE_FORMAT, $wpdb->prefix );
+		$expected_table = sprintf( Event::TABLE_FORMAT, $wpdb->prefix );
 
 		$this->assertContains(
 			$expected_table,
@@ -398,5 +541,338 @@ class Test_Setup extends Base {
 			true,
 			'The smash_table method should execute without error.'
 		);
+	}
+
+	/**
+	 * Coverage for activate_gatherpress_plugin method in single site mode.
+	 *
+	 * @covers ::activate_gatherpress_plugin
+	 * @covers ::create_tables
+	 *
+	 * @return void
+	 */
+	public function test_activate_gatherpress_plugin_single_site(): void {
+		global $wpdb;
+
+		$instance = Setup::get_instance();
+
+		// Drop the table if it exists from previous tests.
+		$table = sprintf( Event::TABLE_FORMAT, $wpdb->prefix );
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery -- Required for testing table creation.
+		$wpdb->query( "DROP TABLE IF EXISTS {$table}" );
+
+		// Activate plugin in single site mode.
+		$instance->activate_gatherpress_plugin( false );
+
+		// Verify table was created.
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery -- Required for testing table creation.
+		$table_exists = $wpdb->get_var( "SHOW TABLES LIKE '{$table}'" );
+
+		$this->assertEquals(
+			$table,
+			$table_exists,
+			'Failed to assert that events table was created during activation.'
+		);
+
+		// Verify online event term was added.
+		$term = term_exists( 'online-event', Venue::TAXONOMY );
+
+		$this->assertNotEmpty(
+			$term,
+			'Failed to assert that online-event term was created during activation.'
+		);
+
+		// Verify rewrite rules were scheduled to flush.
+		$rewrite_rules = get_option( 'rewrite_rules' );
+
+		$this->assertFalse(
+			$rewrite_rules,
+			'Failed to assert that rewrite_rules option was deleted to schedule flush.'
+		);
+	}
+
+	/**
+	 * Coverage for activate_gatherpress_plugin method in multisite mode.
+	 *
+	 * @group multisite
+	 * @covers ::activate_gatherpress_plugin
+	 * @covers ::create_tables
+	 *
+	 * @return void
+	 */
+	public function test_activate_gatherpress_plugin_multisite(): void {
+		global $wpdb;
+
+		$instance = Setup::get_instance();
+
+		// Create a second site for testing network activation.
+		$site_id_2 = $this->factory()->blog->create();
+
+		// Drop tables from both sites if they exist.
+		foreach ( array( get_current_blog_id(), $site_id_2 ) as $site_id ) {
+			switch_to_blog( $site_id );
+			$table = sprintf( Event::TABLE_FORMAT, $wpdb->prefix );
+			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery -- Required for testing table creation.
+			$wpdb->query( "DROP TABLE IF EXISTS {$table}" );
+			restore_current_blog();
+		}
+
+		// Activate plugin network-wide.
+		$instance->activate_gatherpress_plugin( true );
+
+		// Verify tables were created on both sites.
+		foreach ( array( get_current_blog_id(), $site_id_2 ) as $site_id ) {
+			switch_to_blog( $site_id );
+
+			$table = sprintf( Event::TABLE_FORMAT, $wpdb->prefix );
+			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery -- Required for testing table creation.
+			$table_exists = $wpdb->get_var( "SHOW TABLES LIKE '{$table}'" );
+
+			$this->assertEquals(
+				$table,
+				$table_exists,
+				sprintf( 'Events table not created on site %d during network activation.', $site_id )
+			);
+
+			// Verify online event term was added on each site.
+			$term = term_exists( 'online-event', Venue::TAXONOMY );
+
+			$this->assertNotEmpty(
+				$term,
+				sprintf( 'Online-event term not created on site %d during network activation.', $site_id )
+			);
+
+			restore_current_blog();
+		}
+	}
+
+	/**
+	 * Coverage for on_site_create bail path when GatherPress is not
+	 * network-active — no tables should be created on the new site.
+	 *
+	 * @group multisite
+	 * @covers ::on_site_create
+	 *
+	 * @return void
+	 */
+	public function test_on_site_create_bails_when_not_network_active(): void {
+		global $wpdb;
+
+		// Ensure the plugin is NOT listed in active_sitewide_plugins.
+		$active_sitewide_plugins = get_site_option( 'active_sitewide_plugins', array() );
+		unset( $active_sitewide_plugins['gatherpress/gatherpress.php'] );
+		update_site_option( 'active_sitewide_plugins', $active_sitewide_plugins );
+
+		$new_site_id = $this->factory()->blog->create();
+
+		switch_to_blog( $new_site_id );
+
+		$table = sprintf( Event::TABLE_FORMAT, $wpdb->prefix );
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery -- Required for testing table absence.
+		$table_exists = $wpdb->get_var( "SHOW TABLES LIKE '{$table}'" );
+
+		restore_current_blog();
+
+		$this->assertNull(
+			$table_exists,
+			'Table should not be created when plugin is not network-active.'
+		);
+	}
+
+	/**
+	 * Coverage for on_site_create method when new site is created in multisite.
+	 *
+	 * @group multisite
+	 * @covers ::on_site_create
+	 * @covers ::create_tables
+	 *
+	 * @return void
+	 */
+	public function test_on_site_create_multisite(): void {
+		global $wpdb;
+
+		// Simulate plugin being network-activated.
+		$active_sitewide_plugins                                = get_site_option( 'active_sitewide_plugins', array() );
+		$active_sitewide_plugins['gatherpress/gatherpress.php'] = time();
+		update_site_option( 'active_sitewide_plugins', $active_sitewide_plugins );
+
+		// Create a new site which should trigger the wp_initialize_site hook.
+		$new_site_id = $this->factory()->blog->create();
+
+		// Switch to the new site to verify table was created.
+		switch_to_blog( $new_site_id );
+
+		$table = sprintf( Event::TABLE_FORMAT, $wpdb->prefix );
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery -- Required for testing table creation.
+		$table_exists = $wpdb->get_var( "SHOW TABLES LIKE '{$table}'" );
+
+		$this->assertEquals(
+			$table,
+			$table_exists,
+			'Failed to assert that events table was created on new site when wp_initialize_site hook fired.'
+		);
+
+		// Verify online event term was added.
+		$term = term_exists( 'online-event', Venue::TAXONOMY );
+
+		$this->assertNotEmpty(
+			$term,
+			'Failed to assert that online-event term was created on new site when wp_initialize_site hook fired.'
+		);
+
+		restore_current_blog();
+
+		// Clean up.
+		unset( $active_sitewide_plugins['gatherpress/gatherpress.php'] );
+		update_site_option( 'active_sitewide_plugins', $active_sitewide_plugins );
+	}
+
+	/**
+	 * Coverage for create_tables method.
+	 *
+	 * @covers ::create_tables
+	 * @covers ::add_online_event_term
+	 * @covers ::schedule_rewrite_flush
+	 *
+	 * @return void
+	 */
+	public function test_create_tables(): void {
+		global $wpdb;
+
+		$instance = Setup::get_instance();
+
+		// Drop the table if it exists.
+		$table = sprintf( Event::TABLE_FORMAT, $wpdb->prefix );
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery -- Required for testing table creation.
+		$wpdb->query( "DROP TABLE IF EXISTS {$table}" );
+
+		// Add rewrite_rules option to verify it gets deleted.
+		add_option( 'rewrite_rules', array( 'test' => 'rules' ) );
+
+		// Call create_tables.
+		Utility::invoke_hidden_method( $instance, 'create_tables' );
+
+		// Verify table structure.
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery -- Required for testing table structure.
+		$columns = $wpdb->get_results( "DESCRIBE {$table}" );
+
+		$column_names = array_column( $columns, 'Field' );
+
+		$this->assertContains( 'post_id', $column_names, 'Table should have post_id column.' );
+		$this->assertContains( 'datetime_start', $column_names, 'Table should have datetime_start column.' );
+		$this->assertContains( 'datetime_start_gmt', $column_names, 'Table should have datetime_start_gmt column.' );
+		$this->assertContains( 'datetime_end', $column_names, 'Table should have datetime_end column.' );
+		$this->assertContains( 'datetime_end_gmt', $column_names, 'Table should have datetime_end_gmt column.' );
+		$this->assertContains( 'timezone', $column_names, 'Table should have timezone column.' );
+	}
+
+	/**
+	 * Coverage for check_gatherpress_alpha when user lacks install_plugins capability.
+	 *
+	 * @covers ::check_gatherpress_alpha
+	 *
+	 * @return void
+	 */
+	public function test_check_gatherpress_alpha_without_capability(): void {
+		$instance = Setup::get_instance();
+
+		// Create a subscriber user (no install_plugins capability).
+		$user_id = $this->factory->user->create( array( 'role' => 'subscriber' ) );
+		wp_set_current_user( $user_id );
+
+		ob_start();
+		$instance->check_gatherpress_alpha();
+		$output = ob_get_clean();
+
+		$this->assertEmpty(
+			$output,
+			'Failed to assert that no notice is shown to users without install_plugins capability.'
+		);
+	}
+
+	/**
+	 * Tests check_gatherpress_alpha displays notice when Alpha is not active.
+	 *
+	 * @covers ::check_gatherpress_alpha
+	 *
+	 * @return void
+	 */
+	public function test_check_gatherpress_alpha_displays_notice(): void {
+		// Set up admin user with install_plugins capability.
+		$user_id = $this->factory->user->create( array( 'role' => 'administrator' ) );
+		wp_set_current_user( $user_id );
+
+		// Set current screen to a plugins page.
+		set_current_screen( 'plugins' );
+
+		// Use filter to simulate Alpha not being active even if constant is defined.
+		add_filter( 'gatherpress_is_alpha_active', '__return_false' );
+
+		$instance = Setup::get_instance();
+
+		ob_start();
+		$instance->check_gatherpress_alpha();
+		$output = ob_get_clean();
+
+		$this->assertStringContainsString(
+			'GatherPress Alpha',
+			$output,
+			'Failed to assert that admin notice about GatherPress Alpha is displayed.'
+		);
+
+		// Clean up.
+		remove_filter( 'gatherpress_is_alpha_active', '__return_false' );
+		set_current_screen( 'front' );
+	}
+
+	/**
+	 * Tests protect_gatherpress_meta returns true for gatherpress meta keys.
+	 *
+	 * @covers ::protect_gatherpress_meta
+	 *
+	 * @return void
+	 */
+	public function test_protect_gatherpress_meta_protects_gatherpress_keys(): void {
+		$instance       = Setup::get_instance();
+		$protected_keys = array(
+			'gatherpress_datetime',
+			'gatherpress_max_guest_limit',
+			'gatherpress_enable_anonymous_rsvp',
+			'gatherpress_online_event_link',
+			'gatherpress_max_attendance_limit',
+		);
+
+		foreach ( $protected_keys as $key ) {
+			$result = $instance->protect_gatherpress_meta( false, $key );
+			$this->assertTrue( $result, "{$key} should be protected." );
+		}
+	}
+
+	/**
+	 * Tests protect_gatherpress_meta returns original value for other meta keys.
+	 *
+	 * @covers ::protect_gatherpress_meta
+	 *
+	 * @return void
+	 */
+	public function test_protect_gatherpress_meta_ignores_other_keys(): void {
+		$instance = Setup::get_instance();
+
+		$result = $instance->protect_gatherpress_meta( false, 'some_other_meta' );
+		$this->assertFalse( $result, 'Non-gatherpress meta should not be protected.' );
+	}
+
+	/**
+	 * Tests protect_gatherpress_meta preserves existing protection.
+	 *
+	 * @covers ::protect_gatherpress_meta
+	 *
+	 * @return void
+	 */
+	public function test_protect_gatherpress_meta_preserves_existing_protection(): void {
+		$instance = Setup::get_instance();
+
+		$result = $instance->protect_gatherpress_meta( true, 'some_other_meta' );
+		$this->assertTrue( $result, 'Already protected meta should remain protected.' );
 	}
 }

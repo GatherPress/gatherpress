@@ -53,7 +53,8 @@ class Autoloader {
 				 * add_filter( 'gatherpress_autoloader', 'gatherpress_awesome_autoloader' );
 				 * ```
 				 *
-				 * **Example:** The namespace `GatherPress_Awesome\Setup` would map to `gatherpress-awesome/includes/classes/class-setup.php`.
+				 * **Example:** The namespace `GatherPress_Awesome\Setup` would map to
+				 * `gatherpress-awesome/includes/classes/class-setup.php`.
 				 */
 				$registered_autoloaders = apply_filters( 'gatherpress_autoloader', array() );
 
@@ -111,7 +112,8 @@ class Autoloader {
 						file_exists( $resource_path ) &&
 						( 0 === $resource_path_valid || 2 === $resource_path_valid )
 					) {
-						require_once $resource_path;
+						// Autoloader dynamically loads class files at runtime - cannot use 'use' keyword.
+						require_once $resource_path; // NOSONAR.
 					}
 				}
 			}

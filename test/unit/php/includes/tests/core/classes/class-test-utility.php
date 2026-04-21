@@ -88,6 +88,20 @@ class Test_Utility extends Base {
 	}
 
 	/**
+	 * Coverage for snake_to_camel method.
+	 *
+	 * @covers ::snake_to_camel
+	 *
+	 * @return void
+	 */
+	public function test_snake_to_camel(): void {
+		$this->assertSame( 'dateFormat', Utility::snake_to_camel( 'date_format' ) );
+		$this->assertSame( 'enableAnonymousRsvp', Utility::snake_to_camel( 'enable_anonymous_rsvp' ) );
+		$this->assertSame( 'postOrEventDate', Utility::snake_to_camel( 'post_or_event_date' ) );
+		$this->assertSame( 'simple', Utility::snake_to_camel( 'simple' ) );
+	}
+
+	/**
 	 * Coverage for timezone_choices method.
 	 *
 	 * @covers ::timezone_choices
@@ -96,7 +110,19 @@ class Test_Utility extends Base {
 	 */
 	public function test_timezone_choices(): void {
 		$timezones = Utility::timezone_choices();
-		$keys      = array( 'Africa', 'America', 'Antarctica', 'Arctic', 'Asia', 'Atlantic', 'Australia', 'Europe', 'Indian', 'UTC', 'Manual Offsets' );
+		$keys      = array(
+			'Africa',
+			'America',
+			'Antarctica',
+			'Arctic',
+			'Asia',
+			'Atlantic',
+			'Australia',
+			'Europe',
+			'Indian',
+			'UTC',
+			'Manual Offsets',
+		);
 
 		$this->assertIsArray( $timezones );
 
@@ -191,32 +217,116 @@ class Test_Utility extends Base {
 	 */
 	public function data_get_system_timezone(): array {
 		return array(
+			// No gmt_offset and no timezone_string → defaults to UTC.
 			array(
 				false,
 				false,
-				'UTC+0',
+				'UTC',
 			),
+			// Whole positive offset.
 			array(
 				5,
 				false,
-				'UTC+5',
+				'+05:00',
 			),
+			// Whole negative offset.
 			array(
 				-4,
 				false,
-				'UTC-4',
+				'-04:00',
 			),
+			// Fractional offset (e.g. India).
+			array(
+				5.5,
+				false,
+				'+05:30',
+			),
+			// IANA passthrough.
 			array(
 				false,
 				'Europe/London',
 				'Europe/London',
 			),
+			// Etc/GMT is stripped; falls back to gmt_offset.
 			array(
-				false,
+				-3,
 				'Etc/GMT+3',
-				'UTC-3',
+				'-03:00',
 			),
 		);
+	}
+
+	/**
+	 * Data provider for test_offset_to_timezone_string.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return array
+	 */
+	public function data_offset_to_timezone_string(): array {
+		return array(
+			'zero returns UTC'                  => array( 0.0, 'UTC' ),
+			'positive whole hour'               => array( 5.0, '+05:00' ),
+			'negative whole hour'               => array( -8.0, '-08:00' ),
+			'positive half hour (India)'        => array( 5.5, '+05:30' ),
+			'negative half hour (Newfoundland)' => array( -3.5, '-03:30' ),
+			'positive quarter hour (Kathmandu)' => array( 5.75, '+05:45' ),
+		);
+	}
+
+	/**
+	 * Coverage for offset_to_timezone_string.
+	 *
+	 * @dataProvider data_offset_to_timezone_string
+	 *
+	 * @covers ::offset_to_timezone_string
+	 *
+	 * @param float  $offset   Decimal hour offset from UTC.
+	 * @param string $expected Expected DateTimeZone-compatible string.
+	 * @return void
+	 */
+	public function test_offset_to_timezone_string( float $offset, string $expected ): void {
+		$this->assertSame( $expected, Utility::offset_to_timezone_string( $offset ) );
+	}
+
+	/**
+	 * Data provider for test_normalize_timezone_string.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return array
+	 */
+	public function data_normalize_timezone_string(): array {
+		return array(
+			'empty string becomes UTC'           => array( '', 'UTC' ),
+			'whitespace-only string becomes UTC' => array( '   ', 'UTC' ),
+			'offset +HH:MM passes through'       => array( '+05:30', '+05:30' ),
+			'offset -HH:MM passes through'       => array( '-08:00', '-08:00' ),
+			'literal UTC passes through'         => array( 'UTC', 'UTC' ),
+			'UTC+0 normalizes to UTC'            => array( 'UTC+0', 'UTC' ),
+			'UTC-0 normalizes to UTC'            => array( 'UTC-0', 'UTC' ),
+			'UTC+5 becomes +05:00'               => array( 'UTC+5', '+05:00' ),
+			'UTC-8 becomes -08:00'               => array( 'UTC-8', '-08:00' ),
+			'UTC+5.5 becomes +05:30'             => array( 'UTC+5.5', '+05:30' ),
+			'UTC+5:30 becomes +05:30'            => array( 'UTC+5:30', '+05:30' ),
+			'UTC with zero colon form'           => array( 'UTC+0:00', 'UTC' ),
+			'IANA identifier passes through'     => array( 'America/New_York', 'America/New_York' ),
+		);
+	}
+
+	/**
+	 * Coverage for normalize_timezone_string.
+	 *
+	 * @dataProvider data_normalize_timezone_string
+	 *
+	 * @covers ::normalize_timezone_string
+	 *
+	 * @param string $input    Input timezone string.
+	 * @param string $expected Expected normalized output.
+	 * @return void
+	 */
+	public function test_normalize_timezone_string( string $input, string $expected ): void {
+		$this->assertSame( $expected, Utility::normalize_timezone_string( $input ) );
 	}
 
 	/**
@@ -227,7 +337,8 @@ class Test_Utility extends Base {
 	 * @covers ::get_system_timezone
 	 *
 	 * @param int|boolean    $gmt_offset      The GMT offset to simulate getting from WordPress settings for testing.
-	 * @param string|boolean $timezone_string The timezone string to simulate getting from WordPress settings for testing.
+	 * @param string|boolean $timezone_string The timezone string to simulate getting from WordPress settings
+	 *                                        for testing.
 	 * @param string         $expects         The expected timezone string result from get_system_timezone.
 	 *
 	 * @return void
@@ -333,7 +444,11 @@ class Test_Utility extends Base {
 		$authenticated_user_id = Utility::ensure_user_authentication();
 
 		$this->assertSame( $test_user_id, $authenticated_user_id, 'Should return the authenticated user ID' );
-		$this->assertSame( $test_user_id, get_current_user_id(), 'Current user should be set to the authenticated user' );
+		$this->assertSame(
+			$test_user_id,
+			get_current_user_id(),
+			'Current user should be set to the authenticated user'
+		);
 
 		// Clean up.
 		wp_set_current_user( 0 );
@@ -465,7 +580,12 @@ class Test_Utility extends Base {
 	 *
 	 * @return void
 	 */
-	public function test_has_css_class( ?string $class_string, string $target_class, bool $expected, string $message ): void {
+	public function test_has_css_class(
+		?string $class_string,
+		string $target_class,
+		bool $expected,
+		string $message
+	): void {
 		$this->assertSame(
 			$expected,
 			Utility::has_css_class( $class_string, $target_class ),
@@ -488,7 +608,7 @@ class Test_Utility extends Base {
 				'text_field'     => '  Test Value  ',
 				'email_field'    => 'test@example.com',
 				'url_field'      => 'https://example.com',
-				'textarea_field' => "Line 1\nLine 2",
+				'textarea_field' => "Target line\nTarget line",
 				'key_field'      => 'some-key_123',
 				'title_field'    => 'Test Title 123',
 				'user_field'     => 'testuser',
@@ -526,7 +646,7 @@ class Test_Utility extends Base {
 
 		// Test textarea sanitization.
 		$result = Utility::get_http_input( INPUT_POST, 'textarea_field', 'sanitize_textarea_field' );
-		$this->assertEquals( "Line 1\nLine 2", $result, 'Textarea should preserve line breaks.' );
+		$this->assertEquals( "Target line\nTarget line", $result, 'Textarea should preserve line breaks.' );
 
 		// Test key sanitization.
 		$result = Utility::get_http_input( INPUT_POST, 'key_field', 'sanitize_key' );
@@ -546,7 +666,11 @@ class Test_Utility extends Base {
 
 		// Test HTML sanitization with wp_kses_post.
 		$result = Utility::get_http_input( INPUT_POST, 'html_field', 'wp_kses_post' );
-		$this->assertEquals( 'alert("XSS")Hello', $result, 'Script tags should be removed by wp_kses_post, content preserved.' );
+		$this->assertEquals(
+			'alert("XSS")Hello',
+			$result,
+			'Script tags should be removed by wp_kses_post, content preserved.'
+		);
 
 		// Test custom sanitization function.
 		$result = Utility::get_http_input(
@@ -623,5 +747,91 @@ class Test_Utility extends Base {
 
 		// Clean up.
 		remove_all_filters( 'gatherpress_pre_get_http_input' );
+	}
+
+	/**
+	 * Tests get_wp_referer method.
+	 *
+	 * @since 1.0.0
+	 * @covers ::get_wp_referer
+	 *
+	 * @return void
+	 */
+	public function test_get_wp_referer(): void {
+		// Test when referer is available.
+		$expected_referer = 'https://example.com/test-page';
+
+		add_filter(
+			'gatherpress_pre_get_wp_referer',
+			static function () use ( $expected_referer ) {
+				return $expected_referer;
+			}
+		);
+
+		$result = Utility::get_wp_referer();
+
+		$this->assertEquals(
+			$expected_referer,
+			$result,
+			'Should return the mocked referer URL.'
+		);
+
+		// Clean up.
+		remove_all_filters( 'gatherpress_pre_get_wp_referer' );
+
+		// Test when referer is false.
+		add_filter(
+			'gatherpress_pre_get_wp_referer',
+			static function () {
+				return false;
+			}
+		);
+
+		$result = Utility::get_wp_referer();
+
+		$this->assertFalse(
+			$result,
+			'Should return false when no referer is available.'
+		);
+
+		// Clean up.
+		remove_all_filters( 'gatherpress_pre_get_wp_referer' );
+	}
+
+	/**
+	 * Tests get_wp_referer without filter (normal WordPress behavior).
+	 *
+	 * @since 1.0.0
+	 * @covers ::get_wp_referer
+	 *
+	 * @return void
+	 */
+	public function test_get_wp_referer_without_filter(): void {
+		// When no pre-filter is applied, it should call wp_get_referer().
+		// In test environment, wp_get_referer() typically returns false.
+		$result = Utility::get_wp_referer();
+
+		// Should return whatever wp_get_referer() returns (typically false in tests).
+		$this->assertFalse(
+			$result,
+			'Should return false when wp_get_referer has no referer in test environment.'
+		);
+	}
+
+	/**
+	 * Tests safe_exit returns early during unit tests instead of calling exit().
+	 *
+	 * @since 1.0.0
+	 * @covers ::safe_exit
+	 *
+	 * @return void
+	 */
+	public function test_safe_exit_in_unit_tests(): void {
+		// In unit test environment, safe_exit should return early instead of calling exit().
+		// If this test completes, it means safe_exit returned instead of exiting.
+		Utility::safe_exit();
+
+		// If we reach this assertion, safe_exit returned successfully.
+		$this->assertTrue( true, 'safe_exit should return early during unit tests' );
 	}
 }

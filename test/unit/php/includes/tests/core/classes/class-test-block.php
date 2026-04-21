@@ -81,20 +81,23 @@ class Test_Block extends Base {
 			'gatherpress/dropdown',
 			'gatherpress/dropdown-item',
 			'gatherpress/event-date',
-			'gatherpress/events-list',
 			'gatherpress/form-field',
 			'gatherpress/icon',
 			'gatherpress/modal',
 			'gatherpress/modal-content',
 			'gatherpress/modal-manager',
 			'gatherpress/online-event',
+			'gatherpress/online-event-link',
 			'gatherpress/rsvp',
+			'gatherpress/rsvp-count',
 			'gatherpress/rsvp-form',
 			'gatherpress/rsvp-guest-count-display',
 			'gatherpress/rsvp-response',
 			'gatherpress/rsvp-response-toggle',
 			'gatherpress/rsvp-template',
 			'gatherpress/venue',
+			'gatherpress/venue-detail',
+			'gatherpress/venue-map',
 		);
 		$block_type_registry = WP_Block_Type_Registry::get_instance();
 
@@ -134,6 +137,85 @@ class Test_Block extends Base {
 	}
 
 	/**
+	 * Coverage for get_block_variations when directory doesn't exist.
+	 *
+	 * Covers: Early return when variations directory doesn't exist.
+	 *
+	 * @covers ::get_block_variations
+	 *
+	 * @return void
+	 */
+	public function test_get_block_variations_directory_not_exists(): void {
+		$instance            = Block::get_instance();
+		$variations_dir      = sprintf( '%1$s/build/variations/core/', GATHERPRESS_CORE_PATH );
+		$temp_renamed_dir    = sprintf( '%1$s/build/variations/core-temp-renamed/', GATHERPRESS_CORE_PATH );
+		$variations_dir_base = sprintf( '%1$s/build/variations/', GATHERPRESS_CORE_PATH );
+
+		// Temporarily rename the variations directory to simulate non-existence.
+		if ( file_exists( $variations_dir ) ) {
+			// phpcs:ignore WordPress.WP.AlternativeFunctions.rename_rename -- Necessary for testing.
+			rename( $variations_dir, $temp_renamed_dir );
+		}
+
+		// Reset the cached property to force a fresh check.
+		Utility::set_and_get_hidden_property( $instance, 'block_variation_names', array() );
+
+		// Now the directory doesn't exist, should return empty array.
+		$result = $instance->get_block_variations();
+
+		$this->assertSame( array(), $result, 'Should return empty array when variations directory does not exist.' );
+
+		// Restore the directory.
+		if ( file_exists( $temp_renamed_dir ) ) {
+			// phpcs:ignore WordPress.WP.AlternativeFunctions.rename_rename -- Necessary for testing.
+			rename( $temp_renamed_dir, $variations_dir );
+		}
+
+		// Reset the cache again for other tests.
+		Utility::set_and_get_hidden_property( $instance, 'block_variation_names', array() );
+	}
+
+	/**
+	 * Coverage for get_block_variations caching behavior.
+	 *
+	 * Covers: Caching of block variation names.
+	 *
+	 * @covers ::get_block_variations
+	 *
+	 * @return void
+	 */
+	public function test_get_block_variations_caching(): void {
+		$instance = Block::get_instance();
+
+		// Reset the cache to ensure we're starting fresh.
+		Utility::set_and_get_hidden_property( $instance, 'block_variation_names', array() );
+
+		// Verify block_variation_names is empty initially.
+		$cache_before = Utility::get_hidden_property( $instance, 'block_variation_names' );
+		$this->assertEmpty( $cache_before );
+
+		// First call should populate the cache.
+		$first_result = $instance->get_block_variations();
+
+		// Verify cache is now populated (target code executed).
+		$cache_after_first = Utility::get_hidden_property( $instance, 'block_variation_names' );
+		$this->assertNotEmpty( $cache_after_first );
+
+		// Second call should use cached values (target code check causes early return from cache).
+		$second_result = $instance->get_block_variations();
+
+		// Verify cache wasn't modified by second call.
+		$cache_after_second = Utility::get_hidden_property( $instance, 'block_variation_names' );
+		$this->assertSame( $cache_after_first, $cache_after_second );
+
+		// Both results should be identical.
+		$this->assertSame( $first_result, $second_result, 'Should return cached variation names on subsequent calls.' );
+
+		// Verify the final result matches the cached data after array_filter.
+		$this->assertSame( array_filter( $cache_after_second ), $second_result );
+	}
+
+	/**
 	 * Coverage for get_classname_from_foldername.
 	 *
 	 * @covers ::get_classname_from_foldername
@@ -145,7 +227,11 @@ class Test_Block extends Base {
 
 		$this->assertSame(
 			'Unit_Test',
-			Utility::invoke_hidden_method( $instance, 'get_classname_from_foldername', array( '/src/variations/unit-test' ) ),
+			Utility::invoke_hidden_method(
+				$instance,
+				'get_classname_from_foldername',
+				array( '/src/variations/unit-test' )
+			),
 			'Failed to assert, to get class name from foldername.'
 		);
 	}
@@ -184,7 +270,8 @@ class Test_Block extends Base {
 	 */
 	public function test_docs_contain_patterns(): void {
 
-		$doc_file = file_get_contents( // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
+		$doc_file = file_get_contents(
 			sprintf(
 				'%s/docs/%s',
 				GATHERPRESS_CORE_PATH,
@@ -287,10 +374,35 @@ class Test_Block extends Base {
 			'name' => 'gatherpress/venue-template',
 		);
 
+		// Venue is now directly in the pattern content, not hooked.
 		$hooked_blocks = $instance->hook_blocks_into_patterns(
 			array(),
 			'after',
-			'core/paragraph',
+			'gatherpress/venue',
+			$context
+		);
+
+		$this->assertNotContains( 'gatherpress/venue', $hooked_blocks );
+	}
+
+	/**
+	 * Coverage for hook_blocks_into_patterns with venue details pattern.
+	 *
+	 * @covers ::hook_blocks_into_patterns
+	 *
+	 * @return void
+	 */
+	public function test_hook_blocks_into_patterns_venue_details(): void {
+		$instance = Block::get_instance();
+
+		$context = array(
+			'name' => 'gatherpress/venue-details',
+		);
+
+		$hooked_blocks = $instance->hook_blocks_into_patterns(
+			array(),
+			'after',
+			'core/post-title',
 			$context
 		);
 

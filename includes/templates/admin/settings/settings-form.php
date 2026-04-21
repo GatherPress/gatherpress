@@ -19,7 +19,7 @@ if ( ! isset( $page ) ) {
 ?>
 
 <form method="post" action="options.php">
-	<?php settings_fields( $page ); ?>
+	<?php settings_fields( 'gatherpress_settings' ); ?>
 	<?php do_settings_sections( $page ); ?>
 
 	<?php submit_button( __( 'Save Settings', 'gatherpress' ) ); ?>

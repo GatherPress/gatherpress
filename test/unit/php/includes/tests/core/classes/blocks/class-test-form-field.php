@@ -886,4 +886,262 @@ class Test_Form_Field extends Base {
 			'Failed to assert render output contains label.'
 		);
 	}
+
+	/**
+	 * Tests that className is NOT preserved through process_attributes.
+	 *
+	 * This test proves that the className checking code at lines 310-312 and 338-339
+	 * is dead code because process_attributes() does not preserve className.
+	 *
+	 * @since 1.0.0
+	 * @covers ::__construct
+	 * @covers ::process_attributes
+	 * @covers ::get_wrapper_classes
+	 * @covers ::get_wrapper_attributes
+	 *
+	 * @return void
+	 */
+	public function test_className_not_preserved_in_attributes(): void {
+		// Create form field with className in raw attributes.
+		$form_field = new Form_Field(
+			array(
+				'fieldName' => 'test_field',
+				'className' => 'my-custom-class another-class',
+			)
+		);
+
+		// Use reflection to access processed attributes.
+		$reflection = new \ReflectionClass( $form_field );
+		$property   = $reflection->getProperty( 'attributes' );
+		$property->setAccessible( true );
+		$processed_attrs = $property->getValue( $form_field );
+
+		// Verify className is NOT in processed attributes.
+		$this->assertArrayNotHasKey(
+			'className',
+			$processed_attrs,
+			'className should NOT be preserved in processed attributes'
+		);
+
+		// Verify wrapper classes do NOT include custom className.
+		$method = $reflection->getMethod( 'get_wrapper_classes' );
+		$method->setAccessible( true );
+		$wrapper_classes = $method->invoke( $form_field );
+
+		$this->assertNotContains(
+			'my-custom-class',
+			$wrapper_classes,
+			'Custom className should NOT be in wrapper classes'
+		);
+		$this->assertNotContains(
+			'another-class',
+			$wrapper_classes,
+			'Custom className should NOT be in wrapper classes'
+		);
+	}
+
+	/**
+	 * Tests that data-* attributes are NOT preserved through process_attributes.
+	 *
+	 * This test proves that the data-* attribute checking code at lines 345-348
+	 * is dead code because process_attributes() does not preserve data-* attributes.
+	 *
+	 * @since 1.0.0
+	 * @covers ::__construct
+	 * @covers ::process_attributes
+	 * @covers ::get_wrapper_attributes
+	 *
+	 * @return void
+	 */
+	public function test_data_attributes_not_preserved(): void {
+		// Create form field with data-* attributes.
+		$form_field = new Form_Field(
+			array(
+				'fieldName'      => 'test_field',
+				'data-custom'    => 'custom-value',
+				'data-test-attr' => 'test-value',
+			)
+		);
+
+		// Use reflection to access processed attributes.
+		$reflection = new \ReflectionClass( $form_field );
+		$property   = $reflection->getProperty( 'attributes' );
+		$property->setAccessible( true );
+		$processed_attrs = $property->getValue( $form_field );
+
+		// Verify data-* attributes are NOT in processed attributes.
+		$this->assertArrayNotHasKey(
+			'data-custom',
+			$processed_attrs,
+			'data-custom should NOT be preserved in processed attributes'
+		);
+		$this->assertArrayNotHasKey(
+			'data-test-attr',
+			$processed_attrs,
+			'data-test-attr should NOT be preserved in processed attributes'
+		);
+
+		// Verify wrapper attributes do NOT include data-* attributes.
+		$wrapper_attrs = $form_field->get_wrapper_attributes();
+
+		$this->assertStringNotContainsString(
+			'data-custom',
+			$wrapper_attrs,
+			'data-custom should NOT be in wrapper attributes'
+		);
+		$this->assertStringNotContainsString(
+			'data-test-attr',
+			$wrapper_attrs,
+			'data-test-attr should NOT be in wrapper attributes'
+		);
+	}
+
+	/**
+	 * Coverage for wp_kses_post allowing standard post and tooltip HTML.
+	 *
+	 * @covers ::render
+	 *
+	 * @return void
+	 */
+	public function test_wp_kses_post_allows_post_and_tooltip_tags(): void {
+		$allowed_html = wp_kses_allowed_html( 'post' );
+
+		// Verify standard post HTML tags are allowed.
+		$this->assertArrayHasKey(
+			'strong',
+			$allowed_html,
+			'Should allow strong tag from post HTML.'
+		);
+		$this->assertArrayHasKey(
+			'em',
+			$allowed_html,
+			'Should allow em tag from post HTML.'
+		);
+		$this->assertArrayHasKey(
+			'a',
+			$allowed_html,
+			'Should allow anchor tag from post HTML.'
+		);
+
+		// Verify span with data-* attributes is allowed (for tooltips).
+		$this->assertArrayHasKey(
+			'span',
+			$allowed_html,
+			'Should allow span tag.'
+		);
+		$this->assertArrayHasKey(
+			'data-*',
+			$allowed_html['span'],
+			'Should allow data-* attributes on span for tooltips.'
+		);
+	}
+
+	/**
+	 * Coverage for labels with standard HTML being properly escaped.
+	 *
+	 * @covers ::render
+	 *
+	 * @return void
+	 */
+	public function test_label_allows_standard_html_formatting(): void {
+		// Test that standard formatting HTML is preserved.
+		$label_with_formatting = '<strong>Required</strong> field with <em>emphasis</em>';
+		$escaped_label         = wp_kses_post( $label_with_formatting );
+
+		$this->assertStringContainsString(
+			'<strong>Required</strong>',
+			$escaped_label,
+			'Strong tags should be preserved in label.'
+		);
+		$this->assertStringContainsString(
+			'<em>emphasis</em>',
+			$escaped_label,
+			'Em tags should be preserved in label.'
+		);
+	}
+
+	/**
+	 * Coverage for labels with tooltip markup being properly escaped.
+	 *
+	 * @covers ::render
+	 *
+	 * @return void
+	 */
+	public function test_label_allows_tooltip_markup(): void {
+		// Test that tooltip markup is preserved.
+		$label_with_tooltip = 'Field <span class="gatherpress-tooltip" '
+			. 'data-gatherpress-tooltip="Help text">with tooltip</span>';
+		$escaped_label      = wp_kses_post( $label_with_tooltip );
+
+		$this->assertStringContainsString(
+			'gatherpress-tooltip',
+			$escaped_label,
+			'Tooltip class should be preserved in label.'
+		);
+		$this->assertStringContainsString(
+			'data-gatherpress-tooltip="Help text"',
+			$escaped_label,
+			'Tooltip data attribute should be preserved in label.'
+		);
+	}
+
+	/**
+	 * Coverage for labels with dangerous HTML being stripped.
+	 *
+	 * @covers ::render
+	 *
+	 * @return void
+	 */
+	public function test_label_strips_dangerous_html(): void {
+		// Test that dangerous HTML tags are stripped.
+		$label_with_script = 'Field <script>alert("xss")</script>';
+		$escaped_label     = wp_kses_post( $label_with_script );
+
+		$this->assertStringNotContainsString(
+			'<script>',
+			$escaped_label,
+			'Script tags should be stripped from label.'
+		);
+
+		// Test that onclick handlers are stripped from allowed tags.
+		$label_with_onclick = 'Field <span onclick="alert(1)">text</span>';
+		$escaped_onclick    = wp_kses_post( $label_with_onclick );
+
+		$this->assertStringNotContainsString(
+			'onclick',
+			$escaped_onclick,
+			'Onclick handlers should be stripped from span tags.'
+		);
+	}
+
+	/**
+	 * Tests get_input_styles fallback values for text fields without colors.
+	 *
+	 * @since 1.0.0
+	 * @covers ::get_input_styles
+	 * @covers ::add_style
+	 * @covers ::compile_styles
+	 *
+	 * @return void
+	 */
+	public function test_get_input_styles_text_field_no_colors(): void {
+		$form_field = new Form_Field(
+			array(
+				'fieldType' => 'text',
+			)
+		);
+
+		$styles = $form_field->get_input_styles();
+
+		$this->assertStringContainsString(
+			'background-color:transparent',
+			$styles,
+			'Failed to assert fallback transparent background for text field without background color.'
+		);
+		$this->assertStringContainsString(
+			'color:inherit',
+			$styles,
+			'Failed to assert fallback inherit color for text field without text color.'
+		);
+	}
 }

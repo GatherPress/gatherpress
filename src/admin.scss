@@ -64,3 +64,36 @@
 	background: #b32d2e;
 	color: #fff;
 }
+
+/* Popular Venues Quick Select */
+.gatherpress-popular-venues {
+	margin: 12px 0;
+}
+
+.gatherpress-popular-venues__label {
+	margin: 0;
+	font-size: 12px;
+	color: #757575;
+}
+
+.gatherpress-popular-venue.components-button.is-link {
+	text-decoration: none;
+	padding: 0;
+	height: auto;
+	min-height: 0;
+	margin-right: 0.5rem;
+}
+
+.gatherpress-popular-venue.components-button.is-link:not(:disabled):hover {
+	text-decoration: underline;
+}
+
+.gatherpress-popular-venue--selected.components-button.is-link {
+	font-weight: 600;
+	color: #1e1e1e;
+	cursor: default;
+}
+
+.gatherpress-popular-venue--selected.components-button.is-link:disabled {
+	opacity: 1;
+}

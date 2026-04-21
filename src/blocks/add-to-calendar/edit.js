@@ -10,8 +10,9 @@ import TEMPLATE from './template';
 import { hasValidEventId } from '../../helpers/event';
 import { isInFSETemplate } from '../../helpers/editor';
 
-const Edit = ( { attributes } ) => {
-	const { postId } = attributes;
+const Edit = ( { attributes, context } ) => {
+	// Normalize empty strings to null so fallback to context.postId works correctly.
+	const postId = ( attributes?.postId || null ) ?? context?.postId ?? null;
 
 	// Check if block has a valid event connection.
 	const isValidEvent = hasValidEventId( postId );

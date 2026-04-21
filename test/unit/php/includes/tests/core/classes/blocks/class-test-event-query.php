@@ -40,20 +40,78 @@ class Test_Event_Query extends Base {
 				'callback' => array( $instance, 'pre_render_block' ),
 			),
 			array(
-				'type'     => 'filter',
-				'name'     => sprintf( 'rest_%s_query', Event::POST_TYPE ),
+				'type'     => 'action',
+				'name'     => 'registered_post_type',
 				'priority' => 10,
-				'callback' => array( $instance, 'rest_query' ),
+				'callback' => array( $instance, 'maybe_register_event_date_rest_hooks' ),
 			),
 			array(
 				'type'     => 'filter',
-				'name'     => sprintf( 'rest_%s_collection_params', Event::POST_TYPE ),
+				'name'     => 'aql_query_vars',
 				'priority' => 10,
-				'callback' => array( $instance, 'rest_collection_params' ),
+				'callback' => array( $instance, 'aql_query_vars' ),
 			),
 		);
 
 		$this->assert_hooks( $hooks, $instance );
+	}
+
+	/**
+	 * Coverage for maybe_register_event_date_rest_hooks method.
+	 *
+	 * Verifies that REST filters are registered when a post type declares
+	 * gatherpress-event-date support and skipped otherwise.
+	 *
+	 * @since 1.0.0
+	 * @covers ::maybe_register_event_date_rest_hooks
+	 *
+	 * @return void
+	 */
+	public function test_maybe_register_event_date_rest_hooks(): void {
+		$instance = Event_Query::get_instance();
+
+		// Remove any existing filters first.
+		remove_all_filters( sprintf( 'rest_%s_query', Event::POST_TYPE ) );
+		remove_all_filters( sprintf( 'rest_%s_collection_params', Event::POST_TYPE ) );
+
+		$instance->maybe_register_event_date_rest_hooks( Event::POST_TYPE );
+
+		$this->assertSame(
+			10,
+			has_filter(
+				sprintf( 'rest_%s_query', Event::POST_TYPE ),
+				array( $instance, 'rest_query' )
+			),
+			'Failed to assert rest_query filter is registered for event post type.'
+		);
+
+		$this->assertSame(
+			10,
+			has_filter(
+				sprintf( 'rest_%s_collection_params', Event::POST_TYPE ),
+				array( $instance, 'rest_collection_params' )
+			),
+			'Failed to assert rest_collection_params filter is registered for event post type.'
+		);
+	}
+
+	/**
+	 * Bails when the post type does not declare event-date support.
+	 *
+	 * @since 1.0.0
+	 * @covers ::maybe_register_event_date_rest_hooks
+	 *
+	 * @return void
+	 */
+	public function test_maybe_register_event_date_rest_hooks_skips_unsupported_post_type(): void {
+		$instance = Event_Query::get_instance();
+
+		$instance->maybe_register_event_date_rest_hooks( 'post' );
+
+		$this->assertFalse(
+			has_filter( 'rest_post_query', array( $instance, 'rest_query' ) ),
+			'Failed to assert that no REST filters are registered for a post type without event-date support.'
+		);
 	}
 
 	/**
@@ -79,9 +137,10 @@ class Test_Event_Query extends Base {
 			array( 'include_unfinished', 0 ), // Integer 0 - the critical test case.
 			array( 'exclude_current', null ),
 			array( 'orderby', 'datetime' ),
+			array( 'venue_filter', null ),
 		);
 
-		$request->expects( $this->exactly( 4 ) )
+		$request->expects( $this->exactly( 5 ) )
 			->method( 'get_param' )
 			->willReturnMap( $param_map );
 
@@ -366,7 +425,7 @@ class Test_Event_Query extends Base {
 
 		$result = $instance->query_loop_block_query_vars( $query, $block );
 
-		$this->assertSame( array( Event::POST_TYPE ), $result['post_type'] );
+		$this->assertContains( Event::POST_TYPE, $result['post_type'] );
 		$this->assertSame( 'upcoming', $result['gatherpress_event_query'] );
 		$this->assertContains( 123, $result['post__not_in'] );
 		$this->assertSame( 1, $result['include_unfinished'] );
@@ -447,9 +506,10 @@ class Test_Event_Query extends Base {
 			array( 'exclude_current', 456 ),
 			array( 'include_unfinished', null ),
 			array( 'orderby', 'datetime' ),
+			array( 'venue_filter', null ),
 		);
 
-		$request->expects( $this->exactly( 4 ) )
+		$request->expects( $this->exactly( 5 ) )
 			->method( 'get_param' )
 			->willReturnMap( $param_map );
 
@@ -491,9 +551,10 @@ class Test_Event_Query extends Base {
 			array( 'exclude_current', null ),
 			array( 'include_unfinished', 1 ),
 			array( 'orderby', 'date' ),
+			array( 'venue_filter', null ),
 		);
 
-		$request->expects( $this->exactly( 4 ) )
+		$request->expects( $this->exactly( 5 ) )
 			->method( 'get_param' )
 			->willReturnMap( $param_map );
 
@@ -513,7 +574,11 @@ class Test_Event_Query extends Base {
 
 		$result = $instance->rest_query( $initial_args, $request );
 
-		$this->assertArrayNotHasKey( 'post__not_in', $result, 'Should not have post__not_in when exclude_current is null.' );
+		$this->assertArrayNotHasKey(
+			'post__not_in',
+			$result,
+			'Should not have post__not_in when exclude_current is null.'
+		);
 		$this->assertSame( 1, $result['include_unfinished'] );
 	}
 
@@ -535,9 +600,10 @@ class Test_Event_Query extends Base {
 			array( 'exclude_current', null ),
 			array( 'include_unfinished', null ),
 			array( 'orderby', null ),
+			array( 'venue_filter', null ),
 		);
 
-		$request->expects( $this->exactly( 4 ) )
+		$request->expects( $this->exactly( 5 ) )
 			->method( 'get_param' )
 			->willReturnMap( $param_map );
 
@@ -559,6 +625,147 @@ class Test_Event_Query extends Base {
 	}
 
 	/**
+	 * Test aql_query_vars returns unchanged query for non-event post types.
+	 *
+	 * @since 1.0.0
+	 * @covers ::aql_query_vars
+	 *
+	 * @return void
+	 */
+	public function test_aql_query_vars_non_event_post_type(): void {
+		$instance = Event_Query::get_instance();
+
+		$query_args  = array( 'posts_per_page' => 10 );
+		$block_query = array( 'postType' => 'post' );
+
+		$result = $instance->aql_query_vars( $query_args, $block_query, false );
+
+		$this->assertSame( $query_args, $result, 'Should return unchanged query for non-event post types.' );
+	}
+
+	/**
+	 * Test aql_query_vars returns unchanged query when postType is missing.
+	 *
+	 * @since 1.0.0
+	 * @covers ::aql_query_vars
+	 *
+	 * @return void
+	 */
+	public function test_aql_query_vars_missing_post_type(): void {
+		$instance = Event_Query::get_instance();
+
+		$query_args  = array( 'posts_per_page' => 10 );
+		$block_query = array();
+
+		$result = $instance->aql_query_vars( $query_args, $block_query, false );
+
+		$this->assertSame( $query_args, $result, 'Should return unchanged query when postType is missing.' );
+	}
+
+	/**
+	 * Test aql_query_vars passes through all GatherPress event params.
+	 *
+	 * @since 1.0.0
+	 * @covers ::aql_query_vars
+	 *
+	 * @return void
+	 */
+	public function test_aql_query_vars_with_all_params(): void {
+		$instance = Event_Query::get_instance();
+
+		$query_args  = array( 'posts_per_page' => 10 );
+		$block_query = array(
+			'postType'                => 'gatherpress_event',
+			'gatherpress_event_query' => 'upcoming',
+			'include_unfinished'      => 1,
+			'orderBy'                 => 'datetime',
+			'order'                   => 'asc',
+		);
+
+		$result = $instance->aql_query_vars( $query_args, $block_query, false );
+
+		$this->assertSame( 'upcoming', $result['gatherpress_event_query'], 'Should pass through event query type.' );
+		$this->assertSame( 1, $result['include_unfinished'], 'Should pass through include_unfinished.' );
+		$this->assertSame( array( 'datetime' ), $result['orderby'], 'Should pass through orderBy as array.' );
+		$this->assertSame( 'ASC', $result['order'], 'Should uppercase the order direction.' );
+		$this->assertSame( 10, $result['posts_per_page'], 'Should preserve original query args.' );
+	}
+
+	/**
+	 * Test aql_query_vars with past events and descending order.
+	 *
+	 * @since 1.0.0
+	 * @covers ::aql_query_vars
+	 *
+	 * @return void
+	 */
+	public function test_aql_query_vars_past_events(): void {
+		$instance = Event_Query::get_instance();
+
+		$query_args  = array( 'posts_per_page' => 5 );
+		$block_query = array(
+			'postType'                => 'gatherpress_event',
+			'gatherpress_event_query' => 'past',
+			'include_unfinished'      => 0,
+			'orderBy'                 => 'datetime',
+			'order'                   => 'desc',
+		);
+
+		$result = $instance->aql_query_vars( $query_args, $block_query, false );
+
+		$this->assertSame( 'past', $result['gatherpress_event_query'], 'Should pass through past event query type.' );
+		$this->assertSame( 0, $result['include_unfinished'], 'Should preserve integer 0 value.' );
+		$this->assertSame( 'DESC', $result['order'], 'Should uppercase DESC.' );
+	}
+
+	/**
+	 * Test aql_query_vars with minimal params only passes set values.
+	 *
+	 * @since 1.0.0
+	 * @covers ::aql_query_vars
+	 *
+	 * @return void
+	 */
+	public function test_aql_query_vars_minimal_params(): void {
+		$instance = Event_Query::get_instance();
+
+		$query_args  = array( 'posts_per_page' => 10 );
+		$block_query = array(
+			'postType' => 'gatherpress_event',
+		);
+
+		$result = $instance->aql_query_vars( $query_args, $block_query, false );
+
+		$this->assertArrayNotHasKey( 'gatherpress_event_query', $result, 'Should not set empty event query type.' );
+		$this->assertArrayNotHasKey( 'include_unfinished', $result, 'Should not set unset include_unfinished.' );
+		$this->assertArrayNotHasKey( 'orderby', $result, 'Should not set empty orderBy.' );
+		$this->assertArrayNotHasKey( 'order', $result, 'Should not set empty order.' );
+	}
+
+	/**
+	 * Test aql_query_vars with inherited query parameter.
+	 *
+	 * @since 1.0.0
+	 * @covers ::aql_query_vars
+	 *
+	 * @return void
+	 */
+	public function test_aql_query_vars_inherited(): void {
+		$instance = Event_Query::get_instance();
+
+		$query_args  = array( 'posts_per_page' => 10 );
+		$block_query = array(
+			'postType'                => 'gatherpress_event',
+			'gatherpress_event_query' => 'upcoming',
+		);
+
+		// The $inherited parameter is accepted but not used.
+		$result = $instance->aql_query_vars( $query_args, $block_query, true );
+
+		$this->assertSame( 'upcoming', $result['gatherpress_event_query'], 'Should work with inherited flag true.' );
+	}
+
+	/**
 	 * Test rest_query filters out empty string values.
 	 *
 	 * @since 1.0.0
@@ -576,9 +783,10 @@ class Test_Event_Query extends Base {
 			array( 'exclude_current', null ),
 			array( 'include_unfinished', null ),
 			array( 'orderby', '' ),
+			array( 'venue_filter', null ),
 		);
 
-		$request->expects( $this->exactly( 4 ) )
+		$request->expects( $this->exactly( 5 ) )
 			->method( 'get_param' )
 			->willReturnMap( $param_map );
 
@@ -595,5 +803,96 @@ class Test_Event_Query extends Base {
 		// Empty strings should be filtered out.
 		$this->assertArrayNotHasKey( 'gatherpress_event_query', $result );
 		$this->assertArrayNotHasKey( 'orderby', $result );
+	}
+
+	/**
+	 * Test query_loop_block_query_vars passes venue_filter through to query args.
+	 *
+	 * @since 1.0.0
+	 * @covers ::query_loop_block_query_vars
+	 *
+	 * @return void
+	 */
+	public function test_query_loop_block_query_vars_with_venue_filter(): void {
+		$instance = Event_Query::get_instance();
+
+		$query = array( 'posts_per_page' => 10 );
+		$block = $this->createMock( \WP_Block::class );
+
+		$block->context = array(
+			'query' => array(
+				'gatherpress_event_query' => 'upcoming',
+				'venue_filter'            => 1,
+			),
+		);
+
+		$result = $instance->query_loop_block_query_vars( $query, $block );
+
+		$this->assertSame( 1, $result['venue_filter'], 'Should pass venue_filter through to query args.' );
+	}
+
+	/**
+	 * Test rest_query passes venue_filter through to custom args.
+	 *
+	 * @since 1.0.0
+	 * @covers ::rest_query
+	 *
+	 * @return void
+	 */
+	public function test_rest_query_with_venue_filter(): void {
+		$instance = Event_Query::get_instance();
+
+		$request = $this->createMock( \WP_REST_Request::class );
+
+		$param_map = array(
+			array( 'gatherpress_event_query', 'upcoming' ),
+			array( 'exclude_current', null ),
+			array( 'include_unfinished', null ),
+			array( 'orderby', null ),
+			array( 'venue_filter', 1 ),
+		);
+
+		$request->expects( $this->exactly( 5 ) )
+			->method( 'get_param' )
+			->willReturnMap( $param_map );
+
+		$request->expects( $this->once() )
+			->method( 'get_params' )
+			->willReturn(
+				array(
+					'gatherpress_event_query' => 'upcoming',
+					'venue_filter'            => 1,
+				)
+			);
+
+		$initial_args = array(
+			'post_type' => Event::POST_TYPE,
+		);
+
+		$result = $instance->rest_query( $initial_args, $request );
+
+		$this->assertSame( 1, $result['venue_filter'], 'Should pass venue_filter through to custom args.' );
+	}
+
+	/**
+	 * Test aql_query_vars passes venue_filter through to query args.
+	 *
+	 * @since 1.0.0
+	 * @covers ::aql_query_vars
+	 *
+	 * @return void
+	 */
+	public function test_aql_query_vars_with_venue_filter(): void {
+		$instance = Event_Query::get_instance();
+
+		$query_args  = array( 'posts_per_page' => 10 );
+		$block_query = array(
+			'postType'     => 'gatherpress_event',
+			'venue_filter' => 1,
+		);
+
+		$result = $instance->aql_query_vars( $query_args, $block_query, false );
+
+		$this->assertSame( 1, $result['venue_filter'], 'Should pass venue_filter through to query args.' );
 	}
 }

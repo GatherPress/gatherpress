@@ -8,7 +8,7 @@ import { select } from '@wordpress/data';
  */
 import GoogleMap from './GoogleMap';
 import OpenStreetMap from './OpenStreetMap';
-import { getFromGlobal } from '../helpers/globals';
+import { getFromSettings } from '../helpers/editor-settings';
 
 /**
  * MapEmbed component for GatherPress.
@@ -43,8 +43,9 @@ const MapEmbed = ( props ) => {
 		location = '660 4th Street #119 San Francisco CA 94107, USA';
 	}
 
-	const mapPlatform = getFromGlobal( 'settings.mapPlatform' );
-	if ( ! location || ! mapPlatform ) {
+	const mapPlatform =
+		props.mapPlatform || getFromSettings( 'mapPlatform' );
+	if ( ! mapPlatform ) {
 		return <></>;
 	} else if ( 'google' === mapPlatform ) {
 		return (
@@ -67,6 +68,7 @@ const MapEmbed = ( props ) => {
 				className={ className }
 				zoom={ zoom }
 				height={ height }
+				pluginUrl={ props.pluginUrl }
 			/>
 		);
 	}

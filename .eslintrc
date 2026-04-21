@@ -12,6 +12,15 @@
 				"allowedTextDomain": "gatherpress"
 			}
 		],
+		"jsdoc/no-undefined-types": [
+			"error",
+			{
+				"definedTypes": [
+					"JSX",
+					"Component"
+				]
+			}
+		],
 		"yoda": [
 			"error",
 			"always",

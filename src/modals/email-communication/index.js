@@ -13,12 +13,12 @@ import {
 	TextareaControl,
 } from '@wordpress/components';
 import apiFetch from '@wordpress/api-fetch';
-import { useSelect, useDispatch } from '@wordpress/data';
+import { select, useSelect, useDispatch } from '@wordpress/data';
 
 /**
  * Internal dependencies.
  */
-import { getFromGlobal } from '../../helpers/globals';
+import { EVENT_REST_API } from '../../helpers/namespace';
 
 /**
  * A modal component for notifying event members via email.
@@ -32,9 +32,9 @@ import { getFromGlobal } from '../../helpers/globals';
  * @return {JSX.Element} The JSX element for the Event Communication Modal.
  */
 const EventCommunicationModal = () => {
-	const { isOpen, isSaving } = useSelect( ( select ) => ( {
-		isOpen: select( 'gatherpress/email-modal' ).isModalOpen(),
-		isSaving: select( 'gatherpress/email-modal' ).isSaving(),
+	const { isOpen, isSaving } = useSelect( ( wpSelect ) => ( {
+		isOpen: wpSelect( 'gatherpress/email-modal' ).isModalOpen(),
+		isSaving: wpSelect( 'gatherpress/email-modal' ).isSaving(),
 	} ), [] );
 	const { closeModal } = useDispatch( 'gatherpress/email-modal' );
 	const [ isAllChecked, setAllChecked ] = useState( false );
@@ -46,13 +46,14 @@ const EventCommunicationModal = () => {
 	const textareaRef = useRef( null );
 	const sendMessage = () => {
 		if (
-			global.confirm( __( 'Confirm you are ready to send?', 'gatherpress' ) )
+			// eslint-disable-next-line no-alert -- Confirmation required before sending mass emails.
+			window.confirm( __( 'Confirm you are ready to send?', 'gatherpress' ) )
 		) {
 			apiFetch( {
-				path: getFromGlobal( 'urls.eventApiPath' ) + '/email',
+				path: EVENT_REST_API + '/email',
 				method: 'POST',
 				data: {
-					post_id: getFromGlobal( 'eventDetails.postId' ),
+					post_id: select( 'core/editor' ).getCurrentPostId(),
 					message,
 					send: {
 						all: isAllChecked,
@@ -186,7 +187,7 @@ const EventCommunicationModal = () => {
 };
 
 domReady( () => {
-	const modalWrapper = global.document.getElementById(
+	const modalWrapper = document.getElementById(
 		'gatherpress-event-communication-modal',
 	);
 	if ( modalWrapper ) {

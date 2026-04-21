@@ -49,6 +49,41 @@ class Test_Import extends Base {
 	}
 
 	/**
+	 * Coverage for setup_hooks with WXR_Importer class present.
+	 *
+	 * Tests that when the WXR_Importer class exists, the correct hook name is used.
+	 *
+	 * @covers ::setup_hooks
+	 *
+	 * @return void
+	 */
+	public function test_setup_hooks_with_wxr_importer(): void {
+		// Mock the WXR_Importer class.
+		if ( ! class_exists( 'WXR_Importer' ) ) {
+			// Create a mock class using eval for testing purposes.
+			// phpcs:ignore Squiz.PHP.Eval.Discouraged -- Required for mocking WXR_Importer class in tests.
+			eval( 'class WXR_Importer {}' );
+		}
+
+		// Create a new instance to trigger setup_hooks with WXR_Importer present.
+		$reflection = new \ReflectionClass( Import::class );
+		$instance   = $reflection->newInstanceWithoutConstructor();
+
+		// Call setup_hooks via reflection.
+		$method = new \ReflectionMethod( Import::class, 'setup_hooks' );
+		$method->setAccessible( true );
+		$method->invoke( $instance );
+
+		/*
+		 * Tests: $hook_name = 'wxr_importer.pre_process.post'.
+		 */
+		$this->assertNotFalse(
+			has_filter( 'wxr_importer.pre_process.post', array( $instance, 'prepare' ) ),
+			'Should use wxr_importer.pre_process.post hook when WXR_Importer class exists.'
+		);
+	}
+
+	/**
 	 * Coverage for prepare.
 	 *
 	 * @covers ::prepare
@@ -153,6 +188,64 @@ class Test_Import extends Base {
 	}
 
 	/**
+	 * Coverage for run method when import_callback is not set or not callable.
+	 *
+	 * Tests that the method returns null when a pseudopostmeta entry
+	 * exists but has no import_callback or a non-callable callback.
+	 *
+	 * @covers ::run
+	 *
+	 * @return void
+	 */
+	public function test_run_with_no_import_callback(): void {
+		$instance = Import::get_instance();
+
+		// Add a filter to add a pseudopostmeta without import_callback.
+		$filter = static function ( $pseudopostmetas ) {
+			$pseudopostmetas['test_meta_no_callback'] = array(
+				'export_callback' => '__return_empty_string',
+			);
+			return $pseudopostmetas;
+		};
+		add_filter( 'gatherpress_pseudopostmetas', $filter );
+
+		// Defined for readability.
+		$check      = true;
+		$object_id  = 123;
+		$meta_value = 'test_data';
+		$unique     = true;
+
+		// Tests: return null; (when import_callback is not set).
+		$result = $instance->run( $check, $object_id, 'test_meta_no_callback', $meta_value, $unique );
+
+		$this->assertNull(
+			$result,
+			'Should return null when import_callback is not set.'
+		);
+
+		remove_filter( 'gatherpress_pseudopostmetas', $filter );
+
+		// Test with non-callable import_callback.
+		$filter_noncallable = static function ( $pseudopostmetas ) {
+			$pseudopostmetas['test_meta_noncallable'] = array(
+				'import_callback' => 'this_function_does_not_exist',
+			);
+			return $pseudopostmetas;
+		};
+		add_filter( 'gatherpress_pseudopostmetas', $filter_noncallable );
+
+		// Tests: return null; (when import_callback is not callable).
+		$result = $instance->run( $check, $object_id, 'test_meta_noncallable', $meta_value, $unique );
+
+		$this->assertNull(
+			$result,
+			'Should return null when import_callback is not callable.'
+		);
+
+		remove_filter( 'gatherpress_pseudopostmetas', $filter_noncallable );
+	}
+
+	/**
 	 * Coverage for datetimes_callback.
 	 *
 	 * @covers ::datetimes_callback
@@ -174,10 +267,10 @@ class Test_Import extends Base {
 		$instance->datetimes_callback( $post->ID, 0 );
 		$this->assertSame(
 			array(
-				'datetime_start'     => '0000-00-00 00:00:00',
-				'datetime_start_gmt' => '0000-00-00 00:00:00',
-				'datetime_end'       => '0000-00-00 00:00:00',
-				'datetime_end_gmt'   => '0000-00-00 00:00:00',
+				'datetime_start'     => '',
+				'datetime_start_gmt' => '',
+				'datetime_end'       => '',
+				'datetime_end_gmt'   => '',
 				'timezone'           => '+00:00',
 			),
 			$event->get_datetime()
@@ -190,6 +283,9 @@ class Test_Import extends Base {
 			'timezone'       => 'America/New_York',
 		);
 		$instance->datetimes_callback( $post->ID, $meta_data_value );
+
+		// Create new Event instance to get fresh data after datetime save.
+		$event = new Event( $post->ID );
 
 		$expect = array(
 			'datetime_start'     => '2020-05-11 15:00:00',

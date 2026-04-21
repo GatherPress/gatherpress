@@ -38,4 +38,4 @@ apply_filters( 'gatherpress_event_updates_default_opt_in', '1', $user_id )
 
 
 
-[← All Hooks](Hooks)
+[← All Hooks](Hooks.md)

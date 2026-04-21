@@ -20,9 +20,21 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 if ( ! isset( $name, $label, $option, $value, $description ) ) {
 	return;
 }
+
+$gatherpress_disabled = ! empty( $disabled ) ? ' disabled' : '';
+// Checkboxes can't use `readonly`. When disabled the field is omitted
+// from the POST, so the trailing hidden input's value is what lands in
+// `$_POST[$name]` — carry the current (possibly inherited) boolean so
+// the saved value matches what the UI displayed.
+$gatherpress_fallback = ! empty( $disabled ) && rest_sanitize_boolean( $value ) ? '1' : '0';
+
+// IMPORTANT: keep the hidden input BEFORE the checkbox. PHP takes the
+// last value for a repeated name, so a checked (enabled) checkbox wins
+// over the hidden fallback. If you reorder these two, the hidden
+// overrides the checkbox and the saved value is always the fallback.
 ?>
-<input type="hidden" name="<?php echo esc_attr( $name ); ?>" value="0" />
-<input id="<?php echo esc_attr( $option ); ?>" type="checkbox" name="<?php echo esc_attr( $name ); ?>" value="1" <?php checked( 1, rest_sanitize_boolean( $value ), true ); ?> />
+<input type="hidden" name="<?php echo esc_attr( $name ); ?>" value="<?php echo esc_attr( $gatherpress_fallback ); ?>" />
+<input id="<?php echo esc_attr( $option ); ?>" type="checkbox" name="<?php echo esc_attr( $name ); ?>" value="1" <?php checked( 1, rest_sanitize_boolean( $value ), true ); ?><?php echo $gatherpress_disabled; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static value. ?> />
 <label for="<?php echo esc_attr( $option ); ?>"><?php echo esc_html( $label ); ?></label>
 
 <?php

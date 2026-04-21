@@ -15,7 +15,10 @@ namespace GatherPress\Core;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
+use GatherPress\Core\Settings;
 use GatherPress\Core\Traits\Singleton;
+use GatherPress\Core\Venue;
+use WP_Post;
 use WP_Query;
 
 /**
@@ -61,7 +64,8 @@ class Event_Query {
 	 */
 	protected function setup_hooks(): void {
 		add_action( 'pre_get_posts', array( $this, 'prepare_event_query_before_execution' ) );
-		add_filter( 'posts_clauses', array( $this, 'adjust_admin_event_sorting' ), 10, 2 );
+		// Priority 9 to run before the upcoming/past adjustments at priority 10.
+		add_filter( 'posts_clauses', array( $this, 'adjust_admin_event_sorting' ), 9, 2 );
 	}
 
 	/**
@@ -118,7 +122,7 @@ class Event_Query {
 		$order = ( 'past' === $event_list_type ) ? 'DESC' : 'ASC';
 
 		$args = array(
-			'post_type'             => Event::POST_TYPE,
+			'post_type'             => get_post_types_by_support( 'gatherpress-event-date' ),
 			'fields'                => 'ids',
 			'no_found_rows'         => true,
 			'posts_per_page'        => $number,
@@ -136,11 +140,7 @@ class Event_Query {
 					'field'    => 'slug',
 					'terms'    => $topics,
 				),
-				array(
-					'taxonomy' => Venue::TAXONOMY,
-					'field'    => 'slug',
-					'terms'    => $venues,
-				),
+				$this->build_venue_tax_query( $venues ),
 			);
 		} elseif ( ! empty( $topics ) ) {
 			$tax_query[] = array(
@@ -149,11 +149,7 @@ class Event_Query {
 				'terms'    => $topics,
 			);
 		} elseif ( ! empty( $venues ) ) {
-			$tax_query[] = array(
-				'taxonomy' => Venue::TAXONOMY,
-				'field'    => 'slug',
-				'terms'    => $venues,
-			);
+			$tax_query[] = $this->build_venue_tax_query( $venues );
 		}
 
 		$args['tax_query'] = $tax_query; //phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query
@@ -177,32 +173,38 @@ class Event_Query {
 		$events_query = $query->get( self::EVENT_QUERY_PARAM );
 
 		if ( ! is_admin() && $query->is_main_query() ) {
-			$general = get_option( Utility::prefix_key( 'general' ) );
-
-			if ( ! is_array( $general ) ) {
-				return;
-			}
-
-			$pages = $general['pages'] ?? '';
-
-			if ( empty( $pages ) || ! is_array( $pages ) ) {
-				return;
-			}
+			$settings = Settings::get_instance();
 
 			$archive_pages = array(
-				'past'     => json_decode( $pages['past_events'] ),
-				'upcoming' => json_decode( $pages['upcoming_events'] ),
+				'past'     => json_decode( $settings->get( 'past_events' ) ),
+				'upcoming' => json_decode( $settings->get( 'upcoming_events' ) ),
 			);
+
+			// Resolve the current page ID from query vars since
+			// queried_object_id is not yet populated during pre_get_posts.
+			$current_page_id = $query->get( 'page_id' );
+
+			if ( ! $current_page_id ) {
+				$pagename = $query->get( 'pagename' );
+
+				if ( $pagename ) {
+					$page_obj = get_page_by_path( $pagename );
+
+					if ( $page_obj ) {
+						$current_page_id = $page_obj->ID;
+					}
+				}
+			}
 
 			foreach ( $archive_pages as $key => $value ) {
 				if ( ! empty( $value ) && is_array( $value ) ) {
 					$page = $value[0];
 
-					if ( $page->id === $query->queried_object_id ) {
+					if ( $current_page_id && $page->id === $current_page_id ) {
 						$page_id      = $query->queried_object_id;
 						$events_query = $key;
 
-						$query->set( 'post_type', 'gatherpress_event' );
+						$query->set( 'post_type', get_post_types_by_support( 'gatherpress-event-date' ) );
 						$query->set( self::EVENT_QUERY_PARAM, $key );
 						$query->is_page              = false;
 						$query->is_singular          = false;
@@ -239,6 +241,31 @@ class Event_Query {
 						);
 					}
 				}
+			}
+		}
+
+		// Filter events by venue when the venue filter is enabled and we're on a venue page.
+		$venue_filter = $query->get( 'venue_filter' );
+		if ( ! empty( $venue_filter ) && is_singular( Venue::POST_TYPE ) ) {
+			$venue_post = get_queried_object();
+
+			if ( $venue_post instanceof WP_Post ) {
+				$term_slug = ( new Venue( $venue_post->ID ) )->get_term_slug();
+
+				// Merge with any existing tax_query.
+				$existing_tax_query = $query->get( 'tax_query' );
+				if ( ! is_array( $existing_tax_query ) ) {
+					$existing_tax_query = array();
+				}
+
+				$existing_tax_query[] = array(
+					'taxonomy' => Venue::TAXONOMY,
+					'field'    => 'slug',
+					'terms'    => array( $term_slug ),
+				);
+
+				// phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query
+				$query->set( 'tax_query', $existing_tax_query );
 			}
 		}
 
@@ -340,14 +367,27 @@ class Event_Query {
 		 * This sanity check was added after it's been reported that some admin screens may not have $wp_query set.
 		 * @see https://wordpress.org/support/topic/gatherpress-has-critical-error-when-i-access-wpforms-payment-settings/
 		 */
+		$screen_id      = sprintf( 'edit-%s', Event::POST_TYPE );
 		$current_screen = function_exists( 'get_current_screen' ) ? get_current_screen() : null;
-		if ( ! $current_screen || 'edit-gatherpress_event' !== $current_screen->id ) {
+		if ( ! $current_screen || $screen_id !== $current_screen->id ) {
 			return $query_pieces;
 		}
 
-		if ( 'datetime' === $wp_query->get( 'orderby' ) ) {
-			$query_pieces = $this->adjust_event_sql( $query_pieces, 'all', $wp_query->get( 'order' ) );
-		}
+		remove_filter( 'posts_clauses', array( $this, 'adjust_sorting_for_past_events' ) );
+		remove_filter( 'posts_clauses', array( $this, 'adjust_sorting_for_upcoming_events' ) );
+
+		// Admin event list views can be filtered by 'upcoming', 'past' or 'all' events.
+		$gatherpress_events_query = ( ! empty( $wp_query->get( self::EVENT_QUERY_PARAM ) ) )
+			? $wp_query->get( self::EVENT_QUERY_PARAM )
+			: 'all';
+		$query_pieces             = $this->adjust_event_sql(
+			$query_pieces,
+			$gatherpress_events_query,
+			$wp_query->get( 'order' ),
+			$wp_query->get( 'orderby' ),
+			true,
+			true
+		);
 
 		return $query_pieces;
 	}
@@ -365,11 +405,16 @@ class Event_Query {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param array           $pieces    An array of query pieces, including join, where, orderby, and more.
-	 * @param string          $type      The type of events to query (options: 'all', 'upcoming', 'past') (Default: 'all').
-	 * @param string          $order     The event order ('DESC' for descending or 'ASC' for ascending) (Default: 'DESC').
+	 * @param array           $pieces    An array of query pieces, including join, where, orderby,
+	 *                                   and more.
+	 * @param string          $type      The type of events to query (options: 'all', 'upcoming', 'past')
+	 *                                   (Default: 'all').
+	 * @param string          $order     The event order ('DESC' for descending or 'ASC' for ascending)
+	 *                                   (Default: 'DESC').
 	 * @param string[]|string $order_by  List  or singular string of ORDERBY statement(s) (Default: ['datetime']).
-	 * @param bool            $inclusive Whether to include currently running events in the query (Default: true).
+	 * @param bool            $inclusive      Whether to include currently running events in the query (Default: true).
+	 * @param bool            $include_no_date Whether to include events with no date set in upcoming
+	 *                                         and exclude them from past (Default: false).
 	 * @return array An array containing adjusted SQL clauses for the Event query.
 	 */
 	public function adjust_event_sql(
@@ -377,11 +422,12 @@ class Event_Query {
 		string $type = 'all',
 		string $order = 'DESC',
 		$order_by = array( 'datetime' ),
-		bool $inclusive = true
+		bool $inclusive = true,
+		bool $include_no_date = false
 	): array {
 		global $wpdb;
 
-		$defaults        = array(
+		$defaults = array(
 			'where'    => '',
 			'groupby'  => '',
 			'join'     => '',
@@ -390,8 +436,9 @@ class Event_Query {
 			'fields'   => '',
 			'limits'   => '',
 		);
-		$pieces          = array_merge( $defaults, $pieces );
-		$table           = sprintf( Event::TABLE_FORMAT, $wpdb->prefix ); // Could also be (just) $wpdb->{gatherpress_events}.
+		$pieces   = array_merge( $defaults, $pieces );
+
+		$table           = sprintf( Event::TABLE_FORMAT, $wpdb->prefix );
 		$pieces['join'] .= ' LEFT JOIN ' . esc_sql( $table ) . ' ON ' . esc_sql( $wpdb->posts ) . '.ID='
 						. esc_sql( $table ) . '.post_id';
 		$order           = strtoupper( $order );
@@ -409,14 +456,20 @@ class Event_Query {
 					$pieces['orderby'] = sprintf( esc_sql( $wpdb->posts ) . '.post_name %s', esc_sql( $order ) );
 					break;
 				case 'modified':
-					$pieces['orderby'] = sprintf( esc_sql( $wpdb->posts ) . '.post_modified_gmt %s', esc_sql( $order ) );
+					$pieces['orderby'] = sprintf(
+						esc_sql( $wpdb->posts ) . '.post_modified_gmt %s',
+						esc_sql( $order )
+					);
 					break;
 				case 'rand':
 					$pieces['orderby'] = esc_sql( 'RAND()' );
 					break;
 				case 'datetime':
-				default:
 					$pieces['orderby'] = sprintf( esc_sql( $table ) . '.datetime_start_gmt %s', esc_sql( $order ) );
+					break;
+				default:
+					// Custom column sorting (e.g., rsvps, venue) is handled
+					// by posts_orderby filters; do not override their clause.
 					break;
 			}
 		}
@@ -431,14 +484,55 @@ class Event_Query {
 		// Appends a date-based condition to the WHERE clause of the SQL query,
 		// filtering events as either upcoming or past.
 		if ( 'upcoming' === $type ) {
-			// Include only events starting on or after the current date/time (upcoming).
-			$pieces['where'] .= $wpdb->prepare( ' AND %i.%i >= %s', $table, $column, $current );
+			if ( $include_no_date ) {
+				// Include events on or after the current date/time, or events with no row in the events table.
+				$pieces['where'] .= $wpdb->prepare(
+					' AND (%i.%i >= %s OR %i.post_id IS NULL)',
+					$table,
+					$column,
+					$current,
+					$table
+				);
+			} else {
+				// Include only events starting on or after the current date/time (upcoming).
+				$pieces['where'] .= $wpdb->prepare( ' AND %i.%i >= %s', $table, $column, $current );
+			}
 		} elseif ( 'past' === $type ) {
 			// Include only events starting before the current date/time (past).
 			$pieces['where'] .= $wpdb->prepare( ' AND %i.%i < %s', $table, $column, $current );
+
+			if ( $include_no_date ) {
+				// Exclude events with no row in the events table.
+				$pieces['where'] .= $wpdb->prepare( ' AND %i.post_id IS NOT NULL', $table );
+			}
 		}
 
 		return $pieces;
+	}
+
+	/**
+	 * Builds a WP_Query compatible tax_query array for filtering events by venue slugs.
+	 *
+	 * Creates an OR relation across all registered venue post type taxonomies, allowing
+	 * events to be filtered by venue regardless of which venue post type they use.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param array $venues Array of venue slugs to filter by.
+	 * @return array WP_Query compatible tax_query array.
+	 */
+	private function build_venue_tax_query( array $venues ): array {
+		$venue_tax_query = array( 'relation' => 'OR' );
+
+		foreach ( get_post_types_by_support( 'gatherpress-venue-information' ) as $venue_post_type ) {
+			$venue_tax_query[] = array(
+				'taxonomy' => Venue_Setup::get_instance()->get_taxonomy( $venue_post_type ),
+				'field'    => 'slug',
+				'terms'    => $venues,
+			);
+		}
+
+		return $venue_tax_query;
 	}
 
 	/**
@@ -446,7 +540,8 @@ class Event_Query {
 	 * based on the type of event query (either upcoming or past)
 	 * and if started but unfinished events should be included.
 	 *
-	 * @param  string $type      The type of events to query (options: 'all', 'upcoming', 'past') (Cannot be 'all' anymore).
+	 * @param  string $type      The type of events to query (options: 'all', 'upcoming', 'past')
+	 *                          (Cannot be 'all' anymore).
 	 * @param  bool   $inclusive Whether to include currently running events in the query.
 	 *
 	 * @return string Name of the DB column, which content to compare against the current time.

@@ -16,6 +16,7 @@ use GatherPress\Core\Block;
 use GatherPress\Core\Blocks\Form_Field;
 use GatherPress\Core\Blocks\General_Block;
 use GatherPress\Core\Event;
+use GatherPress\Core\Rsvp as Core_Rsvp;
 use GatherPress\Core\Rsvp_Setup;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Utility;
@@ -101,12 +102,16 @@ class Rsvp {
 		$block_instance = Block::get_instance();
 		$post_id        = $block_instance->get_post_id( $block );
 
-		// Validate that the post ID is an actual event post type.
+		// Validate that the post type supports RSVP.
 		// Only check publish status if not in preview mode.
 		if (
-			Event::POST_TYPE !== get_post_type( $post_id ) ||
+			! post_type_supports( (string) get_post_type( $post_id ), 'gatherpress-rsvp' ) ||
 			( ! is_preview() && 'publish' !== get_post_status( $post_id ) )
 		) {
+			return '';
+		}
+
+		if ( ! ( new Core_Rsvp( $post_id ) )->is_enabled() ) {
 			return '';
 		}
 
@@ -149,7 +154,10 @@ class Rsvp {
 				$user_data = $event->rsvp->get( $user_identifier );
 			}
 
-			$filtered_data   = array_intersect_key( $user_data, array_flip( array( 'status', 'guests', 'anonymous' ) ) );
+			$filtered_data   = array_intersect_key(
+				$user_data,
+				array_flip( array( 'status', 'guests', 'anonymous' ) )
+			);
 			$filtered_status = ! empty( $filtered_data['status'] ) ? $filtered_data['status'] : 'no_status';
 
 			if ( $event->has_event_past() ) {
@@ -220,6 +228,8 @@ class Rsvp {
 		while ( $tag->next_tag() ) {
 			$class_attr = $tag->get_attribute( 'class' );
 
+			// str_contains is used here to match BEM modifiers that extend the base class.
+			// For example, 'gatherpress-rsvp--trigger-update__attending' includes the base class as a prefix.
 			if ( $class_attr && str_contains( $class_attr, $rsvp_class ) ) {
 				$classes        = preg_split( '/\s+/', trim( $class_attr ) );
 				$statuses       = array( 'attending', 'waiting-list', 'not-attending' );
@@ -233,19 +243,34 @@ class Rsvp {
 					}
 				}
 
-				// Check if current element is an anchor.
-				if ( 'A' === $tag->get_tag() ) {
-					$tag->set_attribute( 'role', 'button' ); // For links acting as buttons.
-				} else {
-					$tag->set_attribute( 'tabindex', '0' );
-					$tag->set_attribute( 'role', 'button' );
+				// Check if current element is an anchor or button.
+				$is_actionable_element = in_array( $tag->get_tag(), array( 'A', 'BUTTON' ), true );
+
+				if ( ! $is_actionable_element ) {
+					// If not, check if the next element is an anchor or button.
+					// @phpstan-ignore-next-line.
+					$is_actionable_element = $tag->next_tag() &&
+					in_array( $tag->get_tag(), array( 'A', 'BUTTON' ), true );
 				}
 
-				$tag->set_attribute( 'data-wp-interactive', 'gatherpress' );
-				$tag->set_attribute( 'data-wp-on--click', 'actions.updateRsvp' );
+				$target_found = $is_actionable_element;
 
-				if ( ! empty( $matched_status ) ) {
-					$tag->set_attribute( 'data-set-status', str_replace( '-', '_', $matched_status ) );
+				// Apply RSVP attributes if target was found.
+				if ( $target_found ) {
+					// Links only get role="button", others get full keyboard handling.
+					if ( 'A' === $tag->get_tag() ) {
+						$tag->set_attribute( 'role', 'button' ); // For links acting as buttons.
+					} else {
+						$tag->set_attribute( 'tabindex', '0' );
+						$tag->set_attribute( 'role', 'button' );
+					}
+
+					$tag->set_attribute( 'data-wp-interactive', 'gatherpress' );
+					$tag->set_attribute( 'data-wp-on--click', 'actions.updateRsvp' );
+
+					if ( ! empty( $matched_status ) ) {
+						$tag->set_attribute( 'data-set-status', str_replace( '-', '_', $matched_status ) );
+					}
 				}
 			}
 		}
