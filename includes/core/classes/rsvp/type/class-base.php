@@ -10,7 +10,7 @@
  * @since 1.0.0
  */
 
-namespace GatherPress\Core;
+namespace GatherPress\Core\Rsvp\Type;
 
 // Exit if accessed directly.
 \defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
@@ -26,8 +26,8 @@ use GatherPress\Core\Traits\Singleton;
  *
  * @since 1.0.0
  */
-abstract class Rsvp_Type {
-    use Singleton;
+abstract class Base {
+	use Singleton;
 
 	/**
 	 * Get the unique slug for this RSVP type.
@@ -65,6 +65,24 @@ abstract class Rsvp_Type {
 	 * @return string The display name for the identifier.
 	 */
 	abstract public function get_display_name( $identifier ): string;
+
+	/**
+	 * Filter the RSVP-Comment-Query for a RSVP_Type.
+	 *
+	 * @param array $args       The present args.
+	 * @param mixed $identifier The identifier of the RSVP.
+	 * @return array
+	 */
+	abstract public function filter_query_get( $args, $identifier ): array;
+
+	/**
+	 * Filter the RSVP-Comment-Query for a RSVP_Type.
+	 *
+	 * @param array $args       The present args.
+	 * @param mixed $identifier The identifier of the RSVP.
+	 * @return array
+	 */
+	abstract public function filter_query_save( $args, $identifier ): array;
 
 	/**
 	 * Get the avatar URL for an identifier of this type.
@@ -118,8 +136,8 @@ abstract class Rsvp_Type {
 	 *
 	 * @return string|null The profile URL, or null if not available.
 	 */
-	public function get_profile_url( $identifier ): ? string {
-		return null;
+	public function get_profile_url( $identifier ): ?string {
+		return (string) $identifier;
 	}
 
 	/**

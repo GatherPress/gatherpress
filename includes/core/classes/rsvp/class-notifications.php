@@ -23,7 +23,7 @@ use GatherPress\Core\Traits\Singleton;
  *
  * @since 1. 0.0
  */
-class Rsvp_Notifications {
+class Notifications {
 
 	/**
 	 * Enforces a single instance of this class.
@@ -63,7 +63,7 @@ class Rsvp_Notifications {
 	 *
 	 * @param int    $comment_id The comment ID of the RSVP.
 	 * @param string $rsvp_type  The RSVP type slug.
-	 * @param array  $data       {
+	 * @param array  $data       {.
 	 *     @type string $status     The RSVP status ('attending', 'waiting_list', 'not_attending').
 	 *     @type int    $guests     Number of guests.
 	 *     @type int    $anonymous  Whether RSVP is anonymous.
@@ -80,11 +80,11 @@ class Rsvp_Notifications {
 			return;
 		}
 
-		$event = new Event( $data['event_id'] ??  0 );
-
-		if ( ! $event->is_valid() ) {
+		if ( ! isset( $data['event_id'] ) || Event::POST_TYPE !== get_post_type( $data['event_id'] ) ) {
 			return;
 		}
+
+		$event = new Event( $data['event_id'] );
 
 		// Route to type-specific notification handler.
 		/**
@@ -123,15 +123,15 @@ class Rsvp_Notifications {
 			return;
 		}
 
-		$event = new Event( $comment->comment_post_ID );
-
-		if ( ! $event->is_valid() ) {
+		if ( Event::POST_TYPE !== get_post_type( $comment->comment_post_ID) ) {
 			return;
 		}
 
+		$event = new Event( $comment->comment_post_ID );
+
 		// Get RSVP type.
 		$type_terms = wp_get_object_terms( $comment_id, '_gatherpress_rsvp_type', array( 'fields' => 'names' ) );
-		$rsvp_type = !  empty( $type_terms ) ?  $type_terms[0] : 'unknown';
+		$rsvp_type  = ! empty( $type_terms ) ? $type_terms[0] : 'unknown';
 
 		// Notify organizer of status change.
 		$this->notify_organizer_rsvp_status_changed( $comment, $event, $old_status, $new_status, $rsvp_type );
@@ -189,17 +189,15 @@ class Rsvp_Notifications {
 		}
 
 		$registry = Rsvp_Type_Registry::get_instance();
-		$type = $registry->get( $data['rsvp_type'] ??  'user' );
+		$type     = $registry->get( $data['rsvp_type'] ??  'user' );
 
 		if ( ! $type ) {
 			return;
 		}
 
-		$identifier = $data['identifier'] ?? null;
+		$identifier   = $data['identifier'] ?? null;
 		$display_name = $type->get_display_name( $identifier );
 
-		// TODO: Implement email sending here.
-		// For now, just fire a hook that companion plugins can use.
 		/**
 		 * Filter: Organizer RSVP received notification.
 		 *

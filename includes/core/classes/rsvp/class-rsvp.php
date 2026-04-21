@@ -9,7 +9,9 @@
  * @since 1.0.0
  */
 
-namespace GatherPress\Core;
+namespace GatherPress\Core\Rsvp;
+
+use GatherPress\Core\Rsvp_Query;
 
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
@@ -114,30 +116,23 @@ class Rsvp {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param int|string $user_identifier The user ID or email address of the person whose RSVP information
-	 *                                    is being retrieved. If an integer is provided, it's treated as a user ID.
-	 *                                    If a string is provided, it's treated as an email address.
+	 * @param mixed  $identifier The identifier of the RSVP.
+	 * @param string $rsvp_type  The RSVP type key.
 	 *
 	 * @return array An array containing RSVP information.
 	 */
-	public function get( $user_identifier ): array {
+	public function get( $identifier, $rsvp_type = 'user' ): array {
 		$post_id    = $this->event->ID ?? 0;
-		$rsvp_query = Rsvp_Query::get_instance();
-		$user_id    = intval( $user_identifier );
-		$email      = '';
+		$rsvp_query = \GatherPress\Core\Rsvp_Query::get_instance();
+		$rsvp_type  = Manager::get_instance()->get( $rsvp_type );
 
-		if ( is_email( $user_identifier ) ) {
-			$email = $user_identifier;
-		}
-
-		if ( 1 > $post_id || ( empty( $user_id ) && empty( $email ) ) ) {
+		if ( 1 > $post_id || ( empty( $identifier ) ) ) {
 			return array();
 		}
 
 		$data = array(
 			'comment_id' => 0,
 			'post_id'    => $post_id,
-			'user_id'    => $user_id,
 			'timestamp'  => null,
 			'status'     => 'no_status',
 			'guests'     => 0,
@@ -149,12 +144,7 @@ class Rsvp {
 			'status'  => 'approve',
 		);
 
-		if ( ! empty( $user_id ) ) {
-			$args['user_id'] = $user_id;
-		} elseif ( ! empty( $email ) ) {
-			$args['author_email'] = $email;
-		}
-
+		$args = $rsvp_type->filter_query_get( $args, $identifier );
 		$rsvp = $rsvp_query->get_rsvp( $args );
 
 		if ( ! empty( $rsvp ) ) {
@@ -288,14 +278,13 @@ class Rsvp {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param int|string $user_identifier The user ID or email address of the person whose RSVP status is being updated.
-	 *                                    If an integer is provided, it's treated as a user ID. If a string is provided,
-	 *                                    it's treated as an email address.
+	 * @param int|string $identifier      Identifier of the person whose RSVP status is being updated.
 	 * @param string     $status          The new RSVP status for the user. Acceptable values are 'attending',
 	 *                                    'not_attending', or 'waiting_list'.
 	 * @param int        $anonymous       Optional. Whether the RSVP is to be marked as anonymous.
 	 *                                    Accepts 1 for true (anonymous) and 0 for false (not anonymous). Default 0.
 	 * @param int        $guests          Optional. The number of guests the user plans to bring along. Default 0.
+	 * @param string     $rsvp_type            The RSVP Type.
 	 *
 	 * @return array Associative array containing the event ID ('post_id'), user ID ('user_id'),
 	 *               RSVP timestamp ('timestamp'), RSVP status ('status'), number of guests ('guests'),
@@ -307,15 +296,25 @@ class Rsvp {
 	 *
 	 * @SuppressWarnings(PHPMD.NPathComplexity)
 	 */
-	public function save( $user_identifier, string $status, int $anonymous = 0, int $guests = 0 ): array {
-		$rsvp_query      = Rsvp_Query::get_instance();
-		$max_guest_limit = intval( get_post_meta( $this->event->ID, 'gatherpress_max_guest_limit', true ) );
-		$user_id         = intval( $user_identifier );
-		$email           = '';
-
-		if ( is_email( $user_identifier ) ) {
-			$email = $user_identifier;
+	public function save(
+		mixed $identifier,
+		string $status,
+		int $anonymous = 0,
+		int $guests = 0,
+		string $rsvp_type = 'user'
+	): array {
+		if ( 'user' === $rsvp_type && is_email( $identifier ) ) {
+			_doing_it_wrong(
+				__METHOD__,
+				esc_html__( 'RSVP save should specify type email when using email as identifier.', 'gatherpress' ),
+				'gatherpress'
+			);
+			$rsvp_type = 'email';
 		}
+
+		$rsvp_query      = Rsvp_Query::get_instance();
+		$rsvp_type       = Manager::get_instance()->get( $rsvp_type );
+		$max_guest_limit = intval( get_post_meta( $this->event->ID, 'gatherpress_max_guest_limit', true ) );
 
 		if ( $max_guest_limit < $guests ) {
 			$guests = $max_guest_limit;
@@ -339,7 +338,7 @@ class Rsvp {
 
 		$post_id = $this->event->ID;
 
-		if ( 1 > $post_id || ( empty( $user_id ) && empty( $email ) ) ) {
+		if ( 1 > $post_id || ( empty( $identifier ) || ! $rsvp_type ) ) {
 			return $data;
 		}
 
@@ -351,14 +350,10 @@ class Rsvp {
 			'post_id' => $post_id,
 		);
 
-		if ( ! empty( $user_id ) ) {
-			$args['user_id'] = $user_id;
-		} elseif ( ! empty( $email ) ) {
-			$args['author_email'] = $email;
-		}
+		$args = $rsvp_type->filter_query_get( $args, $identifier );
 
 		$rsvp             = $rsvp_query->get_rsvp( $args );
-		$current_response = $this->get( $user_identifier );
+		$current_response = $this->get( $identifier, $rsvp_type );
 		$limit_reached    = $this->attending_limit_reached( $current_response, $guests );
 
 		if ( 'attending' === $status && $limit_reached ) {
@@ -381,16 +376,7 @@ class Rsvp {
 			'comment_post_ID'   => $post_id,
 			'comment_author_IP' => '127.0.0.1',
 			'comment_type'      => self::COMMENT_TYPE,
-			'user_id'           => $user_id,
 		);
-
-		if ( intval( $user_id ) ) {
-			$args['comment_author_url'] = get_author_posts_url( $user_id );
-		}
-
-		if ( ! empty( $email ) ) {
-			$args['comment_author_email'] = $email;
-		}
 
 		if ( ! empty( $_SERVER['REMOTE_ADDR'] ) ) {
 			$remote_ip = sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) );
@@ -459,7 +445,8 @@ class Rsvp {
 		$data = array(
 			'comment_id' => intval( $comment_id ),
 			'post_id'    => intval( $post_id ),
-			'user_id'    => intval( $user_id ),
+			'identifier' => intval( $identifier ),
+			'rsvp_type'  => $rsvp_type,
 			'timestamp'  => gmdate( 'Y-m-d H:i:s' ),
 			'status'     => sanitize_key( $status ),
 			'guests'     => intval( $guests ),

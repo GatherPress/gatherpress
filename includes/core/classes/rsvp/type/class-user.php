@@ -8,7 +8,7 @@
  * @since 1.0.0
  */
 
-namespace GatherPress\Core\Rsvp_Types;
+namespace GatherPress\Core\Rsvp\Type;
 
 // Exit if accessed directly.
 \defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
@@ -22,7 +22,7 @@ use GatherPress\Core\Rsvp_Type;
  *
  * @since 1. 0.0
  */
-class User_Type extends Rsvp_Type {
+class User extends Base {
 
 	/**
 	 * Get the unique slug for this RSVP type.
@@ -88,19 +88,42 @@ class User_Type extends Rsvp_Type {
 	}
 
 	/**
+	 * Filter the RSVP-Comment-Query for a RSVP_Type.
+	 *
+	 * @param array $args       The present args.
+	 * @param mixed $identifier The identifier of the RSVP.
+	 * @return array
+	 */
+	public function filter_query_get( $args, $identifier ): array {
+		$args['user_id'] = $identifier;
+		return $args;
+	}
+
+	/**
+	 * Filter the save RSVP-Comment-Query for a RSVP_Type.
+	 *
+	 * @param array $args       The present args.
+	 * @param mixed $identifier The identifier of the RSVP.
+	 * @return array
+	 */
+	public function filter_query_save( $args, $identifier ): array {
+		$args['user_id']            = $identifier;
+		$args['comment_author_url'] = get_author_posts_url( $identifier );
+		return $args;
+	}
+
+	/**
 	 * Get the avatar URL for a WordPress user.
 	 *
 	 * @since 1.0.0
 	 *
 	 * @param mixed $identifier The user ID.
-	 * @param int   $comment_id Optional.  Unused for user type.
-	 *
 	 * @return string|null The avatar URL, or null if user not found.
 	 */
 	public function get_avatar_url( $identifier ): ?string {
-		$user = get_user_by( 'id', intval( $identifier ) );
+		$user = get_user_by( 'id', \intval( $identifier ) );
 
-		if ( !  $user instanceof \WP_User ) {
+		if ( ! $user instanceof \WP_User ) {
 			return null;
 		}
 

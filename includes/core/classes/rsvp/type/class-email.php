@@ -1,6 +1,6 @@
 <?php
 /**
- * Email RSVP Type handler.
+ * Email RSVP Type handler. Also referred to as Open-RSVP.
  *
  * Handles RSVP logic for non-WordPress users via email address.
  *
@@ -8,12 +8,10 @@
  * @since 1.0.0
  */
 
-namespace GatherPress\Core\Rsvp_Types;
+namespace GatherPress\Core\Rsvp\Type;
 
 // Exit if accessed directly.
 \defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
-
-use GatherPress\Core\Rsvp_Type;
 
 /**
  * Class Email_Type.
@@ -22,7 +20,7 @@ use GatherPress\Core\Rsvp_Type;
  *
  * @since 1. 0.0
  */
-class Email_Type extends Rsvp_Type {
+class Email extends Base {
 	/**
 	 * Get the unique slug for this RSVP type.
 	 *
@@ -83,6 +81,31 @@ class Email_Type extends Rsvp_Type {
 	}
 
 	/**
+	 * Filter the RSVP-Comment-Query.
+	 *
+	 * @param array $args       The present args.
+	 * @param mixed $identifier The identifier of the RSVP.
+	 * @return array
+	 */
+	public function filter_query_get( $args, $identifier ): array {
+		$args['author_email'] = $identifier;
+		return $args;
+	}
+
+	/**
+	 * Filter the save RSVP-Comment-Query for a RSVP_Type.
+	 *
+	 * @param array $args       The present args.
+	 * @param mixed $identifier The identifier of the RSVP.
+	 * @return array
+	 */
+	public function filter_query_save( $args, $identifier ): array {
+		$args['user_id']              = 0;
+		$args['comment_author_email'] = $identifier;
+		return $args;
+	}
+
+	/**
 	 * Get the avatar URL for an email-based RSVP.
 	 *
 	 * Returns a Gravatar URL based on the email address.
@@ -110,7 +133,7 @@ class Email_Type extends Rsvp_Type {
 	 *
 	 * @return string|null Always returns null for email type.
 	 */
-	public function get_profile_url( $identifier ): ?string {
+	public function get_profile_url( $identifier = null ): ?string {
 		return null;
 	}
 
@@ -137,7 +160,7 @@ class Email_Type extends Rsvp_Type {
 	 * @return bool Always false for email type.
 	 */
 	public function supports_anonymous(): bool {
-		return false;
+		return true;
 	}
 
 	/**
@@ -150,6 +173,6 @@ class Email_Type extends Rsvp_Type {
 	 * @return bool True if valid email, false otherwise.
 	 */
 	public function is_valid_identifier( $identifier ): bool {
-		return is_email( $identifier );
+		return \is_email( $identifier );
 	}
 }

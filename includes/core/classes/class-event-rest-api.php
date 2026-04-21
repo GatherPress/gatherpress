@@ -16,7 +16,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use Exception;
 use GatherPress\Core\Blocks\Rsvp_Template;
-use GatherPress\Core\Rsvp;
+use GatherPress\Core\Rsvp\Rsvp;
 use GatherPress\Core\Rsvp_Form as Rsvp_Form_Core;
 use GatherPress\Core\Traits\Singleton;
 use WP_REST_Request;
@@ -774,7 +774,8 @@ class Event_Rest_Api {
 				$guests = 0;
 			}
 
-			$user_record = $event->rsvp->save( $user_identifier, $status, $anonymous, $guests );
+			$rsvp_type   = is_email( $user_identifier ) ? 'email' : 'user';
+			$user_record = $event->rsvp->save( $user_identifier, $status, $anonymous, $guests, $rsvp_type );
 			$status      = $user_record['status'];
 			$guests      = $user_record['guests'];
 

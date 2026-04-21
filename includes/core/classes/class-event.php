@@ -16,6 +16,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use DateTimeZone;
 use Exception;
+use GatherPress\Core\Rsvp\Rsvp;
 use GatherPress\Core\Utility;
 use WP_Post;
 

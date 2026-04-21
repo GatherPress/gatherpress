@@ -1,6 +1,6 @@
 <?php
 /**
- * RSVP Type Registry - Singleton registry for managing RSVP types.
+ * RSVP Type Manager - Singleton registry for managing RSVP types.
  *
  * This class provides a centralized registry for RSVP types, allowing plugins
  * to register new types without modifying core code. It uses the Singleton
@@ -10,22 +10,23 @@
  * @since 1.0.0
  */
 
-namespace GatherPress\Core;
+namespace GatherPress\Core\Rsvp;
 
 // Exit if accessed directly.
 \defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
+use GatherPress\Core\Rsvp\Type\Base as Rsvp_Type;
 use GatherPress\Core\Traits\Singleton;
 
 /**
- * Class Rsvp_Type_Registry.
+ * Class Manager.
  *
  * Manages registration and retrieval of RSVP type handlers (instances of Rsvp_Type).
  * Uses Singleton pattern for global access.
  *
  * @since 1. 0.0
  */
-class Rsvp_Type_Registry {
+class Manager {
 
 	/**
 	 * Enforces a single instance of this class.
@@ -35,7 +36,6 @@ class Rsvp_Type_Registry {
 	/**
 	 * Array of registered RSVP type instances.
 	 *
-	 * @since 1.0. 0
 	 * @var Rsvp_Type[]
 	 */
 	private array $types = array();
@@ -45,7 +45,7 @@ class Rsvp_Type_Registry {
 	 *
 	 * Initializes the registry and sets up hooks for registration.
 	 *
-	 * @since 1.0. 0
+	 * @since 1.0.0
 	 */
 	protected function __construct() {
 		$this->setup_hooks();
@@ -80,25 +80,12 @@ class Rsvp_Type_Registry {
 	public function register( Rsvp_Type $type ): void {
 		$slug = $type->get_slug();
 
-		if ( empty( $slug ) || ! is_string( $slug ) ) {
-			_doing_it_wrong(
-				__METHOD__,
-				esc_html__( 'RSVP type slug must be a non-empty string. ', 'gatherpress' ),
-				'gatherpress'
-			);
+		if ( empty( $slug ) || ! \is_string( $slug ) ) {
 			return;
 		}
 
 		if ( isset( $this->types[ $slug ] ) ) {
-			_doing_it_wrong(
-				__METHOD__,
-				sprintf(
-					/* translators: %s is the type slug */
-					esc_html__( 'RSVP type "%s" is already registered.  Overwriting... ', 'gatherpress' ),
-					esc_html( $slug )
-				),
-				'gatherpress'
-			);
+			return;
 		}
 
 		$this->types[ $slug ] = $type;
@@ -126,7 +113,7 @@ class Rsvp_Type_Registry {
 	 *
 	 * @return Rsvp_Type|null The type instance, or null if not registered.
 	 */
-	public function get( string $slug ): ? Rsvp_Type {
+	public function get( string $slug ): ?Rsvp_Type {
 		return $this->types[ $slug ] ?? null;
 	}
 
@@ -166,8 +153,8 @@ class Rsvp_Type_Registry {
 	 * @return void
 	 */
 	public function register_core_types(): void {
-		$this->register( new Rsvp_Types\User_Type() );
-		$this->register( new Rsvp_Types\Email_Type() );
+		$this->register( new Type\User() );
+		$this->register( new Type\Email() );
 	}
 
 	/**
@@ -196,49 +183,8 @@ class Rsvp_Type_Registry {
 		 *
 		 * @since 1.0.0
 		 *
-		 * @param Rsvp_Type_Registry $registry The RSVP type registry instance.
+		 * @param Registry The RSVP type registry instance.
 		 */
 		do_action( 'gatherpress_register_rsvp_types', $this );
-	}
-
-	/**
-	 * Alias for backward compatibility / deprecated filter access.
-	 *
-	 * Returns registered types as a flat array for plugins using the legacy
-	 * 'gatherpress_rsvp_types' filter.  Internal use only.
-	 *
-	 * @since 1. 0.0
-	 * @deprecated Use get_all() instead
-	 * @internal
-	 *
-	 * @return array Array of types in legacy format.
-	 */
-	public function to_legacy_array(): array {
-		$types = array();
-
-		foreach ( $this->types as $type ) {
-			$types[ $type->get_slug() ] = array(
-				'label'              => $type->get_label(),
-				'description'        => $type->get_description(),
-				'icon'               => $type->get_icon(),
-				'supports_guests'    => $type->supports_guests(),
-				'supports_anonymous' => $type->supports_anonymous(),
-				// Callbacks point to type methods
-				'get_display_name'   => array( $type, 'get_display_name' ),
-				'get_avatar_url'     => array( $type, 'get_avatar_url' ),
-				'get_profile_url'    => array( $type, 'get_profile_url' ),
-				'is_valid_identifier' => array( $type, 'is_valid_identifier' ),
-				// Direct instance access for advanced use cases
-				'instance'           => $type,
-			);
-		}
-
-		/**
-		 * Filter: Modify RSVP types (deprecated).
-		 *
-		 * @deprecated Use 'gatherpress_register_rsvp_types' action instead.
-		 * @param array $types Associative array of RSVP types.
-		 */
-		return apply_filters( 'gatherpress_rsvp_types', $types );
 	}
 }
