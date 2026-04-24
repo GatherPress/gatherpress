@@ -18,7 +18,7 @@
 	},
 	"main": "index.js",
 	"devDependencies": {
-		"@anthropic-ai/claude-code": "^2.1.71",
+		"@anthropic-ai/claude-code": "^2.1.84",
 		"@jest/globals": "^30.2.0",
 		"@playwright/test": "^1.58.2",
 		"@testing-library/jest-dom": "^6.9.1",
