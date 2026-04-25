@@ -407,47 +407,6 @@ class Test_Venue_Setup extends Base {
 	}
 
 	/**
-	 * Coverage for sanitize_website_url.
-	 *
-	 * Restricts the protocol allowlist to http/https. `javascript:` and
-	 * `data:` URLs pass through esc_url_raw with no allowed protocol and
-	 * return the empty string.
-	 *
-	 * @covers ::sanitize_website_url
-	 *
-	 * @return void
-	 */
-	public function test_sanitize_website_url(): void {
-		$instance = Venue_Setup::get_instance();
-
-		$this->assertSame(
-			'https://example.com/',
-			$instance->sanitize_website_url( 'https://example.com/' ),
-			'https URLs should pass through.'
-		);
-		$this->assertSame(
-			'http://example.com/',
-			$instance->sanitize_website_url( 'http://example.com/' ),
-			'http URLs should pass through.'
-		);
-		$this->assertSame(
-			'',
-			$instance->sanitize_website_url( 'javascript:alert(1)' ),
-			'javascript: URLs should be rejected.'
-		);
-		$this->assertSame(
-			'',
-			$instance->sanitize_website_url( 'data:text/html,<script>alert(1)</script>' ),
-			'data: URLs should be rejected.'
-		);
-		$this->assertSame(
-			'',
-			$instance->sanitize_website_url( '' ),
-			'Empty string should remain empty.'
-		);
-	}
-
-	/**
 	 * Coverage for register_taxonomy method.
 	 *
 	 * @covers ::register_taxonomy

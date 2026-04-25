@@ -249,22 +249,6 @@ class Venue_Setup {
 	}
 
 	/**
-	 * Sanitize callback for the venue website URL meta.
-	 *
-	 * Restricts the protocol allowlist to `http` and `https` so a hostile
-	 * `javascript:` / `data:` PATCH gets stored as the empty string rather
-	 * than passed through `esc_url_raw()`'s default (broader) protocol set.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param mixed $value The submitted value.
-	 * @return string Sanitized URL, or '' when the protocol isn't allowed.
-	 */
-	public function sanitize_website_url( $value ): string {
-		return esc_url_raw( (string) $value, array( 'http', 'https' ) );
-	}
-
-	/**
 	 * Registers venue meta fields when a post type declares venue support.
 	 *
 	 * Meta is registered per support:
@@ -318,7 +302,7 @@ class Venue_Setup {
 			),
 			'gatherpress_website'   => array(
 				'auth_callback'     => array( $this, 'can_edit_posts_meta' ),
-				'sanitize_callback' => array( $this, 'sanitize_website_url' ),
+				'sanitize_callback' => 'sanitize_url',
 				'show_in_rest'      => true,
 				'single'            => true,
 				'type'              => 'string',
