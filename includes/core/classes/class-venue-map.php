@@ -1294,6 +1294,10 @@ class Venue_Map {
 	 */
 	public function hash_for( array $info, int $zoom, int $width, int $height, string $tiles ): string {
 		// md5() here is a non-cryptographic cache-key discriminator, matching class-geocoding.php.
+		// CAUTION: the order and types of the values composed below define the
+		// cache key for every static-map PNG on disk. Reordering or changing a
+		// type (e.g. casting one of these to int) silently invalidates every
+		// existing image and forces a full regeneration on the next save.
 		return md5( // NOSONAR.
 			implode(
 				'|',

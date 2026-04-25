@@ -45,6 +45,11 @@ switch ( $gatherpress_field_type ) {
 		break;
 
 	case 'phone':
+		// Phone is sanitized at write time (sanitize_text_field strips HTML
+		// tags) and double-escaped here: esc_attr() for the tel: href to
+		// prevent attribute breakout, esc_html() for the visible text. The
+		// browser's tel: handler ignores characters outside [0-9+*#;,] so a
+		// stored value that survives both layers can't smuggle a dial-out.
 		printf(
 			'<div %s><a class="gatherpress-venue-detail__phone" href="tel:%s">%s</a></div>',
 			$gatherpress_wrapper_attributes, // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped

@@ -551,12 +551,12 @@ class Event {
 		$taxonomy        = $venue_setup->taxonomy_for_event_post_type( $event_post_type );
 		$venue_terms     = (array) get_the_terms( $this->event, $taxonomy );
 
-		// Prefer a real venue term (leading-underscore prefix) over a sentinel
-		// like `online-event`, so a hybrid event with both terms attached
-		// surfaces the venue name. Fall back to the first sentinel only when
-		// no real venue term is present.
-		$term     = null;
-		$sentinel = null;
+		// Prefer a real venue term (leading-underscore prefix) over the
+		// `online-event` sentinel, so a hybrid event with both terms attached
+		// surfaces the venue name. Fall back to the online-event term only
+		// when no real venue term is present.
+		$term        = null;
+		$online_term = null;
 
 		foreach ( $venue_terms as $candidate ) {
 			if ( ! is_a( $candidate, 'WP_Term' ) ) {
@@ -568,10 +568,12 @@ class Event {
 				break;
 			}
 
-			$sentinel = $sentinel ?? $candidate;
+			if ( null === $online_term && 'online-event' === $candidate->slug ) {
+				$online_term = $candidate;
+			}
 		}
 
-		$term  = $term ?? $sentinel;
+		$term  = $term ?? $online_term;
 		$venue = null;
 
 		if ( is_a( $term, 'WP_Term' ) ) {

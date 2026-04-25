@@ -189,12 +189,15 @@ class Venue {
 			return $information;
 		}
 
+		// Read once and pluck — get_post_meta( $id ) primes the meta cache and
+		// returns every key in a single call, avoiding N sequential lookups.
+		$all_meta = get_post_meta( $this->venue->ID );
+
 		foreach ( $fields as $field ) {
-			$information[ $field ] = (string) get_post_meta(
-				$this->venue->ID,
-				Utility::prefix_key( $field ),
-				true
-			);
+			$meta_key              = Utility::prefix_key( $field );
+			$information[ $field ] = isset( $all_meta[ $meta_key ][0] )
+				? (string) $all_meta[ $meta_key ][0]
+				: '';
 		}
 
 		return $information;

@@ -469,6 +469,33 @@ class Test_Event extends Base {
 	}
 
 	/**
+	 * Events with no venue term attached return the empty default shape.
+	 *
+	 * `get_the_terms()` returns `false` when no terms are assigned, which
+	 * casts to `[ false ]`. The foreach must skip the non-WP_Term entry and
+	 * leave `name` / `address` / etc. at their defaults.
+	 *
+	 * @covers ::get_venue_information
+	 *
+	 * @return void
+	 */
+	public function test_get_venue_information_returns_empty_shape_when_no_terms_attached(): void {
+		$event_id = $this->mock->post(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		)->get()->ID;
+
+		$response = ( new Event( $event_id ) )->get_venue_information();
+
+		$this->assertSame( '', $response['name'], 'Expected empty venue name when no term is attached.' );
+		$this->assertSame( '', $response['address'], 'Expected empty address when no term is attached.' );
+		$this->assertSame( '', $response['phone'], 'Expected empty phone when no term is attached.' );
+		$this->assertSame( '', $response['website'], 'Expected empty website when no term is attached.' );
+		$this->assertSame( '', $response['permalink'], 'Expected empty permalink when no term is attached.' );
+	}
+
+	/**
 	 * Hybrid events with both a physical venue and the `online-event` sentinel
 	 * surface the physical venue's name and address rather than the sentinel.
 	 *
