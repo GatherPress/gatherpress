@@ -693,7 +693,7 @@ class Test_Venue_Setup extends Base {
 		add_post_meta( $venue->ID, 'gatherpress_phone', '555-123-4567' );
 		add_post_meta( $venue->ID, 'gatherpress_website', 'https://example.com' );
 		add_post_meta( $venue->ID, 'gatherpress_latitude', '40.7128' );
-		add_post_meta( $venue->ID, 'gatherpress_longitude', '-74.0060' );
+		add_post_meta( $venue->ID, 'gatherpress_longitude', '-74.006' );
 
 		$venue_meta = Venue_Setup::get_instance()->get_venue_meta( $venue->ID, Venue::POST_TYPE );
 
@@ -723,7 +723,7 @@ class Test_Venue_Setup extends Base {
 			'Failed to assert latitude matches.'
 		);
 		$this->assertEquals(
-			'-74.0060',
+			'-74.006',
 			$venue_meta['longitude'],
 			'Failed to assert longitude matches.'
 		);

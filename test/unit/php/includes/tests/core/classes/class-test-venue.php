@@ -60,7 +60,7 @@ class Test_Venue extends Base {
 		add_post_meta( $post_id, 'gatherpress_phone', '555-0100' );
 		add_post_meta( $post_id, 'gatherpress_website', 'https://example.com' );
 		add_post_meta( $post_id, 'gatherpress_latitude', '40.7128' );
-		add_post_meta( $post_id, 'gatherpress_longitude', '-74.0060' );
+		add_post_meta( $post_id, 'gatherpress_longitude', '-74.006' );
 
 		$info = ( new Venue( $post_id ) )->get_information();
 
@@ -68,7 +68,7 @@ class Test_Venue extends Base {
 		$this->assertSame( '555-0100', $info['phone'] );
 		$this->assertSame( 'https://example.com', $info['website'] );
 		$this->assertSame( '40.7128', $info['latitude'] );
-		$this->assertSame( '-74.0060', $info['longitude'] );
+		$this->assertSame( '-74.006', $info['longitude'] );
 	}
 
 	/**

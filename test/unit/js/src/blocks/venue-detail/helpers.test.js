@@ -7,27 +7,29 @@ import { describe, expect, it } from '@jest/globals';
  * Internal dependencies.
  */
 import {
-	VENUE_FIELD_MAPPING,
+	VENUE_FIELDS,
 	cleanUrlForDisplay,
 	getMetaKey,
 } from '@src/blocks/venue-detail/helpers';
 
 describe( 'Venue Detail helpers', () => {
-	describe( 'VENUE_FIELD_MAPPING', () => {
-		it( 'should map address to gatherpress_address', () => {
-			expect( VENUE_FIELD_MAPPING.address ).toBe(
-				'gatherpress_address'
-			);
+	describe( 'VENUE_FIELDS', () => {
+		it( 'should pair the address fieldType with gatherpress_address', () => {
+			expect(
+				VENUE_FIELDS.find( ( f ) => 'address' === f.fieldType )?.metaKey
+			).toBe( 'gatherpress_address' );
 		} );
 
-		it( 'should map phone to gatherpress_phone', () => {
-			expect( VENUE_FIELD_MAPPING.phone ).toBe(
-				'gatherpress_phone'
-			);
+		it( 'should pair the phone fieldType with gatherpress_phone', () => {
+			expect(
+				VENUE_FIELDS.find( ( f ) => 'phone' === f.fieldType )?.metaKey
+			).toBe( 'gatherpress_phone' );
 		} );
 
-		it( 'should map url to gatherpress_website', () => {
-			expect( VENUE_FIELD_MAPPING.url ).toBe( 'gatherpress_website' );
+		it( 'should pair the url fieldType with gatherpress_website', () => {
+			expect(
+				VENUE_FIELDS.find( ( f ) => 'url' === f.fieldType )?.metaKey
+			).toBe( 'gatherpress_website' );
 		} );
 	} );
 
