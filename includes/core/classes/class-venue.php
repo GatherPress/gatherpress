@@ -162,18 +162,19 @@ class Venue {
 	}
 
 	/**
-	 * Returns the parsed venue information for this venue.
+	 * Returns the venue information for this venue.
 	 *
-	 * Reads the `gatherpress_venue_information` JSON meta and returns its
-	 * components with empty-string fallbacks for any missing keys, so callers
-	 * can treat the array shape as stable. Also returns the empty shape when
-	 * this instance does not wrap a real venue.
+	 * Reads the individual `gatherpress_full_address`, `gatherpress_phone_number`,
+	 * `gatherpress_website`, `gatherpress_latitude`, and `gatherpress_longitude`
+	 * meta keys and returns them with empty-string fallbacks so callers can
+	 * treat the array shape as stable. Also returns the empty shape when this
+	 * instance does not wrap a real venue.
 	 *
 	 * @since 1.0.0
 	 *
 	 * @return array{
-	 *     fullAddress: string,
-	 *     phoneNumber: string,
+	 *     full_address: string,
+	 *     phone_number: string,
 	 *     website: string,
 	 *     latitude: string,
 	 *     longitude: string
@@ -181,30 +182,23 @@ class Venue {
 	 */
 	public function get_information(): array {
 		$defaults = array(
-			'fullAddress' => '',
-			'phoneNumber' => '',
-			'website'     => '',
-			'latitude'    => '',
-			'longitude'   => '',
+			'full_address' => '',
+			'phone_number' => '',
+			'website'      => '',
+			'latitude'     => '',
+			'longitude'    => '',
 		);
 
 		if ( ! $this->venue instanceof WP_Post ) {
 			return $defaults;
 		}
 
-		$raw    = (string) get_post_meta( $this->venue->ID, 'gatherpress_venue_information', true );
-		$parsed = json_decode( $raw, true );
-
-		if ( ! is_array( $parsed ) ) {
-			$parsed = array();
-		}
-
 		return array(
-			'fullAddress' => isset( $parsed['fullAddress'] ) ? (string) $parsed['fullAddress'] : '',
-			'phoneNumber' => isset( $parsed['phoneNumber'] ) ? (string) $parsed['phoneNumber'] : '',
-			'website'     => isset( $parsed['website'] ) ? (string) $parsed['website'] : '',
-			'latitude'    => isset( $parsed['latitude'] ) ? (string) $parsed['latitude'] : '',
-			'longitude'   => isset( $parsed['longitude'] ) ? (string) $parsed['longitude'] : '',
+			'full_address' => (string) get_post_meta( $this->venue->ID, 'gatherpress_full_address', true ),
+			'phone_number' => (string) get_post_meta( $this->venue->ID, 'gatherpress_phone_number', true ),
+			'website'      => (string) get_post_meta( $this->venue->ID, 'gatherpress_website', true ),
+			'latitude'     => (string) get_post_meta( $this->venue->ID, 'gatherpress_latitude', true ),
+			'longitude'    => (string) get_post_meta( $this->venue->ID, 'gatherpress_longitude', true ),
 		);
 	}
 }

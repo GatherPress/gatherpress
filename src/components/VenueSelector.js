@@ -46,20 +46,11 @@ const VenueSelector = () => {
 		useDispatch( 'gatherpress/venue' );
 
 	useEffect( () => {
-		let venueInformation = {};
+		const venueMeta =
+			( venueSlug && Array.isArray( venuePost ) && venuePost[ 0 ]?.meta ) || {};
 
-		if ( venueSlug && Array.isArray( venuePost ) ) {
-			const jsonString =
-				venuePost[ 0 ]?.meta?.gatherpress_venue_information ?? '{}';
-
-			if ( jsonString ) {
-				venueInformation = JSON.parse( jsonString );
-				venueInformation.name = venuePost[ 0 ]?.title.rendered ?? '';
-			}
-		}
-
-		const latitudeUpdated = venueInformation?.latitude ?? '0';
-		const longitudeUpdated = venueInformation?.longitude ?? '0';
+		const latitudeUpdated = venueMeta.gatherpress_latitude || '0';
+		const longitudeUpdated = venueMeta.gatherpress_longitude || '0';
 
 		// Will unset the venue if slug is `undefined` here.
 		if ( slug ) {

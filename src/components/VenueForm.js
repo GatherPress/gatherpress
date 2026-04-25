@@ -250,14 +250,9 @@ function CreateVenueForm( { search, ...props } ) {
 					title,
 					status: 'publish', // 'draft' is the default
 					meta: {
-						// Store venue information as JSON.
-						gatherpress_venue_information: JSON.stringify( {
-							fullAddress: newAddress,
-							latitude,
-							longitude,
-							phoneNumber: '',
-							website: '',
-						} ),
+						gatherpress_full_address: newAddress,
+						gatherpress_latitude: latitude,
+						gatherpress_longitude: longitude,
 					},
 				},
 			} );

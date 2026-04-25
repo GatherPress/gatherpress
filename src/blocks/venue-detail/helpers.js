@@ -5,14 +5,14 @@
  */
 
 /**
- * Mapping of field types to JSON field names.
+ * Mapping of field types to individual venue meta keys.
  *
  * @type {Object}
  */
 export const VENUE_FIELD_MAPPING = {
-	address: 'fullAddress',
-	phone: 'phoneNumber',
-	url: 'website',
+	address: 'gatherpress_full_address',
+	phone: 'gatherpress_phone_number',
+	url: 'gatherpress_website',
 };
 
 /**
@@ -34,13 +34,13 @@ export function cleanUrlForDisplay( url ) {
 }
 
 /**
- * Gets the JSON field name for a given field type.
+ * Gets the venue meta key for a given field type.
  *
  * @since 1.0.0
  *
  * @param {string} fieldType The field type (address, phone, url).
- * @return {string} The corresponding JSON field name, or empty string if not found.
+ * @return {string} The corresponding meta key, or empty string if not found.
  */
-export function getJsonFieldName( fieldType ) {
+export function getMetaKey( fieldType ) {
 	return VENUE_FIELD_MAPPING[ fieldType ] || '';
 }

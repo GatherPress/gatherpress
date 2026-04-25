@@ -42,7 +42,7 @@ $gatherpress_post_type   = (string) get_post_type();
 $gatherpress_venue_setup = Venue_Setup::get_instance();
 $gatherpress_venue_meta  = $gatherpress_venue_setup->get_venue_meta( $gatherpress_post_id, $gatherpress_post_type );
 
-$gatherpress_address = (string) ( $gatherpress_venue_meta['fullAddress'] ?? '' );
+$gatherpress_address = (string) ( $gatherpress_venue_meta['full_address'] ?? '' );
 
 if ( '' === $gatherpress_address ) {
 	return;

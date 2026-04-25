@@ -135,11 +135,11 @@ class General_Block {
 	 * Processes blocks with venue conditional classes.
 	 *
 	 * This method hides blocks (and their contents) when the associated venue field
-	 * is empty. It uses a naming convention to automatically map class names to JSON fields:
+	 * is empty. It uses a naming convention to automatically map class names to meta keys:
 	 *
-	 * - Class: `gatherpress--has-venue-phone` → JSON field: `phoneNumber`
-	 * - Class: `gatherpress--has-venue-address` → JSON field: `fullAddress`
-	 * - Class: `gatherpress--has-venue-website` → JSON field: `website`
+	 * - Class: `gatherpress--has-venue-phone`   → meta: `gatherpress_phone_number`
+	 * - Class: `gatherpress--has-venue-address` → meta: `gatherpress_full_address`
+	 * - Class: `gatherpress--has-venue-website` → meta: `gatherpress_website`
 	 *
 	 * This allows wrapper blocks (like Groups/Rows) containing icons and venue-detail blocks
 	 * to be hidden together when the field has no value.
@@ -162,18 +162,18 @@ class General_Block {
 		// Extract field name from class (e.g., "phone" from "gatherpress--has-venue-phone").
 		$field_name = $matches[1];
 
-		// Map class name to JSON field name.
+		// Map class name to individual venue meta key.
 		$field_mapping = array(
-			'phone'   => 'phoneNumber',
-			'address' => 'fullAddress',
-			'website' => 'website',
+			'phone'   => 'gatherpress_phone_number',
+			'address' => 'gatherpress_full_address',
+			'website' => 'gatherpress_website',
 		);
 
 		if ( ! isset( $field_mapping[ $field_name ] ) ) {
 			return $block_content;
 		}
 
-		$json_field = $field_mapping[ $field_name ];
+		$meta_key = $field_mapping[ $field_name ];
 
 		// Get the venue post ID from the current context.
 		// First try to get it from block context, then fall back to current post.
@@ -184,19 +184,10 @@ class General_Block {
 			return $block_content;
 		}
 
-		// Get the venue information JSON and parse it.
-		$venue_info_json = get_post_meta( $venue_post_id, 'gatherpress_venue_information', true );
-		$venue_info      = json_decode( $venue_info_json, true );
-
-		if ( ! is_array( $venue_info ) ) {
-			return '';
-		}
-
-		// Check if the specific field is empty.
-		$field_value = $venue_info[ $json_field ] ?? '';
+		$field_value = (string) get_post_meta( $venue_post_id, $meta_key, true );
 
 		// If the field is empty, hide the entire block.
-		if ( empty( $field_value ) ) {
+		if ( '' === $field_value ) {
 			return '';
 		}
 

@@ -9,21 +9,25 @@ import { describe, expect, it } from '@jest/globals';
 import {
 	VENUE_FIELD_MAPPING,
 	cleanUrlForDisplay,
-	getJsonFieldName,
+	getMetaKey,
 } from '@src/blocks/venue-detail/helpers';
 
 describe( 'Venue Detail helpers', () => {
 	describe( 'VENUE_FIELD_MAPPING', () => {
-		it( 'should have address mapped to fullAddress', () => {
-			expect( VENUE_FIELD_MAPPING.address ).toBe( 'fullAddress' );
+		it( 'should map address to gatherpress_full_address', () => {
+			expect( VENUE_FIELD_MAPPING.address ).toBe(
+				'gatherpress_full_address'
+			);
 		} );
 
-		it( 'should have phone mapped to phoneNumber', () => {
-			expect( VENUE_FIELD_MAPPING.phone ).toBe( 'phoneNumber' );
+		it( 'should map phone to gatherpress_phone_number', () => {
+			expect( VENUE_FIELD_MAPPING.phone ).toBe(
+				'gatherpress_phone_number'
+			);
 		} );
 
-		it( 'should have url mapped to website', () => {
-			expect( VENUE_FIELD_MAPPING.url ).toBe( 'website' );
+		it( 'should map url to gatherpress_website', () => {
+			expect( VENUE_FIELD_MAPPING.url ).toBe( 'gatherpress_website' );
 		} );
 	} );
 
@@ -83,37 +87,39 @@ describe( 'Venue Detail helpers', () => {
 		} );
 	} );
 
-	describe( 'getJsonFieldName', () => {
-		it( 'should return fullAddress for address field type', () => {
-			expect( getJsonFieldName( 'address' ) ).toBe( 'fullAddress' );
+	describe( 'getMetaKey', () => {
+		it( 'should return gatherpress_full_address for address field type', () => {
+			expect( getMetaKey( 'address' ) ).toBe(
+				'gatherpress_full_address'
+			);
 		} );
 
-		it( 'should return phoneNumber for phone field type', () => {
-			expect( getJsonFieldName( 'phone' ) ).toBe( 'phoneNumber' );
+		it( 'should return gatherpress_phone_number for phone field type', () => {
+			expect( getMetaKey( 'phone' ) ).toBe( 'gatherpress_phone_number' );
 		} );
 
-		it( 'should return website for url field type', () => {
-			expect( getJsonFieldName( 'url' ) ).toBe( 'website' );
+		it( 'should return gatherpress_website for url field type', () => {
+			expect( getMetaKey( 'url' ) ).toBe( 'gatherpress_website' );
 		} );
 
 		it( 'should return empty string for unknown field type', () => {
-			expect( getJsonFieldName( 'unknown' ) ).toBe( '' );
+			expect( getMetaKey( 'unknown' ) ).toBe( '' );
 		} );
 
 		it( 'should return empty string for text field type', () => {
-			expect( getJsonFieldName( 'text' ) ).toBe( '' );
+			expect( getMetaKey( 'text' ) ).toBe( '' );
 		} );
 
 		it( 'should return empty string for empty string', () => {
-			expect( getJsonFieldName( '' ) ).toBe( '' );
+			expect( getMetaKey( '' ) ).toBe( '' );
 		} );
 
 		it( 'should return empty string for null', () => {
-			expect( getJsonFieldName( null ) ).toBe( '' );
+			expect( getMetaKey( null ) ).toBe( '' );
 		} );
 
 		it( 'should return empty string for undefined', () => {
-			expect( getJsonFieldName( undefined ) ).toBe( '' );
+			expect( getMetaKey( undefined ) ).toBe( '' );
 		} );
 	} );
 } );

@@ -68,7 +68,10 @@ export function useGeocoding( fieldType, fieldValue, updateVenueField, enabled =
 					updateVenueLongitude( '' );
 
 					// Clear meta for the venue post.
-					updateVenueField( { latitude: '', longitude: '' } );
+					updateVenueField( {
+						gatherpress_latitude: '',
+						gatherpress_longitude: '',
+					} );
 				}
 				return;
 			}
@@ -82,8 +85,8 @@ export function useGeocoding( fieldType, fieldValue, updateVenueField, enabled =
 
 				// Update meta for the venue post.
 				updateVenueField( {
-					latitude: latitude || '',
-					longitude: longitude || '',
+					gatherpress_latitude: latitude || '',
+					gatherpress_longitude: longitude || '',
 				} );
 			}
 		} finally {

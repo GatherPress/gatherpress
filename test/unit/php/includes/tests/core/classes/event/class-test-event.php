@@ -395,23 +395,23 @@ class Test_Event extends Base {
 	 * @return void
 	 */
 	public function test_get_venue_information(): void {
-		$venue      = $this->mock->post(
+		$venue    = $this->mock->post(
 			array(
 				'post_type'  => Venue::POST_TYPE,
 				'post_title' => 'Unit Test Venue',
 				'post_name'  => 'unit-test-venue',
 			)
 		)->get();
-		$event_id   = $this->mock->post(
+		$event_id = $this->mock->post(
 			array(
 				'post_type' => Event::POST_TYPE,
 			)
 		)->get()->ID;
-		$event      = new Event( $event_id );
-		$venue_info = '{"fullAddress":"123 Main Street, Montclair, NJ 07042",'
-			. '"phoneNumber":"(123) 123-1234","website":"https://gatherpress.org/"}';
+		$event    = new Event( $event_id );
 
-		update_post_meta( $venue->ID, 'gatherpress_venue_information', $venue_info );
+		update_post_meta( $venue->ID, 'gatherpress_full_address', '123 Main Street, Montclair, NJ 07042' );
+		update_post_meta( $venue->ID, 'gatherpress_phone_number', '(123) 123-1234' );
+		update_post_meta( $venue->ID, 'gatherpress_website', 'https://gatherpress.org/' );
 		wp_set_post_terms( $event_id, '_unit-test-venue', Venue::TAXONOMY );
 
 		$response = $event->get_venue_information();
@@ -504,8 +504,6 @@ class Test_Event extends Base {
 				'post_name'  => 'unit-test-venue',
 			)
 		)->get();
-		$venue_info  = '{"fullAddress":"123 Main Street, Montclair, NJ 07042",'
-			. '"phoneNumber":"(123) 123-1234","website":"https://gatherpress.org/"}';
 		$event       = new Event( $post->ID );
 		$description = sanitize_text_field( sprintf( 'For details go to %s', get_the_permalink( $post ) ) );
 		$params      = array(
@@ -513,7 +511,9 @@ class Test_Event extends Base {
 			'datetime_end'   => '2020-05-11 17:00:00',
 		);
 
-		update_post_meta( $venue->ID, 'gatherpress_venue_information', $venue_info );
+		update_post_meta( $venue->ID, 'gatherpress_full_address', '123 Main Street, Montclair, NJ 07042' );
+		update_post_meta( $venue->ID, 'gatherpress_phone_number', '(123) 123-1234' );
+		update_post_meta( $venue->ID, 'gatherpress_website', 'https://gatherpress.org/' );
 		wp_set_post_terms( $post->ID, '_unit-test-venue', Venue::TAXONOMY );
 
 		$event->save_datetimes( $params );
@@ -1214,23 +1214,22 @@ class Test_Event extends Base {
 	 * @return void
 	 */
 	public function test_get_ics_calendar_string_with_venue_full_address(): void {
-		$venue      = $this->mock->post(
+		$venue    = $this->mock->post(
 			array(
 				'post_type'  => Venue::POST_TYPE,
 				'post_title' => 'Test Venue',
 				'post_name'  => 'test-venue',
 			)
 		)->get();
-		$event_id   = $this->mock->post(
+		$event_id = $this->mock->post(
 			array(
 				'post_type'  => Event::POST_TYPE,
 				'post_title' => 'Test Event with Venue',
 			)
 		)->get()->ID;
-		$event      = new Event( $event_id );
-		$venue_info = '{"fullAddress":"123 Main Street, Montclair, NJ 07042"}';
+		$event    = new Event( $event_id );
 
-		update_post_meta( $venue->ID, 'gatherpress_venue_information', $venue_info );
+		update_post_meta( $venue->ID, 'gatherpress_full_address', '123 Main Street, Montclair, NJ 07042' );
 		wp_set_post_terms( $event_id, '_test-venue', Venue::TAXONOMY );
 
 		$start = new DateTime( '2025-06-15 14:30:00' );

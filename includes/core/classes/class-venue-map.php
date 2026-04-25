@@ -303,10 +303,10 @@ class Venue_Map {
 	protected function setup_hooks(): void {
 		// Priority 11 — just after the default-10 batch, so any other
 		// wp_after_insert_post callback touching venue meta during the
-		// same save has already run. We read `gatherpress_venue_information`
-		// directly, so there's no hard dependency on any specific hook, but
-		// trailing the default batch is the cheapest guard against future
-		// ordering surprises.
+		// same save has already run. We read the individual venue meta
+		// keys directly, so there's no hard dependency on any specific
+		// hook, but trailing the default batch is the cheapest guard
+		// against future ordering surprises.
 		add_action( 'wp_after_insert_post', array( $this, 'maybe_generate' ), 11 );
 		add_action( 'registered_post_type', array( $this, 'maybe_register_delete_hook' ) );
 		add_action( 'rest_api_init', array( $this, 'register_rest_routes' ) );
@@ -740,7 +740,7 @@ class Venue_Map {
 		$info        = $venue->get_information();
 		$latitude    = $this->parse_coord( $info['latitude'] );
 		$longitude   = $this->parse_coord( $info['longitude'] );
-		$has_address = '' !== trim( (string) $info['fullAddress'] );
+		$has_address = '' !== trim( (string) $info['full_address'] );
 
 		if ( ! $has_address || null === $latitude || null === $longitude ) {
 			return new WP_REST_Response(
@@ -1125,7 +1125,7 @@ class Venue_Map {
 		$height = $this->clamp_height( $height );
 
 		$tiles   = $this->get_tile_url_template();
-		$address = (string) ( $info['fullAddress'] ?? '' );
+		$address = (string) ( $info['full_address'] ?? '' );
 		$hash    = $this->hash_for( $info, $zoom, $width, $height, $tiles );
 		$key     = $this->combo_key( $zoom, $width, $height );
 
@@ -1298,7 +1298,7 @@ class Venue_Map {
 			implode(
 				'|',
 				array(
-					(string) ( $info['fullAddress'] ?? '' ),
+					(string) ( $info['full_address'] ?? '' ),
 					(string) ( $info['latitude'] ?? '' ),
 					(string) ( $info['longitude'] ?? '' ),
 					(string) $zoom,

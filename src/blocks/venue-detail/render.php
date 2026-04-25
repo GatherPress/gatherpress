@@ -16,30 +16,22 @@ if ( ! isset( $attributes ) || ! is_array( $attributes ) ) {
 $gatherpress_field_type  = $attributes['fieldType'] ?? 'text';
 $gatherpress_placeholder = $attributes['placeholder'] ?? '';
 
-// Get venue information from JSON field.
-$gatherpress_venue_info_json = get_post_meta( get_the_ID(), 'gatherpress_venue_information', true );
-$gatherpress_venue_info      = json_decode( $gatherpress_venue_info_json, true );
-
-if ( ! is_array( $gatherpress_venue_info ) ) {
-	return;
-}
-
-// Map field type to JSON field name.
+// Map field type to the individual venue meta key.
 $gatherpress_field_mapping = array(
-	'address' => 'fullAddress',
-	'phone'   => 'phoneNumber',
-	'url'     => 'website',
+	'address' => 'gatherpress_full_address',
+	'phone'   => 'gatherpress_phone_number',
+	'url'     => 'gatherpress_website',
 );
 
-$gatherpress_json_field = $gatherpress_field_mapping[ $gatherpress_field_type ] ?? '';
+$gatherpress_meta_key = $gatherpress_field_mapping[ $gatherpress_field_type ] ?? '';
 
-if ( empty( $gatherpress_json_field ) ) {
+if ( empty( $gatherpress_meta_key ) ) {
 	return;
 }
 
-$gatherpress_value = $gatherpress_venue_info[ $gatherpress_json_field ] ?? '';
+$gatherpress_value = (string) get_post_meta( get_the_ID(), $gatherpress_meta_key, true );
 
-if ( empty( $gatherpress_value ) ) {
+if ( '' === $gatherpress_value ) {
 	return;
 }
 

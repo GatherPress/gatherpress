@@ -21,6 +21,7 @@ use GatherPress\Core\Rsvp_Setup;
 use GatherPress\Core\Settings;
 use GatherPress\Core\Utility;
 use GatherPress\Core\Validate;
+use GatherPress\Core\Venue;
 use GatherPress\Core\Venue_Setup;
 use WP_Post;
 
@@ -560,15 +561,9 @@ class Event {
 		}
 
 		if ( is_a( $venue, 'WP_Post' ) ) {
-			$venue_meta = json_decode( get_post_meta( $venue->ID, 'gatherpress_venue_information', true ) );
-			// phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
-			$venue_information['full_address'] = $venue_meta->fullAddress ?? '';
-			// phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
-			$venue_information['phone_number'] = $venue_meta->phoneNumber ?? '';
-			$venue_information['website']      = $venue_meta->website ?? '';
-			$venue_information['latitude']     = $venue_meta->latitude ?? '';
-			$venue_information['longitude']    = $venue_meta->longitude ?? '';
-			$venue_information['permalink']    = (string) get_permalink( $venue->ID );
+			$venue_information = array_merge( $venue_information, ( new Venue( $venue->ID ) )->get_information() );
+
+			$venue_information['permalink'] = (string) get_permalink( $venue->ID );
 		}
 
 		return $venue_information;
