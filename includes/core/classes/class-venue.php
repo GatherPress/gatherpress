@@ -164,7 +164,7 @@ class Venue {
 	/**
 	 * Returns the venue information for this venue.
 	 *
-	 * Reads the individual `gatherpress_full_address`, `gatherpress_phone_number`,
+	 * Reads the individual `gatherpress_address`, `gatherpress_phone`,
 	 * `gatherpress_website`, `gatherpress_latitude`, and `gatherpress_longitude`
 	 * meta keys and returns them with empty-string fallbacks so callers can
 	 * treat the array shape as stable. Also returns the empty shape when this
@@ -173,8 +173,8 @@ class Venue {
 	 * @since 1.0.0
 	 *
 	 * @return array{
-	 *     full_address: string,
-	 *     phone_number: string,
+	 *     address: string,
+	 *     phone: string,
 	 *     website: string,
 	 *     latitude: string,
 	 *     longitude: string
@@ -182,11 +182,11 @@ class Venue {
 	 */
 	public function get_information(): array {
 		$defaults = array(
-			'full_address' => '',
-			'phone_number' => '',
-			'website'      => '',
-			'latitude'     => '',
-			'longitude'    => '',
+			'address'   => '',
+			'phone'     => '',
+			'website'   => '',
+			'latitude'  => '',
+			'longitude' => '',
 		);
 
 		if ( ! $this->venue instanceof WP_Post ) {
@@ -194,11 +194,11 @@ class Venue {
 		}
 
 		return array(
-			'full_address' => (string) get_post_meta( $this->venue->ID, 'gatherpress_full_address', true ),
-			'phone_number' => (string) get_post_meta( $this->venue->ID, 'gatherpress_phone_number', true ),
-			'website'      => (string) get_post_meta( $this->venue->ID, 'gatherpress_website', true ),
-			'latitude'     => (string) get_post_meta( $this->venue->ID, 'gatherpress_latitude', true ),
-			'longitude'    => (string) get_post_meta( $this->venue->ID, 'gatherpress_longitude', true ),
+			'address'   => (string) get_post_meta( $this->venue->ID, 'gatherpress_address', true ),
+			'phone'     => (string) get_post_meta( $this->venue->ID, 'gatherpress_phone', true ),
+			'website'   => (string) get_post_meta( $this->venue->ID, 'gatherpress_website', true ),
+			'latitude'  => (string) get_post_meta( $this->venue->ID, 'gatherpress_latitude', true ),
+			'longitude' => (string) get_post_meta( $this->venue->ID, 'gatherpress_longitude', true ),
 		);
 	}
 }

@@ -361,9 +361,9 @@ class Test_Venue_Map extends Base {
 	public function test_hash_for_detects_relevant_input_changes(): void {
 		$instance = Venue_Map::get_instance();
 		$info     = array(
-			'full_address' => '1 Infinite Loop',
-			'latitude'     => '37.3318',
-			'longitude'    => '-122.0312',
+			'address'   => '1 Infinite Loop',
+			'latitude'  => '37.3318',
+			'longitude' => '-122.0312',
 		);
 
 		$baseline = $instance->hash_for( $info, 15, 800, 400, Venue_Map::DEFAULT_TILE_URL );
@@ -427,7 +427,7 @@ class Test_Venue_Map extends Base {
 		$instance = Venue_Map::get_instance();
 		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
 
-		add_post_meta( $post_id, 'gatherpress_full_address', '1 Infinite Loop, Cupertino, CA' );
+		add_post_meta( $post_id, 'gatherpress_address', '1 Infinite Loop, Cupertino, CA' );
 		add_post_meta( $post_id, 'gatherpress_latitude', '37.3318' );
 		add_post_meta( $post_id, 'gatherpress_longitude', '-122.0312' );
 
@@ -456,7 +456,7 @@ class Test_Venue_Map extends Base {
 		$instance = Venue_Map::get_instance();
 		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
 
-		add_post_meta( $post_id, 'gatherpress_full_address', '1 Infinite Loop' );
+		add_post_meta( $post_id, 'gatherpress_address', '1 Infinite Loop' );
 		add_post_meta( $post_id, 'gatherpress_latitude', '37.3318' );
 		add_post_meta( $post_id, 'gatherpress_longitude', '-122.0312' );
 
@@ -488,13 +488,13 @@ class Test_Venue_Map extends Base {
 		$instance = Venue_Map::get_instance();
 		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
 
-		update_post_meta( $post_id, 'gatherpress_full_address', '1 Infinite Loop' );
+		update_post_meta( $post_id, 'gatherpress_address', '1 Infinite Loop' );
 		update_post_meta( $post_id, 'gatherpress_latitude', '37.3318' );
 		update_post_meta( $post_id, 'gatherpress_longitude', '-122.0312' );
 		$instance->maybe_generate( $post_id );
 		$first = $instance->get_stored_descriptor( $post_id );
 
-		update_post_meta( $post_id, 'gatherpress_full_address', '60 29th Street #343, San Francisco, CA 94110' );
+		update_post_meta( $post_id, 'gatherpress_address', '60 29th Street #343, San Francisco, CA 94110' );
 		update_post_meta( $post_id, 'gatherpress_latitude', '37.7573' );
 		update_post_meta( $post_id, 'gatherpress_longitude', '-122.4132' );
 		$instance->maybe_generate( $post_id );
@@ -530,7 +530,7 @@ class Test_Venue_Map extends Base {
 		$instance = Venue_Map::get_instance();
 		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
 
-		update_post_meta( $post_id, 'gatherpress_full_address', '1 Infinite Loop' );
+		update_post_meta( $post_id, 'gatherpress_address', '1 Infinite Loop' );
 		update_post_meta( $post_id, 'gatherpress_latitude', '37.3318' );
 		update_post_meta( $post_id, 'gatherpress_longitude', '-122.0312' );
 		$instance->maybe_generate( $post_id );
@@ -542,7 +542,7 @@ class Test_Venue_Map extends Base {
 		$this->assertFileExists( $path );
 
 		// Now clear the coordinates (e.g. address changed to something un-geocodable).
-		update_post_meta( $post_id, 'gatherpress_full_address', 'Nonexistent Place' );
+		update_post_meta( $post_id, 'gatherpress_address', 'Nonexistent Place' );
 		update_post_meta( $post_id, 'gatherpress_latitude', '' );
 		update_post_meta( $post_id, 'gatherpress_longitude', '' );
 		$instance->maybe_generate( $post_id );
@@ -568,7 +568,7 @@ class Test_Venue_Map extends Base {
 		$instance = Venue_Map::get_instance();
 		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
 
-		add_post_meta( $post_id, 'gatherpress_full_address', 'Somewhere, somewhere' );
+		add_post_meta( $post_id, 'gatherpress_address', 'Somewhere, somewhere' );
 		add_post_meta( $post_id, 'gatherpress_latitude', '' );
 		add_post_meta( $post_id, 'gatherpress_longitude', '' );
 
@@ -591,7 +591,7 @@ class Test_Venue_Map extends Base {
 		$instance = Venue_Map::get_instance();
 		$venue_id = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
 
-		update_post_meta( $venue_id, 'gatherpress_full_address', '1 Infinite Loop' );
+		update_post_meta( $venue_id, 'gatherpress_address', '1 Infinite Loop' );
 		update_post_meta( $venue_id, 'gatherpress_latitude', '37.3318' );
 		update_post_meta( $venue_id, 'gatherpress_longitude', '-122.0312' );
 
@@ -619,7 +619,7 @@ class Test_Venue_Map extends Base {
 		$instance = Venue_Map::get_instance();
 		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
 
-		add_post_meta( $post_id, 'gatherpress_full_address', '1 Infinite Loop' );
+		add_post_meta( $post_id, 'gatherpress_address', '1 Infinite Loop' );
 		add_post_meta( $post_id, 'gatherpress_latitude', '37.3318' );
 		add_post_meta( $post_id, 'gatherpress_longitude', '-122.0312' );
 		$instance->maybe_generate( $post_id );
@@ -788,7 +788,7 @@ class Test_Venue_Map extends Base {
 		$instance = Venue_Map::get_instance();
 		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
 
-		add_post_meta( $post_id, 'gatherpress_full_address', '1 Infinite Loop' );
+		add_post_meta( $post_id, 'gatherpress_address', '1 Infinite Loop' );
 		add_post_meta( $post_id, 'gatherpress_latitude', '37.3318' );
 		add_post_meta( $post_id, 'gatherpress_longitude', '-122.0312' );
 
@@ -836,7 +836,7 @@ class Test_Venue_Map extends Base {
 		$instance = Venue_Map::get_instance();
 		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
 
-		add_post_meta( $post_id, 'gatherpress_full_address', '1 Infinite Loop' );
+		add_post_meta( $post_id, 'gatherpress_address', '1 Infinite Loop' );
 		add_post_meta( $post_id, 'gatherpress_latitude', '37.3318' );
 		add_post_meta( $post_id, 'gatherpress_longitude', '-122.0312' );
 		$instance->maybe_generate( $post_id );
@@ -895,7 +895,7 @@ class Test_Venue_Map extends Base {
 		$instance = Venue_Map::get_instance();
 		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
 
-		add_post_meta( $post_id, 'gatherpress_full_address', '1 Infinite Loop' );
+		add_post_meta( $post_id, 'gatherpress_address', '1 Infinite Loop' );
 		add_post_meta( $post_id, 'gatherpress_latitude', '37.3318' );
 		add_post_meta( $post_id, 'gatherpress_longitude', '-122.0312' );
 		$instance->maybe_generate( $post_id );
@@ -934,7 +934,7 @@ class Test_Venue_Map extends Base {
 		$instance = Venue_Map::get_instance();
 		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
 
-		update_post_meta( $post_id, 'gatherpress_full_address', '1 Infinite Loop' );
+		update_post_meta( $post_id, 'gatherpress_address', '1 Infinite Loop' );
 		update_post_meta( $post_id, 'gatherpress_latitude', '37.3318' );
 		update_post_meta( $post_id, 'gatherpress_longitude', '-122.0312' );
 		$instance->maybe_generate( $post_id );
@@ -956,7 +956,7 @@ class Test_Venue_Map extends Base {
 		$this->assertCount( 2, $before );
 
 		// Change the address. maybe_generate should regenerate both combos.
-		update_post_meta( $post_id, 'gatherpress_full_address', '60 29th Street #343, San Francisco, CA 94110' );
+		update_post_meta( $post_id, 'gatherpress_address', '60 29th Street #343, San Francisco, CA 94110' );
 		update_post_meta( $post_id, 'gatherpress_latitude', '37.7573' );
 		update_post_meta( $post_id, 'gatherpress_longitude', '-122.4132' );
 		$instance->maybe_generate( $post_id );
@@ -1004,7 +1004,7 @@ class Test_Venue_Map extends Base {
 		$instance = Venue_Map::get_instance();
 		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
 
-		add_post_meta( $post_id, 'gatherpress_full_address', '1 Infinite Loop' );
+		add_post_meta( $post_id, 'gatherpress_address', '1 Infinite Loop' );
 		add_post_meta( $post_id, 'gatherpress_latitude', '37.3318' );
 		add_post_meta( $post_id, 'gatherpress_longitude', '-122.0312' );
 
@@ -1063,9 +1063,9 @@ class Test_Venue_Map extends Base {
 			array(
 				42,
 				array(
-					'full_address' => '1 Infinite Loop',
-					'latitude'     => '37.3318',
-					'longitude'    => '-122.0312',
+					'address'   => '1 Infinite Loop',
+					'latitude'  => '37.3318',
+					'longitude' => '-122.0312',
 				),
 				15,
 				600,
@@ -1090,7 +1090,7 @@ class Test_Venue_Map extends Base {
 		$instance = Venue_Map::get_instance();
 		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
 
-		add_post_meta( $post_id, 'gatherpress_full_address', '1 Infinite Loop' );
+		add_post_meta( $post_id, 'gatherpress_address', '1 Infinite Loop' );
 		add_post_meta( $post_id, 'gatherpress_latitude', '37.3318' );
 		add_post_meta( $post_id, 'gatherpress_longitude', '-122.0312' );
 
@@ -1117,7 +1117,7 @@ class Test_Venue_Map extends Base {
 		$instance = Venue_Map::get_instance();
 		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
 
-		add_post_meta( $post_id, 'gatherpress_full_address', '1 Infinite Loop' );
+		add_post_meta( $post_id, 'gatherpress_address', '1 Infinite Loop' );
 		add_post_meta( $post_id, 'gatherpress_latitude', '37.3318' );
 		add_post_meta( $post_id, 'gatherpress_longitude', '-122.0312' );
 		$instance->maybe_generate( $post_id );
@@ -1159,7 +1159,7 @@ class Test_Venue_Map extends Base {
 		$term_slug = $venue_setup->term_slug_from_post_name( $venue->post_name );
 		wp_set_post_terms( $event->ID, $term_slug, Venue::TAXONOMY );
 
-		update_post_meta( $venue->ID, 'gatherpress_full_address', '1 Infinite Loop' );
+		update_post_meta( $venue->ID, 'gatherpress_address', '1 Infinite Loop' );
 		update_post_meta( $venue->ID, 'gatherpress_latitude', '37.3318' );
 		update_post_meta( $venue->ID, 'gatherpress_longitude', '-122.0312' );
 		$instance->maybe_generate( $venue->ID );
@@ -1228,7 +1228,7 @@ class Test_Venue_Map extends Base {
 		$instance = Venue_Map::get_instance();
 		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
 
-		add_post_meta( $post_id, 'gatherpress_full_address', '1 Infinite Loop' );
+		add_post_meta( $post_id, 'gatherpress_address', '1 Infinite Loop' );
 		add_post_meta( $post_id, 'gatherpress_latitude', '37.3318' );
 		add_post_meta( $post_id, 'gatherpress_longitude', '-122.0312' );
 
@@ -1255,7 +1255,7 @@ class Test_Venue_Map extends Base {
 		$instance = Venue_Map::get_instance();
 		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
 
-		add_post_meta( $post_id, 'gatherpress_full_address', '1 Infinite Loop' );
+		add_post_meta( $post_id, 'gatherpress_address', '1 Infinite Loop' );
 		add_post_meta( $post_id, 'gatherpress_latitude', '37.3318' );
 		add_post_meta( $post_id, 'gatherpress_longitude', '-122.0312' );
 
@@ -1305,7 +1305,7 @@ class Test_Venue_Map extends Base {
 		$instance = Venue_Map::get_instance();
 		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
 
-		add_post_meta( $post_id, 'gatherpress_full_address', '1 Infinite Loop, Cupertino CA' );
+		add_post_meta( $post_id, 'gatherpress_address', '1 Infinite Loop, Cupertino CA' );
 		add_post_meta( $post_id, 'gatherpress_latitude', '' );
 		add_post_meta( $post_id, 'gatherpress_longitude', '' );
 
@@ -1899,7 +1899,7 @@ class Test_Venue_Map extends Base {
 		$instance = Venue_Map::get_instance();
 		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
 
-		add_post_meta( $post_id, 'gatherpress_full_address', '1 Infinite Loop' );
+		add_post_meta( $post_id, 'gatherpress_address', '1 Infinite Loop' );
 		add_post_meta( $post_id, 'gatherpress_latitude', '37.3318' );
 		add_post_meta( $post_id, 'gatherpress_longitude', '-122.0312' );
 
@@ -2087,7 +2087,7 @@ class Test_Venue_Map extends Base {
 		$instance = Venue_Map::get_instance();
 		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
 
-		add_post_meta( $post_id, 'gatherpress_full_address', '1 Infinite Loop' );
+		add_post_meta( $post_id, 'gatherpress_address', '1 Infinite Loop' );
 		add_post_meta( $post_id, 'gatherpress_latitude', '37.3318' );
 		add_post_meta( $post_id, 'gatherpress_longitude', '-122.0312' );
 		$instance->maybe_generate( $post_id );
@@ -2145,7 +2145,7 @@ class Test_Venue_Map extends Base {
 		$instance = Venue_Map::get_instance();
 		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
 
-		add_post_meta( $post_id, 'gatherpress_full_address', '1 Infinite Loop' );
+		add_post_meta( $post_id, 'gatherpress_address', '1 Infinite Loop' );
 		add_post_meta( $post_id, 'gatherpress_latitude', '37.3318' );
 		add_post_meta( $post_id, 'gatherpress_longitude', '-122.0312' );
 		// Seed one cached combo the venue "already had".
@@ -2177,7 +2177,7 @@ class Test_Venue_Map extends Base {
 		$instance = Venue_Map::get_instance();
 		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
 
-		add_post_meta( $post_id, 'gatherpress_full_address', '1 Infinite Loop' );
+		add_post_meta( $post_id, 'gatherpress_address', '1 Infinite Loop' );
 		add_post_meta( $post_id, 'gatherpress_latitude', '37.3318' );
 		add_post_meta( $post_id, 'gatherpress_longitude', '-122.0312' );
 		$instance->maybe_generate( $post_id );
@@ -2210,7 +2210,7 @@ class Test_Venue_Map extends Base {
 		$instance = Venue_Map::get_instance();
 		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
 
-		add_post_meta( $post_id, 'gatherpress_full_address', '1 Infinite Loop' );
+		add_post_meta( $post_id, 'gatherpress_address', '1 Infinite Loop' );
 		add_post_meta( $post_id, 'gatherpress_latitude', '37.3318' );
 		add_post_meta( $post_id, 'gatherpress_longitude', '-122.0312' );
 
@@ -2240,7 +2240,7 @@ class Test_Venue_Map extends Base {
 		$instance = Venue_Map::get_instance();
 		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
 
-		add_post_meta( $post_id, 'gatherpress_full_address', 'Somewhere, somewhere' );
+		add_post_meta( $post_id, 'gatherpress_address', 'Somewhere, somewhere' );
 		add_post_meta( $post_id, 'gatherpress_latitude', '' );
 		add_post_meta( $post_id, 'gatherpress_longitude', '' );
 
@@ -2289,7 +2289,7 @@ class Test_Venue_Map extends Base {
 		$editor_id = $this->factory->user->create( array( 'role' => 'editor' ) );
 		$post_id   = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
 
-		add_post_meta( $post_id, 'gatherpress_full_address', '1 Infinite Loop' );
+		add_post_meta( $post_id, 'gatherpress_address', '1 Infinite Loop' );
 		add_post_meta( $post_id, 'gatherpress_latitude', '37.3318' );
 		add_post_meta( $post_id, 'gatherpress_longitude', '-122.0312' );
 
@@ -2371,7 +2371,7 @@ class Test_Venue_Map extends Base {
 		$editor_id = $this->factory->user->create( array( 'role' => 'editor' ) );
 		$post_id   = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
 
-		add_post_meta( $post_id, 'gatherpress_full_address', '1 Infinite Loop' );
+		add_post_meta( $post_id, 'gatherpress_address', '1 Infinite Loop' );
 		add_post_meta( $post_id, 'gatherpress_latitude', '37.3318' );
 		add_post_meta( $post_id, 'gatherpress_longitude', '-122.0312' );
 
@@ -2420,7 +2420,7 @@ class Test_Venue_Map extends Base {
 		$editor_id = $this->factory->user->create( array( 'role' => 'editor' ) );
 		$post_id   = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
 
-		add_post_meta( $post_id, 'gatherpress_full_address', '1 Infinite Loop' );
+		add_post_meta( $post_id, 'gatherpress_address', '1 Infinite Loop' );
 		add_post_meta( $post_id, 'gatherpress_latitude', '37.3318' );
 		add_post_meta( $post_id, 'gatherpress_longitude', '-122.0312' );
 
@@ -2511,7 +2511,7 @@ class Test_Venue_Map extends Base {
 		$editor_id = $this->factory->user->create( array( 'role' => 'editor' ) );
 		$post_id   = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
 
-		add_post_meta( $post_id, 'gatherpress_full_address', 'Somewhere' );
+		add_post_meta( $post_id, 'gatherpress_address', 'Somewhere' );
 		add_post_meta( $post_id, 'gatherpress_latitude', '' );
 		add_post_meta( $post_id, 'gatherpress_longitude', '' );
 
@@ -2699,7 +2699,7 @@ class Test_Venue_Map extends Base {
 		$instance = Venue_Map::get_instance();
 		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
 
-		add_post_meta( $post_id, 'gatherpress_full_address', '1 Infinite Loop' );
+		add_post_meta( $post_id, 'gatherpress_address', '1 Infinite Loop' );
 		add_post_meta( $post_id, 'gatherpress_latitude', '37.3318' );
 		add_post_meta( $post_id, 'gatherpress_longitude', '-122.0312' );
 
@@ -2734,7 +2734,7 @@ class Test_Venue_Map extends Base {
 		$instance = Venue_Map::get_instance();
 		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
 
-		add_post_meta( $post_id, 'gatherpress_full_address', '1 Infinite Loop' );
+		add_post_meta( $post_id, 'gatherpress_address', '1 Infinite Loop' );
 		add_post_meta( $post_id, 'gatherpress_latitude', '37.3318' );
 		add_post_meta( $post_id, 'gatherpress_longitude', '-122.0312' );
 
@@ -2814,7 +2814,7 @@ class Test_Venue_Map extends Base {
 		$instance = Venue_Map::get_instance();
 		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
 
-		add_post_meta( $post_id, 'gatherpress_full_address', '1 Infinite Loop' );
+		add_post_meta( $post_id, 'gatherpress_address', '1 Infinite Loop' );
 		add_post_meta( $post_id, 'gatherpress_latitude', '37.3318' );
 		add_post_meta( $post_id, 'gatherpress_longitude', '-122.0312' );
 
@@ -2884,7 +2884,7 @@ class Test_Venue_Map extends Base {
 		$term_slug = $venue_setup->term_slug_from_post_name( $venue->post_name );
 		wp_set_post_terms( $event->ID, $term_slug, Venue::TAXONOMY );
 
-		update_post_meta( $venue->ID, 'gatherpress_full_address', '1 Infinite Loop' );
+		update_post_meta( $venue->ID, 'gatherpress_address', '1 Infinite Loop' );
 		update_post_meta( $venue->ID, 'gatherpress_latitude', '37.3318' );
 		update_post_meta( $venue->ID, 'gatherpress_longitude', '-122.0312' );
 		$instance->maybe_generate( $venue->ID );
@@ -2921,7 +2921,7 @@ class Test_Venue_Map extends Base {
 		$instance = Venue_Map::get_instance();
 		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
 
-		add_post_meta( $post_id, 'gatherpress_full_address', '1 Infinite Loop' );
+		add_post_meta( $post_id, 'gatherpress_address', '1 Infinite Loop' );
 		add_post_meta( $post_id, 'gatherpress_latitude', '37.3318' );
 		add_post_meta( $post_id, 'gatherpress_longitude', '-122.0312' );
 
@@ -3065,7 +3065,7 @@ class Test_Venue_Map extends Base {
 		$instance = Venue_Map::get_instance();
 		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
 
-		add_post_meta( $post_id, 'gatherpress_full_address', '1 Infinite Loop' );
+		add_post_meta( $post_id, 'gatherpress_address', '1 Infinite Loop' );
 		add_post_meta( $post_id, 'gatherpress_latitude', '37.3318' );
 		add_post_meta( $post_id, 'gatherpress_longitude', '-122.0312' );
 
@@ -3112,7 +3112,7 @@ class Test_Venue_Map extends Base {
 		$instance = Venue_Map::get_instance();
 		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
 
-		add_post_meta( $post_id, 'gatherpress_full_address', 'Somewhere' );
+		add_post_meta( $post_id, 'gatherpress_address', 'Somewhere' );
 		add_post_meta( $post_id, 'gatherpress_latitude', '' );
 		add_post_meta( $post_id, 'gatherpress_longitude', '' );
 

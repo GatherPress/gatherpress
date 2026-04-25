@@ -409,8 +409,8 @@ class Test_Event extends Base {
 		)->get()->ID;
 		$event    = new Event( $event_id );
 
-		update_post_meta( $venue->ID, 'gatherpress_full_address', '123 Main Street, Montclair, NJ 07042' );
-		update_post_meta( $venue->ID, 'gatherpress_phone_number', '(123) 123-1234' );
+		update_post_meta( $venue->ID, 'gatherpress_address', '123 Main Street, Montclair, NJ 07042' );
+		update_post_meta( $venue->ID, 'gatherpress_phone', '(123) 123-1234' );
 		update_post_meta( $venue->ID, 'gatherpress_website', 'https://gatherpress.org/' );
 		wp_set_post_terms( $event_id, '_unit-test-venue', Venue::TAXONOMY );
 
@@ -423,12 +423,12 @@ class Test_Event extends Base {
 		);
 		$this->assertSame(
 			'123 Main Street, Montclair, NJ 07042',
-			$response['full_address'],
+			$response['address'],
 			'Failed to assert that full address matches.'
 		);
 		$this->assertSame(
 			'(123) 123-1234',
-			$response['phone_number'],
+			$response['phone'],
 			'Failed to assert that phone number matches.'
 		);
 		$this->assertSame(
@@ -457,12 +457,12 @@ class Test_Event extends Base {
 		);
 
 		$this->assertEmpty(
-			$response['full_address'],
+			$response['address'],
 			'Failed to assert that full address is empty.'
 		);
 
 		$this->assertEmpty(
-			$response['phone_number'],
+			$response['phone'],
 			'Failed to assert that phone number is empty.'
 		);
 
@@ -511,8 +511,8 @@ class Test_Event extends Base {
 			'datetime_end'   => '2020-05-11 17:00:00',
 		);
 
-		update_post_meta( $venue->ID, 'gatherpress_full_address', '123 Main Street, Montclair, NJ 07042' );
-		update_post_meta( $venue->ID, 'gatherpress_phone_number', '(123) 123-1234' );
+		update_post_meta( $venue->ID, 'gatherpress_address', '123 Main Street, Montclair, NJ 07042' );
+		update_post_meta( $venue->ID, 'gatherpress_phone', '(123) 123-1234' );
 		update_post_meta( $venue->ID, 'gatherpress_website', 'https://gatherpress.org/' );
 		wp_set_post_terms( $post->ID, '_unit-test-venue', Venue::TAXONOMY );
 
@@ -1229,7 +1229,7 @@ class Test_Event extends Base {
 		)->get()->ID;
 		$event    = new Event( $event_id );
 
-		update_post_meta( $venue->ID, 'gatherpress_full_address', '123 Main Street, Montclair, NJ 07042' );
+		update_post_meta( $venue->ID, 'gatherpress_address', '123 Main Street, Montclair, NJ 07042' );
 		wp_set_post_terms( $event_id, '_test-venue', Venue::TAXONOMY );
 
 		$start = new DateTime( '2025-06-15 14:30:00' );

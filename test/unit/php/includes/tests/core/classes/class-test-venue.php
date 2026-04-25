@@ -56,16 +56,16 @@ class Test_Venue extends Base {
 		$post_id = $this->factory->post->create(
 			array( 'post_type' => Venue::POST_TYPE )
 		);
-		add_post_meta( $post_id, 'gatherpress_full_address', '123 Main St' );
-		add_post_meta( $post_id, 'gatherpress_phone_number', '555-0100' );
+		add_post_meta( $post_id, 'gatherpress_address', '123 Main St' );
+		add_post_meta( $post_id, 'gatherpress_phone', '555-0100' );
 		add_post_meta( $post_id, 'gatherpress_website', 'https://example.com' );
 		add_post_meta( $post_id, 'gatherpress_latitude', '40.7128' );
 		add_post_meta( $post_id, 'gatherpress_longitude', '-74.0060' );
 
 		$info = ( new Venue( $post_id ) )->get_information();
 
-		$this->assertSame( '123 Main St', $info['full_address'] );
-		$this->assertSame( '555-0100', $info['phone_number'] );
+		$this->assertSame( '123 Main St', $info['address'] );
+		$this->assertSame( '555-0100', $info['phone'] );
 		$this->assertSame( 'https://example.com', $info['website'] );
 		$this->assertSame( '40.7128', $info['latitude'] );
 		$this->assertSame( '-74.0060', $info['longitude'] );
@@ -89,11 +89,11 @@ class Test_Venue extends Base {
 
 		$this->assertSame(
 			array(
-				'full_address' => '',
-				'phone_number' => '',
-				'website'      => '',
-				'latitude'     => '',
-				'longitude'    => '',
+				'address'   => '',
+				'phone'     => '',
+				'website'   => '',
+				'latitude'  => '',
+				'longitude' => '',
 			),
 			$info,
 			'Failed to assert the empty-state default shape when no venue meta is stored.'
@@ -195,11 +195,11 @@ class Test_Venue extends Base {
 
 		$this->assertSame(
 			array(
-				'full_address' => '',
-				'phone_number' => '',
-				'website'      => '',
-				'latitude'     => '',
-				'longitude'    => '',
+				'address'   => '',
+				'phone'     => '',
+				'website'   => '',
+				'latitude'  => '',
+				'longitude' => '',
 			),
 			( new Venue( $post_id ) )->get_information()
 		);

@@ -740,7 +740,7 @@ class Venue_Map {
 		$info        = $venue->get_information();
 		$latitude    = $this->parse_coord( $info['latitude'] );
 		$longitude   = $this->parse_coord( $info['longitude'] );
-		$has_address = '' !== trim( (string) $info['full_address'] );
+		$has_address = '' !== trim( (string) $info['address'] );
 
 		if ( ! $has_address || null === $latitude || null === $longitude ) {
 			return new WP_REST_Response(
@@ -1125,7 +1125,7 @@ class Venue_Map {
 		$height = $this->clamp_height( $height );
 
 		$tiles   = $this->get_tile_url_template();
-		$address = (string) ( $info['full_address'] ?? '' );
+		$address = (string) ( $info['address'] ?? '' );
 		$hash    = $this->hash_for( $info, $zoom, $width, $height, $tiles );
 		$key     = $this->combo_key( $zoom, $width, $height );
 
@@ -1298,7 +1298,7 @@ class Venue_Map {
 			implode(
 				'|',
 				array(
-					(string) ( $info['full_address'] ?? '' ),
+					(string) ( $info['address'] ?? '' ),
 					(string) ( $info['latitude'] ?? '' ),
 					(string) ( $info['longitude'] ?? '' ),
 					(string) $zoom,

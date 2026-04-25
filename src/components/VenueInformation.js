@@ -18,7 +18,7 @@ import AddressAutocompleteField from './AddressAutocompleteField';
  *
  * This component allows users to input and update venue information, including full address,
  * phone number, and website. Each field is stored as its own post meta key
- * (gatherpress_full_address, gatherpress_phone_number, gatherpress_website,
+ * (gatherpress_address, gatherpress_phone, gatherpress_website,
  * gatherpress_latitude, gatherpress_longitude) so the values can be bound to
  * blocks via core/post-meta block bindings.
  *
@@ -43,16 +43,16 @@ const VenueInformation = () => {
 
 	// Use meta as source of truth - no local state needed.
 	// editPost updates editor state, which is saved when user clicks Update.
-	const fullAddress = venueMeta.gatherpress_full_address || '';
-	const phoneNumber = venueMeta.gatherpress_phone_number || '';
+	const address = venueMeta.gatherpress_address || '';
+	const phone = venueMeta.gatherpress_phone || '';
 	const website = venueMeta.gatherpress_website || '';
 	const initialLat = venueMeta.gatherpress_latitude || '';
 	const initialLng = venueMeta.gatherpress_longitude || '';
 
 	// Use ref to track current address for geocoding without recreating callback.
-	const fullAddressRef = useRef( fullAddress );
+	const addressRef = useRef( address );
 
-	fullAddressRef.current = fullAddress;
+	addressRef.current = address;
 
 	// Initialize venue store with saved lat/long values on mount only.
 	// After initialization, getData manages the store directly for live updates.
@@ -74,11 +74,11 @@ const VenueInformation = () => {
 
 	const getData = useCallback( async () => {
 		// Read current address from ref to avoid recreating this callback.
-		const address = fullAddressRef.current;
+		const currentAddress = addressRef.current;
 
 		try {
 			// If address is empty, clear lat/long.
-			if ( ! address ) {
+			if ( ! currentAddress ) {
 				if ( ! mapCustomLatLong ) {
 					updateVenueLatitude( '' );
 					updateVenueLongitude( '' );
@@ -90,7 +90,7 @@ const VenueInformation = () => {
 				return;
 			}
 
-			const { latitude, longitude } = await geocodeAddress( address );
+			const { latitude, longitude } = await geocodeAddress( currentAddress );
 
 			if ( ! mapCustomLatLong ) {
 				updateVenueLatitude( latitude || null );
@@ -111,7 +111,7 @@ const VenueInformation = () => {
 		updateVenueLongitude,
 		updateVenueField,
 		unlockPostSaving,
-	] ); // fullAddress removed - read from ref instead.
+	] ); // address removed - read from ref instead.
 
 	// Longer debounce than autocomplete: geocoding is not user-visible during
 	// typing (only the map preview and stored lat/long depend on it) so we let
@@ -133,22 +133,22 @@ const VenueInformation = () => {
 			unlockPostSaving( GEOCODE_LOCK_NAME );
 		};
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [ fullAddress ] ); // Only depend on fullAddress, not debouncedGetData.
+	}, [ address ] ); // Only depend on address, not debouncedGetData.
 
 	return (
 		<>
 			<AddressAutocompleteField
 				variant="settings"
-				value={ fullAddress }
+				value={ address }
 				onChange={ ( value ) => {
-					updateVenueField( { gatherpress_full_address: value } );
+					updateVenueField( { gatherpress_address: value } );
 				} }
 			/>
 			<TextControl
 				label={ __( 'Phone Number', 'gatherpress' ) }
-				value={ phoneNumber }
+				value={ phone }
 				onChange={ ( value ) => {
-					updateVenueField( { gatherpress_phone_number: value } );
+					updateVenueField( { gatherpress_phone: value } );
 				} }
 			/>
 			<TextControl

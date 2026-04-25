@@ -250,7 +250,7 @@ function CreateVenueForm( { search, ...props } ) {
 					title,
 					status: 'publish', // 'draft' is the default
 					meta: {
-						gatherpress_full_address: newAddress,
+						gatherpress_address: newAddress,
 						gatherpress_latitude: latitude,
 						gatherpress_longitude: longitude,
 					},

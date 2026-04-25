@@ -16,18 +16,16 @@ if ( ! isset( $attributes ) || ! is_array( $attributes ) ) {
 $gatherpress_field_type  = $attributes['fieldType'] ?? 'text';
 $gatherpress_placeholder = $attributes['placeholder'] ?? '';
 
-// Map field type to the individual venue meta key.
-$gatherpress_field_mapping = array(
-	'address' => 'gatherpress_full_address',
-	'phone'   => 'gatherpress_phone_number',
-	'url'     => 'gatherpress_website',
-);
+// 'url' is the block-attribute alias for the website field; otherwise the
+// fieldType matches the venue meta-key suffix one-to-one.
+$gatherpress_meta_field = ( 'url' === $gatherpress_field_type ) ? 'website' : $gatherpress_field_type;
 
-$gatherpress_meta_key = $gatherpress_field_mapping[ $gatherpress_field_type ] ?? '';
-
-if ( empty( $gatherpress_meta_key ) ) {
+// Allow only known venue fields. Anything else (e.g. fieldType "text") returns.
+if ( ! in_array( $gatherpress_meta_field, array( 'address', 'phone', 'website' ), true ) ) {
 	return;
 }
+
+$gatherpress_meta_key = sprintf( 'gatherpress_%s', $gatherpress_meta_field );
 
 $gatherpress_value = (string) get_post_meta( get_the_ID(), $gatherpress_meta_key, true );
 

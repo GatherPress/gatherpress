@@ -231,7 +231,7 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 		[]
 	);
 
-	const fullAddress = venueMeta.gatherpress_full_address || '';
+	const address = venueMeta.gatherpress_address || '';
 
 	let latitude = venueMeta.gatherpress_latitude || '';
 	let longitude = venueMeta.gatherpress_longitude || '';
@@ -279,8 +279,8 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 
 	const hasUnsavedMapInputs =
 		isEditingThisVenue &&
-		( ( venueMeta.gatherpress_full_address || '' ) !==
-			( savedVenueMeta.gatherpress_full_address || '' ) ||
+		( ( venueMeta.gatherpress_address || '' ) !==
+			( savedVenueMeta.gatherpress_address || '' ) ||
 			( venueMeta.gatherpress_latitude || '' ) !==
 				( savedVenueMeta.gatherpress_latitude || '' ) ||
 			( venueMeta.gatherpress_longitude || '' ) !==
@@ -364,7 +364,7 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 	usePlaceholderPolling( {
 		active:
 			showStaticPlaceholder &&
-			Boolean( fullAddress ) &&
+			Boolean( address ) &&
 			Boolean( latitude ) &&
 			Boolean( longitude ),
 		venuePostId,
@@ -462,8 +462,8 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 						className="gatherpress-venue-map__image"
 						src={ staticMapUrl }
 						alt={
-							fullAddress
-								? `${ __( 'Map of', 'gatherpress' ) } ${ fullAddress }`
+							address
+								? `${ __( 'Map of', 'gatherpress' ) } ${ address }`
 								: __( 'Venue map', 'gatherpress' )
 						}
 						style={ {
@@ -480,26 +480,26 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 					style={ wrapperStyle }
 				>
 					<div className="gatherpress-venue-map__placeholder">
-						{ ! fullAddress && isInFSETemplate() && (
+						{ ! address && isInFSETemplate() && (
 							<Icon
 								icon={ mapMarker }
 								size={ 48 }
 								className="gatherpress-venue-map__placeholder-icon"
 							/>
 						) }
-						{ ! fullAddress &&
+						{ ! address &&
 							! isInFSETemplate() &&
 							__(
 								'Add an address to generate the map.',
 								'gatherpress'
 							) }
-						{ fullAddress &&
+						{ address &&
 							hasUnsavedMapInputs &&
 							__(
 								'Save the venue first.',
 								'gatherpress'
 							) }
-						{ fullAddress &&
+						{ address &&
 							! hasUnsavedMapInputs &&
 							0 < venuePostId && (
 							<>
@@ -533,7 +533,7 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 					style={ wrapperStyle }
 				>
 					<MapEmbed
-						location={ fullAddress }
+						location={ address }
 						latitude={ latitude }
 						longitude={ longitude }
 						zoom={ zoom }
@@ -611,7 +611,7 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 							height={ height }
 							aspectRatio={ aspectRatio }
 							disabled={
-								! fullAddress || hasUnsavedMapInputs
+								! address || hasUnsavedMapInputs
 							}
 						/>
 					) }

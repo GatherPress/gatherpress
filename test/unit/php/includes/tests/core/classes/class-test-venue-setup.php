@@ -69,12 +69,6 @@ class Test_Venue_Setup extends Base {
 				'callback' => array( $instance, 'maybe_update_term_slug' ),
 			),
 			array(
-				'type'     => 'action',
-				'name'     => 'wp_after_insert_post',
-				'priority' => 10,
-				'callback' => array( $instance, 'set_geodata' ),
-			),
-			array(
 				'type'     => 'filter',
 				'name'     => 'block_editor_settings_all',
 				'priority' => 10,
@@ -172,8 +166,8 @@ class Test_Venue_Setup extends Base {
 		$instance = Venue_Setup::get_instance();
 
 		$venue_information_keys = array(
-			'gatherpress_full_address',
-			'gatherpress_phone_number',
+			'gatherpress_address',
+			'gatherpress_phone',
 			'gatherpress_website',
 			'gatherpress_latitude',
 			'gatherpress_longitude',
@@ -251,8 +245,8 @@ class Test_Venue_Setup extends Base {
 		$meta = get_registered_meta_keys( 'post', $test_pt );
 
 		$expected_keys = array(
-			'gatherpress_full_address',
-			'gatherpress_phone_number',
+			'gatherpress_address',
+			'gatherpress_phone',
 			'gatherpress_website',
 			'gatherpress_latitude',
 			'gatherpress_longitude',
@@ -293,7 +287,7 @@ class Test_Venue_Setup extends Base {
 						'hash' => 'x',
 					),
 				),
-				'gatherpress_full_address'     => 'Real St',
+				'gatherpress_address'          => 'Real St',
 				'gatherpress_latitude'         => '12.345',
 			)
 		);
@@ -311,7 +305,7 @@ class Test_Venue_Setup extends Base {
 			'gatherpress_venue_static_map is server-generated and must not be writable via REST.'
 		);
 		$this->assertArrayHasKey(
-			'gatherpress_full_address',
+			'gatherpress_address',
 			$meta,
 			'Editor-writable venue meta should pass through untouched.'
 		);
@@ -655,8 +649,8 @@ class Test_Venue_Setup extends Base {
 			)
 		)->get();
 
-		add_post_meta( $venue->ID, 'gatherpress_full_address', '123 Test Street, Test City, TS 12345' );
-		add_post_meta( $venue->ID, 'gatherpress_phone_number', '555-123-4567' );
+		add_post_meta( $venue->ID, 'gatherpress_address', '123 Test Street, Test City, TS 12345' );
+		add_post_meta( $venue->ID, 'gatherpress_phone', '555-123-4567' );
 		add_post_meta( $venue->ID, 'gatherpress_website', 'https://example.com' );
 		add_post_meta( $venue->ID, 'gatherpress_latitude', '40.7128' );
 		add_post_meta( $venue->ID, 'gatherpress_longitude', '-74.0060' );
@@ -670,12 +664,12 @@ class Test_Venue_Setup extends Base {
 		);
 		$this->assertEquals(
 			'123 Test Street, Test City, TS 12345',
-			$venue_meta['full_address'],
+			$venue_meta['address'],
 			'Failed to assert full_address matches.'
 		);
 		$this->assertEquals(
 			'555-123-4567',
-			$venue_meta['phone_number'],
+			$venue_meta['phone'],
 			'Failed to assert phone_number matches.'
 		);
 		$this->assertEquals(
@@ -1435,8 +1429,8 @@ class Test_Venue_Setup extends Base {
 
 		wp_set_post_terms( $event->ID, $term_slug, Venue::TAXONOMY );
 
-		add_post_meta( $venue->ID, 'gatherpress_full_address', '1 Library Lane' );
-		add_post_meta( $venue->ID, 'gatherpress_phone_number', '555-1234' );
+		add_post_meta( $venue->ID, 'gatherpress_address', '1 Library Lane' );
+		add_post_meta( $venue->ID, 'gatherpress_phone', '555-1234' );
 		add_post_meta( $venue->ID, 'gatherpress_website', 'https://example.test' );
 		add_post_meta( $venue->ID, 'gatherpress_latitude', '40.0' );
 		add_post_meta( $venue->ID, 'gatherpress_longitude', '-70.0' );
@@ -1448,7 +1442,7 @@ class Test_Venue_Setup extends Base {
 			$venue_meta['name'],
 			'Expected venue name to come from the linked venue post.'
 		);
-		$this->assertSame( '1 Library Lane', $venue_meta['full_address'] );
+		$this->assertSame( '1 Library Lane', $venue_meta['address'] );
 		$this->assertFalse( $venue_meta['isOnlineEventTerm'] );
 	}
 

@@ -524,14 +524,14 @@ class Event {
 	 * Get venue information associated with the event.
 	 *
 	 * This method retrieves information about the venue associated with the event,
-	 * including its name, full address, phone number, website, permalink, and whether it's an online event.
+	 * including its name, address, phone, website, permalink, and whether it's an online event.
 	 *
 	 * @since 1.0.0
 	 *
 	 * @return array An array containing venue information:
 	 *               - 'name' (string): The name of the venue.
-	 *               - 'full_address' (string): The full address of the venue.
-	 *               - 'phone_number' (string): The phone number of the venue.
+	 *               - 'address' (string): The address of the venue.
+	 *               - 'phone' (string): The phone number of the venue.
 	 *               - 'website' (string): The website URL of the venue.
 	 *               - 'permalink' (string): The permalink (URL) of the venue.
 	 *               - 'is_online_event' (bool): Indicates whether the event is an online event (true/false).
@@ -539,8 +539,8 @@ class Event {
 	public function get_venue_information(): array {
 		$venue_information = array(
 			'name'            => '',
-			'full_address'    => '',
-			'phone_number'    => '',
+			'address'         => '',
+			'phone'           => '',
 			'website'         => '',
 			'permalink'       => '',
 			'is_online_event' => false,
@@ -640,8 +640,8 @@ class Event {
 		$location    = $venue['name'];
 		$description = $this->get_calendar_description();
 
-		if ( ! empty( $venue['full_address'] ) ) {
-			$location .= sprintf( ', %s', $venue['full_address'] );
+		if ( ! empty( $venue['address'] ) ) {
+			$location .= sprintf( ', %s', $venue['address'] );
 		}
 
 		$params = array(
@@ -688,8 +688,8 @@ class Event {
 		$location    = $venue['name'];
 		$description = $this->get_calendar_description();
 
-		if ( ! empty( $venue['full_address'] ) ) {
-			$location .= sprintf( ', %s', $venue['full_address'] );
+		if ( ! empty( $venue['address'] ) ) {
+			$location .= sprintf( ', %s', $venue['address'] );
 		}
 
 		$params = array(
@@ -782,8 +782,8 @@ class Event {
 		$location       = $venue['name'] ?? '';
 		$description    = $this->get_calendar_description();
 
-		if ( ! empty( $venue['full_address'] ) ) {
-			$location .= sprintf( ', %s', $venue['full_address'] );
+		if ( ! empty( $venue['address'] ) ) {
+			$location .= sprintf( ', %s', $venue['address'] );
 		}
 
 		$args = array(

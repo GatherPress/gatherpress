@@ -76,8 +76,8 @@ class Test_Add_To_Calendar extends Base {
 			'datetime_end'   => '2020-05-11 17:00:00',
 		);
 
-		update_post_meta( $venue->ID, 'gatherpress_full_address', '123 Main Street, Montclair, NJ 07042' );
-		update_post_meta( $venue->ID, 'gatherpress_phone_number', '(123) 123-1234' );
+		update_post_meta( $venue->ID, 'gatherpress_address', '123 Main Street, Montclair, NJ 07042' );
+		update_post_meta( $venue->ID, 'gatherpress_phone', '(123) 123-1234' );
 		update_post_meta( $venue->ID, 'gatherpress_website', 'https://gatherpress.org/' );
 		wp_set_post_terms( $post->ID, '_unit-test-venue', Venue::TAXONOMY );
 

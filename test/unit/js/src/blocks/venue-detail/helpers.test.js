@@ -14,15 +14,15 @@ import {
 
 describe( 'Venue Detail helpers', () => {
 	describe( 'VENUE_FIELD_MAPPING', () => {
-		it( 'should map address to gatherpress_full_address', () => {
+		it( 'should map address to gatherpress_address', () => {
 			expect( VENUE_FIELD_MAPPING.address ).toBe(
-				'gatherpress_full_address'
+				'gatherpress_address'
 			);
 		} );
 
-		it( 'should map phone to gatherpress_phone_number', () => {
+		it( 'should map phone to gatherpress_phone', () => {
 			expect( VENUE_FIELD_MAPPING.phone ).toBe(
-				'gatherpress_phone_number'
+				'gatherpress_phone'
 			);
 		} );
 
@@ -88,14 +88,14 @@ describe( 'Venue Detail helpers', () => {
 	} );
 
 	describe( 'getMetaKey', () => {
-		it( 'should return gatherpress_full_address for address field type', () => {
+		it( 'should return gatherpress_address for address field type', () => {
 			expect( getMetaKey( 'address' ) ).toBe(
-				'gatherpress_full_address'
+				'gatherpress_address'
 			);
 		} );
 
-		it( 'should return gatherpress_phone_number for phone field type', () => {
-			expect( getMetaKey( 'phone' ) ).toBe( 'gatherpress_phone_number' );
+		it( 'should return gatherpress_phone for phone field type', () => {
+			expect( getMetaKey( 'phone' ) ).toBe( 'gatherpress_phone' );
 		} );
 
 		it( 'should return gatherpress_website for url field type', () => {

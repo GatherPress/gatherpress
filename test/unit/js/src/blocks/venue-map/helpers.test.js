@@ -73,7 +73,7 @@ describe( 'RegenerateMapButton', () => {
 		mockApiFetch.mockResolvedValue( { descriptors: {}, reason: '' } );
 		mockCurrentEntityRecord = {
 			id: 42,
-			meta: { gatherpress_full_address: '' },
+			meta: { gatherpress_address: '' },
 		};
 	} );
 
@@ -179,7 +179,7 @@ describe( 'RegenerateMapButton', () => {
 			records[ 0 ].meta.gatherpress_venue_static_map[ '18x300' ].url
 		).toBe( 'https://example.test/42-abc.png' );
 		// Existing meta fields must be preserved.
-		expect( records[ 0 ].meta.gatherpress_full_address ).toBe( '' );
+		expect( records[ 0 ].meta.gatherpress_address ).toBe( '' );
 	} );
 
 	it( 'skips the store patch when no cached record exists yet', async () => {

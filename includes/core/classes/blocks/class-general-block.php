@@ -134,15 +134,12 @@ class General_Block {
 	/**
 	 * Processes blocks with venue conditional classes.
 	 *
-	 * This method hides blocks (and their contents) when the associated venue field
-	 * is empty. It uses a naming convention to automatically map class names to meta keys:
-	 *
-	 * - Class: `gatherpress--has-venue-phone`   → meta: `gatherpress_phone_number`
-	 * - Class: `gatherpress--has-venue-address` → meta: `gatherpress_full_address`
-	 * - Class: `gatherpress--has-venue-website` → meta: `gatherpress_website`
-	 *
-	 * This allows wrapper blocks (like Groups/Rows) containing icons and venue-detail blocks
-	 * to be hidden together when the field has no value.
+	 * Hides a block (and its inner content) when the associated venue meta is
+	 * empty. The class suffix maps directly to the venue meta key suffix:
+	 * `gatherpress--has-venue-{field}` checks `gatherpress_{field}` for the
+	 * known venue fields (address, phone, website). This lets wrapper blocks
+	 * like Groups/Rows that contain an icon and a venue-detail block be hidden
+	 * together when the underlying field has no value.
 	 *
 	 * @since 1.0.0
 	 *
@@ -159,21 +156,12 @@ class General_Block {
 			return $block_content;
 		}
 
-		// Extract field name from class (e.g., "phone" from "gatherpress--has-venue-phone").
 		$field_name = $matches[1];
 
-		// Map class name to individual venue meta key.
-		$field_mapping = array(
-			'phone'   => 'gatherpress_phone_number',
-			'address' => 'gatherpress_full_address',
-			'website' => 'gatherpress_website',
-		);
-
-		if ( ! isset( $field_mapping[ $field_name ] ) ) {
+		// Allow-list of venue meta-key suffixes; anything else stays as-is.
+		if ( ! in_array( $field_name, array( 'address', 'phone', 'website' ), true ) ) {
 			return $block_content;
 		}
-
-		$meta_key = $field_mapping[ $field_name ];
 
 		// Get the venue post ID from the current context.
 		// First try to get it from block context, then fall back to current post.
@@ -184,7 +172,7 @@ class General_Block {
 			return $block_content;
 		}
 
-		$field_value = (string) get_post_meta( $venue_post_id, $meta_key, true );
+		$field_value = (string) get_post_meta( $venue_post_id, Utility::prefix_key( $field_name ), true );
 
 		// If the field is empty, hide the entire block.
 		if ( '' === $field_value ) {

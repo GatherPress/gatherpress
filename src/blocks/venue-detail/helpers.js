@@ -10,8 +10,8 @@
  * @type {Object}
  */
 export const VENUE_FIELD_MAPPING = {
-	address: 'gatherpress_full_address',
-	phone: 'gatherpress_phone_number',
+	address: 'gatherpress_address',
+	phone: 'gatherpress_phone',
 	url: 'gatherpress_website',
 };
 

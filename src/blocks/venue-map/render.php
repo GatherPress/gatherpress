@@ -42,7 +42,7 @@ $gatherpress_post_type   = (string) get_post_type();
 $gatherpress_venue_setup = Venue_Setup::get_instance();
 $gatherpress_venue_meta  = $gatherpress_venue_setup->get_venue_meta( $gatherpress_post_id, $gatherpress_post_type );
 
-$gatherpress_address = (string) ( $gatherpress_venue_meta['full_address'] ?? '' );
+$gatherpress_address = (string) ( $gatherpress_venue_meta['address'] ?? '' );
 
 if ( '' === $gatherpress_address ) {
 	return;
@@ -138,7 +138,7 @@ if ( ! empty( $gatherpress_styles ) ) {
 
 if ( 'interactive' === $gatherpress_render_mode ) {
 	$gatherpress_block_attrs = array(
-		'fullAddress'  => $gatherpress_address,
+		'address'      => $gatherpress_address,
 		'latitude'     => (string) ( $gatherpress_venue_meta['latitude'] ?? '' ),
 		'longitude'    => (string) ( $gatherpress_venue_meta['longitude'] ?? '' ),
 		'mapZoomLevel' => $attributes['zoom'] ?? Venue_Map::DEFAULT_ZOOM,

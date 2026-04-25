@@ -246,7 +246,7 @@ class Venue_Setup {
 	 */
 	public function maybe_register_post_meta( string $post_type ): void {
 		$venue_information_meta = array(
-			'gatherpress_full_address' => array(
+			'gatherpress_address'   => array(
 				'auth_callback'     => array( $this, 'can_edit_posts_meta' ),
 				'sanitize_callback' => 'sanitize_text_field',
 				'show_in_rest'      => true,
@@ -255,7 +255,7 @@ class Venue_Setup {
 				'default'           => '',
 				'revisions_enabled' => true,
 			),
-			'gatherpress_phone_number' => array(
+			'gatherpress_phone'     => array(
 				'auth_callback'     => array( $this, 'can_edit_posts_meta' ),
 				'sanitize_callback' => 'sanitize_text_field',
 				'show_in_rest'      => true,
@@ -264,7 +264,7 @@ class Venue_Setup {
 				'default'           => '',
 				'revisions_enabled' => true,
 			),
-			'gatherpress_website'      => array(
+			'gatherpress_website'   => array(
 				'auth_callback'     => array( $this, 'can_edit_posts_meta' ),
 				'sanitize_callback' => 'sanitize_url',
 				'show_in_rest'      => true,
@@ -273,7 +273,7 @@ class Venue_Setup {
 				'default'           => '',
 				'revisions_enabled' => true,
 			),
-			'gatherpress_latitude'     => array(
+			'gatherpress_latitude'  => array(
 				'auth_callback'     => array( $this, 'can_edit_posts_meta' ),
 				'sanitize_callback' => 'sanitize_text_field',
 				'show_in_rest'      => true,
@@ -282,7 +282,7 @@ class Venue_Setup {
 				'default'           => '',
 				'revisions_enabled' => true,
 			),
-			'gatherpress_longitude'    => array(
+			'gatherpress_longitude' => array(
 				'auth_callback'     => array( $this, 'can_edit_posts_meta' ),
 				'sanitize_callback' => 'sanitize_text_field',
 				'show_in_rest'      => true,
@@ -296,7 +296,7 @@ class Venue_Setup {
 			// can preview the cached static image when the user picks
 			// renderMode="static". Writes are denied ­— the server-side
 			// pipeline is the only thing allowed to populate this meta.
-			Venue_Map::META_KEY        => array(
+			Venue_Map::META_KEY     => array(
 				'auth_callback' => '__return_false',
 				'show_in_rest'  => array(
 					'schema' => array(

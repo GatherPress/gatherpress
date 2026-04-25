@@ -902,8 +902,8 @@ class Test_General_Block extends Base {
 		$this->go_to( get_permalink( $post_id ) );
 
 		// Phone number meta is empty; address and website are set.
-		add_post_meta( $post_id, 'gatherpress_phone_number', '' );
-		add_post_meta( $post_id, 'gatherpress_full_address', '123 Main St' );
+		add_post_meta( $post_id, 'gatherpress_phone', '' );
+		add_post_meta( $post_id, 'gatherpress_address', '123 Main St' );
 		add_post_meta( $post_id, 'gatherpress_website', 'https://example.com' );
 
 		$block_content = '<div class="gatherpress--has-venue-phone">Phone content</div>';
@@ -936,8 +936,8 @@ class Test_General_Block extends Base {
 		// Set up the post context.
 		$this->go_to( get_permalink( $post_id ) );
 
-		add_post_meta( $post_id, 'gatherpress_phone_number', '555-123-4567' );
-		add_post_meta( $post_id, 'gatherpress_full_address', '123 Main St' );
+		add_post_meta( $post_id, 'gatherpress_phone', '555-123-4567' );
+		add_post_meta( $post_id, 'gatherpress_address', '123 Main St' );
 		add_post_meta( $post_id, 'gatherpress_website', 'https://example.com' );
 
 		$block_content = '<div class="gatherpress--has-venue-phone">Phone content</div>';
@@ -971,7 +971,7 @@ class Test_General_Block extends Base {
 		// Set up the post context.
 		$this->go_to( get_permalink( $post_id ) );
 
-		add_post_meta( $post_id, 'gatherpress_full_address', '123 Main St, City, State 12345' );
+		add_post_meta( $post_id, 'gatherpress_address', '123 Main St, City, State 12345' );
 
 		$block_content = '<div class="gatherpress--has-venue-address">Address content</div>';
 		$block         = array(
@@ -1038,7 +1038,7 @@ class Test_General_Block extends Base {
 		$this->go_to( get_permalink( $post_id ) );
 
 		// Address and website are set, phone is left unset entirely.
-		add_post_meta( $post_id, 'gatherpress_full_address', '123 Main St' );
+		add_post_meta( $post_id, 'gatherpress_address', '123 Main St' );
 		add_post_meta( $post_id, 'gatherpress_website', 'https://example.com' );
 
 		$block_content = '<div class="gatherpress--has-venue-phone">Phone content</div>';
@@ -1068,8 +1068,8 @@ class Test_General_Block extends Base {
 		$general_block = General_Block::get_instance();
 		$venue_post_id = $this->factory->post->create( array( 'post_type' => 'gatherpress_venue' ) );
 
-		add_post_meta( $venue_post_id, 'gatherpress_phone_number', '555-123-4567' );
-		add_post_meta( $venue_post_id, 'gatherpress_full_address', '123 Main St' );
+		add_post_meta( $venue_post_id, 'gatherpress_phone', '555-123-4567' );
+		add_post_meta( $venue_post_id, 'gatherpress_address', '123 Main St' );
 		add_post_meta( $venue_post_id, 'gatherpress_website', 'https://example.com' );
 
 		$block_content = '<div class="gatherpress--has-venue-phone">Phone content</div>';
