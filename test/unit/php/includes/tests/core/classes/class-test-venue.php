@@ -46,41 +46,33 @@ class Test_Venue extends Base {
 	}
 
 	/**
-	 * Returns parsed venue information when JSON meta is present.
+	 * Returns the venue information when individual meta keys are populated.
 	 *
 	 * @covers ::get_information
 	 *
 	 * @return void
 	 */
-	public function test_get_information_reads_meta_json(): void {
+	public function test_get_information_reads_individual_meta(): void {
 		$post_id = $this->factory->post->create(
 			array( 'post_type' => Venue::POST_TYPE )
 		);
-		add_post_meta(
-			$post_id,
-			'gatherpress_venue_information',
-			wp_json_encode(
-				array(
-					'fullAddress' => '123 Main St',
-					'phoneNumber' => '555-0100',
-					'website'     => 'https://example.com',
-					'latitude'    => '40.7128',
-					'longitude'   => '-74.0060',
-				)
-			)
-		);
+		add_post_meta( $post_id, 'gatherpress_address', '123 Main St' );
+		add_post_meta( $post_id, 'gatherpress_phone', '555-0100' );
+		add_post_meta( $post_id, 'gatherpress_website', 'https://example.com' );
+		add_post_meta( $post_id, 'gatherpress_latitude', '40.7128' );
+		add_post_meta( $post_id, 'gatherpress_longitude', '-74.006' );
 
 		$info = ( new Venue( $post_id ) )->get_information();
 
-		$this->assertSame( '123 Main St', $info['fullAddress'] );
-		$this->assertSame( '555-0100', $info['phoneNumber'] );
+		$this->assertSame( '123 Main St', $info['address'] );
+		$this->assertSame( '555-0100', $info['phone'] );
 		$this->assertSame( 'https://example.com', $info['website'] );
 		$this->assertSame( '40.7128', $info['latitude'] );
-		$this->assertSame( '-74.0060', $info['longitude'] );
+		$this->assertSame( '-74.006', $info['longitude'] );
 	}
 
 	/**
-	 * Returns a fully-populated empty-string shape when no JSON meta exists.
+	 * Returns a fully-populated empty-string shape when no venue meta exists.
 	 *
 	 * The array shape is stable so callers can index into it without guards.
 	 *
@@ -97,36 +89,17 @@ class Test_Venue extends Base {
 
 		$this->assertSame(
 			array(
-				'fullAddress' => '',
-				'phoneNumber' => '',
-				'website'     => '',
-				'latitude'    => '',
-				'longitude'   => '',
+				'address'   => '',
+				'latitude'  => '',
+				'longitude' => '',
+				'phone'     => '',
+				'website'   => '',
 			),
 			$info,
 			'Failed to assert the empty-state default shape when no venue meta is stored.'
 		);
 	}
 
-	/**
-	 * Malformed JSON meta falls back to the empty shape rather than throwing.
-	 *
-	 * @covers ::get_information
-	 *
-	 * @return void
-	 */
-	public function test_get_information_handles_invalid_json(): void {
-		$post_id = $this->factory->post->create(
-			array( 'post_type' => Venue::POST_TYPE )
-		);
-		add_post_meta( $post_id, 'gatherpress_venue_information', 'not json' );
-
-		$info = ( new Venue( $post_id ) )->get_information();
-
-		$this->assertSame( '', $info['fullAddress'] );
-		$this->assertSame( '', $info['latitude'] );
-		$this->assertSame( '', $info['longitude'] );
-	}
 
 	/**
 	 * Coverage for get_term_slug — derives the slug from the instance's post_name.
@@ -222,11 +195,11 @@ class Test_Venue extends Base {
 
 		$this->assertSame(
 			array(
-				'fullAddress' => '',
-				'phoneNumber' => '',
-				'website'     => '',
-				'latitude'    => '',
-				'longitude'   => '',
+				'address'   => '',
+				'latitude'  => '',
+				'longitude' => '',
+				'phone'     => '',
+				'website'   => '',
 			),
 			( new Venue( $post_id ) )->get_information()
 		);

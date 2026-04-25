@@ -18,6 +18,7 @@ namespace GatherPress\Core;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
+use GatherPress\Core\Utility;
 use WP_Post;
 use WP_Term;
 
@@ -162,49 +163,43 @@ class Venue {
 	}
 
 	/**
-	 * Returns the parsed venue information for this venue.
+	 * Returns the venue information for this venue.
 	 *
-	 * Reads the `gatherpress_venue_information` JSON meta and returns its
-	 * components with empty-string fallbacks for any missing keys, so callers
-	 * can treat the array shape as stable. Also returns the empty shape when
-	 * this instance does not wrap a real venue.
+	 * Reads the individual `gatherpress_address`, `gatherpress_phone`,
+	 * `gatherpress_website`, `gatherpress_latitude`, and `gatherpress_longitude`
+	 * meta keys and returns them with empty-string fallbacks so callers can
+	 * treat the array shape as stable. Also returns the empty shape when this
+	 * instance does not wrap a real venue.
 	 *
 	 * @since 1.0.0
 	 *
 	 * @return array{
-	 *     fullAddress: string,
-	 *     phoneNumber: string,
-	 *     website: string,
+	 *     address: string,
 	 *     latitude: string,
-	 *     longitude: string
+	 *     longitude: string,
+	 *     phone: string,
+	 *     website: string
 	 * }
 	 */
 	public function get_information(): array {
-		$defaults = array(
-			'fullAddress' => '',
-			'phoneNumber' => '',
-			'website'     => '',
-			'latitude'    => '',
-			'longitude'   => '',
-		);
+		$fields      = array( 'address', 'latitude', 'longitude', 'phone', 'website' );
+		$information = array_fill_keys( $fields, '' );
 
 		if ( ! $this->venue instanceof WP_Post ) {
-			return $defaults;
+			return $information;
 		}
 
-		$raw    = (string) get_post_meta( $this->venue->ID, 'gatherpress_venue_information', true );
-		$parsed = json_decode( $raw, true );
+		// Read once and pluck — get_post_meta( $id ) primes the meta cache and
+		// returns every key in a single call, avoiding N sequential lookups.
+		$all_meta = get_post_meta( $this->venue->ID );
 
-		if ( ! is_array( $parsed ) ) {
-			$parsed = array();
+		foreach ( $fields as $field ) {
+			$meta_key              = Utility::prefix_key( $field );
+			$information[ $field ] = isset( $all_meta[ $meta_key ][0] )
+				? (string) $all_meta[ $meta_key ][0]
+				: '';
 		}
 
-		return array(
-			'fullAddress' => isset( $parsed['fullAddress'] ) ? (string) $parsed['fullAddress'] : '',
-			'phoneNumber' => isset( $parsed['phoneNumber'] ) ? (string) $parsed['phoneNumber'] : '',
-			'website'     => isset( $parsed['website'] ) ? (string) $parsed['website'] : '',
-			'latitude'    => isset( $parsed['latitude'] ) ? (string) $parsed['latitude'] : '',
-			'longitude'   => isset( $parsed['longitude'] ) ? (string) $parsed['longitude'] : '',
-		);
+		return $information;
 	}
 }

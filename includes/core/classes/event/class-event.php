@@ -21,6 +21,7 @@ use GatherPress\Core\Rsvp_Setup;
 use GatherPress\Core\Settings;
 use GatherPress\Core\Utility;
 use GatherPress\Core\Validate;
+use GatherPress\Core\Venue;
 use GatherPress\Core\Venue_Setup;
 use WP_Post;
 
@@ -523,52 +524,68 @@ class Event {
 	 * Get venue information associated with the event.
 	 *
 	 * This method retrieves information about the venue associated with the event,
-	 * including its name, full address, phone number, website, permalink, and whether it's an online event.
+	 * including its address, name, permalink, phone, and website. Online-event
+	 * status is not part of this shape — use the venue taxonomy directly when
+	 * the caller needs to distinguish online events.
 	 *
 	 * @since 1.0.0
 	 *
 	 * @return array An array containing venue information:
+	 *               - 'address' (string): The address of the venue.
 	 *               - 'name' (string): The name of the venue.
-	 *               - 'full_address' (string): The full address of the venue.
-	 *               - 'phone_number' (string): The phone number of the venue.
-	 *               - 'website' (string): The website URL of the venue.
 	 *               - 'permalink' (string): The permalink (URL) of the venue.
-	 *               - 'is_online_event' (bool): Indicates whether the event is an online event (true/false).
+	 *               - 'phone' (string): The phone number of the venue.
+	 *               - 'website' (string): The website URL of the venue.
 	 */
 	public function get_venue_information(): array {
 		$venue_information = array(
-			'name'            => '',
-			'full_address'    => '',
-			'phone_number'    => '',
-			'website'         => '',
-			'permalink'       => '',
-			'is_online_event' => false,
+			'address'   => '',
+			'name'      => '',
+			'permalink' => '',
+			'phone'     => '',
+			'website'   => '',
 		);
 
 		$event_post_type = (string) get_post_type( $this->event );
-		$taxonomy        = Venue_Setup::get_instance()->taxonomy_for_event_post_type( $event_post_type );
-		$term            = current( (array) get_the_terms( $this->event, $taxonomy ) );
-		$venue           = null;
+		$venue_setup     = Venue_Setup::get_instance();
+		$taxonomy        = $venue_setup->taxonomy_for_event_post_type( $event_post_type );
+		$venue_terms     = (array) get_the_terms( $this->event, $taxonomy );
 
-		if ( ! empty( $term ) && is_a( $term, 'WP_Term' ) ) {
-			$venue_information['name'] = $term->name;
-			$venue                     = Venue_Setup::get_instance()->get_venue_post_from_term_slug( $term->slug );
+		// Prefer a real venue term (leading-underscore prefix) so a hybrid
+		// event with both a physical venue and the `online-event` sentinel
+		// attached surfaces the venue name. When no real venue term is
+		// present, fall back to the first non-prefixed term encountered —
+		// typically `online-event` in production, but kept generic so any
+		// hand-inserted or test-only term still resolves to a name (the
+		// previous behavior of `current( get_the_terms() )`).
+		$term     = null;
+		$fallback = null;
 
-			if ( 'online-event' === $term->slug ) {
-				$venue_information['is_online_event'] = true;
+		foreach ( $venue_terms as $candidate ) {
+			if ( ! is_a( $candidate, 'WP_Term' ) ) {
+				continue;
 			}
+
+			if ( $venue_setup->is_venue_term_slug( $candidate->slug ) ) {
+				$term = $candidate;
+				break;
+			}
+
+			$fallback = $fallback ?? $candidate;
+		}
+
+		$term  = $term ?? $fallback;
+		$venue = null;
+
+		if ( is_a( $term, 'WP_Term' ) ) {
+			$venue_information['name'] = $term->name;
+			$venue                     = $venue_setup->get_venue_post_from_term_slug( $term->slug );
 		}
 
 		if ( is_a( $venue, 'WP_Post' ) ) {
-			$venue_meta = json_decode( get_post_meta( $venue->ID, 'gatherpress_venue_information', true ) );
-			// phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
-			$venue_information['full_address'] = $venue_meta->fullAddress ?? '';
-			// phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
-			$venue_information['phone_number'] = $venue_meta->phoneNumber ?? '';
-			$venue_information['website']      = $venue_meta->website ?? '';
-			$venue_information['latitude']     = $venue_meta->latitude ?? '';
-			$venue_information['longitude']    = $venue_meta->longitude ?? '';
-			$venue_information['permalink']    = (string) get_permalink( $venue->ID );
+			$venue_information = array_merge( $venue_information, ( new Venue( $venue->ID ) )->get_information() );
+
+			$venue_information['permalink'] = (string) get_permalink( $venue->ID );
 		}
 
 		return $venue_information;
@@ -645,8 +662,8 @@ class Event {
 		$location    = $venue['name'];
 		$description = $this->get_calendar_description();
 
-		if ( ! empty( $venue['full_address'] ) ) {
-			$location .= sprintf( ', %s', $venue['full_address'] );
+		if ( ! empty( $venue['address'] ) ) {
+			$location .= sprintf( ', %s', $venue['address'] );
 		}
 
 		$params = array(
@@ -693,8 +710,8 @@ class Event {
 		$location    = $venue['name'];
 		$description = $this->get_calendar_description();
 
-		if ( ! empty( $venue['full_address'] ) ) {
-			$location .= sprintf( ', %s', $venue['full_address'] );
+		if ( ! empty( $venue['address'] ) ) {
+			$location .= sprintf( ', %s', $venue['address'] );
 		}
 
 		$params = array(
@@ -787,8 +804,8 @@ class Event {
 		$location       = $venue['name'] ?? '';
 		$description    = $this->get_calendar_description();
 
-		if ( ! empty( $venue['full_address'] ) ) {
-			$location .= sprintf( ', %s', $venue['full_address'] );
+		if ( ! empty( $venue['address'] ) ) {
+			$location .= sprintf( ', %s', $venue['address'] );
 		}
 
 		$args = array(

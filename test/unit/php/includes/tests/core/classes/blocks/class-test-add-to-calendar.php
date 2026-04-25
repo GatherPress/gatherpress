@@ -54,15 +54,15 @@ class Test_Add_To_Calendar extends Base {
 	 * @return void
 	 */
 	public function test_replace_calendar_placeholders_with_all_links(): void {
-		$instance   = Add_To_Calendar::get_instance();
-		$venue      = $this->mock->post(
+		$instance = Add_To_Calendar::get_instance();
+		$venue    = $this->mock->post(
 			array(
 				'post_type'  => Venue::POST_TYPE,
 				'post_title' => 'Unit Test Venue',
 				'post_name'  => 'unit-test-venue',
 			)
 		)->get();
-		$post       = $this->mock->post(
+		$post     = $this->mock->post(
 			array(
 				'post_title'   => 'Unit Test Event',
 				'post_type'    => 'gatherpress_event',
@@ -70,15 +70,15 @@ class Test_Add_To_Calendar extends Base {
 				'post_date'    => '2020-05-11 00:00:00',
 			)
 		)->get();
-		$venue_info = '{"fullAddress":"123 Main Street, Montclair, NJ 07042",' .
-			'"phoneNumber":"(123) 123-1234","website":"https://gatherpress.org/"}';
-		$event      = new Event( $post->ID );
-		$params     = array(
+		$event    = new Event( $post->ID );
+		$params   = array(
 			'datetime_start' => '2020-05-11 15:00:00',
 			'datetime_end'   => '2020-05-11 17:00:00',
 		);
 
-		update_post_meta( $venue->ID, 'gatherpress_venue_information', $venue_info );
+		update_post_meta( $venue->ID, 'gatherpress_address', '123 Main Street, Montclair, NJ 07042' );
+		update_post_meta( $venue->ID, 'gatherpress_phone', '(123) 123-1234' );
+		update_post_meta( $venue->ID, 'gatherpress_website', 'https://gatherpress.org/' );
 		wp_set_post_terms( $post->ID, '_unit-test-venue', Venue::TAXONOMY );
 
 		$event->save_datetimes( $params );

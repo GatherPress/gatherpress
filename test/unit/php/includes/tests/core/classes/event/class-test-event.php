@@ -395,23 +395,23 @@ class Test_Event extends Base {
 	 * @return void
 	 */
 	public function test_get_venue_information(): void {
-		$venue      = $this->mock->post(
+		$venue    = $this->mock->post(
 			array(
 				'post_type'  => Venue::POST_TYPE,
 				'post_title' => 'Unit Test Venue',
 				'post_name'  => 'unit-test-venue',
 			)
 		)->get();
-		$event_id   = $this->mock->post(
+		$event_id = $this->mock->post(
 			array(
 				'post_type' => Event::POST_TYPE,
 			)
 		)->get()->ID;
-		$event      = new Event( $event_id );
-		$venue_info = '{"fullAddress":"123 Main Street, Montclair, NJ 07042",'
-			. '"phoneNumber":"(123) 123-1234","website":"https://gatherpress.org/"}';
+		$event    = new Event( $event_id );
 
-		update_post_meta( $venue->ID, 'gatherpress_venue_information', $venue_info );
+		update_post_meta( $venue->ID, 'gatherpress_address', '123 Main Street, Montclair, NJ 07042' );
+		update_post_meta( $venue->ID, 'gatherpress_phone', '(123) 123-1234' );
+		update_post_meta( $venue->ID, 'gatherpress_website', 'https://gatherpress.org/' );
 		wp_set_post_terms( $event_id, '_unit-test-venue', Venue::TAXONOMY );
 
 		$response = $event->get_venue_information();
@@ -423,12 +423,12 @@ class Test_Event extends Base {
 		);
 		$this->assertSame(
 			'123 Main Street, Montclair, NJ 07042',
-			$response['full_address'],
+			$response['address'],
 			'Failed to assert that full address matches.'
 		);
 		$this->assertSame(
 			'(123) 123-1234',
-			$response['phone_number'],
+			$response['phone'],
 			'Failed to assert that phone number matches.'
 		);
 		$this->assertSame(
@@ -440,10 +440,6 @@ class Test_Event extends Base {
 			get_the_permalink( $venue->ID ),
 			$response['permalink'],
 			'Failed to assert that permalink matches.'
-		);
-		$this->assertEmpty(
-			$response['is_online_event'],
-			'Failed to assert that is online event is false.'
 		);
 
 		wp_set_post_terms( $event_id, 'Online event', Venue::TAXONOMY );
@@ -457,12 +453,12 @@ class Test_Event extends Base {
 		);
 
 		$this->assertEmpty(
-			$response['full_address'],
+			$response['address'],
 			'Failed to assert that full address is empty.'
 		);
 
 		$this->assertEmpty(
-			$response['phone_number'],
+			$response['phone'],
 			'Failed to assert that phone number is empty.'
 		);
 
@@ -470,10 +466,74 @@ class Test_Event extends Base {
 			$response['website'],
 			'Failed to assert that website is empty.'
 		);
+	}
 
-		$this->assertTrue(
-			$response['is_online_event'],
-			'Failed to assert that is online event is true.'
+	/**
+	 * Events with no venue term attached return the empty default shape.
+	 *
+	 * `get_the_terms()` returns `false` when no terms are assigned, which
+	 * casts to `[ false ]`. The foreach must skip the non-WP_Term entry and
+	 * leave `name` / `address` / etc. at their defaults.
+	 *
+	 * @covers ::get_venue_information
+	 *
+	 * @return void
+	 */
+	public function test_get_venue_information_returns_empty_shape_when_no_terms_attached(): void {
+		$event_id = $this->mock->post(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		)->get()->ID;
+
+		$response = ( new Event( $event_id ) )->get_venue_information();
+
+		$this->assertSame( '', $response['name'], 'Expected empty venue name when no term is attached.' );
+		$this->assertSame( '', $response['address'], 'Expected empty address when no term is attached.' );
+		$this->assertSame( '', $response['phone'], 'Expected empty phone when no term is attached.' );
+		$this->assertSame( '', $response['website'], 'Expected empty website when no term is attached.' );
+		$this->assertSame( '', $response['permalink'], 'Expected empty permalink when no term is attached.' );
+	}
+
+	/**
+	 * Hybrid events with both a physical venue and the `online-event` sentinel
+	 * surface the physical venue's name and address rather than the sentinel.
+	 *
+	 * @covers ::get_venue_information
+	 *
+	 * @return void
+	 */
+	public function test_get_venue_information_prefers_venue_term_over_sentinel(): void {
+		$venue    = $this->mock->post(
+			array(
+				'post_type'  => Venue::POST_TYPE,
+				'post_title' => 'Hybrid Venue',
+				'post_name'  => 'hybrid-venue',
+			)
+		)->get();
+		$event_id = $this->mock->post(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		)->get()->ID;
+		$event    = new Event( $event_id );
+
+		update_post_meta( $venue->ID, 'gatherpress_address', '500 Hybrid Way' );
+
+		// Attach BOTH the venue term and the online-event sentinel.
+		wp_set_post_terms( $event_id, array( '_hybrid-venue', 'online-event' ), Venue::TAXONOMY );
+
+		$response = $event->get_venue_information();
+
+		$this->assertSame(
+			'Hybrid Venue',
+			$response['name'],
+			'Hybrid event should surface the physical venue name, not the sentinel.'
+		);
+		$this->assertSame(
+			'500 Hybrid Way',
+			$response['address'],
+			'Hybrid event should surface the physical venue address.'
 		);
 	}
 
@@ -504,8 +564,6 @@ class Test_Event extends Base {
 				'post_name'  => 'unit-test-venue',
 			)
 		)->get();
-		$venue_info  = '{"fullAddress":"123 Main Street, Montclair, NJ 07042",'
-			. '"phoneNumber":"(123) 123-1234","website":"https://gatherpress.org/"}';
 		$event       = new Event( $post->ID );
 		$description = sanitize_text_field( sprintf( 'For details go to %s', get_the_permalink( $post ) ) );
 		$params      = array(
@@ -513,7 +571,9 @@ class Test_Event extends Base {
 			'datetime_end'   => '2020-05-11 17:00:00',
 		);
 
-		update_post_meta( $venue->ID, 'gatherpress_venue_information', $venue_info );
+		update_post_meta( $venue->ID, 'gatherpress_address', '123 Main Street, Montclair, NJ 07042' );
+		update_post_meta( $venue->ID, 'gatherpress_phone', '(123) 123-1234' );
+		update_post_meta( $venue->ID, 'gatherpress_website', 'https://gatherpress.org/' );
 		wp_set_post_terms( $post->ID, '_unit-test-venue', Venue::TAXONOMY );
 
 		$event->save_datetimes( $params );
@@ -1214,23 +1274,22 @@ class Test_Event extends Base {
 	 * @return void
 	 */
 	public function test_get_ics_calendar_string_with_venue_full_address(): void {
-		$venue      = $this->mock->post(
+		$venue    = $this->mock->post(
 			array(
 				'post_type'  => Venue::POST_TYPE,
 				'post_title' => 'Test Venue',
 				'post_name'  => 'test-venue',
 			)
 		)->get();
-		$event_id   = $this->mock->post(
+		$event_id = $this->mock->post(
 			array(
 				'post_type'  => Event::POST_TYPE,
 				'post_title' => 'Test Event with Venue',
 			)
 		)->get()->ID;
-		$event      = new Event( $event_id );
-		$venue_info = '{"fullAddress":"123 Main Street, Montclair, NJ 07042"}';
+		$event    = new Event( $event_id );
 
-		update_post_meta( $venue->ID, 'gatherpress_venue_information', $venue_info );
+		update_post_meta( $venue->ID, 'gatherpress_address', '123 Main Street, Montclair, NJ 07042' );
 		wp_set_post_terms( $event_id, '_test-venue', Venue::TAXONOMY );
 
 		$start = new DateTime( '2025-06-15 14:30:00' );

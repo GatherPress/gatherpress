@@ -7,23 +7,29 @@ import { describe, expect, it } from '@jest/globals';
  * Internal dependencies.
  */
 import {
-	VENUE_FIELD_MAPPING,
+	VENUE_FIELDS,
 	cleanUrlForDisplay,
-	getJsonFieldName,
+	getMetaKey,
 } from '@src/blocks/venue-detail/helpers';
 
 describe( 'Venue Detail helpers', () => {
-	describe( 'VENUE_FIELD_MAPPING', () => {
-		it( 'should have address mapped to fullAddress', () => {
-			expect( VENUE_FIELD_MAPPING.address ).toBe( 'fullAddress' );
+	describe( 'VENUE_FIELDS', () => {
+		it( 'should pair the address fieldType with gatherpress_address', () => {
+			expect(
+				VENUE_FIELDS.find( ( f ) => 'address' === f.fieldType )?.metaKey
+			).toBe( 'gatherpress_address' );
 		} );
 
-		it( 'should have phone mapped to phoneNumber', () => {
-			expect( VENUE_FIELD_MAPPING.phone ).toBe( 'phoneNumber' );
+		it( 'should pair the phone fieldType with gatherpress_phone', () => {
+			expect(
+				VENUE_FIELDS.find( ( f ) => 'phone' === f.fieldType )?.metaKey
+			).toBe( 'gatherpress_phone' );
 		} );
 
-		it( 'should have url mapped to website', () => {
-			expect( VENUE_FIELD_MAPPING.url ).toBe( 'website' );
+		it( 'should pair the url fieldType with gatherpress_website', () => {
+			expect(
+				VENUE_FIELDS.find( ( f ) => 'url' === f.fieldType )?.metaKey
+			).toBe( 'gatherpress_website' );
 		} );
 	} );
 
@@ -83,37 +89,39 @@ describe( 'Venue Detail helpers', () => {
 		} );
 	} );
 
-	describe( 'getJsonFieldName', () => {
-		it( 'should return fullAddress for address field type', () => {
-			expect( getJsonFieldName( 'address' ) ).toBe( 'fullAddress' );
+	describe( 'getMetaKey', () => {
+		it( 'should return gatherpress_address for address field type', () => {
+			expect( getMetaKey( 'address' ) ).toBe(
+				'gatherpress_address'
+			);
 		} );
 
-		it( 'should return phoneNumber for phone field type', () => {
-			expect( getJsonFieldName( 'phone' ) ).toBe( 'phoneNumber' );
+		it( 'should return gatherpress_phone for phone field type', () => {
+			expect( getMetaKey( 'phone' ) ).toBe( 'gatherpress_phone' );
 		} );
 
-		it( 'should return website for url field type', () => {
-			expect( getJsonFieldName( 'url' ) ).toBe( 'website' );
+		it( 'should return gatherpress_website for url field type', () => {
+			expect( getMetaKey( 'url' ) ).toBe( 'gatherpress_website' );
 		} );
 
 		it( 'should return empty string for unknown field type', () => {
-			expect( getJsonFieldName( 'unknown' ) ).toBe( '' );
+			expect( getMetaKey( 'unknown' ) ).toBe( '' );
 		} );
 
 		it( 'should return empty string for text field type', () => {
-			expect( getJsonFieldName( 'text' ) ).toBe( '' );
+			expect( getMetaKey( 'text' ) ).toBe( '' );
 		} );
 
 		it( 'should return empty string for empty string', () => {
-			expect( getJsonFieldName( '' ) ).toBe( '' );
+			expect( getMetaKey( '' ) ).toBe( '' );
 		} );
 
 		it( 'should return empty string for null', () => {
-			expect( getJsonFieldName( null ) ).toBe( '' );
+			expect( getMetaKey( null ) ).toBe( '' );
 		} );
 
 		it( 'should return empty string for undefined', () => {
-			expect( getJsonFieldName( undefined ) ).toBe( '' );
+			expect( getMetaKey( undefined ) ).toBe( '' );
 		} );
 	} );
 } );
