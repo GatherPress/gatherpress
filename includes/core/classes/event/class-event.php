@@ -524,26 +524,26 @@ class Event {
 	 * Get venue information associated with the event.
 	 *
 	 * This method retrieves information about the venue associated with the event,
-	 * including its name, address, phone, website, permalink, and whether it's an online event.
+	 * including its address, online-event flag, name, permalink, phone, and website.
 	 *
 	 * @since 1.0.0
 	 *
 	 * @return array An array containing venue information:
-	 *               - 'name' (string): The name of the venue.
 	 *               - 'address' (string): The address of the venue.
+	 *               - 'is_online_event' (bool): Indicates whether the event is an online event (true/false).
+	 *               - 'name' (string): The name of the venue.
+	 *               - 'permalink' (string): The permalink (URL) of the venue.
 	 *               - 'phone' (string): The phone number of the venue.
 	 *               - 'website' (string): The website URL of the venue.
-	 *               - 'permalink' (string): The permalink (URL) of the venue.
-	 *               - 'is_online_event' (bool): Indicates whether the event is an online event (true/false).
 	 */
 	public function get_venue_information(): array {
 		$venue_information = array(
-			'name'            => '',
 			'address'         => '',
+			'is_online_event' => false,
+			'name'            => '',
+			'permalink'       => '',
 			'phone'           => '',
 			'website'         => '',
-			'permalink'       => '',
-			'is_online_event' => false,
 		);
 
 		$event_post_type = (string) get_post_type( $this->event );

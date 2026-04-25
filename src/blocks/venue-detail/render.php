@@ -16,7 +16,7 @@ if ( ! isset( $attributes ) || ! is_array( $attributes ) ) {
 $gatherpress_field_type  = $attributes['fieldType'] ?? 'text';
 $gatherpress_placeholder = $attributes['placeholder'] ?? '';
 
-// 'url' is the block-attribute alias for the website field; otherwise the
+// 'url' is the input-type name for the website meta field; otherwise the
 // fieldType matches the venue meta-key suffix one-to-one.
 $gatherpress_meta_field = ( 'url' === $gatherpress_field_type ) ? 'website' : $gatherpress_field_type;
 

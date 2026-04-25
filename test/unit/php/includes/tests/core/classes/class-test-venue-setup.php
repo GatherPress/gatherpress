@@ -167,10 +167,10 @@ class Test_Venue_Setup extends Base {
 
 		$venue_information_keys = array(
 			'gatherpress_address',
-			'gatherpress_phone',
-			'gatherpress_website',
 			'gatherpress_latitude',
 			'gatherpress_longitude',
+			'gatherpress_phone',
+			'gatherpress_website',
 			'gatherpress_venue_static_map',
 		);
 
@@ -246,10 +246,10 @@ class Test_Venue_Setup extends Base {
 
 		$expected_keys = array(
 			'gatherpress_address',
-			'gatherpress_phone',
-			'gatherpress_website',
 			'gatherpress_latitude',
 			'gatherpress_longitude',
+			'gatherpress_phone',
+			'gatherpress_website',
 		);
 
 		foreach ( $expected_keys as $key ) {

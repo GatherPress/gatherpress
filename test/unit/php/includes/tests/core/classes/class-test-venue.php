@@ -90,10 +90,10 @@ class Test_Venue extends Base {
 		$this->assertSame(
 			array(
 				'address'   => '',
-				'phone'     => '',
-				'website'   => '',
 				'latitude'  => '',
 				'longitude' => '',
+				'phone'     => '',
+				'website'   => '',
 			),
 			$info,
 			'Failed to assert the empty-state default shape when no venue meta is stored.'
@@ -196,10 +196,10 @@ class Test_Venue extends Base {
 		$this->assertSame(
 			array(
 				'address'   => '',
-				'phone'     => '',
-				'website'   => '',
 				'latitude'  => '',
 				'longitude' => '',
+				'phone'     => '',
+				'website'   => '',
 			),
 			( new Venue( $post_id ) )->get_information()
 		);

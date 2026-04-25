@@ -122,10 +122,10 @@ The core identifier for venue post types. Enables venue address and contact data
 
 - Registration of five individual editor-writable post meta keys, each `show_in_rest` and bindable via `core/post-meta` block bindings:
     - `gatherpress_address`
-    - `gatherpress_phone`
-    - `gatherpress_website`
     - `gatherpress_latitude`
     - `gatherpress_longitude`
+    - `gatherpress_phone`
+    - `gatherpress_website`
 - Venue detail blocks (address, phone number, website)
 - Automatic creation and management of the corresponding `_gatherpress_venue` taxonomy term
 - `post_type_supports( $type, 'gatherpress-venue-information' )` is the canonical check for "is this a venue?"

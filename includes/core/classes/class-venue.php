@@ -18,6 +18,7 @@ namespace GatherPress\Core;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
+use GatherPress\Core\Utility;
 use WP_Post;
 use WP_Term;
 
@@ -174,31 +175,28 @@ class Venue {
 	 *
 	 * @return array{
 	 *     address: string,
-	 *     phone: string,
-	 *     website: string,
 	 *     latitude: string,
-	 *     longitude: string
+	 *     longitude: string,
+	 *     phone: string,
+	 *     website: string
 	 * }
 	 */
 	public function get_information(): array {
-		$defaults = array(
-			'address'   => '',
-			'phone'     => '',
-			'website'   => '',
-			'latitude'  => '',
-			'longitude' => '',
-		);
+		$fields      = array( 'address', 'latitude', 'longitude', 'phone', 'website' );
+		$information = array_fill_keys( $fields, '' );
 
 		if ( ! $this->venue instanceof WP_Post ) {
-			return $defaults;
+			return $information;
 		}
 
-		return array(
-			'address'   => (string) get_post_meta( $this->venue->ID, 'gatherpress_address', true ),
-			'phone'     => (string) get_post_meta( $this->venue->ID, 'gatherpress_phone', true ),
-			'website'   => (string) get_post_meta( $this->venue->ID, 'gatherpress_website', true ),
-			'latitude'  => (string) get_post_meta( $this->venue->ID, 'gatherpress_latitude', true ),
-			'longitude' => (string) get_post_meta( $this->venue->ID, 'gatherpress_longitude', true ),
-		);
+		foreach ( $fields as $field ) {
+			$information[ $field ] = (string) get_post_meta(
+				$this->venue->ID,
+				Utility::prefix_key( $field ),
+				true
+			);
+		}
+
+		return $information;
 	}
 }

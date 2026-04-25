@@ -18,8 +18,8 @@ import AddressAutocompleteField from './AddressAutocompleteField';
  *
  * This component allows users to input and update venue information, including full address,
  * phone number, and website. Each field is stored as its own post meta key
- * (gatherpress_address, gatherpress_phone, gatherpress_website,
- * gatherpress_latitude, gatherpress_longitude) so the values can be bound to
+ * (gatherpress_address, gatherpress_latitude, gatherpress_longitude,
+ * gatherpress_phone, gatherpress_website) so the values can be bound to
  * blocks via core/post-meta block bindings.
  *
  * @since 1.0.0
@@ -44,10 +44,10 @@ const VenueInformation = () => {
 	// Use meta as source of truth - no local state needed.
 	// editPost updates editor state, which is saved when user clicks Update.
 	const address = venueMeta.gatherpress_address || '';
-	const phone = venueMeta.gatherpress_phone || '';
-	const website = venueMeta.gatherpress_website || '';
 	const initialLat = venueMeta.gatherpress_latitude || '';
 	const initialLng = venueMeta.gatherpress_longitude || '';
+	const phone = venueMeta.gatherpress_phone || '';
+	const website = venueMeta.gatherpress_website || '';
 
 	// Use ref to track current address for geocoding without recreating callback.
 	const addressRef = useRef( address );
