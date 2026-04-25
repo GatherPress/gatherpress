@@ -21,7 +21,7 @@ add_filter(
 
 ## Files
 
-- [includes/core/classes/class-venue-map.php:1701](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/class-venue-map.php#L1701)
+- [includes/core/classes/class-venue-map.php:1705](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/class-venue-map.php#L1705)
 ```php
 apply_filters( 'gatherpress_venue_map_height', $default )
 ```
