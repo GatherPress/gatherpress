@@ -1,26 +1,27 @@
 <?php
 /**
- * Class handles unit tests for GatherPress\Core\Event.
+ * Class handles unit tests for GatherPress\Core\Event\Event.
  *
- * @package GatherPress\Core
+ * @package GatherPress\Core\Event
  * @since 1.0.0
  */
 
-namespace GatherPress\Tests\Core;
+namespace GatherPress\Tests\Core\Event;
 
 use DateTime;
 use DateTimeZone;
-use GatherPress\Core\Event;
+use GatherPress\Core\Event\Event;
 use GatherPress\Core\Rsvp;
 use GatherPress\Core\Venue;
 use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;
+use ReflectionClass;
 use WP_Post;
 
 /**
  * Class Test_Event.
  *
- * @coversDefaultClass \GatherPress\Core\Event
+ * @coversDefaultClass \GatherPress\Core\Event\Event
  */
 class Test_Event extends Base {
 	/**
@@ -42,6 +43,34 @@ class Test_Event extends Base {
 
 		$this->assertInstanceOf( WP_Post::class, Utility::get_hidden_property( $event, 'event' ) );
 		$this->assertInstanceOf( Rsvp::class, Utility::get_hidden_property( $event, 'rsvp' ) );
+	}
+
+	/**
+	 * Asserts that the prior fully-qualified class name `GatherPress\Core\Event` continues
+	 * to resolve to the current class `GatherPress\Core\Event\Event` via the alias map in
+	 * `includes/core/register-class-aliases.php`. Removing the alias entry would silently
+	 * break external consumers (other plugins, theme code) that reference the prior FQN —
+	 * this test fails loudly first.
+	 *
+	 * @return void
+	 */
+	public function test_prior_fqn_resolves_to_current_class(): void {
+		$prior_fqn = 'GatherPress\\Core\\Event';
+
+		$this->assertTrue(
+			class_exists( $prior_fqn ),
+			'The prior fully-qualified class name should resolve via the alias map.'
+		);
+
+		$reflection = new ReflectionClass( $prior_fqn );
+		$this->assertSame(
+			Event::class,
+			$reflection->getName(),
+			'The prior FQN should resolve to the current Event class.'
+		);
+
+		// Read a class constant through the prior FQN to confirm runtime usability.
+		$this->assertSame( Event::POST_TYPE, constant( $prior_fqn . '::POST_TYPE' ) );
 	}
 
 	/**

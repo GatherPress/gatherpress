@@ -5,18 +5,23 @@
  * The Event class is responsible for creating and managing instances of events within the GatherPress plugin.
  * It provides methods for working with event data, such as retrieving event details and managing RSVPs.
  *
- * @package GatherPress\Core
+ * @package GatherPress\Core\Event
  * @since 1.0.0
  */
 
-namespace GatherPress\Core;
+namespace GatherPress\Core\Event;
 
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use DateTimeZone;
 use Exception;
+use GatherPress\Core\Rsvp;
+use GatherPress\Core\Rsvp_Setup;
+use GatherPress\Core\Settings;
 use GatherPress\Core\Utility;
+use GatherPress\Core\Validate;
+use GatherPress\Core\Venue_Setup;
 use WP_Post;
 
 /**
