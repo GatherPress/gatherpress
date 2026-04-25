@@ -71,7 +71,7 @@ class Feed {
 	/**
 	 * Handle events feed queries by setting the appropriate parameters.
 	 *
-	 * This method works in conjunction with Event_Query::prepare_event_query_before_execution()
+	 * This method works in conjunction with Event\Query::prepare_event_query_before_execution()
 	 * to ensure feeds show upcoming events with proper sorting. Supports ?type=past parameter
 	 * to show past events instead of upcoming events.
 	 *
@@ -96,7 +96,7 @@ class Feed {
 
 			// Check if this is the events feed URL.
 			if ( str_contains( $request_uri, '/' . $rewrite_slug . '/' . $GLOBALS['wp_rewrite']->feed_base ) ) {
-				// Set the post type and let Event_Query handle the rest.
+				// Set the post type and let Event\Query handle the rest.
 				$query->set( 'post_type', get_post_types_by_support( 'gatherpress-event-date' ) );
 
 				// Check for type parameter to determine if we want past or upcoming events.

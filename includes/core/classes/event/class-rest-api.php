@@ -5,35 +5,43 @@
  * This file contains the Rest_Api class, which is responsible for registering and managing
  * various Event REST API endpoints within the GatherPress plugin.
  *
- * @package GatherPress\Core
+ * @package GatherPress\Core\Event
  * @since 1.0.0
  */
 
-namespace GatherPress\Core;
+namespace GatherPress\Core\Event;
 
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use Exception;
 use GatherPress\Core\Blocks\Rsvp_Template;
+use GatherPress\Core\Event;
 use GatherPress\Core\Rsvp;
 use GatherPress\Core\Rsvp_Form as Rsvp_Form_Core;
+use GatherPress\Core\Rsvp_Query;
+use GatherPress\Core\Rsvp_Setup;
+use GatherPress\Core\Rsvp_Token;
 use GatherPress\Core\Traits\Singleton;
+use GatherPress\Core\User;
+use GatherPress\Core\Utility;
+use GatherPress\Core\Validate;
 use WP_REST_Request;
 use WP_REST_Response;
 use WP_REST_Server;
 use WP_User;
 
 /**
- * Class Event_Rest_Api.
+ * Class Rest_Api.
  *
- * The Rest_Api class is responsible for registering and managing various REST API endpoints
- * used by the GatherPress plugin. It provides methods for defining routes, handling requests,
- * and delivering responses via the WordPress REST API infrastructure.
+ * Responsible for registering and managing various REST API endpoints used
+ * by the GatherPress plugin. It provides methods for defining routes,
+ * handling requests, and delivering responses via the WordPress REST API
+ * infrastructure.
  *
  * @since 1.0.0
  */
-class Event_Rest_Api {
+class Rest_Api {
 	/**
 	 * Enforces a single instance of this class.
 	 */
@@ -652,7 +660,7 @@ class Event_Rest_Api {
 			);
 		}
 
-		$query = Event_Query::get_instance()->get_events_list( $event_list_type, $max_number, $topics, $venues );
+		$query = Query::get_instance()->get_events_list( $event_list_type, $max_number, $topics, $venues );
 
 		if ( $query->have_posts() ) {
 			foreach ( $query->posts as $post_id ) {

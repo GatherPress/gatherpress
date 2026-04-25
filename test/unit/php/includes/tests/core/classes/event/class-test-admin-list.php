@@ -1,15 +1,15 @@
 <?php
 /**
- * Class handles unit tests for GatherPress\Core\Event_Admin_List.
+ * Class handles unit tests for GatherPress\Core\Event\Admin_List.
  *
- * @package GatherPress\Core
+ * @package GatherPress\Core\Event
  * @since 1.0.0
  */
 
-namespace GatherPress\Tests\Core;
+namespace GatherPress\Tests\Core\Event;
 
 use GatherPress\Core\Event;
-use GatherPress\Core\Event_Admin_List;
+use GatherPress\Core\Event\Admin_List;
 use GatherPress\Core\Rsvp;
 use GatherPress\Core\Venue;
 use GatherPress\Core\Venue_Setup;
@@ -18,11 +18,11 @@ use PMC\Unit_Test\Utility;
 use WP_Query;
 
 /**
- * Class Test_Event_Admin_List.
+ * Class Test_Admin_List.
  *
- * @coversDefaultClass \GatherPress\Core\Event_Admin_List
+ * @coversDefaultClass \GatherPress\Core\Event\Admin_List
  */
-class Test_Event_Admin_List extends Base {
+class Test_Admin_List extends Base {
 	/**
 	 * Coverage for setup_hooks method.
 	 *
@@ -32,7 +32,7 @@ class Test_Event_Admin_List extends Base {
 	 * @return void
 	 */
 	public function test_setup_hooks(): void {
-		$instance = Event_Admin_List::get_instance();
+		$instance = Admin_List::get_instance();
 		$hooks    = array(
 			array(
 				'type'     => 'action',
@@ -77,7 +77,7 @@ class Test_Event_Admin_List extends Base {
 	 * @return void
 	 */
 	public function test_maybe_register_post_type_hooks(): void {
-		$instance = Event_Admin_List::get_instance();
+		$instance = Admin_List::get_instance();
 		$test_pt  = 'test_event_admin';
 
 		// Register a temporary post type with gatherpress-event-date support.
@@ -127,7 +127,7 @@ class Test_Event_Admin_List extends Base {
 	 * @return void
 	 */
 	public function test_maybe_register_post_type_hooks_skips_unsupported_post_type(): void {
-		$instance = Event_Admin_List::get_instance();
+		$instance = Admin_List::get_instance();
 
 		// Standard 'post' does not declare gatherpress-event-date support.
 		$instance->maybe_register_post_type_hooks( 'post' );
@@ -149,7 +149,7 @@ class Test_Event_Admin_List extends Base {
 	 * @return void
 	 */
 	public function test_default_sort_no_screen(): void {
-		$instance = Event_Admin_List::get_instance();
+		$instance = Admin_List::get_instance();
 
 		// Ensure no screen is set so get_current_screen() returns null.
 		unset( $GLOBALS['current_screen'] );
@@ -175,7 +175,7 @@ class Test_Event_Admin_List extends Base {
 	 * @return void
 	 */
 	public function test_default_sort_wrong_screen(): void {
-		$instance = Event_Admin_List::get_instance();
+		$instance = Admin_List::get_instance();
 
 		// Set current screen to a non-event screen.
 		set_current_screen( 'edit-post' );
@@ -204,7 +204,7 @@ class Test_Event_Admin_List extends Base {
 	 * @return void
 	 */
 	public function test_default_sort_orderby_already_set(): void {
-		$instance = Event_Admin_List::get_instance();
+		$instance = Admin_List::get_instance();
 
 		// Set current screen to event edit screen.
 		set_current_screen( 'edit-gatherpress_event' );
@@ -233,7 +233,7 @@ class Test_Event_Admin_List extends Base {
 	 * @return void
 	 */
 	public function test_default_sort_sets_defaults(): void {
-		$instance = Event_Admin_List::get_instance();
+		$instance = Admin_List::get_instance();
 
 		// Set current screen to event edit screen.
 		set_current_screen( 'edit-gatherpress_event' );
@@ -264,7 +264,7 @@ class Test_Event_Admin_List extends Base {
 	 * @return void
 	 */
 	public function test_sortable_columns(): void {
-		$instance = Event_Admin_List::get_instance();
+		$instance = Admin_List::get_instance();
 		$default  = array( 'unit' => 'test' );
 		$expects  = array(
 			'unit'     => 'test',
@@ -291,7 +291,7 @@ class Test_Event_Admin_List extends Base {
 	 * @return void
 	 */
 	public function test_views_edit_no_screen(): void {
-		$instance = Event_Admin_List::get_instance();
+		$instance = Admin_List::get_instance();
 
 		// Ensure no screen is set so get_current_screen() returns null.
 		unset( $GLOBALS['current_screen'] );
@@ -310,7 +310,7 @@ class Test_Event_Admin_List extends Base {
 	 * @return void
 	 */
 	public function test_views_edit_adds_links(): void {
-		$instance = Event_Admin_List::get_instance();
+		$instance = Admin_List::get_instance();
 
 		set_current_screen( 'edit-' . Event::POST_TYPE );
 
@@ -382,7 +382,7 @@ class Test_Event_Admin_List extends Base {
 	 * @return void
 	 */
 	public function test_views_edit_placement(): void {
-		$instance = Event_Admin_List::get_instance();
+		$instance = Admin_List::get_instance();
 
 		set_current_screen( 'edit-' . Event::POST_TYPE );
 
@@ -410,7 +410,7 @@ class Test_Event_Admin_List extends Base {
 	 * @return void
 	 */
 	public function test_views_edit_active_upcoming(): void {
-		$instance = Event_Admin_List::get_instance();
+		$instance = Admin_List::get_instance();
 
 		set_current_screen( 'edit-' . Event::POST_TYPE );
 
@@ -463,7 +463,7 @@ class Test_Event_Admin_List extends Base {
 	 * @return void
 	 */
 	public function test_views_edit_active_past(): void {
-		$instance = Event_Admin_List::get_instance();
+		$instance = Admin_List::get_instance();
 
 		set_current_screen( 'edit-' . Event::POST_TYPE );
 
@@ -503,7 +503,7 @@ class Test_Event_Admin_List extends Base {
 	 * @return void
 	 */
 	public function test_views_edit_no_active_filter(): void {
-		$instance = Event_Admin_List::get_instance();
+		$instance = Admin_List::get_instance();
 
 		set_current_screen( 'edit-' . Event::POST_TYPE );
 
@@ -551,7 +551,7 @@ class Test_Event_Admin_List extends Base {
 	 * @return void
 	 */
 	public function test_views_edit_all_gets_current_when_missing(): void {
-		$instance = Event_Admin_List::get_instance();
+		$instance = Admin_List::get_instance();
 
 		set_current_screen( 'edit-' . Event::POST_TYPE );
 
@@ -591,7 +591,7 @@ class Test_Event_Admin_List extends Base {
 	 * @return void
 	 */
 	public function test_views_edit_displays_counts(): void {
-		$instance = Event_Admin_List::get_instance();
+		$instance = Admin_List::get_instance();
 
 		// Create a published upcoming event.
 		$post_id = $this->mock->post(
@@ -646,7 +646,7 @@ class Test_Event_Admin_List extends Base {
 	 * @return void
 	 */
 	public function test_get_event_counts_no_events(): void {
-		$instance = Event_Admin_List::get_instance();
+		$instance = Admin_List::get_instance();
 
 		// Reset cached counts and invoke the protected method.
 		Utility::set_and_get_hidden_property( $instance, 'event_counts', array() );
@@ -667,7 +667,7 @@ class Test_Event_Admin_List extends Base {
 	 * @return void
 	 */
 	public function test_get_event_counts_with_upcoming(): void {
-		$instance = Event_Admin_List::get_instance();
+		$instance = Admin_List::get_instance();
 
 		// Create a published event in the future.
 		$post_id = $this->mock->post(
@@ -703,7 +703,7 @@ class Test_Event_Admin_List extends Base {
 	 * @return void
 	 */
 	public function test_get_event_counts_with_past(): void {
-		$instance = Event_Admin_List::get_instance();
+		$instance = Admin_List::get_instance();
 
 		// Create a published event in the past.
 		$post_id = $this->mock->post(
@@ -739,7 +739,7 @@ class Test_Event_Admin_List extends Base {
 	 * @return void
 	 */
 	public function test_get_event_counts_with_mixed(): void {
-		$instance = Event_Admin_List::get_instance();
+		$instance = Admin_List::get_instance();
 
 		// Create a published upcoming event.
 		$upcoming_id = $this->mock->post(
@@ -813,7 +813,7 @@ class Test_Event_Admin_List extends Base {
 	 * @return void
 	 */
 	public function test_get_event_counts_running_event(): void {
-		$instance = Event_Admin_List::get_instance();
+		$instance = Admin_List::get_instance();
 
 		// Create a published event that is currently running.
 		$post_id = $this->mock->post(
@@ -853,7 +853,7 @@ class Test_Event_Admin_List extends Base {
 	 * @return void
 	 */
 	public function test_get_event_counts_with_no_date(): void {
-		$instance = Event_Admin_List::get_instance();
+		$instance = Admin_List::get_instance();
 
 		// Reset cached counts.
 		Utility::set_and_get_hidden_property( $instance, 'event_counts', array() );
@@ -882,7 +882,7 @@ class Test_Event_Admin_List extends Base {
 	 * @return void
 	 */
 	public function test_get_event_counts_caches_result(): void {
-		$instance = Event_Admin_List::get_instance();
+		$instance = Admin_List::get_instance();
 
 		// Reset cached counts.
 		Utility::set_and_get_hidden_property( $instance, 'event_counts', array() );
@@ -930,7 +930,7 @@ class Test_Event_Admin_List extends Base {
 	 * @return void
 	 */
 	public function test_query_vars(): void {
-		$instance = Event_Admin_List::get_instance();
+		$instance = Admin_List::get_instance();
 
 		$result = $instance->query_vars( array( 'existing_var' ) );
 
@@ -955,7 +955,7 @@ class Test_Event_Admin_List extends Base {
 	 * @return void
 	 */
 	public function test_query_vars_empty_input(): void {
-		$instance = Event_Admin_List::get_instance();
+		$instance = Admin_List::get_instance();
 
 		$result = $instance->query_vars( array() );
 
@@ -975,7 +975,7 @@ class Test_Event_Admin_List extends Base {
 	 * @return void
 	 */
 	public function test_handle_rsvp_sorting(): void {
-		$instance = Event_Admin_List::get_instance();
+		$instance = Admin_List::get_instance();
 
 		// Create a mock query.
 		$query = $this->createMock( \WP_Query::class );
@@ -1042,7 +1042,7 @@ class Test_Event_Admin_List extends Base {
 	 * @return void
 	 */
 	public function test_handle_venue_sorting(): void {
-		$instance = Event_Admin_List::get_instance();
+		$instance = Admin_List::get_instance();
 
 		// Create a mock query.
 		$query = $this->createMock( \WP_Query::class );
@@ -1110,7 +1110,7 @@ class Test_Event_Admin_List extends Base {
 	 */
 	public function test_rsvp_sorting_join_paged(): void {
 		global $wpdb;
-		$instance = Event_Admin_List::get_instance();
+		$instance = Admin_List::get_instance();
 
 		$original_join = "LEFT JOIN {$wpdb->posts} AS posts ON posts.ID = {$wpdb->posts}.ID";
 		$result        = $instance->rsvp_sorting_join_paged( $original_join );
@@ -1133,7 +1133,7 @@ class Test_Event_Admin_List extends Base {
 	 */
 	public function test_sorting_groupby_post_id(): void {
 		global $wpdb;
-		$instance = Event_Admin_List::get_instance();
+		$instance = Admin_List::get_instance();
 
 		$result = $instance->sorting_groupby_post_id( '' );
 		$this->assertEquals( "`{$wpdb->posts}`.`ID`", $result );
@@ -1155,7 +1155,7 @@ class Test_Event_Admin_List extends Base {
 	 * @return void
 	 */
 	public function test_rsvp_sorting_orderby(): void {
-		$instance = Event_Admin_List::get_instance();
+		$instance = Admin_List::get_instance();
 
 		$result = $instance->rsvp_sorting_orderby( 'original_orderby' );
 
@@ -1185,7 +1185,7 @@ class Test_Event_Admin_List extends Base {
 	 */
 	public function test_venue_sorting_join_paged_with_screen(): void {
 		global $wpdb;
-		$instance = Event_Admin_List::get_instance();
+		$instance = Admin_List::get_instance();
 
 		set_current_screen( 'edit-' . Event::POST_TYPE );
 
@@ -1206,7 +1206,7 @@ class Test_Event_Admin_List extends Base {
 	 */
 	public function test_venue_sorting_join_paged(): void {
 		global $wpdb;
-		$instance = Event_Admin_List::get_instance();
+		$instance = Admin_List::get_instance();
 
 		// Ensure no screen is set so the method falls back to the default post type.
 		unset( $GLOBALS['current_screen'] );
@@ -1238,7 +1238,7 @@ class Test_Event_Admin_List extends Base {
 	 * @return void
 	 */
 	public function test_venue_sorting_join_paged_unregistered_taxonomy(): void {
-		$instance      = Event_Admin_List::get_instance();
+		$instance      = Admin_List::get_instance();
 		$original_join = 'ORIGINAL_JOIN';
 
 		// Temporarily unregister the venue taxonomy so taxonomy_exists() returns false.
@@ -1267,7 +1267,7 @@ class Test_Event_Admin_List extends Base {
 	 * @return void
 	 */
 	public function test_venue_sorting_orderby(): void {
-		$instance = Event_Admin_List::get_instance();
+		$instance = Admin_List::get_instance();
 
 		$result = $instance->venue_sorting_orderby( 'original_orderby' );
 
@@ -1316,7 +1316,7 @@ class Test_Event_Admin_List extends Base {
 		// Simulate admin context.
 		set_current_screen( 'edit-gatherpress_event' );
 
-		$instance = Event_Admin_List::get_instance();
+		$instance = Admin_List::get_instance();
 		$instance->handle_rsvp_sorting( $query );
 
 		// Verify that sorting order was set.
@@ -1371,7 +1371,7 @@ class Test_Event_Admin_List extends Base {
 
 		set_current_screen( 'edit-gatherpress_event' );
 
-		$instance = Event_Admin_List::get_instance();
+		$instance = Admin_List::get_instance();
 		$instance->handle_rsvp_sorting( $query );
 
 		// Should default to ASC for invalid order.
@@ -1410,7 +1410,7 @@ class Test_Event_Admin_List extends Base {
 
 		set_current_screen( 'edit-gatherpress_event' );
 
-		$instance = Event_Admin_List::get_instance();
+		$instance = Admin_List::get_instance();
 		$instance->handle_rsvp_sorting( $query );
 
 		// Should return early — rsvp_sort_order must not be set.
@@ -1442,7 +1442,7 @@ class Test_Event_Admin_List extends Base {
 
 		set_current_screen( 'edit-gatherpress_event' );
 
-		$instance = Event_Admin_List::get_instance();
+		$instance = Admin_List::get_instance();
 		$instance->handle_rsvp_sorting( $query );
 
 		// Should not set rsvp_sort_order since orderby is not 'rsvps'.
@@ -1477,7 +1477,7 @@ class Test_Event_Admin_List extends Base {
 
 		set_current_screen( 'edit-gatherpress_event' );
 
-		$instance = Event_Admin_List::get_instance();
+		$instance = Admin_List::get_instance();
 		$instance->handle_venue_sorting( $query );
 
 		// Verify that sorting order was set.
@@ -1532,7 +1532,7 @@ class Test_Event_Admin_List extends Base {
 
 		set_current_screen( 'edit-gatherpress_event' );
 
-		$instance = Event_Admin_List::get_instance();
+		$instance = Admin_List::get_instance();
 		$instance->handle_venue_sorting( $query );
 
 		// Should default to ASC for invalid order.
@@ -1568,7 +1568,7 @@ class Test_Event_Admin_List extends Base {
 
 		set_current_screen( 'edit-gatherpress_event' );
 
-		$instance = Event_Admin_List::get_instance();
+		$instance = Admin_List::get_instance();
 		$instance->handle_venue_sorting( $query );
 
 		// Should not set venue_sort_order since orderby is not 'venue'.
@@ -1588,7 +1588,7 @@ class Test_Event_Admin_List extends Base {
 	 * @return void
 	 */
 	public function test_custom_columns_datetime(): void {
-		$instance = Event_Admin_List::get_instance();
+		$instance = Admin_List::get_instance();
 		$post_id  = $this->mock->post(
 			array( 'post_type' => Event::POST_TYPE )
 		)->get()->ID;
@@ -1618,7 +1618,7 @@ class Test_Event_Admin_List extends Base {
 	 * @return void
 	 */
 	public function test_custom_columns_venue_with_name(): void {
-		$instance = Event_Admin_List::get_instance();
+		$instance = Admin_List::get_instance();
 		$post_id  = $this->mock->post(
 			array( 'post_type' => Event::POST_TYPE )
 		)->get()->ID;
@@ -1643,7 +1643,7 @@ class Test_Event_Admin_List extends Base {
 	 * @return void
 	 */
 	public function test_custom_columns_venue_no_venue(): void {
-		$instance = Event_Admin_List::get_instance();
+		$instance = Admin_List::get_instance();
 		$post_id  = $this->mock->post(
 			array( 'post_type' => Event::POST_TYPE )
 		)->get()->ID;
@@ -1663,7 +1663,7 @@ class Test_Event_Admin_List extends Base {
 	 * @return void
 	 */
 	public function test_custom_columns_venue_online_event(): void {
-		$instance = Event_Admin_List::get_instance();
+		$instance = Admin_List::get_instance();
 		$post_id  = $this->mock->post(
 			array( 'post_type' => Event::POST_TYPE )
 		)->get()->ID;
@@ -1687,7 +1687,7 @@ class Test_Event_Admin_List extends Base {
 	 * @return void
 	 */
 	public function test_custom_columns_rsvps_no_rsvps(): void {
-		$instance = Event_Admin_List::get_instance();
+		$instance = Admin_List::get_instance();
 		$post_id  = $this->mock->post(
 			array( 'post_type' => Event::POST_TYPE )
 		)->get()->ID;
@@ -1707,7 +1707,7 @@ class Test_Event_Admin_List extends Base {
 	 * @return void
 	 */
 	public function test_custom_columns_rsvps_with_approved(): void {
-		$instance = Event_Admin_List::get_instance();
+		$instance = Admin_List::get_instance();
 		$post_id  = $this->mock->post(
 			array( 'post_type' => Event::POST_TYPE )
 		)->get()->ID;
@@ -1737,7 +1737,7 @@ class Test_Event_Admin_List extends Base {
 	 * @return void
 	 */
 	public function test_custom_columns_rsvps_with_unapproved(): void {
-		$instance = Event_Admin_List::get_instance();
+		$instance = Admin_List::get_instance();
 		$post_id  = $this->mock->post(
 			array( 'post_type' => Event::POST_TYPE )
 		)->get()->ID;
@@ -1778,7 +1778,7 @@ class Test_Event_Admin_List extends Base {
 	 * @return void
 	 */
 	public function test_set_custom_columns(): void {
-		$instance = Event_Admin_List::get_instance();
+		$instance = Admin_List::get_instance();
 
 		$default_columns = array(
 			'cb'     => '<input type="checkbox" />',
@@ -1812,7 +1812,7 @@ class Test_Event_Admin_List extends Base {
 	 * @return void
 	 */
 	public function test_remove_comments_column(): void {
-		$instance = Event_Admin_List::get_instance();
+		$instance = Admin_List::get_instance();
 
 		// Test with columns that include comments.
 		$columns_with_comments = array(
@@ -1889,7 +1889,7 @@ class Test_Event_Admin_List extends Base {
 		// Assign the term to the event.
 		wp_set_object_terms( $post_id, $term['term_id'], '_gatherpress_venue' );
 
-		$instance = Event_Admin_List::get_instance();
+		$instance = Admin_List::get_instance();
 
 		ob_start();
 		$instance->custom_columns( 'venue', $post_id );

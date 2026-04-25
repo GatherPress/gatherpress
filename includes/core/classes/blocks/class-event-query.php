@@ -369,7 +369,7 @@ class Event_Query {
 	 *
 	 * When AQL is used with the gatherpress_event post type, this ensures that
 	 * GatherPress-specific query parameters (event type, unfinished events, datetime ordering)
-	 * are passed through to WP_Query, where the Event_Query class picks them up
+	 * are passed through to WP_Query, where the core Event\Query class picks them up
 	 * via pre_get_posts for SQL modification.
 	 *
 	 * @since 1.0.0

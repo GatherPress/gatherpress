@@ -6,29 +6,32 @@
  * upcoming and past events, applying filters and ordering events. It also handles adjustments
  * for event pages and admin queries.
  *
- * @package GatherPress\Core
+ * @package GatherPress\Core\Event
  * @since 1.0.0
  */
 
-namespace GatherPress\Core;
+namespace GatherPress\Core\Event;
 
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
+use GatherPress\Core\Event;
 use GatherPress\Core\Settings;
+use GatherPress\Core\Topic;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Venue;
+use GatherPress\Core\Venue_Setup;
 use WP_Post;
 use WP_Query;
 
 /**
- * Class Event_Query.
+ * Class Query.
  *
  * Responsible for managing event-related queries and customizations.
  *
  * @since 1.0.0
  */
-class Event_Query {
+class Query {
 	/**
 	 * Enforces a single instance of this class.
 	 */

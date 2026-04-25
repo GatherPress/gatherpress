@@ -59,10 +59,7 @@ class Setup {
 		Assets::get_instance();
 		Block::get_instance();
 		Cli::get_instance();
-		Event_Admin_List::get_instance();
-		Event_Query::get_instance();
-		Event_Rest_Api::get_instance();
-		Event_Setup::get_instance();
+		Event\Setup::get_instance();
 		Export::get_instance();
 		Feed::get_instance();
 		Geocoding::get_instance();

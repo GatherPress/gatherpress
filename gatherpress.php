@@ -42,6 +42,9 @@ if ( ! require_once GATHERPRESS_CORE_PATH . '/includes/core/requirements-check.p
 	return;
 }
 
+// Register class aliases so prior fully-qualified names continue to resolve to their current locations.
+require_once GATHERPRESS_CORE_PATH . '/includes/core/register-class-aliases.php';
+
 // Include and register the autoloader class for automatic loading of plugin classes.
 require_once GATHERPRESS_CORE_PATH . '/includes/core/classes/class-autoloader.php';
 GatherPress\Core\Autoloader::register();

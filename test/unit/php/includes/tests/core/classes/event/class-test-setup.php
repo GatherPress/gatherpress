@@ -1,16 +1,18 @@
 <?php
 /**
- * Class handles unit tests for GatherPress\Core\Event_Setup.
+ * Class handles unit tests for GatherPress\Core\Event\Setup.
  *
- * @package GatherPress\Core
+ * @package GatherPress\Core\Event
  * @since 1.0.0
  */
 
-namespace GatherPress\Tests\Core;
+namespace GatherPress\Tests\Core\Event;
 
 use GatherPress\Core\Event;
-use GatherPress\Core\Event_Query;
-use GatherPress\Core\Event_Setup;
+use GatherPress\Core\Event\Admin_List;
+use GatherPress\Core\Event\Query;
+use GatherPress\Core\Event\Rest_Api;
+use GatherPress\Core\Event\Setup;
 use GatherPress\Core\Settings;
 use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;
@@ -20,11 +22,56 @@ use WP_Block;
 use WP_REST_Request;
 
 /**
- * Class Test_Event_Setup.
+ * Class Test_Setup.
  *
- * @coversDefaultClass \GatherPress\Core\Event_Setup
+ * @coversDefaultClass \GatherPress\Core\Event\Setup
  */
-class Test_Event_Setup extends Base {
+class Test_Setup extends Base {
+	/**
+	 * Event\Setup now owns the instantiation of the Event\* sibling
+	 * singletons (Admin_List, Query, Rest_Api) so the outer
+	 * `Setup::instantiate_classes()` can hand off with a single
+	 * `Event\Setup::get_instance()` call. Per-sibling proof-of-construction
+	 * via their `setup_hooks()`-registered hooks — catches the case where
+	 * a sibling silently drops out of `Event\Setup::instantiate_classes()`.
+	 *
+	 * @covers ::__construct
+	 * @covers ::instantiate_classes
+	 *
+	 * @return void
+	 */
+	public function test_instantiate_classes_registers_siblings(): void {
+		// Force the method to run inside the test's coverage window —
+		// Setup is a singleton cached during plugin bootstrap, so
+		// `get_instance()` here returns the cached instance and doesn't
+		// re-fire the constructor.
+		Utility::invoke_hidden_method( Setup::get_instance(), 'instantiate_classes' );
+
+		$expected_hooks = array(
+			Admin_List::class => array(
+				'load-edit.php',
+				array( Admin_List::get_instance(), 'default_sort' ),
+			),
+			Query::class      => array(
+				'pre_get_posts',
+				array( Query::get_instance(), 'prepare_event_query_before_execution' ),
+			),
+			Rest_Api::class   => array(
+				'rest_api_init',
+				array( Rest_Api::get_instance(), 'register_endpoints' ),
+			),
+		);
+
+		foreach ( $expected_hooks as $class_name => $expected ) {
+			list( $hook, $callback ) = $expected;
+			$this->assertSame(
+				10,
+				has_action( $hook, $callback ),
+				sprintf( '%s must be instantiated so its %s hook registers.', $class_name, $hook )
+			);
+		}
+	}
+
 	/**
 	 * Coverage for setup_hooks.
 	 *
@@ -34,7 +81,7 @@ class Test_Event_Setup extends Base {
 	 * @return void
 	 */
 	public function test_setup_hooks(): void {
-		$instance = Event_Setup::get_instance();
+		$instance = Setup::get_instance();
 		$hooks    = array(
 			array(
 				'type'     => 'action',
@@ -133,7 +180,7 @@ class Test_Event_Setup extends Base {
 	 * @return void
 	 */
 	public function test_register_calendar_rewrite_rule(): void {
-		$instance = Event_Setup::get_instance();
+		$instance = Setup::get_instance();
 		$settings = Settings::get_instance();
 
 		// Get the dynamic slug from settings (default is 'events' plural).
@@ -191,7 +238,7 @@ class Test_Event_Setup extends Base {
 	 * @return void
 	 */
 	public function test_disable_ics_canonical_redirect(): void {
-		$instance     = Event_Setup::get_instance();
+		$instance     = Setup::get_instance();
 		$ics_url      = 'https://example.org/event/test-event.ics';
 		$redirect_url = 'https://example.org/event/test-event.ics/';
 		$result       = $instance->disable_ics_canonical_redirect( $redirect_url, $ics_url );
@@ -222,7 +269,7 @@ class Test_Event_Setup extends Base {
 	 * @return void
 	 */
 	public function test_register_post_type(): void {
-		$instance = Event_Setup::get_instance();
+		$instance = Setup::get_instance();
 
 		unregister_post_type( Event::POST_TYPE );
 
@@ -244,7 +291,7 @@ class Test_Event_Setup extends Base {
 
 		$this->assertSame(
 			'event',
-			Event_Setup::get_localized_post_type_slug(),
+			Setup::get_localized_post_type_slug(),
 			'Failed to assert English post type slug is "event".'
 		);
 
@@ -258,7 +305,7 @@ class Test_Event_Setup extends Base {
 		// it will return the string in English.
 		$this->assertSame(
 			'event',
-			Event_Setup::get_localized_post_type_slug(),
+			Setup::get_localized_post_type_slug(),
 			'Failed to assert post type slug is "event", even the locale is not English anymore.'
 		);
 		// But at least the restoring of the user locale can be tested, without .po files.
@@ -295,7 +342,7 @@ class Test_Event_Setup extends Base {
 
 		$this->assertSame(
 			'unit-test',
-			Event_Setup::get_localized_post_type_slug(),
+			Setup::get_localized_post_type_slug(),
 			'Failed to assert the post type slug is "unit-test".'
 		);
 
@@ -310,7 +357,7 @@ class Test_Event_Setup extends Base {
 	 * @return void
 	 */
 	public function test_register_event_only_meta(): void {
-		$instance = Event_Setup::get_instance();
+		$instance = Setup::get_instance();
 
 		unregister_post_meta( Event::POST_TYPE, 'gatherpress_online_event_link' );
 		unregister_post_meta( Event::POST_TYPE, 'gatherpress_enable_anonymous_rsvp' );
@@ -376,7 +423,7 @@ class Test_Event_Setup extends Base {
 	 * @return void
 	 */
 	public function test_maybe_register_event_date_meta(): void {
-		$instance = Event_Setup::get_instance();
+		$instance = Setup::get_instance();
 		$test_pt  = 'test_event_date_meta';
 
 		register_post_type(
@@ -418,7 +465,7 @@ class Test_Event_Setup extends Base {
 	 * @return void
 	 */
 	public function test_maybe_register_event_date_meta_skips_unsupported_post_type(): void {
-		$instance = Event_Setup::get_instance();
+		$instance = Setup::get_instance();
 
 		$instance->maybe_register_event_date_meta( 'post' );
 
@@ -436,7 +483,7 @@ class Test_Event_Setup extends Base {
 	 * @return void
 	 */
 	public function test_set_datetimes(): void {
-		$instance = Event_Setup::get_instance();
+		$instance = Setup::get_instance();
 		$post_id  = $this->mock->post()->get()->ID;
 
 		$instance->set_datetimes( $post_id );
@@ -501,7 +548,7 @@ class Test_Event_Setup extends Base {
 	 * @return void
 	 */
 	public function test_check_waiting_list(): void {
-		$instance = Event_Setup::get_instance();
+		$instance = Setup::get_instance();
 		$post_id  = $this->mock->post(
 			array( 'post_type' => Event::POST_TYPE )
 		)->get()->ID;
@@ -519,7 +566,7 @@ class Test_Event_Setup extends Base {
 	 * @return void
 	 */
 	public function test_check_waiting_list_skips_non_rsvp_post_type(): void {
-		$instance = Event_Setup::get_instance();
+		$instance = Setup::get_instance();
 		$post_id  = $this->mock->post()->get()->ID;
 
 		// A plain post does not support gatherpress-rsvp so the method returns early.
@@ -535,7 +582,7 @@ class Test_Event_Setup extends Base {
 	 * @return void
 	 */
 	public function test_delete_event_non_event_post(): void {
-		$instance = Event_Setup::get_instance();
+		$instance = Setup::get_instance();
 		$post_id  = $this->mock->post()->get()->ID;
 
 		// Should return early for non-event posts.
@@ -553,7 +600,7 @@ class Test_Event_Setup extends Base {
 	public function test_delete_event(): void {
 		global $wpdb;
 
-		$instance = Event_Setup::get_instance();
+		$instance = Setup::get_instance();
 		$post_id  = $this->mock->post(
 			array( 'post_type' => Event::POST_TYPE )
 		)->get()->ID;
@@ -591,7 +638,7 @@ class Test_Event_Setup extends Base {
 	 * @return void
 	 */
 	public function test_get_the_event_date_use_event_date(): void {
-		$instance = Event_Setup::get_instance();
+		$instance = Setup::get_instance();
 		$post_id  = $this->mock->post(
 			array( 'post_type' => Event::POST_TYPE )
 		)->get()->ID;
@@ -630,7 +677,7 @@ class Test_Event_Setup extends Base {
 	 * @return void
 	 */
 	public function test_get_the_event_date_iso_format(): void {
-		$instance = Event_Setup::get_instance();
+		$instance = Setup::get_instance();
 		$post_id  = $this->mock->post(
 			array( 'post_type' => Event::POST_TYPE )
 		)->get()->ID;
@@ -670,7 +717,7 @@ class Test_Event_Setup extends Base {
 	 * @return void
 	 */
 	public function test_get_the_event_date_use_post_date(): void {
-		$instance = Event_Setup::get_instance();
+		$instance = Setup::get_instance();
 		$post_id  = $this->mock->post(
 			array( 'post_type' => Event::POST_TYPE )
 		)->get()->ID;
@@ -700,7 +747,7 @@ class Test_Event_Setup extends Base {
 	 * @return void
 	 */
 	public function test_get_the_event_date_non_event(): void {
-		$instance = Event_Setup::get_instance();
+		$instance = Setup::get_instance();
 		$post_id  = $this->mock->post()->get()->ID;
 
 		$this->go_to( get_permalink( $post_id ) );
@@ -720,7 +767,7 @@ class Test_Event_Setup extends Base {
 	 * @return void
 	 */
 	public function test_render_event_post_date_block_with_event(): void {
-		$instance = Event_Setup::get_instance();
+		$instance = Setup::get_instance();
 		$post_id  = $this->mock->post(
 			array( 'post_type' => Event::POST_TYPE )
 		)->get()->ID;
@@ -773,7 +820,7 @@ class Test_Event_Setup extends Base {
 	 * @return void
 	 */
 	public function test_render_event_post_date_block_setting_disabled(): void {
-		$instance = Event_Setup::get_instance();
+		$instance = Setup::get_instance();
 		$post_id  = $this->mock->post(
 			array( 'post_type' => Event::POST_TYPE )
 		)->get()->ID;
@@ -812,7 +859,7 @@ class Test_Event_Setup extends Base {
 	 * @return void
 	 */
 	public function test_render_event_post_date_block_non_event(): void {
-		$instance = Event_Setup::get_instance();
+		$instance = Setup::get_instance();
 		$post_id  = $this->mock->post()->get()->ID;
 
 		$this->go_to( get_permalink( $post_id ) );
@@ -841,7 +888,7 @@ class Test_Event_Setup extends Base {
 	 * @return void
 	 */
 	public function test_render_event_post_date_block_empty_datetime(): void {
-		$instance = Event_Setup::get_instance();
+		$instance = Setup::get_instance();
 		$post_id  = $this->mock->post(
 			array( 'post_type' => Event::POST_TYPE )
 		)->get()->ID;
@@ -896,7 +943,7 @@ class Test_Event_Setup extends Base {
 	 * @return void
 	 */
 	public function test_set_event_archive_labels_no_pages(): void {
-		$instance = Event_Setup::get_instance();
+		$instance = Setup::get_instance();
 
 		delete_option( 'gatherpress_settings' );
 
@@ -916,7 +963,7 @@ class Test_Event_Setup extends Base {
 	 * @return void
 	 */
 	public function test_set_event_archive_labels_empty_pages(): void {
-		$instance = Event_Setup::get_instance();
+		$instance = Setup::get_instance();
 
 		update_option(
 			'gatherpress_settings',
@@ -941,7 +988,7 @@ class Test_Event_Setup extends Base {
 	 * @return void
 	 */
 	public function test_set_event_archive_labels_upcoming_events(): void {
-		$instance = Event_Setup::get_instance();
+		$instance = Setup::get_instance();
 
 		$page_id = $this->mock->post( array( 'post_type' => 'page' ) )->get()->ID;
 
@@ -980,7 +1027,7 @@ class Test_Event_Setup extends Base {
 	 * @return void
 	 */
 	public function test_set_event_archive_labels_past_events(): void {
-		$instance = Event_Setup::get_instance();
+		$instance = Setup::get_instance();
 
 		$page_id = $this->mock->post( array( 'post_type' => 'page' ) )->get()->ID;
 
@@ -1019,7 +1066,7 @@ class Test_Event_Setup extends Base {
 	 * @return void
 	 */
 	public function test_set_datetimes_non_event_post(): void {
-		$instance = Event_Setup::get_instance();
+		$instance = Setup::get_instance();
 		$post_id  = $this->mock->post()->get()->ID;
 
 		// Should return early for non-event posts.
@@ -1050,7 +1097,7 @@ class Test_Event_Setup extends Base {
 		add_filter( 'locale', $locale_filter );
 
 		// Now get_locale() will return 'de_DE', triggering switch and restore.
-		$slug = Event_Setup::get_localized_post_type_slug();
+		$slug = Setup::get_localized_post_type_slug();
 
 		// If no error occurs, restore_previous_locale was called correctly.
 		$this->assertIsString( $slug, 'Should return a string slug' );
@@ -1112,7 +1159,7 @@ class Test_Event_Setup extends Base {
 	 * @return void
 	 */
 	public function test_can_edit_posts_meta(): void {
-		$instance = Event_Setup::get_instance();
+		$instance = Setup::get_instance();
 
 		// Test with user who can edit posts.
 		$editor_id = $this->factory->user->create( array( 'role' => 'editor' ) );
@@ -1145,7 +1192,7 @@ class Test_Event_Setup extends Base {
 			'name'            => 'non-existent-event',
 		);
 
-		$instance = Event_Setup::get_instance();
+		$instance = Setup::get_instance();
 
 		$this->expectException( 'WPDieException' );
 		$this->expectExceptionMessage( 'Event not found.' );
@@ -1197,7 +1244,7 @@ class Test_Event_Setup extends Base {
 			'name'            => 'test-ics-download',
 		);
 
-		$instance = Event_Setup::get_instance();
+		$instance = Setup::get_instance();
 
 		// Buffer output to capture ICS content without displaying it.
 		$output = Utility::buffer_and_return(
@@ -1221,7 +1268,7 @@ class Test_Event_Setup extends Base {
 	 * @return void
 	 */
 	public function test_filter_readonly_meta_removes_readonly_keys(): void {
-		$instance = Event_Setup::get_instance();
+		$instance = Setup::get_instance();
 
 		// Create a mock REST request with all readonly keys plus a writable key.
 		$request = new WP_REST_Request( 'POST', '/wp/v2/gatherpress_event' );
@@ -1296,7 +1343,7 @@ class Test_Event_Setup extends Base {
 	 * @return void
 	 */
 	public function test_filter_readonly_meta_with_null_meta(): void {
-		$instance = Event_Setup::get_instance();
+		$instance = Setup::get_instance();
 
 		// Create a REST request without meta parameter.
 		$request = new WP_REST_Request( 'POST', '/wp/v2/gatherpress_event' );
@@ -1324,7 +1371,7 @@ class Test_Event_Setup extends Base {
 	 * @return void
 	 */
 	public function test_filter_readonly_meta_with_empty_meta(): void {
-		$instance = Event_Setup::get_instance();
+		$instance = Setup::get_instance();
 
 		// Create a REST request with empty meta array.
 		$request = new WP_REST_Request( 'POST', '/wp/v2/gatherpress_event' );
@@ -1351,7 +1398,7 @@ class Test_Event_Setup extends Base {
 	 * @return void
 	 */
 	public function test_filter_readonly_meta_with_only_writable_keys(): void {
-		$instance = Event_Setup::get_instance();
+		$instance = Setup::get_instance();
 
 		// Create a REST request with only writable meta keys.
 		$request = new WP_REST_Request( 'POST', '/wp/v2/gatherpress_event' );
@@ -1392,7 +1439,7 @@ class Test_Event_Setup extends Base {
 	 * @return void
 	 */
 	public function test_filter_readonly_meta_with_only_readonly_keys(): void {
-		$instance = Event_Setup::get_instance();
+		$instance = Setup::get_instance();
 
 		// Create a REST request with only readonly meta keys.
 		$request = new WP_REST_Request( 'POST', '/wp/v2/gatherpress_event' );
@@ -1429,7 +1476,7 @@ class Test_Event_Setup extends Base {
 	 * @return void
 	 */
 	public function test_handle_event_archive_redirect_not_archive(): void {
-		$instance = Event_Setup::get_instance();
+		$instance = Setup::get_instance();
 
 		// Create an event and go to its single page.
 		$post_id = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get()->ID;
@@ -1450,7 +1497,7 @@ class Test_Event_Setup extends Base {
 	public function test_handle_event_archive_redirect_with_page(): void {
 		global $wp_query;
 
-		$instance = Event_Setup::get_instance();
+		$instance = Setup::get_instance();
 
 		// Get the rewrite slug from settings.
 		$settings     = Settings::get_instance();
@@ -1494,7 +1541,7 @@ class Test_Event_Setup extends Base {
 	public function test_handle_event_archive_redirect_no_page_404(): void {
 		global $wp_query;
 
-		$instance = Event_Setup::get_instance();
+		$instance = Setup::get_instance();
 
 		// Get the rewrite slug from settings.
 		$settings     = Settings::get_instance();
@@ -1526,7 +1573,7 @@ class Test_Event_Setup extends Base {
 	public function test_handle_event_archive_redirect_draft_page_404(): void {
 		global $wp_query;
 
-		$instance = Event_Setup::get_instance();
+		$instance = Setup::get_instance();
 
 		// Get the rewrite slug from settings.
 		$settings     = Settings::get_instance();
@@ -1567,7 +1614,7 @@ class Test_Event_Setup extends Base {
 	public function test_handle_event_archive_redirect_feed_not_affected(): void {
 		global $wp_query;
 
-		$instance = Event_Setup::get_instance();
+		$instance = Setup::get_instance();
 
 		// Mock being on the post type archive feed.
 		$wp_query->is_post_type_archive = true;
@@ -1592,12 +1639,12 @@ class Test_Event_Setup extends Base {
 	public function test_handle_event_archive_redirect_skips_event_query_param(): void {
 		global $wp_query;
 
-		$instance = Event_Setup::get_instance();
+		$instance = Setup::get_instance();
 
 		// Mock being on post type archive with EVENT_QUERY_PARAM set.
 		$wp_query->is_post_type_archive = true;
 		$wp_query->set( 'post_type', Event::POST_TYPE );
-		$wp_query->set( Event_Query::EVENT_QUERY_PARAM, 'past' );
+		$wp_query->set( Query::EVENT_QUERY_PARAM, 'past' );
 
 		$instance->handle_event_archive_redirect();
 
@@ -1616,7 +1663,7 @@ class Test_Event_Setup extends Base {
 	public function test_handle_event_archive_redirect_designated_archive_page(): void {
 		global $wp_query;
 
-		$instance = Event_Setup::get_instance();
+		$instance = Setup::get_instance();
 
 		// Get the rewrite slug from settings.
 		$settings     = Settings::get_instance();
@@ -1657,7 +1704,7 @@ class Test_Event_Setup extends Base {
 		$this->assertFalse( $wp_query->is_page, 'Should not be a page.' );
 		$this->assertSame(
 			'past',
-			$wp_query->get( Event_Query::EVENT_QUERY_PARAM ),
+			$wp_query->get( Query::EVENT_QUERY_PARAM ),
 			'Should have event query param set to past.'
 		);
 		$this->assertSame(
@@ -1695,7 +1742,7 @@ class Test_Event_Setup extends Base {
 	public function test_handle_event_archive_redirect_preserves_pagination(): void {
 		global $wp_query;
 
-		$instance = Event_Setup::get_instance();
+		$instance = Setup::get_instance();
 
 		$settings     = Settings::get_instance();
 		$rewrite_slug = $settings->get( 'events_url' );
@@ -1749,7 +1796,7 @@ class Test_Event_Setup extends Base {
 	 * @return void
 	 */
 	public function test_filter_archive_title(): void {
-		$instance = Event_Setup::get_instance();
+		$instance = Setup::get_instance();
 
 		Utility::set_and_get_hidden_property( $instance, 'archive_title', 'Test Title' );
 

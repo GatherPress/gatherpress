@@ -6,17 +6,21 @@
  * sorting by event date, RSVP count, and venue, view filters for upcoming and past events,
  * and admin menu link modifications.
  *
- * @package GatherPress\Core
+ * @package GatherPress\Core\Event
  * @since 1.0.0
  */
 
-namespace GatherPress\Core;
+namespace GatherPress\Core\Event;
 
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use Exception;
+use GatherPress\Core\Event;
+use GatherPress\Core\Rsvp;
+use GatherPress\Core\Rsvp_Query;
 use GatherPress\Core\Traits\Singleton;
+use GatherPress\Core\Venue_Setup;
 use WP_Query;
 
 /**
@@ -25,10 +29,10 @@ use WP_Query;
  * This class handles all admin list table concerns for events, including custom columns,
  * sortable columns, sorting logic, view filters, and admin menu modifications.
  *
- * @package GatherPress\Core
+ * @package GatherPress\Core\Event
  * @since 1.0.0
  */
-class Event_Admin_List {
+class Admin_List {
 	/**
 	 * Enforces a single instance of this class.
 	 */
@@ -240,7 +244,7 @@ class Event_Admin_List {
 	/**
 	 * Get counts of upcoming and past events for a given post type.
 	 *
-	 * Uses the same datetime comparison logic as Event_Query::adjust_event_sql()
+	 * Uses the same datetime comparison logic as Query::adjust_event_sql()
 	 * with inclusive=true: upcoming uses datetime_end_gmt (includes running events),
 	 * past uses datetime_start_gmt (excludes running events).
 	 *
