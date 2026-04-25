@@ -572,8 +572,11 @@ class Admin_List {
 			$event             = new Event( $post_id );
 			$venue_information = $event->get_venue_information();
 			$venue_name        = $venue_information['name'];
+			$venue_taxonomy    = Venue_Setup::get_instance()->taxonomy_for_event_post_type(
+				(string) get_post_type( $post_id )
+			);
 
-			if ( $venue_information['is_online_event'] ) {
+			if ( has_term( 'online-event', $venue_taxonomy, $post_id ) ) {
 				echo '<span class="dashicons dashicons-video-alt3"></span> ';
 			}
 

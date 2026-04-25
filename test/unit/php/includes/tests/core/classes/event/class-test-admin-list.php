@@ -1871,7 +1871,7 @@ class Test_Admin_List extends Base {
 	/**
 	 * Tests custom_columns with online event.
 	 *
-	 * Covers: is_online_event icon display.
+	 * Covers: online-event icon display.
 	 *
 	 * @covers ::custom_columns
 	 * @return void

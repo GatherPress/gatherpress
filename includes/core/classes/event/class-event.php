@@ -524,13 +524,14 @@ class Event {
 	 * Get venue information associated with the event.
 	 *
 	 * This method retrieves information about the venue associated with the event,
-	 * including its address, online-event flag, name, permalink, phone, and website.
+	 * including its address, name, permalink, phone, and website. Online-event
+	 * status is not part of this shape — use the venue taxonomy directly when
+	 * the caller needs to distinguish online events.
 	 *
 	 * @since 1.0.0
 	 *
 	 * @return array An array containing venue information:
 	 *               - 'address' (string): The address of the venue.
-	 *               - 'is_online_event' (bool): Indicates whether the event is an online event (true/false).
 	 *               - 'name' (string): The name of the venue.
 	 *               - 'permalink' (string): The permalink (URL) of the venue.
 	 *               - 'phone' (string): The phone number of the venue.
@@ -538,26 +539,44 @@ class Event {
 	 */
 	public function get_venue_information(): array {
 		$venue_information = array(
-			'address'         => '',
-			'is_online_event' => false,
-			'name'            => '',
-			'permalink'       => '',
-			'phone'           => '',
-			'website'         => '',
+			'address'   => '',
+			'name'      => '',
+			'permalink' => '',
+			'phone'     => '',
+			'website'   => '',
 		);
 
 		$event_post_type = (string) get_post_type( $this->event );
-		$taxonomy        = Venue_Setup::get_instance()->taxonomy_for_event_post_type( $event_post_type );
-		$term            = current( (array) get_the_terms( $this->event, $taxonomy ) );
-		$venue           = null;
+		$venue_setup     = Venue_Setup::get_instance();
+		$taxonomy        = $venue_setup->taxonomy_for_event_post_type( $event_post_type );
+		$venue_terms     = (array) get_the_terms( $this->event, $taxonomy );
 
-		if ( ! empty( $term ) && is_a( $term, 'WP_Term' ) ) {
-			$venue_information['name'] = $term->name;
-			$venue                     = Venue_Setup::get_instance()->get_venue_post_from_term_slug( $term->slug );
+		// Prefer a real venue term (leading-underscore prefix) over a sentinel
+		// like `online-event`, so a hybrid event with both terms attached
+		// surfaces the venue name. Fall back to the first sentinel only when
+		// no real venue term is present.
+		$term     = null;
+		$sentinel = null;
 
-			if ( 'online-event' === $term->slug ) {
-				$venue_information['is_online_event'] = true;
+		foreach ( $venue_terms as $candidate ) {
+			if ( ! is_a( $candidate, 'WP_Term' ) ) {
+				continue;
 			}
+
+			if ( $venue_setup->is_venue_term_slug( $candidate->slug ) ) {
+				$term = $candidate;
+				break;
+			}
+
+			$sentinel = $sentinel ?? $candidate;
+		}
+
+		$term  = $term ?? $sentinel;
+		$venue = null;
+
+		if ( is_a( $term, 'WP_Term' ) ) {
+			$venue_information['name'] = $term->name;
+			$venue                     = $venue_setup->get_venue_post_from_term_slug( $term->slug );
 		}
 
 		if ( is_a( $venue, 'WP_Post' ) ) {

@@ -441,10 +441,6 @@ class Test_Event extends Base {
 			$response['permalink'],
 			'Failed to assert that permalink matches.'
 		);
-		$this->assertEmpty(
-			$response['is_online_event'],
-			'Failed to assert that is online event is false.'
-		);
 
 		wp_set_post_terms( $event_id, 'Online event', Venue::TAXONOMY );
 
@@ -470,10 +466,47 @@ class Test_Event extends Base {
 			$response['website'],
 			'Failed to assert that website is empty.'
 		);
+	}
 
-		$this->assertTrue(
-			$response['is_online_event'],
-			'Failed to assert that is online event is true.'
+	/**
+	 * Hybrid events with both a physical venue and the `online-event` sentinel
+	 * surface the physical venue's name and address rather than the sentinel.
+	 *
+	 * @covers ::get_venue_information
+	 *
+	 * @return void
+	 */
+	public function test_get_venue_information_prefers_venue_term_over_sentinel(): void {
+		$venue    = $this->mock->post(
+			array(
+				'post_type'  => Venue::POST_TYPE,
+				'post_title' => 'Hybrid Venue',
+				'post_name'  => 'hybrid-venue',
+			)
+		)->get();
+		$event_id = $this->mock->post(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		)->get()->ID;
+		$event    = new Event( $event_id );
+
+		update_post_meta( $venue->ID, 'gatherpress_address', '500 Hybrid Way' );
+
+		// Attach BOTH the venue term and the online-event sentinel.
+		wp_set_post_terms( $event_id, array( '_hybrid-venue', 'online-event' ), Venue::TAXONOMY );
+
+		$response = $event->get_venue_information();
+
+		$this->assertSame(
+			'Hybrid Venue',
+			$response['name'],
+			'Hybrid event should surface the physical venue name, not the sentinel.'
+		);
+		$this->assertSame(
+			'500 Hybrid Way',
+			$response['address'],
+			'Hybrid event should surface the physical venue address.'
 		);
 	}
 
