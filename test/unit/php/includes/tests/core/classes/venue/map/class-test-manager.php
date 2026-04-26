@@ -263,13 +263,17 @@ class Test_Manager extends Base {
 
 	/**
 	 * When even OSM isn't registered yet (bootstrap hasn't run),
-	 * `get_active()` returns null rather than throwing.
+	 * `get_active()` returns null rather than throwing. The persisted
+	 * `map_platform` default is `osm`, so the misconfigured-slug path
+	 * fires `_doing_it_wrong` on the way through — expected.
 	 *
 	 * @covers ::get_active
 	 *
 	 * @return void
 	 */
 	public function test_get_active_returns_null_when_no_providers(): void {
+		$this->setExpectedIncorrectUsage( Manager::class . '::get_active' );
+
 		$instance = Manager::get_instance();
 		Utility::set_and_get_hidden_property( $instance, 'providers', array() );
 
@@ -278,13 +282,17 @@ class Test_Manager extends Base {
 
 	/**
 	 * `get_active_slug()` returns the active provider's slug, or empty
-	 * string when there's no active provider.
+	 * string when there's no active provider. The empty-registry leg
+	 * trips the misconfigured-slug warning because the persisted
+	 * `map_platform` default is `osm` — expected.
 	 *
 	 * @covers ::get_active_slug
 	 *
 	 * @return void
 	 */
 	public function test_get_active_slug_mirrors_get_active(): void {
+		$this->setExpectedIncorrectUsage( Manager::class . '::get_active' );
+
 		$instance = Manager::get_instance();
 		$this->assertSame( 'osm', $instance->get_active_slug() );
 

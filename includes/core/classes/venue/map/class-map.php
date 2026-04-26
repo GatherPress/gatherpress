@@ -2,7 +2,7 @@
 /**
  * Static-map orchestrator for the venue subsystem.
  *
- * Owns the lifecycle of pre-rendered PNGs: which (zoom, width, height)
+ * Owns the lifecycle of pre-rendered PNG files: which (zoom, width, height)
  * combos exist for a venue, where they live on disk, when they're stale,
  * and how the front end resolves them for a given post context. The
  * provider-specific work — fetching tiles, compositing, marker stamping,
@@ -16,7 +16,7 @@
  *         'google' => [ ... ],
  *     ]
  *
- * so PNGs from different providers coexist on disk and the render path
+ * so PNG files from different providers coexist on disk and the render path
  * can fall back to whichever variant is available when a site switches
  * `map_platform` mid-flight.
  *
@@ -47,6 +47,10 @@ use WP_REST_Server;
  * when the active provider hasn't rendered a given combo yet.
  *
  * @since 1.0.0
+ *
+ * @phpstan-type Descriptor array{url: string, url_2x: string, hash: string, zoom: int, width: int, height: int}
+ * @phpstan-type DescriptorMap array<string, Descriptor>
+ * @phpstan-type ProviderDescriptorMap array<string, DescriptorMap>
  */
 class Map {
 	/**
@@ -250,8 +254,8 @@ class Map {
 	 *         ...
 	 *     ]
 	 *
-	 * The provider-key layer lets a site keep older OSM PNGs around as
-	 * fallbacks while a new Google provider's PNGs render in the
+	 * The provider-key layer lets a site keep older OSM PNG files around as
+	 * fallbacks while a new Google provider's PNG files render in the
 	 * background after a `map_platform` switch. `url_2x` is empty string
 	 * when the retina variant failed or the provider can't produce one
 	 * for the given combo.
@@ -307,7 +311,7 @@ class Map {
 	 * Called by the `update_option_gatherpress_settings` action whenever
 	 * the GatherPress settings option is written. Only the provider switch
 	 * matters here — non-provider edits to the option are no-ops. Existing
-	 * PNGs stay on disk during the transition: the front-end's fallback
+	 * PNG files stay on disk during the transition: the front-end's fallback
 	 * chain in {@see self::get_descriptor_for_post()} keeps showing the
 	 * old-provider image until the new provider's PNG lands via prewarm.
 	 *
@@ -652,7 +656,7 @@ class Map {
 	 * @param int|null $extra_width        Optional extra width (0 = auto).
 	 * @param int|null $extra_height       Optional extra height (0 = auto).
 	 * @param string   $extra_aspect_ratio Optional aspect ratio hint for the extra combo.
-	 * @return array<string, array<string, array{url: string, url_2x: string, hash: string, zoom: int, width: int, height: int}>>
+	 * @return ProviderDescriptorMap
 	 */
 	public function regenerate(
 		int $post_id,
@@ -1039,7 +1043,7 @@ class Map {
 	 * @since 1.0.0
 	 *
 	 * @param int $post_id The venue post ID.
-	 * @return array<string, array<string, array{url: string, url_2x: string, hash: string, zoom: int, width: int, height: int}>>
+	 * @return ProviderDescriptorMap
 	 */
 	public function get_all_descriptors( int $post_id ): array {
 		$raw = get_post_meta( $post_id, self::META_KEY, true );
@@ -1397,8 +1401,9 @@ class Map {
 	): string {
 		$dirs     = wp_get_upload_dir();
 		$base_url = trailingslashit( $dirs['baseurl'] ) . self::UPLOADS_SUBDIR;
+		$filename = $this->filename_for( $address, $zoom, $width, $height, $provider, $density );
 
-		return trailingslashit( $base_url ) . $this->filename_for( $address, $zoom, $width, $height, $provider, $density );
+		return trailingslashit( $base_url ) . $filename;
 	}
 
 	/**
@@ -1418,7 +1423,7 @@ class Map {
 	 * @param int    $width    Output width (at density 1).
 	 * @param int    $height   Output height (at density 1).
 	 * @param string $provider Provider slug (e.g. `osm`) — namespaces the file
-	 *                         so OSM and Google PNGs can coexist on disk.
+	 *                         so OSM and Google PNG files can coexist on disk.
 	 * @param int    $density  Pixel-density multiplier. 1 = standard, 2 = retina.
 	 * @return string Filename including the `.png` extension.
 	 */
@@ -1453,7 +1458,7 @@ class Map {
 	 * Save a finished GD image to the uploads directory and return its URL.
 	 *
 	 * Filename is derived from `(address, provider, zoom, width, height)` so
-	 * different providers' PNGs coexist on disk and two venues at the same
+	 * different providers' PNG files coexist on disk and two venues at the same
 	 * address share one file at matching dimensions. `imagepng` overwrites
 	 * in place, which is fine for the regenerate flow since the inputs
 	 * that'd change visible output also change the hash in the descriptor.

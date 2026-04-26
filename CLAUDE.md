@@ -252,6 +252,10 @@ Based on WordPress Coding Standards (WPCS), always ensure:
 - **Type handling**: WordPress functions may return multiple types; handle all cases with proper type checking
     - Use `is_wp_error()`, `is_numeric()`, and similar WordPress/PHP functions
     - Cast types explicitly when needed: `(int) $comment->comment_post_ID`
+- **PHPCS warnings count as failures**: `npm run lint:php` exits non-zero on warnings, not just errors. The most common one is `Generic.Files.LineLength.TooLong` (120-char limit). Don't dismiss warnings as cosmetic — fix them before declaring lint passes.
+    - Long `@return array<string, array<...>>` PHPDoc types: extract the array shape into a `@phpstan-type` alias at the top of the class, then reference the alias.
+    - Long expression lines: break at logical points (after `return`, after `=`, around operators) and indent the continuation with one tab beyond the statement start.
+    - Long `sprintf()` / translator string args: split the format string across `__()` calls with concatenation, or store the format in a variable on its own line.
 
 ### Test Coverage
 
