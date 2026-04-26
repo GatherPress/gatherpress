@@ -6,12 +6,13 @@
  * associated with RSVP comments. Tokens are used for email verification and
  * allowing anonymous users to modify their RSVP status via email links.
  *
- * @package GatherPress\Core
+ * @package GatherPress\Core\Rsvp
  * @since 1.0.0
  */
 
-namespace GatherPress\Core;
+namespace GatherPress\Core\Rsvp;
 
+use GatherPress\Core\Utility;
 use WP_Comment;
 use WP_Post;
 
@@ -21,13 +22,13 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 /**
  * Handles RSVP token operations for event comments.
  *
- * The Rsvp_Token class provides secure token generation and validation for RSVP comments.
+ * The Token class provides secure token generation and validation for RSVP comments.
  * It enables email-based RSVP management for both logged-in and anonymous users.
  *
- * @package GatherPress\Core
+ * @package GatherPress\Core\Rsvp
  * @since 1.0.0
  */
-class Rsvp_Token {
+class Token {
 	/**
 	 * The parameter name used for RSVP tokens in URLs.
 	 *
@@ -291,7 +292,7 @@ class Rsvp_Token {
 	}
 
 	/**
-	 * Creates an Rsvp_Token instance from a token string.
+	 * Creates a Token instance from a token string.
 	 *
 	 * Parses the token string and validates it against the stored token.
 	 * Returns null if the token string is invalid or doesn't match.
@@ -347,7 +348,7 @@ class Rsvp_Token {
 	}
 
 	/**
-	 * Creates an Rsvp_Token instance from a URL parameter.
+	 * Creates a Token instance from a URL parameter.
 	 *
 	 * Retrieves the token from GET request and attempts to create
 	 * a valid instance. Useful for handling magic link clicks.

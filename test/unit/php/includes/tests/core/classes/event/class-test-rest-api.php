@@ -10,8 +10,8 @@ namespace GatherPress\Tests\Core\Event;
 
 use GatherPress\Core\Event;
 use GatherPress\Core\Event\Rest_Api;
-use GatherPress\Core\Rsvp;
-use GatherPress\Core\Rsvp_Token;
+use GatherPress\Core\Rsvp\Rsvp;
+use GatherPress\Core\Rsvp\Token;
 use GatherPress\Core\Settings;
 use GatherPress\Core\Setup;
 use GatherPress\Core\Topic;
@@ -1302,7 +1302,7 @@ class Test_Rest_Api extends Base {
 		$user_record = $event->rsvp->save( $email, 'attending', 0, 0 );
 
 		// Generate token.
-		$rsvp_token = new Rsvp_Token( $user_record['comment_id'] );
+		$rsvp_token = new Token( $user_record['comment_id'] );
 		$rsvp_token->generate_token();
 		$token_value = $rsvp_token->get_token();
 
@@ -1684,14 +1684,14 @@ class Test_Rest_Api extends Base {
 		$user_record = $event->rsvp->save( $email, 'attending', 0, 0 );
 
 		// Generate token.
-		$rsvp_token = new Rsvp_Token( $user_record['comment_id'] );
+		$rsvp_token = new Token( $user_record['comment_id'] );
 		$rsvp_token->generate_token();
 		$token_value = $rsvp_token->get_token();
 		$token_str   = sprintf( '%d_%s', $user_record['comment_id'], $token_value );
 
 		// Create request with token.
 		$request = new WP_REST_Request( 'POST', '/gatherpress/v1/event/rsvp' );
-		$request->set_param( Rsvp_Token::NAME, $token_str );
+		$request->set_param( Token::NAME, $token_str );
 
 		// Call the permission callback.
 		$permission_callback = $route['args']['permission_callback'];
@@ -2133,7 +2133,7 @@ class Test_Rest_Api extends Base {
 		$this->assertTrue( $response->data['success'], 'RSVP form submission should succeed' );
 
 		// Target line adds custom fields with gatherpress_custom_ prefix to the data array.
-		// The actual processing and saving is done by Rsvp_Form::process_rsvp().
+		// The actual processing and saving is done by Rsvp\Form::process_rsvp().
 		// This test confirms the endpoint successfully processes requests with custom fields.
 	}
 

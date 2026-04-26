@@ -4,11 +4,11 @@
  *
  * This class handles the registration and management of custom blocks used in the GatherPress plugin.
  *
- * @package GatherPress/Core
+ * @package GatherPress\Core\Blocks
  * @since 1.0.0
  */
 
-namespace GatherPress\Core;
+namespace GatherPress\Core\Blocks;
 
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
@@ -18,13 +18,13 @@ use WP_Block_Template;
 use WP_Post;
 
 /**
- * Class Block.
+ * Class Setup.
  *
  * Core class for handling blocks in GatherPress.
  *
  * @since 1.0.0
  */
-class Block {
+class Setup {
 	/**
 	 * Enforces a single instance of this class.
 	 */
@@ -96,20 +96,20 @@ class Block {
 	 * @return void
 	 */
 	public function register_block_classes(): void {
-		Blocks\Add_To_Calendar::get_instance();
-		Blocks\Dropdown::get_instance();
-		Blocks\Dropdown_Item::get_instance();
-		Blocks\Event_Date::get_instance();
-		Blocks\Event_Query::get_instance();
-		Blocks\General_Block::get_instance();
-		Blocks\Modal::get_instance();
-		Blocks\Modal_Manager::get_instance();
-		Blocks\Online_Event::get_instance();
-		Blocks\Rsvp::get_instance();
-		Blocks\Rsvp_Form::get_instance();
-		Blocks\Rsvp_Response::get_instance();
-		Blocks\Rsvp_Template::get_instance();
-		Blocks\Venue::get_instance();
+		Add_To_Calendar::get_instance();
+		Dropdown::get_instance();
+		Dropdown_Item::get_instance();
+		Event_Date::get_instance();
+		Event_Query::get_instance();
+		General_Block::get_instance();
+		Modal::get_instance();
+		Modal_Manager::get_instance();
+		Online_Event::get_instance();
+		Rsvp::get_instance();
+		Rsvp_Form::get_instance();
+		Rsvp_Response::get_instance();
+		Rsvp_Template::get_instance();
+		Venue::get_instance();
 	}
 
 	/**

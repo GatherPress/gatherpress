@@ -16,11 +16,10 @@ namespace GatherPress\Core\Blocks;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
-use GatherPress\Core\Block;
 use GatherPress\Core\Blocks\Form_Field;
 use GatherPress\Core\Blocks\General_Block;
 use GatherPress\Core\Event;
-use GatherPress\Core\Rsvp;
+use GatherPress\Core\Rsvp\Rsvp;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Utility;
 use WP_HTML_Tag_Processor;
@@ -111,7 +110,7 @@ class Rsvp_Form {
 	 * @return string The modified block content as a functional RSVP form.
 	 */
 	public function transform_block_content( string $block_content, array $block ): string {
-		$block_instance = Block::get_instance();
+		$block_instance = Setup::get_instance();
 		$post_id        = $block_instance->get_post_id( $block );
 
 		// Validate that the post type supports RSVP.
@@ -750,7 +749,7 @@ class Rsvp_Form {
 	 */
 	public function process_form_field_attributes( string $block_content, array $block ): string {
 		// Get the correct post ID using override logic.
-		$block_instance = Block::get_instance();
+		$block_instance = Setup::get_instance();
 		$post_id        = $block_instance->get_post_id( $block );
 
 		// Get max guest limit from event settings.

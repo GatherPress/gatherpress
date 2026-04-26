@@ -1,19 +1,21 @@
 <?php
 /**
- * File comment block for RSVP_List_Table class.
+ * File comment block for List_Table class.
  *
- * This file contains the definition of the RSVP_List_Table class, which handles
+ * This file contains the definition of the List_Table class, which handles
  * the display and management of RSVP entries in the WordPress admin interface.
  *
- * @package GatherPress\Core\Admin
+ * @package GatherPress\Core\Rsvp
  * @since 1.0.0
  */
 
-namespace GatherPress\Core;
+namespace GatherPress\Core\Rsvp;
 
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
+use GatherPress\Core\Event\Event;
+use GatherPress\Core\Utility;
 use WP_List_Table;
 
 /**
@@ -23,10 +25,10 @@ use WP_List_Table;
  * managing GatherPress RSVP entries. Handles column display, sorting, filtering,
  * and bulk actions for RSVP data.
  *
- * @package GatherPress\Core\Admin
+ * @package GatherPress\Core\Rsvp
  * @since 1.0.0
  */
-class RSVP_List_Table extends WP_List_Table {
+class List_Table extends WP_List_Table {
 	/**
 	 * Default number of RSVPs to display per page in the admin list table.
 	 *
@@ -263,7 +265,7 @@ class RSVP_List_Table extends WP_List_Table {
 	 * @return array Array of RSVP comment data prepared for display.
 	 */
 	private function get_rsvps( ?int $per_page = null, int $page_number = 1 ): array {
-		$rsvp_query = Rsvp_Query::get_instance();
+		$rsvp_query = Query::get_instance();
 
 		// phpcs:disable WordPress.Security.NonceVerification.Recommended
 		if ( null === $per_page ) {
@@ -364,7 +366,7 @@ class RSVP_List_Table extends WP_List_Table {
 	 */
 	private function get_rsvp_count(): int {
 		// phpcs:disable WordPress.Security.NonceVerification.Recommended
-		$rsvp_query = Rsvp_Query::get_instance();
+		$rsvp_query = Query::get_instance();
 		$args       = array(
 			'count'  => true,
 			'status' => 'all',
@@ -746,7 +748,7 @@ class RSVP_List_Table extends WP_List_Table {
 	 * @return array An array of HTML links for different views.
 	 */
 	public function get_views(): array {
-		$rsvp_query   = Rsvp_Query::get_instance();
+		$rsvp_query   = Query::get_instance();
 		$status_links = array();
 		$current      = 'all';
 

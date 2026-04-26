@@ -11,8 +11,9 @@ namespace GatherPress\Core;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
-use GatherPress\Core\Traits\Singleton;
 use Error;
+use GatherPress\Core\Blocks\Setup;
+use GatherPress\Core\Traits\Singleton;
 
 /**
  * Class Assets.
@@ -430,7 +431,7 @@ class Assets {
 	 * @return void
 	 */
 	public function register_variation_assets(): void {
-		$variations = Block::get_instance()->get_block_variations();
+		$variations = Setup::get_instance()->get_block_variations();
 
 		foreach ( $variations as $variation ) {
 			$this->register_asset( $variation, 'variations/core/' );
@@ -447,7 +448,7 @@ class Assets {
 	public function enqueue_variation_assets(): void {
 		array_map(
 			array( $this, 'enqueue_asset' ),
-			Block::get_instance()->get_block_variations()
+			Setup::get_instance()->get_block_variations()
 		);
 	}
 

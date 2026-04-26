@@ -15,8 +15,7 @@ namespace GatherPress\Core\Blocks;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
-use GatherPress\Core\Block;
-use GatherPress\Core\Rsvp_Setup;
+use GatherPress\Core\Rsvp\Setup;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Utility;
 use WP_HTML_Tag_Processor;
@@ -177,7 +176,7 @@ class Modal {
 	public function filter_rsvp_modal( string $block_content, array $block ): string {
 		if (
 			Utility::has_css_class( $block['attrs']['className'] ?? null, 'gatherpress-modal--type-rsvp' ) &&
-			! Rsvp_Setup::get_instance()->get_user_identifier()
+			! Setup::get_instance()->get_user_identifier()
 		) {
 			return '';
 		}

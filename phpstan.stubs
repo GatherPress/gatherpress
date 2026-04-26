@@ -49,6 +49,11 @@ namespace {
         class_alias( 'GatherPress\\Core\\Event\\Event', 'GatherPress\\Core\\Event' );
     }
 
+    if ( ! class_exists( 'GatherPress\\Core\\Rsvp', false ) ) {
+        require_once __DIR__ . '/includes/core/classes/rsvp/class-rsvp.php';
+        class_alias( 'GatherPress\\Core\\Rsvp\\Rsvp', 'GatherPress\\Core\\Rsvp' );
+    }
+
     if ( ! class_exists( 'GatherPress\\Core\\Venue', false ) ) {
         require_once __DIR__ . '/includes/core/classes/venue/class-venue.php';
         class_alias( 'GatherPress\\Core\\Venue\\Venue', 'GatherPress\\Core\\Venue' );

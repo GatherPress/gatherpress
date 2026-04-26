@@ -6,31 +6,31 @@
  * the traditional form submission handler and the REST API AJAX handler.
  * This ensures consistency and makes maintenance easier.
  *
- * @package GatherPress\Core
+ * @package GatherPress\Core\Rsvp
  * @since 1.0.0
  */
 
-namespace GatherPress\Core;
+namespace GatherPress\Core\Rsvp;
 
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
-use GatherPress\Core\Blocks\Rsvp_Form as Rsvp_Form_Block;
+use GatherPress\Core\Blocks\Rsvp_Form;
+use GatherPress\Core\Event\Event;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Utility;
-use GatherPress\Core\Rsvp_Token;
 use WP_Comment;
 use WP_User;
 
 /**
- * Class Rsvp_Form
+ * Class Form.
  *
  * Centralizes RSVP submission processing logic for consistency across form and AJAX submissions.
  *
- * @package GatherPress\Core
+ * @package GatherPress\Core\Rsvp
  * @since 1.0.0
  */
-class Rsvp_Form {
+class Form {
 	/**
 	 * Enforces a single instance of this class.
 	 */
@@ -265,7 +265,7 @@ class Rsvp_Form {
 			$this->process_fields( $comment_id, $data );
 
 			// Generate and send confirmation email.
-			$rsvp_token = new Rsvp_Token( $comment_id );
+			$rsvp_token = new Token( $comment_id );
 			$rsvp_token->generate_token()->send_rsvp_confirmation_email();
 		}
 	}
@@ -552,7 +552,7 @@ class Rsvp_Form {
 		$form_schema_id = $data['gatherpress_form_schema_id'] ?? '';
 		if ( empty( $form_schema_id ) ) {
 			// For traditional form submissions, delegate to the blocks class.
-			$rsvp_form = Rsvp_Form_Block::get_instance();
+			$rsvp_form = Rsvp_Form::get_instance();
 			$rsvp_form->process_custom_fields_for_form( $comment_id );
 			return;
 		}
@@ -575,12 +575,12 @@ class Rsvp_Form {
 		$fields      = $form_schema['fields'] ?? array();
 
 		// Get the blocks Rsvp_Form instance for field sanitization.
-		$rsvp_form_blocks = Rsvp_Form_Block::get_instance();
+		$rsvp_form_blocks = Rsvp_Form::get_instance();
 
 		// Process each custom field.
 		foreach ( $fields as $field_name => $field_config ) {
 			// Skip built-in fields - they are handled by process_meta_fields().
-			if ( in_array( $field_name, Rsvp_Form_Block::BUILT_IN_FIELDS, true ) ) {
+			if ( in_array( $field_name, Rsvp_Form::BUILT_IN_FIELDS, true ) ) {
 				continue;
 			}
 
@@ -632,7 +632,7 @@ class Rsvp_Form {
 		$this->process_fields( $comment_id, $data );
 
 		// Generate and send confirmation email.
-		$rsvp_token = new Rsvp_Token( $comment_id );
+		$rsvp_token = new Token( $comment_id );
 		$rsvp_token->generate_token()->send_rsvp_confirmation_email();
 
 		return array(

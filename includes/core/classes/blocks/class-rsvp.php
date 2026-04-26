@@ -12,12 +12,11 @@ namespace GatherPress\Core\Blocks;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
-use GatherPress\Core\Block;
 use GatherPress\Core\Blocks\Form_Field;
 use GatherPress\Core\Blocks\General_Block;
 use GatherPress\Core\Event;
-use GatherPress\Core\Rsvp as Core_Rsvp;
-use GatherPress\Core\Rsvp_Setup;
+use GatherPress\Core\Rsvp\Rsvp as Core_Rsvp;
+use GatherPress\Core\Rsvp\Setup as Rsvp_Setup;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Utility;
 use WP_HTML_Tag_Processor;
@@ -99,7 +98,7 @@ class Rsvp {
 	 * @return string The updated block content with dynamically rendered inner blocks and attributes.
 	 */
 	public function transform_block_content( string $block_content, array $block ): string {
-		$block_instance = Block::get_instance();
+		$block_instance = Setup::get_instance();
 		$post_id        = $block_instance->get_post_id( $block );
 
 		// Validate that the post type supports RSVP.
@@ -351,7 +350,7 @@ class Rsvp {
 		$field_name = $attributes['fieldName'] ?? '';
 
 		// Get the correct post ID for remaining logic.
-		$block_instance = Block::get_instance();
+		$block_instance = Setup::get_instance();
 		$post_id        = $block_instance->get_post_id( $block );
 
 		// Handle guest count field interactivity.

@@ -1,21 +1,22 @@
 <?php
 /**
- * File comment block for Rsvp_Setup class.
+ * File comment block for Setup class.
  *
- * This file contains the definition of the Rsvp_Setup class, which handles
+ * This file contains the definition of the Setup class, which handles
  * setup tasks related to RSVP functionality within the GatherPress plugin.
  *
- * @package GatherPress\Core
+ * @package GatherPress\Core\Rsvp
  * @since 1.0.0
  */
 
-namespace GatherPress\Core;
+namespace GatherPress\Core\Rsvp;
 
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Blocks\Rsvp_Form;
-use GatherPress\Core\Rsvp_Token;
+use GatherPress\Core\Event\Event;
+use GatherPress\Core\Settings;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Utility;
 use WP_Block_Type_Registry;
@@ -25,13 +26,16 @@ use WP_User;
 /**
  * Handles setup tasks related to RSVP functionality.
  *
- * The Rsvp_Setup class initializes necessary hooks and configurations for managing RSVPs.
+ * The Setup class initializes necessary hooks and configurations for managing RSVPs.
  * It registers a custom taxonomy for RSVPs and adjusts comment counts specifically for events.
+ * Also owns instantiation of the Rsvp\* sibling singletons (Cleanup, Form, Query, Token) so
+ * the outer `Setup::instantiate_classes()` can hand off the whole rsvp subsystem with a
+ * single `Rsvp\Setup::get_instance()` line — same shape as `Settings::instantiate_classes()`.
  *
- * @package GatherPress\Core
+ * @package GatherPress\Core\Rsvp
  * @since 1.0.0
  */
-class Rsvp_Setup {
+class Setup {
 	/**
 	 * Enforces a single instance of this class.
 	 */
@@ -41,19 +45,40 @@ class Rsvp_Setup {
 	 * The RSVP list table instance.
 	 *
 	 * @since 1.0.0
-	 * @var RSVP_List_Table|null
+	 * @var List_Table|null
 	 */
 	protected $list_table = null;
 
 	/**
 	 * Class constructor.
 	 *
-	 * This method initializes the object and sets up necessary hooks.
+	 * Instantiates the sibling Rsvp\* singletons before wiring hooks so
+	 * `Setup::instantiate_classes()` can hand off the whole rsvp
+	 * subsystem with a single `Rsvp\Setup::get_instance()` line — same
+	 * shape as `Settings::instantiate_classes()`.
 	 *
 	 * @since 1.0.0
 	 */
 	protected function __construct() {
+		$this->instantiate_classes();
 		$this->setup_hooks();
+	}
+
+	/**
+	 * Instantiate each Rsvp\* sibling singleton.
+	 *
+	 * Keeps the outer `Setup::instantiate_classes()` slim — adding a new
+	 * Rsvp\* class lands as a single line here rather than edits to
+	 * Setup. Each subclass is a singleton, so repeat calls are safe.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return void
+	 */
+	protected function instantiate_classes(): void {
+		Cleanup::get_instance();
+		Form::get_instance();
+		Query::get_instance();
 	}
 
 	/**
@@ -205,7 +230,7 @@ class Rsvp_Setup {
 	 */
 	public function get_user_identifier() {
 		$user_identifier = get_current_user_id();
-		$rsvp_token      = Rsvp_Token::from_url_parameter();
+		$rsvp_token      = Token::from_url_parameter();
 
 		if ( $rsvp_token && ! empty( $rsvp_token->get_comment() ) ) {
 			$user_identifier = $rsvp_token->get_email();
@@ -304,7 +329,7 @@ class Rsvp_Setup {
 			2
 		);
 
-		$this->list_table = new RSVP_List_Table();
+		$this->list_table = new List_Table();
 
 		add_action(
 			sprintf( 'load-%s', $hook ),
@@ -327,7 +352,7 @@ class Rsvp_Setup {
 			'per_page',
 			array(
 				'label'   => __( 'RSVPs per page', 'gatherpress' ),
-				'default' => RSVP_List_Table::DEFAULT_PER_PAGE,
+				'default' => List_Table::DEFAULT_PER_PAGE,
 				'option'  => $this->get_per_page_option(),
 			)
 		);
@@ -339,7 +364,7 @@ class Rsvp_Setup {
 	 * Renders the RSVP admin page in the WordPress dashboard.
 	 *
 	 * This method displays the custom admin interface for managing GatherPress RSVPs.
-	 * It initializes and displays the RSVP_List_Table which contains all RSVPs
+	 * It initializes and displays the List_Table which contains all RSVPs
 	 * with options for filtering, bulk actions, and individual RSVP management.
 	 *
 	 * @since 1.0.0
@@ -352,7 +377,7 @@ class Rsvp_Setup {
 			wp_die( esc_html__( 'Sorry, you are not allowed to manage RSVPs.', 'gatherpress' ), 403 );
 		}
 
-		$rsvp_table  = new RSVP_List_Table();
+		$rsvp_table  = new List_Table();
 		$search_term = isset( $_REQUEST['s'] ) ? sanitize_text_field( wp_unslash( $_REQUEST['s'] ) ) : '';
 		$status      = isset( $_REQUEST['status'] ) ? sanitize_text_field( wp_unslash( $_REQUEST['status'] ) ) : '';
 		$event       = isset( $_REQUEST['event'] ) ? sanitize_text_field( wp_unslash( $_REQUEST['event'] ) ) : '';
@@ -417,7 +442,7 @@ class Rsvp_Setup {
 			'per_page',
 			array(
 				'label'   => __( 'RSVPs per page', 'gatherpress' ),
-				'default' => RSVP_List_Table::DEFAULT_PER_PAGE,
+				'default' => List_Table::DEFAULT_PER_PAGE,
 				'option'  => $this->get_per_page_option(),
 			)
 		);
@@ -530,7 +555,7 @@ class Rsvp_Setup {
 	 * @return void
 	 */
 	public function handle_rsvp_token(): void {
-		$rsvp_token = Rsvp_Token::from_url_parameter();
+		$rsvp_token = Token::from_url_parameter();
 
 		if ( $rsvp_token ) {
 			$rsvp_token->approve_comment();

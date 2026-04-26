@@ -12,9 +12,8 @@ namespace GatherPress\Core\Blocks;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
-use GatherPress\Core\Block;
 use GatherPress\Core\Event;
-use GatherPress\Core\Rsvp;
+use GatherPress\Core\Rsvp\Rsvp;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Utility;
 use WP_Block;
@@ -85,7 +84,7 @@ class Rsvp_Template {
 	 * @return string The filtered block content.
 	 */
 	public function ensure_block_styles_loaded( string $block_content ): string {
-		$block_instance = Block::get_instance();
+		$block_instance = Setup::get_instance();
 		$tag            = new WP_HTML_Tag_Processor( $block_content );
 
 		if ( $tag->next_tag() && ! empty( $tag->get_attribute( 'data-blocks' ) ) ) {

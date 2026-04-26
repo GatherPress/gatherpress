@@ -11,7 +11,7 @@ namespace GatherPress\Tests\Core\Event;
 use DateTime;
 use DateTimeZone;
 use GatherPress\Core\Event\Event;
-use GatherPress\Core\Rsvp;
+use GatherPress\Core\Rsvp\Rsvp;
 use GatherPress\Core\Venue;
 use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;

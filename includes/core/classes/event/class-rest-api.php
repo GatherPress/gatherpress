@@ -17,11 +17,11 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 use Exception;
 use GatherPress\Core\Blocks\Rsvp_Template;
 use GatherPress\Core\Event;
-use GatherPress\Core\Rsvp;
-use GatherPress\Core\Rsvp_Form as Rsvp_Form_Core;
-use GatherPress\Core\Rsvp_Query;
-use GatherPress\Core\Rsvp_Setup;
-use GatherPress\Core\Rsvp_Token;
+use GatherPress\Core\Rsvp\Form;
+use GatherPress\Core\Rsvp\Query as Rsvp_Query;
+use GatherPress\Core\Rsvp\Rsvp;
+use GatherPress\Core\Rsvp\Setup;
+use GatherPress\Core\Rsvp\Token;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\User;
 use GatherPress\Core\Utility;
@@ -209,8 +209,8 @@ class Rest_Api {
 				'methods'             => WP_REST_Server::EDITABLE,
 				'callback'            => array( $this, 'update_rsvp' ),
 				'permission_callback' => static function ( WP_Rest_Request $request ): bool {
-					$unparsed_token = $request->get_param( Rsvp_Token::NAME );
-					$rsvp_token     = Rsvp_Token::from_token_string( $unparsed_token );
+					$unparsed_token = $request->get_param( Token::NAME );
+					$rsvp_token     = Token::from_token_string( $unparsed_token );
 
 					if ( $rsvp_token ) {
 						return true;
@@ -226,7 +226,7 @@ class Rest_Api {
 					'rsvp_token' => array(
 						'required'          => false,
 						'validate_callback' => static function ( $param ): bool {
-							return ! empty( Rsvp_Token::parse_token_string( $param ) );
+							return ! empty( Token::parse_token_string( $param ) );
 						},
 					),
 					'status'     => array(
@@ -670,7 +670,7 @@ class Rest_Api {
 			foreach ( $query->posts as $post_id ) {
 				$event             = new Event( $post_id );
 				$venue_information = $event->get_venue_information();
-				$user_identifier   = Rsvp_Setup::get_instance()->get_user_identifier();
+				$user_identifier   = Setup::get_instance()->get_user_identifier();
 				$current_user_rsvp = ( $event->rsvp ) ? $event->rsvp->get( $user_identifier ) : '';
 				$posts[]           = array(
 					'ID'                       => $post_id,
@@ -774,7 +774,7 @@ class Rest_Api {
 		$user_identifier = $user_id;
 
 		if ( ! empty( $unparsed_token ) ) {
-			$rsvp_token = Rsvp_Token::from_token_string( $unparsed_token );
+			$rsvp_token = Token::from_token_string( $unparsed_token );
 
 			if ( $rsvp_token ) {
 				$user_identifier = $rsvp_token->get_email();
@@ -833,8 +833,8 @@ class Rest_Api {
 	 */
 	public function rsvp_status_html( WP_REST_Request $request ): WP_REST_Response {
 		// Prevent caching for logged-in users or users with valid RSVP tokens.
-		$unparsed_token = $request->get_param( Rsvp_Token::NAME );
-		$rsvp_token     = Rsvp_Token::from_token_string( $unparsed_token );
+		$unparsed_token = $request->get_param( Token::NAME );
+		$rsvp_token     = Token::from_token_string( $unparsed_token );
 
 		if ( is_user_logged_in() || $rsvp_token ) {
 			nocache_headers();
@@ -877,7 +877,7 @@ class Rest_Api {
 	 * Handle RSVP form submission via Ajax.
 	 *
 	 * This method processes RSVP form submissions received via Ajax,
-	 * using the centralized Rsvp_Form class for consistency.
+	 * using the centralized Rsvp\Form class for consistency.
 	 *
 	 * @since 1.0.0
 	 *
@@ -947,7 +947,7 @@ class Rest_Api {
 		}
 
 		// Process the RSVP using the centralized processor.
-		$rsvp_form = Rsvp_Form_Core::get_instance();
+		$rsvp_form = Form::get_instance();
 		$result    = $rsvp_form->process_rsvp( $data );
 
 		// Handle success case - get updated responses.
@@ -988,8 +988,8 @@ class Rest_Api {
 	 */
 	public function rsvp_responses( WP_REST_Request $request ): WP_REST_Response {
 		// Prevent caching for logged-in users or users with valid RSVP tokens.
-		$unparsed_token = $request->get_param( Rsvp_Token::NAME );
-		$rsvp_token     = Rsvp_Token::from_token_string( $unparsed_token );
+		$unparsed_token = $request->get_param( Token::NAME );
+		$rsvp_token     = Token::from_token_string( $unparsed_token );
 
 		if ( is_user_logged_in() || $rsvp_token ) {
 			nocache_headers();

@@ -15,7 +15,6 @@ namespace GatherPress\Core\Blocks;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
-use GatherPress\Core\Block;
 use GatherPress\Core\Traits\Singleton;
 use WP_HTML_Tag_Processor;
 
@@ -105,7 +104,7 @@ class Dropdown {
 	 * @return string The modified block content with inline styles.
 	 */
 	public function generate_block_styles( string $block_content, array $block ): string {
-		$block_instance         = Block::get_instance();
+		$block_instance         = Setup::get_instance();
 		$attributes             = $block['attrs'] ?? array();
 		$dropdown_id            = $attributes['dropdownId'] ?? '';
 		$open_on                = $attributes['openOn'] ?? 'click';

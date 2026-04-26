@@ -1,26 +1,26 @@
 <?php
 /**
- * Class handles unit tests for GatherPress\Core\Block.
+ * Class handles unit tests for GatherPress\Core\Blocks\Setup.
  *
- * @package GatherPress\Core
+ * @package GatherPress\Core\Blocks
  * @since 1.0.0
  */
 
-namespace GatherPress\Tests\Core;
+namespace GatherPress\Tests\Core\Blocks;
 
-use GatherPress\Core\Block;
+use GatherPress\Core\Blocks\Setup;
 use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;
 use WP_Block_Patterns_Registry;
 use WP_Block_Type_Registry;
 
 /**
- * Class Test_Block.
+ * Class Test_Setup.
  *
- * @coversDefaultClass \GatherPress\Core\Block
+ * @coversDefaultClass \GatherPress\Core\Blocks\Setup
  * @group              blocks
  */
-class Test_Block extends Base {
+class Test_Setup extends Base {
 	/**
 	 * Coverage for setup_hooks.
 	 *
@@ -30,7 +30,7 @@ class Test_Block extends Base {
 	 * @return void
 	 */
 	public function test_setup_hooks(): void {
-		$instance = Block::get_instance();
+		$instance = Setup::get_instance();
 		$hooks    = array(
 			array(
 				'type'     => 'action',
@@ -75,7 +75,7 @@ class Test_Block extends Base {
 	 * @return void
 	 */
 	public function test_register_blocks(): void {
-		$instance            = Block::get_instance();
+		$instance            = Setup::get_instance();
 		$blocks              = array(
 			'gatherpress/add-to-calendar',
 			'gatherpress/dropdown',
@@ -120,7 +120,7 @@ class Test_Block extends Base {
 	 * @return void
 	 */
 	public function test_get_block_variations(): void {
-		$instance = Block::get_instance();
+		$instance = Setup::get_instance();
 
 		$this->assertSame(
 			array(
@@ -146,7 +146,7 @@ class Test_Block extends Base {
 	 * @return void
 	 */
 	public function test_get_block_variations_directory_not_exists(): void {
-		$instance            = Block::get_instance();
+		$instance            = Setup::get_instance();
 		$variations_dir      = sprintf( '%1$s/build/variations/core/', GATHERPRESS_CORE_PATH );
 		$temp_renamed_dir    = sprintf( '%1$s/build/variations/core-temp-renamed/', GATHERPRESS_CORE_PATH );
 		$variations_dir_base = sprintf( '%1$s/build/variations/', GATHERPRESS_CORE_PATH );
@@ -185,7 +185,7 @@ class Test_Block extends Base {
 	 * @return void
 	 */
 	public function test_get_block_variations_caching(): void {
-		$instance = Block::get_instance();
+		$instance = Setup::get_instance();
 
 		// Reset the cache to ensure we're starting fresh.
 		Utility::set_and_get_hidden_property( $instance, 'block_variation_names', array() );
@@ -223,7 +223,7 @@ class Test_Block extends Base {
 	 * @return void
 	 */
 	public function test_get_classname_from_foldername(): void {
-		$instance = Block::get_instance();
+		$instance = Setup::get_instance();
 
 		$this->assertSame(
 			'Unit_Test',
@@ -244,7 +244,7 @@ class Test_Block extends Base {
 	 * @return void
 	 */
 	public function test_register_block_patterns(): void {
-		$instance               = Block::get_instance();
+		$instance               = Setup::get_instance();
 		$block_patterns         = array(
 			'gatherpress/event-template',
 			'gatherpress/venue-template',
@@ -291,7 +291,7 @@ class Test_Block extends Base {
 	 * @return void
 	 */
 	public function test_register_block_classes(): void {
-		$instance = Block::get_instance();
+		$instance = Setup::get_instance();
 
 		// Just ensure the method runs without errors.
 		// Block class instances are singletons, so they'll already be instantiated.
@@ -311,7 +311,7 @@ class Test_Block extends Base {
 	 * @return void
 	 */
 	public function test_get_default_block_class(): void {
-		$instance = Block::get_instance();
+		$instance = Setup::get_instance();
 
 		$this->assertSame(
 			'wp-block-gatherpress-event-date',
@@ -340,7 +340,7 @@ class Test_Block extends Base {
 	 * @return void
 	 */
 	public function test_hook_blocks_into_patterns_event_template(): void {
-		$instance = Block::get_instance();
+		$instance = Setup::get_instance();
 
 		$context = array(
 			'name' => 'gatherpress/event-template',
@@ -368,7 +368,7 @@ class Test_Block extends Base {
 	 * @return void
 	 */
 	public function test_hook_blocks_into_patterns_venue_template(): void {
-		$instance = Block::get_instance();
+		$instance = Setup::get_instance();
 
 		$context = array(
 			'name' => 'gatherpress/venue-template',
@@ -393,7 +393,7 @@ class Test_Block extends Base {
 	 * @return void
 	 */
 	public function test_hook_blocks_into_patterns_venue_details(): void {
-		$instance = Block::get_instance();
+		$instance = Setup::get_instance();
 
 		$context = array(
 			'name' => 'gatherpress/venue-details',
@@ -417,7 +417,7 @@ class Test_Block extends Base {
 	 * @return void
 	 */
 	public function test_hook_blocks_into_patterns_non_array_context(): void {
-		$instance = Block::get_instance();
+		$instance = Setup::get_instance();
 
 		$hooked_blocks = $instance->hook_blocks_into_patterns(
 			array( 'some-block' ),
@@ -438,7 +438,7 @@ class Test_Block extends Base {
 	 * @return void
 	 */
 	public function test_hook_blocks_into_patterns_context_missing_name(): void {
-		$instance = Block::get_instance();
+		$instance = Setup::get_instance();
 
 		$hooked_blocks = $instance->hook_blocks_into_patterns(
 			array( 'some-block' ),
@@ -459,7 +459,7 @@ class Test_Block extends Base {
 	 * @return void
 	 */
 	public function test_hook_blocks_into_patterns_wrong_pattern(): void {
-		$instance = Block::get_instance();
+		$instance = Setup::get_instance();
 
 		$context = array(
 			'name' => 'some-other/pattern',
@@ -484,7 +484,7 @@ class Test_Block extends Base {
 	 * @return void
 	 */
 	public function test_hook_blocks_into_patterns_wrong_position(): void {
-		$instance = Block::get_instance();
+		$instance = Setup::get_instance();
 
 		$context = array(
 			'name' => 'gatherpress/event-template',
@@ -509,7 +509,7 @@ class Test_Block extends Base {
 	 * @return void
 	 */
 	public function test_modify_hooked_blocks_in_patterns_paragraph(): void {
-		$instance = Block::get_instance();
+		$instance = Setup::get_instance();
 
 		$context = array(
 			'name' => 'gatherpress/event-template',
@@ -546,7 +546,7 @@ class Test_Block extends Base {
 	 * @return void
 	 */
 	public function test_modify_hooked_blocks_in_patterns_suppressed(): void {
-		$instance = Block::get_instance();
+		$instance = Setup::get_instance();
 
 		$context = array(
 			'name' => 'gatherpress/event-template',
@@ -576,7 +576,7 @@ class Test_Block extends Base {
 	 * @return void
 	 */
 	public function test_modify_hooked_blocks_in_patterns_non_array_context(): void {
-		$instance = Block::get_instance();
+		$instance = Setup::get_instance();
 
 		$parsed_anchor_block = array(
 			'blockName' => 'gatherpress/event-date',
@@ -607,7 +607,7 @@ class Test_Block extends Base {
 	 * @return void
 	 */
 	public function test_modify_hooked_blocks_in_patterns_context_missing_name(): void {
-		$instance = Block::get_instance();
+		$instance = Setup::get_instance();
 
 		$parsed_anchor_block = array(
 			'blockName' => 'gatherpress/event-date',
@@ -638,7 +638,7 @@ class Test_Block extends Base {
 	 * @return void
 	 */
 	public function test_modify_hooked_blocks_in_patterns_wrong_pattern(): void {
-		$instance = Block::get_instance();
+		$instance = Setup::get_instance();
 
 		$context = array(
 			'name' => 'some-other/pattern',
@@ -673,7 +673,7 @@ class Test_Block extends Base {
 	 * @return void
 	 */
 	public function test_modify_hooked_blocks_in_patterns_wrong_anchor(): void {
-		$instance = Block::get_instance();
+		$instance = Setup::get_instance();
 
 		$context = array(
 			'name' => 'gatherpress/event-template',
@@ -708,7 +708,7 @@ class Test_Block extends Base {
 	 * @return void
 	 */
 	public function test_modify_hooked_blocks_in_patterns_wrong_position(): void {
-		$instance = Block::get_instance();
+		$instance = Setup::get_instance();
 
 		$context = array(
 			'name' => 'gatherpress/event-template',
@@ -743,7 +743,7 @@ class Test_Block extends Base {
 	 * @return void
 	 */
 	public function test_modify_hooked_blocks_in_patterns_non_paragraph(): void {
-		$instance = Block::get_instance();
+		$instance = Setup::get_instance();
 
 		$context = array(
 			'name' => 'gatherpress/event-template',
@@ -778,7 +778,7 @@ class Test_Block extends Base {
 	 * @return void
 	 */
 	public function test_get_block_names_simple(): void {
-		$instance = Block::get_instance();
+		$instance = Setup::get_instance();
 
 		$blocks = array(
 			'blockName' => 'core/paragraph',
@@ -797,7 +797,7 @@ class Test_Block extends Base {
 	 * @return void
 	 */
 	public function test_get_block_names_nested(): void {
-		$instance = Block::get_instance();
+		$instance = Setup::get_instance();
 
 		$blocks = array(
 			'blockName'   => 'core/group',
@@ -827,7 +827,7 @@ class Test_Block extends Base {
 	 * @return void
 	 */
 	public function test_get_block_names_deeply_nested(): void {
-		$instance = Block::get_instance();
+		$instance = Setup::get_instance();
 
 		$blocks = array(
 			'blockName'   => 'core/group',
@@ -864,7 +864,7 @@ class Test_Block extends Base {
 	 * @return void
 	 */
 	public function test_get_block_names_no_blockname(): void {
-		$instance = Block::get_instance();
+		$instance = Setup::get_instance();
 
 		$blocks = array(
 			'attrs' => array(),
@@ -883,7 +883,7 @@ class Test_Block extends Base {
 	 * @return void
 	 */
 	public function test_get_post_id_with_post_id_attribute(): void {
-		$instance = Block::get_instance();
+		$instance = Setup::get_instance();
 
 		$block = array(
 			'attrs' => array(
@@ -904,7 +904,7 @@ class Test_Block extends Base {
 	 * @return void
 	 */
 	public function test_get_post_id_without_post_id_attribute(): void {
-		$instance = Block::get_instance();
+		$instance = Setup::get_instance();
 		$post     = $this->mock->post()->get();
 
 		$this->go_to( get_permalink( $post->ID ) );
@@ -926,7 +926,7 @@ class Test_Block extends Base {
 	 * @return void
 	 */
 	public function test_get_post_id_with_zero_post_id(): void {
-		$instance = Block::get_instance();
+		$instance = Setup::get_instance();
 		$post     = $this->mock->post()->get();
 
 		$this->go_to( get_permalink( $post->ID ) );
@@ -951,7 +951,7 @@ class Test_Block extends Base {
 	 * @return void
 	 */
 	public function test_get_post_id_with_negative_post_id(): void {
-		$instance = Block::get_instance();
+		$instance = Setup::get_instance();
 		$post     = $this->mock->post()->get();
 
 		$this->go_to( get_permalink( $post->ID ) );

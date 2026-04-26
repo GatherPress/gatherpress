@@ -15,8 +15,7 @@ namespace GatherPress\Core\Blocks;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
-use GatherPress\Core\Block;
-use GatherPress\Core\Rsvp;
+use GatherPress\Core\Rsvp\Rsvp;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Utility;
 use WP_HTML_Tag_Processor;
@@ -244,7 +243,7 @@ class General_Block {
 	 */
 	public function process_guests_field( string $block_content, array $block ): string {
 		// Get the correct post ID using override logic.
-		$block_instance = Block::get_instance();
+		$block_instance = Setup::get_instance();
 		$post_id        = $block_instance->get_post_id( $block );
 
 		// Only process if the post type supports RSVP.
@@ -296,7 +295,7 @@ class General_Block {
 	 */
 	public function process_anonymous_field( string $block_content, array $block ): string {
 		// Get the correct post ID using override logic.
-		$block_instance = Block::get_instance();
+		$block_instance = Setup::get_instance();
 		$post_id        = $block_instance->get_post_id( $block );
 
 		// Only process if the post type supports RSVP.

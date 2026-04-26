@@ -16,7 +16,6 @@ namespace GatherPress\Core\Blocks;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
-use GatherPress\Core\Block;
 use GatherPress\Core\Traits\Singleton;
 
 /**
@@ -80,7 +79,7 @@ class Event_Date {
 	 * @return string The block content if valid event, empty string otherwise.
 	 */
 	public function validate_event( string $block_content, array $block ): string {
-		$block_instance = Block::get_instance();
+		$block_instance = Setup::get_instance();
 		$post_id        = $block_instance->get_post_id( $block );
 
 		// Validate that the post type supports event_date.
