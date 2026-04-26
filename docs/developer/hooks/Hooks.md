@@ -26,6 +26,10 @@
 
 ## class-geocoding.php
 
+- [`gatherpress_async_geocode_delay`](gatherpress_async_geocode_delay.md) Filters the delay between an address-change save and the cron firing.
+- [`gatherpress_async_geocode_failed`](gatherpress_async_geocode_failed.md) Fires when the async geocode handler exits because Photon
+- [`gatherpress_async_geocode_pre_enqueue_job`](gatherpress_async_geocode_pre_enqueue_job.md) Filter the geocode enqueue call to take over scheduling.
+- [`gatherpress_geocode_on_save_enabled`](gatherpress_geocode_on_save_enabled.md) Filters whether the async geocode should run on venue save.
 - [`gatherpress_log_geocoding_errors`](gatherpress_log_geocoding_errors.md) Filters whether to write a PHP error-log line when Photon returns a body
 - [`gatherpress_photon_api_url`](gatherpress_photon_api_url.md) Filters the Photon API base URL used for geocoding and address search.
 
