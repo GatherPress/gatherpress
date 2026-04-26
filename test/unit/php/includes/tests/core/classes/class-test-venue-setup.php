@@ -339,31 +339,53 @@ class Test_Venue_Setup extends Base {
 	}
 
 	/**
-	 * Tests can_edit_posts_meta authorization callback.
+	 * Tests can_edit_post_meta authorization callback — per-post check.
 	 *
-	 * @covers ::can_edit_posts_meta
+	 * Routes through `user_can( $user_id, 'edit_post', $object_id )` so the
+	 * permission model matches what WP uses for the post itself: Editors
+	 * (with `edit_others_posts`) can edit anyone's venue meta, Authors can
+	 * edit only their own, Subscribers and logged-out users are denied.
+	 *
+	 * @covers ::can_edit_post_meta
 	 *
 	 * @return void
 	 */
-	public function test_can_edit_posts_meta(): void {
+	public function test_can_edit_post_meta(): void {
 		$instance = Venue_Setup::get_instance();
 
-		// Test with user who can edit posts.
-		$editor_id = $this->factory->user->create( array( 'role' => 'editor' ) );
-		wp_set_current_user( $editor_id );
-
-		$this->assertTrue( $instance->can_edit_posts_meta(), 'Editor should be able to edit post meta.' );
-
-		// Test with user who cannot edit posts.
+		$author_one_id = $this->factory->user->create( array( 'role' => 'author' ) );
+		$author_two_id = $this->factory->user->create( array( 'role' => 'author' ) );
+		$editor_id     = $this->factory->user->create( array( 'role' => 'editor' ) );
 		$subscriber_id = $this->factory->user->create( array( 'role' => 'subscriber' ) );
-		wp_set_current_user( $subscriber_id );
 
-		$this->assertFalse( $instance->can_edit_posts_meta(), 'Subscriber should not be able to edit post meta.' );
+		$venue_id = $this->factory->post->create(
+			array(
+				'post_type'   => Venue::POST_TYPE,
+				'post_author' => $author_one_id,
+				'post_status' => 'publish',
+			)
+		);
 
-		// Test with logged-out user.
-		wp_set_current_user( 0 );
-
-		$this->assertFalse( $instance->can_edit_posts_meta(), 'Logged-out user should not be able to edit post meta.' );
+		$this->assertTrue(
+			$instance->can_edit_post_meta( false, 'gatherpress_address', $venue_id, $author_one_id ),
+			'The venue author should be able to edit their own venue meta.'
+		);
+		$this->assertFalse(
+			$instance->can_edit_post_meta( false, 'gatherpress_address', $venue_id, $author_two_id ),
+			'A different author should not be able to edit a venue they do not own.'
+		);
+		$this->assertTrue(
+			$instance->can_edit_post_meta( false, 'gatherpress_address', $venue_id, $editor_id ),
+			'An editor should be able to edit any venue meta via edit_others_posts.'
+		);
+		$this->assertFalse(
+			$instance->can_edit_post_meta( false, 'gatherpress_address', $venue_id, $subscriber_id ),
+			'A subscriber should not be able to edit any venue meta.'
+		);
+		$this->assertFalse(
+			$instance->can_edit_post_meta( false, 'gatherpress_address', $venue_id, 0 ),
+			'A logged-out user (user_id 0) should not be able to edit any venue meta.'
+		);
 	}
 
 	/**

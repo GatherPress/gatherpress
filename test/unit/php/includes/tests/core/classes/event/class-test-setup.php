@@ -1112,7 +1112,7 @@ class Test_Setup extends Base {
 	 *
 	 * @covers ::register_event_only_meta
 	 * @covers ::maybe_register_event_date_meta
-	 * @covers ::can_edit_posts_meta
+	 * @covers ::can_edit_post_meta
 	 * @return void
 	 */
 	public function test_register_post_meta_auth_callbacks(): void {
@@ -1152,31 +1152,53 @@ class Test_Setup extends Base {
 	}
 
 	/**
-	 * Tests can_edit_posts_meta authorization callback.
+	 * Tests can_edit_post_meta authorization callback — per-post check.
 	 *
-	 * @covers ::can_edit_posts_meta
+	 * Routes through `user_can( $user_id, 'edit_post', $object_id )` so the
+	 * permission model matches what WP uses for the post itself: Editors
+	 * (with `edit_others_posts`) can edit anyone's event meta, Authors can
+	 * edit only their own, Subscribers and logged-out users are denied.
+	 *
+	 * @covers ::can_edit_post_meta
 	 *
 	 * @return void
 	 */
-	public function test_can_edit_posts_meta(): void {
+	public function test_can_edit_post_meta(): void {
 		$instance = Setup::get_instance();
 
-		// Test with user who can edit posts.
-		$editor_id = $this->factory->user->create( array( 'role' => 'editor' ) );
-		wp_set_current_user( $editor_id );
-
-		$this->assertTrue( $instance->can_edit_posts_meta(), 'Editor should be able to edit post meta' );
-
-		// Test with user who cannot edit posts.
+		$author_one_id = $this->factory->user->create( array( 'role' => 'author' ) );
+		$author_two_id = $this->factory->user->create( array( 'role' => 'author' ) );
+		$editor_id     = $this->factory->user->create( array( 'role' => 'editor' ) );
 		$subscriber_id = $this->factory->user->create( array( 'role' => 'subscriber' ) );
-		wp_set_current_user( $subscriber_id );
 
-		$this->assertFalse( $instance->can_edit_posts_meta(), 'Subscriber should not be able to edit post meta' );
+		$event_id = $this->factory->post->create(
+			array(
+				'post_type'   => Event::POST_TYPE,
+				'post_author' => $author_one_id,
+				'post_status' => 'publish',
+			)
+		);
 
-		// Test with logged-out user.
-		wp_set_current_user( 0 );
-
-		$this->assertFalse( $instance->can_edit_posts_meta(), 'Logged-out user should not be able to edit post meta' );
+		$this->assertTrue(
+			$instance->can_edit_post_meta( false, 'gatherpress_datetime', $event_id, $author_one_id ),
+			'The event author should be able to edit their own event meta.'
+		);
+		$this->assertFalse(
+			$instance->can_edit_post_meta( false, 'gatherpress_datetime', $event_id, $author_two_id ),
+			'A different author should not be able to edit an event they do not own.'
+		);
+		$this->assertTrue(
+			$instance->can_edit_post_meta( false, 'gatherpress_datetime', $event_id, $editor_id ),
+			'An editor should be able to edit any event meta via edit_others_posts.'
+		);
+		$this->assertFalse(
+			$instance->can_edit_post_meta( false, 'gatherpress_datetime', $event_id, $subscriber_id ),
+			'A subscriber should not be able to edit any event meta.'
+		);
+		$this->assertFalse(
+			$instance->can_edit_post_meta( false, 'gatherpress_datetime', $event_id, 0 ),
+			'A logged-out user (user_id 0) should not be able to edit any event meta.'
+		);
 	}
 
 	/**

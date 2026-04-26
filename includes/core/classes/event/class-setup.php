@@ -247,14 +247,32 @@ class Setup {
 	}
 
 	/**
-	 * Authorization callback for post meta that requires edit_posts capability.
+	 * Authorization callback for post meta that mirrors the post-level edit cap.
+	 *
+	 * Routes through `user_can( $user_id, 'edit_post', $object_id )` so the
+	 * per-post permission model (`map_meta_cap` → `edit_others_posts`,
+	 * `edit_published_posts`, etc.) gates meta the same way it gates the post
+	 * itself. Without this, the meta layer would be more permissive than the
+	 * post layer that owns it: a custom REST route or third-party
+	 * `update_post_meta()` call could bypass the per-post check that the WP
+	 * posts controller already enforces on the post.
 	 *
 	 * @since 1.0.0
 	 *
-	 * @return bool True if user can edit posts, false otherwise.
+	 * @param bool   $allowed   Whether the user can edit the post meta. Unused;
+	 *                          we authoritatively return based on `edit_post`.
+	 * @param string $meta_key  The meta key being accessed. Unused.
+	 * @param int    $object_id The post ID the meta belongs to.
+	 * @param int    $user_id   The user ID attempting the edit.
+	 * @return bool True if the user can edit the post, false otherwise.
 	 */
-	public function can_edit_posts_meta(): bool {
-		return current_user_can( 'edit_posts' );
+	public function can_edit_post_meta(
+		bool $allowed,
+		string $meta_key,
+		int $object_id,
+		int $user_id
+	): bool {
+		return user_can( $user_id, 'edit_post', $object_id );
 	}
 
 	/**
@@ -273,7 +291,7 @@ class Setup {
 
 		$event_date_meta = array(
 			'gatherpress_datetime'           => array(
-				'auth_callback'     => array( $this, 'can_edit_posts_meta' ),
+				'auth_callback'     => array( $this, 'can_edit_post_meta' ),
 				'sanitize_callback' => 'sanitize_text_field',
 				'show_in_rest'      => true,
 				'single'            => true,
@@ -341,7 +359,7 @@ class Setup {
 		// Missing meta is treated as "on"; only an explicit 0 disables RSVP per event.
 		$event_only_meta = array(
 			'gatherpress_enable_rsvp'           => array(
-				'auth_callback'     => array( $this, 'can_edit_posts_meta' ),
+				'auth_callback'     => array( $this, 'can_edit_post_meta' ),
 				'sanitize_callback' => 'absint',
 				'show_in_rest'      => true,
 				'single'            => true,
@@ -349,7 +367,7 @@ class Setup {
 				'default'           => 1,
 			),
 			'gatherpress_max_guest_limit'       => array(
-				'auth_callback'     => array( $this, 'can_edit_posts_meta' ),
+				'auth_callback'     => array( $this, 'can_edit_post_meta' ),
 				'sanitize_callback' => 'absint',
 				'show_in_rest'      => true,
 				'single'            => true,
@@ -357,7 +375,7 @@ class Setup {
 				'default'           => (int) Settings::get_instance()->get( 'max_guest_limit' ),
 			),
 			'gatherpress_enable_anonymous_rsvp' => array(
-				'auth_callback'     => array( $this, 'can_edit_posts_meta' ),
+				'auth_callback'     => array( $this, 'can_edit_post_meta' ),
 				'sanitize_callback' => 'rest_sanitize_boolean',
 				'show_in_rest'      => true,
 				'single'            => true,
@@ -367,7 +385,7 @@ class Setup {
 			// Always register so it can be written regardless of open RSVP mode.
 			// Stored as integer (1 = enabled, 0 = disabled); an unset meta (empty string) is treated as enabled.
 			'gatherpress_enable_open_rsvp'      => array(
-				'auth_callback'     => array( $this, 'can_edit_posts_meta' ),
+				'auth_callback'     => array( $this, 'can_edit_post_meta' ),
 				'sanitize_callback' => 'absint',
 				'show_in_rest'      => true,
 				'single'            => true,
@@ -375,7 +393,7 @@ class Setup {
 				'default'           => 1,
 			),
 			'gatherpress_online_event_link'     => array(
-				'auth_callback'     => array( $this, 'can_edit_posts_meta' ),
+				'auth_callback'     => array( $this, 'can_edit_post_meta' ),
 				'sanitize_callback' => 'sanitize_url',
 				'show_in_rest'      => true,
 				'single'            => true,
@@ -383,7 +401,7 @@ class Setup {
 				'default'           => '',
 			),
 			'gatherpress_max_attendance_limit'  => array(
-				'auth_callback'     => array( $this, 'can_edit_posts_meta' ),
+				'auth_callback'     => array( $this, 'can_edit_post_meta' ),
 				'sanitize_callback' => 'absint',
 				'show_in_rest'      => true,
 				'single'            => true,
