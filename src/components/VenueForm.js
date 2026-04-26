@@ -229,6 +229,9 @@ function CreateVenueForm( { search, ...props } ) {
 	 *
 	 * Uses the new individual meta fields architecture.
 	 * Phone and website can be added later when editing the full venue post.
+	 * Structured-address fields (city, state, postcode, etc.) are populated
+	 * server-side by an async cron handler that fires when `gatherpress_address`
+	 * changes — they don't need to be sent in this initial POST.
 	 *
 	 * @param {string} newTitle   - The title of the new venue.
 	 * @param {string} newAddress - The address of the new venue.

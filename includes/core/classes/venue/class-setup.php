@@ -281,6 +281,25 @@ class Setup {
 	 * @return void
 	 */
 	public function maybe_register_post_meta( string $post_type ): void {
+		// Structured-address pieces derived from `gatherpress_address` by an
+		// async cron handler that fires only when the address actually
+		// changes (via `updated_post_meta` short-circuit on no-op). These
+		// are server-populated from the geocoder, so REST writes are denied
+		// (`__return_false` auth_callback) and submitted values get stripped
+		// in `filter_readonly_meta` rather than triggering a permission
+		// error. Read access via REST stays open so JSON-LD / schema.org
+		// emitters and downstream API consumers can read them.
+		$structured_address_meta = array(
+			'gatherpress_house_number',
+			'gatherpress_street',
+			'gatherpress_city',
+			'gatherpress_county',
+			'gatherpress_state',
+			'gatherpress_postcode',
+			'gatherpress_country',
+			'gatherpress_country_code',
+		);
+
 		$venue_information_meta = array(
 			'gatherpress_address'   => array(
 				'auth_callback'     => array( Utility::class, 'can_edit_post_meta' ),
@@ -393,6 +412,29 @@ class Setup {
 				register_post_meta( $post_type, $meta_key, $args );
 			}
 
+			// Structured-address meta share an identical args shape, so
+			// register them in a tight loop rather than duplicating the
+			// array literal eight times. `auth_callback` denies REST writes
+			// — these are populated by the async geocode cron handler, not
+			// the editor.
+			$structured_args = array(
+				'auth_callback'     => '__return_false',
+				'sanitize_callback' => 'sanitize_text_field',
+				'show_in_rest'      => true,
+				'single'            => true,
+				'type'              => 'string',
+				'default'           => '',
+				'revisions_enabled' => true,
+			);
+
+			if ( ! $supports_revisions ) {
+				unset( $structured_args['revisions_enabled'] );
+			}
+
+			foreach ( $structured_address_meta as $meta_key ) {
+				register_post_meta( $post_type, $meta_key, $structured_args );
+			}
+
 			// Strip read-only meta from REST requests so the editor can't write it directly.
 			add_filter(
 				sprintf( 'rest_pre_insert_%s', $post_type ),
@@ -427,6 +469,18 @@ class Setup {
 	public function filter_readonly_meta( stdClass $prepared_post, WP_REST_Request $request ): stdClass {
 		$readonly_keys = array(
 			Map::META_KEY,
+			// Structured-address fields are derived from `gatherpress_address`
+			// by the async geocode cron handler. REST writes are stripped
+			// rather than rejected so a client that PATCHes them alongside
+			// editor-writable fields doesn't fail the whole request.
+			'gatherpress_house_number',
+			'gatherpress_street',
+			'gatherpress_city',
+			'gatherpress_county',
+			'gatherpress_state',
+			'gatherpress_postcode',
+			'gatherpress_country',
+			'gatherpress_country_code',
 		);
 
 		$meta = $request->get_param( 'meta' );
