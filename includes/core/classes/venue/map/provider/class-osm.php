@@ -19,6 +19,7 @@ namespace GatherPress\Core\Venue\Map\Provider;
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Venue\Map\Map;
+use GdImage;
 
 /**
  * Class OSM.
@@ -100,7 +101,7 @@ class OSM extends Base {
 	 * @param int   $width     Logical pixel width (at density 1).
 	 * @param int   $height    Logical pixel height (at density 1).
 	 * @param int   $density   Pixel-density multiplier. 1 = standard, 2 = retina.
-	 * @return \GdImage|resource|null Finished image, or null on failure.
+	 * @return GdImage|resource|null Finished image, or null on failure.
 	 */
 	public function render(
 		float $latitude,
@@ -279,10 +280,10 @@ class OSM extends Base {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param \GdImage|resource $canvas Destination canvas.
-	 * @param int               $x      Pixel X position (marker center).
-	 * @param int               $y      Pixel Y position (marker center).
-	 * @param float             $scale  Multiplier applied to the marker radii.
+	 * @param GdImage|resource $canvas Destination canvas.
+	 * @param int              $x      Pixel X position (marker center).
+	 * @param int              $y      Pixel Y position (marker center).
+	 * @param float            $scale  Multiplier applied to the marker radii.
 	 * @return void
 	 */
 	public function stamp_marker( $canvas, int $x, int $y, float $scale = 1.0 ): void {

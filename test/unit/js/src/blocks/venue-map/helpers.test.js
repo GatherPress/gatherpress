@@ -177,7 +177,7 @@ describe( 'RegenerateMapButton', () => {
 		expect( name ).toBe( 'gatherpress_venue' );
 		expect( records[ 0 ].id ).toBe( 42 );
 		expect(
-			records[ 0 ].meta.gatherpress_venue_static_map[ '18x300' ].url
+			records[ 0 ].meta.gatherpress_static_map[ '18x300' ].url
 		).toBe( 'https://example.test/42-abc.png' );
 		// Existing meta fields must be preserved.
 		expect( records[ 0 ].meta.gatherpress_address ).toBe( '' );
@@ -296,7 +296,7 @@ describe( 'RegenerateMapButton', () => {
 		} );
 
 		const [ , , records ] = mockReceiveEntityRecords.mock.calls[ 0 ];
-		expect( records[ 0 ].meta.gatherpress_venue_static_map ).toEqual( {
+		expect( records[ 0 ].meta.gatherpress_static_map ).toEqual( {
 			'18x300': {
 				url: 'https://example.test/42-abc.png',
 				hash: 'abc',
@@ -320,7 +320,7 @@ describe( 'RegenerateMapButton', () => {
 		} );
 
 		const [ , , records ] = mockReceiveEntityRecords.mock.calls[ 0 ];
-		expect( records[ 0 ].meta.gatherpress_venue_static_map ).toEqual( {} );
+		expect( records[ 0 ].meta.gatherpress_static_map ).toEqual( {} );
 	} );
 
 	it( 'surfaces an error notice when the server reports generation_failed', async () => {

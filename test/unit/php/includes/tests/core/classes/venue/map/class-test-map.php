@@ -12,6 +12,8 @@
 
 namespace GatherPress\Tests\Core\Venue\Map;
 
+use GatherPress\Core\Settings;
+use GatherPress\Core\Venue\Map\Manager;
 use GatherPress\Core\Venue\Map\Map;
 use GatherPress\Core\Venue\Setup;
 use GatherPress\Core\Venue\Venue;
@@ -1445,24 +1447,24 @@ class Test_Map extends Base {
 		$too_high = static function () {
 			return 99;
 		};
-		add_filter( 'gatherpress_venue_map_zoom', $too_high );
+		add_filter( 'gatherpress_map_zoom', $too_high );
 		$this->assertSame(
 			Map::ZOOM_MAX,
 			Utility::invoke_hidden_method( $instance, 'get_zoom' ),
 			'Zoom beyond ZOOM_MAX must clamp down.'
 		);
-		remove_filter( 'gatherpress_venue_map_zoom', $too_high );
+		remove_filter( 'gatherpress_map_zoom', $too_high );
 
 		$too_low = static function () {
 			return 0;
 		};
-		add_filter( 'gatherpress_venue_map_zoom', $too_low );
+		add_filter( 'gatherpress_map_zoom', $too_low );
 		$this->assertSame(
 			Map::ZOOM_MIN,
 			Utility::invoke_hidden_method( $instance, 'get_zoom' ),
 			'Zoom below ZOOM_MIN must clamp up.'
 		);
-		remove_filter( 'gatherpress_venue_map_zoom', $too_low );
+		remove_filter( 'gatherpress_map_zoom', $too_low );
 	}
 
 	/**
@@ -1481,13 +1483,13 @@ class Test_Map extends Base {
 		$too_big = static function () {
 			return 9999;
 		};
-		add_filter( 'gatherpress_venue_map_height', $too_big );
+		add_filter( 'gatherpress_map_height', $too_big );
 		$this->assertSame(
 			Map::HEIGHT_MAX,
 			Utility::invoke_hidden_method( $instance, 'get_height' ),
 			'Height beyond HEIGHT_MAX must clamp down.'
 		);
-		remove_filter( 'gatherpress_venue_map_height', $too_big );
+		remove_filter( 'gatherpress_map_height', $too_big );
 	}
 
 	/**
@@ -2608,5 +2610,395 @@ class Test_Map extends Base {
 		add_post_meta( $post_id, 'gatherpress_longitude', '' );
 
 		$this->assertNull( $instance->get_descriptor_for_post( $post_id, Venue::POST_TYPE ) );
+	}
+
+	/**
+	 * `maybe_handle_settings_change()` is a no-op when `map_platform`
+	 * isn't actually changing — saving Settings without touching the
+	 * platform must not enqueue a fresh prewarm pass.
+	 *
+	 * @covers ::maybe_handle_settings_change
+	 *
+	 * @return void
+	 */
+	public function test_maybe_handle_settings_change_skips_when_platform_unchanged(): void {
+		$instance = Map::get_instance();
+
+		$settings = array( 'map_platform' => 'osm' );
+
+		// Same platform on both sides → early return.
+		$instance->maybe_handle_settings_change( $settings, $settings );
+
+		$this->assertFalse(
+			(bool) wp_next_scheduled( \GatherPress\Core\Venue\Map\Prewarm::CRON_ACTION ),
+			'No warm jobs should be scheduled when the platform did not change.'
+		);
+	}
+
+	/**
+	 * `maybe_handle_settings_change()` reads the inner platform value and
+	 * tolerates non-array inputs on either side without warnings — both
+	 * code paths in the `is_array()` casts must be exercised.
+	 *
+	 * @covers ::maybe_handle_settings_change
+	 *
+	 * @return void
+	 */
+	public function test_maybe_handle_settings_change_tolerates_non_array_inputs(): void {
+		$instance = Map::get_instance();
+
+		// Both non-array → both casts coerce to '' and the early-return
+		// path fires (empty === empty).
+		$instance->maybe_handle_settings_change( false, null );
+
+		$this->assertFalse(
+			(bool) wp_next_scheduled( \GatherPress\Core\Venue\Map\Prewarm::CRON_ACTION ),
+			'Non-array inputs must not schedule prewarm jobs.'
+		);
+	}
+
+	/**
+	 * Flipping `map_platform` triggers the same prewarm pass that runs on
+	 * theme switches — every venue's combos get re-enqueued so the new
+	 * provider's PNG files land in the background.
+	 *
+	 * @covers ::maybe_handle_settings_change
+	 *
+	 * @return void
+	 */
+	public function test_maybe_handle_settings_change_schedules_prewarm_on_platform_change(): void {
+		$instance = Map::get_instance();
+
+		// At least one venue with usable coordinates so the prewarm pass
+		// has something to enqueue.
+		$venue_id = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
+		add_post_meta( $venue_id, 'gatherpress_address', '1 Infinite Loop' );
+		add_post_meta( $venue_id, 'gatherpress_latitude', '37.3318' );
+		add_post_meta( $venue_id, 'gatherpress_longitude', '-122.0312' );
+
+		$old = array( 'map_platform' => 'osm' );
+		$new = array( 'map_platform' => 'google' );
+
+		$instance->maybe_handle_settings_change( $old, $new );
+
+		$this->assertTrue(
+			(bool) wp_next_scheduled( \GatherPress\Core\Venue\Map\Prewarm::CRON_ACTION, array( $venue_id ) ),
+			'Platform change must enqueue a warm job for each addressable venue.'
+		);
+
+		wp_clear_scheduled_hook( \GatherPress\Core\Venue\Map\Prewarm::CRON_ACTION );
+	}
+
+	/**
+	 * `get_descriptor_for_post()` walks other providers' stored entries
+	 * for the same combo when the active provider can't render. Lets a
+	 * site that just flipped from OSM to Google keep showing the OSM
+	 * PNG until the new provider's image lands.
+	 *
+	 * @covers ::get_descriptor_for_post
+	 *
+	 * @return void
+	 */
+	public function test_get_descriptor_for_post_falls_back_to_other_provider(): void {
+		$instance = Map::get_instance();
+		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
+
+		add_post_meta( $post_id, 'gatherpress_address', '1 Infinite Loop' );
+		// No coords on purpose — that prevents the active provider from
+		// rendering, forcing the fallback walk below.
+		$key = sprintf( '%dx%dx%d', Map::DEFAULT_ZOOM, Map::DEFAULT_HEIGHT * 2, Map::DEFAULT_HEIGHT );
+		update_post_meta(
+			$post_id,
+			Map::META_KEY,
+			array(
+				'google' => array(
+					$key => array(
+						'url'    => 'https://example.test/google.png',
+						'url_2x' => '',
+						'hash'   => 'abc',
+						'zoom'   => Map::DEFAULT_ZOOM,
+						'width'  => Map::DEFAULT_HEIGHT * 2,
+						'height' => Map::DEFAULT_HEIGHT,
+					),
+				),
+			)
+		);
+
+		$descriptor = $instance->get_descriptor_for_post( $post_id, Venue::POST_TYPE );
+
+		$this->assertIsArray( $descriptor );
+		$this->assertSame( 'https://example.test/google.png', $descriptor['url'] );
+	}
+
+	/**
+	 * When neither the active provider nor any other provider has a
+	 * matching combo, `get_descriptor_for_post()` returns null.
+	 *
+	 * @covers ::get_descriptor_for_post
+	 *
+	 * @return void
+	 */
+	public function test_get_descriptor_for_post_returns_null_when_no_provider_has_combo(): void {
+		$instance = Map::get_instance();
+		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
+
+		add_post_meta( $post_id, 'gatherpress_address', '1 Infinite Loop' );
+		// Stored combo doesn't match the requested combo, no coords to
+		// satisfy active-provider render either.
+		update_post_meta(
+			$post_id,
+			Map::META_KEY,
+			array(
+				'google' => array(
+					'5x100x100' => array(
+						'url'    => 'https://example.test/google.png',
+						'url_2x' => '',
+						'hash'   => 'abc',
+						'zoom'   => 5,
+						'width'  => 100,
+						'height' => 100,
+					),
+				),
+			)
+		);
+
+		$this->assertNull(
+			$instance->get_descriptor_for_post( $post_id, Venue::POST_TYPE )
+		);
+	}
+
+	/**
+	 * `get_all_descriptors()` skips entries whose top-level key is not a
+	 * non-empty string or whose value is not an array — defensive
+	 * cleanup for legacy meta written under the pre-provider-keyed
+	 * shape.
+	 *
+	 * @covers ::get_all_descriptors
+	 *
+	 * @return void
+	 */
+	public function test_get_all_descriptors_skips_malformed_provider_keys(): void {
+		$instance = Map::get_instance();
+		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
+
+		update_post_meta(
+			$post_id,
+			Map::META_KEY,
+			array(
+				'osm' => array(
+					'15x600x300' => array(
+						'url'    => 'https://example.test/a.png',
+						'hash'   => 'abc',
+						'zoom'   => 15,
+						'width'  => 600,
+						'height' => 300,
+					),
+				),
+				''    => array(
+					'15x600x300' => array(
+						'url'    => 'https://example.test/empty.png',
+						'hash'   => 'def',
+						'zoom'   => 15,
+						'width'  => 600,
+						'height' => 300,
+					),
+				),
+				'bad' => 'not-an-array',
+				42    => array(
+					'15x600x300' => array(
+						'url'    => 'https://example.test/int.png',
+						'hash'   => 'ghi',
+						'zoom'   => 15,
+						'width'  => 600,
+						'height' => 300,
+					),
+				),
+			)
+		);
+
+		$descriptors = $instance->get_all_descriptors( $post_id );
+
+		$this->assertSame(
+			array( 'osm' ),
+			array_keys( $descriptors ),
+			'Only the well-formed provider key should survive.'
+		);
+	}
+
+	/**
+	 * `get_cached_combos()` dedupes when two providers cached the same
+	 * `(zoom, width, height)`. The resulting list seeds the prewarm pass,
+	 * which would otherwise schedule duplicate jobs per combo.
+	 *
+	 * @covers ::get_cached_combos
+	 *
+	 * @return void
+	 */
+	public function test_get_cached_combos_dedupes_across_providers(): void {
+		$instance = Map::get_instance();
+		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
+
+		$entry = array(
+			'url'    => 'https://example.test/x.png',
+			'hash'   => 'abc',
+			'zoom'   => 15,
+			'width'  => 600,
+			'height' => 300,
+		);
+
+		update_post_meta(
+			$post_id,
+			Map::META_KEY,
+			array(
+				'osm'    => array( '15x600x300' => $entry ),
+				'google' => array( '15x600x300' => $entry ),
+			)
+		);
+
+		$combos = $instance->get_cached_combos( $post_id );
+
+		$this->assertCount(
+			1,
+			$combos,
+			'A combo cached under multiple providers must only seed one warm entry.'
+		);
+	}
+
+	/**
+	 * `ensure_descriptor_for_combo()` returns null when the manager has
+	 * no active provider (bootstrap hasn't run, or every provider was
+	 * unregistered by a misconfigured companion plugin).
+	 *
+	 * @covers ::ensure_descriptor_for_combo
+	 *
+	 * @return void
+	 */
+	public function test_ensure_descriptor_for_combo_returns_null_when_no_active_provider(): void {
+		$instance = Map::get_instance();
+		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
+
+		add_post_meta( $post_id, 'gatherpress_address', '1 Infinite Loop' );
+		add_post_meta( $post_id, 'gatherpress_latitude', '37.3318' );
+		add_post_meta( $post_id, 'gatherpress_longitude', '-122.0312' );
+
+		// Wipe the registry so get_active() returns null.
+		$manager  = Manager::get_instance();
+		$original = Utility::set_and_get_hidden_property( $manager, 'providers', array() );
+
+		try {
+			$result = Utility::invoke_hidden_method(
+				$instance,
+				'ensure_descriptor_for_combo',
+				array(
+					$post_id,
+					array(
+						'address'   => '1 Infinite Loop',
+						'latitude'  => '37.3318',
+						'longitude' => '-122.0312',
+					),
+					Map::DEFAULT_ZOOM,
+					800,
+					400,
+				)
+			);
+		} finally {
+			Utility::set_and_get_hidden_property( $manager, 'providers', $original );
+			$manager->register_core_providers();
+		}
+
+		$this->assertNull( $result );
+	}
+
+	/**
+	 * `ensure_descriptor_for_combo()` returns null when the active
+	 * provider's `render()` returns null — surfaces the failure to the
+	 * caller without persisting a half-baked descriptor.
+	 *
+	 * @covers ::ensure_descriptor_for_combo
+	 *
+	 * @return void
+	 */
+	public function test_ensure_descriptor_for_combo_returns_null_when_render_returns_null(): void {
+		$instance = Map::get_instance();
+		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
+
+		add_post_meta( $post_id, 'gatherpress_address', '1 Infinite Loop' );
+		add_post_meta( $post_id, 'gatherpress_latitude', '37.3318' );
+		add_post_meta( $post_id, 'gatherpress_longitude', '-122.0312' );
+
+		// Anonymous provider whose render() always returns null. Wired
+		// into Manager and selected via `map_platform` so the orchestrator
+		// resolves to it.
+		$null_provider = new class() extends \GatherPress\Core\Venue\Map\Provider\Base {
+			/**
+			 * Provider slug.
+			 *
+			 * @return string
+			 */
+			public function get_slug(): string {
+				return 'always-null';
+			}
+
+			/**
+			 * Provider label.
+			 *
+			 * @return string
+			 */
+			public function get_label(): string {
+				return 'Null';
+			}
+
+			/**
+			 * Always-null render so the orchestrator's null-image branch fires.
+			 *
+			 * @param float $latitude  Unused.
+			 * @param float $longitude Unused.
+			 * @param int   $zoom      Unused.
+			 * @param int   $width     Unused.
+			 * @param int   $height    Unused.
+			 * @param int   $density   Unused.
+			 * @return null
+			 */
+			public function render(
+				float $latitude,
+				float $longitude,
+				int $zoom,
+				int $width,
+				int $height,
+				int $density = 1
+			) {
+				return null;
+			}
+		};
+
+		$manager = Manager::get_instance();
+		$manager->register( $null_provider );
+		update_option( Settings::OPTION_NAME, array( 'map_platform' => 'always-null' ) );
+
+		try {
+			$result = Utility::invoke_hidden_method(
+				$instance,
+				'ensure_descriptor_for_combo',
+				array(
+					$post_id,
+					array(
+						'address'   => '1 Infinite Loop',
+						'latitude'  => '37.3318',
+						'longitude' => '-122.0312',
+					),
+					Map::DEFAULT_ZOOM,
+					800,
+					400,
+				)
+			);
+		} finally {
+			delete_option( Settings::OPTION_NAME );
+			$providers = Utility::set_and_get_hidden_property( $manager, 'providers', array() );
+			unset( $providers['always-null'] );
+			Utility::set_and_get_hidden_property( $manager, 'providers', $providers );
+			$manager->register_core_providers();
+		}
+
+		$this->assertNull( $result );
 	}
 }

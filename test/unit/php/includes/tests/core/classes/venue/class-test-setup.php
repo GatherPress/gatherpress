@@ -198,14 +198,14 @@ class Test_Setup extends Base {
 			'gatherpress_longitude',
 			'gatherpress_phone',
 			'gatherpress_website',
-			'gatherpress_venue_static_map',
+			'gatherpress_static_map',
 		);
 
 		foreach ( $venue_information_keys as $key ) {
 			unregister_post_meta( Venue::POST_TYPE, $key );
 		}
 
-		unregister_post_meta( Venue::POST_TYPE, 'gatherpress_venue_map_show' );
+		unregister_post_meta( Venue::POST_TYPE, 'gatherpress_map_show' );
 
 		$meta = get_registered_meta_keys( 'post', Venue::POST_TYPE );
 
@@ -218,9 +218,9 @@ class Test_Setup extends Base {
 		}
 
 		$this->assertArrayNotHasKey(
-			'gatherpress_venue_map_show',
+			'gatherpress_map_show',
 			$meta,
-			'Failed to assert that gatherpress_venue_map_show does not exist.'
+			'Failed to assert that gatherpress_map_show does not exist.'
 		);
 
 		$instance->maybe_register_post_meta( Venue::POST_TYPE );
@@ -236,9 +236,9 @@ class Test_Setup extends Base {
 		}
 
 		$this->assertArrayHasKey(
-			'gatherpress_venue_map_show',
+			'gatherpress_map_show',
 			$meta,
-			'Failed to assert that gatherpress_venue_map_show exists for gatherpress-venue-map support.'
+			'Failed to assert that gatherpress_map_show exists for gatherpress-venue-map support.'
 		);
 	}
 
@@ -308,7 +308,7 @@ class Test_Setup extends Base {
 		$request->set_param(
 			'meta',
 			array(
-				'gatherpress_venue_static_map' => array(
+				'gatherpress_static_map' => array(
 					'15' => array(
 						'url'  => 'evil.png',
 						'hash' => 'x',
@@ -327,9 +327,9 @@ class Test_Setup extends Base {
 		$meta = $request->get_param( 'meta' );
 
 		$this->assertArrayNotHasKey(
-			'gatherpress_venue_static_map',
+			'gatherpress_static_map',
 			$meta,
-			'gatherpress_venue_static_map is server-generated and must not be writable via REST.'
+			'gatherpress_static_map is server-generated and must not be writable via REST.'
 		);
 		$this->assertArrayHasKey(
 			'gatherpress_address',

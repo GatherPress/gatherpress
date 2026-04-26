@@ -194,8 +194,8 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 					venueMeta: meta,
 					savedVenueMeta: savedPost?.meta || {},
 					staticMapDescriptors:
-						editedVenuePost?.meta?.gatherpress_venue_static_map ||
-						meta?.gatherpress_venue_static_map ||
+						editedVenuePost?.meta?.gatherpress_static_map ||
+						meta?.gatherpress_static_map ||
 						{},
 					venuePostId: effectiveVenuePostId,
 					venuePostType: resolvedVenuePostType,
@@ -216,7 +216,7 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 				venueMeta: meta,
 				savedVenueMeta: meta,
 				staticMapDescriptors:
-					meta?.gatherpress_venue_static_map || {},
+					meta?.gatherpress_static_map || {},
 				venuePostId: effectiveVenuePostId,
 				venuePostType: context?.postType || '',
 			};

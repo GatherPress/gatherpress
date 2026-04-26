@@ -33,6 +33,7 @@ use GatherPress\Core\Settings;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Venue\Setup;
 use GatherPress\Core\Venue\Venue;
+use GdImage;
 use WP_Post;
 use WP_REST_Request;
 use WP_REST_Response;
@@ -263,7 +264,7 @@ class Map {
 	 * @since 1.0.0
 	 * @var string
 	 */
-	const META_KEY = 'gatherpress_venue_static_map';
+	const META_KEY = 'gatherpress_static_map';
 
 	/**
 	 * Subdirectory of `wp-content/uploads` where generated PNG files are written.
@@ -322,8 +323,8 @@ class Map {
 	 * @return void
 	 */
 	public function maybe_handle_settings_change( $old_value, $new_value ): void {
-		$old_platform = is_array( $old_value ) ? (string) ( $old_value['gatherpress']['map_platform'] ?? '' ) : '';
-		$new_platform = is_array( $new_value ) ? (string) ( $new_value['gatherpress']['map_platform'] ?? '' ) : '';
+		$old_platform = is_array( $old_value ) ? (string) ( $old_value['map_platform'] ?? '' ) : '';
+		$new_platform = is_array( $new_value ) ? (string) ( $new_value['map_platform'] ?? '' ) : '';
 
 		if ( $old_platform === $new_platform ) {
 			return;
@@ -1465,13 +1466,13 @@ class Map {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param \GdImage|resource $image    Finished image from a provider's `render()`.
-	 * @param string            $address  Venue address (slugified for the filename).
-	 * @param int               $zoom     Map zoom level.
-	 * @param int               $width    Output width (at density 1).
-	 * @param int               $height   Output height (at density 1).
-	 * @param int               $density  Pixel-density multiplier. 1 = standard, 2 = retina.
-	 * @param string            $provider Provider slug.
+	 * @param GdImage|resource $image    Finished image from a provider's `render()`.
+	 * @param string           $address  Venue address (slugified for the filename).
+	 * @param int              $zoom     Map zoom level.
+	 * @param int              $width    Output width (at density 1).
+	 * @param int              $height   Output height (at density 1).
+	 * @param int              $density  Pixel-density multiplier. 1 = standard, 2 = retina.
+	 * @param string           $provider Provider slug.
 	 * @return string|null Public URL of the saved file, or null on failure.
 	 */
 	public function save_image(
@@ -1529,7 +1530,7 @@ class Map {
 	 *
 	 * Prefers the site-wide setting; falls back to {@see self::DEFAULT_ZOOM}
 	 * when the setting is unset or zero. Result is piped through the
-	 * `gatherpress_venue_map_zoom` filter so code-level overrides
+	 * `gatherpress_map_zoom` filter so code-level overrides
 	 * (themes, site-specific plugins) can still take precedence.
 	 *
 	 * @since 1.0.0
@@ -1547,7 +1548,7 @@ class Map {
 		 *
 		 * @param int $zoom Default zoom level.
 		 */
-		$zoom = (int) apply_filters( 'gatherpress_venue_map_zoom', $default );
+		$zoom = (int) apply_filters( 'gatherpress_map_zoom', $default );
 
 		return $this->clamp_zoom( $zoom );
 	}
@@ -1557,7 +1558,7 @@ class Map {
 	 *
 	 * Mirrors {@see self::get_zoom()} — Settings value wins, falls back to
 	 * {@see self::DEFAULT_HEIGHT}, then runs through
-	 * `gatherpress_venue_map_height` for code-level overrides. Because the
+	 * `gatherpress_map_height` for code-level overrides. Because the
 	 * PNG is rendered at exactly this height (no oversampling), the generator
 	 * and the block see the same value and Leaflet's zoom matches the
 	 * static map's zoom visually.
@@ -1577,7 +1578,7 @@ class Map {
 		 *
 		 * @param int $height Default height in pixels.
 		 */
-		$height = (int) apply_filters( 'gatherpress_venue_map_height', $default );
+		$height = (int) apply_filters( 'gatherpress_map_height', $default );
 
 		return $this->clamp_height( $height );
 	}

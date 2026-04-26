@@ -64,4 +64,26 @@ class Test_Setup extends Base {
 			);
 		}
 	}
+
+	/**
+	 * Construction of the singleton runs `instantiate_classes()` so the
+	 * subsystem boots in one line from `Venue\Setup`. The plugin
+	 * bootstrap creates the instance long before this test class loads,
+	 * so reset the cached static `$instance` to force a fresh
+	 * construction and credit the `__construct()` body to coverage.
+	 *
+	 * @covers ::__construct
+	 *
+	 * @return void
+	 */
+	public function test_construct_runs_instantiate_classes(): void {
+		$reflection = new \ReflectionClass( Setup::class );
+		$property   = $reflection->getProperty( 'instance' );
+		$property->setAccessible( true );
+		$property->setValue( null, null );
+
+		$instance = Setup::get_instance();
+
+		$this->assertInstanceOf( Setup::class, $instance );
+	}
 }

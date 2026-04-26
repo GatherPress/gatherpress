@@ -381,4 +381,116 @@ class Test_OSM extends Base {
 
 		$this->assertNull( $canvas );
 	}
+
+	/**
+	 * When the wall-clock budget is exhausted between iterations, the
+	 * render loop breaks out and the canvas comes back with the
+	 * pre-painted gray background — no tiles fetched. Filter-driven so
+	 * we don't have to wait COMPOSITE_TIME_BUDGET seconds.
+	 *
+	 * @covers ::render
+	 *
+	 * @return void
+	 */
+	public function test_render_aborts_when_time_budget_exhausted(): void {
+		if ( ! function_exists( 'imagecreatetruecolor' ) ) {
+			$this->markTestSkipped( 'GD extension is not available.' );
+		}
+
+		$fetches = 0;
+		$counter = function () use ( &$fetches ) {
+			++$fetches;
+			return array(
+				'response' => array(
+					'code'    => 200,
+					'message' => 'OK',
+				),
+				'body'     => $this->tile_png,
+				'headers'  => array(),
+			);
+		};
+		// Negative budget puts the deadline in the past from the first
+		// iteration, forcing `break 2` before any fetch runs.
+		$budget = static fn() => -1;
+
+		remove_filter( 'pre_http_request', array( $this, 'short_circuit_tile_requests' ), 10 );
+		add_filter( 'pre_http_request', $counter, 10 );
+		add_filter( 'gatherpress_venue_map_composite_time_budget', $budget );
+
+		$canvas = ( new OSM() )->render( 37.3318, -122.0312, 15, 512, 256 );
+
+		remove_filter( 'gatherpress_venue_map_composite_time_budget', $budget );
+		remove_filter( 'pre_http_request', $counter, 10 );
+		add_filter( 'pre_http_request', array( $this, 'short_circuit_tile_requests' ), 10, 3 );
+
+		$this->assertInstanceOf( GdImage::class, $canvas );
+		$this->assertSame( 0, $fetches, 'No tiles should be fetched when the deadline is already in the past.' );
+	}
+
+	/**
+	 * A failed tile fetch (HTTP error → fetch_tile returns null) is
+	 * skipped and the loop continues — the canvas still comes back, just
+	 * with a gray patch where the tile would have gone.
+	 *
+	 * @covers ::render
+	 *
+	 * @return void
+	 */
+	public function test_render_continues_past_failed_tile_fetch(): void {
+		if ( ! function_exists( 'imagecreatetruecolor' ) ) {
+			$this->markTestSkipped( 'GD extension is not available.' );
+		}
+
+		remove_filter( 'pre_http_request', array( $this, 'short_circuit_tile_requests' ), 10 );
+		$fail = static function () {
+			return new \WP_Error( 'boom', 'tile fetch failed' );
+		};
+		add_filter( 'pre_http_request', $fail, 10 );
+
+		$canvas = ( new OSM() )->render( 37.3318, -122.0312, 15, 512, 256 );
+
+		remove_filter( 'pre_http_request', $fail, 10 );
+		add_filter( 'pre_http_request', array( $this, 'short_circuit_tile_requests' ), 10, 3 );
+
+		$this->assertInstanceOf(
+			GdImage::class,
+			$canvas,
+			'Failed fetch should leave the canvas intact rather than nulling the result.'
+		);
+	}
+
+	/**
+	 * A response body that isn't a valid PNG is skipped — `imagecreate-
+	 * fromstring()` returns false and the loop moves on without aborting
+	 * the whole composite.
+	 *
+	 * @covers ::render
+	 *
+	 * @return void
+	 */
+	public function test_render_continues_past_invalid_png_body(): void {
+		if ( ! function_exists( 'imagecreatetruecolor' ) ) {
+			$this->markTestSkipped( 'GD extension is not available.' );
+		}
+
+		remove_filter( 'pre_http_request', array( $this, 'short_circuit_tile_requests' ), 10 );
+		$garbage = static function () {
+			return array(
+				'response' => array(
+					'code'    => 200,
+					'message' => 'OK',
+				),
+				'body'     => 'not a png',
+				'headers'  => array(),
+			);
+		};
+		add_filter( 'pre_http_request', $garbage, 10 );
+
+		$canvas = ( new OSM() )->render( 37.3318, -122.0312, 15, 512, 256 );
+
+		remove_filter( 'pre_http_request', $garbage, 10 );
+		add_filter( 'pre_http_request', array( $this, 'short_circuit_tile_requests' ), 10, 3 );
+
+		$this->assertInstanceOf( GdImage::class, $canvas );
+	}
 }

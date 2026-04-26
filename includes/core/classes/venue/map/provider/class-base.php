@@ -19,6 +19,8 @@ namespace GatherPress\Core\Venue\Map\Provider;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
+use GdImage;
+
 /**
  * Class Base.
  *
@@ -76,7 +78,7 @@ abstract class Base {
 	 * @param int   $width     Logical pixel width (at density 1).
 	 * @param int   $height    Logical pixel height (at density 1).
 	 * @param int   $density   Pixel-density multiplier. 1 = standard, 2 = retina.
-	 * @return \GdImage|resource|null Finished image, or null on failure.
+	 * @return GdImage|resource|null Finished image, or null on failure.
 	 */
 	abstract public function render(
 		float $latitude,

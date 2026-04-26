@@ -139,7 +139,7 @@ export const RegenerateMapButton = ( {
 							...current,
 							meta: {
 								...( current.meta || {} ),
-								gatherpress_venue_static_map:
+								gatherpress_static_map:
 									response?.descriptors || {},
 							},
 						},

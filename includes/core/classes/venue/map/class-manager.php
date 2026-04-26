@@ -80,6 +80,7 @@ class Manager {
 	 * @return void
 	 */
 	protected function setup_hooks(): void {
+		// Priority 0 so the registry is populated before any default-priority `init` listener reads it.
 		add_action( 'init', array( $this, 'do_register_action' ), 0 );
 	}
 

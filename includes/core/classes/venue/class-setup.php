@@ -388,7 +388,7 @@ class Setup {
 
 		$venue_map_meta = array(
 			// Map display settings.
-			'gatherpress_venue_map_show'   => array(
+			'gatherpress_map_show'   => array(
 				'auth_callback'     => array( Utility::class, 'can_edit_post_meta' ),
 				'sanitize_callback' => 'rest_sanitize_boolean',
 				'show_in_rest'      => true,
@@ -396,7 +396,7 @@ class Setup {
 				'type'              => 'boolean',
 				'default'           => true,
 			),
-			'gatherpress_venue_map_zoom'   => array(
+			'gatherpress_map_zoom'   => array(
 				'auth_callback'     => array( Utility::class, 'can_edit_post_meta' ),
 				'sanitize_callback' => 'absint',
 				'show_in_rest'      => true,
@@ -404,7 +404,7 @@ class Setup {
 				'type'              => 'integer',
 				'default'           => 10,
 			),
-			'gatherpress_venue_map_height' => array(
+			'gatherpress_map_height' => array(
 				'auth_callback'     => array( Utility::class, 'can_edit_post_meta' ),
 				'sanitize_callback' => 'absint',
 				'show_in_rest'      => true,
