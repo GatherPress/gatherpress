@@ -93,6 +93,11 @@ class Test_Manager extends Base {
 	 * @return void
 	 */
 	public function test_register_is_idempotent(): void {
+		// Second registration trips the slug-collision warning by design —
+		// surfaces the conflict in the debug log instead of silently
+		// overwriting.
+		$this->setExpectedIncorrectUsage( Manager::class . '::register' );
+
 		$instance = Manager::get_instance();
 		$first    = $this->make_stub_provider( 'twice' );
 		$second   = $this->make_stub_provider( 'twice' );

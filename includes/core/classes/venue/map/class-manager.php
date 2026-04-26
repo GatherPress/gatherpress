@@ -110,7 +110,7 @@ class Manager {
 				__METHOD__,
 				sprintf(
 					/* translators: %s: provider slug. */
-					esc_html__( 'A venue map provider is already registered for slug "%s"; the second registration was ignored.', 'gatherpress' ),
+					esc_html__( 'A venue map provider is already registered for slug "%s".', 'gatherpress' ),
 					esc_html( $slug )
 				),
 				'1.0.0'
