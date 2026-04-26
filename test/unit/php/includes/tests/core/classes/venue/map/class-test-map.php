@@ -2658,16 +2658,17 @@ class Test_Map extends Base {
 	}
 
 	/**
-	 * Flipping `map_platform` falls through to the prewarm subsystem —
-	 * `Prewarm::on_theme_switched()` is invoked. Smoke test only; whether
-	 * cron jobs actually land depends on template content the test
-	 * environment can't seed, so we just exercise the branch.
+	 * Flipping `map_platform` schedules a single deferred cron sweep
+	 * via `Prewarm::schedule_full_sweep()` — the heavy template + venue
+	 * rescan runs on the next tick, not inline on the admin save.
 	 *
 	 * @covers ::maybe_handle_settings_change
 	 *
 	 * @return void
 	 */
-	public function test_maybe_handle_settings_change_invokes_prewarm_on_platform_change(): void {
+	public function test_maybe_handle_settings_change_schedules_deferred_sweep(): void {
+		wp_clear_scheduled_hook( \GatherPress\Core\Venue\Map\Prewarm::FULL_SWEEP_ACTION );
+
 		$instance = Map::get_instance();
 
 		$instance->maybe_handle_settings_change(
@@ -2675,9 +2676,12 @@ class Test_Map extends Base {
 			array( 'map_platform' => 'google' )
 		);
 
-		// Reaching this line proves the platform-change branch executed
-		// without a fatal — that's what coverage of 336-337 needs.
-		$this->assertTrue( true );
+		$this->assertNotFalse(
+			wp_next_scheduled( \GatherPress\Core\Venue\Map\Prewarm::FULL_SWEEP_ACTION ),
+			'Platform change must defer the rescan via the FULL_SWEEP_ACTION cron.'
+		);
+
+		wp_clear_scheduled_hook( \GatherPress\Core\Venue\Map\Prewarm::FULL_SWEEP_ACTION );
 	}
 
 	/**
@@ -2698,15 +2702,26 @@ class Test_Map extends Base {
 		add_post_meta( $post_id, 'gatherpress_latitude', '37.3318' );
 		add_post_meta( $post_id, 'gatherpress_longitude', '-122.0312' );
 
-		// Seed a `google`-keyed descriptor for the combo the orchestrator
-		// will request. Active provider (the null-stub registered below)
-		// returns null, so the fallback chain must surface this entry.
+		// Seed two providers: the active slug AND `google`. The active
+		// slug's entry is what proves the `continue` skip in the fallback
+		// walk fires; the google entry is what the walk should ultimately
+		// return.
 		$key = sprintf( '%dx%dx%d', Map::DEFAULT_ZOOM, Map::DEFAULT_HEIGHT * 2, Map::DEFAULT_HEIGHT );
 		update_post_meta(
 			$post_id,
 			Map::META_KEY,
 			array(
-				'google' => array(
+				'fallback-stub' => array(
+					$key => array(
+						'url'    => 'https://example.test/active-but-unusable.png',
+						'url_2x' => '',
+						'hash'   => 'xyz',
+						'zoom'   => Map::DEFAULT_ZOOM,
+						'width'  => Map::DEFAULT_HEIGHT * 2,
+						'height' => Map::DEFAULT_HEIGHT,
+					),
+				),
+				'google'        => array(
 					$key => array(
 						'url'    => 'https://example.test/google.png',
 						'url_2x' => '',
@@ -2736,8 +2751,9 @@ class Test_Map extends Base {
 	}
 
 	/**
-	 * When neither the active provider nor any other provider has a
-	 * matching combo, `get_descriptor_for_post()` returns null.
+	 * When the active provider can't render and no other provider has a
+	 * matching combo in storage, `get_descriptor_for_post()` falls
+	 * through the walk and returns null.
 	 *
 	 * @covers ::get_descriptor_for_post
 	 *
@@ -2748,8 +2764,11 @@ class Test_Map extends Base {
 		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
 
 		add_post_meta( $post_id, 'gatherpress_address', '1 Infinite Loop' );
-		// Stored combo doesn't match the requested combo, no coords to
-		// satisfy active-provider render either.
+		add_post_meta( $post_id, 'gatherpress_latitude', '37.3318' );
+		add_post_meta( $post_id, 'gatherpress_longitude', '-122.0312' );
+
+		// Stored combo deliberately mismatches what the orchestrator
+		// will request, so the fallback walk completes without a match.
 		update_post_meta(
 			$post_id,
 			Map::META_KEY,
@@ -2767,9 +2786,22 @@ class Test_Map extends Base {
 			)
 		);
 
-		$this->assertNull(
-			$instance->get_descriptor_for_post( $post_id, Venue::POST_TYPE )
-		);
+		// Null-active provider so the active branch of
+		// `ensure_descriptor_for_combo` returns null, exercising the
+		// fallback walk in `get_descriptor_for_post`.
+		$null_provider = $this->make_null_provider( 'no-combo-active' );
+		$manager       = Manager::get_instance();
+		$manager->register( $null_provider );
+		update_option( Settings::OPTION_NAME, array( 'map_platform' => 'no-combo-active' ) );
+
+		try {
+			$result = $instance->get_descriptor_for_post( $post_id, Venue::POST_TYPE );
+		} finally {
+			$this->reset_manager_to_core_providers( $manager );
+			delete_option( Settings::OPTION_NAME );
+		}
+
+		$this->assertNull( $result );
 	}
 
 	/**

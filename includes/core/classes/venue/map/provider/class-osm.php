@@ -182,7 +182,17 @@ class OSM extends Base {
 					continue;
 				}
 
-				$tile = imagecreatefromstring( $tile_png );
+				// Wrap the decode — `imagecreatefromstring()` can emit a
+				// PHP warning (and on some builds a notice-converted-to-
+				// exception in tests) for malformed bytes from a tile
+				// host or a misconfigured `gatherpress_venue_map_tile_url`.
+				// Treat any failure as "skip this tile" rather than
+				// fatalling the whole composite.
+				try {
+					$tile = imagecreatefromstring( $tile_png );
+				} catch ( \Throwable $e ) {
+					$tile = false;
+				}
 
 				if ( false === $tile ) {
 					continue;

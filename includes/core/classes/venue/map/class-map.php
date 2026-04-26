@@ -330,11 +330,14 @@ class Map {
 			return;
 		}
 
-		// Defer to the prewarm subsystem — same path used on theme switch.
-		// Wrapped so a missing `Prewarm` (e.g. tests that haven't booted
-		// the venue subsystem) doesn't fatal a plain settings save.
+		// Defer to a one-shot cron tick rather than running the full
+		// template + venue rescan inline. A site with thousands of
+		// venues × combos would otherwise fan out a huge number of cron
+		// events synchronously inside the admin save that triggered us.
+		// Wrapped so a missing `Prewarm` (tests that haven't booted the
+		// venue subsystem) doesn't fatal a plain settings save.
 		if ( class_exists( Prewarm::class ) ) {
-			Prewarm::get_instance()->on_theme_switched();
+			Prewarm::get_instance()->schedule_full_sweep();
 		}
 	}
 

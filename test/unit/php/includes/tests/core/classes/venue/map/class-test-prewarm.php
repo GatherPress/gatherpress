@@ -31,6 +31,7 @@ class Test_Prewarm extends Base {
 	 */
 	public function tear_down(): void {
 		wp_clear_scheduled_hook( Prewarm::CRON_ACTION );
+		wp_clear_scheduled_hook( Prewarm::FULL_SWEEP_ACTION );
 		parent::tear_down();
 	}
 
@@ -54,6 +55,12 @@ class Test_Prewarm extends Base {
 			),
 			array(
 				'type'     => 'action',
+				'name'     => Prewarm::FULL_SWEEP_ACTION,
+				'priority' => 10,
+				'callback' => array( $instance, 'on_theme_switched' ),
+			),
+			array(
+				'type'     => 'action',
 				'name'     => 'wp_after_insert_post',
 				'priority' => 12,
 				'callback' => array( $instance, 'on_post_saved' ),
@@ -67,6 +74,34 @@ class Test_Prewarm extends Base {
 		);
 
 		$this->assert_hooks( $hooks, $instance );
+	}
+
+	/**
+	 * `schedule_full_sweep()` queues a single one-shot cron event for
+	 * the FULL_SWEEP_ACTION. Repeat calls coalesce — only one event
+	 * sits in the queue at a time so a burst of platform-saves
+	 * doesn't pile up duplicate sweeps.
+	 *
+	 * @covers ::schedule_full_sweep
+	 *
+	 * @return void
+	 */
+	public function test_schedule_full_sweep_is_idempotent(): void {
+		wp_clear_scheduled_hook( Prewarm::FULL_SWEEP_ACTION );
+
+		$instance = Prewarm::get_instance();
+
+		$instance->schedule_full_sweep();
+		$first = wp_next_scheduled( Prewarm::FULL_SWEEP_ACTION );
+
+		$this->assertNotFalse( $first, 'A one-shot sweep must be queued.' );
+
+		$instance->schedule_full_sweep();
+		$second = wp_next_scheduled( Prewarm::FULL_SWEEP_ACTION );
+
+		$this->assertSame( $first, $second, 'Repeat calls must not queue a second event.' );
+
+		wp_clear_scheduled_hook( Prewarm::FULL_SWEEP_ACTION );
 	}
 
 	/**

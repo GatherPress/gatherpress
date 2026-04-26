@@ -89,7 +89,9 @@ class Manager {
 	 *
 	 * Idempotent — re-registering the same slug is a no-op so accidental
 	 * double-registration during companion-plugin development doesn't
-	 * silently overwrite the original.
+	 * silently overwrite the original. Logs a `_doing_it_wrong()` on the
+	 * collision so the conflict surfaces in the debug log instead of
+	 * disappearing.
 	 *
 	 * @since 1.0.0
 	 *
@@ -104,6 +106,15 @@ class Manager {
 		}
 
 		if ( isset( $this->providers[ $slug ] ) ) {
+			_doing_it_wrong(
+				__METHOD__,
+				sprintf(
+					/* translators: %s: provider slug. */
+					esc_html__( 'A venue map provider is already registered for slug "%s"; the second registration was ignored.', 'gatherpress' ),
+					esc_html( $slug )
+				),
+				'1.0.0'
+			);
 			return;
 		}
 
@@ -244,9 +255,13 @@ class Manager {
 		/**
 		 * Fires when venue map providers are being registered.
 		 *
-		 * Companion plugins should hook this and register their providers
-		 * by calling `$registry->register( new My_Map_Provider() )`. Core
-		 * providers (OSM) are already registered by this point.
+		 * Fires on `init` priority 0 — after all plugins have loaded but
+		 * before any default-priority `init` listener observes the
+		 * registry. Companion plugins should hook this (NOT `plugins_loaded`,
+		 * which is too early — the manager singleton may not yet exist)
+		 * and register their providers by calling
+		 * `$registry->register( new My_Map_Provider() )`. Core providers
+		 * (OSM) are already registered by this point.
 		 *
 		 * @since 1.0.0
 		 *
