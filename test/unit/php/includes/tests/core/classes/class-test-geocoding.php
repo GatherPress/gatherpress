@@ -315,6 +315,8 @@ class Test_Geocoding extends Base {
 	 * Coverage for geocode_address with successful response.
 	 *
 	 * @covers ::geocode_address
+	 * @covers ::geocode_to_result
+	 * @covers ::extract_structured_address
 	 *
 	 * @return void
 	 */
@@ -358,6 +360,9 @@ class Test_Geocoding extends Base {
 	 * Coverage for geocode_address with no results.
 	 *
 	 * @covers ::geocode_address
+	 * @covers ::geocode_to_result
+	 * @covers ::build_not_found_payload
+	 * @covers ::extract_structured_address
 	 *
 	 * @return void
 	 */
@@ -398,6 +403,7 @@ class Test_Geocoding extends Base {
 	 * Coverage for geocode_address with HTTP error response.
 	 *
 	 * @covers ::geocode_address
+	 * @covers ::geocode_to_result
 	 *
 	 * @return void
 	 */
@@ -541,6 +547,7 @@ class Test_Geocoding extends Base {
 	 * Coverage for geocode_address with network error (WP_Error).
 	 *
 	 * @covers ::geocode_address
+	 * @covers ::geocode_to_result
 	 *
 	 * @return void
 	 */
@@ -576,6 +583,7 @@ class Test_Geocoding extends Base {
 	 * Coverage for geocode_address with non-200 status code.
 	 *
 	 * @covers ::geocode_address
+	 * @covers ::geocode_to_result
 	 *
 	 * @return void
 	 */
@@ -618,6 +626,9 @@ class Test_Geocoding extends Base {
 	 * Coverage for geocode_address with missing geometry in response.
 	 *
 	 * @covers ::geocode_address
+	 * @covers ::geocode_to_result
+	 * @covers ::build_not_found_payload
+	 * @covers ::extract_structured_address
 	 *
 	 * @return void
 	 */
@@ -663,6 +674,8 @@ class Test_Geocoding extends Base {
 	 * Coverage for geocode_address building correct URL.
 	 *
 	 * @covers ::geocode_address
+	 * @covers ::geocode_to_result
+	 * @covers ::extract_structured_address
 	 *
 	 * @return void
 	 */
@@ -734,6 +747,8 @@ class Test_Geocoding extends Base {
 	 * Successful Photon geocode response is stored in a transient for reuse.
 	 *
 	 * @covers ::geocode_address
+	 * @covers ::geocode_to_result
+	 * @covers ::extract_structured_address
 	 *
 	 * @return void
 	 */
@@ -775,6 +790,7 @@ class Test_Geocoding extends Base {
 	 * Cached geocode result short-circuits the outbound Photon request.
 	 *
 	 * @covers ::geocode_address
+	 * @covers ::geocode_to_result
 	 *
 	 * @return void
 	 */
@@ -833,6 +849,9 @@ class Test_Geocoding extends Base {
 	 * Not-found geocode responses are also cached so repeat bad addresses stop hitting upstream.
 	 *
 	 * @covers ::geocode_address
+	 * @covers ::geocode_to_result
+	 * @covers ::build_not_found_payload
+	 * @covers ::extract_structured_address
 	 *
 	 * @return void
 	 */
@@ -2081,6 +2100,7 @@ class Test_Geocoding extends Base {
 	 * values than overwrite with empties on a transient upstream blip.
 	 *
 	 * @covers ::async_geocode_venue
+	 * @covers ::geocode_to_result
 	 *
 	 * @return void
 	 */
@@ -2122,6 +2142,8 @@ class Test_Geocoding extends Base {
 	 * `countrycode` → `country_code`).
 	 *
 	 * @covers ::async_geocode_venue
+	 * @covers ::geocode_to_result
+	 * @covers ::extract_structured_address
 	 *
 	 * @return void
 	 */
@@ -2152,6 +2174,9 @@ class Test_Geocoding extends Base {
 	 * place would be lying.
 	 *
 	 * @covers ::async_geocode_venue
+	 * @covers ::geocode_to_result
+	 * @covers ::build_not_found_payload
+	 * @covers ::extract_structured_address
 	 *
 	 * @return void
 	 */
@@ -2186,6 +2211,7 @@ class Test_Geocoding extends Base {
 	 * the transient TTL expired.
 	 *
 	 * @covers ::geocode_to_result
+	 * @covers ::extract_structured_address
 	 *
 	 * @return void
 	 */
@@ -2219,6 +2245,92 @@ class Test_Geocoding extends Base {
 			(string) ( $result['city'] ?? '' ),
 			'Self-heal must populate city after refetch.'
 		);
+	}
+
+	/**
+	 * Whitespace-only addresses trim to empty inside `geocode_to_result()`
+	 * and short-circuit to the canonical "not found" payload before any
+	 * Photon round-trip. Covers the empty-address branch that
+	 * `geocode_address()` itself doesn't reach (it has its own earlier
+	 * empty-check), but `extract_structured_address()` consumers like
+	 * direct in-process callers can still hit.
+	 *
+	 * @covers ::geocode_to_result
+	 * @covers ::build_not_found_payload
+	 * @covers ::extract_structured_address
+	 *
+	 * @return void
+	 */
+	public function test_geocode_to_result_returns_not_found_payload_for_whitespace_only_address(): void {
+		$instance = Geocoding::get_instance();
+
+		// HTTP layer must not be reached — assert by mocking a mismatched response.
+		$this->http_mock->mock(
+			'*',
+			array(
+				'body' => wp_json_encode(
+					array(
+						'features' => array(
+							array(
+								'geometry' => array( 'coordinates' => array( 99, 99 ) ),
+							),
+						),
+					)
+				),
+			)
+		);
+
+		$result = $instance->geocode_to_result( '   ' );
+
+		$this->assertIsArray( $result );
+		$this->assertSame( '', $result['latitude'] );
+		$this->assertSame( '', $result['longitude'] );
+		$this->assertNotEmpty( $result['error'], 'Empty-address branch must include a user-facing error string.' );
+		$this->assertSame( '', $result['house_number'] );
+		$this->assertSame( '', $result['country_code'] );
+	}
+
+	/**
+	 * Photon GeoJSON nominally puts the structured address under
+	 * `features[0].properties` — but malformed responses may serialize that
+	 * field as a string or null. The `: array()` fallback in
+	 * `geocode_to_result()` keeps the merge safe in that case; without it,
+	 * `extract_structured_address()` would receive a non-array and the type
+	 * declaration would throw.
+	 *
+	 * @covers ::geocode_to_result
+	 * @covers ::extract_structured_address
+	 *
+	 * @return void
+	 */
+	public function test_geocode_to_result_handles_non_array_properties(): void {
+		$instance = Geocoding::get_instance();
+
+		$this->http_mock->mock(
+			'*',
+			array(
+				'body' => wp_json_encode(
+					array(
+						'features' => array(
+							array(
+								'geometry'   => array( 'coordinates' => array( 7.0, 8.0 ) ),
+								'properties' => 'not-an-array',
+							),
+						),
+					)
+				),
+			)
+		);
+
+		$result = $instance->geocode_to_result( 'Non-array properties test address' );
+
+		$this->assertIsArray( $result );
+		$this->assertSame( '8', $result['latitude'] );
+		$this->assertSame( '7', $result['longitude'] );
+		// Structured pieces must be empty because the malformed `properties`
+		// passed an empty array down to `extract_structured_address()`.
+		$this->assertSame( '', $result['house_number'] );
+		$this->assertSame( '', $result['city'] );
 	}
 
 	/**
