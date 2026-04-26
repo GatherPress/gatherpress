@@ -20,7 +20,7 @@ use GatherPress\Core\Event;
 use GatherPress\Core\Rsvp;
 use GatherPress\Core\Rsvp_Query;
 use GatherPress\Core\Traits\Singleton;
-use GatherPress\Core\Venue_Setup;
+use GatherPress\Core\Venue\Setup as Venue_Setup;
 use WP_Query;
 
 /**

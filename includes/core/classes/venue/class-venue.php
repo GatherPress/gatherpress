@@ -2,18 +2,18 @@
 /**
  * Per-post instance class for a single Venue.
  *
- * Mirrors the {@see Event} class: constructed around a specific venue post ID,
- * populates `$this->venue` with the WP_Post when the post type declares
+ * Mirrors the {@see \GatherPress\Core\Event\Event} class: constructed around a specific
+ * venue post ID, populates `$this->venue` with the WP_Post when the post type declares
  * `gatherpress-venue-information` support, and exposes accessors for that
  * venue's stored information, taxonomy term, and slug. Everything not tied to
  * a specific venue instance — post type registration, taxonomy helpers,
- * event→venue lookups — lives on {@see Venue_Setup}.
+ * event→venue lookups — lives on {@see Setup}.
  *
- * @package GatherPress\Core
+ * @package GatherPress\Core\Venue
  * @since 1.0.0
  */
 
-namespace GatherPress\Core;
+namespace GatherPress\Core\Venue;
 
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
@@ -25,8 +25,8 @@ use WP_Term;
 /**
  * Class Venue.
  *
- * Instance anchored to a specific venue post ID. Pair with {@see Venue_Setup}
- * for the WordPress integration layer and venue-type-level utilities.
+ * Instance anchored to a specific venue post ID. Pair with {@see Setup} for
+ * the WordPress integration layer and venue-type-level utilities.
  *
  * @since 1.0.0
  */
@@ -103,9 +103,8 @@ class Venue {
 	/**
 	 * Returns the taxonomy slug that backs this venue's term.
 	 *
-	 * Derived from the venue's post type via
-	 * {@see Venue_Setup::get_taxonomy()}. Empty string when this instance
-	 * does not wrap a real venue.
+	 * Derived from the venue's post type via {@see Setup::get_taxonomy()}.
+	 * Empty string when this instance does not wrap a real venue.
 	 *
 	 * @since 1.0.0
 	 *
@@ -116,7 +115,7 @@ class Venue {
 			return '';
 		}
 
-		return Venue_Setup::get_instance()->get_taxonomy( $this->venue->post_type );
+		return Setup::get_instance()->get_taxonomy( $this->venue->post_type );
 	}
 
 	/**
@@ -124,9 +123,9 @@ class Venue {
 	 *
 	 * Format is the underscore-prefixed post_name (e.g. `my-venue` →
 	 * `_my-venue`). Delegates the formatting to
-	 * {@see Venue_Setup::term_slug_from_post_name()} so there is only one
-	 * source of truth for the slug shape. Empty string when this instance
-	 * does not wrap a real venue.
+	 * {@see Setup::term_slug_from_post_name()} so there is only one source
+	 * of truth for the slug shape. Empty string when this instance does not
+	 * wrap a real venue.
 	 *
 	 * @since 1.0.0
 	 *
@@ -137,7 +136,7 @@ class Venue {
 			return '';
 		}
 
-		return Venue_Setup::get_instance()->term_slug_from_post_name( $this->venue->post_name );
+		return Setup::get_instance()->term_slug_from_post_name( $this->venue->post_name );
 	}
 
 	/**

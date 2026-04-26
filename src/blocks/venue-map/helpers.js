@@ -175,7 +175,7 @@ export const RegenerateMapButton = ( {
 /**
  * Parse an aspect-ratio string (e.g. "16/9" or "4:3") into a float.
  *
- * Mirrors the server-side `Venue_Map::parse_aspect_ratio()` so the editor
+ * Mirrors the server-side `Venue\Map::parse_aspect_ratio()` so the editor
  * can derive auto dimensions from the ratio without a round-trip to PHP.
  * Returns null for unparsable input.
  *
@@ -203,7 +203,7 @@ export const parseAspectRatio = ( ratio ) => {
 /**
  * Resolve a (width, height) pair from block attribute values.
  *
- * Mirrors `Venue_Map::resolve_dimensions()` so the editor renders the map
+ * Mirrors `Venue\Map::resolve_dimensions()` so the editor renders the map
  * at the same effective pixel size the server will compose. Either
  * dimension can be 0 ("auto") and will be derived from the other side and
  * the aspect ratio. When both are auto, `DEFAULT_HEIGHT` seeds the math.

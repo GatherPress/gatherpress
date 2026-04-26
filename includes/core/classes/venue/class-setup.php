@@ -7,15 +7,17 @@
  * slug maintenance). Per-venue data accessors live on the `Venue` instance
  * class instead.
  *
- * @package GatherPress\Core
+ * @package GatherPress\Core\Venue
  * @since 1.0.0
  */
 
-namespace GatherPress\Core;
+namespace GatherPress\Core\Venue;
 
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
+use GatherPress\Core\Event\Event;
+use GatherPress\Core\Settings;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Utility;
 use GatherPress\Core\Validate;
@@ -26,14 +28,18 @@ use WP_REST_Request;
 use WP_Term;
 
 /**
- * Class Venue_Setup.
+ * Class Setup.
  *
  * Registers the Venue post type + taxonomy and wires the WordPress hooks that
- * keep venue data consistent (term lifecycle, template content).
+ * keep venue data consistent (term lifecycle, template content). Also owns
+ * instantiation of the Venue\* sibling singletons (Map, Map_Prewarm) so the
+ * outer `Setup::instantiate_classes()` can hand off the whole venue subsystem
+ * with a single `Venue\Setup::get_instance()` line — same shape as
+ * `Settings::instantiate_classes()`.
  *
  * @since 1.0.0
  */
-class Venue_Setup {
+class Setup {
 	/**
 	 * Enforces a single instance of this class.
 	 */
@@ -42,10 +48,32 @@ class Venue_Setup {
 	/**
 	 * Class constructor.
 	 *
+	 * Instantiates the sibling Venue\* singletons before wiring hooks so
+	 * `Setup::instantiate_classes()` can hand off the whole venue
+	 * subsystem with a single `Venue\Setup::get_instance()` line — same
+	 * shape as `Settings::instantiate_classes()`.
+	 *
 	 * @since 1.0.0
 	 */
 	public function __construct() {
+		$this->instantiate_classes();
 		$this->setup_hooks();
+	}
+
+	/**
+	 * Instantiate each Venue\* sibling singleton.
+	 *
+	 * Keeps the outer `Setup::instantiate_classes()` slim — adding a new
+	 * Venue\* class lands as a single line here rather than edits to
+	 * Setup. Each subclass is a singleton, so repeat calls are safe.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return void
+	 */
+	protected function instantiate_classes(): void {
+		Map::get_instance();
+		Map_Prewarm::get_instance();
 	}
 
 	/**
@@ -227,7 +255,7 @@ class Venue_Setup {
 	 * Numeric values within the ±180 range are normalized to a string form via
 	 * a float cast (trims whitespace, normalizes scientific notation). Anything
 	 * else collapses to an empty string — the "no coords yet" sentinel the
-	 * editor and `Venue_Map::parse_coord()` already treat as unset.
+	 * editor and `Map::parse_coord()` already treat as unset.
 	 *
 	 * @since 1.0.0
 	 *
@@ -299,12 +327,12 @@ class Venue_Setup {
 				'default'           => '',
 				'revisions_enabled' => true,
 			),
-			// Venue_Map keeps a per-zoom descriptor map here: { "15": { url,
+			// Map keeps a per-zoom descriptor map here: { "15": { url,
 			// hash }, ... }. Exposed read-only via REST so the block editor
 			// can preview the cached static image when the user picks
 			// renderMode="static". Writes are denied ­— the server-side
 			// pipeline is the only thing allowed to populate this meta.
-			Venue_Map::META_KEY     => array(
+			Map::META_KEY           => array(
 				'auth_callback' => '__return_false',
 				'show_in_rest'  => array(
 					'schema' => array(
@@ -385,7 +413,7 @@ class Venue_Setup {
 	 * Filter out read-only meta from REST API requests.
 	 *
 	 * Some venue meta keys are populated by server-side pipelines (e.g. the
-	 * Venue_Map static map descriptors) and should never be written by the
+	 * Map static map descriptors) and should never be written by the
 	 * block editor. Values submitted for those keys are silently discarded
 	 * rather than triggering a permission error from the __return_false auth
 	 * callback.
@@ -398,7 +426,7 @@ class Venue_Setup {
 	 */
 	public function filter_readonly_meta( stdClass $prepared_post, WP_REST_Request $request ): stdClass {
 		$readonly_keys = array(
-			Venue_Map::META_KEY,
+			Map::META_KEY,
 		);
 
 		$meta = $request->get_param( 'meta' );

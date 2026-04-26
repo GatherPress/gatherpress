@@ -1,28 +1,57 @@
 <?php
 /**
- * Class handles unit tests for GatherPress\Core\Venue.
+ * Class handles unit tests for GatherPress\Core\Venue\Venue.
  *
  * Covers the instance class — constructor and per-post accessors. Anything
  * that isn't tied to a specific venue instance (WP integration, post-type-level
- * utilities, lookups) is covered by `Test_Venue_Setup`.
+ * utilities, lookups) is covered by `Test_Setup`.
  *
- * @package GatherPress\Core
+ * @package GatherPress\Core\Venue
  * @since 1.0.0
  */
 
-namespace GatherPress\Tests\Core;
+namespace GatherPress\Tests\Core\Venue;
 
-use GatherPress\Core\Venue;
+use GatherPress\Core\Venue\Venue;
 use GatherPress\Tests\Base;
+use ReflectionClass;
 use WP_Term;
 
 /**
  * Class Test_Venue.
  *
  * @group multisite
- * @coversDefaultClass \GatherPress\Core\Venue
+ * @coversDefaultClass \GatherPress\Core\Venue\Venue
  */
 class Test_Venue extends Base {
+	/**
+	 * Asserts that the prior fully-qualified class name `GatherPress\Core\Venue` continues
+	 * to resolve to the current class `GatherPress\Core\Venue\Venue` via the alias map in
+	 * `includes/core/register-class-aliases.php`. Removing the alias entry would silently
+	 * break external consumers (other plugins, theme code) that reference the prior FQN —
+	 * this test fails loudly first.
+	 *
+	 * @return void
+	 */
+	public function test_prior_fqn_resolves_to_current_class(): void {
+		$prior_fqn = 'GatherPress\\Core\\Venue';
+
+		$this->assertTrue(
+			class_exists( $prior_fqn ),
+			'The prior fully-qualified class name should resolve via the alias map.'
+		);
+
+		$reflection = new ReflectionClass( $prior_fqn );
+		$this->assertSame(
+			Venue::class,
+			$reflection->getName(),
+			'The prior FQN should resolve to the current Venue class.'
+		);
+
+		// Read a class constant through the prior FQN to confirm runtime usability.
+		$this->assertSame( Venue::POST_TYPE, constant( $prior_fqn . '::POST_TYPE' ) );
+	}
+
 	/**
 	 * Construct a Venue instance from a post ID and read it back.
 	 *

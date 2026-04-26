@@ -12,7 +12,7 @@ use GatherPress\Core\Event;
 use GatherPress\Core\Event\Admin_List;
 use GatherPress\Core\Rsvp;
 use GatherPress\Core\Venue;
-use GatherPress\Core\Venue_Setup;
+use GatherPress\Core\Venue\Setup as Venue_Setup;
 use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;
 use WP_Query;

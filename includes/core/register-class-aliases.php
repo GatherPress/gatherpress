@@ -22,6 +22,7 @@ spl_autoload_register(
 		// Map of prior fully-qualified class names to their current fully-qualified class names.
 		$aliases = array(
 			'GatherPress\\Core\\Event' => 'GatherPress\\Core\\Event\\Event',
+			'GatherPress\\Core\\Venue' => 'GatherPress\\Core\\Venue\\Venue',
 		);
 
 		if ( ! isset( $aliases[ $class_string ] ) ) {

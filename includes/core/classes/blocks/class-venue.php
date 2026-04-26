@@ -16,8 +16,8 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Block;
 use GatherPress\Core\Traits\Singleton;
-use GatherPress\Core\Venue as Venue_Core;
-use GatherPress\Core\Venue_Setup;
+use GatherPress\Core\Venue\Setup as Venue_Setup;
+use GatherPress\Core\Venue\Venue as Venue_Core;
 use WP_Block;
 use WP_Post;
 

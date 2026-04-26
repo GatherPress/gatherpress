@@ -21,8 +21,8 @@ use GatherPress\Core\Rsvp_Setup;
 use GatherPress\Core\Settings;
 use GatherPress\Core\Utility;
 use GatherPress\Core\Validate;
-use GatherPress\Core\Venue;
-use GatherPress\Core\Venue_Setup;
+use GatherPress\Core\Venue\Setup as Venue_Setup;
+use GatherPress\Core\Venue\Venue;
 use WP_Post;
 
 /**

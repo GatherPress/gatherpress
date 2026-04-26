@@ -48,4 +48,9 @@ namespace {
         require_once __DIR__ . '/includes/core/classes/event/class-event.php';
         class_alias( 'GatherPress\\Core\\Event\\Event', 'GatherPress\\Core\\Event' );
     }
+
+    if ( ! class_exists( 'GatherPress\\Core\\Venue', false ) ) {
+        require_once __DIR__ . '/includes/core/classes/venue/class-venue.php';
+        class_alias( 'GatherPress\\Core\\Venue\\Venue', 'GatherPress\\Core\\Venue' );
+    }
 }

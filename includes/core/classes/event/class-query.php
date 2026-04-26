@@ -19,8 +19,8 @@ use GatherPress\Core\Event;
 use GatherPress\Core\Settings;
 use GatherPress\Core\Topic;
 use GatherPress\Core\Traits\Singleton;
-use GatherPress\Core\Venue;
-use GatherPress\Core\Venue_Setup;
+use GatherPress\Core\Venue\Setup as Venue_Setup;
+use GatherPress\Core\Venue\Venue;
 use WP_Post;
 use WP_Query;
 

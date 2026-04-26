@@ -16,7 +16,7 @@ namespace GatherPress\Core\Settings;
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Traits\Singleton;
-use GatherPress\Core\Venue_Map;
+use GatherPress\Core\Venue\Map as Venue_Map;
 
 /**
  * Class Venues.
