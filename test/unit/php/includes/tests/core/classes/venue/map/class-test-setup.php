@@ -8,8 +8,8 @@
 
 namespace GatherPress\Tests\Core\Venue\Map;
 
+use GatherPress\Core\Venue\Map;
 use GatherPress\Core\Venue\Map\Manager;
-use GatherPress\Core\Venue\Map\Map;
 use GatherPress\Core\Venue\Map\Prewarm;
 use GatherPress\Core\Venue\Map\Setup;
 use GatherPress\Tests\Base;

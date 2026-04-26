@@ -21,7 +21,7 @@ use GatherPress\Core\Settings;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Utility;
 use GatherPress\Core\Validate;
-use GatherPress\Core\Venue\Map\Map;
+use GatherPress\Core\Venue\Map;
 use GatherPress\Core\Venue\Map\Setup as Map_Setup;
 use stdClass;
 use WP_Block_Patterns_Registry;

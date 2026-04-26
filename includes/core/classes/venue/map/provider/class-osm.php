@@ -18,7 +18,7 @@ namespace GatherPress\Core\Venue\Map\Provider;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
-use GatherPress\Core\Venue\Map\Map;
+use GatherPress\Core\Venue\Map;
 use GdImage;
 
 /**
@@ -225,14 +225,9 @@ class OSM extends Base {
 	 * @return string
 	 */
 	public function attribution_html(): string {
-		$link_attrs = 'target="_blank" rel="noopener noreferrer"';
-		$format     = sprintf(
-			'© <a href="%%1$s" %1$s>%%2$s</a> | © <a href="%%3$s" %1$s>%%4$s</a>',
-			$link_attrs
-		);
-
 		return sprintf(
-			$format,
+			'© <a href="%1$s" target="_blank" rel="noopener noreferrer">%2$s</a>'
+			. ' | © <a href="%3$s" target="_blank" rel="noopener noreferrer">%4$s</a>',
 			esc_url( 'https://www.openstreetmap.org/copyright' ),
 			esc_html__( 'OpenStreetMap contributors', 'gatherpress' ),
 			esc_url( 'https://carto.com/' ),

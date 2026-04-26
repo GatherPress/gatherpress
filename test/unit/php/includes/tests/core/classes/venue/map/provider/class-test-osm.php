@@ -12,7 +12,7 @@
 
 namespace GatherPress\Tests\Core\Venue\Map\Provider;
 
-use GatherPress\Core\Venue\Map\Map;
+use GatherPress\Core\Venue\Map;
 use GatherPress\Core\Venue\Map\Provider\OSM;
 use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;
@@ -492,5 +492,51 @@ class Test_OSM extends Base {
 		add_filter( 'pre_http_request', array( $this, 'short_circuit_tile_requests' ), 10, 3 );
 
 		$this->assertInstanceOf( GdImage::class, $canvas );
+	}
+
+	/**
+	 * `imagecreatefromstring()` can emit a PHP warning (which the test
+	 * runner converts to an exception via `convertWarningsToExceptions`)
+	 * when bytes start with a recognizable image-format magic but are
+	 * corrupt downstream — e.g. a truncated PNG. The try/catch around
+	 * the decode swallows the throw and falls through to "skip this
+	 * tile" so the whole composite doesn't fatal.
+	 *
+	 * @covers ::render
+	 *
+	 * @return void
+	 */
+	public function test_render_swallows_imagecreatefromstring_throw(): void {
+		if ( ! function_exists( 'imagecreatetruecolor' ) ) {
+			$this->markTestSkipped( 'GD extension is not available.' );
+		}
+
+		// PNG signature followed by garbage — PHP recognizes the magic
+		// bytes, attempts to read the IHDR chunk, fails, emits a warning.
+		$truncated_png = "\x89PNG\r\n\x1a\n" . str_repeat( "\x00", 50 );
+
+		remove_filter( 'pre_http_request', array( $this, 'short_circuit_tile_requests' ), 10 );
+		$broken = static function () use ( $truncated_png ) {
+			return array(
+				'response' => array(
+					'code'    => 200,
+					'message' => 'OK',
+				),
+				'body'     => $truncated_png,
+				'headers'  => array(),
+			);
+		};
+		add_filter( 'pre_http_request', $broken, 10 );
+
+		$canvas = ( new OSM() )->render( 37.3318, -122.0312, 15, 512, 256 );
+
+		remove_filter( 'pre_http_request', $broken, 10 );
+		add_filter( 'pre_http_request', array( $this, 'short_circuit_tile_requests' ), 10, 3 );
+
+		$this->assertInstanceOf(
+			GdImage::class,
+			$canvas,
+			'A throw from imagecreatefromstring() must be caught and the composite must complete.'
+		);
 	}
 }
