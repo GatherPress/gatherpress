@@ -21,6 +21,8 @@ use GatherPress\Core\Settings;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Utility;
 use GatherPress\Core\Validate;
+use GatherPress\Core\Venue\Map;
+use GatherPress\Core\Venue\Map\Setup as Map_Setup;
 use stdClass;
 use WP_Block_Patterns_Registry;
 use WP_Post;
@@ -31,9 +33,9 @@ use WP_Term;
  * Class Setup.
  *
  * Registers the Venue post type + taxonomy and wires the WordPress hooks that
- * keep venue data consistent (term lifecycle, template content). Also owns
- * instantiation of the Venue\* sibling singletons (Map, Map_Prewarm) so the
- * outer `Setup::instantiate_classes()` can hand off the whole venue subsystem
+ * keep venue data consistent (term lifecycle, template content). Hands off
+ * the map subsystem to `Map\Setup` so the outer `Setup::instantiate_classes()`
+ * can hand off the whole venue subsystem
  * with a single `Venue\Setup::get_instance()` line — same shape as
  * `Settings::instantiate_classes()`.
  *
@@ -127,8 +129,7 @@ class Setup {
 	 * @return void
 	 */
 	protected function instantiate_classes(): void {
-		Map::get_instance();
-		Map_Prewarm::get_instance();
+		Map_Setup::get_instance();
 	}
 
 	/**
@@ -387,7 +388,7 @@ class Setup {
 
 		$venue_map_meta = array(
 			// Map display settings.
-			'gatherpress_venue_map_show'   => array(
+			'gatherpress_map_show'   => array(
 				'auth_callback'     => array( Utility::class, 'can_edit_post_meta' ),
 				'sanitize_callback' => 'rest_sanitize_boolean',
 				'show_in_rest'      => true,
@@ -395,7 +396,7 @@ class Setup {
 				'type'              => 'boolean',
 				'default'           => true,
 			),
-			'gatherpress_venue_map_zoom'   => array(
+			'gatherpress_map_zoom'   => array(
 				'auth_callback'     => array( Utility::class, 'can_edit_post_meta' ),
 				'sanitize_callback' => 'absint',
 				'show_in_rest'      => true,
@@ -403,7 +404,7 @@ class Setup {
 				'type'              => 'integer',
 				'default'           => 10,
 			),
-			'gatherpress_venue_map_height' => array(
+			'gatherpress_map_height' => array(
 				'auth_callback'     => array( Utility::class, 'can_edit_post_meta' ),
 				'sanitize_callback' => 'absint',
 				'show_in_rest'      => true,

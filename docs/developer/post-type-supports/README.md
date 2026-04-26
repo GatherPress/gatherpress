@@ -168,7 +168,7 @@ Because each field is its own meta key, you can bind core blocks (paragraph, hea
 
 Enables map display for a venue post type. This includes:
 
-- Registration of map meta fields (`gatherpress_venue_map_show`, `gatherpress_venue_map_zoom`, `gatherpress_venue_map_height`)
+- Registration of map meta fields (`gatherpress_map_show`, `gatherpress_map_zoom`, `gatherpress_map_height`)
 - Venue Map block rendering
 
 #### Usage for gatherpress-venue-map

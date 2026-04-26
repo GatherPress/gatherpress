@@ -19,27 +19,28 @@
  * Scheduling is WP-Cron for now. Action Scheduler integration will
  * replace this layer once it's pulled into the plugin.
  *
- * @package GatherPress\Core\Venue
+ * @package GatherPress\Core\Venue\Map
  * @since 1.0.0
  */
 
-namespace GatherPress\Core\Venue;
+namespace GatherPress\Core\Venue\Map;
 
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Traits\Singleton;
+use GatherPress\Core\Venue\Setup as Venue_Setup;
 use WP_Post;
 
 /**
- * Class Map_Prewarm.
+ * Class Prewarm.
  *
  * Scans templates + events for venue-map combos, enqueues cron jobs to
  * warm each (venue, combo) via {@see Map::warm()}.
  *
  * @since 1.0.0
  */
-class Map_Prewarm {
+class Prewarm {
 	/**
 	 * Enforces a single instance of this class.
 	 */
@@ -52,6 +53,18 @@ class Map_Prewarm {
 	 * @var string
 	 */
 	const CRON_ACTION = 'gatherpress_warm_venue_map';
+
+	/**
+	 * One-shot cron action that re-runs the full template scan + venue
+	 * enumeration, used when the active provider changes mid-flight. A
+	 * single deferred tick is cheaper than fanning out the per-(venue,
+	 * combo) cron events synchronously inside the admin save that
+	 * triggered the platform switch.
+	 *
+	 * @since 1.0.0
+	 * @var string
+	 */
+	const FULL_SWEEP_ACTION = 'gatherpress_map_reprewarm';
 
 	/**
 	 * Block name this class watches for.
@@ -155,6 +168,7 @@ class Map_Prewarm {
 	 */
 	protected function setup_hooks(): void {
 		add_action( self::CRON_ACTION, array( $this, 'process_warm_job' ), 10, 5 );
+		add_action( self::FULL_SWEEP_ACTION, array( $this, 'on_theme_switched' ) );
 
 		// Priority 12 — after Map::maybe_generate() (priority 11) has
 		// synchronously rendered whatever combos were already cached on the
@@ -162,6 +176,27 @@ class Map_Prewarm {
 		// been rendered at.
 		add_action( 'wp_after_insert_post', array( $this, 'on_post_saved' ), 12, 2 );
 		add_action( 'switch_theme', array( $this, 'on_theme_switched' ) );
+	}
+
+	/**
+	 * Schedule the full template + venue rescan to run on the next cron
+	 * tick. Used by callers that need a re-sweep but shouldn't pay the
+	 * cost inline — `Map::maybe_handle_settings_change()` after a
+	 * `map_platform` switch is the primary caller.
+	 *
+	 * Idempotent: if a sweep is already scheduled, no second event is
+	 * queued, so a flurry of platform-saves coalesces into one tick.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return void
+	 */
+	public function schedule_full_sweep(): void {
+		if ( false !== wp_next_scheduled( self::FULL_SWEEP_ACTION ) ) {
+			return;
+		}
+
+		wp_schedule_single_event( time() + 1, self::FULL_SWEEP_ACTION );
 	}
 
 	/**
@@ -213,7 +248,7 @@ class Map_Prewarm {
 				return;
 			}
 
-			$venue = Setup::get_instance()->get_venue_post_from_event_post_id( $post_id );
+			$venue = Venue_Setup::get_instance()->get_venue_post_from_event_post_id( $post_id );
 
 			if ( $venue instanceof WP_Post ) {
 				foreach ( $combos as $combo ) {
@@ -290,14 +325,17 @@ class Map_Prewarm {
 		while ( true ) {
 			$batch = get_posts(
 				array(
-					'post_type'      => $types,
-					'post_status'    => 'publish',
-					'posts_per_page' => $batch_size,
-					'paged'          => $page,
-					'fields'         => 'ids',
-					'orderby'        => 'ID',
-					'order'          => 'ASC',
-					'no_found_rows'  => true,
+					'post_type'              => $types,
+					'post_status'            => 'publish',
+					'posts_per_page'         => $batch_size,
+					'paged'                  => $page,
+					'fields'                 => 'ids',
+					'orderby'                => 'ID',
+					'order'                  => 'ASC',
+					'no_found_rows'          => true,
+					// Only IDs are used — skip meta and term cache priming.
+					'update_post_meta_cache' => false,
+					'update_post_term_cache' => false,
 				)
 			);
 
@@ -431,13 +469,16 @@ class Map_Prewarm {
 			while ( true ) {
 				$batch = get_posts(
 					array(
-						'post_type'      => $venue_carrying_types,
-						'post_status'    => 'publish',
-						'posts_per_page' => $batch_size,
-						'paged'          => $page,
-						'orderby'        => 'ID',
-						'order'          => 'ASC',
-						'no_found_rows'  => true,
+						'post_type'              => $venue_carrying_types,
+						'post_status'            => 'publish',
+						'posts_per_page'         => $batch_size,
+						'paged'                  => $page,
+						'orderby'                => 'ID',
+						'order'                  => 'ASC',
+						'no_found_rows'          => true,
+						// Only post_content is read — skip meta/term priming.
+						'update_post_meta_cache' => false,
+						'update_post_term_cache' => false,
 					)
 				);
 
@@ -585,14 +626,17 @@ class Map_Prewarm {
 		while ( true ) {
 			$batch = get_posts(
 				array(
-					'post_type'      => $types,
-					'post_status'    => 'publish',
-					'posts_per_page' => $batch_size,
-					'paged'          => $page,
-					'fields'         => 'ids',
-					'orderby'        => 'ID',
-					'order'          => 'ASC',
-					'no_found_rows'  => true,
+					'post_type'              => $types,
+					'post_status'            => 'publish',
+					'posts_per_page'         => $batch_size,
+					'paged'                  => $page,
+					'fields'                 => 'ids',
+					'orderby'                => 'ID',
+					'order'                  => 'ASC',
+					'no_found_rows'          => true,
+					// Only IDs are used — skip meta and term cache priming.
+					'update_post_meta_cache' => false,
+					'update_post_term_cache' => false,
 				)
 			);
 

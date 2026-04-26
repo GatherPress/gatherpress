@@ -9,8 +9,7 @@
 namespace GatherPress\Tests\Core\Venue;
 
 use GatherPress\Core\Event;
-use GatherPress\Core\Venue\Map;
-use GatherPress\Core\Venue\Map_Prewarm;
+use GatherPress\Core\Venue\Map\Setup as Map_Setup;
 use GatherPress\Core\Venue\Setup;
 use GatherPress\Core\Venue\Venue;
 use GatherPress\Tests\Base;
@@ -25,44 +24,28 @@ use WP_Block_Patterns_Registry;
  */
 class Test_Setup extends Base {
 	/**
-	 * Venue\Setup now owns the instantiation of the Venue\* sibling
-	 * singletons (Map, Map_Prewarm) so the outer
-	 * `Setup::instantiate_classes()` can hand off with a single
-	 * `Venue\Setup::get_instance()` call. Per-sibling proof-of-construction
-	 * via their `setup_hooks()`-registered hooks — catches the case where
-	 * a sibling silently drops out of `Venue\Setup::instantiate_classes()`.
+	 * Venue\Setup hands the map subsystem off to `Map\Setup`, which in
+	 * turn instantiates Manager / Map / Prewarm. Test that `Map\Setup`
+	 * is constructed when Venue\Setup wires its siblings. Per-sibling
+	 * registration is proved by `Test_Map_Setup`.
 	 *
 	 * @covers ::__construct
 	 * @covers ::instantiate_classes
 	 *
 	 * @return void
 	 */
-	public function test_instantiate_classes_registers_siblings(): void {
+	public function test_instantiate_classes_hands_off_to_map_setup(): void {
 		// Force the method to run inside the test's coverage window —
 		// Setup is a singleton cached during plugin bootstrap, so
 		// `get_instance()` here returns the cached instance and doesn't
 		// re-fire the constructor.
 		Utility::invoke_hidden_method( Setup::get_instance(), 'instantiate_classes' );
 
-		$expected_hooks = array(
-			Map::class         => array(
-				'rest_api_init',
-				array( Map::get_instance(), 'register_rest_routes' ),
-			),
-			Map_Prewarm::class => array(
-				'switch_theme',
-				array( Map_Prewarm::get_instance(), 'on_theme_switched' ),
-			),
+		$this->assertInstanceOf(
+			Map_Setup::class,
+			Map_Setup::get_instance(),
+			'Map\Setup must be instantiated so the map subsystem is wired.'
 		);
-
-		foreach ( $expected_hooks as $class_name => $expected ) {
-			list( $hook, $callback ) = $expected;
-			$this->assertSame(
-				10,
-				has_action( $hook, $callback ),
-				sprintf( '%s must be instantiated so its %s hook registers.', $class_name, $hook )
-			);
-		}
 	}
 
 	/**
@@ -215,14 +198,14 @@ class Test_Setup extends Base {
 			'gatherpress_longitude',
 			'gatherpress_phone',
 			'gatherpress_website',
-			'gatherpress_venue_static_map',
+			'gatherpress_static_map',
 		);
 
 		foreach ( $venue_information_keys as $key ) {
 			unregister_post_meta( Venue::POST_TYPE, $key );
 		}
 
-		unregister_post_meta( Venue::POST_TYPE, 'gatherpress_venue_map_show' );
+		unregister_post_meta( Venue::POST_TYPE, 'gatherpress_map_show' );
 
 		$meta = get_registered_meta_keys( 'post', Venue::POST_TYPE );
 
@@ -235,9 +218,9 @@ class Test_Setup extends Base {
 		}
 
 		$this->assertArrayNotHasKey(
-			'gatherpress_venue_map_show',
+			'gatherpress_map_show',
 			$meta,
-			'Failed to assert that gatherpress_venue_map_show does not exist.'
+			'Failed to assert that gatherpress_map_show does not exist.'
 		);
 
 		$instance->maybe_register_post_meta( Venue::POST_TYPE );
@@ -253,9 +236,9 @@ class Test_Setup extends Base {
 		}
 
 		$this->assertArrayHasKey(
-			'gatherpress_venue_map_show',
+			'gatherpress_map_show',
 			$meta,
-			'Failed to assert that gatherpress_venue_map_show exists for gatherpress-venue-map support.'
+			'Failed to assert that gatherpress_map_show exists for gatherpress-venue-map support.'
 		);
 	}
 
@@ -325,14 +308,14 @@ class Test_Setup extends Base {
 		$request->set_param(
 			'meta',
 			array(
-				'gatherpress_venue_static_map' => array(
+				'gatherpress_static_map' => array(
 					'15' => array(
 						'url'  => 'evil.png',
 						'hash' => 'x',
 					),
 				),
-				'gatherpress_address'          => 'Real St',
-				'gatherpress_latitude'         => '12.345',
+				'gatherpress_address'    => 'Real St',
+				'gatherpress_latitude'   => '12.345',
 			)
 		);
 
@@ -344,9 +327,9 @@ class Test_Setup extends Base {
 		$meta = $request->get_param( 'meta' );
 
 		$this->assertArrayNotHasKey(
-			'gatherpress_venue_static_map',
+			'gatherpress_static_map',
 			$meta,
-			'gatherpress_venue_static_map is server-generated and must not be writable via REST.'
+			'gatherpress_static_map is server-generated and must not be writable via REST.'
 		);
 		$this->assertArrayHasKey(
 			'gatherpress_address',
