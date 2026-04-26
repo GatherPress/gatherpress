@@ -89,23 +89,25 @@ class Autoloader {
 					array_shift( $structure );
 					$class_filename = sprintf( 'class-%s.php', $file );
 
-					// Two layouts coexist in the codebase:
-					//
-					//   A. Production (`includes/core/classes/…`): `classes/` sits
-					//      directly under the first segment, and any deeper
-					//      namespace segments mirror the directory structure
-					//      under `classes/` —
-					//        Core\Setup            → includes/core/classes/class-setup.php
-					//        Core\Blocks\Modal     → includes/core/classes/blocks/class-modal.php
-					//        Core\Rsvp\Type\User   → includes/core/classes/rsvp/type/class-user.php
-					//
-					//   B. Test fixtures (`test/unit/php/includes/tests/…`):
-					//      `classes/` lands at the END of the namespace path and
-					//      the file sits directly inside it —
-					//        Tests\Core\Test_Geocoding         → includes/tests/core/classes/class-test-geocoding.php
-					//        Tests\Core\Blocks\Test_Modal      → includes/tests/core/blocks/classes/class-test-modal.php
-					//
-					// Build both candidate paths and use whichever exists.
+					/*
+					 * Two layouts coexist in the codebase:
+					 *
+					 *   A. Production (`includes/core/classes/…`): `classes/` sits
+					 *      directly under the first segment, and any deeper
+					 *      namespace segments mirror the directory structure
+					 *      under `classes/` —
+					 *        Core\Setup            → includes/core/classes/class-setup.php
+					 *        Core\Blocks\Modal     → includes/core/classes/blocks/class-modal.php
+					 *        Core\Rsvp\Type\User   → includes/core/classes/rsvp/type/class-user.php
+					 *
+					 *   B. Test fixtures (`test/unit/php/includes/tests/…`):
+					 *      `classes/` lands at the END of the namespace path and
+					 *      the file sits directly inside it —
+					 *        Tests\Core\Test_Geocoding    → includes/tests/core/classes/class-test-geocoding.php
+					 *        Tests\Core\Blocks\Test_Modal → includes/tests/core/blocks/classes/class-test-modal.php
+					 *
+					 * Build both candidate paths and use whichever exists.
+					 */
 					$candidates = array();
 
 					$prod_structure = $structure;
