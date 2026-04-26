@@ -104,6 +104,38 @@ class Utility {
 	}
 
 	/**
+	 * Authorization callback for post meta that mirrors the post-level edit cap.
+	 *
+	 * Routes through `user_can( $user_id, 'edit_post', $object_id )` so the
+	 * per-post permission model (`map_meta_cap` → `edit_others_posts`,
+	 * `edit_published_posts`, etc.) gates meta the same way it gates the post
+	 * itself. Without this, the meta layer would be more permissive than the
+	 * post layer that owns it: a custom REST route or third-party
+	 * `update_post_meta()` call could bypass the per-post check that the WP
+	 * posts controller already enforces on the post.
+	 *
+	 * Wired in via `'auth_callback' => array( Utility::class, 'can_edit_post_meta' )`
+	 * on every editor-writable meta key registered through `register_post_meta()`.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param bool   $allowed   Whether the user can edit the post meta. Unused;
+	 *                          we authoritatively return based on `edit_post`.
+	 * @param string $meta_key  The meta key being accessed. Unused.
+	 * @param int    $object_id The post ID the meta belongs to.
+	 * @param int    $user_id   The user ID attempting the edit.
+	 * @return bool True if the user can edit the post, false otherwise.
+	 */
+	public static function can_edit_post_meta(
+		bool $allowed,
+		string $meta_key,
+		int $object_id,
+		int $user_id
+	): bool {
+		return user_can( $user_id, 'edit_post', $object_id );
+	}
+
+	/**
 	 * Retrieve an array of time zone choices.
 	 *
 	 * This method converts the Time Zone markup returned by WordPress into an associative array

@@ -102,6 +102,55 @@ class Test_Utility extends Base {
 	}
 
 	/**
+	 * Coverage for can_edit_post_meta — per-post auth callback shared by every
+	 * editor-writable post meta GatherPress registers.
+	 *
+	 * Routes through `user_can( $user_id, 'edit_post', $object_id )` so the
+	 * permission model matches what WP applies to the post itself: Editors
+	 * (via `edit_others_posts`) can edit anyone's meta, Authors only their
+	 * own posts, Subscribers and logged-out users are denied.
+	 *
+	 * @covers ::can_edit_post_meta
+	 *
+	 * @return void
+	 */
+	public function test_can_edit_post_meta(): void {
+		$author_one_id = $this->factory->user->create( array( 'role' => 'author' ) );
+		$author_two_id = $this->factory->user->create( array( 'role' => 'author' ) );
+		$editor_id     = $this->factory->user->create( array( 'role' => 'editor' ) );
+		$subscriber_id = $this->factory->user->create( array( 'role' => 'subscriber' ) );
+
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type'   => 'post',
+				'post_author' => $author_one_id,
+				'post_status' => 'publish',
+			)
+		);
+
+		$this->assertTrue(
+			Utility::can_edit_post_meta( false, 'any_meta_key', $post_id, $author_one_id ),
+			'The post author should be able to edit their own post meta.'
+		);
+		$this->assertFalse(
+			Utility::can_edit_post_meta( false, 'any_meta_key', $post_id, $author_two_id ),
+			'A different author should not be able to edit a post they do not own.'
+		);
+		$this->assertTrue(
+			Utility::can_edit_post_meta( false, 'any_meta_key', $post_id, $editor_id ),
+			'An editor should be able to edit any post meta via edit_others_posts.'
+		);
+		$this->assertFalse(
+			Utility::can_edit_post_meta( false, 'any_meta_key', $post_id, $subscriber_id ),
+			'A subscriber should not be able to edit any post meta.'
+		);
+		$this->assertFalse(
+			Utility::can_edit_post_meta( false, 'any_meta_key', $post_id, 0 ),
+			'A logged-out user (user_id 0) should not be able to edit any post meta.'
+		);
+	}
+
+	/**
 	 * Coverage for timezone_choices method.
 	 *
 	 * @covers ::timezone_choices
