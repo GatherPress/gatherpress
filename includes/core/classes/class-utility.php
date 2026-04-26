@@ -119,6 +119,9 @@ class Utility {
 	 *
 	 * @since 1.0.0
 	 *
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) -- $allowed and $meta_key
+	 * are required by WP's register_post_meta auth_callback signature.
+	 *
 	 * @param bool   $allowed   Whether the user can edit the post meta. Unused;
 	 *                          we authoritatively return based on `edit_post`.
 	 * @param string $meta_key  The meta key being accessed. Unused.
