@@ -1,18 +1,18 @@
 <?php
 /**
- * Unit tests for GatherPress\Core\Venue\Map.
+ * Unit tests for GatherPress\Core\Venue\Map\Map.
  *
- * These tests cover the generator's hash logic, the save/regenerate/cleanup
- * lifecycle, and the hook wiring. The tile fetcher is stubbed via an HTTP
- * short-circuit filter so tests never make a real network call.
+ * Covers the orchestrator's hash logic, the save/regenerate/cleanup
+ * lifecycle, and the hook wiring. Provider-specific compositing tests
+ * live in the OSM provider's own test class.
  *
- * @package GatherPress\Core\Venue
+ * @package GatherPress\Core\Venue\Map
  * @since 1.0.0
  */
 
-namespace GatherPress\Tests\Core\Venue;
+namespace GatherPress\Tests\Core\Venue\Map;
 
-use GatherPress\Core\Venue\Map;
+use GatherPress\Core\Venue\Map\Map;
 use GatherPress\Core\Venue\Setup;
 use GatherPress\Core\Venue\Venue;
 use GatherPress\Tests\Base;
@@ -22,7 +22,7 @@ use PMC\Unit_Test\Utility;
  * Class Test_Map.
  *
  * @group multisite
- * @coversDefaultClass \GatherPress\Core\Venue\Map
+ * @coversDefaultClass \GatherPress\Core\Venue\Map\Map
  */
 class Test_Map extends Base {
 	/**

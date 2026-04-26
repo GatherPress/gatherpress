@@ -9,8 +9,7 @@
 namespace GatherPress\Tests\Core\Venue;
 
 use GatherPress\Core\Event;
-use GatherPress\Core\Venue\Map;
-use GatherPress\Core\Venue\Map_Prewarm;
+use GatherPress\Core\Venue\Map\Setup as Map_Setup;
 use GatherPress\Core\Venue\Setup;
 use GatherPress\Core\Venue\Venue;
 use GatherPress\Tests\Base;
@@ -25,44 +24,28 @@ use WP_Block_Patterns_Registry;
  */
 class Test_Setup extends Base {
 	/**
-	 * Venue\Setup now owns the instantiation of the Venue\* sibling
-	 * singletons (Map, Map_Prewarm) so the outer
-	 * `Setup::instantiate_classes()` can hand off with a single
-	 * `Venue\Setup::get_instance()` call. Per-sibling proof-of-construction
-	 * via their `setup_hooks()`-registered hooks — catches the case where
-	 * a sibling silently drops out of `Venue\Setup::instantiate_classes()`.
+	 * Venue\Setup hands the map subsystem off to `Map\Setup`, which in
+	 * turn instantiates Manager / Map / Prewarm. Test that `Map\Setup`
+	 * is constructed when Venue\Setup wires its siblings. Per-sibling
+	 * registration is proved by `Test_Map_Setup`.
 	 *
 	 * @covers ::__construct
 	 * @covers ::instantiate_classes
 	 *
 	 * @return void
 	 */
-	public function test_instantiate_classes_registers_siblings(): void {
+	public function test_instantiate_classes_hands_off_to_map_setup(): void {
 		// Force the method to run inside the test's coverage window —
 		// Setup is a singleton cached during plugin bootstrap, so
 		// `get_instance()` here returns the cached instance and doesn't
 		// re-fire the constructor.
 		Utility::invoke_hidden_method( Setup::get_instance(), 'instantiate_classes' );
 
-		$expected_hooks = array(
-			Map::class         => array(
-				'rest_api_init',
-				array( Map::get_instance(), 'register_rest_routes' ),
-			),
-			Map_Prewarm::class => array(
-				'switch_theme',
-				array( Map_Prewarm::get_instance(), 'on_theme_switched' ),
-			),
+		$this->assertInstanceOf(
+			Map_Setup::class,
+			Map_Setup::get_instance(),
+			'Map\Setup must be instantiated so the map subsystem is wired.'
 		);
-
-		foreach ( $expected_hooks as $class_name => $expected ) {
-			list( $hook, $callback ) = $expected;
-			$this->assertSame(
-				10,
-				has_action( $hook, $callback ),
-				sprintf( '%s must be instantiated so its %s hook registers.', $class_name, $hook )
-			);
-		}
 	}
 
 	/**

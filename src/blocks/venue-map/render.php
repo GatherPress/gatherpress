@@ -30,7 +30,7 @@
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Settings;
-use GatherPress\Core\Venue\Map;
+use GatherPress\Core\Venue\Map\Map;
 use GatherPress\Core\Venue\Setup;
 
 if ( ! isset( $attributes ) || ! is_array( $attributes ) ) {

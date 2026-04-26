@@ -19,27 +19,28 @@
  * Scheduling is WP-Cron for now. Action Scheduler integration will
  * replace this layer once it's pulled into the plugin.
  *
- * @package GatherPress\Core\Venue
+ * @package GatherPress\Core\Venue\Map
  * @since 1.0.0
  */
 
-namespace GatherPress\Core\Venue;
+namespace GatherPress\Core\Venue\Map;
 
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Traits\Singleton;
+use GatherPress\Core\Venue\Setup as Venue_Setup;
 use WP_Post;
 
 /**
- * Class Map_Prewarm.
+ * Class Prewarm.
  *
  * Scans templates + events for venue-map combos, enqueues cron jobs to
  * warm each (venue, combo) via {@see Map::warm()}.
  *
  * @since 1.0.0
  */
-class Map_Prewarm {
+class Prewarm {
 	/**
 	 * Enforces a single instance of this class.
 	 */
@@ -213,7 +214,7 @@ class Map_Prewarm {
 				return;
 			}
 
-			$venue = Setup::get_instance()->get_venue_post_from_event_post_id( $post_id );
+			$venue = Venue_Setup::get_instance()->get_venue_post_from_event_post_id( $post_id );
 
 			if ( $venue instanceof WP_Post ) {
 				foreach ( $combos as $combo ) {

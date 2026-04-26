@@ -1,32 +1,38 @@
 <?php
 /**
- * Home for venue map server-side concerns.
+ * Static-map orchestrator for the venue subsystem.
  *
- * Today this singleton owns the pre-rendered static-map PNG pipeline:
- * fetching a small set of CartoDB basemap tiles around the venue's
- * coordinates, compositing them into a single PNG with a marker stamped at
- * the venue's exact position, and storing the result under
- * `wp-content/uploads/gatherpress/static-maps/`. The file URL and an
- * input-hash are persisted (per zoom+height combo) in venue post meta so
- * the front-end can serve the image directly and so subsequent saves
- * regenerate only when inputs (address, coordinates, tile URL, size)
- * actually change.
+ * Owns the lifecycle of pre-rendered PNGs: which (zoom, width, height)
+ * combos exist for a venue, where they live on disk, when they're stale,
+ * and how the front end resolves them for a given post context. The
+ * provider-specific work — fetching tiles, compositing, marker stamping,
+ * or whatever a Google/Mapbox provider would do — is delegated to the
+ * active {@see Provider\Base} resolved through {@see Manager}.
  *
- * The class is named for its broader role — venue-map — so future
- * map-related additions (REST endpoint for the editor preview, interactive
- * map server-side bits, async regeneration, etc.) have a natural home.
+ * Post-meta shape is provider-keyed:
  *
- * @package GatherPress\Core\Venue
+ *     [
+ *         'osm' => [ '15-800-300' => [url, url_2x, hash, ...], ... ],
+ *         'google' => [ ... ],
+ *     ]
+ *
+ * so PNGs from different providers coexist on disk and the render path
+ * can fall back to whichever variant is available when a site switches
+ * `map_platform` mid-flight.
+ *
+ * @package GatherPress\Core\Venue\Map
  * @since 1.0.0
  */
 
-namespace GatherPress\Core\Venue;
+namespace GatherPress\Core\Venue\Map;
 
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Settings;
 use GatherPress\Core\Traits\Singleton;
+use GatherPress\Core\Venue\Setup;
+use GatherPress\Core\Venue\Venue;
 use WP_Post;
 use WP_REST_Request;
 use WP_REST_Response;
@@ -35,10 +41,10 @@ use WP_REST_Server;
 /**
  * Class Map.
  *
- * Singleton hosting the venue map server-side pipeline. Currently owns the
- * static PNG cache keyed by (zoom, height) combo; structured so that
- * additional map-related methods (REST, async jobs, etc.) can land here
- * without proliferating classes.
+ * Singleton orchestrator. Routes lifecycle events (save/delete/regenerate
+ * /prewarm) through the active provider, persists descriptors per
+ * provider, and serves them back to render paths with a fallback chain
+ * when the active provider hasn't rendered a given combo yet.
  *
  * @since 1.0.0
  */
@@ -179,23 +185,11 @@ class Map {
 	const ASPECT_RATIO_PATTERN = '#\A\s*[1-9][0-9]*\s*[/:]\s*[1-9][0-9]*\s*\z#';
 
 	/**
-	 * Total wall-clock budget (in seconds) for a single composite_image()
-	 * call. CartoDB typically serves tiles in well under 500ms, but a slow
-	 * tile host, a DNS hiccup, or a bad proxy can chain wp_safe_remote_get()
-	 * timeouts together and pin a save for tens of seconds. When the
-	 * budget is exceeded mid-composite, remaining tiles are skipped and the
-	 * gray background shows through instead — degraded, not hung.
-	 *
-	 * @since 1.0.0
-	 * @var int
-	 */
-	const COMPOSITE_TIME_BUDGET = 10;
-
-	/**
 	 * Default `type` attribute for the venue-map block.
 	 *
-	 * Google Maps–specific (roadmap / satellite / hybrid / terrain). Ignored by
-	 * the static renderer and by Leaflet/OSM.
+	 * Google Maps–specific (roadmap / satellite / hybrid / terrain). The OSM
+	 * provider only renders `roadmap`; future Google provider will respect
+	 * the full set per `Provider\Base::supports_map_type()`.
 	 *
 	 * @since 1.0.0
 	 * @var string
@@ -203,23 +197,12 @@ class Map {
 	const DEFAULT_MAP_TYPE = 'roadmap';
 
 	/**
-	 * Slippy-tile dimension in pixels. CartoDB basemaps use 256×256.
-	 *
-	 * @since 1.0.0
-	 * @var int
-	 */
-	const TILE_SIZE = 256;
-
-	/**
 	 * Pixel-density multiplier for the retina (2×) static-map variant.
 	 *
-	 * Drives the `@{density}x` filename suffix, the canvas-size multiplier
-	 * in `composite_image()`, the marker-scale argument in `stamp_marker()`,
-	 * and the zoom offset when fetching tiles (tiles are pulled from
-	 * `base_zoom + log2(RETINA_DENSITY)` for true 2× detail rather than
-	 * upscaled pixels). Kept as a constant so the generator and the
-	 * filename composer can never drift out of lock-step — any future bump
-	 * (3×, 4×) lands in one place.
+	 * Drives the `@{density}x` filename suffix and the second pass through
+	 * the active provider's `render()` for retina variants. Providers that
+	 * can't satisfy a given (zoom, density) combo return null and the
+	 * orchestrator drops the 2× variant for that combo.
 	 *
 	 * @since 1.0.0
 	 * @var int
@@ -227,13 +210,10 @@ class Map {
 	const RETINA_DENSITY = 2;
 
 	/**
-	 * Densities `composite_image()` knows how to produce.
-	 *
-	 * The tile-zoom offset is `log2($density)`, so only power-of-two values
-	 * give a whole-number zoom delta. Anything outside this allow-list is
-	 * coerced back to 1 so a caller can't accidentally generate a
-	 * canvas-doubled-but-tile-zoom-unchanged image (which would be a cheap
-	 * upscale and waste disk).
+	 * Densities the orchestrator asks providers to render at. Only
+	 * power-of-two values give a whole-number tile-zoom offset for tile-
+	 * based providers (OSM); other providers (Google) ignore the
+	 * constraint and just pass through to `scale={n}`.
 	 *
 	 * @since 1.0.0
 	 * @var int[]
@@ -245,7 +225,7 @@ class Map {
 	 *
 	 * The block exposes height but not width (blocks render 100% of their
 	 * container). We still need *some* pixel width for the PNG, so the
-	 * generator derives it from the block's chosen height at this ratio —
+	 * orchestrator derives it from the block's chosen height at this ratio —
 	 * 2:1 by default, which gives a comfortably landscape map without the
 	 * venue marker feeling tight against the edges.
 	 *
@@ -255,22 +235,26 @@ class Map {
 	const IMAGE_ASPECT_RATIO = 2.0;
 
 	/**
-	 * CartoDB Positron tile URL template. `{z}`, `{x}`, `{y}` are substituted.
-	 *
-	 * @since 1.0.0
-	 * @var string
-	 */
-	const DEFAULT_TILE_URL = 'https://cartodb-basemaps-a.global.ssl.fastly.net/light_all/{z}/{x}/{y}.png';
-
-	/**
 	 * Post meta key under which the static-map descriptors are stored.
 	 *
-	 * Stored value is an associative array keyed by `{zoom}x{width}x{height}`
-	 * with entries of shape
-	 * `array{ url: string, url_2x: string, hash: string, zoom: int, width: int, height: int }`.
-	 * `url_2x` is empty string when the retina variant is disabled or failed
-	 * to generate; pre-retina descriptors written by older versions omit the
-	 * key entirely and are normalized by {@see self::get_all_descriptors()}.
+	 * Stored value is provider-keyed:
+	 *
+	 *     [
+	 *         '<provider_slug>' => [
+	 *             '<zoom>x<width>x<height>' => array{
+	 *                 url: string, url_2x: string, hash: string,
+	 *                 zoom: int, width: int, height: int,
+	 *             },
+	 *             ...
+	 *         ],
+	 *         ...
+	 *     ]
+	 *
+	 * The provider-key layer lets a site keep older OSM PNGs around as
+	 * fallbacks while a new Google provider's PNGs render in the
+	 * background after a `map_platform` switch. `url_2x` is empty string
+	 * when the retina variant failed or the provider can't produce one
+	 * for the given combo.
 	 *
 	 * @since 1.0.0
 	 * @var string
@@ -312,6 +296,41 @@ class Map {
 		add_action( 'registered_post_type', array( $this, 'maybe_register_delete_hook' ) );
 		add_action( 'rest_api_init', array( $this, 'register_rest_routes' ) );
 		add_filter( 'block_type_metadata', array( $this, 'apply_block_attribute_defaults' ) );
+		// React to provider changes so a `map_platform` switch schedules
+		// the same prewarm pass that runs on theme switches.
+		add_action( 'update_option_gatherpress_settings', array( $this, 'maybe_handle_settings_change' ), 10, 2 );
+	}
+
+	/**
+	 * Schedule a re-prewarm sweep when `map_platform` changes value.
+	 *
+	 * Called by the `update_option_gatherpress_settings` action whenever
+	 * the GatherPress settings option is written. Only the provider switch
+	 * matters here — non-provider edits to the option are no-ops. Existing
+	 * PNGs stay on disk during the transition: the front-end's fallback
+	 * chain in {@see self::get_descriptor_for_post()} keeps showing the
+	 * old-provider image until the new provider's PNG lands via prewarm.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param array|mixed $old_value Previous settings option value.
+	 * @param array|mixed $new_value New settings option value.
+	 * @return void
+	 */
+	public function maybe_handle_settings_change( $old_value, $new_value ): void {
+		$old_platform = is_array( $old_value ) ? (string) ( $old_value['gatherpress']['map_platform'] ?? '' ) : '';
+		$new_platform = is_array( $new_value ) ? (string) ( $new_value['gatherpress']['map_platform'] ?? '' ) : '';
+
+		if ( $old_platform === $new_platform ) {
+			return;
+		}
+
+		// Defer to the prewarm subsystem — same path used on theme switch.
+		// Wrapped so a missing `Prewarm` (e.g. tests that haven't booted
+		// the venue subsystem) doesn't fatal a plain settings save.
+		if ( class_exists( Prewarm::class ) ) {
+			Prewarm::get_instance()->on_theme_switched();
+		}
 	}
 
 	/**
@@ -633,7 +652,7 @@ class Map {
 	 * @param int|null $extra_width        Optional extra width (0 = auto).
 	 * @param int|null $extra_height       Optional extra height (0 = auto).
 	 * @param string   $extra_aspect_ratio Optional aspect ratio hint for the extra combo.
-	 * @return array<string, array{url: string, url_2x: string, hash: string, zoom: int, width: int, height: int}>
+	 * @return array<string, array<string, array{url: string, url_2x: string, hash: string, zoom: int, width: int, height: int}>>
 	 */
 	public function regenerate(
 		int $post_id,
@@ -849,19 +868,49 @@ class Map {
 			return null;
 		}
 
-		$resolved = $this->resolve_dimensions(
+		$resolved      = $this->resolve_dimensions(
 			(int) ( $width ?? 0 ),
 			(int) ( $height ?? $this->get_height() ),
 			'' !== $aspect_ratio ? $aspect_ratio : self::DEFAULT_ASPECT_RATIO
 		);
+		$resolved_zoom = $zoom ?? $this->get_zoom();
 
-		return $this->ensure_descriptor_for_combo(
+		$active_descriptor = $this->ensure_descriptor_for_combo(
 			$venue_post_id,
 			$info,
-			$zoom ?? $this->get_zoom(),
+			$resolved_zoom,
 			$resolved['width'],
 			$resolved['height']
 		);
+
+		if ( null !== $active_descriptor ) {
+			return $active_descriptor;
+		}
+
+		// Active provider couldn't render this combo (e.g. tile host
+		// unreachable, GD missing, brand-new provider not yet warmed). Walk
+		// other providers' stored entries for the same combo so a switch
+		// from OSM to Google still shows the OSM PNG until the new one
+		// lands. Return the first matching entry; ordering follows whatever
+		// post meta gives us (last-saved-wins by storage order).
+		$key         = $this->combo_key(
+			$this->clamp_zoom( $resolved_zoom ),
+			$this->clamp_width( $resolved['width'] ),
+			$this->clamp_height( $resolved['height'] )
+		);
+		$all         = $this->get_all_descriptors( $venue_post_id );
+		$active_slug = Manager::get_instance()->get_active_slug();
+
+		foreach ( $all as $slug => $combos ) {
+			if ( $slug === $active_slug ) {
+				continue;
+			}
+			if ( isset( $combos[ $key ] ) ) {
+				return $combos[ $key ];
+			}
+		}
+
+		return null;
 	}
 
 	/**
@@ -960,22 +1009,25 @@ class Map {
 	 */
 	public function get_stored_descriptor( int $post_id ): ?array {
 		$all      = $this->get_all_descriptors( $post_id );
+		$slug     = Manager::get_instance()->get_active_slug();
 		$defaults = $this->resolve_dimensions(
 			0,
 			$this->get_height(),
 			self::DEFAULT_ASPECT_RATIO
 		);
 
-		return $all[ $this->combo_key(
+		$key = $this->combo_key(
 			$this->get_zoom(),
 			$defaults['width'],
 			$defaults['height']
-		) ] ?? null;
+		);
+
+		return $all[ $slug ][ $key ] ?? null;
 	}
 
 	/**
-	 * Return every stored descriptor for the venue, keyed by
-	 * `{zoom}x{width}x{height}`.
+	 * Return every stored descriptor for the venue, keyed by provider slug
+	 * then by `{zoom}x{width}x{height}`.
 	 *
 	 * Filters out malformed entries so callers can iterate without defensive
 	 * shape checks. The read path itself does not persist the cleaned map —
@@ -987,7 +1039,7 @@ class Map {
 	 * @since 1.0.0
 	 *
 	 * @param int $post_id The venue post ID.
-	 * @return array<string, array{url: string, url_2x: string, hash: string, zoom: int, width: int, height: int}>
+	 * @return array<string, array<string, array{url: string, url_2x: string, hash: string, zoom: int, width: int, height: int}>>
 	 */
 	public function get_all_descriptors( int $post_id ): array {
 		$raw = get_post_meta( $post_id, self::META_KEY, true );
@@ -998,34 +1050,36 @@ class Map {
 
 		$descriptors = array();
 
-		foreach ( $raw as $key => $entry ) {
-			if ( ! is_array( $entry ) || empty( $entry['url'] ) || empty( $entry['hash'] ) ) {
+		foreach ( $raw as $provider_slug => $combos ) {
+			if ( ! is_string( $provider_slug ) || '' === $provider_slug || ! is_array( $combos ) ) {
 				continue;
 			}
 
-			$zoom   = isset( $entry['zoom'] ) ? (int) $entry['zoom'] : 0;
-			$width  = isset( $entry['width'] ) ? (int) $entry['width'] : 0;
-			$height = isset( $entry['height'] ) ? (int) $entry['height'] : 0;
+			foreach ( $combos as $key => $entry ) {
+				if ( ! is_array( $entry ) || empty( $entry['url'] ) || empty( $entry['hash'] ) ) {
+					continue;
+				}
 
-			// Without concrete zoom/width/height on the entry there's no way
-			// to know which block configuration the file belongs to — skip
-			// rather than guess.
-			if ( $zoom <= 0 || $width <= 0 || $height <= 0 ) {
-				continue;
+				$zoom   = isset( $entry['zoom'] ) ? (int) $entry['zoom'] : 0;
+				$width  = isset( $entry['width'] ) ? (int) $entry['width'] : 0;
+				$height = isset( $entry['height'] ) ? (int) $entry['height'] : 0;
+
+				// Without concrete zoom/width/height on the entry there's no way
+				// to know which block configuration the file belongs to — skip
+				// rather than guess.
+				if ( $zoom <= 0 || $width <= 0 || $height <= 0 ) {
+					continue;
+				}
+
+				$descriptors[ $provider_slug ][ (string) $key ] = array(
+					'url'    => (string) $entry['url'],
+					'url_2x' => isset( $entry['url_2x'] ) ? (string) $entry['url_2x'] : '',
+					'hash'   => (string) $entry['hash'],
+					'zoom'   => $zoom,
+					'width'  => $width,
+					'height' => $height,
+				);
 			}
-
-			// `url_2x` is nullable for back-compat: pre-retina descriptors
-			// written before this plugin version don't carry the key at all.
-			// Normalize to an empty string so downstream callers can check
-			// with a single `'' !== $url_2x` branch.
-			$descriptors[ (string) $key ] = array(
-				'url'    => (string) $entry['url'],
-				'url_2x' => isset( $entry['url_2x'] ) ? (string) $entry['url_2x'] : '',
-				'hash'   => (string) $entry['hash'],
-				'zoom'   => $zoom,
-				'width'  => $width,
-				'height' => $height,
-			);
 		}
 
 		/**
@@ -1034,25 +1088,28 @@ class Map {
 		 * Companion plugins, multi-locale setups, or storage-layer overrides
 		 * can use this to drop entries they consider stale, add synthetic
 		 * descriptors (e.g. pre-rendered PNG files in a CDN), or rewrite URLs.
+		 * Outer key is provider slug, inner key is `{zoom}x{width}x{height}`.
 		 * Callers of this method already tolerate empty maps, so returning
 		 * `[]` is a valid "suppress all" escape hatch.
 		 *
 		 * @since 1.0.0
 		 *
-		 * @param array<string, array<string, mixed>> $descriptors Parsed descriptor map keyed by combo.
-		 * @param int                                 $post_id     Venue post ID.
+		 * @param array<string, array<string, array<string, mixed>>> $descriptors Provider-keyed descriptor map.
+		 * @param int                                                $post_id     Venue post ID.
 		 */
 		return (array) apply_filters( 'gatherpress_venue_map_descriptors', $descriptors, $post_id );
 	}
 
 	/**
-	 * Parse stored meta into the list of (zoom, width, height) combos
-	 * already cached.
+	 * Parse stored meta into the deduped list of (zoom, width, height) combos
+	 * any provider has ever rendered for this venue.
 	 *
 	 * Used by {@see self::maybe_generate()} to cascade content changes (new
 	 * address, new coordinates) across every variant a venue has ever been
-	 * rendered at, so blocks pointing at a non-default combo aren't stranded
-	 * with a stale image.
+	 * rendered at, regardless of which provider rendered it. After a
+	 * `map_platform` switch, the active provider gets re-rendered for every
+	 * combo any earlier provider had — so blocks pointing at non-default
+	 * combos aren't stranded.
 	 *
 	 * @since 1.0.0
 	 *
@@ -1060,14 +1117,26 @@ class Map {
 	 * @return array<int, array{zoom: int, width: int, height: int}>
 	 */
 	public function get_cached_combos( int $post_id ): array {
+		$seen   = array();
 		$combos = array();
 
-		foreach ( $this->get_all_descriptors( $post_id ) as $descriptor ) {
-			$combos[] = array(
-				'zoom'   => $descriptor['zoom'],
-				'width'  => $descriptor['width'],
-				'height' => $descriptor['height'],
-			);
+		foreach ( $this->get_all_descriptors( $post_id ) as $provider_combos ) {
+			foreach ( $provider_combos as $descriptor ) {
+				$key = $this->combo_key(
+					(int) $descriptor['zoom'],
+					(int) $descriptor['width'],
+					(int) $descriptor['height']
+				);
+				if ( isset( $seen[ $key ] ) ) {
+					continue;
+				}
+				$seen[ $key ] = true;
+				$combos[]     = array(
+					'zoom'   => (int) $descriptor['zoom'],
+					'width'  => (int) $descriptor['width'],
+					'height' => (int) $descriptor['height'],
+				);
+			}
 		}
 
 		return $combos;
@@ -1112,6 +1181,11 @@ class Map {
 		int $width,
 		int $height
 	): ?array {
+		$provider = Manager::get_instance()->get_active();
+		if ( null === $provider ) {
+			return null;
+		}
+
 		// Callers (maybe_generate, get_url_for_post) must have validated the
 		// coordinates via parse_coord() already — cast directly.
 		$latitude  = (float) $info['latitude'];
@@ -1125,23 +1199,17 @@ class Map {
 		$width  = $this->clamp_width( $width );
 		$height = $this->clamp_height( $height );
 
-		$tiles   = $this->get_tile_url_template();
+		$slug    = $provider->get_slug();
 		$address = (string) ( $info['address'] ?? '' );
-		$hash    = $this->hash_for( $info, $zoom, $width, $height, $tiles );
+		$hash    = $this->hash_for( $info, $zoom, $width, $height, $slug );
 		$key     = $this->combo_key( $zoom, $width, $height );
 
 		$all      = $this->get_all_descriptors( $post_id );
-		$existing = $all[ $key ] ?? null;
+		$existing = $all[ $slug ][ $key ] ?? null;
 
-		// Retina generation requires a zoom level with tiles available at
-		// `zoom + log2(RETINA_DENSITY)`. At the zoom ceiling the derived
-		// tile zoom would exceed what the provider serves, every fetch
-		// 404s, and we'd persist a solid-gray PNG — skip instead.
-		// Cached locally so we never invoke the filter twice per call.
-		$retina_enabled = $this->should_generate_retina()
-			&& ( $zoom + (int) log( self::RETINA_DENSITY, 2 ) ) <= self::ZOOM_MAX;
+		$retina_enabled = $this->should_generate_retina();
 
-		$expected_url = $this->build_image_url( $address, $zoom, $width, $height );
+		$expected_url = $this->build_image_url( $address, $zoom, $width, $height, $slug, 1 );
 		$has_valid_1x = null !== $existing
 			&& $existing['hash'] === $hash
 			&& $existing['url'] === $expected_url;
@@ -1151,25 +1219,24 @@ class Map {
 			return $existing;
 		}
 
-		// Only recomposite the 1× when it's genuinely missing or stale.
+		// Only re-render the 1× when it's genuinely missing or stale.
 		// Legacy descriptors (pre-retina) land on the `has_valid_1x &&
 		// needs_retina` path — their 1× PNG is still valid so we skip the
-		// redundant fetch/save and only fill in the retina sibling.
+		// redundant render and only fill in the retina sibling.
 		$url = null;
 		if ( $has_valid_1x ) {
 			$url = $existing['url'];
 		} else {
-			$image = $this->composite_image( $latitude, $longitude, $zoom, $width, $height, $tiles );
+			$image = $provider->render( $latitude, $longitude, $zoom, $width, $height, 1 );
 
-			// Downstream of the GD-missing branch in composite_image(); only
-			// reached on PHP builds without the GD extension.
-			if ( null === $image ) { // @codeCoverageIgnore
-				return null; // @codeCoverageIgnore
+			// Provider returned null — GD missing, network failure, or the
+			// provider can't satisfy this combo. Surface as "no descriptor"
+			// rather than persisting a half-baked entry.
+			if ( null === $image ) {
+				return null;
 			}
 
-			$this->stamp_marker( $image, (int) round( $width / 2 ), (int) round( $height / 2 ) );
-
-			$url = $this->save_image( $image, $address, $zoom, $width, $height );
+			$url = $this->save_image( $image, $address, $zoom, $width, $height, 1, $slug );
 			imagedestroy( $image );
 
 			if ( null === $url ) {
@@ -1177,43 +1244,29 @@ class Map {
 			}
 		}
 
-		// Retina variant: separate composite at 2× density (zoom+1 tiles,
-		// double-sized canvas) with its own wall-clock budget. Failure here
-		// is non-fatal — we keep the 1× URL and just leave `url_2x` empty so
-		// the front-end falls back to a plain `src`. Reuses the same hash:
-		// the 2× is fully derived from the same inputs.
+		// Retina variant: ask the provider for a density-2 render. Failure
+		// here is non-fatal — we keep the 1× URL and just leave `url_2x`
+		// empty so the front-end falls back to a plain `src`. Reuses the
+		// same hash: the 2× is fully derived from the same inputs.
 		$url_2x = '';
 		if ( $retina_enabled ) {
-			$canvas_width  = $width * self::RETINA_DENSITY;
-			$canvas_height = $height * self::RETINA_DENSITY;
-			$image_2x      = $this->composite_image(
+			$image_2x = $provider->render(
 				$latitude,
 				$longitude,
 				$zoom,
 				$width,
 				$height,
-				$tiles,
 				self::RETINA_DENSITY
 			);
 			if ( null !== $image_2x ) {
-				// Use the same `round( canvas / 2 )` pattern as the 1× call
-				// so both paths share a single marker-center convention;
-				// even canvas sizes make the results identical, the
-				// symmetry is for maintenance.
-				$this->stamp_marker(
-					$image_2x,
-					(int) round( $canvas_width / 2 ),
-					(int) round( $canvas_height / 2 ),
-					(float) self::RETINA_DENSITY
-				);
-
 				$saved_2x = $this->save_image(
 					$image_2x,
 					$address,
 					$zoom,
 					$width,
 					$height,
-					self::RETINA_DENSITY
+					self::RETINA_DENSITY,
+					$slug
 				);
 				imagedestroy( $image_2x );
 				if ( null !== $saved_2x ) {
@@ -1222,7 +1275,7 @@ class Map {
 			}
 		}
 
-		$all[ $key ] = array(
+		$all[ $slug ][ $key ] = array(
 			'url'    => $url,
 			'url_2x' => $url_2x,
 			'hash'   => $hash,
@@ -1241,13 +1294,13 @@ class Map {
 		// venues, so we don't proactively unlink on write-verify failure.
 		$stored = get_post_meta( $post_id, self::META_KEY, true );
 		if ( ! is_array( $stored )
-			|| ! isset( $stored[ $key ]['url'] )
-			|| $stored[ $key ]['url'] !== $url
+			|| ! isset( $stored[ $slug ][ $key ]['url'] )
+			|| $stored[ $slug ][ $key ]['url'] !== $url
 		) {
 			return null;
 		}
 
-		return $all[ $key ];
+		return $all[ $slug ][ $key ];
 	}
 
 	/**
@@ -1286,14 +1339,14 @@ class Map {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param array  $info  Parsed venue information.
-	 * @param int    $zoom  Map zoom level.
-	 * @param int    $width Output width.
-	 * @param int    $height Output height.
-	 * @param string $tiles Tile URL template.
+	 * @param array  $info     Parsed venue information.
+	 * @param int    $zoom     Map zoom level.
+	 * @param int    $width    Output width.
+	 * @param int    $height   Output height.
+	 * @param string $provider Provider slug (e.g. `osm`).
 	 * @return string MD5 hex digest.
 	 */
-	public function hash_for( array $info, int $zoom, int $width, int $height, string $tiles ): string {
+	public function hash_for( array $info, int $zoom, int $width, int $height, string $provider ): string {
 		// md5() here is a non-cryptographic cache-key discriminator, matching class-geocoding.php.
 		// CAUTION: the order and types of the values composed below define the
 		// cache key for every static-map PNG on disk. Reordering or changing a
@@ -1309,7 +1362,7 @@ class Map {
 					(string) $zoom,
 					(string) $width,
 					(string) $height,
-					$tiles,
+					$provider,
 				)
 			)
 		);
@@ -1326,11 +1379,12 @@ class Map {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param string $address Venue address string.
-	 * @param int    $zoom    Map zoom level.
-	 * @param int    $width   Output width (at density 1).
-	 * @param int    $height  Output height (at density 1).
-	 * @param int    $density Pixel-density multiplier. 1 = standard, 2 = retina.
+	 * @param string $address  Venue address string.
+	 * @param int    $zoom     Map zoom level.
+	 * @param int    $width    Output width (at density 1).
+	 * @param int    $height   Output height (at density 1).
+	 * @param string $provider Provider slug (e.g. `osm`).
+	 * @param int    $density  Pixel-density multiplier. 1 = standard, 2 = retina.
 	 * @return string Full public URL for the PNG.
 	 */
 	protected function build_image_url(
@@ -1338,12 +1392,13 @@ class Map {
 		int $zoom,
 		int $width,
 		int $height,
+		string $provider,
 		int $density = 1
 	): string {
 		$dirs     = wp_get_upload_dir();
 		$base_url = trailingslashit( $dirs['baseurl'] ) . self::UPLOADS_SUBDIR;
 
-		return trailingslashit( $base_url ) . $this->filename_for( $address, $zoom, $width, $height, $density );
+		return trailingslashit( $base_url ) . $this->filename_for( $address, $zoom, $width, $height, $provider, $density );
 	}
 
 	/**
@@ -1358,14 +1413,23 @@ class Map {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param string $address Venue address.
-	 * @param int    $zoom    Map zoom level.
-	 * @param int    $width   Output width (at density 1).
-	 * @param int    $height  Output height (at density 1).
-	 * @param int    $density Pixel-density multiplier. 1 = standard, 2 = retina.
+	 * @param string $address  Venue address.
+	 * @param int    $zoom     Map zoom level.
+	 * @param int    $width    Output width (at density 1).
+	 * @param int    $height   Output height (at density 1).
+	 * @param string $provider Provider slug (e.g. `osm`) — namespaces the file
+	 *                         so OSM and Google PNGs can coexist on disk.
+	 * @param int    $density  Pixel-density multiplier. 1 = standard, 2 = retina.
 	 * @return string Filename including the `.png` extension.
 	 */
-	protected function filename_for( string $address, int $zoom, int $width, int $height, int $density = 1 ): string {
+	protected function filename_for(
+		string $address,
+		int $zoom,
+		int $width,
+		int $height,
+		string $provider,
+		int $density = 1
+	): string {
 		// `sanitize_title()` URL-slugifies; pass the result through
 		// `sanitize_file_name()` as defense-in-depth so any path-sensitive
 		// characters that slip past (or future changes to sanitize_title's
@@ -1382,232 +1446,37 @@ class Map {
 
 		$suffix = $density > 1 ? sprintf( '@%dx', $density ) : '';
 
-		return sprintf( '%s-%d-%d-%d%s.png', $slug, $zoom, $width, $height, $suffix );
+		return sprintf( '%s-%s-%d-%d-%d%s.png', $slug, $provider, $zoom, $width, $height, $suffix );
 	}
 
 	/**
-	 * Fetch, decode, and return the raw PNG bytes for a tile at (z, x, y).
+	 * Save a finished GD image to the uploads directory and return its URL.
 	 *
-	 * Returns null on any HTTP failure so callers can skip that tile without
-	 * aborting the whole composite; the resulting image will simply have a
-	 * blank patch where the fetch failed.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param int    $zoom    Tile zoom.
-	 * @param int    $x       Tile x coordinate.
-	 * @param int    $y       Tile y coordinate.
-	 * @param string $tiles   Tile URL template containing `{z}`, `{x}`, `{y}`.
-	 * @return string|null PNG bytes, or null on failure.
-	 */
-	public function fetch_tile( int $zoom, int $x, int $y, string $tiles ): ?string {
-		$url = strtr(
-			$tiles,
-			array(
-				'{z}' => (string) $zoom,
-				'{x}' => (string) $x,
-				'{y}' => (string) $y,
-			)
-		);
-
-		$response = wp_safe_remote_get( $url, array( 'timeout' => 5 ) );
-
-		if ( is_wp_error( $response ) ) {
-			return null;
-		}
-
-		if ( 200 !== (int) wp_remote_retrieve_response_code( $response ) ) {
-			return null;
-		}
-
-		$body = (string) wp_remote_retrieve_body( $response );
-
-		return '' !== $body ? $body : null;
-	}
-
-	/**
-	 * Composite the tiles needed to cover the output image centered on (lat, lng).
-	 *
-	 * Builds a blank canvas of the requested size, fetches every tile whose
-	 * bounds intersect the canvas window, and copies each into its correct
-	 * pixel offset. Caller is responsible for `imagedestroy()` on the result.
-	 *
-	 * At `$density > 1` the method produces a retina variant: tiles are
-	 * fetched at `zoom + log2($density)` (so a 2× pass uses `zoom + 1` tiles)
-	 * and the canvas is sized at `$width * $density` × `$height * $density`.
-	 * That's true retina detail — the denser zoom level renders labels and
-	 * road lines at native 2× resolution rather than just upscaling the 1×
-	 * tile set. `$density` must be a power of two.
+	 * Filename is derived from `(address, provider, zoom, width, height)` so
+	 * different providers' PNGs coexist on disk and two venues at the same
+	 * address share one file at matching dimensions. `imagepng` overwrites
+	 * in place, which is fine for the regenerate flow since the inputs
+	 * that'd change visible output also change the hash in the descriptor.
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param float  $lat     Latitude in degrees.
-	 * @param float  $lng     Longitude in degrees.
-	 * @param int    $zoom    Zoom level (same zoom Leaflet would use for the same CSS viewport).
-	 * @param int    $width   Output pixel width at density 1.
-	 * @param int    $height  Output pixel height at density 1.
-	 * @param string $tiles   Tile URL template.
-	 * @param int    $density Pixel-density multiplier. 1 = standard, 2 = retina.
-	 * @return \GdImage|resource|null Composited image, or null when GD is unavailable.
-	 *                                GdImage on PHP 8+, resource on PHP 7.4.
-	 */
-	public function composite_image(
-		float $lat,
-		float $lng,
-		int $zoom,
-		int $width,
-		int $height,
-		string $tiles,
-		int $density = 1
-	) {
-		// PHP built without the GD extension. Can't simulate in a unit test without making the runtime itself broken.
-		if ( ! function_exists( 'imagecreatetruecolor' ) ) { // @codeCoverageIgnore
-			return null; // @codeCoverageIgnore
-		}
-
-		// Coerce unsupported densities back to 1. Allowing, say, density=3
-		// with `(int) log(3, 2) === 1` would paint a 3×-sized canvas using
-		// only 2× tiles — a cheap upscale that wastes disk for no gain.
-		// Allow-listing keeps the tile-zoom offset a whole number.
-		if ( ! in_array( $density, self::SUPPORTED_DENSITIES, true ) ) {
-			$density = 1;
-		}
-
-		// Tile zoom climbs with density so the retina variant renders true
-		// zoom+1 detail (sharp labels and lines) rather than upscaled 1×
-		// pixels. Clamp to ZOOM_MAX as defense-in-depth: at the zoom
-		// ceiling the caller should have skipped retina generation
-		// upstream, but if we're ever invoked directly at high zoom we'd
-		// rather render a degraded upscale than hit the tile server with
-		// zoom-beyond-max requests (every fetch 404s → gray canvas).
-		$tile_zoom = min( self::ZOOM_MAX, $zoom + (int) log( $density, 2 ) );
-
-		$canvas_width  = $width * $density;
-		$canvas_height = $height * $density;
-
-		$venue_world_x = $this->lng_to_world_pixel( $lng, $tile_zoom );
-		$venue_world_y = $this->lat_to_world_pixel( $lat, $tile_zoom );
-
-		$left_pixel = (int) round( $venue_world_x - $canvas_width / 2 );
-		$top_pixel  = (int) round( $venue_world_y - $canvas_height / 2 );
-
-		$left_tile   = (int) floor( $left_pixel / self::TILE_SIZE );
-		$top_tile    = (int) floor( $top_pixel / self::TILE_SIZE );
-		$right_tile  = (int) floor( ( $left_pixel + $canvas_width - 1 ) / self::TILE_SIZE );
-		$bottom_tile = (int) floor( ( $top_pixel + $canvas_height - 1 ) / self::TILE_SIZE );
-
-		$canvas = imagecreatetruecolor( $canvas_width, $canvas_height );
-
-		// Background: neutral gray so missing tiles blend rather than glaring black.
-		$bg = imagecolorallocate( $canvas, 238, 238, 238 );
-		imagefilledrectangle( $canvas, 0, 0, $canvas_width - 1, $canvas_height - 1, $bg );
-
-		/**
-		 * Filter the wall-clock budget (in seconds) for a single
-		 * composite_image() call. When the deadline is exceeded mid-loop,
-		 * remaining tiles are skipped and the gray background shows
-		 * through. Accepts int or float.
-		 *
-		 * @since 1.0.0
-		 *
-		 * @param float $budget Default budget from COMPOSITE_TIME_BUDGET.
-		 */
-		$budget   = (float) apply_filters(
-			'gatherpress_venue_map_composite_time_budget',
-			self::COMPOSITE_TIME_BUDGET
-		);
-		$deadline = microtime( true ) + $budget;
-
-		for ( $tx = $left_tile; $tx <= $right_tile; $tx++ ) {
-			for ( $ty = $top_tile; $ty <= $bottom_tile; $ty++ ) {
-				// Budget guard: once the total wall-clock time for this
-				// composite exceeds COMPOSITE_TIME_BUDGET, stop fetching
-				// and let the gray background show through for any tiles
-				// we haven't filled in yet. Bounds the worst-case stall
-				// from a slow tile host.
-				if ( microtime( true ) >= $deadline ) {
-					break 2;
-				}
-
-				$tile_png = $this->fetch_tile( $tile_zoom, $tx, $ty, $tiles );
-
-				if ( null === $tile_png ) {
-					continue;
-				}
-
-				$tile = imagecreatefromstring( $tile_png );
-
-				if ( false === $tile ) {
-					continue;
-				}
-
-				$dst_x = $tx * self::TILE_SIZE - $left_pixel;
-				$dst_y = $ty * self::TILE_SIZE - $top_pixel;
-
-				imagecopy( $canvas, $tile, $dst_x, $dst_y, 0, 0, self::TILE_SIZE, self::TILE_SIZE );
-				imagedestroy( $tile );
-			}
-		}
-
-		return $canvas;
-	}
-
-	/**
-	 * Draw a simple pin marker at the given pixel coordinates.
-	 *
-	 * Passing `$scale > 1` proportionally scales the marker's three concentric
-	 * ellipses so a retina (2×) composite keeps the marker visually the same
-	 * size as the 1× render rather than shrinking to a pinprick.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param \GdImage|resource $canvas Destination canvas (GdImage on PHP 8+, resource on PHP 7.4).
-	 * @param int               $x      Pixel X position (marker center).
-	 * @param int               $y      Pixel Y position (marker center).
-	 * @param float             $scale  Multiplier applied to the marker radii. 1.0 keeps the original size.
-	 * @return void
-	 */
-	public function stamp_marker( $canvas, int $x, int $y, float $scale = 1.0 ): void {
-		$white = imagecolorallocate( $canvas, 255, 255, 255 );
-		$red   = imagecolorallocate( $canvas, 220, 53, 69 );
-		$dark  = imagecolorallocate( $canvas, 30, 30, 30 );
-
-		$outer = max( 1, (int) round( 20 * $scale ) );
-		$inner = max( 1, (int) round( 16 * $scale ) );
-		$dot   = max( 1, (int) round( 6 * $scale ) );
-
-		imagefilledellipse( $canvas, $x, $y, $outer, $outer, $white );
-		imagefilledellipse( $canvas, $x, $y, $inner, $inner, $red );
-		imageellipse( $canvas, $x, $y, $inner, $inner, $dark );
-		imagefilledellipse( $canvas, $x, $y, $dot, $dot, $white );
-	}
-
-	/**
-	 * Save the composited image to the uploads directory and return its URL.
-	 *
-	 * Filename is derived from `(address, zoom, width, height)` — two venues
-	 * that resolve to the same address slug at matching dimensions share one
-	 * file on disk. `imagepng` overwrites in place, which is fine for our
-	 * regenerate flow since the inputs that'd change visible output also
-	 * change the hash in the descriptor meta.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param \GdImage|resource $image   The finished composite (GdImage on PHP 8+, resource on PHP 7.4).
-	 * @param string            $address Venue address (slugified for the filename).
-	 * @param int               $zoom    Map zoom level.
-	 * @param int               $width   Output width (at density 1).
-	 * @param int               $height  Output height (at density 1).
-	 * @param int               $density Pixel-density multiplier. 1 = standard, 2 = retina.
+	 * @param \GdImage $image    Finished image from a provider's `render()`.
+	 * @param string   $address  Venue address (slugified for the filename).
+	 * @param int      $zoom     Map zoom level.
+	 * @param int      $width    Output width (at density 1).
+	 * @param int      $height   Output height (at density 1).
+	 * @param int      $density  Pixel-density multiplier. 1 = standard, 2 = retina.
+	 * @param string   $provider Provider slug.
 	 * @return string|null Public URL of the saved file, or null on failure.
 	 */
 	public function save_image(
-		$image,
+		\GdImage $image,
 		string $address,
 		int $zoom,
 		int $width,
 		int $height,
-		int $density = 1
+		int $density,
+		string $provider
 	): ?string {
 		$dirs = wp_get_upload_dir();
 
@@ -1623,7 +1492,7 @@ class Map {
 			return null; // @codeCoverageIgnore
 		}
 
-		$filename = $this->filename_for( $address, $zoom, $width, $height, $density );
+		$filename = $this->filename_for( $address, $zoom, $width, $height, $provider, $density );
 		$path     = trailingslashit( $base_dir ) . $filename;
 		$url      = trailingslashit( $base_url ) . $filename;
 
@@ -1813,51 +1682,5 @@ class Map {
 			'width'  => $this->clamp_width( $width ),
 			'height' => $this->clamp_height( $height ),
 		);
-	}
-
-	/**
-	 * Tile URL template used by the static renderer. Filterable.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @return string
-	 */
-	protected function get_tile_url_template(): string {
-		/**
-		 * Filter the tile URL template used by the static venue map.
-		 *
-		 * @since 1.0.0
-		 *
-		 * @param string $template Tile URL with `{z}`, `{x}`, `{y}` placeholders.
-		 */
-		return (string) apply_filters( 'gatherpress_venue_map_tile_url', self::DEFAULT_TILE_URL );
-	}
-
-	/**
-	 * Convert longitude to absolute pixel X in world pixel space at `$zoom`.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param float $lng  Longitude in degrees.
-	 * @param int   $zoom Zoom level.
-	 * @return float
-	 */
-	protected function lng_to_world_pixel( float $lng, int $zoom ): float {
-		return ( ( $lng + 180.0 ) / 360.0 ) * self::TILE_SIZE * ( 2 ** $zoom );
-	}
-
-	/**
-	 * Convert latitude to absolute pixel Y in world pixel space at `$zoom`.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param float $lat  Latitude in degrees.
-	 * @param int   $zoom Zoom level.
-	 * @return float
-	 */
-	protected function lat_to_world_pixel( float $lat, int $zoom ): float {
-		$rad = deg2rad( $lat );
-
-		return ( 1 - log( tan( $rad ) + 1 / cos( $rad ) ) / M_PI ) / 2 * self::TILE_SIZE * ( 2 ** $zoom );
 	}
 }
