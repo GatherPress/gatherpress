@@ -9,6 +9,8 @@
 namespace GatherPress\Tests\Core;
 
 use GatherPress\Core\Geocoding;
+use GatherPress\Core\Utility as GP_Utility;
+use GatherPress\Core\Venue\Setup as Venue_Setup;
 use GatherPress\Core\Venue\Venue;
 use GatherPress\Tests\Base;
 use PMC\Unit_Test\Mocks\Http;
@@ -1791,15 +1793,9 @@ class Test_Geocoding extends Base {
 	 * @return string[]
 	 */
 	private function structured_meta_keys(): array {
-		return array(
-			'gatherpress_house_number',
-			'gatherpress_street',
-			'gatherpress_city',
-			'gatherpress_county',
-			'gatherpress_state',
-			'gatherpress_postcode',
-			'gatherpress_country',
-			'gatherpress_country_code',
+		return array_map(
+			array( GP_Utility::class, 'prefix_key' ),
+			Venue_Setup::STRUCTURED_ADDRESS_FIELDS
 		);
 	}
 
@@ -2238,7 +2234,7 @@ class Test_Geocoding extends Base {
 	 * @return void
 	 */
 	public function test_structured_address_meta_stripped_from_rest_writes(): void {
-		$instance = \GatherPress\Core\Venue\Setup::get_instance();
+		$instance = Venue_Setup::get_instance();
 		$request  = new WP_REST_Request();
 
 		$request->set_param(

@@ -16,6 +16,8 @@ namespace GatherPress\Core;
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Traits\Singleton;
+use GatherPress\Core\Utility;
+use GatherPress\Core\Venue\Setup as Venue_Setup;
 use WP_Error;
 use WP_REST_Request;
 use WP_REST_Response;
@@ -262,22 +264,11 @@ class Geocoding {
 			return;
 		}
 
-		$structured_keys = array(
-			'house_number',
-			'street',
-			'city',
-			'county',
-			'state',
-			'postcode',
-			'country',
-			'country_code',
-		);
-
 		$address = (string) get_post_meta( $post_id, 'gatherpress_address', true );
 
 		if ( '' === trim( $address ) ) {
-			foreach ( $structured_keys as $key ) {
-				update_post_meta( $post_id, 'gatherpress_' . $key, '' );
+			foreach ( Venue_Setup::STRUCTURED_ADDRESS_FIELDS as $field ) {
+				update_post_meta( $post_id, Utility::prefix_key( $field ), '' );
 			}
 			return;
 		}
@@ -288,11 +279,11 @@ class Geocoding {
 			return;
 		}
 
-		foreach ( $structured_keys as $key ) {
+		foreach ( Venue_Setup::STRUCTURED_ADDRESS_FIELDS as $field ) {
 			update_post_meta(
 				$post_id,
-				'gatherpress_' . $key,
-				(string) $result[ $key ]
+				Utility::prefix_key( $field ),
+				(string) $result[ $field ]
 			);
 		}
 	}

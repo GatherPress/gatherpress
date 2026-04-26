@@ -46,6 +46,34 @@ class Setup {
 	use Singleton;
 
 	/**
+	 * Suffixes of the structured-address venue meta keys.
+	 *
+	 * These eight keys are derived from `gatherpress_address` by the async
+	 * geocode cron handler — populated server-side from the Photon response,
+	 * never written through the REST API. Stored here as the unprefixed
+	 * "field" form so consumers can either iterate them directly (e.g.
+	 * {@see Venue::get_information()}) or map through {@see Utility::prefix_key()}
+	 * to get the full meta keys (e.g. registration in
+	 * {@see self::maybe_register_post_meta()}).
+	 *
+	 * Single source of truth for: meta registration, REST readonly stripping,
+	 * cron handler write loop, and `Venue::get_information()` field list.
+	 *
+	 * @since 1.0.0
+	 * @var string[]
+	 */
+	public const STRUCTURED_ADDRESS_FIELDS = array(
+		'house_number',
+		'street',
+		'city',
+		'county',
+		'state',
+		'postcode',
+		'country',
+		'country_code',
+	);
+
+	/**
 	 * Class constructor.
 	 *
 	 * Instantiates the sibling Venue\* singletons before wiring hooks so
@@ -289,15 +317,9 @@ class Setup {
 		// in `filter_readonly_meta` rather than triggering a permission
 		// error. Read access via REST stays open so JSON-LD / schema.org
 		// emitters and downstream API consumers can read them.
-		$structured_address_meta = array(
-			'gatherpress_house_number',
-			'gatherpress_street',
-			'gatherpress_city',
-			'gatherpress_county',
-			'gatherpress_state',
-			'gatherpress_postcode',
-			'gatherpress_country',
-			'gatherpress_country_code',
+		$structured_address_meta = array_map(
+			array( Utility::class, 'prefix_key' ),
+			self::STRUCTURED_ADDRESS_FIELDS
 		);
 
 		$venue_information_meta = array(
@@ -467,20 +489,16 @@ class Setup {
 	 * @return stdClass The prepared post object.
 	 */
 	public function filter_readonly_meta( stdClass $prepared_post, WP_REST_Request $request ): stdClass {
-		$readonly_keys = array(
-			Map::META_KEY,
-			// Structured-address fields are derived from `gatherpress_address`
-			// by the async geocode cron handler. REST writes are stripped
-			// rather than rejected so a client that PATCHes them alongside
-			// editor-writable fields doesn't fail the whole request.
-			'gatherpress_house_number',
-			'gatherpress_street',
-			'gatherpress_city',
-			'gatherpress_county',
-			'gatherpress_state',
-			'gatherpress_postcode',
-			'gatherpress_country',
-			'gatherpress_country_code',
+		// Structured-address fields are derived from `gatherpress_address`
+		// by the async geocode cron handler. REST writes are stripped
+		// rather than rejected so a client that PATCHes them alongside
+		// editor-writable fields doesn't fail the whole request.
+		$readonly_keys = array_merge(
+			array( Map::META_KEY ),
+			array_map(
+				array( Utility::class, 'prefix_key' ),
+				self::STRUCTURED_ADDRESS_FIELDS
+			)
 		);
 
 		$meta = $request->get_param( 'meta' );

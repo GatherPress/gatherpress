@@ -195,20 +195,9 @@ class Venue {
 	 * }
 	 */
 	public function get_information(): array {
-		$fields      = array(
-			'address',
-			'city',
-			'country',
-			'country_code',
-			'county',
-			'house_number',
-			'latitude',
-			'longitude',
-			'phone',
-			'postcode',
-			'state',
-			'street',
-			'website',
+		$fields      = array_merge(
+			array( 'address', 'latitude', 'longitude', 'phone', 'website' ),
+			Setup::STRUCTURED_ADDRESS_FIELDS
 		);
 		$information = array_fill_keys( $fields, '' );
 

@@ -126,11 +126,24 @@ The core identifier for venue post types. Enables venue address and contact data
     - `gatherpress_longitude`
     - `gatherpress_phone`
     - `gatherpress_website`
+- Registration of eight server-populated structured-address meta keys, each `show_in_rest` for read access (REST writes are stripped, since these are derived from `gatherpress_address` by an async geocode cron handler that fires only when the address actually changes):
+    - `gatherpress_house_number`
+    - `gatherpress_street`
+    - `gatherpress_city`
+    - `gatherpress_county`
+    - `gatherpress_state`
+    - `gatherpress_postcode`
+    - `gatherpress_country`
+    - `gatherpress_country_code`
 - Venue detail blocks (address, phone number, website)
 - Automatic creation and management of the corresponding `_gatherpress_venue` taxonomy term
 - `post_type_supports( $type, 'gatherpress-venue-information' )` is the canonical check for "is this a venue?"
 
 Meta revisions are enabled automatically when your venue post type declares `revisions` in its `supports` array; venue post types that opt out of revisions still get the meta registered without `revisions_enabled`.
+
+#### Structured-address fields
+
+The eight structured-address fields are populated by a server-side cron handler that runs on a 5-second delay after `gatherpress_address` changes. Manual edits to those fields via `update_post_meta()` from trusted server code are preserved as long as the address itself doesn't change. To suppress the outbound HTTP-on-save (firewalled installs, dev environments without Photon access), return `false` from the `gatherpress_geocode_on_save_enabled` filter. To replace WP-Cron with a different scheduler (e.g. Action Scheduler), short-circuit the `gatherpress_async_geocode_pre_enqueue_job` filter with any non-null value.
 
 #### Usage for gatherpress-venue-information
 
