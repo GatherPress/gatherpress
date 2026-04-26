@@ -54,9 +54,12 @@ class Setup {
 	 * iterate them directly (e.g. {@see Venue::get_information()}) or map
 	 * through {@see Utility::prefix_key()} to get the full meta keys.
 	 *
-	 * Pair with {@see self::STRUCTURED_ADDRESS_FIELDS} for the readonly
-	 * Photon-derived counterpart; together the two arrays make up the full
-	 * 13-field shape returned by `Venue::get_information()`.
+	 * Single source of truth for: meta registration in
+	 * {@see self::maybe_register_post_meta()} and the editor-writable half
+	 * of `Venue::get_information()`. Pair with
+	 * {@see self::STRUCTURED_ADDRESS_FIELDS} for the readonly Photon-derived
+	 * counterpart; together the two arrays make up the full 13-field shape
+	 * returned by `Venue::get_information()`.
 	 *
 	 * @since 1.0.0
 	 * @var string[]
@@ -346,74 +349,40 @@ class Setup {
 			self::STRUCTURED_ADDRESS_FIELDS
 		);
 
-		$venue_information_meta = array(
-			'gatherpress_address'   => array(
-				'auth_callback'     => array( Utility::class, 'can_edit_post_meta' ),
-				'sanitize_callback' => 'sanitize_text_field',
-				'show_in_rest'      => true,
-				'single'            => true,
-				'type'              => 'string',
-				'default'           => '',
-				'revisions_enabled' => true,
-			),
-			'gatherpress_latitude'  => array(
-				'auth_callback'     => array( Utility::class, 'can_edit_post_meta' ),
-				'sanitize_callback' => array( $this, 'sanitize_coordinate' ),
-				'show_in_rest'      => true,
-				'single'            => true,
-				'type'              => 'string',
-				'default'           => '',
-				'revisions_enabled' => true,
-			),
-			'gatherpress_longitude' => array(
-				'auth_callback'     => array( Utility::class, 'can_edit_post_meta' ),
-				'sanitize_callback' => array( $this, 'sanitize_coordinate' ),
-				'show_in_rest'      => true,
-				'single'            => true,
-				'type'              => 'string',
-				'default'           => '',
-				'revisions_enabled' => true,
-			),
-			'gatherpress_phone'     => array(
-				'auth_callback'     => array( Utility::class, 'can_edit_post_meta' ),
-				'sanitize_callback' => 'sanitize_text_field',
-				'show_in_rest'      => true,
-				'single'            => true,
-				'type'              => 'string',
-				'default'           => '',
-				'revisions_enabled' => true,
-			),
-			'gatherpress_website'   => array(
-				'auth_callback'     => array( Utility::class, 'can_edit_post_meta' ),
-				'sanitize_callback' => 'sanitize_url',
-				'show_in_rest'      => true,
-				'single'            => true,
-				'type'              => 'string',
-				'default'           => '',
-				'revisions_enabled' => true,
-			),
-			// Map keeps a per-zoom descriptor map here: { "15": { url,
-			// hash }, ... }. Exposed read-only via REST so the block editor
-			// can preview the cached static image when the user picks
-			// renderMode="static". Writes are denied ­— the server-side
-			// pipeline is the only thing allowed to populate this meta.
-			Map::META_KEY           => array(
-				'auth_callback' => '__return_false',
-				'show_in_rest'  => array(
-					'schema' => array(
-						'type'                 => 'object',
-						'additionalProperties' => array(
-							'type'       => 'object',
-							'properties' => array(
-								'url'  => array( 'type' => 'string' ),
-								'hash' => array( 'type' => 'string' ),
-							),
+		// Per-field sanitize_callback for the editor-writable venue-information
+		// fields. Keys must match `self::EDITOR_WRITABLE_FIELDS` exactly so
+		// the loop below can resolve a callback for each entry.
+		$editor_writable_sanitizers = array(
+			'address'   => 'sanitize_text_field',
+			'latitude'  => array( $this, 'sanitize_coordinate' ),
+			'longitude' => array( $this, 'sanitize_coordinate' ),
+			'phone'     => 'sanitize_text_field',
+			'website'   => 'sanitize_url',
+		);
+
+		// Map keeps a per-zoom descriptor map here: { "15": { url, hash },
+		// ... }. Exposed read-only via REST so the block editor can preview
+		// the cached static image when the user picks renderMode="static".
+		// Writes are denied — the server-side pipeline is the only thing
+		// allowed to populate this meta. Registered separately from the
+		// editor-writable loop because it's neither editor-writable nor
+		// share the standard string-meta args shape.
+		$map_meta_args = array(
+			'auth_callback' => '__return_false',
+			'show_in_rest'  => array(
+				'schema' => array(
+					'type'                 => 'object',
+					'additionalProperties' => array(
+						'type'       => 'object',
+						'properties' => array(
+							'url'  => array( 'type' => 'string' ),
+							'hash' => array( 'type' => 'string' ),
 						),
 					),
 				),
-				'single'        => true,
-				'type'          => 'object',
 			),
+			'single'        => true,
+			'type'          => 'object',
 		);
 
 		$venue_map_meta = array(
@@ -447,7 +416,20 @@ class Setup {
 		if ( post_type_supports( $post_type, 'gatherpress-venue-information' ) ) {
 			$supports_revisions = post_type_supports( $post_type, 'revisions' );
 
-			foreach ( $venue_information_meta as $meta_key => $args ) {
+			// Editor-writable fields share a common args shape; only the
+			// per-field sanitize_callback varies. Iterate the constant so
+			// adding a new field is a single edit at the top of this class.
+			foreach ( self::EDITOR_WRITABLE_FIELDS as $field ) {
+				$args = array(
+					'auth_callback'     => array( Utility::class, 'can_edit_post_meta' ),
+					'sanitize_callback' => $editor_writable_sanitizers[ $field ],
+					'show_in_rest'      => true,
+					'single'            => true,
+					'type'              => 'string',
+					'default'           => '',
+					'revisions_enabled' => true,
+				);
+
 				// revisions_enabled is only valid when the post type supports revisions.
 				// Silently drop it for venue post types that opt out (e.g. companion plugins
 				// registering a minimal venue post type without revisions support).
@@ -455,8 +437,12 @@ class Setup {
 					unset( $args['revisions_enabled'] );
 				}
 
-				register_post_meta( $post_type, $meta_key, $args );
+				register_post_meta( $post_type, Utility::prefix_key( $field ), $args );
 			}
+
+			// Map descriptors register on their own — different shape (object
+			// schema, no sanitize_callback) and not editor-writable.
+			register_post_meta( $post_type, Map::META_KEY, $map_meta_args );
 
 			// Structured-address meta share an identical args shape, so
 			// register them in a tight loop rather than duplicating the
@@ -482,6 +468,12 @@ class Setup {
 			}
 
 			// Strip read-only meta from REST requests so the editor can't write it directly.
+			// Belt-and-suspenders with `auth_callback => __return_false`: the
+			// strip filter runs in `rest_pre_insert_<post_type>` BEFORE the
+			// auth_callback would 403 the whole request, so a co-submitted
+			// PATCH with a writable field plus a readonly field succeeds for
+			// the writable subset rather than failing the whole payload.
+			// Both are required — removing either breaks the contract.
 			add_filter(
 				sprintf( 'rest_pre_insert_%s', $post_type ),
 				array( $this, 'filter_readonly_meta' ),

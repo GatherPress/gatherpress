@@ -2040,6 +2040,83 @@ class Test_Geocoding extends Base {
 	}
 
 	/**
+	 * The schedule handler must skip cleanly when the post no longer exists
+	 * (force-deleted between save and the listener firing).
+	 *
+	 * @covers ::maybe_schedule_geocode
+	 *
+	 * @return void
+	 */
+	public function test_maybe_schedule_geocode_skips_when_post_deleted(): void {
+		$instance      = Geocoding::get_instance();
+		$venue_post_id = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
+
+		wp_delete_post( $venue_post_id, true );
+
+		$instance->maybe_schedule_geocode( 0, $venue_post_id, 'gatherpress_address' );
+
+		$this->assertFalse(
+			wp_next_scheduled( Geocoding::CRON_ACTION, array( $venue_post_id ) ),
+			'A deleted post must not schedule a geocode cron.'
+		);
+	}
+
+	/**
+	 * Sites with heavy save hooks (revisions fanning out, multilingual sync)
+	 * may need a longer delay; sites that batch saves may want zero.
+	 * `gatherpress_async_geocode_delay` lets them override the default.
+	 *
+	 * @covers ::maybe_schedule_geocode
+	 *
+	 * @return void
+	 */
+	public function test_maybe_schedule_geocode_respects_delay_filter(): void {
+		$instance      = Geocoding::get_instance();
+		$venue_post_id = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
+
+		add_filter(
+			'gatherpress_async_geocode_delay',
+			static function () {
+				return 60;
+			}
+		);
+
+		$before = time();
+		$instance->maybe_schedule_geocode( 0, $venue_post_id, 'gatherpress_address' );
+		$after = time();
+
+		$timestamp = wp_next_scheduled( Geocoding::CRON_ACTION, array( $venue_post_id ) );
+
+		remove_all_filters( 'gatherpress_async_geocode_delay' );
+
+		$this->assertNotFalse( $timestamp, 'Filter override should still schedule the cron.' );
+		// Allow ±1s of slack for the time() boundary that brackets the call.
+		$this->assertGreaterThanOrEqual( $before + 60, $timestamp );
+		$this->assertLessThanOrEqual( $after + 60, $timestamp );
+	}
+
+	/**
+	 * End-to-end wiring: an actual `update_post_meta()` call on a venue
+	 * fires `updated_post_meta` (or `added_post_meta` on first write), which
+	 * routes through the scheduler. Locks the integration so a future
+	 * refactor that drops the action listener is caught.
+	 *
+	 * @covers ::maybe_schedule_geocode
+	 *
+	 * @return void
+	 */
+	public function test_update_post_meta_schedules_geocode_via_action_hook(): void {
+		$venue_post_id = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
+
+		update_post_meta( $venue_post_id, 'gatherpress_address', '11 Durrell Street, Verona NJ' );
+
+		$this->assertNotFalse(
+			wp_next_scheduled( Geocoding::CRON_ACTION, array( $venue_post_id ) ),
+			'update_post_meta() on gatherpress_address must schedule the cron via the action hook.'
+		);
+	}
+
+	/**
 	 * Cron handler must re-check the post type at run time — between
 	 * schedule and fire, the post could have been retyped and we don't
 	 * want to scribble structured-address meta onto a non-venue.
@@ -2065,6 +2142,108 @@ class Test_Geocoding extends Base {
 	}
 
 	/**
+	 * Cron handler must skip cleanly when the post has been force-deleted
+	 * between schedule and fire. `get_post()` returns null in that case;
+	 * the explicit `WP_Post` guard catches it rather than relying on the
+	 * `(string) get_post_type( $invalid_id )` cast pattern.
+	 *
+	 * @covers ::async_geocode_venue
+	 *
+	 * @return void
+	 */
+	public function test_async_geocode_venue_skips_when_post_deleted(): void {
+		$instance = Geocoding::get_instance();
+
+		// 999999 is a non-existent post ID — get_post() returns null.
+		$instance->async_geocode_venue( 999999 );
+
+		// No exception, no fatal — clean exit. Nothing else to assert.
+		$this->assertTrue( true );
+	}
+
+	/**
+	 * When Photon returns a `WP_Error`, the handler must fire the
+	 * `gatherpress_async_geocode_failed` action with the post ID and the
+	 * WP_Error so observability plugins can surface chronic failures.
+	 *
+	 * @covers ::async_geocode_venue
+	 *
+	 * @return void
+	 */
+	public function test_async_geocode_venue_fires_failed_action_on_photon_error(): void {
+		$instance      = Geocoding::get_instance();
+		$venue_post_id = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
+
+		update_post_meta( $venue_post_id, 'gatherpress_address', '11 Durrell Street, Verona NJ' );
+
+		$this->http_mock->mock(
+			'*',
+			array(
+				'headers' => 'HTTP/1.1 503 Service Unavailable',
+				'body'    => '',
+			)
+		);
+
+		$captured = array();
+		add_action(
+			'gatherpress_async_geocode_failed',
+			static function ( $post_id, $error ) use ( &$captured ): void {
+				$captured[] = array(
+					'post_id' => $post_id,
+					'error'   => $error,
+				);
+			},
+			10,
+			2
+		);
+
+		$instance->async_geocode_venue( $venue_post_id );
+
+		remove_all_actions( 'gatherpress_async_geocode_failed' );
+
+		$this->assertCount( 1, $captured, 'Failure action must fire exactly once.' );
+		$this->assertSame( $venue_post_id, $captured[0]['post_id'] );
+		$this->assertInstanceOf( 'WP_Error', $captured[0]['error'] );
+		$this->assertSame( 'geocoding_failed', $captured[0]['error']->get_error_code() );
+	}
+
+	/**
+	 * `extract_structured_address()` must skip non-scalar property values
+	 * rather than cast them to the literal "Array" sentinel string. Photon
+	 * normally returns scalar fields, but a malformed response with a
+	 * nested object/array would otherwise emit notices and corrupt meta.
+	 *
+	 * @covers ::geocode_to_result
+	 * @covers ::extract_structured_address
+	 *
+	 * @return void
+	 */
+	public function test_geocode_to_result_skips_non_scalar_properties(): void {
+		$instance = Geocoding::get_instance();
+
+		$this->mock_photon_response(
+			array(
+				$this->build_photon_feature(
+					array(
+						// Malformed: city is an object/array instead of a string.
+						'city'   => array( 'invalid' => 'shape' ),
+						// Malformed: street is an object too.
+						'street' => array( 'name' => 'should-be-a-string' ),
+					)
+				),
+			)
+		);
+
+		$result = $instance->geocode_to_result( 'Non-scalar properties test address' );
+
+		$this->assertIsArray( $result );
+		$this->assertSame( '', $result['city'], 'Non-scalar properties must skip rather than cast to "Array".' );
+		$this->assertSame( '', $result['street'], 'Non-scalar properties must skip rather than cast to "Array".' );
+		// Other (well-formed) properties on the same feature still come through.
+		$this->assertSame( '07044', $result['postcode'] );
+	}
+
+	/**
 	 * When the address is cleared, the structured fields must be cleared
 	 * too. Otherwise stale city/state/postcode pieces outlive the address
 	 * they described and JSON-LD emitters surface mismatched data.
@@ -2081,6 +2260,11 @@ class Test_Geocoding extends Base {
 		foreach ( $this->structured_meta_keys() as $key ) {
 			update_post_meta( $venue_post_id, $key, 'pre-existing' );
 		}
+		// Manually-entered lat/long for a venue without a street address (a
+		// remote campsite, GPS-only marker, etc.) should survive an
+		// address-clear — those coordinates aren't tied to the textual address.
+		update_post_meta( $venue_post_id, 'gatherpress_latitude', '40.8435252' );
+		update_post_meta( $venue_post_id, 'gatherpress_longitude', '-74.2398353' );
 
 		// gatherpress_address is empty / absent.
 		$instance->async_geocode_venue( $venue_post_id );
@@ -2092,6 +2276,17 @@ class Test_Geocoding extends Base {
 				sprintf( 'Empty address must clear %s, but it was not cleared.', $key )
 			);
 		}
+
+		$this->assertSame(
+			'40.8435252',
+			(string) get_post_meta( $venue_post_id, 'gatherpress_latitude', true ),
+			'Empty address must not clear manually-entered lat/long.'
+		);
+		$this->assertSame(
+			'-74.2398353',
+			(string) get_post_meta( $venue_post_id, 'gatherpress_longitude', true ),
+			'Empty address must not clear manually-entered lat/long.'
+		);
 	}
 
 	/**
@@ -2111,6 +2306,8 @@ class Test_Geocoding extends Base {
 		update_post_meta( $venue_post_id, 'gatherpress_address', '11 Durrell Street, Verona NJ' );
 		update_post_meta( $venue_post_id, 'gatherpress_city', 'Verona' );
 		update_post_meta( $venue_post_id, 'gatherpress_state', 'New Jersey' );
+		update_post_meta( $venue_post_id, 'gatherpress_latitude', '40.8435252' );
+		update_post_meta( $venue_post_id, 'gatherpress_longitude', '-74.2398353' );
 
 		// Photon HTTP error: 503 status (header pattern matches the rest of this suite).
 		$this->http_mock->mock(
@@ -2132,6 +2329,16 @@ class Test_Geocoding extends Base {
 			'New Jersey',
 			(string) get_post_meta( $venue_post_id, 'gatherpress_state', true ),
 			'A Photon HTTP error must not overwrite a populated structured field.'
+		);
+		$this->assertSame(
+			'40.8435252',
+			(string) get_post_meta( $venue_post_id, 'gatherpress_latitude', true ),
+			'A Photon HTTP error must not overwrite previously-good lat/long.'
+		);
+		$this->assertSame(
+			'-74.2398353',
+			(string) get_post_meta( $venue_post_id, 'gatherpress_longitude', true ),
+			'A Photon HTTP error must not overwrite previously-good lat/long.'
 		);
 	}
 
@@ -2165,6 +2372,11 @@ class Test_Geocoding extends Base {
 		$this->assertSame( '07044', (string) get_post_meta( $venue_post_id, 'gatherpress_postcode', true ) );
 		$this->assertSame( 'United States', (string) get_post_meta( $venue_post_id, 'gatherpress_country', true ) );
 		$this->assertSame( 'us', (string) get_post_meta( $venue_post_id, 'gatherpress_country_code', true ) );
+
+		// Lat/long are also persisted from the same Photon response so freeform-typed
+		// addresses (no autocomplete pick) don't leave the map block uncoordinated.
+		$this->assertSame( '40.8435252', (string) get_post_meta( $venue_post_id, 'gatherpress_latitude', true ) );
+		$this->assertSame( '-74.2398353', (string) get_post_meta( $venue_post_id, 'gatherpress_longitude', true ) );
 	}
 
 	/**
@@ -2188,6 +2400,11 @@ class Test_Geocoding extends Base {
 		foreach ( $this->structured_meta_keys() as $key ) {
 			update_post_meta( $venue_post_id, $key, 'stale' );
 		}
+		// Manually-entered lat/long for an unfindable venue (e.g. remote GPS
+		// coordinates) should survive a Photon "not found" response —
+		// Photon may simply not have data for the location.
+		update_post_meta( $venue_post_id, 'gatherpress_latitude', '40.8435252' );
+		update_post_meta( $venue_post_id, 'gatherpress_longitude', '-74.2398353' );
 
 		$this->mock_photon_response( array() );
 
@@ -2200,6 +2417,17 @@ class Test_Geocoding extends Base {
 				sprintf( 'A Photon "not found" response must clear stale %s, but it remained populated.', $key )
 			);
 		}
+
+		$this->assertSame(
+			'40.8435252',
+			(string) get_post_meta( $venue_post_id, 'gatherpress_latitude', true ),
+			'Photon "not found" must not overwrite manually-entered lat/long.'
+		);
+		$this->assertSame(
+			'-74.2398353',
+			(string) get_post_meta( $venue_post_id, 'gatherpress_longitude', true ),
+			'Photon "not found" must not overwrite manually-entered lat/long.'
+		);
 	}
 
 	/**

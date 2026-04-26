@@ -19,6 +19,7 @@ use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Utility;
 use GatherPress\Core\Venue\Setup as Venue_Setup;
 use WP_Error;
+use WP_Post;
 use WP_REST_Request;
 use WP_REST_Response;
 use WP_REST_Server;
@@ -164,7 +165,21 @@ class Geocoding {
 			return;
 		}
 
-		if ( ! post_type_supports( (string) get_post_type( $post_id ), 'gatherpress-venue-information' ) ) {
+		// Skip during bulk imports (WP-CLI, importer plugins) so a multi-venue
+		// import doesn't fan out to N Photon round-trips. Importers can run
+		// a single backfill pass afterwards via direct `geocode_to_result()`
+		// calls if they need the structured fields populated.
+		if ( defined( 'WP_IMPORTING' ) && WP_IMPORTING ) { // @codeCoverageIgnore
+			return; // @codeCoverageIgnore
+		}
+
+		$post = get_post( $post_id );
+
+		if ( ! $post instanceof WP_Post ) {
+			return;
+		}
+
+		if ( ! post_type_supports( $post->post_type, 'gatherpress-venue-information' ) ) {
 			return;
 		}
 
@@ -229,7 +244,23 @@ class Geocoding {
 			return;
 		}
 
-		wp_schedule_single_event( time() + self::CRON_DELAY_SECONDS, self::CRON_ACTION, $args );
+		/**
+		 * Filters the delay between an address-change save and the cron firing.
+		 *
+		 * Default 5 seconds is short enough to feel near-realtime and long
+		 * enough that the originating save has fully committed. Sites with
+		 * heavy save hooks (revisions fanning out, multilingual sync, etc.)
+		 * may need longer; sites that batch saves can pass a larger value to
+		 * coalesce. Returning 0 fires effectively immediately.
+		 *
+		 * @since 1.0.0
+		 *
+		 * @param int $delay   Delay in seconds. Default 5.
+		 * @param int $post_id Venue post ID.
+		 */
+		$delay = (int) apply_filters( 'gatherpress_async_geocode_delay', self::CRON_DELAY_SECONDS, $post_id );
+
+		wp_schedule_single_event( time() + max( 0, $delay ), self::CRON_ACTION, $args );
 	}
 
 	/**
@@ -238,17 +269,26 @@ class Geocoding {
 	 * Runs ~5 seconds after a venue's `gatherpress_address` is added or
 	 * changed. Reads the (now-committed) address, hits Photon via the
 	 * shared `geocode_to_result()` method, and overwrites all 8
-	 * structured-address meta keys with whatever Photon returned.
+	 * structured-address meta keys with whatever Photon returned. On a
+	 * successful Photon response, also overwrites `gatherpress_latitude`
+	 * and `gatherpress_longitude` so freeform-typed addresses (which never
+	 * trigger the JS-side autocomplete that pre-fills coordinates) stay in
+	 * sync with the structured pieces derived from the same response.
 	 *
 	 * Failure modes:
-	 * - Empty address (cleared by the user): all 8 keys are emptied so
-	 *   stale city/state/postcode pieces don't outlive the address they
-	 *   described.
-	 * - Photon HTTP error (`WP_Error`): structured fields are left
-	 *   untouched. Better to keep the previous good values than overwrite
-	 *   with empties on a transient upstream blip.
+	 * - Empty address (cleared by the user): all 8 structured keys are
+	 *   emptied so stale city/state/postcode pieces don't outlive the
+	 *   address they described. Lat/long are intentionally left alone in
+	 *   case the user manually entered coordinates for a venue without a
+	 *   street address (a remote campsite, etc.).
+	 * - Photon HTTP error (`WP_Error`): structured fields and lat/long are
+	 *   left untouched. Better to keep the previous good values than
+	 *   overwrite with empties on a transient upstream blip. The
+	 *   `gatherpress_async_geocode_failed` action fires so observability
+	 *   plugins can surface chronic failures.
 	 * - Photon "not found" response: structured fields are emptied (Photon
-	 *   actively returned no match for the typed address).
+	 *   actively returned no match for the typed address). Lat/long are
+	 *   left alone for the same reason as the empty-address path.
 	 *
 	 * @since 1.0.0
 	 *
@@ -256,11 +296,18 @@ class Geocoding {
 	 * @return void
 	 */
 	public function async_geocode_venue( int $post_id ): void {
-		// Re-check post type at run time — between schedule and fire, the
-		// post type could change (rename, taxonomy reshuffle by another
-		// plugin) and we don't want to scribble structured-address meta
-		// onto something that's no longer a venue.
-		if ( ! post_type_supports( (string) get_post_type( $post_id ), 'gatherpress-venue-information' ) ) {
+		// Re-check post existence + type at run time — between schedule and
+		// fire, the post can be force-deleted, trashed-then-restored under a
+		// different type, or its post type can be re-registered without
+		// venue support. The explicit `WP_Post` guard catches the deletion
+		// race; the support check catches the type swap.
+		$post = get_post( $post_id );
+
+		if ( ! $post instanceof WP_Post ) {
+			return;
+		}
+
+		if ( ! post_type_supports( $post->post_type, 'gatherpress-venue-information' ) ) {
 			return;
 		}
 
@@ -276,6 +323,18 @@ class Geocoding {
 		$result = $this->geocode_to_result( $address );
 
 		if ( is_wp_error( $result ) ) {
+			/**
+			 * Fires when the async geocode handler exits because Photon
+			 * returned a `WP_Error`. Observability plugins can hook this to
+			 * surface chronic failures (DNS issues, rate-limit responses,
+			 * Photon outages) without parsing the WP-Cron error log.
+			 *
+			 * @since 1.0.0
+			 *
+			 * @param int      $post_id Venue post ID whose geocode failed.
+			 * @param WP_Error $result  The error returned by `geocode_to_result()`.
+			 */
+			do_action( 'gatherpress_async_geocode_failed', $post_id, $result );
 			return;
 		}
 
@@ -285,6 +344,15 @@ class Geocoding {
 				Utility::prefix_key( $field ),
 				(string) $result[ $field ]
 			);
+		}
+
+		// Persist lat/long only when Photon returned coordinates. The
+		// "not found" payload returns empty strings — we leave any
+		// user-entered coordinates alone in that case (same rationale as
+		// the empty-address branch above).
+		if ( '' !== $result['latitude'] && '' !== $result['longitude'] ) {
+			update_post_meta( $post_id, 'gatherpress_latitude', (string) $result['latitude'] );
+			update_post_meta( $post_id, 'gatherpress_longitude', (string) $result['longitude'] );
 		}
 	}
 
@@ -730,7 +798,14 @@ class Geocoding {
 	 */
 	private function extract_structured_address( array $properties ): array {
 		$pluck = static function ( string $key ) use ( $properties ): string {
-			return isset( $properties[ $key ] ) ? trim( (string) $properties[ $key ] ) : '';
+			// Skip non-scalar values — Photon normally returns string-typed
+			// fields, but a malformed response with a nested object would
+			// otherwise emit "Array to string conversion" notices and store
+			// the literal "Array" sentinel string in our meta.
+			if ( ! isset( $properties[ $key ] ) || ! is_scalar( $properties[ $key ] ) ) {
+				return '';
+			}
+			return trim( (string) $properties[ $key ] );
 		};
 
 		return array(
