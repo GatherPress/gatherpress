@@ -20,7 +20,7 @@ use GatherPress\Core\Event;
 use GatherPress\Core\Rsvp;
 use GatherPress\Core\Rsvp_Query;
 use GatherPress\Core\Traits\Singleton;
-use GatherPress\Core\Venue\Setup as Venue_Setup;
+use GatherPress\Core\Venue\Setup;
 use WP_Query;
 
 /**
@@ -500,7 +500,7 @@ class Admin_List {
 
 		$screen         = get_current_screen();
 		$post_type      = $screen ? $screen->post_type : Event::POST_TYPE;
-		$venue_taxonomy = Venue_Setup::get_instance()->taxonomy_for_event_post_type( $post_type );
+		$venue_taxonomy = Setup::get_instance()->taxonomy_for_event_post_type( $post_type );
 
 		// Bail early if the derived taxonomy is not registered to avoid invalid SQL.
 		if ( ! taxonomy_exists( $venue_taxonomy ) ) {
@@ -572,7 +572,7 @@ class Admin_List {
 			$event             = new Event( $post_id );
 			$venue_information = $event->get_venue_information();
 			$venue_name        = $venue_information['name'];
-			$venue_taxonomy    = Venue_Setup::get_instance()->taxonomy_for_event_post_type(
+			$venue_taxonomy    = Setup::get_instance()->taxonomy_for_event_post_type(
 				(string) get_post_type( $post_id )
 			);
 

@@ -16,7 +16,7 @@ namespace GatherPress\Core\Settings;
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Traits\Singleton;
-use GatherPress\Core\Venue\Map as Venue_Map;
+use GatherPress\Core\Venue\Map;
 
 /**
  * Class Venues.
@@ -116,7 +116,7 @@ class Venues extends Base {
 							'label'   => __( 'Render mode for new blocks:', 'gatherpress' ),
 							'type'    => 'select',
 							'options' => array(
-								'default' => Venue_Map::DEFAULT_RENDER_MODE,
+								'default' => Map::DEFAULT_RENDER_MODE,
 								'items'   => array(
 									'interactive' => __( 'Interactive', 'gatherpress' ),
 									'static'      => __( 'Static image', 'gatherpress' ),
@@ -137,7 +137,7 @@ class Venues extends Base {
 							'type'    => 'number',
 							'size'    => 'small',
 							'options' => array(
-								'default' => Venue_Map::DEFAULT_ZOOM,
+								'default' => Map::DEFAULT_ZOOM,
 								'min'     => '1',
 								'max'     => '20',
 							),
@@ -160,7 +160,7 @@ class Venues extends Base {
 							'options'     => array(
 								'default' => '',
 								'min'     => '0',
-								'max'     => (string) Venue_Map::HEIGHT_MAX,
+								'max'     => (string) Map::HEIGHT_MAX,
 							),
 						),
 					),
@@ -181,7 +181,7 @@ class Venues extends Base {
 							'options'     => array(
 								'default' => '',
 								'min'     => '0',
-								'max'     => (string) Venue_Map::WIDTH_MAX,
+								'max'     => (string) Map::WIDTH_MAX,
 							),
 						),
 					),
@@ -197,7 +197,7 @@ class Venues extends Base {
 							'label'   => __( 'Aspect ratio for new blocks:', 'gatherpress' ),
 							'type'    => 'select',
 							'options' => array(
-								'default' => Venue_Map::DEFAULT_ASPECT_RATIO,
+								'default' => Map::DEFAULT_ASPECT_RATIO,
 								'items'   => array(
 									'2/1'  => __( '2:1 (landscape)', 'gatherpress' ),
 									'16/9' => __( '16:9 (wide)', 'gatherpress' ),
@@ -220,7 +220,7 @@ class Venues extends Base {
 							'label'   => __( 'Scale for new blocks:', 'gatherpress' ),
 							'type'    => 'select',
 							'options' => array(
-								'default' => Venue_Map::DEFAULT_SCALE,
+								'default' => Map::DEFAULT_SCALE,
 								'items'   => array(
 									'cover'   => __( 'Cover', 'gatherpress' ),
 									'contain' => __( 'Contain', 'gatherpress' ),
@@ -242,7 +242,7 @@ class Venues extends Base {
 							'label'   => __( 'Map type for new blocks:', 'gatherpress' ),
 							'type'    => 'select',
 							'options' => array(
-								'default' => Venue_Map::DEFAULT_MAP_TYPE,
+								'default' => Map::DEFAULT_MAP_TYPE,
 								'items'   => array(
 									'roadmap'   => __( 'Roadmap', 'gatherpress' ),
 									'satellite' => __( 'Satellite', 'gatherpress' ),

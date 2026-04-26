@@ -21,7 +21,7 @@ use GatherPress\Core\Rsvp_Setup;
 use GatherPress\Core\Settings;
 use GatherPress\Core\Utility;
 use GatherPress\Core\Validate;
-use GatherPress\Core\Venue\Setup as Venue_Setup;
+use GatherPress\Core\Venue\Setup;
 use GatherPress\Core\Venue\Venue;
 use WP_Post;
 
@@ -547,7 +547,7 @@ class Event {
 		);
 
 		$event_post_type = (string) get_post_type( $this->event );
-		$venue_setup     = Venue_Setup::get_instance();
+		$venue_setup     = Setup::get_instance();
 		$taxonomy        = $venue_setup->taxonomy_for_event_post_type( $event_post_type );
 		$venue_terms     = (array) get_the_terms( $this->event, $taxonomy );
 

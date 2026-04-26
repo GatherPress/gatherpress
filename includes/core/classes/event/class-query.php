@@ -19,7 +19,7 @@ use GatherPress\Core\Event;
 use GatherPress\Core\Settings;
 use GatherPress\Core\Topic;
 use GatherPress\Core\Traits\Singleton;
-use GatherPress\Core\Venue\Setup as Venue_Setup;
+use GatherPress\Core\Venue\Setup;
 use GatherPress\Core\Venue\Venue;
 use WP_Post;
 use WP_Query;
@@ -529,7 +529,7 @@ class Query {
 
 		foreach ( get_post_types_by_support( 'gatherpress-venue-information' ) as $venue_post_type ) {
 			$venue_tax_query[] = array(
-				'taxonomy' => Venue_Setup::get_instance()->get_taxonomy( $venue_post_type ),
+				'taxonomy' => Setup::get_instance()->get_taxonomy( $venue_post_type ),
 				'field'    => 'slug',
 				'terms'    => $venues,
 			);
