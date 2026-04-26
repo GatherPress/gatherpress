@@ -6,6 +6,7 @@ Filters the parsed descriptor map for a venue.
 Companion plugins, multi-locale setups, or storage-layer overrides
 can use this to drop entries they consider stale, add synthetic
 descriptors (e.g. pre-rendered PNG files in a CDN), or rewrite URLs.
+Outer key is provider slug, inner key is `{zoom}x{width}x{height}`.
 Callers of this method already tolerate empty maps, so returning
 `[]` is a valid "suppress all" escape hatch.
 
@@ -28,12 +29,12 @@ add_filter(
 
 ## Parameters
 
-- *`array<string,`* `array<string,` mixed>> $descriptors Parsed descriptor map keyed by combo.
+- *`array<string,`* `array<string,` array<string, mixed>>> $descriptors Provider-keyed descriptor map.
 - *`int`* `$post_id` Venue post ID.
 
 ## Files
 
-- [includes/core/classes/venue/class-map.php:1045](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/venue/class-map.php#L1045)
+- [includes/core/classes/venue/map/class-map.php:1108](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/venue/map/class-map.php#L1108)
 ```php
 apply_filters( 'gatherpress_venue_map_descriptors', $descriptors, $post_id )
 ```
