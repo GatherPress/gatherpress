@@ -181,9 +181,9 @@ export const RegenerateMapButton = ( {
  *
  * @since 1.0.0
  *
- * @param {Object} descriptors  Provider-keyed descriptor map: `{ osm: { combo_key: { url, ... } } }`.
- * @param {string} comboKey     Combo key in the form `{zoom}x{width}x{height}`.
- * @param {string} activeSlug   Slug of the currently active provider (e.g. `'osm'`).
+ * @param {Object} descriptors Provider-keyed descriptor map: `{ osm: { combo_key: { url, ... } } }`.
+ * @param {string} comboKey    Combo key in the form `{zoom}x{width}x{height}`.
+ * @param {string} activeSlug  Slug of the currently active provider (e.g. `'osm'`).
  * @return {Object|undefined} Descriptor object, or undefined when no provider has one.
  */
 export const pickDescriptorForCombo = ( descriptors, comboKey, activeSlug ) => {

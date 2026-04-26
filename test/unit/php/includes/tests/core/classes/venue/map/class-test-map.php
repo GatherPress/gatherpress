@@ -144,6 +144,12 @@ class Test_Map extends Base {
 				'callback' => array( $instance, 'register_rest_routes' ),
 			),
 			array(
+				'type'     => 'action',
+				'name'     => 'update_option_gatherpress_settings',
+				'priority' => 10,
+				'callback' => array( $instance, 'maybe_handle_settings_change' ),
+			),
+			array(
 				'type'     => 'filter',
 				'name'     => 'block_type_metadata',
 				'priority' => 10,
@@ -367,11 +373,11 @@ class Test_Map extends Base {
 			'longitude' => '-122.0312',
 		);
 
-		$baseline = $instance->hash_for( $info, 15, 800, 400, Map::DEFAULT_TILE_URL );
+		$baseline = $instance->hash_for( $info, 15, 800, 400, 'osm' );
 
 		$this->assertSame(
 			$baseline,
-			$instance->hash_for( $info, 15, 800, 400, Map::DEFAULT_TILE_URL ),
+			$instance->hash_for( $info, 15, 800, 400, 'osm' ),
 			'Hash should be stable when every input is identical.'
 		);
 
@@ -381,25 +387,25 @@ class Test_Map extends Base {
 
 		$this->assertNotSame(
 			$baseline,
-			$instance->hash_for( $moved_info, 15, 800, 400, Map::DEFAULT_TILE_URL ),
+			$instance->hash_for( $moved_info, 15, 800, 400, 'osm' ),
 			'Hash should change when coordinates change.'
 		);
 
 		$this->assertNotSame(
 			$baseline,
-			$instance->hash_for( $info, 14, 800, 400, Map::DEFAULT_TILE_URL ),
+			$instance->hash_for( $info, 14, 800, 400, 'osm' ),
 			'Hash should change when the zoom level changes.'
 		);
 
 		$this->assertNotSame(
 			$baseline,
-			$instance->hash_for( $info, 15, 600, 400, Map::DEFAULT_TILE_URL ),
+			$instance->hash_for( $info, 15, 600, 400, 'osm' ),
 			'Hash should change when the width changes.'
 		);
 
 		$this->assertNotSame(
 			$baseline,
-			$instance->hash_for( $info, 15, 800, 500, Map::DEFAULT_TILE_URL ),
+			$instance->hash_for( $info, 15, 800, 500, 'osm' ),
 			'Hash should change when the height changes.'
 		);
 
@@ -407,7 +413,7 @@ class Test_Map extends Base {
 		// filenames dedupe across venues at the same location.
 		$this->assertSame(
 			$baseline,
-			$instance->hash_for( $info, 15, 800, 400, Map::DEFAULT_TILE_URL ),
+			$instance->hash_for( $info, 15, 800, 400, 'osm' ),
 			'Hash is address-scoped, not post-scoped.'
 		);
 	}
@@ -416,10 +422,7 @@ class Test_Map extends Base {
 	 * Writes a PNG to the uploads subdir and stores its URL in post meta.
 	 *
 	 * @covers ::maybe_generate
-	 * @covers ::composite_image
 	 * @covers ::save_image
-	 * @covers ::stamp_marker
-	 * @covers ::fetch_tile
 	 * @covers ::get_stored_descriptor
 	 *
 	 * @return void
@@ -665,36 +668,39 @@ class Test_Map extends Base {
 			$post_id,
 			Map::META_KEY,
 			array(
-				'15x600x300'    => array(
-					'url'    => 'https://example.test/a.png',
-					'hash'   => 'abc',
-					'zoom'   => 15,
-					'width'  => 600,
-					'height' => 300,
+				'osm' => array(
+					'15x600x300'    => array(
+						'url'    => 'https://example.test/a.png',
+						'hash'   => 'abc',
+						'zoom'   => 15,
+						'width'  => 600,
+						'height' => 300,
+					),
+					'18x800x400'    => 'not-an-array',
+					'20x1000x500'   => array(
+						'url'    => 'https://example.test/b.png',
+						'zoom'   => 20,
+						'width'  => 1000,
+						'height' => 500,
+					), // Missing hash.
+					'missing-shape' => array(
+						'url'  => 'https://example.test/c.png',
+						'hash' => 'def',
+					), // Missing zoom/width/height.
 				),
-				'18x800x400'    => 'not-an-array',
-				'20x1000x500'   => array(
-					'url'    => 'https://example.test/b.png',
-					'zoom'   => 20,
-					'width'  => 1000,
-					'height' => 500,
-				), // Missing hash.
-				'missing-shape' => array(
-					'url'  => 'https://example.test/c.png',
-					'hash' => 'def',
-				), // Missing zoom/width/height.
 			)
 		);
 
 		$descriptors = $instance->get_all_descriptors( $post_id );
 
-		$this->assertArrayHasKey( '15x600x300', $descriptors );
-		$this->assertArrayNotHasKey( '18x800x400', $descriptors );
-		$this->assertArrayNotHasKey( '20x1000x500', $descriptors );
-		$this->assertArrayNotHasKey( 'missing-shape', $descriptors );
-		$this->assertSame( 15, $descriptors['15x600x300']['zoom'] );
-		$this->assertSame( 600, $descriptors['15x600x300']['width'] );
-		$this->assertSame( 300, $descriptors['15x600x300']['height'] );
+		$this->assertArrayHasKey( 'osm', $descriptors );
+		$this->assertArrayHasKey( '15x600x300', $descriptors['osm'] );
+		$this->assertArrayNotHasKey( '18x800x400', $descriptors['osm'] );
+		$this->assertArrayNotHasKey( '20x1000x500', $descriptors['osm'] );
+		$this->assertArrayNotHasKey( 'missing-shape', $descriptors['osm'] );
+		$this->assertSame( 15, $descriptors['osm']['15x600x300']['zoom'] );
+		$this->assertSame( 600, $descriptors['osm']['15x600x300']['width'] );
+		$this->assertSame( 300, $descriptors['osm']['15x600x300']['height'] );
 
 		// Read path must not mutate the meta — writing on every render would
 		// thrash the post-meta cache and churn the DB. Cleanup is deferred
@@ -702,7 +708,7 @@ class Test_Map extends Base {
 		$raw_after_read = get_post_meta( $post_id, Map::META_KEY, true );
 		$this->assertCount(
 			4,
-			$raw_after_read,
+			$raw_after_read['osm'],
 			'get_all_descriptors() must not rewrite meta on read.'
 		);
 	}
@@ -725,21 +731,31 @@ class Test_Map extends Base {
 			$post_id,
 			Map::META_KEY,
 			array(
-				'15x600x300' => array(
-					'url'    => 'https://example.test/a.png',
-					'hash'   => 'abc',
-					'zoom'   => 15,
-					'width'  => 600,
-					'height' => 300,
+				'osm' => array(
+					'15x600x300' => array(
+						'url'    => 'https://example.test/a.png',
+						'hash'   => 'abc',
+						'zoom'   => 15,
+						'width'  => 600,
+						'height' => 300,
+					),
 				),
 			)
 		);
 
 		$override = static function ( $descriptors, $filtered_post_id ) {
-			// Verify the filter receives both documented arguments.
-			foreach ( $descriptors as $key => $entry ) {
-				$descriptors[ $key ]['url']     = 'https://cdn.test/' . $filtered_post_id . '-' . $key . '.png';
-				$descriptors[ $key ]['post_id'] = $filtered_post_id;
+			// Verify the filter receives both documented arguments. With the
+			// provider-keyed shape we walk the inner map per provider.
+			foreach ( $descriptors as $slug => $combos ) {
+				foreach ( $combos as $key => $entry ) {
+					$descriptors[ $slug ][ $key ]['url']     = sprintf(
+						'https://cdn.test/%d-%s-%s.png',
+						$filtered_post_id,
+						$slug,
+						$key
+					);
+					$descriptors[ $slug ][ $key ]['post_id'] = $filtered_post_id;
+				}
 			}
 			return $descriptors;
 		};
@@ -750,13 +766,13 @@ class Test_Map extends Base {
 		remove_filter( 'gatherpress_venue_map_descriptors', $override, 10 );
 
 		$this->assertSame(
-			sprintf( 'https://cdn.test/%d-15x600x300.png', $post_id ),
-			$descriptors['15x600x300']['url'],
+			sprintf( 'https://cdn.test/%d-osm-15x600x300.png', $post_id ),
+			$descriptors['osm']['15x600x300']['url'],
 			'Filter can rewrite a URL.'
 		);
 		$this->assertSame(
 			$post_id,
-			$descriptors['15x600x300']['post_id'],
+			$descriptors['osm']['15x600x300']['post_id'],
 			'Filter receives the venue post ID as its second argument.'
 		);
 
@@ -793,16 +809,19 @@ class Test_Map extends Base {
 		add_post_meta( $post_id, 'gatherpress_latitude', '37.3318' );
 		add_post_meta( $post_id, 'gatherpress_longitude', '-122.0312' );
 
-		// Seed meta with a mix of good and malformed entries.
+		// Seed meta with a mix of good and malformed entries under the
+		// active provider key.
 		update_post_meta(
 			$post_id,
 			Map::META_KEY,
 			array(
-				'junk-row' => 'not-an-array',
-				'no-hash'  => array(
-					'url'    => 'https://example.test/b.png',
-					'zoom'   => 20,
-					'height' => 500,
+				'osm' => array(
+					'junk-row' => 'not-an-array',
+					'no-hash'  => array(
+						'url'    => 'https://example.test/b.png',
+						'zoom'   => 20,
+						'height' => 500,
+					),
 				),
 			)
 		);
@@ -812,8 +831,9 @@ class Test_Map extends Base {
 		$stored = get_post_meta( $post_id, Map::META_KEY, true );
 
 		$this->assertIsArray( $stored );
-		$this->assertArrayNotHasKey( 'junk-row', $stored );
-		$this->assertArrayNotHasKey( 'no-hash', $stored );
+		$this->assertArrayHasKey( 'osm', $stored );
+		$this->assertArrayNotHasKey( 'junk-row', $stored['osm'] );
+		$this->assertArrayNotHasKey( 'no-hash', $stored['osm'] );
 
 		$default_key = sprintf(
 			'%dx%dx%d',
@@ -821,7 +841,7 @@ class Test_Map extends Base {
 			Map::DEFAULT_HEIGHT * 2,
 			Map::DEFAULT_HEIGHT
 		);
-		$this->assertArrayHasKey( $default_key, $stored );
+		$this->assertArrayHasKey( $default_key, $stored['osm'] );
 	}
 
 	/**
@@ -853,10 +873,10 @@ class Test_Map extends Base {
 
 		$this->assertCount(
 			1,
-			$descriptors_before,
+			$descriptors_before['osm'],
 			'Initial save should seed only the default combo.'
 		);
-		$this->assertArrayHasKey( $default_key, $descriptors_before );
+		$this->assertArrayHasKey( $default_key, $descriptors_before['osm'] );
 
 		// Request a different zoom — simulates a block customized to zoom 14.
 		// Auto width at 2:1 ratio against DEFAULT_HEIGHT → DEFAULT_HEIGHT*2.
@@ -878,9 +898,9 @@ class Test_Map extends Base {
 
 		$descriptors_after = $instance->get_all_descriptors( $post_id );
 
-		$this->assertCount( 2, $descriptors_after, 'New combo should have been cached.' );
-		$this->assertArrayHasKey( $new_key, $descriptors_after );
-		$this->assertSame( $url, $descriptors_after[ $new_key ]['url'] );
+		$this->assertCount( 2, $descriptors_after['osm'], 'New combo should have been cached.' );
+		$this->assertArrayHasKey( $new_key, $descriptors_after['osm'] );
+		$this->assertSame( $url, $descriptors_after['osm'][ $new_key ]['url'] );
 	}
 
 	/**
@@ -916,9 +936,9 @@ class Test_Map extends Base {
 		$key = sprintf( '%dx1000x500', Map::DEFAULT_ZOOM );
 		$all = $instance->get_all_descriptors( $post_id );
 
-		$this->assertArrayHasKey( $key, $all, 'Tall-height combo should be cached under its own key.' );
-		$this->assertSame( 500, $all[ $key ]['height'] );
-		$this->assertSame( 1000, $all[ $key ]['width'] );
+		$this->assertArrayHasKey( $key, $all['osm'], 'Tall-height combo should be cached under its own key.' );
+		$this->assertSame( 500, $all['osm'][ $key ]['height'] );
+		$this->assertSame( 1000, $all['osm'][ $key ]['width'] );
 	}
 
 	/**
@@ -954,7 +974,7 @@ class Test_Map extends Base {
 
 		$before = $instance->get_all_descriptors( $post_id );
 
-		$this->assertCount( 2, $before );
+		$this->assertCount( 2, $before['osm'] );
 
 		// Change the address. maybe_generate should regenerate both combos.
 		update_post_meta( $post_id, 'gatherpress_address', '60 29th Street #343, San Francisco, CA 94110' );
@@ -964,15 +984,15 @@ class Test_Map extends Base {
 
 		$after = $instance->get_all_descriptors( $post_id );
 
-		$this->assertCount( 2, $after, 'Both combos should still be present after regeneration.' );
+		$this->assertCount( 2, $after['osm'], 'Both combos should still be present after regeneration.' );
 		$this->assertNotSame(
-			$before[ $default_key ]['hash'],
-			$after[ $default_key ]['hash'],
+			$before['osm'][ $default_key ]['hash'],
+			$after['osm'][ $default_key ]['hash'],
 			'Default-combo hash should change with new coordinates.'
 		);
 		$this->assertNotSame(
-			$before[ $second_key ]['hash'],
-			$after[ $second_key ]['hash'],
+			$before['osm'][ $second_key ]['hash'],
+			$after['osm'][ $second_key ]['hash'],
 			'Second-combo hash should change with new coordinates.'
 		);
 
@@ -980,14 +1000,14 @@ class Test_Map extends Base {
 		// deleted — with address-based naming they may be shared, and GC is
 		// deferred to a follow-up pass.
 		$this->assertFileExists(
-			(string) $this->path_for_url( $after[ $default_key ]['url'] )
+			(string) $this->path_for_url( $after['osm'][ $default_key ]['url'] )
 		);
 		$this->assertFileExists(
-			(string) $this->path_for_url( $after[ $second_key ]['url'] )
+			(string) $this->path_for_url( $after['osm'][ $second_key ]['url'] )
 		);
 		$this->assertNotSame(
-			$before[ $default_key ]['url'],
-			$after[ $default_key ]['url'],
+			$before['osm'][ $default_key ]['url'],
+			$after['osm'][ $default_key ]['url'],
 			'Address change produces a different URL via the slug.'
 		);
 	}
@@ -1239,7 +1259,7 @@ class Test_Map extends Base {
 		$this->assertSame( 15, $descriptor['zoom'] );
 		$this->assertSame( 800, $descriptor['width'] );
 		$this->assertSame( 400, $descriptor['height'] );
-		$this->assertStringEndsWith( '1-infinite-loop-15-800-400.png', $descriptor['url'] );
+		$this->assertStringEndsWith( '1-infinite-loop-osm-15-800-400.png', $descriptor['url'] );
 	}
 
 	/**
@@ -1278,18 +1298,18 @@ class Test_Map extends Base {
 		$instance = Map::get_instance();
 
 		// Empty string → fallback slug.
-		$empty = Utility::invoke_hidden_method( $instance, 'filename_for', array( '', 15, 800, 400 ) );
-		$this->assertSame( 'venue-15-800-400.png', $empty );
+		$empty = Utility::invoke_hidden_method( $instance, 'filename_for', array( '', 15, 800, 400, 'osm' ) );
+		$this->assertSame( 'venue-osm-15-800-400.png', $empty );
 
 		// All-special-char input sanitize_title strips to '' → fallback.
-		$weird = Utility::invoke_hidden_method( $instance, 'filename_for', array( '!!!', 15, 800, 400 ) );
-		$this->assertSame( 'venue-15-800-400.png', $weird );
+		$weird = Utility::invoke_hidden_method( $instance, 'filename_for', array( '!!!', 15, 800, 400, 'osm' ) );
+		$this->assertSame( 'venue-osm-15-800-400.png', $weird );
 
 		// Long slugs get truncated so the full filename stays under fs caps.
 		$long    = str_repeat( 'a', 300 );
-		$result  = Utility::invoke_hidden_method( $instance, 'filename_for', array( $long, 18, 600, 300 ) );
+		$result  = Utility::invoke_hidden_method( $instance, 'filename_for', array( $long, 18, 600, 300, 'osm' ) );
 		$matches = array();
-		preg_match( '/^([a-z]+)-18-600-300\.png$/', $result, $matches );
+		preg_match( '/^([a-z]+)-osm-18-600-300\.png$/', $result, $matches );
 		$this->assertNotEmpty( $matches, 'Truncated filename still matches the expected pattern.' );
 		$this->assertSame( 150, strlen( $matches[1] ), 'Slug is capped at 150 characters.' );
 	}
@@ -1333,130 +1353,9 @@ class Test_Map extends Base {
 	}
 
 	/**
-	 * Returns null from fetch_tile when the HTTP response is an error.
-	 *
-	 * @covers ::fetch_tile
-	 *
-	 * @return void
-	 */
-	public function test_fetch_tile_returns_null_on_http_error(): void {
-		$instance = Map::get_instance();
-
-		// Replace the success stub with a WP_Error short-circuit just for this test.
-		remove_filter( 'pre_http_request', array( $this, 'short_circuit_tile_requests' ), 10 );
-		$fail = static function () {
-			return new \WP_Error( 'boom', 'tile fetch failed' );
-		};
-		add_filter( 'pre_http_request', $fail, 10 );
-
-		$this->assertNull(
-			$instance->fetch_tile( 15, 1, 1, Map::DEFAULT_TILE_URL )
-		);
-
-		remove_filter( 'pre_http_request', $fail, 10 );
-		add_filter( 'pre_http_request', array( $this, 'short_circuit_tile_requests' ), 10, 3 );
-	}
-
-	/**
-	 * Returns null from fetch_tile when the HTTP response is not 200 OK.
-	 *
-	 * @covers ::fetch_tile
-	 *
-	 * @return void
-	 */
-	public function test_fetch_tile_returns_null_on_non_200_response(): void {
-		$instance = Map::get_instance();
-
-		remove_filter( 'pre_http_request', array( $this, 'short_circuit_tile_requests' ), 10 );
-		$not_found = static function () {
-			return array(
-				'headers'  => array(),
-				'body'     => '',
-				'response' => array(
-					'code'    => 404,
-					'message' => 'Not Found',
-				),
-				'cookies'  => array(),
-				'filename' => null,
-			);
-		};
-		add_filter( 'pre_http_request', $not_found, 10 );
-
-		$this->assertNull(
-			$instance->fetch_tile( 15, 1, 1, Map::DEFAULT_TILE_URL )
-		);
-
-		remove_filter( 'pre_http_request', $not_found, 10 );
-		add_filter( 'pre_http_request', array( $this, 'short_circuit_tile_requests' ), 10, 3 );
-	}
-
-	/**
-	 * Returns PNG bytes from fetch_tile when the request succeeds.
-	 *
-	 * @covers ::fetch_tile
-	 *
-	 * @return void
-	 */
-	public function test_fetch_tile_returns_png_bytes(): void {
-		$instance = Map::get_instance();
-
-		$this->assertSame(
-			$this->tile_png,
-			$instance->fetch_tile( 15, 1, 1, Map::DEFAULT_TILE_URL )
-		);
-	}
-
-	/**
-	 * Directly exercise composite_image so coverage credits the method entry.
-	 *
-	 * @covers ::composite_image
-	 *
-	 * @return void
-	 */
-	public function test_composite_image_returns_gd_image(): void {
-		$instance = Map::get_instance();
-
-		$image = $instance->composite_image(
-			37.3318,
-			-122.0312,
-			15,
-			512,
-			256,
-			Map::DEFAULT_TILE_URL
-		);
-
-		$this->assertInstanceOf( \GdImage::class, $image );
-		$this->assertSame( 512, imagesx( $image ) );
-		$this->assertSame( 256, imagesy( $image ) );
-
-		imagedestroy( $image );
-	}
-
-	/**
-	 * Draws a marker into the provided canvas.
-	 *
-	 * @covers ::stamp_marker
-	 *
-	 * @return void
-	 */
-	public function test_stamp_marker_draws_on_canvas(): void {
-		$instance = Map::get_instance();
-		$canvas   = imagecreatetruecolor( 40, 40 );
-		$instance->stamp_marker( $canvas, 20, 20 );
-
-		// The marker center should be white (inner dot).
-		$index = imagecolorat( $canvas, 20, 20 );
-		$rgb   = imagecolorsforindex( $canvas, $index );
-
-		$this->assertSame( 255, $rgb['red'] );
-		$this->assertSame( 255, $rgb['green'] );
-		$this->assertSame( 255, $rgb['blue'] );
-
-		imagedestroy( $canvas );
-	}
-
-	/**
 	 * Writes the PNG and returns a URL inside the plugin uploads subdir.
+	 * Provider slug is baked into the filename so two providers' files for
+	 * the same venue + dimensions can coexist on disk.
 	 *
 	 * @covers ::save_image
 	 *
@@ -1466,12 +1365,12 @@ class Test_Map extends Base {
 		$instance = Map::get_instance();
 		$canvas   = imagecreatetruecolor( 10, 10 );
 
-		$url = $instance->save_image( $canvas, '1 Infinite Loop', 15, 800, 400 );
+		$url = $instance->save_image( $canvas, '1 Infinite Loop', 15, 800, 400, 1, 'osm' );
 		imagedestroy( $canvas );
 
 		$this->assertNotNull( $url, 'save_image should return a URL on success.' );
 		$this->assertStringContainsString( Map::UPLOADS_SUBDIR, $url );
-		$this->assertStringEndsWith( '1-infinite-loop-15-800-400.png', $url );
+		$this->assertStringEndsWith( '1-infinite-loop-osm-15-800-400.png', $url );
 
 		$path = $this->path_for_url( $url );
 		$this->assertFileExists( $path );
@@ -1619,22 +1518,6 @@ class Test_Map extends Base {
 	}
 
 	/**
-	 * Coverage for the generator's tile URL getter.
-	 *
-	 * @covers ::get_tile_url_template
-	 *
-	 * @return void
-	 */
-	public function test_get_tile_url_template(): void {
-		$instance = Map::get_instance();
-
-		$this->assertSame(
-			Map::DEFAULT_TILE_URL,
-			Utility::invoke_hidden_method( $instance, 'get_tile_url_template' )
-		);
-	}
-
-	/**
 	 * Coverage for combo_key — formats `{zoom}x{width}x{height}`.
 	 *
 	 * @covers ::combo_key
@@ -1676,19 +1559,21 @@ class Test_Map extends Base {
 			$post_id,
 			Map::META_KEY,
 			array(
-				'15x600x300'  => array(
-					'url'    => 'https://example.test/a.png',
-					'hash'   => 'abc',
-					'zoom'   => 15,
-					'width'  => 600,
-					'height' => 300,
-				),
-				'18x1000x500' => array(
-					'url'    => 'https://example.test/b.png',
-					'hash'   => 'def',
-					'zoom'   => 18,
-					'width'  => 1000,
-					'height' => 500,
+				'osm' => array(
+					'15x600x300'  => array(
+						'url'    => 'https://example.test/a.png',
+						'hash'   => 'abc',
+						'zoom'   => 15,
+						'width'  => 600,
+						'height' => 300,
+					),
+					'18x1000x500' => array(
+						'url'    => 'https://example.test/b.png',
+						'hash'   => 'def',
+						'zoom'   => 18,
+						'width'  => 1000,
+						'height' => 500,
+					),
 				),
 			)
 		);
@@ -1715,153 +1600,6 @@ class Test_Map extends Base {
 	}
 
 	/**
-	 * When the composite time budget is exhausted, the inner loop breaks
-	 * out and the canvas is returned with the pre-painted gray background
-	 * intact — no tiles fetched. Filter-driven so we don't have to wait
-	 * COMPOSITE_TIME_BUDGET seconds to exercise the branch.
-	 *
-	 * @covers ::composite_image
-	 *
-	 * @return void
-	 */
-	public function test_composite_image_aborts_when_time_budget_exhausted(): void {
-		$instance = Map::get_instance();
-
-		$fetches = 0;
-		$counter = static function () use ( &$fetches ) {
-			++$fetches;
-			return array(
-				'headers'  => array(),
-				'body'     => '',
-				'response' => array(
-					'code'    => 200,
-					'message' => 'OK',
-				),
-				'cookies'  => array(),
-				'filename' => null,
-			);
-		};
-		$budget  = static function () {
-			// A negative budget makes the deadline sit in the past from
-			// the first iteration, forcing break 2 before any fetch runs.
-			return -1;
-		};
-
-		remove_filter( 'pre_http_request', array( $this, 'short_circuit_tile_requests' ), 10 );
-		add_filter( 'pre_http_request', $counter, 10 );
-		add_filter( 'gatherpress_venue_map_composite_time_budget', $budget );
-
-		$image = $instance->composite_image(
-			37.3318,
-			-122.0312,
-			15,
-			512,
-			256,
-			Map::DEFAULT_TILE_URL
-		);
-
-		remove_filter( 'gatherpress_venue_map_composite_time_budget', $budget );
-		remove_filter( 'pre_http_request', $counter, 10 );
-		add_filter( 'pre_http_request', array( $this, 'short_circuit_tile_requests' ), 10, 3 );
-
-		$this->assertInstanceOf(
-			\GdImage::class,
-			$image,
-			'Canvas should still be returned when the budget is exhausted.'
-		);
-		$this->assertSame( 0, $fetches, 'No tiles should be fetched when the deadline is already in the past.' );
-
-		// Center pixel should remain the neutral-gray background color since
-		// no tile was drawn.
-		$index = imagecolorat( $image, 128, 64 );
-		$rgb   = imagecolorsforindex( $image, $index );
-		$this->assertSame( 238, $rgb['red'] );
-		$this->assertSame( 238, $rgb['green'] );
-		$this->assertSame( 238, $rgb['blue'] );
-
-		imagedestroy( $image );
-	}
-
-	/**
-	 * Survives a tile that fails to fetch (falls through, blank area).
-	 *
-	 * @covers ::composite_image
-	 *
-	 * @return void
-	 */
-	public function test_composite_image_continues_past_failed_fetch(): void {
-		$instance = Map::get_instance();
-
-		remove_filter( 'pre_http_request', array( $this, 'short_circuit_tile_requests' ), 10 );
-		$fail = static function () {
-			return new \WP_Error( 'boom', 'tile fetch failed' );
-		};
-		add_filter( 'pre_http_request', $fail, 10 );
-
-		$image = $instance->composite_image(
-			37.3318,
-			-122.0312,
-			15,
-			512,
-			256,
-			Map::DEFAULT_TILE_URL
-		);
-
-		remove_filter( 'pre_http_request', $fail, 10 );
-		add_filter( 'pre_http_request', array( $this, 'short_circuit_tile_requests' ), 10, 3 );
-
-		$this->assertInstanceOf(
-			\GdImage::class,
-			$image,
-			'A failed tile fetch should leave the canvas intact rather than nulling the result.'
-		);
-
-		imagedestroy( $image );
-	}
-
-	/**
-	 * Survives a tile whose response body is not a valid PNG.
-	 *
-	 * @covers ::composite_image
-	 *
-	 * @return void
-	 */
-	public function test_composite_image_continues_past_invalid_png(): void {
-		$instance = Map::get_instance();
-
-		remove_filter( 'pre_http_request', array( $this, 'short_circuit_tile_requests' ), 10 );
-		$garbage = static function () {
-			return array(
-				'headers'  => array(),
-				'body'     => 'not a png',
-				'response' => array(
-					'code'    => 200,
-					'message' => 'OK',
-				),
-				'cookies'  => array(),
-				'filename' => null,
-			);
-		};
-		add_filter( 'pre_http_request', $garbage, 10 );
-
-		$image = $instance->composite_image(
-			37.3318,
-			-122.0312,
-			15,
-			512,
-			256,
-			Map::DEFAULT_TILE_URL
-		);
-
-		remove_filter( 'pre_http_request', $garbage, 10 );
-		add_filter( 'pre_http_request', array( $this, 'short_circuit_tile_requests' ), 10, 3 );
-
-		$this->assertInstanceOf( \GdImage::class, $image );
-
-		imagedestroy( $image );
-	}
-
-	/**
 	 * Returns null from save_image when wp_get_upload_dir reports an error.
 	 *
 	 * @covers ::save_image
@@ -1878,7 +1616,7 @@ class Test_Map extends Base {
 		};
 		add_filter( 'upload_dir', $force_error );
 
-		$url = $instance->save_image( $canvas, 'test address', 15, 800, 400 );
+		$url = $instance->save_image( $canvas, 'test address', 15, 800, 400, 1, 'osm' );
 
 		remove_filter( 'upload_dir', $force_error );
 		imagedestroy( $canvas );
@@ -1917,31 +1655,6 @@ class Test_Map extends Base {
 		$this->assertNull(
 			$instance->get_stored_descriptor( $post_id ),
 			'No descriptor should be stored when save_image fails.'
-		);
-	}
-
-	/**
-	 * Coverage for the lng/lat → world-pixel conversions.
-	 *
-	 * Verifies the canonical slippy-map invariants: `lng = 0, zoom = 0` sits
-	 * at the middle of the 256-pixel world, and `lat = 0` likewise.
-	 *
-	 * @covers ::lng_to_world_pixel
-	 * @covers ::lat_to_world_pixel
-	 *
-	 * @return void
-	 */
-	public function test_world_pixel_conversions(): void {
-		$instance = Map::get_instance();
-
-		$this->assertSame(
-			128.0,
-			Utility::invoke_hidden_method( $instance, 'lng_to_world_pixel', array( 0.0, 0 ) )
-		);
-		$this->assertEqualsWithDelta(
-			128.0,
-			Utility::invoke_hidden_method( $instance, 'lat_to_world_pixel', array( 0.0, 0 ) ),
-			0.000001
 		);
 	}
 
@@ -2096,14 +1809,14 @@ class Test_Map extends Base {
 		$instance->get_url_for_post( $post_id, Venue::POST_TYPE, 14, 0, 500, '' );
 
 		$before = $instance->get_all_descriptors( $post_id );
-		$this->assertCount( 2, $before );
+		$this->assertCount( 2, $before['osm'] );
 
 		// Mark the pre-regenerate files so we can detect rewrites below.
 		// When inputs are unchanged the hash (and therefore the filename)
 		// stays the same, so we can't rely on url comparison alone — mtime
 		// is the signal that the tile fetch + compositing ran again.
 		$pre_mtimes = array();
-		foreach ( $before as $combo_key => $descriptor ) {
+		foreach ( $before['osm'] as $combo_key => $descriptor ) {
 			$path                     = (string) $this->path_for_url( $descriptor['url'] );
 			$pre_mtimes[ $combo_key ] = filemtime( $path );
 		}
@@ -2113,13 +1826,13 @@ class Test_Map extends Base {
 
 		$this->assertCount(
 			2,
-			$result,
+			$result['osm'],
 			'regenerate() should return a descriptor for each previously cached combo.'
 		);
 
-		foreach ( $before as $combo_key => $old ) {
-			$this->assertArrayHasKey( $combo_key, $result );
-			$path = (string) $this->path_for_url( $result[ $combo_key ]['url'] );
+		foreach ( $before['osm'] as $combo_key => $old ) {
+			$this->assertArrayHasKey( $combo_key, $result['osm'] );
+			$path = (string) $this->path_for_url( $result['osm'][ $combo_key ]['url'] );
 			$this->assertFileExists(
 				$path,
 				sprintf( 'Post-regenerate PNG for %s should exist on disk.', $combo_key )
@@ -2158,12 +1871,12 @@ class Test_Map extends Base {
 		$expected_key = '8x590x295';
 		$this->assertArrayHasKey(
 			$expected_key,
-			$result,
+			$result['osm'],
 			'The caller-supplied combo must be included in the rebuild.'
 		);
-		$this->assertSame( 8, $result[ $expected_key ]['zoom'] );
-		$this->assertSame( 590, $result[ $expected_key ]['width'] );
-		$this->assertSame( 295, $result[ $expected_key ]['height'] );
+		$this->assertSame( 8, $result['osm'][ $expected_key ]['zoom'] );
+		$this->assertSame( 590, $result['osm'][ $expected_key ]['width'] );
+		$this->assertSame( 295, $result['osm'][ $expected_key ]['height'] );
 	}
 
 	/**
@@ -2193,7 +1906,7 @@ class Test_Map extends Base {
 
 		$this->assertCount(
 			1,
-			$result,
+			$result['osm'],
 			'Supplying the already-cached combo should not add a duplicate entry.'
 		);
 	}
@@ -2225,7 +1938,7 @@ class Test_Map extends Base {
 			Map::DEFAULT_HEIGHT * 2,
 			Map::DEFAULT_HEIGHT
 		);
-		$this->assertArrayHasKey( $default_key, $result );
+		$this->assertArrayHasKey( $default_key, $result['osm'] );
 	}
 
 	/**
@@ -2314,7 +2027,8 @@ class Test_Map extends Base {
 			Map::DEFAULT_HEIGHT * 2,
 			Map::DEFAULT_HEIGHT
 		);
-		$this->assertArrayHasKey( $default_key, (array) $data['descriptors'] );
+		$this->assertArrayHasKey( 'osm', (array) $data['descriptors'] );
+		$this->assertArrayHasKey( $default_key, (array) $data['descriptors']['osm'] );
 	}
 
 	/**
@@ -2544,147 +2258,18 @@ class Test_Map extends Base {
 		$one_x = Utility::invoke_hidden_method(
 			$instance,
 			'filename_for',
-			array( '1 Infinite Loop', 15, 800, 400, 1 )
+			array( '1 Infinite Loop', 15, 800, 400, 'osm', 1 )
 		);
 		$two_x = Utility::invoke_hidden_method(
 			$instance,
 			'filename_for',
-			array( '1 Infinite Loop', 15, 800, 400, 2 )
+			array( '1 Infinite Loop', 15, 800, 400, 'osm', 2 )
 		);
 
-		$this->assertSame( '1-infinite-loop-15-800-400.png', $one_x );
-		$this->assertSame( '1-infinite-loop-15-800-400@2x.png', $two_x );
+		$this->assertSame( '1-infinite-loop-osm-15-800-400.png', $one_x );
+		$this->assertSame( '1-infinite-loop-osm-15-800-400@2x.png', $two_x );
 	}
 
-	/**
-	 * Passing `density=2` doubles the canvas dimensions and pulls tiles
-	 * from `zoom+1` so the retina variant contains true 2× detail rather
-	 * than upscaled 1× pixels. The 1× default is unchanged.
-	 *
-	 * @covers ::composite_image
-	 *
-	 * @return void
-	 */
-	public function test_composite_image_density_two_doubles_canvas(): void {
-		$instance = Map::get_instance();
-
-		// `short_circuit_tile_requests` (installed in setUp) stubs every
-		// outbound tile request with the shared 1×1 PNG, so this call
-		// never touches CartoDB — we only care that the *canvas* GD hands
-		// back is sized correctly, not what it was composited from.
-		$image = $instance->composite_image(
-			37.3318,
-			-122.0312,
-			15,
-			400,
-			200,
-			Map::DEFAULT_TILE_URL,
-			2
-		);
-
-		$this->assertInstanceOf( \GdImage::class, $image );
-		$this->assertSame( 800, imagesx( $image ), 'Retina canvas width is 2× the 1× value.' );
-		$this->assertSame( 400, imagesy( $image ), 'Retina canvas height is 2× the 1× value.' );
-
-		imagedestroy( $image );
-	}
-
-	/**
-	 * Density=2 must fetch tiles at `zoom + 1`. If the compositor uses
-	 * zoom+1 coords against zoom-N tile URLs the server 404s every request
-	 * and the canvas renders as gray — the bug this test locks down.
-	 *
-	 * @covers ::composite_image
-	 *
-	 * @return void
-	 */
-	public function test_composite_image_density_two_fetches_zoom_plus_one_tiles(): void {
-		$instance = Map::get_instance();
-
-		$zooms_seen = array();
-		$spy        = function ( $preempt, $args, $url ) use ( &$zooms_seen ) {
-			unset( $args );
-			$path = (string) wp_parse_url( $url, PHP_URL_PATH );
-			// CartoDB template: /light_all/{z}/{x}/{y}.png — the `{z}`
-			// segment is what composite_image() is supposed to bump by 1
-			// when density > 1.
-			if ( preg_match( '#/light_all/(\d+)/\d+/\d+\.png$#', $path, $m ) ) {
-				$zooms_seen[] = (int) $m[1];
-			}
-
-			return array(
-				'headers'  => array(),
-				'body'     => $this->tile_png,
-				'response' => array(
-					'code'    => 200,
-					'message' => 'OK',
-				),
-				'cookies'  => array(),
-				'filename' => null,
-			);
-		};
-
-		remove_filter( 'pre_http_request', array( $this, 'short_circuit_tile_requests' ), 10 );
-		add_filter( 'pre_http_request', $spy, 10, 3 );
-
-		$image = $instance->composite_image(
-			37.3318,
-			-122.0312,
-			15,
-			400,
-			200,
-			Map::DEFAULT_TILE_URL,
-			2
-		);
-
-		remove_filter( 'pre_http_request', $spy, 10 );
-		add_filter( 'pre_http_request', array( $this, 'short_circuit_tile_requests' ), 10, 3 );
-
-		imagedestroy( $image );
-
-		$this->assertNotEmpty( $zooms_seen, 'Retina composite must attempt at least one tile fetch.' );
-		$this->assertSame(
-			array( 16 ),
-			array_values( array_unique( $zooms_seen ) ),
-			'All retina tile requests must go to zoom + 1.'
-		);
-	}
-
-	/**
-	 * `$scale > 1` proportionally grows the marker so a retina composite
-	 * doesn't shrink the pin to a pinprick. Checks the "outer white halo"
-	 * radius by sampling a pixel that is outside the 1× marker but inside
-	 * the 2× marker.
-	 *
-	 * @covers ::stamp_marker
-	 *
-	 * @return void
-	 */
-	public function test_stamp_marker_scales_radii(): void {
-		$instance = Map::get_instance();
-		$canvas   = imagecreatetruecolor( 80, 80 );
-
-		// Seed the canvas with a distinctive background so we can tell a
-		// stamped pixel from an untouched one.
-		$bg = imagecolorallocate( $canvas, 0, 0, 0 );
-		imagefilledrectangle( $canvas, 0, 0, 79, 79, $bg );
-
-		$instance->stamp_marker( $canvas, 40, 40, 2.0 );
-
-		// 15px from center: outside the 1× halo (radius ~10), inside the 2×
-		// halo (radius ~20). Any non-background pixel here proves the scale
-		// factor actually grew the marker.
-		$index = imagecolorat( $canvas, 40, 25 );
-		$rgb   = imagecolorsforindex( $canvas, $index );
-
-		$this->assertNotSame(
-			array( 0, 0, 0 ),
-			array( $rgb['red'], $rgb['green'], $rgb['blue'] ),
-			'A pixel 15px above the marker center is only painted when the marker is scaled.'
-		);
-
-		imagedestroy( $canvas );
-	}
 
 	/**
 	 * With the default (filter unchanged) the retina variant is generated
@@ -2777,12 +2362,14 @@ class Test_Map extends Base {
 			$post_id,
 			Map::META_KEY,
 			array(
-				'15x600x300' => array(
-					'url'    => 'https://example.test/legacy.png',
-					'hash'   => 'abc',
-					'zoom'   => 15,
-					'width'  => 600,
-					'height' => 300,
+				'osm' => array(
+					'15x600x300' => array(
+						'url'    => 'https://example.test/legacy.png',
+						'hash'   => 'abc',
+						'zoom'   => 15,
+						'width'  => 600,
+						'height' => 300,
+					),
 				),
 			)
 		);
@@ -2791,12 +2378,12 @@ class Test_Map extends Base {
 
 		$this->assertArrayHasKey(
 			'url_2x',
-			$descriptors['15x600x300'],
+			$descriptors['osm']['15x600x300'],
 			'Legacy descriptors still expose url_2x to callers.'
 		);
 		$this->assertSame(
 			'',
-			$descriptors['15x600x300']['url_2x'],
+			$descriptors['osm']['15x600x300']['url_2x'],
 			'Missing url_2x normalizes to empty string.'
 		);
 	}
@@ -2951,103 +2538,6 @@ class Test_Map extends Base {
 			$expected_2x_path,
 			'No @2x file must be written when the tile zoom would exceed the provider ceiling.'
 		);
-	}
-
-	/**
-	 * `composite_image()` clamps `tile_zoom` to `ZOOM_MAX` as
-	 * defense-in-depth. When a caller invokes it directly at the ceiling
-	 * the retina pass still returns a canvas — degraded (same zoom as 1×,
-	 * just larger) but not the broken all-gray PNG you'd get if we let
-	 * zoom+1 requests sail past the provider's max.
-	 *
-	 * @covers ::composite_image
-	 *
-	 * @return void
-	 */
-	public function test_composite_image_clamps_tile_zoom_to_ceiling(): void {
-		$instance = Map::get_instance();
-
-		$zooms_seen = array();
-		$spy        = function ( $preempt, $args, $url ) use ( &$zooms_seen ) {
-			unset( $args );
-			$path = (string) wp_parse_url( $url, PHP_URL_PATH );
-			if ( preg_match( '#/light_all/(\d+)/\d+/\d+\.png$#', $path, $m ) ) {
-				$zooms_seen[] = (int) $m[1];
-			}
-
-			return array(
-				'headers'  => array(),
-				'body'     => $this->tile_png,
-				'response' => array(
-					'code'    => 200,
-					'message' => 'OK',
-				),
-				'cookies'  => array(),
-				'filename' => null,
-			);
-		};
-
-		remove_filter( 'pre_http_request', array( $this, 'short_circuit_tile_requests' ), 10 );
-		add_filter( 'pre_http_request', $spy, 10, 3 );
-
-		$image = $instance->composite_image(
-			37.3318,
-			-122.0312,
-			Map::ZOOM_MAX,
-			400,
-			200,
-			Map::DEFAULT_TILE_URL,
-			Map::RETINA_DENSITY
-		);
-
-		remove_filter( 'pre_http_request', $spy, 10 );
-		add_filter( 'pre_http_request', array( $this, 'short_circuit_tile_requests' ), 10, 3 );
-
-		imagedestroy( $image );
-
-		$this->assertNotEmpty( $zooms_seen, 'Retina composite at the ceiling must still attempt tile fetches.' );
-		$this->assertSame(
-			array( Map::ZOOM_MAX ),
-			array_values( array_unique( $zooms_seen ) ),
-			'Tile fetches must clamp to ZOOM_MAX instead of overshooting to zoom+1 above the provider ceiling.'
-		);
-	}
-
-	/**
-	 * Densities outside the supported allow-list (1, 2) are coerced back
-	 * to 1. Without this `(int) log(3, 2) === 1` would produce a
-	 * canvas-tripled-but-only-zoom+1-tiles image — a cheap upscale that
-	 * wastes disk for no retina win.
-	 *
-	 * @covers ::composite_image
-	 *
-	 * @return void
-	 */
-	public function test_composite_image_coerces_unsupported_density_back_to_one(): void {
-		$instance = Map::get_instance();
-
-		$image = $instance->composite_image(
-			37.3318,
-			-122.0312,
-			15,
-			400,
-			200,
-			Map::DEFAULT_TILE_URL,
-			3
-		);
-
-		$this->assertSame(
-			400,
-			imagesx( $image ),
-			'Unsupported density must fall back to 1× canvas width.'
-		);
-		$this->assertSame(
-			200,
-			imagesy( $image ),
-			'Unsupported density must fall back to 1× canvas height.'
-		);
-
-		imagedestroy( $image );
 	}
 
 	/**
