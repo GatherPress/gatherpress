@@ -132,8 +132,12 @@ class Rest_Api {
 			'args'  => array(
 				'methods'             => WP_REST_Server::EDITABLE,
 				'callback'            => array( $this, 'email' ),
-				'permission_callback' => static function (): bool {
-					return current_user_can( 'edit_posts' );
+				'permission_callback' => static function ( WP_REST_Request $request ): bool {
+					// Per-post check: only users who can edit *this* event may
+					// send emails about it. Mirrors the meta auth_callback
+					// model so a non-owner Author can't blast emails about
+					// someone else's event via this route.
+					return current_user_can( 'edit_post', (int) $request['post_id'] );
 				},
 				'args'                => array(
 					'post_id' => array(
@@ -752,7 +756,11 @@ class Rest_Api {
 			$user_id &&
 			$current_user_id !== $user_id
 		) {
-			if ( ! current_user_can( 'edit_posts' ) ) {
+			// Per-event check: only users who can edit *this* event may
+			// RSVP someone else into it. The previous flat `edit_posts`
+			// check would have let any Author manage attendees on any
+			// event, including ones they don't own.
+			if ( ! current_user_can( 'edit_post', $post_id ) ) {
 				$user_id = 0;
 			}
 		} else {

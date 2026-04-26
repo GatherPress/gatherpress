@@ -1600,47 +1600,65 @@ class Test_Rest_Api extends Base {
 	}
 
 	/**
-	 * Tests email_route permission callback with user who can edit posts.
+	 * Tests email_route permission callback enforces a per-post edit check.
 	 *
-	 * Covers: permission callback returning true for users with edit_posts capability.
-	 *
-	 * @covers ::email_route
-	 */
-	public function test_email_route_permission_callback_can_edit(): void {
-		$instance = Rest_Api::get_instance();
-		$route    = Utility::invoke_hidden_method( $instance, 'email_route' );
-
-		// Create an editor who can edit posts.
-		$editor_id = $this->factory->user->create( array( 'role' => 'editor' ) );
-		wp_set_current_user( $editor_id );
-
-		// Call the permission callback.
-		$permission_callback = $route['args']['permission_callback'];
-		$result              = call_user_func( $permission_callback );
-
-		$this->assertTrue( $result, 'Permission callback should return true for user with edit_posts capability' );
-	}
-
-	/**
-	 * Tests email_route permission callback with user who cannot edit posts.
-	 *
-	 * Covers: permission callback returning false for users without edit_posts capability.
+	 * Routes through `current_user_can( 'edit_post', $post_id )` so the
+	 * permission model matches what WP applies to the event itself: Editors
+	 * can email about anyone's event, Authors can email only about their own,
+	 * and Subscribers / non-owner Authors are denied.
 	 *
 	 * @covers ::email_route
 	 */
-	public function test_email_route_permission_callback_cannot_edit(): void {
+	public function test_email_route_permission_callback_per_post(): void {
 		$instance = Rest_Api::get_instance();
 		$route    = Utility::invoke_hidden_method( $instance, 'email_route' );
+		$callback = $route['args']['permission_callback'];
 
-		// Create a subscriber who cannot edit posts.
+		$author_one_id = $this->factory->user->create( array( 'role' => 'author' ) );
+		$author_two_id = $this->factory->user->create( array( 'role' => 'author' ) );
+		$editor_id     = $this->factory->user->create( array( 'role' => 'editor' ) );
 		$subscriber_id = $this->factory->user->create( array( 'role' => 'subscriber' ) );
+
+		$event_id = $this->factory->post->create(
+			array(
+				'post_type'   => Event::POST_TYPE,
+				'post_author' => $author_one_id,
+				'post_status' => 'publish',
+			)
+		);
+
+		$request = new \WP_REST_Request();
+		$request->set_param( 'post_id', $event_id );
+
+		wp_set_current_user( $author_one_id );
+		$this->assertTrue(
+			call_user_func( $callback, $request ),
+			'The event author should be allowed to email about their own event.'
+		);
+
+		wp_set_current_user( $author_two_id );
+		$this->assertFalse(
+			call_user_func( $callback, $request ),
+			'A different author should not be allowed to email about an event they do not own.'
+		);
+
+		wp_set_current_user( $editor_id );
+		$this->assertTrue(
+			call_user_func( $callback, $request ),
+			'An editor should be allowed to email about any event via edit_others_posts.'
+		);
+
 		wp_set_current_user( $subscriber_id );
+		$this->assertFalse(
+			call_user_func( $callback, $request ),
+			'A subscriber should not be allowed to email about any event.'
+		);
 
-		// Call the permission callback.
-		$permission_callback = $route['args']['permission_callback'];
-		$result              = call_user_func( $permission_callback );
-
-		$this->assertFalse( $result, 'Permission callback should return false for user without edit_posts capability' );
+		wp_set_current_user( 0 );
+		$this->assertFalse(
+			call_user_func( $callback, $request ),
+			'A logged-out user should not be allowed to email about any event.'
+		);
 	}
 
 	/**
@@ -1971,16 +1989,16 @@ class Test_Rest_Api extends Base {
 	}
 
 	/**
-	 * Tests update_rsvp when non-admin user tries to add someone else.
+	 * Tests update_rsvp when a subscriber tries to add someone else.
 	 *
-	 * Covers: user without edit_posts permission gets user_id set to 0.
+	 * Covers: user without edit_post on the target event gets user_id set to 0.
 	 *
 	 * @covers ::update_rsvp
 	 */
 	public function test_update_rsvp_non_admin_cannot_add_others(): void {
 		$instance = Rest_Api::get_instance();
 
-		// Create a subscriber (no edit_posts capability).
+		// Create a subscriber (no edit_post on any event).
 		$subscriber_id = $this->factory->user->create( array( 'role' => 'subscriber' ) );
 		wp_set_current_user( $subscriber_id );
 
@@ -2001,8 +2019,49 @@ class Test_Rest_Api extends Base {
 		$response = $instance->update_rsvp( $request );
 
 		$this->assertInstanceOf( 'WP_REST_Response', $response );
-		// The user_id should be reset to 0 since subscriber doesn't have edit_posts.
+		// The user_id should be reset to 0 since subscriber lacks edit_post on this event.
 		$this->assertFalse( $response->data['success'], 'RSVP should fail when non-admin tries to add someone else' );
+	}
+
+	/**
+	 * Tests update_rsvp when an Author tries to add someone else to a foreign event.
+	 *
+	 * The previous flat `edit_posts` gate would have let any Author manage
+	 * attendees on any event. The per-post `edit_post` check denies an Author
+	 * acting on an event they don't own.
+	 *
+	 * @covers ::update_rsvp
+	 */
+	public function test_update_rsvp_author_cannot_add_others_to_foreign_event(): void {
+		$instance = Rest_Api::get_instance();
+
+		$event_owner_id = $this->factory->user->create( array( 'role' => 'author' ) );
+		$author_id      = $this->factory->user->create( array( 'role' => 'author' ) );
+		$other_user_id  = $this->factory->user->create();
+
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type'   => Event::POST_TYPE,
+				'post_author' => $event_owner_id,
+				'post_status' => 'publish',
+			)
+		);
+
+		// Switch to a *different* author who doesn't own the event.
+		wp_set_current_user( $author_id );
+
+		$request = new WP_REST_Request( 'POST', '/gatherpress/v1/event/rsvp' );
+		$request->set_param( 'post_id', $post_id );
+		$request->set_param( 'user_id', $other_user_id );
+		$request->set_param( 'status', 'attending' );
+
+		$response = $instance->update_rsvp( $request );
+
+		$this->assertInstanceOf( 'WP_REST_Response', $response );
+		$this->assertFalse(
+			$response->data['success'],
+			'A non-owner Author should not be able to RSVP someone else into another author\'s event.'
+		);
 	}
 
 	/**

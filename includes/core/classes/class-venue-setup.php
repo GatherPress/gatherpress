@@ -17,6 +17,7 @@ namespace GatherPress\Core;
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Traits\Singleton;
+use GatherPress\Core\Utility;
 use GatherPress\Core\Validate;
 use stdClass;
 use WP_Block_Patterns_Registry;
@@ -221,17 +222,6 @@ class Venue_Setup {
 	}
 
 	/**
-	 * Authorization callback for post meta that requires edit_posts capability.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @return bool True if user can edit posts, false otherwise.
-	 */
-	public function can_edit_posts_meta(): bool {
-		return current_user_can( 'edit_posts' );
-	}
-
-	/**
 	 * Sanitize callback for venue coordinate meta (latitude / longitude).
 	 *
 	 * Numeric values within the ±180 range are normalized to a string form via
@@ -265,7 +255,7 @@ class Venue_Setup {
 	public function maybe_register_post_meta( string $post_type ): void {
 		$venue_information_meta = array(
 			'gatherpress_address'   => array(
-				'auth_callback'     => array( $this, 'can_edit_posts_meta' ),
+				'auth_callback'     => array( Utility::class, 'can_edit_post_meta' ),
 				'sanitize_callback' => 'sanitize_text_field',
 				'show_in_rest'      => true,
 				'single'            => true,
@@ -274,7 +264,7 @@ class Venue_Setup {
 				'revisions_enabled' => true,
 			),
 			'gatherpress_latitude'  => array(
-				'auth_callback'     => array( $this, 'can_edit_posts_meta' ),
+				'auth_callback'     => array( Utility::class, 'can_edit_post_meta' ),
 				'sanitize_callback' => array( $this, 'sanitize_coordinate' ),
 				'show_in_rest'      => true,
 				'single'            => true,
@@ -283,7 +273,7 @@ class Venue_Setup {
 				'revisions_enabled' => true,
 			),
 			'gatherpress_longitude' => array(
-				'auth_callback'     => array( $this, 'can_edit_posts_meta' ),
+				'auth_callback'     => array( Utility::class, 'can_edit_post_meta' ),
 				'sanitize_callback' => array( $this, 'sanitize_coordinate' ),
 				'show_in_rest'      => true,
 				'single'            => true,
@@ -292,7 +282,7 @@ class Venue_Setup {
 				'revisions_enabled' => true,
 			),
 			'gatherpress_phone'     => array(
-				'auth_callback'     => array( $this, 'can_edit_posts_meta' ),
+				'auth_callback'     => array( Utility::class, 'can_edit_post_meta' ),
 				'sanitize_callback' => 'sanitize_text_field',
 				'show_in_rest'      => true,
 				'single'            => true,
@@ -301,7 +291,7 @@ class Venue_Setup {
 				'revisions_enabled' => true,
 			),
 			'gatherpress_website'   => array(
-				'auth_callback'     => array( $this, 'can_edit_posts_meta' ),
+				'auth_callback'     => array( Utility::class, 'can_edit_post_meta' ),
 				'sanitize_callback' => 'sanitize_url',
 				'show_in_rest'      => true,
 				'single'            => true,
@@ -336,7 +326,7 @@ class Venue_Setup {
 		$venue_map_meta = array(
 			// Map display settings.
 			'gatherpress_venue_map_show'   => array(
-				'auth_callback'     => array( $this, 'can_edit_posts_meta' ),
+				'auth_callback'     => array( Utility::class, 'can_edit_post_meta' ),
 				'sanitize_callback' => 'rest_sanitize_boolean',
 				'show_in_rest'      => true,
 				'single'            => true,
@@ -344,7 +334,7 @@ class Venue_Setup {
 				'default'           => true,
 			),
 			'gatherpress_venue_map_zoom'   => array(
-				'auth_callback'     => array( $this, 'can_edit_posts_meta' ),
+				'auth_callback'     => array( Utility::class, 'can_edit_post_meta' ),
 				'sanitize_callback' => 'absint',
 				'show_in_rest'      => true,
 				'single'            => true,
@@ -352,7 +342,7 @@ class Venue_Setup {
 				'default'           => 10,
 			),
 			'gatherpress_venue_map_height' => array(
-				'auth_callback'     => array( $this, 'can_edit_posts_meta' ),
+				'auth_callback'     => array( Utility::class, 'can_edit_post_meta' ),
 				'sanitize_callback' => 'absint',
 				'show_in_rest'      => true,
 				'single'            => true,

@@ -247,17 +247,6 @@ class Setup {
 	}
 
 	/**
-	 * Authorization callback for post meta that requires edit_posts capability.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @return bool True if user can edit posts, false otherwise.
-	 */
-	public function can_edit_posts_meta(): bool {
-		return current_user_can( 'edit_posts' );
-	}
-
-	/**
 	 * Registers datetime meta + the read-only REST filter when a post type
 	 * declares gatherpress-event-date support.
 	 *
@@ -273,7 +262,7 @@ class Setup {
 
 		$event_date_meta = array(
 			'gatherpress_datetime'           => array(
-				'auth_callback'     => array( $this, 'can_edit_posts_meta' ),
+				'auth_callback'     => array( Utility::class, 'can_edit_post_meta' ),
 				'sanitize_callback' => 'sanitize_text_field',
 				'show_in_rest'      => true,
 				'single'            => true,
@@ -341,7 +330,7 @@ class Setup {
 		// Missing meta is treated as "on"; only an explicit 0 disables RSVP per event.
 		$event_only_meta = array(
 			'gatherpress_enable_rsvp'           => array(
-				'auth_callback'     => array( $this, 'can_edit_posts_meta' ),
+				'auth_callback'     => array( Utility::class, 'can_edit_post_meta' ),
 				'sanitize_callback' => 'absint',
 				'show_in_rest'      => true,
 				'single'            => true,
@@ -349,7 +338,7 @@ class Setup {
 				'default'           => 1,
 			),
 			'gatherpress_max_guest_limit'       => array(
-				'auth_callback'     => array( $this, 'can_edit_posts_meta' ),
+				'auth_callback'     => array( Utility::class, 'can_edit_post_meta' ),
 				'sanitize_callback' => 'absint',
 				'show_in_rest'      => true,
 				'single'            => true,
@@ -357,7 +346,7 @@ class Setup {
 				'default'           => (int) Settings::get_instance()->get( 'max_guest_limit' ),
 			),
 			'gatherpress_enable_anonymous_rsvp' => array(
-				'auth_callback'     => array( $this, 'can_edit_posts_meta' ),
+				'auth_callback'     => array( Utility::class, 'can_edit_post_meta' ),
 				'sanitize_callback' => 'rest_sanitize_boolean',
 				'show_in_rest'      => true,
 				'single'            => true,
@@ -367,7 +356,7 @@ class Setup {
 			// Always register so it can be written regardless of open RSVP mode.
 			// Stored as integer (1 = enabled, 0 = disabled); an unset meta (empty string) is treated as enabled.
 			'gatherpress_enable_open_rsvp'      => array(
-				'auth_callback'     => array( $this, 'can_edit_posts_meta' ),
+				'auth_callback'     => array( Utility::class, 'can_edit_post_meta' ),
 				'sanitize_callback' => 'absint',
 				'show_in_rest'      => true,
 				'single'            => true,
@@ -375,7 +364,7 @@ class Setup {
 				'default'           => 1,
 			),
 			'gatherpress_online_event_link'     => array(
-				'auth_callback'     => array( $this, 'can_edit_posts_meta' ),
+				'auth_callback'     => array( Utility::class, 'can_edit_post_meta' ),
 				'sanitize_callback' => 'sanitize_url',
 				'show_in_rest'      => true,
 				'single'            => true,
@@ -383,7 +372,7 @@ class Setup {
 				'default'           => '',
 			),
 			'gatherpress_max_attendance_limit'  => array(
-				'auth_callback'     => array( $this, 'can_edit_posts_meta' ),
+				'auth_callback'     => array( Utility::class, 'can_edit_post_meta' ),
 				'sanitize_callback' => 'absint',
 				'show_in_rest'      => true,
 				'single'            => true,
