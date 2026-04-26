@@ -39,9 +39,9 @@ class Test_Setup extends Base {
 
 		$expected_hooks = array(
 			Manager::class => array(
-				'gatherpress_loaded',
-				array( Manager::get_instance(), 'register_core_providers' ),
-				1,
+				'init',
+				array( Manager::get_instance(), 'do_register_action' ),
+				0,
 			),
 			Map::class     => array(
 				'rest_api_init',
