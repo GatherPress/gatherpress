@@ -49,11 +49,10 @@ class Setup {
 	/**
 	 * Instantiate each Map\* sibling singleton.
 	 *
-	 * Order matters once: `Manager` registers `gatherpress_loaded`
-	 * listeners that populate the provider registry — it must construct
-	 * before the action fires from the outer `Setup::__construct()`. The
-	 * other siblings have no such dependency, so registration order
-	 * after Manager is alphabetical.
+	 * Manager registers core providers in its own constructor, so it
+	 * must instantiate before Map and Prewarm — both of which call into
+	 * the registry on later hooks. Sibling order after Manager is
+	 * alphabetical; none of the others depend on each other.
 	 *
 	 * @since 1.0.0
 	 *

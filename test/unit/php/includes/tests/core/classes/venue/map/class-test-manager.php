@@ -38,9 +38,12 @@ class Test_Manager extends Base {
 	}
 
 	/**
-	 * Coverage for setup_hooks — verifies the two-phase
-	 * `gatherpress_loaded` registration (priority 1 for core providers,
-	 * priority 5 for the companion-plugin action).
+	 * Coverage for setup_hooks — verifies the companion-plugin
+	 * registration action is wired to `init` priority 0.
+	 *
+	 * Core providers register synchronously in the constructor and are
+	 * covered by `test_register_core_providers_registers_osm` rather
+	 * than as a hook here.
 	 *
 	 * @covers ::__construct
 	 * @covers ::setup_hooks
@@ -52,14 +55,8 @@ class Test_Manager extends Base {
 		$hooks    = array(
 			array(
 				'type'     => 'action',
-				'name'     => 'gatherpress_loaded',
-				'priority' => 1,
-				'callback' => array( $instance, 'register_core_providers' ),
-			),
-			array(
-				'type'     => 'action',
-				'name'     => 'gatherpress_loaded',
-				'priority' => 5,
+				'name'     => 'init',
+				'priority' => 0,
 				'callback' => array( $instance, 'do_register_action' ),
 			),
 		);

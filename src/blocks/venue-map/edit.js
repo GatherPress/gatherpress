@@ -42,6 +42,7 @@ import {
 import {
 	RegenerateMapButton,
 	parseAspectRatio,
+	pickDescriptorForCombo,
 	resolveDimensions,
 	usePlaceholderPolling,
 } from './helpers';
@@ -297,7 +298,11 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 		} );
 
 	const comboKey = `${ zoom }x${ effectiveWidth }x${ effectiveHeight }`;
-	const staticMapDescriptor = staticMapDescriptors?.[ comboKey ];
+	const staticMapDescriptor = pickDescriptorForCombo(
+		staticMapDescriptors,
+		comboKey,
+		mapPlatform || 'osm'
+	);
 	const staticMapUrl = staticMapDescriptor?.url || '';
 	const isStaticMode = 'static' === renderMode;
 	const showStaticImage =

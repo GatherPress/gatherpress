@@ -173,6 +173,39 @@ export const RegenerateMapButton = ( {
 };
 
 /**
+ * Pick the best descriptor for a (provider, combo) lookup, with the same
+ * fallback chain the PHP orchestrator uses in `Map::get_descriptor_for_post`:
+ * active provider first, then any other provider's stored descriptor for
+ * the same combo. Lets a site that just flipped `map_platform` keep
+ * showing the previous provider's PNG until the new one renders.
+ *
+ * @since 1.0.0
+ *
+ * @param {Object} descriptors  Provider-keyed descriptor map: `{ osm: { combo_key: { url, ... } } }`.
+ * @param {string} comboKey     Combo key in the form `{zoom}x{width}x{height}`.
+ * @param {string} activeSlug   Slug of the currently active provider (e.g. `'osm'`).
+ * @return {Object|undefined} Descriptor object, or undefined when no provider has one.
+ */
+export const pickDescriptorForCombo = ( descriptors, comboKey, activeSlug ) => {
+	const active = descriptors?.[ activeSlug ]?.[ comboKey ];
+	if ( active ) {
+		return active;
+	}
+
+	for ( const slug of Object.keys( descriptors || {} ) ) {
+		if ( slug === activeSlug ) {
+			continue;
+		}
+		const candidate = descriptors[ slug ]?.[ comboKey ];
+		if ( candidate ) {
+			return candidate;
+		}
+	}
+
+	return undefined;
+};
+
+/**
  * Parse an aspect-ratio string (e.g. "16/9" or "4:3") into a float.
  *
  * Mirrors the server-side `Venue\Map::parse_aspect_ratio()` so the editor

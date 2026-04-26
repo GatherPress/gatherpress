@@ -3,10 +3,10 @@
  * Venue map provider registry.
  *
  * Singleton registry that owns the provider instances backing the static
- * map pipeline. Mirrors the {@see \GatherPress\Core\Rsvp\Manager} pattern:
- * a per-request registry that hooks `gatherpress_loaded` to register
- * built-in providers (OSM today) and fire a follow-on action so companion
- * plugins can register their own.
+ * map pipeline. Built-in providers (OSM today) are registered immediately
+ * in the constructor so the registry is usable from any later hook;
+ * companion plugins hook the `gatherpress_register_map_providers` action
+ * (fired on `init` priority 0) to register their own providers on top.
  *
  * @package GatherPress\Core\Venue\Map
  * @since 1.0.0
@@ -56,29 +56,31 @@ class Manager {
 	/**
 	 * Class constructor.
 	 *
-	 * Wires the `gatherpress_loaded` listeners that register built-in
-	 * providers and fire the companion-plugin registration action.
+	 * Registers built-in providers immediately so the registry is usable
+	 * the moment the singleton exists, then hooks the companion-plugin
+	 * registration action on `init` so third-party plugins (which load
+	 * after GatherPress's bootstrap) get a chance to register.
 	 *
 	 * @since 1.0.0
 	 */
 	protected function __construct() {
+		$this->register_core_providers();
 		$this->setup_hooks();
 	}
 
 	/**
-	 * Set up hooks for provider registration.
+	 * Set up hooks for companion-plugin provider registration.
 	 *
-	 * Two-phase: priority 1 registers core providers (always present),
-	 * priority 5 fires the companion-plugin action so third-party
-	 * providers register on top.
+	 * `init` priority 0 — early enough that anything else hooked on
+	 * `init` (default priority 10) sees the full registry, late enough
+	 * that all plugins have loaded and can listen for the action.
 	 *
 	 * @since 1.0.0
 	 *
 	 * @return void
 	 */
 	protected function setup_hooks(): void {
-		add_action( 'gatherpress_loaded', array( $this, 'register_core_providers' ), 1 );
-		add_action( 'gatherpress_loaded', array( $this, 'do_register_action' ), 5 );
+		add_action( 'init', array( $this, 'do_register_action' ), 0 );
 	}
 
 	/**
@@ -213,9 +215,9 @@ class Manager {
 	/**
 	 * Register the always-available core providers.
 	 *
-	 * Fires on `gatherpress_loaded` priority 1. Companion plugins should
-	 * NOT hook this — use `gatherpress_register_map_providers` (priority 5)
-	 * instead so core registration is already complete.
+	 * Called from the constructor so the registry is populated as soon as
+	 * the singleton exists. Companion plugins should NOT call this — use
+	 * the `gatherpress_register_map_providers` action instead.
 	 *
 	 * @since 1.0.0
 	 *
@@ -230,8 +232,8 @@ class Manager {
 	 *
 	 * Companion plugins hook `gatherpress_register_map_providers` and call
 	 * `$registry->register( new My_Map_Provider() )` on the passed Manager
-	 * instance. Runs at priority 5 — after core providers (priority 1) so
-	 * the registry is populated when third-party code observes it.
+	 * instance. Fires on `init` priority 0 so the registry is populated
+	 * before anything else hooked on `init` observes it.
 	 *
 	 * @since 1.0.0
 	 *
