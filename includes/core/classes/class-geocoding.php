@@ -808,16 +808,19 @@ class Geocoding {
 			return trim( (string) $properties[ $key ] );
 		};
 
-		return array(
-			'house_number' => $pluck( 'housenumber' ),
-			'street'       => $pluck( 'street' ),
-			'city'         => $pluck( 'city' ),
-			'county'       => $pluck( 'county' ),
-			'state'        => $pluck( 'state' ),
-			'postcode'     => $pluck( 'postcode' ),
-			'country'      => $pluck( 'country' ),
-			'country_code' => $pluck( 'countrycode' ),
-		);
+		$structured = array();
+
+		// Photon's property names match our snake_case fields with the
+		// underscores stripped (`house_number` → `housenumber`,
+		// `country_code` → `countrycode`); single-word fields are unaffected
+		// by the str_replace. Driving the loop off the constant means adding
+		// a new field is a single edit on `STRUCTURED_ADDRESS_FIELDS` —
+		// provided the new Photon property follows the same convention.
+		foreach ( Venue_Setup::STRUCTURED_ADDRESS_FIELDS as $field ) {
+			$structured[ $field ] = $pluck( str_replace( '_', '', $field ) );
+		}
+
+		return $structured;
 	}
 
 	/**
