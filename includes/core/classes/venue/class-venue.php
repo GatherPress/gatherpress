@@ -164,24 +164,41 @@ class Venue {
 	/**
 	 * Returns the venue information for this venue.
 	 *
-	 * Reads the individual `gatherpress_address`, `gatherpress_phone`,
-	 * `gatherpress_website`, `gatherpress_latitude`, and `gatherpress_longitude`
-	 * meta keys and returns them with empty-string fallbacks so callers can
-	 * treat the array shape as stable. Also returns the empty shape when this
-	 * instance does not wrap a real venue.
+	 * Reads the editor-writable venue meta keys and returns them with
+	 * empty-string fallbacks so callers can treat the array shape as stable.
+	 * Also returns the empty shape when this instance does not wrap a real
+	 * venue.
+	 *
+	 * The structured-address fields (`city`, `country`, `country_code`,
+	 * `county`, `house_number`, `postcode`, `state`, `street`) are populated
+	 * by the address-autocomplete handler when the user picks a suggestion;
+	 * freeform-typed addresses leave them blank. Callers that consume the
+	 * structured pieces (e.g. schema.org / JSON-LD emitters) should treat
+	 * empty values as "not set" rather than retry-geocoding.
 	 *
 	 * @since 1.0.0
 	 *
 	 * @return array{
 	 *     address: string,
+	 *     city: string,
+	 *     country: string,
+	 *     country_code: string,
+	 *     county: string,
+	 *     house_number: string,
 	 *     latitude: string,
 	 *     longitude: string,
 	 *     phone: string,
+	 *     postcode: string,
+	 *     state: string,
+	 *     street: string,
 	 *     website: string
 	 * }
 	 */
 	public function get_information(): array {
-		$fields      = array( 'address', 'latitude', 'longitude', 'phone', 'website' );
+		$fields      = array_merge(
+			Setup::EDITOR_WRITABLE_FIELDS,
+			Setup::STRUCTURED_ADDRESS_FIELDS
+		);
 		$information = array_fill_keys( $fields, '' );
 
 		if ( ! $this->venue instanceof WP_Post ) {

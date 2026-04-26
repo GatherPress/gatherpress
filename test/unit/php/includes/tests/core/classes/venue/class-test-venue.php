@@ -12,6 +12,7 @@
 
 namespace GatherPress\Tests\Core\Venue;
 
+use GatherPress\Core\Venue\Setup;
 use GatherPress\Core\Venue\Venue;
 use GatherPress\Tests\Base;
 use ReflectionClass;
@@ -117,13 +118,7 @@ class Test_Venue extends Base {
 		$info = ( new Venue( $post_id ) )->get_information();
 
 		$this->assertSame(
-			array(
-				'address'   => '',
-				'latitude'  => '',
-				'longitude' => '',
-				'phone'     => '',
-				'website'   => '',
-			),
+			$this->empty_information_shape(),
 			$info,
 			'Failed to assert the empty-state default shape when no venue meta is stored.'
 		);
@@ -223,14 +218,24 @@ class Test_Venue extends Base {
 		$post_id = $this->factory->post->create( array( 'post_type' => 'post' ) );
 
 		$this->assertSame(
-			array(
-				'address'   => '',
-				'latitude'  => '',
-				'longitude' => '',
-				'phone'     => '',
-				'website'   => '',
-			),
+			$this->empty_information_shape(),
 			( new Venue( $post_id ) )->get_information()
+		);
+	}
+
+	/**
+	 * Returns the expected empty-string shape for `get_information()`.
+	 *
+	 * Derived from the same source of truth (`Setup::STRUCTURED_ADDRESS_FIELDS`)
+	 * the production code uses, so adding a new structured field updates both
+	 * sides simultaneously and the assertion can't silently drift.
+	 *
+	 * @return array<string, string>
+	 */
+	private function empty_information_shape(): array {
+		return array_fill_keys(
+			array_merge( Setup::EDITOR_WRITABLE_FIELDS, Setup::STRUCTURED_ADDRESS_FIELDS ),
+			''
 		);
 	}
 
