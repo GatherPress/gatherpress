@@ -12,11 +12,12 @@
 
 namespace GatherPress\Tests\Core\Venue\Map\Provider;
 
+use ErrorException;
 use GatherPress\Core\Venue\Map;
 use GatherPress\Core\Venue\Map\Provider\OSM;
 use GatherPress\Tests\Base;
-use PMC\Unit_Test\Utility;
 use GdImage;
+use PMC\Unit_Test\Utility;
 
 /**
  * Class Test_OSM.
@@ -519,13 +520,17 @@ class Test_OSM extends Base {
 	}
 
 	/**
-	 * `decode_tile()` returns `false` when `imagecreatefromstring()`
-	 * throws — exercises the catch branch. Empty input throws on every
-	 * supported PHP version under PHPUnit:
+	 * `decode_tile()` returns `false` when the decode throws.
 	 *
-	 * - PHP 8.0+: native `ValueError` for empty input.
-	 * - PHP 7.4 under PHPUnit: `E_WARNING` converted to a `Throwable`
-	 *   by `convertWarningsToExceptions=true` in `phpunit.xml.dist`.
+	 * `imagecreatefromstring()` itself only emits an E_WARNING for
+	 * malformed bytes on most PHP builds, not a throw — and PHPUnit's
+	 * `convertWarningsToExceptions` setting isn't reliably active in the
+	 * wp-env test runner. To exercise the catch branch deterministically
+	 * we install our own error handler for the duration of the call,
+	 * which rethrows any warning as an `ErrorException` (a `Throwable`).
+	 * That's exactly the shape `decode_tile()` defends against in
+	 * production when WordPress core or another plugin sets up an
+	 * equivalent handler.
 	 *
 	 * @covers ::decode_tile
 	 *
@@ -536,11 +541,23 @@ class Test_OSM extends Base {
 			$this->markTestSkipped( 'GD extension is not available.' );
 		}
 
-		$result = Utility::invoke_hidden_method(
-			new OSM(),
-			'decode_tile',
-			array( '' )
+		// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_set_error_handler -- Test setup, restored in finally below.
+		set_error_handler(
+			static function ( int $errno, string $errstr ): bool {
+				// phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Test-only handler; the exception is caught immediately by decode_tile().
+				throw new ErrorException( $errstr, 0, $errno );
+			}
 		);
+
+		try {
+			$result = Utility::invoke_hidden_method(
+				new OSM(),
+				'decode_tile',
+				array( '' )
+			);
+		} finally {
+			restore_error_handler();
+		}
 
 		$this->assertFalse( $result );
 	}
