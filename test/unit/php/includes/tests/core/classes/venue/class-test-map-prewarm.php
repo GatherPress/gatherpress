@@ -1,25 +1,26 @@
 <?php
 /**
- * Unit tests for GatherPress\Core\Venue_Map_Prewarm.
+ * Unit tests for GatherPress\Core\Venue\Map_Prewarm.
  *
- * @package GatherPress\Core
+ * @package GatherPress\Core\Venue
  * @since 1.0.0
  */
 
-namespace GatherPress\Tests\Core;
+namespace GatherPress\Tests\Core\Venue;
 
-use GatherPress\Core\Venue;
-use GatherPress\Core\Venue_Map;
-use GatherPress\Core\Venue_Map_Prewarm;
+use GatherPress\Core\Venue\Map;
+use GatherPress\Core\Venue\Map_Prewarm;
+use GatherPress\Core\Venue\Setup;
+use GatherPress\Core\Venue\Venue;
 use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;
 
 /**
- * Class Test_Venue_Map_Prewarm.
+ * Class Test_Map_Prewarm.
  *
- * @coversDefaultClass \GatherPress\Core\Venue_Map_Prewarm
+ * @coversDefaultClass \GatherPress\Core\Venue\Map_Prewarm
  */
-class Test_Venue_Map_Prewarm extends Base {
+class Test_Map_Prewarm extends Base {
 	/**
 	 * Clear scheduled warm events between tests — wp_next_scheduled lookups
 	 * otherwise leak across cases and skew dedup assertions.
@@ -29,7 +30,7 @@ class Test_Venue_Map_Prewarm extends Base {
 	 * @return void
 	 */
 	public function tear_down(): void {
-		wp_clear_scheduled_hook( Venue_Map_Prewarm::CRON_ACTION );
+		wp_clear_scheduled_hook( Map_Prewarm::CRON_ACTION );
 		parent::tear_down();
 	}
 
@@ -43,11 +44,11 @@ class Test_Venue_Map_Prewarm extends Base {
 	 * @return void
 	 */
 	public function test_setup_hooks(): void {
-		$instance = Venue_Map_Prewarm::get_instance();
+		$instance = Map_Prewarm::get_instance();
 		$hooks    = array(
 			array(
 				'type'     => 'action',
-				'name'     => Venue_Map_Prewarm::CRON_ACTION,
+				'name'     => Map_Prewarm::CRON_ACTION,
 				'priority' => 10,
 				'callback' => array( $instance, 'process_warm_job' ),
 			),
@@ -76,7 +77,7 @@ class Test_Venue_Map_Prewarm extends Base {
 	 * @return void
 	 */
 	public function test_collect_combos_from_content_ignores_unrelated_markup(): void {
-		$instance = Venue_Map_Prewarm::get_instance();
+		$instance = Map_Prewarm::get_instance();
 
 		$result = Utility::invoke_hidden_method(
 			$instance,
@@ -105,7 +106,7 @@ class Test_Venue_Map_Prewarm extends Base {
 	 * @return void
 	 */
 	public function test_collect_combos_from_content_extracts_single_block(): void {
-		$instance = Venue_Map_Prewarm::get_instance();
+		$instance = Map_Prewarm::get_instance();
 		$content  = '<!-- wp:gatherpress/venue-map {"zoom":15,"width":0,"height":400,"aspectRatio":"16/9"} /-->';
 
 		$result = Utility::invoke_hidden_method(
@@ -134,7 +135,7 @@ class Test_Venue_Map_Prewarm extends Base {
 	 * @return void
 	 */
 	public function test_walk_blocks_for_combos_recurses_inner_blocks(): void {
-		$instance = Venue_Map_Prewarm::get_instance();
+		$instance = Map_Prewarm::get_instance();
 		$content  = '<!-- wp:gatherpress/venue -->'
 			. '<div class="wp-block-gatherpress-venue">'
 			. '<!-- wp:gatherpress/venue-map {"zoom":10,"width":800,"height":400,"aspectRatio":"2/1"} /-->'
@@ -153,14 +154,14 @@ class Test_Venue_Map_Prewarm extends Base {
 	}
 
 	/**
-	 * Missing block attributes fall back to the Venue_Map defaults.
+	 * Missing block attributes fall back to the Map defaults.
 	 *
 	 * @covers ::extract_block_combo
 	 *
 	 * @return void
 	 */
 	public function test_extract_block_combo_uses_venue_map_defaults(): void {
-		$instance = Venue_Map_Prewarm::get_instance();
+		$instance = Map_Prewarm::get_instance();
 
 		$result = Utility::invoke_hidden_method(
 			$instance,
@@ -168,10 +169,10 @@ class Test_Venue_Map_Prewarm extends Base {
 			array( array() )
 		);
 
-		$this->assertSame( Venue_Map::DEFAULT_ZOOM, $result['zoom'] );
+		$this->assertSame( Map::DEFAULT_ZOOM, $result['zoom'] );
 		$this->assertSame( 0, $result['width'] );
-		$this->assertSame( Venue_Map::DEFAULT_HEIGHT, $result['height'] );
-		$this->assertSame( Venue_Map::DEFAULT_ASPECT_RATIO, $result['aspect_ratio'] );
+		$this->assertSame( Map::DEFAULT_HEIGHT, $result['height'] );
+		$this->assertSame( Map::DEFAULT_ASPECT_RATIO, $result['aspect_ratio'] );
 	}
 
 	/**
@@ -182,7 +183,7 @@ class Test_Venue_Map_Prewarm extends Base {
 	 * @return void
 	 */
 	public function test_dedupe_combos_collapses_duplicates(): void {
-		$instance = Venue_Map_Prewarm::get_instance();
+		$instance = Map_Prewarm::get_instance();
 		$combos   = array(
 			array(
 				'zoom'         => 15,
@@ -221,7 +222,7 @@ class Test_Venue_Map_Prewarm extends Base {
 	 * @return void
 	 */
 	public function test_enqueue_warm_job_schedules_cron_event(): void {
-		$instance      = Venue_Map_Prewarm::get_instance();
+		$instance      = Map_Prewarm::get_instance();
 		$venue_post_id = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
 		$combo         = array(
 			'zoom'         => 15,
@@ -237,7 +238,7 @@ class Test_Venue_Map_Prewarm extends Base {
 		);
 
 		$scheduled = wp_next_scheduled(
-			Venue_Map_Prewarm::CRON_ACTION,
+			Map_Prewarm::CRON_ACTION,
 			array( $venue_post_id, 15, 800, 400, '2/1' )
 		);
 		$this->assertNotFalse( $scheduled, 'Warm job is scheduled.' );
@@ -252,7 +253,7 @@ class Test_Venue_Map_Prewarm extends Base {
 	 * @return void
 	 */
 	public function test_enqueue_warm_job_deduplicates_identical_args(): void {
-		$instance      = Venue_Map_Prewarm::get_instance();
+		$instance      = Map_Prewarm::get_instance();
 		$venue_post_id = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
 		$combo         = array(
 			'zoom'         => 15,
@@ -263,13 +264,13 @@ class Test_Venue_Map_Prewarm extends Base {
 
 		Utility::invoke_hidden_method( $instance, 'enqueue_warm_job', array( $venue_post_id, $combo ) );
 		$first_timestamp = wp_next_scheduled(
-			Venue_Map_Prewarm::CRON_ACTION,
+			Map_Prewarm::CRON_ACTION,
 			array( $venue_post_id, 15, 800, 400, '2/1' )
 		);
 
 		Utility::invoke_hidden_method( $instance, 'enqueue_warm_job', array( $venue_post_id, $combo ) );
 		$second_timestamp = wp_next_scheduled(
-			Venue_Map_Prewarm::CRON_ACTION,
+			Map_Prewarm::CRON_ACTION,
 			array( $venue_post_id, 15, 800, 400, '2/1' )
 		);
 
@@ -288,7 +289,7 @@ class Test_Venue_Map_Prewarm extends Base {
 	 * @return void
 	 */
 	public function test_enqueue_warm_job_filter_short_circuits_wp_cron_path(): void {
-		$instance      = Venue_Map_Prewarm::get_instance();
+		$instance      = Map_Prewarm::get_instance();
 		$venue_post_id = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
 		$combo         = array(
 			'zoom'         => 15,
@@ -315,13 +316,13 @@ class Test_Venue_Map_Prewarm extends Base {
 
 		$this->assertFalse(
 			wp_next_scheduled(
-				Venue_Map_Prewarm::CRON_ACTION,
+				Map_Prewarm::CRON_ACTION,
 				array( $venue_post_id, 15, 800, 400, '2/1' )
 			),
 			'Default WP-Cron path must be suppressed when the filter returns non-null.'
 		);
 		$this->assertCount( 1, $seen, 'Filter is invoked exactly once per enqueue call.' );
-		$this->assertSame( Venue_Map_Prewarm::CRON_ACTION, $seen[0]['hook'] );
+		$this->assertSame( Map_Prewarm::CRON_ACTION, $seen[0]['hook'] );
 		$this->assertSame(
 			array( $venue_post_id, 15, 800, 400, '2/1' ),
 			$seen[0]['args'],
@@ -342,7 +343,7 @@ class Test_Venue_Map_Prewarm extends Base {
 	 * @return void
 	 */
 	public function test_enqueue_warm_job_filter_falsy_non_null_values_still_short_circuit(): void {
-		$instance = Venue_Map_Prewarm::get_instance();
+		$instance = Map_Prewarm::get_instance();
 
 		foreach ( array( false, 0, '' ) as $index => $falsy_return ) {
 			$venue_post_id = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
@@ -365,7 +366,7 @@ class Test_Venue_Map_Prewarm extends Base {
 
 			$this->assertFalse(
 				wp_next_scheduled(
-					Venue_Map_Prewarm::CRON_ACTION,
+					Map_Prewarm::CRON_ACTION,
 					array( $venue_post_id, 15, 800 + $index, 400, '2/1' )
 				),
 				sprintf(
@@ -386,7 +387,7 @@ class Test_Venue_Map_Prewarm extends Base {
 	 * @return void
 	 */
 	public function test_enqueue_warm_job_filter_returning_null_preserves_default_path(): void {
-		$instance      = Venue_Map_Prewarm::get_instance();
+		$instance      = Map_Prewarm::get_instance();
 		$venue_post_id = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
 		$combo         = array(
 			'zoom'         => 15,
@@ -406,7 +407,7 @@ class Test_Venue_Map_Prewarm extends Base {
 
 		$this->assertNotFalse(
 			wp_next_scheduled(
-				Venue_Map_Prewarm::CRON_ACTION,
+				Map_Prewarm::CRON_ACTION,
 				array( $venue_post_id, 15, 800, 400, '2/1' )
 			),
 			'Null return from the filter must fall through to wp_schedule_single_event().'
@@ -424,7 +425,7 @@ class Test_Venue_Map_Prewarm extends Base {
 	 * @return void
 	 */
 	public function test_on_post_saved_enqueues_for_venue(): void {
-		$instance = Venue_Map_Prewarm::get_instance();
+		$instance = Map_Prewarm::get_instance();
 
 		// Create a venue so get_venue_post_ids has at least one result when
 		// the template save would fan out; the test itself doesn't care
@@ -442,7 +443,7 @@ class Test_Venue_Map_Prewarm extends Base {
 		$instance->on_post_saved( $venue_post_id, $post );
 
 		$this->assertFalse(
-			(bool) wp_next_scheduled( Venue_Map_Prewarm::CRON_ACTION ),
+			(bool) wp_next_scheduled( Map_Prewarm::CRON_ACTION ),
 			'No combos means no scheduled warm jobs.'
 		);
 	}
@@ -456,7 +457,7 @@ class Test_Venue_Map_Prewarm extends Base {
 	 * @return void
 	 */
 	public function test_on_post_saved_ignores_revisions(): void {
-		$instance = Venue_Map_Prewarm::get_instance();
+		$instance = Map_Prewarm::get_instance();
 
 		$venue_post_id = $this->factory->post->create(
 			array(
@@ -474,7 +475,7 @@ class Test_Venue_Map_Prewarm extends Base {
 		$instance->on_post_saved( $revision_id, $revision );
 
 		$this->assertFalse(
-			(bool) wp_next_scheduled( Venue_Map_Prewarm::CRON_ACTION ),
+			(bool) wp_next_scheduled( Map_Prewarm::CRON_ACTION ),
 			'Revisions do not enqueue warm jobs.'
 		);
 	}
@@ -489,7 +490,7 @@ class Test_Venue_Map_Prewarm extends Base {
 	 * @return void
 	 */
 	public function test_on_post_saved_skips_non_published_posts(): void {
-		$instance = Venue_Map_Prewarm::get_instance();
+		$instance = Map_Prewarm::get_instance();
 
 		foreach ( array( 'draft', 'auto-draft', 'trash' ) as $status ) {
 			$venue_post_id = $this->factory->post->create(
@@ -503,22 +504,22 @@ class Test_Venue_Map_Prewarm extends Base {
 		}
 
 		$this->assertFalse(
-			(bool) wp_next_scheduled( Venue_Map_Prewarm::CRON_ACTION ),
+			(bool) wp_next_scheduled( Map_Prewarm::CRON_ACTION ),
 			'Non-published saves enqueue nothing.'
 		);
 	}
 
 	/**
-	 * Delegates to Venue_Map::warm from the cron handler — this test only
+	 * Delegates to Map::warm from the cron handler — this test only
 	 * verifies it tolerates a missing venue ID without throwing
-	 * (Venue_Map::warm returns null for invalid input).
+	 * (Map::warm returns null for invalid input).
 	 *
 	 * @covers ::process_warm_job
 	 *
 	 * @return void
 	 */
 	public function test_process_warm_job_is_safe_for_missing_venue(): void {
-		$instance = Venue_Map_Prewarm::get_instance();
+		$instance = Map_Prewarm::get_instance();
 
 		// No exception: warm() returns null for non-existent post IDs, and
 		// the cron handler is expected to swallow that outcome silently.
@@ -536,7 +537,7 @@ class Test_Venue_Map_Prewarm extends Base {
 	 * @return void
 	 */
 	public function test_on_post_saved_fan_outs_template_save_to_all_venues(): void {
-		$instance = Venue_Map_Prewarm::get_instance();
+		$instance = Map_Prewarm::get_instance();
 
 		$venue_a = $this->factory->post->create(
 			array(
@@ -564,14 +565,14 @@ class Test_Venue_Map_Prewarm extends Base {
 
 		$this->assertNotFalse(
 			wp_next_scheduled(
-				Venue_Map_Prewarm::CRON_ACTION,
+				Map_Prewarm::CRON_ACTION,
 				array( $venue_a, 15, 800, 400, '2/1' )
 			),
 			'Venue A received a warm job for the template combo.'
 		);
 		$this->assertNotFalse(
 			wp_next_scheduled(
-				Venue_Map_Prewarm::CRON_ACTION,
+				Map_Prewarm::CRON_ACTION,
 				array( $venue_b, 15, 800, 400, '2/1' )
 			),
 			'Venue B received a warm job for the template combo.'
@@ -588,7 +589,7 @@ class Test_Venue_Map_Prewarm extends Base {
 	 * @return void
 	 */
 	public function test_on_post_saved_skips_template_without_venue_map(): void {
-		$instance = Venue_Map_Prewarm::get_instance();
+		$instance = Map_Prewarm::get_instance();
 
 		$this->factory->post->create(
 			array(
@@ -608,7 +609,7 @@ class Test_Venue_Map_Prewarm extends Base {
 		$instance->on_post_saved( $template_id, get_post( $template_id ) );
 
 		$this->assertFalse(
-			(bool) wp_next_scheduled( Venue_Map_Prewarm::CRON_ACTION ),
+			(bool) wp_next_scheduled( Map_Prewarm::CRON_ACTION ),
 			'Templates without venue-map blocks enqueue nothing.'
 		);
 	}
@@ -624,7 +625,7 @@ class Test_Venue_Map_Prewarm extends Base {
 	 * @return void
 	 */
 	public function test_on_theme_switched_runs_without_error(): void {
-		$instance = Venue_Map_Prewarm::get_instance();
+		$instance = Map_Prewarm::get_instance();
 
 		$this->factory->post->create(
 			array(
@@ -649,7 +650,7 @@ class Test_Venue_Map_Prewarm extends Base {
 	 * @return void
 	 */
 	public function test_get_venue_post_ids_returns_published_venues(): void {
-		$instance = Venue_Map_Prewarm::get_instance();
+		$instance = Map_Prewarm::get_instance();
 
 		$published = $this->factory->post->create(
 			array(
@@ -680,8 +681,8 @@ class Test_Venue_Map_Prewarm extends Base {
 	 * @return void
 	 */
 	public function test_on_post_saved_event_enqueues_via_linked_venue(): void {
-		$instance    = Venue_Map_Prewarm::get_instance();
-		$venue_setup = \GatherPress\Core\Venue_Setup::get_instance();
+		$instance    = Map_Prewarm::get_instance();
+		$venue_setup = Setup::get_instance();
 
 		$venue_post_id = $this->factory->post->create(
 			array(
@@ -708,7 +709,7 @@ class Test_Venue_Map_Prewarm extends Base {
 
 		$this->assertNotFalse(
 			wp_next_scheduled(
-				Venue_Map_Prewarm::CRON_ACTION,
+				Map_Prewarm::CRON_ACTION,
 				array( $venue_post_id, 12, 600, 300, '2/1' )
 			),
 			'Event save enqueues a warm job against the linked venue.'
@@ -724,7 +725,7 @@ class Test_Venue_Map_Prewarm extends Base {
 	 * @return void
 	 */
 	public function test_on_post_saved_event_skips_when_no_venue_term(): void {
-		$instance = Venue_Map_Prewarm::get_instance();
+		$instance = Map_Prewarm::get_instance();
 
 		$event_post_id = $this->factory->post->create(
 			array(
@@ -738,7 +739,7 @@ class Test_Venue_Map_Prewarm extends Base {
 		$instance->on_post_saved( $event_post_id, get_post( $event_post_id ) );
 
 		$this->assertFalse(
-			(bool) wp_next_scheduled( Venue_Map_Prewarm::CRON_ACTION ),
+			(bool) wp_next_scheduled( Map_Prewarm::CRON_ACTION ),
 			'Event with no venue term enqueues nothing.'
 		);
 	}
@@ -754,7 +755,7 @@ class Test_Venue_Map_Prewarm extends Base {
 	 * @return void
 	 */
 	public function test_collect_all_template_combos_paginates_event_content(): void {
-		$instance = Venue_Map_Prewarm::get_instance();
+		$instance = Map_Prewarm::get_instance();
 
 		$this->factory->post->create(
 			array(
@@ -809,10 +810,10 @@ class Test_Venue_Map_Prewarm extends Base {
 	 * @return void
 	 */
 	public function test_get_content_scan_batch_size_applies_filter_and_clamps(): void {
-		$instance = Venue_Map_Prewarm::get_instance();
+		$instance = Map_Prewarm::get_instance();
 
 		$this->assertSame(
-			Venue_Map_Prewarm::CONTENT_SCAN_BATCH_SIZE,
+			Map_Prewarm::CONTENT_SCAN_BATCH_SIZE,
 			Utility::invoke_hidden_method( $instance, 'get_content_scan_batch_size' ),
 			'Default matches the CONTENT_SCAN_BATCH_SIZE constant.'
 		);
@@ -866,10 +867,10 @@ class Test_Venue_Map_Prewarm extends Base {
 	 * @return void
 	 */
 	public function test_get_scan_batch_size_applies_filter_and_clamps(): void {
-		$instance = Venue_Map_Prewarm::get_instance();
+		$instance = Map_Prewarm::get_instance();
 
 		$this->assertSame(
-			Venue_Map_Prewarm::SCAN_BATCH_SIZE,
+			Map_Prewarm::SCAN_BATCH_SIZE,
 			Utility::invoke_hidden_method( $instance, 'get_scan_batch_size' ),
 			'Default matches the SCAN_BATCH_SIZE constant.'
 		);
@@ -911,7 +912,7 @@ class Test_Venue_Map_Prewarm extends Base {
 	 * @return void
 	 */
 	public function test_enqueue_for_all_venues_paginates(): void {
-		$instance = Venue_Map_Prewarm::get_instance();
+		$instance = Map_Prewarm::get_instance();
 
 		$venue_ids = array(
 			$this->factory->post->create(
@@ -955,7 +956,7 @@ class Test_Venue_Map_Prewarm extends Base {
 		foreach ( $venue_ids as $venue_post_id ) {
 			$this->assertNotFalse(
 				wp_next_scheduled(
-					Venue_Map_Prewarm::CRON_ACTION,
+					Map_Prewarm::CRON_ACTION,
 					array( $venue_post_id, 11, 500, 250, '2/1' )
 				),
 				sprintf( 'Venue %d received a warm job through the paginated loop.', $venue_post_id )
@@ -973,7 +974,7 @@ class Test_Venue_Map_Prewarm extends Base {
 	 * @return void
 	 */
 	public function test_collect_and_get_ids_paginate(): void {
-		$instance = Venue_Map_Prewarm::get_instance();
+		$instance = Map_Prewarm::get_instance();
 
 		$this->factory->post->create(
 			array(
@@ -1032,7 +1033,7 @@ class Test_Venue_Map_Prewarm extends Base {
 	 * @return void
 	 */
 	public function test_enqueue_for_venue_schedules_jobs_for_each_combo(): void {
-		$instance = Venue_Map_Prewarm::get_instance();
+		$instance = Map_Prewarm::get_instance();
 
 		$venue_post_id = $this->factory->post->create(
 			array(
@@ -1060,7 +1061,7 @@ class Test_Venue_Map_Prewarm extends Base {
 
 		$this->assertNotFalse(
 			wp_next_scheduled(
-				Venue_Map_Prewarm::CRON_ACTION,
+				Map_Prewarm::CRON_ACTION,
 				array( $venue_post_id, 13, 700, 350, '2/1' )
 			),
 			'Venue received a warm job for the combo surfaced via enqueue_for_venue.'
@@ -1079,7 +1080,7 @@ class Test_Venue_Map_Prewarm extends Base {
 	 * @return void
 	 */
 	public function test_scans_short_circuit_without_venue_types(): void {
-		$instance = Venue_Map_Prewarm::get_instance();
+		$instance = Map_Prewarm::get_instance();
 
 		// Temporarily unregister the venue-information support so the
 		// gatherpress-venue-information feature has no matching post types.
@@ -1112,7 +1113,7 @@ class Test_Venue_Map_Prewarm extends Base {
 		}
 
 		$this->assertFalse(
-			(bool) wp_next_scheduled( Venue_Map_Prewarm::CRON_ACTION ),
+			(bool) wp_next_scheduled( Map_Prewarm::CRON_ACTION ),
 			'No venue types means no scheduled warm jobs.'
 		);
 		$this->assertSame( array(), $ids, 'get_venue_post_ids returns [] when no venue types are registered.' );
@@ -1134,7 +1135,7 @@ class Test_Venue_Map_Prewarm extends Base {
 			$this->markTestSkipped( 'WP_Block_Template not available in this environment.' );
 		}
 
-		$instance = Venue_Map_Prewarm::get_instance();
+		$instance = Map_Prewarm::get_instance();
 
 		$template          = new \WP_Block_Template();
 		$template->content = '<!-- wp:gatherpress/venue-map '
@@ -1186,7 +1187,7 @@ class Test_Venue_Map_Prewarm extends Base {
 	 * @return void
 	 */
 	public function test_on_post_saved_event_skips_when_no_combos(): void {
-		$instance = Venue_Map_Prewarm::get_instance();
+		$instance = Map_Prewarm::get_instance();
 
 		$event_post_id = $this->factory->post->create(
 			array(
@@ -1199,7 +1200,7 @@ class Test_Venue_Map_Prewarm extends Base {
 		$instance->on_post_saved( $event_post_id, get_post( $event_post_id ) );
 
 		$this->assertFalse(
-			(bool) wp_next_scheduled( Venue_Map_Prewarm::CRON_ACTION ),
+			(bool) wp_next_scheduled( Map_Prewarm::CRON_ACTION ),
 			'No combos in event content means no cron jobs.'
 		);
 	}

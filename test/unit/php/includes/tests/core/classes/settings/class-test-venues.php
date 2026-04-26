@@ -88,7 +88,7 @@ class Test_Venues extends Base {
 		);
 
 		// New block-default settings feed the venue-map block.json defaults
-		// via Venue_Map::apply_block_attribute_defaults().
+		// via Venue\Map::apply_block_attribute_defaults().
 		foreach ( array(
 			'venue_map_default_render_mode' => 'interactive',
 			'venue_map_default_zoom'        => 18,

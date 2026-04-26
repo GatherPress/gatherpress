@@ -16,15 +16,16 @@
  * map-related additions (REST endpoint for the editor preview, interactive
  * map server-side bits, async regeneration, etc.) have a natural home.
  *
- * @package GatherPress\Core
+ * @package GatherPress\Core\Venue
  * @since 1.0.0
  */
 
-namespace GatherPress\Core;
+namespace GatherPress\Core\Venue;
 
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
+use GatherPress\Core\Settings;
 use GatherPress\Core\Traits\Singleton;
 use WP_Post;
 use WP_REST_Request;
@@ -32,7 +33,7 @@ use WP_REST_Response;
 use WP_REST_Server;
 
 /**
- * Class Venue_Map.
+ * Class Map.
  *
  * Singleton hosting the venue map server-side pipeline. Currently owns the
  * static PNG cache keyed by (zoom, height) combo; structured so that
@@ -41,7 +42,7 @@ use WP_REST_Server;
  *
  * @since 1.0.0
  */
-class Venue_Map {
+class Map {
 	/**
 	 * Enforces a single instance of this class.
 	 */
@@ -830,7 +831,7 @@ class Venue_Map {
 		if ( post_type_supports( $post_type, 'gatherpress-venue-information' ) ) {
 			$venue_post_id = $post_id;
 		} elseif ( post_type_supports( $post_type, 'gatherpress-venue' ) ) {
-			$venue_post = Venue_Setup::get_instance()->get_venue_post_from_event_post_id( $post_id );
+			$venue_post = Setup::get_instance()->get_venue_post_from_event_post_id( $post_id );
 
 			if ( $venue_post instanceof WP_Post ) {
 				$venue_post_id = $venue_post->ID;

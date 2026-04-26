@@ -5,7 +5,7 @@
  * Scans FSE templates, template parts, and event post content for
  * `gatherpress/venue-map` blocks, collects every distinct (zoom, width,
  * height, aspectRatio) combo they request, and enqueues per-venue cron
- * jobs that drive {@see Venue_Map::warm()}. The goal is to keep the first
+ * jobs that drive {@see Map::warm()}. The goal is to keep the first
  * render of a venue page instant — once the venue has been saved, every
  * combo the site's templates reference has a PNG on disk before any
  * front-end request arrives.
@@ -19,11 +19,11 @@
  * Scheduling is WP-Cron for now. Action Scheduler integration will
  * replace this layer once it's pulled into the plugin.
  *
- * @package GatherPress\Core
+ * @package GatherPress\Core\Venue
  * @since 1.0.0
  */
 
-namespace GatherPress\Core;
+namespace GatherPress\Core\Venue;
 
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
@@ -32,14 +32,14 @@ use GatherPress\Core\Traits\Singleton;
 use WP_Post;
 
 /**
- * Class Venue_Map_Prewarm.
+ * Class Map_Prewarm.
  *
  * Scans templates + events for venue-map combos, enqueues cron jobs to
- * warm each (venue, combo) via {@see Venue_Map::warm()}.
+ * warm each (venue, combo) via {@see Map::warm()}.
  *
  * @since 1.0.0
  */
-class Venue_Map_Prewarm {
+class Map_Prewarm {
 	/**
 	 * Enforces a single instance of this class.
 	 */
@@ -156,7 +156,7 @@ class Venue_Map_Prewarm {
 	protected function setup_hooks(): void {
 		add_action( self::CRON_ACTION, array( $this, 'process_warm_job' ), 10, 5 );
 
-		// Priority 12 — after Venue_Map::maybe_generate() (priority 11) has
+		// Priority 12 — after Map::maybe_generate() (priority 11) has
 		// synchronously rendered whatever combos were already cached on the
 		// venue. This hook picks up template combos the venue has never
 		// been rendered at.
@@ -213,7 +213,7 @@ class Venue_Map_Prewarm {
 				return;
 			}
 
-			$venue = Venue_Setup::get_instance()->get_venue_post_from_event_post_id( $post_id );
+			$venue = Setup::get_instance()->get_venue_post_from_event_post_id( $post_id );
 
 			if ( $venue instanceof WP_Post ) {
 				foreach ( $combos as $combo ) {
@@ -236,7 +236,7 @@ class Venue_Map_Prewarm {
 	}
 
 	/**
-	 * Cron handler. Delegates to {@see Venue_Map::warm()}.
+	 * Cron handler. Delegates to {@see Map::warm()}.
 	 *
 	 * @since 1.0.0
 	 *
@@ -248,7 +248,7 @@ class Venue_Map_Prewarm {
 	 * @return void
 	 */
 	public function process_warm_job( int $post_id, int $zoom, int $width, int $height, string $aspect_ratio ): void {
-		Venue_Map::get_instance()->warm( $post_id, $zoom, $width, $height, $aspect_ratio );
+		Map::get_instance()->warm( $post_id, $zoom, $width, $height, $aspect_ratio );
 	}
 
 	/**
@@ -519,14 +519,14 @@ class Venue_Map_Prewarm {
 	 */
 	protected function extract_block_combo( array $attrs ): array {
 		return array(
-			'zoom'         => isset( $attrs['zoom'] ) ? (int) $attrs['zoom'] : Venue_Map::DEFAULT_ZOOM,
+			'zoom'         => isset( $attrs['zoom'] ) ? (int) $attrs['zoom'] : Map::DEFAULT_ZOOM,
 			'width'        => isset( $attrs['width'] ) ? (int) $attrs['width'] : 0,
 			'height'       => isset( $attrs['height'] )
 				? (int) $attrs['height']
-				: Venue_Map::DEFAULT_HEIGHT,
+				: Map::DEFAULT_HEIGHT,
 			'aspect_ratio' => isset( $attrs['aspectRatio'] )
 				? (string) $attrs['aspectRatio']
-				: Venue_Map::DEFAULT_ASPECT_RATIO,
+				: Map::DEFAULT_ASPECT_RATIO,
 		);
 	}
 

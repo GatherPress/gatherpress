@@ -121,7 +121,7 @@ const VenueInformation = () => {
 	useEffect( () => {
 		// Block the Save button while the address is being geocoded. Without
 		// this, a quick save persists the new address with the previous
-		// lat/long and Venue_Map bakes the static PNG at the wrong coords
+		// lat/long and Venue\Map bakes the static PNG at the wrong coords
 		// until a second save rebuilds it. lockPostSaving is idempotent on
 		// the same lock name, so repeat keystrokes don't stack locks.
 		lockPostSaving( GEOCODE_LOCK_NAME );

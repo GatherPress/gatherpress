@@ -1,29 +1,30 @@
 <?php
 /**
- * Unit tests for GatherPress\Core\Venue_Map.
+ * Unit tests for GatherPress\Core\Venue\Map.
  *
  * These tests cover the generator's hash logic, the save/regenerate/cleanup
  * lifecycle, and the hook wiring. The tile fetcher is stubbed via an HTTP
  * short-circuit filter so tests never make a real network call.
  *
- * @package GatherPress\Core
+ * @package GatherPress\Core\Venue
  * @since 1.0.0
  */
 
-namespace GatherPress\Tests\Core;
+namespace GatherPress\Tests\Core\Venue;
 
-use GatherPress\Core\Venue;
-use GatherPress\Core\Venue_Map;
+use GatherPress\Core\Venue\Map;
+use GatherPress\Core\Venue\Setup;
+use GatherPress\Core\Venue\Venue;
 use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;
 
 /**
- * Class Test_Venue_Map.
+ * Class Test_Map.
  *
  * @group multisite
- * @coversDefaultClass \GatherPress\Core\Venue_Map
+ * @coversDefaultClass \GatherPress\Core\Venue\Map
  */
-class Test_Venue_Map extends Base {
+class Test_Map extends Base {
 	/**
 	 * Minimal valid 1×1 PNG used as a stand-in for every tile fetch.
 	 *
@@ -59,7 +60,7 @@ class Test_Venue_Map extends Base {
 		remove_filter( 'pre_http_request', array( $this, 'short_circuit_tile_requests' ), 10 );
 
 		$dirs     = wp_get_upload_dir();
-		$base_dir = trailingslashit( $dirs['basedir'] ) . Venue_Map::UPLOADS_SUBDIR;
+		$base_dir = trailingslashit( $dirs['basedir'] ) . Map::UPLOADS_SUBDIR;
 
 		if ( is_dir( $base_dir ) ) {
 			foreach ( (array) glob( $base_dir . '/*.png' ) as $file ) {
@@ -122,7 +123,7 @@ class Test_Venue_Map extends Base {
 	 * @return void
 	 */
 	public function test_setup_hooks(): void {
-		$instance = Venue_Map::get_instance();
+		$instance = Map::get_instance();
 		$hooks    = array(
 			array(
 				'type'     => 'action',
@@ -162,7 +163,7 @@ class Test_Venue_Map extends Base {
 	 * @return void
 	 */
 	public function test_apply_block_attribute_defaults_overrides_venue_map(): void {
-		$instance = Venue_Map::get_instance();
+		$instance = Map::get_instance();
 		$settings = \GatherPress\Core\Settings::get_instance();
 
 		$settings->set( 'venue_map_default_render_mode', 'static' );
@@ -216,7 +217,7 @@ class Test_Venue_Map extends Base {
 	 * @return void
 	 */
 	public function test_apply_block_attribute_defaults_rejects_invalid_scale(): void {
-		$instance = Venue_Map::get_instance();
+		$instance = Map::get_instance();
 		$settings = \GatherPress\Core\Settings::get_instance();
 
 		$settings->set( 'venue_map_default_scale', 'none' );
@@ -248,7 +249,7 @@ class Test_Venue_Map extends Base {
 	 * @return void
 	 */
 	public function test_apply_block_attribute_defaults_ignores_other_blocks(): void {
-		$instance = Venue_Map::get_instance();
+		$instance = Map::get_instance();
 		$metadata = array(
 			'name'       => 'core/paragraph',
 			'attributes' => array(
@@ -271,7 +272,7 @@ class Test_Venue_Map extends Base {
 	 * @return void
 	 */
 	public function test_apply_block_attribute_defaults_skips_empty_settings(): void {
-		$instance = Venue_Map::get_instance();
+		$instance = Map::get_instance();
 		$settings = \GatherPress\Core\Settings::get_instance();
 
 		$settings->set( 'venue_map_default_render_mode', '' );
@@ -317,7 +318,7 @@ class Test_Venue_Map extends Base {
 	 * @return void
 	 */
 	public function test_maybe_register_delete_hook(): void {
-		$instance = Venue_Map::get_instance();
+		$instance = Map::get_instance();
 
 		foreach ( get_post_types_by_support( 'gatherpress-venue-information' ) as $post_type ) {
 			$instance->maybe_register_delete_hook( $post_type );
@@ -341,7 +342,7 @@ class Test_Venue_Map extends Base {
 	 * @return void
 	 */
 	public function test_maybe_register_delete_hook_skips_unsupported_post_type(): void {
-		$instance = Venue_Map::get_instance();
+		$instance = Map::get_instance();
 
 		$instance->maybe_register_delete_hook( 'post' );
 
@@ -359,18 +360,18 @@ class Test_Venue_Map extends Base {
 	 * @return void
 	 */
 	public function test_hash_for_detects_relevant_input_changes(): void {
-		$instance = Venue_Map::get_instance();
+		$instance = Map::get_instance();
 		$info     = array(
 			'address'   => '1 Infinite Loop',
 			'latitude'  => '37.3318',
 			'longitude' => '-122.0312',
 		);
 
-		$baseline = $instance->hash_for( $info, 15, 800, 400, Venue_Map::DEFAULT_TILE_URL );
+		$baseline = $instance->hash_for( $info, 15, 800, 400, Map::DEFAULT_TILE_URL );
 
 		$this->assertSame(
 			$baseline,
-			$instance->hash_for( $info, 15, 800, 400, Venue_Map::DEFAULT_TILE_URL ),
+			$instance->hash_for( $info, 15, 800, 400, Map::DEFAULT_TILE_URL ),
 			'Hash should be stable when every input is identical.'
 		);
 
@@ -380,25 +381,25 @@ class Test_Venue_Map extends Base {
 
 		$this->assertNotSame(
 			$baseline,
-			$instance->hash_for( $moved_info, 15, 800, 400, Venue_Map::DEFAULT_TILE_URL ),
+			$instance->hash_for( $moved_info, 15, 800, 400, Map::DEFAULT_TILE_URL ),
 			'Hash should change when coordinates change.'
 		);
 
 		$this->assertNotSame(
 			$baseline,
-			$instance->hash_for( $info, 14, 800, 400, Venue_Map::DEFAULT_TILE_URL ),
+			$instance->hash_for( $info, 14, 800, 400, Map::DEFAULT_TILE_URL ),
 			'Hash should change when the zoom level changes.'
 		);
 
 		$this->assertNotSame(
 			$baseline,
-			$instance->hash_for( $info, 15, 600, 400, Venue_Map::DEFAULT_TILE_URL ),
+			$instance->hash_for( $info, 15, 600, 400, Map::DEFAULT_TILE_URL ),
 			'Hash should change when the width changes.'
 		);
 
 		$this->assertNotSame(
 			$baseline,
-			$instance->hash_for( $info, 15, 800, 500, Venue_Map::DEFAULT_TILE_URL ),
+			$instance->hash_for( $info, 15, 800, 500, Map::DEFAULT_TILE_URL ),
 			'Hash should change when the height changes.'
 		);
 
@@ -406,7 +407,7 @@ class Test_Venue_Map extends Base {
 		// filenames dedupe across venues at the same location.
 		$this->assertSame(
 			$baseline,
-			$instance->hash_for( $info, 15, 800, 400, Venue_Map::DEFAULT_TILE_URL ),
+			$instance->hash_for( $info, 15, 800, 400, Map::DEFAULT_TILE_URL ),
 			'Hash is address-scoped, not post-scoped.'
 		);
 	}
@@ -424,7 +425,7 @@ class Test_Venue_Map extends Base {
 	 * @return void
 	 */
 	public function test_maybe_generate_writes_image_and_descriptor(): void {
-		$instance = Venue_Map::get_instance();
+		$instance = Map::get_instance();
 		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
 
 		add_post_meta( $post_id, 'gatherpress_address', '1 Infinite Loop, Cupertino, CA' );
@@ -453,7 +454,7 @@ class Test_Venue_Map extends Base {
 	 * @return void
 	 */
 	public function test_maybe_generate_is_idempotent_when_inputs_unchanged(): void {
-		$instance = Venue_Map::get_instance();
+		$instance = Map::get_instance();
 		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
 
 		add_post_meta( $post_id, 'gatherpress_address', '1 Infinite Loop' );
@@ -485,7 +486,7 @@ class Test_Venue_Map extends Base {
 	 * @return void
 	 */
 	public function test_maybe_generate_regenerates_when_coordinates_change(): void {
-		$instance = Venue_Map::get_instance();
+		$instance = Map::get_instance();
 		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
 
 		update_post_meta( $post_id, 'gatherpress_address', '1 Infinite Loop' );
@@ -527,7 +528,7 @@ class Test_Venue_Map extends Base {
 	 * @return void
 	 */
 	public function test_maybe_generate_purges_when_coordinates_disappear(): void {
-		$instance = Venue_Map::get_instance();
+		$instance = Map::get_instance();
 		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
 
 		update_post_meta( $post_id, 'gatherpress_address', '1 Infinite Loop' );
@@ -565,7 +566,7 @@ class Test_Venue_Map extends Base {
 	 * @return void
 	 */
 	public function test_maybe_generate_bails_without_coordinates(): void {
-		$instance = Venue_Map::get_instance();
+		$instance = Map::get_instance();
 		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
 
 		add_post_meta( $post_id, 'gatherpress_address', 'Somewhere, somewhere' );
@@ -588,7 +589,7 @@ class Test_Venue_Map extends Base {
 	 * @return void
 	 */
 	public function test_maybe_generate_skips_revisions_and_autosaves(): void {
-		$instance = Venue_Map::get_instance();
+		$instance = Map::get_instance();
 		$venue_id = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
 
 		update_post_meta( $venue_id, 'gatherpress_address', '1 Infinite Loop' );
@@ -616,7 +617,7 @@ class Test_Venue_Map extends Base {
 	 * @return void
 	 */
 	public function test_delete_stored_image_clears_meta(): void {
-		$instance = Venue_Map::get_instance();
+		$instance = Map::get_instance();
 		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
 
 		add_post_meta( $post_id, 'gatherpress_address', '1 Infinite Loop' );
@@ -643,7 +644,7 @@ class Test_Venue_Map extends Base {
 	 * @return void
 	 */
 	public function test_get_all_descriptors_empty_when_nothing_stored(): void {
-		$instance = Venue_Map::get_instance();
+		$instance = Map::get_instance();
 		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
 
 		$this->assertSame( array(), $instance->get_all_descriptors( $post_id ) );
@@ -657,12 +658,12 @@ class Test_Venue_Map extends Base {
 	 * @return void
 	 */
 	public function test_get_all_descriptors_filters_malformed_entries(): void {
-		$instance = Venue_Map::get_instance();
+		$instance = Map::get_instance();
 		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
 
 		update_post_meta(
 			$post_id,
-			Venue_Map::META_KEY,
+			Map::META_KEY,
 			array(
 				'15x600x300'    => array(
 					'url'    => 'https://example.test/a.png',
@@ -698,7 +699,7 @@ class Test_Venue_Map extends Base {
 		// Read path must not mutate the meta — writing on every render would
 		// thrash the post-meta cache and churn the DB. Cleanup is deferred
 		// to the next save path.
-		$raw_after_read = get_post_meta( $post_id, Venue_Map::META_KEY, true );
+		$raw_after_read = get_post_meta( $post_id, Map::META_KEY, true );
 		$this->assertCount(
 			4,
 			$raw_after_read,
@@ -717,12 +718,12 @@ class Test_Venue_Map extends Base {
 	 * @return void
 	 */
 	public function test_get_all_descriptors_runs_through_filter(): void {
-		$instance = Venue_Map::get_instance();
+		$instance = Map::get_instance();
 		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
 
 		update_post_meta(
 			$post_id,
-			Venue_Map::META_KEY,
+			Map::META_KEY,
 			array(
 				'15x600x300' => array(
 					'url'    => 'https://example.test/a.png',
@@ -785,7 +786,7 @@ class Test_Venue_Map extends Base {
 	 * @return void
 	 */
 	public function test_ensure_descriptor_for_combo_drops_malformed_entries_on_write(): void {
-		$instance = Venue_Map::get_instance();
+		$instance = Map::get_instance();
 		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
 
 		add_post_meta( $post_id, 'gatherpress_address', '1 Infinite Loop' );
@@ -795,7 +796,7 @@ class Test_Venue_Map extends Base {
 		// Seed meta with a mix of good and malformed entries.
 		update_post_meta(
 			$post_id,
-			Venue_Map::META_KEY,
+			Map::META_KEY,
 			array(
 				'junk-row' => 'not-an-array',
 				'no-hash'  => array(
@@ -808,7 +809,7 @@ class Test_Venue_Map extends Base {
 
 		$instance->maybe_generate( $post_id );
 
-		$stored = get_post_meta( $post_id, Venue_Map::META_KEY, true );
+		$stored = get_post_meta( $post_id, Map::META_KEY, true );
 
 		$this->assertIsArray( $stored );
 		$this->assertArrayNotHasKey( 'junk-row', $stored );
@@ -816,9 +817,9 @@ class Test_Venue_Map extends Base {
 
 		$default_key = sprintf(
 			'%dx%dx%d',
-			Venue_Map::DEFAULT_ZOOM,
-			Venue_Map::DEFAULT_HEIGHT * 2,
-			Venue_Map::DEFAULT_HEIGHT
+			Map::DEFAULT_ZOOM,
+			Map::DEFAULT_HEIGHT * 2,
+			Map::DEFAULT_HEIGHT
 		);
 		$this->assertArrayHasKey( $default_key, $stored );
 	}
@@ -833,7 +834,7 @@ class Test_Venue_Map extends Base {
 	 * @return void
 	 */
 	public function test_get_url_for_post_lazily_generates_new_combo(): void {
-		$instance = Venue_Map::get_instance();
+		$instance = Map::get_instance();
 		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
 
 		add_post_meta( $post_id, 'gatherpress_address', '1 Infinite Loop' );
@@ -843,9 +844,9 @@ class Test_Venue_Map extends Base {
 
 		$default_key = sprintf(
 			'%dx%dx%d',
-			Venue_Map::DEFAULT_ZOOM,
-			Venue_Map::DEFAULT_HEIGHT * 2,
-			Venue_Map::DEFAULT_HEIGHT
+			Map::DEFAULT_ZOOM,
+			Map::DEFAULT_HEIGHT * 2,
+			Map::DEFAULT_HEIGHT
 		);
 
 		$descriptors_before = $instance->get_all_descriptors( $post_id );
@@ -861,15 +862,15 @@ class Test_Venue_Map extends Base {
 		// Auto width at 2:1 ratio against DEFAULT_HEIGHT → DEFAULT_HEIGHT*2.
 		$new_key = sprintf(
 			'14x%dx%d',
-			Venue_Map::DEFAULT_HEIGHT * 2,
-			Venue_Map::DEFAULT_HEIGHT
+			Map::DEFAULT_HEIGHT * 2,
+			Map::DEFAULT_HEIGHT
 		);
 		$url     = $instance->get_url_for_post(
 			$post_id,
 			Venue::POST_TYPE,
 			14,
 			0,
-			Venue_Map::DEFAULT_HEIGHT,
+			Map::DEFAULT_HEIGHT,
 			''
 		);
 
@@ -892,7 +893,7 @@ class Test_Venue_Map extends Base {
 	 * @return void
 	 */
 	public function test_get_url_for_post_lazily_generates_new_height(): void {
-		$instance = Venue_Map::get_instance();
+		$instance = Map::get_instance();
 		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
 
 		add_post_meta( $post_id, 'gatherpress_address', '1 Infinite Loop' );
@@ -903,7 +904,7 @@ class Test_Venue_Map extends Base {
 		$tall_url = $instance->get_url_for_post(
 			$post_id,
 			Venue::POST_TYPE,
-			Venue_Map::DEFAULT_ZOOM,
+			Map::DEFAULT_ZOOM,
 			0,
 			500,
 			''
@@ -912,7 +913,7 @@ class Test_Venue_Map extends Base {
 		$this->assertNotEmpty( $tall_url );
 
 		// Auto width at 2:1 ratio on height=500 → 1000.
-		$key = sprintf( '%dx1000x500', Venue_Map::DEFAULT_ZOOM );
+		$key = sprintf( '%dx1000x500', Map::DEFAULT_ZOOM );
 		$all = $instance->get_all_descriptors( $post_id );
 
 		$this->assertArrayHasKey( $key, $all, 'Tall-height combo should be cached under its own key.' );
@@ -931,7 +932,7 @@ class Test_Venue_Map extends Base {
 	 * @return void
 	 */
 	public function test_maybe_generate_cascades_content_changes_to_all_cached_combos(): void {
-		$instance = Venue_Map::get_instance();
+		$instance = Map::get_instance();
 		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
 
 		update_post_meta( $post_id, 'gatherpress_address', '1 Infinite Loop' );
@@ -944,9 +945,9 @@ class Test_Venue_Map extends Base {
 		// Default combo from DEFAULT_HEIGHT + auto width at 2:1 = 600×300.
 		$default_key = sprintf(
 			'%dx%dx%d',
-			Venue_Map::DEFAULT_ZOOM,
-			Venue_Map::DEFAULT_HEIGHT * 2,
-			Venue_Map::DEFAULT_HEIGHT
+			Map::DEFAULT_ZOOM,
+			Map::DEFAULT_HEIGHT * 2,
+			Map::DEFAULT_HEIGHT
 		);
 		// Second combo: zoom=14, height=500, auto width at 2:1 = 1000×500.
 		$second_key = '14x1000x500';
@@ -1001,7 +1002,7 @@ class Test_Venue_Map extends Base {
 	 * @return void
 	 */
 	public function test_ensure_descriptor_for_combo_returns_null_when_meta_write_dropped(): void {
-		$instance = Venue_Map::get_instance();
+		$instance = Map::get_instance();
 		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
 
 		add_post_meta( $post_id, 'gatherpress_address', '1 Infinite Loop' );
@@ -1009,7 +1010,7 @@ class Test_Venue_Map extends Base {
 		add_post_meta( $post_id, 'gatherpress_longitude', '-122.0312' );
 
 		$suppress = static function ( $check, $object_id, $meta_key ) {
-			if ( Venue_Map::META_KEY === $meta_key ) {
+			if ( Map::META_KEY === $meta_key ) {
 				return true; // Pretend the update happened.
 			}
 			return $check;
@@ -1024,9 +1025,9 @@ class Test_Venue_Map extends Base {
 			array(
 				$post_id,
 				$info,
-				Venue_Map::DEFAULT_ZOOM,
-				Venue_Map::DEFAULT_HEIGHT * 2,
-				Venue_Map::DEFAULT_HEIGHT,
+				Map::DEFAULT_ZOOM,
+				Map::DEFAULT_HEIGHT * 2,
+				Map::DEFAULT_HEIGHT,
 			)
 		);
 
@@ -1049,7 +1050,7 @@ class Test_Venue_Map extends Base {
 	 * @return void
 	 */
 	public function test_ensure_descriptor_for_combo_returns_null_when_save_fails(): void {
-		$instance = Venue_Map::get_instance();
+		$instance = Map::get_instance();
 
 		$force_error = static function ( $dirs ) {
 			$dirs['error'] = 'Simulated uploads failure.';
@@ -1087,7 +1088,7 @@ class Test_Venue_Map extends Base {
 	 * @return void
 	 */
 	public function test_get_url_for_post_is_cached_on_second_call(): void {
-		$instance = Venue_Map::get_instance();
+		$instance = Map::get_instance();
 		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
 
 		add_post_meta( $post_id, 'gatherpress_address', '1 Infinite Loop' );
@@ -1114,7 +1115,7 @@ class Test_Venue_Map extends Base {
 	 * @return void
 	 */
 	public function test_get_url_for_post_resolves_venue_directly(): void {
-		$instance = Venue_Map::get_instance();
+		$instance = Map::get_instance();
 		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
 
 		add_post_meta( $post_id, 'gatherpress_address', '1 Infinite Loop' );
@@ -1138,8 +1139,8 @@ class Test_Venue_Map extends Base {
 	 * @return void
 	 */
 	public function test_get_url_for_post_resolves_event_via_linked_venue(): void {
-		$instance    = Venue_Map::get_instance();
-		$venue_setup = \GatherPress\Core\Venue_Setup::get_instance();
+		$instance    = Map::get_instance();
+		$venue_setup = Setup::get_instance();
 
 		$venue = $this->mock->post(
 			array(
@@ -1180,7 +1181,7 @@ class Test_Venue_Map extends Base {
 	 * @return void
 	 */
 	public function test_get_url_for_post_returns_empty_for_unrelated_post(): void {
-		$instance = Venue_Map::get_instance();
+		$instance = Map::get_instance();
 		$post_id  = $this->factory->post->create( array( 'post_type' => 'post' ) );
 
 		$this->assertSame( '', $instance->get_url_for_post( $post_id, 'post' ) );
@@ -1194,7 +1195,7 @@ class Test_Venue_Map extends Base {
 	 * @return void
 	 */
 	public function test_get_url_for_post_returns_empty_when_no_map_generated(): void {
-		$instance = Venue_Map::get_instance();
+		$instance = Map::get_instance();
 		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
 
 		$this->assertSame( '', $instance->get_url_for_post( $post_id, Venue::POST_TYPE ) );
@@ -1209,7 +1210,7 @@ class Test_Venue_Map extends Base {
 	 * @return void
 	 */
 	public function test_warm_returns_null_for_invalid_post_id(): void {
-		$instance = Venue_Map::get_instance();
+		$instance = Map::get_instance();
 
 		$this->assertNull( $instance->warm( 0, 15, 800, 400, '2/1' ) );
 	}
@@ -1225,7 +1226,7 @@ class Test_Venue_Map extends Base {
 	 * @return void
 	 */
 	public function test_warm_generates_descriptor_on_valid_input(): void {
-		$instance = Venue_Map::get_instance();
+		$instance = Map::get_instance();
 		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
 
 		add_post_meta( $post_id, 'gatherpress_address', '1 Infinite Loop' );
@@ -1252,7 +1253,7 @@ class Test_Venue_Map extends Base {
 	 * @return void
 	 */
 	public function test_warm_reuses_descriptor_on_cache_hit(): void {
-		$instance = Venue_Map::get_instance();
+		$instance = Map::get_instance();
 		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
 
 		add_post_meta( $post_id, 'gatherpress_address', '1 Infinite Loop' );
@@ -1274,7 +1275,7 @@ class Test_Venue_Map extends Base {
 	 * @return void
 	 */
 	public function test_filename_for_handles_edge_cases(): void {
-		$instance = Venue_Map::get_instance();
+		$instance = Map::get_instance();
 
 		// Empty string → fallback slug.
 		$empty = Utility::invoke_hidden_method( $instance, 'filename_for', array( '', 15, 800, 400 ) );
@@ -1302,7 +1303,7 @@ class Test_Venue_Map extends Base {
 	 * @return void
 	 */
 	public function test_warm_returns_null_when_venue_has_no_coordinates(): void {
-		$instance = Venue_Map::get_instance();
+		$instance = Map::get_instance();
 		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
 
 		add_post_meta( $post_id, 'gatherpress_address', '1 Infinite Loop, Cupertino CA' );
@@ -1320,7 +1321,7 @@ class Test_Venue_Map extends Base {
 	 * @return void
 	 */
 	public function test_maybe_generate_skips_unsupported_post_type(): void {
-		$instance = Venue_Map::get_instance();
+		$instance = Map::get_instance();
 		$post_id  = $this->factory->post->create( array( 'post_type' => 'post' ) );
 
 		$instance->maybe_generate( $post_id );
@@ -1339,7 +1340,7 @@ class Test_Venue_Map extends Base {
 	 * @return void
 	 */
 	public function test_fetch_tile_returns_null_on_http_error(): void {
-		$instance = Venue_Map::get_instance();
+		$instance = Map::get_instance();
 
 		// Replace the success stub with a WP_Error short-circuit just for this test.
 		remove_filter( 'pre_http_request', array( $this, 'short_circuit_tile_requests' ), 10 );
@@ -1349,7 +1350,7 @@ class Test_Venue_Map extends Base {
 		add_filter( 'pre_http_request', $fail, 10 );
 
 		$this->assertNull(
-			$instance->fetch_tile( 15, 1, 1, Venue_Map::DEFAULT_TILE_URL )
+			$instance->fetch_tile( 15, 1, 1, Map::DEFAULT_TILE_URL )
 		);
 
 		remove_filter( 'pre_http_request', $fail, 10 );
@@ -1364,7 +1365,7 @@ class Test_Venue_Map extends Base {
 	 * @return void
 	 */
 	public function test_fetch_tile_returns_null_on_non_200_response(): void {
-		$instance = Venue_Map::get_instance();
+		$instance = Map::get_instance();
 
 		remove_filter( 'pre_http_request', array( $this, 'short_circuit_tile_requests' ), 10 );
 		$not_found = static function () {
@@ -1382,7 +1383,7 @@ class Test_Venue_Map extends Base {
 		add_filter( 'pre_http_request', $not_found, 10 );
 
 		$this->assertNull(
-			$instance->fetch_tile( 15, 1, 1, Venue_Map::DEFAULT_TILE_URL )
+			$instance->fetch_tile( 15, 1, 1, Map::DEFAULT_TILE_URL )
 		);
 
 		remove_filter( 'pre_http_request', $not_found, 10 );
@@ -1397,11 +1398,11 @@ class Test_Venue_Map extends Base {
 	 * @return void
 	 */
 	public function test_fetch_tile_returns_png_bytes(): void {
-		$instance = Venue_Map::get_instance();
+		$instance = Map::get_instance();
 
 		$this->assertSame(
 			$this->tile_png,
-			$instance->fetch_tile( 15, 1, 1, Venue_Map::DEFAULT_TILE_URL )
+			$instance->fetch_tile( 15, 1, 1, Map::DEFAULT_TILE_URL )
 		);
 	}
 
@@ -1413,7 +1414,7 @@ class Test_Venue_Map extends Base {
 	 * @return void
 	 */
 	public function test_composite_image_returns_gd_image(): void {
-		$instance = Venue_Map::get_instance();
+		$instance = Map::get_instance();
 
 		$image = $instance->composite_image(
 			37.3318,
@@ -1421,7 +1422,7 @@ class Test_Venue_Map extends Base {
 			15,
 			512,
 			256,
-			Venue_Map::DEFAULT_TILE_URL
+			Map::DEFAULT_TILE_URL
 		);
 
 		$this->assertInstanceOf( \GdImage::class, $image );
@@ -1439,7 +1440,7 @@ class Test_Venue_Map extends Base {
 	 * @return void
 	 */
 	public function test_stamp_marker_draws_on_canvas(): void {
-		$instance = Venue_Map::get_instance();
+		$instance = Map::get_instance();
 		$canvas   = imagecreatetruecolor( 40, 40 );
 		$instance->stamp_marker( $canvas, 20, 20 );
 
@@ -1462,14 +1463,14 @@ class Test_Venue_Map extends Base {
 	 * @return void
 	 */
 	public function test_save_image_writes_file_and_returns_url(): void {
-		$instance = Venue_Map::get_instance();
+		$instance = Map::get_instance();
 		$canvas   = imagecreatetruecolor( 10, 10 );
 
 		$url = $instance->save_image( $canvas, '1 Infinite Loop', 15, 800, 400 );
 		imagedestroy( $canvas );
 
 		$this->assertNotNull( $url, 'save_image should return a URL on success.' );
-		$this->assertStringContainsString( Venue_Map::UPLOADS_SUBDIR, $url );
+		$this->assertStringContainsString( Map::UPLOADS_SUBDIR, $url );
 		$this->assertStringEndsWith( '1-infinite-loop-15-800-400.png', $url );
 
 		$path = $this->path_for_url( $url );
@@ -1484,7 +1485,7 @@ class Test_Venue_Map extends Base {
 	 * @return void
 	 */
 	public function test_parse_coord(): void {
-		$instance = Venue_Map::get_instance();
+		$instance = Map::get_instance();
 
 		$this->assertSame(
 			37.3318,
@@ -1507,7 +1508,7 @@ class Test_Venue_Map extends Base {
 	 * @return void
 	 */
 	public function test_get_zoom(): void {
-		$instance = Venue_Map::get_instance();
+		$instance = Map::get_instance();
 		$settings = \GatherPress\Core\Settings::get_instance();
 
 		$settings->set( 'venue_map_default_zoom', 13 );
@@ -1519,7 +1520,7 @@ class Test_Venue_Map extends Base {
 
 		$settings->set( 'venue_map_default_zoom', 0 );
 		$this->assertSame(
-			Venue_Map::DEFAULT_ZOOM,
+			Map::DEFAULT_ZOOM,
 			Utility::invoke_hidden_method( $instance, 'get_zoom' ),
 			'Should fall back to DEFAULT_ZOOM when the setting is unset/zero.'
 		);
@@ -1538,7 +1539,7 @@ class Test_Venue_Map extends Base {
 	 * @return void
 	 */
 	public function test_get_zoom_clamps_out_of_range_values(): void {
-		$instance = Venue_Map::get_instance();
+		$instance = Map::get_instance();
 		$settings = \GatherPress\Core\Settings::get_instance();
 
 		$settings->set( 'venue_map_default_zoom', 0 );
@@ -1547,7 +1548,7 @@ class Test_Venue_Map extends Base {
 		};
 		add_filter( 'gatherpress_venue_map_zoom', $too_high );
 		$this->assertSame(
-			Venue_Map::ZOOM_MAX,
+			Map::ZOOM_MAX,
 			Utility::invoke_hidden_method( $instance, 'get_zoom' ),
 			'Zoom beyond ZOOM_MAX must clamp down.'
 		);
@@ -1558,7 +1559,7 @@ class Test_Venue_Map extends Base {
 		};
 		add_filter( 'gatherpress_venue_map_zoom', $too_low );
 		$this->assertSame(
-			Venue_Map::ZOOM_MIN,
+			Map::ZOOM_MIN,
 			Utility::invoke_hidden_method( $instance, 'get_zoom' ),
 			'Zoom below ZOOM_MIN must clamp up.'
 		);
@@ -1574,7 +1575,7 @@ class Test_Venue_Map extends Base {
 	 * @return void
 	 */
 	public function test_get_height_clamps_out_of_range_values(): void {
-		$instance = Venue_Map::get_instance();
+		$instance = Map::get_instance();
 		$settings = \GatherPress\Core\Settings::get_instance();
 
 		$settings->set( 'venue_map_default_height', 0 );
@@ -1583,7 +1584,7 @@ class Test_Venue_Map extends Base {
 		};
 		add_filter( 'gatherpress_venue_map_height', $too_big );
 		$this->assertSame(
-			Venue_Map::HEIGHT_MAX,
+			Map::HEIGHT_MAX,
 			Utility::invoke_hidden_method( $instance, 'get_height' ),
 			'Height beyond HEIGHT_MAX must clamp down.'
 		);
@@ -1599,7 +1600,7 @@ class Test_Venue_Map extends Base {
 	 * @return void
 	 */
 	public function test_get_height(): void {
-		$instance = Venue_Map::get_instance();
+		$instance = Map::get_instance();
 		$settings = \GatherPress\Core\Settings::get_instance();
 
 		$settings->set( 'venue_map_default_height', 450 );
@@ -1611,7 +1612,7 @@ class Test_Venue_Map extends Base {
 
 		$settings->set( 'venue_map_default_height', 0 );
 		$this->assertSame(
-			Venue_Map::DEFAULT_HEIGHT,
+			Map::DEFAULT_HEIGHT,
 			Utility::invoke_hidden_method( $instance, 'get_height' ),
 			'Should fall back to DEFAULT_HEIGHT when the setting is unset/zero.'
 		);
@@ -1625,10 +1626,10 @@ class Test_Venue_Map extends Base {
 	 * @return void
 	 */
 	public function test_get_tile_url_template(): void {
-		$instance = Venue_Map::get_instance();
+		$instance = Map::get_instance();
 
 		$this->assertSame(
-			Venue_Map::DEFAULT_TILE_URL,
+			Map::DEFAULT_TILE_URL,
 			Utility::invoke_hidden_method( $instance, 'get_tile_url_template' )
 		);
 	}
@@ -1641,7 +1642,7 @@ class Test_Venue_Map extends Base {
 	 * @return void
 	 */
 	public function test_combo_key_formats_zoom_width_and_height(): void {
-		$instance = Venue_Map::get_instance();
+		$instance = Map::get_instance();
 
 		$this->assertSame(
 			'14x800x500',
@@ -1662,7 +1663,7 @@ class Test_Venue_Map extends Base {
 	 * @return void
 	 */
 	public function test_get_cached_combos(): void {
-		$instance = Venue_Map::get_instance();
+		$instance = Map::get_instance();
 		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
 
 		$this->assertSame(
@@ -1673,7 +1674,7 @@ class Test_Venue_Map extends Base {
 
 		update_post_meta(
 			$post_id,
-			Venue_Map::META_KEY,
+			Map::META_KEY,
 			array(
 				'15x600x300'  => array(
 					'url'    => 'https://example.test/a.png',
@@ -1724,7 +1725,7 @@ class Test_Venue_Map extends Base {
 	 * @return void
 	 */
 	public function test_composite_image_aborts_when_time_budget_exhausted(): void {
-		$instance = Venue_Map::get_instance();
+		$instance = Map::get_instance();
 
 		$fetches = 0;
 		$counter = static function () use ( &$fetches ) {
@@ -1756,7 +1757,7 @@ class Test_Venue_Map extends Base {
 			15,
 			512,
 			256,
-			Venue_Map::DEFAULT_TILE_URL
+			Map::DEFAULT_TILE_URL
 		);
 
 		remove_filter( 'gatherpress_venue_map_composite_time_budget', $budget );
@@ -1789,7 +1790,7 @@ class Test_Venue_Map extends Base {
 	 * @return void
 	 */
 	public function test_composite_image_continues_past_failed_fetch(): void {
-		$instance = Venue_Map::get_instance();
+		$instance = Map::get_instance();
 
 		remove_filter( 'pre_http_request', array( $this, 'short_circuit_tile_requests' ), 10 );
 		$fail = static function () {
@@ -1803,7 +1804,7 @@ class Test_Venue_Map extends Base {
 			15,
 			512,
 			256,
-			Venue_Map::DEFAULT_TILE_URL
+			Map::DEFAULT_TILE_URL
 		);
 
 		remove_filter( 'pre_http_request', $fail, 10 );
@@ -1826,7 +1827,7 @@ class Test_Venue_Map extends Base {
 	 * @return void
 	 */
 	public function test_composite_image_continues_past_invalid_png(): void {
-		$instance = Venue_Map::get_instance();
+		$instance = Map::get_instance();
 
 		remove_filter( 'pre_http_request', array( $this, 'short_circuit_tile_requests' ), 10 );
 		$garbage = static function () {
@@ -1849,7 +1850,7 @@ class Test_Venue_Map extends Base {
 			15,
 			512,
 			256,
-			Venue_Map::DEFAULT_TILE_URL
+			Map::DEFAULT_TILE_URL
 		);
 
 		remove_filter( 'pre_http_request', $garbage, 10 );
@@ -1868,7 +1869,7 @@ class Test_Venue_Map extends Base {
 	 * @return void
 	 */
 	public function test_save_image_returns_null_when_uploads_report_error(): void {
-		$instance = Venue_Map::get_instance();
+		$instance = Map::get_instance();
 		$canvas   = imagecreatetruecolor( 10, 10 );
 
 		$force_error = static function ( $dirs ) {
@@ -1896,7 +1897,7 @@ class Test_Venue_Map extends Base {
 	 * @return void
 	 */
 	public function test_maybe_generate_bails_when_save_fails(): void {
-		$instance = Venue_Map::get_instance();
+		$instance = Map::get_instance();
 		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
 
 		add_post_meta( $post_id, 'gatherpress_address', '1 Infinite Loop' );
@@ -1931,7 +1932,7 @@ class Test_Venue_Map extends Base {
 	 * @return void
 	 */
 	public function test_world_pixel_conversions(): void {
-		$instance = Venue_Map::get_instance();
+		$instance = Map::get_instance();
 
 		$this->assertSame(
 			128.0,
@@ -1953,7 +1954,7 @@ class Test_Venue_Map extends Base {
 	 * @return void
 	 */
 	public function test_parse_aspect_ratio(): void {
-		$instance = Venue_Map::get_instance();
+		$instance = Map::get_instance();
 
 		$this->assertEqualsWithDelta(
 			2.0,
@@ -1994,14 +1995,14 @@ class Test_Venue_Map extends Base {
 	 * @return void
 	 */
 	public function test_clamp_width(): void {
-		$instance = Venue_Map::get_instance();
+		$instance = Map::get_instance();
 
 		$this->assertSame(
-			Venue_Map::WIDTH_MIN,
+			Map::WIDTH_MIN,
 			Utility::invoke_hidden_method( $instance, 'clamp_width', array( 0 ) )
 		);
 		$this->assertSame(
-			Venue_Map::WIDTH_MAX,
+			Map::WIDTH_MAX,
 			Utility::invoke_hidden_method( $instance, 'clamp_width', array( 99999 ) )
 		);
 		$this->assertSame(
@@ -2020,7 +2021,7 @@ class Test_Venue_Map extends Base {
 	 * @return void
 	 */
 	public function test_resolve_dimensions(): void {
-		$instance = Venue_Map::get_instance();
+		$instance = Map::get_instance();
 
 		$both = Utility::invoke_hidden_method(
 			$instance,
@@ -2051,8 +2052,8 @@ class Test_Venue_Map extends Base {
 			'resolve_dimensions',
 			array( 0, 0, '2/1' )
 		);
-		$this->assertSame( Venue_Map::DEFAULT_HEIGHT * 2, $both_auto['width'] );
-		$this->assertSame( Venue_Map::DEFAULT_HEIGHT, $both_auto['height'] );
+		$this->assertSame( Map::DEFAULT_HEIGHT * 2, $both_auto['width'] );
+		$this->assertSame( Map::DEFAULT_HEIGHT, $both_auto['height'] );
 
 		// Unparsable ratio string still resolves cleanly — falls back to
 		// the default ratio rather than stranding the generator.
@@ -2070,8 +2071,8 @@ class Test_Venue_Map extends Base {
 			'resolve_dimensions',
 			array( 99999, 99999, '2/1' )
 		);
-		$this->assertSame( Venue_Map::WIDTH_MAX, $too_big['width'] );
-		$this->assertSame( Venue_Map::HEIGHT_MAX, $too_big['height'] );
+		$this->assertSame( Map::WIDTH_MAX, $too_big['width'] );
+		$this->assertSame( Map::HEIGHT_MAX, $too_big['height'] );
 	}
 
 	/**
@@ -2084,7 +2085,7 @@ class Test_Venue_Map extends Base {
 	 * @return void
 	 */
 	public function test_regenerate_rebuilds_cached_combos(): void {
-		$instance = Venue_Map::get_instance();
+		$instance = Map::get_instance();
 		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
 
 		add_post_meta( $post_id, 'gatherpress_address', '1 Infinite Loop' );
@@ -2142,7 +2143,7 @@ class Test_Venue_Map extends Base {
 	 * @return void
 	 */
 	public function test_regenerate_includes_caller_supplied_combo(): void {
-		$instance = Venue_Map::get_instance();
+		$instance = Map::get_instance();
 		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
 
 		add_post_meta( $post_id, 'gatherpress_address', '1 Infinite Loop' );
@@ -2174,7 +2175,7 @@ class Test_Venue_Map extends Base {
 	 * @return void
 	 */
 	public function test_regenerate_dedupes_caller_combo_against_cache(): void {
-		$instance = Venue_Map::get_instance();
+		$instance = Map::get_instance();
 		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
 
 		add_post_meta( $post_id, 'gatherpress_address', '1 Infinite Loop' );
@@ -2184,9 +2185,9 @@ class Test_Venue_Map extends Base {
 
 		$result = $instance->regenerate(
 			$post_id,
-			Venue_Map::DEFAULT_ZOOM,
-			Venue_Map::DEFAULT_HEIGHT * 2,
-			Venue_Map::DEFAULT_HEIGHT,
+			Map::DEFAULT_ZOOM,
+			Map::DEFAULT_HEIGHT * 2,
+			Map::DEFAULT_HEIGHT,
 			''
 		);
 
@@ -2207,7 +2208,7 @@ class Test_Venue_Map extends Base {
 	 * @return void
 	 */
 	public function test_regenerate_seeds_default_combo_when_nothing_cached(): void {
-		$instance = Venue_Map::get_instance();
+		$instance = Map::get_instance();
 		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
 
 		add_post_meta( $post_id, 'gatherpress_address', '1 Infinite Loop' );
@@ -2220,9 +2221,9 @@ class Test_Venue_Map extends Base {
 
 		$default_key = sprintf(
 			'%dx%dx%d',
-			Venue_Map::DEFAULT_ZOOM,
-			Venue_Map::DEFAULT_HEIGHT * 2,
-			Venue_Map::DEFAULT_HEIGHT
+			Map::DEFAULT_ZOOM,
+			Map::DEFAULT_HEIGHT * 2,
+			Map::DEFAULT_HEIGHT
 		);
 		$this->assertArrayHasKey( $default_key, $result );
 	}
@@ -2237,7 +2238,7 @@ class Test_Venue_Map extends Base {
 	 * @return void
 	 */
 	public function test_regenerate_returns_empty_when_no_coordinates(): void {
-		$instance = Venue_Map::get_instance();
+		$instance = Map::get_instance();
 		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
 
 		add_post_meta( $post_id, 'gatherpress_address', 'Somewhere, somewhere' );
@@ -2256,7 +2257,7 @@ class Test_Venue_Map extends Base {
 	 * @return void
 	 */
 	public function test_rest_regenerate_requires_edit_post(): void {
-		$instance = Venue_Map::get_instance();
+		$instance = Map::get_instance();
 		$instance->register_rest_routes();
 
 		$post_id = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
@@ -2283,7 +2284,7 @@ class Test_Venue_Map extends Base {
 	 * @return void
 	 */
 	public function test_rest_regenerate_returns_fresh_descriptors(): void {
-		$instance = Venue_Map::get_instance();
+		$instance = Map::get_instance();
 		$instance->register_rest_routes();
 
 		$editor_id = $this->factory->user->create( array( 'role' => 'editor' ) );
@@ -2309,9 +2310,9 @@ class Test_Venue_Map extends Base {
 
 		$default_key = sprintf(
 			'%dx%dx%d',
-			Venue_Map::DEFAULT_ZOOM,
-			Venue_Map::DEFAULT_HEIGHT * 2,
-			Venue_Map::DEFAULT_HEIGHT
+			Map::DEFAULT_ZOOM,
+			Map::DEFAULT_HEIGHT * 2,
+			Map::DEFAULT_HEIGHT
 		);
 		$this->assertArrayHasKey( $default_key, (array) $data['descriptors'] );
 	}
@@ -2326,7 +2327,7 @@ class Test_Venue_Map extends Base {
 	 * @return void
 	 */
 	public function test_rest_regenerate_reports_no_address_reason(): void {
-		$instance = Venue_Map::get_instance();
+		$instance = Map::get_instance();
 		$instance->register_rest_routes();
 
 		$editor_id = $this->factory->user->create( array( 'role' => 'editor' ) );
@@ -2365,7 +2366,7 @@ class Test_Venue_Map extends Base {
 	 * @return void
 	 */
 	public function test_rest_regenerate_reports_generation_failed_when_saves_fail(): void {
-		$instance = Venue_Map::get_instance();
+		$instance = Map::get_instance();
 		$instance->register_rest_routes();
 
 		$editor_id = $this->factory->user->create( array( 'role' => 'editor' ) );
@@ -2414,7 +2415,7 @@ class Test_Venue_Map extends Base {
 	 * @return void
 	 */
 	public function test_rest_regenerate_aspect_ratio_validator(): void {
-		$instance = Venue_Map::get_instance();
+		$instance = Map::get_instance();
 		$instance->register_rest_routes();
 
 		$editor_id = $this->factory->user->create( array( 'role' => 'editor' ) );
@@ -2505,7 +2506,7 @@ class Test_Venue_Map extends Base {
 	 * @return void
 	 */
 	public function test_rest_regenerate_reports_awaiting_geocode_reason(): void {
-		$instance = Venue_Map::get_instance();
+		$instance = Map::get_instance();
 		$instance->register_rest_routes();
 
 		$editor_id = $this->factory->user->create( array( 'role' => 'editor' ) );
@@ -2538,7 +2539,7 @@ class Test_Venue_Map extends Base {
 	 * @return void
 	 */
 	public function test_filename_for_appends_density_suffix_for_retina(): void {
-		$instance = Venue_Map::get_instance();
+		$instance = Map::get_instance();
 
 		$one_x = Utility::invoke_hidden_method(
 			$instance,
@@ -2565,7 +2566,7 @@ class Test_Venue_Map extends Base {
 	 * @return void
 	 */
 	public function test_composite_image_density_two_doubles_canvas(): void {
-		$instance = Venue_Map::get_instance();
+		$instance = Map::get_instance();
 
 		// `short_circuit_tile_requests` (installed in setUp) stubs every
 		// outbound tile request with the shared 1×1 PNG, so this call
@@ -2577,7 +2578,7 @@ class Test_Venue_Map extends Base {
 			15,
 			400,
 			200,
-			Venue_Map::DEFAULT_TILE_URL,
+			Map::DEFAULT_TILE_URL,
 			2
 		);
 
@@ -2598,7 +2599,7 @@ class Test_Venue_Map extends Base {
 	 * @return void
 	 */
 	public function test_composite_image_density_two_fetches_zoom_plus_one_tiles(): void {
-		$instance = Venue_Map::get_instance();
+		$instance = Map::get_instance();
 
 		$zooms_seen = array();
 		$spy        = function ( $preempt, $args, $url ) use ( &$zooms_seen ) {
@@ -2632,7 +2633,7 @@ class Test_Venue_Map extends Base {
 			15,
 			400,
 			200,
-			Venue_Map::DEFAULT_TILE_URL,
+			Map::DEFAULT_TILE_URL,
 			2
 		);
 
@@ -2660,7 +2661,7 @@ class Test_Venue_Map extends Base {
 	 * @return void
 	 */
 	public function test_stamp_marker_scales_radii(): void {
-		$instance = Venue_Map::get_instance();
+		$instance = Map::get_instance();
 		$canvas   = imagecreatetruecolor( 80, 80 );
 
 		// Seed the canvas with a distinctive background so we can tell a
@@ -2696,7 +2697,7 @@ class Test_Venue_Map extends Base {
 	 * @return void
 	 */
 	public function test_ensure_descriptor_for_combo_emits_retina_variant(): void {
-		$instance = Venue_Map::get_instance();
+		$instance = Map::get_instance();
 		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
 
 		add_post_meta( $post_id, 'gatherpress_address', '1 Infinite Loop' );
@@ -2731,7 +2732,7 @@ class Test_Venue_Map extends Base {
 	 * @return void
 	 */
 	public function test_ensure_descriptor_for_combo_skips_retina_when_filter_disables(): void {
-		$instance = Venue_Map::get_instance();
+		$instance = Map::get_instance();
 		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
 
 		add_post_meta( $post_id, 'gatherpress_address', '1 Infinite Loop' );
@@ -2752,7 +2753,7 @@ class Test_Venue_Map extends Base {
 
 		// No sibling @2x.png was ever written.
 		$dirs     = wp_get_upload_dir();
-		$base_dir = trailingslashit( $dirs['basedir'] ) . Venue_Map::UPLOADS_SUBDIR;
+		$base_dir = trailingslashit( $dirs['basedir'] ) . Map::UPLOADS_SUBDIR;
 		$retina   = glob( $base_dir . '/*@2x.png' );
 
 		$this->assertEmpty( $retina, 'Disabling the filter must not leave any @2x files on disk.' );
@@ -2769,12 +2770,12 @@ class Test_Venue_Map extends Base {
 	 * @return void
 	 */
 	public function test_get_all_descriptors_normalizes_missing_url_2x(): void {
-		$instance = Venue_Map::get_instance();
+		$instance = Map::get_instance();
 		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
 
 		update_post_meta(
 			$post_id,
-			Venue_Map::META_KEY,
+			Map::META_KEY,
 			array(
 				'15x600x300' => array(
 					'url'    => 'https://example.test/legacy.png',
@@ -2811,7 +2812,7 @@ class Test_Venue_Map extends Base {
 	 * @return void
 	 */
 	public function test_get_descriptor_for_post_returns_full_descriptor(): void {
-		$instance = Venue_Map::get_instance();
+		$instance = Map::get_instance();
 		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
 
 		add_post_meta( $post_id, 'gatherpress_address', '1 Infinite Loop' );
@@ -2846,7 +2847,7 @@ class Test_Venue_Map extends Base {
 	 * @return void
 	 */
 	public function test_get_descriptor_for_post_returns_null_for_unrelated_post(): void {
-		$instance = Venue_Map::get_instance();
+		$instance = Map::get_instance();
 		$post_id  = $this->factory->post->create( array( 'post_type' => 'post' ) );
 
 		$this->assertNull( $instance->get_descriptor_for_post( $post_id, 'post' ) );
@@ -2863,8 +2864,8 @@ class Test_Venue_Map extends Base {
 	 * @return void
 	 */
 	public function test_get_descriptor_for_post_resolves_event_via_linked_venue(): void {
-		$instance    = Venue_Map::get_instance();
-		$venue_setup = \GatherPress\Core\Venue_Setup::get_instance();
+		$instance    = Map::get_instance();
+		$venue_setup = Setup::get_instance();
 
 		$venue = $this->mock->post(
 			array(
@@ -2918,7 +2919,7 @@ class Test_Venue_Map extends Base {
 	 * @return void
 	 */
 	public function test_ensure_descriptor_for_combo_skips_retina_at_zoom_ceiling(): void {
-		$instance = Venue_Map::get_instance();
+		$instance = Map::get_instance();
 		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
 
 		add_post_meta( $post_id, 'gatherpress_address', '1 Infinite Loop' );
@@ -2928,7 +2929,7 @@ class Test_Venue_Map extends Base {
 		$descriptor = $instance->get_descriptor_for_post(
 			$post_id,
 			Venue::POST_TYPE,
-			Venue_Map::ZOOM_MAX,
+			Map::ZOOM_MAX,
 			800,
 			400,
 			'2/1'
@@ -2964,7 +2965,7 @@ class Test_Venue_Map extends Base {
 	 * @return void
 	 */
 	public function test_composite_image_clamps_tile_zoom_to_ceiling(): void {
-		$instance = Venue_Map::get_instance();
+		$instance = Map::get_instance();
 
 		$zooms_seen = array();
 		$spy        = function ( $preempt, $args, $url ) use ( &$zooms_seen ) {
@@ -2992,11 +2993,11 @@ class Test_Venue_Map extends Base {
 		$image = $instance->composite_image(
 			37.3318,
 			-122.0312,
-			Venue_Map::ZOOM_MAX,
+			Map::ZOOM_MAX,
 			400,
 			200,
-			Venue_Map::DEFAULT_TILE_URL,
-			Venue_Map::RETINA_DENSITY
+			Map::DEFAULT_TILE_URL,
+			Map::RETINA_DENSITY
 		);
 
 		remove_filter( 'pre_http_request', $spy, 10 );
@@ -3006,7 +3007,7 @@ class Test_Venue_Map extends Base {
 
 		$this->assertNotEmpty( $zooms_seen, 'Retina composite at the ceiling must still attempt tile fetches.' );
 		$this->assertSame(
-			array( Venue_Map::ZOOM_MAX ),
+			array( Map::ZOOM_MAX ),
 			array_values( array_unique( $zooms_seen ) ),
 			'Tile fetches must clamp to ZOOM_MAX instead of overshooting to zoom+1 above the provider ceiling.'
 		);
@@ -3023,7 +3024,7 @@ class Test_Venue_Map extends Base {
 	 * @return void
 	 */
 	public function test_composite_image_coerces_unsupported_density_back_to_one(): void {
-		$instance = Venue_Map::get_instance();
+		$instance = Map::get_instance();
 
 		$image = $instance->composite_image(
 			37.3318,
@@ -3031,7 +3032,7 @@ class Test_Venue_Map extends Base {
 			15,
 			400,
 			200,
-			Venue_Map::DEFAULT_TILE_URL,
+			Map::DEFAULT_TILE_URL,
 			3
 		);
 
@@ -3062,7 +3063,7 @@ class Test_Venue_Map extends Base {
 	 * @return void
 	 */
 	public function test_ensure_descriptor_for_combo_reuses_valid_1x_when_filling_in_retina(): void {
-		$instance = Venue_Map::get_instance();
+		$instance = Map::get_instance();
 		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
 
 		add_post_meta( $post_id, 'gatherpress_address', '1 Infinite Loop' );
@@ -3109,7 +3110,7 @@ class Test_Venue_Map extends Base {
 	 * @return void
 	 */
 	public function test_get_descriptor_for_post_returns_null_when_venue_has_no_coordinates(): void {
-		$instance = Venue_Map::get_instance();
+		$instance = Map::get_instance();
 		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
 
 		add_post_meta( $post_id, 'gatherpress_address', 'Somewhere' );

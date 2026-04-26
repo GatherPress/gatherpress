@@ -53,7 +53,7 @@ const HEIGHT_MAX = 4000;
 const DEFAULT_HEIGHT = 300;
 
 // Presets for the aspect-ratio dropdown. The first entry matches the
-// server-side `Venue_Map::DEFAULT_ASPECT_RATIO` (2/1) so freshly inserted
+// server-side `Venue\Map::DEFAULT_ASPECT_RATIO` (2/1) so freshly inserted
 // blocks keep the behavior that shipped in the first round of static maps.
 const ASPECT_RATIO_PRESETS = [
 	{ label: __( 'Landscape - 2:1', 'gatherpress' ), value: '2/1' },
@@ -65,7 +65,7 @@ const ASPECT_RATIO_PRESETS = [
 ];
 
 // Allow-list for the `scale` block attribute — mirrors
-// `Venue_Map::SCALE_OPTIONS` so JS and PHP can't drift. The Scale
+// `Venue\Map::SCALE_OPTIONS` so JS and PHP can't drift. The Scale
 // SelectControl options are derived from this list; the guard that
 // hides the control when render mode is interactive reads from it too.
 const SCALE_OPTIONS = [ 'cover', 'contain', 'fill' ];

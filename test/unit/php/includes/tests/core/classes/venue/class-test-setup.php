@@ -1,26 +1,70 @@
 <?php
 /**
- * Class handles unit tests for GatherPress\Core\Venue_Setup.
+ * Class handles unit tests for GatherPress\Core\Venue\Setup.
  *
- * @package GatherPress\Core
+ * @package GatherPress\Core\Venue
  * @since 1.0.0
  */
 
-namespace GatherPress\Tests\Core;
+namespace GatherPress\Tests\Core\Venue;
 
 use GatherPress\Core\Event;
-use GatherPress\Core\Venue;
-use GatherPress\Core\Venue_Setup;
+use GatherPress\Core\Venue\Map;
+use GatherPress\Core\Venue\Map_Prewarm;
+use GatherPress\Core\Venue\Setup;
+use GatherPress\Core\Venue\Venue;
 use GatherPress\Tests\Base;
+use PMC\Unit_Test\Utility;
 use WP_Block_Patterns_Registry;
 
 /**
- * Class Test_Venue_Setup.
+ * Class Test_Setup.
  *
  * @group multisite
- * @coversDefaultClass \GatherPress\Core\Venue_Setup
+ * @coversDefaultClass \GatherPress\Core\Venue\Setup
  */
-class Test_Venue_Setup extends Base {
+class Test_Setup extends Base {
+	/**
+	 * Venue\Setup now owns the instantiation of the Venue\* sibling
+	 * singletons (Map, Map_Prewarm) so the outer
+	 * `Setup::instantiate_classes()` can hand off with a single
+	 * `Venue\Setup::get_instance()` call. Per-sibling proof-of-construction
+	 * via their `setup_hooks()`-registered hooks — catches the case where
+	 * a sibling silently drops out of `Venue\Setup::instantiate_classes()`.
+	 *
+	 * @covers ::__construct
+	 * @covers ::instantiate_classes
+	 *
+	 * @return void
+	 */
+	public function test_instantiate_classes_registers_siblings(): void {
+		// Force the method to run inside the test's coverage window —
+		// Setup is a singleton cached during plugin bootstrap, so
+		// `get_instance()` here returns the cached instance and doesn't
+		// re-fire the constructor.
+		Utility::invoke_hidden_method( Setup::get_instance(), 'instantiate_classes' );
+
+		$expected_hooks = array(
+			Map::class         => array(
+				'rest_api_init',
+				array( Map::get_instance(), 'register_rest_routes' ),
+			),
+			Map_Prewarm::class => array(
+				'switch_theme',
+				array( Map_Prewarm::get_instance(), 'on_theme_switched' ),
+			),
+		);
+
+		foreach ( $expected_hooks as $class_name => $expected ) {
+			list( $hook, $callback ) = $expected;
+			$this->assertSame(
+				10,
+				has_action( $hook, $callback ),
+				sprintf( '%s must be instantiated so its %s hook registers.', $class_name, $hook )
+			);
+		}
+	}
+
 	/**
 	 * Coverage for __construct and setup_hooks.
 	 *
@@ -30,7 +74,7 @@ class Test_Venue_Setup extends Base {
 	 * @return void
 	 */
 	public function test_setup_hooks(): void {
-		$instance = Venue_Setup::get_instance();
+		$instance = Setup::get_instance();
 		$hooks    = array(
 			array(
 				'type'     => 'action',
@@ -90,7 +134,7 @@ class Test_Venue_Setup extends Base {
 	 * @return void
 	 */
 	public function test_maybe_register_post_type_hooks(): void {
-		$instance = Venue_Setup::get_instance();
+		$instance = Setup::get_instance();
 
 		foreach ( get_post_types_by_support( 'gatherpress-venue-information' ) as $post_type ) {
 			$instance->maybe_register_post_type_hooks( $post_type );
@@ -121,7 +165,7 @@ class Test_Venue_Setup extends Base {
 	 * @return void
 	 */
 	public function test_maybe_register_post_type_hooks_skips_unsupported_post_type(): void {
-		$instance = Venue_Setup::get_instance();
+		$instance = Setup::get_instance();
 
 		$instance->maybe_register_post_type_hooks( 'post' );
 
@@ -143,7 +187,7 @@ class Test_Venue_Setup extends Base {
 	 * @return void
 	 */
 	public function test_register_post_type(): void {
-		$instance = Venue_Setup::get_instance();
+		$instance = Setup::get_instance();
 
 		unregister_post_type( Venue::POST_TYPE );
 
@@ -163,7 +207,7 @@ class Test_Venue_Setup extends Base {
 	 * @return void
 	 */
 	public function test_maybe_register_post_meta(): void {
-		$instance = Venue_Setup::get_instance();
+		$instance = Setup::get_instance();
 
 		$venue_information_keys = array(
 			'gatherpress_address',
@@ -228,7 +272,7 @@ class Test_Venue_Setup extends Base {
 	 * @return void
 	 */
 	public function test_maybe_register_post_meta_without_revisions_support(): void {
-		$instance = Venue_Setup::get_instance();
+		$instance = Setup::get_instance();
 		$test_pt  = 'test_venue_no_rev';
 
 		register_post_type(
@@ -275,7 +319,7 @@ class Test_Venue_Setup extends Base {
 	 * @return void
 	 */
 	public function test_filter_readonly_meta(): void {
-		$instance = Venue_Setup::get_instance();
+		$instance = Setup::get_instance();
 		$request  = new \WP_REST_Request();
 
 		$request->set_param(
@@ -328,7 +372,7 @@ class Test_Venue_Setup extends Base {
 	 * @return void
 	 */
 	public function test_filter_readonly_meta_no_meta_param(): void {
-		$instance = Venue_Setup::get_instance();
+		$instance = Setup::get_instance();
 		$request  = new \WP_REST_Request();
 		$prepared = new \stdClass();
 
@@ -349,7 +393,7 @@ class Test_Venue_Setup extends Base {
 	 * @return void
 	 */
 	public function test_sanitize_coordinate(): void {
-		$instance = Venue_Setup::get_instance();
+		$instance = Setup::get_instance();
 
 		$this->assertSame(
 			'40.7128',
@@ -386,7 +430,7 @@ class Test_Venue_Setup extends Base {
 	 * @return void
 	 */
 	public function test_register_taxonomy(): void {
-		$instance = Venue_Setup::get_instance();
+		$instance = Setup::get_instance();
 
 		unregister_taxonomy( Venue::TAXONOMY );
 
@@ -425,7 +469,7 @@ class Test_Venue_Setup extends Base {
 	 * @return void
 	 */
 	public function test_add_venue_term(): void {
-		$instance = Venue_Setup::get_instance();
+		$instance = Setup::get_instance();
 		$venue    = $this->mock->post( array( 'post_type' => Venue::POST_TYPE ) )->get();
 		$term     = term_exists( $instance->term_slug_from_post_name( $venue->post_name ), Venue::TAXONOMY );
 
@@ -469,7 +513,7 @@ class Test_Venue_Setup extends Base {
 	 * @return void
 	 */
 	public function test_maybe_update_term_slug(): void {
-		$instance    = Venue_Setup::get_instance();
+		$instance    = Setup::get_instance();
 		$post_before = $this->mock->post()->get();
 		$post_after  = clone $post_before;
 
@@ -586,7 +630,7 @@ class Test_Venue_Setup extends Base {
 	 * @return void
 	 */
 	public function test_delete_venue_term(): void {
-		$instance = Venue_Setup::get_instance();
+		$instance = Setup::get_instance();
 		$venue    = $this->mock->post( array( 'post_type' => Venue::POST_TYPE ) )->get();
 
 		$this->assertIsArray(
@@ -618,7 +662,7 @@ class Test_Venue_Setup extends Base {
 		)->get();
 		wp_set_post_terms( $event->ID, 'dummy-venue', Venue::TAXONOMY );
 
-		$venue_meta = Venue_Setup::get_instance()->get_venue_meta( $event->ID, Event::POST_TYPE );
+		$venue_meta = Setup::get_instance()->get_venue_meta( $event->ID, Event::POST_TYPE );
 
 		// Generic test for an in person event.
 		$this->assertFalse( $venue_meta['isOnlineEventTerm'] );
@@ -633,7 +677,7 @@ class Test_Venue_Setup extends Base {
 			)
 		)->get();
 
-		$venue_meta = Venue_Setup::get_instance()->get_venue_meta( $venue->ID, Venue::POST_TYPE );
+		$venue_meta = Setup::get_instance()->get_venue_meta( $venue->ID, Venue::POST_TYPE );
 
 		// Test for a venue post.
 		$this->assertEquals(
@@ -667,7 +711,7 @@ class Test_Venue_Setup extends Base {
 		add_post_meta( $venue->ID, 'gatherpress_latitude', '40.7128' );
 		add_post_meta( $venue->ID, 'gatherpress_longitude', '-74.006' );
 
-		$venue_meta = Venue_Setup::get_instance()->get_venue_meta( $venue->ID, Venue::POST_TYPE );
+		$venue_meta = Setup::get_instance()->get_venue_meta( $venue->ID, Venue::POST_TYPE );
 
 		$this->assertEquals(
 			$venue_title,
@@ -712,7 +756,7 @@ class Test_Venue_Setup extends Base {
 	 * @return void
 	 */
 	public function test_maybe_apply_venue_template(): void {
-		$instance = Venue_Setup::get_instance();
+		$instance = Setup::get_instance();
 
 		// Create a venue post with empty content (simulating REST API creation).
 		$post_id = $this->factory->post->create(
@@ -754,7 +798,7 @@ class Test_Venue_Setup extends Base {
 	 * @return void
 	 */
 	public function test_maybe_apply_venue_template_skips_updates(): void {
-		$instance = Venue_Setup::get_instance();
+		$instance = Setup::get_instance();
 
 		// Factory creation triggers the save_post hook with $update=false which
 		// seeds the template. Reset content directly to simulate the user having
@@ -800,7 +844,7 @@ class Test_Venue_Setup extends Base {
 	 * @return void
 	 */
 	public function test_maybe_apply_venue_template_skips_non_empty(): void {
-		$instance         = Venue_Setup::get_instance();
+		$instance         = Setup::get_instance();
 		$existing_content = '<!-- wp:paragraph --><p>Existing content.</p><!-- /wp:paragraph -->';
 
 		$post_id = $this->factory->post->create(
@@ -835,7 +879,7 @@ class Test_Venue_Setup extends Base {
 	 * @return void
 	 */
 	public function test_maybe_apply_venue_template_skips_drafts(): void {
-		$instance = Venue_Setup::get_instance();
+		$instance = Setup::get_instance();
 
 		$post_id = $this->factory->post->create(
 			array(
@@ -869,7 +913,7 @@ class Test_Venue_Setup extends Base {
 	 * @return void
 	 */
 	public function test_maybe_apply_venue_template_skips_unregistered_pattern(): void {
-		$instance = Venue_Setup::get_instance();
+		$instance = Setup::get_instance();
 		$registry = WP_Block_Patterns_Registry::get_instance();
 
 		// Unregister the venue-template pattern.
@@ -915,7 +959,7 @@ class Test_Venue_Setup extends Base {
 	 * @return void
 	 */
 	public function test_add_editor_settings(): void {
-		$instance = Venue_Setup::get_instance();
+		$instance = Setup::get_instance();
 
 		// Test with an empty settings array.
 		$result = $instance->add_editor_settings( array() );
@@ -966,7 +1010,7 @@ class Test_Venue_Setup extends Base {
 	 * @return void
 	 */
 	public function test_add_venue_term_unsupported_post_type(): void {
-		$instance = Venue_Setup::get_instance();
+		$instance = Setup::get_instance();
 		$post     = $this->mock->post( array( 'post_type' => 'post' ) )->get();
 
 		// Calling add_venue_term on a standard 'post' should return early and create no term.
@@ -992,7 +1036,7 @@ class Test_Venue_Setup extends Base {
 				'post_name' => 'unit-test',
 			)
 		)->get();
-		$result = Venue_Setup::get_instance()->get_venue_post_from_term_slug( '_unit-test' );
+		$result = Setup::get_instance()->get_venue_post_from_term_slug( '_unit-test' );
 
 		$this->assertEquals(
 			$venue->ID,
@@ -1009,7 +1053,7 @@ class Test_Venue_Setup extends Base {
 	 * @return void
 	 */
 	public function test_get_venue_post_from_event_post_id(): void {
-		$instance = Venue_Setup::get_instance();
+		$instance = Setup::get_instance();
 		$venue    = $this->mock->post(
 			array(
 				'post_type'  => Venue::POST_TYPE,
@@ -1034,7 +1078,7 @@ class Test_Venue_Setup extends Base {
 
 		wp_set_post_terms( $event->ID, $term_slug, Venue::TAXONOMY );
 
-		$result = Venue_Setup::get_instance()->get_venue_post_from_event_post_id( $event->ID );
+		$result = Setup::get_instance()->get_venue_post_from_event_post_id( $event->ID );
 
 		$this->assertInstanceOf(
 			'WP_Post',
@@ -1063,7 +1107,7 @@ class Test_Venue_Setup extends Base {
 			)
 		)->get();
 
-		$result = Venue_Setup::get_instance()->get_venue_post_from_event_post_id( $event->ID );
+		$result = Setup::get_instance()->get_venue_post_from_event_post_id( $event->ID );
 
 		$this->assertNull(
 			$result,
@@ -1080,7 +1124,7 @@ class Test_Venue_Setup extends Base {
 	 * @return void
 	 */
 	public function test_get_venue_post_from_event_post_id_skips_online_event_sentinel(): void {
-		$instance = Venue_Setup::get_instance();
+		$instance = Setup::get_instance();
 		$venue    = $this->mock->post(
 			array(
 				'post_type'  => Venue::POST_TYPE,
@@ -1107,7 +1151,7 @@ class Test_Venue_Setup extends Base {
 		// old `$venue_terms[0]` logic when the sentinel came first.
 		wp_set_post_terms( $event->ID, array( 'online-event', $venue_term_slug ), Venue::TAXONOMY );
 
-		$result = Venue_Setup::get_instance()->get_venue_post_from_event_post_id( $event->ID );
+		$result = Setup::get_instance()->get_venue_post_from_event_post_id( $event->ID );
 
 		$this->assertInstanceOf(
 			'WP_Post',
@@ -1131,7 +1175,7 @@ class Test_Venue_Setup extends Base {
 	public function test_term_slug_from_post_name(): void {
 		$this->assertSame(
 			'_unit-test',
-			Venue_Setup::get_instance()->term_slug_from_post_name( 'unit-test' ),
+			Setup::get_instance()->term_slug_from_post_name( 'unit-test' ),
 			'Failed to assert that term_slug_from_post_name prepends an underscore.'
 		);
 	}
@@ -1144,7 +1188,7 @@ class Test_Venue_Setup extends Base {
 	 * @return void
 	 */
 	public function test_get_taxonomy(): void {
-		$instance = Venue_Setup::get_instance();
+		$instance = Setup::get_instance();
 
 		// No argument falls back to the default venue post type.
 		$this->assertSame(
@@ -1178,7 +1222,7 @@ class Test_Venue_Setup extends Base {
 	public function test_get_venue_post_type(): void {
 		$this->assertSame(
 			Venue::POST_TYPE,
-			Venue_Setup::get_instance()->get_venue_post_type(),
+			Setup::get_instance()->get_venue_post_type(),
 			'Failed to assert that get_venue_post_type returns the default venue post type.'
 		);
 	}
@@ -1197,7 +1241,7 @@ class Test_Venue_Setup extends Base {
 		// test run that used the default (empty-string) key.
 		$this->assertSame(
 			'custom_venue_type',
-			Venue_Setup::get_instance()->get_venue_post_type( 'test_custom_event_type' ),
+			Setup::get_instance()->get_venue_post_type( 'test_custom_event_type' ),
 			'Failed to assert that get_venue_post_type returns the filtered post type.'
 		);
 
@@ -1212,7 +1256,7 @@ class Test_Venue_Setup extends Base {
 	 * @return void
 	 */
 	public function test_get_venue_post_type_map(): void {
-		$map = Venue_Setup::get_instance()->get_venue_post_type_map();
+		$map = Setup::get_instance()->get_venue_post_type_map();
 
 		$this->assertIsArray(
 			$map,
@@ -1238,7 +1282,7 @@ class Test_Venue_Setup extends Base {
 	 * @return void
 	 */
 	public function test_get_localized_post_type_slug(): void {
-		$instance = Venue_Setup::get_instance();
+		$instance = Setup::get_instance();
 
 		$this->assertSame(
 			'venue',
@@ -1326,7 +1370,7 @@ class Test_Venue_Setup extends Base {
 
 		add_filter( 'locale', $locale_filter );
 
-		$slug = Venue_Setup::get_instance()->get_localized_post_type_slug();
+		$slug = Setup::get_instance()->get_localized_post_type_slug();
 
 		$this->assertNotEmpty( $slug, 'Failed to assert slug is not empty.' );
 
@@ -1347,7 +1391,7 @@ class Test_Venue_Setup extends Base {
 	 * @return void
 	 */
 	public function test_add_venue_term_skips_when_term_already_exists(): void {
-		$instance = Venue_Setup::get_instance();
+		$instance = Setup::get_instance();
 		$venue    = $this->mock->post( array( 'post_type' => Venue::POST_TYPE ) )->get();
 
 		// First save creates the term.
@@ -1377,7 +1421,7 @@ class Test_Venue_Setup extends Base {
 	 * @return void
 	 */
 	public function test_maybe_update_term_slug_no_changes(): void {
-		$instance = Venue_Setup::get_instance();
+		$instance = Setup::get_instance();
 		$venue    = $this->mock->post( array( 'post_type' => Venue::POST_TYPE ) )->get();
 
 		// Call with identical before/after — neither slug nor title changed.
@@ -1400,7 +1444,7 @@ class Test_Venue_Setup extends Base {
 	 * @return void
 	 */
 	public function test_delete_venue_term_unsupported_post_type(): void {
-		$instance = Venue_Setup::get_instance();
+		$instance = Setup::get_instance();
 
 		// Seed a sentinel term so we can prove the method didn't touch it.
 		if ( ! term_exists( 'online-event', Venue::TAXONOMY ) ) {
@@ -1425,7 +1469,7 @@ class Test_Venue_Setup extends Base {
 	 * @return void
 	 */
 	public function test_get_venue_meta_event_with_linked_venue(): void {
-		$instance    = Venue_Setup::get_instance();
+		$instance    = Setup::get_instance();
 		$venue_title = 'Linked Venue';
 		$venue       = $this->mock->post(
 			array(
@@ -1476,7 +1520,7 @@ class Test_Venue_Setup extends Base {
 	 * @return void
 	 */
 	public function test_is_venue_term_slug(): void {
-		$instance = Venue_Setup::get_instance();
+		$instance = Setup::get_instance();
 
 		$this->assertTrue( $instance->is_venue_term_slug( '_my-venue' ) );
 		$this->assertFalse( $instance->is_venue_term_slug( 'online-event' ) );
@@ -1493,7 +1537,7 @@ class Test_Venue_Setup extends Base {
 	public function test_taxonomy_for_event_post_type(): void {
 		$this->assertSame(
 			Venue::TAXONOMY,
-			Venue_Setup::get_instance()->taxonomy_for_event_post_type( Event::POST_TYPE ),
+			Setup::get_instance()->taxonomy_for_event_post_type( Event::POST_TYPE ),
 			'Expected the default event post type to resolve to the default venue taxonomy.'
 		);
 	}
@@ -1509,7 +1553,7 @@ class Test_Venue_Setup extends Base {
 	 * @return void
 	 */
 	public function test_get_venue_post_from_event_post_id_only_sentinel_terms(): void {
-		$instance = Venue_Setup::get_instance();
+		$instance = Setup::get_instance();
 
 		if ( ! term_exists( 'online-event', Venue::TAXONOMY ) ) {
 			wp_insert_term( 'Online event', Venue::TAXONOMY, array( 'slug' => 'online-event' ) );
