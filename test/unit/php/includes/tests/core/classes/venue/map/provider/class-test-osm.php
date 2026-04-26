@@ -495,48 +495,53 @@ class Test_OSM extends Base {
 	}
 
 	/**
-	 * `imagecreatefromstring()` can emit a PHP warning (which the test
-	 * runner converts to an exception via `convertWarningsToExceptions`)
-	 * when bytes start with a recognizable image-format magic but are
-	 * corrupt downstream — e.g. a truncated PNG. The try/catch around
-	 * the decode swallows the throw and falls through to "skip this
-	 * tile" so the whole composite doesn't fatal.
+	 * `decode_tile()` returns a GdImage when the bytes parse cleanly —
+	 * happy path. Use `fetch_tile`'s short-circuit stub to source real
+	 * PNG bytes so this isn't a tautology against a hand-crafted blob.
 	 *
-	 * @covers ::render
+	 * @covers ::decode_tile
 	 *
 	 * @return void
 	 */
-	public function test_render_swallows_imagecreatefromstring_throw(): void {
+	public function test_decode_tile_returns_image_for_valid_bytes(): void {
 		if ( ! function_exists( 'imagecreatetruecolor' ) ) {
 			$this->markTestSkipped( 'GD extension is not available.' );
 		}
 
-		// PNG signature followed by garbage — PHP recognizes the magic
-		// bytes, attempts to read the IHDR chunk, fails, emits a warning.
-		$truncated_png = "\x89PNG\r\n\x1a\n" . str_repeat( "\x00", 50 );
-
-		remove_filter( 'pre_http_request', array( $this, 'short_circuit_tile_requests' ), 10 );
-		$broken = static function () use ( $truncated_png ) {
-			return array(
-				'response' => array(
-					'code'    => 200,
-					'message' => 'OK',
-				),
-				'body'     => $truncated_png,
-				'headers'  => array(),
-			);
-		};
-		add_filter( 'pre_http_request', $broken, 10 );
-
-		$canvas = ( new OSM() )->render( 37.3318, -122.0312, 15, 512, 256 );
-
-		remove_filter( 'pre_http_request', $broken, 10 );
-		add_filter( 'pre_http_request', array( $this, 'short_circuit_tile_requests' ), 10, 3 );
-
-		$this->assertInstanceOf(
-			GdImage::class,
-			$canvas,
-			'A throw from imagecreatefromstring() must be caught and the composite must complete.'
+		$image = Utility::invoke_hidden_method(
+			new OSM(),
+			'decode_tile',
+			array( $this->tile_png )
 		);
+
+		$this->assertInstanceOf( GdImage::class, $image );
+		imagedestroy( $image );
+	}
+
+	/**
+	 * `decode_tile()` returns `false` when `imagecreatefromstring()`
+	 * throws — exercises the catch branch. Empty input throws on every
+	 * supported PHP version under PHPUnit:
+	 *
+	 * - PHP 8.0+: native `ValueError` for empty input.
+	 * - PHP 7.4 under PHPUnit: `E_WARNING` converted to a `Throwable`
+	 *   by `convertWarningsToExceptions=true` in `phpunit.xml.dist`.
+	 *
+	 * @covers ::decode_tile
+	 *
+	 * @return void
+	 */
+	public function test_decode_tile_returns_false_when_bytes_throw(): void {
+		if ( ! function_exists( 'imagecreatetruecolor' ) ) {
+			$this->markTestSkipped( 'GD extension is not available.' );
+		}
+
+		$result = Utility::invoke_hidden_method(
+			new OSM(),
+			'decode_tile',
+			array( '' )
+		);
+
+		$this->assertFalse( $result );
 	}
 }

@@ -20,6 +20,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Venue\Map;
 use GdImage;
+use Throwable;
 
 /**
  * Class OSM.
@@ -182,17 +183,7 @@ class OSM extends Base {
 					continue;
 				}
 
-				// Wrap the decode — `imagecreatefromstring()` can emit a
-				// PHP warning (and on some builds a notice-converted-to-
-				// exception in tests) for malformed bytes from a tile
-				// host or a misconfigured `gatherpress_venue_map_tile_url`.
-				// Treat any failure as "skip this tile" rather than
-				// fatalling the whole composite.
-				try {
-					$tile = imagecreatefromstring( $tile_png );
-				} catch ( \Throwable $e ) {
-					$tile = false;
-				}
+				$tile = $this->decode_tile( $tile_png );
 
 				if ( false === $tile ) {
 					continue;
@@ -233,6 +224,36 @@ class OSM extends Base {
 			esc_url( 'https://carto.com/' ),
 			esc_html__( 'CARTO', 'gatherpress' )
 		);
+	}
+
+	/**
+	 * Decode raw PNG bytes into a GD image. Wraps `imagecreatefromstring()`
+	 * so the calling composite never fatals on a bad tile.
+	 *
+	 * Failure modes by environment:
+	 * - PHP 7.4 production: returns `false`, emits an `E_WARNING` on bad
+	 *   input. No throw — the wrapper returns `false` straight from the
+	 *   `try`, the catch doesn't fire.
+	 * - PHP 7.4 under PHPUnit: the `E_WARNING` is converted to a
+	 *   `PHPUnit\Framework\Error\Warning` (a `Throwable`) by the test
+	 *   runner. The catch fires and returns `false`.
+	 * - PHP 8.0+: throws `ValueError` for empty input or malformed
+	 *   payloads. The catch fires and returns `false`.
+	 *
+	 * Either way, the caller sees `false` and treats it as "skip this
+	 * tile".
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $bytes Raw PNG bytes from `fetch_tile()`.
+	 * @return GdImage|resource|false Decoded image, or false when the bytes don't decode.
+	 */
+	protected function decode_tile( string $bytes ) {
+		try {
+			return imagecreatefromstring( $bytes );
+		} catch ( Throwable $e ) {
+			return false;
+		}
 	}
 
 	/**
