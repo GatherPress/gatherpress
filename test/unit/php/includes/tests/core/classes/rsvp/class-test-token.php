@@ -1,27 +1,27 @@
 <?php
 /**
- * Class handles unit tests for GatherPress\Core\Rsvp_Token.
+ * Class handles unit tests for GatherPress\Core\Rsvp\Token.
  *
- * @package GatherPress\Core
+ * @package GatherPress\Core\Rsvp
  * @since 1.0.0
  */
 
-namespace GatherPress\Tests\Core;
+namespace GatherPress\Tests\Core\Rsvp;
 
 use GatherPress\Core\Event;
-use GatherPress\Core\Rsvp;
-use GatherPress\Core\Rsvp_Token;
+use GatherPress\Core\Rsvp\Rsvp;
+use GatherPress\Core\Rsvp\Token;
 use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;
 use WP_Comment;
 use WP_Post;
 
 /**
- * Class Test_Rsvp_Token.
+ * Class Test_Token.
  *
- * @coversDefaultClass \GatherPress\Core\Rsvp_Token
+ * @coversDefaultClass \GatherPress\Core\Rsvp\Token
  */
-class Test_Rsvp_Token extends Base {
+class Test_Token extends Base {
 	/**
 	 * Coverage for __construct method with invalid comment ID.
 	 *
@@ -31,10 +31,10 @@ class Test_Rsvp_Token extends Base {
 	 * @return void
 	 */
 	public function test___construct_with_invalid_comment_id(): void {
-		$token = new Rsvp_Token( 0 );
+		$token = new Token( 0 );
 		$this->assertNull( $token->get_comment() );
 
-		$token = new Rsvp_Token( -1 );
+		$token = new Token( -1 );
 		$this->assertNull( $token->get_comment() );
 	}
 
@@ -47,7 +47,7 @@ class Test_Rsvp_Token extends Base {
 	 * @return void
 	 */
 	public function test___construct_with_non_existent_comment(): void {
-		$token = new Rsvp_Token( 999999 );
+		$token = new Token( 999999 );
 		$this->assertNull( $token->get_comment() );
 	}
 
@@ -68,7 +68,7 @@ class Test_Rsvp_Token extends Base {
 			)
 		);
 
-		$token = new Rsvp_Token( $comment_id );
+		$token = new Token( $comment_id );
 		$this->assertNull( $token->get_comment() );
 	}
 
@@ -95,7 +95,7 @@ class Test_Rsvp_Token extends Base {
 			)
 		);
 
-		$token = new Rsvp_Token( $comment_id );
+		$token = new Token( $comment_id );
 		$this->assertInstanceOf( WP_Comment::class, $token->get_comment() );
 		$this->assertEquals( $comment_id, $token->get_comment()->comment_ID );
 	}
@@ -122,7 +122,7 @@ class Test_Rsvp_Token extends Base {
 			)
 		);
 
-		$token = new Rsvp_Token( $comment_id );
+		$token = new Token( $comment_id );
 		$this->assertEmpty( $token->get_token() );
 	}
 
@@ -151,7 +151,7 @@ class Test_Rsvp_Token extends Base {
 		$expected_token = 'test-token-123';
 		update_comment_meta( $comment_id, '_gatherpress_rsvp_token', $expected_token );
 
-		$token = new Rsvp_Token( $comment_id );
+		$token = new Token( $comment_id );
 		$this->assertEquals( $expected_token, $token->get_token() );
 	}
 
@@ -192,7 +192,7 @@ class Test_Rsvp_Token extends Base {
 			)
 		);
 
-		$token = new Rsvp_Token( $comment_id );
+		$token = new Token( $comment_id );
 		$this->assertEmpty( $token->get_token() );
 	}
 
@@ -220,7 +220,7 @@ class Test_Rsvp_Token extends Base {
 		$expected_token = 'cached-token-456';
 		update_comment_meta( $comment_id, '_gatherpress_rsvp_token', $expected_token );
 
-		$token = new Rsvp_Token( $comment_id );
+		$token = new Token( $comment_id );
 
 		// First call should retrieve from meta.
 		$this->assertEquals( $expected_token, $token->get_token() );
@@ -240,7 +240,7 @@ class Test_Rsvp_Token extends Base {
 	 * @return void
 	 */
 	public function test_get_token_with_no_comment(): void {
-		$token = new Rsvp_Token( 0 );
+		$token = new Token( 0 );
 		$this->assertEmpty( $token->get_token() );
 	}
 
@@ -267,7 +267,7 @@ class Test_Rsvp_Token extends Base {
 			)
 		);
 
-		$token  = new Rsvp_Token( $comment_id );
+		$token  = new Token( $comment_id );
 		$result = $token->generate_token();
 
 		// Should return self for method chaining.
@@ -276,7 +276,7 @@ class Test_Rsvp_Token extends Base {
 		// Should generate a token of correct length.
 		$generated_token = $token->get_token();
 		$this->assertNotEmpty( $generated_token );
-		$this->assertEquals( Rsvp_Token::TOKEN_LENGTH, strlen( $generated_token ) );
+		$this->assertEquals( Token::TOKEN_LENGTH, strlen( $generated_token ) );
 
 		// Should save to comment meta.
 		$meta_token = get_comment_meta( $comment_id, '_gatherpress_rsvp_token', true );
@@ -291,7 +291,7 @@ class Test_Rsvp_Token extends Base {
 	 * @return void
 	 */
 	public function test_generate_token_with_no_comment(): void {
-		$token  = new Rsvp_Token( 0 );
+		$token  = new Token( 0 );
 		$result = $token->generate_token();
 
 		// Should return self for method chaining.
@@ -323,7 +323,7 @@ class Test_Rsvp_Token extends Base {
 			)
 		);
 
-		$token = new Rsvp_Token( $comment_id );
+		$token = new Token( $comment_id );
 		$token->approve_comment();
 
 		$comment = get_comment( $comment_id );
@@ -338,7 +338,7 @@ class Test_Rsvp_Token extends Base {
 	 * @return void
 	 */
 	public function test_approve_comment_with_no_comment(): void {
-		$token = new Rsvp_Token( 0 );
+		$token = new Token( 0 );
 
 		// Should not throw an error.
 		$token->approve_comment();
@@ -376,7 +376,7 @@ class Test_Rsvp_Token extends Base {
 		};
 		add_action( 'wp_transition_comment_status', $spy );
 
-		$token = new Rsvp_Token( $comment_id );
+		$token = new Token( $comment_id );
 		$token->approve_comment();
 
 		remove_action( 'wp_transition_comment_status', $spy );
@@ -409,7 +409,7 @@ class Test_Rsvp_Token extends Base {
 			)
 		);
 
-		$token   = new Rsvp_Token( $comment_id );
+		$token   = new Token( $comment_id );
 		$comment = $token->get_comment();
 
 		$this->assertInstanceOf( WP_Comment::class, $comment );
@@ -437,7 +437,7 @@ class Test_Rsvp_Token extends Base {
 			)
 		);
 
-		$token          = new Rsvp_Token( $comment_id );
+		$token          = new Token( $comment_id );
 		$retrieved_post = $token->get_post();
 
 		$this->assertInstanceOf( WP_Post::class, $retrieved_post );
@@ -453,7 +453,7 @@ class Test_Rsvp_Token extends Base {
 	 * @return void
 	 */
 	public function test_get_post_with_no_comment(): void {
-		$token = new Rsvp_Token( 0 );
+		$token = new Token( 0 );
 		$this->assertNull( $token->get_post() );
 	}
 
@@ -474,7 +474,7 @@ class Test_Rsvp_Token extends Base {
 			)
 		);
 
-		$token = new Rsvp_Token( $comment_id );
+		$token = new Token( $comment_id );
 		$this->assertNull( $token->get_post() );
 	}
 
@@ -501,7 +501,7 @@ class Test_Rsvp_Token extends Base {
 			)
 		);
 
-		$token = new Rsvp_Token( $comment_id );
+		$token = new Token( $comment_id );
 		$this->assertEquals( $email, $token->get_email() );
 	}
 
@@ -513,7 +513,7 @@ class Test_Rsvp_Token extends Base {
 	 * @return void
 	 */
 	public function test_get_email_with_no_comment(): void {
-		$token = new Rsvp_Token( 0 );
+		$token = new Token( 0 );
 		$this->assertEmpty( $token->get_email() );
 	}
 
@@ -538,7 +538,7 @@ class Test_Rsvp_Token extends Base {
 			)
 		);
 
-		$token = new Rsvp_Token( $comment_id );
+		$token = new Token( $comment_id );
 		$token->generate_token();
 		$generated_token = $token->get_token();
 
@@ -575,14 +575,14 @@ class Test_Rsvp_Token extends Base {
 			)
 		);
 
-		$token = new Rsvp_Token( $comment_id );
+		$token = new Token( $comment_id );
 		$token->generate_token();
 
 		$url = $token->generate_url();
 		$this->assertNotEmpty( $url );
 
 		// Check that URL contains the token parameter.
-		$this->assertStringContainsString( Rsvp_Token::NAME, $url );
+		$this->assertStringContainsString( Token::NAME, $url );
 
 		// Check that URL contains the comment ID and token.
 		$expected_token_value = sprintf( '%d_%s', $comment_id, $token->get_token() );
@@ -614,7 +614,7 @@ class Test_Rsvp_Token extends Base {
 			)
 		);
 
-		$token = new Rsvp_Token( $comment_id );
+		$token = new Token( $comment_id );
 		$this->assertEmpty( $token->generate_url() );
 	}
 
@@ -627,7 +627,7 @@ class Test_Rsvp_Token extends Base {
 	 * @return void
 	 */
 	public function test_generate_url_with_no_comment(): void {
-		$token = new Rsvp_Token( 0 );
+		$token = new Token( 0 );
 		$this->assertEmpty( $token->generate_url() );
 	}
 
@@ -652,7 +652,7 @@ class Test_Rsvp_Token extends Base {
 			)
 		);
 
-		$token = new Rsvp_Token( $comment_id );
+		$token = new Token( $comment_id );
 		$token->generate_token();
 
 		// Filter get_permalink to return false.
@@ -693,7 +693,7 @@ class Test_Rsvp_Token extends Base {
 			)
 		);
 
-		$token = new Rsvp_Token( $comment_id );
+		$token = new Token( $comment_id );
 		$token->generate_token();
 
 		// Mock wp_mail to return true.
@@ -728,7 +728,7 @@ class Test_Rsvp_Token extends Base {
 			)
 		);
 
-		$token = new Rsvp_Token( $comment_id );
+		$token = new Token( $comment_id );
 		$this->assertFalse( $token->send_rsvp_confirmation_email() );
 	}
 
@@ -738,9 +738,9 @@ class Test_Rsvp_Token extends Base {
 	 * @return void
 	 */
 	public function test_constants(): void {
-		$this->assertEquals( 'gatherpress_rsvp_token', Rsvp_Token::NAME );
-		$this->assertEquals( 32, Rsvp_Token::TOKEN_LENGTH );
-		$this->assertEquals( '_', Rsvp_Token::META_KEY_PREFIX );
+		$this->assertEquals( 'gatherpress_rsvp_token', Token::NAME );
+		$this->assertEquals( 32, Token::TOKEN_LENGTH );
+		$this->assertEquals( '_', Token::META_KEY_PREFIX );
 	}
 
 	/**
@@ -764,7 +764,7 @@ class Test_Rsvp_Token extends Base {
 			)
 		);
 
-		$token    = new Rsvp_Token( $comment_id );
+		$token    = new Token( $comment_id );
 		$meta_key = Utility::invoke_hidden_method( $token, 'get_meta_key' );
 
 		$this->assertEquals( '_gatherpress_rsvp_token', $meta_key );
@@ -791,11 +791,11 @@ class Test_Rsvp_Token extends Base {
 			)
 		);
 
-		$token        = new Rsvp_Token( $comment_id );
+		$token        = new Token( $comment_id );
 		$secure_token = Utility::invoke_hidden_method( $token, 'create_secure_token' );
 
 		$this->assertIsString( $secure_token );
-		$this->assertEquals( Rsvp_Token::TOKEN_LENGTH, strlen( $secure_token ) );
+		$this->assertEquals( Token::TOKEN_LENGTH, strlen( $secure_token ) );
 
 		// Generate another token to ensure they're different.
 		$another_token = Utility::invoke_hidden_method( $token, 'create_secure_token' );
@@ -823,7 +823,7 @@ class Test_Rsvp_Token extends Base {
 			)
 		);
 
-		$token      = new Rsvp_Token( $comment_id );
+		$token      = new Token( $comment_id );
 		$test_token = 'test-token-123';
 
 		$formatted_value = Utility::invoke_hidden_method(
@@ -857,7 +857,7 @@ class Test_Rsvp_Token extends Base {
 			)
 		);
 
-		$token_instance = new Rsvp_Token( $comment->comment_ID );
+		$token_instance = new Token( $comment->comment_ID );
 
 		// All valid components.
 		$result = Utility::invoke_hidden_method(
@@ -901,7 +901,7 @@ class Test_Rsvp_Token extends Base {
 	 */
 	public function test_parse_token_string(): void {
 		// Valid token string.
-		$result = Rsvp_Token::parse_token_string( '123_test-token-abc' );
+		$result = Token::parse_token_string( '123_test-token-abc' );
 		$this->assertIsArray( $result );
 		$this->assertArrayHasKey( 'comment_id', $result );
 		$this->assertArrayHasKey( 'token', $result );
@@ -909,38 +909,38 @@ class Test_Rsvp_Token extends Base {
 		$this->assertEquals( 'test-token-abc', $result['token'] );
 
 		// Token with underscore in token part.
-		$result = Rsvp_Token::parse_token_string( '456_token_with_underscores' );
+		$result = Token::parse_token_string( '456_token_with_underscores' );
 		$this->assertEquals( 456, $result['comment_id'] );
 		$this->assertEquals( 'token_with_underscores', $result['token'] );
 
 		// Empty string.
-		$result = Rsvp_Token::parse_token_string( '' );
+		$result = Token::parse_token_string( '' );
 		$this->assertIsArray( $result );
 		$this->assertEmpty( $result );
 
 		// Null string.
-		$result = Rsvp_Token::parse_token_string( null );
+		$result = Token::parse_token_string( null );
 		$this->assertIsArray( $result );
 		$this->assertEmpty( $result );
 
 		// Invalid format - no underscore.
-		$result = Rsvp_Token::parse_token_string( 'invalid-token' );
+		$result = Token::parse_token_string( 'invalid-token' );
 		$this->assertEmpty( $result );
 
 		// Invalid format - no comment ID.
-		$result = Rsvp_Token::parse_token_string( '_token-only' );
+		$result = Token::parse_token_string( '_token-only' );
 		$this->assertEmpty( $result );
 
 		// Invalid format - non-numeric comment ID.
-		$result = Rsvp_Token::parse_token_string( 'abc_token' );
+		$result = Token::parse_token_string( 'abc_token' );
 		$this->assertEmpty( $result );
 
 		// Invalid format - just underscore.
-		$result = Rsvp_Token::parse_token_string( '_' );
+		$result = Token::parse_token_string( '_' );
 		$this->assertEmpty( $result );
 
 		// Zero comment ID (technically valid format but invalid ID).
-		$result = Rsvp_Token::parse_token_string( '0_token' );
+		$result = Token::parse_token_string( '0_token' );
 		$this->assertEquals( 0, $result['comment_id'] );
 		$this->assertEquals( 'token', $result['token'] );
 	}
@@ -971,38 +971,38 @@ class Test_Rsvp_Token extends Base {
 		);
 
 		// Generate token for this comment.
-		$token = new Rsvp_Token( $comment_id );
+		$token = new Token( $comment_id );
 		$token->generate_token();
 		$generated_token = $token->get_token();
 
 		// Test valid token string.
 		$token_string = sprintf( '%d_%s', $comment_id, $generated_token );
-		$result       = Rsvp_Token::from_token_string( $token_string );
+		$result       = Token::from_token_string( $token_string );
 
-		$this->assertInstanceOf( Rsvp_Token::class, $result );
+		$this->assertInstanceOf( Token::class, $result );
 		$this->assertNotNull( $result->get_comment() );
 		$this->assertEquals( $comment_id, $result->get_comment()->comment_ID );
 		$this->assertEquals( 'test@example.com', $result->get_email() );
 
 		// Test invalid token for same comment.
 		$invalid_token_string = sprintf( '%d_%s', $comment_id, 'invalid-token' );
-		$result               = Rsvp_Token::from_token_string( $invalid_token_string );
+		$result               = Token::from_token_string( $invalid_token_string );
 		$this->assertNull( $result );
 
 		// Test empty string.
-		$result = Rsvp_Token::from_token_string( '' );
+		$result = Token::from_token_string( '' );
 		$this->assertNull( $result );
 
 		// Test null string.
-		$result = Rsvp_Token::from_token_string( null );
+		$result = Token::from_token_string( null );
 		$this->assertNull( $result );
 
 		// Test malformed token string.
-		$result = Rsvp_Token::from_token_string( 'not-a-valid-token' );
+		$result = Token::from_token_string( 'not-a-valid-token' );
 		$this->assertNull( $result );
 
 		// Test non-existent comment ID.
-		$result = Rsvp_Token::from_token_string( '999999_some-token' );
+		$result = Token::from_token_string( '999999_some-token' );
 		$this->assertNull( $result );
 
 		// Test with non-RSVP comment.
@@ -1012,7 +1012,7 @@ class Test_Rsvp_Token extends Base {
 				'comment_type'    => 'comment',
 			)
 		);
-		$result             = Rsvp_Token::from_token_string( sprintf( '%d_token', $regular_comment_id ) );
+		$result             = Token::from_token_string( sprintf( '%d_token', $regular_comment_id ) );
 		$this->assertNull( $result );
 	}
 
@@ -1024,7 +1024,7 @@ class Test_Rsvp_Token extends Base {
 	 * @return void
 	 */
 	public function test_from_token_string_with_zero_comment_id(): void {
-		$result = Rsvp_Token::from_token_string( '0_some-token' );
+		$result = Token::from_token_string( '0_some-token' );
 		$this->assertNull( $result );
 	}
 
@@ -1051,7 +1051,7 @@ class Test_Rsvp_Token extends Base {
 			)
 		);
 
-		$token = new Rsvp_Token( $comment_id );
+		$token = new Token( $comment_id );
 		$token->generate_token();
 
 		// Get the URL which includes the formatted token.
@@ -1061,16 +1061,16 @@ class Test_Rsvp_Token extends Base {
 		// Extract token from URL.
 		$parsed_url = wp_parse_url( $url );
 		parse_str( $parsed_url['query'], $query_args );
-		$token_string = $query_args[ Rsvp_Token::NAME ];
+		$token_string = $query_args[ Token::NAME ];
 
 		// Parse should return valid array.
-		$parsed = Rsvp_Token::parse_token_string( $token_string );
+		$parsed = Token::parse_token_string( $token_string );
 		$this->assertNotEmpty( $parsed );
 		$this->assertEquals( $comment_id, $parsed['comment_id'] );
 
 		// from_token_string should return valid instance.
-		$new_instance = Rsvp_Token::from_token_string( $token_string );
-		$this->assertInstanceOf( Rsvp_Token::class, $new_instance );
+		$new_instance = Token::from_token_string( $token_string );
+		$this->assertInstanceOf( Token::class, $new_instance );
 		$this->assertEquals( $comment_id, $new_instance->get_comment()->comment_ID );
 	}
 
@@ -1092,7 +1092,7 @@ class Test_Rsvp_Token extends Base {
 			)
 		);
 
-		$instance = new Rsvp_Token( $comment_id );
+		$instance = new Token( $comment_id );
 		$instance->generate_token();
 		$token        = $instance->get_token();
 		$token_string = sprintf( '%d_%s', $comment_id, $token );
@@ -1101,7 +1101,7 @@ class Test_Rsvp_Token extends Base {
 		add_filter(
 			'gatherpress_pre_get_http_input',
 			function ( $pre_value, $type, $var_name ) use ( $token_string ) {
-				if ( INPUT_GET === $type && Rsvp_Token::NAME === $var_name ) {
+				if ( INPUT_GET === $type && Token::NAME === $var_name ) {
 					return $token_string;
 				}
 				return null;
@@ -1111,8 +1111,8 @@ class Test_Rsvp_Token extends Base {
 		);
 
 		// Test successful creation from URL parameter.
-		$result = Rsvp_Token::from_url_parameter();
-		$this->assertInstanceOf( Rsvp_Token::class, $result );
+		$result = Token::from_url_parameter();
+		$this->assertInstanceOf( Token::class, $result );
 		$this->assertEquals( $comment_id, $result->get_comment()->comment_ID );
 
 		// Test with no token parameter.
@@ -1124,7 +1124,7 @@ class Test_Rsvp_Token extends Base {
 			}
 		);
 
-		$result = Rsvp_Token::from_url_parameter();
+		$result = Token::from_url_parameter();
 		$this->assertNull( $result );
 
 		// Clean up filters.

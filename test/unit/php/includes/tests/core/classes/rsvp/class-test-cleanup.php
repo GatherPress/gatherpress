@@ -1,26 +1,26 @@
 <?php
 /**
- * Class handles unit tests for GatherPress\Core\Rsvp_Cleanup
+ * Class handles unit tests for GatherPress\Core\Rsvp\Cleanup.
  *
- * @package GatherPress\Core
+ * @package GatherPress\Core\Rsvp
  * @since 1.0.0
  */
 
-namespace GatherPress\Tests\Core;
+namespace GatherPress\Tests\Core\Rsvp;
 
 use GatherPress\Core\Event;
-use GatherPress\Core\Rsvp;
-use GatherPress\Core\Rsvp_Cleanup;
+use GatherPress\Core\Rsvp\Cleanup;
+use GatherPress\Core\Rsvp\Query;
+use GatherPress\Core\Rsvp\Rsvp;
 use GatherPress\Core\Settings;
-use GatherPress\Core\Rsvp_Query;
 use GatherPress\Tests\Base;
 
 /**
- * Class Test_Rsvp.
+ * Class Test_Cleanup.
  *
- * @coversDefaultClass \GatherPress\Core\Rsvp_Cleanup
+ * @coversDefaultClass \GatherPress\Core\Rsvp\Cleanup
  */
-class Test_RSVP_Cleanup extends Base {
+class Test_Cleanup extends Base {
 
 	/**
 	 * Coverage for setup_hooks.
@@ -31,7 +31,7 @@ class Test_RSVP_Cleanup extends Base {
 	 * @return void
 	 */
 	public function test_setup_hooks() {
-		$instance = Rsvp_Cleanup::get_instance();
+		$instance = Cleanup::get_instance();
 		$hooks    = array(
 			array(
 				'type'     => 'action',
@@ -69,7 +69,7 @@ class Test_RSVP_Cleanup extends Base {
 		$settings->set( 'rsvp_cleanup_switch', 'on' );
 		$settings->set( 'rsvp_cleanup_frequency', 'hourly' );
 
-		Rsvp_Cleanup::get_instance()->schedule_cleanup_cron();
+		Cleanup::get_instance()->schedule_cleanup_cron();
 		$next_event = wp_next_scheduled( 'gatherpress_rsvp_cleanup' );
 		$this->assertNotEquals( false, $next_event );
 	}
@@ -86,7 +86,7 @@ class Test_RSVP_Cleanup extends Base {
 		$settings = Settings::get_instance();
 		$settings->set( 'rsvp_cleanup_switch', 'on' );
 
-		Rsvp_Cleanup::get_instance()->schedule_cleanup_cron();
+		Cleanup::get_instance()->schedule_cleanup_cron();
 		$next_event = wp_next_scheduled( 'gatherpress_rsvp_cleanup' );
 		$this->assertNotEquals( false, $next_event );
 	}
@@ -104,7 +104,7 @@ class Test_RSVP_Cleanup extends Base {
 		$settings->set( 'rsvp_cleanup_switch', 'on' );
 		$settings->set( 'rsvp_cleanup_frequency', 'weekly' );
 
-		Rsvp_Cleanup::get_instance()->schedule_cleanup_cron();
+		Cleanup::get_instance()->schedule_cleanup_cron();
 		$next_event = wp_next_scheduled( 'gatherpress_rsvp_cleanup' );
 		$this->assertNotEquals( false, $next_event );
 	}
@@ -122,7 +122,7 @@ class Test_RSVP_Cleanup extends Base {
 		$settings->set( 'rsvp_cleanup_switch', 'on' );
 		$settings->set( 'rsvp_cleanup_frequency', 'yearly' );
 
-		Rsvp_Cleanup::get_instance()->schedule_cleanup_cron();
+		Cleanup::get_instance()->schedule_cleanup_cron();
 		$next_event = wp_next_scheduled( 'gatherpress_rsvp_cleanup' );
 		$this->assertNotEquals( false, $next_event );
 	}
@@ -140,7 +140,7 @@ class Test_RSVP_Cleanup extends Base {
 		$settings->set( 'rsvp_cleanup_switch', 'on' );
 		$settings->set( 'rsvp_cleanup_frequency', 'monthly' );
 
-		Rsvp_Cleanup::get_instance()->schedule_cleanup_cron();
+		Cleanup::get_instance()->schedule_cleanup_cron();
 		$next_event = wp_next_scheduled( 'gatherpress_rsvp_cleanup' );
 		$this->assertNotEquals( false, $next_event );
 	}
@@ -156,7 +156,7 @@ class Test_RSVP_Cleanup extends Base {
 		$settings = Settings::get_instance();
 		$settings->set( 'rsvp_cleanup_frequency', 'hourly' );
 
-		Rsvp_Cleanup::get_instance()->schedule_cleanup_cron();
+		Cleanup::get_instance()->schedule_cleanup_cron();
 		$next_event = wp_next_scheduled( 'gatherpress_rsvp_cleanup' );
 		$this->assertFalse( $next_event );
 	}
@@ -174,11 +174,11 @@ class Test_RSVP_Cleanup extends Base {
 		$settings->set( 'rsvp_cleanup_switch', 'on' );
 		$settings->set( 'rsvp_cleanup_frequency', 'hourly' );
 
-		Rsvp_Cleanup::get_instance()->schedule_cleanup_cron();
+		Cleanup::get_instance()->schedule_cleanup_cron();
 		$next_event = wp_next_scheduled( 'gatherpress_rsvp_cleanup' );
 
 		$settings->set( 'rsvp_cleanup_interval', 2 );
-		Rsvp_Cleanup::get_instance()->schedule_cleanup_cron();
+		Cleanup::get_instance()->schedule_cleanup_cron();
 		$rescheduled_event = wp_next_scheduled( 'gatherpress_rsvp_cleanup' );
 
 		$this->assertNotEquals( $rescheduled_event, $next_event );
@@ -192,7 +192,7 @@ class Test_RSVP_Cleanup extends Base {
 	 * @return void
 	 */
 	public function test_rsvp_cleanup_job_deletes_unapproved_rsvps(): void {
-		$instance = Rsvp_Cleanup::get_instance();
+		$instance = Cleanup::get_instance();
 
 		$post = $this->mock->post(
 			array(
@@ -221,7 +221,7 @@ class Test_RSVP_Cleanup extends Base {
 
 		$instance->rsvp_cleanup();
 
-		$rsvp_query = Rsvp_Query::get_instance();
+		$rsvp_query = Query::get_instance();
 		$rsvps      = $rsvp_query->get_rsvps( array() );
 
 		$this->assertCount( 0, $rsvps );

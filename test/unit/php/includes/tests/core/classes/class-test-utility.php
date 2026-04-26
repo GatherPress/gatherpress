@@ -883,4 +883,99 @@ class Test_Utility extends Base {
 		// If we reach this assertion, safe_exit returned successfully.
 		$this->assertTrue( true, 'safe_exit should return early during unit tests' );
 	}
+
+	/**
+	 * Coverage for get_block_names with simple block.
+	 *
+	 * @covers ::get_block_names
+	 *
+	 * @return void
+	 */
+	public function test_get_block_names_simple(): void {
+		$blocks = array(
+			'blockName' => 'core/paragraph',
+		);
+
+		$this->assertSame(
+			array( 'core/paragraph' ),
+			Utility::get_block_names( $blocks )
+		);
+	}
+
+	/**
+	 * Coverage for get_block_names with nested blocks.
+	 *
+	 * @covers ::get_block_names
+	 *
+	 * @return void
+	 */
+	public function test_get_block_names_nested(): void {
+		$blocks = array(
+			'blockName'   => 'core/group',
+			'innerBlocks' => array(
+				array(
+					'blockName' => 'core/paragraph',
+				),
+				array(
+					'blockName' => 'gatherpress/event-date',
+				),
+			),
+		);
+
+		$this->assertSame(
+			array( 'core/group', 'core/paragraph', 'gatherpress/event-date' ),
+			Utility::get_block_names( $blocks )
+		);
+	}
+
+	/**
+	 * Coverage for get_block_names with deeply nested blocks.
+	 *
+	 * @covers ::get_block_names
+	 *
+	 * @return void
+	 */
+	public function test_get_block_names_deeply_nested(): void {
+		$blocks = array(
+			'blockName'   => 'core/group',
+			'innerBlocks' => array(
+				array(
+					'blockName'   => 'core/columns',
+					'innerBlocks' => array(
+						array(
+							'blockName'   => 'core/column',
+							'innerBlocks' => array(
+								array(
+									'blockName' => 'core/paragraph',
+								),
+							),
+						),
+					),
+				),
+			),
+		);
+
+		$this->assertSame(
+			array( 'core/group', 'core/columns', 'core/column', 'core/paragraph' ),
+			Utility::get_block_names( $blocks )
+		);
+	}
+
+	/**
+	 * Coverage for get_block_names with no blockName.
+	 *
+	 * @covers ::get_block_names
+	 *
+	 * @return void
+	 */
+	public function test_get_block_names_no_blockname(): void {
+		$blocks = array(
+			'attrs' => array(),
+		);
+
+		$this->assertSame(
+			array(),
+			Utility::get_block_names( $blocks )
+		);
+	}
 }

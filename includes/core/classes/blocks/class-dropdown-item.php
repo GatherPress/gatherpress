@@ -15,7 +15,6 @@ namespace GatherPress\Core\Blocks;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
-use GatherPress\Core\Block;
 use GatherPress\Core\Traits\Singleton;
 use WP_HTML_Tag_Processor;
 

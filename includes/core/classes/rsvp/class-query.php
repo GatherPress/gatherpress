@@ -5,11 +5,11 @@
  * This file contains the RSVP_Query class which handles the querying and manipulation
  * of RSVP comments within the GatherPress plugin.
  *
- * @package GatherPress\Core
+ * @package GatherPress\Core\Rsvp
  * @since 1.0.0
  */
 
-namespace GatherPress\Core;
+namespace GatherPress\Core\Rsvp;
 
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
@@ -20,14 +20,14 @@ use WP_Comment_Query;
 use WP_Tax_Query;
 
 /**
- * Class Rsvp_Query
+ * Class Query.
  *
  * Handles querying and manipulation of RSVP comments within the GatherPress plugin.
  *
- * @package GatherPress\Core
+ * @package GatherPress\Core\Rsvp
  * @since 1.0.0
  */
-class Rsvp_Query {
+class Query {
 	/**
 	 * Enforces a single instance of this class.
 	 */

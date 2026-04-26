@@ -4,11 +4,11 @@
  *
  * This class handles the registration and management of custom blocks used in the GatherPress plugin.
  *
- * @package GatherPress/Core
+ * @package GatherPress\Core\Blocks
  * @since 1.0.0
  */
 
-namespace GatherPress\Core;
+namespace GatherPress\Core\Blocks;
 
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
@@ -18,25 +18,17 @@ use WP_Block_Template;
 use WP_Post;
 
 /**
- * Class Block.
+ * Class Setup.
  *
  * Core class for handling blocks in GatherPress.
  *
  * @since 1.0.0
  */
-class Block {
+class Setup {
 	/**
 	 * Enforces a single instance of this class.
 	 */
 	use Singleton;
-
-	/**
-	 * An array used to cache block variation names.
-	 *
-	 * @since 1.0.0
-	 * @var array
-	 */
-	protected array $block_variation_names = array();
 
 	/**
 	 * Class constructor.
@@ -96,75 +88,20 @@ class Block {
 	 * @return void
 	 */
 	public function register_block_classes(): void {
-		Blocks\Add_To_Calendar::get_instance();
-		Blocks\Dropdown::get_instance();
-		Blocks\Dropdown_Item::get_instance();
-		Blocks\Event_Date::get_instance();
-		Blocks\Event_Query::get_instance();
-		Blocks\General_Block::get_instance();
-		Blocks\Modal::get_instance();
-		Blocks\Modal_Manager::get_instance();
-		Blocks\Online_Event::get_instance();
-		Blocks\Rsvp::get_instance();
-		Blocks\Rsvp_Form::get_instance();
-		Blocks\Rsvp_Response::get_instance();
-		Blocks\Rsvp_Template::get_instance();
-		Blocks\Venue::get_instance();
-	}
-
-	/**
-	 * Get a list of subfolder names from the /build/variations/core/ directory.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @return string[] List of block-variations foldernames.
-	 */
-	public function get_block_variations(): array {
-		$variations_directory = sprintf( '%1$s/build/variations/core/', GATHERPRESS_CORE_PATH );
-
-		if ( ! file_exists( $variations_directory ) ) {
-			return array();
-		}
-
-		if ( empty( $this->block_variation_names ) ) {
-			$this->block_variation_names = array_values(
-				array_diff(
-					scandir( $variations_directory ),
-					array( '..', '.' )
-				)
-			);
-		}
-		return array_filter( $this->block_variation_names );
-	}
-
-	/**
-	 * Generate the default CSS class for a block.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param string $block_name The block name in the format 'namespace/blockname'.
-	 * @return string The default CSS class for the block.
-	 */
-	public function get_default_block_class( string $block_name ): string {
-		return sprintf(
-			'wp-block-%s',
-			sanitize_key( str_replace( '/', '-', $block_name ) )
-		);
-	}
-
-	/**
-	 * Get class name from folder name.
-	 *
-	 * @todo maybe better in the Utility class?
-	 *
-	 * @param  string $foldername String with name of a folder.
-	 *
-	 * @return string Class name that reflects the given foldername.
-	 */
-	protected static function get_classname_from_foldername( string $foldername ): string {
-		$foldername = basename( $foldername );
-
-		return ucwords( str_replace( '-', '_', $foldername ), '_' );
+		Add_To_Calendar::get_instance();
+		Dropdown::get_instance();
+		Dropdown_Item::get_instance();
+		Event_Date::get_instance();
+		Event_Query::get_instance();
+		General_Block::get_instance();
+		Modal::get_instance();
+		Modal_Manager::get_instance();
+		Online_Event::get_instance();
+		Rsvp::get_instance();
+		Rsvp_Form::get_instance();
+		Rsvp_Response::get_instance();
+		Rsvp_Template::get_instance();
+		Venue::get_instance();
 	}
 
 	/**
@@ -338,34 +275,6 @@ class Block {
 		}
 
 		return $parsed_hooked_block;
-	}
-
-	/**
-	 * Recursively retrieves all block names from a given array of blocks.
-	 *
-	 * This method traverses a nested block structure and collects the block names,
-	 * including those of any inner blocks, into a flat array.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param array $blocks An array of block data, typically including `blockName` and `innerBlocks`.
-	 *
-	 * @return array An array of block names found within the provided block structure.
-	 */
-	public function get_block_names( array $blocks ): array {
-		$block_names = array();
-
-		if ( isset( $blocks['blockName'] ) ) {
-			$block_names[] = $blocks['blockName'];
-		}
-
-		if ( ! empty( $blocks['innerBlocks'] ) ) {
-			foreach ( $blocks['innerBlocks'] as $inner_block ) {
-				$block_names = array_merge( $block_names, $this->get_block_names( $inner_block ) );
-			}
-		}
-
-		return $block_names;
 	}
 
 	/**

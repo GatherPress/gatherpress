@@ -1,26 +1,26 @@
 <?php
 /**
- * Class file for Test_Rsvp_Form.
+ * Class file for Test_Form.
  *
- * @package GatherPress\Core
+ * @package GatherPress\Core\Rsvp
  * @since 1.0.0
  */
 
-namespace GatherPress\Tests\Core;
+namespace GatherPress\Tests\Core\Rsvp;
 
 use GatherPress\Core\Event;
-use GatherPress\Core\Rsvp;
-use GatherPress\Core\Rsvp_Form;
+use GatherPress\Core\Rsvp\Form;
+use GatherPress\Core\Rsvp\Rsvp;
 use GatherPress\Core\Settings;
 use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;
 
 /**
- * Class Test_Rsvp_Form.
+ * Class Test_Form.
  *
- * @coversDefaultClass \GatherPress\Core\Rsvp_Form
+ * @coversDefaultClass \GatherPress\Core\Rsvp\Form
  */
-class Test_Rsvp_Form extends Base {
+class Test_Form extends Base {
 	/**
 	 * Enable open RSVP for all tests in this class so form processing paths are exercisable.
 	 *
@@ -50,7 +50,7 @@ class Test_Rsvp_Form extends Base {
 	 * @return void
 	 */
 	public function test_setup_hooks(): void {
-		$instance = Rsvp_Form::get_instance();
+		$instance = Form::get_instance();
 		$hooks    = array(
 			array(
 				'type'     => 'action',
@@ -77,7 +77,7 @@ class Test_Rsvp_Form extends Base {
 			)
 		);
 
-		$instance = Rsvp_Form::get_instance();
+		$instance = Form::get_instance();
 
 		// Test with no existing RSVP.
 		$result = $instance->has_duplicate_rsvp( $post_id, 'new@example.com' );
@@ -131,7 +131,7 @@ class Test_Rsvp_Form extends Base {
 			)
 		);
 
-		$instance = Rsvp_Form::get_instance();
+		$instance = Form::get_instance();
 
 		// Test with same email (should detect duplicate by user_id OR email).
 		$result = $instance->has_duplicate_rsvp( $post_id, 'user@example.com' );
@@ -159,7 +159,7 @@ class Test_Rsvp_Form extends Base {
 			'email'   => 'test@example.com',
 		);
 
-		$instance = Rsvp_Form::get_instance();
+		$instance = Form::get_instance();
 		$result   = $instance->process_rsvp( $data );
 
 		$this->assertTrue( $result['success'] );
@@ -198,7 +198,7 @@ class Test_Rsvp_Form extends Base {
 			'email'   => 'test@example.com',
 		);
 
-		$instance = Rsvp_Form::get_instance();
+		$instance = Form::get_instance();
 		$result   = $instance->process_rsvp( $data );
 
 		$this->assertFalse( $result['success'] );
@@ -220,7 +220,7 @@ class Test_Rsvp_Form extends Base {
 			)
 		);
 
-		$instance = Rsvp_Form::get_instance();
+		$instance = Form::get_instance();
 
 		// Test missing author.
 		$data = array(
@@ -286,7 +286,7 @@ class Test_Rsvp_Form extends Base {
 			'gatherpress_rsvp_guests' => 5, // Exceeds limit.
 		);
 
-		$instance = Rsvp_Form::get_instance();
+		$instance = Form::get_instance();
 		$result   = $instance->process_rsvp( $data );
 
 		$this->assertTrue( $result['success'] );
@@ -320,7 +320,7 @@ class Test_Rsvp_Form extends Base {
 			'gatherpress_rsvp_anonymous' => true,
 		);
 
-		$instance = Rsvp_Form::get_instance();
+		$instance = Form::get_instance();
 		$result   = $instance->process_rsvp( $data );
 
 		$this->assertTrue( $result['success'] );
@@ -353,7 +353,7 @@ class Test_Rsvp_Form extends Base {
 			'gatherpress_rsvp_anonymous' => true, // Try to be anonymous.
 		);
 
-		$instance = Rsvp_Form::get_instance();
+		$instance = Form::get_instance();
 		$result   = $instance->process_rsvp( $data );
 
 		$this->assertTrue( $result['success'] );
@@ -371,7 +371,7 @@ class Test_Rsvp_Form extends Base {
 	 * @return void
 	 */
 	public function test_is_rsvp_form_submission(): void {
-		$instance = Rsvp_Form::get_instance();
+		$instance = Form::get_instance();
 
 		// Test with no POST data.
 		$result = $instance->is_rsvp_form_submission();
@@ -418,7 +418,7 @@ class Test_Rsvp_Form extends Base {
 	 * @return void
 	 */
 	public function test_initialize_rsvp_form_handling(): void {
-		$instance = Rsvp_Form::get_instance();
+		$instance = Form::get_instance();
 
 		// Remove existing hooks first to get clean slate.
 		remove_all_filters( 'preprocess_comment' );
@@ -492,7 +492,7 @@ class Test_Rsvp_Form extends Base {
 			3
 		);
 
-		$instance = Rsvp_Form::get_instance();
+		$instance = Form::get_instance();
 
 		// Test RSVP comment data - the method always processes when called.
 		$comment_data = array(
@@ -552,7 +552,7 @@ class Test_Rsvp_Form extends Base {
 
 		$_SERVER['REQUEST_METHOD'] = 'POST';
 
-		$instance = Rsvp_Form::get_instance();
+		$instance = Form::get_instance();
 		$instance->handle_rsvp_comment_post( $comment_id );
 
 		// Check that guest count was saved.
@@ -608,7 +608,7 @@ class Test_Rsvp_Form extends Base {
 			}
 		);
 
-		$instance = Rsvp_Form::get_instance();
+		$instance = Form::get_instance();
 
 		// Test with RSVP comment - should redirect to referer with success param.
 		$original_location = 'https://example.com/original';
@@ -649,7 +649,7 @@ class Test_Rsvp_Form extends Base {
 			)
 		);
 
-		$instance = Rsvp_Form::get_instance();
+		$instance = Form::get_instance();
 
 		// Test with anonymous user.
 		$result = Utility::invoke_hidden_method(
@@ -689,7 +689,7 @@ class Test_Rsvp_Form extends Base {
 
 		wp_set_current_user( $user_id );
 
-		$instance = Rsvp_Form::get_instance();
+		$instance = Form::get_instance();
 
 		// Test with matching email.
 		$result = Utility::invoke_hidden_method(
@@ -727,7 +727,7 @@ class Test_Rsvp_Form extends Base {
 			)
 		);
 
-		$instance = Rsvp_Form::get_instance();
+		$instance = Form::get_instance();
 
 		// Test with email of existing user (but not logged in as that user).
 		$result = Utility::invoke_hidden_method(
@@ -793,7 +793,7 @@ class Test_Rsvp_Form extends Base {
 			'custom_field_2'                   => 'test@example.com',
 		);
 
-		$instance = Rsvp_Form::get_instance();
+		$instance = Form::get_instance();
 		$instance->process_fields( $comment_id, $data );
 
 		// Check that meta fields were processed.
@@ -835,7 +835,7 @@ class Test_Rsvp_Form extends Base {
 			'gatherpress_rsvp_guests' => '5', // Try to add 5 guests.
 		);
 
-		$instance = Rsvp_Form::get_instance();
+		$instance = Form::get_instance();
 		$instance->process_fields( $comment_id, $data );
 
 		// Should be capped at 2.
@@ -868,7 +868,7 @@ class Test_Rsvp_Form extends Base {
 			'gatherpress_rsvp_anonymous' => '1', // Try to set anonymous.
 		);
 
-		$instance = Rsvp_Form::get_instance();
+		$instance = Form::get_instance();
 		$instance->process_fields( $comment_id, $data );
 
 		// Should not be saved since anonymous is disabled.
@@ -885,7 +885,7 @@ class Test_Rsvp_Form extends Base {
 			'gatherpress_event_updates_opt_in' => '1',
 		);
 
-		$instance = Rsvp_Form::get_instance();
+		$instance = Form::get_instance();
 
 		// Should not throw errors with invalid comment ID.
 		$instance->process_fields( 99999, $data );
@@ -922,7 +922,7 @@ class Test_Rsvp_Form extends Base {
 			3
 		);
 
-		$instance = Rsvp_Form::get_instance();
+		$instance = Form::get_instance();
 
 		$comment_data = array(
 			'comment_post_ID' => $post_id,
@@ -974,7 +974,7 @@ class Test_Rsvp_Form extends Base {
 			3
 		);
 
-		$instance = Rsvp_Form::get_instance();
+		$instance = Form::get_instance();
 
 		$comment_data = array(
 			'comment_post_ID' => $post_id,
@@ -1019,7 +1019,7 @@ class Test_Rsvp_Form extends Base {
 			3
 		);
 
-		$instance = Rsvp_Form::get_instance();
+		$instance = Form::get_instance();
 
 		$comment_data = array(
 			'comment_post_ID' => $post_id,
@@ -1066,7 +1066,7 @@ class Test_Rsvp_Form extends Base {
 			3
 		);
 
-		$instance     = Rsvp_Form::get_instance();
+		$instance     = Form::get_instance();
 		$comment_data = array(
 			'comment_post_ID' => $post_id,
 		);
@@ -1109,7 +1109,7 @@ class Test_Rsvp_Form extends Base {
 			3
 		);
 
-		$instance     = Rsvp_Form::get_instance();
+		$instance     = Form::get_instance();
 		$comment_data = array(
 			'comment_post_ID' => $post_id,
 		);
@@ -1158,7 +1158,7 @@ class Test_Rsvp_Form extends Base {
 			3
 		);
 
-		$instance = Rsvp_Form::get_instance();
+		$instance = Form::get_instance();
 
 		$comment_data = array(
 			'comment_post_ID' => $post_id,
@@ -1221,7 +1221,7 @@ class Test_Rsvp_Form extends Base {
 			3
 		);
 
-		$instance = Rsvp_Form::get_instance();
+		$instance = Form::get_instance();
 
 		$comment_data = array(
 			'comment_post_ID' => $post_id,
@@ -1252,7 +1252,7 @@ class Test_Rsvp_Form extends Base {
 			)
 		);
 
-		$instance = Rsvp_Form::get_instance();
+		$instance = Form::get_instance();
 		$instance->handle_rsvp_comment_post( $comment_id );
 
 		// Should not set any RSVP meta or terms.
@@ -1300,7 +1300,7 @@ class Test_Rsvp_Form extends Base {
 			3
 		);
 
-		$instance = Rsvp_Form::get_instance();
+		$instance = Form::get_instance();
 		$instance->handle_rsvp_comment_post( $comment_id );
 
 		// Verify the custom field processing was attempted.
@@ -1338,7 +1338,7 @@ class Test_Rsvp_Form extends Base {
 			}
 		);
 
-		$instance          = Rsvp_Form::get_instance();
+		$instance          = Form::get_instance();
 		$original_location = 'https://example.com/original';
 		$result            = $instance->handle_rsvp_comment_redirect( $original_location, $comment );
 
@@ -1363,7 +1363,7 @@ class Test_Rsvp_Form extends Base {
 		// Set REMOTE_ADDR.
 		$_SERVER['REMOTE_ADDR'] = '192.168.1.1';
 
-		$instance = Rsvp_Form::get_instance();
+		$instance = Form::get_instance();
 
 		$result = Utility::invoke_hidden_method(
 			$instance,
@@ -1392,7 +1392,7 @@ class Test_Rsvp_Form extends Base {
 		// Set invalid REMOTE_ADDR.
 		$_SERVER['REMOTE_ADDR'] = 'not-an-ip';
 
-		$instance = Rsvp_Form::get_instance();
+		$instance = Form::get_instance();
 
 		$result = Utility::invoke_hidden_method(
 			$instance,
@@ -1442,7 +1442,7 @@ class Test_Rsvp_Form extends Base {
 				'email'   => 'privacy@example.com',
 			);
 
-			$instance = Rsvp_Form::get_instance();
+			$instance = Form::get_instance();
 			$result   = $instance->process_rsvp( $data );
 
 			$this->assertTrue( $result['success'] );
@@ -1481,7 +1481,7 @@ class Test_Rsvp_Form extends Base {
 			'gatherpress_event_updates_opt_in' => '1',
 		);
 
-		$instance = Rsvp_Form::get_instance();
+		$instance = Form::get_instance();
 		$instance->process_fields( $comment_id, $data );
 
 		// Should complete without errors.
@@ -1508,7 +1508,7 @@ class Test_Rsvp_Form extends Base {
 			'custom_field_1'             => 'Test Value',
 		);
 
-		$instance = Rsvp_Form::get_instance();
+		$instance = Form::get_instance();
 		$instance->process_fields( $comment_id, $data );
 
 		// Should not process custom fields for non-RSVP comments.
@@ -1540,7 +1540,7 @@ class Test_Rsvp_Form extends Base {
 			'custom_field_1'             => 'Test Value',
 		);
 
-		$instance = Rsvp_Form::get_instance();
+		$instance = Form::get_instance();
 		$instance->process_fields( $comment_id, $data );
 
 		// Should not process custom fields when schemas are missing.
@@ -1590,7 +1590,7 @@ class Test_Rsvp_Form extends Base {
 			// field_2 is missing.
 		);
 
-		$instance = Rsvp_Form::get_instance();
+		$instance = Form::get_instance();
 		$instance->process_fields( $comment_id, $data );
 
 		// field_1 should be saved.
@@ -1623,7 +1623,7 @@ class Test_Rsvp_Form extends Base {
 			'gatherpress_rsvp_guests' => 'not-a-number',
 		);
 
-		$instance = Rsvp_Form::get_instance();
+		$instance = Form::get_instance();
 		$instance->process_fields( $comment_id, $data );
 
 		// Should not save non-numeric guest count.
@@ -1653,7 +1653,7 @@ class Test_Rsvp_Form extends Base {
 			'gatherpress_event_updates_opt_in' => false, // Opted out.
 		);
 
-		$instance = Rsvp_Form::get_instance();
+		$instance = Form::get_instance();
 		$instance->process_fields( $comment_id, $data );
 
 		// Should save 0 for opt-out.
@@ -1686,7 +1686,7 @@ class Test_Rsvp_Form extends Base {
 			'gatherpress_rsvp_guests' => 0,
 		);
 
-		$instance = Rsvp_Form::get_instance();
+		$instance = Form::get_instance();
 		$instance->process_fields( $comment_id, $data );
 
 		// Should save 0 for zero guests.
@@ -1702,7 +1702,7 @@ class Test_Rsvp_Form extends Base {
 	 * @return void
 	 */
 	public function test_initialize_rsvp_form_handling_not_rsvp_submission(): void {
-		$instance = Rsvp_Form::get_instance();
+		$instance = Form::get_instance();
 
 		// Remove existing hooks to get clean slate.
 		remove_all_filters( 'preprocess_comment' );
@@ -1739,7 +1739,7 @@ class Test_Rsvp_Form extends Base {
 			)
 		);
 
-		$instance          = Rsvp_Form::get_instance();
+		$instance          = Form::get_instance();
 		$original_location = 'https://example.com/original';
 		$result            = $instance->handle_rsvp_comment_redirect( $original_location, $comment );
 
@@ -1755,7 +1755,7 @@ class Test_Rsvp_Form extends Base {
 	 * @return void
 	 */
 	public function test_process_meta_fields_invalid_comment(): void {
-		$instance = Rsvp_Form::get_instance();
+		$instance = Form::get_instance();
 		$data     = array(
 			'gatherpress_event_updates_opt_in' => true,
 			'gatherpress_rsvp_guests'          => 2,
@@ -1793,7 +1793,7 @@ class Test_Rsvp_Form extends Base {
 			)
 		);
 
-		$instance = Rsvp_Form::get_instance();
+		$instance = Form::get_instance();
 
 		// Call with empty data array (no fields set).
 		$data = array();
@@ -1833,7 +1833,7 @@ class Test_Rsvp_Form extends Base {
 			'gatherpress_rsvp_anonymous' => false, // Explicitly not anonymous.
 		);
 
-		$instance = Rsvp_Form::get_instance();
+		$instance = Form::get_instance();
 		$instance->process_fields( $comment_id, $data );
 
 		// Should not save anonymous meta when value is false.
@@ -1871,7 +1871,7 @@ class Test_Rsvp_Form extends Base {
 			3
 		);
 
-		$instance = Rsvp_Form::get_instance();
+		$instance = Form::get_instance();
 		$instance->handle_rsvp_comment_post( $comment_id );
 
 		// Should not process any fields since it's not an RSVP comment.
@@ -1899,7 +1899,7 @@ class Test_Rsvp_Form extends Base {
 			unset( $_SERVER['REMOTE_ADDR'] );
 		}
 
-		$instance = Rsvp_Form::get_instance();
+		$instance = Form::get_instance();
 		$result   = Utility::invoke_hidden_method(
 			$instance,
 			'prepare_comment_data',
@@ -1938,7 +1938,7 @@ class Test_Rsvp_Form extends Base {
 			'gatherpress_rsvp_guests' => 3, // Try to add 3 guests.
 		);
 
-		$instance = Rsvp_Form::get_instance();
+		$instance = Form::get_instance();
 		$instance->process_fields( $comment_id, $data );
 
 		// Should save 3 guests when limit is 0 (no capping applied).
@@ -1973,7 +1973,7 @@ class Test_Rsvp_Form extends Base {
 			'gatherpress_rsvp_guests' => 10, // Try to add 10 guests.
 		);
 
-		$instance = Rsvp_Form::get_instance();
+		$instance = Form::get_instance();
 		$instance->process_fields( $comment_id, $data );
 
 		// Should cap at max limit of 2.
@@ -1988,7 +1988,7 @@ class Test_Rsvp_Form extends Base {
 	 * @return void
 	 */
 	public function test_is_rsvp_form_submission_missing_form_id(): void {
-		$instance = Rsvp_Form::get_instance();
+		$instance = Form::get_instance();
 
 		// Mock POST with comment_post_ID but missing gatherpress_rsvp_form_id.
 		add_filter(
@@ -2022,7 +2022,7 @@ class Test_Rsvp_Form extends Base {
 	 * @return void
 	 */
 	public function test_is_rsvp_form_submission_missing_post_id(): void {
-		$instance = Rsvp_Form::get_instance();
+		$instance = Form::get_instance();
 
 		// Mock POST with gatherpress_rsvp_form_id but missing comment_post_ID.
 		add_filter(
@@ -2071,7 +2071,7 @@ class Test_Rsvp_Form extends Base {
 			)
 		);
 
-		$instance = Rsvp_Form::get_instance();
+		$instance = Form::get_instance();
 
 		// Check for duplicate with same email (no user account).
 		$result = $instance->has_duplicate_rsvp( $post_id, 'nonuser@example.com' );
@@ -2128,7 +2128,7 @@ class Test_Rsvp_Form extends Base {
 			'comment_post_ID' => $post_id,
 		);
 
-		$instance = Rsvp_Form::get_instance();
+		$instance = Form::get_instance();
 		$result   = $instance->preprocess_rsvp_comment( $comment_data );
 
 		// When logged-in user email matches, should NOT apply pre_comment_approved filter.
@@ -2164,7 +2164,7 @@ class Test_Rsvp_Form extends Base {
 			3
 		);
 
-		$instance = Rsvp_Form::get_instance();
+		$instance = Form::get_instance();
 		$instance->handle_rsvp_comment_post( $invalid_comment_id );
 
 		// Should not throw errors when comment is null.
@@ -2199,7 +2199,7 @@ class Test_Rsvp_Form extends Base {
 			'gatherpress_rsvp_anonymous' => true,
 		);
 
-		$instance = Rsvp_Form::get_instance();
+		$instance = Form::get_instance();
 		$result   = $instance->process_rsvp( $data );
 
 		$this->assertTrue( $result['success'] );
@@ -2217,7 +2217,7 @@ class Test_Rsvp_Form extends Base {
 	 * @return void
 	 */
 	public function test_is_rsvp_form_submission_no_request_method(): void {
-		$instance = Rsvp_Form::get_instance();
+		$instance = Form::get_instance();
 
 		// Ensure REQUEST_METHOD is not set.
 		if ( isset( $_SERVER['REQUEST_METHOD'] ) ) {
@@ -2274,7 +2274,7 @@ class Test_Rsvp_Form extends Base {
 			'gatherpress_rsvp_anonymous' => true,
 		);
 
-		$instance = Rsvp_Form::get_instance();
+		$instance = Form::get_instance();
 		$instance->process_fields( $comment_id, $data );
 
 		// Should not save anonymous when setting is empty.
@@ -2304,7 +2304,7 @@ class Test_Rsvp_Form extends Base {
 
 		wp_set_current_user( $user_id );
 
-		$instance = Rsvp_Form::get_instance();
+		$instance = Form::get_instance();
 
 		// Submit with different email (not matching logged-in user).
 		$result = Utility::invoke_hidden_method(
@@ -2364,7 +2364,7 @@ class Test_Rsvp_Form extends Base {
 			}
 		);
 
-		$instance          = Rsvp_Form::get_instance();
+		$instance          = Form::get_instance();
 		$original_location = 'https://example.com/original';
 		$result            = $instance->handle_rsvp_comment_redirect( $original_location, $comment );
 
@@ -2427,7 +2427,7 @@ class Test_Rsvp_Form extends Base {
 			'comment_post_ID' => $post_id,
 		);
 
-		$instance = Rsvp_Form::get_instance();
+		$instance = Form::get_instance();
 
 		// Expect wp_die to be called.
 		$this->expectException( 'WPDieException' );
@@ -2464,7 +2464,7 @@ class Test_Rsvp_Form extends Base {
 			'gatherpress_event_updates_opt_in' => true,
 		);
 
-		$instance = Rsvp_Form::get_instance();
+		$instance = Form::get_instance();
 		Utility::invoke_hidden_method(
 			$instance,
 			'process_meta_fields',
@@ -2501,7 +2501,7 @@ class Test_Rsvp_Form extends Base {
 			'gatherpress_event_updates_opt_in' => false,
 		);
 
-		$instance = Rsvp_Form::get_instance();
+		$instance = Form::get_instance();
 		Utility::invoke_hidden_method(
 			$instance,
 			'process_meta_fields',
@@ -2541,7 +2541,7 @@ class Test_Rsvp_Form extends Base {
 			'gatherpress_rsvp_anonymous' => true,
 		);
 
-		$instance = Rsvp_Form::get_instance();
+		$instance = Form::get_instance();
 		Utility::invoke_hidden_method(
 			$instance,
 			'process_meta_fields',
@@ -2598,7 +2598,7 @@ class Test_Rsvp_Form extends Base {
 			'custom_field_2'             => '42',
 		);
 
-		$instance = Rsvp_Form::get_instance();
+		$instance = Form::get_instance();
 		Utility::invoke_hidden_method(
 			$instance,
 			'process_custom_fields',
@@ -2637,14 +2637,14 @@ class Test_Rsvp_Form extends Base {
 
 		$data = array();
 
-		$instance = Rsvp_Form::get_instance();
+		$instance = Form::get_instance();
 		Utility::invoke_hidden_method(
 			$instance,
 			'process_custom_fields',
 			array( $comment_id, $data )
 		);
 
-		// Should delegate to Rsvp_Form_Block::process_custom_fields_for_form.
+		// Should delegate to Blocks\Rsvp_Form::process_custom_fields_for_form.
 		// No assertions needed, just verifying it doesn't error.
 		$this->assertTrue( true );
 	}
@@ -2674,7 +2674,7 @@ class Test_Rsvp_Form extends Base {
 			'gatherpress_form_schema_id' => 'test-schema',
 		);
 
-		$instance = Rsvp_Form::get_instance();
+		$instance = Form::get_instance();
 		Utility::invoke_hidden_method(
 			$instance,
 			'process_custom_fields',
@@ -2712,7 +2712,7 @@ class Test_Rsvp_Form extends Base {
 			'custom_field_1'             => 'Test Value',
 		);
 
-		$instance = Rsvp_Form::get_instance();
+		$instance = Form::get_instance();
 		Utility::invoke_hidden_method(
 			$instance,
 			'process_custom_fields',
@@ -2732,7 +2732,7 @@ class Test_Rsvp_Form extends Base {
 	 * @return void
 	 */
 	public function test_handle_rsvp_creation_failure(): void {
-		$instance = Rsvp_Form::get_instance();
+		$instance = Form::get_instance();
 
 		$data = array(
 			'post_id' => 123,
@@ -2781,7 +2781,7 @@ class Test_Rsvp_Form extends Base {
 			)
 		);
 
-		$instance = Rsvp_Form::get_instance();
+		$instance = Form::get_instance();
 
 		$data = array(
 			'post_id' => $post_id,
@@ -2870,7 +2870,7 @@ class Test_Rsvp_Form extends Base {
 			// field_2, field_3, field_4 are intentionally missing.
 		);
 
-		$instance = Rsvp_Form::get_instance();
+		$instance = Form::get_instance();
 
 		// Call process_custom_fields directly using Utility.
 		Utility::invoke_hidden_method(
@@ -2941,7 +2941,7 @@ class Test_Rsvp_Form extends Base {
 		);
 		add_post_meta( $post_id, 'gatherpress_rsvp_form_schemas', $schemas );
 
-		$instance = Rsvp_Form::get_instance();
+		$instance = Form::get_instance();
 
 		// Scenario 1: Only alpha present (beta, gamma missing).
 		$data1 = array(
@@ -3047,7 +3047,7 @@ class Test_Rsvp_Form extends Base {
 			'my_custom_field'                  => 'Custom Value',
 		);
 
-		$instance = Rsvp_Form::get_instance();
+		$instance = Form::get_instance();
 		Utility::invoke_hidden_method(
 			$instance,
 			'process_custom_fields',

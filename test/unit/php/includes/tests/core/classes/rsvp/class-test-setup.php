@@ -1,28 +1,76 @@
 <?php
 /**
- * Class file for Test_Rsvp_Setup.
+ * Class file for Test_Setup.
  *
- * @package GatherPress\Core
+ * @package GatherPress\Core\Rsvp
  * @since 1.0.0
  */
 
-namespace GatherPress\Tests\Core;
+namespace GatherPress\Tests\Core\Rsvp;
 
 use GatherPress\Core\Event;
-use GatherPress\Core\Rsvp;
-use GatherPress\Core\Rsvp_List_Table;
-use GatherPress\Core\Rsvp_Setup;
-use GatherPress\Core\Rsvp_Token;
+use GatherPress\Core\Rsvp\Cleanup;
+use GatherPress\Core\Rsvp\Form;
+use GatherPress\Core\Rsvp\List_Table;
+use GatherPress\Core\Rsvp\Query;
+use GatherPress\Core\Rsvp\Rsvp;
+use GatherPress\Core\Rsvp\Setup;
+use GatherPress\Core\Rsvp\Token;
 use GatherPress\Core\Settings;
 use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;
 
 /**
- * Class Test_Rsvp_Setup.
+ * Class Test_Setup.
  *
- * @coversDefaultClass \GatherPress\Core\Rsvp_Setup
+ * @coversDefaultClass \GatherPress\Core\Rsvp\Setup
  */
-class Test_Rsvp_Setup extends Base {
+class Test_Setup extends Base {
+
+	/**
+	 * Rsvp\Setup now owns the instantiation of the Rsvp\* sibling
+	 * singletons (Cleanup, Form, Query) so the outer
+	 * `Setup::instantiate_classes()` can hand off with a single
+	 * `Rsvp\Setup::get_instance()` call. Per-sibling proof-of-construction
+	 * via their `setup_hooks()`-registered hooks — catches the case where
+	 * a sibling silently drops out of `Rsvp\Setup::instantiate_classes()`.
+	 *
+	 * @covers ::__construct
+	 * @covers ::instantiate_classes
+	 *
+	 * @return void
+	 */
+	public function test_instantiate_classes_registers_siblings(): void {
+		// Force the method to run inside the test's coverage window —
+		// Setup is a singleton cached during plugin bootstrap, so
+		// `get_instance()` here returns the cached instance and doesn't
+		// re-fire the constructor.
+		Utility::invoke_hidden_method( Setup::get_instance(), 'instantiate_classes' );
+
+		$expected_hooks = array(
+			Cleanup::class => array(
+				'gatherpress_rsvp_cleanup',
+				array( Cleanup::get_instance(), 'rsvp_cleanup' ),
+			),
+			Form::class    => array(
+				'init',
+				array( Form::get_instance(), 'initialize_rsvp_form_handling' ),
+			),
+			Query::class   => array(
+				'pre_get_comments',
+				array( Query::get_instance(), 'exclude_rsvp_from_comment_query' ),
+			),
+		);
+
+		foreach ( $expected_hooks as $class_name => $expected ) {
+			list( $hook, $callback ) = $expected;
+			$this->assertSame(
+				10,
+				has_action( $hook, $callback ),
+				sprintf( '%s must be instantiated so its %s hook registers.', $class_name, $hook )
+			);
+		}
+	}
 
 	/**
 	 * Coverage for constructor.
@@ -33,10 +81,10 @@ class Test_Rsvp_Setup extends Base {
 	 * @return void
 	 */
 	public function test_constructor(): void {
-		$instance = Rsvp_Setup::get_instance();
+		$instance = Setup::get_instance();
 
 		// Instance should be created successfully.
-		$this->assertInstanceOf( Rsvp_Setup::class, $instance );
+		$this->assertInstanceOf( Setup::class, $instance );
 	}
 
 	/**
@@ -48,7 +96,7 @@ class Test_Rsvp_Setup extends Base {
 	 * @return void
 	 */
 	public function test_setup_hooks(): void {
-		$instance = Rsvp_Setup::get_instance();
+		$instance = Setup::get_instance();
 		$hooks    = array(
 			array(
 				'type'     => 'action',
@@ -136,7 +184,7 @@ class Test_Rsvp_Setup extends Base {
 	 * @return void
 	 */
 	public function test_register_taxonomy(): void {
-		$instance = Rsvp_Setup::get_instance();
+		$instance = Setup::get_instance();
 		$instance->register_taxonomy();
 
 		$this->assertTrue( taxonomy_exists( Rsvp::TAXONOMY ) );
@@ -163,7 +211,7 @@ class Test_Rsvp_Setup extends Base {
 			)
 		);
 
-		$instance = Rsvp_Setup::get_instance();
+		$instance = Setup::get_instance();
 		$result   = $instance->adjust_comments_number( 5, $post_id );
 
 		$this->assertIsInt( $result );
@@ -198,7 +246,7 @@ class Test_Rsvp_Setup extends Base {
 			)
 		);
 
-		$instance = Rsvp_Setup::get_instance();
+		$instance = Setup::get_instance();
 		$emails   = array( 'test@example.com', 'admin@example.com' );
 
 		// For RSVP comments, should return empty array.
@@ -224,7 +272,7 @@ class Test_Rsvp_Setup extends Base {
 			)
 		);
 
-		$instance = Rsvp_Setup::get_instance();
+		$instance = Setup::get_instance();
 		$instance->maybe_process_waiting_list( $post_id );
 
 		// This method should run without errors for event posts.
@@ -240,7 +288,7 @@ class Test_Rsvp_Setup extends Base {
 	 * @return void
 	 */
 	public function test_get_user_identifier(): void {
-		$instance = Rsvp_Setup::get_instance();
+		$instance = Setup::get_instance();
 
 		// Test with no logged in user and no token.
 		$result = $instance->get_user_identifier();
@@ -258,7 +306,7 @@ class Test_Rsvp_Setup extends Base {
 		$user_id = $this->factory->user->create();
 		wp_set_current_user( $user_id );
 
-		$instance = Rsvp_Setup::get_instance();
+		$instance = Setup::get_instance();
 		$result   = $instance->get_user_identifier();
 
 		$this->assertSame( $user_id, $result );
@@ -289,7 +337,7 @@ class Test_Rsvp_Setup extends Base {
 		);
 
 		// Create a proper token and mock it via filter.
-		$token = new Rsvp_Token( $comment_id );
+		$token = new Token( $comment_id );
 		$token->generate_token();
 		$token_value  = $token->get_token();
 		$token_string = sprintf( '%d_%s', $comment_id, $token_value );
@@ -297,7 +345,7 @@ class Test_Rsvp_Setup extends Base {
 		add_filter(
 			'gatherpress_pre_get_http_input',
 			function ( $pre_value, $type, $var_name ) use ( $token_string ) {
-				if ( INPUT_GET === $type && Rsvp_Token::NAME === $var_name ) {
+				if ( INPUT_GET === $type && Token::NAME === $var_name ) {
 					return $token_string;
 				}
 				return null;
@@ -306,7 +354,7 @@ class Test_Rsvp_Setup extends Base {
 			3
 		);
 
-		$instance = Rsvp_Setup::get_instance();
+		$instance = Setup::get_instance();
 		$result   = $instance->get_user_identifier();
 
 		// Should return the email from the token.
@@ -345,7 +393,7 @@ class Test_Rsvp_Setup extends Base {
 			)
 		);
 
-		$instance = Rsvp_Setup::get_instance();
+		$instance = Setup::get_instance();
 
 		// For RSVP comments, content should be hidden for non-moderators.
 		$result = $instance->maybe_hide_rsvp_comment_content( 'Private RSVP note', $rsvp_comment );
@@ -381,7 +429,7 @@ class Test_Rsvp_Setup extends Base {
 		);
 
 		// Create a proper token and mock it via filter.
-		$token = new Rsvp_Token( $comment_id );
+		$token = new Token( $comment_id );
 		$token->generate_token();
 		$token_value  = $token->get_token();
 		$token_string = sprintf( '%d_%s', $comment_id, $token_value );
@@ -389,7 +437,7 @@ class Test_Rsvp_Setup extends Base {
 		add_filter(
 			'gatherpress_pre_get_http_input',
 			function ( $pre_value, $type, $var_name ) use ( $token_string ) {
-				if ( INPUT_GET === $type && Rsvp_Token::NAME === $var_name ) {
+				if ( INPUT_GET === $type && Token::NAME === $var_name ) {
 					return $token_string;
 				}
 				return null;
@@ -403,7 +451,7 @@ class Test_Rsvp_Setup extends Base {
 		$this->assertEquals( '0', $comment->comment_approved );
 
 		// Call the method (it should process the token and approve the comment).
-		$instance = Rsvp_Setup::get_instance();
+		$instance = Setup::get_instance();
 		$instance->handle_rsvp_token();
 
 		// Verify that the comment was approved based on the token.
@@ -422,7 +470,7 @@ class Test_Rsvp_Setup extends Base {
 	 * @return void
 	 */
 	public function test_handle_rsvp_token_with_no_token(): void {
-		$instance = Rsvp_Setup::get_instance();
+		$instance = Setup::get_instance();
 
 		// Should not throw error when no token is present.
 		$instance->handle_rsvp_token();
@@ -445,7 +493,7 @@ class Test_Rsvp_Setup extends Base {
 			)
 		);
 
-		$instance = Rsvp_Setup::get_instance();
+		$instance = Setup::get_instance();
 		$result   = $instance->adjust_comments_number( 5, $post_id );
 
 		// Should return original count for non-event posts.
@@ -462,7 +510,7 @@ class Test_Rsvp_Setup extends Base {
 	public function test_maybe_process_waiting_list_non_event_post(): void {
 		$post_id = $this->factory->post->create();
 
-		$instance = Rsvp_Setup::get_instance();
+		$instance = Setup::get_instance();
 
 		// Should not process waiting list for non-event posts.
 		$instance->maybe_process_waiting_list( $post_id );
@@ -477,7 +525,7 @@ class Test_Rsvp_Setup extends Base {
 	 * @return void
 	 */
 	public function test_maybe_hide_rsvp_comment_content_null_comment(): void {
-		$instance = Rsvp_Setup::get_instance();
+		$instance = Setup::get_instance();
 
 		$result = $instance->maybe_hide_rsvp_comment_content( 'Test content', null );
 		$this->assertSame( 'Test content', $result );
@@ -512,7 +560,7 @@ class Test_Rsvp_Setup extends Base {
 			)
 		);
 
-		$instance = Rsvp_Setup::get_instance();
+		$instance = Setup::get_instance();
 
 		// For RSVP comments, content should be visible for moderators.
 		$result = $instance->maybe_hide_rsvp_comment_content( 'Private RSVP note', $rsvp_comment );
@@ -530,7 +578,7 @@ class Test_Rsvp_Setup extends Base {
 	 * @return void
 	 */
 	public function test_set_rsvp_screen_options(): void {
-		$instance = Rsvp_Setup::get_instance();
+		$instance = Setup::get_instance();
 
 		// Test with correct option name.
 		$result = $instance->set_rsvp_screen_options( false, sprintf( '%s_per_page', Rsvp::COMMENT_TYPE ), 20 );
@@ -551,7 +599,7 @@ class Test_Rsvp_Setup extends Base {
 	public function test_highlight_admin_menu(): void {
 		global $plugin_page;
 
-		$instance = Rsvp_Setup::get_instance();
+		$instance = Setup::get_instance();
 
 		// Test with RSVP page.
 		$plugin_page = Rsvp::COMMENT_TYPE; // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
@@ -575,7 +623,7 @@ class Test_Rsvp_Setup extends Base {
 	public function test_highlight_admin_menu_different_page(): void {
 		global $plugin_page;
 
-		$instance = Rsvp_Setup::get_instance();
+		$instance = Setup::get_instance();
 
 		// Test with different page.
 		$plugin_page = 'some_other_page'; // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
@@ -594,7 +642,7 @@ class Test_Rsvp_Setup extends Base {
 	 * @return void
 	 */
 	public function test_set_submenu_file(): void {
-		$instance = Rsvp_Setup::get_instance();
+		$instance = Setup::get_instance();
 
 		$result = $instance->set_submenu_file();
 		$this->assertSame( Rsvp::COMMENT_TYPE, $result );
@@ -616,7 +664,7 @@ class Test_Rsvp_Setup extends Base {
 			$submenu = array(); // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
 		}
 
-		$instance = Rsvp_Setup::get_instance();
+		$instance = Setup::get_instance();
 		$instance->add_rsvp_submenu_page();
 
 		// Verify that the load hook was registered.
@@ -646,10 +694,10 @@ class Test_Rsvp_Setup extends Base {
 	 * @return void
 	 */
 	public function test_setup_rsvp_list_table_screen_options(): void {
-		$instance = Rsvp_Setup::get_instance();
+		$instance = Setup::get_instance();
 
 		// Set up list_table property.
-		Utility::set_and_get_hidden_property( $instance, 'list_table', new RSVP_List_Table() );
+		Utility::set_and_get_hidden_property( $instance, 'list_table', new List_Table() );
 
 		// Set up a proper screen context for add_screen_option to work.
 		$screen_id = sprintf( 'events_page_%s', Rsvp::COMMENT_TYPE );
@@ -665,9 +713,9 @@ class Test_Rsvp_Setup extends Base {
 		$this->assertNotEmpty( $options, 'Screen options should not be empty' );
 		$this->assertArrayHasKey( 'per_page', $options, 'Per page option should be registered' );
 		$this->assertEquals(
-			RSVP_List_Table::DEFAULT_PER_PAGE,
+			List_Table::DEFAULT_PER_PAGE,
 			$options['per_page']['default'],
-			'Default per page should match RSVP_List_Table::DEFAULT_PER_PAGE'
+			'Default per page should match List_Table::DEFAULT_PER_PAGE'
 		);
 
 		// Clean up.
@@ -686,7 +734,7 @@ class Test_Rsvp_Setup extends Base {
 		$user_id = $this->factory->user->create( array( 'role' => 'administrator' ) );
 		wp_set_current_user( $user_id );
 
-		$instance = Rsvp_Setup::get_instance();
+		$instance = Setup::get_instance();
 
 		ob_start();
 		$instance->render_rsvp_admin_page();
@@ -706,7 +754,7 @@ class Test_Rsvp_Setup extends Base {
 	 * @return void
 	 */
 	public function test_add_rsvp_screen_options(): void {
-		$instance = Rsvp_Setup::get_instance();
+		$instance = Setup::get_instance();
 
 		// Mock the screen.
 		set_current_screen( 'edit-comments' );
@@ -727,7 +775,7 @@ class Test_Rsvp_Setup extends Base {
 	 * @return void
 	 */
 	public function test_set_rsvp_screen_options_invalid_option(): void {
-		$instance = Rsvp_Setup::get_instance();
+		$instance = Setup::get_instance();
 
 		// Test with invalid option name.
 		$result = $instance->set_rsvp_screen_options( false, 'invalid_option', 10 );
@@ -748,7 +796,7 @@ class Test_Rsvp_Setup extends Base {
 		// Set up the $_GET parameter for the RSVP page.
 		$_GET['page'] = Rsvp::COMMENT_TYPE; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 
-		$instance = Rsvp_Setup::get_instance();
+		$instance = Setup::get_instance();
 
 		// Mock the screen - use a proper admin screen.
 		$screen = \WP_Screen::get( 'admin_init' );
@@ -776,7 +824,7 @@ class Test_Rsvp_Setup extends Base {
 		// Ensure $_GET['page'] is not set.
 		unset( $_GET['page'] );
 
-		$instance = Rsvp_Setup::get_instance();
+		$instance = Setup::get_instance();
 
 		// Should return early without doing anything.
 		$instance->add_rsvp_screen_options();
@@ -802,7 +850,7 @@ class Test_Rsvp_Setup extends Base {
 		$_REQUEST['status'] = 'attending'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		$_REQUEST['event']  = '123'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 
-		$instance = Rsvp_Setup::get_instance();
+		$instance = Setup::get_instance();
 
 		ob_start();
 		$instance->render_rsvp_admin_page();
@@ -828,7 +876,7 @@ class Test_Rsvp_Setup extends Base {
 		$user_id = $this->factory->user->create( array( 'role' => 'subscriber' ) );
 		wp_set_current_user( $user_id );
 
-		$instance = Rsvp_Setup::get_instance();
+		$instance = Setup::get_instance();
 
 		// Should trigger wp_die.
 		$this->expectException( 'WPDieException' );
@@ -851,7 +899,7 @@ class Test_Rsvp_Setup extends Base {
 		delete_post_meta( $post_id, 'gatherpress_enable_rsvp' );
 
 		// Default mode is all_on; the delegation should write 1.
-		Rsvp_Setup::get_instance()->maybe_set_rsvp_meta_default( $post_id );
+		Setup::get_instance()->maybe_set_rsvp_meta_default( $post_id );
 
 		$this->assertSame(
 			'1',
@@ -871,7 +919,7 @@ class Test_Rsvp_Setup extends Base {
 		$post_id = $this->factory->post->create( array( 'post_type' => 'post' ) );
 
 		// Standard post type does not support gatherpress-rsvp; meta should not be written.
-		Rsvp_Setup::get_instance()->maybe_set_rsvp_meta_default( $post_id );
+		Setup::get_instance()->maybe_set_rsvp_meta_default( $post_id );
 
 		$this->assertSame(
 			'',
@@ -888,7 +936,7 @@ class Test_Rsvp_Setup extends Base {
 	 * @return void
 	 */
 	public function test_maybe_disable_rsvp_when_enabled(): void {
-		$instance = Rsvp_Setup::get_instance();
+		$instance = Setup::get_instance();
 
 		// Verify that the event post type supports RSVP before the call.
 		$this->assertTrue(
@@ -914,7 +962,7 @@ class Test_Rsvp_Setup extends Base {
 	 * @return void
 	 */
 	public function test_maybe_disable_rsvp_when_disabled(): void {
-		$instance = Rsvp_Setup::get_instance();
+		$instance = Setup::get_instance();
 
 		// Temporarily set rsvp_mode to disabled via the settings option.
 		Settings::get_instance()->set( 'rsvp_mode', 'disabled' );
@@ -943,7 +991,7 @@ class Test_Rsvp_Setup extends Base {
 	 * @return void
 	 */
 	public function test_filter_rsvp_block_types_when_enabled(): void {
-		$instance = Rsvp_Setup::get_instance();
+		$instance = Setup::get_instance();
 
 		// Both rsvp_mode and enable_open_rsvp must be active for no filtering to occur.
 		Settings::get_instance()->set( 'enable_open_rsvp', true );
@@ -969,7 +1017,7 @@ class Test_Rsvp_Setup extends Base {
 	 * @return void
 	 */
 	public function test_filter_rsvp_block_types_when_disabled(): void {
-		$instance = Rsvp_Setup::get_instance();
+		$instance = Setup::get_instance();
 
 		// Temporarily set rsvp_mode to disabled via the settings option.
 		Settings::get_instance()->set( 'rsvp_mode', 'disabled' );
@@ -1026,7 +1074,7 @@ class Test_Rsvp_Setup extends Base {
 	 * @return void
 	 */
 	public function test_filter_rsvp_block_types_expands_true_when_disabled(): void {
-		$instance = Rsvp_Setup::get_instance();
+		$instance = Setup::get_instance();
 
 		Settings::get_instance()->set( 'rsvp_mode', 'disabled' );
 
@@ -1051,7 +1099,7 @@ class Test_Rsvp_Setup extends Base {
 	 * @return void
 	 */
 	public function test_filter_rsvp_block_types_returns_non_array_unchanged_when_disabled(): void {
-		$instance = Rsvp_Setup::get_instance();
+		$instance = Setup::get_instance();
 
 		Settings::get_instance()->set( 'rsvp_mode', 'disabled' );
 
@@ -1071,7 +1119,7 @@ class Test_Rsvp_Setup extends Base {
 	 * @return void
 	 */
 	public function test_filter_rsvp_block_types_removes_rsvp_form_when_open_rsvp_disabled(): void {
-		$instance = Rsvp_Setup::get_instance();
+		$instance = Setup::get_instance();
 
 		Settings::get_instance()->set( 'enable_open_rsvp', false );
 
@@ -1121,7 +1169,7 @@ class Test_Rsvp_Setup extends Base {
 	 * @return void
 	 */
 	public function test_filter_rsvp_block_types_expands_true_when_open_rsvp_disabled(): void {
-		$instance = Rsvp_Setup::get_instance();
+		$instance = Setup::get_instance();
 
 		Settings::get_instance()->set( 'enable_open_rsvp', false );
 
@@ -1151,7 +1199,7 @@ class Test_Rsvp_Setup extends Base {
 	 * @return void
 	 */
 	public function test_filter_rsvp_block_types_returns_non_array_unchanged_when_open_rsvp_disabled(): void {
-		$instance = Rsvp_Setup::get_instance();
+		$instance = Setup::get_instance();
 
 		Settings::get_instance()->set( 'enable_open_rsvp', false );
 
@@ -1181,7 +1229,7 @@ class Test_Rsvp_Setup extends Base {
 
 		Settings::get_instance()->set( 'rsvp_mode', 'disabled' );
 
-		Rsvp_Setup::get_instance()->add_rsvp_submenu_page();
+		Setup::get_instance()->add_rsvp_submenu_page();
 
 		// Submenu should be unchanged since the method returns early.
 		$this->assertSame(

@@ -14,9 +14,8 @@ namespace GatherPress\Core\Blocks;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
-use GatherPress\Core\Block;
 use GatherPress\Core\Traits\Singleton;
-use GatherPress\Core\Venue\Setup;
+use GatherPress\Core\Venue\Setup as Venue_Setup;
 use GatherPress\Core\Venue\Venue as Venue_Core;
 use WP_Block;
 use WP_Post;
@@ -120,7 +119,7 @@ class Venue {
 		}
 
 		// Get post ID from block attributes or global (handles query loop, override, global).
-		$post_id   = Block::get_instance()->get_post_id( $block );
+		$post_id   = Setup::get_instance()->get_post_id( $block );
 		$post_type = get_post_type( $post_id );
 
 		if ( Venue_Core::POST_TYPE === $post_type ) {
@@ -128,7 +127,7 @@ class Venue {
 		}
 
 		if ( post_type_supports( $post_type, 'gatherpress-venue' ) ) {
-			$venue_post = Setup::get_instance()->get_venue_post_from_event_post_id( $post_id );
+			$venue_post = Venue_Setup::get_instance()->get_venue_post_from_event_post_id( $post_id );
 
 			if ( $venue_post instanceof WP_Post && Venue_Core::POST_TYPE === $venue_post->post_type ) {
 				return $venue_post;

@@ -1,30 +1,30 @@
 <?php
 /**
- * Class handles unit tests for GatherPress\Core\RSVP_List_Table.
+ * Class handles unit tests for GatherPress\Core\Rsvp\List_Table.
  *
- * @package GatherPress\Core
+ * @package GatherPress\Core\Rsvp
  * @since 1.0.0
  */
 
-namespace GatherPress\Tests\Core;
+namespace GatherPress\Tests\Core\Rsvp;
 
 use GatherPress\Core\Event;
-use GatherPress\Core\Rsvp;
-use GatherPress\Core\RSVP_List_Table;
+use GatherPress\Core\Rsvp\List_Table;
+use GatherPress\Core\Rsvp\Rsvp;
 use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;
 use WP_Screen;
 
 /**
- * Class Test_RSVP_List_Table.
+ * Class Test_List_Table.
  *
- * @coversDefaultClass \GatherPress\Core\RSVP_List_Table
+ * @coversDefaultClass \GatherPress\Core\Rsvp\List_Table
  */
-class Test_RSVP_List_Table extends Base {
+class Test_List_Table extends Base {
 	/**
 	 * The RSVP list table instance.
 	 *
-	 * @var RSVP_List_Table
+	 * @var List_Table
 	 */
 	private $list_table;
 
@@ -48,7 +48,7 @@ class Test_RSVP_List_Table extends Base {
 	public function set_up(): void {
 		parent::set_up();
 
-		$this->list_table = new RSVP_List_Table();
+		$this->list_table = new List_Table();
 
 		// Create a test event.
 		$this->event_id = $this->factory->post->create(
@@ -84,12 +84,12 @@ class Test_RSVP_List_Table extends Base {
 	 * @return void
 	 */
 	public function test_construct(): void {
-		$list_table = new RSVP_List_Table();
+		$list_table = new List_Table();
 
 		$this->assertInstanceOf(
-			RSVP_List_Table::class,
+			List_Table::class,
 			$list_table,
-			'Failed to assert instance is RSVP_List_Table.'
+			'Failed to assert instance is List_Table.'
 		);
 	}
 

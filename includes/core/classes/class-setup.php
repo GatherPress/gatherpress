@@ -57,17 +57,14 @@ class Setup {
 	 */
 	protected function instantiate_classes(): void {
 		Assets::get_instance();
-		Block::get_instance();
+		Blocks\Setup::get_instance();
 		Cli::get_instance();
 		Event\Setup::get_instance();
 		Export::get_instance();
 		Feed::get_instance();
 		Geocoding::get_instance();
 		Import::get_instance();
-		Rsvp_Cleanup::get_instance();
-		Rsvp_Form::get_instance();
-		Rsvp_Query::get_instance();
-		Rsvp_Setup::get_instance();
+		Rsvp\Setup::get_instance();
 		Settings::get_instance();
 		Topic::get_instance();
 		User::get_instance();

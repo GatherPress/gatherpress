@@ -596,4 +596,32 @@ class Utility {
 		exit;
 		// @codeCoverageIgnoreEnd
 	}
+
+	/**
+	 * Recursively retrieves all block names from a given parsed-block array.
+	 *
+	 * Traverses a single block's structure (including its `innerBlocks`) and collects
+	 * every `blockName` it finds into a flat list. The input is the parsed-block array
+	 * shape that WordPress hands to `render_block` filters and `WP_Block`.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param array $blocks A parsed block, typically including `blockName` and `innerBlocks`.
+	 * @return array An array of block names found within the provided block structure.
+	 */
+	public static function get_block_names( array $blocks ): array {
+		$block_names = array();
+
+		if ( isset( $blocks['blockName'] ) ) {
+			$block_names[] = $blocks['blockName'];
+		}
+
+		if ( ! empty( $blocks['innerBlocks'] ) ) {
+			foreach ( $blocks['innerBlocks'] as $inner_block ) {
+				$block_names = array_merge( $block_names, self::get_block_names( $inner_block ) );
+			}
+		}
+
+		return $block_names;
+	}
 }

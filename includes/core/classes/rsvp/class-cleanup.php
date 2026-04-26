@@ -4,24 +4,25 @@
  *
  * @since 1.0.0
  *
- * @package GatherPress\Core
+ * @package GatherPress\Core\Rsvp
  */
 
-namespace GatherPress\Core;
+namespace GatherPress\Core\Rsvp;
 
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
+use GatherPress\Core\Settings;
 use GatherPress\Core\Traits\Singleton;
 
 /**
- * Class Rsvp_Cleanup.
+ * Class Cleanup.
  *
  * @since 1.0.0
  *
  * This class manages rsvp cleanup events.
  */
-class Rsvp_Cleanup {
+class Cleanup {
 	use Singleton;
 
 	/**
@@ -62,7 +63,7 @@ class Rsvp_Cleanup {
 	 */
 	public function rsvp_cleanup(): void {
 		// Perform cleanup.
-		$rsvp_query = Rsvp_Query::get_instance();
+		$rsvp_query = Query::get_instance();
 		$rsvps      = $rsvp_query->get_rsvps(
 			array(
 				// 1. Find all rsvps with comment approved = 0.

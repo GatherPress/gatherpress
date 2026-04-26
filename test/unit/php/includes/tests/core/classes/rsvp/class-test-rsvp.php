@@ -1,26 +1,55 @@
 <?php
 /**
- * Class handles unit tests for GatherPress\Core\Rsvp.
+ * Class handles unit tests for GatherPress\Core\Rsvp\Rsvp.
  *
- * @package GatherPress\Core
+ * @package GatherPress\Core\Rsvp
  * @since 1.0.0
  */
 
-namespace GatherPress\Tests\Core;
+namespace GatherPress\Tests\Core\Rsvp;
 
 use GatherPress\Core\Event;
-use GatherPress\Core\Rsvp;
+use GatherPress\Core\Rsvp\Rsvp;
 use GatherPress\Core\Settings;
 use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;
+use ReflectionClass;
 use WP_Error;
 
 /**
  * Class Test_Rsvp.
  *
- * @coversDefaultClass \GatherPress\Core\Rsvp
+ * @coversDefaultClass \GatherPress\Core\Rsvp\Rsvp
  */
 class Test_Rsvp extends Base {
+	/**
+	 * Asserts that the prior fully-qualified class name `GatherPress\Core\Rsvp` continues
+	 * to resolve to the current class `GatherPress\Core\Rsvp\Rsvp` via the alias map in
+	 * `includes/core/register-class-aliases.php`. Removing the alias entry would silently
+	 * break external consumers (other plugins, theme code) that reference the prior FQN —
+	 * this test fails loudly first.
+	 *
+	 * @return void
+	 */
+	public function test_prior_fqn_resolves_to_current_class(): void {
+		$prior_fqn = 'GatherPress\\Core\\Rsvp';
+
+		$this->assertTrue(
+			class_exists( $prior_fqn ),
+			'The prior fully-qualified class name should resolve via the alias map.'
+		);
+
+		$reflection = new ReflectionClass( $prior_fqn );
+		$this->assertSame(
+			Rsvp::class,
+			$reflection->getName(),
+			'The prior FQN should resolve to the current Rsvp class.'
+		);
+
+		// Read a class constant through the prior FQN to confirm runtime usability.
+		$this->assertSame( Rsvp::COMMENT_TYPE, constant( $prior_fqn . '::COMMENT_TYPE' ) );
+	}
+
 	/**
 	 * Coverage for get method.
 	 *
