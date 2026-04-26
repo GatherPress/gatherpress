@@ -84,12 +84,11 @@ class Rsvp_Template {
 	 * @return string The filtered block content.
 	 */
 	public function ensure_block_styles_loaded( string $block_content ): string {
-		$block_instance = Setup::get_instance();
-		$tag            = new WP_HTML_Tag_Processor( $block_content );
+		$tag = new WP_HTML_Tag_Processor( $block_content );
 
 		if ( $tag->next_tag() && ! empty( $tag->get_attribute( 'data-blocks' ) ) ) {
 			$inner_blocks = (array) json_decode( $tag->get_attribute( 'data-blocks' ), true );
-			$inner_blocks = $block_instance->get_block_names( $inner_blocks );
+			$inner_blocks = Utility::get_block_names( $inner_blocks );
 
 			foreach ( $inner_blocks as $inner_block ) {
 				$block_registry = WP_Block_Type_Registry::get_instance();
