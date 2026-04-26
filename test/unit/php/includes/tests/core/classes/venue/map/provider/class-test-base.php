@@ -115,7 +115,7 @@ class Test_Base extends GatherPress_Test_Base {
 				int $width,
 				int $height,
 				int $density = 1
-			): ?\GdImage {
+			) {
 				return null;
 			}
 
@@ -177,7 +177,7 @@ class Test_Base extends GatherPress_Test_Base {
 				int $width,
 				int $height,
 				int $density = 1
-			): ?\GdImage {
+			) {
 				return null;
 			}
 		};

@@ -19,8 +19,6 @@ namespace GatherPress\Core\Venue\Map\Provider;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
-use GdImage;
-
 /**
  * Class Base.
  *
@@ -58,12 +56,17 @@ abstract class Base {
 	/**
 	 * Render a finished, marker-stamped, possibly-retina static map.
 	 *
-	 * Implementations MUST return a `GdImage` of exactly
+	 * Implementations MUST return a GD image of exactly
 	 * `($width * $density) × ($height * $density)` pixels with the venue
 	 * marker already drawn, OR null when rendering fails (network error,
 	 * tile-fetch deadline exceeded, GD missing, unsupported zoom × density
 	 * combo, etc.). The caller treats null as "skip this combo" — it does
 	 * NOT fall back to another provider.
+	 *
+	 * Return type is intentionally untyped at the PHP signature level so the
+	 * abstract is loadable on PHP 7.4 (where the GD extension returns a
+	 * `resource`, not a `GdImage` — the latter class is 8.0+). PHPStan reads
+	 * the docblock instead.
 	 *
 	 * @since 1.0.0
 	 *
@@ -73,7 +76,7 @@ abstract class Base {
 	 * @param int   $width     Logical pixel width (at density 1).
 	 * @param int   $height    Logical pixel height (at density 1).
 	 * @param int   $density   Pixel-density multiplier. 1 = standard, 2 = retina.
-	 * @return GdImage|null Finished image, or null on failure.
+	 * @return \GdImage|resource|null Finished image, or null on failure.
 	 */
 	abstract public function render(
 		float $latitude,
@@ -82,7 +85,7 @@ abstract class Base {
 		int $width,
 		int $height,
 		int $density = 1
-	): ?GdImage;
+	);
 
 	/**
 	 * Attribution markup the front end MUST display alongside the static

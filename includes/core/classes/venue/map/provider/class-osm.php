@@ -19,7 +19,6 @@ namespace GatherPress\Core\Venue\Map\Provider;
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Venue\Map\Map;
-use GdImage;
 
 /**
  * Class OSM.
@@ -89,6 +88,10 @@ class OSM extends Base {
 	 * unavailable, when the requested density is unsupported, or when the
 	 * retina variant would require a tile zoom past `Map::ZOOM_MAX`.
 	 *
+	 * Return type is intentionally untyped at the PHP signature level for
+	 * PHP 7.4 compatibility (GD returns a `resource` there, not a
+	 * `GdImage`).
+	 *
 	 * @since 1.0.0
 	 *
 	 * @param float $latitude  Venue latitude in decimal degrees.
@@ -97,7 +100,7 @@ class OSM extends Base {
 	 * @param int   $width     Logical pixel width (at density 1).
 	 * @param int   $height    Logical pixel height (at density 1).
 	 * @param int   $density   Pixel-density multiplier. 1 = standard, 2 = retina.
-	 * @return GdImage|null Finished image, or null on failure.
+	 * @return \GdImage|resource|null Finished image, or null on failure.
 	 */
 	public function render(
 		float $latitude,
@@ -106,7 +109,7 @@ class OSM extends Base {
 		int $width,
 		int $height,
 		int $density = 1
-	): ?GdImage {
+	) {
 		// PHP built without the GD extension. Can't simulate in a unit test without making the runtime itself broken.
 		if ( ! function_exists( 'imagecreatetruecolor' ) ) { // @codeCoverageIgnore
 			return null; // @codeCoverageIgnore
@@ -276,13 +279,13 @@ class OSM extends Base {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param GdImage $canvas Destination canvas.
-	 * @param int     $x      Pixel X position (marker center).
-	 * @param int     $y      Pixel Y position (marker center).
-	 * @param float   $scale  Multiplier applied to the marker radii.
+	 * @param \GdImage|resource $canvas Destination canvas.
+	 * @param int               $x      Pixel X position (marker center).
+	 * @param int               $y      Pixel Y position (marker center).
+	 * @param float             $scale  Multiplier applied to the marker radii.
 	 * @return void
 	 */
-	public function stamp_marker( GdImage $canvas, int $x, int $y, float $scale = 1.0 ): void {
+	public function stamp_marker( $canvas, int $x, int $y, float $scale = 1.0 ): void {
 		$white = imagecolorallocate( $canvas, 255, 255, 255 );
 		$red   = imagecolorallocate( $canvas, 220, 53, 69 );
 		$dark  = imagecolorallocate( $canvas, 30, 30, 30 );

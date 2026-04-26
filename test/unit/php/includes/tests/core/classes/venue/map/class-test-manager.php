@@ -358,7 +358,7 @@ class Test_Manager extends Base {
 				int $width,
 				int $height,
 				int $density = 1
-			): ?\GdImage {
+			) {
 				return null;
 			}
 		};
