@@ -23,7 +23,7 @@ const DEFAULT_VENUE_POST_TYPE = 'gatherpress_venue';
  * Returns the venue taxonomy slug for a given venue post type.
  *
  * The taxonomy is derived by prepending an underscore to the venue post type slug,
- * following the convention established in PHP via Venue_Setup::get_taxonomy().
+ * following the convention established in PHP via Venue\Setup::get_taxonomy().
  * For example, 'gatherpress_venue' becomes '_gatherpress_venue'.
  *
  * @since 1.0.0

@@ -11,7 +11,7 @@
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
-use GatherPress\Core\Rsvp;
+use GatherPress\Core\Rsvp\Rsvp;
 
 $gatherpress_rsvp = new Rsvp( get_the_ID() );
 

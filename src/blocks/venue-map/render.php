@@ -30,8 +30,8 @@
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Settings;
-use GatherPress\Core\Venue_Setup;
-use GatherPress\Core\Venue_Map;
+use GatherPress\Core\Venue\Map;
+use GatherPress\Core\Venue\Setup;
 
 if ( ! isset( $attributes ) || ! is_array( $attributes ) ) {
 	return;
@@ -39,33 +39,33 @@ if ( ! isset( $attributes ) || ! is_array( $attributes ) ) {
 
 $gatherpress_post_id     = (int) get_the_ID();
 $gatherpress_post_type   = (string) get_post_type();
-$gatherpress_venue_setup = Venue_Setup::get_instance();
+$gatherpress_venue_setup = Setup::get_instance();
 $gatherpress_venue_meta  = $gatherpress_venue_setup->get_venue_meta( $gatherpress_post_id, $gatherpress_post_type );
 
-$gatherpress_address = (string) ( $gatherpress_venue_meta['fullAddress'] ?? '' );
+$gatherpress_address = (string) ( $gatherpress_venue_meta['address'] ?? '' );
 
 if ( '' === $gatherpress_address ) {
 	return;
 }
 
-$gatherpress_render_mode = 'static' === ( $attributes['renderMode'] ?? Venue_Map::DEFAULT_RENDER_MODE )
+$gatherpress_render_mode = 'static' === ( $attributes['renderMode'] ?? Map::DEFAULT_RENDER_MODE )
 	? 'static'
 	: 'interactive';
-$gatherpress_zoom        = (int) ( $attributes['zoom'] ?? Venue_Map::DEFAULT_ZOOM );
+$gatherpress_zoom        = (int) ( $attributes['zoom'] ?? Map::DEFAULT_ZOOM );
 $gatherpress_raw_width   = (int) ( $attributes['width'] ?? 0 );
-$gatherpress_raw_height  = (int) ( $attributes['height'] ?? Venue_Map::DEFAULT_HEIGHT );
-$gatherpress_ratio       = (string) ( $attributes['aspectRatio'] ?? Venue_Map::DEFAULT_ASPECT_RATIO );
+$gatherpress_raw_height  = (int) ( $attributes['height'] ?? Map::DEFAULT_HEIGHT );
+$gatherpress_ratio       = (string) ( $attributes['aspectRatio'] ?? Map::DEFAULT_ASPECT_RATIO );
 
 // Allow-list for the `scale` block attribute. Anything outside this set
 // (a hand-edited block attr, a filter that mutates the value, a migration
 // miss) falls back to `cover` so the inline style stays safe and
 // predictable.
-$gatherpress_scale_candidate = (string) ( $attributes['scale'] ?? Venue_Map::DEFAULT_SCALE );
-$gatherpress_scale           = in_array( $gatherpress_scale_candidate, Venue_Map::SCALE_OPTIONS, true )
+$gatherpress_scale_candidate = (string) ( $attributes['scale'] ?? Map::DEFAULT_SCALE );
+$gatherpress_scale           = in_array( $gatherpress_scale_candidate, Map::SCALE_OPTIONS, true )
 	? $gatherpress_scale_candidate
-	: Venue_Map::DEFAULT_SCALE;
+	: Map::DEFAULT_SCALE;
 
-$gatherpress_static_map_descriptor = Venue_Map::get_instance()->get_descriptor_for_post(
+$gatherpress_static_map_descriptor = Map::get_instance()->get_descriptor_for_post(
 	$gatherpress_post_id,
 	$gatherpress_post_type,
 	$gatherpress_zoom,
@@ -121,14 +121,14 @@ if ( 0 === $gatherpress_raw_width || 0 === $gatherpress_raw_height || $gatherpre
 	// REST validator so the two can never drift apart.
 	$gatherpress_ratio_candidate = '' !== $gatherpress_ratio
 		? $gatherpress_ratio
-		: Venue_Map::DEFAULT_ASPECT_RATIO;
+		: Map::DEFAULT_ASPECT_RATIO;
 	$gatherpress_ratio_is_valid  = (bool) preg_match(
-		Venue_Map::ASPECT_RATIO_PATTERN,
+		Map::ASPECT_RATIO_PATTERN,
 		$gatherpress_ratio_candidate
 	);
 	$gatherpress_styles[]        = sprintf(
 		'aspect-ratio:%s',
-		$gatherpress_ratio_is_valid ? $gatherpress_ratio_candidate : Venue_Map::DEFAULT_ASPECT_RATIO
+		$gatherpress_ratio_is_valid ? $gatherpress_ratio_candidate : Map::DEFAULT_ASPECT_RATIO
 	);
 }
 
@@ -138,12 +138,12 @@ if ( ! empty( $gatherpress_styles ) ) {
 
 if ( 'interactive' === $gatherpress_render_mode ) {
 	$gatherpress_block_attrs = array(
-		'fullAddress'  => $gatherpress_address,
+		'address'      => $gatherpress_address,
 		'latitude'     => (string) ( $gatherpress_venue_meta['latitude'] ?? '' ),
 		'longitude'    => (string) ( $gatherpress_venue_meta['longitude'] ?? '' ),
-		'mapZoomLevel' => $attributes['zoom'] ?? Venue_Map::DEFAULT_ZOOM,
-		'mapType'      => $attributes['type'] ?? Venue_Map::DEFAULT_MAP_TYPE,
-		'mapHeight'    => $attributes['height'] ?? Venue_Map::DEFAULT_HEIGHT,
+		'mapZoomLevel' => $attributes['zoom'] ?? Map::DEFAULT_ZOOM,
+		'mapType'      => $attributes['type'] ?? Map::DEFAULT_MAP_TYPE,
+		'mapHeight'    => $attributes['height'] ?? Map::DEFAULT_HEIGHT,
 		'mapPlatform'  => Settings::get_instance()->get( 'map_platform' ),
 		'pluginUrl'    => GATHERPRESS_CORE_URL,
 	);

@@ -10,7 +10,7 @@ namespace GatherPress\Tests\Core\Blocks;
 
 use GatherPress\Core\Blocks\Rsvp;
 use GatherPress\Core\Event;
-use GatherPress\Core\Event_Setup;
+use GatherPress\Core\Event\Setup;
 use GatherPress\Core\Settings;
 use GatherPress\Tests\Base;
 
@@ -210,7 +210,7 @@ class Test_Rsvp extends Base {
 		)->get();
 
 		// Trigger to set datetimes.
-		Event_Setup::get_instance()->set_datetimes( $post->ID );
+		Setup::get_instance()->set_datetimes( $post->ID );
 
 		$block = array(
 			'blockName' => 'gatherpress/rsvp-v2',

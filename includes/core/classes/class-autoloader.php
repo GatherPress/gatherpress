@@ -82,38 +82,55 @@ class Autoloader {
 						str_replace( '_', '-', strtolower( $class_string ) )
 					);
 
-					$file       = $structure[ count( $structure ) - 1 ];
-					$class_type = $structure[ count( $structure ) - 2 ];
-
+					// Pull off the class name (last segment) and the registered root
+					// namespace (first segment). Whatever remains is the path under
+					// the autoloader's root directory.
+					$file = array_pop( $structure );
 					array_shift( $structure );
-					array_pop( $structure );
-					array_unshift( $structure, 'includes' );
+					$class_filename = sprintf( 'class-%s.php', $file );
 
-					// Check if a specialized directory exists for this class type.
+					// Two layouts coexist in the codebase:
+					//
+					//   A. Production (`includes/core/classes/…`): `classes/` sits
+					//      directly under the first segment, and any deeper
+					//      namespace segments mirror the directory structure
+					//      under `classes/` —
+					//        Core\Setup            → includes/core/classes/class-setup.php
+					//        Core\Blocks\Modal     → includes/core/classes/blocks/class-modal.php
+					//        Core\Rsvp\Type\User   → includes/core/classes/rsvp/type/class-user.php
+					//
+					//   B. Test fixtures (`test/unit/php/includes/tests/…`):
+					//      `classes/` lands at the END of the namespace path and
+					//      the file sits directly inside it —
+					//        Tests\Core\Test_Geocoding         → includes/tests/core/classes/class-test-geocoding.php
+					//        Tests\Core\Blocks\Test_Modal      → includes/tests/core/blocks/classes/class-test-modal.php
+					//
+					// Build both candidate paths and use whichever exists.
+					$candidates = array();
+
+					$prod_structure = $structure;
+					array_unshift( $prod_structure, 'includes' );
+					array_splice( $prod_structure, 2, 0, 'classes' );
+					$prod_structure[] = $class_filename;
+					$candidates[]     = $path . DIRECTORY_SEPARATOR . implode( DIRECTORY_SEPARATOR, $prod_structure );
+
 					$test_structure = $structure;
+					array_unshift( $test_structure, 'includes' );
+					$test_structure[] = 'classes';
+					$test_structure[] = $class_filename;
+					$candidates[]     = $path . DIRECTORY_SEPARATOR . implode( DIRECTORY_SEPARATOR, $test_structure );
 
-					array_pop( $test_structure );
-					array_push( $test_structure, 'classes', $class_type );
+					foreach ( $candidates as $resource_path ) {
+						$resource_path_valid = validate_file( $resource_path );
 
-					$specialized_dir = $path . DIRECTORY_SEPARATOR . implode( DIRECTORY_SEPARATOR, $test_structure );
-
-					if ( is_dir( $specialized_dir ) ) {
-						array_pop( $structure );
-						array_push( $structure, 'classes', $class_type );
-					} else {
-						$structure[] = 'classes';
-					}
-
-					$structure[]         = sprintf( 'class-%s.php', $file );
-					$resource_path       = $path . DIRECTORY_SEPARATOR . implode( DIRECTORY_SEPARATOR, $structure );
-					$resource_path_valid = validate_file( $resource_path );
-
-					if (
-						file_exists( $resource_path ) &&
-						( 0 === $resource_path_valid || 2 === $resource_path_valid )
-					) {
-						// Autoloader dynamically loads class files at runtime - cannot use 'use' keyword.
-						require_once $resource_path; // NOSONAR.
+						if (
+							file_exists( $resource_path ) &&
+							( 0 === $resource_path_valid || 2 === $resource_path_valid )
+						) {
+							// Autoloader dynamically loads class files at runtime - cannot use 'use' keyword.
+							require_once $resource_path; // NOSONAR.
+							break;
+						}
 					}
 				}
 			}

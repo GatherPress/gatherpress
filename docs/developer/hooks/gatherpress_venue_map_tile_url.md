@@ -21,7 +21,7 @@ add_filter(
 
 ## Files
 
-- [includes/core/classes/class-venue-map.php:1828](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/class-venue-map.php#L1828)
+- [includes/core/classes/venue/class-map.php:1833](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/venue/class-map.php#L1833)
 ```php
 apply_filters( 'gatherpress_venue_map_tile_url', self::DEFAULT_TILE_URL )
 ```

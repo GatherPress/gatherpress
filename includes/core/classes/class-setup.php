@@ -34,13 +34,28 @@ class Setup {
 	/**
 	 * Constructor for the Setup class.
 	 *
-	 * Initializes and sets up various components of the plugin.
+	 * Initializes and sets up various components of the plugin. Fires
+	 * the `gatherpress_loaded` action at the end so subsystems that
+	 * registered listeners during instantiation (e.g. `Rsvp\Manager`'s
+	 * core-type registration) can run with all classes already wired up.
 	 *
 	 * @since 1.0.0
 	 */
 	protected function __construct() {
 		$this->instantiate_classes();
 		$this->setup_hooks();
+
+		/**
+		 * Fires once GatherPress has finished bootstrapping its core classes.
+		 *
+		 * Subsystems use this to run setup work that depends on other
+		 * GatherPress classes already being instantiated — for example, the
+		 * RSVP type registry registers its core types here so companion
+		 * plugins can hook into `gatherpress_register_rsvp_types` afterwards.
+		 *
+		 * @since 1.0.0
+		 */
+		do_action( 'gatherpress_loaded' );
 	}
 
 	/**
@@ -57,26 +72,18 @@ class Setup {
 	 */
 	protected function instantiate_classes(): void {
 		Assets::get_instance();
-		Block::get_instance();
+		Blocks\Setup::get_instance();
 		Cli::get_instance();
-		Event_Admin_List::get_instance();
-		Event_Query::get_instance();
-		Event_Rest_Api::get_instance();
-		Event_Setup::get_instance();
+		Event\Setup::get_instance();
 		Export::get_instance();
 		Feed::get_instance();
 		Geocoding::get_instance();
 		Import::get_instance();
-		Rsvp_Cleanup::get_instance();
-		Rsvp_Form::get_instance();
-		Rsvp_Query::get_instance();
-		Rsvp_Setup::get_instance();
+		Rsvp\Setup::get_instance();
 		Settings::get_instance();
 		Topic::get_instance();
 		User::get_instance();
-		Venue_Map::get_instance();
-		Venue_Map_Prewarm::get_instance();
-		Venue_Setup::get_instance();
+		Venue\Setup::get_instance();
 	}
 
 	/**
@@ -351,14 +358,14 @@ class Setup {
 	 * @return void
 	 */
 	public function add_online_event_term(): void {
-		Venue_Setup::get_instance()->register_taxonomy();
+		Venue\Setup::get_instance()->register_taxonomy();
 
 		$term_name = __( 'Online event', 'gatherpress' );
 		$term_slug = 'online-event';
 
 		// Ensure the online-event term exists in each registered venue taxonomy.
 		foreach ( get_post_types_by_support( 'gatherpress-venue-information' ) as $venue_post_type ) {
-			$taxonomy = Venue_Setup::get_instance()->get_taxonomy( $venue_post_type );
+			$taxonomy = Venue\Setup::get_instance()->get_taxonomy( $venue_post_type );
 			$term     = term_exists( $term_slug, $taxonomy );
 
 			if ( ! $term ) {

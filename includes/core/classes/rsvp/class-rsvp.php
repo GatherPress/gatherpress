@@ -5,13 +5,11 @@
  * This class is responsible for handling all operations related to RSVPs for events, including
  * retrieving RSVP information, saving RSVPs, checking attending limits, and more.
  *
- * @package GatherPress\Core
+ * @package GatherPress\Core\Rsvp
  * @since 1.0.0
  */
 
 namespace GatherPress\Core\Rsvp;
-
-use GatherPress\Core\Rsvp_Query;
 
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
@@ -123,7 +121,7 @@ class Rsvp {
 	 */
 	public function get( $identifier, $rsvp_type = 'user' ): array {
 		$post_id    = $this->event->ID ?? 0;
-		$rsvp_query = \GatherPress\Core\Rsvp_Query::get_instance();
+		$rsvp_query = Query::get_instance();
 		$rsvp_type  = Manager::get_instance()->get( $rsvp_type );
 
 		if ( 1 > $post_id || ( empty( $identifier ) ) ) {
@@ -312,7 +310,7 @@ class Rsvp {
 			$rsvp_type = 'email';
 		}
 
-		$rsvp_query      = Rsvp_Query::get_instance();
+		$rsvp_query      = Query::get_instance();
 		$rsvp_type       = Manager::get_instance()->get( $rsvp_type );
 		$max_guest_limit = intval( get_post_meta( $this->event->ID, 'gatherpress_max_guest_limit', true ) );
 
@@ -568,7 +566,7 @@ class Rsvp {
 		$post_id    = $this->event->ID;
 		$cache_key  = sprintf( self::CACHE_KEY, $post_id );
 		$retval     = wp_cache_get( $cache_key, GATHERPRESS_CACHE_GROUP );
-		$rsvp_query = Rsvp_Query::get_instance();
+		$rsvp_query = Query::get_instance();
 
 		// @todo add testing with cache.
 		// @codeCoverageIgnoreStart

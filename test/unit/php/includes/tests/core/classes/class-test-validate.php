@@ -525,6 +525,76 @@ class Test_Validate extends Base {
 	}
 
 	/**
+	 * Coverage for coordinate method with values inside the ±180 range.
+	 *
+	 * @since 1.0.0
+	 * @covers ::coordinate
+	 *
+	 * @return void
+	 */
+	public function test_coordinate_valid(): void {
+		$this->assertTrue(
+			Validate::coordinate( 0 ),
+			'Failed to assert 0 is a valid coordinate.'
+		);
+		$this->assertTrue(
+			Validate::coordinate( 40.7128 ),
+			'Failed to assert a typical latitude float is a valid coordinate.'
+		);
+		$this->assertTrue(
+			Validate::coordinate( -74.0060 ),
+			'Failed to assert a typical longitude float is a valid coordinate.'
+		);
+		$this->assertTrue(
+			Validate::coordinate( '40.7128' ),
+			'Failed to assert a numeric string is a valid coordinate.'
+		);
+		$this->assertTrue(
+			Validate::coordinate( '-180' ),
+			'Failed to assert -180 (range floor) is a valid coordinate.'
+		);
+		$this->assertTrue(
+			Validate::coordinate( 180 ),
+			'Failed to assert 180 (range ceiling) is a valid coordinate.'
+		);
+	}
+
+	/**
+	 * Coverage for coordinate method with non-numeric or out-of-range values.
+	 *
+	 * @since 1.0.0
+	 * @covers ::coordinate
+	 *
+	 * @return void
+	 */
+	public function test_coordinate_invalid(): void {
+		$this->assertFalse(
+			Validate::coordinate( 'banana' ),
+			'Failed to assert non-numeric string is not a valid coordinate.'
+		);
+		$this->assertFalse(
+			Validate::coordinate( '' ),
+			'Failed to assert empty string is not a valid coordinate.'
+		);
+		$this->assertFalse(
+			Validate::coordinate( null ),
+			'Failed to assert null is not a valid coordinate.'
+		);
+		$this->assertFalse(
+			Validate::coordinate( -9999 ),
+			'Failed to assert -9999 is out of range and not a valid coordinate.'
+		);
+		$this->assertFalse(
+			Validate::coordinate( 180.0001 ),
+			'Failed to assert just-above-180 is out of range and not a valid coordinate.'
+		);
+		$this->assertFalse(
+			Validate::coordinate( '40.7128abc' ),
+			'Failed to assert trailing-garbage numeric string is not a valid coordinate.'
+		);
+	}
+
+	/**
 	 * Coverage for datetime method with additional edge cases.
 	 *
 	 * @since 1.0.0

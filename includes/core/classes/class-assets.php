@@ -11,8 +11,8 @@ namespace GatherPress\Core;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
-use GatherPress\Core\Traits\Singleton;
 use Error;
+use GatherPress\Core\Traits\Singleton;
 
 /**
  * Class Assets.
@@ -60,6 +60,14 @@ class Assets {
 	 * @var string
 	 */
 	protected string $path = GATHERPRESS_CORE_PATH . '/build/';
+
+	/**
+	 * Cached list of block variation folder names from `build/variations/core/`.
+	 *
+	 * @since 1.0.0
+	 * @var string[]
+	 */
+	protected array $block_variation_names = array();
 
 	/**
 	 * Class constructor.
@@ -423,6 +431,32 @@ class Assets {
 	}
 
 	/**
+	 * Get a list of subfolder names from the /build/variations/core/ directory.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return string[] List of block-variations foldernames.
+	 */
+	public function get_block_variations(): array {
+		$variations_directory = sprintf( '%1$s/build/variations/core/', GATHERPRESS_CORE_PATH );
+
+		if ( ! file_exists( $variations_directory ) ) {
+			return array();
+		}
+
+		if ( empty( $this->block_variation_names ) ) {
+			$this->block_variation_names = array_values(
+				array_diff(
+					scandir( $variations_directory ),
+					array( '..', '.' )
+				)
+			);
+		}
+
+		return array_filter( $this->block_variation_names );
+	}
+
+	/**
 	 * Register all assets.
 	 *
 	 * @since 1.0.0
@@ -430,9 +464,7 @@ class Assets {
 	 * @return void
 	 */
 	public function register_variation_assets(): void {
-		$variations = Block::get_instance()->get_block_variations();
-
-		foreach ( $variations as $variation ) {
+		foreach ( $this->get_block_variations() as $variation ) {
 			$this->register_asset( $variation, 'variations/core/' );
 		}
 	}
@@ -447,7 +479,7 @@ class Assets {
 	public function enqueue_variation_assets(): void {
 		array_map(
 			array( $this, 'enqueue_asset' ),
-			Block::get_instance()->get_block_variations()
+			$this->get_block_variations()
 		);
 	}
 

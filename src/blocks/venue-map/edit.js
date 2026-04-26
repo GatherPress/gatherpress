@@ -53,7 +53,7 @@ const HEIGHT_MAX = 4000;
 const DEFAULT_HEIGHT = 300;
 
 // Presets for the aspect-ratio dropdown. The first entry matches the
-// server-side `Venue_Map::DEFAULT_ASPECT_RATIO` (2/1) so freshly inserted
+// server-side `Venue\Map::DEFAULT_ASPECT_RATIO` (2/1) so freshly inserted
 // blocks keep the behavior that shipped in the first round of static maps.
 const ASPECT_RATIO_PRESETS = [
 	{ label: __( 'Landscape - 2:1', 'gatherpress' ), value: '2/1' },
@@ -65,7 +65,7 @@ const ASPECT_RATIO_PRESETS = [
 ];
 
 // Allow-list for the `scale` block attribute — mirrors
-// `Venue_Map::SCALE_OPTIONS` so JS and PHP can't drift. The Scale
+// `Venue\Map::SCALE_OPTIONS` so JS and PHP can't drift. The Scale
 // SelectControl options are derived from this list; the guard that
 // hides the control when render mode is interactive reads from it too.
 const SCALE_OPTIONS = [ 'cover', 'contain', 'fill' ];
@@ -134,14 +134,14 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 	} = attributes;
 	const blockProps = useBlockProps();
 
-	// Determine the venue post ID and get venue info + static-map descriptors.
-	// `savedVenueInfoJson` reflects what's persisted server-side — compared
-	// against the edited JSON below to detect unsaved address/coord changes
+	// Determine the venue post ID and get venue meta + static-map descriptors.
+	// `savedVenueMeta` reflects what's persisted server-side — compared
+	// against the edited meta below to detect unsaved address/coord changes
 	// and force the placeholder until the next save regenerates the PNG.
 	const {
 		isEditingThisVenue,
-		venueInfoJson,
-		savedVenueInfoJson,
+		venueMeta,
+		savedVenueMeta,
 		staticMapDescriptors,
 		venuePostId,
 		venuePostType,
@@ -162,8 +162,8 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 			if ( ! effectiveVenuePostId ) {
 				return {
 					isEditingThisVenue: false,
-					venueInfoJson: '{}',
-					savedVenueInfoJson: '{}',
+					venueMeta: {},
+					savedVenueMeta: {},
 					staticMapDescriptors: {},
 					venuePostId: 0,
 					venuePostType: '',
@@ -190,9 +190,8 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 				);
 				return {
 					isEditingThisVenue: true,
-					venueInfoJson: meta?.gatherpress_venue_information || '{}',
-					savedVenueInfoJson:
-						savedPost?.meta?.gatherpress_venue_information || '{}',
+					venueMeta: meta,
+					savedVenueMeta: savedPost?.meta || {},
 					staticMapDescriptors:
 						editedVenuePost?.meta?.gatherpress_venue_static_map ||
 						meta?.gatherpress_venue_static_map ||
@@ -209,15 +208,14 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 				effectiveVenuePostId
 			);
 
-			const venueInfo =
-				venuePost?.meta?.gatherpress_venue_information || '{}';
+			const meta = venuePost?.meta || {};
 
 			return {
 				isEditingThisVenue: false,
-				venueInfoJson: venueInfo,
-				savedVenueInfoJson: venueInfo,
+				venueMeta: meta,
+				savedVenueMeta: meta,
 				staticMapDescriptors:
-					venuePost?.meta?.gatherpress_venue_static_map || {},
+					meta?.gatherpress_venue_static_map || {},
 				venuePostId: effectiveVenuePostId,
 				venuePostType: context?.postType || '',
 			};
@@ -233,18 +231,10 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 		[]
 	);
 
-	// Parse venue information from JSON field.
-	let venueInfo = {};
-	try {
-		venueInfo = JSON.parse( venueInfoJson );
-	} catch ( e ) {
-		venueInfo = {};
-	}
+	const address = venueMeta.gatherpress_address || '';
 
-	const fullAddress = venueInfo.fullAddress || '';
-
-	let latitude = venueInfo.latitude || '';
-	let longitude = venueInfo.longitude || '';
+	let latitude = venueMeta.gatherpress_latitude || '';
+	let longitude = venueMeta.gatherpress_longitude || '';
 
 	if ( isEditingThisVenue ) {
 		latitude =
@@ -287,20 +277,14 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 		},
 	];
 
-	let savedVenueInfo = {};
-	try {
-		savedVenueInfo = JSON.parse( savedVenueInfoJson );
-	} catch ( e ) {
-		savedVenueInfo = {};
-	}
 	const hasUnsavedMapInputs =
 		isEditingThisVenue &&
-		( ( venueInfo.fullAddress || '' ) !==
-			( savedVenueInfo.fullAddress || '' ) ||
-			( venueInfo.latitude || '' ) !==
-				( savedVenueInfo.latitude || '' ) ||
-			( venueInfo.longitude || '' ) !==
-				( savedVenueInfo.longitude || '' ) );
+		( ( venueMeta.gatherpress_address || '' ) !==
+			( savedVenueMeta.gatherpress_address || '' ) ||
+			( venueMeta.gatherpress_latitude || '' ) !==
+				( savedVenueMeta.gatherpress_latitude || '' ) ||
+			( venueMeta.gatherpress_longitude || '' ) !==
+				( savedVenueMeta.gatherpress_longitude || '' ) );
 
 	// Compute the effective pixel dimensions (matching what the server
 	// will compose) so the cached-PNG lookup hits the right combo key.
@@ -380,7 +364,7 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 	usePlaceholderPolling( {
 		active:
 			showStaticPlaceholder &&
-			Boolean( fullAddress ) &&
+			Boolean( address ) &&
 			Boolean( latitude ) &&
 			Boolean( longitude ),
 		venuePostId,
@@ -478,8 +462,8 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 						className="gatherpress-venue-map__image"
 						src={ staticMapUrl }
 						alt={
-							fullAddress
-								? `${ __( 'Map of', 'gatherpress' ) } ${ fullAddress }`
+							address
+								? `${ __( 'Map of', 'gatherpress' ) } ${ address }`
 								: __( 'Venue map', 'gatherpress' )
 						}
 						style={ {
@@ -496,26 +480,26 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 					style={ wrapperStyle }
 				>
 					<div className="gatherpress-venue-map__placeholder">
-						{ ! fullAddress && isInFSETemplate() && (
+						{ ! address && isInFSETemplate() && (
 							<Icon
 								icon={ mapMarker }
 								size={ 48 }
 								className="gatherpress-venue-map__placeholder-icon"
 							/>
 						) }
-						{ ! fullAddress &&
+						{ ! address &&
 							! isInFSETemplate() &&
 							__(
 								'Add an address to generate the map.',
 								'gatherpress'
 							) }
-						{ fullAddress &&
+						{ address &&
 							hasUnsavedMapInputs &&
 							__(
 								'Save the venue first.',
 								'gatherpress'
 							) }
-						{ fullAddress &&
+						{ address &&
 							! hasUnsavedMapInputs &&
 							0 < venuePostId && (
 							<>
@@ -549,7 +533,7 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 					style={ wrapperStyle }
 				>
 					<MapEmbed
-						location={ fullAddress }
+						location={ address }
 						latitude={ latitude }
 						longitude={ longitude }
 						zoom={ zoom }
@@ -627,7 +611,7 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 							height={ height }
 							aspectRatio={ aspectRatio }
 							disabled={
-								! fullAddress || hasUnsavedMapInputs
+								! address || hasUnsavedMapInputs
 							}
 						/>
 					) }

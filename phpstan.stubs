@@ -35,4 +35,27 @@ namespace {
     if ( ! class_exists( '\GdImage', false ) ) {
         class GdImage {}
     }
+
+    /**
+     * Mirror the class aliases registered at runtime in
+     * `includes/core/register-class-aliases.php`. PHPStan does not execute the
+     * plugin bootstrap and cannot see runtime `class_alias` calls, so without
+     * this declaration every consumer of the prior fully-qualified class name
+     * reports `class.notFound`. Loading the source file first defines the
+     * current class so `class_alias` can resolve it.
+     */
+    if ( ! class_exists( 'GatherPress\\Core\\Event', false ) ) {
+        require_once __DIR__ . '/includes/core/classes/event/class-event.php';
+        class_alias( 'GatherPress\\Core\\Event\\Event', 'GatherPress\\Core\\Event' );
+    }
+
+    if ( ! class_exists( 'GatherPress\\Core\\Rsvp', false ) ) {
+        require_once __DIR__ . '/includes/core/classes/rsvp/class-rsvp.php';
+        class_alias( 'GatherPress\\Core\\Rsvp\\Rsvp', 'GatherPress\\Core\\Rsvp' );
+    }
+
+    if ( ! class_exists( 'GatherPress\\Core\\Venue', false ) ) {
+        require_once __DIR__ . '/includes/core/classes/venue/class-venue.php';
+        class_alias( 'GatherPress\\Core\\Venue\\Venue', 'GatherPress\\Core\\Venue' );
+    }
 }

@@ -16,30 +16,20 @@ if ( ! isset( $attributes ) || ! is_array( $attributes ) ) {
 $gatherpress_field_type  = $attributes['fieldType'] ?? 'text';
 $gatherpress_placeholder = $attributes['placeholder'] ?? '';
 
-// Get venue information from JSON field.
-$gatherpress_venue_info_json = get_post_meta( get_the_ID(), 'gatherpress_venue_information', true );
-$gatherpress_venue_info      = json_decode( $gatherpress_venue_info_json, true );
+// 'url' is the input-type name for the website meta field; otherwise the
+// fieldType matches the venue meta-key suffix one-to-one.
+$gatherpress_meta_field = ( 'url' === $gatherpress_field_type ) ? 'website' : $gatherpress_field_type;
 
-if ( ! is_array( $gatherpress_venue_info ) ) {
+// Allow only known venue fields. Anything else (e.g. fieldType "text") returns.
+if ( ! in_array( $gatherpress_meta_field, array( 'address', 'phone', 'website' ), true ) ) {
 	return;
 }
 
-// Map field type to JSON field name.
-$gatherpress_field_mapping = array(
-	'address' => 'fullAddress',
-	'phone'   => 'phoneNumber',
-	'url'     => 'website',
-);
+$gatherpress_meta_key = sprintf( 'gatherpress_%s', $gatherpress_meta_field );
 
-$gatherpress_json_field = $gatherpress_field_mapping[ $gatherpress_field_type ] ?? '';
+$gatherpress_value = (string) get_post_meta( get_the_ID(), $gatherpress_meta_key, true );
 
-if ( empty( $gatherpress_json_field ) ) {
-	return;
-}
-
-$gatherpress_value = $gatherpress_venue_info[ $gatherpress_json_field ] ?? '';
-
-if ( empty( $gatherpress_value ) ) {
+if ( '' === $gatherpress_value ) {
 	return;
 }
 
@@ -55,6 +45,11 @@ switch ( $gatherpress_field_type ) {
 		break;
 
 	case 'phone':
+		// Phone is sanitized at write time (sanitize_text_field strips HTML
+		// tags) and double-escaped here: esc_attr() for the tel: href to
+		// prevent attribute breakout, esc_html() for the visible text. The
+		// browser's tel: handler ignores characters outside [0-9+*#;,] so a
+		// stored value that survives both layers can't smuggle a dial-out.
 		printf(
 			'<div %s><a class="gatherpress-venue-detail__phone" href="tel:%s">%s</a></div>',
 			$gatherpress_wrapper_attributes, // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped

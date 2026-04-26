@@ -101,6 +101,32 @@ class Validate {
 	}
 
 	/**
+	 * Validate a geographic coordinate.
+	 *
+	 * Accepts any numeric value within ±180 — the union of valid latitude
+	 * (-90..90) and longitude (-180..180) ranges. A single validator covers
+	 * both axes since the rejection cases that matter (non-numeric strings,
+	 * obvious garbage like -9999, NaN-like input) are caught the same way.
+	 *
+	 * Empty string, null, and other non-numeric input return false; callers
+	 * that want to preserve an "unset" sentinel should sanitize separately.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param mixed $param The value to validate.
+	 * @return bool True if the parameter is a numeric value within ±180, false otherwise.
+	 */
+	public static function coordinate( $param ): bool {
+		if ( ! is_numeric( $param ) ) {
+			return false;
+		}
+
+		$value = (float) $param;
+
+		return -180.0 <= $value && 180.0 >= $value;
+	}
+
+	/**
 	 * Validates that the value is a boolean or a value that can be safely cast to a boolean.
 	 *
 	 * This method ensures the value is one of the following:

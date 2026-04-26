@@ -9,7 +9,7 @@
 namespace GatherPress\Tests\Core\Blocks;
 
 use GatherPress\Core\Blocks\General_Block;
-use GatherPress\Core\Rsvp;
+use GatherPress\Core\Rsvp\Rsvp;
 use GatherPress\Core\Settings;
 use GatherPress\Core\Utility;
 use GatherPress\Tests\Base;
@@ -887,39 +887,6 @@ class Test_General_Block extends Base {
 	}
 
 	/**
-	 * Test venue detail field returns empty when venue info JSON is invalid.
-	 *
-	 * @since 1.0.0
-	 * @covers ::process_venue_detail_field
-	 *
-	 * @return void
-	 */
-	public function test_process_venue_detail_field_returns_empty_for_invalid_json(): void {
-		$general_block = General_Block::get_instance();
-		$post_id       = $this->factory->post->create( array( 'post_type' => 'gatherpress_venue' ) );
-
-		// Set up the post context.
-		$this->go_to( get_permalink( $post_id ) );
-
-		// Add invalid JSON to venue meta.
-		add_post_meta( $post_id, 'gatherpress_venue_information', 'not valid json' );
-
-		$block_content = '<div class="gatherpress--has-venue-phone">Phone content</div>';
-		$block         = array(
-			'attrs' => array(
-				'className' => 'gatherpress--has-venue-phone',
-			),
-		);
-
-		$result = $general_block->process_venue_detail_field( $block_content, $block );
-
-		$this->assertEmpty(
-			$result,
-			'Block should be empty when venue info JSON is invalid.'
-		);
-	}
-
-	/**
 	 * Test venue detail field returns empty when venue field is empty.
 	 *
 	 * @since 1.0.0
@@ -934,13 +901,10 @@ class Test_General_Block extends Base {
 		// Set up the post context.
 		$this->go_to( get_permalink( $post_id ) );
 
-		// Add venue info with empty phone number.
-		$venue_info = array(
-			'phoneNumber' => '',
-			'fullAddress' => '123 Main St',
-			'website'     => 'https://example.com',
-		);
-		add_post_meta( $post_id, 'gatherpress_venue_information', wp_json_encode( $venue_info ) );
+		// Phone number meta is empty; address and website are set.
+		add_post_meta( $post_id, 'gatherpress_phone', '' );
+		add_post_meta( $post_id, 'gatherpress_address', '123 Main St' );
+		add_post_meta( $post_id, 'gatherpress_website', 'https://example.com' );
 
 		$block_content = '<div class="gatherpress--has-venue-phone">Phone content</div>';
 		$block         = array(
@@ -972,13 +936,9 @@ class Test_General_Block extends Base {
 		// Set up the post context.
 		$this->go_to( get_permalink( $post_id ) );
 
-		// Add venue info with phone number.
-		$venue_info = array(
-			'phoneNumber' => '555-123-4567',
-			'fullAddress' => '123 Main St',
-			'website'     => 'https://example.com',
-		);
-		add_post_meta( $post_id, 'gatherpress_venue_information', wp_json_encode( $venue_info ) );
+		add_post_meta( $post_id, 'gatherpress_phone', '555-123-4567' );
+		add_post_meta( $post_id, 'gatherpress_address', '123 Main St' );
+		add_post_meta( $post_id, 'gatherpress_website', 'https://example.com' );
 
 		$block_content = '<div class="gatherpress--has-venue-phone">Phone content</div>';
 		$block         = array(
@@ -1011,13 +971,7 @@ class Test_General_Block extends Base {
 		// Set up the post context.
 		$this->go_to( get_permalink( $post_id ) );
 
-		// Add venue info with address.
-		$venue_info = array(
-			'phoneNumber' => '',
-			'fullAddress' => '123 Main St, City, State 12345',
-			'website'     => '',
-		);
-		add_post_meta( $post_id, 'gatherpress_venue_information', wp_json_encode( $venue_info ) );
+		add_post_meta( $post_id, 'gatherpress_address', '123 Main St, City, State 12345' );
 
 		$block_content = '<div class="gatherpress--has-venue-address">Address content</div>';
 		$block         = array(
@@ -1050,13 +1004,7 @@ class Test_General_Block extends Base {
 		// Set up the post context.
 		$this->go_to( get_permalink( $post_id ) );
 
-		// Add venue info with website.
-		$venue_info = array(
-			'phoneNumber' => '',
-			'fullAddress' => '',
-			'website'     => 'https://example.com',
-		);
-		add_post_meta( $post_id, 'gatherpress_venue_information', wp_json_encode( $venue_info ) );
+		add_post_meta( $post_id, 'gatherpress_website', 'https://example.com' );
 
 		$block_content = '<div class="gatherpress--has-venue-website">Website content</div>';
 		$block         = array(
@@ -1075,26 +1023,23 @@ class Test_General_Block extends Base {
 	}
 
 	/**
-	 * Test venue detail field returns empty when field is missing from JSON.
+	 * Test venue detail field returns empty when the meta key is unset.
 	 *
 	 * @since 1.0.0
 	 * @covers ::process_venue_detail_field
 	 *
 	 * @return void
 	 */
-	public function test_process_venue_detail_field_returns_empty_for_missing_field(): void {
+	public function test_process_venue_detail_field_returns_empty_for_unset_meta(): void {
 		$general_block = General_Block::get_instance();
 		$post_id       = $this->factory->post->create( array( 'post_type' => 'gatherpress_venue' ) );
 
 		// Set up the post context.
 		$this->go_to( get_permalink( $post_id ) );
 
-		// Add venue info without the phone number field.
-		$venue_info = array(
-			'fullAddress' => '123 Main St',
-			'website'     => 'https://example.com',
-		);
-		add_post_meta( $post_id, 'gatherpress_venue_information', wp_json_encode( $venue_info ) );
+		// Address and website are set, phone is left unset entirely.
+		add_post_meta( $post_id, 'gatherpress_address', '123 Main St' );
+		add_post_meta( $post_id, 'gatherpress_website', 'https://example.com' );
 
 		$block_content = '<div class="gatherpress--has-venue-phone">Phone content</div>';
 		$block         = array(
@@ -1107,7 +1052,7 @@ class Test_General_Block extends Base {
 
 		$this->assertEmpty(
 			$result,
-			'Block should be empty when venue field is missing from JSON.'
+			'Block should be empty when the venue phone meta is unset.'
 		);
 	}
 
@@ -1123,13 +1068,9 @@ class Test_General_Block extends Base {
 		$general_block = General_Block::get_instance();
 		$venue_post_id = $this->factory->post->create( array( 'post_type' => 'gatherpress_venue' ) );
 
-		// Add venue info with phone number.
-		$venue_info = array(
-			'phoneNumber' => '555-123-4567',
-			'fullAddress' => '123 Main St',
-			'website'     => 'https://example.com',
-		);
-		add_post_meta( $venue_post_id, 'gatherpress_venue_information', wp_json_encode( $venue_info ) );
+		add_post_meta( $venue_post_id, 'gatherpress_phone', '555-123-4567' );
+		add_post_meta( $venue_post_id, 'gatherpress_address', '123 Main St' );
+		add_post_meta( $venue_post_id, 'gatherpress_website', 'https://example.com' );
 
 		$block_content = '<div class="gatherpress--has-venue-phone">Phone content</div>';
 		$block         = array(

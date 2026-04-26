@@ -15,8 +15,7 @@ namespace GatherPress\Core\Blocks;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
-use GatherPress\Core\Block;
-use GatherPress\Core\Rsvp;
+use GatherPress\Core\Rsvp\Rsvp;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Utility;
 use WP_HTML_Tag_Processor;
@@ -134,15 +133,12 @@ class General_Block {
 	/**
 	 * Processes blocks with venue conditional classes.
 	 *
-	 * This method hides blocks (and their contents) when the associated venue field
-	 * is empty. It uses a naming convention to automatically map class names to JSON fields:
-	 *
-	 * - Class: `gatherpress--has-venue-phone` → JSON field: `phoneNumber`
-	 * - Class: `gatherpress--has-venue-address` → JSON field: `fullAddress`
-	 * - Class: `gatherpress--has-venue-website` → JSON field: `website`
-	 *
-	 * This allows wrapper blocks (like Groups/Rows) containing icons and venue-detail blocks
-	 * to be hidden together when the field has no value.
+	 * Hides a block (and its inner content) when the associated venue meta is
+	 * empty. The class suffix maps directly to the venue meta key suffix:
+	 * `gatherpress--has-venue-{field}` checks `gatherpress_{field}` for the
+	 * known venue fields (address, phone, website). This lets wrapper blocks
+	 * like Groups/Rows that contain an icon and a venue-detail block be hidden
+	 * together when the underlying field has no value.
 	 *
 	 * @since 1.0.0
 	 *
@@ -159,21 +155,12 @@ class General_Block {
 			return $block_content;
 		}
 
-		// Extract field name from class (e.g., "phone" from "gatherpress--has-venue-phone").
 		$field_name = $matches[1];
 
-		// Map class name to JSON field name.
-		$field_mapping = array(
-			'phone'   => 'phoneNumber',
-			'address' => 'fullAddress',
-			'website' => 'website',
-		);
-
-		if ( ! isset( $field_mapping[ $field_name ] ) ) {
+		// Allow-list of venue meta-key suffixes; anything else stays as-is.
+		if ( ! in_array( $field_name, array( 'address', 'phone', 'website' ), true ) ) {
 			return $block_content;
 		}
-
-		$json_field = $field_mapping[ $field_name ];
 
 		// Get the venue post ID from the current context.
 		// First try to get it from block context, then fall back to current post.
@@ -184,19 +171,10 @@ class General_Block {
 			return $block_content;
 		}
 
-		// Get the venue information JSON and parse it.
-		$venue_info_json = get_post_meta( $venue_post_id, 'gatherpress_venue_information', true );
-		$venue_info      = json_decode( $venue_info_json, true );
-
-		if ( ! is_array( $venue_info ) ) {
-			return '';
-		}
-
-		// Check if the specific field is empty.
-		$field_value = $venue_info[ $json_field ] ?? '';
+		$field_value = (string) get_post_meta( $venue_post_id, Utility::prefix_key( $field_name ), true );
 
 		// If the field is empty, hide the entire block.
-		if ( empty( $field_value ) ) {
+		if ( '' === $field_value ) {
 			return '';
 		}
 
@@ -265,7 +243,7 @@ class General_Block {
 	 */
 	public function process_guests_field( string $block_content, array $block ): string {
 		// Get the correct post ID using override logic.
-		$block_instance = Block::get_instance();
+		$block_instance = Setup::get_instance();
 		$post_id        = $block_instance->get_post_id( $block );
 
 		// Only process if the post type supports RSVP.
@@ -317,7 +295,7 @@ class General_Block {
 	 */
 	public function process_anonymous_field( string $block_content, array $block ): string {
 		// Get the correct post ID using override logic.
-		$block_instance = Block::get_instance();
+		$block_instance = Setup::get_instance();
 		$post_id        = $block_instance->get_post_id( $block );
 
 		// Only process if the post type supports RSVP.

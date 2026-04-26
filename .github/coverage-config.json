@@ -13,6 +13,7 @@
     "*/class-singleton.php",
     "*/requirements-check.php",
     "*/duplicate-check.php",
+    "*/register-class-aliases.php",
     "*/templates/*",
     "*/render.php",
     "*/e2e/*",

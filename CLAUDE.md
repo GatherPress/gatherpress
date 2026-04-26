@@ -112,7 +112,7 @@ GatherPress uses custom `post_type_supports` to decouple features from specific 
 
 **Venue post type supports** (declared on post types that act as venues):
 
-- `gatherpress-venue-information` — **Core venue identifier.** Address, phone, website, lat/lng meta (JSON), venue detail blocks, and automatic `_gatherpress_venue` taxonomy term management. Also registers [WordPress Geodata standard](https://codex.wordpress.org/Geodata) keys (`geo_latitude`, `geo_longitude`, `geo_address`, `geo_public`) as read-only meta derived from the JSON on `wp_after_insert_post` — do not write these directly. Meta revisions (`revisions_enabled`) are opted-in per post type and only applied when the post type declares `revisions` in its `supports` array. Declaring this support is what makes a post type a venue source.
+- `gatherpress-venue-information` — **Core venue identifier.** Registers five individual editor-writable post meta keys (`gatherpress_address`, `gatherpress_latitude`, `gatherpress_longitude`, `gatherpress_phone`, `gatherpress_website`), all `show_in_rest`, so venue fields can be bound to blocks via `core/post-meta` block bindings. Also wires up the venue detail blocks and automatic `_gatherpress_venue` taxonomy term management. Meta revisions (`revisions_enabled`) are opted-in per post type and only applied when the post type declares `revisions` in its `supports` array. Declaring this support is what makes a post type a venue source.
 - `gatherpress-venue-map` — Map display meta (show/zoom/height) and the venue map block
 
 **How it works:**

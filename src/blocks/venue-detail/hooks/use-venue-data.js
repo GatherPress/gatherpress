@@ -1,7 +1,7 @@
 /**
  * WordPress dependencies.
  */
-import { useSelect, useDispatch, select } from '@wordpress/data';
+import { useSelect, useDispatch } from '@wordpress/data';
 import { store as coreStore } from '@wordpress/core-data';
 // eslint-disable-next-line @wordpress/no-unsafe-wp-apis
 import { __unstableStripHTML as stripHTML } from '@wordpress/dom';
@@ -11,13 +11,13 @@ import { useCallback } from '@wordpress/element';
  * Internal dependencies.
  */
 import { isPostTypeSupporting } from '../../../helpers/event';
-import { getJsonFieldName } from '../helpers';
+import { getMetaKey } from '../helpers';
 
 /**
  * Custom hook for managing venue data in the block editor.
  *
  * Handles fetching venue information and provides update functions
- * for modifying venue meta fields.
+ * for modifying individual venue meta fields.
  *
  * @since 1.0.0
  *
@@ -57,101 +57,55 @@ export function useVenueData( context, fieldType ) {
 		[ context?.postId, context?.postType ]
 	);
 
-	// Map field type to JSON field name.
-	const jsonFieldName = getJsonFieldName( fieldType );
+	// Map field type to its individual venue meta key.
+	const metaKey = getMetaKey( fieldType );
 
 	// Get dispatch functions for both stores.
 	const { editEntityRecord } = useDispatch( coreStore );
 	const { editPost } = useDispatch( 'core/editor' );
 
-	// Get venue info from meta.
-	const venueInfo = useSelect(
+	// Read the live venue meta — either from the editor (if we're editing the
+	// venue itself) or from the core entity record (if we're embedded in
+	// another post like an event).
+	const venueMeta = useSelect(
 		( selectData ) => {
 			if ( ! venuePostId ) {
 				return {};
 			}
 
-			let venueInfoJson;
-
 			if ( isEditingCurrentPost ) {
-				const meta =
+				return (
 					selectData( 'core/editor' )?.getEditedPostAttribute(
 						'meta'
-					) || {};
-				venueInfoJson = meta?.gatherpress_venue_information || '{}';
-			} else {
-				const { getEditedEntityRecord } = selectData( coreStore );
-				const venuePost = getEditedEntityRecord(
-					'postType',
-					context?.postType,
-					venuePostId
+					) || {}
 				);
-				venueInfoJson =
-					venuePost?.meta?.gatherpress_venue_information || '{}';
 			}
 
-			try {
-				return JSON.parse( venueInfoJson );
-			} catch ( e ) {
-				return {};
-			}
+			const venuePost = selectData( coreStore ).getEditedEntityRecord(
+				'postType',
+				context?.postType,
+				venuePostId
+			);
+
+			return venuePost?.meta || {};
 		},
 		[ venuePostId, isEditingCurrentPost, context?.postType ]
 	);
 
-	const fieldValue = jsonFieldName ? venueInfo[ jsonFieldName ] || '' : '';
+	const fieldValue = metaKey ? venueMeta[ metaKey ] || '' : '';
 
-	// Generic function to update venue meta fields.
-	// Accepts either (fieldName, value) or an object of { fieldName: value } pairs.
+	// Generic function to update one or more individual venue meta keys.
 	const updateVenueField = useCallback(
-		( fieldNameOrFields, newValue ) => {
+		( meta ) => {
 			if ( ! venuePostId ) {
 				return;
 			}
 
-			let venueInfoJson;
-
 			if ( isEditingCurrentPost ) {
-				const meta =
-					select( 'core/editor' )?.getEditedPostAttribute( 'meta' ) ||
-					{};
-				venueInfoJson = meta?.gatherpress_venue_information || '{}';
-			} else {
-				const currentVenueInfo = select(
-					coreStore
-				)?.getEditedEntityRecord( 'postType', context?.postType, venuePostId );
-				venueInfoJson =
-					currentVenueInfo?.meta?.gatherpress_venue_information ||
-					'{}';
-			}
-
-			let updatedVenueInfo = {};
-			try {
-				updatedVenueInfo = JSON.parse( venueInfoJson );
-			} catch ( e ) {
-				updatedVenueInfo = {};
-			}
-
-			// Support both single field and multiple fields.
-			if ( 'object' === typeof fieldNameOrFields ) {
-				Object.assign( updatedVenueInfo, fieldNameOrFields );
-			} else {
-				updatedVenueInfo[ fieldNameOrFields ] = newValue;
-			}
-
-			if ( isEditingCurrentPost ) {
-				editPost( {
-					meta: {
-						gatherpress_venue_information:
-							JSON.stringify( updatedVenueInfo ),
-					},
-				} );
+				editPost( { meta } );
 			} else {
 				editEntityRecord( 'postType', context?.postType, venuePostId, {
-					meta: {
-						gatherpress_venue_information:
-							JSON.stringify( updatedVenueInfo ),
-					},
+					meta,
 				} );
 			}
 		},
@@ -161,15 +115,21 @@ export function useVenueData( context, fieldType ) {
 	// Update the current field value (strips HTML tags).
 	const updateFieldValue = useCallback(
 		( newValue ) => {
-			updateVenueField( jsonFieldName, stripHTML( newValue ) );
+			if ( ! metaKey ) {
+				return;
+			}
+
+			updateVenueField( { [ metaKey ]: stripHTML( newValue ) } );
 		},
-		[ jsonFieldName, updateVenueField ]
+		[ metaKey, updateVenueField ]
 	);
 
 	// Update the website URL specifically (strips HTML tags).
 	const updateWebsiteUrl = useCallback(
 		( newValue ) => {
-			updateVenueField( 'website', stripHTML( newValue ) );
+			updateVenueField( {
+				gatherpress_website: stripHTML( newValue ),
+			} );
 		},
 		[ updateVenueField ]
 	);
@@ -177,7 +137,7 @@ export function useVenueData( context, fieldType ) {
 	return {
 		venuePostId,
 		isEditingCurrentPost,
-		venueInfo,
+		venueMeta,
 		fieldValue,
 		updateVenueField,
 		updateFieldValue,

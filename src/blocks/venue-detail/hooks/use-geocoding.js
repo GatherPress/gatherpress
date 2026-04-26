@@ -8,7 +8,7 @@ import { useDebounce } from '@wordpress/compose';
 /**
  * Internal dependencies.
  */
-import { geocodeAddress, GEOCODE_LOCK_NAME } from '../../../helpers/geocoding';
+import { geocodeAddress } from '../../../helpers/geocoding';
 
 /**
  * Custom hook for geocoding address fields.
@@ -16,6 +16,15 @@ import { geocodeAddress, GEOCODE_LOCK_NAME } from '../../../helpers/geocoding';
  * Handles geocoding of address input with debouncing,
  * updates the venue store for live map preview,
  * and saves lat/long to venue meta.
+ *
+ * Note: this hook only fires when editing a venue-detail block whose venue
+ * is *not* the current post being edited (e.g. a venue block embedded in an
+ * event editor). It deliberately does **not** lock the current post's save —
+ * the geocode writes to the venue entity, not the host post, so locking the
+ * host post's Save button would block legitimate event edits while the venue
+ * geocodes in the background. The matching `VenueInformation` sidebar panel
+ * locks saving when the venue itself is the current post, which is the only
+ * context where the lock-and-unlock pairing is correct.
  *
  * @since 1.0.0
  *
@@ -29,12 +38,6 @@ export function useGeocoding( fieldType, fieldValue, updateVenueField, enabled =
 	// Get dispatch functions for venue store.
 	const { updateVenueLatitude, updateVenueLongitude } =
 		useDispatch( 'gatherpress/venue' );
-
-	// Dispatches used to block Save while geocoding is pending — prevents
-	// the "saved new address with stale lat/long" race that otherwise bakes
-	// a wrong-location static map until the next save.
-	const { lockPostSaving, unlockPostSaving } =
-		useDispatch( 'core/editor' );
 
 	// Get mapCustomLatLong setting from venue store.
 	const { mapCustomLatLong } = useSelect(
@@ -59,35 +62,34 @@ export function useGeocoding( fieldType, fieldValue, updateVenueField, enabled =
 			return;
 		}
 
-		try {
-			// If address is empty, clear lat/long.
-			if ( ! address ) {
-				if ( ! mapCustomLatLong ) {
-					// Clear venue store for live preview.
-					updateVenueLatitude( '' );
-					updateVenueLongitude( '' );
-
-					// Clear meta for the venue post.
-					updateVenueField( { latitude: '', longitude: '' } );
-				}
-				return;
-			}
-
-			const { latitude, longitude } = await geocodeAddress( address );
-
+		// If address is empty, clear lat/long.
+		if ( ! address ) {
 			if ( ! mapCustomLatLong ) {
-				// Update venue store for live preview.
-				updateVenueLatitude( latitude || null );
-				updateVenueLongitude( longitude || null );
+				// Clear venue store for live preview.
+				updateVenueLatitude( '' );
+				updateVenueLongitude( '' );
 
-				// Update meta for the venue post.
+				// Clear meta for the venue post.
 				updateVenueField( {
-					latitude: latitude || '',
-					longitude: longitude || '',
+					gatherpress_latitude: '',
+					gatherpress_longitude: '',
 				} );
 			}
-		} finally {
-			unlockPostSaving( GEOCODE_LOCK_NAME );
+			return;
+		}
+
+		const { latitude, longitude } = await geocodeAddress( address );
+
+		if ( ! mapCustomLatLong ) {
+			// Update venue store for live preview.
+			updateVenueLatitude( latitude || null );
+			updateVenueLongitude( longitude || null );
+
+			// Update meta for the venue post.
+			updateVenueField( {
+				gatherpress_latitude: latitude || '',
+				gatherpress_longitude: longitude || '',
+			} );
 		}
 	}, [
 		fieldType,
@@ -95,7 +97,6 @@ export function useGeocoding( fieldType, fieldValue, updateVenueField, enabled =
 		updateVenueLatitude,
 		updateVenueLongitude,
 		updateVenueField,
-		unlockPostSaving,
 	] );
 
 	// Longer debounce than autocomplete: geocoding is not user-visible during
@@ -106,15 +107,8 @@ export function useGeocoding( fieldType, fieldValue, updateVenueField, enabled =
 	// Trigger geocoding when address field value changes.
 	useEffect( () => {
 		if ( enabled && 'address' === fieldType ) {
-			lockPostSaving( GEOCODE_LOCK_NAME );
 			debouncedGeocode();
-
-			return () => {
-				unlockPostSaving( GEOCODE_LOCK_NAME );
-			};
 		}
-
-		return undefined;
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [ fieldValue, fieldType, enabled ] );
 

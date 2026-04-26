@@ -15,8 +15,8 @@ namespace GatherPress\Core\Settings;
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Traits\Singleton;
-use GatherPress\Core\Event_Setup;
-use GatherPress\Core\Venue_Setup;
+use GatherPress\Core\Event\Setup as Event_Setup;
+use GatherPress\Core\Venue\Setup as Venue_Setup;
 use GatherPress\Core\Topic;
 
 /**
