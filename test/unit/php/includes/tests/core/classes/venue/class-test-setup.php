@@ -314,8 +314,8 @@ class Test_Setup extends Base {
 						'hash' => 'x',
 					),
 				),
-				'gatherpress_address'          => 'Real St',
-				'gatherpress_latitude'         => '12.345',
+				'gatherpress_address'    => 'Real St',
+				'gatherpress_latitude'   => '12.345',
 			)
 		);
 
