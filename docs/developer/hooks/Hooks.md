@@ -37,24 +37,31 @@
 
 - [`gatherpress_import`](gatherpress_import.md) Fires for every GatherPress data to be imported.
 
-## class-map-prewarm.php
+## class-manager.php
 
-- [`gatherpress_venue_map_prewarm_batch_size`](gatherpress_venue_map_prewarm_batch_size.md) Filter the venue-map prewarm scan batch size.
-- [`gatherpress_venue_map_prewarm_content_batch_size`](gatherpress_venue_map_prewarm_content_batch_size.md) Filter the venue-map prewarm content-scan batch size.
-- [`gatherpress_venue_map_prewarm_pre_enqueue_job`](gatherpress_venue_map_prewarm_pre_enqueue_job.md) Filter the prewarm enqueue call to take over scheduling.
+- [`gatherpress_register_map_providers`](gatherpress_register_map_providers.md) Fires when venue map providers are being registered.
 
 ## class-map.php
 
-- [`gatherpress_venue_map_composite_time_budget`](gatherpress_venue_map_composite_time_budget.md) Filter the wall-clock budget (in seconds) for a single
+- [`gatherpress_map_height`](gatherpress_map_height.md) Filter the height used when rendering the static venue map.
+- [`gatherpress_map_zoom`](gatherpress_map_zoom.md) Filter the zoom level used when rendering the static venue map.
 - [`gatherpress_venue_map_descriptors`](gatherpress_venue_map_descriptors.md) Filters the parsed descriptor map for a venue.
 - [`gatherpress_venue_map_generate_2x`](gatherpress_venue_map_generate_2x.md) Filter whether to generate the retina (2×) static-map variant.
-- [`gatherpress_venue_map_height`](gatherpress_venue_map_height.md) Filter the height used when rendering the static venue map.
-- [`gatherpress_venue_map_tile_url`](gatherpress_venue_map_tile_url.md) Filter the tile URL template used by the static venue map.
-- [`gatherpress_venue_map_zoom`](gatherpress_venue_map_zoom.md) Filter the zoom level used when rendering the static venue map.
 
 ## class-migrate.php
 
 - [`gatherpress_pseudopostmetas`](gatherpress_pseudopostmetas.md) Filters the list of data-names and their respective export- and import-callbacks.
+
+## class-osm.php
+
+- [`gatherpress_venue_map_composite_time_budget`](gatherpress_venue_map_composite_time_budget.md) Filter the wall-clock budget (in seconds) for a single OSM
+- [`gatherpress_venue_map_tile_url`](gatherpress_venue_map_tile_url.md) Filter the tile URL template used by the OSM static map provider.
+
+## class-prewarm.php
+
+- [`gatherpress_venue_map_prewarm_batch_size`](gatherpress_venue_map_prewarm_batch_size.md) Filter the venue-map prewarm scan batch size.
+- [`gatherpress_venue_map_prewarm_content_batch_size`](gatherpress_venue_map_prewarm_content_batch_size.md) Filter the venue-map prewarm content-scan batch size.
+- [`gatherpress_venue_map_prewarm_pre_enqueue_job`](gatherpress_venue_map_prewarm_pre_enqueue_job.md) Filter the prewarm enqueue call to take over scheduling.
 
 ## class-roles.php
 
