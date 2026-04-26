@@ -46,6 +46,30 @@ class Setup {
 	use Singleton;
 
 	/**
+	 * Suffixes of the editor-writable venue-information meta keys.
+	 *
+	 * These five keys are written by the editor (and by trusted server code
+	 * such as REST PATCH requests gated by `Utility::can_edit_post_meta()`).
+	 * Stored here as the unprefixed "field" form so consumers can either
+	 * iterate them directly (e.g. {@see Venue::get_information()}) or map
+	 * through {@see Utility::prefix_key()} to get the full meta keys.
+	 *
+	 * Pair with {@see self::STRUCTURED_ADDRESS_FIELDS} for the readonly
+	 * Photon-derived counterpart; together the two arrays make up the full
+	 * 13-field shape returned by `Venue::get_information()`.
+	 *
+	 * @since 1.0.0
+	 * @var string[]
+	 */
+	public const EDITOR_WRITABLE_FIELDS = array(
+		'address',
+		'latitude',
+		'longitude',
+		'phone',
+		'website',
+	);
+
+	/**
 	 * Suffixes of the structured-address venue meta keys.
 	 *
 	 * These eight keys are derived from `gatherpress_address` by the async

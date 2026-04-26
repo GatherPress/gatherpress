@@ -196,7 +196,7 @@ class Venue {
 	 */
 	public function get_information(): array {
 		$fields      = array_merge(
-			array( 'address', 'latitude', 'longitude', 'phone', 'website' ),
+			Setup::EDITOR_WRITABLE_FIELDS,
 			Setup::STRUCTURED_ADDRESS_FIELDS
 		);
 		$information = array_fill_keys( $fields, '' );

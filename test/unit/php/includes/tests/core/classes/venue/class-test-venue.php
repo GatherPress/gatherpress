@@ -233,10 +233,8 @@ class Test_Venue extends Base {
 	 * @return array<string, string>
 	 */
 	private function empty_information_shape(): array {
-		$editor_writable = array( 'address', 'latitude', 'longitude', 'phone', 'website' );
-
 		return array_fill_keys(
-			array_merge( $editor_writable, Setup::STRUCTURED_ADDRESS_FIELDS ),
+			array_merge( Setup::EDITOR_WRITABLE_FIELDS, Setup::STRUCTURED_ADDRESS_FIELDS ),
 			''
 		);
 	}
