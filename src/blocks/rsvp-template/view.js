@@ -6,7 +6,7 @@ import { store, getContext, getElement } from '@wordpress/interactivity';
 /**
  * Internal dependencies.
  */
-import { safeHTML } from '../../helpers/globals';
+import { stripScriptsAndEventHandlers } from '../../helpers/globals';
 
 const { state } = store( 'gatherpress', {
 	callbacks: {
@@ -105,9 +105,14 @@ const { state } = store( 'gatherpress', {
 							}
 						}
 
+						// `res.content` is HTML rendered by GatherPress's own
+						// `/rsvp-status-html` REST endpoint, which escapes
+						// at template time. The strip pass here is
+						// defense-in-depth — not a substitute for proper
+						// server-side escaping.
 						element.ref.insertAdjacentHTML(
 							'beforebegin',
-							safeHTML( res.content ),
+							stripScriptsAndEventHandlers( res.content ),
 						);
 					}
 				} )
