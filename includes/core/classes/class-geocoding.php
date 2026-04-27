@@ -489,10 +489,19 @@ class Geocoding {
 		}
 
 		/**
-		 * Filter the per-minute ceiling for the geocode REST endpoints.
+		 * Filter the per-user requests-per-minute ceiling for the
+		 * geocode REST endpoints (`/geocode` and `/geocode/search`).
 		 *
-		 * Site owners with unusual workloads (high-frequency autocomplete,
-		 * bulk venue imports, etc.) can raise or lower this ceiling.
+		 * Both endpoints share one fixed-window per-user bucket. Once
+		 * this ceiling is reached within a 60-second window, additional
+		 * requests for the same user return HTTP `429 Too Many Requests`
+		 * with a `Retry-After` header pointing at the remaining seconds
+		 * in the window. Lower this value to be stricter with abusive
+		 * clients; raise it for sites with debounced-but-eager
+		 * autocomplete UIs or bulk-import workflows.
+		 *
+		 * Values below `1` are clamped to `1` (a zero ceiling would 429
+		 * every request, including the first).
 		 *
 		 * @since 1.0.0
 		 *
