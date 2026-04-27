@@ -119,7 +119,7 @@ export function useAddressAutocomplete( {
 					setSuggestions( [] );
 					setSuggestionError(
 						__(
-							'Address search is temporarily unavailable.',
+							'Address suggestions are temporarily unavailable. Try again in a moment, or enter the address manually.',
 							'gatherpress'
 						)
 					);
