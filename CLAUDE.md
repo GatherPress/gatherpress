@@ -216,6 +216,10 @@ When working with this codebase:
     - ❌ Bad: `new \GatherPress\Core\Event( $post_id )`
     - For functions: `use function GatherPress\Core\filter_input;` then `filter_input( $value )`
 - **Namespace resolution**: When moving code between namespaces, ensure proper imports are updated
+- **Cross-subsystem use aliases**: When importing a class from another subsystem that shares a name with a local one (every subsystem has its own `Setup`, for example), alias it. Keeps the bare token unambiguously referring to the local same-namespace class and makes the cross-subsystem import announce itself at every call site.
+    - ✅ Good (in `GatherPress\Core\Event\Admin_List`): `use GatherPress\Core\Venue\Setup as Venue_Setup;` → `Venue_Setup::get_instance()`
+    - ❌ Bad (silently shadows the local `Event\Setup`): `use GatherPress\Core\Venue\Setup;` → `Setup::get_instance()`
+    - Within one subsystem (e.g. `Event\Admin_List` referencing `Event\Query`), no alias needed.
 - **Method organization**: Place related methods in logically grouped classes (e.g., form-related methods in `Rsvp_Form`)
 - **Singleton pattern**: Many GatherPress classes use the Singleton trait - check if a class has `use Singleton;`
     - **Singleton classes** (Blocks, Settings, Setup classes): Use `ClassName::get_instance()`

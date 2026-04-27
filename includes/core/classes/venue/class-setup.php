@@ -271,7 +271,7 @@ class Setup {
 			'hierarchical'       => false,
 			'public'             => true,
 			'show_ui'            => false,
-			'show_admin_column'  => false,
+			'show_admin_column'  => true,
 			'query_var'          => true,
 			'publicly_queryable' => true,
 			'rewrite'            => false,
