@@ -2615,6 +2615,159 @@ class Test_Geocoding extends Base {
 	}
 
 	/**
+	 * Direct coverage for `build_search_suggestions_response()`.
+	 *
+	 * The helper is exercised by every successful `/geocode/search`
+	 * roundtrip, but xdebug coverage doesn't credit the body lines
+	 * reliably when entry is via `$this->...` from another method on
+	 * the same singleton instance. Call it via reflection so the body
+	 * lines are unambiguously executed under coverage instrumentation.
+	 *
+	 * @covers ::build_search_suggestions_response
+	 *
+	 * @return void
+	 */
+	public function test_build_search_suggestions_response_handles_no_features(): void {
+		$cache_key = 'gatherpress_photon_search_test_' . wp_generate_password( 8, false );
+		$method    = new ReflectionMethod( Geocoding::class, 'build_search_suggestions_response' );
+		$method->setAccessible( true );
+
+		$response = $method->invoke( Geocoding::get_instance(), null, $cache_key );
+
+		$this->assertInstanceOf( WP_REST_Response::class, $response );
+		$this->assertSame( 200, $response->get_status() );
+		$this->assertSame(
+			array( 'suggestions' => array() ),
+			$response->get_data(),
+			'A non-array decode result must collapse to an empty suggestions list.'
+		);
+
+		// Empty-result branch still caches an empty array so repeat
+		// queries skip Photon for the next SEARCH_CACHE_TTL.
+		$this->assertSame( array(), get_transient( $cache_key ) );
+
+		delete_transient( $cache_key );
+	}
+
+	/**
+	 * Direct coverage for `build_search_suggestions_response()` with
+	 * a populated payload — verifies the per-feature shape it builds
+	 * and that the suggestions are cached for later cache-hit reads.
+	 *
+	 * @covers ::build_search_suggestions_response
+	 *
+	 * @return void
+	 */
+	public function test_build_search_suggestions_response_maps_features(): void {
+		$cache_key = 'gatherpress_photon_search_test_' . wp_generate_password( 8, false );
+		$payload   = array(
+			'features' => array(
+				// Well-formed feature → maps into a suggestion.
+				array(
+					'geometry'   => array(
+						'coordinates' => array( -74.006, 40.7128 ),
+					),
+					'properties' => array(
+						'name'    => 'Test Place',
+						'city'    => 'New York',
+						'country' => 'United States',
+					),
+				),
+				// Non-array feature → skipped.
+				'not an array',
+				// Feature missing coords → skipped.
+				array(
+					'geometry'   => array(),
+					'properties' => array( 'name' => 'No Coords' ),
+				),
+				// Feature with empty label (no displayable properties) → skipped.
+				array(
+					'geometry'   => array(
+						'coordinates' => array( 0, 0 ),
+					),
+					'properties' => array(),
+				),
+				// Feature with `properties` missing entirely — exercises
+				// the `: array()` fallback in the ternary. Empty label →
+				// skipped.
+				array(
+					'geometry' => array(
+						'coordinates' => array( 1, 1 ),
+					),
+				),
+			),
+		);
+
+		$method = new ReflectionMethod( Geocoding::class, 'build_search_suggestions_response' );
+		$method->setAccessible( true );
+
+		$response = $method->invoke( Geocoding::get_instance(), $payload, $cache_key );
+
+		$this->assertSame( 200, $response->get_status() );
+		$data = $response->get_data();
+		$this->assertCount(
+			1,
+			$data['suggestions'],
+			'Only the well-formed feature should land in the suggestion list.'
+		);
+		$this->assertSame( '40.7128', $data['suggestions'][0]['latitude'] );
+		$this->assertSame( '-74.006', $data['suggestions'][0]['longitude'] );
+
+		$this->assertSame(
+			$data['suggestions'],
+			get_transient( $cache_key ),
+			'Built suggestions must be cached under the supplied key.'
+		);
+
+		delete_transient( $cache_key );
+	}
+
+	/**
+	 * Returning `false` from `gatherpress_geocode_rate_limit_enabled`
+	 * disables the rate limit entirely — even a bucket that's
+	 * already at the ceiling lets requests through, and no transient
+	 * read/write happens.
+	 *
+	 * @covers ::check_rate_limit
+	 *
+	 * @return void
+	 */
+	public function test_rate_limit_can_be_disabled_via_filter(): void {
+		$user_id = $this->factory->user->create( array( 'role' => 'editor' ) );
+		wp_set_current_user( $user_id );
+
+		// Pre-fill the bucket at the ceiling — without the disable
+		// filter, the next call would 429.
+		set_transient(
+			'gatherpress_geocode_rate_' . $user_id,
+			array(
+				'count'      => 30,
+				'expires_at' => time() + 30,
+			),
+			30
+		);
+
+		$disable = static function (): bool {
+			return false;
+		};
+		add_filter( 'gatherpress_geocode_rate_limit_enabled', $disable );
+
+		try {
+			$method = new ReflectionMethod( Geocoding::class, 'check_rate_limit' );
+			$method->setAccessible( true );
+			$result = $method->invoke( Geocoding::get_instance() );
+		} finally {
+			remove_filter( 'gatherpress_geocode_rate_limit_enabled', $disable );
+			delete_transient( 'gatherpress_geocode_rate_' . $user_id );
+		}
+
+		$this->assertNull(
+			$result,
+			'Disabling the rate limit must let an at-ceiling user through.'
+		);
+	}
+
+	/**
 	 * `check_rate_limit()` falls open (returns null, no transient
 	 * touched) when there is no logged-in user. The REST permission
 	 * callback already gates anonymous requests; this short-circuit is
@@ -2976,7 +3129,7 @@ class Test_Geocoding extends Base {
 	 * @return void
 	 */
 	public function test_rate_limit_is_isolated_per_user(): void {
-		$flooder_id  = $this->factory->user->create( array( 'role' => 'editor' ) );
+		$flooder_id   = $this->factory->user->create( array( 'role' => 'editor' ) );
 		$bystander_id = $this->factory->user->create( array( 'role' => 'editor' ) );
 
 		// Flooder is at the ceiling.

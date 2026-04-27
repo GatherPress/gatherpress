@@ -480,6 +480,28 @@ class Geocoding {
 	 * @return WP_REST_Response|null
 	 */
 	protected function check_rate_limit(): ?WP_REST_Response {
+		/**
+		 * Filter whether the geocode REST rate limit is enforced.
+		 *
+		 * Returning `false` disables the rate limit entirely — no
+		 * per-user bucket is read or written, no 429 is ever returned.
+		 * Useful for sites running their own upstream rate limiting at
+		 * a CDN / WAF layer that already covers this surface, or for
+		 * automated test environments that want to bypass the throttle.
+		 *
+		 * Mirrors the shape of `gatherpress_geocode_on_save_enabled`
+		 * (cron side) for consistency: same filter pattern across
+		 * both Photon-traffic toggles.
+		 *
+		 * @since 1.0.0
+		 *
+		 * @param bool $enabled Whether the rate limit is enforced. Default true.
+		 */
+		$enabled = (bool) apply_filters( 'gatherpress_geocode_rate_limit_enabled', true );
+		if ( ! $enabled ) {
+			return null;
+		}
+
 		$user_id = get_current_user_id();
 		// REST permission_callback already gates on `edit_posts`; an
 		// unauthenticated request shouldn't reach this method, but if it
@@ -833,6 +855,27 @@ class Geocoding {
 
 		$this->maybe_log_json_decode_failure( $body, $data, 'search_addresses' );
 
+		return $this->build_search_suggestions_response( $data, $cache_key );
+	}
+
+	/**
+	 * Build the `/geocode/search` REST response from a decoded Photon
+	 * payload. Caches the result under `$cache_key` so repeat queries
+	 * within `SEARCH_CACHE_TTL` skip the Photon roundtrip.
+	 *
+	 * Extracted from `search_addresses()` to keep that method's NPath
+	 * complexity manageable — the parsing loop dominates the path
+	 * count; moving it here lets the REST entry point stay readable
+	 * and PHPMD-clean.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param mixed  $data      Decoded JSON body. Treated as "no results"
+	 *                          when not an array or missing `features`.
+	 * @param string $cache_key Transient key for the cached suggestions.
+	 * @return WP_REST_Response The response with a `suggestions` array (possibly empty).
+	 */
+	private function build_search_suggestions_response( $data, string $cache_key ): WP_REST_Response {
 		if ( ! is_array( $data ) || empty( $data['features'] ) || ! is_array( $data['features'] ) ) {
 			set_transient( $cache_key, array(), self::SEARCH_CACHE_TTL );
 
