@@ -14,14 +14,12 @@ namespace GatherPress\Core\Rsvp;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
-use GatherPress\Core\Blocks\Rsvp_Form;
-use GatherPress\Core\Event\Event;
+use GatherPress\Core\Rsvp\Type\Base as Rsvp_Type;
 use GatherPress\Core\Settings;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Utility;
 use WP_Block_Type_Registry;
 use WP_Comment;
-use WP_User;
 
 /**
  * Handles setup tasks related to RSVP functionality.
@@ -137,6 +135,21 @@ class Setup {
 	public function register_taxonomy(): void {
 		register_taxonomy(
 			Rsvp::TAXONOMY,
+			'comment',
+			array(
+				'labels'             => array(),
+				'hierarchical'       => false,
+				'public'             => true,
+				'show_ui'            => false,
+				'show_admin_column'  => false,
+				'query_var'          => true,
+				'publicly_queryable' => false,
+				'show_in_rest'       => true,
+			)
+		);
+
+		register_taxonomy(
+			Rsvp_Type::TAXONOMY,
 			'comment',
 			array(
 				'labels'             => array(),

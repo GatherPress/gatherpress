@@ -16,6 +16,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Event\Event;
 use GatherPress\Core\Utility;
+use GatherPress\Core\Rsvp\Rsvp;
 use WP_List_Table;
 
 /**
@@ -87,6 +88,7 @@ class List_Table extends WP_List_Table {
 			'cb'       => '<input type="checkbox" />',
 			'attendee' => __( 'Attendee', 'gatherpress' ),
 			'response' => __( 'Response', 'gatherpress' ),
+			'type'     => __( 'Type', 'gatherpress' ),
 			'event'    => __( 'Event', 'gatherpress' ),
 			'approved' => __( 'Status', 'gatherpress' ),
 			'date'     => __( 'Date', 'gatherpress' ),
@@ -461,6 +463,23 @@ class List_Table extends WP_List_Table {
 				return $statuses[ $item['comment_approved'] ];
 			case 'date':
 				return get_comment_date( 'Y/m/d \a\t g:i a', $item['comment_ID'] );
+			case 'type':
+				$terms = wp_get_object_terms( $item['comment_ID'], \GatherPress\Core\Rsvp\Type\Base::TAXONOMY );
+				$type  = '-';
+
+				if ( empty( $terms ) ) {
+					return $type;
+				}
+
+				$rsvp_type = \GatherPress\Core\Rsvp\Manager::get_instance()->get( $type );
+
+				if ( ! $rsvp_type ) {
+					return $type;
+				}
+
+				$type = $rsvp_type->get_label();
+
+				return $type;
 			default:
 				return isset( $item[ $column_name ] ) ? $item[ $column_name ] : '-';
 		}

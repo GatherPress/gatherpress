@@ -183,7 +183,7 @@ class Manager {
 		 *
 		 * @since 1.0.0
 		 *
-		 * @param Registry The RSVP type registry instance.
+		 * @param Manager The RSVP type registry instance.
 		 */
 		do_action( 'gatherpress_register_rsvp_types', $this );
 	}

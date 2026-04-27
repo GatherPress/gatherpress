@@ -45,14 +45,6 @@ class Rsvp {
 	const TAXONOMY = '_gatherpress_rsvp_status';
 
 	/**
-	 * Cache key format for RSVPs.
-	 *
-	 * @since 1.0.0
-	 * @var string $CACHE_KEY
-	 */
-	const CACHE_KEY = 'gatherpress_rsvp_%d';
-
-	/**
 	 * Comment type for RSVPs.
 	 *
 	 * @since 1.0.0
@@ -351,7 +343,7 @@ class Rsvp {
 		$args = $rsvp_type->filter_query_get( $args, $identifier );
 
 		$rsvp             = $rsvp_query->get_rsvp( $args );
-		$current_response = $this->get( $identifier, $rsvp_type );
+		$current_response = $this->get( $identifier, $rsvp_type->get_slug() );
 		$limit_reached    = $this->attending_limit_reached( $current_response, $guests );
 
 		if ( 'attending' === $status && $limit_reached ) {
@@ -417,7 +409,7 @@ class Rsvp {
 		if ( 'no_status' === $status ) {
 			wp_delete_comment( $comment_id, true );
 
-			wp_cache_delete( sprintf( self::CACHE_KEY, $post_id ), GATHERPRESS_CACHE_GROUP );
+			Cache::delete( $post_id );
 
 			return $data;
 		}
@@ -451,7 +443,7 @@ class Rsvp {
 			'anonymous'  => intval( $anonymous ),
 		);
 
-		wp_cache_delete( sprintf( self::CACHE_KEY, $post_id ), GATHERPRESS_CACHE_GROUP );
+		Cache::delete( $post_id );
 
 		if ( ! $limit_reached ) {
 			$this->check_waiting_list();
@@ -502,9 +494,7 @@ class Rsvp {
 
 				$response = $waiting_list[ $i ];
 
-				// @todo need to look into this since Open RSVP will not have a userId,
-				// but email or commentId if we can use that.
-				$this->save( $response['userId'], 'attending', $response['anonymous'] );
+				$this->save( $response['identifier'], 'attending', $response['anonymous'], $response['rsvp_type'] );
 				++$i;
 			}
 		}
@@ -563,14 +553,12 @@ class Rsvp {
 	 * @return array An array containing response information grouped by RSVP status.
 	 */
 	public function responses(): array {
-		$post_id    = $this->event->ID;
-		$cache_key  = sprintf( self::CACHE_KEY, $post_id );
-		$retval     = wp_cache_get( $cache_key, GATHERPRESS_CACHE_GROUP );
-		$rsvp_query = Query::get_instance();
+		$post_id = $this->event->ID;
+		$retval  = Cache::get( $post_id );
 
 		// @todo add testing with cache.
 		// @codeCoverageIgnoreStart
-		if ( ! empty( $retval ) && is_array( $retval ) ) {
+		if ( $retval ) {
 			return $retval;
 		}
 		// @codeCoverageIgnoreEnd
@@ -586,7 +574,7 @@ class Rsvp {
 			return $retval;
 		}
 
-		$data = $rsvp_query->get_rsvps(
+		$data = Query::get_instance()->get_rsvps(
 			array(
 				'post_id' => $post_id,
 				'status'  => 'approve',
@@ -690,7 +678,7 @@ class Rsvp {
 			$retval[ $status ]['count']   = count( $retval[ $status ]['records'] ) + $guests;
 		}
 
-		wp_cache_set( $cache_key, $retval, GATHERPRESS_CACHE_GROUP, 15 * MINUTE_IN_SECONDS );
+		Cache::set( $post_id, $retval );
 
 		return $retval;
 	}

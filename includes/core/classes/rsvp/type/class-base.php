@@ -30,6 +30,16 @@ abstract class Base {
 	use Singleton;
 
 	/**
+	 * Constant representing the RSVP Type Taxonomy.
+	 *
+	 * This constant defines the type taxonomy for RSVP comment type.
+	 *
+	 * @since 1.0.0
+	 * @var string
+	 */
+	const TAXONOMY = '_gatherpress_rsvp_type';
+
+	/**
 	 * Get the unique slug for this RSVP type.
 	 *
 	 * Examples: 'user', 'email', 'activitypub'
@@ -198,9 +208,9 @@ abstract class Base {
 	 *     @type string $term     The term slug.
 	 * }
 	 */
-	public function get_filter_terms(): array {
+	final public function get_filter_terms(): array {
 		return array(
-			'taxonomy' => '_gatherpress_rsvp_type',
+			'taxonomy' => self::TAXONOMY,
 			'term'     => $this->get_slug(),
 		);
 	}
