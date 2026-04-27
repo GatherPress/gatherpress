@@ -11,6 +11,7 @@ namespace GatherPress\Tests\Core\Venue;
 use GatherPress\Core\Venue\Meta;
 use GatherPress\Core\Venue\Venue;
 use GatherPress\Tests\Base;
+use PMC\Unit_Test\Utility;
 
 /**
  * Class Test_Meta.
@@ -265,5 +266,136 @@ class Test_Meta extends Base {
 			$instance->sanitize_coordinate( -9999 ),
 			'Out-of-range values should collapse to the empty sentinel.'
 		);
+	}
+
+	/**
+	 * Direct coverage for `register_venue_information_meta()`.
+	 *
+	 * The helper is `protected` and dispatched from `register()`, but
+	 * xdebug coverage doesn't credit the body lines reliably when entry
+	 * is via `$this->...` from another method on the same instance. Call
+	 * it via reflection so the body lines are unambiguously executed
+	 * under coverage instrumentation.
+	 *
+	 * @covers ::register_venue_information_meta
+	 *
+	 * @return void
+	 */
+	public function test_register_venue_information_meta_direct(): void {
+		$instance = Meta::get_instance();
+
+		// Drop the meta keys this helper registers so we can assert
+		// re-registration after the direct call.
+		foreach ( Meta::EDITOR_WRITABLE_FIELDS as $field ) {
+			unregister_post_meta( Venue::POST_TYPE, 'gatherpress_' . $field );
+		}
+		unregister_post_meta( Venue::POST_TYPE, 'gatherpress_static_map' );
+		foreach ( Meta::STRUCTURED_ADDRESS_FIELDS as $field ) {
+			unregister_post_meta( Venue::POST_TYPE, 'gatherpress_' . $field );
+		}
+
+		Utility::invoke_hidden_method(
+			$instance,
+			'register_venue_information_meta',
+			array( Venue::POST_TYPE )
+		);
+
+		$meta = get_registered_meta_keys( 'post', Venue::POST_TYPE );
+
+		foreach ( Meta::EDITOR_WRITABLE_FIELDS as $field ) {
+			$this->assertArrayHasKey(
+				'gatherpress_' . $field,
+				$meta,
+				sprintf( 'Editor-writable key %s should be registered.', $field )
+			);
+		}
+		$this->assertArrayHasKey( 'gatherpress_static_map', $meta );
+		foreach ( Meta::STRUCTURED_ADDRESS_FIELDS as $field ) {
+			$this->assertArrayHasKey(
+				'gatherpress_' . $field,
+				$meta,
+				sprintf( 'Structured-address key %s should be registered.', $field )
+			);
+		}
+		$this->assertNotFalse(
+			has_filter(
+				sprintf( 'rest_pre_insert_%s', Venue::POST_TYPE ),
+				array( $instance, 'filter_readonly_meta' )
+			),
+			'REST readonly-strip filter should be wired.'
+		);
+	}
+
+	/**
+	 * Direct coverage for the `if ( ! $supports_revisions )` branches in
+	 * `register_venue_information_meta()`. Registers a custom post type
+	 * with venue-information support but without `revisions` and invokes
+	 * the helper directly so the unset() lines for both args arrays
+	 * execute.
+	 *
+	 * @covers ::register_venue_information_meta
+	 *
+	 * @return void
+	 */
+	public function test_register_venue_information_meta_drops_revisions_when_unsupported(): void {
+		$instance = Meta::get_instance();
+		$test_pt  = 'test_venue_norev_d';
+
+		register_post_type(
+			$test_pt,
+			array(
+				'label'    => 'Test Venues (no revisions)',
+				'public'   => false,
+				'supports' => array( 'title', 'gatherpress-venue-information' ),
+			)
+		);
+
+		Utility::invoke_hidden_method(
+			$instance,
+			'register_venue_information_meta',
+			array( $test_pt )
+		);
+
+		$meta = get_registered_meta_keys( 'post', $test_pt );
+
+		foreach ( Meta::EDITOR_WRITABLE_FIELDS as $field ) {
+			$this->assertArrayHasKey( 'gatherpress_' . $field, $meta );
+		}
+
+		unregister_post_type( $test_pt );
+	}
+
+	/**
+	 * Direct coverage for `register_venue_map_meta()` — the venue-map
+	 * display-settings band.
+	 *
+	 * @covers ::register_venue_map_meta
+	 *
+	 * @return void
+	 */
+	public function test_register_venue_map_meta_direct(): void {
+		$instance = Meta::get_instance();
+
+		$map_keys = array(
+			'gatherpress_map_show',
+			'gatherpress_map_zoom',
+			'gatherpress_map_height',
+		);
+
+		foreach ( $map_keys as $key ) {
+			unregister_post_meta( Venue::POST_TYPE, $key );
+		}
+
+		Utility::invoke_hidden_method(
+			$instance,
+			'register_venue_map_meta',
+			array( Venue::POST_TYPE )
+		);
+
+		$meta = get_registered_meta_keys( 'post', Venue::POST_TYPE );
+
+		foreach ( $map_keys as $key ) {
+			$this->assertArrayHasKey( $key, $meta );
+		}
 	}
 }
