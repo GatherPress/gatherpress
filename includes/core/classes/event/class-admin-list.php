@@ -20,7 +20,7 @@ use GatherPress\Core\Event;
 use GatherPress\Core\Rsvp\Query as Rsvp_Query;
 use GatherPress\Core\Rsvp\Rsvp;
 use GatherPress\Core\Traits\Singleton;
-use GatherPress\Core\Venue\Setup;
+use GatherPress\Core\Venue\Setup as Venue_Setup;
 use WP_Query;
 
 /**
@@ -70,7 +70,6 @@ class Admin_List {
 	protected function setup_hooks(): void {
 		add_action( 'load-edit.php', array( $this, 'default_sort' ) );
 		add_action( 'pre_get_posts', array( $this, 'handle_rsvp_sorting' ) );
-		add_action( 'pre_get_posts', array( $this, 'handle_venue_sorting' ) );
 		add_filter( 'query_vars', array( $this, 'query_vars' ) );
 		add_action( 'registered_post_type', array( $this, 'maybe_register_post_type_hooks' ) );
 	}
@@ -154,8 +153,6 @@ class Admin_List {
 	public function sortable_columns( array $columns ): array {
 		// Add 'datetime' as a sortable column.
 		$columns['datetime'] = 'datetime';
-		// Add 'venue' as a sortable column.
-		$columns['venue'] = 'venue';
 		// Add 'rsvps' as a sortable column.
 		$columns['rsvps'] = 'rsvps';
 
@@ -225,14 +222,31 @@ class Admin_List {
 					$view_links['all']
 				);
 			} elseif ( false === strpos( $view_links['all'], 'class="current"' ) ) {
-				// Add "current" class to "All" when no filter is active.
-				// default_sort() adds orderby/order to $_GET which prevents
-				// WordPress from detecting this as a base request.
-				$view_links['all'] = str_replace(
-					'<a ',
-					'<a class="current" aria-current="page" ',
-					$view_links['all']
-				);
+				// Add "current" to "All" only when no other view is current.
+				// `default_sort()` adds `orderby`/`order` to `$_GET`, which
+				// prevents WP from detecting the base request and marking
+				// "All" itself — so we restore that. But we must not stomp
+				// on a built-in status filter (Published / Draft / Trash):
+				// when the user clicks one of those, that link already has
+				// `class="current"` and "All" should stay un-marked.
+				$another_view_is_current = false;
+				foreach ( $view_links as $other_key => $other_link ) {
+					if ( 'all' === $other_key ) {
+						continue;
+					}
+					if ( false !== strpos( (string) $other_link, 'class="current"' ) ) {
+						$another_view_is_current = true;
+						break;
+					}
+				}
+
+				if ( ! $another_view_is_current ) {
+					$view_links['all'] = str_replace(
+						'<a ',
+						'<a class="current" aria-current="page" ',
+						$view_links['all']
+					);
+				}
 			}
 		}
 
@@ -354,30 +368,6 @@ class Admin_List {
 	}
 
 	/**
-	 * Handle venue sorting in the admin list table.
-	 *
-	 * This method modifies the query to sort events by venue name alphabetically.
-	 * Similar to how WordPress core handles taxonomy sorting.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param WP_Query $query The WP_Query instance.
-	 * @return void
-	 */
-	public function handle_venue_sorting( $query ): void {
-		$this->handle_column_sorting(
-			$query,
-			'venue',
-			array(
-				'posts_join_paged' => array( $this, 'venue_sorting_join_paged' ),
-				'posts_groupby'    => array( $this, 'sorting_groupby_post_id' ),
-				'posts_orderby'    => array( $this, 'venue_sorting_orderby' ),
-			),
-			'venue_sort_order'
-		);
-	}
-
-	/**
 	 * Handle column sorting for the admin events list table.
 	 *
 	 * Shared logic for sorting by custom columns (RSVP count, venue name, etc.).
@@ -488,68 +478,6 @@ class Admin_List {
 	}
 
 	/**
-	 * Join term relationships and terms tables for venue sorting.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param string $join The JOIN clause of the query.
-	 * @return string Modified JOIN clause.
-	 */
-	public function venue_sorting_join_paged( string $join ): string {
-		global $wpdb;
-
-		$screen         = get_current_screen();
-		$post_type      = $screen ? $screen->post_type : Event::POST_TYPE;
-		$venue_taxonomy = Setup::get_instance()->taxonomy_for_event_post_type( $post_type );
-
-		// Bail early if the derived taxonomy is not registered to avoid invalid SQL.
-		if ( ! taxonomy_exists( $venue_taxonomy ) ) {
-			return $join;
-		}
-
-		$join .= $wpdb->prepare(
-			' LEFT JOIN %i AS venue_tr ON %i.%i = venue_tr.object_id',
-			$wpdb->term_relationships,
-			$wpdb->posts,
-			'ID'
-		);
-		$join .= $wpdb->prepare(
-			' LEFT JOIN %i AS venue_tt'
-			. ' ON venue_tr.term_taxonomy_id = venue_tt.term_taxonomy_id'
-			. ' AND venue_tt.taxonomy = %s',
-			$wpdb->term_taxonomy,
-			$venue_taxonomy
-		);
-		$join .= $wpdb->prepare(
-			' LEFT JOIN %i AS venue_terms ON venue_tt.term_id = venue_terms.term_id',
-			$wpdb->terms
-		);
-
-		return $join;
-	}
-
-	/**
-	 * Modify the ORDER BY clause for venue sorting.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @return string Modified ORDER BY clause.
-	 */
-	public function venue_sorting_orderby(): string {
-		global $wp_query;
-
-		$order = $wp_query->get( 'venue_sort_order', 'ASC' );
-
-		// Remove the filters to prevent them from affecting other queries.
-		remove_filter( 'posts_join_paged', array( $this, 'venue_sorting_join_paged' ) );
-		remove_filter( 'posts_groupby', array( $this, 'sorting_groupby_post_id' ) );
-		remove_filter( 'posts_orderby', array( $this, 'venue_sorting_orderby' ) );
-
-		// Sort by venue name, with NULL/empty values last.
-		return "CASE WHEN venue_terms.name IS NULL THEN 1 ELSE 0 END ASC, venue_terms.name {$order}";
-	}
-
-	/**
 	 * Populate custom columns for Event post type in the admin dashboard.
 	 *
 	 * Displays additional information, like event datetime and RSVP count, for Event post types.
@@ -566,25 +494,6 @@ class Admin_List {
 		if ( 'datetime' === $column ) {
 			$event = new Event( $post_id );
 			echo esc_html( $event->get_display_datetime() );
-		}
-
-		if ( 'venue' === $column ) {
-			$event             = new Event( $post_id );
-			$venue_information = $event->get_venue_information();
-			$venue_name        = $venue_information['name'];
-			$venue_taxonomy    = Setup::get_instance()->taxonomy_for_event_post_type(
-				(string) get_post_type( $post_id )
-			);
-
-			if ( has_term( 'online-event', $venue_taxonomy, $post_id ) ) {
-				echo '<span class="dashicons dashicons-video-alt3"></span> ';
-			}
-
-			if ( ! empty( $venue_name ) ) {
-				echo esc_html( $venue_name );
-			} else {
-				echo '—';
-			}
 		}
 
 		if ( 'rsvps' === $column ) {
@@ -675,12 +584,37 @@ class Admin_List {
 		// Remove the author column.
 		unset( $columns['author'] );
 
+		// Pull the auto-injected taxonomy columns out of their default
+		// trailing position so we can re-insert them alongside our custom
+		// columns. Venue taxonomy goes first (it's the more useful filter
+		// link in this context); other taxonomies (Topics, etc.) follow.
+		$venue_taxonomy_columns = array();
+		$other_taxonomy_columns = array();
+		$screen                 = function_exists( 'get_current_screen' ) ? get_current_screen() : null;
+		$post_type              = ( $screen && '' !== (string) $screen->post_type )
+			? (string) $screen->post_type
+			: Event::POST_TYPE;
+		$venue_taxonomy_key     = 'taxonomy-' . Venue_Setup::get_instance()->taxonomy_for_event_post_type( $post_type );
+
+		foreach ( $columns as $key => $label ) {
+			if ( 0 !== strpos( $key, 'taxonomy-' ) ) {
+				continue;
+			}
+
+			if ( $key === $venue_taxonomy_key ) {
+				$venue_taxonomy_columns[ $key ] = $label;
+			} else {
+				$other_taxonomy_columns[ $key ] = $label;
+			}
+
+			unset( $columns[ $key ] );
+		}
+
 		$placement = 2;
 		$insert    = array(
 			'datetime' => __( 'Event date &amp; time', 'gatherpress' ),
-			'venue'    => __( 'Venue', 'gatherpress' ),
 			'rsvps'    => __( 'RSVPs', 'gatherpress' ),
-		);
+		) + $venue_taxonomy_columns + $other_taxonomy_columns;
 
 		return array_slice( $columns, 0, $placement, true ) + $insert + array_slice( $columns, $placement, null, true );
 	}
