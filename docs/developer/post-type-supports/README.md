@@ -141,6 +141,8 @@ The core identifier for venue post types. Enables venue address and contact data
 
 Meta revisions are enabled automatically when your venue post type declares `revisions` in its `supports` array; venue post types that opt out of revisions still get the meta registered without `revisions_enabled`.
 
+Meta registration itself lives on `GatherPress\Core\Venue\Meta::register()`. The companion field-list constants are `Venue\Meta::EDITOR_WRITABLE_FIELDS` (the five editor-writable suffixes) and `Venue\Meta::STRUCTURED_ADDRESS_FIELDS` (the eight Photon-derived suffixes) — those are the single source of truth for registration, REST stripping, the geocode cron write loop, and `Venue::get_information()`. The matching event-side class is `GatherPress\Core\Event\Meta`.
+
 #### Structured-address fields
 
 The eight structured-address fields are populated by a server-side cron handler that runs on a 5-second delay after `gatherpress_address` changes. Manual edits to those fields via `update_post_meta()` from trusted server code are preserved as long as the address itself doesn't change. To suppress the outbound HTTP-on-save (firewalled installs, dev environments without Photon access), return `false` from the `gatherpress_geocode_on_save_enabled` filter. To replace WP-Cron with a different scheduler (e.g. Action Scheduler), short-circuit the `gatherpress_async_geocode_pre_enqueue_job` filter with any non-null value.

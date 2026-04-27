@@ -17,7 +17,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Utility;
-use GatherPress\Core\Venue\Setup as Venue_Setup;
+use GatherPress\Core\Venue\Meta as Venue_Meta;
 use WP_Error;
 use WP_Post;
 use WP_REST_Request;
@@ -314,7 +314,7 @@ class Geocoding {
 		$address = (string) get_post_meta( $post_id, 'gatherpress_address', true );
 
 		if ( '' === trim( $address ) ) {
-			foreach ( Venue_Setup::STRUCTURED_ADDRESS_FIELDS as $field ) {
+			foreach ( Venue_Meta::STRUCTURED_ADDRESS_FIELDS as $field ) {
 				update_post_meta( $post_id, Utility::prefix_key( $field ), '' );
 			}
 			return;
@@ -338,7 +338,7 @@ class Geocoding {
 			return;
 		}
 
-		foreach ( Venue_Setup::STRUCTURED_ADDRESS_FIELDS as $field ) {
+		foreach ( Venue_Meta::STRUCTURED_ADDRESS_FIELDS as $field ) {
 			update_post_meta(
 				$post_id,
 				Utility::prefix_key( $field ),
@@ -816,7 +816,7 @@ class Geocoding {
 		// by the str_replace. Driving the loop off the constant means adding
 		// a new field is a single edit on `STRUCTURED_ADDRESS_FIELDS` —
 		// provided the new Photon property follows the same convention.
-		foreach ( Venue_Setup::STRUCTURED_ADDRESS_FIELDS as $field ) {
+		foreach ( Venue_Meta::STRUCTURED_ADDRESS_FIELDS as $field ) {
 			$structured[ $field ] = $pluck( str_replace( '_', '', $field ) );
 		}
 

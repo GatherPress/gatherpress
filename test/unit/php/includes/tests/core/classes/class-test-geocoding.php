@@ -10,7 +10,7 @@ namespace GatherPress\Tests\Core;
 
 use GatherPress\Core\Geocoding;
 use GatherPress\Core\Utility as GP_Utility;
-use GatherPress\Core\Venue\Setup as Venue_Setup;
+use GatherPress\Core\Venue\Meta as Venue_Meta;
 use GatherPress\Core\Venue\Venue;
 use GatherPress\Tests\Base;
 use PMC\Unit_Test\Mocks\Http;
@@ -1814,7 +1814,7 @@ class Test_Geocoding extends Base {
 	private function structured_meta_keys(): array {
 		return array_map(
 			array( GP_Utility::class, 'prefix_key' ),
-			Venue_Setup::STRUCTURED_ADDRESS_FIELDS
+			Venue_Meta::STRUCTURED_ADDRESS_FIELDS
 		);
 	}
 
@@ -2565,16 +2565,16 @@ class Test_Geocoding extends Base {
 	 * Structured-address pieces are exposed under the venue's `meta` field
 	 * via REST `show_in_rest`, but the underlying meta has
 	 * `auth_callback => __return_false`. PATCH attempts that try to write
-	 * them must be silently dropped by `Setup::filter_readonly_meta` rather
+	 * them must be silently dropped by `Meta::filter_readonly_meta` rather
 	 * than failing the whole request — the editor often co-submits
 	 * structured + editor-writable meta in one PATCH.
 	 *
-	 * @covers \GatherPress\Core\Venue\Setup::filter_readonly_meta
+	 * @covers \GatherPress\Core\Venue\Meta::filter_readonly_meta
 	 *
 	 * @return void
 	 */
 	public function test_structured_address_meta_stripped_from_rest_writes(): void {
-		$instance = Venue_Setup::get_instance();
+		$instance = Venue_Meta::get_instance();
 		$request  = new WP_REST_Request();
 
 		$request->set_param(

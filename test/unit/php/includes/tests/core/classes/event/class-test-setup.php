@@ -10,6 +10,7 @@ namespace GatherPress\Tests\Core\Event;
 
 use GatherPress\Core\Event;
 use GatherPress\Core\Event\Admin_List;
+use GatherPress\Core\Event\Meta;
 use GatherPress\Core\Event\Query;
 use GatherPress\Core\Event\Rest_Api;
 use GatherPress\Core\Event\Setup;
@@ -52,6 +53,10 @@ class Test_Setup extends Base {
 				'load-edit.php',
 				array( Admin_List::get_instance(), 'default_sort' ),
 			),
+			Meta::class       => array(
+				'registered_post_type',
+				array( Meta::get_instance(), 'register' ),
+			),
 			Query::class      => array(
 				'pre_get_posts',
 				array( Query::get_instance(), 'prepare_event_query_before_execution' ),
@@ -88,18 +93,6 @@ class Test_Setup extends Base {
 				'name'     => 'init',
 				'priority' => 10,
 				'callback' => array( $instance, 'register_post_type' ),
-			),
-			array(
-				'type'     => 'action',
-				'name'     => 'init',
-				'priority' => 10,
-				'callback' => array( $instance, 'register_event_only_meta' ),
-			),
-			array(
-				'type'     => 'action',
-				'name'     => 'registered_post_type',
-				'priority' => 10,
-				'callback' => array( $instance, 'maybe_register_event_date_meta' ),
 			),
 			array(
 				'type'     => 'action',
@@ -349,131 +342,6 @@ class Test_Setup extends Base {
 		remove_filter( 'gettext_with_context_gatherpress', $filter );
 	}
 
-	/**
-	 * Coverage for register_event_only_meta method.
-	 *
-	 * @covers ::register_event_only_meta
-	 *
-	 * @return void
-	 */
-	public function test_register_event_only_meta(): void {
-		$instance = Setup::get_instance();
-
-		unregister_post_meta( Event::POST_TYPE, 'gatherpress_online_event_link' );
-		unregister_post_meta( Event::POST_TYPE, 'gatherpress_enable_anonymous_rsvp' );
-
-		$meta = get_registered_meta_keys( 'post', Event::POST_TYPE );
-
-		$this->assertArrayNotHasKey(
-			'online_event_link',
-			$meta,
-			'Failed to assert that online_event_link does not exist.'
-		);
-		$this->assertArrayNotHasKey(
-			'enable_anonymous_rsvp',
-			$meta,
-			'Failed to assert that enable_anonymous_rsvp does not exist.'
-		);
-		$this->assertArrayNotHasKey(
-			'max_attendance_limit',
-			$meta,
-			'Failed to assert that max_guest_limit does not exist.'
-		);
-		$this->assertArrayNotHasKey(
-			'max_guest_limit',
-			$meta,
-			'Failed to assert that max_guest_limit does not exist.'
-		);
-
-		$instance->register_event_only_meta();
-
-		$meta = get_registered_meta_keys( 'post', Event::POST_TYPE );
-
-		$this->assertArrayHasKey(
-			'gatherpress_online_event_link',
-			$meta,
-			'Failed to assert that gatherpress_online_event_link does exist.'
-		);
-		$this->assertArrayHasKey(
-			'gatherpress_enable_anonymous_rsvp',
-			$meta,
-			'Failed to assert that gatherpress_enable_anonymous_rsvp does exist.'
-		);
-		$this->assertArrayHasKey(
-			'gatherpress_max_attendance_limit',
-			$meta,
-			'Failed to assert that max_guest_limit does exist.'
-		);
-		$this->assertArrayHasKey(
-			'gatherpress_max_guest_limit',
-			$meta,
-			'Failed to assert that gatherpress_max_guest_limit does exist.'
-		);
-	}
-
-	/**
-	 * Coverage for maybe_register_event_date_meta method.
-	 *
-	 * Registers datetime meta + the read-only REST filter for any post type
-	 * that declares gatherpress-event-date support. Unsupported post types are
-	 * skipped entirely.
-	 *
-	 * @covers ::maybe_register_event_date_meta
-	 *
-	 * @return void
-	 */
-	public function test_maybe_register_event_date_meta(): void {
-		$instance = Setup::get_instance();
-		$test_pt  = 'test_event_date_meta';
-
-		register_post_type(
-			$test_pt,
-			array(
-				'label'    => 'Test Event Date Meta',
-				'public'   => false,
-				'supports' => array( 'title', 'gatherpress-event-date' ),
-			)
-		);
-
-		$instance->maybe_register_event_date_meta( $test_pt );
-
-		$meta = get_registered_meta_keys( 'post', $test_pt );
-
-		$this->assertArrayHasKey(
-			'gatherpress_datetime',
-			$meta,
-			'Failed to assert that gatherpress_datetime is registered for a post type with event-date support.'
-		);
-		$this->assertArrayHasKey(
-			'gatherpress_datetime_start',
-			$meta,
-			'Failed to assert that gatherpress_datetime_start is registered.'
-		);
-		$this->assertNotFalse(
-			has_filter( sprintf( 'rest_pre_insert_%s', $test_pt ), array( $instance, 'filter_readonly_meta' ) ),
-			'Failed to assert that the read-only REST filter is registered for a post type with event-date support.'
-		);
-
-		unregister_post_type( $test_pt );
-	}
-
-	/**
-	 * Bails when the post type does not declare event-date support.
-	 *
-	 * @covers ::maybe_register_event_date_meta
-	 *
-	 * @return void
-	 */
-	public function test_maybe_register_event_date_meta_skips_unsupported_post_type(): void {
-		$instance = Setup::get_instance();
-
-		$instance->maybe_register_event_date_meta( 'post' );
-
-		$this->assertFalse(
-			has_filter( 'rest_pre_insert_post', array( $instance, 'filter_readonly_meta' ) ),
-			'Failed to assert that no hooks are registered for a post type without event-date support.'
-		);
-	}
 
 	/**
 	 * Coverage for set_datetimes method.
@@ -1105,50 +973,6 @@ class Test_Setup extends Base {
 		remove_filter( 'locale', $locale_filter );
 	}
 
-	/**
-	 * Tests auth callbacks for post meta registration.
-	 *
-	 * Covers: auth_callback returns.
-	 *
-	 * @covers ::register_event_only_meta
-	 * @covers ::maybe_register_event_date_meta
-	 * @return void
-	 */
-	public function test_register_post_meta_auth_callbacks(): void {
-		// Set current user as editor.
-		$user_id = $this->factory->user->create( array( 'role' => 'editor' ) );
-		wp_set_current_user( $user_id );
-
-		$post_id = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get()->ID;
-
-		// Test that meta can be updated when user has edit_posts capability.
-		$result = update_post_meta( $post_id, 'gatherpress_datetime_start', '2024-01-01 10:00:00' );
-		$this->assertNotFalse( $result, 'Should allow meta update with edit_posts capability' );
-
-		$result = update_post_meta( $post_id, 'gatherpress_datetime_start_gmt', '2024-01-01 10:00:00' );
-		$this->assertNotFalse( $result, 'Should allow meta update for datetime_start_gmt' );
-
-		$result = update_post_meta( $post_id, 'gatherpress_datetime_end', '2024-01-01 12:00:00' );
-		$this->assertNotFalse( $result, 'Should allow meta update for datetime_end' );
-
-		$result = update_post_meta( $post_id, 'gatherpress_datetime_end_gmt', '2024-01-01 12:00:00' );
-		$this->assertNotFalse( $result, 'Should allow meta update for datetime_end_gmt' );
-
-		$result = update_post_meta( $post_id, 'gatherpress_timezone', 'America/New_York' );
-		$this->assertNotFalse( $result, 'Should allow meta update for timezone' );
-
-		$result = update_post_meta( $post_id, 'gatherpress_max_guest_limit', 5 );
-		$this->assertNotFalse( $result, 'Should allow meta update for max_guest_limit' );
-
-		$result = update_post_meta( $post_id, 'gatherpress_enable_anonymous_rsvp', true );
-		$this->assertNotFalse( $result, 'Should allow meta update for enable_anonymous_rsvp' );
-
-		$result = update_post_meta( $post_id, 'gatherpress_online_event_link', 'https://example.com' );
-		$this->assertNotFalse( $result, 'Should allow meta update for online_event_link' );
-
-		$result = update_post_meta( $post_id, 'gatherpress_max_attendance_limit', 100 );
-		$this->assertNotFalse( $result, 'Should allow meta update for max_attendance_limit' );
-	}
 
 	/**
 	 * Tests handle_calendar_ics_request with event not found.
@@ -1232,213 +1056,6 @@ class Test_Setup extends Base {
 		$this->assertStringContainsString( 'END:VCALENDAR', $output );
 	}
 
-	/**
-	 * Tests filter_readonly_meta removes read-only meta keys from REST request.
-	 *
-	 * @covers ::filter_readonly_meta
-	 * @return void
-	 */
-	public function test_filter_readonly_meta_removes_readonly_keys(): void {
-		$instance = Setup::get_instance();
-
-		// Create a mock REST request with all readonly keys plus a writable key.
-		$request = new WP_REST_Request( 'POST', '/wp/v2/gatherpress_event' );
-		$request->set_param(
-			'meta',
-			array(
-				'gatherpress_datetime'           => '{"dateTimeStart":"2025-01-01 10:00:00"}',
-				'gatherpress_datetime_start'     => '2025-01-01 10:00:00',
-				'gatherpress_datetime_start_gmt' => '2025-01-01 15:00:00',
-				'gatherpress_datetime_end'       => '2025-01-01 12:00:00',
-				'gatherpress_datetime_end_gmt'   => '2025-01-01 17:00:00',
-				'gatherpress_timezone'           => 'America/New_York',
-				'gatherpress_online_event_link'  => 'https://example.com',
-			)
-		);
-
-		$prepared_post     = new stdClass();
-		$prepared_post->ID = 123;
-
-		$result = $instance->filter_readonly_meta( $prepared_post, $request );
-
-		// Verify prepared_post is returned unchanged.
-		$this->assertSame( $prepared_post, $result, 'Should return the same prepared_post object.' );
-		$this->assertEquals( 123, $result->ID, 'Prepared post ID should be unchanged.' );
-
-		// Verify readonly keys were removed from request meta.
-		$filtered_meta = $request->get_param( 'meta' );
-
-		$this->assertArrayNotHasKey(
-			'gatherpress_datetime_start',
-			$filtered_meta,
-			'Should remove gatherpress_datetime_start.'
-		);
-		$this->assertArrayNotHasKey(
-			'gatherpress_datetime_start_gmt',
-			$filtered_meta,
-			'Should remove gatherpress_datetime_start_gmt.'
-		);
-		$this->assertArrayNotHasKey(
-			'gatherpress_datetime_end',
-			$filtered_meta,
-			'Should remove gatherpress_datetime_end.'
-		);
-		$this->assertArrayNotHasKey(
-			'gatherpress_datetime_end_gmt',
-			$filtered_meta,
-			'Should remove gatherpress_datetime_end_gmt.'
-		);
-		$this->assertArrayNotHasKey(
-			'gatherpress_timezone',
-			$filtered_meta,
-			'Should remove gatherpress_timezone.'
-		);
-
-		// Verify writable keys are preserved.
-		$this->assertArrayHasKey(
-			'gatherpress_datetime',
-			$filtered_meta,
-			'Should preserve gatherpress_datetime (writable).'
-		);
-		$this->assertArrayHasKey(
-			'gatherpress_online_event_link',
-			$filtered_meta,
-			'Should preserve gatherpress_online_event_link (writable).'
-		);
-	}
-
-	/**
-	 * Tests filter_readonly_meta with null meta parameter.
-	 *
-	 * @covers ::filter_readonly_meta
-	 * @return void
-	 */
-	public function test_filter_readonly_meta_with_null_meta(): void {
-		$instance = Setup::get_instance();
-
-		// Create a REST request without meta parameter.
-		$request = new WP_REST_Request( 'POST', '/wp/v2/gatherpress_event' );
-		// Do not set meta parameter - it will be null.
-
-		$prepared_post       = new stdClass();
-		$prepared_post->ID   = 456;
-		$prepared_post->name = 'Test Event';
-
-		$result = $instance->filter_readonly_meta( $prepared_post, $request );
-
-		// Verify prepared_post is returned unchanged.
-		$this->assertSame( $prepared_post, $result, 'Should return the same prepared_post object.' );
-		$this->assertEquals( 456, $result->ID, 'Prepared post ID should be unchanged.' );
-		$this->assertEquals( 'Test Event', $result->name, 'Prepared post name should be unchanged.' );
-
-		// Verify meta is still null.
-		$this->assertNull( $request->get_param( 'meta' ), 'Meta should remain null.' );
-	}
-
-	/**
-	 * Tests filter_readonly_meta with empty meta array.
-	 *
-	 * @covers ::filter_readonly_meta
-	 * @return void
-	 */
-	public function test_filter_readonly_meta_with_empty_meta(): void {
-		$instance = Setup::get_instance();
-
-		// Create a REST request with empty meta array.
-		$request = new WP_REST_Request( 'POST', '/wp/v2/gatherpress_event' );
-		$request->set_param( 'meta', array() );
-
-		$prepared_post     = new stdClass();
-		$prepared_post->ID = 789;
-
-		$result = $instance->filter_readonly_meta( $prepared_post, $request );
-
-		// Verify prepared_post is returned unchanged.
-		$this->assertSame( $prepared_post, $result, 'Should return the same prepared_post object.' );
-
-		// Verify meta is still an empty array.
-		$filtered_meta = $request->get_param( 'meta' );
-		$this->assertIsArray( $filtered_meta, 'Meta should still be an array.' );
-		$this->assertEmpty( $filtered_meta, 'Meta should still be empty.' );
-	}
-
-	/**
-	 * Tests filter_readonly_meta with only writable keys.
-	 *
-	 * @covers ::filter_readonly_meta
-	 * @return void
-	 */
-	public function test_filter_readonly_meta_with_only_writable_keys(): void {
-		$instance = Setup::get_instance();
-
-		// Create a REST request with only writable meta keys.
-		$request = new WP_REST_Request( 'POST', '/wp/v2/gatherpress_event' );
-		$request->set_param(
-			'meta',
-			array(
-				'gatherpress_datetime'              => '{"dateTimeStart":"2025-01-01 10:00:00"}',
-				'gatherpress_online_event_link'     => 'https://example.com/meeting',
-				'gatherpress_enable_anonymous_rsvp' => true,
-				'gatherpress_max_guest_limit'       => 5,
-				'gatherpress_max_attendance_limit'  => 100,
-			)
-		);
-
-		$prepared_post     = new stdClass();
-		$prepared_post->ID = 101;
-
-		$result = $instance->filter_readonly_meta( $prepared_post, $request );
-
-		// Verify prepared_post is returned unchanged.
-		$this->assertSame( $prepared_post, $result, 'Should return the same prepared_post object.' );
-
-		// Verify all writable keys are preserved.
-		$filtered_meta = $request->get_param( 'meta' );
-
-		$this->assertCount( 5, $filtered_meta, 'Should have all 5 writable keys.' );
-		$this->assertArrayHasKey( 'gatherpress_datetime', $filtered_meta );
-		$this->assertArrayHasKey( 'gatherpress_online_event_link', $filtered_meta );
-		$this->assertArrayHasKey( 'gatherpress_enable_anonymous_rsvp', $filtered_meta );
-		$this->assertArrayHasKey( 'gatherpress_max_guest_limit', $filtered_meta );
-		$this->assertArrayHasKey( 'gatherpress_max_attendance_limit', $filtered_meta );
-	}
-
-	/**
-	 * Tests filter_readonly_meta with only readonly keys.
-	 *
-	 * @covers ::filter_readonly_meta
-	 * @return void
-	 */
-	public function test_filter_readonly_meta_with_only_readonly_keys(): void {
-		$instance = Setup::get_instance();
-
-		// Create a REST request with only readonly meta keys.
-		$request = new WP_REST_Request( 'POST', '/wp/v2/gatherpress_event' );
-		$request->set_param(
-			'meta',
-			array(
-				'gatherpress_datetime_start'     => '2025-01-01 10:00:00',
-				'gatherpress_datetime_start_gmt' => '2025-01-01 15:00:00',
-				'gatherpress_datetime_end'       => '2025-01-01 12:00:00',
-				'gatherpress_datetime_end_gmt'   => '2025-01-01 17:00:00',
-				'gatherpress_timezone'           => 'America/New_York',
-			)
-		);
-
-		$prepared_post     = new stdClass();
-		$prepared_post->ID = 202;
-
-		$result = $instance->filter_readonly_meta( $prepared_post, $request );
-
-		// Verify prepared_post is returned unchanged.
-		$this->assertSame( $prepared_post, $result, 'Should return the same prepared_post object.' );
-
-		// Verify all readonly keys were removed.
-		$filtered_meta = $request->get_param( 'meta' );
-
-		$this->assertIsArray( $filtered_meta, 'Meta should still be an array.' );
-		$this->assertEmpty( $filtered_meta, 'Meta should be empty after removing all readonly keys.' );
-	}
 
 	/**
 	 * Tests handle_event_archive_redirect returns early when not on post type archive.

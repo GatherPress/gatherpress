@@ -21,11 +21,9 @@ use GatherPress\Core\Rsvp\Rsvp;
 use GatherPress\Core\Settings;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Utility;
-use stdClass;
 use WP;
 use WP_Block;
 use WP_Post;
-use WP_REST_Request;
 
 /**
  * Class Setup.
@@ -77,6 +75,7 @@ class Setup {
 	 */
 	protected function instantiate_classes(): void {
 		Admin_List::get_instance();
+		Meta::get_instance();
 		Query::get_instance();
 		Rest_Api::get_instance();
 	}
@@ -92,8 +91,6 @@ class Setup {
 	 */
 	protected function setup_hooks(): void {
 		add_action( 'init', array( $this, 'register_post_type' ) );
-		add_action( 'init', array( $this, 'register_event_only_meta' ) );
-		add_action( 'registered_post_type', array( $this, 'maybe_register_event_date_meta' ) );
 		add_action( 'init', array( $this, 'register_calendar_rewrite_rule' ) );
 		add_action( 'parse_request', array( $this, 'handle_calendar_ics_request' ) );
 		add_action( 'template_redirect', array( $this, 'handle_event_archive_redirect' ) );
@@ -245,187 +242,6 @@ class Setup {
 		}
 		return $slug;
 	}
-
-	/**
-	 * Registers datetime meta + the read-only REST filter when a post type
-	 * declares gatherpress-event-date support.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param string $post_type The post type that was just registered.
-	 * @return void
-	 */
-	public function maybe_register_event_date_meta( string $post_type ): void {
-		if ( ! post_type_supports( $post_type, 'gatherpress-event-date' ) ) {
-			return;
-		}
-
-		$event_date_meta = array(
-			'gatherpress_datetime'           => array(
-				'auth_callback'     => array( Utility::class, 'can_edit_post_meta' ),
-				'sanitize_callback' => 'sanitize_text_field',
-				'show_in_rest'      => true,
-				'single'            => true,
-				'type'              => 'string',
-			),
-			'gatherpress_datetime_start'     => array(
-				'auth_callback'     => '__return_false', // Read-only: derived from gatherpress_datetime.
-				'sanitize_callback' => 'sanitize_text_field',
-				'show_in_rest'      => true,
-				'single'            => true,
-			),
-			'gatherpress_datetime_start_gmt' => array(
-				'auth_callback'     => '__return_false', // Read-only: derived from gatherpress_datetime.
-				'sanitize_callback' => 'sanitize_text_field',
-				'show_in_rest'      => true,
-				'single'            => true,
-				'type'              => 'string',
-			),
-			'gatherpress_datetime_end'       => array(
-				'auth_callback'     => '__return_false', // Read-only: derived from gatherpress_datetime.
-				'sanitize_callback' => 'sanitize_text_field',
-				'show_in_rest'      => true,
-				'single'            => true,
-				'type'              => 'string',
-			),
-			'gatherpress_datetime_end_gmt'   => array(
-				'auth_callback'     => '__return_false', // Read-only: derived from gatherpress_datetime.
-				'sanitize_callback' => 'sanitize_text_field',
-				'show_in_rest'      => true,
-				'single'            => true,
-				'type'              => 'string',
-			),
-			'gatherpress_timezone'           => array(
-				'auth_callback'     => '__return_false', // Read-only: derived from gatherpress_datetime.
-				'sanitize_callback' => 'sanitize_text_field',
-				'show_in_rest'      => true,
-				'single'            => true,
-				'type'              => 'string',
-			),
-		);
-
-		foreach ( $event_date_meta as $meta_key => $args ) {
-			register_post_meta( $post_type, $meta_key, $args );
-		}
-
-		// Filter read-only datetime meta from REST requests for this post type.
-		add_filter(
-			sprintf( 'rest_pre_insert_%s', $post_type ),
-			array( $this, 'filter_readonly_meta' ),
-			10,
-			2
-		);
-	}
-
-	/**
-	 * Registers meta that only lives on the built-in event post type (RSVP
-	 * toggles, guest / attendance limits, online event link).
-	 *
-	 * @since 1.0.0
-	 *
-	 * @return void
-	 */
-	public function register_event_only_meta(): void {
-		// Always register gatherpress_enable_rsvp so it can be written in all modes.
-		// Missing meta is treated as "on"; only an explicit 0 disables RSVP per event.
-		$event_only_meta = array(
-			'gatherpress_enable_rsvp'           => array(
-				'auth_callback'     => array( Utility::class, 'can_edit_post_meta' ),
-				'sanitize_callback' => 'absint',
-				'show_in_rest'      => true,
-				'single'            => true,
-				'type'              => 'integer',
-				'default'           => 1,
-			),
-			'gatherpress_max_guest_limit'       => array(
-				'auth_callback'     => array( Utility::class, 'can_edit_post_meta' ),
-				'sanitize_callback' => 'absint',
-				'show_in_rest'      => true,
-				'single'            => true,
-				'type'              => 'integer',
-				'default'           => (int) Settings::get_instance()->get( 'max_guest_limit' ),
-			),
-			'gatherpress_enable_anonymous_rsvp' => array(
-				'auth_callback'     => array( Utility::class, 'can_edit_post_meta' ),
-				'sanitize_callback' => 'rest_sanitize_boolean',
-				'show_in_rest'      => true,
-				'single'            => true,
-				'type'              => 'boolean',
-				'default'           => (bool) Settings::get_instance()->get( 'enable_anonymous_rsvp' ),
-			),
-			// Always register so it can be written regardless of open RSVP mode.
-			// Stored as integer (1 = enabled, 0 = disabled); an unset meta (empty string) is treated as enabled.
-			'gatherpress_enable_open_rsvp'      => array(
-				'auth_callback'     => array( Utility::class, 'can_edit_post_meta' ),
-				'sanitize_callback' => 'absint',
-				'show_in_rest'      => true,
-				'single'            => true,
-				'type'              => 'integer',
-				'default'           => 1,
-			),
-			'gatherpress_online_event_link'     => array(
-				'auth_callback'     => array( Utility::class, 'can_edit_post_meta' ),
-				'sanitize_callback' => 'sanitize_url',
-				'show_in_rest'      => true,
-				'single'            => true,
-				'type'              => 'string',
-				'default'           => '',
-			),
-			'gatherpress_max_attendance_limit'  => array(
-				'auth_callback'     => array( Utility::class, 'can_edit_post_meta' ),
-				'sanitize_callback' => 'absint',
-				'show_in_rest'      => true,
-				'single'            => true,
-				'type'              => 'integer',
-				'default'           => (int) Settings::get_instance()->get( 'max_attendance_limit' ),
-			),
-		);
-
-		foreach ( $event_only_meta as $meta_key => $args ) {
-			register_post_meta( Event::POST_TYPE, $meta_key, $args );
-		}
-	}
-
-	/**
-	 * Filter out read-only meta fields from REST API requests.
-	 *
-	 * This prevents the "Publishing failed. Sorry, you are not allowed to edit
-	 * the gatherpress_datetime_start custom field." error that occurs when the
-	 * block editor tries to save derived meta fields that have auth_callback
-	 * set to __return_false.
-	 *
-	 * The derived datetime fields are populated programmatically via the
-	 * set_datetimes() method when gatherpress_datetime is saved, so any
-	 * values sent via REST API should be silently discarded.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param stdClass        $prepared_post An object representing a single post prepared for inserting or updating.
-	 * @param WP_REST_Request $request       Request object.
-	 * @return stdClass The prepared post object.
-	 */
-	public function filter_readonly_meta( stdClass $prepared_post, WP_REST_Request $request ): stdClass {
-		$readonly_keys = array(
-			'gatherpress_datetime_start',
-			'gatherpress_datetime_start_gmt',
-			'gatherpress_datetime_end',
-			'gatherpress_datetime_end_gmt',
-			'gatherpress_timezone',
-		);
-
-		$meta = $request->get_param( 'meta' );
-
-		if ( is_array( $meta ) ) {
-			foreach ( $readonly_keys as $key ) {
-				unset( $meta[ $key ] );
-			}
-
-			$request->set_param( 'meta', $meta );
-		}
-
-		return $prepared_post;
-	}
-
 	/**
 	 * Register a rewrite rule and query var for serving .ics calendar downloads.
 	 *
