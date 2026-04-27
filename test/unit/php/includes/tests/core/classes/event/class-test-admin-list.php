@@ -1434,6 +1434,13 @@ class Test_Admin_List extends Base {
 	public function test_set_custom_columns(): void {
 		$instance = Admin_List::get_instance();
 
+		// Pin the screen to the event edit screen — production calls go
+		// through the `manage_<post_type>_posts_columns` filter, which only
+		// fires when that screen is active. Setting it here also exercises
+		// the screen-driven `$screen->post_type` branch in
+		// `set_custom_columns()`'s venue-taxonomy resolution.
+		set_current_screen( 'edit-' . Event::POST_TYPE );
+
 		// Mirror what WP core hands the filter on the events list screen:
 		// title + auto-injected taxonomy columns + author + date. Venue
 		// taxonomy goes first so the test asserts the venue-first order
@@ -1448,6 +1455,8 @@ class Test_Admin_List extends Base {
 		);
 
 		$result = $instance->set_custom_columns( $default_columns );
+
+		set_current_screen( 'front' );
 
 		// Author column is dropped.
 		$this->assertArrayNotHasKey( 'author', $result, 'Author column should be removed.' );
@@ -1472,6 +1481,48 @@ class Test_Admin_List extends Base {
 			),
 			array_keys( $result ),
 			'Sortable custom columns must precede taxonomy columns; venue taxonomy must come first.'
+		);
+	}
+
+	/**
+	 * Coverage for `set_custom_columns()`'s no-screen fallback.
+	 *
+	 * When `get_current_screen()` returns null (or its `post_type` is
+	 * empty) the venue taxonomy resolves through `Event::POST_TYPE`
+	 * rather than `$screen->post_type`. Exercises the falsy ternary leg
+	 * left uncovered when a screen is set.
+	 *
+	 * @covers ::set_custom_columns
+	 *
+	 * @return void
+	 */
+	public function test_set_custom_columns_falls_back_to_event_post_type_without_screen(): void {
+		$instance = Admin_List::get_instance();
+
+		// Ensure no screen is set so the production code falls through
+		// to the `Event::POST_TYPE` default.
+		unset( $GLOBALS['current_screen'] );
+
+		$default_columns = array(
+			'cb'                          => '<input type="checkbox" />',
+			'title'                       => 'Title',
+			'taxonomy-_gatherpress_venue' => 'Venues',
+			'date'                        => 'Date',
+		);
+
+		$result = $instance->set_custom_columns( $default_columns );
+
+		$this->assertSame(
+			array(
+				'cb',
+				'title',
+				'datetime',
+				'rsvps',
+				'taxonomy-_gatherpress_venue',
+				'date',
+			),
+			array_keys( $result ),
+			'Without a screen, the venue taxonomy still routes through Event::POST_TYPE and lands in the same slot.'
 		);
 	}
 
