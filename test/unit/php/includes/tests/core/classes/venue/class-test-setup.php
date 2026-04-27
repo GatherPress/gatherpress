@@ -10,6 +10,7 @@ namespace GatherPress\Tests\Core\Venue;
 
 use GatherPress\Core\Event;
 use GatherPress\Core\Venue\Map\Setup as Map_Setup;
+use GatherPress\Core\Venue\Meta;
 use GatherPress\Core\Venue\Setup;
 use GatherPress\Core\Venue\Venue;
 use GatherPress\Tests\Base;
@@ -24,17 +25,16 @@ use WP_Block_Patterns_Registry;
  */
 class Test_Setup extends Base {
 	/**
-	 * Venue\Setup hands the map subsystem off to `Map\Setup`, which in
-	 * turn instantiates Manager / Map / Prewarm. Test that `Map\Setup`
-	 * is constructed when Venue\Setup wires its siblings. Per-sibling
-	 * registration is proved by `Test_Map_Setup`.
+	 * Venue\Setup hands the map subsystem off to `Map\Setup` and the
+	 * meta surface off to `Venue\Meta`. Per-sibling internals are
+	 * proved by their own test classes.
 	 *
 	 * @covers ::__construct
 	 * @covers ::instantiate_classes
 	 *
 	 * @return void
 	 */
-	public function test_instantiate_classes_hands_off_to_map_setup(): void {
+	public function test_instantiate_classes_hands_off_to_siblings(): void {
 		// Force the method to run inside the test's coverage window —
 		// Setup is a singleton cached during plugin bootstrap, so
 		// `get_instance()` here returns the cached instance and doesn't
@@ -45,6 +45,11 @@ class Test_Setup extends Base {
 			Map_Setup::class,
 			Map_Setup::get_instance(),
 			'Map\Setup must be instantiated so the map subsystem is wired.'
+		);
+		$this->assertInstanceOf(
+			Meta::class,
+			Meta::get_instance(),
+			'Venue\Meta must be instantiated so meta registration is wired.'
 		);
 	}
 
@@ -76,12 +81,6 @@ class Test_Setup extends Base {
 				'name'     => 'registered_post_type',
 				'priority' => 10,
 				'callback' => array( $instance, 'maybe_register_post_type_hooks' ),
-			),
-			array(
-				'type'     => 'action',
-				'name'     => 'registered_post_type',
-				'priority' => 10,
-				'callback' => array( $instance, 'maybe_register_post_meta' ),
 			),
 			array(
 				'type'     => 'action',
@@ -181,229 +180,6 @@ class Test_Setup extends Base {
 		$this->assertTrue( post_type_exists( Venue::POST_TYPE ), 'Failed to assert that post type exists.' );
 	}
 
-
-	/**
-	 * Coverage for maybe_register_post_meta method.
-	 *
-	 * @covers ::maybe_register_post_meta
-	 *
-	 * @return void
-	 */
-	public function test_maybe_register_post_meta(): void {
-		$instance = Setup::get_instance();
-
-		$venue_information_keys = array(
-			'gatherpress_address',
-			'gatherpress_latitude',
-			'gatherpress_longitude',
-			'gatherpress_phone',
-			'gatherpress_website',
-			'gatherpress_static_map',
-		);
-
-		foreach ( $venue_information_keys as $key ) {
-			unregister_post_meta( Venue::POST_TYPE, $key );
-		}
-
-		unregister_post_meta( Venue::POST_TYPE, 'gatherpress_map_show' );
-
-		$meta = get_registered_meta_keys( 'post', Venue::POST_TYPE );
-
-		foreach ( $venue_information_keys as $key ) {
-			$this->assertArrayNotHasKey(
-				$key,
-				$meta,
-				sprintf( 'Failed to assert that %s is unregistered before re-registration.', $key )
-			);
-		}
-
-		$this->assertArrayNotHasKey(
-			'gatherpress_map_show',
-			$meta,
-			'Failed to assert that gatherpress_map_show does not exist.'
-		);
-
-		$instance->maybe_register_post_meta( Venue::POST_TYPE );
-
-		$meta = get_registered_meta_keys( 'post', Venue::POST_TYPE );
-
-		foreach ( $venue_information_keys as $key ) {
-			$this->assertArrayHasKey(
-				$key,
-				$meta,
-				sprintf( 'Failed to assert that %s is registered for gatherpress-venue-information support.', $key )
-			);
-		}
-
-		$this->assertArrayHasKey(
-			'gatherpress_map_show',
-			$meta,
-			'Failed to assert that gatherpress_map_show exists for gatherpress-venue-map support.'
-		);
-	}
-
-	/**
-	 * Coverage for maybe_register_post_meta when the venue post type does not support revisions.
-	 *
-	 * Registers a throwaway venue post type that declares gatherpress-venue-information
-	 * support but omits WordPress revisions support. Verifies that maybe_register_post_meta
-	 * silently drops revisions_enabled for that post type and still registers the meta
-	 * without triggering a WordPress _doing_it_wrong notice.
-	 *
-	 * @covers ::maybe_register_post_meta
-	 *
-	 * @return void
-	 */
-	public function test_maybe_register_post_meta_without_revisions_support(): void {
-		$instance = Setup::get_instance();
-		$test_pt  = 'test_venue_no_rev';
-
-		register_post_type(
-			$test_pt,
-			array(
-				'label'    => 'Test Venues (no revisions)',
-				'public'   => false,
-				'supports' => array( 'title', 'gatherpress-venue-information' ),
-			)
-		);
-
-		$instance->maybe_register_post_meta( $test_pt );
-
-		$meta = get_registered_meta_keys( 'post', $test_pt );
-
-		$expected_keys = array(
-			'gatherpress_address',
-			'gatherpress_latitude',
-			'gatherpress_longitude',
-			'gatherpress_phone',
-			'gatherpress_website',
-		);
-
-		foreach ( $expected_keys as $key ) {
-			$this->assertArrayHasKey(
-				$key,
-				$meta,
-				sprintf( 'Failed to assert %s is registered for a venue post type without revisions support.', $key )
-			);
-		}
-
-		unregister_post_type( $test_pt );
-	}
-
-	/**
-	 * Coverage for filter_readonly_meta.
-	 *
-	 * Verifies that server-managed meta keys (the static map descriptor blob)
-	 * are stripped from REST API meta payloads so the editor cannot write them
-	 * directly, while editor-writable keys pass through.
-	 *
-	 * @covers ::filter_readonly_meta
-	 *
-	 * @return void
-	 */
-	public function test_filter_readonly_meta(): void {
-		$instance = Setup::get_instance();
-		$request  = new \WP_REST_Request();
-
-		$request->set_param(
-			'meta',
-			array(
-				'gatherpress_static_map' => array(
-					'15' => array(
-						'url'  => 'evil.png',
-						'hash' => 'x',
-					),
-				),
-				'gatherpress_address'    => 'Real St',
-				'gatherpress_latitude'   => '12.345',
-			)
-		);
-
-		$prepared = new \stdClass();
-		$result   = $instance->filter_readonly_meta( $prepared, $request );
-
-		$this->assertSame( $prepared, $result, 'Filter must return the prepared post object.' );
-
-		$meta = $request->get_param( 'meta' );
-
-		$this->assertArrayNotHasKey(
-			'gatherpress_static_map',
-			$meta,
-			'gatherpress_static_map is server-generated and must not be writable via REST.'
-		);
-		$this->assertArrayHasKey(
-			'gatherpress_address',
-			$meta,
-			'Editor-writable venue meta should pass through untouched.'
-		);
-		$this->assertArrayHasKey(
-			'gatherpress_latitude',
-			$meta,
-			'Editor-writable venue meta should pass through untouched.'
-		);
-	}
-
-	/**
-	 * Tests that filter_readonly_meta handles a REST request with no meta param.
-	 *
-	 * Exercises the is_array() guard: when the request has no meta (or a non-array
-	 * value), the filter must return the prepared post object unchanged without
-	 * mutating the request.
-	 *
-	 * @covers ::filter_readonly_meta
-	 *
-	 * @return void
-	 */
-	public function test_filter_readonly_meta_no_meta_param(): void {
-		$instance = Setup::get_instance();
-		$request  = new \WP_REST_Request();
-		$prepared = new \stdClass();
-
-		$result = $instance->filter_readonly_meta( $prepared, $request );
-
-		$this->assertSame( $prepared, $result, 'Filter must return the prepared post object unchanged.' );
-		$this->assertNull( $request->get_param( 'meta' ), 'Missing meta param should remain null.' );
-	}
-
-	/**
-	 * Coverage for sanitize_coordinate.
-	 *
-	 * Numeric values within the ±180 range pass through; everything else
-	 * collapses to the empty-string "no coords yet" sentinel.
-	 *
-	 * @covers ::sanitize_coordinate
-	 *
-	 * @return void
-	 */
-	public function test_sanitize_coordinate(): void {
-		$instance = Setup::get_instance();
-
-		$this->assertSame(
-			'40.7128',
-			$instance->sanitize_coordinate( '40.7128' ),
-			'Numeric strings should round-trip through the float cast.'
-		);
-		$this->assertSame(
-			'-74.006',
-			$instance->sanitize_coordinate( -74.006 ),
-			'Floats should round-trip through the float cast.'
-		);
-		$this->assertSame(
-			'',
-			$instance->sanitize_coordinate( 'banana' ),
-			'Non-numeric input should collapse to the empty sentinel.'
-		);
-		$this->assertSame(
-			'',
-			$instance->sanitize_coordinate( '' ),
-			'Empty string should remain empty.'
-		);
-		$this->assertSame(
-			'',
-			$instance->sanitize_coordinate( -9999 ),
-			'Out-of-range values should collapse to the empty sentinel.'
-		);
-	}
 
 	/**
 	 * Coverage for register_taxonomy method.

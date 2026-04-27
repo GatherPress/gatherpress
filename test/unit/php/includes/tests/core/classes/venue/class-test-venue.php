@@ -12,7 +12,7 @@
 
 namespace GatherPress\Tests\Core\Venue;
 
-use GatherPress\Core\Venue\Setup;
+use GatherPress\Core\Venue\Meta;
 use GatherPress\Core\Venue\Venue;
 use GatherPress\Tests\Base;
 use ReflectionClass;
@@ -226,7 +226,7 @@ class Test_Venue extends Base {
 	/**
 	 * Returns the expected empty-string shape for `get_information()`.
 	 *
-	 * Derived from the same source of truth (`Setup::STRUCTURED_ADDRESS_FIELDS`)
+	 * Derived from the same source of truth (`Meta::STRUCTURED_ADDRESS_FIELDS`)
 	 * the production code uses, so adding a new structured field updates both
 	 * sides simultaneously and the assertion can't silently drift.
 	 *
@@ -234,7 +234,7 @@ class Test_Venue extends Base {
 	 */
 	private function empty_information_shape(): array {
 		return array_fill_keys(
-			array_merge( Setup::EDITOR_WRITABLE_FIELDS, Setup::STRUCTURED_ADDRESS_FIELDS ),
+			array_merge( Meta::EDITOR_WRITABLE_FIELDS, Meta::STRUCTURED_ADDRESS_FIELDS ),
 			''
 		);
 	}
