@@ -1,17 +1,33 @@
 /**
- * Strip <script> tags and "on*" attributes from HTML to sanitize it.
+ * Strip `<script>` elements and `on*` event-handler attributes from an
+ * HTML string. **Not a general-purpose HTML sanitizer.**
  *
- * This function removes <script> elements and any attributes starting with "on" (e.g., event handlers)
- * to mitigate potential XSS vulnerabilities. It is a similar implementation to WordPress Core's `safeHTML` function
- * in `dom.js`, tailored for use when the Core implementation is unavailable or unnecessary.
+ * What it removes:
+ *
+ * - Every `<script>` element.
+ * - Every attribute whose name starts with `on` (e.g. `onclick`,
+ *   `onload`, `onerror`).
+ *
+ * What it does **not** remove (every one of these is a real XSS vector):
+ *
+ * - `javascript:` URLs in `href` / `src` / `action` / etc.
+ * - `data:` URIs with executable payloads (e.g. `data:text/html,...`).
+ * - `<iframe>`, `<object>`, `<embed>`, `<form>`, `<style>` elements.
+ * - `srcdoc`, `formaction`, `xlink:href`, `style` attributes.
+ * - CSS `expression()` / `url(javascript:...)` in inline styles.
+ *
+ * Use this only as defense-in-depth on HTML that is already trusted
+ * (server-rendered with proper escaping, REST responses produced by
+ * GatherPress's own endpoints). Never feed raw user input through it
+ * and treat the result as safe — it isn't. For untrusted HTML reach
+ * for DOMPurify or equivalent.
  *
  * @since 1.0.0
  *
- * @param {string} html - The raw HTML string to sanitize.
- *
- * @return {string} The sanitized HTML string.
+ * @param {string} html Raw HTML string.
+ * @return {string} The HTML with `<script>` elements and `on*` attributes removed.
  */
-export function safeHTML( html ) {
+export function stripScriptsAndEventHandlers( html ) {
 	const { body } = document.implementation.createHTMLDocument( '' );
 	body.innerHTML = html;
 	const elements = body.getElementsByTagName( '*' );
