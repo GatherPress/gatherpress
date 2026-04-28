@@ -199,16 +199,8 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 	const timeFormat = getFromSettings( 'timeFormat' );
 	const defaultShowTimezone = getFromSettings( 'showTimezone' );
 
-	// Check if we're inside a query loop.
-	const isDescendentOfQueryLoop = Number.isFinite( context?.queryId );
-
-	// Only use postId if context is an event or have an explicit override.
 	// Defer the supports check to useSelect so it stays reactive.
-	const postId =
-		( attributes?.postId || null ) ??
-		( isDescendentOfQueryLoop ? context?.postId : null ) ??
-		context?.postId ??
-		null;
+	const postId = attributes?.postId ?? context?.postId ?? null;
 
 	const { dateTimeStart, dateTimeEnd, timezone, isLoading, isValidEvent } = useSelect(
 		( select ) => {
@@ -239,6 +231,14 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 				};
 			}
 
+			// Short-circuit before checking resolution: if the context post type doesn't
+			// support event-date we never call `getEntityRecord`, so its resolver never
+			// fires and `hasFinishedResolution` would stay false forever — blocking the
+			// component on a spinner that never resolves.
+			if ( ! supportsEventDate ) {
+				return { isValidEvent: false };
+			}
+
 			// For Query Loop and override contexts, fetch from entity record.
 			const hasResolved = select( 'core' ).hasFinishedResolution(
 				'getEntityRecord',
@@ -249,23 +249,21 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 				return { isLoading: true, isValidEvent: false };
 			}
 
-			const post = supportsEventDate
-				? select( 'core' ).getEntityRecord(
-					'postType',
-					postType,
-					postId
-				)
-				: null;
+			const post = select( 'core' ).getEntityRecord(
+				'postType',
+				postType,
+				postId
+			);
 			const meta = post?.meta;
 
+			// Match the original `hasValidEventId` semantics: only treat the block as
+			// "connected" when the referenced post is published. Drafts/scheduled posts
+			// referenced via Query Loop or postId override stay dim by design.
 			return {
 				dateTimeStart: meta?.gatherpress_datetime_start,
 				dateTimeEnd: meta?.gatherpress_datetime_end,
 				timezone: meta?.gatherpress_timezone,
-				isValidEvent:
-					supportsEventDate &&
-					!! post &&
-					'publish' === post?.status,
+				isValidEvent: !! post && 'publish' === post?.status,
 			};
 		},
 		[ postId, context?.postType ]

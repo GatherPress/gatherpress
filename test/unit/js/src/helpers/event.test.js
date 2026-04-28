@@ -189,6 +189,38 @@ describe( 'usePostTypeSupports', () => {
 
 		expect( useSelect ).toHaveBeenCalledTimes( 1 );
 	} );
+
+	it( 're-evaluates when getPostType resolves later', () => {
+		// Simulates the actual race the hook is fixing: on first render the
+		// post-type definition isn't cached yet (returns undefined), then
+		// resolves on a subsequent invocation. The hook must reflect the new
+		// value rather than caching the false negative.
+		const { select } = require( '@wordpress/data' );
+		let resolved = false;
+		select.mockImplementation( ( store ) => {
+			if ( 'core' === store ) {
+				return {
+					getPostType: ( slug ) => {
+						if ( ! resolved ) {
+							return undefined;
+						}
+						return mockGetPostType( slug );
+					},
+				};
+			}
+			return {};
+		} );
+
+		expect(
+			usePostTypeSupports( 'gatherpress-event-date', 'gatherpress_event' )
+		).toBe( false );
+
+		resolved = true;
+
+		expect(
+			usePostTypeSupports( 'gatherpress-event-date', 'gatherpress_event' )
+		).toBe( true );
+	} );
 } );
 
 /**

@@ -103,8 +103,10 @@ export function isInFSETemplate() {
  * @param {boolean} options.isDescendentOfQueryLoop Whether the block is inside a Query Loop.
  * @param {boolean} [options.hasSupport]            Whether the resolved post type has the required support.
  *                                                  Pass the result of `usePostTypeSupports` for reactivity.
- * @param {string}  [options.postType]              Legacy fallback when `hasSupport` is omitted.
- * @param {string}  [options.support]               Legacy fallback when `hasSupport` is omitted.
+ * @param {string}  [options.postType]              Deprecated. Legacy fallback when `hasSupport` is omitted —
+ *                                                  prefer `hasSupport` so the supports gate stays reactive.
+ * @param {string}  [options.support]               Deprecated. Legacy fallback when `hasSupport` is omitted —
+ *                                                  prefer `hasSupport` so the supports gate stays reactive.
  * @param {boolean} [options.hasData=false]         Whether the block has its specific data.
  * @return {boolean} True if the block should be fully visible, false if it should be dimmed.
  */

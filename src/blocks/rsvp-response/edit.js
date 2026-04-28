@@ -27,7 +27,7 @@ import apiFetch from '@wordpress/api-fetch';
  */
 import RsvpManager from './rsvp-manager';
 import TEMPLATE from './template';
-import { hasValidEventId, isPostTypeSupporting, usePostTypeSupports, DISABLED_FIELD_OPACITY, getEventMeta, isRsvpEnabledForEvent } from '../../helpers/event';
+import { hasValidEventId, usePostTypeSupports, DISABLED_FIELD_OPACITY, getEventMeta, isRsvpEnabledForEvent } from '../../helpers/event';
 import { getEditorDocument, isInFSETemplate } from '../../helpers/editor';
 import { getFromSettings } from '../../helpers/editor-settings';
 import { EVENT_REST_API } from '../../helpers/namespace';
@@ -73,6 +73,10 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 	// and leave the block permanently dimmed in Query Loops.
 	const isDescendentOfQueryLoop = Number.isFinite( context?.queryId );
 	const isEventContext = usePostTypeSupports( 'gatherpress-rsvp', context?.postType );
+	// Editor-side check (no postType arg) for the inline edit toolbar — only
+	// surface it when editing an RSVP-supporting post directly. Reactive so
+	// the toolbar appears once supports load instead of staying hidden.
+	const isEditingRsvpPost = usePostTypeSupports( 'gatherpress-rsvp' );
 
 	// Only use postId if context is an event or have an explicit override.
 	const postId =
@@ -243,7 +247,7 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 						) }
 					</PanelBody>
 				</InspectorControls>
-				{ isPostTypeSupporting( 'gatherpress-rsvp' ) && (
+				{ isEditingRsvpPost && (
 					<BlockControls>
 						<ToolbarGroup>
 							<ToolbarButton
