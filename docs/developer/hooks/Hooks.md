@@ -41,29 +41,29 @@
 
 ## class-manager.php
 
-- [`gatherpress_register_map_providers`](gatherpress_register_map_providers.md) Fires when venue map providers are being registered.
+- [`gatherpress_register_static_map_providers`](gatherpress_register_static_map_providers.md) Fires when venue map providers are being registered.
 
 ## class-map.php
 
 - [`gatherpress_map_height`](gatherpress_map_height.md) Filter the height used when rendering the static venue map.
 - [`gatherpress_map_zoom`](gatherpress_map_zoom.md) Filter the zoom level used when rendering the static venue map.
-- [`gatherpress_venue_map_descriptors`](gatherpress_venue_map_descriptors.md) Filters the parsed descriptor map for a venue.
-- [`gatherpress_venue_map_generate_2x`](gatherpress_venue_map_generate_2x.md) Filter whether to generate the retina (2×) static-map variant.
+- [`gatherpress_static_map_descriptors`](gatherpress_static_map_descriptors.md) Filters the parsed descriptor map for a venue.
+- [`gatherpress_static_map_generate_2x`](gatherpress_static_map_generate_2x.md) Filter whether to generate the retina (2×) static-map variant.
 
 ## class-migrate.php
 
-- [`gatherpress_pseudopostmetas`](gatherpress_pseudopostmetas.md) Filters the list of data-names and their respective export- and import-callbacks.
+- [`gatherpress_pseudo_post_metas`](gatherpress_pseudo_post_metas.md) Filters the list of data-names and their respective export- and import-callbacks.
 
 ## class-osm.php
 
-- [`gatherpress_venue_map_composite_time_budget`](gatherpress_venue_map_composite_time_budget.md) Filter the wall-clock budget (in seconds) for a single OSM
-- [`gatherpress_venue_map_tile_url`](gatherpress_venue_map_tile_url.md) Filter the tile URL template used by the OSM static map provider.
+- [`gatherpress_static_map_composite_time_budget`](gatherpress_static_map_composite_time_budget.md) Filter the wall-clock budget (in seconds) for a single OSM
+- [`gatherpress_static_map_tile_url`](gatherpress_static_map_tile_url.md) Filter the tile URL template used by the OSM static map provider.
 
 ## class-prewarm.php
 
-- [`gatherpress_venue_map_prewarm_batch_size`](gatherpress_venue_map_prewarm_batch_size.md) Filter the venue-map prewarm scan batch size.
-- [`gatherpress_venue_map_prewarm_content_batch_size`](gatherpress_venue_map_prewarm_content_batch_size.md) Filter the venue-map prewarm content-scan batch size.
-- [`gatherpress_venue_map_prewarm_pre_enqueue_job`](gatherpress_venue_map_prewarm_pre_enqueue_job.md) Filter the prewarm enqueue call to take over scheduling.
+- [`gatherpress_static_map_prewarm_batch_size`](gatherpress_static_map_prewarm_batch_size.md) Filter the venue-map prewarm scan batch size.
+- [`gatherpress_static_map_prewarm_content_batch_size`](gatherpress_static_map_prewarm_content_batch_size.md) Filter the venue-map prewarm content-scan batch size.
+- [`gatherpress_static_map_prewarm_pre_enqueue_job`](gatherpress_static_map_prewarm_pre_enqueue_job.md) Filter the prewarm enqueue call to take over scheduling.
 
 ## class-roles.php
 
@@ -71,8 +71,8 @@
 
 ## class-settings.php
 
-- [`gatherpress_map_tile_attribution`](gatherpress_map_tile_attribution.md) Filters the attribution HTML rendered with the venue map.
-- [`gatherpress_map_tile_url`](gatherpress_map_tile_url.md) Filters the Leaflet tile layer URL used by the venue map.
+- [`gatherpress_interactive_map_tile_attribution`](gatherpress_interactive_map_tile_attribution.md) Filters the attribution HTML rendered with the venue map.
+- [`gatherpress_interactive_map_tile_url`](gatherpress_interactive_map_tile_url.md) Filters the Leaflet tile layer URL used by the venue map.
 - [`gatherpress_network_is_option_inherited`](gatherpress_network_is_option_inherited.md) Filters whether a specific GatherPress option is inherited from the network.
 - [`gatherpress_sub_pages`](gatherpress_sub_pages.md) Filters the list of GatherPress sub pages.
 
@@ -90,6 +90,6 @@
 - [`gatherpress_pre_get_http_input`](gatherpress_pre_get_http_input.md) Short-circuit filter for HTTP input retrieval during testing.
 - [`gatherpress_pre_get_wp_referer`](gatherpress_pre_get_wp_referer.md) Short-circuit filter for wp_get_referer() during testing.
 
-## index.php
+## network-page.php
 
 - [`gatherpress_settings_section`](gatherpress_settings_section.md) Fires so tabs that render via the GatherPress settings section action
