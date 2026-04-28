@@ -249,18 +249,37 @@ class Test_Geocoding extends Base {
 		);
 		remove_filter( 'gatherpress_log_geocoding_errors', '__return_false' );
 
-		// Branch 4: all conditions met → reaches error_log(). Force the filter on so this
-		// path runs regardless of WP_DEBUG's value in the current environment. The emitted
-		// line goes to the PHP error log and does not affect PHPUnit output.
+		// Branch 4: all conditions met → reaches error_log(). Redirect the SAPI log
+		// to a temp file so the diagnostic line is captured instead of leaking to
+		// PHPUnit's stderr, and assert on its contents.
 		add_filter( 'gatherpress_log_geocoding_errors', '__return_true' );
-		$this->invoke_geocoding_private(
-			$instance,
-			'maybe_log_json_decode_failure',
-			array( 'not json at all', null, 'geocode_address' )
-		);
-		remove_filter( 'gatherpress_log_geocoding_errors', '__return_true' );
 
-		$this->assertTrue( true, 'All branches of maybe_log_json_decode_failure executed without error.' );
+		$log_file = tempnam( sys_get_temp_dir(), 'gp-geocoding-log-' );
+		// phpcs:ignore WordPress.PHP.IniSet.Risky
+		$previous = ini_set( 'error_log', $log_file );
+
+		try {
+			$this->invoke_geocoding_private(
+				$instance,
+				'maybe_log_json_decode_failure',
+				array( 'not json at all', null, 'geocode_address' )
+			);
+
+			// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
+			$captured = (string) file_get_contents( $log_file );
+		} finally {
+			// phpcs:ignore WordPress.PHP.IniSet.Risky
+			ini_set( 'error_log', (string) $previous );
+			// phpcs:ignore WordPress.WP.AlternativeFunctions.unlink_unlink
+			unlink( $log_file );
+			remove_filter( 'gatherpress_log_geocoding_errors', '__return_true' );
+		}
+
+		$this->assertStringContainsString(
+			'geocode_address received non-JSON body',
+			$captured,
+			'Branch 4 should write a diagnostic line to the PHP error log.'
+		);
 	}
 
 	/**

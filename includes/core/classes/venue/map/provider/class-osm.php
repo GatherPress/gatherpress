@@ -166,7 +166,7 @@ class OSM extends Base {
 		 * @param float $budget Default budget from COMPOSITE_TIME_BUDGET.
 		 */
 		$budget   = (float) apply_filters(
-			'gatherpress_venue_map_composite_time_budget',
+			'gatherpress_static_map_composite_time_budget',
 			self::COMPOSITE_TIME_BUDGET
 		);
 		$deadline = microtime( true ) + $budget;
@@ -344,7 +344,7 @@ class OSM extends Base {
 		 *
 		 * @param string $template Tile URL with `{z}`, `{x}`, `{y}` placeholders.
 		 */
-		return (string) apply_filters( 'gatherpress_venue_map_tile_url', self::DEFAULT_TILE_URL );
+		return (string) apply_filters( 'gatherpress_static_map_tile_url', self::DEFAULT_TILE_URL );
 	}
 
 	/**

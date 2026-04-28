@@ -282,7 +282,7 @@ class Test_OSM extends Base {
 	}
 
 	/**
-	 * `gatherpress_venue_map_tile_url` is the public hook for repointing
+	 * `gatherpress_static_map_tile_url` is the public hook for repointing
 	 * at a different XYZ provider; verifying the value flows through the
 	 * filter is what makes that hook a real contract.
 	 *
@@ -294,7 +294,7 @@ class Test_OSM extends Base {
 		$override = 'https://tiles.example.test/{z}/{x}/{y}.png';
 
 		add_filter(
-			'gatherpress_venue_map_tile_url',
+			'gatherpress_static_map_tile_url',
 			function () use ( $override ) {
 				return $override;
 			}
@@ -302,7 +302,7 @@ class Test_OSM extends Base {
 
 		$template = Utility::invoke_hidden_method( new OSM(), 'get_tile_url_template' );
 
-		remove_all_filters( 'gatherpress_venue_map_tile_url' );
+		remove_all_filters( 'gatherpress_static_map_tile_url' );
 
 		$this->assertSame( $override, $template );
 	}
@@ -416,11 +416,11 @@ class Test_OSM extends Base {
 
 		remove_filter( 'pre_http_request', array( $this, 'short_circuit_tile_requests' ), 10 );
 		add_filter( 'pre_http_request', $counter, 10 );
-		add_filter( 'gatherpress_venue_map_composite_time_budget', $budget );
+		add_filter( 'gatherpress_static_map_composite_time_budget', $budget );
 
 		$canvas = ( new OSM() )->render( 37.3318, -122.0312, 15, 512, 256 );
 
-		remove_filter( 'gatherpress_venue_map_composite_time_budget', $budget );
+		remove_filter( 'gatherpress_static_map_composite_time_budget', $budget );
 		remove_filter( 'pre_http_request', $counter, 10 );
 		add_filter( 'pre_http_request', array( $this, 'short_circuit_tile_requests' ), 10, 3 );
 

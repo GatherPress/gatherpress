@@ -717,7 +717,7 @@ class Test_Map extends Base {
 
 	/**
 	 * Downstream code can shape the descriptor map through the
-	 * `gatherpress_venue_map_descriptors` filter — companion plugins, CDN
+	 * `gatherpress_static_map_descriptors` filter — companion plugins, CDN
 	 * layers, or multi-locale setups get a single hook point to suppress,
 	 * override, or augment entries without patching core.
 	 *
@@ -761,11 +761,11 @@ class Test_Map extends Base {
 			}
 			return $descriptors;
 		};
-		add_filter( 'gatherpress_venue_map_descriptors', $override, 10, 2 );
+		add_filter( 'gatherpress_static_map_descriptors', $override, 10, 2 );
 
 		$descriptors = $instance->get_all_descriptors( $post_id );
 
-		remove_filter( 'gatherpress_venue_map_descriptors', $override, 10 );
+		remove_filter( 'gatherpress_static_map_descriptors', $override, 10 );
 
 		$this->assertSame(
 			sprintf( 'https://cdn.test/%d-osm-15x600x300.png', $post_id ),
@@ -781,7 +781,7 @@ class Test_Map extends Base {
 		$suppress_all = static function () {
 			return array();
 		};
-		add_filter( 'gatherpress_venue_map_descriptors', $suppress_all );
+		add_filter( 'gatherpress_static_map_descriptors', $suppress_all );
 
 		$this->assertSame(
 			array(),
@@ -789,7 +789,7 @@ class Test_Map extends Base {
 			'Filter can suppress the entire map by returning an empty array.'
 		);
 
-		remove_filter( 'gatherpress_venue_map_descriptors', $suppress_all );
+		remove_filter( 'gatherpress_static_map_descriptors', $suppress_all );
 	}
 
 	/**
@@ -2309,7 +2309,7 @@ class Test_Map extends Base {
 	}
 
 	/**
-	 * Filtering `gatherpress_venue_map_generate_2x` to false halves the
+	 * Filtering `gatherpress_static_map_generate_2x` to false halves the
 	 * on-disk footprint: the descriptor keeps its 1× URL but `url_2x`
 	 * stays empty, and no `@2x.png` file is written.
 	 *
@@ -2327,12 +2327,12 @@ class Test_Map extends Base {
 		add_post_meta( $post_id, 'gatherpress_longitude', '-122.0312' );
 
 		$disable = static fn() => false;
-		add_filter( 'gatherpress_venue_map_generate_2x', $disable );
+		add_filter( 'gatherpress_static_map_generate_2x', $disable );
 
 		$instance->maybe_generate( $post_id );
 		$descriptor = $instance->get_stored_descriptor( $post_id );
 
-		remove_filter( 'gatherpress_venue_map_generate_2x', $disable );
+		remove_filter( 'gatherpress_static_map_generate_2x', $disable );
 
 		$this->assertIsArray( $descriptor );
 		$this->assertNotEmpty( $descriptor['url'], '1× URL must still be populated when the filter disables 2×.' );
@@ -2566,9 +2566,9 @@ class Test_Map extends Base {
 		// Suppressing retina for this first pass gets us exactly the
 		// pre-retina-upgrade state the short-circuit is designed for.
 		$suppress_retina = static fn() => false;
-		add_filter( 'gatherpress_venue_map_generate_2x', $suppress_retina );
+		add_filter( 'gatherpress_static_map_generate_2x', $suppress_retina );
 		$instance->maybe_generate( $post_id );
-		remove_filter( 'gatherpress_venue_map_generate_2x', $suppress_retina );
+		remove_filter( 'gatherpress_static_map_generate_2x', $suppress_retina );
 
 		$legacy = $instance->get_stored_descriptor( $post_id );
 		$this->assertSame( '', $legacy['url_2x'], 'Setup: legacy descriptor has no retina URL.' );

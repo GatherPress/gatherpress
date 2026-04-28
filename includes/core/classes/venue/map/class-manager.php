@@ -5,7 +5,7 @@
  * Singleton registry that owns the provider instances backing the static
  * map pipeline. Built-in providers (OSM today) are registered immediately
  * in the constructor so the registry is usable from any later hook;
- * companion plugins hook the `gatherpress_register_map_providers` action
+ * companion plugins hook the `gatherpress_register_static_map_providers` action
  * (fired on `init` priority 0) to register their own providers on top.
  *
  * @package GatherPress\Core\Venue\Map
@@ -28,7 +28,7 @@ use GatherPress\Core\Venue\Map\Provider\OSM;
  * Provider registry. `register_core_providers()` registers OSM as the
  * always-available default. Companion plugins can register additional
  * providers (Google, MapBox, MapTiler, etc.) by hooking
- * `gatherpress_register_map_providers` and calling `register()` on the
+ * `gatherpress_register_static_map_providers` and calling `register()` on the
  * passed Manager instance — same pattern as RSVP types.
  *
  * The active provider is resolved from the `map_platform` setting at
@@ -229,7 +229,7 @@ class Manager {
 	 *
 	 * Called from the constructor so the registry is populated as soon as
 	 * the singleton exists. Companion plugins should NOT call this — use
-	 * the `gatherpress_register_map_providers` action instead.
+	 * the `gatherpress_register_static_map_providers` action instead.
 	 *
 	 * @since 1.0.0
 	 *
@@ -242,7 +242,7 @@ class Manager {
 	/**
 	 * Fire the action for companion plugins to register their providers.
 	 *
-	 * Companion plugins hook `gatherpress_register_map_providers` and call
+	 * Companion plugins hook `gatherpress_register_static_map_providers` and call
 	 * `$registry->register( new My_Map_Provider() )` on the passed Manager
 	 * instance. Fires on `init` priority 0 so the registry is populated
 	 * before anything else hooked on `init` observes it.
@@ -267,6 +267,6 @@ class Manager {
 		 *
 		 * @param Manager $registry Provider registry.
 		 */
-		do_action( 'gatherpress_register_map_providers', $this );
+		do_action( 'gatherpress_register_static_map_providers', $this );
 	}
 }

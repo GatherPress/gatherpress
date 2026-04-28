@@ -313,7 +313,7 @@ class Test_Prewarm extends Base {
 	}
 
 	/**
-	 * A non-null return from the `gatherpress_venue_map_prewarm_pre_enqueue_job`
+	 * A non-null return from the `gatherpress_static_map_prewarm_pre_enqueue_job`
 	 * filter must suppress the default WP-Cron enqueue so a companion
 	 * plugin can route the fanout through its own queue (e.g. Action
 	 * Scheduler). The filter receives the hook name and args for routing
@@ -343,11 +343,11 @@ class Test_Prewarm extends Base {
 			// action ID or similar; core only cares that it's not null.
 			return 'handled-by-companion';
 		};
-		add_filter( 'gatherpress_venue_map_prewarm_pre_enqueue_job', $spy, 10, 3 );
+		add_filter( 'gatherpress_static_map_prewarm_pre_enqueue_job', $spy, 10, 3 );
 
 		Utility::invoke_hidden_method( $instance, 'enqueue_warm_job', array( $venue_post_id, $combo ) );
 
-		remove_filter( 'gatherpress_venue_map_prewarm_pre_enqueue_job', $spy, 10 );
+		remove_filter( 'gatherpress_static_map_prewarm_pre_enqueue_job', $spy, 10 );
 
 		$this->assertFalse(
 			wp_next_scheduled(
@@ -393,11 +393,11 @@ class Test_Prewarm extends Base {
 			$callback = static function () use ( $falsy_return ) {
 				return $falsy_return;
 			};
-			add_filter( 'gatherpress_venue_map_prewarm_pre_enqueue_job', $callback );
+			add_filter( 'gatherpress_static_map_prewarm_pre_enqueue_job', $callback );
 
 			Utility::invoke_hidden_method( $instance, 'enqueue_warm_job', array( $venue_post_id, $combo ) );
 
-			remove_filter( 'gatherpress_venue_map_prewarm_pre_enqueue_job', $callback );
+			remove_filter( 'gatherpress_static_map_prewarm_pre_enqueue_job', $callback );
 
 			$this->assertFalse(
 				wp_next_scheduled(
@@ -434,11 +434,11 @@ class Test_Prewarm extends Base {
 		$passthrough = static function ( $short_circuit ) {
 			return $short_circuit;
 		};
-		add_filter( 'gatherpress_venue_map_prewarm_pre_enqueue_job', $passthrough );
+		add_filter( 'gatherpress_static_map_prewarm_pre_enqueue_job', $passthrough );
 
 		Utility::invoke_hidden_method( $instance, 'enqueue_warm_job', array( $venue_post_id, $combo ) );
 
-		remove_filter( 'gatherpress_venue_map_prewarm_pre_enqueue_job', $passthrough );
+		remove_filter( 'gatherpress_static_map_prewarm_pre_enqueue_job', $passthrough );
 
 		$this->assertNotFalse(
 			wp_next_scheduled(
@@ -812,11 +812,11 @@ class Test_Prewarm extends Base {
 		$one_per_page = static function () {
 			return 1;
 		};
-		add_filter( 'gatherpress_venue_map_prewarm_content_batch_size', $one_per_page );
+		add_filter( 'gatherpress_static_map_prewarm_content_batch_size', $one_per_page );
 
 		$combos = Utility::invoke_hidden_method( $instance, 'collect_all_template_combos' );
 
-		remove_filter( 'gatherpress_venue_map_prewarm_content_batch_size', $one_per_page );
+		remove_filter( 'gatherpress_static_map_prewarm_content_batch_size', $one_per_page );
 
 		$keys = array_map(
 			static function ( $combo ) {
@@ -856,7 +856,7 @@ class Test_Prewarm extends Base {
 		$override = static function () {
 			return 7;
 		};
-		add_filter( 'gatherpress_venue_map_prewarm_content_batch_size', $override );
+		add_filter( 'gatherpress_static_map_prewarm_content_batch_size', $override );
 
 		$this->assertSame(
 			7,
@@ -864,12 +864,12 @@ class Test_Prewarm extends Base {
 			'Filter-supplied value replaces the default.'
 		);
 
-		remove_filter( 'gatherpress_venue_map_prewarm_content_batch_size', $override );
+		remove_filter( 'gatherpress_static_map_prewarm_content_batch_size', $override );
 
 		$clamp = static function () {
 			return -5;
 		};
-		add_filter( 'gatherpress_venue_map_prewarm_content_batch_size', $clamp );
+		add_filter( 'gatherpress_static_map_prewarm_content_batch_size', $clamp );
 
 		$this->assertSame(
 			1,
@@ -877,12 +877,12 @@ class Test_Prewarm extends Base {
 			'Values below 1 clamp up to 1.'
 		);
 
-		remove_filter( 'gatherpress_venue_map_prewarm_content_batch_size', $clamp );
+		remove_filter( 'gatherpress_static_map_prewarm_content_batch_size', $clamp );
 
 		$ceiling = static function () {
 			return PHP_INT_MAX;
 		};
-		add_filter( 'gatherpress_venue_map_prewarm_content_batch_size', $ceiling );
+		add_filter( 'gatherpress_static_map_prewarm_content_batch_size', $ceiling );
 
 		$this->assertSame(
 			1000,
@@ -890,7 +890,7 @@ class Test_Prewarm extends Base {
 			'Values above 1000 clamp down so a misbehaving filter can\'t load every event at once.'
 		);
 
-		remove_filter( 'gatherpress_venue_map_prewarm_content_batch_size', $ceiling );
+		remove_filter( 'gatherpress_static_map_prewarm_content_batch_size', $ceiling );
 	}
 
 	/**
@@ -913,7 +913,7 @@ class Test_Prewarm extends Base {
 		$override = static function () {
 			return 25;
 		};
-		add_filter( 'gatherpress_venue_map_prewarm_batch_size', $override );
+		add_filter( 'gatherpress_static_map_prewarm_batch_size', $override );
 
 		$this->assertSame(
 			25,
@@ -921,12 +921,12 @@ class Test_Prewarm extends Base {
 			'Filter-supplied value replaces the default.'
 		);
 
-		remove_filter( 'gatherpress_venue_map_prewarm_batch_size', $override );
+		remove_filter( 'gatherpress_static_map_prewarm_batch_size', $override );
 
 		$clamp = static function () {
 			return 0;
 		};
-		add_filter( 'gatherpress_venue_map_prewarm_batch_size', $clamp );
+		add_filter( 'gatherpress_static_map_prewarm_batch_size', $clamp );
 
 		$this->assertSame(
 			1,
@@ -934,7 +934,7 @@ class Test_Prewarm extends Base {
 			'Values below 1 clamp up to 1.'
 		);
 
-		remove_filter( 'gatherpress_venue_map_prewarm_batch_size', $clamp );
+		remove_filter( 'gatherpress_static_map_prewarm_batch_size', $clamp );
 	}
 
 	/**
@@ -973,7 +973,7 @@ class Test_Prewarm extends Base {
 		$one_per_page = static function () {
 			return 1;
 		};
-		add_filter( 'gatherpress_venue_map_prewarm_batch_size', $one_per_page );
+		add_filter( 'gatherpress_static_map_prewarm_batch_size', $one_per_page );
 
 		$template_id = $this->factory->post->create(
 			array(
@@ -986,7 +986,7 @@ class Test_Prewarm extends Base {
 
 		$instance->on_post_saved( $template_id, get_post( $template_id ) );
 
-		remove_filter( 'gatherpress_venue_map_prewarm_batch_size', $one_per_page );
+		remove_filter( 'gatherpress_static_map_prewarm_batch_size', $one_per_page );
 
 		foreach ( $venue_ids as $venue_post_id ) {
 			$this->assertNotFalse(
@@ -1045,12 +1045,12 @@ class Test_Prewarm extends Base {
 		$one_per_page = static function () {
 			return 1;
 		};
-		add_filter( 'gatherpress_venue_map_prewarm_batch_size', $one_per_page );
+		add_filter( 'gatherpress_static_map_prewarm_batch_size', $one_per_page );
 
 		$combos = Utility::invoke_hidden_method( $instance, 'collect_all_template_combos' );
 		$ids    = Utility::invoke_hidden_method( $instance, 'get_venue_post_ids' );
 
-		remove_filter( 'gatherpress_venue_map_prewarm_batch_size', $one_per_page );
+		remove_filter( 'gatherpress_static_map_prewarm_batch_size', $one_per_page );
 
 		$this->assertCount( 2, $combos, 'Both event combos collected through the paginated event loop.' );
 		foreach ( $venue_ids as $venue_post_id ) {

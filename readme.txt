@@ -59,7 +59,7 @@ Default map tile provider when the OpenStreetMap map platform is selected. When 
 - CARTO terms: https://carto.com/legal/
 - CARTO privacy policy: https://carto.com/privacy/
 
-Override the tile URL or attribution with the `gatherpress_map_tile_url` and `gatherpress_map_tile_attribution` filters.
+Override the tile URL or attribution with the `gatherpress_interactive_map_tile_url` and `gatherpress_interactive_map_tile_attribution` filters.
 
 = Google Maps (maps.google.com) =
 

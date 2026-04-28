@@ -42,8 +42,8 @@ class Settings {
 	 * explicitly prohibits third-party app/plugin use — sites that ship the
 	 * plugin widely were intermittently blocked with a "Referer required" error.
 	 *
-	 * Override with the `gatherpress_map_tile_url` filter (e.g. for a self-hosted
-	 * tile server or a provider that requires an API key).
+	 * Override with the `gatherpress_interactive_map_tile_url` filter (e.g. for a
+	 * self-hosted tile server or a provider that requires an API key).
 	 *
 	 * @since 1.0.0
 	 */
@@ -204,7 +204,7 @@ class Settings {
 		 *
 		 * @param string $url Default tile URL template (CartoDB Positron).
 		 */
-		$filtered = (string) apply_filters( 'gatherpress_map_tile_url', self::MAP_TILE_URL );
+		$filtered = (string) apply_filters( 'gatherpress_interactive_map_tile_url', self::MAP_TILE_URL );
 
 		return '' !== $filtered ? $filtered : self::MAP_TILE_URL;
 	}
@@ -233,14 +233,14 @@ class Settings {
 		/**
 		 * Filters the attribution HTML rendered with the venue map.
 		 *
-		 * Override alongside `gatherpress_map_tile_url` when switching providers
-		 * so the correct credits are displayed.
+		 * Override alongside `gatherpress_interactive_map_tile_url` when switching
+		 * providers so the correct credits are displayed.
 		 *
 		 * @since 1.0.0
 		 *
 		 * @param string $attribution Default attribution HTML.
 		 */
-		$filtered = (string) apply_filters( 'gatherpress_map_tile_attribution', $default );
+		$filtered = (string) apply_filters( 'gatherpress_interactive_map_tile_attribution', $default );
 
 		return '' !== $filtered ? $filtered : $default;
 	}

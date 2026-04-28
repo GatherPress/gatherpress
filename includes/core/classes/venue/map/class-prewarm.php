@@ -52,7 +52,7 @@ class Prewarm {
 	 * @since 1.0.0
 	 * @var string
 	 */
-	const CRON_ACTION = 'gatherpress_warm_venue_map';
+	const CRON_ACTION = 'gatherpress_static_map_prewarm_run';
 
 	/**
 	 * One-shot cron action that re-runs the full template scan + venue
@@ -64,7 +64,7 @@ class Prewarm {
 	 * @since 1.0.0
 	 * @var string
 	 */
-	const FULL_SWEEP_ACTION = 'gatherpress_map_reprewarm';
+	const FULL_SWEEP_ACTION = 'gatherpress_static_map_prewarm_sweep';
 
 	/**
 	 * Block name this class watches for.
@@ -89,7 +89,7 @@ class Prewarm {
 	 * included). FSE-rich pages can make post_content multi-megabyte, so
 	 * we pull fewer rows per round-trip than the ID-only venue scan
 	 * (SCAN_BATCH_SIZE). Filterable via
-	 * `gatherpress_venue_map_prewarm_content_batch_size`.
+	 * `gatherpress_static_map_prewarm_content_batch_size`.
 	 *
 	 * @since 1.0.0
 	 * @var int
@@ -124,7 +124,7 @@ class Prewarm {
 		 *
 		 * @param int $size Number of posts loaded per batch during prewarm scans.
 		 */
-		$size = (int) apply_filters( 'gatherpress_venue_map_prewarm_batch_size', self::SCAN_BATCH_SIZE );
+		$size = (int) apply_filters( 'gatherpress_static_map_prewarm_batch_size', self::SCAN_BATCH_SIZE );
 
 		return max( 1, $size );
 	}
@@ -152,7 +152,7 @@ class Prewarm {
 		 * @param int $size Number of posts loaded per batch during content scans.
 		 */
 		$size = (int) apply_filters(
-			'gatherpress_venue_map_prewarm_content_batch_size',
+			'gatherpress_static_map_prewarm_content_batch_size',
 			self::CONTENT_SCAN_BATCH_SIZE
 		);
 
@@ -361,7 +361,7 @@ class Prewarm {
 	 * Schedule a single warm job, deduped via wp_next_scheduled().
 	 *
 	 * The actual scheduling is wrapped in the
-	 * {@see 'gatherpress_venue_map_prewarm_pre_enqueue_job'} short-circuit filter so
+	 * {@see 'gatherpress_static_map_prewarm_pre_enqueue_job'} short-circuit filter so
 	 * a companion plugin (e.g. "GatherPress at Scale") can intercept and
 	 * route the fanout through Action Scheduler — or any other queue —
 	 * without touching core. Returning a non-null value from the filter
@@ -409,7 +409,7 @@ class Prewarm {
 		 *                              `array( $venue_post_id, $zoom, $width, $height, $aspect_ratio )`.
 		 */
 		$short_circuit = apply_filters(
-			'gatherpress_venue_map_prewarm_pre_enqueue_job',
+			'gatherpress_static_map_prewarm_pre_enqueue_job',
 			null,
 			self::CRON_ACTION,
 			$args
