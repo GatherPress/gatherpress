@@ -17,7 +17,7 @@ import { createBlock, parse, serialize } from '@wordpress/blocks';
  * Internal dependencies.
  */
 import TEMPLATES from './templates';
-import { hasValidEventId, DISABLED_FIELD_OPACITY, getEventMeta, isPostTypeSupporting, isRsvpEnabledForEvent } from '../../helpers/event';
+import { hasValidEventId, DISABLED_FIELD_OPACITY, getEventMeta, usePostTypeSupports, isRsvpEnabledForEvent } from '../../helpers/event';
 import { isInFSETemplate, getEditorDocument } from '../../helpers/editor';
 import { getFromSettings } from '../../helpers/editor-settings';
 
@@ -55,8 +55,11 @@ const Edit = ( { attributes, setAttributes, clientId, context } ) => {
 	const { replaceInnerBlocks } = useDispatch( blockEditorStore );
 
 	// Check if we're inside a query loop and if context is an RSVP-enabled post type.
+	// `usePostTypeSupports` is reactive so the block re-renders the moment the
+	// post-type definition resolves — non-reactive checks miss this and leave
+	// the block permanently dimmed in Query Loops.
 	const isDescendentOfQueryLoop = Number.isFinite( context?.queryId );
-	const isEventContext = isPostTypeSupporting( 'gatherpress-rsvp', context?.postType );
+	const isEventContext = usePostTypeSupports( 'gatherpress-rsvp', context?.postType );
 
 	// Only use postId if context is an event or have an explicit override.
 	const postId =

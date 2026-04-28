@@ -38,7 +38,7 @@ import {
 } from '../../helpers/datetime';
 import DateTimeRange from '../../components/DateTimeRange';
 import { getFromSettings } from '../../helpers/editor-settings';
-import { isEventPostType, hasValidEventId } from '../../helpers/event';
+import { isEventPostType } from '../../helpers/event';
 import { isInFSETemplate } from '../../helpers/editor';
 
 /**
@@ -199,32 +199,33 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 	const timeFormat = getFromSettings( 'timeFormat' );
 	const defaultShowTimezone = getFromSettings( 'showTimezone' );
 
-	// Check if we're inside a query loop and if context is an event.
+	// Check if we're inside a query loop.
 	const isDescendentOfQueryLoop = Number.isFinite( context?.queryId );
-	const isEventContext = isEventPostType( context?.postType );
 
 	// Only use postId if context is an event or have an explicit override.
+	// Defer the supports check to useSelect so it stays reactive.
 	const postId =
 		( attributes?.postId || null ) ??
-		( ( isDescendentOfQueryLoop || isEventContext ) ? context?.postId : null ) ??
+		( isDescendentOfQueryLoop ? context?.postId : null ) ??
+		context?.postId ??
 		null;
 
-	// Check if block has a valid event connection.
-	// Only check if we're in an event context.
-	const isValidEvent =
-		( isDescendentOfQueryLoop || isEventContext ) &&
-		hasValidEventId( postId, context?.postType );
-
-	const blockProps = useBlockProps( {
-		style: {
-			opacity: ( isInFSETemplate() || isValidEvent ) ? 1 : 0.3,
-		},
-	} );
-
-	const { dateTimeStart, dateTimeEnd, timezone, isLoading } = useSelect(
+	const { dateTimeStart, dateTimeEnd, timezone, isLoading, isValidEvent } = useSelect(
 		( select ) => {
+			// Resolve the post type from context or fall back to the editor's current post type.
+			// This ensures custom post types with gatherpress-event-date support work correctly
+			// in Query Loop blocks and postId override scenarios.
+			const postType =
+				context?.postType ||
+				select( 'core/editor' )?.getCurrentPostType();
+
+			// Reactive supports check — `getPostType` is read inside useSelect so the
+			// component re-renders once the post-type definition (and its supports) load.
+			const supportsEventDate = !! select( 'core' )
+				.getPostType( postType )?.supports?.[ 'gatherpress-event-date' ];
+
 			if ( ! postId ) {
-				return {};
+				return { isValidEvent: false };
 			}
 
 			// When editing an event directly, use the datetime store for live updates.
@@ -234,15 +235,9 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 					dateTimeStart: datetimeStore.getDateTimeStart(),
 					dateTimeEnd: datetimeStore.getDateTimeEnd(),
 					timezone: datetimeStore.getTimezone(),
+					isValidEvent: supportsEventDate,
 				};
 			}
-
-			// Resolve the post type from context or fall back to the editor's current post type.
-			// This ensures custom post types with gatherpress-event-date support work correctly
-			// in Query Loop blocks and postId override scenarios.
-			const postType =
-				context?.postType ||
-				select( 'core/editor' )?.getCurrentPostType();
 
 			// For Query Loop and override contexts, fetch from entity record.
 			const hasResolved = select( 'core' ).hasFinishedResolution(
@@ -251,23 +246,36 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 			);
 
 			if ( ! hasResolved ) {
-				return { isLoading: true };
+				return { isLoading: true, isValidEvent: false };
 			}
 
-			const meta = select( 'core' ).getEntityRecord(
-				'postType',
-				postType,
-				postId
-			)?.meta;
+			const post = supportsEventDate
+				? select( 'core' ).getEntityRecord(
+					'postType',
+					postType,
+					postId
+				)
+				: null;
+			const meta = post?.meta;
 
 			return {
 				dateTimeStart: meta?.gatherpress_datetime_start,
 				dateTimeEnd: meta?.gatherpress_datetime_end,
 				timezone: meta?.gatherpress_timezone,
+				isValidEvent:
+					supportsEventDate &&
+					!! post &&
+					'publish' === post?.status,
 			};
 		},
 		[ postId, context?.postType ]
 	);
+
+	const blockProps = useBlockProps( {
+		style: {
+			opacity: ( isInFSETemplate() || isValidEvent ) ? 1 : 0.3,
+		},
+	} );
 
 	// Show spinner only while loading, not on 404.
 	if ( isLoading ) {

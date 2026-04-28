@@ -7,7 +7,7 @@
 	"category": "gatherpress",
 	"icon": "video-alt2",
 	"description": "Container block for online event display with icon and link.",
-	"usesContext": ["postId", "queryId"],
+	"usesContext": ["postId", "postType", "queryId"],
 	"providesContext": {
 		"postId": "postId"
 	},

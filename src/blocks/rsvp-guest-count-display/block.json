@@ -10,7 +10,7 @@
 	"icon": "yes",
 	"example": {},
 	"attributes": {},
-	"usesContext": [ "commentId", "gatherpress/rsvpResponses" ],
+	"usesContext": [ "commentId", "postId", "postType", "queryId", "gatherpress/rsvpResponses" ],
 	"supports": {
 		"align": [ "left", "center", "right" ],
 		"spacing": {

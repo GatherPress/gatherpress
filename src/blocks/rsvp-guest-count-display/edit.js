@@ -10,7 +10,7 @@ import { useEffect } from '@wordpress/element';
  * Internal dependencies.
  */
 import { getEditorDocument } from '../../helpers/editor';
-import { DISABLED_FIELD_OPACITY, isPostTypeSupporting } from '../../helpers/event';
+import { DISABLED_FIELD_OPACITY, isPostTypeSupporting, usePostTypeSupports } from '../../helpers/event';
 
 /**
  * Edit function for the RSVP Guest Count Display Block.
@@ -32,7 +32,10 @@ const Edit = ( { context, clientId } ) => {
 	const rsvpResponses = context?.[ 'gatherpress/rsvpResponses' ] ?? null;
 
 	// Check if context post type supports RSVP.
-	const isEventContext = isPostTypeSupporting( 'gatherpress-rsvp', context?.postType );
+	// `usePostTypeSupports` is reactive so the block re-renders the moment the
+	// post-type definition resolves; the non-reactive variant would miss it
+	// and leave the block permanently dimmed in Query Loops.
+	const isEventContext = usePostTypeSupports( 'gatherpress-rsvp', context?.postType );
 
 	// Example guest count.
 	let guestCount = 1;

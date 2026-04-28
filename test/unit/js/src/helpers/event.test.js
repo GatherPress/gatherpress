@@ -13,6 +13,7 @@ import { dispatch } from '@wordpress/data';
 // Mock WordPress modules before importing internal dependencies.
 jest.mock( '@wordpress/data', () => ( {
 	select: jest.fn(),
+	useSelect: jest.fn( ( cb ) => cb( jest.requireMock( '@wordpress/data' ).select ) ),
 	dispatch: jest.fn().mockReturnValue( {
 		removeNotice: jest.fn(),
 		createNotice: jest.fn(),
@@ -29,6 +30,7 @@ import {
 	hasEventPast,
 	hasEventPastNotice,
 	isPostTypeSupporting,
+	usePostTypeSupports,
 	isEventPostType,
 	hasValidEventId,
 	getEventMeta,
@@ -112,6 +114,80 @@ describe( 'isPostTypeSupporting', () => {
 		require( '@wordpress/data' ).select.mockReturnValue( undefined );
 
 		expect( isPostTypeSupporting( 'gatherpress-rsvp' ) ).toBe( false );
+	} );
+} );
+
+/**
+ * Coverage for usePostTypeSupports — the reactive variant of isPostTypeSupporting.
+ */
+describe( 'usePostTypeSupports', () => {
+	it( 'returns true when the resolved post type has the support', () => {
+		require( '@wordpress/data' ).select.mockImplementation( ( store ) => {
+			if ( 'core' === store ) {
+				return { getPostType: mockGetPostType };
+			}
+			return {};
+		} );
+
+		expect(
+			usePostTypeSupports( 'gatherpress-event-date', 'gatherpress_event' )
+		).toBe( true );
+	} );
+
+	it( 'returns false when the resolved post type lacks the support', () => {
+		require( '@wordpress/data' ).select.mockImplementation( ( store ) => {
+			if ( 'core' === store ) {
+				return { getPostType: mockGetPostType };
+			}
+			return {};
+		} );
+
+		expect(
+			usePostTypeSupports( 'gatherpress-event-date', 'post' )
+		).toBe( false );
+	} );
+
+	it( 'falls back to the editor post type when no postType is given', () => {
+		require( '@wordpress/data' ).select.mockImplementation( ( store ) => {
+			if ( 'core/editor' === store ) {
+				return { getCurrentPostType: () => 'gatherpress_event' };
+			}
+			if ( 'core' === store ) {
+				return { getPostType: mockGetPostType };
+			}
+			return {};
+		} );
+
+		expect( usePostTypeSupports( 'gatherpress-rsvp' ) ).toBe( true );
+	} );
+
+	it( 'returns false when no post type can be resolved', () => {
+		require( '@wordpress/data' ).select.mockImplementation( ( store ) => {
+			if ( 'core/editor' === store ) {
+				return { getCurrentPostType: () => undefined };
+			}
+			return {};
+		} );
+
+		expect( usePostTypeSupports( 'gatherpress-event-date' ) ).toBe( false );
+	} );
+
+	it( 'subscribes via useSelect so the support gate is reactive', () => {
+		// Confirms the hook delegates to useSelect — the whole reason the hook
+		// exists, since the non-reactive sibling leaves blocks dimmed when the
+		// post-type definition isn't cached on first render.
+		const { useSelect } = require( '@wordpress/data' );
+		useSelect.mockClear();
+		require( '@wordpress/data' ).select.mockImplementation( ( store ) => {
+			if ( 'core' === store ) {
+				return { getPostType: mockGetPostType };
+			}
+			return {};
+		} );
+
+		usePostTypeSupports( 'gatherpress-event-date', 'gatherpress_event' );
+
+		expect( useSelect ).toHaveBeenCalledTimes( 1 );
 	} );
 } );
 

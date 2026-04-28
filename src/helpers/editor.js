@@ -84,20 +84,33 @@ export function isInFSETemplate() {
  * Use this helper to consistently apply dimming logic across GatherPress blocks.
  * A block is fully visible (not dimmed) when:
  * - It's in an FSE template (always visible for preview)
- * - It's in a Query Loop with valid post type context AND has data
+ * - It's in a Query Loop with valid post type support AND has data
  * - It's editing a post directly AND has data
+ *
+ * The supports check is intentionally a parameter (`hasSupport`) rather than
+ * computed inside the helper. Reading post-type supports via `select(...)` is
+ * non-reactive — the post-type definition often isn't cached on first render,
+ * so the gate would resolve to `false` and the block would never re-render
+ * once supports load. Callers should compute `hasSupport` reactively via the
+ * `usePostTypeSupports` hook so the block re-renders the moment supports become known.
+ *
+ * Backwards compatible: if `hasSupport` is omitted, falls back to a non-reactive
+ * `isPostTypeSupporting( support, postType )` check.
  *
  * @since 1.0.0
  *
  * @param {Object}  options                         Options for determining visibility.
  * @param {boolean} options.isDescendentOfQueryLoop Whether the block is inside a Query Loop.
- * @param {string}  options.postType                The post type from block context.
- * @param {string}  options.support                 The post type support to check (e.g. 'gatherpress-venue').
+ * @param {boolean} [options.hasSupport]            Whether the resolved post type has the required support.
+ *                                                  Pass the result of `usePostTypeSupports` for reactivity.
+ * @param {string}  [options.postType]              Legacy fallback when `hasSupport` is omitted.
+ * @param {string}  [options.support]               Legacy fallback when `hasSupport` is omitted.
  * @param {boolean} [options.hasData=false]         Whether the block has its specific data.
  * @return {boolean} True if the block should be fully visible, false if it should be dimmed.
  */
 export function hasValidBlockContext( {
 	isDescendentOfQueryLoop,
+	hasSupport,
 	postType,
 	support,
 	hasData = false,
@@ -109,7 +122,12 @@ export function hasValidBlockContext( {
 
 	// In Query Loop, require both valid post type support AND data.
 	if ( isDescendentOfQueryLoop ) {
-		return isPostTypeSupporting( support, postType ) && hasData;
+		const resolvedSupport =
+			undefined !== hasSupport
+				? hasSupport
+				: isPostTypeSupporting( support, postType );
+
+		return resolvedSupport && hasData;
 	}
 
 	// When editing directly, just check if we have data.
