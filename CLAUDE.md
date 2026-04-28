@@ -122,7 +122,7 @@ GatherPress uses custom `post_type_supports` to decouple features from specific 
 - PHP checks use `post_type_supports( $post_type, 'gatherpress-event-date' )` instead of `Event::POST_TYPE === $post_type`
 - PHP checks use `post_type_supports( $post_type, 'gatherpress-venue-information' )` instead of `Venue::POST_TYPE === $post_type`
 - Queries use `get_post_types_by_support( 'gatherpress-event-date' )` or `get_post_types_by_support( 'gatherpress-venue-information' )` instead of hardcoded post type slugs
-- JS checks use `select('core').getPostType(slug)?.supports?.['gatherpress-event-date']` via the WordPress data store
+- JS checks go through helpers in `src/helpers/event.js`: `isPostTypeSupporting( support, postType )` for imperative use, `usePostTypeSupports( support, postType )` (a `useSelect`-backed hook) when the result drives rendering. The non-reactive variant misses the post-type registry's first-render cache miss and leaves dim-gated blocks permanently dimmed in Query Loops — always reach for `usePostTypeSupports` inside React components
 - JS venue post type resolution uses `select('core/editor').getEditorSettings()?.gatherpress?.config?.venuePostTypes` (exposed via `block_editor_settings_all` filter)
 - Post-type-specific hooks are registered inside `register_post_meta()` or similar `init` callbacks that loop over supported post types at priority 11
 
@@ -154,7 +154,7 @@ add_filter( 'gatherpress_venue_post_type', function( $post_type, $event_post_typ
 4. Replace `Venue::POST_TYPE === get_post_type()` checks with `post_type_supports( ..., 'gatherpress-venue-information' )`
 5. Replace `'post_type' => Event::POST_TYPE` in queries with `get_post_types_by_support( 'gatherpress-event-date' )`
 6. Register post-type-specific hooks inside `register_post_meta()` or similar `init` callbacks at priority 11 that loop over supported post types
-7. Update JS helpers to check supports via `select('core').getPostType(slug)?.supports`
+7. Update JS helpers to check supports via `isPostTypeSupporting` (imperative) or `usePostTypeSupports` (reactive — required when the check drives render output, including dim/opacity gates)
 8. Update corresponding unit tests (PHP and JS mocks)
 
 ### Database Schema

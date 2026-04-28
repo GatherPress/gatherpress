@@ -230,15 +230,41 @@ $args = array( 'post_type' => get_post_types_by_support( 'gatherpress-event-date
 $args = array( 'post_type' => get_post_types_by_support( 'gatherpress-venue-information' ) );
 ```
 
-In JavaScript, support checks use the WordPress data store:
+In JavaScript, support checks go through one of two helpers in `src/helpers/event.js`:
 
 ```js
-// Check if current post type is an event.
-select( 'core' ).getPostType( postType )?.supports?.[ 'gatherpress-event-date' ];
+import {
+	isPostTypeSupporting,
+	usePostTypeSupports,
+} from '../../helpers/event';
 
-// Check if current post type is a venue.
-select( 'core' ).getPostType( postType )?.supports?.[ 'gatherpress-venue-information' ];
+// Outside React: imperative check that reads the post-type registry once.
+isPostTypeSupporting( 'gatherpress-event-date', postType );
+
+// Inside a React component: reactive check via useSelect, so the component
+// re-renders the moment the post-type definition resolves.
+const isEvent = usePostTypeSupports( 'gatherpress-event-date', postType );
 ```
+
+**Always reach for `usePostTypeSupports` when the result drives rendering** — opacity, visibility, conditional inspector controls, etc. The non-reactive `isPostTypeSupporting` reads `select('core').getPostType(...)` directly, and the post-type registry usually isn't cached on first render. If a dim gate is wired through the non-reactive helper, the gate resolves to `false` on the first paint and the component never re-renders once supports load — leaving the block permanently dimmed in Query Loops.
+
+For blocks that gate dimming on both context support and data presence, `hasValidBlockContext` in `src/helpers/editor.js` accepts a pre-computed `hasSupport` boolean — pass the result of `usePostTypeSupports`:
+
+```js
+const hasSupport = usePostTypeSupports( 'gatherpress-venue', context?.postType );
+
+const blockProps = useBlockProps( {
+	style: {
+		opacity: hasValidBlockContext( {
+			isDescendentOfQueryLoop,
+			hasSupport,
+			hasData: hasVenue,
+		} ) ? 1 : DISABLED_FIELD_OPACITY,
+	},
+} );
+```
+
+Reading the post type from block context (`context?.postType`) requires `postType` to be declared in the block's `block.json` `usesContext` array — otherwise `context.postType` will be `undefined` inside a Query Loop's Post Template even when the queried post type would carry the relevant supports.
 
 ---
 
