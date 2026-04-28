@@ -77,6 +77,7 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 	// surface it when editing an RSVP-supporting post directly. Reactive so
 	// the toolbar appears once supports load instead of staying hidden.
 	const isEditingRsvpPost = usePostTypeSupports( 'gatherpress-rsvp' );
+	const hasExplicitOverride = !! attributes?.postId;
 
 	// Only use postId if context is an event or have an explicit override.
 	const postId =
@@ -85,10 +86,12 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 		null;
 	const { rsvpLimitEnabled, rsvpLimit } = attributes;
 
-	// Check if block has a valid event connection.
-	// Only check if we're in an event context.
+	// Check if block has a valid event connection. An explicit override
+	// (`attributes.postId`) is a third valid path alongside Query Loop and
+	// event-supporting host: it targets a specific event post regardless of
+	// the host's post type.
 	const isValidEvent =
-		( isDescendentOfQueryLoop || isEventContext ) &&
+		( hasExplicitOverride || isDescendentOfQueryLoop || isEventContext ) &&
 		hasValidEventId( postId, context?.postType );
 
 	const { enableRsvp } = useSelect(

@@ -7,6 +7,8 @@ The following GatherPress blocks support an Event ID Override.
 - RSVP
 - RSVP Form
 - RSVP Response
+- RSVP Count
+- Online Event
 
 What this allows:
 
@@ -14,6 +16,8 @@ What this allows:
 - Place RSVP, attendance status, or related UI elements on other pages or posts.
 
 This is found when selecting a block that supports it, clicking "Advanced" and adding a valid event post ID to "Post ID Override". When an Event ID is provided, the block explicitly targets that event instead.
+
+In the editor, the block dims while no override is set (or the ID is invalid) and lights up to full opacity once a valid published event ID is entered — a quick visual confirmation that the override is wired up correctly.
 
 ![Screenshot of the settings panel for ID Override](./user-doc-media/20260110162133.png)
 

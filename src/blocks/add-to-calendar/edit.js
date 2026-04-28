@@ -17,6 +17,7 @@ const Edit = ( { attributes, context } ) => {
 	// and leave the block permanently dimmed in Query Loops.
 	const isDescendentOfQueryLoop = Number.isFinite( context?.queryId );
 	const isEventContext = usePostTypeSupports( 'gatherpress-event-date', context?.postType );
+	const hasExplicitOverride = !! attributes?.postId;
 
 	// Only use postId if context is an event or have an explicit override.
 	const postId =
@@ -24,10 +25,12 @@ const Edit = ( { attributes, context } ) => {
 		( ( isDescendentOfQueryLoop || isEventContext ) ? context?.postId : null ) ??
 		null;
 
-	// Check if block has a valid event connection.
-	// Only check if we're in an event context.
+	// Check if block has a valid event connection. An explicit override
+	// (`attributes.postId`) is a third valid path alongside Query Loop and
+	// event-supporting host: it targets a specific event post regardless of
+	// the host's post type.
 	const isValidEvent =
-		( isDescendentOfQueryLoop || isEventContext ) &&
+		( hasExplicitOverride || isDescendentOfQueryLoop || isEventContext ) &&
 		hasValidEventId( postId, context?.postType );
 
 	const blockProps = useBlockProps( {

@@ -33,6 +33,7 @@ import {
 	usePostTypeSupports,
 	isEventPostType,
 	hasValidEventId,
+	findEventPostById,
 	getEventMeta,
 	hasOnlineEventTerm,
 	isPerEventRsvpMode,
@@ -569,7 +570,7 @@ describe( 'hasValidEventId', () => {
 		expect( hasValidEventId( postId ) ).toBe( false );
 	} );
 
-	it( 'returns false when postType argument is not an event', () => {
+	it( 'returns false when non-event postType hint is given but the editor host is event-supporting and the override target does not exist', () => {
 		const postId = 456;
 
 		require( '@wordpress/data' ).select.mockImplementation( ( store ) => {
@@ -580,16 +581,21 @@ describe( 'hasValidEventId', () => {
 				};
 			}
 			if ( 'core' === store ) {
-				return { getPostType: mockGetPostType };
+				return {
+					getPostType: mockGetPostType,
+					// Editor host is event-supporting, so the lookup falls
+					// back to that type. Return null to simulate a missing
+					// post for the override ID.
+					getEntityRecord: () => null,
+				};
 			}
 			return {};
 		} );
 
-		// PostType argument is 'post', not an event.
 		expect( hasValidEventId( postId, 'post' ) ).toBe( false );
 	} );
 
-	it( 'returns false when postType argument is page', () => {
+	it( 'returns false when postType hint is page and the editor host event lookup returns nothing', () => {
 		const postId = 789;
 
 		require( '@wordpress/data' ).select.mockImplementation( ( store ) => {
@@ -600,13 +606,262 @@ describe( 'hasValidEventId', () => {
 				};
 			}
 			if ( 'core' === store ) {
-				return { getPostType: mockGetPostType };
+				return {
+					getPostType: mockGetPostType,
+					getEntityRecord: () => null,
+				};
 			}
 			return {};
 		} );
 
-		// PostType argument is 'page', not an event.
 		expect( hasValidEventId( postId, 'page' ) ).toBe( false );
+	} );
+
+	it( 'returns false when both postType hint and editor host are non-event and registry scan finds nothing', () => {
+		const postId = 458;
+
+		require( '@wordpress/data' ).select.mockImplementation( ( store ) => {
+			if ( 'core/editor' === store ) {
+				return {
+					getCurrentPostId: () => 999,
+					getCurrentPostType: () => 'page',
+				};
+			}
+			if ( 'core' === store ) {
+				return {
+					getPostType: mockGetPostType,
+					// No getPostTypes — registry not loaded.
+				};
+			}
+			return {};
+		} );
+
+		expect( hasValidEventId( postId, 'page' ) ).toBe( false );
+	} );
+
+	it( 'uses the postType hint when it is event-supporting (Query Loop fast path)', () => {
+		const postId = 460;
+
+		require( '@wordpress/data' ).select.mockImplementation( ( store ) => {
+			if ( 'core/editor' === store ) {
+				return {
+					getCurrentPostId: () => 999, // Different from postId.
+					// Editor host is non-event — only the hint is event-supporting.
+					getCurrentPostType: () => 'page',
+				};
+			}
+			if ( 'core' === store ) {
+				return {
+					getPostType: mockGetPostType,
+					getEntityRecord: ( kind, postTypeName, id ) => {
+						if (
+							'gatherpress_event' === postTypeName &&
+							postId === id
+						) {
+							return { id: postId, status: 'publish' };
+						}
+						return null;
+					},
+				};
+			}
+			return {};
+		} );
+
+		expect( hasValidEventId( postId, 'gatherpress_event' ) ).toBe( true );
+	} );
+
+	it( 'returns true when host postType is non-event but override resolves to a published event', () => {
+		const postId = 456;
+
+		require( '@wordpress/data' ).select.mockImplementation( ( store ) => {
+			if ( 'core/editor' === store ) {
+				return {
+					getCurrentPostId: () => 999, // Different from postId.
+					getCurrentPostType: () => 'page',
+				};
+			}
+			if ( 'core' === store ) {
+				return {
+					getPostType: mockGetPostType,
+					// Registry includes one event-supporting post type.
+					getPostTypes: () => [
+						{
+							slug: 'gatherpress_event',
+							supports: { 'gatherpress-event-date': true },
+						},
+						{ slug: 'page', supports: {} },
+					],
+					getEntityRecord: ( kind, postTypeName, id ) => {
+						if (
+							'gatherpress_event' === postTypeName &&
+							postId === id
+						) {
+							return { id: postId, status: 'publish' };
+						}
+						return null;
+					},
+				};
+			}
+			return {};
+		} );
+
+		// postType hint is 'page', but the override target is a real event.
+		expect( hasValidEventId( postId, 'page' ) ).toBe( true );
+	} );
+
+	it( 'returns false when override target is found but not published', () => {
+		const postId = 457;
+
+		require( '@wordpress/data' ).select.mockImplementation( ( store ) => {
+			if ( 'core/editor' === store ) {
+				return {
+					getCurrentPostId: () => 999,
+					getCurrentPostType: () => 'page',
+				};
+			}
+			if ( 'core' === store ) {
+				return {
+					getPostType: mockGetPostType,
+					getPostTypes: () => [
+						{
+							slug: 'gatherpress_event',
+							supports: { 'gatherpress-event-date': true },
+						},
+					],
+					getEntityRecord: () => ( { id: postId, status: 'draft' } ),
+				};
+			}
+			return {};
+		} );
+
+		expect( hasValidEventId( postId, 'page' ) ).toBe( false );
+	} );
+} );
+
+/**
+ * Coverage for findEventPostById.
+ */
+describe( 'findEventPostById', () => {
+	it( 'returns null when postId is falsy', () => {
+		const selectFunc = jest.fn();
+		expect( findEventPostById( selectFunc, null ) ).toBeNull();
+		expect( findEventPostById( selectFunc, 0 ) ).toBeNull();
+		expect( selectFunc ).not.toHaveBeenCalled();
+	} );
+
+	it( 'returns null when getPostTypes is not loaded yet', () => {
+		const selectFunc = ( store ) => {
+			if ( 'core' === store ) {
+				return { getPostTypes: () => undefined };
+			}
+			return {};
+		};
+
+		expect( findEventPostById( selectFunc, 123 ) ).toBeNull();
+	} );
+
+	it( 'returns null when getPostTypes selector is missing entirely', () => {
+		const selectFunc = ( store ) => {
+			if ( 'core' === store ) {
+				return {};
+			}
+			return {};
+		};
+
+		expect( findEventPostById( selectFunc, 123 ) ).toBeNull();
+	} );
+
+	it( 'returns the published event from the first event-supporting type that owns the ID', () => {
+		const postId = 200;
+		const selectFunc = ( store ) => {
+			if ( 'core' === store ) {
+				return {
+					getPostTypes: () => [
+						{ slug: 'page', supports: {} },
+						{
+							slug: 'gatherpress_event',
+							supports: { 'gatherpress-event-date': true },
+						},
+					],
+					getEntityRecord: ( kind, postTypeName, id ) =>
+						'gatherpress_event' === postTypeName && postId === id
+							? { id: postId, status: 'publish' }
+							: null,
+				};
+			}
+			return {};
+		};
+
+		const result = findEventPostById( selectFunc, postId );
+		expect( result ).toEqual( { id: postId, status: 'publish' } );
+	} );
+
+	it( 'skips non-event-supporting post types when scanning', () => {
+		const postId = 201;
+		const calls = [];
+		const selectFunc = ( store ) => {
+			if ( 'core' === store ) {
+				return {
+					getPostTypes: () => [
+						{ slug: 'page', supports: {} },
+						{ slug: 'post', supports: {} },
+						{
+							slug: 'gatherpress_event',
+							supports: { 'gatherpress-event-date': true },
+						},
+					],
+					getEntityRecord: ( kind, postTypeName, id ) => {
+						calls.push( postTypeName );
+						return 'gatherpress_event' === postTypeName
+							? { id, status: 'publish' }
+							: null;
+					},
+				};
+			}
+			return {};
+		};
+
+		findEventPostById( selectFunc, postId );
+		expect( calls ).toEqual( [ 'gatherpress_event' ] );
+	} );
+
+	it( 'returns null when no event-supporting type owns the ID', () => {
+		const selectFunc = ( store ) => {
+			if ( 'core' === store ) {
+				return {
+					getPostTypes: () => [
+						{
+							slug: 'gatherpress_event',
+							supports: { 'gatherpress-event-date': true },
+						},
+					],
+					getEntityRecord: () => null,
+				};
+			}
+			return {};
+		};
+
+		expect( findEventPostById( selectFunc, 999 ) ).toBeNull();
+	} );
+
+	it( 'returns null when the found post is not published', () => {
+		const postId = 202;
+		const selectFunc = ( store ) => {
+			if ( 'core' === store ) {
+				return {
+					getPostTypes: () => [
+						{
+							slug: 'gatherpress_event',
+							supports: { 'gatherpress-event-date': true },
+						},
+					],
+					getEntityRecord: () => ( { id: postId, status: 'draft' } ),
+				};
+			}
+			return {};
+		};
+
+		expect( findEventPostById( selectFunc, postId ) ).toBeNull();
 	} );
 } );
 
