@@ -639,6 +639,37 @@ describe( 'hasValidEventId', () => {
 		expect( hasValidEventId( postId, 'page' ) ).toBe( false );
 	} );
 
+	it( 'uses the postType hint when it is event-supporting (Query Loop fast path)', () => {
+		const postId = 460;
+
+		require( '@wordpress/data' ).select.mockImplementation( ( store ) => {
+			if ( 'core/editor' === store ) {
+				return {
+					getCurrentPostId: () => 999, // Different from postId.
+					// Editor host is non-event — only the hint is event-supporting.
+					getCurrentPostType: () => 'page',
+				};
+			}
+			if ( 'core' === store ) {
+				return {
+					getPostType: mockGetPostType,
+					getEntityRecord: ( kind, postTypeName, id ) => {
+						if (
+							'gatherpress_event' === postTypeName &&
+							postId === id
+						) {
+							return { id: postId, status: 'publish' };
+						}
+						return null;
+					},
+				};
+			}
+			return {};
+		} );
+
+		expect( hasValidEventId( postId, 'gatherpress_event' ) ).toBe( true );
+	} );
+
 	it( 'returns true when host postType is non-event but override resolves to a published event', () => {
 		const postId = 456;
 
