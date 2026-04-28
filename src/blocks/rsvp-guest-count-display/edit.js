@@ -10,7 +10,7 @@ import { useEffect } from '@wordpress/element';
  * Internal dependencies.
  */
 import { getEditorDocument } from '../../helpers/editor';
-import { DISABLED_FIELD_OPACITY, isPostTypeSupporting } from '../../helpers/event';
+import { DISABLED_FIELD_OPACITY, usePostTypeSupports } from '../../helpers/event';
 
 /**
  * Edit function for the RSVP Guest Count Display Block.
@@ -32,7 +32,10 @@ const Edit = ( { context, clientId } ) => {
 	const rsvpResponses = context?.[ 'gatherpress/rsvpResponses' ] ?? null;
 
 	// Check if context post type supports RSVP.
-	const isEventContext = isPostTypeSupporting( 'gatherpress-rsvp', context?.postType );
+	// `usePostTypeSupports` is reactive so the block re-renders the moment the
+	// post-type definition resolves; the non-reactive variant would miss it
+	// and leave the block permanently dimmed in Query Loops.
+	const isEventContext = usePostTypeSupports( 'gatherpress-rsvp', context?.postType );
 
 	// Example guest count.
 	let guestCount = 1;
@@ -83,10 +86,15 @@ const Edit = ( { context, clientId } ) => {
 				return post?.meta?.gatherpress_max_guest_limit || 0;
 			}
 
-			// Otherwise check current post.
+			// Otherwise check current post. Read supports through the `select`
+			// parameter so this branch re-runs once the post-type definition
+			// resolves — the imperative `isPostTypeSupporting` helper would
+			// race the post-type cache and freeze this branch at 0.
 			const currentPostType = select( 'core/editor' )?.getCurrentPostType();
+			const currentSupportsRsvp = !! select( 'core' )
+				.getPostType( currentPostType )?.supports?.[ 'gatherpress-rsvp' ];
 
-			if ( isPostTypeSupporting( 'gatherpress-rsvp', currentPostType ) ) {
+			if ( currentSupportsRsvp ) {
 				return select( 'core/editor' ).getEditedPostAttribute( 'meta' )
 					?.gatherpress_max_guest_limit || 0;
 			}

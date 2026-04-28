@@ -6,7 +6,7 @@ import moment from 'moment';
 /**
  * WordPress dependencies.
  */
-import { dispatch, select } from '@wordpress/data';
+import { dispatch, select, useSelect } from '@wordpress/data';
 import { __ } from '@wordpress/i18n';
 
 /**
@@ -51,6 +51,39 @@ export function isPostTypeSupporting( support, postType = null ) {
 	const postTypeObject = select( 'core' ).getPostType( typeToCheck );
 
 	return !! postTypeObject?.supports?.[ support ];
+}
+
+/**
+ * Reactive variant of `isPostTypeSupporting` for use in React components.
+ *
+ * `isPostTypeSupporting` reads `getPostType()` non-reactively, so when the
+ * post-type definition isn't yet cached at render time the support gate
+ * resolves to `false` and the component never re-renders once it loads.
+ * This hook subscribes via `useSelect` so the component re-renders the moment
+ * the supports become known — which is the difference between a permanently
+ * dimmed block in a Query Loop and one that lights up correctly.
+ *
+ * @since 1.0.0
+ *
+ * @param {string}      support  The post type support to check.
+ * @param {string|null} postType Optional post type to check. Falls back to the editor post type.
+ * @return {boolean} True if the resolved post type has the given support, false otherwise.
+ */
+export function usePostTypeSupports( support, postType = null ) {
+	return useSelect(
+		( wpSelect ) => {
+			const typeToCheck =
+				postType ?? wpSelect( 'core/editor' )?.getCurrentPostType();
+
+			if ( ! typeToCheck ) {
+				return false;
+			}
+
+			return !! wpSelect( 'core' ).getPostType( typeToCheck )
+				?.supports?.[ support ];
+		},
+		[ support, postType ]
+	);
 }
 
 /**

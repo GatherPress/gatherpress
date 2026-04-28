@@ -8,7 +8,7 @@
 	"icon": "admin-links",
 	"description": "Display an editable link for online events. Link URL comes from event meta, text is customizable.",
 	"ancestor": ["gatherpress/online-event"],
-	"usesContext": ["postId", "queryId"],
+	"usesContext": ["postId", "postType", "queryId"],
 	"attributes": {
 		"linkText": {
 			"type": "string",

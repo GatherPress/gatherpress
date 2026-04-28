@@ -17,7 +17,7 @@ import { __ } from '@wordpress/i18n';
  */
 import TEMPLATE from './template';
 import { hasValidBlockContext, isInFSETemplate } from '../../helpers/editor';
-import { isPostTypeSupporting, DISABLED_FIELD_OPACITY } from '../../helpers/event';
+import { isPostTypeSupporting, usePostTypeSupports, DISABLED_FIELD_OPACITY } from '../../helpers/event';
 import { getVenuePostType, getVenueTaxonomy, useVenueTaxonomyIds } from '../../helpers/venue';
 
 /**
@@ -179,13 +179,19 @@ const Edit = ( { attributes, context } ) => {
 		[ eventId, onlineEventTerm, venueTaxonomy ]
 	);
 
+	// Reactive supports check — keeps the block from staying dimmed when the
+	// post-type definition isn't cached on first render.
+	const hasOnlineEventSupport = usePostTypeSupports(
+		'gatherpress-online-event',
+		context?.postType
+	);
+
 	// Dim the block when not an online event or no valid context.
 	const blockProps = useBlockProps( {
 		style: {
 			opacity: hasValidBlockContext( {
 				isDescendentOfQueryLoop,
-				postType: context?.postType,
-				support: 'gatherpress-online-event',
+				hasSupport: hasOnlineEventSupport,
 				hasData: isOnlineEvent,
 			} )
 				? 1

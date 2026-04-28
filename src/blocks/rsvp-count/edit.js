@@ -11,7 +11,7 @@ import apiFetch from '@wordpress/api-fetch';
 /**
  * Internal dependencies.
  */
-import { hasValidEventId, DISABLED_FIELD_OPACITY, getEventMeta, isPostTypeSupporting, isRsvpEnabledForEvent } from '../../helpers/event';
+import { hasValidEventId, DISABLED_FIELD_OPACITY, getEventMeta, usePostTypeSupports, isRsvpEnabledForEvent } from '../../helpers/event';
 import { EVENT_REST_API } from '../../helpers/namespace';
 import { isInFSETemplate } from '../../helpers/editor';
 import { getFromSettings } from '../../helpers/editor-settings';
@@ -51,7 +51,10 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 	const isDescendentOfQueryLoop = Number.isFinite( context?.queryId );
 
 	// Check if context post type supports RSVP.
-	const isEventContext = isPostTypeSupporting( 'gatherpress-rsvp', context?.postType );
+	// `usePostTypeSupports` is reactive so the block re-renders the moment the
+	// post-type definition resolves; the non-reactive variant would miss it
+	// and leave the block permanently dimmed in Query Loops.
+	const isEventContext = usePostTypeSupports( 'gatherpress-rsvp', context?.postType );
 
 	// Only use postId if context is an event or have an explicit override.
 	const postId =

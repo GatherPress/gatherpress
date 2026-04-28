@@ -15,7 +15,7 @@ import { useSelect } from '@wordpress/data';
  * Internal dependencies
  */
 import { getCurrentContextualPostId, hasValidBlockContext, isInFSETemplate } from '../../helpers/editor';
-import { isPostTypeSupporting, DISABLED_FIELD_OPACITY } from '../../helpers/event';
+import { usePostTypeSupports, DISABLED_FIELD_OPACITY } from '../../helpers/event';
 import { GetVenuePostFromTermId, GetVenuePostFromEventId, getVenuePostType, getVenueTaxonomy, useVenueTaxonomyIds } from '../../helpers/venue';
 import VenueNavigator from '../../components/VenueNavigator';
 import { TEMPLATE_WITH_TITLE, TEMPLATE_WITHOUT_TITLE } from './template';
@@ -24,8 +24,11 @@ const Edit = ( props ) => {
 	const { context } = props;
 
 	const isDescendentOfQueryLoop = Number.isFinite( context?.queryId );
-	const isEventContext = isPostTypeSupporting( 'gatherpress-venue', context?.postType );
-	const isVenueContext = isPostTypeSupporting( 'gatherpress-venue-information', context?.postType );
+	// Reactive supports checks so the block re-renders once the post-type
+	// definition (and its supports) load — non-reactive `select()` calls miss
+	// that resolution and leave the block permanently dimmed in Query Loops.
+	const isEventContext = usePostTypeSupports( 'gatherpress-venue', context?.postType );
+	const isVenueContext = usePostTypeSupports( 'gatherpress-venue-information', context?.postType );
 
 	// Resolve the effective post type from context or the current editor post type.
 	const currentEditorPostType = useSelect(
@@ -107,8 +110,7 @@ const Edit = ( props ) => {
 		style: {
 			opacity: hasValidBlockContext( {
 				isDescendentOfQueryLoop,
-				postType: context?.postType,
-				support: 'gatherpress-venue',
+				hasSupport: isEventContext,
 				hasData: hasVenue,
 			} )
 				? 1
