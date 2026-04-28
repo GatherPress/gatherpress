@@ -262,7 +262,7 @@ class Test_Settings extends Base {
 		$this->assertSame( Settings::MAP_TILE_URL, Settings::get_map_tile_url() );
 
 		add_filter(
-			'gatherpress_map_tile_url',
+			'gatherpress_interactive_map_tile_url',
 			static function (): string {
 				return 'https://tiles.example.com/{z}/{x}/{y}.png';
 			}
@@ -274,12 +274,12 @@ class Test_Settings extends Base {
 			'Filter should replace the default tile URL.'
 		);
 
-		remove_all_filters( 'gatherpress_map_tile_url' );
+		remove_all_filters( 'gatherpress_interactive_map_tile_url' );
 
 		// An empty filter value falls back to the default rather than breaking Leaflet.
-		add_filter( 'gatherpress_map_tile_url', '__return_empty_string' );
+		add_filter( 'gatherpress_interactive_map_tile_url', '__return_empty_string' );
 		$this->assertSame( Settings::MAP_TILE_URL, Settings::get_map_tile_url() );
-		remove_all_filters( 'gatherpress_map_tile_url' );
+		remove_all_filters( 'gatherpress_interactive_map_tile_url' );
 	}
 
 	/**
@@ -299,7 +299,7 @@ class Test_Settings extends Base {
 		$this->assertStringContainsString( Settings::MAP_TILE_ATTRIBUTION_CARTO_URL, $default );
 
 		add_filter(
-			'gatherpress_map_tile_attribution',
+			'gatherpress_interactive_map_tile_attribution',
 			static function (): string {
 				return 'Custom attribution';
 			}
@@ -307,7 +307,7 @@ class Test_Settings extends Base {
 
 		$this->assertSame( 'Custom attribution', Settings::get_map_tile_attribution() );
 
-		remove_all_filters( 'gatherpress_map_tile_attribution' );
+		remove_all_filters( 'gatherpress_interactive_map_tile_attribution' );
 	}
 
 	/**

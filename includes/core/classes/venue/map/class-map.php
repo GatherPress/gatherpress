@@ -1105,7 +1105,7 @@ class Map {
 		 * @param array<string, array<string, array<string, mixed>>> $descriptors Provider-keyed descriptor map.
 		 * @param int                                                $post_id     Venue post ID.
 		 */
-		return (array) apply_filters( 'gatherpress_venue_map_descriptors', $descriptors, $post_id );
+		return (array) apply_filters( 'gatherpress_static_map_descriptors', $descriptors, $post_id );
 	}
 
 	/**
@@ -1335,7 +1335,7 @@ class Map {
 		 *
 		 * @param bool $enabled Whether to generate the 2× variant.
 		 */
-		return (bool) apply_filters( 'gatherpress_venue_map_generate_2x', true );
+		return (bool) apply_filters( 'gatherpress_static_map_generate_2x', true );
 	}
 
 	/**

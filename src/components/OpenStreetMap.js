@@ -126,8 +126,9 @@ const OpenStreetMap = ( props ) => {
 
 		// Default to CartoDB "Positron" because OSMF's public tile server prohibits
 		// third-party plugin distribution and was intermittently blocking requests.
-		// The PHP `gatherpress_map_tile_url` / `gatherpress_map_tile_attribution`
-		// filters let sites point at their own provider (self-hosted, MapTiler, etc.).
+		// The PHP `gatherpress_interactive_map_tile_url` /
+		// `gatherpress_interactive_map_tile_attribution` filters let sites point at
+		// their own provider (self-hosted, MapTiler, etc.).
 		const tileUrl =
 			getFromConfig( 'mapTileUrl' ) ||
 			'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png';

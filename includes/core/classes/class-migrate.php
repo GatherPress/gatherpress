@@ -56,7 +56,7 @@ class Migrate {
 		 *
 		 *   ```php
 		 *   \add_filter(
-		 *       'gatherpress_pseudopostmetas',
+		 *       'gatherpress_pseudo_post_metas',
 		 *       function ( array $pseudopostmetas ): array {
 		 *           $pseudopostmetas['my_gatherpress_extension_data_name'] = [
 		 *               'export_callback' => function ( WP_Post $post ): string {
@@ -81,6 +81,6 @@ class Migrate {
 		 * @param  array $pseudopostmetas List of data-names and their respective export- and import-callbacks.
 		 * @return array
 		 */
-		return (array) apply_filters( 'gatherpress_pseudopostmetas', $this->pseudopostmetas );
+		return (array) apply_filters( 'gatherpress_pseudo_post_metas', $this->pseudopostmetas );
 	}
 }

@@ -185,7 +185,7 @@ class Test_Manager extends Base {
 	}
 
 	/**
-	 * `do_register_action()` fires `gatherpress_register_map_providers`
+	 * `do_register_action()` fires `gatherpress_register_static_map_providers`
 	 * with the manager instance so companion plugins can register their
 	 * providers on top of the core ones.
 	 *
@@ -201,11 +201,11 @@ class Test_Manager extends Base {
 			$captured = $registry;
 		};
 
-		add_action( 'gatherpress_register_map_providers', $callback );
+		add_action( 'gatherpress_register_static_map_providers', $callback );
 
 		$instance->do_register_action();
 
-		remove_action( 'gatherpress_register_map_providers', $callback );
+		remove_action( 'gatherpress_register_static_map_providers', $callback );
 
 		$this->assertSame( $instance, $captured );
 	}
