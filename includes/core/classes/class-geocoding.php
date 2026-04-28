@@ -105,6 +105,36 @@ class Geocoding {
 	private const CRON_DELAY_SECONDS = 5;
 
 	/**
+	 * Length of the per-user rate-limit window for the geocode REST
+	 * endpoints, in seconds. Both `/geocode` and `/geocode/search` share
+	 * the same per-user bucket — one user typing into autocomplete and
+	 * then saving a venue is still one continuous flow.
+	 *
+	 * @since 1.0.0
+	 */
+	private const GEOCODE_RATE_LIMIT_WINDOW_SECONDS = 60;
+
+	/**
+	 * Default ceiling for the per-user rate-limit window. Roomy enough
+	 * for one user typing through a 25-character address with debounced
+	 * autocomplete (~10 requests) plus a couple of save-time reverse
+	 * geocodes; tight enough to catch a runaway client or scripted abuse.
+	 *
+	 * Filterable via `gatherpress_geocode_rate_limit_per_minute`.
+	 *
+	 * @since 1.0.0
+	 */
+	private const GEOCODE_RATE_LIMIT_DEFAULT_PER_MINUTE = 30;
+
+	/**
+	 * Transient key prefix for the per-user geocode rate-limit bucket.
+	 * Keyed on user ID; the suffix is appended at use site.
+	 *
+	 * @since 1.0.0
+	 */
+	private const GEOCODE_RATE_LIMIT_TRANSIENT_PREFIX = 'gatherpress_geocode_rate_';
+
+	/**
 	 * Class constructor.
 	 *
 	 * This method initializes the object and sets up necessary hooks.
@@ -432,6 +462,117 @@ class Geocoding {
 	}
 
 	/**
+	 * Enforce a per-user rate limit on the geocode REST endpoints.
+	 *
+	 * Both `/geocode` and `/geocode/search` consume from the same per-user
+	 * bucket — autocomplete + save-time reverse-geocode are one continuous
+	 * flow from the user's perspective. The bucket is a fixed 60-second
+	 * window; the (N+1)th request once the ceiling has been hit returns
+	 * a 429 response with a `Retry-After` header pointing at the window's
+	 * remaining seconds.
+	 *
+	 * Returns null when the request is under the ceiling and should
+	 * proceed normally; returns a `WP_REST_Response` (HTTP 429) when the
+	 * caller should bail.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return WP_REST_Response|null
+	 */
+	protected function check_rate_limit(): ?WP_REST_Response {
+		/**
+		 * Filter whether the geocode REST rate limit is enforced.
+		 *
+		 * Returning `false` disables the rate limit entirely — no
+		 * per-user bucket is read or written, no 429 is ever returned.
+		 * Useful for sites running their own upstream rate limiting at
+		 * a CDN / WAF layer that already covers this surface, or for
+		 * automated test environments that want to bypass the throttle.
+		 *
+		 * Mirrors the shape of `gatherpress_geocode_on_save_enabled`
+		 * (cron side) for consistency: same filter pattern across
+		 * both Photon-traffic toggles.
+		 *
+		 * @since 1.0.0
+		 *
+		 * @param bool $enabled Whether the rate limit is enforced. Default true.
+		 */
+		$enabled = (bool) apply_filters( 'gatherpress_geocode_rate_limit_enabled', true );
+		if ( ! $enabled ) {
+			return null;
+		}
+
+		$user_id = get_current_user_id();
+		// REST permission_callback already gates on `edit_posts`; an
+		// unauthenticated request shouldn't reach this method, but if it
+		// somehow does, fail open rather than 0-key the bucket.
+		if ( 0 === $user_id ) {
+			return null;
+		}
+
+		/**
+		 * Filter the per-user requests-per-minute ceiling for the
+		 * geocode REST endpoints (`/geocode` and `/geocode/search`).
+		 *
+		 * Both endpoints share one fixed-window per-user bucket. Once
+		 * this ceiling is reached within a 60-second window, additional
+		 * requests for the same user return HTTP `429 Too Many Requests`
+		 * with a `Retry-After` header pointing at the remaining seconds
+		 * in the window. Lower this value to be stricter with abusive
+		 * clients; raise it for sites with debounced-but-eager
+		 * autocomplete UIs or bulk-import workflows.
+		 *
+		 * Values below `1` are clamped to `1` (a zero ceiling would 429
+		 * every request, including the first).
+		 *
+		 * @since 1.0.0
+		 *
+		 * @param int $ceiling Default per-user requests-per-minute ceiling.
+		 */
+		$ceiling = (int) apply_filters(
+			'gatherpress_geocode_rate_limit_per_minute',
+			self::GEOCODE_RATE_LIMIT_DEFAULT_PER_MINUTE
+		);
+		$ceiling = max( 1, $ceiling );
+
+		$now    = time();
+		$key    = self::GEOCODE_RATE_LIMIT_TRANSIENT_PREFIX . $user_id;
+		$bucket = get_transient( $key );
+
+		if ( ! is_array( $bucket ) || empty( $bucket['expires_at'] ) || $now >= (int) $bucket['expires_at'] ) {
+			$bucket = array(
+				'count'      => 0,
+				'expires_at' => $now + self::GEOCODE_RATE_LIMIT_WINDOW_SECONDS,
+			);
+		}
+
+		if ( (int) $bucket['count'] >= $ceiling ) {
+			$retry_after = max( 1, (int) $bucket['expires_at'] - $now );
+			$response    = new WP_REST_Response(
+				array(
+					'code'    => 'gatherpress_geocode_rate_limited',
+					'message' => __(
+						'Too many geocoding requests. Please slow down and try again shortly.',
+						'gatherpress'
+					),
+					'data'    => array( 'status' => 429 ),
+				),
+				429
+			);
+			$response->header( 'Retry-After', (string) $retry_after );
+			return $response;
+		}
+
+		$bucket['count'] = (int) $bucket['count'] + 1;
+		// TTL tracks the remaining window so refreshing the count doesn't
+		// extend it (a true fixed window, not sliding).
+		$ttl = max( 1, (int) $bucket['expires_at'] - $now );
+		set_transient( $key, $bucket, $ttl );
+
+		return null;
+	}
+
+	/**
 	 * Geocodes an address using the Photon API (GeoJSON).
 	 *
 	 * @since 1.0.0
@@ -440,6 +581,11 @@ class Geocoding {
 	 * @return WP_REST_Response|WP_Error Response with coordinates or error.
 	 */
 	public function geocode_address( WP_REST_Request $request ) {
+		$rate_limited = $this->check_rate_limit();
+		if ( null !== $rate_limited ) {
+			return $rate_limited;
+		}
+
 		$address = $request->get_param( 'address' );
 
 		if ( empty( $address ) ) {
@@ -624,6 +770,11 @@ class Geocoding {
 	 * @return WP_REST_Response|WP_Error Suggestions or error.
 	 */
 	public function search_addresses( WP_REST_Request $request ) {
+		$rate_limited = $this->check_rate_limit();
+		if ( null !== $rate_limited ) {
+			return $rate_limited;
+		}
+
 		$query = $request->get_param( 'q' );
 
 		if ( empty( $query ) || '' === trim( $query ) ) {
@@ -704,6 +855,27 @@ class Geocoding {
 
 		$this->maybe_log_json_decode_failure( $body, $data, 'search_addresses' );
 
+		return $this->build_search_suggestions_response( $data, $cache_key );
+	}
+
+	/**
+	 * Build the `/geocode/search` REST response from a decoded Photon
+	 * payload. Caches the result under `$cache_key` so repeat queries
+	 * within `SEARCH_CACHE_TTL` skip the Photon roundtrip.
+	 *
+	 * Extracted from `search_addresses()` to keep that method's NPath
+	 * complexity manageable — the parsing loop dominates the path
+	 * count; moving it here lets the REST entry point stay readable
+	 * and PHPMD-clean.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param mixed  $data      Decoded JSON body. Treated as "no results"
+	 *                          when not an array or missing `features`.
+	 * @param string $cache_key Transient key for the cached suggestions.
+	 * @return WP_REST_Response The response with a `suggestions` array (possibly empty).
+	 */
+	private function build_search_suggestions_response( $data, string $cache_key ): WP_REST_Response {
 		if ( ! is_array( $data ) || empty( $data['features'] ) || ! is_array( $data['features'] ) ) {
 			set_transient( $cache_key, array(), self::SEARCH_CACHE_TTL );
 

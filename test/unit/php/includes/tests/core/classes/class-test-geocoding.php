@@ -2613,4 +2613,601 @@ class Test_Geocoding extends Base {
 			'Structured-address country_code must be stripped from REST writes.'
 		);
 	}
+
+	/**
+	 * Direct coverage for `build_search_suggestions_response()`.
+	 *
+	 * The helper is exercised by every successful `/geocode/search`
+	 * roundtrip, but xdebug coverage doesn't credit the body lines
+	 * reliably when entry is via `$this->...` from another method on
+	 * the same singleton instance. Call it via reflection so the body
+	 * lines are unambiguously executed under coverage instrumentation.
+	 *
+	 * @covers ::build_search_suggestions_response
+	 *
+	 * @return void
+	 */
+	public function test_build_search_suggestions_response_handles_no_features(): void {
+		$cache_key = 'gatherpress_photon_search_test_' . wp_generate_password( 8, false );
+		$method    = new ReflectionMethod( Geocoding::class, 'build_search_suggestions_response' );
+		$method->setAccessible( true );
+
+		$response = $method->invoke( Geocoding::get_instance(), null, $cache_key );
+
+		$this->assertInstanceOf( WP_REST_Response::class, $response );
+		$this->assertSame( 200, $response->get_status() );
+		$this->assertSame(
+			array( 'suggestions' => array() ),
+			$response->get_data(),
+			'A non-array decode result must collapse to an empty suggestions list.'
+		);
+
+		// Empty-result branch still caches an empty array so repeat
+		// queries skip Photon for the next SEARCH_CACHE_TTL.
+		$this->assertSame( array(), get_transient( $cache_key ) );
+
+		delete_transient( $cache_key );
+	}
+
+	/**
+	 * Direct coverage for `build_search_suggestions_response()` with
+	 * a populated payload — verifies the per-feature shape it builds
+	 * and that the suggestions are cached for later cache-hit reads.
+	 *
+	 * @covers ::build_search_suggestions_response
+	 *
+	 * @return void
+	 */
+	public function test_build_search_suggestions_response_maps_features(): void {
+		$cache_key = 'gatherpress_photon_search_test_' . wp_generate_password( 8, false );
+		$payload   = array(
+			'features' => array(
+				// Well-formed feature → maps into a suggestion.
+				array(
+					'geometry'   => array(
+						'coordinates' => array( -74.006, 40.7128 ),
+					),
+					'properties' => array(
+						'name'    => 'Test Place',
+						'city'    => 'New York',
+						'country' => 'United States',
+					),
+				),
+				// Non-array feature → skipped.
+				'not an array',
+				// Feature missing coords → skipped.
+				array(
+					'geometry'   => array(),
+					'properties' => array( 'name' => 'No Coords' ),
+				),
+				// Feature with empty label (no displayable properties) → skipped.
+				array(
+					'geometry'   => array(
+						'coordinates' => array( 0, 0 ),
+					),
+					'properties' => array(),
+				),
+				// Feature with `properties` missing entirely — exercises
+				// the `: array()` fallback in the ternary. Empty label →
+				// skipped.
+				array(
+					'geometry' => array(
+						'coordinates' => array( 1, 1 ),
+					),
+				),
+			),
+		);
+
+		$method = new ReflectionMethod( Geocoding::class, 'build_search_suggestions_response' );
+		$method->setAccessible( true );
+
+		$response = $method->invoke( Geocoding::get_instance(), $payload, $cache_key );
+
+		$this->assertSame( 200, $response->get_status() );
+		$data = $response->get_data();
+		$this->assertCount(
+			1,
+			$data['suggestions'],
+			'Only the well-formed feature should land in the suggestion list.'
+		);
+		$this->assertSame( '40.7128', $data['suggestions'][0]['latitude'] );
+		$this->assertSame( '-74.006', $data['suggestions'][0]['longitude'] );
+
+		$this->assertSame(
+			$data['suggestions'],
+			get_transient( $cache_key ),
+			'Built suggestions must be cached under the supplied key.'
+		);
+
+		delete_transient( $cache_key );
+	}
+
+	/**
+	 * Returning `false` from `gatherpress_geocode_rate_limit_enabled`
+	 * disables the rate limit entirely — even a bucket that's
+	 * already at the ceiling lets requests through, and no transient
+	 * read/write happens.
+	 *
+	 * @covers ::check_rate_limit
+	 *
+	 * @return void
+	 */
+	public function test_rate_limit_can_be_disabled_via_filter(): void {
+		$user_id = $this->factory->user->create( array( 'role' => 'editor' ) );
+		wp_set_current_user( $user_id );
+
+		// Pre-fill the bucket at the ceiling — without the disable
+		// filter, the next call would 429.
+		set_transient(
+			'gatherpress_geocode_rate_' . $user_id,
+			array(
+				'count'      => 30,
+				'expires_at' => time() + 30,
+			),
+			30
+		);
+
+		$disable = static function (): bool {
+			return false;
+		};
+		add_filter( 'gatherpress_geocode_rate_limit_enabled', $disable );
+
+		try {
+			$method = new ReflectionMethod( Geocoding::class, 'check_rate_limit' );
+			$method->setAccessible( true );
+			$result = $method->invoke( Geocoding::get_instance() );
+		} finally {
+			remove_filter( 'gatherpress_geocode_rate_limit_enabled', $disable );
+			delete_transient( 'gatherpress_geocode_rate_' . $user_id );
+		}
+
+		$this->assertNull(
+			$result,
+			'Disabling the rate limit must let an at-ceiling user through.'
+		);
+	}
+
+	/**
+	 * `check_rate_limit()` falls open (returns null, no transient
+	 * touched) when there is no logged-in user. The REST permission
+	 * callback already gates anonymous requests; this short-circuit is
+	 * defense-in-depth against being invoked from an anonymous context
+	 * with `user_id === 0`, which would otherwise key the bucket on 0
+	 * and let an attacker share a global quota with all other anons.
+	 *
+	 * @covers ::check_rate_limit
+	 *
+	 * @return void
+	 */
+	public function test_rate_limit_skips_without_logged_in_user(): void {
+		wp_set_current_user( 0 );
+		delete_transient( 'gatherpress_geocode_rate_0' );
+
+		$method = new ReflectionMethod( Geocoding::class, 'check_rate_limit' );
+		$method->setAccessible( true );
+		$result = $method->invoke( Geocoding::get_instance() );
+
+		$this->assertNull( $result );
+		$this->assertFalse(
+			get_transient( 'gatherpress_geocode_rate_0' ),
+			'No bucket should be created for the anonymous user.'
+		);
+	}
+
+	/**
+	 * Within the rate-limit ceiling, calls succeed normally — the
+	 * counter increments, but the response is the regular geocode
+	 * payload, not a 429.
+	 *
+	 * @covers ::check_rate_limit
+	 *
+	 * @return void
+	 */
+	public function test_rate_limit_allows_requests_under_ceiling(): void {
+		$user_id = $this->factory->user->create( array( 'role' => 'editor' ) );
+		wp_set_current_user( $user_id );
+		delete_transient( 'gatherpress_geocode_rate_' . $user_id );
+
+		$this->http_mock->mock(
+			'*',
+			array(
+				'body' => wp_json_encode(
+					array(
+						'features' => array(
+							array(
+								'geometry' => array(
+									'coordinates' => array( -73.935242, 40.73061 ),
+								),
+							),
+						),
+					)
+				),
+			)
+		);
+
+		$request = new WP_REST_Request( 'GET' );
+		$request->set_param( 'address', '123 Main St' );
+
+		$response = Geocoding::get_instance()->geocode_address( $request );
+
+		$this->assertInstanceOf( WP_REST_Response::class, $response );
+		$this->assertSame( 200, $response->get_status() );
+
+		$bucket = get_transient( 'gatherpress_geocode_rate_' . $user_id );
+		$this->assertIsArray( $bucket );
+		$this->assertSame( 1, $bucket['count'] );
+
+		delete_transient( 'gatherpress_geocode_rate_' . $user_id );
+	}
+
+	/**
+	 * `/geocode` and `/geocode/search` consume from the same per-user
+	 * bucket — so a user typing into autocomplete and then saving a
+	 * venue counts as one continuous flow.
+	 *
+	 * @covers ::check_rate_limit
+	 *
+	 * @return void
+	 */
+	public function test_rate_limit_bucket_is_shared_between_endpoints(): void {
+		$user_id = $this->factory->user->create( array( 'role' => 'editor' ) );
+		wp_set_current_user( $user_id );
+		delete_transient( 'gatherpress_geocode_rate_' . $user_id );
+
+		$this->http_mock->mock(
+			'*',
+			array(
+				'body' => wp_json_encode(
+					array(
+						'features' => array(
+							array(
+								'geometry'   => array(
+									'coordinates' => array( -73.935242, 40.73061 ),
+								),
+								'properties' => array( 'name' => 'Test' ),
+							),
+						),
+					)
+				),
+			)
+		);
+
+		$instance = Geocoding::get_instance();
+
+		$geocode_request = new WP_REST_Request( 'GET' );
+		$geocode_request->set_param( 'address', '123 Main St' );
+		$instance->geocode_address( $geocode_request );
+
+		$search_request = new WP_REST_Request( 'GET' );
+		$search_request->set_param( 'q', '123 Main St' );
+		$instance->search_addresses( $search_request );
+
+		$bucket = get_transient( 'gatherpress_geocode_rate_' . $user_id );
+		$this->assertIsArray( $bucket );
+		$this->assertSame(
+			2,
+			$bucket['count'],
+			'Both endpoints must increment the same per-user bucket.'
+		);
+
+		delete_transient( 'gatherpress_geocode_rate_' . $user_id );
+	}
+
+	/**
+	 * Once the ceiling has been hit, `check_rate_limit()` returns a 429
+	 * response with a `Retry-After` header pointing at the remaining
+	 * seconds in the window. Invoked directly on the protected method
+	 * for deterministic coverage of the over-limit branch — the
+	 * end-to-end "geocode_address returns 429" assertion is covered by
+	 * `test_rate_limit_geocode_address_returns_429_when_exceeded`
+	 * below.
+	 *
+	 * @covers ::check_rate_limit
+	 *
+	 * @return void
+	 */
+	public function test_rate_limit_returns_429_with_retry_after_when_exceeded(): void {
+		$user_id = $this->factory->user->create( array( 'role' => 'editor' ) );
+		wp_set_current_user( $user_id );
+
+		// Pre-fill the bucket at the ceiling. Window expires 30s from now.
+		$expires_at = time() + 30;
+		set_transient(
+			'gatherpress_geocode_rate_' . $user_id,
+			array(
+				'count'      => 30,
+				'expires_at' => $expires_at,
+			),
+			30
+		);
+
+		$method = new ReflectionMethod( Geocoding::class, 'check_rate_limit' );
+		$method->setAccessible( true );
+		$response = $method->invoke( Geocoding::get_instance() );
+
+		$this->assertInstanceOf( WP_REST_Response::class, $response );
+		$this->assertSame( 429, $response->get_status() );
+
+		$headers = $response->get_headers();
+		$this->assertArrayHasKey( 'Retry-After', $headers );
+		$this->assertGreaterThanOrEqual( 1, (int) $headers['Retry-After'] );
+		$this->assertLessThanOrEqual( 30, (int) $headers['Retry-After'] );
+
+		$data = $response->get_data();
+		$this->assertSame( 'gatherpress_geocode_rate_limited', $data['code'] );
+
+		delete_transient( 'gatherpress_geocode_rate_' . $user_id );
+	}
+
+	/**
+	 * `geocode_address()` returns the 429 response from
+	 * `check_rate_limit()` directly (early-returns before its own
+	 * argument validation). Locks in the wiring at the public REST
+	 * entry point.
+	 *
+	 * @covers ::geocode_address
+	 *
+	 * @return void
+	 */
+	public function test_rate_limit_geocode_address_returns_429_when_exceeded(): void {
+		$user_id = $this->factory->user->create( array( 'role' => 'editor' ) );
+		wp_set_current_user( $user_id );
+
+		set_transient(
+			'gatherpress_geocode_rate_' . $user_id,
+			array(
+				'count'      => 30,
+				'expires_at' => time() + 30,
+			),
+			30
+		);
+
+		$request = new WP_REST_Request( 'GET' );
+		$request->set_param( 'address', '123 Main St' );
+
+		$response = Geocoding::get_instance()->geocode_address( $request );
+
+		$this->assertSame( 429, $response->get_status() );
+
+		delete_transient( 'gatherpress_geocode_rate_' . $user_id );
+	}
+
+	/**
+	 * `search_addresses()` returns the 429 response from
+	 * `check_rate_limit()` directly (early-returns before its own
+	 * argument validation). Locks in the wiring at the public REST
+	 * entry point.
+	 *
+	 * @covers ::search_addresses
+	 *
+	 * @return void
+	 */
+	public function test_rate_limit_search_addresses_returns_429_when_exceeded(): void {
+		$user_id = $this->factory->user->create( array( 'role' => 'editor' ) );
+		wp_set_current_user( $user_id );
+
+		set_transient(
+			'gatherpress_geocode_rate_' . $user_id,
+			array(
+				'count'      => 30,
+				'expires_at' => time() + 30,
+			),
+			30
+		);
+
+		$request = new WP_REST_Request( 'GET' );
+		$request->set_param( 'q', '123 Main St' );
+
+		$response = Geocoding::get_instance()->search_addresses( $request );
+
+		$this->assertSame( 429, $response->get_status() );
+
+		delete_transient( 'gatherpress_geocode_rate_' . $user_id );
+	}
+
+	/**
+	 * Once the rate-limit window expires, the next request starts a
+	 * fresh window with count = 1.
+	 *
+	 * @covers ::check_rate_limit
+	 *
+	 * @return void
+	 */
+	public function test_rate_limit_resets_after_window_expires(): void {
+		$user_id = $this->factory->user->create( array( 'role' => 'editor' ) );
+		wp_set_current_user( $user_id );
+
+		// Stale bucket: at ceiling, but window already expired one second ago.
+		set_transient(
+			'gatherpress_geocode_rate_' . $user_id,
+			array(
+				'count'      => 30,
+				'expires_at' => time() - 1,
+			),
+			60
+		);
+
+		$this->http_mock->mock(
+			'*',
+			array(
+				'body' => wp_json_encode(
+					array(
+						'features' => array(
+							array(
+								'geometry' => array(
+									'coordinates' => array( -73.935242, 40.73061 ),
+								),
+							),
+						),
+					)
+				),
+			)
+		);
+
+		$request = new WP_REST_Request( 'GET' );
+		$request->set_param( 'address', '123 Main St' );
+
+		$response = Geocoding::get_instance()->geocode_address( $request );
+
+		$this->assertSame(
+			200,
+			$response->get_status(),
+			'Expired window must allow the request through and start a fresh bucket.'
+		);
+
+		$bucket = get_transient( 'gatherpress_geocode_rate_' . $user_id );
+		$this->assertIsArray( $bucket );
+		$this->assertSame( 1, $bucket['count'] );
+
+		delete_transient( 'gatherpress_geocode_rate_' . $user_id );
+	}
+
+	/**
+	 * `gatherpress_geocode_rate_limit_per_minute` overrides the default
+	 * ceiling. Set it to 1 and the second request in the same window
+	 * gets 429'd.
+	 *
+	 * @covers ::check_rate_limit
+	 *
+	 * @return void
+	 */
+	public function test_rate_limit_filter_changes_ceiling(): void {
+		$user_id = $this->factory->user->create( array( 'role' => 'editor' ) );
+		wp_set_current_user( $user_id );
+		delete_transient( 'gatherpress_geocode_rate_' . $user_id );
+
+		$this->http_mock->mock(
+			'*',
+			array(
+				'body' => wp_json_encode(
+					array(
+						'features' => array(
+							array(
+								'geometry' => array(
+									'coordinates' => array( -73.935242, 40.73061 ),
+								),
+							),
+						),
+					)
+				),
+			)
+		);
+
+		$ceiling_filter = static function (): int {
+			return 1;
+		};
+		add_filter( 'gatherpress_geocode_rate_limit_per_minute', $ceiling_filter );
+
+		try {
+			$instance = Geocoding::get_instance();
+
+			$first_request = new WP_REST_Request( 'GET' );
+			$first_request->set_param( 'address', '123 Main St' );
+			$first_response = $instance->geocode_address( $first_request );
+			$this->assertSame( 200, $first_response->get_status() );
+
+			$second_request = new WP_REST_Request( 'GET' );
+			$second_request->set_param( 'address', '456 Oak St' );
+			$second_response = $instance->geocode_address( $second_request );
+			$this->assertSame(
+				429,
+				$second_response->get_status(),
+				'With ceiling=1, the second request in the window must be rate-limited.'
+			);
+		} finally {
+			remove_filter( 'gatherpress_geocode_rate_limit_per_minute', $ceiling_filter );
+			delete_transient( 'gatherpress_geocode_rate_' . $user_id );
+		}
+	}
+
+	/**
+	 * Rate limiting is per-user — one user hitting the ceiling does
+	 * NOT block other users on the same site.
+	 *
+	 * @covers ::check_rate_limit
+	 *
+	 * @return void
+	 */
+	public function test_rate_limit_is_isolated_per_user(): void {
+		$flooder_id   = $this->factory->user->create( array( 'role' => 'editor' ) );
+		$bystander_id = $this->factory->user->create( array( 'role' => 'editor' ) );
+
+		// Flooder is at the ceiling.
+		set_transient(
+			'gatherpress_geocode_rate_' . $flooder_id,
+			array(
+				'count'      => 30,
+				'expires_at' => time() + 30,
+			),
+			30
+		);
+
+		$this->http_mock->mock(
+			'*',
+			array(
+				'body' => wp_json_encode(
+					array(
+						'features' => array(
+							array(
+								'geometry' => array(
+									'coordinates' => array( -73.935242, 40.73061 ),
+								),
+							),
+						),
+					)
+				),
+			)
+		);
+
+		// Bystander makes a request — should succeed.
+		wp_set_current_user( $bystander_id );
+		delete_transient( 'gatherpress_geocode_rate_' . $bystander_id );
+
+		$request = new WP_REST_Request( 'GET' );
+		$request->set_param( 'address', '123 Main St' );
+		$response = Geocoding::get_instance()->geocode_address( $request );
+
+		$this->assertSame(
+			200,
+			$response->get_status(),
+			"One user's flooded bucket must not affect another user's quota."
+		);
+
+		delete_transient( 'gatherpress_geocode_rate_' . $flooder_id );
+		delete_transient( 'gatherpress_geocode_rate_' . $bystander_id );
+	}
+
+	/**
+	 * Capability gate is **intentionally** `edit_posts` (Contributor+).
+	 * Rate limiting is the meaningful defense; tightening the cap was
+	 * security theater (Photon is already public, anonymous-equivalent
+	 * abuse vectors aren't unlocked by Contributor access). This test
+	 * locks that decision in so anyone tightening the cap notices the
+	 * test break and re-evaluates.
+	 *
+	 * @covers ::register_endpoints
+	 *
+	 * @return void
+	 */
+	public function test_rest_endpoints_keep_edit_posts_capability(): void {
+		$instance = Geocoding::get_instance();
+		$instance->register_endpoints();
+
+		$routes = rest_get_server()->get_routes();
+		foreach ( array( 'geocode', 'geocode/search' ) as $route_suffix ) {
+			$key = '/' . GATHERPRESS_REST_NAMESPACE . '/' . $route_suffix;
+			$this->assertArrayHasKey( $key, $routes, sprintf( 'Route %s should be registered.', $key ) );
+
+			$contributor_id = $this->factory->user->create( array( 'role' => 'contributor' ) );
+			wp_set_current_user( $contributor_id );
+
+			foreach ( $routes[ $key ] as $route_def ) {
+				$callback = $route_def['permission_callback'];
+				$this->assertTrue(
+					(bool) call_user_func( $callback ),
+					sprintf( 'Contributor should pass the %s permission_callback (gated by `edit_posts`).', $key )
+				);
+			}
+		}
+	}
 }

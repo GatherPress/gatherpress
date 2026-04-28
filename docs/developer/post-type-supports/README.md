@@ -147,6 +147,8 @@ Meta registration itself lives on `GatherPress\Core\Venue\Meta::register()`. The
 
 The eight structured-address fields are populated by a server-side cron handler that runs on a 5-second delay after `gatherpress_address` changes. Manual edits to those fields via `update_post_meta()` from trusted server code are preserved as long as the address itself doesn't change. To suppress the outbound HTTP-on-save (firewalled installs, dev environments without Photon access), return `false` from the `gatherpress_geocode_on_save_enabled` filter. To replace WP-Cron with a different scheduler (e.g. Action Scheduler), short-circuit the `gatherpress_async_geocode_pre_enqueue_job` filter with any non-null value.
 
+The address autocomplete and save-time reverse-geocode that drive these fields go through two REST endpoints (`/gatherpress/v1/geocode` and `/gatherpress/v1/geocode/search`), both of which share a per-user fixed-window rate limit. The default ceiling is 30 requests per 60 seconds; the (N+1)th request returns HTTP `429 Too Many Requests` with a `Retry-After` header. Lower or raise the ceiling via the `gatherpress_geocode_rate_limit_per_minute` filter (values below `1` are clamped to `1`). To disable the rate limit entirely — for example when a CDN / WAF already covers this surface — return `false` from `gatherpress_geocode_rate_limit_enabled`.
+
 #### Usage for gatherpress-venue-information
 
 ```php
