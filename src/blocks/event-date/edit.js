@@ -38,7 +38,11 @@ import {
 } from '../../helpers/datetime';
 import DateTimeRange from '../../components/DateTimeRange';
 import { getFromSettings } from '../../helpers/editor-settings';
-import { isEventPostType, DISABLED_FIELD_OPACITY } from '../../helpers/event';
+import {
+	isEventPostType,
+	findEventPostById,
+	DISABLED_FIELD_OPACITY,
+} from '../../helpers/event';
 import { isInFSETemplate } from '../../helpers/editor';
 
 /**
@@ -201,6 +205,7 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 
 	// Defer the supports check to useSelect so it stays reactive.
 	const postId = attributes?.postId ?? context?.postId ?? null;
+	const hasExplicitOverride = !! attributes?.postId;
 
 	const { dateTimeStart, dateTimeEnd, timezone, isLoading, isValidEvent } = useSelect(
 		( select ) => {
@@ -228,6 +233,23 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 					dateTimeEnd: datetimeStore.getDateTimeEnd(),
 					timezone: datetimeStore.getTimezone(),
 					isValidEvent: supportsEventDate,
+				};
+			}
+
+			// Postid override on a host that itself doesn't support event-date
+			// (e.g. a regular page or template part). Resolve the override target
+			// across event-supporting post types so the block can light up.
+			if ( hasExplicitOverride && ! supportsEventDate ) {
+				const overridePost = findEventPostById( select, postId );
+				if ( ! overridePost ) {
+					return { isValidEvent: false };
+				}
+				const overrideMeta = overridePost?.meta;
+				return {
+					dateTimeStart: overrideMeta?.gatherpress_datetime_start,
+					dateTimeEnd: overrideMeta?.gatherpress_datetime_end,
+					timezone: overrideMeta?.gatherpress_timezone,
+					isValidEvent: true,
 				};
 			}
 
@@ -266,7 +288,7 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 				isValidEvent: !! post && 'publish' === post?.status,
 			};
 		},
-		[ postId, context?.postType ]
+		[ postId, context?.postType, hasExplicitOverride ]
 	);
 
 	const blockProps = useBlockProps( {

@@ -302,28 +302,17 @@ When working with JavaScript code:
 
 ## Known Issues / Technical Debt
 
-### @wordpress/env Version Pinned
+### @wordpress/env Patched via patch-package
 
-**Issue**: `@wordpress/env` is currently pinned to version `10.14.0` in `package.json` due to a Docker build bug in versions 10.15.0+.
+**State**: `@wordpress/env` is on `^11.1.0` with a local patch at `patches/@wordpress+env+11.2.0.patch` applied during `npm install` via the `postinstall` hook (uses [`patch-package`](https://www.npmjs.com/package/patch-package)). The patch adds two `composer global config` lines before the wp-env Docker image's `composer global require phpunit` step so Composer's audit does not block install on advisories `PKSA-5jz8-6tcw-pbk4` / `PKSA-z3gr-8qht-p93v`.
 
-**Problem**: Versions 10.15.0 and later fail during Docker container build with this error:
-
-```bash
-RUN composer global require --dev phpunit/phpunit:"^5.7.21 || ^6.0 || ^7.0 || ^8.0 || ^9.0 || ^10.0"
-target cli: failed to solve: process did not complete successfully: exit code: 1
-```
+**Why it's needed**: Without the patch, the wp-env Docker build fails before the test container is ready, which breaks `npm run test:unit:php` and the CI workflows that use it (`phpunit-tests.yml`, `sonarcloud.yml`, `pr-coverage.yml`, `e2e-tests.yml`).
 
 **Action Required**:
 
-- Monitor the [@wordpress/env releases](https://www.npmjs.com/package/@wordpress/env) for a fix
-- Test upgrading to the latest version periodically by:
-  1. Changing `"@wordpress/env": "10.14.0"` to `"@wordpress/env": "^10.37.0"` (or latest)
-  2. Running `npm install`
-  3. Running `npm run test:unit:php` locally to verify Docker build succeeds
-  4. If successful, keep the upgrade; if not, revert and wait for the next release
-- Related GitHub Actions workflows that depend on this: `phpunit-tests.yml`, `sonarcloud.yml`, `pr-coverage.yml`, `e2e-tests.yml`
-
-**Tracking**: This issue was identified on December 23, 2025 while fixing CI test failures.
+- Monitor [@wordpress/env releases](https://www.npmjs.com/package/@wordpress/env) for an upstream fix that disables / configures Composer audit, or a PHPUnit pin that no longer trips the advisories.
+- When such a release lands, bump `@wordpress/env`, delete `patches/@wordpress+env+*.patch`, and remove the `postinstall` hook + `patch-package` dependency from `package.json` if no other patches remain.
+- Removal procedure and full rationale live in [`patches/README.md`](patches/README.md) — keep that file in sync with whatever lives under `patches/`.
 
 ## Planned Improvements for v0.34.0
 

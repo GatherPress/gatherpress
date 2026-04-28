@@ -55,6 +55,7 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 	// post-type definition resolves; the non-reactive variant would miss it
 	// and leave the block permanently dimmed in Query Loops.
 	const isEventContext = usePostTypeSupports( 'gatherpress-rsvp', context?.postType );
+	const hasExplicitOverride = !! attributes?.postId;
 
 	// Only use postId if context is an event or have an explicit override.
 	const postId =
@@ -64,21 +65,24 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 
 	// Subscribe to event data to trigger re-renders when data loads.
 	// This ensures hasValidEventId works correctly after async data fetch.
-	// Only subscribe if we have a valid postId from event context.
+	// Only subscribe if we have a valid postId from event context or an
+	// explicit override.
 	const { enableRsvp } = useSelect(
 		( select ) => {
-			if ( postId && ( isDescendentOfQueryLoop || isEventContext ) ) {
+			if ( postId && ( hasExplicitOverride || isDescendentOfQueryLoop || isEventContext ) ) {
 				return getEventMeta( select, postId, attributes );
 			}
 			return { enableRsvp: true };
 		},
-		[ postId, attributes, isDescendentOfQueryLoop, isEventContext ]
+		[ postId, attributes, hasExplicitOverride, isDescendentOfQueryLoop, isEventContext ]
 	);
 
-	// Check if block has a valid event connection.
-	// Only check if we're in an event context and pass postType to avoid wrong API calls.
+	// Check if block has a valid event connection. An explicit override
+	// (`attributes.postId`) is a third valid path alongside Query Loop and
+	// event-supporting host: it targets a specific event post regardless of
+	// the host's post type.
 	const isValidEvent =
-		( isDescendentOfQueryLoop || isEventContext ) &&
+		( hasExplicitOverride || isDescendentOfQueryLoop || isEventContext ) &&
 		hasValidEventId( postId, context?.postType );
 
 	const rsvpMode = getFromSettings( 'rsvpMode' ) ?? 'all_on';
