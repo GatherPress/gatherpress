@@ -67,22 +67,22 @@ pipelines and that becomes a contract.
 ## Word order
 
 - **Filters:** subsystem first, attribute last.
-  - ✅ `gatherpress_static_map_tile_url`
-  - ❌ `gatherpress_tile_url_static_map`
+    - ✅ `gatherpress_static_map_tile_url`
+    - ❌ `gatherpress_tile_url_static_map`
 - **Actions:** subsystem first, verb last.
-  - ✅ `gatherpress_static_map_prewarm_run`
-  - ❌ `gatherpress_run_static_map_prewarm`
+    - ✅ `gatherpress_static_map_prewarm_run`
+    - ❌ `gatherpress_run_static_map_prewarm`
 
 ## Verb form (actions)
 
 - **Imperative / present tense** for callable lifecycle moments — registration
   hooks, cron run handlers, render-time fanout.
-  - `gatherpress_register_static_map_providers`
-  - `gatherpress_static_map_prewarm_run`
-  - `gatherpress_settings_section`
+    - `gatherpress_register_static_map_providers`
+    - `gatherpress_static_map_prewarm_run`
+    - `gatherpress_settings_section`
 - **Past tense** for outcomes / observability — something already happened, the
   hook is for downstream observers.
-  - `gatherpress_async_geocode_failed`
+    - `gatherpress_async_geocode_failed`
 
 Do not mix tenses in the same family. If you add a `_run` action, its failure
 counterpart should be `_failed` (not `_failure` or `_failing`).
@@ -163,56 +163,3 @@ them. Ship them in coordinated passes, not chipped away one-by-one:
   deprecation notice.
 - For hooks still in alpha (anything not yet in a stable `0.x` release), rename
   in place. No deprecation shim needed.
-
-## Audit history
-
-### Issue #1539 — pre-0.34.0 audit
-
-[Issue #1539](https://github.com/GatherPress/gatherpress/issues/1539) audited
-the namespace and renamed the hooks below as part of the 0.34.0 milestone.
-All renames were against alpha-only hooks, so no `apply_filters_deprecated()`
-shims were added.
-
-#### Static-map cluster (drop redundant `_venue_` infix; route static-only hooks through `static_map_*`)
-
-| Old | New |
-|---|---|
-| `gatherpress_register_map_providers` | `gatherpress_register_static_map_providers` |
-| `gatherpress_venue_map_tile_url` | `gatherpress_static_map_tile_url` |
-| `gatherpress_venue_map_descriptors` | `gatherpress_static_map_descriptors` |
-| `gatherpress_venue_map_generate_2x` | `gatherpress_static_map_generate_2x` |
-| `gatherpress_venue_map_composite_time_budget` | `gatherpress_static_map_composite_time_budget` |
-| `gatherpress_venue_map_prewarm_batch_size` | `gatherpress_static_map_prewarm_batch_size` |
-| `gatherpress_venue_map_prewarm_content_batch_size` | `gatherpress_static_map_prewarm_content_batch_size` |
-| `gatherpress_venue_map_prewarm_pre_enqueue_job` | `gatherpress_static_map_prewarm_pre_enqueue_job` |
-| `gatherpress_warm_venue_map` (cron) | `gatherpress_static_map_prewarm_run` |
-| `gatherpress_map_reprewarm` (cron) | `gatherpress_static_map_prewarm_sweep` |
-
-#### Interactive-map cluster (Leaflet-specific — moved out of the shared `map_*` bucket)
-
-| Old | New |
-|---|---|
-| `gatherpress_map_tile_url` | `gatherpress_interactive_map_tile_url` |
-| `gatherpress_map_tile_attribution` | `gatherpress_interactive_map_tile_attribution` |
-
-#### Shared map config (no rename — left in `map_*` because both pipelines honor them)
-
-- `gatherpress_map_zoom`
-- `gatherpress_map_height`
-
-#### Spelling
-
-| Old | New |
-|---|---|
-| `gatherpress_pseudopostmetas` | `gatherpress_pseudo_post_metas` |
-
-#### JavaScript hooks
-
-`src/` was reviewed for `@wordpress/hooks` `applyFilters()` / `doAction()`
-calls. Only one public JS hook exists today and it already follows the WP
-core JS hook convention (`namespace.camelCaseName`):
-
-- `gatherpress.durationOptions` — [src/helpers/datetime.js](../../src/helpers/datetime.js) — no rename.
-
-All other `addFilter()` / `addAction()` call sites in `src/` are consumers of
-WP core hooks (`editor.BlockEdit`, etc.), not GatherPress-published hooks.
