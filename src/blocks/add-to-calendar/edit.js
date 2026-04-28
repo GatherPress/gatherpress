@@ -7,7 +7,7 @@ import { useBlockProps, InnerBlocks } from '@wordpress/block-editor';
  * Internal dependencies.
  */
 import TEMPLATE from './template';
-import { hasValidEventId, usePostTypeSupports } from '../../helpers/event';
+import { hasValidEventId, usePostTypeSupports, DISABLED_FIELD_OPACITY } from '../../helpers/event';
 import { isInFSETemplate } from '../../helpers/editor';
 
 const Edit = ( { attributes, context } ) => {
@@ -32,7 +32,7 @@ const Edit = ( { attributes, context } ) => {
 
 	const blockProps = useBlockProps( {
 		style: {
-			opacity: ( isInFSETemplate() || isValidEvent ) ? 1 : 0.3,
+			opacity: ( isInFSETemplate() || isValidEvent ) ? 1 : DISABLED_FIELD_OPACITY,
 		},
 	} );
 

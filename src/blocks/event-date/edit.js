@@ -38,7 +38,7 @@ import {
 } from '../../helpers/datetime';
 import DateTimeRange from '../../components/DateTimeRange';
 import { getFromSettings } from '../../helpers/editor-settings';
-import { isEventPostType } from '../../helpers/event';
+import { isEventPostType, DISABLED_FIELD_OPACITY } from '../../helpers/event';
 import { isInFSETemplate } from '../../helpers/editor';
 
 /**
@@ -273,7 +273,7 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 
 	const blockProps = useBlockProps( {
 		style: {
-			opacity: ( isInFSETemplate() || isValidEvent ) ? 1 : 0.3,
+			opacity: ( isInFSETemplate() || isValidEvent ) ? 1 : DISABLED_FIELD_OPACITY,
 		},
 	} );
 
