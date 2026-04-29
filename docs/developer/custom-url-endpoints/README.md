@@ -122,7 +122,7 @@ Example for a new redirection endpoint like `example.org/event/my-sample-event/o
 - ### 2. Define the callback for the endpoint
 
 	```php
-	use GatherPress\Core\Event;
+	use GatherPress\Core\Event\Event;
 	```
 
 	```php

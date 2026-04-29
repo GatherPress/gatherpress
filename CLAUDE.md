@@ -212,7 +212,7 @@ When working with this codebase:
 ### PHP Coding Standards
 
 - **Use statements**: Always use `use` statements at the top of files for classes and functions instead of fully qualified namespace calls
-    - ✅ Good: `use GatherPress\Core\Event;` then `new Event( $post_id )`
+    - ✅ Good: `use GatherPress\Core\Event\Event;` then `new Event( $post_id )`
     - ❌ Bad: `new \GatherPress\Core\Event( $post_id )`
     - For functions: `use function GatherPress\Core\filter_input;` then `filter_input( $value )`
 - **Namespace resolution**: When moving code between namespaces, ensure proper imports are updated

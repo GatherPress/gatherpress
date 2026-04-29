@@ -12,15 +12,16 @@
 namespace GatherPress\Core\Event;
 
 // Exit if accessed directly.
-defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
+\defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use Exception;
 use GatherPress\Core\Blocks\Rsvp_Template;
-use GatherPress\Core\Event;
+use GatherPress\Core\Event\Event;
 use GatherPress\Core\Rsvp\Form;
 use GatherPress\Core\Rsvp\Query as Rsvp_Query;
 use GatherPress\Core\Rsvp\Rsvp;
 use GatherPress\Core\Rsvp\Setup;
+use GatherPress\Core\Rsvp\Status;
 use GatherPress\Core\Rsvp\Token;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\User;
@@ -29,7 +30,6 @@ use GatherPress\Core\Validate;
 use WP_REST_Request;
 use WP_REST_Response;
 use WP_REST_Server;
-use WP_User;
 
 /**
  * Class Rest_Api.
@@ -787,7 +787,7 @@ class Rest_Api {
 			! $event->has_event_past()
 		) {
 			if ( 'attending' !== $status ) {
-				$guests = 0;
+				$guests = 0; // ToDo: is this intended?
 			}
 
 			$rsvp_type   = is_email( $user_identifier ) ? 'email' : 'user';
@@ -795,7 +795,7 @@ class Rest_Api {
 			$status      = $user_record['status'];
 			$guests      = $user_record['guests'];
 
-			if ( in_array( $status, $event->rsvp->statuses, true ) ) {
+			if ( in_array( $status, Status::values(), true ) ) {
 				$success = true;
 			}
 		}

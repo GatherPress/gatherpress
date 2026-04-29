@@ -8,9 +8,10 @@
 
 namespace GatherPress\Tests\Core\Rsvp;
 
-use GatherPress\Core\Event;
+use GatherPress\Core\Event\Event;
 use GatherPress\Core\Rsvp\Query;
 use GatherPress\Core\Rsvp\Rsvp;
+use GatherPress\Core\Rsvp\Status;
 use GatherPress\Tests\Base;
 use stdClass;
 use WP_Comment;
@@ -81,7 +82,7 @@ class Test_Query extends Base {
 				'user_id'   => $user_id,
 				'tax_query' => array( //phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query
 					array(
-						'taxonomy' => Rsvp::TAXONOMY,
+						'taxonomy' => Status::TAXONOMY,
 						'terms'    => 'attending',
 						'field'    => 'slug',
 					),
@@ -90,7 +91,7 @@ class Test_Query extends Base {
 		);
 
 		$pieces = $instance->taxonomy_query( $clauses, $comment_query );
-		$term   = get_term_by( 'slug', 'attending', Rsvp::TAXONOMY );
+		$term   = get_term_by( 'slug', 'attending', Status::TAXONOMY );
 
 		$this->assertSame(
 			' LEFT JOIN wp_term_relationships ON (wp_comments.comment_ID = wp_term_relationships.object_id)',

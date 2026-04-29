@@ -94,7 +94,7 @@ class User extends Base {
 	 * @param mixed $identifier The identifier of the RSVP.
 	 * @return array
 	 */
-	public function filter_query_get( $args, $identifier ): array {
+	protected function add_identifier_to_comment_query( $args, $identifier ): array {
 		$args['user_id'] = $identifier;
 		return $args;
 	}
@@ -107,7 +107,7 @@ class User extends Base {
 	 * @return array
 	 */
 	public function filter_query_save( $args, $identifier ): array {
-		$args['user_id']            = $identifier;
+		$args['user_id']            = \intval( $identifier );
 		$args['comment_author_url'] = get_author_posts_url( $identifier );
 		return $args;
 	}
@@ -139,7 +139,7 @@ class User extends Base {
 	 *
 	 * @return string|null The author posts URL, or null if user not found.
 	 */
-	public function get_profile_url( $identifier ): ?string {
+	public function get_attendee_url( $identifier ): ?string {
 		$user = get_user_by( 'id', intval( $identifier ) );
 
 		if ( ! $user instanceof \WP_User ) {

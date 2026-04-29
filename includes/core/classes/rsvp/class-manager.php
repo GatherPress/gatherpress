@@ -49,6 +49,7 @@ class Manager {
 	 */
 	protected function __construct() {
 		$this->setup_hooks();
+		$this->register_core_types();
 	}
 
 	/**
@@ -59,8 +60,20 @@ class Manager {
 	 * @return void
 	 */
 	protected function setup_hooks(): void {
-		add_action( 'gatherpress_loaded', array( $this, 'register_core_types' ), 1 );
-		add_action( 'gatherpress_loaded', array( $this, 'do_register_action' ), 5 );
+		add_action( 'gatherpress_loaded', array( $this, 'register_rsvp_types' ), 5 );
+	}
+
+	/**
+	 * Get a registered RSVP type by slug.
+	 *
+	 * @since 1.0. 0
+	 *
+	 * @param string $slug The RSVP type slug.
+	 *
+	 * @return Rsvp_Type|null The type instance, or null if not registered.
+	 */
+	public static function get_type( string $slug ): ?Rsvp_Type {
+		return self::get_instance()->get( $slug );
 	}
 
 	/**
@@ -89,6 +102,43 @@ class Manager {
 		}
 
 		$this->types[ $slug ] = $type;
+	}
+
+	/**
+	 * Validate a request.
+	 *
+	 * @param Request $request The request object to validate.
+	 * @return bool
+	 */
+	public static function is_valid_request( Request $request ) {
+		$rsvp_type = self::get_type( $request->type );
+
+		if ( ! $rsvp_type ) {
+			return false;
+		}
+
+		if ( $rsvp_type->is_valid_identifier( $request->identifier ) ) {
+			return true;
+		}
+
+		return false;
+	}
+
+	/**
+	 * Filter the comment query for the given RSVP request.
+	 *
+	 * @param Request $request The request object to validate.
+	 * @param array   $args    The current query args.
+	 * @return array
+	 */
+	public static function filter_comment_query( Request $request, array $args ) {
+		$rsvp_type = self::get_type( $request->type );
+
+		if ( ! $rsvp_type ) {
+			return $args;
+		}
+
+		return $rsvp_type->filter_query_save( $args, $request->identifier );
 	}
 
 	/**
@@ -167,7 +217,7 @@ class Manager {
 	 *
 	 * @return void
 	 */
-	public function do_register_action(): void {
+	public function register_rsvp_types(): void {
 		/**
 		 * Fires when RSVP types are being registered.
 		 *

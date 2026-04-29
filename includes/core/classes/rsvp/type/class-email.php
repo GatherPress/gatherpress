@@ -87,7 +87,7 @@ class Email extends Base {
 	 * @param mixed $identifier The identifier of the RSVP.
 	 * @return array
 	 */
-	public function filter_query_get( $args, $identifier ): array {
+	protected function add_identifier_to_comment_query( $args, $identifier ): array {
 		$args['author_email'] = $identifier;
 		return $args;
 	}
@@ -133,7 +133,7 @@ class Email extends Base {
 	 *
 	 * @return string|null Always returns null for email type.
 	 */
-	public function get_profile_url( $identifier = null ): ?string {
+	public function get_attendee_url( $identifier = null ): ?string {
 		return null;
 	}
 

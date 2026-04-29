@@ -83,7 +83,7 @@ abstract class Base {
 	 * @param mixed $identifier The identifier of the RSVP.
 	 * @return array
 	 */
-	abstract public function filter_query_get( $args, $identifier ): array;
+	abstract protected function add_identifier_to_comment_query( $args, $identifier ): array;
 
 	/**
 	 * Filter the RSVP-Comment-Query for a RSVP_Type.
@@ -146,7 +146,7 @@ abstract class Base {
 	 *
 	 * @return string|null The profile URL, or null if not available.
 	 */
-	public function get_profile_url( $identifier ): ?string {
+	public function get_attendee_url( $identifier ): ?string {
 		return (string) $identifier;
 	}
 
@@ -193,6 +193,28 @@ abstract class Base {
 	 */
 	public function is_valid_identifier( $identifier ): bool {
 		return ! empty( $identifier );
+	}
+
+	/**
+	 * Filter the RSVP-Comment-Query for a RSVP_Type.
+	 *
+	 * @param array $args       The present args.
+	 * @param mixed $identifier The identifier of the RSVP.
+	 * @return array
+	 */
+	final public function filter_query_get( $args, $identifier ): array {
+		$args = $this->add_identifier_to_comment_query( $args, $identifier );
+
+		//phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query
+		$args['tax_query'] = array(
+			array(
+				'taxonomy' => self::TAXONOMY,
+				'field'    => 'slug',
+				'terms'    => array( $this->get_slug() ),
+			),
+		);
+
+		return $args;
 	}
 
 	/**

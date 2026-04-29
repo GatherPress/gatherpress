@@ -14,6 +14,7 @@ namespace GatherPress\Core;
 // Exit if accessed directly.
 \defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
+use GatherPress\Core\Event\Event;
 use GatherPress\Core\Traits\Singleton;
 
 /**
@@ -85,21 +86,6 @@ class Notifications {
 		}
 
 		$event = new Event( $data['event_id'] );
-
-		// Route to type-specific notification handler.
-		/**
-		 * Filter: Type-specific RSVP saved notification.
-		 *
-		 * Allows plugins to customize notifications based on RSVP type.
-		 *
-		 * @since 1.0.0
-		 *
-		 * @param \WP_Comment $comment   The RSVP comment.
-		 * @param string      $rsvp_type The RSVP type slug.
-		 * @param array       $data      Contextual data about the RSVP.
-		 * @param Event       $event     The event object.
-		 */
-		do_action( "gatherpress_rsvp_saved_{$rsvp_type}", $comment, $rsvp_type, $data, $event );
 
 		// Generic notification for organizer.
 		$this->notify_organizer_rsvp_received( $comment, $event, $data );

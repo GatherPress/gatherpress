@@ -14,7 +14,7 @@ namespace GatherPress\Core\Commands;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
-use GatherPress\Core\Event;
+use GatherPress\Core\Event\Event;
 use WP_CLI;
 
 /**

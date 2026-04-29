@@ -8,13 +8,14 @@
 
 namespace GatherPress\Tests\Core\Rsvp;
 
-use GatherPress\Core\Event;
+use GatherPress\Core\Event\Event;
 use GatherPress\Core\Rsvp\Cleanup;
 use GatherPress\Core\Rsvp\Form;
 use GatherPress\Core\Rsvp\List_Table;
 use GatherPress\Core\Rsvp\Query;
 use GatherPress\Core\Rsvp\Rsvp;
 use GatherPress\Core\Rsvp\Setup;
+use GatherPress\Core\Rsvp\Status;
 use GatherPress\Core\Rsvp\Token;
 use GatherPress\Core\Settings;
 use GatherPress\Tests\Base;
@@ -187,7 +188,7 @@ class Test_Setup extends Base {
 		$instance = Setup::get_instance();
 		$instance->register_taxonomy();
 
-		$this->assertTrue( taxonomy_exists( Rsvp::TAXONOMY ) );
+		$this->assertTrue( taxonomy_exists( Status::TAXONOMY ) );
 	}
 
 	/**

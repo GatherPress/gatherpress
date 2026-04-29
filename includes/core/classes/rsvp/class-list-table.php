@@ -429,7 +429,7 @@ class List_Table extends WP_List_Table {
 	public function column_default( $item, $column_name ): string {
 		switch ( $column_name ) {
 			case 'response':
-				$terms = wp_get_object_terms( $item['comment_ID'], Rsvp::TAXONOMY );
+				$terms = wp_get_object_terms( $item['comment_ID'], Status::TAXONOMY );
 				$name  = '-';
 
 				if ( empty( $terms ) ) {

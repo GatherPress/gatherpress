@@ -8,9 +8,10 @@
 
 namespace GatherPress\Tests\Core\Event;
 
-use GatherPress\Core\Event;
+use GatherPress\Core\Event\Event;
 use GatherPress\Core\Event\Rest_Api;
 use GatherPress\Core\Rsvp\Rsvp;
+use GatherPress\Core\Rsvp\Status;
 use GatherPress\Core\Rsvp\Token;
 use GatherPress\Core\Settings;
 use GatherPress\Core\Setup;
@@ -1428,7 +1429,7 @@ class Test_Rest_Api extends Base {
 		);
 
 		// Set RSVP status.
-		wp_set_object_terms( $comment_id, 'attending', Rsvp::TAXONOMY );
+		wp_set_object_terms( $comment_id, 'attending', Status::TAXONOMY );
 
 		// Opt out of event updates.
 		update_comment_meta( $comment_id, 'gatherpress_event_updates_opt_in', 0 );
@@ -1469,7 +1470,7 @@ class Test_Rest_Api extends Base {
 			)
 		);
 
-		wp_set_object_terms( $comment_id, 'attending', Rsvp::TAXONOMY );
+		wp_set_object_terms( $comment_id, 'attending', Status::TAXONOMY );
 
 		$send = array(
 			'attending' => true,
@@ -1505,7 +1506,7 @@ class Test_Rest_Api extends Base {
 			)
 		);
 
-		wp_set_object_terms( $comment_id, 'attending', Rsvp::TAXONOMY );
+		wp_set_object_terms( $comment_id, 'attending', Status::TAXONOMY );
 
 		$send = array(
 			'attending' => true,

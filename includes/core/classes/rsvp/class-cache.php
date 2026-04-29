@@ -11,7 +11,7 @@
 namespace GatherPress\Core\Rsvp;
 
 // Exit if accessed directly.
-defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
+\defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 /**
  * Class of RSVP caches.

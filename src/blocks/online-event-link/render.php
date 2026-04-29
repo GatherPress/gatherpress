@@ -13,7 +13,7 @@
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
-use GatherPress\Core\Event;
+use GatherPress\Core\Event\Event;
 
 if ( ! isset( $attributes ) || ! is_array( $attributes ) ) {
 	return;

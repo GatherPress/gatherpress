@@ -9,7 +9,7 @@
 namespace GatherPress\Tests\Core\Blocks;
 
 use GatherPress\Core\Blocks\Rsvp;
-use GatherPress\Core\Event;
+use GatherPress\Core\Event\Event;
 use GatherPress\Core\Event\Setup;
 use GatherPress\Core\Settings;
 use GatherPress\Tests\Base;
@@ -103,7 +103,7 @@ class Test_Rsvp extends Base {
 		$user     = $this->mock->user( true )->get();
 		$event    = new Event( $post_id );
 
-		$event->rsvp->save( $user->ID, 'attending' );
+		$save_result = $event->rsvp->save( $user->ID, 'attending' );
 
 		$block = array(
 			'blockName'   => 'gatherpress/rsvp-v2',

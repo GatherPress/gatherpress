@@ -8,7 +8,8 @@
 
 namespace GatherPress\Tests\Core\Rsvp;
 
-use GatherPress\Core\Event;
+use GatherPress\Core\Event\Event;
+use GatherPress\Core\Rsvp\Cache;
 use GatherPress\Core\Rsvp\Rsvp;
 use GatherPress\Core\Settings;
 use GatherPress\Tests\Base;
@@ -124,6 +125,11 @@ class Test_Rsvp extends Base {
 			'Failed to assert no_status due to invalid status.'
 		);
 
+		$post = $this->mock->post(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		)->get();
 		$rsvp = new Rsvp( $post->ID );
 
 		Utility::set_and_get_hidden_property( $rsvp, 'max_attendance_limit', 1 );
@@ -385,7 +391,7 @@ class Test_Rsvp extends Base {
 		wp_delete_user( $user_id_2 );
 
 		// User will remain while cached until it expires.
-		wp_cache_delete( sprintf( Rsvp::CACHE_KEY, $post->ID ), GATHERPRESS_CACHE_GROUP );
+		Cache::delete( $post->ID );
 
 		$responses = $rsvp->responses();
 
@@ -631,9 +637,9 @@ class Test_Rsvp extends Base {
 		$rsvp  = new Rsvp( $post->ID );
 		$email = 'rsvp@example.com';
 
-		$data = $rsvp->save( $email, 'attending' );
+		$data = $rsvp->save( $email, 'attending', 0, 0, 'email' );
 
-		$this->assertSame( $post->ID, intval( $data['post_id'] ) );
+		$this->assertSame( $post->ID, \intval( $data['post_id'] ) );
 		$this->assertSame( 'attending', $data['status'] );
 		$this->assertNotEmpty( $data['comment_id'] );
 

@@ -259,7 +259,7 @@ class Form {
 			// phpcs:enable WordPress.Security.NonceVerification.Missing
 
 			// Set RSVP status to attending.
-			wp_set_object_terms( $comment_id, 'attending', Rsvp::TAXONOMY );
+			wp_set_object_terms( $comment_id, Status::ATTENDING->value, Status::TAXONOMY );
 
 			// Process all fields.
 			$this->process_fields( $comment_id, $data );
@@ -626,7 +626,7 @@ class Form {
 		$comment_id = (int) $comment_id_result;
 
 		// Set RSVP status to attending.
-		wp_set_object_terms( $comment_id, 'attending', Rsvp::TAXONOMY );
+		wp_set_object_terms( $comment_id, Status::ATTENDING->value, Status::TAXONOMY );
 
 		// Process all fields.
 		$this->process_fields( $comment_id, $data );

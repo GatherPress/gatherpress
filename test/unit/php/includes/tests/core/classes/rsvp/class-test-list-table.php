@@ -8,9 +8,10 @@
 
 namespace GatherPress\Tests\Core\Rsvp;
 
-use GatherPress\Core\Event;
+use GatherPress\Core\Event\Event;
 use GatherPress\Core\Rsvp\List_Table;
 use GatherPress\Core\Rsvp\Rsvp;
+use GatherPress\Core\Rsvp\Status;
 use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;
 use WP_Screen;
@@ -274,7 +275,7 @@ class Test_List_Table extends Base {
 	 * @return void
 	 */
 	public function test_column_default_response_attending(): void {
-		wp_set_object_terms( $this->rsvp['comment_ID'], 'attending', Rsvp::TAXONOMY );
+		wp_set_object_terms( $this->rsvp['comment_ID'], Status::ATTENDING->value, Status::TAXONOMY );
 		$response_col = $this->list_table->column_default( $this->rsvp, 'response' );
 
 		$this->assertSame(
@@ -291,7 +292,7 @@ class Test_List_Table extends Base {
 	 * @return void
 	 */
 	public function test_column_default_response_not_attending(): void {
-		wp_set_object_terms( $this->rsvp['comment_ID'], 'not_attending', Rsvp::TAXONOMY );
+		wp_set_object_terms( $this->rsvp['comment_ID'], Status::NOT_ATTENDING->value, Status::TAXONOMY );
 		$response_col = $this->list_table->column_default( $this->rsvp, 'response' );
 
 		$this->assertSame(
@@ -308,7 +309,7 @@ class Test_List_Table extends Base {
 	 * @return void
 	 */
 	public function test_column_default_response_waiting_list(): void {
-		wp_set_object_terms( $this->rsvp['comment_ID'], 'waiting_list', Rsvp::TAXONOMY );
+		wp_set_object_terms( $this->rsvp['comment_ID'], Status::WAITING_LIST->value, Status::TAXONOMY );
 		$response_col = $this->list_table->column_default( $this->rsvp, 'response' );
 
 		$this->assertSame(
@@ -1150,8 +1151,8 @@ class Test_List_Table extends Base {
 	 */
 	public function test_column_default_response_unknown(): void {
 		// Create a term with an unknown slug.
-		$term_id = wp_insert_term( 'Unknown', Rsvp::TAXONOMY, array( 'slug' => 'unknown_status' ) );
-		wp_set_object_terms( $this->rsvp['comment_ID'], $term_id['term_id'], Rsvp::TAXONOMY );
+		$term_id = wp_insert_term( 'Unknown', Status::TAXONOMY, array( 'slug' => 'unknown_status' ) );
+		wp_set_object_terms( $this->rsvp['comment_ID'], $term_id['term_id'], Status::TAXONOMY );
 
 		$output = $this->list_table->column_default( $this->rsvp, 'response' );
 

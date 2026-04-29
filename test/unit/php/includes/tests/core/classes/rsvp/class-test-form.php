@@ -8,9 +8,10 @@
 
 namespace GatherPress\Tests\Core\Rsvp;
 
-use GatherPress\Core\Event;
+use GatherPress\Core\Event\Event;
 use GatherPress\Core\Rsvp\Form;
 use GatherPress\Core\Rsvp\Rsvp;
+use GatherPress\Core\Rsvp\Status;
 use GatherPress\Core\Settings;
 use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;
@@ -1256,7 +1257,7 @@ class Test_Form extends Base {
 		$instance->handle_rsvp_comment_post( $comment_id );
 
 		// Should not set any RSVP meta or terms.
-		$terms = wp_get_object_terms( $comment_id, Rsvp::TAXONOMY );
+		$terms = wp_get_object_terms( $comment_id, Status::TAXONOMY );
 		$this->assertEmpty( $terms );
 	}
 
@@ -2799,7 +2800,7 @@ class Test_Form extends Base {
 		$this->assertStringContainsString( 'RSVP has been submitted successfully', $result['message'] );
 		$this->assertSame( $comment_id, $result['comment_id'] );
 
-		$terms = wp_get_object_terms( $comment_id, Rsvp::TAXONOMY );
+		$terms = wp_get_object_terms( $comment_id, Status::TAXONOMY );
 		$this->assertNotEmpty( $terms, 'Should set RSVP status' );
 		$this->assertSame( 'attending', $terms[0]->slug, 'Should set status to attending' );
 	}

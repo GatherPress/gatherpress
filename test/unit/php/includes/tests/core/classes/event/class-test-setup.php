@@ -8,7 +8,7 @@
 
 namespace GatherPress\Tests\Core\Event;
 
-use GatherPress\Core\Event;
+use GatherPress\Core\Event\Event;
 use GatherPress\Core\Event\Admin_List;
 use GatherPress\Core\Event\Query;
 use GatherPress\Core\Event\Rest_Api;

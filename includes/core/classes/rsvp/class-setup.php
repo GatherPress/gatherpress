@@ -14,6 +14,7 @@ namespace GatherPress\Core\Rsvp;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
+use GatherPress\Core\Event\Event;
 use GatherPress\Core\Rsvp\Type\Base as Rsvp_Type;
 use GatherPress\Core\Settings;
 use GatherPress\Core\Traits\Singleton;
@@ -134,7 +135,7 @@ class Setup {
 	 */
 	public function register_taxonomy(): void {
 		register_taxonomy(
-			Rsvp::TAXONOMY,
+			Status::TAXONOMY,
 			'comment',
 			array(
 				'labels'             => array(),
