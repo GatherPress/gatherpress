@@ -416,3 +416,67 @@ export function usePopularVenues( limit = 3, venuePostType = DEFAULT_VENUE_POST_
 
 	return popularVenues ?? [];
 }
+
+/**
+ * Look up a post by ID across all venue-supporting post types.
+ *
+ * Mirrors `findEventPostById()` but scans for `gatherpress-venue-information`
+ * support instead of `gatherpress-event-date`. Used by the venue block's
+ * `postIdOverride` resolver to detect when the override target is a venue
+ * post (so it can be used directly) vs. an event post (so the venue is
+ * derived from the event's venue taxonomy).
+ *
+ * Returns `null` when the post type registry has not finished loading. The
+ * caller's `useSelect` will re-run once it does, since `getPostTypes` is a
+ * subscribed read.
+ *
+ * @since 1.0.0
+ *
+ * @param {Function} selectFunc WordPress data `select` function.
+ * @param {number}   postId     Post ID to resolve.
+ * @return {Object|null} The post entity if found in any venue-supporting post
+ *                       type; null when the registry isn't loaded yet, when
+ *                       no venue-supporting type owns the ID, or when the
+ *                       found post isn't published.
+ */
+export function findVenuePostById( selectFunc, postId ) {
+	if ( ! postId ) {
+		return null;
+	}
+
+	// `context: 'edit'` is required because WP REST only exposes the
+	// `supports` field on post types in the edit context. Without it the
+	// loop below never matches any type and the override silently fails.
+	const postTypes = selectFunc( 'core' ).getPostTypes?.( {
+		per_page: -1,
+		context: 'edit',
+	} );
+	if ( ! Array.isArray( postTypes ) ) {
+		return null;
+	}
+
+	for ( const type of postTypes ) {
+		if ( ! type?.supports?.[ 'gatherpress-venue-information' ] ) {
+			continue;
+		}
+		// Query by `include` filter rather than `getEntityRecord( id )` so a
+		// miss returns an empty array (HTTP 200) instead of a 404. The 404s
+		// are technically accurate but they show up in browser devtools and
+		// look like a real bug to anyone reading the console. Edit context
+		// matches the default `getEntityRecord` uses inside the editor and
+		// keeps the response shape consistent with the event-side helper.
+		const records = selectFunc( 'core' ).getEntityRecords(
+			'postType',
+			type.slug,
+			{ include: [ postId ], context: 'edit', per_page: 1 }
+		);
+		if ( Array.isArray( records ) && 0 < records.length ) {
+			const post = records[ 0 ];
+			if ( post && 'publish' === post.status ) {
+				return post;
+			}
+		}
+	}
+
+	return null;
+}

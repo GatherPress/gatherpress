@@ -133,6 +133,7 @@ class Test_Event_Query extends Base {
 
 		// Set up parameter map for get_param calls.
 		$param_map = array(
+			array( 'include', null ),
 			array( 'gatherpress_event_query', 'past' ),
 			array( 'include_unfinished', 0 ), // Integer 0 - the critical test case.
 			array( 'exclude_current', null ),
@@ -140,7 +141,7 @@ class Test_Event_Query extends Base {
 			array( 'venue_filter', null ),
 		);
 
-		$request->expects( $this->exactly( 5 ) )
+		$request->expects( $this->exactly( 6 ) )
 			->method( 'get_param' )
 			->willReturnMap( $param_map );
 
@@ -502,6 +503,7 @@ class Test_Event_Query extends Base {
 		$request = $this->createMock( \WP_REST_Request::class );
 
 		$param_map = array(
+			array( 'include', null ),
 			array( 'gatherpress_event_query', 'upcoming' ),
 			array( 'exclude_current', 456 ),
 			array( 'include_unfinished', null ),
@@ -509,7 +511,7 @@ class Test_Event_Query extends Base {
 			array( 'venue_filter', null ),
 		);
 
-		$request->expects( $this->exactly( 5 ) )
+		$request->expects( $this->exactly( 6 ) )
 			->method( 'get_param' )
 			->willReturnMap( $param_map );
 
@@ -547,6 +549,7 @@ class Test_Event_Query extends Base {
 		$request = $this->createMock( \WP_REST_Request::class );
 
 		$param_map = array(
+			array( 'include', null ),
 			array( 'gatherpress_event_query', 'past' ),
 			array( 'exclude_current', null ),
 			array( 'include_unfinished', 1 ),
@@ -554,7 +557,7 @@ class Test_Event_Query extends Base {
 			array( 'venue_filter', null ),
 		);
 
-		$request->expects( $this->exactly( 5 ) )
+		$request->expects( $this->exactly( 6 ) )
 			->method( 'get_param' )
 			->willReturnMap( $param_map );
 
@@ -596,6 +599,7 @@ class Test_Event_Query extends Base {
 		$request = $this->createMock( \WP_REST_Request::class );
 
 		$param_map = array(
+			array( 'include', null ),
 			array( 'gatherpress_event_query', null ),
 			array( 'exclude_current', null ),
 			array( 'include_unfinished', null ),
@@ -603,7 +607,7 @@ class Test_Event_Query extends Base {
 			array( 'venue_filter', null ),
 		);
 
-		$request->expects( $this->exactly( 5 ) )
+		$request->expects( $this->exactly( 6 ) )
 			->method( 'get_param' )
 			->willReturnMap( $param_map );
 
@@ -779,6 +783,7 @@ class Test_Event_Query extends Base {
 		$request = $this->createMock( \WP_REST_Request::class );
 
 		$param_map = array(
+			array( 'include', null ),
 			array( 'gatherpress_event_query', '' ),
 			array( 'exclude_current', null ),
 			array( 'include_unfinished', null ),
@@ -786,7 +791,7 @@ class Test_Event_Query extends Base {
 			array( 'venue_filter', null ),
 		);
 
-		$request->expects( $this->exactly( 5 ) )
+		$request->expects( $this->exactly( 6 ) )
 			->method( 'get_param' )
 			->willReturnMap( $param_map );
 
@@ -845,6 +850,7 @@ class Test_Event_Query extends Base {
 		$request = $this->createMock( \WP_REST_Request::class );
 
 		$param_map = array(
+			array( 'include', null ),
 			array( 'gatherpress_event_query', 'upcoming' ),
 			array( 'exclude_current', null ),
 			array( 'include_unfinished', null ),
@@ -852,7 +858,7 @@ class Test_Event_Query extends Base {
 			array( 'venue_filter', 1 ),
 		);
 
-		$request->expects( $this->exactly( 5 ) )
+		$request->expects( $this->exactly( 6 ) )
 			->method( 'get_param' )
 			->willReturnMap( $param_map );
 
@@ -872,6 +878,48 @@ class Test_Event_Query extends Base {
 		$result = $instance->rest_query( $initial_args, $request );
 
 		$this->assertSame( 1, $result['venue_filter'], 'Should pass venue_filter through to custom args.' );
+	}
+
+	/**
+	 * Test rest_query short-circuits when `include` is in the request.
+	 *
+	 * ID-based REST lookups should bypass the upcoming/past date filter so
+	 * they can resolve past events too — without this, blocks that look up
+	 * an override target via the collection endpoint silently get an empty
+	 * array for past events and stay dimmed.
+	 *
+	 * @since 1.0.0
+	 * @covers ::rest_query
+	 *
+	 * @return void
+	 */
+	public function test_rest_query_bypasses_filter_when_include_param_is_set(): void {
+		$instance = Event_Query::get_instance();
+
+		$request = $this->createMock( \WP_REST_Request::class );
+
+		// Only `include` should be read — none of the date/orderby params
+		// because the bypass returns before reaching them.
+		$request->expects( $this->once() )
+			->method( 'get_param' )
+			->with( 'include' )
+			->willReturn( array( 42 ) );
+
+		$request->expects( $this->never() )
+			->method( 'get_params' );
+
+		$initial_args = array(
+			'post_type'      => Event::POST_TYPE,
+			'posts_per_page' => 1,
+		);
+
+		$result = $instance->rest_query( $initial_args, $request );
+
+		$this->assertSame(
+			$initial_args,
+			$result,
+			'Args should be returned unchanged when `include` is present.'
+		);
 	}
 
 	/**

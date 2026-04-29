@@ -15,13 +15,13 @@ import { useSelect } from '@wordpress/data';
  * Internal dependencies
  */
 import { getCurrentContextualPostId, hasValidBlockContext, isInFSETemplate } from '../../helpers/editor';
-import { usePostTypeSupports, DISABLED_FIELD_OPACITY } from '../../helpers/event';
-import { GetVenuePostFromTermId, GetVenuePostFromEventId, getVenuePostType, getVenueTaxonomy, useVenueTaxonomyIds } from '../../helpers/venue';
+import { usePostTypeSupports, findEventPostById, DISABLED_FIELD_OPACITY } from '../../helpers/event';
+import { GetVenuePostFromTermId, GetVenuePostFromEventId, findVenuePostById, getVenuePostType, getVenueTaxonomy, useVenueTaxonomyIds } from '../../helpers/venue';
 import VenueNavigator from '../../components/VenueNavigator';
 import { TEMPLATE_WITH_TITLE, TEMPLATE_WITHOUT_TITLE } from './template';
 
 const Edit = ( props ) => {
-	const { context } = props;
+	const { attributes, context } = props;
 
 	const isDescendentOfQueryLoop = Number.isFinite( context?.queryId );
 	// Reactive supports checks so the block re-renders once the post-type
@@ -35,17 +35,76 @@ const Edit = ( props ) => {
 		( select ) => select( 'core/editor' )?.getCurrentPostType(),
 		[]
 	);
-	const effectivePostType = context?.postType || currentEditorPostType;
-	const venuePostType = getVenuePostType( effectivePostType );
 
-	const eventId = getCurrentContextualPostId( context?.postId );
+	// Resolve the postIdOverride target across event-supporting and venue-
+	// supporting post types so the block can light up on a non-event /
+	// non-venue host (e.g. a regular page). Event lookup wins on tie — the
+	// rest of the block's flow is event-centric, so an ID that resolves as
+	// an event is treated as one even if a venue with the same ID also
+	// exists. Returns null when the override is unset or resolves to
+	// neither bucket.
+	const overrideId = attributes?.postId || null;
+	const overrideResolution = useSelect(
+		( select ) => {
+			if ( ! overrideId ) {
+				return null;
+			}
+			const eventPost = findEventPostById( select, overrideId );
+			if ( eventPost ) {
+				return { kind: 'event', postType: eventPost.type };
+			}
+			const venuePost = findVenuePostById( select, overrideId );
+			if ( venuePost ) {
+				return { kind: 'venue', postType: venuePost.type };
+			}
+			return null;
+		},
+		[ overrideId ]
+	);
+
+	// When the override resolves to an event, use the override as the event
+	// being walked (so the venue taxonomy lookup uses the override's event
+	// post type, not the host's). When the override resolves to a venue,
+	// the post type comes from that venue directly.
+	const effectivePostType =
+		'event' === overrideResolution?.kind
+			? overrideResolution.postType
+			: context?.postType || currentEditorPostType;
+	const venuePostType =
+		'venue' === overrideResolution?.kind
+			? overrideResolution.postType
+			: getVenuePostType( effectivePostType );
+
+	// `eventId` is the post whose venue taxonomy we walk to find the venue.
+	// Only set it when we genuinely have an event in hand — otherwise the
+	// REST query below fires against the host page and 403s, since the
+	// `_gatherpress_venue` taxonomy isn't associated with non-event posts.
+	const isOverrideEvent = 'event' === overrideResolution?.kind;
+	const isOverrideVenue = 'venue' === overrideResolution?.kind;
+	const isOverrideActive = !! overrideId;
+
+	let eventId = null;
+	if ( isOverrideEvent ) {
+		eventId = overrideId;
+	} else if ( ! isOverrideActive && isEventContext ) {
+		eventId = getCurrentContextualPostId( context?.postId );
+	}
 	const venueTaxonomy = getVenueTaxonomy( venuePostType );
 
-	// Read venue taxonomy IDs without triggering context=edit REST requests.
+	// Skip the taxonomy walk when there's no event to walk against (no event
+	// host + no event override), when the host post IS the venue, when the
+	// override resolved to a venue directly (no walk needed), or when in a
+	// Query Loop (handled by GetVenuePostFromEventId below).
+	const skipVenueTaxonomyLookup =
+		null === eventId ||
+		isVenueContext ||
+		isDescendentOfQueryLoop ||
+		isOverrideVenue;
+
 	const venueTaxonomyIds = useVenueTaxonomyIds(
 		venueTaxonomy,
 		eventId,
-		isVenueContext || isDescendentOfQueryLoop
+		skipVenueTaxonomyLookup
 	);
 
 	const isEditableEventContext =
@@ -90,10 +149,15 @@ const Edit = ( props ) => {
 		? venuePostFromEvent
 		: venuePostFromTerm;
 
-	// When on a venue post, use the current post ID directly.
-	// Otherwise, resolve from the event's venue taxonomy.
+	// Resolution priority for the rendered venue:
+	// 1. postIdOverride that points at a venue post → use it directly.
+	// 2. Host post is a venue → use the current post.
+	// 3. Otherwise → walk the event's venue taxonomy (event may itself be
+	//    the override, see `eventId` resolution above).
 	let venuePostId = 0;
-	if ( isVenueContext ) {
+	if ( isOverrideVenue ) {
+		venuePostId = overrideId;
+	} else if ( isVenueContext && ! isOverrideActive ) {
 		venuePostId = getCurrentContextualPostId( context?.postId );
 	} else if (
 		venuePostArray?.[ 0 ]?.id &&

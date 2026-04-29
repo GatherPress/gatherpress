@@ -89,10 +89,20 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 	// Check if block has a valid event connection. An explicit override
 	// (`attributes.postId`) is a third valid path alongside Query Loop and
 	// event-supporting host: it targets a specific event post regardless of
-	// the host's post type.
-	const isValidEvent =
-		( hasExplicitOverride || isDescendentOfQueryLoop || isEventContext ) &&
-		hasValidEventId( postId, context?.postType );
+	// the host's post type. Wrap in `useSelect` so the gate re-evaluates when
+	// the override target's entity record loads.
+	const isValidEvent = useSelect(
+		( select ) =>
+			( hasExplicitOverride || isDescendentOfQueryLoop || isEventContext ) &&
+			hasValidEventId( select, postId, context?.postType ),
+		[
+			postId,
+			context?.postType,
+			hasExplicitOverride,
+			isDescendentOfQueryLoop,
+			isEventContext,
+		]
+	);
 
 	const { enableRsvp } = useSelect(
 		( select ) => getEventMeta( select, postId, attributes ),

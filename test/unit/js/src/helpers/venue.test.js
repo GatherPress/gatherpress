@@ -43,6 +43,7 @@ import {
 	useVenueOptions,
 	usePopularVenues,
 	useVenueTaxonomyIds,
+	findVenuePostById,
 } from '@src/helpers/venue';
 
 /**
@@ -1041,3 +1042,158 @@ describe( 'useVenueTaxonomyIds', () => {
 		expect( capturedQuery ).toMatchObject( { context: 'view', post: 42 } );
 	} );
 } );
+
+/**
+ * Coverage for findVenuePostById.
+ */
+describe( 'findVenuePostById', () => {
+	it( 'returns null when postId is falsy', () => {
+		const selectFunc = jest.fn();
+		expect( findVenuePostById( selectFunc, null ) ).toBeNull();
+		expect( findVenuePostById( selectFunc, 0 ) ).toBeNull();
+		expect( selectFunc ).not.toHaveBeenCalled();
+	} );
+
+	it( 'returns null when getPostTypes is not loaded yet', () => {
+		const selectFunc = ( store ) => {
+			if ( 'core' === store ) {
+				return { getPostTypes: () => undefined };
+			}
+			return {};
+		};
+
+		expect( findVenuePostById( selectFunc, 123 ) ).toBeNull();
+	} );
+
+	it( 'returns null when getPostTypes selector is missing entirely', () => {
+		const selectFunc = ( store ) => {
+			if ( 'core' === store ) {
+				return {};
+			}
+			return {};
+		};
+
+		expect( findVenuePostById( selectFunc, 123 ) ).toBeNull();
+	} );
+
+	it( 'returns the published venue from the first venue-supporting type that owns the ID', () => {
+		const postId = 300;
+		const selectFunc = ( store ) => {
+			if ( 'core' === store ) {
+				return {
+					getPostTypes: () => [
+						{ slug: 'page', supports: {} },
+						{
+							slug: 'gatherpress_venue',
+							supports: { 'gatherpress-venue-information': true },
+						},
+					],
+					getEntityRecords: ( kind, postTypeName, query ) =>
+						'gatherpress_venue' === postTypeName &&
+						query?.include?.[ 0 ] === postId
+							? [ { id: postId, status: 'publish' } ]
+							: [],
+				};
+			}
+			return {};
+		};
+
+		expect( findVenuePostById( selectFunc, postId ) ).toEqual( {
+			id: postId,
+			status: 'publish',
+		} );
+	} );
+
+	it( 'skips non-venue-supporting post types when scanning', () => {
+		const postId = 301;
+		const calls = [];
+		const selectFunc = ( store ) => {
+			if ( 'core' === store ) {
+				return {
+					getPostTypes: () => [
+						{ slug: 'page', supports: {} },
+						{
+							slug: 'gatherpress_event',
+							supports: { 'gatherpress-event-date': true },
+						},
+						{
+							slug: 'gatherpress_venue',
+							supports: { 'gatherpress-venue-information': true },
+						},
+					],
+					getEntityRecords: ( kind, postTypeName ) => {
+						calls.push( postTypeName );
+						return 'gatherpress_venue' === postTypeName
+							? [ { id: postId, status: 'publish' } ]
+							: [];
+					},
+				};
+			}
+			return {};
+		};
+
+		findVenuePostById( selectFunc, postId );
+		expect( calls ).toEqual( [ 'gatherpress_venue' ] );
+	} );
+
+	it( 'returns null when no venue-supporting type owns the ID', () => {
+		const selectFunc = ( store ) => {
+			if ( 'core' === store ) {
+				return {
+					getPostTypes: () => [
+						{
+							slug: 'gatherpress_venue',
+							supports: { 'gatherpress-venue-information': true },
+						},
+					],
+					getEntityRecords: () => [],
+				};
+			}
+			return {};
+		};
+
+		expect( findVenuePostById( selectFunc, 999 ) ).toBeNull();
+	} );
+
+	it( 'returns null when the found post is not published', () => {
+		const postId = 302;
+		const selectFunc = ( store ) => {
+			if ( 'core' === store ) {
+				return {
+					getPostTypes: () => [
+						{
+							slug: 'gatherpress_venue',
+							supports: { 'gatherpress-venue-information': true },
+						},
+					],
+					getEntityRecords: () => [
+						{ id: postId, status: 'draft' },
+					],
+				};
+			}
+			return {};
+		};
+
+		expect( findVenuePostById( selectFunc, postId ) ).toBeNull();
+	} );
+
+	it( 'returns null when getEntityRecords is still loading (returns non-array)', () => {
+		const selectFunc = ( store ) => {
+			if ( 'core' === store ) {
+				return {
+					getPostTypes: () => [
+						{
+							slug: 'gatherpress_venue',
+							supports: { 'gatherpress-venue-information': true },
+						},
+					],
+					getEntityRecords: () => null,
+				};
+			}
+			return {};
+		};
+
+		expect( findVenuePostById( selectFunc, 123 ) ).toBeNull();
+	} );
+} );
+

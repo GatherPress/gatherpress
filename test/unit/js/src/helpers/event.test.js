@@ -691,14 +691,14 @@ describe( 'hasValidEventId', () => {
 						},
 						{ slug: 'page', supports: {} },
 					],
-					getEntityRecord: ( kind, postTypeName, id ) => {
+					getEntityRecords: ( kind, postTypeName, query ) => {
 						if (
 							'gatherpress_event' === postTypeName &&
-							postId === id
+							query?.include?.[ 0 ] === postId
 						) {
-							return { id: postId, status: 'publish' };
+							return [ { id: postId, status: 'publish' } ];
 						}
-						return null;
+						return [];
 					},
 				};
 			}
@@ -728,13 +728,58 @@ describe( 'hasValidEventId', () => {
 							supports: { 'gatherpress-event-date': true },
 						},
 					],
-					getEntityRecord: () => ( { id: postId, status: 'draft' } ),
+					getEntityRecords: () => [
+						{ id: postId, status: 'draft' },
+					],
 				};
 			}
 			return {};
 		} );
 
 		expect( hasValidEventId( postId, 'page' ) ).toBe( false );
+	} );
+
+	it( 'accepts a useSelect-style select callback as the first argument and uses it for reactive reads', () => {
+		const postId = 460;
+		// Custom select function that doesn't touch the global @wordpress/data
+		// mock — proves the back-compat shim picks up `selectFunc` from the
+		// first argument when it's callable.
+		const selectFunc = ( store ) => {
+			if ( 'core/editor' === store ) {
+				return {
+					getCurrentPostId: () => 999, // Not the override.
+					getCurrentPostType: () => 'gatherpress_event',
+				};
+			}
+			if ( 'core' === store ) {
+				return {
+					getPostType: mockGetPostType,
+					getEntityRecord: ( kind, postTypeName, id ) =>
+						'gatherpress_event' === postTypeName && postId === id
+							? { id: postId, status: 'publish' }
+							: null,
+				};
+			}
+			return {};
+		};
+
+		expect( hasValidEventId( selectFunc, postId, 'gatherpress_event' ) ).toBe(
+			true
+		);
+	} );
+
+	it( 'returns event-supporting status of the editor host when called with a select callback and no postId', () => {
+		const selectFunc = ( store ) => {
+			if ( 'core/editor' === store ) {
+				return { getCurrentPostType: () => 'gatherpress_event' };
+			}
+			if ( 'core' === store ) {
+				return { getPostType: mockGetPostType };
+			}
+			return {};
+		};
+
+		expect( hasValidEventId( selectFunc ) ).toBe( true );
 	} );
 } );
 
@@ -783,10 +828,11 @@ describe( 'findEventPostById', () => {
 							supports: { 'gatherpress-event-date': true },
 						},
 					],
-					getEntityRecord: ( kind, postTypeName, id ) =>
-						'gatherpress_event' === postTypeName && postId === id
-							? { id: postId, status: 'publish' }
-							: null,
+					getEntityRecords: ( kind, postTypeName, query ) =>
+						'gatherpress_event' === postTypeName &&
+						query?.include?.[ 0 ] === postId
+							? [ { id: postId, status: 'publish' } ]
+							: [],
 				};
 			}
 			return {};
@@ -810,11 +856,11 @@ describe( 'findEventPostById', () => {
 							supports: { 'gatherpress-event-date': true },
 						},
 					],
-					getEntityRecord: ( kind, postTypeName, id ) => {
+					getEntityRecords: ( kind, postTypeName ) => {
 						calls.push( postTypeName );
 						return 'gatherpress_event' === postTypeName
-							? { id, status: 'publish' }
-							: null;
+							? [ { id: postId, status: 'publish' } ]
+							: [];
 					},
 				};
 			}
@@ -835,7 +881,7 @@ describe( 'findEventPostById', () => {
 							supports: { 'gatherpress-event-date': true },
 						},
 					],
-					getEntityRecord: () => null,
+					getEntityRecords: () => [],
 				};
 			}
 			return {};
@@ -855,13 +901,32 @@ describe( 'findEventPostById', () => {
 							supports: { 'gatherpress-event-date': true },
 						},
 					],
-					getEntityRecord: () => ( { id: postId, status: 'draft' } ),
+					getEntityRecords: () => [ { id: postId, status: 'draft' } ],
 				};
 			}
 			return {};
 		};
 
 		expect( findEventPostById( selectFunc, postId ) ).toBeNull();
+	} );
+
+	it( 'returns null when getEntityRecords is still loading (returns non-array)', () => {
+		const selectFunc = ( store ) => {
+			if ( 'core' === store ) {
+				return {
+					getPostTypes: () => [
+						{
+							slug: 'gatherpress_event',
+							supports: { 'gatherpress-event-date': true },
+						},
+					],
+					getEntityRecords: () => null,
+				};
+			}
+			return {};
+		};
+
+		expect( findEventPostById( selectFunc, 123 ) ).toBeNull();
 	} );
 } );
 
