@@ -44,8 +44,12 @@ const Edit = ( { attributes, clientId, context } ) => {
 		return rawValue === undefined || null === rawValue ? true : 0 !== rawValue;
 	}, [] );
 
-	// Check if block has a valid event connection.
-	const isValidEvent = hasValidEventId( postId );
+	// Check if block has a valid event connection. Wrap in `useSelect` so the
+	// gate re-evaluates when the override target's entity record loads.
+	const isValidEvent = useSelect(
+		( select ) => hasValidEventId( select, postId ),
+		[ postId ]
+	);
 
 	// Get all inner blocks.
 	const innerBlocks = useSelect( ( select ) => {
