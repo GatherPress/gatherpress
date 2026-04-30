@@ -23,8 +23,8 @@ use GatherPress\Core\Traits\Singleton;
  * Class Coexistence_Guard.
  *
  * Centralizes the "two folders of the same plugin, only one should run" guard
- * for GatherPress and any companion plugin that registers itself via the
- * `gatherpress_register_coexistence_guards` action.
+ * for GatherPress and any companion plugin that announces itself via the
+ * `gatherpress_register_coexistence_guard` action.
  *
  * @since 1.0.0
  */
@@ -41,6 +41,7 @@ class Coexistence_Guard {
 	 */
 	public function __construct() {
 		$this->setup_hooks();
+		$this->register( 'gatherpress', 'GatherPress', GATHERPRESS_CORE_FILE );
 	}
 
 	/**
@@ -51,34 +52,7 @@ class Coexistence_Guard {
 	 * @return void
 	 */
 	protected function setup_hooks(): void {
-		add_action( 'plugins_loaded', array( $this, 'fire_registration_action' ) );
-	}
-
-	/**
-	 * Self-registers GatherPress and fires the public registration action so
-	 * companion plugins can wire up their own guards.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @return void
-	 */
-	public function fire_registration_action(): void {
-		$this->register( 'gatherpress', 'GatherPress', GATHERPRESS_CORE_FILE );
-
-		/**
-		 * Fires to allow GatherPress companion plugins to register coexistence
-		 * activation guards.
-		 *
-		 * Companion plugins should hook into this action and call
-		 * `gatherpress_register_coexistence_guard()` from inside the callback,
-		 * passing their plugin slug, display name, and `__FILE__`. The
-		 * `function_exists()` guard recommended in the helper's docblock makes
-		 * the registration a graceful no-op if GatherPress is removed in the
-		 * future.
-		 *
-		 * @since 1.0.0
-		 */
-		do_action( 'gatherpress_register_coexistence_guards' );
+		add_action( 'gatherpress_register_coexistence_guard', array( $this, 'register' ), 10, 3 );
 	}
 
 	/**

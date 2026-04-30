@@ -27,7 +27,7 @@ class Test_Coexistence_Guard extends Base {
 		wp_cache_delete( 'plugins', 'plugins' );
 		delete_option( 'active_plugins' );
 
-		// Clean up any activation hooks registered during the test for our
+		// Clean up activation hooks registered during the test for our
 		// synthetic test slugs so they don't leak into other tests.
 		global $wp_filter;
 		foreach ( array_keys( $wp_filter ) as $tag ) {
@@ -35,8 +35,6 @@ class Test_Coexistence_Guard extends Base {
 				unset( $wp_filter[ $tag ] );
 			}
 		}
-
-		remove_all_actions( 'gatherpress_register_coexistence_guards' );
 
 		parent::tearDown();
 	}
@@ -53,7 +51,8 @@ class Test_Coexistence_Guard extends Base {
 	}
 
 	/**
-	 * Coverage for __construct and setup_hooks.
+	 * Coverage for __construct and setup_hooks. Self-registration of the
+	 * GatherPress slug also runs through the constructor.
 	 *
 	 * @covers ::__construct
 	 * @covers ::setup_hooks
@@ -65,43 +64,17 @@ class Test_Coexistence_Guard extends Base {
 		$hooks    = array(
 			array(
 				'type'     => 'action',
-				'name'     => 'plugins_loaded',
+				'name'     => 'gatherpress_register_coexistence_guard',
 				'priority' => 10,
-				'callback' => array( $instance, 'fire_registration_action' ),
+				'callback' => array( $instance, 'register' ),
 			),
 		);
 
 		$this->assert_hooks( $hooks, $instance );
-	}
 
-	/**
-	 * Self-registers GatherPress and fires the public registration action.
-	 *
-	 * @covers ::fire_registration_action
-	 *
-	 * @return void
-	 */
-	public function test_fire_registration_action_self_registers_and_fires_action(): void {
-		$this->seed_plugins_cache(
-			array(
-				'gatherpress/gatherpress.php' => array( 'Name' => 'GatherPress' ),
-			)
-		);
-
-		$action_fired = false;
-		add_action(
-			'gatherpress_register_coexistence_guards',
-			static function () use ( &$action_fired ): void {
-				$action_fired = true;
-			}
-		);
-
-		Coexistence_Guard::get_instance()->fire_registration_action();
-
-		$this->assertTrue( $action_fired, 'gatherpress_register_coexistence_guards action should fire.' );
 		$this->assertNotFalse(
-			has_action( 'activate_gatherpress/gatherpress.php' ),
-			'GatherPress should self-register its activation hook.'
+			has_action( 'activate_' . plugin_basename( GATHERPRESS_CORE_FILE ) ),
+			'GatherPress should self-register its activation hook in the constructor.'
 		);
 	}
 
@@ -323,6 +296,11 @@ class Test_Coexistence_Guard extends Base {
 
 		$this->expectException( \WPDieException::class );
 
+		// WordPress's `activate_{plugin_file}` hook name shape carries the plugin
+		// basename verbatim, including the slash and dashes — that's the action
+		// name `register_activation_hook()` derives. Suppress the PHPCS naming
+		// sniffs since this is firing WP core's own hook, not a project hook.
+		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound,WordPress.NamingConventions.ValidHookName.UseUnderscores
 		do_action( 'activate_test-coexistence-callback-build/test-coexistence-callback.php' );
 	}
 
