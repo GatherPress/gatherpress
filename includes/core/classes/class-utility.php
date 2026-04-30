@@ -149,32 +149,64 @@ class Utility {
 	 * @return array An array of time zones with labels as keys and time zone choices as values.
 	 */
 	public static function timezone_choices(): array {
-		$timezones_raw   = explode( PHP_EOL, wp_timezone_choice( 'UTC', get_user_locale() ) );
+		// Parse `wp_timezone_choice()` output through WordPress's HTML tag
+		// processor — no regex, no string-stripping. A previous greedy-regex
+		// parser silently broke when WordPress added a `dir="auto"`
+		// attribute to optgroup/option tags: the captured value carried
+		// trailing markup and never matched the saved timezone, so the
+		// editor's timezone select always fell back to the first option.
+		// Walking tokens via `WP_HTML_Tag_Processor` insulates this code
+		// from any future markup changes WordPress makes to those tags.
+		$tags = new \WP_HTML_Tag_Processor(
+			wp_timezone_choice( 'UTC', get_user_locale() )
+		);
+
 		$timezones_clean = array();
 		$group           = null;
+		$pending_value   = null;
 
-		foreach ( $timezones_raw as $timezone ) {
-			// Anchor on the specific `label=` and `value=` attribute names
-			// (`\b` word boundary) and capture only their attribute contents
-			// via `[^"]+`. The previous greedy `.+` would swallow any
-			// additional attributes WordPress emits on the same tag — recent
-			// WP versions added `dir="auto"` on optgroup/option — and the
-			// resulting option values never matched the saved timezone, so
-			// the SelectControl always fell back to the first option.
-			if (
-				str_contains( $timezone, '<optgroup' ) &&
-				preg_match( '/\blabel="([^"]+)"/', $timezone, $matches )
-			) {
-				$group                     = $matches[1];
-				$timezones_clean[ $group ] = array();
+		while ( $tags->next_token() ) {
+			$token_type = $tags->get_token_type();
+
+			if ( '#tag' === $token_type ) {
+				if ( $tags->is_tag_closer() ) {
+					continue;
+				}
+
+				$tag_name = $tags->get_tag();
+
+				if ( 'OPTGROUP' === $tag_name ) {
+					$label = $tags->get_attribute( 'label' );
+
+					if ( is_string( $label ) && '' !== $label ) {
+						$group                     = $label;
+						$timezones_clean[ $group ] = array();
+					}
+
+					$pending_value = null;
+					continue;
+				}
+
+				if ( 'OPTION' === $tag_name && null !== $group ) {
+					$value         = $tags->get_attribute( 'value' );
+					$pending_value = ( is_string( $value ) && '' !== $value ) ? $value : null;
+				}
+
 				continue;
 			}
 
 			if (
-				! empty( $group ) &&
-				preg_match( '/\bvalue="([^"]+)"[^>]*>([^<]+)<\/option>/', $timezone, $matches )
+				'#text' === $token_type &&
+				null !== $group &&
+				null !== $pending_value
 			) {
-				$timezones_clean[ $group ][ $matches[1] ] = $matches[2];
+				$text = trim( $tags->get_modifiable_text() );
+
+				if ( '' !== $text ) {
+					$timezones_clean[ $group ][ $pending_value ] = $text;
+				}
+
+				$pending_value = null;
 			}
 		}
 
