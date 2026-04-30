@@ -15,6 +15,8 @@ namespace GatherPress\Core;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
+use WP_HTML_Tag_Processor;
+
 /**
  * Class Utility.
  *
@@ -157,7 +159,7 @@ class Utility {
 		// editor's timezone select always fell back to the first option.
 		// Walking tokens via `WP_HTML_Tag_Processor` insulates this code
 		// from any future markup changes WordPress makes to those tags.
-		$tags = new \WP_HTML_Tag_Processor(
+		$tags = new WP_HTML_Tag_Processor(
 			wp_timezone_choice( 'UTC', get_user_locale() )
 		);
 
