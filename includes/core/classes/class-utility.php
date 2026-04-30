@@ -154,17 +154,26 @@ class Utility {
 		$group           = null;
 
 		foreach ( $timezones_raw as $timezone ) {
-			preg_match( '/<optgroup label="(.+)">/', $timezone, $matches );
-
-			if ( 2 === count( $matches ) ) {
+			// Anchor on the specific `label=` and `value=` attribute names
+			// (`\b` word boundary) and capture only their attribute contents
+			// via `[^"]+`. The previous greedy `.+` would swallow any
+			// additional attributes WordPress emits on the same tag — recent
+			// WP versions added `dir="auto"` on optgroup/option — and the
+			// resulting option values never matched the saved timezone, so
+			// the SelectControl always fell back to the first option.
+			if (
+				false !== strpos( $timezone, '<optgroup' ) &&
+				preg_match( '/\blabel="([^"]+)"/', $timezone, $matches )
+			) {
 				$group                     = $matches[1];
 				$timezones_clean[ $group ] = array();
 				continue;
 			}
 
-			preg_match( '/<option.*value="(.+)">(.+)<\/option>/', $timezone, $matches );
-
-			if ( ! empty( $group ) && 3 === count( $matches ) ) {
+			if (
+				! empty( $group ) &&
+				preg_match( '/\bvalue="([^"]+)"[^>]*>([^<]+)<\/option>/', $timezone, $matches )
+			) {
 				$timezones_clean[ $group ][ $matches[1] ] = $matches[2];
 			}
 		}
