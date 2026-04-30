@@ -12,6 +12,7 @@ import EmailNotificationManager from './components/EmailNotificationManager';
 import './stores';
 import './supports/post-id-override';
 import './supports/post-date-override';
+import './supports/post-date-convert';
 import './supports/block-guard';
 import './formats/tooltip';
 
