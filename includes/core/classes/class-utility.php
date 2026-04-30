@@ -162,7 +162,7 @@ class Utility {
 			// resulting option values never matched the saved timezone, so
 			// the SelectControl always fell back to the first option.
 			if (
-				false !== strpos( $timezone, '<optgroup' ) &&
+				str_contains( $timezone, '<optgroup' ) &&
 				preg_match( '/\blabel="([^"]+)"/', $timezone, $matches )
 			) {
 				$group                     = $matches[1];
