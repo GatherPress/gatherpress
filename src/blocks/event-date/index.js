@@ -8,6 +8,7 @@ import { registerBlockType } from '@wordpress/blocks';
  */
 import edit from './edit';
 import metadata from './block.json';
+import transforms from './transforms';
 import './style.scss';
 
 /**
@@ -26,4 +27,5 @@ import './style.scss';
 registerBlockType( metadata, {
 	edit,
 	save: () => null,
+	transforms,
 } );
