@@ -105,7 +105,7 @@ if ( ! function_exists( 'gatherpress_refuse_activation_on_duplicates' ) ) {
 			return;
 		}
 
-		deactivate_plugins( plugin_basename( dirname( __FILE__, 3 ) . '/gatherpress.php' ) );
+		deactivate_plugins( plugin_basename( dirname( __DIR__, 2 ) . '/gatherpress.php' ) );
 
 		// `activate_plugin()` pre-sends a `Location:` redirect header to a failure
 		// URL before running the activation hook, so any output produced by
@@ -148,7 +148,7 @@ if ( ! function_exists( 'gatherpress_refuse_activation_on_duplicates' ) ) {
 }
 
 register_activation_hook(
-	dirname( __FILE__, 3 ) . '/gatherpress.php',
+	dirname( __DIR__, 2 ) . '/gatherpress.php',
 	'gatherpress_refuse_activation_on_duplicates'
 );
 
