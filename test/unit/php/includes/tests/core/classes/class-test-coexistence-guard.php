@@ -177,12 +177,12 @@ class Test_Coexistence_Guard extends Base {
 	public function test_find_duplicates_returns_only_matching_basenames(): void {
 		$this->seed_plugins_cache(
 			array(
-				'test-coexistence-find/test-coexistence-find.php'                  => array(),
-				'test-coexistence-find-build/test-coexistence-find.php'            => array(),
-				'test-coexistence-find/different-file.php'                         => array(), // Wrong file name.
-				'unrelated/test-coexistence-find.php'                              => array(), // Wrong folder name.
-				'akismet/akismet.php'                                              => array(), // Unrelated.
-				'test-coexistence-find.php'                                        => array(), // Single-segment key.
+				'test-coexistence-find/test-coexistence-find.php' => array(),
+				'test-coexistence-find-build/test-coexistence-find.php' => array(),
+				'test-coexistence-find/different-file.php' => array(), // Wrong file name.
+				'unrelated/test-coexistence-find.php'      => array(), // Wrong folder name.
+				'akismet/akismet.php'                      => array(), // Unrelated.
+				'test-coexistence-find.php'                => array(), // Single-segment key.
 			)
 		);
 
