@@ -105,12 +105,23 @@ if ( ! function_exists( 'gatherpress_refuse_activation_on_duplicates' ) ) {
 			return;
 		}
 
-		deactivate_plugins( plugin_basename( dirname( __DIR__, 2 ) . '/gatherpress.php' ) );
+		// Only refuse when another copy of GatherPress is already active. With
+		// two folders on disk and neither active, the user is allowed to activate
+		// one — the guard kicks in only on the second activation attempt while a
+		// sibling is already running.
+		$active_duplicates = array_values( array_filter( $duplicates, 'is_plugin_active' ) );
+
+		if ( empty( $active_duplicates ) ) {
+			return;
+		}
 
 		// `activate_plugin()` pre-sends a `Location:` redirect header to a failure
 		// URL before running the activation hook, so any output produced by
 		// `wp_die()` here would be discarded by the browser as it follows the
 		// redirect. Remove the pre-set redirect so the user actually sees this.
+		// `update_option( 'active_plugins', ... )` runs *after* this hook in
+		// `activate_plugin()`, so `wp_die()` alone is enough to prevent the plugin
+		// from being persisted as active — no manual deactivation needed.
 		if ( ! headers_sent() ) {
 			header_remove( 'Location' );
 		}
@@ -125,16 +136,16 @@ if ( ! function_exists( 'gatherpress_refuse_activation_on_duplicates' ) ) {
 		wp_die(
 			sprintf(
 				'<h1>%s</h1><p>%s</p><ul><li><code>%s</code></li></ul><p>%s</p>',
-				esc_html__( 'Multiple GatherPress folders detected', 'gatherpress' ),
+				esc_html__( 'Another copy of GatherPress is already active', 'gatherpress' ),
 				esc_html__(
 					// phpcs:ignore Generic.Files.LineLength.TooLong
-					'WordPress installed a new copy of GatherPress into a separate folder instead of replacing the existing one. Activating any of these copies while the others remain on disk causes confusing behavior on the plugins screen.',
+					'Only one version of GatherPress can run at a time. WordPress installed a new copy in a separate folder instead of replacing the existing one — both folders are now on disk:',
 					'gatherpress'
 				),
 				implode( '</code></li><li><code>', array_map( 'esc_html', $folders ) ),
 				esc_html__(
 					// phpcs:ignore Generic.Files.LineLength.TooLong
-					'Remove all but one of these folders via SFTP or your file manager, then return to the plugins screen and try activating again.',
+					'Deactivate the currently-active copy or remove the duplicate folder via SFTP, then return to the plugins screen and try again.',
 					'gatherpress'
 				)
 			),
