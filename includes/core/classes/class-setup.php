@@ -59,6 +59,7 @@ class Setup {
 		Assets::get_instance();
 		Blocks\Setup::get_instance();
 		Cli::get_instance();
+		Coexistence_Guard::get_instance();
 		Event\Setup::get_instance();
 		Export::get_instance();
 		Feed::get_instance();
