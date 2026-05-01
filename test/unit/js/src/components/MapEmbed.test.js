@@ -123,6 +123,39 @@ test( 'Google MapEmbed returns address in source when location is set', () => {
 	);
 } );
 
+test( 'Google MapEmbed uses Embed API when googleMapsApiKey prop is set', () => {
+	select.mockImplementation( ( store ) => {
+		if ( 'core' === store ) {
+			return { canUser: jest.fn( () => false ) };
+		}
+		if ( 'core/edit-post' === store ) {
+			return null;
+		}
+		if ( 'core/editor' === store ) {
+			return {
+				getEditorSettings: () => ( {
+					gatherpress: { settings: { mapPlatform: 'google' } },
+				} ),
+			};
+		}
+		return null;
+	} );
+	const { container } = render(
+		<MapEmbed
+			location="Test"
+			latitude="40.8117036"
+			longitude="-74.2187738"
+			zoom={ 15 }
+			type="terrain"
+			googleMapsApiKey="unit-test-key"
+		/>,
+	);
+	const src = container.children[ 0 ].getAttribute( 'src' );
+	expect( src ).toContain( 'https://www.google.com/maps/embed/v1/view?' );
+	expect( src ).toContain( 'key=unit-test-key' );
+	expect( src ).toContain( 'maptype=terrain' );
+} );
+
 test( 'MapEmbed returns address in source when location, zoom, map type, height, and class are set', () => {
 	select.mockImplementation( ( store ) => {
 		if ( 'core' === store ) {

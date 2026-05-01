@@ -9,6 +9,7 @@ import {
 } from '@wordpress/block-editor';
 import {
 	Dropdown,
+	ExternalLink,
 	Flex,
 	FlexItem,
 	PanelBody,
@@ -33,7 +34,7 @@ import { Icon, link as linkIcon, mapMarker } from '@wordpress/icons';
  */
 import { isVenuePostType } from '../../helpers/venue';
 import { isInFSETemplate } from '../../helpers/editor';
-import { getFromSettings } from '../../helpers/editor-settings';
+import { getFromConfig, getFromSettings } from '../../helpers/editor-settings';
 import MapEmbed from '../../components/MapEmbed';
 import {
 	useSharedBlockGuardState,
@@ -249,6 +250,9 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 	}
 
 	const mapPlatform = getFromSettings( 'mapPlatform' );
+	const googleMapsApiKey = getFromSettings( 'googleMapsApiKey' ) || '';
+	const venuesMapsSettingsUrl =
+		getFromConfig( 'venuesMapsSettingsUrl' ) || '';
 
 	// Resolve the site-wide scale default from Settings so "Reset all"
 	// and the "has value" check on the Scale ToolsPanelItem mirror what
@@ -260,6 +264,31 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 		: SCALE_DEFAULT;
 	const showMapTypeControl =
 		'interactive' === renderMode && 'google' === mapPlatform;
+
+	const googleMapTypeOptionsBase = [
+		{
+			label: __( 'Roadmap', 'gatherpress' ),
+			value: 'roadmap',
+		},
+		{
+			label: __( 'Satellite', 'gatherpress' ),
+			value: 'satellite',
+		},
+	];
+	const googleMapTypeOptionsExtended = [
+		...googleMapTypeOptionsBase,
+		{
+			label: __( 'Hybrid', 'gatherpress' ),
+			value: 'hybrid',
+		},
+		{
+			label: __( 'Terrain', 'gatherpress' ),
+			value: 'terrain',
+		},
+	];
+	const googleMapTypeSelectOptions = googleMapsApiKey
+		? googleMapTypeOptionsExtended
+		: googleMapTypeOptionsBase;
 
 	// Link destination options track the site's mapping platform: on an
 	// OSM-powered site we only offer the OpenStreetMap preset (and vice
@@ -544,6 +573,7 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 						zoom={ zoom }
 						type={ type }
 						height={ effectiveHeight }
+						googleMapsApiKey={ googleMapsApiKey }
 					/>
 				</div>
 			) }
@@ -581,31 +611,29 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 						max={ 20 }
 					/>
 					{ showMapTypeControl && (
-						<SelectControl
-							label={ __( 'Map type', 'gatherpress' ) }
-							value={ type }
-							options={ [
-								{
-									label: __( 'Roadmap', 'gatherpress' ),
-									value: 'roadmap',
-								},
-								{
-									label: __( 'Satellite', 'gatherpress' ),
-									value: 'satellite',
-								},
-								{
-									label: __( 'Hybrid', 'gatherpress' ),
-									value: 'hybrid',
-								},
-								{
-									label: __( 'Terrain', 'gatherpress' ),
-									value: 'terrain',
-								},
-							] }
-							onChange={ ( value ) =>
-								setAttributes( { type: value } )
-							}
-						/>
+						<>
+							<SelectControl
+								label={ __( 'Map type', 'gatherpress' ) }
+								value={ type }
+								options={ googleMapTypeSelectOptions }
+								onChange={ ( value ) =>
+									setAttributes( { type: value } )
+								}
+							/>
+							{ ! googleMapsApiKey && (
+								<p className="components-base-control__help">
+									{ __(
+										'Hybrid and terrain require a Google Maps API key under GatherPress → Settings → Venues → Maps.',
+										'gatherpress'
+									) }{ ' ' }
+									{ venuesMapsSettingsUrl ? (
+										<ExternalLink href={ venuesMapsSettingsUrl }>
+											{ __( 'Open Maps settings', 'gatherpress' ) }
+										</ExternalLink>
+									) : null }
+								</p>
+							) }
+						</>
 					) }
 					{ isStaticMode && showStaticImage && 0 < venuePostId && (
 						<RegenerateMapButton

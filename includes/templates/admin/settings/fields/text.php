@@ -1,19 +1,20 @@
 <?php
 /**
- * Template for displaying a text input field in GatherPress settings.
+ * Template for displaying a text or password input field in GatherPress settings.
  *
- * This template is used to display a text input field with an associated label and optional description
- * in GatherPress settings pages.
+ * Password fields set `input_type` to `password` via {@see Settings::render_field()};
+ * all other text settings omit it and render `type="text"`.
  *
  * @package GatherPress\Core
  * @since 1.0.0
  *
- * @param string $name        The name attribute for the input field.
- * @param string $label       The label text for the input field.
- * @param string $option      The option name for retrieving the field's value.
- * @param string $value       The current value of the text input field.
- * @param string $description (Optional) Additional information or instructions for the field.
- * @param string $size        The size class for styling (e.g., 'regular', 'large', or 'small').
+ * @param string       $name        The name attribute for the input field.
+ * @param string       $label       The label text for the input field.
+ * @param string       $option      The option name for retrieving the field's value.
+ * @param string       $value       The current value of the text input field.
+ * @param string       $description (Optional) Additional information or instructions for the field.
+ * @param string       $size        The size class for styling (e.g., 'regular', 'large', or 'small').
+ * @param string       $input_type  Optional. `password` or `text` (default).
  */
 
 // Exit if accessed directly.
@@ -23,6 +24,11 @@ if ( ! isset( $name, $label, $option, $value, $description, $size, $preview ) ) 
 	return;
 }
 
+$gatherpress_input_type     = ( isset( $input_type ) && 'password' === $input_type ) ? 'password' : 'text';
+$gatherpress_password_attrs = ( 'password' === $gatherpress_input_type )
+	? ' autocomplete="off" spellcheck="false"'
+	: '';
+
 // Use `readonly` rather than `disabled` so the field still submits its
 // value; `disabled` inputs are omitted from the POST payload, which would
 // drop inherited values out of the blog option on save.
@@ -30,7 +36,7 @@ $gatherpress_readonly = ! empty( $disabled ) ? ' readonly' : '';
 ?>
 <div class="form-wrap">
 	<label for="<?php echo esc_attr( $option ); ?>"><?php echo esc_html( $label ); ?></label>
-	<input id="<?php echo esc_attr( $option ); ?>" type="text" name="<?php echo esc_attr( $name ); ?>" class="<?php echo esc_attr( $size . '-text' ); ?>" value="<?php echo esc_attr( $value ); ?>"<?php echo $gatherpress_readonly; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static value. ?> />
+	<input id="<?php echo esc_attr( $option ); ?>" type="<?php echo esc_attr( $gatherpress_input_type ); ?>" name="<?php echo esc_attr( $name ); ?>" class="<?php echo esc_attr( $size . '-text' ); ?>" value="<?php echo esc_attr( $value ); ?>"<?php echo $gatherpress_password_attrs; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static attribute names/values. ?><?php echo $gatherpress_readonly; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static value. ?> />
 	<?php
 	if ( ! empty( $description ) ) {
 		?>

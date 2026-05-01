@@ -104,6 +104,38 @@ class Venues extends Base {
 							),
 						),
 					),
+					'google_maps_api_key'            => array(
+						'labels'      => array(
+							'name' => __( 'Google Maps API Key', 'gatherpress' ),
+						),
+						'description' => wp_kses_post(
+							sprintf(
+								'%1$s %2$s %3$s %4$s',
+								__(
+									'Optional. Referrer-restricted Maps Embed API key for Google Maps.',
+									'gatherpress'
+								),
+								__(
+									'Hybrid and terrain need a key; it appears in the iframe URL.',
+									'gatherpress'
+								),
+								__(
+									'Use referrer restrictions. Empty = keyless roadmap and satellite.',
+									'gatherpress'
+								),
+								sprintf(
+									'<a href="%1$s" target="_blank" rel="noopener noreferrer">%2$s</a>',
+									esc_url( 'https://developers.google.com/maps/documentation/embed/get-api-key' ),
+									esc_html__( 'Get an API key', 'gatherpress' )
+								)
+							)
+						),
+						'field'       => array(
+							'label' => __( 'Google Maps API key:', 'gatherpress' ),
+							'type'  => 'password',
+							'size'  => 'large',
+						),
+					),
 					'venue_map_default_render_mode'  => array(
 						'labels'      => array(
 							'name' => __( 'Default Render Mode', 'gatherpress' ),

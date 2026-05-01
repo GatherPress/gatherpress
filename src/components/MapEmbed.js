@@ -48,6 +48,10 @@ const MapEmbed = ( props ) => {
 	if ( ! mapPlatform ) {
 		return <></>;
 	} else if ( 'google' === mapPlatform ) {
+		const apiKey =
+			props.googleMapsApiKey ??
+			getFromSettings( 'googleMapsApiKey' ) ??
+			'';
 		return (
 			<GoogleMap
 				location={ location }
@@ -57,6 +61,7 @@ const MapEmbed = ( props ) => {
 				zoom={ zoom }
 				type={ type }
 				height={ height }
+				apiKey={ apiKey }
 			/>
 		);
 	} else if ( 'osm' === mapPlatform ) {
