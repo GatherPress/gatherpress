@@ -457,6 +457,48 @@ class Test_Shadow_Source extends Base {
 	}
 
 	/**
+	 * Coverage for delete_term's empty-post_name early return.
+	 *
+	 * Auto-drafts and similar transient states can leave `post_name` blank.
+	 * The delete hook still fires for those, so the method must bail before
+	 * dereferencing an empty slug to avoid attempting to resolve a `_` term.
+	 *
+	 * @covers ::delete_term
+	 *
+	 * @return void
+	 */
+	public function test_delete_term_skips_when_post_has_empty_post_name(): void {
+		$instance = Shadow_Source::get_instance();
+
+		// Auto-draft + empty title leaves post_name blank — wp_insert_post
+		// only generates a slug when there's a title to derive one from.
+		$post_id = wp_insert_post(
+			array(
+				'post_type'   => Venue::POST_TYPE,
+				'post_status' => 'auto-draft',
+				'post_title'  => '',
+			)
+		);
+
+		$post = get_post( $post_id );
+
+		$this->assertNotEmpty( $post_id, 'Failed to create the auto-draft test post.' );
+		$this->assertEmpty( $post->post_name, 'Expected the auto-draft to have a blank post_name.' );
+
+		// Seed a sentinel term so we can prove the early return didn't touch it.
+		if ( ! term_exists( 'online-event', Venue::TAXONOMY ) ) {
+			wp_insert_term( 'Online event', Venue::TAXONOMY, array( 'slug' => 'online-event' ) );
+		}
+
+		$instance->delete_term( $post_id );
+
+		$this->assertNotNull(
+			term_exists( 'online-event', Venue::TAXONOMY ),
+			'Failed to assert that delete_term bails on empty post_name without touching unrelated terms.'
+		);
+	}
+
+	/**
 	 * Coverage for get_taxonomy — pure formatter prepends an underscore.
 	 *
 	 * @covers ::get_taxonomy
