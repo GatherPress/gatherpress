@@ -6,14 +6,14 @@ import { createSlotFill } from '@wordpress/components';
 /**
  * Create our Slot and Fill components
  */
-const { Fill, Slot } = createSlotFill( 'GatherPressQueryControls' );
+const { Fill, Slot } = createSlotFill( 'EventQueryControls' );
 
-const GatherPressQueryControls = ( { children } ) => <Fill>{ children }</Fill>;
+const EventQueryControls = ( { children } ) => <Fill>{ children }</Fill>;
 
-GatherPressQueryControls.Slot = ( { fillProps } ) => (
+EventQueryControls.Slot = ( { fillProps } ) => (
 	<Slot fillProps={ fillProps }>
 		{ ( fills ) => ( fills.length ? fills : null ) }
 	</Slot>
 );
 
-export default GatherPressQueryControls;
+export default EventQueryControls;
