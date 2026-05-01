@@ -60,7 +60,7 @@ class Test_Event_Query extends Base {
 	 * Coverage for maybe_register_event_date_rest_hooks method.
 	 *
 	 * Verifies that REST filters are registered when a post type declares
-	 * gatherpress-event support and skipped otherwise.
+	 * gatherpress-event-date support and skipped otherwise.
 	 *
 	 * @since 1.0.0
 	 * @covers ::maybe_register_event_date_rest_hooks

@@ -16,7 +16,7 @@ import { usePostTypeSupports } from '../helpers/event';
 
 /**
  * Adds a "Convert to Event Date" button to the core/post-date inspector
- * sidebar when the current post type supports `gatherpress-event`.
+ * sidebar when the current post type supports `gatherpress-event-date`.
  *
  * The button reuses the registered cross-block transform (see
  * `src/blocks/event-date/transforms.js`), so the attribute mapping stays in
@@ -34,7 +34,7 @@ const withPostDateConvertToEventDate = createHigherOrderComponent(
 			const { name, clientId, attributes } = props;
 
 			const supportsEventDate = usePostTypeSupports(
-				'gatherpress-event'
+				'gatherpress-event-date'
 			);
 
 			const { replaceBlocks } = useDispatch( 'core/block-editor' );

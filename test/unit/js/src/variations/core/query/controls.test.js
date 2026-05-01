@@ -88,7 +88,7 @@ describe( 'EventQueryControlsPanel', () => {
 		usePostTypeSupports.mockReset();
 	} );
 
-	it( 'returns null when the queried post type does not support gatherpress-event', () => {
+	it( 'returns null when the queried post type does not support gatherpress-event-date', () => {
 		usePostTypeSupports.mockReturnValue( false );
 
 		const { container } = render(
@@ -97,12 +97,12 @@ describe( 'EventQueryControlsPanel', () => {
 
 		expect( container.firstChild ).toBeNull();
 		expect( usePostTypeSupports ).toHaveBeenCalledWith(
-			'gatherpress-event',
+			'gatherpress-event-date',
 			'post'
 		);
 	} );
 
-	it( 'renders the panel when the queried post type supports gatherpress-event', () => {
+	it( 'renders the panel when the queried post type supports gatherpress-event-date', () => {
 		usePostTypeSupports.mockReturnValue( true );
 
 		render( <EventQueryControlsPanel { ...baseProps() } /> );
@@ -113,7 +113,7 @@ describe( 'EventQueryControlsPanel', () => {
 			'Event Query Settings'
 		);
 		expect( usePostTypeSupports ).toHaveBeenCalledWith(
-			'gatherpress-event',
+			'gatherpress-event-date',
 			'gatherpress_event'
 		);
 	} );
@@ -157,7 +157,7 @@ describe( 'EventQueryControlsPanel', () => {
 
 		expect( container.firstChild ).toBeNull();
 		expect( usePostTypeSupports ).toHaveBeenCalledWith(
-			'gatherpress-event',
+			'gatherpress-event-date',
 			undefined
 		);
 	} );

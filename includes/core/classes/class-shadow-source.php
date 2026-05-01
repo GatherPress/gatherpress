@@ -13,7 +13,7 @@
  * Wiring the resulting taxonomy onto consumer post types (events, sessions,
  * etc.) is the developer's responsibility — pass it via `register_post_type`'s
  * `taxonomies` arg or call `register_taxonomy_for_object_type()`. The venue
- * subsystem performs that wiring for `gatherpress-event-venue` post types so
+ * subsystem performs that wiring for `gatherpress-venue` post types so
  * the venue ⇄ event relationship continues to work out of the box.
  *
  * @package GatherPress\Core

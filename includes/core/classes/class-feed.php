@@ -97,7 +97,7 @@ class Feed {
 			// Check if this is the events feed URL.
 			if ( str_contains( $request_uri, '/' . $rewrite_slug . '/' . $GLOBALS['wp_rewrite']->feed_base ) ) {
 				// Set the post type and let Event\Query handle the rest.
-				$query->set( 'post_type', get_post_types_by_support( 'gatherpress-event' ) );
+				$query->set( 'post_type', get_post_types_by_support( 'gatherpress-event-date' ) );
 
 				// Check for type parameter to determine if we want past or upcoming events.
 				$event_type = 'upcoming';
@@ -150,7 +150,7 @@ class Feed {
 	 */
 	public function get_default_event_excerpt( string $excerpt ): string {
 		// Only apply to events.
-		if ( ! post_type_supports( (string) get_post_type(), 'gatherpress-event' ) ) {
+		if ( ! post_type_supports( (string) get_post_type(), 'gatherpress-event-date' ) ) {
 			return $excerpt;
 		}
 
@@ -199,7 +199,7 @@ class Feed {
 	 */
 	public function get_default_event_content( string $content ): string {
 		// Only apply to events.
-		if ( ! post_type_supports( (string) get_post_type(), 'gatherpress-event' ) ) {
+		if ( ! post_type_supports( (string) get_post_type(), 'gatherpress-event-date' ) ) {
 			return $content;
 		}
 
@@ -247,7 +247,7 @@ class Feed {
 	 */
 	public function apply_event_excerpt( string $excerpt ): string {
 		// Only apply to events.
-		if ( ! post_type_supports( (string) get_post_type(), 'gatherpress-event' ) ) {
+		if ( ! post_type_supports( (string) get_post_type(), 'gatherpress-event-date' ) ) {
 			return $excerpt;
 		}
 
@@ -289,7 +289,7 @@ class Feed {
 	 */
 	public function apply_event_content( string $content ): string {
 		// Only apply to events.
-		if ( ! post_type_supports( (string) get_post_type(), 'gatherpress-event' ) ) {
+		if ( ! post_type_supports( (string) get_post_type(), 'gatherpress-event-date' ) ) {
 			return $content;
 		}
 

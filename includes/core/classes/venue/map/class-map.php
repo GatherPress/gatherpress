@@ -379,7 +379,7 @@ class Map {
 							return $post_id > 0
 								&& post_type_supports(
 									(string) get_post_type( $post_id ),
-									'gatherpress-venue'
+									'gatherpress-venue-information'
 								);
 						},
 					),
@@ -541,7 +541,7 @@ class Map {
 	 * @return void
 	 */
 	public function maybe_register_delete_hook( string $post_type ): void {
-		if ( ! post_type_supports( $post_type, 'gatherpress-venue' ) ) {
+		if ( ! post_type_supports( $post_type, 'gatherpress-venue-information' ) ) {
 			return;
 		}
 
@@ -569,7 +569,7 @@ class Map {
 			return;
 		}
 
-		if ( ! post_type_supports( (string) get_post_type( $post_id ), 'gatherpress-venue' ) ) {
+		if ( ! post_type_supports( (string) get_post_type( $post_id ), 'gatherpress-venue-information' ) ) {
 			return;
 		}
 
@@ -826,8 +826,8 @@ class Map {
 	/**
 	 * Resolve the static-map descriptor for any GatherPress post context.
 	 *
-	 * Accepts either a venue post ID (supports `gatherpress-venue`)
-	 * or an event post ID (supports `gatherpress-event-venue`) and returns the full
+	 * Accepts either a venue post ID (supports `gatherpress-venue-information`)
+	 * or an event post ID (supports `gatherpress-venue`) and returns the full
 	 * descriptor — both 1× and 2× URLs plus the bookkeeping fields — for the
 	 * corresponding venue at the requested zoom and height. When the cache
 	 * doesn't yet have an image for that combo, the method generates one
@@ -855,9 +855,9 @@ class Map {
 	): ?array {
 		$venue_post_id = 0;
 
-		if ( post_type_supports( $post_type, 'gatherpress-venue' ) ) {
+		if ( post_type_supports( $post_type, 'gatherpress-venue-information' ) ) {
 			$venue_post_id = $post_id;
-		} elseif ( post_type_supports( $post_type, 'gatherpress-event-venue' ) ) {
+		} elseif ( post_type_supports( $post_type, 'gatherpress-venue' ) ) {
 			$venue_post = Setup::get_instance()->get_venue_post_from_event_post_id( $post_id );
 
 			if ( $venue_post instanceof WP_Post ) {

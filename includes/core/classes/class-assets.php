@@ -161,7 +161,7 @@ class Assets {
 	 * @return void
 	 */
 	public function add_interactivity_state(): void {
-		$event_post_types = get_post_types_by_support( 'gatherpress-event' );
+		$event_post_types = get_post_types_by_support( 'gatherpress-event-date' );
 
 		if ( ! is_singular( $event_post_types ) ) {
 			return;
@@ -401,7 +401,7 @@ class Assets {
 	 * @return void
 	 */
 	public function event_communication_modal(): void {
-		if ( post_type_supports( (string) get_post_type(), 'gatherpress-event' ) ) {
+		if ( post_type_supports( (string) get_post_type(), 'gatherpress-event-date' ) ) {
 			echo '<div id="gatherpress-event-communication-modal"></div>';
 		}
 	}

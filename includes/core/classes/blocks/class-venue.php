@@ -126,7 +126,7 @@ class Venue {
 			return get_post( $post_id );
 		}
 
-		if ( post_type_supports( $post_type, 'gatherpress-event-venue' ) ) {
+		if ( post_type_supports( $post_type, 'gatherpress-venue' ) ) {
 			$venue_post = Venue_Setup::get_instance()->get_venue_post_from_event_post_id( $post_id );
 
 			if ( $venue_post instanceof WP_Post && Venue_Core::POST_TYPE === $venue_post->post_type ) {

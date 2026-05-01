@@ -146,7 +146,7 @@ describe( 'isVenuePostType', () => {
 		expect( isVenuePostType() ).toBe( false );
 	} );
 
-	it( 'returns false when post type does not have gatherpress-venue support', () => {
+	it( 'returns false when post type does not have gatherpress-venue-information support', () => {
 		select.mockImplementation( ( store ) => {
 			if ( 'core/editor' === store ) {
 				return { getCurrentPostType: () => 'gatherpress_event' };
@@ -154,7 +154,7 @@ describe( 'isVenuePostType', () => {
 			if ( 'core' === store ) {
 				return {
 					getPostType: () => ( {
-						supports: { 'gatherpress-event': true },
+						supports: { 'gatherpress-event-date': true },
 					} ),
 				};
 			}
@@ -163,7 +163,7 @@ describe( 'isVenuePostType', () => {
 		expect( isVenuePostType() ).toBe( false );
 	} );
 
-	it( 'returns true when post type has gatherpress-venue support', () => {
+	it( 'returns true when post type has gatherpress-venue-information support', () => {
 		select.mockImplementation( ( store ) => {
 			if ( 'core/editor' === store ) {
 				return { getCurrentPostType: () => 'gatherpress_venue' };
@@ -171,7 +171,7 @@ describe( 'isVenuePostType', () => {
 			if ( 'core' === store ) {
 				return {
 					getPostType: () => ( {
-						supports: { 'gatherpress-venue': true },
+						supports: { 'gatherpress-venue-information': true },
 					} ),
 				};
 			}
@@ -180,7 +180,7 @@ describe( 'isVenuePostType', () => {
 		expect( isVenuePostType() ).toBe( true );
 	} );
 
-	it( 'returns true for a custom venue post type with gatherpress-venue support', () => {
+	it( 'returns true for a custom venue post type with gatherpress-venue-information support', () => {
 		select.mockImplementation( ( store ) => {
 			if ( 'core/editor' === store ) {
 				return { getCurrentPostType: () => 'my_custom_venue' };
@@ -188,7 +188,7 @@ describe( 'isVenuePostType', () => {
 			if ( 'core' === store ) {
 				return {
 					getPostType: () => ( {
-						supports: { 'gatherpress-venue': true },
+						supports: { 'gatherpress-venue-information': true },
 					} ),
 				};
 			}
@@ -1085,7 +1085,7 @@ describe( 'findVenuePostById', () => {
 						{ slug: 'page', supports: {} },
 						{
 							slug: 'gatherpress_venue',
-							supports: { 'gatherpress-venue': true },
+							supports: { 'gatherpress-venue-information': true },
 						},
 					],
 					getEntityRecords: ( kind, postTypeName, query ) =>
@@ -1114,11 +1114,11 @@ describe( 'findVenuePostById', () => {
 						{ slug: 'page', supports: {} },
 						{
 							slug: 'gatherpress_event',
-							supports: { 'gatherpress-event': true },
+							supports: { 'gatherpress-event-date': true },
 						},
 						{
 							slug: 'gatherpress_venue',
-							supports: { 'gatherpress-venue': true },
+							supports: { 'gatherpress-venue-information': true },
 						},
 					],
 					getEntityRecords: ( kind, postTypeName ) => {
@@ -1143,7 +1143,7 @@ describe( 'findVenuePostById', () => {
 					getPostTypes: () => [
 						{
 							slug: 'gatherpress_venue',
-							supports: { 'gatherpress-venue': true },
+							supports: { 'gatherpress-venue-information': true },
 						},
 					],
 					getEntityRecords: () => [],
@@ -1163,7 +1163,7 @@ describe( 'findVenuePostById', () => {
 					getPostTypes: () => [
 						{
 							slug: 'gatherpress_venue',
-							supports: { 'gatherpress-venue': true },
+							supports: { 'gatherpress-venue-information': true },
 						},
 					],
 					getEntityRecords: () => [
@@ -1184,7 +1184,7 @@ describe( 'findVenuePostById', () => {
 					getPostTypes: () => [
 						{
 							slug: 'gatherpress_venue',
-							supports: { 'gatherpress-venue': true },
+							supports: { 'gatherpress-venue-information': true },
 						},
 					],
 					getEntityRecords: () => null,

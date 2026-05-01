@@ -125,7 +125,7 @@ class Query {
 		$order = ( 'past' === $event_list_type ) ? 'DESC' : 'ASC';
 
 		$args = array(
-			'post_type'             => get_post_types_by_support( 'gatherpress-event' ),
+			'post_type'             => get_post_types_by_support( 'gatherpress-event-date' ),
 			'fields'                => 'ids',
 			'no_found_rows'         => true,
 			'posts_per_page'        => $number,
@@ -207,7 +207,7 @@ class Query {
 						$page_id      = $query->queried_object_id;
 						$events_query = $key;
 
-						$query->set( 'post_type', get_post_types_by_support( 'gatherpress-event' ) );
+						$query->set( 'post_type', get_post_types_by_support( 'gatherpress-event-date' ) );
 						$query->set( self::EVENT_QUERY_PARAM, $key );
 						$query->is_page              = false;
 						$query->is_singular          = false;
@@ -527,7 +527,7 @@ class Query {
 	private function build_venue_tax_query( array $venues ): array {
 		$venue_tax_query = array( 'relation' => 'OR' );
 
-		foreach ( get_post_types_by_support( 'gatherpress-venue' ) as $venue_post_type ) {
+		foreach ( get_post_types_by_support( 'gatherpress-venue-information' ) as $venue_post_type ) {
 			$venue_tax_query[] = array(
 				'taxonomy' => Setup::get_instance()->get_taxonomy( $venue_post_type ),
 				'field'    => 'slug',

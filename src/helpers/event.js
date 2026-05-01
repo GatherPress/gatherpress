@@ -36,7 +36,7 @@ export const DISABLED_FIELD_OPACITY = 0.3;
  *
  * @since 1.0.0
  *
- * @param {string}      support  The post type support to check (e.g. 'gatherpress-event').
+ * @param {string}      support  The post type support to check (e.g. 'gatherpress-event-date').
  * @param {string|null} postType Optional post type to check. If not provided, checks current editor post type.
  * @return {boolean} True if the post type has the given support, false otherwise.
  */
@@ -95,7 +95,7 @@ export function usePostTypeSupports( support, postType = null ) {
  * @return {boolean} True if the post type supports event_date, false otherwise.
  */
 export function isEventPostType( postType = null ) {
-	return isPostTypeSupporting( 'gatherpress-event', postType );
+	return isPostTypeSupporting( 'gatherpress-event-date', postType );
 }
 
 /**
@@ -138,7 +138,7 @@ export function findEventPostById( selectFunc, postId ) {
 	}
 
 	for ( const type of postTypes ) {
-		if ( ! type?.supports?.[ 'gatherpress-event' ] ) {
+		if ( ! type?.supports?.[ 'gatherpress-event-date' ] ) {
 			continue;
 		}
 		// Query by `include` filter rather than `getEntityRecord( id )` so a
@@ -227,7 +227,7 @@ export function hasValidEventId( selectFuncOrPostId = null, maybePostId = null, 
 
 		const isEventSupporting = ( slug ) =>
 			!! selectFunc( 'core' ).getPostType( slug )?.supports?.[
-				'gatherpress-event'
+				'gatherpress-event-date'
 			];
 
 		// If this is the current post, check if it supports event_date.
@@ -271,7 +271,7 @@ export function hasValidEventId( selectFuncOrPostId = null, maybePostId = null, 
 	// Otherwise, check if current post supports event_date (no publish check needed).
 	const editorPostType = selectFunc( 'core/editor' )?.getCurrentPostType();
 	return !! selectFunc( 'core' ).getPostType( editorPostType )?.supports?.[
-		'gatherpress-event'
+		'gatherpress-event-date'
 	];
 }
 

@@ -306,7 +306,7 @@ describe( 'Editor helper functions', () => {
 			const result = hasValidBlockContext( {
 				isDescendentOfQueryLoop: false,
 				postType: 'post',
-				support: 'gatherpress-event',
+				support: 'gatherpress-event-date',
 				hasData: false,
 			} );
 
@@ -321,7 +321,7 @@ describe( 'Editor helper functions', () => {
 			const result = hasValidBlockContext( {
 				isDescendentOfQueryLoop: false,
 				postType: 'post',
-				support: 'gatherpress-event',
+				support: 'gatherpress-event-date',
 				hasData: false,
 			} );
 
@@ -337,7 +337,7 @@ describe( 'Editor helper functions', () => {
 					return {
 						getPostType: ( slug ) =>
 							'gatherpress_event' === slug
-								? { supports: { 'gatherpress-event': true } }
+								? { supports: { 'gatherpress-event-date': true } }
 								: { supports: {} },
 					};
 				}
@@ -347,7 +347,7 @@ describe( 'Editor helper functions', () => {
 			const result = hasValidBlockContext( {
 				isDescendentOfQueryLoop: true,
 				postType: 'gatherpress_event',
-				support: 'gatherpress-event',
+				support: 'gatherpress-event-date',
 				hasData: true,
 			} );
 
@@ -363,7 +363,7 @@ describe( 'Editor helper functions', () => {
 					return {
 						getPostType: ( slug ) =>
 							'gatherpress_event' === slug
-								? { supports: { 'gatherpress-event': true } }
+								? { supports: { 'gatherpress-event-date': true } }
 								: { supports: {} },
 					};
 				}
@@ -373,7 +373,7 @@ describe( 'Editor helper functions', () => {
 			const result = hasValidBlockContext( {
 				isDescendentOfQueryLoop: true,
 				postType: 'gatherpress_event',
-				support: 'gatherpress-event',
+				support: 'gatherpress-event-date',
 				hasData: false,
 			} );
 
@@ -389,7 +389,7 @@ describe( 'Editor helper functions', () => {
 					return {
 						getPostType: ( slug ) =>
 							'gatherpress_event' === slug
-								? { supports: { 'gatherpress-event': true } }
+								? { supports: { 'gatherpress-event-date': true } }
 								: { supports: {} },
 					};
 				}
@@ -399,7 +399,7 @@ describe( 'Editor helper functions', () => {
 			const result = hasValidBlockContext( {
 				isDescendentOfQueryLoop: true,
 				postType: 'post',
-				support: 'gatherpress-event',
+				support: 'gatherpress-event-date',
 				hasData: true,
 			} );
 
@@ -414,7 +414,7 @@ describe( 'Editor helper functions', () => {
 			const result = hasValidBlockContext( {
 				isDescendentOfQueryLoop: false,
 				postType: 'gatherpress_event',
-				support: 'gatherpress-event',
+				support: 'gatherpress-event-date',
 				hasData: true,
 			} );
 
@@ -429,7 +429,7 @@ describe( 'Editor helper functions', () => {
 			const result = hasValidBlockContext( {
 				isDescendentOfQueryLoop: false,
 				postType: 'gatherpress_event',
-				support: 'gatherpress-event',
+				support: 'gatherpress-event-date',
 				hasData: false,
 			} );
 
@@ -444,7 +444,7 @@ describe( 'Editor helper functions', () => {
 			const result = hasValidBlockContext( {
 				isDescendentOfQueryLoop: false,
 				postType: 'gatherpress_event',
-				support: 'gatherpress-event',
+				support: 'gatherpress-event-date',
 			} );
 
 			expect( result ).toBe( false );
@@ -459,7 +459,7 @@ describe( 'Editor helper functions', () => {
 					return {
 						getPostType: ( slug ) =>
 							'gatherpress_event' === slug
-								? { supports: { 'gatherpress-event-venue': true } }
+								? { supports: { 'gatherpress-venue': true } }
 								: { supports: {} },
 					};
 				}
@@ -469,7 +469,7 @@ describe( 'Editor helper functions', () => {
 			const result = hasValidBlockContext( {
 				isDescendentOfQueryLoop: true,
 				postType: 'gatherpress_event',
-				support: 'gatherpress-event-venue',
+				support: 'gatherpress-venue',
 				hasData: true,
 			} );
 
@@ -534,7 +534,7 @@ describe( 'Editor helper functions', () => {
 					isDescendentOfQueryLoop: true,
 					hasSupport: true,
 					postType: 'gatherpress_event',
-					support: 'gatherpress-event',
+					support: 'gatherpress-event-date',
 					hasData: true,
 				} );
 

@@ -210,7 +210,7 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 	const { dateTimeStart, dateTimeEnd, timezone, isLoading, isValidEvent } = useSelect(
 		( select ) => {
 			// Resolve the post type from context or fall back to the editor's current post type.
-			// This ensures custom post types with gatherpress-event support work correctly
+			// This ensures custom post types with gatherpress-event-date support work correctly
 			// in Query Loop blocks and postId override scenarios.
 			const postType =
 				context?.postType ||
@@ -219,7 +219,7 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 			// Reactive supports check — `getPostType` is read inside useSelect so the
 			// component re-renders once the post-type definition (and its supports) load.
 			const supportsEventDate = !! select( 'core' )
-				.getPostType( postType )?.supports?.[ 'gatherpress-event' ];
+				.getPostType( postType )?.supports?.[ 'gatherpress-event-date' ];
 
 			if ( ! postId ) {
 				return { isValidEvent: false };

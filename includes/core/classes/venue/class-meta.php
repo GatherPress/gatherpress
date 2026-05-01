@@ -3,7 +3,7 @@
  * Owns the venue post-meta surface.
  *
  * Registers the editor-writable, structured-address, and Map descriptor
- * post meta for any post type that declares `gatherpress-venue`
+ * post meta for any post type that declares `gatherpress-venue-information`
  * support, plus the matching map-display meta for `gatherpress-venue-map`.
  * Also owns the field-list constants and the REST readonly-strip filter.
  *
@@ -141,7 +141,7 @@ class Meta {
 	 * Registers venue meta for any post type that declares the relevant
 	 * supports. Two bands:
 	 *
-	 * - `gatherpress-venue` gets the editor-writable address /
+	 * - `gatherpress-venue-information` gets the editor-writable address /
 	 *   contact keys, the read-only structured-address keys, the static-
 	 *   map descriptor key, and the REST readonly-strip filter.
 	 * - `gatherpress-venue-map` gets the map display-settings keys
@@ -153,7 +153,7 @@ class Meta {
 	 * @return void
 	 */
 	public function register( string $post_type ): void {
-		if ( post_type_supports( $post_type, 'gatherpress-venue' ) ) {
+		if ( post_type_supports( $post_type, 'gatherpress-venue-information' ) ) {
 			$this->register_venue_information_meta( $post_type );
 		}
 
@@ -165,7 +165,7 @@ class Meta {
 	/**
 	 * Registers the editor-writable venue keys, the structured-address
 	 * keys, the static-map descriptor key, and the REST readonly-strip
-	 * filter for a post type that declares `gatherpress-venue`
+	 * filter for a post type that declares `gatherpress-venue-information`
 	 * support.
 	 *
 	 * @since 1.0.0

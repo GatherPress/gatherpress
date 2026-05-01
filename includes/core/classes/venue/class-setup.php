@@ -104,7 +104,7 @@ class Setup {
 	/**
 	 * Implicitly declare `gatherpress-shadow-source` for every venue post type.
 	 *
-	 * Declaring `gatherpress-venue` is the canonical way to mark a post type
+	 * Declaring `gatherpress-venue-information` is the canonical way to mark a post type
 	 * as a venue. We treat that declaration as also declaring
 	 * `gatherpress-shadow-source` so the shadow-taxonomy primitive is wired
 	 * up automatically — companion plugins don't have to remember to declare
@@ -119,7 +119,7 @@ class Setup {
 	 * @return void
 	 */
 	public function maybe_link_shadow_source_support( string $post_type ): void {
-		if ( ! post_type_supports( $post_type, 'gatherpress-venue' ) ) {
+		if ( ! post_type_supports( $post_type, 'gatherpress-venue-information' ) ) {
 			return;
 		}
 
@@ -227,7 +227,7 @@ class Setup {
 					'thumbnail',
 					'revisions',
 					'custom-fields',
-					'gatherpress-venue',
+					'gatherpress-venue-information',
 					'gatherpress-venue-map',
 					'gatherpress-shadow-source',
 				),
@@ -252,7 +252,7 @@ class Setup {
 	 * it because they declare `gatherpress-shadow-source` (either explicitly
 	 * or via {@see self::maybe_link_shadow_source_support()}). This method
 	 * delegates there and then performs the venue-specific event-side
-	 * wiring: any post type with `gatherpress-event-venue` support gets its
+	 * wiring: any post type with `gatherpress-venue` support gets its
 	 * resolved venue's taxonomy registered for it via
 	 * `register_taxonomy_for_object_type()`.
 	 *
@@ -264,7 +264,7 @@ class Setup {
 		Shadow_Source::get_instance()->register_taxonomies();
 
 		// Register each event post type with the taxonomy of its resolved venue post type.
-		foreach ( get_post_types_by_support( 'gatherpress-event-venue' ) as $event_post_type ) {
+		foreach ( get_post_types_by_support( 'gatherpress-venue' ) as $event_post_type ) {
 			$venue_post_type = $this->get_venue_post_type( $event_post_type );
 			register_taxonomy_for_object_type( $this->get_taxonomy( $venue_post_type ), $event_post_type );
 		}
@@ -358,7 +358,7 @@ class Setup {
 
 		$venue = null;
 
-		if ( post_type_supports( $post_type, 'gatherpress-event-venue' ) ) {
+		if ( post_type_supports( $post_type, 'gatherpress-venue' ) ) {
 			$event       = new Event( $post_id );
 			$venue_terms = get_the_terms( $post_id, $this->taxonomy_for_event_post_type( $post_type ) );
 			$venue_slug  = ( is_array( $venue_terms ) && ! empty( $venue_terms ) ) ? $venue_terms[0]->slug : null;
@@ -371,7 +371,7 @@ class Setup {
 			if ( $venue_post instanceof WP_Post ) {
 				$venue = new Venue( $venue_post->ID );
 			}
-		} elseif ( post_type_supports( $post_type, 'gatherpress-venue' ) ) {
+		} elseif ( post_type_supports( $post_type, 'gatherpress-venue-information' ) ) {
 			$venue = new Venue( $post_id );
 		}
 
@@ -558,7 +558,7 @@ class Setup {
 	/**
 	 * Returns a map of event post types to their corresponding venue post types.
 	 *
-	 * Iterates over all post types that support 'gatherpress-event-venue' and resolves
+	 * Iterates over all post types that support 'gatherpress-venue' and resolves
 	 * the venue post type for each via get_venue_post_type(). This map is used
 	 * to expose the per-event-type venue post type to the block editor.
 	 *
@@ -569,7 +569,7 @@ class Setup {
 	public function get_venue_post_type_map(): array {
 		$map = array();
 
-		foreach ( get_post_types_by_support( 'gatherpress-event-venue' ) as $event_post_type ) {
+		foreach ( get_post_types_by_support( 'gatherpress-venue' ) as $event_post_type ) {
 			$map[ $event_post_type ] = $this->get_venue_post_type( $event_post_type );
 		}
 

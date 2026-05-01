@@ -167,7 +167,7 @@ class General_Block {
 		$venue_post_id = $block['attrs']['postId'] ?? get_the_ID();
 
 		// Verify this is actually a venue post type.
-		if ( ! post_type_supports( (string) get_post_type( $venue_post_id ), 'gatherpress-venue' ) ) {
+		if ( ! post_type_supports( (string) get_post_type( $venue_post_id ), 'gatherpress-venue-information' ) ) {
 			return $block_content;
 		}
 

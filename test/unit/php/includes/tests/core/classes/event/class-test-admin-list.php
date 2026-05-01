@@ -72,13 +72,13 @@ class Test_Admin_List extends Base {
 		$instance = Admin_List::get_instance();
 		$test_pt  = 'test_event_admin';
 
-		// Register a temporary post type with gatherpress-event support.
+		// Register a temporary post type with gatherpress-event-date support.
 		register_post_type(
 			$test_pt,
 			array(
 				'label'    => 'Test Events',
 				'public'   => false,
-				'supports' => array( 'title', 'gatherpress-event' ),
+				'supports' => array( 'title', 'gatherpress-event-date' ),
 			)
 		);
 
@@ -112,7 +112,7 @@ class Test_Admin_List extends Base {
 	}
 
 	/**
-	 * Bails when the post type does not declare gatherpress-event support.
+	 * Bails when the post type does not declare gatherpress-event-date support.
 	 *
 	 * @covers ::maybe_register_post_type_hooks
 	 *
@@ -121,12 +121,12 @@ class Test_Admin_List extends Base {
 	public function test_maybe_register_post_type_hooks_skips_unsupported_post_type(): void {
 		$instance = Admin_List::get_instance();
 
-		// Standard 'post' does not declare gatherpress-event support.
+		// Standard 'post' does not declare gatherpress-event-date support.
 		$instance->maybe_register_post_type_hooks( 'post' );
 
 		$this->assertFalse(
 			has_filter( 'manage_edit-post_sortable_columns', array( $instance, 'sortable_columns' ) ),
-			'Should not register event-admin hooks for post types without gatherpress-event support.'
+			'Should not register event-admin hooks for post types without gatherpress-event-date support.'
 		);
 	}
 

@@ -94,7 +94,7 @@ class Test_Meta extends Base {
 			$this->assertArrayHasKey(
 				$key,
 				$meta,
-				sprintf( 'Failed to assert that %s is registered for gatherpress-venue support.', $key )
+				sprintf( 'Failed to assert that %s is registered for gatherpress-venue-information support.', $key )
 			);
 		}
 
@@ -110,7 +110,7 @@ class Test_Meta extends Base {
 	 * revisions.
 	 *
 	 * Registers a throwaway venue post type that declares
-	 * `gatherpress-venue` support but omits WordPress
+	 * `gatherpress-venue-information` support but omits WordPress
 	 * revisions support. Verifies that `register()` silently drops
 	 * `revisions_enabled` for that post type and still registers the meta
 	 * without triggering a WordPress `_doing_it_wrong` notice.
@@ -128,7 +128,7 @@ class Test_Meta extends Base {
 			array(
 				'label'    => 'Test Venues (no revisions)',
 				'public'   => false,
-				'supports' => array( 'title', 'gatherpress-venue' ),
+				'supports' => array( 'title', 'gatherpress-venue-information' ),
 			)
 		);
 
@@ -346,7 +346,7 @@ class Test_Meta extends Base {
 			array(
 				'label'    => 'Test Venues (no revisions)',
 				'public'   => false,
-				'supports' => array( 'title', 'gatherpress-venue' ),
+				'supports' => array( 'title', 'gatherpress-venue-information' ),
 			)
 		);
 

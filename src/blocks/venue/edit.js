@@ -27,8 +27,8 @@ const Edit = ( props ) => {
 	// Reactive supports checks so the block re-renders once the post-type
 	// definition (and its supports) load — non-reactive `select()` calls miss
 	// that resolution and leave the block permanently dimmed in Query Loops.
-	const isEventContext = usePostTypeSupports( 'gatherpress-event-venue', context?.postType );
-	const isVenueContext = usePostTypeSupports( 'gatherpress-venue', context?.postType );
+	const isEventContext = usePostTypeSupports( 'gatherpress-venue', context?.postType );
+	const isVenueContext = usePostTypeSupports( 'gatherpress-venue-information', context?.postType );
 
 	// Resolve the effective post type from context or the current editor post type.
 	const currentEditorPostType = useSelect(

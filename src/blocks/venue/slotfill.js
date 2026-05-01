@@ -8,7 +8,7 @@ import { isPostTypeSupporting } from '../../helpers/event';
 
 export default function VenueBlockPluginFill() {
 	return (
-		isPostTypeSupporting( 'gatherpress-event-venue' ) && (
+		isPostTypeSupporting( 'gatherpress-venue' ) && (
 			<>
 				<Fill name="VenuePluginDocumentSettings">
 					<VenueNavigator />

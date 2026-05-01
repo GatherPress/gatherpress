@@ -395,7 +395,7 @@ export const EventQueryControlsSlotFill = () => {
 	// On any non-venue, non-template host the toggle can never apply, so we hide
 	// it to remove the mental load of an option that does nothing.
 	const isVenueContext = usePostTypeSupports(
-		'gatherpress-venue'
+		'gatherpress-venue-information'
 	);
 	const inTemplateContext = isInFSETemplate();
 	const showVenueFilter = isVenueContext || inTemplateContext;

@@ -79,7 +79,7 @@ class Event_Query {
 	}
 
 	/**
-	 * Register REST hooks when a post type declares gatherpress-event support.
+	 * Register REST hooks when a post type declares gatherpress-event-date support.
 	 *
 	 * @since 1.0.0
 	 *
@@ -87,7 +87,7 @@ class Event_Query {
 	 * @return void
 	 */
 	public function maybe_register_event_date_rest_hooks( string $post_type ): void {
-		if ( ! post_type_supports( $post_type, 'gatherpress-event' ) ) {
+		if ( ! post_type_supports( $post_type, 'gatherpress-event-date' ) ) {
 			return;
 		}
 
@@ -212,7 +212,7 @@ class Event_Query {
 		$query_args = array();
 
 		// Post Related.
-		$query_args['post_type'] = get_post_types_by_support( 'gatherpress-event' );
+		$query_args['post_type'] = get_post_types_by_support( 'gatherpress-event-date' );
 
 		// Type of event list: 'upcoming' or 'past',
 		// @see wp-content/plugins/gatherpress/includes/core/classes/class-event-query.php.
@@ -400,7 +400,7 @@ class Event_Query {
 		// Only process if querying GatherPress events.
 		$post_type = $block_query['postType'] ?? '';
 
-		if ( ! post_type_supports( $post_type, 'gatherpress-event' ) ) {
+		if ( ! post_type_supports( $post_type, 'gatherpress-event-date' ) ) {
 			return $query_args;
 		}
 

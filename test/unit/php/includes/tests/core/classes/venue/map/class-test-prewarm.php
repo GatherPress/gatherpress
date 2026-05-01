@@ -1104,7 +1104,7 @@ class Test_Prewarm extends Base {
 	}
 
 	/**
-	 * When no post type supports gatherpress-venue,
+	 * When no post type supports gatherpress-venue-information,
 	 * enqueue_for_all_venues and get_venue_post_ids short-circuit without
 	 * scheduling anything. Filters the supports list to simulate a site
 	 * where nothing registers as a venue source.
@@ -1118,10 +1118,10 @@ class Test_Prewarm extends Base {
 		$instance = Prewarm::get_instance();
 
 		// Temporarily unregister the venue-information support so the
-		// gatherpress-venue feature has no matching post types.
-		$supported = get_post_types_by_support( 'gatherpress-venue' );
+		// gatherpress-venue-information feature has no matching post types.
+		$supported = get_post_types_by_support( 'gatherpress-venue-information' );
 		foreach ( $supported as $post_type ) {
-			remove_post_type_support( $post_type, 'gatherpress-venue' );
+			remove_post_type_support( $post_type, 'gatherpress-venue-information' );
 		}
 
 		try {
@@ -1143,7 +1143,7 @@ class Test_Prewarm extends Base {
 			$ids = Utility::invoke_hidden_method( $instance, 'get_venue_post_ids' );
 		} finally {
 			foreach ( $supported as $post_type ) {
-				add_post_type_support( $post_type, 'gatherpress-venue' );
+				add_post_type_support( $post_type, 'gatherpress-venue-information' );
 			}
 		}
 

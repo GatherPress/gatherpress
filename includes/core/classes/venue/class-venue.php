@@ -4,7 +4,7 @@
  *
  * Mirrors the {@see \GatherPress\Core\Event\Event} class: constructed around a specific
  * venue post ID, populates `$this->venue` with the WP_Post when the post type declares
- * `gatherpress-venue` support, and exposes accessors for that
+ * `gatherpress-venue-information` support, and exposes accessors for that
  * venue's stored information, taxonomy term, and slug. Everything not tied to
  * a specific venue instance — post type registration, taxonomy helpers,
  * event→venue lookups — lives on {@see Setup}.
@@ -51,7 +51,7 @@ class Venue {
 	 * Venue post object.
 	 *
 	 * Null when the post_id passed to the constructor does not resolve to a
-	 * post whose post type declares `gatherpress-venue` support.
+	 * post whose post type declares `gatherpress-venue-information` support.
 	 *
 	 * @since 1.0.0
 	 * @var WP_Post|null
@@ -62,7 +62,7 @@ class Venue {
 	 * Construct a Venue around a specific post ID.
 	 *
 	 * Only populates `$this->venue` when the post type declares
-	 * `gatherpress-venue` support, so callers can guard on
+	 * `gatherpress-venue-information` support, so callers can guard on
 	 * `$venue->venue instanceof WP_Post` to tell a legit venue from a
 	 * stale/mistyped ID.
 	 *
@@ -71,7 +71,7 @@ class Venue {
 	 * @param int $post_id The venue post ID.
 	 */
 	public function __construct( int $post_id ) {
-		if ( post_type_supports( (string) get_post_type( $post_id ), 'gatherpress-venue' ) ) {
+		if ( post_type_supports( (string) get_post_type( $post_id ), 'gatherpress-venue-information' ) ) {
 			$this->venue = get_post( $post_id );
 		}
 	}

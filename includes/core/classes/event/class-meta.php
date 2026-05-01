@@ -3,7 +3,7 @@
  * Owns the event post-meta surface.
  *
  * Registers the read-only datetime / timezone meta on any post type that
- * declares `gatherpress-event` support, plus the always-on
+ * declares `gatherpress-event-date` support, plus the always-on
  * RSVP / attendance / online-event-link meta on the built-in event post
  * type. Also owns the REST readonly-strip filter that pairs with the
  * `__return_false` auth callbacks.
@@ -33,7 +33,7 @@ use WP_REST_Request;
  *
  * Singleton owning event post-meta registration. Hooks
  * `registered_post_type` so any post type that declares
- * `gatherpress-event` — including companion-plugin types — picks
+ * `gatherpress-event-date` — including companion-plugin types — picks
  * up the same meta shape, and the built-in event post type also picks
  * up the always-on RSVP / attendance / online-event-link meta on the
  * same hook.
@@ -70,7 +70,7 @@ class Meta {
 	 * Registers event meta for any post type that declares the
 	 * relevant supports. Two flavors:
 	 *
-	 * - `gatherpress-event` support (any registered post type) gets
+	 * - `gatherpress-event-date` support (any registered post type) gets
 	 *   the datetime / timezone read-only meta + the REST readonly-strip
 	 *   filter.
 	 * - The built-in `Event::POST_TYPE` additionally gets the always-on
@@ -84,7 +84,7 @@ class Meta {
 	 * @return void
 	 */
 	public function register( string $post_type ): void {
-		if ( post_type_supports( $post_type, 'gatherpress-event' ) ) {
+		if ( post_type_supports( $post_type, 'gatherpress-event-date' ) ) {
 			$this->register_event_date_meta( $post_type );
 		}
 
@@ -95,7 +95,7 @@ class Meta {
 
 	/**
 	 * Registers datetime meta + the read-only REST filter for a post
-	 * type that declares `gatherpress-event` support.
+	 * type that declares `gatherpress-event-date` support.
 	 *
 	 * @since 1.0.0
 	 *

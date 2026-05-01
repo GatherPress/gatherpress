@@ -111,7 +111,7 @@ class Test_Setup extends Base {
 	public function test_maybe_link_shadow_source_support(): void {
 		$instance = Setup::get_instance();
 
-		// A venue post type carries gatherpress-venue and should be auto-linked.
+		// A venue post type carries gatherpress-venue-information and should be auto-linked.
 		$instance->maybe_link_shadow_source_support( Venue::POST_TYPE );
 
 		$this->assertTrue(
@@ -122,7 +122,7 @@ class Test_Setup extends Base {
 
 	/**
 	 * Coverage for maybe_link_shadow_source_support — bails when the post type
-	 * does not declare gatherpress-venue.
+	 * does not declare gatherpress-venue-information.
 	 *
 	 * @covers ::maybe_link_shadow_source_support
 	 *
