@@ -1,0 +1,385 @@
+<?php
+/**
+ * Per-post-type shadow taxonomy lifecycle.
+ *
+ * Registers a hidden `_<post_type>` taxonomy for any post type that declares
+ * the `gatherpress-shadow-source` support, and wires the save/update/delete
+ * hooks that keep one term per post in lockstep with the post slug. The
+ * `gatherpress_venue` post type uses this primitive to power the venue
+ * taxonomy that tags events; companion plugins can declare the same support
+ * on their own post types (e.g. productions, organizers) to get the same
+ * shadow-taxonomy behavior without depending on any venue-specific code.
+ *
+ * Wiring the resulting taxonomy onto consumer post types (events, sessions,
+ * etc.) is the developer's responsibility — pass it via `register_post_type`'s
+ * `taxonomies` arg or call `register_taxonomy_for_object_type()`. The venue
+ * subsystem performs that wiring for `gatherpress-venue` post types so
+ * the venue ⇄ event relationship continues to work out of the box.
+ *
+ * @package GatherPress\Core
+ * @since 1.0.0
+ */
+
+namespace GatherPress\Core;
+
+// Exit if accessed directly.
+defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
+
+use GatherPress\Core\Traits\Singleton;
+use WP_Post;
+use WP_Post_Type;
+use WP_Term;
+
+/**
+ * Class Shadow_Source.
+ *
+ * Generic shadow-taxonomy primitive shared by the venue subsystem and any
+ * companion plugin that declares `gatherpress-shadow-source` on its own
+ * post type. Owns the per-post-type taxonomy registration and the term
+ * lifecycle (insert / rename / delete in lockstep with the source post).
+ *
+ * @since 1.0.0
+ */
+class Shadow_Source {
+	/**
+	 * Enforces a single instance of this class.
+	 */
+	use Singleton;
+
+	/**
+	 * Class constructor.
+	 *
+	 * @since 1.0.0
+	 */
+	public function __construct() {
+		$this->setup_hooks();
+	}
+
+	/**
+	 * Set up hooks for taxonomy registration and term lifecycle.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return void
+	 */
+	protected function setup_hooks(): void {
+		add_action( 'registered_post_type', array( $this, 'maybe_register_post_type_hooks' ) );
+		// Priority 11 so post types registered at default priority 10 are
+		// available for get_post_types_by_support().
+		add_action( 'init', array( $this, 'register_taxonomies' ), 11 );
+		// post_updated has no per-type variant in WP core, and we need
+		// $post_before for the old/new post_name diff, so this stays on the
+		// global hook.
+		add_action( 'post_updated', array( $this, 'maybe_update_term_slug' ), 10, 3 );
+	}
+
+	/**
+	 * Wire per-post-type lifecycle hooks when a shadow-source post type registers.
+	 *
+	 * Registration is gated on `gatherpress-shadow-source` support so any post
+	 * type that declares it — including companion-plugin post types —
+	 * automatically gets the term wired to its save and delete lifecycle,
+	 * without needing to hook the site-wide `save_post`/`delete_post` actions.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $post_type The post type that was just registered.
+	 * @return void
+	 */
+	public function maybe_register_post_type_hooks( string $post_type ): void {
+		if ( ! post_type_supports( $post_type, 'gatherpress-shadow-source' ) ) {
+			return;
+		}
+
+		add_action(
+			sprintf( 'save_post_%s', $post_type ),
+			array( $this, 'add_term' ),
+			10,
+			3
+		);
+		add_action(
+			sprintf( 'delete_post_%s', $post_type ),
+			array( $this, 'delete_term' )
+		);
+	}
+
+	/**
+	 * Register one hidden taxonomy per shadow-source post type.
+	 *
+	 * The taxonomy slug is `_<post_type>` and term slugs are derived from the
+	 * post's `post_name` via {@see self::term_slug_from_post_name()}. The
+	 * leading underscore keeps the slugs uneditable through the WordPress UI
+	 * and signals that they're programmatically managed.
+	 *
+	 * Labels are inherited from the source post type so admin columns and
+	 * Query Loop taxonomy controls read naturally for any consumer.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return void
+	 */
+	public function register_taxonomies(): void {
+		foreach ( get_post_types_by_support( 'gatherpress-shadow-source' ) as $post_type ) {
+			register_taxonomy(
+				$this->get_taxonomy( $post_type ),
+				array(),
+				$this->get_taxonomy_args( $post_type )
+			);
+		}
+	}
+
+	/**
+	 * Return the taxonomy registration args for a shadow-source post type.
+	 *
+	 * Inherits its labels from the post type itself so the taxonomy reads
+	 * naturally in admin columns and the Query Loop block's taxonomy
+	 * controls. Filterable so consumers can override registration without
+	 * forking the primitive.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $post_type The post type that owns this shadow taxonomy.
+	 * @return array<string, mixed>
+	 */
+	protected function get_taxonomy_args( string $post_type ): array {
+		$post_type_object = get_post_type_object( $post_type );
+		$labels           = array(
+			'name'          => $post_type_object instanceof WP_Post_Type
+				? $post_type_object->labels->name
+				: $post_type,
+			'singular_name' => $post_type_object instanceof WP_Post_Type
+				? $post_type_object->labels->singular_name
+				: $post_type,
+		);
+
+		$args = array(
+			'labels'             => $labels,
+			'hierarchical'       => false,
+			'public'             => true,
+			'show_ui'            => false,
+			'show_admin_column'  => true,
+			'query_var'          => true,
+			'publicly_queryable' => true,
+			'rewrite'            => false,
+			'show_in_rest'       => true,
+		);
+
+		/**
+		 * Filters the taxonomy registration args for a shadow-source post type.
+		 *
+		 * Gives consumers a hook to tweak labels or other registration args
+		 * for the shadow taxonomy without reimplementing the primitive.
+		 *
+		 * @since 1.0.0
+		 *
+		 * @param array<string, mixed> $args      The taxonomy registration args.
+		 * @param string               $post_type The shadow-source post type slug.
+		 */
+		return (array) apply_filters( 'gatherpress_shadow_taxonomy_args', $args, $post_type );
+	}
+
+	/**
+	 * Insert the shadow term when a shadow-source post is first published.
+	 *
+	 * Idempotent: if a term with the derived slug already exists, the call
+	 * returns early. Skips autosaves and updates so the term is only created
+	 * once, on initial publish.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param int     $post_id Post ID of the saved post.
+	 * @param WP_Post $post    The saved post object.
+	 * @param bool    $update  Whether this is an existing post being updated.
+	 * @return void
+	 */
+	public function add_term( int $post_id, WP_Post $post, bool $update ): void {
+		if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) { // @codeCoverageIgnore
+			return; // @codeCoverageIgnore
+		}
+
+		if ( ! post_type_supports( $post->post_type, 'gatherpress-shadow-source' ) ) {
+			return;
+		}
+
+		if ( $update || empty( $post->post_name ) || 'publish' !== $post->post_status ) {
+			return;
+		}
+
+		$taxonomy  = $this->get_taxonomy( $post->post_type );
+		$term_slug = $this->term_slug_from_post_name( $post->post_name );
+
+		if ( term_exists( $term_slug, $taxonomy ) ) {
+			return;
+		}
+
+		wp_insert_term(
+			html_entity_decode( get_the_title( $post_id ) ),
+			$taxonomy,
+			array( 'slug' => $term_slug )
+		);
+	}
+
+	/**
+	 * Update the shadow term slug/title when its source post is renamed.
+	 *
+	 * Triggered on the global `post_updated` action so we can compare the
+	 * pre/post post_name and post_title without re-reading from the DB. If
+	 * the term doesn't exist yet (e.g. the post was created in draft and is
+	 * now being renamed before first publish), one is created with the new
+	 * slug.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param int     $post_id     Post ID of the updated post.
+	 * @param WP_Post $post_after  Post object after the save operation.
+	 * @param WP_Post $post_before Post object before the save operation.
+	 * @return void
+	 */
+	public function maybe_update_term_slug( int $post_id, WP_Post $post_after, WP_Post $post_before ): void {
+		$post_type = (string) get_post_type( $post_id );
+
+		if ( ! post_type_supports( $post_type, 'gatherpress-shadow-source' ) ) {
+			return;
+		}
+
+		if ( ! in_array( $post_after->post_status, array( 'publish', 'trash' ), true ) ) {
+			return;
+		}
+
+		if (
+			$post_before->post_name === $post_after->post_name &&
+			$post_before->post_title === $post_after->post_title
+		) {
+			return;
+		}
+
+		// Derive both slugs from the hook-supplied post objects rather than
+		// re-reading from the DB: the hook already gives us the trusted
+		// pre/post state, and we avoid a race where a concurrent save would
+		// leak into the slug calculation.
+		$taxonomy      = $this->get_taxonomy( $post_type );
+		$old_term_slug = $this->term_slug_from_post_name( $post_before->post_name );
+		$new_term_slug = $this->term_slug_from_post_name( $post_after->post_name );
+		$title         = html_entity_decode( get_the_title( $post_id ) );
+
+		$term = term_exists( $old_term_slug, $taxonomy );
+
+		if ( empty( $term ) ) {
+			wp_insert_term(
+				$title,
+				$taxonomy,
+				array( 'slug' => $new_term_slug )
+			);
+			return;
+		}
+
+		wp_update_term(
+			intval( $term['term_id'] ),
+			$taxonomy,
+			array(
+				'name' => $title,
+				'slug' => $new_term_slug,
+			)
+		);
+	}
+
+	/**
+	 * Delete the shadow term when its source post is deleted.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param int $post_id Post ID of the post being deleted.
+	 * @return void
+	 */
+	public function delete_term( int $post_id ): void {
+		$post_type = (string) get_post_type( $post_id );
+
+		if ( ! post_type_supports( $post_type, 'gatherpress-shadow-source' ) ) {
+			return;
+		}
+
+		$post = get_post( $post_id );
+
+		if ( ! $post instanceof WP_Post || empty( $post->post_name ) ) {
+			return;
+		}
+
+		$taxonomy = $this->get_taxonomy( $post_type );
+		$term     = get_term_by(
+			'slug',
+			$this->term_slug_from_post_name( $post->post_name ),
+			$taxonomy
+		);
+
+		if ( $term instanceof WP_Term ) {
+			wp_delete_term( $term->term_id, $taxonomy );
+		}
+	}
+
+	/**
+	 * Returns the taxonomy slug for a given shadow-source post type.
+	 *
+	 * The taxonomy slug is always derived by prepending an underscore to the
+	 * post type slug — for example, `gatherpress_venue` → `_gatherpress_venue`.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $post_type The shadow-source post type slug.
+	 * @return string The taxonomy slug for the given post type.
+	 */
+	public function get_taxonomy( string $post_type ): string {
+		return '_' . $post_type;
+	}
+
+	/**
+	 * Format a shadow taxonomy term slug from a post_name.
+	 *
+	 * Pure formatter — prepends an underscore to the given post_name. Used
+	 * by callers that already have the name in hand (e.g. rename-diff
+	 * callers comparing old vs. new post_name during a save-post transition).
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $post_name The post_name (e.g. `my-venue`).
+	 * @return string The taxonomy term slug (e.g. `_my-venue`).
+	 */
+	public function term_slug_from_post_name( string $post_name ): string {
+		return sprintf( '_%s', $post_name );
+	}
+
+	/**
+	 * Returns true when `$slug` is a real shadow taxonomy term slug.
+	 *
+	 * Real shadow terms always carry a leading underscore — the auto-generated
+	 * prefix added by {@see self::term_slug_from_post_name()}. Sentinels that
+	 * may be added to the same taxonomy (such as the venue subsystem's
+	 * `online-event` term) deliberately don't, so this predicate filters them
+	 * out and keeps shadow-resolution logic from treating sentinels as real
+	 * source posts.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $slug The term slug to test.
+	 * @return bool
+	 */
+	public function is_shadow_term_slug( string $slug ): bool {
+		return str_starts_with( $slug, '_' );
+	}
+
+	/**
+	 * Retrieve the source post that corresponds to a shadow term slug.
+	 *
+	 * Strips the leading underscore from the taxonomy slug and looks up the
+	 * post via `get_page_by_path()` against the given post type. Returns
+	 * null when no matching post exists.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $slug      The shadow taxonomy term slug (e.g. `_my-venue`).
+	 * @param string $post_type The shadow-source post type to search.
+	 * @return WP_Post|null The matching post, or null.
+	 */
+	public function get_post_from_term_slug( string $slug, string $post_type ): ?WP_Post {
+		return get_page_by_path( ltrim( $slug, '_' ), OBJECT, $post_type );
+	}
+}
