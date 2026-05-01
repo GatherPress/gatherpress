@@ -561,6 +561,94 @@ class Test_Settings extends Base {
 	}
 
 	/**
+	 * Map platform toggle script does not run outside the admin area.
+	 *
+	 * @covers ::print_venues_map_platform_toggle_script
+	 *
+	 * @return void
+	 */
+	public function test_print_venues_map_platform_toggle_script_bails_when_not_admin(): void {
+		$instance = Settings::get_instance();
+		set_current_screen( 'front' );
+
+		$output = Utility::buffer_and_return(
+			array( $instance, 'print_venues_map_platform_toggle_script' )
+		);
+
+		set_current_screen( 'front' );
+
+		$this->assertSame( '', $output );
+	}
+
+	/**
+	 * Map platform toggle script does not run when `page` is absent on a GatherPress admin screen.
+	 *
+	 * @covers ::print_venues_map_platform_toggle_script
+	 *
+	 * @return void
+	 */
+	public function test_print_venues_map_platform_toggle_script_bails_when_page_query_missing(): void {
+		$instance = Settings::get_instance();
+		set_current_screen( 'plugins' );
+		unset( $_GET['page'] ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+
+		$output = Utility::buffer_and_return(
+			array( $instance, 'print_venues_map_platform_toggle_script' )
+		);
+
+		unset( $_GET['page'] ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		set_current_screen( 'front' );
+
+		$this->assertSame( '', $output );
+	}
+
+	/**
+	 * Map platform toggle script does not run on non-GatherPress admin pages.
+	 *
+	 * @covers ::print_venues_map_platform_toggle_script
+	 *
+	 * @return void
+	 */
+	public function test_print_venues_map_platform_toggle_script_bails_when_page_not_gatherpress_slug(): void {
+		$instance = Settings::get_instance();
+		set_current_screen( 'plugins' );
+		$_GET['page'] = 'options-general'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+
+		$output = Utility::buffer_and_return(
+			array( $instance, 'print_venues_map_platform_toggle_script' )
+		);
+
+		unset( $_GET['page'] ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		set_current_screen( 'front' );
+
+		$this->assertSame( '', $output );
+	}
+
+	/**
+	 * Map platform toggle script is printed on GatherPress settings admin pages.
+	 *
+	 * @covers ::print_venues_map_platform_toggle_script
+	 *
+	 * @return void
+	 */
+	public function test_print_venues_map_platform_toggle_script_emits_on_gatherpress_page(): void {
+		$instance = Settings::get_instance();
+		set_current_screen( 'plugins' );
+		$_GET['page'] = 'gatherpress_general'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+
+		$output = Utility::buffer_and_return(
+			array( $instance, 'print_venues_map_platform_toggle_script' )
+		);
+
+		unset( $_GET['page'] ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		set_current_screen( 'front' );
+
+		$this->assertStringContainsString( 'gatherpress_map_platform', $output );
+		$this->assertStringContainsString( 'data-gatherpress-google-api-key-field', $output );
+		$this->assertStringContainsString( 'gatherpressToggleGoogleMapsApiKeyRow', $output );
+	}
+
+	/**
 	 * Data provider for testing the sanitize_autocomplete method.
 	 *
 	 * Provides test cases with various input JSON strings and their expected
