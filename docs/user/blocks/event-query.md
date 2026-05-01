@@ -20,4 +20,5 @@ GatherPress includes a block-variation of the `core/query` block, called _Event 
    - last modified date
 8. ... in either ASC or DESC `ORDER`
 9. Allows to filter the queried events by Author, Keyword, Topic or Venue (and any other additionally registered taxonomies).
-10. The variation is automatically loaded, when an editor chooses the „Event“ post type in a regular `core/query` block.
+10. **Filter by current venue** toggle — when placed on a venue page, the query is automatically scoped to that venue's events. The toggle is hidden on regular posts where there's no venue context to use. In templates or template parts, the toggle is shown with a note that the filter only takes effect when the template renders on a venue page.
+11. The variation is automatically loaded, when an editor chooses the „Event“ post type in a regular `core/query` block.
