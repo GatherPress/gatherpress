@@ -81,6 +81,10 @@
 - [`gatherpress_is_alpha_active`](gatherpress_is_alpha_active.md) Filters whether GatherPress Alpha is considered active.
 - [`gatherpress_venue_post_type`](gatherpress_venue_post_type.md) Filters the post type used as the venue.
 
+## class-shadow-source.php
+
+- [`gatherpress_shadow_taxonomy_args`](gatherpress_shadow_taxonomy_args.md) Filters the taxonomy registration args for a shadow-source post type.
+
 ## class-user.php
 
 - [`gatherpress_event_updates_default_opt_in`](gatherpress_event_updates_default_opt_in.md) Filters the default state of the event updates opt-in.
