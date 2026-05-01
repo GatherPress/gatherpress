@@ -25,11 +25,9 @@ import { select } from '@wordpress/data';
  */
 
 /**
- * Map types supported by the authenticated Maps Embed API (view mode).
- *
- * @see https://developers.google.com/maps/documentation/embed/embedding-map#optional_parameters
+ * Map type slugs stored on the venue-map block (editor + legacy iframe).
  */
-const GOOGLE_EMBED_MAP_TYPES = [
+const BLOCK_MAP_TYPE_SLUGS = [
 	'roadmap',
 	'satellite',
 	'hybrid',
@@ -37,15 +35,33 @@ const GOOGLE_EMBED_MAP_TYPES = [
 ];
 
 /**
+ * Maps Embed API `view` (and related) modes only allow `roadmap` or `satellite`
+ * for `maptype`. Hybrid or terrain in block data (e.g. before the editor
+ * normalizes) are coerced so keyed iframe URLs stay valid.
+ *
+ * @see https://developers.google.com/maps/documentation/embed/embedding-map#view_mode
+ *
+ * @param {string} type Map type slug from the block.
+ * @return {'roadmap'|'satellite'} Coercion for interactive iframe: hybrid→satellite, terrain→roadmap.
+ */
+export function toMapsEmbedApiMapType( type ) {
+	const normalized =
+		type && BLOCK_MAP_TYPE_SLUGS.includes( type ) ? type : 'roadmap';
+	if ( 'satellite' === normalized || 'hybrid' === normalized ) {
+		return 'satellite';
+	}
+	return 'roadmap';
+}
+
+/**
  * Google Maps legacy keyless embed uses single-letter `t=` query values.
+ * Hybrid/terrain block values are coerced to satellite/roadmap for parity with the Embed API path.
  *
  * @see https://developers.google.com/maps/documentation/embed/map-parameters
  */
 const GOOGLE_MAP_TYPE_CODES = {
 	roadmap: 'm',
 	satellite: 'k',
-	hybrid: 'h',
-	terrain: 'p',
 };
 
 const GOOGLE_EMBED_VIEW_BASE = 'https://www.google.com/maps/embed/v1/view';
@@ -71,7 +87,7 @@ export function getGoogleMapEmbedSrc( {
 } ) {
 	const z = zoom || 10;
 	const safeType =
-		type && GOOGLE_EMBED_MAP_TYPES.includes( type ) ? type : 'roadmap';
+		type && BLOCK_MAP_TYPE_SLUGS.includes( type ) ? type : 'roadmap';
 	const trimmedKey = ( apiKey || '' ).trim();
 
 	if ( trimmedKey ) {
@@ -79,15 +95,16 @@ export function getGoogleMapEmbedSrc( {
 			key: trimmedKey,
 			center: `${ latitude },${ longitude }`,
 			zoom: String( z ),
-			maptype: safeType,
+			maptype: toMapsEmbedApiMapType( safeType ),
 		} );
 		return `${ GOOGLE_EMBED_VIEW_BASE }?${ params.toString() }`;
 	}
 
+	const legacyType = toMapsEmbedApiMapType( safeType );
 	const params = new URLSearchParams( {
 		q: `${ latitude },${ longitude }`,
 		z: String( z ),
-		t: GOOGLE_MAP_TYPE_CODES[ safeType ] || GOOGLE_MAP_TYPE_CODES.roadmap,
+		t: GOOGLE_MAP_TYPE_CODES[ legacyType ] || GOOGLE_MAP_TYPE_CODES.roadmap,
 		output: 'embed',
 	} );
 	return `${ GOOGLE_LEGACY_EMBED_BASE }?${ params.toString() }`;

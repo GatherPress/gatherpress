@@ -110,17 +110,21 @@ class Venues extends Base {
 						),
 						'description' => wp_kses_post(
 							sprintf(
-								'%1$s %2$s %3$s %4$s',
+								'%1$s %2$s %3$s %4$s %5$s',
 								__(
-									'Optional. Referrer-restricted Maps Embed API key for Google Maps.',
+									'Optional. Referrer-restricted key for Google Maps (Embed and Static APIs).',
 									'gatherpress'
 								),
 								__(
-									'Hybrid and terrain need a key; it appears in the iframe URL.',
+									'Does not unlock interactive map styles; blocks use roadmap and satellite.',
 									'gatherpress'
 								),
 								__(
-									'Use referrer restrictions. Empty = keyless roadmap and satellite.',
+									'Enables referrer restrictions and cached static images with the static provider.',
+									'gatherpress'
+								),
+								__(
+									'Restrict the key by HTTP referrer.',
 									'gatherpress'
 								),
 								sprintf(
