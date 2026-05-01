@@ -32,7 +32,7 @@ const AQLEventDefaults = ( { attributes, setAttributes } ) => {
 	useEffect( () => {
 		// Set GatherPress defaults when post type supports event-date
 		// but event query params haven't been set yet.
-		if ( isPostTypeSupporting( 'gatherpress-event-date', postType ) && ! eventQuery ) {
+		if ( isPostTypeSupporting( 'gatherpress-event', postType ) && ! eventQuery ) {
 			setAttributes( {
 				query: {
 					...attributes.query,
@@ -69,7 +69,7 @@ const withAQLEventControls = ( BlockEdit ) => ( props ) => {
 	}
 
 	const isEvent = isPostTypeSupporting(
-		'gatherpress-event-date',
+		'gatherpress-event',
 		props.attributes.query?.postType
 	);
 

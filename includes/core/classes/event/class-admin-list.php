@@ -76,7 +76,7 @@ class Admin_List {
 
 	/**
 	 * Registers admin list table hooks when a post type that declares
-	 * gatherpress-event-date support finishes registering.
+	 * gatherpress-event support finishes registering.
 	 *
 	 * @since 1.0.0
 	 *
@@ -84,7 +84,7 @@ class Admin_List {
 	 * @return void
 	 */
 	public function maybe_register_post_type_hooks( string $post_type ): void {
-		if ( ! post_type_supports( $post_type, 'gatherpress-event-date' ) ) {
+		if ( ! post_type_supports( $post_type, 'gatherpress-event' ) ) {
 			return;
 		}
 
@@ -125,7 +125,7 @@ class Admin_List {
 	public function default_sort(): void {
 		$screen = get_current_screen();
 
-		if ( ! $screen || ! post_type_supports( $screen->post_type, 'gatherpress-event-date' ) ) {
+		if ( ! $screen || ! post_type_supports( $screen->post_type, 'gatherpress-event' ) ) {
 			return;
 		}
 
@@ -392,7 +392,7 @@ class Admin_List {
 
 		// Only proceed if we're in admin, on the main query, and dealing with an event post type.
 		if ( ! is_admin() || ! $query->is_main_query()
-			|| ! post_type_supports( $post_type, 'gatherpress-event-date' ) ) {
+			|| ! post_type_supports( $post_type, 'gatherpress-event' ) ) {
 			return;
 		}
 

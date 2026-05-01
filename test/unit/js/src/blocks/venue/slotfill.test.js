@@ -65,11 +65,11 @@ describe( 'VenueBlockPluginFill', () => {
 		expect( container.firstChild ).toBeNull();
 	} );
 
-	it( 'should call isPostTypeSupporting with gatherpress-venue on render', () => {
+	it( 'should call isPostTypeSupporting with gatherpress-event-venue on render', () => {
 		isPostTypeSupporting.mockReturnValue( true );
 
 		render( <VenueBlockPluginFill /> );
 
-		expect( isPostTypeSupporting ).toHaveBeenCalledWith( 'gatherpress-venue' );
+		expect( isPostTypeSupporting ).toHaveBeenCalledWith( 'gatherpress-event-venue' );
 	} );
 } );

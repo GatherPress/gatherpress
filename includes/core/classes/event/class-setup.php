@@ -202,9 +202,9 @@ class Setup {
 					'comments',
 					'revisions',
 					'custom-fields',
-					'gatherpress-event-date',
+					'gatherpress-event',
 					'gatherpress-rsvp',
-					'gatherpress-venue',
+					'gatherpress-event-venue',
 					'gatherpress-online-event',
 				),
 				'menu_icon'     => 'dashicons-nametag',
@@ -474,7 +474,7 @@ class Setup {
 	public function delete_event( int $post_id ): void {
 		global $wpdb;
 
-		if ( ! post_type_supports( (string) get_post_type( $post_id ), 'gatherpress-event-date' ) ) {
+		if ( ! post_type_supports( (string) get_post_type( $post_id ), 'gatherpress-event' ) ) {
 			return;
 		}
 
@@ -515,7 +515,7 @@ class Setup {
 		$post_id   = $post instanceof WP_Post ? $post->ID : get_the_ID();
 
 		if (
-			! post_type_supports( (string) $post_type, 'gatherpress-event-date' )
+			! post_type_supports( (string) $post_type, 'gatherpress-event' )
 			|| 1 !== intval( $use_event_date )
 		) {
 			return $the_date;
@@ -552,7 +552,7 @@ class Setup {
 	public function render_event_post_date_block( string $block_content, array $block, WP_Block $instance ): string {
 		$post_id = $instance->context['postId'] ?? get_the_ID();
 
-		if ( ! $post_id || ! post_type_supports( (string) get_post_type( $post_id ), 'gatherpress-event-date' ) ) {
+		if ( ! $post_id || ! post_type_supports( (string) get_post_type( $post_id ), 'gatherpress-event' ) ) {
 			return $block_content;
 		}
 
@@ -635,7 +635,7 @@ class Setup {
 	 * @return void
 	 */
 	public function set_datetimes( int $post_id ): void {
-		if ( ! post_type_supports( (string) get_post_type( $post_id ), 'gatherpress-event-date' ) ) {
+		if ( ! post_type_supports( (string) get_post_type( $post_id ), 'gatherpress-event' ) ) {
 			return;
 		}
 

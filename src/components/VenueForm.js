@@ -349,7 +349,7 @@ function CreateVenueForm( { search, ...props } ) {
 	 * This function is called when the save button is clicked.
 	 */
 	const saveBogus = async () => {
-		if ( isPostTypeSupporting( 'gatherpress-venue' ) ) {
+		if ( isPostTypeSupporting( 'gatherpress-event-venue' ) ) {
 			// This should only run for the VenueTermsCombobox.
 			await updateVenueTermOnEventPost();
 		} else {

@@ -17,7 +17,7 @@ const Edit = ( { attributes, context } ) => {
 	// post-type definition resolves; the non-reactive variant would miss it
 	// and leave the block permanently dimmed in Query Loops.
 	const isDescendentOfQueryLoop = Number.isFinite( context?.queryId );
-	const isEventContext = usePostTypeSupports( 'gatherpress-event-date', context?.postType );
+	const isEventContext = usePostTypeSupports( 'gatherpress-event', context?.postType );
 	const hasExplicitOverride = !! attributes?.postId;
 
 	// Only use postId if context is an event or have an explicit override.

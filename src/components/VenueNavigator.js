@@ -56,7 +56,7 @@ export default function VenueNavigator( props = null ) {
 
 	// Check if we're in a venue-supporting context to show popular venues.
 	// When used in panel context, props may be null, so check current editor post type.
-	const isEventContext = isPostTypeSupporting( 'gatherpress-venue', props?.context?.postType );
+	const isEventContext = isPostTypeSupporting( 'gatherpress-event-venue', props?.context?.postType );
 
 	// Get current venue and update function for event context.
 	const cId = getCurrentContextualPostId( props?.context?.postId );

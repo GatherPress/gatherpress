@@ -829,7 +829,7 @@ class Test_Query extends Base {
 		);
 
 		// Expect one entry per registered venue post type (plus the relation key).
-		$venue_post_types = get_post_types_by_support( 'gatherpress-venue-information' );
+		$venue_post_types = get_post_types_by_support( 'gatherpress-venue' );
 		$expected_count   = count( $venue_post_types ) + 1;
 		$this->assertCount(
 			$expected_count,

@@ -36,14 +36,14 @@ export function useVenueData( context, fieldType ) {
 			const contextPostId = context?.postId || 0;
 
 			// Check if the context post type is a venue via its registered supports.
-			const contextPostIsVenue = !! contextPostId && isPostTypeSupporting( 'gatherpress-venue-information', context?.postType );
+			const contextPostIsVenue = !! contextPostId && isPostTypeSupporting( 'gatherpress-venue', context?.postType );
 
 			// Only use contextPostId if it's actually a venue post.
 			// Otherwise, check if we're editing a venue directly.
 			let effectiveVenuePostId = 0;
 			if ( contextPostIsVenue ) {
 				effectiveVenuePostId = contextPostId;
-			} else if ( isPostTypeSupporting( 'gatherpress-venue-information', currentPostType ) ) {
+			} else if ( isPostTypeSupporting( 'gatherpress-venue', currentPostType ) ) {
 				effectiveVenuePostId = currentPostId;
 			}
 
@@ -51,7 +51,7 @@ export function useVenueData( context, fieldType ) {
 				venuePostId: effectiveVenuePostId,
 				isEditingCurrentPost:
 					currentPostId === effectiveVenuePostId &&
-					isPostTypeSupporting( 'gatherpress-venue-information', currentPostType ),
+					isPostTypeSupporting( 'gatherpress-venue', currentPostType ),
 			};
 		},
 		[ context?.postId, context?.postType ]

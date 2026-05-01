@@ -159,7 +159,7 @@ class Event {
 	 * @param int $post_id The event post ID.
 	 */
 	public function __construct( int $post_id ) {
-		if ( post_type_supports( (string) get_post_type( $post_id ), 'gatherpress-event-date' ) ) {
+		if ( post_type_supports( (string) get_post_type( $post_id ), 'gatherpress-event' ) ) {
 			$this->event = get_post( $post_id );
 			$this->rsvp  = new Rsvp( $post_id );
 		}

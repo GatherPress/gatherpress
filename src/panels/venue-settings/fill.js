@@ -21,7 +21,7 @@ import { isPostTypeSupporting } from '../../helpers/event';
 import OnlineEventPanel from './online-event';
 
 export default function VenuePluginFill() {
-	const showVenueSection = isPostTypeSupporting( 'gatherpress-venue' );
+	const showVenueSection = isPostTypeSupporting( 'gatherpress-event-venue' );
 	const showOnlineEventSection = isPostTypeSupporting( 'gatherpress-online-event' );
 	const showPanel = showVenueSection || showOnlineEventSection;
 

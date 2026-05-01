@@ -67,6 +67,7 @@ class Setup {
 		Import::get_instance();
 		Rsvp\Setup::get_instance();
 		Settings::get_instance();
+		Shadow_Source::get_instance();
 		Topic::get_instance();
 		User::get_instance();
 		Venue\Setup::get_instance();
@@ -350,7 +351,7 @@ class Setup {
 		$term_slug = 'online-event';
 
 		// Ensure the online-event term exists in each registered venue taxonomy.
-		foreach ( get_post_types_by_support( 'gatherpress-venue-information' ) as $venue_post_type ) {
+		foreach ( get_post_types_by_support( 'gatherpress-venue' ) as $venue_post_type ) {
 			$taxonomy = Venue\Setup::get_instance()->get_taxonomy( $venue_post_type );
 			$term     = term_exists( $term_slug, $taxonomy );
 

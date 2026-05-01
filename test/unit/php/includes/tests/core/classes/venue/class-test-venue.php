@@ -149,7 +149,7 @@ class Test_Venue extends Base {
 
 	/**
 	 * Constructor leaves `$venue` null when the post type doesn't declare
-	 * gatherpress-venue-information support, so callers can guard safely.
+	 * gatherpress-venue support, so callers can guard safely.
 	 *
 	 * @covers ::__construct
 	 *
@@ -162,7 +162,7 @@ class Test_Venue extends Base {
 
 		$this->assertNull(
 			$venue->venue,
-			'Expected $venue property to be null when post type lacks gatherpress-venue-information support.'
+			'Expected $venue property to be null when post type lacks gatherpress-venue support.'
 		);
 		$this->assertSame( 0, $venue->get_post_id() );
 		$this->assertSame( '', $venue->get_post_type() );

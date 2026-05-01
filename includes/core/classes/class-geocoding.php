@@ -209,7 +209,7 @@ class Geocoding {
 			return;
 		}
 
-		if ( ! post_type_supports( $post->post_type, 'gatherpress-venue-information' ) ) {
+		if ( ! post_type_supports( $post->post_type, 'gatherpress-venue' ) ) {
 			return;
 		}
 
@@ -337,7 +337,7 @@ class Geocoding {
 			return;
 		}
 
-		if ( ! post_type_supports( $post->post_type, 'gatherpress-venue-information' ) ) {
+		if ( ! post_type_supports( $post->post_type, 'gatherpress-venue' ) ) {
 			return;
 		}
 

@@ -6,7 +6,7 @@ import { VenuePostsCombobox } from './VenuePostsCombobox';
 import { isPostTypeSupporting } from '../helpers/event';
 
 export const VenueComboboxProvider = ( { search, setSearch, ...props } ) => {
-	const isEventContext = isPostTypeSupporting( 'gatherpress-venue', props?.context?.postType );
+	const isEventContext = isPostTypeSupporting( 'gatherpress-event-venue', props?.context?.postType );
 	return (
 		<>
 			{ isEventContext && (

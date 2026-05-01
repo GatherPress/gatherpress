@@ -80,7 +80,7 @@ const QueryPosttypeObserver = ( { attributes, setAttributes } ) => {
  * supports at all.
  *
  * Hides itself when the queried post type doesn't support
- * `gatherpress-event-date`, so changing a loop's post type away from events
+ * `gatherpress-event`, so changing a loop's post type away from events
  * (without removing the variation) collapses the now-irrelevant panel
  * instead of leaving stale event-only controls visible.
  *
@@ -90,7 +90,7 @@ const QueryPosttypeObserver = ( { attributes, setAttributes } ) => {
 export const EventQueryControlsPanel = ( props ) => {
 	const queryPostType = props.attributes?.query?.postType;
 	const queryPostTypeSupportsEvents = usePostTypeSupports(
-		'gatherpress-event-date',
+		'gatherpress-event',
 		queryPostType
 	);
 

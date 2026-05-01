@@ -1861,7 +1861,7 @@ class Test_Geocoding extends Base {
 	/**
 	 * The same hook fires for every post type. Saving an address-shaped
 	 * meta on a non-venue post must not trigger the cron — only post types
-	 * that declare `gatherpress-venue-information` support are eligible.
+	 * that declare `gatherpress-venue` support are eligible.
 	 *
 	 * @covers ::maybe_schedule_geocode
 	 *

@@ -2,10 +2,13 @@
 /**
  * Handles WordPress integration for the Venue post type.
  *
- * This singleton registers the post type, taxonomy, and meta for venues, plus
- * all the cross-cutting save/delete hooks (term creation, template seeding,
- * slug maintenance). Per-venue data accessors live on the `Venue` instance
- * class instead.
+ * This singleton registers the venue post type and meta, wires the venue
+ * shadow taxonomy onto event post types, and seeds the venue template on
+ * first save. The per-post-type taxonomy registration and term lifecycle
+ * are owned by {@see \GatherPress\Core\Shadow_Source} — venue post types
+ * inherit that lifecycle by also declaring `gatherpress-shadow-source`
+ * support. Per-venue data accessors live on the `Venue` instance class
+ * instead.
  *
  * @package GatherPress\Core\Venue
  * @since 1.0.0
@@ -18,12 +21,12 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Event\Event;
 use GatherPress\Core\Settings;
+use GatherPress\Core\Shadow_Source;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Utility;
 use GatherPress\Core\Venue\Map\Setup as Map_Setup;
 use WP_Block_Patterns_Registry;
 use WP_Post;
-use WP_Term;
 
 /**
  * Class Setup.
@@ -89,44 +92,38 @@ class Setup {
 			3
 		);
 		add_action( 'init', array( $this, 'register_post_type' ) );
-		add_action( 'registered_post_type', array( $this, 'maybe_register_post_type_hooks' ) );
+		// Priority 9 so the implicit `gatherpress-shadow-source` support is
+		// declared before Shadow_Source's own priority-10 `registered_post_type`
+		// callback wires its per-post-type lifecycle hooks for that post type.
+		add_action( 'registered_post_type', array( $this, 'maybe_link_shadow_source_support' ), 9 );
 		// Priority 11 so post types registered at default priority 10 are available for get_post_types_by_support().
 		add_action( 'init', array( $this, 'register_taxonomy' ), 11 );
-		// post_updated has no per-type variant in WP core, and we need $post_before
-		// for the old/new post_name diff, so this stays on the global hook.
-		add_action( 'post_updated', array( $this, 'maybe_update_term_slug' ), 10, 3 );
 		add_filter( 'block_editor_settings_all', array( $this, 'add_editor_settings' ) );
 	}
 
 	/**
-	 * Wire per-post-type lifecycle hooks when a venue post type registers.
+	 * Implicitly declare `gatherpress-shadow-source` for every venue post type.
 	 *
-	 * Registration is gated on `gatherpress-venue-information` support so any
-	 * post type that declares that support — including companion-plugin
-	 * post types — automatically gets the venue term wired to its save and
-	 * delete lifecycle, without needing to hook the site-wide
-	 * `save_post`/`delete_post` actions.
+	 * Declaring `gatherpress-venue` is the canonical way to mark a post type
+	 * as a venue. We treat that declaration as also declaring
+	 * `gatherpress-shadow-source` so the shadow-taxonomy primitive is wired
+	 * up automatically — companion plugins don't have to remember to declare
+	 * both.
+	 *
+	 * Hooked on `registered_post_type` at priority 9 so the support is in
+	 * place before Shadow_Source's own callback (priority 10) reads it.
 	 *
 	 * @since 1.0.0
 	 *
 	 * @param string $post_type The post type that was just registered.
 	 * @return void
 	 */
-	public function maybe_register_post_type_hooks( string $post_type ): void {
-		if ( ! post_type_supports( $post_type, 'gatherpress-venue-information' ) ) {
+	public function maybe_link_shadow_source_support( string $post_type ): void {
+		if ( ! post_type_supports( $post_type, 'gatherpress-venue' ) ) {
 			return;
 		}
 
-		add_action(
-			sprintf( 'save_post_%s', $post_type ),
-			array( $this, 'add_venue_term' ),
-			10,
-			3
-		);
-		add_action(
-			sprintf( 'delete_post_%s', $post_type ),
-			array( $this, 'delete_venue_term' )
-		);
+		add_post_type_support( $post_type, 'gatherpress-shadow-source' );
 	}
 
 	/**
@@ -230,8 +227,9 @@ class Setup {
 					'thumbnail',
 					'revisions',
 					'custom-fields',
-					'gatherpress-venue-information',
+					'gatherpress-venue',
 					'gatherpress-venue-map',
+					'gatherpress-shadow-source',
 				),
 				'menu_icon'    => 'dashicons-location',
 				'template'     => array(
@@ -247,88 +245,29 @@ class Setup {
 	}
 
 	/**
-	 * Registers a custom taxonomy for the Venue post type, not accessible to users.
+	 * Ensure the venue shadow taxonomy is registered and wired to event post types.
 	 *
-	 * This taxonomy, programmatically managed and linked to the Venue post type, is hidden from users
-	 * and designed for internal purposes only. Slugs for taxonomy terms are prefixed with an underscore,
-	 * emphasizing their programmatic nature and ensuring they remain uneditable through the WordPress UI.
-	 * It supports query var and REST API interactions but is entirely excluded from the admin UI
-	 * and user-facing interfaces.
-	 *
-	 * The taxonomy is publicly queryable so that it appears in the Query Loop block's taxonomy
-	 * filter controls, while rewrite rules are disabled to prevent public archive URLs.
+	 * The per-venue-post-type taxonomy registration itself is owned by
+	 * {@see Shadow_Source::register_taxonomies()} — venue post types inherit
+	 * it because they declare `gatherpress-shadow-source` (either explicitly
+	 * or via {@see self::maybe_link_shadow_source_support()}). This method
+	 * delegates there and then performs the venue-specific event-side
+	 * wiring: any post type with `gatherpress-event-venue` support gets its
+	 * resolved venue's taxonomy registered for it via
+	 * `register_taxonomy_for_object_type()`.
 	 *
 	 * @since 1.0.0
 	 *
 	 * @return void
 	 */
 	public function register_taxonomy(): void {
-		$taxonomy_args = array(
-			'labels'             => array(
-				'name'          => _x( 'Venues', 'Admin menu and taxonomy general name', 'gatherpress' ),
-				'singular_name' => _x( 'Venue', 'Admin menu and taxonomy singular name', 'gatherpress' ),
-			),
-			'hierarchical'       => false,
-			'public'             => true,
-			'show_ui'            => false,
-			'show_admin_column'  => true,
-			'query_var'          => true,
-			'publicly_queryable' => true,
-			'rewrite'            => false,
-			'show_in_rest'       => true,
-		);
-
-		// Register one taxonomy per venue post type: '_' . venue_post_type_slug.
-		foreach ( get_post_types_by_support( 'gatherpress-venue-information' ) as $venue_post_type ) {
-			register_taxonomy( $this->get_taxonomy( $venue_post_type ), array(), $taxonomy_args );
-		}
+		Shadow_Source::get_instance()->register_taxonomies();
 
 		// Register each event post type with the taxonomy of its resolved venue post type.
-		foreach ( get_post_types_by_support( 'gatherpress-venue' ) as $event_post_type ) {
+		foreach ( get_post_types_by_support( 'gatherpress-event-venue' ) as $event_post_type ) {
 			$venue_post_type = $this->get_venue_post_type( $event_post_type );
 			register_taxonomy_for_object_type( $this->get_taxonomy( $venue_post_type ), $event_post_type );
 		}
-	}
-
-	/**
-	 * Add a venue term when a venue post type is first saved.
-	 *
-	 * This method is responsible for automatically adding a term to the venue taxonomy
-	 * when a new venue post is created and published.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param int     $post_id Post ID of the venue post.
-	 * @param WP_Post $post    The venue post object.
-	 * @param bool    $update  Whether this is an existing post being updated.
-	 * @return void
-	 */
-	public function add_venue_term( int $post_id, WP_Post $post, bool $update ): void {
-		if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) { // @codeCoverageIgnore
-			return; // @codeCoverageIgnore
-		}
-
-		if ( ! post_type_supports( $post->post_type, 'gatherpress-venue-information' ) ) {
-			return;
-		}
-
-		if ( $update || empty( $post->post_name ) || 'publish' !== $post->post_status ) {
-			return;
-		}
-
-		$venue     = new Venue( $post_id );
-		$term_slug = $venue->get_term_slug();
-		$taxonomy  = $venue->get_taxonomy();
-
-		if ( term_exists( $term_slug, $taxonomy ) ) {
-			return;
-		}
-
-		wp_insert_term(
-			html_entity_decode( get_the_title( $post_id ) ),
-			$taxonomy,
-			array( 'slug' => $term_slug )
-		);
 	}
 
 	/**
@@ -398,93 +337,6 @@ class Setup {
 	}
 
 	/**
-	 * Update the slug of the corresponding venue term if the venue post's slug changes.
-	 *
-	 * This method is triggered when a venue post is updated and checks if the slug of the
-	 * venue post has changed. If it has changed, it updates the corresponding venue term's
-	 * slug to match the new venue post slug.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param int     $post_id     Post ID of the venue post.
-	 * @param WP_Post $post_after  Post object after the save operation.
-	 * @param WP_Post $post_before Post object before the save operation.
-	 * @return void
-	 */
-	public function maybe_update_term_slug( int $post_id, WP_Post $post_after, WP_Post $post_before ): void {
-		if ( ! post_type_supports( (string) get_post_type( $post_id ), 'gatherpress-venue-information' ) ) {
-			return;
-		}
-
-		if ( ! in_array( $post_after->post_status, array( 'publish', 'trash' ), true ) ) {
-			return;
-		}
-
-		if (
-			$post_before->post_name === $post_after->post_name &&
-			$post_before->post_title === $post_after->post_title
-		) {
-			return;
-		}
-
-		$venue = new Venue( $post_id );
-
-		// Derive both slugs from the hook-supplied post objects rather than
-		// re-reading from the DB: the hook already gives us the trusted pre/post
-		// state, and we avoid a race where a concurrent save would leak into the
-		// slug calculation.
-		$old_term_slug = $this->term_slug_from_post_name( $post_before->post_name );
-		$new_term_slug = $this->term_slug_from_post_name( $post_after->post_name );
-		$taxonomy      = $venue->get_taxonomy();
-		$title         = html_entity_decode( get_the_title( $post_id ) );
-
-		$term = term_exists( $old_term_slug, $taxonomy );
-
-		if ( empty( $term ) ) {
-			wp_insert_term(
-				$title,
-				$taxonomy,
-				array( 'slug' => $new_term_slug )
-			);
-			return;
-		}
-
-		wp_update_term(
-			intval( $term['term_id'] ),
-			$taxonomy,
-			array(
-				'name' => $title,
-				'slug' => $new_term_slug,
-			)
-		);
-	}
-
-	/**
-	 * Delete the corresponding venue term when a Venue post is deleted.
-	 *
-	 * This method is triggered when a Venue post is deleted. It checks if the deleted post
-	 * is of the Venue post type and, if so, deletes the corresponding venue term associated
-	 * with the post.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param int $post_id Post ID of the Venue post being deleted.
-	 * @return void
-	 */
-	public function delete_venue_term( int $post_id ): void {
-		if ( ! post_type_supports( (string) get_post_type( $post_id ), 'gatherpress-venue-information' ) ) {
-			return;
-		}
-
-		$venue = new Venue( $post_id );
-		$term  = $venue->get_term();
-
-		if ( $term instanceof WP_Term ) {
-			wp_delete_term( $term->term_id, $venue->get_taxonomy() );
-		}
-	}
-
-	/**
 	 * Retrieve venue information from meta data.
 	 *
 	 * This method retrieves and assembles venue-related information from meta data
@@ -506,7 +358,7 @@ class Setup {
 
 		$venue = null;
 
-		if ( post_type_supports( $post_type, 'gatherpress-venue' ) ) {
+		if ( post_type_supports( $post_type, 'gatherpress-event-venue' ) ) {
 			$event       = new Event( $post_id );
 			$venue_terms = get_the_terms( $post_id, $this->taxonomy_for_event_post_type( $post_type ) );
 			$venue_slug  = ( is_array( $venue_terms ) && ! empty( $venue_terms ) ) ? $venue_terms[0]->slug : null;
@@ -519,7 +371,7 @@ class Setup {
 			if ( $venue_post instanceof WP_Post ) {
 				$venue = new Venue( $venue_post->ID );
 			}
-		} elseif ( post_type_supports( $post_type, 'gatherpress-venue-information' ) ) {
+		} elseif ( post_type_supports( $post_type, 'gatherpress-venue' ) ) {
 			$venue = new Venue( $post_id );
 		}
 
@@ -534,22 +386,20 @@ class Setup {
 	/**
 	 * Retrieve a venue post by its taxonomy term slug.
 	 *
-	 * Strips the leading underscore from the taxonomy slug and looks up the
-	 * corresponding venue post via `get_page_by_path()`. Returns null when no
-	 * matching post exists.
+	 * Resolves the venue post type for the given event post type context (so
+	 * custom event post types pointing at a non-default venue post type via
+	 * the `gatherpress_venue_post_type` filter look up the right post type)
+	 * and then delegates to {@see Shadow_Source::get_post_from_term_slug()}.
 	 *
 	 * @since 1.0.0
 	 *
 	 * @param string $slug            The venue taxonomy term slug (e.g. `_my-venue`).
-	 * @param string $event_post_type Optional event post-type context, used when
-	 *                                mapping custom event post types to a non-default
-	 *                                venue post type via the `gatherpress_venue_post_type` filter.
+	 * @param string $event_post_type Optional event post-type context.
 	 * @return WP_Post|null The matching venue post, or null.
 	 */
 	public function get_venue_post_from_term_slug( string $slug, string $event_post_type = '' ): ?WP_Post {
-		return get_page_by_path(
-			ltrim( $slug, '_' ),
-			OBJECT,
+		return Shadow_Source::get_instance()->get_post_from_term_slug(
+			$slug,
 			$this->get_venue_post_type( $event_post_type )
 		);
 	}
@@ -594,10 +444,12 @@ class Setup {
 	/**
 	 * Returns true when `$slug` is a real venue taxonomy term slug.
 	 *
-	 * Real venue terms always carry a leading underscore — the auto-generated
-	 * prefix added by {@see self::term_slug_from_post_name()}. Sentinels like
-	 * `online-event` deliberately don't, so this predicate filters them out
-	 * and keeps venue-resolution logic from treating sentinels as venues.
+	 * Thin wrapper around {@see Shadow_Source::is_shadow_term_slug()} —
+	 * real venue terms always carry a leading underscore (the auto-generated
+	 * prefix added by {@see self::term_slug_from_post_name()}). Sentinels
+	 * like `online-event` deliberately don't, so this predicate filters
+	 * them out and keeps venue-resolution logic from treating sentinels as
+	 * venues.
 	 *
 	 * @since 1.0.0
 	 *
@@ -605,7 +457,7 @@ class Setup {
 	 * @return bool
 	 */
 	public function is_venue_term_slug( string $slug ): bool {
-		return str_starts_with( $slug, '_' );
+		return Shadow_Source::get_instance()->is_shadow_term_slug( $slug );
 	}
 
 	/**
@@ -627,9 +479,9 @@ class Setup {
 	/**
 	 * Format a venue taxonomy term slug from a post_name.
 	 *
-	 * Pure formatter — prepends an underscore to the given post_name. Used by
-	 * callers that already have the name in hand (e.g. rename-diff callers
-	 * comparing old vs. new post_name during a save-post transition).
+	 * Thin wrapper around {@see Shadow_Source::term_slug_from_post_name()}.
+	 * Used by callers that already have the name in hand (e.g. rename-diff
+	 * callers comparing old vs. new post_name during a save-post transition).
 	 *
 	 * @since 1.0.0
 	 *
@@ -637,15 +489,15 @@ class Setup {
 	 * @return string The taxonomy term slug (e.g. `_my-venue`).
 	 */
 	public function term_slug_from_post_name( string $post_name ): string {
-		return sprintf( '_%s', $post_name );
+		return Shadow_Source::get_instance()->term_slug_from_post_name( $post_name );
 	}
 
 	/**
 	 * Returns the taxonomy slug for a given venue post type.
 	 *
-	 * The taxonomy slug is always derived by prepending an underscore to the venue
-	 * post type slug — for example, 'gatherpress_venue' uses '_gatherpress_venue'.
-	 * Custom venue post types follow the same convention automatically.
+	 * Thin wrapper around {@see Shadow_Source::get_taxonomy()} that defaults
+	 * the post type to the built-in `gatherpress_venue` so venue-side callers
+	 * can omit the argument.
 	 *
 	 * @since 1.0.0
 	 *
@@ -657,7 +509,7 @@ class Setup {
 			$venue_post_type = Venue::POST_TYPE;
 		}
 
-		return '_' . $venue_post_type;
+		return Shadow_Source::get_instance()->get_taxonomy( $venue_post_type );
 	}
 
 	/**
@@ -706,7 +558,7 @@ class Setup {
 	/**
 	 * Returns a map of event post types to their corresponding venue post types.
 	 *
-	 * Iterates over all post types that support 'gatherpress-venue' and resolves
+	 * Iterates over all post types that support 'gatherpress-event-venue' and resolves
 	 * the venue post type for each via get_venue_post_type(). This map is used
 	 * to expose the per-event-type venue post type to the block editor.
 	 *
@@ -717,7 +569,7 @@ class Setup {
 	public function get_venue_post_type_map(): array {
 		$map = array();
 
-		foreach ( get_post_types_by_support( 'gatherpress-venue' ) as $event_post_type ) {
+		foreach ( get_post_types_by_support( 'gatherpress-event-venue' ) as $event_post_type ) {
 			$map[ $event_post_type ] = $this->get_venue_post_type( $event_post_type );
 		}
 

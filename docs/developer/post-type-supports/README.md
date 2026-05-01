@@ -6,7 +6,7 @@ GatherPress uses WordPress [post type supports](https://developer.wordpress.org/
 
 These supports are declared on post types that act as **events**.
 
-### `gatherpress-event-date`
+### `gatherpress-event`
 
 The core identifier for event post types. Enables event datetime storage and display. This includes:
 
@@ -18,18 +18,18 @@ The core identifier for event post types. Enables event datetime storage and dis
 - RSS feed enrichment with event date information
 - Post date override with event date (when enabled in settings)
 
-#### Usage for gatherpress-event-date
+#### Usage for gatherpress-event
 
 Declare the support inside your `register_post_type()` call:
 
 ```php
 register_post_type( 'my_custom_event', array(
-    'supports' => array( 'title', 'editor', 'gatherpress-event-date' ),
+    'supports' => array( 'title', 'editor', 'gatherpress-event' ),
     // ... other args
 ) );
 ```
 
-> **Declare supports on registration, not after.** GatherPress wires its meta registration, admin-list columns, REST filters, and other per-post-type hooks on the `registered_post_type` action — i.e. at the moment your post type finishes registering. Calling `add_post_type_support( 'my_custom_event', 'gatherpress-event-date' )` *after* `register_post_type()` will make `post_type_supports()` return true, but GatherPress's internal wiring won't run for your post type. Always include the support in the `supports` array.
+> **Declare supports on registration, not after.** GatherPress wires its meta registration, admin-list columns, REST filters, and other per-post-type hooks on the `registered_post_type` action — i.e. at the moment your post type finishes registering. Calling `add_post_type_support( 'my_custom_event', 'gatherpress-event' )` *after* `register_post_type()` will make `post_type_supports()` return true, but GatherPress's internal wiring won't run for your post type. Always include the support in the `supports` array.
 
 Once registered, you can use the `Event` class with your custom post type:
 
@@ -59,25 +59,27 @@ Enables the comment-based RSVP system for a post type. This includes:
 
 ```php
 register_post_type( 'my_custom_event', array(
-    'supports' => array( 'title', 'editor', 'gatherpress-event-date', 'gatherpress-rsvp' ),
+    'supports' => array( 'title', 'editor', 'gatherpress-event', 'gatherpress-rsvp' ),
     // ... other args
 ) );
 ```
 
-### `gatherpress-venue`
+### `gatherpress-event-venue`
 
 Enables physical venue association for a post type. This includes:
 
-- Registration of the `_gatherpress_venue` taxonomy for the post type
+- Wiring the venue's shadow taxonomy (e.g. `_gatherpress_venue`) onto the post type so events can be tagged with their venue term
 - Venue selector in the block editor
 - Venue block rendering (name, address, map, phone, website)
 - Venue detail field visibility (hides empty address/phone/website blocks)
 
-#### Usage for gatherpress-venue
+The shadow taxonomy itself is registered by the [`gatherpress-shadow-source`](#gatherpress-shadow-source) primitive; declaring `gatherpress-event-venue` is what wires it onto the event post type.
+
+#### Usage for gatherpress-event-venue
 
 ```php
 register_post_type( 'my_custom_event', array(
-    'supports' => array( 'title', 'editor', 'gatherpress-event-date', 'gatherpress-venue' ),
+    'supports' => array( 'title', 'editor', 'gatherpress-event', 'gatherpress-event-venue' ),
     // ... other args
 ) );
 ```
@@ -105,7 +107,7 @@ Enables online event functionality for a post type. This includes:
 
 ```php
 register_post_type( 'my_custom_event', array(
-    'supports' => array( 'title', 'editor', 'gatherpress-event-date', 'gatherpress-online-event' ),
+    'supports' => array( 'title', 'editor', 'gatherpress-event', 'gatherpress-online-event' ),
     // ... other args
 ) );
 ```
@@ -114,9 +116,9 @@ register_post_type( 'my_custom_event', array(
 
 ## Venue Post Type Supports
 
-These supports are declared on post types that act as **venues**. `gatherpress-venue-information` is the core identifier — declaring it is what makes a post type a venue source.
+These supports are declared on post types that act as **venues**. `gatherpress-venue` is the core identifier — declaring it is what makes a post type a venue source.
 
-### `gatherpress-venue-information`
+### `gatherpress-venue`
 
 The core identifier for venue post types. Enables venue address and contact data. This includes:
 
@@ -136,8 +138,8 @@ The core identifier for venue post types. Enables venue address and contact data
     - `gatherpress_country`
     - `gatherpress_country_code`
 - Venue detail blocks (address, phone number, website)
-- Automatic creation and management of the corresponding `_gatherpress_venue` taxonomy term
-- `post_type_supports( $type, 'gatherpress-venue-information' )` is the canonical check for "is this a venue?"
+- Implicit declaration of [`gatherpress-shadow-source`](#gatherpress-shadow-source), which registers the `_<post_type>` taxonomy and keeps one term per venue post in sync with the post slug
+- `post_type_supports( $type, 'gatherpress-venue' )` is the canonical check for "is this a venue?"
 
 Meta revisions are enabled automatically when your venue post type declares `revisions` in its `supports` array; venue post types that opt out of revisions still get the meta registered without `revisions_enabled`.
 
@@ -149,11 +151,11 @@ The eight structured-address fields are populated by a server-side cron handler 
 
 The address autocomplete and save-time reverse-geocode that drive these fields go through two REST endpoints (`/gatherpress/v1/geocode` and `/gatherpress/v1/geocode/search`), both of which share a per-user fixed-window rate limit. The default ceiling is 30 requests per 60 seconds; the (N+1)th request returns HTTP `429 Too Many Requests` with a `Retry-After` header. Lower or raise the ceiling via the `gatherpress_geocode_rate_limit_per_minute` filter (values below `1` are clamped to `1`). To disable the rate limit entirely — for example when a CDN / WAF already covers this surface — return `false` from `gatherpress_geocode_rate_limit_enabled`.
 
-#### Usage for gatherpress-venue-information
+#### Usage for gatherpress-venue
 
 ```php
 register_post_type( 'my_custom_venue', array(
-    'supports' => array( 'title', 'editor', 'gatherpress-venue-information' ),
+    'supports' => array( 'title', 'editor', 'gatherpress-venue' ),
     // ... other args
 ) );
 ```
@@ -179,9 +181,62 @@ Enables map display for a venue post type. This includes:
 
 ```php
 register_post_type( 'my_custom_venue', array(
-    'supports' => array( 'title', 'editor', 'gatherpress-venue-information', 'gatherpress-venue-map' ),
+    'supports' => array( 'title', 'editor', 'gatherpress-venue', 'gatherpress-venue-map' ),
     // ... other args
 ) );
+```
+
+---
+
+## Shared Primitives
+
+These supports aren't specific to events or venues — they expose foundational behaviors that any post type can opt into.
+
+### `gatherpress-shadow-source`
+
+Registers a hidden `_<post_type>` taxonomy for the post type and keeps one term per published post in lockstep with the post's slug and title. Sometimes called a "shadow taxonomy" — the term mirrors the post and lets consumers (events, sessions, productions, etc.) tag themselves with that term to model a relationship.
+
+This is the primitive that powers `gatherpress_venue` ⇄ event tagging. `gatherpress-venue` implicitly declares `gatherpress-shadow-source`, so existing venue post types pick up the lifecycle without changes. Companion plugins can declare it directly on their own post types — productions, organizers, sponsors — to get the same behavior with no venue-specific baggage.
+
+This support includes:
+
+- A hidden taxonomy `_<post_type>` registered with `show_ui => false`, `show_admin_column => true`, `publicly_queryable => true`, `show_in_rest => true`, and `rewrite => false` (so the taxonomy appears in Query Loop block taxonomy controls but doesn't expose public archive URLs)
+- Labels inherited from the source post type's `name` / `singular_name` (override via the `gatherpress_shadow_taxonomy_args` filter)
+- A `save_post_<post_type>` hook that inserts a term on first publish, with the term slug derived from the post's `post_name` prefixed with an underscore (e.g. `my-production` → `_my-production`)
+- A `post_updated` hook that updates the term's name and slug whenever the source post is renamed
+- A `delete_post_<post_type>` hook that removes the term when the source post is deleted
+
+Sentinel terms (terms that don't carry a leading underscore, such as the venue subsystem's `online-event`) are deliberately preserved — `Shadow_Source::is_shadow_term_slug()` is the canonical predicate for distinguishing real shadow terms from sentinels.
+
+#### Usage for gatherpress-shadow-source
+
+```php
+register_post_type( 'production', array(
+    'supports' => array( 'title', 'editor', 'gatherpress-shadow-source' ),
+    // ... other args
+) );
+```
+
+Wiring the resulting taxonomy onto consumer post types is the developer's responsibility — pass it via `register_post_type`'s `taxonomies` arg or call `register_taxonomy_for_object_type()`:
+
+```php
+add_action( 'init', function() {
+    register_taxonomy_for_object_type( '_production', 'gatherpress_event' );
+}, 12 );
+```
+
+#### Customizing the taxonomy registration
+
+To override labels, REST visibility, or other taxonomy registration args:
+
+```php
+add_filter( 'gatherpress_shadow_taxonomy_args', function( $args, $post_type ) {
+    if ( 'production' === $post_type ) {
+        $args['labels']['name']          = __( 'Productions', 'my-plugin' );
+        $args['labels']['singular_name'] = __( 'Production', 'my-plugin' );
+    }
+    return $args;
+}, 10, 2 );
 ```
 
 ---
@@ -200,8 +255,8 @@ if ( Event::POST_TYPE === get_post_type( $post_id ) ) {
 GatherPress now uses:
 
 ```php
-// After: works with any post type that has gatherpress-event-date support.
-if ( post_type_supports( get_post_type( $post_id ), 'gatherpress-event-date' ) ) {
+// After: works with any post type that has gatherpress-event support.
+if ( post_type_supports( get_post_type( $post_id ), 'gatherpress-event' ) ) {
     // Handle event date logic.
 }
 ```
@@ -214,8 +269,8 @@ if ( Venue::POST_TYPE === get_post_type( $post_id ) ) {
     // Handle venue logic.
 }
 
-// After: works with any post type that has gatherpress-venue-information support.
-if ( post_type_supports( get_post_type( $post_id ), 'gatherpress-venue-information' ) ) {
+// After: works with any post type that has gatherpress-venue support.
+if ( post_type_supports( get_post_type( $post_id ), 'gatherpress-venue' ) ) {
     // Handle venue logic.
 }
 ```
@@ -224,10 +279,10 @@ Similarly, queries that previously targeted only `gatherpress_event` or `gatherp
 
 ```php
 // Event queries.
-$args = array( 'post_type' => get_post_types_by_support( 'gatherpress-event-date' ) );
+$args = array( 'post_type' => get_post_types_by_support( 'gatherpress-event' ) );
 
 // Venue queries.
-$args = array( 'post_type' => get_post_types_by_support( 'gatherpress-venue-information' ) );
+$args = array( 'post_type' => get_post_types_by_support( 'gatherpress-venue' ) );
 ```
 
 In JavaScript, support checks go through one of two helpers in `src/helpers/event.js`:
@@ -239,11 +294,11 @@ import {
 } from '../../helpers/event';
 
 // Outside React: imperative check that reads the post-type registry once.
-isPostTypeSupporting( 'gatherpress-event-date', postType );
+isPostTypeSupporting( 'gatherpress-event', postType );
 
 // Inside a React component: reactive check via useSelect, so the component
 // re-renders the moment the post-type definition resolves.
-const isEvent = usePostTypeSupports( 'gatherpress-event-date', postType );
+const isEvent = usePostTypeSupports( 'gatherpress-event', postType );
 ```
 
 **Always reach for `usePostTypeSupports` when the result drives rendering** — opacity, visibility, conditional inspector controls, etc. The non-reactive `isPostTypeSupporting` reads `select('core').getPostType(...)` directly, and the post-type registry usually isn't cached on first render. If a dim gate is wired through the non-reactive helper, the gate resolves to `false` on the first paint and the component never re-renders once supports load — leaving the block permanently dimmed in Query Loops.
@@ -251,7 +306,7 @@ const isEvent = usePostTypeSupports( 'gatherpress-event-date', postType );
 For blocks that gate dimming on both context support and data presence, `hasValidBlockContext` in `src/helpers/editor.js` accepts a pre-computed `hasSupport` boolean — pass the result of `usePostTypeSupports`:
 
 ```js
-const hasSupport = usePostTypeSupports( 'gatherpress-venue', context?.postType );
+const hasSupport = usePostTypeSupports( 'gatherpress-event-venue', context?.postType );
 
 const blockProps = useBlockProps( {
 	style: {
@@ -277,8 +332,9 @@ All GatherPress supports use the following naming convention:
 
 ## Important Notes
 
-- The `gatherpress_events` database table stores data by `post_id` and is post-type agnostic. Any post type with `gatherpress-event-date` support can store datetime data in this table.
+- The `gatherpress_events` database table stores data by `post_id` and is post-type agnostic. Any post type with `gatherpress-event` support can store datetime data in this table.
 - **Declare supports in your `register_post_type()` call, not via a later `add_post_type_support()`.** GatherPress registers its per-post-type hooks (meta fields, admin-list columns, REST query filters, venue save hooks) on the `registered_post_type` action, which only fires when `register_post_type()` runs. A support added afterwards will pass `post_type_supports()` checks but won't trigger any of GatherPress's internal wiring.
 - The `Event::POST_TYPE` constant still exists and refers to `gatherpress_event`. It is used for GatherPress's own post type registration but should not be used for feature checks.
 - The `Venue::POST_TYPE` constant still exists and refers to `gatherpress_venue`. It is used for GatherPress's own post type registration but should not be used for feature checks.
 - The `venuePostTypes` map is exposed to the block editor via `block_editor_settings_all` under `settings.gatherpress.venuePostTypes`. It maps event post type slugs to their corresponding venue post type slugs, resolved via the `gatherpress_venue_post_type` filter.
+- `gatherpress-venue` implicitly declares `gatherpress-shadow-source` via a `registered_post_type` hook on `Venue\Setup` (priority 9), so any post type that opts into venue support automatically picks up the shadow-taxonomy primitive without having to declare both.

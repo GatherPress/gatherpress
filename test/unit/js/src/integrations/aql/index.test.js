@@ -83,7 +83,7 @@ describe( 'AQL Integration', () => {
 		// Default: return true only for gatherpress_event post type.
 		isPostTypeSupporting.mockImplementation(
 			( support, postType ) =>
-				'gatherpress-event-date' === support &&
+				'gatherpress-event' === support &&
 				'gatherpress_event' === postType
 		);
 	} );
@@ -177,10 +177,10 @@ describe( 'AQL Integration', () => {
 		} );
 
 		it( 'renders event controls panel for AQL blocks with custom event-date-supporting post type', () => {
-			// Mock gatherpress_shindig as a post type that supports gatherpress-event-date.
+			// Mock gatherpress_shindig as a post type that supports gatherpress-event.
 			isPostTypeSupporting.mockImplementation(
 				( support, postType ) =>
-					'gatherpress-event-date' === support &&
+					'gatherpress-event' === support &&
 					'gatherpress_shindig' === postType
 			);
 

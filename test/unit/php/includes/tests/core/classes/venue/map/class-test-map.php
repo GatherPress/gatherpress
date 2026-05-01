@@ -328,7 +328,7 @@ class Test_Map extends Base {
 	public function test_maybe_register_delete_hook(): void {
 		$instance = Map::get_instance();
 
-		foreach ( get_post_types_by_support( 'gatherpress-venue-information' ) as $post_type ) {
+		foreach ( get_post_types_by_support( 'gatherpress-venue' ) as $post_type ) {
 			$instance->maybe_register_delete_hook( $post_type );
 
 			$this->assertSame(

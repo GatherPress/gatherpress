@@ -53,7 +53,7 @@ function mockGetPostType( slug ) {
 	if ( 'gatherpress_event' === slug ) {
 		return {
 			supports: {
-				'gatherpress-event-date': true,
+				'gatherpress-event': true,
 				'gatherpress-rsvp': true,
 			},
 		};
@@ -78,7 +78,7 @@ describe( 'isPostTypeSupporting', () => {
 			return {};
 		} );
 
-		expect( isPostTypeSupporting( 'gatherpress-event-date' ) ).toBe( true );
+		expect( isPostTypeSupporting( 'gatherpress-event' ) ).toBe( true );
 		expect( isPostTypeSupporting( 'gatherpress-rsvp' ) ).toBe( true );
 	} );
 
@@ -95,7 +95,7 @@ describe( 'isPostTypeSupporting', () => {
 			return {};
 		} );
 
-		expect( isPostTypeSupporting( 'gatherpress-event-date' ) ).toBe( false );
+		expect( isPostTypeSupporting( 'gatherpress-event' ) ).toBe( false );
 		expect( isPostTypeSupporting( 'gatherpress-rsvp' ) ).toBe( false );
 	} );
 
@@ -131,7 +131,7 @@ describe( 'usePostTypeSupports', () => {
 		} );
 
 		expect(
-			usePostTypeSupports( 'gatherpress-event-date', 'gatherpress_event' )
+			usePostTypeSupports( 'gatherpress-event', 'gatherpress_event' )
 		).toBe( true );
 	} );
 
@@ -144,7 +144,7 @@ describe( 'usePostTypeSupports', () => {
 		} );
 
 		expect(
-			usePostTypeSupports( 'gatherpress-event-date', 'post' )
+			usePostTypeSupports( 'gatherpress-event', 'post' )
 		).toBe( false );
 	} );
 
@@ -170,7 +170,7 @@ describe( 'usePostTypeSupports', () => {
 			return {};
 		} );
 
-		expect( usePostTypeSupports( 'gatherpress-event-date' ) ).toBe( false );
+		expect( usePostTypeSupports( 'gatherpress-event' ) ).toBe( false );
 	} );
 
 	it( 'subscribes via useSelect so the support gate is reactive', () => {
@@ -186,7 +186,7 @@ describe( 'usePostTypeSupports', () => {
 			return {};
 		} );
 
-		usePostTypeSupports( 'gatherpress-event-date', 'gatherpress_event' );
+		usePostTypeSupports( 'gatherpress-event', 'gatherpress_event' );
 
 		expect( useSelect ).toHaveBeenCalledTimes( 1 );
 	} );
@@ -213,13 +213,13 @@ describe( 'usePostTypeSupports', () => {
 		} );
 
 		expect(
-			usePostTypeSupports( 'gatherpress-event-date', 'gatherpress_event' )
+			usePostTypeSupports( 'gatherpress-event', 'gatherpress_event' )
 		).toBe( false );
 
 		resolved = true;
 
 		expect(
-			usePostTypeSupports( 'gatherpress-event-date', 'gatherpress_event' )
+			usePostTypeSupports( 'gatherpress-event', 'gatherpress_event' )
 		).toBe( true );
 	} );
 } );
@@ -687,7 +687,7 @@ describe( 'hasValidEventId', () => {
 					getPostTypes: () => [
 						{
 							slug: 'gatherpress_event',
-							supports: { 'gatherpress-event-date': true },
+							supports: { 'gatherpress-event': true },
 						},
 						{ slug: 'page', supports: {} },
 					],
@@ -725,7 +725,7 @@ describe( 'hasValidEventId', () => {
 					getPostTypes: () => [
 						{
 							slug: 'gatherpress_event',
-							supports: { 'gatherpress-event-date': true },
+							supports: { 'gatherpress-event': true },
 						},
 					],
 					getEntityRecords: () => [
@@ -825,7 +825,7 @@ describe( 'findEventPostById', () => {
 						{ slug: 'page', supports: {} },
 						{
 							slug: 'gatherpress_event',
-							supports: { 'gatherpress-event-date': true },
+							supports: { 'gatherpress-event': true },
 						},
 					],
 					getEntityRecords: ( kind, postTypeName, query ) =>
@@ -853,7 +853,7 @@ describe( 'findEventPostById', () => {
 						{ slug: 'post', supports: {} },
 						{
 							slug: 'gatherpress_event',
-							supports: { 'gatherpress-event-date': true },
+							supports: { 'gatherpress-event': true },
 						},
 					],
 					getEntityRecords: ( kind, postTypeName ) => {
@@ -878,7 +878,7 @@ describe( 'findEventPostById', () => {
 					getPostTypes: () => [
 						{
 							slug: 'gatherpress_event',
-							supports: { 'gatherpress-event-date': true },
+							supports: { 'gatherpress-event': true },
 						},
 					],
 					getEntityRecords: () => [],
@@ -898,7 +898,7 @@ describe( 'findEventPostById', () => {
 					getPostTypes: () => [
 						{
 							slug: 'gatherpress_event',
-							supports: { 'gatherpress-event-date': true },
+							supports: { 'gatherpress-event': true },
 						},
 					],
 					getEntityRecords: () => [ { id: postId, status: 'draft' } ],
@@ -917,7 +917,7 @@ describe( 'findEventPostById', () => {
 					getPostTypes: () => [
 						{
 							slug: 'gatherpress_event',
-							supports: { 'gatherpress-event-date': true },
+							supports: { 'gatherpress-event': true },
 						},
 					],
 					getEntityRecords: () => null,

@@ -203,7 +203,7 @@ class Prewarm {
 	 * Dispatch a post save to the right enqueue path based on its type.
 	 *
 	 * Venues, FSE templates, and template parts each pull a different slice
-	 * of the (venue, combo) grid; events and any other `gatherpress-venue`-
+	 * of the (venue, combo) grid; events and any other `gatherpress-event-venue`-
 	 * carrying post type also contribute combos via their own embedded
 	 * venue-map blocks.
 	 *
@@ -233,7 +233,7 @@ class Prewarm {
 			return;
 		}
 
-		if ( post_type_supports( $post->post_type, 'gatherpress-venue-information' ) ) {
+		if ( post_type_supports( $post->post_type, 'gatherpress-venue' ) ) {
 			$this->enqueue_for_venue( $post_id );
 			return;
 		}
@@ -242,7 +242,7 @@ class Prewarm {
 		// a gatherpress/venue parent). Collect combos from the post's own
 		// content, but enqueue those combos against the associated venue,
 		// not against the event post itself.
-		if ( post_type_supports( $post->post_type, 'gatherpress-venue' ) ) {
+		if ( post_type_supports( $post->post_type, 'gatherpress-event-venue' ) ) {
 			$combos = $this->collect_combos_from_content( $post->post_content );
 			if ( empty( $combos ) ) {
 				return;
@@ -313,7 +313,7 @@ class Prewarm {
 			return;
 		}
 
-		$types = get_post_types_by_support( 'gatherpress-venue-information' );
+		$types = get_post_types_by_support( 'gatherpress-venue' );
 		if ( empty( $types ) ) {
 			return;
 		}
@@ -430,7 +430,7 @@ class Prewarm {
 	 * Aggregate combos from every source the site renders venue-map blocks in:
 	 * DB templates, DB template parts, theme file templates, theme file
 	 * template parts, and the content of every post whose type supports
-	 * `gatherpress-venue`.
+	 * `gatherpress-event-venue`.
 	 *
 	 * @since 1.0.0
 	 *
@@ -454,7 +454,7 @@ class Prewarm {
 			}
 		}
 
-		$venue_carrying_types = get_post_types_by_support( 'gatherpress-venue' );
+		$venue_carrying_types = get_post_types_by_support( 'gatherpress-event-venue' );
 		if ( ! empty( $venue_carrying_types ) ) {
 			// Full post rows (for post_content) — use the smaller
 			// content-scan batch. FSE-rich events can carry MBs of
@@ -614,7 +614,7 @@ class Prewarm {
 	 * @return int[]
 	 */
 	protected function get_venue_post_ids(): array {
-		$types = get_post_types_by_support( 'gatherpress-venue-information' );
+		$types = get_post_types_by_support( 'gatherpress-venue' );
 		if ( empty( $types ) ) {
 			return array();
 		}

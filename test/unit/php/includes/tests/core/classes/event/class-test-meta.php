@@ -44,7 +44,7 @@ class Test_Meta extends Base {
 
 	/**
 	 * Calling `register()` on the built-in event post type registers
-	 * both the event-date meta (gated on the `gatherpress-event-date`
+	 * both the event-date meta (gated on the `gatherpress-event`
 	 * support) and the event-only meta (RSVP / attendance / online-event
 	 * link). Also wires the REST readonly-strip filter.
 	 *
@@ -69,7 +69,7 @@ class Test_Meta extends Base {
 		$this->assertArrayHasKey(
 			'gatherpress_datetime',
 			$meta,
-			'Event-date meta should be registered for a post type with gatherpress-event-date support.'
+			'Event-date meta should be registered for a post type with gatherpress-event support.'
 		);
 		$this->assertArrayHasKey(
 			'gatherpress_online_event_link',
@@ -86,7 +86,7 @@ class Test_Meta extends Base {
 	}
 
 	/**
-	 * `register()` on a post type that declares `gatherpress-event-date`
+	 * `register()` on a post type that declares `gatherpress-event`
 	 * but isn't `Event::POST_TYPE` registers only the event-date meta —
 	 * the event-only meta band is identity-bound to the canonical post
 	 * type.
@@ -105,7 +105,7 @@ class Test_Meta extends Base {
 			array(
 				'label'    => 'Test Event Date Meta',
 				'public'   => false,
-				'supports' => array( 'title', 'gatherpress-event-date' ),
+				'supports' => array( 'title', 'gatherpress-event' ),
 			)
 		);
 
@@ -116,7 +116,7 @@ class Test_Meta extends Base {
 		$this->assertArrayHasKey(
 			'gatherpress_datetime',
 			$meta,
-			'Event-date meta should be registered for a post type with gatherpress-event-date support.'
+			'Event-date meta should be registered for a post type with gatherpress-event support.'
 		);
 		$this->assertArrayHasKey(
 			'gatherpress_datetime_start',
@@ -138,7 +138,7 @@ class Test_Meta extends Base {
 
 	/**
 	 * `register()` on a post type that declares neither
-	 * `gatherpress-event-date` nor matches `Event::POST_TYPE` is a no-op:
+	 * `gatherpress-event` nor matches `Event::POST_TYPE` is a no-op:
 	 * no meta registers and no REST filter wires.
 	 *
 	 * @covers ::register

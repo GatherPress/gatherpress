@@ -58,7 +58,7 @@ export function getVenuePostType( eventPostType = '' ) {
  * Check if the current post type is a venue.
  *
  * Uses the WordPress data store to check whether the current editor post type
- * declares the 'gatherpress-venue-information' support, which is the identifier
+ * declares the 'gatherpress-venue' support, which is the identifier
  * for all venue post types.
  *
  * @since 1.0.0
@@ -69,7 +69,7 @@ export function isVenuePostType() {
 	const postType = select( 'core/editor' )?.getCurrentPostType();
 	return !! select( 'core' )
 		?.getPostType( postType )
-		?.supports?.[ 'gatherpress-venue-information' ];
+		?.supports?.[ 'gatherpress-venue' ];
 }
 
 /**
@@ -420,8 +420,8 @@ export function usePopularVenues( limit = 3, venuePostType = DEFAULT_VENUE_POST_
 /**
  * Look up a post by ID across all venue-supporting post types.
  *
- * Mirrors `findEventPostById()` but scans for `gatherpress-venue-information`
- * support instead of `gatherpress-event-date`. Used by the venue block's
+ * Mirrors `findEventPostById()` but scans for `gatherpress-venue`
+ * support instead of `gatherpress-event`. Used by the venue block's
  * `postIdOverride` resolver to detect when the override target is a venue
  * post (so it can be used directly) vs. an event post (so the venue is
  * derived from the event's venue taxonomy).
@@ -456,7 +456,7 @@ export function findVenuePostById( selectFunc, postId ) {
 	}
 
 	for ( const type of postTypes ) {
-		if ( ! type?.supports?.[ 'gatherpress-venue-information' ] ) {
+		if ( ! type?.supports?.[ 'gatherpress-venue' ] ) {
 			continue;
 		}
 		// Query by `include` filter rather than `getEntityRecord( id )` so a

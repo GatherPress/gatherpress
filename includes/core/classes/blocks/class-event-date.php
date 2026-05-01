@@ -85,7 +85,7 @@ class Event_Date {
 		// Validate that the post type supports event_date.
 		// Only check publish status if not in preview mode.
 		if (
-			! post_type_supports( (string) get_post_type( $post_id ), 'gatherpress-event-date' ) ||
+			! post_type_supports( (string) get_post_type( $post_id ), 'gatherpress-event' ) ||
 			( ! is_preview() && 'publish' !== get_post_status( $post_id ) )
 		) {
 			return '';
