@@ -56,8 +56,8 @@ jest.mock( '@src/variations/core/query/slots/inherited-query-controls', () => {
 } );
 
 jest.mock( '@src/variations/core/query/components', () => ( {
-	GatherPressQueryControlsSlotFill: () => null,
-	GatherPressInheritedQueryControlsSlotFill: () => null,
+	EventQueryControlsSlotFill: () => null,
+	EventInheritedQueryControlsSlotFill: () => null,
 } ) );
 
 jest.mock( '@src/helpers/event', () => ( {

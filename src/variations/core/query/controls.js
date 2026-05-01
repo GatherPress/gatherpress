@@ -12,11 +12,11 @@ import { registerPlugin } from '@wordpress/plugins';
  *  Internal dependencies
  */
 import { NAME } from '.';
-import GatherPressQueryControls from './slots/query-controls';
-import GatherPressInheritedQueryControls from './slots/inherited-query-controls';
+import EventQueryControls from './slots/query-controls';
+import EventInheritedQueryControls from './slots/inherited-query-controls';
 import {
-	GatherPressQueryControlsSlotFill,
-	GatherPressInheritedQueryControlsSlotFill,
+	EventQueryControlsSlotFill,
+	EventInheritedQueryControlsSlotFill,
 } from './components';
 import { usePostTypeSupports } from '../../../helpers/event';
 
@@ -27,7 +27,7 @@ import { usePostTypeSupports } from '../../../helpers/event';
  * @param {Object} props.attributes - Block attributes.
  * @return {boolean} True if the block's namespace matches 'gatherpress-event-query', otherwise false.
  */
-const isGatherPressQueryLoop = ( props ) => {
+const isEventQueryLoop = ( props ) => {
 	const {
 		attributes: { namespace },
 	} = props;
@@ -102,11 +102,11 @@ export const EventQueryControlsPanel = ( props ) => {
 		<InspectorControls>
 			<PanelBody title={ __( 'Event Query Settings', 'gatherpress' ) }>
 				{ false === props.attributes.query.inherit ? (
-					<GatherPressQueryControls.Slot
+					<EventQueryControls.Slot
 						fillProps={ { ...props } }
 					/>
 				) : (
-					<GatherPressInheritedQueryControls.Slot
+					<EventInheritedQueryControls.Slot
 						fillProps={ { ...props } }
 					/>
 				) }
@@ -125,13 +125,13 @@ export const EventQueryControlsPanel = ( props ) => {
  * @param {Function} BlockEdit - The Query block's BlockEdit component.
  * @return {Function} Enhanced BlockEdit component.
  */
-const withGatherPressQueryControls = ( BlockEdit ) => ( props ) => {
+const withEventQueryControls = ( BlockEdit ) => ( props ) => {
 	// Early return if block is not a query or not a supported variation.
-	if ( ! isGatherPressQueryLoop( props ) && 'core/query' !== props.name ) {
+	if ( ! isEventQueryLoop( props ) && 'core/query' !== props.name ) {
 		return <BlockEdit { ...props } />;
 	}
 	/// If it's a generic core/query, observe for transformation to GatherPress event query.
-	if ( ! isGatherPressQueryLoop( props ) ) {
+	if ( ! isEventQueryLoop( props ) ) {
 		return (
 			<>
 				<QueryPosttypeObserver { ...props } />
@@ -149,18 +149,18 @@ const withGatherPressQueryControls = ( BlockEdit ) => ( props ) => {
 };
 
 /**
- * Registers the withGatherPressQueryControls HOC as a filter to extend core/query blocks
+ * Registers the withEventQueryControls HOC as a filter to extend core/query blocks
  * with custom InspectorControls for GatherPress event queries.
  */
-addFilter( 'editor.BlockEdit', 'core/query', withGatherPressQueryControls );
+addFilter( 'editor.BlockEdit', 'core/query', withEventQueryControls );
 
 /**
  * Registers the Query Controls SlotFills for the plugin interface, allowing
  * the relevant GatherPress query controls and inherited controls to be displayed.
  */
 registerPlugin( 'gatherpress-query-controls-slotfill', {
-	render: GatherPressQueryControlsSlotFill,
+	render: EventQueryControlsSlotFill,
 } );
 registerPlugin( 'gatherpress-inherited-query-controls-slotfill', {
-	render: GatherPressInheritedQueryControlsSlotFill,
+	render: EventInheritedQueryControlsSlotFill,
 } );

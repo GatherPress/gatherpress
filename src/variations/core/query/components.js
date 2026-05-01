@@ -16,8 +16,8 @@ import { __, _x, sprintf } from '@wordpress/i18n';
 /**
  * Internal dependencies
  */
-import GatherPressQueryControls from './slots/query-controls';
-import GatherPressInheritedQueryControls from './slots/inherited-query-controls';
+import EventQueryControls from './slots/query-controls';
+import EventInheritedQueryControls from './slots/inherited-query-controls';
 import { isEventPostType, usePostTypeSupports } from '../../../helpers/event';
 import { isInFSETemplate } from '../../../helpers/editor';
 
@@ -377,7 +377,7 @@ export const EventOrderControls = ( { attributes, setAttributes } ) => {
 };
 
 /**
- * GatherPressQueryControlsSlotFill component
+ * EventQueryControlsSlotFill component
  *
  * Provides the main container for all GatherPress event query controls.
  * Renders all controls depending on the current context (such as post type),
@@ -385,7 +385,7 @@ export const EventOrderControls = ( { attributes, setAttributes } ) => {
  *
  * @return {Element} SlotFill with all event query controls for GatherPress.
  */
-export const GatherPressQueryControlsSlotFill = () => {
+export const EventQueryControlsSlotFill = () => {
 	// If the is the correct variation, add the custom controls.
 	const isEventContext = isEventPostType();
 
@@ -401,7 +401,7 @@ export const GatherPressQueryControlsSlotFill = () => {
 	const showVenueFilter = isVenueContext || inTemplateContext;
 
 	return (
-		<GatherPressQueryControls>
+		<EventQueryControls>
 			{ ( props ) => (
 				<>
 					<EventListTypeControls { ...props } />
@@ -419,12 +419,12 @@ export const GatherPressQueryControlsSlotFill = () => {
 					<EventOrderControls { ...props } />
 				</>
 			) }
-		</GatherPressQueryControls>
+		</EventQueryControls>
 	);
 };
 
 /**
- * GatherPressInheritedQueryControlsSlotFill component
+ * EventInheritedQueryControlsSlotFill component
  *
  * Provides a condensed container for controls used when
  * a query is "inherited" (such as for nested queries), omitting
@@ -432,9 +432,9 @@ export const GatherPressQueryControlsSlotFill = () => {
  *
  * @return {Element} SlotFill with inherited event query controls for GatherPress.
  */
-export const GatherPressInheritedQueryControlsSlotFill = () => {
+export const EventInheritedQueryControlsSlotFill = () => {
 	return (
-		<GatherPressInheritedQueryControls>
+		<EventInheritedQueryControls>
 			{ ( props ) => (
 				<>
 					<EventListTypeControls { ...props } />
@@ -442,6 +442,6 @@ export const GatherPressInheritedQueryControlsSlotFill = () => {
 					<EventOrderControls { ...props } />
 				</>
 			) }
-		</GatherPressInheritedQueryControls>
+		</EventInheritedQueryControls>
 	);
 };

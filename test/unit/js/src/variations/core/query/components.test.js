@@ -88,7 +88,7 @@ import { isInFSETemplate } from '@src/helpers/editor';
 /**
  * Internal dependencies.
  */
-import { GatherPressQueryControlsSlotFill } from '@src/variations/core/query/components';
+import { EventQueryControlsSlotFill } from '@src/variations/core/query/components';
 
 const venueToggleLabel = 'Filter by current venue';
 const excludeToggleLabel = 'Exclude Current Event';
@@ -97,7 +97,7 @@ const venueHelp =
 const templateHelp =
 	'The filter only takes effect when this template renders on a venue page.';
 
-describe( 'GatherPressQueryControlsSlotFill', () => {
+describe( 'EventQueryControlsSlotFill', () => {
 	beforeEach( () => {
 		isEventPostType.mockReset();
 		usePostTypeSupports.mockReset();
@@ -109,7 +109,7 @@ describe( 'GatherPressQueryControlsSlotFill', () => {
 		usePostTypeSupports.mockReturnValue( false );
 		isInFSETemplate.mockReturnValue( false );
 
-		render( <GatherPressQueryControlsSlotFill /> );
+		render( <EventQueryControlsSlotFill /> );
 
 		expect(
 			screen.queryByText( venueToggleLabel )
@@ -124,7 +124,7 @@ describe( 'GatherPressQueryControlsSlotFill', () => {
 		usePostTypeSupports.mockReturnValue( true );
 		isInFSETemplate.mockReturnValue( false );
 
-		render( <GatherPressQueryControlsSlotFill /> );
+		render( <EventQueryControlsSlotFill /> );
 
 		expect( screen.getByText( venueToggleLabel ) ).toBeInTheDocument();
 		expect( screen.getByText( venueHelp ) ).toBeInTheDocument();
@@ -136,7 +136,7 @@ describe( 'GatherPressQueryControlsSlotFill', () => {
 		usePostTypeSupports.mockReturnValue( false );
 		isInFSETemplate.mockReturnValue( true );
 
-		render( <GatherPressQueryControlsSlotFill /> );
+		render( <EventQueryControlsSlotFill /> );
 
 		expect( screen.getByText( venueToggleLabel ) ).toBeInTheDocument();
 		expect( screen.getByText( templateHelp ) ).toBeInTheDocument();
@@ -148,7 +148,7 @@ describe( 'GatherPressQueryControlsSlotFill', () => {
 		usePostTypeSupports.mockReturnValue( true );
 		isInFSETemplate.mockReturnValue( false );
 
-		render( <GatherPressQueryControlsSlotFill /> );
+		render( <EventQueryControlsSlotFill /> );
 
 		expect(
 			screen.queryByText( excludeToggleLabel )
@@ -160,7 +160,7 @@ describe( 'GatherPressQueryControlsSlotFill', () => {
 		usePostTypeSupports.mockReturnValue( true );
 		isInFSETemplate.mockReturnValue( false );
 
-		render( <GatherPressQueryControlsSlotFill /> );
+		render( <EventQueryControlsSlotFill /> );
 
 		expect( screen.getByText( excludeToggleLabel ) ).toBeInTheDocument();
 	} );
