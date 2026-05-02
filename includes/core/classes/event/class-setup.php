@@ -173,7 +173,16 @@ class Setup {
 				'template'      => array(
 					array( 'gatherpress/event-date' ),
 					array( 'gatherpress/add-to-calendar' ),
-					array( 'gatherpress/venue' ),
+					array(
+						'gatherpress/venue',
+						// Marking the attribute pre-picked tells the block to
+						// skip the pattern-picker UI and seed the default
+						// layout directly — this is the canonical auto-loaded
+						// instance, not a fresh manual insert. Users who want
+						// a different layout can still trigger the picker via
+						// the block toolbar's "Choose pattern" button.
+						array( 'patternPicked' => true ),
+					),
 					array( 'gatherpress/online-event' ),
 					array( 'gatherpress/rsvp' ),
 					array(

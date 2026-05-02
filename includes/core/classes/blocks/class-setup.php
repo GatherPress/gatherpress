@@ -161,7 +161,12 @@ class Setup {
 				array(
 					'title'       => __( 'Venue Post Default Content', 'gatherpress' ),
 					'description' => $hook_anchor_description,
-					'content'     => '<!-- wp:gatherpress/venue /-->',
+					// `patternPicked: true` skips the venue block's pattern-picker
+					// UI and seeds the default layout directly — this is the
+					// canonical content for new venue posts, not a fresh manual
+					// insert. The block toolbar's "Choose pattern" action stays
+					// available for authors who want a different layout.
+					'content'     => '<!-- wp:gatherpress/venue {"patternPicked":true} /-->',
 					'inserter'    => false,
 					'source'      => 'plugin',
 				),
