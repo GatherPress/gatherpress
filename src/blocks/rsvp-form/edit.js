@@ -56,7 +56,7 @@ function templateToBlocks( template ) {
  * through the picker. The picker itself is filterable separately via
  * `gatherpress.rsvpFormPatterns`.
  *
- * @since 0.34.0
+ * @since 1.0.0
  *
  * @param {Array} template Default `InnerBlocks` tuple tree —
  *                         `[ blockName, attributes, innerBlocks ]` — that
@@ -76,7 +76,7 @@ const DEFAULT_TEMPLATE = applyFilters(
  * `{ name, title, description, template }` — `template` is an `InnerBlocks`
  * tuple tree (`[ blockName, attributes, innerBlocks ]`).
  *
- * @since 0.34.0
+ * @since 1.0.0
  *
  * @param {Array} patterns Default array containing the bundled
  *                         "Standard RSVP Form" pattern.
