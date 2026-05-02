@@ -135,7 +135,7 @@ const withEventQueryControls = ( BlockEdit ) => ( props ) => {
 		return (
 			<>
 				<QueryPosttypeObserver { ...props } />
-				<BlockEdit { ...props } />;
+				<BlockEdit { ...props } />
 			</>
 		);
 	}
