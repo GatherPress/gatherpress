@@ -19,6 +19,7 @@ use GatherPress\Core\Event;
 use GatherPress\Core\Feed;
 use GatherPress\Core\Rsvp\Rsvp;
 use GatherPress\Core\Settings;
+use GatherPress\Core\Starter_Pattern_Loader;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Utility;
 use WP;
@@ -92,6 +93,8 @@ class Setup {
 	protected function setup_hooks(): void {
 		add_action( 'init', array( $this, 'register_post_type' ) );
 		add_action( 'init', array( $this, 'register_calendar_rewrite_rule' ) );
+		// Priority 11 so post types registered at default priority 10 are available for get_post_types_by_support().
+		add_action( 'init', array( $this, 'register_starter_pattern' ), 11 );
 		add_action( 'parse_request', array( $this, 'handle_calendar_ics_request' ) );
 		add_action( 'template_redirect', array( $this, 'handle_event_archive_redirect' ) );
 		add_action( 'delete_post', array( $this, 'delete_event' ) );
@@ -170,56 +173,6 @@ class Setup {
 				'rest_base'     => 'gatherpress_events',
 				'public'        => true,
 				'hierarchical'  => false,
-				'template'      => array(
-					array( 'gatherpress/event-date' ),
-					array( 'gatherpress/add-to-calendar' ),
-					array(
-						'gatherpress/venue',
-						// Marking the attribute pre-picked tells the block to
-						// skip the pattern-picker UI and seed the default
-						// layout directly — this is the canonical auto-loaded
-						// instance, not a fresh manual insert. Users who want
-						// a different layout can still trigger the picker via
-						// the block toolbar's "Choose pattern" button.
-						array( 'patternPicked' => true ),
-					),
-					array( 'gatherpress/online-event' ),
-					array(
-						'gatherpress/rsvp',
-						// Marking the attribute pre-picked tells the block to
-						// skip the pattern-picker UI and seed the default
-						// per-status layouts directly — this is the canonical
-						// auto-loaded instance, not a fresh manual insert.
-						// Users who want a different layout can still trigger
-						// the picker via the block toolbar's "Choose pattern"
-						// button.
-						array( 'patternPicked' => true ),
-					),
-					array(
-						'core/paragraph',
-						array(
-							'placeholder' => __(
-								// phpcs:ignore Generic.Files.LineLength.TooLong
-								'Add a description of the event and let people know what to expect, including the agenda, what they need to bring, and how to find the group.',
-								'gatherpress'
-							),
-						),
-					),
-					array(
-						'gatherpress/rsvp-response',
-						// Marking the attribute pre-picked tells the block to
-						// skip the pattern-picker UI and seed the default
-						// layout directly — this is the canonical auto-loaded
-						// instance, not a fresh manual insert. Users who want
-						// a different layout can still trigger the picker via
-						// the block toolbar's "Choose pattern" button.
-						array( 'patternPicked' => true ),
-					),
-				),
-				// @todo continue to work on the event-template.
-				// 'template'      => array(
-				// array( 'core/pattern', array( 'slug' => 'gatherpress/event-template' ) ),
-				// ),
 				'menu_position' => 4,
 				'supports'      => array(
 					'title',
@@ -270,10 +223,78 @@ class Setup {
 		}
 		return $slug;
 	}
+
 	/**
-	 * Register a rewrite rule and query var for serving .ics calendar downloads.
+	 * Register the user-facing event starter patterns.
 	 *
-	 * This adds support for URLs like /events/my-event.ics that serve
+	 * Loads every pattern definition from `includes/core/templates/event/`
+	 * (each file returns a `name/title/description/content` array), runs
+	 * the list through the `gatherpress_event_starter_patterns` filter so
+	 * third parties can append their own, and registers each entry scoped
+	 * to `core/post-content` plus every post type declaring
+	 * `gatherpress-event-date` support. The block editor's starter pattern
+	 * modal — the same UX Twenty Twenty-Five uses on new pages — then
+	 * surfaces them when authors create a new event.
+	 *
+	 * Per-user dismissal is handled by the modal's own "Always show
+	 * starter patterns for new pages" toggle, so no site-wide setting
+	 * is needed here.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return void
+	 */
+	public function register_starter_pattern(): void {
+		$post_types = get_post_types_by_support( 'gatherpress-event-date' );
+
+		if ( empty( $post_types ) ) {
+			return;
+		}
+
+		$patterns = Starter_Pattern_Loader::load(
+			GATHERPRESS_CORE_PATH . '/includes/core/templates/event'
+		);
+
+		/**
+		 * Filters the array of event starter pattern definitions.
+		 *
+		 * Each entry is an associative array with `name`, `title`,
+		 * `description`, and `content` keys. Returned patterns are
+		 * registered with `core/post-content` `blockTypes` scoping plus
+		 * every post type declaring `gatherpress-event-date` support, so
+		 * they appear in the new-event chooser modal for any post type
+		 * acting as an event source.
+		 *
+		 * @since 1.0.0
+		 *
+		 * @param array $patterns Pattern definitions loaded from the
+		 *                        `includes/core/templates/event/` directory.
+		 */
+		$patterns = apply_filters( 'gatherpress_event_starter_patterns', $patterns );
+
+		foreach ( (array) $patterns as $pattern ) {
+			if ( ! is_array( $pattern ) || empty( $pattern['name'] ) ) {
+				continue;
+			}
+
+			register_block_pattern(
+				$pattern['name'],
+				array(
+					'title'       => $pattern['title'] ?? '',
+					'description' => $pattern['description'] ?? '',
+					'content'     => $pattern['content'] ?? '',
+					'blockTypes'  => array( 'core/post-content' ),
+					'postTypes'   => $post_types,
+					'source'      => 'plugin',
+				)
+			);
+		}
+	}
+
+	/**
+	 * Register the calendar rewrite rule for ICS file URLs.
+	 *
+	 * Sets up the URL pattern /event-slug/event-name.ics that serves
 	 * dynamically generated ICS files for individual events. The URL slug
 	 * matches the configured event post type slug from GatherPress settings.
 	 *

@@ -205,6 +205,44 @@ class Test_Setup extends Base {
 	}
 
 	/**
+	 * Filter callbacks may return entries that aren't valid pattern
+	 * definitions (missing `name`, non-array values). The registration
+	 * loop must skip those gracefully so one bad entry from a
+	 * third-party filter doesn't bring down the rest of the chooser.
+	 *
+	 * @covers ::register_starter_pattern
+	 *
+	 * @return void
+	 */
+	public function test_register_starter_pattern_skips_malformed_filter_entries(): void {
+		$instance = Setup::get_instance();
+		$registry = WP_Block_Patterns_Registry::get_instance();
+
+		if ( $registry->is_registered( 'gatherpress/venue-with-map' ) ) {
+			$registry->unregister( 'gatherpress/venue-with-map' );
+		}
+
+		$inject_garbage = static function ( array $patterns ): array {
+			$patterns[] = array( 'title' => 'No name key — must be skipped.' );
+			$patterns[] = 'not-an-array — must be skipped.';
+			return $patterns;
+		};
+
+		add_filter( 'gatherpress_venue_starter_patterns', $inject_garbage );
+
+		$instance->register_starter_pattern();
+
+		remove_filter( 'gatherpress_venue_starter_patterns', $inject_garbage );
+
+		$this->assertTrue(
+			$registry->is_registered( 'gatherpress/venue-with-map' ),
+			'Bundled pattern should still register when filter entries before/after it are malformed.'
+		);
+
+		$registry->unregister( 'gatherpress/venue-with-map' );
+	}
+
+	/**
 	 * Bails before registering when no post type declares
 	 * `gatherpress-venue-information` support. Without the guard,
 	 * `register_block_pattern` would be called with an empty
@@ -281,6 +319,47 @@ class Test_Setup extends Base {
 		);
 
 		$registry->unregister( 'gatherpress/venue-with-map' );
+	}
+
+	/**
+	 * Third parties can append their own pattern definitions via the
+	 * `gatherpress_venue_starter_patterns` filter without having to
+	 * call `register_block_pattern()` themselves.
+	 *
+	 * @covers ::register_starter_pattern
+	 *
+	 * @return void
+	 */
+	public function test_register_starter_pattern_filter_extends(): void {
+		$instance = Setup::get_instance();
+		$registry = WP_Block_Patterns_Registry::get_instance();
+
+		if ( $registry->is_registered( 'unit-test/extra-venue-pattern' ) ) {
+			$registry->unregister( 'unit-test/extra-venue-pattern' );
+		}
+
+		$append_pattern = static function ( array $patterns ): array {
+			$patterns[] = array(
+				'name'        => 'unit-test/extra-venue-pattern',
+				'title'       => 'Extra Venue Pattern',
+				'description' => 'Added through the filter.',
+				'content'     => '<!-- wp:paragraph --><p>Extra</p><!-- /wp:paragraph -->',
+			);
+			return $patterns;
+		};
+
+		add_filter( 'gatherpress_venue_starter_patterns', $append_pattern );
+
+		$instance->register_starter_pattern();
+
+		remove_filter( 'gatherpress_venue_starter_patterns', $append_pattern );
+
+		$this->assertTrue(
+			$registry->is_registered( 'unit-test/extra-venue-pattern' ),
+			'Patterns appended via the filter must be registered alongside the bundled defaults.'
+		);
+
+		$registry->unregister( 'unit-test/extra-venue-pattern' );
 	}
 
 	/**
