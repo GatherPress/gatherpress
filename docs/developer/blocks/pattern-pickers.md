@@ -84,6 +84,45 @@ addFilter(
 This only affects the auto-loaded path. Manual inserts still go through the
 picker, which is filtered separately via `gatherpress.rsvpResponsePatterns`.
 
+## RSVP Form — `gatherpress.rsvpFormPatterns`
+
+Same shape as RSVP Response. Filters the array of starter patterns shown in
+the RSVP Form block's picker. Each entry is `{ name, title, description, template }`.
+
+The bundled default (_Standard RSVP Form_) is the only entry registered out
+of the box. Add your own:
+
+```js
+import { addFilter } from '@wordpress/hooks';
+import { __ } from '@wordpress/i18n';
+
+addFilter(
+    'gatherpress.rsvpFormPatterns',
+    'my-plugin/extra-rsvp-form',
+    ( patterns ) => [
+        ...patterns,
+        {
+            name: 'my-plugin/minimal',
+            title: __( 'Minimal', 'my-plugin' ),
+            description: __(
+                'Name + email + submit only.',
+                'my-plugin'
+            ),
+            template: [
+                /* ...InnerBlocks tuples... */
+            ],
+        },
+    ]
+);
+```
+
+### Swapping the RSVP Form auto-loaded template — `gatherpress.rsvpFormDefaultTemplate`
+
+Parallel to `gatherpress.rsvpResponseDefaultTemplate` — filters the template
+seeded into auto-loaded RSVP Form blocks (currently a no-op since the block
+isn't auto-included by the event post type's `template` arg, but kept for
+parity in case future patterns add it).
+
 ## Adding a picker to a new block
 
 The picker component lives at [`src/components/PatternPicker/`](../../../src/components/PatternPicker/)

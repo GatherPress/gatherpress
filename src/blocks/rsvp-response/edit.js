@@ -61,7 +61,7 @@ function templateToBlocks( template ) {
  * `{ name, title, description, template }` — `template` is an `InnerBlocks`
  * tuple tree (`[ blockName, attributes, innerBlocks ]`).
  *
- * @since 0.34.0
+ * @since 1.0.0
  *
  * @param {Array} patterns Default array containing the bundled
  *                         "Attendee Grid with Filter" pattern.
@@ -88,7 +88,7 @@ function templateToBlocks( template ) {
  * user having to click through the picker. The picker itself is filterable
  * separately via `gatherpress.rsvpResponsePatterns`.
  *
- * @since 0.34.0
+ * @since 1.0.0
  *
  * @param {Array} template Default `InnerBlocks` tuple tree —
  *                         `[ blockName, attributes, innerBlocks ]` — that
