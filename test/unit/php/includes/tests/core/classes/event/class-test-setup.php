@@ -50,8 +50,8 @@ class Test_Setup extends Base {
 
 		$expected_hooks = array(
 			Admin_List::class => array(
-				'load-edit.php',
-				array( Admin_List::get_instance(), 'default_sort' ),
+				'query_vars',
+				array( Admin_List::get_instance(), 'query_vars' ),
 			),
 			Meta::class       => array(
 				'registered_post_type',

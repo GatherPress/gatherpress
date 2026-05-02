@@ -68,7 +68,6 @@ class Admin_List {
 	 * @return void
 	 */
 	protected function setup_hooks(): void {
-		add_action( 'load-edit.php', array( $this, 'default_sort' ) );
 		add_action( 'pre_get_posts', array( $this, 'handle_rsvp_sorting' ) );
 		add_filter( 'query_vars', array( $this, 'query_vars' ) );
 		add_action( 'registered_post_type', array( $this, 'maybe_register_post_type_hooks' ) );
@@ -110,33 +109,6 @@ class Admin_List {
 			sprintf( 'manage_%s_posts_columns', $post_type ),
 			array( $this, 'remove_comments_column' )
 		);
-	}
-
-	/**
-	 * Sets the default sort field and sort order on the event post type admin screen, to order by event date.
-	 *
-	 * @author John Blackbourn @johnbillion
-	 * @source https://github.com/johnbillion/extended-cpts/blob/20b7e9773b60f7301cd59ee520affa0ff63f90e6/src/PostTypeAdmin.php#L160-L178
-	 *
-	 * @since 1.0.0
-	 *
-	 * @return void
-	 */
-	public function default_sort(): void {
-		$screen = get_current_screen();
-
-		if ( ! $screen || ! post_type_supports( $screen->post_type, 'gatherpress-event-date' ) ) {
-			return;
-		}
-
-		// If the screen is already ordered, bail out.
-		if ( isset( $_GET['orderby'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-			return;
-		}
-
-		// Default to sorting by event date ascending.
-		$_GET['orderby'] = 'datetime';
-		$_GET['order']   = 'asc';
 	}
 
 	/**
@@ -223,12 +195,10 @@ class Admin_List {
 				);
 			} elseif ( false === strpos( $view_links['all'], 'class="current"' ) ) {
 				// Add "current" to "All" only when no other view is current.
-				// `default_sort()` adds `orderby`/`order` to `$_GET`, which
-				// prevents WP from detecting the base request and marking
-				// "All" itself — so we restore that. But we must not stomp
-				// on a built-in status filter (Published / Draft / Trash):
-				// when the user clicks one of those, that link already has
-				// `class="current"` and "All" should stay un-marked.
+				// We must not stomp on a built-in status filter (Published /
+				// Draft / Trash): when the user clicks one of those, that
+				// link already has `class="current"` and "All" should stay
+				// un-marked.
 				$another_view_is_current = false;
 				foreach ( $view_links as $other_key => $other_link ) {
 					if ( 'all' === $other_key ) {
@@ -258,9 +228,11 @@ class Admin_List {
 	/**
 	 * Get counts of upcoming and past events for a given post type.
 	 *
-	 * Uses the same datetime comparison logic as Query::adjust_event_sql()
-	 * with inclusive=true: upcoming uses datetime_end_gmt (includes running events),
-	 * past uses datetime_start_gmt (excludes running events).
+	 * Mirrors `Query::adjust_admin_event_sorting()` so the view-link counts
+	 * match the actual list. Both buckets pivot on `datetime_end_gmt`:
+	 * upcoming = end time is still in the future (running + future);
+	 * past = end time has already passed. Mutually exclusive — running
+	 * events appear only in upcoming, never in both.
 	 *
 	 * @since 1.0.0
 	 *
@@ -299,14 +271,14 @@ class Admin_List {
 			)
 		);
 
-		// Past: events whose start time is in the past (excludes currently running),
+		// Past: events whose end time has already passed,
 		// excluding events with no row in the events table.
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$past = (int) $wpdb->get_var(
 			$wpdb->prepare(
 				'SELECT COUNT(1) FROM %i LEFT JOIN %i ON %i.ID = %i.post_id'
 				. ' WHERE %i.post_type = %s AND %i.post_status NOT IN'
-				. " ('trash', 'auto-draft') AND %i.datetime_start_gmt < %s"
+				. " ('trash', 'auto-draft') AND %i.datetime_end_gmt < %s"
 				. ' AND %i.post_id IS NOT NULL',
 				$wpdb->posts,
 				$table,

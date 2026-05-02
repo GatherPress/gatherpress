@@ -17,6 +17,10 @@
 		"selectedStatus": {
 			"type": "string",
 			"default": "no_status"
+		},
+		"patternPicked": {
+			"type": "boolean",
+			"default": false
 		}
 	},
 	"supports": {

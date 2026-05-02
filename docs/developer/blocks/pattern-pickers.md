@@ -181,6 +181,64 @@ Parallel to the RSVP Response/Form variants. Filters the template seeded
 into auto-loaded Venue blocks. Receives the context-resolved template
 (with-title or without-title).
 
+## RSVP — `gatherpress.rsvpPatterns`
+
+The RSVP block carries **five** inner-block templates — one per RSVP status
+(`no_status`, `attending`, `waiting_list`, `not_attending`, `past`) — that
+get serialized into the `serializedInnerBlocks` attribute. A pattern entry
+therefore has a richer shape than the other blocks: alongside `template`
+(used for the modal's `<BlockPreview>` thumbnail and as the initial active
+inner blocks), it exposes `statusTemplates` — a map of status → template
+tuple tree — that the RSVP-specific pick handler uses to seed all five
+statuses at once.
+
+The bundled default (_RSVP Button with Modal_) is the only entry registered
+out of the box. Add your own:
+
+```js
+import { addFilter } from '@wordpress/hooks';
+import { __ } from '@wordpress/i18n';
+
+addFilter(
+    'gatherpress.rsvpPatterns',
+    'my-plugin/extra-rsvp-pattern',
+    ( patterns ) => [
+        ...patterns,
+        {
+            name: 'my-plugin/text-rsvp',
+            title: __( 'Text-only RSVP', 'my-plugin' ),
+            description: __(
+                'Link-style RSVP per status, no button.',
+                'my-plugin'
+            ),
+            // Used by the modal preview + active inner blocks on insert.
+            template: [ /* no_status tree */ ],
+            // Seeded into serializedInnerBlocks for all five statuses.
+            statusTemplates: {
+                no_status: [ /* ... */ ],
+                attending: [ /* ... */ ],
+                waiting_list: [ /* ... */ ],
+                not_attending: [ /* ... */ ],
+                past: [ /* ... */ ],
+            },
+        },
+    ]
+);
+```
+
+### Auto-loaded RSVP instances
+
+The RSVP block instance auto-loaded into a new event post (via the
+`gatherpress_event` post type's `template` arg) carries `patternPicked: true`
+so the picker is suppressed and the existing hydration `useEffect` seeds the
+default status templates directly.
+
+### Swapping the RSVP auto-loaded bundle — `gatherpress.rsvpDefaultStatusTemplates`
+
+Parallel to the other auto-load filters, but receives the **per-status
+template map** rather than a single template — the RSVP block's hydration
+logic loops over its keys to populate `serializedInnerBlocks`.
+
 ## Adding a picker to a new block
 
 The picker component lives at [`src/components/PatternPicker/`](../../../src/components/PatternPicker/)
