@@ -322,6 +322,44 @@ class Test_Setup extends Base {
 	}
 
 	/**
+	 * Filter callbacks may return entries that aren't valid pattern
+	 * definitions (missing `name`, non-array values). The registration
+	 * loop must skip those gracefully so one bad entry from a
+	 * third-party filter doesn't bring down the rest of the chooser.
+	 *
+	 * @covers ::register_starter_pattern
+	 *
+	 * @return void
+	 */
+	public function test_register_starter_pattern_skips_malformed_filter_entries(): void {
+		$instance = Setup::get_instance();
+		$registry = WP_Block_Patterns_Registry::get_instance();
+
+		if ( $registry->is_registered( 'gatherpress/event-with-rsvp' ) ) {
+			$registry->unregister( 'gatherpress/event-with-rsvp' );
+		}
+
+		$inject_garbage = static function ( array $patterns ): array {
+			$patterns[] = array( 'title' => 'No name key — must be skipped.' );
+			$patterns[] = 'not-an-array — must be skipped.';
+			return $patterns;
+		};
+
+		add_filter( 'gatherpress_event_starter_patterns', $inject_garbage );
+
+		$instance->register_starter_pattern();
+
+		remove_filter( 'gatherpress_event_starter_patterns', $inject_garbage );
+
+		$this->assertTrue(
+			$registry->is_registered( 'gatherpress/event-with-rsvp' ),
+			'Bundled pattern should still register when filter entries before/after it are malformed.'
+		);
+
+		$registry->unregister( 'gatherpress/event-with-rsvp' );
+	}
+
+	/**
 	 * Bails before registering when no post type declares
 	 * `gatherpress-event-date` support. Without the guard,
 	 * `register_block_pattern` would be called with an empty
