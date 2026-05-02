@@ -49,7 +49,7 @@ addFilter(
 );
 ```
 
-### Auto-loaded instances
+### Auto-loaded RSVP Response instances
 
 The RSVP Response block instance auto-loaded into a new event post (via the
 `gatherpress_event` post type's `template` arg) carries
@@ -122,6 +122,64 @@ Parallel to `gatherpress.rsvpResponseDefaultTemplate` — filters the template
 seeded into auto-loaded RSVP Form blocks (currently a no-op since the block
 isn't auto-included by the event post type's `template` arg, but kept for
 parity in case future patterns add it).
+
+## Venue — `gatherpress.venuePatterns`
+
+Same shape as RSVP Response and RSVP Form. Filters the array of starter
+patterns shown in the Venue block's picker. Each entry is
+`{ name, title, description, template }`.
+
+Two patterns ship by default, both always available in the chooser:
+
+- **Venue Details with Title** — prepends a `core/post-title` to the
+  address + phone + website + map. Default for event posts (the title
+  names the event hosting the venue).
+- **Venue Details** — the same address + phone + website + map without a
+  title. Default for venue posts (the host post itself names the venue).
+
+Authors can pick either regardless of host post type — the auto-load just
+picks the context-appropriate one when the picker is suppressed.
+
+```js
+import { addFilter } from '@wordpress/hooks';
+import { __ } from '@wordpress/i18n';
+
+addFilter(
+    'gatherpress.venuePatterns',
+    'my-plugin/extra-venue-pattern',
+    ( patterns ) => [
+        ...patterns,
+        {
+            name: 'my-plugin/map-only',
+            title: __( 'Map only', 'my-plugin' ),
+            description: __(
+                'Just the embedded venue map, no contact details.',
+                'my-plugin'
+            ),
+            template: [ [ 'gatherpress/venue-map' ] ],
+        },
+    ]
+);
+```
+
+### Auto-loaded venue instances
+
+Two paths seed the picker as already-picked:
+
+- The `gatherpress_event` post type's `template` arg includes
+  `gatherpress/venue` with `patternPicked: true` — new event posts come
+  pre-populated with the with-title venue layout.
+- The `gatherpress/venue-template` hook anchor pattern's content is
+  `<!-- wp:gatherpress/venue {"patternPicked":true} /-->` — new venue posts
+  come pre-populated with the without-title layout.
+
+Manual venue inserts on other post types still hit the picker.
+
+### Swapping the venue auto-loaded template — `gatherpress.venueDefaultTemplate`
+
+Parallel to the RSVP Response/Form variants. Filters the template seeded
+into auto-loaded Venue blocks. Receives the context-resolved template
+(with-title or without-title).
 
 ## Adding a picker to a new block
 

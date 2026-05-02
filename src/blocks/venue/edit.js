@@ -3,13 +3,23 @@
  */
 import {
 	BlockContextProvider,
+	BlockControls,
 	InnerBlocks,
 	InspectorControls,
 	useBlockProps,
+	store as blockEditorStore,
 } from '@wordpress/block-editor';
 import { __ } from '@wordpress/i18n';
-import { PanelBody, PanelRow } from '@wordpress/components';
-import { useSelect } from '@wordpress/data';
+import { applyFilters } from '@wordpress/hooks';
+import {
+	PanelBody,
+	PanelRow,
+	ToolbarButton,
+	ToolbarGroup,
+} from '@wordpress/components';
+import { useDispatch, useSelect } from '@wordpress/data';
+import { createBlock } from '@wordpress/blocks';
+import { useState } from '@wordpress/element';
 
 /**
  * Internal dependencies
@@ -18,10 +28,87 @@ import { getCurrentContextualPostId, hasValidBlockContext, isInFSETemplate } fro
 import { usePostTypeSupports, findEventPostById, DISABLED_FIELD_OPACITY } from '../../helpers/event';
 import { GetVenuePostFromTermId, GetVenuePostFromEventId, findVenuePostById, getVenuePostType, getVenueTaxonomy, useVenueTaxonomyIds } from '../../helpers/venue';
 import VenueNavigator from '../../components/VenueNavigator';
-import { TEMPLATE_WITH_TITLE, TEMPLATE_WITHOUT_TITLE } from './template';
+import PatternPicker, { PatternChooserModal } from '../../components/PatternPicker';
+import { TEMPLATE_WITH_TITLE, TEMPLATE_WITHOUT_TITLE } from './templates/venue-details';
+
+/**
+ * Recursively turn an InnerBlocks-shape `[ name, attrs, inner ]` template
+ * tuple tree into instantiated block objects, ready for `replaceInnerBlocks`.
+ *
+ * @param {Array} template Tuples in `[ blockName, attributes, innerBlocks ]` form.
+ * @return {Array} Created block instances.
+ */
+function templateToBlocks( template ) {
+	return template.map( ( [ name, attributes, innerBlocks ] ) =>
+		createBlock(
+			name,
+			attributes,
+			templateToBlocks( innerBlocks || [] )
+		)
+	);
+}
+
+/**
+ * Starter patterns offered by the Venue block's pattern picker.
+ *
+ * Two layouts that share the address + phone + website + map base — one
+ * prepends a `core/post-title` (intended for event posts where the title
+ * names the event hosting the venue), the other omits it (intended for
+ * venue posts where the post itself is the venue and the page title
+ * already names it). Both are always available regardless of host post
+ * type — the picker lists both and `<defaultTemplate>` (computed from
+ * host context) decides which auto-loads when `patternPicked` is true.
+ *
+ * Filterable via `gatherpress.venuePatterns` so other plugins or themes
+ * can register their own venue layouts. Each entry is shaped
+ * `{ name, title, description, template }` — `template` is an `InnerBlocks`
+ * tuple tree (`[ blockName, attributes, innerBlocks ]`).
+ *
+ * @since 1.0.0
+ *
+ * @param {Array} patterns Default array containing the bundled
+ *                         "Venue Details with Title" and "Venue Details"
+ *                         patterns.
+ * @return {Array} Patterns shown in the picker modal, in display order.
+ *
+ * @example
+ *   addFilter(
+ *     'gatherpress.venuePatterns',
+ *     'my-plugin/extra-venue-pattern',
+ *     ( patterns ) => [ ...patterns, {
+ *       name: 'my-plugin/map-only',
+ *       title: __( 'Map only', 'my-plugin' ),
+ *       description: __( '...', 'my-plugin' ),
+ *       template: [ [ 'gatherpress/venue-map' ] ],
+ *     } ]
+ *   );
+ */
+const PATTERNS = applyFilters( 'gatherpress.venuePatterns', [
+	{
+		name: 'gatherpress/venue-details-with-title',
+		title: __( 'Venue Details with Title', 'gatherpress' ),
+		description: __(
+			'Post title above the venue address, phone, website, and map. Default for event posts.',
+			'gatherpress'
+		),
+		template: TEMPLATE_WITH_TITLE,
+	},
+	{
+		name: 'gatherpress/venue-details',
+		title: __( 'Venue Details', 'gatherpress' ),
+		description: __(
+			'Address, phone, website, and an embedded map (no post title). Default for venue posts.',
+			'gatherpress'
+		),
+		template: TEMPLATE_WITHOUT_TITLE,
+	},
+] );
 
 const Edit = ( props ) => {
-	const { attributes, context } = props;
+	const { attributes, setAttributes, clientId, context } = props;
+	const [ isToolbarChooserOpen, setIsToolbarChooserOpen ] = useState( false );
+	const { patternPicked } = attributes;
+	const { replaceInnerBlocks } = useDispatch( blockEditorStore );
 
 	const isDescendentOfQueryLoop = Number.isFinite( context?.queryId );
 	// Reactive supports checks so the block re-renders once the post-type
@@ -169,31 +256,115 @@ const Edit = ( props ) => {
 	// Check if we have a physical venue selected.
 	const hasVenue = 0 < venuePostId;
 
-	// Dim the block when no venue is selected or no valid context.
+	// Auto-load default template — picks the with-title variant on event
+	// hosts, the without-title variant elsewhere (including venue posts).
+	// Both patterns remain available in the picker modal regardless of
+	// context, so authors can manually pick the other variant if they want.
+	//
+	/**
+	 * Default template seeded into auto-loaded Venue blocks.
+	 *
+	 * Fires only when the picker is suppressed (the canonical instance on
+	 * a new event or venue post — `patternPicked: true` set in the post type
+	 * `template` arg / venue-template pattern). Lets a plugin or theme swap
+	 * the layout that appears without the user clicking through the picker.
+	 * Receives the context-resolved template (with-title in event hosts,
+	 * without-title elsewhere). The picker itself is filterable separately
+	 * via `gatherpress.venuePatterns`.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param {Array} defaultTemplate Default `InnerBlocks` tuple tree
+	 *                                resolved from `TEMPLATE_WITH_TITLE` /
+	 *                                `TEMPLATE_WITHOUT_TITLE` based on
+	 *                                whether the host post supports events.
+	 * @return {Array} Tuple tree handed to `<InnerBlocks template={ ... } />`.
+	 */
+	const defaultTemplate = applyFilters(
+		'gatherpress.venueDefaultTemplate',
+		isEventContext ? TEMPLATE_WITH_TITLE : TEMPLATE_WITHOUT_TITLE
+	);
+
+	const innerBlockCount = useSelect(
+		( select ) =>
+			select( blockEditorStore ).getBlocks( clientId ).length,
+		[ clientId ]
+	);
+	const showPatternPicker =
+		! patternPicked && 0 === innerBlockCount;
+
+	const handlePatternPick = ( pattern ) => {
+		replaceInnerBlocks(
+			clientId,
+			templateToBlocks( pattern.template )
+		);
+		setAttributes( { patternPicked: true } );
+	};
+
+	// Dim the block when no venue is selected or no valid context. The
+	// pattern-picker placeholder always renders at full opacity — dimming
+	// the picker would obscure the actionable Choose button.
 	const blockProps = useBlockProps( {
 		style: {
-			opacity: hasValidBlockContext( {
-				isDescendentOfQueryLoop,
-				hasSupport: isEventContext,
-				hasData: hasVenue,
-			} )
-				? 1
-				: DISABLED_FIELD_OPACITY,
+			opacity:
+				showPatternPicker ||
+				hasValidBlockContext( {
+					isDescendentOfQueryLoop,
+					hasSupport: isEventContext,
+					hasData: hasVenue,
+				} )
+					? 1
+					: DISABLED_FIELD_OPACITY,
 		},
 	} );
 
-	// Get the template based on context.
-	const template = isEventContext ? TEMPLATE_WITH_TITLE : TEMPLATE_WITHOUT_TITLE;
-
 	return (
 		<div { ...blockProps }>
+			{ ! showPatternPicker && (
+				<BlockControls>
+					<ToolbarGroup>
+						<ToolbarButton
+							text={ __( 'Choose pattern', 'gatherpress' ) }
+							onClick={ () => setIsToolbarChooserOpen( true ) }
+						/>
+					</ToolbarGroup>
+				</BlockControls>
+			) }
+			{ isToolbarChooserOpen && (
+				<PatternChooserModal
+					patterns={ PATTERNS }
+					onPick={ handlePatternPick }
+					onClose={ () => setIsToolbarChooserOpen( false ) }
+				/>
+			) }
 			<BlockContextProvider
 				value={ {
 					postId: venuePostId,
 					postType: venuePostType,
 				} }
 			>
-				<InnerBlocks template={ template } templateLock={ false } />
+				{ showPatternPicker && (
+					<PatternPicker
+						label={ __( 'Venue', 'gatherpress' ) }
+						icon="location"
+						instructions={ __(
+							'Choose a pattern for the venue.',
+							'gatherpress'
+						) }
+						patterns={ PATTERNS }
+						showStartBlank={ false }
+						onPick={ handlePatternPick }
+					/>
+				) }
+				{ ! showPatternPicker &&
+					( patternPicked && 0 === innerBlockCount ? (
+						<InnerBlocks
+							template={ defaultTemplate }
+							templateLock={ false }
+						/>
+					) : (
+						<InnerBlocks templateLock={ false } />
+					) ) }
 			</BlockContextProvider>
 			<InspectorControls>
 				{ ! isDescendentOfQueryLoop && ! isInFSETemplate() && isEventContext && (
