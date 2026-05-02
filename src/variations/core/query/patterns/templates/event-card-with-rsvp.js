@@ -10,14 +10,14 @@ import { QUERY_NO_RESULTS_VARIATION } from '../../../query-no-results';
 import { QUERY_PAGINATION_VARIATION } from '../../../query-pagination';
 
 /**
- * Default starter template for the Event Query Loop.
+ * Event Card with RSVP starter template for the Event Query Loop.
  *
  * Mirrors the layout that previously lived inline on the variation as
  * temporary `innerBlocks` (pre-#1124): featured image, date, title, venue,
  * online event link, RSVP avatar grid + count, and the RSVP button. Picking
  * this pattern from the chooser produces the same shape users have today.
  */
-const DEFAULT_TEMPLATE = [
+const EVENT_CARD_WITH_RSVP_TEMPLATE = [
 	[
 		'core/post-template',
 		{
@@ -241,4 +241,4 @@ const DEFAULT_TEMPLATE = [
 	QUERY_NO_RESULTS_VARIATION,
 ];
 
-export default DEFAULT_TEMPLATE;
+export default EVENT_CARD_WITH_RSVP_TEMPLATE;

@@ -14,7 +14,7 @@ import { __ } from '@wordpress/i18n';
 /**
  * Internal dependencies
  */
-import DEFAULT_TEMPLATE from './templates/default';
+import EVENT_CARD_WITH_RSVP_TEMPLATE from './templates/event-card-with-rsvp';
 
 /**
  * Default `core/query` attributes for the Event Query Loop variation. Mirrors
@@ -62,7 +62,7 @@ function templateToBlocks( template ) {
  * the editor doesn't flag the inserted content as malformed.
  *
  * @param {Object} props
- * @param {string} props.name        Pattern slug, e.g. `gatherpress/event-query-default`.
+ * @param {string} props.name        Pattern slug, e.g. `gatherpress/event-card-with-rsvp`.
  * @param {string} props.title       Human-readable title shown in the modal.
  * @param {string} props.description Sentence summary shown alongside the preview.
  * @param {Array}  props.template    Inner template tuples (post-template + pagination + no-results).
@@ -120,13 +120,13 @@ domReady( () => {
 
 	const patterns = [
 		buildPattern( {
-			name: 'gatherpress/event-query-default',
+			name: 'gatherpress/event-card-with-rsvp',
 			title: __( 'Event Card with RSVP', 'gatherpress' ),
 			description: __(
 				'Featured image, date, title, venue, online event link, RSVP responses, and RSVP button.',
 				'gatherpress'
 			),
-			template: DEFAULT_TEMPLATE,
+			template: EVENT_CARD_WITH_RSVP_TEMPLATE,
 		} ),
 	];
 
