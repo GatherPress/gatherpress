@@ -2,9 +2,8 @@
 // that offer named starter layouts. Modal layout mirrors core/query's
 // pattern picker: a responsive grid of preview cards with the title
 // underneath each preview. Clicking the card picks the pattern.
-
-.gatherpress-pattern-picker__modal {
-	.gatherpress-pattern-picker__patterns {
+.gatherpress-pattern-picker {
+	&__patterns {
 		display: grid;
 		grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
 		gap: 24px;
@@ -13,13 +12,13 @@
 		list-style: none;
 	}
 
-	.gatherpress-pattern-picker__pattern {
+	&__pattern {
 		margin: 0;
 		padding: 0;
 		list-style: none;
 	}
 
-	.gatherpress-pattern-picker__pattern-button {
+	&__pattern-button {
 		display: block;
 		width: 100%;
 		padding: 0;
@@ -37,7 +36,7 @@
 		}
 	}
 
-	.gatherpress-pattern-picker__pattern-preview {
+	&__pattern-preview {
 		// Reserve a consistent aspect ratio for every preview tile so the
 		// grid stays orderly even when patterns vary in vertical content.
 		aspect-ratio: 4 / 3;
@@ -47,7 +46,7 @@
 		background: #fff;
 	}
 
-	.gatherpress-pattern-picker__pattern-title {
+	&__pattern-title {
 		display: block;
 		padding: 8px 4px 0;
 		font-size: 13px;

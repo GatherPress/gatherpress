@@ -79,6 +79,28 @@ function templateToBlocks( template ) {
  *     } ]
  *   );
  */
+/**
+ * Default template seeded into auto-loaded RSVP Response blocks.
+ *
+ * Fires only when the picker is suppressed (the canonical instance on a new
+ * event post — see the post type's `template` arg setting `patternPicked` to
+ * true). Lets a plugin or theme swap the layout that appears without the
+ * user having to click through the picker. The picker itself is filterable
+ * separately via `gatherpress.rsvpResponsePatterns`.
+ *
+ * @since 0.34.0
+ *
+ * @param {Array} template Default `InnerBlocks` tuple tree —
+ *                         `[ blockName, attributes, innerBlocks ]` — that
+ *                         matches the bundled "Attendee Grid with Filter"
+ *                         pattern.
+ * @return {Array} Tuple tree handed to `<InnerBlocks template={ ... } />`.
+ */
+const DEFAULT_TEMPLATE = applyFilters(
+	'gatherpress.rsvpResponseDefaultTemplate',
+	ATTENDEE_GRID_WITH_FILTER_TEMPLATE
+);
+
 const PATTERNS = applyFilters( 'gatherpress.rsvpResponsePatterns', [
 	{
 		name: 'gatherpress/attendee-grid-with-filter',
@@ -404,9 +426,7 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 					// only after `replaceInnerBlocks` has populated the tree,
 					// so the `template` prop is a no-op for them.
 					patternPicked && 0 === innerBlockCount ? (
-						<InnerBlocks
-							template={ ATTENDEE_GRID_WITH_FILTER_TEMPLATE }
-						/>
+						<InnerBlocks template={ DEFAULT_TEMPLATE } />
 					) : (
 						<InnerBlocks />
 					)

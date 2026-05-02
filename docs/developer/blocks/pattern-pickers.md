@@ -58,6 +58,32 @@ default template directly. Authors can still swap layouts via the block
 toolbar's **Choose pattern** action — that opens the same modal your filter
 contributes to.
 
+### Swapping the auto-loaded template — `gatherpress.rsvpResponseDefaultTemplate`
+
+To change what auto-loaded instances seed (without going through the picker
+flow), filter the default template directly. The filter receives an
+`InnerBlocks` tuple tree and must return one of the same shape:
+
+```js
+import { addFilter } from '@wordpress/hooks';
+import { __ } from '@wordpress/i18n';
+
+addFilter(
+    'gatherpress.rsvpResponseDefaultTemplate',
+    'my-plugin/swap-rsvp-default',
+    () => [
+        [
+            'core/group',
+            { layout: { type: 'grid', columns: 3 } },
+            [ [ 'gatherpress/rsvp-template', {} ] ],
+        ],
+    ]
+);
+```
+
+This only affects the auto-loaded path. Manual inserts still go through the
+picker, which is filtered separately via `gatherpress.rsvpResponsePatterns`.
+
 ## Adding a picker to a new block
 
 The picker component lives at [`src/components/PatternPicker/`](../../../src/components/PatternPicker/)
