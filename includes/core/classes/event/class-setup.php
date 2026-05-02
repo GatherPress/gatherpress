@@ -19,6 +19,7 @@ use GatherPress\Core\Event;
 use GatherPress\Core\Feed;
 use GatherPress\Core\Rsvp\Rsvp;
 use GatherPress\Core\Settings;
+use GatherPress\Core\Starter_Pattern_Loader;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Utility;
 use WP;
@@ -224,26 +225,20 @@ class Setup {
 	}
 
 	/**
-	 * Register the user-facing "Event with RSVP" starter pattern.
+	 * Register the user-facing event starter patterns.
 	 *
-	 * Scopes to every post type declaring `gatherpress-event-date`
-	 * support so the WordPress block editor's starter pattern modal —
-	 * the same UX Twenty Twenty-Five uses on new pages — surfaces this
-	 * pattern when authors create a new event. Companion plugins that
-	 * declare the support on custom event post types get the chooser
-	 * for free.
+	 * Loads every pattern definition from `includes/core/templates/event/`
+	 * (each file returns a `name/title/description/content` array), runs
+	 * the list through the `gatherpress_event_starter_patterns` filter so
+	 * third parties can append their own, and registers each entry scoped
+	 * to `core/post-content` plus every post type declaring
+	 * `gatherpress-event-date` support. The block editor's starter pattern
+	 * modal — the same UX Twenty Twenty-Five uses on new pages — then
+	 * surfaces them when authors create a new event.
 	 *
 	 * Per-user dismissal is handled by the modal's own "Always show
 	 * starter patterns for new pages" toggle, so no site-wide setting
 	 * is needed here.
-	 *
-	 * The wrapper-`<div>` blocks (add-to-calendar, online-event, rsvp,
-	 * rsvp-response) include the empty wrapper in their serialized
-	 * markup so the block parser's view matches the empty-state output
-	 * of each block's `save()` — without this, the editor flags
-	 * "unexpected or invalid content" on insert. Each block's edit
-	 * component then seeds its own inner-block template at runtime so
-	 * the user sees the populated UI immediately.
 	 *
 	 * @since 1.0.0
 	 *
@@ -256,45 +251,44 @@ class Setup {
 			return;
 		}
 
-		$paragraph_placeholder = __(
-			// phpcs:ignore Generic.Files.LineLength.TooLong
-			'Add a description of the event and let people know what to expect, including the agenda, what they need to bring, and how to find the group.',
-			'gatherpress'
+		$patterns = Starter_Pattern_Loader::load(
+			GATHERPRESS_CORE_PATH . '/includes/core/templates/event'
 		);
 
-		$content  = '<!-- wp:gatherpress/event-date /-->';
-		$content .= '<!-- wp:gatherpress/add-to-calendar -->';
-		$content .= '<div class="wp-block-gatherpress-add-to-calendar"></div>';
-		$content .= '<!-- /wp:gatherpress/add-to-calendar -->';
-		$content .= '<!-- wp:gatherpress/venue {"patternPicked":true} /-->';
-		$content .= '<!-- wp:gatherpress/online-event -->';
-		$content .= '<div class="wp-block-gatherpress-online-event"></div>';
-		$content .= '<!-- /wp:gatherpress/online-event -->';
-		$content .= '<!-- wp:gatherpress/rsvp {"patternPicked":true} -->';
-		$content .= '<div class="wp-block-gatherpress-rsvp"></div>';
-		$content .= '<!-- /wp:gatherpress/rsvp -->';
-		$content .= sprintf(
-			'<!-- wp:paragraph {"placeholder":%s} --><p></p><!-- /wp:paragraph -->',
-			wp_json_encode( $paragraph_placeholder )
-		);
-		$content .= '<!-- wp:gatherpress/rsvp-response {"patternPicked":true} -->';
-		$content .= '<div class="wp-block-gatherpress-rsvp-response"></div>';
-		$content .= '<!-- /wp:gatherpress/rsvp-response -->';
+		/**
+		 * Filters the array of event starter pattern definitions.
+		 *
+		 * Each entry is an associative array with `name`, `title`,
+		 * `description`, and `content` keys. Returned patterns are
+		 * registered with `core/post-content` `blockTypes` scoping plus
+		 * every post type declaring `gatherpress-event-date` support, so
+		 * they appear in the new-event chooser modal for any post type
+		 * acting as an event source.
+		 *
+		 * @since 1.0.0
+		 *
+		 * @param array $patterns Pattern definitions loaded from the
+		 *                        `includes/core/templates/event/` directory.
+		 */
+		$patterns = apply_filters( 'gatherpress_event_starter_patterns', $patterns );
 
-		register_block_pattern(
-			'gatherpress/event-with-rsvp',
-			array(
-				'title'       => __( 'Event with RSVP', 'gatherpress' ),
-				'description' => __(
-					'Date, calendar link, venue, online link, RSVP, description, and attendee list.',
-					'gatherpress'
-				),
-				'content'     => $content,
-				'blockTypes'  => array( 'core/post-content' ),
-				'postTypes'   => $post_types,
-				'source'      => 'plugin',
-			)
-		);
+		foreach ( (array) $patterns as $pattern ) {
+			if ( ! is_array( $pattern ) || empty( $pattern['name'] ) ) {
+				continue;
+			}
+
+			register_block_pattern(
+				$pattern['name'],
+				array(
+					'title'       => $pattern['title'] ?? '',
+					'description' => $pattern['description'] ?? '',
+					'content'     => $pattern['content'] ?? '',
+					'blockTypes'  => array( 'core/post-content' ),
+					'postTypes'   => $post_types,
+					'source'      => 'plugin',
+				)
+			);
+		}
 	}
 
 	/**

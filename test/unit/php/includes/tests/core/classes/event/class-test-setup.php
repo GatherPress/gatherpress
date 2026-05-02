@@ -281,6 +281,47 @@ class Test_Setup extends Base {
 	}
 
 	/**
+	 * Third parties can append their own pattern definitions via the
+	 * `gatherpress_event_starter_patterns` filter without having to
+	 * call `register_block_pattern()` themselves.
+	 *
+	 * @covers ::register_starter_pattern
+	 *
+	 * @return void
+	 */
+	public function test_register_starter_pattern_filter_extends(): void {
+		$instance = Setup::get_instance();
+		$registry = WP_Block_Patterns_Registry::get_instance();
+
+		if ( $registry->is_registered( 'unit-test/extra-event-pattern' ) ) {
+			$registry->unregister( 'unit-test/extra-event-pattern' );
+		}
+
+		$append_pattern = static function ( array $patterns ): array {
+			$patterns[] = array(
+				'name'        => 'unit-test/extra-event-pattern',
+				'title'       => 'Extra Event Pattern',
+				'description' => 'Added through the filter.',
+				'content'     => '<!-- wp:paragraph --><p>Extra</p><!-- /wp:paragraph -->',
+			);
+			return $patterns;
+		};
+
+		add_filter( 'gatherpress_event_starter_patterns', $append_pattern );
+
+		$instance->register_starter_pattern();
+
+		remove_filter( 'gatherpress_event_starter_patterns', $append_pattern );
+
+		$this->assertTrue(
+			$registry->is_registered( 'unit-test/extra-event-pattern' ),
+			'Patterns appended via the filter must be registered alongside the bundled defaults.'
+		);
+
+		$registry->unregister( 'unit-test/extra-event-pattern' );
+	}
+
+	/**
 	 * Bails before registering when no post type declares
 	 * `gatherpress-event-date` support. Without the guard,
 	 * `register_block_pattern` would be called with an empty

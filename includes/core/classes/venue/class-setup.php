@@ -22,6 +22,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 use GatherPress\Core\Event\Event;
 use GatherPress\Core\Settings;
 use GatherPress\Core\Shadow_Source;
+use GatherPress\Core\Starter_Pattern_Loader;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Utility;
 use GatherPress\Core\Venue\Map\Setup as Map_Setup;
@@ -270,14 +271,16 @@ class Setup {
 	}
 
 	/**
-	 * Register the user-facing "Venue with Map" starter pattern.
+	 * Register the user-facing venue starter patterns.
 	 *
-	 * Scopes to every post type declaring `gatherpress-venue-information`
-	 * support so the WordPress block editor's starter pattern modal —
-	 * the same UX Twenty Twenty-Five uses on new pages — surfaces this
-	 * pattern when authors create a new venue. Companion plugins that
-	 * declare the support on custom venue post types get the chooser
-	 * for free.
+	 * Loads every pattern definition from `includes/core/templates/venue/`
+	 * (each file returns a `name/title/description/content` array), runs
+	 * the list through the `gatherpress_venue_starter_patterns` filter so
+	 * third parties can append their own, and registers each entry scoped
+	 * to `core/post-content` plus every post type declaring
+	 * `gatherpress-venue-information` support. The block editor's starter
+	 * pattern modal — the same UX Twenty Twenty-Five uses on new pages —
+	 * then surfaces them when authors create a new venue.
 	 *
 	 * Per-user dismissal is handled by the modal's own "Always show
 	 * starter patterns for new pages" toggle, so no site-wide setting
@@ -294,20 +297,44 @@ class Setup {
 			return;
 		}
 
-		register_block_pattern(
-			'gatherpress/venue-with-map',
-			array(
-				'title'       => __( 'Venue with Map', 'gatherpress' ),
-				'description' => __(
-					'Address, contact details, and an embedded map.',
-					'gatherpress'
-				),
-				'content'     => '<!-- wp:gatherpress/venue {"patternPicked":true} /-->',
-				'blockTypes'  => array( 'core/post-content' ),
-				'postTypes'   => $post_types,
-				'source'      => 'plugin',
-			)
+		$patterns = Starter_Pattern_Loader::load(
+			GATHERPRESS_CORE_PATH . '/includes/core/templates/venue'
 		);
+
+		/**
+		 * Filters the array of venue starter pattern definitions.
+		 *
+		 * Each entry is an associative array with `name`, `title`,
+		 * `description`, and `content` keys. Returned patterns are
+		 * registered with `core/post-content` `blockTypes` scoping plus
+		 * every post type declaring `gatherpress-venue-information`
+		 * support, so they appear in the new-venue chooser modal for any
+		 * post type acting as a venue source.
+		 *
+		 * @since 1.0.0
+		 *
+		 * @param array $patterns Pattern definitions loaded from the
+		 *                        `includes/core/templates/venue/` directory.
+		 */
+		$patterns = apply_filters( 'gatherpress_venue_starter_patterns', $patterns );
+
+		foreach ( (array) $patterns as $pattern ) {
+			if ( ! is_array( $pattern ) || empty( $pattern['name'] ) ) {
+				continue;
+			}
+
+			register_block_pattern(
+				$pattern['name'],
+				array(
+					'title'       => $pattern['title'] ?? '',
+					'description' => $pattern['description'] ?? '',
+					'content'     => $pattern['content'] ?? '',
+					'blockTypes'  => array( 'core/post-content' ),
+					'postTypes'   => $post_types,
+					'source'      => 'plugin',
+				)
+			);
+		}
 	}
 
 	/**
