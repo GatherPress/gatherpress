@@ -31,7 +31,7 @@ const translations = {
 	noOne: __( 'No one is attending this event yet.', 'gatherpress' ),
 };
 
-const TEMPLATE = [
+const ATTENDEE_GRID_WITH_FILTER_TEMPLATE = [
 	[
 		'core/group',
 		{
@@ -149,4 +149,4 @@ const TEMPLATE = [
 	],
 ];
 
-export default TEMPLATE;
+export default ATTENDEE_GRID_WITH_FILTER_TEMPLATE;

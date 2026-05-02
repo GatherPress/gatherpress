@@ -1,3 +1,8 @@
+// Reusable component styles. The pattern-picker modal portals to
+// document.body — outside any block's iframe — so its styles need to live in
+// the admin-wide bundle, not in a block's editor stylesheet.
+@use "components/PatternPicker/pattern-picker";
+
 .gatherpress-attendee-info {
 	display: flex;
 	gap: 0.5rem;

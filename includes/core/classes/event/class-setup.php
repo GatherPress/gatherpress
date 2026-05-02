@@ -186,7 +186,16 @@ class Setup {
 							),
 						),
 					),
-					array( 'gatherpress/rsvp-response' ),
+					array(
+						'gatherpress/rsvp-response',
+						// Marking the attribute pre-picked tells the block to
+						// skip the pattern-picker UI and seed the default
+						// layout directly — this is the canonical auto-loaded
+						// instance, not a fresh manual insert. Users who want
+						// a different layout can still trigger the picker via
+						// the block toolbar's "Choose pattern" button.
+						array( 'patternPicked' => true ),
+					),
 				),
 				// @todo continue to work on the event-template.
 				// 'template'      => array(

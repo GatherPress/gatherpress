@@ -17,6 +17,10 @@
 		"rsvpLimit": {
 			"type": "number",
 			"default": 8
+		},
+		"patternPicked": {
+			"type": "boolean",
+			"default": false
 		}
 	},
 	"supports": {

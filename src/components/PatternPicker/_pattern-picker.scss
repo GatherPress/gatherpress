@@ -1,0 +1,56 @@
+// Pattern picker — Placeholder + Modal pair used by GatherPress blocks
+// that offer named starter layouts. Modal layout mirrors core/query's
+// pattern picker: a responsive grid of preview cards with the title
+// underneath each preview. Clicking the card picks the pattern.
+
+.gatherpress-pattern-picker__modal {
+	.gatherpress-pattern-picker__patterns {
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+		gap: 24px;
+		margin: 0;
+		padding: 0;
+		list-style: none;
+	}
+
+	.gatherpress-pattern-picker__pattern {
+		margin: 0;
+		padding: 0;
+		list-style: none;
+	}
+
+	.gatherpress-pattern-picker__pattern-button {
+		display: block;
+		width: 100%;
+		padding: 0;
+		background: transparent;
+		border: 1px solid transparent;
+		border-radius: 4px;
+		cursor: pointer;
+		text-align: left;
+		transition: border-color 120ms ease-in-out;
+
+		&:hover,
+		&:focus {
+			border-color: var(--wp-admin-theme-color, #007cba);
+			outline: none;
+		}
+	}
+
+	.gatherpress-pattern-picker__pattern-preview {
+		// Reserve a consistent aspect ratio for every preview tile so the
+		// grid stays orderly even when patterns vary in vertical content.
+		aspect-ratio: 4 / 3;
+		overflow: hidden;
+		border: 1px solid #ddd;
+		border-radius: 4px;
+		background: #fff;
+	}
+
+	.gatherpress-pattern-picker__pattern-title {
+		display: block;
+		padding: 8px 4px 0;
+		font-size: 13px;
+		font-weight: 500;
+	}
+}
