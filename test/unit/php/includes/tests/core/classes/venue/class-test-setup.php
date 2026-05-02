@@ -9,6 +9,7 @@
 namespace GatherPress\Tests\Core\Venue;
 
 use GatherPress\Core\Event;
+use GatherPress\Core\Settings;
 use GatherPress\Core\Venue\Map\Setup as Map_Setup;
 use GatherPress\Core\Venue\Meta;
 use GatherPress\Core\Venue\Setup;
@@ -87,6 +88,12 @@ class Test_Setup extends Base {
 				'name'     => 'init',
 				'priority' => 11,
 				'callback' => array( $instance, 'register_taxonomy' ),
+			),
+			array(
+				'type'     => 'action',
+				'name'     => 'init',
+				'priority' => 11,
+				'callback' => array( $instance, 'register_starter_pattern' ),
 			),
 			array(
 				'type'     => 'filter',
@@ -196,6 +203,76 @@ class Test_Setup extends Base {
 			$taxonomy->show_ui,
 			'Taxonomy should remain hidden from admin UI as a shadow taxonomy.'
 		);
+	}
+
+	/**
+	 * Registers the user-facing starter pattern with the right scope when
+	 * the `venue_pattern_chooser` setting is on (default).
+	 *
+	 * @covers ::register_starter_pattern
+	 *
+	 * @return void
+	 */
+	public function test_register_starter_pattern_on(): void {
+		$instance = Setup::get_instance();
+		$registry = WP_Block_Patterns_Registry::get_instance();
+
+		if ( $registry->is_registered( 'gatherpress/venue-with-map' ) ) {
+			$registry->unregister( 'gatherpress/venue-with-map' );
+		}
+
+		update_option( Settings::OPTION_NAME, array( 'venue_pattern_chooser' => true ) );
+
+		$instance->register_starter_pattern();
+
+		$this->assertTrue(
+			$registry->is_registered( 'gatherpress/venue-with-map' ),
+			'Starter pattern should be registered when the setting is on.'
+		);
+
+		$pattern = $registry->get_registered( 'gatherpress/venue-with-map' );
+
+		$this->assertContains(
+			'core/post-content',
+			$pattern['blockTypes'],
+			'Starter pattern must scope to core/post-content so the chooser modal surfaces it.'
+		);
+		$this->assertContains(
+			Venue::POST_TYPE,
+			$pattern['postTypes'],
+			'Starter pattern must scope to gatherpress_venue post type.'
+		);
+
+		$registry->unregister( 'gatherpress/venue-with-map' );
+		delete_option( Settings::OPTION_NAME );
+	}
+
+	/**
+	 * Skips registration entirely when the `venue_pattern_chooser` setting
+	 * is off so new venues open with blank content.
+	 *
+	 * @covers ::register_starter_pattern
+	 *
+	 * @return void
+	 */
+	public function test_register_starter_pattern_off(): void {
+		$instance = Setup::get_instance();
+		$registry = WP_Block_Patterns_Registry::get_instance();
+
+		if ( $registry->is_registered( 'gatherpress/venue-with-map' ) ) {
+			$registry->unregister( 'gatherpress/venue-with-map' );
+		}
+
+		update_option( Settings::OPTION_NAME, array( 'venue_pattern_chooser' => false ) );
+
+		$instance->register_starter_pattern();
+
+		$this->assertFalse(
+			$registry->is_registered( 'gatherpress/venue-with-map' ),
+			'Starter pattern should not be registered when the setting is off.'
+		);
+
+		delete_option( Settings::OPTION_NAME );
 	}
 
 	/**

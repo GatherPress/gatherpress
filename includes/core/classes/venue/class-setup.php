@@ -98,6 +98,7 @@ class Setup {
 		add_action( 'registered_post_type', array( $this, 'maybe_link_shadow_source_support' ), 9 );
 		// Priority 11 so post types registered at default priority 10 are available for get_post_types_by_support().
 		add_action( 'init', array( $this, 'register_taxonomy' ), 11 );
+		add_action( 'init', array( $this, 'register_starter_pattern' ), 11 );
 		add_filter( 'block_editor_settings_all', array( $this, 'add_editor_settings' ) );
 	}
 
@@ -232,9 +233,6 @@ class Setup {
 					'gatherpress-shadow-source',
 				),
 				'menu_icon'    => 'dashicons-location',
-				'template'     => array(
-					array( 'core/pattern', array( 'slug' => 'gatherpress/venue-template' ) ),
-				),
 				'has_archive'  => true,
 				'rewrite'      => array(
 					'slug'       => $rewrite_slug,
@@ -268,6 +266,53 @@ class Setup {
 			$venue_post_type = $this->get_venue_post_type( $event_post_type );
 			register_taxonomy_for_object_type( $this->get_taxonomy( $venue_post_type ), $event_post_type );
 		}
+	}
+
+	/**
+	 * Register the user-facing "Venue with Map" starter pattern.
+	 *
+	 * Scopes to every post type declaring `gatherpress-venue-information`
+	 * support so the WordPress block editor's starter pattern modal —
+	 * the same UX Twenty Twenty-Five uses on new pages — surfaces this
+	 * pattern when authors create a new venue. Companion plugins that
+	 * declare the support on custom venue post types get the chooser
+	 * for free.
+	 *
+	 * Gated by the `venue_pattern_chooser` setting (default on). When
+	 * the setting is off the pattern is not registered and new venues
+	 * open with blank content.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return void
+	 */
+	public function register_starter_pattern(): void {
+		$settings = Settings::get_instance();
+
+		if ( ! (bool) $settings->get( 'venue_pattern_chooser' ) ) {
+			return;
+		}
+
+		$post_types = get_post_types_by_support( 'gatherpress-venue-information' );
+
+		if ( empty( $post_types ) ) {
+			return;
+		}
+
+		register_block_pattern(
+			'gatherpress/venue-with-map',
+			array(
+				'title'       => __( 'Venue with Map', 'gatherpress' ),
+				'description' => __(
+					'Address, contact details, and an embedded map.',
+					'gatherpress'
+				),
+				'content'     => '<!-- wp:gatherpress/venue {"patternPicked":true} /-->',
+				'blockTypes'  => array( 'core/post-content' ),
+				'postTypes'   => $post_types,
+				'source'      => 'plugin',
+			)
+		);
 	}
 
 	/**
