@@ -35,11 +35,24 @@ GatherPress adds the following blocks by default into a new created event:
 
 ### New Venue
 
-A new created venue will have the following blocks prepared by default:
+Creating a new venue opens WordPress's "Choose a pattern" starter modal —
+the same UX Twenty Twenty-Five uses on new pages. A single starter pattern
+ships by default:
 
-- A block-pattern named `gatherpress/venue-template`, which contains the following block by default:
+- `gatherpress/venue-with-map` — title "Venue with Map", scoped to
+  `core/post-content` and every post type declaring
+  `gatherpress-venue-information` support. Picks insert a single
+  `gatherpress/venue` block (address + phone + website + map).
 
-    - `gatherpress/venue`
+The chooser is gated by the **Pattern Chooser** setting under
+*GatherPress Settings → Venues → Editor* (on by default). When off, the
+pattern is not registered and new venues open with blank content.
+
+The `gatherpress/venue-template` pattern still exists — it is the
+Block Hooks anchor and the seed used by `Venue\Setup::maybe_apply_venue_template()`
+when venues are created programmatically (e.g., via REST without
+content). Picking "Venue with Map" in the modal inserts the same
+`gatherpress/venue` block that template carries.
 
 
 ### New Event Queries within any post
