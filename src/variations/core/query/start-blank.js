@@ -62,31 +62,46 @@ function treeContainsBlock( blocks, blockName ) {
 }
 
 /**
- * Build the GatherPress-flavored Start blank scaffold for a `core/post-template`
- * — `gatherpress/event-date` followed by a linked post title.
+ * Walk the picked WP scaffold and convert any `core/post-date` block into a
+ * `gatherpress/event-date` block, leaving every other block (title, excerpt,
+ * image) untouched. Returns the rebuilt block tree.
  *
+ * Driven this way the "Title & Excerpt" scaffold — which has no date — is
+ * left alone, while "Title & Date" / "Title, Date & Excerpt" /
+ * "Image, Date & Title" all swap out their `post-date` for an event date.
+ *
+ * @param {Array} blocks Inner blocks to rebuild.
  * @return {Array} Created block instances ready for `replaceInnerBlocks()`.
  */
-function buildEventScaffoldInner() {
-	return [
-		createBlock( 'gatherpress/event-date', {
-			displayType: 'start',
-			startDateFormat: ' D, M j, Y, g:i a ',
-		} ),
-		createBlock( 'core/post-title', { isLink: true } ),
-	];
+function rebuildWithEventDate( blocks ) {
+	return blocks.map( ( block ) => {
+		if ( 'core/post-date' === block.name ) {
+			return createBlock( 'gatherpress/event-date', {
+				displayType: 'start',
+				startDateFormat: ' D, M j, Y, g:i a ',
+			} );
+		}
+
+		return createBlock(
+			block.name,
+			block.attributes,
+			rebuildWithEventDate( block.innerBlocks || [] )
+		);
+	} );
 }
 
 /**
- * Swap WP core's hardcoded "Start blank" scaffold for an event-shaped one.
+ * Swap WP core's hardcoded "Start blank" scaffold's `core/post-date` for our
+ * `gatherpress/event-date`.
  *
  * The Query Loop block's placeholder modal exposes a "Start blank" button that
  * is bound to a private handler in `@wordpress/block-library` — there's no
  * filter to override its inner blocks. Instead, we subscribe to the block
  * editor store and post-swap: when an Event Query Loop block ends up
- * containing WP's default scaffold, replace the post-template children with
- * `event-date` + linked post title. The original pagination/no-results
- * siblings are left intact since they're identical between scaffolds.
+ * containing one of WP's scoped-variation scaffolds, walk the post-template
+ * tree and replace any `post-date` with `event-date`. Pagination/no-results
+ * siblings stay intact, and scaffolds without a date (Title & Excerpt) pass
+ * through unchanged so we don't add a date the user didn't ask for.
  *
  * Per-`clientId` guarding via `swappedClientIds` keeps the swap one-shot per
  * block — a user who later edits back to the WP scaffold isn't fought with.
@@ -134,9 +149,16 @@ domReady( () => {
 
 			swappedClientIds.add( block.clientId );
 
+			// If the picked scaffold has no `post-date` (Title & Excerpt),
+			// rebuilding is a no-op shape-wise — skip the dispatch to avoid
+			// a pointless undo entry.
+			if ( ! treeContainsBlock( postTemplate.innerBlocks, 'core/post-date' ) ) {
+				continue;
+			}
+
 			dispatch( blockEditorStore ).replaceInnerBlocks(
 				postTemplate.clientId,
-				buildEventScaffoldInner()
+				rebuildWithEventDate( postTemplate.innerBlocks )
 			);
 		}
 	} );
