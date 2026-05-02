@@ -279,21 +279,15 @@ class Setup {
 	 * declare the support on custom venue post types get the chooser
 	 * for free.
 	 *
-	 * Gated by the `venue_pattern_chooser` setting (default on). When
-	 * the setting is off the pattern is not registered and new venues
-	 * open with blank content.
+	 * Per-user dismissal is handled by the modal's own "Always show
+	 * starter patterns for new pages" toggle, so no site-wide setting
+	 * is needed here.
 	 *
 	 * @since 1.0.0
 	 *
 	 * @return void
 	 */
 	public function register_starter_pattern(): void {
-		$settings = Settings::get_instance();
-
-		if ( ! (bool) $settings->get( 'venue_pattern_chooser' ) ) {
-			return;
-		}
-
 		$post_types = get_post_types_by_support( 'gatherpress-venue-information' );
 
 		if ( empty( $post_types ) ) {

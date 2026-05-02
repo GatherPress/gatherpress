@@ -77,31 +77,7 @@ class Venues extends Base {
 	 */
 	protected function get_sections(): array {
 		return array(
-			'editor' => array(
-				'name'        => __( 'Editor', 'gatherpress' ),
-				'description' => __(
-					'Configure the block editor experience for new venues.',
-					'gatherpress'
-				),
-				'options'     => array(
-					'venue_pattern_chooser' => array(
-						'labels' => array(
-							'name' => __( 'Pattern Chooser', 'gatherpress' ),
-						),
-						'field'  => array(
-							'label'   => __(
-								'Show a starter pattern chooser when creating a new venue.',
-								'gatherpress'
-							),
-							'type'    => 'checkbox',
-							'options' => array(
-								'default' => true,
-							),
-						),
-					),
-				),
-			),
-			'maps'   => array(
+			'maps' => array(
 				'name'        => __( 'Maps', 'gatherpress' ),
 				'description' => __(
 					'Configure the mapping platform and defaults applied to new venue map blocks.',

@@ -44,9 +44,9 @@ ships by default:
   `gatherpress-venue-information` support. Picks insert a single
   `gatherpress/venue` block (address + phone + website + map).
 
-The chooser is gated by the **Pattern Chooser** setting under
-*GatherPress Settings → Venues → Editor* (on by default). When off, the
-pattern is not registered and new venues open with blank content.
+Per-user dismissal is handled by the modal's own *"Always show starter
+patterns for new pages"* toggle — that's a WordPress-core user
+preference, not a GatherPress setting.
 
 The `gatherpress/venue-template` pattern still exists — it is the
 Block Hooks anchor and the seed used by `Venue\Setup::maybe_apply_venue_template()`
