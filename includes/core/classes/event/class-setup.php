@@ -143,7 +143,7 @@ class Setup {
 					'not_found'                => __( 'No Events found.', 'gatherpress' ),
 					'not_found_in_trash'       => __( 'No Events found in Trash.', 'gatherpress' ),
 					'parent_item_colon'        => __( 'Parent Events:', 'gatherpress' ),
-					'all_items'                => __( 'View Events', 'gatherpress' ),
+					'all_items'                => __( 'All Events', 'gatherpress' ),
 					'archives'                 => __( 'Event Archives', 'gatherpress' ),
 					'attributes'               => __( 'Event Attributes', 'gatherpress' ),
 					'insert_into_item'         => __( 'Insert into Event', 'gatherpress' ),
@@ -184,7 +184,17 @@ class Setup {
 						array( 'patternPicked' => true ),
 					),
 					array( 'gatherpress/online-event' ),
-					array( 'gatherpress/rsvp' ),
+					array(
+						'gatherpress/rsvp',
+						// Marking the attribute pre-picked tells the block to
+						// skip the pattern-picker UI and seed the default
+						// per-status layouts directly — this is the canonical
+						// auto-loaded instance, not a fresh manual insert.
+						// Users who want a different layout can still trigger
+						// the picker via the block toolbar's "Choose pattern"
+						// button.
+						array( 'patternPicked' => true ),
+					),
 					array(
 						'core/paragraph',
 						array(

@@ -34,12 +34,6 @@ class Test_Admin_List extends Base {
 		$hooks    = array(
 			array(
 				'type'     => 'action',
-				'name'     => 'load-edit.php',
-				'priority' => 10,
-				'callback' => array( $instance, 'default_sort' ),
-			),
-			array(
-				'type'     => 'action',
 				'name'     => 'pre_get_posts',
 				'priority' => 10,
 				'callback' => array( $instance, 'handle_rsvp_sorting' ),
@@ -128,124 +122,6 @@ class Test_Admin_List extends Base {
 			has_filter( 'manage_edit-post_sortable_columns', array( $instance, 'sortable_columns' ) ),
 			'Should not register event-admin hooks for post types without gatherpress-event-date support.'
 		);
-	}
-
-	/**
-	 * Coverage for default_sort method when no screen is available.
-	 *
-	 * Exercises the ! $screen early return, which can occur in multisite
-	 * contexts where get_current_screen() returns null before any screen is set.
-	 *
-	 * @covers ::default_sort
-	 *
-	 * @return void
-	 */
-	public function test_default_sort_no_screen(): void {
-		$instance = Admin_List::get_instance();
-
-		// Ensure no screen is set so get_current_screen() returns null.
-		unset( $GLOBALS['current_screen'] );
-
-		// Ensure $_GET is clean.
-		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		unset( $_GET['orderby'], $_GET['order'] );
-
-		$instance->default_sort();
-
-		// Should return early without modifying $_GET.
-		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		$this->assertArrayNotHasKey( 'orderby', $_GET, 'Should not set orderby when no screen.' );
-		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		$this->assertArrayNotHasKey( 'order', $_GET, 'Should not set order when no screen.' );
-	}
-
-	/**
-	 * Coverage for default_sort method when on the wrong screen.
-	 *
-	 * @covers ::default_sort
-	 *
-	 * @return void
-	 */
-	public function test_default_sort_wrong_screen(): void {
-		$instance = Admin_List::get_instance();
-
-		// Set current screen to a non-event screen.
-		set_current_screen( 'edit-post' );
-
-		// Ensure $_GET is clean.
-		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		unset( $_GET['orderby'], $_GET['order'] );
-
-		$instance->default_sort();
-
-		// Should return early without modifying $_GET.
-		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		$this->assertArrayNotHasKey( 'orderby', $_GET, 'Should not set orderby on wrong screen.' );
-		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		$this->assertArrayNotHasKey( 'order', $_GET, 'Should not set order on wrong screen.' );
-
-		// Clean up.
-		set_current_screen( 'front' );
-	}
-
-	/**
-	 * Coverage for default_sort method when orderby is already set.
-	 *
-	 * @covers ::default_sort
-	 *
-	 * @return void
-	 */
-	public function test_default_sort_orderby_already_set(): void {
-		$instance = Admin_List::get_instance();
-
-		// Set current screen to event edit screen.
-		set_current_screen( 'edit-gatherpress_event' );
-
-		// Set an existing orderby value.
-		$_GET['orderby'] = 'title'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-
-		$instance->default_sort();
-
-		// phpcs:ignore WordPress.Security.NonceVerification.Recommended, WordPress.Security.ValidatedSanitizedInput
-		$this->assertSame( 'title', $_GET['orderby'], 'Should not override existing orderby.' );
-		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		$this->assertArrayNotHasKey( 'order', $_GET, 'Should not set order when orderby already exists.' );
-
-		// Clean up.
-		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		unset( $_GET['orderby'], $_GET['order'] );
-		set_current_screen( 'front' );
-	}
-
-	/**
-	 * Coverage for default_sort method when on the correct screen with no orderby.
-	 *
-	 * @covers ::default_sort
-	 *
-	 * @return void
-	 */
-	public function test_default_sort_sets_defaults(): void {
-		$instance = Admin_List::get_instance();
-
-		// Set current screen to event edit screen.
-		set_current_screen( 'edit-gatherpress_event' );
-
-		// Ensure $_GET is clean.
-		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		unset( $_GET['orderby'], $_GET['order'] );
-
-		$instance->default_sort();
-
-		// Should set default orderby and order.
-		// phpcs:ignore WordPress.Security.NonceVerification.Recommended, WordPress.Security.ValidatedSanitizedInput
-		$this->assertSame( 'datetime', $_GET['orderby'], 'Should set orderby to datetime.' );
-		// phpcs:ignore WordPress.Security.NonceVerification.Recommended, WordPress.Security.ValidatedSanitizedInput
-		$this->assertSame( 'asc', $_GET['order'], 'Should set order to asc.' );
-
-		// Clean up.
-		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		unset( $_GET['orderby'], $_GET['order'] );
-		set_current_screen( 'front' );
 	}
 
 	/**
@@ -534,8 +410,9 @@ class Test_Admin_List extends Base {
 	/**
 	 * Coverage for views_edit adding current class to "All" when WordPress omits it.
 	 *
-	 * When default_sort() adds orderby/order to $_GET, WordPress's
-	 * is_base_request() returns false and omits the current class from "All".
+	 * When extra $_GET params are present, WordPress core's
+	 * `is_base_request()` returns false and the "All" view link loses its
+	 * `current` class — `views_edit()` defensively re-adds it.
 	 *
 	 * @covers ::views_edit
 	 *
@@ -550,8 +427,8 @@ class Test_Admin_List extends Base {
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		unset( $_GET['gatherpress_event_query'] );
 
-		// Simulate WordPress not adding current class due to default_sort()
-		// adding extra $_GET params that break is_base_request().
+		// Simulate WordPress not adding current class because extra $_GET
+		// params break is_base_request().
 		$view_links = array(
 			'all' => '<a href="#">All</a>',
 		);
@@ -836,9 +713,9 @@ class Test_Admin_List extends Base {
 	/**
 	 * Coverage for get_event_counts method with a currently running event.
 	 *
-	 * A running event (started but not ended) should count as upcoming
-	 * because datetime_end_gmt >= now, and also as past because
-	 * datetime_start_gmt < now.
+	 * Running events count as upcoming (datetime_end_gmt is still in the
+	 * future) and not as past — the buckets pivot on datetime_end_gmt so
+	 * a running event lives only in upcoming until it actually ends.
 	 *
 	 * @covers ::get_event_counts
 	 *
@@ -869,9 +746,9 @@ class Test_Admin_List extends Base {
 
 		$counts = Utility::invoke_hidden_method( $instance, 'get_event_counts' );
 
-		// Running events appear in both counts (same logic as Event_Query with inclusive=true).
+		// Running events count only as upcoming — buckets pivot on datetime_end_gmt.
 		$this->assertSame( 1, $counts['upcoming'], 'Running event should count as upcoming.' );
-		$this->assertSame( 1, $counts['past'], 'Running event should count as past.' );
+		$this->assertSame( 0, $counts['past'], 'Running event should not count as past.' );
 	}
 
 	/**
