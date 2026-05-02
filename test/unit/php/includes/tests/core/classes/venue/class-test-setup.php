@@ -89,6 +89,12 @@ class Test_Setup extends Base {
 				'callback' => array( $instance, 'register_taxonomy' ),
 			),
 			array(
+				'type'     => 'action',
+				'name'     => 'init',
+				'priority' => 11,
+				'callback' => array( $instance, 'register_starter_pattern' ),
+			),
+			array(
 				'type'     => 'filter',
 				'name'     => 'block_editor_settings_all',
 				'priority' => 10,
@@ -196,6 +202,85 @@ class Test_Setup extends Base {
 			$taxonomy->show_ui,
 			'Taxonomy should remain hidden from admin UI as a shadow taxonomy.'
 		);
+	}
+
+	/**
+	 * Bails before registering when no post type declares
+	 * `gatherpress-venue-information` support. Without the guard,
+	 * `register_block_pattern` would be called with an empty
+	 * `postTypes` array and the chooser modal would have no
+	 * post-type scope to match against.
+	 *
+	 * @covers ::register_starter_pattern
+	 *
+	 * @return void
+	 */
+	public function test_register_starter_pattern_bails_without_supported_post_types(): void {
+		$instance = Setup::get_instance();
+		$registry = WP_Block_Patterns_Registry::get_instance();
+
+		if ( $registry->is_registered( 'gatherpress/venue-with-map' ) ) {
+			$registry->unregister( 'gatherpress/venue-with-map' );
+		}
+
+		// Strip the support from every post type that currently declares
+		// it so `get_post_types_by_support()` returns an empty array.
+		$supported = get_post_types_by_support( 'gatherpress-venue-information' );
+		foreach ( $supported as $post_type ) {
+			remove_post_type_support( $post_type, 'gatherpress-venue-information' );
+		}
+
+		$instance->register_starter_pattern();
+
+		$this->assertFalse(
+			$registry->is_registered( 'gatherpress/venue-with-map' ),
+			'Starter pattern must not be registered when no post type declares the venue-information support.'
+		);
+
+		// Restore support.
+		foreach ( $supported as $post_type ) {
+			add_post_type_support( $post_type, 'gatherpress-venue-information' );
+		}
+	}
+
+	/**
+	 * Registers the user-facing starter pattern scoped to core/post-content
+	 * and every post type declaring `gatherpress-venue-information` so the
+	 * starter pattern modal surfaces it on new venues.
+	 *
+	 * @covers ::register_starter_pattern
+	 *
+	 * @return void
+	 */
+	public function test_register_starter_pattern(): void {
+		$instance = Setup::get_instance();
+		$registry = WP_Block_Patterns_Registry::get_instance();
+
+		if ( $registry->is_registered( 'gatherpress/venue-with-map' ) ) {
+			$registry->unregister( 'gatherpress/venue-with-map' );
+		}
+
+		$instance->register_starter_pattern();
+
+		$this->assertTrue(
+			$registry->is_registered( 'gatherpress/venue-with-map' ),
+			'Starter pattern should be registered.'
+		);
+
+		$pattern = $registry->get_registered( 'gatherpress/venue-with-map' );
+
+		$this->assertContains(
+			'core/post-content',
+			$pattern['blockTypes'],
+			'Starter pattern must scope to core/post-content so the chooser modal surfaces it.'
+		);
+		$this->assertContains(
+			Venue::POST_TYPE,
+			$pattern['postTypes'],
+			'Starter pattern must scope to gatherpress_venue post type.'
+		);
+
+		$registry->unregister( 'gatherpress/venue-with-map' );
 	}
 
 	/**
