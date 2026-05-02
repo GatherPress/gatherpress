@@ -98,6 +98,7 @@ class Setup {
 		add_action( 'registered_post_type', array( $this, 'maybe_link_shadow_source_support' ), 9 );
 		// Priority 11 so post types registered at default priority 10 are available for get_post_types_by_support().
 		add_action( 'init', array( $this, 'register_taxonomy' ), 11 );
+		// Priority 11 so post types registered at default priority 10 are available for get_post_types_by_support().
 		add_action( 'init', array( $this, 'register_starter_pattern' ), 11 );
 		add_filter( 'block_editor_settings_all', array( $this, 'add_editor_settings' ) );
 	}
