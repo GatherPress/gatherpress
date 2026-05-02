@@ -7,8 +7,8 @@ GatherPress includes a block-variation of the `core/query` block, called _Event 
 
 
 1. Allows endless customization in terms of layout & style, incl. the use of interactive blocks.
-2. Allows editors to select from explicit compositions of block-patterns directly via the blocks **Choose (layout)** button and the **Replace** button in the top toolbar.
-3. Allows editors to choose starter-content via the blocks **Start blank** button and the underlying [Block Variation Picker](https://github.com/WordPress/gutenberg/tree/trunk/packages/block-editor/src/components/block-variation-picker).
+2. Allows editors to drop in the **Event Card with RSVP** starter pattern (featured image, date, title, venue, online event link, RSVP responses, and RSVP button) via the block's **Choose** button or the **Replace** button in the top toolbar.
+3. Allows editors to start with a minimal event scaffold via the **Start blank** button and the underlying [Block Variation Picker](https://github.com/WordPress/gutenberg/tree/trunk/packages/block-editor/src/components/block-variation-picker) — whichever scaffold the editor picks, the post template is seeded with `Event Date` + a linked post title rather than WordPress's generic post-date layout.
 4. Allows to query either **past or upcoming events**.
 5. Allows to select for the inclusion or exclusion of **started, but not yet finished, events**.
 6. If used within a `gatherpress_event` post, an editor can choose to **"Exclude** (the) **current Event"**
