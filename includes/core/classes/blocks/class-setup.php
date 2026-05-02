@@ -123,6 +123,17 @@ class Setup {
 			)
 		);
 
+		// Pattern category that the Event Query Loop variation chooser scopes to.
+		// The category slug must match the variation namespace declared in
+		// src/variations/core/query/index.js so core/query's placeholder modal
+		// surfaces these patterns.
+		register_block_pattern_category(
+			'gatherpress-event-query',
+			array(
+				'label' => __( 'Event Query Loop', 'gatherpress' ),
+			)
+		);
+
 		// Descriptive note shown to developers who enumerate registered
 		// patterns (REST API, pattern registry). These patterns exist as
 		// anchors for the Block Hooks API so other plugins can hook blocks
