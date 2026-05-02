@@ -8,7 +8,7 @@ Patterns allow to be filtered by the (upgraded since WordPress 6.5) Block Hooks 
 - GatherPress provides central entry points for plugin developers to hook-in own blocks, to extend GatherPress
 - GatherPress' blocks will provide their hooking code themself, which keeps concerns separate and code clean
 
-For example, when you create a new event post, it gets pre-populated with a set of blocks, curated within a block-pattern named `gatherpress/event-template`.
+For example, the `gatherpress/event-template` pattern is the Block Hooks anchor that companion plugins extend; the user-facing "Event with RSVP" starter pattern surfaced in the new-event chooser modal seeds the same canonical block layout.
 
 ## Overview of hookable patterns
 

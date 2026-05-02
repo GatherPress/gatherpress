@@ -51,12 +51,12 @@ addFilter(
 
 ### Auto-loaded RSVP Response instances
 
-The RSVP Response block instance auto-loaded into a new event post (via the
-`gatherpress_event` post type's `template` arg) carries
-`patternPicked: true` so the picker is suppressed and the block seeds the
-default template directly. Authors can still swap layouts via the block
-toolbar's **Choose pattern** action — that opens the same modal your filter
-contributes to.
+The RSVP Response block seeded into a new event post (via the
+`gatherpress/event-with-rsvp` starter pattern surfaced in the new-event
+chooser modal) carries `patternPicked: true` so the picker is suppressed
+and the block seeds the default template directly. Authors can still swap
+layouts via the block toolbar's **Choose pattern** action — that opens
+the same modal your filter contributes to.
 
 ### Swapping the auto-loaded template — `gatherpress.rsvpResponseDefaultTemplate`
 
@@ -166,12 +166,13 @@ addFilter(
 
 Two paths seed the picker as already-picked:
 
-- The `gatherpress_event` post type's `template` arg includes
-  `gatherpress/venue` with `patternPicked: true` — new event posts come
-  pre-populated with the with-title venue layout.
-- The `gatherpress/venue-template` hook anchor pattern's content is
-  `<!-- wp:gatherpress/venue {"patternPicked":true} /-->` — new venue posts
-  come pre-populated with the without-title layout.
+- The `gatherpress/event-with-rsvp` starter pattern (surfaced in the
+  new-event chooser modal) includes `gatherpress/venue` with
+  `patternPicked: true` — picking it from the modal pre-populates the
+  with-title venue layout.
+- The `gatherpress/venue-with-map` starter pattern (surfaced in the
+  new-venue chooser modal) carries the same `patternPicked: true` —
+  picking it pre-populates the without-title layout.
 
 Manual venue inserts on other post types still hit the picker.
 
@@ -228,10 +229,11 @@ addFilter(
 
 ### Auto-loaded RSVP instances
 
-The RSVP block instance auto-loaded into a new event post (via the
-`gatherpress_event` post type's `template` arg) carries `patternPicked: true`
-so the picker is suppressed and the existing hydration `useEffect` seeds the
-default status templates directly.
+The RSVP block seeded into a new event post (via the
+`gatherpress/event-with-rsvp` starter pattern surfaced in the new-event
+chooser modal) carries `patternPicked: true` so the picker is suppressed
+and the existing hydration `useEffect` seeds the default status templates
+directly.
 
 ### Swapping the RSVP auto-loaded bundle — `gatherpress.rsvpDefaultStatusTemplates`
 
