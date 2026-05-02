@@ -20,6 +20,7 @@ use PMC\Unit_Test\Utility;
 use stdClass;
 use WP;
 use WP_Block;
+use WP_Block_Patterns_Registry;
 use WP_REST_Request;
 
 /**
@@ -99,6 +100,12 @@ class Test_Setup extends Base {
 				'name'     => 'init',
 				'priority' => 10,
 				'callback' => array( $instance, 'register_calendar_rewrite_rule' ),
+			),
+			array(
+				'type'     => 'action',
+				'name'     => 'init',
+				'priority' => 11,
+				'callback' => array( $instance, 'register_starter_pattern' ),
 			),
 			array(
 				'type'     => 'action',
@@ -221,6 +228,95 @@ class Test_Setup extends Base {
 			implode( '', $wp_rewrite->rules ),
 			"The 'gatherpress_ics' query parameter was not found in any rewrite rule"
 		);
+	}
+
+	/**
+	 * Registers the user-facing starter pattern scoped to core/post-content
+	 * and every post type declaring `gatherpress-event-date` so the starter
+	 * pattern modal surfaces it on new event posts.
+	 *
+	 * @covers ::register_starter_pattern
+	 *
+	 * @return void
+	 */
+	public function test_register_starter_pattern(): void {
+		$instance = Setup::get_instance();
+		$registry = WP_Block_Patterns_Registry::get_instance();
+
+		if ( $registry->is_registered( 'gatherpress/event-with-rsvp' ) ) {
+			$registry->unregister( 'gatherpress/event-with-rsvp' );
+		}
+
+		$instance->register_starter_pattern();
+
+		$this->assertTrue(
+			$registry->is_registered( 'gatherpress/event-with-rsvp' ),
+			'Starter pattern should be registered.'
+		);
+
+		$pattern = $registry->get_registered( 'gatherpress/event-with-rsvp' );
+
+		$this->assertContains(
+			'core/post-content',
+			$pattern['blockTypes'],
+			'Starter pattern must scope to core/post-content so the chooser modal surfaces it.'
+		);
+		$this->assertContains(
+			Event::POST_TYPE,
+			$pattern['postTypes'],
+			'Starter pattern must scope to gatherpress_event post type.'
+		);
+		$this->assertStringContainsString(
+			'gatherpress/event-date',
+			$pattern['content'],
+			'Starter pattern body must seed the event-date block.'
+		);
+		$this->assertStringContainsString(
+			'"patternPicked":true',
+			$pattern['content'],
+			'Wrapper-div blocks must be flagged pattern-picked so the nested pickers stay suppressed.'
+		);
+
+		$registry->unregister( 'gatherpress/event-with-rsvp' );
+	}
+
+	/**
+	 * Bails before registering when no post type declares
+	 * `gatherpress-event-date` support. Without the guard,
+	 * `register_block_pattern` would be called with an empty
+	 * `postTypes` array and the chooser modal would have no
+	 * post-type scope to match against.
+	 *
+	 * @covers ::register_starter_pattern
+	 *
+	 * @return void
+	 */
+	public function test_register_starter_pattern_bails_without_supported_post_types(): void {
+		$instance = Setup::get_instance();
+		$registry = WP_Block_Patterns_Registry::get_instance();
+
+		if ( $registry->is_registered( 'gatherpress/event-with-rsvp' ) ) {
+			$registry->unregister( 'gatherpress/event-with-rsvp' );
+		}
+
+		// Strip the support from every post type that currently declares
+		// it so `get_post_types_by_support()` returns an empty array.
+		$supported = get_post_types_by_support( 'gatherpress-event-date' );
+		foreach ( $supported as $post_type ) {
+			remove_post_type_support( $post_type, 'gatherpress-event-date' );
+		}
+
+		$instance->register_starter_pattern();
+
+		$this->assertFalse(
+			$registry->is_registered( 'gatherpress/event-with-rsvp' ),
+			'Starter pattern must not be registered when no post type declares the event-date support.'
+		);
+
+		// Restore support.
+		foreach ( $supported as $post_type ) {
+			add_post_type_support( $post_type, 'gatherpress-event-date' );
+		}
 	}
 
 	/**

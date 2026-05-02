@@ -21,16 +21,25 @@ GatherPress combines four of such block-patterns to curate the creation of:
 
 ### New Event
 
-GatherPress adds the following blocks by default into a new created event:
+Creating a new event opens WordPress's "Choose a pattern" starter modal —
+the same UX Twenty Twenty-Five uses on new pages. A single starter pattern
+ships by default:
 
-- A block-pattern named `gatherpress/event-template`, which contains the following blocks by default:
+- `gatherpress/event-with-rsvp` — title "Event with RSVP", scoped to
+  `core/post-content` and every post type declaring
+  `gatherpress-event-date` support. Picks insert event-date,
+  add-to-calendar, venue, online-event, RSVP, a description paragraph,
+  and rsvp-response — the canonical event layout. The venue, RSVP,
+  and rsvp-response blocks ship with `patternPicked: true` so their
+  in-block pattern pickers stay suppressed.
 
-    - `gatherpress/event-date`
-    - `gatherpress/add-to-calendar`
-    - `gatherpress/venue`
-    - `gatherpress/rsvp`
-    - `core/paragraph`
-    - `gatherpress/rsvp-response`
+Per-user dismissal is handled by the modal's own *"Always show starter
+patterns for new pages"* toggle — that's a WordPress-core user
+preference, not a GatherPress setting.
+
+The `gatherpress/event-template` pattern still exists as the Block Hooks
+anchor for companion plugins that hook blocks before/after the event-date
+block via `hooked_block_types`.
 
 
 ### New Venue
