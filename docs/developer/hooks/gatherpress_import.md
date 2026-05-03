@@ -20,7 +20,7 @@ add_action(
 
 ## Files
 
-- [includes/core/classes/class-import.php:91](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/class-import.php#L91)
+- [includes/core/classes/class-import.php:92](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/class-import.php#L92)
 ```php
 do_action( 'gatherpress_import', $post_data_raw )
 ```

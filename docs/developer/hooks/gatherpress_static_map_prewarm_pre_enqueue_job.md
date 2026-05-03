@@ -48,7 +48,7 @@ add_filter(
 
 ## Files
 
-- [includes/core/classes/venue/map/class-prewarm.php:411](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/venue/map/class-prewarm.php#L411)
+- [includes/core/classes/venue/map/class-prewarm.php:412](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/venue/map/class-prewarm.php#L412)
 ```php
 apply_filters(
 			'gatherpress_static_map_prewarm_pre_enqueue_job',
