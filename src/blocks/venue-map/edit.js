@@ -333,7 +333,7 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 			}
 			// getBlockParentsByBlockName returns root → self order, so the
 			// last entry is the closest ancestor.
-			return parents[ parents.length - 1 ];
+			return parents.at( -1 );
 		},
 		[ clientId ]
 	);

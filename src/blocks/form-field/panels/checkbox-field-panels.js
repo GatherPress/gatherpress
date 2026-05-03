@@ -25,11 +25,10 @@ export default function CheckboxFieldPanels( { attributes, setAttributes } ) {
 	return (
 		<>
 			<PanelBody title={ __( 'Label Styles', 'gatherpress' ) }>
-				<BaseControl __nextHasNoMarginBottom={ true }>
+				<BaseControl>
 					<FontSizePicker
 						withReset={ true }
 						size="__unstable-large"
-						__nextHasNoMarginBottom
 						onChange={ ( value ) =>
 							setAttributes( { labelFontSize: value } )
 						}

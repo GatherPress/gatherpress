@@ -182,7 +182,6 @@ export const EventListTypeControls = ( { attributes, setAttributes } ) => {
 			label={ __( 'Event List Type', 'gatherpress' ) }
 			value={ eventListType }
 			isBlock
-			__nextHasNoMarginBottom
 			__next40pxDefaultSize
 			onChange={ ( newEventType ) => {
 				// When switching event type, reset related defaults so the

@@ -31,7 +31,7 @@ domReady( () => {
 		let attrs;
 		try {
 			attrs = JSON.parse( container.dataset.gatherpress_block_attrs );
-		} catch ( e ) {
+		} catch {
 			// Malformed JSON — leave the static baseline in place.
 			continue;
 		}

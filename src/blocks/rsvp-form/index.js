@@ -90,7 +90,7 @@ const withFormVisibilityControls = createHigherOrderComponent( ( BlockEdit ) => 
 
 		// Handler to update visibility on this block's metadata.
 		const updateVisibility = ( state, value ) => {
-			const newMetadata = { ...( attributes.metadata || {} ) };
+			const newMetadata = { ...attributes.metadata };
 			const newVisibility = { ...currentVisibility };
 
 			// Update the specific state.

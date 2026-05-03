@@ -26,7 +26,7 @@ import { useState } from '@wordpress/element';
  */
 import { getCurrentContextualPostId, hasValidBlockContext, isInFSETemplate } from '../../helpers/editor';
 import { usePostTypeSupports, findEventPostById, DISABLED_FIELD_OPACITY } from '../../helpers/event';
-import { GetVenuePostFromTermId, GetVenuePostFromEventId, findVenuePostById, getVenuePostType, getVenueTaxonomy, useVenueTaxonomyIds } from '../../helpers/venue';
+import { useVenuePostFromTermId, GetVenuePostFromEventId, findVenuePostById, getVenuePostType, getVenueTaxonomy, useVenueTaxonomyIds } from '../../helpers/venue';
 import VenueNavigator from '../../components/VenueNavigator';
 import PatternPicker, { PatternChooserModal } from '../../components/PatternPicker';
 import { TEMPLATE_WITH_TITLE, TEMPLATE_WITHOUT_TITLE } from './templates/venue-details';
@@ -225,7 +225,7 @@ const Edit = ( props ) => {
 		null;
 
 	// Fetch venue post - use different methods for Query Loop vs direct editing.
-	const venuePostFromTerm = GetVenuePostFromTermId( venueTermId );
+	const venuePostFromTerm = useVenuePostFromTermId( venueTermId );
 	const venuePostFromEvent = GetVenuePostFromEventId(
 		isDescendentOfQueryLoop ? context?.postId : null,
 		context?.postType

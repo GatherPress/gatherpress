@@ -38,32 +38,55 @@ $gatherpress_scope = isset( $scope ) && 'network' === $scope ? 'network' : 'blog
 	<?php esc_html_e( 'Upload a previously exported JSON file to restore or apply settings.', 'gatherpress' ); ?>
 </p>
 
-<table class="form-table" role="presentation">
-	<tr>
-		<td>
+<style>
+	.gatherpress-settings-form {
+		margin-top: 1em;
+	}
+	.gatherpress-settings-form__row {
+		display: grid;
+		grid-template-columns: 200px 1fr;
+		gap: 0 10px;
+		padding: 15px 10px;
+	}
+	.gatherpress-settings-form__label {
+		font-weight: 600;
+		padding-top: 2px;
+	}
+	.gatherpress-settings-form__row--full > * {
+		grid-column: 1 / -1;
+	}
+	@media screen and (max-width: 782px) {
+		.gatherpress-settings-form__row {
+			grid-template-columns: 1fr;
+			gap: 6px;
+		}
+	}
+</style>
+
+<div class="gatherpress-settings-form">
+	<div class="gatherpress-settings-form__row">
+		<div class="gatherpress-settings-form__label">
 			<label for="gatherpress-import-file"><?php esc_html_e( 'Settings File', 'gatherpress' ); ?></label>
-		</td>
-		<td>
+		</div>
+		<div class="gatherpress-settings-form__field">
 			<input type="file" id="gatherpress-import-file" accept=".json" />
-		</td>
-	</tr>
-	<tr>
-		<td colspan="2">
-			<fieldset>
-				<legend><?php esc_html_e( 'Import Mode', 'gatherpress' ); ?></legend>
-				<label>
-					<input type="radio" name="gatherpress_import_mode" value="merge" checked="checked" />
-					<?php esc_html_e( 'Merge: import values while keeping existing settings not in the file.', 'gatherpress' ); ?>
-				</label>
-				<br />
-				<label>
-					<input type="radio" name="gatherpress_import_mode" value="replace" />
-					<?php esc_html_e( 'Replace: overwrite all settings with the file contents.', 'gatherpress' ); ?>
-				</label>
-			</fieldset>
-		</td>
-	</tr>
-</table>
+		</div>
+	</div>
+	<div class="gatherpress-settings-form__row gatherpress-settings-form__row--full">
+		<fieldset>
+			<legend><?php esc_html_e( 'Import Mode', 'gatherpress' ); ?></legend>
+			<label>
+				<input type="radio" name="gatherpress_import_mode" value="merge" checked="checked" />
+				<?php esc_html_e( 'Merge: import values while keeping existing settings not in the file.', 'gatherpress' ); ?>
+			</label>
+			<br />
+			<label>
+				<input type="radio" name="gatherpress_import_mode" value="replace" />
+				<?php esc_html_e( 'Replace: overwrite all settings with the file contents.', 'gatherpress' ); ?>
+			</label>
+		</fieldset>
+	</div>
+</div>
 
 <div id="gatherpress-import-preview" style="display: none; background: #f9f9f9; border-left: 4px solid #0073aa; padding: 12px; margin: 16px 0;">
 	<h3 style="margin-top: 0;"><?php esc_html_e( 'Import Preview', 'gatherpress' ); ?></h3>

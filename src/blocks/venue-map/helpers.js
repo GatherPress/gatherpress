@@ -138,7 +138,7 @@ export const RegenerateMapButton = ( {
 						{
 							...current,
 							meta: {
-								...( current.meta || {} ),
+								...current.meta,
 								gatherpress_static_map:
 									response?.descriptors || {},
 							},
@@ -221,7 +221,7 @@ export const parseAspectRatio = ( ratio ) => {
 	if ( 'string' !== typeof ratio ) {
 		return null;
 	}
-	const match = ratio.trim().match( /^(\d+)\s*[/:]\s*(\d+)$/ );
+	const match = /^(\d+)\s*[/:]\s*(\d+)$/.exec( ratio.trim() );
 	if ( ! match ) {
 		return null;
 	}

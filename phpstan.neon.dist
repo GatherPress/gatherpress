@@ -23,7 +23,8 @@ parameters:
         - includes/
 
     ignoreErrors:
-        # includes/core/classes/class-setup.php
+        # includes/core/classes/class-setup.php and includes/core/classes/class-coexistence-guard.php
         #
-        # A dev-only errors, which can occur if the gatherpress is symlinked into a WP instance or called via wp-env or Playground.
+        # Dev-only errors, which can occur if the gatherpress is symlinked into a WP instance or called via wp-env or Playground.
         - '#^Path in require_once\(\) "\./wp-admin/includes/upgrade\.php" is not a file or it does not exist\.$#'
+        - '#^Path in require_once\(\) "\./wp-admin/includes/plugin\.php" is not a file or it does not exist\.$#'
