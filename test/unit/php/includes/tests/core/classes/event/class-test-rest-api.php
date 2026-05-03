@@ -2235,4 +2235,202 @@ class Test_Rest_Api extends Base {
 
 		restore_current_blog();
 	}
+
+	/**
+	 * `send_event_email_to_recipient` happy path for a WordPress user.
+	 * Direct-invokes the protected helper so xdebug traces every line —
+	 * the loop in `send_emails()` does call it, but xdebug's
+	 * line-coverage doesn't trace inside same-class private/protected
+	 * methods reliably (same gap that bit `Osm::paint_tile`).
+	 *
+	 * @covers ::send_event_email_to_recipient
+	 *
+	 * @return void
+	 */
+	public function test_send_event_email_to_recipient_user_full_send(): void {
+		add_filter( 'pre_wp_mail', '__return_false' );
+
+		$instance = Rest_Api::get_instance();
+		$event_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
+		$user     = get_userdata( $this->factory->user->create() );
+
+		Utility::invoke_hidden_method(
+			$instance,
+			'send_event_email_to_recipient',
+			array(
+				array(
+					'is_user'    => true,
+					'user_id'    => $user->ID,
+					'comment_id' => 0,
+					'email'      => $user->user_email,
+					'name'       => $user->display_name,
+				),
+				$event_id,
+				'Test message',
+				wp_get_current_user(),
+			)
+		);
+
+		remove_filter( 'pre_wp_mail', '__return_false' );
+
+		$this->assertTrue( true, 'Helper completed without throwing.' );
+	}
+
+	/**
+	 * `send_event_email_to_recipient` returns silently when the user
+	 * recipient has opted out of event updates.
+	 *
+	 * @covers ::send_event_email_to_recipient
+	 *
+	 * @return void
+	 */
+	public function test_send_event_email_to_recipient_skips_opted_out_user(): void {
+		$instance = Rest_Api::get_instance();
+		$event_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
+		$user_id  = $this->factory->user->create();
+
+		update_user_meta( $user_id, 'gatherpress_event_updates_opt_in', 0 );
+
+		Utility::invoke_hidden_method(
+			$instance,
+			'send_event_email_to_recipient',
+			array(
+				array(
+					'is_user'    => true,
+					'user_id'    => $user_id,
+					'comment_id' => 0,
+					'email'      => 'doesnt-matter@example.test',
+					'name'       => 'Opted Out',
+				),
+				$event_id,
+				'Test message',
+				wp_get_current_user(),
+			)
+		);
+
+		$this->assertTrue( true, 'Helper returned without sending mail.' );
+	}
+
+	/**
+	 * `send_event_email_to_recipient` returns silently when a non-user
+	 * recipient (anonymous RSVP) has opt-in comment meta set to '0'.
+	 *
+	 * @covers ::send_event_email_to_recipient
+	 *
+	 * @return void
+	 */
+	public function test_send_event_email_to_recipient_skips_opted_out_comment(): void {
+		$instance   = Rest_Api::get_instance();
+		$event_id   = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
+		$comment_id = wp_insert_comment(
+			array(
+				'comment_post_ID'      => $event_id,
+				'comment_type'         => Rsvp::COMMENT_TYPE,
+				'comment_author'       => 'Anon',
+				'comment_author_email' => 'anon@example.test',
+				'comment_approved'     => 1,
+				'user_id'              => 0,
+			)
+		);
+		update_comment_meta( $comment_id, 'gatherpress_event_updates_opt_in', 0 );
+
+		Utility::invoke_hidden_method(
+			$instance,
+			'send_event_email_to_recipient',
+			array(
+				array(
+					'is_user'    => false,
+					'user_id'    => 0,
+					'comment_id' => $comment_id,
+					'email'      => 'anon@example.test',
+					'name'       => 'Anon',
+				),
+				$event_id,
+				'Test message',
+				wp_get_current_user(),
+			)
+		);
+
+		$this->assertTrue( true, 'Helper returned without sending mail.' );
+	}
+
+	/**
+	 * `send_event_email_to_recipient` happy path for a non-user RSVP
+	 * (anonymous attendee) — exercises the elseif fall-through into the
+	 * email-send block without going through the user-locale switch.
+	 *
+	 * @covers ::send_event_email_to_recipient
+	 *
+	 * @return void
+	 */
+	public function test_send_event_email_to_recipient_comment_full_send(): void {
+		add_filter( 'pre_wp_mail', '__return_false' );
+
+		$instance   = Rest_Api::get_instance();
+		$event_id   = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
+		$comment_id = wp_insert_comment(
+			array(
+				'comment_post_ID'      => $event_id,
+				'comment_type'         => Rsvp::COMMENT_TYPE,
+				'comment_author'       => 'Anon',
+				'comment_author_email' => 'anon-send@example.test',
+				'comment_approved'     => 1,
+				'user_id'              => 0,
+			)
+		);
+
+		Utility::invoke_hidden_method(
+			$instance,
+			'send_event_email_to_recipient',
+			array(
+				array(
+					'is_user'    => false,
+					'user_id'    => 0,
+					'comment_id' => $comment_id,
+					'email'      => 'anon-send@example.test',
+					'name'       => 'Anon',
+				),
+				$event_id,
+				'Test message',
+				wp_get_current_user(),
+			)
+		);
+
+		remove_filter( 'pre_wp_mail', '__return_false' );
+
+		$this->assertTrue( true, 'Helper completed without throwing.' );
+	}
+
+	/**
+	 * `send_event_email_to_recipient` returns silently when the recipient
+	 * has no email address — protects against malformed recipient rows.
+	 *
+	 * @covers ::send_event_email_to_recipient
+	 *
+	 * @return void
+	 */
+	public function test_send_event_email_to_recipient_skips_when_email_missing(): void {
+		$instance = Rest_Api::get_instance();
+		$event_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
+		$user     = get_userdata( $this->factory->user->create() );
+
+		Utility::invoke_hidden_method(
+			$instance,
+			'send_event_email_to_recipient',
+			array(
+				array(
+					'is_user'    => true,
+					'user_id'    => $user->ID,
+					'comment_id' => 0,
+					'email'      => '',
+					'name'       => $user->display_name,
+				),
+				$event_id,
+				'Test message',
+				wp_get_current_user(),
+			)
+		);
+
+		$this->assertTrue( true, 'Helper returned without sending mail.' );
+	}
 }

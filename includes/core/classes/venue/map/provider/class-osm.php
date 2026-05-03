@@ -178,23 +178,7 @@ class OSM extends Base {
 					break 2;
 				}
 
-				$tile_png = $this->fetch_tile( $tile_zoom, $tx, $ty, $tiles );
-
-				if ( null === $tile_png ) {
-					continue;
-				}
-
-				$tile = $this->decode_tile( $tile_png );
-
-				if ( false === $tile ) {
-					continue;
-				}
-
-				$dst_x = $tx * self::TILE_SIZE - $left_pixel;
-				$dst_y = $ty * self::TILE_SIZE - $top_pixel;
-
-				imagecopy( $canvas, $tile, $dst_x, $dst_y, 0, 0, self::TILE_SIZE, self::TILE_SIZE );
-				imagedestroy( $tile );
+				$this->paint_tile( $canvas, $tx, $ty, $tile_zoom, $left_pixel, $top_pixel, $tiles );
 			}
 		}
 
@@ -206,6 +190,53 @@ class OSM extends Base {
 		);
 
 		return $canvas;
+	}
+
+	/**
+	 * Fetch one OSM tile and stamp it onto the in-flight canvas at its
+	 * world-pixel-aligned destination. Silently skips tiles that fail to
+	 * fetch or decode — the gray composite background shows through.
+	 *
+	 * Extracted from `render()` to keep that loop body shallow enough to
+	 * stay under SonarCloud's cognitive-complexity threshold.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param GdImage|resource $canvas     Canvas being composited into.
+	 * @param int              $tx         X tile coordinate.
+	 * @param int              $ty         Y tile coordinate.
+	 * @param int              $tile_zoom  OSM zoom level for this tile.
+	 * @param int              $left_pixel World-pixel x-offset of the canvas top-left.
+	 * @param int              $top_pixel  World-pixel y-offset of the canvas top-left.
+	 * @param string           $tiles      URL template (`{z}/{x}/{y}` placeholders).
+	 * @return void
+	 */
+	private function paint_tile(
+		$canvas,
+		int $tx,
+		int $ty,
+		int $tile_zoom,
+		int $left_pixel,
+		int $top_pixel,
+		string $tiles
+	): void {
+		$tile_png = $this->fetch_tile( $tile_zoom, $tx, $ty, $tiles );
+
+		if ( null === $tile_png ) {
+			return;
+		}
+
+		$tile = $this->decode_tile( $tile_png );
+
+		if ( false === $tile ) {
+			return;
+		}
+
+		$dst_x = $tx * self::TILE_SIZE - $left_pixel;
+		$dst_y = $ty * self::TILE_SIZE - $top_pixel;
+
+		imagecopy( $canvas, $tile, $dst_x, $dst_y, 0, 0, self::TILE_SIZE, self::TILE_SIZE );
+		imagedestroy( $tile );
 	}
 
 	/**

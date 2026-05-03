@@ -263,21 +263,16 @@ class Setup {
 		array $parsed_anchor_block,
 		$context
 	): ?array {
-		// Has the hooked block been suppressed by a previous filter?
-		if ( is_null( $parsed_hooked_block ) ) {
-			return $parsed_hooked_block;
-		}
-
-		// Check that the place to hook into is a pattern.
-		if ( ! is_array( $context ) || ! isset( $context['name'] ) ) {
-			return $parsed_hooked_block;
-		}
-
-		// Conditionally hook the block into the "gatherpress/venue-facts" pattern.
-		if (
-			'gatherpress/event-template' !== $context['name'] ||
-			'gatherpress/event-date' !== $parsed_anchor_block['blockName'] ||
-			'after' !== $relative_position
+		// Bail when a previous filter suppressed the block, when the hook
+		// target isn't a pattern, or when the pattern / anchor block /
+		// position don't match the gatherpress/event-template anchor we
+		// inject the opener paragraph after.
+		if ( is_null( $parsed_hooked_block )
+			|| ! is_array( $context )
+			|| ! isset( $context['name'] )
+			|| 'gatherpress/event-template' !== $context['name']
+			|| 'gatherpress/event-date' !== $parsed_anchor_block['blockName']
+			|| 'after' !== $relative_position
 		) {
 			return $parsed_hooked_block;
 		}

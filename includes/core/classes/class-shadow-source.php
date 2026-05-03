@@ -198,11 +198,14 @@ class Shadow_Source {
 			return; // @codeCoverageIgnore
 		}
 
-		if ( ! post_type_supports( $post->post_type, 'gatherpress-shadow-source' ) ) {
-			return;
-		}
-
-		if ( $update || empty( $post->post_name ) || 'publish' !== $post->post_status ) {
+		// Skip non-shadow-source post types, updates (we only insert on the
+		// initial publish), un-named or non-published posts in one guard so
+		// the function reads top-down rather than as a return chain.
+		if ( ! post_type_supports( $post->post_type, 'gatherpress-shadow-source' )
+			|| $update
+			|| empty( $post->post_name )
+			|| 'publish' !== $post->post_status
+		) {
 			return;
 		}
 
@@ -239,17 +242,15 @@ class Shadow_Source {
 	public function maybe_update_term_slug( int $post_id, WP_Post $post_after, WP_Post $post_before ): void {
 		$post_type = (string) get_post_type( $post_id );
 
-		if ( ! post_type_supports( $post_type, 'gatherpress-shadow-source' ) ) {
-			return;
-		}
-
-		if ( ! in_array( $post_after->post_status, array( 'publish', 'trash' ), true ) ) {
-			return;
-		}
-
-		if (
-			$post_before->post_name === $post_after->post_name &&
-			$post_before->post_title === $post_after->post_title
+		// Combined guard: only run on shadow-source post types, only for
+		// publish/trash transitions, and only when slug or title actually
+		// changed (saves are otherwise no-ops here).
+		if ( ! post_type_supports( $post_type, 'gatherpress-shadow-source' )
+			|| ! in_array( $post_after->post_status, array( 'publish', 'trash' ), true )
+			|| (
+				$post_before->post_name === $post_after->post_name
+				&& $post_before->post_title === $post_after->post_title
+			)
 		) {
 			return;
 		}

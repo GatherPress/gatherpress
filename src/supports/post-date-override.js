@@ -92,24 +92,36 @@ const formatEventDateTime = ( dateTimeStart, dateTimeEnd, timezone ) => {
 
 	// Add timezone.
 	if ( showTimezone ) {
-		if ( isManualOffset( timezone ) ) {
-			const sign = timezone.charAt( 0 );
-			const offset = timezone.substring( 1 ).replace( ':', '' );
-			parts.push( `GMT${ sign }${ offset }` );
-		} else {
-			parts.push(
-				createMomentWithTimezone(
-					dateTimeEnd || dateTimeStart,
-					timezone
-				).format( 'z' )
-			);
-		}
+		parts.push( formatTimezoneAbbr( timezone, dateTimeEnd || dateTimeStart ) );
 	}
 
 	// Add UTC offset if GMT (invalid site timezone).
 	parts.push( getUtcOffset( timezone ) );
 
 	return parts.filter( Boolean ).join( ' ' );
+};
+
+/**
+ * Render a timezone abbreviation for the display string.
+ *
+ * Manual offsets (`+05:30`, `-08:00`) become `GMT+0530` / `GMT-0800`; IANA
+ * identifiers resolve through Moment's `z` formatter against a real
+ * datetime so DST yields the right abbreviation. Extracted from
+ * `formatEventDateTime` to keep that function under SonarCloud's
+ * cognitive-complexity threshold.
+ *
+ * @param {string} timezone Timezone string (IANA or manual offset).
+ * @param {string} datetime Datetime to anchor IANA abbreviation against.
+ * @return {string} Timezone abbreviation suitable for the display string.
+ */
+const formatTimezoneAbbr = ( timezone, datetime ) => {
+	if ( isManualOffset( timezone ) ) {
+		const sign = timezone.charAt( 0 );
+		const offset = timezone.substring( 1 ).replace( ':', '' );
+		return `GMT${ sign }${ offset }`;
+	}
+
+	return createMomentWithTimezone( datetime, timezone ).format( 'z' );
 };
 
 /**

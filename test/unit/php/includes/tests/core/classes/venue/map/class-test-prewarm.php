@@ -1240,4 +1240,198 @@ class Test_Prewarm extends Base {
 			'No combos in event content means no cron jobs.'
 		);
 	}
+
+	/**
+	 * `collect_combos_from_block_templates` walks both wp_template and
+	 * wp_template_part queries and returns combos extracted from each.
+	 * Direct-invokes the protected helper so xdebug actually traces its
+	 * lines (same private-method-from-tight-loop tracing gap that bit
+	 * `paint_tile`).
+	 *
+	 * @covers ::collect_combos_from_block_templates
+	 *
+	 * @return void
+	 */
+	public function test_collect_combos_from_block_templates_walks_both_queries(): void {
+		if ( ! class_exists( 'WP_Block_Template' ) ) {
+			$this->markTestSkipped( 'WP_Block_Template not available in this environment.' );
+		}
+
+		$instance = Prewarm::get_instance();
+
+		$template          = new \WP_Block_Template();
+		$template->content = '<!-- wp:gatherpress/venue-map '
+			. '{"zoom":7,"width":400,"height":200,"aspectRatio":"2/1"} /-->';
+
+		$part          = new \WP_Block_Template();
+		$part->content = '<!-- wp:gatherpress/venue-map '
+			. '{"zoom":6,"width":350,"height":175,"aspectRatio":"2/1"} /-->';
+
+		$inject = static function ( $query_result, $query, $template_type ) use ( $template, $part ) {
+			unset( $query );
+			if ( 'wp_template' === $template_type ) {
+				return array( $template );
+			}
+			if ( 'wp_template_part' === $template_type ) {
+				return array( $part );
+			}
+			return $query_result;
+		};
+		add_filter( 'get_block_templates', $inject, 10, 3 );
+
+		$combos = Utility::invoke_hidden_method( $instance, 'collect_combos_from_block_templates' );
+
+		remove_filter( 'get_block_templates', $inject, 10 );
+
+		$keys = array_map(
+			static function ( $combo ) {
+				return sprintf(
+					'%d-%d-%d-%s',
+					(int) $combo['zoom'],
+					(int) $combo['width'],
+					(int) $combo['height'],
+					(string) $combo['aspect_ratio']
+				);
+			},
+			$combos
+		);
+
+		$this->assertContains( '7-400-200-2/1', $keys );
+		$this->assertContains( '6-350-175-2/1', $keys );
+	}
+
+	/**
+	 * `collect_combos_from_venue_posts` paginates through the
+	 * venue-supporting post types and returns the combos found in each
+	 * post's content. Forces the pagination branch by capping the
+	 * batch size at 1 with two events outstanding.
+	 *
+	 * @covers ::collect_combos_from_venue_posts
+	 *
+	 * @return void
+	 */
+	public function test_collect_combos_from_venue_posts_paginates_event_content(): void {
+		$instance = Prewarm::get_instance();
+
+		$this->factory->post->create(
+			array(
+				'post_type'    => 'gatherpress_event',
+				'post_status'  => 'publish',
+				'post_content' => '<!-- wp:gatherpress/venue-map '
+					. '{"zoom":5,"width":150,"height":75,"aspectRatio":"2/1"} /-->',
+			)
+		);
+		$this->factory->post->create(
+			array(
+				'post_type'    => 'gatherpress_event',
+				'post_status'  => 'publish',
+				'post_content' => '<!-- wp:gatherpress/venue-map '
+					. '{"zoom":4,"width":120,"height":60,"aspectRatio":"2/1"} /-->',
+			)
+		);
+
+		$one_per_page = static function () {
+			return 1;
+		};
+		add_filter( 'gatherpress_static_map_prewarm_content_batch_size', $one_per_page );
+
+		$combos = Utility::invoke_hidden_method(
+			$instance,
+			'collect_combos_from_venue_posts',
+			array( array( 'gatherpress_event' ) )
+		);
+
+		remove_filter( 'gatherpress_static_map_prewarm_content_batch_size', $one_per_page );
+
+		$keys = array_map(
+			static function ( $combo ) {
+				return sprintf(
+					'%d-%d-%d-%s',
+					(int) $combo['zoom'],
+					(int) $combo['width'],
+					(int) $combo['height'],
+					(string) $combo['aspect_ratio']
+				);
+			},
+			$combos
+		);
+
+		$this->assertContains( '5-150-75-2/1', $keys );
+		$this->assertContains( '4-120-60-2/1', $keys );
+	}
+
+	/**
+	 * `collect_combos_from_venue_posts` exits the pagination loop on a
+	 * partial last batch (`count($batch) < $batch_size`) without making
+	 * one more empty query — exercises the partial-batch break path.
+	 *
+	 * @covers ::collect_combos_from_venue_posts
+	 *
+	 * @return void
+	 */
+	public function test_collect_combos_from_venue_posts_breaks_on_partial_batch(): void {
+		$instance = Prewarm::get_instance();
+
+		// Three events with batch size 2 → first batch full (continues), second
+		// batch has one entry (partial → break).
+		$this->factory->post->create(
+			array(
+				'post_type'    => 'gatherpress_event',
+				'post_status'  => 'publish',
+				'post_content' => '<!-- wp:gatherpress/venue-map '
+					. '{"zoom":3,"width":100,"height":50,"aspectRatio":"2/1"} /-->',
+			)
+		);
+		$this->factory->post->create(
+			array(
+				'post_type'    => 'gatherpress_event',
+				'post_status'  => 'publish',
+				'post_content' => '<!-- wp:gatherpress/venue-map '
+					. '{"zoom":3,"width":100,"height":50,"aspectRatio":"2/1"} /-->',
+			)
+		);
+		$this->factory->post->create(
+			array(
+				'post_type'    => 'gatherpress_event',
+				'post_status'  => 'publish',
+				'post_content' => '<!-- wp:gatherpress/venue-map '
+					. '{"zoom":3,"width":100,"height":50,"aspectRatio":"2/1"} /-->',
+			)
+		);
+
+		$two_per_page = static function () {
+			return 2;
+		};
+		add_filter( 'gatherpress_static_map_prewarm_content_batch_size', $two_per_page );
+
+		$combos = Utility::invoke_hidden_method(
+			$instance,
+			'collect_combos_from_venue_posts',
+			array( array( 'gatherpress_event' ) )
+		);
+
+		remove_filter( 'gatherpress_static_map_prewarm_content_batch_size', $two_per_page );
+
+		$this->assertCount( 3, $combos, 'All three events should contribute a combo across the two pages.' );
+	}
+
+	/**
+	 * `collect_combos_from_venue_posts` returns an empty array when no
+	 * matching venue-carrying posts exist (the empty-batch break path).
+	 *
+	 * @covers ::collect_combos_from_venue_posts
+	 *
+	 * @return void
+	 */
+	public function test_collect_combos_from_venue_posts_returns_empty_when_no_posts_exist(): void {
+		$instance = Prewarm::get_instance();
+
+		$combos = Utility::invoke_hidden_method(
+			$instance,
+			'collect_combos_from_venue_posts',
+			array( array( 'gatherpress_event' ) )
+		);
+
+		$this->assertSame( array(), $combos );
+	}
 }
