@@ -266,12 +266,20 @@ class Setup {
 		 * they appear in the new-event chooser modal for any post type
 		 * acting as an event source.
 		 *
+		 * The `$post_types` array lets consumers tailor the returned
+		 * patterns to the post types about to receive them — useful for
+		 * companion plugins that register their own event-acting post
+		 * type and want to swap a pattern in only when their post type
+		 * is in scope.
+		 *
 		 * @since 1.0.0
 		 *
-		 * @param array $patterns Pattern definitions loaded from the
-		 *                        `includes/core/templates/event/` directory.
+		 * @param array $patterns   Pattern definitions loaded from the
+		 *                          `includes/core/templates/event/` directory.
+		 * @param array $post_types Post type slugs declaring `gatherpress-event-date`
+		 *                          support that the patterns will be registered against.
 		 */
-		$patterns = apply_filters( 'gatherpress_event_starter_patterns', $patterns );
+		$patterns = apply_filters( 'gatherpress_event_starter_patterns', $patterns, $post_types );
 
 		foreach ( (array) $patterns as $pattern ) {
 			if ( ! is_array( $pattern ) || empty( $pattern['name'] ) ) {

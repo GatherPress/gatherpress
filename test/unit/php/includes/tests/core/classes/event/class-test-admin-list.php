@@ -1405,6 +1405,51 @@ class Test_Admin_List extends Base {
 	}
 
 	/**
+	 * The `gatherpress_event_date_column_label` filter relabels the
+	 * datetime column header without changing the column key, and receives
+	 * the screen's post type so consumers can vary the label per post type.
+	 *
+	 * @covers ::set_custom_columns
+	 *
+	 * @return void
+	 */
+	public function test_set_custom_columns_filters_datetime_label(): void {
+		$instance        = Admin_List::get_instance();
+		$captured_pt_arg = null;
+
+		set_current_screen( 'edit-' . Event::POST_TYPE );
+
+		$relabel = static function ( string $label, string $post_type ) use ( &$captured_pt_arg ): string {
+			$captured_pt_arg = $post_type;
+			return 'Premiere date';
+		};
+
+		add_filter( 'gatherpress_event_date_column_label', $relabel, 10, 2 );
+
+		$result = $instance->set_custom_columns(
+			array(
+				'cb'    => '<input type="checkbox" />',
+				'title' => 'Title',
+				'date'  => 'Date',
+			)
+		);
+
+		remove_filter( 'gatherpress_event_date_column_label', $relabel, 10 );
+		set_current_screen( 'front' );
+
+		$this->assertSame(
+			'Premiere date',
+			$result['datetime'],
+			'Datetime column header must reflect the filtered label.'
+		);
+		$this->assertSame(
+			Event::POST_TYPE,
+			$captured_pt_arg,
+			'Filter must receive the screen post type as its second argument.'
+		);
+	}
+
+	/**
 	 * Coverage for remove_comments_column method.
 	 *
 	 * @covers ::remove_comments_column

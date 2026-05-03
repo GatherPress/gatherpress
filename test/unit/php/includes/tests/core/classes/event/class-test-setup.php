@@ -323,6 +323,42 @@ class Test_Setup extends Base {
 	}
 
 	/**
+	 * The `gatherpress_event_starter_patterns` filter passes the array of
+	 * post types about to receive the registered patterns as its second
+	 * argument, so consumers can vary the returned patterns based on which
+	 * event-acting post types are in scope.
+	 *
+	 * @covers ::register_starter_pattern
+	 *
+	 * @return void
+	 */
+	public function test_register_starter_pattern_filter_receives_post_types(): void {
+		$instance        = Setup::get_instance();
+		$captured_pt_arg = null;
+
+		$capture_post_types = static function ( array $patterns, array $post_types ) use ( &$captured_pt_arg ): array {
+			$captured_pt_arg = $post_types;
+			return $patterns;
+		};
+
+		add_filter( 'gatherpress_event_starter_patterns', $capture_post_types, 10, 2 );
+
+		$instance->register_starter_pattern();
+
+		remove_filter( 'gatherpress_event_starter_patterns', $capture_post_types, 10 );
+
+		$this->assertIsArray(
+			$captured_pt_arg,
+			'Filter must receive the post-type array as its second argument.'
+		);
+		$this->assertContains(
+			Event::POST_TYPE,
+			$captured_pt_arg,
+			'Post-type array must include every post type declaring gatherpress-event-date support.'
+		);
+	}
+
+	/**
 	 * Filter callbacks may return entries that aren't valid pattern
 	 * definitions (missing `name`, non-array values). The registration
 	 * loop must skip those gracefully so one bad entry from a

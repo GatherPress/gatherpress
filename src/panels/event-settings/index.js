@@ -3,7 +3,8 @@
  */
 import { __ } from '@wordpress/i18n';
 import domReady from '@wordpress/dom-ready';
-import { dispatch, select } from '@wordpress/data';
+import { dispatch, select, useSelect } from '@wordpress/data';
+import { applyFilters } from '@wordpress/hooks';
 import {
 	// eslint-disable-next-line @wordpress/no-unsafe-wp-apis
 	__experimentalVStack as VStack,
@@ -32,11 +33,26 @@ import { EventPluginDocumentSettings } from './slot';
  * the current post type is an event; otherwise, returns null.
  */
 const EventSettings = () => {
+	const currentPostType = useSelect(
+		( s ) => s( 'core/editor' )?.getCurrentPostType(),
+		[]
+	);
+
+	// Lets post types that declare `gatherpress-event-date` support relabel
+	// the sidebar panel without re-implementing the slotfill — e.g. a
+	// `production` post type can surface "Production settings" instead of
+	// the default "Event settings".
+	const panelTitle = applyFilters(
+		'gatherpress.eventSettingsPanelTitle',
+		__( 'Event settings', 'gatherpress' ),
+		currentPostType
+	);
+
 	return (
 		isEventPostType() && (
 			<PluginDocumentSettingPanel
 				name="gatherpress-event-settings"
-				title={ __( 'Event settings', 'gatherpress' ) }
+				title={ panelTitle }
 				className="gatherpress-event-settings"
 			>
 				{ /* Extendable entry point for "Event Settings" panel. */ }

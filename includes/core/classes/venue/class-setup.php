@@ -312,12 +312,20 @@ class Setup {
 		 * support, so they appear in the new-venue chooser modal for any
 		 * post type acting as a venue source.
 		 *
+		 * The `$post_types` array lets consumers tailor the returned
+		 * patterns to the post types about to receive them — useful for
+		 * companion plugins that register their own venue-acting post
+		 * type and want to swap a pattern in only when their post type
+		 * is in scope.
+		 *
 		 * @since 1.0.0
 		 *
-		 * @param array $patterns Pattern definitions loaded from the
-		 *                        `includes/core/templates/venue/` directory.
+		 * @param array $patterns   Pattern definitions loaded from the
+		 *                          `includes/core/templates/venue/` directory.
+		 * @param array $post_types Post type slugs declaring `gatherpress-venue-information`
+		 *                          support that the patterns will be registered against.
 		 */
-		$patterns = apply_filters( 'gatherpress_venue_starter_patterns', $patterns );
+		$patterns = apply_filters( 'gatherpress_venue_starter_patterns', $patterns, $post_types );
 
 		foreach ( (array) $patterns as $pattern ) {
 			if ( ! is_array( $pattern ) || empty( $pattern['name'] ) ) {
