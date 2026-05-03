@@ -114,20 +114,17 @@ class Rsvp_Form {
 		$block_instance = Setup::get_instance();
 		$post_id        = $block_instance->get_post_id( $block );
 
-		// Validate that the post type supports RSVP.
-		// Only check publish status if not in preview mode.
+		// Validate that the post type supports RSVP, that the post is published
+		// (unless previewing), and that RSVP is both enabled and open. A single
+		// Rsvp() so we don't construct it twice on the happy path.
+		$rsvp = new Rsvp( $post_id );
+
 		if (
-			! post_type_supports( (string) get_post_type( $post_id ), 'gatherpress-rsvp' ) ||
-			( ! is_preview() && 'publish' !== get_post_status( $post_id ) )
+			! post_type_supports( (string) get_post_type( $post_id ), 'gatherpress-rsvp' )
+			|| ( ! is_preview() && 'publish' !== get_post_status( $post_id ) )
+			|| ! $rsvp->is_enabled()
+			|| ! $rsvp->allows_open_rsvp()
 		) {
-			return '';
-		}
-
-		if ( ! ( new Rsvp( $post_id ) )->is_enabled() ) {
-			return '';
-		}
-
-		if ( ! ( new Rsvp( $post_id ) )->allows_open_rsvp() ) {
 			return '';
 		}
 
@@ -372,27 +369,21 @@ class Rsvp_Form {
 		$on_success = $visibility['onSuccess'] ?? '';
 		$when_past  = $visibility['whenPast'] ?? '';
 
-		// When event is past, check whenPast (takes precedence when past).
+		$result = null;
+
 		if ( $is_past && ! empty( $when_past ) ) {
-			return 'show' === $when_past;
+			// When event is past, whenPast takes precedence.
+			$result = 'show' === $when_past;
+		} elseif ( ! $is_past && ! empty( $when_past ) && empty( $on_success ) ) {
+			// Not past but block has ONLY whenPast: hide-if-set-to-show
+			// (it shouldn't appear yet).
+			$result = 'show' !== $when_past;
+		} elseif ( ! empty( $on_success ) ) {
+			// Success: show-if-set-to-show. Not success: hide-if-set-to-show.
+			$result = $is_success ? ( 'show' === $on_success ) : ( 'show' !== $on_success );
 		}
 
-		// When not past but block has ONLY whenPast setting (no onSuccess).
-		// This handles blocks that should only appear after event has passed.
-		if ( ! $is_past && ! empty( $when_past ) && empty( $on_success ) ) {
-			return 'show' !== $when_past; // Hide if set to show (because not past yet).
-		}
-
-		// Check onSuccess.
-		if ( ! empty( $on_success ) ) {
-			if ( $is_success ) {
-				return 'show' === $on_success;
-			}
-			// Not success: hide if set to show on success.
-			return 'show' !== $on_success;
-		}
-
-		return null; // Default: no change (always visible).
+		return $result;
 	}
 
 	/**
@@ -653,20 +644,20 @@ class Rsvp_Form {
 		$post_id        = (int) $comment->comment_post_ID;
 		$form_schema_id = Utility::get_http_input( INPUT_POST, 'gatherpress_form_schema_id' );
 
-		if ( empty( $form_schema_id ) ) {
-			return;
-		}
-
-		// Get the stored schemas for this post.
+		// Bail when the form-schema id is missing, when no schemas are stored
+		// for this post, when the requested schema id isn't one of them, or
+		// when the matched schema has no field definitions.
 		$schemas = get_post_meta( $post_id, 'gatherpress_rsvp_form_schemas', true );
-		if ( empty( $schemas ) || ! isset( $schemas[ $form_schema_id ] ) ) {
+
+		if ( empty( $form_schema_id )
+			|| empty( $schemas )
+			|| ! isset( $schemas[ $form_schema_id ] )
+			|| empty( $schemas[ $form_schema_id ]['fields'] )
+		) {
 			return;
 		}
 
 		$schema = $schemas[ $form_schema_id ];
-		if ( empty( $schema['fields'] ) ) {
-			return;
-		}
 
 		// Process each custom field from the schema.
 		foreach ( $schema['fields'] as $field_name => $field_config ) {
@@ -705,36 +696,48 @@ class Rsvp_Form {
 			return false;
 		}
 
-		// Handle type-specific validation.
+		// Handle type-specific validation; assign to $result so the switch is a
+		// dispatch (one return) rather than a 7-arm return chain.
+		$result = false;
+
 		switch ( $config['type'] ) {
 			case 'email':
 				$sanitized = sanitize_email( $value );
-				return is_email( $sanitized ) ? $sanitized : false;
+				$result    = is_email( $sanitized ) ? $sanitized : false;
+				break;
 
 			case 'url':
 				$sanitized = esc_url_raw( $value );
-				return filter_var( $sanitized, FILTER_VALIDATE_URL ) ? $sanitized : false;
+				$result    = filter_var( $sanitized, FILTER_VALIDATE_URL ) ? $sanitized : false;
+				break;
 
 			case 'number':
-				return is_numeric( $value ) ? floatval( $value ) : false;
+				$result = is_numeric( $value ) ? floatval( $value ) : false;
+				break;
 
 			case 'select':
 			case 'radio':
 				$sanitized = sanitize_text_field( $value );
-				return in_array( $sanitized, $config['options'] ?? array(), true ) ? $sanitized : false;
+				$result    = in_array( $sanitized, $config['options'] ?? array(), true ) ? $sanitized : false;
+				break;
 
 			case 'checkbox':
-				return ! empty( $value ) ? 1 : 0;
+				$result = ! empty( $value ) ? 1 : 0;
+				break;
 
 			case 'textarea':
 				$sanitized  = sanitize_textarea_field( $value );
 				$max_length = $config['max_length'] ?? 1000;
-				return strlen( $sanitized ) <= $max_length ? $sanitized : false;
+				$result     = strlen( $sanitized ) <= $max_length ? $sanitized : false;
+				break;
 
 			case 'text':
 			default:
-				return sanitize_text_field( $value );
+				$result = sanitize_text_field( $value );
+				break;
 		}
+
+		return $result;
 	}
 
 	/**

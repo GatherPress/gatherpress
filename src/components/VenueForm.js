@@ -236,9 +236,9 @@ function CreateVenueForm( { search, ...props } ) {
 	 * @param {string} newAddress - The address of the new venue.
 	 * @param {string} latitude   - Latitude coordinate (from geocoding).
 	 * @param {string} longitude  - Longitude coordinate (from geocoding).
-	 * @return {Object} The newly created venue post.
+	 * @return {Promise<Object>} A promise that resolves to the newly created venue post.
 	 */
-	const createNewVenuePost = (
+	const createNewVenuePost = async (
 		newTitle,
 		newAddress,
 		latitude = '',

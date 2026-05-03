@@ -393,45 +393,37 @@ class Utility {
 	public static function normalize_timezone_string( string $timezone ): string {
 		$timezone = trim( $timezone );
 
-		if ( '' === $timezone ) {
+		// Empty + the bare "UTC" display string both collapse to UTC.
+		if ( '' === $timezone || preg_match( '/^UTC$/i', $timezone ) ) {
 			return 'UTC';
 		}
 
-		// Already in +HH:MM / -HH:MM form — DateTimeZone accepts these.
-		if ( preg_match( '/^[+-]\d{2}:\d{2}$/', $timezone ) ) {
+		// Already-valid +HH:MM / -HH:MM input or an IANA identifier
+		// (America/New_York, Europe/London, etc.) passes straight through —
+		// the second preg_match is the WP-style UTC offset parser, so its
+		// failure means "not a UTC offset, treat as IANA".
+		if ( preg_match( '/^[+-]\d{2}:\d{2}$/', $timezone )
+			|| ! preg_match( '/^UTC([+-])(\d+(?:\.\d+)?|\d+:\d{2})$/i', $timezone, $matches ) ) {
 			return $timezone;
 		}
 
-		// WP-style display strings: UTC, UTC+0, UTC-5, UTC+5.5, UTC+5:30.
-		if ( preg_match( '/^UTC([+-])(\d+(?:\.\d+)?|\d+:\d{2})?$/i', $timezone, $matches ) ) {
-			if ( empty( $matches[2] ) ) {
-				return 'UTC';
-			}
+		$sign    = $matches[1];
+		$value   = $matches[2];
+		$hours   = 0;
+		$minutes = 0;
 
-			$sign    = $matches[1];
-			$value   = $matches[2];
-			$hours   = 0;
-			$minutes = 0;
-
-			if ( str_contains( $value, ':' ) ) {
-				list( $hours, $minutes ) = array_map( 'intval', explode( ':', $value ) );
-			} elseif ( str_contains( $value, '.' ) ) {
-				$hours   = (int) $value;
-				$minutes = (int) round( ( (float) $value - $hours ) * 60 );
-			} else {
-				$hours = (int) $value;
-			}
-
-			if ( 0 === $hours && 0 === $minutes ) {
-				return 'UTC';
-			}
-
-			return sprintf( '%s%02d:%02d', $sign, $hours, $minutes );
+		if ( str_contains( $value, ':' ) ) {
+			list( $hours, $minutes ) = array_map( 'intval', explode( ':', $value ) );
+		} elseif ( str_contains( $value, '.' ) ) {
+			$hours   = (int) $value;
+			$minutes = (int) round( ( (float) $value - $hours ) * 60 );
+		} else {
+			$hours = (int) $value;
 		}
 
-		// Assume anything else is a valid IANA identifier (America/New_York,
-		// Europe/London, etc.) — passthrough.
-		return $timezone;
+		return ( 0 === $hours && 0 === $minutes )
+			? 'UTC'
+			: sprintf( '%s%02d:%02d', $sign, $hours, $minutes );
 	}
 
 	/**

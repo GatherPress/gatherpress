@@ -92,13 +92,11 @@ class Online_Event {
 			return '';
 		}
 
-		// No override - render as-is.
-		if ( ! isset( $block['attrs']['postId'] ) ) {
-			return $block_content;
-		}
-
-		// Re-render inner blocks with the override postId as context.
-		return $this->render_with_post_context( $post_id, $instance );
+		// No override → render as-is. With override → re-render inner blocks
+		// with the override postId as context. One return either way.
+		return isset( $block['attrs']['postId'] )
+			? $this->render_with_post_context( $post_id, $instance )
+			: $block_content;
 	}
 
 	/**
@@ -111,26 +109,21 @@ class Online_Event {
 	 * @return bool True if the event has the online-event term, false otherwise.
 	 */
 	private function has_online_event_term( int $post_id ): bool {
+		$event_post_type = (string) get_post_type( $post_id );
+
 		// Only render for post types that support online events.
-		if ( ! post_type_supports( (string) get_post_type( $post_id ), 'gatherpress-online-event' ) ) {
+		if ( ! post_type_supports( $event_post_type, 'gatherpress-online-event' ) ) {
 			return false;
 		}
 
-		$event_post_type = (string) get_post_type( $post_id );
-		$taxonomy        = Setup::get_instance()->taxonomy_for_event_post_type( $event_post_type );
-		$venue_terms     = get_the_terms( $post_id, $taxonomy );
+		$taxonomy    = Setup::get_instance()->taxonomy_for_event_post_type( $event_post_type );
+		$venue_terms = get_the_terms( $post_id, $taxonomy );
 
 		if ( ! is_array( $venue_terms ) ) {
 			return false;
 		}
 
-		foreach ( $venue_terms as $term ) {
-			if ( 'online-event' === $term->slug ) {
-				return true;
-			}
-		}
-
-		return false;
+		return in_array( 'online-event', wp_list_pluck( $venue_terms, 'slug' ), true );
 	}
 
 	/**
