@@ -34,7 +34,7 @@ add_filter(
 
 ## Files
 
-- [includes/core/classes/venue/map/class-map.php:1108](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/venue/map/class-map.php#L1108)
+- [includes/core/classes/venue/map/class-map.php:1109](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/venue/map/class-map.php#L1109)
 ```php
 apply_filters( 'gatherpress_static_map_descriptors', $descriptors, $post_id )
 ```
