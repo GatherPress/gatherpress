@@ -92,9 +92,9 @@ class Test_Venues extends Base {
 			'Failed to assert google_maps_api_key option is present.'
 		);
 		$this->assertSame(
-			'password',
+			'text',
 			$section['maps']['options']['google_maps_api_key']['field']['type'],
-			'Failed to assert google_maps_api_key uses password field.'
+			'Failed to assert google_maps_api_key uses text field.'
 		);
 
 		// New block-default settings feed the venue-map block.json defaults
