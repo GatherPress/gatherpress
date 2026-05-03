@@ -1,4 +1,8 @@
 
+## class-admin-list.php
+
+- [`gatherpress_event_datetime_label`](gatherpress_event_datetime_label.md) Filters the label used for the event-date admin list column.
+
 ## class-assets.php
 
 - [`gatherpress_asset_critical`](gatherpress_asset_critical.md) Filters whether an asset file is considered critical.
@@ -97,6 +101,6 @@
 - [`gatherpress_pre_get_http_input`](gatherpress_pre_get_http_input.md) Short-circuit filter for HTTP input retrieval during testing.
 - [`gatherpress_pre_get_wp_referer`](gatherpress_pre_get_wp_referer.md) Short-circuit filter for wp_get_referer() during testing.
 
-## index.php
+## network-page.php
 
 - [`gatherpress_settings_section`](gatherpress_settings_section.md) Fires so tabs that render via the GatherPress settings section action
