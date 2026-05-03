@@ -490,10 +490,10 @@ class Rest_Api {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param array    $recipient    Recipient row from `get_recipients()`.
-	 * @param int      $post_id      Event post ID.
-	 * @param string   $message      Optional editor-supplied message body.
-	 * @param WP_User  $current_user Originating editor (restored after locale/user switch).
+	 * @param array   $recipient    Recipient row from `get_recipients()`.
+	 * @param int     $post_id      Event post ID.
+	 * @param string  $message      Optional editor-supplied message body.
+	 * @param WP_User $current_user Originating editor (restored after locale/user switch).
 	 * @return void
 	 */
 	protected function send_event_email_to_recipient(
