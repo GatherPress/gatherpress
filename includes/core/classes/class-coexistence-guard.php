@@ -98,6 +98,14 @@ class Coexistence_Guard {
 	 * @return string[] Plugin basenames matching the slug pattern.
 	 */
 	public function find_duplicates( string $slug ): array {
+		// `get_plugins()` is defined in wp-admin/includes/plugin.php, which WordPress
+		// only auto-loads in per-site admin context. Front-end requests and Network
+		// Admin pages (e.g. Network → Settings → GatherPress) reach this code without
+		// it loaded, so we require it explicitly to avoid a fatal.
+		if ( ! function_exists( 'get_plugins' ) ) {
+			require_once ABSPATH . 'wp-admin/includes/plugin.php';
+		}
+
 		$plugins       = get_plugins();
 		$duplicates    = array();
 		$expected_file = $slug . '.php';
