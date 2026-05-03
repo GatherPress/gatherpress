@@ -38,12 +38,18 @@ The bundled default ships with the plugin:
   in-block pattern pickers stay suppressed.
 
 Third parties can append their own without forking by hooking the
-`gatherpress_event_starter_patterns` filter:
+`gatherpress_event_starter_patterns` filter. The second argument is the
+array of post types declaring `gatherpress-event-date` support that the
+patterns will be registered against — branch on it to scope an entry to
+your own event-acting post type only:
 
 ```php
 add_filter(
     'gatherpress_event_starter_patterns',
-    function ( array $patterns ): array {
+    function ( array $patterns, array $post_types ): array {
+        if ( ! in_array( 'production', $post_types, true ) ) {
+            return $patterns;
+        }
         $patterns[] = array(
             'name'        => 'my-plugin/minimal-event',
             'title'       => __( 'Minimal Event', 'my-plugin' ),
@@ -51,7 +57,9 @@ add_filter(
             'content'     => '<!-- wp:gatherpress/event-date /--><!-- wp:gatherpress/rsvp {"patternPicked":true} --><div class="wp-block-gatherpress-rsvp"></div><!-- /wp:gatherpress/rsvp -->',
         );
         return $patterns;
-    }
+    },
+    10,
+    2
 );
 ```
 

@@ -45,6 +45,35 @@ $event->save_datetimes( array(
 ) );
 ```
 
+#### Relabeling the date column and editor panel
+
+The default "Event date & time" admin column header and "Event settings" sidebar panel title can be relabeled per post type without re-implementing either surface. The column key (`datetime`) and panel name stay the same — only the visible label changes.
+
+```php
+// Relabel the admin list column for a "production" post type.
+add_filter(
+    'gatherpress_event_date_column_label',
+    function ( string $label, string $post_type ): string {
+        return 'production' === $post_type ? __( 'Premiere date', 'my-plugin' ) : $label;
+    },
+    10,
+    2
+);
+```
+
+```js
+// Relabel the editor sidebar panel title for the same post type.
+import { addFilter } from '@wordpress/hooks';
+import { __ } from '@wordpress/i18n';
+
+addFilter(
+    'gatherpress.eventSettingsPanelTitle',
+    'my-plugin/production-panel-title',
+    ( title, postType ) =>
+        'production' === postType ? __( 'Production settings', 'my-plugin' ) : title
+);
+```
+
 ### `gatherpress-rsvp`
 
 Enables the comment-based RSVP system for a post type. This includes:
