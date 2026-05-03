@@ -159,10 +159,32 @@ class Events extends Base {
 			'archive_pages' => array(
 				'name'        => __( 'Archive Pages', 'gatherpress' ),
 				'description' => __(
-					'Set event archives to pages you have created.',
+					// phpcs:ignore Generic.Files.LineLength.TooLong -- Single translator-facing sentence; keep on one line for the .pot extractor.
+					'Choose what the event archive URL shows by default and optionally point custom pages at the upcoming or past archives.',
 					'gatherpress'
 				),
 				'options'     => array(
+					'event_archive'   => array(
+						'labels'      => array(
+							'name' => __( 'Event Archive', 'gatherpress' ),
+						),
+						'description' => __(
+							'What the events archive URL displays when no custom page is assigned.',
+							'gatherpress'
+						),
+						'field'       => array(
+							'label'   => __( 'Default archive view:', 'gatherpress' ),
+							'type'    => 'select',
+							'options' => array(
+								'default' => 'upcoming',
+								'items'   => array(
+									'upcoming' => __( 'Upcoming Events', 'gatherpress' ),
+									'past'     => __( 'Past Events', 'gatherpress' ),
+									'none'     => __( 'None (return 404)', 'gatherpress' ),
+								),
+							),
+						),
+					),
 					'upcoming_events' => array(
 						'labels' => array(
 							'name' => __( 'Upcoming Events', 'gatherpress' ),

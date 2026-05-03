@@ -1296,7 +1296,8 @@ class Test_Setup extends Base {
 	}
 
 	/**
-	 * Tests handle_event_archive_redirect sets 404 when no page exists.
+	 * Tests handle_event_archive_redirect sets 404 when no page exists
+	 * AND the archive mode is `none`.
 	 *
 	 * @covers ::handle_event_archive_redirect
 	 * @return void
@@ -1316,6 +1317,10 @@ class Test_Setup extends Base {
 			wp_delete_post( $existing_page->ID, true );
 		}
 
+		// Force the archive mode to `none` so the no-page branch 404s
+		// instead of serving the upcoming archive (the new default).
+		update_option( Settings::OPTION_NAME, array( 'event_archive' => 'none' ) );
+
 		// Mock being on the post type archive by setting WP_Query properties directly.
 		$wp_query->is_post_type_archive = true;
 		$wp_query->set( 'post_type', Event::POST_TYPE );
@@ -1323,8 +1328,13 @@ class Test_Setup extends Base {
 		// Call the method.
 		$instance->handle_event_archive_redirect();
 
+		delete_option( Settings::OPTION_NAME );
+
 		// Verify 404 was set.
-		$this->assertTrue( $wp_query->is_404(), 'Should be 404 when no page exists with the same slug.' );
+		$this->assertTrue(
+			$wp_query->is_404(),
+			'Should be 404 when no page exists with the same slug and mode is none.'
+		);
 	}
 
 	/**
@@ -1354,6 +1364,10 @@ class Test_Setup extends Base {
 
 		$this->assertIsInt( $page_id, 'Page should be created successfully.' );
 
+		// Force `none` so the draft (= no published page) falls through
+		// to 404 instead of the upcoming archive (the new default).
+		update_option( Settings::OPTION_NAME, array( 'event_archive' => 'none' ) );
+
 		// Mock being on the post type archive by setting WP_Query properties directly.
 		$wp_query->is_post_type_archive = true;
 		$wp_query->set( 'post_type', Event::POST_TYPE );
@@ -1361,11 +1375,167 @@ class Test_Setup extends Base {
 		// Call the method.
 		$instance->handle_event_archive_redirect();
 
+		delete_option( Settings::OPTION_NAME );
+
 		// Verify 404 was set (draft page should not trigger redirect).
 		$this->assertTrue( $wp_query->is_404(), 'Should be 404 when page exists but is not published.' );
 
 		// Clean up.
 		wp_delete_post( $page_id, true );
+	}
+
+	/**
+	 * Tests handle_event_archive_redirect rewrites the main query as the
+	 * upcoming events archive when no page exists at the slug and the
+	 * archive mode is `upcoming` (the default).
+	 *
+	 * @covers ::handle_event_archive_redirect
+	 *
+	 * @return void
+	 */
+	public function test_handle_event_archive_redirect_upcoming_mode(): void {
+		global $wp_query;
+
+		$instance = Setup::get_instance();
+
+		// Make sure no page exists at the events slug so we exercise
+		// the no-page → mode-fallback branch.
+		$settings      = Settings::get_instance();
+		$rewrite_slug  = $settings->get( 'events_url' );
+		$existing_page = get_page_by_path( $rewrite_slug );
+		if ( $existing_page ) {
+			wp_delete_post( $existing_page->ID, true );
+		}
+
+		// Default mode is `upcoming`; set explicitly for clarity.
+		update_option( Settings::OPTION_NAME, array( 'event_archive' => 'upcoming' ) );
+
+		$wp_query->is_post_type_archive = true;
+		$wp_query->set( 'post_type', Event::POST_TYPE );
+
+		$instance->handle_event_archive_redirect();
+
+		delete_option( Settings::OPTION_NAME );
+
+		$this->assertFalse( $wp_query->is_404(), 'Upcoming mode must not 404.' );
+		$this->assertTrue( $wp_query->is_post_type_archive, 'Must remain a post type archive.' );
+		$this->assertSame(
+			'upcoming',
+			$wp_query->get( Query::EVENT_QUERY_PARAM ),
+			'Upcoming mode must set the event query param so the upcoming-events ordering kicks in.'
+		);
+	}
+
+	/**
+	 * Tests handle_event_archive_redirect rewrites the main query as the
+	 * past events archive when the mode is `past`.
+	 *
+	 * @covers ::handle_event_archive_redirect
+	 *
+	 * @return void
+	 */
+	public function test_handle_event_archive_redirect_past_mode(): void {
+		global $wp_query;
+
+		$instance = Setup::get_instance();
+
+		$settings      = Settings::get_instance();
+		$rewrite_slug  = $settings->get( 'events_url' );
+		$existing_page = get_page_by_path( $rewrite_slug );
+		if ( $existing_page ) {
+			wp_delete_post( $existing_page->ID, true );
+		}
+
+		update_option( Settings::OPTION_NAME, array( 'event_archive' => 'past' ) );
+
+		$wp_query->is_post_type_archive = true;
+		$wp_query->set( 'post_type', Event::POST_TYPE );
+
+		$instance->handle_event_archive_redirect();
+
+		delete_option( Settings::OPTION_NAME );
+
+		$this->assertFalse( $wp_query->is_404(), 'Past mode must not 404.' );
+		$this->assertTrue( $wp_query->is_post_type_archive, 'Must remain a post type archive.' );
+		$this->assertSame(
+			'past',
+			$wp_query->get( Query::EVENT_QUERY_PARAM ),
+			'Past mode must set the event query param so the past-events ordering kicks in.'
+		);
+	}
+
+	/**
+	 * Tests `gatherpress_event_archive_mode` filter overrides the stored
+	 * setting at runtime.
+	 *
+	 * @covers ::handle_event_archive_redirect
+	 * @covers ::get_event_archive_mode
+	 *
+	 * @return void
+	 */
+	public function test_handle_event_archive_redirect_filter_override(): void {
+		global $wp_query;
+
+		$instance = Setup::get_instance();
+
+		$settings      = Settings::get_instance();
+		$rewrite_slug  = $settings->get( 'events_url' );
+		$existing_page = get_page_by_path( $rewrite_slug );
+		if ( $existing_page ) {
+			wp_delete_post( $existing_page->ID, true );
+		}
+
+		// Stored setting is `upcoming` but the filter forces `none`.
+		update_option( Settings::OPTION_NAME, array( 'event_archive' => 'upcoming' ) );
+
+		// phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.Found -- Filter signature requires the param even though we override it.
+		$force_none = static fn( string $mode ): string => 'none';
+		add_filter( 'gatherpress_event_archive_mode', $force_none );
+
+		$wp_query->is_post_type_archive = true;
+		$wp_query->set( 'post_type', Event::POST_TYPE );
+
+		$instance->handle_event_archive_redirect();
+
+		remove_filter( 'gatherpress_event_archive_mode', $force_none );
+		delete_option( Settings::OPTION_NAME );
+
+		$this->assertTrue( $wp_query->is_404(), 'Filter must override the stored setting and force a 404.' );
+	}
+
+	/**
+	 * Tests `get_event_archive_mode()` falls back to `upcoming` when the
+	 * stored setting (or a filter) returns a value outside the valid set.
+	 *
+	 * @covers ::get_event_archive_mode
+	 *
+	 * @return void
+	 */
+	public function test_get_event_archive_mode_invalid_value_falls_back_to_upcoming(): void {
+		$instance = Setup::get_instance();
+
+		update_option( Settings::OPTION_NAME, array( 'event_archive' => 'garbage' ) );
+
+		$this->assertSame(
+			'upcoming',
+			$instance->get_event_archive_mode(),
+			'Stored garbage must coerce back to `upcoming` so resolution never breaks.'
+		);
+
+		// And when the filter returns garbage, same fallback.
+		update_option( Settings::OPTION_NAME, array( 'event_archive' => 'past' ) );
+		// phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.Found -- Filter signature requires the param even though we override it.
+		$return_garbage = static fn( string $mode ): string => 'garbage';
+		add_filter( 'gatherpress_event_archive_mode', $return_garbage );
+
+		$this->assertSame(
+			'upcoming',
+			$instance->get_event_archive_mode(),
+			'Filter-returned garbage must also coerce back to `upcoming`.'
+		);
+
+		remove_filter( 'gatherpress_event_archive_mode', $return_garbage );
+		delete_option( Settings::OPTION_NAME );
 	}
 
 	/**
