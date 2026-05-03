@@ -224,6 +224,22 @@ When working with this codebase:
     - ✅ Good (in `GatherPress\Core\Event\Admin_List`): `use GatherPress\Core\Venue\Setup as Venue_Setup;` → `Venue_Setup::get_instance()`
     - ❌ Bad (silently shadows the local `Event\Setup`): `use GatherPress\Core\Venue\Setup;` → `Setup::get_instance()`
     - Within one subsystem (e.g. `Event\Admin_List` referencing `Event\Query`), no alias needed.
+- **Class body opens with a blank line**: Every `class|trait|interface Foo {` declaration is followed by an empty line before the first member, matching WordPress core's house style. Don't let the first docblock or `use` statement sit flush against the opening brace.
+    - ✅ Good:
+
+        ```php
+        class Setup {
+
+            /**
+             * Enforces a single instance of this class.
+             */
+            use Singleton;
+        ```
+
+    - ❌ Bad: `class Setup {` immediately followed by `\t/**` on the next line.
+- **Prefer `str_contains` / `str_starts_with` / `str_ends_with` over `strpos`**: WordPress ships polyfills for these PHP 8 string helpers back to PHP 7.0, so they're safe under our PHP 7.4 floor. They read better than the `false ===` / `0 ===` dance and SonarCloud flags the legacy form.
+    - ✅ Good: `if ( str_contains( $haystack, $needle ) )` / `if ( str_starts_with( $key, 'gatherpress_' ) )` / `if ( ! str_contains( $content, $token ) )`
+    - ❌ Bad: `if ( false !== strpos( $haystack, $needle ) )` / `if ( 0 === strpos( $key, 'gatherpress_' ) )` / `if ( false === strpos( $content, $token ) )`
 - **Method organization**: Place related methods in logically grouped classes (e.g., form-related methods in `Rsvp_Form`)
 - **Singleton pattern**: Many GatherPress classes use the Singleton trait - check if a class has `use Singleton;`
     - **Singleton classes** (Blocks, Settings, Setup classes): Use `ClassName::get_instance()`
