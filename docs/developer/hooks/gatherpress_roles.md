@@ -31,7 +31,7 @@ add_filter(
 
 ## Files
 
-- [includes/core/classes/settings/class-roles.php:93](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/settings/class-roles.php#L93)
+- [includes/core/classes/settings/class-roles.php:94](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/settings/class-roles.php#L94)
 ```php
 apply_filters( 'gatherpress_roles', $roles )
 ```

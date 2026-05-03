@@ -43,7 +43,7 @@ Example use of the filter to illustrate function signatures for the callbacks.
 
 ## Files
 
-- [includes/core/classes/class-migrate.php:84](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/class-migrate.php#L84)
+- [includes/core/classes/class-migrate.php:85](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/class-migrate.php#L85)
 ```php
 apply_filters( 'gatherpress_pseudo_post_metas', $this->pseudopostmetas )
 ```

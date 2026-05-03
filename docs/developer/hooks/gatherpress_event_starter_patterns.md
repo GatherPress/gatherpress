@@ -31,7 +31,7 @@ add_filter(
 
 ## Files
 
-- [includes/core/classes/event/class-setup.php:273](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/event/class-setup.php#L273)
+- [includes/core/classes/event/class-setup.php:274](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/event/class-setup.php#L274)
 ```php
 apply_filters( 'gatherpress_event_starter_patterns', $patterns )
 ```
