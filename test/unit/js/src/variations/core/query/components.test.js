@@ -1,5 +1,5 @@
 /**
- * External dependencies.
+ * External dependencies
  */
 import { describe, expect, it, jest, beforeEach } from '@jest/globals';
 import { render, screen } from '@testing-library/react';
@@ -80,13 +80,13 @@ jest.mock( '@src/helpers/editor', () => ( {
 } ) );
 
 /**
- * WordPress dependencies.
+ * WordPress dependencies
  */
 import { isEventPostType, usePostTypeSupports } from '@src/helpers/event';
 import { isInFSETemplate } from '@src/helpers/editor';
 
 /**
- * Internal dependencies.
+ * Internal dependencies
  */
 import { EventQueryControlsSlotFill } from '@src/variations/core/query/components';
 

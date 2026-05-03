@@ -1,5 +1,5 @@
 /**
- * WordPress dependencies.
+ * WordPress dependencies
  */
 import { __ } from '@wordpress/i18n';
 import { RichText, useBlockProps } from '@wordpress/block-editor';
@@ -8,7 +8,7 @@ import { store as coreStore } from '@wordpress/core-data';
 import { store as editorStore } from '@wordpress/editor';
 
 /**
- * Internal dependencies.
+ * Internal dependencies
  */
 import { isPostTypeSupporting } from '../../helpers/event';
 

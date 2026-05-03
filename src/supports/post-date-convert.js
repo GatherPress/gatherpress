@@ -1,5 +1,5 @@
 /**
- * WordPress dependencies.
+ * WordPress dependencies
  */
 import { __ } from '@wordpress/i18n';
 import { addFilter } from '@wordpress/hooks';
@@ -10,7 +10,7 @@ import { useDispatch } from '@wordpress/data';
 import { switchToBlockType } from '@wordpress/blocks';
 
 /**
- * Internal dependencies.
+ * Internal dependencies
  */
 import { usePostTypeSupports } from '../helpers/event';
 

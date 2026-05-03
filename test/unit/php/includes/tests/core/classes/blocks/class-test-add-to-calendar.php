@@ -19,6 +19,7 @@ use GatherPress\Tests\Base;
  * @coversDefaultClass \GatherPress\Core\Blocks\Add_To_Calendar
  */
 class Test_Add_To_Calendar extends Base {
+
 	/**
 	 * Tests the setup_hooks method.
 	 *

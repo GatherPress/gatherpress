@@ -1,5 +1,5 @@
 /**
- * External dependencies.
+ * External dependencies
  */
 import {
 	describe,
@@ -12,14 +12,14 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import '@testing-library/jest-dom';
 
 /**
- * WordPress dependencies.
+ * WordPress dependencies
  */
 import { addFilter } from '@wordpress/hooks';
 import { switchToBlockType } from '@wordpress/blocks';
 import { useDispatch } from '@wordpress/data';
 
 /**
- * Internal dependencies.
+ * Internal dependencies
  */
 import { usePostTypeSupports } from '@src/helpers/event';
 

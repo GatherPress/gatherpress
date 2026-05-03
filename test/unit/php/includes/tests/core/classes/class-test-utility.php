@@ -19,6 +19,7 @@ use PMC\Unit_Test\Utility as PMC_Utility;
  * @coversDefaultClass \GatherPress\Core\Utility
  */
 class Test_Utility extends Base {
+
 	/**
 	 * Coverage for render_template method.
 	 *

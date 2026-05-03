@@ -18,6 +18,7 @@ use PMC\Unit_Test\Utility;
  * @coversDefaultClass \GatherPress\Core\Settings\Base
  */
 class Test_Base extends Base_Unit_Test {
+
 	/**
 	 * Coverage for setup_up method.
 	 *

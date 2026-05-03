@@ -54,6 +54,7 @@ use WP_REST_Server;
  * @phpstan-type ProviderDescriptorMap array<string, DescriptorMap>
  */
 class Map {
+
 	/**
 	 * Enforces a single instance of this class.
 	 */

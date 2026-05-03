@@ -17,6 +17,7 @@ use GatherPress\Tests\Base;
  * @coversDefaultClass \GatherPress\Core\Topic
  */
 class Test_Topic extends Base {
+
 	/**
 	 * Coverage for __construct and setup_hooks.
 	 *

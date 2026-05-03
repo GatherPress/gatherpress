@@ -29,6 +29,7 @@ use WP_REST_Request;
  * @coversDefaultClass \GatherPress\Core\Event\Setup
  */
 class Test_Setup extends Base {
+
 	/**
 	 * Event\Setup now owns the instantiation of the Event\* sibling
 	 * singletons (Admin_List, Query, Rest_Api) so the outer

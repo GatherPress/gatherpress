@@ -27,6 +27,7 @@ use WP_HTML_Tag_Processor;
  * @since 1.0.0
  */
 class Add_To_Calendar {
+
 	/**
 	 * Enforces a single instance of this class.
 	 */

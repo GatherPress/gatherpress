@@ -24,6 +24,7 @@ use GatherPress\Core\Traits\Singleton;
  * @since 1.0.0
  */
 class Rsvp_Settings extends Base {
+
 	/**
 	 * Enforces a single instance of this class.
 	 */

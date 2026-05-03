@@ -18,6 +18,7 @@ use PMC\Unit_Test\Utility;
  * @coversDefaultClass \GatherPress\Core\Commands\Settings_Cli
  */
 class Test_Settings_Cli extends Base {
+
 	/**
 	 * Coverage for export to stdout.
 	 *

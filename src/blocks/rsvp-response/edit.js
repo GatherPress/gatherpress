@@ -1,5 +1,5 @@
 /**
- * WordPress dependencies.
+ * WordPress dependencies
  */
 import { __ } from '@wordpress/i18n';
 import { applyFilters } from '@wordpress/hooks';
@@ -26,7 +26,7 @@ import { createBlock } from '@wordpress/blocks';
 import apiFetch from '@wordpress/api-fetch';
 
 /**
- * Internal dependencies.
+ * Internal dependencies
  */
 import RsvpManager from './rsvp-manager';
 import ATTENDEE_GRID_WITH_FILTER_TEMPLATE from './templates/attendee-grid-with-filter';

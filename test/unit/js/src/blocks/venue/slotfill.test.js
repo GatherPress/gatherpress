@@ -1,5 +1,5 @@
 /**
- * External dependencies.
+ * External dependencies
  */
 import { render } from '@testing-library/react';
 import { describe, expect, it, jest, beforeEach } from '@jest/globals';
@@ -17,7 +17,7 @@ jest.mock( '@wordpress/components', () => ( {
 } ) );
 
 /**
- * Mock internal dependencies.
+ * Mock internal dependencies
  */
 jest.mock( '@src/components/VenueNavigator', () => {
 	return function MockVenueNavigator() {
@@ -30,7 +30,7 @@ jest.mock( '@src/helpers/event', () => ( {
 } ) );
 
 /**
- * Internal dependencies.
+ * Internal dependencies
  */
 import VenueBlockPluginFill from '@src/blocks/venue/slotfill';
 import { isPostTypeSupporting } from '@src/helpers/event';

@@ -21,6 +21,7 @@ use GatherPress\Tests\Base;
  * @coversDefaultClass \GatherPress\Core\Blocks\General_Block
  */
 class Test_General_Block extends Base {
+
 	/**
 	 * Tests the setup_hooks method.
 	 *

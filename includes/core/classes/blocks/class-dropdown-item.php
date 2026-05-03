@@ -25,6 +25,7 @@ use WP_HTML_Tag_Processor;
  * @since 1.0.0
  */
 class Dropdown_Item {
+
 	/**
 	 * Enforces a single instance of this class.
 	 */

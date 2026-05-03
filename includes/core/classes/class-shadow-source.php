@@ -41,6 +41,7 @@ use WP_Term;
  * @since 1.0.0
  */
 class Shadow_Source {
+
 	/**
 	 * Enforces a single instance of this class.
 	 */

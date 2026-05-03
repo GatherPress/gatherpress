@@ -1,11 +1,11 @@
 /**
- * WordPress dependencies.
+ * WordPress dependencies
  */
 import domReady from '@wordpress/dom-ready';
 import { createRoot } from '@wordpress/element';
 
 /**
- * Internal dependencies.
+ * Internal dependencies
  */
 import MapEmbed from '../../components/MapEmbed';
 

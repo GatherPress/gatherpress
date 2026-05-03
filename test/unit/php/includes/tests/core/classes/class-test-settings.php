@@ -26,6 +26,7 @@ use PMC\Unit_Test\Utility;
  * @coversDefaultClass \GatherPress\Core\Settings
  */
 class Test_Settings extends Base {
+
 	/**
 	 * Settings now owns the instantiation of every settings-page subclass
 	 * (Credits, Events, Network, Roles, Rsvp_Settings, Tools, Venues) so

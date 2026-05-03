@@ -1,10 +1,10 @@
 /**
- * External dependencies.
+ * External dependencies
  */
 import { describe, expect, it } from '@jest/globals';
 
 /**
- * Internal dependencies.
+ * Internal dependencies
  */
 import RSVP_BUTTON_WITH_MODAL_TEMPLATES from '@src/blocks/rsvp/templates/rsvp-button-with-modal';
 import ATTENDING from '@src/blocks/rsvp/templates/attending';

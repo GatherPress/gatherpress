@@ -20,6 +20,7 @@ use WP_REST_Request;
  * @coversDefaultClass \GatherPress\Core\Event\Meta
  */
 class Test_Meta extends Base {
+
 	/**
 	 * Coverage for `__construct` and `setup_hooks`.
 	 *

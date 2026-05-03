@@ -22,6 +22,7 @@ use WP_Block_Type_Registry;
  * @group              blocks
  */
 class Test_Setup extends Base {
+
 	/**
 	 * Coverage for setup_hooks.
 	 *

@@ -1,10 +1,10 @@
 /**
- * External dependencies.
+ * External dependencies
  */
 import { describe, expect, it } from '@jest/globals';
 
 /**
- * Internal dependencies.
+ * Internal dependencies
  */
 import { getTooltipAttributes } from '@src/formats/tooltip/helpers';
 import { DEFAULT_COLORS } from '@src/formats/tooltip/constants';

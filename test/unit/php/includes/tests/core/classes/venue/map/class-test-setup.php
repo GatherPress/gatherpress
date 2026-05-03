@@ -21,6 +21,7 @@ use PMC\Unit_Test\Utility;
  * @coversDefaultClass \GatherPress\Core\Venue\Map\Setup
  */
 class Test_Setup extends Base {
+
 	/**
 	 * Map\Setup is the hub for the venue map subsystem — its
 	 * `instantiate_classes()` is what wires Manager / Map / Prewarm so

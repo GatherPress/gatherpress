@@ -1,5 +1,5 @@
 /**
- * External dependencies.
+ * External dependencies
  */
 import {
 	describe,
@@ -11,7 +11,7 @@ import {
 } from '@jest/globals';
 
 /**
- * Internal dependencies.
+ * Internal dependencies
  */
 import {
 	ADDRESS_SEARCH_MIN_QUERY_LENGTH,

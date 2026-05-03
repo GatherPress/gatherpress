@@ -31,6 +31,7 @@ use WP_Term;
  * @since 1.0.0
  */
 class Venue {
+
 	/**
 	 * Default venue post type slug.
 	 *

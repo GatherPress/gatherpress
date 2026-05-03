@@ -1,11 +1,11 @@
 /**
- * WordPress dependencies.
+ * WordPress dependencies
  */
 import { dispatch, select } from '@wordpress/data';
 import { store as coreStore } from '@wordpress/core-data';
 
 /**
- * Internal dependencies.
+ * Internal dependencies
  */
 import { isPostTypeSupporting } from './event';
 

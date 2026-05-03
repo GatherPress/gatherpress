@@ -15,8 +15,7 @@ namespace GatherPress\Core\Settings;
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Traits\Singleton;
-use GatherPress\Core\Event\Setup as Event_Setup;
-use GatherPress\Core\Venue\Setup as Venue_Setup;
+use GatherPress\Core\Event\Setup;
 use GatherPress\Core\Topic;
 
 /**
@@ -27,6 +26,7 @@ use GatherPress\Core\Topic;
  * @since 1.0.0
  */
 class Events extends Base {
+
 	/**
 	 * Enforces a single instance of this class.
 	 */
@@ -228,34 +228,13 @@ class Events extends Base {
 							'rewrite' => true,
 							'options' => array(
 								'label'   => __( 'Permalink base of Events.', 'gatherpress' ),
-								'default' => Event_Setup::get_localized_post_type_slug(),
+								'default' => Setup::get_localized_post_type_slug(),
 							),
 							'preview' => array(
 								'template' => 'url-rewrite-preview',
 								'suffix'   => _x(
 									'sample-event',
 									'URL permalink structure example for events',
-									'gatherpress'
-								),
-							),
-						),
-					),
-					'venues_url' => array(
-						'labels' => array(
-							'name' => __( 'Venues', 'gatherpress' ),
-						),
-						'field'  => array(
-							'type'    => 'text',
-							'rewrite' => true,
-							'options' => array(
-								'label'   => __( 'Permalink base of Venues.', 'gatherpress' ),
-								'default' => Venue_Setup::get_instance()->get_localized_post_type_slug(),
-							),
-							'preview' => array(
-								'template' => 'url-rewrite-preview',
-								'suffix'   => _x(
-									'sample-venue',
-									'URL permalink structure example for venues',
 									'gatherpress'
 								),
 							),

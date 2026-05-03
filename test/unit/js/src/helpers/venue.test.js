@@ -1,5 +1,5 @@
 /**
- * External dependencies.
+ * External dependencies
  */
 import { describe, expect, jest, it, beforeEach } from '@jest/globals';
 import { renderHook } from '@testing-library/react';
@@ -30,7 +30,7 @@ jest.mock( '@wordpress/html-entities', () => ( {
 import { select, useSelect } from '@wordpress/data';
 
 /**
- * Internal dependencies.
+ * Internal dependencies
  */
 import {
 	isVenuePostType,

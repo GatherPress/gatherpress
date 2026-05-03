@@ -1,5 +1,5 @@
 /**
- * External dependencies.
+ * External dependencies
  */
 import { describe, expect, it, jest, beforeEach } from '@jest/globals';
 
@@ -9,12 +9,12 @@ jest.mock( '@wordpress/blocks', () => ( {
 } ) );
 
 /**
- * WordPress dependencies.
+ * WordPress dependencies
  */
 import { createBlock } from '@wordpress/blocks';
 
 /**
- * Internal dependencies.
+ * Internal dependencies
  */
 import transforms from '@src/blocks/event-date/transforms';
 

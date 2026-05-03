@@ -18,6 +18,7 @@ use GatherPress\Tests\Base;
  * @group migrate
  */
 class Test_Migrate extends Base {
+
 	/**
 	 * Coverage for get_pseudopostmetas method.
 	 *

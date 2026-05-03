@@ -1,5 +1,5 @@
 /**
- * External dependencies.
+ * External dependencies
  */
 import { render } from '@testing-library/react';
 import {
@@ -13,7 +13,7 @@ import {
 import '@testing-library/jest-dom';
 
 /**
- * Mock WordPress dependencies.
+ * Mock WordPress dependencies
  */
 jest.mock( '@wordpress/block-editor', () => ( {
 	InspectorControls: ( { children } ) => (
@@ -42,7 +42,7 @@ jest.mock( '@wordpress/i18n', () => ( {
 } ) );
 
 /**
- * Mock internal dependencies.
+ * Mock internal dependencies
  */
 jest.mock( '@src/helpers/event', () => ( {
 	isPostTypeSupporting: jest.fn(),
@@ -59,7 +59,7 @@ jest.mock( '@src/variations/core/query/components', () => ( {
 } ) );
 
 /**
- * Internal dependencies.
+ * Internal dependencies
  */
 import { addFilter } from '@wordpress/hooks';
 import { useEffect } from '@wordpress/element';

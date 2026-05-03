@@ -16,7 +16,7 @@ import apiFetch from '@wordpress/api-fetch';
 import { store as coreDataStore } from '@wordpress/core-data';
 
 /**
- * Internal dependencies.
+ * Internal dependencies
  */
 import { getVenuePostType, getVenueTaxonomy } from '../helpers/venue';
 import { isPostTypeSupporting } from '../helpers/event';

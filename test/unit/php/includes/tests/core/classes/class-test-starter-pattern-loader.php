@@ -17,6 +17,7 @@ use GatherPress\Tests\Base;
  * @coversDefaultClass \GatherPress\Core\Starter_Pattern_Loader
  */
 class Test_Starter_Pattern_Loader extends Base {
+
 	/**
 	 * Loads each `*.php` file in the fixtures directory and returns the
 	 * union of their pattern definitions, skipping anything that does

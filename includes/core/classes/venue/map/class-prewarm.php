@@ -41,6 +41,7 @@ use WP_Post;
  * @since 1.0.0
  */
 class Prewarm {
+
 	/**
 	 * Enforces a single instance of this class.
 	 */
@@ -513,7 +514,7 @@ class Prewarm {
 	 * @return array<int, array{zoom:int,width:int,height:int,aspect_ratio:string}>
 	 */
 	protected function collect_combos_from_content( string $content ): array {
-		if ( '' === $content || false === strpos( $content, self::BLOCK_NAME ) ) {
+		if ( '' === $content || ! str_contains( $content, self::BLOCK_NAME ) ) {
 			return array();
 		}
 

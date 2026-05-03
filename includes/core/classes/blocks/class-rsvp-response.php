@@ -29,6 +29,7 @@ use WP_User;
  * @since 1.0.0
  */
 class Rsvp_Response {
+
 	/**
 	 * Enforces a single instance of this class.
 	 */

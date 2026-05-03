@@ -24,6 +24,7 @@ use WP_Block_Patterns_Registry;
  * @coversDefaultClass \GatherPress\Core\Venue\Setup
  */
 class Test_Setup extends Base {
+
 	/**
 	 * Venue\Setup hands the map subsystem off to `Map\Setup` and the
 	 * meta surface off to `Venue\Meta`. Per-sibling internals are

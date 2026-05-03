@@ -17,6 +17,7 @@ use GatherPress\Tests\Base;
  * @coversDefaultClass \GatherPress\Core\Coexistence_Guard
  */
 class Test_Coexistence_Guard extends Base {
+
 	/**
 	 * Reset cached plugin list and the active-plugins option after each test so
 	 * later tests start from a clean slate.
@@ -31,7 +32,7 @@ class Test_Coexistence_Guard extends Base {
 		// synthetic test slugs so they don't leak into other tests.
 		global $wp_filter;
 		foreach ( array_keys( $wp_filter ) as $tag ) {
-			if ( 0 === strpos( $tag, 'activate_test-coexistence' ) ) {
+			if ( str_starts_with( $tag, 'activate_test-coexistence' ) ) {
 				unset( $wp_filter[ $tag ] );
 			}
 		}

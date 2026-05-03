@@ -32,6 +32,7 @@ use WP_REST_Server;
  * @since 1.0.0
  */
 class Geocoding {
+
 	/**
 	 * Enforces a single instance of this class.
 	 */

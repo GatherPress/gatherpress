@@ -21,6 +21,7 @@ use WP_Screen;
  * @coversDefaultClass \GatherPress\Core\Rsvp\List_Table
  */
 class Test_List_Table extends Base {
+
 	/**
 	 * The RSVP list table instance.
 	 *

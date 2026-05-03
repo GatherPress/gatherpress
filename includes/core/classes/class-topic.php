@@ -23,6 +23,7 @@ use GatherPress\Core\Traits\Singleton;
  * @since 1.0.0
  */
 class Topic {
+
 	/**
 	 * Enforces a single instance of this class.
 	 */

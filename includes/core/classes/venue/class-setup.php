@@ -42,6 +42,7 @@ use WP_Post;
  * @since 1.0.0
  */
 class Setup {
+
 	/**
 	 * Enforces a single instance of this class.
 	 */

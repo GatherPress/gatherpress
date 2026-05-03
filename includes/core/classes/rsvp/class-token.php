@@ -29,6 +29,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
  * @since 1.0.0
  */
 class Token {
+
 	/**
 	 * The parameter name used for RSVP tokens in URLs.
 	 *

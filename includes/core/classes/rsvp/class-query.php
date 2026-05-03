@@ -28,6 +28,7 @@ use WP_Tax_Query;
  * @since 1.0.0
  */
 class Query {
+
 	/**
 	 * Enforces a single instance of this class.
 	 */

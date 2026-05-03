@@ -1,11 +1,11 @@
 /**
- * WordPress dependencies.
+ * WordPress dependencies
  */
 import { __ } from '@wordpress/i18n';
 import apiFetch from '@wordpress/api-fetch';
 
 /**
- * Internal dependencies.
+ * Internal dependencies
  */
 import { getFromConfig } from './editor-settings';
 import { REST_NAMESPACE } from './namespace';

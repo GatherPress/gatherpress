@@ -19,6 +19,7 @@ use PMC\Unit_Test\Utility;
  * @coversDefaultClass \GatherPress\Core\Settings\Tools
  */
 class Test_Tools extends Base_Ajax {
+
 	/**
 	 * Coverage for setup_hooks method.
 	 *

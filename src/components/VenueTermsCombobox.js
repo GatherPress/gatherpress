@@ -8,7 +8,7 @@ import { useDebounce } from '@wordpress/compose';
 import { __ } from '@wordpress/i18n';
 
 /**
- * Internal dependencies.
+ * Internal dependencies
  */
 import { getCurrentContextualPostId } from '../helpers/editor';
 import { getVenuePostType, getVenueTaxonomy, useVenueOptions, useVenueTaxonomyIds } from '../helpers/venue';

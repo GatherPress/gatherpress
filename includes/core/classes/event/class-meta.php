@@ -41,6 +41,7 @@ use WP_REST_Request;
  * @since 1.0.0
  */
 class Meta {
+
 	/**
 	 * Enforces a single instance of this class.
 	 */

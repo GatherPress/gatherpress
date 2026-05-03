@@ -29,6 +29,7 @@ use WP_List_Table;
  * @since 1.0.0
  */
 class List_Table extends WP_List_Table {
+
 	/**
 	 * Default number of RSVPs to display per page in the admin list table.
 	 *

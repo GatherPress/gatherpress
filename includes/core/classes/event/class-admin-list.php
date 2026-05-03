@@ -33,6 +33,7 @@ use WP_Query;
  * @since 1.0.0
  */
 class Admin_List {
+
 	/**
 	 * Enforces a single instance of this class.
 	 */
@@ -193,7 +194,7 @@ class Admin_List {
 					'',
 					$view_links['all']
 				);
-			} elseif ( false === strpos( $view_links['all'], 'class="current"' ) ) {
+			} elseif ( ! str_contains( $view_links['all'], 'class="current"' ) ) {
 				// Add "current" to "All" only when no other view is current.
 				// We must not stomp on a built-in status filter (Published /
 				// Draft / Trash): when the user clicks one of those, that
@@ -204,7 +205,7 @@ class Admin_List {
 					if ( 'all' === $other_key ) {
 						continue;
 					}
-					if ( false !== strpos( (string) $other_link, 'class="current"' ) ) {
+					if ( str_contains( (string) $other_link, 'class="current"' ) ) {
 						$another_view_is_current = true;
 						break;
 					}
@@ -569,7 +570,7 @@ class Admin_List {
 		$venue_taxonomy_key     = 'taxonomy-' . Venue_Setup::get_instance()->taxonomy_for_event_post_type( $post_type );
 
 		foreach ( $columns as $key => $label ) {
-			if ( 0 !== strpos( $key, 'taxonomy-' ) ) {
+			if ( ! str_starts_with( $key, 'taxonomy-' ) ) {
 				continue;
 			}
 

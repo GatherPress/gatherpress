@@ -25,6 +25,7 @@ use WP_REST_Request;
  * @since 1.0.0
  */
 class Event_Query {
+
 	/**
 	 * Enforces a single instance of this class.
 	 */

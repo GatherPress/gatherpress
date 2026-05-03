@@ -21,6 +21,7 @@ use PMC\Unit_Test\Utility;
  * @coversDefaultClass \GatherPress\Core\Venue\Map\Manager
  */
 class Test_Manager extends Base {
+
 	/**
 	 * Reset the registry between tests so a stub provider added in one
 	 * case doesn't bleed into the next case's `get_active()` resolution.

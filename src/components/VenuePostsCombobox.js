@@ -7,7 +7,7 @@ import { useDebounce } from '@wordpress/compose';
 import { __ } from '@wordpress/i18n';
 
 /**
- * Internal dependencies.
+ * Internal dependencies
  */
 import { useVenueOptions, getVenuePostType } from '../helpers/venue';
 

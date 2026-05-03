@@ -16,4 +16,5 @@ namespace GatherPress\Tests\Core;
  * @group multisite
  */
 class Test_Geocoding_Multisite extends Test_Geocoding {
+
 }

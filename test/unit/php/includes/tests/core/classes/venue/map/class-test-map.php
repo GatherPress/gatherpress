@@ -27,6 +27,7 @@ use PMC\Unit_Test\Utility;
  * @coversDefaultClass \GatherPress\Core\Venue\Map\Map
  */
 class Test_Map extends Base {
+
 	/**
 	 * Minimal valid 1×1 PNG used as a stand-in for every tile fetch.
 	 *

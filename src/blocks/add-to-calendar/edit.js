@@ -1,11 +1,11 @@
 /**
- * WordPress dependencies.
+ * WordPress dependencies
  */
 import { useBlockProps, InnerBlocks } from '@wordpress/block-editor';
 import { useSelect } from '@wordpress/data';
 
 /**
- * Internal dependencies.
+ * Internal dependencies
  */
 import TEMPLATE from './template';
 import { hasValidEventId, usePostTypeSupports, DISABLED_FIELD_OPACITY } from '../../helpers/event';

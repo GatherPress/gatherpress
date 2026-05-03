@@ -20,6 +20,7 @@ use PMC\Unit_Test\Utility;
  * @group migrate
  */
 class Test_Export extends Base {
+
 	/**
 	 * Coverage for setup_hooks.
 	 *

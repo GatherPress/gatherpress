@@ -1,5 +1,5 @@
 /**
- * WordPress dependencies.
+ * WordPress dependencies
  */
 import { __ } from '@wordpress/i18n';
 import domReady from '@wordpress/dom-ready';
@@ -12,7 +12,7 @@ import { registerPlugin } from '@wordpress/plugins';
 import { PluginDocumentSettingPanel } from '@wordpress/editor';
 
 /**
- * Internal dependencies.
+ * Internal dependencies
  */
 import { isEventPostType } from '../../helpers/event';
 import DateTimeRangePanel from './datetime-range';

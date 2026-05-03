@@ -24,6 +24,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
  * @since 1.0.0
  */
 class Form_Field {
+
 	/**
 	 * Processed form field attributes with defaults applied.
 	 *

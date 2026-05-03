@@ -1,5 +1,5 @@
 /**
- * WordPress dependencies.
+ * WordPress dependencies
  */
 import {
 	// eslint-disable-next-line @wordpress/no-unsafe-wp-apis
@@ -13,7 +13,7 @@ import { useSelect } from '@wordpress/data';
 import { memo, useState } from '@wordpress/element';
 
 /**
- * Internal dependencies.
+ * Internal dependencies
  */
 import TEMPLATE from './template';
 

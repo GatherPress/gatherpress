@@ -1,5 +1,5 @@
 /**
- * WordPress dependencies.
+ * WordPress dependencies
  */
 import { addFilter } from '@wordpress/hooks';
 import { createHigherOrderComponent } from '@wordpress/compose';
@@ -7,7 +7,7 @@ import { useSelect } from '@wordpress/data';
 import { useBlockProps } from '@wordpress/block-editor';
 
 /**
- * Internal dependencies.
+ * Internal dependencies
  */
 import { getFromSettings } from '../helpers/editor-settings';
 import { isEventPostType } from '../helpers/event';

@@ -1,5 +1,5 @@
 /**
- * Internal dependencies.
+ * Internal dependencies
  */
 import { DEFAULT_COLORS } from './constants';
 

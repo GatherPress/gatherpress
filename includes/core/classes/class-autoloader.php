@@ -23,6 +23,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
  * @since 1.0.0
  */
 class Autoloader {
+
 	/**
 	 * Register method for autoloader.
 	 *
@@ -71,8 +72,8 @@ class Autoloader {
 
 					if (
 						empty( $class_string ) ||
-						false === strpos( $class_string, '\\' ) ||
-						0 !== strpos( $class_string, $namespace_root )
+						! str_contains( $class_string, '\\' ) ||
+						! str_starts_with( $class_string, $namespace_root )
 					) {
 						continue;
 					}

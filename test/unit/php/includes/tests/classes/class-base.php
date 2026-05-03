@@ -16,6 +16,7 @@ use ReflectionMethod;
  * Define as abstract class to prevent test suite from scanning for test methods.
  */
 abstract class Base extends PMC_Base {
+
 	/**
 	 * Asserts hooks are registered correctly and counts them.
 	 *

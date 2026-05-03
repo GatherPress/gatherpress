@@ -25,6 +25,7 @@ use WP_Term;
  * @coversDefaultClass \GatherPress\Core\Venue\Venue
  */
 class Test_Venue extends Base {
+
 	/**
 	 * Asserts that the prior fully-qualified class name `GatherPress\Core\Venue` continues
 	 * to resolve to the current class `GatherPress\Core\Venue\Venue` via the alias map in

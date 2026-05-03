@@ -26,6 +26,7 @@ use WP_REST_Server;
  * @coversDefaultClass \GatherPress\Core\Geocoding
  */
 class Test_Geocoding extends Base {
+
 	/**
 	 * HTTP mock instance.
 	 *

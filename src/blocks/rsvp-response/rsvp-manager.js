@@ -1,5 +1,5 @@
 /**
- * WordPress dependencies.
+ * WordPress dependencies
  */
 import { useState, useEffect } from '@wordpress/element';
 import { __, _x } from '@wordpress/i18n';
@@ -9,7 +9,7 @@ import { useSelect } from '@wordpress/data';
 import { store as coreStore } from '@wordpress/core-data';
 
 /**
- * Internal dependencies.
+ * Internal dependencies
  */
 import { EVENT_REST_API } from '../../helpers/namespace';
 

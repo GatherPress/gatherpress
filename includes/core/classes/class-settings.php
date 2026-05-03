@@ -25,6 +25,7 @@ use GatherPress\Core\Traits\Singleton;
  * @since 1.0.0
  */
 class Settings {
+
 	/**
 	 * Enforces a single instance of this class.
 	 */

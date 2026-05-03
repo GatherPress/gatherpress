@@ -1,5 +1,5 @@
 /**
- * WordPress dependencies.
+ * WordPress dependencies
  */
 import {
 	BlockControls,
@@ -21,7 +21,7 @@ import { useDispatch, useSelect } from '@wordpress/data';
 import { createBlock, getBlockTypes } from '@wordpress/blocks';
 
 /**
- * Internal dependencies.
+ * Internal dependencies
  */
 import STANDARD_RSVP_FORM_TEMPLATE from './templates/standard-rsvp-form';
 import PatternPicker, { PatternChooserModal } from '../../components/PatternPicker';

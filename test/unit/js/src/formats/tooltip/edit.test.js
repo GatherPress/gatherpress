@@ -1,12 +1,12 @@
 /**
- * External dependencies.
+ * External dependencies
  */
 import { describe, expect, it, jest, beforeEach } from '@jest/globals';
 import { render, screen, fireEvent } from '@testing-library/react';
 import '@testing-library/jest-dom';
 
 /**
- * WordPress dependencies.
+ * WordPress dependencies
  */
 import { useCachedTruthy } from '@wordpress/block-editor';
 import {

@@ -1,19 +1,19 @@
 /**
- * External dependencies.
+ * External dependencies
  */
 import { render, act } from '@testing-library/react';
 import { expect, test, jest, beforeEach } from '@jest/globals';
 import '@testing-library/jest-dom';
 
 /**
- * WordPress dependencies.
+ * WordPress dependencies
  */
 jest.mock( '@wordpress/data', () => ( {
 	select: jest.fn(),
 } ) );
 
 /**
- * Internal dependencies.
+ * Internal dependencies
  */
 import MapEmbed from '@src/components/MapEmbed';
 import { select } from '@wordpress/data';

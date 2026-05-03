@@ -42,6 +42,7 @@ use WP_User;
  * @since 1.0.0
  */
 class Rest_Api {
+
 	/**
 	 * Enforces a single instance of this class.
 	 */
@@ -903,7 +904,7 @@ class Rest_Api {
 
 		// Add custom fields to data.
 		foreach ( $params as $key => $value ) {
-			if ( 0 === strpos( $key, 'gatherpress_custom_' ) ) {
+			if ( str_starts_with( $key, 'gatherpress_custom_' ) ) {
 				$data[ $key ] = $value;
 			}
 		}
