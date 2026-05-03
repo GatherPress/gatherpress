@@ -19,7 +19,7 @@ import {
 } from '@wordpress/components';
 import { useDispatch, useSelect } from '@wordpress/data';
 import { createBlock } from '@wordpress/blocks';
-import { useState } from '@wordpress/element';
+import { useMemo, useState } from '@wordpress/element';
 
 /**
  * Internal dependencies
@@ -49,7 +49,7 @@ function templateToBlocks( template ) {
 }
 
 /**
- * Starter patterns offered by the Venue block's pattern picker.
+ * Default starter patterns offered by the Venue block's pattern picker.
  *
  * Two layouts that share the address + phone + website + map base — one
  * prepends a `core/post-title` (intended for event posts where the title
@@ -59,31 +59,15 @@ function templateToBlocks( template ) {
  * type — the picker lists both and `<defaultTemplate>` (computed from
  * host context) decides which auto-loads when `patternPicked` is true.
  *
- * Filterable via `gatherpress.venuePatterns` so other plugins or themes
- * can register their own venue layouts. Each entry is shaped
+ * Run through the `gatherpress.venuePatterns` filter inside `Edit` (see
+ * the call site below for the post-type-aware contract) so other plugins
+ * or themes can register their own venue layouts. Each entry is shaped
  * `{ name, title, description, template }` — `template` is an `InnerBlocks`
  * tuple tree (`[ blockName, attributes, innerBlocks ]`).
  *
  * @since 1.0.0
- *
- * @param {Array} patterns Default array containing the bundled
- *                         "Venue Details with Title" and "Venue Details"
- *                         patterns.
- * @return {Array} Patterns shown in the picker modal, in display order.
- *
- * @example
- *   addFilter(
- *     'gatherpress.venuePatterns',
- *     'my-plugin/extra-venue-pattern',
- *     ( patterns ) => [ ...patterns, {
- *       name: 'my-plugin/map-only',
- *       title: __( 'Map only', 'my-plugin' ),
- *       description: __( '...', 'my-plugin' ),
- *       template: [ [ 'gatherpress/venue-map' ] ],
- *     } ]
- *   );
  */
-const PATTERNS = applyFilters( 'gatherpress.venuePatterns', [
+const DEFAULT_PATTERNS = [
 	{
 		name: 'gatherpress/venue-details-with-title',
 		title: __( 'Venue Details with Title', 'gatherpress' ),
@@ -102,7 +86,7 @@ const PATTERNS = applyFilters( 'gatherpress.venuePatterns', [
 		),
 		template: TEMPLATE_WITHOUT_TITLE,
 	},
-] );
+];
 
 const Edit = ( props ) => {
 	const { attributes, setAttributes, clientId, context } = props;
@@ -285,6 +269,52 @@ const Edit = ( props ) => {
 		isEventContext ? TEMPLATE_WITH_TITLE : TEMPLATE_WITHOUT_TITLE
 	);
 
+	/**
+	 * Patterns shown in the Venue block's picker modal.
+	 *
+	 * Receives the bundled defaults plus the host post type so consumers
+	 * can vary the offered patterns by where the block is being edited —
+	 * e.g. a companion plugin's `production` post type can swap in a
+	 * production-specific layout, while leaving the standard event/venue
+	 * picker untouched. `hostPostType` is the post type of the post being
+	 * edited (resolved from block context, falling back to the editor's
+	 * current post type).
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param {Array}       patterns     Default array containing the bundled
+	 *                                   "Venue Details with Title" and
+	 *                                   "Venue Details" patterns.
+	 * @param {string|null} hostPostType Post type of the post being edited.
+	 * @return {Array} Patterns shown in the picker modal, in display order.
+	 *
+	 * @example
+	 *   addFilter(
+	 *     'gatherpress.venuePatterns',
+	 *     'my-plugin/extra-venue-pattern',
+	 *     ( patterns, hostPostType ) => {
+	 *       if ( 'production' !== hostPostType ) {
+	 *         return patterns;
+	 *       }
+	 *       return [ ...patterns, {
+	 *         name: 'my-plugin/map-only',
+	 *         title: __( 'Map only', 'my-plugin' ),
+	 *         description: __( '...', 'my-plugin' ),
+	 *         template: [ [ 'gatherpress/venue-map' ] ],
+	 *       } ];
+	 *     }
+	 *   );
+	 */
+	const patterns = useMemo(
+		() =>
+			applyFilters(
+				'gatherpress.venuePatterns',
+				DEFAULT_PATTERNS,
+				effectivePostType
+			),
+		[ effectivePostType ]
+	);
+
 	const innerBlockCount = useSelect(
 		( select ) =>
 			select( blockEditorStore ).getBlocks( clientId ).length,
@@ -332,7 +362,7 @@ const Edit = ( props ) => {
 			) }
 			{ isToolbarChooserOpen && (
 				<PatternChooserModal
-					patterns={ PATTERNS }
+					patterns={ patterns }
 					onPick={ handlePatternPick }
 					onClose={ () => setIsToolbarChooserOpen( false ) }
 				/>
@@ -351,7 +381,7 @@ const Edit = ( props ) => {
 							'Choose a pattern for the venue.',
 							'gatherpress'
 						) }
-						patterns={ PATTERNS }
+						patterns={ patterns }
 						showStartBlank={ false }
 						onPick={ handlePatternPick }
 					/>

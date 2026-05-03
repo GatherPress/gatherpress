@@ -9,7 +9,7 @@ import { useState, useEffect } from '@wordpress/element';
 /**
  * Internal dependencies
  */
-import { hasEventPast } from '../../../helpers/event';
+import { hasEventPast, usePostTypeSupports } from '../../../helpers/event';
 
 /**
  * A panel component for notifying members about an event update.
@@ -25,6 +25,11 @@ const NotifyMembersPanel = () => {
 	const [ showNotifyPanel, setShowNotifyPanel ] = useState( false );
 	const { openModal } = useDispatch( 'gatherpress/email-modal' );
 	const isEmailSaving = useSelect( ( select ) => select( 'gatherpress/email-modal' ).isSaving(), [] );
+	// Email-update target is the RSVP attendee list, so the panel must only
+	// surface on post types that declare `gatherpress-rsvp` support. Event-
+	// date-only post types (e.g. theater productions) have no attendee list
+	// to email and would render a button that opens an empty-recipient modal.
+	const supportsRsvp = usePostTypeSupports( 'gatherpress-rsvp' );
 
 	const { currentStatus, isSaving, isDirty } = useSelect( ( select ) => {
 		const editorSelect = select( 'core/editor' );
@@ -39,8 +44,8 @@ const NotifyMembersPanel = () => {
 	useEffect( () => {
 		const isPostPublished = 'publish' === currentStatus && ! hasEventPast();
 
-		setShowNotifyPanel( isPostPublished );
-	}, [ currentStatus ] );
+		setShowNotifyPanel( isPostPublished && supportsRsvp );
+	}, [ currentStatus, supportsRsvp ] );
 
 	return (
 		showNotifyPanel && (

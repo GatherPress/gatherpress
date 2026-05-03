@@ -612,7 +612,26 @@ class Admin_List {
 
 		$placement = 2;
 		$insert    = array(
-			'datetime' => __( 'Event date &amp; time', 'gatherpress' ),
+			/**
+			 * Filters the label used for the event-date admin list column.
+			 *
+			 * Lets post types that declare `gatherpress-event-date` support relabel the
+			 * column without having to drop and re-add it via WordPress core's
+			 * `manage_{$post_type}_posts_columns` filter. A `production` post type can
+			 * surface the column as "Premiere date", a `release` post type as "Release
+			 * date", etc., while keeping the underlying `datetime` column key (and its
+			 * sortable behavior) unchanged.
+			 *
+			 * @since 1.0.0
+			 *
+			 * @param string $label     Default column label.
+			 * @param string $post_type Post type the admin list is currently rendering.
+			 */
+			'datetime' => apply_filters(
+				'gatherpress_event_datetime_label',
+				__( 'Event date &amp; time', 'gatherpress' ),
+				$post_type
+			),
 		);
 
 		// Only show the RSVPs column for post types that declare gatherpress-rsvp support.

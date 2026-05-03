@@ -3,7 +3,8 @@
  */
 import { __ } from '@wordpress/i18n';
 import domReady from '@wordpress/dom-ready';
-import { dispatch, select } from '@wordpress/data';
+import { dispatch, select, useSelect } from '@wordpress/data';
+import { applyFilters } from '@wordpress/hooks';
 import {
 	// eslint-disable-next-line @wordpress/no-unsafe-wp-apis
 	__experimentalVStack as VStack,
@@ -32,11 +33,50 @@ import { EventPluginDocumentSettings } from './slot';
  * the current post type is an event; otherwise, returns null.
  */
 const EventSettings = () => {
+	const currentPostType = useSelect(
+		( s ) => s( 'core/editor' )?.getCurrentPostType(),
+		[]
+	);
+
+	/**
+	 * Title of the editor's "Event settings" sidebar panel.
+	 *
+	 * Lets post types that declare `gatherpress-event-date` support relabel
+	 * the sidebar panel without re-implementing the slotfill — a
+	 * `production` post type can surface "Production settings" instead of
+	 * the default "Event settings", a `release` post type "Release settings",
+	 * etc. The panel name (`gatherpress-event-settings`) and its slot
+	 * registration are unchanged, so existing `EventPluginDocumentSettings`
+	 * fills keep mounting in the same panel.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param {string}      title    Default panel title ("Event settings").
+	 * @param {string|null} postType Post type currently being edited, or null
+	 *                               if the editor has not yet resolved one.
+	 * @return {string} Panel title rendered in the sidebar.
+	 *
+	 * @example
+	 *   addFilter(
+	 *     'gatherpress.eventSettingsPanelTitle',
+	 *     'my-plugin/production-panel-title',
+	 *     ( title, postType ) =>
+	 *       'production' === postType
+	 *         ? __( 'Production settings', 'my-plugin' )
+	 *         : title
+	 *   );
+	 */
+	const panelTitle = applyFilters(
+		'gatherpress.eventSettingsPanelTitle',
+		__( 'Event settings', 'gatherpress' ),
+		currentPostType
+	);
+
 	return (
 		isEventPostType() && (
 			<PluginDocumentSettingPanel
 				name="gatherpress-event-settings"
-				title={ __( 'Event settings', 'gatherpress' ) }
+				title={ panelTitle }
 				className="gatherpress-event-settings"
 			>
 				{ /* Extendable entry point for "Event Settings" panel. */ }

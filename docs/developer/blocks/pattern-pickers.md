@@ -140,6 +140,12 @@ Two patterns ship by default, both always available in the chooser:
 Authors can pick either regardless of host post type — the auto-load just
 picks the context-appropriate one when the picker is suppressed.
 
+The second callback argument is the **host post type** — the post type of
+the post being edited (resolved from block context, falling back to the
+editor's current post type). Branch on it to scope a pattern to a specific
+host (e.g. only on a companion plugin's `production` post type) without
+affecting the standard event/venue picker.
+
 ```js
 import { addFilter } from '@wordpress/hooks';
 import { __ } from '@wordpress/i18n';
@@ -147,18 +153,23 @@ import { __ } from '@wordpress/i18n';
 addFilter(
     'gatherpress.venuePatterns',
     'my-plugin/extra-venue-pattern',
-    ( patterns ) => [
-        ...patterns,
-        {
-            name: 'my-plugin/map-only',
-            title: __( 'Map only', 'my-plugin' ),
-            description: __(
-                'Just the embedded venue map, no contact details.',
-                'my-plugin'
-            ),
-            template: [ [ 'gatherpress/venue-map' ] ],
-        },
-    ]
+    ( patterns, hostPostType ) => {
+        if ( 'production' !== hostPostType ) {
+            return patterns;
+        }
+        return [
+            ...patterns,
+            {
+                name: 'my-plugin/map-only',
+                title: __( 'Map only', 'my-plugin' ),
+                description: __(
+                    'Just the embedded venue map, no contact details.',
+                    'my-plugin'
+                ),
+                template: [ [ 'gatherpress/venue-map' ] ],
+            },
+        ];
+    }
 );
 ```
 
