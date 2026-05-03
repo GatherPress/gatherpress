@@ -138,11 +138,6 @@ class Utility {
 		int $object_id,
 		int $user_id
 	): bool {
-		// Required by WP's auth_callback signature. We intentionally ignore
-		// the upstream verdict (`$allowed`) and the meta key — the meta layer
-		// must never be more permissive than the post that owns it.
-		unset( $allowed, $meta_key );
-
 		return user_can( $user_id, 'edit_post', $object_id );
 	}
 
