@@ -159,7 +159,7 @@ export function findEventPostById( selectFunc, postId ) {
 		);
 		if ( Array.isArray( records ) && 0 < records.length ) {
 			const post = records[ 0 ];
-			if ( post && 'publish' === post.status ) {
+			if ( 'publish' === post?.status ) {
 				return post;
 			}
 		}

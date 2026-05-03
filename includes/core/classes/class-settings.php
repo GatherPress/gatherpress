@@ -654,6 +654,9 @@ class Settings {
 			case 'autocomplete':
 				$params['field_options'] = $option_settings['field']['options'] ?? array();
 				break;
+			default:
+				// Field types without extra params (checkbox, etc.) render with the base $params.
+				break;
 		}
 
 		if ( $inherited ) {

@@ -338,7 +338,6 @@ const Edit = ( { attributes, setAttributes, clientId } ) => {
 					label={ __( 'Open on', 'gatherpress' ) }
 					value={ openOn }
 					isBlock
-					__nextHasNoMarginBottom
 					__next40pxDefaultSize
 					onChange={ ( value ) => setAttributes( { openOn: value } ) }
 				>

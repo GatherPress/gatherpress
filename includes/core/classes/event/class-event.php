@@ -479,10 +479,13 @@ class Event {
 				continue;
 			}
 
-			// Validate datetime fields vs timezone field.
-			if ( 'timezone' === $key && Validate::timezone( $result ) ) {
-				$data[ $key ] = $result;
-			} elseif ( Validate::datetime( $result ) ) {
+			// Timezone field validates as a tz string; datetime fields validate as a datetime.
+			// The trailing datetime check still runs for the timezone key so a mistyped value
+			// can fall back to datetime parsing, matching the prior elseif behavior.
+			if (
+				( 'timezone' === $key && Validate::timezone( $result ) )
+				|| Validate::datetime( $result )
+			) {
 				$data[ $key ] = $result;
 			}
 		}

@@ -125,9 +125,9 @@ export function hasValidBlockContext( {
 	// In Query Loop, require both valid post type support AND data.
 	if ( isDescendentOfQueryLoop ) {
 		const resolvedSupport =
-			undefined !== hasSupport
-				? hasSupport
-				: isPostTypeSupporting( support, postType );
+			undefined === hasSupport
+				? isPostTypeSupporting( support, postType )
+				: hasSupport;
 
 		return resolvedSupport && hasData;
 	}

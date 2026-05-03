@@ -443,7 +443,6 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 						</a>
 					</p>
 					<ToggleControl
-						__nextHasNoMarginBottom
 						label={ __( 'Append time zone', 'gatherpress' ) }
 						checked={
 							showTimezone

@@ -273,8 +273,8 @@ describe( 'RegenerateMapButton', () => {
 	} );
 
 	it( 'patches fresh descriptors into an empty meta object when current.meta is missing', async () => {
-		// A cached entity record that never got a `meta` key yet forces the
-		// `...( current.meta || {} )` spread to fall through to `{}`.
+		// A cached entity record that never got a `meta` key yet — the
+		// `...current.meta` spread is a no-op when the value is undefined.
 		mockCurrentEntityRecord = { id: 42 };
 		mockApiFetch.mockResolvedValueOnce( {
 			descriptors: {
@@ -425,6 +425,20 @@ describe( 'pickDescriptorForCombo', () => {
 		const descriptors = {
 			osm: { '18x600x300': osmDescriptor },
 			google: {},
+		};
+
+		expect(
+			pickDescriptorForCombo( descriptors, '18x600x300', 'google' )
+		).toBe( osmDescriptor );
+	} );
+
+	it( 'skips fallback providers that lack the combo and keeps scanning', () => {
+		// Object.keys preserves insertion order, so `empty` is visited first
+		// (candidate undefined → falsy branch of the inner `if`), then `osm`
+		// is visited and returns. Covers both branches of the candidate check.
+		const descriptors = {
+			empty: {},
+			osm: { '18x600x300': osmDescriptor },
 		};
 
 		expect(
