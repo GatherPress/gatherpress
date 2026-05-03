@@ -460,8 +460,10 @@ class Prewarm {
 	protected function collect_combos_from_block_templates(): array {
 		$combos = array();
 
-		if ( ! function_exists( 'get_block_templates' ) ) {
-			return $combos;
+		// Classic themes without FSE / `get_block_templates()` simply have
+		// no DB templates to scan — skip the rest of the function.
+		if ( ! function_exists( 'get_block_templates' ) ) { // @codeCoverageIgnore
+			return $combos; // @codeCoverageIgnore
 		}
 
 		foreach ( get_block_templates( array(), 'wp_template' ) as $template ) {

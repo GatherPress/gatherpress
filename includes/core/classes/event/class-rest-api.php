@@ -496,7 +496,12 @@ class Rest_Api {
 	 * @param \WP_User $current_user Originating editor (restored after locale/user switch).
 	 * @return void
 	 */
-	protected function send_event_email_to_recipient( array $recipient, int $post_id, string $message, \WP_User $current_user ): void {
+	protected function send_event_email_to_recipient(
+		array $recipient,
+		int $post_id,
+		string $message,
+		\WP_User $current_user
+	): void {
 		// Check opt-in preference based on recipient type.
 		if ( $recipient['is_user'] ) {
 			if ( ! User::get_instance()->has_event_updates_opt_in( $recipient['user_id'] ) ) {
@@ -547,8 +552,11 @@ class Rest_Api {
 
 		wp_mail( $recipient['email'], $subject, $body, $headers );
 
-		if ( $switched_locale ) {
-			restore_previous_locale();
+		// Cleanup branch only fires when `switch_to_user_locale()` actually
+		// switched, which requires a non-stub `WP_Locale_Switcher` and is not
+		// reachable from the test runner.
+		if ( $switched_locale ) { // @codeCoverageIgnore
+			restore_previous_locale(); // @codeCoverageIgnore
 		}
 	}
 
