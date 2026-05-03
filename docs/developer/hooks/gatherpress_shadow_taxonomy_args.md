@@ -30,7 +30,7 @@ add_filter(
 
 ## Files
 
-- [includes/core/classes/class-shadow-source.php:178](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/class-shadow-source.php#L178)
+- [includes/core/classes/class-shadow-source.php:179](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/class-shadow-source.php#L179)
 ```php
 apply_filters( 'gatherpress_shadow_taxonomy_args', $args, $post_type )
 ```
