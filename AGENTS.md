@@ -279,6 +279,50 @@ When working with this codebase:
 - **Drop dead `@SuppressWarnings(PHPMD.UnusedFormalParameter)` and inline `phpcs:ignore` comments when the parameter becomes used.** Suppressions are commitments to a known-bad state; once the underlying issue is fixed (e.g. the unused param is removed or starts being read), the suppression must go too. Leaving stale suppressions around hides future regressions of the same rule.
     - ✅ Good: `public function aql_query_vars( array $query_args, array $block_query ): array { ... }` — both params used, no annotation needed.
     - ❌ Bad: keeping `@SuppressWarnings(PHPMD.UnusedFormalParameter)` and `// phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed` after the unused parameter has been removed.
+- **Methods should have ≤3 `return` statements** (`php:S1142`, "This method has N returns, which is more than the 3 allowed"). Two patterns work depending on the shape of the function:
+    - **Switch dispatches** — assign to a `$result` variable and return once at the end. Each `case` body sets `$result` and `break;` instead of returning.
+    - **Guard chains** — combine multiple early bails into one `if (... || ... || ...)` with a single `return`. The `Why:` for each guard moves into a single explanatory comment above the merged condition rather than one comment per arm.
+    - ✅ Good (switch dispatch with one trailing return):
+
+        ```php
+        $result = false;
+        switch ( $config['type'] ) {
+            case 'email':
+                $sanitized = sanitize_email( $value );
+                $result    = is_email( $sanitized ) ? $sanitized : false;
+                break;
+            // ... other cases
+            default:
+                $result = sanitize_text_field( $value );
+                break;
+        }
+        return $result;
+        ```
+
+    - ✅ Good (combined guard):
+
+        ```php
+        // Skip non-shadow-source post types, updates, un-named or non-published
+        // posts in one guard so the function reads top-down rather than as a
+        // return chain.
+        if ( ! post_type_supports( $post->post_type, 'gatherpress-shadow-source' )
+            || $update
+            || empty( $post->post_name )
+            || 'publish' !== $post->post_status
+        ) {
+            return;
+        }
+        ```
+
+    - ❌ Bad: a four-arm `if (X) return; if (Y) return; if (Z) return; if (W) return;` chain when nothing else lives between them — that's the shape S1142 flags.
+    - **When NOT to merge:** if the bails surround `apply_filters` calls whose docblocks document the shape of each filter and matter to extension authors (e.g. `Geocoding::maybe_schedule_geocode`), keeping per-guard structure preserves the docs. Mark those instances won't-fix in SonarCloud rather than collapsing.
+- **Reduce function cognitive complexity by extracting helpers from tight loops or repeated branches** (`php:S3776`, "Refactor this function to reduce its Cognitive Complexity from N to the 15 allowed"). Each `if`, `for`, `while`, or logical operator inside a loop costs more cognitive points the deeper it nests, so the cheapest reductions are the ones that pull a nested-2-deep block up to a helper called once.
+    - ✅ Good (loop body extracted): the inner per-tile `fetch → decode → imagecopy` block in `Osm::render` moved into `paint_tile()`, dropping `render`'s complexity from 16 → ~10.
+    - ✅ Good (per-recipient logic extracted): `Rest_Api::send_emails`'s per-recipient `opt-in / locale-switch / wp_mail` block moved into `send_event_email_to_recipient()`.
+    - **Critical follow-up:** extracting a helper from a tight loop in the same class hits a known xdebug coverage gap — see the "Extracted same-class helpers and xdebug coverage tracing" rule in **Test Coverage** below. You must add a direct reflection-invoke test for every helper you extract.
+- **WP callback signatures with required-but-unused params: mark won't-fix in SonarCloud, don't paper over with `unset()`** (`php:S1172`). When a parameter exists only to satisfy a WordPress hook signature (`auth_callback`, `added_post_meta` action, `register_meta` callbacks), the right answer is to mark the Sonar finding as a false positive in the Sonar UI. Do *not* add `unset( $allowed, $meta_key );` lines or rename to `$_allowed` to silence — those add noise without communicating the constraint, and reviewers don't know whether the workaround can be removed later. The existing `@SuppressWarnings(PHPMD.UnusedFormalParameter)` docblock plus a one-line "required by WP's X signature" comment is enough; the won't-fix in Sonar carries the rest.
+    - ✅ Good: `public static function can_edit_post_meta( bool $allowed, string $meta_key, int $object_id, int $user_id ): bool { return user_can( $user_id, 'edit_post', $object_id ); }` plus a `@SuppressWarnings` docblock noting WP's contract — Sonar finding marked won't-fix.
+    - ❌ Bad: `unset( $allowed, $meta_key );` as the first line of the function body.
 - **Method organization**: Place related methods in logically grouped classes (e.g., form-related methods in `Rsvp_Form`)
 - **Singleton pattern**: Many GatherPress classes use the Singleton trait - check if a class has `use Singleton;`
     - **Singleton classes** (Blocks, Settings, Setup classes): Use `ClassName::get_instance()`
@@ -336,6 +380,28 @@ Coverage gaps flagged by SonarCloud or the `test:unit:js` / `test:unit:php` cove
 - **Never remove `@group multisite`** from test classes that carry it — those tests exist and run in CI.
 - **Never add `@codeCoverageIgnore`** to multisite-only code paths (e.g., `switch_to_blog`, `get_sites`, `is_plugin_active_for_network` branches) — those lines are covered by the multisite test run.
 - If the PR coverage check shows 0% for a class whose tests are in `@group multisite`, the most likely cause is that the multisite test suite is **failing** (e.g., a `test_setup_hooks` assertion no longer matches after a hook was changed). Fix the failing test rather than suppressing coverage.
+
+**Extracted same-class helpers and xdebug coverage tracing:** xdebug doesn't reliably trace lines inside `private` / `protected` methods that are called from a tight loop or short delegation in the same class. The method body executes (you can confirm with a `file_put_contents( '/tmp/probe.log', ... )` inside it) but `coverage.xml` reports the body as `count=0`. This bites every time you extract a helper for `php:S3776` cognitive-complexity reduction, and once for the inlined `current_screen_post_type()` helper in `Admin_List` before that — same shape, same gap.
+
+- **The fix:** add a direct test that invokes the helper via `Utility::invoke_hidden_method( $instance, 'helper_name', array( ... ) )`. xdebug traces through that call cleanly even when it doesn't trace the same call from inside the parent function. Cover each branch of the helper this way (one test per `return` path).
+- ✅ Good (after extracting `Osm::paint_tile` from `Osm::render`'s loop):
+
+    ```php
+    public function test_paint_tile_skips_when_fetch_returns_null(): void {
+        // ... install pre_http_request filter that returns WP_Error
+        $canvas = imagecreatetruecolor( 256, 256 );
+        Utility::invoke_hidden_method(
+            new OSM(),
+            'paint_tile',
+            array( $canvas, 0, 0, 1, 0, 0, 'https://example.test/{z}/{x}/{y}.png' )
+        );
+        $this->assertInstanceOf( GdImage::class, $canvas );
+    }
+    ```
+
+- ❌ Bad: relying on the existing `test_render_*` tests to cover `paint_tile` transitively — they exercise the code path (the helper IS called) but xdebug records the helper body as uncovered, and the PR coverage gate fails.
+- **Apply this proactively**, not just when the gate fails: any time you extract a helper for cognitive-complexity reduction, add the direct invokes in the same PR.
+- **Two cases that genuinely need `@codeCoverageIgnore`** even after adding direct invokes: (1) WP-locale-switcher cleanup branches like `if ( $switched_locale ) { restore_previous_locale(); }` — `switch_to_user_locale()` returns false in the test runner regardless of `get_user_locale` filters because the test env's `WP_Locale_Switcher` is stubbed; (2) classic-theme guards like `if ( ! function_exists( 'get_block_templates' ) ) { return; }` — the function always exists in the WP test bootstrap. Mark these with a short comment explaining what's untestable.
 
 When writing PHPUnit tests that need WordPress post context:
 
@@ -403,9 +469,14 @@ When working with JavaScript code:
     - ✅ Good: `return apiFetch( { path: ..., method: 'POST', data: ... } );`
     - ❌ Bad: `try { return await apiFetch( ... ); } catch ( error ) { throw error; }`
     - If you remove a try/catch wrapper that only existed for a now-deleted log statement, also drop the `async` keyword if the function no longer has an internal `await` — see the "no redundant `async`" rule below.
-- **No redundant `async`**: SonarCloud (`javascript:S4123`) flags `await` of a non-Thenable value, which is what its flow analysis reports when the function being awaited is `async` but contains no internal `await` (just a `return apiFetch(...)`-style body). Drop the `async` — `apiFetch` (and other returning-Promise helpers) already return a Promise, so the function still returns a Promise and the caller's `await fn()` remains valid.
-    - ✅ Good: `const createNewVenuePost = ( a, b ) => apiFetch( { ... } );`
-    - ❌ Bad: `const createNewVenuePost = async ( a, b ) => { return apiFetch( { ... } ); }` — async but no await, will trip Sonar at the call site.
+- **`javascript:S4123` ("`await` of a non-Thenable") needs a per-case decision**: Sonar's flow analysis is finicky about whether it can prove a function returns a Promise. Two sub-cases, and the right fix is different for each:
+    - **(a) Function is `async` with no internal `await`** (e.g. `async (a, b) => { return apiFetch({...}); }`): drop the `async`. The function still returns a Promise (via `apiFetch`) so callers' `await fn()` keeps working, and Sonar accepts the await on the Promise return type.
+        - ✅ Good: `const createNewVenuePost = ( a, b ) => apiFetch( { ... } );`
+        - ❌ Bad: `const createNewVenuePost = async ( a, b ) => { return apiFetch( { ... } ); }`
+    - **(b) Function is non-`async` and explicitly returns a Promise-returning call** (e.g. `(a, b) => apiFetch({...})`) **and Sonar still flags the await at the call site**: the JSDoc `@return {Object}` (or no `@return` at all) isn't enough for Sonar to infer Promise. Add the `async` keyword back. The "no redundant async" intuition fails here because Sonar is reading the type from the function signature, not the body. Update `@return` to `{Promise<Object>}` while you're there.
+        - ✅ Good: `const createNewVenuePost = async ( a, b ) => apiFetch( { ... } );` with `@return {Promise<Object>}`
+        - ❌ Bad: leaving the function non-`async` with `@return {Object}` while Sonar still flags two `await createNewVenuePost(...)` call sites.
+    - **Compare against a peer** before deciding which sub-case applies: if `geocodeAddress` (declared `async function`) is awaited next to `createNewVenuePost` and only the latter trips S4123, you're in case (b).
 - **No fragments with a single child** (`javascript:S6749`). Just return the child directly.
     - ✅ Good: `return ( <ComboboxControl ... /> );`
     - ❌ Bad: `return ( <><ComboboxControl ... /></> );`

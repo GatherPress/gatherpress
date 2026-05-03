@@ -493,14 +493,14 @@ class Rest_Api {
 	 * @param array    $recipient    Recipient row from `get_recipients()`.
 	 * @param int      $post_id      Event post ID.
 	 * @param string   $message      Optional editor-supplied message body.
-	 * @param \WP_User $current_user Originating editor (restored after locale/user switch).
+	 * @param WP_User  $current_user Originating editor (restored after locale/user switch).
 	 * @return void
 	 */
 	protected function send_event_email_to_recipient(
 		array $recipient,
 		int $post_id,
 		string $message,
-		\WP_User $current_user
+		WP_User $current_user
 	): void {
 		// Check opt-in preference based on recipient type.
 		if ( $recipient['is_user'] ) {
