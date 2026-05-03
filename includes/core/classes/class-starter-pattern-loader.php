@@ -47,7 +47,12 @@ class Starter_Pattern_Loader {
 		$files    = glob( rtrim( $dir, '/' ) . '/*.php' );
 
 		foreach ( (array) $files as $file ) {
-			$pattern = require_once $file;
+			// `require` (not `require_once`) is intentional: the loader uses
+			// each file's return value every call. `require_once` returns
+			// `true` after the first include, which collapses repeat loads
+			// (e.g. across PHPUnit tests in the same process) into empty
+			// pattern arrays.
+			$pattern = require $file; // NOSONAR — see comment above.
 
 			if ( is_array( $pattern ) && ! empty( $pattern['name'] ) ) {
 				$patterns[] = $pattern;
