@@ -1,10 +1,10 @@
 /**
- * External dependencies.
+ * External dependencies
  */
 import { describe, expect, it, jest, beforeEach, afterEach } from '@jest/globals';
 
 /**
- * WordPress dependencies.
+ * WordPress dependencies
  */
 import { dispatch, select } from '@wordpress/data';
 
@@ -15,7 +15,7 @@ jest.mock( '@wordpress/core-data', () => ( {
 } ) );
 
 /**
- * Internal dependencies.
+ * Internal dependencies
  */
 import {
 	enableSave,

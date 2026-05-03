@@ -1,5 +1,5 @@
 /**
- * WordPress dependencies.
+ * WordPress dependencies
  */
 import { useSelect, useDispatch } from '@wordpress/data';
 import { store as coreStore } from '@wordpress/core-data';
@@ -8,7 +8,7 @@ import { __unstableStripHTML as stripHTML } from '@wordpress/dom';
 import { useCallback } from '@wordpress/element';
 
 /**
- * Internal dependencies.
+ * Internal dependencies
  */
 import { isPostTypeSupporting } from '../../../helpers/event';
 import { getMetaKey } from '../helpers';

@@ -26,6 +26,7 @@ use WP_HTML_Tag_Processor;
  * @since 1.0.0
  */
 class Modal_Manager {
+
 	/**
 	 * Enforces a single instance of this class.
 	 */

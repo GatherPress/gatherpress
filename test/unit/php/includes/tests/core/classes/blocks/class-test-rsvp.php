@@ -20,6 +20,7 @@ use GatherPress\Tests\Base;
  * @coversDefaultClass \GatherPress\Core\Blocks\Rsvp
  */
 class Test_Rsvp extends Base {
+
 	/**
 	 * Tests the setup_hooks method.
 	 *

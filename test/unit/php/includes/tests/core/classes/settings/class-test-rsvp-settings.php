@@ -18,6 +18,7 @@ use PMC\Unit_Test\Utility;
  * @coversDefaultClass \GatherPress\Core\Settings\Rsvp_Settings
  */
 class Test_Rsvp_Settings extends Base {
+
 	/**
 	 * Coverage for get_slug method.
 	 *

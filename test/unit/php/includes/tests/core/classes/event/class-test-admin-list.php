@@ -21,6 +21,7 @@ use WP_Query;
  * @coversDefaultClass \GatherPress\Core\Event\Admin_List
  */
 class Test_Admin_List extends Base {
+
 	/**
 	 * Coverage for setup_hooks method.
 	 *
@@ -1006,7 +1007,7 @@ class Test_Admin_List extends Base {
 
 		// Should contain either ASC or DESC (defaults to ASC).
 		$this->assertTrue(
-			strpos( $result, 'ASC' ) !== false || strpos( $result, 'DESC' ) !== false,
+			str_contains( $result, 'ASC' ) || str_contains( $result, 'DESC' ),
 			'ORDER BY clause should contain ASC or DESC'
 		);
 

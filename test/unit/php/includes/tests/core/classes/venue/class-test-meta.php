@@ -20,6 +20,7 @@ use PMC\Unit_Test\Utility;
  * @coversDefaultClass \GatherPress\Core\Venue\Meta
  */
 class Test_Meta extends Base {
+
 	/**
 	 * Coverage for `__construct` and `setup_hooks`.
 	 *

@@ -1,5 +1,5 @@
 /**
- * External dependencies.
+ * External dependencies
  */
 import {
 	describe,
@@ -12,7 +12,7 @@ import {
 import '@testing-library/jest-dom';
 
 /**
- * WordPress dependencies.
+ * WordPress dependencies
  */
 jest.mock( '@wordpress/data', () => ( {
 	dispatch: jest.fn( () => ( {
@@ -62,7 +62,7 @@ jest.mock( '@wordpress/element', () => ( {
 } ) );
 
 /**
- * Internal dependencies.
+ * Internal dependencies
  */
 import {
 	generateBlockGuardStateKey,

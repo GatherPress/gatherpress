@@ -1,5 +1,5 @@
 /**
- * WordPress dependencies.
+ * WordPress dependencies
  */
 import { __, _x } from '@wordpress/i18n';
 import domReady from '@wordpress/dom-ready';
@@ -16,7 +16,7 @@ import apiFetch from '@wordpress/api-fetch';
 import { select, useSelect, useDispatch } from '@wordpress/data';
 
 /**
- * Internal dependencies.
+ * Internal dependencies
  */
 import { EVENT_REST_API } from '../../helpers/namespace';
 

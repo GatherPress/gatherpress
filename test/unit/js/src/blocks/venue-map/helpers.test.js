@@ -1,5 +1,5 @@
 /**
- * External dependencies.
+ * External dependencies
  */
 import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
@@ -48,7 +48,7 @@ jest.mock( '@wordpress/components', () => ( {
 } ) );
 
 /**
- * Internal dependencies.
+ * Internal dependencies
  */
 import {
 	MAX_POLLS,

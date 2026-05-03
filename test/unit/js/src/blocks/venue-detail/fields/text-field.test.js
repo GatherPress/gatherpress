@@ -1,11 +1,11 @@
 /**
- * External dependencies.
+ * External dependencies
  */
 import { describe, expect, it, jest } from '@jest/globals';
 import { render, screen } from '@testing-library/react';
 
 /**
- * Internal dependencies.
+ * Internal dependencies
  */
 import TextField from '@src/blocks/venue-detail/fields/text-field';
 

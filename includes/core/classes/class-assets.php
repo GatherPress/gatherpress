@@ -23,6 +23,7 @@ use GatherPress\Core\Traits\Singleton;
  * @since 1.0.0
  */
 class Assets {
+
 	/**
 	 * Enforces a single instance of this class.
 	 */

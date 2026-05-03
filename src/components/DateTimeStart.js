@@ -1,5 +1,5 @@
 /**
- * WordPress dependencies.
+ * WordPress dependencies
  */
 import {
 	Button,
@@ -14,7 +14,7 @@ import { useEffect } from '@wordpress/element';
 import { useDispatch, useSelect } from '@wordpress/data';
 
 /**
- * Internal dependencies.
+ * Internal dependencies
  */
 import { getStartOfWeek } from '../helpers/editor';
 import { hasEventPastNotice } from '../helpers/event';

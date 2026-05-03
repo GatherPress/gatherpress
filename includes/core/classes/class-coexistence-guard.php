@@ -29,6 +29,7 @@ use GatherPress\Core\Traits\Singleton;
  * @since 1.0.0
  */
 class Coexistence_Guard {
+
 	/**
 	 * Enforces a single instance of this class.
 	 */
@@ -119,7 +120,7 @@ class Coexistence_Guard {
 				continue;
 			}
 
-			if ( $slug !== $folder && 0 !== strpos( $folder, $folder_prefix ) ) {
+			if ( $slug !== $folder && ! str_starts_with( $folder, $folder_prefix ) ) {
 				continue;
 			}
 

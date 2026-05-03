@@ -18,6 +18,7 @@ use PMC\Unit_Test\Utility;
  * @coversDefaultClass \GatherPress\Core\Settings\Roles
  */
 class Test_Roles extends Base {
+
 	/**
 	 * Coverage for get_slug method.
 	 *

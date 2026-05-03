@@ -1,5 +1,5 @@
 /**
- * WordPress dependencies.
+ * WordPress dependencies
  */
 import { __ } from '@wordpress/i18n';
 import { Popover, Spinner, TextControl } from '@wordpress/components';
@@ -13,7 +13,7 @@ import {
 } from '@wordpress/element';
 
 /**
- * Internal dependencies.
+ * Internal dependencies
  */
 import { useAddressFieldAntiAutofill } from './use-address-field-anti-autofill';
 import {

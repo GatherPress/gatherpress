@@ -1,12 +1,12 @@
 /**
- * External dependencies.
+ * External dependencies
  */
 import { describe, expect, jest, it, beforeEach } from '@jest/globals';
 import moment from 'moment';
 import 'moment-timezone';
 
 /**
- * WordPress dependencies.
+ * WordPress dependencies
  */
 import { dispatch } from '@wordpress/data';
 
@@ -24,7 +24,7 @@ jest.mock( '@wordpress/core-data', () => ( {
 } ) );
 
 /**
- * Internal dependencies.
+ * Internal dependencies
  */
 import {
 	hasEventPast,

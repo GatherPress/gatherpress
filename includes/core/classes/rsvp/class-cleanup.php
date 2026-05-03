@@ -23,6 +23,7 @@ use GatherPress\Core\Traits\Singleton;
  * This class manages rsvp cleanup events.
  */
 class Cleanup {
+
 	use Singleton;
 
 	/**

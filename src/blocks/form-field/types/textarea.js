@@ -1,11 +1,11 @@
 /**
- * WordPress dependencies.
+ * WordPress dependencies
  */
 import { __ } from '@wordpress/i18n';
 import { RichText } from '@wordpress/block-editor';
 
 /**
- * Internal dependencies.
+ * Internal dependencies
  */
 import {
 	getInputStyles,

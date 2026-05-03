@@ -1,5 +1,5 @@
 /**
- * WordPress dependencies.
+ * WordPress dependencies
  */
 import { select, useSelect } from '@wordpress/data';
 import { useMemo } from '@wordpress/element';

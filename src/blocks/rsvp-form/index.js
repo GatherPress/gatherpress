@@ -1,5 +1,5 @@
 /**
- * WordPress dependencies.
+ * WordPress dependencies
  */
 import { registerBlockType } from '@wordpress/blocks';
 import { useBlockProps, InnerBlocks, InspectorAdvancedControls } from '@wordpress/block-editor';
@@ -11,7 +11,7 @@ import { addFilter } from '@wordpress/hooks';
 import { select, dispatch, useSelect } from '@wordpress/data';
 
 /**
- * Internal dependencies.
+ * Internal dependencies
  */
 import edit from './edit';
 import metadata from './block.json';

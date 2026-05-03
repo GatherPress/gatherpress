@@ -1,10 +1,10 @@
 /**
- * External dependencies.
+ * External dependencies
  */
 import { describe, expect, it } from '@jest/globals';
 
 /**
- * Internal dependencies.
+ * Internal dependencies
  */
 import { calculateMode, getNewTaxonomyIds } from '@src/blocks/venue/helpers';
 

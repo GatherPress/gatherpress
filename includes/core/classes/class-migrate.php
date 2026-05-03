@@ -22,6 +22,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
  * @since 1.0.0
  */
 class Migrate {
+
 	/**
 	 * List of non-existent post_meta keys with array values containing getter and setter callback definitions.
 	 *

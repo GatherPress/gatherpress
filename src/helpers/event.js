@@ -1,16 +1,16 @@
 /**
- * External dependencies.
+ * External dependencies
  */
 import moment from 'moment';
 
 /**
- * WordPress dependencies.
+ * WordPress dependencies
  */
 import { dispatch, select, useSelect } from '@wordpress/data';
 import { __ } from '@wordpress/i18n';
 
 /**
- * Internal dependencies.
+ * Internal dependencies
  */
 import { createMomentWithTimezone, getTimezone } from './datetime';
 import { getVenueTaxonomy, getVenuePostType } from './venue';

@@ -17,6 +17,7 @@ use GatherPress\Tests\Base;
  * @coversDefaultClass \GatherPress\Core\Blocks\Form_Field
  */
 class Test_Form_Field extends Base {
+
 	/**
 	 * Tests the constructor and attribute processing.
 	 *

@@ -1,5 +1,5 @@
 /**
- * Internal dependencies.
+ * Internal dependencies
  */
 import EnableOpenRsvp from '../../../components/EnableOpenRsvp';
 

@@ -1,5 +1,5 @@
 /**
- * WordPress dependencies.
+ * WordPress dependencies
  */
 import { __ } from '@wordpress/i18n';
 import { useBlockProps, InspectorControls } from '@wordpress/block-editor';
@@ -13,7 +13,7 @@ import {
 } from '@wordpress/components';
 
 /**
- * Internal dependencies.
+ * Internal dependencies
  */
 import DefaultField from './types/default';
 import RadioField from './types/radio';

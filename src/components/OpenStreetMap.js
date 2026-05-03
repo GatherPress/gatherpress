@@ -1,17 +1,17 @@
 /**
- * External dependencies.
+ * External dependencies
  */
 import { v4 as uuidv4 } from 'uuid';
 
 /**
- * WordPress dependencies.
+ * WordPress dependencies
  */
 import { sprintf, __ } from '@wordpress/i18n';
 import { useEffect, useState, useRef } from '@wordpress/element';
 import { select } from '@wordpress/data';
 
 /**
- * Internal dependencies.
+ * Internal dependencies
  */
 import { getFromConfig } from '../helpers/editor-settings';
 

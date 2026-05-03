@@ -1,5 +1,5 @@
 /**
- * WordPress dependencies.
+ * WordPress dependencies
  */
 import { BlockPreview } from '@wordpress/block-editor';
 import { createBlock } from '@wordpress/blocks';

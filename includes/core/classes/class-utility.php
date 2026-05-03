@@ -25,6 +25,7 @@ use WP_HTML_Tag_Processor;
  * @since 1.0.0
  */
 class Utility {
+
 	/**
 	 * Renders a template file.
 	 *
@@ -69,7 +70,7 @@ class Utility {
 	 * @return string The key with the 'gatherpress_' prefix.
 	 */
 	public static function prefix_key( string $key ): string {
-		if ( 0 !== strpos( $key, 'gatherpress_' ) ) {
+		if ( ! str_starts_with( $key, 'gatherpress_' ) ) {
 			$key = sprintf( 'gatherpress_%s', $key );
 		}
 
@@ -337,7 +338,7 @@ class Utility {
 		$timezone_string = get_option( 'timezone_string' );
 
 		// Remove old Etc mappings. Fallback to gmt_offset.
-		if ( false !== strpos( $timezone_string, 'Etc/GMT' ) ) {
+		if ( str_contains( $timezone_string, 'Etc/GMT' ) ) {
 			$timezone_string = '';
 		}
 
@@ -412,9 +413,9 @@ class Utility {
 			$hours   = 0;
 			$minutes = 0;
 
-			if ( false !== strpos( $value, ':' ) ) {
+			if ( str_contains( $value, ':' ) ) {
 				list( $hours, $minutes ) = array_map( 'intval', explode( ':', $value ) );
-			} elseif ( false !== strpos( $value, '.' ) ) {
+			} elseif ( str_contains( $value, '.' ) ) {
 				$hours   = (int) $value;
 				$minutes = (int) round( ( (float) $value - $hours ) * 60 );
 			} else {

@@ -1,5 +1,5 @@
 /**
- * Internal dependencies.
+ * Internal dependencies
  */
 import DateTimeRange from '../../../components/DateTimeRange';
 

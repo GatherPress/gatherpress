@@ -28,6 +28,7 @@ use WP_REST_Server;
  * @coversDefaultClass \GatherPress\Core\Event\Rest_Api
  */
 class Test_Rest_Api extends Base {
+
 	/**
 	 * Enable open RSVP for all tests in this class so RSVP form submission paths are exercisable.
 	 *

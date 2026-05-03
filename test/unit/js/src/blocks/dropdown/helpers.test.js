@@ -1,16 +1,16 @@
 /**
- * External dependencies.
+ * External dependencies
  */
 import { renderHook } from '@testing-library/react';
 import { describe, expect, it, jest, afterEach } from '@jest/globals';
 
 /**
- * WordPress dependencies.
+ * WordPress dependencies
  */
 import { useSelect } from '@wordpress/data';
 
 /**
- * Internal dependencies.
+ * Internal dependencies
  */
 import { useIsBlockOrDescendantSelected } from '@src/blocks/dropdown/helpers';
 

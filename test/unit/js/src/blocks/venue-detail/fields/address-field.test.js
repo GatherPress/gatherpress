@@ -1,5 +1,5 @@
 /**
- * External dependencies.
+ * External dependencies
  */
 import { describe, expect, it, jest, beforeEach, afterEach } from '@jest/globals';
 import {
@@ -11,7 +11,7 @@ import {
 } from '@testing-library/react';
 
 /**
- * Internal dependencies.
+ * Internal dependencies
  */
 import { useEffect, useState } from '@wordpress/element';
 import AddressField from '@src/blocks/venue-detail/fields/address-field';

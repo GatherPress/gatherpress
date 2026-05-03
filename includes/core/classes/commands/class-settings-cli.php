@@ -24,6 +24,7 @@ use WP_CLI;
  * @since 1.0.0
  */
 class Settings_Cli extends WP_CLI {
+
 	/**
 	 * Export GatherPress settings to JSON.
 	 *

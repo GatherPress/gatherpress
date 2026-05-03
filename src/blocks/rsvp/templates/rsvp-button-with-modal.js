@@ -1,5 +1,5 @@
 /**
- * Internal dependencies.
+ * Internal dependencies
  */
 import ATTENDING from './attending';
 import NO_STATUS from './no-status';

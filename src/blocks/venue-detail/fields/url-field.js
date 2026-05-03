@@ -1,5 +1,5 @@
 /**
- * WordPress dependencies.
+ * WordPress dependencies
  */
 import { __ } from '@wordpress/i18n';
 import { BlockControls, RichText } from '@wordpress/block-editor';
@@ -13,7 +13,7 @@ import { useState, useRef } from '@wordpress/element';
 import { link as linkIcon } from '@wordpress/icons';
 
 /**
- * Internal dependencies.
+ * Internal dependencies
  */
 import { cleanUrlForDisplay } from '../helpers';
 

@@ -18,6 +18,7 @@ use GatherPress\Tests\Base;
  * @coversDefaultClass \GatherPress\Core\Validate
  */
 class Test_Validate extends Base {
+
 	/**
 	 * Coverage for rsvp_status method.
 	 *

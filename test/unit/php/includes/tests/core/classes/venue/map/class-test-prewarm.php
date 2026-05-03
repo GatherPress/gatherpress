@@ -21,6 +21,7 @@ use PMC\Unit_Test\Utility;
  * @coversDefaultClass \GatherPress\Core\Venue\Map\Prewarm
  */
 class Test_Prewarm extends Base {
+
 	/**
 	 * Clear scheduled warm events between tests — wp_next_scheduled lookups
 	 * otherwise leak across cases and skew dedup assertions.

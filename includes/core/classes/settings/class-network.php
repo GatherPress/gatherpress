@@ -29,6 +29,7 @@ use GatherPress\Core\Utility;
  * @since 1.0.0
  */
 class Network {
+
 	/**
 	 * Enforces a single instance of this class.
 	 */

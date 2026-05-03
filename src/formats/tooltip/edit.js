@@ -1,5 +1,5 @@
 /**
- * WordPress dependencies.
+ * WordPress dependencies
  */
 import { useState, useCallback } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
@@ -24,7 +24,7 @@ import {
 import { comment } from '@wordpress/icons';
 
 /**
- * Internal dependencies.
+ * Internal dependencies
  */
 import { FORMAT_NAME, DEFAULT_COLORS } from './constants';
 import { getTooltipAttributes } from './helpers';

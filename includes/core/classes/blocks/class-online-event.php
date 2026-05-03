@@ -23,6 +23,7 @@ use WP_Block;
  * @since 1.0.0
  */
 class Online_Event {
+
 	/**
 	 * Enforces a single instance of this class.
 	 */

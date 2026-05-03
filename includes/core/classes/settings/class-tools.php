@@ -26,6 +26,7 @@ use GatherPress\Core\Utility;
  * @since 1.0.0
  */
 class Tools extends Base {
+
 	/**
 	 * Enforces a single instance of this class.
 	 */

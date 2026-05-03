@@ -1,10 +1,10 @@
 /**
- * External dependencies.
+ * External dependencies
  */
 import { describe, expect, it, beforeEach, afterEach } from '@jest/globals';
 
 /**
- * Internal dependencies.
+ * Internal dependencies
  */
 import {
 	toCamelCase,

@@ -22,6 +22,7 @@ use GatherPress\Tests\Base;
  * @coversDefaultClass \GatherPress\Core\Shadow_Source
  */
 class Test_Shadow_Source extends Base {
+
 	/**
 	 * Coverage for __construct and setup_hooks.
 	 *

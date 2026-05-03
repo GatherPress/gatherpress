@@ -1,5 +1,5 @@
 /**
- * WordPress dependencies.
+ * WordPress dependencies
  */
 import { __ } from '@wordpress/i18n';
 import { useBlockProps, InspectorControls } from '@wordpress/block-editor';
@@ -9,7 +9,7 @@ import { useSelect } from '@wordpress/data';
 import apiFetch from '@wordpress/api-fetch';
 
 /**
- * Internal dependencies.
+ * Internal dependencies
  */
 import { hasValidEventId, DISABLED_FIELD_OPACITY, getEventMeta, usePostTypeSupports, isRsvpEnabledForEvent } from '../../helpers/event';
 import { EVENT_REST_API } from '../../helpers/namespace';

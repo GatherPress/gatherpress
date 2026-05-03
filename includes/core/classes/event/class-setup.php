@@ -34,6 +34,7 @@ use WP_Post;
  * @since 1.0.0
  */
 class Setup {
+
 	/**
 	 * Enforces a single instance of this class.
 	 */
@@ -328,7 +329,7 @@ class Setup {
 	 * @return string|false The filtered redirect URL or false to cancel redirect.
 	 */
 	public function disable_ics_canonical_redirect( $redirect_url, string $requested_url ) {
-		if ( false !== strpos( $requested_url, '.ics' ) ) {
+		if ( str_contains( $requested_url, '.ics' ) ) {
 			return false; // prevent canonical redirect.
 		}
 

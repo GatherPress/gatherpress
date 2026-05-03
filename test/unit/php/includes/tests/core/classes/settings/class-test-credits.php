@@ -19,6 +19,7 @@ use PMC\Unit_Test\Utility;
  * @coversDefaultClass \GatherPress\Core\Settings\Credits
  */
 class Test_Credits extends Base {
+
 	/**
 	 * Coverage for setup_hooks method.
 	 *

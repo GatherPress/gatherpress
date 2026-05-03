@@ -33,6 +33,7 @@ use Throwable;
  * @since 1.0.0
  */
 class OSM extends Base {
+
 	/**
 	 * Default XYZ tile URL template. CartoDB's "light_all" basemap —
 	 * keyless, fast CDN, fits the GatherPress aesthetic.

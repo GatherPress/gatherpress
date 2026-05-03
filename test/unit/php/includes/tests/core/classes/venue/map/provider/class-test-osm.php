@@ -25,6 +25,7 @@ use PMC\Unit_Test\Utility;
  * @coversDefaultClass \GatherPress\Core\Venue\Map\Provider\OSM
  */
 class Test_OSM extends Base {
+
 	/**
 	 * Minimal valid 1×1 PNG used as a stand-in for every tile fetch.
 	 * Keeping the payload tiny means tests stay fast and any code path

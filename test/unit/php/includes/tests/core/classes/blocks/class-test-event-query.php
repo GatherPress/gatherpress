@@ -18,6 +18,7 @@ use GatherPress\Tests\Base;
  * @coversDefaultClass \GatherPress\Core\Blocks\Event_Query
  */
 class Test_Event_Query extends Base {
+
 	/**
 	 * Tests the setup_hooks method.
 	 *

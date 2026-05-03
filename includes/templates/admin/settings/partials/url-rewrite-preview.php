@@ -17,9 +17,13 @@ if ( ! isset( $name, $value, $suffix ) ) {
 }
 
 $gatherpress_component_attrs = array(
-	'name'   => $name,
-	'value'  => ! empty( $value ) ? $value : '',
-	'suffix' => $suffix,
+	'name'    => $name,
+	'value'   => ! empty( $value ) ? $value : '',
+	'suffix'  => $suffix,
+	// Settings page is a non-block-editor screen, so the home URL has to
+	// ride along on the data attrs. Reading it from the editor settings
+	// store the way block-editor components do would resolve to undefined.
+	'homeUrl' => home_url(),
 );
 ?>
 <p>
