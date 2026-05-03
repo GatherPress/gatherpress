@@ -215,45 +215,37 @@ class Prewarm {
 	 * @return void
 	 */
 	public function on_post_saved( int $post_id, WP_Post $post ): void {
-		if ( wp_is_post_revision( $post_id ) || wp_is_post_autosave( $post_id ) ) {
-			return;
-		}
-
-		// Only published posts contribute to the cached render set — a
-		// draft/auto-draft venue hasn't been seen by any front-end request,
-		// a trashed one shouldn't get new warm jobs scheduled against it,
-		// and an unpublished template won't render. The scan paths reading
-		// venue / event content already filter `post_status => publish`, so
-		// this gate keeps the save-hook path consistent.
-		if ( 'publish' !== $post->post_status ) {
+		// Skip revisions, autosaves, and non-published posts in one guard.
+		// A draft/auto-draft venue hasn't been seen by any front-end request,
+		// a trashed one shouldn't get new warm jobs scheduled against it, and
+		// an unpublished template won't render. The scan paths reading venue
+		// / event content already filter `post_status => publish`, so this
+		// gate keeps the save-hook path consistent.
+		if ( wp_is_post_revision( $post_id )
+			|| wp_is_post_autosave( $post_id )
+			|| 'publish' !== $post->post_status
+		) {
 			return;
 		}
 
 		if ( in_array( $post->post_type, array( 'wp_template', 'wp_template_part' ), true ) ) {
 			$this->enqueue_for_all_venues( $this->collect_combos_from_content( $post->post_content ) );
-			return;
-		}
-
-		if ( post_type_supports( $post->post_type, 'gatherpress-venue-information' ) ) {
+		} elseif ( post_type_supports( $post->post_type, 'gatherpress-venue-information' ) ) {
 			$this->enqueue_for_venue( $post_id );
-			return;
-		}
-
-		// Event post types (or any post type that carries venue-map inside
-		// a gatherpress/venue parent). Collect combos from the post's own
-		// content, but enqueue those combos against the associated venue,
-		// not against the event post itself.
-		if ( post_type_supports( $post->post_type, 'gatherpress-venue' ) ) {
+		} elseif ( post_type_supports( $post->post_type, 'gatherpress-venue' ) ) {
+			// Event post types (or any post type that carries venue-map inside
+			// a gatherpress/venue parent). Collect combos from the post's own
+			// content, but enqueue those combos against the associated venue,
+			// not against the event post itself.
 			$combos = $this->collect_combos_from_content( $post->post_content );
-			if ( empty( $combos ) ) {
-				return;
-			}
 
-			$venue = Venue_Setup::get_instance()->get_venue_post_from_event_post_id( $post_id );
+			if ( ! empty( $combos ) ) {
+				$venue = Venue_Setup::get_instance()->get_venue_post_from_event_post_id( $post_id );
 
-			if ( $venue instanceof WP_Post ) {
-				foreach ( $combos as $combo ) {
-					$this->enqueue_warm_job( $venue->ID, $combo );
+				if ( $venue instanceof WP_Post ) {
+					foreach ( $combos as $combo ) {
+						$this->enqueue_warm_job( $venue->ID, $combo );
+					}
 				}
 			}
 		}

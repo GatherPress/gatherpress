@@ -669,33 +669,27 @@ class List_Table extends WP_List_Table {
 	public function process_bulk_action(): void {
 		$nonce = isset( $_REQUEST['_wpnonce'] ) ? sanitize_text_field( wp_unslash( $_REQUEST['_wpnonce'] ) ) : '';
 
-		if ( ! $nonce || ! wp_verify_nonce( $nonce, Rsvp::COMMENT_TYPE ) ) {
-			// Check for delete action nonce separately.
-			if ( 'delete' === $this->current_action() ) {
-				if (
-					! isset( $_REQUEST['_wpnonce'] ) ||
-					! wp_verify_nonce(
-						sanitize_text_field( wp_unslash( $_REQUEST['_wpnonce'] ) ),
-						'gatherpress_rsvp_action'
-					)
-				) {
-					return;
-				}
-			} else {
-				return;
-			}
-		}
+		// Accept either the standard comment-type nonce, or — only for the
+		// `delete` action — the dedicated `gatherpress_rsvp_action` nonce
+		// the row-action emits. Cap check folds in for a single guard.
+		$valid_nonce = $nonce && (
+			wp_verify_nonce( $nonce, Rsvp::COMMENT_TYPE )
+			|| ( 'delete' === $this->current_action()
+				&& wp_verify_nonce( $nonce, 'gatherpress_rsvp_action' )
+			)
+		);
 
-		if ( ! current_user_can( Rsvp::CAPABILITY ) ) {
+		if ( ! $valid_nonce || ! current_user_can( Rsvp::CAPABILITY ) ) {
 			return;
 		}
 
 		$rsvp_ids = array();
 
-		if ( isset( $_REQUEST['gatherpress_rsvp_id'] ) && is_array( $_REQUEST['gatherpress_rsvp_id'] ) ) {
-			$rsvp_ids = array_map( 'intval', $_REQUEST['gatherpress_rsvp_id'] );
-		} elseif ( isset( $_REQUEST['gatherpress_rsvp_id'] ) ) {
-			$rsvp_ids = array( intval( $_REQUEST['gatherpress_rsvp_id'] ) );
+		if ( isset( $_REQUEST['gatherpress_rsvp_id'] ) ) {
+			$raw_input = wp_unslash( $_REQUEST['gatherpress_rsvp_id'] );
+			$rsvp_ids  = is_array( $raw_input )
+				? array_map( 'intval', $raw_input )
+				: array( intval( $raw_input ) );
 		}
 
 		if ( empty( $rsvp_ids ) ) {

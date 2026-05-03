@@ -32,6 +32,16 @@ class Setup {
 	use Singleton;
 
 	/**
+	 * Pattern slug for the event template — the anchor that the
+	 * `core/paragraph` hooked block (and others) attach to.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @var string
+	 */
+	const EVENT_TEMPLATE_PATTERN = 'gatherpress/event-template';
+
+	/**
 	 * Class constructor.
 	 *
 	 * This method initializes the object and sets up necessary hooks.
@@ -148,7 +158,7 @@ class Setup {
 
 		$block_patterns = array(
 			array(
-				'gatherpress/event-template',
+				self::EVENT_TEMPLATE_PATTERN,
 				array(
 					'title'       => __( 'Event Post Default Content', 'gatherpress' ),
 					'description' => $hook_anchor_description,
@@ -214,9 +224,9 @@ class Setup {
 			return $hooked_block_types;
 		}
 
-		// Hook blocks into the "gatherpress/event-template" pattern.
+		// Hook blocks into the event-template pattern.
 		if (
-			'gatherpress/event-template' === $context['name'] &&
+			self::EVENT_TEMPLATE_PATTERN === $context['name'] &&
 			'gatherpress/event-date' === $anchor_block_type &&
 			'after' === $relative_position
 		) {
@@ -265,12 +275,12 @@ class Setup {
 	): ?array {
 		// Bail when a previous filter suppressed the block, when the hook
 		// target isn't a pattern, or when the pattern / anchor block /
-		// position don't match the gatherpress/event-template anchor we
-		// inject the opener paragraph after.
+		// position don't match the event-template anchor we inject the
+		// opener paragraph after.
 		if ( is_null( $parsed_hooked_block )
 			|| ! is_array( $context )
 			|| ! isset( $context['name'] )
-			|| 'gatherpress/event-template' !== $context['name']
+			|| self::EVENT_TEMPLATE_PATTERN !== $context['name']
 			|| 'gatherpress/event-date' !== $parsed_anchor_block['blockName']
 			|| 'after' !== $relative_position
 		) {

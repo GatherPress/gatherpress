@@ -1496,22 +1496,18 @@ class Map {
 
 		$base_dir = trailingslashit( $dirs['basedir'] ) . self::UPLOADS_SUBDIR;
 		$base_url = trailingslashit( $dirs['baseurl'] ) . self::UPLOADS_SUBDIR;
-
-		// uploads/ not writable or disk full — can't reproduce in a unit test without breaking the test filesystem.
-		if ( ! wp_mkdir_p( $base_dir ) ) { // @codeCoverageIgnore
-			return null; // @codeCoverageIgnore
-		}
-
 		$filename = $this->filename_for( $address, $zoom, $width, $height, $provider, $density );
 		$path     = trailingslashit( $base_dir ) . $filename;
-		$url      = trailingslashit( $base_url ) . $filename;
 
-		// Disk fills up mid-write, or target dir lost write permission between the mkdir check and the imagepng call.
-		if ( ! imagepng( $image, $path ) ) { // @codeCoverageIgnore
+		// Filesystem failure modes — uploads/ not writable, disk full, or
+		// directory loses write permission between mkdir and imagepng. Neither
+		// branch is reliably reproducible in a unit test without breaking the
+		// test filesystem; the `||` short-circuits on the happy path.
+		if ( ! wp_mkdir_p( $base_dir ) || ! imagepng( $image, $path ) ) { // @codeCoverageIgnore
 			return null; // @codeCoverageIgnore
 		}
 
-		return $url;
+		return trailingslashit( $base_url ) . $filename;
 	}
 
 	/**
