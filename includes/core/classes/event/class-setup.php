@@ -378,21 +378,31 @@ class Setup {
 	/**
 	 * Handle event post type archive requests.
 	 *
-	 * When visiting the event archive URL (e.g., /event/), this method checks
-	 * if a WordPress page exists with the same slug. If a page exists, it
-	 * redirects to that page. Otherwise, it triggers a 404 error.
+	 * When visiting the event archive URL (e.g., /event/), this method
+	 * resolves what to render in the following order:
 	 *
-	 * This prevents the default archive behavior where visiting /event/ shows
-	 * a confusing list of events that may not be in a useful order.
+	 * 1. If a published page exists at the configured event slug, that
+	 *    page wins. If the page is also assigned as the upcoming or past
+	 *    archive page in settings, the archive query is rewritten with
+	 *    the matching ordering; otherwise the page is served as a
+	 *    regular page.
+	 * 2. Otherwise, fall back to the **Event Archive** setting (see
+	 *    {@see self::get_event_archive_mode()}):
+	 *      - `upcoming` (default) — rewrite the main query as the
+	 *        upcoming events archive (ASC, datetime ≥ now).
+	 *      - `past` — rewrite as the past events archive (DESC,
+	 *        datetime < now).
+	 *      - `none` — trigger a 404.
 	 *
-	 * Note: We keep `has_archive => true` on the post type registration because
-	 * it is required for the event feed URLs (e.g., /event/feed/) to work. The
-	 * Feed class provides customized RSS feeds for upcoming and past events.
-	 * Setting `has_archive => false` would cause feed URLs to 404.
+	 * `has_archive => true` stays on the post type registration because
+	 * it is required for the event feed URLs (e.g., /event/feed/) to
+	 * work; the Feed class serves those. Setting `has_archive => false`
+	 * would make feed URLs 404 in every mode.
 	 *
 	 * @since 1.0.0
 	 *
 	 * @see Feed::handle_events_feed_query()
+	 * @see self::get_event_archive_mode()
 	 *
 	 * @return void
 	 */
@@ -422,7 +432,28 @@ class Setup {
 		$page = get_page_by_path( $rewrite_slug );
 
 		if ( ! ( $page instanceof WP_Post ) || 'publish' !== $page->post_status ) {
-			// No page exists with this slug, so trigger a 404.
+			// No page exists with this slug — fall back to the configured
+			// archive mode.
+			$mode = $this->get_event_archive_mode();
+
+			if ( 'upcoming' === $mode || 'past' === $mode ) {
+				$paged = get_query_var( 'paged', 1 );
+
+				$wp_query->query(
+					array(
+						'post_type'              => Event::POST_TYPE,
+						Query::EVENT_QUERY_PARAM => $mode,
+						'paged'                  => $paged,
+					)
+				);
+
+				$wp_query->is_page              = false;
+				$wp_query->is_singular          = false;
+				$wp_query->is_archive           = true;
+				$wp_query->is_post_type_archive = true;
+				return;
+			}
+
 			$wp_query->set_404();
 			status_header( 404 );
 			return;
@@ -486,6 +517,48 @@ class Setup {
 	 */
 	public function filter_archive_title(): string {
 		return $this->archive_title;
+	}
+
+	/**
+	 * Resolve the configured event archive mode.
+	 *
+	 * Reads the `event_archive` setting and normalizes it against the
+	 * three valid modes (`upcoming`, `past`, `none`). Anything outside
+	 * that set falls back to `upcoming` so a malformed stored value
+	 * doesn't break archive resolution.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return string One of `upcoming`, `past`, or `none`.
+	 */
+	public function get_event_archive_mode(): string {
+		$settings = Settings::get_instance();
+		$mode     = (string) $settings->get( 'event_archive' );
+
+		if ( ! in_array( $mode, array( 'upcoming', 'past', 'none' ), true ) ) {
+			$mode = 'upcoming';
+		}
+
+		/**
+		 * Filters the resolved event archive mode.
+		 *
+		 * Lets plugins override the user-configured mode at runtime —
+		 * e.g., force `none` while a maintenance flag is set, or pin
+		 * `upcoming` for a specific request context. Returned values
+		 * outside the valid set are coerced back to `upcoming`.
+		 *
+		 * @since 1.0.0
+		 *
+		 * @param string $mode The current archive mode (`upcoming`,
+		 *                     `past`, or `none`).
+		 */
+		$mode = (string) apply_filters( 'gatherpress_event_archive_mode', $mode );
+
+		if ( ! in_array( $mode, array( 'upcoming', 'past', 'none' ), true ) ) {
+			$mode = 'upcoming';
+		}
+
+		return $mode;
 	}
 
 	/**
