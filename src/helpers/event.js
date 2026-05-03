@@ -99,6 +99,22 @@ export function isEventPostType( postType = null ) {
 }
 
 /**
+ * Checks if a post type declares `gatherpress-rsvp` support.
+ *
+ * Sibling to `isEventPostType()` — used to gate RSVP-only UI (sidebar
+ * settings panel, post-publish email-update notice) so it does not appear on
+ * post types that only declare `gatherpress-event-date` support.
+ *
+ * @since 1.0.0
+ *
+ * @param {string|null} postType Optional post type to check. If not provided, checks current editor post type.
+ * @return {boolean} True if the post type supports RSVP, false otherwise.
+ */
+export function isRsvpPostType( postType = null ) {
+	return isPostTypeSupporting( 'gatherpress-rsvp', postType );
+}
+
+/**
  * Look up a post by ID across all event-supporting post types.
  *
  * Used for postIdOverride scenarios where the editor host is not itself an

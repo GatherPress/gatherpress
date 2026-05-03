@@ -10,7 +10,7 @@ These supports are declared on post types that act as **events**.
 
 The core identifier for event post types. Enables event datetime storage and display. This includes:
 
-- Registration of datetime meta fields (`gatherpress_datetime`, `gatherpress_datetime_start`, `gatherpress_datetime_end`, `gatherpress_timezone`, etc.)
+- Registration of datetime meta fields (`gatherpress_datetime`, `gatherpress_datetime_start`, `gatherpress_datetime_end`, `gatherpress_timezone`, etc.) — GatherPress also auto-adds WordPress's `custom-fields` support to the post type so the REST controller actually attaches the `meta` field to the schema (without it, `register_post_meta()` quietly registers the keys but the editor's PUT silently strips them)
 - Storage in the `gatherpress_events` database table
 - Date-based query ordering (upcoming/past)
 - Event Date block rendering
@@ -54,6 +54,11 @@ Enables the comment-based RSVP system for a post type. This includes:
 - RSVP blocks rendering (rsvp, rsvp-form, rsvp-response, rsvp-template)
 - RSVP token-based email verification for anonymous attendees
 - Comment count adjustment to reflect RSVP activity
+- The RSVPs column (and its sortable header) on the admin list table, replacing the standard comments column to avoid confusion with RSVP submissions
+- The "RSVP settings" panel in the block editor sidebar (guest limit, max attendance, anonymous RSVP, per-event toggle)
+- The post-publish "Send an event update via email" notice that opens the attendee email composer
+
+A post type that declares `gatherpress-event-date` without `gatherpress-rsvp` (e.g. a "production" post type that just wants a premiere date) keeps the datetime column and Event settings sidebar but gets none of the RSVP UI above.
 
 #### Usage for gatherpress-rsvp
 
