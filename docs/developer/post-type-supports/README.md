@@ -52,7 +52,7 @@ The default "Event date & time" admin column header and "Event settings" sidebar
 ```php
 // Relabel the admin list column for a "production" post type.
 add_filter(
-    'gatherpress_event_date_column_label',
+    'gatherpress_event_datetime_label',
     function ( string $label, string $post_type ): string {
         return 'production' === $post_type ? __( 'Premiere date', 'my-plugin' ) : $label;
     },

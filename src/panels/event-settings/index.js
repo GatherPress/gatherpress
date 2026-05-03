@@ -38,10 +38,34 @@ const EventSettings = () => {
 		[]
 	);
 
-	// Lets post types that declare `gatherpress-event-date` support relabel
-	// the sidebar panel without re-implementing the slotfill — e.g. a
-	// `production` post type can surface "Production settings" instead of
-	// the default "Event settings".
+	/**
+	 * Title of the editor's "Event settings" sidebar panel.
+	 *
+	 * Lets post types that declare `gatherpress-event-date` support relabel
+	 * the sidebar panel without re-implementing the slotfill — a
+	 * `production` post type can surface "Production settings" instead of
+	 * the default "Event settings", a `release` post type "Release settings",
+	 * etc. The panel name (`gatherpress-event-settings`) and its slot
+	 * registration are unchanged, so existing `EventPluginDocumentSettings`
+	 * fills keep mounting in the same panel.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param {string}      title    Default panel title ("Event settings").
+	 * @param {string|null} postType Post type currently being edited, or null
+	 *                               if the editor has not yet resolved one.
+	 * @return {string} Panel title rendered in the sidebar.
+	 *
+	 * @example
+	 *   addFilter(
+	 *     'gatherpress.eventSettingsPanelTitle',
+	 *     'my-plugin/production-panel-title',
+	 *     ( title, postType ) =>
+	 *       'production' === postType
+	 *         ? __( 'Production settings', 'my-plugin' )
+	 *         : title
+	 *   );
+	 */
 	const panelTitle = applyFilters(
 		'gatherpress.eventSettingsPanelTitle',
 		__( 'Event settings', 'gatherpress' ),

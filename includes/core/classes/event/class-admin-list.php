@@ -628,7 +628,7 @@ class Admin_List {
 			 * @param string $post_type Post type the admin list is currently rendering.
 			 */
 			'datetime' => apply_filters(
-				'gatherpress_event_date_column_label',
+				'gatherpress_event_datetime_label',
 				__( 'Event date &amp; time', 'gatherpress' ),
 				$post_type
 			),

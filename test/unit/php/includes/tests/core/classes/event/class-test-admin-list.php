@@ -1405,7 +1405,7 @@ class Test_Admin_List extends Base {
 	}
 
 	/**
-	 * The `gatherpress_event_date_column_label` filter relabels the
+	 * The `gatherpress_event_datetime_label` filter relabels the
 	 * datetime column header without changing the column key, and receives
 	 * the screen's post type so consumers can vary the label per post type.
 	 *
@@ -1424,7 +1424,7 @@ class Test_Admin_List extends Base {
 			return 'Premiere date';
 		};
 
-		add_filter( 'gatherpress_event_date_column_label', $relabel, 10, 2 );
+		add_filter( 'gatherpress_event_datetime_label', $relabel, 10, 2 );
 
 		$result = $instance->set_custom_columns(
 			array(
@@ -1434,7 +1434,7 @@ class Test_Admin_List extends Base {
 			)
 		);
 
-		remove_filter( 'gatherpress_event_date_column_label', $relabel, 10 );
+		remove_filter( 'gatherpress_event_datetime_label', $relabel, 10 );
 		set_current_screen( 'front' );
 
 		$this->assertSame(
