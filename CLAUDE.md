@@ -319,6 +319,17 @@ When working with JavaScript code:
     - ❌ Bad: `// Check if this is a form-field block with guest count field name`
 - **Comment consistency**: Apply the same punctuation standards across PHP and JavaScript for consistency
 - **Block comments**: Multi-line JSDoc comments should follow proper formatting with periods in descriptions
+- **Dependency-section docblocks have no trailing period**: The `WordPress dependencies` / `Internal dependencies` / `External dependencies` (and `Mock …` test variants) section headers above import groups are labels, not sentences — leave the period off.
+    - ✅ Good:
+
+        ```js
+        /**
+         * WordPress dependencies
+         */
+        import { __ } from '@wordpress/i18n';
+        ```
+
+    - ❌ Bad: `* WordPress dependencies.` (with the period)
 
 ## Known Issues / Technical Debt
 

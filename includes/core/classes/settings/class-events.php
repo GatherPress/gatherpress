@@ -15,7 +15,7 @@ namespace GatherPress\Core\Settings;
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Traits\Singleton;
-use GatherPress\Core\Event\Setup as Event_Setup;
+use GatherPress\Core\Event\Setup;
 use GatherPress\Core\Topic;
 
 /**
@@ -228,7 +228,7 @@ class Events extends Base {
 							'rewrite' => true,
 							'options' => array(
 								'label'   => __( 'Permalink base of Events.', 'gatherpress' ),
-								'default' => Event_Setup::get_localized_post_type_slug(),
+								'default' => Setup::get_localized_post_type_slug(),
 							),
 							'preview' => array(
 								'template' => 'url-rewrite-preview',
