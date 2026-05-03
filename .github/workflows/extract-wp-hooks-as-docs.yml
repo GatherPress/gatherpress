@@ -80,9 +80,25 @@ jobs:
 
     - name: Create a Pull Request
       if: ${{ steps.check-for-changes.outputs.changed == 'true' }}
+      id: create-pr
       # Using GitHub CLI in Workflows
       # https://docs.github.com/en/actions/using-workflows/using-github-cli-in-workflows
       # https://cli.github.com/manual/gh_pr_create
-      run: gh pr create -B develop -H fix/extract-wp-hooks-${{ github.sha }} --title 'Update hook docs automatically' --body 'Created with ❤️ by extract-wp-hooks & GitHub action'
+      run: |
+        pr_url=$(gh pr create -B develop -H fix/extract-wp-hooks-${{ github.sha }} --title 'Update hook docs automatically' --body 'Created with ❤️ by extract-wp-hooks & GitHub action')
+        echo "pr_url=$pr_url" >> "$GITHUB_OUTPUT"
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    # Hook docs are pure markdown regen — auto-merge as soon as required
+    # checks pass, then delete the branch so these PRs don't stack up. If
+    # checks fail, the PR stays open for a human to investigate.
+    #
+    # Requires "Allow auto-merge" enabled in the repo settings AND a branch
+    # protection rule on `develop` with required status checks — without
+    # those, this is a no-op (the PR still gets created, just not merged).
+    - name: Enable auto-merge
+      if: ${{ steps.check-for-changes.outputs.changed == 'true' }}
+      run: gh pr merge "${{ steps.create-pr.outputs.pr_url }}" --auto --squash --delete-branch
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
