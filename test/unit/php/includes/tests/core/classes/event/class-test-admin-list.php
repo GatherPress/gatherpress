@@ -1467,4 +1467,189 @@ class Test_Admin_List extends Base {
 			'Failed to assert that empty array remains unchanged.'
 		);
 	}
+
+	/**
+	 * Reproduces gatherpress#1591: a post type that declares
+	 * `gatherpress-event-date` support but not `gatherpress-rsvp` must not
+	 * advertise the RSVPs sortable column.
+	 *
+	 * @covers ::sortable_columns
+	 *
+	 * @return void
+	 */
+	public function test_sortable_columns_omits_rsvps_for_event_date_only_post_type(): void {
+		$instance = Admin_List::get_instance();
+		$test_pt  = 'production';
+
+		register_post_type(
+			$test_pt,
+			array(
+				'label'    => 'Productions',
+				'public'   => false,
+				'supports' => array( 'title', 'gatherpress-event-date' ),
+			)
+		);
+
+		set_current_screen( 'edit-' . $test_pt );
+
+		$result = $instance->sortable_columns( array( 'unit' => 'test' ) );
+
+		set_current_screen( 'front' );
+		unregister_post_type( $test_pt );
+
+		$this->assertSame(
+			array(
+				'unit'     => 'test',
+				'datetime' => 'datetime',
+			),
+			$result,
+			'Event-date-only post types should keep datetime sortable but not rsvps.'
+		);
+	}
+
+	/**
+	 * Reproduces gatherpress#1591: the `set_custom_columns` filter must not
+	 * inject the RSVPs column header on post types that lack
+	 * `gatherpress-rsvp` support.
+	 *
+	 * @covers ::set_custom_columns
+	 *
+	 * @return void
+	 */
+	public function test_set_custom_columns_omits_rsvps_for_event_date_only_post_type(): void {
+		$instance = Admin_List::get_instance();
+		$test_pt  = 'production';
+
+		register_post_type(
+			$test_pt,
+			array(
+				'label'    => 'Productions',
+				'public'   => false,
+				'supports' => array( 'title', 'gatherpress-event-date' ),
+			)
+		);
+
+		set_current_screen( 'edit-' . $test_pt );
+
+		$default_columns = array(
+			'cb'    => '<input type="checkbox" />',
+			'title' => 'Title',
+			'date'  => 'Date',
+		);
+
+		$result = $instance->set_custom_columns( $default_columns );
+
+		set_current_screen( 'front' );
+		unregister_post_type( $test_pt );
+
+		$this->assertArrayHasKey(
+			'datetime',
+			$result,
+			'Event-date-only post types still get the datetime column.'
+		);
+		$this->assertArrayNotHasKey(
+			'rsvps',
+			$result,
+			'Event-date-only post types should not get the RSVPs column.'
+		);
+	}
+
+	/**
+	 * Reproduces gatherpress#1591: `remove_comments_column` strips the comments
+	 * column to avoid confusion with RSVP comment counts. Post types without
+	 * `gatherpress-rsvp` support have no such conflict and must keep their
+	 * standard comments column.
+	 *
+	 * @covers ::remove_comments_column
+	 *
+	 * @return void
+	 */
+	public function test_remove_comments_column_keeps_column_for_event_date_only_post_type(): void {
+		$instance = Admin_List::get_instance();
+		$test_pt  = 'production';
+
+		register_post_type(
+			$test_pt,
+			array(
+				'label'    => 'Productions',
+				'public'   => false,
+				'supports' => array( 'title', 'gatherpress-event-date' ),
+			)
+		);
+
+		set_current_screen( 'edit-' . $test_pt );
+
+		$columns_with_comments = array(
+			'cb'       => '<input type="checkbox" />',
+			'title'    => 'Title',
+			'comments' => 'Comments',
+			'date'     => 'Date',
+		);
+
+		$result = $instance->remove_comments_column( $columns_with_comments );
+
+		set_current_screen( 'front' );
+		unregister_post_type( $test_pt );
+
+		$this->assertSame(
+			$columns_with_comments,
+			$result,
+			'Event-date-only post types must retain their standard comments column.'
+		);
+	}
+
+	/**
+	 * Reproduces gatherpress#1591: `handle_rsvp_sorting` must short-circuit
+	 * before registering join/groupby/orderby filters when the queried post
+	 * type lacks `gatherpress-rsvp` support, even if a malicious or stale
+	 * `?orderby=rsvps` query var is present.
+	 *
+	 * @covers ::handle_rsvp_sorting
+	 *
+	 * @return void
+	 */
+	public function test_handle_rsvp_sorting_skips_event_date_only_post_type(): void {
+		$instance = Admin_List::get_instance();
+		$test_pt  = 'production';
+
+		register_post_type(
+			$test_pt,
+			array(
+				'label'    => 'Productions',
+				'public'   => false,
+				'supports' => array( 'title', 'gatherpress-event-date' ),
+			)
+		);
+
+		// Make sure no leftover filters are present from a prior test.
+		remove_filter( 'posts_join_paged', array( $instance, 'rsvp_sorting_join_paged' ) );
+		remove_filter( 'posts_groupby', array( $instance, 'sorting_groupby_post_id' ) );
+		remove_filter( 'posts_orderby', array( $instance, 'rsvp_sorting_orderby' ) );
+
+		$query = $this->createMock( WP_Query::class );
+		$query->method( 'is_main_query' )->willReturn( true );
+		$query->method( 'get' )->willReturnMap(
+			array(
+				array( 'post_type', null, $test_pt ),
+				array( 'orderby', null, 'rsvps' ),
+			)
+		);
+
+		$instance->handle_rsvp_sorting( $query );
+
+		unregister_post_type( $test_pt );
+
+		$this->assertFalse(
+			has_filter( 'posts_join_paged', array( $instance, 'rsvp_sorting_join_paged' ) ),
+			'No RSVP join filter should be added for event-date-only post types.'
+		);
+		$this->assertFalse(
+			has_filter( 'posts_groupby', array( $instance, 'sorting_groupby_post_id' ) ),
+			'No RSVP groupby filter should be added for event-date-only post types.'
+		);
+		$this->assertFalse(
+			has_filter( 'posts_orderby', array( $instance, 'rsvp_sorting_orderby' ) ),
+			'No RSVP orderby filter should be added for event-date-only post types.'
+		);
+	}
 }

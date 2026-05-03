@@ -116,7 +116,10 @@ class Admin_List {
 	 * Make custom columns sortable for Event post type in the admin dashboard.
 	 *
 	 * This method allows the custom columns, including the 'Event date & time' and 'RSVPs' columns,
-	 * to be sortable in the WordPress admin dashboard for Event post types.
+	 * to be sortable in the WordPress admin dashboard for Event post types. The
+	 * RSVPs sort key is only added when the current screen's post type also
+	 * declares `gatherpress-rsvp` support, since post types that only carry
+	 * `gatherpress-event-date` have no RSVP column to sort by.
 	 *
 	 * @since 1.0.0
 	 *
@@ -126,8 +129,11 @@ class Admin_List {
 	public function sortable_columns( array $columns ): array {
 		// Add 'datetime' as a sortable column.
 		$columns['datetime'] = 'datetime';
-		// Add 'rsvps' as a sortable column.
-		$columns['rsvps'] = 'rsvps';
+
+		if ( post_type_supports( $this->current_screen_post_type(), 'gatherpress-rsvp' ) ) {
+			// Add 'rsvps' as a sortable column.
+			$columns['rsvps'] = 'rsvps';
+		}
 
 		return $columns;
 	}
@@ -322,12 +328,23 @@ class Admin_List {
 	/**
 	 * Handle RSVP column sorting in the events list.
 	 *
+	 * Bails before delegating to `handle_column_sorting()` when the queried
+	 * post type lacks `gatherpress-rsvp` support — there's no RSVP column on
+	 * that screen, so a `?orderby=rsvps` request would otherwise issue a
+	 * pointless comments-table join.
+	 *
 	 * @since 1.0.0
 	 *
 	 * @param WP_Query $query The WP_Query instance.
 	 * @return void
 	 */
 	public function handle_rsvp_sorting( $query ): void {
+		$post_type = $query->get( 'post_type' );
+
+		if ( is_array( $post_type ) || ! post_type_supports( (string) $post_type, 'gatherpress-rsvp' ) ) {
+			return;
+		}
+
 		$this->handle_column_sorting(
 			$query,
 			'rsvps',
@@ -563,10 +580,7 @@ class Admin_List {
 		// link in this context); other taxonomies (Topics, etc.) follow.
 		$venue_taxonomy_columns = array();
 		$other_taxonomy_columns = array();
-		$screen                 = function_exists( 'get_current_screen' ) ? get_current_screen() : null;
-		$post_type              = ( $screen && '' !== (string) $screen->post_type )
-			? (string) $screen->post_type
-			: Event::POST_TYPE;
+		$post_type              = $this->current_screen_post_type();
 		$venue_taxonomy_key     = 'taxonomy-' . Venue_Setup::get_instance()->taxonomy_for_event_post_type( $post_type );
 
 		foreach ( $columns as $key => $label ) {
@@ -586,8 +600,16 @@ class Admin_List {
 		$placement = 2;
 		$insert    = array(
 			'datetime' => __( 'Event date &amp; time', 'gatherpress' ),
-			'rsvps'    => __( 'RSVPs', 'gatherpress' ),
-		) + $venue_taxonomy_columns + $other_taxonomy_columns;
+		);
+
+		// Only show the RSVPs column for post types that declare gatherpress-rsvp support.
+		// Event-date-only post types (e.g. theater productions tagged with a premiere date)
+		// have no RSVP storage and should not advertise an empty RSVP column.
+		if ( post_type_supports( $post_type, 'gatherpress-rsvp' ) ) {
+			$insert['rsvps'] = __( 'RSVPs', 'gatherpress' );
+		}
+
+		$insert = $insert + $venue_taxonomy_columns + $other_taxonomy_columns;
 
 		return array_slice( $columns, 0, $placement, true ) + $insert + array_slice( $columns, $placement, null, true );
 	}
@@ -598,7 +620,9 @@ class Admin_List {
 	 * This method removes the comments column from the events list table in the WordPress admin
 	 * to avoid confusion between regular comments and RSVP submissions. The comment count
 	 * bubble can be misleading as it combines unapproved comments and RSVPs without
-	 * distinguishing their types.
+	 * distinguishing their types. Only stripped for post types that declare
+	 * `gatherpress-rsvp` support — event-date-only post types still rely on the
+	 * standard comments column for regular comments.
 	 *
 	 * @todo Address limitations in WordPress core get_pending_comments_num function that is too
 	 *       generic and does not take custom comment types into account. It just looks for
@@ -610,8 +634,33 @@ class Admin_List {
 	 * @return array The modified array of column names without the comments column.
 	 */
 	public function remove_comments_column( array $columns ): array {
+		if ( ! post_type_supports( $this->current_screen_post_type(), 'gatherpress-rsvp' ) ) {
+			return $columns;
+		}
+
 		unset( $columns['comments'] );
 
 		return $columns;
+	}
+
+	/**
+	 * Resolve the post type of the current admin screen.
+	 *
+	 * Filters that mutate the columns array (`manage_<post_type>_posts_columns`,
+	 * `manage_edit-<post_type>_sortable_columns`) only receive the columns; the
+	 * post type has to be derived from the current screen so RSVP-specific
+	 * columns can be gated correctly when the same callback runs for multiple
+	 * event-supporting post types.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return string The current screen's post type, or the default event post type as a fallback.
+	 */
+	protected function current_screen_post_type(): string {
+		$screen = function_exists( 'get_current_screen' ) ? get_current_screen() : null;
+
+		return ( $screen && '' !== (string) $screen->post_type )
+			? (string) $screen->post_type
+			: Event::POST_TYPE;
 	}
 }
