@@ -120,11 +120,9 @@ const Edit = ( { attributes, context } ) => {
 
 		let newTerms;
 		if ( shouldAdd ) {
-			if ( ! hasTermAlready ) {
-				newTerms = [ ...currentTerms, termId ];
-			} else {
-				newTerms = currentTerms;
-			}
+			newTerms = hasTermAlready
+				? currentTerms
+				: [ ...currentTerms, termId ];
 		} else {
 			newTerms = currentTerms.filter( ( id ) => String( id ) !== termIdStr );
 		}

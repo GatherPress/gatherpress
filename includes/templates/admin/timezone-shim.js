@@ -13,7 +13,7 @@
  * should pick an IANA zone in Settings → General.
  */
 ( function() {
-	if ( ! window.wp || ! window.wp.date ) {
+	if ( ! window.wp?.date ) {
 		return;
 	}
 
@@ -23,7 +23,7 @@
 
 	const settings = window.wp.date.getSettings();
 
-	if ( ! settings || ! settings.timezone || ! settings.timezone.string ) {
+	if ( ! settings?.timezone?.string ) {
 		return;
 	}
 

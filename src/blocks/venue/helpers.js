@@ -16,7 +16,7 @@
  * @return {string} Mode: 'in-person', 'online', or 'hybrid'.
  */
 export function calculateMode( terms ) {
-	if ( ! terms || ! terms.length ) {
+	if ( ! terms?.length ) {
 		return 'in-person';
 	}
 

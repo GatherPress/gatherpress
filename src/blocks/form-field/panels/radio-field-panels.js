@@ -154,11 +154,10 @@ export default function RadioFieldPanels( { attributes, setAttributes } ) {
 			</PanelBody>
 
 			<PanelBody title={ __( 'Label Styles', 'gatherpress' ) }>
-				<BaseControl __nextHasNoMarginBottom={ true }>
+				<BaseControl>
 					<FontSizePicker
 						withReset={ true }
 						size="__unstable-large"
-						__nextHasNoMarginBottom
 						onChange={ ( value ) =>
 							setAttributes( { labelFontSize: value } )
 						}
@@ -178,11 +177,10 @@ export default function RadioFieldPanels( { attributes, setAttributes } ) {
 			</PanelBody>
 
 			<PanelBody title={ __( 'Option Styles', 'gatherpress' ) }>
-				<BaseControl __nextHasNoMarginBottom={ true }>
+				<BaseControl>
 					<FontSizePicker
 						withReset={ true }
 						size="__unstable-large"
-						__nextHasNoMarginBottom
 						onChange={ ( value ) =>
 							setAttributes( { optionFontSize: value } )
 						}

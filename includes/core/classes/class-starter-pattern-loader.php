@@ -47,7 +47,7 @@ class Starter_Pattern_Loader {
 		$files    = glob( rtrim( $dir, '/' ) . '/*.php' );
 
 		foreach ( (array) $files as $file ) {
-			$pattern = require $file;
+			$pattern = require_once $file;
 
 			if ( is_array( $pattern ) && ! empty( $pattern['name'] ) ) {
 				$patterns[] = $pattern;

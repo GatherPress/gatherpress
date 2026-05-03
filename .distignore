@@ -19,6 +19,7 @@
 .stylelintrc.js
 .travis.yml
 .typos.toml
+AGENTS.md
 CLAUDE.md
 CODE_OF_CONDUCT.md
 README.md

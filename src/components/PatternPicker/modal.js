@@ -61,10 +61,7 @@ const PatternChooserModal = ( { patterns, title, onPick, onClose } ) => {
 			onRequestClose={ onClose }
 			isFullScreen
 		>
-			<ul
-				className="gatherpress-pattern-picker__patterns"
-				role="listbox"
-			>
+			<ul className="gatherpress-pattern-picker__patterns">
 				{ patternsWithPreviewBlocks.map( ( pattern ) => (
 					<li
 						key={ pattern.name }

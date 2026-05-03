@@ -96,7 +96,7 @@ export default function AddressAutocompleteField( {
 
 	const adjustTextareaHeight = useCallback( () => {
 		const el = inputRef.current;
-		if ( ! el || 'TEXTAREA' !== el.nodeName ) {
+		if ( 'TEXTAREA' !== el?.nodeName ) {
 			return;
 		}
 		const maxPx = 220;
@@ -144,47 +144,43 @@ export default function AddressAutocompleteField( {
 					</div>
 				) }
 				{ showSuggestionError && (
-					<div
-						className="gatherpress-address-autocomplete__popover-inner gatherpress-address-autocomplete__error"
-						role="status"
-					>
+					<output className="gatherpress-address-autocomplete__popover-inner gatherpress-address-autocomplete__error">
 						<span>{ suggestionError }</span>
-					</div>
+					</output>
 				) }
 				{ showSuggestionPanel && (
-					<ul
+					<div
 						id={ listboxId }
 						className="gatherpress-address-autocomplete__suggestions"
 						role="listbox"
 						aria-label={ __( 'Address suggestions', 'gatherpress' ) }
 					>
 						{ suggestions.map( ( item, index ) => (
-							<li key={ `${ item.label }-${ index }` } role="none">
-								<button
-									type="button"
-									id={ optionId( index ) }
-									role="option"
-									tabIndex={ -1 }
-									aria-selected={ activeIndex === index }
-									className={
-										activeIndex === index
-											? 'gatherpress-address-autocomplete__suggestion is-active'
-											: 'gatherpress-address-autocomplete__suggestion'
-									}
-									// Prevent the input from blurring on
-									// mousedown so the popover doesn't flicker
-									// shut before the click lands.
-									onMouseDown={ ( event ) =>
-										event.preventDefault()
-									}
-									onClick={ () => selectSuggestion( item ) }
-									onMouseEnter={ () => setActiveIndex( index ) }
-								>
-									{ item.label }
-								</button>
-							</li>
+							<button
+								key={ `${ item.label }-${ index }` }
+								type="button"
+								id={ optionId( index ) }
+								role="option"
+								tabIndex={ -1 }
+								aria-selected={ activeIndex === index }
+								className={
+									activeIndex === index
+										? 'gatherpress-address-autocomplete__suggestion is-active'
+										: 'gatherpress-address-autocomplete__suggestion'
+								}
+								// Prevent the input from blurring on mousedown so
+								// the popover doesn't flicker shut before the
+								// click lands.
+								onMouseDown={ ( event ) =>
+									event.preventDefault()
+								}
+								onClick={ () => selectSuggestion( item ) }
+								onMouseEnter={ () => setActiveIndex( index ) }
+							>
+								{ item.label }
+							</button>
 						) ) }
-					</ul>
+					</div>
 				) }
 			</Popover>
 		) : null;

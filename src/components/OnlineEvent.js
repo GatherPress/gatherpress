@@ -110,11 +110,9 @@ const OnlineEvent = () => {
 		let newTerms;
 		if ( shouldAdd ) {
 			// Add the online-event term if not present.
-			if ( ! hasTermAlready ) {
-				newTerms = [ ...currentTerms, termId ];
-			} else {
-				newTerms = currentTerms;
-			}
+			newTerms = hasTermAlready
+				? currentTerms
+				: [ ...currentTerms, termId ];
 		} else {
 			// Remove the online-event term.
 			newTerms = currentTerms.filter(
