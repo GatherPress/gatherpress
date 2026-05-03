@@ -140,21 +140,16 @@ if ( 'interactive' === $gatherpress_render_mode ) {
 	$gatherpress_settings     = Settings::get_instance();
 	$gatherpress_map_platform = (string) $gatherpress_settings->get( 'map_platform' );
 	$gatherpress_block_attrs  = array(
-		'address'      => $gatherpress_address,
-		'latitude'     => (string) ( $gatherpress_venue_meta['latitude'] ?? '' ),
-		'longitude'    => (string) ( $gatherpress_venue_meta['longitude'] ?? '' ),
-		'mapZoomLevel' => $attributes['zoom'] ?? Map::DEFAULT_ZOOM,
-		'mapType'      => $attributes['type'] ?? Map::DEFAULT_MAP_TYPE,
-		'mapHeight'    => $attributes['height'] ?? Map::DEFAULT_HEIGHT,
-		'mapPlatform'  => $gatherpress_map_platform,
-		'pluginUrl'    => GATHERPRESS_CORE_URL,
+		'address'          => $gatherpress_address,
+		'latitude'         => (string) ( $gatherpress_venue_meta['latitude'] ?? '' ),
+		'longitude'        => (string) ( $gatherpress_venue_meta['longitude'] ?? '' ),
+		'mapZoomLevel'     => $attributes['zoom'] ?? Map::DEFAULT_ZOOM,
+		'mapType'          => $attributes['type'] ?? Map::DEFAULT_MAP_TYPE,
+		'mapHeight'        => $attributes['height'] ?? Map::DEFAULT_HEIGHT,
+		'mapPlatform'      => $gatherpress_map_platform,
+		'pluginUrl'        => GATHERPRESS_CORE_URL,
+		'googleMapsApiKey' => (string) $gatherpress_settings->get( 'google_maps_api_key' ),
 	);
-
-	if ( 'google' === $gatherpress_map_platform ) {
-		$gatherpress_block_attrs['googleMapsApiKey'] = (string) $gatherpress_settings->get(
-			'google_maps_api_key'
-		);
-	}
 
 	$gatherpress_wrapper_attr_args['data-gatherpress_block_name']  = 'map-embed';
 	$gatherpress_wrapper_attr_args['data-gatherpress_block_attrs'] = esc_attr(

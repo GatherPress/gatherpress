@@ -14,6 +14,7 @@ namespace GatherPress\Core;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
+use GatherPress\Core\Event\Event;
 use GatherPress\Core\Traits\Singleton;
 
 /**
@@ -143,8 +144,6 @@ class Settings {
 
 		add_filter( 'submenu_file', array( $this, 'select_menu' ) );
 		add_filter( 'block_editor_settings_all', array( $this, 'add_editor_settings' ) );
-
-		add_action( 'admin_print_footer_scripts', array( $this, 'print_venues_map_platform_toggle_script' ) );
 	}
 
 	/**
@@ -188,7 +187,8 @@ class Settings {
 			'mapTileAttribution'    => self::get_map_tile_attribution(),
 			'venuesMapsSettingsUrl' => admin_url(
 				sprintf(
-					'edit.php?post_type=gatherpress_event&page=%s',
+					'edit.php?post_type=%s&page=%s',
+					Event::POST_TYPE,
 					sprintf( 'gatherpress_event_page_%s', Utility::prefix_key( 'venues' ) )
 				)
 			),
@@ -647,12 +647,13 @@ class Settings {
 		$template_basename = $type;
 
 		switch ( $type ) {
-			case 'password':
 			case 'text':
-				$params['input_type'] = ( 'password' === $type ) ? 'password' : 'text';
-				$template_basename    = 'text';
-				$params['size']       = $option_settings['field']['size'] ?? 'regular';
-				$params['preview']    = $option_settings['field']['preview'] ?? array();
+				$params['size']    = $option_settings['field']['size'] ?? 'regular';
+				$params['preview'] = $option_settings['field']['preview'] ?? array();
+				break;
+			case 'password':
+				$params['size']    = $option_settings['field']['size'] ?? 'regular';
+				$params['preview'] = $option_settings['field']['preview'] ?? array();
 				break;
 			case 'number':
 				$params['size']        = $option_settings['field']['size'] ?? 'regular';
@@ -667,14 +668,6 @@ class Settings {
 			case 'autocomplete':
 				$params['field_options'] = $option_settings['field']['options'] ?? array();
 				break;
-		}
-
-		if ( 'google_maps_api_key' === $option ) {
-			$gatherpress_google_api_initially_visible = ( 'google' === $this->get( 'map_platform' ) );
-			printf(
-				'<div class="gatherpress-settings-google-api-key" data-gatherpress-google-api-key-field="1"%s>',
-				$gatherpress_google_api_initially_visible ? '' : ' hidden'
-			);
 		}
 
 		if ( $inherited ) {
@@ -717,56 +710,6 @@ class Settings {
 			echo '<p class="description gatherpress-field-inherited__note">' . $inherited_message . '</p>';
 			echo '</div>';
 		}
-
-		if ( 'google_maps_api_key' === $option ) {
-			echo '</div>';
-		}
-	}
-
-	/**
-	 * Toggles Google Maps API key visibility when the mapping platform `<select>` changes.
-	 *
-	 * Lets authors choose Google and paste a key before saving. Vanilla JS only.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @return void
-	 */
-	public function print_venues_map_platform_toggle_script(): void {
-		if ( ! is_admin() ) {
-			return;
-		}
-
-		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only page context check.
-		$page = isset( $_GET['page'] ) ? sanitize_text_field( wp_unslash( (string) $_GET['page'] ) ) : '';
-
-		if ( '' === $page || 0 !== strpos( $page, 'gatherpress_' ) ) {
-			return;
-		}
-
-		// phpcs:disable WordPress.Security.EscapeOutput.OutputNotEscaped -- Static script body; no interpolated input.
-		?>
-<script>
-( function () {
-	var select = document.getElementById( 'gatherpress_map_platform' );
-	var field = document.querySelector( '[data-gatherpress-google-api-key-field="1"]' );
-	if ( ! select || ! field ) {
-		return;
-	}
-	function gatherpressToggleGoogleMapsApiKeyRow() {
-		var show = 'google' === select.value;
-		field.hidden = ! show;
-		var row = field.closest( 'tr' );
-		if ( row ) {
-			row.style.display = show ? '' : 'none';
-		}
-	}
-	select.addEventListener( 'change', gatherpressToggleGoogleMapsApiKeyRow );
-	gatherpressToggleGoogleMapsApiKeyRow();
-} )();
-</script>
-		<?php
-		// phpcs:enable WordPress.Security.EscapeOutput.OutputNotEscaped
 	}
 
 	/**

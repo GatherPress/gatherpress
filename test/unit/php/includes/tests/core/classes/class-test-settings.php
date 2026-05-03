@@ -133,12 +133,6 @@ class Test_Settings extends Base {
 				'priority' => 10,
 				'callback' => array( $instance, 'add_editor_settings' ),
 			),
-			array(
-				'type'     => 'action',
-				'name'     => 'admin_print_footer_scripts',
-				'priority' => 10,
-				'callback' => array( $instance, 'print_venues_map_platform_toggle_script' ),
-			),
 		);
 
 		$this->assert_hooks( $hooks, $instance );
@@ -472,13 +466,13 @@ class Test_Settings extends Base {
 	}
 
 	/**
-	 * Google Maps API key field stays in the markup when platform is OSM but the wrapper is hidden.
+	 * Google Maps API key field renders as a plain text input (key is already exposed to the browser for embeds).
 	 *
 	 * @covers ::render_field
 	 *
 	 * @return void
 	 */
-	public function test_render_field_google_maps_api_key_hidden_when_osm(): void {
+	public function test_render_field_google_maps_api_key_uses_text_input(): void {
 		$instance = Settings::get_instance();
 		update_option(
 			Settings::OPTION_NAME,
@@ -491,7 +485,7 @@ class Test_Settings extends Base {
 				'google_maps_api_key',
 				array(
 					'field'       => array(
-						'type'  => 'password',
+						'type'  => 'text',
 						'label' => 'Google Maps API key:',
 						'size'  => 'large',
 					),
@@ -501,151 +495,17 @@ class Test_Settings extends Base {
 		);
 
 		$this->assertStringContainsString(
-			'data-gatherpress-google-api-key-field="1" hidden',
+			'type="text"',
 			$html,
-			'Failed to assert API key wrapper is hidden when platform is OSM.'
-		);
-		$this->assertStringContainsString(
-			'type="password"',
-			$html,
-			'Failed to assert password input is present for client-side toggle.'
-		);
-
-		delete_option( Settings::OPTION_NAME );
-	}
-
-	/**
-	 * Google Maps API key wrapper is not hidden when the saved platform is Google.
-	 *
-	 * @covers ::render_field
-	 *
-	 * @return void
-	 */
-	public function test_render_field_google_maps_api_key_visible_when_google(): void {
-		$instance = Settings::get_instance();
-		update_option(
-			Settings::OPTION_NAME,
-			array(
-				'map_platform'        => 'google',
-				'google_maps_api_key' => '',
-			)
-		);
-
-		$html = Utility::buffer_and_return(
-			array( $instance, 'render_field' ),
-			array(
-				'google_maps_api_key',
-				array(
-					'field'       => array(
-						'type'  => 'password',
-						'label' => 'Google Maps API key:',
-						'size'  => 'large',
-					),
-					'description' => 'Test description.',
-				),
-			)
-		);
-
-		$this->assertStringContainsString(
-			'<div class="gatherpress-settings-google-api-key" data-gatherpress-google-api-key-field="1">',
-			$html,
-			'Failed to assert API key wrapper is visible when platform is Google.'
+			'Failed to assert API key field uses text input.'
 		);
 		$this->assertStringNotContainsString(
-			'data-gatherpress-google-api-key-field="1" hidden',
+			'gatherpress-settings-google-api-key',
 			$html,
-			'Failed to assert hidden attribute is absent when platform is Google.'
+			'Failed to assert no visibility wrapper is emitted.'
 		);
 
 		delete_option( Settings::OPTION_NAME );
-	}
-
-	/**
-	 * Map platform toggle script does not run outside the admin area.
-	 *
-	 * @covers ::print_venues_map_platform_toggle_script
-	 *
-	 * @return void
-	 */
-	public function test_print_venues_map_platform_toggle_script_bails_when_not_admin(): void {
-		$instance = Settings::get_instance();
-		set_current_screen( 'front' );
-
-		$output = Utility::buffer_and_return(
-			array( $instance, 'print_venues_map_platform_toggle_script' )
-		);
-
-		set_current_screen( 'front' );
-
-		$this->assertSame( '', $output );
-	}
-
-	/**
-	 * Map platform toggle script does not run when `page` is absent on a GatherPress admin screen.
-	 *
-	 * @covers ::print_venues_map_platform_toggle_script
-	 *
-	 * @return void
-	 */
-	public function test_print_venues_map_platform_toggle_script_bails_when_page_query_missing(): void {
-		$instance = Settings::get_instance();
-		set_current_screen( 'plugins' );
-		unset( $_GET['page'] ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-
-		$output = Utility::buffer_and_return(
-			array( $instance, 'print_venues_map_platform_toggle_script' )
-		);
-
-		unset( $_GET['page'] ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		set_current_screen( 'front' );
-
-		$this->assertSame( '', $output );
-	}
-
-	/**
-	 * Map platform toggle script does not run on non-GatherPress admin pages.
-	 *
-	 * @covers ::print_venues_map_platform_toggle_script
-	 *
-	 * @return void
-	 */
-	public function test_print_venues_map_platform_toggle_script_bails_when_page_not_gatherpress_slug(): void {
-		$instance = Settings::get_instance();
-		set_current_screen( 'plugins' );
-		$_GET['page'] = 'options-general'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-
-		$output = Utility::buffer_and_return(
-			array( $instance, 'print_venues_map_platform_toggle_script' )
-		);
-
-		unset( $_GET['page'] ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		set_current_screen( 'front' );
-
-		$this->assertSame( '', $output );
-	}
-
-	/**
-	 * Map platform toggle script is printed on GatherPress settings admin pages.
-	 *
-	 * @covers ::print_venues_map_platform_toggle_script
-	 *
-	 * @return void
-	 */
-	public function test_print_venues_map_platform_toggle_script_emits_on_gatherpress_page(): void {
-		$instance = Settings::get_instance();
-		set_current_screen( 'plugins' );
-		$_GET['page'] = 'gatherpress_general'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-
-		$output = Utility::buffer_and_return(
-			array( $instance, 'print_venues_map_platform_toggle_script' )
-		);
-
-		unset( $_GET['page'] ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		set_current_screen( 'front' );
-
-		$this->assertStringContainsString( 'gatherpress_map_platform', $output );
-		$this->assertStringContainsString( 'data-gatherpress-google-api-key-field', $output );
-		$this->assertStringContainsString( 'gatherpressToggleGoogleMapsApiKeyRow', $output );
 	}
 
 	/**

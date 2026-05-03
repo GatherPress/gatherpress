@@ -108,35 +108,28 @@ class Venues extends Base {
 						'labels'      => array(
 							'name' => __( 'Google Maps API Key', 'gatherpress' ),
 						),
-						'description' => wp_kses_post(
+						'description' => wp_kses(
 							sprintf(
-								'%1$s %2$s %3$s %4$s %5$s',
-								__(
-									'Optional. Referrer-restricted key for Google Maps (Embed and Static APIs).',
-									'gatherpress'
+								// phpcs:disable Generic.Files.LineLength.TooLong -- One translator string for the full API key guidance sentence.
+								/* translators: %s: link to "Get an API key" documentation. */
+								__( 'Optional. Referrer-restricted key for Google Maps (Embed and Static APIs). Does not unlock interactive map styles; blocks use roadmap and satellite. Enables referrer restrictions and cached static images with the static provider. Restrict the key by HTTP referrer. %s', 'gatherpress' ),
+								// phpcs:enable Generic.Files.LineLength.TooLong
+								'<a href="'
+								. esc_url( 'https://developers.google.com/maps/documentation/embed/get-api-key' )
+								. '" target="_blank" rel="noopener noreferrer">'
+								. esc_html__( 'Get an API key', 'gatherpress' ) . '</a>'
+							),
+							array(
+								'a' => array(
+									'href'   => true,
+									'target' => true,
+									'rel'    => true,
 								),
-								__(
-									'Does not unlock interactive map styles; blocks use roadmap and satellite.',
-									'gatherpress'
-								),
-								__(
-									'Enables referrer restrictions and cached static images with the static provider.',
-									'gatherpress'
-								),
-								__(
-									'Restrict the key by HTTP referrer.',
-									'gatherpress'
-								),
-								sprintf(
-									'<a href="%1$s" target="_blank" rel="noopener noreferrer">%2$s</a>',
-									esc_url( 'https://developers.google.com/maps/documentation/embed/get-api-key' ),
-									esc_html__( 'Get an API key', 'gatherpress' )
-								)
 							)
 						),
 						'field'       => array(
 							'label' => __( 'Google Maps API key:', 'gatherpress' ),
-							'type'  => 'password',
+							'type'  => 'text',
 							'size'  => 'large',
 						),
 					),

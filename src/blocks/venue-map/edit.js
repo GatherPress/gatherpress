@@ -262,10 +262,11 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 	const showMapTypeControl =
 		'interactive' === renderMode && 'google' === mapPlatform;
 
-	// Google interactive maps use an iframe only (Embed API or legacy URL).
-	// Both paths meaningfully support roadmap and satellite; hybrid/terrain
-	// are not offered (legacy values coerce on save and in URLs).
-	const googleMapTypeSelectOptions = [
+	// Full list of map types for Google. Maps Embed API (iframe) supports
+	// only roadmap and satellite — hybrid/terrain are filtered out below until
+	// a Maps JavaScript API integration can use the full set without changing
+	// this array.
+	const GOOGLE_MAP_TYPE_OPTIONS_ALL = [
 		{
 			label: __( 'Roadmap', 'gatherpress' ),
 			value: 'roadmap',
@@ -274,7 +275,21 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 			label: __( 'Satellite', 'gatherpress' ),
 			value: 'satellite',
 		},
+		{
+			label: __( 'Hybrid', 'gatherpress' ),
+			value: 'hybrid',
+		},
+		{
+			label: __( 'Terrain', 'gatherpress' ),
+			value: 'terrain',
+		},
 	];
+
+	const IFRAME_UNSUPPORTED_GOOGLE_MAP_TYPES = new Set( [ 'hybrid', 'terrain' ] );
+
+	const googleMapTypeSelectOptions = GOOGLE_MAP_TYPE_OPTIONS_ALL.filter(
+		( opt ) => ! IFRAME_UNSUPPORTED_GOOGLE_MAP_TYPES.has( opt.value )
+	);
 
 	useEffect( () => {
 		if (
