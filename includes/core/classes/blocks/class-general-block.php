@@ -151,35 +151,27 @@ class General_Block {
 	public function process_venue_detail_field( string $block_content, array $block ): string {
 		$class_name = $block['attrs']['className'] ?? '';
 
-		// Check if the block has a venue conditional class.
-		if ( ! preg_match( '/gatherpress--has-venue-([a-z-]+)/', $class_name, $matches ) ) {
+		// Bail when the block isn't tagged with a recognized venue field
+		// suffix — anything outside the allow-list stays as-is.
+		if ( ! preg_match( '/gatherpress--has-venue-([a-z-]+)/', $class_name, $matches )
+			|| ! in_array( $matches[1], array( 'address', 'phone', 'website' ), true ) ) {
 			return $block_content;
 		}
 
 		$field_name = $matches[1];
 
-		// Allow-list of venue meta-key suffixes; anything else stays as-is.
-		if ( ! in_array( $field_name, array( 'address', 'phone', 'website' ), true ) ) {
-			return $block_content;
-		}
-
-		// Get the venue post ID from the current context.
-		// First try to get it from block context, then fall back to current post.
+		// Get the venue post ID from the current context (block context first,
+		// fall back to the current post). Verify it's actually a venue.
 		$venue_post_id = $block['attrs']['postId'] ?? get_the_ID();
 
-		// Verify this is actually a venue post type.
 		if ( ! post_type_supports( (string) get_post_type( $venue_post_id ), 'gatherpress-venue-information' ) ) {
 			return $block_content;
 		}
 
 		$field_value = (string) get_post_meta( $venue_post_id, Utility::prefix_key( $field_name ), true );
 
-		// If the field is empty, hide the entire block.
-		if ( '' === $field_value ) {
-			return '';
-		}
-
-		return $block_content;
+		// Hide the entire block when the venue field is empty.
+		return ( '' === $field_value ) ? '' : $block_content;
 	}
 
 	/**
@@ -203,6 +195,7 @@ class General_Block {
 		}
 
 		$processor = new WP_HTML_Tag_Processor( $block_content );
+		$content   = $block_content;
 
 		while ( $processor->next_tag() ) {
 			$tag_name = $processor->get_tag();
@@ -213,21 +206,21 @@ class General_Block {
 				$processor->remove_attribute( 'href' );
 				$processor->remove_attribute( 'role' );
 
-				// Replace tag names.
 				$content = $processor->get_updated_html();
 				$content = preg_replace( '/<a\b/', '<button', $content );
 				$content = str_replace( '</a>', '</button>', $content );
+				break;
+			}
 
-				return $content;
-			} elseif ( 'BUTTON' === $tag_name ) {
+			if ( 'BUTTON' === $tag_name ) {
 				// Handle button tags - just add type="submit".
 				$processor->set_attribute( 'type', 'submit' );
-
-				return $processor->get_updated_html();
+				$content = $processor->get_updated_html();
+				break;
 			}
 		}
 
-		return $block_content;
+		return $content;
 	}
 
 	/**
