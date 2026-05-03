@@ -1609,6 +1609,8 @@ class Test_Admin_List extends Base {
 	 * @return void
 	 */
 	public function test_handle_rsvp_sorting_skips_event_date_only_post_type(): void {
+		global $wp_the_query;
+
 		$instance = Admin_List::get_instance();
 		$test_pt  = 'production';
 
@@ -1626,19 +1628,32 @@ class Test_Admin_List extends Base {
 		remove_filter( 'posts_groupby', array( $instance, 'sorting_groupby_post_id' ) );
 		remove_filter( 'posts_orderby', array( $instance, 'rsvp_sorting_orderby' ) );
 
-		$query = $this->createMock( WP_Query::class );
-		$query->method( 'is_main_query' )->willReturn( true );
-		$query->method( 'get' )->willReturnMap(
+		// Real WP_Query (not a mock) so `$query->get( 'post_type' )` returns the
+		// string we registered — a createMock() with willReturnMap() silently
+		// returns null when the method's optional `$default` arg defaults aren't
+		// matched by the map, which lets the sorting handler bypass the new
+		// rsvp-support guard for the wrong reason.
+		$query = new WP_Query(
 			array(
-				array( 'post_type', null, $test_pt ),
-				array( 'orderby', null, 'rsvps' ),
+				'post_type' => $test_pt,
+				'orderby'   => 'rsvps',
 			)
 		);
 
+		// phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited -- Required to satisfy is_main_query() inside handle_column_sorting.
+		$wp_the_query = $query;
+
+		set_current_screen( 'edit-' . $test_pt );
+
 		$instance->handle_rsvp_sorting( $query );
 
+		set_current_screen( 'front' );
 		unregister_post_type( $test_pt );
 
+		$this->assertEmpty(
+			$query->get( 'rsvp_sort_order' ),
+			'rsvp_sort_order must not be set for event-date-only post types.'
+		);
 		$this->assertFalse(
 			has_filter( 'posts_join_paged', array( $instance, 'rsvp_sorting_join_paged' ) ),
 			'No RSVP join filter should be added for event-date-only post types.'

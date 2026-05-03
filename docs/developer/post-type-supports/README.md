@@ -10,7 +10,7 @@ These supports are declared on post types that act as **events**.
 
 The core identifier for event post types. Enables event datetime storage and display. This includes:
 
-- Registration of datetime meta fields (`gatherpress_datetime`, `gatherpress_datetime_start`, `gatherpress_datetime_end`, `gatherpress_timezone`, etc.)
+- Registration of datetime meta fields (`gatherpress_datetime`, `gatherpress_datetime_start`, `gatherpress_datetime_end`, `gatherpress_timezone`, etc.) — GatherPress also auto-adds WordPress's `custom-fields` support to the post type so the REST controller actually attaches the `meta` field to the schema (without it, `register_post_meta()` quietly registers the keys but the editor's PUT silently strips them)
 - Storage in the `gatherpress_events` database table
 - Date-based query ordering (upcoming/past)
 - Event Date block rendering

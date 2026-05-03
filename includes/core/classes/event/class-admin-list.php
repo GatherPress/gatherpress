@@ -130,7 +130,12 @@ class Admin_List {
 		// Add 'datetime' as a sortable column.
 		$columns['datetime'] = 'datetime';
 
-		if ( post_type_supports( $this->current_screen_post_type(), 'gatherpress-rsvp' ) ) {
+		$screen    = function_exists( 'get_current_screen' ) ? get_current_screen() : null;
+		$post_type = ( $screen && '' !== (string) $screen->post_type )
+			? (string) $screen->post_type
+			: Event::POST_TYPE;
+
+		if ( post_type_supports( $post_type, 'gatherpress-rsvp' ) ) {
 			// Add 'rsvps' as a sortable column.
 			$columns['rsvps'] = 'rsvps';
 		}
@@ -341,7 +346,12 @@ class Admin_List {
 	public function handle_rsvp_sorting( $query ): void {
 		$post_type = $query->get( 'post_type' );
 
-		if ( is_array( $post_type ) || ! post_type_supports( (string) $post_type, 'gatherpress-rsvp' ) ) {
+		// Skip when the queried post type lacks `gatherpress-rsvp` support — there's
+		// no RSVP column on that screen, so a `?orderby=rsvps` request would
+		// otherwise issue a pointless comments-table join. Multi-post-type queries
+		// (array `post_type`) fall through to `handle_column_sorting()`'s own
+		// array guard so its early-return arm stays exercised.
+		if ( is_string( $post_type ) && ! post_type_supports( $post_type, 'gatherpress-rsvp' ) ) {
 			return;
 		}
 
@@ -580,7 +590,10 @@ class Admin_List {
 		// link in this context); other taxonomies (Topics, etc.) follow.
 		$venue_taxonomy_columns = array();
 		$other_taxonomy_columns = array();
-		$post_type              = $this->current_screen_post_type();
+		$screen                 = function_exists( 'get_current_screen' ) ? get_current_screen() : null;
+		$post_type              = ( $screen && '' !== (string) $screen->post_type )
+			? (string) $screen->post_type
+			: Event::POST_TYPE;
 		$venue_taxonomy_key     = 'taxonomy-' . Venue_Setup::get_instance()->taxonomy_for_event_post_type( $post_type );
 
 		foreach ( $columns as $key => $label ) {
@@ -634,33 +647,17 @@ class Admin_List {
 	 * @return array The modified array of column names without the comments column.
 	 */
 	public function remove_comments_column( array $columns ): array {
-		if ( ! post_type_supports( $this->current_screen_post_type(), 'gatherpress-rsvp' ) ) {
+		$screen    = function_exists( 'get_current_screen' ) ? get_current_screen() : null;
+		$post_type = ( $screen && '' !== (string) $screen->post_type )
+			? (string) $screen->post_type
+			: Event::POST_TYPE;
+
+		if ( ! post_type_supports( $post_type, 'gatherpress-rsvp' ) ) {
 			return $columns;
 		}
 
 		unset( $columns['comments'] );
 
 		return $columns;
-	}
-
-	/**
-	 * Resolve the post type of the current admin screen.
-	 *
-	 * Filters that mutate the columns array (`manage_<post_type>_posts_columns`,
-	 * `manage_edit-<post_type>_sortable_columns`) only receive the columns; the
-	 * post type has to be derived from the current screen so RSVP-specific
-	 * columns can be gated correctly when the same callback runs for multiple
-	 * event-supporting post types.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @return string The current screen's post type, or the default event post type as a fallback.
-	 */
-	protected function current_screen_post_type(): string {
-		$screen = function_exists( 'get_current_screen' ) ? get_current_screen() : null;
-
-		return ( $screen && '' !== (string) $screen->post_type )
-			? (string) $screen->post_type
-			: Event::POST_TYPE;
 	}
 }
