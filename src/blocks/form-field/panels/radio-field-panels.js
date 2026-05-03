@@ -148,7 +148,11 @@ export default function RadioFieldPanels( { attributes, setAttributes } ) {
 						</Flex>
 					</div>
 				) ) }
-				<Button variant="secondary" onClick={ addRadioOption }>
+				<Button
+					variant="secondary"
+					onClick={ addRadioOption }
+					style={ { marginTop: '0.75rem' } }
+				>
 					{ __( 'Add Option', 'gatherpress' ) }
 				</Button>
 			</PanelBody>
