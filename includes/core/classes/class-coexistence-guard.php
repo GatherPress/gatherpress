@@ -102,9 +102,11 @@ class Coexistence_Guard {
 		// only auto-loads in per-site admin context. Front-end requests and Network
 		// Admin pages (e.g. Network → Settings → GatherPress) reach this code without
 		// it loaded, so we require it explicitly to avoid a fatal.
+		// @codeCoverageIgnoreStart
 		if ( ! function_exists( 'get_plugins' ) ) {
 			require_once ABSPATH . 'wp-admin/includes/plugin.php';
 		}
+		// @codeCoverageIgnoreEnd
 
 		$plugins       = get_plugins();
 		$duplicates    = array();
