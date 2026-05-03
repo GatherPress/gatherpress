@@ -200,18 +200,19 @@ class Rsvp {
 			return false;
 		}
 
+		// Modes outside the per-event family (currently `all_on`) always enable.
 		if ( ! in_array( $rsvp_mode, array( 'per_event_on', 'per_event_off' ), true ) ) {
 			return true;
 		}
 
+		// Per-event mode: empty meta falls back to the mode default
+		// (`per_event_on` → enabled, `per_event_off` → disabled). Otherwise
+		// any non-`'0'` value enables.
 		$meta = get_post_meta( $post_id, 'gatherpress_enable_rsvp', true );
 
-		// Empty meta falls back to the mode default.
-		if ( '' === $meta ) {
-			return 'per_event_on' === $rsvp_mode;
-		}
-
-		return '0' !== $meta;
+		return ( '' === $meta )
+			? 'per_event_on' === $rsvp_mode
+			: '0' !== $meta;
 	}
 
 	/**

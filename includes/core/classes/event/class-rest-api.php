@@ -467,69 +467,89 @@ class Rest_Api {
 			return false;
 		}
 
-		// Keep the currently logged-in user.
+		// Keep the currently logged-in user so per-recipient locale / user
+		// switches inside the loop can restore back to it.
 		$current_user = wp_get_current_user();
 		$recipients   = $this->get_recipients( $send, $post_id );
 
 		foreach ( $recipients as $recipient ) {
-			// Check opt-in preference based on recipient type.
-			if ( $recipient['is_user'] ) {
-				// For WordPress users, use the centralized helper method.
-				$user = User::get_instance();
-				if ( ! $user->has_event_updates_opt_in( $recipient['user_id'] ) ) {
-					continue;
-				}
-			} elseif (
-				'0' === get_comment_meta(
-					$recipient['comment_id'],
-					'gatherpress_event_updates_opt_in',
-					true
-				)
-			) {
-				// For non-user RSVPs, check comment meta.
-				continue;
-			}
-
-			if ( $recipient['email'] ) {
-				$to              = $recipient['email'];
-				$switched_locale = false;
-
-				// Set the current user context for templating.
-				if ( $recipient['is_user'] ) {
-					$switched_locale = switch_to_user_locale( $recipient['user_id'] );
-					// Set the current user to the actual member to mail to,
-					// to make sure the GatherPress filters for date- and time- format, as well as the users timezone,
-					// are recognized by the functions inside render_template().
-					wp_set_current_user( $recipient['user_id'] );
-				}
-
-				$subject = sprintf(
-					// translators: %s: event title.
-					_x( '📅 %s', 'Email notification subject with event title', 'gatherpress' ),
-					get_the_title( $post_id )
-				);
-				$body    = Utility::render_template(
-					sprintf( '%s/includes/templates/admin/emails/event-email.php', GATHERPRESS_CORE_PATH ),
-					array(
-						'event_id' => $post_id,
-						'message'  => $message,
-					),
-				);
-				$headers = array( 'Content-Type: text/html; charset=UTF-8' );
-				$subject = stripslashes_deep( html_entity_decode( $subject, ENT_QUOTES, 'UTF-8' ) );
-
-				// Reset the current user to the editor sending the email.
-				wp_set_current_user( $current_user->ID );
-
-				wp_mail( $to, $subject, $body, $headers );
-
-				if ( $switched_locale ) {
-					restore_previous_locale();
-				}
-			}
+			$this->send_event_email_to_recipient( $recipient, $post_id, $message, $current_user );
 		}
 
 		return true;
+	}
+
+	/**
+	 * Send the per-event update email to a single recipient.
+	 *
+	 * Extracted from `send_emails()` so the outer loop body stays shallow
+	 * enough for SonarCloud's cognitive-complexity gate. Honors the
+	 * recipient's opt-in (user meta for WP users, comment meta for
+	 * non-user RSVPs) and skips silently when no email is on file.
+	 * Restores the editor's user / locale before returning.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param array    $recipient    Recipient row from `get_recipients()`.
+	 * @param int      $post_id      Event post ID.
+	 * @param string   $message      Optional editor-supplied message body.
+	 * @param \WP_User $current_user Originating editor (restored after locale/user switch).
+	 * @return void
+	 */
+	protected function send_event_email_to_recipient( array $recipient, int $post_id, string $message, \WP_User $current_user ): void {
+		// Check opt-in preference based on recipient type.
+		if ( $recipient['is_user'] ) {
+			if ( ! User::get_instance()->has_event_updates_opt_in( $recipient['user_id'] ) ) {
+				return;
+			}
+		} elseif (
+			'0' === get_comment_meta(
+				$recipient['comment_id'],
+				'gatherpress_event_updates_opt_in',
+				true
+			)
+		) {
+			return;
+		}
+
+		if ( ! $recipient['email'] ) {
+			return;
+		}
+
+		$switched_locale = false;
+
+		// Set the current user context for templating.
+		if ( $recipient['is_user'] ) {
+			$switched_locale = switch_to_user_locale( $recipient['user_id'] );
+			// Set the current user to the actual member to mail to,
+			// to make sure the GatherPress filters for date- and time- format, as well as the users timezone,
+			// are recognized by the functions inside render_template().
+			wp_set_current_user( $recipient['user_id'] );
+		}
+
+		$subject = sprintf(
+			// translators: %s: event title.
+			_x( '📅 %s', 'Email notification subject with event title', 'gatherpress' ),
+			get_the_title( $post_id )
+		);
+		$body    = Utility::render_template(
+			sprintf( '%s/includes/templates/admin/emails/event-email.php', GATHERPRESS_CORE_PATH ),
+			array(
+				'event_id' => $post_id,
+				'message'  => $message,
+			),
+		);
+		$headers = array( 'Content-Type: text/html; charset=UTF-8' );
+		$subject = stripslashes_deep( html_entity_decode( $subject, ENT_QUOTES, 'UTF-8' ) );
+
+		// Reset the current user to the editor sending the email.
+		wp_set_current_user( $current_user->ID );
+
+		wp_mail( $recipient['email'], $subject, $body, $headers );
+
+		if ( $switched_locale ) {
+			restore_previous_locale();
+		}
 	}
 
 	/**

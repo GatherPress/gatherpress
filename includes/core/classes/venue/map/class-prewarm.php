@@ -438,71 +438,104 @@ class Prewarm {
 	 * @return array<int, array{zoom:int,width:int,height:int,aspect_ratio:string}>
 	 */
 	protected function collect_all_template_combos(): array {
-		$combos = array();
-
-		if ( function_exists( 'get_block_templates' ) ) {
-			foreach ( get_block_templates( array(), 'wp_template' ) as $template ) {
-				$combos = array_merge(
-					$combos,
-					$this->collect_combos_from_content( (string) $template->content )
-				);
-			}
-			foreach ( get_block_templates( array(), 'wp_template_part' ) as $template_part ) {
-				$combos = array_merge(
-					$combos,
-					$this->collect_combos_from_content( (string) $template_part->content )
-				);
-			}
-		}
-
+		$combos               = $this->collect_combos_from_block_templates();
 		$venue_carrying_types = get_post_types_by_support( 'gatherpress-venue' );
+
 		if ( ! empty( $venue_carrying_types ) ) {
-			// Full post rows (for post_content) — use the smaller
-			// content-scan batch. FSE-rich events can carry MBs of
-			// content; the ID-only venue scan can afford a larger batch.
-			$batch_size = $this->get_content_scan_batch_size();
-			$page       = 1;
-
-			// Paginate rather than `posts_per_page => -1` — a site with
-			// thousands of events would otherwise load every post into
-			// memory at once on the hook that triggered us (venue save,
-			// template save, theme switch).
-			while ( true ) {
-				$batch = get_posts(
-					array(
-						'post_type'              => $venue_carrying_types,
-						'post_status'            => 'publish',
-						'posts_per_page'         => $batch_size,
-						'paged'                  => $page,
-						'orderby'                => 'ID',
-						'order'                  => 'ASC',
-						'no_found_rows'          => true,
-						// Only post_content is read — skip meta/term priming.
-						'update_post_meta_cache' => false,
-						'update_post_term_cache' => false,
-					)
-				);
-
-				if ( empty( $batch ) ) {
-					break;
-				}
-
-				foreach ( $batch as $post ) {
-					$combos = array_merge(
-						$combos,
-						$this->collect_combos_from_content( $post->post_content )
-					);
-				}
-
-				if ( count( $batch ) < $batch_size ) {
-					break;
-				}
-
-				++$page;
-			}
+			$combos = array_merge( $combos, $this->collect_combos_from_venue_posts( $venue_carrying_types ) );
 		}
 
 		return $this->dedupe_combos( $combos );
+	}
+
+	/**
+	 * Walk every DB template and template part, returning the combos found
+	 * in their content. Returns an empty array on classic themes where
+	 * `get_block_templates()` isn't available.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return array<int, array{zoom:int,width:int,height:int,aspect_ratio:string}>
+	 */
+	protected function collect_combos_from_block_templates(): array {
+		$combos = array();
+
+		if ( ! function_exists( 'get_block_templates' ) ) {
+			return $combos;
+		}
+
+		foreach ( get_block_templates( array(), 'wp_template' ) as $template ) {
+			$combos = array_merge(
+				$combos,
+				$this->collect_combos_from_content( (string) $template->content )
+			);
+		}
+		foreach ( get_block_templates( array(), 'wp_template_part' ) as $template_part ) {
+			$combos = array_merge(
+				$combos,
+				$this->collect_combos_from_content( (string) $template_part->content )
+			);
+		}
+
+		return $combos;
+	}
+
+	/**
+	 * Paginate through every published post of the given venue-supporting
+	 * post types and return the combos from their content. Paginated
+	 * (rather than `posts_per_page => -1`) so a site with thousands of
+	 * events doesn't load every post into memory on the hook that
+	 * triggered us.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string[] $post_types Post types declaring `gatherpress-venue` support.
+	 * @return array<int, array{zoom:int,width:int,height:int,aspect_ratio:string}>
+	 */
+	protected function collect_combos_from_venue_posts( array $post_types ): array {
+		$combos = array();
+
+		// Full post rows (for post_content) — use the smaller content-scan
+		// batch. FSE-rich events can carry MBs of content; the ID-only venue
+		// scan can afford a larger batch.
+		$batch_size = $this->get_content_scan_batch_size();
+		$page       = 1;
+
+		while ( true ) {
+			$batch = get_posts(
+				array(
+					'post_type'              => $post_types,
+					'post_status'            => 'publish',
+					'posts_per_page'         => $batch_size,
+					'paged'                  => $page,
+					'orderby'                => 'ID',
+					'order'                  => 'ASC',
+					'no_found_rows'          => true,
+					// Only post_content is read — skip meta/term priming.
+					'update_post_meta_cache' => false,
+					'update_post_term_cache' => false,
+				)
+			);
+
+			if ( empty( $batch ) ) {
+				break;
+			}
+
+			foreach ( $batch as $post ) {
+				$combos = array_merge(
+					$combos,
+					$this->collect_combos_from_content( $post->post_content )
+				);
+			}
+
+			if ( count( $batch ) < $batch_size ) {
+				break;
+			}
+
+			++$page;
+		}
+
+		return $combos;
 	}
 
 	/**

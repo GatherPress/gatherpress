@@ -368,13 +368,12 @@ class Setup {
 			return; // @codeCoverageIgnore
 		}
 
-		// Respect intentional edits: do not re-seed content on updates.
-		if ( $update ) {
-			return;
-		}
-
-		// Only apply template to published venues with empty content.
-		if ( 'publish' !== $post->post_status || ! empty( $post->post_content ) ) {
+		// Respect intentional edits (no re-seed on updates) and only apply
+		// template to published venues with empty content.
+		if ( $update
+			|| 'publish' !== $post->post_status
+			|| ! empty( $post->post_content )
+		) {
 			return;
 		}
 

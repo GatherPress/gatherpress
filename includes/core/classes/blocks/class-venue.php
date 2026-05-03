@@ -110,32 +110,34 @@ class Venue {
 	 * @return WP_Post|null The venue post or null if not found.
 	 */
 	private function get_venue_post( array $block ): ?WP_Post {
+		$venue_post = null;
+
 		// Check for manually selected venue in block attributes.
 		if ( isset( $block['attrs']['selectedPostId'] ) && is_int( $block['attrs']['selectedPostId'] ) ) {
-			$venue_post = get_post( $block['attrs']['selectedPostId'] );
+			$selected = get_post( $block['attrs']['selectedPostId'] );
 
-			if ( $venue_post instanceof WP_Post && Venue_Core::POST_TYPE === $venue_post->post_type ) {
-				return $venue_post;
+			if ( $selected instanceof WP_Post && Venue_Core::POST_TYPE === $selected->post_type ) {
+				$venue_post = $selected;
 			}
 		}
 
-		// Get post ID from block attributes or global (handles query loop, override, global).
-		$post_id   = Setup::get_instance()->get_post_id( $block );
-		$post_type = get_post_type( $post_id );
+		if ( null === $venue_post ) {
+			// Get post ID from block attributes or global (handles query loop, override, global).
+			$post_id   = Setup::get_instance()->get_post_id( $block );
+			$post_type = get_post_type( $post_id );
 
-		if ( Venue_Core::POST_TYPE === $post_type ) {
-			return get_post( $post_id );
-		}
+			if ( Venue_Core::POST_TYPE === $post_type ) {
+				$venue_post = get_post( $post_id );
+			} elseif ( post_type_supports( $post_type, 'gatherpress-venue' ) ) {
+				$candidate = Venue_Setup::get_instance()->get_venue_post_from_event_post_id( $post_id );
 
-		if ( post_type_supports( $post_type, 'gatherpress-venue' ) ) {
-			$venue_post = Venue_Setup::get_instance()->get_venue_post_from_event_post_id( $post_id );
-
-			if ( $venue_post instanceof WP_Post && Venue_Core::POST_TYPE === $venue_post->post_type ) {
-				return $venue_post;
+				if ( $candidate instanceof WP_Post && Venue_Core::POST_TYPE === $candidate->post_type ) {
+					$venue_post = $candidate;
+				}
 			}
 		}
 
-		return null;
+		return $venue_post;
 	}
 
 	/**

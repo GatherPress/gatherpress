@@ -681,40 +681,38 @@ class Setup {
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) -- $block is required by the render_block filter signature.
 	 */
 	public function render_event_post_date_block( string $block_content, array $block, WP_Block $instance ): string {
-		$post_id = $instance->context['postId'] ?? get_the_ID();
+		$post_id        = $instance->context['postId'] ?? get_the_ID();
+		$use_event_date = Settings::get_instance()->get( 'post_or_event_date' );
 
-		if ( ! $post_id || ! post_type_supports( (string) get_post_type( $post_id ), 'gatherpress-event-date' ) ) {
-			return $block_content;
-		}
-
-		$settings       = Settings::get_instance();
-		$use_event_date = $settings->get( 'post_or_event_date' );
-
-		if ( 1 !== intval( $use_event_date ) ) {
+		// Bail when there's no post, when the post type doesn't carry event-date
+		// support, or when the "use event date" setting isn't enabled.
+		if ( ! $post_id
+			|| ! post_type_supports( (string) get_post_type( $post_id ), 'gatherpress-event-date' )
+			|| 1 !== intval( $use_event_date )
+		) {
 			return $block_content;
 		}
 
 		$event        = new Event( $post_id );
 		$display_date = $event->get_display_datetime();
-		$iso_date     = $event->get_datetime_start( 'c' );
 
 		if ( empty( $display_date ) || Event::DATETIME_PLACEHOLDER === $display_date ) {
 			return $block_content;
 		}
 
 		// Replace the datetime attribute and the displayed date text in the block output.
+		$iso_date      = $event->get_datetime_start( 'c' );
 		$block_content = preg_replace(
 			'/datetime="[^"]*"/',
 			'datetime="' . esc_attr( $iso_date ) . '"',
 			$block_content
 		);
-		$block_content = preg_replace(
+
+		return preg_replace(
 			'|(<time[^>]*>).*?(</time>)|s',
 			'$1' . esc_html( $display_date ) . '$2',
 			$block_content
 		);
-
-		return $block_content;
 	}
 
 	/**
