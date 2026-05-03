@@ -1,4 +1,8 @@
 
+## class-admin-list.php
+
+- [`gatherpress_event_datetime_label`](gatherpress_event_datetime_label.md) Filters the label used for the event-date admin list column.
+
 ## class-assets.php
 
 - [`gatherpress_asset_critical`](gatherpress_asset_critical.md) Filters whether an asset file is considered critical.
