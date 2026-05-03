@@ -264,7 +264,7 @@ When working with this codebase:
 
         ```php
         // Timezone field validates as a tz string; datetime fields validate as a datetime.
-        // The trailing datetime check still runs for the timezone key so a mis-typed value
+        // The trailing datetime check still runs for the timezone key so a mistyped value
         // can fall back to datetime parsing, matching the prior elseif behavior.
         if (
             ( 'timezone' === $key && Validate::timezone( $result ) )
