@@ -75,6 +75,17 @@ class Event {
 	const TABLE_FORMAT = '%sgatherpress_events';
 
 	/**
+	 * Pattern slug for the event template — the anchor that the
+	 * `core/paragraph` hooked block (and others) attach to. Companion
+	 * plugins that hook blocks into events read this constant rather
+	 * than hard-coding the slug.
+	 *
+	 * @since 1.0.0
+	 * @var string
+	 */
+	const TEMPLATE_PATTERN = 'gatherpress/event-template';
+
+	/**
 	 * ISO 8601 datetime format for calendar services.
 	 *
 	 * Format combines date (YYYYMMDD) and time (HHMMSS) with 'T' separator
