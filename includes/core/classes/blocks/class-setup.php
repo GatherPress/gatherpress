@@ -13,6 +13,7 @@ namespace GatherPress\Core\Blocks;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
+use GatherPress\Core\Event;
 use GatherPress\Core\Traits\Singleton;
 use WP_Block_Template;
 use WP_Post;
@@ -148,7 +149,7 @@ class Setup {
 
 		$block_patterns = array(
 			array(
-				'gatherpress/event-template',
+				Event::TEMPLATE_PATTERN,
 				array(
 					'title'       => __( 'Event Post Default Content', 'gatherpress' ),
 					'description' => $hook_anchor_description,
@@ -214,9 +215,9 @@ class Setup {
 			return $hooked_block_types;
 		}
 
-		// Hook blocks into the "gatherpress/event-template" pattern.
+		// Hook blocks into the event-template pattern.
 		if (
-			'gatherpress/event-template' === $context['name'] &&
+			Event::TEMPLATE_PATTERN === $context['name'] &&
 			'gatherpress/event-date' === $anchor_block_type &&
 			'after' === $relative_position
 		) {
@@ -265,12 +266,12 @@ class Setup {
 	): ?array {
 		// Bail when a previous filter suppressed the block, when the hook
 		// target isn't a pattern, or when the pattern / anchor block /
-		// position don't match the gatherpress/event-template anchor we
-		// inject the opener paragraph after.
+		// position don't match the event-template anchor we inject the
+		// opener paragraph after.
 		if ( is_null( $parsed_hooked_block )
 			|| ! is_array( $context )
 			|| ! isset( $context['name'] )
-			|| 'gatherpress/event-template' !== $context['name']
+			|| Event::TEMPLATE_PATTERN !== $context['name']
 			|| 'gatherpress/event-date' !== $parsed_anchor_block['blockName']
 			|| 'after' !== $relative_position
 		) {

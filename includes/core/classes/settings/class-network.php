@@ -168,29 +168,23 @@ class Network {
 		// @codeCoverageIgnoreEnd
 
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only page check.
-		$page = isset( $_GET['page'] ) ? sanitize_key( wp_unslash( $_GET['page'] ) ) : '';
-
-		if ( '' === $page || ! str_starts_with( $page, 'gatherpress_' ) ) {
-			return;
-		}
-
-		$config = self::get_config();
-
-		if ( empty( $config['enabled'] ) || empty( $config['inherited'] ) ) {
-			return;
-		}
-
-		$settings   = Settings::get_instance();
-		$has_locked = false;
-
-		foreach ( (array) $config['inherited'] as $option_key ) {
-			if ( $settings->is_option_inherited( (string) $option_key ) ) {
-				$has_locked = true;
-				break;
+		$page     = isset( $_GET['page'] ) ? sanitize_key( wp_unslash( $_GET['page'] ) ) : '';
+		$config   = self::get_config();
+		$settings = Settings::get_instance();
+		$locked   = array_filter(
+			(array) ( $config['inherited'] ?? array() ),
+			static function ( $option_key ) use ( $settings ): bool {
+				return $settings->is_option_inherited( (string) $option_key );
 			}
-		}
+		);
 
-		if ( ! $has_locked ) {
+		// Bail unless we're on a gatherpress_* settings page, network
+		// inheritance is configured, and at least one option is locked.
+		if ( '' === $page
+			|| ! str_starts_with( $page, 'gatherpress_' )
+			|| empty( $config['enabled'] )
+			|| empty( $locked )
+		) {
 			return;
 		}
 
@@ -572,20 +566,14 @@ class Network {
 		}
 
 		$defaults = self::get_default_config();
+		$stored   = is_multisite() ? get_site_option( self::OPTION_NAME, array() ) : null;
 
-		if ( ! is_multisite() ) {
-			self::$config_cache = $defaults;
-			return self::$config_cache;
-		}
+		// Single-site (no $stored) and multisite-with-corrupt-stored-value
+		// (non-array) both fall back to defaults.
+		self::$config_cache = is_array( $stored )
+			? array_merge( $defaults, $stored )
+			: $defaults;
 
-		$stored = get_site_option( self::OPTION_NAME, array() );
-
-		if ( ! is_array( $stored ) ) {
-			self::$config_cache = $defaults;
-			return self::$config_cache;
-		}
-
-		self::$config_cache = array_merge( $defaults, $stored );
 		return self::$config_cache;
 	}
 

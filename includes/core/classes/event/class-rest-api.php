@@ -954,54 +954,50 @@ class Rest_Api {
 			}
 		}
 
-		if ( ! ( new Rsvp( $data['post_id'] ) )->allows_open_rsvp() ) {
-			$response = array(
-				'success' => false,
-				'message' => __( 'Open RSVP is disabled for this event.', 'gatherpress' ),
-			);
+		// Pre-flight: bail with a structured error before processing if open
+		// RSVP is disabled or the event has already passed.
+		$event = new Event( $data['post_id'] );
+		$bail  = null;
 
-			return new WP_REST_Response( $response, 403 );
+		if ( ! ( new Rsvp( $data['post_id'] ) )->allows_open_rsvp() ) {
+			$bail = array( __( 'Open RSVP is disabled for this event.', 'gatherpress' ), 403 );
+		} elseif ( $event->has_event_past() ) {
+			$bail = array( __( 'Registration for this event is now closed.', 'gatherpress' ), 400 );
 		}
 
-		// Check if event has passed - prevent RSVPs to past events.
-		$event = new Event( $data['post_id'] );
-
-		if ( $event->has_event_past() ) {
-			$response = array(
-				'success' => false,
-				'message' => __( 'Registration for this event is now closed.', 'gatherpress' ),
+		if ( null !== $bail ) {
+			return new WP_REST_Response(
+				array(
+					'success' => false,
+					'message' => $bail[0],
+				),
+				$bail[1]
 			);
-
-			return new WP_REST_Response( $response, 400 );
 		}
 
 		// Process the RSVP using the centralized processor.
-		$rsvp_form = Form::get_instance();
-		$result    = $rsvp_form->process_rsvp( $data );
+		$result = Form::get_instance()->process_rsvp( $data );
 
-		// Handle success case - get updated responses.
+		// One trailing return covers both the success and error shapes — the
+		// success body carries comment_id + responses, the error body just
+		// the message and the upstream error_code.
 		if ( $result['success'] ) {
-			$event     = new Event( $data['post_id'] );
-			$responses = $event->rsvp->responses();
-
 			$response = array(
 				'success'    => true,
 				'message'    => $result['message'],
 				'comment_id' => $result['comment_id'],
-				'responses'  => $responses,
+				'responses'  => $event->rsvp->responses(),
 			);
-
-			return new WP_REST_Response( $response );
+			$status   = 200;
+		} else {
+			$response = array(
+				'success' => false,
+				'message' => $result['message'],
+			);
+			$status   = $result['error_code'] ?? 500;
 		}
 
-		// Handle error case.
-		$error_code = $result['error_code'] ?? 500;
-		$response   = array(
-			'success' => false,
-			'message' => $result['message'],
-		);
-
-		return new WP_REST_Response( $response, $error_code );
+		return new WP_REST_Response( $response, $status );
 	}
 
 	/**

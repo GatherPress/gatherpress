@@ -1345,6 +1345,138 @@ class Test_Settings extends Base {
 	}
 
 	/**
+	 * Direct-invoke coverage for `register_sub_page_sections` — extracted
+	 * from `register_settings()` to keep the latter under SonarCloud's
+	 * cognitive-complexity threshold. xdebug doesn't reliably trace lines
+	 * inside same-class protected helpers called from a tight loop, so the
+	 * `register_settings` parent test would otherwise leave this body
+	 * uncovered.
+	 *
+	 * @covers ::register_sub_page_sections
+	 *
+	 * @return void
+	 */
+	public function test_register_sub_page_sections_walks_sections_and_options(): void {
+		$instance = Settings::get_instance();
+		$sections = array(
+			'test_section' => array(
+				'name'        => 'Test Section',
+				'description' => 'A description that should render.',
+				'options'     => array(
+					'test_option' => array(
+						'labels' => array( 'name' => 'Test Option' ),
+						'field'  => array( 'type' => 'text' ),
+					),
+				),
+			),
+		);
+
+		Utility::invoke_hidden_method(
+			$instance,
+			'register_sub_page_sections',
+			array( 'test_sub_page', $sections )
+		);
+
+		global $wp_settings_sections, $wp_settings_fields;
+
+		$page = 'gatherpress_test_sub_page';
+
+		$this->assertArrayHasKey( $page, $wp_settings_sections );
+		$this->assertArrayHasKey( 'test_section', $wp_settings_sections[ $page ] );
+		$this->assertArrayHasKey( $page, $wp_settings_fields );
+		$this->assertArrayHasKey( 'test_section', $wp_settings_fields[ $page ] );
+		$this->assertArrayHasKey( 'test_option', $wp_settings_fields[ $page ]['test_section'] );
+
+		// Invoking the registered callback exercises the closure body that
+		// defers to render_field — without this the closure stays uncovered
+		// even though the registration path runs.
+		ob_start();
+		call_user_func( $wp_settings_fields[ $page ]['test_section']['test_option']['callback'] );
+		ob_end_clean();
+	}
+
+	/**
+	 * Direct-invoke coverage for the section-with-no-options branch of
+	 * `register_sub_page_sections` — the `continue` path skips
+	 * `add_settings_field` calls entirely.
+	 *
+	 * @covers ::register_sub_page_sections
+	 *
+	 * @return void
+	 */
+	public function test_register_sub_page_sections_skips_when_section_has_no_options(): void {
+		$instance = Settings::get_instance();
+		$sections = array(
+			'no_options_section' => array(
+				'name' => 'Section Without Options',
+			),
+		);
+
+		Utility::invoke_hidden_method(
+			$instance,
+			'register_sub_page_sections',
+			array( 'no_options_sub_page', $sections )
+		);
+
+		global $wp_settings_sections, $wp_settings_fields;
+
+		$page = 'gatherpress_no_options_sub_page';
+
+		$this->assertArrayHasKey( $page, $wp_settings_sections );
+		// Section registered, but no fields under it.
+		$this->assertTrue(
+			empty( $wp_settings_fields[ $page ]['no_options_section'] ),
+			'Section without options should not register any fields.'
+		);
+	}
+
+	/**
+	 * The section description callback rendered by
+	 * `register_sub_page_sections` echoes a `<p class="description">` block
+	 * when the section carries a description, and renders nothing when it
+	 * doesn't — exercises both arms of the inner conditional.
+	 *
+	 * @covers ::register_sub_page_sections
+	 *
+	 * @return void
+	 */
+	public function test_register_sub_page_sections_description_callback_branches(): void {
+		$instance = Settings::get_instance();
+		$sections = array(
+			'with_description' => array(
+				'name'        => 'With Description',
+				'description' => 'My description.',
+			),
+			'no_description'   => array(
+				'name' => 'No Description',
+			),
+		);
+
+		Utility::invoke_hidden_method(
+			$instance,
+			'register_sub_page_sections',
+			array( 'desc_test_sub_page', $sections )
+		);
+
+		global $wp_settings_sections;
+
+		$page    = 'gatherpress_desc_test_sub_page';
+		$with_cb = $wp_settings_sections[ $page ]['with_description']['callback'];
+		$no_cb   = $wp_settings_sections[ $page ]['no_description']['callback'];
+
+		ob_start();
+		$with_cb();
+		$with_html = ob_get_clean();
+
+		ob_start();
+		$no_cb();
+		$no_html = ob_get_clean();
+
+		$this->assertStringContainsString( 'My description.', $with_html );
+		$this->assertSame( '', $no_html );
+	}
+
+	/**
 	 * Test register_settings with empty sections.
 	 *
 	 * @covers ::register_settings

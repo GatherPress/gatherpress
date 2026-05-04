@@ -185,6 +185,23 @@ export function findEventPostById( selectFunc, postId ) {
 }
 
 /**
+ * Lookup helper: does the given post type slug declare
+ * `gatherpress-event-date` support?
+ *
+ * Hoisted to module scope so `resolveLookupType` and
+ * `verifyPostIdIsValidEvent` share one implementation rather than each
+ * defining its own inline arrow (caught by `javascript:S4144`).
+ *
+ * @param {Function} selectFunc WordPress data `select` callback.
+ * @param {string}   slug       Post type slug to check.
+ * @return {boolean} True when the post type declares event-date support.
+ */
+const isEventSupportingType = ( selectFunc, slug ) =>
+	!! selectFunc( 'core' ).getPostType( slug )?.supports?.[
+		'gatherpress-event-date'
+	];
+
+/**
  * Resolve the post type to use when looking up an override target.
  *
  * Order of preference: explicit `postType` hint (when event-supporting),
@@ -198,16 +215,11 @@ export function findEventPostById( selectFunc, postId ) {
  * @return {string|null} The post type slug to look up with, or null.
  */
 const resolveLookupType = ( selectFunc, currentPostType, postType ) => {
-	const isEventSupporting = ( slug ) =>
-		!! selectFunc( 'core' ).getPostType( slug )?.supports?.[
-			'gatherpress-event-date'
-		];
-
-	if ( postType && isEventSupporting( postType ) ) {
+	if ( postType && isEventSupportingType( selectFunc, postType ) ) {
 		return postType;
 	}
 
-	if ( isEventSupporting( currentPostType ) ) {
+	if ( isEventSupportingType( selectFunc, currentPostType ) ) {
 		return currentPostType;
 	}
 
@@ -230,14 +242,10 @@ const resolveLookupType = ( selectFunc, currentPostType, postType ) => {
 const verifyPostIdIsValidEvent = ( selectFunc, postId, postType ) => {
 	const currentPostId = selectFunc( 'core/editor' )?.getCurrentPostId();
 	const currentPostType = selectFunc( 'core/editor' )?.getCurrentPostType();
-	const isEventSupporting = ( slug ) =>
-		!! selectFunc( 'core' ).getPostType( slug )?.supports?.[
-			'gatherpress-event-date'
-		];
 
 	// If this is the current post, check if it supports event_date.
 	if ( currentPostId && currentPostId === postId ) {
-		if ( ! isEventSupporting( currentPostType ) ) {
+		if ( ! isEventSupportingType( selectFunc, currentPostType ) ) {
 			return false;
 		}
 		const post = selectFunc( 'core' ).getEntityRecord(

@@ -276,43 +276,47 @@ class Rsvp_Response {
 	 * @return array Modified array of avatar arguments, including the correct URL for the avatar.
 	 */
 	public function modify_avatar_for_gatherpress_rsvp( array $args, $comment ): array {
+		// Bail when the filter fires for a non-RSVP comment so the body
+		// doesn't have to nest under the positive guard.
 		if (
-			$comment &&
-			is_a( $comment, 'WP_Comment' ) &&
-			Rsvp::COMMENT_TYPE === $comment->comment_type
+			! $comment
+			|| ! is_a( $comment, 'WP_Comment' )
+			|| Rsvp::COMMENT_TYPE !== $comment->comment_type
 		) {
-			$email = $comment->comment_author_email;
+			return $args;
+		}
 
-			if ( intval( $comment->user_id ) && empty( $email ) ) {
-				$user = new WP_User( $comment->user_id );
+		$email = $comment->comment_author_email;
 
-				if ( $user->exists() ) {
-					$email = $user->user_email;
-				}
+		if ( intval( $comment->user_id ) && empty( $email ) ) {
+			$user = new WP_User( $comment->user_id );
+
+			if ( $user->exists() ) {
+				$email = $user->user_email;
 			}
+		}
 
-			if (
-				intval( get_comment_meta( intval( $comment->comment_ID ), 'gatherpress_rsvp_anonymous', true ) ) &&
-				! current_user_can( Rsvp::CAPABILITY )
-			) {
-				// Set the email to empty if the RSVP is marked as anonymous and the current user
-				// does not have permission to edit posts. This ensures the avatar defaults
-				// to a generic or placeholder image for anonymous responses.
-				$email = '';
-			}
+		if (
+			intval( get_comment_meta( intval( $comment->comment_ID ), 'gatherpress_rsvp_anonymous', true ) ) &&
+			! current_user_can( Rsvp::CAPABILITY )
+		) {
+			// Set the email to empty if the RSVP is marked as anonymous and the current user
+			// does not have permission to edit posts. This ensures the avatar defaults
+			// to a generic or placeholder image for anonymous responses.
+			$email = '';
+		}
 
-			$args['url'] = get_avatar_url( $email, array( 'default' => 'mystery' ) );
+		$args['url'] = get_avatar_url( $email, array( 'default' => 'mystery' ) );
 
-			// Preserve only style attributes from extra_attr to maintain WordPress core's
-			// border styles (e.g., border-radius on avatars). Strip all other attributes
-			// that third-party plugins (like Webmention) may inject, as they can cause
-			// issues with JavaScript/React rendering.
-			if ( ! empty( $args['extra_attr'] ) ) {
-				if ( preg_match( '/style="([^"]*)"/', $args['extra_attr'], $matches ) ) {
-					$args['extra_attr'] = sprintf( 'style="%s"', $matches[1] );
-				} else {
-					$args['extra_attr'] = '';
-				}
+		// Preserve only style attributes from extra_attr to maintain WordPress core's
+		// border styles (e.g., border-radius on avatars). Strip all other attributes
+		// that third-party plugins (like Webmention) may inject, as they can cause
+		// issues with JavaScript/React rendering.
+		if ( ! empty( $args['extra_attr'] ) ) {
+			if ( preg_match( '/style="([^"]*)"/', $args['extra_attr'], $matches ) ) {
+				$args['extra_attr'] = sprintf( 'style="%s"', $matches[1] );
+			} else {
+				$args['extra_attr'] = '';
 			}
 		}
 
