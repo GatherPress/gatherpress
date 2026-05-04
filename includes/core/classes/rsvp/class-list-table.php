@@ -686,10 +686,11 @@ class List_Table extends WP_List_Table {
 		$rsvp_ids = array();
 
 		if ( isset( $_REQUEST['gatherpress_rsvp_id'] ) ) {
-			$raw_input = wp_unslash( $_REQUEST['gatherpress_rsvp_id'] );
-			$rsvp_ids  = is_array( $raw_input )
-				? array_map( 'intval', $raw_input )
-				: array( intval( $raw_input ) );
+			// `map_deep` casts via intval on every leaf — handles both the
+			// scalar (single-row delete link) and array (bulk-action checkbox)
+			// shapes in one expression, sanitizing at the read site so PHPCS
+			// doesn't see an unsanitized intermediate.
+			$rsvp_ids = (array) map_deep( wp_unslash( $_REQUEST['gatherpress_rsvp_id'] ), 'intval' );
 		}
 
 		if ( empty( $rsvp_ids ) ) {
