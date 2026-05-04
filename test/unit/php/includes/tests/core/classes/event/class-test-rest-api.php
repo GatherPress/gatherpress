@@ -2433,4 +2433,102 @@ class Test_Rest_Api extends Base {
 
 		$this->assertTrue( true, 'Helper returned without sending mail.' );
 	}
+
+	/**
+	 * Direct-invoke coverage for `build_comment_recipient` (extracted from
+	 * `get_recipients`) — happy path with a registered user pulls email and
+	 * display name from the user record rather than the comment fields.
+	 *
+	 * Reflection-invoked because xdebug doesn't reliably trace lines inside
+	 * same-class protected helpers called from a foreach in the parent.
+	 *
+	 * @covers ::build_comment_recipient
+	 *
+	 * @return void
+	 */
+	public function test_build_comment_recipient_uses_user_data_when_user_id_present(): void {
+		$instance = Rest_Api::get_instance();
+		$user_id  = $this->factory->user->create(
+			array(
+				'user_email'   => 'user-recipient@example.test',
+				'display_name' => 'User Recipient',
+			)
+		);
+
+		$comment                       = new \stdClass();
+		$comment->comment_ID           = 42;
+		$comment->user_id              = $user_id;
+		$comment->comment_author_email = 'comment-fallback@example.test';
+		$comment->comment_author       = 'Comment Author';
+
+		$recipient = Utility::invoke_hidden_method(
+			$instance,
+			'build_comment_recipient',
+			array( $comment )
+		);
+
+		$this->assertIsArray( $recipient );
+		$this->assertTrue( $recipient['is_user'] );
+		$this->assertSame( $user_id, $recipient['user_id'] );
+		$this->assertSame( 42, $recipient['comment_id'] );
+		// User data wins over comment-author fields when user_id resolves.
+		$this->assertSame( 'user-recipient@example.test', $recipient['email'] );
+		$this->assertSame( 'User Recipient', $recipient['name'] );
+	}
+
+	/**
+	 * Direct-invoke coverage for `build_comment_recipient` — anonymous-RSVP
+	 * branch (no user_id) keeps the comment's own author email/name.
+	 *
+	 * @covers ::build_comment_recipient
+	 *
+	 * @return void
+	 */
+	public function test_build_comment_recipient_falls_back_to_comment_fields(): void {
+		$instance = Rest_Api::get_instance();
+
+		$comment                       = new \stdClass();
+		$comment->comment_ID           = 7;
+		$comment->user_id              = 0;
+		$comment->comment_author_email = 'anon@example.test';
+		$comment->comment_author       = 'Anon';
+
+		$recipient = Utility::invoke_hidden_method(
+			$instance,
+			'build_comment_recipient',
+			array( $comment )
+		);
+
+		$this->assertIsArray( $recipient );
+		$this->assertFalse( $recipient['is_user'] );
+		$this->assertSame( 0, $recipient['user_id'] );
+		$this->assertSame( 'anon@example.test', $recipient['email'] );
+		$this->assertSame( 'Anon', $recipient['name'] );
+	}
+
+	/**
+	 * Direct-invoke coverage for `build_comment_recipient` — returns null
+	 * for a comment with no email on file so the caller can skip it.
+	 *
+	 * @covers ::build_comment_recipient
+	 *
+	 * @return void
+	 */
+	public function test_build_comment_recipient_returns_null_without_email(): void {
+		$instance = Rest_Api::get_instance();
+
+		$comment                       = new \stdClass();
+		$comment->comment_ID           = 1;
+		$comment->user_id              = 0;
+		$comment->comment_author_email = '';
+		$comment->comment_author       = 'No Email';
+
+		$recipient = Utility::invoke_hidden_method(
+			$instance,
+			'build_comment_recipient',
+			array( $comment )
+		);
+
+		$this->assertNull( $recipient );
+	}
 }

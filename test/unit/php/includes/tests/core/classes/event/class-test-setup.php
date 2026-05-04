@@ -1779,4 +1779,70 @@ class Test_Setup extends Base {
 		// Clean up.
 		Utility::set_and_get_hidden_property( $instance, 'archive_title', '' );
 	}
+
+	/**
+	 * Direct-invoke coverage for `fall_back_to_archive_mode` (extracted from
+	 * `handle_event_archive_redirect`) — happy path: an `upcoming`/`past`
+	 * mode setting rewrites the query as the matching event archive.
+	 *
+	 * Reflection-invoked because xdebug doesn't reliably trace lines inside
+	 * same-class protected helpers called from the parent dispatch.
+	 *
+	 * @covers ::fall_back_to_archive_mode
+	 *
+	 * @return void
+	 */
+	public function test_fall_back_to_archive_mode_sets_query_for_upcoming(): void {
+		$instance = Setup::get_instance();
+
+		update_option( Settings::OPTION_NAME, array( 'event_archive' => 'upcoming' ) );
+
+		$wp_query = new \WP_Query();
+
+		Utility::invoke_hidden_method(
+			$instance,
+			'fall_back_to_archive_mode',
+			array( $wp_query )
+		);
+
+		delete_option( Settings::OPTION_NAME );
+
+		$this->assertTrue( $wp_query->is_archive );
+		$this->assertTrue( $wp_query->is_post_type_archive );
+		$this->assertFalse( $wp_query->is_page );
+		$this->assertFalse( $wp_query->is_singular );
+		$this->assertSame( 'upcoming', $wp_query->get( Query::EVENT_QUERY_PARAM ) );
+	}
+
+	/**
+	 * Direct-invoke coverage for `fall_back_to_archive_mode` 404 branch:
+	 * when the configured mode is neither `upcoming` nor `past`, the helper
+	 * sets the global query to a 404.
+	 *
+	 * @covers ::fall_back_to_archive_mode
+	 *
+	 * @return void
+	 */
+	public function test_fall_back_to_archive_mode_sets_404_when_no_mode(): void {
+		$instance = Setup::get_instance();
+
+		// `none` is a valid archive mode that means "no archive" — neither
+		// upcoming nor past — so it lands on the 404 arm.
+		$mode_filter = static function (): string {
+			return 'none';
+		};
+		add_filter( 'gatherpress_event_archive_mode', $mode_filter );
+
+		$wp_query = new \WP_Query();
+
+		Utility::invoke_hidden_method(
+			$instance,
+			'fall_back_to_archive_mode',
+			array( $wp_query )
+		);
+
+		remove_filter( 'gatherpress_event_archive_mode', $mode_filter );
+
+		$this->assertTrue( $wp_query->is_404() );
+	}
 }

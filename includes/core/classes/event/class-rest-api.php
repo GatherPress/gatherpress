@@ -577,32 +577,35 @@ class Rest_Api {
 	 */
 	public function get_recipients( array $send, int $post_id ): array {
 		$recipients    = array();
-		$rsvp          = new Rsvp( $post_id );
-		$all_responses = $rsvp->responses();
-		$rsvp_query    = Rsvp_Query::get_instance();
+		$all_responses = ( new Rsvp( $post_id ) )->responses();
 
-		// Handle 'all' members (WordPress users only).
+		// Handle 'all' members (WordPress users only) — array_map keeps the
+		// per-user shape declarative.
 		if ( ! empty( $send['all'] ) ) {
-			$users = get_users();
-
-			foreach ( $users as $user ) {
-				$recipients[] = array(
-					'is_user'    => true,
-					'user_id'    => $user->ID,
-					'comment_id' => 0,
-					'email'      => $user->user_email,
-					'name'       => $user->display_name,
-				);
-			}
+			$recipients = array_map(
+				static function ( $user ): array {
+					return array(
+						'is_user'    => true,
+						'user_id'    => $user->ID,
+						'comment_id' => 0,
+						'email'      => $user->user_email,
+						'name'       => $user->display_name,
+					);
+				},
+				get_users()
+			);
 		}
 
-		// Collect comment IDs for RSVP statuses.
+		// Collect comment IDs for the requested RSVP statuses — `array_column`
+		// flattens each status's records to its commentId list in one pass,
+		// avoiding the inner foreach.
 		$comment_ids = array();
 		foreach ( array( 'attending', 'waiting_list', 'not_attending' ) as $status ) {
 			if ( ! empty( $send[ $status ] ) ) {
-				foreach ( $all_responses[ $status ]['records'] as $record ) {
-					$comment_ids[] = $record['commentId'];
-				}
+				$comment_ids = array_merge(
+					$comment_ids,
+					array_column( $all_responses[ $status ]['records'], 'commentId' )
+				);
 			}
 		}
 
@@ -610,8 +613,8 @@ class Rest_Api {
 			return $recipients;
 		}
 
-		// Get full comment data for the RSVPs.
-		$comments = $rsvp_query->get_rsvps(
+		// Get full comment data for the RSVPs and build recipient rows.
+		$comments = Rsvp_Query::get_instance()->get_rsvps(
 			array(
 				'post_id'     => $post_id,
 				'status'      => 'approve',
@@ -620,35 +623,55 @@ class Rest_Api {
 		);
 
 		foreach ( $comments as $comment ) {
-			$user_id = intval( $comment->user_id );
-			$user    = false;
-			$email   = $comment->comment_author_email;
-			$name    = $comment->comment_author;
+			$recipient = $this->build_comment_recipient( $comment );
 
-			if ( $user_id ) {
-				$user = get_userdata( $user_id );
-
-				if ( $user ) {
-					$email = $user->user_email;
-					$name  = $user->display_name;
-				}
+			if ( null !== $recipient ) {
+				$recipients[] = $recipient;
 			}
-
-			// Skip if no email address.
-			if ( empty( $email ) ) {
-				continue;
-			}
-
-			$recipients[] = array(
-				'is_user'    => (bool) $user_id,
-				'user_id'    => $user_id,
-				'comment_id' => $comment->comment_ID,
-				'email'      => $email,
-				'name'       => $name,
-			);
 		}
 
 		return $recipients;
+	}
+
+	/**
+	 * Build a single recipient row from an approved RSVP comment, resolving
+	 * the user's email/display name when the comment is tied to a WordPress
+	 * user. Returns null when no email can be determined so the caller can
+	 * skip the row.
+	 *
+	 * Extracted from `get_recipients()` so the outer dispatch stays under
+	 * SonarCloud's cognitive-complexity threshold.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param object $comment RSVP comment row from `Rsvp_Query::get_rsvps()`.
+	 * @return array|null Recipient row, or null when no email is on file.
+	 */
+	protected function build_comment_recipient( $comment ): ?array {
+		$user_id = intval( $comment->user_id );
+		$email   = $comment->comment_author_email;
+		$name    = $comment->comment_author;
+
+		if ( $user_id ) {
+			$user = get_userdata( $user_id );
+
+			if ( $user ) {
+				$email = $user->user_email;
+				$name  = $user->display_name;
+			}
+		}
+
+		if ( empty( $email ) ) {
+			return null;
+		}
+
+		return array(
+			'is_user'    => (bool) $user_id,
+			'user_id'    => $user_id,
+			'comment_id' => $comment->comment_ID,
+			'email'      => $email,
+			'name'       => $name,
+		);
 	}
 
 	/**

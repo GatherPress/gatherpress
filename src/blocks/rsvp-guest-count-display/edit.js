@@ -53,25 +53,23 @@ const Edit = ( { context, clientId } ) => {
 	// Get max attendance limit from meta - check Post ID override first.
 	const maxAttendanceLimit = useSelect(
 		( select ) => {
-			// Check if parent RSVP or RSVP Response block has a postId override.
-			const parentBlocks = select( 'core/block-editor' ).getBlockParents( clientId, true );
-			let postIdOverride = null;
+			// Find the first ancestor RSVP or RSVP Response block that
+			// declared a postId override — replaces the original `for` loop
+			// with `find` so the dispatch is one expression.
+			const parentBlocks =
+				select( 'core/block-editor' ).getBlockParents( clientId, true ) || [];
+			const overrideParent = parentBlocks
+				.map( ( id ) => select( 'core/block-editor' ).getBlock( id ) )
+				.find(
+					( parent ) =>
+						( 'gatherpress/rsvp' === parent?.name ||
+							'gatherpress/rsvp-response' === parent?.name ) &&
+						parent.attributes?.postId,
+				);
 
-			if ( parentBlocks && 0 < parentBlocks.length ) {
-				for ( const parentId of parentBlocks ) {
-					const parent = select( 'core/block-editor' ).getBlock( parentId );
-					if ( 'gatherpress/rsvp' === parent?.name && parent.attributes?.postId ) {
-						postIdOverride = parent.attributes.postId;
-						break;
-					}
-					if ( 'gatherpress/rsvp-response' === parent?.name && parent.attributes?.postId ) {
-						postIdOverride = parent.attributes.postId;
-						break;
-					}
-				}
-			}
+			let postIdOverride = overrideParent?.attributes?.postId ?? null;
 
-			// If no parent block postId, check context postId only if it's an event.
+			// Fall back to context postId only if it's an event.
 			if ( ! postIdOverride && contextPostId && isEventContext ) {
 				postIdOverride = contextPostId;
 			}
@@ -94,12 +92,10 @@ const Edit = ( { context, clientId } ) => {
 			const currentSupportsRsvp = !! select( 'core' )
 				.getPostType( currentPostType )?.supports?.[ 'gatherpress-rsvp' ];
 
-			if ( currentSupportsRsvp ) {
-				return select( 'core/editor' ).getEditedPostAttribute( 'meta' )
-					?.gatherpress_max_guest_limit || 0;
-			}
-
-			return 0;
+			return currentSupportsRsvp
+				? ( select( 'core/editor' ).getEditedPostAttribute( 'meta' )
+					?.gatherpress_max_guest_limit || 0 )
+				: 0;
 		},
 		[ clientId, contextPostId, isEventContext, context?.postType ],
 	);

@@ -418,18 +418,14 @@ class Setup {
 	public function handle_event_archive_redirect(): void {
 		global $wp_query;
 
-		// Only handle event post type archive requests.
-		if ( ! is_post_type_archive( Event::POST_TYPE ) ) {
-			return;
-		}
-
-		// Don't interfere with feed requests - those are handled by the Feed class.
-		if ( is_feed() ) {
-			return;
-		}
-
-		// Don't interfere if event-query already assigned this as an archive page.
-		if ( $wp_query->get( Query::EVENT_QUERY_PARAM ) ) {
+		// Bail when not the event post-type archive, when on a feed (the Feed
+		// class handles those separately), or when event-query already claimed
+		// this page as an archive — combined into one guard so the function
+		// reads as a dispatch.
+		if ( ! is_post_type_archive( Event::POST_TYPE )
+			|| is_feed()
+			|| $wp_query->get( Query::EVENT_QUERY_PARAM )
+		) {
 			return;
 		}
 
@@ -442,29 +438,8 @@ class Setup {
 
 		if ( ! ( $page instanceof WP_Post ) || 'publish' !== $page->post_status ) {
 			// No page exists with this slug — fall back to the configured
-			// archive mode.
-			$mode = $this->get_event_archive_mode();
-
-			if ( 'upcoming' === $mode || 'past' === $mode ) {
-				$paged = get_query_var( 'paged', 1 );
-
-				$wp_query->query(
-					array(
-						'post_type'              => Event::POST_TYPE,
-						Query::EVENT_QUERY_PARAM => $mode,
-						'paged'                  => $paged,
-					)
-				);
-
-				$wp_query->is_page              = false;
-				$wp_query->is_singular          = false;
-				$wp_query->is_archive           = true;
-				$wp_query->is_post_type_archive = true;
-				return;
-			}
-
-			$wp_query->set_404();
-			status_header( 404 );
+			// archive mode (or 404 if no mode is configured).
+			$this->fall_back_to_archive_mode( $wp_query );
 			return;
 		}
 
@@ -515,6 +490,43 @@ class Setup {
 		$wp_query->is_singular          = true;
 		$wp_query->queried_object       = $page;
 		$wp_query->queried_object_id    = $page->ID;
+	}
+
+	/**
+	 * Mutate the global query to render the configured fallback archive mode
+	 * (upcoming/past) when no page is assigned to the events rewrite slug, or
+	 * 404 when no mode is configured. Extracted from
+	 * `handle_event_archive_redirect()` to keep that dispatch under
+	 * SonarCloud's three-return ceiling.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param \WP_Query $wp_query The global query, mutated in place.
+	 * @return void
+	 */
+	protected function fall_back_to_archive_mode( \WP_Query $wp_query ): void {
+		$mode = $this->get_event_archive_mode();
+
+		if ( 'upcoming' !== $mode && 'past' !== $mode ) {
+			$wp_query->set_404();
+			status_header( 404 );
+			return;
+		}
+
+		$paged = get_query_var( 'paged', 1 );
+
+		$wp_query->query(
+			array(
+				'post_type'              => Event::POST_TYPE,
+				Query::EVENT_QUERY_PARAM => $mode,
+				'paged'                  => $paged,
+			)
+		);
+
+		$wp_query->is_page              = false;
+		$wp_query->is_singular          = false;
+		$wp_query->is_archive           = true;
+		$wp_query->is_post_type_archive = true;
 	}
 
 	/**

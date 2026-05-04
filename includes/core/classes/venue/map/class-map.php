@@ -900,7 +900,7 @@ class Map {
 		// unreachable, GD missing, brand-new provider not yet warmed). Walk
 		// other providers' stored entries for the same combo so a switch
 		// from OSM to Google still shows the OSM PNG until the new one
-		// lands. Return the first matching entry; ordering follows whatever
+		// lands. Take the first matching entry; ordering follows whatever
 		// post meta gives us (last-saved-wins by storage order).
 		$key         = $this->combo_key(
 			$this->clamp_zoom( $resolved_zoom ),
@@ -909,17 +909,16 @@ class Map {
 		);
 		$all         = $this->get_all_descriptors( $venue_post_id );
 		$active_slug = Manager::get_instance()->get_active_slug();
+		$fallback    = null;
 
 		foreach ( $all as $slug => $combos ) {
-			if ( $slug === $active_slug ) {
-				continue;
-			}
-			if ( isset( $combos[ $key ] ) ) {
-				return $combos[ $key ];
+			if ( $slug !== $active_slug && isset( $combos[ $key ] ) ) {
+				$fallback = $combos[ $key ];
+				break;
 			}
 		}
 
-		return null;
+		return $fallback;
 	}
 
 	/**

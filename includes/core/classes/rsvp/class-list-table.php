@@ -426,45 +426,42 @@ class List_Table extends WP_List_Table {
 	 * @return string Formatted content for the specified column.
 	 */
 	public function column_default( $item, $column_name ): string {
+		// Default fall-through (matches the original switch's `default` arm).
+		$output = isset( $item[ $column_name ] ) ? $item[ $column_name ] : '-';
+
 		switch ( $column_name ) {
 			case 'response':
-				$terms = wp_get_object_terms( $item['comment_ID'], Rsvp::TAXONOMY );
-				$name  = '-';
-
-				if ( empty( $terms ) ) {
-					return $name;
-				}
-
-				switch ( $terms[0]->slug ) {
-					case 'attending':
-						$name = __( 'Attending', 'gatherpress' );
-						break;
-					case 'not_attending':
-						$name = __( 'Not Attending', 'gatherpress' );
-						break;
-					case 'waiting_list':
-						$name = __( 'Waiting List', 'gatherpress' );
-						break;
-					default:
-						$name = '-';
-				}
-
-				return $name;
+				$terms          = wp_get_object_terms( $item['comment_ID'], Rsvp::TAXONOMY );
+				$response_names = array(
+					'attending'     => __( 'Attending', 'gatherpress' ),
+					'not_attending' => __( 'Not Attending', 'gatherpress' ),
+					'waiting_list'  => __( 'Waiting List', 'gatherpress' ),
+				);
+				$output         = empty( $terms )
+					? '-'
+					: ( $response_names[ $terms[0]->slug ] ?? '-' );
+				break;
 			case 'event':
-				return '<a href="' . esc_url( get_permalink( $item['comment_post_ID'] ) ) . '">' .
+				$output = '<a href="' . esc_url( get_permalink( $item['comment_post_ID'] ) ) . '">' .
 					wp_kses_post( $item['event_title'] ) . '</a>';
+				break;
 			case 'approved':
 				$statuses = array(
 					'1'    => __( 'Approved', 'gatherpress' ),
 					'0'    => __( 'Pending', 'gatherpress' ),
 					'spam' => __( 'Spam', 'gatherpress' ),
 				);
-				return $statuses[ $item['comment_approved'] ];
+				$output   = $statuses[ $item['comment_approved'] ];
+				break;
 			case 'date':
-				return get_comment_date( 'Y/m/d \a\t g:i a', $item['comment_ID'] );
+				$output = get_comment_date( 'Y/m/d \a\t g:i a', $item['comment_ID'] );
+				break;
 			default:
-				return isset( $item[ $column_name ] ) ? $item[ $column_name ] : '-';
+				// Default assignment already covers this arm.
+				break;
 		}
+
+		return $output;
 	}
 
 	/**
