@@ -22,6 +22,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
  * @since 1.0.0
  */
 class Migrate {
+
 	/**
 	 * List of non-existent post_meta keys with array values containing getter and setter callback definitions.
 	 *
@@ -52,13 +53,11 @@ class Migrate {
 		 * That can be helpful, if you want to import event- or venue-data from another plugin.
 		 *
 		 * @example
-		 *   The filter in use, to import data from the "Event Organiser" plugin.
-		 *   https://github.com/carstingaxion/gatherpress-export-import/blob/main/import-events-from--event-organiser.php
-		 *
-		 * @example
 		 *   Example use of the filter to illustrate function signatures for the callbacks.
+		 *
+		 *   ```php
 		 *   \add_filter(
-		 *       'gatherpress_pseudopostmetas',
+		 *       'gatherpress_pseudo_post_metas',
 		 *       function ( array $pseudopostmetas ): array {
 		 *           $pseudopostmetas['my_gatherpress_extension_data_name'] = [
 		 *               'export_callback' => function ( WP_Post $post ): string {
@@ -76,12 +75,13 @@ class Migrate {
 		 *           return $pseudopostmetas;
 		 *       }
 		 *   );
+		 *   ```
 		 *
 		 * @since 1.0.0
 		 *
 		 * @param  array $pseudopostmetas List of data-names and their respective export- and import-callbacks.
 		 * @return array
 		 */
-		return (array) apply_filters( 'gatherpress_pseudopostmetas', $this->pseudopostmetas );
+		return (array) apply_filters( 'gatherpress_pseudo_post_metas', $this->pseudopostmetas );
 	}
 }

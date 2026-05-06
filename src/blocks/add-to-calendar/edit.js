@@ -1,19 +1,58 @@
 /**
- * WordPress dependencies.
+ * WordPress dependencies
  */
 import { useBlockProps, InnerBlocks } from '@wordpress/block-editor';
+import { useSelect } from '@wordpress/data';
 
 /**
- * Internal dependencies.
+ * Internal dependencies
  */
 import TEMPLATE from './template';
+import { hasValidEventId, usePostTypeSupports, DISABLED_FIELD_OPACITY } from '../../helpers/event';
+import { isInFSETemplate } from '../../helpers/editor';
 
-const Edit = () => {
-	const blockProps = useBlockProps();
+const Edit = ( { attributes, context } ) => {
+	// Check if we're inside a query loop and if context is an event.
+	// `usePostTypeSupports` is reactive so the block re-renders the moment the
+	// post-type definition resolves; the non-reactive variant would miss it
+	// and leave the block permanently dimmed in Query Loops.
+	const isDescendentOfQueryLoop = Number.isFinite( context?.queryId );
+	const isEventContext = usePostTypeSupports( 'gatherpress-event-date', context?.postType );
+	const hasExplicitOverride = !! attributes?.postId;
+
+	// Only use postId if context is an event or have an explicit override.
+	const postId =
+		( attributes?.postId || null ) ??
+		( ( isDescendentOfQueryLoop || isEventContext ) ? context?.postId : null ) ??
+		null;
+
+	// Check if block has a valid event connection. An explicit override
+	// (`attributes.postId`) is a third valid path alongside Query Loop and
+	// event-supporting host: it targets a specific event post regardless of
+	// the host's post type. Wrap in `useSelect` so the gate re-evaluates when
+	// the override target's entity record loads.
+	const isValidEvent = useSelect(
+		( select ) =>
+			( hasExplicitOverride || isDescendentOfQueryLoop || isEventContext ) &&
+			hasValidEventId( select, postId, context?.postType ),
+		[
+			postId,
+			context?.postType,
+			hasExplicitOverride,
+			isDescendentOfQueryLoop,
+			isEventContext,
+		]
+	);
+
+	const blockProps = useBlockProps( {
+		style: {
+			opacity: ( isInFSETemplate() || isValidEvent ) ? 1 : DISABLED_FIELD_OPACITY,
+		},
+	} );
 
 	return (
-		<div {...blockProps}>
-			<InnerBlocks template={TEMPLATE} />
+		<div { ...blockProps }>
+			<InnerBlocks template={ TEMPLATE } />
 		</div>
 	);
 };

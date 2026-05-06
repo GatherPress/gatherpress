@@ -4,11 +4,11 @@ GatherPress registers multiple invisible block-patterns, that are used as templa
 
 Patterns allow to be filtered by the (upgraded since WordPress 6.5) Block Hooks API. Making use of this API brings some advantages, which are at least:
 
-- GatherPress' blocks can be easily moved, modified or removed by extenders via standardized core code
+- GatherPress' blocks can be easily moved, modified, or removed by extenders via standardized core code
 - GatherPress provides central entry points for plugin developers to hook-in own blocks, to extend GatherPress
 - GatherPress' blocks will provide their hooking code themself, which keeps concerns separate and code clean
 
-For example when you create a new event post, it gets pre-poulated with a set of blocks, curated within a block-pattern named `gatherpress/event-template`.
+For example, the `gatherpress/event-template` pattern is the Block Hooks anchor that companion plugins extend; the user-facing "Event with RSVP" starter pattern surfaced in the new-event chooser modal seeds the same canonical block layout.
 
 ## Overview of hookable patterns
 
@@ -21,25 +21,83 @@ GatherPress combines four of such block-patterns to curate the creation of:
 
 ### New Event
 
-GatherPress adds the following blocks by default into a new created event:
+Creating a new event opens WordPress's "Choose a pattern" starter modal —
+the same UX Twenty Twenty-Five uses on new pages. The bundled patterns
+live in `includes/core/templates/event/`; each file returns a
+`name/title/description/content` array and the loader registers it
+scoped to `core/post-content` plus every post type declaring
+`gatherpress-event-date` support. Adding a new pattern is just dropping
+a file into that directory.
 
-- A block-pattern named `gatherpress/event-template`, which contains the following blocks by default:
+The bundled default ships with the plugin:
 
-    - `gatherpress/event-date`
-    - `gatherpress/add-to-calendar`
-    - `gatherpress/venue`
-    - `gatherpress/rsvp`
-    - `core/paragraph`
-    - `gatherpress/rsvp-response`
+- `gatherpress/event-with-rsvp` (title *"Event with RSVP"*) seeds the
+  canonical event layout: event-date + add-to-calendar + venue +
+  online-event + RSVP + description paragraph + rsvp-response. Venue,
+  RSVP, and rsvp-response carry `patternPicked: true` so their
+  in-block pattern pickers stay suppressed.
+
+Third parties can append their own without forking by hooking the
+`gatherpress_event_starter_patterns` filter. The second argument is the
+array of post types declaring `gatherpress-event-date` support that the
+patterns will be registered against — branch on it to scope an entry to
+your own event-acting post type only:
+
+```php
+add_filter(
+    'gatherpress_event_starter_patterns',
+    function ( array $patterns, array $post_types ): array {
+        if ( ! in_array( 'production', $post_types, true ) ) {
+            return $patterns;
+        }
+        $patterns[] = array(
+            'name'        => 'my-plugin/minimal-event',
+            'title'       => __( 'Minimal Event', 'my-plugin' ),
+            'description' => __( 'Date + RSVP only.', 'my-plugin' ),
+            'content'     => '<!-- wp:gatherpress/event-date /--><!-- wp:gatherpress/rsvp {"patternPicked":true} --><div class="wp-block-gatherpress-rsvp"></div><!-- /wp:gatherpress/rsvp -->',
+        );
+        return $patterns;
+    },
+    10,
+    2
+);
+```
+
+Per-user dismissal is handled by the modal's own *"Always show starter
+patterns for new pages"* toggle — that's a WordPress-core user
+preference, not a GatherPress setting.
+
+The `gatherpress/event-template` pattern still exists as the Block Hooks
+anchor for companion plugins that hook blocks before/after the event-date
+block via `hooked_block_types`.
 
 
 ### New Venue
 
-A new created venue will have the following blocks prepared by default:
+Same shape as the event flow. Bundled venue starter patterns live in
+`includes/core/templates/venue/`; each file returns a
+`name/title/description/content` array and the loader registers it
+scoped to `core/post-content` plus every post type declaring
+`gatherpress-venue-information` support.
 
-- A block-pattern named `gatherpress/venue-template`, which contains the following block by default:
+The bundled default:
 
-    - `gatherpress/venue`
+- `gatherpress/venue-with-map` (title *"Venue with Map"*) seeds a
+  single `gatherpress/venue` block with `patternPicked: true` so the
+  block's in-block picker stays suppressed.
+
+Third parties can append their own via the
+`gatherpress_venue_starter_patterns` filter — same shape as the event
+filter above.
+
+Per-user dismissal is handled by the modal's own *"Always show starter
+patterns for new pages"* toggle — that's a WordPress-core user
+preference, not a GatherPress setting.
+
+The `gatherpress/venue-template` pattern still exists — it is the
+Block Hooks anchor and the seed used by `Venue\Setup::maybe_apply_venue_template()`
+when venues are created programmatically (e.g., via REST without
+content).
 
 
 ### New Event Queries within any post

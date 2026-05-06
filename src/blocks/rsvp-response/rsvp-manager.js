@@ -1,7 +1,7 @@
 /**
- * WordPress dependencies.
+ * WordPress dependencies
  */
-import { useState } from '@wordpress/element';
+import { useState, useEffect } from '@wordpress/element';
 import { __, _x } from '@wordpress/i18n';
 import { FormTokenField, SelectControl } from '@wordpress/components';
 import apiFetch from '@wordpress/api-fetch';
@@ -9,9 +9,9 @@ import { useSelect } from '@wordpress/data';
 import { store as coreStore } from '@wordpress/core-data';
 
 /**
- * Internal dependencies.
+ * Internal dependencies
  */
-import { getFromGlobal, setToGlobal } from '../../helpers/globals';
+import { EVENT_REST_API } from '../../helpers/namespace';
 
 /**
  * Component for displaying and managing RSVP responses.
@@ -28,27 +28,46 @@ import { getFromGlobal, setToGlobal } from '../../helpers/globals';
  *
  * @return {JSX.Element} The rendered RSVP response component.
  */
-const RsvpManager = ({ defaultStatus, setDefaultStatus }) => {
-	const responses = getFromGlobal('eventDetails.responses');
-	const postId = getFromGlobal('eventDetails.postId');
-	const [rsvpResponse, setRsvpResponse] = useState(responses);
-	const attendees = rsvpResponse[defaultStatus].records;
+const RsvpManager = ( { defaultStatus, setDefaultStatus } ) => {
+	const postId = useSelect(
+		( wpSelect ) => wpSelect( 'core/editor' ).getCurrentPostId(),
+		[],
+	);
+	const [ rsvpResponse, setRsvpResponse ] = useState( null );
 
 	/**
 	 * Fetches user records from the core store via getEntityRecords.
 	 * Returns userList containing the list of user records.
 	 */
-	const { userList } = useSelect((select) => {
-		const { getEntityRecords } = select(coreStore);
+	const { userList } = useSelect( ( wpSelect ) => {
+		const { getEntityRecords } = wpSelect( coreStore );
 
-		const users = getEntityRecords('root', 'user', {
+		const users = getEntityRecords( 'root', 'user', {
 			per_page: -1,
-		});
+		} );
 
 		return {
 			userList: users,
 		};
-	}, []);
+	}, [] );
+
+	useEffect( () => {
+		if ( postId ) {
+			apiFetch( {
+				path: `${ EVENT_REST_API }/rsvp-responses?post_id=${ postId }`,
+			} ).then( ( res ) => {
+				if ( res?.success && res?.data ) {
+					setRsvpResponse( res.data );
+				}
+			} );
+		}
+	}, [ postId ] );
+
+	if ( ! rsvpResponse ) {
+		return null;
+	}
+
+	const attendees = rsvpResponse[ defaultStatus ].records;
 
 	/**
 	 * Reduces the userList to an object mapping usernames to user objects.
@@ -56,11 +75,11 @@ const RsvpManager = ({ defaultStatus, setDefaultStatus }) => {
 	 */
 	const userSuggestions =
 		userList?.reduce(
-			(accumulator, user) => ({
+			( accumulator, user ) => ( {
 				...accumulator,
-				[user.username]: user,
-			}),
-			{}
+				[ user.username ]: user,
+			} ),
+			{},
 		) ?? {};
 
 	/**
@@ -69,20 +88,18 @@ const RsvpManager = ({ defaultStatus, setDefaultStatus }) => {
 	 * @param {number} userId               - The ID of the user to update.
 	 * @param {string} [status='attending'] - The RSVP status to set (attending or remove).
 	 */
-	const updateRsvpStatus = (userId, status = 'attending') => {
-		apiFetch({
-			path: getFromGlobal('urls.eventApiPath') + '/rsvp',
+	const updateRsvpStatus = ( userId, status = 'attending' ) => {
+		apiFetch( {
+			path: EVENT_REST_API + '/rsvp',
 			method: 'POST',
 			data: {
 				post_id: postId,
 				status,
 				user_id: userId,
-				_wpnonce: getFromGlobal('misc.nonce'),
 			},
-		}).then((res) => {
-			setRsvpResponse(res.responses);
-			setToGlobal('eventDetails.responses', res.responses);
-		});
+		} ).then( ( res ) => {
+			setRsvpResponse( res.responses );
+		} );
 	};
 
 	/**
@@ -92,38 +109,40 @@ const RsvpManager = ({ defaultStatus, setDefaultStatus }) => {
 	 *
 	 * @param {Object[]} tokens - Array of token objects representing attendees
 	 */
-	const changeRsvp = async (tokens) => {
+	const changeRsvp = async ( tokens ) => {
 		// Adding some new attendees.
-		if (tokens.length > attendees.length) {
-			tokens.forEach((token) => {
-				if (!userSuggestions[token]) {
+		if ( tokens.length > attendees.length ) {
+			tokens.forEach( ( token ) => {
+				if ( ! userSuggestions[ token ] ) {
 					return;
 				}
 
 				// We have a new user to add to the attendees list.
-				updateRsvpStatus(userSuggestions[token].id, defaultStatus);
-			});
+				updateRsvpStatus( userSuggestions[ token ].id, defaultStatus );
+			} );
 		} else {
 			// Removing attendees.
-			attendees.forEach((attendee) => {
-				if (false === tokens.some((item) => item.id === attendee.id)) {
-					updateRsvpStatus(attendee.id, 'no_status');
+			attendees.forEach( ( attendee ) => {
+				if (
+					false === tokens.some( ( item ) => item.id === attendee.userId )
+				) {
+					updateRsvpStatus( attendee.userId, 'no_status' );
 				}
-			});
+			} );
 		}
 	};
 
 	return (
 		<>
 			<SelectControl
-				label={__('RSVP Status', 'gatherpress')}
-				value={defaultStatus}
-				options={[
+				label={ __( 'RSVP Status', 'gatherpress' ) }
+				value={ defaultStatus }
+				options={ [
 					{
 						label: _x(
 							'Attending',
 							'RSVP status option in dropdown',
-							'gatherpress'
+							'gatherpress',
 						),
 						value: 'attending',
 					},
@@ -131,7 +150,7 @@ const RsvpManager = ({ defaultStatus, setDefaultStatus }) => {
 						label: _x(
 							'Waiting List',
 							'RSVP status option in dropdown',
-							'gatherpress'
+							'gatherpress',
 						),
 						value: 'waiting_list',
 					},
@@ -139,27 +158,26 @@ const RsvpManager = ({ defaultStatus, setDefaultStatus }) => {
 						label: _x(
 							'Not Attending',
 							'RSVP status option in dropdown',
-							'gatherpress'
+							'gatherpress',
 						),
 						value: 'not_attending',
 					},
-				]}
-				onChange={(status) => setDefaultStatus(status)}
+				] }
+				onChange={ ( status ) => setDefaultStatus( status ) }
 			/>
 			<FormTokenField
 				key="query-controls-topics-select"
-				label={__('Members', 'gatherpress')}
+				label={ __( 'Members', 'gatherpress' ) }
 				value={
-					attendees &&
-					attendees.map((item) => ({
-						id: item.id,
+					attendees?.map( ( item ) => ( {
+						id: item.userId,
 						value: item.name,
-					}))
+					} ) )
 				}
-				tokenizeOnSpace={true}
-				onChange={changeRsvp}
-				suggestions={Object.keys(userSuggestions)}
-				maxSuggestions={20}
+				tokenizeOnSpace={ true }
+				onChange={ changeRsvp }
+				suggestions={ Object.keys( userSuggestions ) }
+				maxSuggestions={ 20 }
 			/>
 		</>
 	);

@@ -46,7 +46,7 @@ abstract class Endpoint_Type {
 	 *
 	 * @var string
 	 */
-	public $slug;
+	public string $slug;
 
 	/**
 	 * Callback function to handle the endpoint behavior.

@@ -2,6 +2,7 @@
 
 # Configuration and Build Files
 .babelrc
+.claude
 .deployignore
 .distignore
 .editorconfig
@@ -9,14 +10,19 @@
 .eslintignore
 .eslintrc
 .eslintrc.js
+.extract-wp-hooks.json
 .gitignore
 .gitlab-ci.yml
+.markdownlintignore
 .nvmrc
 .stylelintignore
 .stylelintrc.js
 .travis.yml
 .typos.toml
+AGENTS.md
+CLAUDE.md
 CODE_OF_CONDUCT.md
+README.md
 composer.json
 composer.lock
 dependencies.yml
@@ -32,6 +38,8 @@ phpstan.neon.dist
 phpstan.stubs
 phpunit.xml
 phpunit.xml.dist
+phpunit-multisite.xml.dist
+phpmd.xml
 playwright.config.js
 sonar-project.properties
 webpack.config.js
@@ -52,6 +60,7 @@ node_modules
 vendor
 src
 docs
+wp-cron.sh
 
 # Miscellaneous and SQL Archives
 behat.yml

@@ -16,7 +16,6 @@ namespace GatherPress\Core\Blocks;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
-use GatherPress\Core\Block;
 use GatherPress\Core\Event;
 use GatherPress\Core\Traits\Singleton;
 use WP_HTML_Tag_Processor;
@@ -28,6 +27,7 @@ use WP_HTML_Tag_Processor;
  * @since 1.0.0
  */
 class Add_To_Calendar {
+
 	/**
 	 * Enforces a single instance of this class.
 	 */
@@ -83,8 +83,18 @@ class Add_To_Calendar {
 	 * @return string The modified block content with calendar hrefs replaced.
 	 */
 	public function replace_calendar_placeholders( string $block_content, array $block ): string {
-		$block_instance = Block::get_instance();
+		$block_instance = Setup::get_instance();
 		$post_id        = $block_instance->get_post_id( $block );
+
+		// Validate that the post type supports event_date.
+		// Only check publish status if not in preview mode.
+		if (
+			! post_type_supports( (string) get_post_type( $post_id ), 'gatherpress-event-date' ) ||
+			( ! is_preview() && 'publish' !== get_post_status( $post_id ) )
+		) {
+			return '';
+		}
+
 		$event          = new Event( $post_id );
 		$tag            = new WP_HTML_Tag_Processor( $block_content );
 		$calendar_links = $event->get_calendar_links();

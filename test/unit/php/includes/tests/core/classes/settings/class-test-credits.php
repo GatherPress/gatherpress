@@ -19,6 +19,7 @@ use PMC\Unit_Test\Utility;
  * @coversDefaultClass \GatherPress\Core\Settings\Credits
  */
 class Test_Credits extends Base {
+
 	/**
 	 * Coverage for setup_hooks method.
 	 *
@@ -93,7 +94,10 @@ class Test_Credits extends Base {
 	 */
 	public function test_settings_section(): void {
 		$instance = Credits::get_instance();
-		$response = Utility::buffer_and_return( array( $instance, 'settings_section' ), array( 'gatherpress_general' ) );
+		$response = Utility::buffer_and_return(
+			array( $instance, 'settings_section' ),
+			array( 'gatherpress_events' )
+		);
 
 		$this->assertEmpty( $response, 'Failed to assert no markup was returned.' );
 		$this->assertEquals(
@@ -102,7 +106,10 @@ class Test_Credits extends Base {
 			'Failed to assert gatherpress_settings_section has render_settings_form callback at priority 10.'
 		);
 
-		$response = Utility::buffer_and_return( array( $instance, 'settings_section' ), array( 'gatherpress_credits' ) );
+		$response = Utility::buffer_and_return(
+			array( $instance, 'settings_section' ),
+			array( 'gatherpress_credits' )
+		);
 
 		$this->assertFalse(
 			has_action( 'gatherpress_settings_section', array( Settings::get_instance(), 'render_settings_form' ) ),

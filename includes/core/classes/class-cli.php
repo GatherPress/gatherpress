@@ -15,7 +15,7 @@ namespace GatherPress\Core;
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Commands\Event_Cli;
-use GatherPress\Core\Commands\Develop_Cli;
+use GatherPress\Core\Commands\Settings_Cli;
 use GatherPress\Core\Traits\Singleton;
 use WP_CLI;
 
@@ -28,23 +28,23 @@ use WP_CLI;
  * @since 1.0.0
  */
 class Cli {
+
 	/**
 	 * Enforces a single instance of this class.
 	 */
 	use Singleton;
 
 	/**
-	 * Constructor for the Setup class.
+	 * Constructor for the Cli class.
 	 *
 	 * Registers WP-CLI commands for GatherPress if WP-CLI is present.
 	 *
 	 * @since 1.0.0
-	 *
-	 * @codeCoverageIgnore
 	 */
 	protected function __construct() {
 		if ( defined( 'WP_CLI' ) && WP_CLI ) {
 			WP_CLI::add_command( 'gatherpress event', Event_Cli::class );
+			WP_CLI::add_command( 'gatherpress settings', Settings_Cli::class );
 		}
 	}
 }

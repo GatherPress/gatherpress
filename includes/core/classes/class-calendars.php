@@ -20,12 +20,12 @@ namespace GatherPress\Core;
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use Exception;
-use GatherPress\Core\Endpoints\Posttype_Single_Endpoint;
-use GatherPress\Core\Endpoints\Posttype_Single_Feed_Endpoint;
-use GatherPress\Core\Endpoints\Posttype_Feed_Endpoint;
-use GatherPress\Core\Endpoints\Taxonomy_Feed_Endpoint;
 use GatherPress\Core\Endpoints\Endpoint_Redirect;
 use GatherPress\Core\Endpoints\Endpoint_Template;
+use GatherPress\Core\Endpoints\Posttype_Feed_Endpoint;
+use GatherPress\Core\Endpoints\Posttype_Single_Endpoint;
+use GatherPress\Core\Endpoints\Posttype_Single_Feed_Endpoint;
+use GatherPress\Core\Endpoints\Taxonomy_Feed_Endpoint;
 use GatherPress\Core\Event;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Utility;
@@ -44,13 +44,14 @@ use WP_Term;
  * @since 1.0.0
  */
 class Calendars {
+
 	/**
 	 * Enforces a single instance of this class.
 	 */
 	use Singleton;
 
 	const QUERY_VAR = 'gatherpress_calendars';
-	const ICAL_SLUG = 'ical'; // Make sure nobody tries to change or translate this string ;) !
+	const ICAL_SLUG = 'ical'; // Hardcoded ical slug — must not be translated or renamed.
 
 	/**
 	 * Class constructor.
@@ -404,13 +405,12 @@ class Calendars {
 			return false;
 		}
 
-		$is_feed_endpoint = strpos( 'feed/', $endpoint_slug );
-		if ( false !== $is_feed_endpoint ) {
+		if ( str_starts_with( $endpoint_slug, 'feed/' ) ) {
 			// Feels weird to use a *_comments_* function here, but it delivers clean results
 			// in the form of "domain.tld/event/my-sample-event/feed/ical/".
 			return (string) get_post_comments_feed_link(
 				$post->ID,
-				substr( $endpoint_slug, $is_feed_endpoint )
+				substr( $endpoint_slug, strlen( 'feed/' ) )
 			);
 		}
 
@@ -560,7 +560,7 @@ class Calendars {
 			sprintf(
 				'PRODID:-//%s//GatherPress//%s',
 				get_bloginfo( 'title' ),
-				// Prpeare 2-DIGIT lang code.
+				// Prepare 2-digit lang code.
 				strtoupper( substr( get_locale(), 0, 2 ) )
 			),
 			$calendar_data,
@@ -607,9 +607,9 @@ class Calendars {
 			sprintf( 'DTSTART:%s', sanitize_text_field( $datetime_start ) ),
 			sprintf( 'DTEND:%s', sanitize_text_field( $datetime_end ) ),
 			sprintf( 'DTSTAMP:%s', sanitize_text_field( $datetime_stamp ) ),
-			sprintf( 'SUMMARY:%s', self::eventorganiser_fold_ical_text( sanitize_text_field( $event->event->post_title ) ) ),
-			sprintf( 'DESCRIPTION:%s', self::eventorganiser_fold_ical_text( sanitize_text_field( $description ) ) ),
-			sprintf( 'LOCATION:%s', self::eventorganiser_fold_ical_text( sanitize_text_field( $location ) ) ),
+			sprintf( 'SUMMARY:%s', self::fold_ical_text( sanitize_text_field( $event->event->post_title ) ) ),
+			sprintf( 'DESCRIPTION:%s', self::fold_ical_text( sanitize_text_field( $description ) ) ),
+			sprintf( 'LOCATION:%s', self::fold_ical_text( sanitize_text_field( $location ) ) ),
 			'UID:gatherpress_' . intval( $event->event->ID ),
 			'END:VEVENT',
 		);
@@ -704,6 +704,8 @@ class Calendars {
 	/**
 	 * Generate the .ics filename based on the queried object.
 	 *
+	 * @since 1.0.0
+	 *
 	 * @return string Name of the calendar ics file.
 	 */
 	public static function generate_ics_filename() {
@@ -730,6 +732,8 @@ class Calendars {
 
 	/**
 	 * Send the necessary headers for the iCalendar file download.
+	 *
+	 * @since 1.0.0
 	 *
 	 * @param string $filename Generated name of the file.
 	 *
@@ -759,6 +763,8 @@ class Calendars {
 
 	/**
 	 * Output the event(s) as an iCalendar (.ics) file.
+	 *
+	 * @since 1.0.0
 	 *
 	 * @return void
 	 */
@@ -810,7 +816,7 @@ class Calendars {
 	 * @param string $text The string to be escaped.
 	 * @return string The escaped string.
 	 */
-	private static function eventorganiser_fold_ical_text( string $text ): string {
+	private static function fold_ical_text( string $text ): string {
 
 		$text_arr = array();
 

@@ -25,6 +25,7 @@ use GatherPress\Core\Utility;
  * @since 1.0.0
  */
 class Credits extends Base {
+
 	/**
 	 * Enforces a single instance of this class.
 	 */

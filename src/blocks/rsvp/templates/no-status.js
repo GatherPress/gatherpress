@@ -1,7 +1,7 @@
 /**
- * WordPress dependencies.
+ * WordPress dependencies
  */
-import { __, _x } from '@wordpress/i18n';
+import { __, _x, sprintf } from '@wordpress/i18n';
 
 const NO_STATUS = [
 	[
@@ -17,7 +17,7 @@ const NO_STATUS = [
 						name: _x(
 							'Call to Action',
 							'Block name displayed in the editor',
-							'gatherpress'
+							'gatherpress',
 						),
 					},
 				},
@@ -28,15 +28,15 @@ const NO_STATUS = [
 							text: _x(
 								'RSVP',
 								'Button label for editing RSVP',
-								'gatherpress'
+								'gatherpress',
 							),
 							tagName: 'button',
-							className: 'gatherpress--open-modal',
+							className: 'gatherpress-modal--trigger-open',
 							metadata: {
 								name: _x(
 									'RSVP Button',
 									'Block name displayed in the editor',
-									'gatherpress'
+									'gatherpress',
 								),
 							},
 						},
@@ -46,19 +46,19 @@ const NO_STATUS = [
 			[
 				'gatherpress/modal',
 				{
-					className: 'gatherpress--is-rsvp-modal',
+					className: 'gatherpress-modal--type-rsvp',
 					metadata: {
 						name: _x(
 							'RSVP Modal',
 							'Modal title in editor',
-							'gatherpress'
+							'gatherpress',
 						),
 					},
 				},
 				[
 					[
 						'gatherpress/modal-content',
-						{},
+						{ backgroundColor: 'white' },
 						[
 							[
 								'core/paragraph',
@@ -76,13 +76,13 @@ const NO_STATUS = [
 									content: _x(
 										'<strong>RSVP to this event</strong>',
 										'RSVP modal header',
-										'gatherpress'
+										'gatherpress',
 									),
 									metadata: {
 										name: _x(
 											'RSVP Heading',
 											'Block name displayed in the editor',
-											'gatherpress'
+											'gatherpress',
 										),
 									},
 								},
@@ -92,18 +92,38 @@ const NO_STATUS = [
 								{
 									content: __(
 										'To set your attendance status, simply click the <strong>Attend</strong> button below.',
-										'gatherpress'
+										'gatherpress',
 									),
 									metadata: {
 										name: _x(
 											'RSVP Info',
 											'Block name displayed in the editor',
-											'gatherpress'
+											'gatherpress',
 										),
 									},
 								},
 							],
-							['gatherpress/rsvp-anonymous-checkbox', {}],
+							[
+								'gatherpress/form-field',
+								{
+									className: 'gatherpress-rsvp-field-anonymous',
+									fieldType: 'checkbox',
+									fieldName: 'gatherpress_rsvp_anonymous',
+									label: sprintf(
+										/* translators: 1: tooltip text, 2: label text */
+										'<span class="gatherpress-tooltip" data-gatherpress-tooltip="%1$s">%2$s</span>',
+										__(
+											'Only admins will see your identity.',
+											'gatherpress'
+										),
+										__(
+											'List me as anonymous',
+											'gatherpress'
+										)
+									),
+									autocomplete: 'off',
+								},
+							],
 							[
 								'core/buttons',
 								{
@@ -126,7 +146,7 @@ const NO_STATUS = [
 										name: _x(
 											'Call to Action',
 											'Block name displayed in the editor',
-											'gatherpress'
+											'gatherpress',
 										),
 									},
 								},
@@ -137,16 +157,16 @@ const NO_STATUS = [
 											text: _x(
 												'Attend',
 												'RSVP button label for confirming event attendance',
-												'gatherpress'
+												'gatherpress',
 											),
 											tagName: 'button',
 											className:
-												'gatherpress--update-rsvp',
+												'gatherpress-rsvp--trigger-update',
 											metadata: {
 												name: _x(
 													'RSVP Button',
 													'Block name displayed in the editor',
-													'gatherpress'
+													'gatherpress',
 												),
 											},
 										},
@@ -157,16 +177,16 @@ const NO_STATUS = [
 											text: _x(
 												'Close',
 												'Button label for closing modal dialog',
-												'gatherpress'
+												'gatherpress',
 											),
 											tagName: 'button',
 											className:
-												'is-style-outline gatherpress--close-modal',
+												'is-style-outline gatherpress-modal--trigger-close',
 											metadata: {
 												name: _x(
 													'Close Button',
 													'Block name displayed in the editor',
-													'gatherpress'
+													'gatherpress',
 												),
 											},
 										},
@@ -180,19 +200,19 @@ const NO_STATUS = [
 			[
 				'gatherpress/modal',
 				{
-					className: 'gatherpress--is-login-modal',
+					className: 'gatherpress-modal--login',
 					metadata: {
 						name: _x(
 							'Login Modal',
 							'Block title for the login modal',
-							'gatherpress'
+							'gatherpress',
 						),
 					},
 				},
 				[
 					[
 						'gatherpress/modal-content',
-						{},
+						{ backgroundColor: 'white' },
 						[
 							[
 								'core/paragraph',
@@ -210,13 +230,13 @@ const NO_STATUS = [
 									content: _x(
 										'<strong>Login Required</strong>',
 										'Login modal header',
-										'gatherpress'
+										'gatherpress',
 									),
 									metadata: {
 										name: _x(
 											'Login Heading',
 											'Block name displayed in the editor',
-											'gatherpress'
+											'gatherpress',
 										),
 									},
 								},
@@ -226,14 +246,14 @@ const NO_STATUS = [
 								{
 									content: __(
 										'This action requires an account. Please <a href="#gatherpress-login-url">Login</a> to RSVP to this event.',
-										'gatherpress'
+										'gatherpress',
 									),
 									className: 'gatherpress--has-login-url',
 									metadata: {
 										name: _x(
 											'Login Info',
 											'Block name displayed in the editor',
-											'gatherpress'
+											'gatherpress',
 										),
 									},
 								},
@@ -243,7 +263,7 @@ const NO_STATUS = [
 								{
 									content: __(
 										'Don\'t have an account? <a href="#gatherpress-registration-url">Register here</a> to create one.',
-										'gatherpress'
+										'gatherpress',
 									),
 									className:
 										'gatherpress--has-registration-url',
@@ -251,7 +271,7 @@ const NO_STATUS = [
 										name: _x(
 											'Register Info',
 											'Block name displayed in the editor',
-											'gatherpress'
+											'gatherpress',
 										),
 									},
 								},
@@ -278,7 +298,7 @@ const NO_STATUS = [
 										name: _x(
 											'Call to Action',
 											'Block name displayed in the editor',
-											'gatherpress'
+											'gatherpress',
 										),
 									},
 								},
@@ -289,16 +309,16 @@ const NO_STATUS = [
 											text: _x(
 												'Close',
 												'Button label for closing modal dialog',
-												'gatherpress'
+												'gatherpress',
 											),
 											tagName: 'button',
 											className:
-												'gatherpress--close-modal',
+												'gatherpress-modal--trigger-close',
 											metadata: {
 												name: _x(
 													'Close Button',
 													'Block name displayed in the editor',
-													'gatherpress'
+													'gatherpress',
 												),
 											},
 										},

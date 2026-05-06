@@ -42,6 +42,7 @@ wp-core
 coverage.xml
 .env
 .wp-env.override.json
+mu-plugins/
 
 # Playwright #
 ##########
@@ -54,5 +55,9 @@ storageState.json
 ##########
 coverage
 test-report.xml
+
+# Claude Code #
+##########
+.claude
 
 *.zip

@@ -15,7 +15,6 @@ namespace GatherPress\Core\Blocks;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
-use GatherPress\Core\Block;
 use GatherPress\Core\Traits\Singleton;
 use WP_HTML_Tag_Processor;
 
@@ -26,6 +25,7 @@ use WP_HTML_Tag_Processor;
  * @since 1.0.0
  */
 class Dropdown {
+
 	/**
 	 * Enforces a single instance of this class.
 	 */
@@ -38,6 +38,30 @@ class Dropdown {
 	 * @var string
 	 */
 	const BLOCK_NAME = 'gatherpress/dropdown';
+
+	/**
+	 * Default color for text and borders.
+	 *
+	 * @since 1.0.0
+	 * @var string
+	 */
+	const DEFAULT_COLOR_BLACK = '#000000';
+
+	/**
+	 * Default background color.
+	 *
+	 * @since 1.0.0
+	 * @var string
+	 */
+	const DEFAULT_COLOR_WHITE = '#FFFFFF';
+
+	/**
+	 * Default hover background color.
+	 *
+	 * @since 1.0.0
+	 * @var string
+	 */
+	const DEFAULT_COLOR_LIGHT_GRAY = '#EEEEEE';
 
 	/**
 	 * Class constructor.
@@ -81,7 +105,6 @@ class Dropdown {
 	 * @return string The modified block content with inline styles.
 	 */
 	public function generate_block_styles( string $block_content, array $block ): string {
-		$block_instance         = Block::get_instance();
 		$attributes             = $block['attrs'] ?? array();
 		$dropdown_id            = $attributes['dropdownId'] ?? '';
 		$open_on                = $attributes['openOn'] ?? 'click';
@@ -91,11 +114,11 @@ class Dropdown {
 			'bottom' => 8,
 			'left'   => 8,
 		);
-		$item_text_color        = $attributes['itemTextColor'] ?? '#000000';
-		$item_bg_color          = $attributes['itemBgColor'] ?? '#FFFFFF';
-		$item_hover_text_color  = $attributes['itemHoverTextColor'] ?? '#000000';
-		$item_hover_bg_color    = $attributes['itemHoverBgColor'] ?? '#EEEEEEE';
-		$item_divider_color     = $attributes['itemDividerColor'] ?? '#000000';
+		$item_text_color        = $attributes['itemTextColor'] ?? self::DEFAULT_COLOR_BLACK;
+		$item_bg_color          = $attributes['itemBgColor'] ?? self::DEFAULT_COLOR_WHITE;
+		$item_hover_text_color  = $attributes['itemHoverTextColor'] ?? self::DEFAULT_COLOR_BLACK;
+		$item_hover_bg_color    = $attributes['itemHoverBgColor'] ?? self::DEFAULT_COLOR_LIGHT_GRAY;
+		$item_divider_color     = $attributes['itemDividerColor'] ?? self::DEFAULT_COLOR_BLACK;
 		$item_divider_thickness = $attributes['itemDividerThickness'] ?? 1;
 
 		// Generate styles.
@@ -136,7 +159,7 @@ class Dropdown {
 						display: block;
 					}
 				',
-				esc_attr( $block_instance->get_default_block_class( $block['blockName'] ) ),
+				esc_attr( wp_get_block_default_classname( $block['blockName'] ) ),
 				esc_attr( $dropdown_id )
 			);
 		}
@@ -169,50 +192,50 @@ class Dropdown {
 		$act_as_select  = $attributes['actAsSelect'] ?? false;
 		$selected_index = $attributes['selectedIndex'] ?? 0;
 
-		if ( $tag->next_tag() ) {
-			if ( $act_as_select ) {
-				$tag->set_attribute( 'data-dropdown-mode', 'select' );
-				$tag->next_tag(
-					array(
-						'tag_name'   => 'div',
-						'attributes' => array( 'class' => 'wp-block-gatherpress-dropdown__menu' ),
-					)
-				);
+		if ( $tag->next_tag() && $act_as_select ) {
+			$tag->set_attribute( 'data-dropdown-mode', 'select' );
+			$tag->next_tag(
+				array(
+					'tag_name'   => 'div',
+					'attributes' => array( 'class' => 'wp-block-gatherpress-dropdown__menu' ),
+				)
+			);
 
-				// Reset to the parent container and iterate through child items.
-				$item_index = 0;
-				while ( $tag->next_tag(
-					array(
-						'tag_name'   => 'div',
-						'attributes' => array( 'class' => 'wp-block-gatherpress-dropdown-item' ),
-					)
-				) ) {
-					// When select, all links must act like buttons.
-					$tag->next_tag( array( 'tag_name' => 'a' ) );
+			// Reset to the parent container and iterate through child items.
+			$item_index = 0;
+			while ( $tag->next_tag(
+				array(
+					'tag_name'   => 'div',
+					'attributes' => array( 'class' => 'wp-block-gatherpress-dropdown-item' ),
+				)
+			) ) {
+				// When select, all links must act like buttons.
+				$tag->next_tag( array( 'tag_name' => 'a' ) );
 
-					$tag->set_attribute( 'href', '#' );
-					$tag->set_attribute( 'data-wp-interactive', 'gatherpress' );
-					$tag->set_attribute( 'data-wp-on--click', 'actions.linkHandler' );
-					$tag->set_attribute( 'tabindex', '0' );
-					$tag->set_attribute( 'role', 'button' );
+				$tag->set_attribute( 'href', '#' );
+				$tag->set_attribute( 'data-wp-interactive', 'gatherpress' );
+				$tag->set_attribute( 'data-wp-on--click', 'actions.linkHandler' );
+				$tag->set_attribute( 'tabindex', '0' );
+				$tag->set_attribute( 'role', 'button' );
 
-					// Check if the current item's index matches $select_index.
-					if ( $item_index === (int) $selected_index ) {
-						$existing_class = $tag->get_attribute( 'class' );
-						$new_class      = $existing_class ? $existing_class . ' gatherpress--is-disabled' : 'gatherpress--is-disabled';
+				// Check if the current item's index matches $select_index.
+				if ( $item_index === (int) $selected_index ) {
+					$existing_class = $tag->get_attribute( 'class' );
+					$new_class      = $existing_class
+						? $existing_class . ' gatherpress--is-disabled'
+						: 'gatherpress--is-disabled';
 
-						$tag->set_attribute( 'class', $new_class );
-						$tag->set_attribute( 'tabindex', '-1' );
-						$tag->set_attribute( 'aria-disabled', 'true' );
+					$tag->set_attribute( 'class', $new_class );
+					$tag->set_attribute( 'tabindex', '-1' );
+					$tag->set_attribute( 'aria-disabled', 'true' );
 
-						break; // Exit the loop once the desired item is found.
-					}
-
-					++$item_index;
+					break; // Exit the loop once the desired item is found.
 				}
 
-				$block_content = $tag->get_updated_html();
+				++$item_index;
 			}
+
+			$block_content = $tag->get_updated_html();
 		}
 
 		return $block_content;
@@ -235,10 +258,10 @@ class Dropdown {
 		$tag                       = new WP_HTML_Tag_Processor( $block_content );
 		$attributes                = $block['attrs'] ?? array();
 		$open_on                   = $attributes['openOn'] ?? 'click';
-		$label_color               = $attributes['labelColor'] ?? '#000000';
+		$label_color               = $attributes['labelColor'] ?? self::DEFAULT_COLOR_BLACK;
 		$dropdown_id               = $attributes['dropdownId'] ?? '';
 		$dropdown_border_thickness = $attributes['dropdownBorderThickness'] ?? 1;
-		$dropdown_border_color     = $attributes['dropdownBorderColor'] ?? '#000000';
+		$dropdown_border_color     = $attributes['dropdownBorderColor'] ?? self::DEFAULT_COLOR_BLACK;
 		$dropdown_border_radius    = $attributes['dropdownBorderRadius'] ?? 8;
 		$dropdown_z_index          = $attributes['dropdownZIndex'] ?? 1001;
 		$dropdown_width            = $attributes['dropdownWidth'] ?? 240;

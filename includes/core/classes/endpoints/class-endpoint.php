@@ -12,11 +12,11 @@
 
 namespace GatherPress\Core\Endpoints;
 
-use WP_Post_Type;
-use WP_Taxonomy;
-
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
+
+use WP_Post_Type;
+use WP_Taxonomy;
 
 /**
  * Manages Custom Endpoints for Post Types and Taxonomies in GatherPress.
@@ -43,7 +43,7 @@ class Endpoint {
 	 *
 	 * @var string
 	 */
-	public $query_var;
+	public string $query_var;
 
 	/**
 	 * Holds the registered WP_Post_Type or WP_Taxonomy object.
@@ -54,7 +54,7 @@ class Endpoint {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @var WP_Post_Type|WP_Taxonomy
+	 * @var WP_Post_Type|WP_Taxonomy|null
 	 */
 	public $type_object;
 
@@ -81,7 +81,7 @@ class Endpoint {
 	 *
 	 * @var Endpoint_Type[]
 	 */
-	public $types;
+	public array $types;
 
 	/**
 	 * Regular expression used to match the endpoint URL structure.
@@ -94,20 +94,20 @@ class Endpoint {
 	 *
 	 * @var string
 	 */
-	public $reg_ex;
+	public string $reg_ex;
 
 	/**
 	 * Holds the object type.
 	 *
 	 * Depending on the `object_type` parameter, this property will either store
-	 * a `post_type` a post type or a `taxonomy` for a taxonomy.
-	 * This is used to generate the correct rewrite rules and handle URL matching.
+	 * `post_type` for a post type or `taxonomy` for a taxonomy. Used to generate
+	 * the correct rewrite rules and handle URL matching.
 	 *
 	 * @since 1.0.0
 	 *
 	 * @var string
 	 */
-	public $object_type;
+	public string $object_type;
 
 	/**
 	 * Class constructor.
@@ -202,7 +202,9 @@ class Endpoint {
 	 * Build the regular expression pattern for matching the custom endpoint URL structure,
 	 * based on the rewrite base (slug) for the post type or taxonomy.
 	 *
-	 * @return string
+	 * @since 1.0.0
+	 *
+	 * @return string The compiled regex pattern.
 	 */
 	private function get_regex_pattern(): string {
 		$rewrite_base = $this->type_object->rewrite['slug'];
@@ -313,6 +315,11 @@ class Endpoint {
 			case 'post_type':
 				$this->type_object = get_post_type_object( $type_name );
 				break;
+
+			default:
+				// $object_type is constrained above to 'post_type' or 'taxonomy';
+				// this arm satisfies php:S131 and is unreachable in practice.
+				break;
 		}
 
 		if ( ! $this->type_object instanceof WP_Post_Type && ! $this->type_object instanceof WP_Taxonomy ) {
@@ -387,10 +394,12 @@ class Endpoint {
 	 * Determine whether the endpoint is meant for a feed
 	 * and if it has a proper Endpoint_Template defined.
 	 *
+	 * @since 1.0.0
+	 *
 	 * @return string The slug of the endpoint or an empty string if not a feed template.
 	 */
 	public function has_feed(): string {
-		if ( false !== strpos( $this->reg_ex, '/feed/' ) ) {
+		if ( str_contains( $this->reg_ex, '/feed/' ) ) {
 			$feed_slug = current( $this->get_slugs( __NAMESPACE__ . '\Endpoint_Template' ) );
 			if ( ! empty( $feed_slug ) ) {
 				return $feed_slug;

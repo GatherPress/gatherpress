@@ -1,11 +1,10 @@
 <?php
 /**
- * Handles feed-based endpoints for custom post types in GatherPress.
+ * Handles feed-based endpoints for single posts of custom post types in GatherPress.
  *
- * This file defines the `Posttype_Feed_Endpoint` class, which extends the base `Endpoint`
- * class to handle custom feeds for post type singles. It allows users to define custom
- * feed URLs (e.g., RSS feeds) for post types such as `gatherpress_event`, while also allowing
- * theme overrides for feed templates.
+ * This file defines the `Posttype_Single_Feed_Endpoint` class, which extends the base
+ * `Endpoint` class to handle custom feeds attached to a single post (e.g.,
+ * `/event/my-event/feed/ical`). It allows theme overrides for feed templates.
  *
  * @package GatherPress\Core\Endpoints
  * @since 1.0.0

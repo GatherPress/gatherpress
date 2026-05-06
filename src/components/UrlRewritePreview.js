@@ -1,12 +1,7 @@
 /**
- * WordPress dependencies.
+ * WordPress dependencies
  */
 import { useState } from '@wordpress/element';
-
-/**
- * Internal dependencies.
- */
-import { getFromGlobal } from '../helpers/globals';
 
 /**
  * UrlRewritePreview component for GatherPress.
@@ -17,34 +12,34 @@ import { getFromGlobal } from '../helpers/globals';
  *
  * @since 1.0.0
  *
- * @param {Object} props             - Component props.
- * @param {Object} props.attrs       - Component attributes.
- * @param {string} props.attrs.name  - The name of the input field.
- * @param {string} props.attrs.value - The initial value of the input field (rewritten url).
+ * @param {Object} props               - Component props.
+ * @param {Object} props.attrs         - Component attributes.
+ * @param {string} props.attrs.name    - The name of the input field.
+ * @param {string} props.attrs.value   - The initial value of the input field (rewritten url).
+ * @param {string} props.attrs.suffix  - Sample suffix appended after the rewrite slug.
+ * @param {string} props.attrs.homeUrl - Site home URL injected by the PHP partial.
  *
  * @return {JSX.Element} The rendered React component.
  */
-const UrlRewritePreview = (props) => {
-	const { name, value, suffix } = props.attrs;
-	const [rewrittenUrlPart, setRewrittenUrlPart] = useState(value);
+const UrlRewritePreview = ( props ) => {
+	const { name, value, suffix, homeUrl } = props.attrs;
+	const [ rewrittenUrlPart, setRewrittenUrlPart ] = useState( value );
 
-	const input = document.querySelector(`[name="${name}"]`);
-
-	const homeUrl = getFromGlobal('urls.homeUrl');
+	const input = document.querySelector( `[name="${ name }"]` );
 
 	input.addEventListener(
 		'input',
-		(e) => {
-			setRewrittenUrlPart(e.target.value);
+		( e ) => {
+			setRewrittenUrlPart( e.target.value );
 		},
-		{ once: true }
+		{ once: true },
 	);
 
 	return (
 		<>
-			{homeUrl + '/'}
-			<strong>{rewrittenUrlPart}</strong>
-			{'/' + suffix}
+			{ homeUrl + '/' }
+			<strong>{ rewrittenUrlPart }</strong>
+			{ '/' + suffix }
 		</>
 	);
 };

@@ -1,154 +1,163 @@
 /**
- * WordPress dependencies.
+ * WordPress dependencies
  */
 import { TextControl } from '@wordpress/components';
-import { __, sprintf } from '@wordpress/i18n';
+import { __ } from '@wordpress/i18n';
 import { useDispatch, useSelect } from '@wordpress/data';
-import { useState, useEffect, useCallback, useRef } from '@wordpress/element';
+import { useEffect, useCallback, useRef } from '@wordpress/element';
 import { useDebounce } from '@wordpress/compose';
 
 /**
- * Internal dependencies.
+ * Internal dependencies
  */
-import { Broadcaster, Listener } from '../helpers/broadcasting';
+import { geocodeAddress, GEOCODE_LOCK_NAME } from '../helpers/geocoding';
+import AddressAutocompleteField from './AddressAutocompleteField';
 
 /**
  * VenueInformation component for GatherPress.
  *
  * This component allows users to input and update venue information, including full address,
- * phone number, and website. It uses the `TextControl` component from the Gutenberg editor
- * package to provide input fields for each type of information. The entered data is stored
- * in post meta as JSON and updated using the `editPost` method from the editor package.
+ * phone number, and website. Each field is stored as its own post meta key
+ * (gatherpress_address, gatherpress_latitude, gatherpress_longitude,
+ * gatherpress_phone, gatherpress_website) so the values can be bound to
+ * blocks via core/post-meta block bindings.
  *
  * @since 1.0.0
  *
  * @return {JSX.Element} The rendered React component.
  */
 const VenueInformation = () => {
-	const editPost = useDispatch('core/editor').editPost;
-	// eslint-disable-next-line react-hooks/exhaustive-deps
-	const updateVenueMeta = (metaData) => {
-		const payload = JSON.stringify({
-			...venueInformationMetaData,
-			...metaData,
-		});
-		const meta = { gatherpress_venue_information: payload };
-
-		editPost({ meta });
-	};
+	const { editPost, lockPostSaving, unlockPostSaving } =
+		useDispatch( 'core/editor' );
 
 	const { updateVenueLatitude, updateVenueLongitude } =
-		useDispatch('gatherpress/venue');
+		useDispatch( 'gatherpress/venue' );
 
-	const { mapCustomLatLong } = useSelect(
-		(select) => ({
-			mapCustomLatLong: select('gatherpress/venue').getMapCustomLatLong(),
-		}),
-		[]
+	const { mapCustomLatLong, venueMeta } = useSelect(
+		( selectData ) => ( {
+			mapCustomLatLong: selectData( 'gatherpress/venue' ).getMapCustomLatLong(),
+			venueMeta: selectData( 'core/editor' ).getEditedPostAttribute( 'meta' ) || {},
+		} ),
+		[],
 	);
 
-	let venueInformationMetaData = useSelect(
-		(select) =>
-			select('core/editor').getEditedPostAttribute('meta')
-				.gatherpress_venue_information
+	// Use meta as source of truth - no local state needed.
+	// editPost updates editor state, which is saved when user clicks Update.
+	const address = venueMeta.gatherpress_address || '';
+	const initialLat = venueMeta.gatherpress_latitude || '';
+	const initialLng = venueMeta.gatherpress_longitude || '';
+	const phone = venueMeta.gatherpress_phone || '';
+	const website = venueMeta.gatherpress_website || '';
+
+	// Use ref to track current address for geocoding without recreating callback.
+	const addressRef = useRef( address );
+
+	addressRef.current = address;
+
+	// Initialize venue store with saved lat/long values on mount only.
+	// After initialization, getData manages the store directly for live updates.
+	useEffect( () => {
+		if ( initialLat || initialLng ) {
+			updateVenueLatitude( initialLat );
+			updateVenueLongitude( initialLng );
+		}
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [] ); // Run once on mount only.
+
+	// Helper to write one or more individual venue meta keys.
+	const updateVenueField = useCallback(
+		( meta ) => {
+			editPost( { meta } );
+		},
+		[ editPost ],
 	);
 
-	if (venueInformationMetaData) {
-		venueInformationMetaData = JSON.parse(venueInformationMetaData);
-	} else {
-		venueInformationMetaData = {};
-	}
+	const getData = useCallback( async () => {
+		// Read current address from ref to avoid recreating this callback.
+		const currentAddress = addressRef.current;
 
-	const [fullAddress, setFullAddress] = useState(
-		venueInformationMetaData.fullAddress ?? ''
-	);
-	const [phoneNumber, setPhoneNumber] = useState(
-		venueInformationMetaData.phoneNumber ?? ''
-	);
-	const [website, setWebsite] = useState(
-		venueInformationMetaData.website ?? ''
-	);
-
-	Listener({ setFullAddress, setPhoneNumber, setWebsite });
-
-	const updateVenueMetaRef = useRef(updateVenueMeta);
-
-	const getData = useCallback(() => {
-		let lat = null;
-		let lng = null;
-
-		fetch(
-			`https://nominatim.openstreetmap.org/search?q=${fullAddress}&format=geojson`
-		)
-			.then((response) => {
-				if (!response.ok) {
-					throw new Error(
-						sprintf(
-							/* translators: %s: Error message */
-							__('Network response was not ok %s', 'gatherpress'),
-							response.statusText
-						)
-					);
+		try {
+			// If address is empty, clear lat/long.
+			if ( ! currentAddress ) {
+				if ( ! mapCustomLatLong ) {
+					updateVenueLatitude( '' );
+					updateVenueLongitude( '' );
+					updateVenueField( {
+						gatherpress_latitude: '',
+						gatherpress_longitude: '',
+					} );
 				}
-				return response.json();
-			})
-			.then((data) => {
-				if (data.features.length > 0) {
-					lat = data.features[0].geometry.coordinates[1];
-					lng = data.features[0].geometry.coordinates[0];
-				}
-				if (!mapCustomLatLong) {
-					updateVenueLatitude(lat);
-					updateVenueLongitude(lng);
-					updateVenueMetaRef.current({
-						latitude: lat,
-						longitude: lng,
-					});
-				}
-			});
+				return;
+			}
+
+			const { latitude, longitude } = await geocodeAddress( currentAddress );
+
+			if ( ! mapCustomLatLong ) {
+				updateVenueLatitude( latitude || null );
+				updateVenueLongitude( longitude || null );
+				updateVenueField( {
+					gatherpress_latitude: latitude || '',
+					gatherpress_longitude: longitude || '',
+				} );
+			}
+		} finally {
+			// Release the save lock even when geocoding throws — otherwise
+			// the editor would be stuck in the locked state forever.
+			unlockPostSaving( GEOCODE_LOCK_NAME );
+		}
 	}, [
-		fullAddress,
 		mapCustomLatLong,
 		updateVenueLatitude,
 		updateVenueLongitude,
-	]);
+		updateVenueField,
+		unlockPostSaving,
+	] ); // address removed - read from ref instead.
 
-	const debouncedGetData = useDebounce(getData, 300);
+	// Longer debounce than autocomplete: geocoding is not user-visible during
+	// typing (only the map preview and stored lat/long depend on it) so we let
+	// the address settle for a second before hitting the upstream Photon API.
+	const debouncedGetData = useDebounce( getData, 1000 );
 
-	useEffect(() => {
-		updateVenueMetaRef.current = updateVenueMeta;
-	}, [updateVenueMeta]);
-
-	useEffect(() => {
+	useEffect( () => {
+		// Block the Save button while the address is being geocoded. Without
+		// this, a quick save persists the new address with the previous
+		// lat/long and Venue\Map bakes the static PNG at the wrong coords
+		// until a second save rebuilds it. lockPostSaving is idempotent on
+		// the same lock name, so repeat keystrokes don't stack locks.
+		lockPostSaving( GEOCODE_LOCK_NAME );
 		debouncedGetData();
-	}, [fullAddress, debouncedGetData]);
+
+		return () => {
+			// If the component unmounts mid-geocode, release the lock so the
+			// editor doesn't stay wedged.
+			unlockPostSaving( GEOCODE_LOCK_NAME );
+		};
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [ address ] ); // Only depend on address, not debouncedGetData.
 
 	return (
 		<>
-			<TextControl
-				label={__('Full Address', 'gatherpress')}
-				value={fullAddress}
-				onChange={(value) => {
-					Broadcaster({ setFullAddress: value });
-					updateVenueMeta({ fullAddress: value });
-				}}
+			<AddressAutocompleteField
+				variant="settings"
+				value={ address }
+				onChange={ ( value ) => {
+					updateVenueField( { gatherpress_address: value } );
+				} }
 			/>
 			<TextControl
-				label={__('Phone Number', 'gatherpress')}
-				value={phoneNumber}
-				onChange={(value) => {
-					Broadcaster({ setPhoneNumber: value });
-					updateVenueMeta({ phoneNumber: value });
-				}}
+				label={ __( 'Phone Number', 'gatherpress' ) }
+				value={ phone }
+				onChange={ ( value ) => {
+					updateVenueField( { gatherpress_phone: value } );
+				} }
 			/>
 			<TextControl
-				label={__('Website', 'gatherpress')}
-				value={website}
+				label={ __( 'Website', 'gatherpress' ) }
+				value={ website }
 				type="url"
-				onChange={(value) => {
-					Broadcaster({ setWebsite: value });
-					updateVenueMeta({ website: value });
-				}}
+				onChange={ ( value ) => {
+					updateVenueField( { gatherpress_website: value } );
+				} }
 			/>
 		</>
 	);

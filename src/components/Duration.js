@@ -1,5 +1,5 @@
 /**
- * WordPress dependencies.
+ * WordPress dependencies
  */
 import { SelectControl } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
@@ -24,31 +24,31 @@ import { dateTimeOffset, durationOptions } from '../helpers/datetime';
  */
 const Duration = () => {
 	const { duration } = useSelect(
-		(select) => ({
-			duration: select('gatherpress/datetime').getDuration(),
-		}),
-		[]
+		( select ) => ( {
+			duration: select( 'gatherpress/datetime' ).getDuration(),
+		} ),
+		[],
 	);
 	const dispatch = useDispatch();
-	const { setDateTimeEnd, setDuration } = dispatch('gatherpress/datetime');
+	const { setDateTimeEnd, setDuration } = dispatch( 'gatherpress/datetime' );
 	return (
 		<SelectControl
-			label={__('Duration', 'gatherpress')}
+			label={ __( 'Duration', 'gatherpress' ) }
 			value={
-				durationOptions().some((option) => option.value === duration)
+				durationOptions().some( ( option ) => option.value === duration )
 					? duration
 					: false
 			}
-			options={durationOptions()}
-			onChange={(value) => {
-				value = 'false' === value ? false : parseFloat(value);
+			options={ durationOptions() }
+			onChange={ ( value ) => {
+				value = 'false' === value ? false : parseFloat( value );
 
-				if (value) {
-					setDateTimeEnd(dateTimeOffset(value));
+				if ( value ) {
+					setDateTimeEnd( dateTimeOffset( value ) );
 				}
 
-				setDuration(value);
-			}}
+				setDuration( value );
+			} }
 			__nexthasnomarginbottom
 		/>
 	);

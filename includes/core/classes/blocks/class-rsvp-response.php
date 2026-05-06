@@ -12,9 +12,9 @@ namespace GatherPress\Core\Blocks;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
-use GatherPress\Core\Block;
-use GatherPress\Core\Rsvp;
+use GatherPress\Core\Rsvp\Rsvp;
 use GatherPress\Core\Traits\Singleton;
+use GatherPress\Core\Utility;
 use WP_HTML_Tag_Processor;
 use WP_User;
 
@@ -29,6 +29,7 @@ use WP_User;
  * @since 1.0.0
  */
 class Rsvp_Response {
+
 	/**
 	 * Enforces a single instance of this class.
 	 */
@@ -87,11 +88,27 @@ class Rsvp_Response {
 	 * @return string The modified block content with updated attributes.
 	 */
 	public function transform_block_content( string $block_content, array $block ): string {
-		$block_instance     = Block::get_instance();
-		$post_id            = $block_instance->get_post_id( $block );
+		$block_instance = Setup::get_instance();
+		$post_id        = $block_instance->get_post_id( $block );
+
+		// Validate that the post type supports RSVP.
+		// Only check publish status if not in preview mode.
+		if (
+			! post_type_supports( (string) get_post_type( $post_id ), 'gatherpress-rsvp' ) ||
+			( ! is_preview() && 'publish' !== get_post_status( $post_id ) )
+		) {
+			return '';
+		}
+
+		if ( ! ( new Rsvp( $post_id ) )->is_enabled() ) {
+			return '';
+		}
+
 		$rsvp               = new Rsvp( $post_id );
 		$tag                = new WP_HTML_Tag_Processor( $block_content );
-		$rsvp_limit_enabled = isset( $block['attrs']['rsvpLimitEnabled'] ) ? (string) $block['attrs']['rsvpLimitEnabled'] : '0';
+		$rsvp_limit_enabled = isset( $block['attrs']['rsvpLimitEnabled'] ) ?
+			(string) $block['attrs']['rsvpLimitEnabled'] :
+			'0';
 		$rsvp_limit         = isset( $block['attrs']['rsvpLimit'] ) ? (string) $block['attrs']['rsvpLimit'] : '8';
 
 		if ( $tag->next_tag() ) {
@@ -116,23 +133,46 @@ class Rsvp_Response {
 			$tag->set_attribute( 'data-wp-context', wp_json_encode( array( 'postId' => $post_id ) ) );
 			$tag->set_attribute( 'data-counts', wp_json_encode( $counts ) );
 
+			$has_responses = ! empty( $counts['attending'] );
+
 			do {
 				$class_attr = $tag->get_attribute( 'class' );
-				if ( $class_attr && false !== strpos( $class_attr, 'gatherpress--empty-rsvp' ) ) {
-					if ( ! empty( $counts['attending'] ) ) {
+
+				if ( Utility::has_css_class( $class_attr, 'gatherpress-rsvp-response--no-responses' ) ) {
+					if ( $has_responses ) {
 						$updated_class  = str_replace(
 							'gatherpress--is-visible',
 							'',
 							$class_attr
 						);
-						$updated_class .= ' gatherpress--is-not-visible';
+						$updated_class .= ' gatherpress--is-hidden';
 					} else {
 						$updated_class  = str_replace(
-							'gatherpress--is-not-visible',
+							'gatherpress--is-hidden',
 							'',
 							$class_attr
 						);
 						$updated_class .= ' gatherpress--is-visible';
+					}
+
+					$tag->set_attribute( 'class', trim( $updated_class ) );
+				}
+
+				if ( Utility::has_css_class( $class_attr, 'gatherpress-rsvp-response--has-responses' ) ) {
+					if ( $has_responses ) {
+						$updated_class  = str_replace(
+							'gatherpress--is-hidden',
+							'',
+							$class_attr
+						);
+						$updated_class .= ' gatherpress--is-visible';
+					} else {
+						$updated_class  = str_replace(
+							'gatherpress--is-visible',
+							'',
+							$class_attr
+						);
+						$updated_class .= ' gatherpress--is-hidden';
 					}
 
 					$tag->set_attribute( 'class', trim( $updated_class ) );
@@ -178,8 +218,6 @@ class Rsvp_Response {
 			$tag->next_token();
 			$trigger_text = sprintf( $tag->get_modifiable_text(), intval( $counts['attending'] ?? 0 ) );
 
-			// @todo PHPStan flags this line. The method is available in WordPress 6.7. Revisit and consider removing this ignore in the future.
-			// @phpstan-ignore-next-line
 			$tag->set_modifiable_text( $trigger_text );
 		}
 
@@ -200,7 +238,11 @@ class Rsvp_Response {
 
 				if (
 					$current_class &&
-					preg_match( '/gatherpress--rsvp-(attending|waiting-list|not-attending)/', $current_class, $matches ) &&
+					preg_match(
+						'/gatherpress--is-(attending|waiting-list|not-attending)/',
+						$current_class,
+						$matches
+					) &&
 					$tag->next_tag( array( 'tag_name' => 'a' ) )
 				) {
 					// Change for needed format.
@@ -234,32 +276,48 @@ class Rsvp_Response {
 	 * @return array Modified array of avatar arguments, including the correct URL for the avatar.
 	 */
 	public function modify_avatar_for_gatherpress_rsvp( array $args, $comment ): array {
+		// Bail when the filter fires for a non-RSVP comment so the body
+		// doesn't have to nest under the positive guard.
 		if (
-			$comment &&
-			is_a( $comment, 'WP_Comment' ) &&
-			'gatherpress_rsvp' === $comment->comment_type
+			! $comment
+			|| ! is_a( $comment, 'WP_Comment' )
+			|| Rsvp::COMMENT_TYPE !== $comment->comment_type
 		) {
-			$email = $comment->comment_author_email;
+			return $args;
+		}
 
-			if ( intval( $comment->user_id ) && empty( $email ) ) {
-				$user = new WP_User( $comment->user_id );
+		$email = $comment->comment_author_email;
 
-				if ( $user->exists() ) {
-					$email = $user->user_email;
-				}
+		if ( intval( $comment->user_id ) && empty( $email ) ) {
+			$user = new WP_User( $comment->user_id );
+
+			if ( $user->exists() ) {
+				$email = $user->user_email;
 			}
+		}
 
-			if (
-				intval( get_comment_meta( intval( $comment->comment_ID ), 'gatherpress_rsvp_anonymous', true ) ) &&
-				! current_user_can( Rsvp::CAPABILITY )
-			) {
-				// Set the email to empty if the RSVP is marked as anonymous and the current user
-				// does not have permission to edit posts. This ensures the avatar defaults
-				// to a generic or placeholder image for anonymous responses.
-				$email = '';
+		if (
+			intval( get_comment_meta( intval( $comment->comment_ID ), 'gatherpress_rsvp_anonymous', true ) ) &&
+			! current_user_can( Rsvp::CAPABILITY )
+		) {
+			// Set the email to empty if the RSVP is marked as anonymous and the current user
+			// does not have permission to edit posts. This ensures the avatar defaults
+			// to a generic or placeholder image for anonymous responses.
+			$email = '';
+		}
+
+		$args['url'] = get_avatar_url( $email, array( 'default' => 'mystery' ) );
+
+		// Preserve only style attributes from extra_attr to maintain WordPress core's
+		// border styles (e.g., border-radius on avatars). Strip all other attributes
+		// that third-party plugins (like Webmention) may inject, as they can cause
+		// issues with JavaScript/React rendering.
+		if ( ! empty( $args['extra_attr'] ) ) {
+			if ( preg_match( '/style="([^"]*)"/', $args['extra_attr'], $matches ) ) {
+				$args['extra_attr'] = sprintf( 'style="%s"', $matches[1] );
+			} else {
+				$args['extra_attr'] = '';
 			}
-
-			$args['url'] = get_avatar_url( $email, array( 'default' => 'mystery' ) );
 		}
 
 		return $args;

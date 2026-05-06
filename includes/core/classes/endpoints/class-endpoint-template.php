@@ -36,9 +36,11 @@ class Endpoint_Template extends Endpoint_Type {
 	/**
 	 * Directory path for plugin templates.
 	 *
+	 * @since 1.0.0
+	 *
 	 * @var string
 	 */
-	protected $plugin_template_dir;
+	protected string $plugin_template_dir;
 
 	/**
 	 * Class constructor.
@@ -154,6 +156,8 @@ class Endpoint_Template extends Endpoint_Type {
 	/**
 	 * Retrieve template presets by invoking the callback.
 	 *
+	 * @since 1.0.0
+	 *
 	 * @return array Template preset data including file_name and optional dir_path.
 	 */
 	protected function get_template_presets(): array {
@@ -164,6 +168,8 @@ class Endpoint_Template extends Endpoint_Type {
 	 * Locate a template in the theme or child theme.
 	 *
 	 * @todo Maybe better put in the Utility class?
+	 *
+	 * @since 1.0.0
 	 *
 	 * @param string $file_name The name of the template file.
 	 * @return string The path to the theme template or an empty string if not found.
@@ -192,6 +198,8 @@ class Endpoint_Template extends Endpoint_Type {
 	 * Build the full path to the plugin's template file.
 	 *
 	 * @todo Maybe better put in the Utility class?
+	 *
+	 * @since 1.0.0
 	 *
 	 * @param string $file_name The name of the template file.
 	 * @param string $dir_path  The directory path where the template is stored.

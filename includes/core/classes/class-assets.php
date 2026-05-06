@@ -1,7 +1,6 @@
 <?php
 /**
- * Class is responsible for loading and managing static assets like stylesheets and JavaScript files,
- * as well as localizing data as JavaScript objects on the page.
+ * Class is responsible for loading and managing static assets like stylesheets and JavaScript files.
  *
  * @package GatherPress\Core
  * @since 1.0.0
@@ -12,19 +11,19 @@ namespace GatherPress\Core;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
-use GatherPress\Core\Traits\Singleton;
 use Error;
+use GatherPress\Core\Traits\Singleton;
 
 /**
  * Class Assets.
  *
  * This class handles the loading and management of static assets, including stylesheets and JavaScript files.
- * Additionally, it provides a mechanism for localizing data as JavaScript objects,
- * enabling seamless integration of server-side data with client-side scripts.
+ * It also provides frontend interactivity state via the WordPress Interactivity API.
  *
  * @since 1.0.0
  */
 class Assets {
+
 	/**
 	 * Enforces a single instance of this class.
 	 */
@@ -64,6 +63,14 @@ class Assets {
 	protected string $path = GATHERPRESS_CORE_PATH . '/build/';
 
 	/**
+	 * Cached list of block variation folder names from `build/variations/core/`.
+	 *
+	 * @since 1.0.0
+	 * @var string[]
+	 */
+	protected array $block_variation_names = array();
+
+	/**
 	 * Class constructor.
 	 *
 	 * This method initializes the object and sets up necessary hooks.
@@ -84,34 +91,91 @@ class Assets {
 	 * @return void
 	 */
 	protected function setup_hooks(): void {
-		add_action( 'admin_print_scripts', array( $this, 'add_global_object' ), PHP_INT_MIN );
 		add_action( 'admin_enqueue_scripts', array( $this, 'admin_enqueue_scripts' ) );
 		add_action( 'enqueue_block_assets', array( $this, 'block_enqueue_scripts' ) );
 		add_action( 'enqueue_block_editor_assets', array( $this, 'editor_enqueue_scripts' ) );
 		add_action( 'enqueue_block_editor_assets', array( $this, 'enqueue_variation_assets' ) );
+		add_action( 'enqueue_block_editor_assets', array( $this, 'enqueue_aql_integration' ) );
 		add_action( 'init', array( $this, 'register_variation_assets' ) );
-		add_action( 'wp_head', array( $this, 'add_global_object' ), PHP_INT_MIN );
+		add_action( 'wp_head', array( $this, 'add_interactivity_state' ) );
 		// Set priority to 11 to not conflict with media modal.
 		add_action( 'admin_footer', array( $this, 'event_communication_modal' ), 11 );
+		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_timezone_shim' ) );
+		add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_timezone_shim' ) );
 
 		add_filter( 'render_block', array( $this, 'maybe_enqueue_styles' ), 10, 2 );
+		add_filter( 'render_block', array( $this, 'maybe_enqueue_tooltip_assets' ) );
 	}
 
 	/**
-	 * Localize the global GatherPress JavaScript object for use in build scripts.
+	 * Patch `wp.date`'s timezone when WordPress hands Moment Timezone a bogus
+	 * `UTC+0` (or `UTC-0`) string.
 	 *
-	 * This method generates JavaScript code to create a global 'GatherPress' object containing localized data.
-	 * This object is made available for use in JavaScript build scripts, enabling seamless integration of
-	 * server-side data with client-side functionality.
+	 * On a fresh WordPress install the Settings → General timezone is
+	 * unset (no `timezone_string`, `gmt_offset` of 0), so WP core emits
+	 * `wp.date.setSettings({ timezone: { string: 'UTC+0' } })`. That is
+	 * not a valid IANA zone, which triggers a stream of
+	 * "Moment Timezone has no data for UTC+0" console warnings from the
+	 * block editor's panels and any plugin using `@wordpress/date`.
+	 *
+	 * We can't reach into WP core, but we can append an inline script
+	 * after its `setSettings` call to re-call it with a valid zone. We
+	 * only normalize the zero-offset case; non-zero UTC offsets are
+	 * rarer and surface a different warning that users fix by choosing
+	 * an IANA zone in Settings → General.
 	 *
 	 * @since 1.0.0
 	 *
 	 * @return void
 	 */
-	public function add_global_object(): void {
-		?>
-		<script>window.GatherPress = <?php echo wp_json_encode( $this->localize( intval( get_the_ID() ) ) ); ?></script>
-		<?php
+	public function enqueue_timezone_shim(): void {
+		if ( ! wp_script_is( 'wp-date', 'registered' ) ) {
+			return;
+		}
+
+		$script_path = GATHERPRESS_CORE_PATH . '/includes/templates/admin/timezone-shim.js';
+
+		// The shim file ships with the plugin; this guard is defensive in case
+		// someone strips template assets from a distribution.
+		// phpcs:ignore Squiz.Commenting.InlineComment.InvalidEndChar -- PHPUnit annotation must match exactly.
+		// @codeCoverageIgnoreStart
+		if ( ! file_exists( $script_path ) ) {
+			return;
+		}
+		// phpcs:ignore Squiz.Commenting.InlineComment.InvalidEndChar -- PHPUnit annotation must match exactly.
+		// @codeCoverageIgnoreEnd
+
+		wp_enqueue_script( 'wp-date' );
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Reading a plugin-local static file.
+		wp_add_inline_script( 'wp-date', file_get_contents( $script_path ), 'after' );
+	}
+
+	/**
+	 * Set initial interactivity state for frontend blocks.
+	 *
+	 * Provides the REST API URL to the gatherpress interactivity store
+	 * so that frontend view scripts can make API requests without
+	 * relying on window globals.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return void
+	 */
+	public function add_interactivity_state(): void {
+		$event_post_types = get_post_types_by_support( 'gatherpress-event-date' );
+
+		if ( ! is_singular( $event_post_types ) ) {
+			return;
+		}
+
+		$event_rest_api_slug = sprintf( '%s/event', GATHERPRESS_REST_NAMESPACE );
+
+		wp_interactivity_state(
+			'gatherpress',
+			array(
+				'eventApiUrl' => home_url( 'wp-json/' . $event_rest_api_slug ),
+			)
+		);
 	}
 
 	/**
@@ -149,12 +213,60 @@ class Assets {
 	 */
 	public function maybe_enqueue_styles( string $block_content, array $block ): string {
 		if ( isset( $block['blockName'] ) && str_contains( $block['blockName'], 'gatherpress/' ) ) {
-			$asset = $this->get_asset_data( 'utility_style' );
-
 			wp_enqueue_style( 'gatherpress-utility-style' );
 		}
 
 		return $block_content;
+	}
+
+	/**
+	 * Conditionally enqueue tooltip assets if tooltip markup is found in block content.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $block_content The block content.
+	 * @return string The block content.
+	 */
+	public function maybe_enqueue_tooltip_assets( string $block_content ): string {
+		if ( str_contains( $block_content, 'gatherpress-tooltip' ) ) {
+			$this->enqueue_tooltip_assets();
+		}
+
+		return $block_content;
+	}
+
+	/**
+	 * Register and enqueue tooltip frontend assets.
+	 *
+	 * Enqueues the tooltip view script which initializes CSS custom properties
+	 * from data attributes for custom tooltip colors.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return void
+	 */
+	protected function enqueue_tooltip_assets(): void {
+		static $enqueued = false;
+
+		if ( $enqueued ) {
+			return;
+		}
+
+		$enqueued = true;
+
+		// Enqueue utility styles which include tooltip styles.
+		wp_enqueue_style( 'gatherpress-utility-style' );
+
+		// Enqueue tooltip view script for initializing CSS custom properties.
+		$script_asset = $this->get_asset_data( 'tooltip_view' );
+
+		wp_enqueue_script(
+			'gatherpress-tooltip-view',
+			$this->build . 'tooltip_view.js',
+			array(),
+			$script_asset['version'],
+			true
+		);
 	}
 
 	/**
@@ -276,12 +388,6 @@ class Assets {
 
 		wp_enqueue_style( 'gatherpress-utility-style' );
 
-		wp_add_inline_script(
-			'gatherpress-editor',
-			'GatherPress.misc.timezoneChoices = ' . wp_json_encode( Utility::timezone_choices() ),
-			'before'
-		);
-
 		wp_set_script_translations( 'gatherpress-editor', 'gatherpress' );
 	}
 
@@ -296,110 +402,9 @@ class Assets {
 	 * @return void
 	 */
 	public function event_communication_modal(): void {
-		if ( get_post_type() === Event::POST_TYPE ) {
+		if ( post_type_supports( (string) get_post_type(), 'gatherpress-event-date' ) ) {
 			echo '<div id="gatherpress-event-communication-modal"></div>';
 		}
-	}
-
-	/**
-	 * Localize data for JavaScript usage.
-	 *
-	 * This method prepares and localizes data for use in JavaScript scripts. It collects various event-related
-	 * information and settings, making them available in the client-side context. The localized data includes
-	 * response details, current user information, time zone settings, event properties, and more.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param int $post_id The Post ID for an event.
-	 * @return array An associative array containing localized data for JavaScript.
-	 */
-	protected function localize( int $post_id ): array {
-		$event               = new Event( $post_id );
-		$settings            = Settings::get_instance();
-		$event_details       = array();
-		$event_rest_api_slug = sprintf( '%s/event', GATHERPRESS_REST_NAMESPACE );
-
-		if ( is_user_logged_in() ) {
-			$event_rest_api = '/' . $event_rest_api_slug;
-		} else {
-			$event_rest_api = home_url( 'wp-json/' . $event_rest_api_slug );
-		}
-
-		if ( ! empty( $event->event ) ) {
-			$event_details = array(
-				'currentUser'         => $event->rsvp->get( get_current_user_id() ),
-				'dateTime'            => $event->get_datetime(),
-				'enableAnonymousRsvp' => (bool) get_post_meta( $post_id, 'gatherpress_enable_anonymous_rsvp', true ),
-				'maxAttendanceLimit'  => (int) get_post_meta( $post_id, 'gatherpress_max_attendance_limit', true ),
-				'maxGuestLimit'       => (int) get_post_meta( $post_id, 'gatherpress_max_guest_limit', true ),
-				'hasEventPast'        => $event->has_event_past(),
-				'postId'              => $post_id,
-				'responses'           => $event->rsvp->responses(),
-			);
-		}
-
-		return array(
-			'eventDetails' => $event_details,
-			'misc'         => array(
-				'isAdmin'          => is_admin(),
-				'isUserLoggedIn'   => is_user_logged_in(),
-				'nonce'            => wp_create_nonce( 'wp_rest' ),
-				'unregisterBlocks' => $this->unregister_blocks(),
-			),
-			'settings'     => array(
-				'dateFormat'          => $settings->get_value( 'general', 'formatting', 'date_format' ),
-				'enableAnonymousRsvp' => ( 1 === (int) $settings->get_value( 'general', 'general', 'enable_anonymous_rsvp' ) ),
-				'mapPlatform'         => $settings->get_value( 'general', 'general', 'map_platform' ),
-				'maxAttendanceLimit'  => $settings->get_value( 'general', 'general', 'max_attendance_limit' ),
-				'maxGuestLimit'       => $settings->get_value( 'general', 'general', 'max_guest_limit' ),
-				'showTimezone'        => ( 1 === (int) $settings->get_value( 'general', 'formatting', 'show_timezone' ) ),
-				'timeFormat'          => $settings->get_value( 'general', 'formatting', 'time_format' ),
-			),
-			'urls'         => array(
-				'pluginUrl'       => GATHERPRESS_CORE_URL,
-				'eventApiPath'    => '/' . $event_rest_api_slug,
-				'eventApiUrl'     => home_url( 'wp-json/' . $event_rest_api_slug ),
-				'loginUrl'        => Utility::get_login_url( $post_id ),
-				'registrationUrl' => Utility::get_registration_url( $post_id ),
-				'homeUrl'         => get_home_url(),
-			),
-		);
-	}
-
-	/**
-	 * Retrieve a list of blocks to unregister based on the current post type.
-	 *
-	 * This method determines which blocks should be unregistered on the current page
-	 * in the WordPress admin based on the post type. It returns an array of block names
-	 * that should be removed from the block editor for the given post type.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @return array An array of block names to unregister.
-	 */
-	protected function unregister_blocks(): array {
-		$blocks = array();
-
-		if ( ! is_admin() || ! get_post_type() ) {
-			return $blocks;
-		}
-
-		switch ( get_post_type() ) {
-			case Event::POST_TYPE:
-				break;
-			case Venue::POST_TYPE:
-				$blocks = array(
-					'gatherpress/online-event',
-				);
-				break;
-			default:
-				$blocks = array(
-					'gatherpress/online-event',
-					'gatherpress/venue',
-				);
-		}
-
-		return $blocks;
 	}
 
 	/**
@@ -416,13 +421,40 @@ class Assets {
 	 *                       or null to use the path based on the default naming scheme.
 	 * @return array An array containing asset-related data.
 	 */
-	protected function get_asset_data( string $asset, string $path = null ): array {
+	protected function get_asset_data( string $asset, ?string $path = null ): array {
 		$path = $path ?? $this->path . sprintf( '%s.asset.php', $asset );
 		if ( empty( $this->asset_data[ $asset ] ) ) {
-			$this->asset_data[ $asset ] = require_once $path;
+			// Loading WordPress asset metadata file that returns an array, not importing a class.
+			$this->asset_data[ $asset ] = require_once $path; // NOSONAR.
 		}
 
 		return (array) $this->asset_data[ $asset ];
+	}
+
+	/**
+	 * Get a list of subfolder names from the /build/variations/core/ directory.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return string[] List of block-variations foldernames.
+	 */
+	public function get_block_variations(): array {
+		$variations_directory = sprintf( '%1$s/build/variations/core/', GATHERPRESS_CORE_PATH );
+
+		if ( ! file_exists( $variations_directory ) ) {
+			return array();
+		}
+
+		if ( empty( $this->block_variation_names ) ) {
+			$this->block_variation_names = array_values(
+				array_diff(
+					scandir( $variations_directory ),
+					array( '..', '.' )
+				)
+			);
+		}
+
+		return array_filter( $this->block_variation_names );
 	}
 
 	/**
@@ -433,10 +465,9 @@ class Assets {
 	 * @return void
 	 */
 	public function register_variation_assets(): void {
-		array_map(
-			array( $this, 'register_asset' ),
-			Block::get_instance()->get_block_variations()
-		);
+		foreach ( $this->get_block_variations() as $variation ) {
+			$this->register_asset( $variation, 'variations/core/' );
+		}
 	}
 
 	/**
@@ -449,8 +480,47 @@ class Assets {
 	public function enqueue_variation_assets(): void {
 		array_map(
 			array( $this, 'enqueue_asset' ),
-			Block::get_instance()->get_block_variations()
+			$this->get_block_variations()
 		);
+	}
+
+	/**
+	 * Conditionally enqueue the Advanced Query Loop integration script.
+	 *
+	 * Only enqueues when the AQL plugin is active and its script is registered.
+	 * Adds AQL's script handle as a dependency so GatherPress loads after AQL.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return void
+	 */
+	public function enqueue_aql_integration(): void {
+		// Only load when Advanced Query Loop is active.
+		if ( ! wp_script_is( 'advanced-query-loop', 'registered' ) ) {
+			return;
+		}
+
+		$asset_path = $this->path . 'integrations/aql/index.asset.php';
+
+		if ( ! file_exists( $asset_path ) ) {
+			return;
+		}
+
+		$asset = include_once $asset_path;
+
+		// Add AQL as a dependency so our script loads after theirs.
+		$dependencies   = $asset['dependencies'] ?? array();
+		$dependencies[] = 'advanced-query-loop';
+
+		wp_enqueue_script(
+			'gatherpress-aql-integration',
+			$this->build . 'integrations/aql/index.js',
+			$dependencies,
+			$asset['version'] ?? false,
+			true
+		);
+
+		wp_set_script_translations( 'gatherpress-aql-integration', 'gatherpress' );
 	}
 
 	/**
@@ -459,11 +529,11 @@ class Assets {
 	 * @since 1.0.0
 	 *
 	 * @param string $folder_name Slug of the block to register scripts and translations for.
-	 * @param string $build_dir Name of the folder ro register assets from, relative to the plugins root directory.
+	 * @param string $build_dir Name of the folder to register assets from, relative to the plugins root directory.
 	 *
 	 * @return void
 	 */
-	protected function register_asset( string $folder_name, $build_dir = 'variations/' ): void {
+	protected function register_asset( string $folder_name, string $build_dir = '' ): void {
 		$slug     = sprintf( 'gatherpress-%s', $folder_name );
 		$folders  = sprintf( '%1$s%2$s', $build_dir, $folder_name );
 		$dir      = sprintf( '%1$s%2$s', $this->path, $folders );
@@ -533,10 +603,28 @@ class Assets {
 	 * @return bool
 	 */
 	protected function asset_exists( string $path, string $name, bool $critical = true ): bool {
+		/**
+		 * Filters whether an asset file is considered critical.
+		 *
+		 * This filter allows modification of the critical flag for asset files,
+		 * which determines whether missing assets throw an Error in development
+		 * environments or silently return false.
+		 *
+		 * @since 1.0.0
+		 *
+		 * @param bool   $critical Whether file is mandatory for the plugin to work.
+		 * @param string $path     Full file path to the asset file.
+		 * @param string $name     Name of the asset being loaded.
+		 *
+		 * @return bool True if asset is critical, false otherwise.
+		 */
+		$critical = apply_filters( 'gatherpress_asset_critical', $critical, $path, $name );
+
 		if ( ! file_exists( $path ) ) {
 			$error_message = sprintf(
 				/* Translators: %s Name of a block-asset */
 				__(
+					// phpcs:ignore Generic.Files.LineLength.TooLong
 					'You need to run `npm start` or `npm run build` for the "%1$s" block-asset first. %2$s does not exist.',
 					'gatherpress'
 				),
@@ -551,6 +639,7 @@ class Assets {
 				return false;
 			}
 		}
+
 		return true;
 	}
 }

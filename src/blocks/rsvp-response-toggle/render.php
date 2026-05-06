@@ -8,6 +8,9 @@
  * @since 1.0.0
  */
 
+// Exit if accessed directly.
+defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
+
 $gatherpress_limit_enabled = isset( $block->context['gatherpress/rsvpLimitEnabled'] )
 	? (bool) $block->context['gatherpress/rsvpLimitEnabled']
 	: false;

@@ -1,15 +1,14 @@
 /**
- * WordPress dependencies.
+ * WordPress dependencies
  */
 import { PanelRow, SelectControl } from '@wordpress/components';
-import { useEffect } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
 import { useDispatch, useSelect } from '@wordpress/data';
 
 /**
- * Internal dependencies.
+ * Internal dependencies
  */
-import { getFromGlobal } from '../helpers/globals';
+import { getFromConfig } from '../helpers/editor-settings';
 import { enableSave } from '../helpers/editor';
 import {
 	maybeConvertUtcOffsetForDatabase,
@@ -29,52 +28,47 @@ import {
  */
 const Timezone = () => {
 	const { timezone } = useSelect(
-		(select) => ({
-			timezone: select('gatherpress/datetime').getTimezone(),
-		}),
-		[]
+		( select ) => ( {
+			timezone: select( 'gatherpress/datetime' ).getTimezone(),
+		} ),
+		[],
 	);
-	const { setTimezone } = useDispatch('gatherpress/datetime');
-	const choices = getFromGlobal('misc.timezoneChoices');
-
-	// Run only once.
-	useEffect(() => {
-		setTimezone(getFromGlobal('eventDetails.dateTime.timezone'));
-	}, [setTimezone]);
+	const { setTimezone } = useDispatch( 'gatherpress/datetime' );
+	const choices = getFromConfig( 'timezoneChoices' );
 
 	return (
 		<PanelRow>
 			<SelectControl
-				label={__('Time Zone', 'gatherpress')}
-				value={maybeConvertUtcOffsetForSelect(timezone)}
-				onChange={(value) => {
-					value = maybeConvertUtcOffsetForDatabase(value);
-					setTimezone(value);
+				label={ __( 'Time Zone', 'gatherpress' ) }
+				value={ maybeConvertUtcOffsetForSelect( timezone ) }
+				onChange={ ( value ) => {
+					value = maybeConvertUtcOffsetForDatabase( value );
+					setTimezone( value );
 					enableSave();
-				}}
+				} }
 				__nexthasnomarginbottom
 			>
-				{choices &&
+				{ choices &&
 				'object' === typeof choices &&
-				Object.keys(choices).length > 0 ? (
-					Object.keys(choices).map((group) => {
-						return (
-							<optgroup key={group} label={group}>
-								{Object.keys(choices[group]).map((item) => {
-									return (
-										<option key={item} value={item}>
-											{choices[group][item]}
-										</option>
-									);
-								})}
-							</optgroup>
-						);
-					})
-				) : (
-					<option value="">
-						{__('Error, no choices available', 'gatherpress')}
-					</option>
-				)}
+				0 < Object.keys( choices ).length ? (
+						Object.keys( choices ).map( ( group ) => {
+							return (
+								<optgroup key={ group } label={ group }>
+									{ Object.keys( choices[ group ] ).map( ( item ) => {
+										return (
+											<option key={ item } value={ item }>
+												{ choices[ group ][ item ] }
+											</option>
+										);
+									} ) }
+								</optgroup>
+							);
+						} )
+					) : (
+						<option value="">
+							{ __( 'Error, no choices available', 'gatherpress' ) }
+						</option>
+					) }
 			</SelectControl>
 		</PanelRow>
 	);

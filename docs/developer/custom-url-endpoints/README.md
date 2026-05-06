@@ -6,11 +6,11 @@ GatherPress provides some different and custom URL endpoints, for example `/ical
 
 - `example.org/event/my-sample-event/ical`
 
-   provides a download-able .ics file in ical format.
+   provides a downloadable .ics file in ical format.
 
 - `example.org/event/my-sample-event/outlook`
 
-   provides the same download-able file as an alias.
+   provides the same downloadable file as an alias.
 
 - `example.org/event/my-sample-event/google-calendar`
 
@@ -22,7 +22,7 @@ GatherPress provides some different and custom URL endpoints, for example `/ical
 
 - `example.org/event/feed/ical`
 
-   provides a subscribe-able event feed in ical format with all events of the site.
+   provides a subscribable event feed in ical format with all events of the site.
 
 - `example.org/venue/my-sample-venue/feed/ical`
 
@@ -34,7 +34,7 @@ GatherPress provides some different and custom URL endpoints, for example `/ical
 
 The most obvious functions to create such within WordPress seem to be [`add_feed()`](https://developer.wordpress.org/reference/functions/add_feed/) and [`add_rewrite_endpoint()`](https://developer.wordpress.org/reference/functions/add_rewrite_endpoint/) for this purpose.
 
-Unfortunately both functions share a common pitfall, they are not restricitive to any post type at all. That would result in having a `/feed/ical` endpoint for all posts AND every other non-hierarchical, custom post type which seemed to be the wrong way to go. A lot of code would have had to be written, to patch this behavior and remove those superfluous endpoints.
+Unfortunately both functions share a common pitfall, they are not restrictive to any post type at all. That would result in having a `/feed/ical` endpoint for all posts AND every other non-hierarchical, custom post type, which seemed to be the wrong way to go. A lot of code would have had to be written, to patch this behavior and remove those superfluous endpoints.
 
 That's why GatherPress created its own Endpoint ~~API~~ helper and tries to fix the mentioned problems before they appear.
 
@@ -117,7 +117,7 @@ Example for a new redirection endpoint like `example.org/event/my-sample-event/o
 	```
 
 	> [!TIP]
-	> Run this on the `registered_post_type_{post_type}` action, to ensure that custom endpoints are registered after their post type is initialized. GatherPress will trigger php warnings if called too early or or with unsupported arguments.
+	> Run this on the `registered_post_type_{post_type}` action, to ensure that custom endpoints are registered after their post type is initialized. GatherPress will trigger php warnings if called too early or with unsupported arguments.
 
 - ### 2. Define the callback for the endpoint
 

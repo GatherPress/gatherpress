@@ -7,10 +7,10 @@
  */
 import { createSlotFill, PanelRow } from '@wordpress/components';
 
-export const { Fill, Slot } = createSlotFill('EventPluginDocumentSettings');
-export const EventPluginDocumentSettings = ({ children, className }) => (
+export const { Fill, Slot } = createSlotFill( 'EventPluginDocumentSettings' );
+export const EventPluginDocumentSettings = ( { children, className } ) => (
 	<Fill>
-		<PanelRow className={className}>{children}</PanelRow>
+		<PanelRow className={ className }>{ children }</PanelRow>
 	</Fill>
 );
 

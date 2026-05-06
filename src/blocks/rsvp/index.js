@@ -1,10 +1,10 @@
 /**
- * WordPress dependencies.
+ * WordPress dependencies
  */
 import { registerBlockType } from '@wordpress/blocks';
 import { useBlockProps, InnerBlocks } from '@wordpress/block-editor';
 /**
- * Internal dependencies.
+ * Internal dependencies
  */
 import edit from './edit';
 import metadata from './block.json';
@@ -20,13 +20,13 @@ import './style.scss';
  *
  * @return {JSX.Element} The rendered React component.
  */
-registerBlockType(metadata, {
+registerBlockType( metadata, {
 	edit,
 	save: () => {
 		return (
-			<div {...useBlockProps.save()}>
+			<div { ...useBlockProps.save() }>
 				<InnerBlocks.Content />
 			</div>
 		);
 	},
-});
+} );

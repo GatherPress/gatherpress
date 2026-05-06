@@ -64,8 +64,8 @@ jobs:
           coverage: none
           tools: wp-cli
 
-      - name: Install latest version of dist-archive-command
-        run: wp package install wp-cli/dist-archive-command:dev-main
+      - name: Install dist-archive-command
+        run: wp package install wp-cli/dist-archive-command:^2
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -88,11 +88,12 @@ jobs:
 
       - name: NPM install
         if: steps.node_modules-cache.outputs.cache-hit != 'true'
-        run: npm ci --legacy-peer-deps
+        run: npm ci
 
       # Creating a short lived node_modules cache
       - uses: actions/cache/save@v4
         if: steps.node_modules-cache.outputs.cache-hit != 'true'
+        continue-on-error: true
         with:
           path: |
             ./node_modules
@@ -122,6 +123,8 @@ jobs:
       - name: Add Preview Links comment
         id: comment-on-pr
         uses: actions/github-script@v7
+        env:
+          PHP_VERSIONS: '["8.4","8.2","7.4"]'
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |

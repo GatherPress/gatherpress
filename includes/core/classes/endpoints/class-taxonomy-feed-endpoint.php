@@ -2,7 +2,7 @@
 /**
  * Handles feed-based endpoints for custom taxonomies in GatherPress.
  *
- * This file defines the `Posttype_Feed_Endpoint` class, which extends the base `Endpoint`
+ * This file defines the `Taxonomy_Feed_Endpoint` class, which extends the base `Endpoint`
  * class to handle custom feeds for taxonomy archives. It allows users to define custom
  * feed URLs (e.g., RSS feeds) for taxonomies such as `gatherpress_topic`, while also allowing
  * theme overrides for feed templates.

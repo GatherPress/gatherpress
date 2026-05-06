@@ -61,26 +61,69 @@ class Validate {
 	 */
 	public static function event_post_id( $param ): bool {
 		return (
-			static::number( $param ) &&
-			Event::POST_TYPE === get_post_type( $param )
+			static::positive_number( $param ) &&
+			post_type_supports( (string) get_post_type( $param ), 'gatherpress-event-date' )
 		);
 	}
 
 	/**
-	 * Validate a numeric value.
+	 * Validate a positive numeric value.
 	 *
 	 * Validates whether the given parameter is a valid numeric value greater than zero.
 	 *
 	 * @since 1.0.0
 	 *
 	 * @param int|string $param The value to validate.
-	 * @return bool True if the parameter is a valid numeric value greater than zero, false otherwise.
+	 * @return bool True if the parameter is a valid positive numeric value, false otherwise.
 	 */
-	public static function number( $param ): bool {
+	public static function positive_number( $param ): bool {
 		return (
 			0 < intval( $param ) &&
 			is_numeric( $param )
 		);
+	}
+
+	/**
+	 * Validate a non-negative numeric value.
+	 *
+	 * Validates whether the given parameter is a valid numeric value greater than or equal to zero.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param int|string $param The value to validate.
+	 * @return bool True if the parameter is a valid non-negative numeric value, false otherwise.
+	 */
+	public static function non_negative_number( $param ): bool {
+		return (
+			0 <= intval( $param ) &&
+			is_numeric( $param )
+		);
+	}
+
+	/**
+	 * Validate a geographic coordinate.
+	 *
+	 * Accepts any numeric value within ±180 — the union of valid latitude
+	 * (-90..90) and longitude (-180..180) ranges. A single validator covers
+	 * both axes since the rejection cases that matter (non-numeric strings,
+	 * obvious garbage like -9999, NaN-like input) are caught the same way.
+	 *
+	 * Empty string, null, and other non-numeric input return false; callers
+	 * that want to preserve an "unset" sentinel should sanitize separately.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param mixed $param The value to validate.
+	 * @return bool True if the parameter is a numeric value within ±180, false otherwise.
+	 */
+	public static function coordinate( $param ): bool {
+		if ( ! is_numeric( $param ) ) {
+			return false;
+		}
+
+		$value = (float) $param;
+
+		return -180.0 <= $value && 180.0 >= $value;
 	}
 
 	/**
@@ -188,35 +231,16 @@ class Validate {
 	 * @return bool True if the block data is valid, false otherwise.
 	 */
 	public static function block_data( string $param ): bool {
-		// Decode the JSON string.
 		$decoded = json_decode( $param, true );
 
-		// Check if JSON is invalid.
-		if ( null === $decoded ) {
-			return false;
-		}
-
-		// Validate the top-level structure.
-		if ( ! isset( $decoded['blockName'], $decoded['attrs'], $decoded['innerBlocks'] ) ) {
-			return false;
-		}
-
-		// Ensure the `blockName` is a string.
-		if ( ! is_string( $decoded['blockName'] ) ) {
-			return false;
-		}
-
-		// Ensure the `attrs` is an array.
-		if ( ! is_array( $decoded['attrs'] ) ) {
-			return false;
-		}
-
-		// Ensure the `innerBlocks` is an array.
-		if ( ! is_array( $decoded['innerBlocks'] ) ) {
-			return false;
-		}
-
-		// If all checks pass, return true.
-		return true;
+		// Combined guard: bail when JSON decoded to null, when any of the
+		// required top-level keys is missing, or when their types don't match
+		// the parsed-block contract (`blockName` string + `attrs` /
+		// `innerBlocks` arrays).
+		return null !== $decoded
+			&& isset( $decoded['blockName'], $decoded['attrs'], $decoded['innerBlocks'] )
+			&& is_string( $decoded['blockName'] )
+			&& is_array( $decoded['attrs'] )
+			&& is_array( $decoded['innerBlocks'] );
 	}
 }

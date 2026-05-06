@@ -15,6 +15,8 @@ namespace GatherPress\Core;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
+use WP_HTML_Tag_Processor;
+
 /**
  * Class Utility.
  *
@@ -23,6 +25,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
  * @since 1.0.0
  */
 class Utility {
+
 	/**
 	 * Renders a template file.
 	 *
@@ -45,12 +48,14 @@ class Utility {
 		}
 
 		if ( true === $output ) {
-			require $path;
+			// Loading PHP template file, not importing a class.
+			require $path; // NOSONAR.
 			return '';
 		}
 
 		ob_start();
-		require $path;
+		// Loading PHP template file, not importing a class.
+		require $path; // NOSONAR.
 		return ob_get_clean();
 	}
 
@@ -65,7 +70,7 @@ class Utility {
 	 * @return string The key with the 'gatherpress_' prefix.
 	 */
 	public static function prefix_key( string $key ): string {
-		if ( 0 !== strpos( $key, 'gatherpress_' ) ) {
+		if ( ! str_starts_with( $key, 'gatherpress_' ) ) {
 			$key = sprintf( 'gatherpress_%s', $key );
 		}
 
@@ -87,6 +92,56 @@ class Utility {
 	}
 
 	/**
+	 * Convert a snake_case string to camelCase.
+	 *
+	 * Expects standard snake_case input (lowercase words separated by single underscores).
+	 * Leading underscores or consecutive underscores may produce unexpected results.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $key The snake_case string to convert.
+	 * @return string The converted camelCase string.
+	 */
+	public static function snake_to_camel( string $key ): string {
+		return lcfirst( str_replace( '_', '', ucwords( $key, '_' ) ) );
+	}
+
+	/**
+	 * Authorization callback for post meta that mirrors the post-level edit cap.
+	 *
+	 * Routes through `user_can( $user_id, 'edit_post', $object_id )` so the
+	 * per-post permission model (`map_meta_cap` → `edit_others_posts`,
+	 * `edit_published_posts`, etc.) gates meta the same way it gates the post
+	 * itself. Without this, the meta layer would be more permissive than the
+	 * post layer that owns it: a custom REST route or third-party
+	 * `update_post_meta()` call could bypass the per-post check that the WP
+	 * posts controller already enforces on the post.
+	 *
+	 * Wired in via `'auth_callback' => array( Utility::class, 'can_edit_post_meta' )`
+	 * on every editor-writable meta key registered through `register_post_meta()`.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) -- $allowed and $meta_key
+	 * are required by WP's register_post_meta auth_callback signature.
+	 *
+	 * @param bool   $allowed   Whether the user can edit the post meta. Unused;
+	 *                          we authoritatively return based on `edit_post`.
+	 * @param string $meta_key  The meta key being accessed. Unused.
+	 * @param int    $object_id The post ID the meta belongs to.
+	 * @param int    $user_id   The user ID attempting the edit.
+	 * @return bool True if the user can edit the post, false otherwise.
+	 */
+	public static function can_edit_post_meta(
+		bool $allowed,
+		string $meta_key,
+		int $object_id,
+		int $user_id
+	): bool {
+		return user_can( $user_id, 'edit_post', $object_id );
+	}
+
+	/**
 	 * Retrieve an array of time zone choices.
 	 *
 	 * This method converts the Time Zone markup returned by WordPress into an associative array
@@ -97,23 +152,64 @@ class Utility {
 	 * @return array An array of time zones with labels as keys and time zone choices as values.
 	 */
 	public static function timezone_choices(): array {
-		$timezones_raw   = explode( PHP_EOL, wp_timezone_choice( 'UTC', get_user_locale() ) );
+		// Parse `wp_timezone_choice()` output through WordPress's HTML tag
+		// processor — no regex, no string-stripping. A previous greedy-regex
+		// parser silently broke when WordPress added a `dir="auto"`
+		// attribute to optgroup/option tags: the captured value carried
+		// trailing markup and never matched the saved timezone, so the
+		// editor's timezone select always fell back to the first option.
+		// Walking tokens via `WP_HTML_Tag_Processor` insulates this code
+		// from any future markup changes WordPress makes to those tags.
+		$tags = new WP_HTML_Tag_Processor(
+			wp_timezone_choice( 'UTC', get_user_locale() )
+		);
+
 		$timezones_clean = array();
 		$group           = null;
+		$pending_value   = null;
 
-		foreach ( $timezones_raw as $timezone ) {
-			preg_match( '/<optgroup label="(.+)">/', $timezone, $matches );
+		while ( $tags->next_token() ) {
+			$token_type = $tags->get_token_type();
 
-			if ( 2 === count( $matches ) ) {
-				$group                     = $matches[1];
-				$timezones_clean[ $group ] = array();
+			if ( '#tag' === $token_type ) {
+				if ( $tags->is_tag_closer() ) {
+					continue;
+				}
+
+				$tag_name = $tags->get_tag();
+
+				if ( 'OPTGROUP' === $tag_name ) {
+					$label = $tags->get_attribute( 'label' );
+
+					if ( is_string( $label ) && '' !== $label ) {
+						$group                     = $label;
+						$timezones_clean[ $group ] = array();
+					}
+
+					$pending_value = null;
+					continue;
+				}
+
+				if ( 'OPTION' === $tag_name && null !== $group ) {
+					$value         = $tags->get_attribute( 'value' );
+					$pending_value = ( is_string( $value ) && '' !== $value ) ? $value : null;
+				}
+
 				continue;
 			}
 
-			preg_match( '/<option.*value="(.+)">(.+)<\/option>/', $timezone, $matches );
+			if (
+				'#text' === $token_type &&
+				null !== $group &&
+				null !== $pending_value
+			) {
+				$text = trim( $tags->get_modifiable_text() );
 
-			if ( ! empty( $group ) && 3 === count( $matches ) ) {
-				$timezones_clean[ $group ][ $matches[1] ] = $matches[2];
+				if ( '' !== $text ) {
+					$timezones_clean[ $group ][ $pending_value ] = $text;
+				}
+
+				$pending_value = null;
 			}
 		}
 
@@ -234,28 +330,100 @@ class Utility {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @return string The timezone string representing the system's default timezone. Falls back to a UTC offset representation if a named timezone string is not set.
+	 * @return string The timezone string representing the system's default timezone.
+	 *                Falls back to a UTC offset representation if a named timezone string is not set.
 	 */
 	public static function get_system_timezone(): string {
-		$gmt_offset      = intval( get_option( 'gmt_offset' ) );
+		$gmt_offset      = get_option( 'gmt_offset' );
 		$timezone_string = get_option( 'timezone_string' );
 
 		// Remove old Etc mappings. Fallback to gmt_offset.
-		if ( false !== strpos( $timezone_string, 'Etc/GMT' ) ) {
+		if ( str_contains( $timezone_string, 'Etc/GMT' ) ) {
 			$timezone_string = '';
 		}
 
-		if ( empty( $timezone_string ) ) { // Create a UTC+- zone if no timezone string exists.
-			if ( 0 === $gmt_offset ) {
-				$timezone_string = 'UTC+0';
-			} elseif ( $gmt_offset < 0 ) {
-				$timezone_string = 'UTC' . $gmt_offset;
-			} else {
-				$timezone_string = 'UTC+' . $gmt_offset;
-			}
+		if ( empty( $timezone_string ) ) {
+			$timezone_string = self::offset_to_timezone_string( (float) $gmt_offset );
 		}
 
 		return $timezone_string;
+	}
+
+	/**
+	 * Convert a gmt_offset (in hours) into a DateTimeZone-compatible string.
+	 *
+	 * WordPress stores the gmt_offset as a decimal hour (e.g. 5.5 for
+	 * India, -3.5 for Newfoundland). PHP's DateTimeZone rejects WP's display
+	 * strings like `UTC+0` or `UTC+5` but accepts `UTC` and `+HH:MM` /
+	 * `-HH:MM` offsets, so normalize here.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param float $offset Decimal-hour offset from UTC.
+	 * @return string PHP-valid timezone identifier.
+	 */
+	public static function offset_to_timezone_string( float $offset ): string {
+		if ( 0.0 === $offset ) {
+			return 'UTC';
+		}
+
+		$sign    = $offset < 0 ? '-' : '+';
+		$abs     = abs( $offset );
+		$hours   = (int) $abs;
+		$minutes = (int) round( ( $abs - $hours ) * 60 );
+
+		return sprintf( '%s%02d:%02d', $sign, $hours, $minutes );
+	}
+
+	/**
+	 * Normalize a timezone string to a PHP `DateTimeZone`-compatible form.
+	 *
+	 * Accepts anything WordPress / GatherPress might have stored (IANA,
+	 * `+HH:MM`, `UTC`, `UTC+N`, `UTC-N`, decimal UTC like `UTC+5.5`) and
+	 * returns a string that `new DateTimeZone(...)` will accept.
+	 *
+	 * Unknown values pass through unchanged so downstream error handling
+	 * can surface anything genuinely unexpected.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $timezone Raw timezone string.
+	 * @return string
+	 */
+	public static function normalize_timezone_string( string $timezone ): string {
+		$timezone = trim( $timezone );
+
+		// Empty + the bare "UTC" display string both collapse to UTC.
+		if ( '' === $timezone || preg_match( '/^UTC$/i', $timezone ) ) {
+			return 'UTC';
+		}
+
+		// Already-valid +HH:MM / -HH:MM input or an IANA identifier
+		// (America/New_York, Europe/London, etc.) passes straight through —
+		// the second preg_match is the WP-style UTC offset parser, so its
+		// failure means "not a UTC offset, treat as IANA".
+		if ( preg_match( '/^[+-]\d{2}:\d{2}$/', $timezone )
+			|| ! preg_match( '/^UTC([+-])(\d+(?:\.\d+)?|\d+:\d{2})$/i', $timezone, $matches ) ) {
+			return $timezone;
+		}
+
+		$sign    = $matches[1];
+		$value   = $matches[2];
+		$hours   = 0;
+		$minutes = 0;
+
+		if ( str_contains( $value, ':' ) ) {
+			list( $hours, $minutes ) = array_map( 'intval', explode( ':', $value ) );
+		} elseif ( str_contains( $value, '.' ) ) {
+			$hours   = (int) $value;
+			$minutes = (int) round( ( (float) $value - $hours ) * 60 );
+		} else {
+			$hours = (int) $value;
+		}
+
+		return ( 0 === $hours && 0 === $minutes )
+			? 'UTC'
+			: sprintf( '%s%02d:%02d', $sign, $hours, $minutes );
 	}
 
 	/**
@@ -295,5 +463,201 @@ class Utility {
 		}
 
 		return $url;
+	}
+
+	/**
+	 * Ensures proper user authentication for AJAX/REST API contexts.
+	 *
+	 * When WordPress processes AJAX or REST API requests, the user context may not
+	 * be properly established, causing functions like current_user_can() to behave
+	 * incorrectly. This method forces WordPress to determine and set the current user,
+	 * ensuring consistent authentication behavior between server-side rendering and
+	 * dynamic requests.
+	 *
+	 * This is particularly important after the introduction of dynamic nonce generation,
+	 * which changed how user authentication flows through the application.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return int|false The user ID if authentication was successful, false otherwise.
+	 */
+	public static function ensure_user_authentication() {
+		// Force WordPress to authenticate the user.
+		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound
+		$user_id = apply_filters( 'determine_current_user', false );
+
+		if ( $user_id ) {
+			wp_set_current_user( $user_id );
+		}
+
+		return $user_id;
+	}
+
+	/**
+	 * Check if a CSS class string contains a specific class.
+	 *
+	 * This method properly handles space-separated CSS class strings and checks for
+	 * exact class matches, preventing false positives from substring matches.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string|null $class_string The CSS class string to search in.
+	 * @param string      $target_class The specific class to search for.
+	 *
+	 * @return bool True if the target class is found, false otherwise.
+	 */
+	public static function has_css_class( ?string $class_string, string $target_class ): bool {
+		if ( empty( $class_string ) || empty( $target_class ) ) {
+			return false;
+		}
+
+		$classes = preg_split( '/\s+/', trim( $class_string ) );
+
+		return in_array( $target_class, $classes, true );
+	}
+
+	/**
+	 * Get HTTP input with optional mocking for testing.
+	 *
+	 * Wrapper around filter_input() that can be easily mocked for testing.
+	 * In production, uses real filter_input(). In tests, can use filters to mock data.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param int           $type      Input type (INPUT_GET, INPUT_POST, INPUT_COOKIE, INPUT_SERVER, INPUT_ENV).
+	 * @param string        $var_name  Variable name to retrieve.
+	 * @param callable|null $sanitizer Sanitization function to apply. Defaults to sanitize_text_field.
+	 *
+	 * @return string Sanitized input value or empty string if not found.
+	 */
+	public static function get_http_input( int $type, string $var_name, ?callable $sanitizer = null ): string {
+		$value = null;
+
+		// Only allow pre-filtering during unit tests for security.
+		if ( defined( 'WP_TESTS_DOMAIN' ) || ( defined( 'PHPUNIT_RUNNING' ) && PHPUNIT_RUNNING ) ) {
+			/**
+			 * Short-circuit filter for HTTP input retrieval during testing.
+			 *
+			 * Allows tests to completely bypass filter_input() and provide
+			 * their own values. Only available during unit tests for security.
+			 * Return a non-null value to short-circuit.
+			 *
+			 * @since 1.0.0
+			 *
+			 * @param string|null $pre_value Pre-value to return instead of using filter_input.
+			 * @param int         $type      Input type (INPUT_GET, INPUT_POST, etc.).
+			 * @param string      $var_name  Variable name being requested.
+			 */
+			$pre_value = apply_filters( 'gatherpress_pre_get_http_input', null, $type, $var_name );
+
+			if ( null !== $pre_value ) {
+				$value = $pre_value;
+			}
+		}
+
+		if ( null === $value ) {
+			/**
+			 * Raw input value from HTTP request.
+			 *
+			 * @var string|false|null $value
+			 * @phpstan-var 0|1|2|4|5 $type
+			 */
+			$value = filter_input( $type, $var_name );
+		}
+
+		if ( null === $value || false === $value ) {
+			return '';
+		}
+
+		// Apply sanitizer function.
+		if ( null === $sanitizer ) {
+			$sanitizer = 'sanitize_text_field';
+		}
+
+		// For WordPress sanitizers, unslash first.
+		if ( in_array( $sanitizer, array( 'sanitize_text_field', 'sanitize_email' ), true ) ) {
+			$value = wp_unslash( $value );
+		}
+
+		return (string) call_user_func( $sanitizer, $value );
+	}
+
+	/**
+	 * Wrapper for wp_get_referer() with testable fallback.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return string|false The referer URL on success, false on failure.
+	 */
+	public static function get_wp_referer() {
+		// Only allow pre-filtering during unit tests for security.
+		if ( defined( 'WP_TESTS_DOMAIN' ) || ( defined( 'PHPUNIT_RUNNING' ) && PHPUNIT_RUNNING ) ) {
+			/**
+			 * Short-circuit filter for wp_get_referer() during testing.
+			 *
+			 * Allows tests to completely bypass wp_get_referer() and provide
+			 * their own referer values. Only available during unit tests for security.
+			 * Return a non-null value to short-circuit.
+			 *
+			 * @since 1.0.0
+			 *
+			 * @param string|false|null $pre_value Pre-value to return instead of using wp_get_referer().
+			 */
+			$pre_value = apply_filters( 'gatherpress_pre_get_wp_referer', null );
+			if ( null !== $pre_value ) {
+				return $pre_value;
+			}
+		}
+
+		return wp_get_referer();
+	}
+
+	/**
+	 * Safely exits the script in a testable way.
+	 *
+	 * This method provides a centralized exit point that returns early during unit tests
+	 * instead of calling exit(). The actual exit statement is excluded from code coverage.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return void
+	 */
+	public static function safe_exit(): void {
+		// Return early during unit tests instead of exiting.
+		if ( defined( 'WP_TESTS_DOMAIN' ) || ( defined( 'PHPUNIT_RUNNING' ) && PHPUNIT_RUNNING ) ) {
+			return;
+		}
+
+		// @codeCoverageIgnoreStart
+		exit;
+		// @codeCoverageIgnoreEnd
+	}
+
+	/**
+	 * Recursively retrieves all block names from a given parsed-block array.
+	 *
+	 * Traverses a single block's structure (including its `innerBlocks`) and collects
+	 * every `blockName` it finds into a flat list. The input is the parsed-block array
+	 * shape that WordPress hands to `render_block` filters and `WP_Block`.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param array $blocks A parsed block, typically including `blockName` and `innerBlocks`.
+	 * @return array An array of block names found within the provided block structure.
+	 */
+	public static function get_block_names( array $blocks ): array {
+		$block_names = array();
+
+		if ( isset( $blocks['blockName'] ) ) {
+			$block_names[] = $blocks['blockName'];
+		}
+
+		if ( ! empty( $blocks['innerBlocks'] ) ) {
+			foreach ( $blocks['innerBlocks'] as $inner_block ) {
+				$block_names = array_merge( $block_names, self::get_block_names( $inner_block ) );
+			}
+		}
+
+		return $block_names;
 	}
 }

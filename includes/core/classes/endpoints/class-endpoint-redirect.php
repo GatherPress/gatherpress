@@ -42,7 +42,7 @@ class Endpoint_Redirect extends Endpoint_Type {
 	 *
 	 * @var string
 	 */
-	protected $url;
+	protected string $url;
 
 	/**
 	 * Activate Endpoint_Type by hooking into relevant parts.

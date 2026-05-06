@@ -17,9 +17,10 @@ if ( ! isset( $name, $value, $suffix ) ) {
 }
 
 $gatherpress_component_attrs = array(
-	'name'   => $name,
-	'value'  => ! empty( $value ) ? $value : '',
-	'suffix' => $suffix,
+	'name'    => $name,
+	'value'   => ! empty( $value ) ? $value : '',
+	'suffix'  => $suffix,
+	'homeUrl' => home_url(),
 );
 ?>
 <p>

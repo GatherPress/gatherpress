@@ -1,14 +1,14 @@
 /**
- * WordPress dependencies.
+ * WordPress dependencies
  */
 import { select } from '@wordpress/data';
 
 /**
- * Internal dependencies.
+ * Internal dependencies
  */
 import GoogleMap from './GoogleMap';
 import OpenStreetMap from './OpenStreetMap';
-import { getFromGlobal } from '../helpers/globals';
+import { getFromSettings } from '../helpers/editor-settings';
 
 /**
  * MapEmbed component for GatherPress.
@@ -29,44 +29,46 @@ import { getFromGlobal } from '../helpers/globals';
  *
  * @return {JSX.Element} The rendered React component.
  */
-const MapEmbed = (props) => {
-	const isAdmin = select('core')?.canUser('create', 'posts');
-	const isPostEditor = Boolean(select('core/edit-post'));
+const MapEmbed = ( props ) => {
+	const isAdmin = select( 'core' )?.canUser( 'create', 'posts' );
+	const isPostEditor = Boolean( select( 'core/edit-post' ) );
 	const { zoom, type, className, latitude, longitude } = props;
 	let { location, height } = props;
 
-	if (!height) {
+	if ( ! height ) {
 		height = 300;
 	}
 
-	if (isAdmin && !isPostEditor && !location) {
+	if ( isAdmin && ! isPostEditor && ! location ) {
 		location = '660 4th Street #119 San Francisco CA 94107, USA';
 	}
 
-	const mapPlatform = getFromGlobal('settings.mapPlatform');
-	if (!location || !mapPlatform) {
+	const mapPlatform =
+		props.mapPlatform || getFromSettings( 'mapPlatform' );
+	if ( ! mapPlatform ) {
 		return <></>;
-	} else if (mapPlatform === 'google') {
+	} else if ( 'google' === mapPlatform ) {
 		return (
 			<GoogleMap
-				location={location}
-				latitude={latitude}
-				longitude={longitude}
-				className={className}
-				zoom={zoom}
-				type={type}
-				height={height}
+				location={ location }
+				latitude={ latitude }
+				longitude={ longitude }
+				className={ className }
+				zoom={ zoom }
+				type={ type }
+				height={ height }
 			/>
 		);
-	} else if (mapPlatform === 'osm') {
+	} else if ( 'osm' === mapPlatform ) {
 		return (
 			<OpenStreetMap
-				location={location}
-				latitude={latitude}
-				longitude={longitude}
-				className={className}
-				zoom={zoom}
-				height={height}
+				location={ location }
+				latitude={ latitude }
+				longitude={ longitude }
+				className={ className }
+				zoom={ zoom }
+				height={ height }
+				pluginUrl={ props.pluginUrl }
 			/>
 		);
 	}
