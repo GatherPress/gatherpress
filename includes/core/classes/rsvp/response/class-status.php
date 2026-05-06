@@ -6,7 +6,7 @@
  * @since 1.0.0
  */
 
-namespace GatherPress\Core\Rsvp;
+namespace GatherPress\Core\Rsvp\Response;
 
 // Exit if accessed directly.
 \defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
@@ -30,7 +30,7 @@ enum Status: string {
 	 * @since 1.0.0
 	 * @var string
 	 */
-	const TAXONOMY = '_gatherpress_rsvp_status';
+	public const TAXONOMY = '_gatherpress_rsvp_status';
 
 	/**
 	 * Get all valid values.

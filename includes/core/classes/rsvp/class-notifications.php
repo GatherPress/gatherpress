@@ -11,6 +11,8 @@
 
 namespace GatherPress\Core;
 
+use GatherPress\Core\Rsvp\Manager;
+
 // Exit if accessed directly.
 \defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
@@ -174,8 +176,7 @@ class Notifications {
 			return;
 		}
 
-		$registry = Rsvp_Type_Registry::get_instance();
-		$type     = $registry->get( $data['rsvp_type'] ??  'user' );
+		$type = Manager::get_type( $data['type'] );
 
 		if ( ! $type ) {
 			return;

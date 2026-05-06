@@ -1,6 +1,6 @@
 <?php
 /**
- * RSVP Type Manager - Singleton registry for managing RSVP types.
+ * RSVP Registry - Singleton registry for managing RSVP providers.
  *
  * This class provides a centralized registry for RSVP types, allowing plugins
  * to register new types without modifying core code. It uses the Singleton
@@ -10,13 +10,16 @@
  * @since 1.0.0
  */
 
-namespace GatherPress\Core\Rsvp;
+namespace GatherPress\Core\Rsvp\Response;
 
 // Exit if accessed directly.
 \defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
-use GatherPress\Core\Rsvp\Type\Base as Rsvp_Type;
+use GatherPress\Core\Rsvp\Response\Provider\Base as Provider;
+use GatherPress\Core\Rsvp\Response\Provider\Email;
+use GatherPress\Core\Rsvp\Response\Provider\User;
 use GatherPress\Core\Traits\Singleton;
+use InvalidArgumentException;
 
 /**
  * Class Manager.
@@ -26,7 +29,7 @@ use GatherPress\Core\Traits\Singleton;
  *
  * @since 1. 0.0
  */
-class Manager {
+class Provider_Registry {
 
 	/**
 	 * Enforces a single instance of this class.
@@ -36,9 +39,9 @@ class Manager {
 	/**
 	 * Array of registered RSVP type instances.
 	 *
-	 * @var Rsvp_Type[]
+	 * @var string[]
 	 */
-	private array $types = array();
+	private array $provider = array();
 
 	/**
 	 * Class constructor.
@@ -60,7 +63,7 @@ class Manager {
 	 * @return void
 	 */
 	protected function setup_hooks(): void {
-		add_action( 'gatherpress_loaded', array( $this, 'register_rsvp_types' ), 5 );
+		add_action( 'gatherpress_loaded', array( $this, 'register_rsvp_providers' ), 5 );
 	}
 
 	/**
@@ -69,10 +72,8 @@ class Manager {
 	 * @since 1.0. 0
 	 *
 	 * @param string $slug The RSVP type slug.
-	 *
-	 * @return Rsvp_Type|null The type instance, or null if not registered.
 	 */
-	public static function get_type( string $slug ): ?Rsvp_Type {
+	public static function from_slug( string $slug ): ?Provider {
 		return self::get_instance()->get( $slug );
 	}
 
@@ -84,61 +85,24 @@ class Manager {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param Rsvp_Type $type The RSVP type instance to register.
+	 * @param Provider $provider The RSVP provider instance to register.
 	 *
 	 * @return void
 	 *
-	 * @throws \InvalidArgumentException If type instance is invalid.
+	 * @throws InvalidArgumentException If type instance is invalid.
 	 */
-	public function register( Rsvp_Type $type ): void {
-		$slug = $type->get_slug();
+	public function register( $provider ): void {
+		$slug = $provider->get_slug();
 
 		if ( empty( $slug ) || ! \is_string( $slug ) ) {
+			throw new InvalidArgumentException( 'The Provider\'s slug must be a non-empty string' );
+		}
+
+		if ( $this->is_registered( $slug ) ) {
 			return;
 		}
 
-		if ( isset( $this->types[ $slug ] ) ) {
-			return;
-		}
-
-		$this->types[ $slug ] = $type;
-	}
-
-	/**
-	 * Validate a request.
-	 *
-	 * @param Request $request The request object to validate.
-	 * @return bool
-	 */
-	public static function is_valid_request( Request $request ) {
-		$rsvp_type = self::get_type( $request->type );
-
-		if ( ! $rsvp_type ) {
-			return false;
-		}
-
-		if ( $rsvp_type->is_valid_identifier( $request->identifier ) ) {
-			return true;
-		}
-
-		return false;
-	}
-
-	/**
-	 * Filter the comment query for the given RSVP request.
-	 *
-	 * @param Request $request The request object to validate.
-	 * @param array   $args    The current query args.
-	 * @return array
-	 */
-	public static function filter_comment_query( Request $request, array $args ) {
-		$rsvp_type = self::get_type( $request->type );
-
-		if ( ! $rsvp_type ) {
-			return $args;
-		}
-
-		return $rsvp_type->filter_query_save( $args, $request->identifier );
+		$this->types[ $slug ] = $provider;
 	}
 
 	/**
@@ -161,9 +125,9 @@ class Manager {
 	 *
 	 * @param string $slug The RSVP type slug.
 	 *
-	 * @return Rsvp_Type|null The type instance, or null if not registered.
+	 * @return Provider|null The type instance, or null if not registered.
 	 */
-	public function get( string $slug ): ?Rsvp_Type {
+	public function get( string $slug ): ?Provider {
 		return $this->types[ $slug ] ?? null;
 	}
 
@@ -172,7 +136,7 @@ class Manager {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @return Rsvp_Type[] Associative array of registered types, keyed by slug.
+	 * @return Provider[] Associative array of registered types, keyed by slug.
 	 */
 	public function get_all(): array {
 		return $this->types;
@@ -188,7 +152,7 @@ class Manager {
 	 * @return string[] List of registered type slugs.
 	 */
 	public function get_slugs(): array {
-		return array_keys( $this->types );
+		return array_keys( $this->provider );
 	}
 
 	/**
@@ -203,8 +167,8 @@ class Manager {
 	 * @return void
 	 */
 	public function register_core_types(): void {
-		$this->register( new Type\User() );
-		$this->register( new Type\Email() );
+		$this->register( new User() );
+		$this->register( new Email() );
 	}
 
 	/**
@@ -233,7 +197,7 @@ class Manager {
 		 *
 		 * @since 1.0.0
 		 *
-		 * @param Manager The RSVP type registry instance.
+		 * @param Identity_Provider_Registry The RSVP type registry instance.
 		 */
 		do_action( 'gatherpress_register_rsvp_types', $this );
 	}

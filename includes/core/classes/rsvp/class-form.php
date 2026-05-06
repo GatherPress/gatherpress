@@ -13,7 +13,7 @@
 namespace GatherPress\Core\Rsvp;
 
 // Exit if accessed directly.
-defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
+\defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Blocks\Rsvp_Form;
 use GatherPress\Core\Event\Event;

@@ -11,12 +11,22 @@
 
 namespace GatherPress\Core\Rsvp;
 
+use GatherPress\Core\Rsvp\Response\Factory;
+use GatherPress\Core\Rsvp\Response\Identity;
+use GatherPress\Core\Rsvp\Response\Identity_Type;
+use GatherPress\Core\Rsvp\Response\Intent;
+use GatherPress\Core\Rsvp\Response\State;
+use GatherPress\Core\Rsvp\Response\Status;
+
 // Exit if accessed directly.
 \defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
-use GatherPress\Core\Rsvp\Type\Base as Base_Rsvp_Type;
+use GatherPress\Core\Rsvp\Attendee\Email;
+use GatherPress\Core\Rsvp\Attendee\User;
+use GatherPress\Core\Rsvp\Attendee\Base as Attendee;
 use GatherPress\Core\Settings;
 use GatherPress\Core\Settings\Roles;
+use WP_Error;
 use WP_Post;
 
 /**
@@ -104,66 +114,34 @@ class Rsvp {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param mixed  $identifier The identifier of the RSVP.
-	 * @param string $rsvp_type  The RSVP type key.
+	 * @param mixed $identifier The identifier of the RSVP.
 	 *
-	 * @return array An array containing RSVP information.
+	 * @return array|null An array containing RSVP information.
 	 */
-	public function get( $identifier, string $rsvp_type = 'user' ): array {
-		if ( 'user' === $rsvp_type && is_email( $identifier ) ) {
+	public function get( $identifier ): array|null {
+		if ( is_email( $identifier ) ) {
 			$rsvp_type = 'email';
 		}
 
-		$post_id    = $this->event->ID ?? 0;
-		$rsvp_query = Query::get_instance();
-		$rsvp_type  = Manager::get_type( $rsvp_type );
+		$attendee_class = \is_email( $identifier ) ? Email::class : User::class;
+		$attendee       = new $attendee_class( $identifier );
 
-		if ( 1 > $post_id || ( empty( $identifier ) ) || null === $rsvp_type ) {
-			return array();
+		return $this->get_rsvp( $attendee );
+	}
+
+	/**
+	 * Get an RSVP from an attendee.
+	 *
+	 * @param Attendee $attendee
+	 *
+	 * @return Attendee|null
+	 */
+	public function get_rsvp( Attendee $attendee ): ?Attendee {
+		$post_id = $this->event->ID ?? 0;
+		if ( 1 > $post_id ) {
+			return null;
 		}
 
-		$data = array(
-			'comment_id' => 0,
-			'post_id'    => $post_id,
-			'timestamp'  => null,
-			'status'     => 'no_status',
-			'guests'     => 0,
-			'anonymous'  => 0,
-		);
-
-		$args = array(
-			'post_id' => $post_id,
-			'status'  => 'approve',
-		);
-
-		$args = $rsvp_type->filter_query_get( $args, $identifier );
-		$rsvp = $rsvp_query->get_rsvp( $args );
-
-		if ( ! empty( $rsvp ) ) {
-			$data['comment_id'] = $rsvp->comment_ID;
-			$data['user_id']    = $rsvp->user_id;
-			$data['timestamp']  = $rsvp->comment_date;
-			$data['anonymous']  = \intval(
-				get_comment_meta( \intval( $rsvp->comment_ID ), 'gatherpress_rsvp_anonymous', true )
-			);
-			$data['guests']     = \intval(
-				get_comment_meta( \intval( $rsvp->comment_ID ), 'gatherpress_rsvp_guests', true )
-			);
-
-			$terms = wp_get_object_terms( \intval( $rsvp->comment_ID ), Status::TAXONOMY );
-
-			if ( ! empty( $terms ) && \is_array( $terms ) ) {
-				$data['status'] = $terms[0]->slug;
-			}
-
-			$terms = wp_get_object_terms( \intval( $rsvp->comment_ID ), Base_Rsvp_Type::TAXONOMY );
-
-			if ( ! empty( $terms ) && \is_array( $terms ) ) {
-				$data['type'] = $terms[0]->slug;
-			}
-		}
-
-		return $data;
 	}
 
 	/**
@@ -283,7 +261,6 @@ class Rsvp {
 	 * @param int|null   $anonymous       Optional. Whether the RSVP is to be marked as anonymous.
 	 *                                    Accepts 1 for true (anonymous) and 0 for false (not anonymous). Default 0.
 	 * @param int|null   $guests          Optional. The number of guests the user plans to bring along. Default 0.
-	 * @param string     $rsvp_type            The RSVP Type.
 	 *
 	 * @return array Associative array containing the event ID ('post_id'), user ID ('user_id'),
 	 *               RSVP timestamp ('timestamp'), RSVP status ('status'), number of guests ('guests'),
@@ -292,58 +269,49 @@ class Rsvp {
 	 *               and 'anonymous' to 0 if the post ID or user identifier is not valid, or if the status
 	 *               is not one of the acceptable values. If the attending limit is reached, 'status' may be
 	 *               automatically set to 'waiting_list', and 'guests' to 0, depending on the context.
-	 *
-	 * @SuppressWarnings(PHPMD.NPathComplexity)
 	 */
 	public function save(
 		mixed $identifier,
 		string $status,
 		?int $anonymous = 0,
 		?int $guests = 0,
-		string $rsvp_type = 'user'
 	): array {
-		if ( 'user' === $rsvp_type && is_email( $identifier ) ) {
-			$rsvp_type = 'email';
-		}
+		$identity = \is_email( $identifier )
+			? new Identity( Identity_Type::EMAIL, $identifier )
+			: new Identity( Identity_Type::WP_USER_ID, $identifier );
 
-		$status = Status::tryFrom( $status );
+		$intent = new Intent( $identity, Status::tryFrom( $status ), $anonymous, $guests );
 
-		if ( null === $status ) {
+		$state = $this->save_rsvp( $intent );
+		if ( is_wp_error( $state ) ) {
 			return self::DEFAULT_SAVE_RESPONSE;
 		}
 
-		$request = new Request(
-			$rsvp_type,
-			$identifier,
-			$status,
-			$guests,
-			$anonymous,
-		);
-
-		return $this->save_request( $request );
+		return $state->to_array();
 	}
 
 	/**
 	 * Process an RSVP request.
 	 *
-	 * @param Request $request The RSVP Request.
-	 * @return array
+	 * @param Intent $request The RSVP Request.
+	 *
+	 * @return State|WP_Error
 	 */
-	public function save_request( Request $request ): array {
+	public function save_rsvp( Intent $intent ): State|WP_Error {
 		// If no valid event or RSVP is disabled for this event return empty default response.
-		if ( 1 > $this->event->ID || ! $this->is_enabled() || ! Manager::is_valid_request( $request ) ) {
-			return self::DEFAULT_SAVE_RESPONSE;
+		if ( 1 > $this->event->ID || ! $this->is_enabled() ) {
+			return new WP_Error( 'RSVP is not enabled for this event.' );
 		}
 
 		// Get current/prior RSVP response.
-		$current_response = $this->get( $request->identifier, $request->type );
+		$current_response = $this->get( $intent );
 
 		// Apply business logic for RSVP requests.
-		$request = $this->constrain_rsvp_request( $request, $current_response );
+		$request = $this->constrain_rsvp_request( $intent, $current_response );
 
 		// Persist RSVP comment: Create new RSVP-comment, Update existing one, or delete on invalid status.
-		$current_comment_id = max( 0, (int) ( $current_response['commit_id'] ?? 0 ) );
-		$comment_id         = $this->persist( $request, $current_comment_id );
+		$current_comment_id = max( 0, (int) ( $current_response['comment_id'] ?? 0 ) );
+		$comment_id         = Repository->save( $request, $current_comment_id );
 
 		if ( null === $comment_id ) {
 			return self::DEFAULT_SAVE_RESPONSE;
@@ -353,16 +321,7 @@ class Rsvp {
 			$this->check_waiting_list();
 		}
 
-		return array(
-			'comment_id' => \intval( $comment_id ),
-			'post_id'    => \intval( $this->event->ID ),
-			'identifier' => $request->identifier,
-			'type'       => $request->type,
-			'timestamp'  => gmdate( 'Y-m-d H:i:s' ),
-			'status'     => sanitize_key( $request->status->value ),
-			'guests'     => \intval( $request->guests ),
-			'anonymous'  => \intval( $request->anonymous ),
-		);
+		return Factory::from_comment( get_comment( $comment_id ) );
 	}
 
 	/**
@@ -412,7 +371,6 @@ class Rsvp {
 					Status::ATTENDING->value,
 					$response['anonymous'],
 					$response['guests'],
-					$response['type']
 				);
 
 				++$i;
@@ -473,6 +431,9 @@ class Rsvp {
 	 * @return array An array containing response information grouped by RSVP status.
 	 */
 	public function responses(): array {
+
+	 	//TODO:
+
 		$post_id = $this->event->ID;
 		$retval  = Cache::get( $post_id );
 
@@ -529,6 +490,7 @@ class Rsvp {
 			$display_name = $record->comment_author;
 			$profile      = '';
 
+
 			if ( ! empty( $terms ) && is_array( $terms ) ) {
 				$user_status = $terms[0]->slug;
 			}
@@ -537,7 +499,19 @@ class Rsvp {
 
 			if ( ! empty( $terms ) && is_array( $terms ) ) {
 				$rsvp_type = $terms[0]->slug;
+			} else {
+				$rsvp_type = 'user';
 			}
+
+			$rsvp_type = Manager::get_type( $rsvp_type );
+
+			if ( $rsvp_type ) {
+				$identifier   = $rsvp_type->get_identifier( $comment_id );
+				$profile      = $rsvp_type->get_attendee_url( $identifier );
+				$display_name = $rsvp_type->get_display_name( $identifier );
+			}
+
+			
 
 			if ( ! empty( $user_id ) ) {
 				$user_info = get_userdata( $user_id );
@@ -657,89 +631,6 @@ class Rsvp {
 	 */
 	public function sort_by_timestamp( array $first, array $second ): int {
 		return strtotime( $first['timestamp'] ) <=> strtotime( $second['timestamp'] );
-	}
-
-	/**
-	 * Persist a RSVP comment.
-	 *
-	 * @param Request $request             The RSVP request.
-	 * @param int     $current_comment_id  The current RSVP comment ID (in case of an update).
-	 */
-	private function persist( Request $request, $current_comment_id = 0 ) {
-		$post_id = $this->event->ID;
-
-		$args = array(
-			'comment_post_ID'   => $post_id,
-			'comment_author_IP' => '127.0.0.1',
-			'comment_type'      => self::COMMENT_TYPE,
-		);
-
-		$args = Manager::filter_comment_query( $request, $args );
-
-		if ( ! empty( $_SERVER['REMOTE_ADDR'] ) ) {
-			$remote_ip = sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) );
-
-			if ( rest_is_ip_address( $remote_ip ) ) {
-				$args['comment_author_IP'] = $remote_ip;
-			}
-		}
-
-		if ( ! $current_comment_id ) {
-			// Ensure keys that wp_filter_comment accesses without isset() are present.
-			$args = array_merge(
-				array(
-					'comment_author'       => '',
-					'comment_author_email' => '',
-					'comment_author_url'   => '',
-					'comment_author_IP'    => '127.0.0.1',
-					'comment_content'      => '',
-				),
-				$args
-			);
-
-			// Run WordPress-native comment filters so sites can honor
-			// pre_comment_user_ip, pre_comment_user_agent, etc. for privacy.
-			$args       = wp_filter_comment( $args );
-			$comment_id = wp_insert_comment( $args );
-		} else {
-			$comment_id               = $current_comment_id;
-			$args['comment_ID']       = $comment_id;
-			$args['comment_approved'] = 1;
-
-			wp_update_comment( $args );
-		}
-
-		if ( empty( $comment_id ) ) {
-			return null;
-		}
-
-		// If status is 'no_status', remove the record.
-		if ( Status::NO_STATUS === $request->status ) {
-			wp_delete_comment( $comment_id, true );
-
-			Cache::delete( $post_id );
-
-			return null;
-		}
-
-		wp_set_object_terms( $comment_id, $request->status->value, Status::TAXONOMY );
-		wp_set_object_terms( $comment_id, $request->type, Base_Rsvp_Type::TAXONOMY );
-
-		if ( $request->has_guests() ) {
-			update_comment_meta( $comment_id, 'gatherpress_rsvp_guests', $request->guests );
-		} else {
-			delete_comment_meta( $comment_id, 'gatherpress_rsvp_guests' );
-		}
-
-		if ( $request->is_anonymous() ) {
-			update_comment_meta( $comment_id, 'gatherpress_rsvp_anonymous', 1 );
-		} else {
-			delete_comment_meta( $comment_id, 'gatherpress_rsvp_anonymous' );
-		}
-
-		Cache::delete( $post_id );
-
-		return $comment_id;
 	}
 
 	/**

@@ -752,7 +752,7 @@ class Test_Rsvp extends Base {
 
 		// Set attendance limit.
 		update_post_meta( $post->ID, 'gatherpress_enable_attendance_limit', 1 );
-		update_post_meta( $post->ID, 'gatherpress_max_attendance_limit', 5 );
+		update_post_meta( $post->ID, 'gatherpress_max_attendance_limit', 3 );
 
 		$rsvp = new Rsvp( $post->ID );
 

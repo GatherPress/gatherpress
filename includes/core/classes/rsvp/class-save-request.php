@@ -19,7 +19,7 @@ use InvalidArgumentException;
  * @package GatherPress\Core\Rsvp
  * @since 1.0.0
  */
-class Request {
+class Save_Request {
 	/**
 	 * Construct a new RSVP request.
 	 *
