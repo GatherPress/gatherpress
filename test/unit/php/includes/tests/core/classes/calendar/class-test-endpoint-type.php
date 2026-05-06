@@ -1,23 +1,23 @@
 <?php
 /**
- * Class handles unit tests for GatherPress\Core\Endpoints\Endpoint_Type.
+ * Class handles unit tests for GatherPress\Core\Calendar\Endpoint_Type.
  *
- * @package GatherPress\Core
+ * @package GatherPress\Core\Calendar
  * @since 1.0.0
  */
 
-namespace GatherPress\Tests\Core\Endpoints;
+namespace GatherPress\Tests\Core\Calendar;
 
-use GatherPress\Core\Endpoints\Endpoint_Type;
-use GatherPress\Core\Endpoints\Endpoint_Redirect;
-use GatherPress\Core\Endpoints\Endpoint_Template;
+use GatherPress\Core\Calendar\Endpoint_Type;
+use GatherPress\Core\Calendar\Redirect;
+use GatherPress\Core\Calendar\Template;
 use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;
 
 /**
  * Class Test_Endpoint_Type.
  *
- * @coversDefaultClass \GatherPress\Core\Endpoints\Endpoint_Type
+ * @coversDefaultClass \GatherPress\Core\Calendar\Endpoint_Type
  * @group              endpoints
  */
 class Test_Endpoint_Type extends Base {
@@ -39,7 +39,7 @@ class Test_Endpoint_Type extends Base {
 		};
 
 		// Create a mock for Endpoint.
-		$endpoint_template = new Endpoint_Template( $slug, $callback );
+		$endpoint_template = new Template( $slug, $callback );
 
 		$this->assertIsString( $endpoint_template->slug );
 		$this->assertIsCallable( Utility::get_hidden_property( $endpoint_template, 'callback' ) );
@@ -53,15 +53,15 @@ class Test_Endpoint_Type extends Base {
 	 * @return void
 	 */
 	public function test_is_of_class(): void {
-		$instance = new Endpoint_Redirect( 'slug', function () {} );
+		$instance = new Redirect( 'slug', function () {} );
 
 		$this->assertTrue(
-			Utility::invoke_hidden_method( $instance, 'is_of_class', array( 'GatherPress\Core\Endpoints\Endpoint_Redirect' ) ),
+			Utility::invoke_hidden_method( $instance, 'is_of_class', array( 'GatherPress\Core\Calendar\Redirect' ) ),
 			'Failed to validate class in namespace.'
 		);
 
 		$this->assertFalse(
-			Utility::invoke_hidden_method( $instance, 'is_of_class', array( 'GatherPress\Core\Endpoints\Endpoint_Template' ) ),
+			Utility::invoke_hidden_method( $instance, 'is_of_class', array( 'GatherPress\Core\Calendar\Template' ) ),
 			'Failed to validate non-used class in namespace.'
 		);
 	}
@@ -74,15 +74,15 @@ class Test_Endpoint_Type extends Base {
 	 * @return void
 	 */
 	public function test_is_in_class(): void {
-		$instance = new Endpoint_Redirect( 'slug', function () {} );
+		$instance = new Redirect( 'slug', function () {} );
 
 		$this->assertTrue(
-			Utility::invoke_hidden_method( $instance, 'is_in_class', array( 'GatherPress\Core\Endpoints\Endpoint_Redirect' ) ),
+			Utility::invoke_hidden_method( $instance, 'is_in_class', array( 'GatherPress\Core\Calendar\Redirect' ) ),
 			'Failed to validate class in namespace.'
 		);
 
 		$this->assertTrue(
-			Utility::invoke_hidden_method( $instance, 'is_in_class', array( 'GatherPress\Core\Endpoints\Endpoint_Template' ) ),
+			Utility::invoke_hidden_method( $instance, 'is_in_class', array( 'GatherPress\Core\Calendar\Template' ) ),
 			'Failed to validate class in namespace.'
 		);
 

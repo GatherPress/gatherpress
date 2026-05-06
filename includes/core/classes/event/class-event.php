@@ -14,9 +14,9 @@ namespace GatherPress\Core\Event;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
-use GatherPress\Core\Calendars;
 use DateTimeZone;
 use Exception;
+use GatherPress\Core\Calendar;
 use GatherPress\Core\Rsvp\Rsvp;
 use GatherPress\Core\Rsvp\Setup as Rsvp_Setup;
 use GatherPress\Core\Settings;
@@ -629,22 +629,24 @@ class Event {
 			return array();
 		}
 
+		$calendar = new Calendar( $this->event->ID );
+
 		return array(
 			'google'  => array(
 				'name' => __( 'Google Calendar', 'gatherpress' ),
-				'link' => Calendars::get_url( 'google-calendar', $this->event->ID ),
+				'link' => $calendar->get_google_url(),
 			),
 			'ical'    => array(
 				'name'     => __( 'iCal', 'gatherpress' ),
-				'download' => Calendars::get_url( 'ical', $this->event->ID ),
+				'download' => $calendar->get_ical_url(),
 			),
 			'outlook' => array(
 				'name'     => __( 'Outlook', 'gatherpress' ),
-				'download' => Calendars::get_url( 'outlook', $this->event->ID ),
+				'download' => $calendar->get_outlook_url(),
 			),
 			'yahoo'   => array(
 				'name' => __( 'Yahoo Calendar', 'gatherpress' ),
-				'link' => Calendars::get_url( 'yahoo-calendar', $this->event->ID ),
+				'link' => $calendar->get_yahoo_url(),
 			),
 		);
 	}

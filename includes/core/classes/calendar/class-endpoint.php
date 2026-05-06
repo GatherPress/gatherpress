@@ -6,11 +6,11 @@
  * custom rewrite rules, query variables, and template redirects for endpoints
  * tied to specific post types or taxonomies in the GatherPress plugin.
  *
- * @package GatherPress\Core\Endpoints
+ * @package GatherPress\Core\Calendar
  * @since 1.0.0
  */
 
-namespace GatherPress\Core\Endpoints;
+namespace GatherPress\Core\Calendar;
 
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
@@ -73,8 +73,8 @@ class Endpoint {
 	/**
 	 * List of configured endpoint resolvers.
 	 *
-	 * This property holds an array of endpoint types such as `Endpoint_Redirect` and
-	 * `Endpoint_Template`, which determine how the endpoint behaves (e.g., whether it
+	 * This property holds an array of endpoint types such as `Redirect` and
+	 * `Template`, which determine how the endpoint behaves (e.g., whether it
 	 * redirects or serves a template).
 	 *
 	 * @since 1.0.0
@@ -177,7 +177,6 @@ class Endpoint {
 	 * @return void
 	 */
 	public function init(): void {
-
 		// Build the regular expression pattern for matching the custom endpoint URL structure.
 		$reg_ex_pattern = $this->get_regex_pattern();
 
@@ -278,7 +277,6 @@ class Endpoint {
 	 * @return bool               Returns true if registration is valid, false otherwise.
 	 */
 	private function is_valid_registration( string $type_name, array $types, string $object_type ): bool {
-
 		if ( 0 === did_action( 'init' ) ) {
 			wp_trigger_error(
 				__CLASS__,
@@ -291,7 +289,7 @@ class Endpoint {
 		if ( empty( $types ) ) {
 			wp_trigger_error(
 				__CLASS__,
-				'can not be called without endpoint types. Add at least one of either "Endpoint_Redirect" or "Endpoint_Template" to the list of types.',
+				'can not be called without endpoint types. Add at least one of either "Redirect" or "Template" to the list of types.',
 				E_USER_WARNING
 			);
 			return false;
@@ -373,7 +371,6 @@ class Endpoint {
 	 * @return void
 	 */
 	public function template_redirect(): void {
-
 		if ( ! $this->is_valid_query() ) {
 			return;
 		}
@@ -392,7 +389,7 @@ class Endpoint {
 
 	/**
 	 * Determine whether the endpoint is meant for a feed
-	 * and if it has a proper Endpoint_Template defined.
+	 * and if it has a proper Template defined.
 	 *
 	 * @since 1.0.0
 	 *
@@ -400,7 +397,7 @@ class Endpoint {
 	 */
 	public function has_feed(): string {
 		if ( str_contains( $this->reg_ex, '/feed/' ) ) {
-			$feed_slug = current( $this->get_slugs( __NAMESPACE__ . '\Endpoint_Template' ) );
+			$feed_slug = current( $this->get_slugs( __NAMESPACE__ . '\Template' ) );
 			if ( ! empty( $feed_slug ) ) {
 				return $feed_slug;
 			}
@@ -427,12 +424,12 @@ class Endpoint {
 	 * Retrieves the slugs of the specified endpoint types.
 	 *
 	 * This method filters the `types` array to get the slugs for either a specific type of endpoint
-	 * (e.g., `Endpoint_Redirect` or `Endpoint_Template`) or returns slugs for all types if no type
+	 * (e.g., `Redirect` or `Template`) or returns slugs for all types if no type
 	 * is specified.
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param string|null $entity Optional. The class name of the endpoint type to filter by (e.g., 'Endpoint_Redirect' or 'Endpoint_Template').
+	 * @param string|null $entity Optional. The class name of the endpoint type to filter by (e.g., 'Redirect' or 'Template').
 	 *                            If null, it retrieves slugs for all types.
 	 * @return string[]           An array of slugs for the specified or all types.
 	 */

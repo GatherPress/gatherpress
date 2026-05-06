@@ -2,26 +2,25 @@
 /**
  * Handles feed-based endpoints for custom post types in GatherPress.
  *
- * This file defines the `Posttype_Feed_Endpoint` class, which extends the base `Endpoint`
+ * This file defines the `Post_Type_Feed` class, which extends the base `Endpoint`
  * class to handle custom feeds for post type archives. It allows users to define custom
  * feed URLs (e.g., RSS feeds) for post types such as `gatherpress_event`, while also allowing
  * theme overrides for feed templates.
  *
- * @package GatherPress\Core\Endpoints
+ * @package GatherPress\Core\Calendar
  * @since 1.0.0
  */
 
-namespace GatherPress\Core\Endpoints;
+namespace GatherPress\Core\Calendar;
 
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
-use GatherPress\Core\Endpoints\Endpoint;
 
 /**
  * Manages custom feed endpoints for post types in GatherPress.
  *
- * The `Posttype_Feed_Endpoint` class extends the base `Endpoint` class to create
+ * The `Post_Type_Feed` class extends the base `Endpoint` class to create
  * custom feed URLs for post types. It handles URL rewriting for feeds and
  * ensures that WordPress hooks into the appropriate feed template. The class also
  * supports theme overrides, allowing developers to customize feed templates for
@@ -29,12 +28,12 @@ use GatherPress\Core\Endpoints\Endpoint;
  *
  * @since 1.0.0
  */
-class Posttype_Feed_Endpoint extends Endpoint {
+class Post_Type_Feed extends Endpoint {
 
 	/**
 	 * Class constructor.
 	 *
-	 * Initializes the `Posttype_Feed_Endpoint` for handling custom feeds for the
+	 * Initializes the `Post_Type_Feed` for handling custom feeds for the
 	 * specified post type. It sets up a regular expression to match custom feed
 	 * URLs (e.g., `event/feed/custom-endpoint`) and hooks into WordPress to load
 	 * the appropriate feed template.

@@ -1,23 +1,23 @@
 <?php
 /**
- * Class handles unit tests for GatherPress\Core\Endpoints\Endpoint.
+ * Class handles unit tests for GatherPress\Core\Calendar\Endpoint.
  *
- * @package GatherPress\Core
+ * @package GatherPress\Core\Calendar
  * @since 1.0.0
  */
 
-namespace GatherPress\Tests\Core\Endpoints;
+namespace GatherPress\Tests\Core\Calendar;
 
-use GatherPress\Core\Endpoints\Endpoint;
-use GatherPress\Core\Endpoints\Endpoint_Redirect;
-use GatherPress\Core\Endpoints\Endpoint_Template;
+use GatherPress\Core\Calendar\Endpoint;
+use GatherPress\Core\Calendar\Redirect;
+use GatherPress\Core\Calendar\Template;
 use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;
 
 /**
  * Class Test_Endpoint.
  *
- * @coversDefaultClass \GatherPress\Core\Endpoints\Endpoint
+ * @coversDefaultClass \GatherPress\Core\Calendar\Endpoint
  * @group              endpoints
  */
 class Test_Endpoint extends Base {
@@ -34,9 +34,9 @@ class Test_Endpoint extends Base {
 		$post_type = 'gatherpress_event';
 		$callback  = function () {};
 		$types     = array(
-			new Endpoint_Template( 'endpoint_template_1', $callback ),
-			new Endpoint_Template( 'endpoint_template_2', $callback ),
-			new Endpoint_Redirect( 'endpoint_redirect_1', $callback ),
+			new Template( 'endpoint_template_1', $callback ),
+			new Template( 'endpoint_template_2', $callback ),
+			new Redirect( 'endpoint_redirect_1', $callback ),
 		);
 		$reg_ex    = 'reg_ex';
 		$instance  = new Endpoint(
@@ -67,9 +67,9 @@ class Test_Endpoint extends Base {
 		$post_type = 'gatherpress_event';
 		$callback  = function () {};
 		$types     = array(
-			new Endpoint_Template( 'endpoint_template_1', $callback ),
-			new Endpoint_Template( 'endpoint_template_2', $callback ),
-			new Endpoint_Redirect( 'endpoint_redirect_1', $callback ),
+			new Template( 'endpoint_template_1', $callback ),
+			new Template( 'endpoint_template_2', $callback ),
+			new Redirect( 'endpoint_redirect_1', $callback ),
 		);
 		// Regular expression to match singular event endpoints.
 		// Example: 'event/my-sample-event/(custom-endpoint)(/)'.
@@ -101,9 +101,9 @@ class Test_Endpoint extends Base {
 		$post_type = 'gatherpress_event';
 		$callback  = function () {};
 		$types     = array(
-			new Endpoint_Template( 'endpoint_template_1', $callback ),
-			new Endpoint_Template( 'endpoint_template_2', $callback ),
-			new Endpoint_Redirect( 'endpoint_redirect_1', $callback ),
+			new Template( 'endpoint_template_1', $callback ),
+			new Template( 'endpoint_template_2', $callback ),
+			new Redirect( 'endpoint_redirect_1', $callback ),
 		);
 		$reg_ex    = 'reg_ex';
 		$instance  = new Endpoint(
@@ -136,9 +136,9 @@ class Test_Endpoint extends Base {
 		$post_type = 'gatherpress_event';
 		$callback  = function () {};
 		$types     = array(
-			new Endpoint_Template( 'endpoint_template_1', $callback ),
-			new Endpoint_Template( 'endpoint_template_2', $callback ),
-			new Endpoint_Redirect( 'endpoint_redirect_1', $callback ),
+			new Template( 'endpoint_template_1', $callback ),
+			new Template( 'endpoint_template_2', $callback ),
+			new Redirect( 'endpoint_redirect_1', $callback ),
 		);
 		// Regular expression to match singular event endpoints.
 		// Example: 'event/my-sample-event/(custom-endpoint)(/)'.
@@ -199,9 +199,9 @@ class Test_Endpoint extends Base {
 		$post_type = 'gatherpress_event';
 		$callback  = function () {};
 		$types     = array(
-			new Endpoint_Template( 'endpoint_template_1', $callback ),
-			new Endpoint_Template( 'endpoint_template_2', $callback ),
-			new Endpoint_Redirect( 'endpoint_redirect_1', $callback ),
+			new Template( 'endpoint_template_1', $callback ),
+			new Template( 'endpoint_template_2', $callback ),
+			new Redirect( 'endpoint_redirect_1', $callback ),
 		);
 		$reg_ex    = 'reg_ex';
 		$instance  = new Endpoint(
@@ -235,9 +235,9 @@ class Test_Endpoint extends Base {
 		$post_type = 'gatherpress_event';
 		$callback  = function () {};
 		$types     = array(
-			new Endpoint_Template( 'endpoint_template_1', $callback ),
-			new Endpoint_Template( 'endpoint_template_2', $callback ),
-			new Endpoint_Redirect( 'endpoint_redirect_1', $callback ),
+			new Template( 'endpoint_template_1', $callback ),
+			new Template( 'endpoint_template_2', $callback ),
+			new Redirect( 'endpoint_redirect_1', $callback ),
 		);
 		$reg_ex    = 'reg_ex';
 		$instance  = new Endpoint(
@@ -254,7 +254,7 @@ class Test_Endpoint extends Base {
 		);
 
 		$types    = array(
-			new Endpoint_Redirect( 'endpoint_redirect_1', $callback ),
+			new Redirect( 'endpoint_redirect_1', $callback ),
 		);
 		$reg_ex   = 'reg_ex/feed/';
 		$instance = new Endpoint(
@@ -267,12 +267,12 @@ class Test_Endpoint extends Base {
 
 		$this->assertEmpty(
 			$instance->has_feed(),
-			'Failed to assert, endpoint is for feeds, but has no Endpoint_Template type.'
+			'Failed to assert, endpoint is for feeds, but has no Template type.'
 		);
 
 		$types    = array(
-			new Endpoint_Template( 'endpoint_template_1', $callback ),
-			new Endpoint_Template( 'endpoint_template_2', $callback ),
+			new Template( 'endpoint_template_1', $callback ),
+			new Template( 'endpoint_template_2', $callback ),
 		);
 		$reg_ex   = 'reg_ex/feed/';
 		$instance = new Endpoint(
@@ -302,9 +302,9 @@ class Test_Endpoint extends Base {
 		$post_type = 'gatherpress_event';
 		$callback  = '__return_true';
 		$types     = array(
-			new Endpoint_Template( 'endpoint_template_1', $callback ),
-			new Endpoint_Template( 'endpoint_template_2', $callback ),
-			new Endpoint_Redirect( 'endpoint_redirect_1', $callback ),
+			new Template( 'endpoint_template_1', $callback ),
+			new Template( 'endpoint_template_2', $callback ),
+			new Redirect( 'endpoint_redirect_1', $callback ),
 		);
 		$reg_ex    = 'reg_ex';
 		$instance  = new Endpoint(
@@ -372,9 +372,9 @@ class Test_Endpoint extends Base {
 		$post_type = 'gatherpress_event';
 		$callback  = function () {};
 		$types     = array(
-			new Endpoint_Template( 'endpoint_template_1', $callback ),
-			new Endpoint_Template( 'endpoint_template_2', $callback ),
-			new Endpoint_Redirect( 'endpoint_redirect_1', $callback ),
+			new Template( 'endpoint_template_1', $callback ),
+			new Template( 'endpoint_template_2', $callback ),
+			new Redirect( 'endpoint_redirect_1', $callback ),
 		);
 		$reg_ex    = 'reg_ex';
 		$instance  = new Endpoint(

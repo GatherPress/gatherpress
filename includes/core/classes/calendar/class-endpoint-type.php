@@ -6,16 +6,15 @@
  * class for custom endpoint types (e.g., redirects, templates) in GatherPress.
  * Subclasses are expected to define specific behavior for different types of endpoints.
  *
- * @package GatherPress\Core\Endpoints
+ * @package GatherPress\Core\Calendar
  * @since 1.0.0
  */
 
-namespace GatherPress\Core\Endpoints;
+namespace GatherPress\Core\Calendar;
 
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
-use GatherPress\Core\Endpoints\Endpoint;
 
 /**
  * Abstract class for defining custom endpoint behavior.
@@ -26,12 +25,10 @@ use GatherPress\Core\Endpoints\Endpoint;
  * to implement their own specific behavior.
  *
  * This class is designed to be extended by specific endpoint types, such as:
- * - `Endpoint_Redirect`: Handles URL redirection for endpoints.
- * - `Endpoint_Template`: Handles loading custom templates for endpoints.
+ * - `Redirect`: Handles URL redirection for endpoints.
+ * - `Template`: Handles loading custom templates for endpoints.
  *
  * @since 1.0.0
- * @package GatherPress\Core
- * @subpackage Endpoints
  */
 abstract class Endpoint_Type {
 
@@ -102,7 +99,7 @@ abstract class Endpoint_Type {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param  string $entity The class name of the entity to check against (e.g., 'Endpoint_Redirect' or 'Endpoint_Template').
+	 * @param  string $entity The class name of the entity to check against (e.g., 'Redirect' or 'Template').
 	 * @return bool                  True if the `$type` is an instance of the `$entity` class, false otherwise.
 	 */
 	public function is_of_class( string $entity ): bool {
@@ -114,20 +111,20 @@ abstract class Endpoint_Type {
 	 *
 	 * This method verifies whether the provided `$entity` exists in the predefined list
 	 * of valid endpoint classes within the current namespace. It helps ensure that only
-	 * valid classes (like `Endpoint_Redirect` or `Endpoint_Template`) are used when
+	 * valid classes (like `Redirect` or `Template`) are used when
 	 * checking endpoint types.
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param  string $entity The class name of the entity to check (e.g., 'Endpoint_Redirect' or 'Endpoint_Template').
+	 * @param  string $entity The class name of the entity to check (e.g., 'Redirect' or 'Template').
 	 * @return bool           True if the `$entity` is a valid endpoint class, false otherwise.
 	 */
 	private static function is_in_class( string $entity ): bool {
 		return in_array(
 			$entity,
 			array(
-				__NAMESPACE__ . '\Endpoint_Redirect',
-				__NAMESPACE__ . '\Endpoint_Template',
+				__NAMESPACE__ . '\Redirect',
+				__NAMESPACE__ . '\Template',
 			),
 			true
 		);

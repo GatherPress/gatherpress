@@ -1,24 +1,24 @@
 <?php
 /**
- * Class handles unit tests for GatherPress\Core\Endpoints\Endpoint_Redirect.
+ * Class handles unit tests for GatherPress\Core\Calendar\Redirect.
  *
- * @package GatherPress\Core
+ * @package GatherPress\Core\Calendar
  * @since 1.0.0
  */
 
-namespace GatherPress\Tests\Core\Endpoints;
+namespace GatherPress\Tests\Core\Calendar;
 
-use GatherPress\Core\Endpoints\Endpoint_Redirect;
+use GatherPress\Core\Calendar\Redirect;
 use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;
 
 /**
- * Class Test_Endpoint_Redirect.
+ * Class Test_Redirect.
  *
- * @coversDefaultClass \GatherPress\Core\Endpoints\Endpoint_Redirect
+ * @coversDefaultClass \GatherPress\Core\Calendar\Redirect
  * @group              endpoints
  */
-class Test_Endpoint_Redirect extends Base {
+class Test_Redirect extends Base {
 
 	/**
 	 * Coverage for __construct method.
@@ -32,7 +32,7 @@ class Test_Endpoint_Redirect extends Base {
 		$callback = function () {
 			return 'https://example.org/';
 		};
-		$instance = new Endpoint_Redirect( $slug, $callback );
+		$instance = new Redirect( $slug, $callback );
 
 		$this->assertSame(
 			$slug,
@@ -59,7 +59,7 @@ class Test_Endpoint_Redirect extends Base {
 		$callback = function () {
 			return 'https://example.org/';
 		};
-		$instance = new Endpoint_Redirect( $slug, $callback );
+		$instance = new Redirect( $slug, $callback );
 
 		$this->assert_redirect_to(
 			'https://example.org/',
@@ -79,7 +79,7 @@ class Test_Endpoint_Redirect extends Base {
 		$callback = function () {
 			return 'https://example.org/';
 		};
-		$instance = new Endpoint_Redirect( $slug, $callback );
+		$instance = new Redirect( $slug, $callback );
 		Utility::set_and_get_hidden_property( $instance, 'url', ( $callback )() );
 
 		$this->assertSame(

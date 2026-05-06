@@ -2,26 +2,25 @@
 /**
  * Class responsible for handling redirect-based endpoints in GatherPress.
  *
- * This file defines the `Endpoint_Redirect` class, which extends the base `Endpoint_Type`
+ * This file defines the `Redirect` class, which extends the base `Endpoint_Type`
  * class and manages URL redirection for specific endpoints. It safely redirects users
  * to external URLs based on the logic provided by the callback function, while ensuring
  * the redirection is secure and follows WordPress's allowed hosts policy.
  *
- * @package GatherPress\Core\Endpoints
+ * @package GatherPress\Core\Calendar
  * @since 1.0.0
  */
 
-namespace GatherPress\Core\Endpoints;
+namespace GatherPress\Core\Calendar;
 
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
-use GatherPress\Core\Endpoints\Endpoint;
 
 /**
  * Handles safe URL redirection for custom endpoints in GatherPress.
  *
- * The `Endpoint_Redirect` class extends the `Endpoint_Type` class and is responsible
+ * The `Redirect` class extends the `Endpoint_Type` class and is responsible
  * for managing URL redirection for specific endpoints. It handles:
  * - Getting the redirect URL through a callback.
  * - Safely redirecting users using `wp_safe_redirect()`.
@@ -29,7 +28,7 @@ use GatherPress\Core\Endpoints\Endpoint;
  *
  * @since 1.0.0
  */
-class Endpoint_Redirect extends Endpoint_Type {
+class Redirect extends Endpoint_Type {
 
 	/**
 	 * The target URL for the redirection.

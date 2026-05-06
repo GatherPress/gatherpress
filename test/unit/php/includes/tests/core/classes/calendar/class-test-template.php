@@ -1,24 +1,24 @@
 <?php
 /**
- * Class handles unit tests for GatherPress\Core\Endpoints\Endpoint_Template.
+ * Class handles unit tests for GatherPress\Core\Calendar\Template.
  *
- * @package GatherPress\Core
+ * @package GatherPress\Core\Calendar
  * @since 1.0.0
  */
 
-namespace GatherPress\Tests\Core\Endpoints;
+namespace GatherPress\Tests\Core\Calendar;
 
-use GatherPress\Core\Endpoints\Endpoint_Template;
+use GatherPress\Core\Calendar\Template;
 use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;
 
 /**
- * Class Test_Endpoint_Template.
+ * Class Test_Template.
  *
- * @coversDefaultClass \GatherPress\Core\Endpoints\Endpoint_Template
+ * @coversDefaultClass \GatherPress\Core\Calendar\Template
  * @group              endpoints
  */
-class Test_Endpoint_Template extends Base {
+class Test_Template extends Base {
 
 	/**
 	 * Coverage for __construct method.
@@ -35,13 +35,13 @@ class Test_Endpoint_Template extends Base {
 				'dir_path'  => '/path/to/theme',
 			);
 		};
-		$instance = new Endpoint_Template( $slug, $callback );
+		$instance = new Template( $slug, $callback );
 
 		$this->assertIsString( Utility::get_hidden_property( $instance, 'plugin_template_dir' ) );
 		$this->assertNotEmpty( Utility::get_hidden_property( $instance, 'plugin_template_dir' ) );
 		$this->assertSame(
 			sprintf(
-				'%s/includes/templates/endpoints',
+				'%s/includes/templates/calendar',
 				GATHERPRESS_CORE_PATH
 			),
 			Utility::get_hidden_property( $instance, 'plugin_template_dir' ),
@@ -49,7 +49,7 @@ class Test_Endpoint_Template extends Base {
 		);
 
 		$plugin_default = '/mock/plugin/templates';
-		$instance       = new Endpoint_Template( $slug, $callback, $plugin_default );
+		$instance       = new Template( $slug, $callback, $plugin_default );
 
 		$this->assertSame(
 			'/mock/plugin/templates',
@@ -73,7 +73,7 @@ class Test_Endpoint_Template extends Base {
 				'dir_path'  => '/path/to/theme',
 			);
 		};
-		$instance = new Endpoint_Template( $slug, $callback );
+		$instance = new Template( $slug, $callback );
 	}
 
 	/**
@@ -94,7 +94,7 @@ class Test_Endpoint_Template extends Base {
 		$plugin_default   = '/mock/plugin/templates';
 		$template_default = '/default/template.php';
 
-		$instance = new Endpoint_Template( $slug, $callback, $plugin_default );
+		$instance = new Template( $slug, $callback, $plugin_default );
 
 		// Simulate theme template existing.
 		// ...????

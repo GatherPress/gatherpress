@@ -2,26 +2,25 @@
 /**
  * Class responsible for handling template-based endpoints in GatherPress.
  *
- * This file defines the `Endpoint_Template` class, which extends the base `Endpoint_Type` class
+ * This file defines the `Template` class, which extends the base `Endpoint_Type` class
  * and manages custom templates for endpoints. It allows themes to override the default plugin
  * templates by checking the theme's template directory before falling back to the plugin's template.
  *
- * @package GatherPress\Core\Endpoints
+ * @package GatherPress\Core\Calendar
  * @since 1.0.0
  */
 
-namespace GatherPress\Core\Endpoints;
+namespace GatherPress\Core\Calendar;
 
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
-use GatherPress\Core\Endpoints\Endpoint;
 use GatherPress\Core\Utility;
 
 /**
  * Handles template rendering for custom endpoints in GatherPress.
  *
- * The `Endpoint_Template` class extends the `Endpoint_Type` class and is responsible
+ * The `Template` class extends the `Endpoint_Type` class and is responsible
  * for loading custom templates for specific endpoints. It allows for theme-based
  * overrides, giving themes the ability to provide their own template files for the
  * endpoints instead of using the default plugin templates.
@@ -31,7 +30,7 @@ use GatherPress\Core\Utility;
  *
  * @since 1.0.0
  */
-class Endpoint_Template extends Endpoint_Type {
+class Template extends Endpoint_Type {
 
 	/**
 	 * Directory path for plugin templates.
@@ -45,7 +44,7 @@ class Endpoint_Template extends Endpoint_Type {
 	/**
 	 * Class constructor.
 	 *
-	 * Initializes the `Endpoint_Template` object by setting the slug, callback, and
+	 * Initializes the `Template` object by setting the slug, callback, and
 	 * plugin template directory. The parent constructor initializes the slug and callback,
 	 * while this constructor adds the plugin template default.
 	 *
@@ -58,7 +57,7 @@ class Endpoint_Template extends Endpoint_Type {
 	public function __construct( string $slug, callable $callback, string $plugin_template_dir = '' ) {
 		parent::__construct( $slug, $callback );
 		$this->plugin_template_dir = ( ! empty( $plugin_template_dir ) ) ? $plugin_template_dir : sprintf(
-			'%s/includes/templates/endpoints',
+			'%s/includes/templates/calendar',
 			GATHERPRESS_CORE_PATH
 		);
 	}
@@ -73,9 +72,8 @@ class Endpoint_Template extends Endpoint_Type {
 	 * @return void
 	 */
 	public function activate( ?Endpoint $endpoint = null ): void {
-
 		// A call to any /feed/ endpoint is handled different by WordPress
-		// and as such the 'Endpoint_Template's template_include hook would fail.
+		// and as such the 'Template's template_include hook would fail.
 		$feed_slug = ( null !== $endpoint ) ? $endpoint->has_feed() : false;
 		if ( $feed_slug ) {
 			// Hook into WordPress' feed handling to load the custom feed template.
@@ -95,7 +93,7 @@ class Endpoint_Template extends Endpoint_Type {
 	 * method ensures that WordPress does not return a 404 for custom feed URLs.
 	 *
 	 * A call to any post types /feed/anything endpoint is handled by WordPress
-	 * prior 'Endpoint_Template's template_include hook would run.
+	 * prior 'Template's template_include hook would run.
 	 * Therefore WordPress will throw an xml'ed 404 error,
 	 * if nothing is hooked onto the 'do_feed_anything' action.
 	 *
@@ -175,7 +173,6 @@ class Endpoint_Template extends Endpoint_Type {
 	 * @return string The path to the theme template or an empty string if not found.
 	 */
 	protected function get_template_from_theme( string $file_name ): string {
-
 		// locate_template() doesn't cares,
 		// but locate_block_template() needs this to be an array.
 		$templates = array( $file_name );

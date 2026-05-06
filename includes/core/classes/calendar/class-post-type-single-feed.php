@@ -2,36 +2,35 @@
 /**
  * Handles feed-based endpoints for single posts of custom post types in GatherPress.
  *
- * This file defines the `Posttype_Single_Feed_Endpoint` class, which extends the base
+ * This file defines the `Post_Type_Single_Feed` class, which extends the base
  * `Endpoint` class to handle custom feeds attached to a single post (e.g.,
  * `/event/my-event/feed/ical`). It allows theme overrides for feed templates.
  *
- * @package GatherPress\Core\Endpoints
+ * @package GatherPress\Core\Calendar
  * @since 1.0.0
  */
 
-namespace GatherPress\Core\Endpoints;
+namespace GatherPress\Core\Calendar;
 
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
-use GatherPress\Core\Endpoints\Endpoint;
 
 /**
  * Manages custom feed endpoints for post types in GatherPress.
  *
- * The `Posttype_Single_Feed_Endpoint` class extends the base `Endpoint` class to create
+ * The `Post_Type_Single_Feed` class extends the base `Endpoint` class to create
  * custom feed URLs for post types. It handles URL rewriting for feeds and
  * ensures that WordPress hooks into the appropriate feed template.
  *
  * @since 1.0.0
  */
-class Posttype_Single_Feed_Endpoint extends Endpoint {
+class Post_Type_Single_Feed extends Endpoint {
 
 	/**
 	 * Class constructor.
 	 *
-	 * Initializes the `Posttype_Single_Feed_Endpoint` for handling custom feeds for the
+	 * Initializes the `Post_Type_Single_Feed` for handling custom feeds for the
 	 * specified post type. It sets up a regular expression to match custom feed
 	 * URLs (e.g., `venue/bangkok/feed/custom-endpoint`) and hooks into WordPress to load
 	 * the appropriate feed template.
