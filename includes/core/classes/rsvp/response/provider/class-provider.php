@@ -19,7 +19,7 @@ use GatherPress\Core\Rsvp\Response\Identity_Type;
 /**
  * Class Base
  */
-abstract class Base {
+abstract class Provider {
 	public const TAXONOMY = '_gatherpress_rsvp_provider';
 
 	/**

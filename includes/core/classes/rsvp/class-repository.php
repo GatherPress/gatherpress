@@ -9,10 +9,11 @@
 
 namespace GatherPress\Core\Rsvp;
 
-use GatherPress\Core\Traits\Singleton;
-
 // Exit if accessed directly.
 \defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
+
+use GatherPress\Core\Rsvp\Response\Provider\Base as Base_Provider;
+use GatherPress\Core\Traits\Singleton;
 
 /**
  * Class Repository.
@@ -31,27 +32,35 @@ final class Repository {
 	/**
 	 * Get RSVP.
 	 *
-	 * @param int      $post_id   The Events Post ID.
-	 * @param Identity $identity  The Identity of the RSVP response.
+	 * @param int       $post_id   The Events Post ID.
+	 * @param Identity  $identity  The Identity of the RSVP response.
+	 * @param Provider  $provider  The RSVP provider.
 	 * @return array<int|string>
 	 */
-	public function get_rsvp( int $post_id, Identity $identity ) {
+	public function get( int $post_id, Identity $identity, $provider = null ) {
 		$rsvp_query = Query::get_instance();
 
+		// Bootstrap comment query.
 		$args = array(
 			'post_id' => $post_id,
 			'status'  => 'approve',
 		);
 
-		$args = wp_parse_args( $this->get_query_args( $identity ), $args );
+		// Add the identity of the RSVP response.
+		$args = wp_parse_args( $this->get_identity_query_args( $identity ), $args );
+
+		// Optionally also specify the provider that issued the RSVP reponse.
+		if ( $provider ) {
+			$args = wp_parse_args( $this->get_provider_query_args( $provider ), $args );
+		}
 
 		$rsvp = $rsvp_query->get_rsvp( $args );
 
-		if ( ! empty( $rsvp ) ) {
-
+		if ( empty( $rsvp ) ) {
+			return null;
 		}
 
-		return $data;
+		return Factory
 	}
 
 	/**
@@ -146,28 +155,45 @@ final class Repository {
 	 *
 	 * @return array<array<int|string>|int|string>
 	 */
-	protected function get_query_args( Identity $identity ) {
+	protected function get_identity_query_args( Identity $identity ) {
 		$args = array();
 
 		switch ( $identity->get_type() ) {
 			case Identity_Type::EMAIL:
-				$args['comment_author_email'] = $identity->get_value();
+				$args['comment_author_email'] = $identity->value;
 				break;
 
 			case Identity_Type::URL:
-				$args['comment_author_url'] = $identity->get_value();
+				$args['comment_author_url'] = $identity->value;
 				break;
 
 			case Identity_Type::WP_USER_ID:
-				$args['user_id'] = (int) $identity->get_value();
+				$args['user_id'] = (int) $identity->value;
 				break;
 
 			default:
-				$args['comment_meta']['gatherpress_rsvp_external_id'] = $identity->get_value();
+				$args['comment_meta']['gatherpress_rsvp_external_id'] = $identity->value;
 				break;
 		}
 
 		return $args;
+	}
+
+	/**
+	 * Get query args.
+	 *
+	 * @param Provider $provider The RSVP provider.
+	 *
+	 * @return array<array<int|string>|int|string>
+	 */
+	protected function get_provider_query_args( $provider ) {
+		return array(
+			'gatherpress_rsvp_provider_query' => array(
+				'taxonomy' => Base_Provider::TAXONOMY,
+				'terms'    => $provider->get_slug(),
+				'field'    => 'slug',
+			),
+		);
 	}
 
 	/**

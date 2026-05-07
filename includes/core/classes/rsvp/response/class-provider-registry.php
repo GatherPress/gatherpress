@@ -29,7 +29,7 @@ use InvalidArgumentException;
  *
  * @since 1. 0.0
  */
-class Provider_Registry {
+final class Provider_Registry {
 
 	/**
 	 * Enforces a single instance of this class.
@@ -41,7 +41,7 @@ class Provider_Registry {
 	 *
 	 * @var string[]
 	 */
-	private array $provider = array();
+	private array $providers = array();
 
 	/**
 	 * Class constructor.
@@ -102,7 +102,7 @@ class Provider_Registry {
 			return;
 		}
 
-		$this->types[ $slug ] = $provider;
+		$this->providers[ $slug ] = $provider;
 	}
 
 	/**
@@ -115,7 +115,7 @@ class Provider_Registry {
 	 * @return bool True if the type is registered, false otherwise.
 	 */
 	public function is_registered( string $slug ): bool {
-		return isset( $this->types[ $slug ] );
+		return isset( $this->providers[ $slug ] );
 	}
 
 	/**
@@ -128,7 +128,7 @@ class Provider_Registry {
 	 * @return Provider|null The type instance, or null if not registered.
 	 */
 	public function get( string $slug ): ?Provider {
-		return $this->types[ $slug ] ?? null;
+		return $this->providers[ $slug ] ?? null;
 	}
 
 	/**
@@ -139,7 +139,7 @@ class Provider_Registry {
 	 * @return Provider[] Associative array of registered types, keyed by slug.
 	 */
 	public function get_all(): array {
-		return $this->types;
+		return $this->providers;
 	}
 
 	/**
@@ -152,7 +152,7 @@ class Provider_Registry {
 	 * @return string[] List of registered type slugs.
 	 */
 	public function get_slugs(): array {
-		return array_keys( $this->provider );
+		return array_keys( $this->providers );
 	}
 
 	/**
@@ -197,7 +197,7 @@ class Provider_Registry {
 		 *
 		 * @since 1.0.0
 		 *
-		 * @param Identity_Provider_Registry The RSVP type registry instance.
+		 * @param Provider_Registry The RSVP type registry instance.
 		 */
 		do_action( 'gatherpress_register_rsvp_types', $this );
 	}

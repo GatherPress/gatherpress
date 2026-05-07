@@ -18,7 +18,7 @@ namespace GatherPress\Core\Rsvp\Response;
  * @package GatherPress\Core\Rsvp
  * @since 1.0.0
  */
-class Data {
+final class Data {
 	/**
 	 * Constructor for a RSVP response data value object.
 	 *

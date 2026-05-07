@@ -8,15 +8,11 @@
 
 namespace GatherPress\Core\Rsvp\Response;
 
-use GatherPress\Core\Rsvp\Response\Provider\User;
-
 // Exit if accessed directly.
 \defined( 'ABSPATH' ) || exit;
 
-
 use GatherPress\Core\Rsvp\Rsvp;
-use GatherPress\Core\Rsvp\Response\Provider\Base as Provider;
-
+use GatherPress\Core\Rsvp\Response\Provider\Provider;
 use WP_Comment;
 
 /**
@@ -37,13 +33,58 @@ class Factory {
 			return null;
 		}
 
+		$provider = self::get_identity_provider( $comment );
+		if ( null === $provider ) {
+			return null;
+		}
+
+		$identity   = self::get_identity_from_comment( $comment, $provider::get_identity_type() );
+		if ( null === $identity ) {
+			return null;
+		}
+
 		$timestamp  = $comment->comment_date;
 		$comment_id = \intval( $comment->comment_ID );
 		$anonymous  = \intval( get_comment_meta( $comment_id, 'gatherpress_rsvp_anonymous', true ) );
 		$guests     = \intval( get_comment_meta( $comment_id, 'gatherpress_rsvp_guests', true ) );
 		$status     = self::get_status( $comment_id );
-		$provider   = self::get_identity_provider( $comment );
-		$identity   = self::get_identity_from_comment( $comment, $provider::get_identity_type() );
+
+		$data = new Data( $identity, $status, $guests, $anonymous, $timestamp );
+		return new State( $data, $provider, $comment_id );
+	}
+
+	/**
+	 * Get an RSVP response form a WP_Comment.
+	 *
+	 * @param WP_Comment $comment The RSVP comment.
+	 * @return State|null
+	 */
+	final public static function get( WP_Comment $comment, ?Identity $identity, ?Provider $provider ): ?State {
+		if ( Rsvp::COMMENT_TYPE !== $comment->comment_type ) {
+			return null;
+		}
+
+		// Resolve provider if not given.
+        if ( null === $provider ) {
+            $provider = self::get_identity_provider( $comment );
+            if ( null === $provider ) {
+                return null;
+            }
+        }
+
+        // Resolve identity if not given.
+        if ( null === $identity ) {
+            $identity = self::get_identity_from_comment( $comment, $provider::get_identity_type() );
+			if ( null === $identity ) {
+                return null;
+            }
+        }
+
+		$timestamp  = $comment->comment_date;
+		$comment_id = \intval( $comment->comment_ID );
+		$anonymous  = \intval( get_comment_meta( $comment_id, 'gatherpress_rsvp_anonymous', true ) );
+		$guests     = \intval( get_comment_meta( $comment_id, 'gatherpress_rsvp_guests', true ) );
+		$status     = self::get_status( $comment_id );
 
 		$data = new Data( $identity, $status, $guests, $anonymous, $timestamp );
 		return new State( $data, $provider, $comment_id, );
@@ -56,9 +97,12 @@ class Factory {
 	 *
 	 * @param WP_Comment    $comment       Comment.
 	 * @param Identity_Type $identity_type The identity type.
-	 * @return mixed
+	 * @return Identity|null
 	 */
-	final public static function get_identity_from_comment( WP_Comment $comment, Identity_Type $identity_type ) {
+	final public static function get_identity_from_comment(
+		WP_Comment $comment,
+		Identity_Type $identity_type
+	): ?Identity {
 		$identifier = match ( $identity_type ) {
 			Identity_Type::WP_USER_ID  => (int) $comment->user_id,
 			Identity_Type::EMAIL       => $comment->comment_author_email,
@@ -84,9 +128,9 @@ class Factory {
 	 * Get the identity provider for this RSVP response.
 	 *
 	 * @param WP_Comment $comment The WordPress comment that stores the RSVP response.
-	 * @return Provider
+	 * @return Provider|null
 	 */
-	private static function get_identity_provider( WP_Comment $comment ): Provider {
+	private static function get_identity_provider( WP_Comment $comment ): ?Provider {
 		$comment_id = \intval( $comment->comment_ID );
 
 		$provider_slug = self::get_value_from_object_terms( $comment_id, Provider::TAXONOMY );
@@ -95,7 +139,7 @@ class Factory {
 			return Provider_Registry::get_instance()->get( $provider_slug );
 		}
 
-		return Provider_Registry::get_instance()->get( User::get_slug() );
+		return null;
 	}
 
 	/**
