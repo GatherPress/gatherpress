@@ -40,7 +40,7 @@ final class Email extends Provider {
 	 *
 	 * @return Identity_Type
 	 */
-	public function get_identity_type(): Identity_Type {
+	public static function get_identity_type(): Identity_Type {
 		return Identity_Type::EMAIL;
 	}
 

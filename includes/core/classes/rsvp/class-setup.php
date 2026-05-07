@@ -12,10 +12,12 @@
 namespace GatherPress\Core\Rsvp;
 
 // Exit if accessed directly.
-defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
+\defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Event\Event;
-use GatherPress\Core\Rsvp\Type\Base as Rsvp_Type;
+use GatherPress\Core\Rsvp\Response\Provider\Provider;
+use GatherPress\Core\Rsvp\Response\Provider_Registry;
+use GatherPress\Core\Rsvp\Response\Status;
 use GatherPress\Core\Settings;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Utility;
@@ -77,8 +79,8 @@ class Setup {
 	protected function instantiate_classes(): void {
 		Cleanup::get_instance();
 		Form::get_instance();
-		Manager::get_instance();
 		Query::get_instance();
+		Provider_Registry::get_instance();
 	}
 
 	/**
@@ -150,7 +152,7 @@ class Setup {
 		);
 
 		register_taxonomy(
-			Rsvp_Type::TAXONOMY,
+			Provider::TAXONOMY,
 			'comment',
 			array(
 				'labels'             => array(),

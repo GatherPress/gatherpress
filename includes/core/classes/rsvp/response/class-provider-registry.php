@@ -1,6 +1,6 @@
 <?php
 /**
- * RSVP Registry - Singleton registry for managing RSVP providers.
+ * RSVP Provider Registry - Singleton registry for managing RSVP providers.
  *
  * This class provides a centralized registry for RSVP types, allowing plugins
  * to register new types without modifying core code. It uses the Singleton
@@ -15,14 +15,14 @@ namespace GatherPress\Core\Rsvp\Response;
 // Exit if accessed directly.
 \defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
-use GatherPress\Core\Rsvp\Response\Provider\Base as Provider;
+use GatherPress\Core\Rsvp\Response\Provider\Provider;
 use GatherPress\Core\Rsvp\Response\Provider\Email;
 use GatherPress\Core\Rsvp\Response\Provider\User;
 use GatherPress\Core\Traits\Singleton;
 use InvalidArgumentException;
 
 /**
- * Class Manager.
+ * Class RSVP Provider Registry - Singleton registry for managing RSVP providers.
  *
  * Manages registration and retrieval of RSVP type handlers (instances of Rsvp_Type).
  * Uses Singleton pattern for global access.
@@ -84,14 +84,13 @@ final class Provider_Registry {
 	 * same slug already exists, it will be overwritten (allowing for type extension).
 	 *
 	 * @since 1.0.0
+	 * @throws InvalidArgumentException If type instance is invalid.
 	 *
 	 * @param Provider $provider The RSVP provider instance to register.
 	 *
-	 * @return void
-	 *
-	 * @throws InvalidArgumentException If type instance is invalid.
+	 * @return bool
 	 */
-	public function register( $provider ): void {
+	public function register( Provider $provider ): bool {
 		$slug = $provider->get_slug();
 
 		if ( empty( $slug ) || ! \is_string( $slug ) ) {
@@ -99,10 +98,12 @@ final class Provider_Registry {
 		}
 
 		if ( $this->is_registered( $slug ) ) {
-			return;
+			return false;
 		}
 
 		$this->providers[ $slug ] = $provider;
+
+		return true;
 	}
 
 	/**
@@ -172,7 +173,7 @@ final class Provider_Registry {
 	}
 
 	/**
-	 * Fire the action for plugins to register their RSVP types.
+	 * Fire the action for plugins to register their RSVP providers.
 	 *
 	 * Companion plugins should hook into 'gatherpress_register_rsvp_types' to register
 	 * their types.  This method is called after core types are registered.
@@ -181,9 +182,9 @@ final class Provider_Registry {
 	 *
 	 * @return void
 	 */
-	public function register_rsvp_types(): void {
+	public function register_rsvp_providers(): void {
 		/**
-		 * Fires when RSVP types are being registered.
+		 * Fires when RSVP providers are being registered.
 		 *
 		 * Plugins should use this hook to register their custom RSVP types by calling
 		 * $registry->register( new My_Custom_Rsvp_Type() ).

@@ -11,7 +11,7 @@ namespace GatherPress\Tests\Core\Blocks;
 use GatherPress\Core\Blocks\Rsvp_Template;
 use GatherPress\Core\Event\Event;
 use GatherPress\Core\Rsvp\Rsvp;
-use GatherPress\Core\Rsvp\Status;
+use GatherPress\Core\Rsvp\Response\Status;
 use GatherPress\Core\Settings;
 use GatherPress\Tests\Base;
 use WP_Block;

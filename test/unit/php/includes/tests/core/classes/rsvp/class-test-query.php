@@ -11,7 +11,7 @@ namespace GatherPress\Tests\Core\Rsvp;
 use GatherPress\Core\Event\Event;
 use GatherPress\Core\Rsvp\Query;
 use GatherPress\Core\Rsvp\Rsvp;
-use GatherPress\Core\Rsvp\Status;
+use GatherPress\Core\Rsvp\Response\Status;
 use GatherPress\Tests\Base;
 use stdClass;
 use WP_Comment;
@@ -78,7 +78,7 @@ class Test_Query extends Base {
 
 		$comment_query = new WP_Comment_Query(
 			array(
-				'post_id'   => $event->ID,
+				'post_id'   => $event->event->ID,
 				'user_id'   => $user_id,
 				'tax_query' => array( //phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query
 					array(

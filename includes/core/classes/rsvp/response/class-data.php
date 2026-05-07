@@ -20,6 +20,20 @@ namespace GatherPress\Core\Rsvp\Response;
  */
 final class Data {
 	/**
+	 * The number of guests.
+	 *
+	 * @var int
+	 */
+	public readonly int $guests;
+
+	/**
+	 * The number of guests.
+	 *
+	 * @var string
+	 */
+	public readonly string $timestamp;
+
+	/**
 	 * Constructor for a RSVP response data value object.
 	 *
 	 * @param Identity $identity   The Identity of the issues of the RSVP response.
@@ -31,14 +45,11 @@ final class Data {
 	public function __construct(
 		public readonly Identity $identity,
 		public readonly Status $status,
-		public readonly int $guests = 0,
+		int $guests = 0,
 		public readonly bool $anonymous = false,
-		public readonly ?string $timestamp = null,
+		?string $timestamp = null,
 	) {
-		$this->identity  = $identity;
-		$this->status    = $status;
 		$this->guests    = max( 0, $guests );
-		$this->anonymous = $anonymous;
-		$this->timestamp = $timestamp || gmdate( 'Y-m-d H:i:s' );
+		$this->timestamp = $timestamp ?? gmdate( 'Y-m-d H:i:s' );
 	}
 }

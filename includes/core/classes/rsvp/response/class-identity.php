@@ -16,7 +16,9 @@ use InvalidArgumentException;
  */
 final class Identity {
 	/**
-	 * Constructor.
+	 * Constructor of an Identity.
+	 *
+	 * @throws InvalidArgumentException When trying to construct an invalid Identity (e.g. URL as user ID).
 	 *
 	 * @param Identity_Type $type  Identity type.
 	 * @param string|int    $value Identity value.
@@ -25,9 +27,6 @@ final class Identity {
 		public readonly Identity_Type $type,
 		public readonly string|int $value
 	) {
-		$this->type  = $type;
-		$this->value = $value;
-
 		$this->assert_valid();
 	}
 
@@ -61,6 +60,8 @@ final class Identity {
 					throw new InvalidArgumentException( 'Invalid ID.' );
 				}
 				break;
+			default:
+				throw new InvalidArgumentException( 'Invalid Identity_Type' );
 		}
 	}
 }

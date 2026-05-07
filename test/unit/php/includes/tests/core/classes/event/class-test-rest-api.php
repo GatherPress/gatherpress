@@ -10,8 +10,8 @@ namespace GatherPress\Tests\Core\Event;
 
 use GatherPress\Core\Event\Event;
 use GatherPress\Core\Event\Rest_Api;
+use GatherPress\Core\Rsvp\Response\Status;
 use GatherPress\Core\Rsvp\Rsvp;
-use GatherPress\Core\Rsvp\Status;
 use GatherPress\Core\Rsvp\Token;
 use GatherPress\Core\Settings;
 use GatherPress\Core\Setup;
@@ -662,7 +662,7 @@ class Test_Rest_Api extends Base {
 		$this->assertEquals( 0, $response->data['guests'] );
 		$this->assertSame(
 			$user_id,
-			$response->data['responses']['attending']['records'][0]['userId'],
+			$response->data['responses']['attending']['records'][0]['user_id'],
 			'Failed to assert that user ID matches.'
 		);
 		$this->assertSame(

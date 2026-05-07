@@ -11,7 +11,7 @@ namespace GatherPress\Tests\Core\Rsvp;
 use GatherPress\Core\Event\Event;
 use GatherPress\Core\Rsvp\List_Table;
 use GatherPress\Core\Rsvp\Rsvp;
-use GatherPress\Core\Rsvp\Status;
+use GatherPress\Core\Rsvp\Response\Status;
 use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;
 use WP_Screen;

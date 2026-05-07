@@ -33,6 +33,23 @@ enum Status: string {
 	public const TAXONOMY = '_gatherpress_rsvp_status';
 
 	/**
+	 * Get the corresponding Status enum instance. If no match is found Status::NO_STATUS is returned.
+	 *
+	 * @since 1.0.0
+	 * @param string $status The status value.
+	 * @return array
+	 */
+	public static function try_from( string $status ): Status {
+		$status = Status::tryFrom( $status );
+
+		if ( null === $status ) {
+			return Status::NO_STATUS;
+		}
+
+		return $status;
+	}
+
+	/**
 	 * Get all valid values.
 	 *
 	 * @since 1.0.0

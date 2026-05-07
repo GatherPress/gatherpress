@@ -15,7 +15,7 @@ use GatherPress\Core\Rsvp\List_Table;
 use GatherPress\Core\Rsvp\Query;
 use GatherPress\Core\Rsvp\Rsvp;
 use GatherPress\Core\Rsvp\Setup;
-use GatherPress\Core\Rsvp\Status;
+use GatherPress\Core\Rsvp\Response\Status;
 use GatherPress\Core\Rsvp\Token;
 use GatherPress\Core\Settings;
 use GatherPress\Tests\Base;

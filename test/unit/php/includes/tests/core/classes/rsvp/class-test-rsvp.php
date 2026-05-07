@@ -379,12 +379,12 @@ class Test_Rsvp extends Base {
 		$this->assertEquals( 2, $responses['all']['count'], 'Failed to assert that count is 2.' );
 		$this->assertEquals(
 			$user_id_1,
-			$responses['attending']['records'][0]['userId'],
+			$responses['attending']['records'][0]['user_id'],
 			'Failed to assert user ID matches.'
 		);
 		$this->assertEquals(
 			$user_id_2,
-			$responses['not_attending']['records'][0]['userId'],
+			$responses['not_attending']['records'][0]['user_id'],
 			'Failed to assert user ID matches.'
 		);
 
@@ -637,7 +637,7 @@ class Test_Rsvp extends Base {
 		$rsvp  = new Rsvp( $post->ID );
 		$email = 'rsvp@example.com';
 
-		$data = $rsvp->save( $email, 'attending', 0, 0, 'email' );
+		$data = $rsvp->save( $email, 'attending', 0, 0 );
 
 		$this->assertSame( $post->ID, \intval( $data['post_id'] ) );
 		$this->assertSame( 'attending', $data['status'] );

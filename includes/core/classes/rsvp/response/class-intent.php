@@ -11,7 +11,7 @@ namespace GatherPress\Core\Rsvp\Response;
 // Exit if accessed directly.
 \defined( 'ABSPATH' ) || exit;
 
-use GatherPress\Core\Rsvp\Response\Provider\Base as Provider;
+use GatherPress\Core\Rsvp\Response\Provider\Provider;
 
 /**
  * RSVP Response request.
@@ -29,8 +29,5 @@ final class Intent {
 	public function __construct(
 		public readonly Data $data,
 		public readonly Provider $provider
-	) {
-		$this->data     = $data;
-		$this->provider = $provider;
-	}
+	) {}
 }

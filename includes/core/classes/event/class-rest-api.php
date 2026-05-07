@@ -21,7 +21,7 @@ use GatherPress\Core\Rsvp\Form;
 use GatherPress\Core\Rsvp\Query as Rsvp_Query;
 use GatherPress\Core\Rsvp\Rsvp;
 use GatherPress\Core\Rsvp\Setup;
-use GatherPress\Core\Rsvp\Status;
+use GatherPress\Core\Rsvp\Response\Status;
 use GatherPress\Core\Rsvp\Token;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\User;
@@ -790,8 +790,7 @@ class Rest_Api {
 				$guests = 0; // ToDo: is this intended?
 			}
 
-			$rsvp_type   = is_email( $user_identifier ) ? 'email' : 'user';
-			$user_record = $event->rsvp->save( $user_identifier, $status, $anonymous, $guests, $rsvp_type );
+			$user_record = $event->rsvp->save( $user_identifier, $status, $anonymous, $guests );
 			$status      = $user_record['status'];
 			$guests      = $user_record['guests'];
 
@@ -859,7 +858,7 @@ class Rest_Api {
 		if ( ! empty( $responses[ $status ] ) ) {
 			foreach ( $responses[ $status ]['records'] as $key => $record ) {
 				$args['index'] = $key;
-				$content      .= $rsvp_template->get_block_content( $block_data, $record['commentId'], $args );
+				$content      .= $rsvp_template->get_block_content( $block_data, $record['comment_id'], $args );
 			}
 		}
 

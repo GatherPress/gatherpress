@@ -11,12 +11,16 @@
 
 namespace GatherPress\Core\Rsvp;
 
+use GatherPress\Core\Rsvp\Response\Provider_Registry;
+
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Event\Event;
 use GatherPress\Core\Utility;
+use GatherPress\Core\Rsvp\Response\Provider\Provider;
 use GatherPress\Core\Rsvp\Rsvp;
+use GatherPress\Core\Rsvp\Response\Status;
 use WP_List_Table;
 
 /**
@@ -464,22 +468,14 @@ class List_Table extends WP_List_Table {
 			case 'date':
 				return get_comment_date( 'Y/m/d \a\t g:i a', $item['comment_ID'] );
 			case 'type':
-				$terms = wp_get_object_terms( $item['comment_ID'], \GatherPress\Core\Rsvp\Type\Base::TAXONOMY );
+				$terms = wp_get_object_terms( $item['comment_ID'], Provider::TAXONOMY );
 				$type  = '-';
 
 				if ( empty( $terms ) ) {
 					return $type;
 				}
 
-				$rsvp_type = \GatherPress\Core\Rsvp\Manager::get_instance()->get( $type );
-
-				if ( ! $rsvp_type ) {
-					return $type;
-				}
-
-				$type = $rsvp_type->get_label();
-
-				return $type;
+				return Provider_Registry::get_instance()->get( $terms[0] ) ?? '-';
 			default:
 				return isset( $item[ $column_name ] ) ? $item[ $column_name ] : '-';
 		}

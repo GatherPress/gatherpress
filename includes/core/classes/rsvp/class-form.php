@@ -17,6 +17,7 @@ namespace GatherPress\Core\Rsvp;
 
 use GatherPress\Core\Blocks\Rsvp_Form;
 use GatherPress\Core\Event\Event;
+use GatherPress\Core\Rsvp\Response\Status;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Utility;
 use WP_Comment;

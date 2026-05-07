@@ -91,7 +91,7 @@ class Query {
 	public function taxonomy_query( array $clauses, WP_Comment_Query $comment_query ): array {
 		global $wpdb;
 
-		if ( ! empty( $comment_query->query_vars['gatherpress_rsvp_provider_query'] ) ) {
+		if ( ! empty( $comment_query->query_vars['tax_query'] ) ) {
 			$comment_tax_query = new WP_Tax_Query( $comment_query->query_vars['tax_query'] );
 			$pieces            = $comment_tax_query->get_sql( $wpdb->comments, 'comment_ID' );
 			$clauses['join']  .= $pieces['join'];
