@@ -21,7 +21,7 @@ enum Visibility: string {
 	case PUBLIC    = '0';
 	case ANONYMOUS = '1';
 	case ATTENDEES = '2';
-	case ADMIN     =  '3';
+	case ADMIN     = '3';
 	case ORGANIZER = '4';
 
 	/**
