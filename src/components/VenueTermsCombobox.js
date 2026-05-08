@@ -8,7 +8,7 @@ import { useDebounce } from '@wordpress/compose';
 import { __ } from '@wordpress/i18n';
 
 /**
- * Internal dependencies.
+ * Internal dependencies
  */
 import { getCurrentContextualPostId } from '../helpers/editor';
 import { getVenuePostType, getVenueTaxonomy, useVenueOptions, useVenueTaxonomyIds } from '../helpers/venue';
@@ -128,15 +128,13 @@ export const VenueTermsCombobox = ( { search, setSearch, ...props } ) => {
 	};
 
 	return (
-		<>
-			<ComboboxControl
-				label={ __( 'Choose a venue', 'gatherpress' ) }
-				__next40pxDefaultSize
-				onChange={ update }
-				onFilterValueChange={ setSearchDebounced }
-				options={ venueOptions }
-				value={ setValue() }
-			/>
-		</>
+		<ComboboxControl
+			label={ __( 'Choose a venue', 'gatherpress' ) }
+			__next40pxDefaultSize
+			onChange={ update }
+			onFilterValueChange={ setSearchDebounced }
+			options={ venueOptions }
+			value={ setValue() }
+		/>
 	);
 };

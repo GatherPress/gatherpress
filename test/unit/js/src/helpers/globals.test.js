@@ -1,24 +1,30 @@
 /**
- * External dependencies.
+ * External dependencies
  */
 import { describe, expect, it, beforeEach, afterEach } from '@jest/globals';
 
 /**
- * Internal dependencies.
+ * Internal dependencies
  */
 import {
 	toCamelCase,
-	safeHTML,
+	stripScriptsAndEventHandlers,
 	getUrlParam,
 } from '@src/helpers/globals';
 
 /**
- * Coverage for safeHTML.
+ * Coverage for stripScriptsAndEventHandlers.
+ *
+ * The function is a narrow defense-in-depth helper, NOT a general HTML
+ * sanitizer. The "removes ..." cases below cover what it strips; the
+ * "does NOT strip ..." cases lock in the intentional gaps so a future
+ * contributor doesn't mistake this helper for safe-by-default HTML
+ * sanitization. Untrusted HTML still needs DOMPurify or equivalent.
  */
-describe( 'safeHTML', () => {
+describe( 'stripScriptsAndEventHandlers', () => {
 	it( 'removes script tags from HTML', () => {
 		const html = '<div>Safe content<script>alert("xss");</script></div>';
-		const sanitized = safeHTML( html );
+		const sanitized = stripScriptsAndEventHandlers( html );
 
 		expect( sanitized ).not.toContain( '<script>' );
 		expect( sanitized ).toContain( '<div>Safe content</div>' );
@@ -26,7 +32,7 @@ describe( 'safeHTML', () => {
 
 	it( 'removes onclick attributes from HTML elements', () => {
 		const html = '<button onclick="alert(\'xss\')">Click me</button>';
-		const sanitized = safeHTML( html );
+		const sanitized = stripScriptsAndEventHandlers( html );
 
 		expect( sanitized ).not.toContain( 'onclick' );
 		expect( sanitized ).toContain( '<button>Click me</button>' );
@@ -35,7 +41,7 @@ describe( 'safeHTML', () => {
 	it( 'removes multiple on* event handlers from HTML elements', () => {
 		const html =
 			'<div onmouseover="alert(1)" onload="alert(2)" onclick="alert(3)">Test</div>';
-		const sanitized = safeHTML( html );
+		const sanitized = stripScriptsAndEventHandlers( html );
 
 		expect( sanitized ).not.toContain( 'onmouseover' );
 		expect( sanitized ).not.toContain( 'onload' );
@@ -46,7 +52,7 @@ describe( 'safeHTML', () => {
 	it( 'handles nested elements with unsafe attributes', () => {
 		const html =
 			'<div><p onclick="bad()">Text</p><span onmouseover="evil()">More</span></div>';
-		const sanitized = safeHTML( html );
+		const sanitized = stripScriptsAndEventHandlers( html );
 
 		expect( sanitized ).not.toContain( 'onclick' );
 		expect( sanitized ).not.toContain( 'onmouseover' );
@@ -56,7 +62,7 @@ describe( 'safeHTML', () => {
 	it( 'handles nested script tags', () => {
 		const html =
 			'<div>Start<script>bad code</script>Middle<script>more bad</script>End</div>';
-		const sanitized = safeHTML( html );
+		const sanitized = stripScriptsAndEventHandlers( html );
 
 		expect( sanitized ).not.toContain( '<script>' );
 		expect( sanitized ).toContain( '<div>StartMiddleEnd</div>' );
@@ -65,7 +71,7 @@ describe( 'safeHTML', () => {
 	it( 'preserves safe HTML content and attributes', () => {
 		const html =
 			'<a href="https://example.com" target="_blank" class="link">Safe Link</a>';
-		const sanitized = safeHTML( html );
+		const sanitized = stripScriptsAndEventHandlers( html );
 
 		expect( sanitized ).toContain( 'href="https://example.com"' );
 		expect( sanitized ).toContain( 'target="_blank"' );
@@ -74,18 +80,18 @@ describe( 'safeHTML', () => {
 	} );
 
 	it( 'handles empty input', () => {
-		expect( safeHTML( '' ) ).toBe( '' );
+		expect( stripScriptsAndEventHandlers( '' ) ).toBe( '' );
 	} );
 
 	it( 'handles plain text without HTML', () => {
 		const text = 'Just some plain text without any HTML';
 
-		expect( safeHTML( text ) ).toBe( text );
+		expect( stripScriptsAndEventHandlers( text ) ).toBe( text );
 	} );
 
 	it( 'handles malformed HTML gracefully', () => {
 		const malformed = '<div>Unclosed div<script>alert("bad");</script>';
-		const sanitized = safeHTML( malformed );
+		const sanitized = stripScriptsAndEventHandlers( malformed );
 
 		expect( sanitized ).not.toContain( '<script>' );
 		expect( sanitized ).toContain( '<div>Unclosed div' );
@@ -129,7 +135,7 @@ describe( 'safeHTML', () => {
 		};
 
 		// This should not throw even with a detached script element.
-		const sanitized = safeHTML( html );
+		const sanitized = stripScriptsAndEventHandlers( html );
 
 		// Restore original implementation.
 		document.implementation.createHTMLDocument =
@@ -137,6 +143,54 @@ describe( 'safeHTML', () => {
 
 		expect( sanitized ).not.toContain( '<script>' );
 		expect( sanitized ).toContain( '<div' );
+	} );
+
+	// The following cases lock in what the helper is INTENTIONALLY NOT
+	// doing. If any of them flips to "stripped", that's a behavior change
+	// that needs deliberate review and a docblock update — not a quiet
+	// improvement.
+
+	it( 'does NOT strip javascript: URLs', () => {
+		const html = '<a href="javascript:alert(1)">click</a>';
+		const sanitized = stripScriptsAndEventHandlers( html );
+
+		expect( sanitized ).toContain( 'javascript:alert(1)' );
+	} );
+
+	it( 'does NOT strip data: URIs with executable payloads', () => {
+		const html =
+			'<iframe src="data:text/html,<script>alert(1)</script>"></iframe>';
+		const sanitized = stripScriptsAndEventHandlers( html );
+
+		expect( sanitized ).toContain( 'data:text/html' );
+	} );
+
+	it( 'does NOT strip iframe / object / embed elements', () => {
+		const html =
+			'<iframe src="https://evil.test"></iframe><object data="x"></object><embed src="y">';
+		const sanitized = stripScriptsAndEventHandlers( html );
+
+		expect( sanitized ).toContain( '<iframe' );
+		expect( sanitized ).toContain( '<object' );
+		expect( sanitized ).toContain( '<embed' );
+	} );
+
+	it( 'does NOT strip srcdoc / formaction attributes', () => {
+		const html =
+			'<iframe srcdoc="<script>alert(1)</script>"></iframe>' +
+			'<button formaction="javascript:alert(1)">x</button>';
+		const sanitized = stripScriptsAndEventHandlers( html );
+
+		expect( sanitized ).toContain( 'srcdoc' );
+		expect( sanitized ).toContain( 'formaction' );
+	} );
+
+	it( 'does NOT strip inline style attributes', () => {
+		const html =
+			'<div style="background:url(javascript:alert(1))">x</div>';
+		const sanitized = stripScriptsAndEventHandlers( html );
+
+		expect( sanitized ).toContain( 'style=' );
 	} );
 } );
 

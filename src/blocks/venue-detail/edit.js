@@ -1,12 +1,12 @@
 /**
- * WordPress dependencies.
+ * WordPress dependencies
  */
 import { __ } from '@wordpress/i18n';
 import { InspectorControls, useBlockProps } from '@wordpress/block-editor';
 import { PanelBody, SelectControl } from '@wordpress/components';
 
 /**
- * Internal dependencies.
+ * Internal dependencies
  */
 import { useVenueData, useGeocoding, useBlockInsertion } from './hooks';
 import { AddressField, PhoneField, UrlField, TextField } from './fields';

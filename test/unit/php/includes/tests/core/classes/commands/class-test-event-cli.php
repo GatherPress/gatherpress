@@ -19,6 +19,7 @@ use PMC\Unit_Test\Utility;
  * @coversDefaultClass \GatherPress\Core\Commands\Event_Cli
  */
 class Test_Event_Cli extends Base {
+
 	/**
 	 * Coverage for rsvp.
 	 *

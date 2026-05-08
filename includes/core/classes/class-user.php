@@ -29,6 +29,7 @@ use WP_User;
  * @since 1.0.0
  */
 class User {
+
 	/**
 	 * Enforces a single instance of this class.
 	 */
@@ -98,7 +99,7 @@ class User {
 			if ( static::HOUR_12 === $user_time_format ) {
 				$time_format = str_replace( 'G', 'g', $time_format );
 
-				if ( false === strpos( $time_format, 'a' ) ) {
+				if ( ! str_contains( $time_format, 'a' ) ) {
 					$time_format = str_replace( 'i', 'ia', $time_format );
 				}
 			} elseif ( static::HOUR_24 === $user_time_format ) {

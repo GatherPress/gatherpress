@@ -18,6 +18,7 @@ use PMC\Unit_Test\Utility;
  * @coversDefaultClass \GatherPress\Core\Cli
  */
 class Test_Cli extends Base {
+
 	/**
 	 * Coverage for constructor.
 	 *

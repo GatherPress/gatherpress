@@ -1,10 +1,9 @@
 # gatherpress_venue_map_composite_time_budget
 
 
-Filter the wall-clock budget (in seconds) for a single
-composite_image() call. When the deadline is exceeded mid-loop,
-remaining tiles are skipped and the gray background shows
-through. Accepts int or float.
+Filter the wall-clock budget (in seconds) for a single OSM
+render() call. When the deadline is exceeded mid-loop, remaining
+tiles are skipped and the gray background shows through.
 
 ## Auto-generated Example
 
@@ -24,7 +23,7 @@ add_filter(
 
 ## Files
 
-- [includes/core/classes/venue/class-map.php:1515](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/venue/class-map.php#L1515)
+- [includes/core/classes/venue/map/provider/class-osm.php:168](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/venue/map/provider/class-osm.php#L168)
 ```php
 apply_filters(
 			'gatherpress_venue_map_composite_time_budget',

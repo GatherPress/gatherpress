@@ -28,6 +28,7 @@ use WP_CLI;
  * @since 1.0.0
  */
 class Cli {
+
 	/**
 	 * Enforces a single instance of this class.
 	 */

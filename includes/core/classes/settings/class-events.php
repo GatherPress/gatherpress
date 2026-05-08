@@ -15,8 +15,7 @@ namespace GatherPress\Core\Settings;
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Traits\Singleton;
-use GatherPress\Core\Event\Setup as Event_Setup;
-use GatherPress\Core\Venue\Setup as Venue_Setup;
+use GatherPress\Core\Event\Setup;
 use GatherPress\Core\Topic;
 
 /**
@@ -27,6 +26,7 @@ use GatherPress\Core\Topic;
  * @since 1.0.0
  */
 class Events extends Base {
+
 	/**
 	 * Enforces a single instance of this class.
 	 */
@@ -159,10 +159,32 @@ class Events extends Base {
 			'archive_pages' => array(
 				'name'        => __( 'Archive Pages', 'gatherpress' ),
 				'description' => __(
-					'Set event archives to pages you have created.',
+					// phpcs:ignore Generic.Files.LineLength.TooLong -- Single translator-facing sentence; keep on one line for the .pot extractor.
+					'Choose what the event archive URL shows by default and optionally point custom pages at the upcoming or past archives.',
 					'gatherpress'
 				),
 				'options'     => array(
+					'event_archive'   => array(
+						'labels'      => array(
+							'name' => __( 'Event Archive', 'gatherpress' ),
+						),
+						'description' => __(
+							'What the events archive URL displays when no custom page is assigned.',
+							'gatherpress'
+						),
+						'field'       => array(
+							'label'   => __( 'Default archive view:', 'gatherpress' ),
+							'type'    => 'select',
+							'options' => array(
+								'default' => 'upcoming',
+								'items'   => array(
+									'upcoming' => __( 'Upcoming Events', 'gatherpress' ),
+									'past'     => __( 'Past Events', 'gatherpress' ),
+									'none'     => __( 'None (return 404)', 'gatherpress' ),
+								),
+							),
+						),
+					),
 					'upcoming_events' => array(
 						'labels' => array(
 							'name' => __( 'Upcoming Events', 'gatherpress' ),
@@ -206,34 +228,13 @@ class Events extends Base {
 							'rewrite' => true,
 							'options' => array(
 								'label'   => __( 'Permalink base of Events.', 'gatherpress' ),
-								'default' => Event_Setup::get_localized_post_type_slug(),
+								'default' => Setup::get_localized_post_type_slug(),
 							),
 							'preview' => array(
 								'template' => 'url-rewrite-preview',
 								'suffix'   => _x(
 									'sample-event',
 									'URL permalink structure example for events',
-									'gatherpress'
-								),
-							),
-						),
-					),
-					'venues_url' => array(
-						'labels' => array(
-							'name' => __( 'Venues', 'gatherpress' ),
-						),
-						'field'  => array(
-							'type'    => 'text',
-							'rewrite' => true,
-							'options' => array(
-								'label'   => __( 'Permalink base of Venues.', 'gatherpress' ),
-								'default' => Venue_Setup::get_instance()->get_localized_post_type_slug(),
-							),
-							'preview' => array(
-								'template' => 'url-rewrite-preview',
-								'suffix'   => _x(
-									'sample-venue',
-									'URL permalink structure example for venues',
 									'gatherpress'
 								),
 							),

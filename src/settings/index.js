@@ -1,10 +1,10 @@
 /**
- * WordPress dependencies.
+ * WordPress dependencies
  */
 import { createRoot } from '@wordpress/element';
 
 /**
- * Internal dependencies.
+ * Internal dependencies
  */
 import Autocomplete from '../components/Autocomplete';
 import { dateTimePreview } from '../helpers/datetime';

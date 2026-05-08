@@ -32,6 +32,7 @@ use WP_User;
  * @since 1.0.0
  */
 class Form {
+
 	/**
 	 * Enforces a single instance of this class.
 	 */
@@ -253,7 +254,7 @@ class Form {
 
 			// Add custom fields to data.
 			foreach ( $_POST as $key => $value ) {
-				if ( 0 === strpos( $key, 'gatherpress_custom_' ) ) {
+				if ( str_starts_with( $key, 'gatherpress_custom_' ) ) {
 					$data[ $key ] = $value;
 				}
 			}

@@ -23,6 +23,7 @@ use WP_Block_Type_Registry;
  * @coversDefaultClass \GatherPress\Core\Blocks\Rsvp_Template
  */
 class Test_Rsvp_Template extends Base {
+
 	/**
 	 * Tests the setup_hooks method.
 	 *

@@ -21,6 +21,7 @@ use WP_Block;
  * @coversDefaultClass \GatherPress\Core\Blocks\Venue
  */
 class Test_Venue extends Base {
+
 	/**
 	 * Tests the setup_hooks method.
 	 *

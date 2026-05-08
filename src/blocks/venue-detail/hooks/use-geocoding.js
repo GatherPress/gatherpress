@@ -1,12 +1,12 @@
 /**
- * WordPress dependencies.
+ * WordPress dependencies
  */
 import { useSelect, useDispatch } from '@wordpress/data';
 import { useCallback, useEffect, useRef } from '@wordpress/element';
 import { useDebounce } from '@wordpress/compose';
 
 /**
- * Internal dependencies.
+ * Internal dependencies
  */
 import { geocodeAddress } from '../../../helpers/geocoding';
 

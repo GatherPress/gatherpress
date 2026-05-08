@@ -22,6 +22,7 @@ use WP_Post;
  * @coversDefaultClass \GatherPress\Core\Rsvp\Token
  */
 class Test_Token extends Base {
+
 	/**
 	 * Coverage for __construct method with invalid comment ID.
 	 *

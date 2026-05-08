@@ -1,5 +1,5 @@
 /**
- * WordPress dependencies.
+ * WordPress dependencies
  */
 import { useDebounce } from '@wordpress/compose';
 import {
@@ -11,7 +11,7 @@ import {
 import { __ } from '@wordpress/i18n';
 
 /**
- * Internal dependencies.
+ * Internal dependencies
  */
 import {
 	fetchAddressSuggestions,
@@ -119,7 +119,7 @@ export function useAddressAutocomplete( {
 					setSuggestions( [] );
 					setSuggestionError(
 						__(
-							'Address search is temporarily unavailable.',
+							'Address suggestions are temporarily unavailable. Try again in a moment, or enter the address manually.',
 							'gatherpress'
 						)
 					);

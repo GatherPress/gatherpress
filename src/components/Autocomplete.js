@@ -1,10 +1,10 @@
 /**
- * External dependencies.
+ * External dependencies
  */
 import { includes } from 'lodash';
 
 /**
- * WordPress dependencies.
+ * WordPress dependencies
  */
 import { FormTokenField } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';

@@ -23,6 +23,7 @@ use PMC\Unit_Test\Utility;
  * @coversDefaultClass \GatherPress\Core\Setup
  */
 class Test_Setup extends Base {
+
 	/**
 	 * Coverage for setup_hooks.
 	 *

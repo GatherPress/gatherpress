@@ -1,15 +1,15 @@
 /**
- * External dependencies.
+ * External dependencies
  */
 import { describe, expect, it, jest, beforeEach } from '@jest/globals';
 
 /**
- * WordPress dependencies.
+ * WordPress dependencies
  */
 import { select, dispatch } from '@wordpress/data';
 
 /**
- * Internal dependencies.
+ * Internal dependencies
  */
 jest.mock( '@src/helpers/datetime', () => ( {
 	defaultDateTimeStart: '2025-01-15 18:00:00',

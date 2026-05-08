@@ -21,6 +21,7 @@ use WP_Query;
  * @coversDefaultClass \GatherPress\Core\Feed
  */
 class Test_Feed extends Base {
+
 	/**
 	 * Test instance of Feed.
 	 *

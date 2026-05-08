@@ -10,6 +10,7 @@ namespace GatherPress\Tests\Core\Event;
 
 use GatherPress\Core\Event\Event;
 use GatherPress\Core\Event\Admin_List;
+use GatherPress\Core\Event\Meta;
 use GatherPress\Core\Event\Query;
 use GatherPress\Core\Event\Rest_Api;
 use GatherPress\Core\Event\Setup;
@@ -19,6 +20,7 @@ use PMC\Unit_Test\Utility;
 use stdClass;
 use WP;
 use WP_Block;
+use WP_Block_Patterns_Registry;
 use WP_REST_Request;
 
 /**
@@ -27,6 +29,7 @@ use WP_REST_Request;
  * @coversDefaultClass \GatherPress\Core\Event\Setup
  */
 class Test_Setup extends Base {
+
 	/**
 	 * Event\Setup now owns the instantiation of the Event\* sibling
 	 * singletons (Admin_List, Query, Rest_Api) so the outer
@@ -49,8 +52,12 @@ class Test_Setup extends Base {
 
 		$expected_hooks = array(
 			Admin_List::class => array(
-				'load-edit.php',
-				array( Admin_List::get_instance(), 'default_sort' ),
+				'query_vars',
+				array( Admin_List::get_instance(), 'query_vars' ),
+			),
+			Meta::class       => array(
+				'registered_post_type',
+				array( Meta::get_instance(), 'register' ),
 			),
 			Query::class      => array(
 				'pre_get_posts',
@@ -93,19 +100,13 @@ class Test_Setup extends Base {
 				'type'     => 'action',
 				'name'     => 'init',
 				'priority' => 10,
-				'callback' => array( $instance, 'register_event_only_meta' ),
-			),
-			array(
-				'type'     => 'action',
-				'name'     => 'registered_post_type',
-				'priority' => 10,
-				'callback' => array( $instance, 'maybe_register_event_date_meta' ),
+				'callback' => array( $instance, 'register_calendar_rewrite_rule' ),
 			),
 			array(
 				'type'     => 'action',
 				'name'     => 'init',
-				'priority' => 10,
-				'callback' => array( $instance, 'register_calendar_rewrite_rule' ),
+				'priority' => 11,
+				'callback' => array( $instance, 'register_starter_pattern' ),
 			),
 			array(
 				'type'     => 'action',
@@ -231,6 +232,210 @@ class Test_Setup extends Base {
 	}
 
 	/**
+	 * Registers the user-facing starter pattern scoped to core/post-content
+	 * and every post type declaring `gatherpress-event-date` so the starter
+	 * pattern modal surfaces it on new event posts.
+	 *
+	 * @covers ::register_starter_pattern
+	 *
+	 * @return void
+	 */
+	public function test_register_starter_pattern(): void {
+		$instance = Setup::get_instance();
+		$registry = WP_Block_Patterns_Registry::get_instance();
+
+		if ( $registry->is_registered( 'gatherpress/event-with-rsvp' ) ) {
+			$registry->unregister( 'gatherpress/event-with-rsvp' );
+		}
+
+		$instance->register_starter_pattern();
+
+		$this->assertTrue(
+			$registry->is_registered( 'gatherpress/event-with-rsvp' ),
+			'Starter pattern should be registered.'
+		);
+
+		$pattern = $registry->get_registered( 'gatherpress/event-with-rsvp' );
+
+		$this->assertContains(
+			'core/post-content',
+			$pattern['blockTypes'],
+			'Starter pattern must scope to core/post-content so the chooser modal surfaces it.'
+		);
+		$this->assertContains(
+			Event::POST_TYPE,
+			$pattern['postTypes'],
+			'Starter pattern must scope to gatherpress_event post type.'
+		);
+		$this->assertStringContainsString(
+			'gatherpress/event-date',
+			$pattern['content'],
+			'Starter pattern body must seed the event-date block.'
+		);
+		$this->assertStringContainsString(
+			'"patternPicked":true',
+			$pattern['content'],
+			'Wrapper-div blocks must be flagged pattern-picked so the nested pickers stay suppressed.'
+		);
+
+		$registry->unregister( 'gatherpress/event-with-rsvp' );
+	}
+
+	/**
+	 * Third parties can append their own pattern definitions via the
+	 * `gatherpress_event_starter_patterns` filter without having to
+	 * call `register_block_pattern()` themselves.
+	 *
+	 * @covers ::register_starter_pattern
+	 *
+	 * @return void
+	 */
+	public function test_register_starter_pattern_filter_extends(): void {
+		$instance = Setup::get_instance();
+		$registry = WP_Block_Patterns_Registry::get_instance();
+
+		if ( $registry->is_registered( 'unit-test/extra-event-pattern' ) ) {
+			$registry->unregister( 'unit-test/extra-event-pattern' );
+		}
+
+		$append_pattern = static function ( array $patterns ): array {
+			$patterns[] = array(
+				'name'        => 'unit-test/extra-event-pattern',
+				'title'       => 'Extra Event Pattern',
+				'description' => 'Added through the filter.',
+				'content'     => '<!-- wp:paragraph --><p>Extra</p><!-- /wp:paragraph -->',
+			);
+			return $patterns;
+		};
+
+		add_filter( 'gatherpress_event_starter_patterns', $append_pattern );
+
+		$instance->register_starter_pattern();
+
+		remove_filter( 'gatherpress_event_starter_patterns', $append_pattern );
+
+		$this->assertTrue(
+			$registry->is_registered( 'unit-test/extra-event-pattern' ),
+			'Patterns appended via the filter must be registered alongside the bundled defaults.'
+		);
+
+		$registry->unregister( 'unit-test/extra-event-pattern' );
+	}
+
+	/**
+	 * The `gatherpress_event_starter_patterns` filter passes the array of
+	 * post types about to receive the registered patterns as its second
+	 * argument, so consumers can vary the returned patterns based on which
+	 * event-acting post types are in scope.
+	 *
+	 * @covers ::register_starter_pattern
+	 *
+	 * @return void
+	 */
+	public function test_register_starter_pattern_filter_receives_post_types(): void {
+		$instance        = Setup::get_instance();
+		$captured_pt_arg = null;
+
+		$capture_post_types = static function ( array $patterns, array $post_types ) use ( &$captured_pt_arg ): array {
+			$captured_pt_arg = $post_types;
+			return $patterns;
+		};
+
+		add_filter( 'gatherpress_event_starter_patterns', $capture_post_types, 10, 2 );
+
+		$instance->register_starter_pattern();
+
+		remove_filter( 'gatherpress_event_starter_patterns', $capture_post_types, 10 );
+
+		$this->assertIsArray(
+			$captured_pt_arg,
+			'Filter must receive the post-type array as its second argument.'
+		);
+		$this->assertContains(
+			Event::POST_TYPE,
+			$captured_pt_arg,
+			'Post-type array must include every post type declaring gatherpress-event-date support.'
+		);
+	}
+
+	/**
+	 * Filter callbacks may return entries that aren't valid pattern
+	 * definitions (missing `name`, non-array values). The registration
+	 * loop must skip those gracefully so one bad entry from a
+	 * third-party filter doesn't bring down the rest of the chooser.
+	 *
+	 * @covers ::register_starter_pattern
+	 *
+	 * @return void
+	 */
+	public function test_register_starter_pattern_skips_malformed_filter_entries(): void {
+		$instance = Setup::get_instance();
+		$registry = WP_Block_Patterns_Registry::get_instance();
+
+		if ( $registry->is_registered( 'gatherpress/event-with-rsvp' ) ) {
+			$registry->unregister( 'gatherpress/event-with-rsvp' );
+		}
+
+		$inject_garbage = static function ( array $patterns ): array {
+			$patterns[] = array( 'title' => 'No name key — must be skipped.' );
+			$patterns[] = 'not-an-array — must be skipped.';
+			return $patterns;
+		};
+
+		add_filter( 'gatherpress_event_starter_patterns', $inject_garbage );
+
+		$instance->register_starter_pattern();
+
+		remove_filter( 'gatherpress_event_starter_patterns', $inject_garbage );
+
+		$this->assertTrue(
+			$registry->is_registered( 'gatherpress/event-with-rsvp' ),
+			'Bundled pattern should still register when filter entries before/after it are malformed.'
+		);
+
+		$registry->unregister( 'gatherpress/event-with-rsvp' );
+	}
+
+	/**
+	 * Bails before registering when no post type declares
+	 * `gatherpress-event-date` support. Without the guard,
+	 * `register_block_pattern` would be called with an empty
+	 * `postTypes` array and the chooser modal would have no
+	 * post-type scope to match against.
+	 *
+	 * @covers ::register_starter_pattern
+	 *
+	 * @return void
+	 */
+	public function test_register_starter_pattern_bails_without_supported_post_types(): void {
+		$instance = Setup::get_instance();
+		$registry = WP_Block_Patterns_Registry::get_instance();
+
+		if ( $registry->is_registered( 'gatherpress/event-with-rsvp' ) ) {
+			$registry->unregister( 'gatherpress/event-with-rsvp' );
+		}
+
+		// Strip the support from every post type that currently declares
+		// it so `get_post_types_by_support()` returns an empty array.
+		$supported = get_post_types_by_support( 'gatherpress-event-date' );
+		foreach ( $supported as $post_type ) {
+			remove_post_type_support( $post_type, 'gatherpress-event-date' );
+		}
+
+		$instance->register_starter_pattern();
+
+		$this->assertFalse(
+			$registry->is_registered( 'gatherpress/event-with-rsvp' ),
+			'Starter pattern must not be registered when no post type declares the event-date support.'
+		);
+
+		// Restore support.
+		foreach ( $supported as $post_type ) {
+			add_post_type_support( $post_type, 'gatherpress-event-date' );
+		}
+	}
+
+	/**
 	 * Tests for the ics canonical redirect prevention.
 	 *
 	 * @covers ::disable_ics_canonical_redirect
@@ -349,131 +554,6 @@ class Test_Setup extends Base {
 		remove_filter( 'gettext_with_context_gatherpress', $filter );
 	}
 
-	/**
-	 * Coverage for register_event_only_meta method.
-	 *
-	 * @covers ::register_event_only_meta
-	 *
-	 * @return void
-	 */
-	public function test_register_event_only_meta(): void {
-		$instance = Setup::get_instance();
-
-		unregister_post_meta( Event::POST_TYPE, 'gatherpress_online_event_link' );
-		unregister_post_meta( Event::POST_TYPE, 'gatherpress_enable_anonymous_rsvp' );
-
-		$meta = get_registered_meta_keys( 'post', Event::POST_TYPE );
-
-		$this->assertArrayNotHasKey(
-			'online_event_link',
-			$meta,
-			'Failed to assert that online_event_link does not exist.'
-		);
-		$this->assertArrayNotHasKey(
-			'enable_anonymous_rsvp',
-			$meta,
-			'Failed to assert that enable_anonymous_rsvp does not exist.'
-		);
-		$this->assertArrayNotHasKey(
-			'max_attendance_limit',
-			$meta,
-			'Failed to assert that max_guest_limit does not exist.'
-		);
-		$this->assertArrayNotHasKey(
-			'max_guest_limit',
-			$meta,
-			'Failed to assert that max_guest_limit does not exist.'
-		);
-
-		$instance->register_event_only_meta();
-
-		$meta = get_registered_meta_keys( 'post', Event::POST_TYPE );
-
-		$this->assertArrayHasKey(
-			'gatherpress_online_event_link',
-			$meta,
-			'Failed to assert that gatherpress_online_event_link does exist.'
-		);
-		$this->assertArrayHasKey(
-			'gatherpress_enable_anonymous_rsvp',
-			$meta,
-			'Failed to assert that gatherpress_enable_anonymous_rsvp does exist.'
-		);
-		$this->assertArrayHasKey(
-			'gatherpress_max_attendance_limit',
-			$meta,
-			'Failed to assert that max_guest_limit does exist.'
-		);
-		$this->assertArrayHasKey(
-			'gatherpress_max_guest_limit',
-			$meta,
-			'Failed to assert that gatherpress_max_guest_limit does exist.'
-		);
-	}
-
-	/**
-	 * Coverage for maybe_register_event_date_meta method.
-	 *
-	 * Registers datetime meta + the read-only REST filter for any post type
-	 * that declares gatherpress-event-date support. Unsupported post types are
-	 * skipped entirely.
-	 *
-	 * @covers ::maybe_register_event_date_meta
-	 *
-	 * @return void
-	 */
-	public function test_maybe_register_event_date_meta(): void {
-		$instance = Setup::get_instance();
-		$test_pt  = 'test_event_date_meta';
-
-		register_post_type(
-			$test_pt,
-			array(
-				'label'    => 'Test Event Date Meta',
-				'public'   => false,
-				'supports' => array( 'title', 'gatherpress-event-date' ),
-			)
-		);
-
-		$instance->maybe_register_event_date_meta( $test_pt );
-
-		$meta = get_registered_meta_keys( 'post', $test_pt );
-
-		$this->assertArrayHasKey(
-			'gatherpress_datetime',
-			$meta,
-			'Failed to assert that gatherpress_datetime is registered for a post type with event-date support.'
-		);
-		$this->assertArrayHasKey(
-			'gatherpress_datetime_start',
-			$meta,
-			'Failed to assert that gatherpress_datetime_start is registered.'
-		);
-		$this->assertNotFalse(
-			has_filter( sprintf( 'rest_pre_insert_%s', $test_pt ), array( $instance, 'filter_readonly_meta' ) ),
-			'Failed to assert that the read-only REST filter is registered for a post type with event-date support.'
-		);
-
-		unregister_post_type( $test_pt );
-	}
-
-	/**
-	 * Bails when the post type does not declare event-date support.
-	 *
-	 * @covers ::maybe_register_event_date_meta
-	 *
-	 * @return void
-	 */
-	public function test_maybe_register_event_date_meta_skips_unsupported_post_type(): void {
-		$instance = Setup::get_instance();
-
-		$instance->maybe_register_event_date_meta( 'post' );
-
-		$this->assertFalse(
-			has_filter( 'rest_pre_insert_post', array( $instance, 'filter_readonly_meta' ) ),
-			'Failed to assert that no hooks are registered for a post type without event-date support.'
-		);
-	}
 
 	/**
 	 * Coverage for set_datetimes method.
@@ -1105,50 +1185,6 @@ class Test_Setup extends Base {
 		remove_filter( 'locale', $locale_filter );
 	}
 
-	/**
-	 * Tests auth callbacks for post meta registration.
-	 *
-	 * Covers: auth_callback returns.
-	 *
-	 * @covers ::register_event_only_meta
-	 * @covers ::maybe_register_event_date_meta
-	 * @return void
-	 */
-	public function test_register_post_meta_auth_callbacks(): void {
-		// Set current user as editor.
-		$user_id = $this->factory->user->create( array( 'role' => 'editor' ) );
-		wp_set_current_user( $user_id );
-
-		$post_id = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get()->ID;
-
-		// Test that meta can be updated when user has edit_posts capability.
-		$result = update_post_meta( $post_id, 'gatherpress_datetime_start', '2024-01-01 10:00:00' );
-		$this->assertNotFalse( $result, 'Should allow meta update with edit_posts capability' );
-
-		$result = update_post_meta( $post_id, 'gatherpress_datetime_start_gmt', '2024-01-01 10:00:00' );
-		$this->assertNotFalse( $result, 'Should allow meta update for datetime_start_gmt' );
-
-		$result = update_post_meta( $post_id, 'gatherpress_datetime_end', '2024-01-01 12:00:00' );
-		$this->assertNotFalse( $result, 'Should allow meta update for datetime_end' );
-
-		$result = update_post_meta( $post_id, 'gatherpress_datetime_end_gmt', '2024-01-01 12:00:00' );
-		$this->assertNotFalse( $result, 'Should allow meta update for datetime_end_gmt' );
-
-		$result = update_post_meta( $post_id, 'gatherpress_timezone', 'America/New_York' );
-		$this->assertNotFalse( $result, 'Should allow meta update for timezone' );
-
-		$result = update_post_meta( $post_id, 'gatherpress_max_guest_limit', 5 );
-		$this->assertNotFalse( $result, 'Should allow meta update for max_guest_limit' );
-
-		$result = update_post_meta( $post_id, 'gatherpress_enable_anonymous_rsvp', true );
-		$this->assertNotFalse( $result, 'Should allow meta update for enable_anonymous_rsvp' );
-
-		$result = update_post_meta( $post_id, 'gatherpress_online_event_link', 'https://example.com' );
-		$this->assertNotFalse( $result, 'Should allow meta update for online_event_link' );
-
-		$result = update_post_meta( $post_id, 'gatherpress_max_attendance_limit', 100 );
-		$this->assertNotFalse( $result, 'Should allow meta update for max_attendance_limit' );
-	}
 
 	/**
 	 * Tests handle_calendar_ics_request with event not found.
@@ -1232,213 +1268,6 @@ class Test_Setup extends Base {
 		$this->assertStringContainsString( 'END:VCALENDAR', $output );
 	}
 
-	/**
-	 * Tests filter_readonly_meta removes read-only meta keys from REST request.
-	 *
-	 * @covers ::filter_readonly_meta
-	 * @return void
-	 */
-	public function test_filter_readonly_meta_removes_readonly_keys(): void {
-		$instance = Setup::get_instance();
-
-		// Create a mock REST request with all readonly keys plus a writable key.
-		$request = new WP_REST_Request( 'POST', '/wp/v2/gatherpress_event' );
-		$request->set_param(
-			'meta',
-			array(
-				'gatherpress_datetime'           => '{"dateTimeStart":"2025-01-01 10:00:00"}',
-				'gatherpress_datetime_start'     => '2025-01-01 10:00:00',
-				'gatherpress_datetime_start_gmt' => '2025-01-01 15:00:00',
-				'gatherpress_datetime_end'       => '2025-01-01 12:00:00',
-				'gatherpress_datetime_end_gmt'   => '2025-01-01 17:00:00',
-				'gatherpress_timezone'           => 'America/New_York',
-				'gatherpress_online_event_link'  => 'https://example.com',
-			)
-		);
-
-		$prepared_post     = new stdClass();
-		$prepared_post->ID = 123;
-
-		$result = $instance->filter_readonly_meta( $prepared_post, $request );
-
-		// Verify prepared_post is returned unchanged.
-		$this->assertSame( $prepared_post, $result, 'Should return the same prepared_post object.' );
-		$this->assertEquals( 123, $result->ID, 'Prepared post ID should be unchanged.' );
-
-		// Verify readonly keys were removed from request meta.
-		$filtered_meta = $request->get_param( 'meta' );
-
-		$this->assertArrayNotHasKey(
-			'gatherpress_datetime_start',
-			$filtered_meta,
-			'Should remove gatherpress_datetime_start.'
-		);
-		$this->assertArrayNotHasKey(
-			'gatherpress_datetime_start_gmt',
-			$filtered_meta,
-			'Should remove gatherpress_datetime_start_gmt.'
-		);
-		$this->assertArrayNotHasKey(
-			'gatherpress_datetime_end',
-			$filtered_meta,
-			'Should remove gatherpress_datetime_end.'
-		);
-		$this->assertArrayNotHasKey(
-			'gatherpress_datetime_end_gmt',
-			$filtered_meta,
-			'Should remove gatherpress_datetime_end_gmt.'
-		);
-		$this->assertArrayNotHasKey(
-			'gatherpress_timezone',
-			$filtered_meta,
-			'Should remove gatherpress_timezone.'
-		);
-
-		// Verify writable keys are preserved.
-		$this->assertArrayHasKey(
-			'gatherpress_datetime',
-			$filtered_meta,
-			'Should preserve gatherpress_datetime (writable).'
-		);
-		$this->assertArrayHasKey(
-			'gatherpress_online_event_link',
-			$filtered_meta,
-			'Should preserve gatherpress_online_event_link (writable).'
-		);
-	}
-
-	/**
-	 * Tests filter_readonly_meta with null meta parameter.
-	 *
-	 * @covers ::filter_readonly_meta
-	 * @return void
-	 */
-	public function test_filter_readonly_meta_with_null_meta(): void {
-		$instance = Setup::get_instance();
-
-		// Create a REST request without meta parameter.
-		$request = new WP_REST_Request( 'POST', '/wp/v2/gatherpress_event' );
-		// Do not set meta parameter - it will be null.
-
-		$prepared_post       = new stdClass();
-		$prepared_post->ID   = 456;
-		$prepared_post->name = 'Test Event';
-
-		$result = $instance->filter_readonly_meta( $prepared_post, $request );
-
-		// Verify prepared_post is returned unchanged.
-		$this->assertSame( $prepared_post, $result, 'Should return the same prepared_post object.' );
-		$this->assertEquals( 456, $result->ID, 'Prepared post ID should be unchanged.' );
-		$this->assertEquals( 'Test Event', $result->name, 'Prepared post name should be unchanged.' );
-
-		// Verify meta is still null.
-		$this->assertNull( $request->get_param( 'meta' ), 'Meta should remain null.' );
-	}
-
-	/**
-	 * Tests filter_readonly_meta with empty meta array.
-	 *
-	 * @covers ::filter_readonly_meta
-	 * @return void
-	 */
-	public function test_filter_readonly_meta_with_empty_meta(): void {
-		$instance = Setup::get_instance();
-
-		// Create a REST request with empty meta array.
-		$request = new WP_REST_Request( 'POST', '/wp/v2/gatherpress_event' );
-		$request->set_param( 'meta', array() );
-
-		$prepared_post     = new stdClass();
-		$prepared_post->ID = 789;
-
-		$result = $instance->filter_readonly_meta( $prepared_post, $request );
-
-		// Verify prepared_post is returned unchanged.
-		$this->assertSame( $prepared_post, $result, 'Should return the same prepared_post object.' );
-
-		// Verify meta is still an empty array.
-		$filtered_meta = $request->get_param( 'meta' );
-		$this->assertIsArray( $filtered_meta, 'Meta should still be an array.' );
-		$this->assertEmpty( $filtered_meta, 'Meta should still be empty.' );
-	}
-
-	/**
-	 * Tests filter_readonly_meta with only writable keys.
-	 *
-	 * @covers ::filter_readonly_meta
-	 * @return void
-	 */
-	public function test_filter_readonly_meta_with_only_writable_keys(): void {
-		$instance = Setup::get_instance();
-
-		// Create a REST request with only writable meta keys.
-		$request = new WP_REST_Request( 'POST', '/wp/v2/gatherpress_event' );
-		$request->set_param(
-			'meta',
-			array(
-				'gatherpress_datetime'              => '{"dateTimeStart":"2025-01-01 10:00:00"}',
-				'gatherpress_online_event_link'     => 'https://example.com/meeting',
-				'gatherpress_enable_anonymous_rsvp' => true,
-				'gatherpress_max_guest_limit'       => 5,
-				'gatherpress_max_attendance_limit'  => 100,
-			)
-		);
-
-		$prepared_post     = new stdClass();
-		$prepared_post->ID = 101;
-
-		$result = $instance->filter_readonly_meta( $prepared_post, $request );
-
-		// Verify prepared_post is returned unchanged.
-		$this->assertSame( $prepared_post, $result, 'Should return the same prepared_post object.' );
-
-		// Verify all writable keys are preserved.
-		$filtered_meta = $request->get_param( 'meta' );
-
-		$this->assertCount( 5, $filtered_meta, 'Should have all 5 writable keys.' );
-		$this->assertArrayHasKey( 'gatherpress_datetime', $filtered_meta );
-		$this->assertArrayHasKey( 'gatherpress_online_event_link', $filtered_meta );
-		$this->assertArrayHasKey( 'gatherpress_enable_anonymous_rsvp', $filtered_meta );
-		$this->assertArrayHasKey( 'gatherpress_max_guest_limit', $filtered_meta );
-		$this->assertArrayHasKey( 'gatherpress_max_attendance_limit', $filtered_meta );
-	}
-
-	/**
-	 * Tests filter_readonly_meta with only readonly keys.
-	 *
-	 * @covers ::filter_readonly_meta
-	 * @return void
-	 */
-	public function test_filter_readonly_meta_with_only_readonly_keys(): void {
-		$instance = Setup::get_instance();
-
-		// Create a REST request with only readonly meta keys.
-		$request = new WP_REST_Request( 'POST', '/wp/v2/gatherpress_event' );
-		$request->set_param(
-			'meta',
-			array(
-				'gatherpress_datetime_start'     => '2025-01-01 10:00:00',
-				'gatherpress_datetime_start_gmt' => '2025-01-01 15:00:00',
-				'gatherpress_datetime_end'       => '2025-01-01 12:00:00',
-				'gatherpress_datetime_end_gmt'   => '2025-01-01 17:00:00',
-				'gatherpress_timezone'           => 'America/New_York',
-			)
-		);
-
-		$prepared_post     = new stdClass();
-		$prepared_post->ID = 202;
-
-		$result = $instance->filter_readonly_meta( $prepared_post, $request );
-
-		// Verify prepared_post is returned unchanged.
-		$this->assertSame( $prepared_post, $result, 'Should return the same prepared_post object.' );
-
-		// Verify all readonly keys were removed.
-		$filtered_meta = $request->get_param( 'meta' );
-
-		$this->assertIsArray( $filtered_meta, 'Meta should still be an array.' );
-		$this->assertEmpty( $filtered_meta, 'Meta should be empty after removing all readonly keys.' );
-	}
 
 	/**
 	 * Tests handle_event_archive_redirect returns early when not on post type archive.
@@ -1504,7 +1333,8 @@ class Test_Setup extends Base {
 	}
 
 	/**
-	 * Tests handle_event_archive_redirect sets 404 when no page exists.
+	 * Tests handle_event_archive_redirect sets 404 when no page exists
+	 * AND the archive mode is `none`.
 	 *
 	 * @covers ::handle_event_archive_redirect
 	 * @return void
@@ -1524,6 +1354,10 @@ class Test_Setup extends Base {
 			wp_delete_post( $existing_page->ID, true );
 		}
 
+		// Force the archive mode to `none` so the no-page branch 404s
+		// instead of serving the upcoming archive (the new default).
+		update_option( Settings::OPTION_NAME, array( 'event_archive' => 'none' ) );
+
 		// Mock being on the post type archive by setting WP_Query properties directly.
 		$wp_query->is_post_type_archive = true;
 		$wp_query->set( 'post_type', Event::POST_TYPE );
@@ -1531,8 +1365,13 @@ class Test_Setup extends Base {
 		// Call the method.
 		$instance->handle_event_archive_redirect();
 
+		delete_option( Settings::OPTION_NAME );
+
 		// Verify 404 was set.
-		$this->assertTrue( $wp_query->is_404(), 'Should be 404 when no page exists with the same slug.' );
+		$this->assertTrue(
+			$wp_query->is_404(),
+			'Should be 404 when no page exists with the same slug and mode is none.'
+		);
 	}
 
 	/**
@@ -1562,6 +1401,10 @@ class Test_Setup extends Base {
 
 		$this->assertIsInt( $page_id, 'Page should be created successfully.' );
 
+		// Force `none` so the draft (= no published page) falls through
+		// to 404 instead of the upcoming archive (the new default).
+		update_option( Settings::OPTION_NAME, array( 'event_archive' => 'none' ) );
+
 		// Mock being on the post type archive by setting WP_Query properties directly.
 		$wp_query->is_post_type_archive = true;
 		$wp_query->set( 'post_type', Event::POST_TYPE );
@@ -1569,11 +1412,167 @@ class Test_Setup extends Base {
 		// Call the method.
 		$instance->handle_event_archive_redirect();
 
+		delete_option( Settings::OPTION_NAME );
+
 		// Verify 404 was set (draft page should not trigger redirect).
 		$this->assertTrue( $wp_query->is_404(), 'Should be 404 when page exists but is not published.' );
 
 		// Clean up.
 		wp_delete_post( $page_id, true );
+	}
+
+	/**
+	 * Tests handle_event_archive_redirect rewrites the main query as the
+	 * upcoming events archive when no page exists at the slug and the
+	 * archive mode is `upcoming` (the default).
+	 *
+	 * @covers ::handle_event_archive_redirect
+	 *
+	 * @return void
+	 */
+	public function test_handle_event_archive_redirect_upcoming_mode(): void {
+		global $wp_query;
+
+		$instance = Setup::get_instance();
+
+		// Make sure no page exists at the events slug so we exercise
+		// the no-page → mode-fallback branch.
+		$settings      = Settings::get_instance();
+		$rewrite_slug  = $settings->get( 'events_url' );
+		$existing_page = get_page_by_path( $rewrite_slug );
+		if ( $existing_page ) {
+			wp_delete_post( $existing_page->ID, true );
+		}
+
+		// Default mode is `upcoming`; set explicitly for clarity.
+		update_option( Settings::OPTION_NAME, array( 'event_archive' => 'upcoming' ) );
+
+		$wp_query->is_post_type_archive = true;
+		$wp_query->set( 'post_type', Event::POST_TYPE );
+
+		$instance->handle_event_archive_redirect();
+
+		delete_option( Settings::OPTION_NAME );
+
+		$this->assertFalse( $wp_query->is_404(), 'Upcoming mode must not 404.' );
+		$this->assertTrue( $wp_query->is_post_type_archive, 'Must remain a post type archive.' );
+		$this->assertSame(
+			'upcoming',
+			$wp_query->get( Query::EVENT_QUERY_PARAM ),
+			'Upcoming mode must set the event query param so the upcoming-events ordering kicks in.'
+		);
+	}
+
+	/**
+	 * Tests handle_event_archive_redirect rewrites the main query as the
+	 * past events archive when the mode is `past`.
+	 *
+	 * @covers ::handle_event_archive_redirect
+	 *
+	 * @return void
+	 */
+	public function test_handle_event_archive_redirect_past_mode(): void {
+		global $wp_query;
+
+		$instance = Setup::get_instance();
+
+		$settings      = Settings::get_instance();
+		$rewrite_slug  = $settings->get( 'events_url' );
+		$existing_page = get_page_by_path( $rewrite_slug );
+		if ( $existing_page ) {
+			wp_delete_post( $existing_page->ID, true );
+		}
+
+		update_option( Settings::OPTION_NAME, array( 'event_archive' => 'past' ) );
+
+		$wp_query->is_post_type_archive = true;
+		$wp_query->set( 'post_type', Event::POST_TYPE );
+
+		$instance->handle_event_archive_redirect();
+
+		delete_option( Settings::OPTION_NAME );
+
+		$this->assertFalse( $wp_query->is_404(), 'Past mode must not 404.' );
+		$this->assertTrue( $wp_query->is_post_type_archive, 'Must remain a post type archive.' );
+		$this->assertSame(
+			'past',
+			$wp_query->get( Query::EVENT_QUERY_PARAM ),
+			'Past mode must set the event query param so the past-events ordering kicks in.'
+		);
+	}
+
+	/**
+	 * Tests `gatherpress_event_archive_mode` filter overrides the stored
+	 * setting at runtime.
+	 *
+	 * @covers ::handle_event_archive_redirect
+	 * @covers ::get_event_archive_mode
+	 *
+	 * @return void
+	 */
+	public function test_handle_event_archive_redirect_filter_override(): void {
+		global $wp_query;
+
+		$instance = Setup::get_instance();
+
+		$settings      = Settings::get_instance();
+		$rewrite_slug  = $settings->get( 'events_url' );
+		$existing_page = get_page_by_path( $rewrite_slug );
+		if ( $existing_page ) {
+			wp_delete_post( $existing_page->ID, true );
+		}
+
+		// Stored setting is `upcoming` but the filter forces `none`.
+		update_option( Settings::OPTION_NAME, array( 'event_archive' => 'upcoming' ) );
+
+		// phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.Found -- Filter signature requires the param even though we override it.
+		$force_none = static fn( string $mode ): string => 'none';
+		add_filter( 'gatherpress_event_archive_mode', $force_none );
+
+		$wp_query->is_post_type_archive = true;
+		$wp_query->set( 'post_type', Event::POST_TYPE );
+
+		$instance->handle_event_archive_redirect();
+
+		remove_filter( 'gatherpress_event_archive_mode', $force_none );
+		delete_option( Settings::OPTION_NAME );
+
+		$this->assertTrue( $wp_query->is_404(), 'Filter must override the stored setting and force a 404.' );
+	}
+
+	/**
+	 * Tests `get_event_archive_mode()` falls back to `upcoming` when the
+	 * stored setting (or a filter) returns a value outside the valid set.
+	 *
+	 * @covers ::get_event_archive_mode
+	 *
+	 * @return void
+	 */
+	public function test_get_event_archive_mode_invalid_value_falls_back_to_upcoming(): void {
+		$instance = Setup::get_instance();
+
+		update_option( Settings::OPTION_NAME, array( 'event_archive' => 'garbage' ) );
+
+		$this->assertSame(
+			'upcoming',
+			$instance->get_event_archive_mode(),
+			'Stored garbage must coerce back to `upcoming` so resolution never breaks.'
+		);
+
+		// And when the filter returns garbage, same fallback.
+		update_option( Settings::OPTION_NAME, array( 'event_archive' => 'past' ) );
+		// phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.Found -- Filter signature requires the param even though we override it.
+		$return_garbage = static fn( string $mode ): string => 'garbage';
+		add_filter( 'gatherpress_event_archive_mode', $return_garbage );
+
+		$this->assertSame(
+			'upcoming',
+			$instance->get_event_archive_mode(),
+			'Filter-returned garbage must also coerce back to `upcoming`.'
+		);
+
+		remove_filter( 'gatherpress_event_archive_mode', $return_garbage );
+		delete_option( Settings::OPTION_NAME );
 	}
 
 	/**
@@ -1779,5 +1778,71 @@ class Test_Setup extends Base {
 
 		// Clean up.
 		Utility::set_and_get_hidden_property( $instance, 'archive_title', '' );
+	}
+
+	/**
+	 * Direct-invoke coverage for `fall_back_to_archive_mode` (extracted from
+	 * `handle_event_archive_redirect`) — happy path: an `upcoming`/`past`
+	 * mode setting rewrites the query as the matching event archive.
+	 *
+	 * Reflection-invoked because xdebug doesn't reliably trace lines inside
+	 * same-class protected helpers called from the parent dispatch.
+	 *
+	 * @covers ::fall_back_to_archive_mode
+	 *
+	 * @return void
+	 */
+	public function test_fall_back_to_archive_mode_sets_query_for_upcoming(): void {
+		$instance = Setup::get_instance();
+
+		update_option( Settings::OPTION_NAME, array( 'event_archive' => 'upcoming' ) );
+
+		$wp_query = new \WP_Query();
+
+		Utility::invoke_hidden_method(
+			$instance,
+			'fall_back_to_archive_mode',
+			array( $wp_query )
+		);
+
+		delete_option( Settings::OPTION_NAME );
+
+		$this->assertTrue( $wp_query->is_archive );
+		$this->assertTrue( $wp_query->is_post_type_archive );
+		$this->assertFalse( $wp_query->is_page );
+		$this->assertFalse( $wp_query->is_singular );
+		$this->assertSame( 'upcoming', $wp_query->get( Query::EVENT_QUERY_PARAM ) );
+	}
+
+	/**
+	 * Direct-invoke coverage for `fall_back_to_archive_mode` 404 branch:
+	 * when the configured mode is neither `upcoming` nor `past`, the helper
+	 * sets the global query to a 404.
+	 *
+	 * @covers ::fall_back_to_archive_mode
+	 *
+	 * @return void
+	 */
+	public function test_fall_back_to_archive_mode_sets_404_when_no_mode(): void {
+		$instance = Setup::get_instance();
+
+		// `none` is a valid archive mode that means "no archive" — neither
+		// upcoming nor past — so it lands on the 404 arm.
+		$mode_filter = static function (): string {
+			return 'none';
+		};
+		add_filter( 'gatherpress_event_archive_mode', $mode_filter );
+
+		$wp_query = new \WP_Query();
+
+		Utility::invoke_hidden_method(
+			$instance,
+			'fall_back_to_archive_mode',
+			array( $wp_query )
+		);
+
+		remove_filter( 'gatherpress_event_archive_mode', $mode_filter );
+
+		$this->assertTrue( $wp_query->is_404() );
 	}
 }

@@ -1,5 +1,5 @@
 /**
- * WordPress dependencies.
+ * WordPress dependencies
  */
 import { useBlockProps, InspectorControls } from '@wordpress/block-editor';
 import {

@@ -23,6 +23,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
  * @since 1.0.0
  */
 abstract class Base {
+
 	/**
 	 * The slug used to identify the settings page.
 	 *

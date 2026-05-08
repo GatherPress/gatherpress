@@ -27,6 +27,7 @@ use WP_Query;
  * @since 1.0.0
  */
 class Feed {
+
 	/**
 	 * Enforces a single instance of this class.
 	 */

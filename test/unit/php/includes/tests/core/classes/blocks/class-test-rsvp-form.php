@@ -21,6 +21,7 @@ use PMC\Unit_Test\Utility;
  * @coversDefaultClass \GatherPress\Core\Blocks\Rsvp_Form
  */
 class Test_Rsvp_Form extends Base {
+
 	/**
 	 * Enable open RSVP for all tests in this class since most exercise the form rendering path.
 	 *

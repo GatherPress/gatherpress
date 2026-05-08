@@ -17,6 +17,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Venue\Map;
+use GatherPress\Core\Venue\Setup;
 
 /**
  * Class Venues.
@@ -26,6 +27,7 @@ use GatherPress\Core\Venue\Map;
  * @since 1.0.0
  */
 class Venues extends Base {
+
 	/**
 	 * Enforces a single instance of this class.
 	 */
@@ -248,6 +250,33 @@ class Venues extends Base {
 									'satellite' => __( 'Satellite', 'gatherpress' ),
 									'hybrid'    => __( 'Hybrid', 'gatherpress' ),
 									'terrain'   => __( 'Terrain', 'gatherpress' ),
+								),
+							),
+						),
+					),
+				),
+			),
+			'urls' => array(
+				'name'        => __( 'Permalinks', 'gatherpress' ),
+				'description' => __( 'Change permalink bases.', 'gatherpress' ),
+				'options'     => array(
+					'venues_url' => array(
+						'labels' => array(
+							'name' => __( 'Venues', 'gatherpress' ),
+						),
+						'field'  => array(
+							'type'    => 'text',
+							'rewrite' => true,
+							'options' => array(
+								'label'   => __( 'Permalink base of Venues.', 'gatherpress' ),
+								'default' => Setup::get_instance()->get_localized_post_type_slug(),
+							),
+							'preview' => array(
+								'template' => 'url-rewrite-preview',
+								'suffix'   => _x(
+									'sample-venue',
+									'URL permalink structure example for venues',
+									'gatherpress'
 								),
 							),
 						),

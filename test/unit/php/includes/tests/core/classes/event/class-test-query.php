@@ -24,6 +24,7 @@ use WP_Query;
  * @coversDefaultClass \GatherPress\Core\Event\Query
  */
 class Test_Query extends Base {
+
 	/**
 	 * Coverage for setup_hooks method.
 	 *

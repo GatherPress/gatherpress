@@ -1,12 +1,7 @@
 /**
- * WordPress dependencies.
+ * WordPress dependencies
  */
 import { useState } from '@wordpress/element';
-
-/**
- * Internal dependencies.
- */
-import { getFromConfig } from '../helpers/editor-settings';
 
 /**
  * UrlRewritePreview component for GatherPress.
@@ -17,20 +12,20 @@ import { getFromConfig } from '../helpers/editor-settings';
  *
  * @since 1.0.0
  *
- * @param {Object} props             - Component props.
- * @param {Object} props.attrs       - Component attributes.
- * @param {string} props.attrs.name  - The name of the input field.
- * @param {string} props.attrs.value - The initial value of the input field (rewritten url).
+ * @param {Object} props               - Component props.
+ * @param {Object} props.attrs         - Component attributes.
+ * @param {string} props.attrs.name    - The name of the input field.
+ * @param {string} props.attrs.value   - The initial value of the input field (rewritten url).
+ * @param {string} props.attrs.suffix  - Sample suffix appended after the rewrite slug.
+ * @param {string} props.attrs.homeUrl - Site home URL injected by the PHP partial.
  *
  * @return {JSX.Element} The rendered React component.
  */
 const UrlRewritePreview = ( props ) => {
-	const { name, value, suffix } = props.attrs;
+	const { name, value, suffix, homeUrl } = props.attrs;
 	const [ rewrittenUrlPart, setRewrittenUrlPart ] = useState( value );
 
 	const input = document.querySelector( `[name="${ name }"]` );
-
-	const homeUrl = getFromConfig( 'homeUrl' );
 
 	input.addEventListener(
 		'input',

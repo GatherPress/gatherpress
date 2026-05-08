@@ -25,6 +25,7 @@ use WP_REST_Request;
  * @since 1.0.0
  */
 class Event_Query {
+
 	/**
 	 * Enforces a single instance of this class.
 	 */
@@ -74,7 +75,7 @@ class Event_Query {
 			'aql_query_vars',
 			array( $this, 'aql_query_vars' ),
 			10,
-			3
+			2
 		);
 	}
 
@@ -269,6 +270,17 @@ class Event_Query {
 	 * @return array Array of arguments for WP_Query.
 	 */
 	public function rest_query( array $args, WP_REST_Request $request ): array {
+		// When a request explicitly asks for specific events by ID (`include`),
+		// the upcoming/past date filter should not apply — ID-based lookups
+		// are explicit and the date filter is meant for browsing. Without
+		// this bypass, any block that resolves an event by ID via the
+		// collection endpoint (e.g. the postIdOverride resolver) silently
+		// gets an empty array for past events and the override looks broken.
+		$include = $request->get_param( 'include' );
+		if ( ! empty( $include ) ) {
+			return $args;
+		}
+
 		// Generate a new custom query will all potential query vars.
 		$custom_args = array();
 
@@ -376,16 +388,9 @@ class Event_Query {
 	 *
 	 * @param array $query_args  The query arguments being built.
 	 * @param array $block_query The block's query attributes.
-	 * @param bool  $inherited   Whether the query is inherited from the page context.
 	 * @return array Modified query arguments.
-	 *
-	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
 	 */
-	public function aql_query_vars( // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed
-		array $query_args,
-		array $block_query,
-		bool $inherited
-	): array {
+	public function aql_query_vars( array $query_args, array $block_query ): array {
 		// Only process if querying GatherPress events.
 		$post_type = $block_query['postType'] ?? '';
 

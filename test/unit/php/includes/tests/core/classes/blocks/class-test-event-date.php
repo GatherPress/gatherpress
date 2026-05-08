@@ -18,6 +18,7 @@ use GatherPress\Tests\Base;
  * @coversDefaultClass \GatherPress\Core\Blocks\Event_Date
  */
 class Test_Event_Date extends Base {
+
 	/**
 	 * Tests the setup_hooks method.
 	 *

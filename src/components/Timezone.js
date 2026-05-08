@@ -1,12 +1,12 @@
 /**
- * WordPress dependencies.
+ * WordPress dependencies
  */
 import { PanelRow, SelectControl } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
 import { useDispatch, useSelect } from '@wordpress/data';
 
 /**
- * Internal dependencies.
+ * Internal dependencies
  */
 import { getFromConfig } from '../helpers/editor-settings';
 import { enableSave } from '../helpers/editor';

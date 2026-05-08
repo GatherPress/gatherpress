@@ -1,5 +1,5 @@
 /**
- * External dependencies.
+ * External dependencies
  */
 import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
@@ -48,13 +48,14 @@ jest.mock( '@wordpress/components', () => ( {
 } ) );
 
 /**
- * Internal dependencies.
+ * Internal dependencies
  */
 import {
 	MAX_POLLS,
 	POLL_INTERVAL_MS,
 	RegenerateMapButton,
 	parseAspectRatio,
+	pickDescriptorForCombo,
 	resolveDimensions,
 	usePlaceholderPolling,
 } from '@src/blocks/venue-map/helpers';
@@ -176,7 +177,7 @@ describe( 'RegenerateMapButton', () => {
 		expect( name ).toBe( 'gatherpress_venue' );
 		expect( records[ 0 ].id ).toBe( 42 );
 		expect(
-			records[ 0 ].meta.gatherpress_venue_static_map[ '18x300' ].url
+			records[ 0 ].meta.gatherpress_static_map[ '18x300' ].url
 		).toBe( 'https://example.test/42-abc.png' );
 		// Existing meta fields must be preserved.
 		expect( records[ 0 ].meta.gatherpress_address ).toBe( '' );
@@ -272,8 +273,8 @@ describe( 'RegenerateMapButton', () => {
 	} );
 
 	it( 'patches fresh descriptors into an empty meta object when current.meta is missing', async () => {
-		// A cached entity record that never got a `meta` key yet forces the
-		// `...( current.meta || {} )` spread to fall through to `{}`.
+		// A cached entity record that never got a `meta` key yet — the
+		// `...current.meta` spread is a no-op when the value is undefined.
 		mockCurrentEntityRecord = { id: 42 };
 		mockApiFetch.mockResolvedValueOnce( {
 			descriptors: {
@@ -295,7 +296,7 @@ describe( 'RegenerateMapButton', () => {
 		} );
 
 		const [ , , records ] = mockReceiveEntityRecords.mock.calls[ 0 ];
-		expect( records[ 0 ].meta.gatherpress_venue_static_map ).toEqual( {
+		expect( records[ 0 ].meta.gatherpress_static_map ).toEqual( {
 			'18x300': {
 				url: 'https://example.test/42-abc.png',
 				hash: 'abc',
@@ -319,7 +320,7 @@ describe( 'RegenerateMapButton', () => {
 		} );
 
 		const [ , , records ] = mockReceiveEntityRecords.mock.calls[ 0 ];
-		expect( records[ 0 ].meta.gatherpress_venue_static_map ).toEqual( {} );
+		expect( records[ 0 ].meta.gatherpress_static_map ).toEqual( {} );
 	} );
 
 	it( 'surfaces an error notice when the server reports generation_failed', async () => {
@@ -359,6 +360,90 @@ describe( 'parseAspectRatio', () => {
 	it( 'returns null when either side is zero', () => {
 		expect( parseAspectRatio( '0/1' ) ).toBeNull();
 		expect( parseAspectRatio( '4/0' ) ).toBeNull();
+	} );
+} );
+
+describe( 'pickDescriptorForCombo', () => {
+	const osmDescriptor = {
+		url: 'https://example.test/osm.png',
+		url_2x: 'https://example.test/osm@2x.png',
+		hash: 'abc',
+		zoom: 18,
+		width: 600,
+		height: 300,
+	};
+	const googleDescriptor = {
+		url: 'https://example.test/google.png',
+		url_2x: 'https://example.test/google@2x.png',
+		hash: 'def',
+		zoom: 18,
+		width: 600,
+		height: 300,
+	};
+
+	it( 'returns the active provider descriptor when present', () => {
+		const descriptors = {
+			osm: { '18x600x300': osmDescriptor },
+			google: { '18x600x300': googleDescriptor },
+		};
+
+		expect(
+			pickDescriptorForCombo( descriptors, '18x600x300', 'google' )
+		).toBe( googleDescriptor );
+	} );
+
+	it( 'falls back to another provider when the active one is missing the combo', () => {
+		const descriptors = {
+			osm: { '18x600x300': osmDescriptor },
+		};
+
+		expect(
+			pickDescriptorForCombo( descriptors, '18x600x300', 'google' )
+		).toBe( osmDescriptor );
+	} );
+
+	it( 'returns undefined when no provider has the combo', () => {
+		const descriptors = {
+			osm: { '15x800x400': osmDescriptor },
+		};
+
+		expect(
+			pickDescriptorForCombo( descriptors, '18x600x300', 'osm' )
+		).toBeUndefined();
+	} );
+
+	it( 'tolerates a missing or empty descriptor map', () => {
+		expect(
+			pickDescriptorForCombo( undefined, '18x600x300', 'osm' )
+		).toBeUndefined();
+		expect(
+			pickDescriptorForCombo( {}, '18x600x300', 'osm' )
+		).toBeUndefined();
+	} );
+
+	it( 'skips the active slug when scanning for fallbacks', () => {
+		const descriptors = {
+			osm: { '18x600x300': osmDescriptor },
+			google: {},
+		};
+
+		expect(
+			pickDescriptorForCombo( descriptors, '18x600x300', 'google' )
+		).toBe( osmDescriptor );
+	} );
+
+	it( 'skips fallback providers that lack the combo and keeps scanning', () => {
+		// Object.keys preserves insertion order, so `empty` is visited first
+		// (candidate undefined → falsy branch of the inner `if`), then `osm`
+		// is visited and returns. Covers both branches of the candidate check.
+		const descriptors = {
+			empty: {},
+			osm: { '18x600x300': osmDescriptor },
+		};
+
+		expect(
+			pickDescriptorForCombo( descriptors, '18x600x300', 'google' )
+		).toBe( osmDescriptor );
 	} );
 } );
 

@@ -32,6 +32,7 @@ use WP_Query;
  * @since 1.0.0
  */
 class Query {
+
 	/**
 	 * Enforces a single instance of this class.
 	 */
@@ -383,12 +384,18 @@ class Query {
 		$gatherpress_events_query = ( ! empty( $wp_query->get( self::EVENT_QUERY_PARAM ) ) )
 			? $wp_query->get( self::EVENT_QUERY_PARAM )
 			: 'all';
-		$query_pieces             = $this->adjust_event_sql(
+
+		// Upcoming is inclusive (running events count as upcoming);
+		// past is non-inclusive (running events excluded). This makes
+		// the buckets mutually exclusive at `datetime_end_gmt` so a
+		// running event appears only in upcoming, never in both.
+		$inclusive    = ( 'past' !== $gatherpress_events_query );
+		$query_pieces = $this->adjust_event_sql(
 			$query_pieces,
 			$gatherpress_events_query,
 			$wp_query->get( 'order' ),
 			$wp_query->get( 'orderby' ),
-			true,
+			$inclusive,
 			true
 		);
 

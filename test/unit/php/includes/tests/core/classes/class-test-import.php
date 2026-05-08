@@ -20,6 +20,7 @@ use PMC\Unit_Test\Utility;
  * @group migrate
  */
 class Test_Import extends Base {
+
 	/**
 	 * Coverage for setup_hooks.
 	 *
@@ -207,7 +208,7 @@ class Test_Import extends Base {
 			);
 			return $pseudopostmetas;
 		};
-		add_filter( 'gatherpress_pseudopostmetas', $filter );
+		add_filter( 'gatherpress_pseudo_post_metas', $filter );
 
 		// Defined for readability.
 		$check      = true;
@@ -223,7 +224,7 @@ class Test_Import extends Base {
 			'Should return null when import_callback is not set.'
 		);
 
-		remove_filter( 'gatherpress_pseudopostmetas', $filter );
+		remove_filter( 'gatherpress_pseudo_post_metas', $filter );
 
 		// Test with non-callable import_callback.
 		$filter_noncallable = static function ( $pseudopostmetas ) {
@@ -232,7 +233,7 @@ class Test_Import extends Base {
 			);
 			return $pseudopostmetas;
 		};
-		add_filter( 'gatherpress_pseudopostmetas', $filter_noncallable );
+		add_filter( 'gatherpress_pseudo_post_metas', $filter_noncallable );
 
 		// Tests: return null; (when import_callback is not callable).
 		$result = $instance->run( $check, $object_id, 'test_meta_noncallable', $meta_value, $unique );
@@ -242,7 +243,7 @@ class Test_Import extends Base {
 			'Should return null when import_callback is not callable.'
 		);
 
-		remove_filter( 'gatherpress_pseudopostmetas', $filter_noncallable );
+		remove_filter( 'gatherpress_pseudo_post_metas', $filter_noncallable );
 	}
 
 	/**

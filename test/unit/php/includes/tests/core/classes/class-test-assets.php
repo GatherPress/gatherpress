@@ -19,6 +19,7 @@ use PMC\Unit_Test\Utility;
  * @coversDefaultClass \GatherPress\Core\Assets
  */
 class Test_Assets extends Base {
+
 	/**
 	 * Coverage for setup_hooks.
 	 *

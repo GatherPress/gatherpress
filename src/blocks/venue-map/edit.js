@@ -1,5 +1,5 @@
 /**
- * WordPress dependencies.
+ * WordPress dependencies
  */
 import { __ } from '@wordpress/i18n';
 import {
@@ -29,7 +29,7 @@ import { useEffect } from '@wordpress/element';
 import { Icon, link as linkIcon, mapMarker } from '@wordpress/icons';
 
 /**
- * Internal dependencies.
+ * Internal dependencies
  */
 import { isVenuePostType } from '../../helpers/venue';
 import { isInFSETemplate } from '../../helpers/editor';
@@ -42,6 +42,7 @@ import {
 import {
 	RegenerateMapButton,
 	parseAspectRatio,
+	pickDescriptorForCombo,
 	resolveDimensions,
 	usePlaceholderPolling,
 } from './helpers';
@@ -193,8 +194,8 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 					venueMeta: meta,
 					savedVenueMeta: savedPost?.meta || {},
 					staticMapDescriptors:
-						editedVenuePost?.meta?.gatherpress_venue_static_map ||
-						meta?.gatherpress_venue_static_map ||
+						editedVenuePost?.meta?.gatherpress_static_map ||
+						meta?.gatherpress_static_map ||
 						{},
 					venuePostId: effectiveVenuePostId,
 					venuePostType: resolvedVenuePostType,
@@ -215,7 +216,7 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 				venueMeta: meta,
 				savedVenueMeta: meta,
 				staticMapDescriptors:
-					meta?.gatherpress_venue_static_map || {},
+					meta?.gatherpress_static_map || {},
 				venuePostId: effectiveVenuePostId,
 				venuePostType: context?.postType || '',
 			};
@@ -297,7 +298,11 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 		} );
 
 	const comboKey = `${ zoom }x${ effectiveWidth }x${ effectiveHeight }`;
-	const staticMapDescriptor = staticMapDescriptors?.[ comboKey ];
+	const staticMapDescriptor = pickDescriptorForCombo(
+		staticMapDescriptors,
+		comboKey,
+		mapPlatform || 'osm'
+	);
 	const staticMapUrl = staticMapDescriptor?.url || '';
 	const isStaticMode = 'static' === renderMode;
 	const showStaticImage =
@@ -328,7 +333,7 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 			}
 			// getBlockParentsByBlockName returns root → self order, so the
 			// last entry is the closest ancestor.
-			return parents[ parents.length - 1 ];
+			return parents.at( -1 );
 		},
 		[ clientId ]
 	);

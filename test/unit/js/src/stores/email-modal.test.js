@@ -1,15 +1,15 @@
 /**
- * External dependencies.
+ * External dependencies
  */
 import { describe, expect, it } from '@jest/globals';
 
 /**
- * WordPress dependencies.
+ * WordPress dependencies
  */
 import { select, dispatch } from '@wordpress/data';
 
 /**
- * Internal dependencies.
+ * Internal dependencies
  */
 // Import the actual store to get coverage.
 import '@src/stores/email-modal';

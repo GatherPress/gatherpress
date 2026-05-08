@@ -33,6 +33,7 @@ use WP_Post;
  * @since 1.0.0
  */
 class Event {
+
 	/**
 	 * Cache key format for storing and retrieving event datetimes.
 	 *
@@ -72,6 +73,17 @@ class Event {
 	 * @var string $TABLE_FORMAT
 	 */
 	const TABLE_FORMAT = '%sgatherpress_events';
+
+	/**
+	 * Pattern slug for the event template — the anchor that the
+	 * `core/paragraph` hooked block (and others) attach to. Companion
+	 * plugins that hook blocks into events read this constant rather
+	 * than hard-coding the slug.
+	 *
+	 * @since 1.0.0
+	 * @var string
+	 */
+	const TEMPLATE_PATTERN = 'gatherpress/event-template';
 
 	/**
 	 * ISO 8601 datetime format for calendar services.
@@ -478,10 +490,13 @@ class Event {
 				continue;
 			}
 
-			// Validate datetime fields vs timezone field.
-			if ( 'timezone' === $key && Validate::timezone( $result ) ) {
-				$data[ $key ] = $result;
-			} elseif ( Validate::datetime( $result ) ) {
+			// Timezone field validates as a tz string; datetime fields validate as a datetime.
+			// The trailing datetime check still runs for the timezone key so a mistyped value
+			// can fall back to datetime parsing, matching the prior elseif behavior.
+			if (
+				( 'timezone' === $key && Validate::timezone( $result ) )
+				|| Validate::datetime( $result )
+			) {
 				$data[ $key ] = $result;
 			}
 		}

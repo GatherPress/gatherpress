@@ -16,7 +16,7 @@ import apiFetch from '@wordpress/api-fetch';
 import { store as coreDataStore } from '@wordpress/core-data';
 
 /**
- * Internal dependencies.
+ * Internal dependencies
  */
 import { getVenuePostType, getVenueTaxonomy } from '../helpers/venue';
 import { isPostTypeSupporting } from '../helpers/event';
@@ -64,7 +64,6 @@ function VenueForm( {
 			<div className="gatherpress-new-venue-form">
 				<TextControl
 					__next40pxDefaultSize
-					__nextHasNoMarginBottom
 					label={ __( 'Venue name', 'gatherpress' ) }
 					value={ title }
 					onChange={ onChangeTitle }
@@ -229,12 +228,15 @@ function CreateVenueForm( { search, ...props } ) {
 	 *
 	 * Uses the new individual meta fields architecture.
 	 * Phone and website can be added later when editing the full venue post.
+	 * Structured-address fields (city, state, postcode, etc.) are populated
+	 * server-side by an async cron handler that fires when `gatherpress_address`
+	 * changes — they don't need to be sent in this initial POST.
 	 *
 	 * @param {string} newTitle   - The title of the new venue.
 	 * @param {string} newAddress - The address of the new venue.
 	 * @param {string} latitude   - Latitude coordinate (from geocoding).
 	 * @param {string} longitude  - Longitude coordinate (from geocoding).
-	 * @return {Object} The newly created venue post.
+	 * @return {Promise<Object>} A promise that resolves to the newly created venue post.
 	 */
 	const createNewVenuePost = async (
 		newTitle,
@@ -242,27 +244,19 @@ function CreateVenueForm( { search, ...props } ) {
 		latitude = '',
 		longitude = ''
 	) => {
-		try {
-			const newPost = await apiFetch( {
-				path: `/wp/v2/${ venueRestBase }`,
-				method: 'POST',
-				data: {
-					title,
-					status: 'publish', // 'draft' is the default
-					meta: {
-						gatherpress_address: newAddress,
-						gatherpress_latitude: latitude,
-						gatherpress_longitude: longitude,
-					},
+		return apiFetch( {
+			path: `/wp/v2/${ venueRestBase }`,
+			method: 'POST',
+			data: {
+				title,
+				status: 'publish', // 'draft' is the default
+				meta: {
+					gatherpress_address: newAddress,
+					gatherpress_latitude: latitude,
+					gatherpress_longitude: longitude,
 				},
-			} );
-
-			// console.log(`${newPost.title.rendered} Venue saved successfully.`, newPost );
-			return newPost;
-		} catch ( error ) {
-			// console.error('Error creating post:', error);
-			throw error;
-		}
+			},
+		} );
 	};
 
 	/**

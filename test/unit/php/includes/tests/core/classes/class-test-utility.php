@@ -19,6 +19,7 @@ use PMC\Unit_Test\Utility as PMC_Utility;
  * @coversDefaultClass \GatherPress\Core\Utility
  */
 class Test_Utility extends Base {
+
 	/**
 	 * Coverage for render_template method.
 	 *
@@ -179,6 +180,105 @@ class Test_Utility extends Base {
 			$this->assertArrayHasKey( $key, $timezones );
 			$this->assertIsArray( $timezones[ $key ] );
 		}
+	}
+
+	/**
+	 * Regression: option values must be raw timezone identifiers, never markup.
+	 *
+	 * WordPress's `wp_timezone_choice()` markup has shifted across releases —
+	 * recent versions added a `dir="auto"` attribute on `<optgroup>` and
+	 * `<option>` tags. A greedy `.+` capture in the parser used to pull that
+	 * trailing attribute into the option value, so the saved timezone never
+	 * matched any option in the editor's select and the dropdown silently
+	 * fell back to the first item. This bug has shipped twice; lock it down
+	 * with assertions that catch any HTML markup leaking into either group
+	 * keys or option values, regardless of which WP version emitted them.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @covers ::timezone_choices
+	 *
+	 * @return void
+	 */
+	public function test_timezone_choices_keys_and_values_have_no_html_leakage(): void {
+		$timezones = Utility::timezone_choices();
+
+		$this->assertNotEmpty(
+			$timezones,
+			'timezone_choices() should return at least one group.'
+		);
+
+		// Tokens that should never appear in a group label or option value /
+		// label — any presence indicates HTML markup leaked through the
+		// parser. Mapped to a short noun phrase that completes the
+		// assertion failure message ("Group label \"...\" contains <reason>").
+		$forbidden = array(
+			'"'    => 'a quote',
+			'<'    => 'a tag character',
+			'>'    => 'a tag character',
+			'dir=' => 'a `dir=` attribute',
+		);
+
+		foreach ( $timezones as $group_label => $options ) {
+			foreach ( $forbidden as $needle => $reason ) {
+				$this->assertStringNotContainsString(
+					$needle,
+					$group_label,
+					sprintf( 'Group label "%s" contains %s.', $group_label, $reason )
+				);
+			}
+
+			$this->assertIsArray( $options );
+
+			foreach ( $options as $value => $label ) {
+				$value_string = (string) $value;
+				foreach ( $forbidden as $needle => $reason ) {
+					$this->assertStringNotContainsString(
+						$needle,
+						$value_string,
+						sprintf( 'Option value "%s" contains %s.', $value_string, $reason )
+					);
+				}
+
+				$label_string = (string) $label;
+				foreach ( array( '<', '>' ) as $needle ) {
+					$this->assertStringNotContainsString(
+						$needle,
+						$label_string,
+						sprintf( 'Option label "%s" contains a tag character.', $label_string )
+					);
+				}
+			}
+		}
+	}
+
+	/**
+	 * Regression: well-known timezone identifiers must round-trip as exact keys.
+	 *
+	 * If the parser corrupts option `value` attributes, common identifiers
+	 * like `America/New_York` or `UTC` will not appear as exact keys in their
+	 * groups — instead the keys carry trailing markup like
+	 * `America/New_York" dir="auto`. Asserting that a few canonical
+	 * identifiers exist as exact keys is a tight check that catches this
+	 * class of regression early.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @covers ::timezone_choices
+	 *
+	 * @return void
+	 */
+	public function test_timezone_choices_exposes_canonical_identifiers_as_exact_keys(): void {
+		$timezones = Utility::timezone_choices();
+
+		$this->assertArrayHasKey( 'America', $timezones );
+		$this->assertArrayHasKey( 'America/New_York', $timezones['America'] );
+
+		$this->assertArrayHasKey( 'Europe', $timezones );
+		$this->assertArrayHasKey( 'Europe/Berlin', $timezones['Europe'] );
+
+		$this->assertArrayHasKey( 'UTC', $timezones );
+		$this->assertArrayHasKey( 'UTC', $timezones['UTC'] );
 	}
 
 	/**

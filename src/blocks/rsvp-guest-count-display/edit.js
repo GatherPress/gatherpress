@@ -1,5 +1,5 @@
 /**
- * WordPress dependencies.
+ * WordPress dependencies
  */
 import { _n, sprintf } from '@wordpress/i18n';
 import { useBlockProps } from '@wordpress/block-editor';
@@ -7,10 +7,10 @@ import { useSelect } from '@wordpress/data';
 import { useEffect } from '@wordpress/element';
 
 /**
- * Internal dependencies.
+ * Internal dependencies
  */
 import { getEditorDocument } from '../../helpers/editor';
-import { DISABLED_FIELD_OPACITY, isPostTypeSupporting } from '../../helpers/event';
+import { DISABLED_FIELD_OPACITY, usePostTypeSupports } from '../../helpers/event';
 
 /**
  * Edit function for the RSVP Guest Count Display Block.
@@ -32,7 +32,10 @@ const Edit = ( { context, clientId } ) => {
 	const rsvpResponses = context?.[ 'gatherpress/rsvpResponses' ] ?? null;
 
 	// Check if context post type supports RSVP.
-	const isEventContext = isPostTypeSupporting( 'gatherpress-rsvp', context?.postType );
+	// `usePostTypeSupports` is reactive so the block re-renders the moment the
+	// post-type definition resolves; the non-reactive variant would miss it
+	// and leave the block permanently dimmed in Query Loops.
+	const isEventContext = usePostTypeSupports( 'gatherpress-rsvp', context?.postType );
 
 	// Example guest count.
 	let guestCount = 1;
@@ -50,25 +53,23 @@ const Edit = ( { context, clientId } ) => {
 	// Get max attendance limit from meta - check Post ID override first.
 	const maxAttendanceLimit = useSelect(
 		( select ) => {
-			// Check if parent RSVP or RSVP Response block has a postId override.
-			const parentBlocks = select( 'core/block-editor' ).getBlockParents( clientId, true );
-			let postIdOverride = null;
+			// Find the first ancestor RSVP or RSVP Response block that
+			// declared a postId override — replaces the original `for` loop
+			// with `find` so the dispatch is one expression.
+			const parentBlocks =
+				select( 'core/block-editor' ).getBlockParents( clientId, true ) || [];
+			const overrideParent = parentBlocks
+				.map( ( id ) => select( 'core/block-editor' ).getBlock( id ) )
+				.find(
+					( parent ) =>
+						( 'gatherpress/rsvp' === parent?.name ||
+							'gatherpress/rsvp-response' === parent?.name ) &&
+						parent.attributes?.postId,
+				);
 
-			if ( parentBlocks && 0 < parentBlocks.length ) {
-				for ( const parentId of parentBlocks ) {
-					const parent = select( 'core/block-editor' ).getBlock( parentId );
-					if ( 'gatherpress/rsvp' === parent?.name && parent.attributes?.postId ) {
-						postIdOverride = parent.attributes.postId;
-						break;
-					}
-					if ( 'gatherpress/rsvp-response' === parent?.name && parent.attributes?.postId ) {
-						postIdOverride = parent.attributes.postId;
-						break;
-					}
-				}
-			}
+			let postIdOverride = overrideParent?.attributes?.postId ?? null;
 
-			// If no parent block postId, check context postId only if it's an event.
+			// Fall back to context postId only if it's an event.
 			if ( ! postIdOverride && contextPostId && isEventContext ) {
 				postIdOverride = contextPostId;
 			}
@@ -83,15 +84,18 @@ const Edit = ( { context, clientId } ) => {
 				return post?.meta?.gatherpress_max_guest_limit || 0;
 			}
 
-			// Otherwise check current post.
+			// Otherwise check current post. Read supports through the `select`
+			// parameter so this branch re-runs once the post-type definition
+			// resolves — the imperative `isPostTypeSupporting` helper would
+			// race the post-type cache and freeze this branch at 0.
 			const currentPostType = select( 'core/editor' )?.getCurrentPostType();
+			const currentSupportsRsvp = !! select( 'core' )
+				.getPostType( currentPostType )?.supports?.[ 'gatherpress-rsvp' ];
 
-			if ( isPostTypeSupporting( 'gatherpress-rsvp', currentPostType ) ) {
-				return select( 'core/editor' ).getEditedPostAttribute( 'meta' )
-					?.gatherpress_max_guest_limit || 0;
-			}
-
-			return 0;
+			return currentSupportsRsvp
+				? ( select( 'core/editor' ).getEditedPostAttribute( 'meta' )
+					?.gatherpress_max_guest_limit || 0 )
+				: 0;
 		},
 		[ clientId, contextPostId, isEventContext, context?.postType ],
 	);

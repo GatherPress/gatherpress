@@ -39,6 +39,7 @@ use WP_Post;
  * @since 1.0.0
  */
 class Rsvp {
+
 	/**
 	 * Capability required to manage RSVPs.
 	 *

@@ -1,11 +1,11 @@
 /**
- * External dependencies.
+ * External dependencies
  */
 import { describe, expect, it, jest } from '@jest/globals';
 import { render, screen, fireEvent } from '@testing-library/react';
 
 /**
- * Internal dependencies.
+ * Internal dependencies
  */
 import PhoneField from '@src/blocks/venue-detail/fields/phone-field';
 

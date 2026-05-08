@@ -11,6 +11,7 @@ namespace GatherPress\Tests\Core\Blocks;
 use GatherPress\Core\Blocks\Setup;
 use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;
+use WP_Block_Pattern_Categories_Registry;
 use WP_Block_Patterns_Registry;
 use WP_Block_Type_Registry;
 
@@ -21,6 +22,7 @@ use WP_Block_Type_Registry;
  * @group              blocks
  */
 class Test_Setup extends Base {
+
 	/**
 	 * Coverage for setup_hooks.
 	 *
@@ -137,6 +139,42 @@ class Test_Setup extends Base {
 		$expected = wp_list_pluck( $block_pattern_registry->get_all_registered(), 'name' );
 
 		$this->assertSame( $block_patterns, $expected );
+	}
+
+	/**
+	 * Coverage for pattern category registration.
+	 *
+	 * The `gatherpress-event-query` category is what scopes the Event Query
+	 * Loop variation's starter patterns to core/query's placeholder modal —
+	 * the slug must match the variation namespace declared in
+	 * src/variations/core/query/index.js.
+	 *
+	 * @covers ::register_block_patterns
+	 *
+	 * @return void
+	 */
+	public function test_register_block_pattern_categories(): void {
+		$instance                = Setup::get_instance();
+		$category_registry       = WP_Block_Pattern_Categories_Registry::get_instance();
+		$expected_category_slugs = array(
+			'gatherpress',
+			'gatherpress-event-query',
+		);
+
+		// Clear out registered pattern categories so the assertion sees only what register_block_patterns adds.
+		Utility::set_and_get_hidden_property( $category_registry, 'registered_categories', array() );
+
+		$instance->register_block_patterns();
+
+		$registered_slugs = wp_list_pluck( $category_registry->get_all_registered(), 'name' );
+
+		foreach ( $expected_category_slugs as $slug ) {
+			$this->assertContains(
+				$slug,
+				$registered_slugs,
+				sprintf( 'Expected pattern category "%s" to be registered.', $slug )
+			);
+		}
 	}
 
 	/**

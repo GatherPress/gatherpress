@@ -58,4 +58,10 @@ namespace {
         require_once __DIR__ . '/includes/core/classes/venue/class-venue.php';
         class_alias( 'GatherPress\\Core\\Venue\\Venue', 'GatherPress\\Core\\Venue' );
     }
+
+    if ( ! class_exists( 'GatherPress\\Core\\Venue\\Map', false ) ) {
+        require_once __DIR__ . '/includes/core/classes/traits/class-singleton.php';
+        require_once __DIR__ . '/includes/core/classes/venue/map/class-map.php';
+        class_alias( 'GatherPress\\Core\\Venue\\Map\\Map', 'GatherPress\\Core\\Venue\\Map' );
+    }
 }

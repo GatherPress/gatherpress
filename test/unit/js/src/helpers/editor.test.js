@@ -1,10 +1,10 @@
 /**
- * External dependencies.
+ * External dependencies
  */
 import { describe, expect, it, jest, beforeEach, afterEach } from '@jest/globals';
 
 /**
- * WordPress dependencies.
+ * WordPress dependencies
  */
 import { dispatch, select } from '@wordpress/data';
 
@@ -15,7 +15,7 @@ jest.mock( '@wordpress/core-data', () => ( {
 } ) );
 
 /**
- * Internal dependencies.
+ * Internal dependencies
  */
 import {
 	enableSave,
@@ -474,6 +474,73 @@ describe( 'Editor helper functions', () => {
 			} );
 
 			expect( result ).toBe( true );
+		} );
+
+		describe( 'with reactive hasSupport', () => {
+			beforeEach( () => {
+				// `hasSupport` is the canonical input. When provided, the helper
+				// must not fall back to the non-reactive `isPostTypeSupporting`
+				// path — otherwise blocks would still race the post-type cache.
+				select.mockReturnValue( {
+					getCurrentPostType: jest.fn().mockReturnValue( 'post' ),
+				} );
+			} );
+
+			it( 'returns true in Query Loop when hasSupport is true and hasData is true', () => {
+				const result = hasValidBlockContext( {
+					isDescendentOfQueryLoop: true,
+					hasSupport: true,
+					hasData: true,
+				} );
+
+				expect( result ).toBe( true );
+			} );
+
+			it( 'returns false in Query Loop when hasSupport is false', () => {
+				const result = hasValidBlockContext( {
+					isDescendentOfQueryLoop: true,
+					hasSupport: false,
+					hasData: true,
+				} );
+
+				expect( result ).toBe( false );
+			} );
+
+			it( 'returns false in Query Loop when hasSupport is true but no data', () => {
+				const result = hasValidBlockContext( {
+					isDescendentOfQueryLoop: true,
+					hasSupport: true,
+					hasData: false,
+				} );
+
+				expect( result ).toBe( false );
+			} );
+
+			it( 'prefers hasSupport over the legacy postType + support fallback', () => {
+				// If hasSupport is provided, `isPostTypeSupporting` must not be
+				// consulted — otherwise the non-reactive race re-emerges.
+				const getPostType = jest.fn();
+				select.mockImplementation( ( store ) => {
+					if ( 'core/editor' === store ) {
+						return { getCurrentPostType: jest.fn().mockReturnValue( 'post' ) };
+					}
+					if ( 'core' === store ) {
+						return { getPostType };
+					}
+					return {};
+				} );
+
+				const result = hasValidBlockContext( {
+					isDescendentOfQueryLoop: true,
+					hasSupport: true,
+					postType: 'gatherpress_event',
+					support: 'gatherpress-event-date',
+					hasData: true,
+				} );
+
+				expect( result ).toBe( true );
+				expect( getPostType ).not.toHaveBeenCalled();
+			} );
 		} );
 	} );
 } );

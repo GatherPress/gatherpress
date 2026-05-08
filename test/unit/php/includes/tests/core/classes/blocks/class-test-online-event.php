@@ -21,6 +21,7 @@ use WP_Block;
  * @coversDefaultClass \GatherPress\Core\Blocks\Online_Event
  */
 class Test_Online_Event extends Base {
+
 	/**
 	 * Tests the setup_hooks method.
 	 *

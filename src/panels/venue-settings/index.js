@@ -1,5 +1,5 @@
 /**
- * WordPress dependencies.
+ * WordPress dependencies
  */
 import { __ } from '@wordpress/i18n';
 import {
@@ -10,7 +10,7 @@ import { registerPlugin } from '@wordpress/plugins';
 import { PluginDocumentSettingPanel } from '@wordpress/editor';
 
 /**
- * Internal dependencies.
+ * Internal dependencies
  */
 import { isVenuePostType } from '../../helpers/venue';
 import VenueInformationPanel from './venue-information';

@@ -19,13 +19,12 @@ use GatherPress\Core\Event\Event;
 use GatherPress\Core\Feed;
 use GatherPress\Core\Rsvp\Rsvp;
 use GatherPress\Core\Settings;
+use GatherPress\Core\Starter_Pattern_Loader;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Utility;
-use stdClass;
 use WP;
 use WP_Block;
 use WP_Post;
-use WP_REST_Request;
 
 /**
  * Class Setup.
@@ -35,6 +34,7 @@ use WP_REST_Request;
  * @since 1.0.0
  */
 class Setup {
+
 	/**
 	 * Enforces a single instance of this class.
 	 */
@@ -77,6 +77,7 @@ class Setup {
 	 */
 	protected function instantiate_classes(): void {
 		Admin_List::get_instance();
+		Meta::get_instance();
 		Query::get_instance();
 		Rest_Api::get_instance();
 	}
@@ -92,9 +93,9 @@ class Setup {
 	 */
 	protected function setup_hooks(): void {
 		add_action( 'init', array( $this, 'register_post_type' ) );
-		add_action( 'init', array( $this, 'register_event_only_meta' ) );
-		add_action( 'registered_post_type', array( $this, 'maybe_register_event_date_meta' ) );
 		add_action( 'init', array( $this, 'register_calendar_rewrite_rule' ) );
+		// Priority 11 so post types registered at default priority 10 are available for get_post_types_by_support().
+		add_action( 'init', array( $this, 'register_starter_pattern' ), 11 );
 		add_action( 'parse_request', array( $this, 'handle_calendar_ics_request' ) );
 		add_action( 'template_redirect', array( $this, 'handle_event_archive_redirect' ) );
 		add_action( 'delete_post', array( $this, 'delete_event' ) );
@@ -146,7 +147,7 @@ class Setup {
 					'not_found'                => __( 'No Events found.', 'gatherpress' ),
 					'not_found_in_trash'       => __( 'No Events found in Trash.', 'gatherpress' ),
 					'parent_item_colon'        => __( 'Parent Events:', 'gatherpress' ),
-					'all_items'                => __( 'View Events', 'gatherpress' ),
+					'all_items'                => __( 'All Events', 'gatherpress' ),
 					'archives'                 => __( 'Event Archives', 'gatherpress' ),
 					'attributes'               => __( 'Event Attributes', 'gatherpress' ),
 					'insert_into_item'         => __( 'Insert into Event', 'gatherpress' ),
@@ -173,28 +174,6 @@ class Setup {
 				'rest_base'     => 'gatherpress_events',
 				'public'        => true,
 				'hierarchical'  => false,
-				'template'      => array(
-					array( 'gatherpress/event-date' ),
-					array( 'gatherpress/add-to-calendar' ),
-					array( 'gatherpress/venue' ),
-					array( 'gatherpress/online-event' ),
-					array( 'gatherpress/rsvp' ),
-					array(
-						'core/paragraph',
-						array(
-							'placeholder' => __(
-								// phpcs:ignore Generic.Files.LineLength.TooLong
-								'Add a description of the event and let people know what to expect, including the agenda, what they need to bring, and how to find the group.',
-								'gatherpress'
-							),
-						),
-					),
-					array( 'gatherpress/rsvp-response' ),
-				),
-				// @todo continue to work on the event-template.
-				// 'template'      => array(
-				// array( 'core/pattern', array( 'slug' => 'gatherpress/event-template' ) ),
-				// ),
 				'menu_position' => 4,
 				'supports'      => array(
 					'title',
@@ -247,189 +226,84 @@ class Setup {
 	}
 
 	/**
-	 * Registers datetime meta + the read-only REST filter when a post type
-	 * declares gatherpress-event-date support.
+	 * Register the user-facing event starter patterns.
+	 *
+	 * Loads every pattern definition from `includes/core/templates/event/`
+	 * (each file returns a `name/title/description/content` array), runs
+	 * the list through the `gatherpress_event_starter_patterns` filter so
+	 * third parties can append their own, and registers each entry scoped
+	 * to `core/post-content` plus every post type declaring
+	 * `gatherpress-event-date` support. The block editor's starter pattern
+	 * modal — the same UX Twenty Twenty-Five uses on new pages — then
+	 * surfaces them when authors create a new event.
+	 *
+	 * Per-user dismissal is handled by the modal's own "Always show
+	 * starter patterns for new pages" toggle, so no site-wide setting
+	 * is needed here.
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param string $post_type The post type that was just registered.
 	 * @return void
 	 */
-	public function maybe_register_event_date_meta( string $post_type ): void {
-		if ( ! post_type_supports( $post_type, 'gatherpress-event-date' ) ) {
+	public function register_starter_pattern(): void {
+		$post_types = get_post_types_by_support( 'gatherpress-event-date' );
+
+		if ( empty( $post_types ) ) {
 			return;
 		}
 
-		$event_date_meta = array(
-			'gatherpress_datetime'           => array(
-				'auth_callback'     => array( Utility::class, 'can_edit_post_meta' ),
-				'sanitize_callback' => 'sanitize_text_field',
-				'show_in_rest'      => true,
-				'single'            => true,
-				'type'              => 'string',
-			),
-			'gatherpress_datetime_start'     => array(
-				'auth_callback'     => '__return_false', // Read-only: derived from gatherpress_datetime.
-				'sanitize_callback' => 'sanitize_text_field',
-				'show_in_rest'      => true,
-				'single'            => true,
-			),
-			'gatherpress_datetime_start_gmt' => array(
-				'auth_callback'     => '__return_false', // Read-only: derived from gatherpress_datetime.
-				'sanitize_callback' => 'sanitize_text_field',
-				'show_in_rest'      => true,
-				'single'            => true,
-				'type'              => 'string',
-			),
-			'gatherpress_datetime_end'       => array(
-				'auth_callback'     => '__return_false', // Read-only: derived from gatherpress_datetime.
-				'sanitize_callback' => 'sanitize_text_field',
-				'show_in_rest'      => true,
-				'single'            => true,
-				'type'              => 'string',
-			),
-			'gatherpress_datetime_end_gmt'   => array(
-				'auth_callback'     => '__return_false', // Read-only: derived from gatherpress_datetime.
-				'sanitize_callback' => 'sanitize_text_field',
-				'show_in_rest'      => true,
-				'single'            => true,
-				'type'              => 'string',
-			),
-			'gatherpress_timezone'           => array(
-				'auth_callback'     => '__return_false', // Read-only: derived from gatherpress_datetime.
-				'sanitize_callback' => 'sanitize_text_field',
-				'show_in_rest'      => true,
-				'single'            => true,
-				'type'              => 'string',
-			),
+		$patterns = Starter_Pattern_Loader::load(
+			GATHERPRESS_CORE_PATH . '/includes/core/templates/event'
 		);
 
-		foreach ( $event_date_meta as $meta_key => $args ) {
-			register_post_meta( $post_type, $meta_key, $args );
-		}
+		/**
+		 * Filters the array of event starter pattern definitions.
+		 *
+		 * Each entry is an associative array with `name`, `title`,
+		 * `description`, and `content` keys. Returned patterns are
+		 * registered with `core/post-content` `blockTypes` scoping plus
+		 * every post type declaring `gatherpress-event-date` support, so
+		 * they appear in the new-event chooser modal for any post type
+		 * acting as an event source.
+		 *
+		 * The `$post_types` array lets consumers tailor the returned
+		 * patterns to the post types about to receive them — useful for
+		 * companion plugins that register their own event-acting post
+		 * type and want to swap a pattern in only when their post type
+		 * is in scope.
+		 *
+		 * @since 1.0.0
+		 *
+		 * @param array $patterns   Pattern definitions loaded from the
+		 *                          `includes/core/templates/event/` directory.
+		 * @param array $post_types Post type slugs declaring `gatherpress-event-date`
+		 *                          support that the patterns will be registered against.
+		 */
+		$patterns = apply_filters( 'gatherpress_event_starter_patterns', $patterns, $post_types );
 
-		// Filter read-only datetime meta from REST requests for this post type.
-		add_filter(
-			sprintf( 'rest_pre_insert_%s', $post_type ),
-			array( $this, 'filter_readonly_meta' ),
-			10,
-			2
-		);
-	}
-
-	/**
-	 * Registers meta that only lives on the built-in event post type (RSVP
-	 * toggles, guest / attendance limits, online event link).
-	 *
-	 * @since 1.0.0
-	 *
-	 * @return void
-	 */
-	public function register_event_only_meta(): void {
-		// Always register gatherpress_enable_rsvp so it can be written in all modes.
-		// Missing meta is treated as "on"; only an explicit 0 disables RSVP per event.
-		$event_only_meta = array(
-			'gatherpress_enable_rsvp'           => array(
-				'auth_callback'     => array( Utility::class, 'can_edit_post_meta' ),
-				'sanitize_callback' => 'absint',
-				'show_in_rest'      => true,
-				'single'            => true,
-				'type'              => 'integer',
-				'default'           => 1,
-			),
-			'gatherpress_max_guest_limit'       => array(
-				'auth_callback'     => array( Utility::class, 'can_edit_post_meta' ),
-				'sanitize_callback' => 'absint',
-				'show_in_rest'      => true,
-				'single'            => true,
-				'type'              => 'integer',
-				'default'           => (int) Settings::get_instance()->get( 'max_guest_limit' ),
-			),
-			'gatherpress_enable_anonymous_rsvp' => array(
-				'auth_callback'     => array( Utility::class, 'can_edit_post_meta' ),
-				'sanitize_callback' => 'rest_sanitize_boolean',
-				'show_in_rest'      => true,
-				'single'            => true,
-				'type'              => 'boolean',
-				'default'           => (bool) Settings::get_instance()->get( 'enable_anonymous_rsvp' ),
-			),
-			// Always register so it can be written regardless of open RSVP mode.
-			// Stored as integer (1 = enabled, 0 = disabled); an unset meta (empty string) is treated as enabled.
-			'gatherpress_enable_open_rsvp'      => array(
-				'auth_callback'     => array( Utility::class, 'can_edit_post_meta' ),
-				'sanitize_callback' => 'absint',
-				'show_in_rest'      => true,
-				'single'            => true,
-				'type'              => 'integer',
-				'default'           => 1,
-			),
-			'gatherpress_online_event_link'     => array(
-				'auth_callback'     => array( Utility::class, 'can_edit_post_meta' ),
-				'sanitize_callback' => 'sanitize_url',
-				'show_in_rest'      => true,
-				'single'            => true,
-				'type'              => 'string',
-				'default'           => '',
-			),
-			'gatherpress_max_attendance_limit'  => array(
-				'auth_callback'     => array( Utility::class, 'can_edit_post_meta' ),
-				'sanitize_callback' => 'absint',
-				'show_in_rest'      => true,
-				'single'            => true,
-				'type'              => 'integer',
-				'default'           => (int) Settings::get_instance()->get( 'max_attendance_limit' ),
-			),
-		);
-
-		foreach ( $event_only_meta as $meta_key => $args ) {
-			register_post_meta( Event::POST_TYPE, $meta_key, $args );
-		}
-	}
-
-	/**
-	 * Filter out read-only meta fields from REST API requests.
-	 *
-	 * This prevents the "Publishing failed. Sorry, you are not allowed to edit
-	 * the gatherpress_datetime_start custom field." error that occurs when the
-	 * block editor tries to save derived meta fields that have auth_callback
-	 * set to __return_false.
-	 *
-	 * The derived datetime fields are populated programmatically via the
-	 * set_datetimes() method when gatherpress_datetime is saved, so any
-	 * values sent via REST API should be silently discarded.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param stdClass        $prepared_post An object representing a single post prepared for inserting or updating.
-	 * @param WP_REST_Request $request       Request object.
-	 * @return stdClass The prepared post object.
-	 */
-	public function filter_readonly_meta( stdClass $prepared_post, WP_REST_Request $request ): stdClass {
-		$readonly_keys = array(
-			'gatherpress_datetime_start',
-			'gatherpress_datetime_start_gmt',
-			'gatherpress_datetime_end',
-			'gatherpress_datetime_end_gmt',
-			'gatherpress_timezone',
-		);
-
-		$meta = $request->get_param( 'meta' );
-
-		if ( is_array( $meta ) ) {
-			foreach ( $readonly_keys as $key ) {
-				unset( $meta[ $key ] );
+		foreach ( (array) $patterns as $pattern ) {
+			if ( ! is_array( $pattern ) || empty( $pattern['name'] ) ) {
+				continue;
 			}
 
-			$request->set_param( 'meta', $meta );
+			register_block_pattern(
+				$pattern['name'],
+				array(
+					'title'       => $pattern['title'] ?? '',
+					'description' => $pattern['description'] ?? '',
+					'content'     => $pattern['content'] ?? '',
+					'blockTypes'  => array( 'core/post-content' ),
+					'postTypes'   => $post_types,
+					'source'      => 'plugin',
+				)
+			);
 		}
-
-		return $prepared_post;
 	}
 
 	/**
-	 * Register a rewrite rule and query var for serving .ics calendar downloads.
+	 * Register the calendar rewrite rule for ICS file URLs.
 	 *
-	 * This adds support for URLs like /events/my-event.ics that serve
+	 * Sets up the URL pattern /event-slug/event-name.ics that serves
 	 * dynamically generated ICS files for individual events. The URL slug
 	 * matches the configured event post type slug from GatherPress settings.
 	 *
@@ -463,7 +337,7 @@ class Setup {
 	 * @return string|false The filtered redirect URL or false to cancel redirect.
 	 */
 	public function disable_ics_canonical_redirect( $redirect_url, string $requested_url ) {
-		if ( false !== strpos( $requested_url, '.ics' ) ) {
+		if ( str_contains( $requested_url, '.ics' ) ) {
 			return false; // prevent canonical redirect.
 		}
 
@@ -513,39 +387,45 @@ class Setup {
 	/**
 	 * Handle event post type archive requests.
 	 *
-	 * When visiting the event archive URL (e.g., /event/), this method checks
-	 * if a WordPress page exists with the same slug. If a page exists, it
-	 * redirects to that page. Otherwise, it triggers a 404 error.
+	 * When visiting the event archive URL (e.g., /event/), this method
+	 * resolves what to render in the following order:
 	 *
-	 * This prevents the default archive behavior where visiting /event/ shows
-	 * a confusing list of events that may not be in a useful order.
+	 * 1. If a published page exists at the configured event slug, that
+	 *    page wins. If the page is also assigned as the upcoming or past
+	 *    archive page in settings, the archive query is rewritten with
+	 *    the matching ordering; otherwise the page is served as a
+	 *    regular page.
+	 * 2. Otherwise, fall back to the **Event Archive** setting (see
+	 *    {@see self::get_event_archive_mode()}):
+	 *      - `upcoming` (default) — rewrite the main query as the
+	 *        upcoming events archive (ASC, datetime ≥ now).
+	 *      - `past` — rewrite as the past events archive (DESC,
+	 *        datetime < now).
+	 *      - `none` — trigger a 404.
 	 *
-	 * Note: We keep `has_archive => true` on the post type registration because
-	 * it is required for the event feed URLs (e.g., /event/feed/) to work. The
-	 * Feed class provides customized RSS feeds for upcoming and past events.
-	 * Setting `has_archive => false` would cause feed URLs to 404.
+	 * `has_archive => true` stays on the post type registration because
+	 * it is required for the event feed URLs (e.g., /event/feed/) to
+	 * work; the Feed class serves those. Setting `has_archive => false`
+	 * would make feed URLs 404 in every mode.
 	 *
 	 * @since 1.0.0
 	 *
 	 * @see Feed::handle_events_feed_query()
+	 * @see self::get_event_archive_mode()
 	 *
 	 * @return void
 	 */
 	public function handle_event_archive_redirect(): void {
 		global $wp_query;
 
-		// Only handle event post type archive requests.
-		if ( ! is_post_type_archive( Event::POST_TYPE ) ) {
-			return;
-		}
-
-		// Don't interfere with feed requests - those are handled by the Feed class.
-		if ( is_feed() ) {
-			return;
-		}
-
-		// Don't interfere if event-query already assigned this as an archive page.
-		if ( $wp_query->get( Query::EVENT_QUERY_PARAM ) ) {
+		// Bail when not the event post-type archive, when on a feed (the Feed
+		// class handles those separately), or when event-query already claimed
+		// this page as an archive — combined into one guard so the function
+		// reads as a dispatch.
+		if ( ! is_post_type_archive( Event::POST_TYPE )
+			|| is_feed()
+			|| $wp_query->get( Query::EVENT_QUERY_PARAM )
+		) {
 			return;
 		}
 
@@ -557,9 +437,9 @@ class Setup {
 		$page = get_page_by_path( $rewrite_slug );
 
 		if ( ! ( $page instanceof WP_Post ) || 'publish' !== $page->post_status ) {
-			// No page exists with this slug, so trigger a 404.
-			$wp_query->set_404();
-			status_header( 404 );
+			// No page exists with this slug — fall back to the configured
+			// archive mode (or 404 if no mode is configured).
+			$this->fall_back_to_archive_mode( $wp_query );
 			return;
 		}
 
@@ -613,6 +493,43 @@ class Setup {
 	}
 
 	/**
+	 * Mutate the global query to render the configured fallback archive mode
+	 * (upcoming/past) when no page is assigned to the events rewrite slug, or
+	 * 404 when no mode is configured. Extracted from
+	 * `handle_event_archive_redirect()` to keep that dispatch under
+	 * SonarCloud's three-return ceiling.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param \WP_Query $wp_query The global query, mutated in place.
+	 * @return void
+	 */
+	protected function fall_back_to_archive_mode( \WP_Query $wp_query ): void {
+		$mode = $this->get_event_archive_mode();
+
+		if ( 'upcoming' !== $mode && 'past' !== $mode ) {
+			$wp_query->set_404();
+			status_header( 404 );
+			return;
+		}
+
+		$paged = get_query_var( 'paged', 1 );
+
+		$wp_query->query(
+			array(
+				'post_type'              => Event::POST_TYPE,
+				Query::EVENT_QUERY_PARAM => $mode,
+				'paged'                  => $paged,
+			)
+		);
+
+		$wp_query->is_page              = false;
+		$wp_query->is_singular          = false;
+		$wp_query->is_archive           = true;
+		$wp_query->is_post_type_archive = true;
+	}
+
+	/**
 	 * Filter the archive title to use the designated page title.
 	 *
 	 * @since 1.0.0
@@ -621,6 +538,48 @@ class Setup {
 	 */
 	public function filter_archive_title(): string {
 		return $this->archive_title;
+	}
+
+	/**
+	 * Resolve the configured event archive mode.
+	 *
+	 * Reads the `event_archive` setting and normalizes it against the
+	 * three valid modes (`upcoming`, `past`, `none`). Anything outside
+	 * that set falls back to `upcoming` so a malformed stored value
+	 * doesn't break archive resolution.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return string One of `upcoming`, `past`, or `none`.
+	 */
+	public function get_event_archive_mode(): string {
+		$settings = Settings::get_instance();
+		$mode     = (string) $settings->get( 'event_archive' );
+
+		if ( ! in_array( $mode, array( 'upcoming', 'past', 'none' ), true ) ) {
+			$mode = 'upcoming';
+		}
+
+		/**
+		 * Filters the resolved event archive mode.
+		 *
+		 * Lets plugins override the user-configured mode at runtime —
+		 * e.g., force `none` while a maintenance flag is set, or pin
+		 * `upcoming` for a specific request context. Returned values
+		 * outside the valid set are coerced back to `upcoming`.
+		 *
+		 * @since 1.0.0
+		 *
+		 * @param string $mode The current archive mode (`upcoming`,
+		 *                     `past`, or `none`).
+		 */
+		$mode = (string) apply_filters( 'gatherpress_event_archive_mode', $mode );
+
+		if ( ! in_array( $mode, array( 'upcoming', 'past', 'none' ), true ) ) {
+			$mode = 'upcoming';
+		}
+
+		return $mode;
 	}
 
 	/**
@@ -734,40 +693,38 @@ class Setup {
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) -- $block is required by the render_block filter signature.
 	 */
 	public function render_event_post_date_block( string $block_content, array $block, WP_Block $instance ): string {
-		$post_id = $instance->context['postId'] ?? get_the_ID();
+		$post_id        = $instance->context['postId'] ?? get_the_ID();
+		$use_event_date = Settings::get_instance()->get( 'post_or_event_date' );
 
-		if ( ! $post_id || ! post_type_supports( (string) get_post_type( $post_id ), 'gatherpress-event-date' ) ) {
-			return $block_content;
-		}
-
-		$settings       = Settings::get_instance();
-		$use_event_date = $settings->get( 'post_or_event_date' );
-
-		if ( 1 !== intval( $use_event_date ) ) {
+		// Bail when there's no post, when the post type doesn't carry event-date
+		// support, or when the "use event date" setting isn't enabled.
+		if ( ! $post_id
+			|| ! post_type_supports( (string) get_post_type( $post_id ), 'gatherpress-event-date' )
+			|| 1 !== intval( $use_event_date )
+		) {
 			return $block_content;
 		}
 
 		$event        = new Event( $post_id );
 		$display_date = $event->get_display_datetime();
-		$iso_date     = $event->get_datetime_start( 'c' );
 
 		if ( empty( $display_date ) || Event::DATETIME_PLACEHOLDER === $display_date ) {
 			return $block_content;
 		}
 
 		// Replace the datetime attribute and the displayed date text in the block output.
+		$iso_date      = $event->get_datetime_start( 'c' );
 		$block_content = preg_replace(
 			'/datetime="[^"]*"/',
 			'datetime="' . esc_attr( $iso_date ) . '"',
 			$block_content
 		);
-		$block_content = preg_replace(
+
+		return preg_replace(
 			'|(<time[^>]*>).*?(</time>)|s',
 			'$1' . esc_html( $display_date ) . '$2',
 			$block_content
 		);
-
-		return $block_content;
 	}
 
 	/**

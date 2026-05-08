@@ -1,5 +1,5 @@
 /**
- * WordPress dependencies.
+ * WordPress dependencies
  */
 import { useCallback, useEffect, useState } from '@wordpress/element';
 
@@ -25,10 +25,12 @@ export function useAddressFieldAntiAutofill( value, inputRef ) {
 			return;
 		}
 		el.setAttribute( 'autocomplete', 'off' );
-		el.setAttribute( 'data-lpignore', 'true' );
-		el.setAttribute( 'data-1p-ignore', 'true' );
-		el.setAttribute( 'data-bwignore', 'true' );
-		el.setAttribute( 'data-form-type', 'other' );
+		el.dataset.lpignore = 'true';
+		// `data-1p-ignore` exposes as `1pIgnore` in the dataset map, which
+		// can't be reached via dot notation because the key starts with a digit.
+		el.dataset[ '1pIgnore' ] = 'true';
+		el.dataset.bwignore = 'true';
+		el.dataset.formType = 'other';
 		// eslint-disable-next-line react-hooks/exhaustive-deps -- run once; ref is stable.
 	}, [] );
 

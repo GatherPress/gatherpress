@@ -1,7 +1,7 @@
 # gatherpress_venue_map_tile_url
 
 
-Filter the tile URL template used by the static venue map.
+Filter the tile URL template used by the OSM static map provider.
 
 ## Auto-generated Example
 
@@ -21,7 +21,7 @@ add_filter(
 
 ## Files
 
-- [includes/core/classes/venue/class-map.php:1833](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/venue/class-map.php#L1833)
+- [includes/core/classes/venue/map/provider/class-osm.php:347](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/venue/map/provider/class-osm.php#L347)
 ```php
 apply_filters( 'gatherpress_venue_map_tile_url', self::DEFAULT_TILE_URL )
 ```

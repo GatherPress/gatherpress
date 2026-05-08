@@ -1,5 +1,5 @@
 /**
- * WordPress dependencies.
+ * WordPress dependencies
  */
 import { select, useSelect } from '@wordpress/data';
 import { useMemo } from '@wordpress/element';
@@ -85,11 +85,11 @@ export function isVenuePostType() {
  * @param {string}      venuePostType The post type to query for the venue post. Defaults to 'gatherpress_venue'.
  * @return {Object[]|Array}           An array of matching venue post objects, or an empty array if none is found.
  */
-export function GetVenuePostFromTermId( termId, venuePostType = DEFAULT_VENUE_POST_TYPE ) {
+export function useVenuePostFromTermId( termId, venuePostType = DEFAULT_VENUE_POST_TYPE ) {
 	const { venuePost } = useSelect(
 		( wpSelect ) => {
 			if ( null === termId ) {
-				return [];
+				return { venuePost: undefined };
 			}
 			// Get the term object from the venue taxonomy derived from the venue post type.
 			const venueTerm = wpSelect( 'core' ).getEntityRecord(
@@ -98,7 +98,7 @@ export function GetVenuePostFromTermId( termId, venuePostType = DEFAULT_VENUE_PO
 				termId
 			);
 			// If term object exists, strip any leading underscore from its slug.
-			const venueSlug = venueTerm?.slug.replace( /^_/, '' );
+			const venueSlug = venueTerm?.slug?.replace( /^_/, '' );
 			// Query for one venue post with the matching slug.
 			return {
 				venuePost: wpSelect( 'core' ).getEntityRecords(
@@ -130,11 +130,11 @@ export function GetVenuePostFromTermId( termId, venuePostType = DEFAULT_VENUE_PO
  * @param {string}      venuePostType The venue post type slug. Defaults to 'gatherpress_venue'.
  * @return {Object[]|Array}           An array of matching term objects, or an empty array if no matching term is found.
  */
-export function GetVenueTermFromPostId( postId = null, venuePostType = DEFAULT_VENUE_POST_TYPE ) {
+export function useVenueTermFromPostId( postId = null, venuePostType = DEFAULT_VENUE_POST_TYPE ) {
 	const { venueTerm } = useSelect(
 		( wpSelect ) => {
 			if ( null === postId ) {
-				return [];
+				return { venueTerm: undefined };
 			}
 			// Retrieve the venue post entity from the WordPress data store.
 			const venuePost = wpSelect( 'core' ).getEntityRecord(
@@ -142,6 +142,11 @@ export function GetVenueTermFromPostId( postId = null, venuePostType = DEFAULT_V
 				venuePostType,
 				postId
 			);
+			// Bail when the post hasn't resolved yet (or arrived without a
+			// slug) so the underscore-prefix doesn't produce `_undefined`.
+			if ( ! venuePost?.slug ) {
+				return { venueTerm: undefined };
+			}
 			// Prefix the slug with an underscore to match taxonomy term format.
 			const venueSlug = '_' + venuePost.slug;
 			// Fetch the venue taxonomy term matching this slug.
@@ -219,7 +224,7 @@ export function GetVenuePostFromEventId( eventId, postType = null ) {
 	);
 
 	// Fetch and return the related venue post using the term ID and resolved venue post type.
-	return GetVenuePostFromTermId( termId, venuePostType );
+	return useVenuePostFromTermId( termId, venuePostType );
 }
 
 /**
@@ -415,4 +420,68 @@ export function usePopularVenues( limit = 3, venuePostType = DEFAULT_VENUE_POST_
 	);
 
 	return popularVenues ?? [];
+}
+
+/**
+ * Look up a post by ID across all venue-supporting post types.
+ *
+ * Mirrors `findEventPostById()` but scans for `gatherpress-venue-information`
+ * support instead of `gatherpress-event-date`. Used by the venue block's
+ * `postIdOverride` resolver to detect when the override target is a venue
+ * post (so it can be used directly) vs. an event post (so the venue is
+ * derived from the event's venue taxonomy).
+ *
+ * Returns `null` when the post type registry has not finished loading. The
+ * caller's `useSelect` will re-run once it does, since `getPostTypes` is a
+ * subscribed read.
+ *
+ * @since 1.0.0
+ *
+ * @param {Function} selectFunc WordPress data `select` function.
+ * @param {number}   postId     Post ID to resolve.
+ * @return {Object|null} The post entity if found in any venue-supporting post
+ *                       type; null when the registry isn't loaded yet, when
+ *                       no venue-supporting type owns the ID, or when the
+ *                       found post isn't published.
+ */
+export function findVenuePostById( selectFunc, postId ) {
+	if ( ! postId ) {
+		return null;
+	}
+
+	// `context: 'edit'` is required because WP REST only exposes the
+	// `supports` field on post types in the edit context. Without it the
+	// loop below never matches any type and the override silently fails.
+	const postTypes = selectFunc( 'core' ).getPostTypes?.( {
+		per_page: -1,
+		context: 'edit',
+	} );
+	if ( ! Array.isArray( postTypes ) ) {
+		return null;
+	}
+
+	for ( const type of postTypes ) {
+		if ( ! type?.supports?.[ 'gatherpress-venue-information' ] ) {
+			continue;
+		}
+		// Query by `include` filter rather than `getEntityRecord( id )` so a
+		// miss returns an empty array (HTTP 200) instead of a 404. The 404s
+		// are technically accurate but they show up in browser devtools and
+		// look like a real bug to anyone reading the console. Edit context
+		// matches the default `getEntityRecord` uses inside the editor and
+		// keeps the response shape consistent with the event-side helper.
+		const records = selectFunc( 'core' ).getEntityRecords(
+			'postType',
+			type.slug,
+			{ include: [ postId ], context: 'edit', per_page: 1 }
+		);
+		if ( Array.isArray( records ) && 0 < records.length ) {
+			const post = records[ 0 ];
+			if ( 'publish' === post?.status ) {
+				return post;
+			}
+		}
+	}
+
+	return null;
 }

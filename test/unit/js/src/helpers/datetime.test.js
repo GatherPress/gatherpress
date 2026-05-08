@@ -1,5 +1,5 @@
 /**
- * External dependencies.
+ * External dependencies
  */
 import { expect, test, jest, describe, beforeEach } from '@jest/globals';
 import 'moment-timezone';
@@ -45,7 +45,7 @@ jest.mock( '@wordpress/core-data', () => ( {
 } ) );
 
 /**
- * Internal dependencies.
+ * Internal dependencies
  */
 import { getFromSettings } from '@src/helpers/editor-settings';
 

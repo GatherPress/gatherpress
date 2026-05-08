@@ -18,6 +18,7 @@ use PMC\Unit_Test\Utility;
  * @coversDefaultClass \GatherPress\Core\Settings\Events
  */
 class Test_Events extends Base {
+
 	/**
 	 * Coverage for get_slug method.
 	 *

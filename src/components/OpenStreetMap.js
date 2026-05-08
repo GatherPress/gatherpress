@@ -1,17 +1,17 @@
 /**
- * External dependencies.
+ * External dependencies
  */
 import { v4 as uuidv4 } from 'uuid';
 
 /**
- * WordPress dependencies.
+ * WordPress dependencies
  */
 import { sprintf, __ } from '@wordpress/i18n';
 import { useEffect, useState, useRef } from '@wordpress/element';
 import { select } from '@wordpress/data';
 
 /**
- * Internal dependencies.
+ * Internal dependencies
  */
 import { getFromConfig } from '../helpers/editor-settings';
 
@@ -126,8 +126,9 @@ const OpenStreetMap = ( props ) => {
 
 		// Default to CartoDB "Positron" because OSMF's public tile server prohibits
 		// third-party plugin distribution and was intermittently blocking requests.
-		// The PHP `gatherpress_map_tile_url` / `gatherpress_map_tile_attribution`
-		// filters let sites point at their own provider (self-hosted, MapTiler, etc.).
+		// The PHP `gatherpress_interactive_map_tile_url` /
+		// `gatherpress_interactive_map_tile_attribution` filters let sites point at
+		// their own provider (self-hosted, MapTiler, etc.).
 		const tileUrl =
 			getFromConfig( 'mapTileUrl' ) ||
 			'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png';

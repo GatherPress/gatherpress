@@ -27,6 +27,7 @@ use WP_CLI;
  * @since 1.0.0
  */
 class Event_Cli extends WP_CLI {
+
 	/**
 	 * Update RSVP status for an event.
 	 *

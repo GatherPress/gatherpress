@@ -1,25 +1,107 @@
 /**
- * WordPress dependencies.
+ * WordPress dependencies
  */
 import {
+	BlockControls,
 	InnerBlocks,
 	InspectorControls,
 	useBlockProps,
 	store as blockEditorStore,
 } from '@wordpress/block-editor';
-import { PanelBody, SelectControl } from '@wordpress/components';
+import {
+	PanelBody,
+	SelectControl,
+	ToolbarButton,
+	ToolbarGroup,
+} from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
-import { useEffect, useCallback } from '@wordpress/element';
+import { applyFilters } from '@wordpress/hooks';
+import { useEffect, useCallback, useState } from '@wordpress/element';
 import { useDispatch, useSelect } from '@wordpress/data';
 import { createBlock, parse, serialize } from '@wordpress/blocks';
 
 /**
- * Internal dependencies.
+ * Internal dependencies
  */
-import TEMPLATES from './templates';
-import { hasValidEventId, DISABLED_FIELD_OPACITY, getEventMeta, isPostTypeSupporting, isRsvpEnabledForEvent } from '../../helpers/event';
+import RSVP_BUTTON_WITH_MODAL_TEMPLATES from './templates/rsvp-button-with-modal';
+import PatternPicker, { PatternChooserModal } from '../../components/PatternPicker';
+import { hasValidEventId, DISABLED_FIELD_OPACITY, getEventMeta, usePostTypeSupports, isRsvpEnabledForEvent } from '../../helpers/event';
 import { isInFSETemplate, getEditorDocument } from '../../helpers/editor';
 import { getFromSettings } from '../../helpers/editor-settings';
+
+/**
+ * Starter patterns offered by the RSVP block's pattern picker.
+ *
+ * Unlike single-template blocks, RSVP carries five inner-block templates
+ * (one per status) that get serialized into the `serializedInnerBlocks`
+ * attribute. A pattern entry therefore exposes both `template` (the
+ * `no_status` tree, used by the modal's `<BlockPreview>` thumbnail and as
+ * the initially-active inner blocks on insert) and `statusTemplates` (a map
+ * of status → template tuple tree, used by `handlePatternPick` to seed all
+ * five statuses at once).
+ *
+ * Filterable via `gatherpress.rsvpPatterns` so other plugins or themes can
+ * register their own RSVP layouts. Each entry is shaped
+ * `{ name, title, description, template, statusTemplates }`.
+ *
+ * @since 1.0.0
+ *
+ * @param {Array} patterns Default array containing the bundled "RSVP Button
+ *                         with Modal" pattern.
+ * @return {Array} Patterns shown in the picker modal, in display order.
+ *
+ * @example
+ *   addFilter(
+ *     'gatherpress.rsvpPatterns',
+ *     'my-plugin/extra-rsvp-pattern',
+ *     ( patterns ) => [ ...patterns, {
+ *       name: 'my-plugin/text-rsvp',
+ *       title: __( 'Text-only RSVP', 'my-plugin' ),
+ *       description: __( '...', 'my-plugin' ),
+ *       template: [],
+ *       statusTemplates: {
+ *         no_status: [],
+ *         attending: [],
+ *         waiting_list: [],
+ *         not_attending: [],
+ *         past: [],
+ *       },
+ *     } ]
+ *   );
+ */
+const PATTERNS = applyFilters( 'gatherpress.rsvpPatterns', [
+	{
+		name: 'gatherpress/rsvp-button-with-modal',
+		title: __( 'RSVP Button with Modal', 'gatherpress' ),
+		description: __(
+			'An RSVP button that opens a modal — five inner-block layouts, one per RSVP status (no response, attending, waiting list, not attending, past).',
+			'gatherpress'
+		),
+		template: RSVP_BUTTON_WITH_MODAL_TEMPLATES.no_status,
+		statusTemplates: RSVP_BUTTON_WITH_MODAL_TEMPLATES,
+	},
+] );
+
+/**
+ * Default per-status template bundle seeded into auto-loaded RSVP blocks.
+ *
+ * Fires only when the picker is suppressed (the canonical instance on a new
+ * event post — `patternPicked: true` set in the post type `template` arg).
+ * Lets a plugin or theme swap the bundle that auto-loads without the user
+ * clicking through the picker. The picker itself is filterable separately
+ * via `gatherpress.rsvpPatterns`.
+ *
+ * @since 1.0.0
+ *
+ * @param {Object<string, Array>} bundle Default per-status template map
+ *                                       matching the bundled "RSVP Button
+ *                                       with Modal" pattern.
+ * @return {Object<string, Array>} Map handed to the auto-seed flow.
+ */
+const DEFAULT_STATUS_TEMPLATES = applyFilters(
+	'gatherpress.rsvpDefaultStatusTemplates',
+	RSVP_BUTTON_WITH_MODAL_TEMPLATES
+);
 
 /**
  * Helper function to convert a template to blocks.
@@ -51,12 +133,55 @@ function templateToBlocks( template ) {
  * @return {JSX.Element} The rendered edit interface for the RSVP block.
  */
 const Edit = ( { attributes, setAttributes, clientId, context } ) => {
-	const { serializedInnerBlocks = '{}', selectedStatus } = attributes;
+	const {
+		serializedInnerBlocks = '{}',
+		selectedStatus,
+		patternPicked,
+	} = attributes;
 	const { replaceInnerBlocks } = useDispatch( blockEditorStore );
+	const [ isToolbarChooserOpen, setIsToolbarChooserOpen ] = useState( false );
+
+	// Show the pattern picker on a brand-new block — no statuses populated yet
+	// AND the user hasn't already committed to a pattern. Existing posts (with
+	// hydrated `serializedInnerBlocks`) and auto-included instances (which
+	// land with `patternPicked: true`) bypass the picker.
+	const hasAnyStatusSerialized =
+		0 < Object.keys( JSON.parse( serializedInnerBlocks || '{}' ) ).length;
+	const showPatternPicker = ! patternPicked && ! hasAnyStatusSerialized;
+
+	const handlePatternPick = ( pattern ) => {
+		// RSVP patterns carry a per-status `statusTemplates` map (alongside
+		// the `template` used by the modal preview). Serialize every status
+		// up front so all five inspector tabs are pre-populated, then
+		// replaceInnerBlocks for the active status so the canvas shows
+		// content immediately.
+		const bundle = pattern.statusTemplates || {
+			[ selectedStatus ]: pattern.template,
+		};
+		const serialized = Object.fromEntries(
+			Object.entries( bundle ).map( ( [ status, template ] ) => [
+				status,
+				serialize( templateToBlocks( template ) ),
+			] )
+		);
+
+		setAttributes( {
+			serializedInnerBlocks: JSON.stringify( serialized ),
+			patternPicked: true,
+		} );
+
+		const activeTemplate =
+			bundle[ selectedStatus ] || pattern.template;
+		replaceInnerBlocks( clientId, templateToBlocks( activeTemplate ) );
+	};
 
 	// Check if we're inside a query loop and if context is an RSVP-enabled post type.
+	// `usePostTypeSupports` is reactive so the block re-renders the moment the
+	// post-type definition resolves — non-reactive checks miss this and leave
+	// the block permanently dimmed in Query Loops.
 	const isDescendentOfQueryLoop = Number.isFinite( context?.queryId );
-	const isEventContext = isPostTypeSupporting( 'gatherpress-rsvp', context?.postType );
+	const isEventContext = usePostTypeSupports( 'gatherpress-rsvp', context?.postType );
+	const hasExplicitOverride = !! attributes?.postId;
 
 	// Only use postId if context is an event or have an explicit override.
 	const postId =
@@ -64,11 +189,25 @@ const Edit = ( { attributes, setAttributes, clientId, context } ) => {
 		( ( isDescendentOfQueryLoop || isEventContext ) ? context?.postId : null ) ??
 		null;
 
-	// Check if block has a valid event connection.
-	// Only check if we're in an event context.
-	const isValidEvent =
-		( isDescendentOfQueryLoop || isEventContext ) &&
-		hasValidEventId( postId, context?.postType );
+	// Check if block has a valid event connection. An explicit override
+	// (`attributes.postId`) is a third valid path alongside Query Loop and
+	// event-supporting host: it targets a specific event post regardless of
+	// the host's post type. Wrap in `useSelect` so the gate re-evaluates when
+	// the override target's entity record loads — `hasValidEventId` reads
+	// `getEntityRecord` / `getEntityRecords`, which only emit subscription
+	// updates when called via the `useSelect` callback's `select`.
+	const isValidEvent = useSelect(
+		( select ) =>
+			( hasExplicitOverride || isDescendentOfQueryLoop || isEventContext ) &&
+			hasValidEventId( select, postId, context?.postType ),
+		[
+			postId,
+			context?.postType,
+			hasExplicitOverride,
+			isDescendentOfQueryLoop,
+			isEventContext,
+		]
+	);
 
 	// Get the current inner blocks
 	const innerBlocks = useSelect(
@@ -87,6 +226,7 @@ const Edit = ( { attributes, setAttributes, clientId, context } ) => {
 	const blockProps = useBlockProps( {
 		style: {
 			opacity:
+				showPatternPicker ||
 				isInFSETemplate() ||
 				( isValidEvent && isRsvpEnabledForEvent( rsvpMode, enableRsvp ) )
 					? 1
@@ -189,14 +329,20 @@ const Edit = ( { attributes, setAttributes, clientId, context } ) => {
 		saveInnerBlocks( selectedStatus, newStatus, innerBlocks ); // Save current inner blocks before switching state
 	};
 
-	// Hydrate inner blocks for all statuses if not set
+	// Hydrate inner blocks for all statuses if not set. Skipped while the
+	// pattern picker is showing — auto-seeding before the user picks would
+	// commit them to the default layout silently.
 	useEffect( () => {
+		if ( showPatternPicker ) {
+			return;
+		}
+
 		const hydrateInnerBlocks = () => {
 			const currentSerializedBlocks = JSON.parse(
 				serializedInnerBlocks || '{}',
 			);
 
-			const updatedBlocks = Object.keys( TEMPLATES ).reduce(
+			const updatedBlocks = Object.keys( DEFAULT_STATUS_TEMPLATES ).reduce(
 				( updatedSerializedBlocks, templateKey ) => {
 					if ( currentSerializedBlocks[ templateKey ] ) {
 						updatedSerializedBlocks[ templateKey ] =
@@ -206,7 +352,9 @@ const Edit = ( { attributes, setAttributes, clientId, context } ) => {
 					}
 
 					if ( templateKey !== selectedStatus ) {
-						const blocks = templateToBlocks( TEMPLATES[ templateKey ] );
+						const blocks = templateToBlocks(
+							DEFAULT_STATUS_TEMPLATES[ templateKey ]
+						);
 
 						updatedSerializedBlocks[ templateKey ] =
 							serialize( blocks );
@@ -229,7 +377,7 @@ const Edit = ( { attributes, setAttributes, clientId, context } ) => {
 		setTimeout( () => {
 			hydrateInnerBlocks();
 		}, 0 );
-	}, [ serializedInnerBlocks, setAttributes, selectedStatus ] );
+	}, [ serializedInnerBlocks, setAttributes, selectedStatus, showPatternPicker ] );
 
 	// Apply form field visibility via CSS when event settings change.
 	useEffect( () => {
@@ -265,48 +413,86 @@ const Edit = ( { attributes, setAttributes, clientId, context } ) => {
 
 	return (
 		<>
-			<InspectorControls>
-				<PanelBody title={ __( 'RSVP Block Settings', 'gatherpress' ) }>
-					<p>
-						{ __(
-							'Select an RSVP status to edit how this block appears for users with that status.',
-							'gatherpress',
-						) }
-					</p>
-					<SelectControl
-						label={ __( 'Edit Block Status', 'gatherpress' ) }
-						value={ selectedStatus }
-						options={ [
-							{
-								label: __(
-									'No Response (Default)',
+			{ ! showPatternPicker && (
+				<>
+					<BlockControls>
+						<ToolbarGroup>
+							<ToolbarButton
+								text={ __( 'Choose pattern', 'gatherpress' ) }
+								onClick={ () =>
+									setIsToolbarChooserOpen( true )
+								}
+							/>
+						</ToolbarGroup>
+					</BlockControls>
+					<InspectorControls>
+						<PanelBody title={ __( 'RSVP Block Settings', 'gatherpress' ) }>
+							<p>
+								{ __(
+									'Select an RSVP status to edit how this block appears for users with that status.',
 									'gatherpress',
-								),
-								value: 'no_status',
-							},
-							{
-								label: __( 'Attending', 'gatherpress' ),
-								value: 'attending',
-							},
-							{
-								label: __( 'Waiting List', 'gatherpress' ),
-								value: 'waiting_list',
-							},
-							{
-								label: __( 'Not Attending', 'gatherpress' ),
-								value: 'not_attending',
-							},
-							{
-								label: __( 'Past Event', 'gatherpress' ),
-								value: 'past',
-							},
-						] }
-						onChange={ handleStatusChange }
-					/>
-				</PanelBody>
-			</InspectorControls>
+								) }
+							</p>
+							<SelectControl
+								label={ __( 'Edit Block Status', 'gatherpress' ) }
+								value={ selectedStatus }
+								options={ [
+									{
+										label: __(
+											'No Response (Default)',
+											'gatherpress',
+										),
+										value: 'no_status',
+									},
+									{
+										label: __( 'Attending', 'gatherpress' ),
+										value: 'attending',
+									},
+									{
+										label: __( 'Waiting List', 'gatherpress' ),
+										value: 'waiting_list',
+									},
+									{
+										label: __( 'Not Attending', 'gatherpress' ),
+										value: 'not_attending',
+									},
+									{
+										label: __( 'Past Event', 'gatherpress' ),
+										value: 'past',
+									},
+								] }
+								onChange={ handleStatusChange }
+							/>
+						</PanelBody>
+					</InspectorControls>
+				</>
+			) }
+			{ isToolbarChooserOpen && (
+				<PatternChooserModal
+					patterns={ PATTERNS }
+					onPick={ handlePatternPick }
+					onClose={ () => setIsToolbarChooserOpen( false ) }
+				/>
+			) }
 			<div { ...blockProps }>
-				<InnerBlocks template={ TEMPLATES[ selectedStatus ] } />
+				{ showPatternPicker && (
+					<PatternPicker
+						label={ __( 'RSVP', 'gatherpress' ) }
+						icon="insert"
+						instructions={ __(
+							'Choose a pattern for the RSVP block.',
+							'gatherpress'
+						) }
+						patterns={ PATTERNS }
+						showStartBlank={ false }
+						onPick={ handlePatternPick }
+					/>
+				) }
+				{ ! showPatternPicker && (
+					<InnerBlocks
+						template={ DEFAULT_STATUS_TEMPLATES[ selectedStatus ] }
+					/>
+				) }
 			</div>
 		</>
 	);

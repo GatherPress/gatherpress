@@ -23,6 +23,7 @@ use WP_Error;
  * @coversDefaultClass \GatherPress\Core\Rsvp\Rsvp
  */
 class Test_Rsvp extends Base {
+
 	/**
 	 * Asserts that the prior fully-qualified class name `GatherPress\Core\Rsvp` continues
 	 * to resolve to the current class `GatherPress\Core\Rsvp\Rsvp` via the alias map in

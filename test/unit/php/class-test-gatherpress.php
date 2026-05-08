@@ -15,6 +15,7 @@ use GatherPress\Tests\Base;
  * Class Test_GatherPress.
  */
 class Test_GatherPress extends Base {
+
 	/**
 	 * Check plugin version.
 	 *

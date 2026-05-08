@@ -1,13 +1,13 @@
 /**
- * WordPress dependencies.
+ * WordPress dependencies
  */
 import { store, getElement, getContext } from '@wordpress/interactivity';
 
 /**
- * Internal dependencies.
+ * Internal dependencies
  */
 import { initPostContext } from '../../helpers/interactivity';
-import { safeHTML } from '../../helpers/globals';
+import { stripScriptsAndEventHandlers } from '../../helpers/globals';
 
 const { state } = store( 'gatherpress', {
 	callbacks: {
@@ -52,8 +52,15 @@ const { state } = store( 'gatherpress', {
 			const onlineEventLink = state.posts[ postId ]?.onlineEventLink || '';
 			const hasLink = '' !== onlineEventLink;
 
-			// Preserve current inner HTML (including tooltip markup), sanitized for security.
-			const currentHTML = safeHTML( currentElement.innerHTML );
+			// Preserve the current inner HTML (including tooltip markup)
+			// when we swap the wrapper between <a> and <span>. The HTML
+			// originates from PHP `render.php`, which escapes properly,
+			// so this is defense-in-depth against any third-party script
+			// that may have mutated the DOM between server render and
+			// our handler — not a substitute for proper escaping.
+			const currentHTML = stripScriptsAndEventHandlers(
+				currentElement.innerHTML
+			);
 
 			if ( hasLink && ! isLink ) {
 				const linkElement = document.createElement( 'a' );

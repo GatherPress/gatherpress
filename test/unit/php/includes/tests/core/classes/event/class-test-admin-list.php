@@ -11,8 +11,6 @@ namespace GatherPress\Tests\Core\Event;
 use GatherPress\Core\Event\Event;
 use GatherPress\Core\Event\Admin_List;
 use GatherPress\Core\Rsvp\Rsvp;
-use GatherPress\Core\Venue;
-use GatherPress\Core\Venue\Setup;
 use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;
 use WP_Query;
@@ -23,6 +21,7 @@ use WP_Query;
  * @coversDefaultClass \GatherPress\Core\Event\Admin_List
  */
 class Test_Admin_List extends Base {
+
 	/**
 	 * Coverage for setup_hooks method.
 	 *
@@ -36,21 +35,9 @@ class Test_Admin_List extends Base {
 		$hooks    = array(
 			array(
 				'type'     => 'action',
-				'name'     => 'load-edit.php',
-				'priority' => 10,
-				'callback' => array( $instance, 'default_sort' ),
-			),
-			array(
-				'type'     => 'action',
 				'name'     => 'pre_get_posts',
 				'priority' => 10,
 				'callback' => array( $instance, 'handle_rsvp_sorting' ),
-			),
-			array(
-				'type'     => 'action',
-				'name'     => 'pre_get_posts',
-				'priority' => 10,
-				'callback' => array( $instance, 'handle_venue_sorting' ),
 			),
 			array(
 				'type'     => 'filter',
@@ -139,124 +126,6 @@ class Test_Admin_List extends Base {
 	}
 
 	/**
-	 * Coverage for default_sort method when no screen is available.
-	 *
-	 * Exercises the ! $screen early return, which can occur in multisite
-	 * contexts where get_current_screen() returns null before any screen is set.
-	 *
-	 * @covers ::default_sort
-	 *
-	 * @return void
-	 */
-	public function test_default_sort_no_screen(): void {
-		$instance = Admin_List::get_instance();
-
-		// Ensure no screen is set so get_current_screen() returns null.
-		unset( $GLOBALS['current_screen'] );
-
-		// Ensure $_GET is clean.
-		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		unset( $_GET['orderby'], $_GET['order'] );
-
-		$instance->default_sort();
-
-		// Should return early without modifying $_GET.
-		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		$this->assertArrayNotHasKey( 'orderby', $_GET, 'Should not set orderby when no screen.' );
-		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		$this->assertArrayNotHasKey( 'order', $_GET, 'Should not set order when no screen.' );
-	}
-
-	/**
-	 * Coverage for default_sort method when on the wrong screen.
-	 *
-	 * @covers ::default_sort
-	 *
-	 * @return void
-	 */
-	public function test_default_sort_wrong_screen(): void {
-		$instance = Admin_List::get_instance();
-
-		// Set current screen to a non-event screen.
-		set_current_screen( 'edit-post' );
-
-		// Ensure $_GET is clean.
-		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		unset( $_GET['orderby'], $_GET['order'] );
-
-		$instance->default_sort();
-
-		// Should return early without modifying $_GET.
-		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		$this->assertArrayNotHasKey( 'orderby', $_GET, 'Should not set orderby on wrong screen.' );
-		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		$this->assertArrayNotHasKey( 'order', $_GET, 'Should not set order on wrong screen.' );
-
-		// Clean up.
-		set_current_screen( 'front' );
-	}
-
-	/**
-	 * Coverage for default_sort method when orderby is already set.
-	 *
-	 * @covers ::default_sort
-	 *
-	 * @return void
-	 */
-	public function test_default_sort_orderby_already_set(): void {
-		$instance = Admin_List::get_instance();
-
-		// Set current screen to event edit screen.
-		set_current_screen( 'edit-gatherpress_event' );
-
-		// Set an existing orderby value.
-		$_GET['orderby'] = 'title'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-
-		$instance->default_sort();
-
-		// phpcs:ignore WordPress.Security.NonceVerification.Recommended, WordPress.Security.ValidatedSanitizedInput
-		$this->assertSame( 'title', $_GET['orderby'], 'Should not override existing orderby.' );
-		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		$this->assertArrayNotHasKey( 'order', $_GET, 'Should not set order when orderby already exists.' );
-
-		// Clean up.
-		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		unset( $_GET['orderby'], $_GET['order'] );
-		set_current_screen( 'front' );
-	}
-
-	/**
-	 * Coverage for default_sort method when on the correct screen with no orderby.
-	 *
-	 * @covers ::default_sort
-	 *
-	 * @return void
-	 */
-	public function test_default_sort_sets_defaults(): void {
-		$instance = Admin_List::get_instance();
-
-		// Set current screen to event edit screen.
-		set_current_screen( 'edit-gatherpress_event' );
-
-		// Ensure $_GET is clean.
-		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		unset( $_GET['orderby'], $_GET['order'] );
-
-		$instance->default_sort();
-
-		// Should set default orderby and order.
-		// phpcs:ignore WordPress.Security.NonceVerification.Recommended, WordPress.Security.ValidatedSanitizedInput
-		$this->assertSame( 'datetime', $_GET['orderby'], 'Should set orderby to datetime.' );
-		// phpcs:ignore WordPress.Security.NonceVerification.Recommended, WordPress.Security.ValidatedSanitizedInput
-		$this->assertSame( 'asc', $_GET['order'], 'Should set order to asc.' );
-
-		// Clean up.
-		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		unset( $_GET['orderby'], $_GET['order'] );
-		set_current_screen( 'front' );
-	}
-
-	/**
 	 * Coverage for sortable_columns method.
 	 *
 	 * @covers ::sortable_columns
@@ -269,7 +138,6 @@ class Test_Admin_List extends Base {
 		$expects  = array(
 			'unit'     => 'test',
 			'datetime' => 'datetime',
-			'venue'    => 'venue',
 			'rsvps'    => 'rsvps',
 		);
 
@@ -543,8 +411,9 @@ class Test_Admin_List extends Base {
 	/**
 	 * Coverage for views_edit adding current class to "All" when WordPress omits it.
 	 *
-	 * When default_sort() adds orderby/order to $_GET, WordPress's
-	 * is_base_request() returns false and omits the current class from "All".
+	 * When extra $_GET params are present, WordPress core's
+	 * `is_base_request()` returns false and the "All" view link loses its
+	 * `current` class — `views_edit()` defensively re-adds it.
 	 *
 	 * @covers ::views_edit
 	 *
@@ -559,8 +428,8 @@ class Test_Admin_List extends Base {
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		unset( $_GET['gatherpress_event_query'] );
 
-		// Simulate WordPress not adding current class due to default_sort()
-		// adding extra $_GET params that break is_base_request().
+		// Simulate WordPress not adding current class because extra $_GET
+		// params break is_base_request().
 		$view_links = array(
 			'all' => '<a href="#">All</a>',
 		);
@@ -577,6 +446,47 @@ class Test_Admin_List extends Base {
 			'aria-current="page"',
 			$result['all'],
 			'All link should get aria-current when no filter is active.'
+		);
+
+		set_current_screen( 'front' );
+	}
+
+	/**
+	 * `views_edit()` must not stamp "current" on "All" when WordPress
+	 * core has already marked another built-in view (Published, Draft,
+	 * Trash) as current. Without the guard, both "All" and the actual
+	 * status filter would render bold simultaneously.
+	 *
+	 * @covers ::views_edit
+	 *
+	 * @return void
+	 */
+	public function test_views_edit_does_not_mark_all_when_status_filter_is_current(): void {
+		$instance = Admin_List::get_instance();
+
+		set_current_screen( 'edit-' . Event::POST_TYPE );
+
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		unset( $_GET['gatherpress_event_query'] );
+
+		// Simulate WordPress's view-link output when the user is on the
+		// Published filter: "All" is plain, "publish" carries `current`.
+		$view_links = array(
+			'all'     => '<a href="#all">All</a>',
+			'publish' => '<a href="#publish" class="current" aria-current="page">Published</a>',
+		);
+
+		$result = $instance->views_edit( $view_links );
+
+		$this->assertStringNotContainsString(
+			'class="current"',
+			$result['all'],
+			'All link must stay un-marked when another status filter is current.'
+		);
+		$this->assertStringContainsString(
+			'class="current"',
+			$result['publish'],
+			'Published link should retain its current class.'
 		);
 
 		set_current_screen( 'front' );
@@ -804,9 +714,9 @@ class Test_Admin_List extends Base {
 	/**
 	 * Coverage for get_event_counts method with a currently running event.
 	 *
-	 * A running event (started but not ended) should count as upcoming
-	 * because datetime_end_gmt >= now, and also as past because
-	 * datetime_start_gmt < now.
+	 * Running events count as upcoming (datetime_end_gmt is still in the
+	 * future) and not as past — the buckets pivot on datetime_end_gmt so
+	 * a running event lives only in upcoming until it actually ends.
 	 *
 	 * @covers ::get_event_counts
 	 *
@@ -837,9 +747,9 @@ class Test_Admin_List extends Base {
 
 		$counts = Utility::invoke_hidden_method( $instance, 'get_event_counts' );
 
-		// Running events appear in both counts (same logic as Event_Query with inclusive=true).
+		// Running events count only as upcoming — buckets pivot on datetime_end_gmt.
 		$this->assertSame( 1, $counts['upcoming'], 'Running event should count as upcoming.' );
-		$this->assertSame( 1, $counts['past'], 'Running event should count as past.' );
+		$this->assertSame( 0, $counts['past'], 'Running event should not count as past.' );
 	}
 
 	/**
@@ -1035,73 +945,6 @@ class Test_Admin_List extends Base {
 	}
 
 	/**
-	 * Coverage for handle_venue_sorting method.
-	 *
-	 * @covers ::handle_venue_sorting
-	 *
-	 * @return void
-	 */
-	public function test_handle_venue_sorting(): void {
-		$instance = Admin_List::get_instance();
-
-		// Create a mock query.
-		$query = $this->createMock( \WP_Query::class );
-
-		// Test non-admin context (is_admin() returns false by default in tests).
-		$query->method( 'is_main_query' )->willReturn( true );
-		$query->method( 'get' )->willReturnMap(
-			array(
-				array( 'post_type', null, Event::POST_TYPE ),
-				array( 'orderby', null, 'venue' ),
-			)
-		);
-
-		// Should return early due to non-admin context.
-		$instance->handle_venue_sorting( $query );
-
-		// Test different post type - should return early.
-		$query = $this->createMock( \WP_Query::class );
-		$query->method( 'is_main_query' )->willReturn( true );
-		$query->method( 'get' )->willReturnMap(
-			array(
-				array( 'post_type', null, 'post' ),
-				array( 'orderby', null, 'venue' ),
-			)
-		);
-
-		$instance->handle_venue_sorting( $query );
-
-		// Test non-main query - should return early.
-		$query = $this->createMock( \WP_Query::class );
-		$query->method( 'is_main_query' )->willReturn( false );
-		$query->method( 'get' )->willReturnMap(
-			array(
-				array( 'post_type', null, Event::POST_TYPE ),
-				array( 'orderby', null, 'venue' ),
-			)
-		);
-
-		$instance->handle_venue_sorting( $query );
-
-		// Test different orderby - should return early.
-		$query = $this->createMock( \WP_Query::class );
-		$query->method( 'is_main_query' )->willReturn( true );
-		$query->method( 'get' )->willReturnMap(
-			array(
-				array( 'post_type', null, Event::POST_TYPE ),
-				array( 'orderby', null, 'title' ),
-			)
-		);
-
-		$instance->handle_venue_sorting( $query );
-
-		// Since the method primarily adds filters and sets query vars,
-		// and we can't easily test is_admin() in unit tests,
-		// we'll focus on testing the individual components.
-		$this->assertTrue( true ); // Method completed without errors.
-	}
-
-	/**
 	 * Coverage for rsvp_sorting_join_paged method.
 	 *
 	 * @covers ::rsvp_sorting_join_paged
@@ -1164,122 +1007,7 @@ class Test_Admin_List extends Base {
 
 		// Should contain either ASC or DESC (defaults to ASC).
 		$this->assertTrue(
-			strpos( $result, 'ASC' ) !== false || strpos( $result, 'DESC' ) !== false,
-			'ORDER BY clause should contain ASC or DESC'
-		);
-
-		// Verify the method returns a string (basic type check).
-		$this->assertIsString( $result );
-		$this->assertNotEmpty( $result );
-	}
-
-	/**
-	 * Coverage for venue_sorting_join_paged method with a current screen set.
-	 *
-	 * Exercises the $screen->post_type branch, where the venue taxonomy is derived
-	 * from the currently active admin screen rather than falling back to the default.
-	 *
-	 * @covers ::venue_sorting_join_paged
-	 *
-	 * @return void
-	 */
-	public function test_venue_sorting_join_paged_with_screen(): void {
-		global $wpdb;
-		$instance = Admin_List::get_instance();
-
-		set_current_screen( 'edit-' . Event::POST_TYPE );
-
-		$original_join = "LEFT JOIN {$wpdb->posts} AS posts ON posts.ID = {$wpdb->posts}.ID";
-		$result        = $instance->venue_sorting_join_paged( $original_join );
-
-		set_current_screen( 'front' );
-
-		$this->assertStringContainsString( "'" . Venue::TAXONOMY . "'", $result );
-	}
-
-	/**
-	 * Coverage for venue_sorting_join_paged method.
-	 *
-	 * @covers ::venue_sorting_join_paged
-	 *
-	 * @return void
-	 */
-	public function test_venue_sorting_join_paged(): void {
-		global $wpdb;
-		$instance = Admin_List::get_instance();
-
-		// Ensure no screen is set so the method falls back to the default post type.
-		unset( $GLOBALS['current_screen'] );
-
-		$original_join = "LEFT JOIN {$wpdb->posts} AS posts ON posts.ID = {$wpdb->posts}.ID";
-		$result        = $instance->venue_sorting_join_paged( $original_join );
-
-		// Should contain the original join plus the venue joins.
-		$this->assertStringContainsString( $original_join, $result );
-		$this->assertStringContainsString( 'LEFT JOIN', $result );
-		$this->assertStringContainsString( $wpdb->term_relationships, $result );
-		$this->assertStringContainsString( 'venue_tr', $result );
-		$this->assertStringContainsString( $wpdb->term_taxonomy, $result );
-		$this->assertStringContainsString( 'venue_tt', $result );
-		$this->assertStringContainsString( $wpdb->terms, $result );
-		$this->assertStringContainsString( 'venue_terms', $result );
-		$this->assertStringContainsString( "'" . Venue::TAXONOMY . "'", $result );
-	}
-
-	/**
-	 * Coverage for venue_sorting_join_paged when the venue taxonomy is not registered.
-	 *
-	 * Verifies that the method returns the original $join string unchanged when
-	 * taxonomy_exists() returns false for the derived taxonomy slug, avoiding
-	 * invalid SQL from being appended.
-	 *
-	 * @covers ::venue_sorting_join_paged
-	 *
-	 * @return void
-	 */
-	public function test_venue_sorting_join_paged_unregistered_taxonomy(): void {
-		$instance      = Admin_List::get_instance();
-		$original_join = 'ORIGINAL_JOIN';
-
-		// Temporarily unregister the venue taxonomy so taxonomy_exists() returns false.
-		unregister_taxonomy( Venue::TAXONOMY );
-
-		$result = $instance->venue_sorting_join_paged( $original_join );
-
-		// Re-register the taxonomy so subsequent tests are not affected.
-		Setup::get_instance()->register_taxonomy();
-
-		$this->assertSame(
-			$original_join,
-			$result,
-			'Failed to assert that venue_sorting_join_paged returns the original join.'
-		);
-	}
-
-	/**
-	 * Coverage for venue_sorting_orderby method.
-	 *
-	 * Note: This method relies on the global $wp_query, so we test the method's structure
-	 * and ensure it returns a proper ORDER BY clause with expected patterns.
-	 *
-	 * @covers ::venue_sorting_orderby
-	 *
-	 * @return void
-	 */
-	public function test_venue_sorting_orderby(): void {
-		$instance = Admin_List::get_instance();
-
-		$result = $instance->venue_sorting_orderby( 'original_orderby' );
-
-		// Should contain the expected CASE structure for NULL handling.
-		$this->assertStringContainsString( 'CASE WHEN venue_terms.name IS NULL THEN 1 ELSE 0 END ASC', $result );
-
-		// Should contain venue_terms.name in the ORDER BY.
-		$this->assertStringContainsString( 'venue_terms.name', $result );
-
-		// Should contain either ASC or DESC (defaults to ASC).
-		$this->assertTrue(
-			strpos( $result, 'ASC' ) !== false || strpos( $result, 'DESC' ) !== false,
+			str_contains( $result, 'ASC' ) || str_contains( $result, 'DESC' ),
 			'ORDER BY clause should contain ASC or DESC'
 		);
 
@@ -1451,134 +1179,6 @@ class Test_Admin_List extends Base {
 		set_current_screen( 'front' );
 	}
 
-	/**
-	 * Tests handle_venue_sorting with venue orderby.
-	 *
-	 * Covers: Venue sorting logic.
-	 *
-	 * @covers ::handle_venue_sorting
-	 * @covers ::handle_column_sorting
-	 * @return void
-	 */
-	public function test_venue_sorting_with_venue_orderby(): void {
-		global $wp_the_query;
-
-		// Create a WP_Query for events with venue sorting.
-		$query = new WP_Query(
-			array(
-				'post_type' => Event::POST_TYPE,
-				'orderby'   => 'venue',
-				'order'     => 'DESC',
-			)
-		);
-
-		// phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited -- Necessary for testing query modifications.
-		$wp_the_query = $query;
-
-		set_current_screen( 'edit-gatherpress_event' );
-
-		$instance = Admin_List::get_instance();
-		$instance->handle_venue_sorting( $query );
-
-		// Verify that sorting order was set.
-		$this->assertEquals( 'DESC', $query->get( 'venue_sort_order' ), 'Should set DESC order' );
-
-		// Verify filters were added.
-		$this->assertNotFalse(
-			has_filter( 'posts_join_paged', array( $instance, 'venue_sorting_join_paged' ) ),
-			'Should add posts_join_paged filter for venue sorting'
-		);
-		$this->assertNotFalse(
-			has_filter( 'posts_groupby', array( $instance, 'sorting_groupby_post_id' ) ),
-			'Should add posts_groupby filter for venue sorting'
-		);
-		$this->assertNotFalse(
-			has_filter( 'posts_orderby', array( $instance, 'venue_sorting_orderby' ) ),
-			'Should add posts_orderby filter for venue sorting'
-		);
-
-		// Clean up.
-		remove_filter( 'posts_join_paged', array( $instance, 'venue_sorting_join_paged' ) );
-		remove_filter( 'posts_groupby', array( $instance, 'sorting_groupby_post_id' ) );
-		remove_filter( 'posts_orderby', array( $instance, 'venue_sorting_orderby' ) );
-		set_current_screen( 'front' );
-	}
-
-	/**
-	 * Tests handle_venue_sorting with invalid order.
-	 *
-	 * Covers: Order validation in venue sorting.
-	 *
-	 * @covers ::handle_venue_sorting
-	 * @covers ::handle_column_sorting
-	 * @return void
-	 */
-	public function test_venue_sorting_with_invalid_order(): void {
-		global $wp_the_query;
-
-		// Create a WP_Query for venue sorting.
-		$query = new WP_Query(
-			array(
-				'post_type' => Event::POST_TYPE,
-				'orderby'   => 'venue',
-			)
-		);
-
-		// Manually set invalid order (bypasses WP_Query's sanitization).
-		$query->set( 'order', 'RANDOM' );
-
-		// phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited -- Necessary for testing query modifications.
-		$wp_the_query = $query;
-
-		set_current_screen( 'edit-gatherpress_event' );
-
-		$instance = Admin_List::get_instance();
-		$instance->handle_venue_sorting( $query );
-
-		// Should default to ASC for invalid order.
-		$this->assertEquals( 'ASC', $query->get( 'venue_sort_order' ), 'Should default to ASC for invalid order' );
-
-		// Clean up.
-		remove_filter( 'posts_join_paged', array( $instance, 'venue_sorting_join_paged' ) );
-		remove_filter( 'posts_groupby', array( $instance, 'sorting_groupby_post_id' ) );
-		remove_filter( 'posts_orderby', array( $instance, 'venue_sorting_orderby' ) );
-		set_current_screen( 'front' );
-	}
-
-	/**
-	 * Tests handle_venue_sorting early return when orderby is not 'venue'.
-	 *
-	 * @covers ::handle_venue_sorting
-	 * @covers ::handle_column_sorting
-	 * @return void
-	 */
-	public function test_venue_sorting_early_return_wrong_orderby(): void {
-		global $wp_the_query;
-
-		// Create a WP_Query for non-venue sorting.
-		$query = new WP_Query(
-			array(
-				'post_type' => Event::POST_TYPE,
-				'orderby'   => 'title',
-			)
-		);
-
-		// phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited -- Necessary for testing query modifications.
-		$wp_the_query = $query;
-
-		set_current_screen( 'edit-gatherpress_event' );
-
-		$instance = Admin_List::get_instance();
-		$instance->handle_venue_sorting( $query );
-
-		// Should not set venue_sort_order since orderby is not 'venue'.
-		$this->assertEmpty(
-			$query->get( 'venue_sort_order' ),
-			'Should not set venue_sort_order for non-venue orderby'
-		);
-
-		set_current_screen( 'front' );
-	}
 
 	/**
 	 * Coverage for custom_columns method with datetime column.
@@ -1610,74 +1210,6 @@ class Test_Admin_List extends Base {
 		$this->assertStringContainsString( 'June', $output, 'Datetime output should contain month name.' );
 	}
 
-	/**
-	 * Coverage for custom_columns method with venue column.
-	 *
-	 * @covers ::custom_columns
-	 *
-	 * @return void
-	 */
-	public function test_custom_columns_venue_with_name(): void {
-		$instance = Admin_List::get_instance();
-		$post_id  = $this->mock->post(
-			array( 'post_type' => Event::POST_TYPE )
-		)->get()->ID;
-
-		// Create a venue term and associate it with the event.
-		$venue_name = 'Test Venue';
-		$term       = wp_insert_term( $venue_name, Venue::TAXONOMY );
-		wp_set_post_terms( $post_id, array( $term['term_id'] ), Venue::TAXONOMY );
-
-		ob_start();
-		$instance->custom_columns( 'venue', $post_id );
-		$output = ob_get_clean();
-
-		$this->assertStringContainsString( $venue_name, $output, 'Venue column should contain venue name.' );
-	}
-
-	/**
-	 * Coverage for custom_columns method with venue column and no venue.
-	 *
-	 * @covers ::custom_columns
-	 *
-	 * @return void
-	 */
-	public function test_custom_columns_venue_no_venue(): void {
-		$instance = Admin_List::get_instance();
-		$post_id  = $this->mock->post(
-			array( 'post_type' => Event::POST_TYPE )
-		)->get()->ID;
-
-		ob_start();
-		$instance->custom_columns( 'venue', $post_id );
-		$output = ob_get_clean();
-
-		$this->assertStringContainsString( '—', $output, 'Venue column should show em dash when no venue.' );
-	}
-
-	/**
-	 * Coverage for custom_columns method with venue column and online event.
-	 *
-	 * @covers ::custom_columns
-	 *
-	 * @return void
-	 */
-	public function test_custom_columns_venue_online_event(): void {
-		$instance = Admin_List::get_instance();
-		$post_id  = $this->mock->post(
-			array( 'post_type' => Event::POST_TYPE )
-		)->get()->ID;
-
-		// Set online event link.
-		update_post_meta( $post_id, 'gatherpress_online_event_link', 'https://example.com/meeting' );
-
-		ob_start();
-		$instance->custom_columns( 'venue', $post_id );
-		$output = ob_get_clean();
-
-		// The method should execute without error for online events.
-		$this->assertNotEmpty( $output, 'Online event column should produce output.' );
-	}
 
 	/**
 	 * Coverage for custom_columns method with rsvps column (no RSVPs).
@@ -1780,28 +1312,141 @@ class Test_Admin_List extends Base {
 	public function test_set_custom_columns(): void {
 		$instance = Admin_List::get_instance();
 
+		// Pin the screen to the event edit screen — production calls go
+		// through the `manage_<post_type>_posts_columns` filter, which only
+		// fires when that screen is active. Setting it here also exercises
+		// the screen-driven `$screen->post_type` branch in
+		// `set_custom_columns()`'s venue-taxonomy resolution.
+		set_current_screen( 'edit-' . Event::POST_TYPE );
+
+		// Mirror what WP core hands the filter on the events list screen:
+		// title + auto-injected taxonomy columns + author + date. Venue
+		// taxonomy goes first so the test asserts the venue-first order
+		// the production method enforces.
 		$default_columns = array(
-			'cb'     => '<input type="checkbox" />',
-			'title'  => 'Title',
-			'author' => 'Author',
-			'date'   => 'Date',
+			'cb'                          => '<input type="checkbox" />',
+			'title'                       => 'Title',
+			'taxonomy-_gatherpress_venue' => 'Venues',
+			'taxonomy-gatherpress_topic'  => 'Topics',
+			'author'                      => 'Author',
+			'date'                        => 'Date',
 		);
 
 		$result = $instance->set_custom_columns( $default_columns );
 
-		// Should not contain author column.
+		set_current_screen( 'front' );
+
+		// Author column is dropped.
 		$this->assertArrayNotHasKey( 'author', $result, 'Author column should be removed.' );
 
-		// Should contain custom columns.
-		$this->assertArrayHasKey( 'datetime', $result, 'Should have datetime column.' );
-		$this->assertArrayHasKey( 'venue', $result, 'Should have venue column.' );
-		$this->assertArrayHasKey( 'rsvps', $result, 'Should have rsvps column.' );
+		// Custom columns + the auto-injected taxonomy columns survive.
+		$this->assertArrayHasKey( 'datetime', $result );
+		$this->assertArrayHasKey( 'rsvps', $result );
+		$this->assertArrayHasKey( 'taxonomy-_gatherpress_venue', $result );
+		$this->assertArrayHasKey( 'taxonomy-gatherpress_topic', $result );
 
-		// Verify order (custom columns should be inserted after title).
-		$keys = array_keys( $result );
-		$this->assertEquals( 'cb', $keys[0], 'First column should be cb.' );
-		$this->assertEquals( 'title', $keys[1], 'Second column should be title.' );
-		$this->assertEquals( 'datetime', $keys[2], 'Third column should be datetime.' );
+		// Order: cb, title, datetime, rsvps, venue taxonomy, other
+		// taxonomies, then trailing built-ins.
+		$this->assertSame(
+			array(
+				'cb',
+				'title',
+				'datetime',
+				'rsvps',
+				'taxonomy-_gatherpress_venue',
+				'taxonomy-gatherpress_topic',
+				'date',
+			),
+			array_keys( $result ),
+			'Sortable custom columns must precede taxonomy columns; venue taxonomy must come first.'
+		);
+	}
+
+	/**
+	 * Coverage for `set_custom_columns()`'s no-screen fallback.
+	 *
+	 * When `get_current_screen()` returns null (or its `post_type` is
+	 * empty) the venue taxonomy resolves through `Event::POST_TYPE`
+	 * rather than `$screen->post_type`. Exercises the falsy ternary leg
+	 * left uncovered when a screen is set.
+	 *
+	 * @covers ::set_custom_columns
+	 *
+	 * @return void
+	 */
+	public function test_set_custom_columns_falls_back_to_event_post_type_without_screen(): void {
+		$instance = Admin_List::get_instance();
+
+		// Ensure no screen is set so the production code falls through
+		// to the `Event::POST_TYPE` default.
+		unset( $GLOBALS['current_screen'] );
+
+		$default_columns = array(
+			'cb'                          => '<input type="checkbox" />',
+			'title'                       => 'Title',
+			'taxonomy-_gatherpress_venue' => 'Venues',
+			'date'                        => 'Date',
+		);
+
+		$result = $instance->set_custom_columns( $default_columns );
+
+		$this->assertSame(
+			array(
+				'cb',
+				'title',
+				'datetime',
+				'rsvps',
+				'taxonomy-_gatherpress_venue',
+				'date',
+			),
+			array_keys( $result ),
+			'Without a screen, the venue taxonomy still routes through Event::POST_TYPE and lands in the same slot.'
+		);
+	}
+
+	/**
+	 * The `gatherpress_event_datetime_label` filter relabels the
+	 * datetime column header without changing the column key, and receives
+	 * the screen's post type so consumers can vary the label per post type.
+	 *
+	 * @covers ::set_custom_columns
+	 *
+	 * @return void
+	 */
+	public function test_set_custom_columns_filters_datetime_label(): void {
+		$instance        = Admin_List::get_instance();
+		$captured_pt_arg = null;
+
+		set_current_screen( 'edit-' . Event::POST_TYPE );
+
+		$relabel = static function ( string $label, string $post_type ) use ( &$captured_pt_arg ): string {
+			$captured_pt_arg = $post_type;
+			return 'Premiere date';
+		};
+
+		add_filter( 'gatherpress_event_datetime_label', $relabel, 10, 2 );
+
+		$result = $instance->set_custom_columns(
+			array(
+				'cb'    => '<input type="checkbox" />',
+				'title' => 'Title',
+				'date'  => 'Date',
+			)
+		);
+
+		remove_filter( 'gatherpress_event_datetime_label', $relabel, 10 );
+		set_current_screen( 'front' );
+
+		$this->assertSame(
+			'Premiere date',
+			$result['datetime'],
+			'Datetime column header must reflect the filtered label.'
+		);
+		$this->assertSame(
+			Event::POST_TYPE,
+			$captured_pt_arg,
+			'Filter must receive the screen post type as its second argument.'
+		);
 	}
 
 	/**
@@ -1869,32 +1514,202 @@ class Test_Admin_List extends Base {
 	}
 
 	/**
-	 * Tests custom_columns with online event.
+	 * Reproduces gatherpress#1591: a post type that declares
+	 * `gatherpress-event-date` support but not `gatherpress-rsvp` must not
+	 * advertise the RSVPs sortable column.
 	 *
-	 * Covers: online-event icon display.
+	 * @covers ::sortable_columns
 	 *
-	 * @covers ::custom_columns
 	 * @return void
 	 */
-	public function test_custom_columns_venue_with_online_event(): void {
-		$post_id = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get()->ID;
+	public function test_sortable_columns_omits_rsvps_for_event_date_only_post_type(): void {
+		$instance = Admin_List::get_instance();
+		$test_pt  = 'production';
 
-		// Create 'online-event' venue term.
-		$term = wp_insert_term(
-			'Online Event',
-			'_gatherpress_venue',
-			array( 'slug' => 'online-event' )
+		register_post_type(
+			$test_pt,
+			array(
+				'label'    => 'Productions',
+				'public'   => false,
+				'supports' => array( 'title', 'gatherpress-event-date' ),
+			)
 		);
 
-		// Assign the term to the event.
-		wp_set_object_terms( $post_id, $term['term_id'], '_gatherpress_venue' );
+		set_current_screen( 'edit-' . $test_pt );
+
+		$result = $instance->sortable_columns( array( 'unit' => 'test' ) );
+
+		set_current_screen( 'front' );
+		unregister_post_type( $test_pt );
+
+		$this->assertSame(
+			array(
+				'unit'     => 'test',
+				'datetime' => 'datetime',
+			),
+			$result,
+			'Event-date-only post types should keep datetime sortable but not rsvps.'
+		);
+	}
+
+	/**
+	 * Reproduces gatherpress#1591: the `set_custom_columns` filter must not
+	 * inject the RSVPs column header on post types that lack
+	 * `gatherpress-rsvp` support.
+	 *
+	 * @covers ::set_custom_columns
+	 *
+	 * @return void
+	 */
+	public function test_set_custom_columns_omits_rsvps_for_event_date_only_post_type(): void {
+		$instance = Admin_List::get_instance();
+		$test_pt  = 'production';
+
+		register_post_type(
+			$test_pt,
+			array(
+				'label'    => 'Productions',
+				'public'   => false,
+				'supports' => array( 'title', 'gatherpress-event-date' ),
+			)
+		);
+
+		set_current_screen( 'edit-' . $test_pt );
+
+		$default_columns = array(
+			'cb'    => '<input type="checkbox" />',
+			'title' => 'Title',
+			'date'  => 'Date',
+		);
+
+		$result = $instance->set_custom_columns( $default_columns );
+
+		set_current_screen( 'front' );
+		unregister_post_type( $test_pt );
+
+		$this->assertArrayHasKey(
+			'datetime',
+			$result,
+			'Event-date-only post types still get the datetime column.'
+		);
+		$this->assertArrayNotHasKey(
+			'rsvps',
+			$result,
+			'Event-date-only post types should not get the RSVPs column.'
+		);
+	}
+
+	/**
+	 * Reproduces gatherpress#1591: `remove_comments_column` strips the comments
+	 * column to avoid confusion with RSVP comment counts. Post types without
+	 * `gatherpress-rsvp` support have no such conflict and must keep their
+	 * standard comments column.
+	 *
+	 * @covers ::remove_comments_column
+	 *
+	 * @return void
+	 */
+	public function test_remove_comments_column_keeps_column_for_event_date_only_post_type(): void {
+		$instance = Admin_List::get_instance();
+		$test_pt  = 'production';
+
+		register_post_type(
+			$test_pt,
+			array(
+				'label'    => 'Productions',
+				'public'   => false,
+				'supports' => array( 'title', 'gatherpress-event-date' ),
+			)
+		);
+
+		set_current_screen( 'edit-' . $test_pt );
+
+		$columns_with_comments = array(
+			'cb'       => '<input type="checkbox" />',
+			'title'    => 'Title',
+			'comments' => 'Comments',
+			'date'     => 'Date',
+		);
+
+		$result = $instance->remove_comments_column( $columns_with_comments );
+
+		set_current_screen( 'front' );
+		unregister_post_type( $test_pt );
+
+		$this->assertSame(
+			$columns_with_comments,
+			$result,
+			'Event-date-only post types must retain their standard comments column.'
+		);
+	}
+
+	/**
+	 * Reproduces gatherpress#1591: `handle_rsvp_sorting` must short-circuit
+	 * before registering join/groupby/orderby filters when the queried post
+	 * type lacks `gatherpress-rsvp` support, even if a malicious or stale
+	 * `?orderby=rsvps` query var is present.
+	 *
+	 * @covers ::handle_rsvp_sorting
+	 *
+	 * @return void
+	 */
+	public function test_handle_rsvp_sorting_skips_event_date_only_post_type(): void {
+		global $wp_the_query;
 
 		$instance = Admin_List::get_instance();
+		$test_pt  = 'production';
 
-		ob_start();
-		$instance->custom_columns( 'venue', $post_id );
-		$output = ob_get_clean();
+		register_post_type(
+			$test_pt,
+			array(
+				'label'    => 'Productions',
+				'public'   => false,
+				'supports' => array( 'title', 'gatherpress-event-date' ),
+			)
+		);
 
-		$this->assertStringContainsString( 'dashicons-video-alt3', $output, 'Should display online event icon' );
+		// Make sure no leftover filters are present from a prior test.
+		remove_filter( 'posts_join_paged', array( $instance, 'rsvp_sorting_join_paged' ) );
+		remove_filter( 'posts_groupby', array( $instance, 'sorting_groupby_post_id' ) );
+		remove_filter( 'posts_orderby', array( $instance, 'rsvp_sorting_orderby' ) );
+
+		// Real WP_Query (not a mock) so `$query->get( 'post_type' )` returns the
+		// string we registered — a createMock() with willReturnMap() silently
+		// returns null when the method's optional `$default` arg defaults aren't
+		// matched by the map, which lets the sorting handler bypass the new
+		// rsvp-support guard for the wrong reason.
+		$query = new WP_Query(
+			array(
+				'post_type' => $test_pt,
+				'orderby'   => 'rsvps',
+			)
+		);
+
+		// phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited -- Required to satisfy is_main_query() inside handle_column_sorting.
+		$wp_the_query = $query;
+
+		set_current_screen( 'edit-' . $test_pt );
+
+		$instance->handle_rsvp_sorting( $query );
+
+		set_current_screen( 'front' );
+		unregister_post_type( $test_pt );
+
+		$this->assertEmpty(
+			$query->get( 'rsvp_sort_order' ),
+			'rsvp_sort_order must not be set for event-date-only post types.'
+		);
+		$this->assertFalse(
+			has_filter( 'posts_join_paged', array( $instance, 'rsvp_sorting_join_paged' ) ),
+			'No RSVP join filter should be added for event-date-only post types.'
+		);
+		$this->assertFalse(
+			has_filter( 'posts_groupby', array( $instance, 'sorting_groupby_post_id' ) ),
+			'No RSVP groupby filter should be added for event-date-only post types.'
+		);
+		$this->assertFalse(
+			has_filter( 'posts_orderby', array( $instance, 'rsvp_sorting_orderby' ) ),
+			'No RSVP orderby filter should be added for event-date-only post types.'
+		);
 	}
 }

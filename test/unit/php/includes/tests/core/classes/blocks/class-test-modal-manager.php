@@ -17,6 +17,7 @@ use GatherPress\Tests\Base;
  * @coversDefaultClass \GatherPress\Core\Blocks\Modal_Manager
  */
 class Test_Modal_Manager extends Base {
+
 	/**
 	 * Tests the setup_hooks method.
 	 *

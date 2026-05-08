@@ -1,10 +1,10 @@
 /**
- * External dependencies.
+ * External dependencies
  */
 import moment from 'moment';
 
 /**
- * WordPress dependencies.
+ * WordPress dependencies
  */
 import { __ } from '@wordpress/i18n';
 import { createRoot } from '@wordpress/element';
@@ -12,7 +12,7 @@ import { applyFilters } from '@wordpress/hooks';
 import { select } from '@wordpress/data';
 
 /**
- * Internal dependencies.
+ * Internal dependencies
  */
 import { getFromSettings } from './editor-settings';
 import { enableSave } from './editor';
