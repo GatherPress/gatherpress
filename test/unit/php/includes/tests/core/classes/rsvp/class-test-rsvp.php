@@ -9,13 +9,18 @@
 namespace GatherPress\Tests\Core\Rsvp;
 
 use GatherPress\Core\Event\Event;
+use GatherPress\Core\Rsvp\Response\Data;
+use GatherPress\Core\Rsvp\Response\Identity_Type;
+use GatherPress\Core\Rsvp\Response\Identity;
+use GatherPress\Core\Rsvp\Response\Intent;
+use GatherPress\Core\Rsvp\Response\Status;
 use GatherPress\Core\Rsvp\Cache;
+use GatherPress\Core\Rsvp\Response\Provider_Registry;
 use GatherPress\Core\Rsvp\Rsvp;
 use GatherPress\Core\Settings;
 use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;
 use ReflectionClass;
-use WP_Error;
 
 /**
  * Class Test_Rsvp.
@@ -318,9 +323,16 @@ class Test_Rsvp extends Base {
 
 		Utility::set_and_get_hidden_property( $rsvp, 'max_attendance_limit', 1 );
 
-		$current_response = array(
-			'status' => 'waiting_list',
-			'guests' => 0,
+		$user_id = $this->factory->user->create();
+
+		$current_response = $rsvp->process(
+			new Intent(
+				new Data(
+					new Identity( Identity_Type::WP_USER_ID, $user_id ),
+					Status::WAITING_LIST
+				),
+				Provider_Registry::get_instance()->get( 'user' ),
+			)
 		);
 
 		$this->assertFalse(
@@ -328,11 +340,9 @@ class Test_Rsvp extends Base {
 			'Failed to assert that limit has not been reached.'
 		);
 
-		$user_id = $this->factory->user->create();
-
 		$rsvp->save( $user_id, 'attending' );
 
-		$current_response = $rsvp->get( $user_id );
+		$current_response = $rsvp->find( $user_id );
 
 		$this->assertTrue(
 			$rsvp->attending_limit_reached( $current_response, 1 ),

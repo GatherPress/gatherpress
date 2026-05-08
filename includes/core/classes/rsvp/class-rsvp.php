@@ -145,6 +145,28 @@ class Rsvp {
 	}
 
 	/**
+	 * Get RSVP information for a user and an event.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param mixed $identifier The identifier of the RSVP.
+	 *
+	 * @return State|null An array containing RSVP information.
+	 */
+	public function find( $identifier ): State|null {
+		$identity = $this->resolve_identity( $identifier );
+
+		if ( null === $identity ) {
+			return null;
+		}
+
+		$provider = $this->resolve_provider( $identity );
+		$state    = $this->repository->get( $identity, $provider );
+
+		return $state;
+	}
+
+	/**
 	 * Writes an explicit enabled value on first save, based on the active RSVP mode.
 	 *
 	 * Ensures that programmatically created events (e.g. via WP-CLI or imports)
@@ -258,7 +280,7 @@ class Rsvp {
 			$current_response ? (int) $current_response->comment->comment_ID : null
 		);
 
-		if ( ! $state ) {
+		if ( \is_bool( $state ) ) {
 			return null;
 		}
 

@@ -22,7 +22,6 @@ use GatherPress\Core\Rsvp\Response\Intent;
 use GatherPress\Core\Rsvp\Response\Provider_Registry;
 use GatherPress\Core\Rsvp\Response\State;
 use GatherPress\Core\Rsvp\Response\Status;
-use GatherPress\Core\Settings\Roles;
 use InvalidArgumentException;
 use WP_Comment;
 
@@ -121,17 +120,24 @@ final class Repository {
 			return wp_delete_comment( $comment_id );
 		}
 
-		$args = array(
-			'comment_post_ID'  => $this->post_id,
-			'comment_approved' => 1,
-		);
-
-		$args = array_merge( $args, self::DEFAULT_SAVE_ARGS );
+		if ( $comment_id ) {
+			$args = get_comment( $comment_id )->to_array();
+			if ( $args['comment_author'] ) {
+				$intent->data->identity->display_name = $args['comment_author'];
+			}
+		} else {
+			$args = array(
+				'comment_post_ID'  => $this->post_id,
+				'comment_approved' => 1,
+				...self::DEFAULT_SAVE_ARGS,
+			);
+		}
 
 		// Add the identity of the RSVP response.
-		$args = wp_parse_args( $this->get_identity_query_args( $intent->data->identity ), $args );
+		$args = $this->add_identity_comment_data( $args, $intent->data->identity );
 
-		$args['comment_author'] = $intent->provider->get_display_name( $intent->data->identity );
+		$args['comment_author'] = $intent->data->identity->display_name ??
+			$intent->provider->get_display_name( $intent->data->identity );
 		$args['comment_type']   = Rsvp::COMMENT_TYPE;
 
 		$args = apply_filters( 'gatherpress_save_rsvp', $args );
@@ -140,11 +146,10 @@ final class Repository {
 			$args       = wp_filter_comment( $args );
 			$comment_id = wp_insert_comment( $args );
 		} else {
-			$args['comment_ID']       = $comment_id;
-			$args['comment_approved'] = 1;
-			$success                  = wp_update_comment( $args );
+			$args['comment_ID'] = $comment_id;
+			$success            = wp_update_comment( $args );
 
-			if ( ! $success ) {
+			if ( false === $success ) {
 				return false;
 			}
 		}
@@ -306,7 +311,7 @@ final class Repository {
 			return Provider_Registry::get_instance()->get( User::get_slug() );
 		}
 
-		if ( is_email( $comment->comment_author_email ) && get_user_by( 'email', $comment->comment_author_email ) ) {
+		if ( is_email( $comment->comment_author_email ) ) {
 			return Provider_Registry::get_instance()->get( Email::get_slug() );
 		}
 
@@ -356,6 +361,35 @@ final class Repository {
 	private function get_identity_query_args( Identity $identity ) {
 		$args = array();
 
+		switch ( $identity->type ) {
+			case Identity_Type::EMAIL:
+				$args['author_email'] = $identity->value;
+				break;
+
+			case Identity_Type::URL:
+				$args['author_url'] = $identity->value;
+				break;
+
+			case Identity_Type::WP_USER_ID:
+				$args['user_id'] = $identity->value;
+				break;
+
+			default:
+				$args['comment_meta'][ self::COMMENT_META_EXTERNAL_ID ] = $identity->value;
+				break;
+		}
+
+		return $args;
+	}
+
+	/** Get comment data for comment insert.
+	 *
+	 * @param array    $args     The current comment data args.
+	 * @param Identity $identity The identity.
+	 *
+	 * @return array<array<int|string>|int|string>
+	 */
+	private function add_identity_comment_data( array $args, Identity $identity ) {
 		switch ( $identity->type ) {
 			case Identity_Type::EMAIL:
 				$args['comment_author_email'] = $identity->value;

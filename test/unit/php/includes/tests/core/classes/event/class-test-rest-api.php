@@ -334,19 +334,8 @@ class Test_Rest_Api extends Base {
 		$event->rsvp->save( $attending_user_id, 'attending' );
 		$event->rsvp->save( $not_attending_user_id, 'not_attending' );
 
-		// Create anonymous attending RSVP using wp_insert_comment for better control.
-		wp_insert_comment(
-			array(
-				'comment_post_ID'      => $event_id,
-				'comment_type'         => Rsvp::COMMENT_TYPE,
-				'comment_author'       => 'Anonymous Attendee',
-				'comment_author_email' => 'attendee@example.com',
-				'comment_approved'     => 1,
-				'user_id'              => 0,
-			)
-		);
-
-		$event->rsvp->save( 'attendee@example.com', 'attending' );
+		// Create anonymous attending RSVP.
+		$event->rsvp->save( 'attendee@example.com', 'attending', 1 );
 
 		$send = array(
 			'all'           => false,

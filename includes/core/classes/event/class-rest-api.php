@@ -605,7 +605,7 @@ class Rest_Api {
 			if ( ! empty( $send[ $status ] ) ) {
 				$comment_ids = array_merge(
 					$comment_ids,
-					array_column( $all_responses[ $status ]['records'], 'commentId' )
+					array_column( $all_responses[ $status ]['records'], 'comment_id' )
 				);
 			}
 		}
@@ -840,7 +840,7 @@ class Rest_Api {
 			! $event->has_event_past()
 		) {
 			if ( 'attending' !== $status ) {
-				$guests = 0; // ToDo: is this intended?
+				$guests = 0;
 			}
 
 			$user_record = $event->rsvp->save( $user_identifier, $status, $anonymous, $guests );

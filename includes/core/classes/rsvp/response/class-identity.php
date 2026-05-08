@@ -16,6 +16,13 @@ use InvalidArgumentException;
  */
 final class Identity {
 	/**
+	 * Display name of this identity.
+	 *
+	 * @var string
+	 */
+	public string $display_name;
+
+	/**
 	 * Constructor of an Identity.
 	 *
 	 * @throws InvalidArgumentException When trying to construct an invalid Identity (e.g. URL as user ID).
