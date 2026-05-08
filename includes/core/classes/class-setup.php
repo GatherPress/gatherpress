@@ -45,18 +45,6 @@ class Setup {
 	protected function __construct() {
 		$this->instantiate_classes();
 		$this->setup_hooks();
-
-		/**
-		 * Fires once GatherPress has finished bootstrapping its core classes.
-		 *
-		 * Subsystems use this to run setup work that depends on other
-		 * GatherPress classes already being instantiated — for example, the
-		 * RSVP type registry registers its core types here so companion
-		 * plugins can hook into `gatherpress_register_rsvp_types` afterwards.
-		 *
-		 * @since 1.0.0
-		 */
-		do_action( 'gatherpress_loaded' );
 	}
 
 	/**

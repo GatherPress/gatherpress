@@ -56,3 +56,13 @@ if ( ! trait_exists( 'GatherPress\Core\Traits\Singleton' ) ) {
 
 // Initialize setups.
 GatherPress\Core\Setup::get_instance();
+
+/**
+ * Fires once GatherPress has finished bootstrapping its core classes.
+ *
+ * Subsystems or third party plugins can use this to run setup work that
+ * depends on other GatherPress classes already being instantiated.
+ *
+ * @since 1.0.0
+ */
+do_action( 'gatherpress_loaded' );
