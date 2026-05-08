@@ -517,7 +517,7 @@ class Test_OSM extends Base {
 		);
 
 		$this->assertInstanceOf( GdImage::class, $image );
-		imagedestroy( $image );
+		unset( $image );
 	}
 
 	/**
@@ -592,7 +592,7 @@ class Test_OSM extends Base {
 		// is that the call returned without throwing.
 		$this->assertInstanceOf( GdImage::class, $canvas );
 
-		imagedestroy( $canvas );
+		unset( $canvas );
 	}
 
 	/**
@@ -626,7 +626,7 @@ class Test_OSM extends Base {
 		add_filter( 'pre_http_request', array( $this, 'short_circuit_tile_requests' ), 10, 3 );
 
 		$this->assertInstanceOf( GdImage::class, $canvas );
-		imagedestroy( $canvas );
+		unset( $canvas );
 	}
 
 	/**
@@ -667,6 +667,6 @@ class Test_OSM extends Base {
 		add_filter( 'pre_http_request', array( $this, 'short_circuit_tile_requests' ), 10, 3 );
 
 		$this->assertInstanceOf( GdImage::class, $canvas );
-		imagedestroy( $canvas );
+		unset( $canvas );
 	}
 }
