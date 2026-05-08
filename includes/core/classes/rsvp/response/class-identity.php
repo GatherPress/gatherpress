@@ -61,6 +61,9 @@ final class Identity {
 				if ( ! \is_int( $this->value ) ) {
 					throw new InvalidArgumentException( 'Invalid ID.' );
 				}
+				if ( ! get_user_by( 'id', $this->value ) ) {
+					throw new InvalidArgumentException( 'User does not exist.' );
+				}
 				break;
 			case Identity_Type::EXTERNAL_ID:
 				if ( ! \is_int( $this->value ) ) {

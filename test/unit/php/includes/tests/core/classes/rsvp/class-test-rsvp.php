@@ -95,9 +95,6 @@ class Test_Rsvp extends Base {
 	 * @covers ::__construct
 	 */
 	public function test_save(): void {
-		// @todo Investigate root cause of empty cache key from WP_Object_Cache::add.
-		$this->setExpectedIncorrectUsage( 'WP_Object_Cache::add' );
-
 		$post    = $this->mock->post(
 			array(
 				'post_type' => Event::POST_TYPE,

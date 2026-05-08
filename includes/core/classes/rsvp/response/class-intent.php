@@ -30,4 +30,17 @@ final class Intent {
 		public readonly Data $data,
 		public readonly Provider $provider
 	) {}
+
+	/**
+	 * Generate an intent to change the state of an saved RSVP.
+	 *
+	 * @param State $state The desired state.
+	 * @return Intent
+	 */
+	public static function attend( State $state ): self {
+		return new self(
+			$state->data->with_status( Status::ATTENDING ),
+			$state->provider,
+		);
+	}
 }

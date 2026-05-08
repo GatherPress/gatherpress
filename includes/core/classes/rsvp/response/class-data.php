@@ -51,4 +51,20 @@ final class Data {
 		$this->guests    = max( 0, $guests );
 		$this->timestamp = $timestamp ?? gmdate( 'Y-m-d H:i:s' );
 	}
+
+	/**
+	 * Create a copy of this data with a new status.
+	 *
+	 * @param Status $status The new status.
+	 * @return self
+	 */
+	public function with_status( Status $status ) {
+		return new self(
+			$this->identity,
+			$status,
+			$this->guests,
+			$this->anonymous,
+			$this->timestamp
+		);
+	}
 }

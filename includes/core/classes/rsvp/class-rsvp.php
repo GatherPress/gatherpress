@@ -11,6 +11,9 @@
 
 namespace GatherPress\Core\Rsvp;
 
+use GatherPress\Core\Rsvp\Response\Collection;
+use GatherPress\Core\Rsvp\Response\Serializer;
+
 // Exit if accessed directly.
 \defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
@@ -66,7 +69,7 @@ class Rsvp {
 	);
 
 	/**
-	 * The maximum limit for attending responses (RSVPs).
+	 * The maximum limit for attendees for this Event (including guests).
 	 *
 	 * @var int Represents the maximum number of attendees allowed for an event.
 	 */
@@ -113,7 +116,7 @@ class Rsvp {
 	public function __construct( int $post_id ) {
 		$this->event                = get_post( $post_id );
 		$this->repository           = new Repository( $post_id );
-		$this->max_attendance_limit = \intval( get_post_meta( $post_id, 'gatherpress_max_attendance_limit', true ) );
+		$this->max_attendance_limit = (int) get_post_meta( $post_id, 'gatherpress_max_attendance_limit', true );
 		$this->providers            = Provider_Registry::get_instance()->get_all();
 	}
 
@@ -141,7 +144,7 @@ class Rsvp {
 		$provider = $this->resolve_provider( $identity );
 		$state    = $this->repository->get( $identity, $provider );
 
-		return $state?->to_array();
+		return $state ? Serializer::to_array( $state ) : null;
 	}
 
 	/**
@@ -214,9 +217,9 @@ class Rsvp {
 	 * @param int|string $identifier      Identifier of the person whose RSVP status is being updated.
 	 * @param string     $status          The new RSVP status for the user. Acceptable values are 'attending',
 	 *                                    'not_attending', or 'waiting_list'.
-	 * @param int|null   $anonymous       Optional. Whether the RSVP is to be marked as anonymous.
+	 * @param int        $anonymous       Optional. Whether the RSVP is to be marked as anonymous.
 	 *                                    Accepts 1 for true (anonymous) and 0 for false (not anonymous). Default 0.
-	 * @param int|null   $guests          Optional. The number of guests the user plans to bring along. Default 0.
+	 * @param int        $guests          Optional. The number of guests the user plans to bring along. Default 0.
 	 *
 	 * @return array Associative array containing the event ID ('post_id'), user ID ('user_id'),
 	 *               RSVP timestamp ('timestamp'), RSVP status ('status'), number of guests ('guests'),
@@ -229,8 +232,8 @@ class Rsvp {
 	public function save(
 		mixed $identifier,
 		string $status,
-		?int $anonymous = 0,
-		?int $guests = 0,
+		int $anonymous = 0,
+		int $guests = 0,
 	): ?array {
 		$identity = $this->resolve_identity( $identifier );
 
@@ -250,9 +253,7 @@ class Rsvp {
 
 		Cache::delete( $this->event->ID );
 
-		$retval = $state->to_array();
-
-		return $retval;
+		return Serializer::to_array( $state );
 	}
 
 	/**
@@ -292,59 +293,57 @@ class Rsvp {
 	}
 
 	/**
-	 * Check the waiting list and move response to attending if spots are available.
+	 * Undocumented function
 	 *
-	 * This method checks if there are spots available in the attending list and moves response
-	 * from the waiting list to attending based on their timestamp.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @return int The number of responses from the waiting list that were moved to attending.
+	 * @return int
 	 */
 	public function check_waiting_list(): int {
-		$responses          = $this->responses();
-		$attending_count    = \intval( $responses['attending']['count'] );
-		$waiting_list_count = \intval( $responses['waiting_list']['count'] );
-		$i                  = 0;
+		$states    = $this->repository->all();
+		$responses = new Collection( $states );
 
-		if (
-			$waiting_list_count &&
-			(
-				empty( $this->max_attendance_limit ) ||
-				$attending_count < $this->max_attendance_limit
-			)
-		) {
-			$waiting_list = $responses['waiting_list']['records'];
+		// If no RSVP responses are on the waiting list, quit.
+		if ( ! $responses->has_waiting_list() ) {
+			return 0;
+		}
 
-			// People who are longest on the waiting_list should be added first.
-			usort( $waiting_list, array( $this, 'sort_by_timestamp' ) );
+		$waiting_list = $responses->waiting_list();
 
-			if ( ! empty( $this->max_attendance_limit ) ) {
-				$total = $this->max_attendance_limit - intval( $responses['attending']['count'] );
-			} else {
-				$total = $waiting_list_count;
+		// If there is no attendance limit, promote all from waiting list to attending.
+		if ( 0 === $this->max_attendance_limit ) {
+			$promoted_count = 0;
+
+			foreach ( $waiting_list as $state ) {
+				$state = $this->repository->save( Intent::attend( $state ), (int) $state->comment->comment_ID );
+
+				if ( $state instanceof State ) {
+					++$promoted_count;
+				}
 			}
 
-			while ( $i < $total ) {
-				// Check that we have enough on the waiting_list to run this.
-				if ( ( $i + 1 ) > \intval( $responses['waiting_list']['count'] ) ) {
-					break;
-				}
+			return $promoted_count;
+		}
 
-				$response = $waiting_list[ $i ];
+		$remaining_spots = $this->max_attendance_limit - $responses->get_attendee_count();
 
-				$this->save(
-					$response['identifier'],
-					Status::ATTENDING->value,
-					$response['anonymous'],
-					$response['guests'],
-				);
+		// No free spots left.
+		if ( $remaining_spots <= 0 ) {
+			return 0;
+		}
 
-				++$i;
+		// If there is room, promote as many as possible.
+		$promoted_count = 0;
+
+		for ( $i = 0; $i < $remaining_spots; $i++ ) {
+			$state = $waiting_list[ $i ];
+			$state = $this->repository->save( Intent::attend( $state ), (int) $state->comment->comment_ID );
+
+			if ( $state instanceof State ) {
+				++$promoted_count;
+				$remaining_spots -= $state->get_attendee_count();
 			}
 		}
 
-		return $i;
+		return $promoted_count;
 	}
 
 	/**
@@ -491,7 +490,7 @@ class Rsvp {
 		$records      = array();
 
 		foreach ( $states as $state ) {
-			$records[]     = $state->to_array();
+			$records[]     = Serializer::to_array( $state );
 			$total_guests += $state->data->guests;
 		}
 
