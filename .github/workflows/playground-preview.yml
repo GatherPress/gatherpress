@@ -124,7 +124,7 @@ jobs:
         id: comment-on-pr
         uses: actions/github-script@v7
         env:
-          PHP_VERSIONS: '["8.4","8.2","7.4"]'
+          PHP_VERSIONS: '["8.4","8.2","8.1"]'
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
