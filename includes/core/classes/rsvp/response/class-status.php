@@ -37,7 +37,7 @@ enum Status: string {
 	 *
 	 * @since 1.0.0
 	 * @param string $status The status value.
-	 * @return array
+	 * @return Status
 	 */
 	public static function try_from( string $status ): Status {
 		$status = Status::tryFrom( $status );

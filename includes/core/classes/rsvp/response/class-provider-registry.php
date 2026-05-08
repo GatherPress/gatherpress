@@ -39,7 +39,7 @@ final class Provider_Registry {
 	/**
 	 * Array of registered RSVP type instances.
 	 *
-	 * @var string[]
+	 * @var array
 	 */
 	private array $providers = array();
 
@@ -93,8 +93,8 @@ final class Provider_Registry {
 	public function register( Provider $provider ): bool {
 		$slug = $provider->get_slug();
 
-		if ( empty( $slug ) || ! \is_string( $slug ) ) {
-			throw new InvalidArgumentException( 'The Provider\'s slug must be a non-empty string' );
+		if ( \strlen( $slug ) < 4 ) {
+			throw new InvalidArgumentException( 'The Provider\'s slug must string with more than four characters.' );
 		}
 
 		if ( $this->is_registered( $slug ) ) {
@@ -198,7 +198,7 @@ final class Provider_Registry {
 		 *
 		 * @since 1.0.0
 		 *
-		 * @param Provider_Registry The RSVP type registry instance.
+		 * @param Provider_Registry $provider_registry The RSVP type registry instance.
 		 */
 		do_action( 'gatherpress_register_rsvp_types', $this );
 	}

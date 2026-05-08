@@ -48,14 +48,14 @@ abstract class Provider {
 	/**
 	 * Get the label for this Attendee type.
 	 *
-	 * @return void
+	 * @return string
 	 */
 	abstract public static function get_label(): string;
 
 	/**
 	 * Get the label for this Attendee type.
 	 *
-	 * @return void
+	 * @return string
 	 */
 	abstract public static function get_icon(): string;
 

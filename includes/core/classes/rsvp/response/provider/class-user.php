@@ -91,9 +91,9 @@ final class User extends Provider {
 	 * @since 1. 0.0
 	 *
 	 * @param Identity $identity The identity.
-	 * @return string|null The author posts URL, or null if user not found.
+	 * @return string The author posts URL.
 	 */
-	public function get_url( Identity $identity ): ?string {
+	public function get_url( Identity $identity ): string {
 		return get_author_posts_url( $identity->value );
 	}
 }

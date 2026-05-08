@@ -21,7 +21,7 @@ final class Identity {
 	 * @throws InvalidArgumentException When trying to construct an invalid Identity (e.g. URL as user ID).
 	 *
 	 * @param Identity_Type $type  Identity type.
-	 * @param string|int    $value Identity value.
+	 * @param string|int   $value Identity value.
 	 */
 	public function __construct(
 		public readonly Identity_Type $type,

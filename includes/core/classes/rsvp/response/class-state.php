@@ -13,7 +13,7 @@ namespace GatherPress\Core\Rsvp\Response;
 
 use GatherPress\Core\Settings\Roles;
 use GatherPress\Core\Rsvp\Response\Provider\Provider;
-use Wp_Comment;
+use WP_Comment;
 
 /**
  * RSVP Response item (saved state).
@@ -57,7 +57,7 @@ final class State {
 			'comment_id' => (int) $this->comment->comment_ID,
 			'post_id'    => (int) $this->comment->comment_post_ID,
 			'user_id'    => (int) $this->comment->user_id,
-			'role'       => Roles::get_instance()->get_user_role( $this->comment->user_id ),
+			'role'       => Roles::get_instance()->get_user_role( (int) $this->comment->user_id ),
 		);
 	}
 }

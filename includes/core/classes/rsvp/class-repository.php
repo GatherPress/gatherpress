@@ -245,9 +245,9 @@ final class Repository {
 	 */
 	private static function hydrate_data( WP_Comment $comment, Identity $identity ) {
 		$timestamp  = $comment->comment_date;
-		$comment_id = \intval( $comment->comment_ID );
-		$anonymous  = \intval( get_comment_meta( $comment_id, 'gatherpress_rsvp_anonymous', true ) );
-		$guests     = \intval( get_comment_meta( $comment_id, 'gatherpress_rsvp_guests', true ) );
+		$comment_id = (int) $comment->comment_ID;
+		$anonymous  = (bool) get_comment_meta( $comment_id, 'gatherpress_rsvp_anonymous', true );
+		$guests     = (int) get_comment_meta( $comment_id, 'gatherpress_rsvp_guests', true );
 		$status     = self::get_status( $comment_id );
 
 		return new Data( $identity, $status, $guests, $anonymous, $timestamp );
@@ -271,11 +271,10 @@ final class Repository {
 			Identity_Type::EMAIL       => $comment->comment_author_email,
 			Identity_Type::URL         => $comment->comment_author_url,
 			Identity_Type::EXTERNAL_ID => get_comment_meta(
-				$comment->comment_ID,
-				'gatherpress_rsvp_external_id',
+				(int) $comment->comment_ID,
+				self::COMMENT_META_EXTERNAL_ID,
 				true
 			),
-			default => null,
 		};
 
 		try {

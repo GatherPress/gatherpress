@@ -11,24 +11,19 @@
 
 namespace GatherPress\Core\Rsvp;
 
+// Exit if accessed directly.
+\defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
+
 use GatherPress\Core\Rsvp\Response\Data;
-use GatherPress\Core\Rsvp\Response\Factory;
 use GatherPress\Core\Rsvp\Response\Identity;
 use GatherPress\Core\Rsvp\Response\Identity_Type;
 use GatherPress\Core\Rsvp\Response\Intent;
 use GatherPress\Core\Rsvp\Response\Provider_Registry;
 use GatherPress\Core\Rsvp\Response\State;
 use GatherPress\Core\Rsvp\Response\Status;
-use GatherPress\Core\Rsvp\Response\Provider\Email;
 use GatherPress\Core\Rsvp\Response\Provider\Provider;
-use GatherPress\Core\Rsvp\Response\Provider\User;
-
-// Exit if accessed directly.
-\defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
-
 use GatherPress\Core\Settings;
 use GatherPress\Core\Settings\Roles;
-use WP_Error;
 use WP_Post;
 
 /**
@@ -45,7 +40,7 @@ class Rsvp {
 	 * @since 1.0.0
 	 * @var string
 	 */
-	const CAPABILITY = 'moderate_comments';
+	public const CAPABILITY = 'moderate_comments';
 
 	/**
 	 * Comment type for RSVPs.
@@ -53,14 +48,14 @@ class Rsvp {
 	 * @since 1.0.0
 	 * @var string $COMMENT_TYPE
 	 */
-	const COMMENT_TYPE = 'gatherpress_rsvp';
+	public const COMMENT_TYPE = 'gatherpress_rsvp';
 
 	/**
 	 * Default response for calling the save function.
 	 *
 	 * @var array
 	 */
-	const DEFAULT_SAVE_RESPONSE = array(
+	private const DEFAULT_SAVE_RESPONSE = array(
 		'comment_id' => 0,
 		'post_id'    => 0,
 		'user_id'    => 0,
@@ -223,7 +218,7 @@ class Rsvp {
 
 		$provider = $this->resolve_provider( $identity );
 		$status   = Status::try_from( $status );
-		$data     = new Data( $identity, $status, $guests, $anonymous );
+		$data     = new Data( $identity, $status, $guests, (bool) $anonymous );
 		$intent   = new Intent( $data, $provider );
 		$state    = $this->process( $intent );
 
@@ -258,7 +253,10 @@ class Rsvp {
 		$intent = $this->constrain_rsvp_intent( $intent, $current_response );
 
 		// Persist RSVP comment: Create new RSVP-comment, Update existing one, or delete on invalid status.
-		$state = $this->repository->save( $intent, $current_response?->comment_id );
+		$state = $this->repository->save(
+			$intent,
+			$current_response ? (int) $current_response->comment->comment_ID : null
+		);
 
 		if ( ! $state ) {
 			return null;
