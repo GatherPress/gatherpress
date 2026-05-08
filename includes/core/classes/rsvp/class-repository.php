@@ -69,33 +69,13 @@ final class Repository {
 	 * RSVP Repository constructor.
 	 *
 	 * @since 1.0.0
-	 * @throws InvalidArgumentException When trying to construct this RSVP for a post that does not support it.
 	 *
 	 * @param int $post_id The events post id.
 	 */
 	public function __construct( protected readonly int $post_id ) {
-		$post_type = get_post_type( $post_id );
-
-		// if ( ! $post_type ) {
-		// 	throw new InvalidArgumentException(
-		// 		\sprintf(
-		// 			'Cannot construct RSVP repository: post %d does not exist.',
-		// 			(int) $post_id
-		// 		)
-		// 	);
-		// }
-
-		// if ( ! post_type_supports( $post_type, 'gatherpress-rsvp' ) ) {
-		// 	throw new InvalidArgumentException(
-		// 		\sprintf(
-		// 			'Post type "%s" does not support GatherPress RSVPs.',
-		// 			esc_attr( $post_type )
-		// 		)
-		// 	);
-		// }
-
 		$this->rsvp_query = Query::get_instance();
 	}
+
 
 	/**
 	 * Get a single RSVP.
@@ -226,7 +206,11 @@ final class Repository {
 	 * @param Provider|null $provider  The RSVP provider (optional).
 	 * @return State|null
 	 */
-	private static function hydrate( WP_Comment $comment, ?Identity $identity = null, ?Provider $provider = null ): ?State {
+	private static function hydrate(
+		WP_Comment $comment,
+		?Identity $identity = null,
+		?Provider $provider = null
+	): ?State {
 		if ( Rsvp::COMMENT_TYPE !== $comment->comment_type ) {
 			return null;
 		}
@@ -383,7 +367,7 @@ final class Repository {
 				break;
 
 			case Identity_Type::WP_USER_ID:
-				$args['user_id'] = (int) $identity->value;
+				$args['user_id'] = $identity->value;
 				break;
 
 			default:
@@ -403,7 +387,8 @@ final class Repository {
 	 */
 	private function get_provider_query_args( $provider ) {
 		return array(
-			'gatherpress_rsvp_provider_query' => array(
+			// phpcs:disable WordPress.DB.SlowDBQuery.slow_db_query_tax_query
+			'tax_query' => array(
 				'taxonomy' => Provider::TAXONOMY,
 				'terms'    => $provider->get_slug(),
 				'field'    => 'slug',
