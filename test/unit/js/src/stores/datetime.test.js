@@ -45,7 +45,12 @@ describe( 'DateTime store', () => {
 		it( 'has duration set to null by default', () => {
 			const duration = select( STORE_NAME ).getDuration();
 
-			expect( duration ).toBe( 2 );
+			// `getDuration` now returns the raw stored value (null by
+			// default). The matched-preset computation that used to live
+			// in this selector moved to `useMatchedDuration` to avoid the
+			// per-call moment.tz comparison loop that crashed the editor
+			// under IANA timezones (#1607).
+			expect( duration ).toBe( null );
 		} );
 
 		it( 'has timezone set to empty string when not provided', () => {
