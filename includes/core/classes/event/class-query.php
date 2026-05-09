@@ -70,11 +70,6 @@ class Query {
 		add_action( 'pre_get_posts', array( $this, 'prepare_event_query_before_execution' ) );
 		// Priority 9 to run before the upcoming/past adjustments at priority 10.
 		add_filter( 'posts_clauses', array( $this, 'adjust_admin_event_sorting' ), 9, 2 );
-		add_action( 'pre_get_posts', function ( WP_Query $wp_query ) {
-			if ( empty( $wp_query->get( self::EVENT_QUERY_PARAM ) ) && post_type_supports( $wp_query->get( 'post_type' ), 'gatherpress-event-date' ) ) {
-				$wp_query->set( self::EVENT_QUERY_PARAM, 'all' );
-			}
-		}, 8 );
 	}
 
 	/**
@@ -404,8 +399,7 @@ class Query {
 			$gatherpress_events_query,
 			$wp_query->get( 'order' ),
 			$wp_query->get( 'orderby' ),
-			$inclusive,
-			true
+			$inclusive
 		);
 
 		return $query_pieces;
@@ -424,16 +418,14 @@ class Query {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param array           $pieces    An array of query pieces, including join, where, orderby,
-	 *                                   and more.
-	 * @param string          $type      The type of events to query (options: 'all', 'upcoming', 'past')
-	 *                                   (Default: 'all').
-	 * @param string          $order     The event order ('DESC' for descending or 'ASC' for ascending)
-	 *                                   (Default: 'DESC').
-	 * @param string[]|string $order_by  List  or singular string of ORDERBY statement(s) (Default: ['datetime']).
-	 * @param bool            $inclusive      Whether to include currently running events in the query (Default: true).
-	 * @param bool            $include_no_date Whether to include events with no date set in upcoming
-	 *                                         and exclude them from past (Default: false).
+	 * @param array           $pieces   An array of query pieces, including join, where, orderby,
+	 *                                  and more.
+	 * @param string          $type     The type of events to query (options: 'all', 'upcoming', 'past')
+	 *                                  (Default: 'all').
+	 * @param string          $order    The event order ('DESC' for descending or 'ASC' for ascending)
+	 *                                  (Default: 'DESC').
+	 * @param string[]|string $order_by List or singular string of ORDERBY statement(s) (Default: ['datetime']).
+	 * @param bool            $inclusive Whether to include currently running events in the query (Default: true).
 	 * @return array An array containing adjusted SQL clauses for the Event query.
 	 */
 	public function adjust_event_sql(
@@ -441,8 +433,7 @@ class Query {
 		string $type = 'all',
 		string $order = 'DESC',
 		$order_by = array( 'datetime' ),
-		bool $inclusive = true,
-		bool $include_no_date = false
+		bool $inclusive = true
 	): array {
 		global $wpdb;
 
@@ -500,30 +491,14 @@ class Query {
 		$current = gmdate( Event::DATETIME_FORMAT, time() );
 		$column  = $this->get_datetime_comparison_column( $type, $inclusive );
 
-		// Appends a date-based condition to the WHERE clause of the SQL query,
-		// filtering events as either upcoming or past.
+		// Append a date-based condition to the WHERE clause, filtering as
+		// either upcoming or past. Events with no row in the events table
+		// (no date set yet) are excluded from both buckets — they only
+		// appear under the All view.
 		if ( 'upcoming' === $type ) {
-			if ( $include_no_date ) {
-				// Include events on or after the current date/time, or events with no row in the events table.
-				$pieces['where'] .= $wpdb->prepare(
-					' AND (%i.%i >= %s OR %i.post_id IS NULL)',
-					$table,
-					$column,
-					$current,
-					$table
-				);
-			} else {
-				// Include only events starting on or after the current date/time (upcoming).
-				$pieces['where'] .= $wpdb->prepare( ' AND %i.%i >= %s', $table, $column, $current );
-			}
+			$pieces['where'] .= $wpdb->prepare( ' AND %i.%i >= %s', $table, $column, $current );
 		} elseif ( 'past' === $type ) {
-			// Include only events starting before the current date/time (past).
 			$pieces['where'] .= $wpdb->prepare( ' AND %i.%i < %s', $table, $column, $current );
-
-			if ( $include_no_date ) {
-				// Exclude events with no row in the events table.
-				$pieces['where'] .= $wpdb->prepare( ' AND %i.post_id IS NOT NULL', $table );
-			}
 		}
 
 		return $pieces;
