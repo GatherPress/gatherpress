@@ -482,6 +482,60 @@ test( 'updateDateTimeEnd without second argument', () => {
 } );
 
 /**
+ * #1607 regression coverage: the picker emits ISO-format strings with a 'T'
+ * separator, and `updateDateTimeStart`/`updateDateTimeEnd` must normalize
+ * them to the canonical database format (`YYYY-MM-DD HH:mm:ss`) at the
+ * entry point. Doing this in a useEffect that depends on the value being
+ * normalized produced an infinite re-render loop on DST-gap inputs — the
+ * normalization has to happen exactly once per user action, here.
+ */
+test( 'updateDateTimeStart normalizes picker ISO output (T separator) before storing', () => {
+	let captured = null;
+	const setDateTimeStart = ( value ) => {
+		captured = value;
+	};
+
+	updateDateTimeStart( '2024-03-15T10:30:00', setDateTimeStart );
+
+	expect( captured ).toBe( '2024-03-15 10:30:00' );
+} );
+
+test( 'updateDateTimeEnd normalizes picker ISO output (T separator) before storing', () => {
+	let captured = null;
+	const setDateTimeEnd = ( value ) => {
+		captured = value;
+	};
+
+	updateDateTimeEnd( '2024-03-15T14:30:00', setDateTimeEnd );
+
+	expect( captured ).toBe( '2024-03-15 14:30:00' );
+} );
+
+test( 'updateDateTimeStart normalization is idempotent on canonical input', () => {
+	let captured = null;
+	const setDateTimeStart = ( value ) => {
+		captured = value;
+	};
+	const canonical = '2024-06-15 10:30:00';
+
+	updateDateTimeStart( canonical, setDateTimeStart );
+
+	expect( captured ).toBe( canonical );
+} );
+
+test( 'updateDateTimeEnd normalization is idempotent on canonical input', () => {
+	let captured = null;
+	const setDateTimeEnd = ( value ) => {
+		captured = value;
+	};
+	const canonical = '2024-06-15 14:30:00';
+
+	updateDateTimeEnd( canonical, setDateTimeEnd );
+
+	expect( captured ).toBe( canonical );
+} );
+
+/**
  * Coverage for convertPHPToMomentFormat.
  */
 test( 'convertPHPToMomentFormat returns correct date format', () => {

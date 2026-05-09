@@ -20,7 +20,6 @@ import { getStartOfWeek } from '../helpers/editor';
 import { hasEventPastNotice } from '../helpers/event';
 import {
 	createMomentWithTimezone,
-	dateTimeDatabaseFormat,
 	dateTimeLabelFormat,
 	getTimezone,
 	updateDateTimeEnd,
@@ -59,13 +58,15 @@ const DateTimeEnd = () => {
 			.join( '' ),
 	);
 
+	// Normalization that used to live here moved into `updateDateTimeEnd`
+	// so it runs once per user action (#1607). Running it inside a useEffect
+	// without a deps array — as the previous version did — fires on every
+	// render, and with non-idempotent `moment.tz` output on DST-gap times
+	// the store kept changing on every pass, producing an infinite
+	// re-render loop that overflowed the stack on arrows-down.
 	useEffect( () => {
-		setDateTimeEnd(
-			createMomentWithTimezone( dateTimeEnd, getTimezone() ).format( dateTimeDatabaseFormat ),
-		);
-
 		hasEventPastNotice();
-	} );
+	}, [ dateTimeEnd ] );
 
 	return (
 		<PanelRow>

@@ -20,7 +20,6 @@ import { getStartOfWeek } from '../helpers/editor';
 import { hasEventPastNotice } from '../helpers/event';
 import {
 	createMomentWithTimezone,
-	dateTimeDatabaseFormat,
 	dateTimeLabelFormat,
 	dateTimeOffset,
 	getTimezone,
@@ -61,18 +60,18 @@ const DateTimeStart = () => {
 			.join( '' ),
 	);
 
+	// Normalization that used to live here moved into `updateDateTimeStart`
+	// so it runs once per user action (#1607) — running it inside a useEffect
+	// that depends on `dateTimeStart` produced an infinite re-render loop on
+	// DST-gap times since `moment.tz` can return a different normalized
+	// string each pass.
 	useEffect( () => {
-		setDateTimeStart(
-			createMomentWithTimezone( dateTimeStart, getTimezone() )
-				.format( dateTimeDatabaseFormat ),
-		);
-
 		if ( duration ) {
 			setDateTimeEnd( dateTimeOffset( duration ) );
 		}
 
 		hasEventPastNotice();
-	}, [ dateTimeStart, duration, setDateTimeStart, setDateTimeEnd ] );
+	}, [ dateTimeStart, duration, setDateTimeEnd ] );
 
 	return (
 		<PanelRow>
