@@ -415,16 +415,6 @@ export function updateDateTimeStart(
 	setDateTimeStart = null,
 	setDateTimeEnd = null,
 ) {
-	// Normalize the picker's ISO output to the canonical database format
-	// once, here at the entry point. The DateTimePicker emits dates with a
-	// 'T' separator (e.g. "2024-03-15T10:30:00") and timezone-edge inputs
-	// (DST gaps/overlaps) need a single tz-aware canonicalization. Doing
-	// this in a useEffect that depends on the value being normalized
-	// trips an infinite re-render loop on DST-gap times — see #1607.
-	date = createMomentWithTimezone( date, getTimezone() ).format(
-		dateTimeDatabaseFormat,
-	);
-
 	// Store the current duration before updating the start time.
 	const currentDuration = getDateTimeOffset();
 
@@ -469,15 +459,6 @@ export function updateDateTimeEnd(
 	setDateTimeEnd = null,
 	setDateTimeStart = null,
 ) {
-	// Normalize the picker's ISO output to the canonical database format
-	// once, here at the entry point. See updateDateTimeStart for the full
-	// rationale (#1607 — non-idempotent moment.tz normalization on DST-gap
-	// inputs causes an infinite re-render loop when done in a useEffect
-	// that depends on the value being normalized).
-	date = createMomentWithTimezone( date, getTimezone() ).format(
-		dateTimeDatabaseFormat,
-	);
-
 	validateDateTimeEnd( date, setDateTimeStart );
 
 	if ( null !== setDateTimeEnd ) {
