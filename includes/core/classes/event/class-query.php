@@ -70,6 +70,11 @@ class Query {
 		add_action( 'pre_get_posts', array( $this, 'prepare_event_query_before_execution' ) );
 		// Priority 9 to run before the upcoming/past adjustments at priority 10.
 		add_filter( 'posts_clauses', array( $this, 'adjust_admin_event_sorting' ), 9, 2 );
+		add_action( 'pre_get_posts', function ( WP_Query $wp_query ) {
+			if ( empty( $wp_query->get( self::EVENT_QUERY_PARAM ) ) && post_type_supports( $wp_query->get( 'post_type' ), 'gatherpress-event-date' ) ) {
+				$wp_query->set( self::EVENT_QUERY_PARAM, 'all' );
+			}
+		}, 8 );
 	}
 
 	/**
@@ -361,7 +366,7 @@ class Query {
 		}
 
 		/**
-		 * Run only for Event post listings.
+		 * Run only for listings of posts, that support event dates.
 		 *
 		 * First checks whether the get_current_screen function exists,
 		 * because it is loaded only after the 'admin_init' hook.
@@ -371,9 +376,13 @@ class Query {
 		 * This sanity check was added after it's been reported that some admin screens may not have $wp_query set.
 		 * @see https://wordpress.org/support/topic/gatherpress-has-critical-error-when-i-access-wpforms-payment-settings/
 		 */
-		$screen_id      = sprintf( 'edit-%s', Event::POST_TYPE );
 		$current_screen = function_exists( 'get_current_screen' ) ? get_current_screen() : null;
-		if ( ! $current_screen || $screen_id !== $current_screen->id ) {
+		if (
+			! $current_screen ||
+			'edit' !== $current_screen->base ||
+			! post_type_supports( $current_screen->post_type, 'gatherpress-event-date' ) ||
+			$wp_query->get( 'post_type' ) !== $current_screen->post_type
+		) {
 			return $query_pieces;
 		}
 
