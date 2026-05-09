@@ -25,6 +25,7 @@ import {
 	dateTimeOffset,
 	getTimezone,
 	updateDateTimeStart,
+	useMatchedDuration,
 } from '../helpers/datetime';
 import { getSettings } from '@wordpress/date';
 
@@ -41,13 +42,15 @@ import { getSettings } from '@wordpress/date';
  * @return {JSX.Element} The rendered React component.
  */
 const DateTimeStart = () => {
-	const { dateTimeStart, duration } = useSelect(
-		( select ) => ( {
-			dateTimeStart: select( 'gatherpress/datetime' ).getDateTimeStart(),
-			duration: select( 'gatherpress/datetime' ).getDuration(),
-		} ),
+	const dateTimeStart = useSelect(
+		( select ) => select( 'gatherpress/datetime' ).getDateTimeStart(),
 		[],
 	);
+	// Use the memoized matched-preset hook so the gating below only fires
+	// the auto-end-sync when the current end actually equals start + N
+	// hours — same semantics as the previous getDuration selector, but
+	// without that selector's per-call moment.tz comparison loop (#1607).
+	const duration = useMatchedDuration();
 	const { setDateTimeStart, setDateTimeEnd } = useDispatch(
 		'gatherpress/datetime',
 	);
