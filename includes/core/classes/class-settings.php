@@ -644,8 +644,6 @@ class Settings {
 			'disabled'    => $inherited,
 		);
 
-		$template_basename = $type;
-
 		switch ( $type ) {
 			case 'text':
 				$params['size']    = $option_settings['field']['size'] ?? 'regular';
@@ -678,7 +676,7 @@ class Settings {
 			sprintf(
 				'%s/includes/templates/admin/settings/fields/%s.php',
 				GATHERPRESS_CORE_PATH,
-				$template_basename
+				$type
 			),
 			$params,
 			true

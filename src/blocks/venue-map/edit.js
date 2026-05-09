@@ -35,7 +35,11 @@ import { isVenuePostType } from '../../helpers/venue';
 import { isInFSETemplate } from '../../helpers/editor';
 import { getFromSettings } from '../../helpers/editor-settings';
 import MapEmbed from '../../components/MapEmbed';
-import { toMapsEmbedApiMapType } from '../../components/GoogleMap';
+import {
+	GOOGLE_IFRAME_UNSUPPORTED_MAP_TYPE_SLUGS,
+	GOOGLE_MAP_TYPE_DEFINITIONS,
+	toMapsEmbedApiMapType,
+} from '../../components/GoogleMap';
 import {
 	useSharedBlockGuardState,
 	generateBlockGuardStateKey,
@@ -265,27 +269,17 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 	// Full list of map types for Google. Maps Embed API (iframe) supports
 	// only roadmap and satellite — hybrid/terrain are filtered out below until
 	// a Maps JavaScript API integration can use the full set without changing
-	// this array.
-	const GOOGLE_MAP_TYPE_OPTIONS_ALL = [
-		{
-			label: __( 'Roadmap', 'gatherpress' ),
-			value: 'roadmap',
-		},
-		{
-			label: __( 'Satellite', 'gatherpress' ),
-			value: 'satellite',
-		},
-		{
-			label: __( 'Hybrid', 'gatherpress' ),
-			value: 'hybrid',
-		},
-		{
-			label: __( 'Terrain', 'gatherpress' ),
-			value: 'terrain',
-		},
-	];
+	// `GOOGLE_MAP_TYPE_DEFINITIONS` in `GoogleMap.js`.
+	const GOOGLE_MAP_TYPE_OPTIONS_ALL = GOOGLE_MAP_TYPE_DEFINITIONS.map(
+		( definition ) => ( {
+			label: definition.label,
+			value: definition.slug,
+		} )
+	);
 
-	const IFRAME_UNSUPPORTED_GOOGLE_MAP_TYPES = new Set( [ 'hybrid', 'terrain' ] );
+	const IFRAME_UNSUPPORTED_GOOGLE_MAP_TYPES = new Set(
+		GOOGLE_IFRAME_UNSUPPORTED_MAP_TYPE_SLUGS
+	);
 
 	const googleMapTypeSelectOptions = GOOGLE_MAP_TYPE_OPTIONS_ALL.filter(
 		( opt ) => ! IFRAME_UNSUPPORTED_GOOGLE_MAP_TYPES.has( opt.value )

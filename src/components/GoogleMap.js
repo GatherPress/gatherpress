@@ -1,6 +1,7 @@
 /**
  * WordPress dependencies.
  */
+import { __ } from '@wordpress/i18n';
 import { select } from '@wordpress/data';
 
 /**
@@ -25,14 +26,54 @@ import { select } from '@wordpress/data';
  */
 
 /**
- * Map type slugs stored on the venue-map block (editor + legacy iframe).
+ * Canonical Google map types for the venue-map block: localized label, block
+ * attribute slug, and legacy keyless embed `t=` parameter letter.
+ *
+ * @see https://developers.google.com/maps/documentation/embed/map-parameters
  */
-const BLOCK_MAP_TYPE_SLUGS = [
-	'roadmap',
-	'satellite',
+export const GOOGLE_MAP_TYPE_DEFINITIONS = [
+	{
+		slug: 'roadmap',
+		label: __( 'Roadmap', 'gatherpress' ),
+		legacyEmbedLetter: 'm',
+	},
+	{
+		slug: 'satellite',
+		label: __( 'Satellite', 'gatherpress' ),
+		legacyEmbedLetter: 'k',
+	},
+	{
+		slug: 'hybrid',
+		label: __( 'Hybrid', 'gatherpress' ),
+		legacyEmbedLetter: 'h',
+	},
+	{
+		slug: 'terrain',
+		label: __( 'Terrain', 'gatherpress' ),
+		legacyEmbedLetter: 'p',
+	},
+];
+
+/**
+ * Slugs omitted from the editor map-type control while the iframe path uses
+ * the Embed API (roadmap and satellite only).
+ */
+export const GOOGLE_IFRAME_UNSUPPORTED_MAP_TYPE_SLUGS = [
 	'hybrid',
 	'terrain',
 ];
+
+const BLOCK_MAP_TYPE_SLUGS = GOOGLE_MAP_TYPE_DEFINITIONS.map(
+	( definition ) => definition.slug
+);
+
+const LEGACY_EMBED_LETTER_BY_SLUG = GOOGLE_MAP_TYPE_DEFINITIONS.reduce(
+	( accumulator, definition ) => {
+		accumulator[ definition.slug ] = definition.legacyEmbedLetter;
+		return accumulator;
+	},
+	{}
+);
 
 /**
  * Maps Embed API `view` (and related) modes only allow `roadmap` or `satellite`
@@ -52,17 +93,6 @@ export function toMapsEmbedApiMapType( type ) {
 	}
 	return 'roadmap';
 }
-
-/**
- * Google Maps legacy keyless embed uses single-letter `t=` query values.
- * Hybrid/terrain block values are coerced to satellite/roadmap for parity with the Embed API path.
- *
- * @see https://developers.google.com/maps/documentation/embed/map-parameters
- */
-const GOOGLE_MAP_TYPE_CODES = {
-	roadmap: 'm',
-	satellite: 'k',
-};
 
 const GOOGLE_EMBED_VIEW_BASE = 'https://www.google.com/maps/embed/v1/view';
 const GOOGLE_LEGACY_EMBED_BASE = 'https://maps.google.com/maps';
@@ -104,7 +134,9 @@ export function getGoogleMapEmbedSrc( {
 	const params = new URLSearchParams( {
 		q: `${ latitude },${ longitude }`,
 		z: String( z ),
-		t: GOOGLE_MAP_TYPE_CODES[ legacyType ] || GOOGLE_MAP_TYPE_CODES.roadmap,
+		t:
+			LEGACY_EMBED_LETTER_BY_SLUG[ legacyType ] ||
+			LEGACY_EMBED_LETTER_BY_SLUG.roadmap,
 		output: 'embed',
 	} );
 	return `${ GOOGLE_LEGACY_EMBED_BASE }?${ params.toString() }`;

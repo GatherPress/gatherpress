@@ -114,16 +114,15 @@ class Venues extends Base {
 								/* translators: %s: link to "Get an API key" documentation. */
 								__( 'Optional. Referrer-restricted key for Google Maps (Embed and Static APIs). Does not unlock interactive map styles; blocks use roadmap and satellite. Enables referrer restrictions and cached static images with the static provider. Restrict the key by HTTP referrer. %s', 'gatherpress' ),
 								// phpcs:enable Generic.Files.LineLength.TooLong
-								'<a href="'
-								. esc_url( 'https://developers.google.com/maps/documentation/embed/get-api-key' )
-								. '" target="_blank" rel="noopener noreferrer">'
+								'<a href="https://developers.google.com/maps/documentation/embed/get-api-key"'
+								. ' target="_blank" rel="noopener noreferrer">'
 								. esc_html__( 'Get an API key', 'gatherpress' ) . '</a>'
 							),
 							array(
 								'a' => array(
-									'href'   => true,
-									'target' => true,
-									'rel'    => true,
+									'href'   => array(),
+									'target' => array(),
+									'rel'    => array(),
 								),
 							)
 						),

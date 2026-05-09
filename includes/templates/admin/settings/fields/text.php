@@ -2,6 +2,10 @@
 /**
  * Template for displaying a text input field in GatherPress settings.
  *
+ * This template is used to display a text input with an associated label and
+ * optional description. Password values use `password.php` instead; this file
+ * stays text-only so field types are not mixed in one template.
+ *
  * @package GatherPress\Core
  * @since 1.0.0
  *
