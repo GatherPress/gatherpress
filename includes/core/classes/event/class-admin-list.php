@@ -20,6 +20,7 @@ use GatherPress\Core\Event;
 use GatherPress\Core\Rsvp\Query as Rsvp_Query;
 use GatherPress\Core\Rsvp\Rsvp;
 use GatherPress\Core\Traits\Singleton;
+use GatherPress\Core\Utility;
 use GatherPress\Core\Venue\Setup as Venue_Setup;
 use WP_Query;
 
@@ -629,7 +630,11 @@ class Admin_List {
 			 */
 			'datetime' => apply_filters(
 				'gatherpress_event_datetime_label',
-				__( 'Event date &amp; time', 'gatherpress' ),
+				sprintf(
+					/* translators: %s: Singular post type label, e.g. "Event". */
+					__( '%s date &amp; time', 'gatherpress' ),
+					Utility::post_type_label( 'singular_name', $post_type )
+				),
 				$post_type
 			),
 		);
