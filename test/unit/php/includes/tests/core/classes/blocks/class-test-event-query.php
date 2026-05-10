@@ -525,7 +525,7 @@ class Test_Event_Query extends Base {
 		$this->assertSame(
 			'production',
 			$result['post_type'],
-			'Should pass the block-selected post type through verbatim, not the union of all event-supporting post types.'
+			'Should pass the block-selected post type through verbatim, not the union of every event-supporting type.'
 		);
 	}
 
