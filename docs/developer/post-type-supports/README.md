@@ -76,17 +76,17 @@ addFilter(
 
 #### Bare archive temporal handling
 
-The bare post-type archive URL (e.g. `/my_custom_event/`) doesn't apply any upcoming/past temporal filter by default for custom event-supporting post types. Past and future entries appear together unless one of the following narrows the result:
+The bare post-type archive URL (e.g. `/my_custom_event/`) defaults to **upcoming** for every event-supporting post type, so past entries don't appear alongside future ones in the same list. Two knobs override that default:
 
-1. URL parameters: appending `?gatherpress_event_query=upcoming` (or `past`) to the archive URL narrows that page load to the matching subset. This works out of the box.
-2. The `gatherpress_event_archive_mode` filter, which receives the queried post type as its second argument and lets you pin a default mode for any event-supporting post type. Returned values must be `upcoming`, `past`, or `none` — anything else is coerced (`upcoming` for `gatherpress_event`, `none` otherwise).
+1. URL parameters: appending `?gatherpress_event_query=upcoming` (or `past`) narrows that page load to the matching subset.
+2. The `gatherpress_event_archive_mode` filter receives the queried post type as its second argument and lets you pin a different mode for any event-supporting post type. Valid return values are `upcoming`, `past`, or `none` — anything else is coerced back to `upcoming`. Returning `none` opts the archive out entirely (404).
 
 ```php
 add_filter(
     'gatherpress_event_archive_mode',
     function ( string $mode, string $post_type ): string {
         if ( 'my_custom_event' === $post_type ) {
-            return 'upcoming';
+            return 'past';
         }
         return $mode;
     },
@@ -95,7 +95,7 @@ add_filter(
 );
 ```
 
-The standard `gatherpress_event` post type seeds `$mode` from the Event Archive setting and 404s when set to `none`. Other event-supporting post types start at `none` and pass through to the default WP archive when the filter doesn't opt them into temporal handling.
+The standard `gatherpress_event` post type also lets the Event Archive setting choose the default before the filter runs.
 
 ### `gatherpress-rsvp`
 

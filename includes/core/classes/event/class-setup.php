@@ -511,15 +511,12 @@ class Setup {
 	 * Mutate the global query to render the configured archive mode for an
 	 * event-supporting post type.
 	 *
-	 * The mode comes from `get_event_archive_mode( $post_type )`, which
-	 * reads the Event Archive setting for `gatherpress_event` (and `none`
-	 * for every other event-supporting post type) and then runs the
-	 * `gatherpress_event_archive_mode` filter so the resolved mode can
-	 * be overridden programmatically per post type. When the resolved
-	 * mode is `upcoming` or `past`, the archive is re-queried with that
-	 * temporal filter applied; when it's `none`, `gatherpress_event`
-	 * 404s (preserving the opt-out admins rely on) and other post types
-	 * pass through to the default WP archive (#1611).
+	 * The mode comes from `get_event_archive_mode( $post_type )` —
+	 * defaults to `upcoming`, with the Event Archive setting and the
+	 * `gatherpress_event_archive_mode` filter as the override knobs.
+	 * `upcoming` / `past` re-query with the matching temporal filter;
+	 * `none` 404s, since the only way to land there is an explicit
+	 * opt-out (#1611).
 	 *
 	 * @since 1.0.0
 	 *
@@ -530,14 +527,9 @@ class Setup {
 	protected function fall_back_to_archive_mode( WP_Query $wp_query, string $post_type ): void {
 		$mode = $this->get_event_archive_mode( $post_type );
 
-		if ( 'upcoming' !== $mode && 'past' !== $mode ) {
-			// `gatherpress_event` keeps its 404-on-`none` semantics so
-			// admins can opt the events archive out entirely. Other
-			// post types pass through to the default WP archive.
-			if ( Event::POST_TYPE === $post_type ) {
-				$wp_query->set_404();
-				status_header( 404 );
-			}
+		if ( 'none' === $mode ) {
+			$wp_query->set_404();
+			status_header( 404 );
 			return;
 		}
 
@@ -571,12 +563,12 @@ class Setup {
 	/**
 	 * Resolve the configured event archive mode for a given post type.
 	 *
-	 * For `gatherpress_event` the mode is read from the Event Archive
-	 * setting and coerced into one of `upcoming`, `past`, or `none`.
-	 * For other event-supporting post types the mode starts at `none`
-	 * (no settings dropdown exists for them) and only the
-	 * `gatherpress_event_archive_mode` filter can opt the archive into
-	 * upcoming/past handling.
+	 * Every event-supporting post type defaults to `upcoming`. For
+	 * `gatherpress_event` the Event Archive setting overrides the
+	 * default when it carries a valid value. The
+	 * `gatherpress_event_archive_mode` filter then runs for every post
+	 * type and gets the last word. Anything outside `upcoming` / `past`
+	 * / `none` is coerced back to `upcoming` (#1611).
 	 *
 	 * @since 1.0.0
 	 *
@@ -584,31 +576,24 @@ class Setup {
 	 * @return string One of `upcoming`, `past`, or `none`.
 	 */
 	public function get_event_archive_mode( string $post_type = Event::POST_TYPE ): string {
-		if ( Event::POST_TYPE === $post_type ) {
-			$settings = Settings::get_instance();
-			$mode     = (string) $settings->get( 'event_archive' );
+		$valid_modes = array( 'upcoming', 'past', 'none' );
+		$mode        = 'upcoming';
 
-			if ( ! in_array( $mode, array( 'upcoming', 'past', 'none' ), true ) ) {
-				$mode = 'upcoming';
+		if ( Event::POST_TYPE === $post_type ) {
+			$stored = (string) Settings::get_instance()->get( 'event_archive' );
+
+			if ( in_array( $stored, $valid_modes, true ) ) {
+				$mode = $stored;
 			}
-		} else {
-			// Other event-supporting post types have no settings dropdown,
-			// so the filter below is the sole knob. `none` keeps the bare
-			// archive on the default WP query path until a filter opts in.
-			$mode = 'none';
 		}
 
 		/**
 		 * Filters the resolved event archive mode.
 		 *
-		 * For `gatherpress_event` the incoming `$mode` reflects the Event
-		 * Archive setting; the filter lets plugins programmatically
-		 * override it (force `none` during maintenance, pin `past` for a
-		 * specific request, etc.). For other event-supporting post types
-		 * the incoming `$mode` is always `none` and the filter is the
-		 * only way to opt the archive into upcoming/past handling.
-		 * Returned values outside `upcoming`/`past`/`none` are coerced
-		 * to `upcoming` for `gatherpress_event` and `none` for others.
+		 * Lets plugins pin a post type's archive to `upcoming`, `past`,
+		 * or `none` programmatically — including overriding the Event
+		 * Archive setting for `gatherpress_event`. Returned values
+		 * outside the valid set are coerced to `upcoming`.
 		 *
 		 * @since 1.0.0
 		 *
@@ -617,11 +602,7 @@ class Setup {
 		 */
 		$mode = (string) apply_filters( 'gatherpress_event_archive_mode', $mode, $post_type );
 
-		if ( ! in_array( $mode, array( 'upcoming', 'past', 'none' ), true ) ) {
-			$mode = ( Event::POST_TYPE === $post_type ) ? 'upcoming' : 'none';
-		}
-
-		return $mode;
+		return in_array( $mode, $valid_modes, true ) ? $mode : 'upcoming';
 	}
 
 	/**
