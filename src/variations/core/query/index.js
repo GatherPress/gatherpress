@@ -33,9 +33,9 @@ const VARIATION_ATTRIBUTES = {
 	keywords: [ __( 'Events', 'gatherpress' ), __( 'Dates', 'gatherpress' ) ],
 	// Gate on `namespace` only. Including `query.postType` here would
 	// drop the variation match the moment a user picks a custom event-
-	// supporting post type (e.g. `production`), which in turn drops the
-	// "Event Card with RSVP" starter pattern out of the Change design
-	// picker since that pattern is scoped to this variation.
+	// supporting post type, which in turn drops the "Event Card with
+	// RSVP" starter pattern out of the Change design picker since that
+	// pattern is scoped to this variation.
 	isActive: [ 'namespace' ],
 	attributes: {
 		...QUERY_ATTRIBUTES,

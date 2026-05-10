@@ -499,6 +499,37 @@ class Test_Event_Query extends Base {
 	}
 
 	/**
+	 * The block's selected `postType` is honored as the `post_type` query
+	 * arg when present. Without this, a Query Loop pinned to a specific
+	 * event-supporting post type (e.g. `production`) would leak posts
+	 * from every event-supporting post type on the site (#1609).
+	 *
+	 * @since 1.0.0
+	 * @covers ::query_loop_block_query_vars
+	 *
+	 * @return void
+	 */
+	public function test_query_loop_block_query_vars_honors_block_post_type(): void {
+		$instance = Event_Query::get_instance();
+		$block    = $this->createMock( \WP_Block::class );
+
+		$block->context = array(
+			'query' => array(
+				'gatherpress_event_query' => 'upcoming',
+				'postType'                => 'production',
+			),
+		);
+
+		$result = $instance->query_loop_block_query_vars( array(), $block );
+
+		$this->assertSame(
+			'production',
+			$result['post_type'],
+			'Should pass the block-selected post type through verbatim, not the union of all event-supporting post types.'
+		);
+	}
+
+	/**
 	 * Test query_loop_block_query_vars with DESC order.
 	 *
 	 * @since 1.0.0
