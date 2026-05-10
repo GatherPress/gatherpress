@@ -224,6 +224,7 @@ const EVENT_CARD_WITH_RSVP_TEMPLATE = [
 							[
 								'gatherpress/rsvp',
 								{
+									patternPicked: true,
 									layout: {
 										type: 'flex',
 										justifyContent: 'right',

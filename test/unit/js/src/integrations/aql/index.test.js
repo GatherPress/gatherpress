@@ -45,7 +45,7 @@ jest.mock( '@wordpress/i18n', () => ( {
  * Mock internal dependencies
  */
 jest.mock( '@src/helpers/event', () => ( {
-	isPostTypeSupporting: jest.fn(),
+	usePostTypeSupports: jest.fn(),
 } ) );
 
 jest.mock( '@src/variations/core/query/components', () => ( {
@@ -63,7 +63,7 @@ jest.mock( '@src/variations/core/query/components', () => ( {
  */
 import { addFilter } from '@wordpress/hooks';
 import { useEffect } from '@wordpress/element';
-import { isPostTypeSupporting } from '@src/helpers/event';
+import { usePostTypeSupports } from '@src/helpers/event';
 
 // Import the module to trigger the addFilter side effect.
 import '@src/integrations/aql/index';
@@ -81,7 +81,7 @@ describe( 'AQL Integration', () => {
 		// Restore default useEffect behavior for each test.
 		useEffect.mockImplementation( ( fn ) => fn() );
 		// Default: return true only for gatherpress_event post type.
-		isPostTypeSupporting.mockImplementation(
+		usePostTypeSupports.mockImplementation(
 			( support, postType ) =>
 				'gatherpress-event-date' === support &&
 				'gatherpress_event' === postType
@@ -178,7 +178,7 @@ describe( 'AQL Integration', () => {
 
 		it( 'renders event controls panel for AQL blocks with custom event-date-supporting post type', () => {
 			// Mock gatherpress_shindig as a post type that supports gatherpress-event-date.
-			isPostTypeSupporting.mockImplementation(
+			usePostTypeSupports.mockImplementation(
 				( support, postType ) =>
 					'gatherpress-event-date' === support &&
 					'gatherpress_shindig' === postType
@@ -357,11 +357,14 @@ describe( 'AQL Integration', () => {
 				/>
 			);
 
-			// Verify useEffect was called with a callback and dependency array.
+			// Verify useEffect was called with a callback and dependency
+			// array keyed on the resolved support gate (true/false from
+			// usePostTypeSupports), not the raw postType string — so the
+			// effect re-runs the moment the post-type registry resolves.
 			expect( useEffect ).toHaveBeenCalledWith(
 				expect.any( Function ),
 				expect.arrayContaining( [
-					'gatherpress_event',
+					true,
 					undefined,
 					expect.any( Object ),
 					mockSetAttributes,
