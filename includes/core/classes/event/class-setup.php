@@ -25,6 +25,7 @@ use GatherPress\Core\Utility;
 use WP;
 use WP_Block;
 use WP_Post;
+use WP_Query;
 
 /**
  * Class Setup.
@@ -418,14 +419,28 @@ class Setup {
 	public function handle_event_archive_redirect(): void {
 		global $wp_query;
 
-		// Bail when not the event post-type archive, when on a feed (the Feed
-		// class handles those separately), or when event-query already claimed
-		// this page as an archive — combined into one guard so the function
-		// reads as a dispatch.
-		if ( ! is_post_type_archive( Event::POST_TYPE )
-			|| is_feed()
-			|| $wp_query->get( Query::EVENT_QUERY_PARAM )
-		) {
+		// Bail on feeds (handled separately by Feed) or when something
+		// else already claimed this page as an event archive.
+		if ( is_feed() || $wp_query->get( Query::EVENT_QUERY_PARAM ) ) {
+			return;
+		}
+
+		// Bail when not on a post type archive at all, or when the
+		// queried post type doesn't declare event-date support.
+		$post_type = (string) get_query_var( 'post_type' );
+
+		if ( ! is_post_type_archive() || ! post_type_supports( $post_type, 'gatherpress-event-date' ) ) {
+			return;
+		}
+
+		// The page-as-archive flow below reads settings that exist only
+		// for the standard event post type (`events_url`,
+		// `upcoming_events`, `past_events`). Other event-supporting post
+		// types skip straight to the mode resolver, which honors the
+		// `gatherpress_event_archive_mode` filter the same way for every
+		// post type that goes through it (#1611).
+		if ( Event::POST_TYPE !== $post_type ) {
+			$this->fall_back_to_archive_mode( $wp_query, $post_type );
 			return;
 		}
 
@@ -439,7 +454,7 @@ class Setup {
 		if ( ! ( $page instanceof WP_Post ) || 'publish' !== $page->post_status ) {
 			// No page exists with this slug — fall back to the configured
 			// archive mode (or 404 if no mode is configured).
-			$this->fall_back_to_archive_mode( $wp_query );
+			$this->fall_back_to_archive_mode( $wp_query, $post_type );
 			return;
 		}
 
@@ -493,23 +508,36 @@ class Setup {
 	}
 
 	/**
-	 * Mutate the global query to render the configured fallback archive mode
-	 * (upcoming/past) when no page is assigned to the events rewrite slug, or
-	 * 404 when no mode is configured. Extracted from
-	 * `handle_event_archive_redirect()` to keep that dispatch under
-	 * SonarCloud's three-return ceiling.
+	 * Mutate the global query to render the configured archive mode for an
+	 * event-supporting post type.
+	 *
+	 * The mode comes from `get_event_archive_mode( $post_type )`, which
+	 * reads the Event Archive setting for `gatherpress_event` (and `none`
+	 * for every other event-supporting post type) and then runs the
+	 * `gatherpress_event_archive_mode` filter so the resolved mode can
+	 * be overridden programmatically per post type. When the resolved
+	 * mode is `upcoming` or `past`, the archive is re-queried with that
+	 * temporal filter applied; when it's `none`, `gatherpress_event`
+	 * 404s (preserving the opt-out admins rely on) and other post types
+	 * pass through to the default WP archive (#1611).
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param \WP_Query $wp_query The global query, mutated in place.
+	 * @param WP_Query $wp_query  The global query, mutated in place.
+	 * @param string   $post_type The event-supporting post type being archived.
 	 * @return void
 	 */
-	protected function fall_back_to_archive_mode( \WP_Query $wp_query ): void {
-		$mode = $this->get_event_archive_mode();
+	protected function fall_back_to_archive_mode( WP_Query $wp_query, string $post_type ): void {
+		$mode = $this->get_event_archive_mode( $post_type );
 
 		if ( 'upcoming' !== $mode && 'past' !== $mode ) {
-			$wp_query->set_404();
-			status_header( 404 );
+			// `gatherpress_event` keeps its 404-on-`none` semantics so
+			// admins can opt the events archive out entirely. Other
+			// post types pass through to the default WP archive.
+			if ( Event::POST_TYPE === $post_type ) {
+				$wp_query->set_404();
+				status_header( 404 );
+			}
 			return;
 		}
 
@@ -517,7 +545,7 @@ class Setup {
 
 		$wp_query->query(
 			array(
-				'post_type'              => Event::POST_TYPE,
+				'post_type'              => $post_type,
 				Query::EVENT_QUERY_PARAM => $mode,
 				'paged'                  => $paged,
 			)
@@ -541,42 +569,56 @@ class Setup {
 	}
 
 	/**
-	 * Resolve the configured event archive mode.
+	 * Resolve the configured event archive mode for a given post type.
 	 *
-	 * Reads the `event_archive` setting and normalizes it against the
-	 * three valid modes (`upcoming`, `past`, `none`). Anything outside
-	 * that set falls back to `upcoming` so a malformed stored value
-	 * doesn't break archive resolution.
+	 * For `gatherpress_event` the mode is read from the Event Archive
+	 * setting and coerced into one of `upcoming`, `past`, or `none`.
+	 * For other event-supporting post types the mode starts at `none`
+	 * (no settings dropdown exists for them) and only the
+	 * `gatherpress_event_archive_mode` filter can opt the archive into
+	 * upcoming/past handling.
 	 *
 	 * @since 1.0.0
 	 *
+	 * @param string $post_type Post type to resolve the mode for. Defaults to the standard event post type.
 	 * @return string One of `upcoming`, `past`, or `none`.
 	 */
-	public function get_event_archive_mode(): string {
-		$settings = Settings::get_instance();
-		$mode     = (string) $settings->get( 'event_archive' );
+	public function get_event_archive_mode( string $post_type = Event::POST_TYPE ): string {
+		if ( Event::POST_TYPE === $post_type ) {
+			$settings = Settings::get_instance();
+			$mode     = (string) $settings->get( 'event_archive' );
 
-		if ( ! in_array( $mode, array( 'upcoming', 'past', 'none' ), true ) ) {
-			$mode = 'upcoming';
+			if ( ! in_array( $mode, array( 'upcoming', 'past', 'none' ), true ) ) {
+				$mode = 'upcoming';
+			}
+		} else {
+			// Other event-supporting post types have no settings dropdown,
+			// so the filter below is the sole knob. `none` keeps the bare
+			// archive on the default WP query path until a filter opts in.
+			$mode = 'none';
 		}
 
 		/**
 		 * Filters the resolved event archive mode.
 		 *
-		 * Lets plugins override the user-configured mode at runtime —
-		 * e.g., force `none` while a maintenance flag is set, or pin
-		 * `upcoming` for a specific request context. Returned values
-		 * outside the valid set are coerced back to `upcoming`.
+		 * For `gatherpress_event` the incoming `$mode` reflects the Event
+		 * Archive setting; the filter lets plugins programmatically
+		 * override it (force `none` during maintenance, pin `past` for a
+		 * specific request, etc.). For other event-supporting post types
+		 * the incoming `$mode` is always `none` and the filter is the
+		 * only way to opt the archive into upcoming/past handling.
+		 * Returned values outside `upcoming`/`past`/`none` are coerced
+		 * to `upcoming` for `gatherpress_event` and `none` for others.
 		 *
 		 * @since 1.0.0
 		 *
-		 * @param string $mode The current archive mode (`upcoming`,
-		 *                     `past`, or `none`).
+		 * @param string $mode      Current archive mode (`upcoming`, `past`, or `none`).
+		 * @param string $post_type Post type being archived.
 		 */
-		$mode = (string) apply_filters( 'gatherpress_event_archive_mode', $mode );
+		$mode = (string) apply_filters( 'gatherpress_event_archive_mode', $mode, $post_type );
 
 		if ( ! in_array( $mode, array( 'upcoming', 'past', 'none' ), true ) ) {
-			$mode = 'upcoming';
+			$mode = ( Event::POST_TYPE === $post_type ) ? 'upcoming' : 'none';
 		}
 
 		return $mode;

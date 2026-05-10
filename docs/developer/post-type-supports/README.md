@@ -74,6 +74,29 @@ addFilter(
 );
 ```
 
+#### Bare archive temporal handling
+
+The bare post-type archive URL (e.g. `/my_custom_event/`) doesn't apply any upcoming/past temporal filter by default for custom event-supporting post types. Past and future entries appear together unless one of the following narrows the result:
+
+1. URL parameters: appending `?gatherpress_event_query=upcoming` (or `past`) to the archive URL narrows that page load to the matching subset. This works out of the box.
+2. The `gatherpress_event_archive_mode` filter, which receives the queried post type as its second argument and lets you pin a default mode for any event-supporting post type. Returned values must be `upcoming`, `past`, or `none` — anything else is coerced (`upcoming` for `gatherpress_event`, `none` otherwise).
+
+```php
+add_filter(
+    'gatherpress_event_archive_mode',
+    function ( string $mode, string $post_type ): string {
+        if ( 'my_custom_event' === $post_type ) {
+            return 'upcoming';
+        }
+        return $mode;
+    },
+    10,
+    2
+);
+```
+
+The standard `gatherpress_event` post type seeds `$mode` from the Event Archive setting and 404s when set to `none`. Other event-supporting post types start at `none` and pass through to the default WP archive when the filter doesn't opt them into temporal handling.
+
 ### `gatherpress-rsvp`
 
 Enables the comment-based RSVP system for a post type. This includes:

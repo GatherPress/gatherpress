@@ -1576,6 +1576,162 @@ class Test_Setup extends Base {
 	}
 
 	/**
+	 * `get_event_archive_mode()` returns `none` for a non-event post type
+	 * by default, leaving the bare archive on WordPress's default query
+	 * path. Without a `gatherpress_event_archive_mode` filter override
+	 * there's no settings dropdown to read from, so no temporal filter
+	 * applies (#1611).
+	 *
+	 * @covers ::get_event_archive_mode
+	 *
+	 * @return void
+	 */
+	public function test_get_event_archive_mode_defaults_to_none_for_non_event_post_type(): void {
+		$instance = Setup::get_instance();
+
+		register_post_type(
+			'shindig',
+			array(
+				'public'   => false,
+				'supports' => array( 'title', 'gatherpress-event-date' ),
+			)
+		);
+
+		// Even with the events setting present, a non-event post type
+		// must not pick up the events dropdown's value.
+		update_option( Settings::OPTION_NAME, array( 'event_archive' => 'past' ) );
+
+		$this->assertSame(
+			'none',
+			$instance->get_event_archive_mode( 'shindig' ),
+			'Non-event post types must default to `none` and ignore the events setting.'
+		);
+
+		delete_option( Settings::OPTION_NAME );
+		unregister_post_type( 'shindig' );
+	}
+
+	/**
+	 * `get_event_archive_mode()` passes the queried post type to the
+	 * `gatherpress_event_archive_mode` filter so site builders can opt a
+	 * non-event post type's bare archive into upcoming/past handling
+	 * (#1611). The same filter still works against `gatherpress_event`.
+	 *
+	 * @covers ::get_event_archive_mode
+	 *
+	 * @return void
+	 */
+	public function test_get_event_archive_mode_filter_can_opt_non_event_post_type_into_upcoming(): void {
+		$instance = Setup::get_instance();
+
+		register_post_type(
+			'shindig',
+			array(
+				'public'   => false,
+				'supports' => array( 'title', 'gatherpress-event-date' ),
+			)
+		);
+
+		$received_post_type = null;
+		$pin_upcoming       = static function ( string $mode, string $post_type ) use ( &$received_post_type ) {
+			$received_post_type = $post_type;
+			return ( 'shindig' === $post_type ) ? 'upcoming' : $mode;
+		};
+		add_filter( 'gatherpress_event_archive_mode', $pin_upcoming, 10, 2 );
+
+		$this->assertSame(
+			'upcoming',
+			$instance->get_event_archive_mode( 'shindig' ),
+			'Filter must be able to opt a non-event post type into upcoming handling.'
+		);
+		$this->assertSame(
+			'shindig',
+			$received_post_type,
+			'Filter must receive the queried post type as its second argument.'
+		);
+
+		remove_filter( 'gatherpress_event_archive_mode', $pin_upcoming, 10 );
+		unregister_post_type( 'shindig' );
+	}
+
+	/**
+	 * `handle_event_archive_redirect()` routes the bare archive of a
+	 * non-event event-supporting post type through the same mode
+	 * resolver as `gatherpress_event` — but skips the page-as-archive
+	 * settings flow, which is event-specific. Without a
+	 * `gatherpress_event_archive_mode` filter the archive passes
+	 * through to the default WP query (#1611).
+	 *
+	 * @covers ::handle_event_archive_redirect
+	 *
+	 * @return void
+	 */
+	public function test_handle_event_archive_redirect_non_event_post_type_passes_through(): void {
+		global $wp_query;
+
+		$instance = Setup::get_instance();
+
+		register_post_type(
+			'shindig',
+			array(
+				'public'   => true,
+				'supports' => array( 'title', 'gatherpress-event-date' ),
+			)
+		);
+
+		// Mock being on the bare post-type archive of `shindig`.
+		$wp_query->is_post_type_archive = true;
+		$wp_query->set( 'post_type', 'shindig' );
+
+		$instance->handle_event_archive_redirect();
+
+		$this->assertFalse(
+			$wp_query->is_404(),
+			'Non-event archives must pass through, not 404.'
+		);
+
+		unregister_post_type( 'shindig' );
+	}
+
+	/**
+	 * `fall_back_to_archive_mode()` for a non-event post type with an
+	 * unresolved mode (`none`) leaves the global query untouched —
+	 * unlike `gatherpress_event` it must NOT 404, because admins of
+	 * other event-supporting post types haven't opted into temporal
+	 * handling at all (#1611).
+	 *
+	 * @covers ::fall_back_to_archive_mode
+	 *
+	 * @return void
+	 */
+	public function test_fall_back_to_archive_mode_does_not_404_non_event_post_types(): void {
+		global $wp_query;
+
+		$instance = Setup::get_instance();
+
+		register_post_type(
+			'shindig',
+			array(
+				'public'   => false,
+				'supports' => array( 'title', 'gatherpress-event-date' ),
+			)
+		);
+
+		Utility::invoke_hidden_method(
+			$instance,
+			'fall_back_to_archive_mode',
+			array( $wp_query, 'shindig' )
+		);
+
+		$this->assertFalse(
+			$wp_query->is_404(),
+			'Non-event post types with no resolved mode must pass through, not 404.'
+		);
+
+		unregister_post_type( 'shindig' );
+	}
+
+	/**
 	 * Tests handle_event_archive_redirect does not interfere with feed requests.
 	 *
 	 * @covers ::handle_event_archive_redirect
@@ -1802,7 +1958,7 @@ class Test_Setup extends Base {
 		Utility::invoke_hidden_method(
 			$instance,
 			'fall_back_to_archive_mode',
-			array( $wp_query )
+			array( $wp_query, Event::POST_TYPE )
 		);
 
 		delete_option( Settings::OPTION_NAME );
@@ -1838,7 +1994,7 @@ class Test_Setup extends Base {
 		Utility::invoke_hidden_method(
 			$instance,
 			'fall_back_to_archive_mode',
-			array( $wp_query )
+			array( $wp_query, Event::POST_TYPE )
 		);
 
 		remove_filter( 'gatherpress_event_archive_mode', $mode_filter );
