@@ -54,9 +54,9 @@ class Venues extends Base {
 	 * @return string The localized name for the venues settings page.
 	 */
 	protected function get_name(): string {
-		// Read the registered plural label so a site that filters
-		// `gatherpress_venue` to "Locations" sees that everywhere the
-		// Venues settings sub-menu surfaces (#1612).
+		// Read the registered plural label so the settings sub-menu
+		// reflects whatever the site has filtered the post type's
+		// labels to (#1612).
 		return Utility::post_type_label( 'name', Venue::POST_TYPE );
 	}
 
@@ -273,7 +273,11 @@ class Venues extends Base {
 							'type'    => 'text',
 							'rewrite' => true,
 							'options' => array(
-								'label'   => __( 'Permalink base of Venues.', 'gatherpress' ),
+								'label'   => sprintf(
+									/* translators: %s: Plural post type label, e.g. "Venues". */
+									__( 'Permalink base of %s.', 'gatherpress' ),
+									Utility::post_type_label( 'name', Venue::POST_TYPE )
+								),
 								'default' => Setup::get_instance()->get_localized_post_type_slug(),
 							),
 							'preview' => array(
