@@ -69,6 +69,9 @@ class Event_Query {
 			2
 		);
 		add_action( 'registered_post_type', array( $this, 'maybe_register_event_date_rest_hooks' ) );
+		// Sweep last so post types registered before our listener was
+		// added still get their REST filters installed (#1608).
+		add_action( 'init', array( $this, 'register_existing_event_date_post_types' ), PHP_INT_MAX );
 
 		// Integrate with Advanced Query Loop plugin to pass event query params through.
 		add_filter(
@@ -77,6 +80,25 @@ class Event_Query {
 			10,
 			2
 		);
+	}
+
+	/**
+	 * Register REST hooks for every event-supporting post type that's
+	 * already in the registry by the time we run.
+	 *
+	 * Companion to the `registered_post_type` listener — that one catches
+	 * post types registered AFTER `Event_Query` is instantiated, this one
+	 * catches the ones registered BEFORE. Idempotent: `add_filter` is a
+	 * no-op when the same callback is already registered.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return void
+	 */
+	public function register_existing_event_date_post_types(): void {
+		foreach ( get_post_types_by_support( 'gatherpress-event-date' ) as $post_type ) {
+			$this->maybe_register_event_date_rest_hooks( $post_type );
+		}
 	}
 
 	/**

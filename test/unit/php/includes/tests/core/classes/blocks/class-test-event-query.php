@@ -47,6 +47,12 @@ class Test_Event_Query extends Base {
 				'callback' => array( $instance, 'maybe_register_event_date_rest_hooks' ),
 			),
 			array(
+				'type'     => 'action',
+				'name'     => 'init',
+				'priority' => PHP_INT_MAX,
+				'callback' => array( $instance, 'register_existing_event_date_post_types' ),
+			),
+			array(
 				'type'     => 'filter',
 				'name'     => 'aql_query_vars',
 				'priority' => 10,
@@ -113,6 +119,63 @@ class Test_Event_Query extends Base {
 			has_filter( 'rest_post_query', array( $instance, 'rest_query' ) ),
 			'Failed to assert that no REST filters are registered for a post type without event-date support.'
 		);
+	}
+
+	/**
+	 * Sweep registers REST filters for every event-supporting post type
+	 * already in the registry.
+	 *
+	 * Reproduces #1608: post types registered by other plugins before
+	 * `Event_Query` boots (e.g. `gatherpress-productions`) miss the
+	 * `registered_post_type` listener, so without this sweep their REST
+	 * endpoints lack `orderby=datetime`, `gatherpress_event_query`, and
+	 * `include_unfinished` and the editor 400s when the Query Loop block
+	 * tries to fetch them.
+	 *
+	 * @since 1.0.0
+	 * @covers ::register_existing_event_date_post_types
+	 *
+	 * @return void
+	 */
+	public function test_register_existing_event_date_post_types_sweeps_registry(): void {
+		$instance  = Event_Query::get_instance();
+		$post_type = 'shindig';
+
+		register_post_type(
+			$post_type,
+			array(
+				'label'    => 'Test Productions',
+				'public'   => false,
+				'supports' => array( 'title', 'gatherpress-event-date' ),
+			)
+		);
+
+		// Strip any filters so we observe the sweep installing them, not
+		// a pre-existing registration from the `registered_post_type`
+		// listener that fired during `register_post_type()`.
+		remove_all_filters( sprintf( 'rest_%s_query', $post_type ) );
+		remove_all_filters( sprintf( 'rest_%s_collection_params', $post_type ) );
+
+		$instance->register_existing_event_date_post_types();
+
+		$this->assertSame(
+			10,
+			has_filter(
+				sprintf( 'rest_%s_query', $post_type ),
+				array( $instance, 'rest_query' )
+			),
+			'Sweep should install rest_query filter for every event-supporting post type.'
+		);
+		$this->assertSame(
+			10,
+			has_filter(
+				sprintf( 'rest_%s_collection_params', $post_type ),
+				array( $instance, 'rest_collection_params' )
+			),
+			'Sweep should install rest_collection_params filter for every event-supporting post type.'
+		);
+
+		unregister_post_type( $post_type );
 	}
 
 	/**
