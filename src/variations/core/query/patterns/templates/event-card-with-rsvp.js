@@ -224,6 +224,11 @@ const EVENT_CARD_WITH_RSVP_TEMPLATE = [
 							[
 								'gatherpress/rsvp',
 								{
+									// Skip the pattern picker: seeded by the
+									// Event Card with RSVP template, so it
+									// should render the default rather than
+									// prompting "Choose".
+									patternPicked: true,
 									layout: {
 										type: 'flex',
 										justifyContent: 'right',

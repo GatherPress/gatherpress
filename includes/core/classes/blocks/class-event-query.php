@@ -234,8 +234,13 @@ class Event_Query {
 		// Generate a new custom query with all potential query vars.
 		$query_args = array();
 
-		// Post Related.
-		$query_args['post_type'] = get_post_types_by_support( 'gatherpress-event-date' );
+		// Honor the block's selected post type when present so a Query Loop
+		// pinned to e.g. `production` doesn't leak `gatherpress_event` posts
+		// (#1609). Fall back to all event-supporting post types only when
+		// the block didn't pick one explicitly.
+		$query_args['post_type'] = ! empty( $block_query['postType'] )
+			? $block_query['postType']
+			: get_post_types_by_support( 'gatherpress-event-date' );
 
 		// Type of event list: 'upcoming' or 'past',
 		// @see wp-content/plugins/gatherpress/includes/core/classes/class-event-query.php.

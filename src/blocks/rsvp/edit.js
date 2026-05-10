@@ -196,9 +196,16 @@ const Edit = ( { attributes, setAttributes, clientId, context } ) => {
 	// the override target's entity record loads — `hasValidEventId` reads
 	// `getEntityRecord` / `getEntityRecords`, which only emit subscription
 	// updates when called via the `useSelect` callback's `select`.
+	//
+	// Inside a Query Loop the host's `context.postType` is the iterated
+	// post type (e.g. `production`). If that post type doesn't declare
+	// `gatherpress-rsvp` support, the block is in a context where there's
+	// no RSVP to render — gate on `isEventContext` so the loop-iterated
+	// case dims with the rest, instead of staying bright on every
+	// production card just because the post exists (#1608 follow-on).
 	const isValidEvent = useSelect(
 		( select ) =>
-			( hasExplicitOverride || isDescendentOfQueryLoop || isEventContext ) &&
+			( hasExplicitOverride || ( isDescendentOfQueryLoop && isEventContext ) || isEventContext ) &&
 			hasValidEventId( select, postId, context?.postType ),
 		[
 			postId,
