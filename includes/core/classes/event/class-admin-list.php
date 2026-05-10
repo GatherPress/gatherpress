@@ -244,7 +244,9 @@ class Admin_List {
 	 * match the actual list. Both buckets pivot on `datetime_end_gmt`:
 	 * upcoming = end time is still in the future (running + future);
 	 * past = end time has already passed. Mutually exclusive — running
-	 * events appear only in upcoming, never in both.
+	 * events appear only in upcoming, never in both. Events with no row
+	 * in the events table (no date set yet) are excluded from both
+	 * buckets — they only appear under the All view.
 	 *
 	 * @since 1.0.0
 	 *
@@ -261,15 +263,15 @@ class Admin_List {
 		$table   = sprintf( Event::TABLE_FORMAT, $wpdb->prefix );
 		$current = gmdate( Event::DATETIME_FORMAT, time() );
 
-		// Upcoming: events whose end time is still in the future (includes currently running),
-		// or events with no row in the events table (no date set yet).
+		// Upcoming: events whose end time is still in the future (includes
+		// currently running). Events with no row in the events table are
+		// not counted — they only show under the All view.
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$upcoming = (int) $wpdb->get_var(
 			$wpdb->prepare(
-				'SELECT COUNT(1) FROM %i LEFT JOIN %i ON %i.ID = %i.post_id'
+				'SELECT COUNT(1) FROM %i INNER JOIN %i ON %i.ID = %i.post_id'
 				. ' WHERE %i.post_type = %s AND %i.post_status NOT IN'
-				. " ('trash', 'auto-draft') AND (%i.datetime_end_gmt >= %s"
-				. ' OR %i.post_id IS NULL)',
+				. " ('trash', 'auto-draft') AND %i.datetime_end_gmt >= %s",
 				$wpdb->posts,
 				$table,
 				$wpdb->posts,
@@ -278,20 +280,19 @@ class Admin_List {
 				$post_type,
 				$wpdb->posts,
 				$table,
-				$current,
-				$table
+				$current
 			)
 		);
 
-		// Past: events whose end time has already passed,
-		// excluding events with no row in the events table.
+		// Past: events whose end time has already passed. Events with no
+		// row in the events table are excluded — they only show under the
+		// All view.
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$past = (int) $wpdb->get_var(
 			$wpdb->prepare(
-				'SELECT COUNT(1) FROM %i LEFT JOIN %i ON %i.ID = %i.post_id'
+				'SELECT COUNT(1) FROM %i INNER JOIN %i ON %i.ID = %i.post_id'
 				. ' WHERE %i.post_type = %s AND %i.post_status NOT IN'
-				. " ('trash', 'auto-draft') AND %i.datetime_end_gmt < %s"
-				. ' AND %i.post_id IS NOT NULL',
+				. " ('trash', 'auto-draft') AND %i.datetime_end_gmt < %s",
 				$wpdb->posts,
 				$table,
 				$wpdb->posts,
@@ -300,8 +301,7 @@ class Admin_List {
 				$post_type,
 				$wpdb->posts,
 				$table,
-				$current,
-				$table
+				$current
 			)
 		);
 

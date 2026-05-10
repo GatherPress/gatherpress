@@ -83,3 +83,4 @@ GatherPress calls the following services when editing venues or displaying maps.
 ---
 
 *GatherPress is still in active development. Thank you for helping us build a better way to gather.*
+
