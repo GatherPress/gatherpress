@@ -34,11 +34,15 @@ add_filter(
 
 ## Files
 
-- [includes/core/classes/event/class-admin-list.php:630](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/event/class-admin-list.php#L630)
+- [includes/core/classes/event/class-admin-list.php:631](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/event/class-admin-list.php#L631)
 ```php
 apply_filters(
 				'gatherpress_event_datetime_label',
-				__( 'Event date &amp; time', 'gatherpress' ),
+				sprintf(
+					/* translators: %s: Singular post type label, e.g. "Event". */
+					__( '%s date &amp; time', 'gatherpress' ),
+					Utility::post_type_label( 'singular_name', $post_type )
+				),
 				$post_type
 			)
 ```
