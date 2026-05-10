@@ -14,9 +14,11 @@ namespace GatherPress\Core\Settings;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
-use GatherPress\Core\Traits\Singleton;
+use GatherPress\Core\Event;
 use GatherPress\Core\Event\Setup;
 use GatherPress\Core\Topic;
+use GatherPress\Core\Traits\Singleton;
+use GatherPress\Core\Utility;
 
 /**
  * Class Events.
@@ -51,7 +53,10 @@ class Events extends Base {
 	 * @return string The localized name for the events settings page.
 	 */
 	protected function get_name(): string {
-		return __( 'Events', 'gatherpress' );
+		// Read the registered plural label so a site that filters
+		// `gatherpress_event` to "Happenings" sees that everywhere the
+		// Events settings sub-menu surfaces (#1612).
+		return Utility::post_type_label( 'name', Event::POST_TYPE );
 	}
 
 	/**
@@ -221,7 +226,7 @@ class Events extends Base {
 				'options'     => array(
 					'events_url' => array(
 						'labels' => array(
-							'name' => __( 'Events', 'gatherpress' ),
+							'name' => Utility::post_type_label( 'name', Event::POST_TYPE ),
 						),
 						'field'  => array(
 							'type'    => 'text',

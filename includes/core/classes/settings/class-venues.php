@@ -16,6 +16,8 @@ namespace GatherPress\Core\Settings;
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Traits\Singleton;
+use GatherPress\Core\Utility;
+use GatherPress\Core\Venue;
 use GatherPress\Core\Venue\Map;
 use GatherPress\Core\Venue\Setup;
 
@@ -52,7 +54,10 @@ class Venues extends Base {
 	 * @return string The localized name for the venues settings page.
 	 */
 	protected function get_name(): string {
-		return __( 'Venues', 'gatherpress' );
+		// Read the registered plural label so a site that filters
+		// `gatherpress_venue` to "Locations" sees that everywhere the
+		// Venues settings sub-menu surfaces (#1612).
+		return Utility::post_type_label( 'name', Venue::POST_TYPE );
 	}
 
 	/**
@@ -262,7 +267,7 @@ class Venues extends Base {
 				'options'     => array(
 					'venues_url' => array(
 						'labels' => array(
-							'name' => __( 'Venues', 'gatherpress' ),
+							'name' => Utility::post_type_label( 'name', Venue::POST_TYPE ),
 						),
 						'field'  => array(
 							'type'    => 'text',
