@@ -15,7 +15,8 @@ import { PluginDocumentSettingPanel } from '@wordpress/editor';
 /**
  * Internal dependencies
  */
-import { isEventPostType, usePostTypeLabel } from '../../helpers/event';
+import { isEventPostType } from '../../helpers/event';
+import { usePostTypeLabel } from '../../helpers/editor';
 import DateTimeRangePanel from './datetime-range';
 import NotifyMembersPanel from './notify-members';
 import { EventPluginDocumentSettings } from './slot';

@@ -14,7 +14,7 @@ import { PluginDocumentSettingPanel } from '@wordpress/editor';
  * Internal dependencies
  */
 import { isVenuePostType } from '../../helpers/venue';
-import { usePostTypeLabel } from '../../helpers/event';
+import { usePostTypeLabel } from '../../helpers/editor';
 import VenueInformationPanel from './venue-information';
 import { VenuePluginDocumentSettings } from './slot';
 import VenuePluginFill from './fill';
