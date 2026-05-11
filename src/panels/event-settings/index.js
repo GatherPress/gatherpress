@@ -1,7 +1,7 @@
 /**
  * WordPress dependencies
  */
-import { __ } from '@wordpress/i18n';
+import { __, sprintf } from '@wordpress/i18n';
 import domReady from '@wordpress/dom-ready';
 import { dispatch, select, useSelect } from '@wordpress/data';
 import { applyFilters } from '@wordpress/hooks';
@@ -16,6 +16,7 @@ import { PluginDocumentSettingPanel } from '@wordpress/editor';
  * Internal dependencies
  */
 import { isEventPostType } from '../../helpers/event';
+import { usePostTypeLabel } from '../../helpers/editor';
 import DateTimeRangePanel from './datetime-range';
 import NotifyMembersPanel from './notify-members';
 import { EventPluginDocumentSettings } from './slot';
@@ -38,20 +39,31 @@ const EventSettings = () => {
 		[]
 	);
 
+	// Read the singular label so the panel title reflects what the post type
+	// is actually called — a custom event-supporting post type with
+	// `singular_name => 'Production'` shows "Production settings" without
+	// having to write a filter callback (#1612).
+	const singularLabel = usePostTypeLabel(
+		'singular_name',
+		currentPostType,
+		__( 'Event', 'gatherpress' )
+	);
+
 	/**
 	 * Title of the editor's "Event settings" sidebar panel.
 	 *
-	 * Lets post types that declare `gatherpress-event-date` support relabel
-	 * the sidebar panel without re-implementing the slotfill — a
-	 * `production` post type can surface "Production settings" instead of
-	 * the default "Event settings", a `release` post type "Release settings",
-	 * etc. The panel name (`gatherpress-event-settings`) and its slot
+	 * Defaults to `<singular_name> settings`, derived from the post type's
+	 * registered labels — a `production` post type with
+	 * `singular_name => 'Production'` surfaces "Production settings" without
+	 * any extra wiring. The filter remains for sites that need finer control
+	 * (e.g. localized phrasing that doesn't round-trip cleanly through
+	 * sprintf). The panel name (`gatherpress-event-settings`) and its slot
 	 * registration are unchanged, so existing `EventPluginDocumentSettings`
 	 * fills keep mounting in the same panel.
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param {string}      title    Default panel title ("Event settings").
+	 * @param {string}      title    Default panel title (`<singular_name> settings`).
 	 * @param {string|null} postType Post type currently being edited, or null
 	 *                               if the editor has not yet resolved one.
 	 * @return {string} Panel title rendered in the sidebar.
@@ -68,7 +80,11 @@ const EventSettings = () => {
 	 */
 	const panelTitle = applyFilters(
 		'gatherpress.eventSettingsPanelTitle',
-		__( 'Event settings', 'gatherpress' ),
+		sprintf(
+			/* translators: %s: Singular post type label, e.g. "Event". */
+			__( '%s settings', 'gatherpress' ),
+			singularLabel
+		),
 		currentPostType
 	);
 
