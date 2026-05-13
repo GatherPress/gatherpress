@@ -148,23 +148,6 @@ class Endpoint {
 	}
 
 	/**
-	 * Set up hooks for various purposes.
-	 *
-	 * This method adds hooks for different purposes as needed.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @return void
-
-	protected function setup_hooks(): void {
-		global $wp_filter;
-		$current_filter   = current_filter();
-		$current_priority = $wp_filter[ $current_filter ]->current_priority();
-
-		add_action( $current_filter, array( $this, 'init' ), $current_priority + 1 );
-	} */
-
-	/**
 	 * Initializes the endpoint by registering rewrite rules and handling query variables.
 	 *
 	 * The method generates rewrite rules for the endpoint based on the post type or taxonomy rewrite base
