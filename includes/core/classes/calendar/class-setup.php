@@ -135,7 +135,7 @@ class Setup {
 	 * @return void
 	 */
 	public function init_taxonomies( string $taxonomy, $object_type ): void {
-		// Stop if the currently registered taxonomy …
+		// Stop if the currently registered taxonomy does not validate.
 		if ( // … is not registered for the events post type.
 			! in_array( 'gatherpress_event', (array) $object_type, true ) ||
 			// … is GatherPress' shadow-taxonomy for venues.
@@ -237,8 +237,6 @@ class Setup {
 			return;
 		}
 
-		// @todo "add_filter('feed_content_type')" here, if the subscribe-able feed need something different than text/cal.
-
 		$args = array(
 			'blogtitle'     => get_bloginfo( 'name' ),
 			/* translators: Separator between site name and feed type in feed links. */
@@ -293,12 +291,14 @@ class Setup {
 					$tax = get_taxonomy( $term->taxonomy );
 					switch ( $term->taxonomy ) {
 						case '_gatherpress_venue':
-							$gatherpress_venue = Venue_Setup::get_instance()->get_venue_post_from_term_slug( $term->slug );
+							$venue = Venue_Setup::get_instance()->get_venue_post_from_term_slug( $term->slug );
 
 							// An Online-Event will have no Venue; prevent error on non-existent object.
 							// Feels weird to use a *_comments_* function here, but it delivers clean results
 							// in the form of "domain.tld/event/my-sample-event/feed/ical/".
-							$href = ( $gatherpress_venue ) ? get_post_comments_feed_link( $gatherpress_venue->ID, self::ICAL_SLUG ) : null;
+							$href = ( $venue )
+								? get_post_comments_feed_link( $venue->ID, self::ICAL_SLUG )
+								: null;
 							break;
 
 						default:

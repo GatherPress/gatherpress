@@ -285,7 +285,7 @@ class Endpoint {
 		if ( empty( $types ) ) {
 			wp_trigger_error(
 				__CLASS__,
-				'can not be called without endpoint types. Add at least one of either "Redirect" or "Template" to the list of types.',
+				'can not be called without endpoint types. Add at least one of either "Redirect" or "Template" to the list of types.', // phpcs:ignore Generic.Files.LineLength.TooLong
 				E_USER_WARNING
 			);
 			return false;
@@ -294,7 +294,7 @@ class Endpoint {
 		if ( ! in_array( $object_type, array( 'post_type', 'taxonomy' ), true ) ) {
 			wp_trigger_error(
 				__CLASS__,
-				"called on '$type_name' doesn't work, because '$object_type' is no supported object type. Use either 'post_type' or 'taxonomy'.",
+				"called on '$type_name' doesn't work, because '$object_type' is no supported object type. Use either 'post_type' or 'taxonomy'.", // phpcs:ignore Generic.Files.LineLength.TooLong
 				E_USER_WARNING
 			);
 			return false;
@@ -425,8 +425,8 @@ class Endpoint {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param string|null $entity Optional. The class name of the endpoint type to filter by (e.g., 'Redirect' or 'Template').
-	 *                            If null, it retrieves slugs for all types.
+	 * @param string|null $entity (Optional). The class name of the endpoint type to filter by
+	 *                            (e.g., 'Redirect' or 'Template'). If null, it retrieves slugs for all types.
 	 * @return string[]           An array of slugs for the specified or all types.
 	 */
 	protected function get_slugs( ?string $entity = null ): array {

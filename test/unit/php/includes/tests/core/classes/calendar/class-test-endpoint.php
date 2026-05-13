@@ -47,12 +47,36 @@ class Test_Endpoint extends Base {
 			$reg_ex,
 		);
 
-		$this->assertSame( $query_var, $instance->query_var, 'Failed to assert that query_var is persisted.' );
-		$this->assertSame( get_post_type_object( $post_type ), $instance->type_object, 'Failed to assert that type_object is persisted.' );
-		$this->assertSame( $callback, $instance->validation_callback, 'Failed to assert that validation_callback is persisted.' );
-		$this->assertSame( $types, $instance->types, 'Failed to assert that endpoint types are persisted.' );
-		$this->assertSame( $reg_ex, $instance->reg_ex, 'Failed to assert that reg_ex is persisted.' );
-		$this->assertSame( 'post_type', $instance->object_type, 'Failed to assert that object_type is set by default.' );
+		$this->assertSame(
+			$query_var,
+			$instance->query_var,
+			'Failed to assert that query_var is persisted.'
+		);
+		$this->assertSame(
+			get_post_type_object( $post_type ),
+			$instance->type_object,
+			'Failed to assert that type_object is persisted.'
+		);
+		$this->assertSame(
+			$callback,
+			$instance->validation_callback,
+			'Failed to assert that validation_callback is persisted.'
+		);
+		$this->assertSame(
+			$types,
+			$instance->types,
+			'Failed to assert that endpoint types are persisted.'
+		);
+		$this->assertSame(
+			$reg_ex,
+			$instance->reg_ex,
+			'Failed to assert that reg_ex is persisted.'
+		);
+		$this->assertSame(
+			'post_type',
+			$instance->object_type,
+			'Failed to assert that object_type is set by default.'
+		);
 	}
 
 	/**
@@ -154,8 +178,14 @@ class Test_Endpoint extends Base {
 		delete_option( 'rewrite_rules' );
 		delete_option( 'gatherpress_flush_rewrite_rules_flag' );
 
-		$this->assertEmpty( get_option( 'rewrite_rules' ), 'Failed to assert that rewrite_rules are unset.' );
-		$this->assertFalse( get_option( 'gatherpress_flush_rewrite_rules_flag' ), 'Failed to assert that GatherPress\' flag to flush the rewrite_rules is unset.' );
+		$this->assertEmpty(
+			get_option( 'rewrite_rules' ),
+			'Failed to assert that rewrite_rules are unset.'
+		);
+		$this->assertFalse(
+			get_option( 'gatherpress_flush_rewrite_rules_flag' ),
+			'Failed to assert that GatherPress\' flag to flush the rewrite_rules is unset.'
+		);
 
 		// Build the regular expression pattern for matching the custom endpoint URL structure.
 		$reg_ex_pattern = Utility::invoke_hidden_method( $instance, 'get_regex_pattern' );
@@ -165,7 +195,10 @@ class Test_Endpoint extends Base {
 		$rewrite_url = add_query_arg( $instance->get_rewrite_atts(), 'index.php' );
 
 		Utility::invoke_hidden_method( $instance, 'maybe_flush_rewrite_rules', array( $reg_ex_pattern, $rewrite_url ) );
-		$this->assertTrue( get_option( 'gatherpress_flush_rewrite_rules_flag' ), 'Failed to assert that GatherPress\' flag to flush the rewrite_rules is set now.' );
+		$this->assertTrue(
+			get_option( 'gatherpress_flush_rewrite_rules_flag' ),
+			'Failed to assert that GatherPress\' flag to flush the rewrite_rules is set now.'
+		);
 
 		// Normally done automatically via ...
 		flush_rewrite_rules( false );
@@ -184,7 +217,10 @@ class Test_Endpoint extends Base {
 
 		// Run again.
 		Utility::invoke_hidden_method( $instance, 'maybe_flush_rewrite_rules', array( $reg_ex_pattern, $rewrite_url ) );
-		$this->assertFalse( get_option( 'gatherpress_flush_rewrite_rules_flag' ), 'Failed to assert that the GatherPress\' flag to flush the rewrite_rules is not set again after the rewrite_rules were flushed.' );
+		$this->assertFalse(
+			get_option( 'gatherpress_flush_rewrite_rules_flag' ),
+			'Failed to assert that the GatherPress\' flag to flush the rewrite_rules is not set again after the rewrite_rules were flushed.' // phpcs:ignore Generic.Files.LineLength.TooLong
+		);
 	}
 
 	/**
