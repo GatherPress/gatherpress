@@ -148,7 +148,8 @@ class Setup {
 			// … is GatherPress' shadow-taxonomy for venues.
 			'_gatherpress_venue' === $taxonomy ||
 			// … should not be public.
-			! is_taxonomy_viewable( $taxonomy )
+			! is_taxonomy_viewable( $taxonomy ) ||
+			false === get_taxonomy( $taxonomy )->rewrite
 		) {
 			return;
 		}
