@@ -71,7 +71,7 @@ class Calendar {
 	 * URL to the Outlook iCal download endpoint for this event.
 	 *
 	 * Outlook consumes the same `.ics` content as iCal but presents the
-	 * download with an Outlook-flavoured filename, so the endpoint is just a
+	 * download with an Outlook-flavored filename, so the endpoint is just a
 	 * sibling slug pointing at the same template.
 	 *
 	 * @since 1.0.0
