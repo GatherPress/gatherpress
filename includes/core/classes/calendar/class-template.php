@@ -51,7 +51,7 @@ class Template extends Endpoint_Type {
 	 * @since 1.0.0
 	 *
 	 * @param string   $slug                The slug used to identify the endpoint in the URL.
-	 * @param callable $callback            The callback function to retrieve file name and path of the endpoint template.
+	 * @param callable $callback            The callback function to get file name and path of the endpoint template.
 	 * @param string   $plugin_template_dir The directory path for the plugin templates.
 	 */
 	public function __construct( string $slug, callable $callback, string $plugin_template_dir = '' ) {
@@ -101,7 +101,8 @@ class Template extends Endpoint_Type {
 	 * and re-uses the parameters provided by the class.
 	 *
 	 * We expect that a endpoint, that contains the /feed/ string, only has one 'Redirect_Template' attached.
-	 * This might be wrong or short sightened, please open an issue in that case: https://github.com/GatherPress/gatherpress/issues
+	 * This might be wrong or short sightened, please open an issue in that case
+	 * under https://github.com/GatherPress/gatherpress/issues.
 	 *
 	 * Until then, we *just* use the first of the provided endpoint-types,
 	 * to hook into WordPress, which should be the valid template endpoint.

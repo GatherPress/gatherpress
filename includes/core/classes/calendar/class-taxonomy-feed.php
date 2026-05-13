@@ -40,7 +40,8 @@ class Taxonomy_Feed extends Endpoint {
 	 *
 	 * @param Endpoint_Type[] $types      List of endpoint types (templates/redirects) for the feed.
 	 * @param string          $query_var  The query variable used to identify the feed endpoint in the URL.
-	 * @param string          $taxonomy   (Optional) The taxonomy for which the feed endpoint is being created. Default is `gatherpress_topic`.
+	 * @param string          $taxonomy   (Optional) The taxonomy for which the feed endpoint is being created.
+	 *                                    Default is `gatherpress_topic`.
 	 */
 	public function __construct(
 		array $types,

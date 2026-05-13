@@ -168,7 +168,8 @@ class Endpoint {
 	 * Initializes the endpoint by registering rewrite rules and handling query variables.
 	 *
 	 * The method generates rewrite rules for the endpoint based on the post type or taxonomy rewrite base
-	 * and matches against the provided slugs. It also filters allowed query variables to include the custom query variable for the endpoint.
+	 * and matches against the provided slugs. It also filters allowed query variables to include
+	 * the custom query variable for the endpoint.
 	 * The method hooks into the `template_redirect` action to handles template loading
 	 * or redirecting based on the endpoint type.
 	 *
