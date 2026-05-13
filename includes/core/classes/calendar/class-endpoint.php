@@ -234,15 +234,12 @@ class Endpoint {
 	}
 
 	/**
-	 * Creates a flag option to indicate that rewrite rules need to be flushed.
+	 * Checks if the rewrite rules need to be flushed and deletes them if necessary.
 	 *
 	 * This method checks if the generated rewrite rules already exist in the DB,
 	 * and if its rewrite URL matches the recently generated rewrite URL.
-	 * If any of this checks fail, the option to flush the rewrite rules will be set.
-	 *
-	 * This method DOES NO checks if the 'gatherpress_flush_rewrite_rules_flag' option
-	 * exists. It just adds the option and sets it to true. This flag
-	 * is being used to determine when rewrite rules should be flushed.
+	 * If any of this checks fail, the rewrite rules will be deleted and WordPress
+	 * will regenerate them.
 	 *
 	 * @since 1.0.0
 	 *
@@ -254,9 +251,7 @@ class Endpoint {
 		$rules = get_option( 'rewrite_rules' );
 
 		if ( ! isset( $rules[ $reg_ex_pattern ] ) || $rules[ $reg_ex_pattern ] !== $rewrite_url ) {
-			// Event_Setup->maybe_create_flush_rewrite_rules_flag // @todo maybe make this a public method ?!
-			// @see https://github.com/GatherPress/gatherpress/blob/3d91f2bcb30b5d02ebf459cd5a42d4f43bc05ea5/includes/core/classes/class-settings.php#L760C1-L761C63 .
-			add_option( 'gatherpress_flush_rewrite_rules_flag', true );
+			delete_option( 'rewrite_rules' );
 		}
 	}
 
