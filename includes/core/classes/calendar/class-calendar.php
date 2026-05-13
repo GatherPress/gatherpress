@@ -269,7 +269,7 @@ class Calendar {
 		 *
 		 * @since 1.0.0
 		 *
-		 * @param string   $endpoint_url The post embed URL.
+		 * @param string   $endpoint_url The full post endpoint URL.
 		 * @param \WP_Post $post         The corresponding post object.
 		 */
 		$endpoint_url = sanitize_url(
