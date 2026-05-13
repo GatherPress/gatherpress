@@ -23,7 +23,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 use GatherPress\Core\Event\Query;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Utility;
-use GatherPress\Core\Venue;
+use GatherPress\Core\Venue\Setup as Venue_Setup;
 use WP_Term;
 
 /**
@@ -293,7 +293,7 @@ class Setup {
 					$tax = get_taxonomy( $term->taxonomy );
 					switch ( $term->taxonomy ) {
 						case '_gatherpress_venue':
-							$gatherpress_venue = Venue\Setup::get_instance()->get_venue_post_from_term_slug( $term->slug );
+							$gatherpress_venue = Venue_Setup::get_instance()->get_venue_post_from_term_slug( $term->slug );
 
 							// An Online-Event will have no Venue; prevent error on non-existent object.
 							// Feels weird to use a *_comments_* function here, but it delivers clean results

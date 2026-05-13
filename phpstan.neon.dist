@@ -29,13 +29,3 @@ parameters:
         - '#^Path in require_once\(\) "\./wp-admin/includes/upgrade\.php" is not a file or it does not exist\.$#'
         - '#^Path in require_once\(\) "\./wp-admin/includes/plugin\.php" is not a file or it does not exist\.$#'
 
-        # includes/core/classes/calendar/class-endpoint.php
-        #
-        # A known issue, but not a problem.
-        # This "callable-string" is only used in a debug message and is not run.
-        -
-            # I was not able to get the escaping work for the "'", so this matches all argument.type errors in this file,
-            # which is not nice, but the workaround.
-            # message: '#Parameter #1 \$function_name of function wp_trigger_error expects callable-string, \'GatherPress\\Core\\Calendar\\Endpoint\' given.#'
-            identifier: argument.type
-            path: includes/core/classes/calendar/class-endpoint.php

@@ -3,7 +3,7 @@
  * Class for custom rewrite endpoints and their query handling in GatherPress.
  *
  * This file defines the `Endpoint` class, which is responsible for managing
- * custom rewrite rules, query variables, and template redirects for endpoints
+ * custom rewrite rules, query variables and template redirects for endpoints
  * tied to specific post types or taxonomies in the GatherPress plugin.
  *
  * @package GatherPress\Core\Calendar
