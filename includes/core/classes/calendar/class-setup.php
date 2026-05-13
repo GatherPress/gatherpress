@@ -352,8 +352,6 @@ class Setup {
 			);
 		} elseif ( is_tax() ) {
 			$term             = get_queried_object();
-			$event_post_types = get_post_types_by_support( 'gatherpress-event-date' );
-
 			$has_event_post_type = array_filter(
 				$event_post_types,
 				static fn( $post_type ) => $term instanceof WP_Term && is_object_in_taxonomy( $post_type, $term->taxonomy ) // phpcs:ignore Generic.Files.LineLength.TooLong
