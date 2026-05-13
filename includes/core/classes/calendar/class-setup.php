@@ -64,10 +64,7 @@ class Setup {
 	 * @return void
 	 */
 	protected function setup_hooks(): void {
-		add_action(
-			sprintf( 'registered_post_type_%s', 'gatherpress_event' ),
-			array( $this, 'init_events' )
-		);
+		add_action( 'registered_post_type', array( $this, 'init_events' ) );
 		add_action(
 			sprintf( 'registered_post_type_%s', 'gatherpress_venue' ),
 			array( $this, 'init_venues' )
@@ -86,16 +83,24 @@ class Setup {
 	 *
 	 * @since 1.0.0
 	 *
+	 * @param string $post_type The name of the post type that got registered last.
+	 *
 	 * @return void
 	 */
-	public function init_events(): void {
+	public function init_events( string $post_type ): void {
+
+		if ( ! post_type_supports( $post_type, 'gatherpress-event-date' ) ) {
+			return;
+		}
+
 		// Important: register the feed endpoint before the single endpoint,
 		// to make sure rewrite rules get saved in the correct order.
 		new Post_Type_Feed(
 			array(
 				new Template( self::ICAL_SLUG, array( $this, 'get_ical_feed_template' ) ),
 			),
-			self::QUERY_VAR
+			self::QUERY_VAR,
+			$post_type
 		);
 		new Post_Type_Single(
 			array(
@@ -104,7 +109,8 @@ class Setup {
 				new Redirect( 'google-calendar', array( $this, 'queried_event_google_url' ) ),
 				new Redirect( 'yahoo-calendar', array( $this, 'queried_event_yahoo_url' ) ),
 			),
-			self::QUERY_VAR
+			self::QUERY_VAR,
+			$post_type
 		);
 	}
 
@@ -135,9 +141,10 @@ class Setup {
 	 * @return void
 	 */
 	public function init_taxonomies( string $taxonomy, $object_type ): void {
+		$event_post_types = get_post_types_by_support( 'gatherpress-event-date' );
 		// Stop if the currently registered taxonomy does not validate.
-		if ( // … is not registered for the events post type.
-			! in_array( 'gatherpress_event', (array) $object_type, true ) ||
+		if ( // If not registered for the events post type.
+			! array_intersect( $event_post_types, (array) $object_type ) ||
 			// … is GatherPress' shadow-taxonomy for venues.
 			'_gatherpress_venue' === $taxonomy ||
 			// … should not be public.
@@ -253,10 +260,8 @@ class Setup {
 
 		$alternate_links = array();
 
-		// @todo "/feed/ical" could be enabled as alias of "/event/feed/ical",
-		// and called with "get_feed_link( self::ICAL_SLUG )".
 		$alternate_links[] = array(
-			'url'  => get_post_type_archive_feed_link( 'gatherpress_event', self::ICAL_SLUG ),
+			'url'  => get_feed_link( self::ICAL_SLUG ),
 			'attr' => sprintf(
 				$args['feedtitle'],
 				$args['blogtitle'],
@@ -264,7 +269,20 @@ class Setup {
 			),
 		);
 
-		if ( is_singular( 'gatherpress_event' ) ) {
+		$event_post_types = get_post_types_by_support( 'gatherpress-event-date' );
+		foreach ( $event_post_types as $event_post_type ) {
+			$alternate_links[] = array(
+				'url'  => get_post_type_archive_feed_link( $event_post_type, self::ICAL_SLUG ),
+				'attr' => sprintf(
+					$args['posttypetitle'],
+					$args['blogtitle'],
+					$args['separator'],
+					post_type_archive_title( '', false )
+				),
+			);
+		}
+
+		if ( is_singular() && post_type_supports( get_queried_object()->post_type, 'gatherpress-event-date' ) ) {
 			$calendar = new Calendar( (int) get_queried_object_id() );
 
 			$alternate_links[] = array(
@@ -333,9 +351,15 @@ class Setup {
 				),
 			);
 		} elseif ( is_tax() ) {
-			$term = get_queried_object();
+			$term             = get_queried_object();
+			$event_post_types = get_post_types_by_support( 'gatherpress-event-date' );
 
-			if ( $term && is_object_in_taxonomy( 'gatherpress_event', $term->taxonomy ) ) {
+			$has_event_post_type = array_filter(
+				$event_post_types,
+				static fn( $post_type ) => $term instanceof WP_Term && is_object_in_taxonomy( $post_type, $term->taxonomy ) // phpcs:ignore Generic.Files.LineLength.TooLong
+			);
+
+			if ( $has_event_post_type ) {
 				$tax = get_taxonomy( $term->taxonomy );
 
 				$alternate_links[] = array(
@@ -482,7 +506,7 @@ class Setup {
 		$queried_object = get_queried_object();
 		$filename       = 'calendar';
 
-		if ( is_singular( 'gatherpress_event' ) ) {
+		if ( is_singular() && post_type_supports( $queried_object->post_type, 'gatherpress-event-date' ) ) {
 			$calendar  = new Calendar( $queried_object->ID );
 			$date      = $calendar->event->get_datetime_start( 'Y-m-d' );
 			$post_name = $queried_object->post_name;
