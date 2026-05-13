@@ -20,6 +20,7 @@ namespace GatherPress\Core\Calendar;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
+use GatherPress\Core\Event\Query;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Utility;
 use GatherPress\Core\Venue;
@@ -410,15 +411,14 @@ class Setup {
 	 * @return string Concatenated VEVENT blocks for the queried events.
 	 */
 	public function get_ical_list(): string {
-		$event_list_type = ''; // Keep empty, to get all events from upcoming & past.
+		$event_list_type = 'upcoming'; // Keep empty, to get all events from upcoming & past.
 		$number          = ( is_feed( self::ICAL_SLUG ) ) ? -1 : get_option( 'posts_per_page' );
 		$topics          = array();
 		$venues          = array();
 		$output          = array();
 
 		if ( is_singular( 'gatherpress_venue' ) ) {
-			$slug   = '_' . get_queried_object()->post_name;
-			$venues = array( $slug );
+			$venues = array( '_' . get_queried_object()->post_name );
 		} elseif ( is_tax() ) {
 			$term = get_queried_object();
 
@@ -430,7 +430,7 @@ class Setup {
 			}
 		}
 
-		$query = Event_Query::get_instance()->get_events_list( $event_list_type, $number, $topics, $venues );
+		$query = Query::get_instance()->get_events_list( $event_list_type, $number, $topics, $venues );
 		while ( $query->have_posts() ) {
 			$query->the_post();
 			$calendar = new Calendar( get_the_ID() );
