@@ -136,7 +136,7 @@ class Roles extends Base {
 			}
 
 			foreach ( json_decode( $users ) as $user ) {
-				if ( \intval( $user->id ) === $user_id ) {
+				if ( intval( $user->id ) === $user_id ) {
 					return $user_roles[ $role ]['labels']['singular_name'] ?? $default;
 				}
 			}
