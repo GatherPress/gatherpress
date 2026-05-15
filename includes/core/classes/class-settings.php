@@ -14,6 +14,7 @@ namespace GatherPress\Core;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
+use GatherPress\Core\Event\Event;
 use GatherPress\Core\Traits\Singleton;
 
 /**
@@ -179,12 +180,19 @@ class Settings {
 
 		// Infrastructure config values (not user-configurable).
 		$settings['gatherpress']['config'] = array(
-			'timezoneChoices'    => Utility::timezone_choices(),
-			'siteTimezone'       => Utility::get_system_timezone(),
-			'pluginUrl'          => GATHERPRESS_CORE_URL,
-			'homeUrl'            => get_home_url(),
-			'mapTileUrl'         => self::get_map_tile_url(),
-			'mapTileAttribution' => self::get_map_tile_attribution(),
+			'timezoneChoices'       => Utility::timezone_choices(),
+			'siteTimezone'          => Utility::get_system_timezone(),
+			'pluginUrl'             => GATHERPRESS_CORE_URL,
+			'homeUrl'               => get_home_url(),
+			'mapTileUrl'            => self::get_map_tile_url(),
+			'mapTileAttribution'    => self::get_map_tile_attribution(),
+			'venuesMapsSettingsUrl' => admin_url(
+				sprintf(
+					'edit.php?post_type=%s&page=%s',
+					Event::POST_TYPE,
+					sprintf( 'gatherpress_event_page_%s', Utility::prefix_key( 'venues' ) )
+				)
+			),
 		);
 
 		return $settings;
@@ -546,10 +554,11 @@ class Settings {
 					case 'autocomplete':
 						$sanitized[ $key ] = $this->sanitize_autocomplete( $value );
 						break;
+					case 'password':
 					case 'text':
 					case 'select':
 					default:
-						$sanitized[ $key ] = sanitize_text_field( $value );
+						$sanitized[ $key ] = sanitize_text_field( (string) $value );
 						break;
 				}
 			}
@@ -651,6 +660,10 @@ class Settings {
 				$params['size']    = $option_settings['field']['size'] ?? 'regular';
 				$params['preview'] = $option_settings['field']['preview'] ?? array();
 				break;
+			case 'password':
+				$params['size']    = $option_settings['field']['size'] ?? 'regular';
+				$params['preview'] = $option_settings['field']['preview'] ?? array();
+				break;
 			case 'number':
 				$params['size']        = $option_settings['field']['size'] ?? 'regular';
 				$params['min']         = $option_settings['field']['options']['min'] ?? '';
@@ -674,7 +687,11 @@ class Settings {
 		}
 
 		Utility::render_template(
-			sprintf( '%s/includes/templates/admin/settings/fields/%s.php', GATHERPRESS_CORE_PATH, $type ),
+			sprintf(
+				'%s/includes/templates/admin/settings/fields/%s.php',
+				GATHERPRESS_CORE_PATH,
+				$type
+			),
 			$params,
 			true
 		);

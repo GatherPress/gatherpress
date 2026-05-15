@@ -1,6 +1,7 @@
 /**
  * WordPress dependencies
  */
+import { __ } from '@wordpress/i18n';
 import { select } from '@wordpress/data';
 
 /**
@@ -16,41 +17,152 @@ import { select } from '@wordpress/data';
  * @param {number} props.latitude     - The latitude coordinate to be displayed on the map.
  * @param {number} props.longitude    - The longitude coordinate to be displayed on the map.
  * @param {number} [props.zoom=10]    - The zoom level of the map.
- * @param {string} [props.type='m']   - The type of the map (e.g., 'm' for roadmap).
+ * @param {string} [props.type]       - Map type slug: roadmap, satellite, hybrid, terrain.
  * @param {number} [props.height=300] - The height of the map container.
  * @param {string} [props.className]  - Additional CSS class names for styling.
+ * @param {string} [props.apiKey='']  - Google Maps API key; empty keeps the keyless embed URL.
  *
  * @return {JSX.Element} The rendered React component.
  */
+
 /**
- * Google Maps embed expects single-letter codes for the `t=` (map type)
- * query parameter. The block stores the friendly name ("roadmap", etc.)
- * so we translate here; unknown values fall through to the Google default.
+ * Canonical Google map types for the venue-map block: localized label, block
+ * attribute slug, and legacy keyless embed `t=` parameter letter.
  *
  * @see https://developers.google.com/maps/documentation/embed/map-parameters
  */
-const GOOGLE_MAP_TYPE_CODES = {
-	roadmap: 'm',
-	satellite: 'k',
-	hybrid: 'h',
-	terrain: 'p',
-};
+export const GOOGLE_MAP_TYPE_DEFINITIONS = [
+	{
+		slug: 'roadmap',
+		label: __( 'Roadmap', 'gatherpress' ),
+		legacyEmbedLetter: 'm',
+	},
+	{
+		slug: 'satellite',
+		label: __( 'Satellite', 'gatherpress' ),
+		legacyEmbedLetter: 'k',
+	},
+	{
+		slug: 'hybrid',
+		label: __( 'Hybrid', 'gatherpress' ),
+		legacyEmbedLetter: 'h',
+	},
+	{
+		slug: 'terrain',
+		label: __( 'Terrain', 'gatherpress' ),
+		legacyEmbedLetter: 'p',
+	},
+];
 
-const GoogleMap = ( props ) => {
-	const { zoom, type, className, location, latitude, longitude, height } =
-		props;
+/**
+ * Slugs omitted from the editor map-type control while the iframe path uses
+ * the Embed API (roadmap and satellite only).
+ */
+export const GOOGLE_IFRAME_UNSUPPORTED_MAP_TYPE_SLUGS = [
+	'hybrid',
+	'terrain',
+];
 
-	const style = { border: 0, height, width: '100%' };
-	const baseUrl = 'https://maps.google.com/maps';
+const BLOCK_MAP_TYPE_SLUGS = GOOGLE_MAP_TYPE_DEFINITIONS.map(
+	( definition ) => definition.slug
+);
 
+const LEGACY_EMBED_LETTER_BY_SLUG = GOOGLE_MAP_TYPE_DEFINITIONS.reduce(
+	( accumulator, definition ) => {
+		accumulator[ definition.slug ] = definition.legacyEmbedLetter;
+		return accumulator;
+	},
+	{}
+);
+
+/**
+ * Maps Embed API `view` (and related) modes only allow `roadmap` or `satellite`
+ * for `maptype`. Hybrid or terrain in block data (e.g. before the editor
+ * normalizes) are coerced so keyed iframe URLs stay valid.
+ *
+ * @see https://developers.google.com/maps/documentation/embed/embedding-map#view_mode
+ *
+ * @param {string} type Map type slug from the block.
+ * @return {'roadmap'|'satellite'} Coercion for interactive iframe: hybrid→satellite, terrain→roadmap.
+ */
+export function toMapsEmbedApiMapType( type ) {
+	const normalized =
+		type && BLOCK_MAP_TYPE_SLUGS.includes( type ) ? type : 'roadmap';
+	if ( 'satellite' === normalized || 'hybrid' === normalized ) {
+		return 'satellite';
+	}
+	return 'roadmap';
+}
+
+const GOOGLE_EMBED_VIEW_BASE = 'https://www.google.com/maps/embed/v1/view';
+const GOOGLE_LEGACY_EMBED_BASE = 'https://maps.google.com/maps';
+
+/**
+ * Builds the iframe `src` for a Google map embed.
+ *
+ * @param {Object} params           Parameters.
+ * @param {string} params.latitude  Latitude.
+ * @param {string} params.longitude Longitude.
+ * @param {number} params.zoom      Zoom level.
+ * @param {string} params.type      Map type slug from the block.
+ * @param {string} params.apiKey    API key or empty string.
+ * @return {string} Iframe URL.
+ */
+export function getGoogleMapEmbedSrc( {
+	latitude,
+	longitude,
+	zoom,
+	type,
+	apiKey,
+} ) {
+	const z = zoom || 10;
+	const safeType =
+		type && BLOCK_MAP_TYPE_SLUGS.includes( type ) ? type : 'roadmap';
+	const trimmedKey = ( apiKey || '' ).trim();
+
+	if ( trimmedKey ) {
+		const params = new URLSearchParams( {
+			key: trimmedKey,
+			center: `${ latitude },${ longitude }`,
+			zoom: String( z ),
+			maptype: toMapsEmbedApiMapType( safeType ),
+		} );
+		return `${ GOOGLE_EMBED_VIEW_BASE }?${ params.toString() }`;
+	}
+
+	const legacyType = toMapsEmbedApiMapType( safeType );
 	const params = new URLSearchParams( {
-		q: latitude + ',' + longitude,
-		z: zoom || 10,
-		t: GOOGLE_MAP_TYPE_CODES[ type ] || GOOGLE_MAP_TYPE_CODES.roadmap,
+		q: `${ latitude },${ longitude }`,
+		z: String( z ),
+		t:
+			LEGACY_EMBED_LETTER_BY_SLUG[ legacyType ] ||
+			LEGACY_EMBED_LETTER_BY_SLUG.roadmap,
 		output: 'embed',
 	} );
+	return `${ GOOGLE_LEGACY_EMBED_BASE }?${ params.toString() }`;
+}
 
-	const srcURL = baseUrl + '?' + params.toString();
+const GoogleMap = ( props ) => {
+	const {
+		zoom,
+		type,
+		className,
+		location,
+		latitude,
+		longitude,
+		height,
+		apiKey = '',
+	} = props;
+
+	const style = { border: 0, height, width: '100%' };
+
+	const srcURL = getGoogleMapEmbedSrc( {
+		latitude,
+		longitude,
+		zoom,
+		type,
+		apiKey,
+	} );
 
 	// Matches the OpenStreetMap editor fix: the `inert` attribute stops the
 	// iframe from capturing clicks/focus so the user can select the block

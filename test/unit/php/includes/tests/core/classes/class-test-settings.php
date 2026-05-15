@@ -212,6 +212,7 @@ class Test_Settings extends Base {
 			'homeUrl',
 			'mapTileUrl',
 			'mapTileAttribution',
+			'venuesMapsSettingsUrl',
 		);
 
 		foreach ( $expected_config_keys as $key ) {
@@ -427,6 +428,85 @@ class Test_Settings extends Base {
 			$text,
 			'Failed to assert that description matches.'
 		);
+	}
+
+	/**
+	 * Coverage for render_field with password type.
+	 *
+	 * @covers ::render_field
+	 *
+	 * @return void
+	 */
+	public function test_render_field_password(): void {
+		$instance = Settings::get_instance();
+		$html     = Utility::buffer_and_return(
+			array( $instance, 'render_field' ),
+			array(
+				'api_key_test',
+				array(
+					'field'       => array(
+						'type'  => 'password',
+						'label' => 'API key',
+						'size'  => 'regular',
+					),
+					'description' => 'Keep this referrer-restricted.',
+				),
+			)
+		);
+
+		$this->assertStringContainsString(
+			'type="password"',
+			$html,
+			'Failed to assert password input type.'
+		);
+		$this->assertStringContainsString(
+			'autocomplete="off"',
+			$html,
+			'Failed to assert autocomplete is off.'
+		);
+	}
+
+	/**
+	 * Google Maps API key field renders as a plain text input (key is already exposed to the browser for embeds).
+	 *
+	 * @covers ::render_field
+	 *
+	 * @return void
+	 */
+	public function test_render_field_google_maps_api_key_uses_text_input(): void {
+		$instance = Settings::get_instance();
+		update_option(
+			Settings::OPTION_NAME,
+			array( 'map_platform' => 'osm' )
+		);
+
+		$html = Utility::buffer_and_return(
+			array( $instance, 'render_field' ),
+			array(
+				'google_maps_api_key',
+				array(
+					'field'       => array(
+						'type'  => 'text',
+						'label' => 'Google Maps API key:',
+						'size'  => 'large',
+					),
+					'description' => 'Test description.',
+				),
+			)
+		);
+
+		$this->assertStringContainsString(
+			'type="text"',
+			$html,
+			'Failed to assert API key field uses text input.'
+		);
+		$this->assertStringNotContainsString(
+			'gatherpress-settings-google-api-key',
+			$html,
+			'Failed to assert no visibility wrapper is emitted.'
+		);
+
+		delete_option( Settings::OPTION_NAME );
 	}
 
 	/**
@@ -1149,6 +1229,7 @@ class Test_Settings extends Base {
 			'checkbox_field'     => 'checkbox',
 			'number_field'       => 'number',
 			'text_field'         => 'text',
+			'password_field'     => 'password',
 			'select_field'       => 'select',
 			'autocomplete_field' => 'autocomplete',
 		);
@@ -1159,6 +1240,7 @@ class Test_Settings extends Base {
 			'checkbox_field'     => '1',
 			'number_field'       => '42',
 			'text_field'         => 'Test <strong>text</strong>',
+			'password_field'     => 'secret-key-value',
 			'select_field'       => 'option1',
 			'autocomplete_field' => '[{"id":"3","slug":"test","value":"Test"}]',
 		);
@@ -1180,6 +1262,12 @@ class Test_Settings extends Base {
 			'Test text',
 			$result['text_field'],
 			'Failed to assert text was sanitized.'
+		);
+
+		$this->assertSame(
+			'secret-key-value',
+			$result['password_field'],
+			'Failed to assert password field was sanitized as text.'
 		);
 
 		$this->assertSame(
