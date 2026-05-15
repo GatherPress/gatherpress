@@ -1,5 +1,5 @@
 /**
- * WordPress dependencies.
+ * WordPress dependencies
  */
 import { __ } from '@wordpress/i18n';
 import {
@@ -29,7 +29,7 @@ import { useEffect } from '@wordpress/element';
 import { Icon, link as linkIcon, mapMarker } from '@wordpress/icons';
 
 /**
- * Internal dependencies.
+ * Internal dependencies
  */
 import { isVenuePostType } from '../../helpers/venue';
 import { isInFSETemplate } from '../../helpers/editor';
@@ -368,7 +368,7 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 			}
 			// getBlockParentsByBlockName returns root → self order, so the
 			// last entry is the closest ancestor.
-			return parents[ parents.length - 1 ];
+			return parents.at( -1 );
 		},
 		[ clientId ]
 	);

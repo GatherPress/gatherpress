@@ -32,6 +32,7 @@ use WP_Query;
  * @since 1.0.0
  */
 class Query {
+
 	/**
 	 * Enforces a single instance of this class.
 	 */
@@ -360,7 +361,7 @@ class Query {
 		}
 
 		/**
-		 * Run only for Event post listings.
+		 * Run only for listings of posts, that support event dates.
 		 *
 		 * First checks whether the get_current_screen function exists,
 		 * because it is loaded only after the 'admin_init' hook.
@@ -370,9 +371,13 @@ class Query {
 		 * This sanity check was added after it's been reported that some admin screens may not have $wp_query set.
 		 * @see https://wordpress.org/support/topic/gatherpress-has-critical-error-when-i-access-wpforms-payment-settings/
 		 */
-		$screen_id      = sprintf( 'edit-%s', Event::POST_TYPE );
 		$current_screen = function_exists( 'get_current_screen' ) ? get_current_screen() : null;
-		if ( ! $current_screen || $screen_id !== $current_screen->id ) {
+		if (
+			! $current_screen ||
+			'edit' !== $current_screen->base ||
+			! post_type_supports( $current_screen->post_type, 'gatherpress-event-date' ) ||
+			$wp_query->get( 'post_type' ) !== $current_screen->post_type
+		) {
 			return $query_pieces;
 		}
 
@@ -383,13 +388,18 @@ class Query {
 		$gatherpress_events_query = ( ! empty( $wp_query->get( self::EVENT_QUERY_PARAM ) ) )
 			? $wp_query->get( self::EVENT_QUERY_PARAM )
 			: 'all';
-		$query_pieces             = $this->adjust_event_sql(
+
+		// Upcoming is inclusive (running events count as upcoming);
+		// past is non-inclusive (running events excluded). This makes
+		// the buckets mutually exclusive at `datetime_end_gmt` so a
+		// running event appears only in upcoming, never in both.
+		$inclusive    = ( 'past' !== $gatherpress_events_query );
+		$query_pieces = $this->adjust_event_sql(
 			$query_pieces,
 			$gatherpress_events_query,
 			$wp_query->get( 'order' ),
 			$wp_query->get( 'orderby' ),
-			true,
-			true
+			$inclusive
 		);
 
 		return $query_pieces;
@@ -408,16 +418,14 @@ class Query {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param array           $pieces    An array of query pieces, including join, where, orderby,
-	 *                                   and more.
-	 * @param string          $type      The type of events to query (options: 'all', 'upcoming', 'past')
-	 *                                   (Default: 'all').
-	 * @param string          $order     The event order ('DESC' for descending or 'ASC' for ascending)
-	 *                                   (Default: 'DESC').
-	 * @param string[]|string $order_by  List  or singular string of ORDERBY statement(s) (Default: ['datetime']).
-	 * @param bool            $inclusive      Whether to include currently running events in the query (Default: true).
-	 * @param bool            $include_no_date Whether to include events with no date set in upcoming
-	 *                                         and exclude them from past (Default: false).
+	 * @param array           $pieces   An array of query pieces, including join, where, orderby,
+	 *                                  and more.
+	 * @param string          $type     The type of events to query (options: 'all', 'upcoming', 'past')
+	 *                                  (Default: 'all').
+	 * @param string          $order    The event order ('DESC' for descending or 'ASC' for ascending)
+	 *                                  (Default: 'DESC').
+	 * @param string[]|string $order_by List or singular string of ORDERBY statement(s) (Default: ['datetime']).
+	 * @param bool            $inclusive Whether to include currently running events in the query (Default: true).
 	 * @return array An array containing adjusted SQL clauses for the Event query.
 	 */
 	public function adjust_event_sql(
@@ -425,8 +433,7 @@ class Query {
 		string $type = 'all',
 		string $order = 'DESC',
 		$order_by = array( 'datetime' ),
-		bool $inclusive = true,
-		bool $include_no_date = false
+		bool $inclusive = true
 	): array {
 		global $wpdb;
 
@@ -484,30 +491,14 @@ class Query {
 		$current = gmdate( Event::DATETIME_FORMAT, time() );
 		$column  = $this->get_datetime_comparison_column( $type, $inclusive );
 
-		// Appends a date-based condition to the WHERE clause of the SQL query,
-		// filtering events as either upcoming or past.
+		// Append a date-based condition to the WHERE clause, filtering as
+		// either upcoming or past. Events with no row in the events table
+		// (no date set yet) are excluded from both buckets — they only
+		// appear under the All view.
 		if ( 'upcoming' === $type ) {
-			if ( $include_no_date ) {
-				// Include events on or after the current date/time, or events with no row in the events table.
-				$pieces['where'] .= $wpdb->prepare(
-					' AND (%i.%i >= %s OR %i.post_id IS NULL)',
-					$table,
-					$column,
-					$current,
-					$table
-				);
-			} else {
-				// Include only events starting on or after the current date/time (upcoming).
-				$pieces['where'] .= $wpdb->prepare( ' AND %i.%i >= %s', $table, $column, $current );
-			}
+			$pieces['where'] .= $wpdb->prepare( ' AND %i.%i >= %s', $table, $column, $current );
 		} elseif ( 'past' === $type ) {
-			// Include only events starting before the current date/time (past).
 			$pieces['where'] .= $wpdb->prepare( ' AND %i.%i < %s', $table, $column, $current );
-
-			if ( $include_no_date ) {
-				// Exclude events with no row in the events table.
-				$pieces['where'] .= $wpdb->prepare( ' AND %i.post_id IS NOT NULL', $table );
-			}
 		}
 
 		return $pieces;

@@ -1,5 +1,5 @@
 /**
- * External dependencies.
+ * External dependencies
  */
 import { describe, expect, jest, it, beforeEach } from '@jest/globals';
 import { renderHook } from '@testing-library/react';
@@ -30,14 +30,14 @@ jest.mock( '@wordpress/html-entities', () => ( {
 import { select, useSelect } from '@wordpress/data';
 
 /**
- * Internal dependencies.
+ * Internal dependencies
  */
 import {
 	isVenuePostType,
 	getVenuePostType,
 	getVenueTaxonomy,
-	GetVenuePostFromTermId,
-	GetVenueTermFromPostId,
+	useVenuePostFromTermId,
+	useVenueTermFromPostId,
 	GetVenuePostFromEventId,
 	getVenueTitle,
 	useVenueOptions,
@@ -229,21 +229,75 @@ describe( 'getVenueTitle', () => {
 } );
 
 /**
- * Coverage for GetVenuePostFromTermId.
+ * Coverage for useVenuePostFromTermId.
  */
-describe( 'GetVenuePostFromTermId', () => {
+describe( 'useVenuePostFromTermId', () => {
 	beforeEach( () => {
 		jest.clearAllMocks();
 	} );
 
-	it( 'returns empty array when termId is null', () => {
+	it( 'returns undefined when termId is null and skips the entity lookup entirely', () => {
+		const wpSelect = jest.fn( () => ( {
+			getEntityRecord: jest.fn(),
+			getEntityRecords: jest.fn(),
+		} ) );
+
+		useSelect.mockImplementation( ( callback ) => callback( wpSelect ) );
+
+		const { result } = renderHook( () => useVenuePostFromTermId( null ) );
+
+		// Both arms of the inner useSelect callback now return the same
+		// `{ venuePost }` shape, so destructuring still yields undefined.
+		// The early return also short-circuits before any store call —
+		// `wpSelect` is never invoked when there is no term to resolve.
+		expect( result.current ).toBeUndefined();
+		expect( wpSelect ).not.toHaveBeenCalled();
+	} );
+
+	it( 'does not throw when the venue term resolves without a slug', () => {
+		// Guards the `venueTerm?.slug?.replace( /^_/, '' )` chain — without
+		// the inner optional chain, a term object lacking a `slug` would
+		// throw `TypeError: Cannot read properties of undefined (reading 'replace')`.
+		const mockVenueTerm = { id: 1 };
+		let capturedSlug;
+
 		useSelect.mockImplementation( ( callback ) => {
-			const result = callback( () => ( {} ) );
-			return result;
+			const wpSelect = jest.fn( () => ( {
+				getEntityRecord: jest.fn( () => mockVenueTerm ),
+				getEntityRecords: jest.fn( ( _t, _p, query ) => {
+					capturedSlug = query.slug;
+					return [];
+				} ),
+			} ) );
+			return callback( wpSelect );
 		} );
 
-		const { result } = renderHook( () => GetVenuePostFromTermId( null ) );
-		expect( result.current ).toEqual( undefined );
+		expect( () =>
+			renderHook( () => useVenuePostFromTermId( 1 ) )
+		).not.toThrow();
+		expect( capturedSlug ).toBeUndefined();
+	} );
+
+	it( 'does not throw while the venue term entity is still loading', () => {
+		// Pre-resolution `getEntityRecord` returns null/undefined; the outer
+		// optional chain on `venueTerm` is what guards this case.
+		let capturedSlug;
+
+		useSelect.mockImplementation( ( callback ) => {
+			const wpSelect = jest.fn( () => ( {
+				getEntityRecord: jest.fn( () => null ),
+				getEntityRecords: jest.fn( ( _t, _p, query ) => {
+					capturedSlug = query.slug;
+					return [];
+				} ),
+			} ) );
+			return callback( wpSelect );
+		} );
+
+		expect( () =>
+			renderHook( () => useVenuePostFromTermId( 1 ) )
+		).not.toThrow();
+		expect( capturedSlug ).toBeUndefined();
 	} );
 
 	it( 'returns venue post when term is found', () => {
@@ -258,7 +312,7 @@ describe( 'GetVenuePostFromTermId', () => {
 			return callback( wpSelect );
 		} );
 
-		const { result } = renderHook( () => GetVenuePostFromTermId( 1 ) );
+		const { result } = renderHook( () => useVenuePostFromTermId( 1 ) );
 		expect( result.current ).toEqual( mockVenuePost );
 	} );
 
@@ -277,7 +331,7 @@ describe( 'GetVenuePostFromTermId', () => {
 			return callback( wpSelect );
 		} );
 
-		renderHook( () => GetVenuePostFromTermId( 1 ) );
+		renderHook( () => useVenuePostFromTermId( 1 ) );
 		expect( capturedSlug ).toBe( 'my-venue' );
 	} );
 
@@ -296,37 +350,82 @@ describe( 'GetVenuePostFromTermId', () => {
 			return callback( wpSelect );
 		} );
 
-		renderHook( () => GetVenuePostFromTermId( 1 ) );
+		renderHook( () => useVenuePostFromTermId( 1 ) );
 		expect( capturedSlug ).toBe( 'venue-no-underscore' );
 	} );
 } );
 
 /**
- * Coverage for GetVenueTermFromPostId.
+ * Coverage for useVenueTermFromPostId.
  */
-describe( 'GetVenueTermFromPostId', () => {
+describe( 'useVenueTermFromPostId', () => {
 	beforeEach( () => {
 		jest.clearAllMocks();
 	} );
 
-	it( 'returns empty array when postId is null', () => {
-		useSelect.mockImplementation( ( callback ) => {
-			const result = callback( () => ( {} ) );
-			return result;
-		} );
+	it( 'returns undefined when postId is null and skips the entity lookup entirely', () => {
+		const wpSelect = jest.fn( () => ( {
+			getEntityRecord: jest.fn(),
+			getEntityRecords: jest.fn(),
+		} ) );
 
-		const { result } = renderHook( () => GetVenueTermFromPostId( null ) );
-		expect( result.current ).toEqual( undefined );
+		useSelect.mockImplementation( ( callback ) => callback( wpSelect ) );
+
+		const { result } = renderHook( () => useVenueTermFromPostId( null ) );
+
+		// Both arms of the inner useSelect callback now return the same
+		// `{ venueTerm }` shape, so destructuring still yields undefined and
+		// no entity-store lookups fire when there is no post to resolve.
+		expect( result.current ).toBeUndefined();
+		expect( wpSelect ).not.toHaveBeenCalled();
 	} );
 
-	it( 'returns empty array when postId defaults to null', () => {
+	it( 'returns undefined when postId defaults to null', () => {
 		useSelect.mockImplementation( ( callback ) => {
 			const result = callback( () => ( {} ) );
 			return result;
 		} );
 
-		const { result } = renderHook( () => GetVenueTermFromPostId() );
-		expect( result.current ).toEqual( undefined );
+		const { result } = renderHook( () => useVenueTermFromPostId() );
+		expect( result.current ).toBeUndefined();
+	} );
+
+	it( 'returns undefined while the venue post entity is still loading', () => {
+		// Pre-resolution `getEntityRecord` returns null; the `! venuePost?.slug`
+		// guard short-circuits before the slug-prefix and term query so we
+		// never dispatch an `_undefined` lookup or throw on `null.slug`.
+		const getEntityRecords = jest.fn();
+
+		useSelect.mockImplementation( ( callback ) => {
+			const wpSelect = jest.fn( () => ( {
+				getEntityRecord: jest.fn( () => null ),
+				getEntityRecords,
+			} ) );
+			return callback( wpSelect );
+		} );
+
+		const { result } = renderHook( () => useVenueTermFromPostId( 10 ) );
+
+		expect( result.current ).toBeUndefined();
+		expect( getEntityRecords ).not.toHaveBeenCalled();
+	} );
+
+	it( 'returns undefined when the venue post resolves without a slug', () => {
+		// Same guard exercised by a hydrated-but-malformed record (no `slug`).
+		const getEntityRecords = jest.fn();
+
+		useSelect.mockImplementation( ( callback ) => {
+			const wpSelect = jest.fn( () => ( {
+				getEntityRecord: jest.fn( () => ( { id: 10 } ) ),
+				getEntityRecords,
+			} ) );
+			return callback( wpSelect );
+		} );
+
+		const { result } = renderHook( () => useVenueTermFromPostId( 10 ) );
+
+		expect( result.current ).toBeUndefined();
+		expect( getEntityRecords ).not.toHaveBeenCalled();
 	} );
 
 	it( 'returns venue term when post is found', () => {
@@ -341,7 +440,7 @@ describe( 'GetVenueTermFromPostId', () => {
 			return callback( wpSelect );
 		} );
 
-		const { result } = renderHook( () => GetVenueTermFromPostId( 10 ) );
+		const { result } = renderHook( () => useVenueTermFromPostId( 10 ) );
 		expect( result.current ).toEqual( mockVenueTerm );
 	} );
 
@@ -360,7 +459,7 @@ describe( 'GetVenueTermFromPostId', () => {
 			return callback( wpSelect );
 		} );
 
-		renderHook( () => GetVenueTermFromPostId( 10 ) );
+		renderHook( () => useVenueTermFromPostId( 10 ) );
 		expect( capturedSlug ).toBe( '_my-venue' );
 	} );
 } );
@@ -422,7 +521,7 @@ describe( 'GetVenuePostFromEventId', () => {
 				} );
 				return callback( wpSelect );
 			}
-			// Second call: GetVenuePostFromTermId fetches the venue post.
+			// Second call: useVenuePostFromTermId fetches the venue post.
 			const wpSelect = jest.fn( () => ( {
 				getEntityRecord: jest.fn( () => mockVenueTerm ),
 				getEntityRecords: jest.fn( () => mockVenuePost ),
@@ -458,7 +557,7 @@ describe( 'GetVenuePostFromEventId', () => {
 				} );
 				return callback( wpSelect );
 			}
-			// Second call: GetVenuePostFromTermId.
+			// Second call: useVenuePostFromTermId.
 			const wpSelect = jest.fn( () => ( {
 				getEntityRecord: jest.fn( () => mockVenueTerm ),
 				getEntityRecords: jest.fn( () => mockVenuePost ),
@@ -495,7 +594,7 @@ describe( 'GetVenuePostFromEventId', () => {
 				} );
 				return callback( wpSelect );
 			}
-			// Second call: GetVenuePostFromTermId uses term ID 7 (skipping online-event).
+			// Second call: useVenuePostFromTermId uses term ID 7 (skipping online-event).
 			const wpSelect = jest.fn( () => ( {
 				getEntityRecord: jest.fn( () => venueTerm ),
 				getEntityRecords: jest.fn( () => mockVenuePost ),

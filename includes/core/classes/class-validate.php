@@ -231,35 +231,16 @@ class Validate {
 	 * @return bool True if the block data is valid, false otherwise.
 	 */
 	public static function block_data( string $param ): bool {
-		// Decode the JSON string.
 		$decoded = json_decode( $param, true );
 
-		// Check if JSON is invalid.
-		if ( null === $decoded ) {
-			return false;
-		}
-
-		// Validate the top-level structure.
-		if ( ! isset( $decoded['blockName'], $decoded['attrs'], $decoded['innerBlocks'] ) ) {
-			return false;
-		}
-
-		// Ensure the `blockName` is a string.
-		if ( ! is_string( $decoded['blockName'] ) ) {
-			return false;
-		}
-
-		// Ensure the `attrs` is an array.
-		if ( ! is_array( $decoded['attrs'] ) ) {
-			return false;
-		}
-
-		// Ensure the `innerBlocks` is an array.
-		if ( ! is_array( $decoded['innerBlocks'] ) ) {
-			return false;
-		}
-
-		// If all checks pass, return true.
-		return true;
+		// Combined guard: bail when JSON decoded to null, when any of the
+		// required top-level keys is missing, or when their types don't match
+		// the parsed-block contract (`blockName` string + `attrs` /
+		// `innerBlocks` arrays).
+		return null !== $decoded
+			&& isset( $decoded['blockName'], $decoded['attrs'], $decoded['innerBlocks'] )
+			&& is_string( $decoded['blockName'] )
+			&& is_array( $decoded['attrs'] )
+			&& is_array( $decoded['innerBlocks'] );
 	}
 }

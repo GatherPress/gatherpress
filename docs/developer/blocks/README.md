@@ -4,3 +4,5 @@
 2. [Hookable patterns for events & venues](./hookable-patterns/)
     - Add to or Remove blocks from the post type block templates
 3. [Slots & fills in GatherPress Admin UI](./slot-fills/)
+4. [Pattern pickers](./pattern-pickers.md)
+    - JS filters for adding starter patterns to GatherPress blocks (RSVP Response and others)

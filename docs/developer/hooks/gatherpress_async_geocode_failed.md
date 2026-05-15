@@ -29,7 +29,7 @@ add_action(
 
 ## Files
 
-- [includes/core/classes/class-geocoding.php:367](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/class-geocoding.php#L367)
+- [includes/core/classes/class-geocoding.php:368](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/class-geocoding.php#L368)
 ```php
 do_action( 'gatherpress_async_geocode_failed', $post_id, $result )
 ```

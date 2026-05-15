@@ -1,11 +1,11 @@
 /**
- * WordPress dependencies.
+ * WordPress dependencies
  */
 import { registerBlockType } from '@wordpress/blocks';
 import { mapMarker as icon } from '@wordpress/icons';
 
 /**
- * Internal dependencies.
+ * Internal dependencies
  */
 import './editor.scss';
 import edit from './edit';

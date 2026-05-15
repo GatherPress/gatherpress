@@ -21,6 +21,7 @@ use GatherPress\Tests\Base as GatherPress_Test_Base;
  * @coversDefaultClass \GatherPress\Core\Venue\Map\Provider\Base
  */
 class Test_Base extends GatherPress_Test_Base {
+
 	/**
 	 * Default `attribution_html()` returns an empty string — providers that
 	 * bake attribution into the rendered PNG (Google) inherit this; OSM

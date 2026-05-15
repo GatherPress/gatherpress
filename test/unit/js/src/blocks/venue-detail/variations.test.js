@@ -1,10 +1,10 @@
 /**
- * External dependencies.
+ * External dependencies
  */
 import { describe, expect, it } from '@jest/globals';
 
 /**
- * Internal dependencies.
+ * Internal dependencies
  */
 import variations from '@src/blocks/venue-detail/variations';
 

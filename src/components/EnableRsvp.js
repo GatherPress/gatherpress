@@ -1,5 +1,5 @@
 /**
- * WordPress dependencies.
+ * WordPress dependencies
  */
 import { __ } from '@wordpress/i18n';
 import { CheckboxControl } from '@wordpress/components';
@@ -7,7 +7,7 @@ import { useState, useEffect, useCallback, useMemo, useRef } from '@wordpress/el
 import { useDispatch, useSelect } from '@wordpress/data';
 
 /**
- * Internal dependencies.
+ * Internal dependencies
  */
 import { getFromSettings } from '../helpers/editor-settings';
 

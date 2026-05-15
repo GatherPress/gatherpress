@@ -1,5 +1,5 @@
 /**
- * WordPress dependencies.
+ * WordPress dependencies
  */
 import { __ } from '@wordpress/i18n';
 import { FontSizePicker, PanelColorSettings } from '@wordpress/block-editor';
@@ -69,11 +69,10 @@ export default function DefaultFieldPanels( { attributes, setAttributes } ) {
 			</PanelBody>
 
 			<PanelBody title={ __( 'Label Styles', 'gatherpress' ) }>
-				<BaseControl __nextHasNoMarginBottom={ true }>
+				<BaseControl>
 					<FontSizePicker
 						withReset={ true }
 						size="__unstable-large"
-						__nextHasNoMarginBottom
 						onChange={ ( value ) =>
 							setAttributes( { labelFontSize: value } )
 						}
@@ -93,11 +92,10 @@ export default function DefaultFieldPanels( { attributes, setAttributes } ) {
 			</PanelBody>
 
 			<PanelBody title={ __( 'Input Field Styles', 'gatherpress' ) }>
-				<BaseControl __nextHasNoMarginBottom={ true }>
+				<BaseControl>
 					<FontSizePicker
 						withReset={ true }
 						size="__unstable-large"
-						__nextHasNoMarginBottom
 						onChange={ ( value ) =>
 							setAttributes( { inputFontSize: value } )
 						}

@@ -1,29 +1,37 @@
 /**
- * External dependencies.
+ * External dependencies
  */
 import { describe, expect, it, jest, beforeEach, afterEach } from '@jest/globals';
 
 /**
- * WordPress dependencies.
+ * WordPress dependencies
  */
 import { dispatch, select } from '@wordpress/data';
 
 // Mock WordPress modules before importing internal dependencies.
-jest.mock( '@wordpress/data' );
+// `useSelect` is invoked synchronously so reactive helpers like
+// `usePostTypeLabel` can be tested without a renderer.
+jest.mock( '@wordpress/data', () => ( {
+	select: jest.fn(),
+	dispatch: jest.fn(),
+	useSelect: jest.fn( ( cb ) => cb( jest.requireMock( '@wordpress/data' ).select ) ),
+} ) );
 jest.mock( '@wordpress/core-data', () => ( {
 	store: {},
 } ) );
 
 /**
- * Internal dependencies.
+ * Internal dependencies
  */
 import {
 	enableSave,
 	getCurrentContextualPostId,
 	getEditorDocument,
+	getPostTypeLabel,
 	getStartOfWeek,
 	hasValidBlockContext,
 	isInFSETemplate,
+	usePostTypeLabel,
 } from '@src/helpers/editor';
 
 describe( 'Editor helper functions', () => {
@@ -541,6 +549,215 @@ describe( 'Editor helper functions', () => {
 				expect( result ).toBe( true );
 				expect( getPostType ).not.toHaveBeenCalled();
 			} );
+		} );
+	} );
+
+	/**
+	 * Helper to create a mock getPostType function that returns labels.
+	 *
+	 * @param {string} slug The post type slug.
+	 * @return {Object|null} The post type object with labels.
+	 */
+	function mockGetPostTypeWithLabels( slug ) {
+		if ( 'gatherpress_event' === slug ) {
+			return {
+				labels: {
+					name: 'Events',
+					singular_name: 'Event',
+					add_new_item: 'Add New Event',
+				},
+			};
+		}
+		if ( 'gatherpress_venue' === slug ) {
+			return {
+				labels: {
+					name: 'Venues',
+					singular_name: 'Venue',
+				},
+			};
+		}
+		return null;
+	}
+
+	describe( 'getPostTypeLabel', () => {
+		it( 'returns the resolved label for the given key and post type', () => {
+			select.mockImplementation( ( store ) => {
+				if ( 'core' === store ) {
+					return { getPostType: mockGetPostTypeWithLabels };
+				}
+				return {};
+			} );
+
+			expect( getPostTypeLabel( 'name', 'gatherpress_event' ) ).toBe( 'Events' );
+			expect( getPostTypeLabel( 'singular_name', 'gatherpress_event' ) ).toBe( 'Event' );
+			expect( getPostTypeLabel( 'add_new_item', 'gatherpress_event' ) ).toBe( 'Add New Event' );
+		} );
+
+		it( 'falls back to the editor post type when no postType is given', () => {
+			select.mockImplementation( ( store ) => {
+				if ( 'core/editor' === store ) {
+					return { getCurrentPostType: () => 'gatherpress_event' };
+				}
+				if ( 'core' === store ) {
+					return { getPostType: mockGetPostTypeWithLabels };
+				}
+				return {};
+			} );
+
+			expect( getPostTypeLabel( 'singular_name' ) ).toBe( 'Event' );
+		} );
+
+		it( 'returns the fallback when the post type is unknown', () => {
+			select.mockImplementation( ( store ) => {
+				if ( 'core' === store ) {
+					return { getPostType: mockGetPostTypeWithLabels };
+				}
+				return {};
+			} );
+
+			expect( getPostTypeLabel( 'name', 'unknown_type', 'Default' ) ).toBe( 'Default' );
+		} );
+
+		it( 'returns the fallback when the requested label key is missing', () => {
+			select.mockImplementation( ( store ) => {
+				if ( 'core' === store ) {
+					return { getPostType: mockGetPostTypeWithLabels };
+				}
+				return {};
+			} );
+
+			expect( getPostTypeLabel( 'add_new_item', 'gatherpress_venue', 'Add' ) ).toBe( 'Add' );
+		} );
+
+		it( 'returns the fallback when no post type can be resolved', () => {
+			select.mockImplementation( ( store ) => {
+				if ( 'core/editor' === store ) {
+					return { getCurrentPostType: () => undefined };
+				}
+				return {};
+			} );
+
+			expect( getPostTypeLabel( 'name', null, 'Fallback' ) ).toBe( 'Fallback' );
+		} );
+
+		it( 'returns an empty string by default when unresolvable', () => {
+			select.mockImplementation( ( store ) => {
+				if ( 'core/editor' === store ) {
+					return { getCurrentPostType: () => undefined };
+				}
+				return {};
+			} );
+
+			expect( getPostTypeLabel( 'name' ) ).toBe( '' );
+		} );
+	} );
+
+	describe( 'usePostTypeLabel', () => {
+		it( 'returns the resolved label for the given key and post type', () => {
+			select.mockImplementation( ( store ) => {
+				if ( 'core' === store ) {
+					return { getPostType: mockGetPostTypeWithLabels };
+				}
+				return {};
+			} );
+
+			expect( usePostTypeLabel( 'name', 'gatherpress_event' ) ).toBe( 'Events' );
+		} );
+
+		it( 'falls back to the editor post type when no postType is given', () => {
+			select.mockImplementation( ( store ) => {
+				if ( 'core/editor' === store ) {
+					return { getCurrentPostType: () => 'gatherpress_event' };
+				}
+				if ( 'core' === store ) {
+					return { getPostType: mockGetPostTypeWithLabels };
+				}
+				return {};
+			} );
+
+			expect( usePostTypeLabel( 'singular_name' ) ).toBe( 'Event' );
+		} );
+
+		it( 'returns the fallback when the post type is unknown', () => {
+			select.mockImplementation( ( store ) => {
+				if ( 'core' === store ) {
+					return { getPostType: mockGetPostTypeWithLabels };
+				}
+				return {};
+			} );
+
+			expect( usePostTypeLabel( 'name', 'unknown_type', 'Default' ) ).toBe( 'Default' );
+		} );
+
+		it( 'returns the fallback when no post type can be resolved', () => {
+			select.mockImplementation( ( store ) => {
+				if ( 'core/editor' === store ) {
+					return { getCurrentPostType: () => undefined };
+				}
+				return {};
+			} );
+
+			expect( usePostTypeLabel( 'name', null, 'Fallback' ) ).toBe( 'Fallback' );
+		} );
+
+		it( 'returns an empty string by default when unresolvable', () => {
+			select.mockImplementation( ( store ) => {
+				if ( 'core/editor' === store ) {
+					return { getCurrentPostType: () => undefined };
+				}
+				return {};
+			} );
+
+			expect( usePostTypeLabel( 'name' ) ).toBe( '' );
+		} );
+
+		it( 'subscribes via useSelect so the label is reactive', () => {
+			// Confirms the hook delegates to useSelect — without subscription
+			// a label that resolves on a later render (post-type registry
+			// hydration) would not propagate to the component.
+			const { useSelect } = require( '@wordpress/data' );
+			useSelect.mockClear();
+			select.mockImplementation( ( store ) => {
+				if ( 'core' === store ) {
+					return { getPostType: mockGetPostTypeWithLabels };
+				}
+				return {};
+			} );
+
+			usePostTypeLabel( 'name', 'gatherpress_event' );
+
+			expect( useSelect ).toHaveBeenCalledTimes( 1 );
+		} );
+
+		it( 're-evaluates when getPostType resolves later', () => {
+			// Simulates the actual race the hook is fixing: on first render
+			// the post-type definition isn't cached yet (returns undefined),
+			// then resolves on a subsequent invocation. The hook must reflect
+			// the new value rather than caching the fallback.
+			let resolved = false;
+			select.mockImplementation( ( store ) => {
+				if ( 'core' === store ) {
+					return {
+						getPostType: ( slug ) => {
+							if ( ! resolved ) {
+								return undefined;
+							}
+							return mockGetPostTypeWithLabels( slug );
+						},
+					};
+				}
+				return {};
+			} );
+
+			expect(
+				usePostTypeLabel( 'name', 'gatherpress_event', 'Default' )
+			).toBe( 'Default' );
+
+			resolved = true;
+
+			expect(
+				usePostTypeLabel( 'name', 'gatherpress_event', 'Default' )
+			).toBe( 'Events' );
 		} );
 	} );
 } );

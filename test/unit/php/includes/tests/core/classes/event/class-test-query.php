@@ -24,6 +24,7 @@ use WP_Query;
  * @coversDefaultClass \GatherPress\Core\Event\Query
  */
 class Test_Query extends Base {
+
 	/**
 	 * Coverage for setup_hooks method.
 	 *
@@ -689,6 +690,11 @@ class Test_Query extends Base {
 		$this->mock->user( true, 'admin' );
 		set_current_screen( 'edit-gatherpress_event' );
 
+		// Set 'post_type' to match the current screen (the function bails if
+		// they differ, to avoid altering secondary queries fired from the
+		// same admin page).
+		$wp_query->set( 'post_type', Event::POST_TYPE );
+
 		// Set 'orderby' admin query to 'datetime'.
 		$wp_query->set( 'orderby', 'datetime' );
 
@@ -702,6 +708,7 @@ class Test_Query extends Base {
 		);
 
 		$wp_query = new WP_Query();
+		$wp_query->set( 'post_type', Event::POST_TYPE );
 
 		$wp_query->set( 'gatherpress_event_query', 'upcoming' );
 		$response = $instance->adjust_admin_event_sorting( array(), $wp_query );
@@ -747,6 +754,89 @@ class Test_Query extends Base {
 			$query_pieces,
 			$response,
 			'Should return query_pieces unchanged when screen is not edit-gatherpress_event'
+		);
+	}
+
+	/**
+	 * Reproduces #1610: clicking the "Event date & time" column header on
+	 * the admin list of a custom event-supporting post type (e.g.
+	 * `production`) must apply the datetime sort. Before the fix the
+	 * function bailed early because the screen check was hardcoded to
+	 * `edit-gatherpress_event`, leaving the click a no-op on every other
+	 * post type that declares `gatherpress-event-date` support.
+	 *
+	 * @covers ::adjust_admin_event_sorting
+	 *
+	 * @return void
+	 */
+	public function test_adjust_admin_event_sorting_runs_for_event_supporting_post_type(): void {
+		$instance = Query::get_instance();
+		$test_pt  = 'production';
+
+		register_post_type(
+			$test_pt,
+			array(
+				'label'    => 'Productions',
+				'public'   => false,
+				'supports' => array( 'title', 'gatherpress-event-date' ),
+			)
+		);
+
+		$this->mock->user( true, 'admin' );
+		set_current_screen( 'edit-' . $test_pt );
+
+		$wp_query = new WP_Query();
+		$wp_query->set( 'post_type', $test_pt );
+		$wp_query->set( 'orderby', 'datetime' );
+		$wp_query->set( 'order', 'asc' );
+
+		$response = $instance->adjust_admin_event_sorting( array(), $wp_query );
+
+		set_current_screen( 'front' );
+		unregister_post_type( $test_pt );
+
+		$this->assertNotEmpty(
+			$response,
+			'Should produce a non-empty pieces array for an event-supporting custom post type.'
+		);
+		$this->assertStringContainsString(
+			'datetime_start_gmt ASC',
+			$response['orderby'] ?? '',
+			'Should sort by the events table datetime_start_gmt column.'
+		);
+	}
+
+	/**
+	 * Guards against secondary queries on the admin list table — a
+	 * `WP_Query` whose `post_type` does not match the screen's post
+	 * type (for example, a sidebar widget or related-content lookup
+	 * fired from the admin list page) must not get the datetime sort
+	 * grafted onto its SQL.
+	 *
+	 * @covers ::adjust_admin_event_sorting
+	 *
+	 * @return void
+	 */
+	public function test_adjust_admin_event_sorting_skips_when_post_type_mismatches_screen(): void {
+		$instance     = Query::get_instance();
+		$query_pieces = array( 'orderby' => 'post_date' );
+
+		$this->mock->user( true, 'admin' );
+		set_current_screen( 'edit-' . Event::POST_TYPE );
+
+		$wp_query = new WP_Query();
+		// Different post type than the screen — a secondary query.
+		$wp_query->set( 'post_type', 'post' );
+		$wp_query->set( 'orderby', 'datetime' );
+
+		$response = $instance->adjust_admin_event_sorting( $query_pieces, $wp_query );
+
+		set_current_screen( 'front' );
+
+		$this->assertSame(
+			$query_pieces,
+			$response,
+			'Secondary queries with a different post_type than the screen should pass through untouched.'
 		);
 	}
 
@@ -1283,105 +1373,46 @@ class Test_Query extends Base {
 	}
 
 	/**
-	 * Test that events without dates appear in upcoming admin queries with include_no_date.
+	 * Events with no row in the events table fall out of upcoming/past
+	 * (they only show under the admin All view).
 	 *
-	 * Events without a date/time set have no row in the gatherpress_events table.
-	 * When include_no_date is true (admin context), these should appear in upcoming
-	 * and be excluded from past.
+	 * Previously the admin variant of `adjust_event_sql` accepted an
+	 * `include_no_date` flag that wove `OR post_id IS NULL` into the
+	 * upcoming WHERE clause. That clause has been removed — the LEFT
+	 * JOIN's NULL row naturally fails the `datetime_end_gmt >= NOW()`
+	 * comparison, so no-date events are excluded from both buckets.
 	 *
 	 * @covers ::adjust_event_sql
 	 *
 	 * @return void
 	 */
-	public function test_events_without_dates_in_admin_upcoming(): void {
-		global $wpdb;
-
+	public function test_no_date_events_excluded_from_upcoming_and_past(): void {
 		$instance = Query::get_instance();
-		$table    = sprintf( Event::TABLE_FORMAT, $wpdb->prefix );
 
-		// Create an event without setting any dates (no row in gatherpress_events).
-		$no_date_post = $this->mock->post( array( 'post_type' => 'gatherpress_event' ) )->get();
-
-		// Verify there is no row in the events table for this post.
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-		$row = $wpdb->get_var(
-			$wpdb->prepare(
-				'SELECT post_id FROM %i WHERE post_id = %d',
-				$table,
-				$no_date_post->ID
-			)
-		);
-		$this->assertNull( $row, 'Event without dates should have no row in gatherpress_events.' );
-
-		// Create a normal upcoming event for comparison.
-		$upcoming_post  = $this->mock->post( array( 'post_type' => 'gatherpress_event' ) )->get();
-		$upcoming_event = new Event( $upcoming_post->ID );
-		$date           = new \DateTime( 'tomorrow' );
-
-		$params = array(
-			'datetime_start' => $date->format( 'Y-m-d H:i:s' ),
-			'datetime_end'   => $date->modify( '+1 day' )->format( 'Y-m-d H:i:s' ),
-			'timezone'       => 'America/New_York',
-		);
-
-		$upcoming_event->save_datetimes( $params );
-
-		// Create a normal past event for comparison.
-		$past_post  = $this->mock->post( array( 'post_type' => 'gatherpress_event' ) )->get();
-		$past_event = new Event( $past_post->ID );
-		$past_date  = new \DateTime( 'yesterday' );
-
-		$params = array(
-			'datetime_start' => $past_date->modify( '-1 day' )->format( 'Y-m-d H:i:s' ),
-			'datetime_end'   => $past_date->format( 'Y-m-d H:i:s' ),
-			'timezone'       => 'America/New_York',
-		);
-
-		$past_event->save_datetimes( $params );
-
-		// With include_no_date=true (admin), upcoming should include IS NULL.
 		$retval = $instance->adjust_event_sql(
 			array(),
 			'upcoming',
 			'ASC',
 			'datetime',
-			true,
 			true
 		);
-		$this->assertStringContainsString(
+		$this->assertStringNotContainsString(
 			'IS NULL',
 			$retval['where'],
-			'Admin upcoming query should include IS NULL.'
+			'Upcoming query should not have an IS NULL escape hatch for no-date events.'
 		);
 
-		// With include_no_date=true (admin), past should exclude via IS NOT NULL.
 		$retval = $instance->adjust_event_sql(
 			array(),
 			'past',
 			'DESC',
 			'datetime',
-			true,
 			true
 		);
-		$this->assertStringContainsString(
+		$this->assertStringNotContainsString(
 			'IS NOT NULL',
 			$retval['where'],
-			'Admin past query should include IS NOT NULL.'
-		);
-
-		// With include_no_date=false (frontend), no IS NULL check.
-		$retval = $instance->adjust_event_sql(
-			array(),
-			'upcoming',
-			'ASC',
-			'datetime',
-			true,
-			false
-		);
-		$this->assertStringNotContainsString(
-			'IS NULL',
-			$retval['where'],
-			'Frontend query should not have IS NULL.'
+			'Past query should not have an IS NOT NULL guard — no-date events are already excluded by the join.'
 		);
 	}
 

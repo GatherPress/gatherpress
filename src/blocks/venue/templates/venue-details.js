@@ -121,11 +121,10 @@ const VENUE_DETAILS = [
 	[ 'gatherpress/venue-map' ],
 ];
 
-// Template with post-title (for events).
+// Template variants for the Venue Details with Map pattern. Both share the
+// same address + phone + website + map block tree; the with-title variant
+// prepends a post title (used in event posts) while the without-title variant
+// drops it (used in venue posts where the host's title already names the
+// venue).
 export const TEMPLATE_WITH_TITLE = [ POST_TITLE, ...VENUE_DETAILS ];
-
-// Template without post-title (for venues).
 export const TEMPLATE_WITHOUT_TITLE = VENUE_DETAILS;
-
-// Default export is with title for backward compatibility.
-export default TEMPLATE_WITH_TITLE;

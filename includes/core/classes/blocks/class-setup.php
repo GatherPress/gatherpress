@@ -13,6 +13,7 @@ namespace GatherPress\Core\Blocks;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
+use GatherPress\Core\Event;
 use GatherPress\Core\Traits\Singleton;
 use WP_Block_Template;
 use WP_Post;
@@ -25,6 +26,7 @@ use WP_Post;
  * @since 1.0.0
  */
 class Setup {
+
 	/**
 	 * Enforces a single instance of this class.
 	 */
@@ -123,6 +125,17 @@ class Setup {
 			)
 		);
 
+		// Pattern category that the Event Query Loop variation chooser scopes to.
+		// The category slug must match the variation namespace declared in
+		// src/variations/core/query/index.js so core/query's placeholder modal
+		// surfaces these patterns.
+		register_block_pattern_category(
+			'gatherpress-event-query',
+			array(
+				'label' => __( 'Event Query Loop', 'gatherpress' ),
+			)
+		);
+
 		// Descriptive note shown to developers who enumerate registered
 		// patterns (REST API, pattern registry). These patterns exist as
 		// anchors for the Block Hooks API so other plugins can hook blocks
@@ -136,7 +149,7 @@ class Setup {
 
 		$block_patterns = array(
 			array(
-				'gatherpress/event-template',
+				Event::TEMPLATE_PATTERN,
 				array(
 					'title'       => __( 'Event Post Default Content', 'gatherpress' ),
 					'description' => $hook_anchor_description,
@@ -150,7 +163,12 @@ class Setup {
 				array(
 					'title'       => __( 'Venue Post Default Content', 'gatherpress' ),
 					'description' => $hook_anchor_description,
-					'content'     => '<!-- wp:gatherpress/venue /-->',
+					// `patternPicked: true` skips the venue block's pattern-picker
+					// UI and seeds the default layout directly — this is the
+					// canonical content for new venue posts, not a fresh manual
+					// insert. The block toolbar's "Choose pattern" action stays
+					// available for authors who want a different layout.
+					'content'     => '<!-- wp:gatherpress/venue {"patternPicked":true} /-->',
 					'inserter'    => false,
 					'source'      => 'plugin',
 				),
@@ -197,9 +215,9 @@ class Setup {
 			return $hooked_block_types;
 		}
 
-		// Hook blocks into the "gatherpress/event-template" pattern.
+		// Hook blocks into the event-template pattern.
 		if (
-			'gatherpress/event-template' === $context['name'] &&
+			Event::TEMPLATE_PATTERN === $context['name'] &&
 			'gatherpress/event-date' === $anchor_block_type &&
 			'after' === $relative_position
 		) {
@@ -246,21 +264,16 @@ class Setup {
 		array $parsed_anchor_block,
 		$context
 	): ?array {
-		// Has the hooked block been suppressed by a previous filter?
-		if ( is_null( $parsed_hooked_block ) ) {
-			return $parsed_hooked_block;
-		}
-
-		// Check that the place to hook into is a pattern.
-		if ( ! is_array( $context ) || ! isset( $context['name'] ) ) {
-			return $parsed_hooked_block;
-		}
-
-		// Conditionally hook the block into the "gatherpress/venue-facts" pattern.
-		if (
-			'gatherpress/event-template' !== $context['name'] ||
-			'gatherpress/event-date' !== $parsed_anchor_block['blockName'] ||
-			'after' !== $relative_position
+		// Bail when a previous filter suppressed the block, when the hook
+		// target isn't a pattern, or when the pattern / anchor block /
+		// position don't match the event-template anchor we inject the
+		// opener paragraph after.
+		if ( is_null( $parsed_hooked_block )
+			|| ! is_array( $context )
+			|| ! isset( $context['name'] )
+			|| Event::TEMPLATE_PATTERN !== $context['name']
+			|| 'gatherpress/event-date' !== $parsed_anchor_block['blockName']
+			|| 'after' !== $relative_position
 		) {
 			return $parsed_hooked_block;
 		}

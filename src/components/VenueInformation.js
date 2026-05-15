@@ -1,5 +1,5 @@
 /**
- * WordPress dependencies.
+ * WordPress dependencies
  */
 import { TextControl } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
@@ -8,7 +8,7 @@ import { useEffect, useCallback, useRef } from '@wordpress/element';
 import { useDebounce } from '@wordpress/compose';
 
 /**
- * Internal dependencies.
+ * Internal dependencies
  */
 import { geocodeAddress, GEOCODE_LOCK_NAME } from '../helpers/geocoding';
 import AddressAutocompleteField from './AddressAutocompleteField';

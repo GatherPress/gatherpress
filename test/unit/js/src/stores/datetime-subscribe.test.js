@@ -1,5 +1,5 @@
 /**
- * External dependencies.
+ * External dependencies
  */
 import { describe, expect, it, jest, beforeEach } from '@jest/globals';
 

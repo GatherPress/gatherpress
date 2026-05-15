@@ -2,11 +2,7 @@
  * WordPress dependencies
  */
 import { __ } from '@wordpress/i18n';
-import {
-	// eslint-disable-next-line @wordpress/no-unsafe-wp-apis
-	__experimentalNavigatorProvider as NavigatorProvider,
-	Navigator,
-} from '@wordpress/components';
+import { Navigator } from '@wordpress/components';
 import { store as coreDataStore } from '@wordpress/core-data';
 import { useSelect, useDispatch } from '@wordpress/data';
 import { useState, useCallback, useMemo } from '@wordpress/element';
@@ -105,7 +101,7 @@ export default function VenueNavigator( props = null ) {
 	);
 
 	return (
-		<NavigatorProvider
+		<Navigator
 			initialPath="/"
 			style={ {
 				width: '100%',
@@ -146,6 +142,6 @@ export default function VenueNavigator( props = null ) {
 			>
 				<CreateVenueForm { ...props } search={ search } />
 			</Navigator.Screen>
-		</NavigatorProvider>
+		</Navigator>
 	);
 }

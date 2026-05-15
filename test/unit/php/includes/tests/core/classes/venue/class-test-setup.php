@@ -24,6 +24,7 @@ use WP_Block_Patterns_Registry;
  * @coversDefaultClass \GatherPress\Core\Venue\Setup
  */
 class Test_Setup extends Base {
+
 	/**
 	 * Venue\Setup hands the map subsystem off to `Map\Setup` and the
 	 * meta surface off to `Venue\Meta`. Per-sibling internals are
@@ -79,8 +80,8 @@ class Test_Setup extends Base {
 			array(
 				'type'     => 'action',
 				'name'     => 'registered_post_type',
-				'priority' => 10,
-				'callback' => array( $instance, 'maybe_register_post_type_hooks' ),
+				'priority' => 9,
+				'callback' => array( $instance, 'maybe_link_shadow_source_support' ),
 			),
 			array(
 				'type'     => 'action',
@@ -90,9 +91,9 @@ class Test_Setup extends Base {
 			),
 			array(
 				'type'     => 'action',
-				'name'     => 'post_updated',
-				'priority' => 10,
-				'callback' => array( $instance, 'maybe_update_term_slug' ),
+				'name'     => 'init',
+				'priority' => 11,
+				'callback' => array( $instance, 'register_starter_pattern' ),
 			),
 			array(
 				'type'     => 'filter',
@@ -106,58 +107,42 @@ class Test_Setup extends Base {
 	}
 
 	/**
-	 * Coverage for maybe_register_post_type_hooks method.
+	 * Coverage for maybe_link_shadow_source_support — venue support implicitly
+	 * declares gatherpress-shadow-source so the shadow-taxonomy primitive
+	 * wires up automatically for venue post types.
 	 *
-	 * Verifies that per-post-type save and delete actions are registered when
-	 * the given post type declares the 'gatherpress-venue-information' support.
-	 *
-	 * @covers ::maybe_register_post_type_hooks
+	 * @covers ::maybe_link_shadow_source_support
 	 *
 	 * @return void
 	 */
-	public function test_maybe_register_post_type_hooks(): void {
+	public function test_maybe_link_shadow_source_support(): void {
 		$instance = Setup::get_instance();
 
-		foreach ( get_post_types_by_support( 'gatherpress-venue-information' ) as $post_type ) {
-			$instance->maybe_register_post_type_hooks( $post_type );
-			$this->assertSame(
-				10,
-				has_action(
-					sprintf( 'save_post_%s', $post_type ),
-					array( $instance, 'add_venue_term' )
-				),
-				sprintf( 'Failed to assert that save_post_%s has the add_venue_term action.', $post_type )
-			);
-			$this->assertSame(
-				10,
-				has_action(
-					sprintf( 'delete_post_%s', $post_type ),
-					array( $instance, 'delete_venue_term' )
-				),
-				sprintf( 'Failed to assert that delete_post_%s has the delete_venue_term action.', $post_type )
-			);
-		}
+		// A venue post type carries gatherpress-venue-information and should be auto-linked.
+		$instance->maybe_link_shadow_source_support( Venue::POST_TYPE );
+
+		$this->assertTrue(
+			post_type_supports( Venue::POST_TYPE, 'gatherpress-shadow-source' ),
+			'Failed to assert venue post type implicitly declares gatherpress-shadow-source.'
+		);
 	}
 
 	/**
-	 * Bails when the post type does not declare venue-information support.
+	 * Coverage for maybe_link_shadow_source_support — bails when the post type
+	 * does not declare gatherpress-venue-information.
 	 *
-	 * @covers ::maybe_register_post_type_hooks
+	 * @covers ::maybe_link_shadow_source_support
 	 *
 	 * @return void
 	 */
-	public function test_maybe_register_post_type_hooks_skips_unsupported_post_type(): void {
+	public function test_maybe_link_shadow_source_support_skips_unsupported_post_type(): void {
 		$instance = Setup::get_instance();
 
-		$instance->maybe_register_post_type_hooks( 'post' );
+		$instance->maybe_link_shadow_source_support( 'post' );
 
 		$this->assertFalse(
-			has_action( 'save_post_post', array( $instance, 'add_venue_term' ) ),
-			'Failed to assert no save hook is registered for a post type without venue-information support.'
-		);
-		$this->assertFalse(
-			has_action( 'delete_post_post', array( $instance, 'delete_venue_term' ) ),
-			'Failed to assert no delete hook is registered for a post type without venue-information support.'
+			post_type_supports( 'post', 'gatherpress-shadow-source' ),
+			'Failed to assert non-venue post type is not auto-linked.'
 		);
 	}
 
@@ -221,187 +206,196 @@ class Test_Setup extends Base {
 	}
 
 	/**
-	 * Coverage for add_venue_term.
+	 * Filter callbacks may return entries that aren't valid pattern
+	 * definitions (missing `name`, non-array values). The registration
+	 * loop must skip those gracefully so one bad entry from a
+	 * third-party filter doesn't bring down the rest of the chooser.
 	 *
-	 * @covers ::add_venue_term
+	 * @covers ::register_starter_pattern
 	 *
 	 * @return void
 	 */
-	public function test_add_venue_term(): void {
+	public function test_register_starter_pattern_skips_malformed_filter_entries(): void {
 		$instance = Setup::get_instance();
-		$venue    = $this->mock->post( array( 'post_type' => Venue::POST_TYPE ) )->get();
-		$term     = term_exists( $instance->term_slug_from_post_name( $venue->post_name ), Venue::TAXONOMY );
+		$registry = WP_Block_Patterns_Registry::get_instance();
 
-		$this->assertIsArray(
-			$term,
-			'Failed to assert that term exists.'
+		if ( $registry->is_registered( 'gatherpress/venue-with-map' ) ) {
+			$registry->unregister( 'gatherpress/venue-with-map' );
+		}
+
+		$inject_garbage = static function ( array $patterns ): array {
+			$patterns[] = array( 'title' => 'No name key — must be skipped.' );
+			$patterns[] = 'not-an-array — must be skipped.';
+			return $patterns;
+		};
+
+		add_filter( 'gatherpress_venue_starter_patterns', $inject_garbage );
+
+		$instance->register_starter_pattern();
+
+		remove_filter( 'gatherpress_venue_starter_patterns', $inject_garbage );
+
+		$this->assertTrue(
+			$registry->is_registered( 'gatherpress/venue-with-map' ),
+			'Bundled pattern should still register when filter entries before/after it are malformed.'
 		);
 
-		// Delete term to ensure add_venue_term re-creates it.
-		wp_delete_term( $term['term_id'], Venue::TAXONOMY );
-
-		$this->assertNull(
-			term_exists( $term['term_id'], Venue::TAXONOMY ),
-			'Failed to assert that term does not exist after being deleted.'
-		);
-
-		$instance->add_venue_term( $venue->ID, $venue, true );
-
-		$term = term_exists( $instance->term_slug_from_post_name( $venue->post_name ), Venue::TAXONOMY );
-
-		$this->assertNull(
-			term_exists( $term['term_id'], Venue::TAXONOMY ),
-			'Failed to assert that term does not exist when $update is true.'
-		);
-
-		$instance->add_venue_term( $venue->ID, $venue, false );
-
-		$term = term_exists( $instance->term_slug_from_post_name( $venue->post_name ), Venue::TAXONOMY );
-
-		$this->assertIsArray(
-			$term,
-			'Failed to assert that term exists.'
-		);
+		$registry->unregister( 'gatherpress/venue-with-map' );
 	}
 
 	/**
-	 * Coverage for maybe_update_term_slug.
+	 * Bails before registering when no post type declares
+	 * `gatherpress-venue-information` support. Without the guard,
+	 * `register_block_pattern` would be called with an empty
+	 * `postTypes` array and the chooser modal would have no
+	 * post-type scope to match against.
 	 *
-	 * @covers ::maybe_update_term_slug
+	 * @covers ::register_starter_pattern
 	 *
 	 * @return void
 	 */
-	public function test_maybe_update_term_slug(): void {
-		$instance    = Setup::get_instance();
-		$post_before = $this->mock->post()->get();
-		$post_after  = clone $post_before;
+	public function test_register_starter_pattern_bails_without_supported_post_types(): void {
+		$instance = Setup::get_instance();
+		$registry = WP_Block_Patterns_Registry::get_instance();
 
-		$post_after->post_name .= '-after';
+		if ( $registry->is_registered( 'gatherpress/venue-with-map' ) ) {
+			$registry->unregister( 'gatherpress/venue-with-map' );
+		}
 
-		$instance->maybe_update_term_slug( $post_before->ID, $post_after, $post_before );
-		$this->assertNull(
-			term_exists( $instance->term_slug_from_post_name( $post_before->post_name ), Venue::TAXONOMY ),
-			'Failed to assert that term does not exist.'
-		);
-		$this->assertNull(
-			term_exists( $instance->term_slug_from_post_name( $post_after->post_name ), Venue::TAXONOMY ),
-			'Failed to assert that term does not exist.'
-		);
+		// Strip the support from every post type that currently declares
+		// it so `get_post_types_by_support()` returns an empty array.
+		$supported = get_post_types_by_support( 'gatherpress-venue-information' );
+		foreach ( $supported as $post_type ) {
+			remove_post_type_support( $post_type, 'gatherpress-venue-information' );
+		}
 
-		$venue_before = $this->mock->post( array( 'post_type' => Venue::POST_TYPE ) )->get();
-		$venue_after  = clone $venue_before;
+		$instance->register_starter_pattern();
 
-		$venue_after->post_name .= '-first';
-
-		$instance->maybe_update_term_slug( $venue_before->ID, $venue_after, $venue_before );
-
-		$term = term_exists( $instance->term_slug_from_post_name( $venue_after->post_name ), Venue::TAXONOMY );
-
-		$this->assertIsArray(
-			$term,
-			'Failed to assert that term exists.'
+		$this->assertFalse(
+			$registry->is_registered( 'gatherpress/venue-with-map' ),
+			'Starter pattern must not be registered when no post type declares the venue-information support.'
 		);
 
-		$term_object = get_term( $term['term_id'] );
-
-		$this->assertSame(
-			$term_object->slug,
-			$instance->term_slug_from_post_name( $venue_after->post_name ),
-			'Failed to assert that slugs match.'
-		);
-
-		$venue_before = clone $venue_after;
-		$venue_after  = clone $venue_before;
-
-		// Delete term to ensure maybe_update_term_slug re-creates it.
-		wp_delete_term( $term['term_id'], Venue::TAXONOMY );
-
-		$this->assertNull(
-			term_exists( $term['term_id'], Venue::TAXONOMY ),
-			'Failed to assert that term does not exist after being deleted.'
-		);
-
-		$venue_after->post_name .= '-second';
-
-		$instance->maybe_update_term_slug( $venue_before->ID, $venue_after, $venue_before );
-
-		$term = term_exists( $instance->term_slug_from_post_name( $venue_after->post_name ), Venue::TAXONOMY );
-
-		$this->assertIsArray(
-			$term,
-			'Failed to assert that term exists.'
-		);
-
-		$term_object = get_term( $term['term_id'] );
-
-		$this->assertSame(
-			$term_object->slug,
-			$instance->term_slug_from_post_name( $venue_after->post_name ),
-			'Failed to assert that slugs match.'
-		);
-
-		$venue_before = clone $venue_after;
-
-		$venue_after->post_name .= '-third';
-
-		// Setting to draft should not update term.
-		$venue_after->post_status = 'draft';
-		$instance->maybe_update_term_slug( $venue_before->ID, $venue_after, $venue_before );
-
-		$term_object = get_term( $term['term_id'] );
-
-		$this->assertNotSame(
-			$term_object->slug,
-			$instance->term_slug_from_post_name( $venue_after->post_name ),
-			'Failed to assert that slugs do not match.'
-		);
-
-		// Setting back to trash should update the term.
-		$venue_after->post_status = 'trash';
-		$instance->maybe_update_term_slug( $venue_before->ID, $venue_after, $venue_before );
-
-		$term_object = get_term( $term['term_id'] );
-
-		$this->assertSame(
-			$term_object->slug,
-			$instance->term_slug_from_post_name( $venue_after->post_name ),
-			'Failed to assert that slugs match.'
-		);
-
-		// Setting back to publish should update the term.
-		$venue_after->post_status = 'publish';
-		$instance->maybe_update_term_slug( $venue_before->ID, $venue_after, $venue_before );
-
-		$term_object = get_term( $term['term_id'] );
-
-		$this->assertSame(
-			$term_object->slug,
-			$instance->term_slug_from_post_name( $venue_after->post_name ),
-			'Failed to assert that slugs match.'
-		);
+		// Restore support.
+		foreach ( $supported as $post_type ) {
+			add_post_type_support( $post_type, 'gatherpress-venue-information' );
+		}
 	}
 
 	/**
-	 * Coverage for delete_venue_term.
+	 * Registers the user-facing starter pattern scoped to core/post-content
+	 * and every post type declaring `gatherpress-venue-information` so the
+	 * starter pattern modal surfaces it on new venues.
 	 *
-	 * @covers ::delete_venue_term
+	 * @covers ::register_starter_pattern
 	 *
 	 * @return void
 	 */
-	public function test_delete_venue_term(): void {
+	public function test_register_starter_pattern(): void {
 		$instance = Setup::get_instance();
-		$venue    = $this->mock->post( array( 'post_type' => Venue::POST_TYPE ) )->get();
+		$registry = WP_Block_Patterns_Registry::get_instance();
 
-		$this->assertIsArray(
-			term_exists( $instance->term_slug_from_post_name( $venue->post_name ), Venue::TAXONOMY ),
-			'Failed to assert that term exists'
+		if ( $registry->is_registered( 'gatherpress/venue-with-map' ) ) {
+			$registry->unregister( 'gatherpress/venue-with-map' );
+		}
+
+		$instance->register_starter_pattern();
+
+		$this->assertTrue(
+			$registry->is_registered( 'gatherpress/venue-with-map' ),
+			'Starter pattern should be registered.'
 		);
 
-		$instance->delete_venue_term( $venue->ID );
+		$pattern = $registry->get_registered( 'gatherpress/venue-with-map' );
 
-		$this->assertNull(
-			term_exists( $instance->term_slug_from_post_name( $venue->post_name ), Venue::TAXONOMY ),
-			'Failed to assert that term was deleted.'
+		$this->assertContains(
+			'core/post-content',
+			$pattern['blockTypes'],
+			'Starter pattern must scope to core/post-content so the chooser modal surfaces it.'
+		);
+		$this->assertContains(
+			Venue::POST_TYPE,
+			$pattern['postTypes'],
+			'Starter pattern must scope to gatherpress_venue post type.'
+		);
+
+		$registry->unregister( 'gatherpress/venue-with-map' );
+	}
+
+	/**
+	 * Third parties can append their own pattern definitions via the
+	 * `gatherpress_venue_starter_patterns` filter without having to
+	 * call `register_block_pattern()` themselves.
+	 *
+	 * @covers ::register_starter_pattern
+	 *
+	 * @return void
+	 */
+	public function test_register_starter_pattern_filter_extends(): void {
+		$instance = Setup::get_instance();
+		$registry = WP_Block_Patterns_Registry::get_instance();
+
+		if ( $registry->is_registered( 'unit-test/extra-venue-pattern' ) ) {
+			$registry->unregister( 'unit-test/extra-venue-pattern' );
+		}
+
+		$append_pattern = static function ( array $patterns ): array {
+			$patterns[] = array(
+				'name'        => 'unit-test/extra-venue-pattern',
+				'title'       => 'Extra Venue Pattern',
+				'description' => 'Added through the filter.',
+				'content'     => '<!-- wp:paragraph --><p>Extra</p><!-- /wp:paragraph -->',
+			);
+			return $patterns;
+		};
+
+		add_filter( 'gatherpress_venue_starter_patterns', $append_pattern );
+
+		$instance->register_starter_pattern();
+
+		remove_filter( 'gatherpress_venue_starter_patterns', $append_pattern );
+
+		$this->assertTrue(
+			$registry->is_registered( 'unit-test/extra-venue-pattern' ),
+			'Patterns appended via the filter must be registered alongside the bundled defaults.'
+		);
+
+		$registry->unregister( 'unit-test/extra-venue-pattern' );
+	}
+
+	/**
+	 * The `gatherpress_venue_starter_patterns` filter passes the array of
+	 * post types about to receive the registered patterns as its second
+	 * argument, so consumers can vary the returned patterns based on which
+	 * venue-acting post types are in scope.
+	 *
+	 * @covers ::register_starter_pattern
+	 *
+	 * @return void
+	 */
+	public function test_register_starter_pattern_filter_receives_post_types(): void {
+		$instance        = Setup::get_instance();
+		$captured_pt_arg = null;
+
+		$capture_post_types = static function ( array $patterns, array $post_types ) use ( &$captured_pt_arg ): array {
+			$captured_pt_arg = $post_types;
+			return $patterns;
+		};
+
+		add_filter( 'gatherpress_venue_starter_patterns', $capture_post_types, 10, 2 );
+
+		$instance->register_starter_pattern();
+
+		remove_filter( 'gatherpress_venue_starter_patterns', $capture_post_types, 10 );
+
+		$this->assertIsArray(
+			$captured_pt_arg,
+			'Filter must receive the post-type array as its second argument.'
+		);
+		$this->assertContains(
+			Venue::POST_TYPE,
+			$captured_pt_arg,
+			'Post-type array must include every post type declaring gatherpress-venue-information support.'
 		);
 	}
 
@@ -758,26 +752,6 @@ class Test_Setup extends Base {
 			'venuePostTypes',
 			$result['gatherpress']['config'],
 			'Failed to assert that venuePostTypes is added alongside existing gatherpress settings.'
-		);
-	}
-
-	/**
-	 * Coverage for add_venue_term when post type does not support gatherpress-venue-information.
-	 *
-	 * @covers ::add_venue_term
-	 *
-	 * @return void
-	 */
-	public function test_add_venue_term_unsupported_post_type(): void {
-		$instance = Setup::get_instance();
-		$post     = $this->mock->post( array( 'post_type' => 'post' ) )->get();
-
-		// Calling add_venue_term on a standard 'post' should return early and create no term.
-		$instance->add_venue_term( $post->ID, $post, false );
-
-		$this->assertNull(
-			term_exists( $instance->term_slug_from_post_name( $post->post_name ), Venue::TAXONOMY ),
-			'Failed to assert that no venue term was created for a post type without venue-information support.'
 		);
 	}
 
@@ -1139,84 +1113,6 @@ class Test_Setup extends Base {
 			'en_US',
 			determine_locale(),
 			'Failed to assert locale was restored after method execution.'
-		);
-	}
-
-	/**
-	 * Coverage for add_venue_term's early return when the term already exists.
-	 *
-	 * @covers ::add_venue_term
-	 *
-	 * @return void
-	 */
-	public function test_add_venue_term_skips_when_term_already_exists(): void {
-		$instance = Setup::get_instance();
-		$venue    = $this->mock->post( array( 'post_type' => Venue::POST_TYPE ) )->get();
-
-		// First save creates the term.
-		$term = term_exists( $instance->term_slug_from_post_name( $venue->post_name ), Venue::TAXONOMY );
-
-		$this->assertIsArray( $term, 'Expected term to be created on first save.' );
-
-		$term_id = $term['term_id'];
-
-		// Second call with $update=false should detect the existing term and bail.
-		$instance->add_venue_term( $venue->ID, $venue, false );
-
-		$term_after = term_exists( $instance->term_slug_from_post_name( $venue->post_name ), Venue::TAXONOMY );
-
-		$this->assertSame(
-			$term_id,
-			$term_after['term_id'],
-			'Expected the existing term to be untouched rather than replaced.'
-		);
-	}
-
-	/**
-	 * Coverage for maybe_update_term_slug's no-change early return.
-	 *
-	 * @covers ::maybe_update_term_slug
-	 *
-	 * @return void
-	 */
-	public function test_maybe_update_term_slug_no_changes(): void {
-		$instance = Setup::get_instance();
-		$venue    = $this->mock->post( array( 'post_type' => Venue::POST_TYPE ) )->get();
-
-		// Call with identical before/after — neither slug nor title changed.
-		$instance->maybe_update_term_slug( $venue->ID, $venue, $venue );
-
-		$term = term_exists( $instance->term_slug_from_post_name( $venue->post_name ), Venue::TAXONOMY );
-
-		$this->assertIsArray(
-			$term,
-			'Expected the original term to still exist — no-change path should leave terms untouched.'
-		);
-	}
-
-	/**
-	 * Coverage for delete_venue_term's early return when the post type does not
-	 * declare gatherpress-venue-information support.
-	 *
-	 * @covers ::delete_venue_term
-	 *
-	 * @return void
-	 */
-	public function test_delete_venue_term_unsupported_post_type(): void {
-		$instance = Setup::get_instance();
-
-		// Seed a sentinel term so we can prove the method didn't touch it.
-		if ( ! term_exists( 'online-event', Venue::TAXONOMY ) ) {
-			wp_insert_term( 'Online event', Venue::TAXONOMY, array( 'slug' => 'online-event' ) );
-		}
-
-		$post = $this->mock->post( array( 'post_type' => 'post' ) )->get();
-
-		$instance->delete_venue_term( $post->ID );
-
-		$this->assertNotNull(
-			term_exists( 'online-event', Venue::TAXONOMY ),
-			'The sentinel term must not be affected when delete_venue_term is called on a non-venue post.'
 		);
 	}
 

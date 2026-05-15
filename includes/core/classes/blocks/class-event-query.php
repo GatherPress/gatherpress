@@ -25,6 +25,7 @@ use WP_REST_Request;
  * @since 1.0.0
  */
 class Event_Query {
+
 	/**
 	 * Enforces a single instance of this class.
 	 */
@@ -68,14 +69,36 @@ class Event_Query {
 			2
 		);
 		add_action( 'registered_post_type', array( $this, 'maybe_register_event_date_rest_hooks' ) );
+		// Sweep last so post types registered before our listener was
+		// added still get their REST filters installed (#1608).
+		add_action( 'init', array( $this, 'register_existing_event_date_post_types' ), PHP_INT_MAX );
 
 		// Integrate with Advanced Query Loop plugin to pass event query params through.
 		add_filter(
 			'aql_query_vars',
 			array( $this, 'aql_query_vars' ),
 			10,
-			3
+			2
 		);
+	}
+
+	/**
+	 * Register REST hooks for every event-supporting post type that's
+	 * already in the registry by the time we run.
+	 *
+	 * Companion to the `registered_post_type` listener — that one catches
+	 * post types registered AFTER `Event_Query` is instantiated, this one
+	 * catches the ones registered BEFORE. Idempotent: `add_filter` is a
+	 * no-op when the same callback is already registered.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return void
+	 */
+	public function register_existing_event_date_post_types(): void {
+		foreach ( get_post_types_by_support( 'gatherpress-event-date' ) as $post_type ) {
+			$this->maybe_register_event_date_rest_hooks( $post_type );
+		}
 	}
 
 	/**
@@ -211,8 +234,13 @@ class Event_Query {
 		// Generate a new custom query with all potential query vars.
 		$query_args = array();
 
-		// Post Related.
-		$query_args['post_type'] = get_post_types_by_support( 'gatherpress-event-date' );
+		// Honor the block's selected post type when present so a Query Loop
+		// pinned to e.g. `production` doesn't leak `gatherpress_event` posts
+		// (#1609). Fall back to all event-supporting post types only when
+		// the block didn't pick one explicitly.
+		$query_args['post_type'] = ! empty( $block_query['postType'] )
+			? $block_query['postType']
+			: get_post_types_by_support( 'gatherpress-event-date' );
 
 		// Type of event list: 'upcoming' or 'past',
 		// @see wp-content/plugins/gatherpress/includes/core/classes/class-event-query.php.
@@ -387,16 +415,9 @@ class Event_Query {
 	 *
 	 * @param array $query_args  The query arguments being built.
 	 * @param array $block_query The block's query attributes.
-	 * @param bool  $inherited   Whether the query is inherited from the page context.
 	 * @return array Modified query arguments.
-	 *
-	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
 	 */
-	public function aql_query_vars( // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed
-		array $query_args,
-		array $block_query,
-		bool $inherited
-	): array {
+	public function aql_query_vars( array $query_args, array $block_query ): array {
 		// Only process if querying GatherPress events.
 		$post_type = $block_query['postType'] ?? '';
 

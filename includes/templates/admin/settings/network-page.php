@@ -51,6 +51,25 @@ $gatherpress_is_network  = Network::NETWORK_TAB === $current_tab;
 		font-weight: 400;
 		margin-left: 8px;
 	}
+	.gatherpress-settings-form {
+		margin-top: 1em;
+	}
+	.gatherpress-settings-form__row {
+		display: grid;
+		grid-template-columns: 200px 1fr;
+		gap: 0 10px;
+		padding: 15px 10px;
+	}
+	.gatherpress-settings-form__label {
+		font-weight: 600;
+		padding-top: 2px;
+	}
+	@media screen and (max-width: 782px) {
+		.gatherpress-settings-form__row {
+			grid-template-columns: 1fr;
+			gap: 6px;
+		}
+	}
 </style>
 
 <div class="wrap gatherpress-settings">
@@ -140,10 +159,12 @@ $gatherpress_is_network  = Network::NETWORK_TAB === $current_tab;
 				?>
 			</p>
 
-			<table class="form-table" role="presentation">
-				<tr>
-					<th scope="row"><?php esc_html_e( 'Enable', 'gatherpress' ); ?></th>
-					<td>
+			<div class="gatherpress-settings-form">
+				<div class="gatherpress-settings-form__row">
+					<div class="gatherpress-settings-form__label">
+						<?php esc_html_e( 'Enable', 'gatherpress' ); ?>
+					</div>
+					<div class="gatherpress-settings-form__field">
 						<label>
 							<input
 								type="checkbox"
@@ -160,9 +181,9 @@ $gatherpress_is_network  = Network::NETWORK_TAB === $current_tab;
 							);
 							?>
 						</label>
-					</td>
-				</tr>
-			</table>
+					</div>
+				</div>
+			</div>
 
 			<h2><?php esc_html_e( 'Inherited Settings', 'gatherpress' ); ?></h2>
 			<p>
@@ -200,13 +221,13 @@ $gatherpress_is_network  = Network::NETWORK_TAB === $current_tab;
 							</a>)
 						</span>
 					</h3>
-					<table class="form-table" role="presentation">
+					<div class="gatherpress-settings-form">
 					<?php foreach ( $gatherpress_group['sections'] as $gatherpress_section ) : ?>
-						<tr>
-							<th scope="row">
+						<div class="gatherpress-settings-form__row">
+							<div class="gatherpress-settings-form__label">
 								<?php echo esc_html( $gatherpress_section['name'] ?? '' ); ?>
-							</th>
-							<td>
+							</div>
+							<div class="gatherpress-settings-form__field">
 								<ul class="gatherpress-allowlist__options">
 									<?php foreach ( (array) $gatherpress_section['options'] as $gatherpress_option_key => $gatherpress_option ) : ?>
 										<li>
@@ -222,10 +243,10 @@ $gatherpress_is_network  = Network::NETWORK_TAB === $current_tab;
 										</li>
 									<?php endforeach; ?>
 								</ul>
-							</td>
-						</tr>
+							</div>
+						</div>
 					<?php endforeach; ?>
-					</table>
+					</div>
 				</div>
 			<?php endforeach; ?>
 

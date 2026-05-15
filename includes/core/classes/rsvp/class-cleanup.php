@@ -23,6 +23,7 @@ use GatherPress\Core\Traits\Singleton;
  * This class manages rsvp cleanup events.
  */
 class Cleanup {
+
 	use Singleton;
 
 	/**
@@ -114,14 +115,12 @@ class Cleanup {
 		$settings = Settings::get_instance();
 		$switch   = $settings->get( 'rsvp_cleanup_switch' );
 
-		if ( 'on' === $switch ) {
-			if ( ! wp_next_scheduled( 'gatherpress_rsvp_cleanup' ) ) {
-				$frequency       = $settings->get( 'rsvp_cleanup_frequency' );
-				$interval        = $settings->get( 'rsvp_cleanup_interval' );
-				$time_in_seconds = $this->convert_to_seconds( $frequency, $interval );
+		if ( 'on' === $switch && ! wp_next_scheduled( 'gatherpress_rsvp_cleanup' ) ) {
+			$frequency       = $settings->get( 'rsvp_cleanup_frequency' );
+			$interval        = $settings->get( 'rsvp_cleanup_interval' );
+			$time_in_seconds = $this->convert_to_seconds( $frequency, $interval );
 
-				wp_schedule_single_event( time() + $time_in_seconds, 'gatherpress_rsvp_cleanup' );
-			}
+			wp_schedule_single_event( time() + $time_in_seconds, 'gatherpress_rsvp_cleanup' );
 		}
 	}
 
@@ -140,19 +139,28 @@ class Cleanup {
 	 * @return int The total number of seconds, or 0 if the frequency is not recognized.
 	 */
 	private function convert_to_seconds( string $frequency, int $interval ): int {
+		// Assign per-arm and return once so the dispatch isn't a five-arm
+		// return chain.
 		switch ( $frequency ) {
 			case 'daily':
-				return $interval * DAY_IN_SECONDS;
+				$multiplier = DAY_IN_SECONDS;
+				break;
 			case 'weekly':
-				return $interval * WEEK_IN_SECONDS;
+				$multiplier = WEEK_IN_SECONDS;
+				break;
 			case 'monthly':
-				return $interval * MONTH_IN_SECONDS;
+				$multiplier = MONTH_IN_SECONDS;
+				break;
 			case 'yearly':
-				return $interval * YEAR_IN_SECONDS;
+				$multiplier = YEAR_IN_SECONDS;
+				break;
 			case 'hourly':
 			default:
-				return $interval * HOUR_IN_SECONDS;
+				$multiplier = HOUR_IN_SECONDS;
+				break;
 		}
+
+		return $interval * $multiplier;
 	}
 
 	/**

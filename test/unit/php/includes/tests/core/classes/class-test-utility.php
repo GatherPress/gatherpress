@@ -19,6 +19,7 @@ use PMC\Unit_Test\Utility as PMC_Utility;
  * @coversDefaultClass \GatherPress\Core\Utility
  */
 class Test_Utility extends Base {
+
 	/**
 	 * Coverage for render_template method.
 	 *
@@ -85,6 +86,74 @@ class Test_Utility extends Base {
 	 */
 	public function test_unprefix_key() {
 		$this->assertSame( 'unittest', Utility::unprefix_key( 'gatherpress_unittest' ) );
+	}
+
+	/**
+	 * `Utility::post_type_label()` reads a single label off a registered
+	 * post type so admin UI strings reflect whatever a site builder
+	 * filtered the labels to (#1612).
+	 *
+	 * @covers ::post_type_label
+	 *
+	 * @return void
+	 */
+	public function test_post_type_label_returns_registered_label(): void {
+		register_post_type(
+			'shindig',
+			array(
+				'public' => false,
+				'labels' => array(
+					'name'          => 'Shindigs',
+					'singular_name' => 'Shindig',
+					'add_new_item'  => 'Add New Shindig',
+				),
+			)
+		);
+
+		$this->assertSame( 'Shindigs', Utility::post_type_label( 'name', 'shindig' ) );
+		$this->assertSame( 'Shindig', Utility::post_type_label( 'singular_name', 'shindig' ) );
+		$this->assertSame( 'Add New Shindig', Utility::post_type_label( 'add_new_item', 'shindig' ) );
+
+		unregister_post_type( 'shindig' );
+	}
+
+	/**
+	 * `Utility::post_type_label()` returns an empty string for an
+	 * unregistered post type rather than warning. Lets call sites fall
+	 * back gracefully when the post type isn't (or isn't yet)
+	 * registered.
+	 *
+	 * @covers ::post_type_label
+	 *
+	 * @return void
+	 */
+	public function test_post_type_label_unregistered_post_type_returns_empty_string(): void {
+		$this->assertSame( '', Utility::post_type_label( 'name', 'definitely_not_a_post_type' ) );
+	}
+
+	/**
+	 * `Utility::post_type_label()` returns an empty string when the
+	 * label key isn't set on the post type, instead of triggering a
+	 * notice on the missing dynamic property.
+	 *
+	 * @covers ::post_type_label
+	 *
+	 * @return void
+	 */
+	public function test_post_type_label_missing_key_returns_empty_string(): void {
+		register_post_type(
+			'shindig',
+			array(
+				'public' => false,
+				'labels' => array(
+					'name' => 'Shindigs',
+				),
+			)
+		);
+
+		$this->assertSame( '', Utility::post_type_label( 'no_such_label_key', 'shindig' ) );
+
+		unregister_post_type( 'shindig' );
 	}
 
 	/**

@@ -1,10 +1,10 @@
 /**
- * External dependencies.
+ * External dependencies
  */
 import moment from 'moment';
 
 /**
- * WordPress dependencies.
+ * WordPress dependencies
  */
 import { __ } from '@wordpress/i18n';
 import {
@@ -26,7 +26,7 @@ import {
 import { useSelect } from '@wordpress/data';
 
 /**
- * Internal dependencies.
+ * Internal dependencies
  */
 import {
 	convertPHPToMomentFormat,
@@ -443,7 +443,6 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 						</a>
 					</p>
 					<ToggleControl
-						__nextHasNoMarginBottom
 						label={ __( 'Append time zone', 'gatherpress' ) }
 						checked={
 							showTimezone

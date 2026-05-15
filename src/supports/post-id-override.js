@@ -1,5 +1,5 @@
 /**
- * WordPress dependencies.
+ * WordPress dependencies
  */
 import { useSelect, useDispatch } from '@wordpress/data';
 import { getBlockType } from '@wordpress/blocks';

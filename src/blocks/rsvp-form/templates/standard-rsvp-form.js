@@ -1,9 +1,9 @@
 /**
- * WordPress dependencies.
+ * WordPress dependencies
  */
 import { __ } from '@wordpress/i18n';
 
-const TEMPLATE = [
+const STANDARD_RSVP_FORM_TEMPLATE = [
 	[
 		'core/group',
 		{
@@ -204,4 +204,4 @@ const TEMPLATE = [
 	],
 ];
 
-export default TEMPLATE;
+export default STANDARD_RSVP_FORM_TEMPLATE;

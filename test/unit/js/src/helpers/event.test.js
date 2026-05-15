@@ -1,12 +1,12 @@
 /**
- * External dependencies.
+ * External dependencies
  */
 import { describe, expect, jest, it, beforeEach } from '@jest/globals';
 import moment from 'moment';
 import 'moment-timezone';
 
 /**
- * WordPress dependencies.
+ * WordPress dependencies
  */
 import { dispatch } from '@wordpress/data';
 
@@ -24,7 +24,7 @@ jest.mock( '@wordpress/core-data', () => ( {
 } ) );
 
 /**
- * Internal dependencies.
+ * Internal dependencies
  */
 import {
 	hasEventPast,
@@ -32,6 +32,7 @@ import {
 	isPostTypeSupporting,
 	usePostTypeSupports,
 	isEventPostType,
+	isRsvpPostType,
 	hasValidEventId,
 	findEventPostById,
 	getEventMeta,
@@ -329,6 +330,88 @@ describe( 'isEventPostType', () => {
 		} );
 
 		expect( isEventPostType( 'page' ) ).toBe( false );
+	} );
+} );
+
+/**
+ * Coverage for isRsvpPostType.
+ *
+ * Mirrors the bug from gatherpress#1591: a custom post type may declare
+ * `gatherpress-event-date` support without `gatherpress-rsvp` support, and
+ * the helper must return false for that case so RSVP-only UI does not leak.
+ */
+describe( 'isRsvpPostType', () => {
+	/**
+	 * Resolves a "production"-style post type that opts into event-date support
+	 * only, alongside the standard event/post mocks.
+	 *
+	 * @param {string} slug The post type slug.
+	 * @return {Object|null} The post type object with supports.
+	 */
+	function mockGetPostTypeWithProduction( slug ) {
+		if ( 'production' === slug ) {
+			return {
+				supports: {
+					'gatherpress-event-date': true,
+				},
+			};
+		}
+		return mockGetPostType( slug );
+	}
+
+	it( 'returns true when current post type supports gatherpress-rsvp', () => {
+		require( '@wordpress/data' ).select.mockImplementation( ( store ) => {
+			if ( 'core/editor' === store ) {
+				return { getCurrentPostType: () => 'gatherpress_event' };
+			}
+			if ( 'core' === store ) {
+				return { getPostType: mockGetPostTypeWithProduction };
+			}
+			return {};
+		} );
+
+		expect( isRsvpPostType() ).toBe( true );
+	} );
+
+	it( 'returns false for an event-date-only custom post type', () => {
+		require( '@wordpress/data' ).select.mockImplementation( ( store ) => {
+			if ( 'core/editor' === store ) {
+				return { getCurrentPostType: () => 'production' };
+			}
+			if ( 'core' === store ) {
+				return { getPostType: mockGetPostTypeWithProduction };
+			}
+			return {};
+		} );
+
+		expect( isRsvpPostType() ).toBe( false );
+	} );
+
+	it( 'returns false for a non-event post type', () => {
+		require( '@wordpress/data' ).select.mockImplementation( ( store ) => {
+			if ( 'core/editor' === store ) {
+				return { getCurrentPostType: () => 'post' };
+			}
+			if ( 'core' === store ) {
+				return { getPostType: mockGetPostTypeWithProduction };
+			}
+			return {};
+		} );
+
+		expect( isRsvpPostType() ).toBe( false );
+	} );
+
+	it( 'honors the explicit postType argument', () => {
+		require( '@wordpress/data' ).select.mockImplementation( ( store ) => {
+			if ( 'core' === store ) {
+				return { getPostType: mockGetPostTypeWithProduction };
+			}
+			return {};
+		} );
+
+		expect( isRsvpPostType( 'gatherpress_event' ) ).toBe( true );
+		expect( isRsvpPostType( 'production' ) ).toBe( false );
+		expect( isRsvpPostType( 'post' ) ).toBe( false );
 	} );
 } );
 

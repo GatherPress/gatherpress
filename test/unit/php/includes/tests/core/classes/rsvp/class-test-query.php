@@ -22,6 +22,7 @@ use WP_Comment_Query;
  * @coversDefaultClass \GatherPress\Core\Rsvp\Query
  */
 class Test_Query extends Base {
+
 	/**
 	 * Coverage for __construct and setup_hooks.
 	 *

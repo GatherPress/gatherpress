@@ -29,6 +29,7 @@ use WP_List_Table;
  * @since 1.0.0
  */
 class List_Table extends WP_List_Table {
+
 	/**
 	 * Default number of RSVPs to display per page in the admin list table.
 	 *
@@ -425,45 +426,42 @@ class List_Table extends WP_List_Table {
 	 * @return string Formatted content for the specified column.
 	 */
 	public function column_default( $item, $column_name ): string {
+		// Default fall-through (matches the original switch's `default` arm).
+		$output = isset( $item[ $column_name ] ) ? $item[ $column_name ] : '-';
+
 		switch ( $column_name ) {
 			case 'response':
-				$terms = wp_get_object_terms( $item['comment_ID'], Rsvp::TAXONOMY );
-				$name  = '-';
-
-				if ( empty( $terms ) ) {
-					return $name;
-				}
-
-				switch ( $terms[0]->slug ) {
-					case 'attending':
-						$name = __( 'Attending', 'gatherpress' );
-						break;
-					case 'not_attending':
-						$name = __( 'Not Attending', 'gatherpress' );
-						break;
-					case 'waiting_list':
-						$name = __( 'Waiting List', 'gatherpress' );
-						break;
-					default:
-						$name = '-';
-				}
-
-				return $name;
+				$terms          = wp_get_object_terms( $item['comment_ID'], Rsvp::TAXONOMY );
+				$response_names = array(
+					'attending'     => __( 'Attending', 'gatherpress' ),
+					'not_attending' => __( 'Not Attending', 'gatherpress' ),
+					'waiting_list'  => __( 'Waiting List', 'gatherpress' ),
+				);
+				$output         = empty( $terms )
+					? '-'
+					: ( $response_names[ $terms[0]->slug ] ?? '-' );
+				break;
 			case 'event':
-				return '<a href="' . esc_url( get_permalink( $item['comment_post_ID'] ) ) . '">' .
+				$output = '<a href="' . esc_url( get_permalink( $item['comment_post_ID'] ) ) . '">' .
 					wp_kses_post( $item['event_title'] ) . '</a>';
+				break;
 			case 'approved':
 				$statuses = array(
 					'1'    => __( 'Approved', 'gatherpress' ),
 					'0'    => __( 'Pending', 'gatherpress' ),
 					'spam' => __( 'Spam', 'gatherpress' ),
 				);
-				return $statuses[ $item['comment_approved'] ];
+				$output   = $statuses[ $item['comment_approved'] ];
+				break;
 			case 'date':
-				return get_comment_date( 'Y/m/d \a\t g:i a', $item['comment_ID'] );
+				$output = get_comment_date( 'Y/m/d \a\t g:i a', $item['comment_ID'] );
+				break;
 			default:
-				return isset( $item[ $column_name ] ) ? $item[ $column_name ] : '-';
+				// Default assignment already covers this arm.
+				break;
 		}
+
+		return $output;
 	}
 
 	/**
@@ -668,33 +666,28 @@ class List_Table extends WP_List_Table {
 	public function process_bulk_action(): void {
 		$nonce = isset( $_REQUEST['_wpnonce'] ) ? sanitize_text_field( wp_unslash( $_REQUEST['_wpnonce'] ) ) : '';
 
-		if ( ! $nonce || ! wp_verify_nonce( $nonce, Rsvp::COMMENT_TYPE ) ) {
-			// Check for delete action nonce separately.
-			if ( 'delete' === $this->current_action() ) {
-				if (
-					! isset( $_REQUEST['_wpnonce'] ) ||
-					! wp_verify_nonce(
-						sanitize_text_field( wp_unslash( $_REQUEST['_wpnonce'] ) ),
-						'gatherpress_rsvp_action'
-					)
-				) {
-					return;
-				}
-			} else {
-				return;
-			}
-		}
+		// Accept either the standard comment-type nonce, or — only for the
+		// `delete` action — the dedicated `gatherpress_rsvp_action` nonce
+		// the row-action emits. Cap check folds in for a single guard.
+		$valid_nonce = $nonce && (
+			wp_verify_nonce( $nonce, Rsvp::COMMENT_TYPE )
+			|| ( 'delete' === $this->current_action()
+				&& wp_verify_nonce( $nonce, 'gatherpress_rsvp_action' )
+			)
+		);
 
-		if ( ! current_user_can( Rsvp::CAPABILITY ) ) {
+		if ( ! $valid_nonce || ! current_user_can( Rsvp::CAPABILITY ) ) {
 			return;
 		}
 
 		$rsvp_ids = array();
 
-		if ( isset( $_REQUEST['gatherpress_rsvp_id'] ) && is_array( $_REQUEST['gatherpress_rsvp_id'] ) ) {
-			$rsvp_ids = array_map( 'intval', $_REQUEST['gatherpress_rsvp_id'] );
-		} elseif ( isset( $_REQUEST['gatherpress_rsvp_id'] ) ) {
-			$rsvp_ids = array( intval( $_REQUEST['gatherpress_rsvp_id'] ) );
+		if ( isset( $_REQUEST['gatherpress_rsvp_id'] ) ) {
+			// `map_deep` casts via intval on every leaf — handles both the
+			// scalar (single-row delete link) and array (bulk-action checkbox)
+			// shapes in one expression, sanitizing at the read site so PHPCS
+			// doesn't see an unsanitized intermediate.
+			$rsvp_ids = (array) map_deep( wp_unslash( $_REQUEST['gatherpress_rsvp_id'] ), 'intval' );
 		}
 
 		if ( empty( $rsvp_ids ) ) {

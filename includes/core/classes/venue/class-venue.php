@@ -31,6 +31,7 @@ use WP_Term;
  * @since 1.0.0
  */
 class Venue {
+
 	/**
 	 * Default venue post type slug.
 	 *
@@ -144,8 +145,8 @@ class Venue {
 	 *
 	 * Resolves `$this->get_term_slug()` in `$this->get_taxonomy()`. Returns
 	 * null when the term hasn't been created yet (e.g. during the save
-	 * transition before `add_venue_term` has run) or when this instance does
-	 * not wrap a real venue.
+	 * transition before `Shadow_Source::add_term()` has run) or when this
+	 * instance does not wrap a real venue.
 	 *
 	 * @since 1.0.0
 	 *

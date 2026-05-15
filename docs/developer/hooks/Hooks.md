@@ -1,4 +1,8 @@
 
+## class-admin-list.php
+
+- [`gatherpress_event_datetime_label`](gatherpress_event_datetime_label.md) Filters the label used for the event-date admin list column.
+
 ## class-assets.php
 
 - [`gatherpress_asset_critical`](gatherpress_asset_critical.md) Filters whether an asset file is considered critical.
@@ -78,8 +82,15 @@
 
 ## class-setup.php
 
+- [`gatherpress_event_archive_mode`](gatherpress_event_archive_mode.md) Filters the resolved event archive mode.
+- [`gatherpress_event_starter_patterns`](gatherpress_event_starter_patterns.md) Filters the array of event starter pattern definitions.
 - [`gatherpress_is_alpha_active`](gatherpress_is_alpha_active.md) Filters whether GatherPress Alpha is considered active.
 - [`gatherpress_venue_post_type`](gatherpress_venue_post_type.md) Filters the post type used as the venue.
+- [`gatherpress_venue_starter_patterns`](gatherpress_venue_starter_patterns.md) Filters the array of venue starter pattern definitions.
+
+## class-shadow-source.php
+
+- [`gatherpress_shadow_taxonomy_args`](gatherpress_shadow_taxonomy_args.md) Filters the taxonomy registration args for a shadow-source post type.
 
 ## class-user.php
 

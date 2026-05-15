@@ -16,9 +16,10 @@ import { __, _x, sprintf } from '@wordpress/i18n';
 /**
  * Internal dependencies
  */
-import GatherPressQueryControls from './slots/query-controls';
-import GatherPressInheritedQueryControls from './slots/inherited-query-controls';
-import { isEventPostType } from '../../../helpers/event';
+import EventQueryControls from './slots/query-controls';
+import EventInheritedQueryControls from './slots/inherited-query-controls';
+import { isEventPostType, usePostTypeSupports } from '../../../helpers/event';
+import { isInFSETemplate } from '../../../helpers/editor';
 
 /**
  * EventCountControls component
@@ -181,7 +182,6 @@ export const EventListTypeControls = ( { attributes, setAttributes } ) => {
 			label={ __( 'Event List Type', 'gatherpress' ) }
 			value={ eventListType }
 			isBlock
-			__nextHasNoMarginBottom
 			__next40pxDefaultSize
 			onChange={ ( newEventType ) => {
 				// When switching event type, reset related defaults so the
@@ -222,23 +222,40 @@ export const EventListTypeControls = ( { attributes, setAttributes } ) => {
  * events associated with that venue are shown. When not on a
  * venue page, the filter is gracefully ignored.
  *
+ * In a template/template-part context, the editor has no
+ * current venue to bind to — the toggle is still relevant
+ * because the template will be applied to venue posts at
+ * render time, but the help copy reflects the deferred binding.
+ *
  * @param {Object}   props
- * @param {Object}   props.attributes    Block attributes.
- * @param {Function} props.setAttributes Function to update block attributes.
- * @return {Element}                     ToggleControl for venue filtering.
+ * @param {Object}   props.attributes        Block attributes.
+ * @param {Function} props.setAttributes     Function to update block attributes.
+ * @param {boolean}  props.inTemplateContext Whether the host editor is a template or template part.
+ * @return {Element}                          ToggleControl for venue filtering.
  */
-export const VenueFilterControls = ( { attributes, setAttributes } ) => {
+export const VenueFilterControls = ( {
+	attributes,
+	setAttributes,
+	inTemplateContext = false,
+} ) => {
 	const {
 		query: { venue_filter: venueFilter } = {},
 	} = attributes;
 
+	const helpText = inTemplateContext
+		? __(
+			'The filter only takes effect when this template renders on a venue page.',
+			'gatherpress'
+		)
+		: __(
+			'When placed on a venue page, only shows events at that venue.',
+			'gatherpress'
+		);
+
 	return (
 		<ToggleControl
 			label={ __( 'Filter by current venue', 'gatherpress' ) }
-			help={ __(
-				'When placed on a venue page, only shows events at that venue.',
-				'gatherpress'
-			) }
+			help={ helpText }
 			checked={ !! venueFilter }
 			onChange={ ( value ) => {
 				setAttributes( {
@@ -359,7 +376,7 @@ export const EventOrderControls = ( { attributes, setAttributes } ) => {
 };
 
 /**
- * GatherPressQueryControlsSlotFill component
+ * EventQueryControlsSlotFill component
  *
  * Provides the main container for all GatherPress event query controls.
  * Renders all controls depending on the current context (such as post type),
@@ -367,29 +384,46 @@ export const EventOrderControls = ( { attributes, setAttributes } ) => {
  *
  * @return {Element} SlotFill with all event query controls for GatherPress.
  */
-export const GatherPressQueryControlsSlotFill = () => {
+export const EventQueryControlsSlotFill = () => {
 	// If the is the correct variation, add the custom controls.
 	const isEventContext = isEventPostType();
+
+	// Reactive gate against the host editor's post type. Templates and template
+	// parts have no concrete venue context to bind to, but they may render on a
+	// venue page later, so we keep the toggle visible there with adjusted copy.
+	// On any non-venue, non-template host the toggle can never apply, so we hide
+	// it to remove the mental load of an option that does nothing.
+	const isVenueContext = usePostTypeSupports(
+		'gatherpress-venue-information'
+	);
+	const inTemplateContext = isInFSETemplate();
+	const showVenueFilter = isVenueContext || inTemplateContext;
+
 	return (
-		<GatherPressQueryControls>
+		<EventQueryControls>
 			{ ( props ) => (
 				<>
 					<EventListTypeControls { ...props } />
 					<EventIncludeUnfinishedControls { ...props } />
 
 					{ isEventContext && <EventExcludeControls { ...props } /> }
-					<VenueFilterControls { ...props } />
+					{ showVenueFilter && (
+						<VenueFilterControls
+							{ ...props }
+							inTemplateContext={ inTemplateContext }
+						/>
+					) }
 					<EventCountControls { ...props } />
 					<EventOffsetControls { ...props } />
 					<EventOrderControls { ...props } />
 				</>
 			) }
-		</GatherPressQueryControls>
+		</EventQueryControls>
 	);
 };
 
 /**
- * GatherPressInheritedQueryControlsSlotFill component
+ * EventInheritedQueryControlsSlotFill component
  *
  * Provides a condensed container for controls used when
  * a query is "inherited" (such as for nested queries), omitting
@@ -397,9 +431,9 @@ export const GatherPressQueryControlsSlotFill = () => {
  *
  * @return {Element} SlotFill with inherited event query controls for GatherPress.
  */
-export const GatherPressInheritedQueryControlsSlotFill = () => {
+export const EventInheritedQueryControlsSlotFill = () => {
 	return (
-		<GatherPressInheritedQueryControls>
+		<EventInheritedQueryControls>
 			{ ( props ) => (
 				<>
 					<EventListTypeControls { ...props } />
@@ -407,6 +441,6 @@ export const GatherPressInheritedQueryControlsSlotFill = () => {
 					<EventOrderControls { ...props } />
 				</>
 			) }
-		</GatherPressInheritedQueryControls>
+		</EventInheritedQueryControls>
 	);
 };

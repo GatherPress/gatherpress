@@ -18,6 +18,7 @@ use PMC\Unit_Test\Utility;
  * @coversDefaultClass \GatherPress\Core\Settings\Venues
  */
 class Test_Venues extends Base {
+
 	/**
 	 * Coverage for get_slug method.
 	 *

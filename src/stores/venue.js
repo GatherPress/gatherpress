@@ -1,5 +1,5 @@
 /**
- * WordPress dependencies.
+ * WordPress dependencies
  */
 import { createReduxStore, register } from '@wordpress/data';
 

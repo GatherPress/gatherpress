@@ -15,6 +15,8 @@ namespace GatherPress\Core;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
+use WP_HTML_Tag_Processor;
+
 /**
  * Class Utility.
  *
@@ -23,6 +25,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
  * @since 1.0.0
  */
 class Utility {
+
 	/**
 	 * Renders a template file.
 	 *
@@ -67,7 +70,7 @@ class Utility {
 	 * @return string The key with the 'gatherpress_' prefix.
 	 */
 	public static function prefix_key( string $key ): string {
-		if ( 0 !== strpos( $key, 'gatherpress_' ) ) {
+		if ( ! str_starts_with( $key, 'gatherpress_' ) ) {
 			$key = sprintf( 'gatherpress_%s', $key );
 		}
 
@@ -86,6 +89,33 @@ class Utility {
 	 */
 	public static function unprefix_key( string $key ): string {
 		return preg_replace( '/^gatherpress_/', '', $key );
+	}
+
+	/**
+	 * Resolve a single label from a post type's registered labels.
+	 *
+	 * Wraps `get_post_type_object()` so call sites don't have to defend
+	 * against unregistered post types or missing label keys. Lets UI
+	 * strings reflect whatever a site builder filtered the labels to,
+	 * and lets extenders' event-supporting post types surface their own
+	 * labels instead of GatherPress's defaults (#1612).
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $key       Label key to read (e.g. `singular_name`,
+	 *                          `name`, `add_new_item`).
+	 * @param string $post_type Post type slug to read the label from.
+	 * @return string The resolved label, or empty string when the post
+	 *                type isn't registered or the key isn't set.
+	 */
+	public static function post_type_label( string $key, string $post_type ): string {
+		$object = get_post_type_object( $post_type );
+
+		if ( ! $object || empty( $object->labels->$key ) ) {
+			return '';
+		}
+
+		return (string) $object->labels->$key;
 	}
 
 	/**
@@ -149,32 +179,64 @@ class Utility {
 	 * @return array An array of time zones with labels as keys and time zone choices as values.
 	 */
 	public static function timezone_choices(): array {
-		$timezones_raw   = explode( PHP_EOL, wp_timezone_choice( 'UTC', get_user_locale() ) );
+		// Parse `wp_timezone_choice()` output through WordPress's HTML tag
+		// processor — no regex, no string-stripping. A previous greedy-regex
+		// parser silently broke when WordPress added a `dir="auto"`
+		// attribute to optgroup/option tags: the captured value carried
+		// trailing markup and never matched the saved timezone, so the
+		// editor's timezone select always fell back to the first option.
+		// Walking tokens via `WP_HTML_Tag_Processor` insulates this code
+		// from any future markup changes WordPress makes to those tags.
+		$tags = new WP_HTML_Tag_Processor(
+			wp_timezone_choice( 'UTC', get_user_locale() )
+		);
+
 		$timezones_clean = array();
 		$group           = null;
+		$pending_value   = null;
 
-		foreach ( $timezones_raw as $timezone ) {
-			// Anchor on the specific `label=` and `value=` attribute names
-			// (`\b` word boundary) and capture only their attribute contents
-			// via `[^"]+`. The previous greedy `.+` would swallow any
-			// additional attributes WordPress emits on the same tag — recent
-			// WP versions added `dir="auto"` on optgroup/option — and the
-			// resulting option values never matched the saved timezone, so
-			// the SelectControl always fell back to the first option.
-			if (
-				str_contains( $timezone, '<optgroup' ) &&
-				preg_match( '/\blabel="([^"]+)"/', $timezone, $matches )
-			) {
-				$group                     = $matches[1];
-				$timezones_clean[ $group ] = array();
+		while ( $tags->next_token() ) {
+			$token_type = $tags->get_token_type();
+
+			if ( '#tag' === $token_type ) {
+				if ( $tags->is_tag_closer() ) {
+					continue;
+				}
+
+				$tag_name = $tags->get_tag();
+
+				if ( 'OPTGROUP' === $tag_name ) {
+					$label = $tags->get_attribute( 'label' );
+
+					if ( is_string( $label ) && '' !== $label ) {
+						$group                     = $label;
+						$timezones_clean[ $group ] = array();
+					}
+
+					$pending_value = null;
+					continue;
+				}
+
+				if ( 'OPTION' === $tag_name && null !== $group ) {
+					$value         = $tags->get_attribute( 'value' );
+					$pending_value = ( is_string( $value ) && '' !== $value ) ? $value : null;
+				}
+
 				continue;
 			}
 
 			if (
-				! empty( $group ) &&
-				preg_match( '/\bvalue="([^"]+)"[^>]*>([^<]+)<\/option>/', $timezone, $matches )
+				'#text' === $token_type &&
+				null !== $group &&
+				null !== $pending_value
 			) {
-				$timezones_clean[ $group ][ $matches[1] ] = $matches[2];
+				$text = trim( $tags->get_modifiable_text() );
+
+				if ( '' !== $text ) {
+					$timezones_clean[ $group ][ $pending_value ] = $text;
+				}
+
+				$pending_value = null;
 			}
 		}
 
@@ -303,7 +365,7 @@ class Utility {
 		$timezone_string = get_option( 'timezone_string' );
 
 		// Remove old Etc mappings. Fallback to gmt_offset.
-		if ( false !== strpos( $timezone_string, 'Etc/GMT' ) ) {
+		if ( str_contains( $timezone_string, 'Etc/GMT' ) ) {
 			$timezone_string = '';
 		}
 
@@ -358,45 +420,37 @@ class Utility {
 	public static function normalize_timezone_string( string $timezone ): string {
 		$timezone = trim( $timezone );
 
-		if ( '' === $timezone ) {
+		// Empty + the bare "UTC" display string both collapse to UTC.
+		if ( '' === $timezone || preg_match( '/^UTC$/i', $timezone ) ) {
 			return 'UTC';
 		}
 
-		// Already in +HH:MM / -HH:MM form — DateTimeZone accepts these.
-		if ( preg_match( '/^[+-]\d{2}:\d{2}$/', $timezone ) ) {
+		// Already-valid +HH:MM / -HH:MM input or an IANA identifier
+		// (America/New_York, Europe/London, etc.) passes straight through —
+		// the second preg_match is the WP-style UTC offset parser, so its
+		// failure means "not a UTC offset, treat as IANA".
+		if ( preg_match( '/^[+-]\d{2}:\d{2}$/', $timezone )
+			|| ! preg_match( '/^UTC([+-])(\d+(?:\.\d+)?|\d+:\d{2})$/i', $timezone, $matches ) ) {
 			return $timezone;
 		}
 
-		// WP-style display strings: UTC, UTC+0, UTC-5, UTC+5.5, UTC+5:30.
-		if ( preg_match( '/^UTC([+-])(\d+(?:\.\d+)?|\d+:\d{2})?$/i', $timezone, $matches ) ) {
-			if ( empty( $matches[2] ) ) {
-				return 'UTC';
-			}
+		$sign    = $matches[1];
+		$value   = $matches[2];
+		$hours   = 0;
+		$minutes = 0;
 
-			$sign    = $matches[1];
-			$value   = $matches[2];
-			$hours   = 0;
-			$minutes = 0;
-
-			if ( false !== strpos( $value, ':' ) ) {
-				list( $hours, $minutes ) = array_map( 'intval', explode( ':', $value ) );
-			} elseif ( false !== strpos( $value, '.' ) ) {
-				$hours   = (int) $value;
-				$minutes = (int) round( ( (float) $value - $hours ) * 60 );
-			} else {
-				$hours = (int) $value;
-			}
-
-			if ( 0 === $hours && 0 === $minutes ) {
-				return 'UTC';
-			}
-
-			return sprintf( '%s%02d:%02d', $sign, $hours, $minutes );
+		if ( str_contains( $value, ':' ) ) {
+			list( $hours, $minutes ) = array_map( 'intval', explode( ':', $value ) );
+		} elseif ( str_contains( $value, '.' ) ) {
+			$hours   = (int) $value;
+			$minutes = (int) round( ( (float) $value - $hours ) * 60 );
+		} else {
+			$hours = (int) $value;
 		}
 
-		// Assume anything else is a valid IANA identifier (America/New_York,
-		// Europe/London, etc.) — passthrough.
-		return $timezone;
+		return ( 0 === $hours && 0 === $minutes )
+			? 'UTC'
+			: sprintf( '%s%02d:%02d', $sign, $hours, $minutes );
 	}
 
 	/**

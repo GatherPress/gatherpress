@@ -32,6 +32,7 @@ use GdImage;
  * @since 1.0.0
  */
 abstract class Base {
+
 	/**
 	 * Stable identifier used in post meta keys, filename slugs, and the
 	 * `map_platform` setting.

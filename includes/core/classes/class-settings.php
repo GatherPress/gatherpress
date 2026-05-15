@@ -26,6 +26,7 @@ use GatherPress\Core\Traits\Singleton;
  * @since 1.0.0
  */
 class Settings {
+
 	/**
 	 * Enforces a single instance of this class.
 	 */
@@ -402,41 +403,57 @@ class Settings {
 		);
 
 		foreach ( $sub_pages as $sub_page => $sub_page_settings ) {
-			if ( ! isset( $sub_page_settings['sections'] ) ) {
+			if ( isset( $sub_page_settings['sections'] ) ) {
+				$this->register_sub_page_sections( (string) $sub_page, (array) $sub_page_settings['sections'] );
+			}
+		}
+	}
+
+	/**
+	 * Register all sections and their option fields for a single sub-page.
+	 *
+	 * Extracted from `register_settings()` so that triple-nested loop body
+	 * stays under SonarCloud's cognitive-complexity threshold; each section
+	 * gets a `do_settings_section`-rendered description, and each option
+	 * inside it becomes an `add_settings_field` callback that defers to
+	 * `render_field()`.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $sub_page Sub-page slug used to scope WP's settings API.
+	 * @param array  $sections Sections array from the sub-page settings.
+	 * @return void
+	 */
+	protected function register_sub_page_sections( string $sub_page, array $sections ): void {
+		foreach ( $sections as $section => $section_settings ) {
+			add_settings_section(
+				(string) $section,
+				$section_settings['name'],
+				static function () use ( $section_settings ): void {
+					if ( ! empty( $section_settings['description'] ) ) {
+						echo '<p class="description">'
+							. wp_kses_post( $section_settings['description'] ) . '</p>';
+					}
+				},
+				Utility::prefix_key( $sub_page )
+			);
+
+			if ( ! isset( $section_settings['options'] ) ) {
 				continue;
 			}
 
-			foreach ( (array) $sub_page_settings['sections'] as $section => $section_settings ) {
-				add_settings_section(
-					$section,
-					$section_settings['name'],
-					static function () use ( $section_settings ): void {
-						if ( ! empty( $section_settings['description'] ) ) {
-							echo '<p class="description">'
-								. wp_kses_post( $section_settings['description'] ) . '</p>';
-						}
-					},
-					Utility::prefix_key( $sub_page )
+			foreach ( (array) $section_settings['options'] as $option => $option_settings ) {
+				$option_settings['callback'] = function () use ( $option, $option_settings ): void {
+					$this->render_field( (string) $option, $option_settings );
+				};
+
+				add_settings_field(
+					(string) $option,
+					$option_settings['labels']['name'],
+					$option_settings['callback'],
+					Utility::prefix_key( $sub_page ),
+					(string) $section
 				);
-
-				if ( isset( $section_settings['options'] ) ) {
-					foreach ( (array) $section_settings['options'] as $option => $option_settings ) {
-						$option_settings['callback'] = function () use (
-							$option,
-							$option_settings
-						): void {
-							$this->render_field( $option, $option_settings );
-						};
-
-						add_settings_field(
-							$option,
-							$option_settings['labels']['name'],
-							$option_settings['callback'],
-							Utility::prefix_key( $sub_page ),
-							$section
-						);
-					}
-				}
 			}
 		}
 	}
@@ -456,17 +473,11 @@ class Settings {
 		$map        = array();
 		$duplicates = array();
 
+		// Use null-coalescing on each level rather than `if (! isset) continue;`
+		// guards — same control flow, fewer branches for cognitive complexity.
 		foreach ( $sub_pages as $sub_page_settings ) {
-			if ( ! isset( $sub_page_settings['sections'] ) ) {
-				continue;
-			}
-
-			foreach ( (array) $sub_page_settings['sections'] as $section_settings ) {
-				if ( ! isset( $section_settings['options'] ) ) {
-					continue;
-				}
-
-				foreach ( (array) $section_settings['options'] as $option => $option_settings ) {
+			foreach ( (array) ( $sub_page_settings['sections'] ?? array() ) as $section_settings ) {
+				foreach ( (array) ( $section_settings['options'] ?? array() ) as $option => $option_settings ) {
 					if ( isset( $map[ $option ] ) && ! in_array( $option, $duplicates, true ) ) {
 						$duplicates[] = $option;
 					}
@@ -666,6 +677,9 @@ class Settings {
 			case 'autocomplete':
 				$params['field_options'] = $option_settings['field']['options'] ?? array();
 				break;
+			default:
+				// Field types without extra params (checkbox, etc.) render with the base $params.
+				break;
 		}
 
 		if ( $inherited ) {
@@ -750,23 +764,19 @@ class Settings {
 	 * @return mixed The value of the option or its default value.
 	 */
 	public function get( string $option ) {
-		if ( $this->is_option_inherited( $option ) ) {
-			$network_options = get_site_option( self::OPTION_NAME, array() );
+		// Read from the network options table when this is an inherited
+		// option on a multisite subsite, otherwise the local options table.
+		// `get_site_option` returns false on single-site, so the type check
+		// below filters that out before the lookup.
+		$options = $this->is_option_inherited( $option )
+			? get_site_option( self::OPTION_NAME, array() )
+			: get_option( self::OPTION_NAME, array() );
 
-			if (
-				is_array( $network_options )
-				&& isset( $network_options[ $option ] )
-				&& '' !== $network_options[ $option ]
-			) {
-				return $network_options[ $option ];
-			}
-
-			return $this->get_flat_default( $option );
-		}
-
-		$options = get_option( self::OPTION_NAME, array() );
-
-		if ( isset( $options[ $option ] ) && '' !== $options[ $option ] ) {
+		if (
+			is_array( $options )
+			&& isset( $options[ $option ] )
+			&& '' !== $options[ $option ]
+		) {
 			return $options[ $option ];
 		}
 

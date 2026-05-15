@@ -24,6 +24,7 @@ use WP_Post;
  * @coversDefaultClass \GatherPress\Core\Event\Event
  */
 class Test_Event extends Base {
+
 	/**
 	 * Coverage for __construct method.
 	 *

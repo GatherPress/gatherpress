@@ -1,5 +1,5 @@
 /**
- * WordPress dependencies.
+ * WordPress dependencies
  */
 import {
 	BlockContextProvider,
@@ -13,7 +13,7 @@ import { useState, useEffect } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
 
 /**
- * Internal dependencies.
+ * Internal dependencies
  */
 import TEMPLATE from './template';
 import { hasValidBlockContext, isInFSETemplate } from '../../helpers/editor';
@@ -120,11 +120,9 @@ const Edit = ( { attributes, context } ) => {
 
 		let newTerms;
 		if ( shouldAdd ) {
-			if ( ! hasTermAlready ) {
-				newTerms = [ ...currentTerms, termId ];
-			} else {
-				newTerms = currentTerms;
-			}
+			newTerms = hasTermAlready
+				? currentTerms
+				: [ ...currentTerms, termId ];
 		} else {
 			newTerms = currentTerms.filter( ( id ) => String( id ) !== termIdStr );
 		}

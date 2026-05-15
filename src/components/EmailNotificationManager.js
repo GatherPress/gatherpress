@@ -1,14 +1,14 @@
 /**
- * WordPress dependencies.
+ * WordPress dependencies
  */
 import { __ } from '@wordpress/i18n';
 import { useSelect, useDispatch } from '@wordpress/data';
 import { useEffect, useRef } from '@wordpress/element';
 
 /**
- * Internal dependencies.
+ * Internal dependencies
  */
-import { isEventPostType, hasEventPast } from '../helpers/event';
+import { hasEventPast, isRsvpPostType } from '../helpers/event';
 
 /**
  * Email Notification Manager Component.
@@ -42,7 +42,10 @@ const EmailNotificationManager = () => {
 		return {
 			isSaving: saving && ! autosaving,
 			isDirty: dirty,
-			shouldShowNotice: 'publish' === status && isEventPostType() && ! hasEventPast(),
+			// Email-update notice targets RSVP attendees, so only surface it on
+			// post types that actually carry `gatherpress-rsvp` support. Event-
+			// date-only post types have no attendee list to email.
+			shouldShowNotice: 'publish' === status && isRsvpPostType() && ! hasEventPast(),
 		};
 	}, [] );
 

@@ -1,10 +1,10 @@
 /**
- * External dependencies.
+ * External dependencies
  */
 import { v4 as uuidv4 } from 'uuid';
 
 /**
- * WordPress dependencies.
+ * WordPress dependencies
  */
 import { __ } from '@wordpress/i18n';
 import { FontSizePicker, PanelColorSettings } from '@wordpress/block-editor';
@@ -148,17 +148,20 @@ export default function RadioFieldPanels( { attributes, setAttributes } ) {
 						</Flex>
 					</div>
 				) ) }
-				<Button variant="secondary" onClick={ addRadioOption }>
+				<Button
+					variant="secondary"
+					onClick={ addRadioOption }
+					style={ { marginTop: '0.75rem' } }
+				>
 					{ __( 'Add Option', 'gatherpress' ) }
 				</Button>
 			</PanelBody>
 
 			<PanelBody title={ __( 'Label Styles', 'gatherpress' ) }>
-				<BaseControl __nextHasNoMarginBottom={ true }>
+				<BaseControl>
 					<FontSizePicker
 						withReset={ true }
 						size="__unstable-large"
-						__nextHasNoMarginBottom
 						onChange={ ( value ) =>
 							setAttributes( { labelFontSize: value } )
 						}
@@ -178,11 +181,10 @@ export default function RadioFieldPanels( { attributes, setAttributes } ) {
 			</PanelBody>
 
 			<PanelBody title={ __( 'Option Styles', 'gatherpress' ) }>
-				<BaseControl __nextHasNoMarginBottom={ true }>
+				<BaseControl>
 					<FontSizePicker
 						withReset={ true }
 						size="__unstable-large"
-						__nextHasNoMarginBottom
 						onChange={ ( value ) =>
 							setAttributes( { optionFontSize: value } )
 						}

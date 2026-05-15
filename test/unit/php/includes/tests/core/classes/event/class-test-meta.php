@@ -20,6 +20,7 @@ use WP_REST_Request;
  * @coversDefaultClass \GatherPress\Core\Event\Meta
  */
 class Test_Meta extends Base {
+
 	/**
 	 * Coverage for `__construct` and `setup_hooks`.
 	 *
@@ -131,6 +132,10 @@ class Test_Meta extends Base {
 		$this->assertNotFalse(
 			has_filter( sprintf( 'rest_pre_insert_%s', $test_pt ), array( $instance, 'filter_readonly_meta' ) ),
 			'REST readonly-strip filter should wire on event-date-supporting post types.'
+		);
+		$this->assertTrue(
+			post_type_supports( $test_pt, 'custom-fields' ),
+			'custom-fields support should be auto-added so the REST controller exposes the meta field.'
 		);
 
 		unregister_post_type( $test_pt );

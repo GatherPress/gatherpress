@@ -1,5 +1,5 @@
 /**
- * WordPress dependencies.
+ * WordPress dependencies
  */
 import { __ } from '@wordpress/i18n';
 import {
@@ -10,9 +10,9 @@ import { registerPlugin } from '@wordpress/plugins';
 import { PluginDocumentSettingPanel } from '@wordpress/editor';
 
 /**
- * Internal dependencies.
+ * Internal dependencies
  */
-import { isEventPostType, isOpenRsvpEnabled, isPerEventRsvpMode } from '../../helpers/event';
+import { isOpenRsvpEnabled, isPerEventRsvpMode, usePostTypeSupports } from '../../helpers/event';
 import { getFromSettings } from '../../helpers/editor-settings';
 import AnonymousRsvpPanel from './anonymous-rsvp';
 import EnableOpenRsvpPanel from './enable-open-rsvp';
@@ -26,20 +26,24 @@ import { RsvpPluginDocumentSettings } from './slot';
  *
  * This component renders a `PluginDocumentSettingPanel` containing various
  * subpanels for configuring RSVP-related settings, such as guest limits,
- * attendance limits, and anonymous RSVP options.
+ * attendance limits, and anonymous RSVP options. The panel is gated on
+ * `gatherpress-rsvp` post type support so that event-date-only post types
+ * (e.g. theater productions tagged with a premiere date) do not surface RSVP
+ * controls that have no underlying meta storage.
  *
  * @since 1.0.0
  *
  * @return {JSX.Element | null} The JSX element for the RsvpSettings panel if
- * the current post type is an event; otherwise, returns null.
+ * the current post type supports RSVP; otherwise, returns null.
  */
 const RsvpSettings = () => {
 	// Only show per-event RSVP toggle when the admin has set rsvp_mode to per_event.
 	const rsvpMode = getFromSettings( 'rsvpMode' ) ?? 'all_on';
 	const enableOpenRsvp = getFromSettings( 'enableOpenRsvp' ) ?? true;
+	const supportsRsvp = usePostTypeSupports( 'gatherpress-rsvp' );
 
 	return (
-		isEventPostType() && 'disabled' !== rsvpMode && (
+		supportsRsvp && 'disabled' !== rsvpMode && (
 			<PluginDocumentSettingPanel
 				name="gatherpress-rsvp-settings"
 				title={ __( 'RSVP settings', 'gatherpress' ) }

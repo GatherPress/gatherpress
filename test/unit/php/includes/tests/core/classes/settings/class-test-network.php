@@ -20,6 +20,7 @@ use ReflectionClass;
  * @coversDefaultClass \GatherPress\Core\Settings\Network
  */
 class Test_Network extends Base {
+
 	/**
 	 * Reset the Network site option after each test.
 	 *

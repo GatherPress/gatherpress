@@ -10,7 +10,7 @@ These supports are declared on post types that act as **events**.
 
 The core identifier for event post types. Enables event datetime storage and display. This includes:
 
-- Registration of datetime meta fields (`gatherpress_datetime`, `gatherpress_datetime_start`, `gatherpress_datetime_end`, `gatherpress_timezone`, etc.)
+- Registration of datetime meta fields (`gatherpress_datetime`, `gatherpress_datetime_start`, `gatherpress_datetime_end`, `gatherpress_timezone`, etc.) — GatherPress also auto-adds WordPress's `custom-fields` support to the post type so the REST controller actually attaches the `meta` field to the schema (without it, `register_post_meta()` quietly registers the keys but the editor's PUT silently strips them)
 - Storage in the `gatherpress_events` database table
 - Date-based query ordering (upcoming/past)
 - Event Date block rendering
@@ -45,6 +45,76 @@ $event->save_datetimes( array(
 ) );
 ```
 
+#### Relabeling the date column and editor panel
+
+The default "Event date & time" admin column header and "Event settings" sidebar panel title can be relabeled per post type without re-implementing either surface. The column key (`datetime`) and panel name stay the same — only the visible label changes.
+
+```php
+// Relabel the admin list column for a "production" post type.
+add_filter(
+    'gatherpress_event_datetime_label',
+    function ( string $label, string $post_type ): string {
+        return 'production' === $post_type ? __( 'Premiere date', 'my-plugin' ) : $label;
+    },
+    10,
+    2
+);
+```
+
+```js
+// Relabel the editor sidebar panel title for the same post type.
+import { addFilter } from '@wordpress/hooks';
+import { __ } from '@wordpress/i18n';
+
+addFilter(
+    'gatherpress.eventSettingsPanelTitle',
+    'my-plugin/production-panel-title',
+    ( title, postType ) =>
+        'production' === postType ? __( 'Production settings', 'my-plugin' ) : title
+);
+```
+
+#### Surfacing your own labels in GatherPress UI
+
+GatherPress's settings sub-menus and a handful of admin UI strings now pull from each post type's registered labels rather than hardcoded "Event"/"Venue" copy. Whatever label you register your custom event-supporting post type with — `singular_name`, `name`, etc. — is what shows up.
+
+```php
+register_post_type( 'my_custom_event', array(
+    'labels'   => array(
+        'name'          => __( 'Happenings', 'my-plugin' ),
+        'singular_name' => __( 'Happening', 'my-plugin' ),
+    ),
+    'supports' => array( 'title', 'editor', 'gatherpress-event-date' ),
+) );
+```
+
+If you'd rather rename the labels of GatherPress's own `gatherpress_event` (or `gatherpress_venue`), use WordPress's `post_type_labels_<post_type>` filter — the labels propagate to the same UI surfaces.
+
+When writing your own admin UI on top of GatherPress, read labels through `Utility::post_type_label( $key, $post_type )`. It wraps `get_post_type_object()` and returns an empty string when the post type isn't registered (or the label key isn't set), so call sites don't have to defend against either.
+
+#### Bare archive temporal handling
+
+The bare post-type archive URL (e.g. `/my_custom_event/`) defaults to **upcoming** for every event-supporting post type, so past entries don't appear alongside future ones in the same list. Two knobs override that default:
+
+1. URL parameters: appending `?gatherpress_event_query=upcoming` (or `past`) narrows that page load to the matching subset.
+2. The `gatherpress_event_archive_mode` filter receives the queried post type as its second argument and lets you pin a different mode for any event-supporting post type. Valid return values are `upcoming`, `past`, or `none` — anything else is coerced back to `upcoming`. Returning `none` opts the archive out entirely (404).
+
+```php
+add_filter(
+    'gatherpress_event_archive_mode',
+    function ( string $mode, string $post_type ): string {
+        if ( 'my_custom_event' === $post_type ) {
+            return 'past';
+        }
+        return $mode;
+    },
+    10,
+    2
+);
+```
+
+The standard `gatherpress_event` post type also lets the Event Archive setting choose the default before the filter runs.
+
 ### `gatherpress-rsvp`
 
 Enables the comment-based RSVP system for a post type. This includes:
@@ -54,6 +124,11 @@ Enables the comment-based RSVP system for a post type. This includes:
 - RSVP blocks rendering (rsvp, rsvp-form, rsvp-response, rsvp-template)
 - RSVP token-based email verification for anonymous attendees
 - Comment count adjustment to reflect RSVP activity
+- The RSVPs column (and its sortable header) on the admin list table, replacing the standard comments column to avoid confusion with RSVP submissions
+- The "RSVP settings" panel in the block editor sidebar (guest limit, max attendance, anonymous RSVP, per-event toggle)
+- The post-publish "Send an event update via email" notice that opens the attendee email composer
+
+A post type that declares `gatherpress-event-date` without `gatherpress-rsvp` (e.g. a "production" post type that just wants a premiere date) keeps the datetime column and Event settings sidebar but gets none of the RSVP UI above.
 
 #### Usage for gatherpress-rsvp
 
@@ -68,10 +143,12 @@ register_post_type( 'my_custom_event', array(
 
 Enables physical venue association for a post type. This includes:
 
-- Registration of the `_gatherpress_venue` taxonomy for the post type
+- Wiring the venue's shadow taxonomy (e.g. `_gatherpress_venue`) onto the post type so events can be tagged with their venue term
 - Venue selector in the block editor
 - Venue block rendering (name, address, map, phone, website)
 - Venue detail field visibility (hides empty address/phone/website blocks)
+
+The shadow taxonomy itself is registered by the [`gatherpress-shadow-source`](#gatherpress-shadow-source) primitive; declaring `gatherpress-venue` is what wires it onto the event post type.
 
 #### Usage for gatherpress-venue
 
@@ -136,7 +213,7 @@ The core identifier for venue post types. Enables venue address and contact data
     - `gatherpress_country`
     - `gatherpress_country_code`
 - Venue detail blocks (address, phone number, website)
-- Automatic creation and management of the corresponding `_gatherpress_venue` taxonomy term
+- Implicit declaration of [`gatherpress-shadow-source`](#gatherpress-shadow-source), which registers the `_<post_type>` taxonomy and keeps one term per venue post in sync with the post slug
 - `post_type_supports( $type, 'gatherpress-venue-information' )` is the canonical check for "is this a venue?"
 
 Meta revisions are enabled automatically when your venue post type declares `revisions` in its `supports` array; venue post types that opt out of revisions still get the meta registered without `revisions_enabled`.
@@ -182,6 +259,59 @@ register_post_type( 'my_custom_venue', array(
     'supports' => array( 'title', 'editor', 'gatherpress-venue-information', 'gatherpress-venue-map' ),
     // ... other args
 ) );
+```
+
+---
+
+## Shared Primitives
+
+These supports aren't specific to events or venues — they expose foundational behaviors that any post type can opt into.
+
+### `gatherpress-shadow-source`
+
+Registers a hidden `_<post_type>` taxonomy for the post type and keeps one term per published post in lockstep with the post's slug and title. Sometimes called a "shadow taxonomy" — the term mirrors the post and lets consumers (events, sessions, productions, etc.) tag themselves with that term to model a relationship.
+
+This is the primitive that powers `gatherpress_venue` ⇄ event tagging. `gatherpress-venue-information` implicitly declares `gatherpress-shadow-source`, so existing venue post types pick up the lifecycle without changes. Companion plugins can declare it directly on their own post types — productions, organizers, sponsors — to get the same behavior with no venue-specific baggage.
+
+This support includes:
+
+- A hidden taxonomy `_<post_type>` registered with `show_ui => false`, `show_admin_column => true`, `publicly_queryable => true`, `show_in_rest => true`, and `rewrite => false` (so the taxonomy appears in Query Loop block taxonomy controls but doesn't expose public archive URLs)
+- Labels inherited from the source post type's `name` / `singular_name` (override via the `gatherpress_shadow_taxonomy_args` filter)
+- A `save_post_<post_type>` hook that inserts a term on first publish, with the term slug derived from the post's `post_name` prefixed with an underscore (e.g. `my-production` → `_my-production`)
+- A `post_updated` hook that updates the term's name and slug whenever the source post is renamed
+- A `delete_post_<post_type>` hook that removes the term when the source post is deleted
+
+Sentinel terms (terms that don't carry a leading underscore, such as the venue subsystem's `online-event`) are deliberately preserved — `Shadow_Source::is_shadow_term_slug()` is the canonical predicate for distinguishing real shadow terms from sentinels.
+
+#### Usage for gatherpress-shadow-source
+
+```php
+register_post_type( 'production', array(
+    'supports' => array( 'title', 'editor', 'gatherpress-shadow-source' ),
+    // ... other args
+) );
+```
+
+Wiring the resulting taxonomy onto consumer post types is the developer's responsibility — pass it via `register_post_type`'s `taxonomies` arg or call `register_taxonomy_for_object_type()`:
+
+```php
+add_action( 'init', function() {
+    register_taxonomy_for_object_type( '_production', 'gatherpress_event' );
+}, 12 );
+```
+
+#### Customizing the taxonomy registration
+
+To override labels, REST visibility, or other taxonomy registration args:
+
+```php
+add_filter( 'gatherpress_shadow_taxonomy_args', function( $args, $post_type ) {
+    if ( 'production' === $post_type ) {
+        $args['labels']['name']          = __( 'Productions', 'my-plugin' );
+        $args['labels']['singular_name'] = __( 'Production', 'my-plugin' );
+    }
+    return $args;
+}, 10, 2 );
 ```
 
 ---
@@ -282,3 +412,4 @@ All GatherPress supports use the following naming convention:
 - The `Event::POST_TYPE` constant still exists and refers to `gatherpress_event`. It is used for GatherPress's own post type registration but should not be used for feature checks.
 - The `Venue::POST_TYPE` constant still exists and refers to `gatherpress_venue`. It is used for GatherPress's own post type registration but should not be used for feature checks.
 - The `venuePostTypes` map is exposed to the block editor via `block_editor_settings_all` under `settings.gatherpress.venuePostTypes`. It maps event post type slugs to their corresponding venue post type slugs, resolved via the `gatherpress_venue_post_type` filter.
+- `gatherpress-venue-information` implicitly declares `gatherpress-shadow-source` via a `registered_post_type` hook on `Venue\Setup` (priority 9), so any post type that opts into venue support automatically picks up the shadow-taxonomy primitive without having to declare both.

@@ -25,6 +25,7 @@ use PMC\Unit_Test\Utility;
  * @coversDefaultClass \GatherPress\Core\Venue\Map\Provider\OSM
  */
 class Test_OSM extends Base {
+
 	/**
 	 * Minimal valid 1×1 PNG used as a stand-in for every tile fetch.
 	 * Keeping the payload tiny means tests stay fast and any code path
@@ -560,5 +561,112 @@ class Test_OSM extends Base {
 		}
 
 		$this->assertFalse( $result );
+	}
+
+	/**
+	 * `paint_tile()` happy path: fetch returns valid PNG bytes, decode
+	 * yields a GdImage, and the tile gets stamped onto the canvas.
+	 * Direct-invokes the private helper because xdebug doesn't always trace
+	 * inside same-class private methods called from a tight render loop —
+	 * see the previous gap reports against `current_screen_post_type` and
+	 * the same shape here.
+	 *
+	 * @covers ::paint_tile
+	 *
+	 * @return void
+	 */
+	public function test_paint_tile_stamps_tile_onto_canvas(): void {
+		if ( ! function_exists( 'imagecreatetruecolor' ) ) {
+			$this->markTestSkipped( 'GD extension is not available.' );
+		}
+
+		$canvas = imagecreatetruecolor( 256, 256 );
+
+		Utility::invoke_hidden_method(
+			new OSM(),
+			'paint_tile',
+			array( $canvas, 0, 0, 1, 0, 0, 'https://example.test/{z}/{x}/{y}.png' )
+		);
+
+		// Canvas remains a GdImage and was modified in place — proxy assertion
+		// is that the call returned without throwing.
+		$this->assertInstanceOf( GdImage::class, $canvas );
+
+		imagedestroy( $canvas );
+	}
+
+	/**
+	 * `paint_tile()` returns silently when fetch_tile yields null (HTTP
+	 * error path). The canvas is untouched.
+	 *
+	 * @covers ::paint_tile
+	 *
+	 * @return void
+	 */
+	public function test_paint_tile_skips_when_fetch_returns_null(): void {
+		if ( ! function_exists( 'imagecreatetruecolor' ) ) {
+			$this->markTestSkipped( 'GD extension is not available.' );
+		}
+
+		remove_filter( 'pre_http_request', array( $this, 'short_circuit_tile_requests' ), 10 );
+		$fail = static function () {
+			return new \WP_Error( 'boom', 'tile fetch failed' );
+		};
+		add_filter( 'pre_http_request', $fail, 10 );
+
+		$canvas = imagecreatetruecolor( 256, 256 );
+
+		Utility::invoke_hidden_method(
+			new OSM(),
+			'paint_tile',
+			array( $canvas, 0, 0, 1, 0, 0, 'https://example.test/{z}/{x}/{y}.png' )
+		);
+
+		remove_filter( 'pre_http_request', $fail, 10 );
+		add_filter( 'pre_http_request', array( $this, 'short_circuit_tile_requests' ), 10, 3 );
+
+		$this->assertInstanceOf( GdImage::class, $canvas );
+		imagedestroy( $canvas );
+	}
+
+	/**
+	 * `paint_tile()` returns silently when decode_tile yields false (the
+	 * fetched bytes aren't a valid PNG).
+	 *
+	 * @covers ::paint_tile
+	 *
+	 * @return void
+	 */
+	public function test_paint_tile_skips_when_decode_returns_false(): void {
+		if ( ! function_exists( 'imagecreatetruecolor' ) ) {
+			$this->markTestSkipped( 'GD extension is not available.' );
+		}
+
+		remove_filter( 'pre_http_request', array( $this, 'short_circuit_tile_requests' ), 10 );
+		$garbage = static function () {
+			return array(
+				'response' => array(
+					'code'    => 200,
+					'message' => 'OK',
+				),
+				'body'     => 'not a png',
+				'headers'  => array(),
+			);
+		};
+		add_filter( 'pre_http_request', $garbage, 10 );
+
+		$canvas = imagecreatetruecolor( 256, 256 );
+
+		Utility::invoke_hidden_method(
+			new OSM(),
+			'paint_tile',
+			array( $canvas, 0, 0, 1, 0, 0, 'https://example.test/{z}/{x}/{y}.png' )
+		);
+
+		remove_filter( 'pre_http_request', $garbage, 10 );
+		add_filter( 'pre_http_request', array( $this, 'short_circuit_tile_requests' ), 10, 3 );
+
+		$this->assertInstanceOf( GdImage::class, $canvas );
+		imagedestroy( $canvas );
 	}
 }

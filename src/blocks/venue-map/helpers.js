@@ -1,5 +1,5 @@
 /**
- * WordPress dependencies.
+ * WordPress dependencies
  */
 import { __ } from '@wordpress/i18n';
 import apiFetch from '@wordpress/api-fetch';
@@ -8,7 +8,7 @@ import { useDispatch, useSelect } from '@wordpress/data';
 import { useEffect, useState } from '@wordpress/element';
 
 /**
- * Internal dependencies.
+ * Internal dependencies
  */
 import { REST_NAMESPACE } from '../../helpers/namespace';
 
@@ -138,7 +138,7 @@ export const RegenerateMapButton = ( {
 						{
 							...current,
 							meta: {
-								...( current.meta || {} ),
+								...current.meta,
 								gatherpress_static_map:
 									response?.descriptors || {},
 							},
@@ -221,7 +221,7 @@ export const parseAspectRatio = ( ratio ) => {
 	if ( 'string' !== typeof ratio ) {
 		return null;
 	}
-	const match = ratio.trim().match( /^(\d+)\s*[/:]\s*(\d+)$/ );
+	const match = /^(\d+)\s*[/:]\s*(\d+)$/.exec( ratio.trim() );
 	if ( ! match ) {
 		return null;
 	}

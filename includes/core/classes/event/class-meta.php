@@ -41,6 +41,7 @@ use WP_REST_Request;
  * @since 1.0.0
  */
 class Meta {
+
 	/**
 	 * Enforces a single instance of this class.
 	 */
@@ -103,6 +104,15 @@ class Meta {
 	 * @return void
 	 */
 	protected function register_event_date_meta( string $post_type ): void {
+		// `WP_REST_Posts_Controller` only attaches the `meta` field to a post
+		// type's REST schema when the post type declares `custom-fields`
+		// support — without it, `register_post_meta()` quietly registers the
+		// keys but the editor's autosave / publish PUT silently strips them
+		// and the Event Date block renders the em-dash placeholder on the
+		// frontend. Force the support on so companion plugins don't have to
+		// know about this WordPress requirement.
+		add_post_type_support( $post_type, 'custom-fields' );
+
 		$event_date_meta = array(
 			'gatherpress_datetime'           => array(
 				'auth_callback'     => array( Utility::class, 'can_edit_post_meta' ),

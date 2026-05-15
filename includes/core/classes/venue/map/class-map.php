@@ -54,6 +54,7 @@ use WP_REST_Server;
  * @phpstan-type ProviderDescriptorMap array<string, DescriptorMap>
  */
 class Map {
+
 	/**
 	 * Enforces a single instance of this class.
 	 */
@@ -899,7 +900,7 @@ class Map {
 		// unreachable, GD missing, brand-new provider not yet warmed). Walk
 		// other providers' stored entries for the same combo so a switch
 		// from OSM to Google still shows the OSM PNG until the new one
-		// lands. Return the first matching entry; ordering follows whatever
+		// lands. Take the first matching entry; ordering follows whatever
 		// post meta gives us (last-saved-wins by storage order).
 		$key         = $this->combo_key(
 			$this->clamp_zoom( $resolved_zoom ),
@@ -908,17 +909,16 @@ class Map {
 		);
 		$all         = $this->get_all_descriptors( $venue_post_id );
 		$active_slug = Manager::get_instance()->get_active_slug();
+		$fallback    = null;
 
 		foreach ( $all as $slug => $combos ) {
-			if ( $slug === $active_slug ) {
-				continue;
-			}
-			if ( isset( $combos[ $key ] ) ) {
-				return $combos[ $key ];
+			if ( $slug !== $active_slug && isset( $combos[ $key ] ) ) {
+				$fallback = $combos[ $key ];
+				break;
 			}
 		}
 
-		return null;
+		return $fallback;
 	}
 
 	/**
@@ -1495,22 +1495,18 @@ class Map {
 
 		$base_dir = trailingslashit( $dirs['basedir'] ) . self::UPLOADS_SUBDIR;
 		$base_url = trailingslashit( $dirs['baseurl'] ) . self::UPLOADS_SUBDIR;
-
-		// uploads/ not writable or disk full — can't reproduce in a unit test without breaking the test filesystem.
-		if ( ! wp_mkdir_p( $base_dir ) ) { // @codeCoverageIgnore
-			return null; // @codeCoverageIgnore
-		}
-
 		$filename = $this->filename_for( $address, $zoom, $width, $height, $provider, $density );
 		$path     = trailingslashit( $base_dir ) . $filename;
-		$url      = trailingslashit( $base_url ) . $filename;
 
-		// Disk fills up mid-write, or target dir lost write permission between the mkdir check and the imagepng call.
-		if ( ! imagepng( $image, $path ) ) { // @codeCoverageIgnore
+		// Filesystem failure modes — uploads/ not writable, disk full, or
+		// directory loses write permission between mkdir and imagepng. Neither
+		// branch is reliably reproducible in a unit test without breaking the
+		// test filesystem; the `||` short-circuits on the happy path.
+		if ( ! wp_mkdir_p( $base_dir ) || ! imagepng( $image, $path ) ) { // @codeCoverageIgnore
 			return null; // @codeCoverageIgnore
 		}
 
-		return $url;
+		return trailingslashit( $base_url ) . $filename;
 	}
 
 	/**

@@ -39,8 +39,8 @@ function initTooltips() {
 }
 
 // Initialize tooltips on DOMContentLoaded or immediately if already loaded.
-if ( 'loading' !== document.readyState ) {
-	initTooltips();
-} else {
+if ( 'loading' === document.readyState ) {
 	document.addEventListener( 'DOMContentLoaded', initTooltips );
+} else {
+	initTooltips();
 }

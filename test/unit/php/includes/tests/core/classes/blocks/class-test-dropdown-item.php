@@ -17,6 +17,7 @@ use GatherPress\Tests\Base;
  * @coversDefaultClass \GatherPress\Core\Blocks\Dropdown_Item
  */
 class Test_Dropdown_Item extends Base {
+
 	/**
 	 * Tests the setup_hooks method.
 	 *

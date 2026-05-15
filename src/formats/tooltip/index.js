@@ -1,11 +1,11 @@
 /**
- * WordPress dependencies.
+ * WordPress dependencies
  */
 import { __ } from '@wordpress/i18n';
 import { registerFormatType } from '@wordpress/rich-text';
 
 /**
- * Internal dependencies.
+ * Internal dependencies
  */
 import { FORMAT_NAME } from './constants';
 import { TooltipEdit } from './edit';

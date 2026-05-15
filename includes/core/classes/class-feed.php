@@ -15,8 +15,10 @@ namespace GatherPress\Core;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
-use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Settings;
+use GatherPress\Core\Traits\Singleton;
+use GatherPress\Core\Utility;
+use GatherPress\Core\Venue;
 use WP_Query;
 
 /**
@@ -27,6 +29,7 @@ use WP_Query;
  * @since 1.0.0
  */
 class Feed {
+
 	/**
 	 * Enforces a single instance of this class.
 	 */
@@ -162,8 +165,9 @@ class Feed {
 		// Add venue information.
 		if ( $venue && ! empty( $venue['name'] ) ) {
 			$event_info[] = sprintf(
-				/* translators: %s: Venue name */
-				__( 'Venue: %s', 'gatherpress' ),
+				/* translators: 1: Singular post type label (e.g. "Venue"), 2: Venue name. */
+				__( '%1$s: %2$s', 'gatherpress' ),
+				Utility::post_type_label( 'singular_name', Venue::POST_TYPE ),
 				$venue['name']
 			);
 		}
@@ -211,8 +215,9 @@ class Feed {
 		// Add venue information.
 		if ( $venue && ! empty( $venue['name'] ) ) {
 			$event_info[] = sprintf(
-				/* translators: %s: Venue name */
-				__( 'Venue: %s', 'gatherpress' ),
+				/* translators: 1: Singular post type label (e.g. "Venue"), 2: Venue name. */
+				__( '%1$s: %2$s', 'gatherpress' ),
+				Utility::post_type_label( 'singular_name', Venue::POST_TYPE ),
 				$venue['name']
 			);
 		}

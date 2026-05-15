@@ -26,6 +26,7 @@ use WP_Site;
  * @since 1.0.0
  */
 class Setup {
+
 	/**
 	 * Enforces a single instance of this class.
 	 */
@@ -59,6 +60,7 @@ class Setup {
 		Assets::get_instance();
 		Blocks\Setup::get_instance();
 		Cli::get_instance();
+		Coexistence_Guard::get_instance();
 		Event\Setup::get_instance();
 		Export::get_instance();
 		Feed::get_instance();
@@ -66,6 +68,7 @@ class Setup {
 		Import::get_instance();
 		Rsvp\Setup::get_instance();
 		Settings::get_instance();
+		Shadow_Source::get_instance();
 		Topic::get_instance();
 		User::get_instance();
 		Venue\Setup::get_instance();

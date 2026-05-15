@@ -1,18 +1,18 @@
 /**
- * External dependencies.
+ * External dependencies
  */
 import moment from 'moment';
 
 /**
- * WordPress dependencies.
+ * WordPress dependencies
  */
 import { __ } from '@wordpress/i18n';
-import { createRoot } from '@wordpress/element';
+import { createRoot, useMemo } from '@wordpress/element';
 import { applyFilters } from '@wordpress/hooks';
-import { select } from '@wordpress/data';
+import { select, useSelect } from '@wordpress/data';
 
 /**
- * Internal dependencies.
+ * Internal dependencies
  */
 import { getFromSettings } from './editor-settings';
 import { enableSave } from './editor';
@@ -163,6 +163,93 @@ export function getDateTimeOffset() {
 		durationOptions().find(
 			( option ) => dateTimeOffset( option.value ) === getDateTimeEnd(),
 		)?.value || false
+	);
+}
+
+/**
+ * Pure matched-preset lookup. Given a start/end/timezone/duration tuple,
+ * returns the duration option whose `(start + value hours)` matches the
+ * given end, or `false` when no preset matches (or when the caller has
+ * explicitly opted out by passing `false` for `duration`).
+ *
+ * Extracted from `useMatchedDuration` so the matching logic is testable
+ * in isolation — the hook is just a `useSelect`/`useMemo` wrapper around
+ * this function.
+ *
+ * @since 1.0.0
+ *
+ * @param {string}         dateTimeStart Start datetime string.
+ * @param {string}         dateTimeEnd   End datetime string.
+ * @param {string}         timezone      Timezone (IANA name or manual offset).
+ * @param {number|boolean} duration      Raw stored duration: `false` to
+ *                                       opt out, anything else to compute.
+ * @return {number|boolean} Matched duration option value, or `false`.
+ */
+export function findMatchedDuration(
+	dateTimeStart,
+	dateTimeEnd,
+	timezone,
+	duration,
+) {
+	if ( false === duration ) {
+		return false;
+	}
+	return (
+		durationOptions().find( ( option ) => {
+			const computedEnd = createMomentWithTimezone(
+				dateTimeStart,
+				timezone,
+			)
+				.add( option.value, 'hours' )
+				.format( dateTimeDatabaseFormat );
+			return computedEnd === dateTimeEnd;
+		} )?.value || false
+	);
+}
+
+/**
+ * Reactive, memoized matched-preset duration for the event datetime range.
+ *
+ * Returns the duration option whose `(start + value hours)` matches the
+ * current end, or `false` when no preset matches (or when the user has
+ * explicitly opted out via `setDuration(false)`). Components use this to
+ * decide between rendering `<Duration />` (preset mode) vs `<DateTimeEnd />`
+ * (absolute mode) and to drive the duration `<SelectControl>`'s value.
+ *
+ * Why a hook instead of a store selector: the previous `getDuration`
+ * selector ran the full `dateTimeOffset` × N moment.tz comparison on every
+ * call, which @wordpress/data invokes once per subscriber per render. Under
+ * IANA timezones the multiplied moment.tz cost compounded with the WP
+ * picker's render cascade and overflowed the call stack on a single
+ * year-arrow keypress (#1607). Computing in a `useMemo` keyed on the
+ * actual inputs runs the comparison once per real change instead.
+ *
+ * @since 1.0.0
+ *
+ * @return {number|boolean} Matched duration option value, or `false`.
+ */
+export function useMatchedDuration() {
+	const dateTimeStart = useSelect(
+		( s ) => s( 'gatherpress/datetime' ).getDateTimeStart(),
+		[],
+	);
+	const dateTimeEnd = useSelect(
+		( s ) => s( 'gatherpress/datetime' ).getDateTimeEnd(),
+		[],
+	);
+	const timezone = useSelect(
+		( s ) => s( 'gatherpress/datetime' ).getTimezone(),
+		[],
+	);
+	const duration = useSelect(
+		( s ) => s( 'gatherpress/datetime' ).getDuration(),
+		[],
+	);
+
+	return useMemo(
+		() =>
+			findMatchedDuration( dateTimeStart, dateTimeEnd, timezone, duration ),
+		[ dateTimeStart, dateTimeEnd, timezone, duration ],
 	);
 }
 
@@ -415,8 +502,25 @@ export function updateDateTimeStart(
 	setDateTimeStart = null,
 	setDateTimeEnd = null,
 ) {
-	// Store the current duration before updating the start time.
+	// Capture the matched preset BEFORE we dispatch the new start so the
+	// lookup runs against the previous start/end pair — we're trying to
+	// detect "was the event in relative (preset-duration) mode?", which is
+	// a property of the OLD state.
 	const currentDuration = getDateTimeOffset();
+
+	// Dispatch the new start FIRST so the validation cascade below — which
+	// reads the start back via `select( 'gatherpress/datetime' )...` — sees
+	// the new value rather than the stale one. Without this, year-down on
+	// the start picker in relative mode (#1607) computed a new end that's
+	// less than the OLD store start, `validateDateTimeEnd` then recursively
+	// called `updateDateTimeStart` to fix the gap, and the recursion never
+	// terminated because the store never got updated inside the synchronous
+	// chain. Stack overflowed inside `moment.tz`. This mirrors the previous
+	// `setToGlobal( 'eventDetails.dateTime.datetime_start', date )` write
+	// that the old global-object architecture used to perform here.
+	if ( 'function' === typeof setDateTimeStart ) {
+		setDateTimeStart( date );
+	}
 
 	// If in relative mode (duration is numeric), always update the end time to maintain the offset.
 	if ( 'number' === typeof currentDuration ) {
@@ -428,10 +532,6 @@ export function updateDateTimeStart(
 	} else {
 		// Otherwise, only validate to ensure end is after start.
 		validateDateTimeStart( date, setDateTimeEnd, currentDuration );
-	}
-
-	if ( 'function' === typeof setDateTimeStart ) {
-		setDateTimeStart( date );
 	}
 
 	enableSave();
@@ -459,11 +559,16 @@ export function updateDateTimeEnd(
 	setDateTimeEnd = null,
 	setDateTimeStart = null,
 ) {
-	validateDateTimeEnd( date, setDateTimeStart );
-
+	// Dispatch the new end FIRST so any subsequent reads of the end via
+	// `select( 'gatherpress/datetime' ).getDateTimeEnd()` (e.g. through
+	// `validateDateTimeStart` if a recursive call back into the start path
+	// fires) see the new value rather than the stale store value. Same
+	// reasoning as the matching reorder in `updateDateTimeStart` (#1607).
 	if ( null !== setDateTimeEnd ) {
 		setDateTimeEnd( date );
 	}
+
+	validateDateTimeEnd( date, setDateTimeStart );
 
 	enableSave();
 }

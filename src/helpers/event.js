@@ -1,16 +1,16 @@
 /**
- * External dependencies.
+ * External dependencies
  */
 import moment from 'moment';
 
 /**
- * WordPress dependencies.
+ * WordPress dependencies
  */
 import { dispatch, select, useSelect } from '@wordpress/data';
 import { __ } from '@wordpress/i18n';
 
 /**
- * Internal dependencies.
+ * Internal dependencies
  */
 import { createMomentWithTimezone, getTimezone } from './datetime';
 import { getVenueTaxonomy, getVenuePostType } from './venue';
@@ -99,6 +99,22 @@ export function isEventPostType( postType = null ) {
 }
 
 /**
+ * Checks if a post type declares `gatherpress-rsvp` support.
+ *
+ * Sibling to `isEventPostType()` — used to gate RSVP-only UI (sidebar
+ * settings panel, post-publish email-update notice) so it does not appear on
+ * post types that only declare `gatherpress-event-date` support.
+ *
+ * @since 1.0.0
+ *
+ * @param {string|null} postType Optional post type to check. If not provided, checks current editor post type.
+ * @return {boolean} True if the post type supports RSVP, false otherwise.
+ */
+export function isRsvpPostType( postType = null ) {
+	return isPostTypeSupporting( 'gatherpress-rsvp', postType );
+}
+
+/**
  * Look up a post by ID across all event-supporting post types.
  *
  * Used for postIdOverride scenarios where the editor host is not itself an
@@ -159,7 +175,7 @@ export function findEventPostById( selectFunc, postId ) {
 		);
 		if ( Array.isArray( records ) && 0 < records.length ) {
 			const post = records[ 0 ];
-			if ( post && 'publish' === post.status ) {
+			if ( 'publish' === post?.status ) {
 				return post;
 			}
 		}
@@ -167,6 +183,95 @@ export function findEventPostById( selectFunc, postId ) {
 
 	return null;
 }
+
+/**
+ * Lookup helper: does the given post type slug declare
+ * `gatherpress-event-date` support?
+ *
+ * Hoisted to module scope so `resolveLookupType` and
+ * `verifyPostIdIsValidEvent` share one implementation rather than each
+ * defining its own inline arrow (caught by `javascript:S4144`).
+ *
+ * @param {Function} selectFunc WordPress data `select` callback.
+ * @param {string}   slug       Post type slug to check.
+ * @return {boolean} True when the post type declares event-date support.
+ */
+const isEventSupportingType = ( selectFunc, slug ) =>
+	!! selectFunc( 'core' ).getPostType( slug )?.supports?.[
+		'gatherpress-event-date'
+	];
+
+/**
+ * Resolve the post type to use when looking up an override target.
+ *
+ * Order of preference: explicit `postType` hint (when event-supporting),
+ * then the current editor post type (when event-supporting). Returns
+ * `null` when neither is event-supporting — callers fall back to the
+ * cross-type registry scan.
+ *
+ * @param {Function} selectFunc      WordPress data `select` callback.
+ * @param {string}   currentPostType Current editor post type.
+ * @param {string}   postType        Optional hinted post type.
+ * @return {string|null} The post type slug to look up with, or null.
+ */
+const resolveLookupType = ( selectFunc, currentPostType, postType ) => {
+	if ( postType && isEventSupportingType( selectFunc, postType ) ) {
+		return postType;
+	}
+
+	if ( isEventSupportingType( selectFunc, currentPostType ) ) {
+		return currentPostType;
+	}
+
+	return null;
+};
+
+/**
+ * Verify a postId points to a valid event under one of three resolution
+ * strategies (current post, post-type hint / editor host, cross-type scan).
+ *
+ * Extracted from `hasValidEventId` to keep that function under SonarCloud's
+ * cognitive-complexity threshold. See `hasValidEventId` for the full
+ * resolution rules.
+ *
+ * @param {Function}    selectFunc WordPress data `select` callback.
+ * @param {number}      postId     Post ID to verify.
+ * @param {string|null} postType   Optional explicit post type hint.
+ * @return {boolean} True when postId resolves to a valid event.
+ */
+const verifyPostIdIsValidEvent = ( selectFunc, postId, postType ) => {
+	const currentPostId = selectFunc( 'core/editor' )?.getCurrentPostId();
+	const currentPostType = selectFunc( 'core/editor' )?.getCurrentPostType();
+
+	// If this is the current post, check if it supports event_date.
+	if ( currentPostId && currentPostId === postId ) {
+		if ( ! isEventSupportingType( selectFunc, currentPostType ) ) {
+			return false;
+		}
+		const post = selectFunc( 'core' ).getEntityRecord(
+			'postType',
+			currentPostType,
+			postId
+		);
+		return !! post;
+	}
+
+	const lookupType = resolveLookupType( selectFunc, currentPostType, postType );
+
+	if ( lookupType ) {
+		const post = selectFunc( 'core' ).getEntityRecord(
+			'postType',
+			lookupType,
+			postId
+		);
+		return !! post && 'publish' === post.status;
+	}
+
+	// Neither the hint nor the host is event-supporting. This is a
+	// postIdOverride flow on a non-event host (e.g. a regular page). Scan
+	// event-supporting post types so the block can still light up.
+	return null !== findEventPostById( selectFunc, postId );
+};
 
 /**
  * Checks if a block has a valid event ID (either from current post or postId override).
@@ -217,55 +322,7 @@ export function hasValidEventId( selectFuncOrPostId = null, maybePostId = null, 
 
 	// If postId is provided, verify it points to a valid, published event.
 	if ( postId ) {
-		// Check if this is the current post being edited in the editor.
-		const currentPostId =
-			selectFunc( 'core/editor' )?.getCurrentPostId();
-		const currentPostType =
-			selectFunc( 'core/editor' )?.getCurrentPostType();
-		const isCurrentPost =
-			currentPostId && currentPostId === postId;
-
-		const isEventSupporting = ( slug ) =>
-			!! selectFunc( 'core' ).getPostType( slug )?.supports?.[
-				'gatherpress-event-date'
-			];
-
-		// If this is the current post, check if it supports event_date.
-		if ( isCurrentPost ) {
-			if ( ! isEventSupporting( currentPostType ) ) {
-				return false;
-			}
-			const post = selectFunc( 'core' ).getEntityRecord(
-				'postType',
-				currentPostType,
-				postId
-			);
-			return !! post;
-		}
-
-		// Resolve the post type to look up the override target with. Order:
-		// explicit hint (if event-supporting) → current editor type (if
-		// event-supporting) → cross-type registry scan.
-		let lookupType = null;
-		if ( postType && isEventSupporting( postType ) ) {
-			lookupType = postType;
-		} else if ( isEventSupporting( currentPostType ) ) {
-			lookupType = currentPostType;
-		}
-
-		if ( lookupType ) {
-			const post = selectFunc( 'core' ).getEntityRecord(
-				'postType',
-				lookupType,
-				postId
-			);
-			return !! post && 'publish' === post.status;
-		}
-
-		// Neither the hint nor the host is event-supporting. This is a
-		// postIdOverride flow on a non-event host (e.g. a regular page). Scan
-		// event-supporting post types so the block can still light up.
-		return null !== findEventPostById( selectFunc, postId );
+		return verifyPostIdIsValidEvent( selectFunc, postId, postType );
 	}
 
 	// Otherwise, check if current post supports event_date (no publish check needed).

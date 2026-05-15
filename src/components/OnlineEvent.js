@@ -1,5 +1,5 @@
 /**
- * WordPress dependencies.
+ * WordPress dependencies
  */
 import { useState, useEffect } from '@wordpress/element';
 import { TextControl, ToggleControl } from '@wordpress/components';
@@ -7,7 +7,7 @@ import { __ } from '@wordpress/i18n';
 import { useDispatch, useSelect } from '@wordpress/data';
 
 /**
- * Internal dependencies.
+ * Internal dependencies
  */
 import { getVenuePostType, getVenueTaxonomy } from '../helpers/venue';
 
@@ -110,11 +110,9 @@ const OnlineEvent = () => {
 		let newTerms;
 		if ( shouldAdd ) {
 			// Add the online-event term if not present.
-			if ( ! hasTermAlready ) {
-				newTerms = [ ...currentTerms, termId ];
-			} else {
-				newTerms = currentTerms;
-			}
+			newTerms = hasTermAlready
+				? currentTerms
+				: [ ...currentTerms, termId ];
 		} else {
 			// Remove the online-event term.
 			newTerms = currentTerms.filter(

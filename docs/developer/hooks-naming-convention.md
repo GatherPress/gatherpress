@@ -151,7 +151,7 @@ verbatim — gaps here become gaps in the published hook reference.
 5. Write the docblock. Explain the *why*, not the *what*.
 6. Run `vendor/bin/extract-wp-hooks.php` locally to confirm the doc generates
    cleanly. Revert the regen output before committing — CI regenerates it on
-   merge (see [CLAUDE.md](../../CLAUDE.md#auto-generated-developer-hook-docs)).
+   merge (see [AGENTS.md](../../AGENTS.md#auto-generated-developer-hook-docs)).
 
 ## Renaming an existing hook
 

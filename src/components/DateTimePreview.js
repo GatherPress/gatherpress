@@ -1,5 +1,5 @@
 /**
- * WordPress dependencies.
+ * WordPress dependencies
  */
 import { format } from '@wordpress/date';
 import { useState } from '@wordpress/element';

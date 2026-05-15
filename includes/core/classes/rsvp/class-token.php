@@ -29,6 +29,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
  * @since 1.0.0
  */
 class Token {
+
 	/**
 	 * The parameter name used for RSVP tokens in URLs.
 	 *
@@ -120,23 +121,20 @@ class Token {
 			return $this->token;
 		}
 
-		if ( ! $this->comment ) {
+		// Reject if there's no comment to read from, or if the comment is more
+		// than 24 hours old. The cached token guard above makes this only fire
+		// once per request anyway.
+		if ( ! $this->comment
+			|| ( strtotime( 'now' ) - strtotime( $this->comment->comment_date ) ) >= HOUR_IN_SECONDS * 24
+		) {
 			return '';
 		}
 
-		// Reject token if the comment is more than 24 hours old.
-		$diff = strtotime( 'now' ) - strtotime( $this->comment->comment_date );
-		if ( $diff >= HOUR_IN_SECONDS * 24 ) {
-			return '';
-		}
-
-		$token = (string) get_comment_meta(
+		$this->token = (string) get_comment_meta(
 			(int) $this->comment->comment_ID,
 			$this->get_meta_key(),
 			true
 		);
-
-		$this->token = $token;
 
 		return $this->token;
 	}

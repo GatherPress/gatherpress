@@ -16,7 +16,7 @@ import apiFetch from '@wordpress/api-fetch';
 import { store as coreDataStore } from '@wordpress/core-data';
 
 /**
- * Internal dependencies.
+ * Internal dependencies
  */
 import { getVenuePostType, getVenueTaxonomy } from '../helpers/venue';
 import { isPostTypeSupporting } from '../helpers/event';
@@ -64,7 +64,6 @@ function VenueForm( {
 			<div className="gatherpress-new-venue-form">
 				<TextControl
 					__next40pxDefaultSize
-					__nextHasNoMarginBottom
 					label={ __( 'Venue name', 'gatherpress' ) }
 					value={ title }
 					onChange={ onChangeTitle }
@@ -237,7 +236,7 @@ function CreateVenueForm( { search, ...props } ) {
 	 * @param {string} newAddress - The address of the new venue.
 	 * @param {string} latitude   - Latitude coordinate (from geocoding).
 	 * @param {string} longitude  - Longitude coordinate (from geocoding).
-	 * @return {Object} The newly created venue post.
+	 * @return {Promise<Object>} A promise that resolves to the newly created venue post.
 	 */
 	const createNewVenuePost = async (
 		newTitle,
@@ -245,27 +244,19 @@ function CreateVenueForm( { search, ...props } ) {
 		latitude = '',
 		longitude = ''
 	) => {
-		try {
-			const newPost = await apiFetch( {
-				path: `/wp/v2/${ venueRestBase }`,
-				method: 'POST',
-				data: {
-					title,
-					status: 'publish', // 'draft' is the default
-					meta: {
-						gatherpress_address: newAddress,
-						gatherpress_latitude: latitude,
-						gatherpress_longitude: longitude,
-					},
+		return apiFetch( {
+			path: `/wp/v2/${ venueRestBase }`,
+			method: 'POST',
+			data: {
+				title,
+				status: 'publish', // 'draft' is the default
+				meta: {
+					gatherpress_address: newAddress,
+					gatherpress_latitude: latitude,
+					gatherpress_longitude: longitude,
 				},
-			} );
-
-			// console.log(`${newPost.title.rendered} Venue saved successfully.`, newPost );
-			return newPost;
-		} catch ( error ) {
-			// console.error('Error creating post:', error);
-			throw error;
-		}
+			},
+		} );
 	};
 
 	/**

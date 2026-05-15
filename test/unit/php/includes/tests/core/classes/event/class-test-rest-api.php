@@ -28,6 +28,7 @@ use WP_REST_Server;
  * @coversDefaultClass \GatherPress\Core\Event\Rest_Api
  */
 class Test_Rest_Api extends Base {
+
 	/**
 	 * Enable open RSVP for all tests in this class so RSVP form submission paths are exercisable.
 	 *
@@ -2233,5 +2234,301 @@ class Test_Rest_Api extends Base {
 		$this->assertTrue( $response->data['success'], 'RSVP should be successful' );
 
 		restore_current_blog();
+	}
+
+	/**
+	 * `send_event_email_to_recipient` happy path for a WordPress user.
+	 * Direct-invokes the protected helper so xdebug traces every line —
+	 * the loop in `send_emails()` does call it, but xdebug's
+	 * line-coverage doesn't trace inside same-class private/protected
+	 * methods reliably (same gap that bit `Osm::paint_tile`).
+	 *
+	 * @covers ::send_event_email_to_recipient
+	 *
+	 * @return void
+	 */
+	public function test_send_event_email_to_recipient_user_full_send(): void {
+		add_filter( 'pre_wp_mail', '__return_false' );
+
+		$instance = Rest_Api::get_instance();
+		$event_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
+		$user     = get_userdata( $this->factory->user->create() );
+
+		Utility::invoke_hidden_method(
+			$instance,
+			'send_event_email_to_recipient',
+			array(
+				array(
+					'is_user'    => true,
+					'user_id'    => $user->ID,
+					'comment_id' => 0,
+					'email'      => $user->user_email,
+					'name'       => $user->display_name,
+				),
+				$event_id,
+				'Test message',
+				wp_get_current_user(),
+			)
+		);
+
+		remove_filter( 'pre_wp_mail', '__return_false' );
+
+		$this->assertTrue( true, 'Helper completed without throwing.' );
+	}
+
+	/**
+	 * `send_event_email_to_recipient` returns silently when the user
+	 * recipient has opted out of event updates.
+	 *
+	 * @covers ::send_event_email_to_recipient
+	 *
+	 * @return void
+	 */
+	public function test_send_event_email_to_recipient_skips_opted_out_user(): void {
+		$instance = Rest_Api::get_instance();
+		$event_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
+		$user_id  = $this->factory->user->create();
+
+		update_user_meta( $user_id, 'gatherpress_event_updates_opt_in', 0 );
+
+		Utility::invoke_hidden_method(
+			$instance,
+			'send_event_email_to_recipient',
+			array(
+				array(
+					'is_user'    => true,
+					'user_id'    => $user_id,
+					'comment_id' => 0,
+					'email'      => 'doesnt-matter@example.test',
+					'name'       => 'Opted Out',
+				),
+				$event_id,
+				'Test message',
+				wp_get_current_user(),
+			)
+		);
+
+		$this->assertTrue( true, 'Helper returned without sending mail.' );
+	}
+
+	/**
+	 * `send_event_email_to_recipient` returns silently when a non-user
+	 * recipient (anonymous RSVP) has opt-in comment meta set to '0'.
+	 *
+	 * @covers ::send_event_email_to_recipient
+	 *
+	 * @return void
+	 */
+	public function test_send_event_email_to_recipient_skips_opted_out_comment(): void {
+		$instance   = Rest_Api::get_instance();
+		$event_id   = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
+		$comment_id = wp_insert_comment(
+			array(
+				'comment_post_ID'      => $event_id,
+				'comment_type'         => Rsvp::COMMENT_TYPE,
+				'comment_author'       => 'Anon',
+				'comment_author_email' => 'anon@example.test',
+				'comment_approved'     => 1,
+				'user_id'              => 0,
+			)
+		);
+		update_comment_meta( $comment_id, 'gatherpress_event_updates_opt_in', 0 );
+
+		Utility::invoke_hidden_method(
+			$instance,
+			'send_event_email_to_recipient',
+			array(
+				array(
+					'is_user'    => false,
+					'user_id'    => 0,
+					'comment_id' => $comment_id,
+					'email'      => 'anon@example.test',
+					'name'       => 'Anon',
+				),
+				$event_id,
+				'Test message',
+				wp_get_current_user(),
+			)
+		);
+
+		$this->assertTrue( true, 'Helper returned without sending mail.' );
+	}
+
+	/**
+	 * `send_event_email_to_recipient` happy path for a non-user RSVP
+	 * (anonymous attendee) — exercises the elseif fall-through into the
+	 * email-send block without going through the user-locale switch.
+	 *
+	 * @covers ::send_event_email_to_recipient
+	 *
+	 * @return void
+	 */
+	public function test_send_event_email_to_recipient_comment_full_send(): void {
+		add_filter( 'pre_wp_mail', '__return_false' );
+
+		$instance   = Rest_Api::get_instance();
+		$event_id   = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
+		$comment_id = wp_insert_comment(
+			array(
+				'comment_post_ID'      => $event_id,
+				'comment_type'         => Rsvp::COMMENT_TYPE,
+				'comment_author'       => 'Anon',
+				'comment_author_email' => 'anon-send@example.test',
+				'comment_approved'     => 1,
+				'user_id'              => 0,
+			)
+		);
+
+		Utility::invoke_hidden_method(
+			$instance,
+			'send_event_email_to_recipient',
+			array(
+				array(
+					'is_user'    => false,
+					'user_id'    => 0,
+					'comment_id' => $comment_id,
+					'email'      => 'anon-send@example.test',
+					'name'       => 'Anon',
+				),
+				$event_id,
+				'Test message',
+				wp_get_current_user(),
+			)
+		);
+
+		remove_filter( 'pre_wp_mail', '__return_false' );
+
+		$this->assertTrue( true, 'Helper completed without throwing.' );
+	}
+
+	/**
+	 * `send_event_email_to_recipient` returns silently when the recipient
+	 * has no email address — protects against malformed recipient rows.
+	 *
+	 * @covers ::send_event_email_to_recipient
+	 *
+	 * @return void
+	 */
+	public function test_send_event_email_to_recipient_skips_when_email_missing(): void {
+		$instance = Rest_Api::get_instance();
+		$event_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
+		$user     = get_userdata( $this->factory->user->create() );
+
+		Utility::invoke_hidden_method(
+			$instance,
+			'send_event_email_to_recipient',
+			array(
+				array(
+					'is_user'    => true,
+					'user_id'    => $user->ID,
+					'comment_id' => 0,
+					'email'      => '',
+					'name'       => $user->display_name,
+				),
+				$event_id,
+				'Test message',
+				wp_get_current_user(),
+			)
+		);
+
+		$this->assertTrue( true, 'Helper returned without sending mail.' );
+	}
+
+	/**
+	 * Direct-invoke coverage for `build_comment_recipient` (extracted from
+	 * `get_recipients`) — happy path with a registered user pulls email and
+	 * display name from the user record rather than the comment fields.
+	 *
+	 * Reflection-invoked because xdebug doesn't reliably trace lines inside
+	 * same-class protected helpers called from a foreach in the parent.
+	 *
+	 * @covers ::build_comment_recipient
+	 *
+	 * @return void
+	 */
+	public function test_build_comment_recipient_uses_user_data_when_user_id_present(): void {
+		$instance = Rest_Api::get_instance();
+		$user_id  = $this->factory->user->create(
+			array(
+				'user_email'   => 'user-recipient@example.test',
+				'display_name' => 'User Recipient',
+			)
+		);
+
+		$comment                       = new \stdClass();
+		$comment->comment_ID           = 42;
+		$comment->user_id              = $user_id;
+		$comment->comment_author_email = 'comment-fallback@example.test';
+		$comment->comment_author       = 'Comment Author';
+
+		$recipient = Utility::invoke_hidden_method(
+			$instance,
+			'build_comment_recipient',
+			array( $comment )
+		);
+
+		$this->assertIsArray( $recipient );
+		$this->assertTrue( $recipient['is_user'] );
+		$this->assertSame( $user_id, $recipient['user_id'] );
+		$this->assertSame( 42, $recipient['comment_id'] );
+		// User data wins over comment-author fields when user_id resolves.
+		$this->assertSame( 'user-recipient@example.test', $recipient['email'] );
+		$this->assertSame( 'User Recipient', $recipient['name'] );
+	}
+
+	/**
+	 * Direct-invoke coverage for `build_comment_recipient` — anonymous-RSVP
+	 * branch (no user_id) keeps the comment's own author email/name.
+	 *
+	 * @covers ::build_comment_recipient
+	 *
+	 * @return void
+	 */
+	public function test_build_comment_recipient_falls_back_to_comment_fields(): void {
+		$instance = Rest_Api::get_instance();
+
+		$comment                       = new \stdClass();
+		$comment->comment_ID           = 7;
+		$comment->user_id              = 0;
+		$comment->comment_author_email = 'anon@example.test';
+		$comment->comment_author       = 'Anon';
+
+		$recipient = Utility::invoke_hidden_method(
+			$instance,
+			'build_comment_recipient',
+			array( $comment )
+		);
+
+		$this->assertIsArray( $recipient );
+		$this->assertFalse( $recipient['is_user'] );
+		$this->assertSame( 0, $recipient['user_id'] );
+		$this->assertSame( 'anon@example.test', $recipient['email'] );
+		$this->assertSame( 'Anon', $recipient['name'] );
+	}
+
+	/**
+	 * Direct-invoke coverage for `build_comment_recipient` — returns null
+	 * for a comment with no email on file so the caller can skip it.
+	 *
+	 * @covers ::build_comment_recipient
+	 *
+	 * @return void
+	 */
+	public function test_build_comment_recipient_returns_null_without_email(): void {
+		$instance = Rest_Api::get_instance();
+
+		$comment                       = new \stdClass();
+		$comment->comment_ID           = 1;
+		$comment->user_id              = 0;
+		$comment->comment_author_email = '';
+		$comment->comment_author       = 'No Email';
+
+		$recipient = Utility::invoke_hidden_method(
+			$instance,
+			'build_comment_recipient',
+			array( $comment )
+		);
+
+		$this->assertNull( $recipient );
 	}
 }

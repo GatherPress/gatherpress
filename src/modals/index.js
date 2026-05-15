@@ -1,4 +1,4 @@
 /**
- * Internal dependencies.
+ * Internal dependencies
  */
 import './email-communication';

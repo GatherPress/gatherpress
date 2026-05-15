@@ -1,5 +1,5 @@
 /**
- * Internal dependencies.
+ * Internal dependencies
  */
 import AnonymousRsvp from '../../../components/AnonymousRsvp';
 

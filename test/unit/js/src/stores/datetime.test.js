@@ -1,15 +1,15 @@
 /**
- * External dependencies.
+ * External dependencies
  */
 import { describe, expect, it, jest, beforeEach } from '@jest/globals';
 
 /**
- * WordPress dependencies.
+ * WordPress dependencies
  */
 import { select, dispatch } from '@wordpress/data';
 
 /**
- * Internal dependencies.
+ * Internal dependencies
  */
 jest.mock( '@src/helpers/datetime', () => ( {
 	defaultDateTimeStart: '2025-01-15 18:00:00',
@@ -45,7 +45,12 @@ describe( 'DateTime store', () => {
 		it( 'has duration set to null by default', () => {
 			const duration = select( STORE_NAME ).getDuration();
 
-			expect( duration ).toBe( 2 );
+			// `getDuration` now returns the raw stored value (null by
+			// default). The matched-preset computation that used to live
+			// in this selector moved to `useMatchedDuration` to avoid the
+			// per-call moment.tz comparison loop that crashed the editor
+			// under IANA timezones (#1607).
+			expect( duration ).toBe( null );
 		} );
 
 		it( 'has timezone set to empty string when not provided', () => {

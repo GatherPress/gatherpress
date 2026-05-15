@@ -1,10 +1,10 @@
 /**
- * External dependencies.
+ * External dependencies
  */
 import { v4 as uuidv4 } from 'uuid';
 
 /**
- * WordPress dependencies.
+ * WordPress dependencies
  */
 import {
 	BlockControls,
@@ -33,7 +33,7 @@ import { useState, useEffect } from '@wordpress/element';
 import { dispatch, select, useSelect } from '@wordpress/data';
 
 /**
- * Internal dependencies.
+ * Internal dependencies
  */
 import { useIsBlockOrDescendantSelected } from './helpers';
 
@@ -338,7 +338,6 @@ const Edit = ( { attributes, setAttributes, clientId } ) => {
 					label={ __( 'Open on', 'gatherpress' ) }
 					value={ openOn }
 					isBlock
-					__nextHasNoMarginBottom
 					__next40pxDefaultSize
 					onChange={ ( value ) => setAttributes( { openOn: value } ) }
 				>
