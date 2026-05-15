@@ -140,9 +140,6 @@ class Endpoint {
 			$this->reg_ex              = $reg_ex;
 			$this->object_type         = $object_type;
 
-			// Maybe its pointless to hook this onto the next round?
-			// $this->setup_hooks();
-			// Maybe just start ?
 			$this->init();
 		}
 	}
@@ -285,6 +282,9 @@ class Endpoint {
 
 		// Store the validated post type or taxonomy object for later use.
 		switch ( $object_type ) {
+			case 'sitewide':
+				return true;
+
 			case 'taxonomy':
 				$this->type_object = get_taxonomy( $type_name );
 				break;

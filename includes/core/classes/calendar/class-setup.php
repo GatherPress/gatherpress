@@ -21,6 +21,7 @@ namespace GatherPress\Core\Calendar;
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Event\Query;
+use GatherPress\Core\Shadow_Source;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Utility;
 use GatherPress\Core\Venue\Setup as Venue_Setup;
@@ -283,6 +284,12 @@ class Setup {
 			);
 		}
 
+$has_match = array_reduce(
+    $post_types,
+    fn($carry, $post_type) => $carry || is_object_in_taxonomy($post_type, $taxonomy),
+    false
+);
+
 		if ( is_singular() && post_type_supports( get_queried_object()->post_type, 'gatherpress-event-date' ) ) {
 			$calendar = new Calendar( (int) get_queried_object_id() );
 
@@ -339,7 +346,8 @@ class Setup {
 					}
 				}
 			);
-		} elseif ( is_singular( 'gatherpress_venue' ) ) {
+		// } elseif ( is_singular( 'gatherpress_venue' ) ) {
+		} elseif ( is_singular() && post_type_supports( get_queried_object()->post_type, 'gatherpress-shadow-source' ) && $this->has_post_type_for_taxonomy($event_post_types, Shadow_Source::get_instance()->get_taxonomy( get_queried_object()->post_type ) ) ) {
 			// Feels weird to use a *_comments_* function here, but it delivers clean results
 			// in the form of "domain.tld/venue/my-sample-venue/feed/ical/".
 			$alternate_links[] = array(
@@ -593,4 +601,23 @@ class Setup {
 
 		exit(); // Terminate the script after the file has been output.
 	}
+
+	/**
+	 * Check if any post type is registered with a taxonomy.
+	 *
+	 * @param array  $post_types Array of post type slugs.
+	 * @param string $taxonomy   Taxonomy slug.
+	 *
+	 * @return bool
+	 */
+protected function has_post_type_for_taxonomy(array $post_types, string $taxonomy): bool {
+	foreach ($post_types as $post_type) {
+		if (is_object_in_taxonomy($post_type, $taxonomy)) {
+			return true;
+		}
+	}
+
+	return false;
+}
+
 }
