@@ -9,6 +9,7 @@ import { createRoot } from '@wordpress/element';
 import Autocomplete from '../components/Autocomplete';
 import { dateTimePreview } from '../helpers/datetime';
 import { urlRewritePreview } from '../helpers/urlrewrite';
+import { initShowIfDependencies } from '../helpers/settings-show-if';
 
 /**
  * Autocomplete Initialization
@@ -62,3 +63,13 @@ dateTimePreview();
  * @since 1.0.0
  */
 urlRewritePreview();
+
+/**
+ * Show/hide dependent settings fields based on the value of a controlling
+ * field. Driven by the `show_if` key on a field's definition; see
+ * `Settings::build_row_class()` / `render_show_if_marker()` for the
+ * server-side half of the contract.
+ *
+ * @since 1.0.0
+ */
+initShowIfDependencies();

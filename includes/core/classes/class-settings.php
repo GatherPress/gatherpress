@@ -447,15 +447,107 @@ class Settings {
 					$this->render_field( (string) $option, $option_settings );
 				};
 
+				// Initial row visibility class is computed server-side from
+				// the currently saved option values so the row paints
+				// hidden (no flash of unhidden content) before settings.js
+				// has had a chance to wire up the change listeners.
+				$row_class = $this->build_row_class( $option_settings );
+
 				add_settings_field(
 					(string) $option,
 					$option_settings['labels']['name'],
 					$option_settings['callback'],
 					Utility::prefix_key( $sub_page ),
-					(string) $section
+					(string) $section,
+					array( 'class' => $row_class )
 				);
 			}
 		}
+	}
+
+	/**
+	 * Build the row class string for an option's `<tr>` wrapper.
+	 *
+	 * Every settings row gets the base `gatherpress-settings-row` hook so
+	 * the show_if JS has a stable selector to attach to. Rows whose
+	 * `show_if` condition does not currently match the saved values are
+	 * additionally tagged with the `--hidden` modifier so they paint
+	 * hidden on first render — JS toggles the modifier off if the user
+	 * later changes the controlling field to a matching value.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param array $option_settings The option settings array.
+	 * @return string Space-separated class names for the row.
+	 */
+	protected function build_row_class( array $option_settings ): string {
+		$classes = array( 'gatherpress-settings-row' );
+
+		if ( ! empty( $option_settings['show_if'] )
+			&& ! $this->evaluate_show_if( (array) $option_settings['show_if'] )
+		) {
+			$classes[] = 'gatherpress-settings-row--hidden';
+		}
+
+		return implode( ' ', $classes );
+	}
+
+	/**
+	 * Evaluate a `show_if` condition against the current saved option values.
+	 *
+	 * Conditions are an associative array of `controlling_field => expected`.
+	 * Multiple keys are combined with AND. A value can be a scalar (equality
+	 * after string casting) or an array (membership, OR within the same key).
+	 * Comparisons cast both sides to string so checkbox booleans, select
+	 * strings, and numeric values all compare cleanly.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param array $conditions Map of controlling option key => expected value(s).
+	 * @return bool True when every key matches the current saved value, false otherwise.
+	 */
+	protected function evaluate_show_if( array $conditions ): bool {
+		foreach ( $conditions as $key => $expected ) {
+			$current = $this->get( (string) $key );
+
+			if ( is_array( $expected ) ) {
+				$expected = array_map( 'strval', $expected );
+
+				if ( ! in_array( (string) $current, $expected, true ) ) {
+					return false;
+				}
+
+				continue;
+			}
+
+			if ( (string) $current !== (string) $expected ) {
+				return false;
+			}
+		}
+
+		return true;
+	}
+
+	/**
+	 * Render a hidden marker that carries a field's `show_if` condition.
+	 *
+	 * Emitted alongside the field by `render_field()` so the settings JS
+	 * can find the row, locate the controlling input(s) by name, and toggle
+	 * the row's `--hidden` modifier on `change`. The condition is JSON-
+	 * encoded onto a `data-` attribute rather than walked into separate
+	 * attributes so multi-key AND combinations and array-of-values OR
+	 * combinations both serialize without ambiguity.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param array $conditions Map of controlling option key => expected value(s).
+	 * @return void
+	 */
+	protected function render_show_if_marker( array $conditions ): void {
+		printf(
+			'<input type="hidden" class="gatherpress-show-if-marker" data-show-if="%s" />',
+			esc_attr( (string) wp_json_encode( $conditions ) )
+		);
 	}
 
 	/**
@@ -695,6 +787,10 @@ class Settings {
 			$params,
 			true
 		);
+
+		if ( ! empty( $option_settings['show_if'] ) ) {
+			$this->render_show_if_marker( (array) $option_settings['show_if'] );
+		}
 
 		if ( $inherited ) {
 			if ( current_user_can( 'manage_network_options' ) ) {
