@@ -138,6 +138,9 @@ class Venues extends Base {
 							'type'  => 'text',
 							'size'  => 'regular',
 						),
+						'show_if'     => array(
+							'map_platform' => 'google',
+						),
 					),
 					'venue_map_default_render_mode'  => array(
 						'labels'      => array(

@@ -221,6 +221,52 @@ Flag fields that affect permalink structure. When these change, rewrite rules ar
 ),
 ```
 
+### show_if (conditional visibility)
+
+Show a field only when one or more controlling fields hold a specific value. Useful for "this setting only matters when that other setting is on" relationships — for example, hiding the Google Maps API Key field unless Google is the selected map provider.
+
+`show_if` is a sibling of `field`, not nested inside it. It maps controlling field keys to expected values:
+
+```php
+'google_maps_api_key' => array(
+    'labels'      => array( 'name' => __( 'Google Maps API Key', 'my-plugin' ) ),
+    'description' => __( 'Required when Google Maps is selected.', 'my-plugin' ),
+    'field'       => array(
+        'type'    => 'text',
+        'size'    => 'regular',
+        'options' => array( 'default' => '' ),
+    ),
+    'show_if'     => array(
+        'map_platform' => 'google',
+    ),
+),
+```
+
+#### Match semantics
+
+- **Scalar value** — string equality after casting. `'map_platform' => 'google'` matches when the controlling field's current value (coerced to string) equals `'google'`.
+- **Array of values** — OR within one key. `'map_platform' => array( 'google', 'mapbox' )` matches when the current value is either.
+- **Multiple keys** — AND across keys. Every entry in the `show_if` array must be satisfied for the field to be visible.
+
+```php
+'show_if' => array(
+    'map_platform'                  => array( 'google', 'mapbox' ),
+    'venue_map_default_render_mode' => 'interactive',
+),
+```
+
+#### Hidden ≠ cleared
+
+Hiding a field is purely visual — its stored value is **never** dropped just because the field is currently hidden. If a user enters a Google Maps API key, switches the platform to OSM, and saves, the key remains in the `gatherpress_settings` option. Switching back to Google reveals the field with its prior value intact.
+
+This works because (a) the field row is hidden via CSS, so the input still posts its value, and (b) the save path merges submitted input with the previously stored options — any field key not in POST keeps its existing value.
+
+#### Constraints (v1)
+
+- **Same page only.** The controlling field must live on the same settings tab as the dependent field.
+- **Single controller per key.** Each option key on a settings page renders one input; that's the input the JS will resolve.
+- **Comparisons are string-based.** Booleans and numbers are coerced to string before comparing. To match a checkbox stored as `true`, declare `'my_toggle' => 'true'`.
+
 ## Key Uniqueness
 
 All option keys must be globally unique across all tabs and sections. If two extensions register the same key, an admin error notice is displayed:

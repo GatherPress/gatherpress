@@ -2755,4 +2755,396 @@ class Test_Settings extends Base {
 		delete_site_option( Settings::OPTION_NAME );
 		\GatherPress\Core\Settings\Network::flush_config_cache();
 	}
+
+	/**
+	 * Build the row class string with no show_if returns the base hook class
+	 * by itself. Every row gets the base class so the show_if JS can target
+	 * rows uniformly; the `--hidden` modifier is added only when a condition
+	 * exists and isn't satisfied.
+	 *
+	 * @since 1.0.0
+	 * @covers ::build_row_class
+	 *
+	 * @return void
+	 */
+	public function test_build_row_class_without_show_if(): void {
+		$instance = Settings::get_instance();
+
+		$result = Utility::invoke_hidden_method(
+			$instance,
+			'build_row_class',
+			array(
+				array( 'field' => array( 'type' => 'text' ) ),
+			)
+		);
+
+		$this->assertSame( 'gatherpress-settings-row', $result );
+	}
+
+	/**
+	 * Build the row class string when the show_if condition isn't satisfied
+	 * tacks on the `--hidden` modifier so the row paints hidden on first
+	 * render. JS later toggles it off if the user changes the controlling
+	 * field to a matching value.
+	 *
+	 * @since 1.0.0
+	 * @covers ::build_row_class
+	 *
+	 * @return void
+	 */
+	public function test_build_row_class_with_unsatisfied_show_if(): void {
+		$instance = Settings::get_instance();
+
+		delete_option( Settings::OPTION_NAME );
+		update_option( Settings::OPTION_NAME, array( 'map_platform' => 'osm' ) );
+
+		$result = Utility::invoke_hidden_method(
+			$instance,
+			'build_row_class',
+			array(
+				array(
+					'field'   => array( 'type' => 'text' ),
+					'show_if' => array( 'map_platform' => 'google' ),
+				),
+			)
+		);
+
+		$this->assertSame(
+			'gatherpress-settings-row gatherpress--is-hidden',
+			$result
+		);
+
+		delete_option( Settings::OPTION_NAME );
+	}
+
+	/**
+	 * Build the row class string when the show_if condition IS satisfied
+	 * omits the `--hidden` modifier so the row paints visible on first
+	 * render — JS leaves it alone unless the controlling field later changes.
+	 *
+	 * @since 1.0.0
+	 * @covers ::build_row_class
+	 *
+	 * @return void
+	 */
+	public function test_build_row_class_with_satisfied_show_if(): void {
+		$instance = Settings::get_instance();
+
+		delete_option( Settings::OPTION_NAME );
+		update_option( Settings::OPTION_NAME, array( 'map_platform' => 'google' ) );
+
+		$result = Utility::invoke_hidden_method(
+			$instance,
+			'build_row_class',
+			array(
+				array(
+					'field'   => array( 'type' => 'text' ),
+					'show_if' => array( 'map_platform' => 'google' ),
+				),
+			)
+		);
+
+		$this->assertSame( 'gatherpress-settings-row', $result );
+
+		delete_option( Settings::OPTION_NAME );
+	}
+
+	/**
+	 * Evaluate show_if returns true when every controlling key matches the
+	 * currently saved value. Single-value conditions use string equality.
+	 *
+	 * @since 1.0.0
+	 * @covers ::evaluate_show_if
+	 *
+	 * @return void
+	 */
+	public function test_evaluate_show_if_single_value_match(): void {
+		$instance = Settings::get_instance();
+
+		delete_option( Settings::OPTION_NAME );
+		update_option( Settings::OPTION_NAME, array( 'map_platform' => 'google' ) );
+
+		$result = Utility::invoke_hidden_method(
+			$instance,
+			'evaluate_show_if',
+			array( array( 'map_platform' => 'google' ) )
+		);
+
+		$this->assertTrue( $result );
+
+		delete_option( Settings::OPTION_NAME );
+	}
+
+	/**
+	 * Evaluate show_if returns false when the controlling key has a value
+	 * other than the one expected.
+	 *
+	 * @since 1.0.0
+	 * @covers ::evaluate_show_if
+	 *
+	 * @return void
+	 */
+	public function test_evaluate_show_if_single_value_mismatch(): void {
+		$instance = Settings::get_instance();
+
+		delete_option( Settings::OPTION_NAME );
+		update_option( Settings::OPTION_NAME, array( 'map_platform' => 'osm' ) );
+
+		$result = Utility::invoke_hidden_method(
+			$instance,
+			'evaluate_show_if',
+			array( array( 'map_platform' => 'google' ) )
+		);
+
+		$this->assertFalse( $result );
+
+		delete_option( Settings::OPTION_NAME );
+	}
+
+	/**
+	 * Evaluate show_if accepts an array of expected values and returns true
+	 * when the current value is a member (OR semantics within one key).
+	 *
+	 * @since 1.0.0
+	 * @covers ::evaluate_show_if
+	 *
+	 * @return void
+	 */
+	public function test_evaluate_show_if_array_of_values(): void {
+		$instance = Settings::get_instance();
+
+		delete_option( Settings::OPTION_NAME );
+		update_option( Settings::OPTION_NAME, array( 'map_platform' => 'google' ) );
+
+		$result = Utility::invoke_hidden_method(
+			$instance,
+			'evaluate_show_if',
+			array( array( 'map_platform' => array( 'google', 'mapbox' ) ) )
+		);
+		$this->assertTrue( $result );
+
+		// Non-member current value.
+		update_option( Settings::OPTION_NAME, array( 'map_platform' => 'osm' ) );
+		$result = Utility::invoke_hidden_method(
+			$instance,
+			'evaluate_show_if',
+			array( array( 'map_platform' => array( 'google', 'mapbox' ) ) )
+		);
+		$this->assertFalse( $result );
+
+		delete_option( Settings::OPTION_NAME );
+	}
+
+	/**
+	 * Evaluate show_if combines multiple keys with AND — every key's
+	 * condition must hold for the result to be true.
+	 *
+	 * @since 1.0.0
+	 * @covers ::evaluate_show_if
+	 *
+	 * @return void
+	 */
+	public function test_evaluate_show_if_multi_key_and(): void {
+		$instance = Settings::get_instance();
+
+		delete_option( Settings::OPTION_NAME );
+		update_option(
+			Settings::OPTION_NAME,
+			array(
+				'map_platform'                  => 'google',
+				'venue_map_default_render_mode' => 'interactive',
+			)
+		);
+
+		$matching_conditions = array(
+			'map_platform'                  => 'google',
+			'venue_map_default_render_mode' => 'interactive',
+		);
+		$this->assertTrue(
+			Utility::invoke_hidden_method(
+				$instance,
+				'evaluate_show_if',
+				array( $matching_conditions )
+			)
+		);
+
+		// Flip one key out of band — overall result must drop to false.
+		$mixed_conditions = array(
+			'map_platform'                  => 'google',
+			'venue_map_default_render_mode' => 'static',
+		);
+		$this->assertFalse(
+			Utility::invoke_hidden_method(
+				$instance,
+				'evaluate_show_if',
+				array( $mixed_conditions )
+			)
+		);
+
+		delete_option( Settings::OPTION_NAME );
+	}
+
+	/**
+	 * Render field emits the show_if marker alongside the field template
+	 * when the option declares a `show_if` condition. Without this call site
+	 * exercise, the helper would be covered in isolation but the wiring
+	 * from `render_field` → `render_show_if_marker` could silently break
+	 * in a refactor.
+	 *
+	 * @since 1.0.0
+	 * @covers ::render_field
+	 *
+	 * @return void
+	 */
+	public function test_render_field_emits_show_if_marker_when_declared(): void {
+		$instance = Settings::get_instance();
+
+		ob_start();
+		$instance->render_field(
+			'google_maps_api_key',
+			array(
+				'labels'  => array( 'name' => 'Google Maps API Key' ),
+				'field'   => array(
+					'label' => 'Google Maps API key:',
+					'type'  => 'text',
+					'size'  => 'regular',
+				),
+				'show_if' => array( 'map_platform' => 'google' ),
+			)
+		);
+		$output = ob_get_clean();
+
+		// Field input itself renders.
+		$this->assertStringContainsString(
+			'name="gatherpress_settings[google_maps_api_key]"',
+			$output
+		);
+		// And the show_if marker is emitted alongside it.
+		$this->assertStringContainsString(
+			'class="gatherpress-show-if-marker"',
+			$output
+		);
+		$this->assertStringContainsString(
+			'data-show-if="{&quot;map_platform&quot;:&quot;google&quot;}"',
+			$output
+		);
+	}
+
+	/**
+	 * Render field skips the show_if marker when no condition is declared,
+	 * keeping the field output free of the JS hook for the vast majority of
+	 * fields that don't use the feature.
+	 *
+	 * @since 1.0.0
+	 * @covers ::render_field
+	 *
+	 * @return void
+	 */
+	public function test_render_field_omits_show_if_marker_by_default(): void {
+		$instance = Settings::get_instance();
+
+		ob_start();
+		$instance->render_field(
+			'plain_text_field',
+			array(
+				'labels' => array( 'name' => 'Plain Text Field' ),
+				'field'  => array(
+					'label' => 'Plain text:',
+					'type'  => 'text',
+					'size'  => 'regular',
+				),
+			)
+		);
+		$output = ob_get_clean();
+
+		$this->assertStringNotContainsString(
+			'gatherpress-show-if-marker',
+			$output
+		);
+	}
+
+	/**
+	 * Render show_if marker emits a hidden input carrying the condition map
+	 * as a JSON-encoded data attribute. The marker has no `name` attribute
+	 * so it never enters the POST payload — it's a JS hook, not a value.
+	 *
+	 * @since 1.0.0
+	 * @covers ::render_show_if_marker
+	 *
+	 * @return void
+	 */
+	public function test_render_show_if_marker_emits_hidden_input(): void {
+		$instance = Settings::get_instance();
+
+		ob_start();
+		Utility::invoke_hidden_method(
+			$instance,
+			'render_show_if_marker',
+			array( array( 'map_platform' => 'google' ) )
+		);
+		$output = ob_get_clean();
+
+		$this->assertStringContainsString( 'type="hidden"', $output );
+		$this->assertStringContainsString(
+			'class="gatherpress-show-if-marker"',
+			$output
+		);
+		$this->assertStringContainsString(
+			'data-show-if="{&quot;map_platform&quot;:&quot;google&quot;}"',
+			$output
+		);
+		$this->assertStringNotContainsString( 'name=', $output );
+	}
+
+	/**
+	 * Saving a partial input (omitting a show_if-hidden field) preserves the
+	 * field's previously stored value rather than dropping it. This is the
+	 * key guarantee behind the "hidden ≠ cleared" promise of the show_if
+	 * feature: even if the browser somehow omits the field from POST, the
+	 * sanitize_page_settings closure merges with read_stored_options() and
+	 * keeps the value in place.
+	 *
+	 * Uses a synthetic non-default value for the controlling field so the
+	 * "values matching defaults are stripped" pass doesn't interfere with
+	 * the assertion on the hidden field.
+	 *
+	 * @since 1.0.0
+	 * @covers ::sanitize_page_settings
+	 *
+	 * @return void
+	 */
+	public function test_sanitize_page_settings_preserves_hidden_field_value(): void {
+		$instance = Settings::get_instance();
+
+		delete_option( Settings::OPTION_NAME );
+		update_option(
+			Settings::OPTION_NAME,
+			array(
+				'map_platform'        => 'google',
+				'google_maps_api_key' => 'prev-saved-key',
+			)
+		);
+
+		$callback = $instance->sanitize_page_settings(
+			array(
+				'map_platform'        => 'select',
+				'google_maps_api_key' => 'text',
+			)
+		);
+
+		// Submit only the controlling field — simulating what happens if a
+		// show_if-hidden field were somehow omitted from POST. Keep it at
+		// 'google' (the stored value) so it doesn't get stripped via the
+		// "matches default" pass and we can assert on it.
+		$result = $callback( array( 'map_platform' => 'google' ) );
+
+		$this->assertSame( 'google', $result['map_platform'] );
+		$this->assertSame(
+			'prev-saved-key',
+			$result['google_maps_api_key'],
+			'Hidden field value must survive a partial save.'
+		);
+
+		delete_option( Settings::OPTION_NAME );
+	}
 }
