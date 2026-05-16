@@ -14,7 +14,7 @@ import {
 const { matches, readControlValue, resolveControllers, wireMarker } =
 	__testables;
 
-const HIDDEN_CLASS = 'gatherpress-settings-row--hidden';
+const HIDDEN_CLASS = 'gatherpress--is-hidden';
 
 /**
  * Build a minimal settings-table form fragment with a controlling field

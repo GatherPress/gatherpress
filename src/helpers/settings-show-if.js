@@ -18,7 +18,7 @@
  * @since 1.0.0
  */
 
-const ROW_HIDDEN_CLASS = 'gatherpress-settings-row--hidden';
+const ROW_HIDDEN_CLASS = 'gatherpress--is-hidden';
 const MARKER_SELECTOR = '.gatherpress-show-if-marker';
 const NAME_TEMPLATE = ( key ) => `[name="gatherpress_settings[${ key }]"]`;
 

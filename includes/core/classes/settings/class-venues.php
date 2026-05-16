@@ -138,9 +138,6 @@ class Venues extends Base {
 							'type'  => 'text',
 							'size'  => 'regular',
 						),
-						// Only relevant when the Google provider is selected.
-						// Hidden via CSS rather than removed, so a previously
-						// saved key survives a temporary switch to OSM.
 						'show_if'     => array(
 							'map_platform' => 'google',
 						),

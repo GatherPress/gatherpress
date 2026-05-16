@@ -2810,7 +2810,7 @@ class Test_Settings extends Base {
 		);
 
 		$this->assertSame(
-			'gatherpress-settings-row gatherpress-settings-row--hidden',
+			'gatherpress-settings-row gatherpress--is-hidden',
 			$result
 		);
 

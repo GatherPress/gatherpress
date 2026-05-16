@@ -328,6 +328,20 @@ class Assets {
 			// Need to load block styling for some dynamic fields.
 			wp_enqueue_style( 'wp-edit-blocks' );
 
+			// Shared utility classes (`gatherpress--is-hidden`, etc.) used by
+			// settings UI like the `show_if` row visibility toggle. The handle
+			// is registered on the frontend in `block_enqueue_scripts`; re-
+			// register here so it's available on admin settings pages too.
+			$utility_asset = $this->get_asset_data( 'utility_style' );
+
+			wp_register_style(
+				'gatherpress-utility-style',
+				$this->build . 'utility_style.css',
+				$utility_asset['dependencies'],
+				$utility_asset['version']
+			);
+			wp_enqueue_style( 'gatherpress-utility-style' );
+
 			$asset = $this->get_asset_data( 'settings_style' );
 
 			wp_enqueue_style(

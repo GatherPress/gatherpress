@@ -64,12 +64,3 @@
 		pointer-events: auto;
 	}
 }
-
-// Hidden by `show_if` field dependency — controlling input does not currently
-// match the dependent field's required value. Toggled by `settings-show-if.js`
-// on change. Hidden via display:none rather than [disabled] so the input still
-// posts its value (sanitize_page_settings also merges with stored values, so
-// the saved value is preserved either way).
-.gatherpress-settings-row--hidden {
-	display: none;
-}

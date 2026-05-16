@@ -471,9 +471,10 @@ class Settings {
 	 * Every settings row gets the base `gatherpress-settings-row` hook so
 	 * the show_if JS has a stable selector to attach to. Rows whose
 	 * `show_if` condition does not currently match the saved values are
-	 * additionally tagged with the `--hidden` modifier so they paint
-	 * hidden on first render — JS toggles the modifier off if the user
-	 * later changes the controlling field to a matching value.
+	 * additionally tagged with the shared `gatherpress--is-hidden` utility
+	 * class so they paint hidden on first render — JS toggles the utility
+	 * class off if the user later changes the controlling field to a
+	 * matching value.
 	 *
 	 * @since 1.0.0
 	 *
@@ -486,7 +487,7 @@ class Settings {
 		if ( ! empty( $option_settings['show_if'] )
 			&& ! $this->evaluate_show_if( (array) $option_settings['show_if'] )
 		) {
-			$classes[] = 'gatherpress-settings-row--hidden';
+			$classes[] = 'gatherpress--is-hidden';
 		}
 
 		return implode( ' ', $classes );
