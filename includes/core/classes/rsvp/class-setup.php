@@ -551,6 +551,22 @@ class Setup {
 	 * Validates the RSVP token from the URL parameter and automatically
 	 * approves the corresponding comment if the token is valid.
 	 *
+	 * Whenever the `?gatherpress_rsvp_token=…` query var is present we
+	 * also queue `nocache_headers()` onto WP's `send_headers` action so
+	 * any host-level page cache (WP Rocket, W3TC, Nginx FastCGI,
+	 * Cloudflare when configured to honor origin Cache-Control) treats
+	 * the URL as per-user and never stores it. The token acts as a
+	 * magic link — the same URL keeps authenticating the same person on
+	 * every reload — so caching it shared would either leak one user's
+	 * authenticated view to another, or serve a stale render that
+	 * doesn't reflect their RSVP (see #1626). We deferred this to
+	 * `send_headers` rather than calling `nocache_headers()` inline so
+	 * the headers fire at the right moment in the response lifecycle
+	 * (when `headers_sent()` is still false), regardless of any output
+	 * the handler might have triggered. The deferral runs regardless of
+	 * whether the token actually validates, so an expired or wrong-hash
+	 * token also stays out of the page cache.
+	 *
 	 * @since 1.0.0
 	 *
 	 * @return void
@@ -558,8 +574,11 @@ class Setup {
 	public function handle_rsvp_token(): void {
 		$rsvp_token = Token::from_url_parameter();
 
-		if ( $rsvp_token ) {
-			$rsvp_token->approve_comment();
+		if ( ! $rsvp_token ) {
+			return;
 		}
+
+		add_action( 'send_headers', 'nocache_headers' );
+		$rsvp_token->approve_comment();
 	}
 }
