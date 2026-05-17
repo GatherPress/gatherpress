@@ -275,7 +275,10 @@ class Setup {
 		$event_post_types = get_post_types_by_support( 'gatherpress-event-date' );
 		foreach ( $event_post_types as $event_post_type ) {
 			$alternate_links[] = array(
-				'url'  => get_post_type_archive_feed_link( $event_post_type, self::ICAL_SLUG ),
+				'url'  => get_post_type_archive_feed_link(
+					$event_post_type,
+					self::ICAL_SLUG
+				),
 				'attr' => sprintf(
 					$args['posttypetitle'],
 					$args['blogtitle'],
@@ -323,7 +326,11 @@ class Setup {
 							break;
 
 						default:
-							$href = get_term_feed_link( $term->term_id, $term->taxonomy, self::ICAL_SLUG );
+							$href = get_term_feed_link(
+								$term->term_id,
+								$term->taxonomy,
+								self::ICAL_SLUG
+							);
 							break;
 					}
 					// Can be empty for Online-Events.
@@ -345,7 +352,10 @@ class Setup {
 			// Feels weird to use a *_comments_* function here, but it delivers clean results
 			// in the form of "domain.tld/venue/my-sample-venue/feed/ical/".
 			$alternate_links[] = array(
-				'url'  => get_post_comments_feed_link( get_queried_object()->ID, self::ICAL_SLUG ),
+				'url'  => get_post_comments_feed_link(
+					get_queried_object()->ID,
+					self::ICAL_SLUG
+				),
 				'attr' => sprintf(
 					$args['singletitle'],
 					$args['blogtitle'],
@@ -357,7 +367,11 @@ class Setup {
 			$tax = get_taxonomy( get_queried_object()->taxonomy );
 
 			$alternate_links[] = array(
-				'url'  => get_term_feed_link( get_queried_object()->term_id, get_queried_object()->taxonomy, self::ICAL_SLUG ), // phpcs:ignore Generic.Files.LineLength.TooLong
+				'url'  => get_term_feed_link(
+					get_queried_object()->term_id,
+					get_queried_object()->taxonomy,
+					self::ICAL_SLUG
+				),
 				'attr' => sprintf(
 					$args['taxtitle'],
 					$args['blogtitle'],
@@ -428,14 +442,17 @@ class Setup {
 	 * @return string Concatenated VEVENT blocks for the queried events.
 	 */
 	public function get_ical_list(): string {
-		$event_list_type = 'upcoming'; // Keep empty, to get all events from upcoming & past.
-		$number          = ( is_feed( self::ICAL_SLUG ) ) ? -1 : get_option( 'posts_per_page' );
-		$topics          = array();
-		$venues          = array();
-		$output          = array();
+		$event_list_type  = 'upcoming'; // Keep empty, to get all events from upcoming & past.
+		$number           = ( is_feed( self::ICAL_SLUG ) ) ? -1 : get_option( 'posts_per_page' );
+		$topics           = array();
+		$venues           = array();
+		$output           = array();
+		$event_post_types = get_post_types_by_support( 'gatherpress-event-date' );
 
-		if ( is_singular( 'gatherpress_venue' ) ) {
-			$venues = array( '_' . get_queried_object()->post_name );
+		if ( is_singular() && $this->is_tax_like_post_type_for_event_supporting_post_type( get_queried_object(), $event_post_types ) ) {
+			if ( is_singular( 'gatherpress_venue' ) ) {
+				$venues = array( '_' . get_queried_object()->post_name );
+			}
 		} elseif ( is_tax() && $this->has_post_type_for_taxonomy( $event_post_types, get_queried_object()->taxonomy ) ) { // phpcs:ignore Generic.Files.LineLength.TooLong
 			if ( is_tax( 'gatherpress_topic' ) ) {
 				$topics = array( get_queried_object()->slug );
@@ -502,11 +519,8 @@ class Setup {
 			$filename  = $date . '_' . $post_name;
 		} elseif ( is_singular() && $this->is_tax_like_post_type_for_event_supporting_post_type( $queried_object, $event_post_types ) ) { // phpcs:ignore Generic.Files.LineLength.TooLong
 			$filename = $queried_object->post_name;
-		} elseif ( is_tax() ) {
-			// @todo How to be prepared for foreign taxonomies that might be registered by 3rd-parties?
-			if ( is_object_in_taxonomy( 'gatherpress_event', $queried_object->taxonomy ) ) {
-				$filename = $queried_object->slug;
-			}
+		} elseif ( is_tax() && $this->has_post_type_for_taxonomy( $event_post_types, get_queried_object()->taxonomy ) ) { // phpcs:ignore Generic.Files.LineLength.TooLong
+			$filename = $queried_object->slug;
 		}
 
 		return $filename . '.ics';
