@@ -587,6 +587,8 @@ class Setup {
 	/**
 	 * Check if any post type is registered with a taxonomy.
 	 *
+	 * @since 1.0.0
+	 *
 	 * @param array  $post_types Array of post type slugs.
 	 * @param string $taxonomy   Taxonomy slug.
 	 *
@@ -607,6 +609,8 @@ class Setup {
 	 *
 	 * The methods checks whether the given posts type supports 'gatherpress-shadow-source'
 	 * and if its taxonomy is one that is related to any 'gatherpress-event-date' supporting post type.
+	 *
+	 * @since 1.0.0
 	 *
 	 * @param  WP_Post $post       The post to check.
 	 * @param  array   $post_types Array of post type slugs that support 'gatherpress-event-date'.
