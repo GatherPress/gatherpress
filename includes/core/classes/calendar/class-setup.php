@@ -26,6 +26,7 @@ use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Utility;
 use GatherPress\Core\Venue\Setup as Venue_Setup;
 use WP_Term;
+use WP_Post;
 
 /**
  * Calendar subsystem orchestrator.
@@ -284,14 +285,8 @@ class Setup {
 			);
 		}
 
-$has_match = array_reduce(
-    $post_types,
-    fn($carry, $post_type) => $carry || is_object_in_taxonomy($post_type, $taxonomy),
-    false
-);
-
 		if ( is_singular() && post_type_supports( get_queried_object()->post_type, 'gatherpress-event-date' ) ) {
-			$calendar = new Calendar( (int) get_queried_object_id() );
+			$calendar = new Calendar( get_queried_object()->ID );
 
 			$alternate_links[] = array(
 				'url'  => $calendar->get_ical_url(),
@@ -307,7 +302,7 @@ $has_match = array_reduce(
 			$terms = get_terms(
 				array(
 					'taxonomy'   => get_object_taxonomies( get_queried_object() ),
-					'object_ids' => get_queried_object_id(),
+					'object_ids' => get_queried_object()->ID,
 				)
 			);
 			// Loop over terms and generate the ical feed links for the <head>.
@@ -346,12 +341,11 @@ $has_match = array_reduce(
 					}
 				}
 			);
-		// } elseif ( is_singular( 'gatherpress_venue' ) ) {
-		} elseif ( is_singular() && post_type_supports( get_queried_object()->post_type, 'gatherpress-shadow-source' ) && $this->has_post_type_for_taxonomy($event_post_types, Shadow_Source::get_instance()->get_taxonomy( get_queried_object()->post_type ) ) ) {
+		} elseif ( is_singular() && $this->is_tax_like_post_type_for_event_supporting_post_type( get_queried_object(), $event_post_types ) ) { // phpcs:ignore Generic.Files.LineLength.TooLong
 			// Feels weird to use a *_comments_* function here, but it delivers clean results
 			// in the form of "domain.tld/venue/my-sample-venue/feed/ical/".
 			$alternate_links[] = array(
-				'url'  => get_post_comments_feed_link( get_queried_object_id(), self::ICAL_SLUG ),
+				'url'  => get_post_comments_feed_link( get_queried_object()->ID, self::ICAL_SLUG ),
 				'attr' => sprintf(
 					$args['singletitle'],
 					$args['blogtitle'],
@@ -359,27 +353,19 @@ $has_match = array_reduce(
 					the_title_attribute( array( 'echo' => false ) )
 				),
 			);
-		} elseif ( is_tax() ) {
-			$term                = get_queried_object();
-			$has_event_post_type = array_filter(
-				$event_post_types,
-				static fn( $post_type ) => $term instanceof WP_Term && is_object_in_taxonomy( $post_type, $term->taxonomy ) // phpcs:ignore Generic.Files.LineLength.TooLong
+		} elseif ( is_tax() && $this->has_post_type_for_taxonomy( $event_post_types, get_queried_object()->taxonomy ) ) { // phpcs:ignore Generic.Files.LineLength.TooLong
+			$tax = get_taxonomy( get_queried_object()->taxonomy );
+
+			$alternate_links[] = array(
+				'url'  => get_term_feed_link( get_queried_object()->term_id, get_queried_object()->taxonomy, self::ICAL_SLUG ), // phpcs:ignore Generic.Files.LineLength.TooLong
+				'attr' => sprintf(
+					$args['taxtitle'],
+					$args['blogtitle'],
+					$args['separator'],
+					get_queried_object()->name,
+					$tax->labels->singular_name
+				),
 			);
-
-			if ( $has_event_post_type ) {
-				$tax = get_taxonomy( $term->taxonomy );
-
-				$alternate_links[] = array(
-					'url'  => get_term_feed_link( $term->term_id, $term->taxonomy, self::ICAL_SLUG ),
-					'attr' => sprintf(
-						$args['taxtitle'],
-						$args['blogtitle'],
-						$args['separator'],
-						$term->name,
-						$tax->labels->singular_name
-					),
-				);
-			}
 		}
 
 		// Render tags into <head/>.
@@ -450,14 +436,9 @@ $has_match = array_reduce(
 
 		if ( is_singular( 'gatherpress_venue' ) ) {
 			$venues = array( '_' . get_queried_object()->post_name );
-		} elseif ( is_tax() ) {
-			$term = get_queried_object();
-
-			// @todo How to be prepared for foreign taxonomies that might be registered by 3rd-parties?
-			if ( $term && is_object_in_taxonomy( 'gatherpress_event', $term->taxonomy ) ) {
-				if ( is_tax( 'gatherpress_topic' ) ) {
-					$topics = array( $term->slug );
-				}
+		} elseif ( is_tax() && $this->has_post_type_for_taxonomy( $event_post_types, get_queried_object()->taxonomy ) ) { // phpcs:ignore Generic.Files.LineLength.TooLong
+			if ( is_tax( 'gatherpress_topic' ) ) {
+				$topics = array( get_queried_object()->slug );
 			}
 		}
 
@@ -510,15 +491,16 @@ $has_match = array_reduce(
 	 * @return string Filename (with `.ics` extension) for the queried object.
 	 */
 	public function generate_ics_filename(): string {
-		$queried_object = get_queried_object();
-		$filename       = 'calendar';
+		$queried_object   = get_queried_object();
+		$filename         = 'calendar';
+		$event_post_types = get_post_types_by_support( 'gatherpress-event-date' );
 
 		if ( is_singular() && post_type_supports( $queried_object->post_type, 'gatherpress-event-date' ) ) {
 			$calendar  = new Calendar( $queried_object->ID );
 			$date      = $calendar->event->get_datetime_start( 'Y-m-d' );
 			$post_name = $queried_object->post_name;
 			$filename  = $date . '_' . $post_name;
-		} elseif ( is_singular( 'gatherpress_venue' ) ) {
+		} elseif ( is_singular() && $this->is_tax_like_post_type_for_event_supporting_post_type( $queried_object, $event_post_types ) ) { // phpcs:ignore Generic.Files.LineLength.TooLong
 			$filename = $queried_object->post_name;
 		} elseif ( is_tax() ) {
 			// @todo How to be prepared for foreign taxonomies that might be registered by 3rd-parties?
@@ -610,14 +592,32 @@ $has_match = array_reduce(
 	 *
 	 * @return bool
 	 */
-protected function has_post_type_for_taxonomy(array $post_types, string $taxonomy): bool {
-	foreach ($post_types as $post_type) {
-		if (is_object_in_taxonomy($post_type, $taxonomy)) {
-			return true;
+	protected function has_post_type_for_taxonomy( array $post_types, string $taxonomy ): bool {
+		foreach ( $post_types as $post_type ) {
+			if ( is_object_in_taxonomy( $post_type, $taxonomy ) ) {
+				return true;
+			}
 		}
+
+		return false;
 	}
 
-	return false;
-}
-
+	/**
+	 * Checks if the given post could be related to an event-supporting post type.
+	 *
+	 * The methods checks whether the given posts type supports 'gatherpress-shadow-source'
+	 * and if its taxonomy is one that is related to any 'gatherpress-event-date' supporting post type.
+	 *
+	 * @param  WP_Post $post       The post to check.
+	 * @param  array   $post_types Array of post type slugs that support 'gatherpress-event-date'.
+	 *
+	 * @return bool
+	 */
+	protected function is_tax_like_post_type_for_event_supporting_post_type( WP_Post $post, array $post_types ): bool {
+		return post_type_supports( $post->post_type, 'gatherpress-shadow-source' ) &&
+			$this->has_post_type_for_taxonomy(
+				$post_types,
+				Shadow_Source::get_instance()->get_taxonomy( $post->post_type )
+			);
+	}
 }
