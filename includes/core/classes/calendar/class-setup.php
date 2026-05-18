@@ -69,9 +69,9 @@ class Setup {
 		add_action( 'registered_post_type', array( $this, 'init_events' ) );
 		add_action( 'registered_post_type', array( $this, 'init_venues' ) );
 		// @todo Maybe hook this two actions dynamically based on a registered post type?!
-		add_action( 'registered_taxonomy_for_object_type', array( $this, 'init_taxonomies' ), 10, 2 );
+		add_action( 'registered_taxonomy_for_object_type', array( $this, 'init_taxonomies' ) );
 		// @todo Can maybe removed, after #1639 is implemented and registered taxonomies do also trigger the 'registered_taxonomy_for_object_type' action.
-		add_action( 'registered_taxonomy', array( $this, 'init_taxonomies' ), 10, 2 );
+		add_action( 'registered_taxonomy', array( $this, 'init_taxonomies' ) );
 		add_action( 'wp_head', array( $this, 'alternate_links' ) );
 	}
 
@@ -144,11 +144,10 @@ class Setup {
 	 * @since 1.0.0
 	 *
 	 * @param string       $taxonomy    Name of the taxonomy that got registered last.
-	 * @param string|array $object_type String when called via 'registered_taxonomy_for_object_type',
-	 *                                  may be an array when called from 'registered_taxonomy'.
+	 *
 	 * @return void
 	 */
-	public function init_taxonomies( string $taxonomy, $object_type ): void {
+	public function init_taxonomies( string $taxonomy ): void {
 		// Stop if the currently registered taxonomy does not validate.
 		if ( // Stop, if taxonomy is not registered for any event-date supporting post type.
 			! $this->has_post_type_for_taxonomy( $taxonomy ) ||
@@ -275,11 +274,10 @@ class Setup {
 			),
 		);
 
-		$event_post_types = get_post_types_by_support( 'gatherpress-event-date' );
-		foreach ( $event_post_types as $event_post_type ) {
+		foreach ( get_post_types_by_support( 'gatherpress-event-date' ) as $post_type ) {
 			$alternate_links[] = array(
 				'url'  => get_post_type_archive_feed_link(
-					$event_post_type,
+					$post_type,
 					self::ICAL_SLUG
 				),
 				'attr' => sprintf(
