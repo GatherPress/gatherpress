@@ -31,6 +31,7 @@ The subsystem segment names a single area of the plugin. The current set:
 |---|---|
 | `event_*` | Event lifecycle, queries, feed output. |
 | `venue_*` | Venue post type resolution, structured-address sync. |
+| `rsvp_*` | RSVP storage (comment-based), attendee management, comment-query coexistence. |
 | `geocode_*` / `async_geocode_*` | Photon geocoding (sync filters use `geocode_`, async/cron lifecycle uses `async_geocode_`). |
 | `map_*` | Map config that applies to **both** interactive and static rendering (zoom, height, provider registry). |
 | `interactive_map_*` | Leaflet client-side basemap **only** (tile URL, attribution). |
