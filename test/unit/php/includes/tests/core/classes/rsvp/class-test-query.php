@@ -351,6 +351,99 @@ class Test_Query extends Base {
 	}
 
 	/**
+	 * Test the gatherpress_rsvp_comment_query_exclusion filter short-circuits
+	 * the exclusion when an integration returns false, leaving both `type` and
+	 * `type__in` untouched so the caller's original query vars survive.
+	 *
+	 * @covers ::exclude_rsvp_from_comment_query
+	 *
+	 * @return void
+	 */
+	public function test_exclude_rsvp_filter_can_short_circuit(): void {
+		$instance = Query::get_instance();
+		$query    = new WP_Comment_Query();
+
+		$query->query_vars['type']     = array( 'comment', Rsvp::COMMENT_TYPE, 'pingback' );
+		$query->query_vars['type__in'] = array( 'comment', Rsvp::COMMENT_TYPE );
+
+		add_filter( 'gatherpress_rsvp_comment_query_exclusion', '__return_false' );
+		$instance->exclude_rsvp_from_comment_query( $query );
+		remove_filter( 'gatherpress_rsvp_comment_query_exclusion', '__return_false' );
+
+		$this->assertEquals(
+			array( 'comment', Rsvp::COMMENT_TYPE, 'pingback' ),
+			$query->query_vars['type'],
+			'Type array should be untouched when the filter returns false'
+		);
+		$this->assertEquals(
+			array( 'comment', Rsvp::COMMENT_TYPE ),
+			$query->query_vars['type__in'],
+			'Type__in array should be untouched when the filter returns false'
+		);
+	}
+
+	/**
+	 * Test the gatherpress_rsvp_comment_query_exclusion filter receives the
+	 * live WP_Comment_Query as its second argument, which integrations rely on
+	 * to scope the opt-out to specific queries.
+	 *
+	 * @covers ::exclude_rsvp_from_comment_query
+	 *
+	 * @return void
+	 */
+	public function test_exclude_rsvp_filter_receives_query_argument(): void {
+		$instance       = Query::get_instance();
+		$query          = new WP_Comment_Query();
+		$captured_query = null;
+
+		$query->query_vars['type']     = array( 'comment', Rsvp::COMMENT_TYPE );
+		$query->query_vars['type__in'] = '';
+
+		$callback = static function ( bool $exclude, WP_Comment_Query $passed_query ) use ( &$captured_query ): bool {
+			$captured_query = $passed_query;
+			return $exclude;
+		};
+
+		add_filter( 'gatherpress_rsvp_comment_query_exclusion', $callback, 10, 2 );
+		$instance->exclude_rsvp_from_comment_query( $query );
+		remove_filter( 'gatherpress_rsvp_comment_query_exclusion', $callback, 10 );
+
+		$this->assertSame(
+			$query,
+			$captured_query,
+			'Filter should receive the live WP_Comment_Query as its second argument'
+		);
+	}
+
+	/**
+	 * Test the default value of gatherpress_rsvp_comment_query_exclusion is
+	 * true so the exclusion stays in effect for sites that do not hook the
+	 * filter, and that an integration explicitly returning true preserves the
+	 * existing behavior.
+	 *
+	 * @covers ::exclude_rsvp_from_comment_query
+	 *
+	 * @return void
+	 */
+	public function test_exclude_rsvp_filter_default_preserves_exclusion(): void {
+		$instance = Query::get_instance();
+		$query    = new WP_Comment_Query();
+
+		$query->query_vars['type']     = array( 'comment', Rsvp::COMMENT_TYPE );
+		$query->query_vars['type__in'] = '';
+
+		add_filter( 'gatherpress_rsvp_comment_query_exclusion', '__return_true' );
+		$instance->exclude_rsvp_from_comment_query( $query );
+		remove_filter( 'gatherpress_rsvp_comment_query_exclusion', '__return_true' );
+
+		$this->assertEquals(
+			array( 'comment' ),
+			$query->query_vars['type'],
+			'Returning true from the filter should preserve the existing exclusion behavior'
+		);
+	}
+
+	/**
 	 * Test excluding RSVP makes no changes when RSVP is not present in arrays.
 	 *
 	 * @covers ::exclude_rsvp_from_comment_query
