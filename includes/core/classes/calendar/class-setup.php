@@ -67,12 +67,10 @@ class Setup {
 	 */
 	protected function setup_hooks(): void {
 		add_action( 'registered_post_type', array( $this, 'init_events' ) );
-		add_action(
-			sprintf( 'registered_post_type_%s', 'gatherpress_venue' ),
-			array( $this, 'init_venues' )
-		);
+		add_action( 'registered_post_type', array( $this, 'init_venues' ) );
 		// @todo Maybe hook this two actions dynamically based on a registered post type?!
 		add_action( 'registered_taxonomy_for_object_type', array( $this, 'init_taxonomies' ), 10, 2 );
+		// @todo Can maybe removed, after #1639 is implemented and registered taxonomies do also trigger the 'registered_taxonomy_for_object_type' action.
 		add_action( 'registered_taxonomy', array( $this, 'init_taxonomies' ), 10, 2 );
 		add_action( 'wp_head', array( $this, 'alternate_links' ) );
 	}
@@ -121,9 +119,18 @@ class Setup {
 	 *
 	 * @since 1.0.0
 	 *
+	 * @param string $post_type The name of the post type that got registered last.
+	 *
 	 * @return void
 	 */
-	public function init_venues(): void {
+	public function init_venues( string $post_type ): void {
+
+		$event_post_types = get_post_types_by_support( 'gatherpress-event-date' );
+
+		if ( ! $this->is_tax_like_post_type_for_event_supporting_post_type( $post_type, $event_post_types ) ) {
+			return;
+		}
+
 		new Post_Type_Single_Feed(
 			array(
 				new Template( self::ICAL_SLUG, array( $this, 'get_ical_feed_template' ) ),
@@ -144,12 +151,11 @@ class Setup {
 	 */
 	public function init_taxonomies( string $taxonomy, $object_type ): void {
 		$event_post_types = get_post_types_by_support( 'gatherpress-event-date' );
+
 		// Stop if the currently registered taxonomy does not validate.
-		if ( // If not registered for the events post type.
-			! array_intersect( $event_post_types, (array) $object_type ) ||
-			// … is GatherPress' shadow-taxonomy for venues.
-			'_gatherpress_venue' === $taxonomy ||
-			// … should not be public.
+		if ( // Stop, if taxonomy is not registered for any event-date supporting post type.
+			! $this->has_post_type_for_taxonomy( $event_post_types, $taxonomy ) ||
+			// Stop, if taxonomy is not public.
 			! is_taxonomy_viewable( $taxonomy ) ||
 			false === get_taxonomy( $taxonomy )->rewrite
 		) {
@@ -348,7 +354,7 @@ class Setup {
 					}
 				}
 			);
-		} elseif ( is_singular() && $this->is_tax_like_post_type_for_event_supporting_post_type( get_queried_object(), $event_post_types ) ) { // phpcs:ignore Generic.Files.LineLength.TooLong
+		} elseif ( is_singular() && $this->is_tax_like_post_type_for_event_supporting_post_type( get_queried_object()->post_type, $event_post_types ) ) { // phpcs:ignore Generic.Files.LineLength.TooLong
 			// Feels weird to use a *_comments_* function here, but it delivers clean results
 			// in the form of "domain.tld/venue/my-sample-venue/feed/ical/".
 			$alternate_links[] = array(
@@ -449,7 +455,7 @@ class Setup {
 		$output           = array();
 		$event_post_types = get_post_types_by_support( 'gatherpress-event-date' );
 
-		if ( is_singular() && $this->is_tax_like_post_type_for_event_supporting_post_type( get_queried_object(), $event_post_types ) ) {
+		if ( is_singular() && $this->is_tax_like_post_type_for_event_supporting_post_type( get_queried_object()->post_type, $event_post_types ) ) {
 			if ( is_singular( 'gatherpress_venue' ) ) {
 				$venues = array( '_' . get_queried_object()->post_name );
 			}
@@ -517,7 +523,7 @@ class Setup {
 			$date      = $calendar->event->get_datetime_start( 'Y-m-d' );
 			$post_name = $queried_object->post_name;
 			$filename  = $date . '_' . $post_name;
-		} elseif ( is_singular() && $this->is_tax_like_post_type_for_event_supporting_post_type( $queried_object, $event_post_types ) ) { // phpcs:ignore Generic.Files.LineLength.TooLong
+		} elseif ( is_singular() && $this->is_tax_like_post_type_for_event_supporting_post_type( $queried_object->post_type, $event_post_types ) ) { // phpcs:ignore Generic.Files.LineLength.TooLong
 			$filename = $queried_object->post_name;
 		} elseif ( is_tax() && $this->has_post_type_for_taxonomy( $event_post_types, get_queried_object()->taxonomy ) ) { // phpcs:ignore Generic.Files.LineLength.TooLong
 			$filename = $queried_object->slug;
@@ -626,16 +632,16 @@ class Setup {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param  WP_Post $post       The post to check.
-	 * @param  array   $post_types Array of post type slugs that support 'gatherpress-event-date'.
+	 * @param  string $post_type  The post_type to check.
+	 * @param  array  $post_types Array of post type slugs that support 'gatherpress-event-date'.
 	 *
 	 * @return bool
 	 */
-	protected function is_tax_like_post_type_for_event_supporting_post_type( WP_Post $post, array $post_types ): bool {
-		return post_type_supports( $post->post_type, 'gatherpress-shadow-source' ) &&
+	protected function is_tax_like_post_type_for_event_supporting_post_type( string $post_type, array $post_types ): bool {
+		return post_type_supports( $post_type, 'gatherpress-shadow-source' ) &&
 			$this->has_post_type_for_taxonomy(
 				$post_types,
-				Shadow_Source::get_instance()->get_taxonomy( $post->post_type )
+				Shadow_Source::get_instance()->get_taxonomy( $post_type )
 			);
 	}
 }
