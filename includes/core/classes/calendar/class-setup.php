@@ -70,7 +70,8 @@ class Setup {
 		add_action( 'registered_post_type', array( $this, 'init_venues' ) );
 		// @todo Maybe hook this two actions dynamically based on a registered post type?!
 		add_action( 'registered_taxonomy_for_object_type', array( $this, 'init_taxonomies' ) );
-		// @todo Can maybe removed, after #1639 is implemented and registered taxonomies do also trigger the 'registered_taxonomy_for_object_type' action.
+		// @todo Can maybe removed, after #1639 is implemented
+		// and registered taxonomies do also trigger the 'registered_taxonomy_for_object_type' action.
 		add_action( 'registered_taxonomy', array( $this, 'init_taxonomies' ) );
 		add_action( 'wp_head', array( $this, 'alternate_links' ) );
 	}
@@ -125,7 +126,7 @@ class Setup {
 	 */
 	public function init_venues( string $post_type ): void {
 
-		if ( ! $this->is_tax_like_post_type_for_event_supporting_post_type( $post_type ) ) {
+		if ( ! $this->is_tax_like_type_for_event_supporting_types( $post_type ) ) {
 			return;
 		}
 
@@ -143,7 +144,7 @@ class Setup {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param string       $taxonomy    Name of the taxonomy that got registered last.
+	 * @param string $taxonomy    Name of the taxonomy that got registered last.
 	 *
 	 * @return void
 	 */
@@ -349,7 +350,7 @@ class Setup {
 					}
 				}
 			);
-		} elseif ( is_singular() && $this->is_tax_like_post_type_for_event_supporting_post_type( get_queried_object()->post_type ) ) {
+		} elseif ( is_singular() && $this->is_tax_like_type_for_event_supporting_types( get_queried_object()->post_type ) ) { // phpcs:ignore Generic.Files.LineLength.TooLong
 			// Feels weird to use a *_comments_* function here, but it delivers clean results
 			// in the form of "domain.tld/venue/my-sample-venue/feed/ical/".
 			$alternate_links[] = array(
@@ -443,13 +444,13 @@ class Setup {
 	 * @return string Concatenated VEVENT blocks for the queried events.
 	 */
 	public function get_ical_list(): string {
-		$event_list_type  = 'upcoming'; // Keep empty, to get all events from upcoming & past.
-		$number           = ( is_feed( self::ICAL_SLUG ) ) ? -1 : get_option( 'posts_per_page' );
-		$topics           = array();
-		$venues           = array();
-		$output           = array();
+		$event_list_type = 'upcoming'; // Keep empty, to get all events from upcoming & past.
+		$number          = ( is_feed( self::ICAL_SLUG ) ) ? -1 : get_option( 'posts_per_page' );
+		$topics          = array();
+		$venues          = array();
+		$output          = array();
 
-		if ( is_singular() && $this->is_tax_like_post_type_for_event_supporting_post_type( get_queried_object()->post_type ) ) {
+		if ( is_singular() && $this->is_tax_like_type_for_event_supporting_types( get_queried_object()->post_type ) ) {
 			if ( is_singular( 'gatherpress_venue' ) ) {
 				$venues = array( '_' . get_queried_object()->post_name );
 			}
@@ -508,15 +509,15 @@ class Setup {
 	 * @return string Filename (with `.ics` extension) for the queried object.
 	 */
 	public function generate_ics_filename(): string {
-		$queried_object   = get_queried_object();
-		$filename         = 'calendar';
+		$queried_object = get_queried_object();
+		$filename       = 'calendar';
 
 		if ( is_singular() && post_type_supports( $queried_object->post_type, 'gatherpress-event-date' ) ) {
 			$calendar  = new Calendar( $queried_object->ID );
 			$date      = $calendar->event->get_datetime_start( 'Y-m-d' );
 			$post_name = $queried_object->post_name;
 			$filename  = $date . '_' . $post_name;
-		} elseif ( is_singular() && $this->is_tax_like_post_type_for_event_supporting_post_type( $queried_object->post_type ) ) {
+		} elseif ( is_singular() && $this->is_tax_like_type_for_event_supporting_types( $queried_object->post_type ) ) {
 			$filename = $queried_object->post_name;
 		} elseif ( is_tax() && $this->has_post_type_for_taxonomy( get_queried_object()->taxonomy ) ) {
 			$filename = $queried_object->slug;
@@ -629,7 +630,7 @@ class Setup {
 	 *
 	 * @return bool
 	 */
-	protected function is_tax_like_post_type_for_event_supporting_post_type( string $post_type ): bool {
+	protected function is_tax_like_type_for_event_supporting_types( string $post_type ): bool {
 		return post_type_supports( $post_type, 'gatherpress-shadow-source' ) &&
 			$this->has_post_type_for_taxonomy( Shadow_Source::get_instance()->get_taxonomy( $post_type ) );
 	}
