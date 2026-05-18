@@ -125,9 +125,7 @@ class Setup {
 	 */
 	public function init_venues( string $post_type ): void {
 
-		$event_post_types = get_post_types_by_support( 'gatherpress-event-date' );
-
-		if ( ! $this->is_tax_like_post_type_for_event_supporting_post_type( $post_type, $event_post_types ) ) {
+		if ( ! $this->is_tax_like_post_type_for_event_supporting_post_type( $post_type ) ) {
 			return;
 		}
 
@@ -135,7 +133,8 @@ class Setup {
 			array(
 				new Template( self::ICAL_SLUG, array( $this, 'get_ical_feed_template' ) ),
 			),
-			self::QUERY_VAR
+			self::QUERY_VAR,
+			$post_type
 		);
 	}
 
@@ -150,11 +149,9 @@ class Setup {
 	 * @return void
 	 */
 	public function init_taxonomies( string $taxonomy, $object_type ): void {
-		$event_post_types = get_post_types_by_support( 'gatherpress-event-date' );
-
 		// Stop if the currently registered taxonomy does not validate.
 		if ( // Stop, if taxonomy is not registered for any event-date supporting post type.
-			! $this->has_post_type_for_taxonomy( $event_post_types, $taxonomy ) ||
+			! $this->has_post_type_for_taxonomy( $taxonomy ) ||
 			// Stop, if taxonomy is not public.
 			! is_taxonomy_viewable( $taxonomy ) ||
 			false === get_taxonomy( $taxonomy )->rewrite
@@ -354,7 +351,7 @@ class Setup {
 					}
 				}
 			);
-		} elseif ( is_singular() && $this->is_tax_like_post_type_for_event_supporting_post_type( get_queried_object()->post_type, $event_post_types ) ) { // phpcs:ignore Generic.Files.LineLength.TooLong
+		} elseif ( is_singular() && $this->is_tax_like_post_type_for_event_supporting_post_type( get_queried_object()->post_type ) ) {
 			// Feels weird to use a *_comments_* function here, but it delivers clean results
 			// in the form of "domain.tld/venue/my-sample-venue/feed/ical/".
 			$alternate_links[] = array(
@@ -369,7 +366,7 @@ class Setup {
 					the_title_attribute( array( 'echo' => false ) )
 				),
 			);
-		} elseif ( is_tax() && $this->has_post_type_for_taxonomy( $event_post_types, get_queried_object()->taxonomy ) ) { // phpcs:ignore Generic.Files.LineLength.TooLong
+		} elseif ( is_tax() && $this->has_post_type_for_taxonomy( get_queried_object()->taxonomy ) ) {
 			$tax = get_taxonomy( get_queried_object()->taxonomy );
 
 			$alternate_links[] = array(
@@ -453,13 +450,12 @@ class Setup {
 		$topics           = array();
 		$venues           = array();
 		$output           = array();
-		$event_post_types = get_post_types_by_support( 'gatherpress-event-date' );
 
-		if ( is_singular() && $this->is_tax_like_post_type_for_event_supporting_post_type( get_queried_object()->post_type, $event_post_types ) ) {
+		if ( is_singular() && $this->is_tax_like_post_type_for_event_supporting_post_type( get_queried_object()->post_type ) ) {
 			if ( is_singular( 'gatherpress_venue' ) ) {
 				$venues = array( '_' . get_queried_object()->post_name );
 			}
-		} elseif ( is_tax() && $this->has_post_type_for_taxonomy( $event_post_types, get_queried_object()->taxonomy ) ) { // phpcs:ignore Generic.Files.LineLength.TooLong
+		} elseif ( is_tax() && $this->has_post_type_for_taxonomy( get_queried_object()->taxonomy ) ) {
 			if ( is_tax( 'gatherpress_topic' ) ) {
 				$topics = array( get_queried_object()->slug );
 			}
@@ -516,16 +512,15 @@ class Setup {
 	public function generate_ics_filename(): string {
 		$queried_object   = get_queried_object();
 		$filename         = 'calendar';
-		$event_post_types = get_post_types_by_support( 'gatherpress-event-date' );
 
 		if ( is_singular() && post_type_supports( $queried_object->post_type, 'gatherpress-event-date' ) ) {
 			$calendar  = new Calendar( $queried_object->ID );
 			$date      = $calendar->event->get_datetime_start( 'Y-m-d' );
 			$post_name = $queried_object->post_name;
 			$filename  = $date . '_' . $post_name;
-		} elseif ( is_singular() && $this->is_tax_like_post_type_for_event_supporting_post_type( $queried_object->post_type, $event_post_types ) ) { // phpcs:ignore Generic.Files.LineLength.TooLong
+		} elseif ( is_singular() && $this->is_tax_like_post_type_for_event_supporting_post_type( $queried_object->post_type ) ) {
 			$filename = $queried_object->post_name;
-		} elseif ( is_tax() && $this->has_post_type_for_taxonomy( $event_post_types, get_queried_object()->taxonomy ) ) { // phpcs:ignore Generic.Files.LineLength.TooLong
+		} elseif ( is_tax() && $this->has_post_type_for_taxonomy( get_queried_object()->taxonomy ) ) {
 			$filename = $queried_object->slug;
 		}
 
@@ -609,12 +604,12 @@ class Setup {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param array  $post_types Array of post type slugs.
 	 * @param string $taxonomy   Taxonomy slug.
 	 *
 	 * @return bool
 	 */
-	protected function has_post_type_for_taxonomy( array $post_types, string $taxonomy ): bool {
+	protected function has_post_type_for_taxonomy( string $taxonomy ): bool {
+		$post_types = get_post_types_by_support( 'gatherpress-event-date' );
 		foreach ( $post_types as $post_type ) {
 			if ( is_object_in_taxonomy( $post_type, $taxonomy ) ) {
 				return true;
@@ -633,15 +628,11 @@ class Setup {
 	 * @since 1.0.0
 	 *
 	 * @param  string $post_type  The post_type to check.
-	 * @param  array  $post_types Array of post type slugs that support 'gatherpress-event-date'.
 	 *
 	 * @return bool
 	 */
-	protected function is_tax_like_post_type_for_event_supporting_post_type( string $post_type, array $post_types ): bool {
+	protected function is_tax_like_post_type_for_event_supporting_post_type( string $post_type ): bool {
 		return post_type_supports( $post_type, 'gatherpress-shadow-source' ) &&
-			$this->has_post_type_for_taxonomy(
-				$post_types,
-				Shadow_Source::get_instance()->get_taxonomy( $post_type )
-			);
+			$this->has_post_type_for_taxonomy( Shadow_Source::get_instance()->get_taxonomy( $post_type ) );
 	}
 }
