@@ -304,6 +304,7 @@ class Setup {
 		);
 
 		foreach ( get_post_types_by_support( 'gatherpress-event-date' ) as $post_type ) {
+			$post_type_object = get_post_type_object( $post_type );
 			$alternate_links[] = array(
 				'url'  => get_post_type_archive_feed_link(
 					$post_type,
@@ -313,7 +314,7 @@ class Setup {
 					$args['posttypetitle'],
 					$args['blogtitle'],
 					$args['separator'],
-					post_type_archive_title( '', false )
+					apply_filters( 'post_type_archive_title', $post_type_object->labels->name, $post_type )
 				),
 			);
 		}
