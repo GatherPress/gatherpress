@@ -380,27 +380,32 @@ class Setup {
 			array_walk(
 				$terms,
 				function ( WP_Term $term ) use ( $args, &$alternate_links ) {
-					$tax = get_taxonomy( $term->taxonomy );
-					switch ( $term->taxonomy ) {
-						case '_gatherpress_venue':
-							$venue = Venue_Setup::get_instance()->get_venue_post_from_term_slug( $term->slug );
+					$tax           = get_taxonomy( $term->taxonomy );
+					$shadow_source = Shadow_Source::get_instance();
 
-							// An Online-Event will have no Venue; prevent error on non-existent object.
+					// For the venue taxonomy, we want to link to the feed of the associated venue post,
+					// not the term archive feed, so we need to resolve the venue post from the term first
+					// and then get the feed link for that post.
+					if ( $shadow_source->is_shadow_term_slug( $term->taxonomy ) ) {
+
+						// Strip out all 'non-default' shadow terms like 'Online-Event',
+						// which does not start with a "_".
+						if ( $shadow_source->is_shadow_term_slug( $term->slug ) ) {
+							$post = $shadow_source->get_post_from_term_slug( $term->slug, ltrim( $term->taxonomy, '_' ) );
 							// Feels weird to use a *_comments_* function here, but it delivers clean results
 							// in the form of "domain.tld/event/my-sample-event/feed/ical/".
-							$href = ( $venue )
-								? get_post_comments_feed_link( $venue->ID, self::ICAL_SLUG )
-								: null;
-							break;
+							$href = get_post_comments_feed_link( $post->ID, self::ICAL_SLUG );
+						}
 
-						default:
-							$href = get_term_feed_link(
-								$term->term_id,
-								$term->taxonomy,
-								self::ICAL_SLUG
-							);
-							break;
+						// For non-shadow taxonomies, we can link to the term archive feed as usual.
+					} else {
+						$href = get_term_feed_link(
+							$term->term_id,
+							$term->taxonomy,
+							self::ICAL_SLUG
+						);
 					}
+
 					// Can be empty for Online-Events.
 					if ( ! empty( $href ) ) {
 						$alternate_links[] = array(
