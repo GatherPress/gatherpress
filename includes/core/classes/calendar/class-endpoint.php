@@ -294,9 +294,9 @@ class Endpoint {
 				break;
 
 			default:
-				// $object_type is constrained above to 'post_type' or 'taxonomy';
+				// $object_type is constrained above to 'post_type', 'taxonomy', or 'sitewide';
 				// this arm satisfies php:S131 and is unreachable in practice.
-				break;
+				break; // @codeCoverageIgnore
 		}
 
 		if ( ! $this->type_object instanceof WP_Post_Type && ! $this->type_object instanceof WP_Taxonomy ) {

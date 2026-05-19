@@ -421,5 +421,352 @@ class Test_Endpoint extends Base {
 			Utility::invoke_hidden_method( $instance, 'get_slugs' ),
 			'Failed to assert that endpoint slugs match.'
 		);
+
+		// With an entity filter, only matching subclass slugs are returned.
+		$this->assertSame(
+			array( 'endpoint_template_1', 'endpoint_template_2' ),
+			array_values( Utility::invoke_hidden_method( $instance, 'get_slugs', array( Template::class ) ) ),
+			'Filtering by Template class should return only Template slugs.'
+		);
+		$this->assertSame(
+			array( 'endpoint_redirect_1' ),
+			array_values( Utility::invoke_hidden_method( $instance, 'get_slugs', array( Redirect::class ) ) ),
+			'Filtering by Redirect class should return only Redirect slugs.'
+		);
+	}
+
+	/**
+	 * Coverage for init method — confirms the public method registers a
+	 * rewrite rule, hooks query_vars, and hooks template_redirect.
+	 *
+	 * @covers ::init
+	 *
+	 * @return void
+	 */
+	public function test_init_registers_rule_and_hooks(): void {
+		$query_var = 'gatherpress_test_init';
+		$callback  = function () {};
+		$types     = array( new Template( 'endpoint_template_1', $callback ) );
+		$reg_ex    = '%s/([^/]+)/(%s)/?$';
+
+		remove_all_filters( 'query_vars' );
+		remove_all_actions( 'template_redirect' );
+		delete_option( 'rewrite_rules' );
+
+		$instance = new Endpoint(
+			$query_var,
+			'gatherpress_event',
+			$callback,
+			$types,
+			$reg_ex,
+		);
+
+		// init() is called from __construct; verify the rule registered globally.
+		global $wp_rewrite;
+		$pattern = Utility::invoke_hidden_method( $instance, 'get_regex_pattern' );
+		$this->assertArrayHasKey(
+			$pattern,
+			$wp_rewrite->extra_rules_top,
+			'init() should add the generated rewrite rule with `top` priority.'
+		);
+
+		$this->assertTrue(
+			has_filter( 'query_vars', array( $instance, 'allow_query_vars' ) ) > 0,
+			'init() should hook allow_query_vars onto query_vars.'
+		);
+		$this->assertTrue(
+			has_action( 'template_redirect', array( $instance, 'template_redirect' ) ) > 0,
+			'init() should hook template_redirect.'
+		);
+	}
+
+	/**
+	 * Coverage for is_valid_registration when called before `init` fires.
+	 *
+	 * @covers ::is_valid_registration
+	 *
+	 * @return void
+	 */
+	public function test_is_valid_registration_bails_before_init(): void {
+		global $wp_actions;
+		$saved = $wp_actions['init'] ?? 0;
+		// Temporarily reset the init counter so is_valid_registration() takes
+		// the pre-init bail branch; the real value is restored below.
+		$wp_actions['init'] = 0; // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
+
+		// Suppress the E_USER_WARNING that wp_trigger_error() raises on the
+		// pre-init bail — the warning is expected and the test asserts the
+		// registration was skipped.
+		$instance = @new Endpoint( // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged
+			'gatherpress_pre_init',
+			'gatherpress_event',
+			function () {},
+			array( new Template( 'foo', function () {} ) ),
+			'reg_ex',
+		);
+
+		$wp_actions['init'] = $saved; // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
+
+		$this->assertEndpointDidNotRegister(
+			$instance,
+			'Endpoint should not register when init has not fired yet.'
+		);
+	}
+
+	/**
+	 * Coverage for is_valid_registration with an empty types list.
+	 *
+	 * @covers ::is_valid_registration
+	 *
+	 * @return void
+	 */
+	public function test_is_valid_registration_bails_on_empty_types(): void {
+		$instance = @new Endpoint( // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged
+			'gatherpress_empty_types',
+			'gatherpress_event',
+			function () {},
+			array(),
+			'reg_ex',
+		);
+
+		$this->assertEndpointDidNotRegister(
+			$instance,
+			'Empty types array should short-circuit registration.'
+		);
+	}
+
+	/**
+	 * Coverage for is_valid_registration with an unsupported object_type.
+	 *
+	 * @covers ::is_valid_registration
+	 *
+	 * @return void
+	 */
+	public function test_is_valid_registration_bails_on_unsupported_object_type(): void {
+		$instance = @new Endpoint( // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged
+			'gatherpress_bad_object',
+			'gatherpress_event',
+			function () {},
+			array( new Template( 'foo', function () {} ) ),
+			'reg_ex',
+			'option',
+		);
+
+		$this->assertEndpointDidNotRegister(
+			$instance,
+			'Unsupported object_type should short-circuit registration.'
+		);
+	}
+
+	/**
+	 * Coverage for is_valid_registration with the `sitewide` object_type —
+	 * the switch returns true early without resolving a type_object. Direct
+	 * invocation since the Sitewide_Feed instance Calendar\Setup creates
+	 * during bootstrap runs before the xdebug coverage tracer is active.
+	 *
+	 * @covers ::is_valid_registration
+	 *
+	 * @return void
+	 */
+	public function test_is_valid_registration_accepts_sitewide(): void {
+		// Build a bare Endpoint then drive `is_valid_registration` through
+		// reflection with object_type='sitewide'.
+		$callback = function () {};
+		$endpoint = new Endpoint(
+			'gatherpress_sitewide_direct',
+			'gatherpress_event',
+			$callback,
+			array( new Template( 'foo', $callback ) ),
+			'reg_ex',
+		);
+		$result   = Utility::invoke_hidden_method(
+			$endpoint,
+			'is_valid_registration',
+			array( '', array( new Template( 'foo', $callback ) ), 'sitewide' )
+		);
+		$this->assertTrue(
+			$result,
+			'is_valid_registration should return true early for the sitewide object_type.'
+		);
+	}
+
+	/**
+	 * Coverage for is_valid_registration with the `taxonomy` object_type.
+	 *
+	 * @covers ::is_valid_registration
+	 *
+	 * @return void
+	 */
+	public function test_is_valid_registration_resolves_taxonomy(): void {
+		$instance = new Endpoint(
+			'query_var',
+			'gatherpress_topic',
+			function () {},
+			array( new Template( 'foo', function () {} ) ),
+			'reg_ex',
+			'taxonomy',
+		);
+
+		$this->assertSame(
+			get_taxonomy( 'gatherpress_topic' ),
+			$instance->type_object,
+			'Taxonomy object_type should populate type_object via get_taxonomy().'
+		);
+		$this->assertSame(
+			'taxonomy',
+			$instance->object_type,
+			'object_type should be persisted as taxonomy.'
+		);
+	}
+
+	/**
+	 * Coverage for is_valid_registration when the post type doesn't exist.
+	 *
+	 * @covers ::is_valid_registration
+	 *
+	 * @return void
+	 */
+	public function test_is_valid_registration_bails_when_type_object_missing(): void {
+		$instance = @new Endpoint( // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged
+			'gatherpress_missing_pt',
+			'unregistered_post_type',
+			function () {},
+			array( new Template( 'foo', function () {} ) ),
+			'reg_ex',
+		);
+
+		$this->assertEndpointDidNotRegister(
+			$instance,
+			'Unregistered post type should short-circuit registration.'
+		);
+	}
+
+	/**
+	 * Coverage for is_valid_registration when the post type has rewrites disabled.
+	 *
+	 * @covers ::is_valid_registration
+	 *
+	 * @return void
+	 */
+	public function test_is_valid_registration_bails_when_rewrites_disabled(): void {
+		register_post_type(
+			'no_rewrite_pt',
+			array(
+				'public'  => true,
+				'rewrite' => false,
+			)
+		);
+
+		$instance = @new Endpoint( // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged
+			'gatherpress_no_rewrite',
+			'no_rewrite_pt',
+			function () {},
+			array( new Template( 'foo', function () {} ) ),
+			'reg_ex',
+		);
+
+		unregister_post_type( 'no_rewrite_pt' );
+
+		$this->assertEndpointDidNotRegister(
+			$instance,
+			'Post type with rewrite=false should short-circuit registration.'
+		);
+	}
+
+	/**
+	 * Helper: assert that an Endpoint failed registration by checking the
+	 * typed `query_var` property is uninitialized via reflection. Using the
+	 * property directly throws "must not be accessed before initialization".
+	 *
+	 * @param Endpoint $instance The endpoint to inspect.
+	 * @param string   $message  Assertion failure message.
+	 * @return void
+	 */
+	private function assertEndpointDidNotRegister( Endpoint $instance, string $message ): void {
+		$reflection = new \ReflectionProperty( $instance, 'query_var' );
+		$this->assertFalse(
+			$reflection->isInitialized( $instance ),
+			$message
+		);
+	}
+
+	/**
+	 * Coverage for template_redirect — activates the matching endpoint type
+	 * when the query is valid and the requested slug matches a registered type.
+	 *
+	 * @covers ::template_redirect
+	 *
+	 * @return void
+	 */
+	public function test_template_redirect_activates_matching_type(): void {
+		$activated = false;
+
+		$callback       = '__return_true';
+		$template       = $this->getMockBuilder( Template::class )
+			->disableOriginalConstructor()
+			->onlyMethods( array( 'activate' ) )
+			->getMock();
+		$template->slug = 'endpoint_template_1';
+		$template->expects( $this->once() )
+			->method( 'activate' )
+			->willReturnCallback(
+				function () use ( &$activated ) {
+					$activated = true;
+				}
+			);
+
+		$instance = new Endpoint(
+			'gatherpress_calendar',
+			'gatherpress_event',
+			$callback,
+			array( $template ),
+			'reg_ex',
+		);
+
+		$this->mock->wp(
+			array(
+				'query_vars' => array(
+					'gatherpress_calendar' => 'endpoint_template_1',
+				),
+			)
+		);
+
+		$instance->template_redirect();
+
+		$this->mock->wp()->reset();
+
+		$this->assertTrue(
+			$activated,
+			'template_redirect() should call activate() on the matching endpoint type.'
+		);
+	}
+
+	/**
+	 * Coverage for template_redirect — short-circuits when the query is invalid.
+	 *
+	 * @covers ::template_redirect
+	 *
+	 * @return void
+	 */
+	public function test_template_redirect_bails_when_query_invalid(): void {
+		$template       = $this->getMockBuilder( Template::class )
+			->disableOriginalConstructor()
+			->onlyMethods( array( 'activate' ) )
+			->getMock();
+		$template->slug = 'endpoint_template_1';
+		$template->expects( $this->never() )->method( 'activate' );
+
+		$instance = new Endpoint(
+			'gatherpress_calendar',
+			'gatherpress_event',
+			'__return_false',
+			array( $template ),
+			'reg_ex',
+		);
+
+		$instance->template_redirect();
+
+		// No assertions beyond the never() expectation above — PHPUnit reports it.
+		$this->assertTrue( true, 'Reached end of test without calling activate().' );
 	}
 }

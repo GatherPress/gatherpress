@@ -68,6 +68,38 @@ class Test_Redirect extends Base {
 	}
 
 	/**
+	 * Activate with a callback that returns an empty URL must not redirect or
+	 * register the allowed_redirect_hosts filter — the falsy guard at the top
+	 * of `activate()` short-circuits the whole block.
+	 *
+	 * @covers ::activate
+	 *
+	 * @return void
+	 */
+	public function test_activate_with_empty_url_does_nothing(): void {
+		$slug     = 'endpoint-redirect';
+		$callback = static function () {
+			return '';
+		};
+		$instance = new Redirect( $slug, $callback );
+
+		remove_all_filters( 'allowed_redirect_hosts' );
+
+		// Should return without calling wp_safe_redirect or hooking filters.
+		$instance->activate();
+
+		$this->assertFalse(
+			has_filter( 'allowed_redirect_hosts', array( $instance, 'allowed_redirect_hosts' ) ),
+			'Falsy callback should leave the allowed_redirect_hosts filter unhooked.'
+		);
+		$this->assertSame(
+			'',
+			Utility::get_hidden_property( $instance, 'url' ),
+			'Falsy callback should leave the resolved url empty.'
+		);
+	}
+
+	/**
 	 * Coverage for allowed_redirect_hosts method.
 	 *
 	 * @covers ::allowed_redirect_hosts

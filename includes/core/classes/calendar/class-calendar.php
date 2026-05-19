@@ -297,7 +297,15 @@ class Calendar {
 			);
 
 			if ( $path_conflict ) {
+				// Defensive fallback when a real public post collides with the
+				// computed endpoint path. Reachable only when a site builder
+				// has a page at `event/{slug}/ical` (or similar) — hard to
+				// drive through `get_page_by_path()`'s normalization rules in
+				// a unit test without leaking the conflict into other tests.
+				// phpcs:ignore Squiz.Commenting.InlineComment.InvalidEndChar -- PHPUnit annotation.
+				// @codeCoverageIgnoreStart
 				$endpoint_url = add_query_arg( array( $query_var => $endpoint_slug ), $post_url );
+				// @codeCoverageIgnoreEnd
 			}
 		}
 

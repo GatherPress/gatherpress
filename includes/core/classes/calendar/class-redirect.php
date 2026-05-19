@@ -62,7 +62,11 @@ class Redirect extends Endpoint_Type {
 			add_filter( 'allowed_redirect_hosts', array( $this, 'allowed_redirect_hosts' ) );
 			// Perform a safe redirection to the target URL. Defaults to a 302 status code.
 			wp_safe_redirect( $this->url );
-			exit; // Always exit after redirecting.
+			// The PMC test harness intercepts wp_safe_redirect before this line runs.
+			// phpcs:ignore Squiz.Commenting.InlineComment.InvalidEndChar -- PHPUnit annotation.
+			// @codeCoverageIgnoreStart
+			exit;
+			// @codeCoverageIgnoreEnd
 		}
 	}
 

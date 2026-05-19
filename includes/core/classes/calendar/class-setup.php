@@ -338,10 +338,14 @@ class Setup {
 			// the `post_type_archive_title` filter directly from plugin code
 			// also trips WordPress.NamingConventions.PrefixAllGlobals because
 			// it's a core hook not owned by GatherPress.
-			$post_type_object  = get_post_type_object( $post_type );
+			$post_type_object = get_post_type_object( $post_type );
+			// The fallback to the bare slug only fires when `get_post_type_object()`
+			// returns null — structurally unreachable here because the outer loop
+			// iterates `get_post_types_by_support()`, which only yields registered
+			// post types. Defensive code that needs no test invocation.
 			$archive_title     = $post_type_object instanceof \WP_Post_Type
 				? $post_type_object->labels->name
-				: $post_type;
+				: $post_type; // @codeCoverageIgnore
 			$alternate_links[] = array(
 				'url'  => get_post_type_archive_feed_link(
 					$post_type,
@@ -649,7 +653,13 @@ class Setup {
 	 * @return void
 	 */
 	public function send_ics_file(): void {
-		// Start output buffering to capture all output.
+		// The whole method body is integration-tested against the live Lando
+		// install (see PR #955 testing notes); unit-coverage is impractical
+		// because the trailing `exit()` terminates the test runner. Marked
+		// untestable rather than restructured so the production flow stays
+		// straight (ob_start, headers, body, echo, exit).
+		// phpcs:ignore Squiz.Commenting.InlineComment.InvalidEndChar -- PHPUnit annotation.
+		// @codeCoverageIgnoreStart
 		ob_start();
 
 		// Prepare the filename.
@@ -677,7 +687,9 @@ class Setup {
 		// Output the iCalendar content.
 		echo $ics_content; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 
-		exit(); // Terminate the script after the file has been output.
+		// Terminate the script after the file has been output.
+		exit();
+		// @codeCoverageIgnoreEnd
 	}
 
 	/**

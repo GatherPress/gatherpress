@@ -1167,6 +1167,61 @@ class Test_Event extends Base {
 	}
 
 	/**
+	 * When the event has a venue with a non-empty address, both
+	 * get_google_calendar_link and get_yahoo_calendar_link must append the
+	 * address to the venue name in the location query param. Covers the
+	 * `! empty( $venue['address'] )` branches.
+	 *
+	 * @covers ::get_google_calendar_link
+	 * @covers ::get_yahoo_calendar_link
+	 *
+	 * @return void
+	 */
+	public function test_calendar_links_append_venue_address(): void {
+		$venue    = $this->mock->post(
+			array(
+				'post_type'  => Venue::POST_TYPE,
+				'post_title' => 'Brooklyn Office',
+				'post_name'  => 'brooklyn-office',
+			)
+		)->get();
+		$event_id = $this->mock->post(
+			array(
+				'post_type'  => Event::POST_TYPE,
+				'post_title' => 'Address Event',
+			)
+		)->get()->ID;
+
+		update_post_meta( $venue->ID, 'gatherpress_address', '123 Main Street, Brooklyn, NY 11201' );
+		wp_set_post_terms( $event_id, '_brooklyn-office', Venue::TAXONOMY );
+
+		$event = new Event( $event_id );
+		$event->save_datetimes(
+			array(
+				'datetime_start' => '2025-06-15 14:30:00',
+				'datetime_end'   => '2025-06-15 16:30:00',
+				'timezone'       => 'America/New_York',
+			)
+		);
+
+		$google_link = $event->get_google_calendar_link();
+		$yahoo_link  = $event->get_yahoo_calendar_link();
+
+		$encoded_location = rawurlencode( 'Brooklyn Office, 123 Main Street, Brooklyn, NY 11201' );
+
+		$this->assertStringContainsString(
+			'location=' . $encoded_location,
+			$google_link,
+			'Google calendar link should include venue name and full address.'
+		);
+		$this->assertStringContainsString(
+			'in_loc=' . $encoded_location,
+			$yahoo_link,
+			'Yahoo calendar link should include venue name and full address.'
+		);
+	}
+
+	/**
 	 * Coverage for get_ics_download_link method.
 	 *
 	 * @covers ::get_ics_download_link
