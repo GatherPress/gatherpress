@@ -391,7 +391,10 @@ class Setup {
 						// Strip out all 'non-default' shadow terms like 'Online-Event',
 						// which does not start with a "_".
 						if ( $shadow_source->is_shadow_term_slug( $term->slug ) ) {
-							$post = $shadow_source->get_post_from_term_slug( $term->slug, ltrim( $term->taxonomy, '_' ) );
+							$post = $shadow_source->get_post_from_term_slug(
+								$term->slug,
+								ltrim( $term->taxonomy, '_' )
+							);
 							// Feels weird to use a *_comments_* function here, but it delivers clean results
 							// in the form of "domain.tld/event/my-sample-event/feed/ical/".
 							$href = get_post_comments_feed_link( $post->ID, self::ICAL_SLUG );
