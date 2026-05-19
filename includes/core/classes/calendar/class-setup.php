@@ -91,7 +91,14 @@ class Setup {
 	 * @return void
 	 */
 	public function register_endpoints(): void {
-		foreach ( get_post_types_by_support( 'gatherpress-event-date' ) as $post_type ) {
+		$event_types = get_post_types_by_support( 'gatherpress-event-date' );
+		if ( empty( $event_types ) ) {
+			return;
+		}
+
+		$this->init_sitewide();
+
+		foreach ( $event_types as $post_type ) {
 			$this->init_events( $post_type );
 		}
 
@@ -193,6 +200,26 @@ class Setup {
 			),
 			self::QUERY_VAR,
 			$taxonomy
+		);
+	}
+
+	/**
+	 * Register a sitewide calendar feed endpoint.
+	 *
+	 * Sets up the main `/feed/ical` endpoint that surfaces all events across the
+	 * site, regardless of post type or taxonomy. This is the endpoint that gets
+	 * linked in the main `<link rel="alternate">` tag in `<head>`.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return void
+	 */
+	public function init_sitewide(): void {
+		new Sitewide_Feed(
+			array(
+				new Template( self::ICAL_SLUG, array( $this, 'get_ical_feed_template' ) ),
+			),
+			self::QUERY_VAR
 		);
 	}
 
@@ -555,7 +582,7 @@ class Setup {
 			$filename = $queried_object->slug;
 		} elseif ( is_post_type_archive() ) {
 			$filename = ( isset( $queried_object->rewrite['slug'] ) && ! empty( $queried_object->rewrite['slug'] ) ) ? $queried_object->rewrite['slug'] : $filename;
-		} elseif ( is_front_page() ) {
+		} elseif ( is_feed() && ! is_singular() && ! is_tax() && ! is_post_type_archive() ) {
 			$filename = str_replace(
 				'.',
 				'-',

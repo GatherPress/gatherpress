@@ -186,7 +186,7 @@ class Endpoint {
 	 *
 	 * @return string The compiled regex pattern.
 	 */
-	private function get_regex_pattern(): string {
+	protected function get_regex_pattern(): string {
 		$rewrite_base = $this->type_object->rewrite['slug'];
 		$slugs        = join( '|', $this->get_slugs() );
 		return sprintf(
@@ -271,10 +271,10 @@ class Endpoint {
 			return false;
 		}
 
-		if ( ! in_array( $object_type, array( 'post_type', 'taxonomy' ), true ) ) {
+		if ( ! in_array( $object_type, array( 'post_type', 'taxonomy', 'sitewide' ), true ) ) {
 			wp_trigger_error(
 				__CLASS__,
-				"called on '$type_name' doesn't work, because '$object_type' is no supported object type. Use either 'post_type' or 'taxonomy'.", // phpcs:ignore Generic.Files.LineLength.TooLong
+				"called on '$type_name' doesn't work, because '$object_type' is no supported object type. Use either 'post_type', 'taxonomy' or 'sitewide'.", // phpcs:ignore Generic.Files.LineLength.TooLong
 				E_USER_WARNING
 			);
 			return false;
@@ -375,7 +375,7 @@ class Endpoint {
 	 * @return string The slug of the endpoint or an empty string if not a feed template.
 	 */
 	public function has_feed(): string {
-		if ( str_contains( $this->reg_ex, '/feed/' ) ) {
+		if ( str_contains( $this->reg_ex, 'feed/' ) ) {
 			$feed_slug = current( $this->get_slugs( __NAMESPACE__ . '\Template' ) );
 			if ( ! empty( $feed_slug ) ) {
 				return $feed_slug;

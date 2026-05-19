@@ -28,7 +28,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
  *
  * @since 1.0.0
  */
-class Sitewide extends Endpoint {
+class Sitewide_Feed extends Endpoint {
 
 	/**
 	 * Class constructor.
@@ -63,6 +63,22 @@ class Sitewide extends Endpoint {
 	}
 
 	/**
+	 * Build the regular expression pattern for matching the custom endpoint URL structure,
+	 * based on the rewrite base for the site.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return string The compiled regex pattern.
+	 */
+	protected function get_regex_pattern(): string {
+		$slugs        = join( '|', $this->get_slugs() );
+		return sprintf(
+			$this->reg_ex,
+			$slugs
+		);
+	}
+
+	/**
 	 * Determines whether the current request is valid.
 	 *
 	 * @since 1.0.0
@@ -70,7 +86,7 @@ class Sitewide extends Endpoint {
 	 * @return bool True if this is a valid feed request.
 	 */
 	public function is_valid(): bool {
-		return is_feed();
+		return is_feed() && ! is_singular() && ! is_tax() && ! is_post_type_archive();
 	}
 
 	/**
@@ -82,7 +98,8 @@ class Sitewide extends Endpoint {
 	 */
 	public function get_rewrite_atts(): array {
 		return array(
-			'feed' => '$matches[1]',
+			'feed'           => '$matches[1]',
+			$this->query_var => '$matches[1]',
 		);
 	}
 }
