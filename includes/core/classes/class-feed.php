@@ -98,7 +98,7 @@ class Feed {
 			// Check if this is the events feed URL.
 			if ( str_contains( $request_uri, '/' . $rewrite_slug . '/' . $GLOBALS['wp_rewrite']->feed_base ) ) {
 				// Set the post type and let Event\Query handle the rest.
-				$query->set( 'post_type', get_post_types_by_support( 'gatherpress-event-date' ) );
+				$query->set( 'post_type', Event::POST_TYPE );
 
 				// Check for type parameter to determine if we want past or upcoming events.
 				$event_type = 'upcoming';
