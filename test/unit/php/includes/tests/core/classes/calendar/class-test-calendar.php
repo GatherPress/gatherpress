@@ -370,9 +370,9 @@ class Test_Calendar extends Base {
 	}
 
 	/**
-	 * `gatherpress_endpoint_url` filter runs against the resolved URL and the
-	 * post object — verifies both the filter contract and that integrator
-	 * overrides flow back through the final sanitize_url().
+	 * The gatherpress_calendar_url filter runs against the resolved URL and
+	 * the post object — verifies both the filter contract and that
+	 * integrator overrides flow back through the final sanitize_url().
 	 *
 	 * @covers ::get_endpoint_url
 	 *
@@ -390,9 +390,9 @@ class Test_Calendar extends Base {
 			return $override_url;
 		};
 
-		add_filter( 'gatherpress_endpoint_url', $filter, 10, 2 );
+		add_filter( 'gatherpress_calendar_url', $filter, 10, 2 );
 		$result = $instance->get_ical_url();
-		remove_filter( 'gatherpress_endpoint_url', $filter, 10 );
+		remove_filter( 'gatherpress_calendar_url', $filter, 10 );
 
 		$this->assertSame(
 			$override_url,

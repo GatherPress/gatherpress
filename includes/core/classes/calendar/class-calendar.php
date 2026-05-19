@@ -310,22 +310,23 @@ class Calendar {
 		}
 
 		/**
-		 * Filters the endpoint URL of a specific post.
+		 * Filters the calendar URL for a single event.
 		 *
-		 * Lets integrators rewrite the calendar endpoint URL for a single
-		 * event before it reaches the front end — useful for routing
-		 * calendar downloads through a CDN, swapping the host for a
-		 * federation-friendly canonical, or appending tracking params.
+		 * Lets integrators rewrite the calendar URL (iCal / Outlook download,
+		 * Google / Yahoo redirect) for an event before it reaches the front
+		 * end — useful for routing calendar downloads through a CDN, swapping
+		 * the host for a federation-friendly canonical, or appending tracking
+		 * params.
 		 *
 		 * @since 1.0.0
 		 *
-		 * @param string   $endpoint_url The full post endpoint URL.
-		 * @param \WP_Post $post         The corresponding post object.
-		 * @return string                The filtered endpoint URL.
+		 * @param string   $endpoint_url The full calendar URL.
+		 * @param \WP_Post $post         The corresponding event post.
+		 * @return string                The filtered calendar URL.
 		 */
 		$endpoint_url = sanitize_url(
 			apply_filters(
-				'gatherpress_endpoint_url',
+				'gatherpress_calendar_url',
 				$endpoint_url,
 				$post
 			)
