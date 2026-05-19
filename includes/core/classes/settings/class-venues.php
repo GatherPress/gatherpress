@@ -16,6 +16,8 @@ namespace GatherPress\Core\Settings;
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Traits\Singleton;
+use GatherPress\Core\Utility;
+use GatherPress\Core\Venue;
 use GatherPress\Core\Venue\Map;
 use GatherPress\Core\Venue\Setup;
 
@@ -52,7 +54,10 @@ class Venues extends Base {
 	 * @return string The localized name for the venues settings page.
 	 */
 	protected function get_name(): string {
-		return __( 'Venues', 'gatherpress' );
+		// Read the registered plural label so the settings sub-menu
+		// reflects whatever the site has filtered the post type's
+		// labels to (#1612).
+		return Utility::post_type_label( 'name', Venue::POST_TYPE );
 	}
 
 	/**
@@ -104,6 +109,37 @@ class Venues extends Base {
 									'google' => __( 'Google Maps', 'gatherpress' ),
 								),
 							),
+						),
+					),
+					'google_maps_api_key'            => array(
+						'labels'      => array(
+							'name' => __( 'Google Maps API Key', 'gatherpress' ),
+						),
+						'description' => wp_kses(
+							sprintf(
+								// phpcs:disable Generic.Files.LineLength.TooLong -- One translator string for the full API key guidance sentence.
+								/* translators: %s: link to "Get an API key" documentation. */
+								__( 'Optional. Referrer-restricted Google Maps key (Embed + Static APIs). Roadmap and satellite views only. %s', 'gatherpress' ),
+								// phpcs:enable Generic.Files.LineLength.TooLong
+								'<a href="https://developers.google.com/maps/documentation/embed/get-api-key"'
+								. ' target="_blank" rel="noopener noreferrer">'
+								. esc_html__( 'Get an API key', 'gatherpress' ) . '</a>'
+							),
+							array(
+								'a' => array(
+									'href'   => array(),
+									'target' => array(),
+									'rel'    => array(),
+								),
+							)
+						),
+						'field'       => array(
+							'label' => __( 'Google Maps API key:', 'gatherpress' ),
+							'type'  => 'text',
+							'size'  => 'regular',
+						),
+						'show_if'     => array(
+							'map_platform' => 'google',
 						),
 					),
 					'venue_map_default_render_mode'  => array(
@@ -262,13 +298,17 @@ class Venues extends Base {
 				'options'     => array(
 					'venues_url' => array(
 						'labels' => array(
-							'name' => __( 'Venues', 'gatherpress' ),
+							'name' => Utility::post_type_label( 'name', Venue::POST_TYPE ),
 						),
 						'field'  => array(
 							'type'    => 'text',
 							'rewrite' => true,
 							'options' => array(
-								'label'   => __( 'Permalink base of Venues.', 'gatherpress' ),
+								'label'   => sprintf(
+									/* translators: %s: Plural post type label, e.g. "Venues". */
+									__( 'Permalink base of %s.', 'gatherpress' ),
+									Utility::post_type_label( 'name', Venue::POST_TYPE )
+								),
 								'default' => Setup::get_instance()->get_localized_post_type_slug(),
 							),
 							'preview' => array(

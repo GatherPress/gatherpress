@@ -183,9 +183,22 @@ class Form {
 		// Check if event has passed - prevent RSVPs to past events.
 		$event = new Event( $post_id );
 		if ( $event->has_event_past() ) {
+			$singular = Utility::post_type_label( 'singular_name', (string) get_post_type( $post_id ) );
 			wp_die(
-				esc_html__( 'Registration for this event is now closed.', 'gatherpress' ),
-				esc_html__( 'Event Has Passed', 'gatherpress' ),
+				esc_html(
+					sprintf(
+						/* translators: %s: Singular post type label, e.g. "event". */
+						__( 'Registration for this %s is now closed.', 'gatherpress' ),
+						strtolower( $singular )
+					)
+				),
+				esc_html(
+					sprintf(
+						/* translators: %s: Singular post type label, e.g. "Event". */
+						__( '%s Has Passed', 'gatherpress' ),
+						$singular
+					)
+				),
 				400
 			);
 		}

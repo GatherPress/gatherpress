@@ -390,6 +390,142 @@ class Test_Token extends Base {
 	}
 
 	/**
+	 * After flipping a comment from pending to approved, approve_comment()
+	 * must invalidate the GatherPress per-event RSVP cache. Without this,
+	 * the rsvp / rsvp-response blocks still render the pre-approval list
+	 * on the very same request that redeems the token (see #1626).
+	 *
+	 * @covers ::approve_comment
+	 *
+	 * @return void
+	 */
+	public function test_approve_comment_invalidates_gatherpress_rsvp_cache(): void {
+		$post = $this->mock->post(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		)->get();
+
+		$comment_id = $this->factory->comment->create(
+			array(
+				'comment_post_ID'  => $post->ID,
+				'comment_type'     => Rsvp::COMMENT_TYPE,
+				'comment_approved' => '0',
+			)
+		);
+
+		// Seed the per-event cache so we can confirm it gets deleted.
+		$cache_key = sprintf( Rsvp::CACHE_KEY, $post->ID );
+		wp_cache_set( $cache_key, 'stale-payload', GATHERPRESS_CACHE_GROUP );
+		$this->assertSame(
+			'stale-payload',
+			wp_cache_get( $cache_key, GATHERPRESS_CACHE_GROUP )
+		);
+
+		$token = new Token( $comment_id );
+		$token->approve_comment();
+
+		$this->assertFalse(
+			wp_cache_get( $cache_key, GATHERPRESS_CACHE_GROUP ),
+			'Per-event RSVP cache must be deleted after a successful token redemption.'
+		);
+	}
+
+	/**
+	 * After flipping a comment from pending to approved, approve_comment()
+	 * must call `clean_post_cache()` so page-cache plugins listening on
+	 * that action purge the canonical event permalink — and so WP's own
+	 * post cache reflects the new RSVP for subsequent reads.
+	 *
+	 * @covers ::approve_comment
+	 *
+	 * @return void
+	 */
+	public function test_approve_comment_calls_clean_post_cache(): void {
+		$post = $this->mock->post(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		)->get();
+
+		$comment_id = $this->factory->comment->create(
+			array(
+				'comment_post_ID'  => $post->ID,
+				'comment_type'     => Rsvp::COMMENT_TYPE,
+				'comment_approved' => '0',
+			)
+		);
+
+		$purged_ids = array();
+		$spy        = static function ( $purged_post_id ) use ( &$purged_ids ): void {
+			$purged_ids[] = (int) $purged_post_id;
+		};
+		add_action( 'clean_post_cache', $spy );
+
+		$token = new Token( $comment_id );
+		$token->approve_comment();
+
+		remove_action( 'clean_post_cache', $spy );
+
+		$this->assertContains(
+			(int) $post->ID,
+			$purged_ids,
+			'clean_post_cache must fire for the event post when a token approves an RSVP.'
+		);
+	}
+
+	/**
+	 * The already-approved fast path must NOT re-invalidate caches. Token
+	 * URLs are sticky; the user revisits the same URL on every reload, so
+	 * a hot path that re-purges caches on every visit would defeat the
+	 * purpose of caching entirely.
+	 *
+	 * @covers ::approve_comment
+	 *
+	 * @return void
+	 */
+	public function test_approve_comment_skips_cache_invalidation_when_already_approved(): void {
+		$post = $this->mock->post(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		)->get();
+
+		$comment_id = $this->factory->comment->create(
+			array(
+				'comment_post_ID'  => $post->ID,
+				'comment_type'     => Rsvp::COMMENT_TYPE,
+				'comment_approved' => '1',
+			)
+		);
+
+		$cache_key = sprintf( Rsvp::CACHE_KEY, $post->ID );
+		wp_cache_set( $cache_key, 'still-fresh', GATHERPRESS_CACHE_GROUP );
+
+		$purged_ids = array();
+		$spy        = static function ( $purged_post_id ) use ( &$purged_ids ): void {
+			$purged_ids[] = (int) $purged_post_id;
+		};
+		add_action( 'clean_post_cache', $spy );
+
+		$token = new Token( $comment_id );
+		$token->approve_comment();
+
+		remove_action( 'clean_post_cache', $spy );
+
+		$this->assertSame(
+			'still-fresh',
+			wp_cache_get( $cache_key, GATHERPRESS_CACHE_GROUP ),
+			'Per-event RSVP cache must NOT be invalidated when the comment was already approved.'
+		);
+		$this->assertNotContains(
+			(int) $post->ID,
+			$purged_ids,
+			'clean_post_cache must NOT fire when the comment was already approved.'
+		);
+	}
+
+	/**
 	 * Coverage for get_comment method.
 	 *
 	 * @covers ::get_comment

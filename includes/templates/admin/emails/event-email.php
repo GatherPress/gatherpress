@@ -15,6 +15,8 @@
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Event;
+use GatherPress\Core\Utility;
+use GatherPress\Core\Venue;
 
 if ( ! isset( $event_id, $message ) ) {
 	return;
@@ -45,7 +47,13 @@ $gatherpress_venue       = $gatherpress_event->get_venue_information()['name'];
 				'full',
 				false,
 				array(
-					'alt'   => esc_attr__( 'Event Image', 'gatherpress' ),
+					'alt'   => esc_attr(
+						sprintf(
+							/* translators: %s: Singular post type label, e.g. "Event". */
+							__( '%s Image', 'gatherpress' ),
+							Utility::post_type_label( 'singular_name', (string) get_post_type( $event_id ) )
+						)
+					),
 					'style' => 'max-width: 100%;',
 				)
 			);
@@ -67,8 +75,12 @@ $gatherpress_venue       = $gatherpress_event->get_venue_information()['name'];
 		<?php if ( ! empty( $gatherpress_venue ) ) : ?>
 			<p style="text-align: center;">
 				<?php
-				/* translators: %s: gatherpress_event gatherpress_venue name. */
-				printf( esc_html__( 'Venue: %s', 'gatherpress' ), wp_kses_post( $gatherpress_venue ) );
+				printf(
+					/* translators: 1: Singular post type label (e.g. "Venue"), 2: Venue name. */
+					esc_html__( '%1$s: %2$s', 'gatherpress' ),
+					esc_html( Utility::post_type_label( 'singular_name', Venue::POST_TYPE ) ),
+					wp_kses_post( $gatherpress_venue )
+				);
 				?>
 			</p>
 		<?php endif; ?>

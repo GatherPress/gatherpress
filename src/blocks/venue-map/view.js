@@ -16,7 +16,7 @@ import MapEmbed from '../../components/MapEmbed';
  * Static-mode wrappers are left alone — their pre-rendered `<img>` is the
  * final output. For interactive wrappers we read the JSON payload that
  * render.php emitted on the outer `<div>`, replace the wrapper's static
- * children with a React root, and mount `MapEmbed` (which drives Leaflet).
+ * children with a React root, and mount `MapEmbed` (Google Maps or Leaflet).
  *
  * @since 1.0.0
  *
@@ -46,6 +46,7 @@ domReady( () => {
 				height={ attrs.mapHeight }
 				mapPlatform={ attrs.mapPlatform }
 				pluginUrl={ attrs.pluginUrl }
+				googleMapsApiKey={ attrs.googleMapsApiKey }
 			/>
 		);
 	}

@@ -14,6 +14,7 @@ namespace GatherPress\Core;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
+use GatherPress\Core\Event\Event;
 use GatherPress\Core\Traits\Singleton;
 
 /**
@@ -179,12 +180,19 @@ class Settings {
 
 		// Infrastructure config values (not user-configurable).
 		$settings['gatherpress']['config'] = array(
-			'timezoneChoices'    => Utility::timezone_choices(),
-			'siteTimezone'       => Utility::get_system_timezone(),
-			'pluginUrl'          => GATHERPRESS_CORE_URL,
-			'homeUrl'            => get_home_url(),
-			'mapTileUrl'         => self::get_map_tile_url(),
-			'mapTileAttribution' => self::get_map_tile_attribution(),
+			'timezoneChoices'       => Utility::timezone_choices(),
+			'siteTimezone'          => Utility::get_system_timezone(),
+			'pluginUrl'             => GATHERPRESS_CORE_URL,
+			'homeUrl'               => get_home_url(),
+			'mapTileUrl'            => self::get_map_tile_url(),
+			'mapTileAttribution'    => self::get_map_tile_attribution(),
+			'venuesMapsSettingsUrl' => admin_url(
+				sprintf(
+					'edit.php?post_type=%s&page=%s',
+					Event::POST_TYPE,
+					sprintf( 'gatherpress_event_page_%s', Utility::prefix_key( 'venues' ) )
+				)
+			),
 		);
 
 		return $settings;
@@ -439,15 +447,108 @@ class Settings {
 					$this->render_field( (string) $option, $option_settings );
 				};
 
+				// Initial row visibility class is computed server-side from
+				// the currently saved option values so the row paints
+				// hidden (no flash of unhidden content) before settings.js
+				// has had a chance to wire up the change listeners.
+				$row_class = $this->build_row_class( $option_settings );
+
 				add_settings_field(
 					(string) $option,
 					$option_settings['labels']['name'],
 					$option_settings['callback'],
 					Utility::prefix_key( $sub_page ),
-					(string) $section
+					(string) $section,
+					array( 'class' => $row_class )
 				);
 			}
 		}
+	}
+
+	/**
+	 * Build the row class string for an option's `<tr>` wrapper.
+	 *
+	 * Every settings row gets the base `gatherpress-settings-row` hook so
+	 * the show_if JS has a stable selector to attach to. Rows whose
+	 * `show_if` condition does not currently match the saved values are
+	 * additionally tagged with the shared `gatherpress--is-hidden` utility
+	 * class so they paint hidden on first render — JS toggles the utility
+	 * class off if the user later changes the controlling field to a
+	 * matching value.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param array $option_settings The option settings array.
+	 * @return string Space-separated class names for the row.
+	 */
+	protected function build_row_class( array $option_settings ): string {
+		$classes = array( 'gatherpress-settings-row' );
+
+		if ( ! empty( $option_settings['show_if'] )
+			&& ! $this->evaluate_show_if( (array) $option_settings['show_if'] )
+		) {
+			$classes[] = 'gatherpress--is-hidden';
+		}
+
+		return implode( ' ', $classes );
+	}
+
+	/**
+	 * Evaluate a `show_if` condition against the current saved option values.
+	 *
+	 * Conditions are an associative array of `controlling_field => expected`.
+	 * Multiple keys are combined with AND. A value can be a scalar (equality
+	 * after string casting) or an array (membership, OR within the same key).
+	 * Comparisons cast both sides to string so checkbox booleans, select
+	 * strings, and numeric values all compare cleanly.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param array $conditions Map of controlling option key => expected value(s).
+	 * @return bool True when every key matches the current saved value, false otherwise.
+	 */
+	protected function evaluate_show_if( array $conditions ): bool {
+		foreach ( $conditions as $key => $expected ) {
+			$current = $this->get( (string) $key );
+
+			if ( is_array( $expected ) ) {
+				$expected = array_map( 'strval', $expected );
+
+				if ( ! in_array( (string) $current, $expected, true ) ) {
+					return false;
+				}
+
+				continue;
+			}
+
+			if ( (string) $current !== (string) $expected ) {
+				return false;
+			}
+		}
+
+		return true;
+	}
+
+	/**
+	 * Render a hidden marker that carries a field's `show_if` condition.
+	 *
+	 * Emitted alongside the field by `render_field()` so the settings JS
+	 * can find the row, locate the controlling input(s) by name, and toggle
+	 * the row's `--hidden` modifier on `change`. The condition is JSON-
+	 * encoded onto a `data-` attribute rather than walked into separate
+	 * attributes so multi-key AND combinations and array-of-values OR
+	 * combinations both serialize without ambiguity.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param array $conditions Map of controlling option key => expected value(s).
+	 * @return void
+	 */
+	protected function render_show_if_marker( array $conditions ): void {
+		printf(
+			'<input type="hidden" class="gatherpress-show-if-marker" data-show-if="%s" />',
+			esc_attr( (string) wp_json_encode( $conditions ) )
+		);
 	}
 
 	/**
@@ -546,10 +647,11 @@ class Settings {
 					case 'autocomplete':
 						$sanitized[ $key ] = $this->sanitize_autocomplete( $value );
 						break;
+					case 'password':
 					case 'text':
 					case 'select':
 					default:
-						$sanitized[ $key ] = sanitize_text_field( $value );
+						$sanitized[ $key ] = sanitize_text_field( (string) $value );
 						break;
 				}
 			}
@@ -651,6 +753,10 @@ class Settings {
 				$params['size']    = $option_settings['field']['size'] ?? 'regular';
 				$params['preview'] = $option_settings['field']['preview'] ?? array();
 				break;
+			case 'password':
+				$params['size']    = $option_settings['field']['size'] ?? 'regular';
+				$params['preview'] = $option_settings['field']['preview'] ?? array();
+				break;
 			case 'number':
 				$params['size']        = $option_settings['field']['size'] ?? 'regular';
 				$params['min']         = $option_settings['field']['options']['min'] ?? '';
@@ -674,10 +780,18 @@ class Settings {
 		}
 
 		Utility::render_template(
-			sprintf( '%s/includes/templates/admin/settings/fields/%s.php', GATHERPRESS_CORE_PATH, $type ),
+			sprintf(
+				'%s/includes/templates/admin/settings/fields/%s.php',
+				GATHERPRESS_CORE_PATH,
+				$type
+			),
 			$params,
 			true
 		);
+
+		if ( ! empty( $option_settings['show_if'] ) ) {
+			$this->render_show_if_marker( (array) $option_settings['show_if'] );
+		}
 
 		if ( $inherited ) {
 			if ( current_user_can( 'manage_network_options' ) ) {

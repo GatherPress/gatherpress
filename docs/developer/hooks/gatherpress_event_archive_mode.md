@@ -3,35 +3,38 @@
 
 Filters the resolved event archive mode.
 
-Lets plugins override the user-configured mode at runtime —
-e.g., force `none` while a maintenance flag is set, or pin
-`upcoming` for a specific request context. Returned values
-outside the valid set are coerced back to `upcoming`.
-
-
-`past`, or `none`).
+Lets plugins pin a post type's archive to `upcoming`, `past`,
+or `none` programmatically — including overriding the Event
+Archive setting for `gatherpress_event`. Returned values
+outside the valid set are coerced to `upcoming`.
 
 ## Auto-generated Example
 
 ```php
 add_filter(
    'gatherpress_event_archive_mode',
-    function( string $mode ) {
+    function(
+        string $mode,
+        string $post_type
+    ) {
         // Your code here.
         return $mode;
-    }
+    },
+    10,
+    2
 );
 ```
 
 ## Parameters
 
-- *`string`* `$mode` The current archive mode (`upcoming`,
+- *`string`* `$mode` Current archive mode (`upcoming`, `past`, or `none`).
+- *`string`* `$post_type` Post type being archived.
 
 ## Files
 
-- [includes/core/classes/event/class-setup.php:576](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/event/class-setup.php#L576)
+- [includes/core/classes/event/class-setup.php:603](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/event/class-setup.php#L603)
 ```php
-apply_filters( 'gatherpress_event_archive_mode', $mode )
+apply_filters( 'gatherpress_event_archive_mode', $mode, $post_type )
 ```
 
 

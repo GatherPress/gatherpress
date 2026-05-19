@@ -11,7 +11,9 @@ jest.mock( '@wordpress/hooks', () => ( {
 
 jest.mock( '@wordpress/element', () => {
 	const actual = jest.requireActual( '@wordpress/element' );
-	return { ...actual, useEffect: jest.fn() };
+	// Invoke the effect synchronously so QueryPosttypeObserver's auto-
+	// transform fires during render in the HOC tests below.
+	return { ...actual, useEffect: jest.fn( ( fn ) => fn() ) };
 } );
 
 jest.mock( '@wordpress/plugins', () => ( {
@@ -67,12 +69,19 @@ jest.mock( '@src/helpers/event', () => ( {
 /**
  * WordPress dependencies
  */
+import { addFilter } from '@wordpress/hooks';
 import { usePostTypeSupports } from '@src/helpers/event';
 
 /**
  * Internal dependencies
  */
 import { EventQueryControlsPanel } from '@src/variations/core/query/controls';
+
+// Importing the module above runs its side effects, including the
+// `addFilter` registration of the `withEventQueryControls` HOC. Capture the
+// HOC reference here so the QueryPosttypeObserver tests below can render
+// with it.
+const withEventQueryControls = addFilter.mock.calls[ 0 ][ 2 ];
 
 describe( 'EventQueryControlsPanel', () => {
 	const baseProps = ( { postType = 'gatherpress_event', inherit = false } = {} ) => ( {
@@ -160,5 +169,66 @@ describe( 'EventQueryControlsPanel', () => {
 			'gatherpress-event-date',
 			undefined
 		);
+	} );
+} );
+
+describe( 'QueryPosttypeObserver auto-transform', () => {
+	const renderQuery = ( query = {}, namespace = undefined ) => {
+		const setAttributes = jest.fn();
+		const MockBlockEdit = () => <div data-testid="block-edit" />;
+		const Enhanced = withEventQueryControls( MockBlockEdit );
+		render(
+			<Enhanced
+				name="core/query"
+				attributes={ { namespace, query } }
+				setAttributes={ setAttributes }
+			/>
+		);
+		return setAttributes;
+	};
+
+	beforeEach( () => {
+		usePostTypeSupports.mockReset();
+	} );
+
+	it( 'transforms a plain core/query block into the event variation when the post type supports event-date', () => {
+		// Reproduces #1608: any custom post type that declares
+		// gatherpress-event-date support (e.g. `production`) should
+		// trigger the auto-transform on first selection, not just the
+		// hardcoded `gatherpress_event` post type.
+		usePostTypeSupports.mockReturnValue( true );
+
+		const setAttributes = renderQuery( { postType: 'production' } );
+
+		expect( setAttributes ).toHaveBeenCalledTimes( 1 );
+		const next = setAttributes.mock.calls[ 0 ][ 0 ];
+		expect( next.namespace ).toBe( 'gatherpress-event-query' );
+		expect( next.query ).toMatchObject( {
+			postType: 'production',
+			gatherpress_event_query: 'upcoming',
+			include_unfinished: 1,
+			order: 'asc',
+			orderBy: 'datetime',
+			inherit: false,
+		} );
+	} );
+
+	it( 'does not transform when the post type does not support event-date', () => {
+		usePostTypeSupports.mockReturnValue( false );
+
+		const setAttributes = renderQuery( { postType: 'post' } );
+
+		expect( setAttributes ).not.toHaveBeenCalled();
+	} );
+
+	it( 'does not transform when the block already has a namespace (e.g. AQL)', () => {
+		usePostTypeSupports.mockReturnValue( true );
+
+		const setAttributes = renderQuery(
+			{ postType: 'production' },
+			'advanced-query-loop'
+		);
+
+		expect( setAttributes ).not.toHaveBeenCalled();
 	} );
 } );

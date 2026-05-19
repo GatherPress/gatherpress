@@ -753,10 +753,15 @@ class Test_Admin_List extends Base {
 	}
 
 	/**
-	 * Coverage for get_event_counts method with events that have no date set.
+	 * Events without a date set don't appear in the upcoming/past view counts.
 	 *
-	 * Events without a date/time set have no row in the gatherpress_events table.
-	 * These should be counted as upcoming, not past.
+	 * Events with no row in the `gatherpress_events` table show up only
+	 * under the All view — they're neither upcoming nor past, since
+	 * there's no datetime to compare against. The counts mirror the
+	 * filter in `Query::adjust_admin_event_sorting()`, which uses an
+	 * INNER JOIN that drops these rows. Was previously counted as
+	 * upcoming via `OR post_id IS NULL`, removed when the admin
+	 * defaulted to the All view (see #1610).
 	 *
 	 * @covers ::get_event_counts
 	 *
@@ -778,7 +783,7 @@ class Test_Admin_List extends Base {
 
 		$counts = Utility::invoke_hidden_method( $instance, 'get_event_counts' );
 
-		$this->assertSame( 1, $counts['upcoming'], 'Event without date should count as upcoming.' );
+		$this->assertSame( 0, $counts['upcoming'], 'Event without date should not count as upcoming.' );
 		$this->assertSame( 0, $counts['past'], 'Event without date should not count as past.' );
 	}
 

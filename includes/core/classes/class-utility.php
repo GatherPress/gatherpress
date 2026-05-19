@@ -92,6 +92,33 @@ class Utility {
 	}
 
 	/**
+	 * Resolve a single label from a post type's registered labels.
+	 *
+	 * Wraps `get_post_type_object()` so call sites don't have to defend
+	 * against unregistered post types or missing label keys. Lets UI
+	 * strings reflect whatever a site builder filtered the labels to,
+	 * and lets extenders' event-supporting post types surface their own
+	 * labels instead of GatherPress's defaults (#1612).
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $key       Label key to read (e.g. `singular_name`,
+	 *                          `name`, `add_new_item`).
+	 * @param string $post_type Post type slug to read the label from.
+	 * @return string The resolved label, or empty string when the post
+	 *                type isn't registered or the key isn't set.
+	 */
+	public static function post_type_label( string $key, string $post_type ): string {
+		$object = get_post_type_object( $post_type );
+
+		if ( ! $object || empty( $object->labels->$key ) ) {
+			return '';
+		}
+
+		return (string) $object->labels->$key;
+	}
+
+	/**
 	 * Convert a snake_case string to camelCase.
 	 *
 	 * Expects standard snake_case input (lowercase words separated by single underscores).
