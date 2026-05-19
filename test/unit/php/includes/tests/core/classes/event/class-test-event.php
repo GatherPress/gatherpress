@@ -581,18 +581,20 @@ class Test_Event extends Base {
 
 		$output = $event->get_calendar_links();
 
-		$expected_google_link = 'https://www.google.com/calendar/event?action=TEMPLATE'
+		$expected_google_link      = 'https://www.google.com/calendar/event?action=TEMPLATE'
 			. '&text=Unit%20Test%20Event&dates=20200511T150000Z%2F20200511T170000Z'
 			. '&details=' . rawurlencode( $description )
 			. '&location=Unit%20Test%20Venue%2C%20123%20Main%20Street%2C%20Montclair%2C%20NJ%2007042'
 			. '&sprop=name%3A';
-		$expected_yahoo_link  = 'https://calendar.yahoo.com/?v=60&view=d&type=20'
+		$expected_yahoo_link       = 'https://calendar.yahoo.com/?v=60&view=d&type=20'
 			. '&title=Unit%20Test%20Event&st=20200511T150000Z&dur=0200'
 			. '&desc=' . rawurlencode( $description )
 			. '&in_loc=Unit%20Test%20Venue%2C%20123%20Main%20Street%2C%20Montclair%2C%20NJ%2007042';
-		$slug                     = get_post_field( 'post_name', $post->ID );
-		$expected_ical_download   = home_url( sprintf( '/?gatherpress_event=%s&gatherpress_calendar=ical', $slug ) );
-		$expected_outlook_download = home_url( sprintf( '/?gatherpress_event=%s&gatherpress_calendar=outlook', $slug ) );
+		$slug                      = get_post_field( 'post_name', $post->ID );
+		$ical_query                = sprintf( '/?gatherpress_event=%s&gatherpress_calendar=ical', $slug );
+		$outlook_query             = sprintf( '/?gatherpress_event=%s&gatherpress_calendar=outlook', $slug );
+		$expected_ical_download    = home_url( $ical_query );
+		$expected_outlook_download = home_url( $outlook_query );
 		$expects                   = array(
 			'google'  => array(
 				'name' => 'Google Calendar',

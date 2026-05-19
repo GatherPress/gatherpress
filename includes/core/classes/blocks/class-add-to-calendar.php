@@ -103,10 +103,12 @@ class Add_To_Calendar {
 		// `Content-Disposition: attachment`), while Google and Yahoo are
 		// off-site redirects keyed under `link`. Fall back across both so
 		// older themes that haven't migrated still get a valid href.
-		$replacements   = array(
+		$ical_href    = $calendar_links['ical']['download'] ?? $calendar_links['ical']['link'] ?? '';
+		$outlook_href = $calendar_links['outlook']['download'] ?? $calendar_links['outlook']['link'] ?? '';
+		$replacements = array(
 			'#gatherpress-google-calendar'  => $calendar_links['google']['link'] ?? '',
-			'#gatherpress-ical-calendar'    => $calendar_links['ical']['download'] ?? $calendar_links['ical']['link'] ?? '',
-			'#gatherpress-outlook-calendar' => $calendar_links['outlook']['download'] ?? $calendar_links['outlook']['link'] ?? '',
+			'#gatherpress-ical-calendar'    => $ical_href,
+			'#gatherpress-outlook-calendar' => $outlook_href,
 			'#gatherpress-yahoo-calendar'   => $calendar_links['yahoo']['link'] ?? '',
 		);
 

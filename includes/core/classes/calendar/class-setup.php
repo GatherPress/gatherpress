@@ -331,7 +331,17 @@ class Setup {
 		);
 
 		foreach ( get_post_types_by_support( 'gatherpress-event-date' ) as $post_type ) {
-			$post_type_object = get_post_type_object( $post_type );
+			// Read the archive title straight off the post type object instead
+			// of via `post_type_archive_title()` — that function early-returns
+			// outside an `is_post_type_archive()` context, which is exactly the
+			// case here when this hook fires on a non-archive page. Invoking
+			// the `post_type_archive_title` filter directly from plugin code
+			// also trips WordPress.NamingConventions.PrefixAllGlobals because
+			// it's a core hook not owned by GatherPress.
+			$post_type_object  = get_post_type_object( $post_type );
+			$archive_title     = $post_type_object instanceof \WP_Post_Type
+				? $post_type_object->labels->name
+				: $post_type;
 			$alternate_links[] = array(
 				'url'  => get_post_type_archive_feed_link(
 					$post_type,
@@ -341,7 +351,7 @@ class Setup {
 					$args['posttypetitle'],
 					$args['blogtitle'],
 					$args['separator'],
-					apply_filters( 'post_type_archive_title', $post_type_object->labels->name, $post_type )
+					$archive_title
 				),
 			);
 		}
@@ -581,12 +591,15 @@ class Setup {
 		} elseif ( is_tax() && $this->has_post_type_for_taxonomy( $queried_object->taxonomy ) ) {
 			$filename = $queried_object->slug;
 		} elseif ( is_post_type_archive() ) {
-			$filename = ( isset( $queried_object->rewrite['slug'] ) && ! empty( $queried_object->rewrite['slug'] ) ) ? $queried_object->rewrite['slug'] : $filename;
-		} elseif ( is_feed() && ! is_singular() && ! is_tax() && ! is_post_type_archive() ) {
+			// `$queried_object` is the WP_Post_Type here. `rewrite` is `false`
+			// when the post type opted out of rewrite rules — fall back to the
+			// default filename in that case rather than `false['slug']`-ing.
+			$filename = is_array( $queried_object->rewrite ) ? $queried_object->rewrite['slug'] : $filename;
+		} elseif ( is_feed() && ! is_singular() && ! is_tax() ) {
 			$filename = str_replace(
 				'.',
 				'-',
-				parse_url( home_url(), PHP_URL_HOST )
+				wp_parse_url( home_url(), PHP_URL_HOST )
 			);
 		}
 

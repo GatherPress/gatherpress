@@ -71,7 +71,7 @@ class Sitewide_Feed extends Endpoint {
 	 * @return string The compiled regex pattern.
 	 */
 	protected function get_regex_pattern(): string {
-		$slugs        = join( '|', $this->get_slugs() );
+		$slugs = join( '|', $this->get_slugs() );
 		return sprintf(
 			$this->reg_ex,
 			$slugs
