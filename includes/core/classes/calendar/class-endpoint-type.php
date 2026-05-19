@@ -15,7 +15,6 @@ namespace GatherPress\Core\Calendar;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
-
 /**
  * Abstract class for defining custom endpoint behavior.
  *
@@ -87,7 +86,6 @@ abstract class Endpoint_Type {
 	 * @return void
 	 */
 	abstract public function activate( ?Endpoint $endpoint = null ): void;
-
 
 	/**
 	 * Checks if the given endpoint type is an instance of the specified class.

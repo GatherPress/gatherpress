@@ -16,7 +16,6 @@ namespace GatherPress\Core\Calendar;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
-
 /**
  * Handles safe URL redirection for custom endpoints in GatherPress.
  *

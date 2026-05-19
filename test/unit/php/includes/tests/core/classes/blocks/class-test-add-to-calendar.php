@@ -102,9 +102,14 @@ class Test_Add_To_Calendar extends Base {
 		);
 
 		$this->assertStringContainsString(
-			'unit-test-event.ics',
+			'gatherpress_calendar=ical',
 			$result,
-			"Generated calendar link content is missing expected iCal file name 'unit-test-event.ics'"
+			'Generated calendar link content is missing the iCal endpoint query var.'
+		);
+		$this->assertStringContainsString(
+			'gatherpress_event=unit-test-event',
+			$result,
+			'Generated calendar link content is missing the event slug query var.'
 		);
 
 		$this->assertStringContainsString(

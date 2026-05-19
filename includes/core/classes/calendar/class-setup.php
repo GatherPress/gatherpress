@@ -66,14 +66,42 @@ class Setup {
 	 * @return void
 	 */
 	protected function setup_hooks(): void {
-		add_action( 'registered_post_type', array( $this, 'init_events' ) );
-		add_action( 'registered_post_type', array( $this, 'init_venues' ) );
-		// @todo Maybe hook this two actions dynamically based on a registered post type?!
-		add_action( 'registered_taxonomy_for_object_type', array( $this, 'init_taxonomies' ) );
-		// @todo Can maybe removed, after #1639 is implemented
-		// and registered taxonomies do also trigger the 'registered_taxonomy_for_object_type' action.
-		add_action( 'registered_taxonomy', array( $this, 'init_taxonomies' ) );
+		// Register endpoints late on `init` so every post type, taxonomy, and
+		// shadow-taxonomy wiring is in place before we ask `is_object_in_taxonomy()`
+		// which one belongs to which. The previous design used the per-registration
+		// `registered_post_type` / `registered_taxonomy_for_object_type` actions,
+		// but those fire at the moment each individual object is registered —
+		// before companion subsystems (Venue\Setup, Shadow_Source) have attached
+		// their taxonomies to events, so the venue endpoint silently failed its
+		// own validity check and never registered its rewrite rule.
+		add_action( 'init', array( $this, 'register_endpoints' ), 99 );
 		add_action( 'wp_head', array( $this, 'alternate_links' ) );
+	}
+
+	/**
+	 * Register every calendar endpoint after all post types and taxonomies are set up.
+	 *
+	 * Iterates supported post types and event-bearing taxonomies and delegates
+	 * to the per-target `init_*()` helpers. Runs at `init` priority 99 so it
+	 * fires after WP core's built-in post types, GatherPress's own post types,
+	 * and any companion plugin that registers on `init` at default priority.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return void
+	 */
+	public function register_endpoints(): void {
+		foreach ( get_post_types_by_support( 'gatherpress-event-date' ) as $post_type ) {
+			$this->init_events( $post_type );
+		}
+
+		foreach ( get_post_types( array( 'public' => true ) ) as $post_type ) {
+			$this->init_venues( $post_type );
+		}
+
+		foreach ( get_taxonomies( array( 'public' => true ) ) as $taxonomy ) {
+			$this->init_taxonomies( $taxonomy );
+		}
 	}
 
 	/**
@@ -350,7 +378,10 @@ class Setup {
 					}
 				}
 			);
-		} elseif ( is_singular() && $this->is_tax_like_type_for_event_supporting_types( get_queried_object()->post_type ) ) { // phpcs:ignore Generic.Files.LineLength.TooLong
+		} elseif (
+			is_singular()
+			&& $this->is_tax_like_type_for_event_supporting_types( get_queried_object()->post_type )
+		) {
 			// Feels weird to use a *_comments_* function here, but it delivers clean results
 			// in the form of "domain.tld/venue/my-sample-venue/feed/ical/".
 			$alternate_links[] = array(
@@ -578,13 +609,15 @@ class Setup {
 		// Send headers for downloading the .ics file.
 		$this->send_ics_headers( $filename );
 
-		// Output the generated iCalendar content.
+		// Build the iCalendar content. The body is plain text per RFC 5545
+		// (not HTML), so HTML-sanitizers like `wp_kses_post()` are the wrong
+		// tool here — they would encode `&` into `&amp;` and produce broken
+		// .ics files. The TEXT-property values inside are already escaped at
+		// build time via `Calendar::escape_ical_text()` / sanitized via
+		// `sanitize_text_field()`.
 		$get_ical_method = ( is_feed() ) ? 'get_ical_feed' : 'get_ical_file';
-		echo wp_kses_post( $this->{$get_ical_method}() );
-
-		// Get the generated output and calculate file size.
-		$ics_content = ob_get_contents();
-		$filesize    = strlen( $ics_content );
+		$ics_content     = (string) $this->{$get_ical_method}();
+		$filesize        = strlen( $ics_content );
 
 		// Send the file size in the header.
 		header( 'Content-Length: ' . $filesize );
@@ -593,7 +626,7 @@ class Setup {
 		ob_end_clean();
 
 		// Output the iCalendar content.
-		echo wp_kses_post( $ics_content );
+		echo $ics_content; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 
 		exit(); // Terminate the script after the file has been output.
 	}

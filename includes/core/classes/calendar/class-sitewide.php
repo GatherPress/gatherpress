@@ -19,7 +19,6 @@ namespace GatherPress\Core\Calendar;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
-
 /**
  * Endpoint for Sitewide Requests in GatherPress.
  *

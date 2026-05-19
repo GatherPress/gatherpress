@@ -16,7 +16,6 @@ namespace GatherPress\Core\Calendar;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
-
 /**
  * Manages custom feed endpoints for post types in GatherPress.
  *
@@ -91,6 +90,7 @@ class Post_Type_Feed extends Endpoint {
 		return array(
 			$this->object_type => $this->type_object->name,
 			'feed'             => '$matches[1]',
+			$this->query_var   => '$matches[1]',
 		);
 	}
 }

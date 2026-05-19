@@ -590,19 +590,21 @@ class Test_Event extends Base {
 			. '&title=Unit%20Test%20Event&st=20200511T150000Z&dur=0200'
 			. '&desc=' . rawurlencode( $description )
 			. '&in_loc=Unit%20Test%20Venue%2C%20123%20Main%20Street%2C%20Montclair%2C%20NJ%2007042';
-		$expected_ics_link    = home_url( '/event/' . get_post_field( 'post_name', $post->ID ) . '.ics' );
-		$expects              = array(
+		$slug                     = get_post_field( 'post_name', $post->ID );
+		$expected_ical_download   = home_url( sprintf( '/?gatherpress_event=%s&gatherpress_calendar=ical', $slug ) );
+		$expected_outlook_download = home_url( sprintf( '/?gatherpress_event=%s&gatherpress_calendar=outlook', $slug ) );
+		$expects                   = array(
 			'google'  => array(
 				'name' => 'Google Calendar',
 				'link' => $expected_google_link,
 			),
 			'ical'    => array(
-				'name' => 'iCal',
-				'link' => $expected_ics_link,
+				'name'     => 'iCal',
+				'download' => $expected_ical_download,
 			),
 			'outlook' => array(
-				'name' => 'Outlook',
-				'link' => $expected_ics_link,
+				'name'     => 'Outlook',
+				'download' => $expected_outlook_download,
 			),
 			'yahoo'   => array(
 				'name' => 'Yahoo Calendar',

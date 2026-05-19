@@ -175,51 +175,42 @@ class Test_Endpoint extends Base {
 			$reg_ex,
 		);
 
-		delete_option( 'rewrite_rules' );
-		delete_option( 'gatherpress_flush_rewrite_rules_flag' );
-
-		$this->assertEmpty(
-			get_option( 'rewrite_rules' ),
-			'Failed to assert that rewrite_rules are unset.'
-		);
-		$this->assertFalse(
-			get_option( 'gatherpress_flush_rewrite_rules_flag' ),
-			'Failed to assert that GatherPress\' flag to flush the rewrite_rules is unset.'
-		);
-
-		// Build the regular expression pattern for matching the custom endpoint URL structure.
+		// Build the regular expression pattern and target URL for this endpoint.
 		$reg_ex_pattern = Utility::invoke_hidden_method( $instance, 'get_regex_pattern' );
+		$rewrite_url    = add_query_arg( $instance->get_rewrite_atts(), 'index.php' );
 
-		// Define the URL structure for handling matched requests via query vars.
-		// Example result: 'index.php?gatherpress_event=$matches[1]&gatherpress_ext_calendar=$matches[2]'.
-		$rewrite_url = add_query_arg( $instance->get_rewrite_atts(), 'index.php' );
-
+		// First scenario: the rewrite_rules option holds a stale rule for this
+		// pattern (or no rule at all). maybe_flush_rewrite_rules() should
+		// delete the option so WP rebuilds the rules on the next request — the
+		// project moved off the custom `gatherpress_flush_rewrite_rules_flag`
+		// in favor of this lighter pattern (see Setup::schedule_rewrite_flush).
+		update_option( 'rewrite_rules', array( $reg_ex_pattern => 'stale-target' ) );
 		Utility::invoke_hidden_method( $instance, 'maybe_flush_rewrite_rules', array( $reg_ex_pattern, $rewrite_url ) );
-		$this->assertTrue(
-			get_option( 'gatherpress_flush_rewrite_rules_flag' ),
-			'Failed to assert that GatherPress\' flag to flush the rewrite_rules is set now.'
+		$this->assertFalse(
+			get_option( 'rewrite_rules' ),
+			'rewrite_rules option should be deleted when the stored rule diverges from the desired target.'
 		);
 
-		// Normally done automatically via ...
+		// Repopulate as if WP had flushed and re-saved.
 		flush_rewrite_rules( false );
-		delete_option( 'gatherpress_flush_rewrite_rules_flag' );
-
 		$this->assertContains(
 			$reg_ex_pattern,
 			array_keys( get_option( 'rewrite_rules' ) ),
-			'Failed to assert that the GatherPress rewrite_rules are now part of the rewrite_rules option.'
+			'GatherPress rewrite rule should be present after flush.'
 		);
 		$this->assertSame(
 			$rewrite_url,
 			get_option( 'rewrite_rules' )[ $reg_ex_pattern ],
-			'Failed to assert that the GatherPress rewrite_rules have been saved correctly.'
+			'Stored target should match the freshly generated rewrite_url.'
 		);
 
-		// Run again.
+		// Second scenario: the rewrite_rules option already matches the
+		// desired target. maybe_flush_rewrite_rules() should be a no-op.
 		Utility::invoke_hidden_method( $instance, 'maybe_flush_rewrite_rules', array( $reg_ex_pattern, $rewrite_url ) );
-		$this->assertFalse(
-			get_option( 'gatherpress_flush_rewrite_rules_flag' ),
-			'Failed to assert that the GatherPress\' flag to flush the rewrite_rules is not set again after the rewrite_rules were flushed.' // phpcs:ignore Generic.Files.LineLength.TooLong
+		$this->assertSame(
+			$rewrite_url,
+			get_option( 'rewrite_rules' )[ $reg_ex_pattern ] ?? null,
+			'rewrite_rules option should be left untouched when the stored rule already matches.'
 		);
 	}
 

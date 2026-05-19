@@ -62,7 +62,6 @@ class Template extends Endpoint_Type {
 		);
 	}
 
-
 	/**
 	 * Activate Endpoint_Type by hooking into relevant parts.
 	 *
@@ -142,7 +141,7 @@ class Template extends Endpoint_Type {
 		}
 
 		// Check if the plugin has a template file.
-		$plugin_template = $this->get_template_from_plugin( $file_name, $dir_path, );
+		$plugin_template = $this->get_template_from_plugin( $file_name, $dir_path );
 		if ( $plugin_template ) {
 			return $plugin_template;
 		}
@@ -150,7 +149,6 @@ class Template extends Endpoint_Type {
 		// Fallback to the default template.
 		return $template;
 	}
-
 
 	/**
 	 * Retrieve template presets by invoking the callback.
@@ -174,8 +172,8 @@ class Template extends Endpoint_Type {
 	 * @return string The path to the theme template or an empty string if not found.
 	 */
 	protected function get_template_from_theme( string $file_name ): string {
-		// locate_template() doesn't cares,
-		// but locate_block_template() needs this to be an array.
+		// locate_template() accepts a string, but locate_block_template()
+		// requires an array of candidate templates.
 		$templates = array( $file_name );
 
 		// First, search for PHP templates, which block themes can also use.
@@ -204,8 +202,8 @@ class Template extends Endpoint_Type {
 	 * @return string The full path to the template file or an empty string if file not exists.
 	 */
 	protected function get_template_from_plugin( string $file_name, string $dir_path ): string {
-		// Remove prefix to keep file-names simple,
-		// for templates of core GatherPress.
+		// Remove the GatherPress prefix to keep template filenames simple for
+		// core templates shipped from this plugin.
 		if ( $this->plugin_template_dir === $dir_path ) {
 			$file_name = Utility::unprefix_key( $file_name );
 		}

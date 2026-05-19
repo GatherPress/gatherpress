@@ -98,10 +98,15 @@ class Add_To_Calendar {
 		$event          = new Event( $post_id );
 		$tag            = new WP_HTML_Tag_Processor( $block_content );
 		$calendar_links = $event->get_calendar_links();
+		// iCal and Outlook entries surface as `download` URLs (the new
+		// `/event/{slug}/ical|outlook` endpoints serve attachments with
+		// `Content-Disposition: attachment`), while Google and Yahoo are
+		// off-site redirects keyed under `link`. Fall back across both so
+		// older themes that haven't migrated still get a valid href.
 		$replacements   = array(
 			'#gatherpress-google-calendar'  => $calendar_links['google']['link'] ?? '',
-			'#gatherpress-ical-calendar'    => $calendar_links['ical']['link'] ?? '',
-			'#gatherpress-outlook-calendar' => $calendar_links['outlook']['link'] ?? '',
+			'#gatherpress-ical-calendar'    => $calendar_links['ical']['download'] ?? $calendar_links['ical']['link'] ?? '',
+			'#gatherpress-outlook-calendar' => $calendar_links['outlook']['download'] ?? $calendar_links['outlook']['link'] ?? '',
 			'#gatherpress-yahoo-calendar'   => $calendar_links['yahoo']['link'] ?? '',
 		);
 

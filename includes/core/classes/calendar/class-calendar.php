@@ -104,8 +104,8 @@ class Calendar {
 		$location    = $venue['name'];
 		$description = $this->event->get_calendar_description();
 
-		if ( ! empty( $venue['full_address'] ) ) {
-			$location .= sprintf( ', %s', $venue['full_address'] );
+		if ( ! empty( $venue['address'] ) ) {
+			$location .= sprintf( ', %s', $venue['address'] );
 		}
 
 		$params = array(
@@ -153,8 +153,8 @@ class Calendar {
 		$location    = $venue['name'];
 		$description = $this->event->get_calendar_description();
 
-		if ( ! empty( $venue['full_address'] ) ) {
-			$location .= sprintf( ', %s', $venue['full_address'] );
+		if ( ! empty( $venue['address'] ) ) {
+			$location .= sprintf( ', %s', $venue['address'] );
 		}
 
 		$params = array(
@@ -200,9 +200,13 @@ class Calendar {
 		$location       = $venue['name'];
 		$description    = $this->event->get_calendar_description();
 
-		if ( ! empty( $venue['full_address'] ) ) {
-			$location .= sprintf( ', %s', $venue['full_address'] );
+		if ( ! empty( $venue['address'] ) ) {
+			$location .= sprintf( ', %s', $venue['address'] );
 		}
+
+		$summary     = $this->fold_ical_text( $this->escape_ical_text( $this->event->event->post_title ) );
+		$description = $this->fold_ical_text( $this->escape_ical_text( $description ) );
+		$location    = $this->fold_ical_text( $this->escape_ical_text( $location ) );
 
 		$args = array(
 			'BEGIN:VEVENT',
@@ -210,14 +214,35 @@ class Calendar {
 			sprintf( 'DTSTART:%s', sanitize_text_field( $datetime_start ) ),
 			sprintf( 'DTEND:%s', sanitize_text_field( $datetime_end ) ),
 			sprintf( 'DTSTAMP:%s', sanitize_text_field( $datetime_stamp ) ),
-			sprintf( 'SUMMARY:%s', $this->fold_ical_text( sanitize_text_field( $this->event->event->post_title ) ) ),
-			sprintf( 'DESCRIPTION:%s', $this->fold_ical_text( sanitize_text_field( $description ) ) ),
-			sprintf( 'LOCATION:%s', $this->fold_ical_text( sanitize_text_field( $location ) ) ),
+			sprintf( 'SUMMARY:%s', $summary ),
+			sprintf( 'DESCRIPTION:%s', $description ),
+			sprintf( 'LOCATION:%s', $location ),
 			'UID:gatherpress_' . intval( $this->event->event->ID ),
 			'END:VEVENT',
 		);
 
 		return implode( "\r\n", $args );
+	}
+
+	/**
+	 * Escape iCal text per RFC 5545 §3.3.11.
+	 *
+	 * Backslashes, commas, semicolons, and newlines have semantic meaning in
+	 * TEXT-typed properties (SUMMARY / DESCRIPTION / LOCATION). Backslash
+	 * escapes the next character; an unescaped comma separates list values; a
+	 * raw semicolon separates parameters; a literal newline breaks the
+	 * property record. Calendar clients that strictly conform to the spec
+	 * truncate or split values on unescaped occurrences — most user-visible
+	 * venue addresses contain at least a comma. Escape before folding so the
+	 * fold doesn't split inside an escape sequence.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $text The raw text to escape.
+	 * @return string The escaped text suitable for a TEXT-typed iCal property.
+	 */
+	private function escape_ical_text( string $text ): string {
+		return addcslashes( $text, "\\,;\r\n" );
 	}
 
 	/**
@@ -252,25 +277,43 @@ class Calendar {
 			);
 		}
 
-		$post_url      = get_permalink( $post );
-		$endpoint_url  = trailingslashit( $post_url ) . user_trailingslashit( $endpoint_slug );
-		$path_conflict = get_page_by_path(
-			str_replace( home_url(), '', $endpoint_url ),
-			OBJECT,
-			get_post_types( array( 'public' => true ) )
-		);
+		$post_url = get_permalink( $post );
 
-		if ( ! get_option( 'permalink_structure' ) || $path_conflict ) {
+		// `get_permalink()` returns a query-string permalink either when the
+		// site has no permalink structure at all, or when the rewrite rules
+		// haven't been (re)generated for this post type yet — concatenating a
+		// slug onto that produces `/?gatherpress_event=foo/ical/`, which is
+		// malformed. Treat the presence of `?` in the post URL as the signal
+		// to use the query-arg fallback rather than reading the option, since
+		// the option can be set while the rewrite rules are still stale.
+		if ( str_contains( $post_url, '?' ) ) {
 			$endpoint_url = add_query_arg( array( $query_var => $endpoint_slug ), $post_url );
+		} else {
+			$endpoint_url  = trailingslashit( $post_url ) . user_trailingslashit( $endpoint_slug );
+			$path_conflict = get_page_by_path(
+				str_replace( home_url(), '', $endpoint_url ),
+				OBJECT,
+				get_post_types( array( 'public' => true ) )
+			);
+
+			if ( $path_conflict ) {
+				$endpoint_url = add_query_arg( array( $query_var => $endpoint_slug ), $post_url );
+			}
 		}
 
 		/**
 		 * Filters the endpoint URL of a specific post.
 		 *
+		 * Lets integrators rewrite the calendar endpoint URL for a single
+		 * event before it reaches the front end — useful for routing
+		 * calendar downloads through a CDN, swapping the host for a
+		 * federation-friendly canonical, or appending tracking params.
+		 *
 		 * @since 1.0.0
 		 *
 		 * @param string   $endpoint_url The full post endpoint URL.
 		 * @param \WP_Post $post         The corresponding post object.
+		 * @return string                The filtered endpoint URL.
 		 */
 		$endpoint_url = sanitize_url(
 			apply_filters(

@@ -16,7 +16,6 @@ namespace GatherPress\Core\Calendar;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
-
 /**
  * Manages custom feed endpoints for taxonomies in GatherPress.
  *
@@ -63,17 +62,18 @@ class Taxonomy_Feed extends Endpoint {
 	}
 
 	/**
-	 * Validates if the current request is for a post type archive feed.
+	 * Validates if the current request is for a taxonomy archive feed.
 	 *
-	 * This method checks if the current request is for an archive page of the specified
-	 * post type and if it is a valid feed request (i.e., `is_feed()` returns true).
+	 * This method checks if the current request is for a term archive of the
+	 * specified taxonomy and if it is a valid feed request (i.e., `is_feed()`
+	 * returns true).
 	 *
 	 * @since 1.0.0
 	 *
-	 * @return bool True if the current request is a valid feed request for the post type archive.
+	 * @return bool True if the current request is a valid feed request for the taxonomy archive.
 	 */
 	public function is_valid(): bool {
-		return is_post_type_archive( $this->type_object->name ) && is_feed();
+		return is_tax( $this->type_object->name ) && is_feed();
 	}
 
 	/**
@@ -91,6 +91,7 @@ class Taxonomy_Feed extends Endpoint {
 			$this->object_type       => $this->type_object->name,
 			$this->type_object->name => '$matches[1]',
 			'feed'                   => '$matches[2]',
+			$this->query_var         => '$matches[2]',
 		);
 	}
 }
