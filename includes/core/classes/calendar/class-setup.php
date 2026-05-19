@@ -551,8 +551,16 @@ class Setup {
 			$filename  = $date . '_' . $post_name;
 		} elseif ( is_singular() && $this->is_tax_like_type_for_event_supporting_types( $queried_object->post_type ) ) {
 			$filename = $queried_object->post_name;
-		} elseif ( is_tax() && $this->has_post_type_for_taxonomy( get_queried_object()->taxonomy ) ) {
+		} elseif ( is_tax() && $this->has_post_type_for_taxonomy( $queried_object()->taxonomy ) ) {
 			$filename = $queried_object->slug;
+		} elseif ( is_post_type_archive() ) {
+			$filename = ( isset( $queried_object->rewrite['slug'] ) && ! empty( $queried_object->rewrite['slug'] ) ) ? $queried_object->rewrite['slug'] : $filename;
+		} elseif ( is_front_page() ) {
+			$filename = str_replace(
+				'.',
+				'-',
+				parse_url( home_url(), PHP_URL_HOST )
+			);
 		}
 
 		return $filename . '.ics';
