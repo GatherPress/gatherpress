@@ -7,6 +7,7 @@ import { PanelBody } from '@wordpress/components';
 import { __, sprintf } from '@wordpress/i18n';
 import { useEffect } from '@wordpress/element';
 import { registerPlugin } from '@wordpress/plugins';
+import { useDispatch } from '@wordpress/data';
 
 /**
  *  Internal dependencies
@@ -93,14 +94,58 @@ const QueryPosttypeObserver = ( { attributes, setAttributes } ) => {
  * @return {Element|null} The InspectorControls panel, or null when not applicable.
  */
 export const EventQueryControlsPanel = ( props ) => {
+	const { updateBlockAttributes } = useDispatch( 'core/block-editor' );
+	const { clientId } = props;
+	const { gatherpress_event_query } = props.attributes?.query || 'upcoming';
 	const queryPostType = props.attributes?.query?.postType;
 	const queryPostTypeSupportsEvents = usePostTypeSupports(
 		'gatherpress-event-date',
 		queryPostType
 	);
+
+	// Read the plural label so the "Block List" label reflects what the currently
+	// selected post type is actually called — a custom event-supporting post type with
+	// `name => 'Productions'` shows "Upcoming (or Past) Productions".
+	const pluralLabel = usePostTypeLabel(
+		'name',
+		queryPostType,
+		__( 'Events', 'gatherpress' )
+	);
+
+	// Update block name with post type label and query mode
+	useEffect( () => {
+		const queryLabel = ( 'upcoming' === gatherpress_event_query )
+			? __( 'Upcoming', 'gatherpress' )
+			: __( 'Past', 'gatherpress' );
+
+		let blockName = sprintf(
+			/* translators: %1$s: 'Upcoming' or 'Past', %2$s: Plural post type label, e.g. "Events". */
+			__( '%1$s %2$s', 'gatherpress' ),
+			queryLabel,
+			pluralLabel
+		);
+
+		// Unset if not a supporting post type.
+		if ( ! queryPostTypeSupportsEvents ) {
+			blockName = '';
+		}
+
+		updateBlockAttributes( clientId, {
+			metadata: {
+				name: blockName,
+			},
+		} );
+	}, [
+		queryPostTypeSupportsEvents,
+		pluralLabel,
+		gatherpress_event_query,
+		clientId,
+		updateBlockAttributes,
+	] );
+
 	// Read the singular label so the label reflects what the currently
 	// selected post type is actually called — a custom event-supporting post type with
-	// `singular_name => 'Production'` shows "Production Offset".
+	// `singular_name => 'Production'` shows "Production Query Settings".
 	const singularLabel = usePostTypeLabel(
 		'singular_name',
 		queryPostType,
