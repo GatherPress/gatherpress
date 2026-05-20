@@ -4,7 +4,7 @@
 import { addFilter } from '@wordpress/hooks';
 import { InspectorControls } from '@wordpress/block-editor';
 import { PanelBody } from '@wordpress/components';
-import { __ } from '@wordpress/i18n';
+import { __, sprintf } from '@wordpress/i18n';
 import { useEffect } from '@wordpress/element';
 import { registerPlugin } from '@wordpress/plugins';
 
@@ -19,6 +19,7 @@ import {
 	EventInheritedQueryControlsSlotFill,
 } from './components';
 import { usePostTypeSupports } from '../../../helpers/event';
+import { usePostTypeLabel } from '../../../helpers/editor';
 
 /**
  * Determines if the current block instance is the GatherPress event query variation.
@@ -97,6 +98,14 @@ export const EventQueryControlsPanel = ( props ) => {
 		'gatherpress-event-date',
 		queryPostType
 	);
+	// Read the singular label so the label reflects what the currently
+	// selected post type is actually called — a custom event-supporting post type with
+	// `singular_name => 'Production'` shows "Production Offset".
+	const singularLabel = usePostTypeLabel(
+		'singular_name',
+		queryPostType,
+		__( 'Event', 'gatherpress' )
+	);
 
 	if ( ! queryPostTypeSupportsEvents ) {
 		return null;
@@ -104,7 +113,11 @@ export const EventQueryControlsPanel = ( props ) => {
 
 	return (
 		<InspectorControls>
-			<PanelBody title={ __( 'Event Query Settings', 'gatherpress' ) }>
+			<PanelBody title={ sprintf(
+				/* translators: %s: Singular post type label, e.g. "Event". */
+				__( '%s Query Settings', 'gatherpress' ),
+				singularLabel
+			) }>
 				{ false === props.attributes.query.inherit ? (
 					<EventQueryControls.Slot
 						fillProps={ { ...props } }
