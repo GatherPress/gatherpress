@@ -404,6 +404,15 @@ export const EventOrderControls = ( { attributes, setAttributes } ) => {
 		label = __( 'Descending Order', 'gatherpress' );
 	}
 
+	// Read the singular label so the label reflects what the currently
+	// selected post type is actually called — a custom event-supporting post type with
+	// `singular_name => 'Production'` shows "Production Date".
+	const singularLabel = usePostTypeLabel(
+		'singular_name',
+		postType,
+		__( 'Event', 'gatherpress' )
+	);
+
 	// Read the plural label so the label reflects what the currently
 	// selected post type is actually called — a custom event-supporting post type with
 	// `name => 'Productions'` shows "Order Productions by".
@@ -424,7 +433,11 @@ export const EventOrderControls = ( { attributes, setAttributes } ) => {
 				value={ orderBy }
 				options={ [
 					{
-						label: __( 'Event Date', 'gatherpress' ),
+						label: sprintf(
+							/* translators: %s: Singular post type label, e.g. "Event". */
+							__( '%s Date', 'gatherpress' ),
+							singularLabel
+						),
 						value: 'datetime', // This is GatherPress specific, a normal post would use 'date'.
 					},
 					{
