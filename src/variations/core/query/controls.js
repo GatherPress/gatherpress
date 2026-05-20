@@ -96,7 +96,7 @@ const QueryPosttypeObserver = ( { attributes, setAttributes } ) => {
 export const EventQueryControlsPanel = ( props ) => {
 	const { updateBlockAttributes } = useDispatch( 'core/block-editor' );
 	const { clientId } = props;
-	const { gatherpress_event_query } = props.attributes?.query || 'upcoming';
+	const gatherpressEventQuery = props.attributes?.query?.gatherpress_event_query || 'upcoming';
 	const queryPostType = props.attributes?.query?.postType;
 	const queryPostTypeSupportsEvents = usePostTypeSupports(
 		'gatherpress-event-date',
@@ -114,7 +114,7 @@ export const EventQueryControlsPanel = ( props ) => {
 
 	// Update block name with post type label and query mode
 	useEffect( () => {
-		const queryLabel = ( 'upcoming' === gatherpress_event_query )
+		const queryLabel = ( 'upcoming' === gatherpressEventQuery )
 			? __( 'Upcoming', 'gatherpress' )
 			: __( 'Past', 'gatherpress' );
 
@@ -138,7 +138,7 @@ export const EventQueryControlsPanel = ( props ) => {
 	}, [
 		queryPostTypeSupportsEvents,
 		pluralLabel,
-		gatherpress_event_query,
+		gatherpressEventQuery,
 		clientId,
 		updateBlockAttributes,
 	] );
