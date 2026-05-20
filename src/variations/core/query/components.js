@@ -48,8 +48,8 @@ export const EventCountControls = ( { attributes, setAttributes } ) => {
 		<RangeControl
 			label={ sprintf(
 			/* translators: %s: Plural post type label, e.g. "Events". */
-			__( '%s Per Page', 'gatherpress' ),
-			pluralLabel
+				__( '%s Per Page', 'gatherpress' ),
+				pluralLabel
 			) }
 			min={ 1 }
 			max={ 50 }
@@ -88,10 +88,6 @@ export const EventExcludeControls = ( { attributes, setAttributes } ) => {
 		return select( 'core/editor' ).getCurrentPost();
 	}, [] );
 
-	if ( ! currentPost ) {
-		return <div>{ __( 'Loading…', 'gatherpress' ) }</div>;
-	}
-
 	// Read the singular label so the label reflects what the currently
 	// selected post type is actually called — a custom event-supporting post type with
 	// `singular_name => 'Production'` shows "Exclude Current Production".
@@ -100,6 +96,10 @@ export const EventExcludeControls = ( { attributes, setAttributes } ) => {
 		postType,
 		__( 'Event', 'gatherpress' )
 	);
+
+	if ( ! currentPost ) {
+		return <div>{ __( 'Loading…', 'gatherpress' ) }</div>;
+	}
 
 	return (
 		<ToggleControl
