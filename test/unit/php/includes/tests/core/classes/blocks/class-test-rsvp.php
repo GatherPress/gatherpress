@@ -157,17 +157,20 @@ class Test_Rsvp extends Base {
 			. 'visibility class.'
 		);
 		$this->assertStringContainsString(
-			'<div class="gatherpress--is-hidden" data-rsvp-status="no_status"><p class="wp-block-paragraph">No status content</p></div>',
+			'<div class="gatherpress--is-hidden" data-rsvp-status="no_status">'
+			. '<p class="wp-block-paragraph">No status content</p></div>',
 			$result,
 			'The transform_block_content method should mark content for the no_status status as not visible.'
 		);
 		$this->assertStringContainsString(
-			'<div class="gatherpress--is-hidden" data-rsvp-status="waiting_list"><p class="wp-block-paragraph">Waiting List content</p></div>',
+			'<div class="gatherpress--is-hidden" data-rsvp-status="waiting_list">'
+			. '<p class="wp-block-paragraph">Waiting List content</p></div>',
 			$result,
 			'The transform_block_content method should mark content for the waiting_list status as not visible.'
 		);
 		$this->assertStringContainsString(
-			'<div class="gatherpress--is-hidden" data-rsvp-status="not_attending"><p class="wp-block-paragraph">Not Attending content</p></div>',
+			'<div class="gatherpress--is-hidden" data-rsvp-status="not_attending">'
+			. '<p class="wp-block-paragraph">Not Attending content</p></div>',
 			$result,
 			'The transform_block_content method should mark content for the not_attending status as not visible.'
 		);
