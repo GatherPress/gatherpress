@@ -29,6 +29,7 @@ The subsystem segment names a single area of the plugin. The current set:
 
 | Subsystem | Covers |
 |---|---|
+| `asset_*` | Stylesheet/script registration, enqueue gating, and block-asset coverage shared with companion plugins. |
 | `event_*` | Event lifecycle, queries, feed output. |
 | `venue_*` | Venue post type resolution, structured-address sync. |
 | `rsvp_*` | RSVP storage (comment-based), attendee management, comment-query coexistence. |
