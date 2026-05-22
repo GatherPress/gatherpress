@@ -61,9 +61,11 @@ function formatCoverageComment(phpOutput, jsOutput, phpStatus, jsStatus) {
  * @param {string} jsOutput  JavaScript coverage check output.
  * @param {string} phpStatus PHP coverage check status ('success' or 'failure').
  * @param {string} jsStatus  JavaScript coverage check status ('success' or 'failure').
+ * @param {number} [prNumberOverride] Explicit PR number; required when called from a workflow_run
+ *   context where context.payload.pull_request is not present.
  */
-async function createCoverageComment(github, context, phpOutput, jsOutput, phpStatus, jsStatus) {
-	const prNumber = context.payload.pull_request.number;
+async function createCoverageComment(github, context, phpOutput, jsOutput, phpStatus, jsStatus, prNumberOverride) {
+	const prNumber = prNumberOverride ?? context.payload.pull_request.number;
 
 	const repoData = {
 		owner: context.repo.owner,
