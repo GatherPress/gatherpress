@@ -11,6 +11,9 @@ on:
     - '*.md'
     - 'package.json'
 
+permissions:
+  contents: read
+
 jobs:
   mdlinting:
     name: Markdown
