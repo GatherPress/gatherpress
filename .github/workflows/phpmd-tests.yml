@@ -9,6 +9,10 @@ on:
     - 'includes/**'
     - 'phpmd.xml'
     - 'composer.*'
+
+permissions:
+  contents: read
+
 jobs:
   test-phpmd:
     name: PHP Mess Detector

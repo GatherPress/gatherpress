@@ -36,6 +36,9 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.event_name == 'pull_request_target' && github.head_ref || github.sha }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
 jobs:
 
   zip:
@@ -115,6 +118,9 @@ jobs:
     name: Comment with playground link
     needs: zip  # Ensure this runs after zip job.
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
 
     steps:
       - name: Checkout
