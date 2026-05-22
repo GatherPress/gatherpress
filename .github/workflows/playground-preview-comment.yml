@@ -51,8 +51,9 @@ jobs:
         uses: actions/github-script@v7
         env:
           PHP_VERSIONS: '["8.4","8.2","7.4"]'
+          PR_NUMBER: ${{ steps.pr.outputs.number }}
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const createPreviewLinks = require('.github/scripts/playground-preview');
-            await createPreviewLinks(github, context, ${{ steps.pr.outputs.number }});
+            await createPreviewLinks(github, context, Number(process.env.PR_NUMBER));
