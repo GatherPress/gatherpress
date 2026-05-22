@@ -10,6 +10,59 @@ import { store as coreStore } from '@wordpress/core-data';
 import { isPostTypeSupporting } from './event';
 
 /**
+ * Module-level cache of resolved post-type labels, keyed by
+ * `<postType>::<labelKey>`. Post-type labels are set during
+ * `register_post_type()` and don't change at runtime, so once we've
+ * resolved a non-fallback label we serve it from the cache for the rest
+ * of the editor session.
+ *
+ * This doesn't change how often `usePostTypeLabel`'s selector runs —
+ * `useSelect` re-invokes the selector on every dispatch to the stores it
+ * subscribes to (`core/editor`, `core`), which is many times during
+ * editor init (REST resolutions for post types, taxonomies, etc.). With
+ * the cache the selector body is a Map lookup instead of two store
+ * reads. See issue #1646.
+ *
+ * Exported only for tests; production callers should go through
+ * `getPostTypeLabel` / `usePostTypeLabel`.
+ *
+ * @ignore
+ */
+export const __postTypeLabelCache = new Map();
+
+/**
+ * Look up `<postType>::<labelKey>` in the module cache without performing
+ * any store reads. Callers must have already resolved a truthy `postType`
+ * (both `getPostTypeLabel` and `usePostTypeLabel` short-circuit to the
+ * fallback before this is invoked when no post type is available).
+ *
+ * @param {string} postType Post type slug.
+ * @param {string} key      Label key.
+ * @return {string|undefined} The cached label, or `undefined` if absent.
+ */
+function getCachedLabel( postType, key ) {
+	return __postTypeLabelCache.get( `${ postType }::${ key }` );
+}
+
+/**
+ * Cache a non-empty resolved label.
+ *
+ * No-op for empty / falsy labels so the cache only ever serves real values
+ * — a missed lookup still falls through to the live store read on the next
+ * call so we pick up the label as soon as `core` finishes resolving it.
+ *
+ * @param {string} postType Post type slug.
+ * @param {string} key      Label key.
+ * @param {string} label    Resolved label string.
+ * @return {void}
+ */
+function rememberLabel( postType, key, label ) {
+	if ( label ) {
+		__postTypeLabelCache.set( `${ postType }::${ key }`, label );
+	}
+}
+
+/**
  * Resolve a single label from a post type's registered labels.
  *
  * JS counterpart to `Utility::post_type_label()` — wraps `getPostType()` so
@@ -39,7 +92,13 @@ export function getPostTypeLabel( key, postType = null, fallback = '' ) {
 		return fallback;
 	}
 
+	const cached = getCachedLabel( typeToCheck, key );
+	if ( cached !== undefined ) {
+		return cached;
+	}
+
 	const label = select( 'core' ).getPostType( typeToCheck )?.labels?.[ key ];
+	rememberLabel( typeToCheck, key, label );
 
 	return label || fallback;
 }
@@ -53,6 +112,14 @@ export function getPostTypeLabel( key, postType = null, fallback = '' ) {
  * hook subscribes via `useSelect` so the component re-renders the moment
  * the labels become known — which is the difference between a variation
  * permanently titled "Event" and one that picks up the registered label.
+ *
+ * The selector body re-runs on every dispatch to the subscribed stores —
+ * that's how `useSelect` works, and `core` dispatches many times during
+ * editor init (REST resolutions for post types, taxonomies, settings).
+ * Once a label has resolved, subsequent selector invocations short-circuit
+ * to the module-level `__postTypeLabelCache` so each re-run is an O(1)
+ * Map lookup rather than two store reads (issue #1646). React still only
+ * re-renders the component when the resolved string actually changes.
  *
  * @since 1.0.0
  *
@@ -71,8 +138,14 @@ export function usePostTypeLabel( key, postType = null, fallback = '' ) {
 				return fallback;
 			}
 
+			const cached = getCachedLabel( typeToCheck, key );
+			if ( cached !== undefined ) {
+				return cached;
+			}
+
 			const label = wpSelect( 'core' ).getPostType( typeToCheck )
 				?.labels?.[ key ];
+			rememberLabel( typeToCheck, key, label );
 
 			return label || fallback;
 		},
