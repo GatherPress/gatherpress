@@ -151,23 +151,26 @@ class Test_Rsvp extends Base {
 			'The transform_block_content method should correctly mark the active RSVP status as attending.'
 		);
 		$this->assertStringContainsString(
-			'<div class="" data-rsvp-status="attending"><p>Attending content</p></div>',
+			'<div class="" data-rsvp-status="attending"><p class="wp-block-paragraph">Attending content</p></div>',
 			$result,
 			'The transform_block_content method should display content for the attending status without a '
 			. 'visibility class.'
 		);
 		$this->assertStringContainsString(
-			'<div class="gatherpress--is-hidden" data-rsvp-status="no_status"><p>No status content</p></div>',
+			'<div class="gatherpress--is-hidden" data-rsvp-status="no_status">'
+			. '<p class="wp-block-paragraph">No status content</p></div>',
 			$result,
 			'The transform_block_content method should mark content for the no_status status as not visible.'
 		);
 		$this->assertStringContainsString(
-			'<div class="gatherpress--is-hidden" data-rsvp-status="waiting_list"><p>Waiting List content</p></div>',
+			'<div class="gatherpress--is-hidden" data-rsvp-status="waiting_list">'
+			. '<p class="wp-block-paragraph">Waiting List content</p></div>',
 			$result,
 			'The transform_block_content method should mark content for the waiting_list status as not visible.'
 		);
 		$this->assertStringContainsString(
-			'<div class="gatherpress--is-hidden" data-rsvp-status="not_attending"><p>Not Attending content</p></div>',
+			'<div class="gatherpress--is-hidden" data-rsvp-status="not_attending">'
+			. '<p class="wp-block-paragraph">Not Attending content</p></div>',
 			$result,
 			'The transform_block_content method should mark content for the not_attending status as not visible.'
 		);
@@ -230,7 +233,7 @@ class Test_Rsvp extends Base {
 		$result        = $instance->transform_block_content( $block_content, $block );
 
 		$this->assertStringContainsString(
-			'<p>Past content</p>',
+			'<p class="wp-block-paragraph">Past content</p>',
 			$result,
 			'The transform_block_content method should include the "past" status content for a past event.'
 		);
