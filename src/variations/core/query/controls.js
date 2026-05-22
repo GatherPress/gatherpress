@@ -12,7 +12,7 @@ import { useDispatch } from '@wordpress/data';
 /**
  *  Internal dependencies
  */
-import { NAME } from '.';
+import { NAME } from './name';
 import EventQueryControls from './slots/query-controls';
 import EventInheritedQueryControls from './slots/inherited-query-controls';
 import {

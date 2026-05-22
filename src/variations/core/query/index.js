@@ -7,11 +7,12 @@ import { __ } from '@wordpress/i18n';
 /**
  * Internal dependencies
  */
+import { NAME } from './name';
 import './controls';
 import './patterns';
 import './start-blank';
 
-export const NAME = 'gatherpress-event-query';
+export { NAME };
 
 const QUERY_ATTRIBUTES = {
 	namespace: NAME,
