@@ -92,7 +92,7 @@ class Assets {
 	 */
 	protected function setup_hooks(): void {
 		add_action( 'admin_enqueue_scripts', array( $this, 'admin_enqueue_scripts' ) );
-		add_action( 'enqueue_block_assets', array( $this, 'block_enqueue_scripts' ) );
+		add_action( 'enqueue_block_assets', array( $this, 'register_block_assets' ) );
 		add_action( 'enqueue_block_editor_assets', array( $this, 'editor_enqueue_scripts' ) );
 		add_action( 'enqueue_block_editor_assets', array( $this, 'enqueue_variation_assets' ) );
 		add_action( 'enqueue_block_editor_assets', array( $this, 'enqueue_aql_integration' ) );
@@ -179,19 +179,30 @@ class Assets {
 	}
 
 	/**
-	 * Enqueue necessary frontend styles and scripts.
+	 * Register the shared utility stylesheet and enqueue it in the block editor.
 	 *
-	 * This method is responsible for enqueuing essential frontend styles and scripts
-	 * required for the proper functioning of the plugin on the frontend.
+	 * Hooked on `enqueue_block_assets`, which fires in two contexts with
+	 * different responsibilities:
+	 *
+	 * - Frontend: registers the `gatherpress-utility-style` handle so other
+	 *   code paths can enqueue it by name. The actual frontend enqueue is
+	 *   delegated to `maybe_enqueue_styles()` on the `render_block` filter,
+	 *   which only fires the enqueue when a `gatherpress/*` block is being
+	 *   rendered — so frontends that don't use a gatherpress block don't
+	 *   load the CSS.
+	 *
+	 * - Block editor: also enqueues unconditionally so the stylesheet lands
+	 *   inside the editor canvas iframe. `enqueue_block_assets` is the
+	 *   documented hook for iframe-bound styles; `enqueue_block_editor_assets`
+	 *   only reaches the wrapper UI, and a late, `render_block`-driven enqueue
+	 *   during dynamic-block rendering trips the "stylesheet was added to the
+	 *   iframe incorrectly" warning in newer WordPress (issue #1645).
 	 *
 	 * @since 1.0.0
 	 *
 	 * @return void
 	 */
-	public function block_enqueue_scripts(): void {
-		// @todo remove once new blocks are completed.
-		wp_enqueue_style( 'dashicons' );
-
+	public function register_block_assets(): void {
 		$asset = $this->get_asset_data( 'utility_style' );
 
 		wp_register_style(
@@ -200,6 +211,10 @@ class Assets {
 			$asset['dependencies'],
 			$asset['version']
 		);
+
+		if ( is_admin() ) {
+			wp_enqueue_style( 'gatherpress-utility-style' );
+		}
 	}
 
 	/**
@@ -330,7 +345,7 @@ class Assets {
 
 			// Shared utility classes (`gatherpress--is-hidden`, etc.) used by
 			// settings UI like the `show_if` row visibility toggle. The handle
-			// is registered on the frontend in `block_enqueue_scripts`; re-
+			// is registered on the frontend in `register_block_assets`; re-
 			// register here so it's available on admin settings pages too.
 			$utility_asset = $this->get_asset_data( 'utility_style' );
 
@@ -400,7 +415,11 @@ class Assets {
 			true
 		);
 
-		wp_enqueue_style( 'gatherpress-utility-style' );
+		// `gatherpress-utility-style` is enqueued from `register_block_assets`
+		// (on `enqueue_block_assets`) so it reaches the editor canvas iframe.
+		// Enqueuing it here on `enqueue_block_editor_assets` only loaded it in
+		// the wrapper UI and triggered an "added to the iframe incorrectly"
+		// warning in newer WordPress.
 
 		wp_set_script_translations( 'gatherpress-editor', 'gatherpress' );
 	}
