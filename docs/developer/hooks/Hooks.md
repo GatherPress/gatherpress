@@ -6,6 +6,7 @@
 ## class-assets.php
 
 - [`gatherpress_asset_critical`](gatherpress_asset_critical.md) Filters whether an asset file is considered critical.
+- [`gatherpress_asset_utility_style_block_prefixes`](gatherpress_asset_utility_style_block_prefixes.md) Filters additional block-name prefixes whose blocks should
 
 ## class-autoloader.php
 
