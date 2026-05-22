@@ -489,7 +489,8 @@ class Test_Assets extends Base {
 
 		$this->assertTrue(
 			wp_style_is( 'gatherpress-utility-style', 'enqueued' ),
-			'Failed to assert gatherpress-utility-style is still enqueued for gatherpress/ blocks when the filter returns an empty array.'
+			'Failed to assert gatherpress-utility-style is still enqueued for gatherpress/ blocks '
+			. 'when the filter returns an empty array.'
 		);
 	}
 
