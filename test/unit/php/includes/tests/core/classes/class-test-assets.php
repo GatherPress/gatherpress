@@ -430,6 +430,70 @@ class Test_Assets extends Base {
 	}
 
 	/**
+	 * Coverage for maybe_enqueue_styles with a third-party prefix added via the
+	 * `gatherpress_asset_utility_style_block_prefixes` filter.
+	 *
+	 * @covers ::maybe_enqueue_styles
+	 *
+	 * @return void
+	 */
+	public function test_maybe_enqueue_styles_filter_adds_extra_prefix(): void {
+		$instance = Assets::get_instance();
+
+		$instance->register_block_assets();
+		wp_dequeue_style( 'gatherpress-utility-style' );
+
+		$callback = static function (): array {
+			return array( 'gatherpress-awesome/' );
+		};
+		add_filter( 'gatherpress_asset_utility_style_block_prefixes', $callback );
+
+		$block_content = '<div>Test</div>';
+		$block         = array( 'blockName' => 'gatherpress-awesome/showcase' );
+
+		$instance->maybe_enqueue_styles( $block_content, $block );
+
+		remove_filter( 'gatherpress_asset_utility_style_block_prefixes', $callback );
+
+		$this->assertTrue(
+			wp_style_is( 'gatherpress-utility-style', 'enqueued' ),
+			'Failed to assert gatherpress-utility-style is enqueued for a filter-added prefix.'
+		);
+	}
+
+	/**
+	 * `gatherpress/` is appended after the filter runs, so a filter that omits
+	 * (or replaces) the array still leaves GatherPress's own blocks covered.
+	 *
+	 * @covers ::maybe_enqueue_styles
+	 *
+	 * @return void
+	 */
+	public function test_maybe_enqueue_styles_filter_cannot_remove_gatherpress_prefix(): void {
+		$instance = Assets::get_instance();
+
+		$instance->register_block_assets();
+		wp_dequeue_style( 'gatherpress-utility-style' );
+
+		$callback = static function (): array {
+			return array();
+		};
+		add_filter( 'gatherpress_asset_utility_style_block_prefixes', $callback );
+
+		$block_content = '<div>Test</div>';
+		$block         = array( 'blockName' => 'gatherpress/event-date' );
+
+		$instance->maybe_enqueue_styles( $block_content, $block );
+
+		remove_filter( 'gatherpress_asset_utility_style_block_prefixes', $callback );
+
+		$this->assertTrue(
+			wp_style_is( 'gatherpress-utility-style', 'enqueued' ),
+			'Failed to assert gatherpress-utility-style is still enqueued for gatherpress/ blocks when the filter returns an empty array.'
+		);
+	}
+
+	/**
 	 * Coverage for editor_enqueue_scripts method.
 	 *
 	 * @covers ::editor_enqueue_scripts

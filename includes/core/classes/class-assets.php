@@ -227,8 +227,31 @@ class Assets {
 	 * @return string The block content.
 	 */
 	public function maybe_enqueue_styles( string $block_content, array $block ): string {
-		if ( isset( $block['blockName'] ) && str_contains( $block['blockName'], 'gatherpress/' ) ) {
-			wp_enqueue_style( 'gatherpress-utility-style' );
+		if ( ! isset( $block['blockName'] ) ) {
+			return $block_content;
+		}
+
+		/**
+		 * Filters additional block-name prefixes whose blocks should
+		 * auto-enqueue the GatherPress utility stylesheet.
+		 *
+		 * Companion plugins and themes can use this filter to share the
+		 * utility CSS with their own blocks (e.g. `gatherpress-awesome/`).
+		 * The `gatherpress/` prefix is appended after this filter runs and
+		 * cannot be removed through it.
+		 *
+		 * @since 1.0.0
+		 *
+		 * @param string[] $prefixes Additional block-name prefixes to match.
+		 */
+		$prefixes   = (array) apply_filters( 'gatherpress_asset_utility_style_block_prefixes', array() );
+		$prefixes[] = 'gatherpress/';
+
+		foreach ( $prefixes as $prefix ) {
+			if ( str_starts_with( $block['blockName'], (string) $prefix ) ) {
+				wp_enqueue_style( 'gatherpress-utility-style' );
+				break;
+			}
 		}
 
 		return $block_content;
