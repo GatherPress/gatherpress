@@ -134,14 +134,14 @@ registerPlugin( 'gatherpress-event-settings', {
  * @return {void}
  */
 domReady( () => {
-	const selectEditPost = select( 'core/edit-post' );
+	const selectEditor = select( 'core/editor' );
 	const dispatchEditor = dispatch( 'core/editor' );
 
-	if ( ! selectEditPost || ! dispatchEditor ) {
+	if ( ! selectEditor || ! dispatchEditor ) {
 		return;
 	}
 
-	const isEventSettingsPanelOpen = selectEditPost.isEditorPanelOpened(
+	const isEventSettingsPanelOpen = selectEditor.isEditorPanelOpened(
 		'gatherpress-event-settings/gatherpress-event-settings',
 	);
 
