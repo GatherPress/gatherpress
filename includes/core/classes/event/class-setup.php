@@ -22,7 +22,6 @@ use GatherPress\Core\Settings;
 use GatherPress\Core\Starter_Pattern_Loader;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Utility;
-use WP;
 use WP_Block;
 use WP_Post;
 use WP_Query;
@@ -94,15 +93,12 @@ class Setup {
 	 */
 	protected function setup_hooks(): void {
 		add_action( 'init', array( $this, 'register_post_type' ) );
-		add_action( 'init', array( $this, 'register_calendar_rewrite_rule' ) );
 		// Priority 11 so post types registered at default priority 10 are available for get_post_types_by_support().
 		add_action( 'init', array( $this, 'register_starter_pattern' ), 11 );
-		add_action( 'parse_request', array( $this, 'handle_calendar_ics_request' ) );
 		add_action( 'template_redirect', array( $this, 'handle_event_archive_redirect' ) );
 		add_action( 'delete_post', array( $this, 'delete_event' ) );
 		add_action( 'wp_after_insert_post', array( $this, 'set_datetimes' ) );
 		add_action( 'save_post', array( $this, 'check_waiting_list' ) );
-		add_filter( 'redirect_canonical', array( $this, 'disable_ics_canonical_redirect' ), 10, 2 );
 		add_filter( 'get_the_date', array( $this, 'get_the_event_date' ), 10, 3 );
 		add_filter( 'the_time', array( $this, 'get_the_event_date' ) );
 		add_filter( 'render_block_core/post-date', array( $this, 'render_event_post_date_block' ), 10, 3 );
@@ -298,90 +294,6 @@ class Setup {
 					'source'      => 'plugin',
 				)
 			);
-		}
-	}
-
-	/**
-	 * Register the calendar rewrite rule for ICS file URLs.
-	 *
-	 * Sets up the URL pattern /event-slug/event-name.ics that serves
-	 * dynamically generated ICS files for individual events. The URL slug
-	 * matches the configured event post type slug from GatherPress settings.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @return void
-	 */
-	public function register_calendar_rewrite_rule(): void {
-		$settings     = Settings::get_instance();
-		$rewrite_slug = sanitize_title( $settings->get( 'events_url' ) );
-
-		add_rewrite_rule(
-			sprintf( '^%s/([^/]+)\.ics$', $rewrite_slug ),
-			sprintf( 'index.php?post_type=%s&name=$matches[1]&gatherpress_ics=1', Event::POST_TYPE ),
-			'top'
-		);
-
-		add_rewrite_tag( '%gatherpress_ics%', '1' );
-	}
-
-	/**
-	 * Prevent WordPress from redirecting .ics URLs with a trailing slash.
-	 *
-	 * This ensures calendar download URLs like /event/my-event.ics are treated
-	 * as file downloads and not rewritten with a trailing slash.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param string|false $redirect_url  The URL WordPress wants to redirect to.
-	 * @param string       $requested_url The original requested URL.
-	 * @return string|false The filtered redirect URL or false to cancel redirect.
-	 */
-	public function disable_ics_canonical_redirect( $redirect_url, string $requested_url ) {
-		if ( str_contains( $requested_url, '.ics' ) ) {
-			return false; // prevent canonical redirect.
-		}
-
-		return $redirect_url;
-	}
-
-	/**
-	 * Handle calendar .ics file requests for single event pages.
-	 *
-	 * This method intercepts requests for .ics files based on a custom query var
-	 * and serves dynamically generated ICS content for the specified event. It is
-	 * intended to be hooked into the `parse_request` action.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param \WP $wp The current WP object containing query variables and request context.
-	 * @return void
-	 */
-	public function handle_calendar_ics_request( WP $wp ): void {
-		if ( isset( $wp->query_vars['gatherpress_ics'] ) ) {
-			$slug = $wp->query_vars['name'] ?? null;
-			$post = get_page_by_path( $slug, OBJECT, Event::POST_TYPE );
-
-			if ( $post ) {
-				$event = new Event( $post->ID );
-
-				header( 'Content-Type: text/calendar; charset=utf-8' );
-				header(
-					'Content-Disposition: attachment; filename="'
-					. get_post_field( 'post_name', $post->ID )
-					. '.ics"'
-				);
-
-				// ICS content is safely generated and must not be escaped.
-				// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
-				echo $event->get_ics_calendar_string();
-				Utility::safe_exit();
-
-				// Return statement allows unit tests to complete after safe_exit returns instead of exiting.
-				return;
-			}
-
-			wp_die( esc_html__( 'Event not found.', 'gatherpress' ), '', array( 'response' => 404 ) );
 		}
 	}
 

@@ -264,7 +264,7 @@ class Setup {
 	 */
 	public function queried_event_google_url(): string {
 		$calendar = new Calendar( (int) get_queried_object_id() );
-		return $calendar->get_google_url();
+		return $calendar->get_google_destination_url();
 	}
 
 	/**
@@ -279,7 +279,7 @@ class Setup {
 	 */
 	public function queried_event_yahoo_url(): string {
 		$calendar = new Calendar( (int) get_queried_object_id() );
-		return $calendar->get_yahoo_url();
+		return $calendar->get_yahoo_destination_url();
 	}
 
 	/**

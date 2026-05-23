@@ -83,10 +83,50 @@ class Calendar {
 	}
 
 	/**
-	 * Google Calendar add-event URL for this event.
+	 * URL to the Google Calendar redirect endpoint for this event.
 	 *
-	 * Off-site URL that opens Google Calendar's event-creation form
-	 * pre-filled with this event's title, datetime, location, and description.
+	 * Resolves to `/event/<slug>/google-calendar/` (subject to permalink
+	 * structure). A hit on this URL 302-redirects out to Google Calendar
+	 * with the event pre-filled — the off-site destination URL itself is
+	 * computed by `get_google_destination_url()`, called from the Redirect
+	 * endpoint callback in `Calendar\Setup`.
+	 *
+	 * Front-end calendar UIs link to this on-site URL rather than the
+	 * direct Google URL so themes, the `gatherpress_calendar_url` filter,
+	 * and any CDN/federation tooling see a stable canonical link.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return string|false Endpoint URL, or false if the event post can't be resolved.
+	 */
+	public function get_google_url() {
+		return $this->get_endpoint_url( 'google-calendar' );
+	}
+
+	/**
+	 * URL to the Yahoo! Calendar redirect endpoint for this event.
+	 *
+	 * Same redirect pattern as the Google equivalent — see
+	 * `get_google_url()`. The destination Yahoo! URL is computed by
+	 * `get_yahoo_destination_url()`, called from the Redirect endpoint
+	 * callback in `Calendar\Setup`.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return string|false Endpoint URL, or false if the event post can't be resolved.
+	 */
+	public function get_yahoo_url() {
+		return $this->get_endpoint_url( 'yahoo-calendar' );
+	}
+
+	/**
+	 * Off-site destination URL for the Google Calendar redirect.
+	 *
+	 * Opens Google Calendar's event-creation form pre-filled with this
+	 * event's title, datetime, location, and description. Called from
+	 * `Calendar\Setup::queried_event_google_url()` to produce the 302
+	 * target for the `/event/<slug>/google-calendar/` endpoint — front-end
+	 * code should use `get_google_url()` (the on-site URL) instead.
 	 *
 	 * @since 1.0.0
 	 *
@@ -94,7 +134,7 @@ class Calendar {
 	 *
 	 * @throws Exception If reading event datetime/venue data fails.
 	 */
-	public function get_google_url(): string {
+	public function get_google_destination_url(): string {
 		$date_start  = $this->event->get_formatted_datetime( 'Ymd', 'start', false );
 		$time_start  = $this->event->get_formatted_datetime( 'His', 'start', false );
 		$date_end    = $this->event->get_formatted_datetime( 'Ymd', 'end', false );
@@ -124,11 +164,13 @@ class Calendar {
 	}
 
 	/**
-	 * Yahoo! Calendar add-event URL for this event.
+	 * Off-site destination URL for the Yahoo! Calendar redirect.
 	 *
-	 * Off-site URL that opens Yahoo! Calendar's event-creation form
-	 * pre-filled with this event's title, start time, duration, location,
-	 * and description.
+	 * Opens Yahoo! Calendar's event-creation form pre-filled with this
+	 * event's title, start time, duration, location, and description.
+	 * Called from `Calendar\Setup::queried_event_yahoo_url()` to produce
+	 * the 302 target for the `/event/<slug>/yahoo-calendar/` endpoint —
+	 * front-end code should use `get_yahoo_url()` (the on-site URL) instead.
 	 *
 	 * @since 1.0.0
 	 *
@@ -136,7 +178,7 @@ class Calendar {
 	 *
 	 * @throws Exception If reading event datetime/venue data fails.
 	 */
-	public function get_yahoo_url(): string {
+	public function get_yahoo_destination_url(): string {
 		$date_start     = $this->event->get_formatted_datetime( 'Ymd', 'start', false );
 		$time_start     = $this->event->get_formatted_datetime( 'His', 'start', false );
 		$datetime_start = sprintf( '%sT%sZ', $date_start, $time_start );
