@@ -117,6 +117,7 @@ const withFormVisibilityControls = createHigherOrderComponent( ( BlockEdit ) => 
 				<BlockEdit { ...props } />
 				<InspectorAdvancedControls>
 					<SelectControl
+						__next40pxDefaultSize
 						label={ __( 'On Successful Submission', 'gatherpress' ) }
 						help={ __(
 							'Control visibility when the RSVP form is successfully submitted.',
@@ -140,6 +141,7 @@ const withFormVisibilityControls = createHigherOrderComponent( ( BlockEdit ) => 
 						onChange={ ( value ) => updateVisibility( 'onSuccess', value ) }
 					/>
 					<SelectControl
+						__next40pxDefaultSize
 						label={ __( 'When Event Has Passed', 'gatherpress' ) }
 						help={ __(
 							'Control visibility when the event end time has passed.',

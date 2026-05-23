@@ -170,6 +170,7 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 					title={ __( 'RSVP Count Settings', 'gatherpress' ) }
 				>
 					<SelectControl
+						__next40pxDefaultSize
 						label={ __( 'RSVP Status', 'gatherpress' ) }
 						value={ status }
 						options={ statusOptions }

@@ -36,6 +36,7 @@ const Duration = () => {
 	const { setDateTimeEnd, setDuration } = dispatch( 'gatherpress/datetime' );
 	return (
 		<SelectControl
+			__next40pxDefaultSize
 			label={ __( 'Duration', 'gatherpress' ) }
 			value={
 				durationOptions().some( ( option ) => option.value === duration )
