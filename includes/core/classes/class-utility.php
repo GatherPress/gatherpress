@@ -68,7 +68,8 @@ class Utility {
 	 * 1. `locate_template()` — classic theme / child-theme override.
 	 * 2. `locate_block_template()` — block-theme override (HTML template
 	 *    parts), keyed off the file basename minus extension.
-	 * 3. The plugin's bundled fallback under `$plugin_dir`:
+	 * 3. The caller's bundled fallback under `$fallback_dir` (which may be
+	 *    a plugin, mu-plugin, theme, or any other source):
 	 *    - the file name as-supplied (so a caller's custom dir can ship a
 	 *      `gatherpress_*.php` file under its prefixed name), then
 	 *    - the file name with the `gatherpress_` prefix stripped (so the
@@ -78,11 +79,11 @@ class Utility {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param string $file_name  The template file name, e.g. `gatherpress_ical-download.php`.
-	 * @param string $plugin_dir Absolute directory the plugin's bundled fallback lives in.
+	 * @param string $file_name    The template file name, e.g. `gatherpress_ical-download.php`.
+	 * @param string $fallback_dir Absolute directory the caller's bundled fallback lives in.
 	 * @return string Absolute path to the resolved template, or `''` if none exists.
 	 */
-	public static function locate_template( string $file_name, string $plugin_dir = '' ): string {
+	public static function locate_template( string $file_name, string $fallback_dir = '' ): string {
 		// `locate_template()` accepts a string, `locate_block_template()`
 		// requires an array of candidates.
 		$templates      = array( $file_name );
@@ -94,32 +95,64 @@ class Utility {
 		);
 
 		if ( $theme_template ) {
-			return $theme_template;
+			$resolved = $theme_template;
+		} elseif ( empty( $fallback_dir ) ) {
+			$resolved = '';
+		} else {
+			$resolved = self::resolve_fallback_template_path( $fallback_dir, $file_name );
 		}
 
-		if ( empty( $plugin_dir ) ) {
-			return '';
+		/**
+		 * Filters the resolved template path returned by `Utility::locate_template()`.
+		 *
+		 * Lets extension code (plugin, mu-plugin, theme, etc.) override or
+		 * replace GatherPress's default theme → block-template → fallback-dir
+		 * resolution chain — for example to point the calendar's iCal
+		 * templates at a custom directory, or to ship overridable templates
+		 * from a companion source via the same utility. Return an empty
+		 * string to signal "no template found"; callers will fall back to
+		 * their own default.
+		 *
+		 * @since 1.0.0
+		 *
+		 * @param string $resolved     Resolved absolute template path, or `''` if no candidate matched.
+		 * @param string $file_name    The template file name passed to `Utility::locate_template()`.
+		 * @param string $fallback_dir Directory the bundled fallback was looked up in (may be empty).
+		 */
+		return (string) apply_filters( 'gatherpress_template_path', $resolved, $file_name, $fallback_dir );
+	}
+
+	/**
+	 * Resolve a caller-bundled template path, with prefix-strip fallback.
+	 *
+	 * Tries the file name as-supplied first (so a caller can ship a
+	 * `gatherpress_*.php` file under its prefixed name on disk), then falls
+	 * back to the unprefixed name so the bundled core templates (which live
+	 * on disk as plain `ical-download.php`) still resolve when callers pass
+	 * the prefixed name (the convention used by `Utility::prefix_key()`).
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $fallback_dir Absolute directory the caller's bundled fallback lives in.
+	 * @param string $file_name    Template file name to check inside `$fallback_dir`.
+	 * @return string Resolved template path, or `''` if neither variant exists on disk.
+	 */
+	private static function resolve_fallback_template_path( string $fallback_dir, string $file_name ): string {
+		$fallback_template = trailingslashit( $fallback_dir ) . $file_name;
+
+		if ( file_exists( $fallback_template ) ) {
+			return $fallback_template;
 		}
 
-		// Try the file name as-supplied first so a caller can ship a
-		// `gatherpress_*.php` file under its prefixed name on disk.
-		$plugin_template = trailingslashit( $plugin_dir ) . $file_name;
-		if ( file_exists( $plugin_template ) ) {
-			return $plugin_template;
-		}
-
-		// Fall back to the unprefixed name so the bundled core templates
-		// (which live on disk as plain `ical-download.php`) still resolve
-		// when callers pass the prefixed name (the convention used by
-		// `Utility::prefix_key()`-tagged template descriptors).
 		$unprefixed = self::unprefix_key( $file_name );
+
 		if ( $unprefixed === $file_name ) {
 			return '';
 		}
 
-		$plugin_template = trailingslashit( $plugin_dir ) . $unprefixed;
+		$fallback_template = trailingslashit( $fallback_dir ) . $unprefixed;
 
-		return file_exists( $plugin_template ) ? $plugin_template : '';
+		return file_exists( $fallback_template ) ? $fallback_template : '';
 	}
 
 	/**
