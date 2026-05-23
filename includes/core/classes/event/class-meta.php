@@ -9,8 +9,8 @@
  * `__return_false` auth callbacks.
  *
  * Sibling singleton to `Event\Setup` — `Setup` keeps post-type
- * registration, .ics rewrite plumbing, and date-formatting filters;
- * `Meta` keeps everything that touches `register_post_meta()`.
+ * registration and date-formatting filters; `Meta` keeps everything
+ * that touches `register_post_meta()`.
  *
  * @package GatherPress\Core\Event
  * @since 1.0.0
