@@ -36,7 +36,7 @@ class Test_Setup extends Base {
 			array(
 				'type'     => 'action',
 				'name'     => 'init',
-				'priority' => 99,
+				'priority' => PHP_INT_MAX,
 				'callback' => array( $instance, 'register_endpoints' ),
 			),
 			array(
