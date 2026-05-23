@@ -425,6 +425,7 @@ export const EventOrderControls = ( { attributes, setAttributes } ) => {
 	return (
 		<>
 			<SelectControl
+				__next40pxDefaultSize
 				label={ sprintf(
 					/* translators: %s: Plural post type label, e.g. "Events". */
 					__( 'Order %s by', 'gatherpress' ),

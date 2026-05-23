@@ -39,6 +39,7 @@ const Timezone = () => {
 	return (
 		<PanelRow>
 			<SelectControl
+				__next40pxDefaultSize
 				label={ __( 'Time Zone', 'gatherpress' ) }
 				value={ maybeConvertUtcOffsetForSelect( timezone ) }
 				onChange={ ( value ) => {

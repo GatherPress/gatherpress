@@ -135,6 +135,7 @@ const RsvpManager = ( { defaultStatus, setDefaultStatus } ) => {
 	return (
 		<>
 			<SelectControl
+				__next40pxDefaultSize
 				label={ __( 'RSVP Status', 'gatherpress' ) }
 				value={ defaultStatus }
 				options={ [

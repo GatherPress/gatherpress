@@ -441,6 +441,7 @@ const Edit = ( { attributes, setAttributes, clientId, context } ) => {
 								) }
 							</p>
 							<SelectControl
+								__next40pxDefaultSize
 								label={ __( 'Edit Block Status', 'gatherpress' ) }
 								value={ selectedStatus }
 								options={ [

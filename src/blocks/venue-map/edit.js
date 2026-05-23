@@ -591,6 +591,7 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 			<InspectorControls>
 				<PanelBody>
 					<SelectControl
+						__next40pxDefaultSize
 						label={ __( 'Render mode', 'gatherpress' ) }
 						value={ renderMode }
 						options={ [
@@ -618,6 +619,7 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 					/>
 					{ showMapTypeControl && (
 						<SelectControl
+							__next40pxDefaultSize
 							label={ __( 'Map type', 'gatherpress' ) }
 							value={ type }
 							options={ googleMapTypeSelectOptions }
@@ -697,6 +699,7 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 						panelId={ clientId }
 					>
 						<SelectControl
+							__next40pxDefaultSize
 							label={ __( 'Aspect ratio', 'gatherpress' ) }
 							value={ isCustomAspectRatio ? 'custom' : aspectRatio }
 							options={ ASPECT_RATIO_PRESETS }
@@ -749,6 +752,7 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 							panelId={ clientId }
 						>
 							<SelectControl
+								__next40pxDefaultSize
 								label={ __( 'Scale', 'gatherpress' ) }
 								value={ scale ?? siteScaleDefault }
 								options={ SCALE_OPTIONS.map( ( value ) => ( {
@@ -789,6 +793,7 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 									} }
 								>
 									<SelectControl
+										__next40pxDefaultSize
 										label={ __( 'Link to', 'gatherpress' ) }
 										value={
 											linkDestination ||
