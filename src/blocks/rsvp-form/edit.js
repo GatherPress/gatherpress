@@ -310,6 +310,7 @@ const Edit = ( { attributes, setAttributes, clientId, context } ) => {
 			<InspectorControls>
 				<PanelBody title={ __( 'Preview Settings', 'gatherpress' ) }>
 					<SelectControl
+						__next40pxDefaultSize
 						label={ __( 'Form State Preview', 'gatherpress' ) }
 						help={ __(
 							'Preview how blocks appear in different form states. This setting is not saved.',

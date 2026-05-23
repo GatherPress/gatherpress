@@ -52,6 +52,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 			<InspectorControls>
 				<PanelBody title={ __( 'Icon Settings', 'gatherpress' ) }>
 					<SelectControl
+						__next40pxDefaultSize
 						label={ __( 'Icon', 'gatherpress' ) }
 						value={ icon }
 						options={ ICON_OPTIONS }

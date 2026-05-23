@@ -105,6 +105,7 @@ const Edit = ( {
 			<InspectorControls>
 				<PanelBody title={ __( 'Field settings', 'gatherpress' ) }>
 					<SelectControl
+						__next40pxDefaultSize
 						label={ __( 'Field type', 'gatherpress' ) }
 						value={ fieldType }
 						options={ [

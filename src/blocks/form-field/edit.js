@@ -140,6 +140,7 @@ export default function Edit( { attributes, setAttributes } ) {
 			<InspectorControls>
 				<PanelBody title={ __( 'Field Settings', 'gatherpress' ) }>
 					<SelectControl
+						__next40pxDefaultSize
 						label={ __( 'Field Type', 'gatherpress' ) }
 						value={ fieldType }
 						options={ [
