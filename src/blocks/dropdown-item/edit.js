@@ -108,13 +108,6 @@ const Edit = ( { attributes, setAttributes, clientId, insertBlocksAfter } ) => {
 				} }
 				placeholder={ __( 'Item Text…', 'gatherpress' ) }
 				allowedFormats={ [ 'core/link' ] }
-				onSplit={ ( before, after ) => {
-					const newBlock = createBlock( 'gatherpress/dropdown-item', {
-						text: after,
-					} );
-					insertBlocksAfter( [ newBlock ] );
-					setAttributes( { text: before } );
-				} }
 				onKeyDown={ ( event ) => {
 					if ( 'Enter' === event.key ) {
 						event.preventDefault();
