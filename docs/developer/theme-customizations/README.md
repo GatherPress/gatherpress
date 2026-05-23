@@ -48,18 +48,22 @@ GatherPress does respect [theme_supports](https://developer.wordpress.org/refere
 - When **`automatic-feed-links`** are supported, GatherPress will add `rel="alternate"` links to the `<head>` of each view, with the URLs to the relevant iCal feed links. This will be:
 
     - For all requests (`example.org/*`):
-        - `example.org/event/feed/ical`
+        - `example.org/feed/ical` (site-wide)
+        - `example.org/event/feed/ical` (events archive)
 
     - For singular event requests (`example.org/event/my-sample-event`):
+        - `example.org/feed/ical`
         - `example.org/event/feed/ical`
         - `example.org/event/my-sample-event/ical`
-        - `example.org/venue/my-sample-venue/feed/ical` (if its not an Online-Event)
+        - `example.org/venue/my-sample-venue/feed/ical` (if it's not an Online-Event)
         - `example.org/topic/my-sample-topic/feed/ical` (if a topic is selected)
 
     - For singular venue requests (`example.org/venue/my-sample-venue`):
+        - `example.org/feed/ical`
         - `example.org/event/feed/ical`
         - `example.org/venue/my-sample-venue/feed/ical`
 
     - For topic term requests (`example.org/topic/my-sample-topic`):
+        - `example.org/feed/ical`
         - `example.org/event/feed/ical`
         - `example.org/topic/my-sample-topic/feed/ical`
