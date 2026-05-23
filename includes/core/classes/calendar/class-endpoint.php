@@ -284,15 +284,12 @@ class Endpoint {
 		switch ( $object_type ) {
 			case 'sitewide':
 				return true;
-
 			case 'taxonomy':
 				$this->type_object = get_taxonomy( $type_name );
 				break;
-
 			case 'post_type':
 				$this->type_object = get_post_type_object( $type_name );
 				break;
-
 			default:
 				// $object_type is constrained above to 'post_type', 'taxonomy', or 'sitewide';
 				// this arm satisfies php:S131 and is unreachable in practice.

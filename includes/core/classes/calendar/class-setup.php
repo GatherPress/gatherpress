@@ -25,8 +25,9 @@ use GatherPress\Core\Shadow_Source;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Utility;
 use GatherPress\Core\Venue\Setup as Venue_Setup;
-use WP_Term;
 use WP_Post;
+use WP_Post_Type;
+use WP_Term;
 
 /**
  * Calendar subsystem orchestrator.
@@ -66,15 +67,16 @@ class Setup {
 	 * @return void
 	 */
 	protected function setup_hooks(): void {
-		// Register endpoints late on `init` so every post type, taxonomy, and
-		// shadow-taxonomy wiring is in place before we ask `is_object_in_taxonomy()`
-		// which one belongs to which. The previous design used the per-registration
-		// `registered_post_type` / `registered_taxonomy_for_object_type` actions,
-		// but those fire at the moment each individual object is registered —
-		// before companion subsystems (Venue\Setup, Shadow_Source) have attached
-		// their taxonomies to events, so the venue endpoint silently failed its
-		// own validity check and never registered its rewrite rule.
-		add_action( 'init', array( $this, 'register_endpoints' ), 99 );
+		// Register endpoints at `PHP_INT_MAX` on `init` so every post type,
+		// taxonomy, and shadow-taxonomy wiring is in place before we ask
+		// `is_object_in_taxonomy()` which one belongs to which. The previous
+		// design used the per-registration `registered_post_type` /
+		// `registered_taxonomy_for_object_type` actions, but those fire at the
+		// moment each individual object is registered — before companion
+		// subsystems (Venue\Setup, Shadow_Source) have attached their
+		// taxonomies to events, so the venue endpoint silently failed its own
+		// validity check and never registered its rewrite rule.
+		add_action( 'init', array( $this, 'register_endpoints' ), PHP_INT_MAX );
 		add_action( 'wp_head', array( $this, 'alternate_links' ) );
 	}
 
@@ -124,7 +126,6 @@ class Setup {
 	 * @return void
 	 */
 	public function init_events( string $post_type ): void {
-
 		if ( ! post_type_supports( $post_type, 'gatherpress-event-date' ) ) {
 			return;
 		}
@@ -160,7 +161,6 @@ class Setup {
 	 * @return void
 	 */
 	public function init_venues( string $post_type ): void {
-
 		if ( ! $this->is_tax_like_type_for_event_supporting_types( $post_type ) ) {
 			return;
 		}
@@ -343,7 +343,7 @@ class Setup {
 			// returns null — structurally unreachable here because the outer loop
 			// iterates `get_post_types_by_support()`, which only yields registered
 			// post types. Defensive code that needs no test invocation.
-			$archive_title     = $post_type_object instanceof \WP_Post_Type
+			$archive_title     = $post_type_object instanceof WP_Post_Type
 				? $post_type_object->labels->name
 				: $post_type; // @codeCoverageIgnore
 			$alternate_links[] = array(

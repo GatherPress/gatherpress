@@ -98,7 +98,7 @@ Example for a new redirection endpoint like `example.org/event/my-sample-event/o
 
 ### 1. Setup a new endpoint
 
-Set up a single-event endpoint via [`Post_Type_Single`](../../../includes/core/classes/calendar/class-post-type-single.php). Run it on `init` at priority 99 or later so every relevant post type and shadow taxonomy has finished registering — that's the same hook the core calendar subsystem uses (see `Calendar\Setup::setup_hooks()`).
+Set up a single-event endpoint via [`Post_Type_Single`](../../../includes/core/classes/calendar/class-post-type-single.php). Run it on `init` at a very high priority so every relevant post type and shadow taxonomy has finished registering — GatherPress core uses `PHP_INT_MAX` for this (see `Calendar\Setup::setup_hooks()`); companion plugins can pick any similarly high priority, with `99` being a safe default that still leaves room for downstream observers to hook after.
 
 ```php
 use GatherPress\Core\Calendar\Post_Type_Single;
@@ -122,7 +122,7 @@ add_action(
 ```
 
 > [!TIP]
-> Earlier hook timings (`registered_post_type`) can fire before companion subsystems like the venue shadow-taxonomy wiring complete, leaving validation checks on rewrite registration falsely failing. `init` priority 99 sidesteps that.
+> Earlier hook timings (`registered_post_type`) can fire before companion subsystems like the venue shadow-taxonomy wiring complete, leaving validation checks on rewrite registration falsely failing. Hooking late on `init` (priority `99` for companion plugins, `PHP_INT_MAX` for core) sidesteps that.
 
 ### 2. Define the callback for the endpoint
 

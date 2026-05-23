@@ -129,8 +129,7 @@ class Template extends Endpoint_Type {
 	 * @return string          The path of the template to include, either from the theme or plugin.
 	 */
 	public function template_include( string $template = '' ): string {
-		$presets = $this->get_template_presets();
-
+		$presets   = $this->get_template_presets();
 		$file_name = $presets['file_name'];
 		$dir_path  = $presets['dir_path'] ?? $this->plugin_template_dir;
 
