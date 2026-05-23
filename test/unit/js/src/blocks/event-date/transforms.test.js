@@ -3,87 +3,128 @@
  */
 import { describe, expect, it, jest, beforeEach } from '@jest/globals';
 
-// Mock @wordpress/blocks so createBlock returns a deterministic shape we can assert on.
 jest.mock( '@wordpress/blocks', () => ( {
-	createBlock: jest.fn( ( name, attributes ) => ( { name, attributes } ) ),
+	createBlock: jest.fn( ( name, attributes ) => ( {
+		name,
+		attributes,
+	} ) ),
+} ) );
+
+jest.mock( '@wordpress/data', () => ( {
+	select: jest.fn(),
+} ) );
+
+jest.mock( '@src/helpers/event', () => ( {
+	isPostTypeSupporting: jest.fn(),
 } ) );
 
 /**
  * WordPress dependencies
  */
 import { createBlock } from '@wordpress/blocks';
+import { select } from '@wordpress/data';
 
 /**
  * Internal dependencies
  */
+import { isPostTypeSupporting } from '@src/helpers/event';
 import transforms from '@src/blocks/event-date/transforms';
 
-describe( 'event-date transforms', () => {
+describe( 'gatherpress/event-date transforms', () => {
 	beforeEach( () => {
 		createBlock.mockClear();
+		select.mockReset();
+		isPostTypeSupporting.mockReset();
 	} );
 
-	it( 'exports a from array with a single core/post-date entry', () => {
-		expect( Array.isArray( transforms.from ) ).toBe( true );
-		expect( transforms.from ).toHaveLength( 1 );
+	const [ postDateTransform ] = transforms.from;
 
-		const [ rule ] = transforms.from;
-		expect( rule.type ).toBe( 'block' );
-		expect( rule.blocks ).toEqual( [ 'core/post-date' ] );
-		expect( typeof rule.transform ).toBe( 'function' );
+	it( 'declares a block-type transform from core/post-date', () => {
+		expect( postDateTransform.type ).toBe( 'block' );
+		expect( postDateTransform.blocks ).toEqual( [ 'core/post-date' ] );
 	} );
 
-	it( 'maps core/post-date format and textAlign onto the new block', () => {
-		const result = transforms.from[ 0 ].transform( {
-			format: 'F j, Y',
-			textAlign: 'center',
+	describe( 'isMatch', () => {
+		it( 'returns true on a post type that supports gatherpress-event-date', () => {
+			select.mockImplementation( ( store ) => {
+				if ( 'core/editor' === store ) {
+					return { getCurrentPostType: () => 'gatherpress_event' };
+				}
+				return {};
+			} );
+			isPostTypeSupporting.mockReturnValue( true );
+
+			expect( postDateTransform.isMatch() ).toBe( true );
+			expect( isPostTypeSupporting ).toHaveBeenCalledWith(
+				'gatherpress-event-date',
+				'gatherpress_event'
+			);
 		} );
 
-		expect( createBlock ).toHaveBeenCalledWith(
-			'gatherpress/event-date',
-			{
-				displayType: 'start',
-				startDateFormat: 'F j, Y',
-				textAlign: 'center',
-			}
-		);
-		expect( result ).toEqual( {
-			name: 'gatherpress/event-date',
-			attributes: {
-				displayType: 'start',
-				startDateFormat: 'F j, Y',
-				textAlign: 'center',
-			},
+		it( 'returns false on a post type that does not support gatherpress-event-date', () => {
+			select.mockImplementation( ( store ) => {
+				if ( 'core/editor' === store ) {
+					return { getCurrentPostType: () => 'post' };
+				}
+				return {};
+			} );
+			isPostTypeSupporting.mockReturnValue( false );
+
+			expect( postDateTransform.isMatch() ).toBe( false );
+		} );
+
+		it( 'returns false when no post type can be resolved', () => {
+			select.mockImplementation( ( store ) => {
+				if ( 'core/editor' === store ) {
+					return { getCurrentPostType: () => undefined };
+				}
+				return {};
+			} );
+
+			expect( postDateTransform.isMatch() ).toBe( false );
+			expect( isPostTypeSupporting ).not.toHaveBeenCalled();
+		} );
+
+		it( 'returns false when the core/editor store is unavailable', () => {
+			select.mockReturnValue( undefined );
+
+			expect( postDateTransform.isMatch() ).toBe( false );
+			expect( isPostTypeSupporting ).not.toHaveBeenCalled();
 		} );
 	} );
 
-	it( 'omits startDateFormat when format is empty so the block falls back to defaults', () => {
-		transforms.from[ 0 ].transform( { format: '' } );
+	describe( 'transform', () => {
+		it( 'creates a gatherpress/event-date block carrying the source format on both start and end', () => {
+			const result = postDateTransform.transform( {
+				format: 'F j, Y g:i a',
+			} );
 
-		expect( createBlock ).toHaveBeenCalledWith(
-			'gatherpress/event-date',
-			{ displayType: 'start' }
-		);
-	} );
+			expect( createBlock ).toHaveBeenCalledWith(
+				'gatherpress/event-date',
+				{
+					startDateFormat: 'F j, Y g:i a',
+					endDateFormat: 'F j, Y g:i a',
+				}
+			);
+			expect( result ).toEqual( {
+				name: 'gatherpress/event-date',
+				attributes: {
+					startDateFormat: 'F j, Y g:i a',
+					endDateFormat: 'F j, Y g:i a',
+				},
+			} );
+		} );
 
-	it( 'omits textAlign when not provided', () => {
-		transforms.from[ 0 ].transform( { format: 'Y-m-d' } );
+		it( 'defaults missing format to an empty string', () => {
+			postDateTransform.transform( {} );
 
-		expect( createBlock ).toHaveBeenCalledWith(
-			'gatherpress/event-date',
-			{
-				displayType: 'start',
-				startDateFormat: 'Y-m-d',
-			}
-		);
-	} );
-
-	it( 'handles a bare core/post-date with no attributes', () => {
-		transforms.from[ 0 ].transform( {} );
-
-		expect( createBlock ).toHaveBeenCalledWith(
-			'gatherpress/event-date',
-			{ displayType: 'start' }
-		);
+			expect( createBlock ).toHaveBeenCalledWith(
+				'gatherpress/event-date',
+				{
+					startDateFormat: '',
+					endDateFormat: '',
+				}
+			);
+		} );
 	} );
 } );

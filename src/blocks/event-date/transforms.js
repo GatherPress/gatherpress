@@ -1,39 +1,59 @@
 /**
+ * Block transforms for `gatherpress/event-date`.
+ *
+ * Uses the standard Block Transforms API (`transforms.from`) to register a
+ * one-way transform from `core/post-date` → `gatherpress/event-date`. This
+ * is the canonical mechanism for cross-block transforms in WordPress and is
+ * what core surfaces in the block toolbar's "Transform to" menu — no
+ * custom toolbar buttons or inspector slot-fills required.
+ *
+ * The transform is gated to post types that declare
+ * `gatherpress-event-date` support via `isMatch`; on a post type without
+ * that support the resulting block has no datetime source to bind to, so
+ * surfacing the option would just be a dead end. `isMatch` reads the
+ * editor's current post type non-reactively — block-toolbar transforms are
+ * evaluated per click, not per render, so a one-shot `select()` is fine.
+ *
+ * @since 1.0.0
+ */
+
+/**
  * WordPress dependencies
  */
 import { createBlock } from '@wordpress/blocks';
+import { select } from '@wordpress/data';
 
 /**
- * Block transforms for the GatherPress Event Date block.
- *
- * Allows a core/post-date block to be converted into a gatherpress/event-date
- * block via the editor's "Transform to" menu, preserving the user's PHP date
- * format and text alignment.
+ * Internal dependencies
  */
+import { isPostTypeSupporting } from '../../helpers/event';
+
 const transforms = {
 	from: [
 		{
 			type: 'block',
 			blocks: [ 'core/post-date' ],
-			transform: ( attributes ) => {
-				const { format, textAlign } = attributes;
-				const newAttributes = {
-					displayType: 'start',
-				};
+			isMatch: () => {
+				const postType = select( 'core/editor' )?.getCurrentPostType();
 
-				if ( format ) {
-					newAttributes.startDateFormat = format;
+				if ( ! postType ) {
+					return false;
 				}
 
-				if ( textAlign ) {
-					newAttributes.textAlign = textAlign;
-				}
-
-				return createBlock(
-					'gatherpress/event-date',
-					newAttributes
+				return isPostTypeSupporting(
+					'gatherpress-event-date',
+					postType
 				);
 			},
+			transform: ( { format = '' } ) =>
+				createBlock( 'gatherpress/event-date', {
+					// Map core/post-date's single `format` to both the
+					// start and end date formats — the user explicitly
+					// chose this format for "the post date," so it's the
+					// most faithful default for "this event's date."
+					startDateFormat: format,
+					endDateFormat: format,
+				} ),
 		},
 	],
 };
