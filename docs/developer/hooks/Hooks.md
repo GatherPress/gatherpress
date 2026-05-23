@@ -12,6 +12,10 @@
 
 - [`gatherpress_autoloader`](gatherpress_autoloader.md) Filters the registered autoloaders for GatherPress.
 
+## class-calendar.php
+
+- [`gatherpress_calendar_url`](gatherpress_calendar_url.md) Filters the calendar URL for a single event.
+
 ## class-event-query.php
 
 - [`gatherpress_query_vars`](gatherpress_query_vars.md) This filter is documented in includes/query-loop.php
