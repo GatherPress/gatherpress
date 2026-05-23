@@ -26,7 +26,7 @@ add_filter(
 
 ## Files
 
-- [includes/core/classes/event/class-event.php:443](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/event/class-event.php#L443)
+- [includes/core/classes/event/class-event.php:444](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/event/class-event.php#L444)
 ```php
 apply_filters( 'gatherpress_datetime_format', $format, $which, $local )
 ```
