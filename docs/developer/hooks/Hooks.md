@@ -109,6 +109,7 @@
 
 - [`gatherpress_pre_get_http_input`](gatherpress_pre_get_http_input.md) Short-circuit filter for HTTP input retrieval during testing.
 - [`gatherpress_pre_get_wp_referer`](gatherpress_pre_get_wp_referer.md) Short-circuit filter for wp_get_referer() during testing.
+- [`gatherpress_template_path`](gatherpress_template_path.md) Filters the resolved template path returned by `Utility::locate_template()`.
 
 ## network-page.php
 
