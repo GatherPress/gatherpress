@@ -58,6 +58,248 @@ class Test_Utility extends Base {
 	}
 
 	/**
+	 * Coverage for locate_template — resolves a theme override placed in the
+	 * registered stylesheet directory.
+	 *
+	 * @covers ::locate_template
+	 *
+	 * @return void
+	 */
+	public function test_locate_template_resolves_theme_override(): void {
+		$file_name = 'gatherpress_locate-test-' . wp_generate_password( 6, false, false ) . '.php';
+		$tmp_dir   = sys_get_temp_dir() . '/gatherpress-test-theme-' . wp_generate_password( 6, false, false );
+
+		wp_mkdir_p( $tmp_dir );
+		$theme_path = trailingslashit( $tmp_dir ) . $file_name;
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents -- Tmp scratch dir under sys_get_temp_dir().
+		file_put_contents( $theme_path, "<?php // Test stub.\n" );
+
+		$override = static function () use ( $tmp_dir ) {
+			return $tmp_dir;
+		};
+		add_filter( 'stylesheet_directory', $override );
+		add_filter( 'template_directory', $override );
+
+		try {
+			$this->assertSame(
+				$theme_path,
+				Utility::locate_template( $file_name, '/nonexistent/plugin/templates' ),
+				'locate_template should return the theme override when locate_template() resolves it.'
+			);
+		} finally {
+			remove_filter( 'stylesheet_directory', $override );
+			remove_filter( 'template_directory', $override );
+			// phpcs:ignore WordPress.WP.AlternativeFunctions.unlink_unlink -- Tmp scratch dir.
+			unlink( $theme_path );
+			// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_rmdir -- Tmp scratch dir.
+			rmdir( $tmp_dir );
+		}
+	}
+
+	/**
+	 * Coverage for locate_template — falls back to the plugin directory when
+	 * the theme has no override. Strips the `gatherpress_` prefix from the
+	 * passed file name before checking disk.
+	 *
+	 * @covers ::locate_template
+	 *
+	 * @return void
+	 */
+	public function test_locate_template_resolves_plugin_fallback(): void {
+		$expected = sprintf( '%s/includes/templates/calendar/ical-download.php', GATHERPRESS_CORE_PATH );
+
+		$this->assertSame(
+			$expected,
+			Utility::locate_template(
+				'gatherpress_ical-download.php',
+				sprintf( '%s/includes/templates/calendar', GATHERPRESS_CORE_PATH )
+			),
+			'locate_template should return the bundled plugin template and strip the gatherpress_ prefix.'
+		);
+	}
+
+	/**
+	 * Coverage for locate_template — resolves an exact (already-unprefixed)
+	 * filename inside the supplied plugin directory without touching the
+	 * prefix-strip fallback.
+	 *
+	 * @covers ::locate_template
+	 *
+	 * @return void
+	 */
+	public function test_locate_template_resolves_exact_plugin_filename(): void {
+		$tmp_template = wp_tempnam( 'gatherpress-locate-exact' );
+		$dir_path     = dirname( $tmp_template );
+		$file_name    = basename( $tmp_template );
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents -- Tmp scratch file.
+		file_put_contents( $tmp_template, "<?php // Test stub.\n" );
+
+		try {
+			$this->assertSame(
+				$tmp_template,
+				Utility::locate_template( $file_name, $dir_path ),
+				'locate_template should resolve an exact plugin filename without the prefix-strip fallback.'
+			);
+		} finally {
+			// phpcs:ignore WordPress.WP.AlternativeFunctions.unlink_unlink -- Tmp scratch file.
+			unlink( $tmp_template );
+		}
+	}
+
+	/**
+	 * Coverage for locate_template — returns an empty string when neither the
+	 * theme nor the supplied plugin directory has the file.
+	 *
+	 * @covers ::locate_template
+	 *
+	 * @return void
+	 */
+	public function test_locate_template_returns_empty_when_missing(): void {
+		$this->assertSame(
+			'',
+			Utility::locate_template( 'definitely-missing.php', '/nonexistent/plugin/templates' ),
+			'locate_template should return an empty string when nothing resolves.'
+		);
+	}
+
+	/**
+	 * Coverage for locate_template — returns an empty string when the theme
+	 * has no override and the caller omits the fallback directory.
+	 *
+	 * @covers ::locate_template
+	 *
+	 * @return void
+	 */
+	public function test_locate_template_without_fallback_dir_returns_empty(): void {
+		$this->assertSame(
+			'',
+			Utility::locate_template( 'definitely-missing.php' ),
+			'locate_template should return an empty string when no fallback dir is supplied and no theme override.'
+		);
+	}
+
+	/**
+	 * Coverage for resolve_fallback_template_path — returns the file at its
+	 * supplied name when it exists on disk.
+	 *
+	 * @covers ::resolve_fallback_template_path
+	 *
+	 * @return void
+	 */
+	public function test_resolve_fallback_template_path_exact_match(): void {
+		$tmp_template = wp_tempnam( 'gatherpress-resolve-exact' );
+		$dir_path     = dirname( $tmp_template );
+		$file_name    = basename( $tmp_template );
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents -- Tmp scratch file.
+		file_put_contents( $tmp_template, "<?php // Test stub.\n" );
+
+		try {
+			$this->assertSame(
+				$tmp_template,
+				PMC_Utility::invoke_hidden_method(
+					new Utility(),
+					'resolve_fallback_template_path',
+					array( $dir_path, $file_name )
+				),
+				'resolve_fallback_template_path should return the file at the supplied name when it exists.'
+			);
+		} finally {
+			// phpcs:ignore WordPress.WP.AlternativeFunctions.unlink_unlink -- Tmp scratch file.
+			unlink( $tmp_template );
+		}
+	}
+
+	/**
+	 * Coverage for resolve_fallback_template_path — falls back to the
+	 * unprefixed file name when the prefixed name does not exist on disk.
+	 *
+	 * @covers ::resolve_fallback_template_path
+	 *
+	 * @return void
+	 */
+	public function test_resolve_fallback_template_path_strips_prefix(): void {
+		$fallback_dir = sprintf( '%s/includes/templates/calendar', GATHERPRESS_CORE_PATH );
+		$expected     = sprintf( '%s/ical-download.php', $fallback_dir );
+
+		$this->assertSame(
+			$expected,
+			PMC_Utility::invoke_hidden_method(
+				new Utility(),
+				'resolve_fallback_template_path',
+				array( $fallback_dir, 'gatherpress_ical-download.php' )
+			),
+			'resolve_fallback_template_path should fall back to the unprefixed name when the prefixed name is absent.'
+		);
+	}
+
+	/**
+	 * Coverage for resolve_fallback_template_path — returns an empty string
+	 * when neither the prefixed nor the unprefixed name resolves to a file.
+	 *
+	 * @covers ::resolve_fallback_template_path
+	 *
+	 * @return void
+	 */
+	public function test_resolve_fallback_template_path_returns_empty_when_missing(): void {
+		$this->assertSame(
+			'',
+			PMC_Utility::invoke_hidden_method(
+				new Utility(),
+				'resolve_fallback_template_path',
+				array( '/nonexistent/fallback/templates', 'definitely-missing.php' )
+			),
+			'resolve_fallback_template_path should return an empty string when neither variant exists.'
+		);
+	}
+
+	/**
+	 * Coverage for locate_template — the `gatherpress_template_path` filter
+	 * receives the resolved path along with the file name and fallback dir,
+	 * and the filter's return value wins over the default resolution.
+	 *
+	 * @covers ::locate_template
+	 *
+	 * @return void
+	 */
+	public function test_locate_template_filter_overrides_resolved_path(): void {
+		$captured = array();
+		$callback = static function ( $resolved, $file_name, $fallback_dir ) use ( &$captured ) {
+			$captured['resolved']     = $resolved;
+			$captured['file_name']    = $file_name;
+			$captured['fallback_dir'] = $fallback_dir;
+
+			return '/filter/overrode/this.php';
+		};
+
+		add_filter( 'gatherpress_template_path', $callback, 10, 3 );
+
+		try {
+			$this->assertSame(
+				'/filter/overrode/this.php',
+				Utility::locate_template( 'definitely-missing.php', '/nonexistent/fallback/templates' ),
+				'The gatherpress_template_path filter return value should win over the default resolution.'
+			);
+			$this->assertSame(
+				'',
+				$captured['resolved'],
+				'Filter should receive the unresolved empty string.'
+			);
+			$this->assertSame(
+				'definitely-missing.php',
+				$captured['file_name'],
+				'Filter should receive the requested file name.'
+			);
+			$this->assertSame(
+				'/nonexistent/fallback/templates',
+				$captured['fallback_dir'],
+				'Filter should receive the supplied fallback dir.'
+			);
+		} finally {
+			remove_filter( 'gatherpress_template_path', $callback, 10 );
+		}
+	}
+
+	/**
 	 * Coverage for prefix_key method.
 	 *
 	 * @covers ::prefix_key

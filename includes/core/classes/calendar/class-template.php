@@ -86,41 +86,41 @@ class Template extends Endpoint_Type {
 	/**
 	 * Load the theme-overridable feed template from the plugin.
 	 *
-	 * This method ensures that a feed template is loaded when a request is made to
-	 * a custom feed endpoint. If the theme provides an override for the feed template,
-	 * it will be used; otherwise, the default template from the plugin is loaded. The
-	 * method ensures that WordPress does not return a 404 for custom feed URLs.
+	 * Ensures that a feed template is loaded when a request hits a custom
+	 * feed endpoint — without this `do_feed_{slug}` action callback,
+	 * WordPress would XML-404 on `/feed/{slug}` URLs.
 	 *
-	 * A call to any post types /feed/anything endpoint is handled by WordPress
-	 * prior 'Template's template_include hook would run.
-	 * Therefore WordPress will throw an xml'ed 404 error,
-	 * if nothing is hooked onto the 'do_feed_anything' action.
+	 * Resolves the template via `template_include()` (same theme → plugin
+	 * lookup the non-feed branch uses) and then runs it via
+	 * `Utility::render_template()` so the feed body is emitted. Globals
+	 * (`$wp_query`, `$post`) are already set by WordPress before
+	 * `do_feed_{slug}` fires, so the file does not need
+	 * `load_template()`'s explicit `set_global_vars()`.
 	 *
-	 * That's the reason for this method, it delivers what WordPress wants
-	 * and re-uses the parameters provided by the class.
-	 *
-	 * We expect that a endpoint, that contains the /feed/ string, only has one 'Redirect_Template' attached.
-	 * This might be wrong or short sightened, please open an issue in that case
-	 * under https://github.com/GatherPress/gatherpress/issues.
-	 *
-	 * Until then, we *just* use the first of the provided endpoint-types,
-	 * to hook into WordPress, which should be the valid template endpoint.
+	 * We expect that an endpoint containing `/feed/` only has one
+	 * `Redirect_Template` attached. If that assumption ever breaks, open an
+	 * issue at https://github.com/GatherPress/gatherpress/issues — until
+	 * then we just use the first of the provided endpoint-types.
 	 *
 	 * @since 1.0.0
 	 *
 	 * @return void
 	 */
-	public function load_feed_template() {
-		load_template( $this->template_include() );
+	public function load_feed_template(): void {
+		$resolved = $this->template_include();
+
+		if ( ! empty( $resolved ) ) {
+			Utility::render_template( $resolved, array(), true );
+		}
 	}
 
 	/**
 	 * Filters the path of the current template before including it.
 	 *
-	 * This method checks if the theme or child theme provides a custom template for the
-	 * current endpoint. If a theme template exists, it will use that; otherwise, it will
-	 * fall back to the default template provided by the plugin. The template information
-	 * is provided by the callback set during the construction of the endpoint.
+	 * Delegates the theme → block-template → plugin fallback walk to
+	 * `Utility::locate_template()` and returns the resolved path. Falls
+	 * back to the WP-supplied default when nothing is found, so the
+	 * template loader can keep looking.
 	 *
 	 * @since 1.0.0
 	 *
@@ -129,24 +129,11 @@ class Template extends Endpoint_Type {
 	 * @return string          The path of the template to include, either from the theme or plugin.
 	 */
 	public function template_include( string $template = '' ): string {
-		$presets   = $this->get_template_presets();
-		$file_name = $presets['file_name'];
-		$dir_path  = $presets['dir_path'] ?? $this->plugin_template_dir;
+		$presets  = $this->get_template_presets();
+		$dir_path = $presets['dir_path'] ?? $this->plugin_template_dir;
+		$resolved = Utility::locate_template( $presets['file_name'], $dir_path );
 
-		// Check if the theme provides a custom template.
-		$theme_template = $this->get_template_from_theme( $file_name );
-		if ( $theme_template ) {
-			return $theme_template;
-		}
-
-		// Check if the plugin has a template file.
-		$plugin_template = $this->get_template_from_plugin( $file_name, $dir_path );
-		if ( $plugin_template ) {
-			return $plugin_template;
-		}
-
-		// Fallback to the default template.
-		return $template;
+		return $resolved ? $resolved : $template;
 	}
 
 	/**
@@ -158,56 +145,5 @@ class Template extends Endpoint_Type {
 	 */
 	protected function get_template_presets(): array {
 		return ( $this->callback )();
-	}
-
-	/**
-	 * Locate a template in the theme or child theme.
-	 *
-	 * @todo Maybe better put in the Utility class?
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param string $file_name The name of the template file.
-	 * @return string The path to the theme template or an empty string if not found.
-	 */
-	protected function get_template_from_theme( string $file_name ): string {
-		// locate_template() accepts a string, but locate_block_template()
-		// requires an array of candidate templates.
-		$templates = array( $file_name );
-
-		// First, search for PHP templates, which block themes can also use.
-		$template = locate_template( $templates );
-
-		// Pass the result into the block template locator and let it figure
-		// out whether block templates are supported and this template exists.
-		$template = locate_block_template(
-			$template,
-			pathinfo( $file_name, PATHINFO_FILENAME ), // Name of the file without extension.
-			$templates
-		);
-
-		return $template;
-	}
-
-	/**
-	 * Build the full path to the plugin's template file.
-	 *
-	 * @todo Maybe better put in the Utility class?
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param string $file_name The name of the template file.
-	 * @param string $dir_path  The directory path where the template is stored.
-	 * @return string The full path to the template file or an empty string if file not exists.
-	 */
-	protected function get_template_from_plugin( string $file_name, string $dir_path ): string {
-		// Remove the GatherPress prefix to keep template filenames simple for
-		// core templates shipped from this plugin.
-		if ( $this->plugin_template_dir === $dir_path ) {
-			$file_name = Utility::unprefix_key( $file_name );
-		}
-
-		$template = trailingslashit( $dir_path ) . $file_name;
-		return file_exists( $template ) ? $template : '';
 	}
 }

@@ -127,8 +127,6 @@ class Test_Template extends Base {
 	 *
 	 * @covers ::template_include
 	 * @covers ::get_template_presets
-	 * @covers ::get_template_from_theme
-	 * @covers ::get_template_from_plugin
 	 *
 	 * @return void
 	 */
@@ -159,8 +157,6 @@ class Test_Template extends Base {
 	 *
 	 * @covers ::template_include
 	 * @covers ::get_template_presets
-	 * @covers ::get_template_from_theme
-	 * @covers ::get_template_from_plugin
 	 *
 	 * @return void
 	 */
@@ -190,11 +186,10 @@ class Test_Template extends Base {
 	}
 
 	/**
-	 * When `get_template_from_theme()` returns a non-empty path,
-	 * template_include short-circuits and returns it without consulting the
-	 * plugin directory. Verifying via reflection-invoked subcomponents keeps
-	 * the test independent of `locate_template()`'s theme-resolution rules,
-	 * which are difficult to set up reliably in the unit-test environment.
+	 * When a theme provides the override file, `template_include` returns the
+	 * theme path without consulting the plugin directory. Exercises the real
+	 * `locate_template()` resolution by pointing the registered stylesheet
+	 * directory at a scratch dir.
 	 *
 	 * @covers ::template_include
 	 * @covers ::get_template_presets
@@ -202,66 +197,15 @@ class Test_Template extends Base {
 	 * @return void
 	 */
 	public function test_template_include_returns_theme_template_when_present(): void {
-		$slug     = 'ical';
-		$callback = static function () {
-			return array(
-				'file_name' => 'gatherpress_ical-download.php',
-			);
-		};
-
-		$theme_template = '/path/to/theme/ical-download.php';
-
-		// Subclass that stubs the protected theme/plugin lookups so we exercise
-		// the early-return branch of template_include() without depending on
-		// the filesystem.
-		$instance                 = new class( $slug, $callback, '/nonexistent' ) extends Template {
-
-			/**
-			 * Stub return value for the overridden lookup.
-			 *
-			 * @var string
-			 */
-			public string $theme_template = '';
-
-			/**
-			 * Override that returns the stubbed theme template path.
-			 *
-			 * @param string $file_name Template file name (unused in stub).
-			 * @return string
-			 */
-			protected function get_template_from_theme( string $file_name ): string {
-				return $this->theme_template;
-			}
-		};
-		$instance->theme_template = $theme_template;
-
-		$this->assertSame(
-			$theme_template,
-			$instance->template_include( '/default/template.php' ),
-			'template_include should return the theme template when it is non-empty.'
-		);
-	}
-
-	/**
-	 * Direct coverage for `get_template_from_theme()` — exercises
-	 * locate_template + locate_block_template against a real on-disk file
-	 * placed in the registered stylesheet directory.
-	 *
-	 * @covers ::get_template_from_theme
-	 *
-	 * @return void
-	 */
-	public function test_get_template_from_theme_locates_existing_file(): void {
-		$file_name = 'gatherpress-calendar-test-' . wp_generate_password( 6, false, false ) . '.php';
+		$file_name = 'gatherpress_ical-test-' . wp_generate_password( 6, false, false ) . '.php';
 		$tmp_dir   = sys_get_temp_dir() . '/gatherpress-test-theme-' . wp_generate_password( 6, false, false );
 
 		wp_mkdir_p( $tmp_dir );
+		// Theme files live as the unprefixed name (the prefix is plugin-side).
 		$theme_path = trailingslashit( $tmp_dir ) . $file_name;
 		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents -- Tmp scratch dir under sys_get_temp_dir().
 		file_put_contents( $theme_path, "<?php // Test stub.\n" );
 
-		// Override the stylesheet/template paths so locate_template() looks at
-		// our scratch directory instead of the real active theme.
 		$override = static function () use ( $tmp_dir ) {
 			return $tmp_dir;
 		};
@@ -269,17 +213,15 @@ class Test_Template extends Base {
 		add_filter( 'template_directory', $override );
 
 		try {
-			$instance = new Template( 'ical', static function () {} );
-			$result   = Utility::invoke_hidden_method(
-				$instance,
-				'get_template_from_theme',
-				array( $file_name )
-			);
+			$callback = static function () use ( $file_name ) {
+				return array( 'file_name' => $file_name );
+			};
+			$instance = new Template( 'ical', $callback, '/nonexistent' );
 
 			$this->assertSame(
 				$theme_path,
-				$result,
-				'get_template_from_theme should resolve via locate_template when the file lives in the theme directory.'
+				$instance->template_include( '/default/template.php' ),
+				'template_include should return the theme template when locate_template resolves it.'
 			);
 		} finally {
 			remove_filter( 'stylesheet_directory', $override );
@@ -292,47 +234,8 @@ class Test_Template extends Base {
 	}
 
 	/**
-	 * Direct coverage for `get_template_from_plugin()` — returns the resolved
-	 * path when the file exists in the plugin's template directory, an empty
-	 * string when it does not. Also confirms the `gatherpress_` prefix is
-	 * stripped when the configured dir matches the bundled template dir.
-	 *
-	 * @covers ::get_template_from_plugin
-	 *
-	 * @return void
-	 */
-	public function test_get_template_from_plugin_resolves_and_falls_back(): void {
-		$instance = new Template( 'ical', static function () {} );
-
-		// Bundled template under the default plugin_template_dir — the
-		// `gatherpress_` prefix should be stripped before the file check.
-		$bundled = Utility::invoke_hidden_method(
-			$instance,
-			'get_template_from_plugin',
-			array( 'gatherpress_ical-download.php', Utility::get_hidden_property( $instance, 'plugin_template_dir' ) )
-		);
-		$this->assertSame(
-			sprintf( '%s/includes/templates/calendar/ical-download.php', GATHERPRESS_CORE_PATH ),
-			$bundled,
-			'Should resolve the bundled iCal template and strip the gatherpress_ prefix.'
-		);
-
-		// Non-existent file → empty string fallback.
-		$missing = Utility::invoke_hidden_method(
-			$instance,
-			'get_template_from_plugin',
-			array( 'definitely-missing.php', '/nonexistent/dir' )
-		);
-		$this->assertSame(
-			'',
-			$missing,
-			'Should return an empty string when the resolved file does not exist.'
-		);
-	}
-
-	/**
 	 * Delegates to template_include and loads the resolved template via
-	 * WordPress's `load_template()`.
+	 * `Utility::render_template()`.
 	 *
 	 * @covers ::load_feed_template
 	 *
