@@ -304,8 +304,28 @@ class Setup {
 		if ( ! current_theme_supports( 'automatic-feed-links' ) ) {
 			return;
 		}
+		$args  = $this->alternate_link_label_args();
+		$links = array_merge(
+			$this->collect_sitewide_alternate_link( $args ),
+			$this->collect_post_type_archive_alternate_links( $args ),
+			$this->collect_contextual_alternate_links( $args )
+		);
+		$this->render_alternate_links( $links );
+	}
 
-		$args = array(
+	/**
+	 * Build the localized label args used to format alternate-link titles.
+	 *
+	 * Returns the site title, the locale-specific separator (defaults to
+	 * `&raquo;`), and the four `sprintf()` templates the link builders
+	 * consume: `singletitle`, `feedtitle`, `posttypetitle`, `taxtitle`.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return array{blogtitle:string,separator:string,singletitle:string,feedtitle:string,posttypetitle:string,taxtitle:string}
+	 */
+	protected function alternate_link_label_args(): array {
+		return array(
 			'blogtitle'     => get_bloginfo( 'name' ),
 			/* translators: Separator between site name and feed type in feed links. */
 			'separator'     => _x( '&raquo;', 'feed link separator', 'gatherpress' ),
@@ -318,35 +338,60 @@ class Setup {
 			/* translators: 1: Site name, 2: Separator (raquo), 3: Term name, 4: Taxonomy singular name. */
 			'taxtitle'      => __( '📅 %1$s %2$s %3$s %4$s iCal Feed', 'gatherpress' ),
 		);
+	}
 
-		$alternate_links = array();
-
-		$alternate_links[] = array(
-			'url'  => get_feed_link( self::ICAL_SLUG ),
-			'attr' => sprintf(
-				$args['feedtitle'],
-				$args['blogtitle'],
-				$args['separator']
+	/**
+	 * Build the single sitewide `<link rel="alternate">` entry.
+	 *
+	 * Always emitted on every request that reaches `alternate_links()`.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param array $args Label args from `alternate_link_label_args()`.
+	 * @return array<int,array{url:string,attr:string}> One-element list.
+	 */
+	protected function collect_sitewide_alternate_link( array $args ): array {
+		return array(
+			array(
+				'url'  => get_feed_link( self::ICAL_SLUG ),
+				'attr' => sprintf(
+					$args['feedtitle'],
+					$args['blogtitle'],
+					$args['separator']
+				),
 			),
 		);
+	}
+
+	/**
+	 * Build one `<link rel="alternate">` entry per event-supporting post-type archive.
+	 *
+	 * Reads the archive title straight off the post type object instead of via
+	 * `post_type_archive_title()` — that function early-returns outside an
+	 * `is_post_type_archive()` context, which is exactly the case here when
+	 * this hook fires on a non-archive page. Invoking the
+	 * `post_type_archive_title` filter directly from plugin code also trips
+	 * WordPress.NamingConventions.PrefixAllGlobals because it's a core hook
+	 * not owned by GatherPress.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param array $args Label args from `alternate_link_label_args()`.
+	 * @return array<int,array{url:string,attr:string}> One entry per event-supporting post type.
+	 */
+	protected function collect_post_type_archive_alternate_links( array $args ): array {
+		$links = array();
 
 		foreach ( get_post_types_by_support( 'gatherpress-event-date' ) as $post_type ) {
-			// Read the archive title straight off the post type object instead
-			// of via `post_type_archive_title()` — that function early-returns
-			// outside an `is_post_type_archive()` context, which is exactly the
-			// case here when this hook fires on a non-archive page. Invoking
-			// the `post_type_archive_title` filter directly from plugin code
-			// also trips WordPress.NamingConventions.PrefixAllGlobals because
-			// it's a core hook not owned by GatherPress.
 			$post_type_object = get_post_type_object( $post_type );
 			// The fallback to the bare slug only fires when `get_post_type_object()`
-			// returns null — structurally unreachable here because the outer loop
+			// returns null — structurally unreachable here because the loop
 			// iterates `get_post_types_by_support()`, which only yields registered
 			// post types. Defensive code that needs no test invocation.
-			$archive_title     = $post_type_object instanceof WP_Post_Type
+			$archive_title = $post_type_object instanceof WP_Post_Type
 				? $post_type_object->labels->name
 				: $post_type; // @codeCoverageIgnore
-			$alternate_links[] = array(
+			$links[]       = array(
 				'url'  => get_post_type_archive_feed_link(
 					$post_type,
 					self::ICAL_SLUG
@@ -360,10 +405,56 @@ class Setup {
 			);
 		}
 
-		if ( is_singular() && post_type_supports( get_queried_object()->post_type, 'gatherpress-event-date' ) ) {
-			$calendar = new Calendar( get_queried_object()->ID );
+		return $links;
+	}
 
-			$alternate_links[] = array(
+	/**
+	 * Dispatch the contextual `<link rel="alternate">` entries for the current request.
+	 *
+	 * Returns the per-request additions on top of the always-on sitewide and
+	 * per-post-type-archive entries. Dispatches on the queried object:
+	 * singular event, singular tax-like shadow-source post, or taxonomy
+	 * archive. Returns an empty list for any other context.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param array $args Label args from `alternate_link_label_args()`.
+	 * @return array<int,array{url:string,attr:string}>
+	 */
+	protected function collect_contextual_alternate_links( array $args ): array {
+		$queried = get_queried_object();
+
+		if ( is_singular() && post_type_supports( $queried->post_type, 'gatherpress-event-date' ) ) {
+			return $this->collect_singular_event_alternate_links( $queried, $args );
+		}
+
+		if ( is_singular() && $this->is_tax_like_type_for_event_supporting_types( $queried->post_type ) ) {
+			return $this->collect_singular_tax_like_alternate_links( $queried, $args );
+		}
+
+		if ( is_tax() && $this->has_post_type_for_taxonomy( $queried->taxonomy ) ) {
+			return $this->collect_tax_archive_alternate_links( $queried, $args );
+		}
+
+		return array();
+	}
+
+	/**
+	 * Build the alternate-link entries for a singular event request.
+	 *
+	 * Always emits the single-event iCal download link; appends one entry
+	 * per related taxonomy term via `collect_event_term_alternate_links()`.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param WP_Post $event The queried event post.
+	 * @param array   $args  Label args from `alternate_link_label_args()`.
+	 * @return array<int,array{url:string,attr:string}>
+	 */
+	protected function collect_singular_event_alternate_links( WP_Post $event, array $args ): array {
+		$calendar = new Calendar( $event->ID );
+		$links    = array(
+			array(
 				'url'  => $calendar->get_ical_url(),
 				'attr' => sprintf(
 					$args['singletitle'],
@@ -371,103 +462,157 @@ class Setup {
 					$args['separator'],
 					the_title_attribute( array( 'echo' => false ) )
 				),
-			);
+			),
+		);
 
-			// Get all terms associated with the current event-post.
-			$terms = get_terms(
-				array(
-					'taxonomy'   => get_object_taxonomies( get_queried_object() ),
-					'object_ids' => get_queried_object()->ID,
-				)
-			);
-			// Loop over terms and generate the ical feed links for the <head>.
-			array_walk(
-				$terms,
-				function ( WP_Term $term ) use ( $args, &$alternate_links ) {
-					$tax           = get_taxonomy( $term->taxonomy );
-					$shadow_source = Shadow_Source::get_instance();
+		return array_merge( $links, $this->collect_event_term_alternate_links( $event, $args ) );
+	}
 
-					// For the venue taxonomy, we want to link to the feed of the associated venue post,
-					// not the term archive feed, so we need to resolve the venue post from the term first
-					// and then get the feed link for that post.
-					if ( $shadow_source->is_shadow_term_slug( $term->taxonomy ) ) {
-
-						// Strip out all 'non-default' shadow terms like 'Online-Event',
-						// which does not start with a "_".
-						if ( $shadow_source->is_shadow_term_slug( $term->slug ) ) {
-							$post = $shadow_source->get_post_from_term_slug(
-								$term->slug,
-								ltrim( $term->taxonomy, '_' )
-							);
-							// Feels weird to use a *_comments_* function here, but it delivers clean results
-							// in the form of "domain.tld/event/my-sample-event/feed/ical/".
-							$href = get_post_comments_feed_link( $post->ID, self::ICAL_SLUG );
-						}
-
-						// For non-shadow taxonomies, we can link to the term archive feed as usual.
-					} else {
-						$href = get_term_feed_link(
-							$term->term_id,
-							$term->taxonomy,
-							self::ICAL_SLUG
-						);
-					}
-
-					// Can be empty for Online-Events.
-					if ( ! empty( $href ) ) {
-						$alternate_links[] = array(
-							'url'  => $href,
-							'attr' => sprintf(
-								$args['taxtitle'],
-								$args['blogtitle'],
-								$args['separator'],
-								$term->name,
-								$tax->labels->singular_name
-							),
-						);
-					}
-				}
-			);
-		} elseif (
-			is_singular()
-			&& $this->is_tax_like_type_for_event_supporting_types( get_queried_object()->post_type )
-		) {
-			// Feels weird to use a *_comments_* function here, but it delivers clean results
-			// in the form of "domain.tld/venue/my-sample-venue/feed/ical/".
-			$alternate_links[] = array(
-				'url'  => get_post_comments_feed_link(
-					get_queried_object()->ID,
-					self::ICAL_SLUG
-				),
+	/**
+	 * Build the alternate-link entries for a singular tax-like shadow-source request.
+	 *
+	 * Feels weird to use a `*_comments_*` function here, but it delivers
+	 * clean results in the form of `domain.tld/venue/my-sample-venue/feed/ical/`.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param WP_Post $post The queried shadow-source post (e.g. a venue).
+	 * @param array   $args Label args from `alternate_link_label_args()`.
+	 * @return array<int,array{url:string,attr:string}>
+	 */
+	protected function collect_singular_tax_like_alternate_links( WP_Post $post, array $args ): array {
+		return array(
+			array(
+				'url'  => get_post_comments_feed_link( $post->ID, self::ICAL_SLUG ),
 				'attr' => sprintf(
 					$args['singletitle'],
 					$args['blogtitle'],
 					$args['separator'],
 					the_title_attribute( array( 'echo' => false ) )
 				),
-			);
-		} elseif ( is_tax() && $this->has_post_type_for_taxonomy( get_queried_object()->taxonomy ) ) {
-			$tax = get_taxonomy( get_queried_object()->taxonomy );
+			),
+		);
+	}
 
-			$alternate_links[] = array(
-				'url'  => get_term_feed_link(
-					get_queried_object()->term_id,
-					get_queried_object()->taxonomy,
-					self::ICAL_SLUG
-				),
+	/**
+	 * Build the alternate-link entries for an event-bearing taxonomy archive.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param WP_Term $term The queried taxonomy term.
+	 * @param array   $args Label args from `alternate_link_label_args()`.
+	 * @return array<int,array{url:string,attr:string}>
+	 */
+	protected function collect_tax_archive_alternate_links( WP_Term $term, array $args ): array {
+		$tax = get_taxonomy( $term->taxonomy );
+
+		return array(
+			array(
+				'url'  => get_term_feed_link( $term->term_id, $term->taxonomy, self::ICAL_SLUG ),
 				'attr' => sprintf(
 					$args['taxtitle'],
 					$args['blogtitle'],
 					$args['separator'],
-					get_queried_object()->name,
+					$term->name,
 					$tax->labels->singular_name
 				),
-			);
+			),
+		);
+	}
+
+	/**
+	 * Walk the queried event's related terms into alternate-link entries.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param WP_Post $event The queried event post.
+	 * @param array   $args  Label args from `alternate_link_label_args()`.
+	 * @return array<int,array{url:string,attr:string}>
+	 */
+	protected function collect_event_term_alternate_links( WP_Post $event, array $args ): array {
+		$terms = get_terms(
+			array(
+				'taxonomy'   => get_object_taxonomies( $event ),
+				'object_ids' => $event->ID,
+			)
+		);
+
+		$links = array();
+
+		foreach ( $terms as $term ) {
+			$links = array_merge( $links, $this->collect_term_alternate_link( $term, $args ) );
 		}
 
-		// Render tags into <head/>.
+		return $links;
+	}
+
+	/**
+	 * Resolve a single related term into zero or one alternate-link entries.
+	 *
+	 * For shadow-source taxonomies the link points at the associated post's
+	 * comments-feed URL (so `gatherpress_venue` resolves to the venue
+	 * post's feed, not the term archive feed). Sentinel shadow terms like
+	 * `online-event` — slugs that don't start with `_` — are skipped because
+	 * they have no backing post. For regular taxonomies the term archive
+	 * feed link is used directly.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param WP_Term $term Term attached to the queried event.
+	 * @param array   $args Label args from `alternate_link_label_args()`.
+	 * @return array<int,array{url:string,attr:string}> Empty for sentinel terms; otherwise one entry.
+	 */
+	protected function collect_term_alternate_link( WP_Term $term, array $args ): array {
+		$shadow_source = Shadow_Source::get_instance();
+		$href          = '';
+
+		if ( $shadow_source->is_shadow_term_slug( $term->taxonomy ) ) {
+			// Skip sentinel shadow terms like `online-event` whose slug does
+			// not start with `_` — no backing post means no feed to link to.
+			if ( $shadow_source->is_shadow_term_slug( $term->slug ) ) {
+				$post = $shadow_source->get_post_from_term_slug(
+					$term->slug,
+					ltrim( $term->taxonomy, '_' )
+				);
+				// Feels weird to use a *_comments_* function here, but it delivers clean results
+				// in the form of "domain.tld/event/my-sample-event/feed/ical/".
+				$href = get_post_comments_feed_link( $post->ID, self::ICAL_SLUG );
+			}
+		} else {
+			$href = get_term_feed_link( $term->term_id, $term->taxonomy, self::ICAL_SLUG );
+		}
+
+		if ( empty( $href ) ) {
+			return array();
+		}
+
+		$tax = get_taxonomy( $term->taxonomy );
+
+		return array(
+			array(
+				'url'  => $href,
+				'attr' => sprintf(
+					$args['taxtitle'],
+					$args['blogtitle'],
+					$args['separator'],
+					$term->name,
+					$tax->labels->singular_name
+				),
+			),
+		);
+	}
+
+	/**
+	 * Render the collected alternate-link entries into `<head>`.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param array<int,array{url:string,attr:string}> $links Entries to render.
+	 * @return void
+	 */
+	protected function render_alternate_links( array $links ): void {
 		array_walk(
-			$alternate_links,
+			$links,
 			function ( $link ) {
 				printf(
 					'<link rel="alternate" type="%s" title="%s" href="%s" />' . "\n",
