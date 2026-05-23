@@ -60,6 +60,69 @@ class Utility {
 	}
 
 	/**
+	 * Locate a theme-overridable template file.
+	 *
+	 * Walks the resolution chain used everywhere GatherPress ships an
+	 * overridable template:
+	 *
+	 * 1. `locate_template()` — classic theme / child-theme override.
+	 * 2. `locate_block_template()` — block-theme override (HTML template
+	 *    parts), keyed off the file basename minus extension.
+	 * 3. The plugin's bundled fallback under `$plugin_dir`:
+	 *    - the file name as-supplied (so a caller's custom dir can ship a
+	 *      `gatherpress_*.php` file under its prefixed name), then
+	 *    - the file name with the `gatherpress_` prefix stripped (so the
+	 *      bundled core templates live as plain `ical-download.php` on disk).
+	 *
+	 * Returns the first match, or `''` if nothing exists.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $file_name  The template file name, e.g. `gatherpress_ical-download.php`.
+	 * @param string $plugin_dir Absolute directory the plugin's bundled fallback lives in.
+	 * @return string Absolute path to the resolved template, or `''` if none exists.
+	 */
+	public static function locate_template( string $file_name, string $plugin_dir = '' ): string {
+		// `locate_template()` accepts a string, `locate_block_template()`
+		// requires an array of candidates.
+		$templates      = array( $file_name );
+		$theme_template = locate_template( $templates );
+		$theme_template = locate_block_template(
+			$theme_template,
+			pathinfo( $file_name, PATHINFO_FILENAME ),
+			$templates
+		);
+
+		if ( $theme_template ) {
+			return $theme_template;
+		}
+
+		if ( empty( $plugin_dir ) ) {
+			return '';
+		}
+
+		// Try the file name as-supplied first so a caller can ship a
+		// `gatherpress_*.php` file under its prefixed name on disk.
+		$plugin_template = trailingslashit( $plugin_dir ) . $file_name;
+		if ( file_exists( $plugin_template ) ) {
+			return $plugin_template;
+		}
+
+		// Fall back to the unprefixed name so the bundled core templates
+		// (which live on disk as plain `ical-download.php`) still resolve
+		// when callers pass the prefixed name (the convention used by
+		// `Utility::prefix_key()`-tagged template descriptors).
+		$unprefixed = self::unprefix_key( $file_name );
+		if ( $unprefixed === $file_name ) {
+			return '';
+		}
+
+		$plugin_template = trailingslashit( $plugin_dir ) . $unprefixed;
+
+		return file_exists( $plugin_template ) ? $plugin_template : '';
+	}
+
+	/**
 	 * Prefixes a key with 'gatherpress_'.
 	 *
 	 * This method adds the 'gatherpress_' prefix to the provided key and returns the modified key.

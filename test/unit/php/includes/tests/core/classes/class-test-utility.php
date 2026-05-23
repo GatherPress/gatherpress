@@ -58,6 +58,127 @@ class Test_Utility extends Base {
 	}
 
 	/**
+	 * Coverage for locate_template — resolves a theme override placed in the
+	 * registered stylesheet directory.
+	 *
+	 * @covers ::locate_template
+	 *
+	 * @return void
+	 */
+	public function test_locate_template_resolves_theme_override(): void {
+		$file_name = 'gatherpress_locate-test-' . wp_generate_password( 6, false, false ) . '.php';
+		$tmp_dir   = sys_get_temp_dir() . '/gatherpress-test-theme-' . wp_generate_password( 6, false, false );
+
+		wp_mkdir_p( $tmp_dir );
+		$theme_path = trailingslashit( $tmp_dir ) . $file_name;
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents -- Tmp scratch dir under sys_get_temp_dir().
+		file_put_contents( $theme_path, "<?php // Test stub.\n" );
+
+		$override = static function () use ( $tmp_dir ) {
+			return $tmp_dir;
+		};
+		add_filter( 'stylesheet_directory', $override );
+		add_filter( 'template_directory', $override );
+
+		try {
+			$this->assertSame(
+				$theme_path,
+				Utility::locate_template( $file_name, '/nonexistent/plugin/templates' ),
+				'locate_template should return the theme override when locate_template() resolves it.'
+			);
+		} finally {
+			remove_filter( 'stylesheet_directory', $override );
+			remove_filter( 'template_directory', $override );
+			// phpcs:ignore WordPress.WP.AlternativeFunctions.unlink_unlink -- Tmp scratch dir.
+			unlink( $theme_path );
+			// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_rmdir -- Tmp scratch dir.
+			rmdir( $tmp_dir );
+		}
+	}
+
+	/**
+	 * Coverage for locate_template — falls back to the plugin directory when
+	 * the theme has no override. Strips the `gatherpress_` prefix from the
+	 * passed file name before checking disk.
+	 *
+	 * @covers ::locate_template
+	 *
+	 * @return void
+	 */
+	public function test_locate_template_resolves_plugin_fallback(): void {
+		$expected = sprintf( '%s/includes/templates/calendar/ical-download.php', GATHERPRESS_CORE_PATH );
+
+		$this->assertSame(
+			$expected,
+			Utility::locate_template(
+				'gatherpress_ical-download.php',
+				sprintf( '%s/includes/templates/calendar', GATHERPRESS_CORE_PATH )
+			),
+			'locate_template should return the bundled plugin template and strip the gatherpress_ prefix.'
+		);
+	}
+
+	/**
+	 * Coverage for locate_template — resolves an exact (already-unprefixed)
+	 * filename inside the supplied plugin directory without touching the
+	 * prefix-strip fallback.
+	 *
+	 * @covers ::locate_template
+	 *
+	 * @return void
+	 */
+	public function test_locate_template_resolves_exact_plugin_filename(): void {
+		$tmp_template = wp_tempnam( 'gatherpress-locate-exact' );
+		$dir_path     = dirname( $tmp_template );
+		$file_name    = basename( $tmp_template );
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents -- Tmp scratch file.
+		file_put_contents( $tmp_template, "<?php // Test stub.\n" );
+
+		try {
+			$this->assertSame(
+				$tmp_template,
+				Utility::locate_template( $file_name, $dir_path ),
+				'locate_template should resolve an exact plugin filename without the prefix-strip fallback.'
+			);
+		} finally {
+			// phpcs:ignore WordPress.WP.AlternativeFunctions.unlink_unlink -- Tmp scratch file.
+			unlink( $tmp_template );
+		}
+	}
+
+	/**
+	 * Coverage for locate_template — returns an empty string when neither the
+	 * theme nor the supplied plugin directory has the file.
+	 *
+	 * @covers ::locate_template
+	 *
+	 * @return void
+	 */
+	public function test_locate_template_returns_empty_when_missing(): void {
+		$this->assertSame(
+			'',
+			Utility::locate_template( 'definitely-missing.php', '/nonexistent/plugin/templates' ),
+			'locate_template should return an empty string when nothing resolves.'
+		);
+	}
+
+	/**
+	 * Coverage for locate_template — returns an empty string when the theme
+	 * has no override and the caller omits the plugin directory.
+	 *
+	 * @covers ::locate_template
+	 *
+	 * @return void
+	 */
+	public function test_locate_template_without_plugin_dir_returns_empty(): void {
+		$this->assertSame(
+			'',
+			Utility::locate_template( 'definitely-missing.php' ),
+			'locate_template should return an empty string when no plugin dir is supplied and the theme has no override.'
+		);
+	}
+
+	/**
 	 * Coverage for prefix_key method.
 	 *
 	 * @covers ::prefix_key
