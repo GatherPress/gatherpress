@@ -136,97 +136,147 @@ class Test_Calendar extends Base {
 	}
 
 	/**
-	 * Coverage for get_google_url with no venue address — falls past the
-	 * `! empty( $venue['address'] )` guard so location is just the venue name
-	 * (here empty since no venue is attached).
+	 * Coverage for get_google_url — returns the on-site Google Calendar
+	 * redirect endpoint URL for this event (not the off-site Google URL).
 	 *
 	 * @covers ::get_google_url
 	 *
 	 * @return void
 	 */
-	public function test_get_google_url_without_venue_address(): void {
+	public function test_get_google_url_returns_endpoint_url(): void {
+		$event_id = $this->make_event();
+		$instance = new Calendar( $event_id );
+		$slug     = get_post_field( 'post_name', $event_id );
+
+		$this->assertSame(
+			home_url(
+				sprintf(
+					'/?gatherpress_event=%s&gatherpress_calendar=google-calendar',
+					$slug
+				)
+			),
+			$instance->get_google_url(),
+			'get_google_url() should resolve to the on-site google-calendar endpoint.'
+		);
+	}
+
+	/**
+	 * Coverage for get_yahoo_url — returns the on-site Yahoo! Calendar
+	 * redirect endpoint URL for this event.
+	 *
+	 * @covers ::get_yahoo_url
+	 *
+	 * @return void
+	 */
+	public function test_get_yahoo_url_returns_endpoint_url(): void {
+		$event_id = $this->make_event();
+		$instance = new Calendar( $event_id );
+		$slug     = get_post_field( 'post_name', $event_id );
+
+		$this->assertSame(
+			home_url(
+				sprintf(
+					'/?gatherpress_event=%s&gatherpress_calendar=yahoo-calendar',
+					$slug
+				)
+			),
+			$instance->get_yahoo_url(),
+			'get_yahoo_url() should resolve to the on-site yahoo-calendar endpoint.'
+		);
+	}
+
+	/**
+	 * Coverage for get_google_destination_url with no venue address — falls
+	 * past the `! empty( $venue['address'] )` guard so location is just the
+	 * venue name (here empty since no venue is attached).
+	 *
+	 * @covers ::get_google_destination_url
+	 *
+	 * @return void
+	 */
+	public function test_get_google_destination_url_without_venue_address(): void {
 		$instance = new Calendar( $this->make_event() );
-		$url      = $instance->get_google_url();
+		$url      = $instance->get_google_destination_url();
 
 		$this->assertStringStartsWith(
 			'https://www.google.com/calendar/event?',
 			$url,
-			'Google URL should target the calendar event endpoint.'
+			'Google destination URL should target the off-site calendar event endpoint.'
 		);
 		$this->assertStringContainsString(
 			'action=TEMPLATE',
 			$url,
-			'Google URL should include the TEMPLATE action param.'
+			'Google destination URL should include the TEMPLATE action param.'
 		);
 		$this->assertStringContainsString(
 			'text=Sample%20Event',
 			$url,
-			'Google URL should include the event title.'
+			'Google destination URL should include the event title.'
 		);
 	}
 
 	/**
-	 * Coverage for get_google_url with a venue address — exercises the
-	 * address-concat branch of the location string.
+	 * Coverage for get_google_destination_url with a venue address —
+	 * exercises the address-concat branch of the location string.
 	 *
-	 * @covers ::get_google_url
+	 * @covers ::get_google_destination_url
 	 *
 	 * @return void
 	 */
-	public function test_get_google_url_with_venue_address(): void {
+	public function test_get_google_destination_url_with_venue_address(): void {
 		$instance = new Calendar( $this->make_event( true ) );
-		$url      = $instance->get_google_url();
+		$url      = $instance->get_google_destination_url();
 
 		$this->assertStringContainsString(
 			'location=' . rawurlencode( 'Brooklyn Office, 123 Main; Street, Brooklyn' ),
 			$url,
-			'Google URL location should concat venue name and address.'
+			'Google destination URL location should concat venue name and address.'
 		);
 	}
 
 	/**
-	 * Coverage for get_yahoo_url with no venue address.
+	 * Coverage for get_yahoo_destination_url with no venue address.
 	 *
-	 * @covers ::get_yahoo_url
+	 * @covers ::get_yahoo_destination_url
 	 *
 	 * @return void
 	 */
-	public function test_get_yahoo_url_without_venue_address(): void {
+	public function test_get_yahoo_destination_url_without_venue_address(): void {
 		$instance = new Calendar( $this->make_event() );
-		$url      = $instance->get_yahoo_url();
+		$url      = $instance->get_yahoo_destination_url();
 
 		$this->assertStringStartsWith(
 			'https://calendar.yahoo.com/?',
 			$url,
-			'Yahoo URL should target the calendar endpoint.'
+			'Yahoo destination URL should target the off-site calendar endpoint.'
 		);
 		$this->assertStringContainsString(
 			'title=Sample%20Event',
 			$url,
-			'Yahoo URL should include the event title.'
+			'Yahoo destination URL should include the event title.'
 		);
 		$this->assertStringContainsString(
 			'st=20300615',
 			$url,
-			'Yahoo URL should include the event start date in Ymd format.'
+			'Yahoo destination URL should include the event start date in Ymd format.'
 		);
 	}
 
 	/**
-	 * Coverage for get_yahoo_url with a venue address.
+	 * Coverage for get_yahoo_destination_url with a venue address.
 	 *
-	 * @covers ::get_yahoo_url
+	 * @covers ::get_yahoo_destination_url
 	 *
 	 * @return void
 	 */
-	public function test_get_yahoo_url_with_venue_address(): void {
+	public function test_get_yahoo_destination_url_with_venue_address(): void {
 		$instance = new Calendar( $this->make_event( true ) );
-		$url      = $instance->get_yahoo_url();
+		$url      = $instance->get_yahoo_destination_url();
 
 		$this->assertStringContainsString(
 			'in_loc=' . rawurlencode( 'Brooklyn Office, 123 Main; Street, Brooklyn' ),
 			$url,
-			'Yahoo URL in_loc should concat venue name and address.'
+			'Yahoo destination URL in_loc should concat venue name and address.'
 		);
 	}
 
