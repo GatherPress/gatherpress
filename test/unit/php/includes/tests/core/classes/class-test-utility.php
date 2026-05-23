@@ -73,6 +73,21 @@ class Test_Utility extends Base {
 	}
 
 	/**
+	 * Returns an empty string when no theme match exists and no plugin directory is given.
+	 *
+	 * @covers ::locate_template
+	 *
+	 * @return void
+	 */
+	public function test_locate_template_returns_empty_when_plugin_dir_is_empty(): void {
+		$this->assertSame(
+			'',
+			Utility::locate_template( 'gatherpress-definitely-missing.php', '' ),
+			'Should return an empty string when the plugin fallback directory is empty.'
+		);
+	}
+
+	/**
 	 * Resolves a template file placed in the active theme directory.
 	 *
 	 * @covers ::locate_template
@@ -160,6 +175,73 @@ class Test_Utility extends Base {
 			// phpcs:ignore WordPress.WP.AlternativeFunctions.unlink_unlink -- Tmp scratch file.
 			unlink( $tmp_template );
 		}
+	}
+
+	/**
+	 * Returns an exact plugin template match from the bundled directory.
+	 *
+	 * @covers ::resolve_plugin_template
+	 *
+	 * @return void
+	 */
+	public function test_resolve_plugin_template_returns_exact_match(): void {
+		$tmp_template = wp_tempnam( 'gatherpress-resolve-plugin' );
+		$dir_path     = dirname( $tmp_template );
+		$file_name    = basename( $tmp_template );
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents -- Tmp scratch file.
+		file_put_contents( $tmp_template, "<?php // Test stub.\n" );
+
+		try {
+			$result = PMC_Utility::invoke_hidden_method(
+				new Utility(),
+				'resolve_plugin_template',
+				array( $dir_path, $file_name )
+			);
+
+			$this->assertSame( $tmp_template, $result );
+		} finally {
+			// phpcs:ignore WordPress.WP.AlternativeFunctions.unlink_unlink -- Tmp scratch file.
+			unlink( $tmp_template );
+		}
+	}
+
+	/**
+	 * Strips the gatherpress_ prefix when resolving a bundled plugin template.
+	 *
+	 * @covers ::resolve_plugin_template
+	 *
+	 * @return void
+	 */
+	public function test_resolve_plugin_template_strips_gatherpress_prefix(): void {
+		$plugin_dir = sprintf( '%s/includes/templates/calendar', GATHERPRESS_CORE_PATH );
+
+		$result = PMC_Utility::invoke_hidden_method(
+			new Utility(),
+			'resolve_plugin_template',
+			array( $plugin_dir, 'gatherpress_ical-download.php' )
+		);
+
+		$this->assertSame(
+			sprintf( '%s/ical-download.php', $plugin_dir ),
+			$result
+		);
+	}
+
+	/**
+	 * Returns an empty string when no bundled plugin template exists.
+	 *
+	 * @covers ::resolve_plugin_template
+	 *
+	 * @return void
+	 */
+	public function test_resolve_plugin_template_returns_empty_when_missing(): void {
+		$result = PMC_Utility::invoke_hidden_method(
+			new Utility(),
+			'resolve_plugin_template',
+			array( '/nonexistent/plugin/templates', 'gatherpress-definitely-missing.php' )
+		);
+
+		$this->assertSame( '', $result );
 	}
 
 	/**

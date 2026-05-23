@@ -92,10 +92,21 @@ class Utility {
 			return $theme_template;
 		}
 
-		if ( empty( $plugin_dir ) ) {
-			return '';
-		}
+		return ! empty( $plugin_dir )
+			? self::resolve_plugin_template( $plugin_dir, $file_name )
+			: '';
+	}
 
+	/**
+	 * Resolve a plugin-bundled template path when the theme has no override.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $plugin_dir Plugin directory for the bundled fallback lookup.
+	 * @param string $file_name  Template file name (e.g. `gatherpress_ical-download.php`).
+	 * @return string Resolved template path, or empty string when nothing matches.
+	 */
+	private static function resolve_plugin_template( string $plugin_dir, string $file_name ): string {
 		$plugin_template = trailingslashit( $plugin_dir ) . $file_name;
 		if ( file_exists( $plugin_template ) ) {
 			return $plugin_template;
