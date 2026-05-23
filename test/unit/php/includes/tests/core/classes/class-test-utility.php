@@ -174,7 +174,7 @@ class Test_Utility extends Base {
 		$this->assertSame(
 			'',
 			Utility::locate_template( 'definitely-missing.php' ),
-			'locate_template should return an empty string when no fallback dir is supplied and no theme override exists.'
+			'locate_template should return an empty string when no fallback dir is supplied and no theme override.'
 		);
 	}
 
@@ -264,7 +264,9 @@ class Test_Utility extends Base {
 	public function test_locate_template_filter_overrides_resolved_path(): void {
 		$captured = array();
 		$callback = static function ( $resolved, $file_name, $fallback_dir ) use ( &$captured ) {
-			$captured = compact( 'resolved', 'file_name', 'fallback_dir' );
+			$captured['resolved']     = $resolved;
+			$captured['file_name']    = $file_name;
+			$captured['fallback_dir'] = $fallback_dir;
 
 			return '/filter/overrode/this.php';
 		};
