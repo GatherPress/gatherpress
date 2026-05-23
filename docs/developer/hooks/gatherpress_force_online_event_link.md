@@ -29,7 +29,7 @@ add_filter(
 
 ## Files
 
-- [includes/core/classes/event/class-event.php:995](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/event/class-event.php#L995)
+- [includes/core/classes/event/class-event.php:789](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/event/class-event.php#L789)
 ```php
 apply_filters( 'gatherpress_force_online_event_link', false )
 ```

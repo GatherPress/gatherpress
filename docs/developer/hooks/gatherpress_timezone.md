@@ -18,7 +18,7 @@ add_filter(
 
 ## Files
 
-- [includes/core/classes/event/class-event.php:505](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/event/class-event.php#L505)
+- [includes/core/classes/event/class-event.php:494](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/event/class-event.php#L494)
 ```php
 apply_filters( 'gatherpress_timezone', $data['timezone'] )
 ```
