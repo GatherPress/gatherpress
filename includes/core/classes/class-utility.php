@@ -68,17 +68,11 @@ class Utility {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param string $file_name                 Template file name (e.g. `gatherpress_ical-download.php`).
-	 * @param string $plugin_dir                Plugin directory for the bundled fallback lookup.
-	 * @param bool   $strip_gatherpress_prefix  When true, strip the `gatherpress_` prefix from
-	 *                                          `$file_name` before checking the plugin directory.
+	 * @param string $file_name  Template file name (e.g. `gatherpress_ical-download.php`).
+	 * @param string $plugin_dir Plugin directory for the bundled fallback lookup.
 	 * @return string Resolved template path, or empty string when nothing matches.
 	 */
-	public static function locate_template(
-		string $file_name,
-		string $plugin_dir = '',
-		bool $strip_gatherpress_prefix = false
-	): string {
+	public static function locate_template( string $file_name, string $plugin_dir = '' ): string {
 		// locate_template() accepts a string, but locate_block_template()
 		// requires an array of candidate templates.
 		$templates = array( $file_name );
@@ -102,12 +96,17 @@ class Utility {
 			return '';
 		}
 
-		$plugin_file_name = $file_name;
-		if ( $strip_gatherpress_prefix ) {
-			$plugin_file_name = self::unprefix_key( $file_name );
+		$plugin_template = trailingslashit( $plugin_dir ) . $file_name;
+		if ( file_exists( $plugin_template ) ) {
+			return $plugin_template;
 		}
 
-		$plugin_template = trailingslashit( $plugin_dir ) . $plugin_file_name;
+		$unprefixed_name = self::unprefix_key( $file_name );
+		if ( $unprefixed_name === $file_name ) {
+			return '';
+		}
+
+		$plugin_template = trailingslashit( $plugin_dir ) . $unprefixed_name;
 
 		return file_exists( $plugin_template ) ? $plugin_template : '';
 	}

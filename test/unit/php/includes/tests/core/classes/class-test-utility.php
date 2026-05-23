@@ -124,8 +124,7 @@ class Test_Utility extends Base {
 
 		$result = Utility::locate_template(
 			'gatherpress_ical-download.php',
-			$plugin_dir,
-			true
+			$plugin_dir
 		);
 
 		$this->assertSame(
@@ -136,13 +135,13 @@ class Test_Utility extends Base {
 	}
 
 	/**
-	 * Skips prefix stripping when the caller opts out of the bundled-dir convention.
+	 * Resolves a plugin template when the filename has no gatherpress_ prefix.
 	 *
 	 * @covers ::locate_template
 	 *
 	 * @return void
 	 */
-	public function test_locate_template_plugin_fallback_without_prefix_strip(): void {
+	public function test_locate_template_plugin_fallback_exact_filename(): void {
 		$tmp_template = wp_tempnam( 'gatherpress-locate-plugin' );
 		$dir_path     = dirname( $tmp_template );
 		$file_name    = basename( $tmp_template );
@@ -150,12 +149,12 @@ class Test_Utility extends Base {
 		file_put_contents( $tmp_template, "<?php // Test stub.\n" );
 
 		try {
-			$result = Utility::locate_template( $file_name, $dir_path, false );
+			$result = Utility::locate_template( $file_name, $dir_path );
 
 			$this->assertSame(
 				$tmp_template,
 				$result,
-				'Should resolve an exact plugin filename when prefix stripping is disabled.'
+				'Should resolve an exact plugin filename when no prefix stripping is needed.'
 			);
 		} finally {
 			// phpcs:ignore WordPress.WP.AlternativeFunctions.unlink_unlink -- Tmp scratch file.

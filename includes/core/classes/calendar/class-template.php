@@ -111,17 +111,15 @@ class Template extends Endpoint_Type {
 	 * @return void
 	 */
 	public function load_feed_template(): void {
-		$presets  = $this->get_template_presets();
-		$dir_path = $presets['dir_path'] ?? $this->plugin_template_dir;
-		$path     = Utility::locate_template(
-			$presets['file_name'],
-			$dir_path,
-			$this->plugin_template_dir === $dir_path
+		$presets = $this->get_template_presets();
+		Utility::render_template(
+			Utility::locate_template(
+				$presets['file_name'],
+				$presets['dir_path'] ?? $this->plugin_template_dir
+			),
+			array(),
+			true
 		);
-
-		if ( $path ) {
-			Utility::render_template( $path, array(), true );
-		}
 	}
 
 	/**
@@ -140,18 +138,13 @@ class Template extends Endpoint_Type {
 	 */
 	public function template_include( string $template = '' ): string {
 		$presets  = $this->get_template_presets();
-		$dir_path = $presets['dir_path'] ?? $this->plugin_template_dir;
 		$resolved = Utility::locate_template(
 			$presets['file_name'],
-			$dir_path,
-			$this->plugin_template_dir === $dir_path
+			$presets['dir_path'] ?? $this->plugin_template_dir
 		);
 
-		if ( $resolved ) {
-			return $resolved;
-		}
-
-		return $template;
+		// phpcs:ignore Universal.Operators.DisallowShortTernary.Found -- Issue #1667 orchestrator shape.
+		return $resolved ?: $template;
 	}
 
 	/**
