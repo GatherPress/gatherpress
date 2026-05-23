@@ -50,6 +50,8 @@ jobs:
           tools: wp-cli
 
       - name: Install dist-archive-command
+        env:
+          COMPOSER_AUTH: '{"github-oauth": {"github.com": "${{ secrets.GITHUB_TOKEN }}"}}'
         run: wp package install wp-cli/dist-archive-command:^2
 
       - name: Setup Node
