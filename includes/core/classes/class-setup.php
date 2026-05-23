@@ -68,6 +68,7 @@ class Setup {
 		Import::get_instance();
 		Rsvp\Setup::get_instance();
 		Settings::get_instance();
+		Site_Health::get_instance();
 		Shadow_Source::get_instance();
 		Topic::get_instance();
 		User::get_instance();
