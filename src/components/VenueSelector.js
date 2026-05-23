@@ -109,6 +109,7 @@ const VenueSelector = () => {
 	return (
 		<PanelRow>
 			<SelectControl
+				__next40pxDefaultSize
 				label={ __( 'Venue Selector', 'gatherpress' ) }
 				value={ venue }
 				onChange={ ( value ) => {

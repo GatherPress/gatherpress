@@ -5,6 +5,9 @@ on:
       - develop
       - main
 
+permissions:
+  contents: read
+
 jobs:
   sonarcloud:
     name: 'PHPUnit and Jest Tests'

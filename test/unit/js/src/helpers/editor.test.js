@@ -24,6 +24,7 @@ jest.mock( '@wordpress/core-data', () => ( {
  * Internal dependencies
  */
 import {
+	__postTypeLabelCache,
 	enableSave,
 	getCurrentContextualPostId,
 	getEditorDocument,
@@ -580,6 +581,14 @@ describe( 'Editor helper functions', () => {
 	}
 
 	describe( 'getPostTypeLabel', () => {
+		beforeEach( () => {
+			// Clear the module-level label cache so each test starts from a
+			// clean slate — without this, an earlier test that resolves
+			// `gatherpress_event::name` would short-circuit later tests that
+			// mock a different label for the same key.
+			__postTypeLabelCache.clear();
+		} );
+
 		it( 'returns the resolved label for the given key and post type', () => {
 			select.mockImplementation( ( store ) => {
 				if ( 'core' === store ) {
@@ -650,9 +659,76 @@ describe( 'Editor helper functions', () => {
 
 			expect( getPostTypeLabel( 'name' ) ).toBe( '' );
 		} );
+
+		it( 'serves the cached label without re-reading from the core store (issue #1646)', () => {
+			const getPostType = jest.fn( mockGetPostTypeWithLabels );
+			select.mockImplementation( ( store ) => {
+				if ( 'core' === store ) {
+					return { getPostType };
+				}
+				return {};
+			} );
+
+			expect( getPostTypeLabel( 'name', 'gatherpress_event' ) ).toBe( 'Events' );
+			expect( getPostTypeLabel( 'name', 'gatherpress_event' ) ).toBe( 'Events' );
+			expect( getPostTypeLabel( 'name', 'gatherpress_event' ) ).toBe( 'Events' );
+
+			expect( getPostType ).toHaveBeenCalledTimes( 1 );
+		} );
+
+		it( 'does not cache a fallback so the next call can pick up a later resolution', () => {
+			let resolved = false;
+			select.mockImplementation( ( store ) => {
+				if ( 'core' === store ) {
+					return {
+						getPostType: ( slug ) => {
+							if ( ! resolved ) {
+								return undefined;
+							}
+							return mockGetPostTypeWithLabels( slug );
+						},
+					};
+				}
+				return {};
+			} );
+
+			expect(
+				getPostTypeLabel( 'name', 'gatherpress_event', 'Default' )
+			).toBe( 'Default' );
+			expect( __postTypeLabelCache.has( 'gatherpress_event::name' ) ).toBe( false );
+
+			resolved = true;
+
+			expect(
+				getPostTypeLabel( 'name', 'gatherpress_event', 'Default' )
+			).toBe( 'Events' );
+			expect( __postTypeLabelCache.get( 'gatherpress_event::name' ) ).toBe( 'Events' );
+		} );
+
+		it( 'shares the cache with usePostTypeLabel (one resolves, the other hits)', () => {
+			const getPostType = jest.fn( mockGetPostTypeWithLabels );
+			select.mockImplementation( ( store ) => {
+				if ( 'core' === store ) {
+					return { getPostType };
+				}
+				return {};
+			} );
+
+			// usePostTypeLabel populates the cache first.
+			expect( usePostTypeLabel( 'singular_name', 'gatherpress_event' ) ).toBe( 'Event' );
+			expect( getPostType ).toHaveBeenCalledTimes( 1 );
+
+			// getPostTypeLabel for the same key/post type hits the shared cache.
+			expect( getPostTypeLabel( 'singular_name', 'gatherpress_event' ) ).toBe( 'Event' );
+			expect( getPostType ).toHaveBeenCalledTimes( 1 );
+		} );
 	} );
 
 	describe( 'usePostTypeLabel', () => {
+		beforeEach( () => {
+			__postTypeLabelCache.clear();
+		} );
+
 		it( 'returns the resolved label for the given key and post type', () => {
 			select.mockImplementation( ( store ) => {
 				if ( 'core' === store ) {
@@ -758,6 +834,61 @@ describe( 'Editor helper functions', () => {
 			expect(
 				usePostTypeLabel( 'name', 'gatherpress_event', 'Default' )
 			).toBe( 'Events' );
+		} );
+
+		it( 'serves the cached label without re-reading from the core store (issue #1646)', () => {
+			// First call populates the cache from the live store, subsequent
+			// calls hit the cache and never invoke `select('core').getPostType`
+			// again — that's the optimization that keeps the per-call work
+			// O(1) even though `useSelect` invokes the selector body many
+			// times during editor init.
+			const getPostType = jest.fn( mockGetPostTypeWithLabels );
+			select.mockImplementation( ( store ) => {
+				if ( 'core' === store ) {
+					return { getPostType };
+				}
+				return {};
+			} );
+
+			expect( usePostTypeLabel( 'name', 'gatherpress_event' ) ).toBe( 'Events' );
+			expect( usePostTypeLabel( 'name', 'gatherpress_event' ) ).toBe( 'Events' );
+			expect( usePostTypeLabel( 'name', 'gatherpress_event' ) ).toBe( 'Events' );
+
+			expect( getPostType ).toHaveBeenCalledTimes( 1 );
+		} );
+
+		it( 'does not cache a fallback so the next call can pick up a later resolution', () => {
+			// Falsy labels are not cached so callers don't get stuck on the
+			// fallback when the core store hydrates the post type after the
+			// first render.
+			let resolved = false;
+			select.mockImplementation( ( store ) => {
+				if ( 'core' === store ) {
+					return {
+						getPostType: ( slug ) => {
+							if ( ! resolved ) {
+								return undefined;
+							}
+							return mockGetPostTypeWithLabels( slug );
+						},
+					};
+				}
+				return {};
+			} );
+
+			expect(
+				usePostTypeLabel( 'name', 'gatherpress_event', 'Default' )
+			).toBe( 'Default' );
+
+			expect( __postTypeLabelCache.has( 'gatherpress_event::name' ) ).toBe( false );
+
+			resolved = true;
+
+			expect(
+				usePostTypeLabel( 'name', 'gatherpress_event', 'Default' )
+			).toBe( 'Events' );
+
+			expect( __postTypeLabelCache.get( 'gatherpress_event::name' ) ).toBe( 'Events' );
 		} );
 	} );
 } );

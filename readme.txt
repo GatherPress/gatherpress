@@ -1,7 +1,7 @@
 === GatherPress ===
 Contributors: mauteri, patricia70, hrmervin, jmarx75, stephenerdelyi, carstenbach, jordanpak, mahimadave, tusharaddweb, pkbhatt, dd32, kofimokome, richsalvucci
 Tags: events, event, meetup, community
-Tested up to: 6.9
+Tested up to: 7.0
 Stable tag: 0.34.0-alpha.2
 License: GPL v2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html

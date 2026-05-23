@@ -365,6 +365,7 @@ const Edit = ( { attributes, setAttributes, clientId } ) => {
 						/>
 						{ actAsSelect && (
 							<SelectControl
+								__next40pxDefaultSize
 								label={ __(
 									'Default Selected Item',
 									'gatherpress',

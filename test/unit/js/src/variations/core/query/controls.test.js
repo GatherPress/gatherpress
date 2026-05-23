@@ -36,6 +36,7 @@ jest.mock( '@wordpress/components', () => ( {
 
 jest.mock( '@wordpress/i18n', () => ( {
 	__: ( text ) => text,
+	sprintf: ( fmt, ...args ) => args.reduce( ( s, a ) => s.replace( '%s', a ), fmt ),
 } ) );
 
 jest.mock( '@src/variations/core/query/slots/query-controls', () => {
@@ -64,6 +65,16 @@ jest.mock( '@src/variations/core/query/components', () => ( {
 
 jest.mock( '@src/helpers/event', () => ( {
 	usePostTypeSupports: jest.fn(),
+} ) );
+
+jest.mock( '@src/helpers/editor', () => ( {
+	usePostTypeLabel: jest.fn( ( key, postType, fallback ) => fallback ),
+} ) );
+
+jest.mock( '@wordpress/data', () => ( {
+	useDispatch: jest.fn( () => ( {
+		updateBlockAttributes: jest.fn(),
+	} ) ),
 } ) );
 
 /**
