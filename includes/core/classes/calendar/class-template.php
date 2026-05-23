@@ -110,8 +110,18 @@ class Template extends Endpoint_Type {
 	 *
 	 * @return void
 	 */
-	public function load_feed_template() {
-		load_template( $this->template_include() );
+	public function load_feed_template(): void {
+		$presets  = $this->get_template_presets();
+		$dir_path = $presets['dir_path'] ?? $this->plugin_template_dir;
+		$path     = Utility::locate_template(
+			$presets['file_name'],
+			$dir_path,
+			$this->plugin_template_dir === $dir_path
+		);
+
+		if ( $path ) {
+			Utility::render_template( $path, array(), true );
+		}
 	}
 
 	/**
@@ -129,23 +139,18 @@ class Template extends Endpoint_Type {
 	 * @return string          The path of the template to include, either from the theme or plugin.
 	 */
 	public function template_include( string $template = '' ): string {
-		$presets   = $this->get_template_presets();
-		$file_name = $presets['file_name'];
-		$dir_path  = $presets['dir_path'] ?? $this->plugin_template_dir;
+		$presets  = $this->get_template_presets();
+		$dir_path = $presets['dir_path'] ?? $this->plugin_template_dir;
+		$resolved = Utility::locate_template(
+			$presets['file_name'],
+			$dir_path,
+			$this->plugin_template_dir === $dir_path
+		);
 
-		// Check if the theme provides a custom template.
-		$theme_template = $this->get_template_from_theme( $file_name );
-		if ( $theme_template ) {
-			return $theme_template;
+		if ( $resolved ) {
+			return $resolved;
 		}
 
-		// Check if the plugin has a template file.
-		$plugin_template = $this->get_template_from_plugin( $file_name, $dir_path );
-		if ( $plugin_template ) {
-			return $plugin_template;
-		}
-
-		// Fallback to the default template.
 		return $template;
 	}
 
@@ -158,56 +163,5 @@ class Template extends Endpoint_Type {
 	 */
 	protected function get_template_presets(): array {
 		return ( $this->callback )();
-	}
-
-	/**
-	 * Locate a template in the theme or child theme.
-	 *
-	 * @todo Maybe better put in the Utility class?
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param string $file_name The name of the template file.
-	 * @return string The path to the theme template or an empty string if not found.
-	 */
-	protected function get_template_from_theme( string $file_name ): string {
-		// locate_template() accepts a string, but locate_block_template()
-		// requires an array of candidate templates.
-		$templates = array( $file_name );
-
-		// First, search for PHP templates, which block themes can also use.
-		$template = locate_template( $templates );
-
-		// Pass the result into the block template locator and let it figure
-		// out whether block templates are supported and this template exists.
-		$template = locate_block_template(
-			$template,
-			pathinfo( $file_name, PATHINFO_FILENAME ), // Name of the file without extension.
-			$templates
-		);
-
-		return $template;
-	}
-
-	/**
-	 * Build the full path to the plugin's template file.
-	 *
-	 * @todo Maybe better put in the Utility class?
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param string $file_name The name of the template file.
-	 * @param string $dir_path  The directory path where the template is stored.
-	 * @return string The full path to the template file or an empty string if file not exists.
-	 */
-	protected function get_template_from_plugin( string $file_name, string $dir_path ): string {
-		// Remove the GatherPress prefix to keep template filenames simple for
-		// core templates shipped from this plugin.
-		if ( $this->plugin_template_dir === $dir_path ) {
-			$file_name = Utility::unprefix_key( $file_name );
-		}
-
-		$template = trailingslashit( $dir_path ) . $file_name;
-		return file_exists( $template ) ? $template : '';
 	}
 }

@@ -58,6 +58,112 @@ class Test_Utility extends Base {
 	}
 
 	/**
+	 * Returns an empty string when no theme, block, or plugin template exists.
+	 *
+	 * @covers ::locate_template
+	 *
+	 * @return void
+	 */
+	public function test_locate_template_returns_empty_when_nothing_matches(): void {
+		$this->assertSame(
+			'',
+			Utility::locate_template( 'gatherpress-definitely-missing.php', '/nonexistent/plugin/templates' ),
+			'Should return an empty string when no candidate template exists.'
+		);
+	}
+
+	/**
+	 * Resolves a template file placed in the active theme directory.
+	 *
+	 * @covers ::locate_template
+	 *
+	 * @return void
+	 */
+	public function test_locate_template_finds_theme_override(): void {
+		$file_name = 'gatherpress-locate-test-' . wp_generate_password( 6, false, false ) . '.php';
+		$tmp_dir   = sys_get_temp_dir() . '/gatherpress-locate-theme-' . wp_generate_password( 6, false, false );
+
+		wp_mkdir_p( $tmp_dir );
+		$theme_path = trailingslashit( $tmp_dir ) . $file_name;
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents -- Tmp scratch dir under sys_get_temp_dir().
+		file_put_contents( $theme_path, "<?php // Test stub.\n" );
+
+		$override = static function () use ( $tmp_dir ) {
+			return $tmp_dir;
+		};
+		add_filter( 'stylesheet_directory', $override );
+		add_filter( 'template_directory', $override );
+
+		try {
+			$result = Utility::locate_template( $file_name, '/nonexistent/plugin/templates' );
+
+			$this->assertSame(
+				$theme_path,
+				$result,
+				'Theme override should win over the plugin fallback directory.'
+			);
+		} finally {
+			remove_filter( 'stylesheet_directory', $override );
+			remove_filter( 'template_directory', $override );
+			// phpcs:ignore WordPress.WP.AlternativeFunctions.unlink_unlink -- Tmp scratch dir.
+			unlink( $theme_path );
+			// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_rmdir -- Tmp scratch dir.
+			rmdir( $tmp_dir );
+		}
+	}
+
+	/**
+	 * Falls back to the bundled plugin template and strips the gatherpress_ prefix.
+	 *
+	 * @covers ::locate_template
+	 *
+	 * @return void
+	 */
+	public function test_locate_template_resolves_plugin_fallback_with_prefix_strip(): void {
+		$plugin_dir = sprintf( '%s/includes/templates/calendar', GATHERPRESS_CORE_PATH );
+
+		$result = Utility::locate_template(
+			'gatherpress_ical-download.php',
+			$plugin_dir,
+			true
+		);
+
+		$this->assertSame(
+			sprintf( '%s/ical-download.php', $plugin_dir ),
+			$result,
+			'Should resolve the bundled iCal template and strip the gatherpress_ prefix.'
+		);
+	}
+
+	/**
+	 * Skips prefix stripping when the caller opts out of the bundled-dir convention.
+	 *
+	 * @covers ::locate_template
+	 *
+	 * @return void
+	 */
+	public function test_locate_template_plugin_fallback_without_prefix_strip(): void {
+		$tmp_template = wp_tempnam( 'gatherpress-locate-plugin' );
+		$dir_path     = dirname( $tmp_template );
+		$file_name    = basename( $tmp_template );
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents -- Tmp scratch file.
+		file_put_contents( $tmp_template, "<?php // Test stub.\n" );
+
+		try {
+			$result = Utility::locate_template( $file_name, $dir_path, false );
+
+			$this->assertSame(
+				$tmp_template,
+				$result,
+				'Should resolve an exact plugin filename when prefix stripping is disabled.'
+			);
+		} finally {
+			// phpcs:ignore WordPress.WP.AlternativeFunctions.unlink_unlink -- Tmp scratch file.
+			unlink( $tmp_template );
+		}
+	}
+
+	/**
 	 * Coverage for prefix_key method.
 	 *
 	 * @covers ::prefix_key

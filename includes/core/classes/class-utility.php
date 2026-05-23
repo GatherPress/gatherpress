@@ -60,6 +60,59 @@ class Utility {
 	}
 
 	/**
+	 * Locate a theme-overridable template file.
+	 *
+	 * Walks theme PHP templates, block templates, then a plugin-bundled fallback
+	 * directory in that order. Returns the resolved absolute path, or an empty
+	 * string when no candidate exists.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $file_name                 Template file name (e.g. `gatherpress_ical-download.php`).
+	 * @param string $plugin_dir                Plugin directory for the bundled fallback lookup.
+	 * @param bool   $strip_gatherpress_prefix  When true, strip the `gatherpress_` prefix from
+	 *                                          `$file_name` before checking the plugin directory.
+	 * @return string Resolved template path, or empty string when nothing matches.
+	 */
+	public static function locate_template(
+		string $file_name,
+		string $plugin_dir = '',
+		bool $strip_gatherpress_prefix = false
+	): string {
+		// locate_template() accepts a string, but locate_block_template()
+		// requires an array of candidate templates.
+		$templates = array( $file_name );
+
+		// First, search for PHP templates, which block themes can also use.
+		$theme_template = locate_template( $templates );
+
+		// Pass the result into the block template locator and let it figure
+		// out whether block templates are supported and this template exists.
+		$theme_template = locate_block_template(
+			$theme_template,
+			pathinfo( $file_name, PATHINFO_FILENAME ),
+			$templates
+		);
+
+		if ( $theme_template ) {
+			return $theme_template;
+		}
+
+		if ( empty( $plugin_dir ) ) {
+			return '';
+		}
+
+		$plugin_file_name = $file_name;
+		if ( $strip_gatherpress_prefix ) {
+			$plugin_file_name = self::unprefix_key( $file_name );
+		}
+
+		$plugin_template = trailingslashit( $plugin_dir ) . $plugin_file_name;
+
+		return file_exists( $plugin_template ) ? $plugin_template : '';
+	}
+
+	/**
 	 * Prefixes a key with 'gatherpress_'.
 	 *
 	 * This method adds the 'gatherpress_' prefix to the provided key and returns the modified key.
