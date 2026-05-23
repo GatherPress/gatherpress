@@ -96,26 +96,29 @@ class Test_Add_To_Calendar extends Base {
 		$result        = $instance->replace_calendar_placeholders( $block_content, $block );
 
 		$this->assertStringContainsString(
-			'google.com',
+			'gatherpress_calendar=google-calendar',
 			$result,
-			"Generated calendar link content is missing expected Google Calendar URL component 'google.com'"
+			'Generated calendar link content is missing the google-calendar endpoint query var.'
 		);
-
 		$this->assertStringContainsString(
 			'gatherpress_calendar=ical',
 			$result,
 			'Generated calendar link content is missing the iCal endpoint query var.'
 		);
 		$this->assertStringContainsString(
+			'gatherpress_calendar=outlook',
+			$result,
+			'Generated calendar link content is missing the Outlook endpoint query var.'
+		);
+		$this->assertStringContainsString(
+			'gatherpress_calendar=yahoo-calendar',
+			$result,
+			'Generated calendar link content is missing the yahoo-calendar endpoint query var.'
+		);
+		$this->assertStringContainsString(
 			'gatherpress_event=unit-test-event',
 			$result,
 			'Generated calendar link content is missing the event slug query var.'
-		);
-
-		$this->assertStringContainsString(
-			'calendar.yahoo.com',
-			$result,
-			"Generated calendar link content is missing expected Yahoo Calendar URL component 'calendar.yahoo.com'"
 		);
 	}
 
