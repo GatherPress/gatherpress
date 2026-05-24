@@ -17,6 +17,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Event;
 use GatherPress\Core\Settings;
+use GatherPress\Core\Shadow_Source;
 use GatherPress\Core\Topic;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Venue\Setup;
@@ -252,13 +253,22 @@ class Query {
 			}
 		}
 
-		// Filter events by venue when the venue filter is enabled and we're on a venue page.
+		// Filter events by the current shadow-source post when the contextual
+		// filter is enabled. The queried object's post type determines which
+		// shadow taxonomy + term to scope by, so this works for any
+		// shadow-source-supporting CPT (venue, tour, production, season, etc.)
+		// — not just venues.
 		$venue_filter = $query->get( 'venue_filter' );
-		if ( ! empty( $venue_filter ) && is_singular( Venue::POST_TYPE ) ) {
-			$venue_post = get_queried_object();
+		if ( ! empty( $venue_filter ) && is_singular() ) {
+			$source_post = get_queried_object();
 
-			if ( $venue_post instanceof WP_Post ) {
-				$term_slug = ( new Venue( $venue_post->ID ) )->get_term_slug();
+			if (
+				$source_post instanceof WP_Post
+				&& post_type_supports( $source_post->post_type, 'gatherpress-shadow-source' )
+			) {
+				$shadow_source = Shadow_Source::get_instance();
+				$taxonomy      = $shadow_source->get_taxonomy( $source_post->post_type );
+				$term_slug     = $shadow_source->term_slug_from_post_name( $source_post->post_name );
 
 				// Merge with any existing tax_query.
 				$existing_tax_query = $query->get( 'tax_query' );
@@ -267,7 +277,7 @@ class Query {
 				}
 
 				$existing_tax_query[] = array(
-					'taxonomy' => Venue::TAXONOMY,
+					'taxonomy' => $taxonomy,
 					'field'    => 'slug',
 					'terms'    => array( $term_slug ),
 				);

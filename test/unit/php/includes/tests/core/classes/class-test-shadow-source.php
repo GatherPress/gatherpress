@@ -48,6 +48,12 @@ class Test_Shadow_Source extends Base {
 			),
 			array(
 				'type'     => 'action',
+				'name'     => 'init',
+				'priority' => 12,
+				'callback' => array( $instance, 'attach_taxonomies_to_object_types' ),
+			),
+			array(
+				'type'     => 'action',
 				'name'     => 'post_updated',
 				'priority' => 10,
 				'callback' => array( $instance, 'maybe_update_term_slug' ),
@@ -184,6 +190,75 @@ class Test_Shadow_Source extends Base {
 			$taxonomy->labels->name,
 			'Filter should be able to override the taxonomy labels.'
 		);
+	}
+
+	/**
+	 * Coverage for attach_taxonomies_to_object_types — walks shadow-source
+	 * CPTs and registers each shadow taxonomy on the event CPTs returned by
+	 * the `gatherpress_shadow_taxonomy_object_types` filter.
+	 *
+	 * @covers ::attach_taxonomies_to_object_types
+	 *
+	 * @return void
+	 */
+	public function test_attach_taxonomies_to_object_types_uses_filter(): void {
+		$instance = Shadow_Source::get_instance();
+
+		// Detach gatherpress_event from the venue taxonomy so we can assert
+		// the filter callback re-attaches it.
+		unregister_taxonomy_for_object_type( Venue::TAXONOMY, 'gatherpress_event' );
+		$this->assertFalse(
+			is_object_in_taxonomy( 'gatherpress_event', Venue::TAXONOMY ),
+			'Precondition: venue taxonomy should be detached from gatherpress_event before running.'
+		);
+
+		$filter = static function ( array $object_types, string $source_post_type ): array {
+			if ( Venue::POST_TYPE === $source_post_type ) {
+				$object_types[] = 'gatherpress_event';
+			}
+			return $object_types;
+		};
+		add_filter( 'gatherpress_shadow_taxonomy_object_types', $filter, 10, 2 );
+
+		$instance->attach_taxonomies_to_object_types();
+
+		remove_filter( 'gatherpress_shadow_taxonomy_object_types', $filter, 10 );
+
+		$this->assertTrue(
+			is_object_in_taxonomy( 'gatherpress_event', Venue::TAXONOMY ),
+			'Filter callback should have wired the venue taxonomy onto gatherpress_event.'
+		);
+	}
+
+	/**
+	 * Coverage for attach_taxonomies_to_object_types — empty filter
+	 * default attaches the taxonomy to nothing.
+	 *
+	 * @covers ::attach_taxonomies_to_object_types
+	 *
+	 * @return void
+	 */
+	public function test_attach_taxonomies_to_object_types_default_is_empty(): void {
+		$instance = Shadow_Source::get_instance();
+
+		// Stub the filter to short-circuit to an empty list regardless of
+		// other registered callbacks (the venue subsystem registers one in
+		// its own setup_hooks). High-priority callback wins on the chain.
+		$short_circuit = static function (): array {
+			return array();
+		};
+		add_filter( 'gatherpress_shadow_taxonomy_object_types', $short_circuit, PHP_INT_MAX );
+
+		unregister_taxonomy_for_object_type( Venue::TAXONOMY, 'gatherpress_event' );
+
+		$instance->attach_taxonomies_to_object_types();
+
+		$this->assertFalse(
+			is_object_in_taxonomy( 'gatherpress_event', Venue::TAXONOMY ),
+			'When the filter resolves to an empty list, no event CPTs should be wired.'
+		);
+
+		remove_filter( 'gatherpress_shadow_taxonomy_object_types', $short_circuit, PHP_INT_MAX );
 	}
 
 	/**
@@ -578,6 +653,79 @@ class Test_Shadow_Source extends Base {
 		$this->assertNull(
 			$instance->get_post_from_term_slug( '_does-not-exist', Venue::POST_TYPE ),
 			'Failed to assert that get_post_from_term_slug returns null for missing slugs.'
+		);
+	}
+
+	/**
+	 * Coverage for get_source_post_from_event_post_id — walks the event's
+	 * shadow taxonomy terms for the given source post type and resolves the
+	 * first underscore-prefixed slug to its source post.
+	 *
+	 * @covers ::get_source_post_from_event_post_id
+	 *
+	 * @return void
+	 */
+	public function test_get_source_post_from_event_post_id_resolves_linked_source(): void {
+		$instance = Shadow_Source::get_instance();
+		$venue    = $this->mock->post(
+			array(
+				'post_type' => Venue::POST_TYPE,
+				'post_name' => 'unit-test-source-resolve',
+			)
+		)->get();
+		$event    = $this->mock->post(
+			array( 'post_type' => 'gatherpress_event' )
+		)->get();
+
+		wp_set_post_terms( $event->ID, '_unit-test-source-resolve', Venue::TAXONOMY );
+
+		$resolved = $instance->get_source_post_from_event_post_id( $event->ID, Venue::POST_TYPE );
+
+		$this->assertInstanceOf( \WP_Post::class, $resolved, 'Expected a WP_Post for the linked source.' );
+		$this->assertSame( $venue->ID, $resolved->ID, 'Expected the venue post ID to match the linked source.' );
+	}
+
+	/**
+	 * Coverage for get_source_post_from_event_post_id — sentinel terms
+	 * (slugs without a leading underscore, e.g. `online-event`) are skipped.
+	 *
+	 * @covers ::get_source_post_from_event_post_id
+	 *
+	 * @return void
+	 */
+	public function test_get_source_post_from_event_post_id_skips_sentinel_terms(): void {
+		$instance = Shadow_Source::get_instance();
+		$event    = $this->mock->post(
+			array( 'post_type' => 'gatherpress_event' )
+		)->get();
+
+		// Insert a sentinel term (no underscore prefix) and attach it to the event.
+		$term = wp_insert_term( 'Online Event', Venue::TAXONOMY, array( 'slug' => 'online-event-sentinel' ) );
+		wp_set_post_terms( $event->ID, array( (int) $term['term_id'] ), Venue::TAXONOMY );
+
+		$this->assertNull(
+			$instance->get_source_post_from_event_post_id( $event->ID, Venue::POST_TYPE ),
+			'Sentinel terms should be skipped during source resolution.'
+		);
+	}
+
+	/**
+	 * Coverage for get_source_post_from_event_post_id — returns null when
+	 * the event has no terms in the source's shadow taxonomy.
+	 *
+	 * @covers ::get_source_post_from_event_post_id
+	 *
+	 * @return void
+	 */
+	public function test_get_source_post_from_event_post_id_returns_null_without_terms(): void {
+		$instance = Shadow_Source::get_instance();
+		$event    = $this->mock->post(
+			array( 'post_type' => 'gatherpress_event' )
+		)->get();
+
+		$this->assertNull(
+			$instance->get_source_post_from_event_post_id( $event->ID, Venue::POST_TYPE ),
+			'Should return null when no terms link the event to any source post.'
 		);
 	}
 }

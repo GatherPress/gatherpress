@@ -19,7 +19,7 @@ import { __, _x, sprintf } from '@wordpress/i18n';
 import EventQueryControls from './slots/query-controls';
 import EventInheritedQueryControls from './slots/inherited-query-controls';
 import { isEventPostType, usePostTypeSupports } from '../../../helpers/event';
-import { getPostTypeLabel, isInFSETemplate, usePostTypeLabel } from '../../../helpers/editor';
+import { isInFSETemplate, usePostTypeLabel } from '../../../helpers/editor';
 
 /**
  * EventCountControls component
@@ -301,22 +301,43 @@ export const VenueFilterControls = ( {
 		query: { venue_filter: venueFilter } = {},
 	} = attributes;
 
+	// Detect if the editor's current post type is a shadow-source CPT
+	// (gatherpress-shadow-source post-type-support). If yes, the filter label
+	// adapts to that type — "Filter by Current Tour" / "Filter by Current
+	// Production" — matching whatever the template renders against at runtime.
+	// Otherwise (events, pages, templates, patterns) fall back to gatherpress_venue
+	// since that's the most common scope-by-source scenario.
+	const editorPostType = useSelect(
+		( wpSelect ) => wpSelect( 'core/editor' )?.getCurrentPostType(),
+		[]
+	);
+	const editorPostTypeSupports = useSelect(
+		( wpSelect ) =>
+			editorPostType
+				? wpSelect( 'core' ).getPostType( editorPostType )?.supports
+				: null,
+		[ editorPostType ]
+	);
+	const sourcePostType = editorPostTypeSupports?.[ 'gatherpress-shadow-source' ]
+		? editorPostType
+		: 'gatherpress_venue';
+
 	const helpText = inTemplateContext
 		? __(
-			'The filter only takes effect when this template renders on a venue page.',
+			'The filter only takes effect when this template renders on a shadow-source page (venue, tour, production, etc.).',
 			'gatherpress'
 		)
 		: __(
-			'When placed on a venue page, only shows events at that venue.',
+			'When placed on a shadow-source page, only shows events tied to that page.',
 			'gatherpress'
 		);
 
 	// Read the singular label so the label reflects what the currently
 	// selected post type is actually called — a re-named gatherpress_venue post type with
 	// `singular_name => 'Location'` shows "Filter by Current Location".
-	const singularLabel = getPostTypeLabel(
+	const singularLabel = usePostTypeLabel(
 		'singular_name',
-		'gatherpress_venue',
+		sourcePostType,
 		__( 'Venue', 'gatherpress' )
 	);
 

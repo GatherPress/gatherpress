@@ -14,9 +14,9 @@ namespace GatherPress\Core\Blocks;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
+use GatherPress\Core\Shadow_Source;
 use GatherPress\Core\Traits\Singleton;
-use GatherPress\Core\Venue\Setup as Venue_Setup;
-use GatherPress\Core\Venue\Venue as Venue_Core;
+use GatherPress\Core\Venue as Venue_Core;
 use WP_Block;
 use WP_Post;
 
@@ -85,75 +85,101 @@ class Venue {
 			return is_string( $block_content ) ? $block_content : '';
 		}
 
-		$venue_post = $this->get_venue_post( $block );
+		$source_post = $this->get_source_post( $block );
 
-		// No physical venue - don't render.
-		if ( ! $venue_post instanceof WP_Post ) {
+		// No source post resolved — don't render.
+		if ( ! $source_post instanceof WP_Post ) {
 			return '';
 		}
 
-		// Has venue - render with venue context.
-		return $this->render_with_venue_context( $venue_post, $instance );
+		// Has source post — render with source context.
+		return $this->render_with_source_context( $source_post, $instance );
 	}
 
 	/**
-	 * Gets the venue post for the block based on context.
+	 * Resolves the configured shadow-source post type for this block instance.
 	 *
-	 * Checks for a manually selected venue in block attributes first,
-	 * then falls back to getting the venue from the current event.
-	 * Handles query loop, post ID override, and global contexts.
+	 * Defaults to `gatherpress_venue` for backward compatibility with content
+	 * authored before #1687 introduced the `sourcePostType` attribute.
 	 *
 	 * @since 0.34.0
 	 *
 	 * @param array $block The full block, including name and attributes.
 	 *
-	 * @return WP_Post|null The venue post or null if not found.
+	 * @return string Shadow-source post type slug.
 	 */
-	private function get_venue_post( array $block ): ?WP_Post {
-		$venue_post = null;
+	private function get_source_post_type( array $block ): string {
+		$attrs = isset( $block['attrs'] ) && is_array( $block['attrs'] ) ? $block['attrs'] : array();
 
-		// Check for manually selected venue in block attributes.
+		return ! empty( $attrs['sourcePostType'] ) && is_string( $attrs['sourcePostType'] )
+			? $attrs['sourcePostType']
+			: Venue_Core::POST_TYPE;
+	}
+
+	/**
+	 * Gets the source post for the block based on context.
+	 *
+	 * Checks for a manually selected source post in block attributes first,
+	 * then falls back to resolving the source from the current event via the
+	 * configured shadow-source post type's taxonomy. Handles query loop,
+	 * post ID override, and global contexts.
+	 *
+	 * @since 0.34.0
+	 *
+	 * @param array $block The full block, including name and attributes.
+	 *
+	 * @return WP_Post|null The source post or null if not found.
+	 */
+	private function get_source_post( array $block ): ?WP_Post {
+		$source_post_type = $this->get_source_post_type( $block );
+		$source_post      = null;
+
+		// Check for a manually selected source post in block attributes.
 		if ( isset( $block['attrs']['selectedPostId'] ) && is_int( $block['attrs']['selectedPostId'] ) ) {
 			$selected = get_post( $block['attrs']['selectedPostId'] );
 
-			if ( $selected instanceof WP_Post && Venue_Core::POST_TYPE === $selected->post_type ) {
-				$venue_post = $selected;
+			if ( $selected instanceof WP_Post && $source_post_type === $selected->post_type ) {
+				$source_post = $selected;
 			}
 		}
 
-		if ( null === $venue_post ) {
+		if ( null === $source_post ) {
 			// Get post ID from block attributes or global (handles query loop, override, global).
 			$post_id   = Setup::get_instance()->get_post_id( $block );
 			$post_type = get_post_type( $post_id );
 
-			if ( Venue_Core::POST_TYPE === $post_type ) {
-				$venue_post = get_post( $post_id );
-			} elseif ( post_type_supports( $post_type, 'gatherpress-venue' ) ) {
-				$candidate = Venue_Setup::get_instance()->get_venue_post_from_event_post_id( $post_id );
+			if ( $source_post_type === $post_type ) {
+				$source_post = get_post( $post_id );
+			} else {
+				$candidate = Shadow_Source::get_instance()->get_source_post_from_event_post_id(
+					(int) $post_id,
+					$source_post_type
+				);
 
-				if ( $candidate instanceof WP_Post && Venue_Core::POST_TYPE === $candidate->post_type ) {
-					$venue_post = $candidate;
+				if ( $candidate instanceof WP_Post && $source_post_type === $candidate->post_type ) {
+					$source_post = $candidate;
 				}
 			}
 		}
 
-		return $venue_post;
+		return $source_post;
 	}
 
 	/**
-	 * Renders the block with venue post context.
+	 * Renders the block with source post context.
 	 *
-	 * Sets up the global post and block context to the venue post,
-	 * renders the inner blocks, then restores the original context.
+	 * Sets up the global post and block context to the resolved shadow-source
+	 * post (venue, tour, production, etc.), renders the inner blocks, then
+	 * restores the original context.
 	 *
 	 * @since 0.34.0
 	 *
-	 * @param WP_Post  $venue_post The venue post to use as context.
-	 * @param WP_Block $instance   The block instance.
+	 * @param WP_Post  $source_post The source post to use as context.
+	 * @param WP_Block $instance    The block instance.
 	 *
 	 * @return string The rendered block content.
 	 */
-	private function render_with_venue_context( WP_Post $venue_post, WP_Block $instance ): string {
+	private function render_with_source_context( WP_Post $source_post, WP_Block $instance ): string {
 		global $post;
 		$original_post = $post;
 
@@ -162,14 +188,14 @@ class Venue {
 		 *
 		 * @see https://github.com/WordPress/gutenberg/pull/37622#issuecomment-1000932816
 		 */
-		$post = $venue_post; // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
+		$post = $source_post; // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
 
 		// Use 'core/null' to prevent rendering block supports on inner blocks.
 		$block_instance              = $instance->parsed_block;
 		$block_instance['blockName'] = 'core/null';
 
-		$post_id   = $venue_post->ID;
-		$post_type = $venue_post->post_type;
+		$post_id   = $source_post->ID;
+		$post_type = $source_post->post_type;
 
 		$filter_block_context = static function ( array $context ) use ( $post_id, $post_type ): array {
 			$context['postType'] = $post_type;

@@ -1135,4 +1135,103 @@ class Test_Venue extends Base {
 			'Should return empty when postId override points to non-event.'
 		);
 	}
+
+	/**
+	 * Explicit `sourcePostType: gatherpress_venue` should behave identically
+	 * to the default (no attribute). Regression guard for the #1687
+	 * generalization of the venue block.
+	 *
+	 * @since 0.34.0
+	 * @covers ::render_block
+	 * @covers ::get_source_post
+	 * @covers ::get_source_post_type
+	 *
+	 * @return void
+	 */
+	public function test_render_block_with_explicit_source_post_type_venue(): void {
+		$instance = Venue_Block::get_instance();
+
+		$venue_id = $this->factory->post->create(
+			array(
+				'post_type'  => 'gatherpress_venue',
+				'post_title' => 'Explicit Source Type Venue',
+			)
+		);
+
+		$block_instance = new WP_Block(
+			array(
+				'blockName'    => 'gatherpress/venue',
+				'attrs'        => array(
+					'sourcePostType' => 'gatherpress_venue',
+					'selectedPostId' => $venue_id,
+				),
+				'innerBlocks'  => array(
+					array(
+						'blockName'    => 'core/paragraph',
+						'attrs'        => array(),
+						'innerBlocks'  => array(),
+						'innerHTML'    => '<p>Explicit-source inner content</p>',
+						'innerContent' => array( '<p>Explicit-source inner content</p>' ),
+					),
+				),
+				'innerHTML'    => '',
+				'innerContent' => array( null ),
+			)
+		);
+
+		$block = array(
+			'attrs' => array(
+				'sourcePostType' => 'gatherpress_venue',
+				'selectedPostId' => $venue_id,
+			),
+		);
+
+		$result = $instance->render_block( '<div>Test</div>', $block, $block_instance );
+
+		$this->assertStringContainsString(
+			'Explicit-source inner content',
+			$result,
+			'Setting sourcePostType=gatherpress_venue explicitly should resolve and render identically to the default.'
+		);
+	}
+
+	/**
+	 * When `sourcePostType` points at a CPT that isn't actually registered
+	 * (no shadow taxonomy exists), no source resolves and the block renders
+	 * empty. Documents the defensive contract.
+	 *
+	 * @since 0.34.0
+	 * @covers ::render_block
+	 * @covers ::get_source_post
+	 *
+	 * @return void
+	 */
+	public function test_render_block_returns_empty_for_unregistered_source_post_type(): void {
+		$instance = Venue_Block::get_instance();
+
+		$event_id = $this->mock->post(
+			array( 'post_type' => Event::POST_TYPE )
+		)->get()->ID;
+		$this->go_to( get_permalink( $event_id ) );
+
+		$block_instance = new WP_Block(
+			array(
+				'blockName'    => 'gatherpress/venue',
+				'attrs'        => array( 'sourcePostType' => 'gatherpress_definitely_not_registered' ),
+				'innerBlocks'  => array(),
+				'innerHTML'    => '',
+				'innerContent' => array(),
+			)
+		);
+
+		$block = array( 'attrs' => array( 'sourcePostType' => 'gatherpress_definitely_not_registered' ) );
+
+		$result = $instance->render_block( '<div>Test</div>', $block, $block_instance );
+
+		$this->assertSame(
+			'',
+			$result,
+			'Block should render empty when sourcePostType points at an unregistered CPT.'
+		);
+	}
 }
