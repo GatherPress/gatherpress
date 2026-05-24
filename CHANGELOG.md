@@ -5,7 +5,9 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+Pending entries for the next release live as individual files under
+[`.github/changelog/`](.github/changelog/) and get rolled up into a new
+version section by `composer changelog:write` at release time.
 
 ## [0.33.3] - 2026-02-16
 
@@ -304,7 +306,6 @@ Initial public release. Represents 18+ months of pre-1.0 development and ships t
 - Initial unit test suite with code coverage via SonarCloud.
 - Multilingual screenshots and i18n scaffolding.
 
-[Unreleased]: https://github.com/GatherPress/gatherpress/compare/0.33.3...HEAD
 [0.33.3]: https://github.com/GatherPress/gatherpress/compare/0.33.2...0.33.3
 [0.33.2]: https://github.com/GatherPress/gatherpress/compare/0.33.1...0.33.2
 [0.33.1]: https://github.com/GatherPress/gatherpress/compare/0.33.0...0.33.1

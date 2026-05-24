@@ -1,0 +1,4 @@
+Significance: patch
+Type: changed
+
+Flatten `Venue_*` classes into the `GatherPress\Core\Venue` subnamespace. [#1522]

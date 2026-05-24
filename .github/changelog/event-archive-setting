@@ -1,0 +1,4 @@
+Significance: minor
+Type: added
+
+Add the Event Archive setting so site organizers can choose whether the post-type archive defaults to upcoming, past, or is disabled. [#1587]

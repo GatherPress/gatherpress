@@ -1,0 +1,4 @@
+Significance: patch
+Type: fixed
+
+Read SVGs from the filesystem instead of issuing an HTTP self-request, fixing icon-block rendering on hosts behind authenticating reverse proxies. [#1455]

@@ -1,0 +1,4 @@
+Significance: minor
+Type: added
+
+Refactor the Settings API with flat storage, a config-driven architecture, import / export, and reorganized tabs. [#1434]

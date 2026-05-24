@@ -1,0 +1,4 @@
+Significance: patch
+Type: added
+
+Support the Interactivity API's `clientNavigation` flag for the venue block so navigation between venue pages stays SPA-style on themes that opt in. [#1464]

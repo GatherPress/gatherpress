@@ -1,0 +1,4 @@
+Significance: patch
+Type: added
+
+Add a site health test that flags installs running on plain permalinks, since several GatherPress features (notably RSVP magic links and .ics downloads) require pretty permalinks. [#1660]
