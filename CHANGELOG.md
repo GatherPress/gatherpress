@@ -135,7 +135,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.31.0] - 2024-10-04
 
 ### Added
-- Customisable rewrite bases for post types and taxonomies. [#812]
+- Customizable rewrite bases for post types and taxonomies. [#812]
 - New `gatherpress/event-date` block UI with refactored controls and renamed files for consistency. [#820] [#873]
 - Customizable `Event->get_formatted_datetime()` (now public). [#878]
 - New developer docs section for running PHPUnit via `wp-env`. [#879]
