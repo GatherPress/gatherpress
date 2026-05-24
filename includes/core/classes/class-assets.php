@@ -584,7 +584,6 @@ class Assets {
 
 	/**
 	 * Register a new script and sets translated strings for the script.
-
 	 *
 	 * @since 0.33.0
 	 *
