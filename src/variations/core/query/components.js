@@ -11,6 +11,7 @@ import {
 	__experimentalToggleGroupControlOption as ToggleGroupControlOption,
 } from '@wordpress/components';
 import { useSelect } from '@wordpress/data';
+import { useEffect } from '@wordpress/element';
 import { __, _x, sprintf } from '@wordpress/i18n';
 
 /**
@@ -326,6 +327,53 @@ export const VenueFilterControls = ( {
 	const sourcePostType = editorIsShadowSource
 		? editorPostType
 		: 'gatherpress_venue';
+
+	// Backfill the shadow-source context attrs whenever the toggle is on but
+	// the IDs don't match the current editor post. Catches three real-world
+	// scenarios that otherwise let the editor render an unscoped query
+	// briefly (every event in the DB, including ones outside the current
+	// source) before the user notices:
+	//
+	//   1. Blocks saved before the rename to `gatherpress_shadow_source_post_*`
+	//      — the saved markup carries `null` for those keys, so the first
+	//      REST request lacks the context and the resolver gives up.
+	//   2. Toggles fired while `core/editor` data store is still hydrating —
+	//      `editorPostId` is `undefined` at the moment `onChange` runs, so
+	//      the attrs get written as `null` and stay that way until the user
+	//      toggles a second time.
+	//   3. Reloads where Gutenberg restored `venue_filter: 1` but the
+	//      shadow-source attrs were never persisted in the first place.
+	//
+	// Only runs on shadow-source editor post types so non-shadow contexts
+	// (templates, venue pages with the standard venue subsystem) behave as
+	// before.
+	const queryShadowId = attributes.query?.gatherpress_shadow_source_post_id;
+	const queryShadowType = attributes.query?.gatherpress_shadow_source_post_type;
+	const needsBackfill =
+		!! venueFilter &&
+		editorIsShadowSource &&
+		!! editorPostId &&
+		!! editorPostType &&
+		( queryShadowId !== editorPostId || queryShadowType !== editorPostType );
+
+	useEffect( () => {
+		if ( ! needsBackfill ) {
+			return;
+		}
+		setAttributes( {
+			query: {
+				...attributes.query,
+				gatherpress_shadow_source_post_id: editorPostId,
+				gatherpress_shadow_source_post_type: editorPostType,
+			},
+		} );
+	}, [
+		needsBackfill,
+		editorPostId,
+		editorPostType,
+		attributes.query,
+		setAttributes,
+	] );
 
 	const helpText = inTemplateContext
 		? __(
