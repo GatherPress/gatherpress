@@ -13,9 +13,9 @@ Pushing a tag of the form `X.Y.Z` (stable) or `X.Y.Z-alpha.N` / `-beta.N` /
 
 | Tag pattern             | Distro zip                  | GitHub Release entry | Changelog body source                       | wp.org deploy |
 | ----------------------- | --------------------------- | -------------------- | ------------------------------------------- | ------------- |
-| `0.34.0`                | `gatherpress.0.34.0.zip`    | Release (latest)     | Rolled-up `[0.34.0]` section in CHANGELOG.md | Yes           |
-| `0.34.0-alpha.1`        | `gatherpress.0.34.0-alpha.1.zip` | Pre-Release    | Snapshot of `[Unreleased]` section          | No            |
-| `0.34.0-beta.1` / `-rc.1` | Same as alpha             | Pre-Release          | Snapshot of `[Unreleased]` section          | No            |
+| `0.34.0`                | `gatherpress.0.34.0.zip`    | Release (latest)     | Rolled-up `[0.34.0]` section, committed back to `CHANGELOG.md` via auto-PR | Yes |
+| `0.34.0-alpha.1`        | `gatherpress.0.34.0-alpha.1.zip` | Pre-Release    | Rolled-up `[0.34.0-alpha.1]` section computed in an ephemeral checkout (no commit) | No |
+| `0.34.0-beta.1` / `-rc.1` | Same shape as alpha       | Pre-Release          | Same shape as alpha                         | No            |
 
 The distro zip's outer filename carries the version; the inner layout is
 always `gatherpress/...` so it installs cleanly under the right slug.
@@ -38,10 +38,12 @@ git push origin 0.34.0-alpha.1
 
 1. Detects the tag is a pre-release (the `-alpha.` / `-beta.` / `-rc.` suffix).
 2. Builds `gatherpress.0.34.0-alpha.1.zip` via `npm run plugin-zip`.
-3. Extracts the current `[Unreleased]` section from `CHANGELOG.md` as the release body. If the section is empty (no changelog entries queued yet), the body falls back to a generic placeholder.
-4. Creates a GitHub **Pre-Release** with the zip attached and the snapshot as the body. The Pre-Release is **not** marked as the latest release.
-5. **`.github/changelog/*` entries are left in place** so the eventual stable release still has them.
+3. Runs `composer changelog:write --use-version=0.34.0-alpha.1 ...` in an ephemeral working copy and extracts the resulting `[0.34.0-alpha.1]` section as the release body. The changes never get committed anywhere — they evaporate when the job ends.
+4. Creates a GitHub **Pre-Release** with the zip attached and the rolled-up body. The Pre-Release is **not** marked as the latest release.
+5. **`.github/changelog/*` entries are left in place** in the repository so the eventual stable release still has them.
 6. Skips the wp.org deploy entirely.
+
+Testers downloading the pre-release zip see the same changelog body they'd see at stable release time — minus any further entries that land between now and then.
 
 **Verify after the workflow lands:**
 
