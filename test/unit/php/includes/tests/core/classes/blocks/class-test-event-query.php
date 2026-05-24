@@ -988,6 +988,105 @@ class Test_Event_Query extends Base {
 	}
 
 	/**
+	 * Test query_loop_block_query_vars passes shadow-source context attrs through to query args.
+	 *
+	 * Covers the editor-preview parity path — when the block's contextual toggle is on
+	 * the editor writes the current post id + post type into the block's query attribute
+	 * and we thread them onto the WP_Query so `Shadow_Source::resolve_post_from_query_context()`
+	 * can scope by them.
+	 *
+	 * @since 0.34.0
+	 * @covers ::query_loop_block_query_vars
+	 *
+	 * @return void
+	 */
+	public function test_query_loop_block_query_vars_with_shadow_source_context(): void {
+		$instance = Event_Query::get_instance();
+
+		$query = array( 'posts_per_page' => 10 );
+		$block = $this->createMock( \WP_Block::class );
+
+		$block->context = array(
+			'query' => array(
+				'gatherpress_event_query'             => 'upcoming',
+				'venue_filter'                        => 1,
+				'gatherpress_shadow_source_post_id'   => 42,
+				'gatherpress_shadow_source_post_type' => 'production',
+			),
+		);
+
+		$result = $instance->query_loop_block_query_vars( $query, $block );
+
+		$this->assertSame(
+			42,
+			$result['gatherpress_shadow_source_post_id'],
+			'Should pass the shadow-source post id through to query args.'
+		);
+		$this->assertSame(
+			'production',
+			$result['gatherpress_shadow_source_post_type'],
+			'Should pass the shadow-source post type through to query args.'
+		);
+	}
+
+	/**
+	 * Test rest_query passes shadow-source context params through to custom args.
+	 *
+	 * @since 0.34.0
+	 * @covers ::rest_query
+	 *
+	 * @return void
+	 */
+	public function test_rest_query_with_shadow_source_context(): void {
+		$instance = Event_Query::get_instance();
+
+		$request = $this->createMock( \WP_REST_Request::class );
+
+		$param_map = array(
+			array( 'include', null ),
+			array( 'gatherpress_event_query', 'upcoming' ),
+			array( 'exclude_current', null ),
+			array( 'include_unfinished', null ),
+			array( 'orderby', null ),
+			array( 'venue_filter', 1 ),
+			array( 'gatherpress_shadow_source_post_id', 42 ),
+			array( 'gatherpress_shadow_source_post_type', 'production' ),
+		);
+
+		$request->expects( $this->exactly( 8 ) )
+			->method( 'get_param' )
+			->willReturnMap( $param_map );
+
+		$request->expects( $this->once() )
+			->method( 'get_params' )
+			->willReturn(
+				array(
+					'gatherpress_event_query'             => 'upcoming',
+					'venue_filter'                        => 1,
+					'gatherpress_shadow_source_post_id'   => 42,
+					'gatherpress_shadow_source_post_type' => 'production',
+				)
+			);
+
+		$initial_args = array(
+			'post_type' => Event::POST_TYPE,
+		);
+
+		$result = $instance->rest_query( $initial_args, $request );
+
+		$this->assertSame(
+			42,
+			$result['gatherpress_shadow_source_post_id'],
+			'Should pass shadow-source post id through to custom args.'
+		);
+		$this->assertSame(
+			'production',
+			$result['gatherpress_shadow_source_post_type'],
+			'Should pass shadow-source post type through to custom args.'
+		);
+	}
+
+	/**
 	 * Test rest_query short-circuits when `include` is in the request.
 	 *
 	 * ID-based REST lookups should bypass the upcoming/past date filter so
