@@ -337,7 +337,7 @@ if ( $source_post instanceof WP_Post ) {
 }
 ```
 
-`resolve_post_from_query_context()` handles both resolution paths — the frontend `is_singular()` path AND the REST editor-preview path. For the REST path to work, the block's JS must write the editor's current post id + post type into the query attributes as `gatherpress_source_post_id` and `gatherpress_source_post_type` when the toggle is on. Those are the only two query vars the resolver looks at — everything else flows from the resolved post.
+`resolve_post_from_query_context()` handles both resolution paths — the frontend `is_singular()` path AND the REST editor-preview path. For the REST path to work, the block's JS must write the editor's current post id + post type into the query attributes as `gatherpress_shadow_source_post_id` and `gatherpress_shadow_source_post_type` when the toggle is on. Those are the only two query vars the resolver looks at — everything else flows from the resolved post.
 
 #### Customizing the taxonomy registration
 

@@ -817,10 +817,10 @@ class Test_Shadow_Source extends Base {
 			->method( 'get' )
 			->willReturnCallback(
 				static function ( $key ) use ( $venue_post_id ) {
-					if ( 'gatherpress_source_post_id' === $key ) {
+					if ( 'gatherpress_shadow_source_post_id' === $key ) {
 						return $venue_post_id;
 					}
-					if ( 'gatherpress_source_post_type' === $key ) {
+					if ( 'gatherpress_shadow_source_post_type' === $key ) {
 						return Venue::POST_TYPE;
 					}
 					return null;
@@ -856,10 +856,10 @@ class Test_Shadow_Source extends Base {
 			->method( 'get' )
 			->willReturnCallback(
 				static function ( $key ) use ( $page_id ) {
-					if ( 'gatherpress_source_post_id' === $key ) {
+					if ( 'gatherpress_shadow_source_post_id' === $key ) {
 						return $page_id;
 					}
-					if ( 'gatherpress_source_post_type' === $key ) {
+					if ( 'gatherpress_shadow_source_post_type' === $key ) {
 						return 'page';
 					}
 					return null;
@@ -897,10 +897,10 @@ class Test_Shadow_Source extends Base {
 			->method( 'get' )
 			->willReturnCallback(
 				static function ( $key ) use ( $post_id ) {
-					if ( 'gatherpress_source_post_id' === $key ) {
+					if ( 'gatherpress_shadow_source_post_id' === $key ) {
 						return $post_id;
 					}
-					if ( 'gatherpress_source_post_type' === $key ) {
+					if ( 'gatherpress_shadow_source_post_type' === $key ) {
 						return Venue::POST_TYPE;
 					}
 					return null;
@@ -934,10 +934,10 @@ class Test_Shadow_Source extends Base {
 			->method( 'get' )
 			->willReturnCallback(
 				static function ( $key ) {
-					if ( 'gatherpress_source_post_id' === $key ) {
+					if ( 'gatherpress_shadow_source_post_id' === $key ) {
 						return 999999;
 					}
-					if ( 'gatherpress_source_post_type' === $key ) {
+					if ( 'gatherpress_shadow_source_post_type' === $key ) {
 						return Venue::POST_TYPE;
 					}
 					return null;
@@ -1002,7 +1002,11 @@ class Test_Shadow_Source extends Base {
 
 		$this->assertSame( Venue::TAXONOMY, $clause['taxonomy'], 'Clause taxonomy should be the shadow taxonomy.' );
 		$this->assertSame( 'slug', $clause['field'], 'Clause field should be slug.' );
-		$this->assertSame( array( '_clause-venue' ), $clause['terms'], 'Clause terms should be the prefixed post_name.' );
+		$this->assertSame(
+			array( '_clause-venue' ),
+			$clause['terms'],
+			'Clause terms should be the prefixed post_name.'
+		);
 
 		wp_delete_post( $venue_post_id, true );
 	}

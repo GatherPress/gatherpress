@@ -203,8 +203,8 @@ class Test_Event_Query extends Base {
 			array( 'exclude_current', null ),
 			array( 'orderby', 'datetime' ),
 			array( 'venue_filter', null ),
-			array( 'gatherpress_source_post_id', null ),
-			array( 'gatherpress_source_post_type', null ),
+			array( 'gatherpress_shadow_source_post_id', null ),
+			array( 'gatherpress_shadow_source_post_type', null ),
 		);
 
 		$request->expects( $this->exactly( 8 ) )
@@ -606,8 +606,8 @@ class Test_Event_Query extends Base {
 			array( 'include_unfinished', null ),
 			array( 'orderby', 'datetime' ),
 			array( 'venue_filter', null ),
-			array( 'gatherpress_source_post_id', null ),
-			array( 'gatherpress_source_post_type', null ),
+			array( 'gatherpress_shadow_source_post_id', null ),
+			array( 'gatherpress_shadow_source_post_type', null ),
 		);
 
 		$request->expects( $this->exactly( 8 ) )
@@ -654,8 +654,8 @@ class Test_Event_Query extends Base {
 			array( 'include_unfinished', 1 ),
 			array( 'orderby', 'date' ),
 			array( 'venue_filter', null ),
-			array( 'gatherpress_source_post_id', null ),
-			array( 'gatherpress_source_post_type', null ),
+			array( 'gatherpress_shadow_source_post_id', null ),
+			array( 'gatherpress_shadow_source_post_type', null ),
 		);
 
 		$request->expects( $this->exactly( 8 ) )
@@ -706,8 +706,8 @@ class Test_Event_Query extends Base {
 			array( 'include_unfinished', null ),
 			array( 'orderby', null ),
 			array( 'venue_filter', null ),
-			array( 'gatherpress_source_post_id', null ),
-			array( 'gatherpress_source_post_type', null ),
+			array( 'gatherpress_shadow_source_post_id', null ),
+			array( 'gatherpress_shadow_source_post_type', null ),
 		);
 
 		$request->expects( $this->exactly( 8 ) )
@@ -892,8 +892,8 @@ class Test_Event_Query extends Base {
 			array( 'include_unfinished', null ),
 			array( 'orderby', '' ),
 			array( 'venue_filter', null ),
-			array( 'gatherpress_source_post_id', null ),
-			array( 'gatherpress_source_post_type', null ),
+			array( 'gatherpress_shadow_source_post_id', null ),
+			array( 'gatherpress_shadow_source_post_type', null ),
 		);
 
 		$request->expects( $this->exactly( 8 ) )
@@ -961,8 +961,8 @@ class Test_Event_Query extends Base {
 			array( 'include_unfinished', null ),
 			array( 'orderby', null ),
 			array( 'venue_filter', 1 ),
-			array( 'gatherpress_source_post_id', null ),
-			array( 'gatherpress_source_post_type', null ),
+			array( 'gatherpress_shadow_source_post_id', null ),
+			array( 'gatherpress_shadow_source_post_type', null ),
 		);
 
 		$request->expects( $this->exactly( 8 ) )

@@ -513,8 +513,8 @@ class Shadow_Source {
 	 * Two resolution paths:
 	 * 1. Frontend — `is_singular()` is true and the queried object is a shadow-source post.
 	 * 2. REST editor preview — the consumer (typically the `gatherpress/event-query` block)
-	 *    writes the editor's current post id + post type into the `gatherpress_source_post_id`
-	 *    and `gatherpress_source_post_type` query vars when the contextual toggle is on. We
+	 *    writes the editor's current post id + post type into the `gatherpress_shadow_source_post_id`
+	 *    and `gatherpress_shadow_source_post_type` query vars when the contextual toggle is on. We
 	 *    use those as the source when `is_singular()` is false.
 	 *
 	 * @since 0.34.0
@@ -534,8 +534,8 @@ class Shadow_Source {
 			}
 		}
 
-		$context_post_id   = (int) $query->get( 'gatherpress_source_post_id' );
-		$context_post_type = (string) $query->get( 'gatherpress_source_post_type' );
+		$context_post_id   = (int) $query->get( 'gatherpress_shadow_source_post_id' );
+		$context_post_type = (string) $query->get( 'gatherpress_shadow_source_post_type' );
 
 		if (
 			$context_post_id <= 0
