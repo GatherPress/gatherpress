@@ -9,9 +9,10 @@ name: Release
 #
 # Pushing a tag like `0.34.0-alpha.1`, `-beta.1`, or `-rc.1` cuts a pre-release:
 # distro zip is attached to a GitHub Pre-Release (marked NOT-latest), the
-# release body is a snapshot of CHANGELOG.md's `[Unreleased]` section so
-# people testing alphas can see what's queued, and the .github/changelog/*
-# entries are LEFT IN PLACE so the eventual stable release still has them.
+# release body is the SAME rolled-up section that would ship at stable (so
+# testers see what they're testing), but the rollup is computed in an
+# ephemeral checkout — no commit, no PR, no entry files deleted. Pre-releases
+# never deploy to wp.org.
 #
 # Release-manager docs: docs/developer/release-process.md.
 
@@ -25,8 +26,7 @@ permissions:
   contents: read
 
 jobs:
-  # Classify the tag and extract the matching changelog body so downstream
-  # jobs don't have to redo it.
+  # Classify the tag so downstream jobs know which path to take.
   prepare:
     name: Prepare release context
     runs-on: ubuntu-latest
@@ -35,13 +35,7 @@ jobs:
     outputs:
       version: ${{ steps.context.outputs.version }}
       is_prerelease: ${{ steps.context.outputs.is_prerelease }}
-      release_body: ${{ steps.body.outputs.release_body }}
     steps:
-      - name: Checkout the tag
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ github.ref }}
-
       - name: Classify tag
         id: context
         run: |
@@ -57,55 +51,14 @@ jobs:
             echo "Tag ${version} is a stable release."
           fi
 
-      - name: Extract changelog body
-        id: body
-        env:
-          IS_PRERELEASE: ${{ steps.context.outputs.is_prerelease }}
-          VERSION: ${{ steps.context.outputs.version }}
-        run: |
-          # Pre-release: snapshot the [Unreleased] section as-is. Stable: the
-          # release body is written later by the rollup job (this output is
-          # only used by pre-releases). For stable, we still emit something
-          # here so the output isn't empty — the rollup job overrides it.
-          if [[ "${IS_PRERELEASE}" == "true" ]]; then
-            # Single-pass capture between the [Unreleased] header and the next
-            # version header. Suppresses leading blanks until the first non-blank
-            # line, and buffers trailing blanks so they never get flushed.
-            section="$(awk '
-              /^## \[Unreleased\]/ { capture = 1; next }
-              /^## \[/ && capture { exit }
-              capture {
-                if ($0 ~ /[^[:space:]]/) {
-                  seen = 1
-                  if (buffered) { printf "%s", buffered; buffered = "" }
-                  print
-                } else if (seen) {
-                  buffered = buffered $0 ORS
-                }
-              }
-            ' CHANGELOG.md)"
-
-            if [[ -z "$section" ]]; then
-              section="_No changelog entries queued yet for this pre-release._"
-            fi
-          else
-            section="_Will be populated by the rollup job._"
-          fi
-
-          # Multi-line output via the GH Actions heredoc protocol.
-          {
-            echo "release_body<<EOF_BODY"
-            echo "$section"
-            echo "EOF_BODY"
-          } >> "$GITHUB_OUTPUT"
-
-  # Roll up .github/changelog/* into CHANGELOG.md under a new [X.Y.Z] header,
-  # push to a release/X.Y.Z branch, and open a PR back to develop for human
-  # review. Stable releases only — pre-releases preserve the entries.
-  rollup-changelog:
-    name: Roll up CHANGELOG.md
+  # Always runs: aggregate `.github/changelog/*` into a new [X.Y.Z] section
+  # and capture the section text as the release body. For stable tags we
+  # additionally commit the rollup back via an auto-PR; for pre-releases the
+  # working-dir changes evaporate when the job ends, so the entry files stay
+  # intact for the eventual stable release.
+  rollup:
+    name: Roll up changelog
     needs: prepare
-    if: needs.prepare.outputs.is_prerelease == 'false'
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -140,6 +93,10 @@ jobs:
           # --release-date defaults to today, --add-pr-num appends [#NNNN] from
           # merge commit subjects, and --deduplicate=-1 disables looking back
           # at prior versions (we trust each entry file to be unique-by-author).
+          #
+          # On pre-releases this modifies the ephemeral working dir; the
+          # changes never get pushed because the commit step below is gated
+          # on the stable path.
           vendor/bin/changelogger write \
             --use-version="${VERSION}" \
             --release-date="$(date +%Y-%m-%d)" \
@@ -151,6 +108,7 @@ jobs:
         id: extract
         env:
           VERSION: ${{ needs.prepare.outputs.version }}
+          IS_PRERELEASE: ${{ needs.prepare.outputs.is_prerelease }}
         run: |
           # Capture lines between the new [X.Y.Z] header and the next ## header.
           # Single-pass: suppress leading blanks until first non-blank, buffer
@@ -170,8 +128,12 @@ jobs:
           ' CHANGELOG.md)"
 
           if [[ -z "$section" ]]; then
-            echo "::error::Rolled-up CHANGELOG.md does not contain a [${VERSION}] section. Did the changelogger write command succeed?"
-            exit 1
+            if [[ "${IS_PRERELEASE}" == "true" ]]; then
+              section="_No changelog entries queued yet for this pre-release._"
+            else
+              echo "::error::Rolled-up CHANGELOG.md does not contain a [${VERSION}] section. Did the changelogger write command succeed? .github/changelog/ may have been empty at tag time."
+              exit 1
+            fi
           fi
 
           {
@@ -180,7 +142,8 @@ jobs:
             echo "EOF_BODY"
           } >> "$GITHUB_OUTPUT"
 
-      - name: Open PR with rolled-up changelog
+      - name: Open PR with rolled-up changelog (stable only)
+        if: needs.prepare.outputs.is_prerelease == 'false'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VERSION: ${{ needs.prepare.outputs.version }}
@@ -249,19 +212,10 @@ jobs:
           retention-days: 7
 
   # Create the GitHub Release (or Pre-Release) with the zip attached and the
-  # appropriate changelog body. The body source differs by path:
-  #   - Pre-release: [Unreleased] snapshot from prepare.outputs.release_body
-  #   - Stable: rolled-up [X.Y.Z] section from rollup-changelog.outputs.release_body
+  # rolled-up changelog section as the body.
   release:
     name: Create GitHub release
-    needs: [prepare, build, rollup-changelog]
-    # rollup-changelog is skipped on pre-releases; without `always()` this job
-    # would skip too. Re-gate so we only run when build succeeded AND either
-    # rollup succeeded (stable) or was skipped (pre-release).
-    if: |
-      always()
-      && needs.build.result == 'success'
-      && (needs.rollup-changelog.result == 'success' || needs.rollup-changelog.result == 'skipped')
+    needs: [prepare, build, rollup]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -276,8 +230,7 @@ jobs:
         with:
           tag_name: ${{ needs.prepare.outputs.version }}
           name: ${{ needs.prepare.outputs.version }}
-          body: |
-            ${{ needs.rollup-changelog.outputs.release_body || needs.prepare.outputs.release_body }}
+          body: ${{ needs.rollup.outputs.release_body }}
           files: gatherpress.${{ needs.prepare.outputs.version }}.zip
           prerelease: ${{ needs.prepare.outputs.is_prerelease == 'true' }}
           make_latest: ${{ needs.prepare.outputs.is_prerelease == 'false' && 'true' || 'false' }}
