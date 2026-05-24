@@ -3,7 +3,7 @@
  * Unit tests for GatherPress\Core\Venue\Map\Manager.
  *
  * @package GatherPress\Core\Venue\Map
- * @since 1.0.0
+ * @since 0.34.0
  */
 
 namespace GatherPress\Tests\Core\Venue\Map;
@@ -308,6 +308,7 @@ class Test_Manager extends Base {
 	 * Base with just enough plumbing to be registerable.
 	 *
 	 * @param string $slug Slug to advertise.
+	 *
 	 * @return Map_Provider
 	 */
 	private function make_stub_provider( string $slug ): Map_Provider {
@@ -355,6 +356,7 @@ class Test_Manager extends Base {
 			 * @param int   $width     Unused.
 			 * @param int   $height    Unused.
 			 * @param int   $density   Unused.
+			 *
 			 * @return null
 			 */
 			public function render(

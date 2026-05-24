@@ -79,7 +79,10 @@
 		"serialize-javascript": "^7.0.3",
 		"minimatch@3": "3.1.3",
 		"minimatch@9": "9.0.7",
-		"postcss": "^8.5.10"
+		"postcss": "^8.5.10",
+		"qs": "^6.15.2",
+		"uuid": "$uuid",
+		"webpack-dev-server": "^5.2.4"
 	},
 	"scripts": {
 		"postinstall": "patch-package",
@@ -103,6 +106,7 @@
 		"screenshots:wporg": "WP_BASE_URL='http://127.0.0.1:9400/' wp-scripts test-playwright --config .github/scripts/wordpress-org-screenshots/playwright.config.ts",
 		"screenshots:wporg:debug": "npm run screenshots:wporg -- --debug",
 		"screenshots:wporg:ui": "npm run screenshots:wporg -- --ui",
+		"pretest:e2e": "wp-env start --config .wp-env.test.json",
 		"test:e2e": "playwright test --config=playwright.config.js",
 		"test:unit:js": "wp-scripts test-unit-js --coverage --testResultsProcessor=jest-sonar-reporter",
 		"pretest:unit:php": "wp-env start --config .wp-env.test.json --xdebug",

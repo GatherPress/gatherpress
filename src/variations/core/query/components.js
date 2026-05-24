@@ -19,7 +19,7 @@ import { __, _x, sprintf } from '@wordpress/i18n';
 import EventQueryControls from './slots/query-controls';
 import EventInheritedQueryControls from './slots/inherited-query-controls';
 import { isEventPostType, usePostTypeSupports } from '../../../helpers/event';
-import { isInFSETemplate } from '../../../helpers/editor';
+import { getPostTypeLabel, isInFSETemplate, usePostTypeLabel } from '../../../helpers/editor';
 
 /**
  * EventCountControls component
@@ -30,14 +30,28 @@ import { isInFSETemplate } from '../../../helpers/editor';
  * @param {Object}   props
  * @param {Object}   props.attributes    Block attributes.
  * @param {Function} props.setAttributes Function to update block attributes.
+ *
  * @return {Element}                     RangeControl for event "per page" count.
  */
 export const EventCountControls = ( { attributes, setAttributes } ) => {
-	const { query: { perPage, offset = 0 } = {} } = attributes;
+	const { query: { postType, perPage, offset = 0 } = {} } = attributes;
+
+	// Read the plural label so the label reflects what the currently
+	// selected post type is actually called — a custom event-supporting post type with
+	// `name => 'Productions'` shows "Productions Per Page".
+	const pluralLabel = usePostTypeLabel(
+		'name',
+		postType,
+		__( 'Events', 'gatherpress' )
+	);
 
 	return (
 		<RangeControl
-			label={ __( 'Events Per Page', 'gatherpress' ) }
+			label={ sprintf(
+			/* translators: %s: Plural post type label, e.g. "Events". */
+				__( '%s Per Page', 'gatherpress' ),
+				pluralLabel
+			) }
 			min={ 1 }
 			max={ 50 }
 			onChange={ ( newCount ) => {
@@ -66,14 +80,24 @@ export const EventCountControls = ( { attributes, setAttributes } ) => {
  * @param {Object}   props
  * @param {Object}   props.attributes    Block attributes.
  * @param {Function} props.setAttributes Function to update block attributes.
+ *
  * @return {Element}                        ToggleControl to exclude current event.
  */
 export const EventExcludeControls = ( { attributes, setAttributes } ) => {
-	const { query: { exclude_current: excludeCurrent } = {} } = attributes;
+	const { query: { postType, exclude_current: excludeCurrent } = {} } = attributes;
 
 	const currentPost = useSelect( ( select ) => {
 		return select( 'core/editor' ).getCurrentPost();
 	}, [] );
+
+	// Read the singular label so the label reflects what the currently
+	// selected post type is actually called — a custom event-supporting post type with
+	// `singular_name => 'Production'` shows "Exclude Current Production".
+	const singularLabel = usePostTypeLabel(
+		'singular_name',
+		postType,
+		__( 'Event', 'gatherpress' )
+	);
 
 	if ( ! currentPost ) {
 		return <div>{ __( 'Loading…', 'gatherpress' ) }</div>;
@@ -81,7 +105,11 @@ export const EventExcludeControls = ( { attributes, setAttributes } ) => {
 
 	return (
 		<ToggleControl
-			label={ __( 'Exclude Current Event', 'gatherpress' ) }
+			label={ sprintf(
+				/* translators: %s: Singular post type label, e.g. "Event". */
+				__( 'Exclude Current %s', 'gatherpress' ),
+				singularLabel
+			) }
 			checked={ !! excludeCurrent }
 			onChange={ ( value ) => {
 				setAttributes( {
@@ -105,6 +133,7 @@ export const EventExcludeControls = ( { attributes, setAttributes } ) => {
  * @param {Object}   props
  * @param {Object}   props.attributes    Block attributes.
  * @param {Function} props.setAttributes Function to update block attributes.
+ *
  * @return {Element}                        ToggleControl for unfinished events.
  */
 export const EventIncludeUnfinishedControls = ( {
@@ -113,6 +142,7 @@ export const EventIncludeUnfinishedControls = ( {
 } ) => {
 	const {
 		query: {
+			postType,
 			include_unfinished: includeUnfinished,
 			gatherpress_event_query: eventListType = 'upcoming',
 		} = {},
@@ -132,19 +162,33 @@ export const EventIncludeUnfinishedControls = ( {
 		effectiveValue = ( 1 === includeUnfinished );
 	}
 
+	// Read the plural label so the label reflects what the currently
+	// selected post type is actually called — a custom event-supporting post type with
+	// `name => 'Productions'` shows "Include Unfinished Productions".
+	const pluralLabel = usePostTypeLabel(
+		'name',
+		postType,
+		__( 'Events', 'gatherpress' )
+	);
+
 	return (
 		<ToggleControl
-			label={ __( 'Include unfinished events', 'gatherpress' ) }
+			label={ sprintf(
+				/* translators: %s: Plural post type label, e.g. "Events". */
+				__( 'Include Unfinished %s', 'gatherpress' ),
+				pluralLabel
+			) }
 			help={ sprintf(
-				/* translators: %s: 'upcoming' or 'past' */
+				/* translators: %1$s: 'upcoming' or 'past', %2$s: Plural post type label */
 				_x(
-					'%s events that have started but are not yet finished.',
+					'%1$s %2$s that have started but are not yet finished.',
 					"'Shows' or 'Hides'",
 					'gatherpress',
 				),
 				effectiveValue
 					? __( 'Shows', 'gatherpress' )
 					: __( 'Hides', 'gatherpress' ),
+				pluralLabel
 			) }
 			checked={ effectiveValue }
 			onChange={ ( value ) => {
@@ -170,16 +214,30 @@ export const EventIncludeUnfinishedControls = ( {
  * @param {Object}   props
  * @param {Object}   props.attributes    Block attributes.
  * @param {Function} props.setAttributes Function to update block attributes.
+ *
  * @return {Element}                     ToggleGroupControl for event list type.
  */
 export const EventListTypeControls = ( { attributes, setAttributes } ) => {
 	const {
-		query: { gatherpress_event_query: eventListType = 'upcoming' } = {},
+		query: { postType, gatherpress_event_query: eventListType = 'upcoming' } = {},
 	} = attributes;
+
+	// Read the singular label so the label reflects what the currently
+	// selected post type is actually called — a custom event-supporting post type with
+	// `singular_name => 'Production'` shows "Production List Type".
+	const singularLabel = usePostTypeLabel(
+		'singular_name',
+		postType,
+		__( 'Event', 'gatherpress' )
+	);
 
 	return (
 		<ToggleGroupControl
-			label={ __( 'Event List Type', 'gatherpress' ) }
+			label={ sprintf(
+				/* translators: %s: Singular post type label, e.g. "Event". */
+				__( '%s List Type', 'gatherpress' ),
+				singularLabel
+			) }
 			value={ eventListType }
 			isBlock
 			__next40pxDefaultSize
@@ -231,6 +289,7 @@ export const EventListTypeControls = ( { attributes, setAttributes } ) => {
  * @param {Object}   props.attributes        Block attributes.
  * @param {Function} props.setAttributes     Function to update block attributes.
  * @param {boolean}  props.inTemplateContext Whether the host editor is a template or template part.
+ *
  * @return {Element}                          ToggleControl for venue filtering.
  */
 export const VenueFilterControls = ( {
@@ -252,9 +311,22 @@ export const VenueFilterControls = ( {
 			'gatherpress'
 		);
 
+	// Read the singular label so the label reflects what the currently
+	// selected post type is actually called — a re-named gatherpress_venue post type with
+	// `singular_name => 'Location'` shows "Filter by Current Location".
+	const singularLabel = getPostTypeLabel(
+		'singular_name',
+		'gatherpress_venue',
+		__( 'Venue', 'gatherpress' )
+	);
+
 	return (
 		<ToggleControl
-			label={ __( 'Filter by current venue', 'gatherpress' ) }
+			label={ sprintf(
+				/* translators: %s: Singular post type label, e.g. "Venue". */
+				__( 'Filter by Current %s', 'gatherpress' ),
+				singularLabel
+			) }
 			help={ helpText }
 			checked={ !! venueFilter }
 			onChange={ ( value ) => {
@@ -278,13 +350,28 @@ export const VenueFilterControls = ( {
  * @param {Object}   props
  * @param {Object}   props.attributes    Block attributes.
  * @param {Function} props.setAttributes Function to update block attributes.
+ *
  * @return {Element}                        RangeControl for event query offset.
  */
 export const EventOffsetControls = ( { attributes, setAttributes } ) => {
-	const { query: { offset = 0 } = {} } = attributes;
+	const { query: { postType, offset = 0 } = {} } = attributes;
+
+	// Read the singular label so the label reflects what the currently
+	// selected post type is actually called — a custom event-supporting post type with
+	// `singular_name => 'Production'` shows "Production Offset".
+	const singularLabel = usePostTypeLabel(
+		'singular_name',
+		postType,
+		__( 'Event', 'gatherpress' )
+	);
+
 	return (
 		<RangeControl
-			label={ __( 'Event Offset', 'gatherpress' ) }
+			label={ sprintf(
+				/* translators: %s: Singular post type label, e.g. "Event". */
+				__( '%s Offset', 'gatherpress' ),
+				singularLabel
+			) }
 			min={ 0 }
 			max={ 50 }
 			value={ offset }
@@ -310,10 +397,11 @@ export const EventOffsetControls = ( { attributes, setAttributes } ) => {
  * @param {Object}   props
  * @param {Object}   props.attributes    Block attributes.
  * @param {Function} props.setAttributes Function to update block attributes.
+ *
  * @return {Element}                        Controls for event sorting and order.
  */
 export const EventOrderControls = ( { attributes, setAttributes } ) => {
-	const { query: { order, orderBy } = {} } = attributes;
+	const { query: { postType, order, orderBy } = {} } = attributes;
 	let label;
 	if ( 'rand' === orderBy ) {
 		label = __( 'Random Order', 'gatherpress' );
@@ -322,14 +410,42 @@ export const EventOrderControls = ( { attributes, setAttributes } ) => {
 	} else {
 		label = __( 'Descending Order', 'gatherpress' );
 	}
+
+	// Read the singular label so the label reflects what the currently
+	// selected post type is actually called — a custom event-supporting post type with
+	// `singular_name => 'Production'` shows "Production Date".
+	const singularLabel = usePostTypeLabel(
+		'singular_name',
+		postType,
+		__( 'Event', 'gatherpress' )
+	);
+
+	// Read the plural label so the label reflects what the currently
+	// selected post type is actually called — a custom event-supporting post type with
+	// `name => 'Productions'` shows "Order Productions by".
+	const pluralLabel = usePostTypeLabel(
+		'name',
+		postType,
+		__( 'Events', 'gatherpress' )
+	);
+
 	return (
 		<>
 			<SelectControl
-				label={ __( 'Order Events by', 'gatherpress' ) }
+				__next40pxDefaultSize
+				label={ sprintf(
+					/* translators: %s: Plural post type label, e.g. "Events". */
+					__( 'Order %s by', 'gatherpress' ),
+					pluralLabel
+				) }
 				value={ orderBy }
 				options={ [
 					{
-						label: __( 'Event Date', 'gatherpress' ),
+						label: sprintf(
+							/* translators: %s: Singular post type label, e.g. "Event". */
+							__( '%s Date', 'gatherpress' ),
+							singularLabel
+						),
 						value: 'datetime', // This is GatherPress specific, a normal post would use 'date'.
 					},
 					{

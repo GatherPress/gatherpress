@@ -3,7 +3,7 @@
  * Class handles unit tests for GatherPress\Core\Event\Setup.
  *
  * @package GatherPress\Core\Event
- * @since 1.0.0
+ * @since 0.29.0
  */
 
 namespace GatherPress\Tests\Core\Event;
@@ -99,20 +99,8 @@ class Test_Setup extends Base {
 			array(
 				'type'     => 'action',
 				'name'     => 'init',
-				'priority' => 10,
-				'callback' => array( $instance, 'register_calendar_rewrite_rule' ),
-			),
-			array(
-				'type'     => 'action',
-				'name'     => 'init',
 				'priority' => 11,
 				'callback' => array( $instance, 'register_starter_pattern' ),
-			),
-			array(
-				'type'     => 'action',
-				'name'     => 'parse_request',
-				'priority' => 10,
-				'callback' => array( $instance, 'handle_calendar_ics_request' ),
 			),
 			array(
 				'type'     => 'action',
@@ -137,12 +125,6 @@ class Test_Setup extends Base {
 				'name'     => 'save_post',
 				'priority' => 10,
 				'callback' => array( $instance, 'check_waiting_list' ),
-			),
-			array(
-				'type'     => 'filter',
-				'name'     => 'redirect_canonical',
-				'priority' => 10,
-				'callback' => array( $instance, 'disable_ics_canonical_redirect' ),
 			),
 			array(
 				'type'     => 'filter',
@@ -171,64 +153,6 @@ class Test_Setup extends Base {
 		);
 
 		$this->assert_hooks( $hooks, $instance );
-	}
-
-	/**
-	 * Test that the calendar rewrite rule is registered correctly with default slug.
-	 *
-	 * @covers ::register_calendar_rewrite_rule
-	 *
-	 * @return void
-	 */
-	public function test_register_calendar_rewrite_rule(): void {
-		$instance = Setup::get_instance();
-		$settings = Settings::get_instance();
-
-		// Get the dynamic slug from settings (default is 'events' plural).
-		$rewrite_slug = $settings->get( 'events_url' );
-
-		$instance->register_calendar_rewrite_rule();
-
-		// Test that add_rewrite_rule was called with correct arguments.
-		global $wp_rewrite;
-
-		// Flush rewrite rules to ensure they're generated.
-		$wp_rewrite->flush_rules();
-
-		// Get the current rewrite rules.
-		$rules = $wp_rewrite->rewrite_rules();
-
-		// Build the expected rule pattern using dynamic slug.
-		$expected_rule_pattern     = sprintf( '^%s/([^/]+)\.ics$', $rewrite_slug );
-		$expected_rule_replacement = sprintf(
-			'index.php?post_type=%s&name=$matches[1]&gatherpress_ics=1',
-			Event::POST_TYPE
-		);
-
-		// Check that our specific rule pattern exists.
-		$this->assertArrayHasKey(
-			$expected_rule_pattern,
-			$rules,
-			sprintf(
-				"Expected rewrite rule pattern '^%s/([^/]+)\\.ics$' was not found in WordPress rewrite rules",
-				$rewrite_slug
-			)
-		);
-
-		// Check that the rule maps to the correct replacement.
-		$this->assertEquals(
-			$expected_rule_replacement,
-			$rules[ $expected_rule_pattern ],
-			'The rewrite rule replacement does not match the expected format -
-			should map event .ics requests to the correct query vars'
-		);
-
-		// Verify that the gatherpress_ics parameter appears in the rules.
-		$this->assertStringContainsString(
-			'gatherpress_ics=1',
-			implode( '', $wp_rewrite->rules ),
-			"The 'gatherpress_ics' query parameter was not found in any rewrite rule"
-		);
 	}
 
 	/**
@@ -436,37 +360,6 @@ class Test_Setup extends Base {
 	}
 
 	/**
-	 * Tests for the ics canonical redirect prevention.
-	 *
-	 * @covers ::disable_ics_canonical_redirect
-	 *
-	 * @return void
-	 */
-	public function test_disable_ics_canonical_redirect(): void {
-		$instance     = Setup::get_instance();
-		$ics_url      = 'https://example.org/event/test-event.ics';
-		$redirect_url = 'https://example.org/event/test-event.ics/';
-		$result       = $instance->disable_ics_canonical_redirect( $redirect_url, $ics_url );
-
-		$this->assertFalse(
-			$result,
-			"The method should return false to prevent redirects when the URL contains '.ics'"
-		);
-
-		// Test with a non-ics URL.
-		$regular_url  = 'https://example.org/event/test-event';
-		$redirect_url = 'https://example.org/event/test-event/';
-
-		$result = $instance->disable_ics_canonical_redirect( $redirect_url, $regular_url );
-
-		$this->assertEquals(
-			$redirect_url,
-			$result,
-			"The method should return the original redirect URL when the URL does not contain '.ics'"
-		);
-	}
-
-	/**
 	 * Coverage for register_post_type method.
 	 *
 	 * @covers ::register_post_type
@@ -541,6 +434,7 @@ class Test_Setup extends Base {
 		 * @param string $translation Translated text.
 		 * @param string $text        Text to translate.
 		 * @param string $context     Context information for the translators.
+		 *
 		 * @return string Translated text.
 		 */
 		add_filter( 'gettext_with_context_gatherpress', $filter, 10, 3 );
@@ -1187,89 +1081,6 @@ class Test_Setup extends Base {
 
 
 	/**
-	 * Tests handle_calendar_ics_request with event not found.
-	 *
-	 * @covers ::handle_calendar_ics_request
-	 * @return void
-	 */
-	public function test_handle_calendar_ics_request_event_not_found(): void {
-		$wp             = new WP();
-		$wp->query_vars = array(
-			'gatherpress_ics' => true,
-			'name'            => 'non-existent-event',
-		);
-
-		$instance = Setup::get_instance();
-
-		$this->expectException( 'WPDieException' );
-		$this->expectExceptionMessage( 'Event not found.' );
-
-		$instance->handle_calendar_ics_request( $wp );
-	}
-
-
-	/**
-	 * Tests handle_calendar_ics_request with ICS generation.
-	 *
-	 * @covers ::handle_calendar_ics_request
-	 * @return void
-	 */
-	public function test_handle_calendar_ics_request_with_ics_output(): void {
-		// Create event post directly with wp_insert_post.
-		$post_id = wp_insert_post(
-			array(
-				'post_type'   => Event::POST_TYPE,
-				'post_name'   => 'test-ics-download',
-				'post_title'  => 'Test ICS Download',
-				'post_status' => 'publish',
-			),
-			true
-		);
-
-		$this->assertIsInt( $post_id, 'Post should be created successfully' );
-
-		// Set event datetime so ICS has valid content.
-		$event = new Event( $post_id );
-		$event->save_datetimes(
-			array(
-				'datetime_start' => '2025-12-25 10:00:00',
-				'datetime_end'   => '2025-12-25 12:00:00',
-				'timezone'       => 'America/New_York',
-			)
-		);
-
-		// Set up global WP object with proper query_vars.
-		global $wp;
-
-		if ( ! ( $wp instanceof WP ) ) {
-			// phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited -- Required for testing ICS request handling.
-			$wp = new WP();
-		}
-
-		$wp->query_vars = array(
-			'gatherpress_ics' => true,
-			'name'            => 'test-ics-download',
-		);
-
-		$instance = Setup::get_instance();
-
-		// Buffer output to capture ICS content without displaying it.
-		$output = Utility::buffer_and_return(
-			static function () use ( $instance, $wp ) {
-				$instance->handle_calendar_ics_request( $wp );
-			}
-		);
-
-		// Verify ICS content is generated correctly.
-		$this->assertStringContainsString( 'BEGIN:VCALENDAR', $output );
-		$this->assertStringContainsString( 'VERSION:2.0', $output );
-		$this->assertStringContainsString( 'BEGIN:VEVENT', $output );
-		$this->assertStringContainsString( 'END:VEVENT', $output );
-		$this->assertStringContainsString( 'END:VCALENDAR', $output );
-	}
-
-
-	/**
 	 * Tests handle_event_archive_redirect returns early when not on post type archive.
 	 *
 	 * @covers ::handle_event_archive_redirect
@@ -1576,6 +1387,166 @@ class Test_Setup extends Base {
 	}
 
 	/**
+	 * `get_event_archive_mode()` defaults to `upcoming` for every
+	 * event-supporting post type and ignores the events-only Event
+	 * Archive setting when resolving for a non-event post type (#1611).
+	 *
+	 * @covers ::get_event_archive_mode
+	 *
+	 * @return void
+	 */
+	public function test_get_event_archive_mode_defaults_to_upcoming_for_non_event_post_type(): void {
+		$instance = Setup::get_instance();
+
+		register_post_type(
+			'shindig',
+			array(
+				'public'   => false,
+				'supports' => array( 'title', 'gatherpress-event-date' ),
+			)
+		);
+
+		// The events setting must not bleed into other post types.
+		update_option( Settings::OPTION_NAME, array( 'event_archive' => 'past' ) );
+
+		$this->assertSame(
+			'upcoming',
+			$instance->get_event_archive_mode( 'shindig' ),
+			'Non-event post types must default to `upcoming` and ignore the events setting.'
+		);
+
+		delete_option( Settings::OPTION_NAME );
+		unregister_post_type( 'shindig' );
+	}
+
+	/**
+	 * `get_event_archive_mode()` passes the queried post type to the
+	 * `gatherpress_event_archive_mode` filter so site builders can pin
+	 * a non-event post type to a different mode than the upcoming
+	 * default (#1611). The same filter works for `gatherpress_event`.
+	 *
+	 * @covers ::get_event_archive_mode
+	 *
+	 * @return void
+	 */
+	public function test_get_event_archive_mode_filter_receives_post_type(): void {
+		$instance = Setup::get_instance();
+
+		register_post_type(
+			'shindig',
+			array(
+				'public'   => false,
+				'supports' => array( 'title', 'gatherpress-event-date' ),
+			)
+		);
+
+		$received_post_type = null;
+		$pin_past           = static function ( string $mode, string $post_type ) use ( &$received_post_type ) {
+			$received_post_type = $post_type;
+			return ( 'shindig' === $post_type ) ? 'past' : $mode;
+		};
+		add_filter( 'gatherpress_event_archive_mode', $pin_past, 10, 2 );
+
+		$this->assertSame(
+			'past',
+			$instance->get_event_archive_mode( 'shindig' ),
+			'Filter must be able to override the default for a non-event post type.'
+		);
+		$this->assertSame(
+			'shindig',
+			$received_post_type,
+			'Filter must receive the queried post type as its second argument.'
+		);
+
+		remove_filter( 'gatherpress_event_archive_mode', $pin_past, 10 );
+		unregister_post_type( 'shindig' );
+	}
+
+	/**
+	 * `handle_event_archive_redirect()` routes the bare archive of a
+	 * non-event event-supporting post type through the same mode
+	 * resolver as `gatherpress_event`. With the default `upcoming`
+	 * mode, the archive is re-queried with the upcoming temporal
+	 * filter applied (#1611).
+	 *
+	 * @covers ::handle_event_archive_redirect
+	 *
+	 * @return void
+	 */
+	public function test_handle_event_archive_redirect_non_event_post_type_defaults_to_upcoming(): void {
+		global $wp_query;
+
+		$instance = Setup::get_instance();
+
+		register_post_type(
+			'shindig',
+			array(
+				'public'   => true,
+				'supports' => array( 'title', 'gatherpress-event-date' ),
+			)
+		);
+
+		// Mock being on the bare post-type archive of `shindig`.
+		$wp_query->is_post_type_archive = true;
+		$wp_query->set( 'post_type', 'shindig' );
+
+		$instance->handle_event_archive_redirect();
+
+		$this->assertFalse(
+			$wp_query->is_404(),
+			'Non-event archives must not 404 by default.'
+		);
+		$this->assertSame(
+			'upcoming',
+			$wp_query->get( Query::EVENT_QUERY_PARAM ),
+			'Non-event archives default to the upcoming temporal filter.'
+		);
+
+		unregister_post_type( 'shindig' );
+	}
+
+	/**
+	 * `fall_back_to_archive_mode()` 404s for any post type when the
+	 * resolved mode is `none` — that's an explicit admin or filter
+	 * opt-out and applies the same way to every event-supporting post
+	 * type (#1611).
+	 *
+	 * @covers ::fall_back_to_archive_mode
+	 *
+	 * @return void
+	 */
+	public function test_fall_back_to_archive_mode_404s_when_filter_pins_none_for_non_event(): void {
+		global $wp_query;
+
+		$instance = Setup::get_instance();
+
+		register_post_type(
+			'shindig',
+			array(
+				'public'   => false,
+				'supports' => array( 'title', 'gatherpress-event-date' ),
+			)
+		);
+
+		$pin_none = static fn(): string => 'none';
+		add_filter( 'gatherpress_event_archive_mode', $pin_none );
+
+		Utility::invoke_hidden_method(
+			$instance,
+			'fall_back_to_archive_mode',
+			array( $wp_query, 'shindig' )
+		);
+
+		remove_filter( 'gatherpress_event_archive_mode', $pin_none );
+		unregister_post_type( 'shindig' );
+
+		$this->assertTrue(
+			$wp_query->is_404(),
+			'A filter pinning `none` opts the archive out and 404s, regardless of post type.'
+		);
+	}
+
+	/**
 	 * Tests handle_event_archive_redirect does not interfere with feed requests.
 	 *
 	 * @covers ::handle_event_archive_redirect
@@ -1802,7 +1773,7 @@ class Test_Setup extends Base {
 		Utility::invoke_hidden_method(
 			$instance,
 			'fall_back_to_archive_mode',
-			array( $wp_query )
+			array( $wp_query, Event::POST_TYPE )
 		);
 
 		delete_option( Settings::OPTION_NAME );
@@ -1838,7 +1809,7 @@ class Test_Setup extends Base {
 		Utility::invoke_hidden_method(
 			$instance,
 			'fall_back_to_archive_mode',
-			array( $wp_query )
+			array( $wp_query, Event::POST_TYPE )
 		);
 
 		remove_filter( 'gatherpress_event_archive_mode', $mode_filter );

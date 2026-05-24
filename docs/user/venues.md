@@ -66,7 +66,9 @@ Two toggles apply to any link destination except "None":
 
 ### Sitewide defaults
 
-`Settings > GatherPress > Venues > Maps` exposes four defaults that apply to newly inserted Venue Map blocks:
+Under `Settings > GatherPress > Venues > Maps` you choose the **mapping platform** (OpenStreetMap or Google Maps). For Google Maps you can add an optional **Google Maps API key**. It is stored and edited as a normal text field (not a masked password); restrict the key by HTTP referrer in Google Cloud. The value is used where maps run (including the block editor and the front of the site), so treat it like any other client-side API key.
+
+The same screen sets defaults for **new** Venue Map blocks (render mode, zoom, height, width, aspect ratio, scale, map type, and related options). Highlights:
 
 - **Default Render Mode** — interactive or static image.
 - **Default Zoom Level** — 1 (world) to 20 (street).

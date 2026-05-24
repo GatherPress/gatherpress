@@ -7,7 +7,7 @@
  * allowing anonymous users to modify their RSVP status via email links.
  *
  * @package GatherPress\Core\Rsvp
- * @since 1.0.0
+ * @since 0.33.0
  */
 
 namespace GatherPress\Core\Rsvp;
@@ -26,14 +26,14 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
  * It enables email-based RSVP management for both logged-in and anonymous users.
  *
  * @package GatherPress\Core\Rsvp
- * @since 1.0.0
+ * @since 0.34.0
  */
 class Token {
 
 	/**
 	 * The parameter name used for RSVP tokens in URLs.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @var string
 	 */
 	const NAME = 'gatherpress_rsvp_token';
@@ -41,7 +41,7 @@ class Token {
 	/**
 	 * The length of the generated token.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @var int
 	 */
 	const TOKEN_LENGTH = 32;
@@ -49,7 +49,7 @@ class Token {
 	/**
 	 * The meta key prefix for storing tokens.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @var string
 	 */
 	const META_KEY_PREFIX = '_';
@@ -57,7 +57,7 @@ class Token {
 	/**
 	 * The comment object associated with this token.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @var WP_Comment|null
 	 */
 	private ?WP_Comment $comment = null;
@@ -65,7 +65,7 @@ class Token {
 	/**
 	 * The cached token string.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @var string
 	 */
 	private string $token = '';
@@ -75,7 +75,7 @@ class Token {
 	 *
 	 * Initializes the token object with a comment ID and validates that it's an RSVP comment.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param int $comment_id The ID of the RSVP comment.
 	 */
@@ -96,7 +96,7 @@ class Token {
 	/**
 	 * Validates if a comment is a valid RSVP comment.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param WP_Comment|null $comment The comment object to validate.
 	 * @param int             $comment_id The comment ID for fallback validation.
@@ -112,7 +112,7 @@ class Token {
 	 *
 	 * Returns the cached token if available, otherwise retrieves it from comment meta.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return string The token string, or empty string if no token exists.
 	 */
@@ -154,7 +154,23 @@ class Token {
 	 * on marginal inputs, and there's no reason to give them a repeat
 	 * opportunity once the comment is already approved.
 	 *
-	 * @since 1.0.0
+	 * After a successful status flip we invalidate two layers of cache so
+	 * the page rendered in the same request — and on any subsequent
+	 * anonymous visit to the canonical event URL — reflects the new RSVP:
+	 *
+	 *   1. `Rsvp::CACHE_KEY` in `GATHERPRESS_CACHE_GROUP` — the
+	 *      per-event response cache that `Rsvp::responses()` reads.
+	 *      Without this, the rsvp / rsvp-response blocks still pull the
+	 *      pre-approval list on the very same page render that follows
+	 *      token redemption (see #1626).
+	 *   2. `clean_post_cache()` — bumps WP's lastpostmodified and fires
+	 *      the `clean_post_cache` action that page-cache plugins
+	 *      (WP Rocket, W3TC, etc.) listen to for purging the canonical
+	 *      permalink's cached HTML. Without this, anonymous visitors
+	 *      hitting the cached event page after someone redeems a token
+	 *      keep seeing the stale rendered RSVP list.
+	 *
+	 * @since 0.34.0
 	 *
 	 * @return void
 	 */
@@ -168,12 +184,22 @@ class Token {
 		}
 
 		wp_set_comment_status( (int) $this->comment->comment_ID, 'approve' );
+
+		$post_id = (int) $this->comment->comment_post_ID;
+
+		if ( $post_id ) {
+			wp_cache_delete(
+				sprintf( Rsvp::CACHE_KEY, $post_id ),
+				GATHERPRESS_CACHE_GROUP
+			);
+			clean_post_cache( $post_id );
+		}
 	}
 
 	/**
 	 * Gets the meta key for storing the token.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return string The formatted meta key.
 	 */
@@ -186,7 +212,7 @@ class Token {
 	 *
 	 * Creates a secure random token and saves it to comment meta.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return self Returns the current instance for method chaining.
 	 */
@@ -204,7 +230,7 @@ class Token {
 	/**
 	 * Creates a secure random token.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return string The generated token.
 	 */
@@ -215,7 +241,7 @@ class Token {
 	/**
 	 * Saves the current token to comment meta.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return void
 	 */
@@ -230,7 +256,7 @@ class Token {
 	/**
 	 * Retrieves the comment object associated with this token.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return WP_Comment|null The comment object, or null if not set.
 	 */
@@ -241,7 +267,7 @@ class Token {
 	/**
 	 * Retrieves the event post object associated with this token.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return WP_Post|null The event post object, or null if not set.
 	 */
@@ -264,7 +290,7 @@ class Token {
 	/**
 	 * Retrieves the email address from the RSVP comment.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return string The comment author's email address, or empty string if not available.
 	 */
@@ -279,7 +305,7 @@ class Token {
 	/**
 	 * Validates a token against the stored token for this comment.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param string $token The token to validate.
 	 *
@@ -295,9 +321,10 @@ class Token {
 	 * Parses the token string and validates it against the stored token.
 	 * Returns null if the token string is invalid or doesn't match.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param string|null $token_string Token in format "commentId_token".
+	 *
 	 * @return self|null Instance if valid, null otherwise.
 	 */
 	public static function from_token_string( ?string $token_string ): ?self {
@@ -323,9 +350,10 @@ class Token {
 	 * Splits a token string in the format "commentId_token" into its
 	 * component parts for validation and instantiation.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param string|null $token_string Raw token string in format "commentId_token".
+	 *
 	 * @return array Array with 'comment_id' and 'token' keys, or empty array if invalid.
 	 */
 	public static function parse_token_string( ?string $token_string ): array {
@@ -351,7 +379,7 @@ class Token {
 	 * Retrieves the token from GET request and attempts to create
 	 * a valid instance. Useful for handling magic link clicks.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return self|null Instance if valid token found, null otherwise.
 	 */
@@ -364,7 +392,7 @@ class Token {
 	/**
 	 * Generates the confirmation URL with the event URL and token parameter.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return string The confirmation URL, or empty string if post not found.
 	 */
@@ -391,7 +419,7 @@ class Token {
 	/**
 	 * Checks if all required components for URL generation are available.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param WP_Post|null    $post The post object.
 	 * @param WP_Comment|null $comment The comment object.
@@ -406,7 +434,7 @@ class Token {
 	/**
 	 * Formats the token value for URL inclusion.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param int    $comment_id The comment ID.
 	 * @param string $token The token string.
@@ -423,7 +451,7 @@ class Token {
 	 * Sends an email containing a magic link that allows the user to confirm
 	 * their RSVP and change their response if needed.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return bool True if email was sent successfully, false otherwise.
 	 */
@@ -448,7 +476,7 @@ class Token {
 	/**
 	 * Prepares email data for the confirmation email.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param WP_Post|null $post The event post object.
 	 *
@@ -471,7 +499,7 @@ class Token {
 	/**
 	 * Renders the email template for the confirmation email.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param WP_Post|null $post The event post object.
 	 *

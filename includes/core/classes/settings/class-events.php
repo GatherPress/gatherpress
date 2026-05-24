@@ -6,7 +6,7 @@
  * for configuring event display, archive pages, and permalink slugs.
  *
  * @package GatherPress\Core
- * @since 1.0.0
+ * @since 0.34.0
  */
 
 namespace GatherPress\Core\Settings;
@@ -14,16 +14,18 @@ namespace GatherPress\Core\Settings;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
-use GatherPress\Core\Traits\Singleton;
+use GatherPress\Core\Event;
 use GatherPress\Core\Event\Setup;
 use GatherPress\Core\Topic;
+use GatherPress\Core\Traits\Singleton;
+use GatherPress\Core\Utility;
 
 /**
  * Class Events.
  *
  * Handles the "Events" settings page for GatherPress.
  *
- * @since 1.0.0
+ * @since 0.34.0
  */
 class Events extends Base {
 
@@ -35,7 +37,7 @@ class Events extends Base {
 	/**
 	 * Get the slug for the events settings page.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return string The slug for the events settings page.
 	 */
@@ -46,18 +48,21 @@ class Events extends Base {
 	/**
 	 * Get the name for the events settings page.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return string The localized name for the events settings page.
 	 */
 	protected function get_name(): string {
-		return __( 'Events', 'gatherpress' );
+		// Read the registered plural label so the settings sub-menu
+		// reflects whatever the site has filtered the post type's
+		// labels to (#1612).
+		return Utility::post_type_label( 'name', Event::POST_TYPE );
 	}
 
 	/**
 	 * Get the priority for displaying the events settings page.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return int The priority for displaying the events settings page.
 	 */
@@ -68,7 +73,7 @@ class Events extends Base {
 	/**
 	 * Get sections and options for the Events settings page.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return array An array of sections and options for the Events settings page.
 	 */
@@ -133,7 +138,11 @@ class Events extends Base {
 				),
 			),
 			'event_display' => array(
-				'name'        => __( 'Event Display', 'gatherpress' ),
+				'name'        => sprintf(
+					/* translators: %s: Singular post type label, e.g. "Event". */
+					__( '%s Display', 'gatherpress' ),
+					Utility::post_type_label( 'singular_name', Event::POST_TYPE )
+				),
 				'description' => __(
 					'Configure how events are displayed on your site.',
 					'gatherpress'
@@ -166,7 +175,11 @@ class Events extends Base {
 				'options'     => array(
 					'event_archive'   => array(
 						'labels'      => array(
-							'name' => __( 'Event Archive', 'gatherpress' ),
+							'name' => sprintf(
+								/* translators: %s: Singular post type label, e.g. "Event". */
+								__( '%s Archive', 'gatherpress' ),
+								Utility::post_type_label( 'singular_name', Event::POST_TYPE )
+							),
 						),
 						'description' => __(
 							'What the events archive URL displays when no custom page is assigned.',
@@ -221,13 +234,17 @@ class Events extends Base {
 				'options'     => array(
 					'events_url' => array(
 						'labels' => array(
-							'name' => __( 'Events', 'gatherpress' ),
+							'name' => Utility::post_type_label( 'name', Event::POST_TYPE ),
 						),
 						'field'  => array(
 							'type'    => 'text',
 							'rewrite' => true,
 							'options' => array(
-								'label'   => __( 'Permalink base of Events.', 'gatherpress' ),
+								'label'   => sprintf(
+									/* translators: %s: Plural post type label, e.g. "Events". */
+									__( 'Permalink base of %s.', 'gatherpress' ),
+									Utility::post_type_label( 'name', Event::POST_TYPE )
+								),
 								'default' => Setup::get_localized_post_type_slug(),
 							),
 							'preview' => array(

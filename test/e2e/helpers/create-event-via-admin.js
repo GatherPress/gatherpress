@@ -6,6 +6,7 @@
  * have permalink/cache issues).
  *
  * @param {import('@playwright/test').Page} page - Playwright page object.
+ *
  * @return {Promise<string>} The event URL.
  */
 async function createEventWithRSVP( page ) {

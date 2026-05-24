@@ -7,7 +7,7 @@
  * for event pages and admin queries.
  *
  * @package GatherPress\Core\Event
- * @since 1.0.0
+ * @since 0.27.0
  */
 
 namespace GatherPress\Core\Event;
@@ -29,7 +29,7 @@ use WP_Query;
  *
  * Responsible for managing event-related queries and customizations.
  *
- * @since 1.0.0
+ * @since 0.34.0
  */
 class Query {
 
@@ -41,7 +41,7 @@ class Query {
 	/**
 	 * Query parameter name for event type filtering.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @var string
 	 */
 	const EVENT_QUERY_PARAM = 'gatherpress_event_query';
@@ -51,7 +51,7 @@ class Query {
 	 *
 	 * This method initializes the object and sets up necessary hooks.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 */
 	protected function __construct() {
 		$this->setup_hooks();
@@ -62,7 +62,7 @@ class Query {
 	 *
 	 * This method adds hooks for different purposes as needed.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return void
 	 */
@@ -77,9 +77,10 @@ class Query {
 	 *
 	 * Retrieves a list of upcoming events with optional filtering by the maximum number to display.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param int $number Maximum number of upcoming events to retrieve.
+	 *
 	 * @return WP_Query A WordPress query object containing the list of upcoming events.
 	 */
 	public function get_upcoming_events( int $number = 5 ): WP_Query {
@@ -91,9 +92,10 @@ class Query {
 	 *
 	 * Retrieves a list of past events with optional filtering by the maximum number to display.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param int $number Maximum number of past events to retrieve.
+	 *
 	 * @return WP_Query A WordPress query object containing the list of past events.
 	 */
 	public function get_past_events( int $number = 5 ): WP_Query {
@@ -107,12 +109,13 @@ class Query {
 	 * maximum number to display, optional topics, and venues for filtering. The results are returned as
 	 * a WordPress query object.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param string $event_list_type Type of event list: 'upcoming' or 'past'.
 	 * @param int    $number          Maximum number of events to retrieve.
 	 * @param array  $topics          Array of topic slugs for additional filtering.
 	 * @param array  $venues          Array of venue slugs for additional filtering.
+	 *
 	 * @return WP_Query A WordPress query object containing the list of events.
 	 */
 	public function get_events_list(
@@ -168,9 +171,10 @@ class Query {
 	 * It primarily handles adjustments for event archive pages, such as changing the post type, ordering,
 	 * and filtering. This method is typically hooked into the 'pre_get_posts' action.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param WP_Query $query An instance of WP_Query representing the event query.
+	 *
 	 * @return void
 	 */
 	public function prepare_event_query_before_execution( WP_Query $query ): void {
@@ -296,10 +300,11 @@ class Query {
 	 *
 	 * @see https://developer.wordpress.org/reference/hooks/posts_clauses/
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param array    $query_pieces An array containing pieces of the SQL query.
 	 * @param WP_Query $query        The WP_Query instance (passed by reference).
+	 *
 	 * @return array The modified SQL query pieces with adjusted sorting criteria for upcoming events.
 	 */
 	public function adjust_sorting_for_upcoming_events( array $query_pieces, WP_Query $query ): array {
@@ -322,10 +327,11 @@ class Query {
 	 * This method modifies the SQL query pieces, including join, where, orderby, etc., to adjust the sorting criteria
 	 * for past events in the query. It ensures that events are ordered by their start datetime in the desired order.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param array    $query_pieces An array containing pieces of the SQL query.
 	 * @param WP_Query $query        The WP_Query instance (passed by reference).
+	 *
 	 * @return array The modified SQL query pieces with adjusted sorting criteria for past events.
 	 */
 	public function adjust_sorting_for_past_events( array $query_pieces, WP_Query $query ): array {
@@ -349,10 +355,11 @@ class Query {
 	 * This method modifies the SQL query pieces, including join, where, orderby, etc., to adjust the sorting criteria
 	 * for events when viewing them in the WordPress admin panel. It specifically handles sorting by event datetime.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param array    $query_pieces An array containing pieces of the SQL query.
 	 * @param WP_Query $wp_query     The WP_Query instance (passed by reference).
+	 *
 	 * @return array The modified SQL query pieces with adjusted sorting criteria.
 	 */
 	public function adjust_admin_event_sorting( array $query_pieces, WP_Query $wp_query ): array {
@@ -361,7 +368,7 @@ class Query {
 		}
 
 		/**
-		 * Run only for Event post listings.
+		 * Run only for listings of posts, that support event dates.
 		 *
 		 * First checks whether the get_current_screen function exists,
 		 * because it is loaded only after the 'admin_init' hook.
@@ -371,9 +378,13 @@ class Query {
 		 * This sanity check was added after it's been reported that some admin screens may not have $wp_query set.
 		 * @see https://wordpress.org/support/topic/gatherpress-has-critical-error-when-i-access-wpforms-payment-settings/
 		 */
-		$screen_id      = sprintf( 'edit-%s', Event::POST_TYPE );
 		$current_screen = function_exists( 'get_current_screen' ) ? get_current_screen() : null;
-		if ( ! $current_screen || $screen_id !== $current_screen->id ) {
+		if (
+			! $current_screen ||
+			'edit' !== $current_screen->base ||
+			! post_type_supports( $current_screen->post_type, 'gatherpress-event-date' ) ||
+			$wp_query->get( 'post_type' ) !== $current_screen->post_type
+		) {
 			return $query_pieces;
 		}
 
@@ -395,8 +406,7 @@ class Query {
 			$gatherpress_events_query,
 			$wp_query->get( 'order' ),
 			$wp_query->get( 'orderby' ),
-			$inclusive,
-			true
+			$inclusive
 		);
 
 		return $query_pieces;
@@ -413,18 +423,17 @@ class Query {
 	 * @see https://developer.wordpress.org/reference/hooks/posts_orderby/
 	 * @see https://developer.wordpress.org/reference/hooks/posts_where/
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
-	 * @param array           $pieces    An array of query pieces, including join, where, orderby,
-	 *                                   and more.
-	 * @param string          $type      The type of events to query (options: 'all', 'upcoming', 'past')
-	 *                                   (Default: 'all').
-	 * @param string          $order     The event order ('DESC' for descending or 'ASC' for ascending)
-	 *                                   (Default: 'DESC').
-	 * @param string[]|string $order_by  List  or singular string of ORDERBY statement(s) (Default: ['datetime']).
-	 * @param bool            $inclusive      Whether to include currently running events in the query (Default: true).
-	 * @param bool            $include_no_date Whether to include events with no date set in upcoming
-	 *                                         and exclude them from past (Default: false).
+	 * @param array           $pieces   An array of query pieces, including join, where, orderby,
+	 *                                  and more.
+	 * @param string          $type     The type of events to query (options: 'all', 'upcoming', 'past')
+	 *                                  (Default: 'all').
+	 * @param string          $order    The event order ('DESC' for descending or 'ASC' for ascending)
+	 *                                  (Default: 'DESC').
+	 * @param string[]|string $order_by List or singular string of ORDERBY statement(s) (Default: ['datetime']).
+	 * @param bool            $inclusive Whether to include currently running events in the query (Default: true).
+	 *
 	 * @return array An array containing adjusted SQL clauses for the Event query.
 	 */
 	public function adjust_event_sql(
@@ -432,8 +441,7 @@ class Query {
 		string $type = 'all',
 		string $order = 'DESC',
 		$order_by = array( 'datetime' ),
-		bool $inclusive = true,
-		bool $include_no_date = false
+		bool $inclusive = true
 	): array {
 		global $wpdb;
 
@@ -491,30 +499,14 @@ class Query {
 		$current = gmdate( Event::DATETIME_FORMAT, time() );
 		$column  = $this->get_datetime_comparison_column( $type, $inclusive );
 
-		// Appends a date-based condition to the WHERE clause of the SQL query,
-		// filtering events as either upcoming or past.
+		// Append a date-based condition to the WHERE clause, filtering as
+		// either upcoming or past. Events with no row in the events table
+		// (no date set yet) are excluded from both buckets — they only
+		// appear under the All view.
 		if ( 'upcoming' === $type ) {
-			if ( $include_no_date ) {
-				// Include events on or after the current date/time, or events with no row in the events table.
-				$pieces['where'] .= $wpdb->prepare(
-					' AND (%i.%i >= %s OR %i.post_id IS NULL)',
-					$table,
-					$column,
-					$current,
-					$table
-				);
-			} else {
-				// Include only events starting on or after the current date/time (upcoming).
-				$pieces['where'] .= $wpdb->prepare( ' AND %i.%i >= %s', $table, $column, $current );
-			}
+			$pieces['where'] .= $wpdb->prepare( ' AND %i.%i >= %s', $table, $column, $current );
 		} elseif ( 'past' === $type ) {
-			// Include only events starting before the current date/time (past).
 			$pieces['where'] .= $wpdb->prepare( ' AND %i.%i < %s', $table, $column, $current );
-
-			if ( $include_no_date ) {
-				// Exclude events with no row in the events table.
-				$pieces['where'] .= $wpdb->prepare( ' AND %i.post_id IS NOT NULL', $table );
-			}
 		}
 
 		return $pieces;
@@ -526,9 +518,10 @@ class Query {
 	 * Creates an OR relation across all registered venue post type taxonomies, allowing
 	 * events to be filtered by venue regardless of which venue post type they use.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param array $venues Array of venue slugs to filter by.
+	 *
 	 * @return array WP_Query compatible tax_query array.
 	 */
 	private function build_venue_tax_query( array $venues ): array {

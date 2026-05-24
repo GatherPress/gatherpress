@@ -23,7 +23,7 @@ import { isPostTypeSupporting } from '../../helpers/event';
  * Note: On the frontend, event links are only shown to users who have RSVP'd
  * as "attending" and the event hasn't passed. Venue links are always shown.
  *
- * @since 1.0.0
+ * @since 0.34.0
  *
  * @param {Object}   props               - Component properties.
  * @param {Object}   props.context       - Block context.

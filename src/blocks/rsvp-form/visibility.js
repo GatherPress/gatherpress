@@ -21,6 +21,7 @@
  * @param {string} visibility.onSuccess Show/hide on form success ('show'|'hide'|'').
  * @param {string} visibility.whenPast  Show/hide when event has passed ('show'|'hide'|'').
  * @param {string} formState            Current form state ('default'|'success'|'past').
+ *
  * @return {boolean} True if block should be hidden, false if it should be shown.
  */
 export const shouldHideBlock = ( visibility, formState ) => {

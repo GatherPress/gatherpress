@@ -12,6 +12,10 @@ on:
     - 'package.*'
     - '*.js'
     - '*.php'
+
+permissions:
+  contents: read
+
 jobs:
   phpcs:
     name: PHP Coding Standards

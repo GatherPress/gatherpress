@@ -9,6 +9,7 @@ import { createRoot } from '@wordpress/element';
 import Autocomplete from '../components/Autocomplete';
 import { dateTimePreview } from '../helpers/datetime';
 import { urlRewritePreview } from '../helpers/urlrewrite';
+import { initShowIfDependencies } from '../helpers/settings-show-if';
 
 /**
  * Autocomplete Initialization
@@ -18,7 +19,7 @@ import { urlRewritePreview } from '../helpers/urlrewrite';
  * It iterates through all matching elements and initializes an Autocomplete component
  * with the attributes provided in the 'data-gatherpress_component_attrs' attribute.
  *
- * @since 1.0.0
+ * @since 0.27.0
  */
 
 // Select all elements with the attribute 'data-gatherpress_component_name' set to 'autocomplete'.
@@ -47,7 +48,7 @@ for ( const container of autocompleteContainers ) {
  * It iterates through all matching elements and initializes a DateTimePreview component
  * with the attributes provided in the 'data-gatherpress_component_attrs' attribute.
  *
- * @since 1.0.0
+ * @since 0.27.0
  */
 dateTimePreview();
 
@@ -59,6 +60,16 @@ dateTimePreview();
  * It iterates through all matching elements and initializes a UrlRewritePreview component
  * with the attributes provided in the 'data-gatherpress_component_attrs' attribute.
  *
- * @since 1.0.0
+ * @since 0.27.0
  */
 urlRewritePreview();
+
+/**
+ * Show/hide dependent settings fields based on the value of a controlling
+ * field. Driven by the `show_if` key on a field's definition; see
+ * `Settings::build_row_class()` / `render_show_if_marker()` for the
+ * server-side half of the contract.
+ *
+ * @since 0.27.0
+ */
+initShowIfDependencies();

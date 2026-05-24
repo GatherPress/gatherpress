@@ -1,7 +1,20 @@
 name: PR Coverage Check
 
+# Why pull_request (not pull_request_target)?
+#
+# This workflow checks out and executes PR code (composer install, npm install,
+# npm run build, the PHPUnit/Jest suites). Running that on pull_request_target
+# would give the PR's build/test scripts access to the base repo's
+# pull-requests:write token — a supply-chain attack surface (CodeQL flagged
+# this as actions/untrusted-checkout/critical).
+#
+# The companion workflow `PR Coverage Comment` consumes this run's artifact
+# via workflow_run, runs in the privileged base-repo context with
+# `pull-requests: write`, and posts the coverage PR comment — without ever
+# executing PR code.
+
 on:
-  pull_request_target:
+  pull_request:
     branches:
       - develop
       - main
@@ -24,20 +37,18 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
 jobs:
   check-coverage:
     name: Check Test Coverage on Changed Files
     runs-on: ubuntu-latest
 
     steps:
-      - name: Get PR merge commit
-        uses: suzuki-shunsuke/get-pr-action@v0.1.0
-        id: pr
-
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          ref: ${{ steps.pr.outputs.merge_commit_sha }}
           fetch-depth: 0  # Fetch all history for all branches and tags.
 
       - name: Setup PHP
@@ -100,41 +111,29 @@ jobs:
           GITHUB_BASE_REF: ${{ github.base_ref }}
         continue-on-error: true  # Continue to show all results before failing
 
-      - name: Post coverage comment on PR
+      - name: Save PR metadata for downstream comment workflow
         if: always()
-        uses: actions/github-script@v7
+        run: |
+          echo "${{ github.event.pull_request.number }}" > pr-number.txt
+          echo "${{ steps.php-coverage.outcome }}" > php-status.txt
+          echo "${{ steps.js-coverage.outcome }}" > js-status.txt
+
+      - name: Upload coverage artifact
+        if: always()
+        uses: actions/upload-artifact@v4
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            const fs = require('fs');
-            const createCoverageComment = require('.github/scripts/pr-coverage-comment');
-
-            // Read coverage output files.
-            let phpOutput = '';
-            let jsOutput = '';
-
-            try {
-              phpOutput = fs.readFileSync('php-coverage-output.txt', 'utf8');
-            } catch (e) {
-              phpOutput = 'PHP coverage check did not run.';
-            }
-
-            try {
-              jsOutput = fs.readFileSync('js-coverage-output.txt', 'utf8');
-            } catch (e) {
-              jsOutput = 'JavaScript coverage check did not run.';
-            }
-
-            // Get the status of each coverage check.
-            const phpStatus = '${{ steps.php-coverage.outcome }}';
-            const jsStatus = '${{ steps.js-coverage.outcome }}';
-
-            await createCoverageComment(github, context, phpOutput, jsOutput, phpStatus, jsStatus);
+          name: pr-coverage-results
+          path: |
+            php-coverage-output.txt
+            js-coverage-output.txt
+            pr-number.txt
+            php-status.txt
+            js-status.txt
 
       - name: Fail if coverage checks failed
         if: steps.php-coverage.outcome == 'failure' || steps.js-coverage.outcome == 'failure'
         run: |
-          echo "❌ One or more coverage checks failed. See the PR comment for details."
+          echo "One or more coverage checks failed. See the PR comment for details."
           exit 1
 
       - name: Stop WordPress environment

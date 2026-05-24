@@ -9,7 +9,6 @@ import { createReduxStore, dispatch, register, select, subscribe } from '@wordpr
 import {
 	defaultDateTimeEnd,
 	defaultDateTimeStart,
-	getDateTimeOffset,
 } from '../helpers/datetime';
 const DEFAULT_STATE = {
 	dateTimeStart: defaultDateTimeStart,
@@ -66,8 +65,16 @@ const store = createReduxStore( 'gatherpress/datetime', {
 	selectors: {
 		getDateTimeStart: ( state ) => state.dateTimeStart,
 		getDateTimeEnd: ( state ) => state.dateTimeEnd,
-		getDuration: ( state ) =>
-			false === state.duration ? false : getDateTimeOffset(),
+		// Return the raw stored value. Computing the matched preset here
+		// ran a moment.tz comparison loop on every selector call, which
+		// @wordpress/data invokes per subscriber per render — under IANA
+		// timezones the multiplied moment.tz cost overflowed the call
+		// stack on a single picker arrow keypress (#1607). Consumers that
+		// need the matched preset (the conditional in DateTimeRange, the
+		// SelectControl value in Duration, the gating in DateTimeStart's
+		// effect) call `useMatchedDuration()` from `helpers/datetime`,
+		// which memoizes the comparison on the actual store inputs.
+		getDuration: ( state ) => state.duration,
 		getTimezone: ( state ) => state.timezone,
 	},
 } );

@@ -14,6 +14,10 @@ on:
     - 'test/e2e/**'
     - '*.php'
     - '*.js'
+
+permissions:
+  contents: read
+
 jobs:
   playwright:
     name: Playwright Tests

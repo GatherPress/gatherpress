@@ -6,7 +6,7 @@
  * of RSVP comments within the GatherPress plugin.
  *
  * @package GatherPress\Core\Rsvp
- * @since 1.0.0
+ * @since 0.30.0
  */
 
 namespace GatherPress\Core\Rsvp;
@@ -26,7 +26,7 @@ use WP_Tax_Query;
  * Handles querying and manipulation of RSVP comments within the GatherPress plugin.
  *
  * @package GatherPress\Core\Rsvp
- * @since 1.0.0
+ * @since 0.34.0
  */
 class Query {
 
@@ -38,7 +38,7 @@ class Query {
 	/**
 	 * Cache key for storing comment types.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @var string
 	 */
 	const COMMENT_TYPES_CACHE_KEY = 'gatherpress_all_comment_types';
@@ -46,7 +46,7 @@ class Query {
 	/**
 	 * Cache expiration time (24 hours).
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @var int
 	 */
 	const CACHE_EXPIRATION = DAY_IN_SECONDS;
@@ -56,7 +56,7 @@ class Query {
 	 *
 	 * This method initializes the object and sets up necessary hooks.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 */
 	protected function __construct() {
 		$this->setup_hooks();
@@ -67,7 +67,7 @@ class Query {
 	 *
 	 * This method adds hooks for different purposes as needed.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return void
 	 */
@@ -83,10 +83,11 @@ class Query {
 	 * This method adds the necessary SQL join and where clauses to a comment query
 	 * based on a taxonomy query if one is present in the query variables.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param array            $clauses       The clauses for the query.
 	 * @param WP_Comment_Query $comment_query Current instance of WP_Comment_Query (passed by reference).
+	 *
 	 * @return array Modified query clauses.
 	 */
 	public function taxonomy_query( array $clauses, WP_Comment_Query $comment_query ): array {
@@ -109,9 +110,10 @@ class Query {
 	 * values specific to RSVPs. Can return either an array of comments or integer count
 	 * based on the 'count' parameter.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param array $args Arguments for retrieving RSVPs.
+	 *
 	 * @return mixed Array of RSVP comments or integer count when count parameter is true.
 	 */
 	public function get_rsvps( array $args ) {
@@ -145,9 +147,10 @@ class Query {
 	 * This method fetches a single RSVP comment by setting the number limit to 1
 	 * and calling get_rsvps(). Returns the first RSVP found or null if none exist.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param array $args Arguments for retrieving the RSVP.
+	 *
 	 * @return WP_Comment|null The RSVP comment or null if not found.
 	 */
 	public function get_rsvp( array $args ): ?WP_Comment {
@@ -169,7 +172,7 @@ class Query {
 	 * This method queries the database for all distinct comment types
 	 * and caches the result for performance.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return array Array of all comment types in the database.
 	 */
@@ -208,10 +211,11 @@ class Query {
 	 * This method checks if a newly inserted comment has a type that's not
 	 * already in our cached types, and if so, invalidates the cache.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param int        $id      The comment ID.
 	 * @param WP_Comment $comment The comment object.
+	 *
 	 * @return void
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
@@ -240,12 +244,36 @@ class Query {
 	 * Note: The comment_type field is not currently indexed in WordPress core,
 	 * which may impact query performance. See https://core.trac.wordpress.org/ticket/59488
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param WP_Comment_Query $query Current instance of WP_Comment_Query (passed by reference).
+	 *
 	 * @return void
 	 */
 	public function exclude_rsvp_from_comment_query( WP_Comment_Query $query ) {
+		/**
+		 * Filters whether RSVP comments should be excluded from a comment query.
+		 *
+		 * RSVPs are stored as WordPress comments with the `gatherpress_rsvp`
+		 * comment_type and excluded from generic comment queries by default so
+		 * they don't leak into normal comment lists, feeds, or third-party UIs
+		 * that aren't RSVP-aware. Integrations that want the RSVP type to flow
+		 * through (federation plugins that filter comment types themselves,
+		 * admin reports that intentionally include RSVPs, custom moderation
+		 * dashboards) can return false here to skip the default exclusion for
+		 * a given query. The filter receives the live `WP_Comment_Query` so
+		 * the opt-out can be scoped — e.g. only when the caller's `type__in`
+		 * names types the integration owns — rather than disabled globally.
+		 *
+		 * @since 0.30.0
+		 *
+		 * @param bool             $exclude True to apply the RSVP exclusion, false to skip it.
+		 * @param WP_Comment_Query $query   The current comment query (passed by reference upstream).
+		 */
+		if ( ! apply_filters( 'gatherpress_rsvp_comment_query_exclusion', true, $query ) ) {
+			return;
+		}
+
 		// Process 'type' query var.
 		$current_comment_types = $query->query_vars['type'];
 

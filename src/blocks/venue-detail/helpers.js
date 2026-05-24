@@ -1,7 +1,7 @@
 /**
  * Helper functions for the venue-detail block.
  *
- * @since 1.0.0
+ * @since 0.34.0
  */
 
 /**
@@ -26,9 +26,10 @@ export const VENUE_FIELDS = [
 /**
  * Cleans a URL for display by removing protocol, www, and trailing slash.
  *
- * @since 1.0.0
+ * @since 0.34.0
  *
  * @param {string} url The URL to clean.
+ *
  * @return {string} The cleaned URL for display.
  */
 export function cleanUrlForDisplay( url ) {
@@ -44,9 +45,10 @@ export function cleanUrlForDisplay( url ) {
 /**
  * Gets the venue meta key for a given field type.
  *
- * @since 1.0.0
+ * @since 0.34.0
  *
  * @param {string} fieldType The field type (address, phone, url).
+ *
  * @return {string} The corresponding meta key, or empty string if not found.
  */
 export function getMetaKey( fieldType ) {

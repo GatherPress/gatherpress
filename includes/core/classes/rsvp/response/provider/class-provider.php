@@ -5,7 +5,7 @@
  * Providers define WHAT an identity is, not HOW it is stored.
  *
  * @package GatherPress\Core\Rsvp\Type
- * @since 1.0.0
+ * @since 0.35.0
  */
 
 namespace GatherPress\Core\Rsvp\Response\Provider;
@@ -39,7 +39,7 @@ abstract class Provider {
 	 * The types 'user', 'email', 'url' will lead to direct storage in the comment
 	 * Any other valid string will lead to storage in Comment Meta.
 	 *
-	 * @since 1.0.0
+	 * @since 0.35.0
 	 *
 	 * @return Identity_Type
 	 */
@@ -62,7 +62,7 @@ abstract class Provider {
 	/**
 	 * Get display name.
 	 *
-	 * @since 1.0.0
+	 * @since 0.35.0
 	 *
 	 * @param Identity $identity The identity.
 	 * @return string
@@ -90,7 +90,7 @@ abstract class Provider {
 	/**
 	 * Get profile URL.
 	 *
-	 * @since 1.0.0
+	 * @since 0.35.0
 	 *
 	 * @param Identity $identity The identity.
 	 * @return string|null

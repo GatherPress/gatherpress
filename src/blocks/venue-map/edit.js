@@ -36,6 +36,11 @@ import { isInFSETemplate } from '../../helpers/editor';
 import { getFromSettings } from '../../helpers/editor-settings';
 import MapEmbed from '../../components/MapEmbed';
 import {
+	GOOGLE_IFRAME_UNSUPPORTED_MAP_TYPE_SLUGS,
+	GOOGLE_MAP_TYPE_DEFINITIONS,
+	toMapsEmbedApiMapType,
+} from '../../components/GoogleMap';
+import {
 	useSharedBlockGuardState,
 	generateBlockGuardStateKey,
 } from '../../supports/block-guard';
@@ -89,6 +94,7 @@ const LINK_DESTINATION_CUSTOM = 'custom';
  * @param {string} latitude    Venue latitude.
  * @param {string} longitude   Venue longitude.
  * @param {number} zoom        Desired zoom level.
+ *
  * @return {string} Computed href, or '' when the preset doesn't apply.
  */
 const buildExternalMapUrl = ( destination, latitude, longitude, zoom ) => {
@@ -108,7 +114,7 @@ const buildExternalMapUrl = ( destination, latitude, longitude, zoom ) => {
 /**
  * Edit component for the Venue Map block.
  *
- * @since 1.0.0
+ * @since 0.34.0
  *
  * @param {Object}   props               - Component properties.
  * @param {Object}   props.attributes    - Block attributes.
@@ -249,7 +255,7 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 	}
 
 	const mapPlatform = getFromSettings( 'mapPlatform' );
-
+	const googleMapsApiKey = getFromSettings( 'googleMapsApiKey' ) || '';
 	// Resolve the site-wide scale default from Settings so "Reset all"
 	// and the "has value" check on the Scale ToolsPanelItem mirror what
 	// apply_block_attribute_defaults() stamps on the block. Fall back to
@@ -260,6 +266,36 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 		: SCALE_DEFAULT;
 	const showMapTypeControl =
 		'interactive' === renderMode && 'google' === mapPlatform;
+
+	// Full list of map types for Google. Maps Embed API (iframe) supports
+	// only roadmap and satellite — hybrid/terrain are filtered out below until
+	// a Maps JavaScript API integration can use the full set without changing
+	// `GOOGLE_MAP_TYPE_DEFINITIONS` in `GoogleMap.js`.
+	const GOOGLE_MAP_TYPE_OPTIONS_ALL = GOOGLE_MAP_TYPE_DEFINITIONS.map(
+		( definition ) => ( {
+			label: definition.label,
+			value: definition.slug,
+		} )
+	);
+
+	const IFRAME_UNSUPPORTED_GOOGLE_MAP_TYPES = new Set(
+		GOOGLE_IFRAME_UNSUPPORTED_MAP_TYPE_SLUGS
+	);
+
+	const googleMapTypeSelectOptions = GOOGLE_MAP_TYPE_OPTIONS_ALL.filter(
+		( opt ) => ! IFRAME_UNSUPPORTED_GOOGLE_MAP_TYPES.has( opt.value )
+	);
+
+	useEffect( () => {
+		if (
+			showMapTypeControl &&
+			! [ 'roadmap', 'satellite' ].includes( type )
+		) {
+			setAttributes( {
+				type: toMapsEmbedApiMapType( type ),
+			} );
+		}
+	}, [ showMapTypeControl, type, setAttributes ] );
 
 	// Link destination options track the site's mapping platform: on an
 	// OSM-powered site we only offer the OpenStreetMap preset (and vice
@@ -544,6 +580,7 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 						zoom={ zoom }
 						type={ type }
 						height={ effectiveHeight }
+						googleMapsApiKey={ googleMapsApiKey }
 					/>
 				</div>
 			) }
@@ -555,6 +592,7 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 			<InspectorControls>
 				<PanelBody>
 					<SelectControl
+						__next40pxDefaultSize
 						label={ __( 'Render mode', 'gatherpress' ) }
 						value={ renderMode }
 						options={ [
@@ -582,26 +620,10 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 					/>
 					{ showMapTypeControl && (
 						<SelectControl
+							__next40pxDefaultSize
 							label={ __( 'Map type', 'gatherpress' ) }
 							value={ type }
-							options={ [
-								{
-									label: __( 'Roadmap', 'gatherpress' ),
-									value: 'roadmap',
-								},
-								{
-									label: __( 'Satellite', 'gatherpress' ),
-									value: 'satellite',
-								},
-								{
-									label: __( 'Hybrid', 'gatherpress' ),
-									value: 'hybrid',
-								},
-								{
-									label: __( 'Terrain', 'gatherpress' ),
-									value: 'terrain',
-								},
-							] }
+							options={ googleMapTypeSelectOptions }
 							onChange={ ( value ) =>
 								setAttributes( { type: value } )
 							}
@@ -678,6 +700,7 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 						panelId={ clientId }
 					>
 						<SelectControl
+							__next40pxDefaultSize
 							label={ __( 'Aspect ratio', 'gatherpress' ) }
 							value={ isCustomAspectRatio ? 'custom' : aspectRatio }
 							options={ ASPECT_RATIO_PRESETS }
@@ -730,6 +753,7 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 							panelId={ clientId }
 						>
 							<SelectControl
+								__next40pxDefaultSize
 								label={ __( 'Scale', 'gatherpress' ) }
 								value={ scale ?? siteScaleDefault }
 								options={ SCALE_OPTIONS.map( ( value ) => ( {
@@ -770,6 +794,7 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 									} }
 								>
 									<SelectControl
+										__next40pxDefaultSize
 										label={ __( 'Link to', 'gatherpress' ) }
 										value={
 											linkDestination ||

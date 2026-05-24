@@ -7,7 +7,7 @@
  * and admin menu link modifications.
  *
  * @package GatherPress\Core\Event
- * @since 1.0.0
+ * @since 0.34.0
  */
 
 namespace GatherPress\Core\Event;
@@ -20,6 +20,7 @@ use GatherPress\Core\Event\Event;
 use GatherPress\Core\Rsvp\Query as Rsvp_Query;
 use GatherPress\Core\Rsvp\Rsvp;
 use GatherPress\Core\Traits\Singleton;
+use GatherPress\Core\Utility;
 use GatherPress\Core\Venue\Setup as Venue_Setup;
 use WP_Query;
 
@@ -30,7 +31,7 @@ use WP_Query;
  * sortable columns, sorting logic, view filters, and admin menu modifications.
  *
  * @package GatherPress\Core\Event
- * @since 1.0.0
+ * @since 0.34.0
  */
 class Admin_List {
 
@@ -42,7 +43,7 @@ class Admin_List {
 	/**
 	 * Cached event counts keyed by post type for the current request.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @var array<string, array<string, int>>
 	 */
@@ -53,7 +54,7 @@ class Admin_List {
 	 *
 	 * This method initializes the object and sets up necessary hooks.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 */
 	protected function __construct() {
 		$this->setup_hooks();
@@ -64,7 +65,7 @@ class Admin_List {
 	 *
 	 * This method adds hooks for different purposes as needed.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return void
 	 */
@@ -78,9 +79,10 @@ class Admin_List {
 	 * Registers admin list table hooks when a post type that declares
 	 * gatherpress-event-date support finishes registering.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param string $post_type The post type that was just registered.
+	 *
 	 * @return void
 	 */
 	public function maybe_register_post_type_hooks( string $post_type ): void {
@@ -121,9 +123,10 @@ class Admin_List {
 	 * declares `gatherpress-rsvp` support, since post types that only carry
 	 * `gatherpress-event-date` have no RSVP column to sort by.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param array $columns An array of sortable columns.
+	 *
 	 * @return array An updated array of sortable columns.
 	 */
 	public function sortable_columns( array $columns ): array {
@@ -149,7 +152,7 @@ class Admin_List {
 	 * This method adds links to filter the shown events in the admin list,
 	 * the filtering allows to show 'upcoming' or 'past' events.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param array $view_links An array of available list table views.
 	 *
@@ -244,11 +247,14 @@ class Admin_List {
 	 * match the actual list. Both buckets pivot on `datetime_end_gmt`:
 	 * upcoming = end time is still in the future (running + future);
 	 * past = end time has already passed. Mutually exclusive — running
-	 * events appear only in upcoming, never in both.
+	 * events appear only in upcoming, never in both. Events with no row
+	 * in the events table (no date set yet) are excluded from both
+	 * buckets — they only appear under the All view.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param string $post_type The event post type to count.
+	 *
 	 * @return array<string, int> Associative array with 'upcoming' and 'past' counts.
 	 */
 	protected function get_event_counts( string $post_type = Event::POST_TYPE ): array {
@@ -261,15 +267,15 @@ class Admin_List {
 		$table   = sprintf( Event::TABLE_FORMAT, $wpdb->prefix );
 		$current = gmdate( Event::DATETIME_FORMAT, time() );
 
-		// Upcoming: events whose end time is still in the future (includes currently running),
-		// or events with no row in the events table (no date set yet).
+		// Upcoming: events whose end time is still in the future (includes
+		// currently running). Events with no row in the events table are
+		// not counted — they only show under the All view.
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$upcoming = (int) $wpdb->get_var(
 			$wpdb->prepare(
-				'SELECT COUNT(1) FROM %i LEFT JOIN %i ON %i.ID = %i.post_id'
+				'SELECT COUNT(1) FROM %i INNER JOIN %i ON %i.ID = %i.post_id'
 				. ' WHERE %i.post_type = %s AND %i.post_status NOT IN'
-				. " ('trash', 'auto-draft') AND (%i.datetime_end_gmt >= %s"
-				. ' OR %i.post_id IS NULL)',
+				. " ('trash', 'auto-draft') AND %i.datetime_end_gmt >= %s",
 				$wpdb->posts,
 				$table,
 				$wpdb->posts,
@@ -278,20 +284,19 @@ class Admin_List {
 				$post_type,
 				$wpdb->posts,
 				$table,
-				$current,
-				$table
+				$current
 			)
 		);
 
-		// Past: events whose end time has already passed,
-		// excluding events with no row in the events table.
+		// Past: events whose end time has already passed. Events with no
+		// row in the events table are excluded — they only show under the
+		// All view.
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$past = (int) $wpdb->get_var(
 			$wpdb->prepare(
-				'SELECT COUNT(1) FROM %i LEFT JOIN %i ON %i.ID = %i.post_id'
+				'SELECT COUNT(1) FROM %i INNER JOIN %i ON %i.ID = %i.post_id'
 				. ' WHERE %i.post_type = %s AND %i.post_status NOT IN'
-				. " ('trash', 'auto-draft') AND %i.datetime_end_gmt < %s"
-				. ' AND %i.post_id IS NOT NULL',
+				. " ('trash', 'auto-draft') AND %i.datetime_end_gmt < %s",
 				$wpdb->posts,
 				$table,
 				$wpdb->posts,
@@ -300,8 +305,7 @@ class Admin_List {
 				$post_type,
 				$wpdb->posts,
 				$table,
-				$current,
-				$table
+				$current
 			)
 		);
 
@@ -319,7 +323,7 @@ class Admin_List {
 	 * Adds 'gatherpress_event_query' to the list of allowed query variables,
 	 * to be able to request 'upcoming' or 'past' events in the admin list view.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param  string[] $query_vars List of allowed query variables.
 	 *
@@ -338,9 +342,10 @@ class Admin_List {
 	 * that screen, so a `?orderby=rsvps` request would otherwise issue a
 	 * pointless comments-table join.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param WP_Query $query The WP_Query instance.
+	 *
 	 * @return void
 	 */
 	public function handle_rsvp_sorting( $query ): void {
@@ -374,12 +379,13 @@ class Admin_List {
 	 * Validates the query context, normalizes the sort order, registers the
 	 * provided SQL filter callbacks, and stores the order on the query object.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param WP_Query               $query     The WP_Query instance.
 	 * @param string                 $column    The column name to match against the orderby query var.
 	 * @param array<string,callable> $filters   Map of WordPress filter hook => callback to register.
 	 * @param string                 $order_key The query var key used to store the validated sort order.
+	 *
 	 * @return void
 	 */
 	private function handle_column_sorting( WP_Query $query, string $column, array $filters, string $order_key ): void {
@@ -415,9 +421,10 @@ class Admin_List {
 	/**
 	 * Join comments table for RSVP sorting (WordPress style).
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param string $join The JOIN clause of the query.
+	 *
 	 * @return string Modified JOIN clause.
 	 */
 	public function rsvp_sorting_join_paged( string $join ): string {
@@ -442,9 +449,10 @@ class Admin_List {
 	 *
 	 * Shared callback used by both RSVP and venue sorting.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param string $groupby The GROUP BY clause of the query.
+	 *
 	 * @return string Modified GROUP BY clause.
 	 */
 	public function sorting_groupby_post_id( string $groupby ): string {
@@ -460,7 +468,7 @@ class Admin_List {
 	/**
 	 * Order by RSVP count for RSVP sorting (WordPress style).
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return string Modified ORDER BY clause.
 	 */
@@ -482,10 +490,11 @@ class Admin_List {
 	 *
 	 * Displays additional information, like event datetime and RSVP count, for Event post types.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param string $column  The name of the column to display.
 	 * @param int    $post_id The current post ID.
+	 *
 	 * @return void
 	 *
 	 * @throws Exception If initializing Event or Rsvp object fails, due to invalid post ID or database issues.
@@ -575,9 +584,10 @@ class Admin_List {
 	 * This method is used to define custom columns for Event post types in the WordPress admin dashboard.
 	 * It adds additional columns for displaying event date and time, and RSVP count.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param array $columns An associative array of column headings.
+	 *
 	 * @return array An updated array of column headings, including the custom columns.
 	 */
 	public function set_custom_columns( array $columns ): array {
@@ -622,14 +632,18 @@ class Admin_List {
 			 * date", etc., while keeping the underlying `datetime` column key (and its
 			 * sortable behavior) unchanged.
 			 *
-			 * @since 1.0.0
+			 * @since 0.34.0
 			 *
 			 * @param string $label     Default column label.
 			 * @param string $post_type Post type the admin list is currently rendering.
 			 */
 			'datetime' => apply_filters(
 				'gatherpress_event_datetime_label',
-				__( 'Event date &amp; time', 'gatherpress' ),
+				sprintf(
+					/* translators: %s: Singular post type label, e.g. "Event". */
+					__( '%s date &amp; time', 'gatherpress' ),
+					Utility::post_type_label( 'singular_name', $post_type )
+				),
 				$post_type
 			),
 		);
@@ -660,9 +674,10 @@ class Admin_List {
 	 *       generic and does not take custom comment types into account. It just looks for
 	 *       unapproved comments of any type.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param array $columns An array of column names.
+	 *
 	 * @return array The modified array of column names without the comments column.
 	 */
 	public function remove_comments_column( array $columns ): array {

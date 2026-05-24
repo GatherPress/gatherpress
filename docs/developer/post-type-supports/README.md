@@ -74,6 +74,47 @@ addFilter(
 );
 ```
 
+#### Surfacing your own labels in GatherPress UI
+
+GatherPress's settings sub-menus and a handful of admin UI strings now pull from each post type's registered labels rather than hardcoded "Event"/"Venue" copy. Whatever label you register your custom event-supporting post type with — `singular_name`, `name`, etc. — is what shows up.
+
+```php
+register_post_type( 'my_custom_event', array(
+    'labels'   => array(
+        'name'          => __( 'Happenings', 'my-plugin' ),
+        'singular_name' => __( 'Happening', 'my-plugin' ),
+    ),
+    'supports' => array( 'title', 'editor', 'gatherpress-event-date' ),
+) );
+```
+
+If you'd rather rename the labels of GatherPress's own `gatherpress_event` (or `gatherpress_venue`), use WordPress's `post_type_labels_<post_type>` filter — the labels propagate to the same UI surfaces.
+
+When writing your own admin UI on top of GatherPress, read labels through `Utility::post_type_label( $key, $post_type )`. It wraps `get_post_type_object()` and returns an empty string when the post type isn't registered (or the label key isn't set), so call sites don't have to defend against either.
+
+#### Bare archive temporal handling
+
+The bare post-type archive URL (e.g. `/my_custom_event/`) defaults to **upcoming** for every event-supporting post type, so past entries don't appear alongside future ones in the same list. Two knobs override that default:
+
+1. URL parameters: appending `?gatherpress_event_query=upcoming` (or `past`) narrows that page load to the matching subset.
+2. The `gatherpress_event_archive_mode` filter receives the queried post type as its second argument and lets you pin a different mode for any event-supporting post type. Valid return values are `upcoming`, `past`, or `none` — anything else is coerced back to `upcoming`. Returning `none` opts the archive out entirely (404).
+
+```php
+add_filter(
+    'gatherpress_event_archive_mode',
+    function ( string $mode, string $post_type ): string {
+        if ( 'my_custom_event' === $post_type ) {
+            return 'past';
+        }
+        return $mode;
+    },
+    10,
+    2
+);
+```
+
+The standard `gatherpress_event` post type also lets the Event Archive setting choose the default before the filter runs.
+
 ### `gatherpress-rsvp`
 
 Enables the comment-based RSVP system for a post type. This includes:

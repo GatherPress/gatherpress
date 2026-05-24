@@ -4,7 +4,7 @@
  * it mainly prepares the output of the block.
  *
  * @package GatherPress\Core
- * @since 1.0.0
+ * @since 0.33.0
  */
 
 namespace GatherPress\Core\Blocks;
@@ -22,7 +22,7 @@ use WP_REST_Request;
  * Class responsible for managing the "Event Query" block,
  * which is a block-variation of 'core/query'.
  *
- * @since 1.0.0
+ * @since 0.33.0
  */
 class Event_Query {
 
@@ -37,7 +37,7 @@ class Event_Query {
 	 * This is not namespaced by purpose.
 	 * It's mainly used as a CSS class.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @var string
 	 */
 	const BLOCK_NAME = 'gatherpress-event-query';
@@ -46,7 +46,7 @@ class Event_Query {
 	 *
 	 * This method initializes the object and sets up necessary hooks.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 */
 	protected function __construct() {
 		$this->setup_hooks();
@@ -57,7 +57,7 @@ class Event_Query {
 	 *
 	 * This method adds filters to handle rendering & REST requests for the block.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @return void
 	 */
@@ -69,6 +69,9 @@ class Event_Query {
 			2
 		);
 		add_action( 'registered_post_type', array( $this, 'maybe_register_event_date_rest_hooks' ) );
+		// Sweep last so post types registered before our listener was
+		// added still get their REST filters installed (#1608).
+		add_action( 'init', array( $this, 'register_existing_event_date_post_types' ), PHP_INT_MAX );
 
 		// Integrate with Advanced Query Loop plugin to pass event query params through.
 		add_filter(
@@ -80,11 +83,31 @@ class Event_Query {
 	}
 
 	/**
+	 * Register REST hooks for every event-supporting post type that's
+	 * already in the registry by the time we run.
+	 *
+	 * Companion to the `registered_post_type` listener — that one catches
+	 * post types registered AFTER `Event_Query` is instantiated, this one
+	 * catches the ones registered BEFORE. Idempotent: `add_filter` is a
+	 * no-op when the same callback is already registered.
+	 *
+	 * @since 0.34.0
+	 *
+	 * @return void
+	 */
+	public function register_existing_event_date_post_types(): void {
+		foreach ( get_post_types_by_support( 'gatherpress-event-date' ) as $post_type ) {
+			$this->maybe_register_event_date_rest_hooks( $post_type );
+		}
+	}
+
+	/**
 	 * Register REST hooks when a post type declares gatherpress-event-date support.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param string $post_type The post type that was just registered.
+	 *
 	 * @return void
 	 */
 	public function maybe_register_event_date_rest_hooks( string $post_type ): void {
@@ -111,10 +134,11 @@ class Event_Query {
 	 *
 	 * Updates the query on the front end based on custom query attributes.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @param string|null $pre_render   The pre-rendered content. Default null.
 	 * @param array       $parsed_block The block being rendered.
+	 *
 	 * @return string|null The pre-rendered content. Default null.
 	 */
 	public function pre_render_block( ?string $pre_render, array $parsed_block ): ?string {
@@ -143,7 +167,7 @@ class Event_Query {
 				 *
 				 * Allows filtering query params when the query is being inherited.
 				 *
-				 * @since 1.0.0
+				 * @since 0.33.0
 				 *
 				 * @param array   $query_args  Arguments to be passed to WP_Query.
 				 * @param array   $block_query The query attribute retrieved from the block.
@@ -176,9 +200,10 @@ class Event_Query {
 	/**
 	 * Returns an array with Post IDs that should be excluded from the Query.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @param array $attributes Event Query block attributes.
+	 *
 	 * @return int[] Array of post IDs to exclude.
 	 */
 	protected function get_exclude_ids( array $attributes ): array {
@@ -195,10 +220,11 @@ class Event_Query {
 	/**
 	 * Filters the arguments which will be passed to `WP_Query` for the Query Loop Block.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @param array    $query Array containing parameters for <code>WP_Query</code> as parsed by the block context.
 	 * @param WP_Block $block Block instance.
+	 *
 	 * @return array Array containing parameters for <code>WP_Query</code> as parsed by the block context.
 	 */
 	public function query_loop_block_query_vars( array $query, WP_Block $block ): array {
@@ -212,8 +238,13 @@ class Event_Query {
 		// Generate a new custom query with all potential query vars.
 		$query_args = array();
 
-		// Post Related.
-		$query_args['post_type'] = get_post_types_by_support( 'gatherpress-event-date' );
+		// Honor the block's selected post type when present so a Query Loop
+		// pinned to e.g. `production` doesn't leak `gatherpress_event` posts
+		// (#1609). Fall back to all event-supporting post types only when
+		// the block didn't pick one explicitly.
+		$query_args['post_type'] = ! empty( $block_query['postType'] )
+			? $block_query['postType']
+			: get_post_types_by_support( 'gatherpress-event-date' );
 
 		// Type of event list: 'upcoming' or 'past',
 		// @see wp-content/plugins/gatherpress/includes/core/classes/class-event-query.php.
@@ -263,10 +294,11 @@ class Event_Query {
 	 *
 	 * Filters WP_Query arguments when querying posts via the REST API.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @param array           $args    Array of arguments for WP_Query.
 	 * @param WP_REST_Request $request The REST API request object.
+	 *
 	 * @return array Array of arguments for WP_Query.
 	 */
 	public function rest_query( array $args, WP_REST_Request $request ): array {
@@ -336,11 +368,12 @@ class Event_Query {
 	 *
 	 * Override the allowed items.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @see https://developer.wordpress.org/reference/classes/wp_rest_posts_controller/get_collection_params/
 	 *
 	 * @param array $query_params JSON Schema-formatted collection parameters.
+	 *
 	 * @return array JSON Schema-formatted collection parameters.
 	 */
 	public function rest_collection_params( array $query_params ): array {
@@ -384,10 +417,11 @@ class Event_Query {
 	 * are passed through to WP_Query, where the core Event\Query class picks them up
 	 * via pre_get_posts for SQL modification.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param array $query_args  The query arguments being built.
 	 * @param array $block_query The block's query attributes.
+	 *
 	 * @return array Modified query arguments.
 	 */
 	public function aql_query_vars( array $query_args, array $block_query ): array {

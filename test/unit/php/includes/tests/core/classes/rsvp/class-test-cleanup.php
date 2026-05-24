@@ -3,7 +3,7 @@
  * Class handles unit tests for GatherPress\Core\Rsvp\Cleanup.
  *
  * @package GatherPress\Core\Rsvp
- * @since 1.0.0
+ * @since 0.34.0
  */
 
 namespace GatherPress\Tests\Core\Rsvp;

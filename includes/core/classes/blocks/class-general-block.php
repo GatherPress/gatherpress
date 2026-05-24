@@ -7,7 +7,7 @@
  * that do not belong to a specific block type but require additional processing.
  *
  * @package GatherPress\Core
- * @since 1.0.0
+ * @since 0.33.0
  */
 
 namespace GatherPress\Core\Blocks;
@@ -27,7 +27,7 @@ use WP_HTML_Tag_Processor;
  * This class acts as a central handler for non-specific block logic,
  * such as filtering or injecting attributes for blocks with certain characteristics.
  *
- * @since 1.0.0
+ * @since 0.33.0
  */
 class General_Block {
 
@@ -41,7 +41,7 @@ class General_Block {
 	 *
 	 * This method initializes the object and sets up necessary hooks.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 */
 	protected function __construct() {
 		$this->setup_hooks();
@@ -52,7 +52,7 @@ class General_Block {
 	 *
 	 * This method adds hooks for different purposes as needed.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @return void
 	 */
@@ -71,7 +71,7 @@ class General_Block {
 	 * 2. Dynamically replaces the placeholder login URL with the actual login URL
 	 *    for users who are not logged in
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @param string $block_content The HTML content of the block.
 	 * @param array  $block         The parsed block data.
@@ -105,7 +105,7 @@ class General_Block {
 	 * 2. For enabled registration, dynamically replaces the placeholder registration URL with the actual
 	 *    registration URL
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @param string $block_content The HTML content of the block.
 	 * @param array  $block         The parsed block data.
@@ -141,7 +141,7 @@ class General_Block {
 	 * like Groups/Rows that contain an icon and a venue-detail block be hidden
 	 * together when the underlying field has no value.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param string $block_content The HTML content of the block.
 	 * @param array  $block         The parsed block data.
@@ -181,7 +181,7 @@ class General_Block {
 	 * 1. Converts anchor tags (`<a>`) to button elements and removes href/role attributes
 	 * 2. Adds `type="submit"` attribute to both converted anchors and existing button elements
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @param string $block_content The HTML content of the block.
 	 * @param array  $block         The parsed block data.
@@ -228,7 +228,7 @@ class General_Block {
 	 *
 	 * Hides the guest count field when max guest limit is 0.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @param string $block_content The block content.
 	 * @param array  $block         The block data.
@@ -280,7 +280,7 @@ class General_Block {
 	 *
 	 * Hides the anonymous field when anonymous RSVP is disabled.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @param string $block_content The block content.
 	 * @param array  $block         The block data.

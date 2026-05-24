@@ -17,7 +17,7 @@ import { AddressField, PhoneField, UrlField, TextField } from './fields';
  * Provides inline editing of venue meta fields with automatic
  * cross-post editing warnings (like post-title block).
  *
- * @since 1.0.0
+ * @since 0.34.0
  *
  * @param {Object}   props                   - Component properties.
  * @param {Object}   props.attributes        - Block attributes.
@@ -25,6 +25,7 @@ import { AddressField, PhoneField, UrlField, TextField } from './fields';
  * @param {Object}   props.context           - Block context.
  * @param {string}   props.clientId          - Block client ID.
  * @param {Function} props.insertBlocksAfter - Function to insert blocks after this block.
+ *
  * @return {JSX.Element} The rendered React component.
  */
 const Edit = ( {
@@ -105,6 +106,7 @@ const Edit = ( {
 			<InspectorControls>
 				<PanelBody title={ __( 'Field settings', 'gatherpress' ) }>
 					<SelectControl
+						__next40pxDefaultSize
 						label={ __( 'Field type', 'gatherpress' ) }
 						value={ fieldType }
 						options={ [

@@ -3,7 +3,7 @@
  * Class handles unit tests for GatherPress\Core\Blocks\Form_Field.
  *
  * @package GatherPress\Core
- * @since 1.0.0
+ * @since 0.33.0
  */
 
 namespace GatherPress\Tests\Core\Blocks;
@@ -21,7 +21,7 @@ class Test_Form_Field extends Base {
 	/**
 	 * Tests the constructor and attribute processing.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::__construct
 	 * @covers ::process_attributes
 	 * @covers ::get_input_id
@@ -41,7 +41,7 @@ class Test_Form_Field extends Base {
 	/**
 	 * Tests the constructor with custom attributes.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::__construct
 	 * @covers ::process_attributes
 	 * @covers ::get_input_id
@@ -68,7 +68,7 @@ class Test_Form_Field extends Base {
 	/**
 	 * Tests get_field_type method.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::get_field_type
 	 *
 	 * @return void
@@ -90,7 +90,7 @@ class Test_Form_Field extends Base {
 	/**
 	 * Tests get_input_styles for text-based fields.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::get_input_styles
 	 * @covers ::add_style
 	 * @covers ::compile_styles
@@ -129,7 +129,7 @@ class Test_Form_Field extends Base {
 	/**
 	 * Tests get_input_styles for checkbox field.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::get_input_styles
 	 * @covers ::add_style
 	 * @covers ::compile_styles
@@ -156,7 +156,7 @@ class Test_Form_Field extends Base {
 	/**
 	 * Tests get_input_styles for radio field.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::get_input_styles
 	 * @covers ::add_style
 	 * @covers ::compile_styles
@@ -183,7 +183,7 @@ class Test_Form_Field extends Base {
 	/**
 	 * Tests get_input_styles for hidden field.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::get_input_styles
 	 * @covers ::add_style
 	 * @covers ::compile_styles
@@ -208,7 +208,7 @@ class Test_Form_Field extends Base {
 	/**
 	 * Tests get_label_styles method.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::get_label_styles
 	 * @covers ::add_style
 	 * @covers ::compile_styles
@@ -234,7 +234,7 @@ class Test_Form_Field extends Base {
 	/**
 	 * Tests get_label_wrapper_styles method.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::get_label_wrapper_styles
 	 * @covers ::add_style
 	 * @covers ::compile_styles
@@ -266,7 +266,7 @@ class Test_Form_Field extends Base {
 	/**
 	 * Tests get_required_styles method.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::get_required_styles
 	 * @covers ::add_style
 	 * @covers ::compile_styles
@@ -292,7 +292,7 @@ class Test_Form_Field extends Base {
 	/**
 	 * Tests get_option_styles method.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::get_option_styles
 	 * @covers ::add_style
 	 * @covers ::compile_styles
@@ -330,7 +330,7 @@ class Test_Form_Field extends Base {
 	/**
 	 * Tests get_wrapper_classes for text field.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::get_wrapper_classes
 	 *
 	 * @return void
@@ -354,7 +354,7 @@ class Test_Form_Field extends Base {
 	/**
 	 * Tests get_wrapper_classes with inline layout.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::get_wrapper_classes
 	 *
 	 * @return void
@@ -379,7 +379,7 @@ class Test_Form_Field extends Base {
 	/**
 	 * Tests get_wrapper_classes without custom className.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::get_wrapper_classes
 	 *
 	 * @return void
@@ -408,7 +408,7 @@ class Test_Form_Field extends Base {
 	/**
 	 * Tests get_wrapper_classes for checkbox field without inline layout.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::get_wrapper_classes
 	 *
 	 * @return void
@@ -433,7 +433,7 @@ class Test_Form_Field extends Base {
 	/**
 	 * Tests get_wrapper_classes for textarea field without inline layout.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::get_wrapper_classes
 	 *
 	 * @return void
@@ -458,7 +458,7 @@ class Test_Form_Field extends Base {
 	/**
 	 * Tests get_wrapper_attributes method.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::get_wrapper_attributes
 	 *
 	 * @return void
@@ -482,7 +482,7 @@ class Test_Form_Field extends Base {
 	/**
 	 * Tests get_wrapper_attributes contains basic structure.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::get_wrapper_attributes
 	 *
 	 * @return void
@@ -509,7 +509,7 @@ class Test_Form_Field extends Base {
 	/**
 	 * Tests get_input_attributes for checkbox field.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::get_input_attributes
 	 *
 	 * @return void
@@ -544,7 +544,7 @@ class Test_Form_Field extends Base {
 	/**
 	 * Tests get_input_attributes for radio field.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::get_input_attributes
 	 *
 	 * @return void
@@ -574,7 +574,7 @@ class Test_Form_Field extends Base {
 	/**
 	 * Tests get_input_attributes for textarea field.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::get_input_attributes
 	 *
 	 * @return void
@@ -611,7 +611,7 @@ class Test_Form_Field extends Base {
 	/**
 	 * Tests get_input_attributes for textarea with min and max length.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::get_input_attributes
 	 *
 	 * @return void
@@ -643,7 +643,7 @@ class Test_Form_Field extends Base {
 	/**
 	 * Tests get_input_attributes for hidden field.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::get_input_attributes
 	 *
 	 * @return void
@@ -679,7 +679,7 @@ class Test_Form_Field extends Base {
 	/**
 	 * Tests get_input_attributes for number field with min and max.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::get_input_attributes
 	 *
 	 * @return void
@@ -716,7 +716,7 @@ class Test_Form_Field extends Base {
 	/**
 	 * Tests get_input_attributes for text field with minlength and maxlength.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::get_input_attributes
 	 *
 	 * @return void
@@ -748,7 +748,7 @@ class Test_Form_Field extends Base {
 	/**
 	 * Tests get_input_attributes with required attribute.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::get_input_attributes
 	 *
 	 * @return void
@@ -774,7 +774,7 @@ class Test_Form_Field extends Base {
 	/**
 	 * Tests get_input_attributes for hidden field without required.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::get_input_attributes
 	 *
 	 * @return void
@@ -801,7 +801,7 @@ class Test_Form_Field extends Base {
 	/**
 	 * Tests get_template_path for existing field type.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::get_template_path
 	 *
 	 * @return void
@@ -829,7 +829,7 @@ class Test_Form_Field extends Base {
 	/**
 	 * Tests get_template_path falls back to default for non-existing field type.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::get_template_path
 	 *
 	 * @return void
@@ -857,7 +857,7 @@ class Test_Form_Field extends Base {
 	/**
 	 * Tests render method.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::render
 	 *
 	 * @return void
@@ -894,7 +894,7 @@ class Test_Form_Field extends Base {
 	 * This test proves that the className checking code at lines 310-312 and 338-339
 	 * is dead code because process_attributes() does not preserve className.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::__construct
 	 * @covers ::process_attributes
 	 * @covers ::get_wrapper_classes
@@ -947,7 +947,7 @@ class Test_Form_Field extends Base {
 	 * This test proves that the data-* attribute checking code at lines 345-348
 	 * is dead code because process_attributes() does not preserve data-* attributes.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::__construct
 	 * @covers ::process_attributes
 	 * @covers ::get_wrapper_attributes
@@ -1118,7 +1118,7 @@ class Test_Form_Field extends Base {
 	/**
 	 * Tests get_input_styles fallback values for text fields without colors.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @covers ::get_input_styles
 	 * @covers ::add_style
 	 * @covers ::compile_styles

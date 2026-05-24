@@ -9,7 +9,7 @@
  * `description`, and `content` keys.
  *
  * @package GatherPress\Core
- * @since 1.0.0
+ * @since 0.34.0
  */
 
 namespace GatherPress\Core;
@@ -25,7 +25,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
  * (e.g., `gatherpress_event_starter_patterns`) is the caller's responsibility
  * so the filter name stays scoped to each subsystem.
  *
- * @since 1.0.0
+ * @since 0.34.0
  */
 class Starter_Pattern_Loader {
 
@@ -36,7 +36,7 @@ class Starter_Pattern_Loader {
 	 * `name` is what `register_block_pattern()` keys on, so without it
 	 * the entry can never be registered.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param string $dir Absolute path to a directory of pattern files.
 	 *                    Each file must `return` a definition array.

@@ -21,6 +21,7 @@ const blockGuardListeners = new Map();
  * Custom hook to manage shared block guard state.
  *
  * @param {string} blockName - The name of the block type.
+ *
  * @return {Array} Array containing [isEnabled, setIsEnabled] similar to useState.
  */
 function useSharedBlockGuardState( blockName ) {
@@ -221,6 +222,7 @@ function removeDragListeners( handler ) {
  * Create a drop handler for the given clientId.
  *
  * @param {string} clientId - The block's client ID.
+ *
  * @return {Function} Drop handler function.
  */
 function createDropHandler( clientId ) {
@@ -242,6 +244,7 @@ function createDropHandler( clientId ) {
  *
  * @param {string}  clientId            - The block's client ID.
  * @param {boolean} isBlockGuardEnabled - Whether guard is enabled.
+ *
  * @return {Object|null} Object with expander element or null if not found.
  */
 function applyListViewGuardForBlock( clientId, isBlockGuardEnabled ) {
@@ -370,6 +373,7 @@ function applyBlockGuard( clientId, name, stateKey, isBlockGuardEnabled ) {
  *
  * @param {string} name     - The block type name.
  * @param {string} clientId - The current block's client ID.
+ *
  * @return {string} Unique state key for this block's context.
  */
 function generateBlockGuardStateKey( name, clientId ) {
@@ -421,6 +425,7 @@ function generateBlockGuardStateKey( name, clientId ) {
  *
  * @param {Function} BlockEdit - The original BlockEdit component.
  * @param            props
+ *
  * @return {Function} Enhanced BlockEdit component with BlockGuard functionality.
  *
  * @example

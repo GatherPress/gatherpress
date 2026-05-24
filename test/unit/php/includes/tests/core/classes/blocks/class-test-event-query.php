@@ -3,7 +3,7 @@
  * Class handles unit tests for GatherPress\Core\Blocks\Event_Query.
  *
  * @package GatherPress\Core
- * @since 1.0.0
+ * @since 0.33.0
  */
 
 namespace GatherPress\Tests\Core\Blocks;
@@ -25,7 +25,7 @@ class Test_Event_Query extends Base {
 	 * Verifies that the appropriate filters are registered during setup,
 	 * ensuring the hooks are properly configured for Event_Query.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::__construct
 	 * @covers ::setup_hooks
 	 *
@@ -47,6 +47,12 @@ class Test_Event_Query extends Base {
 				'callback' => array( $instance, 'maybe_register_event_date_rest_hooks' ),
 			),
 			array(
+				'type'     => 'action',
+				'name'     => 'init',
+				'priority' => PHP_INT_MAX,
+				'callback' => array( $instance, 'register_existing_event_date_post_types' ),
+			),
+			array(
 				'type'     => 'filter',
 				'name'     => 'aql_query_vars',
 				'priority' => 10,
@@ -63,7 +69,7 @@ class Test_Event_Query extends Base {
 	 * Verifies that REST filters are registered when a post type declares
 	 * gatherpress-event-date support and skipped otherwise.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @covers ::maybe_register_event_date_rest_hooks
 	 *
 	 * @return void
@@ -99,7 +105,7 @@ class Test_Event_Query extends Base {
 	/**
 	 * Bails when the post type does not declare event-date support.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @covers ::maybe_register_event_date_rest_hooks
 	 *
 	 * @return void
@@ -116,12 +122,69 @@ class Test_Event_Query extends Base {
 	}
 
 	/**
+	 * Sweep registers REST filters for every event-supporting post type
+	 * already in the registry.
+	 *
+	 * Reproduces #1608: post types registered by other plugins before
+	 * `Event_Query` boots (e.g. `gatherpress-productions`) miss the
+	 * `registered_post_type` listener, so without this sweep their REST
+	 * endpoints lack `orderby=datetime`, `gatherpress_event_query`, and
+	 * `include_unfinished` and the editor 400s when the Query Loop block
+	 * tries to fetch them.
+	 *
+	 * @since 0.34.0
+	 * @covers ::register_existing_event_date_post_types
+	 *
+	 * @return void
+	 */
+	public function test_register_existing_event_date_post_types_sweeps_registry(): void {
+		$instance  = Event_Query::get_instance();
+		$post_type = 'shindig';
+
+		register_post_type(
+			$post_type,
+			array(
+				'label'    => 'Test Productions',
+				'public'   => false,
+				'supports' => array( 'title', 'gatherpress-event-date' ),
+			)
+		);
+
+		// Strip any filters so we observe the sweep installing them, not
+		// a pre-existing registration from the `registered_post_type`
+		// listener that fired during `register_post_type()`.
+		remove_all_filters( sprintf( 'rest_%s_query', $post_type ) );
+		remove_all_filters( sprintf( 'rest_%s_collection_params', $post_type ) );
+
+		$instance->register_existing_event_date_post_types();
+
+		$this->assertSame(
+			10,
+			has_filter(
+				sprintf( 'rest_%s_query', $post_type ),
+				array( $instance, 'rest_query' )
+			),
+			'Sweep should install rest_query filter for every event-supporting post type.'
+		);
+		$this->assertSame(
+			10,
+			has_filter(
+				sprintf( 'rest_%s_collection_params', $post_type ),
+				array( $instance, 'rest_collection_params' )
+			),
+			'Sweep should install rest_collection_params filter for every event-supporting post type.'
+		);
+
+		unregister_post_type( $post_type );
+	}
+
+	/**
 	 * Test that array_filter preserves integer 0 values in REST API.
 	 *
 	 * This test specifically prevents regression of the array_filter bug that
 	 * removed integer 0 values from filtered query args.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::rest_query
 	 *
 	 * @return void
@@ -191,7 +254,7 @@ class Test_Event_Query extends Base {
 	/**
 	 * Test that REST API collection params include include_unfinished.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::rest_collection_params
 	 *
 	 * @return void
@@ -231,7 +294,7 @@ class Test_Event_Query extends Base {
 	/**
 	 * Test pre_render_block returns null for non-event-query blocks.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::pre_render_block
 	 *
 	 * @return void
@@ -253,7 +316,7 @@ class Test_Event_Query extends Base {
 	/**
 	 * Test pre_render_block returns null for blocks without namespace.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::pre_render_block
 	 *
 	 * @return void
@@ -273,7 +336,7 @@ class Test_Event_Query extends Base {
 	/**
 	 * Test pre_render_block with inherit query modifies global wp_query.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::pre_render_block
 	 *
 	 * @return void
@@ -316,7 +379,7 @@ class Test_Event_Query extends Base {
 	/**
 	 * Test pre_render_block without inherit query adds filter.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::pre_render_block
 	 *
 	 * @return void
@@ -355,7 +418,7 @@ class Test_Event_Query extends Base {
 	/**
 	 * Test query_loop_block_query_vars returns unchanged query for non-array block query.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::query_loop_block_query_vars
 	 *
 	 * @return void
@@ -378,7 +441,7 @@ class Test_Event_Query extends Base {
 	/**
 	 * Test query_loop_block_query_vars returns unchanged query without gatherpress_event_query.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::query_loop_block_query_vars
 	 *
 	 * @return void
@@ -403,7 +466,7 @@ class Test_Event_Query extends Base {
 	/**
 	 * Test query_loop_block_query_vars builds proper query args.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::query_loop_block_query_vars
 	 * @covers ::get_exclude_ids
 	 *
@@ -436,9 +499,40 @@ class Test_Event_Query extends Base {
 	}
 
 	/**
+	 * The block's selected `postType` is honored as the `post_type` query
+	 * arg when present. Without this, a Query Loop pinned to a specific
+	 * event-supporting post type (e.g. `production`) would leak posts
+	 * from every event-supporting post type on the site (#1609).
+	 *
+	 * @since 0.34.0
+	 * @covers ::query_loop_block_query_vars
+	 *
+	 * @return void
+	 */
+	public function test_query_loop_block_query_vars_honors_block_post_type(): void {
+		$instance = Event_Query::get_instance();
+		$block    = $this->createMock( \WP_Block::class );
+
+		$block->context = array(
+			'query' => array(
+				'gatherpress_event_query' => 'upcoming',
+				'postType'                => 'production',
+			),
+		);
+
+		$result = $instance->query_loop_block_query_vars( array(), $block );
+
+		$this->assertSame(
+			'production',
+			$result['post_type'],
+			'Should pass the block-selected post type through verbatim, not the union of every event-supporting type.'
+		);
+	}
+
+	/**
 	 * Test query_loop_block_query_vars with DESC order.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::query_loop_block_query_vars
 	 *
 	 * @return void
@@ -465,7 +559,7 @@ class Test_Event_Query extends Base {
 	/**
 	 * Test query_loop_block_query_vars without exclude_current.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::query_loop_block_query_vars
 	 * @covers ::get_exclude_ids
 	 *
@@ -492,7 +586,7 @@ class Test_Event_Query extends Base {
 	/**
 	 * Test rest_query with exclude_current parameter.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::rest_query
 	 * @covers ::get_exclude_ids
 	 *
@@ -539,7 +633,7 @@ class Test_Event_Query extends Base {
 	/**
 	 * Test rest_query without exclude_current parameter.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::rest_query
 	 *
 	 * @return void
@@ -589,7 +683,7 @@ class Test_Event_Query extends Base {
 	/**
 	 * Test rest_query filters out null and empty values.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::rest_query
 	 *
 	 * @return void
@@ -632,7 +726,7 @@ class Test_Event_Query extends Base {
 	/**
 	 * Test aql_query_vars returns unchanged query for non-event post types.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @covers ::aql_query_vars
 	 *
 	 * @return void
@@ -651,7 +745,7 @@ class Test_Event_Query extends Base {
 	/**
 	 * Test aql_query_vars returns unchanged query when postType is missing.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @covers ::aql_query_vars
 	 *
 	 * @return void
@@ -670,7 +764,7 @@ class Test_Event_Query extends Base {
 	/**
 	 * Test aql_query_vars passes through all GatherPress event params.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @covers ::aql_query_vars
 	 *
 	 * @return void
@@ -699,7 +793,7 @@ class Test_Event_Query extends Base {
 	/**
 	 * Test aql_query_vars with past events and descending order.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @covers ::aql_query_vars
 	 *
 	 * @return void
@@ -726,7 +820,7 @@ class Test_Event_Query extends Base {
 	/**
 	 * Test aql_query_vars with minimal params only passes set values.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @covers ::aql_query_vars
 	 *
 	 * @return void
@@ -750,7 +844,7 @@ class Test_Event_Query extends Base {
 	/**
 	 * Test aql_query_vars with inherited query parameter.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @covers ::aql_query_vars
 	 *
 	 * @return void
@@ -773,7 +867,7 @@ class Test_Event_Query extends Base {
 	/**
 	 * Test rest_query filters out empty string values.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::rest_query
 	 *
 	 * @return void
@@ -814,7 +908,7 @@ class Test_Event_Query extends Base {
 	/**
 	 * Test query_loop_block_query_vars passes venue_filter through to query args.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @covers ::query_loop_block_query_vars
 	 *
 	 * @return void
@@ -840,7 +934,7 @@ class Test_Event_Query extends Base {
 	/**
 	 * Test rest_query passes venue_filter through to custom args.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @covers ::rest_query
 	 *
 	 * @return void
@@ -889,7 +983,7 @@ class Test_Event_Query extends Base {
 	 * an override target via the collection endpoint silently get an empty
 	 * array for past events and stay dimmed.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @covers ::rest_query
 	 *
 	 * @return void
@@ -926,7 +1020,7 @@ class Test_Event_Query extends Base {
 	/**
 	 * Test aql_query_vars passes venue_filter through to query args.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @covers ::aql_query_vars
 	 *
 	 * @return void

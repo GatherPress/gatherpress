@@ -3,7 +3,7 @@
  * Class responsible for exporting content using WordPress' native export tool.
  *
  * @package GatherPress\Core
- * @since 1.0.0
+ * @since 0.30.0
  */
 
 namespace GatherPress\Core;
@@ -21,7 +21,7 @@ use WP_Post;
  * This class will enhance overall export management, provide effective filtering
  * and support validation of the export-objects based on their post type and meta data.
  *
- * @since 1.0.0
+ * @since 0.30.0
  */
 class Export extends Migrate {
 
@@ -34,7 +34,7 @@ class Export extends Migrate {
 	 * The post_meta name for GatherPress temporary entry,
 	 * to hook into WordPress export.
 	 *
-	 * @since 1.0.0
+	 * @since 0.30.0
 	 * @var string $POST_META
 	 */
 	const POST_META = 'gatherpress_extend_export';
@@ -44,7 +44,7 @@ class Export extends Migrate {
 	 *
 	 * This method initializes the object and sets up necessary hooks.
 	 *
-	 * @since 1.0.0
+	 * @since 0.30.0
 	 */
 	public function __construct() {
 		$this->setup_hooks();
@@ -55,7 +55,7 @@ class Export extends Migrate {
 	 *
 	 * This method adds hooks for different purposes as needed.
 	 *
-	 * @since 1.0.0
+	 * @since 0.30.0
 	 *
 	 * @return void
 	 */
@@ -69,7 +69,7 @@ class Export extends Migrate {
 	/**
 	 * Sets up the necessary hooks for the export process.
 	 *
-	 * @since 1.0.0
+	 * @since 0.30.0
 	 *
 	 * @return void
 	 */
@@ -86,9 +86,10 @@ class Export extends Migrate {
 	 *
 	 * Fires once the post data has been set up.
 	 *
-	 * @since 1.0.0
+	 * @since 0.30.0
 	 *
 	 * @param  WP_Post $post  The Post object (passed by reference).
+	 *
 	 * @return void
 	 */
 	public function prepare( WP_Post $post ): void {
@@ -115,11 +116,12 @@ class Export extends Migrate {
 	 * GatherPress created a post_meta entry as a temporary marker, to be used as an entry-point into
 	 * WordPress' native export process, which is used now.
 	 *
-	 * @since 1.0.0
+	 * @since 0.30.0
 	 *
 	 * @param  bool   $skip     Whether to skip the current post meta. Default false.
 	 * @param  string $meta_key Current meta key.
 	 * @param  object $meta     Current meta object.
+	 *
 	 * @return bool             Whether to skip the current post meta. Default false.
 	 */
 	public function extend( bool $skip, string $meta_key, object $meta ): bool {
@@ -147,9 +149,10 @@ class Export extends Migrate {
 	 * An export file like this can be imported into GatherPress using
 	 * the native 'WordPress importer' and its potential replacement the 'WordPress importer (v2)'.
 	 *
-	 * @since 1.0.0
+	 * @since 0.30.0
 	 *
 	 * @param  WP_Post $post Current 'gatherpress_event' post being exported.
+	 *
 	 * @return void
 	 */
 	public function run( WP_Post $post ): void {
@@ -171,7 +174,7 @@ class Export extends Migrate {
 	 * @param  WP_Post $post      The currently exported 'gatherpress_event' post.
 	 *
 	 * @return void
-	 * @since 1.0.0
+	 * @since 0.30.0
 	 */
 	public function render( array $callbacks, string $key, WP_Post $post ) {
 		if (
@@ -198,9 +201,10 @@ class Export extends Migrate {
 	 * Returns dates, times and timezone from the 'wp_gatherpress_events' DB table
 	 * as serialized string for the current post being exported.
 	 *
-	 * @since 1.0.0
+	 * @since 0.30.0
 	 *
 	 * @param  WP_Post $post Current 'gatherpress_event' post being exported.
+	 *
 	 * @return string        Serialized JSON string with all date, time & timezone data of the current $post.
 	 */
 	public function datetimes_callback( WP_Post $post ): string {

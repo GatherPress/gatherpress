@@ -36,6 +36,7 @@ import { TEMPLATE_WITH_TITLE, TEMPLATE_WITHOUT_TITLE } from './templates/venue-d
  * tuple tree into instantiated block objects, ready for `replaceInnerBlocks`.
  *
  * @param {Array} template Tuples in `[ blockName, attributes, innerBlocks ]` form.
+ *
  * @return {Array} Created block instances.
  */
 function templateToBlocks( template ) {
@@ -65,7 +66,7 @@ function templateToBlocks( template ) {
  * `{ name, title, description, template }` — `template` is an `InnerBlocks`
  * tuple tree (`[ blockName, attributes, innerBlocks ]`).
  *
- * @since 1.0.0
+ * @since 0.27.0
  */
 const DEFAULT_PATTERNS = [
 	{
@@ -256,7 +257,7 @@ const Edit = ( props ) => {
 	 * without-title elsewhere). The picker itself is filterable separately
 	 * via `gatherpress.venuePatterns`.
 	 *
-	 * @since 1.0.0
+	 * @since 0.27.0
 	 *
 	 * @param {Array} defaultTemplate Default `InnerBlocks` tuple tree
 	 *                                resolved from `TEMPLATE_WITH_TITLE` /
@@ -280,12 +281,13 @@ const Edit = ( props ) => {
 	 * edited (resolved from block context, falling back to the editor's
 	 * current post type).
 	 *
-	 * @since 1.0.0
+	 * @since 0.27.0
 	 *
 	 * @param {Array}       patterns     Default array containing the bundled
 	 *                                   "Venue Details with Title" and
 	 *                                   "Venue Details" patterns.
 	 * @param {string|null} hostPostType Post type of the post being edited.
+	 *
 	 * @return {Array} Patterns shown in the picker modal, in display order.
 	 *
 	 * @example

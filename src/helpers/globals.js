@@ -22,9 +22,10 @@
  * and treat the result as safe — it isn't. For untrusted HTML reach
  * for DOMPurify or equivalent.
  *
- * @since 1.0.0
+ * @since 0.27.0
  *
  * @param {string} html Raw HTML string.
+ *
  * @return {string} The HTML with `<script>` elements and `on*` attributes removed.
  */
 export function stripScriptsAndEventHandlers( html ) {
@@ -57,9 +58,10 @@ export function stripScriptsAndEventHandlers( html ) {
  * This function transforms a string in snake_case format into camelCase format by
  * removing underscores and capitalizing the first letter of each subsequent word.
  *
- * @since 1.0.0
+ * @since 0.27.0
  *
  * @param {string} snakeCaseString The snake_case string to be converted.
+ *
  * @return {string} The converted string in camelCase format.
  *
  * @example
@@ -80,9 +82,10 @@ export function toCamelCase( snakeCaseString ) {
 /**
  * Get a URL parameter value by name.
  *
- * @since 1.0.0
+ * @since 0.27.0
  *
  * @param {string} name The parameter name to retrieve.
+ *
  * @return {string|null} The parameter value or null if not found.
  */
 export function getUrlParam( name ) {

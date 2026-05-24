@@ -9,7 +9,7 @@ import AnonymousRsvp from '../../../components/AnonymousRsvp';
  * This component renders a section containing the `AnonymousRsvp` component,
  * allowing users to enable or disable anonymous RSVPs for an event.
  *
- * @since 1.0.0
+ * @since 0.34.0
  *
  * @return {JSX.Element} The JSX element for the AnonymousRsvpPanel.
  */

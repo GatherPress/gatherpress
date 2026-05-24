@@ -7,7 +7,7 @@
  * rendering form fields with appropriate styles and validation attributes.
  *
  * @package GatherPress\Core
- * @since 1.0.0
+ * @since 0.33.0
  */
 
 namespace GatherPress\Core\Blocks;
@@ -21,14 +21,14 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
  * Class responsible for managing the "FormField" block and its functionality,
  * including dynamic rendering and attribute processing.
  *
- * @since 1.0.0
+ * @since 0.33.0
  */
 class Form_Field {
 
 	/**
 	 * Processed form field attributes with defaults applied.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @var array
 	 */
@@ -37,7 +37,7 @@ class Form_Field {
 	/**
 	 * Constant representing the Block Name.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @var string
 	 */
 	const BLOCK_NAME = 'gatherpress/form-field';
@@ -45,7 +45,7 @@ class Form_Field {
 	/**
 	 * CSS property format for color.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @var string
 	 */
 	const CSS_COLOR = 'color:%s';
@@ -53,7 +53,7 @@ class Form_Field {
 	/**
 	 * CSS property format for font size.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @var string
 	 */
 	const CSS_FONT_SIZE = 'font-size:%s';
@@ -61,7 +61,7 @@ class Form_Field {
 	/**
 	 * CSS property format for line height.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @var string
 	 */
 	const CSS_LINE_HEIGHT = 'line-height:%s';
@@ -71,7 +71,7 @@ class Form_Field {
 	 *
 	 * Initializes a FormField object with the provided block attributes.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @param array $attributes The block attributes array.
 	 */
@@ -87,7 +87,7 @@ class Form_Field {
 	 * and naming conventions. Generates a unique input ID and applies
 	 * fallback values for all attributes.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @param array $raw_attributes Raw attributes from the block editor.
 	 *
@@ -136,7 +136,7 @@ class Form_Field {
 	 * a random number to ensure uniqueness across multiple
 	 * form fields on the same page.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @return string Unique input ID (e.g., 'gatherpress_123456789').
 	 */
@@ -151,7 +151,7 @@ class Form_Field {
 	 * then formats it using the provided format string and adds it
 	 * to the styles array. Handles both numeric and string values.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @param array  $styles   Reference to the styles array to modify.
 	 * @param string $attr_key The attribute key to check in the attributes array.
@@ -171,7 +171,7 @@ class Form_Field {
 	 * Takes an array of CSS style declarations and formats them into
 	 * a properly escaped HTML style attribute string.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @param array $styles Array of CSS style declarations (e.g., ['color:red', 'font-size:16px']).
 	 *
@@ -187,7 +187,7 @@ class Form_Field {
 	 * Returns the field type from the processed attributes with
 	 * a fallback to 'text' if not specified.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @return string The field type (e.g., 'text', 'email', 'checkbox', 'radio').
 	 */
@@ -203,7 +203,7 @@ class Form_Field {
 	 * full styling including fonts, padding, and colors. All input
 	 * types receive border styling.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @return string Formatted CSS style attribute string or empty string if no styles.
 	 */
@@ -248,7 +248,7 @@ class Form_Field {
 	 * line height, and text color. Applied to all field types
 	 * that display labels.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @return string Formatted CSS style attribute string or empty string if no styles.
 	 */
@@ -267,7 +267,7 @@ class Form_Field {
 	 * and line height. Applied to wrapper elements that contain both
 	 * the label and required text.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @return string Formatted CSS style attribute string or empty string if no styles.
 	 */
@@ -286,7 +286,7 @@ class Form_Field {
 	 * Builds CSS styles for the required field indicator text,
 	 * typically displayed next to the field label.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @return string Formatted CSS style attribute string or empty string if no styles.
 	 */
@@ -304,7 +304,7 @@ class Form_Field {
 	 * Builds CSS styles for radio button option labels including
 	 * font size, line height, and text color. Only used for radio field types.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @return string Formatted CSS style attribute string or empty string if no styles.
 	 */
@@ -325,7 +325,7 @@ class Form_Field {
 	 * conditional layout classes. Inline layout is only applied to
 	 * text-based field types.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @return array Array of CSS class names for the wrapper element.
 	 */
@@ -351,7 +351,7 @@ class Form_Field {
 	 * using WordPress's get_block_wrapper_attributes() function with
 	 * field-specific CSS classes.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @return string Formatted HTML attributes string for the wrapper element.
 	 */
@@ -371,7 +371,7 @@ class Form_Field {
 	 * the field type. Includes common attributes like id, name, type, and
 	 * field-specific attributes like min/max values, placeholder, etc.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @return string Formatted HTML attributes string (e.g., ' id="field_123" type="text" name="email"').
 	 */
@@ -473,7 +473,7 @@ class Form_Field {
 	 * Determines the appropriate template file based on the field type.
 	 * Falls back to default.php if a field-specific template doesn't exist.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @return string The full path to the template file.
 	 */
@@ -493,7 +493,7 @@ class Form_Field {
 	/**
 	 * Renders the form field based on its type and attributes.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @return void
 	 */

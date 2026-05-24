@@ -41,6 +41,7 @@ import { EVENT_REST_API } from '../../helpers/namespace';
  * tuple tree into instantiated block objects, ready for `replaceInnerBlocks`.
  *
  * @param {Array} template Tuples in `[ blockName, attributes, innerBlocks ]` form.
+ *
  * @return {Array} Created block instances.
  */
 function templateToBlocks( template ) {
@@ -61,7 +62,7 @@ function templateToBlocks( template ) {
  * `{ name, title, description, template }` — `template` is an `InnerBlocks`
  * tuple tree (`[ blockName, attributes, innerBlocks ]`).
  *
- * @since 1.0.0
+ * @since 0.33.0
  *
  * @param {Array} patterns Default array containing the bundled
  *                         "Attendee Grid with Filter" pattern.
@@ -88,7 +89,7 @@ function templateToBlocks( template ) {
  * user having to click through the picker. The picker itself is filterable
  * separately via `gatherpress.rsvpResponsePatterns`.
  *
- * @since 1.0.0
+ * @since 0.33.0
  *
  * @param {Array} template Default `InnerBlocks` tuple tree —
  *                         `[ blockName, attributes, innerBlocks ]` — that
@@ -117,6 +118,7 @@ const PATTERNS = applyFilters( 'gatherpress.rsvpResponsePatterns', [
  * Fetch RSVP responses from the API.
  *
  * @param {number} postId The post ID for which to fetch RSVP responses.
+ *
  * @return {Promise<Object>} The RSVP responses data.
  */
 async function fetchRsvpResponses( postId ) {
@@ -137,7 +139,7 @@ async function fetchRsvpResponses( postId ) {
  * @param {Object}   root0.context       - Block context data containing postId and event info.
  * @param {Function} root0.setAttributes - Function to update block attributes.
  * @param {string}   root0.clientId      - The unique ID of this block instance, used to seed inner blocks when a pattern is picked.
- * @since 1.0.0
+ * @since 0.33.0
  *
  * @return {JSX.Element} The rendered edit interface for the block.
  */

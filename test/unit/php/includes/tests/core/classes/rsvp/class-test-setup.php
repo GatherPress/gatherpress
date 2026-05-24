@@ -3,7 +3,7 @@
  * Class file for Test_Setup.
  *
  * @package GatherPress\Core\Rsvp
- * @since 1.0.0
+ * @since 0.30.0
  */
 
 namespace GatherPress\Tests\Core\Rsvp;
@@ -476,6 +476,92 @@ class Test_Setup extends Base {
 		// Should not throw error when no token is present.
 		$instance->handle_rsvp_token();
 		$this->assertTrue( true );
+	}
+
+	/**
+	 * Whenever the token query var is present the handler must queue
+	 * `nocache_headers()` onto WP's `send_headers` action so the magic-
+	 * link URL is treated as per-user by any host-level page cache.
+	 * Without this, an aggressive page cache either leaks one user's
+	 * authenticated view to another or pins a stale RSVP-list render to
+	 * the URL (#1626). The deferred dispatch is what makes this
+	 * observable in tests — `nocache_headers()` called inline early-
+	 * returns under `headers_sent()`, which is always true in the
+	 * PHPUnit runner.
+	 *
+	 * @covers ::handle_rsvp_token
+	 *
+	 * @return void
+	 */
+	public function test_handle_rsvp_token_defers_nocache_headers(): void {
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		);
+
+		$comment_id = $this->factory->comment->create(
+			array(
+				'comment_post_ID'      => $post_id,
+				'comment_type'         => Rsvp::COMMENT_TYPE,
+				'comment_author_email' => 'test@example.com',
+				'comment_approved'     => 0,
+			)
+		);
+
+		$token = new Token( $comment_id );
+		$token->generate_token();
+		$token_string = sprintf( '%d_%s', $comment_id, $token->get_token() );
+
+		add_filter(
+			'gatherpress_pre_get_http_input',
+			static function ( $pre_value, $type, $var_name ) use ( $token_string ) {
+				if ( INPUT_GET === $type && Token::NAME === $var_name ) {
+					return $token_string;
+				}
+				return null;
+			},
+			10,
+			3
+		);
+
+		// Ensure baseline: no nocache_headers wiring before the call.
+		remove_action( 'send_headers', 'nocache_headers' );
+
+		Setup::get_instance()->handle_rsvp_token();
+
+		$has_action = has_action( 'send_headers', 'nocache_headers' );
+
+		remove_action( 'send_headers', 'nocache_headers' );
+		remove_all_filters( 'gatherpress_pre_get_http_input' );
+
+		$this->assertNotFalse(
+			$has_action,
+			'`send_headers` must be wired to `nocache_headers` on every token-bearing request.'
+		);
+	}
+
+	/**
+	 * Without a token in the URL the handler must NOT queue no-cache
+	 * headers — otherwise every page request would become uncacheable,
+	 * defeating the host's page cache for the vast majority of traffic.
+	 *
+	 * @covers ::handle_rsvp_token
+	 *
+	 * @return void
+	 */
+	public function test_handle_rsvp_token_skips_nocache_headers_when_token_absent(): void {
+		// Ensure baseline: no nocache_headers wiring before the call.
+		remove_action( 'send_headers', 'nocache_headers' );
+
+		Setup::get_instance()->handle_rsvp_token();
+
+		$has_action = has_action( 'send_headers', 'nocache_headers' );
+
+		$this->assertFalse(
+			$has_action,
+			'`send_headers` must not be wired to `nocache_headers` on requests that carry no RSVP token.'
+		);
 	}
 
 	/**

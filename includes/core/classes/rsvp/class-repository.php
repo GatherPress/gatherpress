@@ -31,7 +31,7 @@ use WP_Comment;
  * Handles querying and manipulation of RSVP comments within the GatherPress plugin.
  *
  * @package GatherPress\Core\Rsvp
- * @since 1.0.0
+ * @since 0.35.0
  */
 final class Repository {
 	private const COMMENT_META_EXTERNAL_ID = 'gatherpress_rsvp_external_id';
@@ -67,7 +67,7 @@ final class Repository {
 	/**
 	 * RSVP Repository constructor.
 	 *
-	 * @since 1.0.0
+	 * @since 0.35.0
 	 *
 	 * @param int $post_id The events post id.
 	 */
@@ -261,7 +261,7 @@ final class Repository {
 	/**
 	 * Read identity from comment based on declared identity type.
 	 *
-	 * @since 1.0.0
+	 * @since 0.35.0
 	 *
 	 * @param WP_Comment    $comment       Comment.
 	 * @param Identity_Type $identity_type The identity type.

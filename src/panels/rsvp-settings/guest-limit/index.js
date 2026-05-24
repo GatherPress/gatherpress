@@ -10,7 +10,7 @@ import GuestLimit from '../../../components/GuestLimit';
  * allowing users to set and manage the maximum number of additional guests
  * each attendee can bring to an event.
  *
- * @since 1.0.0
+ * @since 0.34.0
  *
  * @return {JSX.Element} The JSX element for the GuestLimitPanel.
  */

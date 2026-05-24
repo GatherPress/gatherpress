@@ -3,7 +3,7 @@
  * Class handles unit tests for GatherPress\Core\Assets.
  *
  * @package GatherPress\Core
- * @since 1.0.0
+ * @since 0.27.0
  */
 
 namespace GatherPress\Tests\Core;
@@ -41,7 +41,7 @@ class Test_Assets extends Base {
 				'type'     => 'action',
 				'name'     => 'enqueue_block_assets',
 				'priority' => 10,
-				'callback' => array( $instance, 'block_enqueue_scripts' ),
+				'callback' => array( $instance, 'register_block_assets' ),
 			),
 			array(
 				'type'     => 'action',
@@ -231,17 +231,51 @@ class Test_Assets extends Base {
 
 
 	/**
-	 * Coverage for block_enqueue_scripts.
+	 * Coverage for register_block_assets.
 	 *
-	 * @covers ::block_enqueue_scripts
+	 * Registers `gatherpress-utility-style` in every context and additionally
+	 * enqueues it in the block editor (where `is_admin()` is true) so the
+	 * stylesheet lands inside the editor canvas iframe via the
+	 * `enqueue_block_assets` hook.
+	 *
+	 * @covers ::register_block_assets
 	 *
 	 * @return void
 	 */
-	public function test_block_enqueue_scripts(): void {
+	public function test_register_block_assets(): void {
 		$instance = Assets::get_instance();
-		$instance->block_enqueue_scripts();
 
-		$this->assertTrue( wp_style_is( 'dashicons', 'enqueued' ) );
+		// Frontend context: style registered but not enqueued (the per-block
+		// `maybe_enqueue_styles` filter handles conditional frontend loading).
+		set_current_screen( 'front' );
+		wp_dequeue_style( 'gatherpress-utility-style' );
+
+		$instance->register_block_assets();
+
+		$this->assertTrue(
+			wp_style_is( 'gatherpress-utility-style', 'registered' ),
+			'Failed to assert gatherpress-utility-style is registered on frontend.'
+		);
+		$this->assertFalse(
+			wp_style_is( 'gatherpress-utility-style', 'enqueued' ),
+			'Failed to assert gatherpress-utility-style is not enqueued on frontend.'
+		);
+
+		// Admin / block-editor context: style is also enqueued so it reaches
+		// the editor canvas iframe (issue #1645).
+		set_current_screen( 'post.php' );
+		wp_dequeue_style( 'gatherpress-utility-style' );
+
+		$instance->register_block_assets();
+
+		$this->assertTrue(
+			wp_style_is( 'gatherpress-utility-style', 'enqueued' ),
+			'Failed to assert gatherpress-utility-style is enqueued in the block editor.'
+		);
+
+		// Reset for downstream tests.
+		set_current_screen( 'front' );
+		wp_dequeue_style( 'gatherpress-utility-style' );
 	}
 
 	/**
@@ -304,7 +338,7 @@ class Test_Assets extends Base {
 		$instance = Assets::get_instance();
 
 		// First register the utility style.
-		$instance->block_enqueue_scripts();
+		$instance->register_block_assets();
 
 		$block_content = '<div class="wp-block-gatherpress-event-date">Test</div>';
 		$block         = array(
@@ -340,7 +374,7 @@ class Test_Assets extends Base {
 		$instance = Assets::get_instance();
 
 		// First register the utility style.
-		$instance->block_enqueue_scripts();
+		$instance->register_block_assets();
 
 		// Dequeue if it was enqueued by previous test.
 		wp_dequeue_style( 'gatherpress-utility-style' );
@@ -374,7 +408,7 @@ class Test_Assets extends Base {
 		$instance = Assets::get_instance();
 
 		// First register the utility style.
-		$instance->block_enqueue_scripts();
+		$instance->register_block_assets();
 
 		// Dequeue if it was enqueued by previous test.
 		wp_dequeue_style( 'gatherpress-utility-style' );
@@ -396,6 +430,71 @@ class Test_Assets extends Base {
 	}
 
 	/**
+	 * Coverage for maybe_enqueue_styles with a third-party prefix added via the
+	 * `gatherpress_asset_utility_style_block_prefixes` filter.
+	 *
+	 * @covers ::maybe_enqueue_styles
+	 *
+	 * @return void
+	 */
+	public function test_maybe_enqueue_styles_filter_adds_extra_prefix(): void {
+		$instance = Assets::get_instance();
+
+		$instance->register_block_assets();
+		wp_dequeue_style( 'gatherpress-utility-style' );
+
+		$callback = static function (): array {
+			return array( 'gatherpress-awesome/' );
+		};
+		add_filter( 'gatherpress_asset_utility_style_block_prefixes', $callback );
+
+		$block_content = '<div>Test</div>';
+		$block         = array( 'blockName' => 'gatherpress-awesome/showcase' );
+
+		$instance->maybe_enqueue_styles( $block_content, $block );
+
+		remove_filter( 'gatherpress_asset_utility_style_block_prefixes', $callback );
+
+		$this->assertTrue(
+			wp_style_is( 'gatherpress-utility-style', 'enqueued' ),
+			'Failed to assert gatherpress-utility-style is enqueued for a filter-added prefix.'
+		);
+	}
+
+	/**
+	 * `gatherpress/` is appended after the filter runs, so a filter that omits
+	 * (or replaces) the array still leaves GatherPress's own blocks covered.
+	 *
+	 * @covers ::maybe_enqueue_styles
+	 *
+	 * @return void
+	 */
+	public function test_maybe_enqueue_styles_filter_cannot_remove_gatherpress_prefix(): void {
+		$instance = Assets::get_instance();
+
+		$instance->register_block_assets();
+		wp_dequeue_style( 'gatherpress-utility-style' );
+
+		$callback = static function (): array {
+			return array();
+		};
+		add_filter( 'gatherpress_asset_utility_style_block_prefixes', $callback );
+
+		$block_content = '<div>Test</div>';
+		$block         = array( 'blockName' => 'gatherpress/event-date' );
+
+		$instance->maybe_enqueue_styles( $block_content, $block );
+
+		remove_filter( 'gatherpress_asset_utility_style_block_prefixes', $callback );
+
+		$this->assertTrue(
+			wp_style_is( 'gatherpress-utility-style', 'enqueued' ),
+			'Failed to assert gatherpress-utility-style is still enqueued for gatherpress/ blocks '
+			. 'when the filter returns an empty array.'
+		);
+	}
+
+	/**
 	 * Coverage for editor_enqueue_scripts method.
 	 *
 	 * @covers ::editor_enqueue_scripts
@@ -405,8 +504,12 @@ class Test_Assets extends Base {
 	public function test_editor_enqueue_scripts(): void {
 		$instance = Assets::get_instance();
 
-		// First register the utility style.
-		$instance->block_enqueue_scripts();
+		// First register the utility style. The utility-style enqueue itself
+		// moved into register_block_assets() so it loads on the
+		// `enqueue_block_assets` hook and reaches the editor canvas iframe
+		// (issue #1645); editor_enqueue_scripts() now only enqueues the
+		// editor script.
+		$instance->register_block_assets();
 
 		$this->assertFalse(
 			wp_script_is( 'gatherpress-editor', 'enqueued' ),
@@ -418,10 +521,6 @@ class Test_Assets extends Base {
 		$this->assertTrue(
 			wp_script_is( 'gatherpress-editor', 'enqueued' ),
 			'Failed to assert gatherpress-editor is enqueued.'
-		);
-		$this->assertTrue(
-			wp_style_is( 'gatherpress-utility-style', 'enqueued' ),
-			'Failed to assert gatherpress-utility-style is enqueued in editor.'
 		);
 	}
 
@@ -756,7 +855,7 @@ class Test_Assets extends Base {
 		$instance = Assets::get_instance();
 
 		// First register the utility style.
-		$instance->block_enqueue_scripts();
+		$instance->register_block_assets();
 
 		// Dequeue if it was enqueued by previous test.
 		wp_dequeue_style( 'gatherpress-utility-style' );
@@ -781,7 +880,7 @@ class Test_Assets extends Base {
 		$instance = Assets::get_instance();
 
 		// First register the utility style.
-		$instance->block_enqueue_scripts();
+		$instance->register_block_assets();
 
 		// Call enqueue_tooltip_assets twice - second call should return early.
 		Utility::invoke_hidden_method( $instance, 'enqueue_tooltip_assets' );
@@ -912,7 +1011,7 @@ class Test_Assets extends Base {
 		$instance = Assets::get_instance();
 
 		// First register the utility style.
-		$instance->block_enqueue_scripts();
+		$instance->register_block_assets();
 
 		// Dequeue if it was enqueued by previous test.
 		wp_dequeue_style( 'gatherpress-utility-style' );

@@ -3,7 +3,7 @@
  * Collection of RSVP objects.
  *
  * @package GatherPress\Core\Rsvp
- * @since 1.0.0
+ * @since 0.35.0
  */
 
 namespace GatherPress\Core\Rsvp\Response;
@@ -15,7 +15,7 @@ namespace GatherPress\Core\Rsvp\Response;
  * Class with methods to serialize RSVP Response objects
  *
  * @package GatherPress\Core\Rsvp
- * @since 1.0.0
+ * @since 0.35.0
  */
 final class Collection {
 	/**

@@ -5,7 +5,7 @@
  * This class is responsible for caching RSVP information.
  *
  * @package GatherPress\Core\Rsvp
- * @since 1.0.0
+ * @since 0.35.0
  */
 
 namespace GatherPress\Core\Rsvp;
@@ -18,13 +18,13 @@ namespace GatherPress\Core\Rsvp;
  *
  * This class is responsible for caching RSVP information.
  *
- * @since 1.0.0
+ * @since 0.35.0
  */
 class Cache {
 	/**
 	 * Cache key format for RSVPs.
 	 *
-	 * @since 1.0.0
+	 * @since 0.35.0
 	 * @var string $CACHE_KEY
 	 */
 	const CACHE_KEY = 'gatherpress_rsvp_%d';

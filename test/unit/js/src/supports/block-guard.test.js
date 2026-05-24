@@ -118,6 +118,7 @@ const setupMockDOM = () => {
  * @param {string}  clientId  - The block's client ID.
  * @param {string}  blockType - The block type name.
  * @param {boolean} queryLoop - Whether this block is in a query loop.
+ *
  * @return {Object} Mock block element.
  */
 const createMockBlockElement = ( clientId, blockType, queryLoop = false ) => {

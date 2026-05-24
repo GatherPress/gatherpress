@@ -77,6 +77,8 @@ jest.mock( '@src/helpers/event', () => ( {
 
 jest.mock( '@src/helpers/editor', () => ( {
 	isInFSETemplate: jest.fn(),
+	getPostTypeLabel: jest.fn( ( key, postType, fallback ) => fallback ),
+	usePostTypeLabel: jest.fn( ( key, postType, fallback ) => fallback ),
 } ) );
 
 /**
@@ -90,7 +92,7 @@ import { isInFSETemplate } from '@src/helpers/editor';
  */
 import { EventQueryControlsSlotFill } from '@src/variations/core/query/components';
 
-const venueToggleLabel = 'Filter by current venue';
+const venueToggleLabel = 'Filter by Current Venue';
 const excludeToggleLabel = 'Exclude Current Event';
 const venueHelp =
 	'When placed on a venue page, only shows events at that venue.';

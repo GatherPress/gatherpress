@@ -3,7 +3,7 @@
  * Class handles unit tests for GatherPress\Core\Blocks\Rsvp.
  *
  * @package GatherPress\Core
- * @since 1.0.0
+ * @since 0.33.0
  */
 
 namespace GatherPress\Tests\Core\Blocks;
@@ -27,7 +27,7 @@ class Test_Rsvp extends Base {
 	 * Verifies that the appropriate filters are registered during setup,
 	 * ensuring the hooks are properly configured for the RSVP block.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::__construct
 	 * @covers ::setup_hooks
 	 *
@@ -89,7 +89,7 @@ class Test_Rsvp extends Base {
 	 * - Content for other statuses is marked as not visible.
 	 * - Past status content is excluded.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::transform_block_content
 	 *
 	 * @return void
@@ -151,23 +151,26 @@ class Test_Rsvp extends Base {
 			'The transform_block_content method should correctly mark the active RSVP status as attending.'
 		);
 		$this->assertStringContainsString(
-			'<div class="" data-rsvp-status="attending"><p>Attending content</p></div>',
+			'<div class="" data-rsvp-status="attending"><p class="wp-block-paragraph">Attending content</p></div>',
 			$result,
 			'The transform_block_content method should display content for the attending status without a '
 			. 'visibility class.'
 		);
 		$this->assertStringContainsString(
-			'<div class="gatherpress--is-hidden" data-rsvp-status="no_status"><p>No status content</p></div>',
+			'<div class="gatherpress--is-hidden" data-rsvp-status="no_status">'
+			. '<p class="wp-block-paragraph">No status content</p></div>',
 			$result,
 			'The transform_block_content method should mark content for the no_status status as not visible.'
 		);
 		$this->assertStringContainsString(
-			'<div class="gatherpress--is-hidden" data-rsvp-status="waiting_list"><p>Waiting List content</p></div>',
+			'<div class="gatherpress--is-hidden" data-rsvp-status="waiting_list">'
+			. '<p class="wp-block-paragraph">Waiting List content</p></div>',
 			$result,
 			'The transform_block_content method should mark content for the waiting_list status as not visible.'
 		);
 		$this->assertStringContainsString(
-			'<div class="gatherpress--is-hidden" data-rsvp-status="not_attending"><p>Not Attending content</p></div>',
+			'<div class="gatherpress--is-hidden" data-rsvp-status="not_attending">'
+			. '<p class="wp-block-paragraph">Not Attending content</p></div>',
 			$result,
 			'The transform_block_content method should mark content for the not_attending status as not visible.'
 		);
@@ -186,7 +189,7 @@ class Test_Rsvp extends Base {
 	 * - The block does not include the data-wp-interactive attribute since the event is no longer active.
 	 * - Content for other statuses, such as "attending", is excluded from the output.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::transform_block_content
 	 *
 	 * @return void
@@ -230,7 +233,7 @@ class Test_Rsvp extends Base {
 		$result        = $instance->transform_block_content( $block_content, $block );
 
 		$this->assertStringContainsString(
-			'<p>Past content</p>',
+			'<p class="wp-block-paragraph">Past content</p>',
 			$result,
 			'The transform_block_content method should include the "past" status content for a past event.'
 		);
@@ -256,7 +259,7 @@ class Test_Rsvp extends Base {
 	 * - The block includes the data-wp-context attribute.
 	 * - The RSVP status is set to "no_status".
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::transform_block_content
 	 *
 	 * @return void
@@ -302,7 +305,7 @@ class Test_Rsvp extends Base {
 	 * - The RSVP status is set to "no_status".
 	 * - The user details attribute is empty (e.g., data-user-details="[]").
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::transform_block_content
 	 *
 	 * @return void
@@ -354,7 +357,7 @@ class Test_Rsvp extends Base {
 	 * - The role="button" attribute for accessibility.
 	 * - The tabindex="0" attribute for keyboard navigation.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::apply_rsvp_button_interactivity
 	 *
 	 * @return void
@@ -400,7 +403,7 @@ class Test_Rsvp extends Base {
 	 * - The data-wp-on--click attribute for the appropriate action.
 	 * - The role="button" attribute for accessibility.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::apply_rsvp_button_interactivity
 	 *
 	 * @return void
@@ -440,7 +443,7 @@ class Test_Rsvp extends Base {
 	 * Specifically checks for:
 	 * - The data-set-status attribute with the correct status value.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::apply_rsvp_button_interactivity
 	 *
 	 * @return void
@@ -465,7 +468,7 @@ class Test_Rsvp extends Base {
 	 * data-wp-watch attribute and visibility class are applied
 	 * to the guest count display element.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::apply_guest_count_watch
 	 *
 	 * @return void
@@ -494,7 +497,7 @@ class Test_Rsvp extends Base {
 	 * data-wp-watch attribute is applied without adding the visibility class
 	 * to the guest count display element.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::apply_guest_count_watch
 	 *
 	 * @return void
@@ -523,7 +526,7 @@ class Test_Rsvp extends Base {
 	 * the data-wp-watch attribute and the visibility class are correctly applied
 	 * to the guest count display element.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::apply_guest_count_watch
 	 *
 	 * @return void
@@ -549,7 +552,7 @@ class Test_Rsvp extends Base {
 	 * Ensures that when guest count field is rendered and guests are allowed (max_guest_limit > 0),
 	 * the appropriate interactivity attributes are added to the input field.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::handle_rsvp_form_fields
 	 *
 	 * @return void
@@ -606,7 +609,7 @@ class Test_Rsvp extends Base {
 	 * Ensures that when guests are not allowed (max_guest_limit is 0 or empty),
 	 * the method returns empty content to hide the field.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::handle_rsvp_form_fields
 	 *
 	 * @return void
@@ -648,7 +651,7 @@ class Test_Rsvp extends Base {
 	 * Ensures that when anonymous RSVP is enabled, the appropriate interactivity
 	 * attributes are added to the checkbox input field.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::handle_rsvp_form_fields
 	 *
 	 * @return void
@@ -702,7 +705,7 @@ class Test_Rsvp extends Base {
 	 * Ensures that when anonymous RSVP is disabled, the method returns empty content
 	 * to hide the field from the frontend.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::handle_rsvp_form_fields
 	 *
 	 * @return void
@@ -744,7 +747,7 @@ class Test_Rsvp extends Base {
 	 * Ensures that form fields that are not RSVP-related are returned unmodified,
 	 * allowing other form-field blocks to function normally.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::handle_rsvp_form_fields
 	 *
 	 * @return void
@@ -773,7 +776,7 @@ class Test_Rsvp extends Base {
 	 * Ensures that when no fieldName is provided in the block attributes,
 	 * the method returns the original content unmodified.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::handle_rsvp_form_fields
 	 *
 	 * @return void
@@ -800,7 +803,7 @@ class Test_Rsvp extends Base {
 	 * Ensures that when there are multiple input elements in the content,
 	 * only the one with the matching name attribute gets the interactivity attributes.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::handle_rsvp_form_fields
 	 *
 	 * @return void

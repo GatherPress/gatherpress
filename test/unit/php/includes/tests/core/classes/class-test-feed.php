@@ -3,7 +3,7 @@
  * Test class for Feed.
  *
  * @package GatherPress\Tests\Core
- * @since 1.0.0
+ * @since 0.33.0
  */
 
 namespace GatherPress\Tests\Core;
@@ -16,7 +16,7 @@ use WP_Query;
 /**
  * Class Test_Feed.
  *
- * @since 1.0.0
+ * @since 0.33.0
  *
  * @coversDefaultClass \GatherPress\Core\Feed
  */
@@ -25,7 +25,7 @@ class Test_Feed extends Base {
 	/**
 	 * Test instance of Feed.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @var Feed
 	 */
@@ -34,7 +34,7 @@ class Test_Feed extends Base {
 	/**
 	 * Set up test environment.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @return void
 	 */
@@ -46,7 +46,7 @@ class Test_Feed extends Base {
 	/**
 	 * Test singleton pattern.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @covers ::get_instance
 	 *
@@ -62,7 +62,7 @@ class Test_Feed extends Base {
 	/**
 	 * Test setup_hooks registers all filters and actions.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @covers ::__construct
 	 * @covers ::setup_hooks
@@ -115,7 +115,7 @@ class Test_Feed extends Base {
 	/**
 	 * Test force_events_feed_query method.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @covers ::handle_events_feed_query
 	 *
@@ -143,7 +143,7 @@ class Test_Feed extends Base {
 	/**
 	 * Test handle_events_feed_query method with non-events feed.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @covers ::handle_events_feed_query
 	 *
@@ -168,7 +168,7 @@ class Test_Feed extends Base {
 	/**
 	 * Test handle_events_feed_query method with non-feed query.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @covers ::handle_events_feed_query
 	 *
@@ -193,7 +193,7 @@ class Test_Feed extends Base {
 	/**
 	 * Test handle_events_feed_query method with type parameter.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @covers ::handle_events_feed_query
 	 *
@@ -223,7 +223,7 @@ class Test_Feed extends Base {
 	/**
 	 * Test modify_feed_link_for_past_events method.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @covers ::modify_feed_link_for_past_events
 	 *
@@ -240,7 +240,7 @@ class Test_Feed extends Base {
 	/**
 	 * Test modify_feed_link_for_past_events method adds type=past parameter.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @covers ::modify_feed_link_for_past_events
 	 *
@@ -275,7 +275,7 @@ class Test_Feed extends Base {
 	/**
 	 * Test get_default_event_excerpt method.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @covers ::get_default_event_excerpt
 	 *
@@ -338,7 +338,7 @@ class Test_Feed extends Base {
 	/**
 	 * Test get_default_event_excerpt method with non-event post.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @covers ::get_default_event_excerpt
 	 *
@@ -370,7 +370,7 @@ class Test_Feed extends Base {
 	/**
 	 * Test get_default_event_content method.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @covers ::get_default_event_content
 	 *
@@ -405,7 +405,7 @@ class Test_Feed extends Base {
 	/**
 	 * Test get_default_event_content method with non-event post.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @covers ::get_default_event_content
 	 *
@@ -437,7 +437,7 @@ class Test_Feed extends Base {
 	/**
 	 * Test get_event_datetime_info method.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @covers ::get_event_datetime_info
 	 *
@@ -464,7 +464,7 @@ class Test_Feed extends Base {
 	/**
 	 * Test get_event_datetime_info method with empty datetime data.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @covers ::get_event_datetime_info
 	 *
@@ -490,7 +490,7 @@ class Test_Feed extends Base {
 	/**
 	 * Test apply_event_excerpt method with non-event post.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @covers ::apply_event_excerpt
 	 *
@@ -518,7 +518,7 @@ class Test_Feed extends Base {
 	/**
 	 * Test apply_event_excerpt method with event post.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @covers ::apply_event_excerpt
 	 *
@@ -564,7 +564,7 @@ class Test_Feed extends Base {
 	/**
 	 * Test apply_event_content method with non-event post.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @covers ::apply_event_content
 	 *
@@ -592,7 +592,7 @@ class Test_Feed extends Base {
 	/**
 	 * Test apply_event_content method with event post.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @covers ::apply_event_content
 	 *
@@ -638,7 +638,7 @@ class Test_Feed extends Base {
 	/**
 	 * Test handle_events_feed_query without REQUEST_URI.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @covers ::handle_events_feed_query
 	 *
@@ -665,7 +665,7 @@ class Test_Feed extends Base {
 	/**
 	 * Test handle_events_feed_query with non-main query.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @covers ::handle_events_feed_query
 	 *
@@ -690,7 +690,7 @@ class Test_Feed extends Base {
 	/**
 	 * Test get_default_event_excerpt with empty excerpt.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @covers ::get_default_event_excerpt
 	 *
@@ -712,7 +712,7 @@ class Test_Feed extends Base {
 	/**
 	 * Test get_default_event_excerpt with excerpt same as content.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @covers ::get_default_event_excerpt
 	 *
@@ -742,7 +742,7 @@ class Test_Feed extends Base {
 	/**
 	 * Test get_default_event_excerpt with whitespace-only excerpt.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @covers ::get_default_event_excerpt
 	 *
@@ -765,7 +765,7 @@ class Test_Feed extends Base {
 	/**
 	 * Test get_default_event_content with empty content.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @covers ::get_default_event_content
 	 *
@@ -787,7 +787,7 @@ class Test_Feed extends Base {
 	/**
 	 * Test get_default_event_content with whitespace-only content.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @covers ::get_default_event_content
 	 *
@@ -810,7 +810,7 @@ class Test_Feed extends Base {
 	/**
 	 * Test modify_feed_link_for_past_events with non-past events.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @covers ::modify_feed_link_for_past_events
 	 *
@@ -844,7 +844,7 @@ class Test_Feed extends Base {
 	/**
 	 * Test get_event_datetime_info with empty string.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @covers ::get_event_datetime_info
 	 *
@@ -870,7 +870,7 @@ class Test_Feed extends Base {
 	/**
 	 * Test get_default_event_excerpt with venue information.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @covers ::get_default_event_excerpt
 	 * @covers ::get_event_datetime_info
@@ -912,7 +912,7 @@ class Test_Feed extends Base {
 	/**
 	 * Test get_default_event_content with venue information.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @covers ::get_default_event_content
 	 * @covers ::get_event_datetime_info
@@ -954,7 +954,7 @@ class Test_Feed extends Base {
 	/**
 	 * Test handle_events_feed_query actually modifies query.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @covers ::handle_events_feed_query
 	 *
@@ -1011,7 +1011,7 @@ class Test_Feed extends Base {
 	/**
 	 * Test handle_events_feed_query with past events type parameter.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @covers ::handle_events_feed_query
 	 *

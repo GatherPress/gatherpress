@@ -168,9 +168,11 @@ function createPlaygroundLinks( blueprint, prText) {
  *
  * @param {object} github - An authenticated GitHub API instance.
  * @param {object} context - The context of the event.
+ * @param {number} [prNumberOverride] - Explicit PR number; required when called from a workflow_run
+ *   context where context.payload.pull_request is not present.
  */
-async function createPreviewLinksComment(github, context) {
-	const prNumber       = context.payload.pull_request.number;
+async function createPreviewLinksComment(github, context, prNumberOverride) {
+	const prNumber       = prNumberOverride ?? context.payload.pull_request.number;
 	const zipArtifactUrl = createBlueprintUrl(context.repo, prNumber);  // URL to the built plugin artifact
 	const prText         = `for PR#${prNumber}`;  // Descriptive text for the PR
 

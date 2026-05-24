@@ -3,7 +3,7 @@
  * Class handles unit tests for GatherPress\Core\Blocks\Dropdown.
  *
  * @package GatherPress\Core
- * @since 1.0.0
+ * @since 0.33.0
  */
 
 namespace GatherPress\Tests\Core\Blocks;
@@ -24,7 +24,7 @@ class Test_Dropdown extends Base {
 	 * Verifies that the appropriate filters are registered during setup,
 	 * ensuring the hooks are properly configured for the Dropdown block.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::__construct
 	 * @covers ::setup_hooks
 	 *
@@ -60,7 +60,7 @@ class Test_Dropdown extends Base {
 	/**
 	 * Tests default values for block styles.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::generate_block_styles
 	 *
 	 * @return void
@@ -106,7 +106,7 @@ class Test_Dropdown extends Base {
 	/**
 	 * Tests hover behavior styles.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::generate_block_styles
 	 *
 	 * @return void
@@ -143,7 +143,7 @@ class Test_Dropdown extends Base {
 	/**
 	 * Tests custom attribute values.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::generate_block_styles
 	 *
 	 * @return void
@@ -206,7 +206,7 @@ class Test_Dropdown extends Base {
 	/**
 	 * Tests missing block attributes.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::generate_block_styles
 	 *
 	 * @return void
@@ -239,7 +239,7 @@ class Test_Dropdown extends Base {
 	/**
 	 * Tests select mode disabled.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::apply_select_mode_attributes
 	 *
 	 * @return void
@@ -266,7 +266,7 @@ class Test_Dropdown extends Base {
 	/**
 	 * Tests select mode enabled.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::apply_select_mode_attributes
 	 *
 	 * @return void
@@ -319,7 +319,7 @@ class Test_Dropdown extends Base {
 	/**
 	 * Tests select mode with multiple items.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::apply_select_mode_attributes
 	 *
 	 * @return void
@@ -363,7 +363,7 @@ class Test_Dropdown extends Base {
 	/**
 	 * Tests select mode with existing class on anchor.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::apply_select_mode_attributes
 	 *
 	 * @return void
@@ -401,7 +401,7 @@ class Test_Dropdown extends Base {
 	/**
 	 * Tests click interactions.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::apply_dropdown_attributes
 	 *
 	 * @return void
@@ -438,7 +438,7 @@ class Test_Dropdown extends Base {
 	/**
 	 * Tests hover interactions.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::apply_dropdown_attributes
 	 *
 	 * @return void
@@ -469,7 +469,7 @@ class Test_Dropdown extends Base {
 	/**
 	 * Tests custom styles.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::apply_dropdown_attributes
 	 *
 	 * @return void
@@ -521,7 +521,7 @@ class Test_Dropdown extends Base {
 	/**
 	 * Tests default attributes.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::apply_dropdown_attributes
 	 *
 	 * @return void
@@ -560,7 +560,7 @@ class Test_Dropdown extends Base {
 	/**
 	 * Tests apply_select_mode_attributes with invalid HTML.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::apply_select_mode_attributes
 	 *
 	 * @return void
@@ -586,7 +586,7 @@ class Test_Dropdown extends Base {
 	/**
 	 * Tests apply_dropdown_attributes with no trigger element.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::apply_dropdown_attributes
 	 *
 	 * @return void
@@ -612,7 +612,7 @@ class Test_Dropdown extends Base {
 	/**
 	 * Tests apply_dropdown_attributes with no menu element.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::apply_dropdown_attributes
 	 *
 	 * @return void
@@ -638,7 +638,7 @@ class Test_Dropdown extends Base {
 	/**
 	 * Tests apply_dropdown_attributes with existing label styles.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::apply_dropdown_attributes
 	 *
 	 * @return void

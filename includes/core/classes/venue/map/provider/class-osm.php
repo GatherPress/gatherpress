@@ -10,7 +10,7 @@
  * 1× pixels.
  *
  * @package GatherPress\Core\Venue\Map\Provider
- * @since 1.0.0
+ * @since 0.34.0
  */
 
 namespace GatherPress\Core\Venue\Map\Provider;
@@ -30,7 +30,7 @@ use Throwable;
  * point at a different XYZ tile server (Stamen, Maptiler, self-hosted)
  * without changing code.
  *
- * @since 1.0.0
+ * @since 0.34.0
  */
 class OSM extends Base {
 
@@ -38,7 +38,7 @@ class OSM extends Base {
 	 * Default XYZ tile URL template. CartoDB's "light_all" basemap —
 	 * keyless, fast CDN, fits the GatherPress aesthetic.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @var string
 	 */
 	const DEFAULT_TILE_URL = 'https://cartodb-basemaps-a.global.ssl.fastly.net/light_all/{z}/{x}/{y}.png';
@@ -46,7 +46,7 @@ class OSM extends Base {
 	/**
 	 * Tile dimension in pixels (Web Mercator standard).
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @var int
 	 */
 	const TILE_SIZE = 256;
@@ -56,7 +56,7 @@ class OSM extends Base {
 	 * deadline is exceeded mid-loop, remaining tiles are skipped and the
 	 * gray canvas background shows through.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @var int
 	 */
 	const COMPOSITE_TIME_BUDGET = 10;
@@ -65,7 +65,7 @@ class OSM extends Base {
 	 * Provider slug used in post meta keys, filenames, and the
 	 * `map_platform` setting.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return string
 	 */
@@ -77,7 +77,7 @@ class OSM extends Base {
 	 * Human-readable label shown in the Settings → Venues → Maps platform
 	 * dropdown.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return string
 	 */
@@ -95,7 +95,7 @@ class OSM extends Base {
 	 * PHP 7.4 compatibility (GD returns a `resource` there, not a
 	 * `GdImage`).
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param float $latitude  Venue latitude in decimal degrees.
 	 * @param float $longitude Venue longitude in decimal degrees.
@@ -103,6 +103,7 @@ class OSM extends Base {
 	 * @param int   $width     Logical pixel width (at density 1).
 	 * @param int   $height    Logical pixel height (at density 1).
 	 * @param int   $density   Pixel-density multiplier. 1 = standard, 2 = retina.
+	 *
 	 * @return GdImage|resource|null Finished image, or null on failure.
 	 */
 	public function render(
@@ -162,7 +163,7 @@ class OSM extends Base {
 		 * render() call. When the deadline is exceeded mid-loop, remaining
 		 * tiles are skipped and the gray background shows through.
 		 *
-		 * @since 1.0.0
+		 * @since 0.34.0
 		 *
 		 * @param float $budget Default budget from COMPOSITE_TIME_BUDGET.
 		 */
@@ -200,7 +201,7 @@ class OSM extends Base {
 	 * Extracted from `render()` to keep that loop body shallow enough to
 	 * stay under SonarCloud's cognitive-complexity threshold.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param GdImage|resource $canvas     Canvas being composited into.
 	 * @param int              $tx         X tile coordinate.
@@ -209,6 +210,7 @@ class OSM extends Base {
 	 * @param int              $left_pixel World-pixel x-offset of the canvas top-left.
 	 * @param int              $top_pixel  World-pixel y-offset of the canvas top-left.
 	 * @param string           $tiles      URL template (`{z}/{x}/{y}` placeholders).
+	 *
 	 * @return void
 	 */
 	private function paint_tile(
@@ -243,7 +245,7 @@ class OSM extends Base {
 	 * Required attribution for OSM + CartoDB. Front end displays this
 	 * alongside the static map image.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return string
 	 */
@@ -275,9 +277,10 @@ class OSM extends Base {
 	 * Either way, the caller sees `false` and treats it as "skip this
 	 * tile".
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param string $bytes Raw PNG bytes from `fetch_tile()`.
+	 *
 	 * @return GdImage|resource|false Decoded image, or false when the bytes don't decode.
 	 */
 	protected function decode_tile( string $bytes ) {
@@ -295,12 +298,13 @@ class OSM extends Base {
 	 * that tile without aborting the whole composite; the resulting image
 	 * will simply have a blank patch where the fetch failed.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param int    $zoom  Tile zoom.
 	 * @param int    $x     Tile x coordinate.
 	 * @param int    $y     Tile y coordinate.
 	 * @param string $tiles Tile URL template containing `{z}`, `{x}`, `{y}`.
+	 *
 	 * @return string|null PNG bytes, or null on failure.
 	 */
 	public function fetch_tile( int $zoom, int $x, int $y, string $tiles ): ?string {
@@ -336,12 +340,13 @@ class OSM extends Base {
 	 * visually the same size as the 1× render rather than shrinking to
 	 * a pinprick.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param GdImage|resource $canvas Destination canvas.
 	 * @param int              $x      Pixel X position (marker center).
 	 * @param int              $y      Pixel Y position (marker center).
 	 * @param float            $scale  Multiplier applied to the marker radii.
+	 *
 	 * @return void
 	 */
 	public function stamp_marker( $canvas, int $x, int $y, float $scale = 1.0 ): void {
@@ -364,7 +369,7 @@ class OSM extends Base {
 	 * different XYZ provider (self-hosted, Stamen, Maptiler, etc.) without
 	 * forking the provider class.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return string
 	 */
@@ -372,7 +377,7 @@ class OSM extends Base {
 		/**
 		 * Filter the tile URL template used by the OSM static map provider.
 		 *
-		 * @since 1.0.0
+		 * @since 0.34.0
 		 *
 		 * @param string $template Tile URL with `{z}`, `{x}`, `{y}` placeholders.
 		 */
@@ -382,10 +387,11 @@ class OSM extends Base {
 	/**
 	 * Convert longitude to absolute pixel X in world pixel space at `$zoom`.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param float $lng  Longitude in degrees.
 	 * @param int   $zoom Zoom level.
+	 *
 	 * @return float
 	 */
 	protected function lng_to_world_pixel( float $lng, int $zoom ): float {
@@ -395,10 +401,11 @@ class OSM extends Base {
 	/**
 	 * Convert latitude to absolute pixel Y in world pixel space at `$zoom`.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param float $lat  Latitude in degrees.
 	 * @param int   $zoom Zoom level.
+	 *
 	 * @return float
 	 */
 	protected function lat_to_world_pixel( float $lat, int $zoom ): float {

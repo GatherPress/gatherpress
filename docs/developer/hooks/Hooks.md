@@ -6,10 +6,15 @@
 ## class-assets.php
 
 - [`gatherpress_asset_critical`](gatherpress_asset_critical.md) Filters whether an asset file is considered critical.
+- [`gatherpress_asset_utility_style_block_prefixes`](gatherpress_asset_utility_style_block_prefixes.md) Filters additional block-name prefixes whose blocks should
 
 ## class-autoloader.php
 
 - [`gatherpress_autoloader`](gatherpress_autoloader.md) Filters the registered autoloaders for GatherPress.
+
+## class-calendar.php
+
+- [`gatherpress_calendar_url`](gatherpress_calendar_url.md) Filters the calendar URL for a single event.
 
 ## class-event-query.php
 
@@ -69,6 +74,10 @@
 - [`gatherpress_static_map_prewarm_content_batch_size`](gatherpress_static_map_prewarm_content_batch_size.md) Filter the venue-map prewarm content-scan batch size.
 - [`gatherpress_static_map_prewarm_pre_enqueue_job`](gatherpress_static_map_prewarm_pre_enqueue_job.md) Filter the prewarm enqueue call to take over scheduling.
 
+## class-query.php
+
+- [`gatherpress_rsvp_comment_query_exclusion`](gatherpress_rsvp_comment_query_exclusion.md) Filters whether RSVP comments should be excluded from a comment query.
+
 ## class-roles.php
 
 - [`gatherpress_roles`](gatherpress_roles.md) Filter the list of roles for GatherPress.
@@ -100,6 +109,7 @@
 
 - [`gatherpress_pre_get_http_input`](gatherpress_pre_get_http_input.md) Short-circuit filter for HTTP input retrieval during testing.
 - [`gatherpress_pre_get_wp_referer`](gatherpress_pre_get_wp_referer.md) Short-circuit filter for wp_get_referer() during testing.
+- [`gatherpress_template_path`](gatherpress_template_path.md) Filters the resolved template path returned by `Utility::locate_template()`.
 
 ## network-page.php
 

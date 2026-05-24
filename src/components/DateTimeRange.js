@@ -10,6 +10,7 @@ import { useEffect } from '@wordpress/element';
 import {
 	dateTimeDatabaseFormat,
 	createMomentWithTimezone,
+	useMatchedDuration,
 } from '../helpers/datetime';
 import DateTimeStart from '../components/DateTimeStart';
 import DateTimeEnd from '../components/DateTimeEnd';
@@ -29,7 +30,7 @@ import Duration from '../components/Duration';
  * The component also handles the duration of the event, checking if the end time
  * matches a predefined duration option and updating the duration accordingly.
  *
- * @since 1.0.0
+ * @since 0.27.0
  *
  * @return {JSX.Element} The rendered DateTimeRange React component.
  */
@@ -49,16 +50,18 @@ const DateTimeRange = () => {
 		dateTimeMetaData = {};
 	}
 
-	const { dateTimeStart, dateTimeEnd, duration, timezone } = useSelect(
+	const { dateTimeStart, dateTimeEnd, timezone } = useSelect(
 		( select ) => ( {
 			dateTimeStart: select( 'gatherpress/datetime' ).getDateTimeStart(),
 			dateTimeEnd: select( 'gatherpress/datetime' ).getDateTimeEnd(),
-			duration: select( 'gatherpress/datetime' ).getDuration(),
 			timezone: select( 'gatherpress/datetime' ).getTimezone(),
 		} ),
 		[],
 	);
-	const { setDuration } = useDispatch( 'gatherpress/datetime' );
+	// Matched preset (or `false`) for the start/end pair. Memoized on the
+	// inputs so the moment.tz comparisons run once per real change rather
+	// than once per render — see `useMatchedDuration` for the #1607 context.
+	const matchedDuration = useMatchedDuration();
 
 	useEffect( () => {
 		const payload = JSON.stringify( {
@@ -78,8 +81,6 @@ const DateTimeRange = () => {
 		timezone,
 		dateTimeMetaData,
 		editPost,
-		setDuration,
-		duration,
 	] );
 
 	return (
@@ -87,7 +88,9 @@ const DateTimeRange = () => {
 			<section>
 				<DateTimeStart />
 			</section>
-			<section>{ duration ? <Duration /> : <DateTimeEnd /> }</section>
+			<section>
+				{ matchedDuration ? <Duration /> : <DateTimeEnd /> }
+			</section>
 			<section>
 				<Timezone />
 			</section>

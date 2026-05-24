@@ -4,7 +4,7 @@
  * primarily transforming block content and preparing it for output.
  *
  * @package GatherPress\Core
- * @since 1.0.0
+ * @since 0.33.0
  */
 
 namespace GatherPress\Core\Blocks;
@@ -25,7 +25,7 @@ use WP_HTML_Tag_Processor;
  * Class responsible for managing the "RSVP" block and its variations,
  * including dynamic transformations and enhancements for interactive functionality.
  *
- * @since 1.0.0
+ * @since 0.33.0
  */
 class Rsvp {
 
@@ -37,7 +37,7 @@ class Rsvp {
 	/**
 	 * Constant representing the Block Name.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @var string
 	 */
 	const BLOCK_NAME = 'gatherpress/rsvp';
@@ -47,7 +47,7 @@ class Rsvp {
 	 *
 	 * This method initializes the object and sets up necessary hooks.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 */
 	protected function __construct() {
 		$this->setup_hooks();
@@ -58,7 +58,7 @@ class Rsvp {
 	 *
 	 * This method adds hooks for different purposes as needed.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @return void
 	 */
@@ -91,7 +91,7 @@ class Rsvp {
 	 * - Dynamically renders and serializes inner blocks for each RSVP status.
 	 * - Ensures proper markup updates based on the RSVP status and event state.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @param string $block_content The original HTML content of the block.
 	 * @param array  $block         An associative array containing block data, including `blockName` and `attrs`.
@@ -213,7 +213,7 @@ class Rsvp {
 	 * are added to either the nested tag or the containing element if no nested tag
 	 * exists.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @param string $block_content The original block content as a string.
 	 *
@@ -285,7 +285,7 @@ class Rsvp {
 	 * adds the `data-wp-watch` attribute to enable dynamic updates using the
 	 * specified callback.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @param string $block_content The original block content.
 	 *
@@ -320,9 +320,10 @@ class Rsvp {
 	 *
 	 * Processes form-field blocks within RSVP blocks, applying the guest count form field callback.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @param string $block_content The block content to modify.
+	 *
 	 * @return string The modified block content with form field callbacks applied.
 	 */
 	public function apply_guests_input_interactivity( string $block_content ): string {
@@ -340,10 +341,11 @@ class Rsvp {
 	 * Processes form-field blocks with RSVP-specific field names to either
 	 * remove the field (if not permitted) or apply interactivity attributes.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @param string $block_content The form field block content.
 	 * @param array  $block         The block data including attributes.
+	 *
 	 * @return string The modified block content or empty string if field should be hidden.
 	 */
 	public function handle_rsvp_form_fields( string $block_content, array $block ): string {

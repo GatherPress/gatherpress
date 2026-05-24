@@ -6,7 +6,7 @@
  * options for customizing user roles and their labels.
  *
  * @package GatherPress\Core
- * @since 1.0.0
+ * @since 0.27.0
  */
 
 namespace GatherPress\Core\Settings;
@@ -22,7 +22,7 @@ use GatherPress\Core\Traits\Singleton;
  *
  * Handles the "Roles" settings page for GatherPress.
  *
- * @since 1.0.0
+ * @since 0.34.0
  */
 class Roles extends Base {
 
@@ -34,7 +34,7 @@ class Roles extends Base {
 	/**
 	 * Get the slug for the roles settings page.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return string The slug for the roles settings page.
 	 */
@@ -45,7 +45,7 @@ class Roles extends Base {
 	/**
 	 * Get the name for the roles settings page.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return string The localized name for the roles settings page.
 	 */
@@ -56,7 +56,7 @@ class Roles extends Base {
 	/**
 	 * Get sections for the Roles settings page.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return array An array of sections and their settings.
 	 */
@@ -85,7 +85,7 @@ class Roles extends Base {
 		 * This filter allows modification of the list of user roles used by GatherPress.
 		 * By default, GatherPress supports only the 'Organizers' role.
 		 *
-		 * @since 1.0.0
+		 * @since 0.27.0
 		 *
 		 * @param array $roles An array of user roles supported by GatherPress.
 		 *                     By default, it includes only the 'Organizers' role.
@@ -105,7 +105,7 @@ class Roles extends Base {
 	/**
 	 * Retrieve a list of user roles.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return array An array containing user roles and their corresponding settings.
 	 */
@@ -118,9 +118,10 @@ class Roles extends Base {
 	/**
 	 * Retrieve the role of a user.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param int $user_id User ID.
+	 *
 	 * @return string The role of the user, or 'Member' if no matching role is found.
 	 */
 	public function get_user_role( int $user_id ): string {

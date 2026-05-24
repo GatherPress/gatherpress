@@ -7,7 +7,7 @@
  * live in the OSM provider's own test class.
  *
  * @package GatherPress\Core\Venue\Map
- * @since 1.0.0
+ * @since 0.34.0
  */
 
 namespace GatherPress\Tests\Core\Venue\Map;
@@ -82,6 +82,7 @@ class Test_Map extends Base {
 	 * @param mixed  $preempt Default false.
 	 * @param array  $args    HTTP args (unused).
 	 * @param string $url     Request URL (unused).
+	 *
 	 * @return array Mocked WP HTTP response.
 	 */
 	public function short_circuit_tile_requests( $preempt, $args, $url ): array {
@@ -105,6 +106,7 @@ class Test_Map extends Base {
 	 * used to live on the class, scoped down to what tests need.
 	 *
 	 * @param string $url Stored descriptor URL.
+	 *
 	 * @return string Absolute filesystem path.
 	 */
 	protected function path_for_url( string $url ): string {
@@ -3001,6 +3003,7 @@ class Test_Map extends Base {
 	 * each can swap in a deterministic non-OSM active provider.
 	 *
 	 * @param string $slug Slug to advertise via `get_slug()`.
+	 *
 	 * @return \GatherPress\Core\Venue\Map\Provider\Base
 	 */
 	private function make_null_provider( string $slug ): \GatherPress\Core\Venue\Map\Provider\Base {
@@ -3048,6 +3051,7 @@ class Test_Map extends Base {
 			 * @param int   $width     Unused.
 			 * @param int   $height    Unused.
 			 * @param int   $density   Unused.
+			 *
 			 * @return null
 			 */
 			public function render(
@@ -3068,6 +3072,7 @@ class Test_Map extends Base {
 	 * test that mutates Manager state leave it in a clean baseline.
 	 *
 	 * @param Manager $manager Manager instance.
+	 *
 	 * @return void
 	 */
 	private function reset_manager_to_core_providers( Manager $manager ): void {

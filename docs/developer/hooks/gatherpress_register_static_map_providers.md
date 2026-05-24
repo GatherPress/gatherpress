@@ -28,7 +28,7 @@ add_action(
 
 ## Files
 
-- [includes/core/classes/venue/map/class-manager.php:271](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/venue/map/class-manager.php#L271)
+- [includes/core/classes/venue/map/class-manager.php:274](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/venue/map/class-manager.php#L274)
 ```php
 do_action( 'gatherpress_register_static_map_providers', $this )
 ```

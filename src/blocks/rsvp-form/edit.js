@@ -35,6 +35,7 @@ import { shouldHideBlock } from './visibility';
  * tuple tree into instantiated block objects, ready for `replaceInnerBlocks`.
  *
  * @param {Array} template Tuples in `[ blockName, attributes, innerBlocks ]` form.
+ *
  * @return {Array} Created block instances.
  */
 function templateToBlocks( template ) {
@@ -56,7 +57,7 @@ function templateToBlocks( template ) {
  * through the picker. The picker itself is filterable separately via
  * `gatherpress.rsvpFormPatterns`.
  *
- * @since 1.0.0
+ * @since 0.27.0
  *
  * @param {Array} template Default `InnerBlocks` tuple tree —
  *                         `[ blockName, attributes, innerBlocks ]` — that
@@ -76,7 +77,7 @@ const DEFAULT_TEMPLATE = applyFilters(
  * `{ name, title, description, template }` — `template` is an `InnerBlocks`
  * tuple tree (`[ blockName, attributes, innerBlocks ]`).
  *
- * @since 1.0.0
+ * @since 0.27.0
  *
  * @param {Array} patterns Default array containing the bundled
  *                         "Standard RSVP Form" pattern.
@@ -162,6 +163,7 @@ const Edit = ( { attributes, setAttributes, clientId, context } ) => {
 	 * Apply conditional visibility class to form fields based on event settings.
 	 *
 	 * @param {Array} blocks Array of blocks to process.
+	 *
 	 * @return {Array} Processed blocks with conditional classes applied.
 	 */
 	const applyFormFieldVisibility = useCallback( ( blocks ) => {
@@ -211,6 +213,7 @@ const Edit = ( { attributes, setAttributes, clientId, context } ) => {
 	 * Recursively collect visibility styles from blocks with metadata.
 	 *
 	 * @param {Array} blocks The blocks array.
+	 *
 	 * @return {Array} Array of CSS rules.
 	 */
 	const collectVisibilityStyles = useCallback( ( blocks ) => {
@@ -310,6 +313,7 @@ const Edit = ( { attributes, setAttributes, clientId, context } ) => {
 			<InspectorControls>
 				<PanelBody title={ __( 'Preview Settings', 'gatherpress' ) }>
 					<SelectControl
+						__next40pxDefaultSize
 						label={ __( 'Form State Preview', 'gatherpress' ) }
 						help={ __(
 							'Preview how blocks appear in different form states. This setting is not saved.',

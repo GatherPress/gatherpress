@@ -3,7 +3,7 @@
  * RSVP Status.
  *
  * @package GatherPress\Core\Rsvp
- * @since 1.0.0
+ * @since 0.35.0
  */
 
 namespace GatherPress\Core\Rsvp\Response;
@@ -15,7 +15,7 @@ namespace GatherPress\Core\Rsvp\Response;
  * RSVP Status.
  *
  * @package GatherPress\Core\Rsvp
- * @since 1.0.0
+ * @since 0.35.0
  */
 enum Status: string {
 	case ATTENDING     = 'attending';
@@ -27,7 +27,7 @@ enum Status: string {
 	 * Constant representing the RSVP Taxonomy.
 	 * This constant defines the status taxonomy for RSVP comment type.
 	 *
-	 * @since 1.0.0
+	 * @since 0.35.0
 	 * @var string
 	 */
 	public const TAXONOMY = '_gatherpress_rsvp_status';
@@ -35,7 +35,7 @@ enum Status: string {
 	/**
 	 * Get the corresponding Status enum instance. If no match is found Status::NO_STATUS is returned.
 	 *
-	 * @since 1.0.0
+	 * @since 0.35.0
 	 * @param string $status The status value.
 	 * @return Status
 	 */
@@ -52,7 +52,7 @@ enum Status: string {
 	/**
 	 * Get all valid values.
 	 *
-	 * @since 1.0.0
+	 * @since 0.35.0
 	 * @return array
 	 */
 	public static function values(): array {

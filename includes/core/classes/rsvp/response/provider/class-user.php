@@ -5,7 +5,7 @@
  * Handles RSVP logic for registered WordPress users.
  *
  * @package GatherPress\Core\Rsvp_Types
- * @since 1.0.0
+ * @since 0.35.0
  */
 
 namespace GatherPress\Core\Rsvp\Response\Provider;
@@ -37,7 +37,7 @@ final class User extends Provider {
 	/**
 	 * Get the unique slug for this RSVP type.
 	 *
-	 * @since 1.0.0
+	 * @since 0.35.0
 	 *
 	 * @return Identity_Type
 	 */
@@ -48,7 +48,7 @@ final class User extends Provider {
 	/**
 	 * Get the human-readable label for this RSVP type.
 	 *
-	 * @since 1.0.0
+	 * @since 0.35.0
 	 *
 	 * @return string
 	 */
@@ -59,7 +59,7 @@ final class User extends Provider {
 	/**
 	 * Get the icon for this RSVP type.
 	 *
-	 * @since 1.0.0
+	 * @since 0.35.0
 	 *
 	 * @return string
 	 */
@@ -70,7 +70,7 @@ final class User extends Provider {
 	/**
 	 * Get the display name for a WordPress user.
 	 *
-	 * @since 1.0.0
+	 * @since 0.35.0
 	 *
 	 * @param Identity $identity The identity.
 	 * @return string The user's display name, or empty string if user not found.

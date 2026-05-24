@@ -6,7 +6,7 @@
  * retrieving RSVP information, saving RSVPs, checking attending limits, and more.
  *
  * @package GatherPress\Core\Rsvp
- * @since 1.0.0
+ * @since 0.27.0
  */
 
 namespace GatherPress\Core\Rsvp;
@@ -34,13 +34,13 @@ use WP_Post;
  *
  * Manages RSVP functionality for events, including response status tracking and limits.
  *
- * @since 1.0.0
+ * @since 0.34.0
  */
 class Rsvp {
 	/**
 	 * Capability required to manage RSVPs.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @var string
 	 */
 	public const CAPABILITY = 'moderate_comments';
@@ -48,7 +48,7 @@ class Rsvp {
 	/**
 	 * Comment type for RSVPs.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @var string $COMMENT_TYPE
 	 */
 	public const COMMENT_TYPE = 'gatherpress_rsvp';
@@ -56,6 +56,7 @@ class Rsvp {
 	/**
 	 * Default response for calling the save function.
 	 *
+	 * @since 0.35.0
 	 * @var array
 	 */
 	private const DEFAULT_SAVE_RESPONSE = array(
@@ -71,6 +72,7 @@ class Rsvp {
 	/**
 	 * The maximum limit for attendees for this Event (including guests).
 	 *
+	 * @since 0.34.0
 	 * @var int Represents the maximum number of attendees allowed for an event.
 	 */
 	protected int $max_attendance_limit;
@@ -78,6 +80,7 @@ class Rsvp {
 	/**
 	 * The event post object associated with this RSVP instance.
 	 *
+	 * @since 0.34.0
 	 * @var WP_Post
 	 */
 	protected readonly WP_Post $event;
@@ -109,7 +112,7 @@ class Rsvp {
 	 *
 	 * Initializes an RSVP instance for a specific event.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param int $post_id The event post ID.
 	 */
@@ -128,7 +131,7 @@ class Rsvp {
 	 * and the number of guests accompanying the user. If no RSVP information is found for the user and event,
 	 * default values are provided.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param mixed $identifier The identifier of the RSVP.
 	 *
@@ -150,7 +153,7 @@ class Rsvp {
 	/**
 	 * Get RSVP information for a user and an event.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param mixed $identifier The identifier of the RSVP.
 	 *
@@ -179,7 +182,7 @@ class Rsvp {
 	 * - `per_event_off`: writes meta = 0 (default-off intent).
 	 * - `disabled`: no meta is written.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return void
 	 */
@@ -212,7 +215,7 @@ class Rsvp {
 	 * the number of guests they plan to bring along and whether their RSVP should be considered anonymous.
 	 * This method updates the database accordingly to reflect the new RSVP status.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param int|string $identifier      Identifier of the person whose RSVP status is being updated.
 	 * @param string     $status          The new RSVP status for the user. Acceptable values are 'attending',
@@ -259,6 +262,8 @@ class Rsvp {
 	/**
 	 * Process an RSVP request.
 	 *
+	 * @since 0.35.0
+	 *
 	 * @param Intent $intent The RSVP response/intent to save.
 	 *
 	 * @return State|null
@@ -293,9 +298,11 @@ class Rsvp {
 	}
 
 	/**
-	 * Undocumented function
+	 * Promote pending RSVPs from the waiting list to attending up to the attendance limit.
 	 *
-	 * @return int
+	 * @since 0.34.0
+	 *
+	 * @return int Number of RSVPs promoted from the waiting list.
 	 */
 	public function check_waiting_list(): int {
 		$states    = $this->repository->all();
@@ -356,7 +363,7 @@ class Rsvp {
 	 * (empty string) falls back to the mode default: `per_event_on`
 	 * defaults to enabled, `per_event_off` defaults to disabled.
 	 *
-	 * @since 1.0.0
+	 * @since 0.35.0
 	 *
 	 * @return bool True if RSVP is enabled for this event, false otherwise.
 	 */
@@ -389,7 +396,7 @@ class Rsvp {
 	 * When sitewide is on, consults the per-event `gatherpress_enable_open_rsvp` post meta.
 	 * An unset meta (empty string) is treated as enabled (the default).
 	 *
-	 * @since 1.0.0
+	 * @since 0.35.0
 	 *
 	 * @return bool True if Open RSVP is enabled for this event, false otherwise.
 	 */
@@ -420,7 +427,7 @@ class Rsvp {
 	 * and compares it to the defined limit. It considers both the current response status
 	 * and the number of guests associated with that response.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param State|null $current_response The current response data including status and number of guests.
 	 *                                     Expected to have keys 'status' and 'guests', where 'status' is a
@@ -458,7 +465,7 @@ class Rsvp {
 	 * It provides an array with response details grouped by RSVP status ('attending', 'not_attending', 'waiting_list'),
 	 * along with counts and additional response data.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return array An array containing response information grouped by RSVP status.
 	 */
@@ -529,10 +536,11 @@ class Rsvp {
 	 * This method compares two responses based on their user roles and returns
 	 * an integer (-1, 0, or 1) to determine their order in the sorted list.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param array $first  The first response to compare in the sort.
 	 * @param array $second The second response to compare in the sort.
+	 *
 	 * @return int An integer indicating the sorting order:
 	 *             -1 if $first should come before $second,
 	 *              0 if they have the same sorting order,
@@ -560,10 +568,11 @@ class Rsvp {
 	 * This method compares two responses based on their RSVP timestamps and is used to sort responses
 	 * from the waiting list, with the earliest timestamp responses appearing first.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param array $first  First response to compare in the sort.
 	 * @param array $second Second response to compare in the sort.
+	 *
 	 * @return int Returns a negative number if the first response's timestamp is earlier,
 	 *             a positive number if the second response's timestamp is earlier,
 	 *             or 0 if both are equal.

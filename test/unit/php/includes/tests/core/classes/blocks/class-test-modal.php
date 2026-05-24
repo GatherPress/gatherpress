@@ -3,7 +3,7 @@
  * Class handles unit tests for GatherPress\Core\Blocks\Modal.
  *
  * @package GatherPress\Core
- * @since 1.0.0
+ * @since 0.33.0
  */
 
 namespace GatherPress\Tests\Core\Blocks;
@@ -24,7 +24,7 @@ class Test_Modal extends Base {
 	 * Verifies that the appropriate filters are registered during setup,
 	 * ensuring the hooks are properly configured for the Modal block.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::__construct
 	 * @covers ::setup_hooks
 	 *
@@ -66,7 +66,7 @@ class Test_Modal extends Base {
 	/**
 	 * Test modal attributes are applied with custom name.
 	 *
-	 * @since  1.0.0
+	 * @since  0.33.0
 	 * @covers ::apply_modal_attributes
 	 *
 	 * @return void
@@ -113,7 +113,7 @@ class Test_Modal extends Base {
 	/**
 	 * Test modal attributes are applied with default name.
 	 *
-	 * @since  1.0.0
+	 * @since  0.33.0
 	 * @covers ::apply_modal_attributes
 	 *
 	 * @return void
@@ -156,7 +156,7 @@ class Test_Modal extends Base {
 	/**
 	 * Test modal attributes preserve existing content.
 	 *
-	 * @since  1.0.0
+	 * @since  0.33.0
 	 * @covers ::apply_modal_attributes
 	 *
 	 * @return void
@@ -184,7 +184,7 @@ class Test_Modal extends Base {
 	/**
 	 * Test modal attributes with empty HTML.
 	 *
-	 * @since  1.0.0
+	 * @since  0.33.0
 	 * @covers ::apply_modal_attributes
 	 *
 	 * @return void
@@ -206,7 +206,7 @@ class Test_Modal extends Base {
 	/**
 	 * Test z-index is applied with default value.
 	 *
-	 * @since  1.0.0
+	 * @since  0.33.0
 	 * @covers ::adjust_block_z_index
 	 *
 	 * @return void
@@ -227,7 +227,7 @@ class Test_Modal extends Base {
 	/**
 	 * Test z-index is applied with custom value.
 	 *
-	 * @since  1.0.0
+	 * @since  0.33.0
 	 * @covers ::adjust_block_z_index
 	 *
 	 * @return void
@@ -252,7 +252,7 @@ class Test_Modal extends Base {
 	/**
 	 * Test z-index merges with existing styles.
 	 *
-	 * @since  1.0.0
+	 * @since  0.33.0
 	 * @covers ::adjust_block_z_index
 	 *
 	 * @return void
@@ -283,7 +283,7 @@ class Test_Modal extends Base {
 	/**
 	 * Test z-index handles empty style attribute.
 	 *
-	 * @since  1.0.0
+	 * @since  0.33.0
 	 * @covers ::adjust_block_z_index
 	 *
 	 * @return void
@@ -304,7 +304,7 @@ class Test_Modal extends Base {
 	/**
 	 * Test login modal is removed for logged-in users.
 	 *
-	 * @since  1.0.0
+	 * @since  0.33.0
 	 * @covers ::filter_login_modal
 	 *
 	 * @return void
@@ -335,7 +335,7 @@ class Test_Modal extends Base {
 	/**
 	 * Test login modal remains for logged-out users.
 	 *
-	 * @since  1.0.0
+	 * @since  0.33.0
 	 * @covers ::filter_login_modal
 	 *
 	 * @return void
@@ -364,7 +364,7 @@ class Test_Modal extends Base {
 	/**
 	 * Test non-login modal remains for logged-in users.
 	 *
-	 * @since  1.0.0
+	 * @since  0.33.0
 	 * @covers ::filter_login_modal
 	 *
 	 * @return void
@@ -396,7 +396,7 @@ class Test_Modal extends Base {
 	/**
 	 * Test modal without className attribute.
 	 *
-	 * @since  1.0.0
+	 * @since  0.33.0
 	 * @covers ::filter_login_modal
 	 *
 	 * @return void
@@ -425,7 +425,7 @@ class Test_Modal extends Base {
 	/**
 	 * Test RSVP modal is removed for logged-out users.
 	 *
-	 * @since  1.0.0
+	 * @since  0.33.0
 	 * @covers ::filter_rsvp_modal
 	 *
 	 * @return void
@@ -453,7 +453,7 @@ class Test_Modal extends Base {
 	/**
 	 * Test RSVP modal remains for logged-in users.
 	 *
-	 * @since  1.0.0
+	 * @since  0.33.0
 	 * @covers ::filter_rsvp_modal
 	 *
 	 * @return void
@@ -485,7 +485,7 @@ class Test_Modal extends Base {
 	/**
 	 * Test non-RSVP modal remains for logged-out users.
 	 *
-	 * @since  1.0.0
+	 * @since  0.33.0
 	 * @covers ::filter_rsvp_modal
 	 *
 	 * @return void
@@ -514,7 +514,7 @@ class Test_Modal extends Base {
 	/**
 	 * Test modal without className attribute.
 	 *
-	 * @since  1.0.0
+	 * @since  0.33.0
 	 * @covers ::filter_rsvp_modal
 	 *
 	 * @return void

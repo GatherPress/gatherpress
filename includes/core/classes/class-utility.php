@@ -7,7 +7,7 @@
  * GatherPress plugin.
  *
  * @package GatherPress\Core
- * @since 1.0.0
+ * @since 0.27.0
  */
 
 namespace GatherPress\Core;
@@ -22,7 +22,7 @@ use WP_HTML_Tag_Processor;
  *
  * Essential utility functions for the GatherPress plugin.
  *
- * @since 1.0.0
+ * @since 0.27.0
  */
 class Utility {
 
@@ -31,11 +31,12 @@ class Utility {
 	 *
 	 * This method loads and renders a template file located at the specified path.
 	 *
-	 * @since 1.0.0
+	 * @since 0.27.0
 	 *
 	 * @param string $path      The path to the template file.
 	 * @param array  $variables An array of variables to pass to the template.
 	 * @param bool   $output    Whether to echo the template (true) or return it (false).
+	 *
 	 * @return string The rendered template as a string.
 	 */
 	public static function render_template( string $path, array $variables = array(), bool $output = false ): string {
@@ -60,13 +61,112 @@ class Utility {
 	}
 
 	/**
+	 * Locate a theme-overridable template file.
+	 *
+	 * Walks the resolution chain used everywhere GatherPress ships an
+	 * overridable template:
+	 *
+	 * 1. `locate_template()` — classic theme / child-theme override.
+	 * 2. `locate_block_template()` — block-theme override (HTML template
+	 *    parts), keyed off the file basename minus extension.
+	 * 3. The caller's bundled fallback under `$fallback_dir` (which may be
+	 *    a plugin, mu-plugin, theme, or any other source):
+	 *    - the file name as-supplied (so a caller's custom dir can ship a
+	 *      `gatherpress_*.php` file under its prefixed name), then
+	 *    - the file name with the `gatherpress_` prefix stripped (so the
+	 *      bundled core templates live as plain `ical-download.php` on disk).
+	 *
+	 * Returns the first match, or `''` if nothing exists.
+	 *
+	 * @since 0.34.0
+	 *
+	 * @param string $file_name    The template file name, e.g. `gatherpress_ical-download.php`.
+	 * @param string $fallback_dir Absolute directory the caller's bundled fallback lives in.
+	 *
+	 * @return string Absolute path to the resolved template, or `''` if none exists.
+	 */
+	public static function locate_template( string $file_name, string $fallback_dir = '' ): string {
+		// `locate_template()` accepts a string, `locate_block_template()`
+		// requires an array of candidates.
+		$templates      = array( $file_name );
+		$theme_template = locate_template( $templates );
+		$theme_template = locate_block_template(
+			$theme_template,
+			pathinfo( $file_name, PATHINFO_FILENAME ),
+			$templates
+		);
+
+		if ( $theme_template ) {
+			$resolved = $theme_template;
+		} elseif ( empty( $fallback_dir ) ) {
+			$resolved = '';
+		} else {
+			$resolved = self::resolve_fallback_template_path( $fallback_dir, $file_name );
+		}
+
+		/**
+		 * Filters the resolved template path returned by `Utility::locate_template()`.
+		 *
+		 * Lets extension code (plugin, mu-plugin, theme, etc.) override or
+		 * replace GatherPress's default theme → block-template → fallback-dir
+		 * resolution chain — for example to point the calendar's iCal
+		 * templates at a custom directory, or to ship overridable templates
+		 * from a companion source via the same utility. Return an empty
+		 * string to signal "no template found"; callers will fall back to
+		 * their own default.
+		 *
+		 * @since 0.34.0
+		 *
+		 * @param string $resolved     Resolved absolute template path, or `''` if no candidate matched.
+		 * @param string $file_name    The template file name passed to `Utility::locate_template()`.
+		 * @param string $fallback_dir Directory the bundled fallback was looked up in (may be empty).
+		 */
+		return (string) apply_filters( 'gatherpress_template_path', $resolved, $file_name, $fallback_dir );
+	}
+
+	/**
+	 * Resolve a caller-bundled template path, with prefix-strip fallback.
+	 *
+	 * Tries the file name as-supplied first (so a caller can ship a
+	 * `gatherpress_*.php` file under its prefixed name on disk), then falls
+	 * back to the unprefixed name so the bundled core templates (which live
+	 * on disk as plain `ical-download.php`) still resolve when callers pass
+	 * the prefixed name (the convention used by `Utility::prefix_key()`).
+	 *
+	 * @since 0.34.0
+	 *
+	 * @param string $fallback_dir Absolute directory the caller's bundled fallback lives in.
+	 * @param string $file_name    Template file name to check inside `$fallback_dir`.
+	 *
+	 * @return string Resolved template path, or `''` if neither variant exists on disk.
+	 */
+	private static function resolve_fallback_template_path( string $fallback_dir, string $file_name ): string {
+		$fallback_template = trailingslashit( $fallback_dir ) . $file_name;
+
+		if ( file_exists( $fallback_template ) ) {
+			return $fallback_template;
+		}
+
+		$unprefixed = self::unprefix_key( $file_name );
+
+		if ( $unprefixed === $file_name ) {
+			return '';
+		}
+
+		$fallback_template = trailingslashit( $fallback_dir ) . $unprefixed;
+
+		return file_exists( $fallback_template ) ? $fallback_template : '';
+	}
+
+	/**
 	 * Prefixes a key with 'gatherpress_'.
 	 *
 	 * This method adds the 'gatherpress_' prefix to the provided key and returns the modified key.
 	 *
-	 * @since 1.0.0
+	 * @since 0.27.0
 	 *
 	 * @param string $key The key to which the prefix will be added.
+	 *
 	 * @return string The key with the 'gatherpress_' prefix.
 	 */
 	public static function prefix_key( string $key ): string {
@@ -82,13 +182,42 @@ class Utility {
 	 *
 	 * This method removes the 'gatherpress_' prefix from the provided key and returns the modified key.
 	 *
-	 * @since 1.0.0
+	 * @since 0.27.0
 	 *
 	 * @param string $key The key from which the prefix will be removed.
+	 *
 	 * @return string The key with the 'gatherpress_' prefix removed.
 	 */
 	public static function unprefix_key( string $key ): string {
 		return preg_replace( '/^gatherpress_/', '', $key );
+	}
+
+	/**
+	 * Resolve a single label from a post type's registered labels.
+	 *
+	 * Wraps `get_post_type_object()` so call sites don't have to defend
+	 * against unregistered post types or missing label keys. Lets UI
+	 * strings reflect whatever a site builder filtered the labels to,
+	 * and lets extenders' event-supporting post types surface their own
+	 * labels instead of GatherPress's defaults (#1612).
+	 *
+	 * @since 0.34.0
+	 *
+	 * @param string $key       Label key to read (e.g. `singular_name`,
+	 *                          `name`, `add_new_item`).
+	 * @param string $post_type Post type slug to read the label from.
+	 *
+	 * @return string The resolved label, or empty string when the post
+	 *                type isn't registered or the key isn't set.
+	 */
+	public static function post_type_label( string $key, string $post_type ): string {
+		$object = get_post_type_object( $post_type );
+
+		if ( ! $object || empty( $object->labels->$key ) ) {
+			return '';
+		}
+
+		return (string) $object->labels->$key;
 	}
 
 	/**
@@ -97,9 +226,10 @@ class Utility {
 	 * Expects standard snake_case input (lowercase words separated by single underscores).
 	 * Leading underscores or consecutive underscores may produce unexpected results.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param string $key The snake_case string to convert.
+	 *
 	 * @return string The converted camelCase string.
 	 */
 	public static function snake_to_camel( string $key ): string {
@@ -120,7 +250,7 @@ class Utility {
 	 * Wired in via `'auth_callback' => array( Utility::class, 'can_edit_post_meta' )`
 	 * on every editor-writable meta key registered through `register_post_meta()`.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) -- $allowed and $meta_key
 	 * are required by WP's register_post_meta auth_callback signature.
@@ -130,6 +260,7 @@ class Utility {
 	 * @param string $meta_key  The meta key being accessed. Unused.
 	 * @param int    $object_id The post ID the meta belongs to.
 	 * @param int    $user_id   The user ID attempting the edit.
+	 *
 	 * @return bool True if the user can edit the post, false otherwise.
 	 */
 	public static function can_edit_post_meta(
@@ -147,7 +278,7 @@ class Utility {
 	 * This method converts the Time Zone markup returned by WordPress into an associative array
 	 * of time zones grouped by their labels. The array is used to populate select input fields.
 	 *
-	 * @since 1.0.0
+	 * @since 0.27.0
 	 *
 	 * @return array An array of time zones with labels as keys and time zone choices as values.
 	 */
@@ -221,7 +352,7 @@ class Utility {
 	 *
 	 * This method returns an array containing all available timezones along with standard UTC offsets.
 	 *
-	 * @since 1.0.0
+	 * @since 0.29.0
 	 *
 	 * @return array An array of timezone identifiers and UTC offsets.
 	 */
@@ -298,9 +429,10 @@ class Utility {
 	 * This method takes a UTC offset in the form of "+HH:mm" or "-HH:mm" and converts it to a format
 	 * that can be used with the DateTimeZone constructor.
 	 *
-	 * @since 1.0.0
+	 * @since 0.29.0
 	 *
 	 * @param string $timezone The UTC offset to convert, e.g., "+05:30" or "-08:00".
+	 *
 	 * @return string The converted timezone format, e.g., "+0530" or "-0800".
 	 */
 	public static function maybe_convert_utc_offset( string $timezone ): string {
@@ -328,7 +460,7 @@ class Utility {
 	 * 'Etc/GMT' timezone strings are considered outdated and are stripped in favor of a UTC
 	 * representation.
 	 *
-	 * @since 1.0.0
+	 * @since 0.29.0
 	 *
 	 * @return string The timezone string representing the system's default timezone.
 	 *                Falls back to a UTC offset representation if a named timezone string is not set.
@@ -357,9 +489,10 @@ class Utility {
 	 * strings like `UTC+0` or `UTC+5` but accepts `UTC` and `+HH:MM` /
 	 * `-HH:MM` offsets, so normalize here.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param float $offset Decimal-hour offset from UTC.
+	 *
 	 * @return string PHP-valid timezone identifier.
 	 */
 	public static function offset_to_timezone_string( float $offset ): string {
@@ -385,9 +518,10 @@ class Utility {
 	 * Unknown values pass through unchanged so downstream error handling
 	 * can surface anything genuinely unexpected.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param string $timezone Raw timezone string.
+	 *
 	 * @return string
 	 */
 	public static function normalize_timezone_string( string $timezone ): string {
@@ -432,9 +566,10 @@ class Utility {
 	 * This method generates and returns the URL for logging in or accessing event-specific content.
 	 * It takes the optional `$post_id` parameter to customize the URL based on the event's Post ID.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @param int $post_id Optional. The Post ID of the event. Defaults to 0.
+	 *
 	 * @return string The login URL for the event.
 	 */
 	public static function get_login_url( int $post_id = 0 ): string {
@@ -449,9 +584,10 @@ class Utility {
 	 * This method generates and returns the URL for user registration or accessing event-specific registration.
 	 * It takes the optional `$post_id` parameter to customize the URL based on the event's Post ID.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @param int $post_id Optional. The Post ID of the event. Defaults to 0.
+	 *
 	 * @return string The registration URL for the event, or an empty string if user registration is disabled.
 	 */
 	public static function get_registration_url( int $post_id = 0 ): string {
@@ -477,7 +613,7 @@ class Utility {
 	 * This is particularly important after the introduction of dynamic nonce generation,
 	 * which changed how user authentication flows through the application.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @return int|false The user ID if authentication was successful, false otherwise.
 	 */
@@ -499,7 +635,7 @@ class Utility {
 	 * This method properly handles space-separated CSS class strings and checks for
 	 * exact class matches, preventing false positives from substring matches.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @param string|null $class_string The CSS class string to search in.
 	 * @param string      $target_class The specific class to search for.
@@ -522,7 +658,7 @@ class Utility {
 	 * Wrapper around filter_input() that can be easily mocked for testing.
 	 * In production, uses real filter_input(). In tests, can use filters to mock data.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @param int           $type      Input type (INPUT_GET, INPUT_POST, INPUT_COOKIE, INPUT_SERVER, INPUT_ENV).
 	 * @param string        $var_name  Variable name to retrieve.
@@ -542,7 +678,7 @@ class Utility {
 			 * their own values. Only available during unit tests for security.
 			 * Return a non-null value to short-circuit.
 			 *
-			 * @since 1.0.0
+			 * @since 0.27.0
 			 *
 			 * @param string|null $pre_value Pre-value to return instead of using filter_input.
 			 * @param int         $type      Input type (INPUT_GET, INPUT_POST, etc.).
@@ -585,7 +721,7 @@ class Utility {
 	/**
 	 * Wrapper for wp_get_referer() with testable fallback.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @return string|false The referer URL on success, false on failure.
 	 */
@@ -599,7 +735,7 @@ class Utility {
 			 * their own referer values. Only available during unit tests for security.
 			 * Return a non-null value to short-circuit.
 			 *
-			 * @since 1.0.0
+			 * @since 0.27.0
 			 *
 			 * @param string|false|null $pre_value Pre-value to return instead of using wp_get_referer().
 			 */
@@ -618,7 +754,7 @@ class Utility {
 	 * This method provides a centralized exit point that returns early during unit tests
 	 * instead of calling exit(). The actual exit statement is excluded from code coverage.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @return void
 	 */
@@ -640,9 +776,10 @@ class Utility {
 	 * every `blockName` it finds into a flat list. The input is the parsed-block array
 	 * shape that WordPress hands to `render_block` filters and `WP_Block`.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param array $blocks A parsed block, typically including `blockName` and `innerBlocks`.
+	 *
 	 * @return array An array of block names found within the provided block structure.
 	 */
 	public static function get_block_names( array $blocks ): array {

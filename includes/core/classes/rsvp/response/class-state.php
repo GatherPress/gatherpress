@@ -3,7 +3,7 @@
  * RSVP response item (saved state).
  *
  * @package GatherPress\Core\Rsvp
- * @since 1.0.0
+ * @since 0.35.0
  */
 
 namespace GatherPress\Core\Rsvp\Response;
@@ -18,7 +18,7 @@ use WP_Comment;
  * RSVP Response item (saved state).
  *
  * @package GatherPress\Core\Rsvp
- * @since 1.0.0
+ * @since 0.35.0
  */
 final class State {
 	/**

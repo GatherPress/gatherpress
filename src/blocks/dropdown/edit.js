@@ -44,7 +44,7 @@ import { useIsBlockOrDescendantSelected } from './helpers';
  * for the GatherPress Dropdown block. It allows users to configure the block's
  * attributes and settings directly within the editor.
  *
- * @since 1.0.0
+ * @since 0.33.0
  *
  * @param {Object}   props               The props object passed to the component.
  * @param {Object}   props.attributes    The attributes for the block.
@@ -365,6 +365,7 @@ const Edit = ( { attributes, setAttributes, clientId } ) => {
 						/>
 						{ actAsSelect && (
 							<SelectControl
+								__next40pxDefaultSize
 								label={ __(
 									'Default Selected Item',
 									'gatherpress',

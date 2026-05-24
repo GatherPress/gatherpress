@@ -19,10 +19,11 @@ import { getMetaKey } from '../helpers';
  * Handles fetching venue information and provides update functions
  * for modifying individual venue meta fields.
  *
- * @since 1.0.0
+ * @since 0.34.0
  *
  * @param {Object} context   - Block context containing postId.
  * @param {string} fieldType - The type of field (address, phone, url, text).
+ *
  * @return {Object} Venue data and update functions.
  */
 export function useVenueData( context, fieldType ) {

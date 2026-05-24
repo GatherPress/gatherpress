@@ -26,7 +26,7 @@ add_filter(
 
 ## Files
 
-- [includes/core/classes/venue/map/class-map.php:1338](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/venue/map/class-map.php#L1338)
+- [includes/core/classes/venue/map/class-map.php:1353](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/venue/map/class-map.php#L1353)
 ```php
 apply_filters( 'gatherpress_static_map_generate_2x', true )
 ```

@@ -5,7 +5,7 @@
  * Handles RSVP logic for non-WordPress users via email address.
  *
  * @package GatherPress\Core\Rsvp
- * @since 1.0.0
+ * @since 0.35.0
  */
 
 namespace GatherPress\Core\Rsvp\Response\Provider;
@@ -36,7 +36,7 @@ final class Email extends Provider {
 	/**
 	 * Get the unique slug for this RSVP type.
 	 *
-	 * @since 1.0.0
+	 * @since 0.35.0
 	 *
 	 * @return Identity_Type
 	 */
@@ -47,7 +47,7 @@ final class Email extends Provider {
 	/**
 	 * Get the human-readable label for this RSVP type.
 	 *
-	 * @since 1.0.0
+	 * @since 0.35.0
 	 *
 	 * @return string
 	 */
@@ -58,7 +58,7 @@ final class Email extends Provider {
 	/**
 	 * Get the icon for this RSVP type.
 	 *
-	 * @since 1.0.0
+	 * @since 0.35.0
 	 *
 	 * @return string
 	 */
@@ -71,7 +71,7 @@ final class Email extends Provider {
 	 *
 	 * Returns the email address itself, sanitized.
 	 *
-	 * @since 1.0.0
+	 * @since 0.35.0
 	 *
 	 * @param Identity $identity The identity.
 	 * @return string The sanitized email address.

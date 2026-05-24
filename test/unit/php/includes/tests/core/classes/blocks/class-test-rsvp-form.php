@@ -3,7 +3,7 @@
  * Class handles unit tests for GatherPress\Core\Blocks\Rsvp_Form.
  *
  * @package GatherPress\Core
- * @since 1.0.0
+ * @since 0.33.0
  */
 
 namespace GatherPress\Tests\Core\Blocks;
@@ -48,7 +48,7 @@ class Test_Rsvp_Form extends Base {
 	 * Verifies that the appropriate filters are registered during setup,
 	 * ensuring the hooks are properly configured for the RSVP Form block.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::__construct
 	 * @covers ::setup_hooks
 	 *
@@ -105,7 +105,7 @@ class Test_Rsvp_Form extends Base {
 	 *
 	 * Verifies that the method generates unique form IDs with the correct prefix.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::generate_form_id
 	 *
 	 * @return void
@@ -129,7 +129,7 @@ class Test_Rsvp_Form extends Base {
 	 * Verifies that the block content is correctly transformed from a div
 	 * to a form with proper attributes and hidden inputs including form ID.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::transform_block_content
 	 * @covers ::generate_form_id
 	 *
@@ -172,7 +172,7 @@ class Test_Rsvp_Form extends Base {
 	 * Verifies that when transforming the div to a form, existing attributes
 	 * like classes and IDs are preserved.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::transform_block_content
 	 *
 	 * @return void
@@ -211,7 +211,7 @@ class Test_Rsvp_Form extends Base {
 	 * Verifies that the WordPress Interactivity API attributes are properly
 	 * added to enable Ajax form handling.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::transform_block_content
 	 *
 	 * @return void
@@ -247,7 +247,7 @@ class Test_Rsvp_Form extends Base {
 	 * Verifies that elements with gatherpress--rsvp-form-message class
 	 * are hidden by adding display:none style when no success parameter is present.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::transform_block_content
 	 * @covers ::handle_form_visibility
 	 *
@@ -287,7 +287,7 @@ class Test_Rsvp_Form extends Base {
 	 * Verifies that the form schema ID is included as a hidden input
 	 * for schema validation during form submission.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::transform_block_content
 	 * @covers ::get_form_schema_id
 	 *
@@ -321,7 +321,7 @@ class Test_Rsvp_Form extends Base {
 	 * Verifies that form schemas are correctly extracted and saved as post meta
 	 * when a post is saved.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::save_form_schema
 	 * @covers ::extract_form_schemas_from_blocks
 	 * @covers ::extract_form_fields_from_inner_blocks
@@ -369,7 +369,7 @@ class Test_Rsvp_Form extends Base {
 	 * Verifies that multiple RSVP forms on the same post generate
 	 * separate schemas with unique form IDs.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::save_form_schema
 	 * @covers ::extract_form_schemas_from_blocks
 	 *
@@ -424,7 +424,7 @@ class Test_Rsvp_Form extends Base {
 	 * Verifies that form schema meta is deleted when a post no longer
 	 * contains any RSVP forms.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::save_form_schema
 	 *
 	 * @return void
@@ -457,7 +457,7 @@ class Test_Rsvp_Form extends Base {
 	 * Verifies that form schema processing is skipped when user
 	 * lacks permission to edit the post.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::save_form_schema
 	 *
 	 * @return void
@@ -493,7 +493,7 @@ class Test_Rsvp_Form extends Base {
 	 * Verifies that text field sanitization works correctly with
 	 * sanitization and required field checking.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::sanitize_custom_field_value
 	 *
 	 * @return void
@@ -528,7 +528,7 @@ class Test_Rsvp_Form extends Base {
 	 * Verifies that email field sanitization correctly validates
 	 * email addresses and handles required fields.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::sanitize_custom_field_value
 	 *
 	 * @return void
@@ -563,7 +563,7 @@ class Test_Rsvp_Form extends Base {
 	 * Verifies that number field sanitization correctly validates
 	 * numeric values and handles required fields.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::sanitize_custom_field_value
 	 *
 	 * @return void
@@ -602,7 +602,7 @@ class Test_Rsvp_Form extends Base {
 	 * Verifies that select field sanitization correctly validates
 	 * against allowed options.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::sanitize_custom_field_value
 	 *
 	 * @return void
@@ -639,7 +639,7 @@ class Test_Rsvp_Form extends Base {
 	 * Verifies that checkbox field sanitization correctly converts
 	 * values to 1 or 0.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::sanitize_custom_field_value
 	 *
 	 * @return void
@@ -673,7 +673,7 @@ class Test_Rsvp_Form extends Base {
 	 * Verifies that textarea field sanitization correctly handles
 	 * max length constraints.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::sanitize_custom_field_value
 	 *
 	 * @return void
@@ -712,7 +712,7 @@ class Test_Rsvp_Form extends Base {
 	 * Verifies that URL field sanitization correctly validates
 	 * URL format and handles required fields.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::sanitize_custom_field_value
 	 *
 	 * @return void
@@ -751,7 +751,7 @@ class Test_Rsvp_Form extends Base {
 	 * Verifies that the method correctly shows/hides elements based on
 	 * the success state parameter and gatherpressRsvpFormVisibility attributes.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::handle_form_visibility
 	 *
 	 * @return void
@@ -802,7 +802,7 @@ class Test_Rsvp_Form extends Base {
 	 * Verifies that forms without gatherpressRsvpFormVisibility attributes
 	 * remain unchanged.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::handle_form_visibility
 	 *
 	 * @return void
@@ -826,7 +826,7 @@ class Test_Rsvp_Form extends Base {
 	 *
 	 * Verifies that blocks without gatherpressRsvpFormVisibility attribute are unchanged.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::apply_visibility_attribute
 	 *
 	 * @return void
@@ -847,7 +847,7 @@ class Test_Rsvp_Form extends Base {
 	 *
 	 * Verifies that blocks with gatherpressRsvpFormVisibility set to 'default' are unchanged.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::apply_visibility_attribute
 	 *
 	 * @return void
@@ -870,7 +870,7 @@ class Test_Rsvp_Form extends Base {
 	 *
 	 * Verifies that blocks with gatherpressRsvpFormVisibility attribute respond correctly to success state.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::apply_visibility_attribute
 	 *
 	 * @return void
@@ -930,7 +930,7 @@ class Test_Rsvp_Form extends Base {
 	 *
 	 * Verifies that blocks with gatherpressRsvpFormVisibility attribute respond correctly to default state.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::apply_visibility_attribute
 	 *
 	 * @return void
@@ -1323,7 +1323,7 @@ class Test_Rsvp_Form extends Base {
 	 * Verifies that the method correctly sets max attribute on guest count inputs
 	 * based on the event's max guest limit setting.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::process_form_field_attributes
 	 *
 	 * @return void
@@ -1365,7 +1365,7 @@ class Test_Rsvp_Form extends Base {
 	 * Verifies that the method returns unmodified content when max guest limit
 	 * meta is not set (returns empty).
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::process_form_field_attributes
 	 *
 	 * @return void
@@ -1406,7 +1406,7 @@ class Test_Rsvp_Form extends Base {
 	 * Verifies that the method sets max attribute on all matching guest count inputs
 	 * in the block content.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::process_form_field_attributes
 	 *
 	 * @return void
@@ -1448,7 +1448,7 @@ class Test_Rsvp_Form extends Base {
 	 *
 	 * Verifies that the method sets max="0" when the event has zero guest limit.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::process_form_field_attributes
 	 *
 	 * @return void
@@ -1487,7 +1487,7 @@ class Test_Rsvp_Form extends Base {
 	 *
 	 * Verifies that the method doesn't modify content with non-guest input fields.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::process_form_field_attributes
 	 *
 	 * @return void
@@ -1529,7 +1529,7 @@ class Test_Rsvp_Form extends Base {
 	 *
 	 * Verifies that the method returns unmodified content when there are no input fields.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::process_form_field_attributes
 	 *
 	 * @return void

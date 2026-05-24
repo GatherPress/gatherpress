@@ -3,7 +3,7 @@
  * Base test class for GatherPress.
  *
  * @package GatherPress
- * @since   1.0.0
+ * @since   0.33.0
  */
 
 namespace GatherPress\Tests;
@@ -24,7 +24,7 @@ abstract class Base extends PMC_Base {
 	 * that the number of action and filter hooks found in the setup_hooks method
 	 * matches what is expected based on the hooks array.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @param array      $hooks                Array of hooks to assert with structure:
 	 *                                         [
@@ -100,7 +100,7 @@ abstract class Base extends PMC_Base {
 	 *
 	 * Analyzes the method's code to count add_filter and add_action calls.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @param string $class_name  The name of the class containing the method.
 	 * @param string $method_name The name of the method to analyze.
@@ -184,7 +184,7 @@ abstract class Base extends PMC_Base {
 	/**
 	 * Mock a function's return value for testing.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @param string   $function_name The name of the function to mock.
 	 * @param callable $callback      The callback to use as the mock.
@@ -199,7 +199,7 @@ abstract class Base extends PMC_Base {
 	/**
 	 * Remove function mock.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @param string $function_name The name of the function to unmock.
 	 *

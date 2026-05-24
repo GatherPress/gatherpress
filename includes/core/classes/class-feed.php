@@ -7,7 +7,7 @@
  * and customizing excerpts to show event details.
  *
  * @package GatherPress\Core
- * @since 1.0.0
+ * @since 0.33.0
  */
 
 namespace GatherPress\Core;
@@ -15,8 +15,10 @@ namespace GatherPress\Core;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
-use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Settings;
+use GatherPress\Core\Traits\Singleton;
+use GatherPress\Core\Utility;
+use GatherPress\Core\Venue;
 use WP_Query;
 
 /**
@@ -24,7 +26,7 @@ use WP_Query;
  *
  * Manages feeds for GatherPress.
  *
- * @since 1.0.0
+ * @since 0.33.0
  */
 class Feed {
 
@@ -38,7 +40,7 @@ class Feed {
 	 *
 	 * This method initializes the object and sets up necessary hooks.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 */
 	protected function __construct() {
 		$this->setup_hooks();
@@ -49,7 +51,7 @@ class Feed {
 	 *
 	 * This method adds hooks for different purposes as needed.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @return void
 	 */
@@ -76,9 +78,10 @@ class Feed {
 	 * to ensure feeds show upcoming events with proper sorting. Supports ?type=past parameter
 	 * to show past events instead of upcoming events.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @param WP_Query $query The WP_Query instance.
+	 *
 	 * @return void
 	 */
 	public function handle_events_feed_query( WP_Query $query ): void {
@@ -98,7 +101,7 @@ class Feed {
 			// Check if this is the events feed URL.
 			if ( str_contains( $request_uri, '/' . $rewrite_slug . '/' . $GLOBALS['wp_rewrite']->feed_base ) ) {
 				// Set the post type and let Event\Query handle the rest.
-				$query->set( 'post_type', get_post_types_by_support( 'gatherpress-event-date' ) );
+				$query->set( 'post_type', Event::POST_TYPE );
 
 				// Check for type parameter to determine if we want past or upcoming events.
 				$event_type = 'upcoming';
@@ -121,9 +124,10 @@ class Feed {
 	/**
 	 * Get formatted event datetime information for feeds.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @param Event $event The event object.
+	 *
 	 * @return array Array of event information strings.
 	 */
 	private function get_event_datetime_info( Event $event ): array {
@@ -144,9 +148,10 @@ class Feed {
 	/**
 	 * Get default event excerpt customization.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @param string $excerpt The current excerpt.
+	 *
 	 * @return string The customized excerpt.
 	 */
 	public function get_default_event_excerpt( string $excerpt ): string {
@@ -163,8 +168,9 @@ class Feed {
 		// Add venue information.
 		if ( $venue && ! empty( $venue['name'] ) ) {
 			$event_info[] = sprintf(
-				/* translators: %s: Venue name */
-				__( 'Venue: %s', 'gatherpress' ),
+				/* translators: 1: Singular post type label (e.g. "Venue"), 2: Venue name. */
+				__( '%1$s: %2$s', 'gatherpress' ),
+				Utility::post_type_label( 'singular_name', Venue::POST_TYPE ),
 				$venue['name']
 			);
 		}
@@ -193,9 +199,10 @@ class Feed {
 	/**
 	 * Get default event content customization.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @param string $content The current content.
+	 *
 	 * @return string The customized content.
 	 */
 	public function get_default_event_content( string $content ): string {
@@ -212,8 +219,9 @@ class Feed {
 		// Add venue information.
 		if ( $venue && ! empty( $venue['name'] ) ) {
 			$event_info[] = sprintf(
-				/* translators: %s: Venue name */
-				__( 'Venue: %s', 'gatherpress' ),
+				/* translators: 1: Singular post type label (e.g. "Venue"), 2: Venue name. */
+				__( '%1$s: %2$s', 'gatherpress' ),
+				Utility::post_type_label( 'singular_name', Venue::POST_TYPE ),
 				$venue['name']
 			);
 		}
@@ -241,9 +249,10 @@ class Feed {
 	/**
 	 * Apply event excerpt customization with flexibility for themes/editors.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @param string $excerpt The current excerpt.
+	 *
 	 * @return string The customized excerpt.
 	 */
 	public function apply_event_excerpt( string $excerpt ): string {
@@ -273,7 +282,7 @@ class Feed {
 		 * } );
 		 * ```
 		 *
-		 * @since 1.0.0
+		 * @since 0.33.0
 		 *
 		 * @param string $excerpt The event post excerpt.
 		 */
@@ -283,9 +292,10 @@ class Feed {
 	/**
 	 * Apply event content customization with flexibility for themes/editors.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @param string $content The current content.
+	 *
 	 * @return string The customized content.
 	 */
 	public function apply_event_content( string $content ): string {
@@ -315,7 +325,7 @@ class Feed {
 		 * } );
 		 * ```
 		 *
-		 * @since 1.0.0
+		 * @since 0.33.0
 		 *
 		 * @param string $content The event post content.
 		 */
@@ -325,9 +335,10 @@ class Feed {
 	/**
 	 * Modify feed link for past events page.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @param string $feed_link The feed link URL.
+	 *
 	 * @return string The modified feed link URL.
 	 */
 	public function modify_feed_link_for_past_events( $feed_link ): string {

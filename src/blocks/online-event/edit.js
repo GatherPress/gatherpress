@@ -27,7 +27,7 @@ import { getVenuePostType, getVenueTaxonomy, useVenueTaxonomyIds } from '../../h
  * If a postId attribute is set (override), it provides that as context to children.
  * Dims when the event doesn't have the online-event term.
  *
- * @since 1.0.0
+ * @since 0.27.0
  *
  * @param {Object} props            Block props.
  * @param {Object} props.attributes Block attributes.

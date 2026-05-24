@@ -23,7 +23,7 @@ import { cleanUrlForDisplay } from '../helpers';
  * Renders an editable URL field with a link settings popover
  * for configuring target and URL display options.
  *
- * @since 1.0.0
+ * @since 0.34.0
  *
  * @param {Object}   props               - Component props.
  * @param {string}   props.value         - The current field value.
@@ -34,6 +34,7 @@ import { cleanUrlForDisplay } from '../helpers';
  * @param {boolean}  props.cleanUrl      - Whether to display cleaned URL.
  * @param {Function} props.setAttributes - Function to update block attributes.
  * @param {boolean}  props.disabled      - Whether the field is disabled.
+ *
  * @return {JSX.Element} The rendered URL field.
  */
 const UrlField = ( {

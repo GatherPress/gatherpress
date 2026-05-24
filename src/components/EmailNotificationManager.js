@@ -17,7 +17,7 @@ import { hasEventPast, isRsvpPostType } from '../helpers/event';
  * that appears after saving a published event. Uses proper WordPress
  * data hooks instead of custom subscription patterns.
  *
- * @since 1.0.0
+ * @since 0.33.0
  *
  * @return {null} This component doesn't render anything visible.
  */

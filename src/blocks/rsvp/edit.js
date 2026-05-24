@@ -44,7 +44,7 @@ import { getFromSettings } from '../../helpers/editor-settings';
  * register their own RSVP layouts. Each entry is shaped
  * `{ name, title, description, template, statusTemplates }`.
  *
- * @since 1.0.0
+ * @since 0.33.0
  *
  * @param {Array} patterns Default array containing the bundled "RSVP Button
  *                         with Modal" pattern.
@@ -91,7 +91,7 @@ const PATTERNS = applyFilters( 'gatherpress.rsvpPatterns', [
  * clicking through the picker. The picker itself is filterable separately
  * via `gatherpress.rsvpPatterns`.
  *
- * @since 1.0.0
+ * @since 0.33.0
  *
  * @param {Object<string, Array>} bundle Default per-status template map
  *                                       matching the bundled "RSVP Button
@@ -107,6 +107,7 @@ const DEFAULT_STATUS_TEMPLATES = applyFilters(
  * Helper function to convert a template to blocks.
  *
  * @param {Array} template The block template structure.
+ *
  * @return {Array} Array of blocks created from the template.
  */
 function templateToBlocks( template ) {
@@ -128,7 +129,7 @@ function templateToBlocks( template ) {
  * @param {string}   props.clientId      The unique ID of the block instance.
  * @param {Object}   props.context       Block context data containing postId and event info.
  *
- * @since 1.0.0
+ * @since 0.33.0
  *
  * @return {JSX.Element} The rendered edit interface for the RSVP block.
  */
@@ -196,9 +197,16 @@ const Edit = ( { attributes, setAttributes, clientId, context } ) => {
 	// the override target's entity record loads — `hasValidEventId` reads
 	// `getEntityRecord` / `getEntityRecords`, which only emit subscription
 	// updates when called via the `useSelect` callback's `select`.
+	//
+	// Inside a Query Loop the host's `context.postType` is the iterated
+	// post type (e.g. `production`). If that post type doesn't declare
+	// `gatherpress-rsvp` support, the block is in a context where there's
+	// no RSVP to render — gate on `isEventContext` so the loop-iterated
+	// case dims with the rest, instead of staying bright on every
+	// production card just because the post exists (#1608 follow-on).
 	const isValidEvent = useSelect(
 		( select ) =>
-			( hasExplicitOverride || isDescendentOfQueryLoop || isEventContext ) &&
+			( hasExplicitOverride || ( isDescendentOfQueryLoop && isEventContext ) || isEventContext ) &&
 			hasValidEventId( select, postId, context?.postType ),
 		[
 			postId,
@@ -237,6 +245,7 @@ const Edit = ( { attributes, setAttributes, clientId, context } ) => {
 	 * Apply conditional visibility class to form fields based on event settings.
 	 *
 	 * @param {Array} blocks Array of blocks to process.
+	 *
 	 * @return {Array} Processed blocks with conditional classes applied.
 	 */
 	const applyFormFieldVisibility = useCallback( ( blocks ) => {
@@ -434,6 +443,7 @@ const Edit = ( { attributes, setAttributes, clientId, context } ) => {
 								) }
 							</p>
 							<SelectControl
+								__next40pxDefaultSize
 								label={ __( 'Edit Block Status', 'gatherpress' ) }
 								value={ selectedStatus }
 								options={ [

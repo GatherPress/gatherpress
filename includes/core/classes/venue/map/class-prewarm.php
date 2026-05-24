@@ -20,7 +20,7 @@
  * replace this layer once it's pulled into the plugin.
  *
  * @package GatherPress\Core\Venue\Map
- * @since 1.0.0
+ * @since 0.34.0
  */
 
 namespace GatherPress\Core\Venue\Map;
@@ -38,7 +38,7 @@ use WP_Post;
  * Scans templates + events for venue-map combos, enqueues cron jobs to
  * warm each (venue, combo) via {@see Map::warm()}.
  *
- * @since 1.0.0
+ * @since 0.34.0
  */
 class Prewarm {
 
@@ -50,7 +50,7 @@ class Prewarm {
 	/**
 	 * Cron action fired for each (venue, combo) warm job.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @var string
 	 */
 	const CRON_ACTION = 'gatherpress_static_map_prewarm_run';
@@ -62,7 +62,7 @@ class Prewarm {
 	 * combo) cron events synchronously inside the admin save that
 	 * triggered the platform switch.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @var string
 	 */
 	const FULL_SWEEP_ACTION = 'gatherpress_static_map_prewarm_sweep';
@@ -70,7 +70,7 @@ class Prewarm {
 	/**
 	 * Block name this class watches for.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @var string
 	 */
 	const BLOCK_NAME = 'gatherpress/venue-map';
@@ -80,7 +80,7 @@ class Prewarm {
 	 * batch fits comfortably in memory even when post_content is large,
 	 * big enough that pagination overhead stays cheap.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @var int
 	 */
 	const SCAN_BATCH_SIZE = 500;
@@ -92,7 +92,7 @@ class Prewarm {
 	 * (SCAN_BATCH_SIZE). Filterable via
 	 * `gatherpress_static_map_prewarm_content_batch_size`.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @var int
 	 */
 	const CONTENT_SCAN_BATCH_SIZE = 100;
@@ -100,7 +100,7 @@ class Prewarm {
 	/**
 	 * Class constructor — wires hooks.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 */
 	protected function __construct() {
 		$this->setup_hooks();
@@ -113,7 +113,7 @@ class Prewarm {
 	 * users on unusual installs) can shrink the batch without touching the
 	 * class. Clamped to at least 1 to avoid an infinite-empty-batch loop.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return int
 	 */
@@ -121,7 +121,7 @@ class Prewarm {
 		/**
 		 * Filter the venue-map prewarm scan batch size.
 		 *
-		 * @since 1.0.0
+		 * @since 0.34.0
 		 *
 		 * @param int $size Number of posts loaded per batch during prewarm scans.
 		 */
@@ -140,7 +140,7 @@ class Prewarm {
 	 * batch loop, and the ceiling caps a misbehaving filter that would
 	 * otherwise try to load every event into memory in a single query.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return int
 	 */
@@ -148,7 +148,7 @@ class Prewarm {
 		/**
 		 * Filter the venue-map prewarm content-scan batch size.
 		 *
-		 * @since 1.0.0
+		 * @since 0.34.0
 		 *
 		 * @param int $size Number of posts loaded per batch during content scans.
 		 */
@@ -163,7 +163,7 @@ class Prewarm {
 	/**
 	 * Register save hooks, theme-switch hook, and the cron action handler.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return void
 	 */
@@ -188,7 +188,7 @@ class Prewarm {
 	 * Idempotent: if a sweep is already scheduled, no second event is
 	 * queued, so a flurry of platform-saves coalesces into one tick.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return void
 	 */
@@ -208,10 +208,11 @@ class Prewarm {
 	 * carrying post type also contribute combos via their own embedded
 	 * venue-map blocks.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param int     $post_id Post ID that just saved.
 	 * @param WP_Post $post    Post object.
+	 *
 	 * @return void
 	 */
 	public function on_post_saved( int $post_id, WP_Post $post ): void {
@@ -255,7 +256,7 @@ class Prewarm {
 	 * Full rescan after a theme switch — new theme ships new templates, so
 	 * combos for every venue may have changed.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return void
 	 */
@@ -266,13 +267,14 @@ class Prewarm {
 	/**
 	 * Cron handler. Delegates to {@see Map::warm()}.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param int    $post_id      Venue post ID.
 	 * @param int    $zoom         Zoom level.
 	 * @param int    $width        Pixel width (0 = auto).
 	 * @param int    $height       Pixel height (0 = auto).
 	 * @param string $aspect_ratio Aspect-ratio string.
+	 *
 	 * @return void
 	 */
 	public function process_warm_job( int $post_id, int $zoom, int $width, int $height, string $aspect_ratio ): void {
@@ -282,9 +284,10 @@ class Prewarm {
 	/**
 	 * Enqueue every known template combo for a single venue.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param int $venue_post_id Venue post ID.
+	 *
 	 * @return void
 	 */
 	protected function enqueue_for_venue( int $venue_post_id ): void {
@@ -296,9 +299,10 @@ class Prewarm {
 	/**
 	 * Enqueue a list of combos against every supported venue.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param array<int, array{zoom:int,width:int,height:int,aspect_ratio:string}> $combos Combo list.
+	 *
 	 * @return void
 	 */
 	protected function enqueue_for_all_venues( array $combos ): void {
@@ -360,10 +364,11 @@ class Prewarm {
 	 * without touching core. Returning a non-null value from the filter
 	 * suppresses the default WP-Cron path.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param int                                                      $venue_post_id Venue post ID.
 	 * @param array{zoom:int,width:int,height:int,aspect_ratio:string} $combo         Combo to warm.
+	 *
 	 * @return void
 	 */
 	protected function enqueue_warm_job( int $venue_post_id, array $combo ): void {
@@ -394,7 +399,7 @@ class Prewarm {
 		 * `as_enqueue_async_action()`) so other filters / debug
 		 * tooling downstream can correlate the job.
 		 *
-		 * @since 1.0.0
+		 * @since 0.34.0
 		 *
 		 * @param mixed  $short_circuit Non-null to suppress the default enqueue.
 		 * @param string $hook          Action hook name fired when the job runs.
@@ -425,7 +430,7 @@ class Prewarm {
 	 * template parts, and the content of every post whose type supports
 	 * `gatherpress-venue`.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return array<int, array{zoom:int,width:int,height:int,aspect_ratio:string}>
 	 */
@@ -445,7 +450,7 @@ class Prewarm {
 	 * in their content. Returns an empty array on classic themes where
 	 * `get_block_templates()` isn't available.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return array<int, array{zoom:int,width:int,height:int,aspect_ratio:string}>
 	 */
@@ -481,9 +486,10 @@ class Prewarm {
 	 * events doesn't load every post into memory on the hook that
 	 * triggered us.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param string[] $post_types Post types declaring `gatherpress-venue` support.
+	 *
 	 * @return array<int, array{zoom:int,width:int,height:int,aspect_ratio:string}>
 	 */
 	protected function collect_combos_from_venue_posts( array $post_types ): array {
@@ -535,9 +541,10 @@ class Prewarm {
 	/**
 	 * Parse block markup and return every venue-map combo it contains.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param string $content Block markup (post_content / template content).
+	 *
 	 * @return array<int, array{zoom:int,width:int,height:int,aspect_ratio:string}>
 	 */
 	protected function collect_combos_from_content( string $content ): array {
@@ -553,9 +560,10 @@ class Prewarm {
 	/**
 	 * Recurse through a parsed block tree and collect venue-map combos.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param array<int, array<string, mixed>> $blocks Parsed blocks.
+	 *
 	 * @return array<int, array{zoom:int,width:int,height:int,aspect_ratio:string}>
 	 */
 	protected function walk_blocks_for_combos( array $blocks ): array {
@@ -581,9 +589,10 @@ class Prewarm {
 	 * Pull a combo tuple out of a block's attributes, filling in site
 	 * defaults for anything the block didn't explicitly set.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param array<string, mixed> $attrs Block attributes.
+	 *
 	 * @return array{zoom:int,width:int,height:int,aspect_ratio:string}
 	 */
 	protected function extract_block_combo( array $attrs ): array {
@@ -602,9 +611,10 @@ class Prewarm {
 	/**
 	 * Dedupe a combo list keyed by (zoom, width, height, aspect_ratio).
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param array<int, array{zoom:int,width:int,height:int,aspect_ratio:string}> $combos Combo list.
+	 *
 	 * @return array<int, array{zoom:int,width:int,height:int,aspect_ratio:string}>
 	 */
 	protected function dedupe_combos( array $combos ): array {
@@ -637,7 +647,7 @@ class Prewarm {
 	 * use `enqueue_for_all_venues()` instead, which streams through the
 	 * venue set in batches without ever holding the full list in memory.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return int[]
 	 */

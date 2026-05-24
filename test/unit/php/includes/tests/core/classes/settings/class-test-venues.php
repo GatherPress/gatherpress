@@ -3,7 +3,7 @@
  * Class handles unit tests for GatherPress\Core\Settings\Venues.
  *
  * @package GatherPress\Core
- * @since 1.0.0
+ * @since 0.27.0
  */
 
 namespace GatherPress\Tests\Core\Settings;
@@ -86,6 +86,16 @@ class Test_Venues extends Base {
 			'osm',
 			$section['maps']['options']['map_platform']['field']['options']['default'],
 			'Failed to assert map_platform defaults to osm.'
+		);
+		$this->assertArrayHasKey(
+			'google_maps_api_key',
+			$section['maps']['options'],
+			'Failed to assert google_maps_api_key option is present.'
+		);
+		$this->assertSame(
+			'text',
+			$section['maps']['options']['google_maps_api_key']['field']['type'],
+			'Failed to assert google_maps_api_key uses text field.'
 		);
 
 		// New block-default settings feed the venue-map block.json defaults

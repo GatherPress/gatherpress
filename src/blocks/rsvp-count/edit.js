@@ -20,6 +20,7 @@ import { getFromSettings } from '../../helpers/editor-settings';
  * Fetch RSVP responses from the API.
  *
  * @param {number} postId The post ID for which to fetch RSVP responses.
+ *
  * @return {Promise<Object>} The RSVP responses data.
  */
 async function fetchRsvpResponses( postId ) {
@@ -37,7 +38,7 @@ async function fetchRsvpResponses( postId ) {
  * @param {Object}   root0.attributes    - Block attributes.
  * @param {Function} root0.setAttributes - Function to update block attributes.
  * @param {Object}   root0.context       - Block context data.
- * @since 1.0.0
+ * @since 0.34.0
  *
  * @return {JSX.Element} The rendered edit interface.
  */
@@ -170,6 +171,7 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 					title={ __( 'RSVP Count Settings', 'gatherpress' ) }
 				>
 					<SelectControl
+						__next40pxDefaultSize
 						label={ __( 'RSVP Status', 'gatherpress' ) }
 						value={ status }
 						options={ statusOptions }

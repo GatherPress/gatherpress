@@ -17,26 +17,42 @@ jest.mock( '@wordpress/data', () => {
 		dateTimeStart: '',
 		dateTimeEnd: '',
 		timezone: '',
+		duration: null,
 	};
 
+	const mockSelect = jest.fn( ( storeName ) => {
+		if ( 'gatherpress/datetime' === storeName ) {
+			return {
+				getDateTimeStart: () => global.__gpDatetime.dateTimeStart,
+				getDateTimeEnd: () => global.__gpDatetime.dateTimeEnd,
+				getTimezone: () => global.__gpDatetime.timezone,
+				getDuration: () => global.__gpDatetime.duration,
+			};
+		}
+		return {};
+	} );
+
 	return {
-		select: jest.fn( ( storeName ) => {
-			if ( 'gatherpress/datetime' === storeName ) {
-				return {
-					getDateTimeStart: () =>
-						global.__gpDatetime.dateTimeStart,
-					getDateTimeEnd: () =>
-						global.__gpDatetime.dateTimeEnd,
-					getTimezone: () => global.__gpDatetime.timezone,
-				};
-			}
-			return {};
-		} ),
+		select: mockSelect,
+		// Run the user's mapSelect synchronously against our mocked
+		// `select` so hooks like `useMatchedDuration` resolve to their
+		// real values in tests without needing React infrastructure.
+		useSelect: jest.fn( ( mapSelect ) => mapSelect( mockSelect ) ),
 		dispatch: jest.fn(),
 		subscribe: jest.fn(),
 		createReduxStore: jest.fn(),
 		register: jest.fn(),
 		createSelector: jest.fn( ( fn ) => fn ),
+	};
+} );
+
+// Stub `useMemo` to just invoke the factory — we don't need memoization
+// semantics in unit tests, only the result.
+jest.mock( '@wordpress/element', () => {
+	const actual = jest.requireActual( '@wordpress/element' );
+	return {
+		...actual,
+		useMemo: jest.fn( ( factory ) => factory() ),
 	};
 } );
 
@@ -65,6 +81,7 @@ import {
 	dateTimePreview,
 	defaultDateTimeEnd,
 	defaultDateTimeStart,
+	findMatchedDuration,
 	getDateTimeEnd,
 	getDateTimeOffset,
 	getDateTimeStart,
@@ -77,6 +94,7 @@ import {
 	removeNonTimePHPFormatChars,
 	updateDateTimeEnd,
 	updateDateTimeStart,
+	useMatchedDuration,
 	validateDateTimeEnd,
 	validateDateTimeStart,
 } from '@src/helpers/datetime';
@@ -721,6 +739,47 @@ describe( 'Relative mode duration tests', () => {
 		// Should maintain 3-hour offset.
 		expect( setDateTimeEnd ).toHaveBeenCalledWith( '2023-11-26 21:00:00' );
 	} );
+
+	test( '#1607: year-down on start picker in relative mode does not recurse', () => {
+		// Regression test for the recursive validation cascade introduced when
+		// the global GatherPress object was removed in 7772acf9. Before the
+		// fix, moving the start backward in relative mode (e.g. pressing Down
+		// on the year input) led to an infinite recursion: the new end was
+		// computed as `(new start) + duration`, which is BEFORE the OLD store
+		// start; `validateDateTimeEnd` then read the stale store start, saw
+		// `new end < old start`, and recursively called `updateDateTimeStart`
+		// to fix the gap — and recursed forever because the store was never
+		// updated inside the synchronous chain. The editor crashed with a
+		// "Maximum call stack size exceeded" inside moment.tz.
+		//
+		// The fix dispatches `setDateTimeStart(date)` BEFORE the validation
+		// cascade runs, so when validateDateTimeEnd reads the store it sees
+		// the new start and the inequality is false. Asserts that each
+		// dispatcher is called exactly once with the expected value.
+		const setDateTimeStart = jest.fn( ( val ) => {
+			global.__gpDatetime.dateTimeStart = val;
+		} );
+		const setDateTimeEnd = jest.fn( ( val ) => {
+			global.__gpDatetime.dateTimeEnd = val;
+		} );
+
+		// Initial state: 2025-04-29 6pm to 8pm = preset 2-hour duration.
+		global.__gpDatetime.dateTimeStart = '2025-04-29 18:00:00';
+		global.__gpDatetime.dateTimeEnd = '2025-04-29 20:00:00';
+
+		// User presses Down on the year input — picker emits the new start
+		// one year earlier than the stored start.
+		const newStartDate = '2024-04-29 18:00:00';
+
+		expect( () =>
+			updateDateTimeStart( newStartDate, setDateTimeStart, setDateTimeEnd ),
+		).not.toThrow();
+
+		expect( setDateTimeStart ).toHaveBeenCalledTimes( 1 );
+		expect( setDateTimeStart ).toHaveBeenCalledWith( newStartDate );
+		expect( setDateTimeEnd ).toHaveBeenCalledTimes( 1 );
+		expect( setDateTimeEnd ).toHaveBeenCalledWith( '2024-04-29 20:00:00' );
+	} );
 } );
 
 /**
@@ -884,5 +943,92 @@ describe( 'dateTimePreview', () => {
 		expect( document.querySelectorAll ).toHaveBeenCalledWith(
 			'[data-gatherpress_component_name="datetime-preview"]',
 		);
+	} );
+} );
+
+/**
+ * Coverage for findMatchedDuration.
+ *
+ * Pure matching logic that backs `useMatchedDuration`. The hook is just a
+ * `useSelect` + `useMemo` wrapper around this function — keeping the logic
+ * here lets us cover the matching branches without React infrastructure.
+ */
+describe( 'findMatchedDuration', () => {
+	test( 'returns false when duration is explicitly false', () => {
+		expect(
+			findMatchedDuration(
+				'2024-06-15 10:00:00',
+				'2024-06-15 12:00:00',
+				'America/New_York',
+				false,
+			),
+		).toBe( false );
+	} );
+
+	test( 'returns matched preset value when end equals start + N hours', () => {
+		// 2 hours apart should match the 2-hour preset under any tz.
+		expect(
+			findMatchedDuration(
+				'2024-06-15 10:00:00',
+				'2024-06-15 12:00:00',
+				'America/New_York',
+				null,
+			),
+		).toBe( 2 );
+	} );
+
+	test( 'returns matched preset under a manual UTC offset timezone', () => {
+		expect(
+			findMatchedDuration(
+				'2024-06-15 10:00:00',
+				'2024-06-15 12:00:00',
+				'+00:00',
+				null,
+			),
+		).toBe( 2 );
+	} );
+
+	test( 'returns false when end does not match any preset', () => {
+		// 2h 17m apart — no preset matches.
+		expect(
+			findMatchedDuration(
+				'2024-06-15 10:00:00',
+				'2024-06-15 12:17:00',
+				'America/New_York',
+				null,
+			),
+		).toBe( false );
+	} );
+} );
+
+/**
+ * Coverage for useMatchedDuration.
+ *
+ * Thin `useSelect` + `useMemo` wrapper around `findMatchedDuration`. With
+ * `useSelect` mocked to call its mapSelect synchronously and `useMemo`
+ * stubbed to invoke its factory, calling the hook in plain Jest exercises
+ * the wiring end-to-end.
+ */
+describe( 'useMatchedDuration', () => {
+	test( 'reads inputs from the store and returns the matched preset', () => {
+		global.__gpDatetime = {
+			dateTimeStart: '2024-06-15 10:00:00',
+			dateTimeEnd: '2024-06-15 12:00:00',
+			timezone: 'America/New_York',
+			duration: null,
+		};
+
+		expect( useMatchedDuration() ).toBe( 2 );
+	} );
+
+	test( 'returns false when the user opts out via setDuration(false)', () => {
+		global.__gpDatetime = {
+			dateTimeStart: '2024-06-15 10:00:00',
+			dateTimeEnd: '2024-06-15 12:00:00',
+			timezone: 'America/New_York',
+			duration: false,
+		};
+
+		expect( useMatchedDuration() ).toBe( false );
 	} );
 } );

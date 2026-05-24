@@ -2,7 +2,7 @@
 /**
  * Class responsible for scheduling rsvp cleanup cron jobs.
  *
- * @since 1.0.0
+ * @since 0.34.0
  *
  * @package GatherPress\Core\Rsvp
  */
@@ -18,7 +18,7 @@ use GatherPress\Core\Traits\Singleton;
 /**
  * Class Cleanup.
  *
- * @since 1.0.0
+ * @since 0.34.0
  *
  * This class manages rsvp cleanup events.
  */
@@ -29,7 +29,7 @@ class Cleanup {
 	/**
 	 * Initializes hooks needed for the cleanup cron event.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return void
 	 */
@@ -40,7 +40,7 @@ class Cleanup {
 	/**
 	 * Sets up WordPress action hooks for managing cron scheduling and cleanup operations.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return void
 	 */
@@ -58,7 +58,7 @@ class Cleanup {
 	 * 2. Filters the retrieved RSVPs to include only those that are more than 24 hours old.
 	 * 3. Deletes the filtered RSVP comments along with their associated metadata.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return void
 	 */
@@ -107,7 +107,7 @@ class Cleanup {
 	/**
 	 * Determines if rsvp cleanup is enabled and schedules the next cleanup event.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return void
 	 */
@@ -131,7 +131,7 @@ class Cleanup {
 	 * multiplier interval. Supported frequencies include 'hourly', 'daily',
 	 * 'weekly', 'monthly', and 'yearly'.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param string $frequency The recurrence frequency (e.g., 'hourly', 'daily').
 	 * @param int    $interval The interval multiplier for the frequency.
@@ -170,7 +170,7 @@ class Cleanup {
 	 * or frequency. If a change is detected, it clears the existing scheduled cron job
 	 * and schedules a new one with the updated settings.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param array $old_value The previous RSVP cleanup settings including interval and frequency.
 	 * @param array $new_value The updated RSVP cleanup settings including interval and frequency.

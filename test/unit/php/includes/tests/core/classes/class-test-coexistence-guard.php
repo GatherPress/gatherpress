@@ -3,7 +3,7 @@
  * Class handles unit tests for GatherPress\Core\Coexistence_Guard.
  *
  * @package GatherPress\Core
- * @since 1.0.0
+ * @since 0.34.0
  */
 
 namespace GatherPress\Tests\Core;
@@ -45,6 +45,7 @@ class Test_Coexistence_Guard extends Base {
 	 * touching the real plugins directory.
 	 *
 	 * @param array<string, array<string, mixed>> $plugins Mapping of plugin basename to header data.
+	 *
 	 * @return void
 	 */
 	private function seed_plugins_cache( array $plugins ): void {

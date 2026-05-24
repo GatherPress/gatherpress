@@ -7,7 +7,7 @@
  * Mercator pixel projection, and the filterable tile URL template.
  *
  * @package GatherPress\Core\Venue\Map\Provider
- * @since 1.0.0
+ * @since 0.34.0
  */
 
 namespace GatherPress\Tests\Core\Venue\Map\Provider;
@@ -68,6 +68,7 @@ class Test_OSM extends Base {
 	 * @param mixed  $preempt Default false.
 	 * @param array  $args    HTTP args (unused).
 	 * @param string $url     Request URL (unused).
+	 *
 	 * @return array
 	 */
 	public function short_circuit_tile_requests( $preempt, $args, $url ): array {

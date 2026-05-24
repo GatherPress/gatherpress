@@ -12,7 +12,6 @@ import EmailNotificationManager from './components/EmailNotificationManager';
 import './stores';
 import './supports/post-id-override';
 import './supports/post-date-override';
-import './supports/post-date-convert';
 import './supports/block-guard';
 import './formats/tooltip';
 
@@ -22,7 +21,7 @@ import './formats/tooltip';
  * Ensures the editor sidebar is open, initializes the email notification manager,
  * and displays a notice for past events.
  *
- * @since 1.0.0
+ * @since 0.27.0
  */
 domReady( () => {
 	const selectEditPost = select( 'core/edit-post' );

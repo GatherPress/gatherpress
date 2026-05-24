@@ -3,7 +3,7 @@
  * Class handles unit tests for GatherPress\Core\Blocks\Add_To_Calendar.
  *
  * @package GatherPress\Core
- * @since 1.0.0
+ * @since 0.33.0
  */
 
 namespace GatherPress\Tests\Core\Blocks;
@@ -26,7 +26,7 @@ class Test_Add_To_Calendar extends Base {
 	 * Verifies that the appropriate filters are registered during setup,
 	 * ensuring the hooks are properly configured for the Add_To_Calendar block.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::__construct
 	 * @covers ::setup_hooks
 	 *
@@ -96,21 +96,29 @@ class Test_Add_To_Calendar extends Base {
 		$result        = $instance->replace_calendar_placeholders( $block_content, $block );
 
 		$this->assertStringContainsString(
-			'google.com',
+			'gatherpress_calendar=google-calendar',
 			$result,
-			"Generated calendar link content is missing expected Google Calendar URL component 'google.com'"
+			'Generated calendar link content is missing the google-calendar endpoint query var.'
 		);
-
 		$this->assertStringContainsString(
-			'unit-test-event.ics',
+			'gatherpress_calendar=ical',
 			$result,
-			"Generated calendar link content is missing expected iCal file name 'unit-test-event.ics'"
+			'Generated calendar link content is missing the iCal endpoint query var.'
 		);
-
 		$this->assertStringContainsString(
-			'calendar.yahoo.com',
+			'gatherpress_calendar=outlook',
 			$result,
-			"Generated calendar link content is missing expected Yahoo Calendar URL component 'calendar.yahoo.com'"
+			'Generated calendar link content is missing the Outlook endpoint query var.'
+		);
+		$this->assertStringContainsString(
+			'gatherpress_calendar=yahoo-calendar',
+			$result,
+			'Generated calendar link content is missing the yahoo-calendar endpoint query var.'
+		);
+		$this->assertStringContainsString(
+			'gatherpress_event=unit-test-event',
+			$result,
+			'Generated calendar link content is missing the event slug query var.'
 		);
 	}
 

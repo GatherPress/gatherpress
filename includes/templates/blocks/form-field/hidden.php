@@ -3,7 +3,7 @@
  * Hidden Form Field Template.
  *
  * @package GatherPress\Core
- * @since 1.0.0
+ * @since 0.33.0
  */
 
 // Exit if accessed directly.

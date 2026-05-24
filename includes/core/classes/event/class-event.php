@@ -6,7 +6,7 @@
  * It provides methods for working with event data, such as retrieving event details and managing RSVPs.
  *
  * @package GatherPress\Core\Event
- * @since 1.0.0
+ * @since 0.27.0
  */
 
 namespace GatherPress\Core\Event;
@@ -16,6 +16,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use DateTimeZone;
 use Exception;
+use GatherPress\Core\Calendar\Calendar;
 use GatherPress\Core\Rsvp\Rsvp;
 use GatherPress\Core\Rsvp\Setup as Rsvp_Setup;
 use GatherPress\Core\Settings;
@@ -30,14 +31,14 @@ use WP_Post;
  *
  * Represents individual events within the GatherPress plugin and provides event-related functionality.
  *
- * @since 1.0.0
+ * @since 0.34.0
  */
 class Event {
 
 	/**
 	 * Cache key format for storing and retrieving event datetimes.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @var string $DATETIME_CACHE_KEY
 	 */
 	const DATETIME_CACHE_KEY = 'datetime_%d';
@@ -45,7 +46,7 @@ class Event {
 	/**
 	 * Date and time format used within GatherPress.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @var string $DATETIME_FORMAT
 	 */
 	const DATETIME_FORMAT = 'Y-m-d H:i:s';
@@ -53,7 +54,7 @@ class Event {
 	/**
 	 * The post type name for GatherPress events.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @var string $POST_TYPE
 	 */
 	const POST_TYPE = 'gatherpress_event';
@@ -61,7 +62,7 @@ class Event {
 	/**
 	 * Placeholder displayed when no datetime is set.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @var string
 	 */
 	const DATETIME_PLACEHOLDER = '—';
@@ -69,7 +70,7 @@ class Event {
 	/**
 	 * Format for the database table name used by GatherPress events.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @var string $TABLE_FORMAT
 	 */
 	const TABLE_FORMAT = '%sgatherpress_events';
@@ -80,26 +81,15 @@ class Event {
 	 * plugins that hook blocks into events read this constant rather
 	 * than hard-coding the slug.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @var string
 	 */
 	const TEMPLATE_PATTERN = 'gatherpress/event-template';
 
 	/**
-	 * ISO 8601 datetime format for calendar services.
-	 *
-	 * Format combines date (YYYYMMDD) and time (HHMMSS) with 'T' separator
-	 * and 'Z' suffix indicating UTC timezone. Example: 20240315T143000Z
-	 *
-	 * @since 1.0.0
-	 * @var string $CALENDAR_DATETIME_FORMAT
-	 */
-	const CALENDAR_DATETIME_FORMAT = '%sT%sZ';
-
-	/**
 	 * Non-time PHP DateTime formatting characters
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @var array
 	 */
 	const PHP_NON_TIME_FORMAT_CHARS = array(
@@ -139,7 +129,7 @@ class Event {
 	/**
 	 * Event post object.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @var WP_Post|null
 	 */
 	public ?WP_Post $event = null;
@@ -147,7 +137,7 @@ class Event {
 	/**
 	 * RSVP instance.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @var Rsvp|null
 	 */
 	public ?Rsvp $rsvp = null;
@@ -155,7 +145,7 @@ class Event {
 	/**
 	 * Cached datetime data.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @var array|null
 	 */
@@ -166,7 +156,7 @@ class Event {
 	 *
 	 * Initializes an Event object for a specific event post.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param int $post_id The event post ID.
 	 */
@@ -184,7 +174,7 @@ class Event {
 	 * It also considers whether the event's start and end occur on the same day to adjust the format accordingly.
 	 * Additionally, it can append the timezone to the formatted string based on settings.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param string $type           Display type: 'start', 'end', or 'both'.
 	 * @param string $start_format   PHP display format for start date/time.
@@ -263,7 +253,7 @@ class Event {
 	 *
 	 * Compares the start and end DateTime objects to determine if they are on the same date.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return bool True if start and end are on the same date, false otherwise.
 	 *
@@ -290,7 +280,7 @@ class Event {
 	 * This method compares the start datetime of the event with the current time
 	 * to determine if the event has yet to take place.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param int $offset The time offset, in minutes, to adjust the consideration of the event end time.
 	 *                    A positive value extends the period of considering the event ongoing,
@@ -312,7 +302,7 @@ class Event {
 	 * This method compares the end datetime of the event with the current time
 	 * to determine if the event has already taken place.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param int $offset The time offset, in minutes, to adjust the consideration of the event start time.
 	 *                    A positive value delays the event start, while a negative value checks for an earlier start.
@@ -332,7 +322,7 @@ class Event {
 	 *
 	 * This method determines whether the event has started and is not in the past.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param int $started_offset The time offset, in minutes, to adjust the consideration of the event start time.
 	 *                            A positive value delays the event start,
@@ -354,9 +344,10 @@ class Event {
 	 * This method retrieves and formats the start datetime of the event using the
 	 * specified PHP date format.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param string $format Optional. PHP date format. Default is 'D, M j, Y, g:i a T'.
+	 *
 	 * @return string The formatted start datetime of the event.
 	 *
 	 * @throws Exception If there is an issue formatting the start datetime.
@@ -371,7 +362,7 @@ class Event {
 	 * This method retrieves the end date and time of the event and formats it
 	 * according to the specified PHP date format.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param string $format Optional. The PHP date format in which to return the end date and time.
 	 *                       Default is 'D, F j, g:ia T'.
@@ -386,7 +377,7 @@ class Event {
 	/**
 	 * Get the end time of an event.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param string $format PHP DateTime format (defaults to g:ia).
 	 *
@@ -408,11 +399,12 @@ class Event {
 	 * This method takes a datetime value from the event table, formats it according to the specified PHP date format,
 	 * and allows you to choose between displaying the date in local time or GMT.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param string $format Optional. The PHP date format in which to format the datetime. Default is 'D, F j, g:ia T'.
 	 * @param string $which  Optional. Datetime field in event table to format ('start' or 'end'). Default is 'start'.
 	 * @param bool   $local  Optional. Whether to format the date in local time (true) or GMT (false). Default is true.
+	 *
 	 * @return string The formatted datetime value.
 	 *
 	 * @throws Exception If there is an issue while formatting the datetime value.
@@ -456,7 +448,7 @@ class Event {
 	 * timezone information from post meta. Datetime values are validated before
 	 * being returned.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return array An associative array detailing the event's schedule and timezone, potentially
 	 * adjusted for user-specific preferences:
@@ -515,10 +507,11 @@ class Event {
 	 * date and time in the GMT (UTC) time zone. It ensures that the date remains in the correct
 	 * format.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param string       $date     The date to be converted.
 	 * @param DateTimeZone $timezone The time zone to use for date conversion.
+	 *
 	 * @return string The converted date in GMT (UTC) time zone in 'Y-m-d H:i:s' format.
 	 */
 	protected function get_gmt_datetime( string $date, DateTimeZone $timezone ): string {
@@ -543,7 +536,7 @@ class Event {
 	 * status is not part of this shape — use the venue taxonomy directly when
 	 * the caller needs to distinguish online events.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return array An array containing venue information:
 	 *               - 'address' (string): The address of the venue.
@@ -613,7 +606,7 @@ class Event {
 	 * including Google Calendar, iCal, Outlook, and Yahoo Calendar. Each link is represented as an
 	 * associative array with a name and a corresponding link or download URL.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return array An associative array containing supported calendar links:
 	 *     - 'google'  (array) Google Calendar link information with 'name' and 'link' keys.
@@ -628,219 +621,26 @@ class Event {
 			return array();
 		}
 
+		$calendar = new Calendar( $this->event->ID );
+
 		return array(
 			'google'  => array(
 				'name' => __( 'Google Calendar', 'gatherpress' ),
-				'link' => $this->get_google_calendar_link(),
+				'link' => $calendar->get_google_url(),
 			),
 			'ical'    => array(
-				'name' => __( 'iCal', 'gatherpress' ),
-				'link' => $this->get_ics_download_link(),
+				'name'     => __( 'iCal', 'gatherpress' ),
+				'download' => $calendar->get_ical_url(),
 			),
 			'outlook' => array(
-				'name' => __( 'Outlook', 'gatherpress' ),
-				'link' => $this->get_ics_download_link(),
+				'name'     => __( 'Outlook', 'gatherpress' ),
+				'download' => $calendar->get_outlook_url(),
 			),
 			'yahoo'   => array(
 				'name' => __( 'Yahoo Calendar', 'gatherpress' ),
-				'link' => $this->get_yahoo_calendar_link(),
+				'link' => $calendar->get_yahoo_url(),
 			),
 		);
-	}
-
-	/**
-	 * Get the Google Calendar add event link for the event.
-	 *
-	 * This method generates and returns a Google Calendar link that allows users to add the event to their
-	 * Google Calendar. The link includes event details such as the event name, date, time, location, and a
-	 * link to the event's details page.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @return string The Google Calendar add event link for the event.
-	 *
-	 * @throws Exception If there is an issue while generating the Google Calendar link.
-	 */
-	public function get_google_calendar_link(): string {
-		$date_start  = $this->get_formatted_datetime( 'Ymd', 'start', false );
-		$time_start  = $this->get_formatted_datetime( 'His', 'start', false );
-		$date_end    = $this->get_formatted_datetime( 'Ymd', 'end', false );
-		$time_end    = $this->get_formatted_datetime( 'His', 'end', false );
-		$datetime    = sprintf(
-			self::CALENDAR_DATETIME_FORMAT . '/' . self::CALENDAR_DATETIME_FORMAT,
-			$date_start,
-			$time_start,
-			$date_end,
-			$time_end
-		);
-		$venue       = $this->get_venue_information();
-		$location    = $venue['name'];
-		$description = $this->get_calendar_description();
-
-		if ( ! empty( $venue['address'] ) ) {
-			$location .= sprintf( ', %s', $venue['address'] );
-		}
-
-		$params = array(
-			'action'   => 'TEMPLATE',
-			'text'     => sanitize_text_field( $this->event->post_title ),
-			'dates'    => sanitize_text_field( $datetime ),
-			'details'  => sanitize_text_field( $description ),
-			'location' => sanitize_text_field( $location ),
-			'sprop'    => 'name:',
-		);
-
-		return add_query_arg(
-			rawurlencode_deep( $params ),
-			'https://www.google.com/calendar/event'
-		);
-	}
-
-	/**
-	 * Get the "Add to Yahoo! Calendar" link for the event.
-	 *
-	 * This method generates and returns a URL that allows users to add the event to their Yahoo! Calendar.
-	 * The URL includes event details such as the event title, start time, duration, description, and location.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @return string The Yahoo! Calendar link for adding the event.
-	 *
-	 * @throws Exception If an error occurs while generating the Yahoo! Calendar link.
-	 */
-	public function get_yahoo_calendar_link(): string {
-		$date_start     = $this->get_formatted_datetime( 'Ymd', 'start', false );
-		$time_start     = $this->get_formatted_datetime( 'His', 'start', false );
-		$datetime_start = sprintf( self::CALENDAR_DATETIME_FORMAT, $date_start, $time_start );
-
-		// Figure out duration of event in hours and minutes: hhmm format.
-		$diff_start  = $this->get_formatted_datetime( self::DATETIME_FORMAT, 'start', false );
-		$diff_end    = $this->get_formatted_datetime( self::DATETIME_FORMAT, 'end', false );
-		$duration    = ( ( strtotime( $diff_end ) - strtotime( $diff_start ) ) / 60 / 60 );
-		$full        = intval( $duration );
-		$fraction    = ( $duration - $full );
-		$hours       = str_pad( strval( $duration ), 2, '0', STR_PAD_LEFT );
-		$minutes     = str_pad( strval( $fraction * 60 ), 2, '0', STR_PAD_LEFT );
-		$venue       = $this->get_venue_information();
-		$location    = $venue['name'];
-		$description = $this->get_calendar_description();
-
-		if ( ! empty( $venue['address'] ) ) {
-			$location .= sprintf( ', %s', $venue['address'] );
-		}
-
-		$params = array(
-			'v'      => '60',
-			'view'   => 'd',
-			'type'   => '20',
-			'title'  => sanitize_text_field( $this->event->post_title ),
-			'st'     => sanitize_text_field( $datetime_start ),
-			'dur'    => sanitize_text_field( (string) $hours . (string) $minutes ),
-			'desc'   => sanitize_text_field( $description ),
-			'in_loc' => sanitize_text_field( $location ),
-		);
-
-		return add_query_arg(
-			rawurlencode_deep( $params ),
-			'https://calendar.yahoo.com/'
-		);
-	}
-
-	/**
-	 * Get the ICS file download link for the event.
-	 *
-	 * This method returns the full URL to the dynamically generated .ics file
-	 * for the event, based on its post slug and the configured event base URL.
-	 * The URL points to a route handled by a custom rewrite rule and can be used
-	 * in "Add to Calendar" buttons or links.
-	 *
-	 * The base event path (e.g., "event") is pulled from settings and sanitized
-	 * to ensure safe and predictable output.
-	 *
-	 * Example: https://example.com/event/my-event.ics
-	 *
-	 * @since 1.0.0
-	 *
-	 * @return string The public-facing ICS download URL for the event.
-	 */
-	public function get_ics_download_link(): string {
-		$settings     = Settings::get_instance();
-		$rewrite_slug = $settings->get( 'events_url' );
-
-		return home_url(
-			'/' . sanitize_title( $rewrite_slug ) . '/' . get_post_field( 'post_name', $this->event->ID ) . '.ics'
-		);
-	}
-
-	/**
-	 * Escape special characters for ICS (iCalendar) text fields.
-	 *
-	 * This method escapes characters that must be escaped in ICS files,
-	 * including commas, semicolons, and line breaks, to ensure compatibility
-	 * with calendar applications.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param string $text The raw text to be escaped.
-	 * @return string The escaped text suitable for ICS content.
-	 */
-	protected function escape_ics_text( string $text ): string {
-		return addcslashes( $text, "\\,;\n" );
-	}
-
-	/**
-	 * Generate the ICS (iCalendar) file content for the event.
-	 *
-	 * This method constructs and returns a properly formatted ICS string
-	 * containing event details such as title, start/end time, description,
-	 * location, and a unique identifier. The result can be used to serve
-	 * downloadable .ics calendar files compatible with most calendar applications.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @return string The raw ICS calendar content for the event.
-	 *
-	 * @throws Exception If an error occurs while generating event data.
-	 */
-	public function get_ics_calendar_string(): string {
-		$date_start     = $this->get_formatted_datetime( 'Ymd', 'start', false );
-		$time_start     = $this->get_formatted_datetime( 'His', 'start', false );
-		$date_end       = $this->get_formatted_datetime( 'Ymd', 'end', false );
-		$time_end       = $this->get_formatted_datetime( 'His', 'end', false );
-		$datetime_start = sprintf( self::CALENDAR_DATETIME_FORMAT, $date_start, $time_start );
-		$datetime_end   = sprintf( self::CALENDAR_DATETIME_FORMAT, $date_end, $time_end );
-		$modified_date  = strtotime( $this->event->post_modified );
-		$datetime_stamp = sprintf(
-			self::CALENDAR_DATETIME_FORMAT,
-			gmdate( 'Ymd', $modified_date ),
-			gmdate( 'His', $modified_date )
-		);
-		$venue          = $this->get_venue_information();
-		$location       = $venue['name'] ?? '';
-		$description    = $this->get_calendar_description();
-
-		if ( ! empty( $venue['address'] ) ) {
-			$location .= sprintf( ', %s', $venue['address'] );
-		}
-
-		$args = array(
-			'BEGIN:VCALENDAR',
-			'VERSION:2.0',
-			'PRODID:-//GatherPress//RemoteApi//EN',
-			'BEGIN:VEVENT',
-			sprintf( 'URL:%s', esc_url_raw( get_permalink( $this->event->ID ) ) ),
-			sprintf( 'DTSTART:%s', sanitize_text_field( $datetime_start ) ),
-			sprintf( 'DTEND:%s', sanitize_text_field( $datetime_end ) ),
-			sprintf( 'DTSTAMP:%s', sanitize_text_field( $datetime_stamp ) ),
-			sprintf( 'SUMMARY:%s', $this->escape_ics_text( $this->event->post_title ) ),
-			sprintf( 'DESCRIPTION:%s', $this->escape_ics_text( $description ) ),
-			sprintf( 'LOCATION:%s', $this->escape_ics_text( $location ) ),
-			sprintf( 'UID:gatherpress_%d', intval( $this->event->ID ) ),
-			'END:VEVENT',
-			'END:VCALENDAR',
-		);
-
-		return implode( "\r\n", $args ) . "\r\n";
 	}
 
 	/**
@@ -849,7 +649,7 @@ class Event {
 	 * This method generates a descriptive text for a calendar event, including a link to the event details page.
 	 * The generated description can be used in calendar applications or event listings.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return string The calendar event description with the event details link.
 	 */
@@ -865,7 +665,7 @@ class Event {
 	 * for an event into the custom event table. It provides a structured way to store event data
 	 * and ensures consistency in the format of datetime values.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param array $params {
 	 *     An array of arguments used to save event data to the custom event table.
@@ -983,7 +783,7 @@ class Event {
 		 * display in the `maybe_get_online_event_link` method. Return true to
 		 * force the online event link, or false to allow normal checks.
 		 *
-		 * @since 1.0.0
+		 * @since 0.27.0
 		 *
 		 * @param bool $force_online_event_link Whether to force the display of the online event link.
 		 *

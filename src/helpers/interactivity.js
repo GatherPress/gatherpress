@@ -12,7 +12,7 @@ const { state: gatherPressState } = store( 'gatherpress' );
  * If no entry exists, it creates one with default values for event responses,
  * the current user's RSVP status, and other RSVP-related details.
  *
- * @since 1.0.0
+ * @since 0.33.0
  *
  * @param {Object} state  - The application state object to be updated.
  *                        Should contain a `posts` property.
@@ -70,7 +70,7 @@ export function initPostContext( state, postId ) {
  * request failures gracefully. The nonce is required for authenticated AJAX requests
  * to WordPress REST API endpoints.
  *
- * @since 1.0.0
+ * @since 0.33.0
  *
  * @return {Promise<string|null>} A promise that resolves to the nonce string on success,
  *                                or null if the request fails.
@@ -137,7 +137,7 @@ export const getNonce = ( () => {
  * with invalid statuses (`no_status`, `waiting_list`). If the nonce expires during
  * the request, it automatically retries once with a fresh nonce.
  *
- * @since 1.0.0
+ * @since 0.33.0
  *
  * @param {number}      postId                 - The ID of the post for which the RSVP is being updated.
  * @param {Object}      args                   - An object containing the RSVP details.
@@ -269,7 +269,7 @@ export async function sendRsvpApiRequest(
  * when the `Escape` key is pressed or when the function is explicitly
  * invoked.
  *
- * @since 1.0.0
+ * @since 0.33.0
  *
  * @param {HTMLElement[]} focusableElements - An array of focusable elements.
  *                                          These elements will be used to define

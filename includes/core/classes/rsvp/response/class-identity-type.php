@@ -5,7 +5,7 @@
  * Represents a unique RSVP identity consisting of a type and identifier.
  *
  * @package GatherPress\Core\Rsvp
- * @since 1.0.0
+ * @since 0.35.0
  */
 
 namespace GatherPress\Core\Rsvp\Response;
@@ -19,7 +19,7 @@ namespace GatherPress\Core\Rsvp\Response;
  * Represents a unique RSVP identity consisting of a type and identifier.
  *
  * @package GatherPress\Core\Rsvp
- * @since 1.0.0
+ * @since 0.35.0
  */
 enum Identity_Type: string {
 	case EMAIL       = 'email';

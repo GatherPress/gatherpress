@@ -11,6 +11,10 @@ on:
     - '*.php'
     - 'phpunit.xml.dist'
     - 'composer.*'
+
+permissions:
+  contents: read
+
 jobs:
   test-php:
     name: ${{ matrix.php_versions }} on ${{ matrix.os }}

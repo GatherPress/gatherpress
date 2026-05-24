@@ -17,7 +17,7 @@
  * the venue ⇄ event relationship continues to work out of the box.
  *
  * @package GatherPress\Core
- * @since 1.0.0
+ * @since 0.34.0
  */
 
 namespace GatherPress\Core;
@@ -38,7 +38,7 @@ use WP_Term;
  * post type. Owns the per-post-type taxonomy registration and the term
  * lifecycle (insert / rename / delete in lockstep with the source post).
  *
- * @since 1.0.0
+ * @since 0.34.0
  */
 class Shadow_Source {
 
@@ -50,7 +50,7 @@ class Shadow_Source {
 	/**
 	 * Class constructor.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 */
 	public function __construct() {
 		$this->setup_hooks();
@@ -59,7 +59,7 @@ class Shadow_Source {
 	/**
 	 * Set up hooks for taxonomy registration and term lifecycle.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return void
 	 */
@@ -82,9 +82,10 @@ class Shadow_Source {
 	 * automatically gets the term wired to its save and delete lifecycle,
 	 * without needing to hook the site-wide `save_post`/`delete_post` actions.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param string $post_type The post type that was just registered.
+	 *
 	 * @return void
 	 */
 	public function maybe_register_post_type_hooks( string $post_type ): void {
@@ -115,7 +116,7 @@ class Shadow_Source {
 	 * Labels are inherited from the source post type so admin columns and
 	 * Query Loop taxonomy controls read naturally for any consumer.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return void
 	 */
@@ -137,9 +138,10 @@ class Shadow_Source {
 	 * controls. Filterable so consumers can override registration without
 	 * forking the primitive.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param string $post_type The post type that owns this shadow taxonomy.
+	 *
 	 * @return array<string, mixed>
 	 */
 	protected function get_taxonomy_args( string $post_type ): array {
@@ -171,7 +173,7 @@ class Shadow_Source {
 		 * Gives consumers a hook to tweak labels or other registration args
 		 * for the shadow taxonomy without reimplementing the primitive.
 		 *
-		 * @since 1.0.0
+		 * @since 0.34.0
 		 *
 		 * @param array<string, mixed> $args      The taxonomy registration args.
 		 * @param string               $post_type The shadow-source post type slug.
@@ -186,11 +188,12 @@ class Shadow_Source {
 	 * returns early. Skips autosaves and updates so the term is only created
 	 * once, on initial publish.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param int     $post_id Post ID of the saved post.
 	 * @param WP_Post $post    The saved post object.
 	 * @param bool    $update  Whether this is an existing post being updated.
+	 *
 	 * @return void
 	 */
 	public function add_term( int $post_id, WP_Post $post, bool $update ): void {
@@ -232,11 +235,12 @@ class Shadow_Source {
 	 * now being renamed before first publish), one is created with the new
 	 * slug.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param int     $post_id     Post ID of the updated post.
 	 * @param WP_Post $post_after  Post object after the save operation.
 	 * @param WP_Post $post_before Post object before the save operation.
+	 *
 	 * @return void
 	 */
 	public function maybe_update_term_slug( int $post_id, WP_Post $post_after, WP_Post $post_before ): void {
@@ -288,9 +292,10 @@ class Shadow_Source {
 	/**
 	 * Delete the shadow term when its source post is deleted.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param int $post_id Post ID of the post being deleted.
+	 *
 	 * @return void
 	 */
 	public function delete_term( int $post_id ): void {
@@ -324,9 +329,10 @@ class Shadow_Source {
 	 * The taxonomy slug is always derived by prepending an underscore to the
 	 * post type slug — for example, `gatherpress_venue` → `_gatherpress_venue`.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param string $post_type The shadow-source post type slug.
+	 *
 	 * @return string The taxonomy slug for the given post type.
 	 */
 	public function get_taxonomy( string $post_type ): string {
@@ -340,9 +346,10 @@ class Shadow_Source {
 	 * by callers that already have the name in hand (e.g. rename-diff
 	 * callers comparing old vs. new post_name during a save-post transition).
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param string $post_name The post_name (e.g. `my-venue`).
+	 *
 	 * @return string The taxonomy term slug (e.g. `_my-venue`).
 	 */
 	public function term_slug_from_post_name( string $post_name ): string {
@@ -359,9 +366,10 @@ class Shadow_Source {
 	 * out and keeps shadow-resolution logic from treating sentinels as real
 	 * source posts.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param string $slug The term slug to test.
+	 *
 	 * @return bool
 	 */
 	public function is_shadow_term_slug( string $slug ): bool {
@@ -375,10 +383,11 @@ class Shadow_Source {
 	 * post via `get_page_by_path()` against the given post type. Returns
 	 * null when no matching post exists.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param string $slug      The shadow taxonomy term slug (e.g. `_my-venue`).
 	 * @param string $post_type The shadow-source post type to search.
+	 *
 	 * @return WP_Post|null The matching post, or null.
 	 */
 	public function get_post_from_term_slug( string $slug, string $post_type ): ?WP_Post {

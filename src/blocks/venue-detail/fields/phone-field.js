@@ -9,7 +9,7 @@ import { RichText } from '@wordpress/block-editor';
  * Renders an editable phone field. When a value exists,
  * it renders as a clickable tel: link.
  *
- * @since 1.0.0
+ * @since 0.34.0
  *
  * @param {Object}   props             - Component props.
  * @param {string}   props.value       - The current field value.
@@ -17,6 +17,7 @@ import { RichText } from '@wordpress/block-editor';
  * @param {string}   props.placeholder - Placeholder text.
  * @param {Function} props.onKeyDown   - Keyboard event handler.
  * @param {boolean}  props.disabled    - Whether the field is disabled.
+ *
  * @return {JSX.Element} The rendered phone field.
  */
 const PhoneField = ( {

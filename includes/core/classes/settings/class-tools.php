@@ -6,7 +6,7 @@
  * import and export functionality for plugin settings.
  *
  * @package GatherPress\Core
- * @since 1.0.0
+ * @since 0.34.0
  */
 
 namespace GatherPress\Core\Settings;
@@ -23,7 +23,7 @@ use GatherPress\Core\Utility;
  *
  * Handles the "Tools" settings page for GatherPress.
  *
- * @since 1.0.0
+ * @since 0.34.0
  */
 class Tools extends Base {
 
@@ -35,7 +35,7 @@ class Tools extends Base {
 	/**
 	 * Set up hooks for various purposes.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return void
 	 */
@@ -50,7 +50,7 @@ class Tools extends Base {
 	/**
 	 * Get the slug for the tools settings page.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return string The slug for the tools settings page.
 	 */
@@ -61,7 +61,7 @@ class Tools extends Base {
 	/**
 	 * Get the name for the tools settings page.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return string The localized name for the tools settings page.
 	 */
@@ -72,7 +72,7 @@ class Tools extends Base {
 	/**
 	 * Get the priority for displaying the tools settings page.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return int The priority for displaying the tools settings page.
 	 */
@@ -83,9 +83,10 @@ class Tools extends Base {
 	/**
 	 * Render the custom tools section instead of the default settings form.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param string $page The current settings page slug.
+	 *
 	 * @return void
 	 */
 	public function settings_section( string $page ): void {
@@ -108,7 +109,7 @@ class Tools extends Base {
 	 *
 	 * Verifies permissions and nonce, then sends the settings export as JSON.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return void
 	 */
@@ -131,7 +132,7 @@ class Tools extends Base {
 	/**
 	 * Resolve the storage scope from the AJAX POST.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return string 'network' or 'blog'.
 	 */
@@ -145,9 +146,10 @@ class Tools extends Base {
 	/**
 	 * Minimum capability required to act in the given scope.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param string $scope 'network' or 'blog'.
+	 *
 	 * @return string
 	 */
 	protected function capability_for_scope( string $scope ): string {
@@ -160,7 +162,7 @@ class Tools extends Base {
 	 * Verifies permissions and nonce, parses the uploaded JSON,
 	 * validates and imports the settings.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return void
 	 */

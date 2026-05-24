@@ -5,7 +5,7 @@
  * This template is used to generate RSVP confirmation emails with magic links.
  *
  * @package GatherPress\Core
- * @since 1.0.0
+ * @since 0.33.0
  *
  * @param int    $event_id   The ID of the event for which the email is generated.
  * @param string $token_url  The magic link URL for RSVP confirmation and management.

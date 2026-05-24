@@ -4,7 +4,7 @@
  * like this so callers never try to register a nameless pattern.
  *
  * @package GatherPress\Tests
- * @since 1.0.0
+ * @since 0.34.0
  */
 
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore

@@ -11,7 +11,7 @@
  * the prior name is actually referenced.
  *
  * @package GatherPress\Core
- * @since 1.0.0
+ * @since 0.34.0
  */
 
 // Exit if accessed directly.
@@ -21,6 +21,7 @@ spl_autoload_register(
 	static function ( string $class_string ): void {
 		// Map of prior fully-qualified class names to their current fully-qualified class names.
 		$aliases = array(
+			'GatherPress\\Core\\Calendar'   => 'GatherPress\\Core\\Calendar\\Calendar',
 			'GatherPress\\Core\\Event'      => 'GatherPress\\Core\\Event\\Event',
 			'GatherPress\\Core\\Rsvp'       => 'GatherPress\\Core\\Rsvp\\Rsvp',
 			'GatherPress\\Core\\Venue'      => 'GatherPress\\Core\\Venue\\Venue',

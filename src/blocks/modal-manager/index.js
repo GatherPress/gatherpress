@@ -18,7 +18,7 @@ import metadata from './block.json';
  * It includes functionality for setting up modals and dynamically handling
  * their content and visibility, providing users with an interactive experience.
  *
- * @since 1.0.0
+ * @since 0.33.0
  *
  * @return {JSX.Element} The rendered React component for editing the block.
  */

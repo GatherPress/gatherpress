@@ -4,14 +4,15 @@
 import { addFilter } from '@wordpress/hooks';
 import { InspectorControls } from '@wordpress/block-editor';
 import { PanelBody } from '@wordpress/components';
-import { __ } from '@wordpress/i18n';
+import { __, sprintf } from '@wordpress/i18n';
 import { useEffect } from '@wordpress/element';
 import { registerPlugin } from '@wordpress/plugins';
+import { useDispatch } from '@wordpress/data';
 
 /**
  *  Internal dependencies
  */
-import { NAME } from '.';
+import { NAME } from './name';
 import EventQueryControls from './slots/query-controls';
 import EventInheritedQueryControls from './slots/inherited-query-controls';
 import {
@@ -19,12 +20,14 @@ import {
 	EventInheritedQueryControlsSlotFill,
 } from './components';
 import { usePostTypeSupports } from '../../../helpers/event';
+import { usePostTypeLabel } from '../../../helpers/editor';
 
 /**
  * Determines if the current block instance is the GatherPress event query variation.
  *
  * @param {Object} props            - Props passed to the block's edit component.
  * @param {Object} props.attributes - Block attributes.
+ *
  * @return {boolean} True if the block's namespace matches 'gatherpress-event-query', otherwise false.
  */
 const isEventQueryLoop = ( props ) => {
@@ -35,23 +38,30 @@ const isEventQueryLoop = ( props ) => {
 };
 
 /**
- * Watches the Query block's `postType` attribute and, if changed to "gatherpress_event",
- * automatically transforms it into a GatherPress "Event Query" variation by updating
- * relevant attributes. Only transforms blocks without an existing namespace (plain core/query),
- * so blocks belonging to other variations (e.g., Advanced Query Loop) are not hijacked.
+ * Auto-transforms a plain `core/query` block into the GatherPress "Event
+ * Query" variation when the user selects any post type that declares
+ * `gatherpress-event-date` support. Reactive so the transform fires on
+ * first selection of a custom event-supporting post type, not only after
+ * routing through `gatherpress_event` first (#1608). Skips blocks that
+ * already carry a namespace so other variations (e.g. AQL) aren't hijacked.
  *
  * @param {Object}   props
  * @param {Object}   props.attributes    - Block attributes.
  * @param {Function} props.setAttributes - Function to update block attributes.
+ *
  * @return {void}
  */
 const QueryPosttypeObserver = ( { attributes, setAttributes } ) => {
 	const { postType } = attributes.query;
 	const { namespace } = attributes;
+	const supportsEventDate = usePostTypeSupports(
+		'gatherpress-event-date',
+		postType
+	);
 	useEffect( () => {
 		// Only auto-transform blocks without a namespace set.
 		// Blocks with an existing namespace (e.g., 'advanced-query-loop') should not be overwritten.
-		if ( 'gatherpress_event' === postType && ! namespace ) {
+		if ( supportsEventDate && ! namespace ) {
 			const newAttributes = {
 				...attributes,
 				namespace: NAME,
@@ -66,9 +76,7 @@ const QueryPosttypeObserver = ( { attributes, setAttributes } ) => {
 			};
 			setAttributes( newAttributes );
 		}
-		// Dependency array ensures this runs
-		// whenever postType, namespace, attributes, or setAttributes changes.
-	}, [ postType, namespace, attributes, setAttributes ] );
+	}, [ supportsEventDate, namespace, attributes, setAttributes ] );
 };
 
 /**
@@ -85,13 +93,66 @@ const QueryPosttypeObserver = ( { attributes, setAttributes } ) => {
  * instead of leaving stale event-only controls visible.
  *
  * @param {Object} props - Block props passed through from the HOC.
+ *
  * @return {Element|null} The InspectorControls panel, or null when not applicable.
  */
 export const EventQueryControlsPanel = ( props ) => {
+	const { updateBlockAttributes } = useDispatch( 'core/block-editor' );
+	const { clientId } = props;
+	const gatherpressEventQuery = props.attributes?.query?.gatherpress_event_query || 'upcoming';
 	const queryPostType = props.attributes?.query?.postType;
 	const queryPostTypeSupportsEvents = usePostTypeSupports(
 		'gatherpress-event-date',
 		queryPostType
+	);
+
+	// Read the plural label so the "Block List" label reflects what the currently
+	// selected post type is actually called — a custom event-supporting post type with
+	// `name => 'Productions'` shows "Upcoming (or Past) Productions".
+	const pluralLabel = usePostTypeLabel(
+		'name',
+		queryPostType,
+		__( 'Events', 'gatherpress' )
+	);
+
+	// Update block name with post type label and query mode
+	useEffect( () => {
+		const queryLabel = ( 'upcoming' === gatherpressEventQuery )
+			? __( 'Upcoming', 'gatherpress' )
+			: __( 'Past', 'gatherpress' );
+
+		let blockName = sprintf(
+			/* translators: %1$s: 'Upcoming' or 'Past', %2$s: Plural post type label, e.g. "Events". */
+			__( '%1$s %2$s', 'gatherpress' ),
+			queryLabel,
+			pluralLabel
+		);
+
+		// Unset if not a supporting post type.
+		if ( ! queryPostTypeSupportsEvents ) {
+			blockName = '';
+		}
+
+		updateBlockAttributes( clientId, {
+			metadata: {
+				name: blockName,
+			},
+		} );
+	}, [
+		queryPostTypeSupportsEvents,
+		pluralLabel,
+		gatherpressEventQuery,
+		clientId,
+		updateBlockAttributes,
+	] );
+
+	// Read the singular label so the label reflects what the currently
+	// selected post type is actually called — a custom event-supporting post type with
+	// `singular_name => 'Production'` shows "Production Query Settings".
+	const singularLabel = usePostTypeLabel(
+		'singular_name',
+		queryPostType,
+		__( 'Event', 'gatherpress' )
 	);
 
 	if ( ! queryPostTypeSupportsEvents ) {
@@ -100,7 +161,11 @@ export const EventQueryControlsPanel = ( props ) => {
 
 	return (
 		<InspectorControls>
-			<PanelBody title={ __( 'Event Query Settings', 'gatherpress' ) }>
+			<PanelBody title={ sprintf(
+				/* translators: %s: Singular post type label, e.g. "Event". */
+				__( '%s Query Settings', 'gatherpress' ),
+				singularLabel
+			) }>
 				{ false === props.attributes.query.inherit ? (
 					<EventQueryControls.Slot
 						fillProps={ { ...props } }
@@ -123,6 +188,7 @@ export const EventQueryControlsPanel = ( props ) => {
  * - For GatherPress event queries, provides the relevant controls in a PanelBody within InspectorControls.
  *
  * @param {Function} BlockEdit - The Query block's BlockEdit component.
+ *
  * @return {Function} Enhanced BlockEdit component.
  */
 const withEventQueryControls = ( BlockEdit ) => ( props ) => {

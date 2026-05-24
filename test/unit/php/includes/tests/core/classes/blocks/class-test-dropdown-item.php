@@ -3,7 +3,7 @@
  * Class handles unit tests for GatherPress\Core\Blocks\Dropdown_Item.
  *
  * @package GatherPress\Core
- * @since 1.0.0
+ * @since 0.33.0
  */
 
 namespace GatherPress\Tests\Core\Blocks;
@@ -24,7 +24,7 @@ class Test_Dropdown_Item extends Base {
 	 * Verifies that the appropriate filters are registered during setup,
 	 * ensuring the hooks are properly configured for the Dropdown_Item block.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::__construct
 	 * @covers ::setup_hooks
 	 *
@@ -48,7 +48,7 @@ class Test_Dropdown_Item extends Base {
 	/**
 	 * Tests apply_dropdown_attributes with an empty href.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::apply_dropdown_attributes
 	 *
 	 * @return void
@@ -67,7 +67,7 @@ class Test_Dropdown_Item extends Base {
 	/**
 	 * Tests apply_dropdown_attributes with a hash href.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::apply_dropdown_attributes
 	 *
 	 * @return void
@@ -86,7 +86,7 @@ class Test_Dropdown_Item extends Base {
 	/**
 	 * Tests apply_dropdown_attributes with a valid URL href.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::apply_dropdown_attributes
 	 *
 	 * @return void
@@ -106,7 +106,7 @@ class Test_Dropdown_Item extends Base {
 	/**
 	 * Tests apply_dropdown_attributes with no anchor tag.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::apply_dropdown_attributes
 	 *
 	 * @return void

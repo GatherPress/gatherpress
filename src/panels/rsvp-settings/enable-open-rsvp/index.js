@@ -10,7 +10,7 @@ import EnableOpenRsvp from '../../../components/EnableOpenRsvp';
  * editors to control whether visitors without an account can RSVP to
  * this specific event. Only visible when Open RSVP is enabled sitewide.
  *
- * @since 1.0.0
+ * @since 0.34.0
  *
  * @return {JSX.Element} The JSX element for the EnableOpenRsvpPanel.
  */

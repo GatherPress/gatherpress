@@ -4,7 +4,7 @@
  * including preparation of its output and handling hooks for customization and interactivity.
  *
  * @package GatherPress\Core
- * @since 1.0.0
+ * @since 0.33.0
  */
 
 namespace GatherPress\Core\Blocks;
@@ -28,7 +28,7 @@ use WP_HTML_Tag_Processor;
  *
  * It ensures seamless integration with WordPress's block editor and dynamic functionality.
  *
- * @since 1.0.0
+ * @since 0.33.0
  */
 class Rsvp_Template {
 
@@ -40,7 +40,7 @@ class Rsvp_Template {
 	/**
 	 * Constant representing the Block Name.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @var string
 	 */
 	const BLOCK_NAME = 'gatherpress/rsvp-template';
@@ -50,7 +50,7 @@ class Rsvp_Template {
 	 *
 	 * This method initializes the object and sets up necessary hooks.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 */
 	protected function __construct() {
 		$this->setup_hooks();
@@ -61,7 +61,7 @@ class Rsvp_Template {
 	 *
 	 * This method adds hooks for different purposes as needed.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @return void
 	 */
@@ -78,7 +78,7 @@ class Rsvp_Template {
 	 * This function checks if the `gatherpress/rsvp-template` block contains inner blocks and retrieves
 	 * their block names. It then enqueues the associated styles for each inner block dynamically.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @param string $block_content The content of the current block being rendered.
 	 *
@@ -112,7 +112,7 @@ class Rsvp_Template {
 	 * found, a default template is added to maintain the block structure and enable
 	 * front-end API interactions.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @param string   $block_content The original block content.
 	 * @param array    $block         The parsed block data.
@@ -177,7 +177,7 @@ class Rsvp_Template {
 	 * rendering behavior. The block content is wrapped in a `div` with a `data-id` attribute
 	 * for identification.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @param array $parsed_block The parsed block data, typically from a block's JSON structure.
 	 * @param int   $response_id  The ID of the response used to populate the block's context.
@@ -238,7 +238,7 @@ class Rsvp_Template {
 	 * - Replaces the `core/comment-author-name` block's text with "Anonymous"
 	 *   and converts it into a `core/paragraph` block.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @param array $blocks      The array of blocks to process, passed by reference.
 	 * @param int   $response_id The ID of the response, used for rendering context.

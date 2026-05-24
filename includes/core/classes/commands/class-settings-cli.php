@@ -6,7 +6,7 @@
  * GatherPress plugin settings.
  *
  * @package GatherPress\Core
- * @since 1.0.0
+ * @since 0.34.0
  */
 
 namespace GatherPress\Core\Commands;
@@ -21,7 +21,7 @@ use WP_CLI;
  * WP-CLI commands for managing GatherPress settings.
  *
  * @package GatherPress\Core
- * @since 1.0.0
+ * @since 0.34.0
  */
 class Settings_Cli extends WP_CLI {
 
@@ -41,10 +41,11 @@ class Settings_Cli extends WP_CLI {
 	 *    # Export to a file.
 	 *    $ wp gatherpress settings export --file=gatherpress-settings.json
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param array $args       Positional arguments.
 	 * @param array $assoc_args Associative arguments.
+	 *
 	 * @return void
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
@@ -116,10 +117,11 @@ class Settings_Cli extends WP_CLI {
 	 *    # Apply import with replace.
 	 *    $ wp gatherpress settings import gatherpress-settings.json --apply --mode=replace
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param array $args       Positional arguments.
 	 * @param array $assoc_args Associative arguments.
+	 *
 	 * @return void
 	 */
 	public function import( array $args = array(), array $assoc_args = array() ): void {

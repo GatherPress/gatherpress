@@ -9,7 +9,7 @@ import VenueSelector from '../../../components/VenueSelector';
  * This component renders a section containing the `VenueSelector` component,
  * allowing users to choose a venue for the event.
  *
- * @since 1.0.0
+ * @since 0.27.0
  *
  * @return {JSX.Element} The JSX element for the VenueSelectorPanel.
  */

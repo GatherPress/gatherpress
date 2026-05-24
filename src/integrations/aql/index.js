@@ -15,7 +15,7 @@ import {
 	EventIncludeUnfinishedControls,
 	EventOrderControls,
 } from '../../variations/core/query/components';
-import { isPostTypeSupporting } from '../../helpers/event';
+import { usePostTypeSupports } from '../../helpers/event';
 
 /**
  * Component that auto-sets GatherPress event defaults when the post type
@@ -24,15 +24,21 @@ import { isPostTypeSupporting } from '../../helpers/event';
  * @param {Object}   props
  * @param {Object}   props.attributes    Block attributes.
  * @param {Function} props.setAttributes Function to update block attributes.
+ *
  * @return {null} Renders nothing.
  */
 const AQLEventDefaults = ( { attributes, setAttributes } ) => {
 	const { postType, gatherpress_event_query: eventQuery } = attributes.query;
+	// Reactive so the gate flips when the post-type registry resolves (#1608).
+	const supportsEventDate = usePostTypeSupports(
+		'gatherpress-event-date',
+		postType,
+	);
 
 	useEffect( () => {
 		// Set GatherPress defaults when post type supports event-date
 		// but event query params haven't been set yet.
-		if ( isPostTypeSupporting( 'gatherpress-event-date', postType ) && ! eventQuery ) {
+		if ( supportsEventDate && ! eventQuery ) {
 			setAttributes( {
 				query: {
 					...attributes.query,
@@ -43,37 +49,29 @@ const AQLEventDefaults = ( { attributes, setAttributes } ) => {
 				},
 			} );
 		}
-	}, [ postType, eventQuery, attributes, setAttributes ] );
+	}, [ supportsEventDate, eventQuery, attributes, setAttributes ] );
 
 	return null;
 };
 
 /**
- * Higher Order Component that adds GatherPress event controls to AQL blocks
- * as a separate InspectorControls panel, rendered as a sibling to AQL's
- * "Advanced Query Settings" panel.
+ * Renders the AQL event controls panel and the defaults observer.
  *
- * @param {Function} BlockEdit The block's edit component.
- * @return {Function} Enhanced edit component.
+ * Extracted from the HOC so `usePostTypeSupports` only runs for AQL blocks,
+ * not every block in the editor. Reactive so the panel appears on first
+ * selection of an event-supporting post type (#1608).
+ *
+ * @param {Object}   props           Block edit props plus BlockEdit injection.
+ * @param {Function} props.BlockEdit The wrapped block's BlockEdit component.
+ *
+ * @return {JSX.Element} Edit output augmented with event controls when applicable.
  */
-const withAQLEventControls = ( BlockEdit ) => ( props ) => {
-	if ( 'core/query' !== props.name ) {
-		return <BlockEdit { ...props } />;
-	}
-
-	const { namespace } = props.attributes;
-
-	// Only handle AQL blocks.
-	if ( 'advanced-query-loop' !== namespace ) {
-		return <BlockEdit { ...props } />;
-	}
-
-	const isEvent = isPostTypeSupporting(
+const AQLBlockEdit = ( { BlockEdit, ...props } ) => {
+	const isEvent = usePostTypeSupports(
 		'gatherpress-event-date',
-		props.attributes.query?.postType
+		props.attributes.query?.postType,
 	);
 
-	// For AQL blocks with gatherpress_event post type, add the controls panel.
 	if ( isEvent ) {
 		return (
 			<>
@@ -81,10 +79,7 @@ const withAQLEventControls = ( BlockEdit ) => ( props ) => {
 				<BlockEdit { ...props } />
 				<InspectorControls>
 					<PanelBody
-						title={ __(
-							'Event Query Settings',
-							'gatherpress'
-						) }
+						title={ __( 'Event Query Settings', 'gatherpress' ) }
 					>
 						<EventListTypeControls { ...props } />
 						<EventIncludeUnfinishedControls { ...props } />
@@ -102,6 +97,28 @@ const withAQLEventControls = ( BlockEdit ) => ( props ) => {
 			<BlockEdit { ...props } />
 		</>
 	);
+};
+
+/**
+ * Higher Order Component that adds GatherPress event controls to AQL blocks
+ * as a separate InspectorControls panel, rendered as a sibling to AQL's
+ * "Advanced Query Settings" panel.
+ *
+ * @param {Function} BlockEdit The block's edit component.
+ *
+ * @return {Function} Enhanced edit component.
+ */
+const withAQLEventControls = ( BlockEdit ) => ( props ) => {
+	if ( 'core/query' !== props.name ) {
+		return <BlockEdit { ...props } />;
+	}
+
+	// Only handle AQL blocks.
+	if ( 'advanced-query-loop' !== props.attributes.namespace ) {
+		return <BlockEdit { ...props } />;
+	}
+
+	return <AQLBlockEdit BlockEdit={ BlockEdit } { ...props } />;
 };
 
 addFilter(

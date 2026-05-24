@@ -8,7 +8,7 @@
  * visitors to register for events without requiring a site account.
  *
  * @package GatherPress\Core
- * @since 1.0.0
+ * @since 0.33.0
  */
 
 namespace GatherPress\Core\Blocks;
@@ -28,7 +28,7 @@ use WP_HTML_Tag_Processor;
  * Class responsible for managing the "RSVP Form" block and its functionality,
  * including dynamic rendering and form processing.
  *
- * @since 1.0.0
+ * @since 0.33.0
  */
 class Rsvp_Form {
 
@@ -40,7 +40,7 @@ class Rsvp_Form {
 	/**
 	 * Constant representing the Block Name.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @var string
 	 */
 	const BLOCK_NAME = 'gatherpress/rsvp-form';
@@ -50,7 +50,7 @@ class Rsvp_Form {
 	 *
 	 * These fields are handled by WordPress core or other parts of the RSVP system.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @var array
 	 */
 	const BUILT_IN_FIELDS = array(
@@ -66,7 +66,7 @@ class Rsvp_Form {
 	 *
 	 * This method initializes the object and sets up necessary hooks.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 */
 	protected function __construct() {
 		$this->setup_hooks();
@@ -77,7 +77,7 @@ class Rsvp_Form {
 	 *
 	 * This method adds hooks for different purposes as needed.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @return void
 	 */
@@ -103,7 +103,7 @@ class Rsvp_Form {
 	 * and method to POST to enable form submission handling through WordPress's
 	 * comment system. Generates a unique form ID for redirect handling.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @param string $block_content The original block content.
 	 * @param array  $block         The block instance array, used to determine the event.
@@ -182,10 +182,11 @@ class Rsvp_Form {
 	 * data attribute(s) to the rendered HTML and potentially hides the block
 	 * based on event state.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @param string $block_content The rendered block content.
 	 * @param array  $block         The block instance array.
+	 *
 	 * @return string The modified block content or empty string if block should be hidden.
 	 */
 	public function apply_visibility_attribute( string $block_content, array $block ): string {
@@ -252,9 +253,10 @@ class Rsvp_Form {
 	 * Attempts to find the event post ID by looking for a parent RSVP form block
 	 * or from the current global post.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @param array $block The block instance array.
+	 *
 	 * @return int|null The post ID or null if not found.
 	 */
 	private function get_post_id_from_context( array $block ): ?int {
@@ -275,10 +277,11 @@ class Rsvp_Form {
 	 * be shown or hidden based on form success state. This provides flexible control
 	 * over any inner blocks within the RSVP form.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @param string $html       The form HTML content.
 	 * @param bool   $is_success Whether the form was successfully submitted.
+	 *
 	 * @return string The modified HTML with appropriate visibility.
 	 */
 	private function handle_form_visibility( string $html, bool $is_success ): string {
@@ -308,12 +311,13 @@ class Rsvp_Form {
 	/**
 	 * Apply visibility rule to a specific HTML element.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @param WP_HTML_Tag_Processor $tag             The HTML tag processor.
 	 * @param string                $visibility_rule The visibility rule as a JSON object.
 	 * @param bool                  $is_success      Whether the form was successfully submitted.
 	 * @param bool                  $is_past         Whether the event has passed.
+	 *
 	 * @return void
 	 */
 	private function apply_visibility_rule(
@@ -350,11 +354,12 @@ class Rsvp_Form {
 	/**
 	 * Determine if a block should be visible based on visibility rules and current state.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @param string $visibility_rule The visibility rule as a JSON object.
 	 * @param bool   $is_success      Whether the form was successfully submitted.
 	 * @param bool   $is_past         Whether the event has passed.
+	 *
 	 * @return bool|null True to show, false to hide, null for no change (always visible).
 	 */
 	private function determine_visibility( string $visibility_rule, bool $is_success, bool $is_past ): ?bool {
@@ -393,9 +398,10 @@ class Rsvp_Form {
 	 * it as post meta. This schema is later used to validate form submissions
 	 * and prevent unauthorized field injection.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @param int $post_id The post ID being saved.
+	 *
 	 * @return void
 	 */
 	public function save_form_schema( int $post_id ): void {
@@ -434,9 +440,10 @@ class Rsvp_Form {
 	 * Searches through blocks to find RSVP Form blocks and creates
 	 * a separate schema for each form based on its position.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @param array $blocks Array of parsed blocks.
+	 *
 	 * @return array Array of form schemas keyed by form ID.
 	 */
 	private function extract_form_schemas_from_blocks( array $blocks ): array {
@@ -475,9 +482,10 @@ class Rsvp_Form {
 	 * Processes the inner blocks of an RSVP Form block to identify
 	 * form field blocks and extract their configuration.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @param array $inner_blocks Array of inner blocks.
+	 *
 	 * @return array Array of form field configurations.
 	 */
 	private function extract_form_fields_from_inner_blocks( array $inner_blocks ): array {
@@ -533,10 +541,11 @@ class Rsvp_Form {
 	 * Determines the position-based schema ID for this form block
 	 * by parsing the current post content and finding its index.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @param int   $post_id The post ID.
 	 * @param array $block   The current block being rendered.
+	 *
 	 * @return string The form schema ID (e.g., 'form_0', 'form_2').
 	 */
 	private function get_form_schema_id( int $post_id, array $block ): string {
@@ -557,11 +566,12 @@ class Rsvp_Form {
 	 * Recursively searches through blocks to find the current RSVP Form
 	 * block and returns its position index.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @param array $blocks       Array of parsed blocks.
 	 * @param array $target_block The block we're looking for.
 	 * @param int   $base_index   Base index for nested blocks.
+	 *
 	 * @return int The index of the form block.
 	 */
 	private function find_form_index_in_blocks( array $blocks, array $target_block, int $base_index = 0 ): int {
@@ -596,10 +606,11 @@ class Rsvp_Form {
 	 * Compares blocks to determine if they are the same instance.
 	 * Uses inner HTML content as the primary comparison method.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @param array $block1 First block to compare.
 	 * @param array $block2 Second block to compare.
+	 *
 	 * @return bool True if blocks match.
 	 */
 	private function blocks_match( array $block1, array $block2 ): bool {
@@ -616,7 +627,7 @@ class Rsvp_Form {
 	 * Creates a unique identifier that can be used to track form submissions
 	 * and handle redirects back to the correct page location.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @return string Unique form ID.
 	 */
@@ -630,9 +641,10 @@ class Rsvp_Form {
 	 * Validates and saves custom fields from form submissions
 	 * using the same schema validation as the Ajax form handler.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @param int $comment_id The comment ID of the RSVP.
+	 *
 	 * @return void
 	 */
 	public function process_custom_fields_for_form( int $comment_id ): void {
@@ -684,10 +696,11 @@ class Rsvp_Form {
 	 *
 	 * Shared sanitization logic for both traditional and Ajax form submissions.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @param mixed $value  The field value to sanitize.
 	 * @param array $config The field configuration from the schema.
+	 *
 	 * @return mixed|false The sanitized value, or false if sanitization fails.
 	 */
 	public function sanitize_custom_field_value( $value, array $config ) {
@@ -745,10 +758,11 @@ class Rsvp_Form {
 	 *
 	 * Sets the max attribute for guest count fields based on event settings.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @param string $block_content The block content.
 	 * @param array  $block         The block data.
+	 *
 	 * @return string The processed block content.
 	 */
 	public function process_form_field_attributes( string $block_content, array $block ): string {

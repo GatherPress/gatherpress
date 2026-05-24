@@ -21,6 +21,7 @@ const NAMESPACE = 'gatherpress-event-query';
  * its media-text wrapper).
  *
  * @param {Array} innerBlocks Inner blocks of a `core/query` block.
+ *
  * @return {boolean} True when the inner-block tree looks like a WP scoped-variation scaffold.
  */
 function isWpStartBlankShape( innerBlocks ) {
@@ -43,6 +44,7 @@ function isWpStartBlankShape( innerBlocks ) {
  *
  * @param {Array}  blocks    Block tree to search.
  * @param {string} blockName Name to look for, e.g. `gatherpress/event-date`.
+ *
  * @return {boolean} True if any node in the tree matches.
  */
 function treeContainsBlock( blocks, blockName ) {
@@ -71,6 +73,7 @@ function treeContainsBlock( blocks, blockName ) {
  * "Image, Date & Title" all swap out their `post-date` for an event date.
  *
  * @param {Array} blocks Inner blocks to rebuild.
+ *
  * @return {Array} Created block instances ready for `replaceInnerBlocks()`.
  */
 function rebuildWithEventDate( blocks ) {

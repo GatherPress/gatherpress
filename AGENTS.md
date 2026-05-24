@@ -208,6 +208,45 @@ When working with this codebase:
 - The exception is a `fix/extract-wp-hooks-{sha}` branch itself — regen is the point of that branch. Merge-conflict resolution there is also fair game (take develop's version for any conflict, then re-run `vendor/bin/extract-wp-hooks.php` against the merged state).
 - This applies only to `docs/developer/hooks/`. `docs/user/` and the rest of `docs/developer/` are hand-maintained.
 
+### Docblock conventions
+
+Apply to PHP PHPDoc blocks and JS JSDoc blocks alike.
+
+- **Never write `@since 1.0.0`**. 1.0.0 has not been released — every `@since` must resolve to a tag that exists in `git tag`. The tag floor is `0.27.0`; the current development line is `0.34.0`. New symbols added on `develop` past the latest tag take the next planned release version (i.e. whatever `0.34.0` resolves to today).
+    - ✅ Good: `@since 0.33.0` (filter shipped in 0.33.0 stable).
+    - ✅ Good: `@since 0.34.0` for anything introduced in the current dev cycle.
+    - ❌ Bad: `@since 1.0.0`, `@since unreleased`, `@since TBD`.
+- **Derive `@since` from git history, not memory.** When adding a new symbol, set `@since` to the target release. When touching an existing symbol whose `@since` looks wrong, verify against history before fixing:
+    - Find the introducing commit: `git log --all --reverse -G "['\"]hook_name['\"]" --format=%H | head -1` for hooks, `git log --all --reverse -G "function method_name" -- path/to/file.php --format=%H | head -1` for methods.
+    - Resolve to the first containing tag: `git describe --contains <sha>`.
+    - Strip pre-release suffixes — `0.33.0-alpha.1` → `@since 0.33.0`. The `@since` tag tracks the **stable base version**, not the alpha/beta/rc the symbol first landed on.
+    - Floor anything older than `0.27.0` to `0.27.0`.
+    - Commits not yet in any tag map to the next release (currently `0.34.0`).
+- **Signature changes after introduction don't move `@since`.** If a filter shipped in 0.30.0 and grew a third `@param` in 0.31.0, the docblock stays `@since 0.30.0`. Document the parameter evolution in a separate sentence or `@since` note inside the param's description — matches WordPress core convention.
+- **Hook-name search must require quotes.** A PHP variable named `$gatherpress_template_path` shares a token with the filter `'gatherpress_template_path'`. When dating a hook from history, the search pattern needs the quote chars: `-G "['\"]hook_name['\"]"`. Bare-word matching picks up unrelated commits and dates the hook too early.
+- **Canonical docblock shape** — short description first, then `@since` separated by a blank `* ` line, then the `@param` group separated by another blank `* ` line, then `@return` separated by another blank `* ` line:
+
+    ```php
+    /**
+     * Method description.
+     *
+     * @since 0.30.0
+     *
+     * @param int[] $param_1 Param description.
+     * @param int[] $param_2 Param description.
+     *
+     * @return int[] Description.
+     */
+    ```
+
+    Rules:
+    - Blank `* ` line between the short description and `@since`.
+    - Blank `* ` line between `@since` and the `@param` group.
+    - Blank `* ` line between the `@param` group and `@return`.
+    - **No blank lines inside the `@param` group** — `@param` lines run consecutively.
+    - Same shape for JS JSDoc (`@since`, `@param`, `@return`).
+- **`@since` lives below the short description, not next to it.** ❌ Bad: `* Method description. @since 0.33.0` on one line. ✅ Good: description on its own line(s), blank `* ` separator, then `@since` on its own line.
+
 ### JavaScript/TypeScript Guidelines
 
 - **No console.log statements**: JavaScript linting will fail if `console.log()` statements are present in the code. For debugging purposes, use proper debugging tools or remove all console statements before committing.

@@ -9,7 +9,7 @@ import EnableRsvp from '../../../components/EnableRsvp';
  * This component renders a section containing the `EnableRsvp` component,
  * allowing editors to enable or disable RSVP for a specific event.
  *
- * @since 1.0.0
+ * @since 0.34.0
  *
  * @return {JSX.Element} The JSX element for the EnableRsvpPanel.
  */

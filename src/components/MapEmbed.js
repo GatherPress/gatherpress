@@ -16,7 +16,7 @@ import { getFromSettings } from '../helpers/editor-settings';
  * This component is used to embed a Google Map with specified location,
  * zoom level, map type, and height.
  *
- * @since 1.0.0
+ * @since 0.27.0
  *
  * @param {Object} props              - Component properties.
  * @param {string} props.location     - The location to be displayed on the map.
@@ -48,6 +48,10 @@ const MapEmbed = ( props ) => {
 	if ( ! mapPlatform ) {
 		return <></>;
 	} else if ( 'google' === mapPlatform ) {
+		const apiKey =
+			props.googleMapsApiKey ??
+			getFromSettings( 'googleMapsApiKey' ) ??
+			'';
 		return (
 			<GoogleMap
 				location={ location }
@@ -57,6 +61,7 @@ const MapEmbed = ( props ) => {
 				zoom={ zoom }
 				type={ type }
 				height={ height }
+				apiKey={ apiKey }
 			/>
 		);
 	} else if ( 'osm' === mapPlatform ) {

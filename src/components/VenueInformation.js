@@ -22,7 +22,7 @@ import AddressAutocompleteField from './AddressAutocompleteField';
  * gatherpress_phone, gatherpress_website) so the values can be bound to
  * blocks via core/post-meta block bindings.
  *
- * @since 1.0.0
+ * @since 0.27.0
  *
  * @return {JSX.Element} The rendered React component.
  */

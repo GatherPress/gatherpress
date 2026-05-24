@@ -6,7 +6,7 @@
  * of the custom post type for events, managing event metadata, and enhancing the admin dashboard for event management.
  *
  * @package GatherPress\Core\Event
- * @since 1.0.0
+ * @since 0.29.0
  */
 
 namespace GatherPress\Core\Event;
@@ -22,16 +22,16 @@ use GatherPress\Core\Settings;
 use GatherPress\Core\Starter_Pattern_Loader;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Utility;
-use WP;
 use WP_Block;
 use WP_Post;
+use WP_Query;
 
 /**
  * Class Setup.
  *
  * Manages event-related functionalities, including registration of event post types and metadata.
  *
- * @since 1.0.0
+ * @since 0.34.0
  */
 class Setup {
 
@@ -43,7 +43,7 @@ class Setup {
 	/**
 	 * Title to use as the archive page title.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @var string
 	 */
@@ -57,7 +57,7 @@ class Setup {
 	 * subsystem with a single `Event\Setup::get_instance()` line — same
 	 * shape as `Settings::instantiate_classes()`.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 */
 	public function __construct() {
 		$this->instantiate_classes();
@@ -71,7 +71,7 @@ class Setup {
 	 * Event\* class lands as a single line here rather than edits to
 	 * Setup. Each subclass is a singleton, so repeat calls are safe.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return void
 	 */
@@ -87,21 +87,18 @@ class Setup {
 	 *
 	 * This method adds hooks for different purposes as needed.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return void
 	 */
 	protected function setup_hooks(): void {
 		add_action( 'init', array( $this, 'register_post_type' ) );
-		add_action( 'init', array( $this, 'register_calendar_rewrite_rule' ) );
 		// Priority 11 so post types registered at default priority 10 are available for get_post_types_by_support().
 		add_action( 'init', array( $this, 'register_starter_pattern' ), 11 );
-		add_action( 'parse_request', array( $this, 'handle_calendar_ics_request' ) );
 		add_action( 'template_redirect', array( $this, 'handle_event_archive_redirect' ) );
 		add_action( 'delete_post', array( $this, 'delete_event' ) );
 		add_action( 'wp_after_insert_post', array( $this, 'set_datetimes' ) );
 		add_action( 'save_post', array( $this, 'check_waiting_list' ) );
-		add_filter( 'redirect_canonical', array( $this, 'disable_ics_canonical_redirect' ), 10, 2 );
 		add_filter( 'get_the_date', array( $this, 'get_the_event_date' ), 10, 3 );
 		add_filter( 'the_time', array( $this, 'get_the_event_date' ) );
 		add_filter( 'render_block_core/post-date', array( $this, 'render_event_post_date_block' ), 10, 3 );
@@ -116,7 +113,7 @@ class Setup {
 	 * within the WordPress admin area. It defines labels for various UI elements, enables Gutenberg support,
 	 * sets the post type to be public, and configures other settings such as the menu position and icon.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return void
 	 */
@@ -211,7 +208,7 @@ class Setup {
 	 * After that, the method sanitizes the string to be safely used within an URL,
 	 * by removing accents, replacing special characters and replacing whitespace with dashes.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return string
 	 */
@@ -241,7 +238,7 @@ class Setup {
 	 * starter patterns for new pages" toggle, so no site-wide setting
 	 * is needed here.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return void
 	 */
@@ -272,7 +269,7 @@ class Setup {
 		 * type and want to swap a pattern in only when their post type
 		 * is in scope.
 		 *
-		 * @since 1.0.0
+		 * @since 0.29.0
 		 *
 		 * @param array $patterns   Pattern definitions loaded from the
 		 *                          `includes/core/templates/event/` directory.
@@ -301,90 +298,6 @@ class Setup {
 	}
 
 	/**
-	 * Register the calendar rewrite rule for ICS file URLs.
-	 *
-	 * Sets up the URL pattern /event-slug/event-name.ics that serves
-	 * dynamically generated ICS files for individual events. The URL slug
-	 * matches the configured event post type slug from GatherPress settings.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @return void
-	 */
-	public function register_calendar_rewrite_rule(): void {
-		$settings     = Settings::get_instance();
-		$rewrite_slug = sanitize_title( $settings->get( 'events_url' ) );
-
-		add_rewrite_rule(
-			sprintf( '^%s/([^/]+)\.ics$', $rewrite_slug ),
-			sprintf( 'index.php?post_type=%s&name=$matches[1]&gatherpress_ics=1', Event::POST_TYPE ),
-			'top'
-		);
-
-		add_rewrite_tag( '%gatherpress_ics%', '1' );
-	}
-
-	/**
-	 * Prevent WordPress from redirecting .ics URLs with a trailing slash.
-	 *
-	 * This ensures calendar download URLs like /event/my-event.ics are treated
-	 * as file downloads and not rewritten with a trailing slash.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param string|false $redirect_url  The URL WordPress wants to redirect to.
-	 * @param string       $requested_url The original requested URL.
-	 * @return string|false The filtered redirect URL or false to cancel redirect.
-	 */
-	public function disable_ics_canonical_redirect( $redirect_url, string $requested_url ) {
-		if ( str_contains( $requested_url, '.ics' ) ) {
-			return false; // prevent canonical redirect.
-		}
-
-		return $redirect_url;
-	}
-
-	/**
-	 * Handle calendar .ics file requests for single event pages.
-	 *
-	 * This method intercepts requests for .ics files based on a custom query var
-	 * and serves dynamically generated ICS content for the specified event. It is
-	 * intended to be hooked into the `parse_request` action.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param \WP $wp The current WP object containing query variables and request context.
-	 * @return void
-	 */
-	public function handle_calendar_ics_request( WP $wp ): void {
-		if ( isset( $wp->query_vars['gatherpress_ics'] ) ) {
-			$slug = $wp->query_vars['name'] ?? null;
-			$post = get_page_by_path( $slug, OBJECT, Event::POST_TYPE );
-
-			if ( $post ) {
-				$event = new Event( $post->ID );
-
-				header( 'Content-Type: text/calendar; charset=utf-8' );
-				header(
-					'Content-Disposition: attachment; filename="'
-					. get_post_field( 'post_name', $post->ID )
-					. '.ics"'
-				);
-
-				// ICS content is safely generated and must not be escaped.
-				// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
-				echo $event->get_ics_calendar_string();
-				Utility::safe_exit();
-
-				// Return statement allows unit tests to complete after safe_exit returns instead of exiting.
-				return;
-			}
-
-			wp_die( esc_html__( 'Event not found.', 'gatherpress' ), '', array( 'response' => 404 ) );
-		}
-	}
-
-	/**
 	 * Handle event post type archive requests.
 	 *
 	 * When visiting the event archive URL (e.g., /event/), this method
@@ -408,7 +321,7 @@ class Setup {
 	 * work; the Feed class serves those. Setting `has_archive => false`
 	 * would make feed URLs 404 in every mode.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @see Feed::handle_events_feed_query()
 	 * @see self::get_event_archive_mode()
@@ -418,14 +331,28 @@ class Setup {
 	public function handle_event_archive_redirect(): void {
 		global $wp_query;
 
-		// Bail when not the event post-type archive, when on a feed (the Feed
-		// class handles those separately), or when event-query already claimed
-		// this page as an archive — combined into one guard so the function
-		// reads as a dispatch.
-		if ( ! is_post_type_archive( Event::POST_TYPE )
-			|| is_feed()
-			|| $wp_query->get( Query::EVENT_QUERY_PARAM )
-		) {
+		// Bail on feeds (handled separately by Feed) or when something
+		// else already claimed this page as an event archive.
+		if ( is_feed() || $wp_query->get( Query::EVENT_QUERY_PARAM ) ) {
+			return;
+		}
+
+		// Bail when not on a post type archive at all, or when the
+		// queried post type doesn't declare event-date support.
+		$post_type = (string) get_query_var( 'post_type' );
+
+		if ( ! is_post_type_archive() || ! post_type_supports( $post_type, 'gatherpress-event-date' ) ) {
+			return;
+		}
+
+		// The page-as-archive flow below reads settings that exist only
+		// for the standard event post type (`events_url`,
+		// `upcoming_events`, `past_events`). Other event-supporting post
+		// types skip straight to the mode resolver, which honors the
+		// `gatherpress_event_archive_mode` filter the same way for every
+		// post type that goes through it (#1611).
+		if ( Event::POST_TYPE !== $post_type ) {
+			$this->fall_back_to_archive_mode( $wp_query, $post_type );
 			return;
 		}
 
@@ -439,7 +366,7 @@ class Setup {
 		if ( ! ( $page instanceof WP_Post ) || 'publish' !== $page->post_status ) {
 			// No page exists with this slug — fall back to the configured
 			// archive mode (or 404 if no mode is configured).
-			$this->fall_back_to_archive_mode( $wp_query );
+			$this->fall_back_to_archive_mode( $wp_query, $post_type );
 			return;
 		}
 
@@ -493,21 +420,27 @@ class Setup {
 	}
 
 	/**
-	 * Mutate the global query to render the configured fallback archive mode
-	 * (upcoming/past) when no page is assigned to the events rewrite slug, or
-	 * 404 when no mode is configured. Extracted from
-	 * `handle_event_archive_redirect()` to keep that dispatch under
-	 * SonarCloud's three-return ceiling.
+	 * Mutate the global query to render the configured archive mode for an
+	 * event-supporting post type.
 	 *
-	 * @since 1.0.0
+	 * The mode comes from `get_event_archive_mode( $post_type )` —
+	 * defaults to `upcoming`, with the Event Archive setting and the
+	 * `gatherpress_event_archive_mode` filter as the override knobs.
+	 * `upcoming` / `past` re-query with the matching temporal filter;
+	 * `none` 404s, since the only way to land there is an explicit
+	 * opt-out (#1611).
 	 *
-	 * @param \WP_Query $wp_query The global query, mutated in place.
+	 * @since 0.34.0
+	 *
+	 * @param WP_Query $wp_query  The global query, mutated in place.
+	 * @param string   $post_type The event-supporting post type being archived.
+	 *
 	 * @return void
 	 */
-	protected function fall_back_to_archive_mode( \WP_Query $wp_query ): void {
-		$mode = $this->get_event_archive_mode();
+	protected function fall_back_to_archive_mode( WP_Query $wp_query, string $post_type ): void {
+		$mode = $this->get_event_archive_mode( $post_type );
 
-		if ( 'upcoming' !== $mode && 'past' !== $mode ) {
+		if ( 'none' === $mode ) {
 			$wp_query->set_404();
 			status_header( 404 );
 			return;
@@ -517,7 +450,7 @@ class Setup {
 
 		$wp_query->query(
 			array(
-				'post_type'              => Event::POST_TYPE,
+				'post_type'              => $post_type,
 				Query::EVENT_QUERY_PARAM => $mode,
 				'paged'                  => $paged,
 			)
@@ -532,7 +465,7 @@ class Setup {
 	/**
 	 * Filter the archive title to use the designated page title.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return string The archive page title.
 	 */
@@ -541,45 +474,49 @@ class Setup {
 	}
 
 	/**
-	 * Resolve the configured event archive mode.
+	 * Resolve the configured event archive mode for a given post type.
 	 *
-	 * Reads the `event_archive` setting and normalizes it against the
-	 * three valid modes (`upcoming`, `past`, `none`). Anything outside
-	 * that set falls back to `upcoming` so a malformed stored value
-	 * doesn't break archive resolution.
+	 * Every event-supporting post type defaults to `upcoming`. For
+	 * `gatherpress_event` the Event Archive setting overrides the
+	 * default when it carries a valid value. The
+	 * `gatherpress_event_archive_mode` filter then runs for every post
+	 * type and gets the last word. Anything outside `upcoming` / `past`
+	 * / `none` is coerced back to `upcoming` (#1611).
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
+	 *
+	 * @param string $post_type Post type to resolve the mode for. Defaults to the standard event post type.
 	 *
 	 * @return string One of `upcoming`, `past`, or `none`.
 	 */
-	public function get_event_archive_mode(): string {
-		$settings = Settings::get_instance();
-		$mode     = (string) $settings->get( 'event_archive' );
+	public function get_event_archive_mode( string $post_type = Event::POST_TYPE ): string {
+		$valid_modes = array( 'upcoming', 'past', 'none' );
+		$mode        = 'upcoming';
 
-		if ( ! in_array( $mode, array( 'upcoming', 'past', 'none' ), true ) ) {
-			$mode = 'upcoming';
+		if ( Event::POST_TYPE === $post_type ) {
+			$stored = (string) Settings::get_instance()->get( 'event_archive' );
+
+			if ( in_array( $stored, $valid_modes, true ) ) {
+				$mode = $stored;
+			}
 		}
 
 		/**
 		 * Filters the resolved event archive mode.
 		 *
-		 * Lets plugins override the user-configured mode at runtime —
-		 * e.g., force `none` while a maintenance flag is set, or pin
-		 * `upcoming` for a specific request context. Returned values
-		 * outside the valid set are coerced back to `upcoming`.
+		 * Lets plugins pin a post type's archive to `upcoming`, `past`,
+		 * or `none` programmatically — including overriding the Event
+		 * Archive setting for `gatherpress_event`. Returned values
+		 * outside the valid set are coerced to `upcoming`.
 		 *
-		 * @since 1.0.0
+		 * @since 0.29.0
 		 *
-		 * @param string $mode The current archive mode (`upcoming`,
-		 *                     `past`, or `none`).
+		 * @param string $mode      Current archive mode (`upcoming`, `past`, or `none`).
+		 * @param string $post_type Post type being archived.
 		 */
-		$mode = (string) apply_filters( 'gatherpress_event_archive_mode', $mode );
+		$mode = (string) apply_filters( 'gatherpress_event_archive_mode', $mode, $post_type );
 
-		if ( ! in_array( $mode, array( 'upcoming', 'past', 'none' ), true ) ) {
-			$mode = 'upcoming';
-		}
-
-		return $mode;
+		return in_array( $mode, $valid_modes, true ) ? $mode : 'upcoming';
 	}
 
 	/**
@@ -588,9 +525,10 @@ class Setup {
 	 * This function initializes an RSVP object for the given post ID
 	 * and checks the waiting list associated with that post.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param int $post_id The ID of the post for which the waiting list should be checked.
+	 *
 	 * @return void
 	 */
 	public function check_waiting_list( int $post_id ): void {
@@ -609,9 +547,10 @@ class Setup {
 	 * This method is called when an event post is deleted, and it ensures that the corresponding
 	 * record in the custom table associated with the event is also deleted.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param int $post_id An event post ID.
+	 *
 	 * @return void
 	 */
 	public function delete_event( int $post_id ): void {
@@ -640,11 +579,12 @@ class Setup {
 	 * ISO 8601), the event start datetime is returned in that format. This ensures compatibility
 	 * with the core/post-date block, which requests ISO 8601 format via block bindings.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param string       $the_date The formatted date.
 	 * @param string       $format   PHP date format.
 	 * @param WP_Post|null $post     The post object.
+	 *
 	 * @return string The event date as a formatted string.
 	 *
 	 * @throws Exception If initializing the Event object fails or event data cannot be retrieved.
@@ -683,11 +623,12 @@ class Setup {
 	 * this method replaces the Post Date block output with the GatherPress-formatted event
 	 * datetime (using the event format settings for date, time, and timezone).
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param string   $block_content The block content.
 	 * @param array    $block         The full block, including name and attributes.
 	 * @param WP_Block $instance      The block instance.
+	 *
 	 * @return string The filtered block content with event datetime.
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) -- $block is required by the render_block filter signature.
@@ -734,10 +675,11 @@ class Setup {
 	 * based on the plugin settings. It checks if the current post object corresponds to any of the assigned
 	 * pages and adds display states accordingly.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param array   $post_states An array of post display states.
 	 * @param WP_Post $post        The current post object.
+	 *
 	 * @return array An updated array of post display states with custom labels if applicable.
 	 */
 	public function set_event_archive_labels( array $post_states, WP_Post $post ): array {
@@ -769,7 +711,7 @@ class Setup {
 	 * associated 'gatherpress_datetime' metadata, and processes the date/time and
 	 * timezone information. It then saves the event's date and time details.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param int $post_id The ID of the post being saved.
 	 *

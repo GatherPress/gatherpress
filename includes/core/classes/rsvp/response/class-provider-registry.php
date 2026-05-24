@@ -7,7 +7,7 @@
  * pattern to ensure only one registry instance exists.
  *
  * @package GatherPress\Core
- * @since 1.0.0
+ * @since 0.35.0
  */
 
 namespace GatherPress\Core\Rsvp\Response;
@@ -48,7 +48,7 @@ final class Provider_Registry {
 	 *
 	 * Initializes the registry and sets up hooks for registration.
 	 *
-	 * @since 1.0.0
+	 * @since 0.35.0
 	 */
 	protected function __construct() {
 		$this->setup_hooks();
@@ -58,7 +58,7 @@ final class Provider_Registry {
 	/**
 	 * Set up hooks for RSVP type registration.
 	 *
-	 * @since 1.0.0
+	 * @since 0.35.0
 	 *
 	 * @return void
 	 */
@@ -83,7 +83,7 @@ final class Provider_Registry {
 	 * Registers a type handler instance with the registry. If a type with the
 	 * same slug already exists, it will be overwritten (allowing for type extension).
 	 *
-	 * @since 1.0.0
+	 * @since 0.35.0
 	 * @throws InvalidArgumentException If type instance is invalid.
 	 *
 	 * @param Provider $provider The RSVP provider instance to register.
@@ -109,7 +109,7 @@ final class Provider_Registry {
 	/**
 	 * Check if an RSVP type is registered.
 	 *
-	 * @since 1.0.0
+	 * @since 0.35.0
 	 *
 	 * @param string $slug The RSVP type slug.
 	 *
@@ -135,7 +135,7 @@ final class Provider_Registry {
 	/**
 	 * Get all registered RSVP types.
 	 *
-	 * @since 1.0.0
+	 * @since 0.35.0
 	 *
 	 * @return Provider[] Associative array of registered types, keyed by slug.
 	 */
@@ -163,7 +163,7 @@ final class Provider_Registry {
 	 * Companion plugins should not hook into this; use the 'gatherpress_register_rsvp_types'
 	 * action instead.
 	 *
-	 * @since 1.0.0
+	 * @since 0.35.0
 	 *
 	 * @return void
 	 */
@@ -178,7 +178,7 @@ final class Provider_Registry {
 	 * Companion plugins should hook into 'gatherpress_register_rsvp_types' to register
 	 * their types.  This method is called after core types are registered.
 	 *
-	 * @since 1.0.0
+	 * @since 0.35.0
 	 *
 	 * @return void
 	 */
@@ -196,7 +196,7 @@ final class Provider_Registry {
 		 * });
 		 * ```
 		 *
-		 * @since 1.0.0
+		 * @since 0.35.0
 		 *
 		 * @param Provider_Registry $provider_registry The RSVP type registry instance.
 		 */

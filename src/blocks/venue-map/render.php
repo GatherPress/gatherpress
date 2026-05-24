@@ -23,7 +23,7 @@
  *     shrinks stays at the right shape.
  *
  * @package GatherPress\Core
- * @since 1.0.0
+ * @since 0.34.0
  */
 
 // Exit if accessed directly.
@@ -138,14 +138,15 @@ if ( ! empty( $gatherpress_styles ) ) {
 
 if ( 'interactive' === $gatherpress_render_mode ) {
 	$gatherpress_block_attrs = array(
-		'address'      => $gatherpress_address,
-		'latitude'     => (string) ( $gatherpress_venue_meta['latitude'] ?? '' ),
-		'longitude'    => (string) ( $gatherpress_venue_meta['longitude'] ?? '' ),
-		'mapZoomLevel' => $attributes['zoom'] ?? Map::DEFAULT_ZOOM,
-		'mapType'      => $attributes['type'] ?? Map::DEFAULT_MAP_TYPE,
-		'mapHeight'    => $attributes['height'] ?? Map::DEFAULT_HEIGHT,
-		'mapPlatform'  => Settings::get_instance()->get( 'map_platform' ),
-		'pluginUrl'    => GATHERPRESS_CORE_URL,
+		'address'          => $gatherpress_address,
+		'latitude'         => (string) ( $gatherpress_venue_meta['latitude'] ?? '' ),
+		'longitude'        => (string) ( $gatherpress_venue_meta['longitude'] ?? '' ),
+		'mapZoomLevel'     => $attributes['zoom'] ?? Map::DEFAULT_ZOOM,
+		'mapType'          => $attributes['type'] ?? Map::DEFAULT_MAP_TYPE,
+		'mapHeight'        => $attributes['height'] ?? Map::DEFAULT_HEIGHT,
+		'mapPlatform'      => (string) Settings::get_instance()->get( 'map_platform' ),
+		'pluginUrl'        => GATHERPRESS_CORE_URL,
+		'googleMapsApiKey' => (string) Settings::get_instance()->get( 'google_maps_api_key' ),
 	);
 
 	$gatherpress_wrapper_attr_args['data-gatherpress_block_name']  = 'map-embed';

@@ -7,11 +7,12 @@ import { __ } from '@wordpress/i18n';
 /**
  * Internal dependencies
  */
+import { NAME } from './name';
 import './controls';
 import './patterns';
 import './start-blank';
 
-export const NAME = 'gatherpress-event-query';
+export { NAME };
 
 const QUERY_ATTRIBUTES = {
 	namespace: NAME,
@@ -31,7 +32,12 @@ const QUERY_ATTRIBUTES = {
 const VARIATION_ATTRIBUTES = {
 	category: 'gatherpress',
 	keywords: [ __( 'Events', 'gatherpress' ), __( 'Dates', 'gatherpress' ) ],
-	isActive: [ 'namespace', 'query.postType' ],
+	// Gate on `namespace` only. Including `query.postType` here would
+	// drop the variation match the moment a user picks a custom event-
+	// supporting post type, which in turn drops the "Event Card with
+	// RSVP" starter pattern out of the Change design picker since that
+	// pattern is scoped to this variation.
+	isActive: [ 'namespace' ],
 	attributes: {
 		...QUERY_ATTRIBUTES,
 		className: 'gatherpress-event-query',
