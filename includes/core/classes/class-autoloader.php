@@ -41,6 +41,7 @@ class Autoloader {
 				 * namespaces and their corresponding paths can be registered.
 				 *
 				 * @param array $registered_autoloaders An associative array of namespaces and their paths.
+				 *
 				 * @return array Modified array of namespaces and their paths.
 				 * @since 0.27.0
 				 *

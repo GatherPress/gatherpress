@@ -79,6 +79,7 @@ abstract class Base {
 	 * @param int   $width     Logical pixel width (at density 1).
 	 * @param int   $height    Logical pixel height (at density 1).
 	 * @param int   $density   Pixel-density multiplier. 1 = standard, 2 = retina.
+	 *
 	 * @return GdImage|resource|null Finished image, or null on failure.
 	 */
 	abstract public function render(
@@ -116,6 +117,7 @@ abstract class Base {
 	 * @since 0.34.0
 	 *
 	 * @param string $map_type Map type slug — one of `roadmap`, `satellite`, `hybrid`, `terrain`.
+	 *
 	 * @return bool
 	 */
 	public function supports_map_type( string $map_type ): bool {

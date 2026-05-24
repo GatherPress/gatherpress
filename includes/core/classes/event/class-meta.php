@@ -82,6 +82,7 @@ class Meta {
 	 * @since 0.34.0
 	 *
 	 * @param string $post_type The post type that was just registered.
+	 *
 	 * @return void
 	 */
 	public function register( string $post_type ): void {
@@ -101,6 +102,7 @@ class Meta {
 	 * @since 0.34.0
 	 *
 	 * @param string $post_type The post type to register against.
+	 *
 	 * @return void
 	 */
 	protected function register_event_date_meta( string $post_type ): void {
@@ -255,6 +257,7 @@ class Meta {
 	 *
 	 * @param stdClass        $prepared_post An object representing a single post prepared for inserting or updating.
 	 * @param WP_REST_Request $request       Request object.
+	 *
 	 * @return stdClass The prepared post object.
 	 */
 	public function filter_readonly_meta( stdClass $prepared_post, WP_REST_Request $request ): stdClass {

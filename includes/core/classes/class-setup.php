@@ -126,6 +126,7 @@ class Setup {
 	 * @since 0.27.0
 	 *
 	 * @param array $actions An array of existing action links.
+	 *
 	 * @return array An updated array of action links, including the 'Settings' link.
 	 */
 	public function filter_plugin_action_links( array $actions ): array {
@@ -158,6 +159,7 @@ class Setup {
 	 * @global wpdb $wpdb WordPress database abstraction object.
 	 *
 	 * @param bool $network_wide Whether the plugin is being activated network-wide.
+	 *
 	 * @return void
 	 */
 	public function activate_gatherpress_plugin( bool $network_wide ): void {
@@ -305,6 +307,7 @@ class Setup {
 	 * @since 0.27.0
 	 *
 	 * @param array $classes Existing body classes.
+	 *
 	 * @return array An updated array of body classes.
 	 */
 	public function add_gatherpress_body_classes( array $classes ): array {
@@ -323,6 +326,7 @@ class Setup {
 	 * @since 0.27.0
 	 *
 	 * @param array $block_categories Array of registered block categories.
+	 *
 	 * @return array An updated array of block categories.
 	 */
 	public function register_gatherpress_block_category( array $block_categories ): array {
@@ -429,6 +433,7 @@ class Setup {
 	 * @since 0.27.0
 	 *
 	 * @param array $tables An array of names of the site tables to be dropped.
+	 *
 	 * @return array An updated array of table names to be deleted during site deletion.
 	 */
 	public function on_site_delete( array $tables ): array {
@@ -542,6 +547,7 @@ class Setup {
 	 *
 	 * @param bool   $is_protected Whether the meta key is protected.
 	 * @param string $meta_key     The meta key being checked.
+	 *
 	 * @return bool True if the meta key should be protected, false otherwise.
 	 */
 	public function protect_gatherpress_meta( bool $is_protected, string $meta_key ): bool {

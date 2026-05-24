@@ -27,6 +27,7 @@ import {
  * @param {Function} props.setAttributes     - Function to update block attributes.
  * @param {Object}   props.blockProps        - WordPress block wrapper properties.
  * @param {Function} props.generateFieldName - Function to generate field name from label.
+ *
  * @return {JSX.Element} The radio button group field component.
  */
 export default function RadioField( {

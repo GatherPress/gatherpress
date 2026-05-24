@@ -89,6 +89,7 @@ class Export extends Migrate {
 	 * @since 0.30.0
 	 *
 	 * @param  WP_Post $post  The Post object (passed by reference).
+	 *
 	 * @return void
 	 */
 	public function prepare( WP_Post $post ): void {
@@ -120,6 +121,7 @@ class Export extends Migrate {
 	 * @param  bool   $skip     Whether to skip the current post meta. Default false.
 	 * @param  string $meta_key Current meta key.
 	 * @param  object $meta     Current meta object.
+	 *
 	 * @return bool             Whether to skip the current post meta. Default false.
 	 */
 	public function extend( bool $skip, string $meta_key, object $meta ): bool {
@@ -150,6 +152,7 @@ class Export extends Migrate {
 	 * @since 0.30.0
 	 *
 	 * @param  WP_Post $post Current 'gatherpress_event' post being exported.
+	 *
 	 * @return void
 	 */
 	public function run( WP_Post $post ): void {
@@ -201,6 +204,7 @@ class Export extends Migrate {
 	 * @since 0.30.0
 	 *
 	 * @param  WP_Post $post Current 'gatherpress_event' post being exported.
+	 *
 	 * @return string        Serialized JSON string with all date, time & timezone data of the current $post.
 	 */
 	public function datetimes_callback( WP_Post $post ): string {

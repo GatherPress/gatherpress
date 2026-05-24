@@ -36,6 +36,7 @@ import { TEMPLATE_WITH_TITLE, TEMPLATE_WITHOUT_TITLE } from './templates/venue-d
  * tuple tree into instantiated block objects, ready for `replaceInnerBlocks`.
  *
  * @param {Array} template Tuples in `[ blockName, attributes, innerBlocks ]` form.
+ *
  * @return {Array} Created block instances.
  */
 function templateToBlocks( template ) {
@@ -286,6 +287,7 @@ const Edit = ( props ) => {
 	 *                                   "Venue Details with Title" and
 	 *                                   "Venue Details" patterns.
 	 * @param {string|null} hostPostType Post type of the post being edited.
+	 *
 	 * @return {Array} Patterns shown in the picker modal, in display order.
 	 *
 	 * @example

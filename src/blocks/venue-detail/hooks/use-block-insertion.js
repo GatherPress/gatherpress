@@ -17,6 +17,7 @@ import { useCallback } from '@wordpress/element';
  *
  * @param {string}   clientId          - The block's client ID.
  * @param {Function} insertBlocksAfter - Function to insert blocks after this block.
+ *
  * @return {Object} Block insertion handlers.
  */
 export function useBlockInsertion( clientId, insertBlocksAfter ) {

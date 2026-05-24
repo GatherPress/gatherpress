@@ -212,6 +212,7 @@ class Prewarm {
 	 *
 	 * @param int     $post_id Post ID that just saved.
 	 * @param WP_Post $post    Post object.
+	 *
 	 * @return void
 	 */
 	public function on_post_saved( int $post_id, WP_Post $post ): void {
@@ -273,6 +274,7 @@ class Prewarm {
 	 * @param int    $width        Pixel width (0 = auto).
 	 * @param int    $height       Pixel height (0 = auto).
 	 * @param string $aspect_ratio Aspect-ratio string.
+	 *
 	 * @return void
 	 */
 	public function process_warm_job( int $post_id, int $zoom, int $width, int $height, string $aspect_ratio ): void {
@@ -285,6 +287,7 @@ class Prewarm {
 	 * @since 0.34.0
 	 *
 	 * @param int $venue_post_id Venue post ID.
+	 *
 	 * @return void
 	 */
 	protected function enqueue_for_venue( int $venue_post_id ): void {
@@ -299,6 +302,7 @@ class Prewarm {
 	 * @since 0.34.0
 	 *
 	 * @param array<int, array{zoom:int,width:int,height:int,aspect_ratio:string}> $combos Combo list.
+	 *
 	 * @return void
 	 */
 	protected function enqueue_for_all_venues( array $combos ): void {
@@ -364,6 +368,7 @@ class Prewarm {
 	 *
 	 * @param int                                                      $venue_post_id Venue post ID.
 	 * @param array{zoom:int,width:int,height:int,aspect_ratio:string} $combo         Combo to warm.
+	 *
 	 * @return void
 	 */
 	protected function enqueue_warm_job( int $venue_post_id, array $combo ): void {
@@ -484,6 +489,7 @@ class Prewarm {
 	 * @since 0.34.0
 	 *
 	 * @param string[] $post_types Post types declaring `gatherpress-venue` support.
+	 *
 	 * @return array<int, array{zoom:int,width:int,height:int,aspect_ratio:string}>
 	 */
 	protected function collect_combos_from_venue_posts( array $post_types ): array {
@@ -538,6 +544,7 @@ class Prewarm {
 	 * @since 0.34.0
 	 *
 	 * @param string $content Block markup (post_content / template content).
+	 *
 	 * @return array<int, array{zoom:int,width:int,height:int,aspect_ratio:string}>
 	 */
 	protected function collect_combos_from_content( string $content ): array {
@@ -556,6 +563,7 @@ class Prewarm {
 	 * @since 0.34.0
 	 *
 	 * @param array<int, array<string, mixed>> $blocks Parsed blocks.
+	 *
 	 * @return array<int, array{zoom:int,width:int,height:int,aspect_ratio:string}>
 	 */
 	protected function walk_blocks_for_combos( array $blocks ): array {
@@ -584,6 +592,7 @@ class Prewarm {
 	 * @since 0.34.0
 	 *
 	 * @param array<string, mixed> $attrs Block attributes.
+	 *
 	 * @return array{zoom:int,width:int,height:int,aspect_ratio:string}
 	 */
 	protected function extract_block_combo( array $attrs ): array {
@@ -605,6 +614,7 @@ class Prewarm {
 	 * @since 0.34.0
 	 *
 	 * @param array<int, array{zoom:int,width:int,height:int,aspect_ratio:string}> $combos Combo list.
+	 *
 	 * @return array<int, array{zoom:int,width:int,height:int,aspect_ratio:string}>
 	 */
 	protected function dedupe_combos( array $combos ): array {

@@ -161,6 +161,7 @@ class Settings {
 	 * @since 0.34.0
 	 *
 	 * @param array $settings The block editor settings array.
+	 *
 	 * @return array The modified block editor settings array.
 	 */
 	public function add_editor_settings( array $settings ): array {
@@ -422,6 +423,7 @@ class Settings {
 	 *
 	 * @param string $sub_page Sub-page slug used to scope WP's settings API.
 	 * @param array  $sections Sections array from the sub-page settings.
+	 *
 	 * @return void
 	 */
 	protected function register_sub_page_sections( string $sub_page, array $sections ): void {
@@ -479,6 +481,7 @@ class Settings {
 	 * @since 0.34.0
 	 *
 	 * @param array $option_settings The option settings array.
+	 *
 	 * @return string Space-separated class names for the row.
 	 */
 	protected function build_row_class( array $option_settings ): string {
@@ -505,6 +508,7 @@ class Settings {
 	 * @since 0.34.0
 	 *
 	 * @param array $conditions Map of controlling option key => expected value(s).
+	 *
 	 * @return bool True when every key matches the current saved value, false otherwise.
 	 */
 	protected function evaluate_show_if( array $conditions ): bool {
@@ -542,6 +546,7 @@ class Settings {
 	 * @since 0.34.0
 	 *
 	 * @param array $conditions Map of controlling option key => expected value(s).
+	 *
 	 * @return void
 	 */
 	protected function render_show_if_marker( array $conditions ): void {
@@ -560,6 +565,7 @@ class Settings {
 	 * @since 0.34.0
 	 *
 	 * @param array $sub_pages The sub-pages array from get_sub_pages().
+	 *
 	 * @return array Flat map of option_key => field_type.
 	 */
 	protected function build_field_type_map( array $sub_pages ): array {
@@ -682,6 +688,7 @@ class Settings {
 	 * sanitized data as a JSON string.
 	 *
 	 * @param string $json_string The JSON string to sanitize.
+	 *
 	 * @return string Sanitized JSON string or empty array '[]' if invalid.
 	 *
 	 * @since 0.33.0
@@ -731,6 +738,7 @@ class Settings {
 	 *
 	 * @param string $option          The unique option key for the field.
 	 * @param array  $option_settings The option settings including field config.
+	 *
 	 * @return void
 	 */
 	public function render_field( string $option, array $option_settings ): void {
@@ -831,6 +839,7 @@ class Settings {
 	 *
 	 * @param string $option The unique name of the option to set.
 	 * @param mixed  $value  The value to set.
+	 *
 	 * @return void
 	 */
 	public function set( string $option, $value ): void {
@@ -858,6 +867,7 @@ class Settings {
 	 * @since 0.27.0
 	 *
 	 * @param string $option The unique name of the option to retrieve.
+	 *
 	 * @return mixed The value of the option or its default value.
 	 */
 	public function get( string $option ) {
@@ -892,6 +902,7 @@ class Settings {
 	 * @since 0.34.0
 	 *
 	 * @param string $option The option key to check.
+	 *
 	 * @return bool
 	 */
 	public function is_option_inherited( string $option ): bool {
@@ -939,6 +950,7 @@ class Settings {
 	 * @since 0.34.0
 	 *
 	 * @param string $option The unique name of the option to retrieve the default value for.
+	 *
 	 * @return mixed The default value of the option or an empty string if not defined.
 	 */
 	public function get_flat_default( string $option ) {
@@ -994,6 +1006,7 @@ class Settings {
 	 * @since 0.27.0
 	 *
 	 * @param string $option Option of the setting field.
+	 *
 	 * @return string The generated name attribute for the setting field.
 	 */
 	public function get_name_field( string $option ): string {
@@ -1045,6 +1058,7 @@ class Settings {
 	 *
 	 * @param array $first  The first sub-page to compare by priority.
 	 * @param array $second The second sub-page to compare by priority.
+	 *
 	 * @return int Returns a negative number if the first sub-page has a lower priority,
 	 *             a positive number if the second sub-page has a lower priority,
 	 *             or 0 if their priorities are equal.
@@ -1087,6 +1101,7 @@ class Settings {
 	 * @since 0.27.0
 	 *
 	 * @param string $submenu The name of the sub menu page.
+	 *
 	 * @return string The selected submenu name, either the provided one or 'general'.
 	 */
 	public function select_menu( $submenu ): string {
@@ -1115,6 +1130,7 @@ class Settings {
 	 *
 	 * @param mixed $old_value The old option value.
 	 * @param mixed $new_value The new option value.
+	 *
 	 * @return void
 	 */
 	public function maybe_flush_rewrite_rules( $old_value, $new_value ): void {
@@ -1192,6 +1208,7 @@ class Settings {
 	 * @since 0.34.0
 	 *
 	 * @param string $scope Storage scope: 'blog' or 'network'.
+	 *
 	 * @return array
 	 */
 	protected function read_stored_options( string $scope ): array {
@@ -1209,6 +1226,7 @@ class Settings {
 	 *
 	 * @param string $scope   Storage scope: 'blog' or 'network'.
 	 * @param array  $options Options array to persist.
+	 *
 	 * @return void
 	 */
 	protected function write_stored_options( string $scope, array $options ): void {
@@ -1226,6 +1244,7 @@ class Settings {
 	 * @since 0.34.0
 	 *
 	 * @param string $scope Storage scope: 'blog' or 'network'.
+	 *
 	 * @return void
 	 */
 	protected function delete_stored_options( string $scope ): void {
@@ -1247,6 +1266,7 @@ class Settings {
 	 *
 	 * @param array  $data  The parsed import data.
 	 * @param string $scope Storage scope: 'blog' (default) or 'network'.
+	 *
 	 * @return array Validation result with 'valid', 'changes', 'unknown', and 'warnings' keys.
 	 */
 	public function validate_import( array $data, string $scope = 'blog' ): array {
@@ -1306,6 +1326,7 @@ class Settings {
 	 * @param array  $data  The parsed import data.
 	 * @param string $mode  Import mode: 'merge' or 'replace'.
 	 * @param string $scope Storage scope: 'blog' (default) or 'network'.
+	 *
 	 * @return array Result with 'success', 'imported', 'skipped', and 'warnings' keys.
 	 */
 	public function import_settings( array $data, string $mode = 'merge', string $scope = 'blog' ): array {

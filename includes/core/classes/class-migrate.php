@@ -80,6 +80,7 @@ class Migrate {
 		 * @since 0.34.0
 		 *
 		 * @param  array $pseudopostmetas List of data-names and their respective export- and import-callbacks.
+		 *
 		 * @return array
 		 */
 		return (array) apply_filters( 'gatherpress_pseudo_post_metas', $this->pseudopostmetas );

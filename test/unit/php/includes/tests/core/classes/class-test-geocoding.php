@@ -67,6 +67,7 @@ class Test_Geocoding extends Base {
 	 * Helper that fires a Photon JSON response for the next outbound HTTP call.
 	 *
 	 * @param array $features `features` payload (use empty array to simulate "no match").
+	 *
 	 * @return void
 	 */
 	private function mock_photon_response( array $features ): void {
@@ -84,6 +85,7 @@ class Test_Geocoding extends Base {
 	 * `country`, `countrycode`) at sensible default values for a US address.
 	 *
 	 * @param array $overrides Property overrides to merge over the defaults.
+	 *
 	 * @return array
 	 */
 	private function build_photon_feature( array $overrides = array() ): array {
@@ -115,6 +117,7 @@ class Test_Geocoding extends Base {
 	 * @param Geocoding $instance Instance.
 	 * @param string    $method   Method name.
 	 * @param array     $args     Arguments.
+	 *
 	 * @return mixed
 	 */
 	private function invoke_geocoding_private( Geocoding $instance, string $method, array $args = array() ) {
@@ -755,6 +758,7 @@ class Test_Geocoding extends Base {
 	 * Returns the transient key used for a given geocode lookup.
 	 *
 	 * @param string $address Address value.
+	 *
 	 * @return string Transient key.
 	 */
 	private function geocode_cache_key( string $address ): string {
@@ -943,6 +947,7 @@ class Test_Geocoding extends Base {
 	 * Returns the transient key used for a given search query.
 	 *
 	 * @param string $query Search query (already trimmed as it would arrive at the cache check).
+	 *
 	 * @return string Transient key.
 	 */
 	private function search_cache_key( string $query ): string {

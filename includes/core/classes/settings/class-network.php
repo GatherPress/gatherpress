@@ -297,6 +297,7 @@ class Network {
 	 * @since 0.34.0
 	 *
 	 * @param mixed $pre The pre-filter value (false when not short-circuited).
+	 *
 	 * @return mixed
 	 */
 	public function route_read_to_site_option( $pre ) {
@@ -360,6 +361,7 @@ class Network {
 	 * @since 0.34.0
 	 *
 	 * @param array $sub_pages Available sub-pages keyed by slug.
+	 *
 	 * @return string
 	 */
 	protected function get_current_tab( array $sub_pages ): string {
@@ -469,6 +471,7 @@ class Network {
 	 * @since 0.34.0
 	 *
 	 * @param array $sub_pages Sub-pages from Settings::get_sub_pages().
+	 *
 	 * @return array<string, string>
 	 */
 	protected function build_field_type_map( array $sub_pages ): array {
@@ -500,6 +503,7 @@ class Network {
 	 * @since 0.34.0
 	 *
 	 * @param string $tab The tab slug to return to.
+	 *
 	 * @return void
 	 */
 	protected function redirect_to_tab( string $tab ): void {
@@ -526,6 +530,7 @@ class Network {
 	 * @since 0.34.0
 	 *
 	 * @param mixed $input Raw input array.
+	 *
 	 * @return array
 	 */
 	public function sanitize( $input ): array {

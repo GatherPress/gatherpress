@@ -415,6 +415,7 @@ class Rest_Api {
 	 * @since 0.34.0
 	 *
 	 * @param WP_REST_Request $request Contains data from the request.
+	 *
 	 * @return WP_REST_Response The response indicating the success of the email scheduling process.
 	 */
 	public function email( WP_REST_Request $request ): WP_REST_Response {
@@ -442,6 +443,7 @@ class Rest_Api {
 	 * @param int    $post_id Post ID.
 	 * @param array  $send    Members to send the email to.
 	 * @param string $message Optional message to include in the email.
+	 *
 	 * @return void
 	 */
 	public function handle_email_send_action( int $post_id, array $send, string $message ): void {
@@ -460,6 +462,7 @@ class Rest_Api {
 	 * @param int    $post_id Post ID.
 	 * @param array  $send    Members to send the email to.
 	 * @param string $message Optional message to include in the email.
+	 *
 	 * @return bool True if emails were successfully sent, false otherwise.
 	 */
 	public function send_emails( int $post_id, array $send, string $message ): bool {
@@ -494,6 +497,7 @@ class Rest_Api {
 	 * @param int     $post_id      Event post ID.
 	 * @param string  $message      Optional editor-supplied message body.
 	 * @param WP_User $current_user Originating editor (restored after locale/user switch).
+	 *
 	 * @return void
 	 */
 	protected function send_event_email_to_recipient(
@@ -573,6 +577,7 @@ class Rest_Api {
 	 *
 	 * @param array $send    An array specifying who to send emails to.
 	 * @param int   $post_id The Event Post ID.
+	 *
 	 * @return array An array containing unified recipient data for both users and non-users.
 	 */
 	public function get_recipients( array $send, int $post_id ): array {
@@ -645,6 +650,7 @@ class Rest_Api {
 	 * @since 0.34.0
 	 *
 	 * @param object $comment RSVP comment row from `Rsvp_Query::get_rsvps()`.
+	 *
 	 * @return array|null Recipient row, or null when no email is on file.
 	 */
 	protected function build_comment_recipient( $comment ): ?array {
@@ -685,6 +691,7 @@ class Rest_Api {
 	 * @since 0.34.0
 	 *
 	 * @param WP_REST_Request $request Contains data from the REST API request.
+	 *
 	 * @return WP_REST_Response The REST API response containing an array of event data.
 	 *
 	 * @throws Exception If there is an issue while retrieving the list of events.
@@ -764,6 +771,7 @@ class Rest_Api {
 	 *
 	 * @param int $number     The actual number.
 	 * @param int $max_number The maximum number allowed.
+	 *
 	 * @return int The sanitized number, ensuring it does not exceed the maximum limit.
 	 */
 	protected function max_number( int $number, int $max_number ): int {
@@ -784,6 +792,7 @@ class Rest_Api {
 	 * @since 0.34.0
 	 *
 	 * @param WP_REST_Request $request Contains data from the request.
+	 *
 	 * @return WP_REST_Response An instance of WP_REST_Response containing the response data.
 	 */
 	public function update_rsvp( WP_REST_Request $request ): WP_REST_Response {
@@ -934,6 +943,7 @@ class Rest_Api {
 	 * @since 0.34.0
 	 *
 	 * @param WP_REST_Request $request The REST API request object.
+	 *
 	 * @return WP_REST_Response The response indicating success or failure.
 	 */
 	public function handle_rsvp_form_submission( WP_REST_Request $request ): WP_REST_Response {
@@ -1032,6 +1042,7 @@ class Rest_Api {
 	 * @since 0.34.0
 	 *
 	 * @param WP_REST_Request $request REST API request object containing post_id parameter.
+	 *
 	 * @return WP_REST_Response Response containing success status and RSVP data.
 	 */
 	public function rsvp_responses( WP_REST_Request $request ): WP_REST_Response {
@@ -1073,6 +1084,7 @@ class Rest_Api {
 	 * @since 0.34.0
 	 *
 	 * @param WP_REST_Response $response The response object containing event data.
+	 *
 	 * @return WP_REST_Response The response object with enhanced event data.
 	 */
 	public function prepare_event_data( WP_REST_Response $response ): WP_REST_Response {

@@ -38,6 +38,7 @@ export const __postTypeLabelCache = new Map();
  *
  * @param {string} postType Post type slug.
  * @param {string} key      Label key.
+ *
  * @return {string|undefined} The cached label, or `undefined` if absent.
  */
 function getCachedLabel( postType, key ) {
@@ -54,6 +55,7 @@ function getCachedLabel( postType, key ) {
  * @param {string} postType Post type slug.
  * @param {string} key      Label key.
  * @param {string} label    Resolved label string.
+ *
  * @return {void}
  */
 function rememberLabel( postType, key, label ) {
@@ -82,6 +84,7 @@ function rememberLabel( postType, key, label ) {
  * @param {string}      key      Label key to read (e.g. `singular_name`, `name`, `add_new_item`).
  * @param {string|null} postType Optional post type slug. Falls back to the editor post type.
  * @param {string}      fallback Optional fallback returned when the label can't be resolved.
+ *
  * @return {string} The resolved label, or the fallback when unresolvable.
  */
 export function getPostTypeLabel( key, postType = null, fallback = '' ) {
@@ -126,6 +129,7 @@ export function getPostTypeLabel( key, postType = null, fallback = '' ) {
  * @param {string}      key      Label key to read.
  * @param {string|null} postType Optional post type slug. Falls back to the editor post type.
  * @param {string}      fallback Optional fallback returned when the label can't be resolved.
+ *
  * @return {string} The resolved label, or the fallback when unresolvable.
  */
 export function usePostTypeLabel( key, postType = null, fallback = '' ) {
@@ -179,6 +183,7 @@ export function enableSave() {
  * @since 0.33.0
  *
  * @param {number|null} postId Optional. A specific post ID to return instead of detecting the current one. Defaults to null.
+ *
  * @return {number|null}                 The post ID, or null if it cannot be determined.
  */
 export function getCurrentContextualPostId( postId = null ) {
@@ -252,6 +257,7 @@ export function isInFSETemplate() {
  * @param {string}  [options.support]               Deprecated. Legacy fallback when `hasSupport` is omitted —
  *                                                  prefer `hasSupport` so the supports gate stays reactive.
  * @param {boolean} [options.hasData=false]         Whether the block has its specific data.
+ *
  * @return {boolean} True if the block should be fully visible, false if it should be dimmed.
  */
 export function hasValidBlockContext( {

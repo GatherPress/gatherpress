@@ -21,6 +21,7 @@ import metadata from './block.json';
  * Stores visibility settings on each block's metadata.gatherpressRsvpFormVisibility attribute.
  *
  * @param {Function} BlockEdit Original BlockEdit component.
+ *
  * @return {Function} Wrapped BlockEdit component.
  */
 const withFormVisibilityControls = createHigherOrderComponent( ( BlockEdit ) => {
@@ -200,6 +201,7 @@ registerBlockType( metadata, {
  * @param {boolean|Array} canInsert    Whether the block can be inserted.
  * @param {Object}        blockType    The block type being checked.
  * @param {string}        rootClientId The client ID of the parent block.
+ *
  * @return {boolean} Whether the block can be inserted.
  */
 function preventNestedRsvpFormInsertion( canInsert, blockType, rootClientId ) {

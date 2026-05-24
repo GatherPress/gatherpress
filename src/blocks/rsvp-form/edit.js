@@ -35,6 +35,7 @@ import { shouldHideBlock } from './visibility';
  * tuple tree into instantiated block objects, ready for `replaceInnerBlocks`.
  *
  * @param {Array} template Tuples in `[ blockName, attributes, innerBlocks ]` form.
+ *
  * @return {Array} Created block instances.
  */
 function templateToBlocks( template ) {
@@ -162,6 +163,7 @@ const Edit = ( { attributes, setAttributes, clientId, context } ) => {
 	 * Apply conditional visibility class to form fields based on event settings.
 	 *
 	 * @param {Array} blocks Array of blocks to process.
+	 *
 	 * @return {Array} Processed blocks with conditional classes applied.
 	 */
 	const applyFormFieldVisibility = useCallback( ( blocks ) => {
@@ -211,6 +213,7 @@ const Edit = ( { attributes, setAttributes, clientId, context } ) => {
 	 * Recursively collect visibility styles from blocks with metadata.
 	 *
 	 * @param {Array} blocks The blocks array.
+	 *
 	 * @return {Array} Array of CSS rules.
 	 */
 	const collectVisibilityStyles = useCallback( ( blocks ) => {

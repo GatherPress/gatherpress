@@ -225,6 +225,7 @@ class Endpoint {
 	 *
 	 * @param  string $reg_ex_pattern The regular expression pattern for matching the custom endpoint URL structure.
 	 * @param  string $rewrite_url    The URL structure for handling matched requests via query vars.
+	 *
 	 * @return void
 	 */
 	private function maybe_flush_rewrite_rules( string $reg_ex_pattern, string $rewrite_url ): void {
@@ -250,6 +251,7 @@ class Endpoint {
 	 * @param string $type_name   The name of the post type or taxonomy to validate.
 	 * @param array  $types       Array of endpoint types to register (redirects/templates).
 	 * @param string $object_type The type of object ('post' or 'taxonomy').
+	 *
 	 * @return bool               Returns true if registration is valid, false otherwise.
 	 */
 	private function is_valid_registration( string $type_name, array $types, string $object_type ): bool {
@@ -325,6 +327,7 @@ class Endpoint {
 	 * @since 0.34.0
 	 *
 	 * @param string[] $public_query_vars The array of allowed query variable names.
+	 *
 	 * @return string[]                   The updated array of allowed query variable names.
 	 */
 	public function allow_query_vars( array $public_query_vars ): array {

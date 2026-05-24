@@ -32,6 +32,7 @@ import { geocodeAddress } from '../../../helpers/geocoding';
  * @param {string}   fieldValue       - The current field value.
  * @param {Function} updateVenueField - Function to update venue meta fields.
  * @param {boolean}  [enabled=true]   - When false, the hook skips firing geocode requests. Callers pass false in contexts where another component (e.g. the VenueInformation sidebar panel) already geocodes the same address, to avoid double requests.
+ *
  * @return {Object} Geocoding state and handlers.
  */
 export function useGeocoding( fieldType, fieldValue, updateVenueField, enabled = true ) {

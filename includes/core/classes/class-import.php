@@ -78,6 +78,7 @@ class Import extends Migrate {
 	 * @see https://github.com/WordPress/wordpress-importer/blob/71bdd41a2aa2c6a0967995ee48021037b39a1097/src/class-wp-import.php#L631
 	 *
 	 * @param  array $post_data_raw The result of 'wp_import_post_data_raw'.
+	 *
 	 * @return array                Returns the unchanged result of 'wp_import_post_data_raw'.
 	 */
 	public function prepare( array $post_data_raw ): array {
@@ -99,6 +100,7 @@ class Import extends Migrate {
 	 * Checks if the currently imported post is of type 'gatherpress_event'.
 	 *
 	 * @param  array $post_data_raw The result of 'wp_import_post_data_raw'.
+	 *
 	 * @return bool                 True, when the currently imported post is of type 'gatherpress_event',
 	 *                              false otherwise.
 	 */
@@ -134,6 +136,7 @@ class Import extends Migrate {
 	 * @param  int       $object_id  ID of the object metadata is for.
 	 * @param  string    $meta_key   Metadata key.
 	 * @param  mixed     $meta_value Metadata value. Must be serializable if non-scalar.
+	 *
 	 * @return null|bool             Returning a non-null value will effectively short-circuit the saving
 	 *                               of 'normal' meta data.
 	 *
@@ -175,6 +178,7 @@ class Import extends Migrate {
 	 *
 	 * @param  int   $post_id   ID of the object metadata is for.
 	 * @param  mixed $data      Metadata value. Must be serializable if non-scalar.
+	 *
 	 * @return void
 	 */
 	public function datetimes_callback( int $post_id, $data ): void {

@@ -25,6 +25,7 @@
  * @since 0.27.0
  *
  * @param {string} html Raw HTML string.
+ *
  * @return {string} The HTML with `<script>` elements and `on*` attributes removed.
  */
 export function stripScriptsAndEventHandlers( html ) {
@@ -60,6 +61,7 @@ export function stripScriptsAndEventHandlers( html ) {
  * @since 0.27.0
  *
  * @param {string} snakeCaseString The snake_case string to be converted.
+ *
  * @return {string} The converted string in camelCase format.
  *
  * @example
@@ -83,6 +85,7 @@ export function toCamelCase( snakeCaseString ) {
  * @since 0.27.0
  *
  * @param {string} name The parameter name to retrieve.
+ *
  * @return {string|null} The parameter value or null if not found.
  */
 export function getUrlParam( name ) {

@@ -86,6 +86,7 @@ class Tools extends Base {
 	 * @since 0.34.0
 	 *
 	 * @param string $page The current settings page slug.
+	 *
 	 * @return void
 	 */
 	public function settings_section( string $page ): void {
@@ -148,6 +149,7 @@ class Tools extends Base {
 	 * @since 0.34.0
 	 *
 	 * @param string $scope 'network' or 'blog'.
+	 *
 	 * @return string
 	 */
 	protected function capability_for_scope( string $scope ): string {

@@ -281,6 +281,7 @@ class Calendar {
 	 * @since 0.34.0
 	 *
 	 * @param string $text The raw text to escape.
+	 *
 	 * @return string The escaped text suitable for a TEXT-typed iCal property.
 	 */
 	private function escape_ical_text( string $text ): string {
@@ -299,6 +300,7 @@ class Calendar {
 	 *
 	 * @param string      $endpoint_slug The visible suffix appended to the post permalink.
 	 * @param string|null $query_var     Optional query var; falls back to `Setup::QUERY_VAR`.
+	 *
 	 * @return string|false              URL of the event's endpoint, or false when the post can't be resolved.
 	 */
 	protected function get_endpoint_url( string $endpoint_slug, ?string $query_var = null ) {
@@ -364,6 +366,7 @@ class Calendar {
 		 *
 		 * @param string   $endpoint_url The full calendar URL.
 		 * @param \WP_Post $post         The corresponding event post.
+		 *
 		 * @return string                The filtered calendar URL.
 		 */
 		$endpoint_url = sanitize_url(
@@ -395,6 +398,7 @@ class Calendar {
 	 * @since 0.34.0
 	 *
 	 * @param string $text The string to be escaped.
+	 *
 	 * @return string The escaped string.
 	 */
 	private function fold_ical_text( string $text ): string {

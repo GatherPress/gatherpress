@@ -348,6 +348,7 @@ class Setup {
 	 * @since 0.34.0
 	 *
 	 * @param array $args Label args from `alternate_link_label_args()`.
+	 *
 	 * @return array<int,array{url:string,attr:string}> One-element list.
 	 */
 	protected function collect_sitewide_alternate_link( array $args ): array {
@@ -377,6 +378,7 @@ class Setup {
 	 * @since 0.34.0
 	 *
 	 * @param array $args Label args from `alternate_link_label_args()`.
+	 *
 	 * @return array<int,array{url:string,attr:string}> One entry per event-supporting post type.
 	 */
 	protected function collect_post_type_archive_alternate_links( array $args ): array {
@@ -419,6 +421,7 @@ class Setup {
 	 * @since 0.34.0
 	 *
 	 * @param array $args Label args from `alternate_link_label_args()`.
+	 *
 	 * @return array<int,array{url:string,attr:string}>
 	 */
 	protected function collect_contextual_alternate_links( array $args ): array {
@@ -449,6 +452,7 @@ class Setup {
 	 *
 	 * @param WP_Post $event The queried event post.
 	 * @param array   $args  Label args from `alternate_link_label_args()`.
+	 *
 	 * @return array<int,array{url:string,attr:string}>
 	 */
 	protected function collect_singular_event_alternate_links( WP_Post $event, array $args ): array {
@@ -478,6 +482,7 @@ class Setup {
 	 *
 	 * @param WP_Post $post The queried shadow-source post (e.g. a venue).
 	 * @param array   $args Label args from `alternate_link_label_args()`.
+	 *
 	 * @return array<int,array{url:string,attr:string}>
 	 */
 	protected function collect_singular_tax_like_alternate_links( WP_Post $post, array $args ): array {
@@ -501,6 +506,7 @@ class Setup {
 	 *
 	 * @param WP_Term $term The queried taxonomy term.
 	 * @param array   $args Label args from `alternate_link_label_args()`.
+	 *
 	 * @return array<int,array{url:string,attr:string}>
 	 */
 	protected function collect_tax_archive_alternate_links( WP_Term $term, array $args ): array {
@@ -527,6 +533,7 @@ class Setup {
 	 *
 	 * @param WP_Post $event The queried event post.
 	 * @param array   $args  Label args from `alternate_link_label_args()`.
+	 *
 	 * @return array<int,array{url:string,attr:string}>
 	 */
 	protected function collect_event_term_alternate_links( WP_Post $event, array $args ): array {
@@ -560,6 +567,7 @@ class Setup {
 	 *
 	 * @param WP_Term $term Term attached to the queried event.
 	 * @param array   $args Label args from `alternate_link_label_args()`.
+	 *
 	 * @return array<int,array{url:string,attr:string}> Empty for sentinel terms; otherwise one entry.
 	 */
 	protected function collect_term_alternate_link( WP_Term $term, array $args ): array {
@@ -608,6 +616,7 @@ class Setup {
 	 * @since 0.34.0
 	 *
 	 * @param array<int,array{url:string,attr:string}> $links Entries to render.
+	 *
 	 * @return void
 	 */
 	protected function render_alternate_links( array $links ): void {
@@ -634,6 +643,7 @@ class Setup {
 	 * @since 0.34.0
 	 *
 	 * @param string $calendar_data The events to be included in the iCal file.
+	 *
 	 * @return string               The complete iCal data wrapped in the VCALENDAR format.
 	 */
 	public function get_ical_wrap( string $calendar_data ): string {
@@ -769,6 +779,7 @@ class Setup {
 	 * @since 0.34.0
 	 *
 	 * @param string $filename Generated name of the file.
+	 *
 	 * @return void
 	 */
 	public function send_ics_headers( string $filename ): void {

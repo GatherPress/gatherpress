@@ -102,6 +102,7 @@ class Dropdown {
 	 *
 	 * @param string $block_content The original block content.
 	 * @param array  $block         The parsed block data containing block attributes.
+	 *
 	 * @return string The modified block content with inline styles.
 	 */
 	public function generate_block_styles( string $block_content, array $block ): string {
@@ -184,6 +185,7 @@ class Dropdown {
 	 *
 	 * @param string $block_content The original block content.
 	 * @param array  $block         The parsed block data.
+	 *
 	 * @return string The modified block content with select mode attributes.
 	 */
 	public function apply_select_mode_attributes( string $block_content, array $block ): string {

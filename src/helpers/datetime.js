@@ -660,6 +660,7 @@ export function validateDateTimeEnd( dateTimeEnd, setDateTimeStart = null ) {
  * @since 0.27.0
  *
  * @param {string} format - The PHP date format to be converted.
+ *
  * @return {string} The equivalent Moment.js date format.
  */
 export function convertPHPToMomentFormat( format ) {
@@ -794,6 +795,7 @@ export const phpNonTimeFormatChars = [
  * @since 0.27.0
  *
  * @param {string} format - The PHP datetime format.
+ *
  * @return {string} The PHP time-only format.
  */
 export function removeNonTimePHPFormatChars( format ) {

@@ -94,6 +94,7 @@ const LINK_DESTINATION_CUSTOM = 'custom';
  * @param {string} latitude    Venue latitude.
  * @param {string} longitude   Venue longitude.
  * @param {number} zoom        Desired zoom level.
+ *
  * @return {string} Computed href, or '' when the preset doesn't apply.
  */
 const buildExternalMapUrl = ( destination, latitude, longitude, zoom ) => {

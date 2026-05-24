@@ -8,6 +8,7 @@ import { useBlockProps, RichText } from '@wordpress/block-editor';
  *
  * @param {Object} props            Block properties.
  * @param {Object} props.attributes Block attributes.
+ *
  * @return {JSX.Element} The rendered save component.
  */
 const Save = ( { attributes } ) => {

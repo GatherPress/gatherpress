@@ -53,6 +53,7 @@ class Redirect extends Endpoint_Type {
 	 * @since 0.34.0
 	 *
 	 * @param Endpoint|null $endpoint Class for custom rewrite endpoints and their query handling in GatherPress.
+	 *
 	 * @return void
 	 */
 	public function activate( ?Endpoint $endpoint = null ): void {
@@ -83,6 +84,7 @@ class Redirect extends Endpoint_Type {
 	 * @since 0.34.0
 	 *
 	 * @param string[] $hosts An array of allowed host names.
+	 *
 	 * @return string[]       The updated array of allowed host names, including the redirect target.
 	 */
 	public function allowed_redirect_hosts( array $hosts ): array {

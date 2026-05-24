@@ -45,6 +45,7 @@ class Test_Coexistence_Guard extends Base {
 	 * touching the real plugins directory.
 	 *
 	 * @param array<string, array<string, mixed>> $plugins Mapping of plugin basename to header data.
+	 *
 	 * @return void
 	 */
 	private function seed_plugins_cache( array $plugins ): void {

@@ -7,6 +7,7 @@ import AddressAutocompleteField from '../../../components/AddressAutocompleteFie
  * Address field for venue details in the block editor (textarea + Popover).
  *
  * @param {Object} props - Passed through to AddressAutocompleteField (block variant).
+ *
  * @return {JSX.Element} Field.
  */
 export default function AddressField( props ) {

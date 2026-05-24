@@ -48,6 +48,7 @@ import { dateTimeDatabaseFormat } from '@src/helpers/datetime';
  * Returns supports.event_date: true for gatherpress_event, false for others.
  *
  * @param {string} slug The post type slug.
+ *
  * @return {Object|null} The post type object with supports.
  */
 function mockGetPostType( slug ) {
@@ -346,6 +347,7 @@ describe( 'isRsvpPostType', () => {
 	 * only, alongside the standard event/post mocks.
 	 *
 	 * @param {string} slug The post type slug.
+	 *
 	 * @return {Object|null} The post type object with supports.
 	 */
 	function mockGetPostTypeWithProduction( slug ) {

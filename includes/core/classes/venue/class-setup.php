@@ -120,6 +120,7 @@ class Setup {
 	 * @since 0.34.0
 	 *
 	 * @param string $post_type The post type that was just registered.
+	 *
 	 * @return void
 	 */
 	public function maybe_link_shadow_source_support( string $post_type ): void {
@@ -140,6 +141,7 @@ class Setup {
 	 * @since 0.34.0
 	 *
 	 * @param array $settings The block editor settings array.
+	 *
 	 * @return array The modified block editor settings array.
 	 */
 	public function add_editor_settings( array $settings ): array {
@@ -361,6 +363,7 @@ class Setup {
 	 * @param int     $post_id Post ID of the venue post.
 	 * @param WP_Post $post    The venue post object.
 	 * @param bool    $update  True when updating an existing post, false on initial insert.
+	 *
 	 * @return void
 	 */
 	public function maybe_apply_venue_template( int $post_id, WP_Post $post, bool $update ): void {
@@ -423,6 +426,7 @@ class Setup {
 	 *
 	 * @param int    $post_id   The post ID for which to retrieve venue information.
 	 * @param string $post_type The post type of the provided post ID.
+	 *
 	 * @return array An array containing venue-related information.
 	 */
 	public function get_venue_meta( int $post_id, string $post_type ): array {
@@ -470,6 +474,7 @@ class Setup {
 	 *
 	 * @param string $slug            The venue taxonomy term slug (e.g. `_my-venue`).
 	 * @param string $event_post_type Optional event post-type context.
+	 *
 	 * @return WP_Post|null The matching venue post, or null.
 	 */
 	public function get_venue_post_from_term_slug( string $slug, string $event_post_type = '' ): ?WP_Post {
@@ -490,6 +495,7 @@ class Setup {
 	 * @since 0.34.0
 	 *
 	 * @param int $event_post_id The event post ID.
+	 *
 	 * @return WP_Post|null The linked venue post, or null.
 	 */
 	public function get_venue_post_from_event_post_id( int $event_post_id ): ?WP_Post {
@@ -529,6 +535,7 @@ class Setup {
 	 * @since 0.34.0
 	 *
 	 * @param string $slug The term slug to test.
+	 *
 	 * @return bool
 	 */
 	public function is_venue_term_slug( string $slug ): bool {
@@ -545,6 +552,7 @@ class Setup {
 	 * @since 0.34.0
 	 *
 	 * @param string $event_post_type The event post type.
+	 *
 	 * @return string The venue taxonomy slug.
 	 */
 	public function taxonomy_for_event_post_type( string $event_post_type = '' ): string {
@@ -561,6 +569,7 @@ class Setup {
 	 * @since 0.34.0
 	 *
 	 * @param string $post_name The venue post's post_name (e.g. `my-venue`).
+	 *
 	 * @return string The taxonomy term slug (e.g. `_my-venue`).
 	 */
 	public function term_slug_from_post_name( string $post_name ): string {
@@ -577,6 +586,7 @@ class Setup {
 	 * @since 0.34.0
 	 *
 	 * @param string $venue_post_type The venue post type slug. Defaults to the built-in venue post type.
+	 *
 	 * @return string The taxonomy slug for the given venue post type.
 	 */
 	public function get_taxonomy( string $venue_post_type = '' ): string {
@@ -604,6 +614,7 @@ class Setup {
 	 * @since 0.34.0
 	 *
 	 * @param string $event_post_type The event post type requesting a venue post type.
+	 *
 	 * @return string The venue post type slug.
 	 */
 	public function get_venue_post_type( string $event_post_type = '' ): string {

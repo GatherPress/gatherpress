@@ -25,6 +25,7 @@ import { AddressField, PhoneField, UrlField, TextField } from './fields';
  * @param {Object}   props.context           - Block context.
  * @param {string}   props.clientId          - Block client ID.
  * @param {Function} props.insertBlocksAfter - Function to insert blocks after this block.
+ *
  * @return {JSX.Element} The rendered React component.
  */
 const Edit = ( {

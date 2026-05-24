@@ -12,6 +12,7 @@ import { __ } from '@wordpress/i18n';
  * into instantiated block objects that `<BlockPreview>` can render.
  *
  * @param {Array} template Tuples in `[ blockName, attributes, innerBlocks ]` form.
+ *
  * @return {Array} Created block instances.
  */
 function templateToBlocks( template ) {
@@ -35,6 +36,7 @@ function templateToBlocks( template ) {
  * @param {string}   [props.title]  Modal heading. Defaults to "Choose a pattern".
  * @param {Function} props.onPick   Called with the picked pattern object.
  * @param {Function} props.onClose  Called when the modal is dismissed without a pick.
+ *
  * @return {JSX.Element} The modal UI.
  */
 const PatternChooserModal = ( { patterns, title, onPick, onClose } ) => {

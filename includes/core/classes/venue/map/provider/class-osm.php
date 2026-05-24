@@ -103,6 +103,7 @@ class OSM extends Base {
 	 * @param int   $width     Logical pixel width (at density 1).
 	 * @param int   $height    Logical pixel height (at density 1).
 	 * @param int   $density   Pixel-density multiplier. 1 = standard, 2 = retina.
+	 *
 	 * @return GdImage|resource|null Finished image, or null on failure.
 	 */
 	public function render(
@@ -209,6 +210,7 @@ class OSM extends Base {
 	 * @param int              $left_pixel World-pixel x-offset of the canvas top-left.
 	 * @param int              $top_pixel  World-pixel y-offset of the canvas top-left.
 	 * @param string           $tiles      URL template (`{z}/{x}/{y}` placeholders).
+	 *
 	 * @return void
 	 */
 	private function paint_tile(
@@ -278,6 +280,7 @@ class OSM extends Base {
 	 * @since 0.34.0
 	 *
 	 * @param string $bytes Raw PNG bytes from `fetch_tile()`.
+	 *
 	 * @return GdImage|resource|false Decoded image, or false when the bytes don't decode.
 	 */
 	protected function decode_tile( string $bytes ) {
@@ -301,6 +304,7 @@ class OSM extends Base {
 	 * @param int    $x     Tile x coordinate.
 	 * @param int    $y     Tile y coordinate.
 	 * @param string $tiles Tile URL template containing `{z}`, `{x}`, `{y}`.
+	 *
 	 * @return string|null PNG bytes, or null on failure.
 	 */
 	public function fetch_tile( int $zoom, int $x, int $y, string $tiles ): ?string {
@@ -342,6 +346,7 @@ class OSM extends Base {
 	 * @param int              $x      Pixel X position (marker center).
 	 * @param int              $y      Pixel Y position (marker center).
 	 * @param float            $scale  Multiplier applied to the marker radii.
+	 *
 	 * @return void
 	 */
 	public function stamp_marker( $canvas, int $x, int $y, float $scale = 1.0 ): void {
@@ -386,6 +391,7 @@ class OSM extends Base {
 	 *
 	 * @param float $lng  Longitude in degrees.
 	 * @param int   $zoom Zoom level.
+	 *
 	 * @return float
 	 */
 	protected function lng_to_world_pixel( float $lng, int $zoom ): float {
@@ -399,6 +405,7 @@ class OSM extends Base {
 	 *
 	 * @param float $lat  Latitude in degrees.
 	 * @param int   $zoom Zoom level.
+	 *
 	 * @return float
 	 */
 	protected function lat_to_world_pixel( float $lat, int $zoom ): float {

@@ -34,6 +34,7 @@ class Validate {
 	 * @since 0.31.0
 	 *
 	 * @param string $param An RSVP status to validate.
+	 *
 	 * @return bool True if the parameter is a valid RSVP status, false otherwise.
 	 */
 	public static function rsvp_status( $param ): bool {
@@ -57,6 +58,7 @@ class Validate {
 	 * @since 0.31.0
 	 *
 	 * @param int|string $param A Post ID to validate.
+	 *
 	 * @return bool True if the parameter is a valid Event Post ID, false otherwise.
 	 */
 	public static function event_post_id( $param ): bool {
@@ -74,6 +76,7 @@ class Validate {
 	 * @since 0.33.0
 	 *
 	 * @param int|string $param The value to validate.
+	 *
 	 * @return bool True if the parameter is a valid positive numeric value, false otherwise.
 	 */
 	public static function positive_number( $param ): bool {
@@ -91,6 +94,7 @@ class Validate {
 	 * @since 0.33.0
 	 *
 	 * @param int|string $param The value to validate.
+	 *
 	 * @return bool True if the parameter is a valid non-negative numeric value, false otherwise.
 	 */
 	public static function non_negative_number( $param ): bool {
@@ -114,6 +118,7 @@ class Validate {
 	 * @since 0.34.0
 	 *
 	 * @param mixed $param The value to validate.
+	 *
 	 * @return bool True if the parameter is a numeric value within ±180, false otherwise.
 	 */
 	public static function coordinate( $param ): bool {
@@ -137,6 +142,7 @@ class Validate {
 	 * @since 0.33.0
 	 *
 	 * @param mixed $value The value to validate.
+	 *
 	 * @return bool True if the value is valid, false otherwise.
 	 */
 	public static function boolean( $value ): bool {
@@ -151,6 +157,7 @@ class Validate {
 	 * @since 0.31.0
 	 *
 	 * @param mixed $param An array of email recipients.
+	 *
 	 * @return bool True if the parameter is a valid array of email recipients, false otherwise.
 	 */
 	public static function send( $param ): bool {
@@ -180,6 +187,7 @@ class Validate {
 	 * @since 0.31.0
 	 *
 	 * @param string $param The event list type to validate.
+	 *
 	 * @return bool True if the parameter is a valid event list type, false otherwise.
 	 */
 	public static function event_list_type( string $param ): bool {
@@ -194,6 +202,7 @@ class Validate {
 	 * @since 0.31.0
 	 *
 	 * @param string $param The datetime string to validate.
+	 *
 	 * @return bool True if the parameter is a valid datetime string, false otherwise.
 	 */
 	public static function datetime( string $param ): bool {
@@ -208,6 +217,7 @@ class Validate {
 	 * @since 0.31.0
 	 *
 	 * @param string $param The timezone identifier to validate.
+	 *
 	 * @return bool True if the parameter is a valid timezone identifier, false otherwise.
 	 */
 	public static function timezone( string $param ): bool {
@@ -228,6 +238,7 @@ class Validate {
 	 * @since 0.33.0
 	 *
 	 * @param string $param The JSON string representing block data.
+	 *
 	 * @return bool True if the block data is valid, false otherwise.
 	 */
 	public static function block_data( string $param ): bool {

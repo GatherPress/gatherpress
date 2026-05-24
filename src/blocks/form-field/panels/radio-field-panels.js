@@ -25,6 +25,7 @@ import {
  * @param {Object}   props               - Component props.
  * @param {Object}   props.attributes    - Block attributes object.
  * @param {Function} props.setAttributes - Function to update block attributes.
+ *
  * @return {JSX.Element} The radio field styling and options panels.
  */
 export default function RadioFieldPanels( { attributes, setAttributes } ) {

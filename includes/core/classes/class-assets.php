@@ -224,6 +224,7 @@ class Assets {
 	 *
 	 * @param string $block_content The block content.
 	 * @param array  $block         The block settings.
+	 *
 	 * @return string The block content.
 	 */
 	public function maybe_enqueue_styles( string $block_content, array $block ): string {
@@ -263,6 +264,7 @@ class Assets {
 	 * @since 0.34.0
 	 *
 	 * @param string $block_content The block content.
+	 *
 	 * @return string The block content.
 	 */
 	public function maybe_enqueue_tooltip_assets( string $block_content ): string {
@@ -317,6 +319,7 @@ class Assets {
 	 * @since 0.27.0
 	 *
 	 * @param string $hook The name of the current admin page.
+	 *
 	 * @return void
 	 */
 	public function admin_enqueue_scripts( string $hook ): void {
@@ -581,7 +584,7 @@ class Assets {
 
 	/**
 	 * Register a new script and sets translated strings for the script.
-
+	 *
 	 * @since 0.33.0
 	 *
 	 * @param string $folder_name Slug of the block to register scripts and translations for.

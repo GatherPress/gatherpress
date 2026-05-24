@@ -68,6 +68,7 @@ class Test_OSM extends Base {
 	 * @param mixed  $preempt Default false.
 	 * @param array  $args    HTTP args (unused).
 	 * @param string $url     Request URL (unused).
+	 *
 	 * @return array
 	 */
 	public function short_circuit_tile_requests( $preempt, $args, $url ): array {

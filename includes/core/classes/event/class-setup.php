@@ -434,6 +434,7 @@ class Setup {
 	 *
 	 * @param WP_Query $wp_query  The global query, mutated in place.
 	 * @param string   $post_type The event-supporting post type being archived.
+	 *
 	 * @return void
 	 */
 	protected function fall_back_to_archive_mode( WP_Query $wp_query, string $post_type ): void {
@@ -485,6 +486,7 @@ class Setup {
 	 * @since 0.34.0
 	 *
 	 * @param string $post_type Post type to resolve the mode for. Defaults to the standard event post type.
+	 *
 	 * @return string One of `upcoming`, `past`, or `none`.
 	 */
 	public function get_event_archive_mode( string $post_type = Event::POST_TYPE ): string {
@@ -526,6 +528,7 @@ class Setup {
 	 * @since 0.34.0
 	 *
 	 * @param int $post_id The ID of the post for which the waiting list should be checked.
+	 *
 	 * @return void
 	 */
 	public function check_waiting_list( int $post_id ): void {
@@ -547,6 +550,7 @@ class Setup {
 	 * @since 0.34.0
 	 *
 	 * @param int $post_id An event post ID.
+	 *
 	 * @return void
 	 */
 	public function delete_event( int $post_id ): void {
@@ -580,6 +584,7 @@ class Setup {
 	 * @param string       $the_date The formatted date.
 	 * @param string       $format   PHP date format.
 	 * @param WP_Post|null $post     The post object.
+	 *
 	 * @return string The event date as a formatted string.
 	 *
 	 * @throws Exception If initializing the Event object fails or event data cannot be retrieved.
@@ -623,6 +628,7 @@ class Setup {
 	 * @param string   $block_content The block content.
 	 * @param array    $block         The full block, including name and attributes.
 	 * @param WP_Block $instance      The block instance.
+	 *
 	 * @return string The filtered block content with event datetime.
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) -- $block is required by the render_block filter signature.
@@ -673,6 +679,7 @@ class Setup {
 	 *
 	 * @param array   $post_states An array of post display states.
 	 * @param WP_Post $post        The current post object.
+	 *
 	 * @return array An updated array of post display states with custom labels if applicable.
 	 */
 	public function set_event_archive_labels( array $post_states, WP_Post $post ): array {

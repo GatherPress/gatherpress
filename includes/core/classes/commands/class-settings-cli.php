@@ -45,6 +45,7 @@ class Settings_Cli extends WP_CLI {
 	 *
 	 * @param array $args       Positional arguments.
 	 * @param array $assoc_args Associative arguments.
+	 *
 	 * @return void
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
@@ -120,6 +121,7 @@ class Settings_Cli extends WP_CLI {
 	 *
 	 * @param array $args       Positional arguments.
 	 * @param array $assoc_args Associative arguments.
+	 *
 	 * @return void
 	 */
 	public function import( array $args = array(), array $assoc_args = array() ): void {

@@ -42,6 +42,7 @@ const QUERY_ATTRIBUTES = {
  * of `wp.blocks` block instances ready for `serialize()`.
  *
  * @param {Array} template Array of `[ block_name, attributes, inner_blocks ]` tuples.
+ *
  * @return {Array} Created block instances.
  */
 function templateToBlocks( template ) {
@@ -66,6 +67,7 @@ function templateToBlocks( template ) {
  * @param {string} props.title       Human-readable title shown in the modal.
  * @param {string} props.description Sentence summary shown alongside the preview.
  * @param {Array}  props.template    Inner template tuples (post-template + pagination + no-results).
+ *
  * @return {Object} Pattern descriptor in the shape `__experimentalBlockPatterns` accepts.
  */
 function buildPattern( { name, title, description, template } ) {

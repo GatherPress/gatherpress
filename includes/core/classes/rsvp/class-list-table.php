@@ -722,6 +722,7 @@ class List_Table extends WP_List_Table {
 	 *
 	 * @param string $status_key The status key to check.
 	 * @param string $current    The currently active status.
+	 *
 	 * @return string The class attribute string or empty string.
 	 */
 	private function get_current_class_attr( string $status_key, string $current ): string {

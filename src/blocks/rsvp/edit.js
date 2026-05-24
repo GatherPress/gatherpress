@@ -107,6 +107,7 @@ const DEFAULT_STATUS_TEMPLATES = applyFilters(
  * Helper function to convert a template to blocks.
  *
  * @param {Array} template The block template structure.
+ *
  * @return {Array} Array of blocks created from the template.
  */
 function templateToBlocks( template ) {
@@ -244,6 +245,7 @@ const Edit = ( { attributes, setAttributes, clientId, context } ) => {
 	 * Apply conditional visibility class to form fields based on event settings.
 	 *
 	 * @param {Array} blocks Array of blocks to process.
+	 *
 	 * @return {Array} Processed blocks with conditional classes applied.
 	 */
 	const applyFormFieldVisibility = useCallback( ( blocks ) => {

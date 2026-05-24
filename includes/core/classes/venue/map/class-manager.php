@@ -97,6 +97,7 @@ class Manager {
 	 * @since 0.34.0
 	 *
 	 * @param Map_Provider $provider Provider instance.
+	 *
 	 * @return void
 	 */
 	public function register( Map_Provider $provider ): void {
@@ -114,7 +115,7 @@ class Manager {
 					esc_html__( 'A venue map provider is already registered for slug "%s".', 'gatherpress' ),
 					esc_html( $slug )
 				),
-				'1.0.0'
+				'0.34.0'
 			);
 			return;
 		}
@@ -128,6 +129,7 @@ class Manager {
 	 * @since 0.34.0
 	 *
 	 * @param string $slug Provider slug.
+	 *
 	 * @return bool
 	 */
 	public function is_registered( string $slug ): bool {
@@ -140,6 +142,7 @@ class Manager {
 	 * @since 0.34.0
 	 *
 	 * @param string $slug Provider slug.
+	 *
 	 * @return Map_Provider|null
 	 */
 	public function get( string $slug ): ?Map_Provider {
@@ -201,7 +204,7 @@ class Manager {
 					esc_html__( 'No venue map provider registered for slug "%s"; falling back to OSM.', 'gatherpress' ),
 					esc_html( $slug )
 				),
-				'1.0.0'
+				'0.34.0'
 			);
 		}
 

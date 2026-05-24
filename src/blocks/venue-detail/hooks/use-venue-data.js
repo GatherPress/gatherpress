@@ -23,6 +23,7 @@ import { getMetaKey } from '../helpers';
  *
  * @param {Object} context   - Block context containing postId.
  * @param {string} fieldType - The type of field (address, phone, url, text).
+ *
  * @return {Object} Venue data and update functions.
  */
 export function useVenueData( context, fieldType ) {

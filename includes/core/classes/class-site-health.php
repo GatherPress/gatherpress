@@ -65,6 +65,7 @@ class Site_Health {
 	 * @since 0.34.0
 	 *
 	 * @param array<string, array<string, array<string, mixed>>> $tests Existing Site Health tests.
+	 *
 	 * @return array<string, array<string, array<string, mixed>>> Updated Site Health tests.
 	 */
 	public function register_site_status_tests( array $tests ): array {
