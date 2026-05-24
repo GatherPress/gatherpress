@@ -26,7 +26,8 @@
 		"yoast/phpunit-polyfills": "*",
 		"szepeviktor/phpstan-wordpress": "^1.3",
 		"akirk/extract-wp-hooks": "dev-main",
-		"phpmd/phpmd": "^2.9"
+		"phpmd/phpmd": "^2.9",
+		"automattic/jetpack-changelogger": "6.0.15"
 	},
 	"suggest": {
 		"wp-cli/wp-cli-bundle": "Combines the most common WP-CLI commands, including the wp-cli/i18n-command which should be used to create translation-files."
@@ -39,7 +40,21 @@
 		"test:phpmd": "phpmd . text phpmd.xml",
 		"test": "@php ./vendor/phpunit/phpunit/phpunit",
 		"test:phpstan": "@php ./vendor/bin/phpstan analyze -vv --memory-limit=2G",
-		"hooks": "@php ./vendor/bin/extract-wp-hooks.php"
+		"hooks": "@php ./vendor/bin/extract-wp-hooks.php",
+		"changelog:add": [
+			"composer install",
+			"vendor/bin/changelogger add"
+		],
+		"changelog:write": [
+			"composer install",
+			"vendor/bin/changelogger write --add-pr-num"
+		]
+	},
+	"extra": {
+		"changelogger": {
+			"changes-dir": ".github/changelog/",
+			"link-template": "https://github.com/GatherPress/gatherpress/compare/${old}...${new}"
+		}
 	},
 	"config": {
 		"allow-plugins": {
