@@ -68,14 +68,22 @@ jobs:
           # only used by pre-releases). For stable, we still emit something
           # here so the output isn't empty — the rollup job overrides it.
           if [[ "${IS_PRERELEASE}" == "true" ]]; then
+            # Single-pass capture between the [Unreleased] header and the next
+            # version header. Suppresses leading blanks until the first non-blank
+            # line, and buffers trailing blanks so they never get flushed.
             section="$(awk '
               /^## \[Unreleased\]/ { capture = 1; next }
               /^## \[/ && capture { exit }
-              capture { print }
+              capture {
+                if ($0 ~ /[^[:space:]]/) {
+                  seen = 1
+                  if (buffered) { printf "%s", buffered; buffered = "" }
+                  print
+                } else if (seen) {
+                  buffered = buffered $0 ORS
+                }
+              }
             ' CHANGELOG.md)"
-
-            # Strip leading/trailing blank lines.
-            section="$(printf "%s" "$section" | sed -e '/./,$!d' | sed -e ':a' -e '/^\s*$/{$d;N;ba' -e '}')"
 
             if [[ -z "$section" ]]; then
               section="_No changelog entries queued yet for this pre-release._"
@@ -145,13 +153,21 @@ jobs:
           VERSION: ${{ needs.prepare.outputs.version }}
         run: |
           # Capture lines between the new [X.Y.Z] header and the next ## header.
+          # Single-pass: suppress leading blanks until first non-blank, buffer
+          # trailing blanks so they never flush.
           section="$(awk -v ver="${VERSION}" '
             $0 ~ "^## \\[" ver "\\]" { capture = 1; next }
             /^## \[/ && capture { exit }
-            capture { print }
+            capture {
+              if ($0 ~ /[^[:space:]]/) {
+                seen = 1
+                if (buffered) { printf "%s", buffered; buffered = "" }
+                print
+              } else if (seen) {
+                buffered = buffered $0 ORS
+              }
+            }
           ' CHANGELOG.md)"
-
-          section="$(printf "%s" "$section" | sed -e '/./,$!d' | sed -e ':a' -e '/^\s*$/{$d;N;ba' -e '}')"
 
           if [[ -z "$section" ]]; then
             echo "::error::Rolled-up CHANGELOG.md does not contain a [${VERSION}] section. Did the changelogger write command succeed?"
