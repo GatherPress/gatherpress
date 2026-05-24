@@ -1,0 +1,4 @@
+Significance: patch
+Type: changed
+
+Refactor the venue map block into a swappable provider strategy so Google Maps and OpenStreetMap (and future providers) share a common interface. [#1534]

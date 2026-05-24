@@ -1,0 +1,4 @@
+Significance: minor
+Type: added
+
+Add the `gatherpress-rsvp` post type support so any post type can opt into the comment-based RSVP system, attendee management, waiting lists, and the RSVP block family. [#1444]

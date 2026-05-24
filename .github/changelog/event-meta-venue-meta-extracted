@@ -1,0 +1,4 @@
+Significance: patch
+Type: changed
+
+Extract `Event\Meta` and `Venue\Meta` from their respective `Setup` classes so meta registration lives in a dedicated, testable component. [#1542]
