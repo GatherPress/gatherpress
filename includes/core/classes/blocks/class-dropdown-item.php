@@ -7,7 +7,7 @@
  * styles and attributes specific to dropdown functionality.
  *
  * @package GatherPress\Core
- * @since 1.0.0
+ * @since 0.33.0
  */
 
 namespace GatherPress\Core\Blocks;
@@ -22,7 +22,7 @@ use WP_HTML_Tag_Processor;
  * Class responsible for managing the "Dropdown" block and its functionality,
  * including dynamic rendering adjustments.
  *
- * @since 1.0.0
+ * @since 0.33.0
  */
 class Dropdown_Item {
 
@@ -34,7 +34,7 @@ class Dropdown_Item {
 	/**
 	 * Constant representing the Block Name.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @var string
 	 */
 	const BLOCK_NAME = 'gatherpress/dropdown-item';
@@ -44,7 +44,7 @@ class Dropdown_Item {
 	 *
 	 * This method initializes the object and sets up necessary hooks.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 */
 	protected function __construct() {
 		$this->setup_hooks();
@@ -55,7 +55,7 @@ class Dropdown_Item {
 	 *
 	 * This method adds hooks for different purposes as needed.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @return void
 	 */
@@ -72,7 +72,7 @@ class Dropdown_Item {
 	 * them to the block content. Styles include padding, colors, and hover effects
 	 * for dropdown items. Additionally, it handles `hover`-based dropdown behavior.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @param string $block_content The original block content.
 	 *

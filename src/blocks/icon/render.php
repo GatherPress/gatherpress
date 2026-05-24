@@ -5,7 +5,7 @@
  * Dynamically renders an inline SVG for the Icon block with customizable size and color.
  *
  * @package GatherPress\Core
- * @since 1.0.0
+ * @since 0.33.0
  */
 
 // Exit if accessed directly.

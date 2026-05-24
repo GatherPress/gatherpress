@@ -4,7 +4,7 @@
  * Sets CSS custom properties for tooltip colors based on data attributes.
  * The actual tooltip display is handled via pure CSS.
  *
- * @since 1.0.0
+ * @since 0.34.0
  */
 
 /**

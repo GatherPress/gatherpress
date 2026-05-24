@@ -13,7 +13,7 @@
  * they operate on `get_queried_object()` rather than a single specific post.
  *
  * @package GatherPress\Core\Calendar
- * @since 1.0.0
+ * @since 0.34.0
  */
 
 namespace GatherPress\Core\Calendar;
@@ -32,14 +32,14 @@ use GatherPress\Core\Event;
  * for that event. Site-wide / request-scoped concerns live on
  * `Calendar\Setup`.
  *
- * @since 1.0.0
+ * @since 0.34.0
  */
 class Calendar {
 
 	/**
 	 * Event this Calendar instance wraps.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @var Event
 	 */
@@ -48,7 +48,7 @@ class Calendar {
 	/**
 	 * Class constructor.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param int $post_id The event post ID.
 	 */
@@ -59,7 +59,7 @@ class Calendar {
 	/**
 	 * URL to the iCal download endpoint for this event.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return string|false Endpoint URL, or false if the event post can't be resolved.
 	 */
@@ -74,7 +74,7 @@ class Calendar {
 	 * download with an Outlook-flavored filename, so the endpoint is just a
 	 * sibling slug pointing at the same template.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return string|false Endpoint URL, or false if the event post can't be resolved.
 	 */
@@ -95,7 +95,7 @@ class Calendar {
 	 * direct Google URL so themes, the `gatherpress_calendar_url` filter,
 	 * and any CDN/federation tooling see a stable canonical link.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return string|false Endpoint URL, or false if the event post can't be resolved.
 	 */
@@ -111,7 +111,7 @@ class Calendar {
 	 * `get_yahoo_destination_url()`, called from the Redirect endpoint
 	 * callback in `Calendar\Setup`.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return string|false Endpoint URL, or false if the event post can't be resolved.
 	 */
@@ -128,7 +128,7 @@ class Calendar {
 	 * target for the `/event/<slug>/google-calendar/` endpoint — front-end
 	 * code should use `get_google_url()` (the on-site URL) instead.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return string The Google Calendar add-event URL.
 	 *
@@ -172,7 +172,7 @@ class Calendar {
 	 * the 302 target for the `/event/<slug>/yahoo-calendar/` endpoint —
 	 * front-end code should use `get_yahoo_url()` (the on-site URL) instead.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return string The Yahoo! Calendar add-event URL.
 	 *
@@ -223,7 +223,7 @@ class Calendar {
 	 * event. The caller is responsible for wrapping one or more of these
 	 * in a `BEGIN:VCALENDAR` envelope (see `Calendar\Setup::get_ical_wrap()`).
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return string The VEVENT block.
 	 *
@@ -278,7 +278,7 @@ class Calendar {
 	 * venue addresses contain at least a comma. Escape before folding so the
 	 * fold doesn't split inside an escape sequence.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param string $text The raw text to escape.
 	 * @return string The escaped text suitable for a TEXT-typed iCal property.
@@ -295,7 +295,7 @@ class Calendar {
 	 *
 	 * @see https://developer.wordpress.org/reference/functions/get_post_embed_url/
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param string      $endpoint_slug The visible suffix appended to the post permalink.
 	 * @param string|null $query_var     Optional query var; falls back to `Setup::QUERY_VAR`.
@@ -360,7 +360,7 @@ class Calendar {
 		 * the host for a federation-friendly canonical, or appending tracking
 		 * params.
 		 *
-		 * @since 1.0.0
+		 * @since 0.34.0
 		 *
 		 * @param string   $endpoint_url The full calendar URL.
 		 * @param \WP_Post $post         The corresponding event post.
@@ -392,7 +392,7 @@ class Calendar {
 	 * @author Stephen Harris (@stephenharris)
 	 * @source https://github.com/stephenharris/Event-Organiser/blob/develop/includes/event-organiser-utility-functions.php#L1663
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param string $text The string to be escaped.
 	 * @return string The escaped string.

@@ -7,7 +7,7 @@
  * file locations within the GatherPress plugin.
  *
  * @package GatherPress\Core
- * @since 1.0.0
+ * @since 0.27.0
  */
 
 namespace GatherPress\Core;
@@ -20,14 +20,14 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
  *
  * This class is responsible for automatic loading of classes and namespaces.
  *
- * @since 1.0.0
+ * @since 0.27.0
  */
 class Autoloader {
 
 	/**
 	 * Register method for autoloader.
 	 *
-	 * @since 1.0.0
+	 * @since 0.27.0
 	 *
 	 * @return void
 	 */
@@ -42,7 +42,7 @@ class Autoloader {
 				 *
 				 * @param array $registered_autoloaders An associative array of namespaces and their paths.
 				 * @return array Modified array of namespaces and their paths.
-				 * @since 1.0.0
+				 * @since 0.27.0
 				 *
 				 * @example
 				 * ```php

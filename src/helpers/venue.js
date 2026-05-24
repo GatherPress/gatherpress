@@ -13,7 +13,7 @@ import { store as coreStore } from '@wordpress/core-data';
 /**
  * Default venue post type slug used as a fallback when no override is configured.
  *
- * @since 1.0.0
+ * @since 0.27.0
  *
  * @type {string}
  */
@@ -26,7 +26,7 @@ const DEFAULT_VENUE_POST_TYPE = 'gatherpress_venue';
  * following the convention established in PHP via Venue\Setup::get_taxonomy().
  * For example, 'gatherpress_venue' becomes '_gatherpress_venue'.
  *
- * @since 1.0.0
+ * @since 0.27.0
  *
  * @param {string} [venuePostType='gatherpress_venue'] The venue post type slug.
  * @return {string} The taxonomy slug for the given venue post type.
@@ -42,7 +42,7 @@ export function getVenueTaxonomy( venuePostType = DEFAULT_VENUE_POST_TYPE ) {
  * via the block_editor_settings_all filter. Falls back to 'gatherpress_venue'
  * if the map is unavailable or the event post type is not found.
  *
- * @since 1.0.0
+ * @since 0.27.0
  *
  * @param {string} [eventPostType=''] The event post type slug to look up.
  * @return {string} The venue post type slug for the given event post type.
@@ -61,7 +61,7 @@ export function getVenuePostType( eventPostType = '' ) {
  * declares the 'gatherpress-venue-information' support, which is the identifier
  * for all venue post types.
  *
- * @since 1.0.0
+ * @since 0.27.0
  *
  * @return {boolean} True if the current post type is a venue; false otherwise.
  */
@@ -79,7 +79,7 @@ export function isVenuePostType() {
  * strips any leading underscore from the slug, and fetches the related
  * venue post whose slug matches the term. Returns the first matching post.
  *
- * @since 1.0.0
+ * @since 0.27.0
  *
  * @param {number|null} termId        The ID of the '_gatherpress_venue' term. If null, no post is retrieved.
  * @param {string}      venuePostType The post type to query for the venue post. Defaults to 'gatherpress_venue'.
@@ -124,7 +124,7 @@ export function useVenuePostFromTermId( termId, venuePostType = DEFAULT_VENUE_PO
  * (to match the related taxonomy term format), and retrieves the term object from the derived
  * venue taxonomy.
  *
- * @since 1.0.0
+ * @since 0.27.0
  *
  * @param {number|null} postId        The ID of the venue post. Defaults to null, in which case no term is retrieved.
  * @param {string}      venuePostType The venue post type slug. Defaults to 'gatherpress_venue'.
@@ -175,7 +175,7 @@ export function useVenueTermFromPostId( postId = null, venuePostType = DEFAULT_V
  * a separate context=edit fetch of the event post itself. Falls back to the
  * first non-online-event term and fetches the corresponding venue post.
  *
- * @since 1.0.0
+ * @since 0.27.0
  *
  * @param {number} eventId  The ID of the event post.
  * @param {string} postType The post type of the event (defaults to the current editor post type).
@@ -230,7 +230,7 @@ export function GetVenuePostFromEventId( eventId, postType = null ) {
 /**
  * Get the title of a venue based on its kind (taxonomy term or post type).
  *
- * @since 1.0.0
+ * @since 0.27.0
  *
  * @param {Object} venue Venue object (either a term or post).
  * @param {string} kind  Type of venue ('taxonomy' or 'postType').
@@ -343,7 +343,7 @@ export function useVenueOptions(
  * Returns undefined when skipped or when postId is absent and the editor
  * attribute has not yet loaded.
  *
- * @since 1.0.0
+ * @since 0.27.0
  *
  * @param {string}      venueTaxonomy Taxonomy slug (e.g. '_gatherpress_venue').
  * @param {number|null} postId        The event post whose terms should be fetched.
@@ -386,7 +386,7 @@ export function useVenueTaxonomyIds( venueTaxonomy, postId, skip = false ) {
  * Retrieves venue taxonomy terms ordered by count (number of events using that venue)
  * in descending order, limited to the specified number.
  *
- * @since 1.0.0
+ * @since 0.27.0
  *
  * @param {number} limit         Maximum number of popular venues to fetch (default: 3).
  * @param {string} venuePostType Venue post type slug used to derive the taxonomy (default: 'gatherpress_venue').
@@ -435,7 +435,7 @@ export function usePopularVenues( limit = 3, venuePostType = DEFAULT_VENUE_POST_
  * caller's `useSelect` will re-run once it does, since `getPostTypes` is a
  * subscribed read.
  *
- * @since 1.0.0
+ * @since 0.27.0
  *
  * @param {Function} selectFunc WordPress data `select` function.
  * @param {number}   postId     Post ID to resolve.

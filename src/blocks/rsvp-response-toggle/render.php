@@ -5,7 +5,7 @@
  * Dynamically renders a toggle link to show all or fewer RSVP responses.
  *
  * @package GatherPress\Core
- * @since 1.0.0
+ * @since 0.33.0
  */
 
 // Exit if accessed directly.

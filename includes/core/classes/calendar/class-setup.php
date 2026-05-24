@@ -12,7 +12,7 @@
  * `Calendar` class, which is instantiated with an event post ID.
  *
  * @package GatherPress\Core\Calendar
- * @since 1.0.0
+ * @since 0.34.0
  */
 
 namespace GatherPress\Core\Calendar;
@@ -37,7 +37,7 @@ use WP_Term;
  * surfaces (`get_google_url`, `get_ical_event_string`, etc.) live on the
  * sibling `Calendar` class, instantiated as `new Calendar( $event_id )`.
  *
- * @since 1.0.0
+ * @since 0.34.0
  */
 class Setup {
 
@@ -52,7 +52,7 @@ class Setup {
 	/**
 	 * Class constructor.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 */
 	public function __construct() {
 		$this->setup_hooks();
@@ -62,7 +62,7 @@ class Setup {
 	 * Set up hooks for registering custom calendar endpoints and the
 	 * `<head>` link tags.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return void
 	 */
@@ -88,7 +88,7 @@ class Setup {
 	 * fires after WP core's built-in post types, GatherPress's own post types,
 	 * and any companion plugin that registers on `init` at default priority.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return void
 	 */
@@ -119,7 +119,7 @@ class Setup {
 	 * Sets up the post-type archive feed plus the per-event endpoints for
 	 * iCal download, Outlook download, and Google / Yahoo redirect URLs.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param string $post_type The name of the post type that got registered last.
 	 *
@@ -154,7 +154,7 @@ class Setup {
 	/**
 	 * Register the calendar feed endpoint for single venues.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param string $post_type The name of the post type that got registered last.
 	 *
@@ -177,7 +177,7 @@ class Setup {
 	/**
 	 * Register a calendar feed endpoint for each event-bearing taxonomy.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param string $taxonomy    Name of the taxonomy that got registered last.
 	 *
@@ -210,7 +210,7 @@ class Setup {
 	 * site, regardless of post type or taxonomy. This is the endpoint that gets
 	 * linked in the main `<link rel="alternate">` tag in `<head>`.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return void
 	 */
@@ -229,7 +229,7 @@ class Setup {
 	 * Theme overrides win: a file with the same name placed in the active
 	 * theme is loaded ahead of the bundled one.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return array Template descriptor with `file_name` (and optional `dir_path`) keys.
 	 */
@@ -242,7 +242,7 @@ class Setup {
 	/**
 	 * Template config for the iCal subscribeable feed endpoint.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return array Template descriptor with `file_name` (and optional `dir_path`) keys.
 	 */
@@ -258,7 +258,7 @@ class Setup {
 	 * Wired into the `google-calendar` Redirect endpoint so a hit on
 	 * `/event/my-event/google-calendar` redirects out to Google.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return string The Google Calendar add-event URL for the queried event.
 	 */
@@ -273,7 +273,7 @@ class Setup {
 	 * Wired into the `yahoo-calendar` Redirect endpoint so a hit on
 	 * `/event/my-event/yahoo-calendar` redirects out to Yahoo!.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return string The Yahoo! Calendar add-event URL for the queried event.
 	 */
@@ -295,7 +295,7 @@ class Setup {
 	 * and flow of this method is replicated from the `feed_links()` and
 	 * `feed_links_extra()` functions in WordPress core.
 	 *
-	 * @since  1.0.0
+	 * @since  0.34.0
 	 * @see    https://developer.wordpress.org/reference/functions/feed_links_extra/
 	 *
 	 * @return void
@@ -320,7 +320,7 @@ class Setup {
 	 * `&raquo;`), and the four `sprintf()` templates the link builders
 	 * consume: `singletitle`, `feedtitle`, `posttypetitle`, `taxtitle`.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return array{blogtitle:string,separator:string,singletitle:string,feedtitle:string,posttypetitle:string,taxtitle:string}
 	 */
@@ -345,7 +345,7 @@ class Setup {
 	 *
 	 * Always emitted on every request that reaches `alternate_links()`.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param array $args Label args from `alternate_link_label_args()`.
 	 * @return array<int,array{url:string,attr:string}> One-element list.
@@ -374,7 +374,7 @@ class Setup {
 	 * WordPress.NamingConventions.PrefixAllGlobals because it's a core hook
 	 * not owned by GatherPress.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param array $args Label args from `alternate_link_label_args()`.
 	 * @return array<int,array{url:string,attr:string}> One entry per event-supporting post type.
@@ -416,7 +416,7 @@ class Setup {
 	 * singular event, singular tax-like shadow-source post, or taxonomy
 	 * archive. Returns an empty list for any other context.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param array $args Label args from `alternate_link_label_args()`.
 	 * @return array<int,array{url:string,attr:string}>
@@ -445,7 +445,7 @@ class Setup {
 	 * Always emits the single-event iCal download link; appends one entry
 	 * per related taxonomy term via `collect_event_term_alternate_links()`.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param WP_Post $event The queried event post.
 	 * @param array   $args  Label args from `alternate_link_label_args()`.
@@ -474,7 +474,7 @@ class Setup {
 	 * Feels weird to use a `*_comments_*` function here, but it delivers
 	 * clean results in the form of `domain.tld/venue/my-sample-venue/feed/ical/`.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param WP_Post $post The queried shadow-source post (e.g. a venue).
 	 * @param array   $args Label args from `alternate_link_label_args()`.
@@ -497,7 +497,7 @@ class Setup {
 	/**
 	 * Build the alternate-link entries for an event-bearing taxonomy archive.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param WP_Term $term The queried taxonomy term.
 	 * @param array   $args Label args from `alternate_link_label_args()`.
@@ -523,7 +523,7 @@ class Setup {
 	/**
 	 * Walk the queried event's related terms into alternate-link entries.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param WP_Post $event The queried event post.
 	 * @param array   $args  Label args from `alternate_link_label_args()`.
@@ -556,7 +556,7 @@ class Setup {
 	 * they have no backing post. For regular taxonomies the term archive
 	 * feed link is used directly.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param WP_Term $term Term attached to the queried event.
 	 * @param array   $args Label args from `alternate_link_label_args()`.
@@ -605,7 +605,7 @@ class Setup {
 	/**
 	 * Render the collected alternate-link entries into `<head>`.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param array<int,array{url:string,attr:string}> $links Entries to render.
 	 * @return void
@@ -631,7 +631,7 @@ class Setup {
 	 * header, and the `PRODID` header (which includes the blog title and the
 	 * current locale for proper calendar identification).
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param string $calendar_data The events to be included in the iCal file.
 	 * @return string               The complete iCal data wrapped in the VCALENDAR format.
@@ -665,7 +665,7 @@ class Setup {
 	 * - Single `gatherpress_venue` requests (events for the queried venue).
 	 * - Event-bearing taxonomies (events tagged with the queried term).
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return string Concatenated VEVENT blocks for the queried events.
 	 */
@@ -705,7 +705,7 @@ class Setup {
 	 * Builds the VEVENT for the queried event via `Calendar::get_ical_event_string()`
 	 * and wraps it in the VCALENDAR envelope.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return string The complete iCal file content for the queried event.
 	 */
@@ -719,7 +719,7 @@ class Setup {
 	 *
 	 * Builds the VEVENT list via `get_ical_list()` and wraps in VCALENDAR.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return string The complete iCal feed for the queried events.
 	 */
@@ -730,7 +730,7 @@ class Setup {
 	/**
 	 * Generate the .ics filename based on the queried object.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return string Filename (with `.ics` extension) for the queried object.
 	 */
@@ -766,7 +766,7 @@ class Setup {
 	/**
 	 * Send headers for the iCalendar (.ics) file response.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param string $filename Generated name of the file.
 	 * @return void
@@ -801,7 +801,7 @@ class Setup {
 	 *
 	 * Called from the iCal templates after the endpoint resolves.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return void
 	 */
@@ -848,7 +848,7 @@ class Setup {
 	/**
 	 * Check if any post type is registered with a taxonomy.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param string $taxonomy   Taxonomy slug.
 	 *
@@ -871,7 +871,7 @@ class Setup {
 	 * The methods checks whether the given posts type supports 'gatherpress-shadow-source'
 	 * and if its taxonomy is one that is related to any 'gatherpress-event-date' supporting post type.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param  string $post_type  The post_type to check.
 	 *

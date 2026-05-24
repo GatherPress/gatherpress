@@ -6,7 +6,7 @@
  * of the custom post type for events, managing event metadata, and enhancing the admin dashboard for event management.
  *
  * @package GatherPress\Core\Event
- * @since 1.0.0
+ * @since 0.29.0
  */
 
 namespace GatherPress\Core\Event;
@@ -31,7 +31,7 @@ use WP_Query;
  *
  * Manages event-related functionalities, including registration of event post types and metadata.
  *
- * @since 1.0.0
+ * @since 0.34.0
  */
 class Setup {
 
@@ -43,7 +43,7 @@ class Setup {
 	/**
 	 * Title to use as the archive page title.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @var string
 	 */
@@ -57,7 +57,7 @@ class Setup {
 	 * subsystem with a single `Event\Setup::get_instance()` line — same
 	 * shape as `Settings::instantiate_classes()`.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 */
 	public function __construct() {
 		$this->instantiate_classes();
@@ -71,7 +71,7 @@ class Setup {
 	 * Event\* class lands as a single line here rather than edits to
 	 * Setup. Each subclass is a singleton, so repeat calls are safe.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return void
 	 */
@@ -87,7 +87,7 @@ class Setup {
 	 *
 	 * This method adds hooks for different purposes as needed.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return void
 	 */
@@ -113,7 +113,7 @@ class Setup {
 	 * within the WordPress admin area. It defines labels for various UI elements, enables Gutenberg support,
 	 * sets the post type to be public, and configures other settings such as the menu position and icon.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return void
 	 */
@@ -208,7 +208,7 @@ class Setup {
 	 * After that, the method sanitizes the string to be safely used within an URL,
 	 * by removing accents, replacing special characters and replacing whitespace with dashes.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return string
 	 */
@@ -238,7 +238,7 @@ class Setup {
 	 * starter patterns for new pages" toggle, so no site-wide setting
 	 * is needed here.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return void
 	 */
@@ -269,7 +269,7 @@ class Setup {
 		 * type and want to swap a pattern in only when their post type
 		 * is in scope.
 		 *
-		 * @since 1.0.0
+		 * @since 0.29.0
 		 *
 		 * @param array $patterns   Pattern definitions loaded from the
 		 *                          `includes/core/templates/event/` directory.
@@ -321,7 +321,7 @@ class Setup {
 	 * work; the Feed class serves those. Setting `has_archive => false`
 	 * would make feed URLs 404 in every mode.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @see Feed::handle_events_feed_query()
 	 * @see self::get_event_archive_mode()
@@ -430,7 +430,7 @@ class Setup {
 	 * `none` 404s, since the only way to land there is an explicit
 	 * opt-out (#1611).
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param WP_Query $wp_query  The global query, mutated in place.
 	 * @param string   $post_type The event-supporting post type being archived.
@@ -464,7 +464,7 @@ class Setup {
 	/**
 	 * Filter the archive title to use the designated page title.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return string The archive page title.
 	 */
@@ -482,7 +482,7 @@ class Setup {
 	 * type and gets the last word. Anything outside `upcoming` / `past`
 	 * / `none` is coerced back to `upcoming` (#1611).
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param string $post_type Post type to resolve the mode for. Defaults to the standard event post type.
 	 * @return string One of `upcoming`, `past`, or `none`.
@@ -507,7 +507,7 @@ class Setup {
 		 * Archive setting for `gatherpress_event`. Returned values
 		 * outside the valid set are coerced to `upcoming`.
 		 *
-		 * @since 1.0.0
+		 * @since 0.29.0
 		 *
 		 * @param string $mode      Current archive mode (`upcoming`, `past`, or `none`).
 		 * @param string $post_type Post type being archived.
@@ -523,7 +523,7 @@ class Setup {
 	 * This function initializes an RSVP object for the given post ID
 	 * and checks the waiting list associated with that post.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param int $post_id The ID of the post for which the waiting list should be checked.
 	 * @return void
@@ -544,7 +544,7 @@ class Setup {
 	 * This method is called when an event post is deleted, and it ensures that the corresponding
 	 * record in the custom table associated with the event is also deleted.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param int $post_id An event post ID.
 	 * @return void
@@ -575,7 +575,7 @@ class Setup {
 	 * ISO 8601), the event start datetime is returned in that format. This ensures compatibility
 	 * with the core/post-date block, which requests ISO 8601 format via block bindings.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param string       $the_date The formatted date.
 	 * @param string       $format   PHP date format.
@@ -618,7 +618,7 @@ class Setup {
 	 * this method replaces the Post Date block output with the GatherPress-formatted event
 	 * datetime (using the event format settings for date, time, and timezone).
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param string   $block_content The block content.
 	 * @param array    $block         The full block, including name and attributes.
@@ -669,7 +669,7 @@ class Setup {
 	 * based on the plugin settings. It checks if the current post object corresponds to any of the assigned
 	 * pages and adds display states accordingly.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param array   $post_states An array of post display states.
 	 * @param WP_Post $post        The current post object.
@@ -704,7 +704,7 @@ class Setup {
 	 * associated 'gatherpress_datetime' metadata, and processes the date/time and
 	 * timezone information. It then saves the event's date and time details.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param int $post_id The ID of the post being saved.
 	 *

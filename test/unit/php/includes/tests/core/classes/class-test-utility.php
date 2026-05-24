@@ -3,7 +3,7 @@
  * Class handles unit tests for GatherPress\Core\Utility.
  *
  * @package GatherPress\Core
- * @since 1.0.0
+ * @since 0.27.0
  */
 
 namespace GatherPress\Tests\Core;
@@ -504,7 +504,7 @@ class Test_Utility extends Base {
 	 * with assertions that catch any HTML markup leaking into either group
 	 * keys or option values, regardless of which WP version emitted them.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @covers ::timezone_choices
 	 *
@@ -572,7 +572,7 @@ class Test_Utility extends Base {
 	 * identifiers exist as exact keys is a tight check that catches this
 	 * class of regression early.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @covers ::timezone_choices
 	 *
@@ -718,7 +718,7 @@ class Test_Utility extends Base {
 	/**
 	 * Data provider for test_offset_to_timezone_string.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return array
 	 */
@@ -751,7 +751,7 @@ class Test_Utility extends Base {
 	/**
 	 * Data provider for test_normalize_timezone_string.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return array
 	 */
@@ -1055,7 +1055,7 @@ class Test_Utility extends Base {
 	/**
 	 * Tests get_http_input method with various sanitizers.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::get_http_input
 	 *
 	 * @return void
@@ -1163,7 +1163,7 @@ class Test_Utility extends Base {
 	/**
 	 * Tests get_http_input method with special characters and encoding.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::get_http_input
 	 *
 	 * @return void
@@ -1211,7 +1211,7 @@ class Test_Utility extends Base {
 	/**
 	 * Tests get_wp_referer method.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::get_wp_referer
 	 *
 	 * @return void
@@ -1260,7 +1260,7 @@ class Test_Utility extends Base {
 	/**
 	 * Tests get_wp_referer without filter (normal WordPress behavior).
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::get_wp_referer
 	 *
 	 * @return void
@@ -1280,7 +1280,7 @@ class Test_Utility extends Base {
 	/**
 	 * Tests safe_exit returns early during unit tests instead of calling exit().
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::safe_exit
 	 *
 	 * @return void

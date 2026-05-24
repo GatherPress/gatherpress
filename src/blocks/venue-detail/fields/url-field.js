@@ -23,7 +23,7 @@ import { cleanUrlForDisplay } from '../helpers';
  * Renders an editable URL field with a link settings popover
  * for configuring target and URL display options.
  *
- * @since 1.0.0
+ * @since 0.34.0
  *
  * @param {Object}   props               - Component props.
  * @param {string}   props.value         - The current field value.

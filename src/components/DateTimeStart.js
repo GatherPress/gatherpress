@@ -37,7 +37,7 @@ import { getSettings } from '@wordpress/date';
  * values are formatted and saved. The component subscribes to the saveDateTime
  * function and triggers the hasEventPastNotice function to handle any event past notices.
  *
- * @since 1.0.0
+ * @since 0.27.0
  *
  * @return {JSX.Element} The rendered React component.
  */

@@ -6,7 +6,7 @@
  * various Event REST API endpoints within the GatherPress plugin.
  *
  * @package GatherPress\Core\Event
- * @since 1.0.0
+ * @since 0.27.0
  */
 
 namespace GatherPress\Core\Event;
@@ -39,7 +39,7 @@ use WP_User;
  * handling requests, and delivering responses via the WordPress REST API
  * infrastructure.
  *
- * @since 1.0.0
+ * @since 0.34.0
  */
 class Rest_Api {
 
@@ -53,7 +53,7 @@ class Rest_Api {
 	 *
 	 * This method initializes the object and sets up necessary hooks.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 */
 	protected function __construct() {
 		$this->setup_hooks();
@@ -64,7 +64,7 @@ class Rest_Api {
 	 *
 	 * This method adds hooks for different purposes as needed.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return void
 	 */
@@ -80,7 +80,7 @@ class Rest_Api {
 	 * Registers various REST API endpoints for interacting with GatherPress events.
 	 * The registered routes include endpoints for event creation, retrieval, updating, and deletion.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return void
 	 */
@@ -102,7 +102,7 @@ class Rest_Api {
 	 *
 	 * Retrieves an array of REST API routes for GatherPress events.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return array[] An array of route definitions for GatherPress events.
 	 */
@@ -123,7 +123,7 @@ class Rest_Api {
 	 *
 	 * This method sets up the REST route for sending emails related to an event.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return array The REST route configuration.
 	 */
@@ -164,7 +164,7 @@ class Rest_Api {
 	 * Creates a publicly accessible endpoint that generates a fresh nonce
 	 * for authenticated REST API requests.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return array Route configuration array.
 	 */
@@ -199,7 +199,7 @@ class Rest_Api {
 	 *
 	 * This method sets up the REST route for updating the RSVP status of an event.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return array The REST route configuration.
 	 */
@@ -246,7 +246,7 @@ class Rest_Api {
 	 * dynamically via Ajax while maintaining the same functionality as the
 	 * traditional comment-based form submission system.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return array The REST route configuration.
 	 */
@@ -305,7 +305,7 @@ class Rest_Api {
 	 * The generated HTML reflects the current RSVP status and can be used
 	 * to re-render block content when status changes occur.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return array The REST route configuration.
 	 */
@@ -348,7 +348,7 @@ class Rest_Api {
 	 * Defines REST route configuration to fetch RSVP response data for an event post.
 	 * Endpoint requires post_id parameter which must validate as an event post type.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return array Route configuration with path, methods, callback and arguments.
 	 */
@@ -374,7 +374,7 @@ class Rest_Api {
 	 *
 	 * This method sets up the REST route for retrieving a list of events based on specified parameters.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return array The REST route configuration.
 	 */
@@ -412,7 +412,7 @@ class Rest_Api {
 	 * It checks the user's capability to edit posts before initiating the email sending process.
 	 * If the user doesn't have the required capability, the method returns a response with 'success' set to false.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param WP_REST_Request $request Contains data from the request.
 	 * @return WP_REST_Response The response indicating the success of the email scheduling process.
@@ -437,7 +437,7 @@ class Rest_Api {
 	 * to send emails to selected members. It doesn't return any value,
 	 * as it's intended to be called by an action hook.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param int    $post_id Post ID.
 	 * @param array  $send    Members to send the email to.
@@ -455,7 +455,7 @@ class Rest_Api {
 	 * `$post_id` corresponds to a specific post type, retrieves the list of members to email, and sends the email with
 	 * the appropriate subject, body, and headers.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param int    $post_id Post ID.
 	 * @param array  $send    Members to send the email to.
@@ -488,7 +488,7 @@ class Rest_Api {
 	 * non-user RSVPs) and skips silently when no email is on file.
 	 * Restores the editor's user / locale before returning.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param array   $recipient    Recipient row from `get_recipients()`.
 	 * @param int     $post_id      Event post ID.
@@ -569,7 +569,7 @@ class Rest_Api {
 	 * such as 'all,' 'attending,' 'waiting_list,' and 'not_attending,' and compiles a unified list of recipients
 	 * that includes both WordPress users and non-user RSVPs with their email addresses and metadata.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param array $send    An array specifying who to send emails to.
 	 * @param int   $post_id The Event Post ID.
@@ -642,7 +642,7 @@ class Rest_Api {
 	 * Extracted from `get_recipients()` so the outer dispatch stays under
 	 * SonarCloud's cognitive-complexity threshold.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param object $comment RSVP comment row from `Rsvp_Query::get_rsvps()`.
 	 * @return array|null Recipient row, or null when no email is on file.
@@ -682,7 +682,7 @@ class Rest_Api {
 	 * limit the number of events in the response, and optional `topics` and `venues` to filter events by specific
 	 * topic and venue slugs.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param WP_REST_Request $request Contains data from the REST API request.
 	 * @return WP_REST_Response The REST API response containing an array of event data.
@@ -760,7 +760,7 @@ class Rest_Api {
 	 * This method checks if the provided `$number` is greater than the specified `$max_number` and
 	 * returns the lower of the two values to ensure it does not exceed the maximum limit.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param int $number     The actual number.
 	 * @param int $max_number The maximum number allowed.
@@ -781,7 +781,7 @@ class Rest_Api {
 	 * It checks the user's permissions and the event's status to ensure a valid update. If the update is successful,
 	 * it returns relevant information, including the updated status, guest count, and responses.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param WP_REST_Request $request Contains data from the request.
 	 * @return WP_REST_Response An instance of WP_REST_Response containing the response data.
@@ -873,7 +873,7 @@ class Rest_Api {
 	 * Each response is wrapped in its own container with data attributes to facilitate
 	 * interactivity and styling.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param WP_REST_Request $request The REST API request object containing parameters:
 	 *                                 - post_id (int): The ID of the post associated with the RSVP.
@@ -931,7 +931,7 @@ class Rest_Api {
 	 * This method processes RSVP form submissions received via Ajax,
 	 * using the centralized Rsvp\Form class for consistency.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param WP_REST_Request $request The REST API request object.
 	 * @return WP_REST_Response The response indicating success or failure.
@@ -1029,7 +1029,7 @@ class Rest_Api {
 	 * Retrieves RSVP response data for a given event post ID. Validates that the post
 	 * is an event type before returning response data.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param WP_REST_Request $request REST API request object containing post_id parameter.
 	 * @return WP_REST_Response Response containing success status and RSVP data.
@@ -1070,7 +1070,7 @@ class Rest_Api {
 	 * It retrieves additional meta information, such as the online event link, based on specific conditions.
 	 * The enhanced data is then added to the response.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param WP_REST_Response $response The response object containing event data.
 	 * @return WP_REST_Response The response object with enhanced event data.

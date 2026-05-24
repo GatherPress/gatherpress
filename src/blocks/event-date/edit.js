@@ -177,7 +177,7 @@ const calculateDisplayType = ( toggleType, showStartTime, showEndTime ) => {
  * time, and provides controls for editing the date and time range via the
  * DateTimeRange component within InspectorControls.
  *
- * @since 1.0.0
+ * @since 0.27.0
  *
  * @param {Object}   root0               The props passed to the Edit component.
  * @param {Object}   root0.attributes    The block attributes.

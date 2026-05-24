@@ -16,7 +16,7 @@ import UrlRewritePreview from '../components/UrlRewritePreview';
  * It iterates through all matching elements and initializes a UrlRewritePreview component
  * with the attributes provided in the 'data-gatherpress_component_attrs' attribute.
  *
- * @since 1.0.0
+ * @since 0.31.0
  */
 export function urlRewritePreview() {
 	// Select all elements with the attribute 'data-gatherpress_component_name' set to 'urlrewrite-preview'.

@@ -3,7 +3,7 @@
  * User Notifications Settings Template.
  *
  * @package GatherPress\Core
- * @since 1.0.0
+ * @since 0.28.0
  */
 
 // Exit if accessed directly.

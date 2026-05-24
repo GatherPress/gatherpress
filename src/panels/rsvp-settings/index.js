@@ -31,7 +31,7 @@ import { RsvpPluginDocumentSettings } from './slot';
  * (e.g. theater productions tagged with a premiere date) do not surface RSVP
  * controls that have no underlying meta storage.
  *
- * @since 1.0.0
+ * @since 0.34.0
  *
  * @return {JSX.Element | null} The JSX element for the RsvpSettings panel if
  * the current post type supports RSVP; otherwise, returns null.
@@ -72,7 +72,7 @@ const RsvpSettings = () => {
  * This function registers a custom plugin named 'gatherpress-rsvp-settings' and
  * associates it with the `RsvpSettings` component for rendering.
  *
- * @since 1.0.0
+ * @since 0.34.0
  *
  * @return {void}
  */

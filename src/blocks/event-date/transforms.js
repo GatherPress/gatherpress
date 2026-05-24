@@ -14,7 +14,7 @@
  * editor's current post type non-reactively — block-toolbar transforms are
  * evaluated per click, not per render, so a one-shot `select()` is fine.
  *
- * @since 1.0.0
+ * @since 0.34.0
  */
 
 /**

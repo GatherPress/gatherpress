@@ -3,7 +3,7 @@
  * Class file for Test_Setup.
  *
  * @package GatherPress\Core\Rsvp
- * @since 1.0.0
+ * @since 0.30.0
  */
 
 namespace GatherPress\Tests\Core\Rsvp;

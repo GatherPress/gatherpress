@@ -15,7 +15,7 @@
  * submitted input with stored values, so even if a browser somehow omits a
  * hidden field, the previously saved value is preserved.
  *
- * @since 1.0.0
+ * @since 0.34.0
  */
 
 const ROW_HIDDEN_CLASS = 'gatherpress--is-hidden';

@@ -18,7 +18,7 @@ import MapEmbed from '../../components/MapEmbed';
  * render.php emitted on the outer `<div>`, replace the wrapper's static
  * children with a React root, and mount `MapEmbed` (Google Maps or Leaflet).
  *
- * @since 1.0.0
+ * @since 0.34.0
  *
  * @return {void}
  */

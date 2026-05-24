@@ -35,7 +35,7 @@ import { getSettings } from '@wordpress/date';
  * The component also updates the state using the setDateTimeEnd callback.
  * If the event has passed, it displays a notice using the hasEventPastNotice function.
  *
- * @since 1.0.0
+ * @since 0.27.0
  *
  * @return {JSX.Element} The rendered React component.
  */

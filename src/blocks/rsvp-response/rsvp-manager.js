@@ -24,7 +24,7 @@ import { EVENT_REST_API } from '../../helpers/namespace';
  * @param {Object}   root0                  The destructured props object.
  * @param {string}   root0.defaultStatus    The current default status for the RSVP response.
  * @param {Function} root0.setDefaultStatus The function to update the defaultStatus state.
- * @since 1.0.0
+ * @since 0.28.0
  *
  * @return {JSX.Element} The rendered RSVP response component.
  */

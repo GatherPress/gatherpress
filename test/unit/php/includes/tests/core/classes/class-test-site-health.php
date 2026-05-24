@@ -3,7 +3,7 @@
  * Class handles unit tests for GatherPress\Core\Site_Health.
  *
  * @package GatherPress\Tests\Core
- * @since 1.0.0
+ * @since 0.34.0
  */
 
 namespace GatherPress\Tests\Core;
@@ -21,7 +21,7 @@ class Test_Site_Health extends Base {
 	/**
 	 * Test instance of Site_Health.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @var Site_Health
 	 */
@@ -30,7 +30,7 @@ class Test_Site_Health extends Base {
 	/**
 	 * Set up test environment.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return void
 	 */
@@ -42,7 +42,7 @@ class Test_Site_Health extends Base {
 	/**
 	 * Coverage for setup_hooks.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @covers ::__construct
 	 * @covers ::setup_hooks
@@ -65,7 +65,7 @@ class Test_Site_Health extends Base {
 	/**
 	 * Registers the pretty permalinks direct Site Health test.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @covers ::register_site_status_tests
 	 *
@@ -89,7 +89,7 @@ class Test_Site_Health extends Base {
 	/**
 	 * Returns a good result when pretty permalinks are enabled.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @covers ::test_pretty_permalinks
 	 *
@@ -115,7 +115,7 @@ class Test_Site_Health extends Base {
 	/**
 	 * Returns a recommended result when permalinks are Plain.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @covers ::test_pretty_permalinks
 	 *

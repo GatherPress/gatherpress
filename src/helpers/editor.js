@@ -77,7 +77,7 @@ function rememberLabel( postType, key, label ) {
  * hook below — without subscription the label resolves to the fallback at
  * first render and never updates.
  *
- * @since 1.0.0
+ * @since 0.33.0
  *
  * @param {string}      key      Label key to read (e.g. `singular_name`, `name`, `add_new_item`).
  * @param {string|null} postType Optional post type slug. Falls back to the editor post type.
@@ -121,7 +121,7 @@ export function getPostTypeLabel( key, postType = null, fallback = '' ) {
  * Map lookup rather than two store reads (issue #1646). React still only
  * re-renders the component when the resolved string actually changes.
  *
- * @since 1.0.0
+ * @since 0.33.0
  *
  * @param {string}      key      Label key to read.
  * @param {string|null} postType Optional post type slug. Falls back to the editor post type.
@@ -160,7 +160,7 @@ export function usePostTypeLabel( key, postType = null, fallback = '' ) {
  * Gutenberg to recognize that changes have been made and enables the Save buttons.
  * It dispatches an editPost action with a non-existing meta key.
  *
- * @since 1.0.0
+ * @since 0.33.0
  *
  * @todo This is a hacky approach and relies on the behavior described in
  *       https://github.com/WordPress/gutenberg/issues/13774.
@@ -176,7 +176,7 @@ export function enableSave() {
  * If a `postId` argument is provided, that value is returned.
  * If not, falls back to the current post ID from the block editor's `core/editor` store.
  *
- * @since 1.0.0
+ * @since 0.33.0
  *
  * @param {number|null} postId Optional. A specific post ID to return instead of detecting the current one. Defaults to null.
  * @return {number|null}                 The post ID, or null if it cannot be determined.
@@ -212,7 +212,7 @@ export function getEditorDocument() {
  * This function determines if the user is editing a template or template part
  * in the Full Site Editor, as opposed to editing a regular post or page.
  *
- * @since 1.0.0
+ * @since 0.33.0
  *
  * @return {boolean} True if editing an FSE template or template part, false otherwise.
  */
@@ -241,7 +241,7 @@ export function isInFSETemplate() {
  * Backwards compatible: if `hasSupport` is omitted, falls back to a non-reactive
  * `isPostTypeSupporting( support, postType )` check.
  *
- * @since 1.0.0
+ * @since 0.33.0
  *
  * @param {Object}  options                         Options for determining visibility.
  * @param {boolean} options.isDescendentOfQueryLoop Whether the block is inside a Query Loop.
@@ -286,7 +286,7 @@ export function hasValidBlockContext( {
  * This function retrieves the start of the week setting from the site's
  * configuration, which indicates which day is considered the first day of the week.
  *
- * @since 1.0.0
+ * @since 0.33.0
  *
  * @return {number} The start of the week (0 for Sunday, 1 for Monday, etc.).
  */

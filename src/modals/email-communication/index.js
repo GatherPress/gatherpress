@@ -27,7 +27,7 @@ import { EVENT_REST_API } from '../../helpers/namespace';
  * to specific groups of event members, such as attendees, waiting list members, or those
  * who have not indicated attendance.
  *
- * @since 1.0.0
+ * @since 0.27.0
  *
  * @return {JSX.Element} The JSX element for the Event Communication Modal.
  */

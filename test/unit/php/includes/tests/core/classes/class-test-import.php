@@ -3,7 +3,7 @@
  * Class handles unit tests for GatherPress\Core\Import.
  *
  * @package GatherPress\Core
- * @since 1.0.0
+ * @since 0.30.0
  */
 
 namespace GatherPress\Tests\Core;

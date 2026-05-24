@@ -21,7 +21,7 @@
  * `map_platform` mid-flight.
  *
  * @package GatherPress\Core\Venue\Map
- * @since 1.0.0
+ * @since 0.34.0
  */
 
 namespace GatherPress\Core\Venue\Map;
@@ -47,7 +47,7 @@ use WP_REST_Server;
  * provider, and serves them back to render paths with a fallback chain
  * when the active provider hasn't rendered a given combo yet.
  *
- * @since 1.0.0
+ * @since 0.34.0
  *
  * @phpstan-type Descriptor array{url: string, url_2x: string, hash: string, zoom: int, width: int, height: int}
  * @phpstan-type DescriptorMap array<string, Descriptor>
@@ -63,7 +63,7 @@ class Map {
 	/**
 	 * Default `renderMode` attribute for the venue-map block.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @var string
 	 */
 	const DEFAULT_RENDER_MODE = 'interactive';
@@ -71,7 +71,7 @@ class Map {
 	/**
 	 * Default zoom level. Used by the generator and the block.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @var int
 	 */
 	const DEFAULT_ZOOM = 18;
@@ -79,7 +79,7 @@ class Map {
 	/**
 	 * Default height (in pixels). Used by the generator and the block.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @var int
 	 */
 	const DEFAULT_HEIGHT = 300;
@@ -93,7 +93,7 @@ class Map {
 	 * world-view (zoom 0) or crash out on a value the tile provider won't
 	 * serve (zoom 30).
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @var int
 	 */
 	const ZOOM_MIN = 1;
@@ -101,7 +101,7 @@ class Map {
 	/**
 	 * See self::ZOOM_MIN.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @var int
 	 */
 	const ZOOM_MAX = 20;
@@ -112,7 +112,7 @@ class Map {
 	 * (a 10,000-px-tall image would allocate gigabytes of GD memory and
 	 * fetch hundreds of tiles).
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @var int
 	 */
 	const HEIGHT_MIN = 100;
@@ -120,7 +120,7 @@ class Map {
 	/**
 	 * See self::HEIGHT_MIN.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @var int
 	 */
 	const HEIGHT_MAX = 4000;
@@ -133,7 +133,7 @@ class Map {
 	 * that would allocate gigabytes of GD memory or fetch hundreds of
 	 * tiles.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @var int
 	 */
 	const WIDTH_MIN = 100;
@@ -141,7 +141,7 @@ class Map {
 	/**
 	 * See self::WIDTH_MIN.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @var int
 	 */
 	const WIDTH_MAX = 4000;
@@ -152,7 +152,7 @@ class Map {
 	 * `aspect-ratio` property so the same value can drive the server-side
 	 * width derivation and the client-side CSS on the interactive wrapper.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @var string
 	 */
 	const DEFAULT_ASPECT_RATIO = '2/1';
@@ -162,7 +162,7 @@ class Map {
 	 * `cover` crops the PNG to fill the wrapper without distortion — same
 	 * behavior the block shipped with before the attribute was exposed.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @var string
 	 */
 	const DEFAULT_SCALE = 'cover';
@@ -173,7 +173,7 @@ class Map {
 	 * value falls back to `DEFAULT_SCALE` at render time so a hand-edited
 	 * block attribute can't smuggle arbitrary CSS into the inline style.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @var string[]
 	 */
 	const SCALE_OPTIONS = array( 'cover', 'contain', 'fill' );
@@ -185,7 +185,7 @@ class Map {
 	 * one non-zero digit on each side so a degenerate `0/9` / `9/0` — which
 	 * CSS would treat as `auto` — can't slip through.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @var string
 	 */
 	const ASPECT_RATIO_PATTERN = '#\A\s*[1-9][0-9]*\s*[/:]\s*[1-9][0-9]*\s*\z#';
@@ -197,7 +197,7 @@ class Map {
 	 * provider only renders `roadmap`; future Google provider will respect
 	 * the full set per `Provider\Base::supports_map_type()`.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @var string
 	 */
 	const DEFAULT_MAP_TYPE = 'roadmap';
@@ -210,7 +210,7 @@ class Map {
 	 * can't satisfy a given (zoom, density) combo return null and the
 	 * orchestrator drops the 2× variant for that combo.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @var int
 	 */
 	const RETINA_DENSITY = 2;
@@ -221,7 +221,7 @@ class Map {
 	 * based providers (OSM); other providers (Google) ignore the
 	 * constraint and just pass through to `scale={n}`.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @var int[]
 	 */
 	const SUPPORTED_DENSITIES = array( 1, self::RETINA_DENSITY );
@@ -235,7 +235,7 @@ class Map {
 	 * 2:1 by default, which gives a comfortably landscape map without the
 	 * venue marker feeling tight against the edges.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @var float
 	 */
 	const IMAGE_ASPECT_RATIO = 2.0;
@@ -262,7 +262,7 @@ class Map {
 	 * when the retina variant failed or the provider can't produce one
 	 * for the given combo.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @var string
 	 */
 	const META_KEY = 'gatherpress_static_map';
@@ -270,7 +270,7 @@ class Map {
 	/**
 	 * Subdirectory of `wp-content/uploads` where generated PNG files are written.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @var string
 	 */
 	const UPLOADS_SUBDIR = 'gatherpress/static-maps';
@@ -278,7 +278,7 @@ class Map {
 	/**
 	 * Class constructor — wires hooks.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 */
 	protected function __construct() {
 		$this->setup_hooks();
@@ -287,7 +287,7 @@ class Map {
 	/**
 	 * Register the save- and delete-side hooks that own the static map lifecycle.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return void
 	 */
@@ -317,7 +317,7 @@ class Map {
 	 * chain in {@see self::get_descriptor_for_post()} keeps showing the
 	 * old-provider image until the new provider's PNG lands via prewarm.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param array|mixed $old_value Previous settings option value.
 	 * @param array|mixed $new_value New settings option value.
@@ -350,7 +350,7 @@ class Map {
 	 * block editor when a tile provider changes or a render gets out of
 	 * sync with the venue's current inputs.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return void
 	 */
@@ -439,7 +439,7 @@ class Map {
 	 * newly inserted blocks and preserves explicit customizations on existing
 	 * ones — changing the setting won't retroactively rewrite old content.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param array $metadata Parsed `block.json` metadata for the block being registered.
 	 * @return array The metadata array, potentially with updated attribute defaults.
@@ -536,7 +536,7 @@ class Map {
 	 * Mirrors the registered_post_type pattern used elsewhere so companion
 	 * plugins declaring custom venue post types automatically get cleanup.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param string $post_type The post type that was just registered.
 	 * @return void
@@ -560,7 +560,7 @@ class Map {
 	 * relevant inputs is unchanged from the last stored descriptor, the
 	 * method no-ops — this is the "set it and forget it" guarantee.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param int $post_id The post ID being saved.
 	 * @return void
@@ -625,7 +625,7 @@ class Map {
 	/**
 	 * Delete every stored static-map PNG (at any zoom) and clear the meta.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param int $post_id The venue post ID.
 	 * @return void
@@ -654,7 +654,7 @@ class Map {
 	 * editor's "Regenerate Map" REST endpoint — can hand the new URLs
 	 * straight back to the client without a second DB round-trip.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param int      $post_id            The venue post ID.
 	 * @param int|null $extra_zoom         Optional extra zoom to include.
@@ -756,7 +756,7 @@ class Map {
 	 * descriptors array and a structured `reason` so the client can show
 	 * the right placeholder instead of a generic error.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param WP_REST_Request $request The REST request.
 	 * @return WP_REST_Response
@@ -836,7 +836,7 @@ class Map {
 	 * cache. Returns null when the post isn't venue-related, the venue has
 	 * no coordinates, or generation failed.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param int      $post_id      Event or venue post ID.
 	 * @param string   $post_type    The post type of `$post_id`.
@@ -929,7 +929,7 @@ class Map {
 	 * image. For render paths that want the retina variant too, call
 	 * `get_descriptor_for_post()` directly.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param int      $post_id      Event or venue post ID.
 	 * @param string   $post_type    The post type of `$post_id`.
@@ -965,7 +965,7 @@ class Map {
 	 * no-op DB read, so it's safe to enqueue the same (venue, combo) job
 	 * multiple times while a site is churning saves.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param int    $post_id      Venue post ID.
 	 * @param int    $zoom         Zoom level.
@@ -1010,7 +1010,7 @@ class Map {
 	 * combo through {@see self::get_url_for_post()}, and code iterating
 	 * every cached variant should use {@see self::get_all_descriptors()}.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param int $post_id The venue post ID.
 	 * @return array{url: string, url_2x: string, hash: string, zoom: int, width: int, height: int}|null
@@ -1044,7 +1044,7 @@ class Map {
 	 * next time a descriptor is saved, because `ensure_descriptor_for_combo()`
 	 * reuses the filtered map as the basis for its `update_post_meta()` call.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param int $post_id The venue post ID.
 	 * @return ProviderDescriptorMap
@@ -1100,7 +1100,7 @@ class Map {
 		 * Callers of this method already tolerate empty maps, so returning
 		 * `[]` is a valid "suppress all" escape hatch.
 		 *
-		 * @since 1.0.0
+		 * @since 0.34.0
 		 *
 		 * @param array<string, array<string, array<string, mixed>>> $descriptors Provider-keyed descriptor map.
 		 * @param int                                                $post_id     Venue post ID.
@@ -1119,7 +1119,7 @@ class Map {
 	 * combo any earlier provider had — so blocks pointing at non-default
 	 * combos aren't stranded.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param int $post_id Venue post ID.
 	 * @return array<int, array{zoom: int, width: int, height: int}>
@@ -1153,7 +1153,7 @@ class Map {
 	/**
 	 * Build the meta-storage key for a (zoom, width, height) combo.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param int $zoom   Zoom level.
 	 * @param int $width  Pixel width.
@@ -1173,7 +1173,7 @@ class Map {
 	 * fresh image, saves it, updates the meta, and removes the old PNG for
 	 * that combo (if any).
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param int   $post_id Venue post ID.
 	 * @param array $info    Parsed venue information.
@@ -1318,7 +1318,7 @@ class Map {
 	 * the filter. Called per-combo so a filter can even target specific
 	 * contexts (`is_admin()`, per-post, per-current-user).
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return bool True when the retina variant should be generated.
 	 */
@@ -1331,7 +1331,7 @@ class Map {
 		 * will still upscale the 1× PNG, but labels and road lines will
 		 * look softer than a native 2× render. Default true.
 		 *
-		 * @since 1.0.0
+		 * @since 0.34.0
 		 *
 		 * @param bool $enabled Whether to generate the 2× variant.
 		 */
@@ -1345,7 +1345,7 @@ class Map {
 	 * invalidates the previous image. Unrelated venue edits (title, excerpt,
 	 * other meta) keep the same hash and skip regeneration.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param array  $info     Parsed venue information.
 	 * @param int    $zoom     Map zoom level.
@@ -1385,7 +1385,7 @@ class Map {
 	 * URL at matching dimensions — intentional dedupe. `$density > 1` appends
 	 * the `@{density}x` suffix used by the retina variants.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param string $address  Venue address string.
 	 * @param int    $zoom     Map zoom level.
@@ -1420,7 +1420,7 @@ class Map {
 	 * suffix. `$density > 1` appends the `@{density}x` suffix used by the
 	 * retina variants, e.g. `venue-12-800-300@2x.png`.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param string $address  Venue address.
 	 * @param int    $zoom     Map zoom level.
@@ -1467,7 +1467,7 @@ class Map {
 	 * in place, which is fine for the regenerate flow since the inputs
 	 * that'd change visible output also change the hash in the descriptor.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param GdImage|resource $image    Finished image from a provider's `render()`.
 	 * @param string           $address  Venue address (slugified for the filename).
@@ -1515,7 +1515,7 @@ class Map {
 	 * Stored coordinates are strings ("40.7128"); empty string / "null" / text
 	 * should not generate a bogus (0, 0) map off the west coast of Africa.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param mixed $raw Raw coordinate from venue information.
 	 * @return float|null
@@ -1532,7 +1532,7 @@ class Map {
 	 * `gatherpress_map_zoom` filter so code-level overrides
 	 * (themes, site-specific plugins) can still take precedence.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return int
 	 */
@@ -1543,7 +1543,7 @@ class Map {
 		/**
 		 * Filter the zoom level used when rendering the static venue map.
 		 *
-		 * @since 1.0.0
+		 * @since 0.34.0
 		 *
 		 * @param int $zoom Default zoom level.
 		 */
@@ -1562,7 +1562,7 @@ class Map {
 	 * and the block see the same value and Leaflet's zoom matches the
 	 * static map's zoom visually.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return int
 	 */
@@ -1573,7 +1573,7 @@ class Map {
 		/**
 		 * Filter the height used when rendering the static venue map.
 		 *
-		 * @since 1.0.0
+		 * @since 0.34.0
 		 *
 		 * @param int $height Default height in pixels.
 		 */
@@ -1585,7 +1585,7 @@ class Map {
 	/**
 	 * Clamp a zoom level to the supported range.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param int $zoom Raw zoom value.
 	 * @return int
@@ -1597,7 +1597,7 @@ class Map {
 	/**
 	 * Clamp a pixel height to the supported range.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param int $height Raw height value.
 	 * @return int
@@ -1609,7 +1609,7 @@ class Map {
 	/**
 	 * Clamp a pixel width to the supported range.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param int $width Raw width value.
 	 * @return int
@@ -1625,7 +1625,7 @@ class Map {
 	 * colon separator. Returns null for unparsable / zero-denominator
 	 * input so callers can fall back to the default.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param string $ratio Raw aspect-ratio string.
 	 * @return float|null
@@ -1659,7 +1659,7 @@ class Map {
 	 * hand-edited block attribute or filter override can't drive the
 	 * generator outside of sane bounds.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param int    $width   Block width (0 = auto).
 	 * @param int    $height  Block height (0 = auto).

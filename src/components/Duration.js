@@ -22,7 +22,7 @@ import {
  * duration and updates the event's end date and time. It also updates the duration value
  * in the state.
  *
- * @since 1.0.0
+ * @since 0.31.0
  *
  * @return {JSX.Element} The rendered Duration React component.
  */

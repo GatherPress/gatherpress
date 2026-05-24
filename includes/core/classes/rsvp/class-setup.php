@@ -6,7 +6,7 @@
  * setup tasks related to RSVP functionality within the GatherPress plugin.
  *
  * @package GatherPress\Core\Rsvp
- * @since 1.0.0
+ * @since 0.30.0
  */
 
 namespace GatherPress\Core\Rsvp;
@@ -33,7 +33,7 @@ use WP_User;
  * single `Rsvp\Setup::get_instance()` line — same shape as `Settings::instantiate_classes()`.
  *
  * @package GatherPress\Core\Rsvp
- * @since 1.0.0
+ * @since 0.34.0
  */
 class Setup {
 
@@ -45,7 +45,7 @@ class Setup {
 	/**
 	 * The RSVP list table instance.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @var List_Table|null
 	 */
 	protected $list_table = null;
@@ -58,7 +58,7 @@ class Setup {
 	 * subsystem with a single `Rsvp\Setup::get_instance()` line — same
 	 * shape as `Settings::instantiate_classes()`.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 */
 	protected function __construct() {
 		$this->instantiate_classes();
@@ -72,7 +72,7 @@ class Setup {
 	 * Rsvp\* class lands as a single line here rather than edits to
 	 * Setup. Each subclass is a singleton, so repeat calls are safe.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return void
 	 */
@@ -85,7 +85,7 @@ class Setup {
 	/**
 	 * Gets the per page option name for RSVP list table.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return string The per page option name.
 	 */
@@ -98,7 +98,7 @@ class Setup {
 	 *
 	 * This method adds hooks for different purposes as needed.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return void
 	 */
@@ -130,7 +130,7 @@ class Setup {
 	 * Registers a custom taxonomy 'gatherpress_rsvp' for managing RSVP related functionalities
 	 * specifically for comments.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return void
 	 */
@@ -159,7 +159,7 @@ class Setup {
 	 * guards throughout the plugin to return false, effectively disabling RSVP
 	 * functionality without requiring individual checks everywhere.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return void
 	 */
@@ -179,7 +179,7 @@ class Setup {
 	 * Removes all `gatherpress/rsvp*` blocks from the block inserter while leaving
 	 * existing RSVP blocks already placed in posts fully intact for editing.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param bool|string[] $allowed_block_types Array of block type slugs or true for all blocks.
 	 *
@@ -225,7 +225,7 @@ class Setup {
 	 * Returns the current user ID if logged in, or email address from
 	 * a valid RSVP token if accessing via magic link.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return string|int User ID if logged in, email address if via token, or 0 if neither.
 	 */
@@ -245,7 +245,7 @@ class Setup {
 	 *
 	 * Retrieves and returns the count of approved RSVP comments for event posts.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param int $comments_number The original number of comments.
 	 * @param int $post_id         The ID of the post.
@@ -268,7 +268,7 @@ class Setup {
 	 * Checks if the saved post is an event and not an autosave,
 	 * then processes any waiting list entries if applicable.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param int $post_id The ID of the post being saved.
 	 *
@@ -287,7 +287,7 @@ class Setup {
 	/**
 	 * Delegates to Rsvp::initialize_enabled() for the wp_after_insert_post hook.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param int $post_id The ID of the post being saved.
 	 *
@@ -310,7 +310,7 @@ class Setup {
 	 * to GatherPress events, with capabilities similar to the WordPress comments
 	 * page but specifically tailored for RSVPs.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return void
 	 */
@@ -344,7 +344,7 @@ class Setup {
 	 * This method registers the per-page screen option and column options
 	 * for the RSVP list table in the WordPress admin.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return void
 	 */
@@ -368,7 +368,7 @@ class Setup {
 	 * It initializes and displays the List_Table which contains all RSVPs
 	 * with options for filtering, bulk actions, and individual RSVP management.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return void
 	 */
@@ -403,7 +403,7 @@ class Setup {
 	 * rules based on user permissions. Returns empty string for non-moderators
 	 * to protect private RSVP information.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param string          $comment_content Text of the comment.
 	 * @param WP_Comment|null $comment        The comment object.
@@ -429,7 +429,7 @@ class Setup {
 	 * which columns are visible in the table. These settings are accessible
 	 * via the Screen Options tab on the RSVP admin page.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return void
 	 */
@@ -463,7 +463,7 @@ class Setup {
 	 * display per page in the admin table. Only processes options relevant
 	 * to the RSVP listing page.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param mixed  $status Screen option value. Default false to skip.
 	 * @param string $option The option name.
@@ -486,7 +486,7 @@ class Setup {
 	 * menu item to be highlighted in the admin menu. It also adds a filter to
 	 * set the correct submenu item.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param string $parent_file The current parent file.
 	 *
@@ -511,7 +511,7 @@ class Setup {
 	 * the RSVP admin page. Works with WordPress admin menu highlighting
 	 * system to indicate the current active page.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return string The submenu file slug to mark as active.
 	 */
@@ -530,7 +530,7 @@ class Setup {
 	 * @todo Implement custom RSVP notification emails for event organizers with relevant
 	 *       information about new RSVPs and changes to existing RSVPs.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param array  $emails     Array of email addresses to notify.
 	 * @param string $comment_id The comment ID.
@@ -567,7 +567,7 @@ class Setup {
 	 * whether the token actually validates, so an expired or wrong-hash
 	 * token also stays out of the page cache.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return void
 	 */

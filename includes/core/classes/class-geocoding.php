@@ -7,7 +7,7 @@
  * traffic. Requests run server-side with a valid User-Agent.
  *
  * @package GatherPress\Core
- * @since 1.0.0
+ * @since 0.34.0
  */
 
 namespace GatherPress\Core;
@@ -29,7 +29,7 @@ use WP_REST_Server;
  *
  * Provides REST API endpoints for geocoding and address search.
  *
- * @since 1.0.0
+ * @since 0.34.0
  */
 class Geocoding {
 
@@ -41,7 +41,7 @@ class Geocoding {
 	/**
 	 * Default Photon API base URL (forward search / geocode).
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @var string
 	 */
 	const PHOTON_API_URL = 'https://photon.komoot.io/api';
@@ -53,35 +53,35 @@ class Geocoding {
 	 * editor via `block_editor_settings_all` so the JS short-query guard stays
 	 * in lockstep with the server without a second hardcoded copy.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 */
 	public const ADDRESS_SEARCH_MIN_QUERY_LENGTH = 3;
 
 	/**
 	 * Transient key prefix for cached Photon search results.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 */
 	private const SEARCH_CACHE_PREFIX = 'gatherpress_photon_search_';
 
 	/**
 	 * Time-to-live for cached Photon search results, in seconds.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 */
 	private const SEARCH_CACHE_TTL = 15 * MINUTE_IN_SECONDS;
 
 	/**
 	 * Transient key prefix for cached Photon geocode (address → lat/long) results.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 */
 	private const GEOCODE_CACHE_PREFIX = 'gatherpress_photon_geocode_';
 
 	/**
 	 * Time-to-live for cached Photon geocode results, in seconds.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 */
 	private const GEOCODE_CACHE_TTL = 15 * MINUTE_IN_SECONDS;
 
@@ -89,7 +89,7 @@ class Geocoding {
 	 * Cron action fired to backfill structured-address venue meta after a
 	 * `gatherpress_address` value changes. Handler signature: `( int $post_id )`.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 */
 	public const CRON_ACTION = 'gatherpress_async_geocode_venue';
 
@@ -101,7 +101,7 @@ class Geocoding {
 	 * reads in the cron handler return the new value (not a transient
 	 * mid-save state).
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 */
 	private const CRON_DELAY_SECONDS = 5;
 
@@ -111,7 +111,7 @@ class Geocoding {
 	 * the same per-user bucket — one user typing into autocomplete and
 	 * then saving a venue is still one continuous flow.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 */
 	private const GEOCODE_RATE_LIMIT_WINDOW_SECONDS = 60;
 
@@ -123,7 +123,7 @@ class Geocoding {
 	 *
 	 * Filterable via `gatherpress_geocode_rate_limit_per_minute`.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 */
 	private const GEOCODE_RATE_LIMIT_DEFAULT_PER_MINUTE = 30;
 
@@ -131,7 +131,7 @@ class Geocoding {
 	 * Transient key prefix for the per-user geocode rate-limit bucket.
 	 * Keyed on user ID; the suffix is appended at use site.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 */
 	private const GEOCODE_RATE_LIMIT_TRANSIENT_PREFIX = 'gatherpress_geocode_rate_';
 
@@ -140,7 +140,7 @@ class Geocoding {
 	 *
 	 * This method initializes the object and sets up necessary hooks.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 */
 	protected function __construct() {
 		$this->setup_hooks();
@@ -149,7 +149,7 @@ class Geocoding {
 	/**
 	 * Set up hooks for various purposes.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return void
 	 */
@@ -181,7 +181,7 @@ class Geocoding {
 	 * changing `gatherpress_address`, no cron fires and their correction
 	 * stays intact.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param int    $meta_id  Meta row ID. Unused (signature requirement).
 	 * @param int    $post_id  Post ID the meta belongs to.
@@ -224,7 +224,7 @@ class Geocoding {
 		 * is re-enabled or `update_post_meta` is called directly from
 		 * trusted code.
 		 *
-		 * @since 1.0.0
+		 * @since 0.34.0
 		 *
 		 * @param bool $enabled True to schedule the geocode, false to skip.
 		 * @param int  $post_id Venue post ID.
@@ -254,7 +254,7 @@ class Geocoding {
 		 * Scheduler action ID returned by `as_enqueue_async_action()`) so
 		 * other filters / debug tooling downstream can correlate the job.
 		 *
-		 * @since 1.0.0
+		 * @since 0.34.0
 		 *
 		 * @param mixed  $short_circuit Non-null to suppress the default enqueue.
 		 * @param string $hook          Action hook name fired when the job runs.
@@ -284,7 +284,7 @@ class Geocoding {
 		 * may need longer; sites that batch saves can pass a larger value to
 		 * coalesce. Returning 0 fires effectively immediately.
 		 *
-		 * @since 1.0.0
+		 * @since 0.34.0
 		 *
 		 * @param int $delay   Delay in seconds. Default 5.
 		 * @param int $post_id Venue post ID.
@@ -321,7 +321,7 @@ class Geocoding {
 	 *   actively returned no match for the typed address). Lat/long are
 	 *   left alone for the same reason as the empty-address path.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param int $post_id Venue post ID.
 	 * @return void
@@ -360,7 +360,7 @@ class Geocoding {
 			 * surface chronic failures (DNS issues, rate-limit responses,
 			 * Photon outages) without parsing the WP-Cron error log.
 			 *
-			 * @since 1.0.0
+			 * @since 0.34.0
 			 *
 			 * @param int      $post_id Venue post ID whose geocode failed.
 			 * @param WP_Error $result  The error returned by `geocode_to_result()`.
@@ -394,7 +394,7 @@ class Geocoding {
 	 * so the JS `geocodeAddress` / `fetchAddressSuggestions` helpers can read the
 	 * same minimum query length the REST endpoints enforce.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param array $settings The block editor settings array.
 	 * @return array The modified settings.
@@ -416,7 +416,7 @@ class Geocoding {
 	/**
 	 * Registers REST API endpoints for geocoding.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return void
 	 */
@@ -476,7 +476,7 @@ class Geocoding {
 	 * proceed normally; returns a `WP_REST_Response` (HTTP 429) when the
 	 * caller should bail.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return WP_REST_Response|null
 	 */
@@ -494,7 +494,7 @@ class Geocoding {
 		 * (cron side) for consistency: same filter pattern across
 		 * both Photon-traffic toggles.
 		 *
-		 * @since 1.0.0
+		 * @since 0.34.0
 		 *
 		 * @param bool $enabled Whether the rate limit is enforced. Default true.
 		 */
@@ -526,7 +526,7 @@ class Geocoding {
 		 * Values below `1` are clamped to `1` (a zero ceiling would 429
 		 * every request, including the first).
 		 *
-		 * @since 1.0.0
+		 * @since 0.34.0
 		 *
 		 * @param int $ceiling Default per-user requests-per-minute ceiling.
 		 */
@@ -576,7 +576,7 @@ class Geocoding {
 	/**
 	 * Geocodes an address using the Photon API (GeoJSON).
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param WP_REST_Request $request The REST request object.
 	 * @return WP_REST_Response|WP_Error Response with coordinates or error.
@@ -627,7 +627,7 @@ class Geocoding {
 	 * earlier code that didn't carry structured pieces are treated as a
 	 * cache miss and refetched (self-healing on upgrade).
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param string $address Address string to resolve.
 	 * @return array{
@@ -745,7 +745,7 @@ class Geocoding {
 	 * Used both for empty input (early return before Photon is contacted)
 	 * and for Photon responses that contain no features.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return array Result payload with empty fields and an error message.
 	 */
@@ -765,7 +765,7 @@ class Geocoding {
 	 *
 	 * Each row has `label` (postal-style), `latitude`, and `longitude`.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param WP_REST_Request $request The REST request object.
 	 * @return WP_REST_Response|WP_Error Suggestions or error.
@@ -869,7 +869,7 @@ class Geocoding {
 	 * count; moving it here lets the REST entry point stay readable
 	 * and PHPMD-clean.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param mixed  $data      Decoded JSON body. Treated as "no results"
 	 *                          when not an array or missing `features`.
@@ -955,7 +955,7 @@ class Geocoding {
 	 * intentionally dropped — we don't have a `gatherpress_district` field,
 	 * and shoehorning it into `city` would conflate two layers.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param array $properties Photon `properties` object.
 	 * @return array{
@@ -999,7 +999,7 @@ class Geocoding {
 	/**
 	 * Builds a one-line label from Photon GeocodeJson properties (country omitted).
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param array $properties Photon `properties` object.
 	 * @return string Non-empty label or empty string.
@@ -1059,7 +1059,7 @@ class Geocoding {
 	 * response when the body is unusable, so callers see graceful behavior; this
 	 * line is only meant to aid triage when an upstream incident is suspected.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param string $body    Raw response body.
 	 * @param mixed  $decoded Result of json_decode (null when decode failed).
@@ -1083,7 +1083,7 @@ class Geocoding {
 		 *
 		 *     add_filter( 'gatherpress_log_geocoding_errors', '__return_true' );
 		 *
-		 * @since 1.0.0
+		 * @since 0.34.0
 		 *
 		 * @param bool $should_log Default: value of WP_DEBUG.
 		 */
@@ -1107,7 +1107,7 @@ class Geocoding {
 	/**
 	 * Photon API base URL (filterable for self-hosted instances).
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return string Base URL for Photon `/api` requests.
 	 */
@@ -1115,7 +1115,7 @@ class Geocoding {
 		/**
 		 * Filters the Photon API base URL used for geocoding and address search.
 		 *
-		 * @since 1.0.0
+		 * @since 0.34.0
 		 *
 		 * @param string $url Default Photon API URL (e.g. https://photon.komoot.io/api).
 		 */
@@ -1133,7 +1133,7 @@ class Geocoding {
 	/**
 	 * Gets the language code for Photon `lang` parameter.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return string Language code (e.g., 'en', 'de').
 	 */
@@ -1147,7 +1147,7 @@ class Geocoding {
 	/**
 	 * Gets the User-Agent string for outbound geocoding requests.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return string User-Agent header value.
 	 */

@@ -21,7 +21,7 @@ import metadata from './block.json';
  * It uses the block metadata from the 'block.json' file and associates it with the
  * edit component for rendering in the editor. The 'save' function is set to keep all inner blocks.
  *
- * @since 1.0.0
+ * @since 0.27.0
  *
  * @return {void}
  */

@@ -6,7 +6,7 @@
  * including the administration menu, settings registration, and rendering.
  *
  * @package GatherPress\Core
- * @since 1.0.0
+ * @since 0.27.0
  */
 
 namespace GatherPress\Core;
@@ -23,7 +23,7 @@ use GatherPress\Core\Traits\Singleton;
  * This class handles the management of plugin settings, including options
  * related to event display, roles, and credits.
  *
- * @since 1.0.0
+ * @since 0.27.0
  */
 class Settings {
 
@@ -47,28 +47,28 @@ class Settings {
 	 * Override with the `gatherpress_interactive_map_tile_url` filter (e.g. for a
 	 * self-hosted tile server or a provider that requires an API key).
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 */
 	const MAP_TILE_URL = 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png';
 
 	/**
 	 * URL used in the default map attribution credit to OpenStreetMap.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 */
 	const MAP_TILE_ATTRIBUTION_OSM_URL = 'https://www.openstreetmap.org/copyright';
 
 	/**
 	 * URL used in the default map attribution credit to CARTO.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 */
 	const MAP_TILE_ATTRIBUTION_CARTO_URL = 'https://carto.com/attributions';
 
 	/**
 	 * The current page being accessed within the settings.
 	 *
-	 * @since 1.0.0
+	 * @since 0.27.0
 	 * @var string
 	 */
 	protected string $current_page = '';
@@ -76,7 +76,7 @@ class Settings {
 	/**
 	 * The main sub-page identifier used for the settings.
 	 *
-	 * @since 1.0.0
+	 * @since 0.27.0
 	 * @var string
 	 */
 	protected string $main_sub_page = '';
@@ -84,7 +84,7 @@ class Settings {
 	/**
 	 * Cached flat map of option keys to their default values.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @var array|null
 	 */
 	protected ?array $defaults_cache = null;
@@ -94,7 +94,7 @@ class Settings {
 	 *
 	 * Initializes the settings object, sets the current page, and sets up hooks.
 	 *
-	 * @since 1.0.0
+	 * @since 0.27.0
 	 */
 	protected function __construct() {
 		$this->set_current_page();
@@ -112,7 +112,7 @@ class Settings {
 	 * a single added line here rather than edits to Setup. Each subclass
 	 * is a singleton, so repeat calls are safe.
 	 *
-	 * @since 1.0.0
+	 * @since 0.27.0
 	 *
 	 * @return void
 	 */
@@ -131,7 +131,7 @@ class Settings {
 	 *
 	 * This method adds hooks for different purposes as needed.
 	 *
-	 * @since 1.0.0
+	 * @since 0.27.0
 	 *
 	 * @return void
 	 */
@@ -158,7 +158,7 @@ class Settings {
 	 * - getFromSettings( key ) for Settings API values.
 	 * - getFromConfig( key ) for infrastructure values.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param array $settings The block editor settings array.
 	 * @return array The modified block editor settings array.
@@ -201,7 +201,7 @@ class Settings {
 	/**
 	 * Returns the map tile layer URL, allowing sites to override the default.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return string Leaflet-compatible tile URL template.
 	 */
@@ -209,7 +209,7 @@ class Settings {
 		/**
 		 * Filters the Leaflet tile layer URL used by the venue map.
 		 *
-		 * @since 1.0.0
+		 * @since 0.27.0
 		 *
 		 * @param string $url Default tile URL template (CartoDB Positron).
 		 */
@@ -221,7 +221,7 @@ class Settings {
 	/**
 	 * Returns the map attribution string, allowing sites to override the default.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return string HTML attribution credit shown on the map.
 	 */
@@ -245,7 +245,7 @@ class Settings {
 		 * Override alongside `gatherpress_interactive_map_tile_url` when switching
 		 * providers so the correct credits are displayed.
 		 *
-		 * @since 1.0.0
+		 * @since 0.27.0
 		 *
 		 * @param string $attribution Default attribution HTML.
 		 */
@@ -259,7 +259,7 @@ class Settings {
 	 *
 	 * This method sets the main sub-page identifier based on the first sub-page key.
 	 *
-	 * @since 1.0.0
+	 * @since 0.27.0
 	 *
 	 * @return void
 	 */
@@ -271,7 +271,7 @@ class Settings {
 	/**
 	 * Get the main sub-page slug.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return string The main sub-page slug.
 	 */
@@ -284,7 +284,7 @@ class Settings {
 	 *
 	 * This method retrieves and sanitizes the 'page' query parameter from the request.
 	 *
-	 * @since 1.0.0
+	 * @since 0.27.0
 	 *
 	 * @return void
 	 */
@@ -302,7 +302,7 @@ class Settings {
 	 * This method is responsible for rendering a settings form section on a settings page
 	 * using a template file. It accepts the current settings page identifier as a parameter.
 	 *
-	 * @since 1.0.0
+	 * @since 0.27.0
 	 *
 	 * @param string $page The slug of the current settings page.
 	 */
@@ -320,7 +320,7 @@ class Settings {
 	 * This method adds submenu pages for various sections of GatherPress settings,
 	 * allowing users to configure different aspects of the plugin.
 	 *
-	 * @since 1.0.0
+	 * @since 0.27.0
 	 *
 	 * @return void
 	 */
@@ -362,7 +362,7 @@ class Settings {
 	 * It ensures that only the necessary submenu pages are displayed to users based on their
 	 * role and permissions.
 	 *
-	 * @since 1.0.0
+	 * @since 0.27.0
 	 *
 	 * @return void
 	 */
@@ -385,7 +385,7 @@ class Settings {
 	 * settings sections and fields for sub-pages. It sets up the necessary WordPress settings and
 	 * fields, including their callbacks, for each defined section and option.
 	 *
-	 * @since 1.0.0
+	 * @since 0.27.0
 	 *
 	 * @return void
 	 */
@@ -418,7 +418,7 @@ class Settings {
 	 * inside it becomes an `add_settings_field` callback that defers to
 	 * `render_field()`.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param string $sub_page Sub-page slug used to scope WP's settings API.
 	 * @param array  $sections Sections array from the sub-page settings.
@@ -476,7 +476,7 @@ class Settings {
 	 * class off if the user later changes the controlling field to a
 	 * matching value.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param array $option_settings The option settings array.
 	 * @return string Space-separated class names for the row.
@@ -502,7 +502,7 @@ class Settings {
 	 * Comparisons cast both sides to string so checkbox booleans, select
 	 * strings, and numeric values all compare cleanly.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param array $conditions Map of controlling option key => expected value(s).
 	 * @return bool True when every key matches the current saved value, false otherwise.
@@ -539,7 +539,7 @@ class Settings {
 	 * attributes so multi-key AND combinations and array-of-values OR
 	 * combinations both serialize without ambiguity.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param array $conditions Map of controlling option key => expected value(s).
 	 * @return void
@@ -557,7 +557,7 @@ class Settings {
 	 * Iterates all sub-pages, sections, and options to produce
 	 * a flat associative array of option_key => field_type.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param array $sub_pages The sub-pages array from get_sub_pages().
 	 * @return array Flat map of option_key => field_type.
@@ -684,7 +684,7 @@ class Settings {
 	 * @param string $json_string The JSON string to sanitize.
 	 * @return string Sanitized JSON string or empty array '[]' if invalid.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 */
 	public function sanitize_autocomplete( string $json_string ): string {
 		// Decode.
@@ -727,7 +727,7 @@ class Settings {
 	 * This method renders the appropriate template for a settings field by mapping
 	 * the field type to a template file and passing type-specific parameters.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param string $option          The unique option key for the field.
 	 * @param array  $option_settings The option settings including field config.
@@ -827,7 +827,7 @@ class Settings {
 	 * Updates the flat gatherpress_settings option with the given key-value pair.
 	 * If the value matches the default, the key is removed to keep the option lean.
 	 *
-	 * @since 1.0.0
+	 * @since 0.27.0
 	 *
 	 * @param string $option The unique name of the option to set.
 	 * @param mixed  $value  The value to set.
@@ -855,7 +855,7 @@ class Settings {
 	 * On a multisite subsite, options that are flagged as network-inherited
 	 * are read from the main site instead of the local site.
 	 *
-	 * @since 1.0.0
+	 * @since 0.27.0
 	 *
 	 * @param string $option The unique name of the option to retrieve.
 	 * @return mixed The value of the option or its default value.
@@ -889,7 +889,7 @@ class Settings {
 	 * `gatherpress_network_is_option_inherited` filter so a companion plugin or
 	 * site-specific code can override the decision for an individual site.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param string $option The option key to check.
 	 * @return bool
@@ -916,7 +916,7 @@ class Settings {
 		 * for that option; returning true forces inheritance even if the network
 		 * config would otherwise leave it site-editable.
 		 *
-		 * @since 1.0.0
+		 * @since 0.34.0
 		 *
 		 * @param bool   $inherited Whether the option is inherited from the network.
 		 * @param string $option    The option key being resolved.
@@ -936,7 +936,7 @@ class Settings {
 	 * Uses a cached defaults map built from all sub-pages' sections
 	 * to avoid repeated walks of the settings structure.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param string $option The unique name of the option to retrieve the default value for.
 	 * @return mixed The default value of the option or an empty string if not defined.
@@ -953,7 +953,7 @@ class Settings {
 	 * Walks the sub-pages structure once and caches the result for the
 	 * duration of the request.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return array Flat map of option_key => default_value.
 	 */
@@ -991,7 +991,7 @@ class Settings {
 	 * option name. The resulting name attribute is used to associate the field's
 	 * value with its location within the flat settings structure.
 	 *
-	 * @since 1.0.0
+	 * @since 0.27.0
 	 *
 	 * @param string $option Option of the setting field.
 	 * @return string The generated name attribute for the setting field.
@@ -1011,7 +1011,7 @@ class Settings {
 	 * The sub-pages include information such as their settings and priority. Filters can be
 	 * applied to modify the sub-pages before they are returned.
 	 *
-	 * @since 1.0.0
+	 * @since 0.27.0
 	 *
 	 * @return array An array of sub-pages, each with settings and priority information.
 	 */
@@ -1022,7 +1022,7 @@ class Settings {
 		 * Allows a companion plugin or theme to extend GatherPress settings
 		 * by adding additional sub pages to the settings page.
 		 *
-		 * @since 1.0.0
+		 * @since 0.27.0
 		 *
 		 * @param array $sub_pages The array of sub pages.
 		 *
@@ -1041,7 +1041,7 @@ class Settings {
 	 * This method compares the priority of two sub-pages and is used for sorting them.
 	 * The default priority is 10 if not explicitly set.
 	 *
-	 * @since 1.0.0
+	 * @since 0.27.0
 	 *
 	 * @param array $first  The first sub-page to compare by priority.
 	 * @param array $second The second sub-page to compare by priority.
@@ -1062,7 +1062,7 @@ class Settings {
 	 * This method is responsible for rendering the primary options page of the GatherPress plugin.
 	 * It displays settings and configurations for various sub-pages within the plugin's administration panel.
 	 *
-	 * @since 1.0.0
+	 * @since 0.27.0
 	 *
 	 * @return void
 	 */
@@ -1084,7 +1084,7 @@ class Settings {
 	 * It checks if the provided submenu name is empty and, if so, determines whether to select the 'General' subpage
 	 * based on the current page. This helps maintain consistent menu selection across GatherPress settings pages.
 	 *
-	 * @since 1.0.0
+	 * @since 0.27.0
 	 *
 	 * @param string $submenu The name of the sub menu page.
 	 * @return string The selected submenu name, either the provided one or 'general'.
@@ -1111,7 +1111,7 @@ class Settings {
 	 * Checks all fields marked with 'rewrite' => true in their config and
 	 * flushes rewrite rules if any of their values changed.
 	 *
-	 * @since 1.0.0
+	 * @since 0.31.0
 	 *
 	 * @param mixed $old_value The old option value.
 	 * @param mixed $new_value The new option value.
@@ -1135,7 +1135,7 @@ class Settings {
 	 * Walks the settings config and returns keys for fields that have
 	 * 'rewrite' => true in their field definition.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return array List of option keys that affect rewrite rules.
 	 */
@@ -1170,7 +1170,7 @@ class Settings {
 	 * Returns only non-default values (what's actually stored),
 	 * along with version metadata.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param string $scope Storage scope: 'blog' (default) or 'network'.
 	 *                      'network' reads the network-wide site option,
@@ -1189,7 +1189,7 @@ class Settings {
 	/**
 	 * Read the stored settings option in the given storage scope.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param string $scope Storage scope: 'blog' or 'network'.
 	 * @return array
@@ -1205,7 +1205,7 @@ class Settings {
 	/**
 	 * Write the stored settings option in the given storage scope.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param string $scope   Storage scope: 'blog' or 'network'.
 	 * @param array  $options Options array to persist.
@@ -1223,7 +1223,7 @@ class Settings {
 	/**
 	 * Delete the stored settings option in the given storage scope.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param string $scope Storage scope: 'blog' or 'network'.
 	 * @return void
@@ -1243,7 +1243,7 @@ class Settings {
 	 * Checks structure, version compatibility, and reports what
 	 * would change if the import were applied.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param array  $data  The parsed import data.
 	 * @param string $scope Storage scope: 'blog' (default) or 'network'.
@@ -1301,7 +1301,7 @@ class Settings {
 	 * Validates, sanitizes, and applies imported settings. Supports
 	 * merge (preserves existing) and replace (overwrites all) modes.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param array  $data  The parsed import data.
 	 * @param string $mode  Import mode: 'merge' or 'replace'.

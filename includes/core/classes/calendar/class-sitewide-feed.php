@@ -11,7 +11,7 @@
  * - /calendar/json
  *
  * @package GatherPress\Core\Calendar
- * @since 1.0.0
+ * @since 0.34.0
  */
 
 namespace GatherPress\Core\Calendar;
@@ -26,7 +26,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
  * custom endpoints that exist globally across the site rather than being tied
  * to a specific object type.
  *
- * @since 1.0.0
+ * @since 0.34.0
  */
 class Sitewide_Feed extends Endpoint {
 
@@ -39,7 +39,7 @@ class Sitewide_Feed extends Endpoint {
 	 * - /feed/ical
 	 * - /calendar/json
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param Endpoint_Type[] $types     List of endpoint types (templates/redirects).
 	 * @param string          $query_var The query variable used to identify the endpoint.
@@ -66,7 +66,7 @@ class Sitewide_Feed extends Endpoint {
 	 * Build the regular expression pattern for matching the custom endpoint URL structure,
 	 * based on the rewrite base for the site.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return string The compiled regex pattern.
 	 */
@@ -81,7 +81,7 @@ class Sitewide_Feed extends Endpoint {
 	/**
 	 * Determines whether the current request is valid.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return bool True if this is a valid feed request.
 	 */
@@ -92,7 +92,7 @@ class Sitewide_Feed extends Endpoint {
 	/**
 	 * Defines rewrite attributes.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return array
 	 */

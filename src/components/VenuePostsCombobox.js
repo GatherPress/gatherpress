@@ -18,7 +18,7 @@ import { useVenueOptions, getVenuePostType } from '../helpers/venue';
  * Fetches available venues as options based on the search input,
  * and updates block attributes when a new venue is selected.
  *
- * @since 1.0.0
+ * @since 0.34.0
  *
  * @param {Object}   props           Properties of the 'gatherpress/venue'-block.
  * @param {string}   props.search    Current search string for venue filtering.

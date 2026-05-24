@@ -8,7 +8,7 @@ import { RichText } from '@wordpress/block-editor';
  *
  * Renders a generic editable text field (default field type).
  *
- * @since 1.0.0
+ * @since 0.34.0
  *
  * @param {Object}   props             - Component props.
  * @param {string}   props.value       - The current field value.

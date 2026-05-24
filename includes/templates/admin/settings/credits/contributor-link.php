@@ -8,7 +8,7 @@
  *
  * @package GatherPress\Core
  * @param array $gatherpress_contributor An array containing contributor information.
- * @since 1.0.0
+ * @since 0.27.0
  */
 
 // Exit if accessed directly.

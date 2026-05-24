@@ -5,7 +5,7 @@
  * This template is used to display a select input field in GatherPress settings pages.
  *
  * @package GatherPress\Core
- * @since 1.0.0
+ * @since 0.27.0
  *
  * @param string $name        The name attribute for the input field.
  * @param string $label       The label text displayed next to the checkbox.

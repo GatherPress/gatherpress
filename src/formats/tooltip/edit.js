@@ -32,7 +32,7 @@ import { getTooltipAttributes } from './helpers';
 /**
  * Tooltip popover component for editing tooltip content and colors.
  *
- * @since 1.0.0
+ * @since 0.34.0
  *
  * @param {Object}   props              Component props.
  * @param {Function} props.onClose      Callback when popover closes.
@@ -255,7 +255,7 @@ function TooltipPopover( {
  * This component renders the toolbar button and popover for adding/editing tooltips.
  * The tooltip button is disabled when the selected text is inside a link.
  *
- * @since 1.0.0
+ * @since 0.34.0
  *
  * @param {Object}   props            Component props.
  * @param {Object}   props.value      RichText value object.

@@ -8,7 +8,7 @@
  * theme overrides for feed templates.
  *
  * @package GatherPress\Core\Calendar
- * @since 1.0.0
+ * @since 0.34.0
  */
 
 namespace GatherPress\Core\Calendar;
@@ -25,7 +25,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
  * supports theme overrides, allowing developers to customize feed templates for
  * specific post types.
  *
- * @since 1.0.0
+ * @since 0.34.0
  */
 class Post_Type_Feed extends Endpoint {
 
@@ -37,7 +37,7 @@ class Post_Type_Feed extends Endpoint {
 	 * URLs (e.g., `event/feed/custom-endpoint`) and hooks into WordPress to load
 	 * the appropriate feed template.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param Endpoint_Type[] $types      List of endpoint types (templates/redirects) for the feed.
 	 * @param string          $query_var  The query variable used to identify the feed endpoint in the URL.
@@ -68,7 +68,7 @@ class Post_Type_Feed extends Endpoint {
 	 * This method checks if the current request is for an archive page of the specified
 	 * post type and if it is a valid feed request (i.e., `is_feed()` returns true).
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return bool True if the current request is a valid feed request for the post type archive.
 	 */
@@ -82,7 +82,7 @@ class Post_Type_Feed extends Endpoint {
 	 * This method defines the rewrite replacement attributes
 	 * for the custom feed endpoint to be further processed by add_rewrite_rule().
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return array The rewrite replacement attributes for add_rewrite_rule().
 	 */

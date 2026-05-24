@@ -6,7 +6,7 @@
  * for configuring attendance limits, guest limits, anonymous RSVPs, and cleanup.
  *
  * @package GatherPress\Core
- * @since 1.0.0
+ * @since 0.34.0
  */
 
 namespace GatherPress\Core\Settings;
@@ -21,7 +21,7 @@ use GatherPress\Core\Traits\Singleton;
  *
  * Handles the "RSVP" settings page for GatherPress.
  *
- * @since 1.0.0
+ * @since 0.34.0
  */
 class Rsvp_Settings extends Base {
 
@@ -33,7 +33,7 @@ class Rsvp_Settings extends Base {
 	/**
 	 * Get the slug for the RSVP settings page.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return string The slug for the RSVP settings page.
 	 */
@@ -44,7 +44,7 @@ class Rsvp_Settings extends Base {
 	/**
 	 * Get the name for the RSVP settings page.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return string The localized name for the RSVP settings page.
 	 */
@@ -55,7 +55,7 @@ class Rsvp_Settings extends Base {
 	/**
 	 * Get the priority for displaying the RSVP settings page.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return int The priority for displaying the RSVP settings page.
 	 */
@@ -66,7 +66,7 @@ class Rsvp_Settings extends Base {
 	/**
 	 * Get sections and options for the RSVP settings page.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return array An array of sections and options for the RSVP settings page.
 	 */

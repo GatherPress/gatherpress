@@ -22,7 +22,7 @@ import {
  * It includes a SelectControl with options grouped by regions. The selected time zone is
  * stored in the state and updated via the setTimezone function.
  *
- * @since 1.0.0
+ * @since 0.27.0
  *
  * @return {JSX.Element} The rendered React component.
  */

@@ -15,7 +15,7 @@ import metadata from './block.json';
  * This block provides context-aware online event link fetching with support for
  * both event and venue contexts, with smart fallback logic.
  *
- * @since 1.0.0
+ * @since 0.27.0
  *
  * @return {void}
  */

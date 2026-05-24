@@ -13,7 +13,7 @@ import { useCallback } from '@wordpress/element';
  * new paragraph blocks when Enter is pressed at the beginning
  * or end of the field.
  *
- * @since 1.0.0
+ * @since 0.34.0
  *
  * @param {string}   clientId          - The block's client ID.
  * @param {Function} insertBlocksAfter - Function to insert blocks after this block.

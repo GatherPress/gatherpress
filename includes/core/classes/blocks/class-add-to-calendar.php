@@ -8,7 +8,7 @@
  * It enables users to add events to services like Google, iCal, Outlook, and Yahoo.
  *
  * @package GatherPress\Core
- * @since 1.0.0
+ * @since 0.33.0
  */
 
 namespace GatherPress\Core\Blocks;
@@ -24,7 +24,7 @@ use WP_HTML_Tag_Processor;
  * Class responsible for managing the "Add_To_Calendar" block and its functionality,
  * including dynamic rendering adjustments.
  *
- * @since 1.0.0
+ * @since 0.33.0
  */
 class Add_To_Calendar {
 
@@ -36,7 +36,7 @@ class Add_To_Calendar {
 	/**
 	 * Constant representing the Block Name.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @var string
 	 */
 	const BLOCK_NAME = 'gatherpress/add-to-calendar';
@@ -46,7 +46,7 @@ class Add_To_Calendar {
 	 *
 	 * This method initializes the object and sets up necessary hooks.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 */
 	protected function __construct() {
 		$this->setup_hooks();
@@ -57,7 +57,7 @@ class Add_To_Calendar {
 	 *
 	 * This method adds hooks for different purposes as needed.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @return void
 	 */
@@ -75,7 +75,7 @@ class Add_To_Calendar {
 	 * URLs based on the associated event data. This ensures that "Add to Calendar"
 	 * links point to the correct service with event details.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @param string $block_content The original block content.
 	 * @param array  $block         The block instance array, used to determine the event.

@@ -25,7 +25,7 @@ import VenuePluginFill from './fill';
  * This component represents a panel in the Block Editor for venue settings.
  * It includes the VenueInformationPanel component to manage and display venue details.
  *
- * @since 1.0.0
+ * @since 0.27.0
  *
  * @return {JSX.Element} The JSX element for the VenueSettings.
  */
@@ -72,7 +72,7 @@ const VenueSettings = () => {
  *
  * This function registers the VenueSettings component as a plugin to be rendered in the Block Editor.
  *
- * @since 1.0.0
+ * @since 0.27.0
  *
  * @return {void}
  */

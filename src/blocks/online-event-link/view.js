@@ -18,7 +18,7 @@ const { state } = store( 'gatherpress', {
 		 * and swaps between a clickable link and plain text. The element uses
 		 * class "gatherpress-online-event__text" whether it's a <span> or <a>.
 		 *
-		 * @since 1.0.0
+		 * @since 0.34.0
 		 *
 		 * @return {void}
 		 */

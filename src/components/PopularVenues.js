@@ -16,7 +16,7 @@ import { usePopularVenues, getVenueTitle } from '../helpers/venue';
  * Displays a list of the most frequently used venues as quick-select buttons.
  * Only shown when there are popular venues available and the user is in an event context.
  *
- * @since 1.0.0
+ * @since 0.34.0
  *
  * @param {Object}   props               Component props.
  * @param {Function} props.onSelect      Callback function when a venue is selected.

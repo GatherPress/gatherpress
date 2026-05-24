@@ -6,7 +6,7 @@
  * that need to have a single instance throughout the application.
  *
  * @package GatherPress\Core
- * @since 1.0.0
+ * @since 0.27.0
  */
 
 namespace GatherPress\Core\Traits;
@@ -19,14 +19,14 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
  *
  * A reusable trait for implementing the singleton design pattern in PHP classes.
  *
- * @since 1.0.0
+ * @since 0.27.0
  */
 trait Singleton {
 
 	/**
 	 * The single instance of the class.
 	 *
-	 * @since 1.0.0
+	 * @since 0.27.0
 	 * @var self|null The instance of the class or null if not instantiated.
 	 */
 	private static ?self $instance = null;
@@ -36,7 +36,7 @@ trait Singleton {
 	 *
 	 * If an instance does not exist, it creates one; otherwise, it returns the existing instance.
 	 *
-	 * @since 1.0.0
+	 * @since 0.27.0
 	 *
 	 * @return self The instance of the class.
 	 */

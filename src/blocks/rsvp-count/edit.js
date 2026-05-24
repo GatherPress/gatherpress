@@ -37,7 +37,7 @@ async function fetchRsvpResponses( postId ) {
  * @param {Object}   root0.attributes    - Block attributes.
  * @param {Function} root0.setAttributes - Function to update block attributes.
  * @param {Object}   root0.context       - Block context data.
- * @since 1.0.0
+ * @since 0.34.0
  *
  * @return {JSX.Element} The rendered edit interface.
  */

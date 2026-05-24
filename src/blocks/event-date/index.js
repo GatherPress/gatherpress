@@ -20,7 +20,7 @@ import './style.scss';
  * for the block's appearance and behavior in the editor, while the 'save' component defines how
  * the block should be rendered on the front end.
  *
- * @since 1.0.0
+ * @since 0.27.0
  *
  * @return {void}
  */

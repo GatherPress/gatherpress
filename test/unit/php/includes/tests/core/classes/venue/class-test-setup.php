@@ -3,7 +3,7 @@
  * Class handles unit tests for GatherPress\Core\Venue\Setup.
  *
  * @package GatherPress\Core\Venue
- * @since 1.0.0
+ * @since 0.27.0
  */
 
 namespace GatherPress\Tests\Core\Venue;

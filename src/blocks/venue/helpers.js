@@ -1,7 +1,7 @@
 /**
  * Helper functions for the venue block.
  *
- * @since 1.0.0
+ * @since 0.34.0
  */
 
 /**
@@ -10,7 +10,7 @@
  * Determines whether an event is in-person, online, or hybrid based on
  * the presence of venue terms and the special 'online-event' term.
  *
- * @since 1.0.0
+ * @since 0.34.0
  *
  * @param {Array} terms Array of venue term objects.
  * @return {string} Mode: 'in-person', 'online', or 'hybrid'.
@@ -38,7 +38,7 @@ export function calculateMode( terms ) {
  * Calculates which taxonomy term IDs should be assigned to an event
  * when switching between in-person, online, and hybrid modes.
  *
- * @since 1.0.0
+ * @since 0.34.0
  *
  * @param {string} newMode            New mode to switch to ('in-person', 'online', or 'hybrid').
  * @param {number} onlineEventTermId  The term ID for the 'online-event' term.

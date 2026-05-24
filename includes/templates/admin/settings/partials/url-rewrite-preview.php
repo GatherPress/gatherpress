@@ -3,7 +3,7 @@
  * Render a preview of the given urlrewrite value.
  *
  * @package GatherPress\Core
- * @since 1.0.0
+ * @since 0.27.0
  *
  * @param string $name  The name parameter.
  * @param string $value The value parameter representing a urlrewrite.

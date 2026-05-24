@@ -3,7 +3,7 @@
  * Class handles unit tests for GatherPress\Core\Blocks\General_Block.
  *
  * @package GatherPress\Core
- * @since 1.0.0
+ * @since 0.33.0
  */
 
 namespace GatherPress\Tests\Core\Blocks;
@@ -28,7 +28,7 @@ class Test_General_Block extends Base {
 	 * Verifies that the appropriate filters are registered during setup,
 	 * ensuring the hooks are properly configured for General_Block.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::__construct
 	 * @covers ::setup_hooks
 	 *
@@ -69,7 +69,7 @@ class Test_General_Block extends Base {
 	/**
 	 * Test block content is removed when user is logged in and block has login URL class.
 	 *
-	 * @since  1.0.0
+	 * @since  0.33.0
 	 * @covers ::process_login_block
 	 *
 	 * @return void
@@ -104,7 +104,7 @@ class Test_General_Block extends Base {
 	 * This test verifies that when a user is not logged in, the block content is preserved
 	 * and the placeholder login URL is correctly replaced with the actual login URL.
 	 *
-	 * @since  1.0.0
+	 * @since  0.33.0
 	 * @covers ::process_login_block
 	 *
 	 * @return void
@@ -140,7 +140,7 @@ class Test_General_Block extends Base {
 	/**
 	 * Test block content remains when user is logged in but block doesn't have login URL class.
 	 *
-	 * @since  1.0.0
+	 * @since  0.33.0
 	 * @covers ::process_login_block
 	 *
 	 * @return void
@@ -178,7 +178,7 @@ class Test_General_Block extends Base {
 	/**
 	 * Test block content remains when block has no className attribute.
 	 *
-	 * @since  1.0.0
+	 * @since  0.33.0
 	 * @covers ::process_login_block
 	 *
 	 * @return void
@@ -213,7 +213,7 @@ class Test_General_Block extends Base {
 	/**
 	 * Test block content is removed when registration is disabled and block has registration URL class.
 	 *
-	 * @since  1.0.0
+	 * @since  0.33.0
 	 * @covers ::process_registration_block
 	 *
 	 * @return void
@@ -245,7 +245,7 @@ class Test_General_Block extends Base {
 	 * This test verifies that when a user is not logged in, the block content is preserved
 	 * and the placeholder registration URL is correctly replaced with the actual registration URL.
 	 *
-	 * @since  1.0.0
+	 * @since  0.33.0
 	 * @covers ::process_registration_block
 	 *
 	 * @return void
@@ -285,7 +285,7 @@ class Test_General_Block extends Base {
 	/**
 	 * Test registration URL placeholder is replaced in anchor tag href.
 	 *
-	 * @since  1.0.0
+	 * @since  0.34.0
 	 * @covers ::process_registration_block
 	 *
 	 * @return void
@@ -312,7 +312,7 @@ class Test_General_Block extends Base {
 	/**
 	 * Test block content remains when registration is disabled but block doesn't have registration URL class.
 	 *
-	 * @since  1.0.0
+	 * @since  0.33.0
 	 * @covers ::process_registration_block
 	 *
 	 * @return void
@@ -342,7 +342,7 @@ class Test_General_Block extends Base {
 	/**
 	 * Test block content remains when block has no className attribute.
 	 *
-	 * @since  1.0.0
+	 * @since  0.33.0
 	 * @covers ::process_registration_block
 	 *
 	 * @return void
@@ -370,7 +370,7 @@ class Test_General_Block extends Base {
 	/**
 	 * Test guest count field is hidden when max guest limit is 0.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::process_guests_field
 	 *
 	 * @return void
@@ -398,7 +398,7 @@ class Test_General_Block extends Base {
 	/**
 	 * Test guest count field is visible when max guest limit is greater than 0.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::process_guests_field
 	 *
 	 * @return void
@@ -426,7 +426,7 @@ class Test_General_Block extends Base {
 	/**
 	 * Test anonymous field is hidden when anonymous RSVP is disabled.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::process_anonymous_field
 	 *
 	 * @return void
@@ -454,7 +454,7 @@ class Test_General_Block extends Base {
 	/**
 	 * Test anonymous field is visible when anonymous RSVP is enabled.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::process_anonymous_field
 	 *
 	 * @return void
@@ -482,7 +482,7 @@ class Test_General_Block extends Base {
 	/**
 	 * Test process methods return unchanged content for non-event posts.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::process_guests_field
 	 * @covers ::process_anonymous_field
 	 *
@@ -520,7 +520,7 @@ class Test_General_Block extends Base {
 	 * ALL of them get hidden, not just the first one. This prevents regression of break
 	 * statements that would stop processing after the first match.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::process_guests_field
 	 *
 	 * @return void
@@ -569,7 +569,7 @@ class Test_General_Block extends Base {
 	 * ALL of them get hidden, not just the first one. This prevents regression of break
 	 * statements that would stop processing after the first match.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::process_anonymous_field
 	 *
 	 * @return void
@@ -614,7 +614,7 @@ class Test_General_Block extends Base {
 	/**
 	 * Test converting anchor tag to submit button.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::convert_submit_button
 	 *
 	 * @return void
@@ -643,7 +643,7 @@ class Test_General_Block extends Base {
 	/**
 	 * Test adding type="submit" to existing button element.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::convert_submit_button
 	 *
 	 * @return void
@@ -668,7 +668,7 @@ class Test_General_Block extends Base {
 	/**
 	 * Test that button without gatherpress-submit-button class is not modified.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::convert_submit_button
 	 *
 	 * @return void
@@ -698,7 +698,7 @@ class Test_General_Block extends Base {
 	 * Tests the fallback return path when the block has the gatherpress-submit-button
 	 * class but doesn't contain any anchor or button tags to process.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::convert_submit_button
 	 *
 	 * @return void
@@ -726,7 +726,7 @@ class Test_General_Block extends Base {
 	/**
 	 * Test process_guests_field with non-publish status returns content unchanged.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::process_guests_field
 	 *
 	 * @return void
@@ -753,7 +753,7 @@ class Test_General_Block extends Base {
 	/**
 	 * Test process_anonymous_field with non-publish status returns content unchanged.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::process_anonymous_field
 	 *
 	 * @return void
@@ -780,7 +780,7 @@ class Test_General_Block extends Base {
 	/**
 	 * Test venue detail field returns unchanged when block has no venue conditional class.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @covers ::process_venue_detail_field
 	 *
 	 * @return void
@@ -807,7 +807,7 @@ class Test_General_Block extends Base {
 	/**
 	 * Test venue detail field returns unchanged when block has no className attribute.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @covers ::process_venue_detail_field
 	 *
 	 * @return void
@@ -832,7 +832,7 @@ class Test_General_Block extends Base {
 	/**
 	 * Test venue detail field returns unchanged when field name is not in mapping.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @covers ::process_venue_detail_field
 	 *
 	 * @return void
@@ -859,7 +859,7 @@ class Test_General_Block extends Base {
 	/**
 	 * Test venue detail field returns unchanged when post is not a venue type.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @covers ::process_venue_detail_field
 	 *
 	 * @return void
@@ -890,7 +890,7 @@ class Test_General_Block extends Base {
 	/**
 	 * Test venue detail field returns empty when venue field is empty.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @covers ::process_venue_detail_field
 	 *
 	 * @return void
@@ -925,7 +925,7 @@ class Test_General_Block extends Base {
 	/**
 	 * Test venue detail field returns content when venue field has value.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @covers ::process_venue_detail_field
 	 *
 	 * @return void
@@ -960,7 +960,7 @@ class Test_General_Block extends Base {
 	/**
 	 * Test venue detail field works with address field.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @covers ::process_venue_detail_field
 	 *
 	 * @return void
@@ -993,7 +993,7 @@ class Test_General_Block extends Base {
 	/**
 	 * Test venue detail field works with website field.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @covers ::process_venue_detail_field
 	 *
 	 * @return void
@@ -1026,7 +1026,7 @@ class Test_General_Block extends Base {
 	/**
 	 * Test venue detail field returns empty when the meta key is unset.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @covers ::process_venue_detail_field
 	 *
 	 * @return void
@@ -1060,7 +1060,7 @@ class Test_General_Block extends Base {
 	/**
 	 * Test venue detail field uses postId attribute when provided.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @covers ::process_venue_detail_field
 	 *
 	 * @return void
@@ -1097,7 +1097,7 @@ class Test_General_Block extends Base {
 	 * and both conditions are met (guest limit 0 and anonymous disabled),
 	 * all appropriate fields are hidden independently.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::process_guests_field
 	 * @covers ::process_anonymous_field
 	 *

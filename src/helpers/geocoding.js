@@ -164,7 +164,7 @@ export function primeGeocodeCache( address, latitude, longitude ) {
  * for the same address. The PHP backend proxies requests to Photon
  * (OpenStreetMap-based) so the editor does not call third-party APIs directly.
  *
- * @since 1.0.0
+ * @since 0.34.0
  *
  * @param {string} address The full address to geocode.
  * @return {Promise<Object>} Promise resolving to { latitude, longitude, error }.

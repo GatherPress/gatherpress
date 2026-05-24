@@ -14,7 +14,7 @@ import { useEffect, useState } from '@wordpress/element';
  * information based on the selected venue. The selected venue is stored as a term associated
  * with the event, and its latitude/longitude are updated in the venue store.
  *
- * @since 1.0.0
+ * @since 0.27.0
  *
  * @return {JSX.Element} The rendered React component.
  */

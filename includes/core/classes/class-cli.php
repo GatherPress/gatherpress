@@ -6,7 +6,7 @@
  * allowing developers to interact with and manage plugin functionality via the command line.
  *
  * @package GatherPress\Core
- * @since 1.0.0
+ * @since 0.27.0
  */
 
 namespace GatherPress\Core;
@@ -25,7 +25,7 @@ use WP_CLI;
  * The Cli class extends WP-CLI and provides custom WP-CLI commands
  * for interacting with and managing GatherPress functionality via the command line.
  *
- * @since 1.0.0
+ * @since 0.27.0
  */
 class Cli {
 
@@ -39,7 +39,7 @@ class Cli {
 	 *
 	 * Registers WP-CLI commands for GatherPress if WP-CLI is present.
 	 *
-	 * @since 1.0.0
+	 * @since 0.27.0
 	 */
 	protected function __construct() {
 		if ( defined( 'WP_CLI' ) && WP_CLI ) {

@@ -44,7 +44,7 @@ import { getFromSettings } from '../../helpers/editor-settings';
  * register their own RSVP layouts. Each entry is shaped
  * `{ name, title, description, template, statusTemplates }`.
  *
- * @since 1.0.0
+ * @since 0.33.0
  *
  * @param {Array} patterns Default array containing the bundled "RSVP Button
  *                         with Modal" pattern.
@@ -91,7 +91,7 @@ const PATTERNS = applyFilters( 'gatherpress.rsvpPatterns', [
  * clicking through the picker. The picker itself is filterable separately
  * via `gatherpress.rsvpPatterns`.
  *
- * @since 1.0.0
+ * @since 0.33.0
  *
  * @param {Object<string, Array>} bundle Default per-status template map
  *                                       matching the bundled "RSVP Button
@@ -128,7 +128,7 @@ function templateToBlocks( template ) {
  * @param {string}   props.clientId      The unique ID of the block instance.
  * @param {Object}   props.context       Block context data containing postId and event info.
  *
- * @since 1.0.0
+ * @since 0.33.0
  *
  * @return {JSX.Element} The rendered edit interface for the RSVP block.
  */

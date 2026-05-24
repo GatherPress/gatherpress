@@ -15,7 +15,7 @@ import variations from './variations';
 /**
  * Register the Venue Detail block.
  *
- * @since 1.0.0
+ * @since 0.34.0
  */
 registerBlockType( metadata.name, {
 	icon,

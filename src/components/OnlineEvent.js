@@ -18,7 +18,7 @@ import { getVenuePostType, getVenueTaxonomy } from '../helpers/venue';
  * shows a TextControl input for adding the online event link. It updates the post
  * meta and manages the online-event taxonomy term.
  *
- * @since 1.0.0
+ * @since 0.27.0
  *
  * @return {JSX.Element} The rendered React component.
  */

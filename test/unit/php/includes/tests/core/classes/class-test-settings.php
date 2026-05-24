@@ -3,7 +3,7 @@
  * Class handles unit tests for GatherPress\Core\Settings.
  *
  * @package GatherPress\Core
- * @since 1.0.0
+ * @since 0.27.0
  */
 
 namespace GatherPress\Tests\Core;
@@ -686,7 +686,7 @@ class Test_Settings extends Base {
 	/**
 	 * Test getting value with all parameters set.
 	 *
-	 * @since  1.0.0
+	 * @since  0.34.0
 	 * @covers ::get
 	 *
 	 * @return void
@@ -716,7 +716,7 @@ class Test_Settings extends Base {
 	/**
 	 * Test getting default value when option is empty.
 	 *
-	 * @since  1.0.0
+	 * @since  0.33.0
 	 * @covers ::get
 	 *
 	 * @return void
@@ -748,7 +748,7 @@ class Test_Settings extends Base {
 	/**
 	 * Test getting value with empty section and option.
 	 *
-	 * @since  1.0.0
+	 * @since  0.34.0
 	 * @covers ::get
 	 *
 	 * @return void
@@ -767,7 +767,7 @@ class Test_Settings extends Base {
 	/**
 	 * Test getting value with non-existent sub-page.
 	 *
-	 * @since  1.0.0
+	 * @since  0.34.0
 	 * @covers ::get
 	 *
 	 * @return void
@@ -786,7 +786,7 @@ class Test_Settings extends Base {
 	/**
 	 * Test getting flat default value with valid structure.
 	 *
-	 * @since  1.0.0
+	 * @since  0.34.0
 	 * @covers ::get_flat_default
 	 *
 	 * @return void
@@ -832,7 +832,7 @@ class Test_Settings extends Base {
 	/**
 	 * Test getting flat default value with nonexistent option.
 	 *
-	 * @since  1.0.0
+	 * @since  0.34.0
 	 * @covers ::get_flat_default
 	 *
 	 * @return void
@@ -851,7 +851,7 @@ class Test_Settings extends Base {
 	/**
 	 * Test getting flat default value with empty option.
 	 *
-	 * @since  1.0.0
+	 * @since  0.34.0
 	 * @covers ::get_flat_default
 	 *
 	 * @return void
@@ -942,7 +942,7 @@ class Test_Settings extends Base {
 	/**
 	 * Tests for the select_menu method.
 	 *
-	 * @since  1.0.0
+	 * @since  0.33.0
 	 * @covers ::select_menu
 	 *
 	 * @return void
@@ -963,7 +963,7 @@ class Test_Settings extends Base {
 	/**
 	 * Test select menu with empty submenu and existing page.
 	 *
-	 * @since  1.0.0
+	 * @since  0.33.0
 	 * @covers ::select_menu
 	 *
 	 * @return void
@@ -998,7 +998,7 @@ class Test_Settings extends Base {
 	/**
 	 * Test select menu with empty submenu and non-existent page.
 	 *
-	 * @since  1.0.0
+	 * @since  0.33.0
 	 * @covers ::select_menu
 	 *
 	 * @return void
@@ -1032,7 +1032,7 @@ class Test_Settings extends Base {
 	/**
 	 * Test select menu with empty submenu and empty sub pages.
 	 *
-	 * @since  1.0.0
+	 * @since  0.33.0
 	 * @covers ::select_menu
 	 *
 	 * @return void
@@ -1058,7 +1058,7 @@ class Test_Settings extends Base {
 	/**
 	 * Test render_field with select type.
 	 *
-	 * @since  1.0.0
+	 * @since  0.34.0
 	 * @covers ::render_field
 	 *
 	 * @return void
@@ -1096,7 +1096,7 @@ class Test_Settings extends Base {
 	/**
 	 * Test maybe_flush_rewrite_rules when URLs change.
 	 *
-	 * @since  1.0.0
+	 * @since  0.33.0
 	 * @covers ::maybe_flush_rewrite_rules
 	 *
 	 * @return void
@@ -1126,7 +1126,7 @@ class Test_Settings extends Base {
 	/**
 	 * Test maybe_flush_rewrite_rules when URLs are the same.
 	 *
-	 * @since  1.0.0
+	 * @since  0.33.0
 	 * @covers ::maybe_flush_rewrite_rules
 	 *
 	 * @return void
@@ -1158,7 +1158,7 @@ class Test_Settings extends Base {
 	/**
 	 * Test maybe_flush_rewrite_rules when old value has no URLs.
 	 *
-	 * @since  1.0.0
+	 * @since  0.33.0
 	 * @covers ::maybe_flush_rewrite_rules
 	 *
 	 * @return void
@@ -1186,7 +1186,7 @@ class Test_Settings extends Base {
 	/**
 	 * Test maybe_flush_rewrite_rules when new value has no URLs.
 	 *
-	 * @since  1.0.0
+	 * @since  0.33.0
 	 * @covers ::maybe_flush_rewrite_rules
 	 *
 	 * @return void
@@ -1214,7 +1214,7 @@ class Test_Settings extends Base {
 	/**
 	 * Test sanitize_page_settings callback with various field types.
 	 *
-	 * @since  1.0.0
+	 * @since  0.33.0
 	 * @covers ::sanitize_page_settings
 	 *
 	 * @return void
@@ -1290,7 +1290,7 @@ class Test_Settings extends Base {
 	 * Explicit "0" submissions must still be kept as int 0, distinct from
 	 * empty, so callers can tell "unset" from "set to zero".
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @covers ::sanitize_page_settings
 	 *
 	 * @return void
@@ -1330,7 +1330,7 @@ class Test_Settings extends Base {
 	/**
 	 * Test settings_page method.
 	 *
-	 * @since  1.0.0
+	 * @since  0.33.0
 	 * @covers ::settings_page
 	 *
 	 * @return void
@@ -1350,7 +1350,7 @@ class Test_Settings extends Base {
 	/**
 	 * Test sort_sub_pages_by_priority with default priorities.
 	 *
-	 * @since  1.0.0
+	 * @since  0.33.0
 	 * @covers ::sort_sub_pages_by_priority
 	 *
 	 * @return void
@@ -2762,7 +2762,7 @@ class Test_Settings extends Base {
 	 * rows uniformly; the `--hidden` modifier is added only when a condition
 	 * exists and isn't satisfied.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @covers ::build_row_class
 	 *
 	 * @return void
@@ -2787,7 +2787,7 @@ class Test_Settings extends Base {
 	 * render. JS later toggles it off if the user changes the controlling
 	 * field to a matching value.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @covers ::build_row_class
 	 *
 	 * @return void
@@ -2822,7 +2822,7 @@ class Test_Settings extends Base {
 	 * omits the `--hidden` modifier so the row paints visible on first
 	 * render — JS leaves it alone unless the controlling field later changes.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @covers ::build_row_class
 	 *
 	 * @return void
@@ -2853,7 +2853,7 @@ class Test_Settings extends Base {
 	 * Evaluate show_if returns true when every controlling key matches the
 	 * currently saved value. Single-value conditions use string equality.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @covers ::evaluate_show_if
 	 *
 	 * @return void
@@ -2879,7 +2879,7 @@ class Test_Settings extends Base {
 	 * Evaluate show_if returns false when the controlling key has a value
 	 * other than the one expected.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @covers ::evaluate_show_if
 	 *
 	 * @return void
@@ -2905,7 +2905,7 @@ class Test_Settings extends Base {
 	 * Evaluate show_if accepts an array of expected values and returns true
 	 * when the current value is a member (OR semantics within one key).
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @covers ::evaluate_show_if
 	 *
 	 * @return void
@@ -2939,7 +2939,7 @@ class Test_Settings extends Base {
 	 * Evaluate show_if combines multiple keys with AND — every key's
 	 * condition must hold for the result to be true.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @covers ::evaluate_show_if
 	 *
 	 * @return void
@@ -2991,7 +2991,7 @@ class Test_Settings extends Base {
 	 * from `render_field` → `render_show_if_marker` could silently break
 	 * in a refactor.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @covers ::render_field
 	 *
 	 * @return void
@@ -3035,7 +3035,7 @@ class Test_Settings extends Base {
 	 * keeping the field output free of the JS hook for the vast majority of
 	 * fields that don't use the feature.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @covers ::render_field
 	 *
 	 * @return void
@@ -3068,7 +3068,7 @@ class Test_Settings extends Base {
 	 * as a JSON-encoded data attribute. The marker has no `name` attribute
 	 * so it never enters the POST payload — it's a JS hook, not a value.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @covers ::render_show_if_marker
 	 *
 	 * @return void
@@ -3108,7 +3108,7 @@ class Test_Settings extends Base {
 	 * "values matching defaults are stripped" pass doesn't interfere with
 	 * the assertion on the hidden field.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @covers ::sanitize_page_settings
 	 *
 	 * @return void

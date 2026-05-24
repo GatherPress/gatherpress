@@ -6,7 +6,7 @@
  * in GatherPress settings. It includes labels, input attributes, and an example.
  *
  * @package GatherPress\Core
- * @since 1.0.0
+ * @since 0.27.0
  *
  * @param string $name        The name attribute for the input field.
  * @param string $label       The label for the input field.

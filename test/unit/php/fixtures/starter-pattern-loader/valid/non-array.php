@@ -4,7 +4,7 @@
  * skips these so non-pattern files in the directory don't break it.
  *
  * @package GatherPress\Tests
- * @since 1.0.0
+ * @since 0.34.0
  */
 
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore

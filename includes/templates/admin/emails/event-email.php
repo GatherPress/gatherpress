@@ -5,7 +5,7 @@
  * This template is used to generate email notifications for events in GatherPress.
  *
  * @package GatherPress\Core
- * @since 1.0.0
+ * @since 0.27.0
  *
  * @param int    $event_id The ID of the event for which the email is generated.
  * @param string $message  Optional message content for the email.

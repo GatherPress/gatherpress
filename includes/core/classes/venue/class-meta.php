@@ -12,7 +12,7 @@
  * `register_post_meta()`.
  *
  * @package GatherPress\Core\Venue
- * @since 1.0.0
+ * @since 0.34.0
  */
 
 namespace GatherPress\Core\Venue;
@@ -35,7 +35,7 @@ use WP_REST_Request;
  * supports — including companion-plugin types — picks up the same meta
  * shape without separate wiring.
  *
- * @since 1.0.0
+ * @since 0.34.0
  */
 class Meta {
 
@@ -59,7 +59,7 @@ class Meta {
 	 * counterpart; together the two arrays make up the full 13-field shape
 	 * returned by `Venue::get_information()`.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @var string[]
 	 */
 	public const EDITOR_WRITABLE_FIELDS = array(
@@ -83,7 +83,7 @@ class Meta {
 	 * Single source of truth for: meta registration, REST readonly stripping,
 	 * cron handler write loop, and `Venue::get_information()` field list.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @var string[]
 	 */
 	public const STRUCTURED_ADDRESS_FIELDS = array(
@@ -104,7 +104,7 @@ class Meta {
 	 * declares venue support picks up the same meta shape without
 	 * separate per-type registration calls.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 */
 	public function __construct() {
 		$this->setup_hooks();
@@ -113,7 +113,7 @@ class Meta {
 	/**
 	 * Set up hooks for venue meta registration.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return void
 	 */
@@ -129,7 +129,7 @@ class Meta {
 	 * else collapses to an empty string — the "no coords yet" sentinel the
 	 * editor and `Map::parse_coord()` already treat as unset.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param mixed $value The submitted value.
 	 * @return string Normalized coordinate string, or '' for invalid / unset input.
@@ -148,7 +148,7 @@ class Meta {
 	 * - `gatherpress-venue-map` gets the map display-settings keys
 	 *   (show / zoom / height).
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param string $post_type The post type that was just registered.
 	 * @return void
@@ -169,7 +169,7 @@ class Meta {
 	 * filter for a post type that declares `gatherpress-venue-information`
 	 * support.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param string $post_type The post type to register against.
 	 * @return void
@@ -295,7 +295,7 @@ class Meta {
 	 * height) for a post type that declares `gatherpress-venue-map`
 	 * support.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param string $post_type The post type to register against.
 	 * @return void
@@ -342,7 +342,7 @@ class Meta {
 	 * rather than triggering a permission error from the __return_false auth
 	 * callback.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param stdClass        $prepared_post An object representing a single post prepared for inserting or updating.
 	 * @param WP_REST_Request $request       Request object.
