@@ -258,14 +258,44 @@ class Query {
 		// shadow taxonomy + term to scope by, so this works for any
 		// shadow-source-supporting CPT (venue, tour, production, season, etc.)
 		// — not just venues.
+		//
+		// Two resolution paths:
+		// 1. Frontend — `is_singular()` is true, queried object is the
+		// source post; we scope to its term.
+		// 2. REST editor preview — `is_singular()` is false, but the block
+		// writes the editor's current post id + type into the query
+		// attribute when the toggle is on. We use those as the source.
 		$venue_filter = $query->get( 'venue_filter' );
-		if ( ! empty( $venue_filter ) && is_singular() ) {
-			$source_post = get_queried_object();
+		if ( ! empty( $venue_filter ) ) {
+			$source_post = null;
 
-			if (
-				$source_post instanceof WP_Post
-				&& post_type_supports( $source_post->post_type, 'gatherpress-shadow-source' )
-			) {
+			if ( is_singular() ) {
+				$queried = get_queried_object();
+				if (
+					$queried instanceof WP_Post
+					&& post_type_supports( $queried->post_type, 'gatherpress-shadow-source' )
+				) {
+					$source_post = $queried;
+				}
+			}
+
+			if ( ! $source_post instanceof WP_Post ) {
+				$context_post_id   = (int) $query->get( 'venue_filter_context_post_id' );
+				$context_post_type = (string) $query->get( 'venue_filter_context_post_type' );
+
+				if (
+					$context_post_id > 0
+					&& '' !== $context_post_type
+					&& post_type_supports( $context_post_type, 'gatherpress-shadow-source' )
+				) {
+					$candidate = get_post( $context_post_id );
+					if ( $candidate instanceof WP_Post && $candidate->post_type === $context_post_type ) {
+						$source_post = $candidate;
+					}
+				}
+			}
+
+			if ( $source_post instanceof WP_Post ) {
 				$shadow_source = Shadow_Source::get_instance();
 				$taxonomy      = $shadow_source->get_taxonomy( $source_post->post_type );
 				$term_slug     = $shadow_source->term_slug_from_post_name( $source_post->post_name );

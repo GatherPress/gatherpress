@@ -307,6 +307,10 @@ export const VenueFilterControls = ( {
 	// Production" — matching whatever the template renders against at runtime.
 	// Otherwise (events, pages, templates, patterns) fall back to gatherpress_venue
 	// since that's the most common scope-by-source scenario.
+	const editorPostId = useSelect(
+		( wpSelect ) => wpSelect( 'core/editor' )?.getCurrentPostId(),
+		[]
+	);
 	const editorPostType = useSelect(
 		( wpSelect ) => wpSelect( 'core/editor' )?.getCurrentPostType(),
 		[]
@@ -318,7 +322,8 @@ export const VenueFilterControls = ( {
 				: null,
 		[ editorPostType ]
 	);
-	const sourcePostType = editorPostTypeSupports?.[ 'gatherpress-shadow-source' ]
+	const editorIsShadowSource = !! editorPostTypeSupports?.[ 'gatherpress-shadow-source' ];
+	const sourcePostType = editorIsShadowSource
 		? editorPostType
 		: 'gatherpress_venue';
 
@@ -351,10 +356,21 @@ export const VenueFilterControls = ( {
 			help={ helpText }
 			checked={ !! venueFilter }
 			onChange={ ( value ) => {
+				// Pass editor's current page through to REST so the preview
+				// matches what the runtime template will render against. The
+				// runtime path uses `is_singular()` and ignores these — they
+				// only matter for the REST-driven editor preview.
+				const contextPostId =
+					value && editorIsShadowSource ? editorPostId : null;
+				const contextPostType =
+					value && editorIsShadowSource ? editorPostType : null;
+
 				setAttributes( {
 					query: {
 						...attributes.query,
 						venue_filter: value ? 1 : 0,
+						venue_filter_context_post_id: contextPostId,
+						venue_filter_context_post_type: contextPostType,
 					},
 				} );
 			} }

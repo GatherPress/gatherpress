@@ -265,6 +265,19 @@ class Event_Query {
 			$query_args['venue_filter'] = $block_query['venue_filter'];
 		}
 
+		// Editor-preview context — the editor writes these into the block's
+		// `query` attribute when the contextual toggle is enabled, so the
+		// REST-side preview can scope to the same shadow-source post the
+		// frontend `is_singular()` path scopes to. Frontend `pre_get_posts`
+		// ignores these (it has the queried object); the REST path uses them
+		// as a fallback when `is_singular()` is false.
+		if ( ! empty( $block_query['venue_filter_context_post_id'] ) ) {
+			$query_args['venue_filter_context_post_id'] = (int) $block_query['venue_filter_context_post_id'];
+		}
+		if ( ! empty( $block_query['venue_filter_context_post_type'] ) ) {
+			$query_args['venue_filter_context_post_type'] = (string) $block_query['venue_filter_context_post_type'];
+		}
+
 		// Order By.
 		if ( isset( $block_query['orderBy'] ) ) {
 			$query_args['orderby'] = array( $block_query['orderBy'] );
@@ -342,6 +355,19 @@ class Event_Query {
 			$custom_args['venue_filter'] = $venue_filter;
 		}
 
+		// REST-side context for the editor preview. When the editor's
+		// contextual toggle is on, the block sends the editor's current page
+		// post id and type so the REST query can scope to the same source
+		// the frontend `is_singular()` path would scope to.
+		$context_post_id = $request->get_param( 'venue_filter_context_post_id' );
+		if ( null !== $context_post_id ) {
+			$custom_args['venue_filter_context_post_id'] = (int) $context_post_id;
+		}
+		$context_post_type = $request->get_param( 'venue_filter_context_post_type' );
+		if ( null !== $context_post_type ) {
+			$custom_args['venue_filter_context_post_type'] = (string) $context_post_type;
+		}
+
 		/** This filter is documented in includes/query-loop.php */
 		$filtered_query_args = apply_filters(
 			'gatherpress_query_vars',
@@ -404,6 +430,22 @@ class Event_Query {
 			'description' => __( 'Whether to filter events by the current venue context', 'gatherpress' ),
 			'type'        => 'integer',
 			'enum'        => array( 0, 1 ),
+		);
+
+		$query_params['venue_filter_context_post_id'] = array(
+			'description' => __(
+				'Editor-side post ID used to scope the venue contextual filter in the REST preview.',
+				'gatherpress'
+			),
+			'type'        => 'integer',
+		);
+
+		$query_params['venue_filter_context_post_type'] = array(
+			'description' => __(
+				'Editor-side post type used to scope the venue contextual filter in the REST preview.',
+				'gatherpress'
+			),
+			'type'        => 'string',
 		);
 
 		return $query_params;
