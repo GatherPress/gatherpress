@@ -115,7 +115,7 @@ class Manager {
 					esc_html__( 'A venue map provider is already registered for slug "%s".', 'gatherpress' ),
 					esc_html( $slug )
 				),
-				'1.0.0'
+				'0.34.0'
 			);
 			return;
 		}
@@ -204,7 +204,7 @@ class Manager {
 					esc_html__( 'No venue map provider registered for slug "%s"; falling back to OSM.', 'gatherpress' ),
 					esc_html( $slug )
 				),
-				'1.0.0'
+				'0.34.0'
 			);
 		}
 
