@@ -1,0 +1,4 @@
+Significance: patch
+Type: security
+
+Override vulnerable transitive npm dependencies (`qs`, `uuid`, `webpack-dev-server`) via npm overrides. [#1651]

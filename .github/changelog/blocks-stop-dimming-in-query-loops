@@ -1,0 +1,4 @@
+Significance: patch
+Type: changed
+
+Stop dimming GatherPress blocks inside Query Loop contexts when valid event context is present. [#1549]

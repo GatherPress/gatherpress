@@ -1,0 +1,4 @@
+Significance: patch
+Type: changed
+
+Restructure settings tabs — Date & Time moves under Events, Maps moves under a new Venues tab. `Venue` splits into an instance class plus a `Venue_Setup` singleton. [#1477]

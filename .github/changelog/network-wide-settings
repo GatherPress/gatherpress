@@ -1,0 +1,4 @@
+Significance: minor
+Type: added
+
+Add network-wide GatherPress settings with per-option inheritance so multisite installs can share or override individual settings at the site level. [#1500]

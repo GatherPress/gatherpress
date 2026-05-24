@@ -1,0 +1,4 @@
+Significance: patch
+Type: changed
+
+Honor the WordPress comment privacy filters when inserting RSVP comments. [#1470]
