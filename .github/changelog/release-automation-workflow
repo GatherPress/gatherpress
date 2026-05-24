@@ -1,0 +1,4 @@
+Significance: minor
+Type: added
+
+Add tag-driven release automation. Pushing a stable tag now triggers a workflow that builds a versioned distro zip, rolls up `.github/changelog/*` into a new `CHANGELOG.md` section (auto-PR'd back to develop), creates a GitHub Release with the zip attached, and deploys to wordpress.org. Pre-release tags (alpha/beta/rc) produce a GitHub Pre-Release with the `[Unreleased]` changelog snapshot and skip the wp.org deploy. See `docs/developer/release-process.md`.
