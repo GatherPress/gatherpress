@@ -1,0 +1,4 @@
+Significance: patch
+Type: changed
+
+WordPress conventions sweep across the codebase (blank line after class openings per WP core style, JS docblock dependency-header normalization, `str_contains` / `str_starts_with` migration from `strpos`), plus two small settings panel fixes. [#1589]
