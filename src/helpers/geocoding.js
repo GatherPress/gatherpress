@@ -107,6 +107,7 @@ function setGeocodeCacheEntry( key, value ) {
  * Retrieves a cached geocode result, marking it as recently used.
  *
  * @param {string} key Trimmed address key.
+ *
  * @return {Object|undefined} Cached record if present.
  */
 function getGeocodeCacheEntry( key ) {
@@ -167,6 +168,7 @@ export function primeGeocodeCache( address, latitude, longitude ) {
  * @since 0.34.0
  *
  * @param {string} address The full address to geocode.
+ *
  * @return {Promise<Object>} Promise resolving to { latitude, longitude, error }.
  *                           On success: { latitude: string, longitude: string, error: null }
  *                           On error: { latitude: '', longitude: '', error: string }
@@ -259,6 +261,7 @@ export async function geocodeAddress( address ) {
  * @param {string}      query            Partial address input.
  * @param {Object}      [options]        Request options.
  * @param {AbortSignal} [options.signal] Signal used to abort the request when a newer one supersedes it.
+ *
  * @return {Promise<Array<{ label: string, latitude: string, longitude: string }>>} Suggestion rows.
  */
 export async function fetchAddressSuggestions( query, { signal } = {} ) {

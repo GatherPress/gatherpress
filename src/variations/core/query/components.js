@@ -30,6 +30,7 @@ import { getPostTypeLabel, isInFSETemplate, usePostTypeLabel } from '../../../he
  * @param {Object}   props
  * @param {Object}   props.attributes    Block attributes.
  * @param {Function} props.setAttributes Function to update block attributes.
+ *
  * @return {Element}                     RangeControl for event "per page" count.
  */
 export const EventCountControls = ( { attributes, setAttributes } ) => {
@@ -79,6 +80,7 @@ export const EventCountControls = ( { attributes, setAttributes } ) => {
  * @param {Object}   props
  * @param {Object}   props.attributes    Block attributes.
  * @param {Function} props.setAttributes Function to update block attributes.
+ *
  * @return {Element}                        ToggleControl to exclude current event.
  */
 export const EventExcludeControls = ( { attributes, setAttributes } ) => {
@@ -131,6 +133,7 @@ export const EventExcludeControls = ( { attributes, setAttributes } ) => {
  * @param {Object}   props
  * @param {Object}   props.attributes    Block attributes.
  * @param {Function} props.setAttributes Function to update block attributes.
+ *
  * @return {Element}                        ToggleControl for unfinished events.
  */
 export const EventIncludeUnfinishedControls = ( {
@@ -211,6 +214,7 @@ export const EventIncludeUnfinishedControls = ( {
  * @param {Object}   props
  * @param {Object}   props.attributes    Block attributes.
  * @param {Function} props.setAttributes Function to update block attributes.
+ *
  * @return {Element}                     ToggleGroupControl for event list type.
  */
 export const EventListTypeControls = ( { attributes, setAttributes } ) => {
@@ -285,6 +289,7 @@ export const EventListTypeControls = ( { attributes, setAttributes } ) => {
  * @param {Object}   props.attributes        Block attributes.
  * @param {Function} props.setAttributes     Function to update block attributes.
  * @param {boolean}  props.inTemplateContext Whether the host editor is a template or template part.
+ *
  * @return {Element}                          ToggleControl for venue filtering.
  */
 export const VenueFilterControls = ( {
@@ -345,6 +350,7 @@ export const VenueFilterControls = ( {
  * @param {Object}   props
  * @param {Object}   props.attributes    Block attributes.
  * @param {Function} props.setAttributes Function to update block attributes.
+ *
  * @return {Element}                        RangeControl for event query offset.
  */
 export const EventOffsetControls = ( { attributes, setAttributes } ) => {
@@ -391,6 +397,7 @@ export const EventOffsetControls = ( { attributes, setAttributes } ) => {
  * @param {Object}   props
  * @param {Object}   props.attributes    Block attributes.
  * @param {Function} props.setAttributes Function to update block attributes.
+ *
  * @return {Element}                        Controls for event sorting and order.
  */
 export const EventOrderControls = ( { attributes, setAttributes } ) => {

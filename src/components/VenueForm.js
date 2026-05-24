@@ -159,6 +159,7 @@ function CreateVenueForm( { search, ...props } ) {
 	 * Validates the venue title.
 	 *
 	 * @param {string} value - The title value to validate.
+	 *
 	 * @return {string} Error message if validation fails, empty string if valid.
 	 */
 	const validateTitle = ( value ) => {
@@ -236,6 +237,7 @@ function CreateVenueForm( { search, ...props } ) {
 	 * @param {string} newAddress - The address of the new venue.
 	 * @param {string} latitude   - Latitude coordinate (from geocoding).
 	 * @param {string} longitude  - Longitude coordinate (from geocoding).
+	 *
 	 * @return {Promise<Object>} A promise that resolves to the newly created venue post.
 	 */
 	const createNewVenuePost = async (

@@ -186,6 +186,7 @@ class Geocoding {
 	 * @param int    $meta_id  Meta row ID. Unused (signature requirement).
 	 * @param int    $post_id  Post ID the meta belongs to.
 	 * @param string $meta_key Meta key being added/updated.
+	 *
 	 * @return void
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) -- $meta_id is required
@@ -324,6 +325,7 @@ class Geocoding {
 	 * @since 0.34.0
 	 *
 	 * @param int $post_id Venue post ID.
+	 *
 	 * @return void
 	 */
 	public function async_geocode_venue( int $post_id ): void {
@@ -397,6 +399,7 @@ class Geocoding {
 	 * @since 0.34.0
 	 *
 	 * @param array $settings The block editor settings array.
+	 *
 	 * @return array The modified settings.
 	 */
 	public function add_editor_settings( array $settings ): array {
@@ -579,6 +582,7 @@ class Geocoding {
 	 * @since 0.34.0
 	 *
 	 * @param WP_REST_Request $request The REST request object.
+	 *
 	 * @return WP_REST_Response|WP_Error Response with coordinates or error.
 	 */
 	public function geocode_address( WP_REST_Request $request ) {
@@ -630,6 +634,7 @@ class Geocoding {
 	 * @since 0.34.0
 	 *
 	 * @param string $address Address string to resolve.
+	 *
 	 * @return array{
 	 *     latitude: string,
 	 *     longitude: string,
@@ -768,6 +773,7 @@ class Geocoding {
 	 * @since 0.34.0
 	 *
 	 * @param WP_REST_Request $request The REST request object.
+	 *
 	 * @return WP_REST_Response|WP_Error Suggestions or error.
 	 */
 	public function search_addresses( WP_REST_Request $request ) {
@@ -874,6 +880,7 @@ class Geocoding {
 	 * @param mixed  $data      Decoded JSON body. Treated as "no results"
 	 *                          when not an array or missing `features`.
 	 * @param string $cache_key Transient key for the cached suggestions.
+	 *
 	 * @return WP_REST_Response The response with a `suggestions` array (possibly empty).
 	 */
 	private function build_search_suggestions_response( $data, string $cache_key ): WP_REST_Response {
@@ -958,6 +965,7 @@ class Geocoding {
 	 * @since 0.34.0
 	 *
 	 * @param array $properties Photon `properties` object.
+	 *
 	 * @return array{
 	 *     house_number: string,
 	 *     street: string,
@@ -1002,6 +1010,7 @@ class Geocoding {
 	 * @since 0.34.0
 	 *
 	 * @param array $properties Photon `properties` object.
+	 *
 	 * @return string Non-empty label or empty string.
 	 */
 	private function format_photon_feature_label( array $properties ): string {
@@ -1064,6 +1073,7 @@ class Geocoding {
 	 * @param string $body    Raw response body.
 	 * @param mixed  $decoded Result of json_decode (null when decode failed).
 	 * @param string $context Short label identifying the caller ('geocode_address', 'search_addresses').
+	 *
 	 * @return void
 	 */
 	private function maybe_log_json_decode_failure( string $body, $decoded, string $context ): void {

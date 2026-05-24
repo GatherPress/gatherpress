@@ -6,6 +6,7 @@ import { useCallback, useEffect, useState } from '@wordpress/element';
 /**
  * @param {string} value    - Current value.
  * @param {Object} inputRef - Ref to the input or textarea DOM node.
+ *
  * @return {Object} suppressNativeAutofill, unlockAddressInput.
  */
 export function useAddressFieldAntiAutofill( value, inputRef ) {

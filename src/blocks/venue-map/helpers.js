@@ -31,6 +31,7 @@ import { REST_NAMESPACE } from '../../helpers/namespace';
  * @param {boolean} props.disabled      When true, the button is disabled regardless of internal state.
  * @param {string}  [props.label]       Override the default "Regenerate map" label.
  * @param {string}  [props.variant]     Underlying Button variant (e.g. 'primary', 'secondary', 'link').
+ *
  * @return {JSX.Element} The button.
  */
 export const RegenerateMapButton = ( {
@@ -184,6 +185,7 @@ export const RegenerateMapButton = ( {
  * @param {Object} descriptors Provider-keyed descriptor map: `{ osm: { combo_key: { url, ... } } }`.
  * @param {string} comboKey    Combo key in the form `{zoom}x{width}x{height}`.
  * @param {string} activeSlug  Slug of the currently active provider (e.g. `'osm'`).
+ *
  * @return {Object|undefined} Descriptor object, or undefined when no provider has one.
  */
 export const pickDescriptorForCombo = ( descriptors, comboKey, activeSlug ) => {
@@ -215,6 +217,7 @@ export const pickDescriptorForCombo = ( descriptors, comboKey, activeSlug ) => {
  * @since 0.34.0
  *
  * @param {string} ratio Raw aspect-ratio string.
+ *
  * @return {number|null} Parsed ratio, or null if the input is invalid.
  */
 export const parseAspectRatio = ( ratio ) => {
@@ -248,6 +251,7 @@ export const parseAspectRatio = ( ratio ) => {
  * @param {number} args.height        Raw height (0 = auto).
  * @param {string} args.aspectRatio   Aspect-ratio string.
  * @param {number} args.defaultHeight Fallback height for the both-auto case.
+ *
  * @return {{width: number, height: number}} Concrete pixel dimensions.
  */
 export const resolveDimensions = ( {
@@ -308,6 +312,7 @@ export const MAX_POLLS = 20;
  * @param {boolean} args.active        Whether polling should run (typically `showStaticPlaceholder` gated on coords).
  * @param {number}  args.venuePostId   Venue post ID.
  * @param {string}  args.venuePostType Venue post type slug.
+ *
  * @return {void}
  */
 export const usePlaceholderPolling = ( {

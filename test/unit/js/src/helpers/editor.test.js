@@ -557,6 +557,7 @@ describe( 'Editor helper functions', () => {
 	 * Helper to create a mock getPostType function that returns labels.
 	 *
 	 * @param {string} slug The post type slug.
+	 *
 	 * @return {Object|null} The post type object with labels.
 	 */
 	function mockGetPostTypeWithLabels( slug ) {

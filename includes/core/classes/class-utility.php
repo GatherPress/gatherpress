@@ -36,6 +36,7 @@ class Utility {
 	 * @param string $path      The path to the template file.
 	 * @param array  $variables An array of variables to pass to the template.
 	 * @param bool   $output    Whether to echo the template (true) or return it (false).
+	 *
 	 * @return string The rendered template as a string.
 	 */
 	public static function render_template( string $path, array $variables = array(), bool $output = false ): string {
@@ -81,6 +82,7 @@ class Utility {
 	 *
 	 * @param string $file_name    The template file name, e.g. `gatherpress_ical-download.php`.
 	 * @param string $fallback_dir Absolute directory the caller's bundled fallback lives in.
+	 *
 	 * @return string Absolute path to the resolved template, or `''` if none exists.
 	 */
 	public static function locate_template( string $file_name, string $fallback_dir = '' ): string {
@@ -135,6 +137,7 @@ class Utility {
 	 *
 	 * @param string $fallback_dir Absolute directory the caller's bundled fallback lives in.
 	 * @param string $file_name    Template file name to check inside `$fallback_dir`.
+	 *
 	 * @return string Resolved template path, or `''` if neither variant exists on disk.
 	 */
 	private static function resolve_fallback_template_path( string $fallback_dir, string $file_name ): string {
@@ -163,6 +166,7 @@ class Utility {
 	 * @since 0.27.0
 	 *
 	 * @param string $key The key to which the prefix will be added.
+	 *
 	 * @return string The key with the 'gatherpress_' prefix.
 	 */
 	public static function prefix_key( string $key ): string {
@@ -181,6 +185,7 @@ class Utility {
 	 * @since 0.27.0
 	 *
 	 * @param string $key The key from which the prefix will be removed.
+	 *
 	 * @return string The key with the 'gatherpress_' prefix removed.
 	 */
 	public static function unprefix_key( string $key ): string {
@@ -201,6 +206,7 @@ class Utility {
 	 * @param string $key       Label key to read (e.g. `singular_name`,
 	 *                          `name`, `add_new_item`).
 	 * @param string $post_type Post type slug to read the label from.
+	 *
 	 * @return string The resolved label, or empty string when the post
 	 *                type isn't registered or the key isn't set.
 	 */
@@ -223,6 +229,7 @@ class Utility {
 	 * @since 0.34.0
 	 *
 	 * @param string $key The snake_case string to convert.
+	 *
 	 * @return string The converted camelCase string.
 	 */
 	public static function snake_to_camel( string $key ): string {
@@ -253,6 +260,7 @@ class Utility {
 	 * @param string $meta_key  The meta key being accessed. Unused.
 	 * @param int    $object_id The post ID the meta belongs to.
 	 * @param int    $user_id   The user ID attempting the edit.
+	 *
 	 * @return bool True if the user can edit the post, false otherwise.
 	 */
 	public static function can_edit_post_meta(
@@ -424,6 +432,7 @@ class Utility {
 	 * @since 0.29.0
 	 *
 	 * @param string $timezone The UTC offset to convert, e.g., "+05:30" or "-08:00".
+	 *
 	 * @return string The converted timezone format, e.g., "+0530" or "-0800".
 	 */
 	public static function maybe_convert_utc_offset( string $timezone ): string {
@@ -483,6 +492,7 @@ class Utility {
 	 * @since 0.34.0
 	 *
 	 * @param float $offset Decimal-hour offset from UTC.
+	 *
 	 * @return string PHP-valid timezone identifier.
 	 */
 	public static function offset_to_timezone_string( float $offset ): string {
@@ -511,6 +521,7 @@ class Utility {
 	 * @since 0.34.0
 	 *
 	 * @param string $timezone Raw timezone string.
+	 *
 	 * @return string
 	 */
 	public static function normalize_timezone_string( string $timezone ): string {
@@ -558,6 +569,7 @@ class Utility {
 	 * @since 0.33.0
 	 *
 	 * @param int $post_id Optional. The Post ID of the event. Defaults to 0.
+	 *
 	 * @return string The login URL for the event.
 	 */
 	public static function get_login_url( int $post_id = 0 ): string {
@@ -575,6 +587,7 @@ class Utility {
 	 * @since 0.33.0
 	 *
 	 * @param int $post_id Optional. The Post ID of the event. Defaults to 0.
+	 *
 	 * @return string The registration URL for the event, or an empty string if user registration is disabled.
 	 */
 	public static function get_registration_url( int $post_id = 0 ): string {
@@ -766,6 +779,7 @@ class Utility {
 	 * @since 0.34.0
 	 *
 	 * @param array $blocks A parsed block, typically including `blockName` and `innerBlocks`.
+	 *
 	 * @return array An array of block names found within the provided block structure.
 	 */
 	public static function get_block_names( array $blocks ): array {

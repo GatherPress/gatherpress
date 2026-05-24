@@ -13,6 +13,7 @@ import {
  *
  * @param {string} fieldType  - The type of field (text, checkbox, etc.)
  * @param {Object} attributes - Block attributes
+ *
  * @return {Object} Style object for the input
  */
 export const getInputStyles = ( fieldType, attributes ) => {
@@ -100,6 +101,7 @@ export const getInputStyles = ( fieldType, attributes ) => {
  * Get label styles based on attributes.
  *
  * @param {Object} attributes - Block attributes
+ *
  * @return {Object} Style object for the label
  */
 export const getLabelStyles = ( attributes ) => {
@@ -120,6 +122,7 @@ export const getLabelStyles = ( attributes ) => {
  * Get label wrapper styles based on attributes.
  *
  * @param {Object} attributes - Block attributes
+ *
  * @return {Object} Style object for the label wrapper
  */
 export const getLabelWrapperStyles = ( attributes ) => {
@@ -142,6 +145,7 @@ export const getLabelWrapperStyles = ( attributes ) => {
  * Get option styles (for radio buttons) based on attributes.
  *
  * @param {Object} attributes - Block attributes
+ *
  * @return {Object} Style object for the options
  */
 export const getOptionStyles = ( attributes ) => {
@@ -172,6 +176,7 @@ export const getOptionStyles = ( attributes ) => {
  * @param {string}  fieldType    - The type of field
  * @param {Object}  blockProps   - Block props from useBlockProps
  * @param {boolean} inlineLayout - Whether to use side-by-side layout
+ *
  * @return {string} CSS classes for the wrapper
  */
 export const getWrapperClasses = (
@@ -199,6 +204,7 @@ export const getWrapperClasses = (
  * @param {string}   props.fieldType     - The type of form field.
  * @param {Object}   props.attributes    - Block attributes object.
  * @param {Function} props.setAttributes - Function to update block attributes.
+ *
  * @return {JSX.Element|null} The field value control component or null.
  */
 export default function FieldValue( { fieldType, attributes, setAttributes } ) {

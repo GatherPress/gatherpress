@@ -323,6 +323,7 @@ class Rsvp {
 	 * @since 0.33.0
 	 *
 	 * @param string $block_content The block content to modify.
+	 *
 	 * @return string The modified block content with form field callbacks applied.
 	 */
 	public function apply_guests_input_interactivity( string $block_content ): string {
@@ -344,6 +345,7 @@ class Rsvp {
 	 *
 	 * @param string $block_content The form field block content.
 	 * @param array  $block         The block data including attributes.
+	 *
 	 * @return string The modified block content or empty string if field should be hidden.
 	 */
 	public function handle_rsvp_form_fields( string $block_content, array $block ): string {

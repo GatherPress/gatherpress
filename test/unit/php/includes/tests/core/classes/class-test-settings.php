@@ -549,6 +549,7 @@ class Test_Settings extends Base {
 	 *
 	 * @param string $input   The JSON string input to sanitize.
 	 * @param string $expects The expected sanitized output.
+	 *
 	 * @return void
 	 */
 	public function test_sanitize_autocomplete( $input, $expects ): void {

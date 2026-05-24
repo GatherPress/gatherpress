@@ -27,6 +27,7 @@ const HIDDEN_CLASS = 'gatherpress--is-hidden';
  * @param {string}  options.controllingValue  The controlling input's initial value (or 'true'/'false' for checkbox).
  * @param {Object}  options.conditions        The show_if condition map.
  * @param {boolean} [options.initiallyHidden] Whether the dependent row starts with the hidden class.
+ *
  * @return {Object} Refs to the inserted DOM nodes for assertions.
  */
 function buildFixture( {
@@ -81,6 +82,7 @@ function buildFixture( {
  *
  * @param {string} type  'select', 'text', or 'checkbox'.
  * @param {string} value The initial value (or 'true'/'false' for checkbox).
+ *
  * @return {string} The HTML string for the controlling input.
  */
 function renderControllingInput( type, value ) {

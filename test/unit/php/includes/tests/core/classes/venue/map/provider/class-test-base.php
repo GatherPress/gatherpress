@@ -107,6 +107,7 @@ class Test_Base extends GatherPress_Test_Base {
 			 * @param int   $width     Unused.
 			 * @param int   $height    Unused.
 			 * @param int   $density   Unused.
+			 *
 			 * @return null
 			 */
 			public function render(
@@ -169,6 +170,7 @@ class Test_Base extends GatherPress_Test_Base {
 			 * @param int   $width     Unused.
 			 * @param int   $height    Unused.
 			 * @param int   $density   Unused.
+			 *
 			 * @return null
 			 */
 			public function render(

@@ -324,6 +324,7 @@ class Token {
 	 * @since 0.34.0
 	 *
 	 * @param string|null $token_string Token in format "commentId_token".
+	 *
 	 * @return self|null Instance if valid, null otherwise.
 	 */
 	public static function from_token_string( ?string $token_string ): ?self {
@@ -352,6 +353,7 @@ class Token {
 	 * @since 0.34.0
 	 *
 	 * @param string|null $token_string Raw token string in format "commentId_token".
+	 *
 	 * @return array Array with 'comment_id' and 'token' keys, or empty array if invalid.
 	 */
 	public static function parse_token_string( ?string $token_string ): array {

@@ -347,6 +347,7 @@ class Event {
 	 * @since 0.34.0
 	 *
 	 * @param string $format Optional. PHP date format. Default is 'D, M j, Y, g:i a T'.
+	 *
 	 * @return string The formatted start datetime of the event.
 	 *
 	 * @throws Exception If there is an issue formatting the start datetime.
@@ -403,6 +404,7 @@ class Event {
 	 * @param string $format Optional. The PHP date format in which to format the datetime. Default is 'D, F j, g:ia T'.
 	 * @param string $which  Optional. Datetime field in event table to format ('start' or 'end'). Default is 'start'.
 	 * @param bool   $local  Optional. Whether to format the date in local time (true) or GMT (false). Default is true.
+	 *
 	 * @return string The formatted datetime value.
 	 *
 	 * @throws Exception If there is an issue while formatting the datetime value.
@@ -509,6 +511,7 @@ class Event {
 	 *
 	 * @param string       $date     The date to be converted.
 	 * @param DateTimeZone $timezone The time zone to use for date conversion.
+	 *
 	 * @return string The converted date in GMT (UTC) time zone in 'Y-m-d H:i:s' format.
 	 */
 	protected function get_gmt_datetime( string $date, DateTimeZone $timezone ): string {

@@ -121,6 +121,7 @@ class Roles extends Base {
 	 * @since 0.34.0
 	 *
 	 * @param int $user_id User ID.
+	 *
 	 * @return string The role of the user, or 'Member' if no matching role is found.
 	 */
 	public function get_user_role( int $user_id ): string {

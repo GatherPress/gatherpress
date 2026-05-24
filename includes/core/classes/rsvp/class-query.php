@@ -86,6 +86,7 @@ class Query {
 	 *
 	 * @param array            $clauses       The clauses for the query.
 	 * @param WP_Comment_Query $comment_query Current instance of WP_Comment_Query (passed by reference).
+	 *
 	 * @return array Modified query clauses.
 	 */
 	public function taxonomy_query( array $clauses, WP_Comment_Query $comment_query ): array {
@@ -111,6 +112,7 @@ class Query {
 	 * @since 0.34.0
 	 *
 	 * @param array $args Arguments for retrieving RSVPs.
+	 *
 	 * @return mixed Array of RSVP comments or integer count when count parameter is true.
 	 */
 	public function get_rsvps( array $args ) {
@@ -141,6 +143,7 @@ class Query {
 	 * @since 0.34.0
 	 *
 	 * @param array $args Arguments for retrieving the RSVP.
+	 *
 	 * @return WP_Comment|null The RSVP comment or null if not found.
 	 */
 	public function get_rsvp( array $args ): ?WP_Comment {
@@ -205,6 +208,7 @@ class Query {
 	 *
 	 * @param int        $id      The comment ID.
 	 * @param WP_Comment $comment The comment object.
+	 *
 	 * @return void
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
@@ -236,6 +240,7 @@ class Query {
 	 * @since 0.34.0
 	 *
 	 * @param WP_Comment_Query $query Current instance of WP_Comment_Query (passed by reference).
+	 *
 	 * @return void
 	 */
 	public function exclude_rsvp_from_comment_query( WP_Comment_Query $query ) {

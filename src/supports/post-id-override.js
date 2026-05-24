@@ -20,6 +20,7 @@ import { addFilter } from '@wordpress/hooks';
  * their `supports` configuration.
  *
  * @param {Object} settings Original block settings.
+ *
  * @return {Object} Updated block settings with `postId` attribute if `postIdOverride` is supported.
  */
 function addPostIdOverrideSupport( settings ) {
@@ -56,6 +57,7 @@ addFilter(
  * that support `postIdOverride`, enabling users to specify a custom post ID.
  *
  * @param {Function} BlockEdit - The original BlockEdit component.
+ *
  * @return {Function} Enhanced BlockEdit component with postId override functionality.
  *
  * @example

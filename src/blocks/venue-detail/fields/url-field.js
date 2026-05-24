@@ -34,6 +34,7 @@ import { cleanUrlForDisplay } from '../helpers';
  * @param {boolean}  props.cleanUrl      - Whether to display cleaned URL.
  * @param {Function} props.setAttributes - Function to update block attributes.
  * @param {boolean}  props.disabled      - Whether the field is disabled.
+ *
  * @return {JSX.Element} The rendered URL field.
  */
 const UrlField = ( {

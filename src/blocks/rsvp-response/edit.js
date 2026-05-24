@@ -41,6 +41,7 @@ import { EVENT_REST_API } from '../../helpers/namespace';
  * tuple tree into instantiated block objects, ready for `replaceInnerBlocks`.
  *
  * @param {Array} template Tuples in `[ blockName, attributes, innerBlocks ]` form.
+ *
  * @return {Array} Created block instances.
  */
 function templateToBlocks( template ) {
@@ -117,6 +118,7 @@ const PATTERNS = applyFilters( 'gatherpress.rsvpResponsePatterns', [
  * Fetch RSVP responses from the API.
  *
  * @param {number} postId The post ID for which to fetch RSVP responses.
+ *
  * @return {Promise<Object>} The RSVP responses data.
  */
 async function fetchRsvpResponses( postId ) {

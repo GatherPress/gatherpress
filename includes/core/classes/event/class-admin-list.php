@@ -82,6 +82,7 @@ class Admin_List {
 	 * @since 0.34.0
 	 *
 	 * @param string $post_type The post type that was just registered.
+	 *
 	 * @return void
 	 */
 	public function maybe_register_post_type_hooks( string $post_type ): void {
@@ -125,6 +126,7 @@ class Admin_List {
 	 * @since 0.34.0
 	 *
 	 * @param array $columns An array of sortable columns.
+	 *
 	 * @return array An updated array of sortable columns.
 	 */
 	public function sortable_columns( array $columns ): array {
@@ -252,6 +254,7 @@ class Admin_List {
 	 * @since 0.34.0
 	 *
 	 * @param string $post_type The event post type to count.
+	 *
 	 * @return array<string, int> Associative array with 'upcoming' and 'past' counts.
 	 */
 	protected function get_event_counts( string $post_type = Event::POST_TYPE ): array {
@@ -342,6 +345,7 @@ class Admin_List {
 	 * @since 0.34.0
 	 *
 	 * @param WP_Query $query The WP_Query instance.
+	 *
 	 * @return void
 	 */
 	public function handle_rsvp_sorting( $query ): void {
@@ -381,6 +385,7 @@ class Admin_List {
 	 * @param string                 $column    The column name to match against the orderby query var.
 	 * @param array<string,callable> $filters   Map of WordPress filter hook => callback to register.
 	 * @param string                 $order_key The query var key used to store the validated sort order.
+	 *
 	 * @return void
 	 */
 	private function handle_column_sorting( WP_Query $query, string $column, array $filters, string $order_key ): void {
@@ -419,6 +424,7 @@ class Admin_List {
 	 * @since 0.34.0
 	 *
 	 * @param string $join The JOIN clause of the query.
+	 *
 	 * @return string Modified JOIN clause.
 	 */
 	public function rsvp_sorting_join_paged( string $join ): string {
@@ -446,6 +452,7 @@ class Admin_List {
 	 * @since 0.34.0
 	 *
 	 * @param string $groupby The GROUP BY clause of the query.
+	 *
 	 * @return string Modified GROUP BY clause.
 	 */
 	public function sorting_groupby_post_id( string $groupby ): string {
@@ -487,6 +494,7 @@ class Admin_List {
 	 *
 	 * @param string $column  The name of the column to display.
 	 * @param int    $post_id The current post ID.
+	 *
 	 * @return void
 	 *
 	 * @throws Exception If initializing Event or Rsvp object fails, due to invalid post ID or database issues.
@@ -579,6 +587,7 @@ class Admin_List {
 	 * @since 0.34.0
 	 *
 	 * @param array $columns An associative array of column headings.
+	 *
 	 * @return array An updated array of column headings, including the custom columns.
 	 */
 	public function set_custom_columns( array $columns ): array {
@@ -668,6 +677,7 @@ class Admin_List {
 	 * @since 0.34.0
 	 *
 	 * @param array $columns An array of column names.
+	 *
 	 * @return array The modified array of column names without the comments column.
 	 */
 	public function remove_comments_column( array $columns ): array {

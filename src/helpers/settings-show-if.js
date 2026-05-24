@@ -30,6 +30,7 @@ const NAME_TEMPLATE = ( key ) => `[name="gatherpress_settings[${ key }]"]`;
  * `matches()` smooth the boolean / number / string comparison.
  *
  * @param {HTMLInputElement|HTMLSelectElement} el The input or select element.
+ *
  * @return {string|boolean} The control's current value.
  */
 function readControlValue( el ) {
@@ -49,6 +50,7 @@ function readControlValue( el ) {
  *
  * @param {string|boolean}              current  The control's current value.
  * @param {string|number|boolean|Array} expected The expected value(s) from the show_if declaration.
+ *
  * @return {boolean} True when the current value satisfies the expectation.
  */
 function matches( current, expected ) {
@@ -76,6 +78,7 @@ function matches( current, expected ) {
  * over the upstream hidden fallback.
  *
  * @param {Object} conditions Map of controlling option key → expected value(s).
+ *
  * @return {Array<{key: string, el: HTMLElement}>} Resolved controller pairs.
  */
 function resolveControllers( conditions ) {
@@ -98,6 +101,7 @@ function resolveControllers( conditions ) {
  * so it has no effect on form submission.
  *
  * @param {HTMLElement} marker The `.gatherpress-show-if-marker` element.
+ *
  * @return {void}
  */
 function wireMarker( marker ) {

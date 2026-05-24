@@ -19,6 +19,7 @@ import { dispatch, select } from '@wordpress/data';
  * @param {Function} props.setAttributes     Function to update attributes.
  * @param {string}   props.clientId          Unique ID of the block.
  * @param {Function} props.insertBlocksAfter Function to insert blocks after this block.
+ *
  * @return {JSX.Element} The rendered edit component.
  */
 const Edit = ( { attributes, setAttributes, clientId, insertBlocksAfter } ) => {

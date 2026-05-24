@@ -71,6 +71,7 @@ class Coexistence_Guard {
 	 *                          folder named `<slug>` (canonical) or `<slug>-*` (siblings).
 	 * @param string $name      Display name, e.g. `GatherPress Alpha`.
 	 * @param string $main_file Absolute path to the companion's main plugin file.
+	 *
 	 * @return void
 	 */
 	public function register( string $slug, string $name, string $main_file ): void {
@@ -95,6 +96,7 @@ class Coexistence_Guard {
 	 * @since 0.34.0
 	 *
 	 * @param string $slug Plugin folder slug.
+	 *
 	 * @return string[] Plugin basenames matching the slug pattern.
 	 */
 	public function find_duplicates( string $slug ): array {
@@ -156,6 +158,7 @@ class Coexistence_Guard {
 	 *
 	 * @param string $slug Plugin folder slug.
 	 * @param string $name Plugin display name.
+	 *
 	 * @return void
 	 */
 	public function refuse_on_duplicates( string $slug, string $name ): void {

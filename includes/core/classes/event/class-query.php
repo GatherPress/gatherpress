@@ -80,6 +80,7 @@ class Query {
 	 * @since 0.34.0
 	 *
 	 * @param int $number Maximum number of upcoming events to retrieve.
+	 *
 	 * @return WP_Query A WordPress query object containing the list of upcoming events.
 	 */
 	public function get_upcoming_events( int $number = 5 ): WP_Query {
@@ -94,6 +95,7 @@ class Query {
 	 * @since 0.34.0
 	 *
 	 * @param int $number Maximum number of past events to retrieve.
+	 *
 	 * @return WP_Query A WordPress query object containing the list of past events.
 	 */
 	public function get_past_events( int $number = 5 ): WP_Query {
@@ -113,6 +115,7 @@ class Query {
 	 * @param int    $number          Maximum number of events to retrieve.
 	 * @param array  $topics          Array of topic slugs for additional filtering.
 	 * @param array  $venues          Array of venue slugs for additional filtering.
+	 *
 	 * @return WP_Query A WordPress query object containing the list of events.
 	 */
 	public function get_events_list(
@@ -171,6 +174,7 @@ class Query {
 	 * @since 0.34.0
 	 *
 	 * @param WP_Query $query An instance of WP_Query representing the event query.
+	 *
 	 * @return void
 	 */
 	public function prepare_event_query_before_execution( WP_Query $query ): void {
@@ -300,6 +304,7 @@ class Query {
 	 *
 	 * @param array    $query_pieces An array containing pieces of the SQL query.
 	 * @param WP_Query $query        The WP_Query instance (passed by reference).
+	 *
 	 * @return array The modified SQL query pieces with adjusted sorting criteria for upcoming events.
 	 */
 	public function adjust_sorting_for_upcoming_events( array $query_pieces, WP_Query $query ): array {
@@ -326,6 +331,7 @@ class Query {
 	 *
 	 * @param array    $query_pieces An array containing pieces of the SQL query.
 	 * @param WP_Query $query        The WP_Query instance (passed by reference).
+	 *
 	 * @return array The modified SQL query pieces with adjusted sorting criteria for past events.
 	 */
 	public function adjust_sorting_for_past_events( array $query_pieces, WP_Query $query ): array {
@@ -353,6 +359,7 @@ class Query {
 	 *
 	 * @param array    $query_pieces An array containing pieces of the SQL query.
 	 * @param WP_Query $wp_query     The WP_Query instance (passed by reference).
+	 *
 	 * @return array The modified SQL query pieces with adjusted sorting criteria.
 	 */
 	public function adjust_admin_event_sorting( array $query_pieces, WP_Query $wp_query ): array {
@@ -426,6 +433,7 @@ class Query {
 	 *                                  (Default: 'DESC').
 	 * @param string[]|string $order_by List or singular string of ORDERBY statement(s) (Default: ['datetime']).
 	 * @param bool            $inclusive Whether to include currently running events in the query (Default: true).
+	 *
 	 * @return array An array containing adjusted SQL clauses for the Event query.
 	 */
 	public function adjust_event_sql(
@@ -513,6 +521,7 @@ class Query {
 	 * @since 0.34.0
 	 *
 	 * @param array $venues Array of venue slugs to filter by.
+	 *
 	 * @return array WP_Query compatible tax_query array.
 	 */
 	private function build_venue_tax_query( array $venues ): array {

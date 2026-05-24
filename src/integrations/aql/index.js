@@ -24,6 +24,7 @@ import { usePostTypeSupports } from '../../helpers/event';
  * @param {Object}   props
  * @param {Object}   props.attributes    Block attributes.
  * @param {Function} props.setAttributes Function to update block attributes.
+ *
  * @return {null} Renders nothing.
  */
 const AQLEventDefaults = ( { attributes, setAttributes } ) => {
@@ -62,6 +63,7 @@ const AQLEventDefaults = ( { attributes, setAttributes } ) => {
  *
  * @param {Object}   props           Block edit props plus BlockEdit injection.
  * @param {Function} props.BlockEdit The wrapped block's BlockEdit component.
+ *
  * @return {JSX.Element} Edit output augmented with event controls when applicable.
  */
 const AQLBlockEdit = ( { BlockEdit, ...props } ) => {
@@ -103,6 +105,7 @@ const AQLBlockEdit = ( { BlockEdit, ...props } ) => {
  * "Advanced Query Settings" panel.
  *
  * @param {Function} BlockEdit The block's edit component.
+ *
  * @return {Function} Enhanced edit component.
  */
 const withAQLEventControls = ( BlockEdit ) => ( props ) => {

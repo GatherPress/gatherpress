@@ -29,6 +29,7 @@ class Test_Calendar extends Base {
 	 * a structured address attached.
 	 *
 	 * @param bool $with_venue When true, also create and attach a venue with an address.
+	 *
 	 * @return int The event post ID.
 	 */
 	private function make_event( bool $with_venue = false ): int {

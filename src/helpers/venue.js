@@ -29,6 +29,7 @@ const DEFAULT_VENUE_POST_TYPE = 'gatherpress_venue';
  * @since 0.27.0
  *
  * @param {string} [venuePostType='gatherpress_venue'] The venue post type slug.
+ *
  * @return {string} The taxonomy slug for the given venue post type.
  */
 export function getVenueTaxonomy( venuePostType = DEFAULT_VENUE_POST_TYPE ) {
@@ -45,6 +46,7 @@ export function getVenueTaxonomy( venuePostType = DEFAULT_VENUE_POST_TYPE ) {
  * @since 0.27.0
  *
  * @param {string} [eventPostType=''] The event post type slug to look up.
+ *
  * @return {string} The venue post type slug for the given event post type.
  */
 export function getVenuePostType( eventPostType = '' ) {
@@ -83,6 +85,7 @@ export function isVenuePostType() {
  *
  * @param {number|null} termId        The ID of the '_gatherpress_venue' term. If null, no post is retrieved.
  * @param {string}      venuePostType The post type to query for the venue post. Defaults to 'gatherpress_venue'.
+ *
  * @return {Object[]|Array}           An array of matching venue post objects, or an empty array if none is found.
  */
 export function useVenuePostFromTermId( termId, venuePostType = DEFAULT_VENUE_POST_TYPE ) {
@@ -128,6 +131,7 @@ export function useVenuePostFromTermId( termId, venuePostType = DEFAULT_VENUE_PO
  *
  * @param {number|null} postId        The ID of the venue post. Defaults to null, in which case no term is retrieved.
  * @param {string}      venuePostType The venue post type slug. Defaults to 'gatherpress_venue'.
+ *
  * @return {Object[]|Array}           An array of matching term objects, or an empty array if no matching term is found.
  */
 export function useVenueTermFromPostId( postId = null, venuePostType = DEFAULT_VENUE_POST_TYPE ) {
@@ -179,6 +183,7 @@ export function useVenueTermFromPostId( postId = null, venuePostType = DEFAULT_V
  *
  * @param {number} eventId  The ID of the event post.
  * @param {string} postType The post type of the event (defaults to the current editor post type).
+ *
  * @return {Object|null} The related venue post object, or null if none is found.
  */
 export function GetVenuePostFromEventId( eventId, postType = null ) {
@@ -348,6 +353,7 @@ export function useVenueOptions(
  * @param {string}      venueTaxonomy Taxonomy slug (e.g. '_gatherpress_venue').
  * @param {number|null} postId        The event post whose terms should be fetched.
  * @param {boolean}     skip          When true, skip all lookups and return undefined.
+ *
  * @return {number[]|undefined} Array of term IDs, or undefined when not yet resolved.
  */
 export function useVenueTaxonomyIds( venueTaxonomy, postId, skip = false ) {
@@ -439,6 +445,7 @@ export function usePopularVenues( limit = 3, venuePostType = DEFAULT_VENUE_POST_
  *
  * @param {Function} selectFunc WordPress data `select` function.
  * @param {number}   postId     Post ID to resolve.
+ *
  * @return {Object|null} The post entity if found in any venue-supporting post
  *                       type; null when the registry isn't loaded yet, when
  *                       no venue-supporting type owns the ID, or when the

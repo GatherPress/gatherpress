@@ -722,6 +722,7 @@ class Rsvp {
 	 *
 	 * @param array $first  The first response to compare in the sort.
 	 * @param array $second The second response to compare in the sort.
+	 *
 	 * @return int An integer indicating the sorting order:
 	 *             -1 if $first should come before $second,
 	 *              0 if they have the same sorting order,
@@ -753,6 +754,7 @@ class Rsvp {
 	 *
 	 * @param array $first  First response to compare in the sort.
 	 * @param array $second Second response to compare in the sort.
+	 *
 	 * @return int Returns a negative number if the first response's timestamp is earlier,
 	 *             a positive number if the second response's timestamp is earlier,
 	 *             or 0 if both are equal.

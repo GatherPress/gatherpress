@@ -83,6 +83,7 @@ abstract class Endpoint_Type {
 	 * @since 0.34.0
 	 *
 	 * @param Endpoint|null $endpoint Class for custom rewrite endpoints and their query handling in GatherPress.
+	 *
 	 * @return void
 	 */
 	abstract public function activate( ?Endpoint $endpoint = null ): void;
@@ -98,6 +99,7 @@ abstract class Endpoint_Type {
 	 * @since 0.34.0
 	 *
 	 * @param  string $entity The class name of the entity to check against (e.g., 'Redirect' or 'Template').
+	 *
 	 * @return bool                  True if the `$type` is an instance of the `$entity` class, false otherwise.
 	 */
 	public function is_of_class( string $entity ): bool {
@@ -115,6 +117,7 @@ abstract class Endpoint_Type {
 	 * @since 0.34.0
 	 *
 	 * @param  string $entity The class name of the entity to check (e.g., 'Redirect' or 'Template').
+	 *
 	 * @return bool           True if the `$entity` is a valid endpoint class, false otherwise.
 	 */
 	private static function is_in_class( string $entity ): bool {

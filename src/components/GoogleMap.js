@@ -83,6 +83,7 @@ const LEGACY_EMBED_LETTER_BY_SLUG = GOOGLE_MAP_TYPE_DEFINITIONS.reduce(
  * @see https://developers.google.com/maps/documentation/embed/embedding-map#view_mode
  *
  * @param {string} type Map type slug from the block.
+ *
  * @return {'roadmap'|'satellite'} Coercion for interactive iframe: hybrid→satellite, terrain→roadmap.
  */
 export function toMapsEmbedApiMapType( type ) {
@@ -106,6 +107,7 @@ const GOOGLE_LEGACY_EMBED_BASE = 'https://maps.google.com/maps';
  * @param {number} params.zoom      Zoom level.
  * @param {string} params.type      Map type slug from the block.
  * @param {string} params.apiKey    API key or empty string.
+ *
  * @return {string} Iframe URL.
  */
 export function getGoogleMapEmbedSrc( {

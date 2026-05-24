@@ -434,6 +434,7 @@ class Test_Setup extends Base {
 		 * @param string $translation Translated text.
 		 * @param string $text        Text to translate.
 		 * @param string $context     Context information for the translators.
+		 *
 		 * @return string Translated text.
 		 */
 		add_filter( 'gettext_with_context_gatherpress', $filter, 10, 3 );

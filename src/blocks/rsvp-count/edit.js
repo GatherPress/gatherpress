@@ -20,6 +20,7 @@ import { getFromSettings } from '../../helpers/editor-settings';
  * Fetch RSVP responses from the API.
  *
  * @param {number} postId The post ID for which to fetch RSVP responses.
+ *
  * @return {Promise<Object>} The RSVP responses data.
  */
 async function fetchRsvpResponses( postId ) {

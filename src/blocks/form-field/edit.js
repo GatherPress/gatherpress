@@ -31,6 +31,7 @@ import FieldValue from './helpers';
  * @param {Object}   props               The block props.
  * @param {Object}   props.attributes    The block attributes.
  * @param {Function} props.setAttributes Function to set block attributes.
+ *
  * @return {JSX.Element} The edit component.
  */
 export default function Edit( { attributes, setAttributes } ) {
@@ -56,6 +57,7 @@ export default function Edit( { attributes, setAttributes } ) {
 	 * Generate field name from label.
 	 *
 	 * @param {string} labelValue The label value to convert.
+	 *
 	 * @return {string} The generated field name.
 	 */
 	const generateFieldName = ( labelValue ) => {
@@ -72,6 +74,7 @@ export default function Edit( { attributes, setAttributes } ) {
 	 * Get the default autocomplete value based on field type.
 	 *
 	 * @param {string} value - The field type.
+	 *
 	 * @return {string} The default autocomplete value.
 	 */
 	const getDefaultAutocomplete = ( value ) => {

@@ -321,6 +321,7 @@ class Map {
 	 *
 	 * @param array|mixed $old_value Previous settings option value.
 	 * @param array|mixed $new_value New settings option value.
+	 *
 	 * @return void
 	 */
 	public function maybe_handle_settings_change( $old_value, $new_value ): void {
@@ -442,6 +443,7 @@ class Map {
 	 * @since 0.34.0
 	 *
 	 * @param array $metadata Parsed `block.json` metadata for the block being registered.
+	 *
 	 * @return array The metadata array, potentially with updated attribute defaults.
 	 */
 	public function apply_block_attribute_defaults( array $metadata ): array {
@@ -539,6 +541,7 @@ class Map {
 	 * @since 0.34.0
 	 *
 	 * @param string $post_type The post type that was just registered.
+	 *
 	 * @return void
 	 */
 	public function maybe_register_delete_hook( string $post_type ): void {
@@ -563,6 +566,7 @@ class Map {
 	 * @since 0.34.0
 	 *
 	 * @param int $post_id The post ID being saved.
+	 *
 	 * @return void
 	 */
 	public function maybe_generate( int $post_id ): void {
@@ -628,6 +632,7 @@ class Map {
 	 * @since 0.34.0
 	 *
 	 * @param int $post_id The venue post ID.
+	 *
 	 * @return void
 	 */
 	public function delete_stored_image( int $post_id ): void {
@@ -661,6 +666,7 @@ class Map {
 	 * @param int|null $extra_width        Optional extra width (0 = auto).
 	 * @param int|null $extra_height       Optional extra height (0 = auto).
 	 * @param string   $extra_aspect_ratio Optional aspect ratio hint for the extra combo.
+	 *
 	 * @return ProviderDescriptorMap
 	 */
 	public function regenerate(
@@ -759,6 +765,7 @@ class Map {
 	 * @since 0.34.0
 	 *
 	 * @param WP_REST_Request $request The REST request.
+	 *
 	 * @return WP_REST_Response
 	 */
 	public function rest_regenerate( WP_REST_Request $request ): WP_REST_Response {
@@ -844,6 +851,7 @@ class Map {
 	 * @param int|null $width        Desired pixel width (0/null = auto).
 	 * @param int|null $height       Desired pixel height (0/null = auto).
 	 * @param string   $aspect_ratio Aspect-ratio hint used to derive any auto dimension.
+	 *
 	 * @return array{url: string, url_2x: string, hash: string, zoom: int, width: int, height: int}|null
 	 */
 	public function get_descriptor_for_post(
@@ -937,6 +945,7 @@ class Map {
 	 * @param int|null $width        Desired pixel width (0/null = auto).
 	 * @param int|null $height       Desired pixel height (0/null = auto).
 	 * @param string   $aspect_ratio Aspect-ratio hint used to derive any auto dimension.
+	 *
 	 * @return string Static map URL, or '' when unavailable.
 	 */
 	public function get_url_for_post(
@@ -972,6 +981,7 @@ class Map {
 	 * @param int    $width        Pixel width (0 = auto).
 	 * @param int    $height       Pixel height (0 = auto).
 	 * @param string $aspect_ratio Aspect-ratio string (e.g. "16/9").
+	 *
 	 * @return array{url: string, url_2x: string, hash: string, zoom: int, width: int, height: int}|null
 	 */
 	public function warm( int $post_id, int $zoom, int $width, int $height, string $aspect_ratio = '' ): ?array {
@@ -1013,6 +1023,7 @@ class Map {
 	 * @since 0.34.0
 	 *
 	 * @param int $post_id The venue post ID.
+	 *
 	 * @return array{url: string, url_2x: string, hash: string, zoom: int, width: int, height: int}|null
 	 */
 	public function get_stored_descriptor( int $post_id ): ?array {
@@ -1047,6 +1058,7 @@ class Map {
 	 * @since 0.34.0
 	 *
 	 * @param int $post_id The venue post ID.
+	 *
 	 * @return ProviderDescriptorMap
 	 */
 	public function get_all_descriptors( int $post_id ): array {
@@ -1122,6 +1134,7 @@ class Map {
 	 * @since 0.34.0
 	 *
 	 * @param int $post_id Venue post ID.
+	 *
 	 * @return array<int, array{zoom: int, width: int, height: int}>
 	 */
 	public function get_cached_combos( int $post_id ): array {
@@ -1158,6 +1171,7 @@ class Map {
 	 * @param int $zoom   Zoom level.
 	 * @param int $width  Pixel width.
 	 * @param int $height Pixel height.
+	 *
 	 * @return string
 	 */
 	protected function combo_key( int $zoom, int $width, int $height ): string {
@@ -1180,6 +1194,7 @@ class Map {
 	 * @param int   $zoom    Zoom level to render at.
 	 * @param int   $width   Pixel width of the PNG.
 	 * @param int   $height  Pixel height of the PNG.
+	 *
 	 * @return array{url: string, url_2x: string, hash: string, zoom: int, width: int, height: int}|null
 	 */
 	protected function ensure_descriptor_for_combo(
@@ -1352,6 +1367,7 @@ class Map {
 	 * @param int    $width    Output width.
 	 * @param int    $height   Output height.
 	 * @param string $provider Provider slug (e.g. `osm`).
+	 *
 	 * @return string MD5 hex digest.
 	 */
 	public function hash_for( array $info, int $zoom, int $width, int $height, string $provider ): string {
@@ -1393,6 +1409,7 @@ class Map {
 	 * @param int    $height   Output height (at density 1).
 	 * @param string $provider Provider slug (e.g. `osm`).
 	 * @param int    $density  Pixel-density multiplier. 1 = standard, 2 = retina.
+	 *
 	 * @return string Full public URL for the PNG.
 	 */
 	protected function build_image_url(
@@ -1429,6 +1446,7 @@ class Map {
 	 * @param string $provider Provider slug (e.g. `osm`) — namespaces the file
 	 *                         so OSM and Google PNG files can coexist on disk.
 	 * @param int    $density  Pixel-density multiplier. 1 = standard, 2 = retina.
+	 *
 	 * @return string Filename including the `.png` extension.
 	 */
 	protected function filename_for(
@@ -1476,6 +1494,7 @@ class Map {
 	 * @param int              $height   Output height (at density 1).
 	 * @param int              $density  Pixel-density multiplier. 1 = standard, 2 = retina.
 	 * @param string           $provider Provider slug.
+	 *
 	 * @return string|null Public URL of the saved file, or null on failure.
 	 */
 	public function save_image(
@@ -1518,6 +1537,7 @@ class Map {
 	 * @since 0.34.0
 	 *
 	 * @param mixed $raw Raw coordinate from venue information.
+	 *
 	 * @return float|null
 	 */
 	protected function parse_coord( $raw ): ?float {
@@ -1588,6 +1608,7 @@ class Map {
 	 * @since 0.34.0
 	 *
 	 * @param int $zoom Raw zoom value.
+	 *
 	 * @return int
 	 */
 	protected function clamp_zoom( int $zoom ): int {
@@ -1600,6 +1621,7 @@ class Map {
 	 * @since 0.34.0
 	 *
 	 * @param int $height Raw height value.
+	 *
 	 * @return int
 	 */
 	protected function clamp_height( int $height ): int {
@@ -1612,6 +1634,7 @@ class Map {
 	 * @since 0.34.0
 	 *
 	 * @param int $width Raw width value.
+	 *
 	 * @return int
 	 */
 	protected function clamp_width( int $width ): int {
@@ -1628,6 +1651,7 @@ class Map {
 	 * @since 0.34.0
 	 *
 	 * @param string $ratio Raw aspect-ratio string.
+	 *
 	 * @return float|null
 	 */
 	protected function parse_aspect_ratio( string $ratio ): ?float {
@@ -1664,6 +1688,7 @@ class Map {
 	 * @param int    $width   Block width (0 = auto).
 	 * @param int    $height  Block height (0 = auto).
 	 * @param string $ratio   Aspect-ratio string (e.g. "16/9").
+	 *
 	 * @return array{width: int, height: int}
 	 */
 	protected function resolve_dimensions( int $width, int $height, string $ratio ): array {

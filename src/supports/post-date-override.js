@@ -27,6 +27,7 @@ import { __ } from '@wordpress/i18n';
  * @param {string} dateTimeStart - Event start datetime.
  * @param {string} dateTimeEnd   - Event end datetime.
  * @param {string} timezone      - Event timezone.
+ *
  * @return {string} Formatted display datetime.
  */
 const formatEventDateTime = ( dateTimeStart, dateTimeEnd, timezone ) => {
@@ -112,6 +113,7 @@ const formatEventDateTime = ( dateTimeStart, dateTimeEnd, timezone ) => {
  *
  * @param {string} timezone Timezone string (IANA or manual offset).
  * @param {string} datetime Datetime to anchor IANA abbreviation against.
+ *
  * @return {string} Timezone abbreviation suitable for the display string.
  */
 const formatTimezoneAbbr = ( timezone, datetime ) => {
@@ -130,6 +132,7 @@ const formatTimezoneAbbr = ( timezone, datetime ) => {
  * setting is enabled.
  *
  * @param {Function} BlockEdit - The original BlockEdit component.
+ *
  * @return {Function} Enhanced BlockEdit component.
  */
 const withEventPostDateOverride = createHigherOrderComponent(

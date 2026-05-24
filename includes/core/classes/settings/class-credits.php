@@ -95,6 +95,7 @@ class Credits extends Base {
 	 * @since 0.27.0
 	 *
 	 * @param string $page The current settings page slug.
+	 *
 	 * @return void
 	 */
 	public function settings_section( string $page ): void {

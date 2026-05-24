@@ -742,6 +742,7 @@ class Test_Utility extends Base {
 	 *
 	 * @param float  $offset   Decimal hour offset from UTC.
 	 * @param string $expected Expected DateTimeZone-compatible string.
+	 *
 	 * @return void
 	 */
 	public function test_offset_to_timezone_string( float $offset, string $expected ): void {
@@ -782,6 +783,7 @@ class Test_Utility extends Base {
 	 *
 	 * @param string $input    Input timezone string.
 	 * @param string $expected Expected normalized output.
+	 *
 	 * @return void
 	 */
 	public function test_normalize_timezone_string( string $input, string $expected ): void {

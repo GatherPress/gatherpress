@@ -186,6 +186,7 @@ class Rsvp_Form {
 	 *
 	 * @param string $block_content The rendered block content.
 	 * @param array  $block         The block instance array.
+	 *
 	 * @return string The modified block content or empty string if block should be hidden.
 	 */
 	public function apply_visibility_attribute( string $block_content, array $block ): string {
@@ -255,6 +256,7 @@ class Rsvp_Form {
 	 * @since 0.33.0
 	 *
 	 * @param array $block The block instance array.
+	 *
 	 * @return int|null The post ID or null if not found.
 	 */
 	private function get_post_id_from_context( array $block ): ?int {
@@ -279,6 +281,7 @@ class Rsvp_Form {
 	 *
 	 * @param string $html       The form HTML content.
 	 * @param bool   $is_success Whether the form was successfully submitted.
+	 *
 	 * @return string The modified HTML with appropriate visibility.
 	 */
 	private function handle_form_visibility( string $html, bool $is_success ): string {
@@ -314,6 +317,7 @@ class Rsvp_Form {
 	 * @param string                $visibility_rule The visibility rule as a JSON object.
 	 * @param bool                  $is_success      Whether the form was successfully submitted.
 	 * @param bool                  $is_past         Whether the event has passed.
+	 *
 	 * @return void
 	 */
 	private function apply_visibility_rule(
@@ -355,6 +359,7 @@ class Rsvp_Form {
 	 * @param string $visibility_rule The visibility rule as a JSON object.
 	 * @param bool   $is_success      Whether the form was successfully submitted.
 	 * @param bool   $is_past         Whether the event has passed.
+	 *
 	 * @return bool|null True to show, false to hide, null for no change (always visible).
 	 */
 	private function determine_visibility( string $visibility_rule, bool $is_success, bool $is_past ): ?bool {
@@ -396,6 +401,7 @@ class Rsvp_Form {
 	 * @since 0.33.0
 	 *
 	 * @param int $post_id The post ID being saved.
+	 *
 	 * @return void
 	 */
 	public function save_form_schema( int $post_id ): void {
@@ -437,6 +443,7 @@ class Rsvp_Form {
 	 * @since 0.33.0
 	 *
 	 * @param array $blocks Array of parsed blocks.
+	 *
 	 * @return array Array of form schemas keyed by form ID.
 	 */
 	private function extract_form_schemas_from_blocks( array $blocks ): array {
@@ -478,6 +485,7 @@ class Rsvp_Form {
 	 * @since 0.33.0
 	 *
 	 * @param array $inner_blocks Array of inner blocks.
+	 *
 	 * @return array Array of form field configurations.
 	 */
 	private function extract_form_fields_from_inner_blocks( array $inner_blocks ): array {
@@ -537,6 +545,7 @@ class Rsvp_Form {
 	 *
 	 * @param int   $post_id The post ID.
 	 * @param array $block   The current block being rendered.
+	 *
 	 * @return string The form schema ID (e.g., 'form_0', 'form_2').
 	 */
 	private function get_form_schema_id( int $post_id, array $block ): string {
@@ -562,6 +571,7 @@ class Rsvp_Form {
 	 * @param array $blocks       Array of parsed blocks.
 	 * @param array $target_block The block we're looking for.
 	 * @param int   $base_index   Base index for nested blocks.
+	 *
 	 * @return int The index of the form block.
 	 */
 	private function find_form_index_in_blocks( array $blocks, array $target_block, int $base_index = 0 ): int {
@@ -600,6 +610,7 @@ class Rsvp_Form {
 	 *
 	 * @param array $block1 First block to compare.
 	 * @param array $block2 Second block to compare.
+	 *
 	 * @return bool True if blocks match.
 	 */
 	private function blocks_match( array $block1, array $block2 ): bool {
@@ -633,6 +644,7 @@ class Rsvp_Form {
 	 * @since 0.33.0
 	 *
 	 * @param int $comment_id The comment ID of the RSVP.
+	 *
 	 * @return void
 	 */
 	public function process_custom_fields_for_form( int $comment_id ): void {
@@ -688,6 +700,7 @@ class Rsvp_Form {
 	 *
 	 * @param mixed $value  The field value to sanitize.
 	 * @param array $config The field configuration from the schema.
+	 *
 	 * @return mixed|false The sanitized value, or false if sanitization fails.
 	 */
 	public function sanitize_custom_field_value( $value, array $config ) {
@@ -749,6 +762,7 @@ class Rsvp_Form {
 	 *
 	 * @param string $block_content The block content.
 	 * @param array  $block         The block data.
+	 *
 	 * @return string The processed block content.
 	 */
 	public function process_form_field_attributes( string $block_content, array $block ): string {

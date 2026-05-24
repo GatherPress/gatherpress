@@ -107,6 +107,7 @@ class Event_Query {
 	 * @since 0.34.0
 	 *
 	 * @param string $post_type The post type that was just registered.
+	 *
 	 * @return void
 	 */
 	public function maybe_register_event_date_rest_hooks( string $post_type ): void {
@@ -137,6 +138,7 @@ class Event_Query {
 	 *
 	 * @param string|null $pre_render   The pre-rendered content. Default null.
 	 * @param array       $parsed_block The block being rendered.
+	 *
 	 * @return string|null The pre-rendered content. Default null.
 	 */
 	public function pre_render_block( ?string $pre_render, array $parsed_block ): ?string {
@@ -201,6 +203,7 @@ class Event_Query {
 	 * @since 0.33.0
 	 *
 	 * @param array $attributes Event Query block attributes.
+	 *
 	 * @return int[] Array of post IDs to exclude.
 	 */
 	protected function get_exclude_ids( array $attributes ): array {
@@ -221,6 +224,7 @@ class Event_Query {
 	 *
 	 * @param array    $query Array containing parameters for <code>WP_Query</code> as parsed by the block context.
 	 * @param WP_Block $block Block instance.
+	 *
 	 * @return array Array containing parameters for <code>WP_Query</code> as parsed by the block context.
 	 */
 	public function query_loop_block_query_vars( array $query, WP_Block $block ): array {
@@ -294,6 +298,7 @@ class Event_Query {
 	 *
 	 * @param array           $args    Array of arguments for WP_Query.
 	 * @param WP_REST_Request $request The REST API request object.
+	 *
 	 * @return array Array of arguments for WP_Query.
 	 */
 	public function rest_query( array $args, WP_REST_Request $request ): array {
@@ -368,6 +373,7 @@ class Event_Query {
 	 * @see https://developer.wordpress.org/reference/classes/wp_rest_posts_controller/get_collection_params/
 	 *
 	 * @param array $query_params JSON Schema-formatted collection parameters.
+	 *
 	 * @return array JSON Schema-formatted collection parameters.
 	 */
 	public function rest_collection_params( array $query_params ): array {
@@ -415,6 +421,7 @@ class Event_Query {
 	 *
 	 * @param array $query_args  The query arguments being built.
 	 * @param array $block_query The block's query attributes.
+	 *
 	 * @return array Modified query arguments.
 	 */
 	public function aql_query_vars( array $query_args, array $block_query ): array {

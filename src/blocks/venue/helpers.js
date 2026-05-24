@@ -13,6 +13,7 @@
  * @since 0.34.0
  *
  * @param {Array} terms Array of venue term objects.
+ *
  * @return {string} Mode: 'in-person', 'online', or 'hybrid'.
  */
 export function calculateMode( terms ) {
@@ -43,6 +44,7 @@ export function calculateMode( terms ) {
  * @param {string} newMode            New mode to switch to ('in-person', 'online', or 'hybrid').
  * @param {number} onlineEventTermId  The term ID for the 'online-event' term.
  * @param {number} currentVenueTermId Current venue term ID (excluding online-event).
+ *
  * @return {Array} Array of taxonomy term IDs to assign.
  */
 export function getNewTaxonomyIds( newMode, onlineEventTermId, currentVenueTermId ) {

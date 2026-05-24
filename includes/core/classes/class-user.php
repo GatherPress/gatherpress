@@ -153,6 +153,7 @@ class User {
 	 * @since 0.33.0
 	 *
 	 * @param int $user_id The user ID to check.
+	 *
 	 * @return bool True if the user has opted in, false otherwise.
 	 */
 	public function has_event_updates_opt_in( int $user_id ): bool {

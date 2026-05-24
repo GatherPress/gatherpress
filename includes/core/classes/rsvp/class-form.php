@@ -146,6 +146,7 @@ class Form {
 	 * @since 0.34.0
 	 *
 	 * @param array $comment_data The comment data array.
+	 *
 	 * @return array Modified comment data array.
 	 */
 	public function preprocess_rsvp_comment( array $comment_data ): array {
@@ -243,6 +244,7 @@ class Form {
 	 * @since 0.34.0
 	 *
 	 * @param int $comment_id The comment ID.
+	 *
 	 * @return void
 	 */
 	public function handle_rsvp_comment_post( int $comment_id ): void {
@@ -294,6 +296,7 @@ class Form {
 	 *
 	 * @param string     $location The original redirect location.
 	 * @param WP_Comment $comment  The comment object.
+	 *
 	 * @return string The modified redirect location.
 	 */
 	public function handle_rsvp_comment_redirect( string $location, WP_Comment $comment ): string {
@@ -332,6 +335,7 @@ class Form {
 	 * @since 0.34.0
 	 *
 	 * @param array $data RSVP submission data containing post_id, author, email, and optional fields.
+	 *
 	 * @return array{success: bool, message: string, comment_id: int, error_code?: int} Processing result.
 	 */
 	public function process_rsvp( array $data ): array {
@@ -384,6 +388,7 @@ class Form {
 	 *
 	 * @param int    $post_id The event post ID.
 	 * @param string $email   The email address to check.
+	 *
 	 * @return bool True if a duplicate RSVP exists, false otherwise.
 	 */
 	public function has_duplicate_rsvp( int $post_id, string $email ): bool {
@@ -429,6 +434,7 @@ class Form {
 	 * @param int    $post_id The event post ID.
 	 * @param string $author  The author name.
 	 * @param string $email   The email address.
+	 *
 	 * @return array Comment data array for wp_insert_comment().
 	 */
 	private function prepare_comment_data( int $post_id, string $author, string $email ): array {
@@ -492,6 +498,7 @@ class Form {
 	 *
 	 * @param int   $comment_id The comment ID.
 	 * @param array $data       Submission data containing field values.
+	 *
 	 * @return void
 	 */
 	public function process_fields( int $comment_id, array $data ): void {
@@ -509,6 +516,7 @@ class Form {
 	 *
 	 * @param int   $comment_id The comment ID.
 	 * @param array $data       Submission data containing meta field values.
+	 *
 	 * @return void
 	 */
 	private function process_meta_fields( int $comment_id, array $data ): void {
@@ -559,6 +567,7 @@ class Form {
 	 *
 	 * @param int   $comment_id The comment ID.
 	 * @param array $data       Submission data containing custom field values.
+	 *
 	 * @return void
 	 */
 	private function process_custom_fields( int $comment_id, array $data ): void {
@@ -624,6 +633,7 @@ class Form {
 	 *
 	 * @param int|false $comment_id_result The result from wp_insert_comment (comment ID or false).
 	 * @param array     $data              RSVP submission data.
+	 *
 	 * @return array{success: bool, message: string, comment_id: int, error_code?: int} Processing result.
 	 */
 	private function handle_rsvp_creation( $comment_id_result, array $data ): array {

@@ -150,6 +150,7 @@ abstract class Base {
 	 * @since 0.27.0
 	 *
 	 * @param array $sub_pages An array of sub-pages for GatherPress.
+	 *
 	 * @return array Modified array with the sub-page added.
 	 */
 	public function set_sub_page( array $sub_pages ): array {
@@ -167,6 +168,7 @@ abstract class Base {
 	 * @since 0.27.0
 	 *
 	 * @param string $property The name of the property to retrieve.
+	 *
 	 * @return mixed|null The value of the property or null if it doesn't exist.
 	 */
 	public function get( string $property ) {

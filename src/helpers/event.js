@@ -38,6 +38,7 @@ export const DISABLED_FIELD_OPACITY = 0.3;
  *
  * @param {string}      support  The post type support to check (e.g. 'gatherpress-event-date').
  * @param {string|null} postType Optional post type to check. If not provided, checks current editor post type.
+ *
  * @return {boolean} True if the post type has the given support, false otherwise.
  */
 export function isPostTypeSupporting( support, postType = null ) {
@@ -67,6 +68,7 @@ export function isPostTypeSupporting( support, postType = null ) {
  *
  * @param {string}      support  The post type support to check.
  * @param {string|null} postType Optional post type to check. Falls back to the editor post type.
+ *
  * @return {boolean} True if the resolved post type has the given support, false otherwise.
  */
 export function usePostTypeSupports( support, postType = null ) {
@@ -92,6 +94,7 @@ export function usePostTypeSupports( support, postType = null ) {
  * @since 0.27.0
  *
  * @param {string|null} postType Optional post type to check. If not provided, checks current editor post type.
+ *
  * @return {boolean} True if the post type supports event_date, false otherwise.
  */
 export function isEventPostType( postType = null ) {
@@ -108,6 +111,7 @@ export function isEventPostType( postType = null ) {
  * @since 0.27.0
  *
  * @param {string|null} postType Optional post type to check. If not provided, checks current editor post type.
+ *
  * @return {boolean} True if the post type supports RSVP, false otherwise.
  */
 export function isRsvpPostType( postType = null ) {
@@ -132,6 +136,7 @@ export function isRsvpPostType( postType = null ) {
  *
  * @param {Function} selectFunc WordPress data `select` function.
  * @param {number}   postId     Post ID to resolve.
+ *
  * @return {Object|null} The post entity if found in any event-supporting post
  *                       type; null when the registry isn't loaded yet, when
  *                       no event-supporting type owns the ID, or when the
@@ -194,6 +199,7 @@ export function findEventPostById( selectFunc, postId ) {
  *
  * @param {Function} selectFunc WordPress data `select` callback.
  * @param {string}   slug       Post type slug to check.
+ *
  * @return {boolean} True when the post type declares event-date support.
  */
 const isEventSupportingType = ( selectFunc, slug ) =>
@@ -212,6 +218,7 @@ const isEventSupportingType = ( selectFunc, slug ) =>
  * @param {Function} selectFunc      WordPress data `select` callback.
  * @param {string}   currentPostType Current editor post type.
  * @param {string}   postType        Optional hinted post type.
+ *
  * @return {string|null} The post type slug to look up with, or null.
  */
 const resolveLookupType = ( selectFunc, currentPostType, postType ) => {
@@ -237,6 +244,7 @@ const resolveLookupType = ( selectFunc, currentPostType, postType ) => {
  * @param {Function}    selectFunc WordPress data `select` callback.
  * @param {number}      postId     Post ID to verify.
  * @param {string|null} postType   Optional explicit post type hint.
+ *
  * @return {boolean} True when postId resolves to a valid event.
  */
 const verifyPostIdIsValidEvent = ( selectFunc, postId, postType ) => {
@@ -396,6 +404,7 @@ export function hasEventPastNotice() {
  * @since 0.27.0
  *
  * @param {number|null} postId Optional post ID override to check.
+ *
  * @return {boolean} True if the event has the online-event term, false otherwise.
  */
 export function hasOnlineEventTerm( postId = null ) {
@@ -504,6 +513,7 @@ export function isOpenRsvpEnabled( enableOpenRsvp ) {
  * @param {Object}      selectFunc WordPress data select function.
  * @param {number|null} postId     Post ID from context or null.
  * @param {Object}      attributes Block attributes (may contain explicit postId override).
+ *
  * @return {Object} Object containing maxGuestLimit, enableRsvp, and enableAnonymousRsvp.
  */
 export function getEventMeta( selectFunc, postId, attributes ) {

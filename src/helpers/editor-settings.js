@@ -15,6 +15,7 @@ import { select } from '@wordpress/data';
  * @since 0.34.0
  *
  * @param {string} key - The camelCase setting key (e.g., 'dateFormat', 'mapPlatform').
+ *
  * @return {*} The setting value, or undefined if not available.
  */
 export function getFromSettings( key ) {
@@ -35,6 +36,7 @@ export function getFromSettings( key ) {
  * @since 0.34.0
  *
  * @param {string} key - The camelCase config key (e.g., 'pluginUrl', 'siteTimezone').
+ *
  * @return {*} The config value, or undefined if not available.
  */
 export function getFromConfig( key ) {

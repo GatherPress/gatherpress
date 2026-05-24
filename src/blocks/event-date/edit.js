@@ -55,6 +55,7 @@ import { isInFSETemplate } from '../../helpers/editor';
  * @param {string} endFormat
  * @param {string} separator
  * @param {string} showTimezone
+ *
  * @return {string} Displayed date.
  */
 const displayDateTime = (
@@ -149,6 +150,7 @@ const displayDateTime = (
  * @param {string}  toggleType    - Which date to toggle: 'start' or 'end'.
  * @param {boolean} showStartTime - Whether start time is currently shown.
  * @param {boolean} showEndTime   - Whether end time is currently shown.
+ *
  * @return {string} New display type value.
  */
 const calculateDisplayType = ( toggleType, showStartTime, showEndTime ) => {

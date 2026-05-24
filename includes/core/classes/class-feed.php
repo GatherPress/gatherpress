@@ -81,6 +81,7 @@ class Feed {
 	 * @since 0.33.0
 	 *
 	 * @param WP_Query $query The WP_Query instance.
+	 *
 	 * @return void
 	 */
 	public function handle_events_feed_query( WP_Query $query ): void {
@@ -126,6 +127,7 @@ class Feed {
 	 * @since 0.33.0
 	 *
 	 * @param Event $event The event object.
+	 *
 	 * @return array Array of event information strings.
 	 */
 	private function get_event_datetime_info( Event $event ): array {
@@ -149,6 +151,7 @@ class Feed {
 	 * @since 0.33.0
 	 *
 	 * @param string $excerpt The current excerpt.
+	 *
 	 * @return string The customized excerpt.
 	 */
 	public function get_default_event_excerpt( string $excerpt ): string {
@@ -199,6 +202,7 @@ class Feed {
 	 * @since 0.33.0
 	 *
 	 * @param string $content The current content.
+	 *
 	 * @return string The customized content.
 	 */
 	public function get_default_event_content( string $content ): string {
@@ -248,6 +252,7 @@ class Feed {
 	 * @since 0.33.0
 	 *
 	 * @param string $excerpt The current excerpt.
+	 *
 	 * @return string The customized excerpt.
 	 */
 	public function apply_event_excerpt( string $excerpt ): string {
@@ -290,6 +295,7 @@ class Feed {
 	 * @since 0.33.0
 	 *
 	 * @param string $content The current content.
+	 *
 	 * @return string The customized content.
 	 */
 	public function apply_event_content( string $content ): string {
@@ -332,6 +338,7 @@ class Feed {
 	 * @since 0.33.0
 	 *
 	 * @param string $feed_link The feed link URL.
+	 *
 	 * @return string The modified feed link URL.
 	 */
 	public function modify_feed_link_for_past_events( $feed_link ): string {

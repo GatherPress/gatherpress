@@ -16,6 +16,7 @@ import { RichText } from '@wordpress/block-editor';
  * @param {string}   props.placeholder - Placeholder text.
  * @param {Function} props.onKeyDown   - Keyboard event handler.
  * @param {boolean}  props.disabled    - Whether the field is disabled.
+ *
  * @return {JSX.Element} The rendered text field.
  */
 const TextField = ( { value, onChange, placeholder, onKeyDown, disabled } ) => {

@@ -27,6 +27,7 @@ import { usePostTypeLabel } from '../../../helpers/editor';
  *
  * @param {Object} props            - Props passed to the block's edit component.
  * @param {Object} props.attributes - Block attributes.
+ *
  * @return {boolean} True if the block's namespace matches 'gatherpress-event-query', otherwise false.
  */
 const isEventQueryLoop = ( props ) => {
@@ -47,6 +48,7 @@ const isEventQueryLoop = ( props ) => {
  * @param {Object}   props
  * @param {Object}   props.attributes    - Block attributes.
  * @param {Function} props.setAttributes - Function to update block attributes.
+ *
  * @return {void}
  */
 const QueryPosttypeObserver = ( { attributes, setAttributes } ) => {
@@ -91,6 +93,7 @@ const QueryPosttypeObserver = ( { attributes, setAttributes } ) => {
  * instead of leaving stale event-only controls visible.
  *
  * @param {Object} props - Block props passed through from the HOC.
+ *
  * @return {Element|null} The InspectorControls panel, or null when not applicable.
  */
 export const EventQueryControlsPanel = ( props ) => {
@@ -185,6 +188,7 @@ export const EventQueryControlsPanel = ( props ) => {
  * - For GatherPress event queries, provides the relevant controls in a PanelBody within InspectorControls.
  *
  * @param {Function} BlockEdit - The Query block's BlockEdit component.
+ *
  * @return {Function} Enhanced BlockEdit component.
  */
 const withEventQueryControls = ( BlockEdit ) => ( props ) => {

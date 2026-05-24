@@ -680,6 +680,7 @@ class Test_Endpoint extends Base {
 	 *
 	 * @param Endpoint $instance The endpoint to inspect.
 	 * @param string   $message  Assertion failure message.
+	 *
 	 * @return void
 	 */
 	private function assertEndpointDidNotRegister( Endpoint $instance, string $message ): void {

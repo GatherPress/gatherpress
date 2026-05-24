@@ -68,6 +68,7 @@ class Template extends Endpoint_Type {
 	 * @since 0.34.0
 	 *
 	 * @param Endpoint|null $endpoint Class for custom rewrite endpoints and their query handling in GatherPress.
+	 *
 	 * @return void
 	 */
 	public function activate( ?Endpoint $endpoint = null ): void {

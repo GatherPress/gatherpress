@@ -45,6 +45,7 @@ import PatternChooserModal from './modal';
  * @param {boolean}    [props.showStartBlank]  Whether to render the secondary Start blank button. Defaults to true.
  * @param {Function}   props.onPick            Called with the picked pattern object.
  * @param {Function}   [props.onStartBlank]    Called when the user clicks Start blank. Required when `showStartBlank` is true.
+ *
  * @return {JSX.Element} The placeholder + (conditionally) modal UI.
  */
 const PatternPicker = ( {
