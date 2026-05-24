@@ -1,0 +1,8 @@
+changelog:
+  exclude:
+    labels:
+      - 'Skip Changelog'
+      - 'Release'
+    authors:
+      - dependabot[bot]
+      - github-actions[bot]
