@@ -44,7 +44,7 @@ add_filter(
 
 ## Files
 
-- [includes/core/classes/venue/class-setup.php:328](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/venue/class-setup.php#L328)
+- [includes/core/classes/venue/class-setup.php:330](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/venue/class-setup.php#L330)
 ```php
 apply_filters( 'gatherpress_venue_starter_patterns', $patterns, $post_types )
 ```
