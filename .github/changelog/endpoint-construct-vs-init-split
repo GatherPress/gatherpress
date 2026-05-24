@@ -1,0 +1,4 @@
+Significance: patch
+Type: changed
+
+Calendar endpoint registration is now an explicit `(new Foo(...))->init()` chain instead of a side effect of `new Foo(...)`. The `Calendar\\Endpoint` constructor only stores validated args; `init()` performs rewrite-rule registration and hook wiring, and returns `$this` for chaining. Fixes five SonarCloud `php:S1848` bugs flagged on `Calendar\\Setup` and makes the registration side effect surface at the call site.
