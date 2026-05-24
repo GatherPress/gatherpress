@@ -586,6 +586,7 @@ class Rsvp {
 	 *
 	 * @param Intent $intent            The new RSVP intent.
 	 * @param State  $current_response  The prior/current RSVP state.
+	 *
 	 * @return Intent
 	 */
 	private function constrain_rsvp_intent( Intent $intent, ?State $current_response ): Intent {
@@ -649,6 +650,7 @@ class Rsvp {
 	 * Only legacy functions should use this.
 	 *
 	 * @param string|int $identifier The Identifier.
+	 *
 	 * @return Identity|null
 	 */
 	private function resolve_identity( int|string $identifier ): ?Identity {

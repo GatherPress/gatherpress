@@ -65,6 +65,7 @@ abstract class Provider {
 	 * @since 0.35.0
 	 *
 	 * @param Identity $identity The identity.
+	 *
 	 * @return string
 	 */
 	abstract public function get_display_name( Identity $identity ): string;
@@ -74,9 +75,10 @@ abstract class Provider {
 	 *
 	 * Returns a Gravatar URL based on the email address.
 	 *
-	 * @since 1. 0.0
+	 * @since 0.35.0
 	 *
 	 * @param Identity $identity The identity.
+	 *
 	 * @return string|null The Gravatar URL, or null if email is invalid.
 	 */
 	public function get_avatar_url( Identity $identity ): ?string {
@@ -93,6 +95,7 @@ abstract class Provider {
 	 * @since 0.35.0
 	 *
 	 * @param Identity $identity The identity.
+	 *
 	 * @return string|null
 	 */
 	public function get_url( Identity $identity ): ?string {

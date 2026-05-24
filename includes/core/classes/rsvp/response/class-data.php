@@ -56,6 +56,7 @@ final class Data {
 	 * Create a copy of this data with a new status.
 	 *
 	 * @param Status $status The new status.
+	 *
 	 * @return self
 	 */
 	public function with_status( Status $status ) {

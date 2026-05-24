@@ -22,7 +22,7 @@ use WP_User;
  *
  * Handles RSVP logic for registered WordPress users.
  *
- * @since 1. 0.0
+ * @since 0.35.0
  */
 final class User extends Provider {
 	/**
@@ -73,6 +73,7 @@ final class User extends Provider {
 	 * @since 0.35.0
 	 *
 	 * @param Identity $identity The identity.
+	 *
 	 * @return string The user's display name, or empty string if user not found.
 	 */
 	public function get_display_name( Identity $identity ): string {
@@ -88,9 +89,10 @@ final class User extends Provider {
 	/**
 	 * Get the profile URL for a WordPress user.
 	 *
-	 * @since 1. 0.0
+	 * @since 0.35.0
 	 *
 	 * @param Identity $identity The identity.
+	 *
 	 * @return string The author posts URL.
 	 */
 	public function get_url( Identity $identity ): string {

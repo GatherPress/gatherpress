@@ -21,7 +21,7 @@ use GatherPress\Core\Rsvp\Response\Identity_Type;
  *
  * Handles RSVP logic for email-based RSVPs (non-WordPress users).
  *
- * @since 1. 0.0
+ * @since 0.35.0
  */
 final class Email extends Provider {
 	/**
@@ -74,6 +74,7 @@ final class Email extends Provider {
 	 * @since 0.35.0
 	 *
 	 * @param Identity $identity The identity.
+	 *
 	 * @return string The sanitized email address.
 	 */
 	public function get_display_name( Identity $identity ): string {

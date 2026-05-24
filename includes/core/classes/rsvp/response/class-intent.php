@@ -35,6 +35,7 @@ final class Intent {
 	 * Generate an intent to change the state of an saved RSVP.
 	 *
 	 * @param State $state The desired state.
+	 *
 	 * @return Intent
 	 */
 	public static function attend( State $state ): self {

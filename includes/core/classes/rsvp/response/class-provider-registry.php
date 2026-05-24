@@ -27,7 +27,7 @@ use InvalidArgumentException;
  * Manages registration and retrieval of RSVP type handlers (instances of Rsvp_Type).
  * Uses Singleton pattern for global access.
  *
- * @since 1. 0.0
+ * @since 0.35.0
  */
 final class Provider_Registry {
 
@@ -69,7 +69,7 @@ final class Provider_Registry {
 	/**
 	 * Get a registered RSVP type by slug.
 	 *
-	 * @since 1.0. 0
+	 * @since 0.35.0
 	 *
 	 * @param string $slug The RSVP type slug.
 	 */
@@ -122,7 +122,7 @@ final class Provider_Registry {
 	/**
 	 * Get a registered RSVP type by slug.
 	 *
-	 * @since 1.0. 0
+	 * @since 0.35.0
 	 *
 	 * @param string $slug The RSVP type slug.
 	 *
@@ -148,7 +148,7 @@ final class Provider_Registry {
 	 *
 	 * Useful for iteration or checking which types are available.
 	 *
-	 * @since 1.0. 0
+	 * @since 0.35.0
 	 *
 	 * @return string[] List of registered type slugs.
 	 */

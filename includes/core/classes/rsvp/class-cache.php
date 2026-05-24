@@ -33,6 +33,7 @@ class Cache {
 	 * Get the RSVP cache for an Event by the events WordPress post ID.
 	 *
 	 * @param int $post_id The WordPress post ID of the event.
+	 *
 	 * @return array|null
 	 */
 	public static function get( int $post_id ) {
@@ -50,6 +51,7 @@ class Cache {
 	 *
 	 * @param int   $post_id The WordPress post ID of the event.
 	 * @param mixed $value   The cache value to set.
+	 *
 	 * @return void
 	 */
 	public static function set( int $post_id, $value ) {
@@ -60,6 +62,7 @@ class Cache {
 	 * Delete an RSVP cache for an event.
 	 *
 	 * @param int $post_id The WordPress post ID of the event.
+	 *
 	 * @return void
 	 */
 	public static function delete( int $post_id ) {
@@ -70,6 +73,7 @@ class Cache {
 	 * Get the cache key.
 	 *
 	 * @param mixed $post_id The WordPress post ID of the event.
+	 *
 	 * @return string
 	 */
 	private static function cache_key( $post_id ) {

@@ -36,7 +36,9 @@ enum Status: string {
 	 * Get the corresponding Status enum instance. If no match is found Status::NO_STATUS is returned.
 	 *
 	 * @since 0.35.0
+	 *
 	 * @param string $status The status value.
+	 *
 	 * @return Status
 	 */
 	public static function try_from( string $status ): Status {

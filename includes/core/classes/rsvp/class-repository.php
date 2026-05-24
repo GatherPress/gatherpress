@@ -81,6 +81,7 @@ final class Repository {
 	 *
 	 * @param Identity      $identity      The Identity of the RSVP response.
 	 * @param Provider|null $provider The RSVP provider.
+	 *
 	 * @return State|null
 	 */
 	public function get( Identity $identity, ?Provider $provider = null ): ?State {
@@ -209,6 +210,7 @@ final class Repository {
 	 * @param WP_Comment    $comment   The RSVP comment.
 	 * @param Identity|null $identity  The RSVPs identity (optional).
 	 * @param Provider|null $provider  The RSVP provider (optional).
+	 *
 	 * @return State|null
 	 */
 	private static function hydrate(
@@ -246,6 +248,7 @@ final class Repository {
 	 *
 	 * @param WP_Comment $comment  The RSVP comment.
 	 * @param Identity   $identity The RSVP response identity.
+	 *
 	 * @return Data
 	 */
 	private static function hydrate_data( WP_Comment $comment, Identity $identity ) {
@@ -265,6 +268,7 @@ final class Repository {
 	 *
 	 * @param WP_Comment    $comment       Comment.
 	 * @param Identity_Type $identity_type The identity type.
+	 *
 	 * @return Identity|null
 	 */
 	private static function get_identity_from_comment(
@@ -295,6 +299,7 @@ final class Repository {
 	 * Get the identity provider for this RSVP response.
 	 *
 	 * @param WP_Comment $comment The WordPress comment that stores the RSVP response.
+	 *
 	 * @return Provider|null
 	 */
 	private static function get_identity_provider( WP_Comment $comment ): ?Provider {
@@ -322,6 +327,7 @@ final class Repository {
 	 * Get the status.
 	 *
 	 * @param mixed $comment_id The comment ID of the RSVP response.
+	 *
 	 * @return Status
 	 */
 	private static function get_status( $comment_id ): Status {
@@ -339,6 +345,7 @@ final class Repository {
 	 *
 	 * @param int    $id        The objects ID.
 	 * @param string $taxonomy  The taxonomy of the term.
+	 *
 	 * @return string|null
 	 */
 	private static function get_value_from_object_terms( int $id, string $taxonomy ) {
