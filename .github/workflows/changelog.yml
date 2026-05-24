@@ -7,6 +7,16 @@ on:
     # as defined in the (optional) "skipLabels" property.
     types: [opened, edited, synchronize, reopened, ready_for_review, labeled, unlabeled]
 
+# Least-privilege scopes for the default GITHUB_TOKEN, matching the workflow's
+# actual API calls:
+#   contents:      write — createOrUpdateFileContents commits the changelog file to the PR branch
+#   pull-requests: write — listFiles + reading PR labels/state
+#   issues:        write — createComment for the fork-PR fallback that posts the file content
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
 jobs:
   # Enforces the addition of a changelog entry (a file in the .github/changelog directory) every pull request.
   changelog:
@@ -167,7 +177,6 @@ jobs:
           PR_MESSAGE: '${{ steps.check-pr-body.outputs.message }}'
         uses: actions/github-script@v9
         with:
-          github-token: ${{ secrets.API_TOKEN_GITHUB }}
           script: |
             const { repo: { owner, repo }, payload : { pull_request : { number, head : { ref, repo: head_repo } } } } = context;
 
