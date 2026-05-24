@@ -9,7 +9,7 @@
  * duplicate folders.
  *
  * @package GatherPress\Core
- * @since 1.0.0
+ * @since 0.34.0
  */
 
 namespace GatherPress\Core;
@@ -26,7 +26,7 @@ use GatherPress\Core\Traits\Singleton;
  * for GatherPress and any companion plugin that announces itself via the
  * `gatherpress_register_coexistence_guard` action.
  *
- * @since 1.0.0
+ * @since 0.34.0
  */
 class Coexistence_Guard {
 
@@ -38,7 +38,7 @@ class Coexistence_Guard {
 	/**
 	 * Class constructor.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 */
 	public function __construct() {
 		$this->setup_hooks();
@@ -48,7 +48,7 @@ class Coexistence_Guard {
 	/**
 	 * Set up hooks.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return void
 	 */
@@ -64,7 +64,7 @@ class Coexistence_Guard {
 	 * already on disk so an older build that doesn't carry this code still
 	 * trips the guard when activated.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param string $slug      Folder slug, e.g. `gatherpress-alpha`. The companion
 	 *                          plugin's main file must be `<slug>.php` inside a
@@ -92,7 +92,7 @@ class Coexistence_Guard {
 	/**
 	 * Returns every installed plugin file matching `<slug>*\/<slug>.php`, sorted.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param string $slug Plugin folder slug.
 	 * @return string[] Plugin basenames matching the slug pattern.
@@ -152,7 +152,7 @@ class Coexistence_Guard {
 	 * after this hook, so `wp_die()` alone prevents the plugin from being
 	 * persisted as active.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param string $slug Plugin folder slug.
 	 * @param string $name Plugin display name.

@@ -12,7 +12,7 @@ import { select } from '@wordpress/data';
  * This function must NOT be imported in view scripts (viewScriptModule entries)
  * because @wordpress/data is not available as a script module.
  *
- * @since 1.0.0
+ * @since 0.34.0
  *
  * @param {string} key - The camelCase setting key (e.g., 'dateFormat', 'mapPlatform').
  * @return {*} The setting value, or undefined if not available.
@@ -32,7 +32,7 @@ export function getFromSettings( key ) {
  * This function must NOT be imported in view scripts (viewScriptModule entries)
  * because @wordpress/data is not available as a script module.
  *
- * @since 1.0.0
+ * @since 0.34.0
  *
  * @param {string} key - The camelCase config key (e.g., 'pluginUrl', 'siteTimezone').
  * @return {*} The config value, or undefined if not available.

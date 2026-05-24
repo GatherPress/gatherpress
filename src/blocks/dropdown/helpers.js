@@ -10,7 +10,7 @@ import { useSelect } from '@wordpress/data';
  * the block is in focus. For example, a dropdown that should auto-close when
  * clicking outside of it.
  *
- * @since 1.0.0
+ * @since 0.33.0
  *
  * @param {string} clientId The unique identifier for the block instance.
  * @return {boolean} True if the block or any of its children are selected, false otherwise.

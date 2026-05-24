@@ -6,7 +6,7 @@
  * retrieving RSVP information, saving RSVPs, checking attending limits, and more.
  *
  * @package GatherPress\Core\Rsvp
- * @since 1.0.0
+ * @since 0.27.0
  */
 
 namespace GatherPress\Core\Rsvp;
@@ -23,14 +23,14 @@ use WP_Post;
  *
  * Manages RSVP functionality for events, including response status tracking and limits.
  *
- * @since 1.0.0
+ * @since 0.34.0
  */
 class Rsvp {
 
 	/**
 	 * Capability required to manage RSVPs.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @var string
 	 */
 	const CAPABILITY = 'moderate_comments';
@@ -40,7 +40,7 @@ class Rsvp {
 	 *
 	 * This constant defines the status taxonomy for RSVP comment type.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @var string
 	 */
 	const TAXONOMY = '_gatherpress_rsvp_status';
@@ -48,7 +48,7 @@ class Rsvp {
 	/**
 	 * Cache key format for RSVPs.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @var string $CACHE_KEY
 	 */
 	const CACHE_KEY = 'gatherpress_rsvp_%d';
@@ -56,7 +56,7 @@ class Rsvp {
 	/**
 	 * Comment type for RSVPs.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @var string $COMMENT_TYPE
 	 */
 	const COMMENT_TYPE = 'gatherpress_rsvp';
@@ -64,7 +64,7 @@ class Rsvp {
 	/**
 	 * An array of RSVP statuses.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @var string[] Contains RSVP statuses such as 'attending', 'not_attending', 'waiting_list', and 'no_status'.
 	 */
 	public array $statuses = array(
@@ -77,7 +77,7 @@ class Rsvp {
 	/**
 	 * The maximum limit for attending responses (RSVPs).
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @var int Represents the maximum number of attendees allowed for an event.
 	 */
 	protected int $max_attendance_limit;
@@ -85,7 +85,7 @@ class Rsvp {
 	/**
 	 * The event post object associated with this RSVP instance.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @var WP_Post|null
 	 */
 	protected $event;
@@ -96,7 +96,7 @@ class Rsvp {
 	 *
 	 * Initializes an RSVP instance for a specific event.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param int $post_id The event post ID.
 	 */
@@ -113,7 +113,7 @@ class Rsvp {
 	 * and the number of guests accompanying the user. If no RSVP information is found for the user and event,
 	 * default values are provided.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param int|string $user_identifier The user ID or email address of the person whose RSVP information
 	 *                                    is being retrieved. If an integer is provided, it's treated as a user ID.
@@ -188,7 +188,7 @@ class Rsvp {
 	 * (empty string) falls back to the mode default: `per_event_on`
 	 * defaults to enabled, `per_event_off` defaults to disabled.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return bool True if RSVP is enabled for this event, false otherwise.
 	 */
@@ -222,7 +222,7 @@ class Rsvp {
 	 * When sitewide is on, consults the per-event `gatherpress_enable_open_rsvp` post meta.
 	 * An unset meta (empty string) is treated as enabled (the default).
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return bool True if Open RSVP is enabled for this event, false otherwise.
 	 */
@@ -255,7 +255,7 @@ class Rsvp {
 	 * - `per_event_off`: writes meta = 0 (default-off intent).
 	 * - `disabled`: no meta is written.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return void
 	 */
@@ -288,7 +288,7 @@ class Rsvp {
 	 * the number of guests they plan to bring along and whether their RSVP should be considered anonymous.
 	 * This method updates the database accordingly to reflect the new RSVP status.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param int|string $user_identifier The user ID or email address of the person whose RSVP status is being updated.
 	 *                                    If an integer is provided, it's treated as a user ID. If a string is provided,
@@ -483,7 +483,7 @@ class Rsvp {
 	 * This method checks if there are spots available in the attending list and moves response
 	 * from the waiting list to attending based on their timestamp.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return int The number of responses from the waiting list that were moved to attending.
 	 */
@@ -537,7 +537,7 @@ class Rsvp {
 	 * and compares it to the defined limit. It considers both the current response status
 	 * and the number of guests associated with that response.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param array $current_response The current response data including status and number of guests.
 	 *                                Expected to have keys 'status' and 'guests', where 'status' is a
@@ -575,7 +575,7 @@ class Rsvp {
 	 * It provides an array with response details grouped by RSVP status ('attending', 'not_attending', 'waiting_list'),
 	 * along with counts and additional response data.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return array An array containing response information grouped by RSVP status.
 	 */
@@ -718,7 +718,7 @@ class Rsvp {
 	 * This method compares two responses based on their user roles and returns
 	 * an integer (-1, 0, or 1) to determine their order in the sorted list.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param array $first  The first response to compare in the sort.
 	 * @param array $second The second response to compare in the sort.
@@ -749,7 +749,7 @@ class Rsvp {
 	 * This method compares two responses based on their RSVP timestamps and is used to sort responses
 	 * from the waiting list, with the earliest timestamp responses appearing first.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param array $first  First response to compare in the sort.
 	 * @param array $second Second response to compare in the sort.

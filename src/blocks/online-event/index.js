@@ -15,7 +15,7 @@ import metadata from './block.json';
  *
  * Container block for online event display with icon and link.
  *
- * @since 1.0.0
+ * @since 0.27.0
  *
  * @return {void}
  */

@@ -6,7 +6,7 @@
  * affecting GatherPress features.
  *
  * @package GatherPress\Core
- * @since 1.0.0
+ * @since 0.34.0
  */
 
 namespace GatherPress\Core;
@@ -21,7 +21,7 @@ use GatherPress\Core\Traits\Singleton;
  *
  * Manages GatherPress Site Health tests.
  *
- * @since 1.0.0
+ * @since 0.34.0
  */
 class Site_Health {
 
@@ -33,7 +33,7 @@ class Site_Health {
 	/**
 	 * Site Health test identifier for the pretty permalinks check.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @var string
 	 */
@@ -42,7 +42,7 @@ class Site_Health {
 	/**
 	 * Class constructor.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 */
 	protected function __construct() {
 		$this->setup_hooks();
@@ -51,7 +51,7 @@ class Site_Health {
 	/**
 	 * Set up hooks for Site Health tests.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return void
 	 */
@@ -62,7 +62,7 @@ class Site_Health {
 	/**
 	 * Register GatherPress direct Site Health tests.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param array<string, array<string, array<string, mixed>>> $tests Existing Site Health tests.
 	 * @return array<string, array<string, array<string, mixed>>> Updated Site Health tests.
@@ -82,7 +82,7 @@ class Site_Health {
 	 * GatherPress rewrite rules for event and venue URLs, feeds, and calendar
 	 * endpoints require a permalink structure other than Plain.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return array<string, mixed> Site Health test result.
 	 */

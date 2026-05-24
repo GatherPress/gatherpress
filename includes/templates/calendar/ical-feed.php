@@ -9,7 +9,7 @@
  * @see /docs/developer/theme-customizations/README.md
  *
  * @package GatherPress\Core\Calendar
- * @since 1.0.0
+ * @since 0.34.0
  */
 
 // Exit if accessed directly.

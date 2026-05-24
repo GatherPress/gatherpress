@@ -7,7 +7,7 @@
  * This ensures consistency and makes maintenance easier.
  *
  * @package GatherPress\Core\Rsvp
- * @since 1.0.0
+ * @since 0.33.0
  */
 
 namespace GatherPress\Core\Rsvp;
@@ -28,7 +28,7 @@ use WP_User;
  * Centralizes RSVP submission processing logic for consistency across form and AJAX submissions.
  *
  * @package GatherPress\Core\Rsvp
- * @since 1.0.0
+ * @since 0.34.0
  */
 class Form {
 
@@ -42,7 +42,7 @@ class Form {
 	 *
 	 * This method initializes the object and sets up necessary hooks.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 */
 	protected function __construct() {
 		$this->setup_hooks();
@@ -53,7 +53,7 @@ class Form {
 	 *
 	 * This method adds hooks for different purposes as needed.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return void
 	 */
@@ -64,7 +64,7 @@ class Form {
 	/**
 	 * Get the duplicate RSVP error message.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return string The translated error message.
 	 */
@@ -78,7 +78,7 @@ class Form {
 	 * This method determines if the current request is an RSVP form submission
 	 * by checking for the presence of required form fields in the POST data.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return bool True if this is an RSVP form submission, false otherwise.
 	 */
@@ -101,7 +101,7 @@ class Form {
 	 * This method detects RSVP form submissions and configures the necessary WordPress
 	 * filters and actions to process them correctly as specialized comment objects.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @return void
 	 */
 	public function initialize_rsvp_form_handling(): void {
@@ -143,7 +143,7 @@ class Form {
 	 * This method handles duplicate detection and prepares comment data
 	 * for WordPress's comment processing system.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param array $comment_data The comment data array.
 	 * @return array Modified comment data array.
@@ -240,7 +240,7 @@ class Form {
 	 * This method processes meta fields and sends confirmation emails
 	 * after a successful RSVP comment creation.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param int $comment_id The comment ID.
 	 * @return void
@@ -290,7 +290,7 @@ class Form {
 	 * This method customizes the redirect URL to include success parameters
 	 * and preserve form anchors for better user experience.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param string     $location The original redirect location.
 	 * @param WP_Comment $comment  The comment object.
@@ -329,7 +329,7 @@ class Form {
 	 * Handles user authentication, duplicate detection, comment creation,
 	 * meta data processing, and confirmation email sending.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param array $data RSVP submission data containing post_id, author, email, and optional fields.
 	 * @return array{success: bool, message: string, comment_id: int, error_code?: int} Processing result.
@@ -380,7 +380,7 @@ class Form {
 	 * This prevents duplicate RSVPs when someone submits with an email that
 	 * belongs to an existing user who already RSVP'd.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param int    $post_id The event post ID.
 	 * @param string $email   The email address to check.
@@ -424,7 +424,7 @@ class Form {
 	 * Handles user authentication and sets appropriate author information
 	 * based on whether the user is logged in and email matches.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param int    $post_id The event post ID.
 	 * @param string $author  The author name.
@@ -488,7 +488,7 @@ class Form {
 	 * Handles both meta fields (email updates, guest count, anonymous flag)
 	 * and custom fields based on form schema.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param int   $comment_id The comment ID.
 	 * @param array $data       Submission data containing field values.
@@ -505,7 +505,7 @@ class Form {
 	 * Handles email updates preference, guest count, and anonymous flag
 	 * with proper validation and limits.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param int   $comment_id The comment ID.
 	 * @param array $data       Submission data containing meta field values.
@@ -555,7 +555,7 @@ class Form {
 	 * For form submissions, this uses the existing method that reads from $_POST.
 	 * For REST API submissions, this processes the data directly.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param int   $comment_id The comment ID.
 	 * @param array $data       Submission data containing custom field values.
@@ -620,7 +620,7 @@ class Form {
 	 * On success, sets the RSVP status, processes custom fields, and sends confirmation email.
 	 * On failure, returns an error response.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param int|false $comment_id_result The result from wp_insert_comment (comment ID or false).
 	 * @param array     $data              RSVP submission data.

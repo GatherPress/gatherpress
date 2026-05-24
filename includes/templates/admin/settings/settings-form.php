@@ -7,7 +7,7 @@
  *
  * @package GatherPress\Core
  * @param string $page The slug of the current settings page.
- * @since 1.0.0
+ * @since 0.27.0
  */
 
 // Exit if accessed directly.

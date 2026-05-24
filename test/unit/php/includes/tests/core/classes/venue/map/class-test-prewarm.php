@@ -3,7 +3,7 @@
  * Unit tests for GatherPress\Core\Venue\Map\Prewarm.
  *
  * @package GatherPress\Core\Venue\Map
- * @since 1.0.0
+ * @since 0.34.0
  */
 
 namespace GatherPress\Tests\Core\Venue\Map;
@@ -26,7 +26,7 @@ class Test_Prewarm extends Base {
 	 * Clear scheduled warm events between tests — wp_next_scheduled lookups
 	 * otherwise leak across cases and skew dedup assertions.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return void
 	 */

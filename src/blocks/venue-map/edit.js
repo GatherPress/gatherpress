@@ -113,7 +113,7 @@ const buildExternalMapUrl = ( destination, latitude, longitude, zoom ) => {
 /**
  * Edit component for the Venue Map block.
  *
- * @since 1.0.0
+ * @since 0.34.0
  *
  * @param {Object}   props               - Component properties.
  * @param {Object}   props.attributes    - Block attributes.

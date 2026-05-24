@@ -9,7 +9,7 @@ import DateTimeRange from '../../../components/DateTimeRange';
  * This component serves as a panel containing the `DateTimeRange` component
  * for managing date and time ranges in a specific context.
  *
- * @since 1.0.0
+ * @since 0.27.0
  *
  * @return {JSX.Element} The JSX element for the DateTimeRangePanel.
  */

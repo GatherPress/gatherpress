@@ -7,7 +7,7 @@
  * and admin menu link modifications.
  *
  * @package GatherPress\Core\Event
- * @since 1.0.0
+ * @since 0.34.0
  */
 
 namespace GatherPress\Core\Event;
@@ -31,7 +31,7 @@ use WP_Query;
  * sortable columns, sorting logic, view filters, and admin menu modifications.
  *
  * @package GatherPress\Core\Event
- * @since 1.0.0
+ * @since 0.34.0
  */
 class Admin_List {
 
@@ -43,7 +43,7 @@ class Admin_List {
 	/**
 	 * Cached event counts keyed by post type for the current request.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @var array<string, array<string, int>>
 	 */
@@ -54,7 +54,7 @@ class Admin_List {
 	 *
 	 * This method initializes the object and sets up necessary hooks.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 */
 	protected function __construct() {
 		$this->setup_hooks();
@@ -65,7 +65,7 @@ class Admin_List {
 	 *
 	 * This method adds hooks for different purposes as needed.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return void
 	 */
@@ -79,7 +79,7 @@ class Admin_List {
 	 * Registers admin list table hooks when a post type that declares
 	 * gatherpress-event-date support finishes registering.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param string $post_type The post type that was just registered.
 	 * @return void
@@ -122,7 +122,7 @@ class Admin_List {
 	 * declares `gatherpress-rsvp` support, since post types that only carry
 	 * `gatherpress-event-date` have no RSVP column to sort by.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param array $columns An array of sortable columns.
 	 * @return array An updated array of sortable columns.
@@ -150,7 +150,7 @@ class Admin_List {
 	 * This method adds links to filter the shown events in the admin list,
 	 * the filtering allows to show 'upcoming' or 'past' events.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param array $view_links An array of available list table views.
 	 *
@@ -249,7 +249,7 @@ class Admin_List {
 	 * in the events table (no date set yet) are excluded from both
 	 * buckets — they only appear under the All view.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param string $post_type The event post type to count.
 	 * @return array<string, int> Associative array with 'upcoming' and 'past' counts.
@@ -320,7 +320,7 @@ class Admin_List {
 	 * Adds 'gatherpress_event_query' to the list of allowed query variables,
 	 * to be able to request 'upcoming' or 'past' events in the admin list view.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param  string[] $query_vars List of allowed query variables.
 	 *
@@ -339,7 +339,7 @@ class Admin_List {
 	 * that screen, so a `?orderby=rsvps` request would otherwise issue a
 	 * pointless comments-table join.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param WP_Query $query The WP_Query instance.
 	 * @return void
@@ -375,7 +375,7 @@ class Admin_List {
 	 * Validates the query context, normalizes the sort order, registers the
 	 * provided SQL filter callbacks, and stores the order on the query object.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param WP_Query               $query     The WP_Query instance.
 	 * @param string                 $column    The column name to match against the orderby query var.
@@ -416,7 +416,7 @@ class Admin_List {
 	/**
 	 * Join comments table for RSVP sorting (WordPress style).
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param string $join The JOIN clause of the query.
 	 * @return string Modified JOIN clause.
@@ -443,7 +443,7 @@ class Admin_List {
 	 *
 	 * Shared callback used by both RSVP and venue sorting.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param string $groupby The GROUP BY clause of the query.
 	 * @return string Modified GROUP BY clause.
@@ -461,7 +461,7 @@ class Admin_List {
 	/**
 	 * Order by RSVP count for RSVP sorting (WordPress style).
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return string Modified ORDER BY clause.
 	 */
@@ -483,7 +483,7 @@ class Admin_List {
 	 *
 	 * Displays additional information, like event datetime and RSVP count, for Event post types.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param string $column  The name of the column to display.
 	 * @param int    $post_id The current post ID.
@@ -576,7 +576,7 @@ class Admin_List {
 	 * This method is used to define custom columns for Event post types in the WordPress admin dashboard.
 	 * It adds additional columns for displaying event date and time, and RSVP count.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param array $columns An associative array of column headings.
 	 * @return array An updated array of column headings, including the custom columns.
@@ -623,7 +623,7 @@ class Admin_List {
 			 * date", etc., while keeping the underlying `datetime` column key (and its
 			 * sortable behavior) unchanged.
 			 *
-			 * @since 1.0.0
+			 * @since 0.34.0
 			 *
 			 * @param string $label     Default column label.
 			 * @param string $post_type Post type the admin list is currently rendering.
@@ -665,7 +665,7 @@ class Admin_List {
 	 *       generic and does not take custom comment types into account. It just looks for
 	 *       unapproved comments of any type.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param array $columns An array of column names.
 	 * @return array The modified array of column names without the comments column.

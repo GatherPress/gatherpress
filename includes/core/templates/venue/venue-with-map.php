@@ -9,7 +9,7 @@
  * swap layouts via the block toolbar's "Choose pattern" action.
  *
  * @package GatherPress\Core
- * @since 1.0.0
+ * @since 0.34.0
  */
 
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore

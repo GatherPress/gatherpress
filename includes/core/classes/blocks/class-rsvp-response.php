@@ -4,7 +4,7 @@
  * handling associated hooks for customizing functionality.
  *
  * @package GatherPress\Core
- * @since 1.0.0
+ * @since 0.30.0
  */
 
 namespace GatherPress\Core\Blocks;
@@ -26,7 +26,7 @@ use WP_User;
  *
  * It ensures smooth integration with WordPress's block editor and REST API.
  *
- * @since 1.0.0
+ * @since 0.33.0
  */
 class Rsvp_Response {
 
@@ -38,7 +38,7 @@ class Rsvp_Response {
 	/**
 	 * Constant representing the Block Name.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @var string
 	 */
 	const BLOCK_NAME = 'gatherpress/rsvp-response';
@@ -48,7 +48,7 @@ class Rsvp_Response {
 	 *
 	 * This method initializes the object and sets up necessary hooks.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 */
 	protected function __construct() {
 		$this->setup_hooks();
@@ -59,7 +59,7 @@ class Rsvp_Response {
 	 *
 	 * This method adds hooks for different purposes as needed.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @return void
 	 */
@@ -80,7 +80,7 @@ class Rsvp_Response {
 	 * interactivity attributes if the block matches certain conditions.
 	 * It uses the `WP_HTML_Tag_Processor` to locate and update the block's attributes.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @param string $block_content The original HTML content of the block.
 	 * @param array  $block         An associative array containing block data, including `blockName` and attributes.
@@ -193,7 +193,7 @@ class Rsvp_Response {
 	 * Adds interactivity attributes to dropdown menu items with specific RSVP-related classes
 	 * for use with the WordPress Interactivity API.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @param string $block_content The block content to modify.
 	 *
@@ -268,7 +268,7 @@ class Rsvp_Response {
 	 * It checks if the provided comment is of type `gatherpress_rsvp` and modifies the avatar data `$args`
 	 * to include the user's avatar URL based on their user ID.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @param array $args    Array of arguments for the avatar data.
 	 * @param mixed $comment The comment object or other data passed to the filter.
@@ -330,7 +330,7 @@ class Rsvp_Response {
 	 * to include the `gatherpress/rsvp-response` block. This allows the comment author name block
 	 * to be used as a child of the RSVP response block.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @param array $metadata The block metadata for `core/comment-author-name`.
 	 *

@@ -3,7 +3,7 @@
  * Class handles unit tests for GatherPress\Core\Validate.
  *
  * @package GatherPress\Core
- * @since 1.0.0
+ * @since 0.31.0
  */
 
 namespace GatherPress\Tests\Core;
@@ -22,7 +22,7 @@ class Test_Validate extends Base {
 	/**
 	 * Coverage for rsvp_status method.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::rsvp_status
 	 *
 	 * @return void
@@ -61,7 +61,7 @@ class Test_Validate extends Base {
 	/**
 	 * Data provider for send test.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @return array
 	 */
@@ -105,7 +105,7 @@ class Test_Validate extends Base {
 	/**
 	 * Coverage for send method.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @dataProvider data_send
 	 * @covers ::send
 	 *
@@ -121,7 +121,7 @@ class Test_Validate extends Base {
 	/**
 	 * Coverage for event_post_id method.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::event_post_id
 	 * @covers ::positive_number
 	 *
@@ -155,7 +155,7 @@ class Test_Validate extends Base {
 	/**
 	 * Coverage for boolean method.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::boolean
 	 *
 	 * @return void
@@ -200,7 +200,7 @@ class Test_Validate extends Base {
 	/**
 	 * Coverage for event_list_type method.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::event_list_type
 	 *
 	 * @return void
@@ -223,7 +223,7 @@ class Test_Validate extends Base {
 	/**
 	 * Coverage for datetime method.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::datetime
 	 *
 	 * @return void
@@ -242,7 +242,7 @@ class Test_Validate extends Base {
 	/**
 	 * Coverage for timezone method.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::timezone
 	 *
 	 * @return void
@@ -261,7 +261,7 @@ class Test_Validate extends Base {
 	/**
 	 * Test valid block data with all required properties.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::block_data
 	 *
 	 * @return void
@@ -283,7 +283,7 @@ class Test_Validate extends Base {
 	/**
 	 * Test invalid JSON string.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::block_data
 	 *
 	 * @return void
@@ -299,7 +299,7 @@ class Test_Validate extends Base {
 	/**
 	 * Test missing required properties.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::block_data
 	 *
 	 * @return void
@@ -321,7 +321,7 @@ class Test_Validate extends Base {
 	/**
 	 * Data provider for invalid property types test.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @return array
 	 */
@@ -354,7 +354,7 @@ class Test_Validate extends Base {
 	/**
 	 * Test invalid property types.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @dataProvider data_invalid_property_types_provider
 	 * @covers ::block_data
 	 *
@@ -373,7 +373,7 @@ class Test_Validate extends Base {
 	/**
 	 * Test complex nested block structure.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::block_data
 	 *
 	 * @return void
@@ -404,7 +404,7 @@ class Test_Validate extends Base {
 	/**
 	 * Coverage for positive_number method with valid positive numbers.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::positive_number
 	 *
 	 * @return void
@@ -431,7 +431,7 @@ class Test_Validate extends Base {
 	/**
 	 * Coverage for positive_number method with invalid values.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::positive_number
 	 *
 	 * @return void
@@ -466,7 +466,7 @@ class Test_Validate extends Base {
 	/**
 	 * Coverage for non_negative_number method with valid non-negative numbers.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::non_negative_number
 	 *
 	 * @return void
@@ -497,7 +497,7 @@ class Test_Validate extends Base {
 	/**
 	 * Coverage for non_negative_number method with invalid values.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::non_negative_number
 	 *
 	 * @return void
@@ -528,7 +528,7 @@ class Test_Validate extends Base {
 	/**
 	 * Coverage for coordinate method with values inside the ±180 range.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @covers ::coordinate
 	 *
 	 * @return void
@@ -563,7 +563,7 @@ class Test_Validate extends Base {
 	/**
 	 * Coverage for coordinate method with non-numeric or out-of-range values.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @covers ::coordinate
 	 *
 	 * @return void
@@ -598,7 +598,7 @@ class Test_Validate extends Base {
 	/**
 	 * Coverage for datetime method with additional edge cases.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::datetime
 	 *
 	 * @return void
@@ -641,7 +641,7 @@ class Test_Validate extends Base {
 	/**
 	 * Coverage for timezone method with UTC offset format.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::timezone
 	 *
 	 * @return void
@@ -672,7 +672,7 @@ class Test_Validate extends Base {
 	/**
 	 * Coverage for send method with missing keys.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::send
 	 *
 	 * @return void
@@ -718,7 +718,7 @@ class Test_Validate extends Base {
 	/**
 	 * Coverage for event_post_id with string numeric ID.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::event_post_id
 	 *
 	 * @return void
@@ -735,7 +735,7 @@ class Test_Validate extends Base {
 	/**
 	 * Coverage for boolean with additional edge cases.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::boolean
 	 *
 	 * @return void

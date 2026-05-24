@@ -11,7 +11,7 @@
  * in the inherited allowlist resolve `Settings::get()` to that network value.
  *
  * @package GatherPress\Core
- * @since 1.0.0
+ * @since 0.34.0
  */
 
 namespace GatherPress\Core\Settings;
@@ -26,7 +26,7 @@ use GatherPress\Core\Utility;
 /**
  * Class Network.
  *
- * @since 1.0.0
+ * @since 0.34.0
  */
 class Network {
 
@@ -38,28 +38,28 @@ class Network {
 	/**
 	 * Site option storing the network inheritance config (enabled + inherited list).
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 */
 	const OPTION_NAME = 'gatherpress_network_settings';
 
 	/**
 	 * Admin page slug used in the network admin menu.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 */
 	const PAGE_SLUG = 'gatherpress-network-settings';
 
 	/**
 	 * Slug for the special "Network" tab (inheritance allowlist).
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 */
 	const NETWORK_TAB = 'network';
 
 	/**
 	 * Nonce + edit action for saving the inheritance allowlist.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 */
 	const NONCE_ACTION = 'gatherpress_network_settings_save';
 	const EDIT_ACTION  = 'gatherpress_network_settings';
@@ -68,7 +68,7 @@ class Network {
 	 * Nonce + edit action for saving the network-level settings values
 	 * (the content of the Events/Venues/Roles/RSVP tabs).
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 */
 	const VALUES_NONCE_ACTION = 'gatherpress_network_values_save';
 	const VALUES_EDIT_ACTION  = 'gatherpress_network_values';
@@ -78,14 +78,14 @@ class Network {
 	 * viewing/saving the Network Admin Settings page, importing or
 	 * exporting network values, etc.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 */
 	const CAPABILITY = 'manage_network_options';
 
 	/**
 	 * Per-request cache for get_config() — see get_config() for rationale.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @var array|null
 	 */
@@ -94,7 +94,7 @@ class Network {
 	/**
 	 * Constructor.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 */
 	protected function __construct() {
 		$this->setup_hooks();
@@ -103,7 +103,7 @@ class Network {
 	/**
 	 * Set up hooks.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return void
 	 */
@@ -121,7 +121,7 @@ class Network {
 	 * Runs on every admin_head so the styling is applied whether or not the
 	 * built SCSS bundle is available.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return void
 	 */
@@ -146,7 +146,7 @@ class Network {
 	 * Links to the Network Admin → Settings → GatherPress page so super admins
 	 * know where to change values that are locked here.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return void
 	 */
@@ -226,7 +226,7 @@ class Network {
 	 * read filter to only this screen so network values appear in the UI
 	 * while the per-site Settings remain untouched.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return void
 	 */
@@ -250,7 +250,7 @@ class Network {
 	 * Redirect bare `?page=gatherpress-network-settings` to the Network tab
 	 * so the URL always reflects the active tab (and bookmarks land correctly).
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return void
 	 */
@@ -283,7 +283,7 @@ class Network {
 	 * value while this page renders, so field values show network values,
 	 * not the blog option of whichever site is "current" for the admin.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return void
 	 */
@@ -294,7 +294,7 @@ class Network {
 	/**
 	 * Short-circuit get_option to return the network-wide site option.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param mixed $pre The pre-filter value (false when not short-circuited).
 	 * @return mixed
@@ -308,7 +308,7 @@ class Network {
 	/**
 	 * Render the network admin page.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return void
 	 */
@@ -335,7 +335,7 @@ class Network {
 	 * Sub-pages shown at network admin: existing sub-pages minus Tools
 	 * (import/export is blog-scoped), plus the special "Network" tab.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return array
 	 */
@@ -357,7 +357,7 @@ class Network {
 	 * Resolve the current tab from the `tab` query arg, falling back to the
 	 * first sub-page when missing or unknown.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param array $sub_pages Available sub-pages keyed by slug.
 	 * @return string
@@ -376,7 +376,7 @@ class Network {
 	/**
 	 * Handle save of the inheritance allowlist (Network tab).
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return void
 	 */
@@ -414,7 +414,7 @@ class Network {
 	 * the main site's blog option), then persists the sanitized result to
 	 * the site option.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return void
 	 */
@@ -466,7 +466,7 @@ class Network {
 	 * Mirrors `Settings::build_field_type_map()` (protected there) so we can
 	 * sanitize POSTs in our own save handler without exposing that method.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param array $sub_pages Sub-pages from Settings::get_sub_pages().
 	 * @return array<string, string>
@@ -497,7 +497,7 @@ class Network {
 	 * Redirect back to the network admin page on the given tab with a
 	 * success flag.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param string $tab The tab slug to return to.
 	 * @return void
@@ -523,7 +523,7 @@ class Network {
 	/**
 	 * Sanitize the submitted inheritance config.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param mixed $input Raw input array.
 	 * @return array
@@ -552,7 +552,7 @@ class Network {
 	/**
 	 * Current inheritance config, merged with defaults.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return array Config with 'enabled' (bool) and 'inherited' (string[]).
 	 */
@@ -581,7 +581,7 @@ class Network {
 	 * Reset the per-request config cache. Called after a save so the next
 	 * read sees the fresh value, and used by tests to isolate assertions.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return void
 	 */
@@ -592,7 +592,7 @@ class Network {
 	/**
 	 * Default inheritance config.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return array
 	 */

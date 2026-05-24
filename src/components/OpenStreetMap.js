@@ -21,7 +21,7 @@ import { getFromConfig } from '../helpers/editor-settings';
  * This component is used to embed an OpenStreetMap with specified location,
  * zoom level, and height using the Leaflet platform.
  *
- * @since 1.0.0
+ * @since 0.30.0
  *
  * @param {Object} props             - Component properties.
  * @param {string} props.location    - The location to be displayed on the map.

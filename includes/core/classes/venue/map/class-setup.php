@@ -10,7 +10,7 @@
  * rather than touching `Venue\Setup`.
  *
  * @package GatherPress\Core\Venue\Map
- * @since 1.0.0
+ * @since 0.34.0
  */
 
 namespace GatherPress\Core\Venue\Map;
@@ -25,7 +25,7 @@ use GatherPress\Core\Traits\Singleton;
  *
  * Singleton hub for the venue map subsystem.
  *
- * @since 1.0.0
+ * @since 0.34.0
  */
 class Setup {
 
@@ -41,7 +41,7 @@ class Setup {
 	 * their own hooks in their own `setup_hooks()` calls — this hub does
 	 * nothing else.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 */
 	protected function __construct() {
 		$this->instantiate_classes();
@@ -55,7 +55,7 @@ class Setup {
 	 * the registry on later hooks. Sibling order after Manager is
 	 * alphabetical; none of the others depend on each other.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return void
 	 */

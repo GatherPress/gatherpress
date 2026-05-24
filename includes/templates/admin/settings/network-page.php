@@ -11,7 +11,7 @@
  * @param array  $sub_pages   Tabs to render, keyed by slug.
  * @param string $current_tab Slug of the active tab.
  * @param array  $config      Current network inheritance config.
- * @since 1.0.0
+ * @since 0.34.0
  */
 
 use GatherPress\Core\Settings\Network;
@@ -315,7 +315,7 @@ $gatherpress_is_network  = Network::NETWORK_TAB === $current_tab;
 			 * (e.g. the Alpha sub-page) can emit their own content. Mirrors the
 			 * per-site settings page template.
 			 *
-			 * @since 1.0.0
+			 * @since 0.27.0
 			 *
 			 * @param string $page Prefixed page slug (e.g. `gatherpress_alpha`).
 			 */

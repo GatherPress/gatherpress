@@ -6,7 +6,7 @@ import { __ } from '@wordpress/i18n';
 /**
  * Block variations for different venue details.
  *
- * @since 1.0.0
+ * @since 0.34.0
  */
 const variations = [
 	{

@@ -29,7 +29,7 @@ import AddressAutocompleteField from './AddressAutocompleteField';
  * Renders a form with fields for venue name and address,
  * along with save and cancel buttons.
  *
- * @since 1.0.0
+ * @since 0.34.0
  *
  * @param {Object}   props                     Component props.
  * @param {string}   props.title               The venue title.
@@ -118,7 +118,7 @@ function VenueForm( {
  * Handles the complete workflow of creating a new venue post,
  * including geocoding the address and updating event relationships.
  *
- * @since 1.0.0
+ * @since 0.34.0
  *
  * @param {Object} props        Component props.
  * @param {string} props.search Initial search text to populate the title.

@@ -20,7 +20,7 @@ import './style.scss';
 /**
  * Register the Venue Map block.
  *
- * @since 1.0.0
+ * @since 0.33.0
  */
 registerBlockType( metadata.name, {
 	edit,

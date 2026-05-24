@@ -5,7 +5,7 @@
  * Dynamically displays the number of guests a member is bringing in a formatted string.
  *
  * @package GatherPress\Core
- * @since 1.0.0
+ * @since 0.33.0
  */
 
 // Exit if accessed directly.

@@ -7,7 +7,7 @@
  * templates by checking the theme's template directory before falling back to the plugin's template.
  *
  * @package GatherPress\Core\Calendar
- * @since 1.0.0
+ * @since 0.34.0
  */
 
 namespace GatherPress\Core\Calendar;
@@ -28,14 +28,14 @@ use GatherPress\Core\Utility;
  * - It checks if a template exists in the current theme or child theme.
  * - If not found, it falls back to the template provided by the plugin.
  *
- * @since 1.0.0
+ * @since 0.34.0
  */
 class Template extends Endpoint_Type {
 
 	/**
 	 * Directory path for plugin templates.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @var string
 	 */
@@ -48,7 +48,7 @@ class Template extends Endpoint_Type {
 	 * plugin template directory. The parent constructor initializes the slug and callback,
 	 * while this constructor adds the plugin template default.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param string   $slug                The slug used to identify the endpoint in the URL.
 	 * @param callable $callback            The callback function to get file name and path of the endpoint template.
@@ -65,7 +65,7 @@ class Template extends Endpoint_Type {
 	/**
 	 * Activate Endpoint_Type by hooking into relevant parts.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param Endpoint|null $endpoint Class for custom rewrite endpoints and their query handling in GatherPress.
 	 * @return void
@@ -102,7 +102,7 @@ class Template extends Endpoint_Type {
 	 * issue at https://github.com/GatherPress/gatherpress/issues — until
 	 * then we just use the first of the provided endpoint-types.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return void
 	 */
@@ -122,7 +122,7 @@ class Template extends Endpoint_Type {
 	 * back to the WP-supplied default when nothing is found, so the
 	 * template loader can keep looking.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param string $template The path of the default template to include,
 	 *                         defaults to '' so that the template loader keeps looking for templates.
@@ -139,7 +139,7 @@ class Template extends Endpoint_Type {
 	/**
 	 * Retrieve template presets by invoking the callback.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return array Template preset data including file_name and optional dir_path.
 	 */

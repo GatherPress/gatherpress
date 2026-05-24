@@ -17,7 +17,7 @@ import './style.scss';
  * This component renders the edit view of the GatherPress RSVP block.
  * It provides an interface for users to RSVP to an event.
  *
- * @since 1.0.0
+ * @since 0.27.0
  *
  * @return {JSX.Element} The rendered React component.
  */

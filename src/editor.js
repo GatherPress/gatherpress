@@ -21,7 +21,7 @@ import './formats/tooltip';
  * Ensures the editor sidebar is open, initializes the email notification manager,
  * and displays a notice for past events.
  *
- * @since 1.0.0
+ * @since 0.27.0
  */
 domReady( () => {
 	const selectEditPost = select( 'core/edit-post' );

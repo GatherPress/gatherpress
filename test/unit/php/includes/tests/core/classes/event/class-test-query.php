@@ -3,7 +3,7 @@
  * Class handles unit tests for GatherPress\Core\Event\Query.
  *
  * @package GatherPress\Core\Event
- * @since 1.0.0
+ * @since 0.27.0
  */
 
 namespace GatherPress\Tests\Core\Event;
@@ -214,7 +214,7 @@ class Test_Query extends Base {
 	/**
 	 * Test query adjusted for upcoming events.
 	 *
-	 * @since  1.0.0
+	 * @since  0.34.0
 	 * @covers ::prepare_event_query_before_execution
 	 *
 	 * @return void
@@ -242,7 +242,7 @@ class Test_Query extends Base {
 	/**
 	 * Test query adjusted for past events.
 	 *
-	 * @since  1.0.0
+	 * @since  0.34.0
 	 * @covers ::prepare_event_query_before_execution
 	 *
 	 * @return void
@@ -270,7 +270,7 @@ class Test_Query extends Base {
 	/**
 	 * Test query adjusted for archive page.
 	 *
-	 * @since  1.0.0
+	 * @since  0.34.0
 	 * @covers ::prepare_event_query_before_execution
 	 *
 	 * @return void
@@ -343,7 +343,7 @@ class Test_Query extends Base {
 	 * Covers the get_page_by_path code path when page_id is not set
 	 * but pagename query var is present.
 	 *
-	 * @since  1.0.0
+	 * @since  0.34.0
 	 * @covers ::prepare_event_query_before_execution
 	 *
 	 * @return void
@@ -429,7 +429,7 @@ class Test_Query extends Base {
 	 *
 	 * Early return when $general is not an array.
 	 *
-	 * @since  1.0.0
+	 * @since  0.34.0
 	 * @covers ::prepare_event_query_before_execution
 	 *
 	 * @return void
@@ -466,7 +466,7 @@ class Test_Query extends Base {
 	 *
 	 * Early return when $pages is empty or not an array.
 	 *
-	 * @since  1.0.0
+	 * @since  0.34.0
 	 * @covers ::prepare_event_query_before_execution
 	 *
 	 * @return void
@@ -516,7 +516,7 @@ class Test_Query extends Base {
 	 *
 	 * Covers pre_option filter for page_for_posts and show_on_front.
 	 *
-	 * @since  1.0.0
+	 * @since  0.34.0
 	 * @covers ::prepare_event_query_before_execution
 	 *
 	 * @return void
@@ -586,7 +586,7 @@ class Test_Query extends Base {
 	 *
 	 * Covers get_the_archive_title filter callback.
 	 *
-	 * @since  1.0.0
+	 * @since  0.34.0
 	 * @covers ::prepare_event_query_before_execution
 	 *
 	 * @return void
@@ -650,7 +650,7 @@ class Test_Query extends Base {
 	/**
 	 * Test query with no event type.
 	 *
-	 * @since  1.0.0
+	 * @since  0.34.0
 	 * @covers ::prepare_event_query_before_execution
 	 *
 	 * @return void

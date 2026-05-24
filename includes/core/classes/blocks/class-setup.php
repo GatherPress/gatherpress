@@ -5,7 +5,7 @@
  * This class handles the registration and management of custom blocks used in the GatherPress plugin.
  *
  * @package GatherPress\Core\Blocks
- * @since 1.0.0
+ * @since 0.27.0
  */
 
 namespace GatherPress\Core\Blocks;
@@ -23,7 +23,7 @@ use WP_Post;
  *
  * Core class for handling blocks in GatherPress.
  *
- * @since 1.0.0
+ * @since 0.34.0
  */
 class Setup {
 
@@ -37,7 +37,7 @@ class Setup {
 	 *
 	 * This method initializes the object and sets up necessary hooks.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 */
 	protected function __construct() {
 		$this->setup_hooks();
@@ -48,7 +48,7 @@ class Setup {
 	 *
 	 * This method adds hooks for different purposes as needed.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return void
 	 */
@@ -67,7 +67,7 @@ class Setup {
 	 *
 	 * This method scans a directory for custom block definitions and registers them.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return void
 	 */
@@ -111,7 +111,7 @@ class Setup {
 	 *
 	 * This method registers multiple different block-patterns for GatherPress.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @see   https://developer.wordpress.org/reference/functions/register_block_pattern/
 	 *
 	 * @return void
@@ -293,7 +293,7 @@ class Setup {
 	/**
 	 * Get the post ID from block attributes or fallback to the current post ID.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param array $block The block data.
 	 *

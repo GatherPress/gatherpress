@@ -6,7 +6,7 @@
  * object data.
  *
  * @package GatherPress\Core
- * @since 1.0.0
+ * @since 0.31.0
  */
 
 namespace GatherPress\Core;
@@ -22,7 +22,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
  * The Validate class is responsible for ensuring event/venue/object data is
  * secure and of the correct format.
  *
- * @since 1.0.0
+ * @since 0.31.0
  */
 class Validate {
 
@@ -31,7 +31,7 @@ class Validate {
 	 *
 	 * Validates whether a given parameter is a valid RSVP status.
 	 *
-	 * @since 1.0.0
+	 * @since 0.31.0
 	 *
 	 * @param string $param An RSVP status to validate.
 	 * @return bool True if the parameter is a valid RSVP status, false otherwise.
@@ -54,7 +54,7 @@ class Validate {
 	 *
 	 * Validates whether a given parameter is a valid Event Post ID.
 	 *
-	 * @since 1.0.0
+	 * @since 0.31.0
 	 *
 	 * @param int|string $param A Post ID to validate.
 	 * @return bool True if the parameter is a valid Event Post ID, false otherwise.
@@ -71,7 +71,7 @@ class Validate {
 	 *
 	 * Validates whether the given parameter is a valid numeric value greater than zero.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @param int|string $param The value to validate.
 	 * @return bool True if the parameter is a valid positive numeric value, false otherwise.
@@ -88,7 +88,7 @@ class Validate {
 	 *
 	 * Validates whether the given parameter is a valid numeric value greater than or equal to zero.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @param int|string $param The value to validate.
 	 * @return bool True if the parameter is a valid non-negative numeric value, false otherwise.
@@ -111,7 +111,7 @@ class Validate {
 	 * Empty string, null, and other non-numeric input return false; callers
 	 * that want to preserve an "unset" sentinel should sanitize separately.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param mixed $param The value to validate.
 	 * @return bool True if the parameter is a numeric value within ±180, false otherwise.
@@ -134,7 +134,7 @@ class Validate {
 	 * - Integer: 1 or 0
 	 * - String: '1' or '0'
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @param mixed $value The value to validate.
 	 * @return bool True if the value is valid, false otherwise.
@@ -148,7 +148,7 @@ class Validate {
 	 *
 	 * Validates an array of email recipient options to ensure they are correctly structured.
 	 *
-	 * @since 1.0.0
+	 * @since 0.31.0
 	 *
 	 * @param mixed $param An array of email recipients.
 	 * @return bool True if the parameter is a valid array of email recipients, false otherwise.
@@ -177,7 +177,7 @@ class Validate {
 	 *
 	 * Validates whether the given event list type parameter is valid (either 'upcoming' or 'past').
 	 *
-	 * @since 1.0.0
+	 * @since 0.31.0
 	 *
 	 * @param string $param The event list type to validate.
 	 * @return bool True if the parameter is a valid event list type, false otherwise.
@@ -191,7 +191,7 @@ class Validate {
 	 *
 	 * Validates whether the given datetime string parameter is in the valid 'Y-m-d H:i:s' format.
 	 *
-	 * @since 1.0.0
+	 * @since 0.31.0
 	 *
 	 * @param string $param The datetime string to validate.
 	 * @return bool True if the parameter is a valid datetime string, false otherwise.
@@ -205,7 +205,7 @@ class Validate {
 	 *
 	 * Validates whether the given timezone identifier parameter is valid.
 	 *
-	 * @since 1.0.0
+	 * @since 0.31.0
 	 *
 	 * @param string $param The timezone identifier to validate.
 	 * @return bool True if the parameter is a valid timezone identifier, false otherwise.
@@ -225,7 +225,7 @@ class Validate {
 	 * a valid block structure by ensuring the required properties
 	 * (`blockName`, `attrs`, `innerBlocks`) exist and are of the correct types.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @param string $param The JSON string representing block data.
 	 * @return bool True if the block data is valid, false otherwise.

@@ -3,7 +3,7 @@
  * Class responsible for importing content using WordPress' native import tool(s).
  *
  * @package GatherPress\Core
- * @since 1.0.0
+ * @since 0.30.0
  */
 
 namespace GatherPress\Core;
@@ -22,7 +22,7 @@ use GatherPress\Core\Traits\Singleton;
  *
  * Successfully identified GatherPress data will be saved into custom DB tables.
  *
- * @since 1.0.0
+ * @since 0.30.0
  */
 class Import extends Migrate {
 
@@ -36,7 +36,7 @@ class Import extends Migrate {
 	 *
 	 * This method initializes the object and sets up necessary hooks.
 	 *
-	 * @since 1.0.0
+	 * @since 0.30.0
 	 */
 	public function __construct() {
 		$this->setup_hooks();
@@ -47,7 +47,7 @@ class Import extends Migrate {
 	 *
 	 * This method adds hooks for different purposes as needed.
 	 *
-	 * @since 1.0.0
+	 * @since 0.30.0
 	 *
 	 * @return void
 	 */
@@ -85,7 +85,7 @@ class Import extends Migrate {
 			/**
 			 * Fires for every GatherPress data to be imported.
 			 *
-			 * @since 1.0.0
+			 * @since 0.30.0
 			 *
 			 * @param array $post_data_raw Unprocessesd 'gatherpress_event' post being imported.
 			 */

@@ -30,7 +30,7 @@ import Duration from '../components/Duration';
  * The component also handles the duration of the event, checking if the end time
  * matches a predefined duration option and updating the duration accordingly.
  *
- * @since 1.0.0
+ * @since 0.27.0
  *
  * @return {JSX.Element} The rendered DateTimeRange React component.
  */

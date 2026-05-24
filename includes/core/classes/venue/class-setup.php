@@ -11,7 +11,7 @@
  * instead.
  *
  * @package GatherPress\Core\Venue
- * @since 1.0.0
+ * @since 0.27.0
  */
 
 namespace GatherPress\Core\Venue;
@@ -39,7 +39,7 @@ use WP_Post;
  * with a single `Venue\Setup::get_instance()` line — same shape as
  * `Settings::instantiate_classes()`.
  *
- * @since 1.0.0
+ * @since 0.34.0
  */
 class Setup {
 
@@ -56,7 +56,7 @@ class Setup {
 	 * subsystem with a single `Venue\Setup::get_instance()` line — same
 	 * shape as `Settings::instantiate_classes()`.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 */
 	public function __construct() {
 		$this->instantiate_classes();
@@ -70,7 +70,7 @@ class Setup {
 	 * Venue\* class lands as a single line here rather than edits to
 	 * Setup. Each subclass is a singleton, so repeat calls are safe.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return void
 	 */
@@ -82,7 +82,7 @@ class Setup {
 	/**
 	 * Set up hooks for post-type, taxonomy, and save-lifecycle integration.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return void
 	 */
@@ -117,7 +117,7 @@ class Setup {
 	 * Hooked on `registered_post_type` at priority 9 so the support is in
 	 * place before Shadow_Source's own callback (priority 10) reads it.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param string $post_type The post type that was just registered.
 	 * @return void
@@ -137,7 +137,7 @@ class Setup {
 	 * so that the block editor can resolve the correct venue post type for each
 	 * event post type without relying on window globals.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param array $settings The block editor settings array.
 	 * @return array The modified block editor settings array.
@@ -165,7 +165,7 @@ class Setup {
 	 * It is designed to handle venue information for events, including titles,
 	 * descriptions, images, and custom fields.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return void
 	 */
@@ -257,7 +257,7 @@ class Setup {
 	 * resolved venue's taxonomy registered for it via
 	 * `register_taxonomy_for_object_type()`.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return void
 	 */
@@ -287,7 +287,7 @@ class Setup {
 	 * starter patterns for new pages" toggle, so no site-wide setting
 	 * is needed here.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return void
 	 */
@@ -318,7 +318,7 @@ class Setup {
 		 * type and want to swap a pattern in only when their post type
 		 * is in scope.
 		 *
-		 * @since 1.0.0
+		 * @since 0.27.0
 		 *
 		 * @param array $patterns   Pattern definitions loaded from the
 		 *                          `includes/core/templates/venue/` directory.
@@ -356,7 +356,7 @@ class Setup {
 	 * Only runs on insert (`$update` false) so a user who intentionally clears
 	 * the content of an existing venue and saves is not silently re-seeded.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param int     $post_id Post ID of the venue post.
 	 * @param WP_Post $post    The venue post object.
@@ -419,7 +419,7 @@ class Setup {
 	 * venue's name, whether it's an online event term, an online event link, and any
 	 * additional venue information stored as JSON in post meta.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param int    $post_id   The post ID for which to retrieve venue information.
 	 * @param string $post_type The post type of the provided post ID.
@@ -466,7 +466,7 @@ class Setup {
 	 * the `gatherpress_venue_post_type` filter look up the right post type)
 	 * and then delegates to {@see Shadow_Source::get_post_from_term_slug()}.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param string $slug            The venue taxonomy term slug (e.g. `_my-venue`).
 	 * @param string $event_post_type Optional event post-type context.
@@ -487,7 +487,7 @@ class Setup {
 	 * underscore — the sentinels do not — so we filter on that invariant and
 	 * return the first term that resolves to an actual venue post.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param int $event_post_id The event post ID.
 	 * @return WP_Post|null The linked venue post, or null.
@@ -526,7 +526,7 @@ class Setup {
 	 * them out and keeps venue-resolution logic from treating sentinels as
 	 * venues.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param string $slug The term slug to test.
 	 * @return bool
@@ -542,7 +542,7 @@ class Setup {
 	 * `$setup->get_taxonomy( $setup->get_venue_post_type( $pt ) )` — the most
 	 * common lookup at call sites that need to tag/query events by venue.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param string $event_post_type The event post type.
 	 * @return string The venue taxonomy slug.
@@ -558,7 +558,7 @@ class Setup {
 	 * Used by callers that already have the name in hand (e.g. rename-diff
 	 * callers comparing old vs. new post_name during a save-post transition).
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param string $post_name The venue post's post_name (e.g. `my-venue`).
 	 * @return string The taxonomy term slug (e.g. `_my-venue`).
@@ -574,7 +574,7 @@ class Setup {
 	 * the post type to the built-in `gatherpress_venue` so venue-side callers
 	 * can omit the argument.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param string $venue_post_type The venue post type slug. Defaults to the built-in venue post type.
 	 * @return string The taxonomy slug for the given venue post type.
@@ -601,7 +601,7 @@ class Setup {
 	 * normal WordPress request flow, where filters are registered before any
 	 * post-type lookups occur.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param string $event_post_type The event post type requesting a venue post type.
 	 * @return string The venue post type slug.
@@ -616,7 +616,7 @@ class Setup {
 		/**
 		 * Filters the post type used as the venue.
 		 *
-		 * @since 1.0.0
+		 * @since 0.27.0
 		 *
 		 * @param string $post_type       The venue post type slug. Default 'gatherpress_venue'.
 		 * @param string $event_post_type The event post type requesting a venue post type.
@@ -637,7 +637,7 @@ class Setup {
 	 * the venue post type for each via get_venue_post_type(). This map is used
 	 * to expose the per-event-type venue post type to the block editor.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return array<string, string> Map of event post type slug to venue post type slug.
 	 */
@@ -660,7 +660,7 @@ class Setup {
 	 * After that, the method sanitizes the string to be safely used within an URL,
 	 * by removing accents, replacing special characters and replacing whitespace with dashes.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return string
 	 */

@@ -3,7 +3,7 @@
  * Class handles unit tests for GatherPress\Core\Blocks\Online_Event.
  *
  * @package GatherPress\Core
- * @since 1.0.0
+ * @since 0.34.0
  */
 
 namespace GatherPress\Tests\Core\Blocks;
@@ -28,7 +28,7 @@ class Test_Online_Event extends Base {
 	 * Verifies that the appropriate filters are registered during setup,
 	 * ensuring the hooks are properly configured for the Online_Event block.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @covers ::__construct
 	 * @covers ::setup_hooks
 	 *
@@ -52,7 +52,7 @@ class Test_Online_Event extends Base {
 	/**
 	 * Tests BLOCK_NAME constant value.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return void
 	 */
@@ -67,7 +67,7 @@ class Test_Online_Event extends Base {
 	/**
 	 * Tests render_block returns empty string when block_content is null.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @covers ::render_block
 	 *
 	 * @return void
@@ -97,7 +97,7 @@ class Test_Online_Event extends Base {
 	/**
 	 * Tests render_block returns content when block array is null.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @covers ::render_block
 	 *
 	 * @return void
@@ -127,7 +127,7 @@ class Test_Online_Event extends Base {
 	/**
 	 * Tests render_block returns empty when both content and block are null.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @covers ::render_block
 	 *
 	 * @return void
@@ -157,7 +157,7 @@ class Test_Online_Event extends Base {
 	/**
 	 * Tests render_block returns empty when event has no online-event term.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @covers ::render_block
 	 * @covers ::has_online_event_term
 	 *
@@ -195,7 +195,7 @@ class Test_Online_Event extends Base {
 	/**
 	 * Tests render_block returns content for non-event post types.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @covers ::render_block
 	 * @covers ::has_online_event_term
 	 *
@@ -233,7 +233,7 @@ class Test_Online_Event extends Base {
 	/**
 	 * Tests render_block returns content when event has online-event term.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @covers ::render_block
 	 * @covers ::has_online_event_term
 	 *
@@ -282,7 +282,7 @@ class Test_Online_Event extends Base {
 	/**
 	 * Tests render_block with postId attribute renders with context.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @covers ::render_block
 	 * @covers ::has_online_event_term
 	 * @covers ::render_with_post_context
@@ -343,7 +343,7 @@ class Test_Online_Event extends Base {
 	/**
 	 * Tests render_block returns empty for override event without online term.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @covers ::render_block
 	 * @covers ::has_online_event_term
 	 *
@@ -380,7 +380,7 @@ class Test_Online_Event extends Base {
 	/**
 	 * Tests has_online_event_term returns false when event has other venue terms.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @covers ::render_block
 	 * @covers ::has_online_event_term
 	 *
@@ -433,7 +433,7 @@ class Test_Online_Event extends Base {
 	 * This test verifies that the postId is correctly passed to inner blocks
 	 * and that the render_block_context filter is properly applied.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @covers ::render_with_post_context
 	 *
 	 * @return void
@@ -514,7 +514,7 @@ class Test_Online_Event extends Base {
 	 * When the postId attribute points to a post type that does not support
 	 * gatherpress-online-event, the block should not render.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @covers ::render_block
 	 * @covers ::has_online_event_term
 	 *
@@ -556,7 +556,7 @@ class Test_Online_Event extends Base {
 	/**
 	 * Tests render_block with event that has both online-event and other venue terms.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @covers ::render_block
 	 * @covers ::has_online_event_term
 	 *
@@ -613,7 +613,7 @@ class Test_Online_Event extends Base {
 	/**
 	 * Tests get_the_ID is used when no postId override.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @covers ::render_block
 	 * @covers ::has_online_event_term
 	 *

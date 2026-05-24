@@ -8,7 +8,7 @@
  * functionality (e.g., event-based URLs like `event/my-sample-event/custom-endpoint`).
  *
  * @package GatherPress\Core\Calendar
- * @since 1.0.0
+ * @since 0.34.0
  */
 
 namespace GatherPress\Core\Calendar;
@@ -24,7 +24,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
  * behavior to specific post types like events, venues, or any custom post type that
  * needs custom URLs for singular items.
  *
- * @since 1.0.0
+ * @since 0.34.0
  */
 class Post_Type_Single extends Endpoint {
 
@@ -36,7 +36,7 @@ class Post_Type_Single extends Endpoint {
 	 * URLs (e.g., `event/my-sample-event/custom-endpoint`) and hooks into WordPress to load
 	 * the appropriate feed template.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param Endpoint_Type[] $types      List of endpoint types (templates/redirects) for the feed.
 	 * @param string          $query_var  The query variable used to identify the feed endpoint in the URL.
@@ -68,7 +68,7 @@ class Post_Type_Single extends Endpoint {
 	 * is for a single post of the post type provided when registering the endpoint. It ensures
 	 * that the endpoint logic only applies to single posts, not archives or other post type queries.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return bool True if the current query is for a singular post of the post type, false otherwise.
 	 */

@@ -23,7 +23,7 @@ import { getVenuePostType, getVenueTaxonomy, useVenueOptions, useVenueTaxonomyId
  * reads and updates the `_gatherpress_venue` taxonomy term IDs
  * attached to that event, and fetches available venue options for selection.
  *
- * @since 1.0.0
+ * @since 0.34.0
  *
  * @param {Object}   props           Properties of the 'gatherpress/venue'-block.
  * @param {string}   props.search    Current search string for venue filtering.

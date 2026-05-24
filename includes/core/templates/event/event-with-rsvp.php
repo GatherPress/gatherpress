@@ -18,7 +18,7 @@
  * here as the canonical default, not a fresh manual insert.
  *
  * @package GatherPress\Core
- * @since 1.0.0
+ * @since 0.34.0
  */
 
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore

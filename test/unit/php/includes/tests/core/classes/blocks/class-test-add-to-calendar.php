@@ -3,7 +3,7 @@
  * Class handles unit tests for GatherPress\Core\Blocks\Add_To_Calendar.
  *
  * @package GatherPress\Core
- * @since 1.0.0
+ * @since 0.33.0
  */
 
 namespace GatherPress\Tests\Core\Blocks;
@@ -26,7 +26,7 @@ class Test_Add_To_Calendar extends Base {
 	 * Verifies that the appropriate filters are registered during setup,
 	 * ensuring the hooks are properly configured for the Add_To_Calendar block.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::__construct
 	 * @covers ::setup_hooks
 	 *

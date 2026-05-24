@@ -3,7 +3,7 @@
  * Class handles unit tests for GatherPress\Core\Blocks\Setup.
  *
  * @package GatherPress\Core\Blocks
- * @since 1.0.0
+ * @since 0.27.0
  */
 
 namespace GatherPress\Tests\Core\Blocks;

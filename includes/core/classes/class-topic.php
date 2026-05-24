@@ -5,7 +5,7 @@
  * This class facilitates the management of the Topic taxonomy within the context of the Event post type.
  *
  * @package GatherPress\Core
- * @since 1.0.0
+ * @since 0.29.0
  */
 
 namespace GatherPress\Core;
@@ -20,7 +20,7 @@ use GatherPress\Core\Traits\Singleton;
  *
  * Manages Topic taxonomy for the GatherPress Event post type, including registration and administration.
  *
- * @since 1.0.0
+ * @since 0.29.0
  */
 class Topic {
 
@@ -32,7 +32,7 @@ class Topic {
 	/**
 	 * The taxonomy name for GatherPress event topics.
 	 *
-	 * @since 1.0.0
+	 * @since 0.29.0
 	 * @var string $TAXONOMY
 	 */
 	const TAXONOMY = 'gatherpress_topic';
@@ -42,7 +42,7 @@ class Topic {
 	 *
 	 * This method initializes the object and sets up necessary hooks.
 	 *
-	 * @since 1.0.0
+	 * @since 0.29.0
 	 */
 	public function __construct() {
 		$this->setup_hooks();
@@ -53,7 +53,7 @@ class Topic {
 	 *
 	 * This method adds hooks for different purposes as needed.
 	 *
-	 * @since 1.0.0
+	 * @since 0.29.0
 	 *
 	 * @return void
 	 */
@@ -68,7 +68,7 @@ class Topic {
 	 * and hierarchical structuring. This method ensures Topics are properly integrated within
 	 * WordPress for management and querying.
 	 *
-	 * @since 1.0.0
+	 * @since 0.29.0
 	 *
 	 * @return void
 	 */
@@ -140,7 +140,7 @@ class Topic {
 	 * After that, the method sanitizes the string to be safely used within an URL,
 	 * by removing accents, replacing special characters and replacing whitespace with dashes.
 	 *
-	 * @since 1.0.0
+	 * @since 0.31.0
 	 *
 	 * @return string
 	 */

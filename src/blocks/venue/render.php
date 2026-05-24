@@ -3,7 +3,7 @@
  * Render Venue block.
  *
  * @package GatherPress\Core
- * @since 1.0.0
+ * @since 0.27.0
  */
 
 // Exit if accessed directly.

@@ -3,7 +3,7 @@
  * Class handles unit tests for GatherPress\Core\Rsvp\Token.
  *
  * @package GatherPress\Core\Rsvp
- * @since 1.0.0
+ * @since 0.33.0
  */
 
 namespace GatherPress\Tests\Core\Rsvp;
@@ -1216,7 +1216,7 @@ class Test_Token extends Base {
 	 *
 	 * Verifies that the method correctly creates an instance from mocked GET parameters.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @covers ::from_url_parameter
 	 *
 	 * @return void

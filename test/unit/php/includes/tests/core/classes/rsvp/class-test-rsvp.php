@@ -3,7 +3,7 @@
  * Class handles unit tests for GatherPress\Core\Rsvp\Rsvp.
  *
  * @package GatherPress\Core\Rsvp
- * @since 1.0.0
+ * @since 0.27.0
  */
 
 namespace GatherPress\Tests\Core\Rsvp;
@@ -207,7 +207,7 @@ class Test_Rsvp extends Base {
 	/**
 	 * Test check waiting list with no attendees.
 	 *
-	 * @since  1.0.0
+	 * @since  0.34.0
 	 * @covers ::check_waiting_list
 	 *
 	 * @return void
@@ -226,7 +226,7 @@ class Test_Rsvp extends Base {
 	/**
 	 * Test check waiting list with unlimited attendance.
 	 *
-	 * @since  1.0.0
+	 * @since  0.34.0
 	 * @covers ::check_waiting_list
 	 *
 	 * @return void
@@ -260,7 +260,7 @@ class Test_Rsvp extends Base {
 	/**
 	 * Test check waiting list with limited attendance.
 	 *
-	 * @since  1.0.0
+	 * @since  0.34.0
 	 * @covers ::check_waiting_list
 	 *
 	 * @return void

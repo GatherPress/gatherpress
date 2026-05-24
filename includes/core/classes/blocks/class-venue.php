@@ -6,7 +6,7 @@
  * ...
  *
  * @package GatherPress\Core
- * @since 1.0.0
+ * @since 0.34.0
  */
 
 namespace GatherPress\Core\Blocks;
@@ -24,7 +24,7 @@ use WP_Post;
  * Class responsible for managing the "Venue" block and its functionality,
  * including dynamic rendering adjustments.
  *
- * @since 1.0.0
+ * @since 0.34.0
  */
 class Venue {
 
@@ -36,7 +36,7 @@ class Venue {
 	/**
 	 * Constant representing the Block Name.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @var string
 	 */
 	const BLOCK_NAME = 'gatherpress/venue';
@@ -46,7 +46,7 @@ class Venue {
 	 *
 	 * This method initializes the object and sets up necessary hooks.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 */
 	protected function __construct() {
 		$this->setup_hooks();
@@ -57,7 +57,7 @@ class Venue {
 	 *
 	 * This method adds hooks for different purposes as needed.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return void
 	 */
@@ -70,7 +70,7 @@ class Venue {
 	 *
 	 * @see https://developer.wordpress.org/reference/hooks/render_block_this-name/
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param string|null $block_content The block content.
 	 * @param array|null  $block         The full block, including name and attributes.
@@ -103,7 +103,7 @@ class Venue {
 	 * then falls back to getting the venue from the current event.
 	 * Handles query loop, post ID override, and global contexts.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param array $block The full block, including name and attributes.
 	 *
@@ -146,7 +146,7 @@ class Venue {
 	 * Sets up the global post and block context to the venue post,
 	 * renders the inner blocks, then restores the original context.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param WP_Post  $venue_post The venue post to use as context.
 	 * @param WP_Block $instance   The block instance.

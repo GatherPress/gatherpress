@@ -17,7 +17,7 @@ import { AddressField, PhoneField, UrlField, TextField } from './fields';
  * Provides inline editing of venue meta fields with automatic
  * cross-post editing warnings (like post-title block).
  *
- * @since 1.0.0
+ * @since 0.34.0
  *
  * @param {Object}   props                   - Component properties.
  * @param {Object}   props.attributes        - Block attributes.

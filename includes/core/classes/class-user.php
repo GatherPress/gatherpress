@@ -8,7 +8,7 @@
  * settings fields on the user profile and saving these settings.
  *
  * @package GatherPress\Core
- * @since 1.0.0
+ * @since 0.28.0
  */
 
 namespace GatherPress\Core;
@@ -26,7 +26,7 @@ use WP_User;
  * managing user profiles, handling user permissions, and user notification settings.
  * It includes methods for rendering and saving user profile fields.
  *
- * @since 1.0.0
+ * @since 0.28.0
  */
 class User {
 
@@ -54,7 +54,7 @@ class User {
 	 *
 	 * This method initializes the object and sets up necessary hooks.
 	 *
-	 * @since 1.0.0
+	 * @since 0.28.0
 	 */
 	protected function __construct() {
 		$this->setup_hooks();
@@ -65,7 +65,7 @@ class User {
 	 *
 	 * This method adds hooks for different purposes as needed.
 	 *
-	 * @since 1.0.0
+	 * @since 0.28.0
 	 *
 	 * @return void
 	 */
@@ -84,7 +84,7 @@ class User {
 	 *
 	 * This is a filter to get a user defined time format. 'gatherpress_time_format'
 	 *
-	 * @since 1.0.0
+	 * @since 0.29.0
 	 *
 	 * @param string $time_format The default time format.
 	 *
@@ -127,7 +127,7 @@ class User {
 	 *
 	 * This is a filter to get a user defined timezone. 'gatherpress_timezone'
 	 *
-	 * @since 1.0.0
+	 * @since 0.29.0
 	 *
 	 * @param string $timezone The default timezone.
 	 *
@@ -150,7 +150,7 @@ class User {
 	 * This method centralizes the logic for checking opt-in status,
 	 * including handling defaults when no preference has been set.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @param int $user_id The user ID to check.
 	 * @return bool True if the user has opted in, false otherwise.
@@ -167,7 +167,7 @@ class User {
 			 * with regional privacy laws (e.g., GDPR in Germany) that may require
 			 * opt-in consent to be unchecked by default.
 			 *
-			 * @since 1.0.0
+			 * @since 0.28.0
 			 *
 			 * @param string $default_opt_in Default opt-in state ('1' for opted in, '0' for opted out).
 			 * @param int    $user_id        The user ID.

@@ -7,7 +7,7 @@
  * tied to specific post types or taxonomies in the GatherPress plugin.
  *
  * @package GatherPress\Core\Calendar
- * @since 1.0.0
+ * @since 0.34.0
  */
 
 namespace GatherPress\Core\Calendar;
@@ -29,7 +29,7 @@ use WP_Taxonomy;
  * The class supports registering endpoints for custom slugs, handling validation
  * callbacks, and dynamically redirecting or rendering templates based on the request.
  *
- * @since 1.0.0
+ * @since 0.34.0
  */
 class Endpoint {
 
@@ -39,7 +39,7 @@ class Endpoint {
 	 * This property holds the custom query variable name that will be appended to the
 	 * endpoint's URL. It is used to differentiate the various types of endpoints.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @var string
 	 */
@@ -52,7 +52,7 @@ class Endpoint {
 	 * a `WP_Post_Type` object for a post type or a `WP_Taxonomy` object for a taxonomy.
 	 * This is used to generate the correct rewrite rules and handle URL matching.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @var WP_Post_Type|WP_Taxonomy|null
 	 */
@@ -64,7 +64,7 @@ class Endpoint {
 	 * The validation callback is used during template redirects and query validation
 	 * to ensure that the endpoint request meets certain conditions before proceeding.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @var callable
 	 */
@@ -77,7 +77,7 @@ class Endpoint {
 	 * `Template`, which determine how the endpoint behaves (e.g., whether it
 	 * redirects or serves a template).
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @var Endpoint_Type[]
 	 */
@@ -90,7 +90,7 @@ class Endpoint {
 	 * endpoint URL structure. It is combined with the post type or taxonomy rewrite base
 	 * and the slug of the endpoint.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @var string
 	 */
@@ -103,7 +103,7 @@ class Endpoint {
 	 * `post_type` for a post type or `taxonomy` for a taxonomy. Used to generate
 	 * the correct rewrite rules and handle URL matching.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @var string
 	 */
@@ -115,7 +115,7 @@ class Endpoint {
 	 * Initializes the endpoint by setting up necessary properties and ensuring
 	 * that the provided object type is valid.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param string          $query_var           The query variable used in WP_Query to identify the endpoint.
 	 * @param string          $type_name           The name of the post type or taxonomy this endpoint operates on.
@@ -153,7 +153,7 @@ class Endpoint {
 	 * The method hooks into the `template_redirect` action to handles template loading
 	 * or redirecting based on the endpoint type.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return void
 	 */
@@ -182,7 +182,7 @@ class Endpoint {
 	 * Build the regular expression pattern for matching the custom endpoint URL structure,
 	 * based on the rewrite base (slug) for the post type or taxonomy.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return string The compiled regex pattern.
 	 */
@@ -202,7 +202,7 @@ class Endpoint {
 	 * This method defines the rewrite replacement attributes
 	 * for the custom feed endpoint to be further processed by add_rewrite_rule().
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return array The rewrite replacement attributes for add_rewrite_rule().
 	 */
@@ -221,7 +221,7 @@ class Endpoint {
 	 * If any of this checks fail, the rewrite rules will be deleted and WordPress
 	 * will regenerate them.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param  string $reg_ex_pattern The regular expression pattern for matching the custom endpoint URL structure.
 	 * @param  string $rewrite_url    The URL structure for handling matched requests via query vars.
@@ -245,7 +245,7 @@ class Endpoint {
 	 *
 	 * If the validation fails, appropriate warnings are triggered using `wp_trigger_error()`.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param string $type_name   The name of the post type or taxonomy to validate.
 	 * @param array  $types       Array of endpoint types to register (redirects/templates).
@@ -322,7 +322,7 @@ class Endpoint {
 	 * Adds the custom query variable used by the endpoint to the list of allowed
 	 * public query variables so that it can be recognized and used by WordPress.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param string[] $public_query_vars The array of allowed query variable names.
 	 * @return string[]                   The updated array of allowed query variable names.
@@ -340,7 +340,7 @@ class Endpoint {
 	 * - Performing redirects if the current endpoint has associated redirects.
 	 * - Loading a custom template if the endpoint defines one.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @see https://developer.wordpress.org/reference/hooks/template_redirect/
 	 *
@@ -367,7 +367,7 @@ class Endpoint {
 	 * Determine whether the endpoint is meant for a feed
 	 * and if it has a proper Template defined.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return string The slug of the endpoint or an empty string if not a feed template.
 	 */
@@ -388,7 +388,7 @@ class Endpoint {
 	 * to ensure that the query is valid. It also checks if the custom query
 	 * variable is populated.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return bool True if the query is valid, false otherwise.
 	 */
@@ -403,7 +403,7 @@ class Endpoint {
 	 * (e.g., `Redirect` or `Template`) or returns slugs for all types if no type
 	 * is specified.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param string|null $entity (Optional). The class name of the endpoint type to filter by
 	 *                            (e.g., 'Redirect' or 'Template'). If null, it retrieves slugs for all types.

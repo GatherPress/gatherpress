@@ -7,7 +7,7 @@
  * platform today; future: static-map caching TTL, provider overrides, etc.).
  *
  * @package GatherPress\Core
- * @since 1.0.0
+ * @since 0.34.0
  */
 
 namespace GatherPress\Core\Settings;
@@ -26,7 +26,7 @@ use GatherPress\Core\Venue\Setup;
  *
  * Handles the "Venues" settings page for GatherPress.
  *
- * @since 1.0.0
+ * @since 0.34.0
  */
 class Venues extends Base {
 
@@ -38,7 +38,7 @@ class Venues extends Base {
 	/**
 	 * Get the slug for the venues settings page.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return string The slug for the venues settings page.
 	 */
@@ -49,7 +49,7 @@ class Venues extends Base {
 	/**
 	 * Get the name for the venues settings page.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return string The localized name for the venues settings page.
 	 */
@@ -67,7 +67,7 @@ class Venues extends Base {
 	 * before Rsvp_Settings (priority 2), so the tabs flow content → venue →
 	 * RSVP rather than relying on class-setup.php registration order.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return int The priority for displaying the venues settings page.
 	 */
@@ -78,7 +78,7 @@ class Venues extends Base {
 	/**
 	 * Get sections and options for the Venues settings page.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return array An array of sections and options for the Venues settings page.
 	 */

@@ -10,7 +10,7 @@ import { useState } from '@wordpress/element';
  * It listens for the 'input' event on the input field with the specified name and updates
  * the state with the new rewritten url.
  *
- * @since 1.0.0
+ * @since 0.27.0
  *
  * @param {Object} props               - Component props.
  * @param {Object} props.attrs         - Component attributes.

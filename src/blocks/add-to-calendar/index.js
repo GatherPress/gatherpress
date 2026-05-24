@@ -18,7 +18,7 @@ import metadata from './block.json';
  * It supports customization of display text and calendar options, and integrates
  * with event metadata provided by GatherPress.
  *
- * @since 1.0.0
+ * @since 0.27.0
  *
  * @return {JSX.Element} The rendered React component for editing the block.
  */

@@ -7,7 +7,7 @@
  * and customizing excerpts to show event details.
  *
  * @package GatherPress\Core
- * @since 1.0.0
+ * @since 0.33.0
  */
 
 namespace GatherPress\Core;
@@ -26,7 +26,7 @@ use WP_Query;
  *
  * Manages feeds for GatherPress.
  *
- * @since 1.0.0
+ * @since 0.33.0
  */
 class Feed {
 
@@ -40,7 +40,7 @@ class Feed {
 	 *
 	 * This method initializes the object and sets up necessary hooks.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 */
 	protected function __construct() {
 		$this->setup_hooks();
@@ -51,7 +51,7 @@ class Feed {
 	 *
 	 * This method adds hooks for different purposes as needed.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @return void
 	 */
@@ -78,7 +78,7 @@ class Feed {
 	 * to ensure feeds show upcoming events with proper sorting. Supports ?type=past parameter
 	 * to show past events instead of upcoming events.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @param WP_Query $query The WP_Query instance.
 	 * @return void
@@ -123,7 +123,7 @@ class Feed {
 	/**
 	 * Get formatted event datetime information for feeds.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @param Event $event The event object.
 	 * @return array Array of event information strings.
@@ -146,7 +146,7 @@ class Feed {
 	/**
 	 * Get default event excerpt customization.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @param string $excerpt The current excerpt.
 	 * @return string The customized excerpt.
@@ -196,7 +196,7 @@ class Feed {
 	/**
 	 * Get default event content customization.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @param string $content The current content.
 	 * @return string The customized content.
@@ -245,7 +245,7 @@ class Feed {
 	/**
 	 * Apply event excerpt customization with flexibility for themes/editors.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @param string $excerpt The current excerpt.
 	 * @return string The customized excerpt.
@@ -277,7 +277,7 @@ class Feed {
 		 * } );
 		 * ```
 		 *
-		 * @since 1.0.0
+		 * @since 0.33.0
 		 *
 		 * @param string $excerpt The event post excerpt.
 		 */
@@ -287,7 +287,7 @@ class Feed {
 	/**
 	 * Apply event content customization with flexibility for themes/editors.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @param string $content The current content.
 	 * @return string The customized content.
@@ -319,7 +319,7 @@ class Feed {
 		 * } );
 		 * ```
 		 *
-		 * @since 1.0.0
+		 * @since 0.33.0
 		 *
 		 * @param string $content The event post content.
 		 */
@@ -329,7 +329,7 @@ class Feed {
 	/**
 	 * Modify feed link for past events page.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @param string $feed_link The feed link URL.
 	 * @return string The modified feed link URL.

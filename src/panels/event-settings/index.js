@@ -28,7 +28,7 @@ import { EventPluginDocumentSettings } from './slot';
  * subpanels for configuring event-related settings, such as date and time,
  * venue selection, online event link, and notifying members.
  *
- * @since 1.0.0
+ * @since 0.27.0
  *
  * @return {JSX.Element | null} The JSX element for the EventSettings panel if
  * the current post type is an event; otherwise, returns null.
@@ -61,7 +61,7 @@ const EventSettings = () => {
 	 * registration are unchanged, so existing `EventPluginDocumentSettings`
 	 * fills keep mounting in the same panel.
 	 *
-	 * @since 1.0.0
+	 * @since 0.27.0
 	 *
 	 * @param {string}      title    Default panel title (`<singular_name> settings`).
 	 * @param {string|null} postType Post type currently being edited, or null
@@ -113,7 +113,7 @@ const EventSettings = () => {
  * This function registers a custom plugin named 'gatherpress-event-settings' and
  * associates it with the `EventSettings` component for rendering.
  *
- * @since 1.0.0
+ * @since 0.27.0
  *
  * @return {void}
  */
@@ -129,7 +129,7 @@ registerPlugin( 'gatherpress-event-settings', {
  * If the 'gatherpress-event-settings' panel is not open, it opens the panel using the
  * `toggleEditorPanelOpened` function.
  *
- * @since 1.0.0
+ * @since 0.27.0
  *
  * @return {void}
  */

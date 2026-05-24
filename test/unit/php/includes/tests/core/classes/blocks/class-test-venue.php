@@ -3,7 +3,7 @@
  * Class handles unit tests for GatherPress\Core\Blocks\Venue.
  *
  * @package GatherPress\Core
- * @since 1.0.0
+ * @since 0.34.0
  */
 
 namespace GatherPress\Tests\Core\Blocks;
@@ -28,7 +28,7 @@ class Test_Venue extends Base {
 	 * Verifies that the appropriate filters are registered during setup,
 	 * ensuring the hooks are properly configured for the Venue block.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @covers ::__construct
 	 * @covers ::setup_hooks
 	 *
@@ -52,7 +52,7 @@ class Test_Venue extends Base {
 	/**
 	 * Tests render_block returns empty string when block_content is null.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @covers ::render_block
 	 *
 	 * @return void
@@ -83,7 +83,7 @@ class Test_Venue extends Base {
 	/**
 	 * Tests render_block returns empty string when block array is null.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @covers ::render_block
 	 *
 	 * @return void
@@ -114,7 +114,7 @@ class Test_Venue extends Base {
 	/**
 	 * Tests render_block returns empty string when no venue is found.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @covers ::render_block
 	 * @covers ::get_venue_post
 	 *
@@ -152,7 +152,7 @@ class Test_Venue extends Base {
 	/**
 	 * Tests render_block returns empty string for non-event post without venue.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @covers ::render_block
 	 * @covers ::get_venue_post
 	 *
@@ -190,7 +190,7 @@ class Test_Venue extends Base {
 	/**
 	 * Tests render_block with manually selected venue post ID.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @covers ::render_block
 	 * @covers ::get_venue_post
 	 * @covers ::render_with_venue_context
@@ -242,7 +242,7 @@ class Test_Venue extends Base {
 	/**
 	 * Tests render_block returns empty when selected post ID is not a venue.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @covers ::render_block
 	 * @covers ::get_venue_post
 	 *
@@ -280,7 +280,7 @@ class Test_Venue extends Base {
 	/**
 	 * Tests render_block returns empty for online-only event (no physical venue).
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @covers ::render_block
 	 * @covers ::get_venue_post
 	 *
@@ -342,7 +342,7 @@ class Test_Venue extends Base {
 	 * get_page_by_path to work in the test environment, which has limitations.
 	 * The render_with_venue_context method is fully tested via selectedPostId tests.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @covers ::render_block
 	 * @covers ::get_venue_post
 	 *
@@ -399,7 +399,7 @@ class Test_Venue extends Base {
 	/**
 	 * Tests render_block returns empty when event has no venue terms.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @covers ::render_block
 	 * @covers ::get_venue_post
 	 *
@@ -439,7 +439,7 @@ class Test_Venue extends Base {
 	/**
 	 * Tests render_block returns empty when event has multiple venue terms but no valid venue post.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @covers ::render_block
 	 * @covers ::get_venue_post
 	 *
@@ -503,7 +503,7 @@ class Test_Venue extends Base {
 	/**
 	 * Tests render_with_venue_context restores original post.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @covers ::render_with_venue_context
 	 *
 	 * @return void
@@ -563,7 +563,7 @@ class Test_Venue extends Base {
 	 * This test verifies that when rendering with venue context, the venue post
 	 * becomes the context for inner blocks by checking filter behavior.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @covers ::render_with_venue_context
 	 *
 	 * @return void
@@ -612,7 +612,7 @@ class Test_Venue extends Base {
 	/**
 	 * Tests BLOCK_NAME constant value.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return void
 	 */
@@ -627,7 +627,7 @@ class Test_Venue extends Base {
 	/**
 	 * Tests render_block returns empty when selectedPostId is not an integer.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @covers ::render_block
 	 * @covers ::get_venue_post
 	 *
@@ -669,7 +669,7 @@ class Test_Venue extends Base {
 	 * covering the success path where get_venue_post_from_event_post_id returns
 	 * a valid venue post.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @covers ::render_block
 	 * @covers ::get_venue_post
 	 * @covers ::render_with_venue_context
@@ -746,7 +746,7 @@ class Test_Venue extends Base {
 	/**
 	 * Tests render_block when event has venue term but no matching venue post.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @covers ::get_venue_post
 	 *
 	 * @return void
@@ -797,7 +797,7 @@ class Test_Venue extends Base {
 	/**
 	 * Tests render_with_venue_context applies align class.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @covers ::render_with_venue_context
 	 *
 	 * @return void
@@ -848,7 +848,7 @@ class Test_Venue extends Base {
 	/**
 	 * Tests render_with_venue_context applies className attribute.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @covers ::render_with_venue_context
 	 *
 	 * @return void
@@ -899,7 +899,7 @@ class Test_Venue extends Base {
 	/**
 	 * Tests render_with_venue_context applies both align and className.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @covers ::render_with_venue_context
 	 *
 	 * @return void
@@ -964,7 +964,7 @@ class Test_Venue extends Base {
 	 * This tests the Block::get_post_id() path where postId comes from
 	 * block attributes (used for query loop context).
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @covers ::get_venue_post
 	 * @covers ::render_with_venue_context
 	 *
@@ -1045,7 +1045,7 @@ class Test_Venue extends Base {
 	 * Covers the Venue::POST_TYPE case in the switch statement, where
 	 * the block renders directly using the current venue post.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @covers ::render_block
 	 * @covers ::get_venue_post
 	 * @covers ::render_with_venue_context
@@ -1097,7 +1097,7 @@ class Test_Venue extends Base {
 	/**
 	 * Tests get_venue_post returns null when postId override points to non-event.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @covers ::get_venue_post
 	 *
 	 * @return void

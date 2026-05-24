@@ -7,7 +7,7 @@
  * for event pages and admin queries.
  *
  * @package GatherPress\Core\Event
- * @since 1.0.0
+ * @since 0.27.0
  */
 
 namespace GatherPress\Core\Event;
@@ -29,7 +29,7 @@ use WP_Query;
  *
  * Responsible for managing event-related queries and customizations.
  *
- * @since 1.0.0
+ * @since 0.34.0
  */
 class Query {
 
@@ -41,7 +41,7 @@ class Query {
 	/**
 	 * Query parameter name for event type filtering.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @var string
 	 */
 	const EVENT_QUERY_PARAM = 'gatherpress_event_query';
@@ -51,7 +51,7 @@ class Query {
 	 *
 	 * This method initializes the object and sets up necessary hooks.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 */
 	protected function __construct() {
 		$this->setup_hooks();
@@ -62,7 +62,7 @@ class Query {
 	 *
 	 * This method adds hooks for different purposes as needed.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return void
 	 */
@@ -77,7 +77,7 @@ class Query {
 	 *
 	 * Retrieves a list of upcoming events with optional filtering by the maximum number to display.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param int $number Maximum number of upcoming events to retrieve.
 	 * @return WP_Query A WordPress query object containing the list of upcoming events.
@@ -91,7 +91,7 @@ class Query {
 	 *
 	 * Retrieves a list of past events with optional filtering by the maximum number to display.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param int $number Maximum number of past events to retrieve.
 	 * @return WP_Query A WordPress query object containing the list of past events.
@@ -107,7 +107,7 @@ class Query {
 	 * maximum number to display, optional topics, and venues for filtering. The results are returned as
 	 * a WordPress query object.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param string $event_list_type Type of event list: 'upcoming' or 'past'.
 	 * @param int    $number          Maximum number of events to retrieve.
@@ -168,7 +168,7 @@ class Query {
 	 * It primarily handles adjustments for event archive pages, such as changing the post type, ordering,
 	 * and filtering. This method is typically hooked into the 'pre_get_posts' action.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param WP_Query $query An instance of WP_Query representing the event query.
 	 * @return void
@@ -296,7 +296,7 @@ class Query {
 	 *
 	 * @see https://developer.wordpress.org/reference/hooks/posts_clauses/
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param array    $query_pieces An array containing pieces of the SQL query.
 	 * @param WP_Query $query        The WP_Query instance (passed by reference).
@@ -322,7 +322,7 @@ class Query {
 	 * This method modifies the SQL query pieces, including join, where, orderby, etc., to adjust the sorting criteria
 	 * for past events in the query. It ensures that events are ordered by their start datetime in the desired order.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param array    $query_pieces An array containing pieces of the SQL query.
 	 * @param WP_Query $query        The WP_Query instance (passed by reference).
@@ -349,7 +349,7 @@ class Query {
 	 * This method modifies the SQL query pieces, including join, where, orderby, etc., to adjust the sorting criteria
 	 * for events when viewing them in the WordPress admin panel. It specifically handles sorting by event datetime.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param array    $query_pieces An array containing pieces of the SQL query.
 	 * @param WP_Query $wp_query     The WP_Query instance (passed by reference).
@@ -416,7 +416,7 @@ class Query {
 	 * @see https://developer.wordpress.org/reference/hooks/posts_orderby/
 	 * @see https://developer.wordpress.org/reference/hooks/posts_where/
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param array           $pieces   An array of query pieces, including join, where, orderby,
 	 *                                  and more.
@@ -510,7 +510,7 @@ class Query {
 	 * Creates an OR relation across all registered venue post type taxonomies, allowing
 	 * events to be filtered by venue regardless of which venue post type they use.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param array $venues Array of venue slugs to filter by.
 	 * @return array WP_Query compatible tax_query array.

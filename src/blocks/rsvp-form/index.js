@@ -178,7 +178,7 @@ const withFormVisibilityControls = createHigherOrderComponent( ( BlockEdit ) => 
  * It provides a form interface for event registration and integrates with the
  * WordPress comment system for processing RSVP submissions.
  *
- * @since 1.0.0
+ * @since 0.27.0
  *
  * @return {JSX.Element} The rendered React component for editing the block.
  */

@@ -9,7 +9,7 @@
  * (fired on `init` priority 0) to register their own providers on top.
  *
  * @package GatherPress\Core\Venue\Map
- * @since 1.0.0
+ * @since 0.34.0
  */
 
 namespace GatherPress\Core\Venue\Map;
@@ -37,7 +37,7 @@ use GatherPress\Core\Venue\Map\Provider\OSM;
  * in #1528), the manager logs a `_doing_it_wrong()` and falls back to OSM
  * so the front end keeps rendering.
  *
- * @since 1.0.0
+ * @since 0.34.0
  */
 class Manager {
 
@@ -49,7 +49,7 @@ class Manager {
 	/**
 	 * Registered provider instances keyed by slug.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @var Map_Provider[]
 	 */
 	private array $providers = array();
@@ -62,7 +62,7 @@ class Manager {
 	 * registration action on `init` so third-party plugins (which load
 	 * after GatherPress's bootstrap) get a chance to register.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 */
 	protected function __construct() {
 		$this->register_core_providers();
@@ -76,7 +76,7 @@ class Manager {
 	 * `init` (default priority 10) sees the full registry, late enough
 	 * that all plugins have loaded and can listen for the action.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return void
 	 */
@@ -94,7 +94,7 @@ class Manager {
 	 * collision so the conflict surfaces in the debug log instead of
 	 * disappearing.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param Map_Provider $provider Provider instance.
 	 * @return void
@@ -125,7 +125,7 @@ class Manager {
 	/**
 	 * Whether a provider with the given slug is registered.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param string $slug Provider slug.
 	 * @return bool
@@ -137,7 +137,7 @@ class Manager {
 	/**
 	 * Get a registered provider by slug, or null when missing.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param string $slug Provider slug.
 	 * @return Map_Provider|null
@@ -149,7 +149,7 @@ class Manager {
 	/**
 	 * All registered providers, keyed by slug.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return Map_Provider[]
 	 */
@@ -160,7 +160,7 @@ class Manager {
 	/**
 	 * Slugs of every registered provider, in registration order.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return string[]
 	 */
@@ -180,7 +180,7 @@ class Manager {
 	 * registered so site owners surface the misconfiguration in their
 	 * debug log instead of just silently defaulting.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return Map_Provider|null
 	 */
@@ -215,7 +215,7 @@ class Manager {
 	 * `Map::ensure_descriptor_for_combo`) that need the slug as a meta
 	 * key without holding onto the provider instance.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return string
 	 */
@@ -232,7 +232,7 @@ class Manager {
 	 * the singleton exists. Companion plugins should NOT call this — use
 	 * the `gatherpress_register_static_map_providers` action instead.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return void
 	 */
@@ -248,7 +248,7 @@ class Manager {
 	 * instance. Fires on `init` priority 0 so the registry is populated
 	 * before anything else hooked on `init` observes it.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return void
 	 */
@@ -264,7 +264,7 @@ class Manager {
 		 * `$registry->register( new My_Map_Provider() )`. Core providers
 		 * (OSM) are already registered by this point.
 		 *
-		 * @since 1.0.0
+		 * @since 0.34.0
 		 *
 		 * @param Manager $registry Provider registry.
 		 */

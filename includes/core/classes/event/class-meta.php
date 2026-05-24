@@ -13,7 +13,7 @@
  * that touches `register_post_meta()`.
  *
  * @package GatherPress\Core\Event
- * @since 1.0.0
+ * @since 0.34.0
  */
 
 namespace GatherPress\Core\Event;
@@ -38,7 +38,7 @@ use WP_REST_Request;
  * up the always-on RSVP / attendance / online-event-link meta on the
  * same hook.
  *
- * @since 1.0.0
+ * @since 0.34.0
  */
 class Meta {
 
@@ -50,7 +50,7 @@ class Meta {
 	/**
 	 * Class constructor.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 */
 	public function __construct() {
 		$this->setup_hooks();
@@ -59,7 +59,7 @@ class Meta {
 	/**
 	 * Set up hooks for event meta registration.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return void
 	 */
@@ -79,7 +79,7 @@ class Meta {
 	 *   on a `post_type_supports()` flag because they're identity-bound
 	 *   to the canonical event post type.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param string $post_type The post type that was just registered.
 	 * @return void
@@ -98,7 +98,7 @@ class Meta {
 	 * Registers datetime meta + the read-only REST filter for a post
 	 * type that declares `gatherpress-event-date` support.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param string $post_type The post type to register against.
 	 * @return void
@@ -174,7 +174,7 @@ class Meta {
 	 * Registers meta that only lives on the built-in event post type (RSVP
 	 * toggles, guest / attendance limits, online event link).
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return void
 	 */
@@ -251,7 +251,7 @@ class Meta {
 	 * `Event\Setup::set_datetimes()` method when gatherpress_datetime is saved,
 	 * so any values sent via REST API should be silently discarded.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param stdClass        $prepared_post An object representing a single post prepared for inserting or updating.
 	 * @param WP_REST_Request $request       Request object.

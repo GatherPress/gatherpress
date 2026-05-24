@@ -16,7 +16,7 @@ import './style.scss';
  * This component renders the edit view of the RSVP Response Toggle block.
  * It manages the block's settings and preview in the WordPress editor.
  *
- * @since 1.0.0
+ * @since 0.27.0
  *
  * @return {JSX.Element} The rendered React component.
  */

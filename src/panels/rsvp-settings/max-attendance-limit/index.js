@@ -9,7 +9,7 @@ import MaxAttendanceLimit from '../../../components/MaxAttendanceLimit';
  * This component renders a section containing the `MaxAttendanceLimit` component,
  * allowing users to set and manage the total number of people allowed at an event.
  *
- * @since 1.0.0
+ * @since 0.34.0
  *
  * @return {JSX.Element} The JSX element for the MaxAttendanceLimitPanel.
  */

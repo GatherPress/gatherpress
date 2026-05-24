@@ -19,7 +19,7 @@ import { initShowIfDependencies } from '../helpers/settings-show-if';
  * It iterates through all matching elements and initializes an Autocomplete component
  * with the attributes provided in the 'data-gatherpress_component_attrs' attribute.
  *
- * @since 1.0.0
+ * @since 0.27.0
  */
 
 // Select all elements with the attribute 'data-gatherpress_component_name' set to 'autocomplete'.
@@ -48,7 +48,7 @@ for ( const container of autocompleteContainers ) {
  * It iterates through all matching elements and initializes a DateTimePreview component
  * with the attributes provided in the 'data-gatherpress_component_attrs' attribute.
  *
- * @since 1.0.0
+ * @since 0.27.0
  */
 dateTimePreview();
 
@@ -60,7 +60,7 @@ dateTimePreview();
  * It iterates through all matching elements and initializes a UrlRewritePreview component
  * with the attributes provided in the 'data-gatherpress_component_attrs' attribute.
  *
- * @since 1.0.0
+ * @since 0.27.0
  */
 urlRewritePreview();
 
@@ -70,6 +70,6 @@ urlRewritePreview();
  * `Settings::build_row_class()` / `render_show_if_marker()` for the
  * server-side half of the contract.
  *
- * @since 1.0.0
+ * @since 0.27.0
  */
 initShowIfDependencies();

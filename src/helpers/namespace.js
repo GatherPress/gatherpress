@@ -7,7 +7,7 @@
  * which allow third-party post types to participate in GatherPress features
  * without relying on hardcoded slug comparisons.
  *
- * @since 1.0.0
+ * @since 0.34.0
  *
  * @type {string}
  */
@@ -16,7 +16,7 @@ export const REST_NAMESPACE = 'gatherpress/v1';
 /**
  * The REST API path for event endpoints.
  *
- * @since 1.0.0
+ * @since 0.34.0
  *
  * @type {string}
  */

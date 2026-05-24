@@ -7,7 +7,7 @@
  * Subclasses are expected to define specific behavior for different types of endpoints.
  *
  * @package GatherPress\Core\Calendar
- * @since 1.0.0
+ * @since 0.34.0
  */
 
 namespace GatherPress\Core\Calendar;
@@ -27,7 +27,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
  * - `Redirect`: Handles URL redirection for endpoints.
  * - `Template`: Handles loading custom templates for endpoints.
  *
- * @since 1.0.0
+ * @since 0.34.0
  */
 abstract class Endpoint_Type {
 
@@ -38,7 +38,7 @@ abstract class Endpoint_Type {
 	 * what differentiates one type of endpoint from another in the URL structure (e.g.,
 	 * `event/my-sample-event/googlecalendar` or `event/my-sample-event/ical`).
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @var string
 	 */
@@ -51,7 +51,7 @@ abstract class Endpoint_Type {
 	 * matched. The specific behavior of the endpoint (e.g., redirecting or rendering a
 	 * template) is handled by this callback, which is passed when the endpoint is created.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @var callable
 	 */
@@ -64,7 +64,7 @@ abstract class Endpoint_Type {
 	 * the endpoint and the callback function that defines the endpoint's behavior.
 	 * Subclasses will use this constructor to set up specific types of endpoints.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param string   $slug     The slug used to identify the endpoint in the URL.
 	 * @param callable $callback The callback function that handles the endpoint logic.
@@ -80,7 +80,7 @@ abstract class Endpoint_Type {
 	/**
 	 * Activate Endpoint_Type by hooking into relevant parts.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param Endpoint|null $endpoint Class for custom rewrite endpoints and their query handling in GatherPress.
 	 * @return void
@@ -95,7 +95,7 @@ abstract class Endpoint_Type {
 	 * classes by calling `is_in_class()`. If the entity is valid, it further checks if the
 	 * `$type` is an instance of that class.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param  string $entity The class name of the entity to check against (e.g., 'Redirect' or 'Template').
 	 * @return bool                  True if the `$type` is an instance of the `$entity` class, false otherwise.
@@ -112,7 +112,7 @@ abstract class Endpoint_Type {
 	 * valid classes (like `Redirect` or `Template`) are used when
 	 * checking endpoint types.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param  string $entity The class name of the entity to check (e.g., 'Redirect' or 'Template').
 	 * @return bool           True if the `$entity` is a valid endpoint class, false otherwise.

@@ -7,7 +7,7 @@
  * three methods that subclasses can lean on without overriding.
  *
  * @package GatherPress\Core\Venue\Map\Provider
- * @since 1.0.0
+ * @since 0.34.0
  */
 
 namespace GatherPress\Tests\Core\Venue\Map\Provider;

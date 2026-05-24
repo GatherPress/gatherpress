@@ -10,7 +10,7 @@ import { select } from '@wordpress/data';
  * This component is used to embed a Google Map with specified location,
  * zoom level, map type, and height.
  *
- * @since 1.0.0
+ * @since 0.27.0
  *
  * @param {Object} props              - Component properties.
  * @param {string} props.location     - The location to be displayed on the map.

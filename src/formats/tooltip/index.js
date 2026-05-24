@@ -17,7 +17,7 @@ import './style.scss';
  * This format type allows users to add hover-based tooltips to selected text
  * in the block editor. The tooltip content and colors are customizable.
  *
- * @since 1.0.0
+ * @since 0.34.0
  */
 registerFormatType( FORMAT_NAME, {
 	title: __( 'Tooltip', 'gatherpress' ),

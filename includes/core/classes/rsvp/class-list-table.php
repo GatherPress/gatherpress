@@ -6,7 +6,7 @@
  * the display and management of RSVP entries in the WordPress admin interface.
  *
  * @package GatherPress\Core\Rsvp
- * @since 1.0.0
+ * @since 0.33.0
  */
 
 namespace GatherPress\Core\Rsvp;
@@ -26,7 +26,7 @@ use WP_List_Table;
  * and bulk actions for RSVP data.
  *
  * @package GatherPress\Core\Rsvp
- * @since 1.0.0
+ * @since 0.34.0
  */
 class List_Table extends WP_List_Table {
 
@@ -51,7 +51,7 @@ class List_Table extends WP_List_Table {
 	 * Extends the parent WP_List_Table constructor to inherit core functionality
 	 * while customizing for RSVP management needs.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param array $args Optional. Additional arguments to configure the list table.
 	 *                    Supports 'screen' to specify a particular screen context.
@@ -79,7 +79,7 @@ class List_Table extends WP_List_Table {
 	 * - approved: Moderation status of the RSVP
 	 * - date: When the RSVP was submitted
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return array Array of column identifiers and their labels.
 	 */
@@ -101,7 +101,7 @@ class List_Table extends WP_List_Table {
 	 * via Screen Options. This ensures critical columns like 'attendee' always
 	 * remain visible in the RSVP table.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return array Filtered list of columns that can be hidden.
 	 */
@@ -126,7 +126,7 @@ class List_Table extends WP_List_Table {
 	 * hidden, ensuring essential columns remain visible. Must be called during screen
 	 * initialization.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return void
 	 */
@@ -153,7 +153,7 @@ class List_Table extends WP_List_Table {
 	 * columns they want to see in the RSVP table. The method handles cases where
 	 * the screen object might not be available or user settings might not exist.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return array List of column identifiers that should be hidden from display.
 	 */
@@ -185,7 +185,7 @@ class List_Table extends WP_List_Table {
 	 * - approved: The approval status
 	 * - date: The RSVP submission date (default sort column)
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return array Associative array of sortable column identifiers and their configurations.
 	 */
@@ -210,7 +210,7 @@ class List_Table extends WP_List_Table {
 	 * - Calculates pagination parameters based on total items and per-page count
 	 * - Fetches the RSVP items for the current page
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return void
 	 */
@@ -258,7 +258,7 @@ class List_Table extends WP_List_Table {
 	 * The method transforms comment objects into arrays and adds additional data
 	 * like event titles for display purposes.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param ?int $per_page    Optional. Number of items per page. Default null (uses DEFAULT_PER_PAGE).
 	 * @param int  $page_number Optional. Current page number. Default 1.
@@ -361,7 +361,7 @@ class List_Table extends WP_List_Table {
 	 * and approval status. Uses the get_rsvps() method with the count parameter
 	 * to efficiently retrieve only the count value.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return int The total number of RSVP comments matching the current filters.
 	 */
@@ -418,7 +418,7 @@ class List_Table extends WP_List_Table {
 	 * - 'date': Formats and displays the RSVP submission date
 	 * - Any other column: Attempts to display the corresponding data from the item
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param object|array $item        RSVP comment data containing various properties like comment_ID.
 	 * @param string       $column_name The name of the column being rendered.
@@ -471,7 +471,7 @@ class List_Table extends WP_List_Table {
 	 * to select multiple entries for performing bulk actions. The checkbox value
 	 * is set to the comment ID.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param array|object $item RSVP comment data containing the comment_ID.
 	 *
@@ -492,7 +492,7 @@ class List_Table extends WP_List_Table {
 	 * The method creates different action links based on the current status of the RSVP comment
 	 * and handles security by creating nonces for each action.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param array $item RSVP comment data for the RSVP entry.
 	 *
@@ -597,7 +597,7 @@ class List_Table extends WP_List_Table {
 	 * simultaneously. Actions include approve, unapprove, and delete. Access is restricted
 	 * based on user capabilities.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return array An associative array of bulk action identifiers and their labels.
 	 */
@@ -622,7 +622,7 @@ class List_Table extends WP_List_Table {
 	 * based on the approval status. Also handles capability checks to ensure
 	 * only authorized users can view the row.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param object|array $item RSVP comment data, either as an object or an associative array.
 	 *                           Contains properties/keys like 'comment_ID' and 'comment_approved'.
@@ -659,7 +659,7 @@ class List_Table extends WP_List_Table {
 	 * unapproval, marking as spam, or deletion of RSVPs. Requires appropriate nonce
 	 * verification and capability checks before processing any actions.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return void
 	 */
@@ -718,7 +718,7 @@ class List_Table extends WP_List_Table {
 	/**
 	 * Gets the CSS class attribute for current status links.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param string $status_key The status key to check.
 	 * @param string $current    The currently active status.
@@ -735,7 +735,7 @@ class List_Table extends WP_List_Table {
 	 * Note: This method processes request parameters for view state only,
 	 * actual data operations are handled separately with nonce verification.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @global string $post_type
 	 * @return array An array of HTML links for different views.
@@ -873,7 +873,7 @@ class List_Table extends WP_List_Table {
 	 * for security. This method extends the parent display() method to add
 	 * GatherPress-specific nonce fields for RSVP actions.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return void
 	 */

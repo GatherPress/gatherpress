@@ -3,7 +3,7 @@
  * Class handles unit tests for GatherPress\Core\Blocks\Rsvp_Response.
  *
  * @package GatherPress\Core
- * @since 1.0.0
+ * @since 0.33.0
  */
 
 namespace GatherPress\Tests\Core\Blocks;
@@ -26,7 +26,7 @@ class Test_Rsvp_Response extends Base {
 	 * Verifies that the appropriate filters are registered during setup,
 	 * ensuring the hooks are properly configured for the RSVP Response block.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::__construct
 	 * @covers ::setup_hooks
 	 *
@@ -68,7 +68,7 @@ class Test_Rsvp_Response extends Base {
 	/**
 	 * Tests basic block content transformation.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::transform_block_content
 	 *
 	 * @return void
@@ -111,7 +111,7 @@ class Test_Rsvp_Response extends Base {
 	/**
 	 * Tests transform_block_content returns empty string for non-event post type.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::transform_block_content
 	 *
 	 * @return void
@@ -142,7 +142,7 @@ class Test_Rsvp_Response extends Base {
 	/**
 	 * Tests empty RSVP visibility handling.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::transform_block_content
 	 *
 	 * @return void
@@ -173,7 +173,7 @@ class Test_Rsvp_Response extends Base {
 	/**
 	 * Tests RSVP count data attributes.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::transform_block_content
 	 *
 	 * @return void
@@ -209,7 +209,7 @@ class Test_Rsvp_Response extends Base {
 	/**
 	 * Tests no-responses visibility handling with attending responses.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::transform_block_content
 	 *
 	 * @return void
@@ -252,7 +252,7 @@ class Test_Rsvp_Response extends Base {
 	/**
 	 * Tests default values for RSVP limits.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::transform_block_content
 	 *
 	 * @return void
@@ -288,7 +288,7 @@ class Test_Rsvp_Response extends Base {
 	/**
 	 * Tests trigger text with attendee count.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::attach_dropdown_interactivity
 	 *
 	 * @return void
@@ -317,7 +317,7 @@ class Test_Rsvp_Response extends Base {
 	/**
 	 * Tests RSVP status buttons.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::attach_dropdown_interactivity
 	 *
 	 * @return void
@@ -371,7 +371,7 @@ class Test_Rsvp_Response extends Base {
 	/**
 	 * Tests with missing data counts.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::attach_dropdown_interactivity
 	 *
 	 * @return void
@@ -391,7 +391,7 @@ class Test_Rsvp_Response extends Base {
 	/**
 	 * Tests with non-RSVP menu items.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::attach_dropdown_interactivity
 	 *
 	 * @return void
@@ -415,7 +415,7 @@ class Test_Rsvp_Response extends Base {
 	/**
 	 * Tests avatar modification for regular RSVP comments.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::modify_avatar_for_gatherpress_rsvp
 	 *
 	 * @return void
@@ -443,7 +443,7 @@ class Test_Rsvp_Response extends Base {
 	/**
 	 * Tests avatar modification for anonymous RSVP comments.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::modify_avatar_for_gatherpress_rsvp
 	 *
 	 * @return void
@@ -475,7 +475,7 @@ class Test_Rsvp_Response extends Base {
 	/**
 	 * Tests avatar modification for admin viewing anonymous RSVP.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::modify_avatar_for_gatherpress_rsvp
 	 *
 	 * @return void
@@ -509,7 +509,7 @@ class Test_Rsvp_Response extends Base {
 	/**
 	 * Tests avatar modification for non-RSVP comments.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::modify_avatar_for_gatherpress_rsvp
 	 *
 	 * @return void
@@ -535,7 +535,7 @@ class Test_Rsvp_Response extends Base {
 	/**
 	 * Tests adding RSVP template to empty ancestor array.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::add_rsvp_to_comment_ancestor
 	 *
 	 * @return void
@@ -558,7 +558,7 @@ class Test_Rsvp_Response extends Base {
 	/**
 	 * Tests adding RSVP template to existing ancestors.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::add_rsvp_to_comment_ancestor
 	 *
 	 * @return void
@@ -586,7 +586,7 @@ class Test_Rsvp_Response extends Base {
 	/**
 	 * Tests missing ancestor property.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::add_rsvp_to_comment_ancestor
 	 *
 	 * @return void
@@ -613,7 +613,7 @@ class Test_Rsvp_Response extends Base {
 	/**
 	 * Tests non-comment author block metadata.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::add_rsvp_to_comment_ancestor
 	 *
 	 * @return void
@@ -635,7 +635,7 @@ class Test_Rsvp_Response extends Base {
 	/**
 	 * Tests has-responses section becomes visible when attendees exist.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @covers ::transform_block_content
 	 *
 	 * @return void
@@ -678,7 +678,7 @@ class Test_Rsvp_Response extends Base {
 	/**
 	 * Tests has-responses section becomes hidden when no attendees exist.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @covers ::transform_block_content
 	 *
 	 * @return void
@@ -716,7 +716,7 @@ class Test_Rsvp_Response extends Base {
 	/**
 	 * Tests extra_attr with a style attribute is preserved and other attributes stripped.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @covers ::modify_avatar_for_gatherpress_rsvp
 	 *
 	 * @return void
@@ -747,7 +747,7 @@ class Test_Rsvp_Response extends Base {
 	/**
 	 * Tests extra_attr without a style attribute is cleared entirely.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @covers ::modify_avatar_for_gatherpress_rsvp
 	 *
 	 * @return void

@@ -7,7 +7,7 @@
  * GatherPress plugin.
  *
  * @package GatherPress\Core
- * @since 1.0.0
+ * @since 0.27.0
  */
 
 namespace GatherPress\Core;
@@ -22,7 +22,7 @@ use WP_HTML_Tag_Processor;
  *
  * Essential utility functions for the GatherPress plugin.
  *
- * @since 1.0.0
+ * @since 0.27.0
  */
 class Utility {
 
@@ -31,7 +31,7 @@ class Utility {
 	 *
 	 * This method loads and renders a template file located at the specified path.
 	 *
-	 * @since 1.0.0
+	 * @since 0.27.0
 	 *
 	 * @param string $path      The path to the template file.
 	 * @param array  $variables An array of variables to pass to the template.
@@ -77,7 +77,7 @@ class Utility {
 	 *
 	 * Returns the first match, or `''` if nothing exists.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param string $file_name    The template file name, e.g. `gatherpress_ical-download.php`.
 	 * @param string $fallback_dir Absolute directory the caller's bundled fallback lives in.
@@ -113,7 +113,7 @@ class Utility {
 		 * string to signal "no template found"; callers will fall back to
 		 * their own default.
 		 *
-		 * @since 1.0.0
+		 * @since 0.34.0
 		 *
 		 * @param string $resolved     Resolved absolute template path, or `''` if no candidate matched.
 		 * @param string $file_name    The template file name passed to `Utility::locate_template()`.
@@ -131,7 +131,7 @@ class Utility {
 	 * on disk as plain `ical-download.php`) still resolve when callers pass
 	 * the prefixed name (the convention used by `Utility::prefix_key()`).
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param string $fallback_dir Absolute directory the caller's bundled fallback lives in.
 	 * @param string $file_name    Template file name to check inside `$fallback_dir`.
@@ -160,7 +160,7 @@ class Utility {
 	 *
 	 * This method adds the 'gatherpress_' prefix to the provided key and returns the modified key.
 	 *
-	 * @since 1.0.0
+	 * @since 0.27.0
 	 *
 	 * @param string $key The key to which the prefix will be added.
 	 * @return string The key with the 'gatherpress_' prefix.
@@ -178,7 +178,7 @@ class Utility {
 	 *
 	 * This method removes the 'gatherpress_' prefix from the provided key and returns the modified key.
 	 *
-	 * @since 1.0.0
+	 * @since 0.27.0
 	 *
 	 * @param string $key The key from which the prefix will be removed.
 	 * @return string The key with the 'gatherpress_' prefix removed.
@@ -196,7 +196,7 @@ class Utility {
 	 * and lets extenders' event-supporting post types surface their own
 	 * labels instead of GatherPress's defaults (#1612).
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param string $key       Label key to read (e.g. `singular_name`,
 	 *                          `name`, `add_new_item`).
@@ -220,7 +220,7 @@ class Utility {
 	 * Expects standard snake_case input (lowercase words separated by single underscores).
 	 * Leading underscores or consecutive underscores may produce unexpected results.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param string $key The snake_case string to convert.
 	 * @return string The converted camelCase string.
@@ -243,7 +243,7 @@ class Utility {
 	 * Wired in via `'auth_callback' => array( Utility::class, 'can_edit_post_meta' )`
 	 * on every editor-writable meta key registered through `register_post_meta()`.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) -- $allowed and $meta_key
 	 * are required by WP's register_post_meta auth_callback signature.
@@ -270,7 +270,7 @@ class Utility {
 	 * This method converts the Time Zone markup returned by WordPress into an associative array
 	 * of time zones grouped by their labels. The array is used to populate select input fields.
 	 *
-	 * @since 1.0.0
+	 * @since 0.27.0
 	 *
 	 * @return array An array of time zones with labels as keys and time zone choices as values.
 	 */
@@ -344,7 +344,7 @@ class Utility {
 	 *
 	 * This method returns an array containing all available timezones along with standard UTC offsets.
 	 *
-	 * @since 1.0.0
+	 * @since 0.29.0
 	 *
 	 * @return array An array of timezone identifiers and UTC offsets.
 	 */
@@ -421,7 +421,7 @@ class Utility {
 	 * This method takes a UTC offset in the form of "+HH:mm" or "-HH:mm" and converts it to a format
 	 * that can be used with the DateTimeZone constructor.
 	 *
-	 * @since 1.0.0
+	 * @since 0.29.0
 	 *
 	 * @param string $timezone The UTC offset to convert, e.g., "+05:30" or "-08:00".
 	 * @return string The converted timezone format, e.g., "+0530" or "-0800".
@@ -451,7 +451,7 @@ class Utility {
 	 * 'Etc/GMT' timezone strings are considered outdated and are stripped in favor of a UTC
 	 * representation.
 	 *
-	 * @since 1.0.0
+	 * @since 0.29.0
 	 *
 	 * @return string The timezone string representing the system's default timezone.
 	 *                Falls back to a UTC offset representation if a named timezone string is not set.
@@ -480,7 +480,7 @@ class Utility {
 	 * strings like `UTC+0` or `UTC+5` but accepts `UTC` and `+HH:MM` /
 	 * `-HH:MM` offsets, so normalize here.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param float $offset Decimal-hour offset from UTC.
 	 * @return string PHP-valid timezone identifier.
@@ -508,7 +508,7 @@ class Utility {
 	 * Unknown values pass through unchanged so downstream error handling
 	 * can surface anything genuinely unexpected.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param string $timezone Raw timezone string.
 	 * @return string
@@ -555,7 +555,7 @@ class Utility {
 	 * This method generates and returns the URL for logging in or accessing event-specific content.
 	 * It takes the optional `$post_id` parameter to customize the URL based on the event's Post ID.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @param int $post_id Optional. The Post ID of the event. Defaults to 0.
 	 * @return string The login URL for the event.
@@ -572,7 +572,7 @@ class Utility {
 	 * This method generates and returns the URL for user registration or accessing event-specific registration.
 	 * It takes the optional `$post_id` parameter to customize the URL based on the event's Post ID.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @param int $post_id Optional. The Post ID of the event. Defaults to 0.
 	 * @return string The registration URL for the event, or an empty string if user registration is disabled.
@@ -600,7 +600,7 @@ class Utility {
 	 * This is particularly important after the introduction of dynamic nonce generation,
 	 * which changed how user authentication flows through the application.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @return int|false The user ID if authentication was successful, false otherwise.
 	 */
@@ -622,7 +622,7 @@ class Utility {
 	 * This method properly handles space-separated CSS class strings and checks for
 	 * exact class matches, preventing false positives from substring matches.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @param string|null $class_string The CSS class string to search in.
 	 * @param string      $target_class The specific class to search for.
@@ -645,7 +645,7 @@ class Utility {
 	 * Wrapper around filter_input() that can be easily mocked for testing.
 	 * In production, uses real filter_input(). In tests, can use filters to mock data.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @param int           $type      Input type (INPUT_GET, INPUT_POST, INPUT_COOKIE, INPUT_SERVER, INPUT_ENV).
 	 * @param string        $var_name  Variable name to retrieve.
@@ -665,7 +665,7 @@ class Utility {
 			 * their own values. Only available during unit tests for security.
 			 * Return a non-null value to short-circuit.
 			 *
-			 * @since 1.0.0
+			 * @since 0.27.0
 			 *
 			 * @param string|null $pre_value Pre-value to return instead of using filter_input.
 			 * @param int         $type      Input type (INPUT_GET, INPUT_POST, etc.).
@@ -708,7 +708,7 @@ class Utility {
 	/**
 	 * Wrapper for wp_get_referer() with testable fallback.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @return string|false The referer URL on success, false on failure.
 	 */
@@ -722,7 +722,7 @@ class Utility {
 			 * their own referer values. Only available during unit tests for security.
 			 * Return a non-null value to short-circuit.
 			 *
-			 * @since 1.0.0
+			 * @since 0.27.0
 			 *
 			 * @param string|false|null $pre_value Pre-value to return instead of using wp_get_referer().
 			 */
@@ -741,7 +741,7 @@ class Utility {
 	 * This method provides a centralized exit point that returns early during unit tests
 	 * instead of calling exit(). The actual exit statement is excluded from code coverage.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @return void
 	 */
@@ -763,7 +763,7 @@ class Utility {
 	 * every `blockName` it finds into a flat list. The input is the parsed-block array
 	 * shape that WordPress hands to `render_block` filters and `WP_Block`.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param array $blocks A parsed block, typically including `blockName` and `innerBlocks`.
 	 * @return array An array of block names found within the provided block structure.

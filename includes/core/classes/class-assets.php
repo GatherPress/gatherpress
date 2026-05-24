@@ -3,7 +3,7 @@
  * Class is responsible for loading and managing static assets like stylesheets and JavaScript files.
  *
  * @package GatherPress\Core
- * @since 1.0.0
+ * @since 0.27.0
  */
 
 namespace GatherPress\Core;
@@ -20,7 +20,7 @@ use GatherPress\Core\Traits\Singleton;
  * This class handles the loading and management of static assets, including stylesheets and JavaScript files.
  * It also provides frontend interactivity state via the WordPress Interactivity API.
  *
- * @since 1.0.0
+ * @since 0.27.0
  */
 class Assets {
 
@@ -34,7 +34,7 @@ class Assets {
 	 *
 	 * This property stores data assets in an array for efficient access and management.
 	 *
-	 * @since 1.0.0
+	 * @since 0.27.0
 	 * @var array
 	 */
 	protected array $asset_data = array();
@@ -45,7 +45,7 @@ class Assets {
 	 * This property holds the URL to the 'build' directory, which is used to reference built assets
 	 * such as stylesheets and JavaScript files.
 	 *
-	 * @since 1.0.0
+	 * @since 0.27.0
 	 * @var string
 	 */
 	protected string $build = GATHERPRESS_CORE_URL . 'build/';
@@ -57,7 +57,7 @@ class Assets {
 	 * such as minified stylesheets and JavaScript files. It is used for referencing these assets within
 	 * the application.
 	 *
-	 * @since 1.0.0
+	 * @since 0.27.0
 	 * @var string
 	 */
 	protected string $path = GATHERPRESS_CORE_PATH . '/build/';
@@ -65,7 +65,7 @@ class Assets {
 	/**
 	 * Cached list of block variation folder names from `build/variations/core/`.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @var string[]
 	 */
 	protected array $block_variation_names = array();
@@ -75,7 +75,7 @@ class Assets {
 	 *
 	 * This method initializes the object and sets up necessary hooks.
 	 *
-	 * @since 1.0.0
+	 * @since 0.27.0
 	 */
 	protected function __construct() {
 		$this->setup_hooks();
@@ -86,7 +86,7 @@ class Assets {
 	 *
 	 * This method adds hooks for different purposes as needed.
 	 *
-	 * @since 1.0.0
+	 * @since 0.27.0
 	 *
 	 * @return void
 	 */
@@ -124,7 +124,7 @@ class Assets {
 	 * rarer and surface a different warning that users fix by choosing
 	 * an IANA zone in Settings → General.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return void
 	 */
@@ -157,7 +157,7 @@ class Assets {
 	 * so that frontend view scripts can make API requests without
 	 * relying on window globals.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return void
 	 */
@@ -198,7 +198,7 @@ class Assets {
 	 *   during dynamic-block rendering trips the "stylesheet was added to the
 	 *   iframe incorrectly" warning in newer WordPress (issue #1645).
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return void
 	 */
@@ -220,7 +220,7 @@ class Assets {
 	/**
 	 * Conditionally enqueue utility styles if GatherPress blocks are rendered.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @param string $block_content The block content.
 	 * @param array  $block         The block settings.
@@ -240,7 +240,7 @@ class Assets {
 		 * The `gatherpress/` prefix is appended after this filter runs and
 		 * cannot be removed through it.
 		 *
-		 * @since 1.0.0
+		 * @since 0.27.0
 		 *
 		 * @param string[] $prefixes Additional block-name prefixes to match.
 		 */
@@ -260,7 +260,7 @@ class Assets {
 	/**
 	 * Conditionally enqueue tooltip assets if tooltip markup is found in block content.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param string $block_content The block content.
 	 * @return string The block content.
@@ -279,7 +279,7 @@ class Assets {
 	 * Enqueues the tooltip view script which initializes CSS custom properties
 	 * from data attributes for custom tooltip colors.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return void
 	 */
@@ -314,7 +314,7 @@ class Assets {
 	 * proper functioning of the WordPress admin area. It conditionally loads assets based on
 	 * the admin page's context, such as post editing, settings pages, or general admin pages.
 	 *
-	 * @since 1.0.0
+	 * @since 0.27.0
 	 *
 	 * @param string $hook The name of the current admin page.
 	 * @return void
@@ -423,7 +423,7 @@ class Assets {
 	 * This method is responsible for enqueuing backend styles and scripts required for the proper functioning
 	 * of the WordPress block editor (Gutenberg). It ensures that the editor has access to necessary assets.
 	 *
-	 * @since 1.0.0
+	 * @since 0.27.0
 	 *
 	 * @return void
 	 */
@@ -453,7 +453,7 @@ class Assets {
 	 * This method inserts HTML markup on the event edit page specifically for storing the communication modal.
 	 * It is responsible for creating a designated container for the modal's content.
 	 *
-	 * @since 1.0.0
+	 * @since 0.27.0
 	 *
 	 * @return void
 	 */
@@ -470,7 +470,7 @@ class Assets {
 	 * The data is cached to ensure efficient retrieval, as `require_once` only loads the file contents
 	 * on the first request and returns `true` thereafter.
 	 *
-	 * @since 1.0.0
+	 * @since 0.27.0
 	 *
 	 * @param string  $asset The file name of the asset.
 	 * @param ?string $path  (Optional) The absolute path to the asset file
@@ -490,7 +490,7 @@ class Assets {
 	/**
 	 * Get a list of subfolder names from the /build/variations/core/ directory.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return string[] List of block-variations foldernames.
 	 */
@@ -516,7 +516,7 @@ class Assets {
 	/**
 	 * Register all assets.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @return void
 	 */
@@ -529,7 +529,7 @@ class Assets {
 	/**
 	 * Enqueue all assets.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @return void
 	 */
@@ -546,7 +546,7 @@ class Assets {
 	 * Only enqueues when the AQL plugin is active and its script is registered.
 	 * Adds AQL's script handle as a dependency so GatherPress loads after AQL.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return void
 	 */
@@ -582,7 +582,7 @@ class Assets {
 	/**
 	 * Register a new script and sets translated strings for the script.
 
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @param string $folder_name Slug of the block to register scripts and translations for.
 	 * @param string $build_dir Name of the folder to register assets from, relative to the plugins root directory.
@@ -628,7 +628,7 @@ class Assets {
 	/**
 	 * Enqueue a script and a style with the same name, if registered.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @param  string $folder_name Slug of the block to load the frontend scripts for.
 	 *
@@ -646,7 +646,7 @@ class Assets {
 	/**
 	 * A better file_exists with built-in error handling.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @throws Error Throws error for non-existent file with given path,
 	 *               if this is a development environment,
@@ -666,7 +666,7 @@ class Assets {
 		 * which determines whether missing assets throw an Error in development
 		 * environments or silently return false.
 		 *
-		 * @since 1.0.0
+		 * @since 0.27.0
 		 *
 		 * @param bool   $critical Whether file is mandatory for the plugin to work.
 		 * @param string $path     Full file path to the asset file.

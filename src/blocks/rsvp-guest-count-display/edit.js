@@ -18,7 +18,7 @@ import { DISABLED_FIELD_OPACITY, usePostTypeSupports } from '../../helpers/event
  * This function defines the edit interface for the RSVP Guest Count Display Block,
  * rendering the block's UI within the editor. It utilizes block context for dynamic data.
  *
- * @since 1.0.0
+ * @since 0.33.0
  *
  * @param {Object} root0          - The root properties object.
  * @param {Object} root0.context  - The block's context, providing dynamic data.

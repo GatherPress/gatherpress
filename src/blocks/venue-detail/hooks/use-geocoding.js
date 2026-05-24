@@ -26,7 +26,7 @@ import { geocodeAddress } from '../../../helpers/geocoding';
  * locks saving when the venue itself is the current post, which is the only
  * context where the lock-and-unlock pairing is correct.
  *
- * @since 1.0.0
+ * @since 0.34.0
  *
  * @param {string}   fieldType        - The type of field (only 'address' triggers geocoding).
  * @param {string}   fieldValue       - The current field value.

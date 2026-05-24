@@ -3,7 +3,7 @@
  * Class handles unit tests for GatherPress\Core\Blocks\Modal_Manager.
  *
  * @package GatherPress\Core
- * @since 1.0.0
+ * @since 0.33.0
  */
 
 namespace GatherPress\Tests\Core\Blocks;
@@ -24,7 +24,7 @@ class Test_Modal_Manager extends Base {
 	 * Verifies that the appropriate filters are registered during setup,
 	 * ensuring the hooks are properly configured for the Modal_Manager block.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::__construct
 	 * @covers ::setup_hooks
 	 *
@@ -54,7 +54,7 @@ class Test_Modal_Manager extends Base {
 	/**
 	 * Test modal open behavior is applied to non-link elements with open modal class.
 	 *
-	 * @since  1.0.0
+	 * @since  0.33.0
 	 * @covers ::attach_modal_open_behavior
 	 *
 	 * @return void
@@ -95,7 +95,7 @@ class Test_Modal_Manager extends Base {
 	/**
 	 * Test modal open behavior is applied to link elements with open modal class.
 	 *
-	 * @since  1.0.0
+	 * @since  0.33.0
 	 * @covers ::attach_modal_open_behavior
 	 *
 	 * @return void
@@ -136,7 +136,7 @@ class Test_Modal_Manager extends Base {
 	/**
 	 * Test modal open behavior with button element having modal class directly.
 	 *
-	 * @since  1.0.0
+	 * @since  0.33.0
 	 * @covers ::attach_modal_open_behavior
 	 *
 	 * @return void
@@ -172,7 +172,7 @@ class Test_Modal_Manager extends Base {
 	/**
 	 * Test modal open behavior with anchor element having modal class directly.
 	 *
-	 * @since  1.0.0
+	 * @since  0.33.0
 	 * @covers ::attach_modal_open_behavior
 	 *
 	 * @return void
@@ -208,7 +208,7 @@ class Test_Modal_Manager extends Base {
 	/**
 	 * Test modal open behavior is not applied to elements without open modal class.
 	 *
-	 * @since  1.0.0
+	 * @since  0.33.0
 	 * @covers ::attach_modal_open_behavior
 	 *
 	 * @return void
@@ -229,7 +229,7 @@ class Test_Modal_Manager extends Base {
 	/**
 	 * Test modal open behavior with multiple elements in content.
 	 *
-	 * @since  1.0.0
+	 * @since  0.33.0
 	 * @covers ::attach_modal_open_behavior
 	 *
 	 * @return void
@@ -266,7 +266,7 @@ class Test_Modal_Manager extends Base {
 	/**
 	 * Test modal open behavior with mixed class names.
 	 *
-	 * @since  1.0.0
+	 * @since  0.33.0
 	 * @covers ::attach_modal_open_behavior
 	 *
 	 * @return void
@@ -298,7 +298,7 @@ class Test_Modal_Manager extends Base {
 	/**
 	 * Test modal close behavior is applied to div with nested button element.
 	 *
-	 * @since  1.0.0
+	 * @since  0.33.0
 	 * @covers ::attach_modal_close_behavior
 	 *
 	 * @return void
@@ -340,7 +340,7 @@ class Test_Modal_Manager extends Base {
 	/**
 	 * Test modal close behavior is applied to div with nested anchor element.
 	 *
-	 * @since  1.0.0
+	 * @since  0.33.0
 	 * @covers ::attach_modal_close_behavior
 	 *
 	 * @return void
@@ -382,7 +382,7 @@ class Test_Modal_Manager extends Base {
 	/**
 	 * Test close behavior is not applied to elements without close modal class.
 	 *
-	 * @since  1.0.0
+	 * @since  0.33.0
 	 * @covers ::attach_modal_close_behavior
 	 *
 	 * @return void
@@ -403,7 +403,7 @@ class Test_Modal_Manager extends Base {
 	/**
 	 * Test close behavior with multiple elements in content.
 	 *
-	 * @since  1.0.0
+	 * @since  0.33.0
 	 * @covers ::attach_modal_close_behavior
 	 *
 	 * @return void
@@ -442,7 +442,7 @@ class Test_Modal_Manager extends Base {
 	/**
 	 * Test close behavior with mixed class names.
 	 *
-	 * @since  1.0.0
+	 * @since  0.33.0
 	 * @covers ::attach_modal_close_behavior
 	 *
 	 * @return void

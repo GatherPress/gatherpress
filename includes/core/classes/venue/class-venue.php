@@ -10,7 +10,7 @@
  * event→venue lookups — lives on {@see Setup}.
  *
  * @package GatherPress\Core\Venue
- * @since 1.0.0
+ * @since 0.27.0
  */
 
 namespace GatherPress\Core\Venue;
@@ -28,14 +28,14 @@ use WP_Term;
  * Instance anchored to a specific venue post ID. Pair with {@see Setup} for
  * the WordPress integration layer and venue-type-level utilities.
  *
- * @since 1.0.0
+ * @since 0.34.0
  */
 class Venue {
 
 	/**
 	 * Default venue post type slug.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @var string
 	 */
 	const POST_TYPE = 'gatherpress_venue';
@@ -43,7 +43,7 @@ class Venue {
 	/**
 	 * Default venue taxonomy slug.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @var string
 	 */
 	const TAXONOMY = '_gatherpress_venue';
@@ -54,7 +54,7 @@ class Venue {
 	 * Null when the post_id passed to the constructor does not resolve to a
 	 * post whose post type declares `gatherpress-venue-information` support.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @var WP_Post|null
 	 */
 	public ?WP_Post $venue = null;
@@ -67,7 +67,7 @@ class Venue {
 	 * `$venue->venue instanceof WP_Post` to tell a legit venue from a
 	 * stale/mistyped ID.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param int $post_id The venue post ID.
 	 */
@@ -80,7 +80,7 @@ class Venue {
 	/**
 	 * Returns the venue post ID, or 0 when this instance does not wrap a real venue.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return int
 	 */
@@ -93,7 +93,7 @@ class Venue {
 	 *
 	 * Empty string when this instance does not wrap a real venue.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return string
 	 */
@@ -107,7 +107,7 @@ class Venue {
 	 * Derived from the venue's post type via {@see Setup::get_taxonomy()}.
 	 * Empty string when this instance does not wrap a real venue.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return string
 	 */
@@ -128,7 +128,7 @@ class Venue {
 	 * of truth for the slug shape. Empty string when this instance does not
 	 * wrap a real venue.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return string
 	 */
@@ -148,7 +148,7 @@ class Venue {
 	 * transition before `Shadow_Source::add_term()` has run) or when this
 	 * instance does not wrap a real venue.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return WP_Term|null
 	 */
@@ -177,7 +177,7 @@ class Venue {
 	 * structured pieces (e.g. schema.org / JSON-LD emitters) should treat
 	 * empty values as "not set" rather than retry-geocoding.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return array{
 	 *     address: string,

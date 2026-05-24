@@ -4,7 +4,7 @@
  * ensuring proper context for its inner blocks.
  *
  * @package GatherPress\Core
- * @since 1.0.0
+ * @since 0.34.0
  */
 
 namespace GatherPress\Core\Blocks;
@@ -20,7 +20,7 @@ use WP_Block;
  * Class responsible for managing the "Online Event" block and its functionality,
  * including providing postId context to inner blocks when an override is set.
  *
- * @since 1.0.0
+ * @since 0.34.0
  */
 class Online_Event {
 
@@ -32,7 +32,7 @@ class Online_Event {
 	/**
 	 * Constant representing the Block Name.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 * @var string
 	 */
 	const BLOCK_NAME = 'gatherpress/online-event';
@@ -42,7 +42,7 @@ class Online_Event {
 	 *
 	 * This method initializes the object and sets up necessary hooks.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 */
 	protected function __construct() {
 		$this->setup_hooks();
@@ -53,7 +53,7 @@ class Online_Event {
 	 *
 	 * This method adds hooks for different purposes as needed.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @return void
 	 */
@@ -70,7 +70,7 @@ class Online_Event {
 	 *
 	 * @see https://developer.wordpress.org/reference/hooks/render_block_this-name/
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param string|null $block_content The block content.
 	 * @param array|null  $block         The full block, including name and attributes.
@@ -102,7 +102,7 @@ class Online_Event {
 	/**
 	 * Checks if an event has the online-event term.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param int $post_id The post ID to check.
 	 *
@@ -132,7 +132,7 @@ class Online_Event {
 	 * Sets up the block context to use the override postId,
 	 * then renders the inner blocks with that context.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
 	 * @param int      $post_id  The post ID to use as context.
 	 * @param WP_Block $instance The block instance.

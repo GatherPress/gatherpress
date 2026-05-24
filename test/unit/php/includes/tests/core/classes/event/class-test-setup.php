@@ -3,7 +3,7 @@
  * Class handles unit tests for GatherPress\Core\Event\Setup.
  *
  * @package GatherPress\Core\Event
- * @since 1.0.0
+ * @since 0.29.0
  */
 
 namespace GatherPress\Tests\Core\Event;
