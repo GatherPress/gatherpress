@@ -369,8 +369,8 @@ export const VenueFilterControls = ( {
 					query: {
 						...attributes.query,
 						venue_filter: value ? 1 : 0,
-						venue_filter_context_post_id: contextPostId,
-						venue_filter_context_post_type: contextPostType,
+						gatherpress_source_post_id: contextPostId,
+						gatherpress_source_post_type: contextPostType,
 					},
 				} );
 			} }

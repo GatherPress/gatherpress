@@ -1737,4 +1737,5 @@ class Test_Query extends Base {
 
 		wp_delete_post( $venue_post_id, true );
 	}
+
 }

@@ -28,6 +28,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 use GatherPress\Core\Traits\Singleton;
 use WP_Post;
 use WP_Post_Type;
+use WP_Query;
 use WP_Term;
 
 /**
@@ -504,5 +505,79 @@ class Shadow_Source {
 		}
 
 		return null;
+	}
+
+	/**
+	 * Resolve the shadow-source post for the current query context.
+	 *
+	 * Two resolution paths:
+	 * 1. Frontend — `is_singular()` is true and the queried object is a shadow-source post.
+	 * 2. REST editor preview — the consumer (typically the `gatherpress/event-query` block)
+	 *    writes the editor's current post id + post type into the `gatherpress_source_post_id`
+	 *    and `gatherpress_source_post_type` query vars when the contextual toggle is on. We
+	 *    use those as the source when `is_singular()` is false.
+	 *
+	 * @since 0.34.0
+	 *
+	 * @param WP_Query $query The WP_Query instance being prepared.
+	 *
+	 * @return WP_Post|null The source post if one can be resolved, otherwise null.
+	 */
+	public function resolve_post_from_query_context( WP_Query $query ): ?WP_Post {
+		if ( is_singular() ) {
+			$queried = get_queried_object();
+			if (
+				$queried instanceof WP_Post
+				&& post_type_supports( $queried->post_type, 'gatherpress-shadow-source' )
+			) {
+				return $queried;
+			}
+		}
+
+		$context_post_id   = (int) $query->get( 'gatherpress_source_post_id' );
+		$context_post_type = (string) $query->get( 'gatherpress_source_post_type' );
+
+		if (
+			$context_post_id <= 0
+			|| '' === $context_post_type
+			|| ! post_type_supports( $context_post_type, 'gatherpress-shadow-source' )
+		) {
+			return null;
+		}
+
+		$candidate = get_post( $context_post_id );
+
+		if ( ! $candidate instanceof WP_Post || $candidate->post_type !== $context_post_type ) {
+			return null;
+		}
+
+		return $candidate;
+	}
+
+	/**
+	 * Build the tax_query clause that scopes a query to a shadow-source post.
+	 *
+	 * Returned shape:
+	 *
+	 * ```php
+	 * array(
+	 *     'taxonomy' => '_<source_post_type>',
+	 *     'field'    => 'slug',
+	 *     'terms'    => array( '_<source_post_name>' ),
+	 * )
+	 * ```
+	 *
+	 * @since 0.34.0
+	 *
+	 * @param WP_Post $source_post The shadow-source post.
+	 *
+	 * @return array The tax_query clause.
+	 */
+	public function build_tax_query_clause( WP_Post $source_post ): array {
+		return array(
+			'taxonomy' => $this->get_taxonomy( $source_post->post_type ),
+			'field'    => 'slug',
+			'terms'    => array( $this->term_slug_from_post_name( $source_post->post_name ) ),
+		);
 	}
 }
