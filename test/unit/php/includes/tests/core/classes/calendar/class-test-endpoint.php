@@ -174,6 +174,10 @@ class Test_Endpoint extends Base {
 			$types,
 			$reg_ex,
 		);
+		// Registration is no longer a constructor side effect — call init()
+		// explicitly so add_rewrite_rule() runs and the rule is present in
+		// the rebuilt rule set after flush_rewrite_rules() below.
+		$instance->init();
 
 		// Build the regular expression pattern and target URL for this endpoint.
 		$reg_ex_pattern = Utility::invoke_hidden_method( $instance, 'get_regex_pattern' );
@@ -460,8 +464,12 @@ class Test_Endpoint extends Base {
 			$types,
 			$reg_ex,
 		);
+		// Construction stores the validated args; init() does the actual
+		// hook + rewrite-rule registration. Caller-explicit so SonarCloud
+		// (php:S1848) doesn't flag "instantiate for side effects".
+		$instance->init();
 
-		// init() is called from __construct; verify the rule registered globally.
+		// Verify the rule, query_vars filter, and template_redirect action all registered globally.
 		global $wp_rewrite;
 		$pattern = Utility::invoke_hidden_method( $instance, 'get_regex_pattern' );
 		$this->assertArrayHasKey(
