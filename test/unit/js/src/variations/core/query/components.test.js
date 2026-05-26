@@ -95,9 +95,9 @@ import { EventQueryControlsSlotFill } from '@src/variations/core/query/component
 const venueToggleLabel = 'Filter by Current Venue';
 const excludeToggleLabel = 'Exclude Current Event';
 const venueHelp =
-	'When placed on a venue page, only shows events at that venue.';
+	'When placed on a shadow-source page, only shows events tied to that page.';
 const templateHelp =
-	'The filter only takes effect when this template renders on a venue page.';
+	'The filter only takes effect when this template renders on a shadow-source page (venue, tour, production, etc.).';
 
 describe( 'EventQueryControlsSlotFill', () => {
 	beforeEach( () => {

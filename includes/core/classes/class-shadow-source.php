@@ -28,6 +28,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 use GatherPress\Core\Traits\Singleton;
 use WP_Post;
 use WP_Post_Type;
+use WP_Query;
 use WP_Term;
 
 /**
@@ -68,6 +69,10 @@ class Shadow_Source {
 		// Priority 11 so post types registered at default priority 10 are
 		// available for get_post_types_by_support().
 		add_action( 'init', array( $this, 'register_taxonomies' ), 11 );
+		// Priority 12 runs after our own register_taxonomies (priority 11) so
+		// each shadow taxonomy exists before we ask which post types should
+		// carry it.
+		add_action( 'init', array( $this, 'attach_taxonomies_to_object_types' ), 12 );
 		// post_updated has no per-type variant in WP core, and we need
 		// $post_before for the old/new post_name diff, so this stays on the
 		// global hook.
@@ -127,6 +132,70 @@ class Shadow_Source {
 				array(),
 				$this->get_taxonomy_args( $post_type )
 			);
+		}
+	}
+
+	/**
+	 * Attach each shadow taxonomy to the event CPTs declared via filter.
+	 *
+	 * For every shadow-source CPT, asks
+	 * `gatherpress_shadow_taxonomy_object_types` for the list of event post
+	 * types that should be taggable with the shadow's terms, then runs
+	 * `register_taxonomy_for_object_type()` against each. The default filter
+	 * value is an empty array — extensions opt in by returning the event
+	 * CPTs they want their source connected to, so the wiring is explicit
+	 * and discoverable in the hook docs.
+	 *
+	 * GatherPress's own venue subsystem hooks into this filter to wire
+	 * `_gatherpress_venue` onto every `gatherpress-venue`-supporting event
+	 * CPT, preserving the existing zero-config venue ↔ event relationship.
+	 *
+	 * @since 0.34.0
+	 *
+	 * @return void
+	 */
+	public function attach_taxonomies_to_object_types(): void {
+		foreach ( get_post_types_by_support( 'gatherpress-shadow-source' ) as $source_post_type ) {
+			$taxonomy = $this->get_taxonomy( $source_post_type );
+
+			/**
+			 * Filters which event post types the shadow taxonomy should be
+			 * attached to.
+			 *
+			 * Default is an empty array — extensions opt in by returning the
+			 * event CPTs they want their shadow source linked to (saves
+			 * callers from poking `register_taxonomy_for_object_type()`
+			 * directly, and surfaces the wiring as a discoverable hook).
+			 *
+			 * Example — companion plugin registers `production` as a
+			 * shadow source and wants events tagged with productions:
+			 *
+			 *     add_filter(
+			 *         'gatherpress_shadow_taxonomy_object_types',
+			 *         function ( $object_types, $source_post_type ) {
+			 *             if ( 'production' === $source_post_type ) {
+			 *                 $object_types[] = 'gatherpress_event';
+			 *             }
+			 *             return $object_types;
+			 *         },
+			 *         10,
+			 *         2
+			 *     );
+			 *
+			 * @since 0.34.0
+			 *
+			 * @param string[] $object_types     Event post types the shadow taxonomy attaches to.
+			 * @param string   $source_post_type Shadow-source CPT slug whose taxonomy is being wired.
+			 */
+			$object_types = (array) apply_filters(
+				'gatherpress_shadow_taxonomy_object_types',
+				array(),
+				$source_post_type
+			);
+
+			foreach ( array_unique( array_filter( $object_types ) ) as $object_type ) {
+				register_taxonomy_for_object_type( $taxonomy, $object_type );
+			}
 		}
 	}
 
@@ -392,5 +461,123 @@ class Shadow_Source {
 	 */
 	public function get_post_from_term_slug( string $slug, string $post_type ): ?WP_Post {
 		return get_page_by_path( ltrim( $slug, '_' ), OBJECT, $post_type );
+	}
+
+	/**
+	 * Retrieve the shadow-source post linked to an event post via shadow taxonomy.
+	 *
+	 * Generic version of the venue-specific lookup in
+	 * {@see Venue\Setup::get_venue_post_from_event_post_id()} — given an event
+	 * post ID and a shadow-source post type (e.g. `gatherpress_venue`,
+	 * `gatherpress_tour`, `gatherpress_production`), walks the event's terms in
+	 * the matching shadow taxonomy and returns the first term that resolves
+	 * to an actual source post of that type.
+	 *
+	 * Skips sentinel terms (slugs without a leading underscore) such as the
+	 * venue subsystem's `online-event` — those are markers, not pointers to
+	 * source posts.
+	 *
+	 * @since 0.34.0
+	 *
+	 * @param int    $event_post_id    Event post ID to look up sources for.
+	 * @param string $source_post_type Shadow-source post type to resolve against.
+	 *
+	 * @return WP_Post|null The linked source post, or null if none.
+	 */
+	public function get_source_post_from_event_post_id( int $event_post_id, string $source_post_type ): ?WP_Post {
+		$taxonomy = $this->get_taxonomy( $source_post_type );
+		$terms    = get_the_terms( $event_post_id, $taxonomy );
+
+		if ( ! is_array( $terms ) || empty( $terms ) ) {
+			return null;
+		}
+
+		foreach ( $terms as $term ) {
+			if ( ! $this->is_shadow_term_slug( $term->slug ) ) {
+				continue;
+			}
+
+			$source_post = $this->get_post_from_term_slug( $term->slug, $source_post_type );
+
+			if ( $source_post instanceof WP_Post ) {
+				return $source_post;
+			}
+		}
+
+		return null;
+	}
+
+	/**
+	 * Resolve the shadow-source post for the current query context.
+	 *
+	 * Two resolution paths:
+	 * 1. Frontend — `is_singular()` is true and the queried object is a shadow-source post.
+	 * 2. REST editor preview — the consumer (typically the `gatherpress/event-query` block)
+	 *    writes the editor's current post id + post type into the `gatherpress_shadow_source_post_id`
+	 *    and `gatherpress_shadow_source_post_type` query vars when the contextual toggle is on. We
+	 *    use those as the source when `is_singular()` is false.
+	 *
+	 * @since 0.34.0
+	 *
+	 * @param WP_Query $query The WP_Query instance being prepared.
+	 *
+	 * @return WP_Post|null The source post if one can be resolved, otherwise null.
+	 */
+	public function resolve_post_from_query_context( WP_Query $query ): ?WP_Post {
+		if ( is_singular() ) {
+			$queried = get_queried_object();
+			if (
+				$queried instanceof WP_Post
+				&& post_type_supports( $queried->post_type, 'gatherpress-shadow-source' )
+			) {
+				return $queried;
+			}
+		}
+
+		$context_post_id   = (int) $query->get( 'gatherpress_shadow_source_post_id' );
+		$context_post_type = (string) $query->get( 'gatherpress_shadow_source_post_type' );
+
+		if (
+			$context_post_id <= 0
+			|| '' === $context_post_type
+			|| ! post_type_supports( $context_post_type, 'gatherpress-shadow-source' )
+		) {
+			return null;
+		}
+
+		$candidate = get_post( $context_post_id );
+
+		if ( ! $candidate instanceof WP_Post || $candidate->post_type !== $context_post_type ) {
+			return null;
+		}
+
+		return $candidate;
+	}
+
+	/**
+	 * Build the tax_query clause that scopes a query to a shadow-source post.
+	 *
+	 * Returned shape:
+	 *
+	 * ```php
+	 * array(
+	 *     'taxonomy' => '_<source_post_type>',
+	 *     'field'    => 'slug',
+	 *     'terms'    => array( '_<source_post_name>' ),
+	 * )
+	 * ```
+	 *
+	 * @since 0.34.0
+	 *
+	 * @param WP_Post $source_post The shadow-source post.
+	 *
+	 * @return array The tax_query clause.
+	 */
+	public function build_tax_query_clause( WP_Post $source_post ): array {
+		return array(
+			'taxonomy' => $this->get_taxonomy( $source_post->post_type ),
+			'field'    => 'slug',
+			'terms'    => array( $this->term_slug_from_post_name( $source_post->post_name ) ),
+		);
 	}
 }

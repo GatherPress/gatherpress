@@ -135,17 +135,26 @@ const Edit = ( props ) => {
 	);
 
 	// When the override resolves to an event, use the override as the event
-	// being walked (so the venue taxonomy lookup uses the override's event
+	// being walked (so the source taxonomy lookup uses the override's event
 	// post type, not the host's). When the override resolves to a venue,
 	// the post type comes from that venue directly.
 	const effectivePostType =
 		'event' === overrideResolution?.kind
 			? overrideResolution.postType
 			: context?.postType || currentEditorPostType;
+
+	// Source post type — defaults to gatherpress_venue. When set explicitly
+	// (e.g. sourcePostType: "production"), the block resolves its connected
+	// source post via the shadow taxonomy of that CPT instead of venues.
+	// The venue-helper chain (getVenueTaxonomy, useVenueTaxonomyIds,
+	// useVenuePostFromTermId) is parameterized by post type and works for
+	// any shadow-source-supporting CPT without renaming.
+	const sourcePostType =
+		attributes?.sourcePostType || getVenuePostType( effectivePostType );
 	const venuePostType =
 		'venue' === overrideResolution?.kind
 			? overrideResolution.postType
-			: getVenuePostType( effectivePostType );
+			: sourcePostType;
 
 	// `eventId` is the post whose venue taxonomy we walk to find the venue.
 	// Only set it when we genuinely have an event in hand — otherwise the
@@ -210,7 +219,10 @@ const Edit = ( props ) => {
 		null;
 
 	// Fetch venue post - use different methods for Query Loop vs direct editing.
-	const venuePostFromTerm = useVenuePostFromTermId( venueTermId );
+	// Pass venuePostType through so non-venue source types (e.g. production)
+	// resolve the right post type — without it the helper defaults to
+	// gatherpress_venue and the wrong CPT is queried.
+	const venuePostFromTerm = useVenuePostFromTermId( venueTermId, venuePostType );
 	const venuePostFromEvent = GetVenuePostFromEventId(
 		isDescendentOfQueryLoop ? context?.postId : null,
 		context?.postType

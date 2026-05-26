@@ -11,6 +11,7 @@ import {
 	__experimentalToggleGroupControlOption as ToggleGroupControlOption,
 } from '@wordpress/components';
 import { useSelect } from '@wordpress/data';
+import { useEffect } from '@wordpress/element';
 import { __, _x, sprintf } from '@wordpress/i18n';
 
 /**
@@ -19,7 +20,7 @@ import { __, _x, sprintf } from '@wordpress/i18n';
 import EventQueryControls from './slots/query-controls';
 import EventInheritedQueryControls from './slots/inherited-query-controls';
 import { isEventPostType, usePostTypeSupports } from '../../../helpers/event';
-import { getPostTypeLabel, isInFSETemplate, usePostTypeLabel } from '../../../helpers/editor';
+import { isInFSETemplate, usePostTypeLabel } from '../../../helpers/editor';
 
 /**
  * EventCountControls component
@@ -301,22 +302,95 @@ export const VenueFilterControls = ( {
 		query: { venue_filter: venueFilter } = {},
 	} = attributes;
 
+	// Detect if the editor's current post type is a shadow-source CPT
+	// (gatherpress-shadow-source post-type-support). If yes, the filter label
+	// adapts to that type — "Filter by Current Tour" / "Filter by Current
+	// Production" — matching whatever the template renders against at runtime.
+	// Otherwise (events, pages, templates, patterns) fall back to gatherpress_venue
+	// since that's the most common scope-by-source scenario.
+	const editorPostId = useSelect(
+		( wpSelect ) => wpSelect( 'core/editor' )?.getCurrentPostId(),
+		[]
+	);
+	const editorPostType = useSelect(
+		( wpSelect ) => wpSelect( 'core/editor' )?.getCurrentPostType(),
+		[]
+	);
+	const editorPostTypeSupports = useSelect(
+		( wpSelect ) =>
+			editorPostType
+				? wpSelect( 'core' ).getPostType( editorPostType )?.supports
+				: null,
+		[ editorPostType ]
+	);
+	const editorIsShadowSource = !! editorPostTypeSupports?.[ 'gatherpress-shadow-source' ];
+	const sourcePostType = editorIsShadowSource
+		? editorPostType
+		: 'gatherpress_venue';
+
+	// Backfill the shadow-source context attrs whenever the toggle is on but
+	// the IDs don't match the current editor post. Catches three real-world
+	// scenarios that otherwise let the editor render an unscoped query
+	// briefly (every event in the DB, including ones outside the current
+	// source) before the user notices:
+	//
+	//   1. Blocks saved before the rename to `gatherpress_shadow_source_post_*`
+	//      — the saved markup carries `null` for those keys, so the first
+	//      REST request lacks the context and the resolver gives up.
+	//   2. Toggles fired while `core/editor` data store is still hydrating —
+	//      `editorPostId` is `undefined` at the moment `onChange` runs, so
+	//      the attrs get written as `null` and stay that way until the user
+	//      toggles a second time.
+	//   3. Reloads where Gutenberg restored `venue_filter: 1` but the
+	//      shadow-source attrs were never persisted in the first place.
+	//
+	// Only runs on shadow-source editor post types so non-shadow contexts
+	// (templates, venue pages with the standard venue subsystem) behave as
+	// before.
+	const queryShadowId = attributes.query?.gatherpress_shadow_source_post_id;
+	const queryShadowType = attributes.query?.gatherpress_shadow_source_post_type;
+	const needsBackfill =
+		!! venueFilter &&
+		editorIsShadowSource &&
+		!! editorPostId &&
+		!! editorPostType &&
+		( queryShadowId !== editorPostId || queryShadowType !== editorPostType );
+
+	useEffect( () => {
+		if ( ! needsBackfill ) {
+			return;
+		}
+		setAttributes( {
+			query: {
+				...attributes.query,
+				gatherpress_shadow_source_post_id: editorPostId,
+				gatherpress_shadow_source_post_type: editorPostType,
+			},
+		} );
+	}, [
+		needsBackfill,
+		editorPostId,
+		editorPostType,
+		attributes.query,
+		setAttributes,
+	] );
+
 	const helpText = inTemplateContext
 		? __(
-			'The filter only takes effect when this template renders on a venue page.',
+			'The filter only takes effect when this template renders on a shadow-source page (venue, tour, production, etc.).',
 			'gatherpress'
 		)
 		: __(
-			'When placed on a venue page, only shows events at that venue.',
+			'When placed on a shadow-source page, only shows events tied to that page.',
 			'gatherpress'
 		);
 
 	// Read the singular label so the label reflects what the currently
 	// selected post type is actually called — a re-named gatherpress_venue post type with
 	// `singular_name => 'Location'` shows "Filter by Current Location".
-	const singularLabel = getPostTypeLabel(
+	const singularLabel = usePostTypeLabel(
 		'singular_name',
-		'gatherpress_venue',
+		sourcePostType,
 		__( 'Venue', 'gatherpress' )
 	);
 
@@ -330,10 +404,21 @@ export const VenueFilterControls = ( {
 			help={ helpText }
 			checked={ !! venueFilter }
 			onChange={ ( value ) => {
+				// Pass editor's current page through to REST so the preview
+				// matches what the runtime template will render against. The
+				// runtime path uses `is_singular()` and ignores these — they
+				// only matter for the REST-driven editor preview.
+				const contextPostId =
+					value && editorIsShadowSource ? editorPostId : null;
+				const contextPostType =
+					value && editorIsShadowSource ? editorPostType : null;
+
 				setAttributes( {
 					query: {
 						...attributes.query,
 						venue_filter: value ? 1 : 0,
+						gatherpress_shadow_source_post_id: contextPostId,
+						gatherpress_shadow_source_post_type: contextPostType,
 					},
 				} );
 			} }

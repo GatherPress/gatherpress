@@ -11,6 +11,7 @@ namespace GatherPress\Tests\Core;
 use GatherPress\Core\Shadow_Source;
 use GatherPress\Core\Venue\Venue;
 use GatherPress\Tests\Base;
+use WP_Post;
 
 /**
  * Class Test_Shadow_Source.
@@ -45,6 +46,12 @@ class Test_Shadow_Source extends Base {
 				'name'     => 'init',
 				'priority' => 11,
 				'callback' => array( $instance, 'register_taxonomies' ),
+			),
+			array(
+				'type'     => 'action',
+				'name'     => 'init',
+				'priority' => 12,
+				'callback' => array( $instance, 'attach_taxonomies_to_object_types' ),
 			),
 			array(
 				'type'     => 'action',
@@ -184,6 +191,75 @@ class Test_Shadow_Source extends Base {
 			$taxonomy->labels->name,
 			'Filter should be able to override the taxonomy labels.'
 		);
+	}
+
+	/**
+	 * Coverage for attach_taxonomies_to_object_types — walks shadow-source
+	 * CPTs and registers each shadow taxonomy on the event CPTs returned by
+	 * the `gatherpress_shadow_taxonomy_object_types` filter.
+	 *
+	 * @covers ::attach_taxonomies_to_object_types
+	 *
+	 * @return void
+	 */
+	public function test_attach_taxonomies_to_object_types_uses_filter(): void {
+		$instance = Shadow_Source::get_instance();
+
+		// Detach gatherpress_event from the venue taxonomy so we can assert
+		// the filter callback re-attaches it.
+		unregister_taxonomy_for_object_type( Venue::TAXONOMY, 'gatherpress_event' );
+		$this->assertFalse(
+			is_object_in_taxonomy( 'gatherpress_event', Venue::TAXONOMY ),
+			'Precondition: venue taxonomy should be detached from gatherpress_event before running.'
+		);
+
+		$filter = static function ( array $object_types, string $source_post_type ): array {
+			if ( Venue::POST_TYPE === $source_post_type ) {
+				$object_types[] = 'gatherpress_event';
+			}
+			return $object_types;
+		};
+		add_filter( 'gatherpress_shadow_taxonomy_object_types', $filter, 10, 2 );
+
+		$instance->attach_taxonomies_to_object_types();
+
+		remove_filter( 'gatherpress_shadow_taxonomy_object_types', $filter, 10 );
+
+		$this->assertTrue(
+			is_object_in_taxonomy( 'gatherpress_event', Venue::TAXONOMY ),
+			'Filter callback should have wired the venue taxonomy onto gatherpress_event.'
+		);
+	}
+
+	/**
+	 * Coverage for attach_taxonomies_to_object_types — empty filter
+	 * default attaches the taxonomy to nothing.
+	 *
+	 * @covers ::attach_taxonomies_to_object_types
+	 *
+	 * @return void
+	 */
+	public function test_attach_taxonomies_to_object_types_default_is_empty(): void {
+		$instance = Shadow_Source::get_instance();
+
+		// Stub the filter to short-circuit to an empty list regardless of
+		// other registered callbacks (the venue subsystem registers one in
+		// its own setup_hooks). High-priority callback wins on the chain.
+		$short_circuit = static function (): array {
+			return array();
+		};
+		add_filter( 'gatherpress_shadow_taxonomy_object_types', $short_circuit, PHP_INT_MAX );
+
+		unregister_taxonomy_for_object_type( Venue::TAXONOMY, 'gatherpress_event' );
+
+		$instance->attach_taxonomies_to_object_types();
+
+		$this->assertFalse(
+			is_object_in_taxonomy( 'gatherpress_event', Venue::TAXONOMY ),
+			'When the filter resolves to an empty list, no event CPTs should be wired.'
+		);
+
+		remove_filter( 'gatherpress_shadow_taxonomy_object_types', $short_circuit, PHP_INT_MAX );
 	}
 
 	/**
@@ -579,5 +655,359 @@ class Test_Shadow_Source extends Base {
 			$instance->get_post_from_term_slug( '_does-not-exist', Venue::POST_TYPE ),
 			'Failed to assert that get_post_from_term_slug returns null for missing slugs.'
 		);
+	}
+
+	/**
+	 * Coverage for get_source_post_from_event_post_id — walks the event's
+	 * shadow taxonomy terms for the given source post type and resolves the
+	 * first underscore-prefixed slug to its source post.
+	 *
+	 * @covers ::get_source_post_from_event_post_id
+	 *
+	 * @return void
+	 */
+	public function test_get_source_post_from_event_post_id_resolves_linked_source(): void {
+		$instance = Shadow_Source::get_instance();
+		$venue    = $this->mock->post(
+			array(
+				'post_type' => Venue::POST_TYPE,
+				'post_name' => 'unit-test-source-resolve',
+			)
+		)->get();
+		$event    = $this->mock->post(
+			array( 'post_type' => 'gatherpress_event' )
+		)->get();
+
+		wp_set_post_terms( $event->ID, '_unit-test-source-resolve', Venue::TAXONOMY );
+
+		$resolved = $instance->get_source_post_from_event_post_id( $event->ID, Venue::POST_TYPE );
+
+		$this->assertInstanceOf( \WP_Post::class, $resolved, 'Expected a WP_Post for the linked source.' );
+		$this->assertSame( $venue->ID, $resolved->ID, 'Expected the venue post ID to match the linked source.' );
+	}
+
+	/**
+	 * Coverage for get_source_post_from_event_post_id — sentinel terms
+	 * (slugs without a leading underscore, e.g. `online-event`) are skipped.
+	 *
+	 * @covers ::get_source_post_from_event_post_id
+	 *
+	 * @return void
+	 */
+	public function test_get_source_post_from_event_post_id_skips_sentinel_terms(): void {
+		$instance = Shadow_Source::get_instance();
+		$event    = $this->mock->post(
+			array( 'post_type' => 'gatherpress_event' )
+		)->get();
+
+		// Insert a sentinel term (no underscore prefix) and attach it to the event.
+		$term = wp_insert_term( 'Online Event', Venue::TAXONOMY, array( 'slug' => 'online-event-sentinel' ) );
+		wp_set_post_terms( $event->ID, array( (int) $term['term_id'] ), Venue::TAXONOMY );
+
+		$this->assertNull(
+			$instance->get_source_post_from_event_post_id( $event->ID, Venue::POST_TYPE ),
+			'Sentinel terms should be skipped during source resolution.'
+		);
+	}
+
+	/**
+	 * Coverage for get_source_post_from_event_post_id — returns null when
+	 * the event has no terms in the source's shadow taxonomy.
+	 *
+	 * @covers ::get_source_post_from_event_post_id
+	 *
+	 * @return void
+	 */
+	public function test_get_source_post_from_event_post_id_returns_null_without_terms(): void {
+		$instance = Shadow_Source::get_instance();
+		$event    = $this->mock->post(
+			array( 'post_type' => 'gatherpress_event' )
+		)->get();
+
+		$this->assertNull(
+			$instance->get_source_post_from_event_post_id( $event->ID, Venue::POST_TYPE ),
+			'Should return null when no terms link the event to any source post.'
+		);
+	}
+
+	/**
+	 * Resolves the queried object on the frontend singular path.
+	 *
+	 * @covers ::resolve_post_from_query_context
+	 *
+	 * @return void
+	 */
+	public function test_resolve_post_from_query_context_returns_queried_object_on_singular(): void {
+		$instance = Shadow_Source::get_instance();
+
+		$venue_post_id = $this->factory->post->create(
+			array(
+				'post_type' => Venue::POST_TYPE,
+				'post_name' => 'singular-resolve-venue',
+			)
+		);
+
+		// Navigate to the venue page so is_singular() and get_queried_object() work correctly.
+		$this->go_to( get_permalink( $venue_post_id ) );
+
+		$query = $this->getMockBuilder( 'WP_Query' )
+			->setMethods( array( 'get' ) )
+			->getMock();
+
+		$query->expects( $this->any() )
+			->method( 'get' )
+			->willReturn( null );
+
+		$resolved = $instance->resolve_post_from_query_context( $query );
+
+		$this->assertInstanceOf( WP_Post::class, $resolved, 'Singular venue page should resolve to a WP_Post.' );
+		$this->assertSame( $venue_post_id, $resolved->ID, 'Resolved post should be the queried venue.' );
+
+		wp_delete_post( $venue_post_id, true );
+	}
+
+	/**
+	 * Returns null when there is no singular context and no REST fallback params.
+	 *
+	 * @covers ::resolve_post_from_query_context
+	 *
+	 * @return void
+	 */
+	public function test_resolve_post_from_query_context_returns_null_without_context(): void {
+		$instance = Shadow_Source::get_instance();
+		$this->go_to( '/' );
+
+		$query = $this->getMockBuilder( 'WP_Query' )
+			->setMethods( array( 'get' ) )
+			->getMock();
+
+		$query->expects( $this->any() )
+			->method( 'get' )
+			->willReturn( null );
+
+		$this->assertNull(
+			$instance->resolve_post_from_query_context( $query ),
+			'No singular and no REST context should resolve to null.'
+		);
+	}
+
+	/**
+	 * Resolves the source post via the REST context fallback when is_singular() is false.
+	 *
+	 * @covers ::resolve_post_from_query_context
+	 *
+	 * @return void
+	 */
+	public function test_resolve_post_from_query_context_resolves_via_rest_context(): void {
+		$instance = Shadow_Source::get_instance();
+		$this->go_to( '/' );
+
+		$venue_post_id = $this->factory->post->create(
+			array(
+				'post_type' => Venue::POST_TYPE,
+				'post_name' => 'rest-context-venue',
+			)
+		);
+
+		$query = $this->getMockBuilder( 'WP_Query' )
+			->setMethods( array( 'get' ) )
+			->getMock();
+
+		$query->expects( $this->any() )
+			->method( 'get' )
+			->willReturnCallback(
+				static function ( $key ) use ( $venue_post_id ) {
+					if ( 'gatherpress_shadow_source_post_id' === $key ) {
+						return $venue_post_id;
+					}
+					if ( 'gatherpress_shadow_source_post_type' === $key ) {
+						return Venue::POST_TYPE;
+					}
+					return null;
+				}
+			);
+
+		$resolved = $instance->resolve_post_from_query_context( $query );
+
+		$this->assertInstanceOf( WP_Post::class, $resolved, 'REST context should resolve to the venue post.' );
+		$this->assertSame( $venue_post_id, $resolved->ID, 'Resolved post ID should match the venue post.' );
+
+		wp_delete_post( $venue_post_id, true );
+	}
+
+	/**
+	 * Returns null when the REST context post type does not support shadow-source.
+	 *
+	 * @covers ::resolve_post_from_query_context
+	 *
+	 * @return void
+	 */
+	public function test_resolve_post_from_query_context_rejects_non_shadow_post_type(): void {
+		$instance = Shadow_Source::get_instance();
+		$this->go_to( '/' );
+
+		$page_id = $this->factory->post->create( array( 'post_type' => 'page' ) );
+
+		$query = $this->getMockBuilder( 'WP_Query' )
+			->setMethods( array( 'get' ) )
+			->getMock();
+
+		$query->expects( $this->any() )
+			->method( 'get' )
+			->willReturnCallback(
+				static function ( $key ) use ( $page_id ) {
+					if ( 'gatherpress_shadow_source_post_id' === $key ) {
+						return $page_id;
+					}
+					if ( 'gatherpress_shadow_source_post_type' === $key ) {
+						return 'page';
+					}
+					return null;
+				}
+			);
+
+		$this->assertNull(
+			$instance->resolve_post_from_query_context( $query ),
+			'A non-shadow-source post type must not resolve.'
+		);
+
+		wp_delete_post( $page_id, true );
+	}
+
+	/**
+	 * Returns null when the REST context post id exists but its post type
+	 * does not match the post type the context declared.
+	 *
+	 * @covers ::resolve_post_from_query_context
+	 *
+	 * @return void
+	 */
+	public function test_resolve_post_from_query_context_rejects_post_type_mismatch(): void {
+		$instance = Shadow_Source::get_instance();
+		$this->go_to( '/' );
+
+		// A real post that exists but isn't a venue, even though the context says venue.
+		$post_id = $this->factory->post->create( array( 'post_type' => 'post' ) );
+
+		$query = $this->getMockBuilder( 'WP_Query' )
+			->setMethods( array( 'get' ) )
+			->getMock();
+
+		$query->expects( $this->any() )
+			->method( 'get' )
+			->willReturnCallback(
+				static function ( $key ) use ( $post_id ) {
+					if ( 'gatherpress_shadow_source_post_id' === $key ) {
+						return $post_id;
+					}
+					if ( 'gatherpress_shadow_source_post_type' === $key ) {
+						return Venue::POST_TYPE;
+					}
+					return null;
+				}
+			);
+
+		$this->assertNull(
+			$instance->resolve_post_from_query_context( $query ),
+			'Mismatch between context post type and the post itself must not resolve.'
+		);
+
+		wp_delete_post( $post_id, true );
+	}
+
+	/**
+	 * Returns null when the REST context post id resolves to a non-existent post.
+	 *
+	 * @covers ::resolve_post_from_query_context
+	 *
+	 * @return void
+	 */
+	public function test_resolve_post_from_query_context_returns_null_for_missing_post(): void {
+		$instance = Shadow_Source::get_instance();
+		$this->go_to( '/' );
+
+		$query = $this->getMockBuilder( 'WP_Query' )
+			->setMethods( array( 'get' ) )
+			->getMock();
+
+		$query->expects( $this->any() )
+			->method( 'get' )
+			->willReturnCallback(
+				static function ( $key ) {
+					if ( 'gatherpress_shadow_source_post_id' === $key ) {
+						return 999999;
+					}
+					if ( 'gatherpress_shadow_source_post_type' === $key ) {
+						return Venue::POST_TYPE;
+					}
+					return null;
+				}
+			);
+
+		$this->assertNull(
+			$instance->resolve_post_from_query_context( $query ),
+			'Missing post id should resolve to null.'
+		);
+	}
+
+	/**
+	 * Returns null when the singular queried object is not a shadow-source post type
+	 * AND no REST fallback context is supplied — covers the fall-through branch.
+	 *
+	 * @covers ::resolve_post_from_query_context
+	 *
+	 * @return void
+	 */
+	public function test_resolve_post_from_query_context_singular_non_shadow_falls_through(): void {
+		$instance = Shadow_Source::get_instance();
+
+		$page_id = $this->factory->post->create( array( 'post_type' => 'page' ) );
+		$this->go_to( get_permalink( $page_id ) );
+
+		$query = $this->getMockBuilder( 'WP_Query' )
+			->setMethods( array( 'get' ) )
+			->getMock();
+
+		$query->expects( $this->any() )
+			->method( 'get' )
+			->willReturn( null );
+
+		$this->assertNull(
+			$instance->resolve_post_from_query_context( $query ),
+			'Singular non-shadow-source post should fall through and resolve to null.'
+		);
+
+		wp_delete_post( $page_id, true );
+	}
+
+	/**
+	 * Builds the correct tax_query clause shape from a venue post.
+	 *
+	 * @covers ::build_tax_query_clause
+	 *
+	 * @return void
+	 */
+	public function test_build_tax_query_clause(): void {
+		$instance = Shadow_Source::get_instance();
+
+		$venue_post_id = $this->factory->post->create(
+			array(
+				'post_type' => Venue::POST_TYPE,
+				'post_name' => 'clause-venue',
+			)
+		);
+		$venue_post    = get_post( $venue_post_id );
+
+		$clause = $instance->build_tax_query_clause( $venue_post );
+
+		$this->assertSame( Venue::TAXONOMY, $clause['taxonomy'], 'Clause taxonomy should be the shadow taxonomy.' );
+		$this->assertSame( 'slug', $clause['field'], 'Clause field should be slug.' );
+		$this->assertSame(
+			array( '_clause-venue' ),
+			$clause['terms'],
+			'Clause terms should be the prefixed post_name.'
+		);
+
+		wp_delete_post( $venue_post_id, true );
 	}
 }
