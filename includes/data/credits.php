@@ -4,7 +4,7 @@
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 return array (
-  'version' => '0.34.0-alpha.2',
+  'version' => '0.34.0-beta.1',
   'project-leaders' => 
   array (
     0 => 
