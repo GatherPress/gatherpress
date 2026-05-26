@@ -59,13 +59,11 @@ GatherPress is built by and for the community -- contributions are always welcom
 
 [Contributor Guide](https://github.com/GatherPress/gatherpress/blob/main/docs/contributing.md)
 
-## Third-Party Libraries & Services
-
-### Libraries
+## Third-Party Libraries
 
 - [Leaflet](https://leafletjs.com/) -- interactive maps for venues
 
-### External services
+## External Services
 
 GatherPress calls the following services when editing venues or displaying maps. Each can be overridden or swapped out via a filter; see links for filter names.
 
@@ -83,4 +81,3 @@ GatherPress calls the following services when editing venues or displaying maps.
 ---
 
 *GatherPress is still in active development. Thank you for helping us build a better way to gather.*
-
