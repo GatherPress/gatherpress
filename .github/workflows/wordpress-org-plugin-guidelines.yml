@@ -103,12 +103,12 @@ jobs:
 
       - name: Configure wp-env
         run: |
-          # Faithful mirror of the repo's proven .wp-env.test.json (the exact
-          # config the e2e job boots successfully): testsEnvironment + a theme +
-          # WP_DEBUG. Only additions are the plugin-check plugin and mapping the
-          # built plugin in. Earlier dev-environment configs left wp-env
-          # provisioning only the database here.
-          echo "{ \"\$schema\": \"https://schemas.wp.org/trunk/wp-env.json\", \"testsEnvironment\": true, \"themes\": [ \"WordPress/twentytwentyfive\" ], \"config\": { \"WP_DEBUG\": true }, \"plugins\": [ \"https://downloads.wordpress.org/plugin/plugin-check.zip\" ], \"mappings\": { \"wp-content/plugins/$PLUGIN_SLUG\": \"$PLUGIN_DIR\" } }" > .wp-env.json
+          # Mirror the repo's proven local-only .wp-env.json (what e2e/phpunit
+          # boot). Crucially NO remote plugin URL in `plugins`: having wp-env
+          # fetch plugin-check from downloads.wordpress.org during `wp-env start`
+          # is what left the env provisioning only the database. Map the built
+          # plugin in here; plugin-check is installed at runtime once WP is live.
+          echo "{ \"\$schema\": \"https://schemas.wp.org/trunk/wp-env.json\", \"testsEnvironment\": false, \"themes\": [ \"WordPress/twentytwentyfive\" ], \"config\": { \"WP_DEBUG\": true }, \"mappings\": { \"wp-content/plugins/$PLUGIN_SLUG\": \"$PLUGIN_DIR\" } }" > .wp-env.json
           cat .wp-env.json
         shell: bash
 
@@ -116,15 +116,18 @@ jobs:
         run: |
           # Strip only docker layer-progress lines (hex-id prefixed) so wp-env's
           # own provisioning output stays visible; docker ps + wait-on are the
-          # real gates. e2e waits on the tests environment at port 8889.
+          # real gates. Dev environment serves on port 8888.
           npm run wp-env -- start --debug 2>&1 | grep -vE '^ [0-9a-f]{8,} ' || true
           echo "::group::docker ps -a"; docker ps -a; echo "::endgroup::"
-          npx wait-on http://localhost:8889/wp-admin -t 180000
+          npx wait-on http://localhost:8888/wp-admin -t 180000
           npm run wp-env -- run cli wp core version
         shell: bash
 
       - name: Run Plugin Check
         run: |
+          # Install Plugin Check inside the running env (a runtime fetch, after
+          # WordPress is up, rather than during wp-env start).
+          npm run wp-env -- run cli wp plugin install plugin-check --activate
           npm run wp-env -- run cli wp plugin activate "$PLUGIN_SLUG"
           npm run wp-env -- run cli wp plugin check "$PLUGIN_SLUG" \
             --format=json \
