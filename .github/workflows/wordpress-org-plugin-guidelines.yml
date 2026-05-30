@@ -103,41 +103,27 @@ jobs:
 
       - name: Configure wp-env
         run: |
-          # Dev-only environment (no tests env needed for Plugin Check) with the
-          # plugin-check plugin installed and the built plugin mapped in.
-          echo "{ \"core\": null, \"port\": 8880, \"testsEnvironment\": false, \"plugins\": [ \"https://downloads.wordpress.org/plugin/plugin-check.zip\" ], \"mappings\": { \"wp-content/plugins/$PLUGIN_SLUG\": \"$PLUGIN_DIR\" } }" > .wp-env.json
+          # Modeled on the repo's proven .wp-env.test.json (the config e2e boots
+          # successfully). The upstream action's minimal `"core": null` config
+          # left wp-env provisioning ONLY the database here — no WordPress image
+          # build, no wordpress container — so Plugin Check had nothing to run
+          # against. Omitting `core` (defaults to the latest WP), specifying a
+          # theme, and enabling WP_DEBUG matches the shape that actually starts.
+          echo "{ \"\$schema\": \"https://schemas.wp.org/trunk/wp-env.json\", \"plugins\": [ \"https://downloads.wordpress.org/plugin/plugin-check.zip\" ], \"themes\": [ \"WordPress/twentytwentyfive\" ], \"config\": { \"WP_DEBUG\": true }, \"mappings\": { \"wp-content/plugins/$PLUGIN_SLUG\": \"$PLUGIN_DIR\" } }" > .wp-env.json
+          cat .wp-env.json
         shell: bash
 
       - name: Start wp-env
         run: |
-          echo "::group::env"
-          echo "node: $(node -v)  npm: $(npm -v)"
-          echo "patched docker-config.js? (expect 1):"
-          grep -c 'audit.block-insecure' node_modules/@wordpress/env/lib/runtime/docker/docker-config.js || echo "PATCH MISSING"
-          echo "::endgroup::"
-
-          echo "::group::wp-env start --debug"
-          npm run wp-env -- start --debug > /tmp/wpenv.log 2>&1 && echo "start exit 0" || echo "start exit $?"
-          grep -viE 'Downloading|Extracting|Pull complete|Download complete|Pulling fs|Already exists|[0-9.]+ ?[kKMG]?B/' /tmp/wpenv.log | tail -160
-          echo "::endgroup::"
-
-          echo "::group::docker images"; docker images; echo "::endgroup::"
+          # --debug output (minus image-pull noise) and docker ps are kept so a
+          # non-booting env stays diagnosable without a separate run; wait-on is
+          # the real gate that fails loudly if WordPress never answers.
+          npm run wp-env -- start --debug 2>&1 \
+            | grep -viE 'Downloading|Extracting|Pull complete|Download complete|Pulling fs|Already exists|[0-9.]+ ?[kKMG]?B/' || true
           echo "::group::docker ps -a"; docker ps -a; echo "::endgroup::"
-
-          echo "::group::generated docker-compose.yml"
-          find ~/.wp-env -name 'docker-compose.yml' -exec cat {} \; 2>/dev/null | head -160
-          echo "::endgroup::"
-
-          echo "::group::generated Dockerfile(s)"
-          find ~/.wp-env -iname '*ockerfile*' -exec echo '---- {} ----' \; -exec cat {} \; 2>/dev/null | head -160
-          echo "::endgroup::"
-
-          echo "::group::wordpress container logs (if any)"
-          docker ps -a --format '{{.Names}}' | grep -i wordpress | head -1 | xargs -r -I{} docker logs {} 2>&1 | tail -60 || true
-          echo "::endgroup::"
-
-          # Diagnostic run: stop here with everything captured.
-          exit 1
+          # Default development environment serves on port 8888.
+          npx wait-on http://localhost:8888/wp-admin -t 180000
+          npm run wp-env -- run cli wp core version
         shell: bash
 
       - name: Run Plugin Check
