@@ -75,42 +75,21 @@ jobs:
             ./node_modules
           key: ${{ steps.node_modules-cache.outputs.cache-primary-key }}
 
-      # Resolve the exact Playwright version from the installed package so the
-      # browser cache key tracks it. node_modules is restored/installed above,
-      # so @playwright/test is available here.
-      - name: Resolve Playwright version
-        id: playwright-version
-        run: echo "version=$(node -e "console.log(require('@playwright/test/package.json').version)")" >> "$GITHUB_OUTPUT"
-
-      # Cache the downloaded browser binaries so a healthy run skips the CDN
-      # download entirely. Keyed on the Playwright version: a version bump
-      # invalidates the cache and triggers a fresh download.
-      - name: Cache Playwright browsers
-        id: playwright-cache
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/ms-playwright
-          key: ${{ runner.os }}-playwright-${{ steps.playwright-version.outputs.version }}
-
-      # System libraries (apt) are part of the runner, not the cache, so install
-      # them every run. Split out from the browser download so an apt lock/stall
-      # surfaces fast against its own short timeout. Only chromium is needed —
-      # playwright.config.js defines a single chromium project.
-      - name: Install Playwright system dependencies
-        timeout-minutes: 5
-        run: npx playwright install-deps chromium
-
-      # Download only the chromium binary (was --with-deps, which also pulled
-      # firefox + webkit). Wrapped in retry with a tight per-attempt timeout so
-      # a stalled CDN download is killed and retried in minutes instead of
-      # hanging for hours (observed 1-2h+ hangs on 2026-05-30).
-      - name: Install Playwright browser (chromium)
-        if: steps.playwright-cache.outputs.cache-hit != 'true'
-        uses: nick-fields/retry@v3
-        with:
-          timeout_minutes: 8
-          max_attempts: 3
-          command: npx playwright install chromium
+      # Do NOT run `npx playwright install chromium` here. On 2026-05-30 that
+      # download hung after the chromium binary reached 100% — Playwright's
+      # post-download/extract phase stalled until killed, every attempt. Instead
+      # run the suite against the Google Chrome that GitHub's ubuntu runners ship
+      # preinstalled: playwright.config.js sets `channel: 'chrome'` when CI is
+      # set, so no browser download is needed. This step just asserts Chrome is
+      # present so a runner-image change that drops it fails fast and obvious.
+      - name: Verify preinstalled Google Chrome
+        run: |
+          BIN="$(command -v google-chrome || command -v google-chrome-stable)"
+          if [ -z "$BIN" ]; then
+            echo "::error::Google Chrome is not preinstalled on this runner; E2E uses channel: 'chrome'."
+            exit 1
+          fi
+          "$BIN" --version
 
       - name: Build plugin assets
         run: npm run build
