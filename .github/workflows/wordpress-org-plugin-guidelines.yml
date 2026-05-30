@@ -106,7 +106,15 @@ jobs:
           # Same config the official action emits.
           echo "{ \"core\": null, \"port\": 8880, \"testsPort\": 8881, \"plugins\": [ \"https://downloads.wordpress.org/plugin/plugin-check.zip\" ], \"mappings\": { \"wp-content/plugins/$PLUGIN_SLUG\": \"$PLUGIN_DIR\" } }" > .wp-env.json
 
-          npm -g --no-fund i @wordpress/env
+          # Pin @wordpress/env to 11.2.0. Installing unpinned (`@wordpress/env`)
+          # pulls whatever is tagged `latest`, which since 11.3.0 changed
+          # `wp-env start` so it exits 0 right after "Reading configuration"
+          # without ever bringing the containers up — the next step then fails
+          # with "Environment not initialized." 11.2.0 is the version this
+          # workflow's docker-config.js sed patch targets and the version the
+          # repo already validates via patches/@wordpress+env+11.2.0.patch.
+          # Bump this in lockstep with that patch once upstream is sorted.
+          npm -g --no-fund i @wordpress/env@11.2.0
 
           # Bypass Composer's new audit block on PHPUnit security advisories.
           WP_ENV_DOCKER_CONFIG="$(npm root -g)/@wordpress/env/lib/runtime/docker/docker-config.js"
