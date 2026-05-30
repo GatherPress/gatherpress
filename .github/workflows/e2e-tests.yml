@@ -15,6 +15,13 @@ on:
     - '*.php'
     - '*.js'
 
+# Cancel an in-progress run when a newer commit is pushed to the same ref so
+# stacked PR runs do not pile up (three were running simultaneously on
+# 2026-05-30).
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
@@ -22,6 +29,10 @@ jobs:
   playwright:
     name: Playwright Tests
     runs-on: ubuntu-latest
+    # A healthy run finishes well under 30 minutes; without this a hung step
+    # (e.g. the Playwright browser download stalling) inherits GitHub's 6-hour
+    # default before it is killed.
+    timeout-minutes: 30
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -64,8 +75,42 @@ jobs:
             ./node_modules
           key: ${{ steps.node_modules-cache.outputs.cache-primary-key }}
 
-      - name: Playwright install
-        run: npx playwright install --with-deps
+      # Resolve the exact Playwright version from the installed package so the
+      # browser cache key tracks it. node_modules is restored/installed above,
+      # so @playwright/test is available here.
+      - name: Resolve Playwright version
+        id: playwright-version
+        run: echo "version=$(node -e "console.log(require('@playwright/test/package.json').version)")" >> "$GITHUB_OUTPUT"
+
+      # Cache the downloaded browser binaries so a healthy run skips the CDN
+      # download entirely. Keyed on the Playwright version: a version bump
+      # invalidates the cache and triggers a fresh download.
+      - name: Cache Playwright browsers
+        id: playwright-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ steps.playwright-version.outputs.version }}
+
+      # System libraries (apt) are part of the runner, not the cache, so install
+      # them every run. Split out from the browser download so an apt lock/stall
+      # surfaces fast against its own short timeout. Only chromium is needed —
+      # playwright.config.js defines a single chromium project.
+      - name: Install Playwright system dependencies
+        timeout-minutes: 5
+        run: npx playwright install-deps chromium
+
+      # Download only the chromium binary (was --with-deps, which also pulled
+      # firefox + webkit). Wrapped in retry with a tight per-attempt timeout so
+      # a stalled CDN download is killed and retried in minutes instead of
+      # hanging for hours (observed 1-2h+ hangs on 2026-05-30).
+      - name: Install Playwright browser (chromium)
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        uses: nick-fields/retry@v3
+        with:
+          timeout_minutes: 8
+          max_attempts: 3
+          command: npx playwright install chromium
 
       - name: Build plugin assets
         run: npm run build
