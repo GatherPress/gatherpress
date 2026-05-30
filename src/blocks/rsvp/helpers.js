@@ -9,7 +9,7 @@
  * Gutenberg's error boundary ("RSVP block has encountered an error and cannot
  * be previewed") and taking the whole block down.
  *
- * Treat an unparseable or non-object value as empty so the block degrades
+ * Treat an unparsable or non-object value as empty so the block degrades
  * gracefully — the hydrate effect re-seeds the per-status defaults — instead of
  * crashing the editor.
  *
