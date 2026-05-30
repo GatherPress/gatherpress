@@ -114,13 +114,10 @@ jobs:
 
       - name: Start wp-env
         run: |
-          # Strip only docker layer-progress lines (hex-id prefixed) so wp-env's
-          # own provisioning output stays visible; docker ps + wait-on are the
-          # real gates. Dev environment serves on port 8888.
-          npm run wp-env -- start --debug 2>&1 | grep -vE '^ [0-9a-f]{8,} ' || true
-          echo "::group::docker ps -a"; docker ps -a; echo "::endgroup::"
+          npm run wp-env -- start
+          # Block until the dev site (port 8888) actually answers, so a
+          # non-booting env fails here rather than at the Plugin Check step.
           npx wait-on http://localhost:8888/wp-admin -t 180000
-          npm run wp-env -- run cli wp core version
         shell: bash
 
       - name: Run Plugin Check
