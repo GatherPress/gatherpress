@@ -110,17 +110,34 @@ jobs:
 
       - name: Start wp-env
         run: |
-          echo "cwd: $(pwd)"
-          # Local, patch-package-patched wp-env from node_modules (audit bypass
-          # already baked in) — the same binary e2e/phpunit CI boot successfully.
-          npm run wp-env -- start
-          echo "::group::docker ps"
-          docker ps -a
+          echo "::group::env"
+          echo "node: $(node -v)  npm: $(npm -v)"
+          echo "patched docker-config.js? (expect 1):"
+          grep -c 'audit.block-insecure' node_modules/@wordpress/env/lib/runtime/docker/docker-config.js || echo "PATCH MISSING"
           echo "::endgroup::"
-          # Block until WordPress actually answers, and fail loudly here (rather
-          # than downstream with "Environment not initialized") if it never does.
-          npx wait-on http://localhost:8880/wp-admin/install.php -t 120000
-          npm run wp-env -- run cli wp core version
+
+          echo "::group::wp-env start --debug"
+          npm run wp-env -- start --debug > /tmp/wpenv.log 2>&1 && echo "start exit 0" || echo "start exit $?"
+          grep -viE 'Downloading|Extracting|Pull complete|Download complete|Pulling fs|Already exists|[0-9.]+ ?[kKMG]?B/' /tmp/wpenv.log | tail -160
+          echo "::endgroup::"
+
+          echo "::group::docker images"; docker images; echo "::endgroup::"
+          echo "::group::docker ps -a"; docker ps -a; echo "::endgroup::"
+
+          echo "::group::generated docker-compose.yml"
+          find ~/.wp-env -name 'docker-compose.yml' -exec cat {} \; 2>/dev/null | head -160
+          echo "::endgroup::"
+
+          echo "::group::generated Dockerfile(s)"
+          find ~/.wp-env -iname '*ockerfile*' -exec echo '---- {} ----' \; -exec cat {} \; 2>/dev/null | head -160
+          echo "::endgroup::"
+
+          echo "::group::wordpress container logs (if any)"
+          docker ps -a --format '{{.Names}}' | grep -i wordpress | head -1 | xargs -r -I{} docker logs {} 2>&1 | tail -60 || true
+          echo "::endgroup::"
+
+          # Diagnostic run: stop here with everything captured.
+          exit 1
         shell: bash
 
       - name: Run Plugin Check
