@@ -104,6 +104,43 @@ const DEFAULT_STATUS_TEMPLATES = applyFilters(
 );
 
 /**
+ * Safely parse the `serializedInnerBlocks` attribute into a status→markup map.
+ *
+ * `serializedInnerBlocks` is a JSON string round-tripped through
+ * `post_content`: a block attribute whose value is itself serialized block
+ * markup. That double nesting is fragile — a single dropped escape anywhere in
+ * the storage round-trip (seen on WordPress 7.0, issue #1704) leaves the editor
+ * with a malformed JSON string. An unguarded `JSON.parse` of it throws on every
+ * render, tripping Gutenberg's error boundary ("RSVP block has encountered an
+ * error and cannot be previewed") and taking the whole block down.
+ *
+ * Treat an unparseable value as empty so the block degrades gracefully — the
+ * hydrate effect re-seeds the per-status defaults — instead of crashing the
+ * editor.
+ *
+ * @since 0.34.0
+ *
+ * @param {string} serialized The raw `serializedInnerBlocks` attribute value.
+ *
+ * @return {Object} Parsed status→markup map, or `{}` when the value is missing
+ *                  or not valid JSON.
+ */
+export function parseSerializedInnerBlocks( serialized ) {
+	try {
+		const parsed = JSON.parse( serialized || '{}' );
+
+		// A valid-JSON array/string/number is not a status map — normalize to
+		// an object so callers can rely on `Object.keys` / property access.
+		return parsed && 'object' === typeof parsed && ! Array.isArray( parsed )
+			? parsed
+			: {};
+	} catch {
+		// Malformed JSON — fall back to an empty map and let hydration rebuild.
+		return {};
+	}
+}
+
+/**
  * Helper function to convert a template to blocks.
  *
  * @param {Array} template The block template structure.
@@ -147,7 +184,7 @@ const Edit = ( { attributes, setAttributes, clientId, context } ) => {
 	// hydrated `serializedInnerBlocks`) and auto-included instances (which
 	// land with `patternPicked: true`) bypass the picker.
 	const hasAnyStatusSerialized =
-		0 < Object.keys( JSON.parse( serializedInnerBlocks || '{}' ) ).length;
+		0 < Object.keys( parseSerializedInnerBlocks( serializedInnerBlocks ) ).length;
 	const showPatternPicker = ! patternPicked && ! hasAnyStatusSerialized;
 
 	const handlePatternPick = ( pattern ) => {
@@ -295,9 +332,8 @@ const Edit = ( { attributes, setAttributes, clientId, context } ) => {
 	// Save the provided inner blocks to the serializedInnerBlocks attribute
 	const saveInnerBlocks = useCallback(
 		( state, newState, blocks ) => {
-			const currentSerializedBlocks = JSON.parse(
-				serializedInnerBlocks || '{}',
-			);
+			const currentSerializedBlocks =
+				parseSerializedInnerBlocks( serializedInnerBlocks );
 
 			// Encode the serialized content for safe use in HTML attributes
 			const sanitizedSerialized = serialize( blocks );
@@ -319,9 +355,8 @@ const Edit = ( { attributes, setAttributes, clientId, context } ) => {
 	// Load inner blocks for a given state
 	const loadInnerBlocksForState = useCallback(
 		( state ) => {
-			const savedBlocks = JSON.parse( serializedInnerBlocks || '{}' )[
-				state
-			];
+			const savedBlocks =
+				parseSerializedInnerBlocks( serializedInnerBlocks )[ state ];
 			if ( savedBlocks && 0 < savedBlocks.length ) {
 				replaceInnerBlocks( clientId, parse( savedBlocks, {} ) );
 			}
@@ -347,9 +382,8 @@ const Edit = ( { attributes, setAttributes, clientId, context } ) => {
 		}
 
 		const hydrateInnerBlocks = () => {
-			const currentSerializedBlocks = JSON.parse(
-				serializedInnerBlocks || '{}',
-			);
+			const currentSerializedBlocks =
+				parseSerializedInnerBlocks( serializedInnerBlocks );
 
 			const updatedBlocks = Object.keys( DEFAULT_STATUS_TEMPLATES ).reduce(
 				( updatedSerializedBlocks, templateKey ) => {
