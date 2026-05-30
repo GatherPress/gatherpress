@@ -106,14 +106,11 @@ jobs:
           # Same config the official action emits.
           echo "{ \"core\": null, \"port\": 8880, \"testsPort\": 8881, \"plugins\": [ \"https://downloads.wordpress.org/plugin/plugin-check.zip\" ], \"mappings\": { \"wp-content/plugins/$PLUGIN_SLUG\": \"$PLUGIN_DIR\" } }" > .wp-env.json
 
-          # Pin @wordpress/env to 11.2.0. Installing unpinned (`@wordpress/env`)
-          # pulls whatever is tagged `latest`, which since 11.3.0 changed
-          # `wp-env start` so it exits 0 right after "Reading configuration"
-          # without ever bringing the containers up — the next step then fails
-          # with "Environment not initialized." 11.2.0 is the version this
-          # workflow's docker-config.js sed patch targets and the version the
-          # repo already validates via patches/@wordpress+env+11.2.0.patch.
-          # Bump this in lockstep with that patch once upstream is sorted.
+          # Pin @wordpress/env to 11.2.0 for deterministic CI: it's the version
+          # the repo validates locally (package.json + the
+          # patches/@wordpress+env+11.2.0.patch postinstall) and the one the
+          # docker-config.js sed patch below targets. Unpinned drifts to
+          # whatever is tagged `latest`. Bump in lockstep with that patch.
           npm -g --no-fund i @wordpress/env@11.2.0
 
           # Bypass Composer's new audit block on PHPUnit security advisories.
@@ -126,13 +123,23 @@ jobs:
           fi
         shell: bash
 
+      # Run `wp-env start` directly rather than via nick-fields/retry: under the
+      # retry wrapper the command returned exit 0 immediately after "Reading
+      # configuration" without ever bringing the containers up, so the next step
+      # failed with "Environment not initialized." A direct step runs in the
+      # workspace cwd (same as Run Plugin Check), streams full `--debug` output,
+      # and we assert the container is actually reachable before moving on so a
+      # silent no-op start fails loudly here instead of downstream.
       - name: Start wp-env
-        uses: nick-fields/retry@v3
-        with:
-          timeout_minutes: 10
-          max_attempts: 3
-          shell: bash
-          command: wp-env start --update
+        run: |
+          echo "cwd: $(pwd)"
+          wp-env start --update --debug
+          echo "::group::docker ps"
+          docker ps -a
+          echo "::endgroup::"
+          # Fail here (with context) if the env didn't actually come up.
+          wp-env run cli wp core version
+        shell: bash
 
       - name: Run Plugin Check
         run: |
