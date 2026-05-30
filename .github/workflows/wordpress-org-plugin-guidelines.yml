@@ -13,6 +13,11 @@ on: # rebuild any PRs and main branch changes
     branches:
     - main
 
+# Cancel superseded runs on the same ref so stacked PR pushes do not pile up.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
@@ -32,9 +37,14 @@ jobs:
           tools: wp-cli
 
       - name: Install dist-archive-command
-        env:
-          COMPOSER_AUTH: '{"github-oauth": {"github.com": "${{ secrets.GITHUB_TOKEN }}"}}'
-        run: wp package install wp-cli/dist-archive-command:^2
+        run: |
+          # shivammathur/setup-php stores a GitHub OAuth token in Composer's
+          # global auth config; wp-cli's bundled Composer rejects its format
+          # ("invalid characters"), breaking this install. dist-archive-command
+          # is public, so drop the token and install unauthenticated.
+          composer config --global --unset github-oauth.github.com 2>/dev/null || true
+          rm -f "$HOME/.config/composer/auth.json" "$HOME/.composer/auth.json" "$HOME/.wp-cli/packages/auth.json" 2>/dev/null || true
+          wp package install wp-cli/dist-archive-command:^2
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -76,19 +86,19 @@ jobs:
           mkdir tmp-build
           unzip gatherpress.zip -d tmp-build
 
-      # The wordpress/plugin-check-action composite action installs
-      # @wordpress/env globally and runs it, but the wp-env Dockerfile
-      # currently fails because Composer's audit blocks every PHPUnit
-      # version covered by the new PKSA-5jz8-6tcw-pbk4 / PKSA-z3gr-8qht-p93v
-      # advisories. Inline the action's steps here so we can patch the
-      # generated Dockerfile to skip the audit before `wp-env start` runs.
-      # Revert to `uses: wordpress/plugin-check-action@…` once upstream ships
-      # a fix.
-      - name: Set up Node for plugin-check
-        uses: actions/setup-node@v4
-        with:
-          node-version: '24'
-
+      # Run Plugin Check against a wp-env environment. We deliberately do NOT
+      # use `uses: wordpress/plugin-check-action@…` or a fresh global
+      # `npm i -g @wordpress/env`: the wp-env Docker image build runs
+      # `composer global require phpunit/phpunit`, which Composer's audit blocks
+      # on the PKSA-5jz8-6tcw-pbk4 / PKSA-z3gr-8qht-p93v advisories. The repo
+      # already solves this for its other wp-env CI (e2e, phpunit) by patching
+      # the generated Dockerfile via patches/@wordpress+env+11.2.0.patch, which
+      # `npm ci` applies above (patch-package fails loudly if it ever stops
+      # matching). So we use that local, validated wp-env (`npm run wp-env`)
+      # instead of an unpinned global install + a silent best-effort `sed`,
+      # which broke when `latest` drifted and the WordPress image stopped
+      # building (only the db containers came up → "Environment not
+      # initialized"). Revert to the upstream action once it ships a fix.
       - name: Export plugin paths
         run: |
           PLUGIN_DIR=$(realpath "./tmp-build/gatherpress")
@@ -96,35 +106,32 @@ jobs:
           echo "PLUGIN_SLUG=$(basename $PLUGIN_DIR)" >> "$GITHUB_ENV"
         shell: bash
 
-      - name: Install and patch wp-env
+      - name: Configure wp-env
         run: |
-          # Same config the official action emits.
-          echo "{ \"core\": null, \"port\": 8880, \"testsPort\": 8881, \"plugins\": [ \"https://downloads.wordpress.org/plugin/plugin-check.zip\" ], \"mappings\": { \"wp-content/plugins/$PLUGIN_SLUG\": \"$PLUGIN_DIR\" } }" > .wp-env.json
-
-          npm -g --no-fund i @wordpress/env
-
-          # Bypass Composer's new audit block on PHPUnit security advisories.
-          WP_ENV_DOCKER_CONFIG="$(npm root -g)/@wordpress/env/lib/runtime/docker/docker-config.js"
-          if grep -q 'composer global require --dev phpunit/phpunit' "$WP_ENV_DOCKER_CONFIG" \
-             && ! grep -q 'audit.block-insecure' "$WP_ENV_DOCKER_CONFIG"; then
-            sed -i \
-              's|RUN composer global require --dev phpunit/phpunit:|RUN composer global config --no-plugins audit.abandoned ignore\nRUN composer global config --no-plugins audit.block-insecure false\nRUN composer global require --dev phpunit/phpunit:|' \
-              "$WP_ENV_DOCKER_CONFIG"
-          fi
+          # Mirror the repo's proven local-only .wp-env.json (what e2e/phpunit
+          # boot). Crucially NO remote plugin URL in `plugins`: having wp-env
+          # fetch plugin-check from downloads.wordpress.org during `wp-env start`
+          # is what left the env provisioning only the database. Map the built
+          # plugin in here; plugin-check is installed at runtime once WP is live.
+          echo "{ \"\$schema\": \"https://schemas.wp.org/trunk/wp-env.json\", \"testsEnvironment\": false, \"themes\": [ \"WordPress/twentytwentyfive\" ], \"config\": { \"WP_DEBUG\": true }, \"mappings\": { \"wp-content/plugins/$PLUGIN_SLUG\": \"$PLUGIN_DIR\" } }" > .wp-env.json
+          cat .wp-env.json
         shell: bash
 
       - name: Start wp-env
-        uses: nick-fields/retry@v3
-        with:
-          timeout_minutes: 10
-          max_attempts: 3
-          shell: bash
-          command: wp-env start --update
+        run: |
+          npm run wp-env -- start
+          # Block until the dev site (port 8888) actually answers, so a
+          # non-booting env fails here rather than at the Plugin Check step.
+          npx wait-on http://localhost:8888/wp-admin -t 180000
+        shell: bash
 
       - name: Run Plugin Check
         run: |
-          wp-env run cli wp plugin activate "$PLUGIN_SLUG"
-          wp-env run cli wp plugin check "$PLUGIN_SLUG" \
+          # Install Plugin Check inside the running env (a runtime fetch, after
+          # WordPress is up, rather than during wp-env start).
+          npm run wp-env -- run cli wp plugin install plugin-check --activate
+          npm run wp-env -- run cli wp plugin activate "$PLUGIN_SLUG"
+          npm run wp-env -- run cli wp plugin check "$PLUGIN_SLUG" \
             --format=json \
             --exclude-files=.wp-env.json \
             --require=./wp-content/plugins/plugin-check/cli.php

@@ -140,6 +140,19 @@ return array (
         96 => '//www.gravatar.com/avatar/8c23225a67ae866951341a9d5844af55?s=96&#038;r=g&#038;d=mm',
       ),
     ),
+    8 => 
+    array (
+      'id' => 1321993,
+      'name' => 'Velda',
+      'link' => 'https://profiles.wordpress.org/supernovia/',
+      'slug' => 'supernovia',
+      'avatar_urls' => 
+      array (
+        24 => '//www.gravatar.com/avatar/b56caeb30157e1e1dd6c7d0a7ad00d78?s=24&#038;r=g&#038;d=mm',
+        48 => '//www.gravatar.com/avatar/b56caeb30157e1e1dd6c7d0a7ad00d78?s=48&#038;r=g&#038;d=mm',
+        96 => '//www.gravatar.com/avatar/b56caeb30157e1e1dd6c7d0a7ad00d78?s=96&#038;r=g&#038;d=mm',
+      ),
+    ),
   ),
   'contributors' => 
   array (
