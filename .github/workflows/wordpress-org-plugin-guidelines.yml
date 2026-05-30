@@ -32,7 +32,14 @@ jobs:
           tools: wp-cli
 
       - name: Install dist-archive-command
-        run: wp package install wp-cli/dist-archive-command:^2
+        run: |
+          # shivammathur/setup-php stores a GitHub OAuth token in Composer's
+          # global auth config; wp-cli's bundled Composer rejects its format
+          # ("invalid characters"), breaking this install. dist-archive-command
+          # is public, so drop the token and install unauthenticated.
+          composer config --global --unset github-oauth.github.com 2>/dev/null || true
+          rm -f "$HOME/.config/composer/auth.json" "$HOME/.composer/auth.json" "$HOME/.wp-cli/packages/auth.json" 2>/dev/null || true
+          wp package install wp-cli/dist-archive-command:^2
 
       - name: Setup Node
         uses: actions/setup-node@v4
