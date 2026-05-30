@@ -81,19 +81,19 @@ jobs:
           mkdir tmp-build
           unzip gatherpress.zip -d tmp-build
 
-      # The wordpress/plugin-check-action composite action installs
-      # @wordpress/env globally and runs it, but the wp-env Dockerfile
-      # currently fails because Composer's audit blocks every PHPUnit
-      # version covered by the new PKSA-5jz8-6tcw-pbk4 / PKSA-z3gr-8qht-p93v
-      # advisories. Inline the action's steps here so we can patch the
-      # generated Dockerfile to skip the audit before `wp-env start` runs.
-      # Revert to `uses: wordpress/plugin-check-action@…` once upstream ships
-      # a fix.
-      - name: Set up Node for plugin-check
-        uses: actions/setup-node@v4
-        with:
-          node-version: '24'
-
+      # Run Plugin Check against a wp-env environment. We deliberately do NOT
+      # use `uses: wordpress/plugin-check-action@…` or a fresh global
+      # `npm i -g @wordpress/env`: the wp-env Docker image build runs
+      # `composer global require phpunit/phpunit`, which Composer's audit blocks
+      # on the PKSA-5jz8-6tcw-pbk4 / PKSA-z3gr-8qht-p93v advisories. The repo
+      # already solves this for its other wp-env CI (e2e, phpunit) by patching
+      # the generated Dockerfile via patches/@wordpress+env+11.2.0.patch, which
+      # `npm ci` applies above (patch-package fails loudly if it ever stops
+      # matching). So we use that local, validated wp-env (`npm run wp-env`)
+      # instead of an unpinned global install + a silent best-effort `sed`,
+      # which broke when `latest` drifted and the WordPress image stopped
+      # building (only the db containers came up → "Environment not
+      # initialized"). Revert to the upstream action once it ships a fix.
       - name: Export plugin paths
         run: |
           PLUGIN_DIR=$(realpath "./tmp-build/gatherpress")
@@ -101,50 +101,32 @@ jobs:
           echo "PLUGIN_SLUG=$(basename $PLUGIN_DIR)" >> "$GITHUB_ENV"
         shell: bash
 
-      - name: Install and patch wp-env
+      - name: Configure wp-env
         run: |
-          # Same config the official action emits.
-          echo "{ \"core\": null, \"port\": 8880, \"testsPort\": 8881, \"plugins\": [ \"https://downloads.wordpress.org/plugin/plugin-check.zip\" ], \"mappings\": { \"wp-content/plugins/$PLUGIN_SLUG\": \"$PLUGIN_DIR\" } }" > .wp-env.json
-
-          # Pin @wordpress/env to 11.2.0 for deterministic CI: it's the version
-          # the repo validates locally (package.json + the
-          # patches/@wordpress+env+11.2.0.patch postinstall) and the one the
-          # docker-config.js sed patch below targets. Unpinned drifts to
-          # whatever is tagged `latest`. Bump in lockstep with that patch.
-          npm -g --no-fund i @wordpress/env@11.2.0
-
-          # Bypass Composer's new audit block on PHPUnit security advisories.
-          WP_ENV_DOCKER_CONFIG="$(npm root -g)/@wordpress/env/lib/runtime/docker/docker-config.js"
-          if grep -q 'composer global require --dev phpunit/phpunit' "$WP_ENV_DOCKER_CONFIG" \
-             && ! grep -q 'audit.block-insecure' "$WP_ENV_DOCKER_CONFIG"; then
-            sed -i \
-              's|RUN composer global require --dev phpunit/phpunit:|RUN composer global config --no-plugins audit.abandoned ignore\nRUN composer global config --no-plugins audit.block-insecure false\nRUN composer global require --dev phpunit/phpunit:|' \
-              "$WP_ENV_DOCKER_CONFIG"
-          fi
+          # Dev-only environment (no tests env needed for Plugin Check) with the
+          # plugin-check plugin installed and the built plugin mapped in.
+          echo "{ \"core\": null, \"port\": 8880, \"testsEnvironment\": false, \"plugins\": [ \"https://downloads.wordpress.org/plugin/plugin-check.zip\" ], \"mappings\": { \"wp-content/plugins/$PLUGIN_SLUG\": \"$PLUGIN_DIR\" } }" > .wp-env.json
         shell: bash
 
-      # Run `wp-env start` directly rather than via nick-fields/retry: under the
-      # retry wrapper the command returned exit 0 immediately after "Reading
-      # configuration" without ever bringing the containers up, so the next step
-      # failed with "Environment not initialized." A direct step runs in the
-      # workspace cwd (same as Run Plugin Check), streams full `--debug` output,
-      # and we assert the container is actually reachable before moving on so a
-      # silent no-op start fails loudly here instead of downstream.
       - name: Start wp-env
         run: |
           echo "cwd: $(pwd)"
-          wp-env start --update --debug
+          # Local, patch-package-patched wp-env from node_modules (audit bypass
+          # already baked in) — the same binary e2e/phpunit CI boot successfully.
+          npm run wp-env -- start
           echo "::group::docker ps"
           docker ps -a
           echo "::endgroup::"
-          # Fail here (with context) if the env didn't actually come up.
-          wp-env run cli wp core version
+          # Block until WordPress actually answers, and fail loudly here (rather
+          # than downstream with "Environment not initialized") if it never does.
+          npx wait-on http://localhost:8880/wp-admin/install.php -t 120000
+          npm run wp-env -- run cli wp core version
         shell: bash
 
       - name: Run Plugin Check
         run: |
-          wp-env run cli wp plugin activate "$PLUGIN_SLUG"
-          wp-env run cli wp plugin check "$PLUGIN_SLUG" \
+          npm run wp-env -- run cli wp plugin activate "$PLUGIN_SLUG"
+          npm run wp-env -- run cli wp plugin check "$PLUGIN_SLUG" \
             --format=json \
             --exclude-files=.wp-env.json \
             --require=./wp-content/plugins/plugin-check/cli.php
