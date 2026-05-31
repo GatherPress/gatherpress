@@ -7,8 +7,10 @@ import { createReduxStore, dispatch, register, select, subscribe } from '@wordpr
  * Internal dependencies
  */
 import {
+	dateTimeOffset,
 	defaultDateTimeEnd,
 	defaultDateTimeStart,
+	getDefaultDuration,
 } from '../helpers/datetime';
 const DEFAULT_STATE = {
 	dateTimeStart: defaultDateTimeStart,
@@ -98,10 +100,24 @@ const unsubscribe = subscribe( () => {
 	if ( meta.gatherpress_datetime_start ) {
 		gpDispatch.setDateTimeStart( meta.gatherpress_datetime_start );
 	}
-	if ( meta.gatherpress_datetime_end ) {
-		gpDispatch.setDateTimeEnd( meta.gatherpress_datetime_end );
-	}
+
+	// Set the timezone before deriving any default end below, since
+	// dateTimeOffset() reads it from the store.
 	gpDispatch.setTimezone(
 		meta.gatherpress_timezone || config.siteTimezone || '',
 	);
+
+	if ( meta.gatherpress_datetime_end ) {
+		gpDispatch.setDateTimeEnd( meta.gatherpress_datetime_end );
+	} else {
+		// New event (no saved end): seed the end from the default duration
+		// resolved against the live, possibly-filtered durationOptions, so the
+		// end maps to a real preset and the Duration select renders. The
+		// module-load default end is hardcoded to start + 2h, which leaves no
+		// matching preset (and drops to the end-time picker) when a
+		// `gatherpress.durationOptions` filter omits 2 (#1706).
+		const defaultDuration = getDefaultDuration();
+		gpDispatch.setDuration( defaultDuration );
+		gpDispatch.setDateTimeEnd( dateTimeOffset( defaultDuration ) );
+	}
 } );

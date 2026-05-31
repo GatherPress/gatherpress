@@ -19,6 +19,7 @@ jest.mock( '@wordpress/data', () => {
 	global.__testMockDispatchFns = {
 		setDateTimeStart: jest.fn(),
 		setDateTimeEnd: jest.fn(),
+		setDuration: jest.fn(),
 		setTimezone: jest.fn(),
 	};
 
@@ -55,6 +56,8 @@ jest.mock( '@src/helpers/datetime', () => ( {
 	defaultDateTimeStart: '2025-01-15 18:00:00',
 	defaultDateTimeEnd: '2025-01-15 20:00:00',
 	getDateTimeOffset: jest.fn( () => 2 ),
+	getDefaultDuration: jest.fn( () => 2 ),
+	dateTimeOffset: jest.fn( () => '2025-01-15 20:00:00' ),
 } ) );
 
 // Import store to trigger module evaluation (registers subscribe).
@@ -106,6 +109,8 @@ describe( 'DateTime store subscribe initialization', () => {
 		expect( global.__testMockDispatchFns.setTimezone ).toHaveBeenCalledWith(
 			'America/Chicago',
 		);
+		// A saved end is used verbatim — no default duration is seeded.
+		expect( global.__testMockDispatchFns.setDuration ).not.toHaveBeenCalled();
 	} );
 
 	it( 'falls back to siteTimezone from config when meta timezone is empty', () => {
@@ -123,7 +128,7 @@ describe( 'DateTime store subscribe initialization', () => {
 		);
 	} );
 
-	it( 'skips setDateTimeStart and setDateTimeEnd when meta values are empty', () => {
+	it( 'seeds a default duration and derived end when meta datetime values are empty', () => {
 		global.__testMockMeta = {
 			gatherpress_datetime_start: '',
 			gatherpress_datetime_end: '',
@@ -133,8 +138,14 @@ describe( 'DateTime store subscribe initialization', () => {
 
 		global.__testSubscribeCallback();
 
+		// No saved start to restore.
 		expect( global.__testMockDispatchFns.setDateTimeStart ).not.toHaveBeenCalled();
-		expect( global.__testMockDispatchFns.setDateTimeEnd ).not.toHaveBeenCalled();
+		// New event: seed the default duration and derive the end from it so the
+		// Duration select renders even when a durationOptions filter omits 2 (#1706).
+		expect( global.__testMockDispatchFns.setDuration ).toHaveBeenCalledWith( 2 );
+		expect( global.__testMockDispatchFns.setDateTimeEnd ).toHaveBeenCalledWith(
+			'2025-01-15 20:00:00',
+		);
 		expect( global.__testMockDispatchFns.setTimezone ).toHaveBeenCalledWith(
 			'Europe/London',
 		);
