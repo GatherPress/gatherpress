@@ -1,8 +1,9 @@
 /**
  * External dependencies
  */
-import { expect, test, jest, describe, beforeEach } from '@jest/globals';
+import { expect, test, jest, describe, beforeEach, afterEach } from '@jest/globals';
 import 'moment-timezone';
+import { addFilter, removeFilter } from '@wordpress/hooks';
 
 /**
  * Mock @wordpress/data and @wordpress/core-data.
@@ -84,6 +85,7 @@ import {
 	findMatchedDuration,
 	getDateTimeEnd,
 	getDateTimeOffset,
+	getDefaultDuration,
 	getDateTimeStart,
 	getTimezone,
 	getUtcOffset,
@@ -1030,5 +1032,60 @@ describe( 'useMatchedDuration', () => {
 		};
 
 		expect( useMatchedDuration() ).toBe( false );
+	} );
+} );
+
+/**
+ * Coverage for getDefaultDuration.
+ *
+ * Resolves the default event duration from the (possibly filtered)
+ * durationOptions: prefer 2h when offered, else the first real (numeric)
+ * option, else 2 as a last resort. Drives the new-event default end so the
+ * Duration select renders even when a filter omits 2 (#1706).
+ */
+describe( 'getDefaultDuration', () => {
+	afterEach( () => {
+		removeFilter( 'gatherpress.durationOptions', 'test/duration-options' );
+	} );
+
+	test( 'returns 2 when 2h is among the options (default option set)', () => {
+		expect( getDefaultDuration() ).toBe( 2 );
+	} );
+
+	test( 'falls back to the first numeric option when 2 is filtered out', () => {
+		addFilter(
+			'gatherpress.durationOptions',
+			'test/duration-options',
+			() => [
+				{ label: '3 hours', value: 3 },
+				{ label: '15 hours', value: 15 },
+				{ label: 'Set an end time…', value: false },
+			],
+		);
+
+		expect( getDefaultDuration() ).toBe( 3 );
+	} );
+
+	test( 'skips the false sentinel and picks the first real duration', () => {
+		addFilter(
+			'gatherpress.durationOptions',
+			'test/duration-options',
+			() => [
+				{ label: 'Set an end time…', value: false },
+				{ label: '5 hours', value: 5 },
+			],
+		);
+
+		expect( getDefaultDuration() ).toBe( 5 );
+	} );
+
+	test( 'returns 2 as a last resort when no numeric option exists', () => {
+		addFilter(
+			'gatherpress.durationOptions',
+			'test/duration-options',
+			() => [ { label: 'Set an end time…', value: false } ],
+		);
+
+		expect( getDefaultDuration() ).toBe( 2 );
 	} );
 } );

@@ -73,7 +73,7 @@ function getDefaultDateTimeEnd() {
 	const timezone = getTimezone();
 	const startDateTime = getDefaultDateTimeStart();
 	return createMomentWithTimezone( startDateTime, timezone )
-		.add( 2, 'hours' )
+		.add( getDefaultDuration(), 'hours' )
 		.format( dateTimeDatabaseFormat );
 }
 
@@ -126,6 +126,37 @@ export function durationOptions() {
 	];
 
 	return applyFilters( 'gatherpress.durationOptions', options );
+}
+
+/**
+ * Resolve the default event duration, in hours, from the available options.
+ *
+ * Prefers the conventional 2-hour duration when it is one of the (possibly
+ * filtered) `durationOptions`, so the default option set behaves exactly as
+ * before. When a `gatherpress.durationOptions` filter omits 2, it falls back
+ * to the first option that represents a real duration — skipping the `false`
+ * "Set an end time…" sentinel — so the default always maps to a selectable
+ * preset. Without this, a new event's end defaulted to start + 2h even when 2
+ * was not offered, no preset matched, and the Duration select was replaced by
+ * the end-time picker (#1706). Returns 2 as a last resort when no numeric
+ * option exists at all.
+ *
+ * @since 0.34.0
+ *
+ * @return {number} The default duration in hours.
+ */
+export function getDefaultDuration() {
+	const options = durationOptions();
+
+	if ( options.some( ( option ) => 2 === option.value ) ) {
+		return 2;
+	}
+
+	const firstNumeric = options.find(
+		( option ) => 'number' === typeof option.value,
+	);
+
+	return firstNumeric ? firstNumeric.value : 2;
 }
 
 /**
@@ -605,7 +636,7 @@ export function validateDateTimeStart( dateTimeStart, setDateTimeEnd = null, cur
 		// Use the passed duration if available, otherwise check current offset.
 		// Only use duration if it's numeric (relative mode), not if it's false (absolute mode).
 		const duration = null === currentDuration ? getDateTimeOffset() : currentDuration;
-		const hoursToAdd = ( false !== duration && 'number' === typeof duration ) ? duration : 2;
+		const hoursToAdd = ( false !== duration && 'number' === typeof duration ) ? duration : getDefaultDuration();
 
 		const dateTimeEnd = createMomentWithTimezone( dateTimeStartNumeric, tz )
 			.add( hoursToAdd, 'hours' )
@@ -643,7 +674,7 @@ export function validateDateTimeEnd( dateTimeEnd, setDateTimeStart = null ) {
 
 	if ( dateTimeEndNumeric <= dateTimeStartNumeric ) {
 		const dateTimeStart = createMomentWithTimezone( dateTimeEndNumeric, tz )
-			.subtract( 2, 'hours' )
+			.subtract( getDefaultDuration(), 'hours' )
 			.format( dateTimeDatabaseFormat );
 		updateDateTimeStart( dateTimeStart, setDateTimeStart );
 	}
