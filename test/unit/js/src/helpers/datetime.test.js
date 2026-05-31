@@ -1046,17 +1046,17 @@ describe( 'useMatchedDuration', () => {
 describe( 'getDefaultDuration', () => {
 	afterEach( () => {
 		removeFilter( 'gatherpress.durationOptions', 'test/duration-options' );
-		removeFilter( 'gatherpress.defaultDuration', 'test/default-duration' );
+		removeFilter( 'gatherpress.durationDefault', 'test/duration-default' );
 	} );
 
 	test( 'returns 2 when 2h is among the options (default option set)', () => {
 		expect( getDefaultDuration() ).toBe( 2 );
 	} );
 
-	test( 'honors the gatherpress.defaultDuration filter when it is a valid option', () => {
+	test( 'honors the gatherpress.durationDefault filter when it is a valid option', () => {
 		addFilter(
-			'gatherpress.defaultDuration',
-			'test/default-duration',
+			'gatherpress.durationDefault',
+			'test/duration-default',
 			() => 3,
 		);
 
@@ -1066,8 +1066,8 @@ describe( 'getDefaultDuration', () => {
 
 	test( 'ignores a filtered default that is not a selectable option', () => {
 		addFilter(
-			'gatherpress.defaultDuration',
-			'test/default-duration',
+			'gatherpress.durationDefault',
+			'test/duration-default',
 			() => 99,
 		);
 

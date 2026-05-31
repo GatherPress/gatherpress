@@ -1,0 +1,4 @@
+Significance: minor
+Type: added
+
+Add a `gatherpress.durationDefault` JavaScript filter to override the default event duration (in hours). The value is honored when it matches one of the available `durationOptions`, otherwise it falls back to the first available duration. [#1706]

@@ -4,7 +4,7 @@ GatherPress lets developers customize the event **Duration** control in the
 block editor through two JavaScript filters:
 
 1. [`gatherpress.durationOptions`](#gatherpressdurationoptions) — change the list of selectable durations.
-2. [`gatherpress.defaultDuration`](#gatherpressdefaultduration) — choose which duration is selected by default.
+2. [`gatherpress.durationDefault`](#gatherpressdurationdefault) — choose which duration is selected by default.
 
 Both are registered with `wp.hooks.addFilter` (the `@wordpress/hooks` package)
 and follow the [JavaScript hook naming convention](hooks-naming-convention.md)
@@ -47,7 +47,7 @@ The value you return replaces the default list entirely, so include every
 option you want available (and the `false` entry if you want to keep the
 absolute end-time picker).
 
-## `gatherpress.defaultDuration`
+## `gatherpress.durationDefault`
 
 Filters the preferred default duration, in hours, for a new event. The default
 is `2`.
@@ -56,8 +56,8 @@ is `2`.
 import { addFilter } from '@wordpress/hooks';
 
 addFilter(
-	'gatherpress.defaultDuration',
-	'my-plugin/default-duration',
+	'gatherpress.durationDefault',
+	'my-plugin/duration-default',
 	() => 6
 );
 ```
@@ -73,13 +73,13 @@ absolute end-time picker.
 
 The default duration is resolved against the (possibly filtered) options:
 
-- If `gatherpress.defaultDuration` returns a value that is one of the
+- If `gatherpress.durationDefault` returns a value that is one of the
   `durationOptions`, that value is the default.
 - Otherwise the first option with a numeric `value` (skipping the
   "Set an end time…" entry) becomes the default.
 - With the built-in options unchanged, the default stays `2` hours.
 
 So if you provide a custom `durationOptions` list that does not include `2`, you
-do not have to set `gatherpress.defaultDuration` as well — the first duration in
-your list is used automatically. Set `gatherpress.defaultDuration` only when you
+do not have to set `gatherpress.durationDefault` as well — the first duration in
+your list is used automatically. Set `gatherpress.durationDefault` only when you
 want a specific entry (other than the first) to be the default.

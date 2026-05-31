@@ -132,7 +132,7 @@ export function durationOptions() {
  * Resolve the default event duration, in hours, from the available options.
  *
  * The preferred default starts at 2h and can be overridden via the
- * `gatherpress.defaultDuration` filter. That preferred value is used when it
+ * `gatherpress.durationDefault` filter. That preferred value is used when it
  * is one of the (possibly filtered) `durationOptions`; otherwise it falls back
  * to the first option that represents a real duration — skipping the `false`
  * "Set an end time…" sentinel — so the default always maps to a selectable
@@ -157,7 +157,7 @@ export function getDefaultDuration() {
 	 *
 	 * @param {number} value The preferred default duration in hours. Default 2.
 	 */
-	const defaultValue = applyFilters( 'gatherpress.defaultDuration', 2 );
+	const defaultValue = applyFilters( 'gatherpress.durationDefault', 2 );
 
 	const options = durationOptions();
 
