@@ -131,32 +131,45 @@ export function durationOptions() {
 /**
  * Resolve the default event duration, in hours, from the available options.
  *
- * Prefers the conventional 2-hour duration when it is one of the (possibly
- * filtered) `durationOptions`, so the default option set behaves exactly as
- * before. When a `gatherpress.durationOptions` filter omits 2, it falls back
+ * The preferred default starts at 2h and can be overridden via the
+ * `gatherpress.defaultDuration` filter. That preferred value is used when it
+ * is one of the (possibly filtered) `durationOptions`; otherwise it falls back
  * to the first option that represents a real duration — skipping the `false`
  * "Set an end time…" sentinel — so the default always maps to a selectable
  * preset. Without this, a new event's end defaulted to start + 2h even when 2
  * was not offered, no preset matched, and the Duration select was replaced by
- * the end-time picker (#1706). Returns 2 as a last resort when no numeric
- * option exists at all.
+ * the end-time picker (#1706). Returns the preferred value as a last resort
+ * when no numeric option exists at all.
  *
  * @since 0.34.0
  *
  * @return {number} The default duration in hours.
  */
 export function getDefaultDuration() {
+	/**
+	 * Filters the preferred default event duration, in hours.
+	 *
+	 * The returned value is honored when it matches one of the available
+	 * `durationOptions`; otherwise GatherPress falls back to the first real
+	 * duration in the list so the Duration select always has a matching preset.
+	 *
+	 * @since 0.34.0
+	 *
+	 * @param {number} value The preferred default duration in hours. Default 2.
+	 */
+	const defaultValue = applyFilters( 'gatherpress.defaultDuration', 2 );
+
 	const options = durationOptions();
 
-	if ( options.some( ( option ) => 2 === option.value ) ) {
-		return 2;
+	if ( options.some( ( option ) => defaultValue === option.value ) ) {
+		return defaultValue;
 	}
 
 	const firstNumeric = options.find(
 		( option ) => 'number' === typeof option.value,
 	);
 
-	return firstNumeric ? firstNumeric.value : 2;
+	return firstNumeric ? firstNumeric.value : defaultValue;
 }
 
 /**
