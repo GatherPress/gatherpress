@@ -20,6 +20,15 @@
 	position: relative;
 	overflow: hidden;
 
+	// Never exceed the container. With an auto width the inline
+	// `height` + `aspect-ratio` pair resolves to a fixed pixel width
+	// (e.g. 300px tall at 2/1 → 600px wide), which overflows narrow
+	// viewports — the map "breaks out" of the body on mobile (#1703).
+	// Capping the width lets the box shrink to its container; `box-sizing`
+	// keeps the block-supports border inside that cap.
+	max-width: 100%;
+	box-sizing: border-box;
+
 	// Inherit the wrapper's border-radius (the `border` block support
 	// stamps radius onto the block wrapper) so inner elements — static
 	// <img>, Leaflet container, placeholder — get clipped to the same
