@@ -28,6 +28,7 @@ import PatternPicker, { PatternChooserModal } from '../../components/PatternPick
 import { hasValidEventId, DISABLED_FIELD_OPACITY, getEventMeta, usePostTypeSupports, isRsvpEnabledForEvent } from '../../helpers/event';
 import { isInFSETemplate, getEditorDocument } from '../../helpers/editor';
 import { getFromSettings } from '../../helpers/editor-settings';
+import { parseSerializedInnerBlocks } from './helpers';
 
 /**
  * Starter patterns offered by the RSVP block's pattern picker.
@@ -147,7 +148,7 @@ const Edit = ( { attributes, setAttributes, clientId, context } ) => {
 	// hydrated `serializedInnerBlocks`) and auto-included instances (which
 	// land with `patternPicked: true`) bypass the picker.
 	const hasAnyStatusSerialized =
-		0 < Object.keys( JSON.parse( serializedInnerBlocks || '{}' ) ).length;
+		0 < Object.keys( parseSerializedInnerBlocks( serializedInnerBlocks ) ).length;
 	const showPatternPicker = ! patternPicked && ! hasAnyStatusSerialized;
 
 	const handlePatternPick = ( pattern ) => {
@@ -295,9 +296,8 @@ const Edit = ( { attributes, setAttributes, clientId, context } ) => {
 	// Save the provided inner blocks to the serializedInnerBlocks attribute
 	const saveInnerBlocks = useCallback(
 		( state, newState, blocks ) => {
-			const currentSerializedBlocks = JSON.parse(
-				serializedInnerBlocks || '{}',
-			);
+			const currentSerializedBlocks =
+				parseSerializedInnerBlocks( serializedInnerBlocks );
 
 			// Encode the serialized content for safe use in HTML attributes
 			const sanitizedSerialized = serialize( blocks );
@@ -319,9 +319,8 @@ const Edit = ( { attributes, setAttributes, clientId, context } ) => {
 	// Load inner blocks for a given state
 	const loadInnerBlocksForState = useCallback(
 		( state ) => {
-			const savedBlocks = JSON.parse( serializedInnerBlocks || '{}' )[
-				state
-			];
+			const savedBlocks =
+				parseSerializedInnerBlocks( serializedInnerBlocks )[ state ];
 			if ( savedBlocks && 0 < savedBlocks.length ) {
 				replaceInnerBlocks( clientId, parse( savedBlocks, {} ) );
 			}
@@ -347,9 +346,8 @@ const Edit = ( { attributes, setAttributes, clientId, context } ) => {
 		}
 
 		const hydrateInnerBlocks = () => {
-			const currentSerializedBlocks = JSON.parse(
-				serializedInnerBlocks || '{}',
-			);
+			const currentSerializedBlocks =
+				parseSerializedInnerBlocks( serializedInnerBlocks );
 
 			const updatedBlocks = Object.keys( DEFAULT_STATUS_TEMPLATES ).reduce(
 				( updatedSerializedBlocks, templateKey ) => {
