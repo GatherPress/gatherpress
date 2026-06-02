@@ -274,16 +274,16 @@ export const EventListTypeControls = ( { attributes, setAttributes } ) => {
 };
 
 /**
- * VenueFilterControls component
+ * ShadowSourceFilterControls component
  *
  * Renders a ToggleControl to filter the event query by the
- * current venue context. When enabled on a venue page, only
- * events associated with that venue are shown. When not on a
- * venue page, the filter is gracefully ignored.
+ * current shadow-source context. When enabled on a shadow-source page, only
+ * events associated with that shadow-source are shown. When not on a
+ * shadow-source page, the filter is gracefully ignored.
  *
  * In a template/template-part context, the editor has no
- * current venue to bind to — the toggle is still relevant
- * because the template will be applied to venue posts at
+ * current shadow-source to bind to — the toggle is still relevant
+ * because the template will be applied to shadow-source posts at
  * render time, but the help copy reflects the deferred binding.
  *
  * @param {Object}   props
@@ -291,15 +291,15 @@ export const EventListTypeControls = ( { attributes, setAttributes } ) => {
  * @param {Function} props.setAttributes     Function to update block attributes.
  * @param {boolean}  props.inTemplateContext Whether the host editor is a template or template part.
  *
- * @return {Element}                          ToggleControl for venue filtering.
+ * @return {Element}                          ToggleControl for shadow-source filtering.
  */
-export const VenueFilterControls = ( {
+export const ShadowSourceFilterControls = ( {
 	attributes,
 	setAttributes,
 	inTemplateContext = false,
 } ) => {
 	const {
-		query: { venue_filter: venueFilter } = {},
+		query: { shadow_filter: ShadowFilter } = {},
 	} = attributes;
 
 	// Detect if the editor's current post type is a shadow-source CPT
@@ -341,7 +341,7 @@ export const VenueFilterControls = ( {
 	//      `editorPostId` is `undefined` at the moment `onChange` runs, so
 	//      the attrs get written as `null` and stay that way until the user
 	//      toggles a second time.
-	//   3. Reloads where Gutenberg restored `venue_filter: 1` but the
+	//   3. Reloads where Gutenberg restored `shadow_filter: 1` but the
 	//      shadow-source attrs were never persisted in the first place.
 	//
 	// Only runs on shadow-source editor post types so non-shadow contexts
@@ -350,7 +350,7 @@ export const VenueFilterControls = ( {
 	const queryShadowId = attributes.query?.gatherpress_shadow_source_post_id;
 	const queryShadowType = attributes.query?.gatherpress_shadow_source_post_type;
 	const needsBackfill =
-		!! venueFilter &&
+		!! ShadowFilter &&
 		editorIsShadowSource &&
 		!! editorPostId &&
 		!! editorPostType &&
@@ -402,7 +402,7 @@ export const VenueFilterControls = ( {
 				singularLabel
 			) }
 			help={ helpText }
-			checked={ !! venueFilter }
+			checked={ !! ShadowFilter }
 			onChange={ ( value ) => {
 				// Pass editor's current page through to REST so the preview
 				// matches what the runtime template will render against. The
@@ -416,7 +416,7 @@ export const VenueFilterControls = ( {
 				setAttributes( {
 					query: {
 						...attributes.query,
-						venue_filter: value ? 1 : 0,
+						shadow_filter: value ? 1 : 0,
 						gatherpress_shadow_source_post_id: contextPostId,
 						gatherpress_shadow_source_post_type: contextPostType,
 					},
@@ -590,15 +590,15 @@ export const EventQueryControlsSlotFill = () => {
 	const isEventContext = isEventPostType();
 
 	// Reactive gate against the host editor's post type. Templates and template
-	// parts have no concrete venue context to bind to, but they may render on a
-	// venue page later, so we keep the toggle visible there with adjusted copy.
-	// On any non-venue, non-template host the toggle can never apply, so we hide
+	// parts have no concrete shadow-source context to bind to, but they may render on a
+	// shadow-source page later, so we keep the toggle visible there with adjusted copy.
+	// On any non-shadow-source, non-template host the toggle can never apply, so we hide
 	// it to remove the mental load of an option that does nothing.
-	const isVenueContext = usePostTypeSupports(
+	const isShadowSourceContext = usePostTypeSupports(
 		'gatherpress-shadow-source'
 	);
 	const inTemplateContext = isInFSETemplate();
-	const showVenueFilter = isVenueContext || inTemplateContext;
+	const showShadowSourceFilter = isShadowSourceContext || inTemplateContext;
 
 	return (
 		<EventQueryControls>
@@ -608,8 +608,8 @@ export const EventQueryControlsSlotFill = () => {
 					<EventIncludeUnfinishedControls { ...props } />
 
 					{ isEventContext && <EventExcludeControls { ...props } /> }
-					{ showVenueFilter && (
-						<VenueFilterControls
+					{ showShadowSourceFilter && (
+						<ShadowSourceFilterControls
 							{ ...props }
 							inTemplateContext={ inTemplateContext }
 						/>
