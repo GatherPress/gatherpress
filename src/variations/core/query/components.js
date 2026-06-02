@@ -615,13 +615,23 @@ export const EventQueryControlsSlotFill = () => {
 					queryPostType &&
 					currentPostType === queryPostType;
 
+				const showShadowSourceFilterControl =
+					inTemplateContext ||
+					(
+						isShadowSourceContext &&
+						currentPostType &&
+						queryPostType &&
+						currentPostType !== queryPostType
+					);
+
+
 				return (
 					<>
 						<EventListTypeControls { ...props } />
 						<EventIncludeUnfinishedControls { ...props } />
 
 						{ showExcludeControl && <EventExcludeControls { ...props } /> }
-						{ showShadowSourceFilter && (
+						{ showShadowSourceFilterControl && (
 							<ShadowSourceFilterControls
 								{ ...props }
 								inTemplateContext={ inTemplateContext }
