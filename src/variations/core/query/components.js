@@ -599,26 +599,40 @@ export const EventQueryControlsSlotFill = () => {
 	);
 	const inTemplateContext = isInFSETemplate();
 	const showShadowSourceFilter = isShadowSourceContext || inTemplateContext;
+	const currentPostType = useSelect(
+		( select ) => select( 'core/editor' ).getCurrentPostType(),
+		[]
+	);
 
 	return (
 		<EventQueryControls>
-			{ ( props ) => (
-				<>
-					<EventListTypeControls { ...props } />
-					<EventIncludeUnfinishedControls { ...props } />
+			{ ( props ) => {
+				const queryPostType = props.attributes?.query?.postType;
 
-					{ isEventContext && <EventExcludeControls { ...props } /> }
-					{ showShadowSourceFilter && (
-						<ShadowSourceFilterControls
-							{ ...props }
-							inTemplateContext={ inTemplateContext }
-						/>
-					) }
-					<EventCountControls { ...props } />
-					<EventOffsetControls { ...props } />
-					<EventOrderControls { ...props } />
-				</>
-			) }
+				const showExcludeControl =
+					isEventContext &&
+					currentPostType &&
+					queryPostType &&
+					currentPostType === queryPostType;
+
+				return (
+					<>
+						<EventListTypeControls { ...props } />
+						<EventIncludeUnfinishedControls { ...props } />
+
+						{ showExcludeControl && <EventExcludeControls { ...props } /> }
+						{ showShadowSourceFilter && (
+							<ShadowSourceFilterControls
+								{ ...props }
+								inTemplateContext={ inTemplateContext }
+							/>
+						) }
+						<EventCountControls { ...props } />
+						<EventOffsetControls { ...props } />
+						<EventOrderControls { ...props } />
+					</>
+				);
+			} }
 		</EventQueryControls>
 	);
 };
