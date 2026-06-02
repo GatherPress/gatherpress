@@ -117,7 +117,7 @@ describe( 'EventQueryControlsSlotFill', () => {
 			screen.queryByText( venueToggleLabel )
 		).not.toBeInTheDocument();
 		expect( usePostTypeSupports ).toHaveBeenCalledWith(
-			'gatherpress-venue-information'
+			'gatherpress-shadow-source'
 		);
 	} );
 
