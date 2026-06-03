@@ -35,6 +35,12 @@ class Test_Setup extends Base {
 		$instance = Setup::get_instance();
 		$hooks    = array(
 			array(
+				'type'     => 'filter',
+				'name'     => 'register_block_type_args',
+				'priority' => 10,
+				'callback' => array( $instance, 'enable_context_for_core_query_block' ),
+			),
+			array(
 				'type'     => 'action',
 				'name'     => 'init',
 				'priority' => 10,
