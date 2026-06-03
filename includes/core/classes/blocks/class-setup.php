@@ -53,7 +53,7 @@ class Setup {
 	 * @return void
 	 */
 	protected function setup_hooks(): void {
-		// Called from here because the Init:10 from inside Blocks/Event_Query would be too late for that filter to work.
+		// Called from here because Init:10 from inside Blocks/Event_Query would be too late for that filter to work.
 		add_filter( 'register_block_type_args', array( $this, 'enable_context_for_core_query_block' ), 10, 2 );
 		add_action( 'init', array( $this, 'register_block_classes' ) );
 		add_action( 'init', array( $this, 'register_block_patterns' ) );
@@ -323,10 +323,9 @@ class Setup {
 	public function enable_context_for_core_query_block( array $args, string $block_type ): array {
 		// Only modify the Query block.
 		if ( 'core/query' === $block_type ) {
-			error_log( 'enable_context_for_core_query_block called for block type: ' . $block_type );
 			$args['uses_context'] = array_merge(
-				$args['uses_context'] ?? [],
-				[ 'postType', 'postId' ]
+				$args['uses_context'] ?? array(),
+				array( 'postType', 'postId' )
 			);
 		}
 		return $args;
