@@ -1,0 +1,4 @@
+Significance: patch
+Type: fixed
+
+Stop the front-end RSVP button from vanishing when a request fails or the block markup is incomplete. The status switcher now falls back to the no_status state when no inner block matches, the request handler guards against missing/non-JSON responses and surfaces an error instead of failing silently, and the post-RSVP modal logic no longer throws on malformed markup.
