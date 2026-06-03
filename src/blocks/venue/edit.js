@@ -411,7 +411,7 @@ const Edit = ( props ) => {
 					) ) }
 			</BlockContextProvider>
 			<InspectorControls>
-				{ ! isDescendentOfQueryLoop && ! isInFSETemplate() && isEventContext && (
+				{ 'gatherpress_venue' === sourcePostType && ! isDescendentOfQueryLoop && ! isInFSETemplate() && isEventContext && (
 					<PanelBody
 						title={ __( 'Venue settings', 'gatherpress' ) }
 						initialOpen={ true }
