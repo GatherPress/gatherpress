@@ -72,7 +72,7 @@ jest.mock( '@src/variations/core/query/slots/inherited-query-controls', () => ( 
 
 jest.mock( '@src/helpers/event', () => ( {
 	isEventPostType: jest.fn(),
-	usePostTypeSupports: jest.fn(),
+	isPostTypeSupporting: jest.fn(),
 } ) );
 
 jest.mock( '@src/helpers/editor', () => ( {
@@ -84,7 +84,7 @@ jest.mock( '@src/helpers/editor', () => ( {
 /**
  * WordPress dependencies
  */
-import { isEventPostType, usePostTypeSupports } from '@src/helpers/event';
+import { isEventPostType, isPostTypeSupporting } from '@src/helpers/event';
 import { isInFSETemplate } from '@src/helpers/editor';
 
 /**
@@ -95,20 +95,20 @@ import { EventQueryControlsSlotFill } from '@src/variations/core/query/component
 const venueToggleLabel = 'Filter by Current Venue';
 const excludeToggleLabel = 'Exclude Current Event';
 const venueHelp =
-	'When placed on a shadow-source page, only shows events tied to that page.';
+	'When placed inside Venue context, only shows Events tied to that Venue.';
 const templateHelp =
 	'The filter only takes effect when this template renders on a shadow-source page (venue, tour, production, etc.).';
 
 describe( 'EventQueryControlsSlotFill', () => {
 	beforeEach( () => {
 		isEventPostType.mockReset();
-		usePostTypeSupports.mockReset();
+		isPostTypeSupporting.mockReset();
 		isInFSETemplate.mockReset();
 	} );
 
 	it( 'hides the venue filter toggle on a regular non-venue, non-template host', () => {
 		isEventPostType.mockReturnValue( true );
-		usePostTypeSupports.mockReturnValue( false );
+		isPostTypeSupporting.mockReturnValue( false );
 		isInFSETemplate.mockReturnValue( false );
 
 		render( <EventQueryControlsSlotFill /> );
@@ -116,14 +116,14 @@ describe( 'EventQueryControlsSlotFill', () => {
 		expect(
 			screen.queryByText( venueToggleLabel )
 		).not.toBeInTheDocument();
-		expect( usePostTypeSupports ).toHaveBeenCalledWith(
+		expect( isPostTypeSupporting ).toHaveBeenCalledWith(
 			'gatherpress-shadow-source'
 		);
 	} );
 
 	it( 'shows the venue filter toggle with venue copy when host is a venue post', () => {
 		isEventPostType.mockReturnValue( false );
-		usePostTypeSupports.mockReturnValue( true );
+		isPostTypeSupporting.mockReturnValue( true );
 		isInFSETemplate.mockReturnValue( false );
 
 		render( <EventQueryControlsSlotFill /> );
@@ -135,7 +135,7 @@ describe( 'EventQueryControlsSlotFill', () => {
 
 	it( 'shows the venue filter toggle with template copy on a template / template part', () => {
 		isEventPostType.mockReturnValue( false );
-		usePostTypeSupports.mockReturnValue( false );
+		isPostTypeSupporting.mockReturnValue( false );
 		isInFSETemplate.mockReturnValue( true );
 
 		render( <EventQueryControlsSlotFill /> );
@@ -147,7 +147,7 @@ describe( 'EventQueryControlsSlotFill', () => {
 
 	it( 'still gates the exclude-current-event toggle on the existing isEventPostType check', () => {
 		isEventPostType.mockReturnValue( false );
-		usePostTypeSupports.mockReturnValue( true );
+		isPostTypeSupporting.mockReturnValue( true );
 		isInFSETemplate.mockReturnValue( false );
 
 		render( <EventQueryControlsSlotFill /> );
@@ -159,7 +159,7 @@ describe( 'EventQueryControlsSlotFill', () => {
 
 	it( 'shows the exclude-current-event toggle when the host is an event post type', () => {
 		isEventPostType.mockReturnValue( true );
-		usePostTypeSupports.mockReturnValue( true );
+		isPostTypeSupporting.mockReturnValue( true );
 		isInFSETemplate.mockReturnValue( false );
 
 		render( <EventQueryControlsSlotFill /> );
