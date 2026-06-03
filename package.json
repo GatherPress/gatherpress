@@ -16,7 +16,6 @@
 	"bugs": {
 		"url": "https://github.com/GatherPress/gatherpress/issues"
 	},
-	"main": "index.js",
 	"files": [
 		"build",
 		"includes",
@@ -24,6 +23,7 @@
 		"CHANGELOG.md",
 		"SECURITY.md"
 	],
+	"main": "index.js",
 	"devDependencies": {
 		"@anthropic-ai/claude-code": "^2.1.84",
 		"@jest/globals": "^30.2.0",
