@@ -932,7 +932,7 @@ class Test_Event_Query extends Base {
 		$block->context = array(
 			'query' => array(
 				'gatherpress_event_query' => 'upcoming',
-				'shadow_filter'            => 1,
+				'shadow_filter'           => 1,
 			),
 		);
 
@@ -974,7 +974,7 @@ class Test_Event_Query extends Base {
 			->willReturn(
 				array(
 					'gatherpress_event_query' => 'upcoming',
-					'shadow_filter'            => 1,
+					'shadow_filter'           => 1,
 				)
 			);
 
@@ -1009,7 +1009,7 @@ class Test_Event_Query extends Base {
 		$block->context = array(
 			'query' => array(
 				'gatherpress_event_query'             => 'upcoming',
-				'shadow_filter'                        => 1,
+				'shadow_filter'                       => 1,
 				'gatherpress_shadow_source_post_id'   => 42,
 				'gatherpress_shadow_source_post_type' => 'production',
 			),
@@ -1062,7 +1062,7 @@ class Test_Event_Query extends Base {
 			->willReturn(
 				array(
 					'gatherpress_event_query'             => 'upcoming',
-					'shadow_filter'                        => 1,
+					'shadow_filter'                       => 1,
 					'gatherpress_shadow_source_post_id'   => 42,
 					'gatherpress_shadow_source_post_type' => 'production',
 				)
@@ -1141,7 +1141,7 @@ class Test_Event_Query extends Base {
 
 		$query_args  = array( 'posts_per_page' => 10 );
 		$block_query = array(
-			'postType'     => 'gatherpress_event',
+			'postType'      => 'gatherpress_event',
 			'shadow_filter' => 1,
 		);
 
