@@ -58,15 +58,3 @@ if ( ! trait_exists( 'GatherPress\Core\Traits\Singleton' ) ) {
 GatherPress\Core\Setup::get_instance();
 
 
-function enable_context_for_core_query_block($args, $block_type) {
-
-	// Only modify the Query block
-	if ( 'core/query' === $block_type ) {
-		$args['uses_context'] = array_merge(
-			$args['uses_context'] ?? [],
-			[ 'postType', 'postId' ]
-		);
-	}
-	return $args;
-}
-add_filter('register_block_type_args', 'enable_context_for_core_query_block', 10, 2);
