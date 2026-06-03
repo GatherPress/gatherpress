@@ -7,12 +7,13 @@ import moment from 'moment';
  * WordPress dependencies
  */
 import { dispatch, select, useSelect } from '@wordpress/data';
-import { __ } from '@wordpress/i18n';
+import { __, sprintf } from '@wordpress/i18n';
 
 /**
  * Internal dependencies
  */
 import { createMomentWithTimezone, getTimezone } from './datetime';
+import { getPostTypeLabel } from './editor';
 import { getVenueTaxonomy, getVenuePostType } from './venue';
 
 /**
@@ -384,9 +385,22 @@ export function hasEventPastNotice() {
 	notices.removeNotice( id );
 
 	if ( hasEventPast() ) {
+		// Reflect the post type's own label so a custom event-supporting post
+		// type with `singular_name => 'Production'` reads "Production has
+		// already passed." instead of the hardcoded "event" (#1722).
+		const singularLabel = getPostTypeLabel(
+			'singular_name',
+			null,
+			__( 'Event', 'gatherpress' )
+		);
+
 		notices.createNotice(
 			'warning',
-			__( 'This event has already passed.', 'gatherpress' ),
+			sprintf(
+				/* translators: %s: Singular post type label, e.g. "Event". */
+				__( '%s has already passed.', 'gatherpress' ),
+				singularLabel
+			),
 			{
 				id,
 				isDismissible: false,

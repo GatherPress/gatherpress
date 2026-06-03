@@ -1127,7 +1127,50 @@ describe( 'hasEventPastNotice', () => {
 
 		expect( dispatch( 'core/notices' ).createNotice ).toHaveBeenCalledWith(
 			'warning',
-			'This event has already passed.',
+			'Event has already passed.',
+			{
+				id: 'gatherpress_event_past',
+				isDismissible: false,
+			},
+		);
+	} );
+
+	it( 'notice uses the post type singular label', () => {
+		const pastEnd = moment()
+			.subtract( 1, 'days' )
+			.format( dateTimeDatabaseFormat );
+
+		require( '@wordpress/data' ).select.mockImplementation( ( store ) => {
+			if ( 'gatherpress/datetime' === store ) {
+				return {
+					getDateTimeEnd: () => pastEnd,
+					getTimezone: () => 'America/New_York',
+				};
+			}
+			if ( 'core/editor' === store ) {
+				return { getCurrentPostType: () => 'production' };
+			}
+			if ( 'core' === store ) {
+				return {
+					getPostType: ( slug ) => {
+						if ( 'production' === slug ) {
+							return {
+								supports: { 'gatherpress-event-date': true },
+								labels: { singular_name: 'Production' },
+							};
+						}
+						return mockGetPostType( slug );
+					},
+				};
+			}
+			return {};
+		} );
+
+		hasEventPastNotice();
+
+		expect( dispatch( 'core/notices' ).createNotice ).toHaveBeenCalledWith(
+			'warning',
+			'Production has already passed.',
 			{
 				id: 'gatherpress_event_past',
 				isDismissible: false,
