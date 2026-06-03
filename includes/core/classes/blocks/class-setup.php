@@ -313,7 +313,7 @@ class Setup {
 	 * This allows the block to receive context values like postType and postId,
 	 * which are necessary for some of the custom Event Query block controls.
 	 *
-	 * @since 0.33.0
+	 * @since 0.34.0
 	 *
 	 * @param array  $args       The arguments for registering the block type.
 	 * @param string $block_type The name of the block type being registered.
