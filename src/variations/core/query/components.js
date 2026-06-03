@@ -598,7 +598,6 @@ export const EventQueryControlsSlotFill = () => {
 		'gatherpress-shadow-source'
 	);
 	const inTemplateContext = isInFSETemplate();
-	const showShadowSourceFilter = isShadowSourceContext || inTemplateContext;
 	const currentPostType = useSelect(
 		( select ) => select( 'core/editor' ).getCurrentPostType(),
 		[]
