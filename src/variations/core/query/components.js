@@ -377,24 +377,31 @@ export const ShadowSourceFilterControls = ( {
 		setAttributes,
 	] );
 
-	const helpText = inTemplateContext
-		? __(
-			'The filter only takes effect when this template renders on a shadow-source page (venue, tour, production, etc.).',
-			'gatherpress'
-		)
-		: __(
-			'When placed on a shadow-source page, only shows events tied to that page.',
-			'gatherpress'
-		);
-
 	// Read the singular label so the label reflects what the currently
 	// selected post type is actually called — a re-named gatherpress_venue post type with
 	// `singular_name => 'Location'` shows "Filter by Current Location".
+	const pluralQueryLabel = usePostTypeLabel(
+		'name',
+		attributes?.query?.postType,
+		__( 'Events', 'gatherpress' )
+	);
+
 	const singularLabel = usePostTypeLabel(
 		'singular_name',
 		sourcePostType,
 		__( 'Venue', 'gatherpress' )
 	);
+
+	const helpText = inTemplateContext
+		? __(
+			'The filter only takes effect when this template renders on a shadow-source page (venue, tour, production, etc.).',
+			'gatherpress'
+		)
+		: sprintf( __(
+			/* translators: 1: Singular post type label, e.g. "Venue", 2: Plural post type label, e.g. "Events" */
+			'When placed inside %1$s context, only shows %2$s tied to that %1$s.',
+			'gatherpress'
+		), singularLabel, pluralQueryLabel, singularLabel );
 
 	return (
 		<ToggleControl
