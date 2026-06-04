@@ -116,6 +116,29 @@ class Test_Calendar extends Base {
 	}
 
 	/**
+	 * Regression for #1730 — single-event iCal download URL must use the
+	 * `ical` slug directly, never `feed/ical`.
+	 *
+	 * @covers ::get_ical_url
+	 * @covers ::get_endpoint_url
+	 *
+	 * @return void
+	 */
+	public function test_get_ical_url_does_not_use_feed_slug(): void {
+		$instance = new Calendar( $this->make_event() );
+
+		$url = $instance->get_ical_url();
+
+		$this->assertIsString( $url );
+		$this->assertStringNotContainsString(
+			'feed',
+			$url,
+			'Single-event iCal download URL must not contain "feed" — ' .
+			'download uses /ical/ directly; /feed/ical/ is for feed endpoints only.'
+		);
+	}
+
+	/**
 	 * Coverage for get_outlook_url — uses the `outlook` sibling slug pointing
 	 * at the same iCal template.
 	 *

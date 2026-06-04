@@ -1,0 +1,4 @@
+Significance: patch
+Type: fixed
+
+Correct the misleading `/event/sample/feed/ical/` test-fixture URL in `test_render_alternate_links_prints_link_tags` to the real single-event iCal download shape (`/event/sample/ical/`). [#1730]
