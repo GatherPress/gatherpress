@@ -39,6 +39,7 @@ import {
 import DateTimeRange from '../../components/DateTimeRange';
 import { getFromSettings } from '../../helpers/editor-settings';
 import {
+	isEventPostType,
 	DISABLED_FIELD_OPACITY,
 } from '../../helpers/event';
 import { isInFSETemplate } from '../../helpers/editor';
@@ -208,9 +209,12 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 	const postId = attributes?.postId ?? context?.postId ?? null;
 	const hasExplicitOverride = !! attributes?.postId;
 
+	const contextPostType = context?.postType;
+	const contextQueryId = context?.queryId;
+
 	const { dateTimeStart, dateTimeEnd, timezone, isLoading, isValidEvent } = useSelect(
-		( select ) => resolveEventDateData( select, context, postId, hasExplicitOverride ),
-		[ postId, context?.postType, context?.queryId, hasExplicitOverride ]
+		( select ) => resolveEventDateData( select, contextPostType, contextQueryId, postId, hasExplicitOverride ),
+		[ postId, contextPostType, contextQueryId, hasExplicitOverride ]
 	);
 
 	const blockProps = useBlockProps( {

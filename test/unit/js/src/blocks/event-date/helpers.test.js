@@ -4,14 +4,13 @@
 import { describe, expect, it, jest, beforeEach } from '@jest/globals';
 
 jest.mock( '@src/helpers/event', () => ( {
-	isEventPostType: jest.fn(),
 	findEventPostById: jest.fn(),
 } ) );
 
 /**
  * Internal dependencies
  */
-import { isEventPostType, findEventPostById } from '@src/helpers/event';
+import { findEventPostById } from '@src/helpers/event';
 import { resolveEventDateData } from '@src/blocks/event-date/helpers';
 
 /**
@@ -29,7 +28,6 @@ describe( 'resolveEventDateData', () => {
 	let mockSelect;
 
 	beforeEach( () => {
-		isEventPostType.mockReset();
 		findEventPostById.mockReset();
 
 		mockDatetimeStore = {
@@ -69,11 +67,10 @@ describe( 'resolveEventDateData', () => {
 
 	describe( 'direct event editing (no query loop)', () => {
 		it( 'reads from gatherpress/datetime store when editing a standalone event block', () => {
-			isEventPostType.mockReturnValue( true );
-
 			const result = resolveEventDateData(
 				mockSelect,
-				{ postType: 'gatherpress_event' },
+				'gatherpress_event',
+				undefined,
 				42,
 				false
 			);
@@ -82,14 +79,15 @@ describe( 'resolveEventDateData', () => {
 			expect( result.dateTimeStart ).toBe( '2025-01-15 09:00:00' );
 			expect( result.dateTimeEnd ).toBe( '2025-01-15 11:00:00' );
 			expect( result.timezone ).toBe( 'America/New_York' );
+			expect( result.isValidEvent ).toBe( true );
+			expect( result.isLoading ).toBe( false );
 		} );
 
-		it( 'reads from gatherpress/datetime store when context.queryId is undefined', () => {
-			isEventPostType.mockReturnValue( true );
-
+		it( 'reads from gatherpress/datetime store when contextQueryId is undefined', () => {
 			const result = resolveEventDateData(
 				mockSelect,
-				{ postType: 'gatherpress_event', queryId: undefined },
+				'gatherpress_event',
+				undefined,
 				42,
 				false
 			);
@@ -99,29 +97,26 @@ describe( 'resolveEventDateData', () => {
 		} );
 	} );
 
-	describe( 'inside a query loop (context.queryId is a number)', () => {
+	describe( 'inside a query loop (contextQueryId is a number)', () => {
 		it( 'fetches from entity record instead of datetime store when queryId is 0', () => {
-			isEventPostType.mockReturnValue( true );
-
 			const result = resolveEventDateData(
 				mockSelect,
-				{ postType: 'gatherpress_event', queryId: 0 },
+				'gatherpress_event',
+				0,
 				42,
 				false
 			);
 
-			// Bug: the datetime store IS called before the fix — test will fail here.
 			expect( mockDatetimeStore.getDateTimeStart ).not.toHaveBeenCalled();
 			expect( result.dateTimeStart ).toBe( '2025-06-10 14:00:00' );
 			expect( result.timezone ).toBe( 'America/Chicago' );
 		} );
 
 		it( 'fetches from entity record instead of datetime store when queryId is a positive integer', () => {
-			isEventPostType.mockReturnValue( true );
-
 			const result = resolveEventDateData(
 				mockSelect,
-				{ postType: 'gatherpress_event', queryId: 1 },
+				'gatherpress_event',
+				1,
 				42,
 				false
 			);
@@ -131,7 +126,6 @@ describe( 'resolveEventDateData', () => {
 		} );
 
 		it( 'returns isValidEvent false for an unpublished queried post', () => {
-			isEventPostType.mockReturnValue( true );
 			mockCoreStore.getEntityRecord.mockReturnValue( {
 				status: 'draft',
 				meta: {
@@ -143,7 +137,8 @@ describe( 'resolveEventDateData', () => {
 
 			const result = resolveEventDateData(
 				mockSelect,
-				{ postType: 'gatherpress_event', queryId: 0 },
+				'gatherpress_event',
+				0,
 				42,
 				false
 			);
@@ -154,51 +149,75 @@ describe( 'resolveEventDateData', () => {
 
 	describe( 'edge cases', () => {
 		it( 'returns isValidEvent false when postId is null', () => {
-			isEventPostType.mockReturnValue( true );
-
 			const result = resolveEventDateData(
 				mockSelect,
-				{ postType: 'gatherpress_event' },
+				'gatherpress_event',
+				undefined,
 				null,
 				false
 			);
 
-			expect( result ).toEqual( { isValidEvent: false } );
+			expect( result.isValidEvent ).toBe( false );
+			expect( result.isLoading ).toBe( false );
 			expect( mockDatetimeStore.getDateTimeStart ).not.toHaveBeenCalled();
 		} );
 
 		it( 'returns isValidEvent false when post type does not support event-date', () => {
-			isEventPostType.mockReturnValue( false );
 			mockCoreStore.getPostType.mockReturnValue( {
 				supports: {},
 			} );
 
 			const result = resolveEventDateData(
 				mockSelect,
-				{ postType: 'post', queryId: 0 },
+				'post',
+				0,
 				42,
 				false
 			);
 
-			expect( result ).toEqual( { isValidEvent: false } );
+			expect( result.isValidEvent ).toBe( false );
+			expect( result.isLoading ).toBe( false );
+		} );
+
+		it( 'returns isValidEvent false and empty dates when entity record is null', () => {
+			mockCoreStore.getEntityRecord.mockReturnValue( null );
+
+			const result = resolveEventDateData(
+				mockSelect,
+				'gatherpress_event',
+				1,
+				42,
+				false
+			);
+
+			expect( result.isValidEvent ).toBe( false );
+			expect( result.dateTimeStart ).toBeUndefined();
+			expect( result.dateTimeEnd ).toBeUndefined();
+			expect( result.timezone ).toBeUndefined();
+			expect( result.isLoading ).toBe( false );
 		} );
 
 		it( 'returns isLoading true while entity record resolution is pending', () => {
-			isEventPostType.mockReturnValue( false );
 			mockCoreStore.hasFinishedResolution.mockReturnValue( false );
 
 			const result = resolveEventDateData(
 				mockSelect,
-				{ postType: 'gatherpress_event', queryId: 1 },
+				'gatherpress_event',
+				1,
 				42,
 				false
 			);
 
-			expect( result ).toEqual( { isLoading: true, isValidEvent: false } );
+			expect( result ).toEqual( {
+				dateTimeStart: undefined,
+				dateTimeEnd: undefined,
+				timezone: undefined,
+				isLoading: true,
+				isValidEvent: false,
+			} );
 		} );
 
 		it( 'resolves postId override target from non-event host when outside a query loop', () => {
-			isEventPostType.mockReturnValue( false );
 			mockCoreStore.getPostType.mockReturnValue( { supports: {} } );
 			findEventPostById.mockReturnValue( {
 				meta: {
@@ -210,7 +229,8 @@ describe( 'resolveEventDateData', () => {
 
 			const result = resolveEventDateData(
 				mockSelect,
-				{ postType: 'page' },
+				'page',
+				undefined,
 				99,
 				true
 			);
@@ -218,6 +238,59 @@ describe( 'resolveEventDateData', () => {
 			expect( findEventPostById ).toHaveBeenCalledWith( mockSelect, 99 );
 			expect( result.dateTimeStart ).toBe( '2025-08-01 10:00:00' );
 			expect( result.isValidEvent ).toBe( true );
+			expect( result.isLoading ).toBe( false );
+		} );
+
+		it( 'falls back to editor post type when contextPostType is null', () => {
+			const result = resolveEventDateData(
+				mockSelect,
+				null,
+				undefined,
+				42,
+				false
+			);
+
+			// Editor post type 'gatherpress_event' supports event-date, so
+			// live-store path fires.
+			expect( mockDatetimeStore.getDateTimeStart ).toHaveBeenCalled();
+			expect( result.isValidEvent ).toBe( true );
+		} );
+
+		it( 'does not use datetime store in site editor even when contextPostType is an event type', () => {
+			// In the site editor the editor document type is wp_template, not an
+			// event. isDirectEditingEvent must check the editor type, not the
+			// context type, so the live-store path is skipped correctly.
+			mockSelect = jest.fn( ( store ) => {
+				if ( 'gatherpress/datetime' === store ) {
+					return mockDatetimeStore;
+				}
+				if ( 'core' === store ) {
+					return {
+						...mockCoreStore,
+						getPostType: jest.fn( ( type ) => {
+							if ( 'wp_template' === type ) {
+								return { supports: {} };
+							}
+							return { supports: { 'gatherpress-event-date': true } };
+						} ),
+					};
+				}
+				if ( 'core/editor' === store ) {
+					return { getCurrentPostType: () => 'wp_template' };
+				}
+				return {};
+			} );
+
+			const result = resolveEventDateData(
+				mockSelect,
+				'gatherpress_event',
+				undefined,
+				42,
+				false
+			);
+
+			expect( mockDatetimeStore.getDateTimeStart ).not.toHaveBeenCalled();
+			expect( result.dateTimeStart ).toBe( '2025-06-10 14:00:00' );
 		} );
 	} );
 } );
