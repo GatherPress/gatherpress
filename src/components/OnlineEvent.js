@@ -139,7 +139,7 @@ const OnlineEvent = () => {
 	};
 
 	return (
-		<VStack spacing={ 2 }>
+		<VStack spacing={ 3 }>
 			<ToggleControl
 				label={ __( 'This is an online event', 'gatherpress' ) }
 				checked={ isOnlineEvent }
