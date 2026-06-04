@@ -217,6 +217,28 @@ describe( 'resolveEventDateData', () => {
 			} );
 		} );
 
+		it( 'returns isValidEvent false when postId override target is not found', () => {
+			mockCoreStore.getPostType.mockReturnValue( { supports: {} } );
+			findEventPostById.mockReturnValue( null );
+
+			const result = resolveEventDateData(
+				mockSelect,
+				'page',
+				undefined,
+				99,
+				true
+			);
+
+			expect( findEventPostById ).toHaveBeenCalledWith( mockSelect, 99 );
+			expect( result ).toEqual( {
+				dateTimeStart: undefined,
+				dateTimeEnd: undefined,
+				timezone: undefined,
+				isLoading: false,
+				isValidEvent: false,
+			} );
+		} );
+
 		it( 'resolves postId override target from non-event host when outside a query loop', () => {
 			mockCoreStore.getPostType.mockReturnValue( { supports: {} } );
 			findEventPostById.mockReturnValue( {
