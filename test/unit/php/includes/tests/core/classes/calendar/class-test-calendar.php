@@ -116,6 +116,46 @@ class Test_Calendar extends Base {
 	}
 
 	/**
+	 * Single-event iCal downloads must not use the feed/ical URL shape.
+	 *
+	 * With pretty permalinks, the download is …/event/<slug>/ical/. With plain
+	 * permalinks, WordPress uses the gatherpress_calendar query arg instead —
+	 * never get_post_comments_feed_link() (…/feed/ical/), which is for feeds only.
+	 *
+	 * @covers ::get_ical_url
+	 * @covers ::get_endpoint_url
+	 *
+	 * @return void
+	 */
+	public function test_get_ical_url_uses_permalink_download_path(): void {
+		$event_id = $this->make_event();
+
+		$path_filter = static function () {
+			return home_url( '/event/sample-event/' );
+		};
+		add_filter( 'post_link', $path_filter, 10, 1 );
+		add_filter( 'post_type_link', $path_filter, 10, 1 );
+
+		$pretty_url = ( new Calendar( $event_id ) )->get_ical_url();
+
+		remove_filter( 'post_link', $path_filter, 10 );
+		remove_filter( 'post_type_link', $path_filter, 10 );
+
+		$plain_url = ( new Calendar( $event_id ) )->get_ical_url();
+
+		$this->assertIsString( $pretty_url );
+		$this->assertStringContainsString( 'sample-event/ical', $pretty_url );
+		$this->assertStringNotContainsString( 'feed/ical', $pretty_url );
+
+		$this->assertIsString( $plain_url );
+		$this->assertStringContainsString(
+			'gatherpress_calendar=' . Setup::ICAL_SLUG,
+			$plain_url
+		);
+		$this->assertStringNotContainsString( 'feed/ical', $plain_url );
+	}
+
+	/**
 	 * Coverage for get_outlook_url — uses the `outlook` sibling slug pointing
 	 * at the same iCal template.
 	 *
