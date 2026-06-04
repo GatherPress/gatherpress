@@ -269,7 +269,9 @@ const OpenStreetMap = ( props ) => {
 						position: 'absolute',
 						inset: 0,
 						display: 'flex',
-						alignItems: 'center',
+						// Pin the message to the top so it clears the centered
+						// map marker, which Leaflet paints above the overlay.
+						alignItems: 'flex-start',
 						justifyContent: 'center',
 						padding: '1rem',
 						textAlign: 'center',
