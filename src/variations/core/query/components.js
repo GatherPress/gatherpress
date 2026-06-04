@@ -310,14 +310,11 @@ export const ShadowSourceFilterControls = ( {
 	// Production" — matching whatever the template renders against at runtime.
 	// Otherwise (events, pages, templates, patterns) fall back to gatherpress_venue
 	// since that's the most common scope-by-source scenario.
-	const editorPostId = context?.postId || useSelect(
-		( wpSelect ) => wpSelect( 'core/editor' )?.getCurrentPostId(),
-		[]
-	);
-	const editorPostType = context?.postType || useSelect(
-		( wpSelect ) => wpSelect( 'core/editor' )?.getCurrentPostType(),
-		[]
-	);
+	const fallbackPostId = useSelect( ( wpSelect ) => wpSelect( 'core/editor' )?.getCurrentPostId(), [] );
+	const fallbackPostType = useSelect( ( wpSelect ) => wpSelect( 'core/editor' )?.getCurrentPostType(), [] );
+	const editorPostId = context?.postId || fallbackPostId;
+	const editorPostType = context?.postType || fallbackPostType;
+
 	const editorPostTypeSupports = useSelect(
 		( wpSelect ) =>
 			editorPostType
