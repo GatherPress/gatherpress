@@ -151,7 +151,6 @@ class Test_Calendar extends Base {
 			'gatherpress_calendar=' . Setup::ICAL_SLUG,
 			$plain_url
 		);
-
 	}
 
 	/**
