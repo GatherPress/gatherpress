@@ -533,10 +533,12 @@ class Shadow_Source {
 				return $queried;
 			}
 		}
-
+error_log( 'Resolving shadow source from query context' );
+error_log( 'Resolved host post for shadow filter: ' . print_r( $queried->post_title, true ) );
 		$context_post_id   = (int) $query->get( 'gatherpress_shadow_source_post_id' );
 		$context_post_type = (string) $query->get( 'gatherpress_shadow_source_post_type' );
-
+error_log( 'Context post ID: ' . print_r( $context_post_id, true ) );
+error_log( 'Context post type: ' . print_r( $context_post_type, true ) );
 		if (
 			$context_post_id <= 0
 			|| '' === $context_post_type
