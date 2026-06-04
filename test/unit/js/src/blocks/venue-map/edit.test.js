@@ -1,0 +1,318 @@
+/**
+ * External dependencies
+ */
+import { beforeEach, describe, expect, it, jest } from '@jest/globals';
+import { render } from '@testing-library/react';
+
+/**
+ * Mocks — declared before the component import so jest hoists them.
+ *
+ * The goal of this test file is to verify that the useSelect selector in the
+ * venue-map Edit block returns stable object references for venueMeta,
+ * savedVenueMeta, and staticMapDescriptors across multiple calls with the same
+ * underlying state. Unstable references trigger Gutenberg's "Non-equal value
+ * keys" warning and unnecessary re-renders (issue #1735).
+ */
+
+// Capture the venue-state selector from the Edit block's first useSelect call
+// so we can invoke it directly in tests.
+let capturedVenueStateSelector = null;
+
+// A minimal select mock that puts the block into the early-bail path:
+// effectiveVenuePostId === 0 because both context.postId and
+// core/editor.getCurrentPostId() return falsy values.
+const noVenueMockSelect = ( storeName ) => {
+	switch ( storeName ) {
+		case 'core/editor':
+			return {
+				getCurrentPostId: () => 0,
+				getCurrentPostType: () => '',
+				getEditedPostAttribute: () => null,
+				getCurrentPost: () => null,
+			};
+		case 'core':
+			return { getEditedEntityRecord: () => null };
+		case 'core/block-editor':
+			return { getBlockParentsByBlockName: () => [] };
+		case 'gatherpress/venue':
+			return {
+				getVenueLatitude: () => null,
+				getVenueLongitude: () => null,
+			};
+		default:
+			return {};
+	}
+};
+
+jest.mock( '@wordpress/data', () => ( {
+	useSelect: jest.fn( ( selector ) => {
+		const result = selector( noVenueMockSelect );
+		// Identify the venue-state selector by its return shape.
+		if (
+			null !== result &&
+			'object' === typeof result &&
+			'venueMeta' in result
+		) {
+			capturedVenueStateSelector = selector;
+		}
+		return result;
+	} ),
+	useDispatch: jest.fn( () => ( {} ) ),
+} ) );
+
+jest.mock( '@wordpress/i18n', () => ( {
+	__: ( str ) => str,
+} ) );
+
+jest.mock( '@wordpress/element', () => ( {
+	useEffect: jest.fn(),
+} ) );
+
+jest.mock( '@wordpress/block-editor', () => ( {
+	BlockControls: ( { children } ) => <div>{ children }</div>,
+	InspectorControls: ( { children } ) => <div>{ children }</div>,
+	useBlockProps: jest.fn( () => ( {} ) ),
+} ) );
+
+jest.mock( '@wordpress/components', () => ( {
+	Dropdown: ( { renderToggle, renderContent } ) => (
+		<div>
+			{ renderToggle( { isOpen: false, onToggle: () => {} } ) }
+			{ renderContent() }
+		</div>
+	),
+	Flex: ( { children } ) => <div>{ children }</div>,
+	FlexItem: ( { children } ) => <div>{ children }</div>,
+	PanelBody: ( { children } ) => <div>{ children }</div>,
+	RangeControl: () => null,
+	ResizableBox: ( { children } ) => <div>{ children }</div>,
+	SelectControl: () => null,
+	TextControl: () => null,
+	ToggleControl: () => null,
+	ToolbarButton: () => null,
+	ToolbarGroup: ( { children } ) => <div>{ children }</div>,
+	Icon: () => null,
+	__experimentalToolsPanel: ( { children } ) => <div>{ children }</div>,
+	__experimentalToolsPanelItem: ( { children } ) => <div>{ children }</div>,
+} ) );
+
+jest.mock( '@wordpress/icons', () => ( {
+	Icon: () => null,
+	link: null,
+	mapMarker: null,
+} ) );
+
+jest.mock( '@src/helpers/venue', () => ( {
+	isVenuePostType: jest.fn( () => false ),
+} ) );
+
+jest.mock( '@src/helpers/editor', () => ( {
+	isInFSETemplate: jest.fn( () => false ),
+} ) );
+
+jest.mock( '@src/helpers/editor-settings', () => ( {
+	getFromSettings: jest.fn( () => null ),
+} ) );
+
+jest.mock( '@src/components/MapEmbed', () => () => null );
+
+jest.mock( '@src/components/GoogleMap', () => ( {
+	GOOGLE_IFRAME_UNSUPPORTED_MAP_TYPE_SLUGS: [],
+	GOOGLE_MAP_TYPE_DEFINITIONS: [],
+	toMapsEmbedApiMapType: jest.fn( ( type ) => type ),
+} ) );
+
+jest.mock( '@src/supports/block-guard', () => ( {
+	useSharedBlockGuardState: jest.fn( () => [ false ] ),
+	generateBlockGuardStateKey: jest.fn(
+		( type, id ) => `${ type }:${ id }`
+	),
+} ) );
+
+jest.mock( '@src/blocks/venue-map/helpers', () => ( {
+	RegenerateMapButton: () => null,
+	parseAspectRatio: jest.fn( () => false ),
+	pickDescriptorForCombo: jest.fn( () => undefined ),
+	resolveDimensions: jest.fn( () => ( { width: 800, height: 400 } ) ),
+	usePlaceholderPolling: jest.fn(),
+} ) );
+
+/**
+ * Internal dependencies
+ */
+import Edit from '@src/blocks/venue-map/edit';
+
+const DEFAULT_ATTRIBUTES = {
+	zoom: 18,
+	type: 'roadmap',
+	width: 0,
+	height: 300,
+	aspectRatio: '2/1',
+	scale: 'cover',
+	renderMode: 'static',
+	align: '',
+	href: '',
+	linkDestination: 'none',
+	linkTarget: '',
+	rel: '',
+};
+
+describe( 'venue-map Edit useSelect selector stability', () => {
+	beforeEach( () => {
+		capturedVenueStateSelector = null;
+		jest.clearAllMocks();
+	} );
+
+	it( 'returns the same venueMeta reference on repeated calls when there is no venue post', () => {
+		render(
+			<Edit
+				attributes={ DEFAULT_ATTRIBUTES }
+				setAttributes={ jest.fn() }
+				context={ {} }
+				clientId=""
+			/>
+		);
+
+		expect( capturedVenueStateSelector ).not.toBeNull();
+
+		const result1 = capturedVenueStateSelector( noVenueMockSelect );
+		const result2 = capturedVenueStateSelector( noVenueMockSelect );
+
+		expect( result1.venueMeta ).toBe( result2.venueMeta );
+	} );
+
+	it( 'returns the same savedVenueMeta reference on repeated calls when there is no venue post', () => {
+		render(
+			<Edit
+				attributes={ DEFAULT_ATTRIBUTES }
+				setAttributes={ jest.fn() }
+				context={ {} }
+				clientId=""
+			/>
+		);
+
+		expect( capturedVenueStateSelector ).not.toBeNull();
+
+		const result1 = capturedVenueStateSelector( noVenueMockSelect );
+		const result2 = capturedVenueStateSelector( noVenueMockSelect );
+
+		expect( result1.savedVenueMeta ).toBe( result2.savedVenueMeta );
+	} );
+
+	it( 'returns the same staticMapDescriptors reference on repeated calls when there is no venue post', () => {
+		render(
+			<Edit
+				attributes={ DEFAULT_ATTRIBUTES }
+				setAttributes={ jest.fn() }
+				context={ {} }
+				clientId=""
+			/>
+		);
+
+		expect( capturedVenueStateSelector ).not.toBeNull();
+
+		const result1 = capturedVenueStateSelector( noVenueMockSelect );
+		const result2 = capturedVenueStateSelector( noVenueMockSelect );
+
+		expect( result1.staticMapDescriptors ).toBe(
+			result2.staticMapDescriptors
+		);
+	} );
+
+	it( 'returns the same venueMeta reference when the venue post has null meta', () => {
+		const nullMetaSelect = ( storeName ) => {
+			switch ( storeName ) {
+				case 'core/editor':
+					return {
+						getCurrentPostId: () => 0,
+						getCurrentPostType: () => '',
+						getEditedPostAttribute: () => null,
+						getCurrentPost: () => null,
+					};
+				case 'core':
+					return {
+						// Venue post exists but has no meta.
+						getEditedEntityRecord: () => ( {
+							id: 99,
+							meta: null,
+						} ),
+					};
+				case 'core/block-editor':
+					return { getBlockParentsByBlockName: () => [] };
+				case 'gatherpress/venue':
+					return {
+						getVenueLatitude: () => null,
+						getVenueLongitude: () => null,
+					};
+				default:
+					return {};
+			}
+		};
+
+		// Render with a context.postId to bypass the early bail.
+		render(
+			<Edit
+				attributes={ DEFAULT_ATTRIBUTES }
+				setAttributes={ jest.fn() }
+				context={ { postId: 99, postType: 'gatherpress_venue' } }
+				clientId=""
+			/>
+		);
+
+		expect( capturedVenueStateSelector ).not.toBeNull();
+
+		const result1 = capturedVenueStateSelector( nullMetaSelect );
+		const result2 = capturedVenueStateSelector( nullMetaSelect );
+
+		expect( result1.venueMeta ).toBe( result2.venueMeta );
+	} );
+
+	it( 'returns the same staticMapDescriptors reference when the venue post has no static map meta', () => {
+		const noMapSelect = ( storeName ) => {
+			switch ( storeName ) {
+				case 'core/editor':
+					return {
+						getCurrentPostId: () => 0,
+						getCurrentPostType: () => '',
+						getEditedPostAttribute: () => null,
+						getCurrentPost: () => null,
+					};
+				case 'core':
+					return {
+						// Venue post with meta but no gatherpress_static_map key.
+						getEditedEntityRecord: () => ( {
+							id: 99,
+							meta: { gatherpress_address: '123 Main St' },
+						} ),
+					};
+				case 'core/block-editor':
+					return { getBlockParentsByBlockName: () => [] };
+				case 'gatherpress/venue':
+					return {
+						getVenueLatitude: () => null,
+						getVenueLongitude: () => null,
+					};
+				default:
+					return {};
+			}
+		};
+
+		render(
+			<Edit
+				attributes={ DEFAULT_ATTRIBUTES }
+				setAttributes={ jest.fn() }
+				context={ { postId: 99, postType: 'gatherpress_venue' } }
+				clientId=""
+			/>
+		);
+
+		expect( capturedVenueStateSelector ).not.toBeNull();
+
+		const result1 = capturedVenueStateSelector( noMapSelect );
+		const result2 = capturedVenueStateSelector( noMapSelect );
+
+		expect( result1.staticMapDescriptors ).toBe(
+			result2.staticMapDescriptors
+		);
+	} );
+} );

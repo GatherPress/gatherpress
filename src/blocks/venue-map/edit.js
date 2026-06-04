@@ -87,6 +87,14 @@ const LINK_DESTINATION_OPENSTREETMAP = 'openstreetmap';
 const LINK_DESTINATION_GOOGLE = 'google';
 const LINK_DESTINATION_CUSTOM = 'custom';
 
+// Stable empty-object sentinels used as fallbacks in the useSelect selector.
+// Returning inline `{}` literals on every call creates new references each
+// render, triggering Gutenberg's "Non-equal value keys" warning and causing
+// unnecessary re-renders. Frozen constants ensure referential stability when
+// the underlying data is absent.
+const EMPTY_META = Object.freeze( {} );
+const EMPTY_STATIC_MAP_DESCRIPTORS = Object.freeze( {} );
+
 /**
  * Build the canonical external-map URL for a preset destination.
  *
@@ -169,9 +177,9 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 			if ( ! effectiveVenuePostId ) {
 				return {
 					isEditingThisVenue: false,
-					venueMeta: {},
-					savedVenueMeta: {},
-					staticMapDescriptors: {},
+					venueMeta: EMPTY_META,
+					savedVenueMeta: EMPTY_META,
+					staticMapDescriptors: EMPTY_STATIC_MAP_DESCRIPTORS,
 					venuePostId: 0,
 					venuePostType: '',
 				};
@@ -182,7 +190,7 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 
 			if ( isEditing ) {
 				const meta =
-					select( 'core/editor' )?.getEditedPostAttribute( 'meta' ) || {};
+					select( 'core/editor' )?.getEditedPostAttribute( 'meta' ) || EMPTY_META;
 				const savedPost =
 					select( 'core/editor' )?.getCurrentPost() || {};
 				// Prefer the `core` entity cache for the descriptors map —
@@ -198,11 +206,11 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 				return {
 					isEditingThisVenue: true,
 					venueMeta: meta,
-					savedVenueMeta: savedPost?.meta || {},
+					savedVenueMeta: savedPost?.meta || EMPTY_META,
 					staticMapDescriptors:
 						editedVenuePost?.meta?.gatherpress_static_map ||
 						meta?.gatherpress_static_map ||
-						{},
+						EMPTY_STATIC_MAP_DESCRIPTORS,
 					venuePostId: effectiveVenuePostId,
 					venuePostType: resolvedVenuePostType,
 				};
@@ -215,14 +223,14 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 				effectiveVenuePostId
 			);
 
-			const meta = venuePost?.meta || {};
+			const meta = venuePost?.meta || EMPTY_META;
 
 			return {
 				isEditingThisVenue: false,
 				venueMeta: meta,
 				savedVenueMeta: meta,
 				staticMapDescriptors:
-					meta?.gatherpress_static_map || {},
+					meta?.gatherpress_static_map || EMPTY_STATIC_MAP_DESCRIPTORS,
 				venuePostId: effectiveVenuePostId,
 				venuePostType: context?.postType || '',
 			};
