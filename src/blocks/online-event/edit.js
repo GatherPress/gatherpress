@@ -7,7 +7,13 @@ import {
 	InspectorControls,
 	useBlockProps,
 } from '@wordpress/block-editor';
-import { PanelBody, TextControl, ToggleControl } from '@wordpress/components';
+import {
+	PanelBody,
+	TextControl,
+	ToggleControl,
+	// eslint-disable-next-line @wordpress/no-unsafe-wp-apis
+	__experimentalVStack as VStack,
+} from '@wordpress/components';
 import { useSelect, useDispatch } from '@wordpress/data';
 import { useState, useEffect } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
@@ -216,22 +222,31 @@ const Edit = ( { attributes, context } ) => {
 						title={ __( 'Online Event Settings', 'gatherpress' ) }
 						initialOpen={ true }
 					>
-						<ToggleControl
-							label={ __( 'This is an online event', 'gatherpress' ) }
-							checked={ isOnlineEvent }
-							onChange={ toggleOnlineEvent }
-						/>
-						{ isOnlineEvent && (
-							<TextControl
-								label={ __( 'Online event link', 'gatherpress' ) }
-								value={ onlineEventLink }
-								placeholder={ __(
-									'Add link to online event',
+						<VStack spacing={ 3 }>
+							<ToggleControl
+								label={ __(
+									'This is an online event',
 									'gatherpress'
 								) }
-								onChange={ updateOnlineEventLink }
+								checked={ isOnlineEvent }
+								onChange={ toggleOnlineEvent }
 							/>
-						) }
+							{ isOnlineEvent && (
+								<TextControl
+									type="url"
+									label={ __(
+										'Online event link',
+										'gatherpress'
+									) }
+									value={ onlineEventLink }
+									placeholder={ __(
+										'Add link to online event',
+										'gatherpress'
+									) }
+									onChange={ updateOnlineEventLink }
+								/>
+							) }
+						</VStack>
 					</PanelBody>
 				</InspectorControls>
 			) }

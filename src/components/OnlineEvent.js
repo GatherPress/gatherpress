@@ -2,7 +2,12 @@
  * WordPress dependencies
  */
 import { useState, useEffect } from '@wordpress/element';
-import { TextControl, ToggleControl } from '@wordpress/components';
+import {
+	TextControl,
+	ToggleControl,
+	// eslint-disable-next-line @wordpress/no-unsafe-wp-apis
+	__experimentalVStack as VStack,
+} from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
 import { useDispatch, useSelect } from '@wordpress/data';
 
@@ -134,7 +139,7 @@ const OnlineEvent = () => {
 	};
 
 	return (
-		<>
+		<VStack spacing={ 3 }>
 			<ToggleControl
 				label={ __( 'This is an online event', 'gatherpress' ) }
 				checked={ isOnlineEvent }
@@ -142,6 +147,7 @@ const OnlineEvent = () => {
 			/>
 			{ isOnlineEvent && (
 				<TextControl
+					type="url"
 					label={ __( 'Online event link', 'gatherpress' ) }
 					value={ onlineEventLink }
 					placeholder={ __( 'Add link to online event', 'gatherpress' ) }
@@ -150,7 +156,7 @@ const OnlineEvent = () => {
 					} }
 				/>
 			) }
-		</>
+		</VStack>
 	);
 };
 
