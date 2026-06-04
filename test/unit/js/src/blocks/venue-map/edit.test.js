@@ -5,14 +5,13 @@ import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { render } from '@testing-library/react';
 
 /**
- * Mocks — declared before the component import so jest hoists them.
- *
- * The goal of this test file is to verify that the useSelect selector in the
- * venue-map Edit block returns stable object references for venueMeta,
- * savedVenueMeta, and staticMapDescriptors across multiple calls with the same
- * underlying state. Unstable references trigger Gutenberg's "Non-equal value
- * keys" warning and unnecessary re-renders (issue #1735).
+ * Mocks
  */
+
+// Verify that the useSelect selector returns stable object references for
+// venueMeta, savedVenueMeta, and staticMapDescriptors across repeated calls
+// with the same state. Unstable references trigger Gutenberg's "Non-equal
+// value keys" warning and cause unnecessary re-renders (issue #1735).
 
 // Capture the venue-state selector from the Edit block's first useSelect call
 // so we can invoke it directly in tests.
@@ -141,6 +140,7 @@ jest.mock( '@src/blocks/venue-map/helpers', () => ( {
  * Internal dependencies
  */
 import Edit from '@src/blocks/venue-map/edit';
+import { isVenuePostType } from '@src/helpers/venue';
 
 const DEFAULT_ATTRIBUTES = {
 	zoom: 18,
@@ -161,6 +161,9 @@ describe( 'venue-map Edit useSelect selector stability', () => {
 	beforeEach( () => {
 		capturedVenueStateSelector = null;
 		jest.clearAllMocks();
+		// clearAllMocks does not reset mockReturnValue; restore the default
+		// so each test starts with isVenuePostType returning false.
+		isVenuePostType.mockReturnValue( false );
 	} );
 
 	it( 'returns the same venueMeta reference on repeated calls when there is no venue post', () => {
@@ -311,6 +314,56 @@ describe( 'venue-map Edit useSelect selector stability', () => {
 		const result1 = capturedVenueStateSelector( noMapSelect );
 		const result2 = capturedVenueStateSelector( noMapSelect );
 
+		expect( result1.staticMapDescriptors ).toBe(
+			result2.staticMapDescriptors
+		);
+	} );
+
+	it( 'returns stable savedVenueMeta and staticMapDescriptors references in the isEditing branch', () => {
+		// Trigger the isEditing path: getCurrentPostId() matches context.postId
+		// and isVenuePostType() returns true.
+		isVenuePostType.mockReturnValue( true );
+
+		const editingSelect = ( storeName ) => {
+			switch ( storeName ) {
+				case 'core/editor':
+					return {
+						getCurrentPostId: () => 42,
+						getCurrentPostType: () => 'gatherpress_venue',
+						// Null meta and null post ensure the || EMPTY_META and
+						// || EMPTY_STATIC_MAP_DESCRIPTORS fallbacks are exercised.
+						getEditedPostAttribute: () => null,
+						getCurrentPost: () => null,
+					};
+				case 'core':
+					return { getEditedEntityRecord: () => null };
+				case 'core/block-editor':
+					return { getBlockParentsByBlockName: () => [] };
+				case 'gatherpress/venue':
+					return {
+						getVenueLatitude: () => null,
+						getVenueLongitude: () => null,
+					};
+				default:
+					return {};
+			}
+		};
+
+		render(
+			<Edit
+				attributes={ DEFAULT_ATTRIBUTES }
+				setAttributes={ jest.fn() }
+				context={ { postId: 42, postType: 'gatherpress_venue' } }
+				clientId=""
+			/>
+		);
+
+		expect( capturedVenueStateSelector ).not.toBeNull();
+
+		const result1 = capturedVenueStateSelector( editingSelect );
+		const result2 = capturedVenueStateSelector( editingSelect );
+
+		expect( result1.savedVenueMeta ).toBe( result2.savedVenueMeta );
 		expect( result1.staticMapDescriptors ).toBe(
 			result2.staticMapDescriptors
 		);

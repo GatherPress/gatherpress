@@ -94,6 +94,7 @@ const LINK_DESTINATION_CUSTOM = 'custom';
 // the underlying data is absent.
 const EMPTY_META = Object.freeze( {} );
 const EMPTY_STATIC_MAP_DESCRIPTORS = Object.freeze( {} );
+const EMPTY_POST = Object.freeze( {} );
 
 /**
  * Build the canonical external-map URL for a preset destination.
@@ -192,7 +193,7 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 				const meta =
 					select( 'core/editor' )?.getEditedPostAttribute( 'meta' ) || EMPTY_META;
 				const savedPost =
-					select( 'core/editor' )?.getCurrentPost() || {};
+					select( 'core/editor' )?.getCurrentPost() || EMPTY_POST;
 				// Prefer the `core` entity cache for the descriptors map —
 				// `regenerate` patches that cache directly via
 				// receiveEntityRecords, but `core/editor`'s in-memory copy of
