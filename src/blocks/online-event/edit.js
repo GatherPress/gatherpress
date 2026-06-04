@@ -222,7 +222,7 @@ const Edit = ( { attributes, context } ) => {
 						title={ __( 'Online Event Settings', 'gatherpress' ) }
 						initialOpen={ true }
 					>
-						<VStack spacing={ 3 }>
+						<VStack spacing={ 2 }>
 							<ToggleControl
 								label={ __(
 									'This is an online event',
