@@ -1,0 +1,4 @@
+Significance: patch
+Type: fixed
+
+Only show "Venue Settings" panel for post types supporting `gatherpress-venue-information`
