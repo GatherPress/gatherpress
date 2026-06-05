@@ -401,8 +401,7 @@ export const ShadowSourceFilterControls = ( {
 				'gatherpress'
 			),
 			singularLabel,
-			pluralQueryLabel,
-			singularLabel
+			pluralQueryLabel
 		);
 
 	return (
@@ -617,7 +616,6 @@ export const EventQueryControlsSlotFill = () => {
 					'gatherpress-shadow-source',
 					currentPostType
 				);
-				// const isShadowSourceContext = false;
 
 				const showExcludeControl =
 					isEventContext &&
