@@ -258,12 +258,9 @@ class Query {
 		// so any consumer can reuse them; we just merge the clause into the
 		// existing tax_query and call $query->set().
 		if ( ! empty( $query->get( 'shadow_filter' ) ) ) {
-echo "\n\n";
-error_log( 'Applying shadow filter to event query.' );
-error_log( 'Current query shadow_filter: ' . print_r( $query->get( 'shadow_filter' ), true ) );
 			$shadow_source = Shadow_Source::get_instance();
 			$source_post   = $shadow_source->resolve_post_from_query_context( $query );
-error_log( 'Resolved source post for shadow filter: ' . print_r( $source_post->post_title, true ) );
+
 			if ( $source_post instanceof WP_Post ) {
 				$existing_tax_query = $query->get( 'tax_query' );
 
