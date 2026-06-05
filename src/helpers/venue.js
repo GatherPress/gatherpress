@@ -102,6 +102,11 @@ export function useVenuePostFromTermId( termId, venuePostType = DEFAULT_VENUE_PO
 			);
 			// If term object exists, strip any leading underscore from its slug.
 			const venueSlug = venueTerm?.slug?.replace( /^_/, '' );
+			// In case the Venue post (source post type) does also support gatherpress-event-date,
+			// we need to ensure that all posts of that type are queried,
+			// not only upcoming ones, which would be the default.
+			const isEventDateSupported = wpSelect( 'core' ).getPostType( venuePostType )
+				?.supports?.[ 'gatherpress-event-date' ] ? 'all' : null;
 			// Query for one venue post with the matching slug.
 			return {
 				venuePost: wpSelect( 'core' ).getEntityRecords(
@@ -110,6 +115,7 @@ export function useVenuePostFromTermId( termId, venuePostType = DEFAULT_VENUE_PO
 					{
 						per_page: 1,
 						slug: venueSlug,
+						gatherpress_event_query: isEventDateSupported,
 					}
 				),
 			};
