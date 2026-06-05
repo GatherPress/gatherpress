@@ -412,7 +412,7 @@ class Event_Query {
 		$query_params['gatherpress_event_query'] = array(
 			'description' => __( 'Type of events to query: upcoming or past', 'gatherpress' ),
 			'type'        => 'string',
-			'enum'        => array( 'upcoming', 'past' ),
+			'enum'        => array( 'upcoming', 'past', 'all' ),
 			'default'     => 'upcoming',
 		);
 
