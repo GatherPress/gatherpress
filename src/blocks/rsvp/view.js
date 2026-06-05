@@ -197,8 +197,13 @@ const { state, actions } = store( 'gatherpress', {
 					state.posts[ postId ].currentUser.status
 				) {
 					innerBlock.classList.remove( 'gatherpress--is-hidden' );
-					// Move the visible block to the start of its parent.
-					parent.insertBefore( innerBlock, parent.firstChild );
+					// Guard against a spurious DOM remove+reinsert: when the block
+					// is already firstChild, insertBefore(node, node) per the DOM
+					// spec becomes insertBefore(node, node.nextSibling), which is
+					// still a real mutation and restarts CSS animations on descendants.
+					if ( parent.firstChild !== innerBlock ) {
+						parent.insertBefore( innerBlock, parent.firstChild );
+					}
 				} else {
 					innerBlock.classList.add( 'gatherpress--is-hidden' );
 				}
