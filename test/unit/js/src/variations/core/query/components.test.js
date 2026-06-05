@@ -36,7 +36,14 @@ jest.mock( '@wordpress/data', () => ( {
 jest.mock( '@wordpress/i18n', () => ( {
 	__: ( text ) => text,
 	_x: ( text ) => text,
-	sprintf: ( fmt, ...args ) => args.reduce( ( s, a ) => s.replace( '%s', a ), fmt ),
+	sprintf: ( fmt, ...args ) => {
+		// Mirror @wordpress/i18n: support both positional (%1$s) and
+		// sequential (%s) placeholders so help copy interpolates correctly.
+		let sequential = 0;
+		return fmt.replace( /%(\d+)\$s|%s/g, ( match, position ) =>
+			position ? args[ position - 1 ] : args[ sequential++ ]
+		);
+	},
 } ) );
 
 // The slot wrapper invokes its render-prop child immediately so we can assert
@@ -122,7 +129,8 @@ describe( 'EventQueryControlsSlotFill', () => {
 			screen.queryByText( venueToggleLabel )
 		).not.toBeInTheDocument();
 		expect( isPostTypeSupporting ).toHaveBeenCalledWith(
-			'gatherpress-shadow-source'
+			'gatherpress-shadow-source',
+			'gatherpress_event'
 		);
 	} );
 
