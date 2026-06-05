@@ -35,6 +35,12 @@ class Test_Setup extends Base {
 		$instance = Setup::get_instance();
 		$hooks    = array(
 			array(
+				'type'     => 'filter',
+				'name'     => 'register_block_type_args',
+				'priority' => 10,
+				'callback' => array( $instance, 'enable_context_for_core_query_block' ),
+			),
+			array(
 				'type'     => 'action',
 				'name'     => 'init',
 				'priority' => 10,
@@ -746,5 +752,72 @@ class Test_Setup extends Base {
 
 		// Should fall back to get_the_ID() when postId is negative.
 		$this->assertSame( $post->ID, $result );
+	}
+
+	/**
+	 * Coverage for enable_context_for_core_query_block when uses_context is missing.
+	 *
+	 * @covers ::enable_context_for_core_query_block
+	 *
+	 * @return void
+	 */
+	public function test_adds_context_to_core_query_block_when_uses_context_missing(): void {
+		$instance = Setup::get_instance();
+		$args     = array();
+
+		$result = $instance->enable_context_for_core_query_block(
+			$args,
+			'core/query'
+		);
+
+		$this->assertSame(
+			array( 'postType', 'postId' ),
+			$result['uses_context']
+		);
+	}
+
+	/**
+	 * Coverage for enable_context_for_core_query_block when uses_context exists already.
+	 *
+	 * @covers ::enable_context_for_core_query_block
+	 *
+	 * @return void
+	 */
+	public function test_preserves_existing_context_for_core_query_block(): void {
+		$instance = Setup::get_instance();
+		$args     = array(
+			'uses_context' => array( 'queryId', 'layout' ),
+		);
+
+		$result = $instance->enable_context_for_core_query_block(
+			$args,
+			'core/query'
+		);
+
+		$this->assertSame(
+			array( 'queryId', 'layout', 'postType', 'postId' ),
+			$result['uses_context']
+		);
+	}
+
+	/**
+	 * Coverage for enable_context_for_core_query_block with non-query block.
+	 *
+	 * @covers ::enable_context_for_core_query_block
+	 *
+	 * @return void
+	 */
+	public function test_does_not_modify_non_query_blocks(): void {
+		$instance = Setup::get_instance();
+		$args     = array(
+			'uses_context' => array( 'queryId' ),
+		);
+
+		$result = $instance->enable_context_for_core_query_block(
+			$args,
+			'core/paragraph'
+		);
+
+		$this->assertSame( $args, $result );
 	}
 }

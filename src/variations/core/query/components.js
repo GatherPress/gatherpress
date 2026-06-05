@@ -19,7 +19,7 @@ import { __, _x, sprintf } from '@wordpress/i18n';
  */
 import EventQueryControls from './slots/query-controls';
 import EventInheritedQueryControls from './slots/inherited-query-controls';
-import { isEventPostType, usePostTypeSupports } from '../../../helpers/event';
+import { isEventPostType, isPostTypeSupporting } from '../../../helpers/event';
 import { isInFSETemplate, usePostTypeLabel } from '../../../helpers/editor';
 
 /**
@@ -287,6 +287,7 @@ export const EventListTypeControls = ( { attributes, setAttributes } ) => {
  * render time, but the help copy reflects the deferred binding.
  *
  * @param {Object}   props
+ * @param {Object}   props.context           Block context, including post type and ID.
  * @param {Object}   props.attributes        Block attributes.
  * @param {Function} props.setAttributes     Function to update block attributes.
  * @param {boolean}  props.inTemplateContext Whether the host editor is a template or template part.
@@ -294,6 +295,7 @@ export const EventListTypeControls = ( { attributes, setAttributes } ) => {
  * @return {Element}                          ToggleControl for shadow-source filtering.
  */
 export const ShadowSourceFilterControls = ( {
+	context,
 	attributes,
 	setAttributes,
 	inTemplateContext = false,
@@ -308,14 +310,11 @@ export const ShadowSourceFilterControls = ( {
 	// Production" — matching whatever the template renders against at runtime.
 	// Otherwise (events, pages, templates, patterns) fall back to gatherpress_venue
 	// since that's the most common scope-by-source scenario.
-	const editorPostId = useSelect(
-		( wpSelect ) => wpSelect( 'core/editor' )?.getCurrentPostId(),
-		[]
-	);
-	const editorPostType = useSelect(
-		( wpSelect ) => wpSelect( 'core/editor' )?.getCurrentPostType(),
-		[]
-	);
+	const fallbackPostId = useSelect( ( wpSelect ) => wpSelect( 'core/editor' )?.getCurrentPostId(), [] );
+	const fallbackPostType = useSelect( ( wpSelect ) => wpSelect( 'core/editor' )?.getCurrentPostType(), [] );
+	const editorPostId = context?.postId || fallbackPostId;
+	const editorPostType = context?.postType || fallbackPostType;
+
 	const editorPostTypeSupports = useSelect(
 		( wpSelect ) =>
 			editorPostType
@@ -375,24 +374,35 @@ export const ShadowSourceFilterControls = ( {
 		setAttributes,
 	] );
 
-	const helpText = inTemplateContext
-		? __(
-			'The filter only takes effect when this template renders on a shadow-source page (venue, tour, production, etc.).',
-			'gatherpress'
-		)
-		: __(
-			'When placed on a shadow-source page, only shows events tied to that page.',
-			'gatherpress'
-		);
-
 	// Read the singular label so the label reflects what the currently
 	// selected post type is actually called — a re-named gatherpress_venue post type with
 	// `singular_name => 'Location'` shows "Filter by Current Location".
+	const pluralQueryLabel = usePostTypeLabel(
+		'name',
+		attributes?.query?.postType,
+		__( 'Events', 'gatherpress' )
+	);
+
 	const singularLabel = usePostTypeLabel(
 		'singular_name',
 		sourcePostType,
 		__( 'Venue', 'gatherpress' )
 	);
+
+	const helpText = inTemplateContext
+		? __(
+			'The filter only takes effect when this template renders on a shadow-source page (venue, tour, production, etc.).',
+			'gatherpress'
+		)
+		: sprintf(
+			/* translators: 1: Singular post type label, e.g. "Venue", 2: Plural post type label, e.g. "Events" */
+			__(
+				'When placed inside %1$s context, only shows %2$s tied to that %1$s.',
+				'gatherpress'
+			),
+			singularLabel,
+			pluralQueryLabel
+		);
 
 	return (
 		<ToggleControl
@@ -586,39 +596,60 @@ export const EventOrderControls = ( { attributes, setAttributes } ) => {
  * @return {Element} SlotFill with all event query controls for GatherPress.
  */
 export const EventQueryControlsSlotFill = () => {
-	// If the is the correct variation, add the custom controls.
-	const isEventContext = isEventPostType();
-
-	// Reactive gate against the host editor's post type. Templates and template
-	// parts have no concrete shadow-source context to bind to, but they may render on a
-	// shadow-source page later, so we keep the toggle visible there with adjusted copy.
-	// On any non-shadow-source, non-template host the toggle can never apply, so we hide
-	// it to remove the mental load of an option that does nothing.
-	const isShadowSourceContext = usePostTypeSupports(
-		'gatherpress-shadow-source'
-	);
 	const inTemplateContext = isInFSETemplate();
-	const showShadowSourceFilter = isShadowSourceContext || inTemplateContext;
 
 	return (
 		<EventQueryControls>
-			{ ( props ) => (
-				<>
-					<EventListTypeControls { ...props } />
-					<EventIncludeUnfinishedControls { ...props } />
+			{ ( props ) => {
+				const queryPostType = props.attributes?.query?.postType;
+				const currentPostType = props?.context?.postType;
 
-					{ isEventContext && <EventExcludeControls { ...props } /> }
-					{ showShadowSourceFilter && (
-						<ShadowSourceFilterControls
-							{ ...props }
-							inTemplateContext={ inTemplateContext }
-						/>
-					) }
-					<EventCountControls { ...props } />
-					<EventOffsetControls { ...props } />
-					<EventOrderControls { ...props } />
-				</>
-			) }
+				// If the is the correct variation, add the custom controls.
+				const isEventContext = isEventPostType( currentPostType );
+
+				// Reactive gate against the host editor's post type. Templates and template
+				// parts have no concrete shadow-source context to bind to, but they may render on a
+				// shadow-source page later, so we keep the toggle visible there with adjusted copy.
+				// On any non-shadow-source, non-template host the toggle can never apply, so we hide
+				// it to remove the mental load of an option that does nothing.
+				const isShadowSourceContext = isPostTypeSupporting(
+					'gatherpress-shadow-source',
+					currentPostType
+				);
+
+				const showExcludeControl =
+					isEventContext &&
+					currentPostType &&
+					queryPostType &&
+					currentPostType === queryPostType;
+
+				const showShadowSourceFilterControl =
+					inTemplateContext ||
+					(
+						isShadowSourceContext &&
+						currentPostType &&
+						queryPostType &&
+						currentPostType !== queryPostType
+					);
+
+				return (
+					<>
+						<EventListTypeControls { ...props } />
+						<EventIncludeUnfinishedControls { ...props } />
+
+						{ showExcludeControl && <EventExcludeControls { ...props } /> }
+						{ showShadowSourceFilterControl && (
+							<ShadowSourceFilterControls
+								{ ...props }
+								inTemplateContext={ inTemplateContext }
+							/>
+						) }
+						<EventCountControls { ...props } />
+						<EventOffsetControls { ...props } />
+						<EventOrderControls { ...props } />
+					</>
+				);
+			} }
 		</EventQueryControls>
 	);
 };

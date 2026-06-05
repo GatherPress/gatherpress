@@ -202,7 +202,7 @@ class Test_Event_Query extends Base {
 			array( 'include_unfinished', 0 ), // Integer 0 - the critical test case.
 			array( 'exclude_current', null ),
 			array( 'orderby', 'datetime' ),
-			array( 'venue_filter', null ),
+			array( 'shadow_filter', null ),
 			array( 'gatherpress_shadow_source_post_id', null ),
 			array( 'gatherpress_shadow_source_post_type', null ),
 		);
@@ -605,7 +605,7 @@ class Test_Event_Query extends Base {
 			array( 'exclude_current', 456 ),
 			array( 'include_unfinished', null ),
 			array( 'orderby', 'datetime' ),
-			array( 'venue_filter', null ),
+			array( 'shadow_filter', null ),
 			array( 'gatherpress_shadow_source_post_id', null ),
 			array( 'gatherpress_shadow_source_post_type', null ),
 		);
@@ -653,7 +653,7 @@ class Test_Event_Query extends Base {
 			array( 'exclude_current', null ),
 			array( 'include_unfinished', 1 ),
 			array( 'orderby', 'date' ),
-			array( 'venue_filter', null ),
+			array( 'shadow_filter', null ),
 			array( 'gatherpress_shadow_source_post_id', null ),
 			array( 'gatherpress_shadow_source_post_type', null ),
 		);
@@ -705,7 +705,7 @@ class Test_Event_Query extends Base {
 			array( 'exclude_current', null ),
 			array( 'include_unfinished', null ),
 			array( 'orderby', null ),
-			array( 'venue_filter', null ),
+			array( 'shadow_filter', null ),
 			array( 'gatherpress_shadow_source_post_id', null ),
 			array( 'gatherpress_shadow_source_post_type', null ),
 		);
@@ -891,7 +891,7 @@ class Test_Event_Query extends Base {
 			array( 'exclude_current', null ),
 			array( 'include_unfinished', null ),
 			array( 'orderby', '' ),
-			array( 'venue_filter', null ),
+			array( 'shadow_filter', null ),
 			array( 'gatherpress_shadow_source_post_id', null ),
 			array( 'gatherpress_shadow_source_post_type', null ),
 		);
@@ -916,14 +916,14 @@ class Test_Event_Query extends Base {
 	}
 
 	/**
-	 * Test query_loop_block_query_vars passes venue_filter through to query args.
+	 * Test query_loop_block_query_vars passes shadow_filter through to query args.
 	 *
 	 * @since 0.34.0
 	 * @covers ::query_loop_block_query_vars
 	 *
 	 * @return void
 	 */
-	public function test_query_loop_block_query_vars_with_venue_filter(): void {
+	public function test_query_loop_block_query_vars_with_shadow_filter(): void {
 		$instance = Event_Query::get_instance();
 
 		$query = array( 'posts_per_page' => 10 );
@@ -932,24 +932,24 @@ class Test_Event_Query extends Base {
 		$block->context = array(
 			'query' => array(
 				'gatherpress_event_query' => 'upcoming',
-				'venue_filter'            => 1,
+				'shadow_filter'           => 1,
 			),
 		);
 
 		$result = $instance->query_loop_block_query_vars( $query, $block );
 
-		$this->assertSame( 1, $result['venue_filter'], 'Should pass venue_filter through to query args.' );
+		$this->assertSame( 1, $result['shadow_filter'], 'Should pass shadow_filter through to query args.' );
 	}
 
 	/**
-	 * Test rest_query passes venue_filter through to custom args.
+	 * Test rest_query passes shadow_filter through to custom args.
 	 *
 	 * @since 0.34.0
 	 * @covers ::rest_query
 	 *
 	 * @return void
 	 */
-	public function test_rest_query_with_venue_filter(): void {
+	public function test_rest_query_with_shadow_filter(): void {
 		$instance = Event_Query::get_instance();
 
 		$request = $this->createMock( \WP_REST_Request::class );
@@ -960,7 +960,7 @@ class Test_Event_Query extends Base {
 			array( 'exclude_current', null ),
 			array( 'include_unfinished', null ),
 			array( 'orderby', null ),
-			array( 'venue_filter', 1 ),
+			array( 'shadow_filter', 1 ),
 			array( 'gatherpress_shadow_source_post_id', null ),
 			array( 'gatherpress_shadow_source_post_type', null ),
 		);
@@ -974,7 +974,7 @@ class Test_Event_Query extends Base {
 			->willReturn(
 				array(
 					'gatherpress_event_query' => 'upcoming',
-					'venue_filter'            => 1,
+					'shadow_filter'           => 1,
 				)
 			);
 
@@ -984,7 +984,7 @@ class Test_Event_Query extends Base {
 
 		$result = $instance->rest_query( $initial_args, $request );
 
-		$this->assertSame( 1, $result['venue_filter'], 'Should pass venue_filter through to custom args.' );
+		$this->assertSame( 1, $result['shadow_filter'], 'Should pass shadow_filter through to custom args.' );
 	}
 
 	/**
@@ -1009,7 +1009,7 @@ class Test_Event_Query extends Base {
 		$block->context = array(
 			'query' => array(
 				'gatherpress_event_query'             => 'upcoming',
-				'venue_filter'                        => 1,
+				'shadow_filter'                       => 1,
 				'gatherpress_shadow_source_post_id'   => 42,
 				'gatherpress_shadow_source_post_type' => 'production',
 			),
@@ -1048,7 +1048,7 @@ class Test_Event_Query extends Base {
 			array( 'exclude_current', null ),
 			array( 'include_unfinished', null ),
 			array( 'orderby', null ),
-			array( 'venue_filter', 1 ),
+			array( 'shadow_filter', 1 ),
 			array( 'gatherpress_shadow_source_post_id', 42 ),
 			array( 'gatherpress_shadow_source_post_type', 'production' ),
 		);
@@ -1062,7 +1062,7 @@ class Test_Event_Query extends Base {
 			->willReturn(
 				array(
 					'gatherpress_event_query'             => 'upcoming',
-					'venue_filter'                        => 1,
+					'shadow_filter'                       => 1,
 					'gatherpress_shadow_source_post_id'   => 42,
 					'gatherpress_shadow_source_post_type' => 'production',
 				)
@@ -1129,24 +1129,24 @@ class Test_Event_Query extends Base {
 	}
 
 	/**
-	 * Test aql_query_vars passes venue_filter through to query args.
+	 * Test aql_query_vars passes shadow_filter through to query args.
 	 *
 	 * @since 0.34.0
 	 * @covers ::aql_query_vars
 	 *
 	 * @return void
 	 */
-	public function test_aql_query_vars_with_venue_filter(): void {
+	public function test_aql_query_vars_with_shadow_filter(): void {
 		$instance = Event_Query::get_instance();
 
 		$query_args  = array( 'posts_per_page' => 10 );
 		$block_query = array(
-			'postType'     => 'gatherpress_event',
-			'venue_filter' => 1,
+			'postType'      => 'gatherpress_event',
+			'shadow_filter' => 1,
 		);
 
 		$result = $instance->aql_query_vars( $query_args, $block_query, false );
 
-		$this->assertSame( 1, $result['venue_filter'], 'Should pass venue_filter through to query args.' );
+		$this->assertSame( 1, $result['shadow_filter'], 'Should pass shadow_filter through to query args.' );
 	}
 }

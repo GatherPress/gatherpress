@@ -1509,7 +1509,7 @@ class Test_Query extends Base {
 	/**
 	 * Test venue filter sets tax_query when on a venue singular page.
 	 *
-	 * Covers the venue_filter block when venue_filter is non-empty,
+	 * Covers the shadow_filter block when shadow_filter is non-empty,
 	 * is_singular returns true for a venue post type, the queried object
 	 * is a WP_Post, and no existing tax_query is present.
 	 *
@@ -1517,7 +1517,7 @@ class Test_Query extends Base {
 	 *
 	 * @return void
 	 */
-	public function test_prepare_query_venue_filter_sets_tax_query(): void {
+	public function test_prepare_query_shadow_filter_sets_tax_query(): void {
 		$instance = Query::get_instance();
 
 		// Create a venue post to establish proper singular context.
@@ -1531,7 +1531,7 @@ class Test_Query extends Base {
 		// Navigate to the venue page so is_singular() and get_queried_object() work correctly.
 		$this->go_to( get_permalink( $venue_post_id ) );
 
-		// Build a mock query with venue_filter set and no existing tax_query.
+		// Build a mock query with shadow_filter set and no existing tax_query.
 		$query = $this->getMockBuilder( 'WP_Query' )
 			->setMethods( array( 'is_main_query', 'get', 'set' ) )
 			->getMock();
@@ -1546,7 +1546,7 @@ class Test_Query extends Base {
 			->method( 'get' )
 			->willReturnCallback(
 				static function ( $key ) {
-					if ( 'venue_filter' === $key ) {
+					if ( 'shadow_filter' === $key ) {
 						return true;
 					}
 					// Return null for tax_query so existing_tax_query is initialized as an empty array.
@@ -1594,7 +1594,7 @@ class Test_Query extends Base {
 	 *
 	 * @return void
 	 */
-	public function test_prepare_query_venue_filter_merges_with_existing_tax_query(): void {
+	public function test_prepare_query_shadow_filter_merges_with_existing_tax_query(): void {
 		$instance = Query::get_instance();
 
 		// Create a venue post to establish proper singular context.
@@ -1615,7 +1615,7 @@ class Test_Query extends Base {
 			'terms'    => array( 'existing-term' ),
 		);
 
-		// Build a mock query with venue_filter set and a pre-existing tax_query.
+		// Build a mock query with shadow_filter set and a pre-existing tax_query.
 		$query = $this->getMockBuilder( 'WP_Query' )
 			->setMethods( array( 'is_main_query', 'get', 'set' ) )
 			->getMock();
@@ -1630,7 +1630,7 @@ class Test_Query extends Base {
 			->method( 'get' )
 			->willReturnCallback(
 				static function ( $key ) use ( $pre_existing_entry ) {
-					if ( 'venue_filter' === $key ) {
+					if ( 'shadow_filter' === $key ) {
 						return true;
 					}
 					if ( 'tax_query' === $key ) {
@@ -1681,16 +1681,16 @@ class Test_Query extends Base {
 	}
 
 	/**
-	 * Test venue filter is skipped when venue_filter query var is empty.
+	 * Test venue filter is skipped when shadow_filter query var is empty.
 	 *
-	 * Covers the early-exit branch of the venue filter block when venue_filter
+	 * Covers the early-exit branch of the venue filter block when shadow_filter
 	 * is not set so that tax_query is never modified.
 	 *
 	 * @covers ::prepare_event_query_before_execution
 	 *
 	 * @return void
 	 */
-	public function test_prepare_query_venue_filter_skipped_when_empty(): void {
+	public function test_prepare_query_shadow_filter_skipped_when_empty(): void {
 		$instance = Query::get_instance();
 
 		// Create a venue post to establish proper singular context.
@@ -1704,7 +1704,7 @@ class Test_Query extends Base {
 		// Navigate to the venue page so the singular context is active.
 		$this->go_to( get_permalink( $venue_post_id ) );
 
-		// Build a mock query with venue_filter intentionally absent.
+		// Build a mock query with shadow_filter intentionally absent.
 		$query = $this->getMockBuilder( 'WP_Query' )
 			->setMethods( array( 'is_main_query', 'get', 'set' ) )
 			->getMock();
@@ -1732,8 +1732,8 @@ class Test_Query extends Base {
 
 		$instance->prepare_event_query_before_execution( $query );
 
-		// Assert that tax_query was never touched because the venue_filter is empty.
-		$this->assertFalse( $set_called_with_tax_query, 'tax_query should not be set when venue_filter is empty.' );
+		// Assert that tax_query was never touched because the shadow_filter is empty.
+		$this->assertFalse( $set_called_with_tax_query, 'tax_query should not be set when shadow_filter is empty.' );
 
 		wp_delete_post( $venue_post_id, true );
 	}
