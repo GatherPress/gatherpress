@@ -40,10 +40,10 @@ import DateTimeRange from '../../components/DateTimeRange';
 import { getFromSettings } from '../../helpers/editor-settings';
 import {
 	isEventPostType,
-	findEventPostById,
 	DISABLED_FIELD_OPACITY,
 } from '../../helpers/event';
 import { isInFSETemplate } from '../../helpers/editor';
+import { resolveEventDateData } from './helpers';
 
 /**
  * Similar to get_display_datetime method in class-event.php.
@@ -209,88 +209,12 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 	const postId = attributes?.postId ?? context?.postId ?? null;
 	const hasExplicitOverride = !! attributes?.postId;
 
+	const contextPostType = context?.postType;
+	const contextQueryId = context?.queryId;
+
 	const { dateTimeStart, dateTimeEnd, timezone, isLoading, isValidEvent } = useSelect(
-		( select ) => {
-			// Resolve the post type from context or fall back to the editor's current post type.
-			// This ensures custom post types with gatherpress-event-date support work correctly
-			// in Query Loop blocks and postId override scenarios.
-			const postType =
-				context?.postType ||
-				select( 'core/editor' )?.getCurrentPostType();
-
-			// Reactive supports check — `getPostType` is read inside useSelect so the
-			// component re-renders once the post-type definition (and its supports) load.
-			const supportsEventDate = !! select( 'core' )
-				.getPostType( postType )?.supports?.[ 'gatherpress-event-date' ];
-
-			if ( ! postId ) {
-				return { isValidEvent: false };
-			}
-
-			// When editing an event directly, use the datetime store for live updates.
-			if ( isEventPostType() ) {
-				const datetimeStore = select( 'gatherpress/datetime' );
-				return {
-					dateTimeStart: datetimeStore.getDateTimeStart(),
-					dateTimeEnd: datetimeStore.getDateTimeEnd(),
-					timezone: datetimeStore.getTimezone(),
-					isValidEvent: supportsEventDate,
-				};
-			}
-
-			// Postid override on a host that itself doesn't support event-date
-			// (e.g. a regular page or template part). Resolve the override target
-			// across event-supporting post types so the block can light up.
-			if ( hasExplicitOverride && ! supportsEventDate ) {
-				const overridePost = findEventPostById( select, postId );
-				if ( ! overridePost ) {
-					return { isValidEvent: false };
-				}
-				const overrideMeta = overridePost?.meta;
-				return {
-					dateTimeStart: overrideMeta?.gatherpress_datetime_start,
-					dateTimeEnd: overrideMeta?.gatherpress_datetime_end,
-					timezone: overrideMeta?.gatherpress_timezone,
-					isValidEvent: true,
-				};
-			}
-
-			// Short-circuit before checking resolution: if the context post type doesn't
-			// support event-date we never call `getEntityRecord`, so its resolver never
-			// fires and `hasFinishedResolution` would stay false forever — blocking the
-			// component on a spinner that never resolves.
-			if ( ! supportsEventDate ) {
-				return { isValidEvent: false };
-			}
-
-			// For Query Loop and override contexts, fetch from entity record.
-			const hasResolved = select( 'core' ).hasFinishedResolution(
-				'getEntityRecord',
-				[ 'postType', postType, postId ]
-			);
-
-			if ( ! hasResolved ) {
-				return { isLoading: true, isValidEvent: false };
-			}
-
-			const post = select( 'core' ).getEntityRecord(
-				'postType',
-				postType,
-				postId
-			);
-			const meta = post?.meta;
-
-			// Match the original `hasValidEventId` semantics: only treat the block as
-			// "connected" when the referenced post is published. Drafts/scheduled posts
-			// referenced via Query Loop or postId override stay dim by design.
-			return {
-				dateTimeStart: meta?.gatherpress_datetime_start,
-				dateTimeEnd: meta?.gatherpress_datetime_end,
-				timezone: meta?.gatherpress_timezone,
-				isValidEvent: !! post && 'publish' === post?.status,
-			};
-		},
-		[ postId, context?.postType, hasExplicitOverride ]
+		( select ) => resolveEventDateData( select, contextPostType, contextQueryId, postId, hasExplicitOverride ),
+		[ postId, contextPostType, contextQueryId, hasExplicitOverride ]
 	);
 
 	const blockProps = useBlockProps( {
