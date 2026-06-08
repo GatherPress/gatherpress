@@ -268,6 +268,9 @@ describe( 'useVenuePostFromTermId', () => {
 					capturedSlug = query.slug;
 					return [];
 				} ),
+				getPostType: jest.fn( () => ( {
+					supports: {},
+				} ) ),
 			} ) );
 			return callback( wpSelect );
 		} );
@@ -290,6 +293,9 @@ describe( 'useVenuePostFromTermId', () => {
 					capturedSlug = query.slug;
 					return [];
 				} ),
+				getPostType: jest.fn( () => ( {
+					supports: {},
+				} ) ),
 			} ) );
 			return callback( wpSelect );
 		} );
@@ -308,6 +314,9 @@ describe( 'useVenuePostFromTermId', () => {
 			const wpSelect = jest.fn( () => ( {
 				getEntityRecord: jest.fn( () => mockVenueTerm ),
 				getEntityRecords: jest.fn( () => mockVenuePost ),
+				getPostType: jest.fn( () => ( {
+					supports: {},
+				} ) ),
 			} ) );
 			return callback( wpSelect );
 		} );
@@ -327,6 +336,9 @@ describe( 'useVenuePostFromTermId', () => {
 					capturedSlug = query.slug;
 					return [];
 				} ),
+				getPostType: jest.fn( () => ( {
+					supports: {},
+				} ) ),
 			} ) );
 			return callback( wpSelect );
 		} );
@@ -346,6 +358,9 @@ describe( 'useVenuePostFromTermId', () => {
 					capturedSlug = query.slug;
 					return [];
 				} ),
+				getPostType: jest.fn( () => ( {
+					supports: {},
+				} ) ),
 			} ) );
 			return callback( wpSelect );
 		} );
@@ -525,6 +540,9 @@ describe( 'GetVenuePostFromEventId', () => {
 			const wpSelect = jest.fn( () => ( {
 				getEntityRecord: jest.fn( () => mockVenueTerm ),
 				getEntityRecords: jest.fn( () => mockVenuePost ),
+				getPostType: jest.fn( () => ( {
+					supports: {},
+				} ) ),
 			} ) );
 			return callback( wpSelect );
 		} );
@@ -561,6 +579,9 @@ describe( 'GetVenuePostFromEventId', () => {
 			const wpSelect = jest.fn( () => ( {
 				getEntityRecord: jest.fn( () => mockVenueTerm ),
 				getEntityRecords: jest.fn( () => mockVenuePost ),
+				getPostType: jest.fn( () => ( {
+					supports: {},
+				} ) ),
 			} ) );
 			return callback( wpSelect );
 		} );
@@ -598,6 +619,9 @@ describe( 'GetVenuePostFromEventId', () => {
 			const wpSelect = jest.fn( () => ( {
 				getEntityRecord: jest.fn( () => venueTerm ),
 				getEntityRecords: jest.fn( () => mockVenuePost ),
+				getPostType: jest.fn( () => ( {
+					supports: {},
+				} ) ),
 			} ) );
 			return callback( wpSelect );
 		} );
