@@ -37,7 +37,7 @@ add_filter(
 
 ## Files
 
-- [includes/core/classes/class-assets.php:680](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/class-assets.php#L680)
+- [includes/core/classes/class-assets.php:683](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/class-assets.php#L683)
 ```php
 apply_filters( 'gatherpress_asset_critical', $critical, $path, $name )
 ```
