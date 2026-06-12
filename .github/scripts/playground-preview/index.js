@@ -151,7 +151,7 @@ function createBlueprintUrl(context, number) {
  * @param {object|null} override - Optional override loaded from the PR branch.
  * @returns {string} - A JSON string representing the blueprint.
  */
-function createBlueprint(context, number, zipArtifactUrl, phpVersion) {
+function createBlueprint(context, number, zipArtifactUrl, phpVersion, override) {
 	const { repo, owner } = context;
 
 	// TODO
