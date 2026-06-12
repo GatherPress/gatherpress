@@ -246,7 +246,7 @@ class Event_Query {
 			? $block_query['postType']
 			: get_post_types_by_support( 'gatherpress-event-date' );
 
-		// Type of event list: 'upcoming' or 'past',
+		// Type of event list: 'upcoming', 'past', or 'all',
 		// @see wp-content/plugins/gatherpress/includes/core/classes/class-event-query.php.
 		$query_args['gatherpress_event_query'] = $block_query['gatherpress_event_query'];
 
@@ -330,7 +330,7 @@ class Event_Query {
 		// Generate a new custom query will all potential query vars.
 		$custom_args = array();
 
-		// Type of event list: 'upcoming' or 'past',
+		// Type of event list: 'upcoming', 'past', or 'all',
 		// @see wp-content/plugins/gatherpress/includes/core/classes/class-event-query.php .
 		$custom_args['gatherpress_event_query'] = $request->get_param( 'gatherpress_event_query' );
 
@@ -410,7 +410,7 @@ class Event_Query {
 
 		// Add custom GatherPress query parameters.
 		$query_params['gatherpress_event_query'] = array(
-			'description' => __( 'Type of events to query: upcoming or past', 'gatherpress' ),
+			'description' => __( 'Type of events to query: upcoming, past, or all', 'gatherpress' ),
 			'type'        => 'string',
 			'enum'        => array( 'upcoming', 'past', 'all' ),
 			'default'     => 'upcoming',

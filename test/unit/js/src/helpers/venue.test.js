@@ -368,6 +368,81 @@ describe( 'useVenuePostFromTermId', () => {
 		renderHook( () => useVenuePostFromTermId( 1 ) );
 		expect( capturedSlug ).toBe( 'venue-no-underscore' );
 	} );
+
+	it( 'queries all posts when the post type supports gatherpress-event-date', () => {
+		// An event-date-supporting source post type defaults to upcoming-only
+		// filtering on its REST collection, which hides past posts from the
+		// slug lookup — the hook must opt out by querying 'all'.
+		const mockVenueTerm = { id: 1, slug: '_my-production' };
+		let capturedQuery = null;
+
+		useSelect.mockImplementation( ( callback ) => {
+			const wpSelect = jest.fn( () => ( {
+				getEntityRecord: jest.fn( () => mockVenueTerm ),
+				getEntityRecords: jest.fn( ( type, postType, query ) => {
+					capturedQuery = query;
+					return [];
+				} ),
+				getPostType: jest.fn( () => ( {
+					supports: { 'gatherpress-event-date': true },
+				} ) ),
+			} ) );
+			return callback( wpSelect );
+		} );
+
+		renderHook( () => useVenuePostFromTermId( 1, 'production' ) );
+		expect( capturedQuery.gatherpress_event_query ).toBe( 'all' );
+	} );
+
+	it( 'omits the event query param when the post type lacks event-date support', () => {
+		// The param must be absent, not null: null serializes to an empty
+		// string in the request URL instead of being dropped.
+		const mockVenueTerm = { id: 1, slug: '_my-venue' };
+		let capturedQuery = null;
+
+		useSelect.mockImplementation( ( callback ) => {
+			const wpSelect = jest.fn( () => ( {
+				getEntityRecord: jest.fn( () => mockVenueTerm ),
+				getEntityRecords: jest.fn( ( type, postType, query ) => {
+					capturedQuery = query;
+					return [];
+				} ),
+				getPostType: jest.fn( () => ( {
+					supports: {},
+				} ) ),
+			} ) );
+			return callback( wpSelect );
+		} );
+
+		renderHook( () => useVenuePostFromTermId( 1 ) );
+		expect( capturedQuery ).not.toHaveProperty(
+			'gatherpress_event_query'
+		);
+	} );
+
+	it( 'omits the event query param while the post type is still resolving', () => {
+		// Before getPostType resolves, supports are unknown — the hook must
+		// not send a placeholder value that would fail REST enum validation.
+		const mockVenueTerm = { id: 1, slug: '_my-production' };
+		let capturedQuery = null;
+
+		useSelect.mockImplementation( ( callback ) => {
+			const wpSelect = jest.fn( () => ( {
+				getEntityRecord: jest.fn( () => mockVenueTerm ),
+				getEntityRecords: jest.fn( ( type, postType, query ) => {
+					capturedQuery = query;
+					return [];
+				} ),
+				getPostType: jest.fn( () => undefined ),
+			} ) );
+			return callback( wpSelect );
+		} );
+
+		renderHook( () => useVenuePostFromTermId( 1, 'production' ) );
+		expect( capturedQuery ).not.toHaveProperty(
+			'gatherpress_event_query'
+		);
+	} );
 } );
 
 /**
