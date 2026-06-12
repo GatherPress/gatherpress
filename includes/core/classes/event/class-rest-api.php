@@ -1088,7 +1088,17 @@ class Rest_Api {
 	 * @return WP_REST_Response The response object with enhanced event data.
 	 */
 	public function prepare_event_data( WP_REST_Response $response ): WP_REST_Response {
-		$event = new Event( $response->data['id'] );
+		// The response data shape depends on what the controller included: a
+		// `_fields=` request that drops `id`, or another plugin filtering the
+		// response, can leave it absent. Bail rather than emit an undefined-key
+		// notice and construct Event( 0 ), which would silently do nothing.
+		$post_id = $response->data['id'] ?? 0;
+
+		if ( ! $post_id ) {
+			return $response;
+		}
+
+		$event = new Event( $post_id );
 
 		// Retrieve the online event link only if:
 		// - The user is attending the event.

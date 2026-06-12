@@ -1159,6 +1159,38 @@ class Test_Rest_Api extends Base {
 	}
 
 	/**
+	 * Coverage for prepare_event_data when the response has no id.
+	 *
+	 * Regression for #1765: a `_fields=` request (or another plugin filtering
+	 * the response) can produce data without an `id` key. The method should
+	 * bail instead of emitting an undefined-key notice and constructing
+	 * Event( 0 ).
+	 *
+	 * @covers ::prepare_event_data
+	 *
+	 * @return void
+	 */
+	public function test_prepare_event_data_without_id_returns_response_unchanged(): void {
+		$instance = Rest_Api::get_instance();
+
+		// Mimic a `_fields=title` response: no `id`, no `meta`.
+		$response = new WP_REST_Response( array( 'title' => 'Filtered Event' ) );
+
+		$result = $instance->prepare_event_data( $response );
+
+		$this->assertSame(
+			array( 'title' => 'Filtered Event' ),
+			$result->data,
+			'Response data should be returned untouched when id is absent.'
+		);
+		$this->assertArrayNotHasKey(
+			'meta',
+			$result->data,
+			'No meta should be injected when id is absent.'
+		);
+	}
+
+	/**
 	 * Coverage for events_list with topics filter.
 	 *
 	 * @covers ::events_list
