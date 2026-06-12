@@ -280,7 +280,7 @@ class Test_Event_Query extends Base {
 		// Verify gatherpress_event_query parameter is registered.
 		$this->assertArrayHasKey( 'gatherpress_event_query', $result );
 		$this->assertSame( 'string', $result['gatherpress_event_query']['type'] );
-		$this->assertSame( array( 'upcoming', 'past' ), $result['gatherpress_event_query']['enum'] );
+		$this->assertSame( array( 'upcoming', 'past', 'all' ), $result['gatherpress_event_query']['enum'] );
 
 		// Verify exclude_current parameter is registered.
 		$this->assertArrayHasKey( 'exclude_current', $result );
