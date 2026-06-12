@@ -16,6 +16,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Settings;
 use GatherPress\Core\Settings\Roles;
+use WP_Comment;
 use WP_Post;
 
 /**
@@ -519,9 +520,20 @@ class Rsvp {
 
 				$response = $waiting_list[ $i ];
 
-				// @todo need to look into this since Open RSVP will not have a userId,
-				// but email or commentId if we can use that.
-				$this->save( $response['userId'], 'attending', $response['anonymous'] );
+				// Resolve the identifier save() expects. Logged-in attendees
+				// carry a userId; Open RSVP attendees have userId 0 and are
+				// keyed by the email on their RSVP comment instead. Without
+				// this, save( 0, ... ) hits the empty-identifier guard and the
+				// promotion is silently dropped (#1771).
+				$comment         = empty( $response['userId'] ) ? get_comment( (int) $response['commentId'] ) : null;
+				$user_identifier = ! empty( $response['userId'] )
+					? $response['userId']
+					: ( $comment instanceof WP_Comment ? $comment->comment_author_email : '' );
+
+				if ( ! empty( $user_identifier ) ) {
+					$this->save( $user_identifier, 'attending', $response['anonymous'] );
+				}
+
 				++$i;
 			}
 		}

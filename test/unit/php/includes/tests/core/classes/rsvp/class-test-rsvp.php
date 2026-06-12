@@ -296,6 +296,53 @@ class Test_Rsvp extends Base {
 	}
 
 	/**
+	 * Test that an Open RSVP (email-keyed, userId 0) attendee is promoted off the waiting list.
+	 *
+	 * Regression for #1771: the promotion loop previously passed the record's
+	 * userId straight to save(), which is 0 for non-logged-in Open RSVP
+	 * attendees, so save() hit its empty-identifier guard and the promotion
+	 * was silently dropped.
+	 *
+	 * @since  0.34.0
+	 * @covers ::check_waiting_list
+	 *
+	 * @return void
+	 */
+	public function test_check_waiting_list_promotes_open_rsvp_attendee(): void {
+		$event_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
+		$rsvp     = new Rsvp( $event_id );
+		$email    = 'open-rsvp-attendee@example.com';
+
+		Utility::set_and_get_hidden_property( $rsvp, 'max_attendance_limit', 1 );
+
+		// Fill the single spot with a logged-in user, then add an email-keyed
+		// Open RSVP attendee who lands on the waiting list.
+		$rsvp->save( $this->factory->user->create(), 'attending' );
+		$rsvp->save( $email, 'attending' );
+
+		$this->assertSame(
+			'waiting_list',
+			$rsvp->get( $email )['status'],
+			'Open RSVP attendee should start on the waiting list'
+		);
+
+		// Open the event up and run the promotion sweep.
+		Utility::set_and_get_hidden_property( $rsvp, 'max_attendance_limit', 0 );
+
+		$this->assertSame(
+			1,
+			$rsvp->check_waiting_list(),
+			'Should promote the email-keyed Open RSVP attendee'
+		);
+
+		$this->assertSame(
+			'attending',
+			$rsvp->get( $email )['status'],
+			'Open RSVP attendee should be moved to attending'
+		);
+	}
+
+	/**
 	 * Coverage for attending_limit_reached method.
 	 *
 	 * @covers ::attending_limit_reached
