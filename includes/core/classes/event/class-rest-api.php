@@ -730,7 +730,11 @@ class Rest_Api {
 				$event             = new Event( $post_id );
 				$venue_information = $event->get_venue_information();
 				$user_identifier   = Setup::get_instance()->get_user_identifier();
-				$current_user_rsvp = ( $event->rsvp ) ? $event->rsvp->get( $user_identifier ) : '';
+				// Rsvp::get() is typed `: array` — an empty array when there's
+				// no RSVP, a populated record otherwise. Mirror that with an
+				// empty-array fallback so `current_user` is always an array
+				// rather than flipping between '' and an object (#1766).
+				$current_user_rsvp = ( $event->rsvp ) ? $event->rsvp->get( $user_identifier ) : array();
 				$posts[]           = array(
 					'ID'                       => $post_id,
 					'datetime_start'           => $event->get_datetime_start( $datetime_format ),
@@ -748,7 +752,7 @@ class Rest_Api {
 						true
 					),
 					'responses'                => ( $event->rsvp ) ? $event->rsvp->responses() : array(),
-					'current_user'             => ( $current_user_rsvp ) ? $current_user_rsvp : '',
+					'current_user'             => $current_user_rsvp,
 					'venue'                    => ( $venue_information['name'] )
 						? $event->get_venue_information()
 						: null,

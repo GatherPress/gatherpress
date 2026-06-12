@@ -584,6 +584,73 @@ class Test_Rest_Api extends Base {
 	}
 
 	/**
+	 * Coverage for the current_user field type stability in events_list.
+	 *
+	 * Regression for #1766: current_user previously returned '' when there was
+	 * no RSVP and an array when one existed. It should always be an array so JS
+	 * consumers can safely read current_user.status.
+	 *
+	 * @covers ::events_list
+	 *
+	 * @return void
+	 */
+	public function test_events_list_current_user_is_always_array(): void {
+		$instance = Rest_Api::get_instance();
+		$event_id = $this->mock->post(
+			array( 'post_type' => Event::POST_TYPE )
+		)->get()->ID;
+		$event    = new Event( $event_id );
+
+		$event->save_datetimes(
+			array(
+				'datetime_start' => gmdate( Event::DATETIME_FORMAT, strtotime( '+1 day' ) ),
+				'datetime_end'   => gmdate( Event::DATETIME_FORMAT, strtotime( '+2 day' ) ),
+				'timezone'       => 'America/New_York',
+			)
+		);
+
+		$request = new WP_REST_Request( 'POST' );
+		$request->set_query_params( array( 'event_list_type' => 'upcoming' ) );
+
+		// Logged-out, no RSVP: current_user should be an empty array, not ''.
+		wp_set_current_user( 0 );
+		$response = $instance->events_list( $request );
+		$current  = $this->find_event_in_list( $response->data, $event_id )['current_user'];
+
+		$this->assertIsArray( $current, 'current_user should be an array with no RSVP.' );
+		$this->assertSame( array(), $current, 'current_user should be empty with no RSVP.' );
+
+		// Logged-in with an RSVP: current_user should still be an array, now populated.
+		$user_id = $this->factory->user->create();
+		wp_set_current_user( $user_id );
+		$event->rsvp->save( $user_id, 'attending' );
+
+		$response = $instance->events_list( $request );
+		$current  = $this->find_event_in_list( $response->data, $event_id )['current_user'];
+
+		$this->assertIsArray( $current, 'current_user should be an array with an RSVP.' );
+		$this->assertSame( 'attending', $current['status'], 'current_user should carry the RSVP status.' );
+	}
+
+	/**
+	 * Helper to find a single event entry in an events_list response.
+	 *
+	 * @param array $events   Response data from events_list.
+	 * @param int   $event_id The event ID to locate.
+	 *
+	 * @return array The matching event entry, or an empty array if not found.
+	 */
+	private function find_event_in_list( array $events, int $event_id ): array {
+		foreach ( $events as $event ) {
+			if ( isset( $event['ID'] ) && $event_id === $event['ID'] ) {
+				return $event;
+			}
+		}
+
+		return array();
+	}
+
+	/**
 	 * Helper to get members IDs for test.
 	 *
 	 * @param array $events Response from events_list.
