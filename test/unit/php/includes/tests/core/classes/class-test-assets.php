@@ -164,6 +164,13 @@ class Test_Assets extends Base {
 	/**
 	 * Coverage for add_interactivity_state method.
 	 *
+	 * Regression for #1752: the eventApiUrl must be available on event
+	 * archives (and Query Loops), not only singular event pages — RSVP and
+	 * other interactive blocks render there too. The previous `is_singular()`
+	 * gate left `eventApiUrl` undefined on the archive, so the RSVP view
+	 * scripts requested `/event/undefined/nonce` (404) and every RSVP from an
+	 * archive failed.
+	 *
 	 * @covers ::add_interactivity_state
 	 *
 	 * @return void
@@ -171,22 +178,9 @@ class Test_Assets extends Base {
 	public function test_add_interactivity_state(): void {
 		$instance = Assets::get_instance();
 
-		// Should not set state on a non-event singular page.
-		$post = $this->mock->post( array( 'post_type' => 'post' ) )->get();
-		$this->go_to( get_permalink( $post->ID ) );
-
-		$instance->add_interactivity_state();
-		$state = wp_interactivity_state( 'gatherpress' );
-
-		$this->assertArrayNotHasKey(
-			'eventApiUrl',
-			$state,
-			'Failed to assert interactivity state is not set for non-event post types.'
-		);
-
-		// Should set state on an event singular page.
-		$event = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get();
-		$this->go_to( get_permalink( $event->ID ) );
+		// Visit the event archive — the context that previously bailed.
+		$this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get();
+		$this->go_to( get_post_type_archive_link( Event::POST_TYPE ) );
 
 		$instance->add_interactivity_state();
 		$state = wp_interactivity_state( 'gatherpress' );
@@ -194,7 +188,7 @@ class Test_Assets extends Base {
 		$this->assertArrayHasKey(
 			'eventApiUrl',
 			$state,
-			'Failed to assert eventApiUrl is set in interactivity state.'
+			'Failed to assert eventApiUrl is set in interactivity state on the event archive.'
 		);
 		$this->assertStringContainsString(
 			'wp-json/gatherpress/v1/event',

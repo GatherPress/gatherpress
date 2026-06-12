@@ -153,21 +153,24 @@ class Assets {
 	/**
 	 * Set initial interactivity state for frontend blocks.
 	 *
-	 * Provides the REST API URL to the gatherpress interactivity store
-	 * so that frontend view scripts can make API requests without
-	 * relying on window globals.
+	 * Provides the REST API URL to the gatherpress interactivity store so
+	 * frontend view scripts (RSVP nonce/status requests) can build API URLs
+	 * without relying on window globals.
+	 *
+	 * The state is set on every front-end view rather than only on singular
+	 * event pages: RSVP and other interactive blocks also render in event
+	 * archives and Query Loops, where the previous `is_singular()` gate left
+	 * `eventApiUrl` undefined — the view scripts then requested
+	 * `/event/undefined/nonce` (404) and every RSVP from an archive failed
+	 * (#1752). The value is a static site URL, so emitting it broadly is
+	 * cheap; the interactivity runtime only serializes it when a gatherpress
+	 * interactive block is actually present on the page.
 	 *
 	 * @since 0.34.0
 	 *
 	 * @return void
 	 */
 	public function add_interactivity_state(): void {
-		$event_post_types = get_post_types_by_support( 'gatherpress-event-date' );
-
-		if ( ! is_singular( $event_post_types ) ) {
-			return;
-		}
-
 		$event_rest_api_slug = sprintf( '%s/event', GATHERPRESS_REST_NAMESPACE );
 
 		wp_interactivity_state(
