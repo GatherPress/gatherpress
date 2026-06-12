@@ -13,7 +13,6 @@ const path = require('path');
  * @returns {object|null} - Parsed override object, or null if not found / invalid.
  */
 function loadBlueprintOverride(filePath) {
-
 	try {
 		if (!fs.existsSync(filePath)) {
 			console.log(`No blueprint override found at ${filePath}`);
@@ -240,7 +239,7 @@ function createBlueprint(context, number, zipArtifactUrl, phpVersion) {
 				step: 'importWxr',
 				file: {
 					resource: 'url',
-					url: 'https://raw.githubusercontent.com/GatherPress/gatherpress-demo-data/main/GatherPress-demo-data-0.33.0.xml',
+					url: 'https://raw.githubusercontent.com/GatherPress/gatherpress-demo-data/main/GatherPress-demo-data-0.34.0.xml',
 				},
 			},
 			/**
