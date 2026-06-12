@@ -58,7 +58,7 @@ const { actions } = store( 'gatherpress', {
 			if ( clickedAnchor ) {
 				clickedAnchor.classList.add( 'gatherpress--is-disabled' );
 				clickedAnchor.setAttribute( 'tabindex', '-1' );
-				clickedAnchor.setAttribute( 'aira-disabled', 'true' );
+				clickedAnchor.setAttribute( 'aria-disabled', 'true' );
 			}
 
 			// Enable sibling items.

@@ -246,7 +246,7 @@ class Event_Query {
 			? $block_query['postType']
 			: get_post_types_by_support( 'gatherpress-event-date' );
 
-		// Type of event list: 'upcoming' or 'past',
+		// Type of event list: 'upcoming', 'past', or 'all',
 		// @see wp-content/plugins/gatherpress/includes/core/classes/class-event-query.php.
 		$query_args['gatherpress_event_query'] = $block_query['gatherpress_event_query'];
 
@@ -261,8 +261,8 @@ class Event_Query {
 			$query_args['include_unfinished'] = $block_query['include_unfinished'];
 		}
 
-		if ( ! empty( $block_query['venue_filter'] ) ) {
-			$query_args['venue_filter'] = $block_query['venue_filter'];
+		if ( ! empty( $block_query['shadow_filter'] ) ) {
+			$query_args['shadow_filter'] = $block_query['shadow_filter'];
 		}
 
 		// Editor-preview context — the editor writes these into the block's
@@ -330,7 +330,7 @@ class Event_Query {
 		// Generate a new custom query will all potential query vars.
 		$custom_args = array();
 
-		// Type of event list: 'upcoming' or 'past',
+		// Type of event list: 'upcoming', 'past', or 'all',
 		// @see wp-content/plugins/gatherpress/includes/core/classes/class-event-query.php .
 		$custom_args['gatherpress_event_query'] = $request->get_param( 'gatherpress_event_query' );
 
@@ -351,9 +351,9 @@ class Event_Query {
 
 		$custom_args['orderby'] = $request->get_param( 'orderby' );
 
-		$venue_filter = $request->get_param( 'venue_filter' );
-		if ( null !== $venue_filter ) {
-			$custom_args['venue_filter'] = $venue_filter;
+		$shadow_filter = $request->get_param( 'shadow_filter' );
+		if ( null !== $shadow_filter ) {
+			$custom_args['shadow_filter'] = $shadow_filter;
 		}
 
 		// REST-side context for the editor preview. When the editor's
@@ -410,9 +410,9 @@ class Event_Query {
 
 		// Add custom GatherPress query parameters.
 		$query_params['gatherpress_event_query'] = array(
-			'description' => __( 'Type of events to query: upcoming or past', 'gatherpress' ),
+			'description' => __( 'Type of events to query: upcoming, past, or all', 'gatherpress' ),
 			'type'        => 'string',
-			'enum'        => array( 'upcoming', 'past' ),
+			'enum'        => array( 'upcoming', 'past', 'all' ),
 			'default'     => 'upcoming',
 		);
 
@@ -427,7 +427,7 @@ class Event_Query {
 			'type'        => 'integer',
 		);
 
-		$query_params['venue_filter'] = array(
+		$query_params['shadow_filter'] = array(
 			'description' => __( 'Whether to filter events by the current venue context', 'gatherpress' ),
 			'type'        => 'integer',
 			'enum'        => array( 0, 1 ),
@@ -496,8 +496,8 @@ class Event_Query {
 		}
 
 		// Pass through venue filter setting.
-		if ( ! empty( $block_query['venue_filter'] ) ) {
-			$query_args['venue_filter'] = $block_query['venue_filter'];
+		if ( ! empty( $block_query['shadow_filter'] ) ) {
+			$query_args['shadow_filter'] = $block_query['shadow_filter'];
 		}
 
 		return $query_args;

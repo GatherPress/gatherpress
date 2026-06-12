@@ -151,6 +151,8 @@ const Edit = ( props ) => {
 	// any shadow-source-supporting CPT without renaming.
 	const sourcePostType =
 		attributes?.sourcePostType || getVenuePostType( effectivePostType );
+	// Only a venue-information source has anything to configure in this panel.
+	const isVenueSource = usePostTypeSupports( 'gatherpress-venue-information', sourcePostType );
 	const venuePostType =
 		'venue' === overrideResolution?.kind
 			? overrideResolution.postType
@@ -411,7 +413,7 @@ const Edit = ( props ) => {
 					) ) }
 			</BlockContextProvider>
 			<InspectorControls>
-				{ ! isDescendentOfQueryLoop && ! isInFSETemplate() && isEventContext && (
+				{ isVenueSource && ! isDescendentOfQueryLoop && ! isInFSETemplate() && isEventContext && (
 					<PanelBody
 						title={ __( 'Venue settings', 'gatherpress' ) }
 						initialOpen={ true }

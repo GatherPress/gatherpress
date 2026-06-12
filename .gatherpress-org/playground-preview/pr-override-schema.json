@@ -1,0 +1,24 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://gatherpress.org/playground-preview/pr-override-schema.json",
+  "title": "GatherPress Playground Override Blueprint",
+  "description": "Extends the GatherPress PR preview Playground blueprint schema with prependSteps and appendSteps.",
+
+  "allOf": [
+    {
+      "$ref": "https://playground.wordpress.net/blueprint-schema.json"
+    },
+    {
+      "properties": {
+        "prependSteps": {
+          "description": "Steps to execute before the main blueprint steps.",
+          "$ref": "https://playground.wordpress.net/blueprint-schema.json#/properties/steps"
+        },
+        "appendSteps": {
+			"description": "Steps to execute after the main blueprint steps.",
+			"$ref": "https://playground.wordpress.net/blueprint-schema.json#/properties/steps"
+        }
+      }
+    }
+  ]
+}

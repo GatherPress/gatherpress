@@ -1,0 +1,4 @@
+Significance: patch
+Type: fixed
+
+The venue-map block returned new empty-object references from its useSelect selector on every render, triggering Gutenberg's "Non-equal value keys" warning and causing unnecessary re-renders when no venue address was set.

@@ -1290,7 +1290,7 @@ class Test_Setup extends Base {
 				'attr' => 'Example iCal Feed',
 			),
 			array(
-				'url'  => 'https://example.org/event/sample/feed/ical/',
+				'url'  => 'https://example.org/event/sample/ical/',
 				'attr' => 'Example iCal Download',
 			),
 		);

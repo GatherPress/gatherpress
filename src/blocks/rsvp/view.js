@@ -205,8 +205,13 @@ const { state, actions } = store( 'gatherpress', {
 				const parent = innerBlock.parentNode;
 				if ( innerBlock.dataset.rsvpStatus === currentStatus ) {
 					innerBlock.classList.remove( 'gatherpress--is-hidden' );
-					// Move the visible block to the start of its parent.
-					parent.insertBefore( innerBlock, parent.firstChild );
+					// Guard against a spurious DOM remove+reinsert: when the block
+					// is already firstChild, insertBefore(node, node) per the DOM
+					// spec becomes insertBefore(node, node.nextSibling), which is
+					// still a real mutation and restarts CSS animations on descendants.
+					if ( parent.firstChild !== innerBlock ) {
+						parent.insertBefore( innerBlock, parent.firstChild );
+					}
 					matched = true;
 				} else {
 					innerBlock.classList.add( 'gatherpress--is-hidden' );
@@ -224,10 +229,15 @@ const { state, actions } = store( 'gatherpress', {
 
 				if ( fallback ) {
 					fallback.classList.remove( 'gatherpress--is-hidden' );
-					fallback.parentNode.insertBefore(
-						fallback,
-						fallback.parentNode.firstChild,
-					);
+					// Same firstChild guard as above: re-inserting an already
+					// first node is still a DOM mutation and restarts CSS
+					// animations on descendants (#1741).
+					if ( fallback.parentNode.firstChild !== fallback ) {
+						fallback.parentNode.insertBefore(
+							fallback,
+							fallback.parentNode.firstChild,
+						);
+					}
 				}
 			}
 		},

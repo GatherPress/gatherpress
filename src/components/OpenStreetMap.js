@@ -42,6 +42,7 @@ const OpenStreetMap = ( props ) => {
 		pluginUrl,
 	} = props;
 	const [ Leaflet, setLeaflet ] = useState( null );
+	const [ tilesFailed, setTilesFailed ] = useState( false );
 	const mapId = `map-${ uuidv4() }`;
 	const mapRef = useRef( null );
 	const mapInstanceRef = useRef( null );
@@ -141,9 +142,26 @@ const OpenStreetMap = ( props ) => {
 				'<a href="https://carto.com/attributions">CARTO</a>'
 			);
 
-		Leaflet.tileLayer( tileUrl, {
+		// Surface a clear "unavailable" state instead of a blank gray map when
+		// the tile provider fails (e.g. CartoDB returning 502s for uncached
+		// high-zoom tiles). Only flag failure when no tile has loaded — a few
+		// stray edge-tile errors on an otherwise-working basemap shouldn't
+		// trip the message (#1731).
+		setTilesFailed( false );
+		let tilesLoaded = 0;
+		const tileLayer = Leaflet.tileLayer( tileUrl, {
 			attribution: tileAttribution,
-		} ).addTo( map );
+		} );
+		tileLayer.on( 'tileload', () => {
+			tilesLoaded += 1;
+			setTilesFailed( false );
+		} );
+		tileLayer.on( 'tileerror', () => {
+			if ( 0 === tilesLoaded ) {
+				setTilesFailed( true );
+			}
+		} );
+		tileLayer.addTo( map );
 
 		// Center the marker icon on the coord (both axes) so the pin's
 		// visual center matches the map center — mirrors the static map's
@@ -221,16 +239,55 @@ const OpenStreetMap = ( props ) => {
 		return null;
 	}
 
-	// Add inert attribute in editor to prevent all interactions and focus.
-	const mapProps = {
+	// Wrap the Leaflet container so the tile-failure overlay can sit on top of
+	// it. Add inert in the editor to prevent all interactions and focus.
+	const wrapperProps = {
 		className,
-		id: mapId,
-		ref: mapRef,
-		style,
+		// Carry the block's border-radius down so the Leaflet container (and the
+		// failure overlay) stay clipped to the same rounded corners — the inner
+		// elements inherit from this wrapper.
+		style: {
+			...style,
+			position: 'relative',
+			borderRadius: 'inherit',
+			overflow: 'hidden',
+		},
 		...( isPostEditor && { inert: '' } ),
 	};
 
-	return <div { ...mapProps }></div>;
+	return (
+		<div { ...wrapperProps }>
+			<div
+				id={ mapId }
+				ref={ mapRef }
+				style={ { width: '100%', height: '100%', borderRadius: 'inherit' } }
+			></div>
+			{ tilesFailed && (
+				<output
+					className="gatherpress-venue-map__tile-error"
+					style={ {
+						position: 'absolute',
+						inset: 0,
+						display: 'flex',
+						// Pin the message to the top so it clears the centered
+						// map marker, which Leaflet paints above the overlay.
+						alignItems: 'flex-start',
+						justifyContent: 'center',
+						padding: '1rem',
+						textAlign: 'center',
+						backgroundColor: '#e0e0e0',
+						color: '#757575',
+						borderRadius: 'inherit',
+					} }
+				>
+					{ __(
+						'Map could not be loaded. Please try again later.',
+						'gatherpress'
+					) }
+				</output>
+			) }
+		</div>
+	);
 };
 
 export default OpenStreetMap;

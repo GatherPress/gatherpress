@@ -257,7 +257,7 @@ class Query {
 		// filter is enabled. Resolution + clause-building live in Shadow_Source
 		// so any consumer can reuse them; we just merge the clause into the
 		// existing tax_query and call $query->set().
-		if ( ! empty( $query->get( 'venue_filter' ) ) ) {
+		if ( ! empty( $query->get( 'shadow_filter' ) ) ) {
 			$shadow_source = Shadow_Source::get_instance();
 			$source_post   = $shadow_source->resolve_post_from_query_context( $query );
 
