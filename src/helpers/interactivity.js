@@ -6,6 +6,33 @@ import { store } from '@wordpress/interactivity';
 const { state: gatherPressState } = store( 'gatherpress' );
 
 /**
+ * Surface an RSVP request failure to the user.
+ *
+ * Logs the underlying error for debugging and shows a brief alert so a failed
+ * request doesn't leave the UI in a silent half-updated state. Mirrors the
+ * server-error handling in the rsvp-form block (#1719).
+ *
+ * The message is a plain string, not wrapped in `__()`: this helper runs in the
+ * Interactivity API script-module graph (`wp-scripts build --experimental-modules`),
+ * which does not support `@wordpress/i18n` as a module dependency yet — the same
+ * reason the rsvp-form block hardcodes its alert copy.
+ *
+ * @since 0.34.0
+ *
+ * @param {*} [error=null] Optional error to log for debugging.
+ *
+ * @return {void}
+ */
+function notifyRsvpFailure( error = null ) {
+	// eslint-disable-next-line no-console
+	console.warn( 'RSVP API request failed:', error );
+	// eslint-disable-next-line no-alert
+	alert(
+		'Sorry, there was an issue processing your RSVP. Please try again.'
+	);
+}
+
+/**
  * Initializes the post context within the application state.
  *
  * This function ensures that the given `postId` has an entry in the `state.posts` object.
@@ -216,16 +243,13 @@ export async function sendRsvpApiRequest(
 	try {
 		const res = await makeRequest();
 
-		if ( res.success ) {
+		// `makeRequest` resolves to undefined when the nonce can't be fetched,
+		// and to a `{ success: false }` / error payload when the server (or a
+		// proxy/WAF returning non-JSON) rejects the request. Guard against both
+		// so a failed request surfaces an error instead of throwing on
+		// `res.success` and leaving the button hidden (#1719).
+		if ( res?.success ) {
 			if ( state ) {
-				// eslint-disable-next-line no-console
-				console.log( '[RSVP API] Response received:', {
-					postId,
-					status: res.status,
-					onlineLink: res.online_link,
-					fullResponse: res,
-				} );
-
 				state.posts[ postId ] = {
 					...state.posts[ postId ],
 					eventResponses: {
@@ -240,19 +264,16 @@ export async function sendRsvpApiRequest(
 					},
 					onlineEventLink: res.online_link || '',
 				};
-
-				// eslint-disable-next-line no-console
-				console.log( '[RSVP API] State updated:', state.posts[ postId ] );
 			}
 
 			if ( 'function' === typeof onSuccess ) {
 				onSuccess( res );
 			}
+		} else {
+			notifyRsvpFailure();
 		}
 	} catch ( error ) {
-		// Handle error silently - log for debugging but don't interrupt user.
-		// eslint-disable-next-line no-console
-		console.warn( 'RSVP API request failed:', error );
+		notifyRsvpFailure( error );
 	} finally {
 		// Always remove loading class when request completes.
 		if ( loadingElement ) {
