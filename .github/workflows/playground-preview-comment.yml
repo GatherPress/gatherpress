@@ -46,6 +46,18 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: ${{ github.event.repository.default_branch }}
+          path: base
+
+      # PR head — ONLY to read the override file, never to execute code from it.
+      # Sparse checkout limits what we pull to just the override directory.
+      - name: Checkout PR head for blueprint override
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          path: pr-head
+          sparse-checkout: |
+            .github/playground
+          sparse-checkout-cone-mode: true
 
       - name: Add Preview Links comment
         uses: actions/github-script@v7
@@ -55,5 +67,11 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const createPreviewLinks = require('.github/scripts/playground-preview');
-            await createPreviewLinks(github, context, Number(process.env.PR_NUMBER));
+            const overrideFilePath = 'pr-head/.github/playground/';
+            const createPreviewLinks = require('./base/.github/scripts/playground-preview');
+            await createPreviewLinks(
+                github,
+                context,
+                Number(process.env.PR_NUMBER),
+                overrideFilePath
+            );
