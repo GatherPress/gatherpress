@@ -1,0 +1,4 @@
+Significance: patch
+Type: fixed
+
+Open RSVP attendees are now correctly promoted from the waiting list when a spot opens up.
