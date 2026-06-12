@@ -1,0 +1,4 @@
+Significance: patch
+Type: fixed
+
+Fixed the Event Query block hanging on an endless spinner when its post type is switched to one that does not support event dates.
