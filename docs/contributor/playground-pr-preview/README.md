@@ -30,7 +30,7 @@ The override is merged into the generated default blueprint and as such still co
 ### Examples
 
 
-1.
+1.	<!-- markdownlint-disable-next-line MD033 -->
 	<details><summary><strong>Debug with <em>Query Monitor</em></strong></summary>
 
 	```json
@@ -47,7 +47,7 @@ The override is merged into the generated default blueprint and as such still co
 
 	</details>
 
-2.
+2.	<!-- markdownlint-disable-next-line MD033 -->
 	<details><summary><strong>Test <code>/ical</code>endpoints with <em>Monkeyman Rewrite Analyzer</em></strong></summary>
 
 	```json
@@ -65,7 +65,7 @@ The override is merged into the generated default blueprint and as such still co
 
 	</details>
 
-3.
+3.	<!-- markdownlint-disable-next-line MD033 -->
 	<details><summary><strong>Full example</strong></summary>
 
 	```json
@@ -102,7 +102,7 @@ The override is merged into the generated default blueprint and as such still co
 
 Protected fields cannot be overridden, `preferredVersions` (the PHP version matrix), `phpExtensionBundles`, and raw `step`s are rejected. PR authors must use `prependSteps` and `appendSteps`.
 
-To help with the override style, GatherPress published its own Playground Override Scheme under https://gatherpress.org/playground-preview/pr-override-schema.json.
+To help with the override style, GatherPress published its own Playground Override Scheme under [`gatherpress.org/playground-preview/pr-override-schema.json`](https://gatherpress.org/playground-preview/pr-override-schema.json).
 
 This should be referenced in a `PR-*-blueprint-override.json` like so:
 
@@ -112,4 +112,5 @@ This should be referenced in a `PR-*-blueprint-override.json` like so:
   [...]
 }
 ```
+
 Editors like *VS Code* will provide autocompletion for all standard and our custom Playground properties with full step-type validation.
