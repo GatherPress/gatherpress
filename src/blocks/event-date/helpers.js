@@ -40,11 +40,23 @@ export function resolveEventDateData( select, contextPostType, contextQueryId, p
 	}
 
 	// When editing an event directly (not inside a query loop), use the
-	// datetime store for live updates. Skip this path when contextQueryId is
-	// a number — core/query sets it on every block in the loop template,
-	// meaning each instance represents a different queried post and must fetch
-	// its own dates via the entity record below.
-	if ( isDirectEditingEvent && undefined === contextQueryId ) {
+	// datetime store for live updates. Three conditions must hold:
+	// - isDirectEditingEvent: the editor document is itself an event.
+	// - undefined === contextQueryId: core/query sets queryId on every block in
+	//   the loop template, so a defined value means this instance represents a
+	//   different queried post and must fetch its own dates via the entity
+	//   record below.
+	// - postId === current post id: a gatherpress/venue block overrides the
+	//   postId/postType context for its inner blocks (e.g. sourcePostType
+	//   "gatherpress_production"), so an event-date block nested there points at
+	//   a different post than the one being edited. The live store only holds
+	//   the edited event's dates, so it is only correct when the resolved postId
+	//   is that edited post (#1794).
+	if (
+		isDirectEditingEvent &&
+		undefined === contextQueryId &&
+		postId === select( 'core/editor' )?.getCurrentPostId()
+	) {
 		const datetimeStore = select( 'gatherpress/datetime' );
 		return {
 			dateTimeStart: datetimeStore.getDateTimeStart(),
