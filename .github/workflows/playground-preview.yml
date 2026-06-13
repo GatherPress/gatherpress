@@ -23,6 +23,10 @@ on:
     - 'includes/**'
     - 'src/**'
     - '*.php'
+    # Do start the workflow, even when just a PR preview blueprint was added or changed.
+    # That allows doing compatibility tests with 3rd-party plugins or
+    # just to get some reproducible debugging environment with "Query Monitor".
+    - '.github/playground/**'
 
 # Cancels all previous workflow runs for pull requests that have not completed.
 concurrency:

@@ -278,7 +278,6 @@ function createPlaygroundLinks( blueprint, prText) {
 	const playgrounds = [
 		{ name: '**Normal** WordPress Playground ', url: 'https://playground.wordpress.net/#' },
 		{ name: '**Seamless** WordPress Playground ', url: 'https://playground.wordpress.net/?mode=seamless#' },
-		{ name: 'WordPress Playground **Builder** ', url: 'https://playground.wordpress.net/builder/builder.html#' },
 	];
 
 	return playgrounds.map(playground => ({
@@ -325,27 +324,25 @@ async function createPreviewLinksComment(github, context, prNumberOverride, file
 
 	const overrideNote = override
 		? `
-> ℹ️ This preview includes a custom blueprint override from <code>${overridePath}</code>.
+ℹ️ This preview includes a custom blueprint override from <code>.github/playground/PR-${prNumber}-blueprint-override.json</code>.
 `
 		: `
 <details><summary>Customize PR Playground</summary>
 
 To customize the Playground preview for this specific PR, create a file at:
 
-<code>
-.github/playground/PR-${prNumber}-blueprint-override.json
-</code>
+<code>.github/playground/PR-${prNumber}-blueprint-override.json</code>
 
 The override is merged into the generated blueprint and can be used to:
 
 - Enable Playground features
 - Install additional plugins
 - Change site options
-- Run setup steps before or after the default blueprint
+- Run steps before or after the GatherPress' default steps
 
 Example:
 
-<pre>
+\`\`\`json
 {
 	"$schema": "https://gatherpress.org/playground-preview/pr-override-schema.json",
 	"landingPage": "/wp-admin/edit.php?post_type=gatherpress_venue",
@@ -374,8 +371,10 @@ Example:
 		}
 	]
 }
-</pre>
+\`\`\`
 </details>
+
+Go to [Playground PR preview customization](https://github.com/GatherPress/gatherpress/blob/develop/docs/contributor/playground-pr-preview/README.md#customize-your-pr-playground) for more details.
 `;
 
 	// The title of the comment and its content, including preview links for all PHP versions.
