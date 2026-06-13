@@ -22,3 +22,89 @@ The override is merged into the generated default blueprint and as such still co
 - Run steps before GatherPress' default steps
 - Run steps after GatherPress' default steps
 
+###
+
+
+1.
+	<details><summary>Debug with *Query Monitor*</summary>
+
+	```json
+	{
+		"prependSteps": [
+		{
+			"step": "installPlugin",
+			"pluginData": { "resource": "wordpress.org/plugins", "slug": "query-monitor" },
+			"options": { "activate": true }
+		}
+		]
+	}
+	```
+
+	</details>
+
+2.
+	<details><summary>Test endpoints with *Monkeyman Rewrite Analyzer*</summary>
+
+	```json
+	{
+		"landingPage": "/wp-admin/admin.php?page=monkeyman-rewrite-analyzer",
+		"prependSteps": [
+		{
+			"step": "installPlugin",
+			"pluginData": { "resource": "wordpress.org/plugins", "slug": "monkeyman-rewrite-analyzer" },
+			"options": { "activate": true }
+		}
+		]
+	}
+	```
+
+	</details>
+
+3.
+	<details><summary>Full example</summary>
+
+	```json
+	{
+		"$schema": "https://gatherpress.org/playground-preview/pr-override-schema.json",
+		"landingPage": "/wp-admin/edit.php?post_type=gatherpress_event",
+		"siteOptions": {
+			"show_on_front": "page"
+		},
+		"features": {
+			"networking": true
+		},
+		"prependSteps": [
+			{
+			"step": "installPlugin",
+			"pluginData": { "resource": "wordpress.org/plugins", "slug": "gutenberg" },
+			"options": { "activate": true }
+			}
+		],
+		"appendSteps": [
+			{
+			"step": "runPHP",
+			"code": "<?php require '/wordpress/wp-load.php'; update_option('gatherpress_some_setting', 'value'); ?>"
+			}
+		]
+	}
+	```
+
+	</details>
+
+
+
+### Validation Schema
+
+Protected fields cannot be overridden, `preferredVersions` (the PHP version matrix), `phpExtensionBundles`, and raw `step`s are rejected. PR authors must use `prependSteps` and `appendSteps`.
+
+To help with the override style, GatherPress published its own Playground Override Scheme under https://gatherpress.org/playground-preview/pr-override-schema.json.
+
+This should be referenced in a `PR-*-blueprint-override.json` like so:
+
+```json
+{
+  "$schema": "https://gatherpress.org/playground-preview/pr-override-schema.json",
+  [...]
+}
+```
+Editors like *VS Code* will provide autocompletion for all standard and our custom Playground properties with full step-type validation.
