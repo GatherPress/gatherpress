@@ -163,8 +163,6 @@ class Venues extends Base {
 								),
 							),
 						),
-						// Map type only affects Google Maps rendering, so only
-						// surface this field when the Google platform is selected.
 						'show_if'     => array(
 							'map_platform' => 'google',
 						),
