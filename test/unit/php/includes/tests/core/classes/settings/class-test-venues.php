@@ -118,5 +118,13 @@ class Test_Venues extends Base {
 				sprintf( 'Failed to assert default value for %s.', $key )
 			);
 		}
+
+		// Default Map Type only affects Google Maps rendering, so it is gated
+		// behind the Google platform via show_if (#1760).
+		$this->assertSame(
+			array( 'map_platform' => 'google' ),
+			$section['maps']['options']['venue_map_default_type']['show_if'],
+			'Failed to assert Default Map Type is gated to the Google platform.'
+		);
 	}
 }

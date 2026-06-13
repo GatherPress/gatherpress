@@ -1,0 +1,4 @@
+Significance: patch
+Type: fixed
+
+The RSVP manager in the editor now shows an error notice instead of silently clearing the attendee list when an RSVP request fails.

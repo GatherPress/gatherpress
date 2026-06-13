@@ -164,6 +164,13 @@ class Test_Assets extends Base {
 	/**
 	 * Coverage for add_interactivity_state method.
 	 *
+	 * Regression for #1752: the eventApiUrl must be available on event
+	 * archives (and Query Loops), not only singular event pages — RSVP and
+	 * other interactive blocks render there too. The previous `is_singular()`
+	 * gate left `eventApiUrl` undefined on the archive, so the RSVP view
+	 * scripts requested `/event/undefined/nonce` (404) and every RSVP from an
+	 * archive failed.
+	 *
 	 * @covers ::add_interactivity_state
 	 *
 	 * @return void
@@ -171,22 +178,9 @@ class Test_Assets extends Base {
 	public function test_add_interactivity_state(): void {
 		$instance = Assets::get_instance();
 
-		// Should not set state on a non-event singular page.
-		$post = $this->mock->post( array( 'post_type' => 'post' ) )->get();
-		$this->go_to( get_permalink( $post->ID ) );
-
-		$instance->add_interactivity_state();
-		$state = wp_interactivity_state( 'gatherpress' );
-
-		$this->assertArrayNotHasKey(
-			'eventApiUrl',
-			$state,
-			'Failed to assert interactivity state is not set for non-event post types.'
-		);
-
-		// Should set state on an event singular page.
-		$event = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get();
-		$this->go_to( get_permalink( $event->ID ) );
+		// Visit the event archive — the context that previously bailed.
+		$this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get();
+		$this->go_to( get_post_type_archive_link( Event::POST_TYPE ) );
 
 		$instance->add_interactivity_state();
 		$state = wp_interactivity_state( 'gatherpress' );
@@ -194,7 +188,7 @@ class Test_Assets extends Base {
 		$this->assertArrayHasKey(
 			'eventApiUrl',
 			$state,
-			'Failed to assert eventApiUrl is set in interactivity state.'
+			'Failed to assert eventApiUrl is set in interactivity state on the event archive.'
 		);
 		$this->assertStringContainsString(
 			'wp-json/gatherpress/v1/event',
@@ -324,6 +318,68 @@ class Test_Assets extends Base {
 		$this->assertIsArray(
 			Utility::get_hidden_property( $instance, 'asset_data' ),
 			'Failed to assert that asset_data is an array.'
+		);
+	}
+
+	/**
+	 * Coverage for get_asset_data when the asset file was already loaded.
+	 *
+	 * Regression for #1768: the method used require_once, which returns `true`
+	 * (not the array) when the file has already been loaded in the request.
+	 * `(array) true` is `[ 0 => true ]`, breaking the dependencies/version
+	 * lookups. Plain require always returns the array.
+	 *
+	 * @covers ::get_asset_data
+	 *
+	 * @return void
+	 */
+	public function test_get_asset_data_returns_array_when_file_already_loaded(): void {
+		$instance = Assets::get_instance();
+		$path     = GATHERPRESS_CORE_PATH . '/build/editor.asset.php';
+
+		// Simulate the asset file already being loaded earlier in the request.
+		require_once $path;
+
+		Utility::set_and_get_hidden_property( $instance, 'asset_data', array() );
+		$asset = Utility::invoke_hidden_method(
+			$instance,
+			'get_asset_data',
+			array( 'editor_already_loaded', $path )
+		);
+
+		$this->assertArrayHasKey(
+			'version',
+			$asset,
+			'get_asset_data should return the asset array even when the file was already loaded.'
+		);
+		$this->assertArrayHasKey(
+			'dependencies',
+			$asset,
+			'get_asset_data should expose dependencies even when the file was already loaded.'
+		);
+	}
+
+	/**
+	 * Coverage for get_asset_data when the asset file is missing.
+	 *
+	 * @covers ::get_asset_data
+	 *
+	 * @return void
+	 */
+	public function test_get_asset_data_returns_empty_array_for_missing_file(): void {
+		$instance = Assets::get_instance();
+
+		Utility::set_and_get_hidden_property( $instance, 'asset_data', array() );
+		$asset = Utility::invoke_hidden_method(
+			$instance,
+			'get_asset_data',
+			array( 'does_not_exist', GATHERPRESS_CORE_PATH . '/build/missing.asset.php' )
+		);
+
+		$this->assertSame(
+			array(),
+			$asset,
+			'get_asset_data should return an empty array when the asset file is missing.'
 		);
 	}
 

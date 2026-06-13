@@ -308,22 +308,22 @@ export async function sendRsvpApiRequest(
  */
 export function manageFocusTrap( focusableElements ) {
 	if ( ! focusableElements || 0 === focusableElements.length ) {
-		return () => {}; // Return an empty cleanup function if no elements..
+		return () => {}; // Return an empty cleanup function if no elements.
 	}
 
 	const isElementVisible = ( element ) => {
 		return (
 			null !== element.offsetParent && // Excludes elements with `display: none`.
 			'hidden' !== window.getComputedStyle( element ).visibility && // Excludes elements with `visibility: hidden`.
-			'0' !== window.getComputedStyle( element ).opacity // Excludes fully transparent elements..
+			'0' !== window.getComputedStyle( element ).opacity // Excludes fully transparent elements.
 		);
 	};
 
-	// Filter out hidden elements..
+	// Filter out hidden elements.
 	const visibleFocusableElements = focusableElements.filter( isElementVisible );
 
 	if ( 0 === visibleFocusableElements.length ) {
-		return () => {}; // No visible elements, no trap needed..
+		return () => {}; // No visible elements, no trap needed.
 	}
 
 	const firstFocusableElement = visibleFocusableElements[ 0 ];
@@ -332,13 +332,13 @@ export function manageFocusTrap( focusableElements ) {
 	const handleFocusTrap = ( e ) => {
 		if ( 'Tab' === e.key ) {
 			if (
-				e.shiftKey && // Shift + Tab..
+				e.shiftKey && // Shift + Tab.
 				firstFocusableElement.ownerDocument.activeElement === firstFocusableElement
 			) {
 				e.preventDefault();
 				lastFocusableElement.focus();
 			} else if (
-				! e.shiftKey && // Tab..
+				! e.shiftKey && // Tab.
 				lastFocusableElement.ownerDocument.activeElement === lastFocusableElement
 			) {
 				e.preventDefault();
@@ -349,7 +349,7 @@ export function manageFocusTrap( focusableElements ) {
 
 	const handleEscapeKey = ( e ) => {
 		if ( 'Escape' === e.key ) {
-			cleanup(); // Trigger cleanup on Escape key..
+			cleanup(); // Trigger cleanup on Escape key.
 		}
 	};
 
@@ -358,11 +358,11 @@ export function manageFocusTrap( focusableElements ) {
 		document.removeEventListener( 'keydown', handleEscapeKey );
 	};
 
-	// Attach the event listeners for focus trap..
+	// Attach the event listeners for focus trap.
 	document.addEventListener( 'keydown', handleFocusTrap );
 	document.addEventListener( 'keydown', handleEscapeKey );
 
-	// Return a cleanup function for the caller..
+	// Return a cleanup function for the caller.
 	return cleanup;
 }
 
@@ -375,10 +375,10 @@ export function manageFocusTrap( focusableElements ) {
  */
 export function setupCloseHandlers( elementSelector, contentSelector, onClose ) {
 	const handleClose = ( element ) => {
-		// Remove the visible class..
+		// Remove the visible class.
 		element.classList.remove( 'gatherpress--is-visible' );
 
-		// Execute the custom close callback..
+		// Execute the custom close callback.
 		if ( 'function' === typeof onClose ) {
 			onClose( element );
 		}
@@ -415,11 +415,11 @@ export function setupCloseHandlers( elementSelector, contentSelector, onClose ) 
 		} );
 	};
 
-	// Attach event listeners..
+	// Attach event listeners.
 	document.addEventListener( 'keydown', handleEscapeKey );
 	document.addEventListener( 'click', handleOutsideClick );
 
-	// Return a cleanup function to remove event listeners if needed..
+	// Return a cleanup function to remove event listeners if needed.
 	return () => {
 		document.removeEventListener( 'keydown', handleEscapeKey );
 		document.removeEventListener( 'click', handleOutsideClick );

@@ -5,7 +5,7 @@ import { useState, useEffect } from '@wordpress/element';
 import { __, _x } from '@wordpress/i18n';
 import { FormTokenField, SelectControl } from '@wordpress/components';
 import apiFetch from '@wordpress/api-fetch';
-import { useSelect } from '@wordpress/data';
+import { useSelect, useDispatch } from '@wordpress/data';
 import { store as coreStore } from '@wordpress/core-data';
 
 /**
@@ -34,6 +34,7 @@ const RsvpManager = ( { defaultStatus, setDefaultStatus } ) => {
 		[],
 	);
 	const [ rsvpResponse, setRsvpResponse ] = useState( null );
+	const { createErrorNotice } = useDispatch( 'core/notices' );
 
 	/**
 	 * Fetches user records from the core store via getEntityRecords.
@@ -55,13 +56,26 @@ const RsvpManager = ( { defaultStatus, setDefaultStatus } ) => {
 		if ( postId ) {
 			apiFetch( {
 				path: `${ EVENT_REST_API }/rsvp-responses?post_id=${ postId }`,
-			} ).then( ( res ) => {
-				if ( res?.success && res?.data ) {
-					setRsvpResponse( res.data );
-				}
-			} );
+			} )
+				.then( ( res ) => {
+					if ( res?.success && res?.data ) {
+						setRsvpResponse( res.data );
+					}
+				} )
+				.catch( ( error ) => {
+					// Leave any existing responses on screen and surface the
+					// failure rather than silently rendering nothing.
+					createErrorNotice?.(
+						error?.message ||
+							__(
+								'Could not load RSVP responses. Please try again.',
+								'gatherpress',
+							),
+						{ type: 'snackbar' },
+					);
+				} );
 		}
-	}, [ postId ] );
+	}, [ postId, createErrorNotice ] );
 
 	if ( ! rsvpResponse ) {
 		return null;
@@ -97,9 +111,25 @@ const RsvpManager = ( { defaultStatus, setDefaultStatus } ) => {
 				status,
 				user_id: userId,
 			},
-		} ).then( ( res ) => {
-			setRsvpResponse( res.responses );
-		} );
+		} )
+			.then( ( res ) => {
+				// Only replace the list when the response actually carries
+				// one. An error-shaped response has no `responses` key, and
+				// blindly assigning it would wipe the displayed attendees.
+				if ( res?.responses ) {
+					setRsvpResponse( res.responses );
+				}
+			} )
+			.catch( ( error ) => {
+				createErrorNotice?.(
+					error?.message ||
+						__(
+							'Could not update the RSVP. Please try again.',
+							'gatherpress',
+						),
+					{ type: 'snackbar' },
+				);
+			} );
 	};
 
 	/**
