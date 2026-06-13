@@ -278,7 +278,6 @@ function createPlaygroundLinks( blueprint, prText) {
 	const playgrounds = [
 		{ name: '**Normal** WordPress Playground ', url: 'https://playground.wordpress.net/#' },
 		{ name: '**Seamless** WordPress Playground ', url: 'https://playground.wordpress.net/?mode=seamless#' },
-		// { name: 'WordPress Playground **Builder** ', url: 'https://playground.wordpress.net/builder/builder.html#' },
 	];
 
 	return playgrounds.map(playground => ({
