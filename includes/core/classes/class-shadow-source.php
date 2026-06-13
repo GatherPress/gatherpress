@@ -510,9 +510,16 @@ class Shadow_Source {
 	/**
 	 * Resolve the shadow-source post for the current query context.
 	 *
-	 * Two resolution paths:
-	 * 1. Frontend — `is_singular()` is true and the queried object is a shadow-source post.
-	 * 2. REST editor preview — the consumer (typically the `gatherpress/event-query` block)
+	 * Three resolution paths, tried in order:
+	 * 1. Frontend, queried object is itself a shadow source — `is_singular()` is true and the
+	 *    queried object (e.g. a single venue or season) declares `gatherpress-shadow-source`.
+	 * 2. Frontend, queried object is an event — `is_singular()` is true and the queried object is
+	 *    an event (or other consumer post type). The block's baked context id points at the
+	 *    template, not a post, so the source post of the requested type is resolved from the
+	 *    event's own relationship via its shadow taxonomy. This is what makes a contextual Event
+	 *    Query inside a Single Event template filter by the season/venue of the event being viewed
+	 *    (#1753).
+	 * 3. REST editor preview — the consumer (typically the `gatherpress/event-query` block)
 	 *    writes the editor's current post id + post type into the `gatherpress_shadow_source_post_id`
 	 *    and `gatherpress_shadow_source_post_type` query vars when the contextual toggle is on. We
 	 *    use those as the source when `is_singular()` is false.
@@ -524,18 +531,35 @@ class Shadow_Source {
 	 * @return WP_Post|null The source post if one can be resolved, otherwise null.
 	 */
 	public function resolve_post_from_query_context( WP_Query $query ): ?WP_Post {
+		$context_post_type = (string) $query->get( 'gatherpress_shadow_source_post_type' );
+		$resolved          = null;
+
 		if ( is_singular() ) {
 			$queried = get_queried_object();
-			if (
-				$queried instanceof WP_Post
-				&& post_type_supports( $queried->post_type, 'gatherpress-shadow-source' )
-			) {
-				return $queried;
+
+			if ( $queried instanceof WP_Post ) {
+				if ( post_type_supports( $queried->post_type, 'gatherpress-shadow-source' ) ) {
+					// The page itself is a shadow source (e.g. a single venue or
+					// season): scope the query to it directly.
+					$resolved = $queried;
+				} elseif (
+					'' !== $context_post_type
+					&& post_type_supports( $context_post_type, 'gatherpress-shadow-source' )
+				) {
+					// The page is an event (Single Event template). Resolve the
+					// source post of the requested type from the event's own
+					// relationship so "filter by season/venue" means "the same
+					// season/venue as the event being viewed" (#1753).
+					$resolved = $this->get_source_post_from_event_post_id( $queried->ID, $context_post_type );
+				}
 			}
 		}
 
-		$context_post_id   = (int) $query->get( 'gatherpress_shadow_source_post_id' );
-		$context_post_type = (string) $query->get( 'gatherpress_shadow_source_post_type' );
+		if ( $resolved instanceof WP_Post ) {
+			return $resolved;
+		}
+
+		$context_post_id = (int) $query->get( 'gatherpress_shadow_source_post_id' );
 
 		if (
 			$context_post_id <= 0
