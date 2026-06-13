@@ -1,0 +1,4 @@
+Significance: patch
+Type: fixed
+
+RSVP requests no longer throw and leave the UI inconsistent when the server returns a success response with a missing or partial responses object.

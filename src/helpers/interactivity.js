@@ -253,9 +253,9 @@ export async function sendRsvpApiRequest(
 				state.posts[ postId ] = {
 					...state.posts[ postId ],
 					eventResponses: {
-						attending: res.responses.attending.count,
-						waitingList: res.responses.waiting_list.count,
-						notAttending: res.responses.not_attending.count,
+						attending: res.responses?.attending?.count ?? 0,
+						waitingList: res.responses?.waiting_list?.count ?? 0,
+						notAttending: res.responses?.not_attending?.count ?? 0,
 					},
 					currentUser: {
 						status: res.status,
