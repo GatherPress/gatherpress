@@ -322,6 +322,68 @@ class Test_Assets extends Base {
 	}
 
 	/**
+	 * Coverage for get_asset_data when the asset file was already loaded.
+	 *
+	 * Regression for #1768: the method used require_once, which returns `true`
+	 * (not the array) when the file has already been loaded in the request.
+	 * `(array) true` is `[ 0 => true ]`, breaking the dependencies/version
+	 * lookups. Plain require always returns the array.
+	 *
+	 * @covers ::get_asset_data
+	 *
+	 * @return void
+	 */
+	public function test_get_asset_data_returns_array_when_file_already_loaded(): void {
+		$instance = Assets::get_instance();
+		$path     = GATHERPRESS_CORE_PATH . '/build/editor.asset.php';
+
+		// Simulate the asset file already being loaded earlier in the request.
+		require_once $path;
+
+		Utility::set_and_get_hidden_property( $instance, 'asset_data', array() );
+		$asset = Utility::invoke_hidden_method(
+			$instance,
+			'get_asset_data',
+			array( 'editor_already_loaded', $path )
+		);
+
+		$this->assertArrayHasKey(
+			'version',
+			$asset,
+			'get_asset_data should return the asset array even when the file was already loaded.'
+		);
+		$this->assertArrayHasKey(
+			'dependencies',
+			$asset,
+			'get_asset_data should expose dependencies even when the file was already loaded.'
+		);
+	}
+
+	/**
+	 * Coverage for get_asset_data when the asset file is missing.
+	 *
+	 * @covers ::get_asset_data
+	 *
+	 * @return void
+	 */
+	public function test_get_asset_data_returns_empty_array_for_missing_file(): void {
+		$instance = Assets::get_instance();
+
+		Utility::set_and_get_hidden_property( $instance, 'asset_data', array() );
+		$asset = Utility::invoke_hidden_method(
+			$instance,
+			'get_asset_data',
+			array( 'does_not_exist', GATHERPRESS_CORE_PATH . '/build/missing.asset.php' )
+		);
+
+		$this->assertSame(
+			array(),
+			$asset,
+			'get_asset_data should return an empty array when the asset file is missing.'
+		);
+	}
+
+	/**
 	 * Coverage for maybe_enqueue_styles method with GatherPress block.
 	 *
 	 * @covers ::maybe_enqueue_styles
