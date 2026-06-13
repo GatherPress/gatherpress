@@ -291,6 +291,29 @@ class Test_Event_Query extends Base {
 		$this->assertContains( 'title', $result['orderby']['enum'] );
 		$this->assertContains( 'rand', $result['orderby']['enum'] );
 		$this->assertContains( 'datetime', $result['orderby']['enum'] );
+
+		// Regression for #1753: the post-ID params must coerce a non-numeric
+		// value to 0 rather than rejecting it. Inside a block template the
+		// editor preview sends the template identifier (e.g.
+		// "twentytwentyfive//single-gatherpress_event") for these, and a strict
+		// integer rejection 400s the request and leaves the Query Loop spinning.
+		$template_id = 'twentytwentyfive//single-gatherpress_event';
+		foreach ( array( 'exclude_current', 'gatherpress_shadow_source_post_id' ) as $param ) {
+			$this->assertSame(
+				'absint',
+				$result[ $param ]['sanitize_callback'],
+				sprintf( '%s should sanitize to a non-negative int.', $param )
+			);
+			$this->assertTrue(
+				call_user_func( $result[ $param ]['validate_callback'], $template_id ),
+				sprintf( '%s should accept a non-numeric template identifier (no 400).', $param )
+			);
+			$this->assertSame(
+				0,
+				call_user_func( $result[ $param ]['sanitize_callback'], $template_id ),
+				sprintf( '%s should coerce a non-numeric template identifier to 0 (no context).', $param )
+			);
+		}
 	}
 
 	/**
