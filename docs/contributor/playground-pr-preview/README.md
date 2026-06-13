@@ -12,7 +12,12 @@ You can change the landing page, set options, do stuff before GatherPress is loa
 
 To customize the Playground preview for a specific PR, create a file at:
 
-<code>.github/playground/PR-{NUMBER_OF_THE_PR}-blueprint-override.json</code>
+```sh
+your-gatherpress-branch
+ └── .github
+     └──playground
+         └── PR-{NUMBER_OF_THE_PR}-blueprint-override.json
+```
 
 The override is merged into the generated default blueprint and as such still contains the different php version, GatherPress plugin and demo-data, but also allows to
 
