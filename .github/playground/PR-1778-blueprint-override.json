@@ -1,16 +1,11 @@
 {
 	"$schema": "https://gatherpress.org/playground-preview/pr-override-schema.json",
-	"landingPage": "/wp-admin/plugins.php",
-	"prependSteps": [
+	"landingPage": "/wp-admin/admin.php?page=gatherpress_events",
+	"appendSteps": [
 		{
-			"step": "installPlugin",
-			"pluginData": {
-				"resource": "wordpress.org/plugins",
-				"slug": "simple-location"
-			},
-			"options": {
-				"activate": true
-			}
+			"step": "writeFile",
+			"path": "/wordpress/wp-content/mu-plugins/playground-override-notice.php",
+			"data": "<?php add_action('admin_notices', function() {  echo '<div class=\"notice notice-success\"><p>Hello from a customized GatherPress PR Playground.</p></div>'; });"
 		}
 	]
 }
