@@ -1,0 +1,4 @@
+{
+	"$schema": "https://gatherpress.org/playground-preview/pr-override-schema.json",
+	"landingPage": "/wp-admin/edit.php?post_type=gatherpress_venue"
+}
