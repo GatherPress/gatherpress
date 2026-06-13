@@ -1,7 +1,16 @@
 {
 	"$schema": "https://gatherpress.org/playground-preview/pr-override-schema.json",
-	"landingPage": "/wp-admin/options.php",
-	"siteOptions": {
-		"A_NON_EXISTENT_OPTION": "is-set-via-blueprint-override"
-	}
+	"landingPage": "/wp-admin/plugins.php",
+	"prependSteps": [
+		{
+			"step": "installPlugin",
+			"pluginData": {
+				"resource": "wordpress.org/plugins",
+				"slug": "simple-location"
+			},
+			"options": {
+				"activate": true
+			}
+		}
+	]
 }
