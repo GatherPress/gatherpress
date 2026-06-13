@@ -325,16 +325,14 @@ async function createPreviewLinksComment(github, context, prNumberOverride, file
 
 	const overrideNote = override
 		? `
-ℹ️ This preview includes a custom blueprint override from <code>${overridePath}</code>.
+ℹ️ This preview includes a custom blueprint override from <code>.github/playground/PR-${prNumber}-blueprint-override.json</code>.
 `
 		: `
 <details><summary>Customize PR Playground</summary>
 
 To customize the Playground preview for this specific PR, create a file at:
 
-<code>
-.github/playground/PR-${prNumber}-blueprint-override.json
-</code>
+<code>.github/playground/PR-${prNumber}-blueprint-override.json</code>
 
 The override is merged into the generated blueprint and can be used to:
 
@@ -345,7 +343,7 @@ The override is merged into the generated blueprint and can be used to:
 
 Example:
 
-<pre>
+\`\`\`json
 {
 	"$schema": "https://gatherpress.org/playground-preview/pr-override-schema.json",
 	"landingPage": "/wp-admin/edit.php?post_type=gatherpress_venue",
@@ -374,7 +372,7 @@ Example:
 		}
 	]
 }
-</pre>
+\`\`\`
 </details>
 `;
 
