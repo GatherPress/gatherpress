@@ -1,4 +1,7 @@
 {
 	"$schema": "https://gatherpress.org/playground-preview/pr-override-schema.json",
-	"landingPage": "/wp-admin/edit.php?post_type=gatherpress_venue"
+	"landingPage": "/wp-admin/options.php",
+	"siteOptions": {
+		"A_NON_EXISTENT_OPTION": "is-set-via-blueprint-override"
+	}
 }
