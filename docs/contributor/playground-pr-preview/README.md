@@ -8,7 +8,7 @@ A PR preview Playground contains the latest changes from this PR, built, install
 
 GatherPress allows to customize the generated Playground for your PR.
 
-You can change the landing page, set options, do stuff before GatherPress is loaded, do stuff afterwards. Everything you can with a regular Playground blueprint. GatherPress loads its important blueprint steps together with yours, resulting in a nicely, reproducible and highly customizable setup.
+You can change the landing page, set options, do stuff before GatherPress is loaded, do stuff afterwards. Everything you can with a regular Playground blueprint. GatherPress loads its important blueprint steps together with yours, resulting in a nicely reproducible and highly customizable setup.
 
 To customize the Playground preview for a specific PR, create a file at:
 
@@ -27,7 +27,7 @@ The override is merged into the generated default blueprint and as such still co
 - Run steps before GatherPress' default steps
 - Run steps after GatherPress' default steps
 
-###
+### Examples
 
 
 1.
