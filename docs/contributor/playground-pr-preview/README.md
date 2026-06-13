@@ -26,7 +26,7 @@ The override is merged into the generated default blueprint and as such still co
 
 
 1.
-	<details><summary>Debug with *Query Monitor*</summary>
+	<details><summary><strong>Debug with <em>Query Monitor</em></strong></summary>
 
 	```json
 	{
@@ -43,7 +43,7 @@ The override is merged into the generated default blueprint and as such still co
 	</details>
 
 2.
-	<details><summary>Test endpoints with *Monkeyman Rewrite Analyzer*</summary>
+	<details><summary><strong>Test <code>/ical</code>endpoints with <em>Monkeyman Rewrite Analyzer</em></strong></summary>
 
 	```json
 	{
@@ -61,7 +61,7 @@ The override is merged into the generated default blueprint and as such still co
 	</details>
 
 3.
-	<details><summary>Full example</summary>
+	<details><summary><strong>Full example</strong></summary>
 
 	```json
 	{
