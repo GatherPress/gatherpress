@@ -981,6 +981,104 @@ class Test_Shadow_Source extends Base {
 	}
 
 	/**
+	 * Resolves the related source post from a singular event when the block
+	 * supplies a source post type but the context id is the baked template
+	 * identifier. This is the #1753 frontend template-context path: a
+	 * contextual Event Query in a Single Event template must filter by the
+	 * season/venue of the event being viewed.
+	 *
+	 * @covers ::resolve_post_from_query_context
+	 *
+	 * @return void
+	 */
+	public function test_resolve_post_from_query_context_resolves_source_from_singular_event(): void {
+		$instance = Shadow_Source::get_instance();
+
+		$venue = $this->mock->post(
+			array(
+				'post_type' => Venue::POST_TYPE,
+				'post_name' => 'template-context-venue',
+			)
+		)->get();
+		$event = $this->mock->post(
+			array( 'post_type' => 'gatherpress_event' )
+		)->get();
+
+		wp_set_post_terms( $event->ID, '_template-context-venue', Venue::TAXONOMY );
+
+		// Navigate to the single event so is_singular() is true and the queried
+		// object is the event (not a shadow source).
+		$this->go_to( get_permalink( $event->ID ) );
+
+		$query = $this->getMockBuilder( 'WP_Query' )
+			->setMethods( array( 'get' ) )
+			->getMock();
+
+		// The block bakes the template identifier into the context id, so only
+		// the source post type is usable; resolution must come from the event.
+		$query->expects( $this->any() )
+			->method( 'get' )
+			->willReturnCallback(
+				static function ( $key ) {
+					if ( 'gatherpress_shadow_source_post_type' === $key ) {
+						return Venue::POST_TYPE;
+					}
+					if ( 'gatherpress_shadow_source_post_id' === $key ) {
+						return 'twentytwentyfive//single-gatherpress_event';
+					}
+					return null;
+				}
+			);
+
+		$resolved = $instance->resolve_post_from_query_context( $query );
+
+		$this->assertInstanceOf( WP_Post::class, $resolved, 'Singular event should resolve to a related source post.' );
+		$this->assertSame( $venue->ID, $resolved->ID, 'Resolved post should be the venue linked to the event.' );
+	}
+
+	/**
+	 * Returns null on a singular event that has no relationship to the
+	 * requested source type — the event-relationship branch finds no term and
+	 * the unusable baked context id cannot rescue it.
+	 *
+	 * @covers ::resolve_post_from_query_context
+	 *
+	 * @return void
+	 */
+	public function test_resolve_post_from_query_context_singular_event_without_relationship(): void {
+		$instance = Shadow_Source::get_instance();
+
+		$event = $this->mock->post(
+			array( 'post_type' => 'gatherpress_event' )
+		)->get();
+
+		$this->go_to( get_permalink( $event->ID ) );
+
+		$query = $this->getMockBuilder( 'WP_Query' )
+			->setMethods( array( 'get' ) )
+			->getMock();
+
+		$query->expects( $this->any() )
+			->method( 'get' )
+			->willReturnCallback(
+				static function ( $key ) {
+					if ( 'gatherpress_shadow_source_post_type' === $key ) {
+						return Venue::POST_TYPE;
+					}
+					if ( 'gatherpress_shadow_source_post_id' === $key ) {
+						return 'twentytwentyfive//single-gatherpress_event';
+					}
+					return null;
+				}
+			);
+
+		$this->assertNull(
+			$instance->resolve_post_from_query_context( $query ),
+			'A singular event with no related source post should resolve to null.'
+		);
+	}
+
+	/**
 	 * Builds the correct tax_query clause shape from a venue post.
 	 *
 	 * @covers ::build_tax_query_clause

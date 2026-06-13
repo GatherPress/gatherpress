@@ -609,6 +609,84 @@ class Test_Event_Query extends Base {
 	}
 
 	/**
+	 * Inside a block template `exclude_current` holds the template identifier
+	 * (non-numeric), which casts to 0. On a singular event the "current" post
+	 * is the queried object, so it must be excluded by the queried event id
+	 * rather than the unusable template slug (#1753).
+	 *
+	 * @since 0.34.0
+	 * @covers ::query_loop_block_query_vars
+	 * @covers ::get_exclude_ids
+	 *
+	 * @return void
+	 */
+	public function test_get_exclude_ids_resolves_current_event_in_template_context(): void {
+		$instance = Event_Query::get_instance();
+
+		$event_id = $this->factory->post->create(
+			array( 'post_type' => Event::POST_TYPE )
+		);
+		$this->go_to( get_permalink( $event_id ) );
+
+		$block          = $this->createMock( \WP_Block::class );
+		$block->context = array(
+			'query' => array(
+				'gatherpress_event_query' => 'upcoming',
+				'exclude_current'         => 'twentytwentyfive//single-gatherpress_event',
+			),
+		);
+
+		$result = $instance->query_loop_block_query_vars( array(), $block );
+
+		$this->assertContains(
+			$event_id,
+			$result['post__not_in'],
+			'A non-numeric template identifier should resolve to the queried event id on a singular page.'
+		);
+		$this->assertNotContains(
+			'twentytwentyfive//single-gatherpress_event',
+			$result['post__not_in'],
+			'The raw template identifier must not be pushed into post__not_in.'
+		);
+
+		wp_delete_post( $event_id, true );
+	}
+
+	/**
+	 * A baked template identifier in `exclude_current` is dropped (not
+	 * excluded) when there is no singular post to resolve it against — e.g. an
+	 * archive or the REST editor preview. This keeps the editor best-effort
+	 * unfiltered rather than excluding a bogus id (#1753).
+	 *
+	 * @since 0.34.0
+	 * @covers ::query_loop_block_query_vars
+	 * @covers ::get_exclude_ids
+	 *
+	 * @return void
+	 */
+	public function test_get_exclude_ids_drops_template_identifier_without_singular(): void {
+		$instance = Event_Query::get_instance();
+
+		$this->go_to( '/' );
+
+		$block          = $this->createMock( \WP_Block::class );
+		$block->context = array(
+			'query' => array(
+				'gatherpress_event_query' => 'upcoming',
+				'exclude_current'         => 'twentytwentyfive//single-gatherpress_event',
+			),
+		);
+
+		$result = $instance->query_loop_block_query_vars( array(), $block );
+
+		$this->assertArrayNotHasKey(
+			'post__not_in',
+			$result,
+			'A non-numeric template identifier with no singular context should not produce an exclusion.'
+		);
+	}
+
+	/**
 	 * Test rest_query with exclude_current parameter.
 	 *
 	 * @since 0.33.0

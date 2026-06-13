@@ -211,7 +211,20 @@ class Event_Query {
 
 		// Exclude Current Post.
 		if ( isset( $attributes['exclude_current'] ) && boolval( $attributes['exclude_current'] ) ) {
-			array_push( $exclude_ids, $attributes['exclude_current'] );
+			$exclude_id = (int) $attributes['exclude_current'];
+
+			// Inside a block template `exclude_current` holds the template
+			// identifier (e.g. "twentytwentyfive//single-gatherpress_event"),
+			// not a post id, so it casts to 0. On a singular page the "current"
+			// post is the queried object, so resolve to it at render time. This
+			// makes "exclude current event" work inside a template too (#1753).
+			if ( $exclude_id <= 0 && is_singular() ) {
+				$exclude_id = get_queried_object_id();
+			}
+
+			if ( $exclude_id > 0 ) {
+				array_push( $exclude_ids, $exclude_id );
+			}
 		}
 
 		return $exclude_ids;
