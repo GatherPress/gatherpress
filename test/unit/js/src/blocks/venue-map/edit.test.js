@@ -143,7 +143,7 @@ import Edit from '@src/blocks/venue-map/edit';
 import { isVenuePostType } from '@src/helpers/venue';
 
 const DEFAULT_ATTRIBUTES = {
-	zoom: 18,
+	zoom: 16,
 	type: 'roadmap',
 	width: 0,
 	height: 300,
