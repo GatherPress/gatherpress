@@ -142,6 +142,33 @@ class Venues extends Base {
 							'map_platform' => 'google',
 						),
 					),
+					'venue_map_default_type'         => array(
+						'labels'      => array(
+							'name' => __( 'Default Map Type', 'gatherpress' ),
+						),
+						'description' => __(
+							'Default map type for new venue map blocks.',
+							'gatherpress'
+						),
+						'field'       => array(
+							'label'   => __( 'Map type for new blocks:', 'gatherpress' ),
+							'type'    => 'select',
+							'options' => array(
+								'default' => Map::DEFAULT_MAP_TYPE,
+								'items'   => array(
+									'roadmap'   => __( 'Roadmap', 'gatherpress' ),
+									'satellite' => __( 'Satellite', 'gatherpress' ),
+									'hybrid'    => __( 'Hybrid', 'gatherpress' ),
+									'terrain'   => __( 'Terrain', 'gatherpress' ),
+								),
+							),
+						),
+						// Map type only affects Google Maps rendering, so only
+						// surface this field when the Google platform is selected.
+						'show_if'     => array(
+							'map_platform' => 'google',
+						),
+					),
 					'venue_map_default_render_mode'  => array(
 						'labels'      => array(
 							'name' => __( 'Default Render Mode', 'gatherpress' ),
@@ -263,29 +290,6 @@ class Venues extends Base {
 									'cover'   => __( 'Cover', 'gatherpress' ),
 									'contain' => __( 'Contain', 'gatherpress' ),
 									'fill'    => __( 'Fill', 'gatherpress' ),
-								),
-							),
-						),
-					),
-					'venue_map_default_type'         => array(
-						'labels'      => array(
-							'name' => __( 'Default Map Type', 'gatherpress' ),
-						),
-						'description' => __(
-							// phpcs:ignore Generic.Files.LineLength.TooLong -- Single translator-facing sentence; keep on one line for .pot extractor.
-							'Default map type for new venue map blocks. Only rendered by Google Maps; OpenStreetMap and static images ignore this value.',
-							'gatherpress'
-						),
-						'field'       => array(
-							'label'   => __( 'Map type for new blocks:', 'gatherpress' ),
-							'type'    => 'select',
-							'options' => array(
-								'default' => Map::DEFAULT_MAP_TYPE,
-								'items'   => array(
-									'roadmap'   => __( 'Roadmap', 'gatherpress' ),
-									'satellite' => __( 'Satellite', 'gatherpress' ),
-									'hybrid'    => __( 'Hybrid', 'gatherpress' ),
-									'terrain'   => __( 'Terrain', 'gatherpress' ),
 								),
 							),
 						),
