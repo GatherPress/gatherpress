@@ -278,7 +278,7 @@ function createPlaygroundLinks( blueprint, prText) {
 	const playgrounds = [
 		{ name: '**Normal** WordPress Playground ', url: 'https://playground.wordpress.net/#' },
 		{ name: '**Seamless** WordPress Playground ', url: 'https://playground.wordpress.net/?mode=seamless#' },
-		{ name: 'WordPress Playground **Builder** ', url: 'https://playground.wordpress.net/builder/builder.html#' },
+		// { name: 'WordPress Playground **Builder** ', url: 'https://playground.wordpress.net/builder/builder.html#' },
 	];
 
 	return playgrounds.map(playground => ({
@@ -325,7 +325,7 @@ async function createPreviewLinksComment(github, context, prNumberOverride, file
 
 	const overrideNote = override
 		? `
-> ℹ️ This preview includes a custom blueprint override from <code>${overridePath}</code>.
+ℹ️ This preview includes a custom blueprint override from <code>${overridePath}</code>.
 `
 		: `
 <details><summary>Customize PR Playground</summary>
