@@ -422,9 +422,20 @@ class Event_Query {
 			'enum'        => array( 0, 1 ),
 		);
 
+		// exclude_current and gatherpress_shadow_source_post_id are post IDs,
+		// but inside a block template the editor preview sends the template
+		// identifier (e.g. "twentytwentyfive//single-gatherpress_event")
+		// because there is no concrete post providing numeric context. A bare
+		// `type => integer` rejects that with a 400, which leaves the Query
+		// Loop spinning forever in the template editor (#1753). Accept any
+		// value and coerce it to a non-negative int instead: a non-numeric
+		// template id collapses to 0, which downstream treats as "no context"
+		// and renders the query unfiltered rather than erroring.
 		$query_params['exclude_current'] = array(
-			'description' => __( 'Post ID to exclude from results', 'gatherpress' ),
-			'type'        => 'integer',
+			'description'       => __( 'Post ID to exclude from results', 'gatherpress' ),
+			'type'              => 'integer',
+			'validate_callback' => '__return_true',
+			'sanitize_callback' => 'absint',
 		);
 
 		$query_params['shadow_filter'] = array(
@@ -434,11 +445,13 @@ class Event_Query {
 		);
 
 		$query_params['gatherpress_shadow_source_post_id'] = array(
-			'description' => __(
+			'description'       => __(
 				'Editor-side post ID used to scope the venue contextual filter in the REST preview.',
 				'gatherpress'
 			),
-			'type'        => 'integer',
+			'type'              => 'integer',
+			'validate_callback' => '__return_true',
+			'sanitize_callback' => 'absint',
 		);
 
 		$query_params['gatherpress_shadow_source_post_type'] = array(
