@@ -338,7 +338,7 @@ The override is merged into the generated blueprint and can be used to:
 - Enable Playground features
 - Install additional plugins
 - Change site options
-- Run setup steps before or after the default blueprint
+- Run steps before or after the GatherPress' default steps
 
 Example:
 
@@ -374,7 +374,7 @@ Example:
 \`\`\`
 </details>
 
-Go to [Playground PR preview customization](https://github.com/GatherPress/gatherpress/blob/develop/docs/contributor/playground-pr-preview/README.md) for more details.
+Go to [Playground PR preview customization](https://github.com/GatherPress/gatherpress/blob/develop/docs/contributor/playground-pr-preview/README.md#customize-your-pr-playground) for more details.
 `;
 
 	// The title of the comment and its content, including preview links for all PHP versions.

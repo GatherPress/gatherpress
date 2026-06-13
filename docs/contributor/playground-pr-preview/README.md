@@ -4,11 +4,11 @@ GatherPress PRs have Playground powered previews available in 3 PHP version, and
 
 A PR preview Playground contains the latest changes from this PR, built, installed and activated. The setup gets seeded with the regular gatherpress-demo-data.
 
-## Customize PR Playground
+## Customize your PR Playground
 
-GatherPress allows to customise the generated Playground for your PR.
+GatherPress allows to customize the generated Playground for your PR.
 
-You can change the landing page, set options, do stuff before GatherPress is loaded, do stuff afterwards. Everything you can with a regular Playground blueprint. GatherPress loads its important blueprint steps together with yours, resulting in a nicely, reproducable and highly customisable setup.
+You can change the landing page, set options, do stuff before GatherPress is loaded, do stuff afterwards. Everything you can with a regular Playground blueprint. GatherPress loads its important blueprint steps together with yours, resulting in a nicely, reproducible and highly customizable setup.
 
 To customize the Playground preview for a specific PR, create a file at:
 
