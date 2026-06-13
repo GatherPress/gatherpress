@@ -19,6 +19,21 @@ your-gatherpress-branch
          └── PR-{NUMBER_OF_THE_PR}-blueprint-override.json
 ```
 
+The content of that new file looks very much like a regular *Playground blueprint*.
+
+The main difference is that you are not allowed to use any regular `steps`, but have to use `prependSteps` and `appendSteps`. This will make sure, your *steps* get loaded in the correct order, and before or after GatherPress core runs its own steps. `prependSteps` and `appendSteps` take all the same, you would put in `steps` in a regular blueprint.
+
+```json
+{
+	"$schema": "https://gatherpress.org/playground-override-schema.json",
+	"landingPage": " ... ",
+	"siteOptions": { ... },
+	"features": { ... },
+	"prependSteps": [ ... ],
+	"appendSteps": [ ... ]
+}
+```
+
 The override is merged into the generated default blueprint and as such still contains the different php version, GatherPress plugin and demo-data, but also allows to
 
 - Change the landing page
@@ -35,6 +50,7 @@ The override is merged into the generated default blueprint and as such still co
 
 	```json
 	{
+		"$schema": "https://gatherpress.org/playground-preview/pr-override-schema.json",
 		"prependSteps": [
 		{
 			"step": "installPlugin",
@@ -52,6 +68,7 @@ The override is merged into the generated default blueprint and as such still co
 
 	```json
 	{
+		"$schema": "https://gatherpress.org/playground-preview/pr-override-schema.json",
 		"landingPage": "/wp-admin/admin.php?page=monkeyman-rewrite-analyzer",
 		"prependSteps": [
 		{
