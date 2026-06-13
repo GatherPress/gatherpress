@@ -1,8 +1,8 @@
 # Playground PR previews
 
-GatherPress PRs have Playground powered previews available in 3 PHP version, and prepared as normal, seamless and builder-enabled Playgrounds. The prepared instances are provided as a comment on each PR, that gets updated automatically.
+GatherPress PRs have Playground powered previews available in 3 PHP version, and prepared as normal and seamless Playgrounds. The prepared instances are provided as a comment on each PR, that gets updated automatically.
 
-A PR preview Playground contains the latest changes from this PR, built, installed and activated. The setup gets seeded with the regular gatherpress-demo-data.
+A PR preview Playground contains the latest changes from this PR, built, installed and activated. The setup gets seeded with the regular [gatherpress-demo-data](https://github.com/GatherPress/gatherpress-demo-data).
 
 ## Customize your PR Playground
 
