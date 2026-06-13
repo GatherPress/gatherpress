@@ -59,7 +59,10 @@ describe( 'resolveEventDateData', () => {
 				return mockCoreStore;
 			}
 			if ( 'core/editor' === store ) {
-				return { getCurrentPostType: () => 'gatherpress_event' };
+				return {
+					getCurrentPostType: () => 'gatherpress_event',
+					getCurrentPostId: () => 42,
+				};
 			}
 			return {};
 		} );
@@ -144,6 +147,48 @@ describe( 'resolveEventDateData', () => {
 			);
 
 			expect( result.isValidEvent ).toBe( false );
+		} );
+	} );
+
+	describe( 'inside a venue/source-context block (#1794)', () => {
+		it( 'fetches the source post entity record, not the edited event datetime store, when the venue context overrides postId/postType', () => {
+			// A gatherpress/venue block with sourcePostType "gatherpress_production"
+			// wraps its inner blocks in a context override: postId = production id,
+			// postType = gatherpress_production. While editing an event, the nested
+			// event-date block must show the production's date, not the host event's.
+			const result = resolveEventDateData(
+				mockSelect,
+				'gatherpress_production',
+				undefined,
+				777,
+				false
+			);
+
+			expect( mockDatetimeStore.getDateTimeStart ).not.toHaveBeenCalled();
+			expect( mockCoreStore.getEntityRecord ).toHaveBeenCalledWith(
+				'postType',
+				'gatherpress_production',
+				777
+			);
+			expect( result.dateTimeStart ).toBe( '2025-06-10 14:00:00' );
+			expect( result.timezone ).toBe( 'America/Chicago' );
+			expect( result.isValidEvent ).toBe( true );
+		} );
+
+		it( 'still uses the live datetime store for the host event-date block when its postId is the edited post', () => {
+			// The event's own event-date block (postId === edited post id) keeps
+			// live-updating from the datetime store, even though a sibling venue
+			// block exists elsewhere in the content.
+			const result = resolveEventDateData(
+				mockSelect,
+				'gatherpress_event',
+				undefined,
+				42,
+				false
+			);
+
+			expect( mockDatetimeStore.getDateTimeStart ).toHaveBeenCalled();
+			expect( result.dateTimeStart ).toBe( '2025-01-15 09:00:00' );
 		} );
 	} );
 

@@ -1,0 +1,4 @@
+Significance: patch
+Type: fixed
+
+The event-date block inside a venue block with a source post type (e.g. productions/seasons) now shows the related source post's date instead of the host event's date in the editor.
