@@ -1,6 +1,5 @@
 {
 	"$schema": "https://gatherpress.org/playground-preview/pr-override-schema.json",
-	"landingPage": "/wp-admin/edit.php?post_type=gatherpress_venue",
 	"siteOptions": {
 		"timezone_string": "Europe/Amsterdam",
         "permalink_structure": "/%postname%/",
@@ -21,5 +20,17 @@
             "pluginData": { "resource": "wordpress.org/plugins", "slug": "query-monitor" },
             "options": { "activate": true }
         }
-	]
+	],
+    "appendSteps": [
+		{
+			"step": "installPlugin",
+			"pluginData": {
+				"resource": "url",
+				"url": "https://github.com/GatherPress/gatherpress/releases/download/0.34.0-alpha.2/gatherpress.0.34.0-alpha.2.zip"
+			},
+            "options": {
+                "activate": true
+            }
+		}
+    ]
 }
