@@ -20,6 +20,14 @@ Fixes #
 * Go to '..'
 *
 
+
+<details>
+<summary>Playground Blueprint</summary>
+
+<!-- Optional: add a `json` fenced code block here to customize the PR Playground preview. -->
+
+</details>
+
 ### Changelog entry
 
 <!-- You can optionally choose to enter a changelog entry by checking the box below and supplying data. -->

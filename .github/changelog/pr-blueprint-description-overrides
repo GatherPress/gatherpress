@@ -1,0 +1,4 @@
+Significance: patch
+Type: added
+
+Allow PR Playground previews to read custom Blueprint overrides from a collapsed PR description details block.
