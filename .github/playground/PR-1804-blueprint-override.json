@@ -26,7 +26,7 @@
 			"step": "installPlugin",
 			"pluginData": {
 				"resource": "url",
-				"url": "https://github.com/GatherPress/gatherpress/releases/download/0.34.0-alpha.2/gatherpress.0.34.0-alpha.2.zip"
+				"url": "https://github.com/GatherPress/gatherpress-alpha/releases/download/0.34.0-alpha.2/gatherpress-alpha.0.34.0-alpha.2.zip"
 			},
             "options": {
                 "activate": true
