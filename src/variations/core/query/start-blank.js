@@ -46,7 +46,7 @@ const START_BLANK_VARIATION_ATTRIBUTES = {
  */
 registerBlockVariation( 'core/query', {
 	...START_BLANK_VARIATION_ATTRIBUTES,
-	name: NAME + 'start-blank-1',
+	name: NAME + '-start-blank-1',
 	title: __( 'Event Date & Title', 'gatherpress' ),
 	icon: eventDateTitle,
 	/*
@@ -81,7 +81,7 @@ registerBlockVariation( 'core/query', {
  */
 registerBlockVariation( 'core/query', {
 	...START_BLANK_VARIATION_ATTRIBUTES,
-	name: NAME + 'start-blank-2',
+	name: NAME + '-start-blank-2',
 	title: __( 'Event Date, Title & Excerpt', 'gatherpress' ),
 	icon: eventDateTitleExcerpt,
 	/*
@@ -117,7 +117,7 @@ registerBlockVariation( 'core/query', {
  */
 registerBlockVariation( 'core/query', {
 	...START_BLANK_VARIATION_ATTRIBUTES,
-	name: NAME + 'start-blank-3',
+	name: NAME + '-start-blank-3',
 	title: __( 'Image, Event Date & Title', 'gatherpress' ),
 	icon: imageEventDateTitle,
 	/*
@@ -154,7 +154,7 @@ registerBlockVariation( 'core/query', {
  */
 registerBlockVariation( 'core/query', {
 	...START_BLANK_VARIATION_ATTRIBUTES,
-	name: NAME + 'start-blank-4',
+	name: NAME + '-start-blank-4',
 	title: __( 'Event Date, Title, Venue & Map', 'gatherpress' ),
 	icon: eventDateTitleVenueMap,
 	/*

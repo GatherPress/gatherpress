@@ -101,6 +101,11 @@ describe( 'core/query "Start blank" variations', () => {
 	it( 'gives every variation a unique name and a title', () => {
 		const names = startBlankVariations.map( ( v ) => v.name );
 		expect( new Set( names ).size ).toBe( names.length );
+		names.forEach( ( name ) => {
+			expect( name ).toMatch(
+				/^gatherpress-event-query-start-blank-\d+$/
+			);
+		} );
 		startBlankVariations.forEach( ( variation ) => {
 			expect( typeof variation.title ).toBe( 'string' );
 			expect( variation.title.length ).toBeGreaterThan( 0 );
