@@ -13,8 +13,6 @@ import './controls';
 import './patterns';
 import './start-blank';
 
-// export { NAME };
-
 /**
  * Docs about the Query block.
  *
