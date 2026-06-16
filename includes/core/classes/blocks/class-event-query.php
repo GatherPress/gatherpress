@@ -41,6 +41,26 @@ class Event_Query {
 	 * @var string
 	 */
 	const BLOCK_NAME = 'gatherpress-event-query';
+
+	/**
+	 * Resolved event-query type ('upcoming', 'past' or 'all') keyed by the
+	 * `queryId` of each event-query block seen during the render pass.
+	 *
+	 * Populated in `pre_render_block`, where the block's `namespace` attribute
+	 * confirms it is one of ours, and consumed in `query_loop_block_query_vars`,
+	 * which only sees the descendant (post-template / pagination) block context
+	 * and therefore cannot tell our blocks from a sibling plain Query Loop. The
+	 * map lets the front-end filter scope strictly to the blocks we registered
+	 * and fall back to the same 'upcoming' default the REST collection params
+	 * apply, so a block whose saved query predates the `gatherpress_event_query`
+	 * attribute still scopes to upcoming events on the front end instead of
+	 * listing every event (#1806).
+	 *
+	 * @since 0.34.0
+	 * @var array<int, string>
+	 */
+	protected array $event_query_types = array();
+
 	/**
 	 * Class constructor.
 	 *
@@ -142,56 +162,64 @@ class Event_Query {
 	 * @return string|null The pre-rendered content. Default null.
 	 */
 	public function pre_render_block( ?string $pre_render, array $parsed_block ): ?string {
-		// Check if this is our event query block by verifying the namespace attribute.
+		// Bail unless this is our event query block, verified via the namespace attribute.
 		if (
-			isset( $parsed_block['attrs']['namespace'] ) &&
-			self::BLOCK_NAME === $parsed_block['attrs']['namespace']
+			! isset( $parsed_block['attrs']['namespace'] ) ||
+			self::BLOCK_NAME !== $parsed_block['attrs']['namespace']
 		) {
-			if (
-				isset( $parsed_block['attrs']['query']['inherit'] ) &&
-				true === $parsed_block['attrs']['query']['inherit']
-			) {
-				global $wp_query;
+			return $pre_render;
+		}
 
-				$query_args = array_merge(
-					$wp_query->query_vars,
-					array(
-						'posts_per_page' => $parsed_block['attrs']['query']['perPage'],
-						'order'          => $parsed_block['attrs']['query']['order'],
-						'orderby'        => $parsed_block['attrs']['query']['orderBy'],
-					)
-				);
+		if (
+			isset( $parsed_block['attrs']['query']['inherit'] ) &&
+			true === $parsed_block['attrs']['query']['inherit']
+		) {
+			global $wp_query;
 
-				/**
-				 * Filter the query vars.
-				 *
-				 * Allows filtering query params when the query is being inherited.
-				 *
-				 * @since 0.33.0
-				 *
-				 * @param array   $query_args  Arguments to be passed to WP_Query.
-				 * @param array   $block_query The query attribute retrieved from the block.
-				 * @param boolean $inherited   Whether the query is being inherited.
-				 *
-				 * @return array $filtered_query_args Final arguments list.
-				 */
-				$filtered_query_args = apply_filters(
-					'gatherpress_query_vars',
-					$query_args,
-					$parsed_block['attrs']['query'],
-					true,
-				);
-				// "Hijack the global query. It's a hack, but it works." Ryan Welcher.
-				// phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
-				$wp_query = new WP_Query( $filtered_query_args );
-			} else {
-				add_filter(
-					'query_loop_block_query_vars',
-					array( $this, 'query_loop_block_query_vars' ),
-					10,
-					2
-				);
-			}
+			$query_args = array_merge(
+				$wp_query->query_vars,
+				array(
+					'posts_per_page' => $parsed_block['attrs']['query']['perPage'],
+					'order'          => $parsed_block['attrs']['query']['order'],
+					'orderby'        => $parsed_block['attrs']['query']['orderBy'],
+				)
+			);
+
+			/**
+			 * Filter the query vars.
+			 *
+			 * Allows filtering query params when the query is being inherited.
+			 *
+			 * @since 0.33.0
+			 *
+			 * @param array   $query_args  Arguments to be passed to WP_Query.
+			 * @param array   $block_query The query attribute retrieved from the block.
+			 * @param boolean $inherited   Whether the query is being inherited.
+			 *
+			 * @return array $filtered_query_args Final arguments list.
+			 */
+			$filtered_query_args = apply_filters(
+				'gatherpress_query_vars',
+				$query_args,
+				$parsed_block['attrs']['query'],
+				true,
+			);
+			// "Hijack the global query. It's a hack, but it works." Ryan Welcher.
+			// phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
+			$wp_query = new WP_Query( $filtered_query_args );
+		} else {
+			// Record this query's event type, defaulting to 'upcoming' to
+			// match the REST collection params when the block omits it (#1806).
+			$query_id                             = $parsed_block['attrs']['queryId'] ?? 0;
+			$this->event_query_types[ $query_id ] =
+				$parsed_block['attrs']['query']['gatherpress_event_query'] ?? 'upcoming';
+
+			add_filter(
+				'query_loop_block_query_vars',
+				array( $this, 'query_loop_block_query_vars' ),
+				10,
+				2
+			);
 		}
 
 		return $pre_render;
@@ -244,7 +272,19 @@ class Event_Query {
 		// Retrieve the query from the passed block context.
 		$block_query = $block->context['query'];
 
-		if ( ! is_array( $block_query ) || ! isset( $block_query['gatherpress_event_query'] ) ) {
+		if ( ! is_array( $block_query ) ) {
+			return $query;
+		}
+
+		// Prefer the type recorded in pre_render_block, then one set directly on
+		// the block query. A query with neither is not ours, so leave it untouched.
+		$query_id = $block->context['queryId'] ?? 0;
+
+		if ( array_key_exists( $query_id, $this->event_query_types ) ) {
+			$event_query_type = $this->event_query_types[ $query_id ];
+		} elseif ( isset( $block_query['gatherpress_event_query'] ) ) {
+			$event_query_type = $block_query['gatherpress_event_query'];
+		} else {
 			return $query;
 		}
 
@@ -261,7 +301,7 @@ class Event_Query {
 
 		// Type of event list: 'upcoming', 'past', or 'all',
 		// @see wp-content/plugins/gatherpress/includes/core/classes/class-event-query.php.
-		$query_args['gatherpress_event_query'] = $block_query['gatherpress_event_query'];
+		$query_args['gatherpress_event_query'] = $event_query_type;
 
 		// Exclude Posts.
 		$exclude_ids = $this->get_exclude_ids( $block_query );
@@ -278,12 +318,10 @@ class Event_Query {
 			$query_args['shadow_filter'] = $block_query['shadow_filter'];
 		}
 
-		// Editor-preview context — the editor writes these into the block's
-		// `query` attribute when the contextual toggle is enabled, so the
-		// REST-side preview can scope to the same shadow-source post the
-		// frontend `is_singular()` path scopes to. Frontend `pre_get_posts`
-		// ignores these (it has the queried object); the REST path uses them
-		// as a fallback when `is_singular()` is false.
+		// Editor-preview context: lets the REST preview scope to the same
+		// shadow-source post the frontend resolves from the queried object.
+		// Frontend pre_get_posts ignores these; the REST path uses them as a
+		// fallback when is_singular() is false.
 		if ( ! empty( $block_query['gatherpress_shadow_source_post_id'] ) ) {
 			$query_args['gatherpress_shadow_source_post_id'] = (int) $block_query['gatherpress_shadow_source_post_id'];
 		}
