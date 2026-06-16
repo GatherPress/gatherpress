@@ -17,16 +17,18 @@ name: Playground Preview
 
 on:
   pull_request:
-    types: [opened, synchronize]
+    types: [opened, synchronize, reopened]
     paths:
     - 'build/**'
     - 'includes/**'
     - 'src/**'
     - '*.php'
-    # Do start the workflow, even when just a PR preview blueprint was added or changed.
-    # That allows doing compatibility tests with 3rd-party plugins or
-    # just to get some reproducible debugging environment with "Query Monitor".
-    - '.github/playground/**'
+    # Do start the workflow when the preview system itself changes so those
+    # changes can produce a PR artifact and preview comment in forks.
+    - '.github/scripts/playground-preview/**'
+    - '.github/workflows/playground-preview*.yml'
+    - 'docs/contributor/playground-pr-preview/**'
+    - '.github/PULL_REQUEST_TEMPLATE.md'
 
 # Cancels all previous workflow runs for pull requests that have not completed.
 concurrency:

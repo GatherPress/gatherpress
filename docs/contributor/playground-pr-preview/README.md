@@ -10,22 +10,32 @@ GatherPress allows to customize the generated Playground for your PR.
 
 You can change the landing page, set options, do stuff before GatherPress is loaded, do stuff afterwards. Everything you can with a regular Playground blueprint. GatherPress loads its important blueprint steps together with yours, resulting in a nicely reproducible and highly customizable setup.
 
-To customize the Playground preview for a specific PR, create a file at:
+To customize the Playground preview for a specific PR, add a collapsed `Playground Blueprint` details block to the PR description:
 
-```sh
-your-gatherpress-branch
- └── .github
-     └──playground
-         └── PR-{NUMBER_OF_THE_PR}-blueprint-override.json
-```
-
-The content of that new file looks very much like a regular *Playground blueprint*.
-
-The main difference is that you are not allowed to use any regular `steps`, but have to use `prependSteps` and `appendSteps`. This will make sure, your *steps* get loaded in the correct order, and before or after GatherPress core runs its own steps. `prependSteps` and `appendSteps` take all the same, you would put in `steps` in a regular blueprint.
+````md
+<details>
+<summary>Playground Blueprint</summary>
 
 ```json
 {
-	"$schema": "https://gatherpress.org/playground-override-schema.json",
+	"$schema": "https://gatherpress.org/playground-preview/pr-override-schema.json",
+	"landingPage": "/wp-admin/edit.php?post_type=gatherpress_event"
+}
+```
+
+</details>
+````
+
+The content of that JSON code block looks very much like a regular *Playground blueprint*.
+
+The main difference is that you are not allowed to use any regular `steps`, but have to use `prependSteps` and
+`appendSteps`. This will make sure your *steps* get loaded in the correct order, and before or after GatherPress core
+runs its own steps. `prependSteps` and `appendSteps` take all the same steps you would put in `steps` in a regular
+blueprint.
+
+```json
+{
+	"$schema": "https://gatherpress.org/playground-preview/pr-override-schema.json",
 	"landingPage": " ... ",
 	"siteOptions": { ... },
 	"features": { ... },
@@ -34,7 +44,7 @@ The main difference is that you are not allowed to use any regular `steps`, but 
 }
 ```
 
-The override is merged into the generated default blueprint and as such still contains the different php version, GatherPress plugin and demo-data, but also allows to
+The override is merged into the generated default blueprint and as such still contains the different PHP version, GatherPress plugin and demo-data, but also allows to
 
 - Change the landing page
 - Enable Playground features
@@ -121,7 +131,7 @@ Protected fields cannot be overridden, `preferredVersions` (the PHP version matr
 
 To help with the override style, GatherPress published its own Playground Override Scheme under [`gatherpress.org/playground-preview/pr-override-schema.json`](https://gatherpress.org/playground-preview/pr-override-schema.json).
 
-This should be referenced in a `PR-*-blueprint-override.json` like so:
+This should be referenced in the PR description's `Playground Blueprint` JSON block like so:
 
 ```json
 {

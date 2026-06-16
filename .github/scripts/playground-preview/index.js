@@ -1,125 +1,166 @@
-const fs = require('fs');
-const path = require('path');
-
 /**
- * Attempts to read and parse a per-PR blueprint override file.
+ * Main function to create and post a comment on the PR with preview links for different PHP versions.
+ * It generates Playground preview URLs for each PHP version specified.
  *
- * The file is looked up at `.github/playground/PR-123-blueprint-override.json`
- * in the checked-out PR branch code. When called from `workflow_run`,
- * this requires a separate checkout of the PR head ref (see workflow
- * changes below).
- *
- * @param {string} [filePath] - Path to the override file.
- * @returns {object|null} - Parsed override object, or null if not found / invalid.
+ * @param {object} github - An authenticated GitHub API instance.
+ * @param {object} context - The context of the event.
+ * @param {number} [prNumberOverride] - Explicit PR number; required when called from a workflow_run
+ *   context where context.payload.pull_request is not present.
  */
-function loadBlueprintOverride(filePath) {
-	try {
-		if (!fs.existsSync(filePath)) {
-			console.log(`No blueprint override found at ${filePath}`);
-			return null;
-		}
+async function createPreviewLinksComment(github, context, prNumberOverride) {
+	const prNumber       = prNumberOverride ?? context.payload.pull_request.number;
+	const zipArtifactUrl = createBlueprintUrl(context.repo, prNumber);  // URL to the built plugin artifact
+	const prText         = `for PR#${prNumber}`;  // Descriptive text for the PR
+	const { override, error: overrideError } = await loadBlueprintOverride(
+		github,
+		context,
+		prNumber
+	);
 
-		const raw = fs.readFileSync(filePath, 'utf8');
-		const override = JSON.parse(raw);
+	// Retrieve PHP versions from environment variable (JSON string)
+	const phpVersionsEnv = process.env.PHP_VERSIONS || '["8.4","8.2","7.4"]';  // Default to common versions if not set.
+	const phpVersions    = JSON.parse( phpVersionsEnv );  // Parse the JSON string into an array
 
-		console.log(`Loaded blueprint override from ${filePath}`);
-		return override;
-	} catch (err) {
-		console.warn(`Warning: Failed to load blueprint override: ${err.message}`);
-		return null;
+	// Generate preview links for each PHP version
+	let previewLinks = '';
+	for (const phpVersion of phpVersions) {
+		const blueprint      = encodeURI(
+			createBlueprint(context.repo, prNumber, zipArtifactUrl, phpVersion, override)
+		);
+		const links          = createPlaygroundLinks( blueprint, prText );  // Create preview links
+		const versionHeading = `#### PHP Version ${phpVersion}\n`;
+		const versionLinks   = links.map(link => `- [${link.title}](${link.url})\n`).join('');
+		previewLinks        += `\n${versionHeading}\n${versionLinks}`;
 	}
+
+	const docsUrl = 'https://github.com/GatherPress/gatherpress/blob/develop/' +
+		'docs/contributor/playground-pr-preview/README.md#customize-your-pr-playground';
+
+	let overrideNote = '';
+	if (override) {
+		overrideNote = `
+ℹ️ This preview includes a custom blueprint override from the PR description's
+<code>Playground Blueprint</code> details block.
+`;
+	} else if (overrideError) {
+		overrideNote = `
+⚠️ ${overrideError}
+
+The default Playground preview was generated instead. Check the JSON inside the
+<code>Playground Blueprint</code> details block, then edit the PR description to
+refresh the preview links.
+`;
+	} else {
+		overrideNote = `
+<details><summary>Customize PR Playground</summary>
+
+To customize the Playground preview for this specific PR, add a collapsed
+<code>Playground Blueprint</code> details block to the PR description.
+
+The override is merged into the generated blueprint and can be used to:
+
+- Enable Playground features
+- Install additional plugins
+- Change site options
+- Run steps before or after the GatherPress' default steps
+
+Example:
+
+\`\`\`\`md
+<details>
+<summary>Playground Blueprint</summary>
+
+\`\`\`json
+{
+	"$schema": "https://gatherpress.org/playground-preview/pr-override-schema.json",
+	"landingPage": "/wp-admin/edit.php?post_type=gatherpress_venue",
+	"siteOptions": {
+		"show_on_front": "page"
+	},
+	"features": {
+		"networking": true
+	},
+	"prependSteps": [
+		{
+			"step": "installPlugin",
+			"pluginData": {
+				"resource": "wordpress.org/plugins",
+				"slug": "simple-location"
+			},
+			"options": {
+				"activate": true
+			}
+		}
+	],
+	"appendSteps": [
+		{
+			"step": "runPHP",
+			"code": ""
+		}
+	]
 }
+\`\`\`
 
-/**
- * Validates that an override doesn't try to set protected fields.
- *
- * @param {object} override - The parsed override object.
- * @returns {object} - The sanitized override with protected fields removed.
- */
-function sanitizeOverride(override) {
-	const sanitized = { ...override };
+</details>
+\`\`\`\`
+</details>
 
-	// These fields are controlled by the generation script and must not
-	// be overridden, because they are either driven by the version matrix
-	// or contain PR-specific dynamic values.
-	const protectedFields = ['preferredVersions', 'phpExtensionBundles'];
-
-	for (const field of protectedFields) {
-		if (field in sanitized) {
-			console.warn(
-				`Warning: Override tried to set protected field "${field}" — ignoring.`
-			);
-			delete sanitized[field];
-		}
+Go to [Playground PR preview customization](${docsUrl}) for more details.
+`;
 	}
 
-	// Prevent overriding steps directly — use prependSteps / appendSteps instead.
-	if ('steps' in sanitized) {
-		console.warn(
-			'Warning: Override contains "steps" — use "prependSteps" or "appendSteps" instead. Ignoring "steps".'
-		);
-		delete sanitized.steps;
+	// The title of the comment and its content, including preview links for all PHP versions.
+	const title       = '### Preview changes with Playground';
+	const commentBody = `
+${overrideNote}
+
+You can preview the recent changes ${prText} with the following PHP versions:
+${previewLinks}
+
+[Download <code>.zip</code> with build changes](${zipArtifactUrl})
+
+*Made with 💙 from GatherPress & a little bit of [WordPress Playground](https://wordpress.org/playground/). Changes will not persist between sessions.*
+`;
+
+	const repoData = {
+		owner: context.repo.owner,
+		repo: context.repo.repo,
+	};
+
+	const { data: comments } = await github.rest.issues.listComments({
+		issue_number: prNumber,
+		...repoData,
+	});
+
+	const existingComment = comments.find(
+		(comment) =>
+			comment.user.login === 'github-actions[bot]' &&
+			comment.body.startsWith( title )
+	);
+	const commentObject = {
+		body: `${title}\n${commentBody}`,
+		...repoData,
+	};
+
+	if (
+		! existingComment &&
+		process.env.UPDATE_EXISTING_PLAYGROUND_COMMENT_ONLY === 'true'
+	) {
+		return;
 	}
 
-	return sanitized;
-}
-
-/**
- * Merges a sanitized override into the base blueprint template.
- *
- * Merge strategy:
- * - `landingPage`: override replaces base.
- * - `features`: shallow merge (override keys win).
- * - `siteOptions`: merged into the setSiteOptions step.
- * - `prependSteps`: inserted after login + setSiteOptions, before mkdir.
- * - `appendSteps`: appended after all base steps.
- *
- * @param {object} template - The base blueprint object (mutated in place).
- * @param {object} override - The sanitized override object.
- * @returns {object} - The merged blueprint.
- */
-function mergeOverride(template, override) {
-	// landingPage — simple replacement
-	if (override.landingPage) {
-		template.landingPage = override.landingPage;
+	if ( existingComment ) {
+		await github.rest.issues.updateComment({
+			comment_id: existingComment.id,
+			...commentObject,
+		});
+		return;
 	}
 
-	// features — shallow merge
-	if (override.features) {
-		template.features = {
-			...template.features,
-			...override.features,
-		};
-	}
-
-	// siteOptions — merge into existing setSiteOptions step
-	if (override.siteOptions) {
-		const siteOptionsStep = template.steps.find(
-			(s) => s.step === 'setSiteOptions'
-		);
-		if (siteOptionsStep) {
-			siteOptionsStep.options = {
-				...siteOptionsStep.options,
-				...override.siteOptions,
-			};
-		}
-	}
-
-	// prependSteps — insert after setSiteOptions, before mkdir
-	if (override.prependSteps && Array.isArray(override.prependSteps)) {
-		const mkdirIndex = template.steps.findIndex(
-			(s) => s.step === 'mkdir'
-		);
-		const insertAt = mkdirIndex >= 0 ? mkdirIndex : 2; // fallback after login + setSiteOptions
-		template.steps.splice(insertAt, 0, ...override.prependSteps);
-	}
-
-	// appendSteps — add after all existing steps
-	if (override.appendSteps && Array.isArray(override.appendSteps)) {
-		template.steps.push(...override.appendSteps);
-	}
-
-	return template;
+	await github.rest.issues.createComment({
+		issue_number: prNumber,
+		...commentObject,
+	});
 }
 
 /**
@@ -148,7 +189,7 @@ function createBlueprintUrl(context, number) {
  * @param {number} number - The PR number where the plugin changes are located.
  * @param {string} zipArtifactUrl - The URL where the built plugin artifact can be downloaded.
  * @param {string} phpVersion - The PHP version to use in the WordPress Playground.
- * @param {object|null} override - Optional override loaded from the PR branch.
+ * @param {object|null} override - Optional override loaded from the PR description.
  * @returns {string} - A JSON string representing the blueprint.
  */
 function createBlueprint(context, number, zipArtifactUrl, phpVersion, override) {
@@ -257,13 +298,207 @@ function createBlueprint(context, number, zipArtifactUrl, phpVersion, override) 
 		],
 	};
 
-	// Apply override if provided
 	if (override) {
 		const sanitized = sanitizeOverride(override);
 		mergeOverride(template, sanitized);
 	}
 
 	return JSON.stringify(template);
+}
+
+/**
+ * Gets the PR body and parses a Blueprint override from it.
+ *
+ * @param {object} github - An authenticated GitHub API instance.
+ * @param {object} context - The context of the event.
+ * @param {number} prNumber - Pull request number.
+ * @returns {Promise<object>} Parsed override object and parse error, if any.
+ */
+async function loadBlueprintOverride(github, context, prNumber) {
+	const { data: pullRequest } = await github.rest.pulls.get({
+		owner: context.repo.owner,
+		repo: context.repo.repo,
+		pull_number: prNumber,
+	});
+
+	return loadBlueprintOverrideFromPullRequestBody(pullRequest.body);
+}
+
+/**
+ * Attempts to read and parse a per-PR blueprint override from the PR body.
+ *
+ * The override must live in a collapsed details block whose summary is
+ * "Playground Blueprint", with the JSON stored in a fenced json code block.
+ *
+ * @param {string} body - Pull request body text.
+ * @returns {object} Parsed override object and parse error, if any.
+ */
+function loadBlueprintOverrideFromPullRequestBody(body) {
+	const detailsBlock = findBlueprintDetailsBlock(body || '');
+
+	if (!detailsBlock) {
+		return { override: null, error: null };
+	}
+
+	const raw = extractJsonCodeBlock(detailsBlock);
+
+	if (!raw) {
+		return { override: null, error: null };
+	}
+
+	try {
+		const override = JSON.parse(raw);
+
+		return { override, error: null };
+	} catch (err) {
+		return {
+			override: null,
+			error: `Failed to parse the Playground Blueprint JSON: ${err.message}`,
+		};
+	}
+}
+
+/**
+ * Finds the collapsed details block used for the PR Blueprint override.
+ *
+ * @param {string} body - Pull request body text.
+ * @returns {string|null} The details block contents, or null when absent.
+ */
+function findBlueprintDetailsBlock(body) {
+	const detailsPattern = /<details\b[^>]*>([\s\S]*?)<\/details>/gi;
+	let detailsMatch;
+
+	while ((detailsMatch = detailsPattern.exec(body))) {
+		const details = detailsMatch[1];
+		const summaryMatch = details.match(
+			/<summary\b[^>]*>([\s\S]*?)<\/summary>/i
+		);
+
+		if (!summaryMatch) {
+			continue;
+		}
+
+		const summary = summaryMatch[1].replace(/<[^>]+>/g, '').trim();
+
+		if ('playground blueprint' === summary.toLowerCase()) {
+			return details;
+		}
+	}
+
+	return null;
+}
+
+/**
+ * Extracts the first JSON fenced code block from a details block.
+ *
+ * @param {string} detailsBlock - Details block contents.
+ * @returns {string|null} Code block contents, or null when absent.
+ */
+function extractJsonCodeBlock(detailsBlock) {
+	const codeBlockPattern = /```json\s*([\s\S]*?)```/i;
+	const codeBlockMatch = detailsBlock.match(codeBlockPattern);
+
+	if (!codeBlockMatch) {
+		return null;
+	}
+
+	const code = codeBlockMatch[1].trim();
+
+	return code || null;
+}
+
+
+
+/**
+ * Validates that an override doesn't try to set protected fields.
+ *
+ * @param {object} override - The parsed override object.
+ * @returns {object} - The sanitized override with protected fields removed.
+ */
+function sanitizeOverride(override) {
+	const sanitized = { ...override };
+
+	// These fields are controlled by the generation script and must not
+	// be overridden, because they are either driven by the version matrix
+	// or contain PR-specific dynamic values.
+	const protectedFields = ['preferredVersions', 'phpExtensionBundles'];
+
+	for (const field of protectedFields) {
+		if (field in sanitized) {
+			console.warn(
+				`Warning: Override tried to set protected field "${field}" — ignoring.`
+			);
+			delete sanitized[field];
+		}
+	}
+
+	// Prevent overriding steps directly — use prependSteps / appendSteps instead.
+	if ('steps' in sanitized) {
+		console.warn(
+			'Warning: Override contains "steps" — use "prependSteps" or "appendSteps" instead. Ignoring "steps".'
+		);
+		delete sanitized.steps;
+	}
+
+	return sanitized;
+}
+
+/**
+ * Merges a sanitized override into the base blueprint template.
+ *
+ * Merge strategy:
+ * - `landingPage`: override replaces base.
+ * - `features`: shallow merge (override keys win).
+ * - `siteOptions`: merged into the setSiteOptions step.
+ * - `prependSteps`: inserted after login + setSiteOptions, before mkdir.
+ * - `appendSteps`: appended after all base steps.
+ *
+ * @param {object} template - The base blueprint object (mutated in place).
+ * @param {object} override - The sanitized override object.
+ * @returns {object} - The merged blueprint.
+ */
+function mergeOverride(template, override) {
+	// landingPage — simple replacement
+	if (override.landingPage) {
+		template.landingPage = override.landingPage;
+	}
+
+	// features — shallow merge
+	if (override.features) {
+		template.features = {
+			...template.features,
+			...override.features,
+		};
+	}
+
+	// siteOptions — merge into existing setSiteOptions step
+	if (override.siteOptions) {
+		const siteOptionsStep = template.steps.find(
+			(s) => s.step === 'setSiteOptions'
+		);
+		if (siteOptionsStep) {
+			siteOptionsStep.options = {
+				...siteOptionsStep.options,
+				...override.siteOptions,
+			};
+		}
+	}
+
+	// prependSteps — insert after setSiteOptions, before mkdir
+	if (override.prependSteps && Array.isArray(override.prependSteps)) {
+		const mkdirIndex = template.steps.findIndex(
+			(s) => s.step === 'mkdir'
+		);
+		const insertAt = mkdirIndex >= 0 ? mkdirIndex : 2; // fallback after login + setSiteOptions
+		template.steps.splice(insertAt, 0, ...override.prependSteps);
+	}
+
+	// appendSteps — add after all existing steps
+	if (override.appendSteps && Array.isArray(override.appendSteps)) {
+		template.steps.push(...override.appendSteps);
+	}
+
+	return template;
 }
 
 /**
@@ -284,146 +519,6 @@ function createPlaygroundLinks( blueprint, prText) {
 		title: playground.name + prText,
 		url: playground.url + blueprint
 	}));
-}
-
-/**
- * Main function to create and post a comment on the PR with preview links for different PHP versions.
- * It generates Playground preview URLs for each PHP version specified.
- *
- * @param {object} github - An authenticated GitHub API instance.
- * @param {object} context - The context of the event.
- * @param {number} [prNumberOverride] - Explicit PR number; required when called from a workflow_run
- *   context where context.payload.pull_request is not present.
- * @param {string} [filePath] - Path to the blueprint override file (for testing or
- *   when the PR head is checked out to a non-default location).
- */
-async function createPreviewLinksComment(github, context, prNumberOverride, filePath) {
-	const prNumber       = prNumberOverride ?? context.payload.pull_request.number;
-	const zipArtifactUrl = createBlueprintUrl(context.repo, prNumber);  // URL to the built plugin artifact
-	const prText         = `for PR#${prNumber}`;  // Descriptive text for the PR
-
-	// Load per-PR override
-	const overridePath = filePath + 'PR-' + prNumber + '-blueprint-override.json';
-	const override = loadBlueprintOverride(overridePath);
-
-	// Retrieve PHP versions from environment variable (JSON string)
-	const phpVersionsEnv = process.env.PHP_VERSIONS || '["8.4","8.2","7.4"]';  // Default to common versions if not set.
-	const phpVersions    = JSON.parse( phpVersionsEnv );  // Parse the JSON string into an array
-
-	// Generate preview links for each PHP version
-	let previewLinks = '';
-	for (const phpVersion of phpVersions) {
-		const blueprint      = encodeURI(
-			createBlueprint(context.repo, prNumber, zipArtifactUrl, phpVersion, override)
-		);
-		const links          = createPlaygroundLinks( blueprint, prText );  // Create preview links
-		const versionHeading = `#### PHP Version ${phpVersion}\n`;
-		const versionLinks   = links.map(link => `- [${link.title}](${link.url})\n`).join('');
-		previewLinks        += `\n${versionHeading}\n${versionLinks}`;
-	}
-
-	const overrideNote = override
-		? `
-ℹ️ This preview includes a custom blueprint override from <code>.github/playground/PR-${prNumber}-blueprint-override.json</code>.
-`
-		: `
-<details><summary>Customize PR Playground</summary>
-
-To customize the Playground preview for this specific PR, create a file at:
-
-<code>.github/playground/PR-${prNumber}-blueprint-override.json</code>
-
-The override is merged into the generated blueprint and can be used to:
-
-- Enable Playground features
-- Install additional plugins
-- Change site options
-- Run steps before or after the GatherPress' default steps
-
-Example:
-
-\`\`\`json
-{
-	"$schema": "https://gatherpress.org/playground-preview/pr-override-schema.json",
-	"landingPage": "/wp-admin/edit.php?post_type=gatherpress_venue",
-	"siteOptions": {
-		"show_on_front": "page"
-	},
-	"features": {
-		"networking": true
-	},
-	"prependSteps": [
-		{
-			"step": "installPlugin",
-			"pluginData": {
-				"resource": "wordpress.org/plugins",
-				"slug": "simple-location"
-			},
-			"options": {
-				"activate": true
-			}
-		}
-	],
-	"appendSteps": [
-		{
-			"step": "runPHP",
-			"code": ""
-		}
-	]
-}
-\`\`\`
-</details>
-
-Go to [Playground PR preview customization](https://github.com/GatherPress/gatherpress/blob/develop/docs/contributor/playground-pr-preview/README.md#customize-your-pr-playground) for more details.
-`;
-
-	// The title of the comment and its content, including preview links for all PHP versions.
-	const title       = '### Preview changes with Playground';
-	const commentBody = `
-${overrideNote}
-
-You can preview the recent changes ${prText} with the following PHP versions:
-${previewLinks}
-
-[Download <code>.zip</code> with build changes](${zipArtifactUrl})
-
-*Made with 💙 from GatherPress & a little bit of [WordPress Playground](https://wordpress.org/playground/). Changes will not persist between sessions.*
-`;
-
-	const repoData = {
-		owner: context.repo.owner,
-		repo: context.repo.repo,
-	};
-
-	// Check if any comments already exists
-	const { data: comments } = await github.rest.issues.listComments({
-		issue_number: prNumber,
-		...repoData,
-	});
-
-	const existingComment = comments.find(
-		(comment) =>
-			comment.user.login === 'github-actions[bot]' &&
-			comment.body.startsWith( title )
-	);
-	const commentObject = {
-		body: `${title}\n${commentBody}`,
-		...repoData,
-	};
-
-	// If an existing comment is found, delete it before creating a new one
-	if ( existingComment ) {
-		await github.rest.issues.deleteComment({
-			comment_id: existingComment.id,
-			...commentObject,
-		});
-	}
-
-	// Create a new comment with preview links
-	github.rest.issues.createComment({
-		issue_number: prNumber,
-		...commentObject,
-	});
 }
 
 module.exports = createPreviewLinksComment;
