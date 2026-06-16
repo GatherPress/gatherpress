@@ -20,6 +20,18 @@ Fixes #
 * Go to '..'
 *
 
+### Credit (for release notes)
+
+<!-- First time contributing? Add your WordPress.org profile so we can credit you in the -->
+<!-- release and on the in-plugin Credits screen. -->
+<!-- Your profile URL looks like: https://profiles.wordpress.org/USERNAME/ -->
+<!-- Enter just the USERNAME (the last part of that URL) below. -->
+<!-- Please open the link first to confirm it loads — credits are generated from this exact -->
+<!-- username, so a typo or a non-existent profile gets skipped. -->
+<!-- Don't have a WordPress.org account? Create a free one at https://login.wordpress.org/register -->
+
+My WordPress.org username:
+
 ### Changelog entry
 
 <!-- You can optionally choose to enter a changelog entry by checking the box below and supplying data. -->
