@@ -11,6 +11,7 @@ namespace GatherPress\Tests\Core\Blocks;
 use GatherPress\Core\Blocks\Event_Query;
 use GatherPress\Core\Event;
 use GatherPress\Tests\Base;
+use PMC\Unit_Test\Utility;
 
 /**
  * Class Test_Event_Query.
@@ -18,6 +19,20 @@ use GatherPress\Tests\Base;
  * @coversDefaultClass \GatherPress\Core\Blocks\Event_Query
  */
 class Test_Event_Query extends Base {
+
+	/**
+	 * Reset the per-request event-query type map between tests.
+	 *
+	 * The map is request-scoped singleton state in production, but the
+	 * singleton persists across test methods, so clear it to keep the
+	 * `query_loop_block_query_vars` tests isolated from each other.
+	 *
+	 * @return void
+	 */
+	public function setUp(): void {
+		parent::setUp();
+		Utility::set_and_get_hidden_property( Event_Query::get_instance(), 'event_query_types', array() );
+	}
 
 	/**
 	 * Tests the setup_hooks method.
@@ -486,6 +501,128 @@ class Test_Event_Query extends Base {
 		$result = $instance->query_loop_block_query_vars( $query, $block );
 
 		$this->assertSame( $query, $result, 'Should return unchanged query without gatherpress_event_query.' );
+	}
+
+	/**
+	 * Test pre_render_block records the default 'upcoming' type for a block
+	 * whose saved query omits gatherpress_event_query.
+	 *
+	 * Regression coverage for #1806: such a block rendered every event on the
+	 * front end because no event type reached the query. The recorded default
+	 * is what lets the front-end filter scope it to upcoming events.
+	 *
+	 * @since 0.34.0
+	 * @covers ::pre_render_block
+	 *
+	 * @return void
+	 */
+	public function test_pre_render_block_records_default_event_query_type(): void {
+		$instance = Event_Query::get_instance();
+
+		remove_all_filters( 'query_loop_block_query_vars' );
+
+		$parsed_block = array(
+			'attrs' => array(
+				'namespace' => Event_Query::BLOCK_NAME,
+				'queryId'   => 6,
+				'query'     => array(
+					'inherit'  => false,
+					'postType' => Event::POST_TYPE,
+					'order'    => 'desc',
+					'orderBy'  => 'date',
+				),
+			),
+		);
+
+		$instance->pre_render_block( null, $parsed_block );
+
+		$types = Utility::get_hidden_property( $instance, 'event_query_types' );
+
+		$this->assertSame(
+			'upcoming',
+			$types[6] ?? null,
+			'A block whose saved query omits gatherpress_event_query should default to upcoming.'
+		);
+
+		remove_filter( 'query_loop_block_query_vars', array( $instance, 'query_loop_block_query_vars' ) );
+	}
+
+	/**
+	 * Test query_loop_block_query_vars applies the recorded 'upcoming' default
+	 * when the block context omits gatherpress_event_query.
+	 *
+	 * Mirrors the #1806 front-end path: pre_render_block records the default
+	 * keyed by queryId, then the descendant post-template context (which lacks
+	 * gatherpress_event_query) resolves to that default instead of leaving the
+	 * query unfiltered.
+	 *
+	 * @since 0.34.0
+	 * @covers ::query_loop_block_query_vars
+	 *
+	 * @return void
+	 */
+	public function test_query_loop_block_query_vars_applies_registered_default(): void {
+		$instance = Event_Query::get_instance();
+
+		Utility::set_and_get_hidden_property( $instance, 'event_query_types', array( 6 => 'upcoming' ) );
+
+		$query = array( 'posts_per_page' => 5 );
+		$block = $this->createMock( \WP_Block::class );
+
+		$block->context = array(
+			'queryId' => 6,
+			'query'   => array(
+				'postType' => Event::POST_TYPE,
+				'order'    => 'desc',
+			),
+		);
+
+		$result = $instance->query_loop_block_query_vars( $query, $block );
+
+		$this->assertSame(
+			'upcoming',
+			$result['gatherpress_event_query'],
+			'A registered query without an explicit type should default to upcoming.'
+		);
+		$this->assertSame( Event::POST_TYPE, $result['post_type'] );
+	}
+
+	/**
+	 * Test query_loop_block_query_vars leaves an unregistered sibling query
+	 * untouched.
+	 *
+	 * A plain Query Loop rendered after an event-query block can hit this
+	 * still-attached filter. Without a recorded type and without an explicit
+	 * gatherpress_event_query, its query must pass through unmodified so it is
+	 * not accidentally turned into an event query (#1806).
+	 *
+	 * @since 0.34.0
+	 * @covers ::query_loop_block_query_vars
+	 *
+	 * @return void
+	 */
+	public function test_query_loop_block_query_vars_skips_unregistered_query(): void {
+		$instance = Event_Query::get_instance();
+
+		Utility::set_and_get_hidden_property( $instance, 'event_query_types', array( 6 => 'upcoming' ) );
+
+		$query = array( 'posts_per_page' => 5 );
+		$block = $this->createMock( \WP_Block::class );
+
+		$block->context = array(
+			'queryId' => 99,
+			'query'   => array(
+				'postType' => 'post',
+			),
+		);
+
+		$result = $instance->query_loop_block_query_vars( $query, $block );
+
+		$this->assertSame(
+			$query,
+			$result,
+			'A sibling query with a different queryId and no explicit type should be untouched.'
+		);
 	}
 
 	/**
