@@ -32,7 +32,7 @@ const START_BLANK_VARIATION_ATTRIBUTES = {
 	...VARIATION_ATTRIBUTES_WITHOUT_ATTRIBUTES,
 	scope: [ 'block' ],
 	attributes: {
-		...VARIATION_ATTRIBUTES.attributes.className,
+		...attributes,
 		...START_BLANK_QUERY_ATTRIBUTES,
 	},
 };

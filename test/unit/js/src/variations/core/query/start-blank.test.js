@@ -107,6 +107,20 @@ describe( 'core/query "Start blank" variations', () => {
 		} );
 	} );
 
+	it( 'carries the event-query className without leaking string-spread keys', () => {
+		startBlankVariations.forEach( ( variation ) => {
+			expect( variation.attributes.className ).toBe(
+				'gatherpress-event-query'
+			);
+			// A regression guard against spreading the className *string*,
+			// which would scatter numeric-index keys ("0","1",...) across
+			// the attributes object.
+			Object.keys( variation.attributes ).forEach( ( key ) => {
+				expect( key ).not.toMatch( /^\d+$/ );
+			} );
+		} );
+	} );
+
 	it( 'scaffolds an event template with pagination and no-results in each variation', () => {
 		startBlankVariations.forEach( ( variation ) => {
 			const blocks = createBlocksFromInnerBlocksTemplate(
