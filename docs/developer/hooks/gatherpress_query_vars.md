@@ -35,17 +35,17 @@ add_filter(
 
 ## Files
 
-- [includes/core/classes/blocks/class-event-query.php:178](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/blocks/class-event-query.php#L178)
+- [includes/core/classes/blocks/class-event-query.php:201](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/blocks/class-event-query.php#L201)
 ```php
 apply_filters(
-					'gatherpress_query_vars',
-					$query_args,
-					$parsed_block['attrs']['query'],
-					true,
-				)
+				'gatherpress_query_vars',
+				$query_args,
+				$parsed_block['attrs']['query'],
+				true,
+			)
 ```
 
-- [includes/core/classes/blocks/class-event-query.php:305](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/blocks/class-event-query.php#L305)
+- [includes/core/classes/blocks/class-event-query.php:343](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/blocks/class-event-query.php#L343)
 ```php
 apply_filters(
 			'gatherpress_query_vars',
@@ -55,7 +55,7 @@ apply_filters(
 		)
 ```
 
-- [includes/core/classes/blocks/class-event-query.php:386](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/blocks/class-event-query.php#L386)
+- [includes/core/classes/blocks/class-event-query.php:424](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/blocks/class-event-query.php#L424)
 ```php
 apply_filters(
 			'gatherpress_query_vars',
