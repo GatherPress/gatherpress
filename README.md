@@ -82,4 +82,5 @@ GatherPress calls the following services when editing venues or displaying maps.
 
 *GatherPress is still in active development. Thank you for helping us build a better way to gather.*
 
+<!-- markdownlint-disable-next-line MD047 -->
 [blueprint-nightly]: https://playground.wordpress.net/?blueprint-url=https://raw.githubusercontent.com/GatherPress/gatherpress/main/.wordpress-org/blueprints/blueprint-nightly.json
