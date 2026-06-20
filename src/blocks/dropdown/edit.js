@@ -35,7 +35,10 @@ import { dispatch, select, useSelect } from '@wordpress/data';
 /**
  * Internal dependencies
  */
-import { useIsBlockOrDescendantSelected } from './helpers';
+import {
+	getSelectedItemReset,
+	useIsBlockOrDescendantSelected,
+} from './helpers';
 
 /**
  * Edit component for the GatherPress Dropdown block.
@@ -127,6 +130,21 @@ const Edit = ( { attributes, setAttributes, clientId } ) => {
 			} );
 		}
 	}, [ label, clientId ] );
+
+	// Recover from a deleted "Default Selected Item": fall back to the first item,
+	// or switch select mode off entirely once every item has been removed.
+	useEffect( () => {
+		const reset = getSelectedItemReset(
+			actAsSelect,
+			innerBlocks,
+			selectedIndex,
+			__( 'Dropdown', 'gatherpress' )
+		);
+
+		if ( reset ) {
+			setAttributes( reset );
+		}
+	}, [ actAsSelect, innerBlocks, selectedIndex, setAttributes ] );
 
 	useEffect( () => {
 		// Ensure this effect only runs when `actAsSelect` is enabled.
