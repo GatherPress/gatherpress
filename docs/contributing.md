@@ -38,6 +38,14 @@ Draft PRs and PRs not targeting `develop` are exempt from the check.
 
 - For access to infrastructure (SSH or WP Admin on gatherpress.org), contact [@MervinHernandez](https://github.com/MervinHernandez)
 
+## 🏷️ Contributor Credits
+
+GatherPress credits contributors by their **WordPress.org username**, both on the in-plugin Credits screen and in the WordPress.org attribution. A [Props Bot](https://github.com/WordPress/props-bot-action) runs on every pull request and posts a maintained comment listing the PR's contributors (including authors of any linked issues), resolved to their wp.org usernames.
+
+For the bot to resolve you correctly, **link your GitHub account on your [profiles.wordpress.org](https://profiles.wordpress.org/) profile**. If you don't have a WordPress.org account yet, create a free one at [login.wordpress.org/register](https://login.wordpress.org/register). Contributors who haven't linked their accounts won't resolve cleanly and may need to be credited by hand.
+
+Maintainers can force the bot to refresh its list by adding the `Props Bot` label to a pull request.
+
 ---
 
 Thanks for helping make GatherPress better! 💜
