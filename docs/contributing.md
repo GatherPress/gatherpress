@@ -44,7 +44,7 @@ GatherPress credits contributors by their **WordPress.org username**, both on th
 
 For the bot to resolve you correctly, **link your GitHub account on your [profiles.wordpress.org](https://profiles.wordpress.org/) profile**. If you don't have a WordPress.org account yet, create a free one at [login.wordpress.org/register](https://login.wordpress.org/register). Contributors who haven't linked their accounts won't resolve cleanly and may need to be credited by hand.
 
-Maintainers can force the bot to refresh its list by adding the `props-bot` label to a pull request.
+Maintainers can force the bot to refresh its list by adding the `Props Bot` label to a pull request.
 
 ---
 

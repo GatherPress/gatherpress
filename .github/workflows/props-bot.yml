@@ -3,7 +3,7 @@ name: Props Bot
 on:
     # This event runs anytime a PR is (re)opened, updated, marked ready for review, or labeled.
     # GitHub does not allow filtering the `labeled` event by a specific label.
-    # However, the logic below will short-circuit the workflow when the `props-bot` label is not the one being added.
+    # However, the logic below will short-circuit the workflow when the `Props Bot` label is not the one being added.
     # Note: The pull_request_target event is used instead of pull_request because this workflow needs permission to comment
     # on the pull request. Because this event grants extra permissions to `GITHUB_TOKEN`, any code changes within the PR
     # should be considered untrusted. See https://securitylab.github.com/research/github-actions-preventing-pwn-requests/.
@@ -45,7 +45,7 @@ jobs:
     #
     # Performs the following steps:
     # - Collects a list of contributor props and leaves a comment.
-    # - Removes the props-bot label, if necessary.
+    # - Removes the Props Bot label, if necessary.
     props-bot:
         name: Generate a list of props
         runs-on: ubuntu-latest
@@ -58,13 +58,13 @@ jobs:
         # - A comment is added to the pull request.
         # - A review is created or commented on (unless PR originates from a fork).
         # - The pull request is opened, synchronized, marked ready for review, or reopened.
-        # - The `props-bot` label is added to the pull request.
+        # - The `Props Bot` label is added to the pull request.
         if: |
             (
               github.event_name == 'issue_comment' && github.event.issue.pull_request ||
               ( contains( fromJSON( '["pull_request_review", "pull_request_review_comment"]' ), github.event_name ) && ! github.event.pull_request.head.repo.fork ) ||
               github.event_name == 'pull_request_target' && github.event.action != 'labeled' ||
-              'props-bot' == github.event.label.name
+              'Props Bot' == github.event.label.name
             ) &&
             ( ! github.event.pull_request.draft && github.event.pull_request.state == 'open' || ! github.event.issue.draft && github.event.issue.state == 'open' )
 
@@ -78,9 +78,9 @@ jobs:
                   # `svn` value only describes the output style.
                   format: 'svn'
 
-            - name: Remove the props-bot label
+            - name: Remove the Props Bot label
               uses: actions/github-script@v7
-              if: ${{ github.event.action == 'labeled' && 'props-bot' == github.event.label.name }}
+              if: ${{ github.event.action == 'labeled' && 'Props Bot' == github.event.label.name }}
               with:
                   retries: 2
                   retry-exempt-status-codes: 418
@@ -89,5 +89,5 @@ jobs:
                         owner: context.repo.owner,
                         repo: context.repo.repo,
                         issue_number: '${{ github.event.number }}',
-                        name: 'props-bot'
+                        name: 'Props Bot'
                       });
