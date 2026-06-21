@@ -272,23 +272,12 @@ class Settings {
 										$option_settings
 									);
 								};
-							} elseif ( 'password' === $option_settings['field']['type'] ) {
-								$option_settings['callback'] = function () use (
-									$sub_page,
-									$section,
-									$option,
-									$option_settings
-								) {
-									$sub_page = Utility::prefix_key( $sub_page );
-									$this->text( $sub_page, $section, $option, $option_settings );
-								};
 							}
-							$prefix_key = Utility::prefix_key( $sub_page );
 							add_settings_field(
 								$option,
 								$option_settings['labels']['name'],
 								$option_settings['callback'],
-								$prefix_key,
+								Utility::prefix_key( $sub_page ),
 								$section
 							);
 						}
@@ -326,7 +315,6 @@ class Settings {
 							$input[ $key ][ $k ] = $this->sanitize_autocomplete( $v );
 							break;
 						case 'text':
-						case 'password':
 						case 'select':
 						default:
 							$input[ $key ][ $k ] = sanitize_text_field( $v );
@@ -405,7 +393,6 @@ class Settings {
 	public function text( string $sub_page, string $section, string $option, array $option_settings ): void {
 		$name  = $this->get_name_field( $sub_page, $section, $option );
 		$value = $this->get_value( $sub_page, $section, $option );
-		$type  = $option_settings['field']['type'] ?? 'text';
 
 		Utility::render_template(
 			sprintf( '%s/includes/templates/admin/settings/fields/text.php', GATHERPRESS_CORE_PATH ),
@@ -416,7 +403,6 @@ class Settings {
 				'label'       => $option_settings['field']['label'] ?? '',
 				'size'        => $option_settings['field']['size'] ?? 'regular',
 				'description' => $option_settings['description'] ?? '',
-				'type'        => $type,
 			),
 			true
 		);

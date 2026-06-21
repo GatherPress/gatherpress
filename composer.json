@@ -15,8 +15,7 @@
 	],
 	"require": {
 		"pmc/unit-test": "dev-main",
-		"php": ">=7.4",
-		"wordpress/wp-ai-client": "^0.2"
+		"php": ">=7.4"
 	},
 	"require-dev": {
 		"dealerdirect/phpcodesniffer-composer-installer": "*",

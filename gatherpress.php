@@ -42,11 +42,6 @@ if ( ! require_once GATHERPRESS_CORE_PATH . '/includes/core/requirements-check.p
 	return;
 }
 
-// Load Composer autoloader for vendor dependencies (e.g., wp-ai-client).
-if ( file_exists( GATHERPRESS_CORE_PATH . '/vendor/autoload.php' ) ) {
-	require_once GATHERPRESS_CORE_PATH . '/vendor/autoload.php';
-}
-
 // Include and register the autoloader class for automatic loading of plugin classes.
 require_once GATHERPRESS_CORE_PATH . '/includes/core/classes/class-autoloader.php';
 GatherPress\Core\Autoloader::register();
