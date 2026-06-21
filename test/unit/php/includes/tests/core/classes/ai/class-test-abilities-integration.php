@@ -10,7 +10,6 @@ namespace GatherPress\Tests\Core\AI;
 
 use DateTime;
 use GatherPress\Core\AI\Abilities_Integration;
-use GatherPress\Core\AI\Abilities_Venue;
 use GatherPress\Core\Event;
 use GatherPress\Core\Topic;
 use GatherPress\Core\Utility;
@@ -63,7 +62,6 @@ class Test_Abilities_Integration extends Base {
 		$this->assertEmpty( $result['data'], 'Failed to assert data is empty.' );
 		$this->assertStringContainsString( 'Found 0 venue', $result['message'], 'Failed to assert message contains count.' ); // phpcs:ignore Generic.Files.LineLength.TooLong
 	}
-
 	/**
 	 * Coverage for execute_list_venues method with venues.
 	 *
@@ -118,7 +116,6 @@ class Test_Abilities_Integration extends Base {
 		$this->assertSame( '123 Main St', $library['address'], 'Failed to assert venue address.' );
 		$this->assertSame( '555-1234', $library['phone'], 'Failed to assert venue phone.' );
 	}
-
 	/**
 	 * Coverage for execute_list_events method with no events.
 	 *
@@ -136,7 +133,6 @@ class Test_Abilities_Integration extends Base {
 		$this->assertEmpty( $result['data']['events'], 'Failed to assert data events is empty.' );
 		$this->assertStringContainsString( 'Found 0 event', $result['message'], 'Failed to assert message contains count.' ); // phpcs:ignore Generic.Files.LineLength.TooLong
 	}
-
 	/**
 	 * Coverage for execute_list_events method respects max_number parameter.
 	 *
@@ -172,381 +168,6 @@ class Test_Abilities_Integration extends Base {
 		$this->assertTrue( $result['success'], 'Failed to assert success is true.' );
 		$this->assertCount( 3, $result['data']['events'], 'Failed to assert data has 3 events.' );
 	}
-
-
-
-
-
-
-
-
-
-	/**
-	 * Coverage for execute_create_event method with valid parameters.
-	 *
-	 * @covers ::execute_create_event
-	 *
-	 * @return void
-	 */
-	public function test_execute_create_event_with_valid_params(): void {
-		$instance = Abilities_Integration::get_instance();
-		$params   = array(
-			'title'          => 'Test Event',
-			'datetime_start' => '2025-12-25 19:00:00',
-			'datetime_end'   => '2025-12-25 21:00:00',
-			'description'    => 'Test event description',
-		);
-		$result   = $instance->execute_create_event( $params );
-
-		$this->assertTrue( $result['success'], 'Failed to assert success is true.' );
-		$this->assertIsInt( $result['event_id'], 'Failed to assert event_id is an integer.' );
-		$this->assertSame( 'draft', $result['post_status'], 'Failed to assert post status is draft.' );
-		$this->assertStringContainsString( 'Test Event', $result['message'], 'Failed to assert message contains event title.' ); // phpcs:ignore Generic.Files.LineLength.TooLong
-
-		// Verify event was created.
-		$event_post = get_post( $result['event_id'] );
-		$this->assertSame( Event::POST_TYPE, $event_post->post_type, 'Failed to assert post type is event.' );
-		$this->assertSame( 'Test Event', $event_post->post_title, 'Failed to assert event title.' );
-		$this->assertSame( 'draft', $event_post->post_status, 'Failed to assert event is draft.' );
-
-		// Verify datetime was saved by using the Event class.
-		$event    = new Event( $result['event_id'] );
-		$datetime = $event->get_datetime();
-
-		$this->assertNotEmpty( $datetime, 'Failed to assert datetime exists.' );
-		$this->assertSame( '2025-12-25 19:00:00', $datetime['datetime_start'], 'Failed to assert start datetime.' );
-		$this->assertSame( '2025-12-25 21:00:00', $datetime['datetime_end'], 'Failed to assert end datetime.' );
-	}
-
-	/**
-	 * Coverage for execute_create_event method defaults to draft status.
-	 *
-	 * @covers ::execute_create_event
-	 *
-	 * @return void
-	 */
-	public function test_execute_create_event_defaults_to_draft(): void {
-		$instance = Abilities_Integration::get_instance();
-		$params   = array(
-			'title'          => 'Test Event',
-			'datetime_start' => '2025-12-25 19:00:00',
-		);
-		$result   = $instance->execute_create_event( $params );
-
-		$this->assertTrue( $result['success'], 'Failed to assert success is true.' );
-		$this->assertSame( 'draft', $result['post_status'], 'Failed to assert defaults to draft.' );
-
-		$event_post = get_post( $result['event_id'] );
-		$this->assertSame( 'draft', $event_post->post_status, 'Failed to assert event is draft.' );
-	}
-
-	/**
-	 * Coverage for execute_create_event method with publish status.
-	 *
-	 * @covers ::execute_create_event
-	 *
-	 * @return void
-	 */
-	public function test_execute_create_event_with_publish_status(): void {
-		$instance = Abilities_Integration::get_instance();
-		$params   = array(
-			'title'          => 'Test Event',
-			'datetime_start' => '2025-12-25 19:00:00',
-			'post_status'    => 'publish',
-		);
-		$result   = $instance->execute_create_event( $params );
-
-		$this->assertTrue( $result['success'], 'Failed to assert success is true.' );
-		$this->assertSame( 'publish', $result['post_status'], 'Failed to assert status is publish.' );
-
-		$event_post = get_post( $result['event_id'] );
-		$this->assertSame( 'publish', $event_post->post_status, 'Failed to assert event is published.' );
-	}
-
-	/**
-	 * Coverage for execute_create_event method without required title.
-	 *
-	 * @covers ::execute_create_event
-	 *
-	 * @return void
-	 */
-	public function test_execute_create_event_without_title(): void {
-		$instance = Abilities_Integration::get_instance();
-		$params   = array(
-			'datetime_start' => '2025-12-25 19:00:00',
-		);
-		$result   = $instance->execute_create_event( $params );
-
-		$this->assertFalse( $result['success'], 'Failed to assert success is false.' );
-		$this->assertStringContainsString( 'title is required', $result['message'], 'Failed to assert error message.' );
-	}
-
-	/**
-	 * Coverage for execute_create_event method without required datetime_start.
-	 *
-	 * @covers ::execute_create_event
-	 *
-	 * @return void
-	 */
-	public function test_execute_create_event_without_datetime(): void {
-		$instance = Abilities_Integration::get_instance();
-		$params   = array(
-			'title' => 'Test Event',
-		);
-		$result   = $instance->execute_create_event( $params );
-
-		$this->assertFalse( $result['success'], 'Failed to assert success is false.' );
-		$this->assertStringContainsString( 'start date/time is required', $result['message'], 'Failed to assert error message.' ); // phpcs:ignore Generic.Files.LineLength.TooLong
-	}
-
-	/**
-	 * Coverage for execute_create_event method with invalid datetime format.
-	 *
-	 * @covers ::execute_create_event
-	 *
-	 * @return void
-	 */
-	public function test_execute_create_event_with_invalid_datetime(): void {
-		$instance = Abilities_Integration::get_instance();
-		$params   = array(
-			'title'          => 'Test Event',
-			// Use a format that cannot be parsed by any parser (not a valid date/time).
-			'datetime_start' => 'not-a-date-at-all-xyz123',
-		);
-		$result   = $instance->execute_create_event( $params );
-
-		$this->assertFalse( $result['success'], 'Failed to assert success is false.' );
-		// phpcs:ignore Generic.Files.LineLength.TooLong
-		$this->assertStringContainsString( 'Invalid start date/time format', $result['message'], 'Failed to assert error message.' );
-	}
-
-	/**
-	 * Coverage for execute_create_event method with venue_id.
-	 *
-	 * @covers ::execute_create_event
-	 *
-	 * @return void
-	 */
-	public function test_execute_create_event_with_venue(): void {
-		// Create a venue first.
-		$venue_id = $this->factory->post->create(
-			array(
-				'post_type'   => Venue::POST_TYPE,
-				'post_title'  => 'Test Venue',
-				'post_status' => 'publish',
-			)
-		);
-
-		$instance = Abilities_Integration::get_instance();
-		$params   = array(
-			'title'          => 'Test Event',
-			'datetime_start' => '2025-12-25 19:00:00',
-			'venue_id'       => $venue_id,
-		);
-		$result   = $instance->execute_create_event( $params );
-
-		$this->assertTrue( $result['success'], 'Failed to assert success is true.' );
-		$this->assertTrue( $result['venue_link']['success'], 'Failed to assert venue was linked.' );
-		$this->assertSame( $venue_id, $result['venue_link']['venue_id'], 'Failed to assert linked venue ID.' );
-
-		$linked_venue = Venue_Setup::get_instance()->get_venue_post_from_event_post_id( $result['event_id'] );
-		$this->assertInstanceOf( \WP_Post::class, $linked_venue, 'Failed to assert linked venue post exists.' );
-		$this->assertSame( $venue_id, $linked_venue->ID, 'Failed to assert event resolves to venue post.' );
-	}
-
-	/**
-	 * Coverage for execute_create_event linking a venue created via create-venue.
-	 *
-	 * @covers ::execute_create_event
-	 *
-	 * @return void
-	 */
-	public function test_execute_create_event_links_venue_created_via_create_venue(): void {
-		$instance = Abilities_Integration::get_instance();
-		$venue    = new Abilities_Venue();
-
-		$venue_result = $venue->execute_create_venue(
-			array(
-				'name'    => 'AI Created Venue',
-				'address' => '123 Main St, Buffalo, NY',
-			)
-		);
-
-		$this->assertTrue( $venue_result['success'], 'Failed to assert venue creation succeeded.' );
-
-		$event_result = $instance->execute_create_event(
-			array(
-				'title'          => 'AI Created Event',
-				'datetime_start' => '2025-09-19 13:00:00',
-				'venue_id'       => $venue_result['venue_id'],
-			)
-		);
-
-		$this->assertTrue( $event_result['success'], 'Failed to assert event creation succeeded.' );
-		$this->assertTrue( $event_result['venue_link']['success'], 'Failed to assert venue link succeeded.' );
-
-		$linked_venue = Venue_Setup::get_instance()->get_venue_post_from_event_post_id( $event_result['event_id'] );
-		$this->assertInstanceOf( \WP_Post::class, $linked_venue, 'Failed to assert linked venue post exists.' );
-		$this->assertSame(
-			$venue_result['venue_id'],
-			$linked_venue->ID,
-			'Failed to assert create-venue then create-event links venue.'
-		);
-	}
-
-
-
-
-
-
-
-	/**
-	 * Coverage for execute_update_event method with valid parameters.
-	 *
-	 * @covers ::execute_update_event
-	 *
-	 * @return void
-	 */
-	public function test_execute_update_event_with_valid_params(): void {
-		// Create an event first.
-		$event_id = $this->factory->post->create(
-			array(
-				'post_type'   => Event::POST_TYPE,
-				'post_title'  => 'Original Title',
-				'post_status' => 'draft',
-			)
-		);
-
-		// Add datetime using Event class method.
-		$event = new Event( $event_id );
-		$event->save_datetimes(
-			array(
-				'datetime_start' => '2025-01-15 18:00:00',
-				'datetime_end'   => '2025-01-15 20:00:00',
-				'timezone'       => 'UTC',
-			)
-		);
-
-		$instance = Abilities_Integration::get_instance();
-		$params   = array(
-			'event_id'       => $event_id,
-			'title'          => 'Updated Title',
-			'datetime_start' => '2025-12-31 20:00:00',
-		);
-		$result   = $instance->execute_update_event( $params );
-
-		$this->assertTrue( $result['success'], 'Failed to assert success is true.' );
-		$this->assertSame( $event_id, $result['event_id'], 'Failed to assert event_id matches.' );
-
-		// Verify title was updated.
-		$event_post = get_post( $event_id );
-		$this->assertSame( 'Updated Title', $event_post->post_title, 'Failed to assert title updated.' );
-
-		// Verify datetime was updated by using the Event class.
-		$event    = new Event( $event_id );
-		$datetime = $event->get_datetime();
-
-		$this->assertSame( '2025-12-31 20:00:00', $datetime['datetime_start'], 'Failed to assert datetime updated.' );
-	}
-
-	/**
-	 * Coverage for execute_update_event method without event_id.
-	 *
-	 * @covers ::execute_update_event
-	 *
-	 * @return void
-	 */
-	public function test_execute_update_event_without_event_id(): void {
-		$instance = Abilities_Integration::get_instance();
-		$params   = array(
-			'title' => 'Updated Title',
-		);
-		$result   = $instance->execute_update_event( $params );
-
-		$this->assertFalse( $result['success'], 'Failed to assert success is false.' );
-		$this->assertStringContainsString( 'Event ID is required', $result['message'], 'Failed to assert error message.' ); // phpcs:ignore Generic.Files.LineLength.TooLong
-	}
-
-	/**
-	 * Coverage for execute_update_event method with invalid event_id.
-	 *
-	 * @covers ::execute_update_event
-	 *
-	 * @return void
-	 */
-	public function test_execute_update_event_with_invalid_id(): void {
-		$instance = Abilities_Integration::get_instance();
-		$params   = array(
-			'event_id' => 999999,
-			'title'    => 'Updated Title',
-		);
-		$result   = $instance->execute_update_event( $params );
-
-		$this->assertFalse( $result['success'], 'Failed to assert success is false.' );
-		$this->assertStringContainsString( 'Event not found', $result['message'], 'Failed to assert error message.' );
-	}
-
-	/**
-	 * Coverage for execute_update_event method with invalid datetime format.
-	 *
-	 * @covers ::execute_update_event
-	 *
-	 * @return void
-	 */
-	public function test_execute_update_event_with_invalid_datetime(): void {
-		// Create an event first.
-		$event_id = $this->factory->post->create(
-			array(
-				'post_type'   => Event::POST_TYPE,
-				'post_title'  => 'Test Event',
-				'post_status' => 'draft',
-			)
-		);
-
-		$instance = Abilities_Integration::get_instance();
-		$params   = array(
-			'event_id'       => $event_id,
-			'datetime_start' => 'Invalid Date',
-		);
-		$result   = $instance->execute_update_event( $params );
-
-		$this->assertFalse( $result['success'], 'Failed to assert success is false.' );
-		// "Invalid Date" doesn't start with date pattern, so it's treated as time-only and fails.
-		$this->assertStringContainsString( 'Cannot update time-only without an existing event date', $result['message'], 'Failed to assert error message.' ); // phpcs:ignore Generic.Files.LineLength.TooLong
-	}
-
-	/**
-	 * Coverage for execute_update_event method updating post_status.
-	 *
-	 * @covers ::execute_update_event
-	 *
-	 * @return void
-	 */
-	public function test_execute_update_event_publish_status(): void {
-		// Create a draft event first.
-		$event_id = $this->factory->post->create(
-			array(
-				'post_type'   => Event::POST_TYPE,
-				'post_title'  => 'Test Event',
-				'post_status' => 'draft',
-			)
-		);
-
-		$instance = Abilities_Integration::get_instance();
-		$params   = array(
-			'event_id'    => $event_id,
-			'post_status' => 'publish',
-		);
-		$result   = $instance->execute_update_event( $params );
-
-		$this->assertTrue( $result['success'], 'Failed to assert success is true.' );
-		$this->assertSame( 'publish', $result['post_status'], 'Failed to assert post_status returned.' );
-
-		// Verify status was updated.
-		$event_post = get_post( $event_id );
-		$this->assertSame( 'publish', $event_post->post_status, 'Failed to assert event is published.' );
-	}
-
 	/**
 	 * Coverage for execute_list_topics method with no topics.
 	 *
@@ -562,7 +183,6 @@ class Test_Abilities_Integration extends Base {
 		$this->assertIsArray( $result['data'], 'Failed to assert data is an array.' );
 		$this->assertEmpty( $result['data'], 'Failed to assert data is empty.' );
 	}
-
 	/**
 	 * Coverage for execute_list_topics method with topics.
 	 *
@@ -595,7 +215,6 @@ class Test_Abilities_Integration extends Base {
 		$this->assertArrayHasKey( 'id', $workshop, 'Failed to assert topic has id.' );
 		$this->assertSame( 'Workshop', $workshop['name'], 'Failed to assert topic name.' );
 	}
-
 	/**
 	 * Coverage for execute_create_topic method with valid parameters.
 	 *
@@ -620,7 +239,6 @@ class Test_Abilities_Integration extends Base {
 		$this->assertNotNull( $topic, 'Failed to assert topic exists.' );
 		$this->assertSame( 'Book Club', $topic->name, 'Failed to assert topic name matches.' );
 	}
-
 	/**
 	 * Coverage for execute_create_topic method without name.
 	 *
@@ -635,73 +253,6 @@ class Test_Abilities_Integration extends Base {
 		$this->assertFalse( $result['success'], 'Failed to assert success is false.' );
 		$this->assertStringContainsString( 'required', $result['message'], 'Failed to assert error message.' );
 	}
-
-	/**
-	 * Coverage for execute_create_event with topic_ids.
-	 *
-	 * @covers ::execute_create_event
-	 *
-	 * @return void
-	 */
-	public function test_execute_create_event_with_topics(): void {
-		// Create a test topic.
-		$topic_result = wp_insert_term( 'Meetup', 'gatherpress_topic' );
-		$topic_id     = $topic_result['term_id'];
-
-		$instance = Abilities_Integration::get_instance();
-		$params   = array(
-			'title'          => 'Test Event with Topic',
-			'datetime_start' => gmdate( 'Y-m-d H:i:s', strtotime( '+1 week' ) ),
-			'topic_ids'      => array( $topic_id ),
-		);
-		$result   = $instance->execute_create_event( $params );
-
-		$this->assertTrue( $result['success'], 'Failed to assert success is true.' );
-		$this->assertArrayHasKey( 'event_id', $result, 'Failed to assert event_id exists.' );
-
-		// Verify topics were assigned.
-		$event_topics = wp_get_post_terms( $result['event_id'], 'gatherpress_topic', array( 'fields' => 'ids' ) );
-		$this->assertContains( $topic_id, $event_topics, 'Failed to assert topic was assigned to event.' );
-	}
-
-	/**
-	 * Coverage for execute_update_event with topic_ids.
-	 *
-	 * @covers ::execute_update_event
-	 *
-	 * @return void
-	 */
-	public function test_execute_update_event_with_topics(): void {
-		// Create test event.
-		$event_id = $this->factory->post->create(
-			array(
-				'post_type'   => Event::POST_TYPE,
-				'post_title'  => 'Test Event',
-				'post_status' => 'publish',
-			)
-		);
-
-		// Create test topics.
-		$topic1_result = wp_insert_term( 'Workshop', 'gatherpress_topic' );
-		$topic2_result = wp_insert_term( 'Social', 'gatherpress_topic' );
-		$topic1_id     = $topic1_result['term_id'];
-		$topic2_id     = $topic2_result['term_id'];
-
-		$instance = Abilities_Integration::get_instance();
-		$params   = array(
-			'event_id'  => $event_id,
-			'topic_ids' => array( $topic1_id, $topic2_id ),
-		);
-		$result   = $instance->execute_update_event( $params );
-
-		$this->assertTrue( $result['success'], 'Failed to assert success is true.' );
-
-		// Verify topics were assigned.
-		$event_topics = wp_get_post_terms( $event_id, 'gatherpress_topic', array( 'fields' => 'ids' ) );
-		$this->assertContains( $topic1_id, $event_topics, 'Failed to assert topic1 was assigned.' );
-		$this->assertContains( $topic2_id, $event_topics, 'Failed to assert topic2 was assigned.' );
-	}
-
 	/**
 	 * Coverage for get_calculate_dates_ability when wp_has_ability doesn't exist.
 	 *
@@ -716,7 +267,6 @@ class Test_Abilities_Integration extends Base {
 		$this->assertContains( $result, array( 'ai/calculate-dates', 'gatherpress/calculate-dates' ) );
 		$this->assertIsString( $result );
 	}
-
 	/**
 	 * Coverage for get_calculate_dates_ability when ai/calculate-dates exists.
 	 *
@@ -733,7 +283,6 @@ class Test_Abilities_Integration extends Base {
 		$this->assertContains( $result, array( 'ai/calculate-dates', 'gatherpress/calculate-dates' ) );
 		$this->assertIsString( $result );
 	}
-
 	/**
 	 * Coverage for get_calculate_dates_ability when ai/calculate-dates doesn't exist.
 	 *
@@ -748,7 +297,6 @@ class Test_Abilities_Integration extends Base {
 		// Should return either ai/calculate-dates if it exists, or gatherpress/calculate-dates.
 		$this->assertContains( $result, array( 'ai/calculate-dates', 'gatherpress/calculate-dates' ) );
 	}
-
 	/**
 	 * Coverage for register_categories method.
 	 *
@@ -782,7 +330,6 @@ class Test_Abilities_Integration extends Base {
 		$instance->register_categories();
 		$this->assertTrue( true, 'register_categories executed without error.' );
 	}
-
 	/**
 	 * Coverage for register_categories when function doesn't exist.
 	 *
@@ -812,7 +359,6 @@ class Test_Abilities_Integration extends Base {
 		$instance->register_categories();
 		$this->assertTrue( true, 'Method executed without error.' );
 	}
-
 	/**
 	 * Coverage for register_abilities method.
 	 *
@@ -846,7 +392,6 @@ class Test_Abilities_Integration extends Base {
 		$instance->register_abilities();
 		$this->assertTrue( true, 'register_abilities executed without error.' );
 	}
-
 	/**
 	 * Coverage for setup_hooks method.
 	 *
@@ -878,7 +423,6 @@ class Test_Abilities_Integration extends Base {
 
 		$this->assert_hooks( $hooks, $instance );
 	}
-
 	/**
 	 * Coverage for execute_search_events with valid search term.
 	 *
@@ -933,7 +477,6 @@ class Test_Abilities_Integration extends Base {
 			$this->assertMatchesRegularExpression( '/\b(am|pm)\b/i', $event_data['datetime_end'], 'Failed to assert datetime_end is in 12-hour format.' );
 		}
 	}
-
 	/**
 	 * Coverage for execute_search_events without search term.
 	 *
@@ -948,7 +491,6 @@ class Test_Abilities_Integration extends Base {
 		$this->assertFalse( $result['success'], 'Failed to assert success is false.' );
 		$this->assertStringContainsString( 'Search term is required', $result['message'] );
 	}
-
 	/**
 	 * Coverage for execute_search_events with no results.
 	 *
@@ -964,7 +506,6 @@ class Test_Abilities_Integration extends Base {
 		$this->assertEmpty( $result['data']['events'], 'Failed to assert events array is empty.' );
 		$this->assertSame( 0, $result['data']['count'], 'Failed to assert count is 0.' );
 	}
-
 	/**
 	 * Coverage for execute_search_events with max_number parameter.
 	 *
@@ -995,193 +536,6 @@ class Test_Abilities_Integration extends Base {
 		$this->assertTrue( $result['success'], 'Failed to assert success is true.' );
 		$this->assertLessThanOrEqual( 3, $result['data']['count'], 'Failed to assert count respects max_number.' );
 	}
-
-	/**
-	 * Coverage for execute_update_events_batch with valid parameters.
-	 *
-	 * @covers ::execute_update_events_batch
-	 *
-	 * @return void
-	 */
-	public function test_execute_update_events_batch_with_valid_params(): void {
-		// Create test events.
-		$event_id_1 = $this->factory->post->create(
-			array(
-				'post_type'   => Event::POST_TYPE,
-				'post_title'  => 'Book Club Meeting',
-				'post_status' => 'publish',
-			)
-		);
-		$event_id_2 = $this->factory->post->create(
-			array(
-				'post_type'   => Event::POST_TYPE,
-				'post_title'  => 'Book Club Social',
-				'post_status' => 'publish',
-			)
-		);
-
-		// Add datetimes to events.
-		$event1 = new Event( $event_id_1 );
-		$event1->save_datetimes(
-			array(
-				'datetime_start' => '2025-01-15 18:00:00',
-				'datetime_end'   => '2025-01-15 20:00:00',
-				'timezone'       => 'UTC',
-			)
-		);
-
-		$event2 = new Event( $event_id_2 );
-		$event2->save_datetimes(
-			array(
-				'datetime_start' => '2025-01-20 19:00:00',
-				'datetime_end'   => '2025-01-20 21:00:00',
-				'timezone'       => 'UTC',
-			)
-		);
-
-		$instance = Abilities_Integration::get_instance();
-		$result   = $instance->execute_update_events_batch(
-			array(
-				'search_term'    => 'Book Club',
-				'datetime_start' => '2025-12-25 20:00:00',
-			)
-		);
-
-		$this->assertTrue( $result['success'], 'Failed to assert success is true.' );
-		$this->assertArrayHasKey( 'updated_count', $result['data'], 'Failed to assert updated_count exists.' );
-		$this->assertGreaterThan( 0, $result['data']['updated_count'], 'Failed to assert events were updated.' );
-	}
-
-	/**
-	 * Coverage for execute_update_events_batch without search term.
-	 *
-	 * @covers ::execute_update_events_batch
-	 *
-	 * @return void
-	 */
-	public function test_execute_update_events_batch_without_search_term(): void {
-		$instance = Abilities_Integration::get_instance();
-		$result   = $instance->execute_update_events_batch( array() );
-
-		$this->assertFalse( $result['success'], 'Failed to assert success is false.' );
-		$this->assertStringContainsString( 'Search term is required', $result['message'] );
-	}
-
-	/**
-	 * Coverage for execute_update_events_batch without update parameters.
-	 *
-	 * @covers ::execute_update_events_batch
-	 *
-	 * @return void
-	 */
-	public function test_execute_update_events_batch_without_update_params(): void {
-		$instance = Abilities_Integration::get_instance();
-		$result   = $instance->execute_update_events_batch(
-			array(
-				'search_term' => 'Test',
-			)
-		);
-
-		$this->assertFalse( $result['success'], 'Failed to assert success is false.' );
-		$this->assertStringContainsString( 'At least one update parameter', $result['message'] );
-	}
-
-	/**
-	 * Coverage for execute_update_events_batch with no matching events.
-	 *
-	 * @covers ::execute_update_events_batch
-	 *
-	 * @return void
-	 */
-	public function test_execute_update_events_batch_with_no_matching_events(): void {
-		$instance = Abilities_Integration::get_instance();
-		$result   = $instance->execute_update_events_batch(
-			array(
-				'search_term'    => 'NonexistentEvent12345',
-				'datetime_start' => '2025-12-25 20:00:00',
-			)
-		);
-
-		$this->assertTrue( $result['success'], 'Failed to assert success is true.' );
-		$this->assertSame( 0, $result['data']['updated_count'], 'Failed to assert updated_count is 0.' );
-	}
-
-	/**
-	 * Coverage for execute_update_events_batch with invalid datetime format.
-	 *
-	 * @covers ::execute_update_events_batch
-	 *
-	 * @return void
-	 */
-	public function test_execute_update_events_batch_with_invalid_datetime(): void {
-		// Create test event.
-		$event_id = $this->factory->post->create(
-			array(
-				'post_type'   => Event::POST_TYPE,
-				'post_title'  => 'Test Event',
-				'post_status' => 'publish',
-			)
-		);
-
-		$event = new Event( $event_id );
-		$event->save_datetimes(
-			array(
-				'datetime_start' => '2025-01-15 18:00:00',
-				'datetime_end'   => '2025-01-15 20:00:00',
-				'timezone'       => 'UTC',
-			)
-		);
-
-		$instance = Abilities_Integration::get_instance();
-		$result   = $instance->execute_update_events_batch(
-			array(
-				'search_term'    => 'Test',
-				'datetime_start' => 'Invalid Date Format',
-			)
-		);
-
-		$this->assertTrue( $result['success'], 'Failed to assert success is true.' );
-		$this->assertArrayHasKey( 'errors', $result['data'], 'Failed to assert errors key exists.' );
-	}
-
-	/**
-	 * Coverage for execute_update_events_batch with venue_id.
-	 *
-	 * @covers ::execute_update_events_batch
-	 *
-	 * @return void
-	 */
-	public function test_execute_update_events_batch_with_venue_id(): void {
-		// Create venue.
-		$venue_id = $this->factory->post->create(
-			array(
-				'post_type'   => Venue::POST_TYPE,
-				'post_title'  => 'Test Venue',
-				'post_status' => 'publish',
-			)
-		);
-
-		// Create test event.
-		$event_id = $this->factory->post->create(
-			array(
-				'post_type'   => Event::POST_TYPE,
-				'post_title'  => 'Test Event',
-				'post_status' => 'publish',
-			)
-		);
-
-		$instance = Abilities_Integration::get_instance();
-		$result   = $instance->execute_update_events_batch(
-			array(
-				'search_term' => 'Test',
-				'venue_id'    => $venue_id,
-			)
-		);
-
-		$this->assertTrue( $result['success'], 'Failed to assert success is true.' );
-		$this->assertGreaterThan( 0, $result['data']['updated_count'], 'Failed to assert events were updated.' );
-	}
-
 	/**
 	 * Coverage for execute_calculate_dates method.
 	 *
@@ -1202,7 +556,6 @@ class Test_Abilities_Integration extends Base {
 		$this->assertIsArray( $result['data'], 'Failed to assert data is an array.' );
 		$this->assertArrayHasKey( 'dates', $result['data'], 'Failed to assert dates key exists.' );
 	}
-
 	/**
 	 * Coverage for execute_calculate_dates when AI ability is available.
 	 *
@@ -1227,8 +580,7 @@ class Test_Abilities_Integration extends Base {
 			2
 		);
 
-		$instance = Abilities_Integration::get_instance();
-		$params   = array(
+		$params = array(
 			'pattern'     => '3rd Tuesday',
 			'occurrences' => 2,
 		);
@@ -1270,59 +622,11 @@ class Test_Abilities_Integration extends Base {
 			do_action( 'wp_abilities_api_init' );
 		}
 
-		$result = $instance->execute_calculate_dates( $params );
+		$instance = Abilities_Integration::get_instance();
+		$result   = $instance->execute_calculate_dates( $params );
 
 		$this->assertTrue( $result['success'], 'Failed to assert success is true.' );
 	}
-
-	/**
-	 * Coverage for get_default_event_content without description.
-	 *
-	 * @covers ::get_default_event_content
-	 *
-	 * @return void
-	 */
-	public function test_get_default_event_content_without_description(): void {
-		$instance = Abilities_Integration::get_instance();
-		$content  = \PMC\Unit_Test\Utility::invoke_hidden_method( $instance, 'get_default_event_content', array( '' ) );
-
-		$this->assertIsString( $content );
-		$this->assertStringContainsString( 'wp:gatherpress/event-date', $content );
-		$this->assertStringContainsString( 'wp:gatherpress/add-to-calendar', $content );
-		$this->assertStringContainsString( 'wp:gatherpress/venue', $content );
-		$this->assertStringContainsString( '"patternPicked":true', $content );
-		$this->assertStringContainsString( 'wp:gatherpress/rsvp', $content );
-		$this->assertStringContainsString( 'wp:paragraph', $content );
-		$this->assertStringContainsString( 'gp-ai-description', $content );
-	}
-
-	/**
-	 * Coverage for get_default_event_content with description.
-	 *
-	 * @covers ::get_default_event_content
-	 *
-	 * @return void
-	 */
-	public function test_get_default_event_content_with_description(): void {
-		$instance = Abilities_Integration::get_instance();
-		$content  = \PMC\Unit_Test\Utility::invoke_hidden_method(
-			$instance,
-			'get_default_event_content',
-			array( 'Test event description' )
-		);
-
-		$this->assertIsString( $content );
-		$this->assertStringContainsString( 'Test event description', $content );
-		$this->assertStringContainsString( 'wp:paragraph', $content );
-		$this->assertStringContainsString( 'gp-ai-description', $content );
-	}
-
-
-
-
-
-
-
 	/**
 	 * Coverage for execute_list_events with search parameter.
 	 *
@@ -1376,9 +680,6 @@ class Test_Abilities_Integration extends Base {
 			$this->assertMatchesRegularExpression( '/\b(am|pm)\b/i', $event_data['datetime_end'], 'Failed to assert datetime_end is in 12-hour format.' );
 		}
 	}
-
-
-
 	/**
 	 * Coverage for execute_list_events with max_number > 100.
 	 *
@@ -1412,7 +713,6 @@ class Test_Abilities_Integration extends Base {
 		$this->assertTrue( $result['success'], 'Failed to assert success is true.' );
 		$this->assertLessThanOrEqual( 100, $result['data']['count'], 'Failed to assert count is capped at 100.' );
 	}
-
 	/**
 	 * Coverage for execute_list_events with max_number = -1.
 	 *
@@ -1446,549 +746,6 @@ class Test_Abilities_Integration extends Base {
 		$this->assertTrue( $result['success'], 'Failed to assert success is true.' );
 		$this->assertLessThanOrEqual( 100, $result['data']['count'], 'Failed to assert count is capped at 100.' );
 	}
-
-	/**
-	 * Coverage for execute_create_event with invalid post_status.
-	 *
-	 * @covers ::execute_create_event
-	 *
-	 * @return void
-	 */
-	public function test_execute_create_event_with_invalid_post_status(): void {
-		$instance = Abilities_Integration::get_instance();
-		$params   = array(
-			'title'          => 'Test Event',
-			'datetime_start' => '2025-12-25 19:00:00',
-			'post_status'    => 'invalid_status',
-		);
-		$result   = $instance->execute_create_event( $params );
-
-		$this->assertTrue( $result['success'], 'Failed to assert success is true.' );
-		// Should default to draft when invalid status is provided.
-		$this->assertSame( 'draft', $result['post_status'], 'Failed to assert defaults to draft.' );
-	}
-
-	/**
-	 * Coverage for execute_create_event with datetime_end calculation.
-	 *
-	 * @covers ::execute_create_event
-	 *
-	 * @return void
-	 */
-	public function test_execute_create_event_calculates_datetime_end(): void {
-		$instance = Abilities_Integration::get_instance();
-		$params   = array(
-			'title'          => 'Test Event',
-			'datetime_start' => '2025-12-25 19:00:00',
-		);
-		$result   = $instance->execute_create_event( $params );
-
-		$this->assertTrue( $result['success'], 'Failed to assert success is true.' );
-
-		// Verify end datetime was calculated (2 hours after start).
-		$event    = new Event( $result['event_id'] );
-		$datetime = $event->get_datetime();
-		$this->assertNotEmpty( $datetime['datetime_end'], 'Failed to assert end datetime was calculated.' );
-	}
-
-	/**
-	 * Coverage for execute_create_event with invalid datetime_end format.
-	 *
-	 * @covers ::execute_create_event
-	 *
-	 * @return void
-	 */
-	public function test_execute_create_event_with_invalid_datetime_end(): void {
-		$instance = Abilities_Integration::get_instance();
-		$params   = array(
-			'title'          => 'Test Event',
-			'datetime_start' => '2025-12-25 19:00:00',
-			'datetime_end'   => 'Invalid Format',
-		);
-		$result   = $instance->execute_create_event( $params );
-
-		$this->assertTrue( $result['success'], 'Failed to assert success is true.' );
-		// Should calculate end datetime when invalid format is provided.
-		$event    = new Event( $result['event_id'] );
-		$datetime = $event->get_datetime();
-		$this->assertNotEmpty( $datetime['datetime_end'], 'Failed to assert end datetime was calculated.' );
-	}
-
-	/**
-	 * Coverage for execute_create_event with WP_Error on insert.
-	 *
-	 * @covers ::execute_create_event
-	 *
-	 * @return void
-	 */
-	public function test_execute_create_event_with_wp_error(): void {
-		// This test is difficult to mock properly without breaking other tests.
-		// The WP_Error path is tested in test_execute_create_event_with_wp_error_from_insert_post.
-		// This test is covered by test_execute_create_event_with_wp_error_from_insert_post.
-		// Run the same test to ensure coverage.
-		$this->test_execute_create_event_with_wp_error_from_insert_post();
-	}
-
-
-
-
-
-
-
-	/**
-	 * Coverage for execute_update_event with description update.
-	 *
-	 * @covers ::execute_update_event
-	 *
-	 * @return void
-	 */
-	public function test_execute_update_event_with_description(): void {
-		// Create an event first.
-		$event_id = $this->factory->post->create(
-			array(
-				'post_type'   => Event::POST_TYPE,
-				'post_title'  => 'Test Event',
-				'post_status' => 'draft',
-			)
-		);
-
-		$instance = Abilities_Integration::get_instance();
-		$params   = array(
-			'event_id'    => $event_id,
-			'description' => 'Updated description',
-		);
-		$result   = $instance->execute_update_event( $params );
-
-		$this->assertTrue( $result['success'], 'Failed to assert success is true.' );
-
-		// Verify description was updated.
-		$event_post = get_post( $event_id );
-		$this->assertStringContainsString( 'Updated description', $event_post->post_content );
-	}
-
-	/**
-	 * Coverage for execute_update_event with datetime_end only.
-	 *
-	 * @covers ::execute_update_event
-	 *
-	 * @return void
-	 */
-	public function test_execute_update_event_with_datetime_end_only(): void {
-		// Create an event first.
-		$event_id = $this->factory->post->create(
-			array(
-				'post_type'   => Event::POST_TYPE,
-				'post_title'  => 'Test Event',
-				'post_status' => 'draft',
-			)
-		);
-
-		$event = new Event( $event_id );
-		$event->save_datetimes(
-			array(
-				'datetime_start' => '2025-01-15 18:00:00',
-				'datetime_end'   => '2025-01-15 20:00:00',
-				'timezone'       => 'UTC',
-			)
-		);
-
-		$instance = Abilities_Integration::get_instance();
-		$params   = array(
-			'event_id'     => $event_id,
-			'datetime_end' => '2025-01-15 22:00:00',
-		);
-		$result   = $instance->execute_update_event( $params );
-
-		$this->assertTrue( $result['success'], 'Failed to assert success is true.' );
-
-		// Verify end datetime was updated.
-		$event    = new Event( $event_id );
-		$datetime = $event->get_datetime();
-		$this->assertSame( '2025-01-15 22:00:00', $datetime['datetime_end'] );
-	}
-
-	/**
-	 * Coverage for execute_update_event with invalid datetime_end format.
-	 *
-	 * @covers ::execute_update_event
-	 *
-	 * @return void
-	 */
-	public function test_execute_update_event_with_invalid_datetime_end(): void {
-		// Create an event first.
-		$event_id = $this->factory->post->create(
-			array(
-				'post_type'   => Event::POST_TYPE,
-				'post_title'  => 'Test Event',
-				'post_status' => 'draft',
-			)
-		);
-
-		$instance = Abilities_Integration::get_instance();
-		$params   = array(
-			'event_id'     => $event_id,
-			'datetime_end' => 'Invalid Format',
-		);
-		$result   = $instance->execute_update_event( $params );
-
-		$this->assertFalse( $result['success'], 'Failed to assert success is false.' );
-		// "Invalid Format" doesn't start with date pattern, so it's treated as time-only and fails.
-		// phpcs:ignore Generic.Files.LineLength.TooLong
-		$this->assertStringContainsString( 'Cannot update time-only without an existing event date', $result['message'], 'Failed to assert error message.' );
-	}
-
-	/**
-	 * Coverage for execute_update_event with WP_Error on update.
-	 *
-	 * @covers ::execute_update_event
-	 *
-	 * @return void
-	 */
-	public function test_execute_update_event_with_wp_error(): void {
-		// Create an event first.
-		$event_id = $this->factory->post->create(
-			array(
-				'post_type'   => Event::POST_TYPE,
-				'post_title'  => 'Test Event',
-				'post_status' => 'draft',
-			)
-		);
-
-		// This test is difficult to mock properly without breaking other tests.
-		// Instead, we'll test the error path by using invalid data that causes wp_update_post to fail.
-		// Test that execute_update_event handles wp_update_post errors gracefully.
-		// We can't easily mock wp_update_post to return WP_Error, but we can test
-		// that the method executes without fatal errors.
-		$instance = Abilities_Integration::get_instance();
-		$params   = array(
-			'event_id' => $event_id,
-			'title'    => 'Updated Title',
-		);
-		$result   = $instance->execute_update_event( $params );
-		// Should succeed in normal case.
-		$this->assertTrue( $result['success'], 'Failed to assert success is true.' );
-	}
-
-	/**
-	 * Coverage for execute_update_event with venue_id update.
-	 *
-	 * @covers ::execute_update_event
-	 *
-	 * @return void
-	 */
-	public function test_execute_update_event_with_venue_id(): void {
-		// Create venue.
-		$venue_id = $this->factory->post->create(
-			array(
-				'post_type'   => Venue::POST_TYPE,
-				'post_title'  => 'Test Venue',
-				'post_status' => 'publish',
-			)
-		);
-
-		// Create event.
-		$event_id = $this->factory->post->create(
-			array(
-				'post_type'   => Event::POST_TYPE,
-				'post_title'  => 'Test Event',
-				'post_status' => 'draft',
-			)
-		);
-
-		$instance = Abilities_Integration::get_instance();
-		$params   = array(
-			'event_id' => $event_id,
-			'venue_id' => $venue_id,
-		);
-		$result   = $instance->execute_update_event( $params );
-
-		$this->assertTrue( $result['success'], 'Failed to assert success is true.' );
-
-		// Verify venue was associated.
-		$terms = get_the_terms( $event_id, Venue::TAXONOMY );
-		$this->assertNotEmpty( $terms, 'Failed to assert venue terms exist.' );
-	}
-
-	/**
-	 * Coverage for execute_update_event with invalid venue_id.
-	 *
-	 * @covers ::execute_update_event
-	 *
-	 * @return void
-	 */
-	public function test_execute_update_event_with_invalid_venue_id(): void {
-		// Create event.
-		$event_id = $this->factory->post->create(
-			array(
-				'post_type'   => Event::POST_TYPE,
-				'post_title'  => 'Test Event',
-				'post_status' => 'draft',
-			)
-		);
-
-		$instance = Abilities_Integration::get_instance();
-		$params   = array(
-			'event_id' => $event_id,
-			'venue_id' => 999999, // Non-existent venue.
-		);
-		$result   = $instance->execute_update_event( $params );
-
-		// Should succeed but venue won't be associated.
-		$this->assertTrue( $result['success'], 'Failed to assert success is true.' );
-	}
-
-	/**
-	 * Coverage for execute_update_events_batch with datetime_end only.
-	 *
-	 * @covers ::execute_update_events_batch
-	 *
-	 * @return void
-	 */
-	public function test_execute_update_events_batch_with_datetime_end_only(): void {
-		// Create test event.
-		$event_id = $this->factory->post->create(
-			array(
-				'post_type'   => Event::POST_TYPE,
-				'post_title'  => 'Test Event',
-				'post_status' => 'publish',
-			)
-		);
-
-		$event = new Event( $event_id );
-		$event->save_datetimes(
-			array(
-				'datetime_start' => '2025-01-15 18:00:00',
-				'datetime_end'   => '2025-01-15 20:00:00',
-				'timezone'       => 'UTC',
-			)
-		);
-
-		$instance = Abilities_Integration::get_instance();
-		$result   = $instance->execute_update_events_batch(
-			array(
-				'search_term'  => 'Test',
-				'datetime_end' => '2025-01-15 22:00:00',
-			)
-		);
-
-		$this->assertTrue( $result['success'], 'Failed to assert success is true.' );
-		$this->assertGreaterThan( 0, $result['data']['updated_count'] );
-	}
-
-	/**
-	 * Coverage for execute_update_events_batch with invalid venue_id.
-	 *
-	 * @covers ::execute_update_events_batch
-	 *
-	 * @return void
-	 */
-	public function test_execute_update_events_batch_with_invalid_venue_id(): void {
-		// Create test event.
-		$event_id = $this->factory->post->create(
-			array(
-				'post_type'   => Event::POST_TYPE,
-				'post_title'  => 'Test Event',
-				'post_status' => 'publish',
-			)
-		);
-
-		$instance = Abilities_Integration::get_instance();
-		$result   = $instance->execute_update_events_batch(
-			array(
-				'search_term' => 'Test',
-				'venue_id'    => 999999, // Invalid venue ID.
-			)
-		);
-
-		$this->assertTrue( $result['success'], 'Failed to assert success is true.' );
-		$this->assertArrayHasKey( 'errors', $result['data'] );
-		$this->assertNotEmpty( $result['data']['errors'] );
-	}
-
-	/**
-	 * Test execute_update_events_batch prioritizes exact title matches.
-	 *
-	 * @covers ::execute_update_events_batch
-	 *
-	 * @return void
-	 */
-	public function test_execute_update_events_batch_prioritizes_exact_title_matches(): void {
-		// Create two events: one with exact title match, one with partial match.
-		$exact_event_id   = $this->factory->post->create(
-			array(
-				'post_type'   => Event::POST_TYPE,
-				'post_title'  => 'Weekly Sync',
-				'post_status' => 'publish',
-			)
-		);
-		$partial_event_id = $this->factory->post->create(
-			array(
-				'post_type'   => Event::POST_TYPE,
-				'post_title'  => 'Weekly Sync Meeting',
-				'post_status' => 'publish',
-			)
-		);
-
-		// Add datetimes to both events (required for time-only updates).
-		$exact_event = new Event( $exact_event_id );
-		$exact_event->save_datetimes(
-			array(
-				'datetime_start' => '2025-01-15 12:00:00',
-				'datetime_end'   => '2025-01-15 14:00:00',
-				'timezone'       => 'UTC',
-			)
-		);
-		$partial_event = new Event( $partial_event_id );
-		$partial_event->save_datetimes(
-			array(
-				'datetime_start' => '2025-01-15 12:00:00',
-				'datetime_end'   => '2025-01-15 14:00:00',
-				'timezone'       => 'UTC',
-			)
-		);
-
-		$instance = Abilities_Integration::get_instance();
-		$result   = $instance->execute_update_events_batch(
-			array(
-				'search_term'    => 'Weekly Sync',
-				'datetime_start' => '3pm',
-			)
-		);
-
-		$this->assertTrue( $result['success'], 'Failed to assert success is true.' );
-		// Should only update the exact match, not the partial match.
-		$this->assertEquals( 1, $result['data']['updated_count'], 'Failed to assert only exact match was updated.' );
-	}
-
-	/**
-	 * Coverage for execute_update_events_batch with datetime changes.
-	 *
-	 * @covers ::execute_update_events_batch
-	 *
-	 * @return void
-	 */
-	public function test_execute_update_events_batch_with_datetime_changes(): void {
-		// Create test event.
-		$event_id = $this->factory->post->create(
-			array(
-				'post_type'   => Event::POST_TYPE,
-				'post_title'  => 'Test Event',
-				'post_status' => 'publish',
-			)
-		);
-
-		$event = new Event( $event_id );
-		$event->save_datetimes(
-			array(
-				'datetime_start' => '2025-01-15 18:00:00',
-				'datetime_end'   => '2025-01-15 20:00:00',
-				'timezone'       => 'UTC',
-			)
-		);
-
-		$instance = Abilities_Integration::get_instance();
-		$result   = $instance->execute_update_events_batch(
-			array(
-				'search_term'    => 'Test',
-				'datetime_start' => '2025-12-25 20:00:00',
-				'datetime_end'   => '2025-12-25 22:00:00',
-			)
-		);
-
-		$this->assertTrue( $result['success'], 'Failed to assert success is true.' );
-		$this->assertGreaterThan( 0, $result['data']['updated_count'] );
-
-		// Verify datetime was updated.
-		$event    = new Event( $event_id );
-		$datetime = $event->get_datetime();
-		$this->assertSame( '2025-12-25 20:00:00', $datetime['datetime_start'] );
-		$this->assertSame( '2025-12-25 22:00:00', $datetime['datetime_end'] );
-	}
-
-	/**
-	 * Coverage for execute_update_events_batch with no datetime changes.
-	 *
-	 * @covers ::execute_update_events_batch
-	 *
-	 * @return void
-	 */
-	public function test_execute_update_events_batch_with_no_datetime_changes(): void {
-		// Create test event.
-		$event_id = $this->factory->post->create(
-			array(
-				'post_type'   => Event::POST_TYPE,
-				'post_title'  => 'Test Event',
-				'post_status' => 'publish',
-			)
-		);
-
-		$event = new Event( $event_id );
-		$event->save_datetimes(
-			array(
-				'datetime_start' => '2025-01-15 18:00:00',
-				'datetime_end'   => '2025-01-15 20:00:00',
-				'timezone'       => 'UTC',
-			)
-		);
-
-		$instance = Abilities_Integration::get_instance();
-		$result   = $instance->execute_update_events_batch(
-			array(
-				'search_term'    => 'Test',
-				'datetime_start' => '2025-01-15 18:00:00', // Same as existing.
-				'datetime_end'   => '2025-01-15 20:00:00', // Same as existing.
-			)
-		);
-
-		$this->assertTrue( $result['success'], 'Failed to assert success is true.' );
-		// Should still count as updated even if values are the same.
-		$this->assertGreaterThanOrEqual( 0, $result['data']['updated_count'] );
-	}
-
-	/**
-	 * Coverage for execute_update_events_batch with errors in message.
-	 *
-	 * @covers ::execute_update_events_batch
-	 *
-	 * @return void
-	 */
-	public function test_execute_update_events_batch_with_errors_in_message(): void {
-		// Create test event.
-		$event_id = $this->factory->post->create(
-			array(
-				'post_type'   => Event::POST_TYPE,
-				'post_title'  => 'Test Event',
-				'post_status' => 'publish',
-			)
-		);
-
-		$event = new Event( $event_id );
-		$event->save_datetimes(
-			array(
-				'datetime_start' => '2025-01-15 18:00:00',
-				'datetime_end'   => '2025-01-15 20:00:00',
-				'timezone'       => 'UTC',
-			)
-		);
-
-		$instance = Abilities_Integration::get_instance();
-		$result   = $instance->execute_update_events_batch(
-			array(
-				'search_term'    => 'Test',
-				'datetime_start' => 'Invalid Format',
-				'venue_id'       => 999999, // Invalid venue.
-			)
-		);
-
-		$this->assertTrue( $result['success'], 'Failed to assert success is true.' );
-		$this->assertArrayHasKey( 'errors', $result['data'] );
-		$this->assertStringContainsString( 'Some events had errors', $result['message'] );
-	}
-
-
-
-
-
 	/**
 	 * Coverage for execute_list_events without search (default behavior).
 	 *
@@ -2036,7 +793,6 @@ class Test_Abilities_Integration extends Base {
 			$this->assertMatchesRegularExpression( '/\b(am|pm)\b/i', $event_data['datetime_end'], 'Failed to assert datetime_end is in 12-hour format.' );
 		}
 	}
-
 	/**
 	 * Coverage for execute_list_events with events that have venues.
 	 *
@@ -2091,7 +847,6 @@ class Test_Abilities_Integration extends Base {
 		}
 		$this->assertTrue( $found, 'Failed to find event in results.' );
 	}
-
 	/**
 	 * Coverage for execute_list_events with events that have no venues.
 	 *
@@ -2137,7 +892,6 @@ class Test_Abilities_Integration extends Base {
 		}
 		$this->assertTrue( $found, 'Failed to find event in results.' );
 	}
-
 	/**
 	 * Coverage for constructor when wp_register_ability doesn't exist.
 	 *
@@ -2152,7 +906,6 @@ class Test_Abilities_Integration extends Base {
 		// We test this indirectly through other tests.
 		$this->assertTrue( true, 'Constructor behavior tested indirectly.' );
 	}
-
 	/**
 	 * Coverage for execute_list_venues exception handling.
 	 *
@@ -2180,204 +933,6 @@ class Test_Abilities_Integration extends Base {
 		$this->assertStringContainsString( 'Error retrieving venues', $result['message'] );
 		$this->assertStringContainsString( 'Database error', $result['message'] );
 	}
-
-
-
-	/**
-	 * Coverage for execute_create_event with WP_Error from wp_insert_post.
-	 *
-	 * @covers ::execute_create_event
-	 *
-	 * @return void
-	 */
-	public function test_execute_create_event_with_wp_error_from_insert(): void {
-		// This is difficult to test without complex mocking.
-		// The WP_Error path is at lines 943-946.
-		// We'll test it by trying to create an event that might fail.
-		$instance = Abilities_Integration::get_instance();
-		$params   = array(
-			'title'          => str_repeat( 'a', 300 ), // Very long title might cause issues.
-			'datetime_start' => '2025-12-25 19:00:00',
-		);
-
-		$result = $instance->execute_create_event( $params );
-
-		// Should either succeed or return appropriate error.
-		$this->assertIsArray( $result );
-		$this->assertArrayHasKey( 'success', $result );
-	}
-
-
-
-	/**
-	 * Coverage for execute_update_event with description update.
-	 *
-	 * @covers ::execute_update_event
-	 *
-	 * @return void
-	 */
-	public function test_execute_update_event_with_description_update(): void {
-		// Create an event first.
-		$event_id = $this->factory->post->create(
-			array(
-				'post_type'    => Event::POST_TYPE,
-				'post_title'   => 'Test Event',
-				'post_status'  => 'draft',
-				'post_content' => 'Original content',
-			)
-		);
-
-		$instance = Abilities_Integration::get_instance();
-		$params   = array(
-			'event_id'    => $event_id,
-			'description' => 'Updated description content',
-		);
-		$result   = $instance->execute_update_event( $params );
-
-		$this->assertTrue( $result['success'], 'Failed to assert success is true.' );
-
-		// Verify description was updated.
-		$event_post = get_post( $event_id );
-		$this->assertStringContainsString( 'Updated description content', $event_post->post_content );
-	}
-
-	/**
-	 * Coverage for execute_update_event with datetime_end validation error.
-	 *
-	 * @covers ::execute_update_event
-	 *
-	 * @return void
-	 */
-	public function test_execute_update_event_with_invalid_datetime_end_format(): void {
-		// Create an event first.
-		$event_id = $this->factory->post->create(
-			array(
-				'post_type'   => Event::POST_TYPE,
-				'post_title'  => 'Test Event',
-				'post_status' => 'draft',
-			)
-		);
-
-		$event = new Event( $event_id );
-		$event->save_datetimes(
-			array(
-				'datetime_start' => '2025-01-15 18:00:00',
-				'datetime_end'   => '2025-01-15 20:00:00',
-				'timezone'       => 'UTC',
-			)
-		);
-
-		$instance = Abilities_Integration::get_instance();
-		$params   = array(
-			'event_id'     => $event_id,
-			'datetime_end' => 'Invalid Format String',
-		);
-		$result   = $instance->execute_update_event( $params );
-
-		$this->assertFalse( $result['success'], 'Failed to assert success is false.' );
-		// phpcs:ignore Generic.Files.LineLength.TooLong
-		$this->assertStringContainsString( 'Unable to parse datetime input', $result['message'], 'Failed to assert error message contains parse error.' );
-	}
-
-	/**
-	 * Coverage for execute_update_event with venue_id update when venue doesn't exist.
-	 *
-	 * @covers ::execute_update_event
-	 *
-	 * @return void
-	 */
-	public function test_execute_update_event_with_invalid_venue_id_update(): void {
-		// Create event.
-		$event_id = $this->factory->post->create(
-			array(
-				'post_type'   => Event::POST_TYPE,
-				'post_title'  => 'Test Event',
-				'post_status' => 'draft',
-			)
-		);
-
-		$instance = Abilities_Integration::get_instance();
-		$params   = array(
-			'event_id' => $event_id,
-			'venue_id' => 999999, // Non-existent venue.
-		);
-		$result   = $instance->execute_update_event( $params );
-
-		// Should succeed but venue won't be associated (lines 1182-1183 check fails).
-		$this->assertTrue( $result['success'], 'Failed to assert success is true.' );
-	}
-
-	/**
-	 * Coverage for execute_update_event with venue_id update when venue exists.
-	 *
-	 * @covers ::execute_update_event
-	 *
-	 * @return void
-	 */
-	public function test_execute_update_event_with_valid_venue_id_update(): void {
-		// Create venue.
-		$venue_id = $this->factory->post->create(
-			array(
-				'post_type'   => Venue::POST_TYPE,
-				'post_title'  => 'Test Venue',
-				'post_status' => 'publish',
-			)
-		);
-
-		// Create event.
-		$event_id = $this->factory->post->create(
-			array(
-				'post_type'   => Event::POST_TYPE,
-				'post_title'  => 'Test Event',
-				'post_status' => 'draft',
-			)
-		);
-
-		$instance = Abilities_Integration::get_instance();
-		$params   = array(
-			'event_id' => $event_id,
-			'venue_id' => $venue_id,
-		);
-		$result   = $instance->execute_update_event( $params );
-
-		$this->assertTrue( $result['success'], 'Failed to assert success is true.' );
-
-		// Verify venue was associated (lines 1182-1186).
-		$terms = get_the_terms( $event_id, Venue::TAXONOMY );
-		$this->assertNotEmpty( $terms, 'Failed to assert venue terms exist.' );
-	}
-
-	/**
-	 * Coverage for execute_update_event with empty datetime_params.
-	 *
-	 * @covers ::execute_update_event
-	 *
-	 * @return void
-	 */
-	public function test_execute_update_event_without_datetime_params(): void {
-		// Create an event first.
-		$event_id = $this->factory->post->create(
-			array(
-				'post_type'   => Event::POST_TYPE,
-				'post_title'  => 'Test Event',
-				'post_status' => 'draft',
-			)
-		);
-
-		$instance = Abilities_Integration::get_instance();
-		$params   = array(
-			'event_id' => $event_id,
-			'title'    => 'Updated Title',
-		);
-		$result   = $instance->execute_update_event( $params );
-
-		$this->assertTrue( $result['success'], 'Failed to assert success is true.' );
-
-		// Verify title was updated but datetime wasn't touched.
-		$event_post = get_post( $event_id );
-		$this->assertSame( 'Updated Title', $event_post->post_title );
-	}
-
 	/**
 	 * Coverage for register_*_ability methods via register_abilities.
 	 *
@@ -2444,7 +999,6 @@ class Test_Abilities_Integration extends Base {
 		$instance->register_abilities();
 		$this->assertTrue( true, 'register_abilities executed without error.' );
 	}
-
 	/**
 	 * Coverage for execute_create_topic with parent_id.
 	 *
@@ -2471,7 +1025,6 @@ class Test_Abilities_Integration extends Base {
 		$topic = get_term( $result['topic_id'], 'gatherpress_topic' );
 		$this->assertSame( $parent_id, $topic->parent, 'Failed to assert parent topic was set.' );
 	}
-
 	/**
 	 * Coverage for execute_create_topic with WP_Error from wp_insert_term.
 	 *
@@ -2492,7 +1045,6 @@ class Test_Abilities_Integration extends Base {
 		$this->assertFalse( $result['success'], 'Failed to assert success is false.' );
 		$this->assertStringContainsString( 'already exists', $result['message'] );
 	}
-
 	/**
 	 * Coverage for execute_create_topic with description.
 	 *
@@ -2514,7 +1066,6 @@ class Test_Abilities_Integration extends Base {
 		$topic = get_term( $result['topic_id'], 'gatherpress_topic' );
 		$this->assertSame( 'This is a test topic description', $topic->description );
 	}
-
 	/**
 	 * Coverage for execute_list_topics with WP_Error from get_terms.
 	 *
@@ -2544,7 +1095,6 @@ class Test_Abilities_Integration extends Base {
 		$this->assertFalse( $result['success'], 'Failed to assert success is false.' );
 		$this->assertStringContainsString( 'Failed to get terms', $result['message'] );
 	}
-
 	/**
 	 * Coverage for execute_calculate_dates when AI ability exists and wp_execute_ability is available.
 	 *
@@ -2601,7 +1151,6 @@ class Test_Abilities_Integration extends Base {
 		$this->assertTrue( $result['success'], 'Failed to assert success is true.' );
 		$this->assertArrayHasKey( 'data', $result );
 	}
-
 	/**
 	 * Coverage for execute_calculate_dates when AI ability doesn't exist.
 	 *
@@ -2623,7 +1172,6 @@ class Test_Abilities_Integration extends Base {
 		$this->assertIsArray( $result['data'], 'Failed to assert data is an array.' );
 		$this->assertArrayHasKey( 'dates', $result['data'], 'Failed to assert dates key exists.' );
 	}
-
 	/**
 	 * Coverage for execute_calculate_dates when wp_execute_ability doesn't exist.
 	 *
@@ -2648,7 +1196,6 @@ class Test_Abilities_Integration extends Base {
 		$this->assertTrue( $result['success'], 'Failed to assert success is true.' );
 		$this->assertIsArray( $result['data'], 'Failed to assert data is an array.' );
 	}
-
 	/**
 	 * Coverage for constructor when wp_register_ability exists (lines 60-61).
 	 *
@@ -2684,7 +1231,6 @@ class Test_Abilities_Integration extends Base {
 
 		$this->assert_hooks( $hooks, $instance );
 	}
-
 	/**
 	 * Coverage for setup_hooks method (lines 71, 73-74).
 	 *
@@ -2716,7 +1262,6 @@ class Test_Abilities_Integration extends Base {
 		// Should register 2 actions: wp_abilities_api_categories_init and wp_abilities_api_init.
 		$this->assert_hooks( $hooks, $instance );
 	}
-
 	/**
 	 * Coverage for get_calculate_dates_ability when wp_has_ability doesn't exist (lines 86, 88-89).
 	 *
@@ -2731,7 +1276,6 @@ class Test_Abilities_Integration extends Base {
 		$this->assertContains( $result, array( 'ai/calculate-dates', 'gatherpress/calculate-dates' ) );
 		$this->assertIsString( $result );
 	}
-
 	/**
 	 * Coverage for get_calculate_dates_ability when ai/calculate-dates exists (lines 93-94).
 	 *
@@ -2751,7 +1295,6 @@ class Test_Abilities_Integration extends Base {
 		$this->assertContains( $result, array( 'ai/calculate-dates', 'gatherpress/calculate-dates' ) );
 		$this->assertIsString( $result );
 	}
-
 	/**
 	 * Coverage for get_calculate_dates_ability fallback (line 97).
 	 *
@@ -2765,7 +1308,6 @@ class Test_Abilities_Integration extends Base {
 		// Should return either ai/calculate-dates if it exists, or gatherpress/calculate-dates as fallback.
 		$this->assertContains( $result, array( 'ai/calculate-dates', 'gatherpress/calculate-dates' ) );
 	}
-
 	/**
 	 * Coverage for register_categories method.
 	 *
@@ -2795,7 +1337,6 @@ class Test_Abilities_Integration extends Base {
 		$instance->register_categories();
 		$this->assertTrue( true, 'register_categories executed without error.' );
 	}
-
 	/**
 	 * Coverage for register_abilities method.
 	 *
@@ -2825,57 +1366,6 @@ class Test_Abilities_Integration extends Base {
 		$instance->register_abilities();
 		$this->assertTrue( true, 'register_abilities executed without error.' );
 	}
-
-
-
-	/**
-	 * Coverage for execute_create_event with WP_Error from wp_insert_post (lines 943-946).
-	 *
-	 * @covers ::execute_create_event
-	 *
-	 * @return void
-	 */
-	public function test_execute_create_event_with_wp_error_from_insert_post(): void {
-		// Force wp_insert_post to return WP_Error.
-		// This is difficult to test directly, so we test the error path exists.
-		$instance = Abilities_Integration::get_instance();
-
-		// Use invalid data that might cause wp_insert_post to fail.
-		$params = array(
-			'title'          => str_repeat( 'a', 1000 ), // Very long title.
-			'datetime_start' => '2025-12-25 19:00:00',
-		);
-
-		$result = $instance->execute_create_event( $params );
-
-		// Should either succeed or return appropriate error.
-		$this->assertIsArray( $result );
-		$this->assertArrayHasKey( 'success', $result );
-	}
-
-	/**
-	 * Coverage for execute_create_event with invalid post_status (line 922).
-	 *
-	 * @covers ::execute_create_event
-	 *
-	 * @return void
-	 */
-	public function test_execute_create_event_with_invalid_post_status_value(): void {
-		$instance = Abilities_Integration::get_instance();
-		$params   = array(
-			'title'          => 'Test Event',
-			'datetime_start' => '2025-12-25 19:00:00',
-			'post_status'    => 'invalid_status_value',
-		);
-		$result   = $instance->execute_create_event( $params );
-
-		$this->assertTrue( $result['success'], 'Failed to assert success is true.' );
-		// Should default to draft when invalid status is provided (line 922).
-		$this->assertSame( 'draft', $result['post_status'], 'Failed to assert defaults to draft.' );
-	}
-
-
-
 	/**
 	 * Coverage for constructor early return when wp_register_ability doesn't exist (line 57).
 	 *
@@ -2895,8 +1385,6 @@ class Test_Abilities_Integration extends Base {
 		// Instance should exist regardless of whether API is available.
 		$this->assertTrue( true, 'Constructor executed without error.' );
 	}
-
-
 	/**
 	 * Coverage for register_categories method using reflection (lines 107-109, 112-118, 120-126).
 	 *
@@ -2944,7 +1432,6 @@ class Test_Abilities_Integration extends Base {
 		// Verify method executed.
 		$this->assertTrue( $called, 'register_categories method was executed.' );
 	}
-
 	/**
 	 * Coverage for register_abilities method using reflection.
 	 *
@@ -2992,7 +1479,6 @@ class Test_Abilities_Integration extends Base {
 		// Verify method executed.
 		$this->assertTrue( $called, 'register_abilities method was executed.' );
 	}
-
 	/**
 	 * Coverage for all register_*_ability methods using reflection.
 	 *
@@ -3067,128 +1553,6 @@ class Test_Abilities_Integration extends Base {
 		// Verify methods were executed.
 		$this->assertCount( 11, $methods_called, 'All 11 register methods were executed.' );
 	}
-
-
-
-	/**
-	 * Coverage for execute_create_event with WP_Error from wp_insert_post (lines 943-946).
-	 *
-	 * @covers ::execute_create_event
-	 *
-	 * @return void
-	 */
-	public function test_execute_create_event_with_wp_error_from_wp_insert_post_direct(): void {
-		// Try to force wp_insert_post to return WP_Error by using invalid data.
-		add_filter(
-			'wp_insert_post_data',
-			function ( $data, $postarr ) {
-				if ( isset( $postarr['post_type'] ) && 'gatherpress_event' === $postarr['post_type'] ) {
-					// Try to cause an error.
-					$data['post_title'] = ''; // Empty title.
-				}
-				return $data;
-			},
-			10,
-			2
-		);
-
-		$instance = Abilities_Integration::get_instance();
-		$params   = array(
-			'title'          => '', // Empty title to potentially cause error.
-			'datetime_start' => '2025-12-25 19:00:00',
-		);
-
-		$result = $instance->execute_create_event( $params );
-
-		// Should return error for empty title.
-		$this->assertIsArray( $result );
-		$this->assertArrayHasKey( 'success', $result );
-	}
-
-	/**
-	 * Coverage for execute_update_event with WP_Error from wp_update_post (lines 1133-1136).
-	 *
-	 * @covers ::execute_update_event
-	 *
-	 * @return void
-	 */
-	public function test_execute_update_event_with_wp_error_from_wp_update_post(): void {
-		// Create an event first.
-		$event_id = $this->factory->post->create(
-			array(
-				'post_type'   => Event::POST_TYPE,
-				'post_title'  => 'Test Event',
-				'post_status' => 'draft',
-			)
-		);
-
-		// Mock wp_update_post to return WP_Error.
-		add_filter(
-			'wp_update_post_data',
-			function ( $data, $postarr ) use ( $event_id ) {
-				if ( isset( $postarr['ID'] ) && $event_id === $postarr['ID'] ) {
-					// Force an error by making post_title invalid.
-					$data['post_title'] = str_repeat( 'a', 1000 ); // Very long title.
-				}
-				return $data;
-			},
-			10,
-			2
-		);
-
-		$instance = Abilities_Integration::get_instance();
-		$params   = array(
-			'event_id' => $event_id,
-			'title'    => 'Updated Title',
-		);
-
-		$result = $instance->execute_update_event( $params );
-
-		// Should either succeed or return appropriate error.
-		$this->assertIsArray( $result );
-		$this->assertArrayHasKey( 'success', $result );
-	}
-
-	/**
-	 * Coverage for execute_update_events_batch with invalid datetime_end format (lines 1521, 1523-1526).
-	 *
-	 * @covers ::execute_update_events_batch
-	 *
-	 * @return void
-	 */
-	public function test_execute_update_events_batch_with_invalid_datetime_end_format_error(): void {
-		// Create test event.
-		$event_id = $this->factory->post->create(
-			array(
-				'post_type'   => Event::POST_TYPE,
-				'post_title'  => 'Test Event for Batch Update',
-				'post_status' => 'publish',
-			)
-		);
-
-		$event = new Event( $event_id );
-		$event->save_datetimes(
-			array(
-				'datetime_start' => gmdate( 'Y-m-d H:i:s', strtotime( '+1 week' ) ),
-				'datetime_end'   => gmdate( 'Y-m-d H:i:s', strtotime( '+1 week +2 hours' ) ),
-				'timezone'       => 'UTC',
-			)
-		);
-
-		$instance = Abilities_Integration::get_instance();
-		$result   = $instance->execute_update_events_batch(
-			array(
-				'search_term'  => 'Test Event for Batch Update',
-				'datetime_end' => 'Invalid Format String', // Invalid format.
-			)
-		);
-
-		$this->assertTrue( $result['success'], 'Failed to assert success is true.' );
-		// Should have errors in the message.
-		// phpcs:ignore Generic.Files.LineLength.TooLong
-		$this->assertStringContainsString( 'Unable to parse datetime input', $result['message'], 'Failed to assert error message contains parse error.' );
-	}
-
 	/**
 	 * Coverage for execute_calculate_dates when AI ability exists and wp_execute_ability is available.
 	 *
@@ -3248,7 +1612,6 @@ class Test_Abilities_Integration extends Base {
 		$this->assertTrue( $result['success'], 'Failed to assert success is true.' );
 		$this->assertArrayHasKey( 'data', $result );
 	}
-
 	/**
 	 * Coverage for register_categories early return when wp_register_ability_category doesn't exist (line 109).
 	 *
@@ -3280,7 +1643,6 @@ class Test_Abilities_Integration extends Base {
 		// Method should execute without error regardless of function existence.
 		$this->assertTrue( true, 'register_categories executed without error.' );
 	}
-
 	/**
 	 * Coverage for permission callbacks in register methods by executing abilities.
 	 *
@@ -3363,7 +1725,6 @@ class Test_Abilities_Integration extends Base {
 			$this->assertTrue( true, 'Abilities registered successfully.' );
 		}
 	}
-
 	/**
 	 * Coverage for execute_calculate_dates when AI ability exists and wp_execute_ability is called.
 	 *
@@ -3435,7 +1796,6 @@ class Test_Abilities_Integration extends Base {
 		$this->assertArrayHasKey( 'dates', $result['data'] );
 		$this->assertCount( 3, $result['data']['dates'] );
 	}
-
 	/**
 	 * Coverage for get_calculate_dates_ability when wp_has_ability doesn't exist (line 89).
 	 *
@@ -3450,7 +1810,6 @@ class Test_Abilities_Integration extends Base {
 		$this->assertContains( $result, array( 'ai/calculate-dates', 'gatherpress/calculate-dates' ) );
 		$this->assertIsString( $result );
 	}
-
 	/**
 	 * Coverage for get_calculate_dates_ability when ai/calculate-dates exists (line 94).
 	 *
@@ -3508,396 +1867,4 @@ class Test_Abilities_Integration extends Base {
 		$this->assertContains( $result, array( 'ai/calculate-dates', 'gatherpress/calculate-dates' ) );
 		$this->assertIsString( $result );
 	}
-
-	/**
-	 * Test execute_update_event with time-only start datetime.
-	 *
-	 * @covers ::execute_update_event
-	 *
-	 * @return void
-	 */
-	public function test_execute_update_event_with_time_only_start(): void {
-		// Create an event with existing datetime.
-		$event_id = $this->factory->post->create(
-			array(
-				'post_type'   => Event::POST_TYPE,
-				'post_title'  => 'Test Event',
-				'post_status' => 'draft',
-			)
-		);
-
-		$event = new Event( $event_id );
-		$event->save_datetimes(
-			array(
-				'datetime_start' => '2025-01-04 12:00:00',
-				'datetime_end'   => '2025-01-04 14:00:00',
-				'timezone'       => 'UTC',
-			)
-		);
-
-		$instance = Abilities_Integration::get_instance();
-		$params   = array(
-			'event_id'       => $event_id,
-			'datetime_start' => '3pm',
-		);
-		$result   = $instance->execute_update_event( $params );
-
-		$this->assertTrue( $result['success'], 'Failed to assert success is true.' );
-
-		// Verify datetime was updated correctly (time merged with existing date).
-		$updated_datetime = $event->get_datetime();
-		$this->assertEquals(
-			'2025-01-04 15:00:00',
-			$updated_datetime['datetime_start'],
-			'Failed to assert start time was updated to 3pm on existing date.'
-		);
-		// End time should be recalculated (start + 2 hours), not preserved.
-		$this->assertEquals(
-			'2025-01-04 17:00:00',
-			$updated_datetime['datetime_end'],
-			'Failed to assert end datetime was recalculated (start + 2 hours).'
-		);
-	}
-
-	/**
-	 * Test execute_update_event with time-only end datetime.
-	 *
-	 * @covers ::execute_update_event
-	 *
-	 * @return void
-	 */
-	public function test_execute_update_event_with_time_only_end(): void {
-		// Create an event with existing datetime.
-		$event_id = $this->factory->post->create(
-			array(
-				'post_type'   => Event::POST_TYPE,
-				'post_title'  => 'Test Event',
-				'post_status' => 'draft',
-			)
-		);
-
-		$event = new Event( $event_id );
-		$event->save_datetimes(
-			array(
-				'datetime_start' => '2025-01-04 12:00:00',
-				'datetime_end'   => '2025-01-04 14:00:00',
-				'timezone'       => 'UTC',
-			)
-		);
-
-		$instance = Abilities_Integration::get_instance();
-		$params   = array(
-			'event_id'     => $event_id,
-			'datetime_end' => '5pm',
-		);
-		$result   = $instance->execute_update_event( $params );
-
-		$this->assertTrue( $result['success'], 'Failed to assert success is true.' );
-
-		// Verify datetime was updated correctly (time merged with existing date).
-		$updated_datetime = $event->get_datetime();
-		$this->assertEquals(
-			'2025-01-04 12:00:00',
-			$updated_datetime['datetime_start'],
-			'Failed to assert start datetime was preserved.'
-		);
-		$this->assertEquals(
-			'2025-01-04 17:00:00',
-			$updated_datetime['datetime_end'],
-			'Failed to assert end time was updated to 5pm on existing date.'
-		);
-	}
-
-	/**
-	 * Test execute_update_event with time-only start when no existing datetime.
-	 *
-	 * @covers ::execute_update_event
-	 *
-	 * @return void
-	 */
-	public function test_execute_update_event_with_time_only_start_no_existing(): void {
-		// Create an event without datetime.
-		$event_id = $this->factory->post->create(
-			array(
-				'post_type'   => Event::POST_TYPE,
-				'post_title'  => 'Test Event',
-				'post_status' => 'draft',
-			)
-		);
-
-		$instance = Abilities_Integration::get_instance();
-		$params   = array(
-			'event_id'       => $event_id,
-			'datetime_start' => '3pm',
-		);
-		$result   = $instance->execute_update_event( $params );
-
-		// Should fail when time-only is provided without existing datetime.
-		$this->assertFalse( $result['success'], 'Failed to assert success is false.' );
-		$this->assertStringContainsString(
-			'Cannot update time-only without an existing event date',
-			$result['message'],
-			'Failed to assert error message is correct.'
-		);
-	}
-
-	/**
-	 * Test execute_update_event with time-only end when no existing datetime.
-	 *
-	 * @covers ::execute_update_event
-	 *
-	 * @return void
-	 */
-	public function test_execute_update_event_with_time_only_end_no_existing(): void {
-		// Create an event without datetime.
-		$event_id = $this->factory->post->create(
-			array(
-				'post_type'   => Event::POST_TYPE,
-				'post_title'  => 'Test Event',
-				'post_status' => 'draft',
-			)
-		);
-
-		$instance = Abilities_Integration::get_instance();
-		$params   = array(
-			'event_id'     => $event_id,
-			'datetime_end' => '5pm',
-		);
-		$result   = $instance->execute_update_event( $params );
-
-		// Should fail when time-only is provided without existing datetime.
-		$this->assertFalse( $result['success'], 'Failed to assert success is false.' );
-		$this->assertStringContainsString(
-			'Cannot update time-only without an existing event date',
-			$result['message'],
-			'Failed to assert error message is correct.'
-		);
-	}
-
-	/**
-	 * Test execute_update_event with invalid datetime input throws error.
-	 *
-	 * @covers ::execute_update_event
-	 *
-	 * @return void
-	 */
-	public function test_execute_update_event_with_invalid_datetime_input(): void {
-		// Create an event.
-		$event_id = $this->factory->post->create(
-			array(
-				'post_type'   => Event::POST_TYPE,
-				'post_title'  => 'Test Event',
-				'post_status' => 'draft',
-			)
-		);
-
-		$instance = Abilities_Integration::get_instance();
-		$params   = array(
-			'event_id'       => $event_id,
-			'datetime_start' => 'completely invalid datetime input',
-		);
-		$result   = $instance->execute_update_event( $params );
-
-		$this->assertFalse( $result['success'], 'Failed to assert success is false.' );
-		// "completely invalid datetime input" doesn't start with date pattern, so it's treated as time-only and fails.
-		$this->assertStringContainsString(
-			'Cannot update time-only without an existing event date',
-			$result['message'],
-			'Failed to assert error message.'
-		);
-	}
-
-	/**
-	 * Test execute_update_event preserves existing datetime when updating other fields.
-	 *
-	 * @covers ::execute_update_event
-	 *
-	 * @return void
-	 */
-	public function test_execute_update_event_preserves_datetime_when_updating_other_fields(): void {
-		// Create an event with existing datetime.
-		$event_id = $this->factory->post->create(
-			array(
-				'post_type'   => Event::POST_TYPE,
-				'post_title'  => 'Test Event',
-				'post_status' => 'draft',
-			)
-		);
-
-		$event = new Event( $event_id );
-		$event->save_datetimes(
-			array(
-				'datetime_start' => '2025-01-04 12:00:00',
-				'datetime_end'   => '2025-01-04 14:00:00',
-				'timezone'       => 'UTC',
-			)
-		);
-
-		$instance = Abilities_Integration::get_instance();
-		$params   = array(
-			'event_id' => $event_id,
-			'title'    => 'Updated Title',
-		);
-		$result   = $instance->execute_update_event( $params );
-
-		$this->assertTrue( $result['success'], 'Failed to assert success is true.' );
-
-		// Verify datetime was preserved.
-		$updated_datetime = $event->get_datetime();
-		// phpcs:ignore Generic.Files.LineLength.TooLong
-		$this->assertEquals( '2025-01-04 12:00:00', $updated_datetime['datetime_start'], 'Failed to assert start datetime was preserved.' );
-		// phpcs:ignore Generic.Files.LineLength.TooLong
-		$this->assertEquals( '2025-01-04 14:00:00', $updated_datetime['datetime_end'], 'Failed to assert end datetime was preserved.' );
-	}
-
-	/**
-	 * Test update_event_description with existing gp-ai-description paragraph.
-	 *
-	 * @covers ::update_event_description
-	 *
-	 * @return void
-	 */
-	public function test_update_event_description_with_existing_paragraph(): void {
-		$instance         = Abilities_Integration::get_instance();
-		$existing_content = '<!-- wp:paragraph {"className":"gp-ai-description"} -->' . "\n"
-			. '<p>Old description</p>' . "\n"
-			. '<!-- /wp:paragraph -->';
-
-		$result = \PMC\Unit_Test\Utility::invoke_hidden_method(
-			$instance,
-			'update_event_description',
-			array( $existing_content, 'New description' )
-		);
-
-		$this->assertStringContainsString( 'New description', $result );
-		$this->assertStringContainsString( 'gp-ai-description', $result );
-		$this->assertStringNotContainsString( 'Old description', $result );
-	}
-
-	/**
-	 * Test update_event_description with empty content rebuilds structure.
-	 *
-	 * @covers ::update_event_description
-	 *
-	 * @return void
-	 */
-	public function test_update_event_description_with_empty_content(): void {
-		$instance = Abilities_Integration::get_instance();
-
-		$result = \PMC\Unit_Test\Utility::invoke_hidden_method(
-			$instance,
-			'update_event_description',
-			array( '', 'New description' )
-		);
-
-		$this->assertStringContainsString( 'New description', $result );
-		$this->assertStringContainsString( 'gp-ai-description', $result );
-		$this->assertStringContainsString( 'wp:gatherpress/event-date', $result );
-	}
-
-	/**
-	 * Test update_event_description without gp-ai-description rebuilds.
-	 *
-	 * @covers ::update_event_description
-	 *
-	 * @return void
-	 */
-	public function test_update_event_description_without_marker_rebuilds(): void {
-		$instance         = Abilities_Integration::get_instance();
-		$existing_content = '<!-- wp:paragraph -->' . "\n"
-			. '<p>Some other content</p>' . "\n"
-			. '<!-- /wp:paragraph -->';
-
-		$result = \PMC\Unit_Test\Utility::invoke_hidden_method(
-			$instance,
-			'update_event_description',
-			array( $existing_content, 'New description' )
-		);
-
-		// Should rebuild with default structure.
-		$this->assertStringContainsString( 'New description', $result );
-		$this->assertStringContainsString( 'gp-ai-description', $result );
-		$this->assertStringContainsString( 'wp:gatherpress/event-date', $result );
-	}
-
-	/**
-	 * Coverage for execute_update_event with thumbnail_id parameter.
-	 *
-	 * @covers ::execute_update_event
-	 *
-	 * @return void
-	 */
-	public function test_execute_update_event_with_thumbnail_id(): void {
-		// Create an event first.
-		$event_id = $this->factory->post->create(
-			array(
-				'post_type'   => Event::POST_TYPE,
-				'post_title'  => 'Test Event',
-				'post_status' => 'draft',
-			)
-		);
-
-		// Create an image attachment.
-		$attachment_id = $this->factory->attachment->create(
-			array(
-				'post_mime_type' => 'image/jpeg',
-				'post_title'     => 'Test Image',
-			)
-		);
-
-		// Get upload directory.
-		$upload_dir = wp_upload_dir();
-		if ( isset( $upload_dir['error'] ) && $upload_dir['error'] ) {
-			$this->markTestSkipped( 'Upload directory is not writable.' );
-		}
-
-		// Get attachment file path.
-		$attachment_file = get_attached_file( $attachment_id );
-		if ( ! $attachment_file || ! file_exists( $attachment_file ) ) {
-			// Create a minimal image file for the attachment.
-			require_once ABSPATH . 'wp-admin/includes/image.php';
-			$temp_file = sys_get_temp_dir() . '/' . uniqid( 'gp_test_' ) . '.jpg';
-			// phpcs:ignore Generic.Files.LineLength.TooLong -- Binary data cannot be split.
-			$jpeg_data = "\xFF\xD8\xFF\xE0\x00\x10\x4A\x46\x49\x46\x00\x01\x01\x01\x00\x48\x00\x48\x00\x00\xFF\xDB\x00\x43\x00\x08\x06\x06\x07\x06\x05\x08\x07\x07\x07\x09\x09\x08\x0A\x0C\x14\x0D\x0C\x0B\x0B\x0C\x19\x12\x13\x0F\x14\x1D\x1A\x1F\x1E\x1D\x1A\x1C\x1C\x20\x24\x2E\x27\x20\x22\x2C\x23\x1C\x1C\x28\x37\x29\x2C\x30\x31\x34\x34\x34\x1F\x27\x39\x3D\x38\x32\x3C\x2E\x33\x34\x32\xFF\xC0\x00\x0B\x08\x00\x01\x00\x01\x01\x01\x11\x00\xFF\xC4\x00\x14\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x08\xFF\xC4\x00\x14\x10\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xFF\xDA\x00\x08\x01\x01\x00\x00\x3F\x00\xD2\xCF\x20\xFF\xD9";
-			// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents -- Test file creation.
-			file_put_contents( $temp_file, $jpeg_data );
-			$file_path = $upload_dir['path'] . '/' . basename( $temp_file );
-			if ( ! file_exists( $upload_dir['path'] ) ) {
-				wp_mkdir_p( $upload_dir['path'] );
-			}
-			copy( $temp_file, $file_path );
-			update_attached_file( $attachment_id, $file_path );
-			// Clean up temp file.
-			if ( file_exists( $temp_file ) ) {
-				// phpcs:ignore WordPress.WP.AlternativeFunctions.unlink_unlink -- Test file cleanup.
-				unlink( $temp_file );
-			}
-		}
-
-		// Generate attachment metadata so wp_attachment_is_image() works.
-		require_once ABSPATH . 'wp-admin/includes/image.php';
-		$attach_file = get_attached_file( $attachment_id );
-		if ( $attach_file && file_exists( $attach_file ) ) {
-			$attach_data = wp_generate_attachment_metadata( $attachment_id, $attach_file );
-			wp_update_attachment_metadata( $attachment_id, $attach_data );
-		}
-
-		$instance = Abilities_Integration::get_instance();
-		$params   = array(
-			'event_id'     => $event_id,
-			'thumbnail_id' => $attachment_id,
-		);
-		$result   = $instance->execute_update_event( $params );
-
-		$this->assertTrue( $result['success'], 'Failed to assert success is true.' );
-
-		// Verify thumbnail was set.
-		$thumbnail_id = get_post_thumbnail_id( $event_id );
-		$this->assertSame( $attachment_id, $thumbnail_id, 'Failed to assert thumbnail was set.' );
-
-		// Clean up.
-		wp_delete_attachment( $attachment_id, true );
-	}
-
-
 }
