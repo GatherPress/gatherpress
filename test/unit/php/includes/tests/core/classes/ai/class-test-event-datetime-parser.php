@@ -13,6 +13,7 @@ use DateTimeZone;
 use Exception;
 use GatherPress\Core\AI\Event_Datetime_Parser;
 use GatherPress\Tests\Base;
+use PMC\Unit_Test\Utility;
 
 /**
  * Class Test_Event_Datetime_Parser.
@@ -785,5 +786,433 @@ class Test_Event_Datetime_Parser extends Base {
 		$this->assertInstanceOf( DateTime::class, $result, 'Failed to assert result is DateTime instance.' );
 		$hour = (int) $result->format( 'H' );
 		$this->assertEquals( 12, $hour, 'Failed to assert hour defaults to noon.' );
+	}
+
+	/**
+	 * Direct invoke coverage for get_existing_datetimes GMT fallbacks.
+	 *
+	 * @covers ::get_existing_datetimes
+	 * @covers ::convert_gmt_to_local
+	 *
+	 * @return void
+	 */
+	public function test_get_existing_datetimes_via_invoke(): void {
+		$local = Utility::invoke_hidden_method(
+			$this->parser,
+			'get_existing_datetimes',
+			array(
+				array(
+					'datetime_start' => '2025-01-04 12:00:00',
+					'datetime_end'   => '2025-01-04 14:00:00',
+				),
+				'UTC',
+			)
+		);
+		$this->assertSame( '2025-01-04 12:00:00', $local['start'] );
+		$this->assertSame( '2025-01-04 14:00:00', $local['end'] );
+
+		$from_gmt = Utility::invoke_hidden_method(
+			$this->parser,
+			'get_existing_datetimes',
+			array(
+				array(
+					'datetime_start_gmt' => '2025-01-05 09:00:00',
+					'datetime_end_gmt'   => '2025-01-05 11:00:00',
+				),
+				'UTC',
+			)
+		);
+		$this->assertSame( '2025-01-05 09:00:00', $from_gmt['start'] );
+		$this->assertSame( '2025-01-05 11:00:00', $from_gmt['end'] );
+	}
+
+	/**
+	 * Direct invoke coverage for get_existing_start_date paths.
+	 *
+	 * @covers ::get_existing_start_date
+	 * @covers ::extract_date_from_datetime
+	 *
+	 * @return void
+	 */
+	public function test_get_existing_start_date_via_invoke(): void {
+		$from_local = Utility::invoke_hidden_method(
+			$this->parser,
+			'get_existing_start_date',
+			array( '2025-01-04 12:00:00', array(), 'UTC' )
+		);
+		$this->assertSame( '2025-01-04', $from_local );
+
+		$from_gmt = Utility::invoke_hidden_method(
+			$this->parser,
+			'get_existing_start_date',
+			array(
+				null,
+				array( 'datetime_start_gmt' => '2025-01-05 09:00:00' ),
+				'UTC',
+			)
+		);
+		$this->assertSame( '2025-01-05', $from_gmt );
+
+		$empty = Utility::invoke_hidden_method(
+			$this->parser,
+			'get_existing_start_date',
+			array( null, array(), 'UTC' )
+		);
+		$this->assertNull( $empty );
+	}
+
+	/**
+	 * Direct invoke coverage for get_existing_end_date paths.
+	 *
+	 * @covers ::get_existing_end_date
+	 * @covers ::extract_date_from_gmt
+	 *
+	 * @return void
+	 */
+	public function test_get_existing_end_date_via_invoke(): void {
+		$from_start = Utility::invoke_hidden_method(
+			$this->parser,
+			'get_existing_end_date',
+			array( '2025-01-04 12:00:00', null, array(), 'UTC' )
+		);
+		$this->assertSame( '2025-01-04', $from_start );
+
+		$from_start_gmt = Utility::invoke_hidden_method(
+			$this->parser,
+			'get_existing_end_date',
+			array(
+				null,
+				null,
+				array( 'datetime_start_gmt' => '2025-01-05 09:00:00' ),
+				'UTC',
+			)
+		);
+		$this->assertSame( '2025-01-05', $from_start_gmt );
+
+		$from_end = Utility::invoke_hidden_method(
+			$this->parser,
+			'get_existing_end_date',
+			array( null, '2025-01-06 14:00:00', array(), 'UTC' )
+		);
+		$this->assertSame( '2025-01-06', $from_end );
+
+		$from_end_gmt = Utility::invoke_hidden_method(
+			$this->parser,
+			'get_existing_end_date',
+			array(
+				null,
+				null,
+				array( 'datetime_end_gmt' => '2025-01-07 11:00:00' ),
+				'UTC',
+			)
+		);
+		$this->assertSame( '2025-01-07', $from_end_gmt );
+
+		$empty = Utility::invoke_hidden_method(
+			$this->parser,
+			'get_existing_end_date',
+			array( null, null, array(), 'UTC' )
+		);
+		$this->assertNull( $empty );
+	}
+
+	/**
+	 * Direct invoke coverage for calculate_default_end_from_start.
+	 *
+	 * @covers ::calculate_default_end_from_start
+	 *
+	 * @return void
+	 */
+	public function test_calculate_default_end_from_start_via_invoke(): void {
+		$result = array(
+			'datetime_start' => '2025-01-04 15:00:00',
+		);
+
+		Utility::invoke_hidden_method(
+			$this->parser,
+			'calculate_default_end_from_start',
+			array( &$result, 'UTC' )
+		);
+
+		$this->assertSame( '2025-01-04 17:00:00', $result['datetime_end'] );
+	}
+
+	/**
+	 * Direct invoke coverage for calculate_default_start_from_end.
+	 *
+	 * @covers ::calculate_default_start_from_end
+	 *
+	 * @return void
+	 */
+	public function test_calculate_default_start_from_end_via_invoke(): void {
+		$result = array(
+			'datetime_end' => '2025-01-04 17:00:00',
+		);
+
+		Utility::invoke_hidden_method(
+			$this->parser,
+			'calculate_default_start_from_end',
+			array(
+				&$result,
+				array( 'datetime_end' => '2025-01-04 17:00:00' ),
+				null,
+				array(),
+				'UTC',
+			)
+		);
+
+		$this->assertSame( '2025-01-04 15:00:00', $result['datetime_start'] );
+	}
+
+	/**
+	 * Direct invoke coverage for validate_datetime_order guard and happy path.
+	 *
+	 * @covers ::validate_datetime_order
+	 *
+	 * @return void
+	 */
+	public function test_validate_datetime_order_via_invoke(): void {
+		Utility::invoke_hidden_method(
+			$this->parser,
+			'validate_datetime_order',
+			array( array( 'datetime_start' => '2025-01-04 12:00:00' ), 'UTC' )
+		);
+
+		Utility::invoke_hidden_method(
+			$this->parser,
+			'validate_datetime_order',
+			array(
+				array(
+					'datetime_start' => '2025-01-04 12:00:00',
+					'datetime_end'   => '2025-01-04 14:00:00',
+				),
+				'UTC',
+			)
+		);
+
+		$this->assertTrue( true, 'validate_datetime_order passed for valid datetimes.' );
+	}
+
+	/**
+	 * Direct invoke coverage for extract_date_from_datetime branches.
+	 *
+	 * @covers ::extract_date_from_datetime
+	 *
+	 * @return void
+	 */
+	public function test_extract_date_from_datetime_via_invoke(): void {
+		$from_datetime = Utility::invoke_hidden_method(
+			$this->parser,
+			'extract_date_from_datetime',
+			array( '2025-01-04 12:00:00', 'UTC' )
+		);
+		$this->assertSame( '2025-01-04', $from_datetime );
+
+		$from_date = Utility::invoke_hidden_method(
+			$this->parser,
+			'extract_date_from_datetime',
+			array( '2025-01-04', 'UTC' )
+		);
+		$this->assertSame( '2025-01-04', $from_date );
+
+		$invalid = Utility::invoke_hidden_method(
+			$this->parser,
+			'extract_date_from_datetime',
+			array( 'not-a-date', '' )
+		);
+		$this->assertNull( $invalid );
+	}
+
+	/**
+	 * Direct invoke coverage for extract_date_from_gmt branches.
+	 *
+	 * @covers ::extract_date_from_gmt
+	 *
+	 * @return void
+	 */
+	public function test_extract_date_from_gmt_via_invoke(): void {
+		$valid = Utility::invoke_hidden_method(
+			$this->parser,
+			'extract_date_from_gmt',
+			array( '2025-01-04 12:00:00', 'America/New_York' )
+		);
+		$this->assertSame( '2025-01-04', $valid );
+
+		$invalid = Utility::invoke_hidden_method(
+			$this->parser,
+			'extract_date_from_gmt',
+			array( 'invalid-gmt', 'UTC' )
+		);
+		$this->assertNull( $invalid );
+	}
+
+	/**
+	 * Direct invoke coverage for convert_gmt_to_local branches.
+	 *
+	 * @covers ::convert_gmt_to_local
+	 *
+	 * @return void
+	 */
+	public function test_convert_gmt_to_local_via_invoke(): void {
+		$valid = Utility::invoke_hidden_method(
+			$this->parser,
+			'convert_gmt_to_local',
+			array( '2025-01-04 12:00:00', 'America/New_York' )
+		);
+		$this->assertSame( '2025-01-04 07:00:00', $valid );
+
+		$invalid = Utility::invoke_hidden_method(
+			$this->parser,
+			'convert_gmt_to_local',
+			array( 'invalid-gmt', 'UTC' )
+		);
+		$this->assertNull( $invalid );
+	}
+
+	/**
+	 * Coverage for flexible parser merge with existing date.
+	 *
+	 * @covers ::parse_datetime_input
+	 *
+	 * @return void
+	 */
+	public function test_parse_datetime_input_flexible_parser_merges_existing_date(): void {
+		$result = $this->parser->parse_datetime_input( 'January 10, 2025 3:30 pm', '2025-01-04' );
+
+		$this->assertSame( '2025-01-04 15:30:00', $result->format( 'Y-m-d H:i:s' ) );
+	}
+
+	/**
+	 * Coverage for flexible parser return when existing date already matches.
+	 *
+	 * @covers ::parse_datetime_input
+	 *
+	 * @return void
+	 */
+	public function test_parse_datetime_input_flexible_parser_returns_parsed_datetime(): void {
+		$result = $this->parser->parse_datetime_input( 'January 10, 2025 3:30 pm', '2025-01-10' );
+
+		$this->assertSame( '2025-01-10 15:30:00', $result->format( 'Y-m-d H:i:s' ) );
+	}
+
+	/**
+	 * Direct invoke coverage for validate_datetime_order failure branch.
+	 *
+	 * @covers ::validate_datetime_order
+	 *
+	 * @return void
+	 */
+	public function test_validate_datetime_order_throws_when_end_not_after_start(): void {
+		$this->expectException( Exception::class );
+		$this->expectExceptionMessage( 'End datetime must be after start datetime.' );
+
+		Utility::invoke_hidden_method(
+			$this->parser,
+			'validate_datetime_order',
+			array(
+				array(
+					'datetime_start' => '2025-01-04 17:00:00',
+					'datetime_end'   => '2025-01-04 15:00:00',
+				),
+				'UTC',
+			)
+		);
+	}
+
+	/**
+	 * Coverage for time-only input with trailing seconds stripped.
+	 *
+	 * @covers ::parse_datetime_input
+	 *
+	 * @return void
+	 */
+	public function test_parse_datetime_input_time_only_with_seconds(): void {
+		$result = $this->parser->parse_datetime_input( '15:30:00', '2025-01-04' );
+
+		$this->assertSame( '2025-01-04 15:30:00', $result->format( 'Y-m-d H:i:s' ) );
+	}
+
+	/**
+	 * Coverage for weekday target already passed this week.
+	 *
+	 * @covers ::parse_datetime_input
+	 *
+	 * @return void
+	 */
+	public function test_parse_datetime_input_weekday_target_already_passed(): void {
+		$current_day = (int) ( new DateTime( 'now' ) )->format( 'N' );
+		if ( $current_day <= 1 ) {
+			$this->markTestSkipped( 'Need a day after Monday to exercise the next-week weekday branch.' );
+		}
+
+		$result = $this->parser->parse_datetime_input( 'this monday' );
+
+		$this->assertSame( 1, (int) $result->format( 'N' ) );
+	}
+
+	/**
+	 * Coverage for weekday pattern with invalid time defaulting to noon.
+	 *
+	 * @covers ::parse_datetime_input
+	 *
+	 * @return void
+	 */
+	public function test_parse_datetime_input_weekday_invalid_time_defaults_to_noon(): void {
+		$result = $this->parser->parse_datetime_input( 'sunday at not-a-time' );
+
+		$this->assertSame( 7, (int) $result->format( 'N' ) );
+		$this->assertSame( 12, (int) $result->format( 'H' ) );
+	}
+
+	/**
+	 * Coverage for prepare_datetime_params preserving existing end when no updates provided.
+	 *
+	 * @covers ::prepare_datetime_params
+	 *
+	 * @return void
+	 */
+	public function test_prepare_datetime_params_preserves_existing_end_without_updates(): void {
+		$result = $this->parser->prepare_datetime_params(
+			array(),
+			array(
+				'datetime_start' => '2025-01-04 12:00:00',
+				'datetime_end'   => '2025-01-04 14:00:00',
+				'timezone'       => 'UTC',
+			)
+		);
+
+		$this->assertSame( '2025-01-04 12:00:00', $result['datetime_start'] );
+		$this->assertSame( '2025-01-04 14:00:00', $result['datetime_end'] );
+	}
+
+	/**
+	 * Direct invoke coverage for parse_time_only compact 24-hour format.
+	 *
+	 * @covers ::parse_time_only
+	 *
+	 * @return void
+	 */
+	public function test_parse_time_only_compact_24_hour_format(): void {
+		$result = $this->parser->parse_time_only( '1530' );
+
+		$this->assertSame(
+			array(
+				'hour'   => 15,
+				'minute' => 30,
+			),
+			$result
+		);
+	}
+
+	/**
+	 * Direct invoke coverage for parse_time_only invalid hour and minute bounds.
+	 *
+	 * @covers ::parse_time_only
+	 *
+	 * @return void
+	 */
+	public function test_parse_time_only_rejects_out_of_range_values(): void {
+		$this->assertFalse( $this->parser->parse_time_only( '25:00' ) );
+		$this->assertFalse( $this->parser->parse_time_only( '12:60pm' ) );
 	}
 }
