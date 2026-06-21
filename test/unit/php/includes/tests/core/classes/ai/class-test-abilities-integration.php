@@ -14,6 +14,7 @@ use GatherPress\Core\Event;
 use GatherPress\Core\Topic;
 use GatherPress\Core\Utility;
 use GatherPress\Core\Venue;
+use GatherPress\Core\Venue\Setup as Venue_Setup;
 use GatherPress\Tests\Base;
 
 /**
@@ -442,10 +443,52 @@ class Test_Abilities_Integration extends Base {
 		$result   = $instance->execute_create_event( $params );
 
 		$this->assertTrue( $result['success'], 'Failed to assert success is true.' );
+		$this->assertTrue( $result['venue_link']['success'], 'Failed to assert venue was linked.' );
+		$this->assertSame( $venue_id, $result['venue_link']['venue_id'], 'Failed to assert linked venue ID.' );
 
-		// Verify venue was associated.
-		$terms = get_the_terms( $result['event_id'], Venue::TAXONOMY );
-		$this->assertNotEmpty( $terms, 'Failed to assert venue terms exist.' );
+		$linked_venue = Venue_Setup::get_instance()->get_venue_post_from_event_post_id( $result['event_id'] );
+		$this->assertInstanceOf( \WP_Post::class, $linked_venue, 'Failed to assert linked venue post exists.' );
+		$this->assertSame( $venue_id, $linked_venue->ID, 'Failed to assert event resolves to venue post.' );
+	}
+
+	/**
+	 * Coverage for execute_create_event linking a venue created via create-venue.
+	 *
+	 * @covers ::execute_create_venue
+	 * @covers ::execute_create_event
+	 *
+	 * @return void
+	 */
+	public function test_execute_create_event_links_venue_created_via_create_venue(): void {
+		$instance = Abilities_Integration::get_instance();
+
+		$venue_result = $instance->execute_create_venue(
+			array(
+				'name'    => 'AI Created Venue',
+				'address' => '123 Main St, Buffalo, NY',
+			)
+		);
+
+		$this->assertTrue( $venue_result['success'], 'Failed to assert venue creation succeeded.' );
+
+		$event_result = $instance->execute_create_event(
+			array(
+				'title'          => 'AI Created Event',
+				'datetime_start' => '2025-09-19 13:00:00',
+				'venue_id'       => $venue_result['venue_id'],
+			)
+		);
+
+		$this->assertTrue( $event_result['success'], 'Failed to assert event creation succeeded.' );
+		$this->assertTrue( $event_result['venue_link']['success'], 'Failed to assert venue link succeeded.' );
+
+		$linked_venue = Venue_Setup::get_instance()->get_venue_post_from_event_post_id( $event_result['event_id'] );
+		$this->assertInstanceOf( \WP_Post::class, $linked_venue, 'Failed to assert linked venue post exists.' );
+		$this->assertSame(
+			$venue_result['venue_id'],
+			$linked_venue->ID,
+			'Failed to assert create-venue then create-event links venue.'
+		);
 	}
 
 	/**
@@ -1420,6 +1463,7 @@ class Test_Abilities_Integration extends Base {
 		$this->assertStringContainsString( 'wp:gatherpress/event-date', $content );
 		$this->assertStringContainsString( 'wp:gatherpress/add-to-calendar', $content );
 		$this->assertStringContainsString( 'wp:gatherpress/venue', $content );
+		$this->assertStringContainsString( '"patternPicked":true', $content );
 		$this->assertStringContainsString( 'wp:gatherpress/rsvp', $content );
 		$this->assertStringContainsString( 'wp:paragraph', $content );
 		$this->assertStringContainsString( 'gp-ai-description', $content );

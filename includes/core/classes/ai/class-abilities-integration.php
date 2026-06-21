@@ -19,12 +19,16 @@ use GatherPress\Core\AI\Date_Calculator;
 use GatherPress\Core\AI\Event_Datetime_Parser;
 use GatherPress\Core\Event;
 use GatherPress\Core\Rsvp;
+use GatherPress\Core\Shadow_Source;
 use GatherPress\Core\Topic;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Utility;
 use GatherPress\Core\Venue;
 use GatherPress\Core\Venue\Meta as Venue_Meta;
+use GatherPress\Core\Venue\Setup as Venue_Setup;
 use WP_Error;
+use WP_Post;
+use WP_Term;
 
 /**
  * Class Abilities_Integration.
@@ -440,7 +444,10 @@ class Abilities_Integration {
 						),
 						'venue_id'       => array(
 							'type'        => 'integer',
-							'description' => __( 'ID of the venue for this event', 'gatherpress' ),
+							'description' => __(
+								'Venue post ID. Required when linking a venue created in the same conversation.',
+								'gatherpress'
+							),
 						),
 						'description'    => array(
 							'type'        => 'string',
@@ -1036,17 +1043,15 @@ class Abilities_Integration {
 			)
 		);
 
-		// Associate venue if provided.
-		if ( ! empty( $params['venue_id'] ) ) {
-			$venue_id = intval( $params['venue_id'] );
+		$venue_link = array(
+			'attempted' => false,
+		);
 
-			// Verify venue exists.
-			$venue = get_post( $venue_id );
-			if ( $venue && Venue::POST_TYPE === $venue->post_type ) {
-				// Get the venue term slug.
-				$venue_slug = '_' . $venue->post_name;
-				wp_set_object_terms( $event_id, $venue_slug, Venue::TAXONOMY );
-			}
+		if ( ! empty( $params['venue_id'] ) ) {
+			$venue_link = array_merge(
+				array( 'attempted' => true ),
+				$this->attach_venue_to_event( $event_id, intval( $params['venue_id'] ) )
+			);
 		}
 
 		// Associate topics if provided.
@@ -1059,6 +1064,7 @@ class Abilities_Integration {
 			'success'     => true,
 			'event_id'    => $event_id,
 			'post_status' => $post_status,
+			'venue_link'  => $venue_link,
 			'edit_url'    => get_edit_post_link( $event_id, 'raw' ),
 			'message'     => sprintf(
 				/* translators: 1: event title, 2: post status */
@@ -1395,13 +1401,7 @@ class Abilities_Integration {
 			return;
 		}
 
-		$venue_id = intval( $params['venue_id'] );
-		$venue    = get_post( $venue_id );
-
-		if ( $venue && Venue::POST_TYPE === $venue->post_type ) {
-			$venue_slug = '_' . $venue->post_name;
-			wp_set_object_terms( $event_id, $venue_slug, Venue::TAXONOMY );
-		}
+		$this->attach_venue_to_event( $event_id, intval( $params['venue_id'] ) );
 	}
 
 	/**
@@ -1501,9 +1501,9 @@ class Abilities_Integration {
 		$content .= '<div class="wp-block-gatherpress-add-to-calendar"></div>' . "\n";
 		$content .= '<!-- /wp:gatherpress/add-to-calendar -->' . "\n\n";
 
-		$content .= '<!-- wp:gatherpress/venue /-->' . "\n\n";
+		$content .= '<!-- wp:gatherpress/venue {"patternPicked":true} /-->' . "\n\n";
 
-		$content .= '<!-- wp:gatherpress/rsvp -->' . "\n";
+		$content .= '<!-- wp:gatherpress/rsvp {"patternPicked":true} -->' . "\n";
 		$content .= '<div class="wp-block-gatherpress-rsvp"></div>' . "\n";
 		$content .= '<!-- /wp:gatherpress/rsvp -->' . "\n\n";
 
@@ -1523,7 +1523,7 @@ class Abilities_Integration {
 			$content                .= '<!-- /wp:paragraph -->' . "\n\n";
 		}
 
-		$content .= '<!-- wp:gatherpress/rsvp-response -->' . "\n";
+		$content .= '<!-- wp:gatherpress/rsvp-response {"patternPicked":true} -->' . "\n";
 		$content .= '<div class="wp-block-gatherpress-rsvp-response"></div>' . "\n";
 		$content .= '<!-- /wp:gatherpress/rsvp-response -->';
 
@@ -1688,7 +1688,7 @@ class Abilities_Integration {
 				'datetime_start' => $event_obj->get_datetime_start( 'F j, Y, g:i a' ),
 				'datetime_end'   => $event_obj->get_datetime_end( 'F j, Y, g:i a' ),
 				'timezone'       => $datetime['timezone'] ?? '',
-				'venue_id'       => get_post_meta( $event->ID, 'gatherpress_venue', true ),
+				'venue_id'       => $this->get_event_venue_id( $event->ID ),
 				'edit_url'       => get_edit_post_link( $event->ID, 'raw' ),
 			);
 		}
@@ -2031,17 +2031,15 @@ class Abilities_Integration {
 			return array( 'updated' => false );
 		}
 
-		$venue_id = absint( $params['venue_id'] );
-		$venue    = get_post( $venue_id );
+		$attach_result = $this->attach_venue_to_event( $event_id, absint( $params['venue_id'] ) );
 
-		if ( $venue && get_post_type( $venue_id ) === Venue::POST_TYPE ) {
-			update_post_meta( $event_id, 'gatherpress_venue', $venue_id );
+		if ( ! empty( $attach_result['success'] ) ) {
 			return array( 'updated' => true );
 		}
 
 		return array(
 			'updated' => false,
-			'error'   => sprintf(
+			'error'   => $attach_result['message'] ?? sprintf(
 				/* translators: %s: event title */
 				__( 'Invalid venue ID for event "%s".', 'gatherpress' ),
 				get_the_title( $event_id )
@@ -2196,6 +2194,120 @@ class Abilities_Integration {
 
 			update_post_meta( $venue_id, Utility::prefix_key( $field ), $fields[ $field ] );
 		}
+	}
+
+	/**
+	 * Resolve the venue post ID linked to an event via shadow taxonomy.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param int $event_id Event post ID.
+	 * @return int Venue post ID, or 0 when none is linked.
+	 */
+	private function get_event_venue_id( int $event_id ): int {
+		$venue_post = Venue_Setup::get_instance()->get_venue_post_from_event_post_id( $event_id );
+
+		if ( ! $venue_post instanceof WP_Post ) {
+			return 0;
+		}
+
+		return (int) $venue_post->ID;
+	}
+
+	/**
+	 * Link a venue post to an event via the venue shadow taxonomy.
+	 *
+	 * Ensures the shadow term exists, assigns it by term ID (matching the block
+	 * editor flow), preserves the online-event sentinel when present, and verifies
+	 * the event resolves back to the requested venue post.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param int $event_id Event post ID.
+	 * @param int $venue_id Venue post ID.
+	 * @return array Result with success flag and optional message or IDs.
+	 */
+	private function attach_venue_to_event( int $event_id, int $venue_id ): array {
+		$venue = get_post( $venue_id );
+
+		if ( ! $venue instanceof WP_Post || Venue::POST_TYPE !== $venue->post_type ) {
+			return array(
+				'success' => false,
+				'message' => __( 'Venue not found.', 'gatherpress' ),
+			);
+		}
+
+		if ( empty( $venue->post_name ) || 'publish' !== $venue->post_status ) {
+			return array(
+				'success' => false,
+				'message' => __(
+					'Venue must be published with a valid slug before it can be linked to an event.',
+					'gatherpress'
+				),
+			);
+		}
+
+		$shadow_source = Shadow_Source::get_instance();
+		$term_slug     = $shadow_source->term_slug_from_post_name( $venue->post_name );
+		$taxonomy      = Venue::TAXONOMY;
+		$term          = term_exists( $term_slug, $taxonomy );
+
+		if ( empty( $term ) ) {
+			$term = wp_insert_term(
+				html_entity_decode( get_the_title( $venue_id ) ),
+				$taxonomy,
+				array( 'slug' => $term_slug )
+			);
+		}
+
+		if ( is_wp_error( $term ) ) {
+			return array(
+				'success' => false,
+				'message' => $term->get_error_message(),
+			);
+		}
+
+		$term_id  = is_array( $term ) ? (int) $term['term_id'] : (int) $term;
+		$term_ids = array( $term_id );
+		$existing = get_the_terms( $event_id, $taxonomy );
+
+		if ( is_array( $existing ) ) {
+			foreach ( $existing as $existing_term ) {
+				if ( $existing_term instanceof WP_Term && 'online-event' === $existing_term->slug ) {
+					$term_ids[] = (int) $existing_term->term_id;
+					break;
+				}
+			}
+		}
+
+		/**
+		 * Term assignment result or WP_Error.
+		 *
+		 * @var array|WP_Error $result
+		 */
+		$result = wp_set_object_terms( $event_id, $term_ids, $taxonomy, false );
+
+		if ( is_wp_error( $result ) ) {
+			return array(
+				'success' => false,
+				'message' => $result->get_error_message(),
+			);
+		}
+
+		$linked_venue = Venue_Setup::get_instance()->get_venue_post_from_event_post_id( $event_id );
+
+		if ( ! $linked_venue instanceof WP_Post || (int) $linked_venue->ID !== $venue_id ) {
+			return array(
+				'success' => false,
+				'message' => __( 'Venue term was assigned but could not be verified on the event.', 'gatherpress' ),
+			);
+		}
+
+		return array(
+			'success'  => true,
+			'venue_id' => $venue_id,
+			'term_id'  => $term_id,
+		);
 	}
 
 	/**
