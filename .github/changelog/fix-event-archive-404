@@ -1,0 +1,4 @@
+Significance: patch
+Type: fixed
+
+Return 404 for the event archive URL when no matching page exists, instead of rendering an empty archive. [#1381]

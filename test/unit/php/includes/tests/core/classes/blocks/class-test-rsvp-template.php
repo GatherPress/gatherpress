@@ -3,14 +3,15 @@
  * Class handles unit tests for GatherPress\Core\Blocks\Rsvp_Template.
  *
  * @package GatherPress\Core
- * @since 1.0.0
+ * @since 0.33.0
  */
 
 namespace GatherPress\Tests\Core\Blocks;
 
 use GatherPress\Core\Blocks\Rsvp_Template;
 use GatherPress\Core\Event;
-use GatherPress\Core\Rsvp;
+use GatherPress\Core\Rsvp\Rsvp;
+use GatherPress\Core\Settings;
 use GatherPress\Tests\Base;
 use WP_Block;
 use WP_Block_Type_Registry;
@@ -21,13 +22,14 @@ use WP_Block_Type_Registry;
  * @coversDefaultClass \GatherPress\Core\Blocks\Rsvp_Template
  */
 class Test_Rsvp_Template extends Base {
+
 	/**
 	 * Tests the setup_hooks method.
 	 *
 	 * Verifies that the appropriate filters are registered during setup,
 	 * ensuring the hooks are properly configured for the RSVP Template block.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::__construct
 	 * @covers ::setup_hooks
 	 *
@@ -188,15 +190,22 @@ class Test_Rsvp_Template extends Base {
 		$block    = array( 'innerBlocks' => array() );
 		$result   = $instance->generate_rsvp_template_block( '', $block, $wp_block );
 
+		// With no responses, the result should only contain the hidden template div.
 		$this->assertStringContainsString(
-			'data-wp-interactive="gatherpress"',
+			'<div hidden data-wp-interactive="gatherpress"',
 			$result,
-			'Failed to assert published event generates interactive markup.'
+			'Failed to assert published event with no responses contains hidden template div.'
 		);
 		$this->assertStringContainsString(
-			'data-wp-watch="callbacks.renderBlocks"',
+			'data-block-template=',
 			$result,
-			'Failed to assert published event includes watch callback.'
+			'Failed to assert published event with no responses contains block template data attribute.'
+		);
+		// Should not contain any response content (data-id="rsvp-").
+		$this->assertStringNotContainsString(
+			'data-id="rsvp-',
+			$result,
+			'Failed to assert published event with no responses has no response content.'
 		);
 	}
 
@@ -744,18 +753,35 @@ class Test_Rsvp_Template extends Base {
 		$result = $instance->generate_rsvp_template_block( '', $block, $wp_block );
 
 		// Tests: Foreach loop through responses.
-		// Just verify that output was generated (responses were processed).
+		// Verify that output was generated with response wrappers.
 		$this->assertStringContainsString(
-			'data-wp-interactive="gatherpress"',
+			'data-id="rsvp-',
 			$result,
 			'Failed to assert output was generated with responses.'
 		);
+	}
 
-		// Verify script tag with block data is present.
-		$this->assertStringContainsString(
-			'<script type="application/json"',
-			$result,
-			'Failed to assert script tag is present.'
-		);
+	/**
+	 * Tests that generate_rsvp_template_block returns empty string when per-event RSVP is disabled.
+	 *
+	 * @covers ::generate_rsvp_template_block
+	 *
+	 * @return void
+	 */
+	public function test_generate_rsvp_template_block_rsvp_disabled_per_event(): void {
+		$instance = Rsvp_Template::get_instance();
+		$post     = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get();
+		$post_id  = $post->ID;
+
+		Settings::get_instance()->set( 'rsvp_mode', 'per_event_on' );
+		update_post_meta( $post_id, 'gatherpress_enable_rsvp', 0 );
+
+		$wp_block = new WP_Block( array(), array( 'postId' => $post_id ) );
+		$result   = $instance->generate_rsvp_template_block( '<div>Original content</div>', array(), $wp_block );
+
+		$this->assertSame( '', $result, 'Should return empty string when per-event RSVP is disabled.' );
+
+		delete_post_meta( $post_id, 'gatherpress_enable_rsvp' );
+		Settings::get_instance()->set( 'rsvp_mode', 'all_on' );
 	}
 }

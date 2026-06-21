@@ -1,0 +1,4 @@
+Significance: patch
+Type: fixed
+
+Guard the RSVP block against a malformed `serializedInnerBlocks` attribute so a bad stored value degrades gracefully instead of crashing the editor with "RSVP block has encountered an error and cannot be previewed". [#1704] [#1713]

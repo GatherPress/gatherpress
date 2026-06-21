@@ -5,26 +5,21 @@
  * Dynamically renders an inline SVG for the Icon block with customizable size and color.
  *
  * @package GatherPress\Core
- * @since 1.0.0
+ * @since 0.33.0
  */
 
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
-$gatherpress_icon         = ! empty( $attributes['icon'] ) ? $attributes['icon'] : 'nametag';
-$gatherpress_icon_color   = ! empty( $attributes['iconColor'] ) ? $attributes['iconColor'] : 'inherit';
-$gatherpress_icon_size    = ! empty( $attributes['iconSize'] ) ? $attributes['iconSize'] : 20;
-$gatherpress_svg_base_url = GATHERPRESS_CORE_URL . '/includes/assets/svg/';
-$gatherpress_svg_url      = $gatherpress_svg_base_url . $gatherpress_icon . '.svg';
-$gatherpress_svg_content  = '<svg><text x="0" y="15">' . esc_html__( 'SVG Error', 'gatherpress' ) . '</text></svg>';
-$gatherpress_response     = wp_safe_remote_get( $gatherpress_svg_url );
+$gatherpress_icon        = ! empty( $attributes['icon'] ) ? $attributes['icon'] : 'nametag';
+$gatherpress_icon_color  = ! empty( $attributes['iconColor'] ) ? $attributes['iconColor'] : 'inherit';
+$gatherpress_icon_size   = ! empty( $attributes['iconSize'] ) ? $attributes['iconSize'] : 20;
+$gatherpress_svg_file    = GATHERPRESS_CORE_PATH . '/includes/assets/svg/' . $gatherpress_icon . '.svg';
+$gatherpress_svg_content = '<svg><text x="0" y="15">' . esc_html__( 'SVG Error', 'gatherpress' ) . '</text></svg>';
 
-if ( is_array( $gatherpress_response ) && ! is_wp_error( $gatherpress_response ) ) {
-	$gatherpress_http_code = wp_remote_retrieve_response_code( $gatherpress_response );
-
-	if ( 200 === $gatherpress_http_code ) {
-		$gatherpress_svg_content = wp_remote_retrieve_body( $gatherpress_response );
-	}
+if ( is_readable( $gatherpress_svg_file ) ) {
+	// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Reading a local plugin asset, not a remote URL.
+	$gatherpress_svg_content = (string) file_get_contents( $gatherpress_svg_file );
 }
 
 $gatherpress_styles = sprintf(

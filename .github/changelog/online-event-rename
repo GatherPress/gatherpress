@@ -1,0 +1,4 @@
+Significance: patch
+Type: changed
+
+Rename `OnlineEventLink` to `OnlineEvent` and remove the legacy Listener / Broadcaster code that was no longer used. [#1420]

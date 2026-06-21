@@ -3,7 +3,7 @@
  * Class handles unit tests for GatherPress\Core\Settings\Base.
  *
  * @package GatherPress\Core
- * @since 1.0.0
+ * @since 0.27.0
  */
 
 namespace GatherPress\Tests\Core\Settings;
@@ -18,6 +18,7 @@ use PMC\Unit_Test\Utility;
  * @coversDefaultClass \GatherPress\Core\Settings\Base
  */
 class Test_Base extends Base_Unit_Test {
+
 	/**
 	 * Coverage for setup_up method.
 	 *

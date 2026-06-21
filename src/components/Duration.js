@@ -1,10 +1,14 @@
 /**
- * WordPress dependencies.
+ * WordPress dependencies
  */
 import { SelectControl } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
-import { useDispatch, useSelect } from '@wordpress/data';
-import { dateTimeOffset, durationOptions } from '../helpers/datetime';
+import { useDispatch } from '@wordpress/data';
+import {
+	dateTimeOffset,
+	durationOptions,
+	useMatchedDuration,
+} from '../helpers/datetime';
 
 /**
  * Duration component for GatherPress.
@@ -18,21 +22,21 @@ import { dateTimeOffset, durationOptions } from '../helpers/datetime';
  * duration and updates the event's end date and time. It also updates the duration value
  * in the state.
  *
- * @since 1.0.0
+ * @since 0.31.0
  *
  * @return {JSX.Element} The rendered Duration React component.
  */
 const Duration = () => {
-	const { duration } = useSelect(
-		( select ) => ( {
-			duration: select( 'gatherpress/datetime' ).getDuration(),
-		} ),
-		[],
-	);
+	// Read the matched preset via the memoized hook rather than the raw
+	// store value — only the matched preset reflects "the current end
+	// equals start + N hours", which is what the SelectControl's display
+	// needs to track. See `useMatchedDuration` for the #1607 context.
+	const duration = useMatchedDuration();
 	const dispatch = useDispatch();
 	const { setDateTimeEnd, setDuration } = dispatch( 'gatherpress/datetime' );
 	return (
 		<SelectControl
+			__next40pxDefaultSize
 			label={ __( 'Duration', 'gatherpress' ) }
 			value={
 				durationOptions().some( ( option ) => option.value === duration )

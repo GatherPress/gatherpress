@@ -1,0 +1,4 @@
+Significance: patch
+Type: fixed
+
+Multiple JS fixes for blocks inside FSE templates. [#1459] [#1461]

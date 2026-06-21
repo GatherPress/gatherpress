@@ -1,0 +1,4 @@
+Significance: patch
+Type: fixed
+
+Fixed the event-date block incorrectly showing the edited event's dates for all events inside a query loop on an event post.

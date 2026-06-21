@@ -20,14 +20,6 @@
 					"maxWidth": "400px"
 				}
 			}
-		},
-		"backgroundColor": {
-			"type": "string",
-			"default": "white"
-		},
-		"textColor": {
-			"type": "string",
-			"default": "contrast"
 		}
 	},
 	"supports": {

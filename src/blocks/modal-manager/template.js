@@ -1,5 +1,5 @@
 /**
- * WordPress dependencies.
+ * WordPress dependencies
  */
 import { __ } from '@wordpress/i18n';
 
@@ -27,7 +27,10 @@ const TEMPLATE = [
 		[
 			[
 				'gatherpress/modal-content',
-				{},
+				{
+					backgroundColor: 'white',
+					textColor: 'contrast',
+				},
 				[
 					[
 						'core/paragraph',

@@ -3,7 +3,7 @@
  * Class handles unit tests for GatherPress\Core\Topic.
  *
  * @package GatherPress\Core
- * @since 1.0.0
+ * @since 0.31.0
  */
 
 namespace GatherPress\Tests\Core;
@@ -17,6 +17,7 @@ use GatherPress\Tests\Base;
  * @coversDefaultClass \GatherPress\Core\Topic
  */
 class Test_Topic extends Base {
+
 	/**
 	 * Coverage for __construct and setup_hooks.
 	 *
@@ -114,6 +115,7 @@ class Test_Topic extends Base {
 		 * @param string $translation Translated text.
 		 * @param string $text        Text to translate.
 		 * @param string $context     Context information for the translators.
+		 *
 		 * @return string Translated text.
 		 */
 		add_filter( 'gettext_with_context_gatherpress', $filter, 10, 3 );

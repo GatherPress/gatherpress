@@ -6,10 +6,58 @@
 	inset: 0;
 	background-color: rgb(0 0 0 / 50%);
 
+	// Keep modal rendered during close so content can fade out.
+	transition: display 0.15s allow-discrete;
+
 	> div {
 		position: absolute;
 		inset: 50% auto auto 50%;
 		margin-right: -50%;
 		transform: translate(-50%, -50%);
+		opacity: 0;
+
+		// Fade out content on close.
+		transition: opacity 0.15s ease;
+	}
+
+	// Smooth content appearance when modal opens.
+	&.gatherpress--is-visible > div {
+		opacity: 1;
+		animation: gatherpress-modal-content-appear 0.25s ease-out;
+	}
+}
+
+// Editor: disable transitions and keep content visible.
+// stylelint-disable-next-line selector-class-pattern
+.editor-styles-wrapper .wp-block-gatherpress-modal {
+	transition: none;
+
+	> div {
+		opacity: 1;
+		transition: none;
+	}
+}
+
+// Skip content animation during RSVP modal-to-modal switch.
+// Detects when two sibling [data-rsvp-status] containers each have a visible modal,
+// which only happens briefly during the switch between RSVP states.
+// Uses animation-duration (not animation-name) to avoid replay when the condition clears.
+.wp-block-gatherpress-rsvp:has(
+	[data-rsvp-status]:has(.wp-block-gatherpress-modal.gatherpress--is-visible)
+	~
+	[data-rsvp-status]:has(.wp-block-gatherpress-modal.gatherpress--is-visible)
+) .wp-block-gatherpress-modal.gatherpress--is-visible > div {
+	animation-duration: 0s;
+}
+
+@keyframes gatherpress-modal-content-appear {
+	from {
+		opacity: 0;
+		transform: translate(-50%, -50%) scale(0.97);
+	}
+
+	to {
+		opacity: 1;
+		transform: translate(-50%, -50%) scale(1);
 	}
 }

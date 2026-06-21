@@ -1,0 +1,4 @@
+Significance: patch
+Type: changed
+
+Re-implement the calendar .ics download endpoint with proper rewrites and feed handling, replacing the legacy Event ICS code. [#1669]

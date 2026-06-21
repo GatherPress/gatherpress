@@ -9,6 +9,12 @@
 	"example": {},
 	"description": "Allows visitors to RSVP to an event without requiring a site account.",
 	"usesContext": [ "postId", "queryId" ],
+	"attributes": {
+		"patternPicked": {
+			"type": "boolean",
+			"default": false
+		}
+	},
 	"supports": {
 		"gatherpress": {
 			"postIdOverride": true

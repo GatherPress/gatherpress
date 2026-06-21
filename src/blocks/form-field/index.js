@@ -1,10 +1,10 @@
 /**
- * WordPress dependencies.
+ * WordPress dependencies
  */
 import { registerBlockType } from '@wordpress/blocks';
 
 /**
- * Internal dependencies.
+ * Internal dependencies
  */
 import edit from './edit';
 import metadata from './block.json';
@@ -20,7 +20,7 @@ import './style.scss';
  * the block should be rendered on the front end. This flexible block can be configured as various
  * input types.
  *
- * @since 1.0.0
+ * @since 0.27.0
  *
  * @return {void}
  */

@@ -12,6 +12,7 @@ namespace {
     define( 'GATHERPRESS_CORE_URL', '');
     define( 'GATHERPRESS_REST_NAMESPACE', '');
     define( 'GATHERPRESS_REQUIRES_PHP', '');
+    define( 'GATHERPRESS_VERSION', '');
 
     /**
      * Used in includes/core/classes/class-export.php
@@ -22,4 +23,45 @@ namespace {
      * @return string
      */
     function wxr_cdata( string $str ): string {}
+
+    /**
+     * GD image resource. Introduced in PHP 8.0; on PHP 7.4 the GD extension
+     * returns a plain `resource`. Stubbed here so PHPStan recognizes the
+     * class name in docblocks such as `@return \GdImage|resource|null` —
+     * GatherPress never instantiates it directly. Guarded with class_exists
+     * because this file is loaded as a bootstrap on PHP 8+, where the real
+     * class already exists and redeclaring would fatal.
+     */
+    if ( ! class_exists( '\GdImage', false ) ) {
+        class GdImage {}
+    }
+
+    /**
+     * Mirror the class aliases registered at runtime in
+     * `includes/core/register-class-aliases.php`. PHPStan does not execute the
+     * plugin bootstrap and cannot see runtime `class_alias` calls, so without
+     * this declaration every consumer of the prior fully-qualified class name
+     * reports `class.notFound`. Loading the source file first defines the
+     * current class so `class_alias` can resolve it.
+     */
+    if ( ! class_exists( 'GatherPress\\Core\\Event', false ) ) {
+        require_once __DIR__ . '/includes/core/classes/event/class-event.php';
+        class_alias( 'GatherPress\\Core\\Event\\Event', 'GatherPress\\Core\\Event' );
+    }
+
+    if ( ! class_exists( 'GatherPress\\Core\\Rsvp', false ) ) {
+        require_once __DIR__ . '/includes/core/classes/rsvp/class-rsvp.php';
+        class_alias( 'GatherPress\\Core\\Rsvp\\Rsvp', 'GatherPress\\Core\\Rsvp' );
+    }
+
+    if ( ! class_exists( 'GatherPress\\Core\\Venue', false ) ) {
+        require_once __DIR__ . '/includes/core/classes/venue/class-venue.php';
+        class_alias( 'GatherPress\\Core\\Venue\\Venue', 'GatherPress\\Core\\Venue' );
+    }
+
+    if ( ! class_exists( 'GatherPress\\Core\\Venue\\Map', false ) ) {
+        require_once __DIR__ . '/includes/core/classes/traits/class-singleton.php';
+        require_once __DIR__ . '/includes/core/classes/venue/map/class-map.php';
+        class_alias( 'GatherPress\\Core\\Venue\\Map\\Map', 'GatherPress\\Core\\Venue\\Map' );
+    }
 }

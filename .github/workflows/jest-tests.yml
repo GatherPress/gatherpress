@@ -10,6 +10,10 @@ on:
     - 'test/unit/js**'
     - '*.js'
     - 'package.*'
+
+permissions:
+  contents: read
+
 jobs:
   test-js:
     name: Jest Tests

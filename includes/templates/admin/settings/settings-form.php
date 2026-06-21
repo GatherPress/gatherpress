@@ -7,7 +7,7 @@
  *
  * @package GatherPress\Core
  * @param string $page The slug of the current settings page.
- * @since 1.0.0
+ * @since 0.27.0
  */
 
 // Exit if accessed directly.
@@ -19,7 +19,7 @@ if ( ! isset( $page ) ) {
 ?>
 
 <form method="post" action="options.php">
-	<?php settings_fields( $page ); ?>
+	<?php settings_fields( 'gatherpress_settings' ); ?>
 	<?php do_settings_sections( $page ); ?>
 
 	<?php submit_button( __( 'Save Settings', 'gatherpress' ) ); ?>

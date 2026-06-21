@@ -1,10 +1,10 @@
 /**
- * External dependencies.
+ * External dependencies
  */
 import { v4 as uuidv4 } from 'uuid';
 
 /**
- * WordPress dependencies.
+ * WordPress dependencies
  */
 import {
 	BlockControls,
@@ -33,9 +33,12 @@ import { useState, useEffect } from '@wordpress/element';
 import { dispatch, select, useSelect } from '@wordpress/data';
 
 /**
- * Internal dependencies.
+ * Internal dependencies
  */
-import { useIsBlockOrDescendantSelected } from './helpers';
+import {
+	getSelectedItemReset,
+	useIsBlockOrDescendantSelected,
+} from './helpers';
 
 /**
  * Edit component for the GatherPress Dropdown block.
@@ -44,7 +47,7 @@ import { useIsBlockOrDescendantSelected } from './helpers';
  * for the GatherPress Dropdown block. It allows users to configure the block's
  * attributes and settings directly within the editor.
  *
- * @since 1.0.0
+ * @since 0.33.0
  *
  * @param {Object}   props               The props object passed to the component.
  * @param {Object}   props.attributes    The attributes for the block.
@@ -117,8 +120,8 @@ const Edit = ( { attributes, setAttributes, clientId } ) => {
 	useEffect( () => {
 		const currentLabel = label || __( 'Dropdown', 'gatherpress' );
 		const currentMetadata =
-			select( 'core/block-editor' ).getBlockAttributes( clientId ).metadata ||
-			{};
+			select( 'core/block-editor' ).getBlockAttributes( clientId )
+				?.metadata || {};
 
 		// Only update if the metadata name differs from the current label.
 		if ( currentMetadata.name !== currentLabel ) {
@@ -127,6 +130,21 @@ const Edit = ( { attributes, setAttributes, clientId } ) => {
 			} );
 		}
 	}, [ label, clientId ] );
+
+	// Recover from a deleted "Default Selected Item": fall back to the first item,
+	// or switch select mode off entirely once every item has been removed.
+	useEffect( () => {
+		const reset = getSelectedItemReset(
+			actAsSelect,
+			innerBlocks,
+			selectedIndex,
+			__( 'Dropdown', 'gatherpress' )
+		);
+
+		if ( reset ) {
+			setAttributes( reset );
+		}
+	}, [ actAsSelect, innerBlocks, selectedIndex, setAttributes ] );
 
 	useEffect( () => {
 		// Ensure this effect only runs when `actAsSelect` is enabled.
@@ -338,7 +356,6 @@ const Edit = ( { attributes, setAttributes, clientId } ) => {
 					label={ __( 'Open on', 'gatherpress' ) }
 					value={ openOn }
 					isBlock
-					__nextHasNoMarginBottom
 					__next40pxDefaultSize
 					onChange={ ( value ) => setAttributes( { openOn: value } ) }
 				>
@@ -366,6 +383,7 @@ const Edit = ( { attributes, setAttributes, clientId } ) => {
 						/>
 						{ actAsSelect && (
 							<SelectControl
+								__next40pxDefaultSize
 								label={ __(
 									'Default Selected Item',
 									'gatherpress',

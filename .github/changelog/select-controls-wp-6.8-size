@@ -1,0 +1,4 @@
+Significance: patch
+Type: changed
+
+Apply the WordPress 6.8 `__next40pxDefaultSize` opt-in to every `SelectControl` instance so admin form controls match the upcoming default sizing. [#1661]

@@ -1,0 +1,4 @@
+Significance: patch
+Type: changed
+
+Apply the GatherPress hook naming convention across the codebase. New `shadow_*` subsystem row added to the hooks-naming-convention doc. [#1550]

@@ -1,0 +1,77 @@
+name: Playground Preview Comment
+
+# Privileged companion to the `Playground Preview` workflow.
+#
+# Triggered when the build workflow finishes, downloads its artifact, and posts
+# the PR comment with playground links. Because this runs via workflow_run, it
+# executes from the base repo's default branch — never from PR-controlled code
+# — even though it has `pull-requests: write` to post the comment.
+
+on:
+  workflow_run:
+    workflows: ['Playground Preview']
+    types: [completed]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+
+  comment:
+    name: Comment with playground link
+    # Only post for successful PR runs. Skips push/scheduled invocations of
+    # the upstream workflow (none today, but defensive) and failed builds.
+    if: >-
+      github.event.workflow_run.event == 'pull_request' &&
+      github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    steps:
+
+      - name: Download build artifact from upstream workflow
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ github.event.repository.name }}-pr
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Read PR number from artifact
+        id: pr
+        run: echo "number=$(cat pr-number.txt)" >> "$GITHUB_OUTPUT"
+
+      # Check out the base repo at the default branch (trusted code) so the
+      # github-script step below can require .github/scripts/playground-preview
+      # from the merged base, never from the PR.
+      - name: Checkout base repo
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          path: base
+
+      # PR head — ONLY to read the override file, never to execute code from it.
+      # Sparse checkout limits what we pull to just the override directory.
+      - name: Checkout PR head for blueprint override
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          path: pr-head
+          sparse-checkout: |
+            .github/playground
+          sparse-checkout-cone-mode: true
+
+      - name: Add Preview Links comment
+        uses: actions/github-script@v7
+        env:
+          PHP_VERSIONS: '["8.4","8.2","7.4"]'
+          PR_NUMBER: ${{ steps.pr.outputs.number }}
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const overrideFilePath = 'pr-head/.github/playground/';
+            const createPreviewLinks = require('./base/.github/scripts/playground-preview');
+            await createPreviewLinks(
+                github,
+                context,
+                Number(process.env.PR_NUMBER),
+                overrideFilePath
+            );

@@ -5,7 +5,7 @@
  * Description:       Powering Communities with WordPress.
  * Author:            The GatherPress Community
  * Author URI:        https://gatherpress.org/
- * Version:           0.34.0-alpha.1
+ * Version:           0.34.0-beta.1
  * Requires PHP:      7.4
  * Requires at least: 6.7
  * Text Domain:       gatherpress
@@ -41,6 +41,9 @@ define( 'GATHERPRESS_VERSION', current( get_file_data( __FILE__, array( 'Version
 if ( ! require_once GATHERPRESS_CORE_PATH . '/includes/core/requirements-check.php' ) {
 	return;
 }
+
+// Register class aliases so prior fully-qualified names continue to resolve to their current locations.
+require_once GATHERPRESS_CORE_PATH . '/includes/core/register-class-aliases.php';
 
 // Include and register the autoloader class for automatic loading of plugin classes.
 require_once GATHERPRESS_CORE_PATH . '/includes/core/classes/class-autoloader.php';

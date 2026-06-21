@@ -1,12 +1,66 @@
 /**
- * WordPress dependencies.
+ * WordPress dependencies
  */
 import { store, getContext, getElement } from '@wordpress/interactivity';
 
 /**
- * Internal dependencies.
+ * Internal dependencies
  */
-import { getFromGlobal, safeHTML } from '../../helpers/globals';
+import { stripScriptsAndEventHandlers } from '../../helpers/globals';
+
+/**
+ * Toggle a `.gatherpress--is-visible` / `.gatherpress--is-hidden` class
+ * pair on an element. Centralized so the empty-/has-responses pair share
+ * one implementation and the caller stays a one-liner.
+ *
+ * @param {Element} element The element to toggle.
+ * @param {boolean} visible Whether the element should be visible.
+ */
+const setResponseVisibility = ( element, visible ) => {
+	element.classList.add(
+		visible ? 'gatherpress--is-visible' : 'gatherpress--is-hidden',
+	);
+	element.classList.remove(
+		visible ? 'gatherpress--is-hidden' : 'gatherpress--is-visible',
+	);
+};
+
+/**
+ * Update the empty-/has-responses message pair next to the rendered RSVP
+ * template. Extracted from the renderBlocks `.then` callback so that
+ * callback stays under SonarCloud's cognitive-complexity threshold.
+ *
+ * @param {Element} grandParent    Container holding the message elements.
+ * @param {string}  rsvpSelection  Currently selected RSVP filter.
+ * @param {number}  attendingCount Number of attendees in the response.
+ */
+const updateEmptyResponseMessages = (
+	grandParent,
+	rsvpSelection,
+	attendingCount,
+) => {
+	const emptyEl = grandParent.querySelector(
+		'.gatherpress-rsvp-response--no-responses',
+	);
+
+	if ( ! emptyEl ) {
+		return;
+	}
+
+	const hasNoAttendees =
+		[ 'attending', 'no_status' ].includes( rsvpSelection ) &&
+		0 === attendingCount;
+
+	setResponseVisibility( emptyEl, hasNoAttendees );
+
+	const hasResponsesEl = grandParent.querySelector(
+		'.gatherpress-rsvp-response--has-responses',
+	);
+
+	if ( hasResponsesEl ) {
+		setResponseVisibility( hasResponsesEl, ! hasNoAttendees );
+	}
+};
 
 const { state } = store( 'gatherpress', {
 	callbacks: {
@@ -16,7 +70,7 @@ const { state } = store( 'gatherpress', {
 			const rsvpResponseElement = element.ref.closest(
 				'.wp-block-gatherpress-rsvp-response',
 			);
-			fetch( getFromGlobal( 'urls.eventApiUrl' ) + '/rsvp-status-html', {
+			fetch( state.eventApiUrl + '/rsvp-status-html', {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json',
@@ -26,7 +80,7 @@ const { state } = store( 'gatherpress', {
 						state.posts[ context.postId ]?.rsvpSelection ||
 						'attending',
 					post_id: context.postId,
-					block_data: element.ref.textContent,
+					block_data: element.ref.dataset.blockTemplate,
 					limit_enabled:
 						'1' === rsvpResponseElement.dataset.limitEnabled,
 					limit: parseInt( rsvpResponseElement.dataset.limit, 10 ),
@@ -34,52 +88,37 @@ const { state } = store( 'gatherpress', {
 			} )
 				.then( ( response ) => response.json() ) // Parse the JSON response.
 				.then( ( res ) => {
-					if ( res.success ) {
-						const parent = element.ref.parentElement;
-
-						Array.from( parent.children ).forEach( ( sibling ) => {
-							if (
-								sibling !== element.ref &&
-								'id' in sibling.dataset
-							) {
-								sibling.remove();
-							}
-						} );
-
-						const grandParent = parent.parentElement;
-						const emptyRsvpMessageElement =
-							grandParent.querySelector(
-								'.gatherpress-rsvp-response--no-responses',
-							);
-
-						if ( emptyRsvpMessageElement ) {
-							if (
-								[ 'attending', 'no_status' ].includes(
-									state.posts[ context.postId ]?.rsvpSelection,
-								) &&
-								0 === res.responses.attending.count
-							) {
-								emptyRsvpMessageElement.classList.add(
-									'gatherpress--is-visible',
-								);
-								emptyRsvpMessageElement.classList.remove(
-									'gatherpress--is-hidden',
-								);
-							} else {
-								emptyRsvpMessageElement.classList.add(
-									'gatherpress--is-hidden',
-								);
-								emptyRsvpMessageElement.classList.remove(
-									'gatherpress--is-visible',
-								);
-							}
-						}
-
-						element.ref.insertAdjacentHTML(
-							'beforebegin',
-							safeHTML( res.content ),
-						);
+					if ( ! res.success ) {
+						return;
 					}
+
+					const parent = element.ref.parentElement;
+
+					Array.from( parent.children ).forEach( ( sibling ) => {
+						if (
+							sibling !== element.ref &&
+							'id' in sibling.dataset
+						) {
+							sibling.remove();
+						}
+					} );
+
+					updateEmptyResponseMessages(
+						parent.parentElement,
+						state.posts[ context.postId ]?.rsvpSelection ||
+							'attending',
+						res.responses.attending.count,
+					);
+
+					// `res.content` is HTML rendered by GatherPress's own
+					// `/rsvp-status-html` REST endpoint, which escapes
+					// at template time. The strip pass here is
+					// defense-in-depth — not a substitute for proper
+					// server-side escaping.
+					element.ref.insertAdjacentHTML(
+						'beforebegin',
+						stripScriptsAndEventHandlers( res.content ),
+					);
 				} )
 				.catch( () => {} );
 		},

@@ -1,0 +1,4 @@
+Significance: patch
+Type: fixed
+
+Refuse activation when duplicate GatherPress folders are on disk to prevent silent class collisions. [#1560]

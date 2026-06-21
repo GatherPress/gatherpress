@@ -1,5 +1,5 @@
 /**
- * WordPress dependencies.
+ * WordPress dependencies
  */
 import { createReduxStore, register } from '@wordpress/data';
 
@@ -22,12 +22,6 @@ const actions = {
 			longitude,
 		};
 	},
-	updateMapCustomLatLong( mapCustomLatLong ) {
-		return {
-			type: 'UPDATE_MAP_CUSTOM_LAT_LONG',
-			mapCustomLatLong,
-		};
-	},
 };
 
 const reducer = ( state = DEFAULT_STATE, action ) => {
@@ -41,11 +35,6 @@ const reducer = ( state = DEFAULT_STATE, action ) => {
 			return {
 				...state,
 				longitude: action.longitude,
-			};
-		case 'UPDATE_MAP_CUSTOM_LAT_LONG':
-			return {
-				...state,
-				mapCustomLatLong: action.mapCustomLatLong,
 			};
 		default:
 			return state;

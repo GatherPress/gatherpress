@@ -1,21 +1,21 @@
 /**
- * External dependencies.
+ * External dependencies
  */
 import { render, act } from '@testing-library/react';
 import { describe, expect, it, jest, beforeEach } from '@jest/globals';
 import '@testing-library/jest-dom';
 
 /**
- * WordPress dependencies.
+ * WordPress dependencies
  */
 jest.mock( '@wordpress/date', () => ( {
 	format: jest.fn( ( dateFormat ) => `Formatted: ${ dateFormat }` ),
 } ) );
 
 /**
- * Internal dependencies.
+ * Internal dependencies
  */
-import DateTimePreview from '../../../../../src/components/DateTimePreview';
+import DateTimePreview from '@src/components/DateTimePreview';
 import { format } from '@wordpress/date';
 
 /**

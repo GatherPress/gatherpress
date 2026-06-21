@@ -11,6 +11,15 @@ on:
     - '*.php'
     - 'phpunit.xml.dist'
     - 'composer.*'
+
+# Cancel superseded runs on the same ref so stacked PR pushes do not pile up.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
 jobs:
   test-php:
     name: ${{ matrix.php_versions }} on ${{ matrix.os }}

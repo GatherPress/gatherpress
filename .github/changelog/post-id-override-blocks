@@ -1,0 +1,4 @@
+Significance: patch
+Type: changed
+
+Make `postIdOverride` work for the event and venue blocks, with the dim-gate suppressed on non-event hosts when the override resolves. [#1552] [#1554]

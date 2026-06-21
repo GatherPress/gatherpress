@@ -3,13 +3,14 @@
  * Class handles unit tests for GatherPress\Core\Blocks\Rsvp_Response.
  *
  * @package GatherPress\Core
- * @since 1.0.0
+ * @since 0.33.0
  */
 
 namespace GatherPress\Tests\Core\Blocks;
 
 use GatherPress\Core\Blocks\Rsvp_Response;
-use GatherPress\Core\Rsvp;
+use GatherPress\Core\Rsvp\Rsvp;
+use GatherPress\Core\Settings;
 use GatherPress\Tests\Base;
 
 /**
@@ -18,13 +19,14 @@ use GatherPress\Tests\Base;
  * @coversDefaultClass \GatherPress\Core\Blocks\Rsvp_Response
  */
 class Test_Rsvp_Response extends Base {
+
 	/**
 	 * Tests the setup_hooks method.
 	 *
 	 * Verifies that the appropriate filters are registered during setup,
 	 * ensuring the hooks are properly configured for the RSVP Response block.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::__construct
 	 * @covers ::setup_hooks
 	 *
@@ -66,7 +68,7 @@ class Test_Rsvp_Response extends Base {
 	/**
 	 * Tests basic block content transformation.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::transform_block_content
 	 *
 	 * @return void
@@ -109,7 +111,7 @@ class Test_Rsvp_Response extends Base {
 	/**
 	 * Tests transform_block_content returns empty string for non-event post type.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::transform_block_content
 	 *
 	 * @return void
@@ -140,7 +142,7 @@ class Test_Rsvp_Response extends Base {
 	/**
 	 * Tests empty RSVP visibility handling.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::transform_block_content
 	 *
 	 * @return void
@@ -171,7 +173,7 @@ class Test_Rsvp_Response extends Base {
 	/**
 	 * Tests RSVP count data attributes.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::transform_block_content
 	 *
 	 * @return void
@@ -207,7 +209,7 @@ class Test_Rsvp_Response extends Base {
 	/**
 	 * Tests no-responses visibility handling with attending responses.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::transform_block_content
 	 *
 	 * @return void
@@ -250,7 +252,7 @@ class Test_Rsvp_Response extends Base {
 	/**
 	 * Tests default values for RSVP limits.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::transform_block_content
 	 *
 	 * @return void
@@ -286,7 +288,7 @@ class Test_Rsvp_Response extends Base {
 	/**
 	 * Tests trigger text with attendee count.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::attach_dropdown_interactivity
 	 *
 	 * @return void
@@ -315,7 +317,7 @@ class Test_Rsvp_Response extends Base {
 	/**
 	 * Tests RSVP status buttons.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::attach_dropdown_interactivity
 	 *
 	 * @return void
@@ -369,7 +371,7 @@ class Test_Rsvp_Response extends Base {
 	/**
 	 * Tests with missing data counts.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::attach_dropdown_interactivity
 	 *
 	 * @return void
@@ -389,7 +391,7 @@ class Test_Rsvp_Response extends Base {
 	/**
 	 * Tests with non-RSVP menu items.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::attach_dropdown_interactivity
 	 *
 	 * @return void
@@ -413,7 +415,7 @@ class Test_Rsvp_Response extends Base {
 	/**
 	 * Tests avatar modification for regular RSVP comments.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::modify_avatar_for_gatherpress_rsvp
 	 *
 	 * @return void
@@ -441,7 +443,7 @@ class Test_Rsvp_Response extends Base {
 	/**
 	 * Tests avatar modification for anonymous RSVP comments.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::modify_avatar_for_gatherpress_rsvp
 	 *
 	 * @return void
@@ -473,7 +475,7 @@ class Test_Rsvp_Response extends Base {
 	/**
 	 * Tests avatar modification for admin viewing anonymous RSVP.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::modify_avatar_for_gatherpress_rsvp
 	 *
 	 * @return void
@@ -507,7 +509,7 @@ class Test_Rsvp_Response extends Base {
 	/**
 	 * Tests avatar modification for non-RSVP comments.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::modify_avatar_for_gatherpress_rsvp
 	 *
 	 * @return void
@@ -533,7 +535,7 @@ class Test_Rsvp_Response extends Base {
 	/**
 	 * Tests adding RSVP template to empty ancestor array.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::add_rsvp_to_comment_ancestor
 	 *
 	 * @return void
@@ -556,7 +558,7 @@ class Test_Rsvp_Response extends Base {
 	/**
 	 * Tests adding RSVP template to existing ancestors.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::add_rsvp_to_comment_ancestor
 	 *
 	 * @return void
@@ -584,7 +586,7 @@ class Test_Rsvp_Response extends Base {
 	/**
 	 * Tests missing ancestor property.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::add_rsvp_to_comment_ancestor
 	 *
 	 * @return void
@@ -611,7 +613,7 @@ class Test_Rsvp_Response extends Base {
 	/**
 	 * Tests non-comment author block metadata.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::add_rsvp_to_comment_ancestor
 	 *
 	 * @return void
@@ -628,5 +630,181 @@ class Test_Rsvp_Response extends Base {
 			$result['ancestor'],
 			'Ancestor array should remain empty for non-comment author blocks'
 		);
+	}
+
+	/**
+	 * Tests has-responses section becomes visible when attendees exist.
+	 *
+	 * @since 0.34.0
+	 * @covers ::transform_block_content
+	 *
+	 * @return void
+	 */
+	public function test_transform_block_content_show_has_responses_with_attendees(): void {
+		$instance = Rsvp_Response::get_instance();
+		$post_id  = $this->factory()->post->create(
+			array(
+				'post_type' => 'gatherpress_event',
+			)
+		);
+		$user_id  = $this->factory()->user->create();
+		$rsvp     = new Rsvp( $post_id );
+
+		$rsvp->save( $user_id, 'attending' );
+
+		$block         = array(
+			'blockName' => 'gatherpress/rsvp-response',
+			'attrs'     => array(
+				'postId' => $post_id,
+			),
+		);
+		$block_content = '<div class="wp-block-gatherpress-rsvp-response">' .
+			'<div class="gatherpress-rsvp-response--has-responses gatherpress--is-hidden">Responses</div>' .
+			'</div>';
+		$result        = $instance->transform_block_content( $block_content, $block );
+
+		$this->assertStringContainsString(
+			'gatherpress--is-visible',
+			$result,
+			'Has-responses section should have visible class when attendees exist.'
+		);
+		$this->assertStringNotContainsString(
+			'gatherpress--is-hidden',
+			$result,
+			'Has-responses section should not have hidden class when attendees exist.'
+		);
+	}
+
+	/**
+	 * Tests has-responses section becomes hidden when no attendees exist.
+	 *
+	 * @since 0.34.0
+	 * @covers ::transform_block_content
+	 *
+	 * @return void
+	 */
+	public function test_transform_block_content_hide_has_responses_without_attendees(): void {
+		$instance      = Rsvp_Response::get_instance();
+		$post_id       = $this->factory()->post->create(
+			array(
+				'post_type' => 'gatherpress_event',
+			)
+		);
+		$block         = array(
+			'blockName' => 'gatherpress/rsvp-response',
+			'attrs'     => array(
+				'postId' => $post_id,
+			),
+		);
+		$block_content = '<div class="wp-block-gatherpress-rsvp-response">' .
+			'<div class="gatherpress-rsvp-response--has-responses gatherpress--is-visible">Responses</div>' .
+			'</div>';
+		$result        = $instance->transform_block_content( $block_content, $block );
+
+		$this->assertStringContainsString(
+			'gatherpress--is-hidden',
+			$result,
+			'Has-responses section should have hidden class when no attendees exist.'
+		);
+		$this->assertStringNotContainsString(
+			'gatherpress--is-visible',
+			$result,
+			'Has-responses section should not have visible class when no attendees exist.'
+		);
+	}
+
+	/**
+	 * Tests extra_attr with a style attribute is preserved and other attributes stripped.
+	 *
+	 * @since 0.34.0
+	 * @covers ::modify_avatar_for_gatherpress_rsvp
+	 *
+	 * @return void
+	 */
+	public function test_modify_avatar_extra_attr_with_style(): void {
+		$instance   = Rsvp_Response::get_instance();
+		$user_id    = $this->factory()->user->create();
+		$comment_id = $this->factory()->comment->create(
+			array(
+				'user_id'      => $user_id,
+				'comment_type' => 'gatherpress_rsvp',
+			)
+		);
+		$comment    = get_comment( $comment_id );
+		$args       = array(
+			'url'        => '',
+			'extra_attr' => 'style="border-radius:50%" data-foo="bar"',
+		);
+		$result     = $instance->modify_avatar_for_gatherpress_rsvp( $args, $comment );
+
+		$this->assertSame(
+			'style="border-radius:50%"',
+			$result['extra_attr'],
+			'Only the style attribute should be preserved in extra_attr when a style is present.'
+		);
+	}
+
+	/**
+	 * Tests extra_attr without a style attribute is cleared entirely.
+	 *
+	 * @since 0.34.0
+	 * @covers ::modify_avatar_for_gatherpress_rsvp
+	 *
+	 * @return void
+	 */
+	public function test_modify_avatar_extra_attr_without_style(): void {
+		$instance   = Rsvp_Response::get_instance();
+		$user_id    = $this->factory()->user->create();
+		$comment_id = $this->factory()->comment->create(
+			array(
+				'user_id'      => $user_id,
+				'comment_type' => 'gatherpress_rsvp',
+			)
+		);
+		$comment    = get_comment( $comment_id );
+		$args       = array(
+			'url'        => '',
+			'extra_attr' => 'data-foo="bar"',
+		);
+		$result     = $instance->modify_avatar_for_gatherpress_rsvp( $args, $comment );
+
+		$this->assertSame(
+			'',
+			$result['extra_attr'],
+			'extra_attr should be cleared to an empty string when no style attribute is present.'
+		);
+	}
+
+	/**
+	 * Tests that transform_block_content returns empty string when per-event RSVP is disabled.
+	 *
+	 * @covers ::transform_block_content
+	 *
+	 * @return void
+	 */
+	public function test_transform_block_content_rsvp_disabled_per_event(): void {
+		$instance = Rsvp_Response::get_instance();
+		$post_id  = $this->factory()->post->create(
+			array(
+				'post_type'   => 'gatherpress_event',
+				'post_status' => 'publish',
+			)
+		);
+
+		Settings::get_instance()->set( 'rsvp_mode', 'per_event_on' );
+		update_post_meta( $post_id, 'gatherpress_enable_rsvp', 0 );
+
+		$block_content = '<div class="wp-block-gatherpress-rsvp-response">Content</div>';
+		$block         = array(
+			'blockName' => 'gatherpress/rsvp-response',
+			'attrs'     => array( 'postId' => $post_id ),
+		);
+
+		$result = $instance->transform_block_content( $block_content, $block );
+
+		$this->assertSame( '', $result, 'Should return empty string when per-event RSVP is disabled.' );
+
+		delete_post_meta( $post_id, 'gatherpress_enable_rsvp' );
+		Settings::get_instance()->set( 'rsvp_mode', 'all_on' );
 	}
 }

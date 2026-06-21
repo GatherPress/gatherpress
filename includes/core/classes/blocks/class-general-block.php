@@ -7,7 +7,7 @@
  * that do not belong to a specific block type but require additional processing.
  *
  * @package GatherPress\Core
- * @since 1.0.0
+ * @since 0.33.0
  */
 
 namespace GatherPress\Core\Blocks;
@@ -15,8 +15,7 @@ namespace GatherPress\Core\Blocks;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
-use GatherPress\Core\Block;
-use GatherPress\Core\Event;
+use GatherPress\Core\Rsvp\Rsvp;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Utility;
 use WP_HTML_Tag_Processor;
@@ -28,9 +27,10 @@ use WP_HTML_Tag_Processor;
  * This class acts as a central handler for non-specific block logic,
  * such as filtering or injecting attributes for blocks with certain characteristics.
  *
- * @since 1.0.0
+ * @since 0.33.0
  */
 class General_Block {
+
 	/**
 	 * Enforces a single instance of this class.
 	 */
@@ -41,7 +41,7 @@ class General_Block {
 	 *
 	 * This method initializes the object and sets up necessary hooks.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 */
 	protected function __construct() {
 		$this->setup_hooks();
@@ -52,13 +52,14 @@ class General_Block {
 	 *
 	 * This method adds hooks for different purposes as needed.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @return void
 	 */
 	protected function setup_hooks(): void {
 		add_filter( 'render_block', array( $this, 'process_login_block' ), 10, 2 );
 		add_filter( 'render_block', array( $this, 'process_registration_block' ), 10, 2 );
+		add_filter( 'render_block', array( $this, 'process_venue_detail_field' ), 10, 2 );
 		add_filter( 'render_block_core/button', array( $this, 'convert_submit_button' ), 10, 2 );
 	}
 
@@ -70,7 +71,7 @@ class General_Block {
 	 * 2. Dynamically replaces the placeholder login URL with the actual login URL
 	 *    for users who are not logged in
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @param string $block_content The HTML content of the block.
 	 * @param array  $block         The parsed block data.
@@ -104,7 +105,7 @@ class General_Block {
 	 * 2. For enabled registration, dynamically replaces the placeholder registration URL with the actual
 	 *    registration URL
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @param string $block_content The HTML content of the block.
 	 * @param array  $block         The parsed block data.
@@ -131,13 +132,56 @@ class General_Block {
 	}
 
 	/**
+	 * Processes blocks with venue conditional classes.
+	 *
+	 * Hides a block (and its inner content) when the associated venue meta is
+	 * empty. The class suffix maps directly to the venue meta key suffix:
+	 * `gatherpress--has-venue-{field}` checks `gatherpress_{field}` for the
+	 * known venue fields (address, phone, website). This lets wrapper blocks
+	 * like Groups/Rows that contain an icon and a venue-detail block be hidden
+	 * together when the underlying field has no value.
+	 *
+	 * @since 0.34.0
+	 *
+	 * @param string $block_content The HTML content of the block.
+	 * @param array  $block         The parsed block data.
+	 *
+	 * @return string The modified block content or an empty string if the block should be removed.
+	 */
+	public function process_venue_detail_field( string $block_content, array $block ): string {
+		$class_name = $block['attrs']['className'] ?? '';
+
+		// Bail when the block isn't tagged with a recognized venue field
+		// suffix — anything outside the allow-list stays as-is.
+		if ( ! preg_match( '/gatherpress--has-venue-([a-z-]+)/', $class_name, $matches )
+			|| ! in_array( $matches[1], array( 'address', 'phone', 'website' ), true ) ) {
+			return $block_content;
+		}
+
+		$field_name = $matches[1];
+
+		// Get the venue post ID from the current context (block context first,
+		// fall back to the current post). Verify it's actually a venue.
+		$venue_post_id = $block['attrs']['postId'] ?? get_the_ID();
+
+		if ( ! post_type_supports( (string) get_post_type( $venue_post_id ), 'gatherpress-venue-information' ) ) {
+			return $block_content;
+		}
+
+		$field_value = (string) get_post_meta( $venue_post_id, Utility::prefix_key( $field_name ), true );
+
+		// Hide the entire block when the venue field is empty.
+		return ( '' === $field_value ) ? '' : $block_content;
+	}
+
+	/**
 	 * Converts button blocks with the `gatherpress-submit-button` class to submit buttons.
 	 *
 	 * This method performs two functions:
 	 * 1. Converts anchor tags (`<a>`) to button elements and removes href/role attributes
 	 * 2. Adds `type="submit"` attribute to both converted anchors and existing button elements
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @param string $block_content The HTML content of the block.
 	 * @param array  $block         The parsed block data.
@@ -151,6 +195,7 @@ class General_Block {
 		}
 
 		$processor = new WP_HTML_Tag_Processor( $block_content );
+		$content   = $block_content;
 
 		while ( $processor->next_tag() ) {
 			$tag_name = $processor->get_tag();
@@ -161,21 +206,21 @@ class General_Block {
 				$processor->remove_attribute( 'href' );
 				$processor->remove_attribute( 'role' );
 
-				// Replace tag names.
 				$content = $processor->get_updated_html();
 				$content = preg_replace( '/<a\b/', '<button', $content );
 				$content = str_replace( '</a>', '</button>', $content );
+				break;
+			}
 
-				return $content;
-			} elseif ( 'BUTTON' === $tag_name ) {
+			if ( 'BUTTON' === $tag_name ) {
 				// Handle button tags - just add type="submit".
 				$processor->set_attribute( 'type', 'submit' );
-
-				return $processor->get_updated_html();
+				$content = $processor->get_updated_html();
+				break;
 			}
 		}
 
-		return $block_content;
+		return $content;
 	}
 
 	/**
@@ -183,7 +228,7 @@ class General_Block {
 	 *
 	 * Hides the guest count field when max guest limit is 0.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @param string $block_content The block content.
 	 * @param array  $block         The block data.
@@ -192,16 +237,20 @@ class General_Block {
 	 */
 	public function process_guests_field( string $block_content, array $block ): string {
 		// Get the correct post ID using override logic.
-		$block_instance = Block::get_instance();
+		$block_instance = Setup::get_instance();
 		$post_id        = $block_instance->get_post_id( $block );
 
-		// Only process if we have a valid event post.
+		// Only process if the post type supports RSVP.
 		// Only check publish status if not in preview mode.
 		if (
-			Event::POST_TYPE !== get_post_type( $post_id ) ||
+			! post_type_supports( (string) get_post_type( $post_id ), 'gatherpress-rsvp' ) ||
 			( ! is_preview() && 'publish' !== get_post_status( $post_id ) )
 		) {
 			return $block_content;
+		}
+
+		if ( ! ( new Rsvp( $post_id ) )->is_enabled() ) {
+			return '';
 		}
 
 		// Get max guest limit from event settings.
@@ -231,7 +280,7 @@ class General_Block {
 	 *
 	 * Hides the anonymous field when anonymous RSVP is disabled.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @param string $block_content The block content.
 	 * @param array  $block         The block data.
@@ -240,16 +289,20 @@ class General_Block {
 	 */
 	public function process_anonymous_field( string $block_content, array $block ): string {
 		// Get the correct post ID using override logic.
-		$block_instance = Block::get_instance();
+		$block_instance = Setup::get_instance();
 		$post_id        = $block_instance->get_post_id( $block );
 
-		// Only process if we have a valid event post.
+		// Only process if the post type supports RSVP.
 		// Only check publish status if not in preview mode.
 		if (
-			Event::POST_TYPE !== get_post_type( $post_id ) ||
+			! post_type_supports( (string) get_post_type( $post_id ), 'gatherpress-rsvp' ) ||
 			( ! is_preview() && 'publish' !== get_post_status( $post_id ) )
 		) {
 			return $block_content;
+		}
+
+		if ( ! ( new Rsvp( $post_id ) )->is_enabled() ) {
+			return '';
 		}
 
 		// Get anonymous RSVP setting from event.

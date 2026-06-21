@@ -10,5 +10,5 @@
 	"ignore_filter": [
 		"determine_current_user"
 	],
-	"top_headline": true
+	"github_wiki": false
 }

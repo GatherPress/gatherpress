@@ -1,18 +1,21 @@
 /**
- * External dependencies.
+ * External dependencies
  */
 import { renderHook } from '@testing-library/react';
 import { describe, expect, it, jest, afterEach } from '@jest/globals';
 
 /**
- * WordPress dependencies.
+ * WordPress dependencies
  */
 import { useSelect } from '@wordpress/data';
 
 /**
- * Internal dependencies.
+ * Internal dependencies
  */
-import { useIsBlockOrDescendantSelected } from '../../../../../../src/blocks/dropdown/helpers';
+import {
+	getSelectedItemReset,
+	useIsBlockOrDescendantSelected,
+} from '@src/blocks/dropdown/helpers';
 
 // Mock @wordpress/data.
 jest.mock( '@wordpress/data', () => ( {
@@ -163,5 +166,54 @@ describe( 'useIsBlockOrDescendantSelected', () => {
 		);
 
 		expect( result.current ).toBe( true );
+	} );
+} );
+
+describe( 'getSelectedItemReset', () => {
+	const items = ( count ) =>
+		Array.from( { length: count }, ( _, index ) => ( {
+			attributes: { text: `Item ${ index + 1 }` },
+		} ) );
+
+	it( 'returns null when select mode is disabled', () => {
+		expect(
+			getSelectedItemReset( false, items( 3 ), 5, 'Dropdown' )
+		).toBeNull();
+	} );
+
+	it( 'returns null when the selected index still points at a valid item', () => {
+		expect(
+			getSelectedItemReset( true, items( 3 ), 2, 'Dropdown' )
+		).toBeNull();
+	} );
+
+	it( 'falls back to the first item when the selected item was removed but others remain', () => {
+		expect(
+			getSelectedItemReset( true, items( 3 ), 4, 'Dropdown' )
+		).toEqual( { selectedIndex: 0 } );
+	} );
+
+	it( 'falls back to the first item when the selected index is negative', () => {
+		expect(
+			getSelectedItemReset( true, items( 3 ), -1, 'Dropdown' )
+		).toEqual( { selectedIndex: 0 } );
+	} );
+
+	it( 'switches select mode off and resets the label when all items are removed', () => {
+		expect( getSelectedItemReset( true, [], 2, 'Dropdown' ) ).toEqual( {
+			actAsSelect: false,
+			selectedIndex: 0,
+			label: 'Dropdown',
+		} );
+	} );
+
+	it( 'treats a non-array innerBlocks value as an empty dropdown', () => {
+		expect(
+			getSelectedItemReset( true, undefined, 0, 'Dropdown' )
+		).toEqual( {
+			actAsSelect: false,
+			selectedIndex: 0,
+			label: 'Dropdown',
+		} );
 	} );
 } );

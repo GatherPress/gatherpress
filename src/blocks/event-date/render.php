@@ -4,16 +4,16 @@
  *
  * @package GatherPress
  * @subpackage Core
- * @since 1.0.0
+ * @since 0.27.0
  */
 
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
+use GatherPress\Core\Blocks\Setup;
 use GatherPress\Core\Event;
-use GatherPress\Core\Block;
 
-$gatherpress_block_instance = Block::get_instance();
+$gatherpress_block_instance = Setup::get_instance();
 $gatherpress_post_id        = $gatherpress_block_instance->get_post_id( $block->parsed_block );
 $gatherpress_event          = new Event( $gatherpress_post_id );
 ?>

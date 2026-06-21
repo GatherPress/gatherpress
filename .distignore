@@ -19,8 +19,10 @@
 .stylelintrc.js
 .travis.yml
 .typos.toml
+AGENTS.md
 CLAUDE.md
 CODE_OF_CONDUCT.md
+README.md
 composer.json
 composer.lock
 dependencies.yml
@@ -58,6 +60,7 @@ node_modules
 vendor
 src
 docs
+wp-cron.sh
 
 # Miscellaneous and SQL Archives
 behat.yml

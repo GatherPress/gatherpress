@@ -3,7 +3,7 @@
  * Class handles unit tests for GatherPress\Core\Commands\Event_Cli.
  *
  * @package GatherPress\Core
- * @since 1.0.0
+ * @since 0.27.0
  */
 
 namespace GatherPress\Tests\Core\Commands;
@@ -19,6 +19,7 @@ use PMC\Unit_Test\Utility;
  * @coversDefaultClass \GatherPress\Core\Commands\Event_Cli
  */
 class Test_Event_Cli extends Base {
+
 	/**
 	 * Coverage for rsvp.
 	 *

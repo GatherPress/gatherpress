@@ -14,10 +14,25 @@ on:
     - 'test/e2e/**'
     - '*.php'
     - '*.js'
+
+# Cancel an in-progress run when a newer commit is pushed to the same ref so
+# stacked PR runs do not pile up (three were running simultaneously on
+# 2026-05-30).
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
 jobs:
   playwright:
     name: Playwright Tests
     runs-on: ubuntu-latest
+    # A healthy run finishes well under 30 minutes; without this a hung step
+    # (e.g. the Playwright browser download stalling) inherits GitHub's 6-hour
+    # default before it is killed.
+    timeout-minutes: 30
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -60,8 +75,21 @@ jobs:
             ./node_modules
           key: ${{ steps.node_modules-cache.outputs.cache-primary-key }}
 
-      - name: Playwright install
-        run: npx playwright install --with-deps
+      # Do NOT run `npx playwright install chromium` here. On 2026-05-30 that
+      # download hung after the chromium binary reached 100% — Playwright's
+      # post-download/extract phase stalled until killed, every attempt. Instead
+      # run the suite against the Google Chrome that GitHub's ubuntu runners ship
+      # preinstalled: playwright.config.js sets `channel: 'chrome'` when CI is
+      # set, so no browser download is needed. This step just asserts Chrome is
+      # present so a runner-image change that drops it fails fast and obvious.
+      - name: Verify preinstalled Google Chrome
+        run: |
+          BIN="$(command -v google-chrome || command -v google-chrome-stable)"
+          if [ -z "$BIN" ]; then
+            echo "::error::Google Chrome is not preinstalled on this runner; E2E uses channel: 'chrome'."
+            exit 1
+          fi
+          "$BIN" --version
 
       - name: Build plugin assets
         run: npm run build
@@ -73,14 +101,14 @@ jobs:
 
       - name: Install WordPress and start the server
         run: |
-          npm run wp-env start
+          npm run wp-env -- start --config .wp-env.test.json
 
           # Wait for WordPress admin to be accessible.
           npx wait-on http://localhost:8889/wp-admin -t 60000
 
           # Verify plugin is active.
           echo "Verifying GatherPress plugin is active..."
-          npm run wp-env run cli wp plugin list --status=active | grep gatherpress
+          npm run wp-env -- run --config .wp-env.test.json cli wp plugin list --status=active | grep gatherpress
 
           # Verify post types are registered via REST API.
           echo "Verifying GatherPress post types via REST API..."
@@ -98,7 +126,7 @@ jobs:
           HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "http://localhost:8889/?rest_route=/wp/v2/types/gatherpress_event")
           if [ "$HTTP_STATUS" != "200" ]; then
             echo "❌ ERROR: GatherPress post types not accessible via REST API (HTTP $HTTP_STATUS)"
-            npm run wp-env run cli wp post-type list
+            npm run wp-env -- run --config .wp-env.test.json cli wp post-type list
             exit 1
           fi
 
@@ -121,4 +149,4 @@ jobs:
 
       - name: Stop WordPress
         if: always()
-        run: npm run wp-env stop
+        run: npm run wp-env -- stop --config .wp-env.test.json

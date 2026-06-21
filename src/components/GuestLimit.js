@@ -1,5 +1,5 @@
 /**
- * WordPress dependencies.
+ * WordPress dependencies
  */
 import { __ } from '@wordpress/i18n';
 import {
@@ -10,9 +10,9 @@ import { useState, useEffect, useCallback } from '@wordpress/element';
 import { useDispatch, useSelect } from '@wordpress/data';
 
 /**
- * Internal dependencies.
+ * Internal dependencies
  */
-import { getFromGlobal } from '../helpers/globals';
+import { getFromSettings } from '../helpers/editor-settings';
 
 /**
  * GuestLimit component.
@@ -36,7 +36,7 @@ const GuestLimit = () => {
 	}, [] );
 
 	if ( isNewEvent ) {
-		defaultGuestLimit = getFromGlobal( 'settings.maxGuestLimit' );
+		defaultGuestLimit = getFromSettings( 'maxGuestLimit' );
 	}
 
 	if ( false === defaultGuestLimit ) {

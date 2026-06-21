@@ -1,10 +1,10 @@
 /**
- * External dependencies.
+ * External dependencies
  */
 import { includes } from 'lodash';
 
 /**
- * WordPress dependencies.
+ * WordPress dependencies
  */
 import { FormTokenField } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
@@ -19,7 +19,7 @@ import { useSelect } from '@wordpress/data';
  * It uses a FormTokenField for the input, allowing users to select multiple items.
  * The selected items are stored in a hidden input field as JSON data.
  *
- * @since 1.0.0
+ * @since 0.27.0
  *
  * @param {Object} props                    - Component props.
  * @param {Object} props.attrs              - Attributes for configuring the Autocomplete field.

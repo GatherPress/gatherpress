@@ -1,0 +1,4 @@
+Significance: patch
+Type: changed
+
+Enforce per-post edit capability on venue / event meta and post-specific REST routes. [#1520]

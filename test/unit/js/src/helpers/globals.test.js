@@ -1,168 +1,30 @@
 /**
- * External dependencies.
+ * External dependencies
  */
 import { describe, expect, it, beforeEach, afterEach } from '@jest/globals';
 
 /**
- * Internal dependencies.
+ * Internal dependencies
  */
 import {
-	getFromGlobal,
-	setToGlobal,
 	toCamelCase,
-	safeHTML,
+	stripScriptsAndEventHandlers,
 	getUrlParam,
-} from '../../../../../src/helpers/globals';
+} from '@src/helpers/globals';
 
 /**
- * Coverage for getFromGlobal and setToGlobal.
+ * Coverage for stripScriptsAndEventHandlers.
+ *
+ * The function is a narrow defense-in-depth helper, NOT a general HTML
+ * sanitizer. The "removes ..." cases below cover what it strips; the
+ * "does NOT strip ..." cases lock in the intentional gaps so a future
+ * contributor doesn't mistake this helper for safe-by-default HTML
+ * sanitization. Untrusted HTML still needs DOMPurify or equivalent.
  */
-describe( 'Global GatherPress functions', () => {
-	// Setup and teardown for the global GatherPress object
-	beforeEach( () => {
-		// Create mock GatherPress global
-		global.GatherPress = {
-			config: {
-				apiUrl: 'https://api.example.com',
-				nonce: '1234abcd',
-			},
-			data: {
-				events: [],
-				user: {
-					id: 1,
-					name: 'Test User',
-				},
-			},
-		};
-	} );
-
-	afterEach( () => {
-		// Clean up mock
-		delete global.GatherPress;
-	} );
-
-	describe( 'getFromGlobal', () => {
-		it( 'retrieves a top-level property from the global GatherPress object', () => {
-			expect( getFromGlobal( 'config' ) ).toEqual( {
-				apiUrl: 'https://api.example.com',
-				nonce: '1234abcd',
-			} );
-		} );
-
-		it( 'retrieves a nested property using dot notation', () => {
-			expect( getFromGlobal( 'config.apiUrl' ) ).toBe(
-				'https://api.example.com',
-			);
-			expect( getFromGlobal( 'data.user.name' ) ).toBe( 'Test User' );
-		} );
-
-		it( 'returns undefined for non-existent properties', () => {
-			expect( getFromGlobal( 'nonExistent' ) ).toBeUndefined();
-			expect( getFromGlobal( 'config.missing' ) ).toBeUndefined();
-			expect( getFromGlobal( 'data.user.email' ) ).toBeUndefined();
-		} );
-
-		it( 'returns undefined for deeply nested non-existent paths', () => {
-			expect(
-				getFromGlobal( 'a.very.deep.path.that.does.not.exist' ),
-			).toBeUndefined();
-		} );
-
-		it( 'returns undefined when GatherPress global is not defined', () => {
-			delete global.GatherPress;
-			expect( getFromGlobal( 'config' ) ).toBeUndefined();
-		} );
-
-		it( 'returns undefined when GatherPress is not an object', () => {
-			global.GatherPress = 'not an object';
-			expect( getFromGlobal( 'config' ) ).toBeUndefined();
-		} );
-	} );
-
-	describe( 'setToGlobal', () => {
-		it( 'sets a value to an existing property', () => {
-			setToGlobal( 'config.apiUrl', 'https://new-api.example.com' );
-			expect( global.GatherPress.config.apiUrl ).toBe(
-				'https://new-api.example.com',
-			);
-		} );
-
-		it( 'creates a new property at an existing level', () => {
-			setToGlobal( 'config.version', '1.0.0' );
-			expect( global.GatherPress.config.version ).toBe( '1.0.0' );
-		} );
-
-		it( 'creates a new nested property structure', () => {
-			setToGlobal( 'settings.theme.darkMode', true );
-			expect( global.GatherPress.settings.theme.darkMode ).toBe( true );
-		} );
-
-		it( 'can set various data types as values', () => {
-			// String.
-			setToGlobal( 'testString', 'hello' );
-			expect( global.GatherPress.testString ).toBe( 'hello' );
-
-			// Number.
-			setToGlobal( 'testNumber', 42 );
-			expect( global.GatherPress.testNumber ).toBe( 42 );
-
-			// Boolean.
-			setToGlobal( 'testBoolean', false );
-			expect( global.GatherPress.testBoolean ).toBe( false );
-
-			// Object.
-			setToGlobal( 'testObject', { key: 'value' } );
-			expect( global.GatherPress.testObject ).toEqual( { key: 'value' } );
-
-			// Array.
-			setToGlobal( 'testArray', [ 1, 2, 3 ] );
-			expect( global.GatherPress.testArray ).toEqual( [ 1, 2, 3 ] );
-
-			// Null.
-			setToGlobal( 'testNull', null );
-			expect( global.GatherPress.testNull ).toBeNull();
-		} );
-
-		it( 'does nothing when GatherPress global is not defined', () => {
-			delete global.GatherPress;
-
-			// This should not throw an error.
-			setToGlobal( 'config.apiUrl', 'test' );
-
-			// GatherPress should still be undefined.
-			expect( global.GatherPress ).toBeUndefined();
-		} );
-
-		it( 'does nothing when GatherPress is not an object', () => {
-			global.GatherPress = 'not an object';
-
-			// This should not throw an error.
-			setToGlobal( 'config.apiUrl', 'test' );
-
-			// GatherPress should remain unchanged.
-			expect( global.GatherPress ).toBe( 'not an object' );
-		} );
-
-		it( 'preserves existing properties when adding new ones', () => {
-			setToGlobal( 'data.newProperty', 'new value' );
-
-			expect( global.GatherPress.data.events ).toEqual( [] );
-			expect( global.GatherPress.data.user ).toEqual( {
-				id: 1,
-				name: 'Test User',
-			} );
-			expect( global.GatherPress.data.newProperty ).toBe( 'new value' );
-		} );
-	} );
-} );
-
-/**
- * Coverage for safeHTML.
- */
-describe( 'safeHTML', () => {
+describe( 'stripScriptsAndEventHandlers', () => {
 	it( 'removes script tags from HTML', () => {
 		const html = '<div>Safe content<script>alert("xss");</script></div>';
-		const sanitized = safeHTML( html );
+		const sanitized = stripScriptsAndEventHandlers( html );
 
 		expect( sanitized ).not.toContain( '<script>' );
 		expect( sanitized ).toContain( '<div>Safe content</div>' );
@@ -170,7 +32,7 @@ describe( 'safeHTML', () => {
 
 	it( 'removes onclick attributes from HTML elements', () => {
 		const html = '<button onclick="alert(\'xss\')">Click me</button>';
-		const sanitized = safeHTML( html );
+		const sanitized = stripScriptsAndEventHandlers( html );
 
 		expect( sanitized ).not.toContain( 'onclick' );
 		expect( sanitized ).toContain( '<button>Click me</button>' );
@@ -179,7 +41,7 @@ describe( 'safeHTML', () => {
 	it( 'removes multiple on* event handlers from HTML elements', () => {
 		const html =
 			'<div onmouseover="alert(1)" onload="alert(2)" onclick="alert(3)">Test</div>';
-		const sanitized = safeHTML( html );
+		const sanitized = stripScriptsAndEventHandlers( html );
 
 		expect( sanitized ).not.toContain( 'onmouseover' );
 		expect( sanitized ).not.toContain( 'onload' );
@@ -190,7 +52,7 @@ describe( 'safeHTML', () => {
 	it( 'handles nested elements with unsafe attributes', () => {
 		const html =
 			'<div><p onclick="bad()">Text</p><span onmouseover="evil()">More</span></div>';
-		const sanitized = safeHTML( html );
+		const sanitized = stripScriptsAndEventHandlers( html );
 
 		expect( sanitized ).not.toContain( 'onclick' );
 		expect( sanitized ).not.toContain( 'onmouseover' );
@@ -200,7 +62,7 @@ describe( 'safeHTML', () => {
 	it( 'handles nested script tags', () => {
 		const html =
 			'<div>Start<script>bad code</script>Middle<script>more bad</script>End</div>';
-		const sanitized = safeHTML( html );
+		const sanitized = stripScriptsAndEventHandlers( html );
 
 		expect( sanitized ).not.toContain( '<script>' );
 		expect( sanitized ).toContain( '<div>StartMiddleEnd</div>' );
@@ -209,7 +71,7 @@ describe( 'safeHTML', () => {
 	it( 'preserves safe HTML content and attributes', () => {
 		const html =
 			'<a href="https://example.com" target="_blank" class="link">Safe Link</a>';
-		const sanitized = safeHTML( html );
+		const sanitized = stripScriptsAndEventHandlers( html );
 
 		expect( sanitized ).toContain( 'href="https://example.com"' );
 		expect( sanitized ).toContain( 'target="_blank"' );
@@ -218,18 +80,18 @@ describe( 'safeHTML', () => {
 	} );
 
 	it( 'handles empty input', () => {
-		expect( safeHTML( '' ) ).toBe( '' );
+		expect( stripScriptsAndEventHandlers( '' ) ).toBe( '' );
 	} );
 
 	it( 'handles plain text without HTML', () => {
 		const text = 'Just some plain text without any HTML';
 
-		expect( safeHTML( text ) ).toBe( text );
+		expect( stripScriptsAndEventHandlers( text ) ).toBe( text );
 	} );
 
 	it( 'handles malformed HTML gracefully', () => {
 		const malformed = '<div>Unclosed div<script>alert("bad");</script>';
-		const sanitized = safeHTML( malformed );
+		const sanitized = stripScriptsAndEventHandlers( malformed );
 
 		expect( sanitized ).not.toContain( '<script>' );
 		expect( sanitized ).toContain( '<div>Unclosed div' );
@@ -273,7 +135,7 @@ describe( 'safeHTML', () => {
 		};
 
 		// This should not throw even with a detached script element.
-		const sanitized = safeHTML( html );
+		const sanitized = stripScriptsAndEventHandlers( html );
 
 		// Restore original implementation.
 		document.implementation.createHTMLDocument =
@@ -281,6 +143,54 @@ describe( 'safeHTML', () => {
 
 		expect( sanitized ).not.toContain( '<script>' );
 		expect( sanitized ).toContain( '<div' );
+	} );
+
+	// The following cases lock in what the helper is INTENTIONALLY NOT
+	// doing. If any of them flips to "stripped", that's a behavior change
+	// that needs deliberate review and a docblock update — not a quiet
+	// improvement.
+
+	it( 'does NOT strip javascript: URLs', () => {
+		const html = '<a href="javascript:alert(1)">click</a>';
+		const sanitized = stripScriptsAndEventHandlers( html );
+
+		expect( sanitized ).toContain( 'javascript:alert(1)' );
+	} );
+
+	it( 'does NOT strip data: URIs with executable payloads', () => {
+		const html =
+			'<iframe src="data:text/html,<script>alert(1)</script>"></iframe>';
+		const sanitized = stripScriptsAndEventHandlers( html );
+
+		expect( sanitized ).toContain( 'data:text/html' );
+	} );
+
+	it( 'does NOT strip iframe / object / embed elements', () => {
+		const html =
+			'<iframe src="https://evil.test"></iframe><object data="x"></object><embed src="y">';
+		const sanitized = stripScriptsAndEventHandlers( html );
+
+		expect( sanitized ).toContain( '<iframe' );
+		expect( sanitized ).toContain( '<object' );
+		expect( sanitized ).toContain( '<embed' );
+	} );
+
+	it( 'does NOT strip srcdoc / formaction attributes', () => {
+		const html =
+			'<iframe srcdoc="<script>alert(1)</script>"></iframe>' +
+			'<button formaction="javascript:alert(1)">x</button>';
+		const sanitized = stripScriptsAndEventHandlers( html );
+
+		expect( sanitized ).toContain( 'srcdoc' );
+		expect( sanitized ).toContain( 'formaction' );
+	} );
+
+	it( 'does NOT strip inline style attributes', () => {
+		const html =
+			'<div style="background:url(javascript:alert(1))">x</div>';
+		const sanitized = stripScriptsAndEventHandlers( html );
+
+		expect( sanitized ).toContain( 'style=' );
 	} );
 } );
 
@@ -331,52 +241,71 @@ describe( 'toCamelCase', () => {
  * Coverage for getUrlParam.
  */
 describe( 'getUrlParam', () => {
+	let OriginalURLSearchParams;
+
 	beforeEach( () => {
-		// Mock global.location.search.
-		delete global.location;
-		global.location = { search: '' };
+		OriginalURLSearchParams = global.URLSearchParams;
 	} );
 
+	afterEach( () => {
+		global.URLSearchParams = OriginalURLSearchParams;
+	} );
+
+	/**
+	 * Helper to mock URLSearchParams for a given search string.
+	 *
+	 * @param {string} search - The search string to mock.
+	 */
+	function mockLocationSearch( search ) {
+		global.URLSearchParams = class extends OriginalURLSearchParams {
+			constructor() {
+				super( search );
+			}
+		};
+	}
+
 	it( 'returns parameter value when parameter exists', () => {
-		global.location.search = '?foo=bar&baz=qux';
+		mockLocationSearch( '?foo=bar&baz=qux' );
 
 		expect( getUrlParam( 'foo' ) ).toBe( 'bar' );
 		expect( getUrlParam( 'baz' ) ).toBe( 'qux' );
 	} );
 
 	it( 'returns null when parameter does not exist', () => {
-		global.location.search = '?foo=bar';
+		mockLocationSearch( '?foo=bar' );
 
 		expect( getUrlParam( 'missing' ) ).toBeNull();
 	} );
 
 	it( 'handles empty query string', () => {
-		global.location.search = '';
+		mockLocationSearch( '' );
 
 		expect( getUrlParam( 'anything' ) ).toBeNull();
 	} );
 
 	it( 'handles URL-encoded values', () => {
-		global.location.search = '?message=hello%20world';
+		mockLocationSearch( '?message=hello%20world' );
 
 		expect( getUrlParam( 'message' ) ).toBe( 'hello world' );
 	} );
 
 	it( 'handles parameters with no value', () => {
-		global.location.search = '?flag';
+		mockLocationSearch( '?flag' );
 
 		expect( getUrlParam( 'flag' ) ).toBe( '' );
 	} );
 
 	it( 'handles multiple parameters with same name', () => {
-		global.location.search = '?tag=react&tag=wordpress';
+		mockLocationSearch( '?tag=react&tag=wordpress' );
 
 		// URLSearchParams.get() returns the first value.
 		expect( getUrlParam( 'tag' ) ).toBe( 'react' );
 	} );
 
 	it( 'handles parameters with special characters', () => {
-		global.location.search = '?email=test%40example.com&path=%2Fhome%2Fuser';
+		mockLocationSearch(
+			'?email=test%40example.com&path=%2Fhome%2Fuser'
+		);
 
 		expect( getUrlParam( 'email' ) ).toBe( 'test@example.com' );
 		expect( getUrlParam( 'path' ) ).toBe( '/home/user' );

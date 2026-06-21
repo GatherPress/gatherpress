@@ -1,15 +1,15 @@
 /**
- * External dependencies.
+ * External dependencies
  */
 import { v4 as uuidv4 } from 'uuid';
 
 /**
- * WordPress dependencies.
+ * WordPress dependencies
  */
 import { __ } from '@wordpress/i18n';
 import { RichText } from '@wordpress/block-editor';
 /**
- * Internal dependencies.
+ * Internal dependencies
  */
 import {
 	getInputStyles,
@@ -27,6 +27,7 @@ import {
  * @param {Function} props.setAttributes     - Function to update block attributes.
  * @param {Object}   props.blockProps        - WordPress block wrapper properties.
  * @param {Function} props.generateFieldName - Function to generate field name from label.
+ *
  * @return {JSX.Element} The radio button group field component.
  */
 export default function RadioField( {
@@ -160,7 +161,7 @@ export default function RadioField( {
 					value={ label }
 					onChange={ ( value ) => setAttributes( { label: value } ) }
 					onBlur={ () => handleLabelBlur( label ) }
-					allowedFormats={ [] }
+					allowedFormats={ [ 'gatherpress/tooltip' ] }
 					style={ getLabelStyles( attributes ) }
 				/>
 				{ required && (
@@ -172,7 +173,7 @@ export default function RadioField( {
 						onChange={ ( value ) =>
 							setAttributes( { requiredText: value } )
 						}
-						allowedFormats={ [] }
+						allowedFormats={ [ 'gatherpress/tooltip' ] }
 						style={ {
 							...( requiredTextColor && {
 								color: requiredTextColor,
@@ -209,7 +210,7 @@ export default function RadioField( {
 								updateRadioOption( index, 'label', value )
 							}
 							onKeyDown={ ( event ) => handleKeyDown( event, index ) }
-							allowedFormats={ [] }
+							allowedFormats={ [ 'gatherpress/tooltip' ] }
 							identifier={ `radio-option-${ index }` }
 							style={ getOptionStyles( attributes ) }
 						/>

@@ -1,14 +1,14 @@
 /**
- * WordPress dependencies.
+ * WordPress dependencies
  */
 import { select } from '@wordpress/data';
 
 /**
- * Internal dependencies.
+ * Internal dependencies
  */
 import GoogleMap from './GoogleMap';
 import OpenStreetMap from './OpenStreetMap';
-import { getFromGlobal } from '../helpers/globals';
+import { getFromSettings } from '../helpers/editor-settings';
 
 /**
  * MapEmbed component for GatherPress.
@@ -16,7 +16,7 @@ import { getFromGlobal } from '../helpers/globals';
  * This component is used to embed a Google Map with specified location,
  * zoom level, map type, and height.
  *
- * @since 1.0.0
+ * @since 0.27.0
  *
  * @param {Object} props              - Component properties.
  * @param {string} props.location     - The location to be displayed on the map.
@@ -43,10 +43,15 @@ const MapEmbed = ( props ) => {
 		location = '660 4th Street #119 San Francisco CA 94107, USA';
 	}
 
-	const mapPlatform = getFromGlobal( 'settings.mapPlatform' );
-	if ( ! location || ! mapPlatform ) {
+	const mapPlatform =
+		props.mapPlatform || getFromSettings( 'mapPlatform' );
+	if ( ! mapPlatform ) {
 		return <></>;
 	} else if ( 'google' === mapPlatform ) {
+		const apiKey =
+			props.googleMapsApiKey ??
+			getFromSettings( 'googleMapsApiKey' ) ??
+			'';
 		return (
 			<GoogleMap
 				location={ location }
@@ -56,6 +61,7 @@ const MapEmbed = ( props ) => {
 				zoom={ zoom }
 				type={ type }
 				height={ height }
+				apiKey={ apiKey }
 			/>
 		);
 	} else if ( 'osm' === mapPlatform ) {
@@ -67,6 +73,7 @@ const MapEmbed = ( props ) => {
 				className={ className }
 				zoom={ zoom }
 				height={ height }
+				pluginUrl={ props.pluginUrl }
 			/>
 		);
 	}

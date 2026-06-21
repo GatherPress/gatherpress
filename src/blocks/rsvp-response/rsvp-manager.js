@@ -1,17 +1,17 @@
 /**
- * WordPress dependencies.
+ * WordPress dependencies
  */
-import { useState } from '@wordpress/element';
+import { useState, useEffect } from '@wordpress/element';
 import { __, _x } from '@wordpress/i18n';
 import { FormTokenField, SelectControl } from '@wordpress/components';
 import apiFetch from '@wordpress/api-fetch';
-import { useSelect } from '@wordpress/data';
+import { useSelect, useDispatch } from '@wordpress/data';
 import { store as coreStore } from '@wordpress/core-data';
 
 /**
- * Internal dependencies.
+ * Internal dependencies
  */
-import { getFromGlobal, setToGlobal } from '../../helpers/globals';
+import { EVENT_REST_API } from '../../helpers/namespace';
 
 /**
  * Component for displaying and managing RSVP responses.
@@ -24,22 +24,24 @@ import { getFromGlobal, setToGlobal } from '../../helpers/globals';
  * @param {Object}   root0                  The destructured props object.
  * @param {string}   root0.defaultStatus    The current default status for the RSVP response.
  * @param {Function} root0.setDefaultStatus The function to update the defaultStatus state.
- * @since 1.0.0
+ * @since 0.28.0
  *
  * @return {JSX.Element} The rendered RSVP response component.
  */
 const RsvpManager = ( { defaultStatus, setDefaultStatus } ) => {
-	const responses = getFromGlobal( 'eventDetails.responses' );
-	const postId = getFromGlobal( 'eventDetails.postId' );
-	const [ rsvpResponse, setRsvpResponse ] = useState( responses );
-	const attendees = rsvpResponse[ defaultStatus ].records;
+	const postId = useSelect(
+		( wpSelect ) => wpSelect( 'core/editor' ).getCurrentPostId(),
+		[],
+	);
+	const [ rsvpResponse, setRsvpResponse ] = useState( null );
+	const { createErrorNotice } = useDispatch( 'core/notices' );
 
 	/**
 	 * Fetches user records from the core store via getEntityRecords.
 	 * Returns userList containing the list of user records.
 	 */
-	const { userList } = useSelect( ( select ) => {
-		const { getEntityRecords } = select( coreStore );
+	const { userList } = useSelect( ( wpSelect ) => {
+		const { getEntityRecords } = wpSelect( coreStore );
 
 		const users = getEntityRecords( 'root', 'user', {
 			per_page: -1,
@@ -49,6 +51,37 @@ const RsvpManager = ( { defaultStatus, setDefaultStatus } ) => {
 			userList: users,
 		};
 	}, [] );
+
+	useEffect( () => {
+		if ( postId ) {
+			apiFetch( {
+				path: `${ EVENT_REST_API }/rsvp-responses?post_id=${ postId }`,
+			} )
+				.then( ( res ) => {
+					if ( res?.success && res?.data ) {
+						setRsvpResponse( res.data );
+					}
+				} )
+				.catch( ( error ) => {
+					// Leave any existing responses on screen and surface the
+					// failure rather than silently rendering nothing.
+					createErrorNotice?.(
+						error?.message ||
+							__(
+								'Could not load RSVP responses. Please try again.',
+								'gatherpress',
+							),
+						{ type: 'snackbar' },
+					);
+				} );
+		}
+	}, [ postId, createErrorNotice ] );
+
+	if ( ! rsvpResponse ) {
+		return null;
+	}
+
+	const attendees = rsvpResponse[ defaultStatus ].records;
 
 	/**
 	 * Reduces the userList to an object mapping usernames to user objects.
@@ -71,17 +104,32 @@ const RsvpManager = ( { defaultStatus, setDefaultStatus } ) => {
 	 */
 	const updateRsvpStatus = ( userId, status = 'attending' ) => {
 		apiFetch( {
-			path: getFromGlobal( 'urls.eventApiPath' ) + '/rsvp',
+			path: EVENT_REST_API + '/rsvp',
 			method: 'POST',
 			data: {
 				post_id: postId,
 				status,
 				user_id: userId,
 			},
-		} ).then( ( res ) => {
-			setRsvpResponse( res.responses );
-			setToGlobal( 'eventDetails.responses', res.responses );
-		} );
+		} )
+			.then( ( res ) => {
+				// Only replace the list when the response actually carries
+				// one. An error-shaped response has no `responses` key, and
+				// blindly assigning it would wipe the displayed attendees.
+				if ( res?.responses ) {
+					setRsvpResponse( res.responses );
+				}
+			} )
+			.catch( ( error ) => {
+				createErrorNotice?.(
+					error?.message ||
+						__(
+							'Could not update the RSVP. Please try again.',
+							'gatherpress',
+						),
+					{ type: 'snackbar' },
+				);
+			} );
 	};
 
 	/**
@@ -117,6 +165,7 @@ const RsvpManager = ( { defaultStatus, setDefaultStatus } ) => {
 	return (
 		<>
 			<SelectControl
+				__next40pxDefaultSize
 				label={ __( 'RSVP Status', 'gatherpress' ) }
 				value={ defaultStatus }
 				options={ [

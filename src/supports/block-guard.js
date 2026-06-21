@@ -1,12 +1,12 @@
 /**
- * WordPress dependencies.
+ * WordPress dependencies
  */
 import { getBlockType } from '@wordpress/blocks';
 import { createHigherOrderComponent } from '@wordpress/compose';
 import { InspectorControls } from '@wordpress/block-editor';
 import { PanelBody, ToggleControl } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
-import { addFilter } from '@wordpress/hooks';
+import { addFilter, hasFilter } from '@wordpress/hooks';
 import { useState, useEffect } from '@wordpress/element';
 
 /**
@@ -21,6 +21,7 @@ const blockGuardListeners = new Map();
  * Custom hook to manage shared block guard state.
  *
  * @param {string} blockName - The name of the block type.
+ *
  * @return {Array} Array containing [isEnabled, setIsEnabled] similar to useState.
  */
 function useSharedBlockGuardState( blockName ) {
@@ -221,6 +222,7 @@ function removeDragListeners( handler ) {
  * Create a drop handler for the given clientId.
  *
  * @param {string} clientId - The block's client ID.
+ *
  * @return {Function} Drop handler function.
  */
 function createDropHandler( clientId ) {
@@ -242,6 +244,7 @@ function createDropHandler( clientId ) {
  *
  * @param {string}  clientId            - The block's client ID.
  * @param {boolean} isBlockGuardEnabled - Whether guard is enabled.
+ *
  * @return {Object|null} Object with expander element or null if not found.
  */
 function applyListViewGuardForBlock( clientId, isBlockGuardEnabled ) {
@@ -370,6 +373,7 @@ function applyBlockGuard( clientId, name, stateKey, isBlockGuardEnabled ) {
  *
  * @param {string} name     - The block type name.
  * @param {string} clientId - The current block's client ID.
+ *
  * @return {string} Unique state key for this block's context.
  */
 function generateBlockGuardStateKey( name, clientId ) {
@@ -421,6 +425,7 @@ function generateBlockGuardStateKey( name, clientId ) {
  *
  * @param {Function} BlockEdit - The original BlockEdit component.
  * @param            props
+ *
  * @return {Function} Enhanced BlockEdit component with BlockGuard functionality.
  *
  * @example
@@ -570,7 +575,15 @@ const withBlockGuard = createHigherOrderComponent( ( BlockEdit ) => {
  *
  * @see https://developer.wordpress.org/block-editor/reference-guides/filters/block-filters/
  */
-addFilter( 'editor.BlockEdit', 'gatherpress/with-block-guard', withBlockGuard );
+// This module is imported both as a side-effect from `src/editor.js` and as
+// named exports from block edits (e.g. venue-map), so it lands in multiple
+// webpack chunks that all evaluate on the editor page. WP's addFilter doesn't
+// dedupe by namespace — every evaluation would otherwise append a second
+// handler and render duplicate Block Guard toggles. hasFilter returns the
+// handler's priority when registered, `false` when absent.
+if ( false === hasFilter( 'editor.BlockEdit', 'gatherpress/with-block-guard' ) ) {
+	addFilter( 'editor.BlockEdit', 'gatherpress/with-block-guard', withBlockGuard );
+}
 
 // Export functions for testing.
 export {

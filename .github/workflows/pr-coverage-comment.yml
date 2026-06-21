@@ -1,0 +1,87 @@
+name: PR Coverage Comment
+
+# Privileged companion to the `PR Coverage Check` workflow.
+#
+# Triggered when the upstream coverage run finishes (success or failure),
+# downloads its artifact, and posts the coverage PR comment. Because this runs
+# via workflow_run, it executes from the base repo's default branch — never
+# from PR-controlled code — even though it has `pull-requests: write` to post
+# the comment.
+
+on:
+  workflow_run:
+    workflows: ['PR Coverage Check']
+    types: [completed]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+
+  comment:
+    name: Post coverage comment on PR
+    if: github.event.workflow_run.event == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+
+      - name: Download coverage artifact from upstream workflow
+        uses: actions/download-artifact@v4
+        with:
+          name: pr-coverage-results
+          # Drop the artifact in a sibling directory so the base-repo checkout
+          # below doesn't overwrite it.
+          path: ./artifact
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Read PR metadata from artifact
+        id: meta
+        run: |
+          echo "pr_number=$(cat ./artifact/pr-number.txt)" >> "$GITHUB_OUTPUT"
+          echo "php_status=$(cat ./artifact/php-status.txt)" >> "$GITHUB_OUTPUT"
+          echo "js_status=$(cat ./artifact/js-status.txt)" >> "$GITHUB_OUTPUT"
+
+      # Check out the base repo at the default branch (trusted code) so the
+      # github-script step below can require .github/scripts/pr-coverage-comment
+      # from the merged base, never from the PR.
+      - name: Checkout base repo
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+
+      - name: Post coverage comment
+        uses: actions/github-script@v7
+        env:
+          PR_NUMBER: ${{ steps.meta.outputs.pr_number }}
+          PHP_STATUS: ${{ steps.meta.outputs.php_status }}
+          JS_STATUS: ${{ steps.meta.outputs.js_status }}
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            const createCoverageComment = require('.github/scripts/pr-coverage-comment');
+
+            let phpOutput;
+            try {
+              phpOutput = fs.readFileSync('./artifact/php-coverage-output.txt', 'utf8');
+            } catch {
+              phpOutput = 'PHP coverage check did not run.';
+            }
+
+            let jsOutput;
+            try {
+              jsOutput = fs.readFileSync('./artifact/js-coverage-output.txt', 'utf8');
+            } catch {
+              jsOutput = 'JavaScript coverage check did not run.';
+            }
+
+            await createCoverageComment(
+              github,
+              context,
+              phpOutput,
+              jsOutput,
+              process.env.PHP_STATUS,
+              process.env.JS_STATUS,
+              Number(process.env.PR_NUMBER)
+            );

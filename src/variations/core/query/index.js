@@ -7,39 +7,11 @@ import { __ } from '@wordpress/i18n';
 /**
  * Internal dependencies
  */
+import { NAME } from './name';
+import { QUERY_ATTRIBUTES, VARIATION_ATTRIBUTES } from './constants';
 import './controls';
-import { QUERY_NO_RESULTS_VARIATION } from '../query-no-results';
-import { QUERY_PAGINATION_VARIATION } from '../query-pagination';
-
-export const NAME = 'gatherpress-event-query';
-
-const QUERY_ATTRIBUTES = {
-	namespace: NAME,
-	query: {
-		perPage: 5,
-		pages: 0,
-		offset: 0,
-		postType: 'gatherpress_event',
-		gatherpress_event_query: 'upcoming',
-		include_unfinished: 1,
-		order: 'asc',
-		orderBy: 'datetime',
-		inherit: false,
-	},
-};
-
-const VARIATION_ATTRIBUTES = {
-	category: 'gatherpress',
-	keywords: [ __( 'Events', 'gatherpress' ), __( 'Dates', 'gatherpress' ) ],
-	isActive: [ 'namespace', 'query.postType' ],
-	attributes: {
-		...QUERY_ATTRIBUTES,
-	},
-	// Disabling irrelevant or unsupported query controls
-	// @see https://developer.wordpress.org/block-editor/how-to-guides/block-tutorial/extending-the-query-loop-block/#disabling-irrelevant-or-unsupported-query-controls
-	allowedControls: [ 'inherit', 'taxQuery', 'author', 'search' ],
-	scope: [ 'block' ],
-};
+import './patterns';
+import './start-blank';
 
 /**
  * Docs about the Query block.
@@ -61,42 +33,19 @@ const VARIATION_ATTRIBUTES = {
 registerBlockVariation( 'core/query', {
 	...VARIATION_ATTRIBUTES,
 	name: NAME,
-	title: __( 'Event Query', 'gatherpress' ),
+	title: __( 'Event Query Loop', 'gatherpress' ),
 	description: __( 'Create event queries', 'gatherpress' ),
 	scope: [ 'inserter', 'transform' ],
 	/*
-	 * Having innerBlocks in THIS (visible) variation, essentially
-	 * skips the setup phase of the Query Loop block with suggested starter patterns
-	 * and the block is inserted with these inner blocks as its starting content.
+	 * Intentionally no `innerBlocks` here.
 	 *
-	 * This is not what GatherPress wanted, so it is disabled.
+	 * Omitting the field lets core/query show its placeholder modal on insert
+	 * with "Choose" and "Start blank" — the Choose flow surfaces the starter
+	 * patterns registered in `./patterns/index.js`, which are scoped via the
+	 * `gatherpress-event-query` pattern category.
 	 *
 	 * @see https://developer.wordpress.org/block-editor/how-to-guides/block-tutorial/extending-the-query-loop-block/#customize-your-variation-layout
-	 *
-	 * As long as GatherPress does not have any valid Starter Patterns, this 'innerBlocks' section is temporarily re-enabled
-	 * to prevent the default 'core/query' block starter patterns to appear.
-	 * As soon as #1124 is done, this part should be disabled again.
-	 *
-	 * @todo Add 'Start blank' patterns for the gatherpress query loop variation. https://github.com/GatherPress/gatherpress/issues/1124
 	 */
-	innerBlocks: [
-		[
-			'core/post-template',
-			{
-				metadata: {
-					name: __( 'Events Template', 'gatherpress' ),
-				},
-			},
-			[
-				[ 'core/post-title' ],
-				[ 'gatherpress/event-date' ],
-				[ 'core/post-excerpt' ],
-				[ 'core/post-terms', { term: '_gatherpress_venue' } ],
-			],
-		],
-		QUERY_PAGINATION_VARIATION,
-		QUERY_NO_RESULTS_VARIATION,
-	],
 
 	example: {
 		attributes: {

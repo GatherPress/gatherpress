@@ -7,7 +7,7 @@
  * styles and attributes specific to dropdown functionality.
  *
  * @package GatherPress\Core
- * @since 1.0.0
+ * @since 0.33.0
  */
 
 namespace GatherPress\Core\Blocks;
@@ -15,7 +15,6 @@ namespace GatherPress\Core\Blocks;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
-use GatherPress\Core\Block;
 use GatherPress\Core\Traits\Singleton;
 use WP_HTML_Tag_Processor;
 
@@ -23,9 +22,10 @@ use WP_HTML_Tag_Processor;
  * Class responsible for managing the "Dropdown" block and its functionality,
  * including dynamic rendering adjustments.
  *
- * @since 1.0.0
+ * @since 0.33.0
  */
 class Dropdown {
+
 	/**
 	 * Enforces a single instance of this class.
 	 */
@@ -34,7 +34,7 @@ class Dropdown {
 	/**
 	 * Constant representing the Block Name.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @var string
 	 */
 	const BLOCK_NAME = 'gatherpress/dropdown';
@@ -42,7 +42,7 @@ class Dropdown {
 	/**
 	 * Default color for text and borders.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @var string
 	 */
 	const DEFAULT_COLOR_BLACK = '#000000';
@@ -50,7 +50,7 @@ class Dropdown {
 	/**
 	 * Default background color.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @var string
 	 */
 	const DEFAULT_COLOR_WHITE = '#FFFFFF';
@@ -58,7 +58,7 @@ class Dropdown {
 	/**
 	 * Default hover background color.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @var string
 	 */
 	const DEFAULT_COLOR_LIGHT_GRAY = '#EEEEEE';
@@ -68,7 +68,7 @@ class Dropdown {
 	 *
 	 * This method initializes the object and sets up necessary hooks.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 */
 	protected function __construct() {
 		$this->setup_hooks();
@@ -79,7 +79,7 @@ class Dropdown {
 	 *
 	 * This method adds hooks for different purposes as needed.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @return void
 	 */
@@ -98,14 +98,14 @@ class Dropdown {
 	 * them to the block content. Styles include padding, colors, and hover effects
 	 * for dropdown items. Additionally, it handles `hover`-based dropdown behavior.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @param string $block_content The original block content.
 	 * @param array  $block         The parsed block data containing block attributes.
+	 *
 	 * @return string The modified block content with inline styles.
 	 */
 	public function generate_block_styles( string $block_content, array $block ): string {
-		$block_instance         = Block::get_instance();
 		$attributes             = $block['attrs'] ?? array();
 		$dropdown_id            = $attributes['dropdownId'] ?? '';
 		$open_on                = $attributes['openOn'] ?? 'click';
@@ -160,7 +160,7 @@ class Dropdown {
 						display: block;
 					}
 				',
-				esc_attr( $block_instance->get_default_block_class( $block['blockName'] ) ),
+				esc_attr( wp_get_block_default_classname( $block['blockName'] ) ),
 				esc_attr( $dropdown_id )
 			);
 		}
@@ -181,10 +181,11 @@ class Dropdown {
 	 * This method modifies the block content to set `data-dropdown-mode="select"`
 	 * and adds the `gatherpress--is-disabled` class to the selected dropdown item.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @param string $block_content The original block content.
 	 * @param array  $block         The parsed block data.
+	 *
 	 * @return string The modified block content with select mode attributes.
 	 */
 	public function apply_select_mode_attributes( string $block_content, array $block ): string {
@@ -248,7 +249,7 @@ class Dropdown {
 	 * Dynamically updates the dropdown block's rendered content to include necessary
 	 * attributes for improved functionality and interactivity.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @param string $block_content The HTML content of the block.
 	 * @param array  $block         The parsed block data.
