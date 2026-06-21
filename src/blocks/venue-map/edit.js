@@ -252,15 +252,19 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 	let latitude = venueMeta.gatherpress_latitude || '';
 	let longitude = venueMeta.gatherpress_longitude || '';
 
-	if ( isEditingThisVenue ) {
-		latitude =
-			null !== storeLat && storeLat !== undefined
-				? String( storeLat )
-				: latitude;
-		longitude =
-			null !== storeLng && storeLng !== undefined
-				? String( storeLng )
-				: longitude;
+	// The venue store seeds 0/0 before VenueInformation hydrates it from
+	// saved meta. Prefer post meta until the store holds real coordinates.
+	const storeIsUninitialized =
+		( null === storeLat || undefined === storeLat || 0 === storeLat ) &&
+		( null === storeLng || undefined === storeLng || 0 === storeLng );
+
+	if ( isEditingThisVenue && ! storeIsUninitialized ) {
+		if ( null !== storeLat && undefined !== storeLat ) {
+			latitude = String( storeLat );
+		}
+		if ( null !== storeLng && undefined !== storeLng ) {
+			longitude = String( storeLng );
+		}
 	}
 
 	const mapPlatform = getFromSettings( 'mapPlatform' );

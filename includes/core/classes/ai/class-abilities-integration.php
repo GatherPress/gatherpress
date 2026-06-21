@@ -21,7 +21,9 @@ use GatherPress\Core\Event;
 use GatherPress\Core\Rsvp;
 use GatherPress\Core\Topic;
 use GatherPress\Core\Traits\Singleton;
+use GatherPress\Core\Utility;
 use GatherPress\Core\Venue;
+use GatherPress\Core\Venue\Meta as Venue_Meta;
 use WP_Error;
 
 /**
@@ -707,20 +709,18 @@ class Abilities_Integration {
 			$venue_list = array();
 
 			foreach ( $venues as $venue_post ) {
-				$venue_info_json = get_post_meta( $venue_post->ID, 'gatherpress_venue_information', true );
-				$venue_info      = json_decode( $venue_info_json, true );
-
-				$edit_url  = get_edit_post_link( $venue_post->ID, 'raw' );
-				$permalink = get_permalink( $venue_post->ID );
+				$venue_info = ( new Venue( $venue_post->ID ) )->get_information();
+				$edit_url   = get_edit_post_link( $venue_post->ID, 'raw' );
+				$permalink  = get_permalink( $venue_post->ID );
 
 				$venue_list[] = array(
 					'id'        => (int) $venue_post->ID,
 					'name'      => ! empty( $venue_post->post_title ) ? $venue_post->post_title : '',
-					'address'   => $venue_info['fullAddress'] ?? '',
-					'phone'     => $venue_info['phoneNumber'] ?? '',
-					'website'   => $venue_info['website'] ?? '',
-					'latitude'  => $venue_info['latitude'] ?? '',
-					'longitude' => $venue_info['longitude'] ?? '',
+					'address'   => $venue_info['address'],
+					'phone'     => $venue_info['phone'],
+					'website'   => $venue_info['website'],
+					'latitude'  => $venue_info['latitude'],
+					'longitude' => $venue_info['longitude'],
 					'edit_url'  => ! empty( $edit_url ) ? $edit_url : '',
 					'permalink' => ! empty( $permalink ) ? $permalink : '',
 				);
@@ -910,17 +910,16 @@ class Abilities_Integration {
 		// Geocode the address to get latitude and longitude.
 		$coordinates = $this->geocode_address( $params['address'] );
 
-		// Prepare venue information.
-		$venue_info = array(
-			'fullAddress' => sanitize_text_field( $params['address'] ),
-			'phoneNumber' => isset( $params['phone'] ) ? sanitize_text_field( $params['phone'] ) : '',
-			'website'     => isset( $params['website'] ) ? esc_url_raw( $params['website'] ) : '',
-			'latitude'    => $coordinates['latitude'],
-			'longitude'   => $coordinates['longitude'],
+		$this->save_venue_editor_meta(
+			$venue_id,
+			array(
+				'address'   => sanitize_text_field( $params['address'] ),
+				'phone'     => isset( $params['phone'] ) ? sanitize_text_field( $params['phone'] ) : '',
+				'website'   => isset( $params['website'] ) ? esc_url_raw( $params['website'] ) : '',
+				'latitude'  => $coordinates['latitude'],
+				'longitude' => $coordinates['longitude'],
+			)
 		);
-
-		// Save venue information as post meta.
-		update_post_meta( $venue_id, 'gatherpress_venue_information', wp_json_encode( $venue_info ) );
 
 		return array(
 			'success'  => true,
@@ -1108,26 +1107,21 @@ class Abilities_Integration {
 			);
 		}
 
-		// Get existing venue information.
-		$venue_info_json = get_post_meta( $venue_id, 'gatherpress_venue_information', true );
-		$venue_info      = json_decode( $venue_info_json, true );
-		if ( ! is_array( $venue_info ) ) {
-			$venue_info = array();
-		}
+		$meta_updates = array();
 
-		// Update venue information fields.
 		if ( isset( $params['address'] ) ) {
-			$venue_info['fullAddress'] = sanitize_text_field( $params['address'] );
+			$meta_updates['address'] = sanitize_text_field( $params['address'] );
 		}
 		if ( isset( $params['phone'] ) ) {
-			$venue_info['phoneNumber'] = sanitize_text_field( $params['phone'] );
+			$meta_updates['phone'] = sanitize_text_field( $params['phone'] );
 		}
 		if ( isset( $params['website'] ) ) {
-			$venue_info['website'] = esc_url_raw( $params['website'] );
+			$meta_updates['website'] = esc_url_raw( $params['website'] );
 		}
 
-		// Save updated venue information.
-		update_post_meta( $venue_id, 'gatherpress_venue_information', wp_json_encode( $venue_info ) );
+		if ( ! empty( $meta_updates ) ) {
+			$this->save_venue_editor_meta( $venue_id, $meta_updates );
+		}
 
 		// Update featured image if provided.
 		if ( isset( $params['thumbnail_id'] ) ) {
@@ -2183,6 +2177,25 @@ class Abilities_Integration {
 				$topic->name
 			),
 		);
+	}
+
+	/**
+	 * Save editor-writable venue meta fields.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param int                   $venue_id Venue post ID.
+	 * @param array<string, string> $fields   Field values keyed by unprefixed meta suffix.
+	 * @return void
+	 */
+	private function save_venue_editor_meta( int $venue_id, array $fields ): void {
+		foreach ( Venue_Meta::EDITOR_WRITABLE_FIELDS as $field ) {
+			if ( ! array_key_exists( $field, $fields ) ) {
+				continue;
+			}
+
+			update_post_meta( $venue_id, Utility::prefix_key( $field ), $fields[ $field ] );
+		}
 	}
 
 	/**

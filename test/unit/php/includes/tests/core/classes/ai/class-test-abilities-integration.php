@@ -12,6 +12,7 @@ use DateTime;
 use GatherPress\Core\AI\Abilities_Integration;
 use GatherPress\Core\Event;
 use GatherPress\Core\Topic;
+use GatherPress\Core\Utility;
 use GatherPress\Core\Venue;
 use GatherPress\Tests\Base;
 
@@ -21,6 +22,29 @@ use GatherPress\Tests\Base;
  * @coversDefaultClass \GatherPress\Core\AI\Abilities_Integration
  */
 class Test_Abilities_Integration extends Base {
+	/**
+	 * Set venue meta using the current GatherPress meta keys.
+	 *
+	 * @param int                   $venue_id Venue post ID.
+	 * @param array<string, string> $fields   Field values keyed by unprefixed meta suffix.
+	 * @return void
+	 */
+	private function set_venue_test_meta( int $venue_id, array $fields ): void {
+		foreach ( $fields as $field => $value ) {
+			update_post_meta( $venue_id, Utility::prefix_key( $field ), $value );
+		}
+	}
+
+	/**
+	 * Read venue meta using the current GatherPress Venue API.
+	 *
+	 * @param int $venue_id Venue post ID.
+	 * @return array<string, string>
+	 */
+	private function get_venue_test_meta( int $venue_id ): array {
+		return ( new Venue( $venue_id ) )->get_information();
+	}
+
 	/**
 	 * Coverage for execute_list_venues method with no venues.
 	 *
@@ -62,15 +86,16 @@ class Test_Abilities_Integration extends Base {
 			)
 		);
 
-		// Add venue information.
-		$venue_info = array(
-			'fullAddress' => '123 Main St',
-			'phoneNumber' => '555-1234',
-			'website'     => 'https://example.com',
-			'latitude'    => '40.7128',
-			'longitude'   => '-74.0060',
+		$this->set_venue_test_meta(
+			$venue_id_1,
+			array(
+				'address'   => '123 Main St',
+				'phone'     => '555-1234',
+				'website'   => 'https://example.com',
+				'latitude'  => '40.7128',
+				'longitude' => '-74.0060',
+			)
 		);
-		update_post_meta( $venue_id_1, 'gatherpress_venue_information', wp_json_encode( $venue_info ) );
 
 		$instance = Abilities_Integration::get_instance();
 		$result   = $instance->execute_list_venues();
@@ -173,10 +198,9 @@ class Test_Abilities_Integration extends Base {
 		$this->assertSame( 'Test Venue', $venue_post->post_title, 'Failed to assert venue title.' );
 		$this->assertStringContainsString( 'gatherpress/venue-template', $venue_post->post_content, 'Failed to assert venue template pattern.' ); // phpcs:ignore Generic.Files.LineLength.TooLong
 
-		// Verify venue information.
-		$venue_info = json_decode( get_post_meta( $result['venue_id'], 'gatherpress_venue_information', true ), true );
-		$this->assertSame( '456 Test St', $venue_info['fullAddress'], 'Failed to assert venue address saved.' );
-		$this->assertSame( '555-9999', $venue_info['phoneNumber'], 'Failed to assert venue phone saved.' );
+		$venue_info = $this->get_venue_test_meta( $result['venue_id'] );
+		$this->assertSame( '456 Test St', $venue_info['address'], 'Failed to assert venue address saved.' );
+		$this->assertSame( '555-9999', $venue_info['phone'], 'Failed to assert venue phone saved.' );
 		$this->assertSame( 'https://test.com', $venue_info['website'], 'Failed to assert venue website saved.' );
 	}
 
@@ -199,7 +223,7 @@ class Test_Abilities_Integration extends Base {
 		$this->assertTrue( $result['success'], 'Failed to assert success is true.' );
 
 		// Verify venue information includes geocoded coordinates.
-		$venue_info = json_decode( get_post_meta( $result['venue_id'], 'gatherpress_venue_information', true ), true );
+		$venue_info = $this->get_venue_test_meta( $result['venue_id'] );
 		$this->assertArrayHasKey( 'latitude', $venue_info, 'Failed to assert latitude exists.' );
 		$this->assertArrayHasKey( 'longitude', $venue_info, 'Failed to assert longitude exists.' );
 
@@ -440,11 +464,13 @@ class Test_Abilities_Integration extends Base {
 				'post_status' => 'publish',
 			)
 		);
-		$venue_info = array(
-			'fullAddress' => 'Original Address',
-			'phoneNumber' => '555-1111',
+		$this->set_venue_test_meta(
+			$venue_id,
+			array(
+				'address' => 'Original Address',
+				'phone'   => '555-1111',
+			)
 		);
-		update_post_meta( $venue_id, 'gatherpress_venue_information', wp_json_encode( $venue_info ) );
 
 		$instance = Abilities_Integration::get_instance();
 		$params   = array(
@@ -462,9 +488,9 @@ class Test_Abilities_Integration extends Base {
 		$this->assertSame( 'Updated Name', $venue_post->post_title, 'Failed to assert title updated.' );
 
 		// Verify venue information was updated.
-		$updated_info = json_decode( get_post_meta( $venue_id, 'gatherpress_venue_information', true ), true );
-		$this->assertSame( 'Original Address', $updated_info['fullAddress'], 'Failed to assert address unchanged.' );
-		$this->assertSame( '555-9999', $updated_info['phoneNumber'], 'Failed to assert phone updated.' );
+		$updated_info = $this->get_venue_test_meta( $venue_id );
+		$this->assertSame( 'Original Address', $updated_info['address'], 'Failed to assert address unchanged.' );
+		$this->assertSame( '555-9999', $updated_info['phone'], 'Failed to assert phone updated.' );
 	}
 
 	/**
@@ -1627,10 +1653,7 @@ class Test_Abilities_Integration extends Base {
 		$this->assertTrue( $result['success'], 'Failed to assert success is true.' );
 
 		// Verify venue information includes coordinates.
-		$venue_info = json_decode(
-			get_post_meta( $result['venue_id'], 'gatherpress_venue_information', true ),
-			true
-		);
+		$venue_info = $this->get_venue_test_meta( $result['venue_id'] );
 		$this->assertArrayHasKey( 'latitude', $venue_info );
 		$this->assertArrayHasKey( 'longitude', $venue_info );
 	}
@@ -1835,11 +1858,8 @@ class Test_Abilities_Integration extends Base {
 		$this->assertTrue( $result['success'], 'Failed to assert success is true.' );
 
 		// Verify address was updated.
-		$venue_info = json_decode(
-			get_post_meta( $venue_id, 'gatherpress_venue_information', true ),
-			true
-		);
-		$this->assertSame( '1600 Amphitheater Parkway, Mountain View, CA', $venue_info['fullAddress'] );
+		$venue_info = $this->get_venue_test_meta( $venue_id );
+		$this->assertSame( '1600 Amphitheater Parkway, Mountain View, CA', $venue_info['address'] );
 	}
 
 	/**
@@ -1875,12 +1895,9 @@ class Test_Abilities_Integration extends Base {
 		$venue_post = get_post( $venue_id );
 		$this->assertSame( 'Updated Venue Name', $venue_post->post_title );
 
-		$venue_info = json_decode(
-			get_post_meta( $venue_id, 'gatherpress_venue_information', true ),
-			true
-		);
-		$this->assertSame( 'New Address', $venue_info['fullAddress'] );
-		$this->assertSame( '555-1234', $venue_info['phoneNumber'] );
+		$venue_info = $this->get_venue_test_meta( $venue_id );
+		$this->assertSame( 'New Address', $venue_info['address'] );
+		$this->assertSame( '555-1234', $venue_info['phone'] );
 		$this->assertSame( 'https://example.com', $venue_info['website'] );
 	}
 
@@ -1910,13 +1927,8 @@ class Test_Abilities_Integration extends Base {
 
 		$this->assertTrue( $result['success'], 'Failed to assert success is true.' );
 
-		// Verify venue info was created.
-		$venue_info = json_decode(
-			get_post_meta( $venue_id, 'gatherpress_venue_information', true ),
-			true
-		);
-		$this->assertIsArray( $venue_info );
-		$this->assertSame( '555-9999', $venue_info['phoneNumber'] );
+		$venue_info = $this->get_venue_test_meta( $venue_id );
+		$this->assertSame( '555-9999', $venue_info['phone'] );
 	}
 
 	/**
@@ -2388,10 +2400,7 @@ class Test_Abilities_Integration extends Base {
 		$this->assertTrue( $result['success'], 'Failed to assert success is true.' );
 
 		// Verify website was saved.
-		$venue_info = json_decode(
-			get_post_meta( $result['venue_id'], 'gatherpress_venue_information', true ),
-			true
-		);
+		$venue_info = $this->get_venue_test_meta( $result['venue_id'] );
 		$this->assertSame( 'https://example.com', $venue_info['website'] );
 	}
 
@@ -2414,11 +2423,8 @@ class Test_Abilities_Integration extends Base {
 		$this->assertTrue( $result['success'], 'Failed to assert success is true.' );
 
 		// Verify phone was saved.
-		$venue_info = json_decode(
-			get_post_meta( $result['venue_id'], 'gatherpress_venue_information', true ),
-			true
-		);
-		$this->assertSame( '555-1234', $venue_info['phoneNumber'] );
+		$venue_info = $this->get_venue_test_meta( $result['venue_id'] );
+		$this->assertSame( '555-1234', $venue_info['phone'] );
 	}
 
 	/**
@@ -2682,7 +2688,6 @@ class Test_Abilities_Integration extends Base {
 	 * @return void
 	 */
 	public function test_execute_update_venue_with_empty_venue_info_json(): void {
-		// Create a venue without venue information (or with invalid JSON).
 		$venue_id = $this->factory->post->create(
 			array(
 				'post_type'   => Venue::POST_TYPE,
@@ -2690,9 +2695,6 @@ class Test_Abilities_Integration extends Base {
 				'post_status' => 'publish',
 			)
 		);
-
-		// Set invalid JSON or empty string.
-		update_post_meta( $venue_id, 'gatherpress_venue_information', 'invalid json' );
 
 		$instance = Abilities_Integration::get_instance();
 		$params   = array(
@@ -2703,13 +2705,8 @@ class Test_Abilities_Integration extends Base {
 
 		$this->assertTrue( $result['success'], 'Failed to assert success is true.' );
 
-		// Verify venue info was created from empty state.
-		$venue_info = json_decode(
-			get_post_meta( $venue_id, 'gatherpress_venue_information', true ),
-			true
-		);
-		$this->assertIsArray( $venue_info );
-		$this->assertSame( '555-9999', $venue_info['phoneNumber'] );
+		$venue_info = $this->get_venue_test_meta( $venue_id );
+		$this->assertSame( '555-9999', $venue_info['phone'] );
 	}
 
 	/**
@@ -3408,7 +3405,6 @@ class Test_Abilities_Integration extends Base {
 	 * @return void
 	 */
 	public function test_execute_update_venue_with_invalid_json_venue_info(): void {
-		// Create a venue with invalid JSON in venue information.
 		$venue_id = $this->factory->post->create(
 			array(
 				'post_type'   => Venue::POST_TYPE,
@@ -3416,9 +3412,6 @@ class Test_Abilities_Integration extends Base {
 				'post_status' => 'publish',
 			)
 		);
-
-		// Set invalid JSON that will fail to decode.
-		update_post_meta( $venue_id, 'gatherpress_venue_information', 'invalid json string' );
 
 		$instance = Abilities_Integration::get_instance();
 		$params   = array(
@@ -3429,13 +3422,8 @@ class Test_Abilities_Integration extends Base {
 
 		$this->assertTrue( $result['success'], 'Failed to assert success is true.' );
 
-		// Verify venue info was initialized as empty array (line 1049).
-		$venue_info = json_decode(
-			get_post_meta( $venue_id, 'gatherpress_venue_information', true ),
-			true
-		);
-		$this->assertIsArray( $venue_info );
-		$this->assertSame( '555-9999', $venue_info['phoneNumber'] );
+		$venue_info = $this->get_venue_test_meta( $venue_id );
+		$this->assertSame( '555-9999', $venue_info['phone'] );
 	}
 
 	/**
