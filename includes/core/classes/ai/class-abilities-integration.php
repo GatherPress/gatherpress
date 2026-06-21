@@ -28,7 +28,6 @@ use GatherPress\Core\Venue\Meta as Venue_Meta;
 use GatherPress\Core\Venue\Setup as Venue_Setup;
 use WP_Error;
 use WP_Post;
-use WP_Term;
 
 /**
  * Class Abilities_Integration.
@@ -2267,13 +2266,13 @@ class Abilities_Integration {
 			);
 		}
 
-		$term_id  = is_array( $term ) ? (int) $term['term_id'] : (int) $term;
+		$term_id  = (int) $term['term_id'];
 		$term_ids = array( $term_id );
 		$existing = get_the_terms( $event_id, $taxonomy );
 
 		if ( is_array( $existing ) ) {
 			foreach ( $existing as $existing_term ) {
-				if ( $existing_term instanceof WP_Term && 'online-event' === $existing_term->slug ) {
+				if ( 'online-event' === $existing_term->slug ) {
 					$term_ids[] = (int) $existing_term->term_id;
 					break;
 				}
