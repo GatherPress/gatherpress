@@ -16,12 +16,7 @@ namespace GatherPress\Core\AI;
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\AI\Date_Calculator;
-use GatherPress\Core\Event;
-use GatherPress\Core\Rsvp;
-use GatherPress\Core\Topic;
 use GatherPress\Core\Traits\Singleton;
-use GatherPress\Core\Venue;
-use WP_Error;
 
 /**
  * Class Abilities_Integration.
@@ -72,6 +67,14 @@ class Abilities_Integration {
 	private $batch;
 
 	/**
+	 * Topic abilities handler.
+	 *
+	 * @since 0.34.0
+	 * @var Abilities_Topic
+	 */
+	private $topic;
+
+	/**
 	 * Class constructor.
 	 *
 	 * Initializes the Abilities API integration if the API is available.
@@ -80,7 +83,7 @@ class Abilities_Integration {
 	 */
 	protected function __construct() {
 		// Only proceed if Abilities API is available.
-		if ( ! function_exists( 'wp_register_ability' ) ) {
+		if ( ! $this->abilities_api_is_available() ) {
 			return;
 		}
 
@@ -88,6 +91,7 @@ class Abilities_Integration {
 		$this->venue           = new Abilities_Venue();
 		$this->event           = new Abilities_Event();
 		$this->batch           = new Abilities_Event_Batch( $this->event );
+		$this->topic           = new Abilities_Topic();
 		$this->setup_hooks();
 	}
 
@@ -115,7 +119,7 @@ class Abilities_Integration {
 	 */
 	public static function get_calculate_dates_ability(): string {
 		// Default to GatherPress's own implementation.
-		if ( ! function_exists( 'wp_has_ability' ) ) {
+		if ( ! static::has_ability_registry() ) {
 			return 'gatherpress/calculate-dates';
 		}
 
@@ -135,7 +139,7 @@ class Abilities_Integration {
 	 * @return void
 	 */
 	public function register_categories(): void {
-		if ( ! function_exists( 'wp_register_ability_category' ) ) {
+		if ( ! $this->ability_category_api_is_available() ) {
 			return;
 		}
 
@@ -227,7 +231,7 @@ class Abilities_Integration {
 					'properties'           => array(),
 					'additionalProperties' => false,
 				),
-				'execute_callback'    => array( $this, 'execute_list_venues' ),
+				'execute_callback'    => array( $this->venue, 'execute_list_venues' ),
 				'permission_callback' => static function (): bool {
 					return current_user_can( 'read' );
 				},
@@ -258,7 +262,7 @@ class Abilities_Integration {
 				// phpcs:ignore Generic.Files.LineLength.TooLong
 				'description'         => __( 'Retrieve a list of events with their dates, venues, and details. IMPORTANT: When searching for events by name, use the search parameter to find all events (not just upcoming).', 'gatherpress' ),
 				'category'            => 'event',
-				'execute_callback'    => array( $this, 'execute_list_events' ),
+				'execute_callback'    => array( $this->event, 'execute_list_events' ),
 				'permission_callback' => static function (): bool {
 					return current_user_can( 'read' );
 				},
@@ -307,7 +311,7 @@ class Abilities_Integration {
 				'label'               => __( 'List Topics', 'gatherpress' ),
 				'description'         => __( 'Retrieve a list of all available event topics.', 'gatherpress' ),
 				'category'            => 'event',
-				'execute_callback'    => array( $this, 'execute_list_topics' ),
+				'execute_callback'    => array( $this->topic, 'execute_list_topics' ),
 				'permission_callback' => static function (): bool {
 					return current_user_can( 'read' );
 				},
@@ -394,7 +398,7 @@ class Abilities_Integration {
 				'label'               => __( 'Create Topic', 'gatherpress' ),
 				'description'         => __( 'Create a new event topic for categorizing events.', 'gatherpress' ),
 				'category'            => 'event',
-				'execute_callback'    => array( $this, 'execute_create_topic' ),
+				'execute_callback'    => array( $this->topic, 'execute_create_topic' ),
 				'permission_callback' => static function (): bool {
 					return current_user_can( 'manage_categories' );
 				},
@@ -712,184 +716,6 @@ class Abilities_Integration {
 	}
 
 	/**
-	 * Execute the list-venues ability.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param array $_params Optional parameters (currently unused).
-	 * @return array Response with venue list or error.
-	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
-	 */
-	// phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.Found,Squiz.Commenting.FunctionComment.Missing
-	public function execute_list_venues( array $_params = array() ): array {
-		try {
-			$venues = get_posts(
-				array(
-					'post_type'      => Venue::POST_TYPE,
-					'posts_per_page' => -1,
-					'post_status'    => 'publish',
-					'orderby'        => 'title',
-					'order'          => 'ASC',
-				)
-			);
-
-			$venue_list = array();
-
-			foreach ( $venues as $venue_post ) {
-				$venue_info = ( new Venue( $venue_post->ID ) )->get_information();
-				$edit_url   = get_edit_post_link( $venue_post->ID, 'raw' );
-				$permalink  = get_permalink( $venue_post->ID );
-
-				$venue_list[] = array(
-					'id'        => (int) $venue_post->ID,
-					'name'      => ! empty( $venue_post->post_title ) ? $venue_post->post_title : '',
-					'address'   => $venue_info['address'],
-					'phone'     => $venue_info['phone'],
-					'website'   => $venue_info['website'],
-					'latitude'  => $venue_info['latitude'],
-					'longitude' => $venue_info['longitude'],
-					'edit_url'  => ! empty( $edit_url ) ? $edit_url : '',
-					'permalink' => ! empty( $permalink ) ? $permalink : '',
-				);
-			}
-
-			$venue_count = count( $venue_list );
-
-			return array(
-				'success' => true,
-				'data'    => $venue_list,
-				'count'   => $venue_count,
-				'message' => sprintf(
-					/* translators: %d: number of venues */
-					__( 'Found %d venue(s)', 'gatherpress' ),
-					$venue_count
-				),
-			);
-		} catch ( \Exception $e ) {
-			return array(
-				'success' => false,
-				'data'    => array(),
-				'message' => sprintf(
-					/* translators: %s: error message */
-					__( 'Error retrieving venues: %s', 'gatherpress' ),
-					$e->getMessage()
-				),
-			);
-		}
-	}
-
-	/**
-	 * Execute the list-events ability.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param array $params Parameters including max_number.
-	 * @return array Response with event list or error.
-	 */
-	public function execute_list_events( array $params = array() ): array {
-		$max_number = isset( $params['max_number'] ) ? intval( $params['max_number'] ) : 50;
-		// If max_number is -1 or very large, get all events (but cap at 100 for performance).
-		if ( $max_number <= 0 || $max_number > 100 ) {
-			$max_number = 100;
-		}
-
-		// If search term is provided, search all events instead of just upcoming.
-		if ( ! empty( $params['search'] ) ) {
-			$events = get_posts(
-				array(
-					'post_type'      => Event::POST_TYPE,
-					'post_status'    => array( 'publish', 'draft' ),
-					'posts_per_page' => $max_number,
-					's'              => sanitize_text_field( $params['search'] ),
-					'orderby'        => 'date',
-					'order'          => 'DESC',
-				)
-			);
-
-			$event_list = array();
-			foreach ( $events as $event ) {
-				$event_obj         = new Event( $event->ID );
-				$venue_information = $event_obj->get_venue_information();
-
-				$event_list[] = array(
-					'id'             => $event->ID,
-					'title'          => get_the_title( $event->ID ),
-					'datetime_start' => $event_obj->get_datetime_start( 'F j, Y, g:i a' ),
-					'datetime_end'   => $event_obj->get_datetime_end( 'F j, Y, g:i a' ),
-					'venue'          => $venue_information['name'] ?? null,
-					'permalink'      => get_permalink( $event->ID ),
-					'edit_url'       => get_edit_post_link( $event->ID, 'raw' ),
-				);
-			}
-
-			return array(
-				'success' => true,
-				'data'    => array(
-					'events' => $event_list,
-					'count'  => count( $event_list ),
-				),
-				'message' => sprintf(
-					/* translators: %1$d: number of events, %2$s: search term */
-					_n(
-						'Found %1$d event matching "%2$s".',
-						'Found %1$d events matching "%2$s".',
-						count( $event_list ),
-						'gatherpress'
-					),
-					count( $event_list ),
-					$params['search']
-				),
-			);
-		}
-
-		// Default to searching all events instead of just upcoming.
-		$events = get_posts(
-			array(
-				'post_type'      => Event::POST_TYPE,
-				'post_status'    => array( 'publish', 'draft' ),
-				'posts_per_page' => $max_number,
-				'orderby'        => 'date',
-				'order'          => 'DESC',
-			)
-		);
-
-		$event_list = array();
-		foreach ( $events as $event ) {
-			$event_obj         = new Event( $event->ID );
-			$venue_information = $event_obj->get_venue_information();
-
-			$event_list[] = array(
-				'id'             => $event->ID,
-				'title'          => get_the_title( $event->ID ),
-				'datetime_start' => $event_obj->get_datetime_start( 'F j, Y, g:i a' ),
-				'datetime_end'   => $event_obj->get_datetime_end( 'F j, Y, g:i a' ),
-				'venue'          => $venue_information['name'] ?? null,
-				'permalink'      => get_permalink( $event->ID ),
-				'edit_url'       => get_edit_post_link( $event->ID, 'raw' ),
-			);
-		}
-
-		return array(
-			'success' => true,
-			'data'    => array(
-				'events' => $event_list,
-				'count'  => count( $event_list ),
-			),
-			'message' => sprintf(
-				/* translators: %d: number of events */
-				_n(
-					'Found %d event.',
-					'Found %d events.',
-					count( $event_list ),
-					'gatherpress'
-				),
-				count( $event_list )
-			),
-		);
-	}
-
-
-	/**
 	 * Register the search-events ability.
 	 *
 	 * Allows searching for events by title or content.
@@ -905,7 +731,7 @@ class Abilities_Integration {
 				'label'               => __( 'Search Events', 'gatherpress' ),
 				'description'         => __( 'Search for events by title or content.', 'gatherpress' ),
 				'category'            => 'event',
-				'execute_callback'    => array( $this, 'execute_search_events' ),
+				'execute_callback'    => array( $this->event, 'execute_search_events' ),
 				'permission_callback' => static function (): bool {
 					return current_user_can( 'read' );
 				},
@@ -990,89 +816,6 @@ class Abilities_Integration {
 	}
 
 	/**
-	 * Execute the search-events ability.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param array $params The parameters passed to the ability.
-	 * @return array The result of the ability execution.
-	 */
-	public function execute_search_events( array $params ): array {
-		// Validate required parameters.
-		if ( empty( $params['search_term'] ) ) {
-			return array(
-				'success' => false,
-				'message' => __( 'Search term is required.', 'gatherpress' ),
-			);
-		}
-
-		$max_number = isset( $params['max_number'] ) ? absint( $params['max_number'] ) : 10;
-
-		// Search for events.
-		$events = get_posts(
-			array(
-				'post_type'      => Event::POST_TYPE,
-				'post_status'    => array( 'publish', 'draft' ),
-				'posts_per_page' => $max_number,
-				's'              => sanitize_text_field( $params['search_term'] ),
-				'orderby'        => 'date',
-				'order'          => 'DESC',
-			)
-		);
-
-		if ( empty( $events ) ) {
-			return array(
-				'success' => true,
-				'data'    => array(
-					'events' => array(),
-					'count'  => 0,
-				),
-				'message' => sprintf(
-					/* translators: %s: search term */
-					__( 'No events found matching "%s".', 'gatherpress' ),
-					$params['search_term']
-				),
-			);
-		}
-
-		$event_data = array();
-		foreach ( $events as $event ) {
-			$event_obj = new Event( $event->ID );
-			$datetime  = $event_obj->get_datetime();
-
-			$event_data[] = array(
-				'id'             => $event->ID,
-				'title'          => get_the_title( $event->ID ),
-				'status'         => $event->post_status,
-				'datetime_start' => $event_obj->get_datetime_start( 'F j, Y, g:i a' ),
-				'datetime_end'   => $event_obj->get_datetime_end( 'F j, Y, g:i a' ),
-				'timezone'       => $datetime['timezone'] ?? '',
-				'venue_id'       => $this->event->get_event_venue_id( $event->ID ),
-				'edit_url'       => get_edit_post_link( $event->ID, 'raw' ),
-			);
-		}
-
-		return array(
-			'success' => true,
-			'data'    => array(
-				'events' => $event_data,
-				'count'  => count( $event_data ),
-			),
-			'message' => sprintf(
-				/* translators: %1$d: number of events, %2$s: search term */
-				_n(
-					'Found %1$d event matching "%2$s".',
-					'Found %1$d events matching "%2$s".',
-					count( $event_data ),
-					'gatherpress'
-				),
-				count( $event_data ),
-				$params['search_term']
-			),
-		);
-	}
-
-	/**
 	 * Execute the calculate-dates ability.
 	 *
 	 * @since 1.0.0
@@ -1081,124 +824,55 @@ class Abilities_Integration {
 	 * @return array Response with calculated dates or error message.
 	 */
 	public function execute_calculate_dates( array $params = array() ): array {
-		// Check if AI plugin's calculate-dates ability is available.
-		if ( function_exists( 'wp_execute_ability' ) ) {
-			$ai_ability = wp_get_ability( 'ai/calculate-dates' );
-			if ( $ai_ability ) {
-				// Use AI plugin's ability if available.
-				return wp_execute_ability( 'ai/calculate-dates', $params );
+		if ( function_exists( 'wp_has_ability' ) && wp_has_ability( 'ai/calculate-dates' ) ) {
+			$ability = wp_get_ability( 'ai/calculate-dates' );
+			if ( null !== $ability ) {
+				$result = $ability->execute( $params );
+				if ( is_wp_error( $result ) ) {
+					return array(
+						'success' => false,
+						'message' => $result->get_error_message(),
+					);
+				}
+				if ( is_array( $result ) ) {
+					return $result;
+				}
 			}
 		}
 
-		// Fall back to local Date_Calculator.
 		return $this->date_calculator->calculate_dates( $params );
 	}
 
 	/**
-	 * Execute the list-topics ability.
+	 * Whether the Abilities API registration function is available.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
-	 * @param array $_params Optional parameters (currently unused).
-	 * @return array List of topics with their IDs and names.
-	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+	 * @return bool True when wp_register_ability exists.
 	 */
-	// phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.Found,Squiz.Commenting.FunctionComment.Missing
-	public function execute_list_topics( array $_params = array() ): array {
-		$topics = get_terms(
-			array(
-				'taxonomy'   => Topic::TAXONOMY,
-				'hide_empty' => false,
-				'orderby'    => 'name',
-				'order'      => 'ASC',
-			)
-		);
-
-		if ( is_wp_error( $topics ) ) {
-			return array(
-				'success' => false,
-				'message' => $topics->get_error_message(),
-			);
-		}
-
-		$topic_list = array();
-		foreach ( $topics as $topic ) {
-			$topic_list[] = array(
-				'id'          => $topic->term_id,
-				'name'        => $topic->name,
-				'slug'        => $topic->slug,
-				'description' => $topic->description,
-				'parent'      => $topic->parent,
-			);
-		}
-
-		return array(
-			'success' => true,
-			'data'    => $topic_list,
-			'message' => sprintf(
-				/* translators: %d: number of topics */
-				_n(
-					'Found %d topic',
-					'Found %d topics',
-					count( $topic_list ),
-					'gatherpress'
-				),
-				count( $topic_list )
-			),
-		);
+	protected function abilities_api_is_available(): bool {
+		return function_exists( 'wp_register_ability' );
 	}
 
 	/**
-	 * Execute the create-topic ability.
+	 * Whether the Abilities API registry lookup function is available.
 	 *
-	 * @since 1.0.0
+	 * @since 0.34.0
 	 *
-	 * @param array $params Parameters including name, description, and parent_id.
-	 * @return array Result with topic ID or error.
+	 * @return bool True when wp_has_ability exists.
 	 */
-	public function execute_create_topic( array $params = array() ): array {
-		// Validate required parameters.
-		if ( empty( $params['name'] ) ) {
-			return array(
-				'success' => false,
-				'message' => __( 'Topic name is required.', 'gatherpress' ),
-			);
-		}
+	protected static function has_ability_registry(): bool {
+		return function_exists( 'wp_has_ability' );
+	}
 
-		$args = array(
-			'description' => ! empty( $params['description'] ) ? sanitize_textarea_field( $params['description'] ) : '',
-		);
-
-		if ( ! empty( $params['parent_id'] ) ) {
-			$args['parent'] = intval( $params['parent_id'] );
-		}
-
-		$result = wp_insert_term(
-			sanitize_text_field( $params['name'] ),
-			Topic::TAXONOMY,
-			$args
-		);
-
-		if ( is_wp_error( $result ) ) {
-			return array(
-				'success' => false,
-				'message' => $result->get_error_message(),
-			);
-		}
-
-		$topic    = get_term( $result['term_id'], Topic::TAXONOMY );
-		$edit_url = get_edit_term_link( $result['term_id'], Topic::TAXONOMY );
-
-		return array(
-			'success'  => true,
-			'topic_id' => $result['term_id'],
-			'name'     => $topic->name,
-			'edit_url' => $edit_url,
-			'message'  => sprintf(
-				/* translators: %s: topic name */
-				__( 'Topic "%s" created successfully.', 'gatherpress' ),
-				$topic->name
-			),
-		);
+	/**
+	 * Whether the Abilities API category registration function is available.
+	 *
+	 * @since 0.34.0
+	 *
+	 * @return bool True when wp_register_ability_category exists.
+	 */
+	protected function ability_category_api_is_available(): bool {
+		return function_exists( 'wp_register_ability_category' );
 	}
 }

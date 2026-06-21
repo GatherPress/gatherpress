@@ -23,7 +23,7 @@ use WP_Post;
 /**
  * Class Abilities_Event.
  *
- * Handles create-event and update-event ability execution.
+ * Handles create-event, update-event, list-events, and search-events ability execution.
  *
  * @since 0.34.0
  */
@@ -665,5 +665,198 @@ class Abilities_Event {
 	 */
 	protected function assign_venue_terms( int $event_id, array $term_ids ) {
 		return wp_set_object_terms( $event_id, $term_ids, Venue::TAXONOMY, false );
+	}
+
+	/**
+	 * Execute the list-events ability.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param array $params Parameters including max_number.
+	 * @return array Response with event list or error.
+	 */
+	public function execute_list_events( array $params = array() ): array {
+		$max_number = isset( $params['max_number'] ) ? intval( $params['max_number'] ) : 50;
+		// If max_number is -1 or very large, get all events (but cap at 100 for performance).
+		if ( $max_number <= 0 || $max_number > 100 ) {
+			$max_number = 100;
+		}
+
+		// If search term is provided, search all events instead of just upcoming.
+		if ( ! empty( $params['search'] ) ) {
+			$events = get_posts(
+				array(
+					'post_type'      => Event::POST_TYPE,
+					'post_status'    => array( 'publish', 'draft' ),
+					'posts_per_page' => $max_number,
+					's'              => sanitize_text_field( $params['search'] ),
+					'orderby'        => 'date',
+					'order'          => 'DESC',
+				)
+			);
+
+			$event_list = array();
+			foreach ( $events as $event ) {
+				$event_obj         = new Event( $event->ID );
+				$venue_information = $event_obj->get_venue_information();
+
+				$event_list[] = array(
+					'id'             => $event->ID,
+					'title'          => get_the_title( $event->ID ),
+					'datetime_start' => $event_obj->get_datetime_start( 'F j, Y, g:i a' ),
+					'datetime_end'   => $event_obj->get_datetime_end( 'F j, Y, g:i a' ),
+					'venue'          => $venue_information['name'] ?? null,
+					'permalink'      => get_permalink( $event->ID ),
+					'edit_url'       => get_edit_post_link( $event->ID, 'raw' ),
+				);
+			}
+
+			return array(
+				'success' => true,
+				'data'    => array(
+					'events' => $event_list,
+					'count'  => count( $event_list ),
+				),
+				'message' => sprintf(
+					/* translators: %1$d: number of events, %2$s: search term */
+					_n(
+						'Found %1$d event matching "%2$s".',
+						'Found %1$d events matching "%2$s".',
+						count( $event_list ),
+						'gatherpress'
+					),
+					count( $event_list ),
+					$params['search']
+				),
+			);
+		}
+
+		// Default to searching all events instead of just upcoming.
+		$events = get_posts(
+			array(
+				'post_type'      => Event::POST_TYPE,
+				'post_status'    => array( 'publish', 'draft' ),
+				'posts_per_page' => $max_number,
+				'orderby'        => 'date',
+				'order'          => 'DESC',
+			)
+		);
+
+		$event_list = array();
+		foreach ( $events as $event ) {
+			$event_obj         = new Event( $event->ID );
+			$venue_information = $event_obj->get_venue_information();
+
+			$event_list[] = array(
+				'id'             => $event->ID,
+				'title'          => get_the_title( $event->ID ),
+				'datetime_start' => $event_obj->get_datetime_start( 'F j, Y, g:i a' ),
+				'datetime_end'   => $event_obj->get_datetime_end( 'F j, Y, g:i a' ),
+				'venue'          => $venue_information['name'] ?? null,
+				'permalink'      => get_permalink( $event->ID ),
+				'edit_url'       => get_edit_post_link( $event->ID, 'raw' ),
+			);
+		}
+
+		return array(
+			'success' => true,
+			'data'    => array(
+				'events' => $event_list,
+				'count'  => count( $event_list ),
+			),
+			'message' => sprintf(
+				/* translators: %d: number of events */
+				_n(
+					'Found %d event.',
+					'Found %d events.',
+					count( $event_list ),
+					'gatherpress'
+				),
+				count( $event_list )
+			),
+		);
+	}
+
+	/**
+	 * Execute the search-events ability.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param array $params The parameters passed to the ability.
+	 * @return array The result of the ability execution.
+	 */
+	public function execute_search_events( array $params ): array {
+		// Validate required parameters.
+		if ( empty( $params['search_term'] ) ) {
+			return array(
+				'success' => false,
+				'message' => __( 'Search term is required.', 'gatherpress' ),
+			);
+		}
+
+		$max_number = isset( $params['max_number'] ) ? absint( $params['max_number'] ) : 10;
+
+		// Search for events.
+		$events = get_posts(
+			array(
+				'post_type'      => Event::POST_TYPE,
+				'post_status'    => array( 'publish', 'draft' ),
+				'posts_per_page' => $max_number,
+				's'              => sanitize_text_field( $params['search_term'] ),
+				'orderby'        => 'date',
+				'order'          => 'DESC',
+			)
+		);
+
+		if ( empty( $events ) ) {
+			return array(
+				'success' => true,
+				'data'    => array(
+					'events' => array(),
+					'count'  => 0,
+				),
+				'message' => sprintf(
+					/* translators: %s: search term */
+					__( 'No events found matching "%s".', 'gatherpress' ),
+					$params['search_term']
+				),
+			);
+		}
+
+		$event_data = array();
+		foreach ( $events as $event ) {
+			$event_obj = new Event( $event->ID );
+			$datetime  = $event_obj->get_datetime();
+
+			$event_data[] = array(
+				'id'             => $event->ID,
+				'title'          => get_the_title( $event->ID ),
+				'status'         => $event->post_status,
+				'datetime_start' => $event_obj->get_datetime_start( 'F j, Y, g:i a' ),
+				'datetime_end'   => $event_obj->get_datetime_end( 'F j, Y, g:i a' ),
+				'timezone'       => $datetime['timezone'] ?? '',
+				'venue_id'       => $this->get_event_venue_id( $event->ID ),
+				'edit_url'       => get_edit_post_link( $event->ID, 'raw' ),
+			);
+		}
+
+		return array(
+			'success' => true,
+			'data'    => array(
+				'events' => $event_data,
+				'count'  => count( $event_data ),
+			),
+			'message' => sprintf(
+				/* translators: %1$d: number of events, %2$s: search term */
+				_n(
+					'Found %1$d event matching "%2$s".',
+					'Found %1$d events matching "%2$s".',
+					count( $event_data ),
+					'gatherpress'
+				),
+				count( $event_data ),
+				$params['search_term']
+			),
+		);
 	}
 }

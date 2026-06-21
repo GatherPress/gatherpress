@@ -2333,4 +2333,434 @@ class Test_Abilities_Event extends Base {
 
 		$this->assertIsArray( $result );
 	}
+	/**
+	 * Coverage for execute_list_events method with no events.
+	 *
+	 * @covers ::execute_list_events
+	 *
+	 * @return void
+	 */
+	public function test_execute_list_events_with_no_events(): void {
+		$handler = $this->get_event_instance();
+		$result  = $handler->execute_list_events( array( 'max_number' => 10 ) );
+
+		$this->assertTrue( $result['success'], 'Failed to assert success is true.' );
+		$this->assertIsArray( $result['data'], 'Failed to assert data is an array.' );
+		$this->assertIsArray( $result['data']['events'], 'Failed to assert data events is an array.' );
+		$this->assertEmpty( $result['data']['events'], 'Failed to assert data events is empty.' );
+		$this->assertStringContainsString( 'Found 0 event', $result['message'], 'Failed to assert message contains count.' ); // phpcs:ignore Generic.Files.LineLength.TooLong
+	}
+	/**
+	 * Coverage for execute_list_events method respects max_number parameter.
+	 *
+	 * @covers ::execute_list_events
+	 *
+	 * @return void
+	 */
+	public function test_execute_list_events_respects_max_number(): void {
+		// Create test events with future dates.
+		for ( $i = 1; $i <= 5; $i++ ) {
+			$event_id = $this->factory->post->create(
+				array(
+					'post_type'   => Event::POST_TYPE,
+					'post_title'  => "Event $i",
+					'post_status' => 'publish',
+				)
+			);
+
+			// Add future datetime using Event class method.
+			$event = new Event( $event_id );
+			$event->save_datetimes(
+				array(
+					'datetime_start' => gmdate( 'Y-m-d H:i:s', strtotime( '+' . $i . ' days' ) ),
+					'datetime_end'   => gmdate( 'Y-m-d H:i:s', strtotime( '+' . $i . ' days +2 hours' ) ),
+					'timezone'       => 'UTC',
+				)
+			);
+		}
+
+		$handler = $this->get_event_instance();
+		$result  = $handler->execute_list_events( array( 'max_number' => 3 ) );
+
+		$this->assertTrue( $result['success'], 'Failed to assert success is true.' );
+		$this->assertCount( 3, $result['data']['events'], 'Failed to assert data has 3 events.' );
+	}
+	/**
+	 * Coverage for execute_search_events with valid search term.
+	 *
+	 * @covers ::execute_search_events
+	 *
+	 * @return void
+	 */
+	public function test_execute_search_events_with_valid_term(): void {
+		// Create test events.
+		$event_id_1 = $this->factory->post->create(
+			array(
+				'post_type'   => Event::POST_TYPE,
+				'post_title'  => 'Book Club Meeting',
+				'post_status' => 'publish',
+			)
+		);
+		$event_id_2 = $this->factory->post->create(
+			array(
+				'post_type'   => Event::POST_TYPE,
+				'post_title'  => 'Workshop Event',
+				'post_status' => 'publish',
+			)
+		);
+
+		// Add datetimes to event.
+		$event1 = new Event( $event_id_1 );
+		$event1->save_datetimes(
+			array(
+				'datetime_start' => '2025-12-25 19:00:00',
+				'datetime_end'   => '2025-12-25 21:00:00',
+				'timezone'       => 'UTC',
+			)
+		);
+
+		$handler = $this->get_event_instance();
+		$result  = $handler->execute_search_events( array( 'search_term' => 'Book' ) );
+
+		$this->assertTrue( $result['success'], 'Failed to assert success is true.' );
+		$this->assertIsArray( $result['data'], 'Failed to assert data is an array.' );
+		$this->assertArrayHasKey( 'events', $result['data'], 'Failed to assert events key exists.' );
+		$this->assertArrayHasKey( 'count', $result['data'], 'Failed to assert count key exists.' );
+
+		// Verify datetime format is 12-hour (F j, Y, g:i a).
+		if ( ! empty( $result['data']['events'] ) ) {
+			$event_data = $result['data']['events'][0];
+			$this->assertArrayHasKey( 'datetime_start', $event_data, 'Failed to assert datetime_start key exists.' );
+			$this->assertArrayHasKey( 'datetime_end', $event_data, 'Failed to assert datetime_end key exists.' );
+			// Check format contains am/pm (12-hour format).
+			// phpcs:ignore Generic.Files.LineLength.TooLong
+			$this->assertMatchesRegularExpression( '/\b(am|pm)\b/i', $event_data['datetime_start'], 'Failed to assert datetime_start is in 12-hour format.' );
+			// phpcs:ignore Generic.Files.LineLength.TooLong
+			$this->assertMatchesRegularExpression( '/\b(am|pm)\b/i', $event_data['datetime_end'], 'Failed to assert datetime_end is in 12-hour format.' );
+		}
+	}
+	/**
+	 * Coverage for execute_search_events without search term.
+	 *
+	 * @covers ::execute_search_events
+	 *
+	 * @return void
+	 */
+	public function test_execute_search_events_without_search_term(): void {
+		$handler = $this->get_event_instance();
+		$result  = $handler->execute_search_events( array() );
+
+		$this->assertFalse( $result['success'], 'Failed to assert success is false.' );
+		$this->assertStringContainsString( 'Search term is required', $result['message'] );
+	}
+	/**
+	 * Coverage for execute_search_events with no results.
+	 *
+	 * @covers ::execute_search_events
+	 *
+	 * @return void
+	 */
+	public function test_execute_search_events_with_no_results(): void {
+		$handler = $this->get_event_instance();
+		$result  = $handler->execute_search_events( array( 'search_term' => 'NonexistentEvent12345' ) );
+
+		$this->assertTrue( $result['success'], 'Failed to assert success is true.' );
+		$this->assertEmpty( $result['data']['events'], 'Failed to assert events array is empty.' );
+		$this->assertSame( 0, $result['data']['count'], 'Failed to assert count is 0.' );
+	}
+	/**
+	 * Coverage for execute_search_events with max_number parameter.
+	 *
+	 * @covers ::execute_search_events
+	 *
+	 * @return void
+	 */
+	public function test_execute_search_events_with_max_number(): void {
+		// Create multiple test events.
+		for ( $i = 1; $i <= 5; $i++ ) {
+			$this->factory->post->create(
+				array(
+					'post_type'   => Event::POST_TYPE,
+					'post_title'  => "Test Event $i",
+					'post_status' => 'publish',
+				)
+			);
+		}
+
+		$handler = $this->get_event_instance();
+		$result  = $handler->execute_search_events(
+			array(
+				'search_term' => 'Test',
+				'max_number'  => 3,
+			)
+		);
+
+		$this->assertTrue( $result['success'], 'Failed to assert success is true.' );
+		$this->assertLessThanOrEqual( 3, $result['data']['count'], 'Failed to assert count respects max_number.' );
+	}
+	/**
+	 * Coverage for execute_list_events with search parameter.
+	 *
+	 * @covers ::execute_list_events
+	 *
+	 * @return void
+	 */
+	public function test_execute_list_events_with_search(): void {
+		// Create test events.
+		$event_id_1 = $this->factory->post->create(
+			array(
+				'post_type'   => Event::POST_TYPE,
+				'post_title'  => 'Book Club Meeting',
+				'post_status' => 'publish',
+			)
+		);
+		$event_id_2 = $this->factory->post->create(
+			array(
+				'post_type'   => Event::POST_TYPE,
+				'post_title'  => 'Workshop Event',
+				'post_status' => 'publish',
+			)
+		);
+
+		// Add future datetimes.
+		$event1 = new Event( $event_id_1 );
+		$event1->save_datetimes(
+			array(
+				'datetime_start' => gmdate( 'Y-m-d H:i:s', strtotime( '+1 week' ) ),
+				'datetime_end'   => gmdate( 'Y-m-d H:i:s', strtotime( '+1 week +2 hours' ) ),
+				'timezone'       => 'UTC',
+			)
+		);
+
+		$handler = $this->get_event_instance();
+		$result  = $handler->execute_list_events( array( 'search' => 'Book' ) );
+
+		$this->assertTrue( $result['success'], 'Failed to assert success is true.' );
+		$this->assertIsArray( $result['data'], 'Failed to assert data is an array.' );
+		$this->assertArrayHasKey( 'events', $result['data'], 'Failed to assert events key exists.' );
+
+		// Verify datetime format is 12-hour (F j, Y, g:i a).
+		if ( ! empty( $result['data']['events'] ) ) {
+			$event_data = $result['data']['events'][0];
+			$this->assertArrayHasKey( 'datetime_start', $event_data, 'Failed to assert datetime_start key exists.' );
+			$this->assertArrayHasKey( 'datetime_end', $event_data, 'Failed to assert datetime_end key exists.' );
+			// Check format contains am/pm (12-hour format).
+			// phpcs:ignore Generic.Files.LineLength.TooLong
+			$this->assertMatchesRegularExpression( '/\b(am|pm)\b/i', $event_data['datetime_start'], 'Failed to assert datetime_start is in 12-hour format.' );
+			// phpcs:ignore Generic.Files.LineLength.TooLong
+			$this->assertMatchesRegularExpression( '/\b(am|pm)\b/i', $event_data['datetime_end'], 'Failed to assert datetime_end is in 12-hour format.' );
+		}
+	}
+	/**
+	 * Coverage for execute_list_events with max_number > 100.
+	 *
+	 * @covers ::execute_list_events
+	 *
+	 * @return void
+	 */
+	public function test_execute_list_events_with_max_number_over_limit(): void {
+		// Create test events.
+		for ( $i = 1; $i <= 5; $i++ ) {
+			$event_id = $this->factory->post->create(
+				array(
+					'post_type'   => Event::POST_TYPE,
+					'post_title'  => "Event $i",
+					'post_status' => 'publish',
+				)
+			);
+			$event    = new Event( $event_id );
+			$event->save_datetimes(
+				array(
+					'datetime_start' => gmdate( 'Y-m-d H:i:s', strtotime( '+' . $i . ' days' ) ),
+					'datetime_end'   => gmdate( 'Y-m-d H:i:s', strtotime( '+' . $i . ' days +2 hours' ) ),
+					'timezone'       => 'UTC',
+				)
+			);
+		}
+
+		$handler = $this->get_event_instance();
+		$result  = $handler->execute_list_events( array( 'max_number' => 200 ) );
+
+		$this->assertTrue( $result['success'], 'Failed to assert success is true.' );
+		$this->assertLessThanOrEqual( 100, $result['data']['count'], 'Failed to assert count is capped at 100.' );
+	}
+	/**
+	 * Coverage for execute_list_events with max_number = -1.
+	 *
+	 * @covers ::execute_list_events
+	 *
+	 * @return void
+	 */
+	public function test_execute_list_events_with_max_number_negative(): void {
+		// Create test events.
+		for ( $i = 1; $i <= 5; $i++ ) {
+			$event_id = $this->factory->post->create(
+				array(
+					'post_type'   => Event::POST_TYPE,
+					'post_title'  => "Event $i",
+					'post_status' => 'publish',
+				)
+			);
+			$event    = new Event( $event_id );
+			$event->save_datetimes(
+				array(
+					'datetime_start' => gmdate( 'Y-m-d H:i:s', strtotime( '+' . $i . ' days' ) ),
+					'datetime_end'   => gmdate( 'Y-m-d H:i:s', strtotime( '+' . $i . ' days +2 hours' ) ),
+					'timezone'       => 'UTC',
+				)
+			);
+		}
+
+		$handler = $this->get_event_instance();
+		$result  = $handler->execute_list_events( array( 'max_number' => -1 ) );
+
+		$this->assertTrue( $result['success'], 'Failed to assert success is true.' );
+		$this->assertLessThanOrEqual( 100, $result['data']['count'], 'Failed to assert count is capped at 100.' );
+	}
+	/**
+	 * Coverage for execute_list_events without search (default behavior).
+	 *
+	 * @covers ::execute_list_events
+	 *
+	 * @return void
+	 */
+	public function test_execute_list_events_without_search(): void {
+		// Create test events.
+		for ( $i = 1; $i <= 3; $i++ ) {
+			$event_id = $this->factory->post->create(
+				array(
+					'post_type'   => Event::POST_TYPE,
+					'post_title'  => "Event $i",
+					'post_status' => 'publish',
+				)
+			);
+			$event    = new Event( $event_id );
+			$event->save_datetimes(
+				array(
+					'datetime_start' => gmdate( 'Y-m-d H:i:s', strtotime( '+' . $i . ' days' ) ),
+					'datetime_end'   => gmdate( 'Y-m-d H:i:s', strtotime( '+' . $i . ' days +2 hours' ) ),
+					'timezone'       => 'UTC',
+				)
+			);
+		}
+
+		$handler = $this->get_event_instance();
+		$result  = $handler->execute_list_events( array() );
+
+		$this->assertTrue( $result['success'], 'Failed to assert success is true.' );
+		$this->assertIsArray( $result['data'], 'Failed to assert data is an array.' );
+		$this->assertArrayHasKey( 'events', $result['data'], 'Failed to assert events key exists.' );
+		$this->assertArrayHasKey( 'count', $result['data'], 'Failed to assert count key exists.' );
+
+		// Verify datetime format is 12-hour (F j, Y, g:i a).
+		if ( ! empty( $result['data']['events'] ) ) {
+			$event_data = $result['data']['events'][0];
+			$this->assertArrayHasKey( 'datetime_start', $event_data, 'Failed to assert datetime_start key exists.' );
+			$this->assertArrayHasKey( 'datetime_end', $event_data, 'Failed to assert datetime_end key exists.' );
+			// Check format contains am/pm (12-hour format).
+			// phpcs:ignore Generic.Files.LineLength.TooLong
+			$this->assertMatchesRegularExpression( '/\b(am|pm)\b/i', $event_data['datetime_start'], 'Failed to assert datetime_start is in 12-hour format.' );
+			// phpcs:ignore Generic.Files.LineLength.TooLong
+			$this->assertMatchesRegularExpression( '/\b(am|pm)\b/i', $event_data['datetime_end'], 'Failed to assert datetime_end is in 12-hour format.' );
+		}
+	}
+	/**
+	 * Coverage for execute_list_events with events that have venues.
+	 *
+	 * @covers ::execute_list_events
+	 *
+	 * @return void
+	 */
+	public function test_execute_list_events_with_venues(): void {
+		// Create venue.
+		$venue_id = $this->factory->post->create(
+			array(
+				'post_type'   => Venue::POST_TYPE,
+				'post_title'  => 'Test Venue',
+				'post_status' => 'publish',
+			)
+		);
+
+		// Create event with venue.
+		$event_id = $this->factory->post->create(
+			array(
+				'post_type'   => Event::POST_TYPE,
+				'post_title'  => 'Event with Venue',
+				'post_status' => 'publish',
+			)
+		);
+
+		$event = new Event( $event_id );
+		$event->save_datetimes(
+			array(
+				'datetime_start' => gmdate( 'Y-m-d H:i:s', strtotime( '+1 week' ) ),
+				'datetime_end'   => gmdate( 'Y-m-d H:i:s', strtotime( '+1 week +2 hours' ) ),
+				'timezone'       => 'UTC',
+			)
+		);
+
+		// Associate venue.
+		$venue_slug = '_' . get_post( $venue_id )->post_name;
+		wp_set_object_terms( $event_id, $venue_slug, Venue::TAXONOMY );
+
+		$handler = $this->get_event_instance();
+		$result  = $handler->execute_list_events( array() );
+
+		$this->assertTrue( $result['success'], 'Failed to assert success is true.' );
+		// Find our event in the results.
+		$found = false;
+		foreach ( $result['data']['events'] as $event_data ) {
+			if ( $event_data['id'] === $event_id ) {
+				$found = true;
+				$this->assertSame( 'Test Venue', $event_data['venue'] );
+				break;
+			}
+		}
+		$this->assertTrue( $found, 'Failed to find event in results.' );
+	}
+	/**
+	 * Coverage for execute_list_events with events that have no venues.
+	 *
+	 * @covers ::execute_list_events
+	 *
+	 * @return void
+	 */
+	public function test_execute_list_events_without_venues(): void {
+		// Create event without venue.
+		$event_id = $this->factory->post->create(
+			array(
+				'post_type'   => Event::POST_TYPE,
+				'post_title'  => 'Event without Venue',
+				'post_status' => 'publish',
+			)
+		);
+
+		$event = new Event( $event_id );
+		$event->save_datetimes(
+			array(
+				'datetime_start' => gmdate( 'Y-m-d H:i:s', strtotime( '+1 week' ) ),
+				'datetime_end'   => gmdate( 'Y-m-d H:i:s', strtotime( '+1 week +2 hours' ) ),
+				'timezone'       => 'UTC',
+			)
+		);
+
+		$handler = $this->get_event_instance();
+		$result  = $handler->execute_list_events( array() );
+
+		$this->assertTrue( $result['success'], 'Failed to assert success is true.' );
+		// Find our event in the results.
+		$found = false;
+		foreach ( $result['data']['events'] as $event_data ) {
+			if ( $event_data['id'] === $event_id ) {
+				$found = true;
+				// Venue might be null or empty string, both are acceptable.
+				$this->assertTrue(
+					null === $event_data['venue'] || '' === $event_data['venue'],
+					'Failed to assert venue is null or empty.'
+				);
+				break;
+			}
+		}
+		$this->assertTrue( $found, 'Failed to find event in results.' );
+	}
 }

@@ -19,7 +19,7 @@ use WP_Error;
 /**
  * Class Abilities_Venue.
  *
- * Handles create-venue and update-venue ability execution.
+ * Handles create-venue, update-venue, and list-venues ability execution.
  *
  * @since 0.34.0
  */
@@ -234,5 +234,72 @@ class Abilities_Venue {
 			'latitude'  => '0',
 			'longitude' => '0',
 		);
+	}
+
+	/**
+	 * Execute the list-venues ability.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param array $_params Optional parameters (currently unused).
+	 * @return array Response with venue list or error.
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+	 */
+	// phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.Found,Squiz.Commenting.FunctionComment.Missing
+	public function execute_list_venues( array $_params = array() ): array {
+		try {
+			$venues = get_posts(
+				array(
+					'post_type'      => Venue::POST_TYPE,
+					'posts_per_page' => -1,
+					'post_status'    => 'publish',
+					'orderby'        => 'title',
+					'order'          => 'ASC',
+				)
+			);
+
+			$venue_list = array();
+
+			foreach ( $venues as $venue_post ) {
+				$venue_info = ( new Venue( $venue_post->ID ) )->get_information();
+				$edit_url   = get_edit_post_link( $venue_post->ID, 'raw' );
+				$permalink  = get_permalink( $venue_post->ID );
+
+				$venue_list[] = array(
+					'id'        => (int) $venue_post->ID,
+					'name'      => ! empty( $venue_post->post_title ) ? $venue_post->post_title : '',
+					'address'   => $venue_info['address'],
+					'phone'     => $venue_info['phone'],
+					'website'   => $venue_info['website'],
+					'latitude'  => $venue_info['latitude'],
+					'longitude' => $venue_info['longitude'],
+					'edit_url'  => ! empty( $edit_url ) ? $edit_url : '',
+					'permalink' => ! empty( $permalink ) ? $permalink : '',
+				);
+			}
+
+			$venue_count = count( $venue_list );
+
+			return array(
+				'success' => true,
+				'data'    => $venue_list,
+				'count'   => $venue_count,
+				'message' => sprintf(
+					/* translators: %d: number of venues */
+					__( 'Found %d venue(s)', 'gatherpress' ),
+					$venue_count
+				),
+			);
+		} catch ( \Exception $e ) {
+			return array(
+				'success' => false,
+				'data'    => array(),
+				'message' => sprintf(
+					/* translators: %s: error message */
+					__( 'Error retrieving venues: %s', 'gatherpress' ),
+					$e->getMessage()
+				),
+			);
+		}
 	}
 }

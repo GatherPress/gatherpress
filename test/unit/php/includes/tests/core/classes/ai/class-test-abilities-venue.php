@@ -831,4 +831,101 @@ class Test_Abilities_Venue extends Base {
 
 		wp_delete_attachment( $attachment_id, true );
 	}
+
+	/**
+	 * Coverage for execute_list_venues method with no venues.
+	 *
+	 * @covers ::execute_list_venues
+	 *
+	 * @return void
+	 */
+	public function test_execute_list_venues_with_no_venues(): void {
+		$venue  = $this->get_venue_instance();
+		$result = $venue->execute_list_venues();
+
+		$this->assertTrue( $result['success'], 'Failed to assert success is true.' );
+		$this->assertIsArray( $result['data'], 'Failed to assert data is an array.' );
+		$this->assertEmpty( $result['data'], 'Failed to assert data is empty.' );
+		$this->assertStringContainsString( 'Found 0 venue', $result['message'], 'Failed to assert message contains count.' ); // phpcs:ignore Generic.Files.LineLength.TooLong
+	}
+
+	/**
+	 * Coverage for execute_list_venues method with venues.
+	 *
+	 * @covers ::execute_list_venues
+	 *
+	 * @return void
+	 */
+	public function test_execute_list_venues_with_venues(): void {
+		$venue_id_1 = $this->factory->post->create(
+			array(
+				'post_type'   => Venue::POST_TYPE,
+				'post_title'  => 'Downtown Library',
+				'post_status' => 'publish',
+			)
+		);
+		$this->factory->post->create(
+			array(
+				'post_type'   => Venue::POST_TYPE,
+				'post_title'  => 'Community Center',
+				'post_status' => 'publish',
+			)
+		);
+
+		$this->set_venue_test_meta(
+			$venue_id_1,
+			array(
+				'address'   => '123 Main St',
+				'phone'     => '555-1234',
+				'website'   => 'https://example.com',
+				'latitude'  => '40.7128',
+				'longitude' => '-74.0060',
+			)
+		);
+
+		$venue  = $this->get_venue_instance();
+		$result = $venue->execute_list_venues();
+
+		$this->assertTrue( $result['success'], 'Failed to assert success is true.' );
+		$this->assertCount( 2, $result['data'], 'Failed to assert data has 2 venues.' );
+
+		$library = null;
+		foreach ( $result['data'] as $venue_data ) {
+			if ( 'Downtown Library' === $venue_data['name'] ) {
+				$library = $venue_data;
+				break;
+			}
+		}
+
+		$this->assertNotNull( $library, 'Failed to find Downtown Library in results.' );
+		$this->assertSame( '123 Main St', $library['address'], 'Failed to assert venue address.' );
+		$this->assertSame( '555-1234', $library['phone'], 'Failed to assert venue phone.' );
+	}
+
+	/**
+	 * Coverage for execute_list_venues exception handling.
+	 *
+	 * @covers ::execute_list_venues
+	 *
+	 * @return void
+	 */
+	public function test_execute_list_venues_with_exception(): void {
+		add_filter(
+			'pre_get_posts',
+			function ( $query ) {
+				// phpcs:ignore Generic.Files.LineLength.TooLong
+				if ( isset( $query->query_vars['post_type'] ) && 'gatherpress_venue' === $query->query_vars['post_type'] ) {
+					throw new \Exception( 'Database error' );
+				}
+				return $query;
+			}
+		);
+
+		$venue  = $this->get_venue_instance();
+		$result = $venue->execute_list_venues();
+
+		$this->assertFalse( $result['success'], 'Failed to assert success is false.' );
+		$this->assertStringContainsString( 'Error retrieving venues', $result['message'] );
+		$this->assertStringContainsString( 'Database error', $result['message'] );
+	}
 }

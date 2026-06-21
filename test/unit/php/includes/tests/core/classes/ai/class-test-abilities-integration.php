@@ -16,6 +16,7 @@ use GatherPress\Core\Utility;
 use GatherPress\Core\Venue;
 use GatherPress\Core\Venue\Setup as Venue_Setup;
 use GatherPress\Tests\Base;
+use ReflectionClass;
 
 /**
  * Class Test_Abilities_Integration.
@@ -47,212 +48,133 @@ class Test_Abilities_Integration extends Base {
 	}
 
 	/**
-	 * Coverage for execute_list_venues method with no venues.
+	 * Declares a test double subclass without running the protected constructor.
 	 *
-	 * @covers ::execute_list_venues
-	 *
-	 * @return void
+	 * @param string $method_overrides Method overrides as a class body fragment.
+	 * @return class-string<Abilities_Integration>
 	 */
-	public function test_execute_list_venues_with_no_venues(): void {
-		$instance = Abilities_Integration::get_instance();
-		$result   = $instance->execute_list_venues();
+	private function declare_abilities_integration_double( string $method_overrides ): string {
+		$class_name = 'Test_Abilities_Integration_Double_' . str_replace( '.', '_', uniqid( '', true ) );
 
-		$this->assertTrue( $result['success'], 'Failed to assert success is true.' );
-		$this->assertIsArray( $result['data'], 'Failed to assert data is an array.' );
-		$this->assertEmpty( $result['data'], 'Failed to assert data is empty.' );
-		$this->assertStringContainsString( 'Found 0 venue', $result['message'], 'Failed to assert message contains count.' ); // phpcs:ignore Generic.Files.LineLength.TooLong
+		// phpcs:ignore Squiz.PHP.Eval.Discouraged -- Dynamic test double avoids protected-constructor side effects.
+		eval(
+			'namespace GatherPress\Tests\Core\AI; class ' . $class_name .
+			' extends \\GatherPress\\Core\\AI\\Abilities_Integration { ' . $method_overrides . ' }'
+		);
+
+		return __NAMESPACE__ . '\\' . $class_name;
 	}
+
 	/**
-	 * Coverage for execute_list_venues method with venues.
-	 *
-	 * @covers ::execute_list_venues
+	 * Unregisters the external ai/calculate-dates ability so local fallback can run.
 	 *
 	 * @return void
 	 */
-	public function test_execute_list_venues_with_venues(): void {
-		// Create test venues.
-		$venue_id_1 = $this->factory->post->create(
-			array(
-				'post_type'   => Venue::POST_TYPE,
-				'post_title'  => 'Downtown Library',
-				'post_status' => 'publish',
-			)
-		);
-		$venue_id_2 = $this->factory->post->create(
-			array(
-				'post_type'   => Venue::POST_TYPE,
-				'post_title'  => 'Community Center',
-				'post_status' => 'publish',
-			)
-		);
-
-		$this->set_venue_test_meta(
-			$venue_id_1,
-			array(
-				'address'   => '123 Main St',
-				'phone'     => '555-1234',
-				'website'   => 'https://example.com',
-				'latitude'  => '40.7128',
-				'longitude' => '-74.0060',
-			)
-		);
-
-		$instance = Abilities_Integration::get_instance();
-		$result   = $instance->execute_list_venues();
-
-		$this->assertTrue( $result['success'], 'Failed to assert success is true.' );
-		$this->assertCount( 2, $result['data'], 'Failed to assert data has 2 venues.' );
-
-		// Find Downtown Library in results (order not guaranteed).
-		$library = null;
-		foreach ( $result['data'] as $venue ) {
-			if ( 'Downtown Library' === $venue['name'] ) {
-				$library = $venue;
-				break;
-			}
+	private function unregister_ai_calculate_dates_ability(): void {
+		if ( ! function_exists( 'wp_unregister_ability' ) || ! function_exists( 'wp_has_ability' ) ) {
+			return;
 		}
 
-		$this->assertNotNull( $library, 'Failed to find Downtown Library in results.' );
-		$this->assertSame( '123 Main St', $library['address'], 'Failed to assert venue address.' );
-		$this->assertSame( '555-1234', $library['phone'], 'Failed to assert venue phone.' );
-	}
-	/**
-	 * Coverage for execute_list_events method with no events.
-	 *
-	 * @covers ::execute_list_events
-	 *
-	 * @return void
-	 */
-	public function test_execute_list_events_with_no_events(): void {
-		$instance = Abilities_Integration::get_instance();
-		$result   = $instance->execute_list_events( array( 'max_number' => 10 ) );
-
-		$this->assertTrue( $result['success'], 'Failed to assert success is true.' );
-		$this->assertIsArray( $result['data'], 'Failed to assert data is an array.' );
-		$this->assertIsArray( $result['data']['events'], 'Failed to assert data events is an array.' );
-		$this->assertEmpty( $result['data']['events'], 'Failed to assert data events is empty.' );
-		$this->assertStringContainsString( 'Found 0 event', $result['message'], 'Failed to assert message contains count.' ); // phpcs:ignore Generic.Files.LineLength.TooLong
-	}
-	/**
-	 * Coverage for execute_list_events method respects max_number parameter.
-	 *
-	 * @covers ::execute_list_events
-	 *
-	 * @return void
-	 */
-	public function test_execute_list_events_respects_max_number(): void {
-		// Create test events with future dates.
-		for ( $i = 1; $i <= 5; $i++ ) {
-			$event_id = $this->factory->post->create(
-				array(
-					'post_type'   => Event::POST_TYPE,
-					'post_title'  => "Event $i",
-					'post_status' => 'publish',
-				)
-			);
-
-			// Add future datetime using Event class method.
-			$event = new Event( $event_id );
-			$event->save_datetimes(
-				array(
-					'datetime_start' => gmdate( 'Y-m-d H:i:s', strtotime( '+' . $i . ' days' ) ),
-					'datetime_end'   => gmdate( 'Y-m-d H:i:s', strtotime( '+' . $i . ' days +2 hours' ) ),
-					'timezone'       => 'UTC',
-				)
-			);
+		if ( ! wp_has_ability( 'ai/calculate-dates' ) ) {
+			return;
 		}
 
-		$instance = Abilities_Integration::get_instance();
-		$result   = $instance->execute_list_events( array( 'max_number' => 3 ) );
+		add_filter(
+			'pmc_doing_it_wrong',
+			static function ( $caught, $description ) {
+				if ( is_string( $description ) && str_contains( $description, 'ai/calculate-dates' ) ) {
+					return false;
+				}
 
-		$this->assertTrue( $result['success'], 'Failed to assert success is true.' );
-		$this->assertCount( 3, $result['data']['events'], 'Failed to assert data has 3 events.' );
-	}
-	/**
-	 * Coverage for execute_list_topics method with no topics.
-	 *
-	 * @covers ::execute_list_topics
-	 *
-	 * @return void
-	 */
-	public function test_execute_list_topics_with_no_topics(): void {
-		$instance = Abilities_Integration::get_instance();
-		$result   = $instance->execute_list_topics();
-
-		$this->assertTrue( $result['success'], 'Failed to assert success is true.' );
-		$this->assertIsArray( $result['data'], 'Failed to assert data is an array.' );
-		$this->assertEmpty( $result['data'], 'Failed to assert data is empty.' );
-	}
-	/**
-	 * Coverage for execute_list_topics method with topics.
-	 *
-	 * @covers ::execute_list_topics
-	 *
-	 * @return void
-	 */
-	public function test_execute_list_topics_with_topics(): void {
-		// Create test topics.
-		wp_insert_term( 'Workshop', 'gatherpress_topic' );
-		wp_insert_term( 'Social', 'gatherpress_topic' );
-
-		$instance = Abilities_Integration::get_instance();
-		$result   = $instance->execute_list_topics();
-
-		$this->assertTrue( $result['success'], 'Failed to assert success is true.' );
-		$this->assertIsArray( $result['data'], 'Failed to assert data is an array.' );
-		$this->assertCount( 2, $result['data'], 'Failed to assert data has 2 topics.' );
-
-		// Find the Workshop topic in the results.
-		$workshop = null;
-		foreach ( $result['data'] as $topic ) {
-			if ( 'Workshop' === $topic['name'] ) {
-				$workshop = $topic;
-				break;
-			}
-		}
-
-		$this->assertNotNull( $workshop, 'Failed to find Workshop topic.' );
-		$this->assertArrayHasKey( 'id', $workshop, 'Failed to assert topic has id.' );
-		$this->assertSame( 'Workshop', $workshop['name'], 'Failed to assert topic name.' );
-	}
-	/**
-	 * Coverage for execute_create_topic method with valid parameters.
-	 *
-	 * @covers ::execute_create_topic
-	 *
-	 * @return void
-	 */
-	public function test_execute_create_topic_with_valid_params(): void {
-		$instance = Abilities_Integration::get_instance();
-		$params   = array(
-			'name'        => 'Book Club',
-			'description' => 'Events for book club meetings',
+				return $caught;
+			},
+			10,
+			2
 		);
-		$result   = $instance->execute_create_topic( $params );
 
-		$this->assertTrue( $result['success'], 'Failed to assert success is true.' );
-		$this->assertArrayHasKey( 'topic_id', $result, 'Failed to assert topic_id exists.' );
-		$this->assertSame( 'Book Club', $result['name'], 'Failed to assert topic name.' );
-
-		// Verify topic was created.
-		$topic = get_term( $result['topic_id'], 'gatherpress_topic' );
-		$this->assertNotNull( $topic, 'Failed to assert topic exists.' );
-		$this->assertSame( 'Book Club', $topic->name, 'Failed to assert topic name matches.' );
+		wp_unregister_ability( 'ai/calculate-dates' );
 	}
+
 	/**
-	 * Coverage for execute_create_topic method without name.
+	 * Builds registration args for a mock ai/calculate-dates ability.
 	 *
-	 * @covers ::execute_create_topic
+	 * @param callable $execute_callback Ability execute callback.
+	 * @return array<string, mixed>
+	 */
+	private function get_ai_calculate_dates_ability_args( callable $execute_callback ): array {
+		return array(
+			'label'               => 'AI Calculate Dates',
+			'description'         => 'Calculate dates using AI',
+			'category'            => 'event',
+			'permission_callback' => static function (): bool {
+				return current_user_can( 'read' );
+			},
+			'input_schema'        => array(
+				'type'       => 'object',
+				'properties' => array(
+					'pattern'     => array(
+						'type' => 'string',
+					),
+					'occurrences' => array(
+						'type'    => 'integer',
+						'minimum' => 1,
+					),
+					'start_date'  => array(
+						'type'   => 'string',
+						'format' => 'date',
+					),
+				),
+				'required'   => array( 'pattern', 'occurrences' ),
+			),
+			'execute_callback'    => $execute_callback,
+		);
+	}
+
+	/**
+	 * Registers a mock ai/calculate-dates ability within the abilities init hook.
 	 *
+	 * @param callable $execute_callback Ability execute callback.
 	 * @return void
 	 */
-	public function test_execute_create_topic_without_name(): void {
-		$instance = Abilities_Integration::get_instance();
-		$result   = $instance->execute_create_topic( array() );
+	private function register_ai_calculate_dates_ability_mock( callable $execute_callback ): void {
+		if ( ! function_exists( 'wp_register_ability' ) ) {
+			return;
+		}
 
-		$this->assertFalse( $result['success'], 'Failed to assert success is false.' );
-		$this->assertStringContainsString( 'required', $result['message'], 'Failed to assert error message.' );
+		$this->unregister_ai_calculate_dates_ability();
+
+		add_filter(
+			'pmc_doing_it_wrong',
+			static function ( $caught, $description ) {
+				if ( is_string( $description )
+					&& ( str_contains( $description, 'already registered' )
+					|| str_contains( $description, 'must be registered on' ) ) ) {
+					return false;
+				}
+
+				return $caught;
+			},
+			10,
+			2
+		);
+
+		$ability_args = $this->get_ai_calculate_dates_ability_args( $execute_callback );
+
+		add_action(
+			// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound
+			'wp_abilities_api_init',
+			static function () use ( $ability_args ) {
+				if ( ! wp_has_ability( 'ai/calculate-dates' ) ) {
+					wp_register_ability( 'ai/calculate-dates', $ability_args );
+				}
+			},
+			1
+		);
+
+		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound
+		do_action( 'wp_abilities_api_init' );
 	}
+
 	/**
 	 * Coverage for get_calculate_dates_ability when wp_has_ability doesn't exist.
 	 *
@@ -424,119 +346,6 @@ class Test_Abilities_Integration extends Base {
 		$this->assert_hooks( $hooks, $instance );
 	}
 	/**
-	 * Coverage for execute_search_events with valid search term.
-	 *
-	 * @covers ::execute_search_events
-	 *
-	 * @return void
-	 */
-	public function test_execute_search_events_with_valid_term(): void {
-		// Create test events.
-		$event_id_1 = $this->factory->post->create(
-			array(
-				'post_type'   => Event::POST_TYPE,
-				'post_title'  => 'Book Club Meeting',
-				'post_status' => 'publish',
-			)
-		);
-		$event_id_2 = $this->factory->post->create(
-			array(
-				'post_type'   => Event::POST_TYPE,
-				'post_title'  => 'Workshop Event',
-				'post_status' => 'publish',
-			)
-		);
-
-		// Add datetimes to event.
-		$event1 = new Event( $event_id_1 );
-		$event1->save_datetimes(
-			array(
-				'datetime_start' => '2025-12-25 19:00:00',
-				'datetime_end'   => '2025-12-25 21:00:00',
-				'timezone'       => 'UTC',
-			)
-		);
-
-		$instance = Abilities_Integration::get_instance();
-		$result   = $instance->execute_search_events( array( 'search_term' => 'Book' ) );
-
-		$this->assertTrue( $result['success'], 'Failed to assert success is true.' );
-		$this->assertIsArray( $result['data'], 'Failed to assert data is an array.' );
-		$this->assertArrayHasKey( 'events', $result['data'], 'Failed to assert events key exists.' );
-		$this->assertArrayHasKey( 'count', $result['data'], 'Failed to assert count key exists.' );
-
-		// Verify datetime format is 12-hour (F j, Y, g:i a).
-		if ( ! empty( $result['data']['events'] ) ) {
-			$event_data = $result['data']['events'][0];
-			$this->assertArrayHasKey( 'datetime_start', $event_data, 'Failed to assert datetime_start key exists.' );
-			$this->assertArrayHasKey( 'datetime_end', $event_data, 'Failed to assert datetime_end key exists.' );
-			// Check format contains am/pm (12-hour format).
-			// phpcs:ignore Generic.Files.LineLength.TooLong
-			$this->assertMatchesRegularExpression( '/\b(am|pm)\b/i', $event_data['datetime_start'], 'Failed to assert datetime_start is in 12-hour format.' );
-			// phpcs:ignore Generic.Files.LineLength.TooLong
-			$this->assertMatchesRegularExpression( '/\b(am|pm)\b/i', $event_data['datetime_end'], 'Failed to assert datetime_end is in 12-hour format.' );
-		}
-	}
-	/**
-	 * Coverage for execute_search_events without search term.
-	 *
-	 * @covers ::execute_search_events
-	 *
-	 * @return void
-	 */
-	public function test_execute_search_events_without_search_term(): void {
-		$instance = Abilities_Integration::get_instance();
-		$result   = $instance->execute_search_events( array() );
-
-		$this->assertFalse( $result['success'], 'Failed to assert success is false.' );
-		$this->assertStringContainsString( 'Search term is required', $result['message'] );
-	}
-	/**
-	 * Coverage for execute_search_events with no results.
-	 *
-	 * @covers ::execute_search_events
-	 *
-	 * @return void
-	 */
-	public function test_execute_search_events_with_no_results(): void {
-		$instance = Abilities_Integration::get_instance();
-		$result   = $instance->execute_search_events( array( 'search_term' => 'NonexistentEvent12345' ) );
-
-		$this->assertTrue( $result['success'], 'Failed to assert success is true.' );
-		$this->assertEmpty( $result['data']['events'], 'Failed to assert events array is empty.' );
-		$this->assertSame( 0, $result['data']['count'], 'Failed to assert count is 0.' );
-	}
-	/**
-	 * Coverage for execute_search_events with max_number parameter.
-	 *
-	 * @covers ::execute_search_events
-	 *
-	 * @return void
-	 */
-	public function test_execute_search_events_with_max_number(): void {
-		// Create multiple test events.
-		for ( $i = 1; $i <= 5; $i++ ) {
-			$this->factory->post->create(
-				array(
-					'post_type'   => Event::POST_TYPE,
-					'post_title'  => "Test Event $i",
-					'post_status' => 'publish',
-				)
-			);
-		}
-
-		$instance = Abilities_Integration::get_instance();
-		$result   = $instance->execute_search_events(
-			array(
-				'search_term' => 'Test',
-				'max_number'  => 3,
-			)
-		);
-
-		$this->assertTrue( $result['success'], 'Failed to assert success is true.' );
-		$this->assertLessThanOrEqual( 3, $result['data']['count'], 'Failed to assert count respects max_number.' );
-	}
-	/**
 	 * Coverage for execute_calculate_dates method.
 	 *
 	 * @covers ::execute_calculate_dates
@@ -544,6 +353,8 @@ class Test_Abilities_Integration extends Base {
 	 * @return void
 	 */
 	public function test_execute_calculate_dates(): void {
+		$this->unregister_ai_calculate_dates_ability();
+
 		$instance = Abilities_Integration::get_instance();
 		$params   = array(
 			'pattern'     => '3rd Tuesday',
@@ -564,8 +375,6 @@ class Test_Abilities_Integration extends Base {
 	 * @return void
 	 */
 	public function test_execute_calculate_dates_with_ai_ability(): void {
-		// Test both paths: if functions exist, use them; otherwise fall back to Date_Calculator.
-
 		// Suppress expected notices if abilities are registered outside action hook.
 		add_filter(
 			'pmc_doing_it_wrong',
@@ -585,312 +394,26 @@ class Test_Abilities_Integration extends Base {
 			'occurrences' => 2,
 		);
 
-		// Register the ai/calculate-dates ability if functions exist and it doesn't exist.
-		// Register within the action hook to avoid notices.
-		if ( function_exists( 'wp_has_ability' ) && function_exists( 'wp_register_ability' ) ) {
-			add_action(
-				// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound
-				'wp_abilities_api_init',
-				function () {
-					if ( ! wp_has_ability( 'ai/calculate-dates' ) ) {
-						wp_register_ability(
-							'ai/calculate-dates',
-							array(
-								'label'               => 'AI Calculate Dates',
-								'description'         => 'Calculate dates using AI',
-								'category'            => 'event',
-								'permission_callback' => function () {
-									return current_user_can( 'read' );
-								},
-								'execute_callback'    => function ( $params ) {
-									// phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.Found
-									$params = $params;
-									return array(
-										'success' => true,
-										'data'    => array(
-											'dates' => array( '2025-01-15', '2025-02-15' ),
-										),
-									);
-								},
-							)
-						);
-					}
-				},
-				1
-			);
-			// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound
-			do_action( 'wp_abilities_api_init' );
-		}
+		$this->register_ai_calculate_dates_ability_mock(
+			static function ( $params ) {
+				// phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.Found
+				$params = $params;
+				return array(
+					'success' => true,
+					'data'    => array(
+						'dates' => array( '2025-01-15', '2025-02-15' ),
+					),
+				);
+			}
+		);
+
+		$user_id = $this->factory->user->create( array( 'role' => 'subscriber' ) );
+		wp_set_current_user( $user_id );
 
 		$instance = Abilities_Integration::get_instance();
 		$result   = $instance->execute_calculate_dates( $params );
 
 		$this->assertTrue( $result['success'], 'Failed to assert success is true.' );
-	}
-	/**
-	 * Coverage for execute_list_events with search parameter.
-	 *
-	 * @covers ::execute_list_events
-	 *
-	 * @return void
-	 */
-	public function test_execute_list_events_with_search(): void {
-		// Create test events.
-		$event_id_1 = $this->factory->post->create(
-			array(
-				'post_type'   => Event::POST_TYPE,
-				'post_title'  => 'Book Club Meeting',
-				'post_status' => 'publish',
-			)
-		);
-		$event_id_2 = $this->factory->post->create(
-			array(
-				'post_type'   => Event::POST_TYPE,
-				'post_title'  => 'Workshop Event',
-				'post_status' => 'publish',
-			)
-		);
-
-		// Add future datetimes.
-		$event1 = new Event( $event_id_1 );
-		$event1->save_datetimes(
-			array(
-				'datetime_start' => gmdate( 'Y-m-d H:i:s', strtotime( '+1 week' ) ),
-				'datetime_end'   => gmdate( 'Y-m-d H:i:s', strtotime( '+1 week +2 hours' ) ),
-				'timezone'       => 'UTC',
-			)
-		);
-
-		$instance = Abilities_Integration::get_instance();
-		$result   = $instance->execute_list_events( array( 'search' => 'Book' ) );
-
-		$this->assertTrue( $result['success'], 'Failed to assert success is true.' );
-		$this->assertIsArray( $result['data'], 'Failed to assert data is an array.' );
-		$this->assertArrayHasKey( 'events', $result['data'], 'Failed to assert events key exists.' );
-
-		// Verify datetime format is 12-hour (F j, Y, g:i a).
-		if ( ! empty( $result['data']['events'] ) ) {
-			$event_data = $result['data']['events'][0];
-			$this->assertArrayHasKey( 'datetime_start', $event_data, 'Failed to assert datetime_start key exists.' );
-			$this->assertArrayHasKey( 'datetime_end', $event_data, 'Failed to assert datetime_end key exists.' );
-			// Check format contains am/pm (12-hour format).
-			// phpcs:ignore Generic.Files.LineLength.TooLong
-			$this->assertMatchesRegularExpression( '/\b(am|pm)\b/i', $event_data['datetime_start'], 'Failed to assert datetime_start is in 12-hour format.' );
-			// phpcs:ignore Generic.Files.LineLength.TooLong
-			$this->assertMatchesRegularExpression( '/\b(am|pm)\b/i', $event_data['datetime_end'], 'Failed to assert datetime_end is in 12-hour format.' );
-		}
-	}
-	/**
-	 * Coverage for execute_list_events with max_number > 100.
-	 *
-	 * @covers ::execute_list_events
-	 *
-	 * @return void
-	 */
-	public function test_execute_list_events_with_max_number_over_limit(): void {
-		// Create test events.
-		for ( $i = 1; $i <= 5; $i++ ) {
-			$event_id = $this->factory->post->create(
-				array(
-					'post_type'   => Event::POST_TYPE,
-					'post_title'  => "Event $i",
-					'post_status' => 'publish',
-				)
-			);
-			$event    = new Event( $event_id );
-			$event->save_datetimes(
-				array(
-					'datetime_start' => gmdate( 'Y-m-d H:i:s', strtotime( '+' . $i . ' days' ) ),
-					'datetime_end'   => gmdate( 'Y-m-d H:i:s', strtotime( '+' . $i . ' days +2 hours' ) ),
-					'timezone'       => 'UTC',
-				)
-			);
-		}
-
-		$instance = Abilities_Integration::get_instance();
-		$result   = $instance->execute_list_events( array( 'max_number' => 200 ) );
-
-		$this->assertTrue( $result['success'], 'Failed to assert success is true.' );
-		$this->assertLessThanOrEqual( 100, $result['data']['count'], 'Failed to assert count is capped at 100.' );
-	}
-	/**
-	 * Coverage for execute_list_events with max_number = -1.
-	 *
-	 * @covers ::execute_list_events
-	 *
-	 * @return void
-	 */
-	public function test_execute_list_events_with_max_number_negative(): void {
-		// Create test events.
-		for ( $i = 1; $i <= 5; $i++ ) {
-			$event_id = $this->factory->post->create(
-				array(
-					'post_type'   => Event::POST_TYPE,
-					'post_title'  => "Event $i",
-					'post_status' => 'publish',
-				)
-			);
-			$event    = new Event( $event_id );
-			$event->save_datetimes(
-				array(
-					'datetime_start' => gmdate( 'Y-m-d H:i:s', strtotime( '+' . $i . ' days' ) ),
-					'datetime_end'   => gmdate( 'Y-m-d H:i:s', strtotime( '+' . $i . ' days +2 hours' ) ),
-					'timezone'       => 'UTC',
-				)
-			);
-		}
-
-		$instance = Abilities_Integration::get_instance();
-		$result   = $instance->execute_list_events( array( 'max_number' => -1 ) );
-
-		$this->assertTrue( $result['success'], 'Failed to assert success is true.' );
-		$this->assertLessThanOrEqual( 100, $result['data']['count'], 'Failed to assert count is capped at 100.' );
-	}
-	/**
-	 * Coverage for execute_list_events without search (default behavior).
-	 *
-	 * @covers ::execute_list_events
-	 *
-	 * @return void
-	 */
-	public function test_execute_list_events_without_search(): void {
-		// Create test events.
-		for ( $i = 1; $i <= 3; $i++ ) {
-			$event_id = $this->factory->post->create(
-				array(
-					'post_type'   => Event::POST_TYPE,
-					'post_title'  => "Event $i",
-					'post_status' => 'publish',
-				)
-			);
-			$event    = new Event( $event_id );
-			$event->save_datetimes(
-				array(
-					'datetime_start' => gmdate( 'Y-m-d H:i:s', strtotime( '+' . $i . ' days' ) ),
-					'datetime_end'   => gmdate( 'Y-m-d H:i:s', strtotime( '+' . $i . ' days +2 hours' ) ),
-					'timezone'       => 'UTC',
-				)
-			);
-		}
-
-		$instance = Abilities_Integration::get_instance();
-		$result   = $instance->execute_list_events( array() );
-
-		$this->assertTrue( $result['success'], 'Failed to assert success is true.' );
-		$this->assertIsArray( $result['data'], 'Failed to assert data is an array.' );
-		$this->assertArrayHasKey( 'events', $result['data'], 'Failed to assert events key exists.' );
-		$this->assertArrayHasKey( 'count', $result['data'], 'Failed to assert count key exists.' );
-
-		// Verify datetime format is 12-hour (F j, Y, g:i a).
-		if ( ! empty( $result['data']['events'] ) ) {
-			$event_data = $result['data']['events'][0];
-			$this->assertArrayHasKey( 'datetime_start', $event_data, 'Failed to assert datetime_start key exists.' );
-			$this->assertArrayHasKey( 'datetime_end', $event_data, 'Failed to assert datetime_end key exists.' );
-			// Check format contains am/pm (12-hour format).
-			// phpcs:ignore Generic.Files.LineLength.TooLong
-			$this->assertMatchesRegularExpression( '/\b(am|pm)\b/i', $event_data['datetime_start'], 'Failed to assert datetime_start is in 12-hour format.' );
-			// phpcs:ignore Generic.Files.LineLength.TooLong
-			$this->assertMatchesRegularExpression( '/\b(am|pm)\b/i', $event_data['datetime_end'], 'Failed to assert datetime_end is in 12-hour format.' );
-		}
-	}
-	/**
-	 * Coverage for execute_list_events with events that have venues.
-	 *
-	 * @covers ::execute_list_events
-	 *
-	 * @return void
-	 */
-	public function test_execute_list_events_with_venues(): void {
-		// Create venue.
-		$venue_id = $this->factory->post->create(
-			array(
-				'post_type'   => Venue::POST_TYPE,
-				'post_title'  => 'Test Venue',
-				'post_status' => 'publish',
-			)
-		);
-
-		// Create event with venue.
-		$event_id = $this->factory->post->create(
-			array(
-				'post_type'   => Event::POST_TYPE,
-				'post_title'  => 'Event with Venue',
-				'post_status' => 'publish',
-			)
-		);
-
-		$event = new Event( $event_id );
-		$event->save_datetimes(
-			array(
-				'datetime_start' => gmdate( 'Y-m-d H:i:s', strtotime( '+1 week' ) ),
-				'datetime_end'   => gmdate( 'Y-m-d H:i:s', strtotime( '+1 week +2 hours' ) ),
-				'timezone'       => 'UTC',
-			)
-		);
-
-		// Associate venue.
-		$venue_slug = '_' . get_post( $venue_id )->post_name;
-		wp_set_object_terms( $event_id, $venue_slug, Venue::TAXONOMY );
-
-		$instance = Abilities_Integration::get_instance();
-		$result   = $instance->execute_list_events( array() );
-
-		$this->assertTrue( $result['success'], 'Failed to assert success is true.' );
-		// Find our event in the results.
-		$found = false;
-		foreach ( $result['data']['events'] as $event_data ) {
-			if ( $event_data['id'] === $event_id ) {
-				$found = true;
-				$this->assertSame( 'Test Venue', $event_data['venue'] );
-				break;
-			}
-		}
-		$this->assertTrue( $found, 'Failed to find event in results.' );
-	}
-	/**
-	 * Coverage for execute_list_events with events that have no venues.
-	 *
-	 * @covers ::execute_list_events
-	 *
-	 * @return void
-	 */
-	public function test_execute_list_events_without_venues(): void {
-		// Create event without venue.
-		$event_id = $this->factory->post->create(
-			array(
-				'post_type'   => Event::POST_TYPE,
-				'post_title'  => 'Event without Venue',
-				'post_status' => 'publish',
-			)
-		);
-
-		$event = new Event( $event_id );
-		$event->save_datetimes(
-			array(
-				'datetime_start' => gmdate( 'Y-m-d H:i:s', strtotime( '+1 week' ) ),
-				'datetime_end'   => gmdate( 'Y-m-d H:i:s', strtotime( '+1 week +2 hours' ) ),
-				'timezone'       => 'UTC',
-			)
-		);
-
-		$instance = Abilities_Integration::get_instance();
-		$result   = $instance->execute_list_events( array() );
-
-		$this->assertTrue( $result['success'], 'Failed to assert success is true.' );
-		// Find our event in the results.
-		$found = false;
-		foreach ( $result['data']['events'] as $event_data ) {
-			if ( $event_data['id'] === $event_id ) {
-				$found = true;
-				// Venue might be null or empty string, both are acceptable.
-				$this->assertTrue(
-					null === $event_data['venue'] || '' === $event_data['venue'],
-					'Failed to assert venue is null or empty.'
-				);
-				break;
-			}
-		}
-		$this->assertTrue( $found, 'Failed to find event in results.' );
 	}
 	/**
 	 * Coverage for constructor when wp_register_ability doesn't exist.
@@ -905,33 +428,6 @@ class Test_Abilities_Integration extends Base {
 		// The constructor early returns if wp_register_ability doesn't exist.
 		// We test this indirectly through other tests.
 		$this->assertTrue( true, 'Constructor behavior tested indirectly.' );
-	}
-	/**
-	 * Coverage for execute_list_venues exception handling.
-	 *
-	 * @covers ::execute_list_venues
-	 *
-	 * @return void
-	 */
-	public function test_execute_list_venues_with_exception(): void {
-		// Mock get_posts to throw an exception.
-		add_filter(
-			'pre_get_posts',
-			function ( $query ) {
-				// phpcs:ignore Generic.Files.LineLength.TooLong
-				if ( isset( $query->query_vars['post_type'] ) && 'gatherpress_venue' === $query->query_vars['post_type'] ) {
-					throw new \Exception( 'Database error' );
-				}
-				return $query;
-			}
-		);
-
-		$instance = Abilities_Integration::get_instance();
-		$result   = $instance->execute_list_venues();
-
-		$this->assertFalse( $result['success'], 'Failed to assert success is false.' );
-		$this->assertStringContainsString( 'Error retrieving venues', $result['message'] );
-		$this->assertStringContainsString( 'Database error', $result['message'] );
 	}
 	/**
 	 * Coverage for register_*_ability methods via register_abilities.
@@ -1000,145 +496,28 @@ class Test_Abilities_Integration extends Base {
 		$this->assertTrue( true, 'register_abilities executed without error.' );
 	}
 	/**
-	 * Coverage for execute_create_topic with parent_id.
-	 *
-	 * @covers ::execute_create_topic
-	 *
-	 * @return void
-	 */
-	public function test_execute_create_topic_with_parent_id(): void {
-		// Create a parent topic first.
-		$parent_result = wp_insert_term( 'Parent Topic', 'gatherpress_topic' );
-		$parent_id     = $parent_result['term_id'];
-
-		$instance = Abilities_Integration::get_instance();
-		$params   = array(
-			'name'      => 'Child Topic',
-			'parent_id' => $parent_id,
-		);
-		$result   = $instance->execute_create_topic( $params );
-
-		$this->assertTrue( $result['success'], 'Failed to assert success is true.' );
-		$this->assertArrayHasKey( 'topic_id', $result );
-
-		// Verify parent was set.
-		$topic = get_term( $result['topic_id'], 'gatherpress_topic' );
-		$this->assertSame( $parent_id, $topic->parent, 'Failed to assert parent topic was set.' );
-	}
-	/**
-	 * Coverage for execute_create_topic with WP_Error from wp_insert_term.
-	 *
-	 * @covers ::execute_create_topic
-	 *
-	 * @return void
-	 */
-	public function test_execute_create_topic_with_wp_error(): void {
-		// Create a topic with a name that will cause a duplicate error.
-		wp_insert_term( 'Duplicate Topic', 'gatherpress_topic' );
-
-		$instance = Abilities_Integration::get_instance();
-		$params   = array(
-			'name' => 'Duplicate Topic', // Same name will cause error.
-		);
-		$result   = $instance->execute_create_topic( $params );
-
-		$this->assertFalse( $result['success'], 'Failed to assert success is false.' );
-		$this->assertStringContainsString( 'already exists', $result['message'] );
-	}
-	/**
-	 * Coverage for execute_create_topic with description.
-	 *
-	 * @covers ::execute_create_topic
-	 *
-	 * @return void
-	 */
-	public function test_execute_create_topic_with_description(): void {
-		$instance = Abilities_Integration::get_instance();
-		$params   = array(
-			'name'        => 'Topic with Description',
-			'description' => 'This is a test topic description',
-		);
-		$result   = $instance->execute_create_topic( $params );
-
-		$this->assertTrue( $result['success'], 'Failed to assert success is true.' );
-
-		// Verify description was saved.
-		$topic = get_term( $result['topic_id'], 'gatherpress_topic' );
-		$this->assertSame( 'This is a test topic description', $topic->description );
-	}
-	/**
-	 * Coverage for execute_list_topics with WP_Error from get_terms.
-	 *
-	 * @covers ::execute_list_topics
-	 *
-	 * @return void
-	 */
-	public function test_execute_list_topics_with_wp_error(): void {
-		// Mock get_terms to return WP_Error.
-		add_filter(
-			'get_terms',
-			function ( $terms, $taxonomies, $args ) {
-				// phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed
-				$args = $args;
-				if ( in_array( 'gatherpress_topic', (array) $taxonomies, true ) ) {
-					return new \WP_Error( 'term_error', 'Failed to get terms' );
-				}
-				return $terms;
-			},
-			10,
-			3
-		);
-
-		$instance = Abilities_Integration::get_instance();
-		$result   = $instance->execute_list_topics();
-
-		$this->assertFalse( $result['success'], 'Failed to assert success is false.' );
-		$this->assertStringContainsString( 'Failed to get terms', $result['message'] );
-	}
-	/**
-	 * Coverage for execute_calculate_dates when AI ability exists and wp_execute_ability is available.
+	 * Coverage for execute_calculate_dates when AI ability is registered.
 	 *
 	 * @covers ::execute_calculate_dates
 	 *
 	 * @return void
 	 */
 	public function test_execute_calculate_dates_with_ai_ability_available(): void {
-		// Test both paths: if functions exist, use them; otherwise fall back to Date_Calculator.
+		$this->register_ai_calculate_dates_ability_mock(
+			static function ( $params ) {
+				// phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.Found
+				$params = $params;
+				return array(
+					'success' => true,
+					'data'    => array(
+						'dates' => array( '2025-01-15', '2025-02-15' ),
+					),
+				);
+			}
+		);
 
-		// Register the ai/calculate-dates ability if functions exist.
-		// phpcs:ignore Generic.Files.LineLength.TooLong
-		if ( function_exists( 'wp_execute_ability' ) && function_exists( 'wp_get_ability' ) && function_exists( 'wp_has_ability' ) && function_exists( 'wp_register_ability' ) ) {
-			add_action(
-				// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound
-				'wp_abilities_api_init',
-				function () {
-					if ( ! wp_has_ability( 'ai/calculate-dates' ) ) {
-						wp_register_ability(
-							'ai/calculate-dates',
-							array(
-								'label'            => 'AI Calculate Dates',
-								'description'      => 'Calculate dates using AI',
-								'category'         => 'event',
-								'execute_callback' => function ( $params ) {
-									// phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.Found
-									$params = $params;
-									return array(
-										'success' => true,
-										'data'    => array(
-											'dates' => array( '2025-01-15', '2025-02-15' ),
-										),
-									);
-								},
-							)
-						);
-					}
-				},
-				1
-			);
-
-			// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound
-			do_action( 'wp_abilities_api_init' );
-		}
+		$user_id = $this->factory->user->create( array( 'role' => 'subscriber' ) );
+		wp_set_current_user( $user_id );
 
 		$instance = Abilities_Integration::get_instance();
 		$result   = $instance->execute_calculate_dates(
@@ -1159,6 +538,8 @@ class Test_Abilities_Integration extends Base {
 	 * @return void
 	 */
 	public function test_execute_calculate_dates_without_ai_ability(): void {
+		$this->unregister_ai_calculate_dates_ability();
+
 		$instance = Abilities_Integration::get_instance();
 		$params   = array(
 			'pattern'     => '3rd Tuesday',
@@ -1171,30 +552,6 @@ class Test_Abilities_Integration extends Base {
 		$this->assertTrue( $result['success'], 'Failed to assert success is true.' );
 		$this->assertIsArray( $result['data'], 'Failed to assert data is an array.' );
 		$this->assertArrayHasKey( 'dates', $result['data'], 'Failed to assert dates key exists.' );
-	}
-	/**
-	 * Coverage for execute_calculate_dates when wp_execute_ability doesn't exist.
-	 *
-	 * @covers ::execute_calculate_dates
-	 *
-	 * @return void
-	 */
-	public function test_execute_calculate_dates_when_wp_execute_ability_not_exists(): void {
-		if ( function_exists( 'wp_execute_ability' ) ) {
-			$this->markTestSkipped( 'wp_execute_ability function is available.' );
-		}
-
-		$instance = Abilities_Integration::get_instance();
-		$params   = array(
-			'pattern'     => '3rd Tuesday',
-			'occurrences' => 3,
-			'start_date'  => '2025-01-01',
-		);
-		$result   = $instance->execute_calculate_dates( $params );
-
-		// Should fall back to local Date_Calculator.
-		$this->assertTrue( $result['success'], 'Failed to assert success is true.' );
-		$this->assertIsArray( $result['data'], 'Failed to assert data is an array.' );
 	}
 	/**
 	 * Coverage for constructor when wp_register_ability exists (lines 60-61).
@@ -1374,16 +731,16 @@ class Test_Abilities_Integration extends Base {
 	 * @return void
 	 */
 	public function test_constructor_early_return_when_api_not_available(): void {
-		// This is difficult to test directly since the singleton pattern means
-		// we can't easily create a new instance. The early return at line 57
-		// happens when wp_register_ability doesn't exist.
-		// We test this indirectly - if the API doesn't exist, the instance
-		// won't have hooks set up.
-		// Test both paths: when function exists and when it doesn't.
-		$instance = Abilities_Integration::get_instance();
+		$double_class = $this->declare_abilities_integration_double(
+			'protected function abilities_api_is_available(): bool { return false; }'
+		);
+
+		$reflection = new ReflectionClass( $double_class );
+		$instance   = $reflection->newInstanceWithoutConstructor();
+
+		\PMC\Unit_Test\Utility::invoke_hidden_method( $instance, '__construct', array() );
+
 		$this->assertInstanceOf( Abilities_Integration::class, $instance );
-		// Instance should exist regardless of whether API is available.
-		$this->assertTrue( true, 'Constructor executed without error.' );
 	}
 	/**
 	 * Coverage for register_categories method using reflection (lines 107-109, 112-118, 120-126).
@@ -1554,52 +911,28 @@ class Test_Abilities_Integration extends Base {
 		$this->assertCount( 11, $methods_called, 'All 11 register methods were executed.' );
 	}
 	/**
-	 * Coverage for execute_calculate_dates when AI ability exists and wp_execute_ability is available.
+	 * Coverage for execute_calculate_dates when AI ability is registered.
 	 *
 	 * @covers ::execute_calculate_dates
 	 *
 	 * @return void
 	 */
 	public function test_execute_calculate_dates_with_ai_ability_available_direct(): void {
-		// Test both paths: if functions exist, use them; otherwise fall back to Date_Calculator.
+		$this->register_ai_calculate_dates_ability_mock(
+			static function ( $params ) {
+				// phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.Found
+				$params = $params;
+				return array(
+					'success' => true,
+					'data'    => array(
+						'dates' => array( '2025-01-15', '2025-02-15', '2025-03-15' ),
+					),
+				);
+			}
+		);
 
-		// Register ai/calculate-dates ability if functions exist and it's not already registered.
-		// phpcs:ignore Generic.Files.LineLength.TooLong
-		if ( function_exists( 'wp_execute_ability' ) && function_exists( 'wp_get_ability' ) && function_exists( 'wp_has_ability' ) && function_exists( 'wp_register_ability' ) ) {
-			add_action(
-				// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound
-				'wp_abilities_api_init',
-				function () {
-					if ( ! wp_has_ability( 'ai/calculate-dates' ) ) {
-						wp_register_ability(
-							'ai/calculate-dates',
-							array(
-								'label'               => 'AI Calculate Dates',
-								'description'         => 'Calculate dates using AI',
-								'category'            => 'event',
-								'permission_callback' => function () {
-									return current_user_can( 'read' );
-								},
-								'execute_callback'    => function ( $params ) {
-									// phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.Found
-									$params = $params;
-									return array(
-										'success' => true,
-										'data'    => array(
-											'dates' => array( '2025-01-15', '2025-02-15', '2025-03-15' ),
-										),
-									);
-								},
-							)
-						);
-					}
-				},
-				1
-			);
-
-			// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound
-			do_action( 'wp_abilities_api_init' );
-		}
+		$user_id = $this->factory->user->create( array( 'role' => 'subscriber' ) );
+		wp_set_current_user( $user_id );
 
 		$instance = Abilities_Integration::get_instance();
 		$result   = $instance->execute_calculate_dates(
@@ -1661,8 +994,6 @@ class Test_Abilities_Integration extends Base {
 	 * @return void
 	 */
 	public function test_permission_callbacks_are_executable(): void {
-		// Test both paths: if function exists, use it; otherwise test that abilities are registered.
-
 		// Suppress expected notices.
 		add_filter(
 			'pmc_doing_it_wrong',
@@ -1696,91 +1027,41 @@ class Test_Abilities_Integration extends Base {
 		$user_id = $this->factory->user->create( array( 'role' => 'administrator' ) );
 		wp_set_current_user( $user_id );
 
-		// Execute abilities to trigger permission callbacks (which will execute lines 176, 207, etc.).
-		// Only test if wp_execute_ability exists.
-		if ( function_exists( 'wp_execute_ability' ) ) {
-			$abilities_to_test = array(
-				'gatherpress/list-venues'         => array(),
-				'gatherpress/list-events'         => array(),
-				'gatherpress/list-topics'         => array(),
-				'gatherpress/calculate-dates'     => array(
-					'pattern'     => '3rd Tuesday',
-					'occurrences' => 1,
-				),
-				'gatherpress/search-events'       => array( 'search_term' => 'test' ),
-				'gatherpress/update-events-batch' => array(),
-			);
-
-			foreach ( $abilities_to_test as $ability_name => $params ) {
-				$result = wp_execute_ability( $ability_name, $params );
-				// Permission callback was executed during wp_execute_ability.
-				$this->assertIsArray( $result, "Ability {$ability_name} should return a result." );
-			}
-
-			$this->assertTrue( true, 'All permission callbacks were executed.' );
-		} else {
-			// If wp_execute_ability doesn't exist, just verify abilities are registered.
-			$instance = Abilities_Integration::get_instance();
-			$instance->register_abilities();
-			$this->assertTrue( true, 'Abilities registered successfully.' );
+		foreach ( Abilities_Integration::get_all_ability_names() as $ability_name ) {
+			$ability = wp_get_ability( $ability_name );
+			$this->assertNotNull( $ability, "Ability {$ability_name} should be registered." );
+			$this->assertTrue( $ability->check_permissions( array() ) );
 		}
 	}
 	/**
-	 * Coverage for execute_calculate_dates when AI ability exists and wp_execute_ability is called.
+	 * Coverage for execute_calculate_dates when AI ability exists and is executed directly.
 	 *
 	 * @covers ::execute_calculate_dates
 	 *
 	 * @return void
 	 */
-	public function test_execute_calculate_dates_with_ai_ability_executes_wp_execute_ability(): void {
-		// Test both paths: if functions exist, use them; otherwise fall back to Date_Calculator.
-
-		// Register ai/calculate-dates ability if functions exist and it's not already registered.
-		// phpcs:ignore Generic.Files.LineLength.TooLong
-		if ( function_exists( 'wp_execute_ability' ) && function_exists( 'wp_get_ability' ) && function_exists( 'wp_has_ability' ) && function_exists( 'wp_register_ability' ) ) {
-			add_action(
-				// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound
-				'wp_abilities_api_init',
-				function () {
-					// phpcs:ignore Generic.Files.LineLength.TooLong
-					if ( ! wp_has_ability( 'ai/calculate-dates' ) ) {
-						wp_register_ability(
-							'ai/calculate-dates',
-							array(
-								'label'               => 'AI Calculate Dates',
-								'description'         => 'Calculate dates using AI',
-								'category'            => 'event',
-								'permission_callback' => function () {
-									return current_user_can( 'read' );
-								},
-								'execute_callback'    => function ( $params ) {
-									// phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.Found
-									$params = $params;
-									return array(
-										'success' => true,
-										'data'    => array(
-											'dates' => array( '2025-01-15', '2025-02-15', '2025-03-15' ),
-										),
-									);
-								},
-							)
-						);
-					}
-				},
-				1
-			);
-
-			// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound
-			do_action( 'wp_abilities_api_init' );
-
-			// Verify ai/calculate-dates ability exists (line 1596 checks this via wp_get_ability).
-			if ( function_exists( 'wp_get_ability' ) && function_exists( 'wp_has_ability' ) ) {
-				$ai_ability = wp_get_ability( 'ai/calculate-dates' );
-				$this->assertNotEmpty( $ai_ability, 'ai/calculate-dates ability should be registered.' );
-				// phpcs:ignore Generic.Files.LineLength.TooLong
-				$this->assertTrue( wp_has_ability( 'ai/calculate-dates' ), 'ai/calculate-dates should exist for line 1597 check.' );
+	public function test_execute_calculate_dates_delegates_to_ai_ability(): void {
+		$this->register_ai_calculate_dates_ability_mock(
+			static function ( $params ) {
+				// phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.Found
+				$params = $params;
+				return array(
+					'success' => true,
+					'data'    => array(
+						'dates' => array( '2025-01-15', '2025-02-15', '2025-03-15' ),
+					),
+				);
 			}
+		);
+
+		if ( function_exists( 'wp_get_ability' ) && function_exists( 'wp_has_ability' ) ) {
+			$ai_ability = wp_get_ability( 'ai/calculate-dates' );
+			$this->assertNotEmpty( $ai_ability, 'ai/calculate-dates ability should be registered.' );
+			$this->assertTrue( wp_has_ability( 'ai/calculate-dates' ) );
 		}
+
+		$user_id = $this->factory->user->create( array( 'role' => 'subscriber' ) );
+		wp_set_current_user( $user_id );
 
 		$instance = Abilities_Integration::get_instance();
 		$result   = $instance->execute_calculate_dates(
@@ -1790,12 +1071,42 @@ class Test_Abilities_Integration extends Base {
 			)
 		);
 
-		// Should use AI plugin's ability via wp_execute_ability (line 1599) if available, otherwise fall back.
+		// Should delegate to the registered ai/calculate-dates ability when it exists.
 		$this->assertTrue( $result['success'], 'Failed to assert success is true.' );
 		$this->assertArrayHasKey( 'data', $result );
 		$this->assertArrayHasKey( 'dates', $result['data'] );
 		$this->assertCount( 3, $result['data']['dates'] );
 	}
+
+	/**
+	 * Coverage for execute_calculate_dates when AI ability execute returns WP_Error.
+	 *
+	 * @covers ::execute_calculate_dates
+	 *
+	 * @return void
+	 */
+	public function test_execute_calculate_dates_returns_error_when_ai_ability_fails(): void {
+		$this->register_ai_calculate_dates_ability_mock(
+			static function () {
+				return new \WP_Error( 'ai_calculate_dates_failed', 'AI calculation failed.' );
+			}
+		);
+
+		$user_id = $this->factory->user->create( array( 'role' => 'subscriber' ) );
+		wp_set_current_user( $user_id );
+
+		$instance = Abilities_Integration::get_instance();
+		$result   = $instance->execute_calculate_dates(
+			array(
+				'pattern'     => '3rd Tuesday',
+				'occurrences' => 1,
+			)
+		);
+
+		$this->assertFalse( $result['success'] );
+		$this->assertSame( 'AI calculation failed.', $result['message'] );
+	}
+
 	/**
 	 * Coverage for get_calculate_dates_ability when wp_has_ability doesn't exist (line 89).
 	 *
@@ -1866,5 +1177,146 @@ class Test_Abilities_Integration extends Base {
 		// Should return either ai/calculate-dates if it exists, or gatherpress/calculate-dates.
 		$this->assertContains( $result, array( 'ai/calculate-dates', 'gatherpress/calculate-dates' ) );
 		$this->assertIsString( $result );
+	}
+
+	/**
+	 * Coverage for get_all_ability_names static list.
+	 *
+	 * @covers ::get_all_ability_names
+	 *
+	 * @return void
+	 */
+	public function test_get_all_ability_names_returns_expected_slugs(): void {
+		$names = Abilities_Integration::get_all_ability_names();
+
+		$this->assertCount( 11, $names );
+		$this->assertContains( 'gatherpress/list-venues', $names );
+		$this->assertContains( 'gatherpress/update-events-batch', $names );
+	}
+
+	/**
+	 * Coverage for get_calculate_dates_ability when ability registry is unavailable.
+	 *
+	 * @covers ::get_calculate_dates_ability
+	 * @covers ::has_ability_registry
+	 *
+	 * @return void
+	 */
+	public function test_get_calculate_dates_ability_when_registry_unavailable(): void {
+		$double_class = $this->declare_abilities_integration_double(
+			'protected static function has_ability_registry(): bool { return false; }'
+		);
+
+		$this->assertSame(
+			'gatherpress/calculate-dates',
+			$double_class::get_calculate_dates_ability()
+		);
+	}
+
+	/**
+	 * Coverage for register_categories when category API is unavailable.
+	 *
+	 * @covers ::register_categories
+	 * @covers ::ability_category_api_is_available
+	 *
+	 * @return void
+	 */
+	public function test_register_categories_when_category_api_unavailable(): void {
+		$double_class = $this->declare_abilities_integration_double(
+			'protected function ability_category_api_is_available(): bool { return false; }'
+		);
+
+		$reflection = new ReflectionClass( $double_class );
+		$instance   = $reflection->newInstanceWithoutConstructor();
+
+		$instance->register_categories();
+		$this->assertTrue( true, 'register_categories returned early without error.' );
+	}
+
+	/**
+	 * Coverage for abilities API availability helpers on the integration class.
+	 *
+	 * @covers ::abilities_api_is_available
+	 * @covers ::has_ability_registry
+	 * @covers ::ability_category_api_is_available
+	 *
+	 * @return void
+	 */
+	public function test_abilities_api_availability_helpers(): void {
+		$instance = Abilities_Integration::get_instance();
+
+		$this->assertTrue(
+			\PMC\Unit_Test\Utility::invoke_hidden_method( $instance, 'abilities_api_is_available', array() )
+		);
+		$this->assertTrue(
+			\PMC\Unit_Test\Utility::invoke_hidden_method(
+				$instance,
+				'has_ability_registry',
+				array()
+			)
+		);
+		$this->assertTrue(
+			\PMC\Unit_Test\Utility::invoke_hidden_method( $instance, 'ability_category_api_is_available', array() )
+		);
+	}
+
+	/**
+	 * Coverage for permission callbacks registered with each ability.
+	 *
+	 * @covers ::register_list_venues_ability
+	 * @covers ::register_list_events_ability
+	 * @covers ::register_list_topics_ability
+	 * @covers ::register_search_events_ability
+	 * @covers ::register_calculate_dates_ability
+	 * @covers ::register_create_venue_ability
+	 * @covers ::register_create_topic_ability
+	 * @covers ::register_create_event_ability
+	 * @covers ::register_update_venue_ability
+	 * @covers ::register_update_event_ability
+	 * @covers ::register_update_events_batch_ability
+	 *
+	 * @return void
+	 */
+	public function test_register_ability_permission_callbacks_via_check_permissions(): void {
+		if ( ! function_exists( 'wp_register_ability' ) || ! function_exists( 'wp_get_ability' ) ) {
+			$this->markTestSkipped( 'Abilities API not available.' );
+		}
+
+		add_filter(
+			'pmc_doing_it_wrong',
+			function ( $caught, $description ) {
+				if ( is_string( $description )
+					&& ( str_contains( $description, 'already registered' )
+					|| str_contains( $description, 'must be registered on' ) ) ) {
+					return false;
+				}
+				return $caught;
+			},
+			10,
+			2
+		);
+
+		$instance = Abilities_Integration::get_instance();
+
+		add_action(
+			// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound
+			'wp_abilities_api_init',
+			function () use ( $instance ) {
+				\PMC\Unit_Test\Utility::invoke_hidden_method( $instance, 'register_abilities', array() );
+			},
+			999
+		);
+
+		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound
+		do_action( 'wp_abilities_api_init' );
+
+		$user_id = $this->factory->user->create( array( 'role' => 'administrator' ) );
+		wp_set_current_user( $user_id );
+
+		foreach ( Abilities_Integration::get_all_ability_names() as $ability_name ) {
+			$ability = wp_get_ability( $ability_name );
+			$this->assertNotNull( $ability, "Ability {$ability_name} should be registered." );
+			$this->assertTrue( $ability->check_permissions( array() ) );
+		}
 	}
 }
