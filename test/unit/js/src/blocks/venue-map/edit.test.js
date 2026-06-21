@@ -397,10 +397,10 @@ describe( 'venue-map Edit coordinate resolution', () => {
 	/**
 	 * Build a select mock for the in-editor venue path.
 	 *
-	 * @param {Object} options                 Mock options.
-	 * @param {number} options.storeLat        Venue store latitude.
-	 * @param {number} options.storeLng        Venue store longitude.
-	 * @param {Object} options.meta            Edited post meta.
+	 * @param {Object} options          Mock options.
+	 * @param {number} options.storeLat Venue store latitude.
+	 * @param {number} options.storeLng Venue store longitude.
+	 * @param {Object} options.meta     Edited post meta.
 	 * @return {Function} WordPress data select mock.
 	 */
 	const buildEditingVenueSelect = ( {

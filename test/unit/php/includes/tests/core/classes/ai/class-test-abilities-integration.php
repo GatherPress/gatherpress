@@ -457,7 +457,7 @@ class Test_Abilities_Integration extends Base {
 	 */
 	public function test_execute_update_venue_with_valid_params(): void {
 		// Create a venue first.
-		$venue_id   = $this->factory->post->create(
+		$venue_id = $this->factory->post->create(
 			array(
 				'post_type'   => Venue::POST_TYPE,
 				'post_title'  => 'Original Name',
