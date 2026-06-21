@@ -10,6 +10,7 @@ namespace GatherPress\Tests\Core\AI;
 
 use GatherPress\Core\AI\Date_Calculator;
 use GatherPress\Tests\Base;
+use PMC\Unit_Test\Utility;
 
 /**
  * Class Test_Date_Calculator.
@@ -1371,5 +1372,268 @@ class Test_Date_Calculator extends Base {
 
 		$this->assertTrue( $result['success'], 'Failed to assert success for this Monday.' );
 		$this->assertCount( 1, $result['data']['dates'], 'Failed to assert 1 date returned.' );
+	}
+
+	/**
+	 * Direct invoke coverage for calculate_recurring_dates relative pattern branches.
+	 *
+	 * @covers ::calculate_recurring_dates
+	 * @covers ::calculate_relative_weekday_dates
+	 * @covers ::calculate_relative_day_dates
+	 * @covers ::calculate_relative_period_dates
+	 * @covers ::calculate_future_day_dates
+	 * @covers ::calculate_past_day_dates
+	 *
+	 * @return void
+	 */
+	public function test_calculate_recurring_dates_relative_pattern_branches(): void {
+		$calculator = new Date_Calculator();
+		$monday     = \DateTime::createFromFormat( 'Y-m-d', '2025-01-06' );
+
+		$relative_weekday = Utility::invoke_hidden_method(
+			$calculator,
+			'calculate_recurring_dates',
+			array( 'next Tuesday', 2, $monday )
+		);
+		$this->assertCount( 2, $relative_weekday );
+
+		$tomorrow = Utility::invoke_hidden_method(
+			$calculator,
+			'calculate_recurring_dates',
+			array( 'tomorrow', 2, $monday )
+		);
+		$this->assertCount( 2, $tomorrow );
+
+		$yesterday = Utility::invoke_hidden_method(
+			$calculator,
+			'calculate_recurring_dates',
+			array( 'yesterday', 1, $monday )
+		);
+		$this->assertCount( 1, $yesterday );
+
+		$next_week = Utility::invoke_hidden_method(
+			$calculator,
+			'calculate_recurring_dates',
+			array( 'next week', 2, $monday )
+		);
+		$this->assertCount( 2, $next_week );
+
+		$last_month = Utility::invoke_hidden_method(
+			$calculator,
+			'calculate_recurring_dates',
+			array( 'last month', 1, $monday )
+		);
+		$this->assertCount( 1, $last_month );
+
+		$in_days = Utility::invoke_hidden_method(
+			$calculator,
+			'calculate_recurring_dates',
+			array( 'in 3 days', 2, $monday )
+		);
+		$this->assertCount( 2, $in_days );
+
+		$days_ago = Utility::invoke_hidden_method(
+			$calculator,
+			'calculate_recurring_dates',
+			array( '3 days ago', 1, $monday )
+		);
+		$this->assertCount( 1, $days_ago );
+	}
+
+	/**
+	 * Direct invoke coverage for calculate_recurring_dates interval and ordinal branches.
+	 *
+	 * @covers ::calculate_recurring_dates
+	 * @covers ::calculate_biweekly_dates
+	 * @covers ::calculate_interval_dates
+	 * @covers ::calculate_weeks_from_weekday
+	 *
+	 * @return void
+	 */
+	public function test_calculate_recurring_dates_interval_and_ordinal_branches(): void {
+		$calculator = new Date_Calculator();
+		$monday     = \DateTime::createFromFormat( 'Y-m-d', '2025-01-06' );
+		$mid_month  = \DateTime::createFromFormat( 'Y-m-d', '2025-01-15' );
+
+		$biweekly = Utility::invoke_hidden_method(
+			$calculator,
+			'calculate_recurring_dates',
+			array( 'every other Monday', 2, $monday )
+		);
+		$this->assertCount( 2, $biweekly );
+
+		$interval = Utility::invoke_hidden_method(
+			$calculator,
+			'calculate_recurring_dates',
+			array( 'every 2 weeks', 2, $monday )
+		);
+		$this->assertCount( 2, $interval );
+
+		$weeks_from = Utility::invoke_hidden_method(
+			$calculator,
+			'calculate_recurring_dates',
+			array( '2 weeks from Thursday', 1, $monday )
+		);
+		$this->assertCount( 1, $weeks_from );
+
+		$nth = Utility::invoke_hidden_method(
+			$calculator,
+			'calculate_recurring_dates',
+			array( 'first Monday', 2, $monday )
+		);
+		$this->assertCount( 2, $nth );
+
+		$before_start = Utility::invoke_hidden_method(
+			$calculator,
+			'calculate_recurring_dates',
+			array( '1st Tuesday', 2, $mid_month )
+		);
+		$this->assertCount( 2, $before_start );
+		$this->assertStringStartsWith( '2025-02', $before_start[0] );
+	}
+
+	/**
+	 * Direct invoke coverage for calculate_recurring_dates weekly and fallback branches.
+	 *
+	 * @covers ::calculate_recurring_dates
+	 *
+	 * @return void
+	 */
+	public function test_calculate_recurring_dates_weekly_and_unrecognized_branches(): void {
+		$calculator = new Date_Calculator();
+		$monday     = \DateTime::createFromFormat( 'Y-m-d', '2025-01-06' );
+		$friday     = \DateTime::createFromFormat( 'Y-m-d', '2025-01-03' );
+
+		$same_day = Utility::invoke_hidden_method(
+			$calculator,
+			'calculate_recurring_dates',
+			array( 'every Monday', 2, $monday )
+		);
+		$this->assertSame( '2025-01-06', $same_day[0] );
+
+		$after_weekday = Utility::invoke_hidden_method(
+			$calculator,
+			'calculate_recurring_dates',
+			array( 'every Monday', 2, $friday )
+		);
+		$this->assertSame( '2025-01-06', $after_weekday[0] );
+
+		$unrecognized = Utility::invoke_hidden_method(
+			$calculator,
+			'calculate_recurring_dates',
+			array( 'not a real pattern', 1, $monday )
+		);
+		$this->assertSame( array(), $unrecognized );
+	}
+
+	/**
+	 * Direct invoke coverage for calculate_relative_period_dates month and week branches.
+	 *
+	 * @covers ::calculate_relative_period_dates
+	 *
+	 * @return void
+	 */
+	public function test_calculate_relative_period_dates_next_month_and_last_week(): void {
+		$calculator = new Date_Calculator();
+		$start      = \DateTime::createFromFormat( 'Y-m-d', '2025-01-15' );
+
+		$next_month = Utility::invoke_hidden_method(
+			$calculator,
+			'calculate_relative_period_dates',
+			array( 'next', 'month', 2, $start )
+		);
+		$this->assertCount( 2, $next_month );
+		$this->assertSame( '2025-02-15', $next_month[0] );
+
+		$last_week = Utility::invoke_hidden_method(
+			$calculator,
+			'calculate_relative_period_dates',
+			array( 'last', 'week', 2, $start )
+		);
+		$this->assertCount( 2, $last_week );
+		$this->assertSame( '2025-01-08', $last_week[0] );
+	}
+
+	/**
+	 * Direct invoke coverage for calculate_biweekly_dates when start day is after weekday.
+	 *
+	 * @covers ::calculate_biweekly_dates
+	 *
+	 * @return void
+	 */
+	public function test_calculate_biweekly_dates_when_start_is_after_weekday(): void {
+		$calculator = new Date_Calculator();
+		$friday     = \DateTime::createFromFormat( 'Y-m-d', '2025-01-03' );
+
+		$dates = Utility::invoke_hidden_method(
+			$calculator,
+			'calculate_biweekly_dates',
+			array( 'monday', 2, $friday )
+		);
+
+		$this->assertCount( 2, $dates );
+		$this->assertSame( '2025-01-06', $dates[0] );
+	}
+
+	/**
+	 * Direct invoke coverage for calculate_interval_dates with singular week period.
+	 *
+	 * @covers ::calculate_interval_dates
+	 *
+	 * @return void
+	 */
+	public function test_calculate_interval_dates_singular_week_period(): void {
+		$calculator = new Date_Calculator();
+		$start      = \DateTime::createFromFormat( 'Y-m-d', '2025-01-01' );
+
+		$dates = Utility::invoke_hidden_method(
+			$calculator,
+			'calculate_interval_dates',
+			array( 2, 'week', 2, $start )
+		);
+
+		$this->assertCount( 2, $dates );
+		$this->assertSame( '2025-01-01', $dates[0] );
+		$this->assertSame( '2025-01-15', $dates[1] );
+	}
+
+	/**
+	 * Direct invoke coverage for get_nth_weekday_of_month invalid nth fallback.
+	 *
+	 * @covers ::get_nth_weekday_of_month
+	 *
+	 * @return void
+	 */
+	public function test_get_nth_weekday_of_month_invalid_nth_uses_first(): void {
+		$calculator = new Date_Calculator();
+
+		$result = Utility::invoke_hidden_method(
+			$calculator,
+			'get_nth_weekday_of_month',
+			array( 2025, 1, 'monday', 6 )
+		);
+
+		$this->assertSame( '2025-01-06', $result );
+	}
+
+	/**
+	 * Direct invoke coverage for calculate_weeks_from_weekday when start is after weekday.
+	 *
+	 * @covers ::calculate_weeks_from_weekday
+	 *
+	 * @return void
+	 */
+	public function test_calculate_weeks_from_weekday_when_start_is_after_weekday(): void {
+		$calculator = new Date_Calculator();
+		$friday     = \DateTime::createFromFormat( 'Y-m-d', '2025-01-03' );
+
+		$dates = Utility::invoke_hidden_method(
+			$calculator,
+			'calculate_weeks_from_weekday',
+			array( 2, 'monday', 1, $friday )
+		);
+
+		$this->assertCount( 1, $dates );
+		$this->assertSame( '2025-01-20', $dates[0] );
 	}
 }
