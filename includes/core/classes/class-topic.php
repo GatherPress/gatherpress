@@ -146,8 +146,28 @@ class Topic {
 	 */
 	public static function get_localized_taxonomy_slug(): string {
 		$switched_locale = switch_to_locale( get_locale() );
-		$slug            = _x( 'Topic', 'Admin menu and taxonomy singular name', 'gatherpress' );
-		$slug            = sanitize_title( $slug );
+
+		// The taxonomy (to get the singular name from) is typically not registered, when this method is called.
+		// Using Utility::taxonomy_label() will not yet work.
+
+		// Prepare a default at first.
+		$default_labels                = new \stdClass();
+		$default_labels->singular_name = _x(
+			'Topic',
+			'Admin menu and taxonomy singular name',
+			'gatherpress'
+		);
+
+		// To ensure, we use the proper labels, we get them from the WordPress core filter.
+		$taxonomy_labels = apply_filters(
+			sprintf( // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.DynamicHooknameFound
+				'taxonomy_labels_%s',
+				self::TAXONOMY
+			),
+			$default_labels
+		);
+
+		$slug = sanitize_title( $taxonomy_labels->singular_name );
 
 		if ( $switched_locale ) {
 			restore_previous_locale();
