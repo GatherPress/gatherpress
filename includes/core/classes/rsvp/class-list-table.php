@@ -88,7 +88,7 @@ class List_Table extends WP_List_Table {
 			'cb'       => '<input type="checkbox" />',
 			'attendee' => __( 'Attendee', 'gatherpress' ),
 			'response' => __( 'Response', 'gatherpress' ),
-			'event'    => __( 'Event', 'gatherpress' ),
+			'event'    => Utility::post_type_label( 'singular_name', Event::POST_TYPE ),
 			'approved' => __( 'Status', 'gatherpress' ),
 			'date'     => __( 'Date', 'gatherpress' ),
 		);
