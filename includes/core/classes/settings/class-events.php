@@ -198,12 +198,12 @@ class Events extends Base {
 								'items'   => array(
 									'upcoming' => sprintf(
 										/* translators: %s: Plural post type label, e.g. "Events". */
-										__( 'Upcoming %s.', 'gatherpress' ),
+										__( 'Upcoming %s', 'gatherpress' ),
 										Utility::post_type_label( 'name', Event::POST_TYPE )
 									),
 									'past'     => sprintf(
 										/* translators: %s: Plural post type label, e.g. "Events". */
-										__( 'Past %s.', 'gatherpress' ),
+										__( 'Past %s', 'gatherpress' ),
 										Utility::post_type_label( 'name', Event::POST_TYPE )
 									),
 									'none'     => __( 'None (return 404)', 'gatherpress' ),
@@ -215,7 +215,7 @@ class Events extends Base {
 						'labels' => array(
 							'name' => sprintf(
 								/* translators: %s: Plural post type label, e.g. "Events". */
-								__( 'Upcoming %s.', 'gatherpress' ),
+								__( 'Upcoming %s', 'gatherpress' ),
 								Utility::post_type_label( 'name', Event::POST_TYPE )
 							),
 						),
@@ -237,7 +237,7 @@ class Events extends Base {
 						'labels' => array(
 							'name' => sprintf(
 								/* translators: %s: Plural post type label, e.g. "Events". */
-								__( 'Past %s.', 'gatherpress' ),
+								__( 'Past %s', 'gatherpress' ),
 								Utility::post_type_label( 'name', Event::POST_TYPE )
 							),
 						),
