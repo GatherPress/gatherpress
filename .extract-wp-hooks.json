@@ -8,7 +8,9 @@
 		"test"
 	],
 	"ignore_filter": [
-		"determine_current_user"
+		"determine_current_user",
+		"post_type_labels_gatherpress_event",
+		"post_type_labels_gatherpress_venue"
 	],
 	"github_wiki": false
 }
