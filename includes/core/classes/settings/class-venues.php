@@ -318,7 +318,7 @@ class Venues extends Base {
 								'suffix'   => _x(
 									sprintf(
 										/* translators: %s: Singular post type label, e.g. "Venue". */
-										__( 'sample-%s.', 'gatherpress' ),
+										__( 'sample-%s', 'gatherpress' ),
 										lcfirst( Utility::post_type_label( 'singular_name', Venue::POST_TYPE ) )
 									),
 									'URL permalink structure example for Venues.',
