@@ -167,10 +167,14 @@ class Events extends Base {
 			),
 			'archive_pages' => array(
 				'name'        => __( 'Archive Pages', 'gatherpress' ),
-				'description' => __(
-					// phpcs:ignore Generic.Files.LineLength.TooLong -- Single translator-facing sentence; keep on one line for the .pot extractor.
-					'Choose what the event archive URL shows by default and optionally point custom pages at the upcoming or past archives.',
-					'gatherpress'
+				'description' => sprintf(
+					/* translators: %s: Singular post type label, e.g. "Event". */
+					__(
+						// phpcs:ignore Generic.Files.LineLength.TooLong -- Single translator-facing sentence; keep on one line for the .pot extractor.
+						'Choose what the %s archive URL shows by default and optionally point custom pages at the upcoming or past archives.',
+						'gatherpress'
+					),
+					Utility::post_type_label( 'singular_name', Event::POST_TYPE )
 				),
 				'options'     => array(
 					'event_archive'   => array(
@@ -181,9 +185,10 @@ class Events extends Base {
 								Utility::post_type_label( 'singular_name', Event::POST_TYPE )
 							),
 						),
-						'description' => __(
-							'What the events archive URL displays when no custom page is assigned.',
-							'gatherpress'
+						'description' => sprintf(
+							/* translators: %s: Plural post type label, e.g. "Events". */
+							__( 'What the %s archive URL displays when no custom page is assigned.', 'gatherpress' ),
+							Utility::post_type_label( 'name', Event::POST_TYPE )
 						),
 						'field'       => array(
 							'label'   => __( 'Default archive view:', 'gatherpress' ),
@@ -191,8 +196,16 @@ class Events extends Base {
 							'options' => array(
 								'default' => 'upcoming',
 								'items'   => array(
-									'upcoming' => __( 'Upcoming Events', 'gatherpress' ),
-									'past'     => __( 'Past Events', 'gatherpress' ),
+									'upcoming' => sprintf(
+										/* translators: %s: Plural post type label, e.g. "Events". */
+										__( 'Upcoming %s.', 'gatherpress' ),
+										Utility::post_type_label( 'name', Event::POST_TYPE )
+									),
+									'past'     => sprintf(
+										/* translators: %s: Plural post type label, e.g. "Events". */
+										__( 'Past %s.', 'gatherpress' ),
+										Utility::post_type_label( 'name', Event::POST_TYPE )
+									),
 									'none'     => __( 'None (return 404)', 'gatherpress' ),
 								),
 							),
@@ -200,13 +213,21 @@ class Events extends Base {
 					),
 					'upcoming_events' => array(
 						'labels' => array(
-							'name' => __( 'Upcoming Events', 'gatherpress' ),
+							'name' => sprintf(
+								/* translators: %s: Plural post type label, e.g. "Events". */
+								__( 'Upcoming %s.', 'gatherpress' ),
+								Utility::post_type_label( 'name', Event::POST_TYPE )
+							),
 						),
 						'field'  => array(
 							'type'    => 'autocomplete',
 							'options' => array(
 								'type'    => 'page',
-								'label'   => __( 'Select Upcoming Events Archive Page', 'gatherpress' ),
+								'label'   => sprintf(
+									/* translators: %s: Plural post type label, e.g. "Events". */
+									__( 'Select Upcoming %s Archive Page.', 'gatherpress' ),
+									Utility::post_type_label( 'name', Event::POST_TYPE )
+								),
 								'limit'   => 1,
 								'default' => '[]',
 							),
@@ -214,13 +235,21 @@ class Events extends Base {
 					),
 					'past_events'     => array(
 						'labels' => array(
-							'name' => __( 'Past Events', 'gatherpress' ),
+							'name' => sprintf(
+								/* translators: %s: Plural post type label, e.g. "Events". */
+								__( 'Past %s.', 'gatherpress' ),
+								Utility::post_type_label( 'name', Event::POST_TYPE )
+							),
 						),
 						'field'  => array(
 							'type'    => 'autocomplete',
 							'options' => array(
 								'type'    => 'page',
-								'label'   => __( 'Select Past Events Archive Page', 'gatherpress' ),
+								'label'   => sprintf(
+									/* translators: %s: Plural post type label, e.g. "Events". */
+									__( 'Select Past %s Archive Page.', 'gatherpress' ),
+									Utility::post_type_label( 'name', Event::POST_TYPE )
+								),
 								'limit'   => 1,
 								'default' => '[]',
 							),
