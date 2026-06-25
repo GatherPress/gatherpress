@@ -1,0 +1,14 @@
+{
+	"$schema": "https://gatherpress.org/playground-preview/pr-override-schema.json",
+	"landingPage": "/wp-admin/edit.php?post_type=gatherpress_event",
+	"appendSteps": [
+		{
+			"step": "writeFile",
+			"path": "/wordpress/wp-content/mu-plugins/happenings-at-spots.php",
+			"data": {
+				"resource": "url",
+				"url": "https://raw.githubusercontent.com/carstingaxion/gatherpress-demos/main/happenings-at-spots/happenings-at-spots.php"
+			}
+		}
+	]
+}
