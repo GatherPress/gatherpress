@@ -93,7 +93,14 @@ class Events extends Base {
 							'name' => __( 'Date Format', 'gatherpress' ),
 						),
 						'field'  => array(
-							'label'   => __( 'Format of date for scheduled events.', 'gatherpress' ),
+							'label'   => sprintf(
+								/* translators: %s: Plural post type label, e.g. "Events". */
+								__(
+									'Format of date for scheduled %s.',
+									'gatherpress'
+								),
+								Utility::post_type_label( 'name', Event::POST_TYPE )
+							),
 							'type'    => 'text',
 							'size'    => 'regular',
 							'options' => array(
@@ -109,7 +116,14 @@ class Events extends Base {
 							'name' => __( 'Time Format', 'gatherpress' ),
 						),
 						'field'  => array(
-							'label'   => __( 'Format of time for scheduled events.', 'gatherpress' ),
+							'label'   => sprintf(
+								/* translators: %s: Plural post type label, e.g. "Events". */
+								__(
+									'Format of time for scheduled %s.',
+									'gatherpress'
+								),
+								Utility::post_type_label( 'name', Event::POST_TYPE )
+							),
 							'type'    => 'text',
 							'size'    => 'regular',
 							'options' => array(
@@ -125,9 +139,13 @@ class Events extends Base {
 							'name' => __( 'Show Timezone', 'gatherpress' ),
 						),
 						'field'  => array(
-							'label'   => __(
-								'Display the timezone for scheduled events.',
-								'gatherpress'
+							'label'   => sprintf(
+								/* translators: %s: Plural post type label, e.g. "Events". */
+								__(
+									'Display the timezone for scheduled %s.',
+									'gatherpress'
+								),
+								Utility::post_type_label( 'name', Event::POST_TYPE )
 							),
 							'type'    => 'checkbox',
 							'options' => array(
@@ -143,9 +161,13 @@ class Events extends Base {
 					__( '%s Display', 'gatherpress' ),
 					Utility::post_type_label( 'singular_name', Event::POST_TYPE )
 				),
-				'description' => __(
-					'Configure how events are displayed on your site.',
-					'gatherpress'
+				'description' => sprintf(
+					/* translators: %s: Plural post type label, e.g. "Events". */
+					__(
+						'Configure how %s are displayed on your site.',
+						'gatherpress'
+					),
+					Utility::post_type_label( 'name', Event::POST_TYPE )
 				),
 				'options'     => array(
 					'post_or_event_date' => array(
@@ -153,9 +175,15 @@ class Events extends Base {
 							'name' => __( 'Publish Date', 'gatherpress' ),
 						),
 						'field'  => array(
-							'label'   => __(
-								'Display event date instead of publish date for events.',
-								'gatherpress'
+							'label'   => sprintf(
+								// phpcs:ignore Generic.Files.LineLength.TooLong
+								/* translators: %1$s: Singular post type label, e.g. "Event", %2$s: Plural post type label, e.g. "Events". */
+								__(
+									'Display %1$s date instead of publish date for %2$s.',
+									'gatherpress'
+								),
+								Utility::post_type_label( 'singular_name', Event::POST_TYPE ),
+								Utility::post_type_label( 'name', Event::POST_TYPE )
 							),
 							'type'    => 'checkbox',
 							'options' => array(
