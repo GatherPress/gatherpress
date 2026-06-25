@@ -249,14 +249,10 @@ class Events extends Base {
 							),
 							'preview' => array(
 								'template' => 'url-rewrite-preview',
-								'suffix'   => _x(
-									sprintf(
-										/* translators: %s: Singular post type label, e.g. "Event". */
-										__( 'sample-%s', 'gatherpress' ),
-										lcfirst( Utility::post_type_label( 'singular_name', Event::POST_TYPE ) )
-									),
-									'URL permalink structure example for events',
-									'gatherpress'
+								'suffix'   => sprintf(
+									/* translators: %s: Singular post type label, e.g. "Event". */
+									_x( 'sample-%s', 'URL permalink structure example for events', 'gatherpress' ),
+									sanitize_title( Utility::post_type_label( 'singular_name', Event::POST_TYPE ) )
 								),
 							),
 						),

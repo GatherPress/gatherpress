@@ -219,7 +219,7 @@ class Setup {
 		// Using Utility::post_type_label() will not yet work.
 
 		// Prepare a default at first.
-		$default_labels                = new \stdClass;
+		$default_labels                = new \stdClass();
 		$default_labels->singular_name = _x(
 			'Event',
 			'Admin menu and post type singular name',
@@ -228,7 +228,7 @@ class Setup {
 
 		// To ensure, we use the proper labels, we get them from the WordPress core filter.
 		$post_type_labels = apply_filters(
-			sprintf(
+			sprintf( // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.DynamicHooknameFound
 				'post_type_labels_%s',
 				Event::POST_TYPE
 			),
