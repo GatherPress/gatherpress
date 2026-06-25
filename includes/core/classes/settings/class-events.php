@@ -250,7 +250,11 @@ class Events extends Base {
 							'preview' => array(
 								'template' => 'url-rewrite-preview',
 								'suffix'   => _x(
-									'sample-event',
+									sprintf(
+										/* translators: %s: Singular post type label, e.g. "Event". */
+										__( 'sample-%s', 'gatherpress' ),
+										lcfirst( Utility::post_type_label( 'singular_name', Event::POST_TYPE ) )
+									),
 									'URL permalink structure example for events',
 									'gatherpress'
 								),
