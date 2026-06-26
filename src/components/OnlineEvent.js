@@ -15,7 +15,7 @@ import { useDispatch, useSelect } from '@wordpress/data';
  * Internal dependencies
  */
 import { usePostTypeLabel } from '../helpers/editor';
-import { getVenueTaxonomy } from '../helpers/venue';
+import { getVenuePostType, getVenueTaxonomy } from '../helpers/venue';
 
 /**
  * OnlineEvent component for GatherPress.
@@ -41,10 +41,9 @@ const OnlineEvent = () => {
 	// Derive the venue taxonomy from the current editor post type.
 	const { venueTaxonomy, editorPostType } = useSelect( ( select ) => {
 		const currentEditorPostType = select( 'core/editor' )?.getCurrentPostType();
-		const currentVenueTaxonomy = getVenueTaxonomy( currentEditorPostType );
 		return {
 			editorPostType: currentEditorPostType,
-			venueTaxonomy: currentVenueTaxonomy,
+			venueTaxonomy: getVenueTaxonomy( getVenuePostType( currentEditorPostType ) ),
 		};
 	}, [] );
 
@@ -55,7 +54,7 @@ const OnlineEvent = () => {
 	const singularLabel = usePostTypeLabel(
 		'singular_name',
 		editorPostType,
-		__( 'Venue', 'gatherpress' )
+		__( 'Event', 'gatherpress' )
 	);
 
 	// Get current venue taxonomy terms.
