@@ -1,7 +1,7 @@
 /**
  * WordPress dependencies
  */
-import { __ } from '@wordpress/i18n';
+import { __, sprintf } from '@wordpress/i18n';
 import {
 	Spinner,
 	Button,
@@ -18,6 +18,7 @@ import { store as coreDataStore } from '@wordpress/core-data';
 /**
  * Internal dependencies
  */
+import { usePostTypeLabel } from '../helpers/editor';
 import { getVenuePostType, getVenueTaxonomy } from '../helpers/venue';
 import { isPostTypeSupporting } from '../helpers/event';
 import { geocodeAddress } from '../helpers/geocoding';
@@ -32,6 +33,7 @@ import AddressAutocompleteField from './AddressAutocompleteField';
  * @since 0.34.0
  *
  * @param {Object}   props                     Component props.
+ * @param {string}   props.newTitleLabel       The label for the venue title.
  * @param {string}   props.title               The venue title.
  * @param {Function} props.onChangeTitle       Callback when title changes.
  * @param {string}   props.titleError          Error message for title validation.
@@ -47,6 +49,7 @@ import AddressAutocompleteField from './AddressAutocompleteField';
  * @return {JSX.Element} The venue form component.
  */
 function VenueForm( {
+	newTitleLabel,
 	title,
 	onChangeTitle,
 	titleError,
@@ -64,7 +67,7 @@ function VenueForm( {
 			<div className="gatherpress-new-venue-form">
 				<TextControl
 					__next40pxDefaultSize
-					label={ __( 'Venue name', 'gatherpress' ) }
+					label={ newTitleLabel }
 					value={ title }
 					onChange={ onChangeTitle }
 					help={ titleError }
@@ -141,6 +144,21 @@ function CreateVenueForm( { search, ...props } ) {
 	const venuePostType = getVenuePostType( currentPostType );
 	const venueTaxonomy = getVenueTaxonomy( venuePostType );
 
+	// Read the singular label so the input-label reflects what the post type
+	// is actually called — a custom venue post type with
+	// `singular_name => 'Location'` shows "Location name" without any
+	// extra wiring (#1612).
+	const singularLabel = usePostTypeLabel(
+		'singular_name',
+		venuePostType,
+		__( 'Venue', 'gatherpress' )
+	);
+	const newTitleLabel = sprintf(
+		/* translators: %s: Singular post type label, e.g. "Venue". */
+		__( '%s name', 'gatherpress' ),
+		singularLabel
+	);
+
 	const { lastError, isSaving } = useSelect(
 		( select ) => ( {
 			lastError: select( coreDataStore ).getLastEntitySaveError(
@@ -164,12 +182,17 @@ function CreateVenueForm( { search, ...props } ) {
 	 */
 	const validateTitle = ( value ) => {
 		if ( ! value || '' === value.trim() ) {
-			return __( 'Venue name is required.', 'gatherpress' );
+			return sprintf(
+				/* translators: %s: Singular post type label, e.g. "Venue". */
+				__( '%s name is required.', 'gatherpress' ),
+				singularLabel
+			);
 		}
 		if ( 2 > value.trim().length ) {
-			return __(
-				'Venue name must be at least 2 characters.',
-				'gatherpress'
+			return sprintf(
+				/* translators: %s: Singular post type label, e.g. "Venue". */
+				__( '%s name must be at least 2 characters.', 'gatherpress' ),
+				singularLabel
 			);
 		}
 		return '';
@@ -357,6 +380,7 @@ function CreateVenueForm( { search, ...props } ) {
 
 	return (
 		<VenueForm
+			newTitleLabel={ newTitleLabel }
 			title={ title ?? '' }
 			onChangeTitle={ handleTitleChange }
 			titleError={ titleError }

@@ -8,6 +8,7 @@ import { decodeEntities } from '@wordpress/html-entities';
 /**
  * Internal dependencies
  */
+import { usePostTypeLabel } from '../helpers/editor';
 import { usePopularVenues, getVenueTitle } from '../helpers/venue';
 
 /**
@@ -28,15 +29,31 @@ import { usePopularVenues, getVenueTitle } from '../helpers/venue';
 export default function PopularVenues( { onSelect, currentId, venuePostType } ) {
 	const popularVenues = usePopularVenues( 3, venuePostType );
 
+	// Read the plural label so the panel title reflects what the post type
+	// is actually called — a custom venue post type with
+	// `name => 'Location'` shows "Popular Locations" without any
+	// extra wiring (#1612).
+	const pluralLabel = usePostTypeLabel(
+		'name',
+		venuePostType,
+		__( 'Venue', 'gatherpress' )
+	);
+
 	// Don't render if there are no popular venues.
 	if ( ! popularVenues || 0 === popularVenues.length ) {
 		return null;
 	}
 
+	const popularVenuesLabel = sprintf(
+		/* translators: %s: Plural post type label, e.g. "Venues". */
+		__( 'Popular %s:', 'gatherpress' ),
+		pluralLabel
+	);
+
 	return (
 		<div className="gatherpress-popular-venues">
 			<p className="gatherpress-popular-venues__label">
-				{ __( 'Popular venues:', 'gatherpress' ) }{ ' ' }
+				{ popularVenuesLabel }{ ' ' }
 				{ popularVenues.map( ( venue ) => {
 					const isSelected = currentId === venue.id;
 					const venueName = decodeEntities(
