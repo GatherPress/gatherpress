@@ -48,8 +48,8 @@ const OnlineEvent = () => {
 	}, [] );
 
 	// Read the singular label so the panel title reflects what the post type
-	// is actually called — a custom venue post type with
-	// `singular_name => 'Location'` shows "Location settings" without any
+	// is actually called — a renamed event post type with
+	// `singular_name => 'Happening'` shows "This is an online Happening" without any
 	// extra wiring (#1612).
 	const singularLabel = usePostTypeLabel(
 		'singular_name',
@@ -156,7 +156,7 @@ const OnlineEvent = () => {
 		<VStack spacing={ 3 }>
 			<ToggleControl
 				label={ sprintf(
-					/* translators: %s: Singular post type label, e.g. "Venue". */
+					/* translators: %s: Singular post type label, e.g. "Event". */
 					__( 'This is an online %s', 'gatherpress' ),
 					singularLabel
 				) }
@@ -167,13 +167,13 @@ const OnlineEvent = () => {
 				<TextControl
 					type="url"
 					label={ sprintf(
-						/* translators: %s: Singular post type label, e.g. "Venue". */
+						/* translators: %s: Singular post type label, e.g. "Event". */
 						__( 'Online %s link', 'gatherpress' ),
 						singularLabel
 					) }
 					value={ onlineEventLink }
 					placeholder={ sprintf(
-						/* translators: %s: Singular post type label, e.g. "Venue". */
+						/* translators: %s: Singular post type label, e.g. "Event". */
 						__( 'Add link to online %s', 'gatherpress' ),
 						singularLabel
 					) }
