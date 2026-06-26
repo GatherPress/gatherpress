@@ -8,13 +8,14 @@ import {
 	// eslint-disable-next-line @wordpress/no-unsafe-wp-apis
 	__experimentalVStack as VStack,
 } from '@wordpress/components';
-import { __ } from '@wordpress/i18n';
+import { __, sprintf } from '@wordpress/i18n';
 import { useDispatch, useSelect } from '@wordpress/data';
 
 /**
  * Internal dependencies
  */
-import { getVenuePostType, getVenueTaxonomy } from '../helpers/venue';
+import { usePostTypeLabel } from '../helpers/editor';
+import { getVenueTaxonomy } from '../helpers/venue';
 
 /**
  * OnlineEvent component for GatherPress.
@@ -38,10 +39,24 @@ const OnlineEvent = () => {
 	);
 
 	// Derive the venue taxonomy from the current editor post type.
-	const venueTaxonomy = useSelect( ( select ) => {
-		const editorPostType = select( 'core/editor' )?.getCurrentPostType();
-		return getVenueTaxonomy( getVenuePostType( editorPostType ) );
+	const { venueTaxonomy, editorPostType } = useSelect( ( select ) => {
+		const currentEditorPostType = select( 'core/editor' )?.getCurrentPostType();
+		const currentVenueTaxonomy = getVenueTaxonomy( currentEditorPostType );
+		return {
+			editorPostType: currentEditorPostType,
+			venueTaxonomy: currentVenueTaxonomy,
+		};
 	}, [] );
+
+	// Read the singular label so the panel title reflects what the post type
+	// is actually called — a custom venue post type with
+	// `singular_name => 'Location'` shows "Location settings" without any
+	// extra wiring (#1612).
+	const singularLabel = usePostTypeLabel(
+		'singular_name',
+		editorPostType,
+		__( 'Venue', 'gatherpress' )
+	);
 
 	// Get current venue taxonomy terms.
 	const venueTermIds = useSelect( ( select ) =>
@@ -141,16 +156,28 @@ const OnlineEvent = () => {
 	return (
 		<VStack spacing={ 3 }>
 			<ToggleControl
-				label={ __( 'This is an online event', 'gatherpress' ) }
+				label={ sprintf(
+					/* translators: %s: Singular post type label, e.g. "Venue". */
+					__( 'This is an online %s', 'gatherpress' ),
+					singularLabel
+				) }
 				checked={ isOnlineEvent }
 				onChange={ handleToggleChange }
 			/>
 			{ isOnlineEvent && (
 				<TextControl
 					type="url"
-					label={ __( 'Online event link', 'gatherpress' ) }
+					label={ sprintf(
+						/* translators: %s: Singular post type label, e.g. "Venue". */
+						__( 'Online %s link', 'gatherpress' ),
+						singularLabel
+					) }
 					value={ onlineEventLink }
-					placeholder={ __( 'Add link to online event', 'gatherpress' ) }
+					placeholder={ sprintf(
+						/* translators: %s: Singular post type label, e.g. "Venue". */
+						__( 'Add link to online %s', 'gatherpress' ),
+						singularLabel
+					) }
 					onChange={ ( value ) => {
 						updateEventLink( value );
 					} }
