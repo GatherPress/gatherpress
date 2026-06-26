@@ -399,6 +399,74 @@ class Test_Utility extends Base {
 	}
 
 	/**
+	 * `Utility::taxonomy_label()` reads a single label off a registered
+	 * taxonomy so admin UI strings reflect whatever a site builder
+	 * filtered the labels to (#1612).
+	 *
+	 * @covers ::taxonomy_label
+	 *
+	 * @return void
+	 */
+	public function test_taxonomy_label_returns_registered_label(): void {
+		register_taxonomy(
+			'shindig_type',
+			'post',
+			array(
+				'public' => false,
+				'labels' => array(
+					'name'          => 'Shindig Types',
+					'singular_name' => 'Shindig Type',
+					'add_new_item'  => 'Add New Shindig Type',
+				),
+			)
+		);
+
+		$this->assertSame( 'Shindig Types', Utility::taxonomy_label( 'name', 'shindig_type' ) );
+		$this->assertSame( 'Shindig Type', Utility::taxonomy_label( 'singular_name', 'shindig_type' ) );
+		$this->assertSame( 'Add New Shindig Type', Utility::taxonomy_label( 'add_new_item', 'shindig_type' ) );
+
+		unregister_taxonomy( 'shindig_type' );
+	}
+
+	/**
+	 * `Utility::taxonomy_label()` returns an empty string for an
+	 * unregistered taxonomy rather than warning. Lets call sites fall
+	 * back gracefully when the taxonomy isn't (or isn't yet)
+	 * registered.
+	 *
+	 * @covers ::taxonomy_label
+	 *
+	 * @return void
+	 */
+	public function test_taxonomy_label_unregistered_taxonomy_returns_empty_string(): void {
+		$this->assertSame( '', Utility::taxonomy_label( 'name', 'definitely_not_a_taxonomy' ) );
+	}
+
+	/**
+	 * `Utility::taxonomy_label()` returns an empty string when the
+	 * label key isn't set on the taxonomy, instead of triggering a
+	 * notice on the missing dynamic property.
+	 *
+	 * @covers ::taxonomy_label
+	 *
+	 * @return void
+	 */
+	public function test_taxonomy_label_missing_key_returns_empty_string(): void {
+		register_taxonomy(
+			'shindig_type',
+			'post',
+			array(
+				'public' => false,
+				'labels' => array(
+					'name' => 'Shindig Types',
+				),
+			)
+		);
+
+		$this->assertSame( '', Utility::taxonomy_label( 'no_such_label_key', 'shindig_type' ) );
+	}
+
+	/**
 	 * Coverage for snake_to_camel method.
 	 *
 	 * @covers ::snake_to_camel
