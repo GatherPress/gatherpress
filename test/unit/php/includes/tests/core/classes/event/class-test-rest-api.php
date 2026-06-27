@@ -2043,6 +2043,131 @@ class Test_Rest_Api extends Base {
 	}
 
 	/**
+	 * Tests that a manager with edit_post but not promote_users cannot enroll others.
+	 *
+	 * Managing attendees is gated by `edit_post`, but adding a non-member user to
+	 * the blog is a `promote_users` action. An event author (has edit_post on
+	 * their own event, lacks promote_users) must not be able to add another user
+	 * to the site via the RSVP endpoint, and the RSVP for that non-member fails.
+	 *
+	 * @group multisite
+	 * @covers ::update_rsvp
+	 *
+	 * @return void
+	 */
+	public function test_update_rsvp_manager_without_promote_users_cannot_enroll_other_multisite(): void {
+		$instance = Rest_Api::get_instance();
+
+		// Target network user, not a member of site 2.
+		$target_id = $this->factory->user->create( array( 'role' => 'subscriber' ) );
+
+		$site_2_id = $this->factory->blog->create();
+		switch_to_blog( $site_2_id );
+
+		$setup = Setup::get_instance();
+		Utility::invoke_hidden_method( $setup, 'create_tables' );
+
+		// Author who owns the event on site 2: has edit_post on it, no promote_users.
+		$author_id = $this->factory->user->create();
+		add_user_to_blog( $site_2_id, $author_id, 'author' );
+
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type'   => Event::POST_TYPE,
+				'post_author' => $author_id,
+				'post_status' => 'publish',
+			)
+		);
+
+		wp_set_current_user( $author_id );
+
+		$this->assertFalse(
+			current_user_can( 'promote_users' ),
+			'Author should not have promote_users.'
+		);
+
+		$request = new WP_REST_Request( 'POST', '/gatherpress/v1/event/rsvp' );
+		$request->set_param( 'post_id', $post_id );
+		$request->set_param( 'user_id', $target_id );
+		$request->set_param( 'status', 'attending' );
+
+		$response = $instance->update_rsvp( $request );
+
+		$this->assertFalse(
+			is_user_member_of_blog( $target_id, $site_2_id ),
+			'Target must not be enrolled into site 2 by a manager lacking promote_users.'
+		);
+		$this->assertFalse(
+			$response->data['success'],
+			'RSVP for a non-member target should fail when the manager cannot enroll them.'
+		);
+
+		restore_current_blog();
+	}
+
+	/**
+	 * Tests that a manager with promote_users can enroll another user.
+	 *
+	 * A site administrator holds both edit_post and promote_users, so managing an
+	 * RSVP for a non-member network user enrolls them as a subscriber and the
+	 * RSVP succeeds.
+	 *
+	 * @group multisite
+	 * @covers ::update_rsvp
+	 *
+	 * @return void
+	 */
+	public function test_update_rsvp_admin_with_promote_users_enrolls_other_multisite(): void {
+		$instance = Rest_Api::get_instance();
+
+		// Target network user, not a member of site 2.
+		$target_id = $this->factory->user->create( array( 'role' => 'subscriber' ) );
+
+		$site_2_id = $this->factory->blog->create();
+		switch_to_blog( $site_2_id );
+
+		$setup = Setup::get_instance();
+		Utility::invoke_hidden_method( $setup, 'create_tables' );
+
+		// Administrator on site 2: has edit_post (edit_others_posts) and promote_users.
+		$admin_id = $this->factory->user->create();
+		add_user_to_blog( $site_2_id, $admin_id, 'administrator' );
+
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type'   => Event::POST_TYPE,
+				'post_author' => $admin_id,
+				'post_status' => 'publish',
+			)
+		);
+
+		wp_set_current_user( $admin_id );
+
+		$this->assertTrue(
+			current_user_can( 'promote_users' ),
+			'Administrator should have promote_users.'
+		);
+
+		$request = new WP_REST_Request( 'POST', '/gatherpress/v1/event/rsvp' );
+		$request->set_param( 'post_id', $post_id );
+		$request->set_param( 'user_id', $target_id );
+		$request->set_param( 'status', 'attending' );
+
+		$response = $instance->update_rsvp( $request );
+
+		$this->assertTrue(
+			is_user_member_of_blog( $target_id, $site_2_id ),
+			'Target should be enrolled into site 2 by a manager with promote_users.'
+		);
+		$this->assertTrue(
+			$response->data['success'],
+			'RSVP should succeed when the manager can enroll the target.'
+		);
+
+		restore_current_blog();
+	}
+
+	/**
 	 * `send_event_email_to_recipient` happy path for a WordPress user.
 	 * Direct-invokes the protected helper so xdebug traces every line —
 	 * the loop in `send_emails()` does call it, but xdebug's
