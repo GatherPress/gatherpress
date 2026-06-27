@@ -673,6 +673,7 @@ class Rest_Api {
 		$event           = new Event( $post_id );
 
 		// If managing user is adding someone to an event.
+		$is_managing_other = false;
 		if (
 			$current_user_id &&
 			$user_id &&
@@ -682,14 +683,27 @@ class Rest_Api {
 			// RSVP someone else into it. The previous flat `edit_posts`
 			// check would have let any Author manage attendees on any
 			// event, including ones they don't own.
-			if ( ! current_user_can( 'edit_post', $post_id ) ) {
+			if ( current_user_can( 'edit_post', $post_id ) ) {
+				$is_managing_other = true;
+			} else {
 				$user_id = 0;
 			}
 		} else {
 			$user_id = $current_user_id;
 		}
 
-		if ( intval( $user_id ) && ! is_user_member_of_blog( $user_id ) ) {
+		// Auto-join the current blog when the RSVP target is not yet a member.
+		// A user RSVPing *themselves* joins as a subscriber (the open-RSVP
+		// across-network flow). Enrolling *another* user is a higher-privilege
+		// action: `edit_post` lets an editor manage attendees, but adding users
+		// to a site is gated by `promote_users` in WordPress, so require that
+		// capability here and confirm the target is a real user before creating
+		// any membership.
+		if (
+			intval( $user_id )
+			&& ! is_user_member_of_blog( $user_id )
+			&& ( ! $is_managing_other || ( current_user_can( 'promote_users' ) && get_userdata( $user_id ) ) )
+		) {
 			add_user_to_blog( $blog_id, $user_id, 'subscriber' );
 		}
 
