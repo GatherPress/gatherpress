@@ -39,6 +39,8 @@ Behavior to be aware of:
 * Display follows the date and time format defined in settings by default and can be adjusted at the Event Date block level.  
 * Timezones follow the user profile or site timezone.
 
+For developers: the Duration control's preset options and default value can be customized with JavaScript filters. See [Event duration filters](../developer/event-duration.md).
+
 
 ![Screenshot of the WordPress editor with Event time](./user-doc-media/20260110153038.png)
 
