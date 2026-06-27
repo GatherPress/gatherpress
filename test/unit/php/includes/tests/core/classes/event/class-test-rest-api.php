@@ -116,11 +116,6 @@ class Test_Rest_Api extends Base {
 			$namespace[ sprintf( '/%s/event/rsvp', GATHERPRESS_REST_NAMESPACE ) ],
 			'Failed to assert rsvp endpoint is registered'
 		);
-		$this->assertEquals(
-			1,
-			$namespace[ sprintf( '/%s/event/events-list', GATHERPRESS_REST_NAMESPACE ) ],
-			'Failed to assert events-list endpoint is registered'
-		);
 	}
 
 	/**
@@ -129,7 +124,6 @@ class Test_Rest_Api extends Base {
 	 * @covers ::get_event_routes
 	 * @covers ::email_route
 	 * @covers ::rsvp_route
-	 * @covers ::events_list_route
 	 *
 	 * @return void
 	 */
@@ -165,12 +159,6 @@ class Test_Rest_Api extends Base {
 		$this->assertSame(
 			WP_REST_Server::READABLE,
 			$routes[4]['args']['methods'],
-			'Failed to assert methods is GET.'
-		);
-		$this->assertSame( 'events-list', $routes[5]['route'], 'Failed to assert route is events-list.' );
-		$this->assertSame(
-			WP_REST_Server::READABLE,
-			$routes[5]['args']['methods'],
 			'Failed to assert methods is GET.'
 		);
 	}
@@ -520,171 +508,6 @@ class Test_Rest_Api extends Base {
 				return $recipient['email'];
 			},
 			$recipients
-		);
-	}
-
-	/**
-	 * Coverage for events_list method.
-	 *
-	 * @covers ::events_list
-	 *
-	 * @return void
-	 */
-	public function test_events_list(): void {
-		$instance          = Rest_Api::get_instance();
-		$request           = new WP_REST_Request( 'POST' );
-		$upcoming_event_id = $this->mock->post(
-			array( 'post_type' => Event::POST_TYPE )
-		)->get()->ID;
-		$past_event_id     = $this->mock->post(
-			array( 'post_type' => Event::POST_TYPE )
-		)->get()->ID;
-		$upcoming_event    = new Event( $upcoming_event_id );
-		$past_event        = new Event( $past_event_id );
-
-		$request->set_query_params(
-			array(
-				'event_list_type' => 'upcoming',
-			)
-		);
-
-		$upcoming_event->save_datetimes(
-			array(
-				'datetime_start' => gmdate( Event::DATETIME_FORMAT, strtotime( '+1 day' ) ),
-				'datetime_end'   => gmdate( Event::DATETIME_FORMAT, strtotime( '+2 day' ) ),
-				'timezone'       => 'America/New_York',
-			)
-		);
-
-		$past_event->save_datetimes(
-			array(
-				'datetime_start' => gmdate( Event::DATETIME_FORMAT, strtotime( '-2 day' ) ),
-				'datetime_end'   => gmdate( Event::DATETIME_FORMAT, strtotime( '-1 day' ) ),
-				'timezone'       => 'America/New_York',
-			)
-		);
-
-		$response  = $instance->events_list( $request );
-		$event_ids = $this->get_event_ids( $response->data );
-
-		$this->assertContains( $upcoming_event_id, $event_ids, 'Failed to assert event ID is in array.' );
-		$this->assertNotContains( $past_event_id, $event_ids, 'Failed to assert event ID is not in array.' );
-
-		$request->set_query_params(
-			array(
-				'event_list_type' => 'past',
-			)
-		);
-
-		$response  = $instance->events_list( $request );
-		$event_ids = $this->get_event_ids( $response->data );
-
-		$this->assertContains( $past_event_id, $event_ids, 'Failed to assert event ID is in array.' );
-		$this->assertNotContains( $upcoming_event_id, $event_ids, 'Failed to assert event ID is not in array.' );
-	}
-
-	/**
-	 * Coverage for the current_user field type stability in events_list.
-	 *
-	 * Regression for #1766: current_user previously returned '' when there was
-	 * no RSVP and an array when one existed. It should always be an array so JS
-	 * consumers can safely read current_user.status.
-	 *
-	 * @covers ::events_list
-	 *
-	 * @return void
-	 */
-	public function test_events_list_current_user_is_always_array(): void {
-		$instance = Rest_Api::get_instance();
-		$event_id = $this->mock->post(
-			array( 'post_type' => Event::POST_TYPE )
-		)->get()->ID;
-		$event    = new Event( $event_id );
-
-		$event->save_datetimes(
-			array(
-				'datetime_start' => gmdate( Event::DATETIME_FORMAT, strtotime( '+1 day' ) ),
-				'datetime_end'   => gmdate( Event::DATETIME_FORMAT, strtotime( '+2 day' ) ),
-				'timezone'       => 'America/New_York',
-			)
-		);
-
-		$request = new WP_REST_Request( 'POST' );
-		$request->set_query_params( array( 'event_list_type' => 'upcoming' ) );
-
-		// Logged-out, no RSVP: current_user should be an empty array, not ''.
-		wp_set_current_user( 0 );
-		$response = $instance->events_list( $request );
-		$current  = $this->find_event_in_list( $response->data, $event_id )['current_user'];
-
-		$this->assertIsArray( $current, 'current_user should be an array with no RSVP.' );
-		$this->assertSame( array(), $current, 'current_user should be empty with no RSVP.' );
-
-		// Logged-in with an RSVP: current_user should still be an array, now populated.
-		$user_id = $this->factory->user->create();
-		wp_set_current_user( $user_id );
-		$event->rsvp->save( $user_id, 'attending' );
-
-		$response = $instance->events_list( $request );
-		$current  = $this->find_event_in_list( $response->data, $event_id )['current_user'];
-
-		$this->assertIsArray( $current, 'current_user should be an array with an RSVP.' );
-		$this->assertSame( 'attending', $current['status'], 'current_user should carry the RSVP status.' );
-	}
-
-	/**
-	 * Helper to find a single event entry in an events_list response.
-	 *
-	 * @param array $events   Response data from events_list.
-	 * @param int   $event_id The event ID to locate.
-	 *
-	 * @return array The matching event entry, or an empty array if not found.
-	 */
-	private function find_event_in_list( array $events, int $event_id ): array {
-		foreach ( $events as $event ) {
-			if ( isset( $event['ID'] ) && $event_id === $event['ID'] ) {
-				return $event;
-			}
-		}
-
-		return array();
-	}
-
-	/**
-	 * Helper to get members IDs for test.
-	 *
-	 * @param array $events Response from events_list.
-	 *
-	 * @return array
-	 */
-	protected function get_event_ids( array $events ): array {
-		return array_map(
-			static function ( $event ): int {
-				return $event['ID'];
-			},
-			$events
-		);
-	}
-
-	/**
-	 * Coverage for max_number method.
-	 *
-	 * @covers ::max_number
-	 *
-	 * @return void
-	 */
-	public function test_max_number(): void {
-		$instance = Rest_Api::get_instance();
-
-		$this->assertEquals(
-			5,
-			Utility::invoke_hidden_method( $instance, 'max_number', array( 6, 5 ) ),
-			'Failed to assert that numbers are equal.'
-		);
-		$this->assertEquals(
-			3,
-			Utility::invoke_hidden_method( $instance, 'max_number', array( 3, 5 ) ),
-			'Failed to assert that numbers are equal.'
 		);
 	}
 
@@ -1255,122 +1078,6 @@ class Test_Rest_Api extends Base {
 			$result->data,
 			'No meta should be injected when id is absent.'
 		);
-	}
-
-	/**
-	 * Coverage for events_list with topics filter.
-	 *
-	 * @covers ::events_list
-	 *
-	 * @return void
-	 */
-	public function test_events_list_with_topics(): void {
-		$instance = Rest_Api::get_instance();
-		$post_id  = $this->factory()->post->create(
-			array(
-				'post_type' => Event::POST_TYPE,
-			)
-		);
-
-		$event = new Event( $post_id );
-		$event->save_datetimes(
-			array(
-				'datetime_start' => '2099-01-01 10:00:00',
-				'datetime_end'   => '2099-01-01 14:00:00',
-				'timezone'       => 'America/New_York',
-			)
-		);
-
-		// Create a topic term.
-		$term = wp_insert_term( 'Test Topic', Topic::TAXONOMY );
-		wp_set_post_terms( $post_id, array( $term['term_id'] ), Topic::TAXONOMY );
-
-		$request = new WP_REST_Request( 'GET' );
-		$request->set_param( 'event_list_type', 'upcoming' );
-		$request->set_param( 'max_number', 5 );
-		$request->set_param( 'topics', 'test-topic' );
-
-		$response = $instance->events_list( $request );
-		$data     = $response->get_data();
-
-		$this->assertIsArray( $data );
-	}
-
-	/**
-	 * Coverage for events_list with venues filter.
-	 *
-	 * @covers ::events_list
-	 *
-	 * @return void
-	 */
-	public function test_events_list_with_venues(): void {
-		$instance = Rest_Api::get_instance();
-		$post_id  = $this->factory()->post->create(
-			array(
-				'post_type' => Event::POST_TYPE,
-			)
-		);
-
-		$event = new Event( $post_id );
-		$event->save_datetimes(
-			array(
-				'datetime_start' => '2099-01-01 10:00:00',
-				'datetime_end'   => '2099-01-01 14:00:00',
-				'timezone'       => 'America/New_York',
-			)
-		);
-
-		// Create a venue term.
-		$term = wp_insert_term( 'Test Venue', Venue::TAXONOMY );
-		wp_set_post_terms( $post_id, array( $term['term_id'] ), Venue::TAXONOMY );
-
-		$request = new WP_REST_Request( 'GET' );
-		$request->set_param( 'event_list_type', 'upcoming' );
-		$request->set_param( 'max_number', 5 );
-		$request->set_param( 'venues', 'test-venue' );
-
-		$response = $instance->events_list( $request );
-		$data     = $response->get_data();
-
-		$this->assertIsArray( $data );
-	}
-
-	/**
-	 * Coverage for events_list with custom datetime format.
-	 *
-	 * @covers ::events_list
-	 *
-	 * @return void
-	 */
-	public function test_events_list_custom_datetime_format(): void {
-		$instance = Rest_Api::get_instance();
-		$post_id  = $this->factory()->post->create(
-			array(
-				'post_type' => Event::POST_TYPE,
-			)
-		);
-
-		$event = new Event( $post_id );
-		$event->save_datetimes(
-			array(
-				'datetime_start' => '2099-01-01 10:00:00',
-				'datetime_end'   => '2099-01-01 14:00:00',
-				'timezone'       => 'America/New_York',
-			)
-		);
-
-		$request = new WP_REST_Request( 'GET' );
-		$request->set_param( 'event_list_type', 'upcoming' );
-		$request->set_param( 'max_number', 5 );
-		$request->set_param( 'datetime_format', 'Y-m-d H:i:s' );
-
-		$response = $instance->events_list( $request );
-		$data     = $response->get_data();
-
-		$this->assertIsArray( $data );
-		if ( ! empty( $data ) ) {
-			$this->assertArrayHasKey( 'datetime_start', $data[0] );
-		}
 	}
 
 	/**
