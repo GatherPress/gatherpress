@@ -1,0 +1,4 @@
+Significance: minor
+Type: removed
+
+Remove the unused public `event/events-list` REST endpoint (and its `events_list`/`max_number` handlers). The route had no callers in the plugin or build output and exposed event RSVP data on a public, unauthenticated GET; the same data is already rendered on public event pages, so nothing relied on it.
