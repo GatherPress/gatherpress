@@ -236,6 +236,17 @@ function createBlueprint(context, number, zipArtifactUrl, phpVersion, override) 
 				},
 			},
 			{
+				step: 'writeFile',
+				path: '/wordpress/wp-content/mu-plugins/gatherpress-do-not-rewrite-urls-on-import.php',
+				data: {
+					resource: 'url',
+					url: 'https://raw.githubusercontent.com/GatherPress/gatherpress-demo-data/main/blueprints/gatherpress-do-not-rewrite-urls-on-import.php'
+				},
+				progress: {
+					caption: 'TEMPORARY PATCH, see https://github.com/GatherPress/gatherpress/issues/1842'
+				}
+			},
+			{
 				step: 'importWxr',
 				file: {
 					resource: 'url',
