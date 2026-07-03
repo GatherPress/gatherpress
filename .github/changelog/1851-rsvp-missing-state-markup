@@ -1,0 +1,4 @@
+Significance: patch
+Type: fixed
+
+Prevent a successful RSVP from showing a false "RSVP API request failed" alert and a broken modal when the block's state markup is malformed or incomplete.
