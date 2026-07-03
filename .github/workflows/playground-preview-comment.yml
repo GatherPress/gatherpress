@@ -28,16 +28,29 @@ jobs:
     runs-on: ubuntu-latest
     steps:
 
-      - name: Download build artifact from upstream workflow
-        uses: actions/download-artifact@v4
-        with:
-          name: ${{ github.event.repository.name }}-pr
-          run-id: ${{ github.event.workflow_run.id }}
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Read PR number from artifact
+      # The upstream workflow encodes the PR number in the artifact name
+      # (`gatherpress-pr-<number>`), so listing the run's artifacts is
+      # enough — no artifact download or pr-number.txt payload file needed.
+      - name: Read PR number from artifact name
         id: pr
-        run: echo "number=$(cat pr-number.txt)" >> "$GITHUB_OUTPUT"
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const { data } = await github.rest.actions.listWorkflowRunArtifacts({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                run_id: context.payload.workflow_run.id,
+            });
+            const prefix = `${context.repo.repo}-pr-`;
+            const artifact = data.artifacts.find(
+                (a) => a.name.startsWith(prefix) && /^\d+$/.test(a.name.slice(prefix.length))
+            );
+            if (!artifact) {
+                core.setFailed(`No ${prefix}<number> artifact found on run ${context.payload.workflow_run.id}`);
+                return;
+            }
+            core.setOutput('number', artifact.name.slice(prefix.length));
 
       # Check out the base repo at the default branch (trusted code) so the
       # github-script step below can require .github/scripts/playground-preview

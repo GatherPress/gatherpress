@@ -133,7 +133,7 @@ function mergeOverride(template, override) {
 function createBlueprintUrl(context, number) {
 	const { repo, owner } = context;
 	const workflow = encodeURI('Playground Preview');  // Encode the workflow name
-	const artifact = 'gatherpress-pr'; // GitHub Actions artifact name
+	const artifact = `gatherpress-pr-${number}`; // GitHub Actions artifact name (PR number encoded)
 	const proxy = 'https://gatherpress.org/playground-preview/plugin-proxy.php';
 
 	return `${proxy}?org=${owner}&repo=${repo}&workflow=${workflow}&artifact=${artifact}&pr=${number}`;
@@ -196,7 +196,7 @@ function createBlueprint(context, number, zipArtifactUrl, phpVersion, override) 
 			*/
 			{
 				step: 'writeFile',
-				path: '/wordpress/pr/pr.zip',
+				path: '/wordpress/pr/gatherpress-pr.zip',
 				data: {
 					resource: 'url',
 					url: zipArtifactUrl,
@@ -208,31 +208,22 @@ function createBlueprint(context, number, zipArtifactUrl, phpVersion, override) 
 				},
 			},
 			/**
-			 * GitHub CI artifacts are doubly zipped:
-			*
-			* pr.zip
-			*    gatherpress.zip
-			*       gatherpress/
-			*          gatherpress.php
-			*          ... other files ...
-			*
-			* This step extracts the inner zip file so that we get
-			* access directly to gatherpress.zip and can use it to
-			* install the plugin.
-			*/
-			{
-				step: 'unzip',
-				zipFile: {
-					resource: 'vfs',
-					path: '/wordpress/pr/pr.zip',
-				},
-				extractToPath: '/wordpress/pr',
-			},
+			 * The `Playground Preview` workflow uploads the extracted plugin
+			 * directory, so the downloaded artifact is a single zip that
+			 * unpacks straight to `gatherpress/`:
+			 *
+			 * gatherpress-pr.zip
+			 *    gatherpress/
+			 *       gatherpress.php
+			 *       ... other files ...
+			 *
+			 * That makes it directly installable — no inner-zip extraction.
+			 */
 			{
 				step: 'installPlugin',
 				pluginData: {
 					resource: 'vfs',
-					path: '/wordpress/pr/gatherpress.zip',
+					path: '/wordpress/pr/gatherpress-pr.zip',
 				},
 			},
 			{

@@ -1,6 +1,6 @@
 <?php
 /**
- * https://gatherpress.org/some-random-chars/plugin-proxy.php?org=GatherPress&repo=gatherpress&workflow=Build%20GatherPress%20Plugin%20Zip&artifact=gatherpress-pr&pr=666
+ * https://gatherpress.org/some-random-chars/plugin-proxy.php?org=GatherPress&repo=gatherpress&workflow=Playground%20Preview&artifact=gatherpress-pr-666&pr=666
  * 
  * 
  * Based on: https://github.com/WordPress/wordpress-playground/blob/ca759ee3281837596bfdd9736bbea205104741b2/packages/playground/website/public/plugin-proxy.php
@@ -100,7 +100,9 @@ class PluginDownloader {
 			// server-level .htaccess `Header set Content-Disposition` rule.
 			if ( ! headers_sent() ) {
 				header( 'Content-Type: application/zip' );
-				header( 'Content-Disposition: attachment; filename="gatherpress-pr.zip"' );
+				// Match the artifact naming so proxy downloads and direct
+				// workflow-page downloads produce the same filename.
+				header( 'Content-Disposition: attachment; filename="gatherpress-pr-' . (int) $pr . '.zip"' );
 			}
 
 			// die(var_export($artifact_res['headers'],true));
@@ -255,7 +257,9 @@ try {
 				'org'      => 'GatherPress',
 				'repo'     => 'gatherpress',
 				'workflow' => 'Playground Preview',
-				'artifact' => '#gatherpress-pr#',
+				// The `Playground Preview` workflow encodes the PR number in
+				// the artifact name: gatherpress-pr-<number>.
+				'artifact' => '#^gatherpress-pr-\d+$#',
 			],
 		];
 		$allowed       = false;
