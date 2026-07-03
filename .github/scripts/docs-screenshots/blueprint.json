@@ -1,0 +1,65 @@
+{
+  "$schema": "https://playground.wordpress.net/blueprint-schema.json",
+  "preferredVersions": {
+    "php": "8.2",
+    "wp": "latest"
+  },
+  "phpExtensionBundles": [
+    "kitchen-sink"
+  ],
+  "features": {
+    "networking": true
+  },
+  "constants": {
+    "WP_HTTP_BLOCK_EXTERNAL": "true",
+    "GATHERPRESS_ALPHA_VERSION": "true"
+  },
+  "siteOptions": {
+    "blogname": "GatherPress",
+    "blogdescription": "Powering Communities with WordPress.",
+    "users_can_register": "1",
+    "permalink_structure": "/%postname%/"
+  },
+  "steps": [
+    {
+      "step": "defineWpConfigConsts",
+      "consts": {
+        "WP_DEBUG": false,
+        "WP_DEBUG_DISPLAY": false,
+        "DISABLE_WP_CRON": true
+      }
+    },
+    {
+      "step": "login"
+    },
+    {
+      "step": "updateUserMeta",
+      "meta": {
+        "admin_color": "modern"
+      },
+      "userId": 1
+    },
+    {
+      "step": "activatePlugin",
+      "pluginPath": "/wordpress/wp-content/plugins/gatherpress/gatherpress.php"
+    },
+    {
+      "step": "writeFile",
+      "path": "/wordpress/wp-content/mu-plugins/gatherpress-do-not-rewrite-urls-on-import.php",
+      "data": {
+        "resource": "url",
+        "url": "https://raw.githubusercontent.com/GatherPress/gatherpress-demo-data/main/blueprints/gatherpress-do-not-rewrite-urls-on-import.php"
+      },
+      "progress": {
+        "caption": "TEMPORARY PATCH, see https://github.com/GatherPress/gatherpress/issues/1842"
+      }
+    },
+    {
+      "step": "importWxr",
+      "file": {
+        "resource": "url",
+        "url": "https://raw.githubusercontent.com/GatherPress/gatherpress-demo-data/main/GatherPress-demo-data-0.33.0.xml"
+      }
+    }
+  ]
+}
