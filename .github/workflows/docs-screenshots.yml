@@ -1,9 +1,9 @@
 # Thin caller for the reusable screenshot-generation workflow: regenerates
-# the wordpress.org plugin-assets screenshots (.wordpress-org) for every
-# locale with more than 90% complete plugin translations on
-# https://translate.wordpress.org/projects/wp-plugins/gatherpress/
+# the documentation images (docs/user/user-doc-media) from the Playwright
+# spec at .github/scripts/docs-screenshots/ — English only, since the docs
+# are written in English.
 
-name: WordPress.org screenshot generation
+name: Documentation screenshot generation
 
 on:
   workflow_dispatch:
@@ -27,9 +27,14 @@ jobs:
       contents: write  # Grant write permissions for the contents scope to allow pushing changes
     uses: ./.github/workflows/screenshot-generation.yml
     with:
-      locales: '["fr_FR", "de_DE", "es_ES", "mr", "nl_BE", "it_IT", "en_US", "pt_BR"]'
-      npm-script: screenshots:wporg
-      output-path: .wordpress-org
-      branch-prefix: wp-org-screenshots
-      pr-title-template: 'Update {0} screenshots for wordpress.org'
+      locales: '["en_US"]'
+      npm-script: screenshots:docs
+      output-path: docs/user/user-doc-media
+      branch-prefix: docs-screenshots
+      pr-title-template: 'Update documentation screenshots'
       update-all: ${{ github.event.inputs.updateAllSnapshots == 'true' }}
+      # Docs must show the code under development, not the latest release:
+      # the docs blueprint skips the wordpress.org installPlugin step and the
+      # working tree is built and mounted as the plugin instead.
+      blueprint: .github/scripts/docs-screenshots/blueprint.json
+      mount-plugin: true
