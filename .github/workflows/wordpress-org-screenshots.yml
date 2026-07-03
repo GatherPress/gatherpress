@@ -22,6 +22,10 @@ permissions:
 jobs:
   screenshot:
     runs-on: ubuntu-latest
+    # Backstop against hangs: with max-parallel 1, a job silently stuck at
+    # GitHub's 6h default limit stalls every locale behind it — one hung
+    # apt phase turned into ~48h of dead runner time (run 27881952586).
+    timeout-minutes: 40
     strategy:
       fail-fast: false
       max-parallel: 1 # Prevent parallel runs to make use of the caching for node_modules and playwright browsers
@@ -81,11 +85,23 @@ jobs:
           ./node_modules
         key: ${{ steps.node_modules-cache.outputs.cache-primary-key }}
 
-    - name: Install Playwright dependencies
-      run: npx playwright install --with-deps chromium
+    # The browser download and the apt-based system-dependency install are
+    # deliberately separate steps with their own timeouts: the combined
+    # `install --with-deps` hung indefinitely inside its apt phase (after the
+    # browser download had already completed) and every locale job burned
+    # GitHub's 6h limit — see run 27881952586. Step-level timeouts fail fast
+    # AND keep the post-job cache save alive, so the next locale job can hit
+    # the browser cache instead of repeating the download.
+    - name: Install Playwright browser
+      timeout-minutes: 10
+      run: npx playwright install chromium
       if: steps.playwright-cache.outputs.cache-hit != 'true'
-    - run: npx playwright install-deps chromium
-      if: steps.playwright-cache.outputs.cache-hit == 'true'
+
+    - name: Install Playwright system dependencies
+      timeout-minutes: 10
+      env:
+        DEBIAN_FRONTEND: noninteractive
+      run: npx playwright install-deps chromium
 
     - name: Prepare localized blueprint
       # en_US should not get any additional steps added, as this will result in errors!
@@ -222,6 +238,16 @@ jobs:
       # Using GitHub CLI in Workflows
       # https://docs.github.com/en/actions/using-workflows/using-github-cli-in-workflows
       # https://cli.github.com/manual/gh_pr_create
-      run: gh pr create -B main -H fix/wp-org-screenshots-${{ matrix.locale }}-${{ github.sha }} --title 'Update ${{ matrix.locale }} screenshots for wordpress.org' --body 'Created with ❤️ by WordPress Playground, Playwright & GitHub action <br /><br />${{ steps.compress-images.outputs.markdown }}'
+      #
+      # The compression markdown is passed through an env var, NOT interpolated
+      # into the run script: it always contains a single quote ("Calibre's"),
+      # which terminated the quoted --body argument and crashed the shell with
+      # a syntax error (and expression interpolation into run scripts is a
+      # script-injection surface besides).
+      run: |
+        gh pr create -B main -H fix/wp-org-screenshots-${{ matrix.locale }}-${{ github.sha }} \
+          --title 'Update ${{ matrix.locale }} screenshots for wordpress.org' \
+          --body "Created with ❤️ by WordPress Playground, Playwright & GitHub action <br /><br />${COMPRESS_MARKDOWN}"
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        COMPRESS_MARKDOWN: ${{ steps.compress-images.outputs.markdown }}
