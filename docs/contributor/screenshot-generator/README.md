@@ -30,7 +30,8 @@ Some details worth knowing when reviewing the generated pull requests:
 - The locale jobs run **sequentially** (`max-parallel: 1`) so later jobs reuse the cached Playwright browser, and every job is bounded by timeouts — a hung step fails within minutes instead of stalling the whole matrix.
 - Each per-locale branch is cut **from `origin/develop`** and contains **only the `.wordpress-org/` screenshot changes**; incidental changes elsewhere in the run's checkout (for example the image recompression pass) are never committed.
 - The pull requests **target `develop`** — like all other work, screenshots reach `main` with the next release. They carry the **Skip Changelog** label, since screenshot regeneration doesn't warrant a changelog entry.
-- Commits are created through GitHub's GraphQL `createCommitOnBranch` API (see [`create-verified-commits.sh`](../../../.github/scripts/wordpress-org-screenshots/create-verified-commits.sh)), so they are **signed by GitHub and show as "Verified"** — required by the branch protection on `develop`. Large image sets are split across several commits per pull request to stay within API request-size limits.
+- Branch, commit, and pull request are created by [`peter-evans/create-pull-request`](https://github.com/peter-evans/create-pull-request) with `sign-commits: true` — the same pattern as the hook-docs workflow. Commits are created through the GitHub API and therefore **signed by GitHub ("Verified")**, which the branch protection on `develop` requires.
+- Each pull request has **auto-merge (squash) enabled** and its branch is deleted after merging — the per-locale PRs land on their own once required checks pass, and only stay open for human review when something fails.
 
 ## Manually generating Screenshots
 
