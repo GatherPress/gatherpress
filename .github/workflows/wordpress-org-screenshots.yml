@@ -191,7 +191,10 @@ jobs:
       id: compress-images
       uses: calibreapp/image-actions@main
       with:
-        githubToken: ${{ secrets.GITHUB_TOKEN }}
+        # The action renamed this input from `githubToken`; the old name is
+        # silently ignored ("Unexpected input(s)") and compression ran
+        # without a token.
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         # Use the compressOnly option with true value to skip the commit and summary comment.
         compressOnly: true
         # ignorePaths accepts a comma-separated string with globbing support # https://www.npmjs.com/package/glob
@@ -220,8 +223,12 @@ jobs:
         # switch branches over dirty files that differ between the branches.
         git reset --hard HEAD
 
+        # Check out develop itself as the local working base: peter-evans
+        # resolves the current branch as the PR's working base and resets it
+        # to its remote counterpart, so the branch must exist on origin — a
+        # local-only staging branch fails with "unknown revision".
         git fetch --no-tags --depth=1 origin develop
-        git checkout -B screenshots-staging-${{ matrix.locale }} origin/develop
+        git checkout -B develop origin/develop
 
         rm -rf .wordpress-org
         cp -r "${RUNNER_TEMP}/wordpress-org-screenshots" .wordpress-org
