@@ -1,0 +1,4 @@
+Significance: patch
+Type: fixed
+
+Center the RSVP Response display name again on WordPress versions where the comment author name block moved text alignment to the typography block support.
