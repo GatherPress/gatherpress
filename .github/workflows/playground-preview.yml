@@ -82,13 +82,23 @@ jobs:
           npm run build
           wp dist-archive . ./${{ github.event.repository.name }}.zip
 
-      - name: Save PR number for downstream comment workflow
-        run: echo "${{ github.event.pull_request.number }}" > pr-number.txt
+      # dist-archive is kept as the single source of truth for what ships
+      # (.distignore), but its zip is re-extracted so the *artifact itself*
+      # is the one and only zip: downloading it yields
+      # `gatherpress-pr-<number>.zip`, which unzips straight to a
+      # `gatherpress/` directory. Without this, GitHub wraps the uploaded
+      # files in an artifact zip and users get a zip inside a zip.
+      - name: Stage plugin directory for artifact
+        run: |
+          mkdir staging
+          unzip -q ./${{ github.event.repository.name }}.zip -d staging
 
+      # The PR number is encoded in the artifact name (instead of a
+      # pr-number.txt payload file) so the downstream `Playground Preview
+      # Comment` workflow can read it via the artifact-listing API and the
+      # downloaded zip stays clean.
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ github.event.repository.name }}-pr
-          path: |
-            ./${{ github.event.repository.name }}.zip
-            pr-number.txt
+          name: ${{ github.event.repository.name }}-pr-${{ github.event.pull_request.number }}
+          path: staging
