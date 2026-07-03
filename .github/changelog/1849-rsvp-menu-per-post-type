@@ -1,0 +1,4 @@
+Significance: patch
+Type: changed
+
+Each post type supporting RSVPs now gets its own RSVPs admin page, scoped to that post type.

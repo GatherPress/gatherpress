@@ -45,6 +45,18 @@ class List_Table extends WP_List_Table {
 	const STATUS_LINK_TEMPLATE = '<a href="%s"%s>%s <span class="count">(%s)</span></a>';
 
 	/**
+	 * Post type whose RSVPs this table lists.
+	 *
+	 * Each RSVP-supporting post type gets its own RSVPs admin page, and
+	 * the table only shows RSVPs belonging to that page's post type (#1849).
+	 *
+	 * @since 0.34.0
+	 *
+	 * @var string
+	 */
+	protected string $post_type;
+
+	/**
 	 * Initializes the RSVP list table.
 	 *
 	 * Sets up the table with appropriate labels and configuration options.
@@ -54,9 +66,13 @@ class List_Table extends WP_List_Table {
 	 * @since 0.34.0
 	 *
 	 * @param array $args Optional. Additional arguments to configure the list table.
-	 *                    Supports 'screen' to specify a particular screen context.
+	 *                    Supports 'screen' to specify a particular screen context and
+	 *                    'post_type' to scope the table to one RSVP-supporting post
+	 *                    type (defaults to the event post type).
 	 */
 	public function __construct( $args = array() ) {
+		$this->post_type = ! empty( $args['post_type'] ) ? (string) $args['post_type'] : Event::POST_TYPE;
+
 		parent::__construct(
 			array(
 				'plural'   => __( 'RSVPs', 'gatherpress' ),
@@ -88,7 +104,7 @@ class List_Table extends WP_List_Table {
 			'cb'       => '<input type="checkbox" />',
 			'attendee' => __( 'Attendee', 'gatherpress' ),
 			'response' => __( 'Response', 'gatherpress' ),
-			'event'    => __( 'Event', 'gatherpress' ),
+			'event'    => Utility::post_type_label( 'singular_name', $this->post_type ),
 			'approved' => __( 'Status', 'gatherpress' ),
 			'date'     => __( 'Date', 'gatherpress' ),
 		);
@@ -276,9 +292,10 @@ class List_Table extends WP_List_Table {
 		$offset = ( $page_number - 1 ) * $per_page;
 
 		$args = array(
-			'number' => $per_page,
-			'offset' => $offset,
-			'status' => 'all',
+			'number'    => $per_page,
+			'offset'    => $offset,
+			'status'    => 'all',
+			'post_type' => $this->post_type,
 		);
 
 		if ( isset( $_REQUEST['s'] ) && ! empty( $_REQUEST['s'] ) ) {
@@ -369,8 +386,9 @@ class List_Table extends WP_List_Table {
 		// phpcs:disable WordPress.Security.NonceVerification.Recommended
 		$rsvp_query = Query::get_instance();
 		$args       = array(
-			'count'  => true,
-			'status' => 'all',
+			'count'     => true,
+			'status'    => 'all',
+			'post_type' => $this->post_type,
 		);
 
 		if ( isset( $_REQUEST['user_id'] ) && ! empty( $_REQUEST['user_id'] ) ) {
@@ -569,7 +587,7 @@ class List_Table extends WP_List_Table {
 
 		$ip_search_url = add_query_arg(
 			array(
-				'post_type' => Event::POST_TYPE,
+				'post_type' => $this->post_type,
 				'page'      => Rsvp::COMMENT_TYPE,
 				's'         => $item['comment_author_IP'],
 			),
@@ -767,7 +785,7 @@ class List_Table extends WP_List_Table {
 		// phpcs:enable WordPress.Security.NonceVerification.Recommended
 
 		$base_url_args = array(
-			'post_type' => Event::POST_TYPE,
+			'post_type' => $this->post_type,
 			'page'      => Rsvp::COMMENT_TYPE,
 			'_wpnonce'  => wp_create_nonce( Rsvp::COMMENT_TYPE ),
 		);
@@ -779,8 +797,11 @@ class List_Table extends WP_List_Table {
 
 		$base_url = add_query_arg( $base_url_args, admin_url( 'edit.php' ) );
 
-		// Base args for count queries.
-		$count_base_args = array( 'count' => true );
+		// Base args for count queries, scoped to this table's post type.
+		$count_base_args = array(
+			'count'     => true,
+			'post_type' => $this->post_type,
+		);
 
 		if ( $post_id ) {
 			$count_base_args['post_id'] = $post_id;

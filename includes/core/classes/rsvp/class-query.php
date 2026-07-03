@@ -117,9 +117,14 @@ class Query {
 	 */
 	public function get_rsvps( array $args ) {
 		$args['type']         = Rsvp::COMMENT_TYPE;
-		$args['post_type']    = array_values( get_post_types_by_support( 'gatherpress-rsvp' ) );
 		$args['type__in']     = array();
 		$args['type__not_in'] = array();
+
+		// Default to every RSVP-supporting post type; callers may narrow
+		// this down, like the per-post-type RSVPs admin pages do (#1849).
+		if ( empty( $args['post_type'] ) ) {
+			$args['post_type'] = array_values( get_post_types_by_support( 'gatherpress-rsvp' ) );
+		}
 
 		remove_action( 'pre_get_comments', array( $this, 'exclude_rsvp_from_comment_query' ) );
 

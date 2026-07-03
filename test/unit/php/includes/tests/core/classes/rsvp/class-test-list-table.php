@@ -95,6 +95,115 @@ class Test_List_Table extends Base {
 	}
 
 	/**
+	 * The table defaults to the event post type and honors a `post_type`
+	 * constructor argument (#1849).
+	 *
+	 * @covers ::__construct
+	 *
+	 * @return void
+	 */
+	public function test_construct_scopes_post_type(): void {
+		$this->assertSame(
+			Event::POST_TYPE,
+			Utility::get_hidden_property( new List_Table(), 'post_type' ),
+			'Table should default to the event post type.'
+		);
+
+		$scoped = new List_Table( array( 'post_type' => 'gatherpress_probe' ) );
+
+		$this->assertSame(
+			'gatherpress_probe',
+			Utility::get_hidden_property( $scoped, 'post_type' ),
+			'Table should honor the post_type constructor argument.'
+		);
+	}
+
+	/**
+	 * The table only counts RSVPs belonging to its scoped post type (#1849).
+	 *
+	 * @covers ::get_rsvp_count
+	 *
+	 * @return void
+	 */
+	public function test_get_rsvp_count_only_counts_scoped_post_type(): void {
+		register_post_type(
+			'gatherpress_probe',
+			array(
+				'public'   => true,
+				'supports' => array( 'title', 'gatherpress-rsvp' ),
+			)
+		);
+
+		$probe_id = $this->factory->post->create(
+			array(
+				'post_type'   => 'gatherpress_probe',
+				'post_status' => 'publish',
+			)
+		);
+
+		$this->factory->comment->create(
+			array(
+				'comment_post_ID' => $probe_id,
+				'comment_type'    => Rsvp::COMMENT_TYPE,
+			)
+		);
+
+		// One RSVP on the probe post plus the event RSVP from set_up().
+		$scoped = new List_Table( array( 'post_type' => 'gatherpress_probe' ) );
+
+		$this->assertSame(
+			1,
+			Utility::invoke_hidden_method( $scoped, 'get_rsvp_count' ),
+			'Scoped table should only count RSVPs of its own post type.'
+		);
+
+		$this->assertSame(
+			1,
+			Utility::invoke_hidden_method( new List_Table(), 'get_rsvp_count' ),
+			'Default table should only count event RSVPs.'
+		);
+
+		unregister_post_type( 'gatherpress_probe' );
+	}
+
+	/**
+	 * The event column header uses the scoped post type's singular label (#1849).
+	 *
+	 * @covers ::get_columns
+	 *
+	 * @return void
+	 */
+	public function test_get_columns_uses_scoped_post_type_label(): void {
+		register_post_type(
+			'gatherpress_probe',
+			array(
+				'public'   => true,
+				'supports' => array( 'title', 'gatherpress-rsvp' ),
+				'labels'   => array(
+					'name'          => 'Probes',
+					'singular_name' => 'Probe',
+				),
+			)
+		);
+
+		$scoped = new List_Table( array( 'post_type' => 'gatherpress_probe' ) );
+
+		$this->assertSame(
+			'Probe',
+			$scoped->get_columns()['event'],
+			'Event column header should use the scoped post type singular label.'
+		);
+
+		$this->assertSame(
+			'Event',
+			( new List_Table() )->get_columns()['event'],
+			'Event column header should default to the event post type singular label.'
+		);
+
+		unregister_post_type( 'gatherpress_probe' );
+	}
+
+	/**
 	 * Tests get_columns method.
 	 *
 	 * @covers ::get_columns

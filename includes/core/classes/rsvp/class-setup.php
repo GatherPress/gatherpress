@@ -303,44 +303,74 @@ class Setup {
 	}
 
 	/**
-	 * Adds a submenu page for managing GatherPress RSVPs.
+	 * Adds an RSVPs submenu page to every RSVP-supporting post type's menu.
 	 *
-	 * This method adds a submenu page under the Events menu in the WordPress admin.
-	 * The page provides a dedicated interface for viewing and managing RSVPs
-	 * to GatherPress events, with capabilities similar to the WordPress comments
-	 * page but specifically tailored for RSVPs.
+	 * Each post type declaring `gatherpress-rsvp` support gets its own
+	 * RSVPs page under its admin menu, scoped to that post type's RSVPs —
+	 * the same way WordPress scopes post lists per type (#1849). The page
+	 * provides a dedicated interface for viewing and managing RSVPs, with
+	 * capabilities similar to the WordPress comments page but specifically
+	 * tailored for RSVPs.
 	 *
 	 * @since 0.34.0
 	 *
 	 * @return void
 	 */
 	public function add_rsvp_submenu_page(): void {
-		// Do not show the RSVPs submenu when RSVP is globally disabled or
-		// when no post type declares `gatherpress-rsvp` support — e.g. a
-		// companion plugin removed it from the event post type (#1849).
-		if (
-			'disabled' === Settings::get_instance()->get( 'rsvp_mode' ) ||
-			empty( get_post_types_by_support( 'gatherpress-rsvp' ) )
-		) {
+		// Do not show any RSVPs submenu when RSVP is globally disabled.
+		if ( 'disabled' === Settings::get_instance()->get( 'rsvp_mode' ) ) {
 			return;
 		}
 
-		$hook = add_submenu_page(
-			sprintf( 'edit.php?post_type=%s', Event::POST_TYPE ),
-			__( 'RSVPs', 'gatherpress' ),
-			__( 'RSVPs', 'gatherpress' ),
-			Rsvp::CAPABILITY,
-			Rsvp::COMMENT_TYPE,
-			array( $this, 'render_rsvp_admin_page' ),
-			2
-		);
+		// When no post type declares `gatherpress-rsvp` support — e.g. a
+		// companion plugin removed it from the event post type — the loop
+		// simply adds nothing (#1849).
+		foreach ( get_post_types_by_support( 'gatherpress-rsvp' ) as $post_type ) {
+			$hook = add_submenu_page(
+				sprintf( 'edit.php?post_type=%s', $post_type ),
+				__( 'RSVPs', 'gatherpress' ),
+				__( 'RSVPs', 'gatherpress' ),
+				Rsvp::CAPABILITY,
+				Rsvp::COMMENT_TYPE,
+				array( $this, 'render_rsvp_admin_page' ),
+				2
+			);
 
-		$this->list_table = new List_Table();
+			if ( false === $hook ) {
+				continue;
+			}
 
-		add_action(
-			sprintf( 'load-%s', $hook ),
-			array( $this, 'setup_rsvp_list_table_screen_options' )
-		);
+			add_action(
+				sprintf( 'load-%s', $hook ),
+				array( $this, 'prepare_rsvp_admin_page' )
+			);
+		}
+	}
+
+	/**
+	 * Prepares the RSVP admin page for the post type being viewed.
+	 *
+	 * Runs on the `load-{$hook}` action of each per-post-type RSVPs page.
+	 * Instantiates the list table scoped to the current screen's post type
+	 * and registers its screen options (#1849).
+	 *
+	 * @since 0.34.0
+	 *
+	 * @return void
+	 */
+	public function prepare_rsvp_admin_page(): void {
+		$screen_post_type = get_current_screen()->post_type ?? '';
+
+		// Fall back to the event post type when the screen doesn't carry a
+		// supporting post type (defensive; the submenu is only registered
+		// for supporting post types).
+		if ( ! post_type_supports( $screen_post_type, 'gatherpress-rsvp' ) ) {
+			$screen_post_type = Event::POST_TYPE;
+		}
+
+		$this->list_table = new List_Table( array( 'post_type' => $screen_post_type ) );
+
+		$this->setup_rsvp_list_table_screen_options();
 	}
 
 	/**
@@ -383,7 +413,10 @@ class Setup {
 			wp_die( esc_html__( 'Sorry, you are not allowed to manage RSVPs.', 'gatherpress' ), 403 );
 		}
 
-		$rsvp_table  = new List_Table();
+		// The load-{$hook} action has already scoped the list table to the
+		// current screen's post type; fall back to a default instance when
+		// called outside that flow (#1849).
+		$rsvp_table  = $this->list_table ?? new List_Table();
 		$search_term = isset( $_REQUEST['s'] ) ? sanitize_text_field( wp_unslash( $_REQUEST['s'] ) ) : '';
 		$status      = isset( $_REQUEST['status'] ) ? sanitize_text_field( wp_unslash( $_REQUEST['status'] ) ) : '';
 		$event       = isset( $_REQUEST['event'] ) ? sanitize_text_field( wp_unslash( $_REQUEST['event'] ) ) : '';
@@ -498,12 +531,18 @@ class Setup {
 	 * @return string Modified parent file path to highlight the correct menu item.
 	 */
 	public function highlight_admin_menu( string $parent_file ): string {
-		global $plugin_page;
+		global $plugin_page, $typenow;
 
 		if ( isset( $plugin_page ) && Rsvp::COMMENT_TYPE === $plugin_page ) {
 			add_filter( 'submenu_file', array( $this, 'set_submenu_file' ) );
 
-			return sprintf( 'edit.php?post_type=%s', Event::POST_TYPE );
+			// Each RSVP-supporting post type has its own RSVPs page, so
+			// highlight whichever post type menu the page lives under (#1849).
+			$post_type = ( ! empty( $typenow ) && post_type_supports( $typenow, 'gatherpress-rsvp' ) )
+				? $typenow
+				: Event::POST_TYPE;
+
+			return sprintf( 'edit.php?post_type=%s', $post_type );
 		}
 
 		return $parent_file;
