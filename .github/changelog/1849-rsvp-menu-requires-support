@@ -1,0 +1,4 @@
+Significance: patch
+Type: fixed
+
+Hide the RSVPs admin menu when no post type supports the RSVP feature.
