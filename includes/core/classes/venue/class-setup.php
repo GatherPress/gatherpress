@@ -26,6 +26,7 @@ use GatherPress\Core\Starter_Pattern_Loader;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Utility;
 use GatherPress\Core\Venue\Map\Setup as Map_Setup;
+use stdClass;
 use WP_Block_Patterns_Registry;
 use WP_Post;
 
@@ -707,8 +708,28 @@ class Setup {
 	 */
 	public function get_localized_post_type_slug(): string {
 		$switched_locale = switch_to_locale( get_locale() );
-		$slug            = _x( 'Venue', 'Admin menu and post type singular name', 'gatherpress' );
-		$slug            = sanitize_title( $slug );
+
+		// The post type (to get the singular name from) is typically not registered, when this method is called.
+		// Using Utility::post_type_label() will not yet work.
+
+		// Prepare a default at first.
+		$default_labels                = new stdClass();
+		$default_labels->singular_name = _x(
+			'Venue',
+			'Admin menu and post type singular name',
+			'gatherpress'
+		);
+
+		// To ensure, we use the proper labels, we get them from the WordPress core filter.
+		$post_type_labels = apply_filters(
+			sprintf( // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.DynamicHooknameFound
+				'post_type_labels_%s',
+				Venue::POST_TYPE
+			),
+			$default_labels
+		);
+
+		$slug = sanitize_title( $post_type_labels->singular_name );
 
 		if ( $switched_locale ) {
 			restore_previous_locale();

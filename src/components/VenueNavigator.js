@@ -15,7 +15,7 @@ import CreateVenueForm from './VenueForm';
 import { VenueComboboxProvider } from './VenueComboboxProvider';
 import PopularVenues from './PopularVenues';
 import { isPostTypeSupporting } from '../helpers/event';
-import { getCurrentContextualPostId } from '../helpers/editor';
+import { getCurrentContextualPostId, usePostTypeLabel } from '../helpers/editor';
 
 /**
  *
@@ -24,8 +24,6 @@ import { getCurrentContextualPostId } from '../helpers/editor';
  * @return {Component} A Navigator component to be rendered.
  */
 export default function VenueNavigator( props = null ) {
-	const addNewItemLabel = __( 'Add New Venue', 'gatherpress' );
-
 	// Use context post type if provided, otherwise fall back to the editor's current post type.
 	// This is necessary because VenueNavigator can be rendered from slotfill.js without any props.
 	const currentPostType = useSelect(
@@ -36,6 +34,16 @@ export default function VenueNavigator( props = null ) {
 	);
 	const venuePostType = getVenuePostType( currentPostType );
 	const venueTaxonomy = getVenueTaxonomy( venuePostType );
+
+	// Read the "Add new Venue" label so the panel title reflects what the post type
+	// is actually called — a custom venue post type with
+	// `singular_name => 'Location'` shows "Add New Location" without any
+	// extra wiring (#1612).
+	const addNewItemLabel = usePostTypeLabel(
+		'add_new_item',
+		venuePostType,
+		__( 'Add New Venue', 'gatherpress' )
+	);
 
 	/**
 	 * Check if user can CREATE new venues.

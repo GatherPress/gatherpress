@@ -8,12 +8,13 @@ import {
 	// eslint-disable-next-line @wordpress/no-unsafe-wp-apis
 	__experimentalVStack as VStack,
 } from '@wordpress/components';
-import { __ } from '@wordpress/i18n';
+import { __, sprintf } from '@wordpress/i18n';
 import { useDispatch, useSelect } from '@wordpress/data';
 
 /**
  * Internal dependencies
  */
+import { usePostTypeLabel } from '../helpers/editor';
 import { getVenuePostType, getVenueTaxonomy } from '../helpers/venue';
 
 /**
@@ -38,10 +39,23 @@ const OnlineEvent = () => {
 	);
 
 	// Derive the venue taxonomy from the current editor post type.
-	const venueTaxonomy = useSelect( ( select ) => {
-		const editorPostType = select( 'core/editor' )?.getCurrentPostType();
-		return getVenueTaxonomy( getVenuePostType( editorPostType ) );
+	const { venueTaxonomy, editorPostType } = useSelect( ( select ) => {
+		const currentEditorPostType = select( 'core/editor' )?.getCurrentPostType();
+		return {
+			editorPostType: currentEditorPostType,
+			venueTaxonomy: getVenueTaxonomy( getVenuePostType( currentEditorPostType ) ),
+		};
 	}, [] );
+
+	// Read the singular label so the panel title reflects what the post type
+	// is actually called — a renamed event post type with
+	// `singular_name => 'Happening'` shows "This is an online Happening" without any
+	// extra wiring (#1612).
+	const singularLabel = usePostTypeLabel(
+		'singular_name',
+		editorPostType,
+		__( 'Event', 'gatherpress' )
+	);
 
 	// Get current venue taxonomy terms.
 	const venueTermIds = useSelect( ( select ) =>
@@ -141,16 +155,28 @@ const OnlineEvent = () => {
 	return (
 		<VStack spacing={ 3 }>
 			<ToggleControl
-				label={ __( 'This is an online event', 'gatherpress' ) }
+				label={ sprintf(
+					/* translators: %s: Singular post type label, e.g. "Event". */
+					__( 'This is an online %s', 'gatherpress' ),
+					singularLabel
+				) }
 				checked={ isOnlineEvent }
 				onChange={ handleToggleChange }
 			/>
 			{ isOnlineEvent && (
 				<TextControl
 					type="url"
-					label={ __( 'Online event link', 'gatherpress' ) }
+					label={ sprintf(
+						/* translators: %s: Singular post type label, e.g. "Event". */
+						__( 'Online %s link', 'gatherpress' ),
+						singularLabel
+					) }
 					value={ onlineEventLink }
-					placeholder={ __( 'Add link to online event', 'gatherpress' ) }
+					placeholder={ sprintf(
+						/* translators: %s: Singular post type label, e.g. "Event". */
+						__( 'Add link to online %s', 'gatherpress' ),
+						singularLabel
+					) }
 					onChange={ ( value ) => {
 						updateEventLink( value );
 					} }

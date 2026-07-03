@@ -315,10 +315,10 @@ class Venues extends Base {
 							),
 							'preview' => array(
 								'template' => 'url-rewrite-preview',
-								'suffix'   => _x(
-									'sample-venue',
-									'URL permalink structure example for venues',
-									'gatherpress'
+								'suffix'   => sprintf(
+									/* translators: %s: Singular post type label, e.g. "Venue". */
+									_x( 'sample-%s', 'URL permalink structure example for Venues.', 'gatherpress' ),
+									sanitize_title( Utility::post_type_label( 'singular_name', Venue::POST_TYPE ) )
 								),
 							),
 						),

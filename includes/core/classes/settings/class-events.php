@@ -93,7 +93,14 @@ class Events extends Base {
 							'name' => __( 'Date Format', 'gatherpress' ),
 						),
 						'field'  => array(
-							'label'   => __( 'Format of date for scheduled events.', 'gatherpress' ),
+							'label'   => sprintf(
+								/* translators: %s: Plural post type label, e.g. "Events". */
+								__(
+									'Format of date for scheduled %s.',
+									'gatherpress'
+								),
+								Utility::post_type_label( 'name', Event::POST_TYPE )
+							),
 							'type'    => 'text',
 							'size'    => 'regular',
 							'options' => array(
@@ -109,7 +116,14 @@ class Events extends Base {
 							'name' => __( 'Time Format', 'gatherpress' ),
 						),
 						'field'  => array(
-							'label'   => __( 'Format of time for scheduled events.', 'gatherpress' ),
+							'label'   => sprintf(
+								/* translators: %s: Plural post type label, e.g. "Events". */
+								__(
+									'Format of time for scheduled %s.',
+									'gatherpress'
+								),
+								Utility::post_type_label( 'name', Event::POST_TYPE )
+							),
 							'type'    => 'text',
 							'size'    => 'regular',
 							'options' => array(
@@ -125,9 +139,13 @@ class Events extends Base {
 							'name' => __( 'Show Timezone', 'gatherpress' ),
 						),
 						'field'  => array(
-							'label'   => __(
-								'Display the timezone for scheduled events.',
-								'gatherpress'
+							'label'   => sprintf(
+								/* translators: %s: Plural post type label, e.g. "Events". */
+								__(
+									'Display the timezone for scheduled %s.',
+									'gatherpress'
+								),
+								Utility::post_type_label( 'name', Event::POST_TYPE )
 							),
 							'type'    => 'checkbox',
 							'options' => array(
@@ -143,9 +161,13 @@ class Events extends Base {
 					__( '%s Display', 'gatherpress' ),
 					Utility::post_type_label( 'singular_name', Event::POST_TYPE )
 				),
-				'description' => __(
-					'Configure how events are displayed on your site.',
-					'gatherpress'
+				'description' => sprintf(
+					/* translators: %s: Plural post type label, e.g. "Events". */
+					__(
+						'Configure how %s are displayed on your site.',
+						'gatherpress'
+					),
+					Utility::post_type_label( 'name', Event::POST_TYPE )
 				),
 				'options'     => array(
 					'post_or_event_date' => array(
@@ -153,9 +175,15 @@ class Events extends Base {
 							'name' => __( 'Publish Date', 'gatherpress' ),
 						),
 						'field'  => array(
-							'label'   => __(
-								'Display event date instead of publish date for events.',
-								'gatherpress'
+							'label'   => sprintf(
+								// phpcs:ignore Generic.Files.LineLength.TooLong
+								/* translators: %1$s: Singular post type label, e.g. "Event", %2$s: Plural post type label, e.g. "Events". */
+								__(
+									'Display %1$s date instead of publish date for %2$s.',
+									'gatherpress'
+								),
+								Utility::post_type_label( 'singular_name', Event::POST_TYPE ),
+								Utility::post_type_label( 'name', Event::POST_TYPE )
 							),
 							'type'    => 'checkbox',
 							'options' => array(
@@ -167,10 +195,14 @@ class Events extends Base {
 			),
 			'archive_pages' => array(
 				'name'        => __( 'Archive Pages', 'gatherpress' ),
-				'description' => __(
-					// phpcs:ignore Generic.Files.LineLength.TooLong -- Single translator-facing sentence; keep on one line for the .pot extractor.
-					'Choose what the event archive URL shows by default and optionally point custom pages at the upcoming or past archives.',
-					'gatherpress'
+				'description' => sprintf(
+					/* translators: %s: Singular post type label, e.g. "Event". */
+					__(
+						// phpcs:ignore Generic.Files.LineLength.TooLong -- Single translator-facing sentence; keep on one line for the .pot extractor.
+						'Choose what the %s archive URL shows by default and optionally point custom pages at the upcoming or past archives.',
+						'gatherpress'
+					),
+					Utility::post_type_label( 'singular_name', Event::POST_TYPE )
 				),
 				'options'     => array(
 					'event_archive'   => array(
@@ -181,9 +213,10 @@ class Events extends Base {
 								Utility::post_type_label( 'singular_name', Event::POST_TYPE )
 							),
 						),
-						'description' => __(
-							'What the events archive URL displays when no custom page is assigned.',
-							'gatherpress'
+						'description' => sprintf(
+							/* translators: %s: Plural post type label, e.g. "Events". */
+							__( 'What the %s archive URL displays when no custom page is assigned.', 'gatherpress' ),
+							Utility::post_type_label( 'name', Event::POST_TYPE )
 						),
 						'field'       => array(
 							'label'   => __( 'Default archive view:', 'gatherpress' ),
@@ -191,8 +224,16 @@ class Events extends Base {
 							'options' => array(
 								'default' => 'upcoming',
 								'items'   => array(
-									'upcoming' => __( 'Upcoming Events', 'gatherpress' ),
-									'past'     => __( 'Past Events', 'gatherpress' ),
+									'upcoming' => sprintf(
+										/* translators: %s: Plural post type label, e.g. "Events". */
+										__( 'Upcoming %s', 'gatherpress' ),
+										Utility::post_type_label( 'name', Event::POST_TYPE )
+									),
+									'past'     => sprintf(
+										/* translators: %s: Plural post type label, e.g. "Events". */
+										__( 'Past %s', 'gatherpress' ),
+										Utility::post_type_label( 'name', Event::POST_TYPE )
+									),
 									'none'     => __( 'None (return 404)', 'gatherpress' ),
 								),
 							),
@@ -200,13 +241,21 @@ class Events extends Base {
 					),
 					'upcoming_events' => array(
 						'labels' => array(
-							'name' => __( 'Upcoming Events', 'gatherpress' ),
+							'name' => sprintf(
+								/* translators: %s: Plural post type label, e.g. "Events". */
+								__( 'Upcoming %s', 'gatherpress' ),
+								Utility::post_type_label( 'name', Event::POST_TYPE )
+							),
 						),
 						'field'  => array(
 							'type'    => 'autocomplete',
 							'options' => array(
 								'type'    => 'page',
-								'label'   => __( 'Select Upcoming Events Archive Page', 'gatherpress' ),
+								'label'   => sprintf(
+									/* translators: %s: Plural post type label, e.g. "Events". */
+									__( 'Select Upcoming %s Archive Page.', 'gatherpress' ),
+									Utility::post_type_label( 'name', Event::POST_TYPE )
+								),
 								'limit'   => 1,
 								'default' => '[]',
 							),
@@ -214,13 +263,21 @@ class Events extends Base {
 					),
 					'past_events'     => array(
 						'labels' => array(
-							'name' => __( 'Past Events', 'gatherpress' ),
+							'name' => sprintf(
+								/* translators: %s: Plural post type label, e.g. "Events". */
+								__( 'Past %s', 'gatherpress' ),
+								Utility::post_type_label( 'name', Event::POST_TYPE )
+							),
 						),
 						'field'  => array(
 							'type'    => 'autocomplete',
 							'options' => array(
 								'type'    => 'page',
-								'label'   => __( 'Select Past Events Archive Page', 'gatherpress' ),
+								'label'   => sprintf(
+									/* translators: %s: Plural post type label, e.g. "Events". */
+									__( 'Select Past %s Archive Page.', 'gatherpress' ),
+									Utility::post_type_label( 'name', Event::POST_TYPE )
+								),
 								'limit'   => 1,
 								'default' => '[]',
 							),
@@ -249,31 +306,35 @@ class Events extends Base {
 							),
 							'preview' => array(
 								'template' => 'url-rewrite-preview',
-								'suffix'   => _x(
-									'sample-event',
-									'URL permalink structure example for events',
-									'gatherpress'
+								'suffix'   => sprintf(
+									/* translators: %s: Singular post type label, e.g. "Event". */
+									_x( 'sample-%s', 'URL permalink structure example for events', 'gatherpress' ),
+									sanitize_title( Utility::post_type_label( 'singular_name', Event::POST_TYPE ) )
 								),
 							),
 						),
 					),
 					'topics_url' => array(
 						'labels' => array(
-							'name' => __( 'Topics', 'gatherpress' ),
+							'name' => Utility::taxonomy_label( 'name', Topic::TAXONOMY ),
 						),
 						'field'  => array(
 							'type'    => 'text',
 							'rewrite' => true,
 							'options' => array(
-								'label'   => __( 'Permalink base of Topics.', 'gatherpress' ),
+								'label'   => sprintf(
+									/* translators: %s: Plural taxonomy label, e.g. "Topics". */
+									__( 'Permalink base of %s.', 'gatherpress' ),
+									Utility::taxonomy_label( 'name', Topic::TAXONOMY )
+								),
 								'default' => Topic::get_localized_taxonomy_slug(),
 							),
 							'preview' => array(
 								'template' => 'url-rewrite-preview',
-								'suffix'   => _x(
-									'sample-topic-term',
-									'URL permalink structure example for topics',
-									'gatherpress'
+								'suffix'   => sprintf(
+									/* translators: %s: Singular taxonomy label, e.g. "Topic". */
+									_x( 'sample-%s-term', 'URL permalink structure example for topics', 'gatherpress' ),
+									sanitize_title( Utility::taxonomy_label( 'singular_name', Topic::TAXONOMY ) )
 								),
 							),
 						),

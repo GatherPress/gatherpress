@@ -97,11 +97,16 @@
 - [`gatherpress_is_alpha_active`](gatherpress_is_alpha_active.md) Filters whether GatherPress Alpha is considered active.
 - [`gatherpress_venue_post_type`](gatherpress_venue_post_type.md) Filters the post type used as the venue.
 - [`gatherpress_venue_starter_patterns`](gatherpress_venue_starter_patterns.md) Filters the array of venue starter pattern definitions.
+- [`post_type_labels_%s`](post_type_labels_%s.md)
 
 ## class-shadow-source.php
 
 - [`gatherpress_shadow_taxonomy_args`](gatherpress_shadow_taxonomy_args.md) Filters the taxonomy registration args for a shadow-source post type.
 - [`gatherpress_shadow_taxonomy_object_types`](gatherpress_shadow_taxonomy_object_types.md) Filters which event post types the shadow taxonomy should be
+
+## class-topic.php
+
+- [`taxonomy_labels_%s`](taxonomy_labels_%s.md)
 
 ## class-user.php
 

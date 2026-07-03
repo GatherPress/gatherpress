@@ -16,13 +16,13 @@ import {
 } from '@wordpress/components';
 import { useSelect, useDispatch } from '@wordpress/data';
 import { useState, useEffect } from '@wordpress/element';
-import { __ } from '@wordpress/i18n';
+import { __, sprintf } from '@wordpress/i18n';
 
 /**
  * Internal dependencies
  */
 import TEMPLATE from './template';
-import { hasValidBlockContext, isInFSETemplate } from '../../helpers/editor';
+import { hasValidBlockContext, isInFSETemplate, usePostTypeLabel } from '../../helpers/editor';
 import { isPostTypeSupporting, usePostTypeSupports, DISABLED_FIELD_OPACITY } from '../../helpers/event';
 import { getVenuePostType, getVenueTaxonomy, useVenueTaxonomyIds } from '../../helpers/venue';
 
@@ -67,6 +67,16 @@ const Edit = ( { attributes, context } ) => {
 			};
 		},
 		[]
+	);
+
+	// Read the singular label so the panel title reflects what the post type
+	// is actually called — a renamed event post type with
+	// `singular_name => 'Happening'` shows "This is an online Happening" without any
+	// extra wiring (#1612).
+	const singularLabel = usePostTypeLabel(
+		'singular_name',
+		currentPostType,
+		__( 'Event', 'gatherpress' )
 	);
 
 	const isEditingEvent = isPostTypeSupporting( 'gatherpress-online-event', currentPostType );
@@ -219,14 +229,19 @@ const Edit = ( { attributes, context } ) => {
 			{ showControls && (
 				<InspectorControls>
 					<PanelBody
-						title={ __( 'Online Event Settings', 'gatherpress' ) }
+						title={ sprintf(
+							/* translators: %s: Singular post type label, e.g. "Event". */
+							__( 'Online %s Settings', 'gatherpress' ),
+							singularLabel
+						) }
 						initialOpen={ true }
 					>
 						<VStack spacing={ 3 }>
 							<ToggleControl
-								label={ __(
-									'This is an online event',
-									'gatherpress'
+								label={ sprintf(
+									/* translators: %s: Singular post type label, e.g. "Event". */
+									__( 'This is an online %s', 'gatherpress' ),
+									singularLabel
 								) }
 								checked={ isOnlineEvent }
 								onChange={ toggleOnlineEvent }
@@ -234,14 +249,16 @@ const Edit = ( { attributes, context } ) => {
 							{ isOnlineEvent && (
 								<TextControl
 									type="url"
-									label={ __(
-										'Online event link',
-										'gatherpress'
+									label={ sprintf(
+										/* translators: %s: Singular post type label, e.g. "Event". */
+										__( 'Online %s link', 'gatherpress' ),
+										singularLabel
 									) }
 									value={ onlineEventLink }
-									placeholder={ __(
-										'Add link to online event',
-										'gatherpress'
+									placeholder={ sprintf(
+										/* translators: %s: Singular post type label, e.g. "Event". */
+										__( 'Add link to online %s', 'gatherpress' ),
+										singularLabel
 									) }
 									onChange={ updateOnlineEventLink }
 								/>
