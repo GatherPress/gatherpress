@@ -238,6 +238,16 @@ jobs:
       # Using GitHub CLI in Workflows
       # https://docs.github.com/en/actions/using-workflows/using-github-cli-in-workflows
       # https://cli.github.com/manual/gh_pr_create
-      run: gh pr create -B main -H fix/wp-org-screenshots-${{ matrix.locale }}-${{ github.sha }} --title 'Update ${{ matrix.locale }} screenshots for wordpress.org' --body 'Created with ❤️ by WordPress Playground, Playwright & GitHub action <br /><br />${{ steps.compress-images.outputs.markdown }}'
+      #
+      # The compression markdown is passed through an env var, NOT interpolated
+      # into the run script: it always contains a single quote ("Calibre's"),
+      # which terminated the quoted --body argument and crashed the shell with
+      # a syntax error (and expression interpolation into run scripts is a
+      # script-injection surface besides).
+      run: |
+        gh pr create -B main -H fix/wp-org-screenshots-${{ matrix.locale }}-${{ github.sha }} \
+          --title 'Update ${{ matrix.locale }} screenshots for wordpress.org' \
+          --body "Created with ❤️ by WordPress Playground, Playwright & GitHub action <br /><br />${COMPRESS_MARKDOWN}"
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        COMPRESS_MARKDOWN: ${{ steps.compress-images.outputs.markdown }}
