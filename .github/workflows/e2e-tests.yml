@@ -91,6 +91,16 @@ jobs:
           fi
           "$BIN" --version
 
+      # Playwright records a video on the first retry of a failing test, and
+      # video capture needs Playwright's bundled ffmpeg — which the skipped
+      # browser install would normally provide. Without it, EVERY retry dies
+      # instantly with "Executable doesn't exist at .../ffmpeg-linux", so a
+      # flaky test can never recover. This downloads only ffmpeg (a few MB),
+      # not the browsers, so it doesn't reopen the 2026-05-30 hang above.
+      - name: Install Playwright ffmpeg for retry videos
+        timeout-minutes: 5
+        run: npx playwright install ffmpeg
+
       - name: Build plugin assets
         run: npm run build
 
