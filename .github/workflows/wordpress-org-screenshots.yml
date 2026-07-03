@@ -186,15 +186,6 @@ jobs:
         # DEBUG=pw:api,pw:webserver \
         npm run screenshots:wporg -- --update-snapshots
 
-    - name: Checkout new branch
-      # Using "continue-on-error:true" results in 'conclusion' being a success in any case, while the 'outcome' can differ.
-      # And, as you already guessed, if: failure() looks at 'conclusion'.
-      if: ${{ github.event.inputs.updateAllSnapshots || steps.screenshot-tests.outcome == 'failure' }}
-      run: |
-        # Remove untracked, temporary file
-        rm -f ./localized_blueprint.json
-        git checkout -b fix/wp-org-screenshots-${{ matrix.locale }}-${{ github.sha }}
-
     - name: Compress Images
       if: ${{ github.event.inputs.updateAllSnapshots || steps.screenshot-tests.outcome == 'failure' }}
       id: compress-images
@@ -206,6 +197,35 @@ jobs:
         # ignorePaths accepts a comma-separated string with globbing support # https://www.npmjs.com/package/glob
         ignorePaths: 'artifacts,build,node_modules/**'
 
+    - name: Checkout new branch
+      # Using "continue-on-error:true" results in 'conclusion' being a success in any case, while the 'outcome' can differ.
+      # And, as you already guessed, if: failure() looks at 'conclusion'.
+      #
+      # The PR branch is cut from origin/main and carries over ONLY the
+      # screenshot directory. The run's own checkout is develop-based, and a
+      # branch created from it drags every develop-not-in-main commit into the
+      # main-targeted PR — with develop ~1000 commits ahead, that made every
+      # screenshot PR conflict with main (and, via `git add -A` picking up the
+      # repo-wide image recompression, with each other).
+      if: ${{ github.event.inputs.updateAllSnapshots || steps.screenshot-tests.outcome == 'failure' }}
+      run: |
+        # Remove untracked, temporary file
+        rm -f ./localized_blueprint.json
+
+        # Preserve the (compressed) screenshots across the branch switch.
+        cp -r .wordpress-org "${RUNNER_TEMP}/wordpress-org-screenshots"
+
+        # Drop every working-tree modification (screenshots are safe in the
+        # copy above; the rest is incidental recompression) — git refuses to
+        # switch branches over dirty files that differ between the branches.
+        git reset --hard HEAD
+
+        git fetch --no-tags --depth=1 origin main
+        git checkout -B fix/wp-org-screenshots-${{ matrix.locale }}-${{ github.sha }} origin/main
+
+        rm -rf .wordpress-org
+        cp -r "${RUNNER_TEMP}/wordpress-org-screenshots" .wordpress-org
+
     - name: Commit updated screenshots
       # Using "continue-on-error:true" results in 'conclusion' being a success in any case, while the 'outcome' can differ.
       # And, as you already guessed, if: failure() looks at 'conclusion'.
@@ -214,7 +234,10 @@ jobs:
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
 
-        git add -A
+        # Scope the commit to the screenshots: everything else in the working
+        # tree is either develop-only state left over from the run checkout or
+        # incidental recompression of unrelated images.
+        git add .wordpress-org
         git commit -m "Screenshots for ${{ matrix.locale }} updated!"
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
