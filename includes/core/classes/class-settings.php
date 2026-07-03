@@ -119,6 +119,7 @@ class Settings {
 	protected function instantiate_classes(): void {
 		Settings\Credits::get_instance();
 		Settings\Events::get_instance();
+		Settings\Experiments::get_instance();
 		Settings\Network::get_instance();
 		Settings\Roles::get_instance();
 		Settings\Rsvp_Settings::get_instance();
