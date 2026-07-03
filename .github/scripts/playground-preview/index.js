@@ -196,7 +196,7 @@ function createBlueprint(context, number, zipArtifactUrl, phpVersion, override) 
 			*/
 			{
 				step: 'writeFile',
-				path: '/wordpress/pr/pr.zip',
+				path: '/wordpress/pr/gatherpress-pr.zip',
 				data: {
 					resource: 'url',
 					url: zipArtifactUrl,
@@ -212,7 +212,7 @@ function createBlueprint(context, number, zipArtifactUrl, phpVersion, override) 
 			 * directory, so the downloaded artifact is a single zip that
 			 * unpacks straight to `gatherpress/`:
 			 *
-			 * pr.zip
+			 * gatherpress-pr.zip
 			 *    gatherpress/
 			 *       gatherpress.php
 			 *       ... other files ...
@@ -223,7 +223,7 @@ function createBlueprint(context, number, zipArtifactUrl, phpVersion, override) 
 				step: 'installPlugin',
 				pluginData: {
 					resource: 'vfs',
-					path: '/wordpress/pr/pr.zip',
+					path: '/wordpress/pr/gatherpress-pr.zip',
 				},
 			},
 			{
