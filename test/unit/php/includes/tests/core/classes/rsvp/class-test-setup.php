@@ -772,6 +772,40 @@ class Test_Setup extends Base {
 	}
 
 	/**
+	 * The RSVPs submenu is not added when no post type supports
+	 * `gatherpress-rsvp` — e.g. a companion plugin removed the support
+	 * from the event post type (#1849).
+	 *
+	 * @covers ::add_rsvp_submenu_page
+	 *
+	 * @return void
+	 */
+	public function test_add_rsvp_submenu_page_bails_without_supporting_post_type(): void {
+		$instance = Setup::get_instance();
+
+		Utility::set_and_get_hidden_property( $instance, 'list_table', null );
+		remove_post_type_support( Event::POST_TYPE, 'gatherpress-rsvp' );
+
+		$instance->add_rsvp_submenu_page();
+
+		$this->assertNull(
+			Utility::get_hidden_property( $instance, 'list_table' ),
+			'List table should not be instantiated when no post type supports gatherpress-rsvp.'
+		);
+
+		// Restore the support for subsequent tests.
+		add_post_type_support( Event::POST_TYPE, 'gatherpress-rsvp' );
+
+		$instance->add_rsvp_submenu_page();
+
+		$this->assertInstanceOf(
+			List_Table::class,
+			Utility::get_hidden_property( $instance, 'list_table' ),
+			'List table should be instantiated once a post type supports gatherpress-rsvp again.'
+		);
+	}
+
+	/**
 	 * Test setup_rsvp_list_table_screen_options method.
 	 *
 	 * @covers ::setup_rsvp_list_table_screen_options

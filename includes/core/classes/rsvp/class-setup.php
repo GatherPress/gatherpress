@@ -315,8 +315,13 @@ class Setup {
 	 * @return void
 	 */
 	public function add_rsvp_submenu_page(): void {
-		// Do not show the RSVPs submenu when RSVP is globally disabled.
-		if ( 'disabled' === Settings::get_instance()->get( 'rsvp_mode' ) ) {
+		// Do not show the RSVPs submenu when RSVP is globally disabled or
+		// when no post type declares `gatherpress-rsvp` support — e.g. a
+		// companion plugin removed it from the event post type (#1849).
+		if (
+			'disabled' === Settings::get_instance()->get( 'rsvp_mode' ) ||
+			empty( get_post_types_by_support( 'gatherpress-rsvp' ) )
+		) {
 			return;
 		}
 
