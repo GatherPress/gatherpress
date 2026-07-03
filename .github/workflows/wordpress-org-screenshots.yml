@@ -160,6 +160,11 @@ jobs:
       #
       # Because it seems to be a problem to "wait on webServer.command" https://github.com/microsoft/playwright/issues/11811
       # & "it seems that globalSetup runs before webServer is started." https://github.com/microsoft/playwright/issues/11811#issuecomment-1040732201
+      #
+      # No retry here on purpose: this step failing is the SIGNAL that
+      # screenshots changed, which routes into the retry-hardened update
+      # step below. A transient Playground failure takes the same route and
+      # self-corrects there (identical regen produces no diff, so no PR).
       run: |
         npm run playground -- --blueprint=./localized_blueprint.json  & \
         sleep 60 && \
@@ -179,12 +184,26 @@ jobs:
         UPDATE_ALL_SNAPSHOTS: ${{ github.event.inputs.updateAllSnapshots }}
       # Important Documentation about this "run"
       # can be found on the "screenshot-tests" step!
+      #
+      # Playground's blueprint occasionally fails to download the WordPress
+      # core translations from translate.wordpress.org (transient; observed
+      # hitting random locales). Retry the whole playground + screenshots
+      # cycle a few times, killing any leftover playground on port 9400
+      # between attempts.
       run: |
-        npm run playground -- --blueprint=./localized_blueprint.json & \
-        sleep 60 && \
-        echo 'Playground is ready now, lets take some pictures.' && \
-        # DEBUG=pw:api,pw:webserver \
-        npm run screenshots:wporg -- --update-snapshots
+        for attempt in 1 2 3; do
+          npm run playground -- --blueprint=./localized_blueprint.json &
+          sleep 60
+          echo 'Playground is ready now, lets take some pictures.'
+          # For verbose output, prefix the next command with: DEBUG=pw:api,pw:webserver
+          if npm run screenshots:wporg -- --update-snapshots; then
+            exit 0
+          fi
+          echo "Attempt ${attempt} failed; restarting Playground."
+          fuser -k 9400/tcp || true
+          sleep 10
+        done
+        exit 1
 
     - name: Compress Images
       if: ${{ github.event.inputs.updateAllSnapshots || steps.screenshot-tests.outcome == 'failure' }}
