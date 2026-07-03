@@ -186,15 +186,6 @@ jobs:
         # DEBUG=pw:api,pw:webserver \
         npm run screenshots:wporg -- --update-snapshots
 
-    - name: Checkout new branch
-      # Using "continue-on-error:true" results in 'conclusion' being a success in any case, while the 'outcome' can differ.
-      # And, as you already guessed, if: failure() looks at 'conclusion'.
-      if: ${{ github.event.inputs.updateAllSnapshots || steps.screenshot-tests.outcome == 'failure' }}
-      run: |
-        # Remove untracked, temporary file
-        rm -f ./localized_blueprint.json
-        git checkout -b fix/wp-org-screenshots-${{ matrix.locale }}-${{ github.sha }}
-
     - name: Compress Images
       if: ${{ github.event.inputs.updateAllSnapshots || steps.screenshot-tests.outcome == 'failure' }}
       id: compress-images
@@ -206,6 +197,35 @@ jobs:
         # ignorePaths accepts a comma-separated string with globbing support # https://www.npmjs.com/package/glob
         ignorePaths: 'artifacts,build,node_modules/**'
 
+    - name: Checkout new branch
+      # Using "continue-on-error:true" results in 'conclusion' being a success in any case, while the 'outcome' can differ.
+      # And, as you already guessed, if: failure() looks at 'conclusion'.
+      #
+      # The PR branch is cut from origin/develop (screenshots flow into
+      # develop like all other work; main only moves on release) and carries
+      # over ONLY the screenshot directory. Branching straight off the run's
+      # checkout is wrong twice: a run dispatched from any other ref would
+      # leak that ref's commits into the PR, and the earlier main-targeted
+      # variant dragged the whole develop delta into main and conflicted.
+      if: ${{ github.event.inputs.updateAllSnapshots || steps.screenshot-tests.outcome == 'failure' }}
+      run: |
+        # Remove untracked, temporary file
+        rm -f ./localized_blueprint.json
+
+        # Preserve the (compressed) screenshots across the branch switch.
+        cp -r .wordpress-org "${RUNNER_TEMP}/wordpress-org-screenshots"
+
+        # Drop every working-tree modification (screenshots are safe in the
+        # copy above; the rest is incidental recompression) — git refuses to
+        # switch branches over dirty files that differ between the branches.
+        git reset --hard HEAD
+
+        git fetch --no-tags --depth=1 origin develop
+        git checkout -B fix/wp-org-screenshots-${{ matrix.locale }}-${{ github.sha }} origin/develop
+
+        rm -rf .wordpress-org
+        cp -r "${RUNNER_TEMP}/wordpress-org-screenshots" .wordpress-org
+
     - name: Commit updated screenshots
       # Using "continue-on-error:true" results in 'conclusion' being a success in any case, while the 'outcome' can differ.
       # And, as you already guessed, if: failure() looks at 'conclusion'.
@@ -214,7 +234,10 @@ jobs:
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
 
-        git add -A
+        # Scope the commit to the screenshots: everything else in the working
+        # tree is either leftover state from the run checkout or incidental
+        # recompression of unrelated images.
+        git add .wordpress-org
         git commit -m "Screenshots for ${{ matrix.locale }} updated!"
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -244,8 +267,12 @@ jobs:
       # which terminated the quoted --body argument and crashed the shell with
       # a syntax error (and expression interpolation into run scripts is a
       # script-injection surface besides).
+      # Targets develop (main only moves on release). The Skip Changelog
+      # label is required because the changelog check enforces an entry on
+      # every develop-targeted PR, and screenshot regen doesn't warrant one.
       run: |
-        gh pr create -B main -H fix/wp-org-screenshots-${{ matrix.locale }}-${{ github.sha }} \
+        gh pr create -B develop -H fix/wp-org-screenshots-${{ matrix.locale }}-${{ github.sha }} \
+          --label 'Skip Changelog' \
           --title 'Update ${{ matrix.locale }} screenshots for wordpress.org' \
           --body "Created with ❤️ by WordPress Playground, Playwright & GitHub action <br /><br />${COMPRESS_MARKDOWN}"
       env:
