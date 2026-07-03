@@ -129,14 +129,24 @@ const { state, actions } = store( 'gatherpress', {
 								'[data-rsvp-status="attending"] .gatherpress-rsvp--trigger-update',
 							);
 
-						actions.openModal( null, attendingStatusButton );
+						if ( attendingStatusButton ) {
+							actions.openModal( null, attendingStatusButton );
+						}
 
 						/**
-						 * When keeping a modal open after an action, use findActiveSibling=false
-						 * to prevent focus from moving to a different modal manager.
+						 * When switching to the attending modal, close with
+						 * findActiveSibling=false so focus stays on the newly
+						 * opened modal manager. When the attending state's
+						 * markup is missing (malformed or partial block
+						 * content), there is no modal to switch to, so fully
+						 * close the current one instead (#1719).
 						 */
 						setTimeout( () => {
-							actions.closeModal( null, element.ref, false );
+							actions.closeModal(
+								null,
+								element.ref,
+								! attendingStatusButton,
+							);
 						}, 10 );
 					} else {
 						/**

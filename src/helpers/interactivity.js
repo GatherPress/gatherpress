@@ -267,7 +267,18 @@ export async function sendRsvpApiRequest(
 			}
 
 			if ( 'function' === typeof onSuccess ) {
-				onSuccess( res );
+				try {
+					onSuccess( res );
+				} catch ( error ) {
+					// The RSVP request itself succeeded — a failure while
+					// updating the UI afterward must not be reported to the
+					// user as a failed request (#1719).
+					// eslint-disable-next-line no-console
+					console.warn(
+						'RSVP post-success UI update failed:',
+						error,
+					);
+				}
 			}
 		} else {
 			notifyRsvpFailure();

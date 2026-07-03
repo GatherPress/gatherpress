@@ -118,6 +118,58 @@ describe( 'sendRsvpApiRequest', () => {
 		expect( window.alert ).not.toHaveBeenCalled();
 	} );
 
+	it( 'invokes onSuccess with the response payload on success', async () => {
+		rsvpPayload = {
+			success: true,
+			status: 'attending',
+			guests: 0,
+			anonymous: false,
+		};
+
+		const onSuccess = jest.fn();
+
+		await sendRsvpApiRequest(
+			123,
+			{ status: 'attending', guests: 0, anonymous: false },
+			state,
+			onSuccess
+		);
+
+		expect( onSuccess ).toHaveBeenCalledWith( rsvpPayload );
+		expect( window.alert ).not.toHaveBeenCalled();
+	} );
+
+	it( 'does not report a successful request as failed when onSuccess throws (#1719)', async () => {
+		rsvpPayload = {
+			success: true,
+			status: 'attending',
+			guests: 0,
+			anonymous: false,
+		};
+
+		const onSuccess = jest.fn( () => {
+			throw new TypeError( 'UI update failed' );
+		} );
+
+		await sendRsvpApiRequest(
+			123,
+			{ status: 'attending', guests: 0, anonymous: false },
+			state,
+			onSuccess
+		);
+
+		// The request succeeded, so the user-facing failure alert must not
+		// fire; the UI error is only logged for debugging.
+		expect( window.alert ).not.toHaveBeenCalled();
+		// eslint-disable-next-line no-console
+		expect( console.warn ).toHaveBeenCalledWith(
+			'RSVP post-success UI update failed:',
+			expect.any( TypeError )
+		);
+		// State was still updated before the callback threw.
+		expect( state.posts[ 123 ].currentUser.status ).toBe( 'attending' );
+	} );
+
 	it( 'falls back to 0 only for the missing sub-keys of a partial responses object', async () => {
 		rsvpPayload = {
 			success: true,
