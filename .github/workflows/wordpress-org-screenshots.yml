@@ -229,28 +229,28 @@ jobs:
     - name: Commit updated screenshots
       # Using "continue-on-error:true" results in 'conclusion' being a success in any case, while the 'outcome' can differ.
       # And, as you already guessed, if: failure() looks at 'conclusion'.
+      #
+      # The branch is pushed at origin/develop's own sha (no new commit, so
+      # nothing unsigned), then the screenshot changes are committed through
+      # GitHub's GraphQL createCommitOnBranch mutation. Commits created that
+      # way are signed by GitHub and show as "Verified" — the develop branch
+      # protection requires verified signatures, which a plain `git commit`
+      # in a workflow cannot produce without managing GPG keys in secrets.
+      # The commit is scoped to .wordpress-org: everything else in the
+      # working tree is either leftover state from the run checkout or
+      # incidental recompression of unrelated images.
       if: ${{ github.event.inputs.updateAllSnapshots || steps.screenshot-tests.outcome == 'failure' }}
       run: |
-        git config --local user.email "action@github.com"
-        git config --local user.name "GitHub Action"
+        BRANCH=fix/wp-org-screenshots-${{ matrix.locale }}-${{ github.sha }}
+        BASE_OID="$(git rev-parse origin/develop)"
 
-        # Scope the commit to the screenshots: everything else in the working
-        # tree is either leftover state from the run checkout or incidental
-        # recompression of unrelated images.
-        git add .wordpress-org
-        git commit -m "Screenshots for ${{ matrix.locale }} updated!"
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        git push --force origin "${BASE_OID}:refs/heads/${BRANCH}"
 
-    - name: Push new branch to origin
-      # Using "continue-on-error:true" results in 'conclusion' being a success in any case, while the 'outcome' can differ.
-      # And, as you already guessed, if: failure() looks at 'conclusion'.
-      if: ${{ github.event.inputs.updateAllSnapshots || steps.screenshot-tests.outcome == 'failure' }}
-      run: |
-        git config --local user.email "action@github.com"
-        git config --local user.name "GitHub Action"
-
-        git push origin fix/wp-org-screenshots-${{ matrix.locale }}-${{ github.sha }}
+        bash .github/scripts/wordpress-org-screenshots/create-verified-commits.sh \
+          "${{ github.repository }}" \
+          "${BRANCH}" \
+          "${BASE_OID}" \
+          "Screenshots for ${{ matrix.locale }} updated!"
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

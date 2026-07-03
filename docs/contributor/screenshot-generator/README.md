@@ -23,6 +23,15 @@ While such a workflow could run on every major- and minor-, but not on bug-fix-r
 3. ... **pull_requests are created**, one for each language, that could be reviewed by native speakers.
    ![The created PRs per language on github.com](./screenshot-generator__PRs-per-language.png)
 
+### How the workflow publishes changes
+
+Some details worth knowing when reviewing the generated pull requests:
+
+- The locale jobs run **sequentially** (`max-parallel: 1`) so later jobs reuse the cached Playwright browser, and every job is bounded by timeouts — a hung step fails within minutes instead of stalling the whole matrix.
+- Each per-locale branch is cut **from `origin/develop`** and contains **only the `.wordpress-org/` screenshot changes**; incidental changes elsewhere in the run's checkout (for example the image recompression pass) are never committed.
+- The pull requests **target `develop`** — like all other work, screenshots reach `main` with the next release. They carry the **Skip Changelog** label, since screenshot regeneration doesn't warrant a changelog entry.
+- Commits are created through GitHub's GraphQL `createCommitOnBranch` API (see [`create-verified-commits.sh`](../../../.github/scripts/wordpress-org-screenshots/create-verified-commits.sh)), so they are **signed by GitHub and show as "Verified"** — required by the branch protection on `develop`. Large image sets are split across several commits per pull request to stay within API request-size limits.
+
 ## Manually generating Screenshots
 
 The workflow scripts can also be used to **manually create screenshots**. In general, only a Playground instance is needed. This could have different languages enabled or additional plugins added, that may extend GatherPress or demonstrate a new feature.
