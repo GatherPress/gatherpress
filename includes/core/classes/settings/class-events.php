@@ -323,7 +323,7 @@ class Events extends Base {
 							'rewrite' => true,
 							'options' => array(
 								'label'   => sprintf(
-									/* translators: %s: Plural post type label, e.g. "Topics". */
+									/* translators: %s: Plural taxonomy label, e.g. "Topics". */
 									__( 'Permalink base of %s.', 'gatherpress' ),
 									Utility::taxonomy_label( 'name', Topic::TAXONOMY )
 								),
@@ -332,7 +332,7 @@ class Events extends Base {
 							'preview' => array(
 								'template' => 'url-rewrite-preview',
 								'suffix'   => sprintf(
-									/* translators: %s: Singular post type label, e.g. "Event". */
+									/* translators: %s: Singular taxonomy label, e.g. "Topic". */
 									_x( 'sample-%s-term', 'URL permalink structure example for topics', 'gatherpress' ),
 									sanitize_title( Utility::taxonomy_label( 'singular_name', Topic::TAXONOMY ) )
 								),

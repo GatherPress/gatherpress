@@ -26,6 +26,7 @@ use GatherPress\Core\Starter_Pattern_Loader;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Utility;
 use GatherPress\Core\Venue\Map\Setup as Map_Setup;
+use stdClass;
 use WP_Block_Patterns_Registry;
 use WP_Post;
 
@@ -712,7 +713,7 @@ class Setup {
 		// Using Utility::post_type_label() will not yet work.
 
 		// Prepare a default at first.
-		$default_labels                = new \stdClass();
+		$default_labels                = new stdClass();
 		$default_labels->singular_name = _x(
 			'Venue',
 			'Admin menu and post type singular name',

@@ -42,7 +42,7 @@ export default function VenueNavigator( props = null ) {
 	const addNewItemLabel = usePostTypeLabel(
 		'add_new_item',
 		venuePostType,
-		__( 'Venue', 'gatherpress' )
+		__( 'Add New Venue', 'gatherpress' )
 	);
 
 	/**

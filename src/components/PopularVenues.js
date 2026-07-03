@@ -36,7 +36,7 @@ export default function PopularVenues( { onSelect, currentId, venuePostType } ) 
 	const pluralLabel = usePostTypeLabel(
 		'name',
 		venuePostType,
-		__( 'Venue', 'gatherpress' )
+		__( 'Venues', 'gatherpress' )
 	);
 
 	// Don't render if there are no popular venues.

@@ -14,6 +14,7 @@ namespace GatherPress\Core;
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Traits\Singleton;
+use stdClass;
 
 /**
  * Class Topic.
@@ -151,7 +152,7 @@ class Topic {
 		// Using Utility::taxonomy_label() will not yet work.
 
 		// Prepare a default at first.
-		$default_labels                = new \stdClass();
+		$default_labels                = new stdClass();
 		$default_labels->singular_name = _x(
 			'Topic',
 			'Admin menu and taxonomy singular name',
