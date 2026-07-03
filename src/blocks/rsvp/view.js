@@ -129,15 +129,26 @@ const { state, actions } = store( 'gatherpress', {
 								'[data-rsvp-status="attending"] .gatherpress-rsvp--trigger-update',
 							);
 
-						actions.openModal( null, attendingStatusButton );
+						if ( attendingStatusButton ) {
+							actions.openModal( null, attendingStatusButton );
 
-						/**
-						 * When keeping a modal open after an action, use findActiveSibling=false
-						 * to prevent focus from moving to a different modal manager.
-						 */
-						setTimeout( () => {
-							actions.closeModal( null, element.ref, false );
-						}, 10 );
+							/**
+							 * When keeping a modal open after an action, use findActiveSibling=false
+							 * to prevent focus from moving to a different modal manager.
+							 */
+							setTimeout( () => {
+								actions.closeModal( null, element.ref, false );
+							}, 10 );
+						} else {
+							/**
+							 * The attending state's markup is missing (malformed or
+							 * partial block content), so there is no modal to switch
+							 * to — fully close the current one instead (#1719).
+							 */
+							setTimeout( () => {
+								actions.closeModal( null, element.ref, true );
+							}, 10 );
+						}
 					} else {
 						/**
 						 * When fully closing a modal, use findActiveSibling=true
