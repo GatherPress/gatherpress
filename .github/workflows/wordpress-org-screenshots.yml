@@ -197,13 +197,13 @@ jobs:
         # ignorePaths accepts a comma-separated string with globbing support # https://www.npmjs.com/package/glob
         ignorePaths: 'artifacts,build,node_modules/**'
 
-    - name: Checkout new branch
+    - name: Prepare working tree on develop
       # Using "continue-on-error:true" results in 'conclusion' being a success in any case, while the 'outcome' can differ.
       # And, as you already guessed, if: failure() looks at 'conclusion'.
       #
-      # The PR branch is cut from origin/develop (screenshots flow into
-      # develop like all other work; main only moves on release) and carries
-      # over ONLY the screenshot directory. Branching straight off the run's
+      # The PR branch must be based on origin/develop (screenshots flow into
+      # develop like all other work; main only moves on release) and carry
+      # over ONLY the screenshot directory. Working from the run's own
       # checkout is wrong twice: a run dispatched from any other ref would
       # leak that ref's commits into the PR, and the earlier main-targeted
       # variant dragged the whole develop delta into main and conflicted.
@@ -221,60 +221,51 @@ jobs:
         git reset --hard HEAD
 
         git fetch --no-tags --depth=1 origin develop
-        git checkout -B fix/wp-org-screenshots-${{ matrix.locale }}-${{ github.sha }} origin/develop
+        git checkout -B screenshots-staging-${{ matrix.locale }} origin/develop
 
         rm -rf .wordpress-org
         cp -r "${RUNNER_TEMP}/wordpress-org-screenshots" .wordpress-org
 
-    - name: Commit updated screenshots
-      # Using "continue-on-error:true" results in 'conclusion' being a success in any case, while the 'outcome' can differ.
-      # And, as you already guessed, if: failure() looks at 'conclusion'.
+    # Create the branch, commit, and PR in one step via peter-evans — the
+    # same pattern as extract-wp-hooks-as-docs.yml. `sign-commits: true`
+    # commits the screenshots THROUGH the GitHub API; API-created commits
+    # are GPG-signed by GitHub (verified), so they satisfy the "Require
+    # signed commits" rule on develop — a plain `git commit` from the
+    # runner is unsigned and is rejected at merge. `add-paths` scopes the
+    # commit to the screenshots, and the compression markdown lands in the
+    # body via YAML interpolation (no shell quoting to break — the previous
+    # `--body '...'` crashed on the apostrophe in "Calibre's").
+    #
+    # Targets develop (main only moves on release). The Skip Changelog
+    # label is required because the changelog check enforces an entry on
+    # every develop-targeted PR, and screenshot regen doesn't warrant one.
+    #
+    # Pinned to a full commit SHA (not a tag) for supply-chain safety.
+    - name: Create pull request with updated screenshots
+      id: cpr
       if: ${{ github.event.inputs.updateAllSnapshots || steps.screenshot-tests.outcome == 'failure' }}
-      run: |
-        git config --local user.email "action@github.com"
-        git config --local user.name "GitHub Action"
+      uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        sign-commits: true
+        add-paths: .wordpress-org
+        branch: fix/wp-org-screenshots-${{ matrix.locale }}-${{ github.sha }}
+        base: develop
+        commit-message: "Screenshots for ${{ matrix.locale }} updated!"
+        title: "Update ${{ matrix.locale }} screenshots for wordpress.org"
+        body: "Created with ❤️ by WordPress Playground, Playwright & GitHub action <br /><br />${{ steps.compress-images.outputs.markdown }}"
+        labels: "Skip Changelog"
+        delete-branch: true
 
-        # Scope the commit to the screenshots: everything else in the working
-        # tree is either leftover state from the run checkout or incidental
-        # recompression of unrelated images.
-        git add .wordpress-org
-        git commit -m "Screenshots for ${{ matrix.locale }} updated!"
+    # Screenshot PRs are image-only regen — auto-merge as soon as required
+    # checks pass, then delete the branch so these PRs don't stack up per
+    # locale. If checks fail, the PR stays open for a human (ideally a
+    # native speaker) to investigate.
+    #
+    # Requires "Allow auto-merge" enabled in the repo settings; without it,
+    # this is a no-op (the PR still gets created, just not merged).
+    - name: Enable auto-merge
+      if: ${{ steps.cpr.outputs.pull-request-number }}
+      run: gh pr merge "${{ steps.cpr.outputs.pull-request-number }}" --auto --squash --delete-branch
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-    - name: Push new branch to origin
-      # Using "continue-on-error:true" results in 'conclusion' being a success in any case, while the 'outcome' can differ.
-      # And, as you already guessed, if: failure() looks at 'conclusion'.
-      if: ${{ github.event.inputs.updateAllSnapshots || steps.screenshot-tests.outcome == 'failure' }}
-      run: |
-        git config --local user.email "action@github.com"
-        git config --local user.name "GitHub Action"
-
-        git push origin fix/wp-org-screenshots-${{ matrix.locale }}-${{ github.sha }}
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-    - name: Create a Pull Request
-      # Using "continue-on-error:true" results in 'conclusion' being a success in any case, while the 'outcome' can differ.
-      # And, as you already guessed, if: failure() looks at 'conclusion'.
-      if: ${{ github.event.inputs.updateAllSnapshots || steps.screenshot-tests.outcome == 'failure' }}
-      # Using GitHub CLI in Workflows
-      # https://docs.github.com/en/actions/using-workflows/using-github-cli-in-workflows
-      # https://cli.github.com/manual/gh_pr_create
-      #
-      # The compression markdown is passed through an env var, NOT interpolated
-      # into the run script: it always contains a single quote ("Calibre's"),
-      # which terminated the quoted --body argument and crashed the shell with
-      # a syntax error (and expression interpolation into run scripts is a
-      # script-injection surface besides).
-      # Targets develop (main only moves on release). The Skip Changelog
-      # label is required because the changelog check enforces an entry on
-      # every develop-targeted PR, and screenshot regen doesn't warrant one.
-      run: |
-        gh pr create -B develop -H fix/wp-org-screenshots-${{ matrix.locale }}-${{ github.sha }} \
-          --label 'Skip Changelog' \
-          --title 'Update ${{ matrix.locale }} screenshots for wordpress.org' \
-          --body "Created with ❤️ by WordPress Playground, Playwright & GitHub action <br /><br />${COMPRESS_MARKDOWN}"
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        COMPRESS_MARKDOWN: ${{ steps.compress-images.outputs.markdown }}
