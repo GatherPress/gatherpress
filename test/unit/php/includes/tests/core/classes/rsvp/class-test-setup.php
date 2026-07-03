@@ -721,6 +721,52 @@ class Test_Setup extends Base {
 	}
 
 	/**
+	 * The highlighted parent follows the RSVP-supporting post type whose
+	 * menu the current RSVPs page lives under (#1849).
+	 *
+	 * @covers ::highlight_admin_menu
+	 *
+	 * @return void
+	 */
+	public function test_highlight_admin_menu_follows_supporting_post_type(): void {
+		global $plugin_page, $typenow;
+
+		register_post_type(
+			'gatherpress_probe',
+			array(
+				'public'   => true,
+				'supports' => array( 'title', 'gatherpress-rsvp' ),
+			)
+		);
+
+		$instance = Setup::get_instance();
+
+		$plugin_page = Rsvp::COMMENT_TYPE; // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
+		$typenow     = 'gatherpress_probe'; // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
+
+		$this->assertSame(
+			'edit.php?post_type=gatherpress_probe',
+			$instance->highlight_admin_menu( 'index.php' ),
+			'Highlighted parent should follow the supporting post type.'
+		);
+
+		// A non-supporting post type falls back to the event post type.
+		$typenow = 'post'; // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
+
+		$this->assertSame(
+			sprintf( 'edit.php?post_type=%s', Event::POST_TYPE ),
+			$instance->highlight_admin_menu( 'index.php' ),
+			'Highlighted parent should fall back to the event post type.'
+		);
+
+		// Clean up.
+		remove_filter( 'submenu_file', array( $instance, 'set_submenu_file' ) );
+		unregister_post_type( 'gatherpress_probe' );
+		$plugin_page = null; // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
+		$typenow     = ''; // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
+	}
+
+	/**
 	 * Coverage for set_submenu_file method.
 	 *
 	 * @covers ::set_submenu_file
