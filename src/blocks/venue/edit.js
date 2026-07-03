@@ -9,7 +9,7 @@ import {
 	useBlockProps,
 	store as blockEditorStore,
 } from '@wordpress/block-editor';
-import { __ } from '@wordpress/i18n';
+import { __, sprintf } from '@wordpress/i18n';
 import { applyFilters } from '@wordpress/hooks';
 import {
 	PanelBody,
@@ -24,7 +24,7 @@ import { useMemo, useState } from '@wordpress/element';
 /**
  * Internal dependencies
  */
-import { getCurrentContextualPostId, hasValidBlockContext, isInFSETemplate } from '../../helpers/editor';
+import { getCurrentContextualPostId, hasValidBlockContext, isInFSETemplate, usePostTypeLabel } from '../../helpers/editor';
 import { usePostTypeSupports, findEventPostById, DISABLED_FIELD_OPACITY } from '../../helpers/event';
 import { useVenuePostFromTermId, GetVenuePostFromEventId, findVenuePostById, getVenuePostType, getVenueTaxonomy, useVenueTaxonomyIds } from '../../helpers/venue';
 import VenueNavigator from '../../components/VenueNavigator';
@@ -364,6 +364,16 @@ const Edit = ( props ) => {
 		},
 	} );
 
+	// Read the singular label so the panel title reflects what the post type
+	// is actually called — a custom venue post type with
+	// `singular_name => 'Location'` shows "Location settings" without any
+	// extra wiring (#1612).
+	const singularLabel = usePostTypeLabel(
+		'singular_name',
+		venuePostType,
+		__( 'Venue', 'gatherpress' )
+	);
+
 	return (
 		<div { ...blockProps }>
 			{ ! showPatternPicker && (
@@ -391,11 +401,12 @@ const Edit = ( props ) => {
 			>
 				{ showPatternPicker && (
 					<PatternPicker
-						label={ __( 'Venue', 'gatherpress' ) }
+						label={ singularLabel }
 						icon="location"
-						instructions={ __(
-							'Choose a pattern for the venue.',
-							'gatherpress'
+						instructions={ sprintf(
+							/* translators: %s: Singular post type label, e.g. "Venue". */
+							__( 'Choose a pattern for the %s.', 'gatherpress' ),
+							singularLabel
 						) }
 						patterns={ patterns }
 						showStartBlank={ false }
@@ -415,7 +426,11 @@ const Edit = ( props ) => {
 			<InspectorControls>
 				{ isVenueSource && ! isDescendentOfQueryLoop && ! isInFSETemplate() && isEventContext && (
 					<PanelBody
-						title={ __( 'Venue settings', 'gatherpress' ) }
+						title={ sprintf(
+							/* translators: %s: Singular post type label, e.g. "Venue". */
+							__( '%s settings', 'gatherpress' ),
+							singularLabel
+						) }
 						initialOpen={ true }
 					>
 						<PanelRow>
