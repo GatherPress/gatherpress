@@ -18,7 +18,7 @@ import { highlight } from './highlight';
  *
  * Pilot set: the three GatherPress settings tabs, feeding the 0.34.0
  * rewrite of docs/user/configuration.md (#1845). Further images migrate
- * from hand-captured PNGs to specs incrementally.
+ * from hand-captured PNG images to specs incrementally.
  */
 test.describe( 'Documentation screenshots', () => {
 	test( 'GatherPress settings: Events tab', async ( { admin, page } ) => {
