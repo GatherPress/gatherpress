@@ -8,6 +8,8 @@ GatherPress uses Playwright for this task, which is a tool to do [end-to-end tes
 
 With the help of WordPress Playground, identical instances are created one for each language, based on one identical [blueprint.json](../../../.github/scripts/wordpress-org-screenshots/blueprint.json) file.
 
+**Screenshots always show the code under development**: the workflow builds the checked-out working tree and mounts it into Playground as the plugin, so images on `develop` always match `develop`'s code. On release, the merge into `main` carries the code and its matching screenshots together, and the wordpress.org assets shipped from `main` depict exactly the released version. (Regeneration happens on dispatch, so running both screenshot workflows is part of preparing a release.)
+
 There are **two screenshot suites**, both driven by the same reusable workflow ([screenshot-generation.yml](../../../.github/workflows/screenshot-generation.yml)):
 
 | Suite | Spec | Output | Languages |

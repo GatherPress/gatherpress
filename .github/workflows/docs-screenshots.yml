@@ -33,8 +33,3 @@ jobs:
       branch-prefix: docs-screenshots
       pr-title-template: 'Update documentation screenshots'
       update-all: ${{ github.event.inputs.updateAllSnapshots == 'true' }}
-      # Docs must show the code under development, not the latest release:
-      # the docs blueprint skips the wordpress.org installPlugin step and the
-      # working tree is built and mounted as the plugin instead.
-      blueprint: .github/scripts/docs-screenshots/blueprint.json
-      mount-plugin: true

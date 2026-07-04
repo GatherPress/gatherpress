@@ -44,15 +44,6 @@ on:
         required: false
         type: boolean
         default: false
-      mount-plugin:
-        description: >-
-          Mount the checked-out working tree as the gatherpress plugin inside
-          Playground (and build its assets first), so screenshots show the
-          code under development. Without this, the blueprint's installPlugin
-          step provides the plugin — i.e. the latest wordpress.org release.
-        required: false
-        type: boolean
-        default: false
 
 jobs:
   screenshot:
@@ -128,10 +119,11 @@ jobs:
         DEBIAN_FRONTEND: noninteractive
       run: npx playwright install-deps chromium
 
-    # A mounted plugin serves its assets straight from the working tree, so
-    # they have to be built — the repository doesn't commit build output.
+    # Screenshots always depict the checked-out working tree: develop is the
+    # single source of truth, and the release merge carries code and matching
+    # images to main together. The working tree is mounted as the plugin, so
+    # its assets have to be built — the repository doesn't commit build output.
     - name: Build plugin assets
-      if: ${{ inputs.mount-plugin }}
       run: npm run build
 
     - name: Prepare localized blueprint
@@ -197,7 +189,7 @@ jobs:
       # step below. A transient Playground failure takes the same route and
       # self-corrects there (identical regen produces no diff, so no PR).
       run: |
-        npm run playground -- --blueprint=./localized_blueprint.json ${{ inputs.mount-plugin && '--mount=.:/wordpress/wp-content/plugins/gatherpress' || '' }}  & \
+        npm run playground -- --blueprint=./localized_blueprint.json --mount=.:/wordpress/wp-content/plugins/gatherpress  & \
         sleep 60 && \
         echo 'Playground is ready now, lets take some pictures.' && \
         # DEBUG=pw:api,pw:webserver \
@@ -223,7 +215,7 @@ jobs:
       # between attempts.
       run: |
         for attempt in 1 2 3; do
-          npm run playground -- --blueprint=./localized_blueprint.json ${{ inputs.mount-plugin && '--mount=.:/wordpress/wp-content/plugins/gatherpress' || '' }} &
+          npm run playground -- --blueprint=./localized_blueprint.json --mount=.:/wordpress/wp-content/plugins/gatherpress &
           sleep 60
           echo 'Playground is ready now, lets take some pictures.'
           # For verbose output, prefix the next command with: DEBUG=pw:api,pw:webserver
