@@ -25,7 +25,7 @@ The settings screen is organized into tabs: **Events**, **Venues**, **RSVP**, **
 - **Event Archive** chooses what the events archive URL displays when no custom page is assigned: **Upcoming Events**, **Past Events**, or **None (return 404)**.
 - **Upcoming Events** and **Past Events** optionally point the corresponding archive at a custom page you have created.
 
-### Permalinks
+### Event and topic permalinks
 
 - **Events** and **Topics** set the permalink bases used in event and topic URLs, with a live preview of the resulting URL.
 
@@ -41,7 +41,7 @@ These settings choose the mapping platform and the defaults applied to newly add
 - **Default Render Mode** chooses between an interactive map and a static map image for new blocks.
 - **Default Zoom Level**, **Default Height**, **Default Width**, **Default Aspect Ratio**, and **Default Scale** set the initial appearance of new venue map blocks. Height and width can be left empty for automatic sizing derived from the aspect ratio.
 
-### Permalinks
+### Venue permalink
 
 - **Venues** sets the permalink base used in venue URLs.
 
@@ -54,10 +54,10 @@ These settings choose the mapping platform and the defaults applied to newly add
 Default RSVP settings for new events; most can be overridden per event.
 
 - **RSVP Mode** controls how RSVP works across your site (see [RSVP system](user/rsvp-system.md#rsvp-mode)):
-  - **All Events**: RSVP is enabled for every event.
-  - **Per event (default on)**: each event gets its own toggle in the editor; new events start with RSVP enabled.
-  - **Per event (default off)**: each event gets its own toggle; new events start with RSVP disabled.
-  - **Disabled**: RSVP is turned off sitewide, and the RSVP blocks and admin screens are hidden.
+    - **All Events**: RSVP is enabled for every event.
+    - **Per event (default on)**: each event gets its own toggle in the editor; new events start with RSVP enabled.
+    - **Per event (default off)**: each event gets its own toggle; new events start with RSVP disabled.
+    - **Disabled**: RSVP is turned off sitewide, and the RSVP blocks and admin screens are hidden.
 - **Open RSVP** allows visitors to RSVP without a site account, using email verification (see [Open RSVP](user/rsvp-system.md#open-rsvp-without-an-account)).
 - **Maximum Attendance Limit** caps the total number of people per event. Set to 0 for no limit.
 - **Maximum Number of Guests** sets how many additional guests each attendee may bring.
