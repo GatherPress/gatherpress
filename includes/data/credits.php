@@ -4,7 +4,7 @@
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 return array (
-  'version' => '0.34.0-beta.1',
+  'version' => '0.34.0-beta.2',
   'project-leaders' => 
   array (
     0 => 
@@ -219,6 +219,19 @@ return array (
         24 => '//www.gravatar.com/avatar/fa01ba22f1911653a65d50ccb265ba5d?s=24&#038;r=g&#038;d=mm',
         48 => '//www.gravatar.com/avatar/fa01ba22f1911653a65d50ccb265ba5d?s=48&#038;r=g&#038;d=mm',
         96 => '//www.gravatar.com/avatar/fa01ba22f1911653a65d50ccb265ba5d?s=96&#038;r=g&#038;d=mm',
+      ),
+    ),
+    5 => 
+    array (
+      'id' => 13804324,
+      'name' => 'Vineet Talwar',
+      'link' => 'https://profiles.wordpress.org/vineettalwar/',
+      'slug' => 'vineettalwar',
+      'avatar_urls' => 
+      array (
+        24 => '//www.gravatar.com/avatar/80b2864ad2ab0b704caee3c1495cf0ba?s=24&#038;r=g&#038;d=mm',
+        48 => '//www.gravatar.com/avatar/80b2864ad2ab0b704caee3c1495cf0ba?s=48&#038;r=g&#038;d=mm',
+        96 => '//www.gravatar.com/avatar/80b2864ad2ab0b704caee3c1495cf0ba?s=96&#038;r=g&#038;d=mm',
       ),
     ),
   ),

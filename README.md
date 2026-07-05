@@ -12,7 +12,7 @@ or the assembly in classes/class-cli.php, then regenerate.
 
 **GatherPress is a flexible, community-powered event management plugin for WordPress.**
 
-[![Try it in WordPress Playground](https://img.shields.io/badge/Try_it-in_WordPress_Playground-blue?logo=wordpress&logoColor=%23fff&labelColor=%233858e9&color=%233858e9)](https://playground.wordpress.net/?blueprint-url=https://raw.githubusercontent.com/GatherPress/gatherpress/main/.wordpress-org/blueprints/blueprint-nightly.json) ![Version](https://img.shields.io/static/v1?label=version&message=0.34.0-beta.1&color=blue)
+[![Try it in WordPress Playground](https://img.shields.io/badge/Try_it-in_WordPress_Playground-blue?logo=wordpress&logoColor=%23fff&labelColor=%233858e9&color=%233858e9)](https://playground.wordpress.net/?blueprint-url=https://raw.githubusercontent.com/GatherPress/gatherpress/develop/.wordpress-org/blueprints/blueprint-nightly.json) ![Version](https://img.shields.io/static/v1?label=version&message=0.34.0-beta.2&color=blue)
 
 [![GPLv2 License](https://img.shields.io/github/license/GatherPress/gatherpress)](https://github.com/GatherPress/gatherpress/blob/main/LICENSE) [![Coding Standards](https://github.com/GatherPress/gatherpress/actions/workflows/coding-standards.yml/badge.svg)](https://github.com/GatherPress/gatherpress/actions/workflows/coding-standards.yml) [![PHPUnit Tests](https://github.com/GatherPress/gatherpress/actions/workflows/phpunit-tests.yml/badge.svg)](https://github.com/GatherPress/gatherpress/actions/workflows/phpunit-tests.yml) [![JavaScript Unit Tests](https://github.com/GatherPress/gatherpress/actions/workflows/jest-tests.yml/badge.svg)](https://github.com/GatherPress/gatherpress/actions/workflows/jest-tests.yml) [![E2E Tests](https://github.com/GatherPress/gatherpress/actions/workflows/e2e-tests.yml/badge.svg)](https://github.com/GatherPress/gatherpress/actions/workflows/e2e-tests.yml)
 
@@ -40,7 +40,7 @@ or the assembly in classes/class-cli.php, then regenerate.
 
 ### Try it instantly
 
-Use the [Playground Environment](https://playground.wordpress.net/?blueprint-url=https://raw.githubusercontent.com/GatherPress/gatherpress/main/.wordpress-org/blueprints/blueprint-nightly.json) to test the latest GatherPress nightly build with real data -- no setup required.
+Use the [Playground Environment](https://playground.wordpress.net/?blueprint-url=https://raw.githubusercontent.com/GatherPress/gatherpress/develop/.wordpress-org/blueprints/blueprint-nightly.json) to test the latest GatherPress nightly build with real data -- no setup required.
 
 [Watch the intro demo](https://gatherpress.org/demovideo) | [Learn more about Playground](https://github.com/GatherPress/gatherpress/blob/main/docs/playground.md)
 
