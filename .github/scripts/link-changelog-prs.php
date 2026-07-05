@@ -1,20 +1,25 @@
 #!/usr/bin/env php
 <?php
 /**
- * Append GitHub PR link definitions to CHANGELOG.md.
+ * Turn the PR-number markers in CHANGELOG.md into inline links.
  *
  * `changelogger write --add-pr-num` appends plain `[#123]` markers to change
- * entries but never emits matching Markdown link definitions, so the markers
- * render as literal bracketed text (see issue #1896; the appended string is
- * hard-coded in jetpack-changelogger's Utils.php). This script adds a
- * `[#123]: https://github.com/GatherPress/gatherpress/pull/123` reference
- * definition at the end of the file for every marker that lacks one, which
- * turns every `[#123]` in the document into a link.
+ * entries but never links them (see issue #1896; the appended string is
+ * hard-coded in jetpack-changelogger's Utils.php), and GitHub does not
+ * auto-link `#123` in rendered Markdown files. This script rewrites every
+ * unlinked marker as an inline link:
  *
- * Runs as the last step of `composer changelog:write`. Changelogger's own
- * parser preserves the added definitions across future rewrites: link
- * definitions not consumed by version headings round-trip through the
- * changelog epilogue (KeepAChangelogParser::parse).
+ *     [#123](https://github.com/GatherPress/gatherpress/pull/123)
+ *
+ * Inline (rather than reference-style) links keep each entry self-contained:
+ * the release workflow extracts a version's section out of CHANGELOG.md as
+ * the GitHub Release body, and any links relying on definitions elsewhere in
+ * the file would break in every such extraction.
+ *
+ * Runs as the last step of `composer changelog:write` and is idempotent —
+ * already-linked markers are left untouched. Entry content round-trips
+ * verbatim through changelogger's parser, so the links survive future
+ * release rewrites.
  *
  * @package GatherPress
  *
@@ -29,27 +34,26 @@ if ( false === $contents ) {
 	exit( 1 );
 }
 
-// Every `[#123]` marker in the document...
-preg_match_all( '/\[#(\d+)\]/', $contents, $used );
-// ...and every `[#123]:` link definition that already exists.
-preg_match_all( '/^\[#(\d+)\]:/m', $contents, $defined );
+// Match `[#123]` not already followed by a link (`(`) and not a reference
+// definition (`:`).
+$updated = preg_replace(
+	'/\[#(\d+)\](?![(:])/',
+	'[#$1](https://github.com/GatherPress/gatherpress/pull/$1)',
+	$contents,
+	-1,
+	$count
+);
 
-$missing = array_diff( array_unique( $used[1] ), $defined[1] );
+if ( null === $updated ) {
+	fwrite( STDERR, "Failed to process {$changelog_file}\n" );
+	exit( 1 );
+}
 
-if ( empty( $missing ) ) {
-	echo "All PR references in CHANGELOG.md already have link definitions.\n";
+if ( 0 === $count ) {
+	echo "All PR references in CHANGELOG.md are already linked.\n";
 	exit( 0 );
 }
 
-// Newest first, matching the version links above them.
-rsort( $missing, SORT_NUMERIC );
+file_put_contents( $changelog_file, $updated );
 
-$definitions = '';
-
-foreach ( $missing as $number ) {
-	$definitions .= "[#{$number}]: https://github.com/GatherPress/gatherpress/pull/{$number}\n";
-}
-
-file_put_contents( $changelog_file, rtrim( $contents, "\n" ) . "\n" . $definitions );
-
-echo 'Added ' . count( $missing ) . " PR link definition(s) to CHANGELOG.md.\n";
+echo "Linked {$count} PR reference(s) in CHANGELOG.md.\n";
