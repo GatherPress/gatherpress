@@ -28,6 +28,7 @@ composer.lock
 dependencies.yml
 Gruntfile.js
 jest.config.js
+jsconfig.json
 package.json
 package-lock.json
 phpcs.xml
@@ -61,6 +62,7 @@ vendor
 src
 docs
 wp-cron.sh
+patches
 
 # Miscellaneous and SQL Archives
 behat.yml
