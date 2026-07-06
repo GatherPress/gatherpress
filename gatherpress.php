@@ -56,3 +56,6 @@ if ( ! trait_exists( 'GatherPress\Core\Traits\Singleton' ) ) {
 
 // Initialize setups.
 GatherPress\Core\Setup::get_instance();
+
+// Trigger the PR preview workflow to test.
+// DO NOT MERGE.
