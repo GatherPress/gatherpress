@@ -83,6 +83,16 @@ Changing a default only affects blocks added afterwards — existing blocks keep
 
 Static images regenerate automatically when any input the image depends on changes — venue address, coordinates, zoom level, or block height. Each `(zoom, height)` combination is cached separately, so two events showing the same venue at different sizes each get a crisp PNG. Old images are cleaned up when the venue is updated or deleted.
 
+### Disabling static map generation
+
+GatherPress pre-generates static map images in the background so they are ready before a visitor asks for one. If your site only uses interactive maps, those generated files are wasted disk space and server work — in that case it is best to switch the pre-generation off:
+
+```php
+add_filter( 'gatherpress_static_map_prewarm_pre_enqueue_job', '__return_false' );
+```
+
+Drop the snippet into a must-use plugin, a site-specific plugin, or your theme's `functions.php`. Any Venue Map block actually set to the static render mode still generates its image on demand; the filter only stops the speculative background generation.
+
 ### Privacy of static map URLs
 
 Because static maps live under `wp-content/uploads/gatherpress/static-maps/`, anyone with the direct URL can fetch one — the same is true of any image in your uploads directory. To keep those URLs from being guessable, each filename includes a random per-venue salt generated the first time a map is rendered; two different venues at the same address produce different filenames. If you need stronger isolation (for example, venues whose coordinates should stay hidden until the event is public), restrict access to the static-maps subdirectory with an `.htaccess` or Nginx rule, or keep the venue unpublished until you're ready.
