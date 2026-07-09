@@ -165,8 +165,8 @@ class User {
 			 * Filters the default state of the event updates opt-in.
 			 *
 			 * This filter allows modification of the default opt-in state for compliance
-			 * with regional privacy laws (e.g., GDPR in Germany) that may require
-			 * opt-in consent to be unchecked by default.
+			 * with privacy laws such as the European Union's GDPR (known in Germany
+			 * as the DSGVO) that may require opt-in consent to be unchecked by default.
 			 *
 			 * @since 0.28.0
 			 *
