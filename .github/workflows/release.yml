@@ -14,7 +14,7 @@ name: Release
 # ephemeral checkout — no commit, no PR, no entry files deleted. Pre-releases
 # never deploy to wp.org.
 #
-# Release-manager docs: docs/developer/release-process.md.
+# Release-manager docs: docs/contributor/release-process.md.
 
 on:
   push:
