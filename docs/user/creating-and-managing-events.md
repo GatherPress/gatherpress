@@ -84,5 +84,7 @@ When publishing or updating an event:
 * Existing RSVPs are preserved when editing events.
 * A Compose message prompt appears at the top of the event to invite you to inform users, see [more on Emails](./emails.md)
 
+Published events automatically appear in the site's subscribable [calendar feeds](./calendar-feeds.md), so attendees following a venue, topic, or the whole site see new and updated events in their own calendar apps.
+
 
 
