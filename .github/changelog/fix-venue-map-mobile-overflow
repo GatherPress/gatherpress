@@ -1,4 +1,0 @@
-Significance: patch
-Type: fixed
-
-Stop the venue map from breaking out of the body on narrow viewports. With an auto width, the inline `height` + `aspect-ratio` pair resolved to a fixed pixel width (300px tall at 2/1 → 600px wide) that overflowed mobile screens; the wrapper is now capped to its container width. [#1703]

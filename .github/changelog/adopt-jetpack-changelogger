@@ -1,4 +1,0 @@
-Significance: minor
-Type: added
-
-Adopt the Jetpack changelogger workflow with a per-PR `.github/changelog/*` file format and a rolled-up `CHANGELOG.md`. Backfills history from 0.27.0.

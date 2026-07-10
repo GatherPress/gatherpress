@@ -1,4 +1,0 @@
-Significance: patch
-Type: fixed
-
-Deduplicate admin column sorting in `Event_Setup` and fix SQL identifier quoting on the sort query. [#1449]

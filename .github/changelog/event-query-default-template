@@ -1,4 +1,0 @@
-Significance: patch
-Type: added
-
-Add a default template for the Event Query Loop block so it has a sensible starting point on themes that don't ship one. [#1399]

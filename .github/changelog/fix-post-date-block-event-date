@@ -1,4 +1,0 @@
-Significance: patch
-Type: fixed
-
-Fix the Post Date block to display the event date when the 'use event date for post date' setting is enabled. [#1430]

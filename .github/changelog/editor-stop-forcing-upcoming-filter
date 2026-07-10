@@ -1,4 +1,0 @@
-Significance: patch
-Type: fixed
-
-Editor no longer forces the events admin list back to the Upcoming filter when the user explicitly selects All — the previously-saved filter sticks. [#1515]

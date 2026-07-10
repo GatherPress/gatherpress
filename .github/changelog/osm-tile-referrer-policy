@@ -1,4 +1,0 @@
-Significance: patch
-Type: fixed
-
-Set `referrerPolicy: 'no-referrer-when-downgrade'` on OpenStreetMap tile requests so tile providers that gate access on the `Referer` header (e.g. CARTO basemaps) receive the request correctly. [#1433]

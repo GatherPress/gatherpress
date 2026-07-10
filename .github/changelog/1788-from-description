@@ -1,4 +1,0 @@
-Significance: patch
-Type: fixed
-
-Harden asset metadata loading so build dependency/version data is read correctly even if the asset file was already loaded in the request.

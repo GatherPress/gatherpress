@@ -1,4 +1,0 @@
-Significance: patch
-Type: fixed
-
-Invalidate caches on RSVP token redemption and bypass page cache for magic-link URLs so the user sees the result of their RSVP immediately. [#1636]

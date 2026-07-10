@@ -1,4 +1,0 @@
-Significance: patch
-Type: added
-
-Add a `show_if` field key to the Settings API so settings fields can be conditionally hidden based on the value of other fields. [#1634]

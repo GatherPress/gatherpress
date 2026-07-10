@@ -1,4 +1,0 @@
-Significance: patch
-Type: fixed
-
-Follow-up to the 0.33.3 protected-meta hardening. Additional GatherPress meta keys are now protected from the Custom Fields panel to prevent stale data overwrites on event save. [#1387]

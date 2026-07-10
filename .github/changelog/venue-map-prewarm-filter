@@ -1,4 +1,0 @@
-Significance: patch
-Type: added
-
-Expose the `gatherpress_venue_map_prewarm_pre_enqueue_job` filter so extensions can short-circuit individual venue-map prewarm jobs (useful for sites with hundreds of venues where a `switch_theme` would otherwise flood WP-Cron with warm jobs). [#1504]

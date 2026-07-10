@@ -1,4 +1,0 @@
-Significance: patch
-Type: changed
-
-GatherPress UI strings now pull from each post type's registered labels rather than hardcoding 'Event' / 'Venue'. Custom event-supporting post types see their own labels everywhere in the settings sub-menus, admin list, sidebar panels, and Query block UI. [#1627] [#1629] [#1631] [#1647] [#1659]

@@ -1,4 +1,0 @@
-Significance: patch
-Type: fixed
-
-Event Query blocks placed in a Single Event block template now filter by the viewed event's season/venue and can exclude the current event on the frontend, instead of rendering every event unfiltered.

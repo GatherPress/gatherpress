@@ -1,4 +1,0 @@
-Significance: minor
-Type: changed
-
-Replace the original RSVP / RSVP Response / RSVP Template / Venue blocks with their V2 equivalents that shipped in 0.32.0. The V2 naming is dropped now that the new blocks are canonical. [#1407]
