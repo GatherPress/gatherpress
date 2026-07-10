@@ -3,28 +3,32 @@
  * Class handles unit tests for GatherPress\Core\Blocks\General_Block.
  *
  * @package GatherPress\Core
- * @since 1.0.0
+ * @since 0.33.0
  */
 
 namespace GatherPress\Tests\Core\Blocks;
 
 use GatherPress\Core\Blocks\General_Block;
+use GatherPress\Core\Rsvp\Rsvp;
+use GatherPress\Core\Settings;
 use GatherPress\Core\Utility;
 use GatherPress\Tests\Base;
 
 /**
  * Class Test_General_Block.
  *
+ * @group multisite
  * @coversDefaultClass \GatherPress\Core\Blocks\General_Block
  */
 class Test_General_Block extends Base {
+
 	/**
 	 * Tests the setup_hooks method.
 	 *
 	 * Verifies that the appropriate filters are registered during setup,
 	 * ensuring the hooks are properly configured for General_Block.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::__construct
 	 * @covers ::setup_hooks
 	 *
@@ -47,6 +51,12 @@ class Test_General_Block extends Base {
 			),
 			array(
 				'type'     => 'filter',
+				'name'     => 'render_block',
+				'priority' => 10,
+				'callback' => array( $instance, 'process_venue_detail_field' ),
+			),
+			array(
+				'type'     => 'filter',
 				'name'     => 'render_block_core/button',
 				'priority' => 10,
 				'callback' => array( $instance, 'convert_submit_button' ),
@@ -59,7 +69,7 @@ class Test_General_Block extends Base {
 	/**
 	 * Test block content is removed when user is logged in and block has login URL class.
 	 *
-	 * @since  1.0.0
+	 * @since  0.33.0
 	 * @covers ::process_login_block
 	 *
 	 * @return void
@@ -94,7 +104,7 @@ class Test_General_Block extends Base {
 	 * This test verifies that when a user is not logged in, the block content is preserved
 	 * and the placeholder login URL is correctly replaced with the actual login URL.
 	 *
-	 * @since  1.0.0
+	 * @since  0.33.0
 	 * @covers ::process_login_block
 	 *
 	 * @return void
@@ -130,7 +140,7 @@ class Test_General_Block extends Base {
 	/**
 	 * Test block content remains when user is logged in but block doesn't have login URL class.
 	 *
-	 * @since  1.0.0
+	 * @since  0.33.0
 	 * @covers ::process_login_block
 	 *
 	 * @return void
@@ -168,7 +178,7 @@ class Test_General_Block extends Base {
 	/**
 	 * Test block content remains when block has no className attribute.
 	 *
-	 * @since  1.0.0
+	 * @since  0.33.0
 	 * @covers ::process_login_block
 	 *
 	 * @return void
@@ -203,7 +213,7 @@ class Test_General_Block extends Base {
 	/**
 	 * Test block content is removed when registration is disabled and block has registration URL class.
 	 *
-	 * @since  1.0.0
+	 * @since  0.33.0
 	 * @covers ::process_registration_block
 	 *
 	 * @return void
@@ -235,7 +245,7 @@ class Test_General_Block extends Base {
 	 * This test verifies that when a user is not logged in, the block content is preserved
 	 * and the placeholder registration URL is correctly replaced with the actual registration URL.
 	 *
-	 * @since  1.0.0
+	 * @since  0.33.0
 	 * @covers ::process_registration_block
 	 *
 	 * @return void
@@ -273,9 +283,36 @@ class Test_General_Block extends Base {
 	}
 
 	/**
+	 * Test registration URL placeholder is replaced in anchor tag href.
+	 *
+	 * @since  0.34.0
+	 * @covers ::process_registration_block
+	 *
+	 * @return void
+	 */
+	public function test_registration_url_replaced_in_anchor_href(): void {
+		$general_block = General_Block::get_instance();
+
+		// Enable user registration.
+		update_option( 'users_can_register', 1 );
+
+		// Block without the registration URL class so early return is bypassed.
+		$block_content = '<a href="#gatherpress-registration-url">Register</a>';
+		$block         = array( 'attrs' => array() );
+
+		$result = $general_block->process_registration_block( $block_content, $block );
+
+		$this->assertStringNotContainsString(
+			'#gatherpress-registration-url',
+			$result,
+			'Registration URL placeholder should be replaced in anchor href.'
+		);
+	}
+
+	/**
 	 * Test block content remains when registration is disabled but block doesn't have registration URL class.
 	 *
-	 * @since  1.0.0
+	 * @since  0.33.0
 	 * @covers ::process_registration_block
 	 *
 	 * @return void
@@ -305,7 +342,7 @@ class Test_General_Block extends Base {
 	/**
 	 * Test block content remains when block has no className attribute.
 	 *
-	 * @since  1.0.0
+	 * @since  0.33.0
 	 * @covers ::process_registration_block
 	 *
 	 * @return void
@@ -333,7 +370,7 @@ class Test_General_Block extends Base {
 	/**
 	 * Test guest count field is hidden when max guest limit is 0.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::process_guests_field
 	 *
 	 * @return void
@@ -361,7 +398,7 @@ class Test_General_Block extends Base {
 	/**
 	 * Test guest count field is visible when max guest limit is greater than 0.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::process_guests_field
 	 *
 	 * @return void
@@ -389,7 +426,7 @@ class Test_General_Block extends Base {
 	/**
 	 * Test anonymous field is hidden when anonymous RSVP is disabled.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::process_anonymous_field
 	 *
 	 * @return void
@@ -417,7 +454,7 @@ class Test_General_Block extends Base {
 	/**
 	 * Test anonymous field is visible when anonymous RSVP is enabled.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::process_anonymous_field
 	 *
 	 * @return void
@@ -445,7 +482,7 @@ class Test_General_Block extends Base {
 	/**
 	 * Test process methods return unchanged content for non-event posts.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::process_guests_field
 	 * @covers ::process_anonymous_field
 	 *
@@ -483,7 +520,7 @@ class Test_General_Block extends Base {
 	 * ALL of them get hidden, not just the first one. This prevents regression of break
 	 * statements that would stop processing after the first match.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::process_guests_field
 	 *
 	 * @return void
@@ -532,7 +569,7 @@ class Test_General_Block extends Base {
 	 * ALL of them get hidden, not just the first one. This prevents regression of break
 	 * statements that would stop processing after the first match.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::process_anonymous_field
 	 *
 	 * @return void
@@ -577,7 +614,7 @@ class Test_General_Block extends Base {
 	/**
 	 * Test converting anchor tag to submit button.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::convert_submit_button
 	 *
 	 * @return void
@@ -606,7 +643,7 @@ class Test_General_Block extends Base {
 	/**
 	 * Test adding type="submit" to existing button element.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::convert_submit_button
 	 *
 	 * @return void
@@ -631,7 +668,7 @@ class Test_General_Block extends Base {
 	/**
 	 * Test that button without gatherpress-submit-button class is not modified.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::convert_submit_button
 	 *
 	 * @return void
@@ -661,7 +698,7 @@ class Test_General_Block extends Base {
 	 * Tests the fallback return path when the block has the gatherpress-submit-button
 	 * class but doesn't contain any anchor or button tags to process.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::convert_submit_button
 	 *
 	 * @return void
@@ -689,7 +726,7 @@ class Test_General_Block extends Base {
 	/**
 	 * Test process_guests_field with non-publish status returns content unchanged.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::process_guests_field
 	 *
 	 * @return void
@@ -716,7 +753,7 @@ class Test_General_Block extends Base {
 	/**
 	 * Test process_anonymous_field with non-publish status returns content unchanged.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::process_anonymous_field
 	 *
 	 * @return void
@@ -741,13 +778,326 @@ class Test_General_Block extends Base {
 	}
 
 	/**
+	 * Test venue detail field returns unchanged when block has no venue conditional class.
+	 *
+	 * @since 0.34.0
+	 * @covers ::process_venue_detail_field
+	 *
+	 * @return void
+	 */
+	public function test_process_venue_detail_field_returns_unchanged_without_venue_class(): void {
+		$general_block = General_Block::get_instance();
+
+		$block_content = '<div class="some-other-class">Test content</div>';
+		$block         = array(
+			'attrs' => array(
+				'className' => 'some-other-class',
+			),
+		);
+
+		$result = $general_block->process_venue_detail_field( $block_content, $block );
+
+		$this->assertEquals(
+			$block_content,
+			$result,
+			'Block without venue conditional class should remain unchanged.'
+		);
+	}
+
+	/**
+	 * Test venue detail field returns unchanged when block has no className attribute.
+	 *
+	 * @since 0.34.0
+	 * @covers ::process_venue_detail_field
+	 *
+	 * @return void
+	 */
+	public function test_process_venue_detail_field_returns_unchanged_without_classname(): void {
+		$general_block = General_Block::get_instance();
+
+		$block_content = '<div>Test content</div>';
+		$block         = array(
+			'attrs' => array(),
+		);
+
+		$result = $general_block->process_venue_detail_field( $block_content, $block );
+
+		$this->assertEquals(
+			$block_content,
+			$result,
+			'Block without className attribute should remain unchanged.'
+		);
+	}
+
+	/**
+	 * Test venue detail field returns unchanged when field name is not in mapping.
+	 *
+	 * @since 0.34.0
+	 * @covers ::process_venue_detail_field
+	 *
+	 * @return void
+	 */
+	public function test_process_venue_detail_field_returns_unchanged_for_unknown_field(): void {
+		$general_block = General_Block::get_instance();
+
+		$block_content = '<div class="gatherpress--has-venue-unknown">Test content</div>';
+		$block         = array(
+			'attrs' => array(
+				'className' => 'gatherpress--has-venue-unknown',
+			),
+		);
+
+		$result = $general_block->process_venue_detail_field( $block_content, $block );
+
+		$this->assertEquals(
+			$block_content,
+			$result,
+			'Block with unknown venue field should remain unchanged.'
+		);
+	}
+
+	/**
+	 * Test venue detail field returns unchanged when post is not a venue type.
+	 *
+	 * @since 0.34.0
+	 * @covers ::process_venue_detail_field
+	 *
+	 * @return void
+	 */
+	public function test_process_venue_detail_field_returns_unchanged_for_non_venue_post(): void {
+		$general_block = General_Block::get_instance();
+		$post_id       = $this->mock->post()->get()->ID;
+
+		// Set up the post context.
+		$this->go_to( get_permalink( $post_id ) );
+
+		$block_content = '<div class="gatherpress--has-venue-phone">Phone content</div>';
+		$block         = array(
+			'attrs' => array(
+				'className' => 'gatherpress--has-venue-phone',
+			),
+		);
+
+		$result = $general_block->process_venue_detail_field( $block_content, $block );
+
+		$this->assertEquals(
+			$block_content,
+			$result,
+			'Block should remain unchanged when post is not a venue type.'
+		);
+	}
+
+	/**
+	 * Test venue detail field returns empty when venue field is empty.
+	 *
+	 * @since 0.34.0
+	 * @covers ::process_venue_detail_field
+	 *
+	 * @return void
+	 */
+	public function test_process_venue_detail_field_returns_empty_for_empty_field(): void {
+		$general_block = General_Block::get_instance();
+		$post_id       = $this->factory->post->create( array( 'post_type' => 'gatherpress_venue' ) );
+
+		// Set up the post context.
+		$this->go_to( get_permalink( $post_id ) );
+
+		// Phone number meta is empty; address and website are set.
+		add_post_meta( $post_id, 'gatherpress_phone', '' );
+		add_post_meta( $post_id, 'gatherpress_address', '123 Main St' );
+		add_post_meta( $post_id, 'gatherpress_website', 'https://example.com' );
+
+		$block_content = '<div class="gatherpress--has-venue-phone">Phone content</div>';
+		$block         = array(
+			'attrs' => array(
+				'className' => 'gatherpress--has-venue-phone',
+			),
+		);
+
+		$result = $general_block->process_venue_detail_field( $block_content, $block );
+
+		$this->assertEmpty(
+			$result,
+			'Block should be empty when venue phone field is empty.'
+		);
+	}
+
+	/**
+	 * Test venue detail field returns content when venue field has value.
+	 *
+	 * @since 0.34.0
+	 * @covers ::process_venue_detail_field
+	 *
+	 * @return void
+	 */
+	public function test_process_venue_detail_field_returns_content_when_field_has_value(): void {
+		$general_block = General_Block::get_instance();
+		$post_id       = $this->factory->post->create( array( 'post_type' => 'gatherpress_venue' ) );
+
+		// Set up the post context.
+		$this->go_to( get_permalink( $post_id ) );
+
+		add_post_meta( $post_id, 'gatherpress_phone', '555-123-4567' );
+		add_post_meta( $post_id, 'gatherpress_address', '123 Main St' );
+		add_post_meta( $post_id, 'gatherpress_website', 'https://example.com' );
+
+		$block_content = '<div class="gatherpress--has-venue-phone">Phone content</div>';
+		$block         = array(
+			'attrs' => array(
+				'className' => 'gatherpress--has-venue-phone',
+			),
+		);
+
+		$result = $general_block->process_venue_detail_field( $block_content, $block );
+
+		$this->assertEquals(
+			$block_content,
+			$result,
+			'Block should remain unchanged when venue phone field has value.'
+		);
+	}
+
+	/**
+	 * Test venue detail field works with address field.
+	 *
+	 * @since 0.34.0
+	 * @covers ::process_venue_detail_field
+	 *
+	 * @return void
+	 */
+	public function test_process_venue_detail_field_works_with_address_field(): void {
+		$general_block = General_Block::get_instance();
+		$post_id       = $this->factory->post->create( array( 'post_type' => 'gatherpress_venue' ) );
+
+		// Set up the post context.
+		$this->go_to( get_permalink( $post_id ) );
+
+		add_post_meta( $post_id, 'gatherpress_address', '123 Main St, City, State 12345' );
+
+		$block_content = '<div class="gatherpress--has-venue-address">Address content</div>';
+		$block         = array(
+			'attrs' => array(
+				'className' => 'gatherpress--has-venue-address',
+			),
+		);
+
+		$result = $general_block->process_venue_detail_field( $block_content, $block );
+
+		$this->assertEquals(
+			$block_content,
+			$result,
+			'Block should remain unchanged when venue address field has value.'
+		);
+	}
+
+	/**
+	 * Test venue detail field works with website field.
+	 *
+	 * @since 0.34.0
+	 * @covers ::process_venue_detail_field
+	 *
+	 * @return void
+	 */
+	public function test_process_venue_detail_field_works_with_website_field(): void {
+		$general_block = General_Block::get_instance();
+		$post_id       = $this->factory->post->create( array( 'post_type' => 'gatherpress_venue' ) );
+
+		// Set up the post context.
+		$this->go_to( get_permalink( $post_id ) );
+
+		add_post_meta( $post_id, 'gatherpress_website', 'https://example.com' );
+
+		$block_content = '<div class="gatherpress--has-venue-website">Website content</div>';
+		$block         = array(
+			'attrs' => array(
+				'className' => 'gatherpress--has-venue-website',
+			),
+		);
+
+		$result = $general_block->process_venue_detail_field( $block_content, $block );
+
+		$this->assertEquals(
+			$block_content,
+			$result,
+			'Block should remain unchanged when venue website field has value.'
+		);
+	}
+
+	/**
+	 * Test venue detail field returns empty when the meta key is unset.
+	 *
+	 * @since 0.34.0
+	 * @covers ::process_venue_detail_field
+	 *
+	 * @return void
+	 */
+	public function test_process_venue_detail_field_returns_empty_for_unset_meta(): void {
+		$general_block = General_Block::get_instance();
+		$post_id       = $this->factory->post->create( array( 'post_type' => 'gatherpress_venue' ) );
+
+		// Set up the post context.
+		$this->go_to( get_permalink( $post_id ) );
+
+		// Address and website are set, phone is left unset entirely.
+		add_post_meta( $post_id, 'gatherpress_address', '123 Main St' );
+		add_post_meta( $post_id, 'gatherpress_website', 'https://example.com' );
+
+		$block_content = '<div class="gatherpress--has-venue-phone">Phone content</div>';
+		$block         = array(
+			'attrs' => array(
+				'className' => 'gatherpress--has-venue-phone',
+			),
+		);
+
+		$result = $general_block->process_venue_detail_field( $block_content, $block );
+
+		$this->assertEmpty(
+			$result,
+			'Block should be empty when the venue phone meta is unset.'
+		);
+	}
+
+	/**
+	 * Test venue detail field uses postId attribute when provided.
+	 *
+	 * @since 0.34.0
+	 * @covers ::process_venue_detail_field
+	 *
+	 * @return void
+	 */
+	public function test_process_venue_detail_field_uses_post_id_attribute(): void {
+		$general_block = General_Block::get_instance();
+		$venue_post_id = $this->factory->post->create( array( 'post_type' => 'gatherpress_venue' ) );
+
+		add_post_meta( $venue_post_id, 'gatherpress_phone', '555-123-4567' );
+		add_post_meta( $venue_post_id, 'gatherpress_address', '123 Main St' );
+		add_post_meta( $venue_post_id, 'gatherpress_website', 'https://example.com' );
+
+		$block_content = '<div class="gatherpress--has-venue-phone">Phone content</div>';
+		$block         = array(
+			'attrs' => array(
+				'className' => 'gatherpress--has-venue-phone',
+				'postId'    => $venue_post_id,
+			),
+		);
+
+		$result = $general_block->process_venue_detail_field( $block_content, $block );
+
+		$this->assertEquals(
+			$block_content,
+			$result,
+			'Block should use postId attribute when provided.'
+		);
+	}
+
+	/**
 	 * Test mixed field types processing with multiple fields.
 	 *
 	 * This test ensures that when both guest and anonymous fields are present
 	 * and both conditions are met (guest limit 0 and anonymous disabled),
 	 * all appropriate fields are hidden independently.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::process_guests_field
 	 * @covers ::process_anonymous_field
 	 *
@@ -795,5 +1145,65 @@ class Test_General_Block extends Base {
 
 		// Verify normal field is not affected.
 		$this->assertStringNotContainsString( 'normal-field gatherpress--is-hidden', $final_result );
+	}
+
+	/**
+	 * Tests process_guests_field returns empty string when per-event RSVP is disabled.
+	 *
+	 * @covers ::process_guests_field
+	 *
+	 * @return void
+	 */
+	public function test_process_guests_field_rsvp_disabled_per_event(): void {
+		$general_block = General_Block::get_instance();
+		$post_id       = $this->factory->post->create(
+			array(
+				'post_type'   => 'gatherpress_event',
+				'post_status' => 'publish',
+			)
+		);
+
+		Settings::get_instance()->set( 'rsvp_mode', 'per_event_on' );
+		update_post_meta( $post_id, 'gatherpress_enable_rsvp', 0 );
+
+		$block_content = '<div class="gatherpress-rsvp-field-guests">Guests</div>';
+		$block         = array( 'attrs' => array( 'postId' => $post_id ) );
+
+		$result = $general_block->process_guests_field( $block_content, $block );
+
+		$this->assertSame( '', $result, 'Should return empty string when per-event RSVP is disabled.' );
+
+		delete_post_meta( $post_id, 'gatherpress_enable_rsvp' );
+		Settings::get_instance()->set( 'rsvp_mode', 'all_on' );
+	}
+
+	/**
+	 * Tests process_anonymous_field returns empty string when per-event RSVP is disabled.
+	 *
+	 * @covers ::process_anonymous_field
+	 *
+	 * @return void
+	 */
+	public function test_process_anonymous_field_rsvp_disabled_per_event(): void {
+		$general_block = General_Block::get_instance();
+		$post_id       = $this->factory->post->create(
+			array(
+				'post_type'   => 'gatherpress_event',
+				'post_status' => 'publish',
+			)
+		);
+
+		Settings::get_instance()->set( 'rsvp_mode', 'per_event_on' );
+		update_post_meta( $post_id, 'gatherpress_enable_rsvp', 0 );
+
+		$block_content = '<div class="gatherpress-rsvp-field-anonymous">Anonymous</div>';
+		$block         = array( 'attrs' => array( 'postId' => $post_id ) );
+
+		$result = $general_block->process_anonymous_field( $block_content, $block );
+
+		$this->assertSame( '', $result, 'Should return empty string when per-event RSVP is disabled.' );
+
+		delete_post_meta( $post_id, 'gatherpress_enable_rsvp' );
+		Settings::get_instance()->set( 'rsvp_mode', 'all_on' );
 	}
 }

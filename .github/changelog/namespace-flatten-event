@@ -1,0 +1,4 @@
+Significance: patch
+Type: changed
+
+Flatten `Event_*` classes into the `GatherPress\Core\Event` subnamespace. `Event_Admin_List` is extracted into its own class. [#1450] [#1508]

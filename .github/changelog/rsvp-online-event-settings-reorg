@@ -1,0 +1,4 @@
+Significance: patch
+Type: changed
+
+Move RSVP-related settings to a dedicated RSVP settings panel and relocate the online event link to Venue settings for better organization. [#1394]

@@ -1,0 +1,4 @@
+Significance: patch
+Type: fixed
+
+Gate the 'Send Updates' email notice so it only appears on event-supporting post types, and surface post-type-aware label / pattern filters for related UI. [#1598]

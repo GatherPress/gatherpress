@@ -29,11 +29,11 @@ add_filter(
 
 ## Files
 
-- [includes/core/classes/class-event.php:945](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/class-event.php#L945)
+- [includes/core/classes/event/class-event.php:792](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/event/class-event.php#L792)
 ```php
 apply_filters( 'gatherpress_force_online_event_link', false )
 ```
 
 
 
-[← All Hooks](Hooks)
+[← All Hooks](Hooks.md)

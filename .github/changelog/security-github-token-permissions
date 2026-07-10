@@ -1,0 +1,4 @@
+Significance: patch
+Type: security
+
+Lock down `GITHUB_TOKEN` permissions across CI workflows to least-privilege scopes, reducing the blast radius of a compromised workflow. [#1650]

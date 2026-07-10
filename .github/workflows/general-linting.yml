@@ -11,6 +11,9 @@ on:
     - '*.md'
     - 'package.json'
 
+permissions:
+  contents: read
+
 jobs:
   mdlinting:
     name: Markdown
@@ -48,7 +51,7 @@ jobs:
 
       - name: NPM install
         if: steps.node_modules-cache.outputs.cache-hit != 'true'
-        run: npm ci --legacy-peer-deps
+        run: npm ci
 
       # Creating a short lived node_modules cache
       - uses: actions/cache/save@v4
@@ -101,7 +104,7 @@ jobs:
 
       - name: NPM install
         if: steps.node_modules-cache.outputs.cache-hit != 'true'
-        run: npm ci --legacy-peer-deps
+        run: npm ci
 
       # Creating a short lived node_modules cache
       - uses: actions/cache/save@v4

@@ -5,16 +5,22 @@ import {
 	RangeControl,
 	SelectControl,
 	ToggleControl,
+	// eslint-disable-next-line @wordpress/no-unsafe-wp-apis
+	__experimentalToggleGroupControl as ToggleGroupControl,
+	// eslint-disable-next-line @wordpress/no-unsafe-wp-apis
+	__experimentalToggleGroupControlOption as ToggleGroupControlOption,
 } from '@wordpress/components';
 import { useSelect } from '@wordpress/data';
+import { useEffect } from '@wordpress/element';
 import { __, _x, sprintf } from '@wordpress/i18n';
 
 /**
  * Internal dependencies
  */
-import GatherPressQueryControls from './slots/query-controls';
-import GatherPressInheritedQueryControls from './slots/inherited-query-controls';
-import { isEventPostType } from '../../../helpers/event';
+import EventQueryControls from './slots/query-controls';
+import EventInheritedQueryControls from './slots/inherited-query-controls';
+import { isEventPostType, isPostTypeSupporting } from '../../../helpers/event';
+import { isInFSETemplate, usePostTypeLabel } from '../../../helpers/editor';
 
 /**
  * EventCountControls component
@@ -25,14 +31,28 @@ import { isEventPostType } from '../../../helpers/event';
  * @param {Object}   props
  * @param {Object}   props.attributes    Block attributes.
  * @param {Function} props.setAttributes Function to update block attributes.
+ *
  * @return {Element}                     RangeControl for event "per page" count.
  */
 export const EventCountControls = ( { attributes, setAttributes } ) => {
-	const { query: { perPage, offset = 0 } = {} } = attributes;
+	const { query: { postType, perPage, offset = 0 } = {} } = attributes;
+
+	// Read the plural label so the label reflects what the currently
+	// selected post type is actually called — a custom event-supporting post type with
+	// `name => 'Productions'` shows "Productions Per Page".
+	const pluralLabel = usePostTypeLabel(
+		'name',
+		postType,
+		__( 'Events', 'gatherpress' )
+	);
 
 	return (
 		<RangeControl
-			label={ __( 'Events Per Page', 'gatherpress' ) }
+			label={ sprintf(
+			/* translators: %s: Plural post type label, e.g. "Events". */
+				__( '%s Per Page', 'gatherpress' ),
+				pluralLabel
+			) }
 			min={ 1 }
 			max={ 50 }
 			onChange={ ( newCount ) => {
@@ -61,14 +81,24 @@ export const EventCountControls = ( { attributes, setAttributes } ) => {
  * @param {Object}   props
  * @param {Object}   props.attributes    Block attributes.
  * @param {Function} props.setAttributes Function to update block attributes.
+ *
  * @return {Element}                        ToggleControl to exclude current event.
  */
 export const EventExcludeControls = ( { attributes, setAttributes } ) => {
-	const { query: { exclude_current: excludeCurrent } = {} } = attributes;
+	const { query: { postType, exclude_current: excludeCurrent } = {} } = attributes;
 
 	const currentPost = useSelect( ( select ) => {
 		return select( 'core/editor' ).getCurrentPost();
 	}, [] );
+
+	// Read the singular label so the label reflects what the currently
+	// selected post type is actually called — a custom event-supporting post type with
+	// `singular_name => 'Production'` shows "Exclude Current Production".
+	const singularLabel = usePostTypeLabel(
+		'singular_name',
+		postType,
+		__( 'Event', 'gatherpress' )
+	);
 
 	if ( ! currentPost ) {
 		return <div>{ __( 'Loading…', 'gatherpress' ) }</div>;
@@ -76,7 +106,11 @@ export const EventExcludeControls = ( { attributes, setAttributes } ) => {
 
 	return (
 		<ToggleControl
-			label={ __( 'Exclude Current Event', 'gatherpress' ) }
+			label={ sprintf(
+				/* translators: %s: Singular post type label, e.g. "Event". */
+				__( 'Exclude Current %s', 'gatherpress' ),
+				singularLabel
+			) }
 			checked={ !! excludeCurrent }
 			onChange={ ( value ) => {
 				setAttributes( {
@@ -100,6 +134,7 @@ export const EventExcludeControls = ( { attributes, setAttributes } ) => {
  * @param {Object}   props
  * @param {Object}   props.attributes    Block attributes.
  * @param {Function} props.setAttributes Function to update block attributes.
+ *
  * @return {Element}                        ToggleControl for unfinished events.
  */
 export const EventIncludeUnfinishedControls = ( {
@@ -108,6 +143,7 @@ export const EventIncludeUnfinishedControls = ( {
 } ) => {
 	const {
 		query: {
+			postType,
 			include_unfinished: includeUnfinished,
 			gatherpress_event_query: eventListType = 'upcoming',
 		} = {},
@@ -127,19 +163,33 @@ export const EventIncludeUnfinishedControls = ( {
 		effectiveValue = ( 1 === includeUnfinished );
 	}
 
+	// Read the plural label so the label reflects what the currently
+	// selected post type is actually called — a custom event-supporting post type with
+	// `name => 'Productions'` shows "Include Unfinished Productions".
+	const pluralLabel = usePostTypeLabel(
+		'name',
+		postType,
+		__( 'Events', 'gatherpress' )
+	);
+
 	return (
 		<ToggleControl
-			label={ __( 'Include unfinished events', 'gatherpress' ) }
+			label={ sprintf(
+				/* translators: %s: Plural post type label, e.g. "Events". */
+				__( 'Include Unfinished %s', 'gatherpress' ),
+				pluralLabel
+			) }
 			help={ sprintf(
-				/* translators: %s: 'upcoming' or 'past' */
+				/* translators: %1$s: 'upcoming' or 'past', %2$s: Plural post type label */
 				_x(
-					'%s events that have started but are not yet finished.',
+					'%1$s %2$s that have started but are not yet finished.',
 					"'Shows' or 'Hides'",
 					'gatherpress',
 				),
 				effectiveValue
 					? __( 'Shows', 'gatherpress' )
 					: __( 'Hides', 'gatherpress' ),
+				pluralLabel
 			) }
 			checked={ effectiveValue }
 			onChange={ ( value ) => {
@@ -159,51 +209,226 @@ export const EventIncludeUnfinishedControls = ( {
  * EventListTypeControls component
  *
  * Lets the editor choose whether the query returns "upcoming" or "past" events.
- * Toggled via a ToggleControl between upcoming (future) or past (archived) events,
+ * Uses a ToggleGroupControl with "Upcoming" and "Past" options,
  * stored as `gatherpress_event_query` in attributes.
  *
  * @param {Object}   props
  * @param {Object}   props.attributes    Block attributes.
  * @param {Function} props.setAttributes Function to update block attributes.
- * @return {Element}                        ToggleControl for event list type.
+ *
+ * @return {Element}                     ToggleGroupControl for event list type.
  */
 export const EventListTypeControls = ( { attributes, setAttributes } ) => {
 	const {
-		query: { gatherpress_event_query: eventListType = 'upcoming' } = {},
+		query: { postType, gatherpress_event_query: eventListType = 'upcoming' } = {},
 	} = attributes;
 
-	const currentPost = useSelect( ( select ) => {
-		return select( 'core/editor' ).getCurrentPost();
-	}, [] );
+	// Read the singular label so the label reflects what the currently
+	// selected post type is actually called — a custom event-supporting post type with
+	// `singular_name => 'Production'` shows "Production List Type".
+	const singularLabel = usePostTypeLabel(
+		'singular_name',
+		postType,
+		__( 'Event', 'gatherpress' )
+	);
 
-	if ( ! currentPost ) {
-		return <div>{ __( 'Loading…', 'gatherpress' ) }</div>;
-	}
+	return (
+		<ToggleGroupControl
+			label={ sprintf(
+				/* translators: %s: Singular post type label, e.g. "Event". */
+				__( '%s List Type', 'gatherpress' ),
+				singularLabel
+			) }
+			value={ eventListType }
+			isBlock
+			__next40pxDefaultSize
+			onChange={ ( newEventType ) => {
+				// When switching event type, reset related defaults so the
+				// query immediately makes sense for the new type.
+				const isUpcoming = 'upcoming' === newEventType;
+				const updatedQuery = {
+					...attributes.query,
+					gatherpress_event_query: newEventType,
+					include_unfinished: isUpcoming ? 1 : 0,
+				};
+
+				// Only reset the sort direction when ordering by Event Date,
+				// so we don't override a manually chosen order for other fields.
+				if ( 'datetime' === attributes.query?.orderBy ) {
+					updatedQuery.order = isUpcoming ? 'asc' : 'desc';
+				}
+
+				setAttributes( { query: updatedQuery } );
+			} }
+		>
+			<ToggleGroupControlOption
+				value="upcoming"
+				label={ __( 'Upcoming', 'gatherpress' ) }
+			/>
+			<ToggleGroupControlOption
+				value="past"
+				label={ __( 'Past', 'gatherpress' ) }
+			/>
+		</ToggleGroupControl>
+	);
+};
+
+/**
+ * ShadowSourceFilterControls component
+ *
+ * Renders a ToggleControl to filter the event query by the
+ * current shadow-source context. When enabled on a shadow-source page, only
+ * events associated with that shadow-source are shown. When not on a
+ * shadow-source page, the filter is gracefully ignored.
+ *
+ * In a template/template-part context, the editor has no
+ * current shadow-source to bind to — the toggle is still relevant
+ * because the template will be applied to shadow-source posts at
+ * render time, but the help copy reflects the deferred binding.
+ *
+ * @param {Object}   props
+ * @param {Object}   props.context           Block context, including post type and ID.
+ * @param {Object}   props.attributes        Block attributes.
+ * @param {Function} props.setAttributes     Function to update block attributes.
+ * @param {boolean}  props.inTemplateContext Whether the host editor is a template or template part.
+ *
+ * @return {Element}                          ToggleControl for shadow-source filtering.
+ */
+export const ShadowSourceFilterControls = ( {
+	context,
+	attributes,
+	setAttributes,
+	inTemplateContext = false,
+} ) => {
+	const {
+		query: { shadow_filter: ShadowFilter } = {},
+	} = attributes;
+
+	// Detect if the editor's current post type is a shadow-source CPT
+	// (gatherpress-shadow-source post-type-support). If yes, the filter label
+	// adapts to that type — "Filter by Current Tour" / "Filter by Current
+	// Production" — matching whatever the template renders against at runtime.
+	// Otherwise (events, pages, templates, patterns) fall back to gatherpress_venue
+	// since that's the most common scope-by-source scenario.
+	const fallbackPostId = useSelect( ( wpSelect ) => wpSelect( 'core/editor' )?.getCurrentPostId(), [] );
+	const fallbackPostType = useSelect( ( wpSelect ) => wpSelect( 'core/editor' )?.getCurrentPostType(), [] );
+	const editorPostId = context?.postId || fallbackPostId;
+	const editorPostType = context?.postType || fallbackPostType;
+
+	const editorPostTypeSupports = useSelect(
+		( wpSelect ) =>
+			editorPostType
+				? wpSelect( 'core' ).getPostType( editorPostType )?.supports
+				: null,
+		[ editorPostType ]
+	);
+	const editorIsShadowSource = !! editorPostTypeSupports?.[ 'gatherpress-shadow-source' ];
+	const sourcePostType = editorIsShadowSource
+		? editorPostType
+		: 'gatherpress_venue';
+
+	// Backfill the shadow-source context attrs whenever the toggle is on but
+	// the IDs don't match the current editor post. Catches three real-world
+	// scenarios that otherwise let the editor render an unscoped query
+	// briefly (every event in the DB, including ones outside the current
+	// source) before the user notices:
+	//
+	//   1. Blocks saved before the rename to `gatherpress_shadow_source_post_*`
+	//      — the saved markup carries `null` for those keys, so the first
+	//      REST request lacks the context and the resolver gives up.
+	//   2. Toggles fired while `core/editor` data store is still hydrating —
+	//      `editorPostId` is `undefined` at the moment `onChange` runs, so
+	//      the attrs get written as `null` and stay that way until the user
+	//      toggles a second time.
+	//   3. Reloads where Gutenberg restored `shadow_filter: 1` but the
+	//      shadow-source attrs were never persisted in the first place.
+	//
+	// Only runs on shadow-source editor post types so non-shadow contexts
+	// (templates, venue pages with the standard venue subsystem) behave as
+	// before.
+	const queryShadowId = attributes.query?.gatherpress_shadow_source_post_id;
+	const queryShadowType = attributes.query?.gatherpress_shadow_source_post_type;
+	const needsBackfill =
+		!! ShadowFilter &&
+		editorIsShadowSource &&
+		!! editorPostId &&
+		!! editorPostType &&
+		( queryShadowId !== editorPostId || queryShadowType !== editorPostType );
+
+	useEffect( () => {
+		if ( ! needsBackfill ) {
+			return;
+		}
+		setAttributes( {
+			query: {
+				...attributes.query,
+				gatherpress_shadow_source_post_id: editorPostId,
+				gatherpress_shadow_source_post_type: editorPostType,
+			},
+		} );
+	}, [
+		needsBackfill,
+		editorPostId,
+		editorPostType,
+		attributes.query,
+		setAttributes,
+	] );
+
+	// Read the singular label so the label reflects what the currently
+	// selected post type is actually called — a re-named gatherpress_venue post type with
+	// `singular_name => 'Location'` shows "Filter by Current Location".
+	const pluralQueryLabel = usePostTypeLabel(
+		'name',
+		attributes?.query?.postType,
+		__( 'Events', 'gatherpress' )
+	);
+
+	const singularLabel = usePostTypeLabel(
+		'singular_name',
+		sourcePostType,
+		__( 'Venue', 'gatherpress' )
+	);
+
+	const helpText = inTemplateContext
+		? __(
+			'The filter only takes effect when this template renders on a shadow-source page (venue, tour, production, etc.).',
+			'gatherpress'
+		)
+		: sprintf(
+			/* translators: 1: Singular post type label, e.g. "Venue", 2: Plural post type label, e.g. "Events" */
+			__(
+				'When placed inside %1$s context, only shows %2$s tied to that %1$s.',
+				'gatherpress'
+			),
+			singularLabel,
+			pluralQueryLabel
+		);
 
 	return (
 		<ToggleControl
-			label={ __( 'Upcoming or past events.', 'gatherpress' ) }
-			help={ sprintf(
-				/* translators: %s: 'upcoming' or 'past' */
-				_x(
-					'Currently shows %s events.',
-					"'upcoming' or 'past'",
-					'gatherpress',
-				),
-				eventListType,
+			label={ sprintf(
+				/* translators: %s: Singular post type label, e.g. "Venue". */
+				__( 'Filter by Current %s', 'gatherpress' ),
+				singularLabel
 			) }
-			checked={ 'upcoming' === eventListType }
+			help={ helpText }
+			checked={ !! ShadowFilter }
 			onChange={ ( value ) => {
-				// When switching event type, explicitly set include_unfinished to the
-				// default for the new event type to ensure WordPress recognizes the state change
-				const newEventType = value ? 'upcoming' : 'past';
-				const defaultIncludeUnfinished = ( 'upcoming' === newEventType ) ? 1 : 0;
+				// Pass editor's current page through to REST so the preview
+				// matches what the runtime template will render against. The
+				// runtime path uses `is_singular()` and ignores these — they
+				// only matter for the REST-driven editor preview.
+				const contextPostId =
+					value && editorIsShadowSource ? editorPostId : null;
+				const contextPostType =
+					value && editorIsShadowSource ? editorPostType : null;
 
 				setAttributes( {
 					query: {
 						...attributes.query,
-						gatherpress_event_query: newEventType,
-						include_unfinished: defaultIncludeUnfinished,
+						shadow_filter: value ? 1 : 0,
+						gatherpress_shadow_source_post_id: contextPostId,
+						gatherpress_shadow_source_post_type: contextPostType,
 					},
 				} );
 			} }
@@ -220,13 +445,28 @@ export const EventListTypeControls = ( { attributes, setAttributes } ) => {
  * @param {Object}   props
  * @param {Object}   props.attributes    Block attributes.
  * @param {Function} props.setAttributes Function to update block attributes.
+ *
  * @return {Element}                        RangeControl for event query offset.
  */
 export const EventOffsetControls = ( { attributes, setAttributes } ) => {
-	const { query: { offset = 0 } = {} } = attributes;
+	const { query: { postType, offset = 0 } = {} } = attributes;
+
+	// Read the singular label so the label reflects what the currently
+	// selected post type is actually called — a custom event-supporting post type with
+	// `singular_name => 'Production'` shows "Production Offset".
+	const singularLabel = usePostTypeLabel(
+		'singular_name',
+		postType,
+		__( 'Event', 'gatherpress' )
+	);
+
 	return (
 		<RangeControl
-			label={ __( 'Event Offset', 'gatherpress' ) }
+			label={ sprintf(
+				/* translators: %s: Singular post type label, e.g. "Event". */
+				__( '%s Offset', 'gatherpress' ),
+				singularLabel
+			) }
 			min={ 0 }
 			max={ 50 }
 			value={ offset }
@@ -252,10 +492,11 @@ export const EventOffsetControls = ( { attributes, setAttributes } ) => {
  * @param {Object}   props
  * @param {Object}   props.attributes    Block attributes.
  * @param {Function} props.setAttributes Function to update block attributes.
+ *
  * @return {Element}                        Controls for event sorting and order.
  */
 export const EventOrderControls = ( { attributes, setAttributes } ) => {
-	const { query: { order, orderBy } = {} } = attributes;
+	const { query: { postType, order, orderBy } = {} } = attributes;
 	let label;
 	if ( 'rand' === orderBy ) {
 		label = __( 'Random Order', 'gatherpress' );
@@ -264,14 +505,42 @@ export const EventOrderControls = ( { attributes, setAttributes } ) => {
 	} else {
 		label = __( 'Descending Order', 'gatherpress' );
 	}
+
+	// Read the singular label so the label reflects what the currently
+	// selected post type is actually called — a custom event-supporting post type with
+	// `singular_name => 'Production'` shows "Production Date".
+	const singularLabel = usePostTypeLabel(
+		'singular_name',
+		postType,
+		__( 'Event', 'gatherpress' )
+	);
+
+	// Read the plural label so the label reflects what the currently
+	// selected post type is actually called — a custom event-supporting post type with
+	// `name => 'Productions'` shows "Order Productions by".
+	const pluralLabel = usePostTypeLabel(
+		'name',
+		postType,
+		__( 'Events', 'gatherpress' )
+	);
+
 	return (
 		<>
 			<SelectControl
-				label={ __( 'Order Events by', 'gatherpress' ) }
+				__next40pxDefaultSize
+				label={ sprintf(
+					/* translators: %s: Plural post type label, e.g. "Events". */
+					__( 'Order %s by', 'gatherpress' ),
+					pluralLabel
+				) }
 				value={ orderBy }
 				options={ [
 					{
-						label: __( 'Event Date', 'gatherpress' ),
+						label: sprintf(
+							/* translators: %s: Singular post type label, e.g. "Event". */
+							__( '%s Date', 'gatherpress' ),
+							singularLabel
+						),
 						value: 'datetime', // This is GatherPress specific, a normal post would use 'date'.
 					},
 					{
@@ -318,7 +587,7 @@ export const EventOrderControls = ( { attributes, setAttributes } ) => {
 };
 
 /**
- * GatherPressQueryControlsSlotFill component
+ * EventQueryControlsSlotFill component
  *
  * Provides the main container for all GatherPress event query controls.
  * Renders all controls depending on the current context (such as post type),
@@ -326,28 +595,67 @@ export const EventOrderControls = ( { attributes, setAttributes } ) => {
  *
  * @return {Element} SlotFill with all event query controls for GatherPress.
  */
-export const GatherPressQueryControlsSlotFill = () => {
-	// If the is the correct variation, add the custom controls.
-	const isEventContext = isEventPostType();
-	return (
-		<GatherPressQueryControls>
-			{ ( props ) => (
-				<>
-					<EventListTypeControls { ...props } />
-					<EventIncludeUnfinishedControls { ...props } />
+export const EventQueryControlsSlotFill = () => {
+	const inTemplateContext = isInFSETemplate();
 
-					{ isEventContext && <EventExcludeControls { ...props } /> }
-					<EventCountControls { ...props } />
-					<EventOffsetControls { ...props } />
-					<EventOrderControls { ...props } />
-				</>
-			) }
-		</GatherPressQueryControls>
+	return (
+		<EventQueryControls>
+			{ ( props ) => {
+				const queryPostType = props.attributes?.query?.postType;
+				const currentPostType = props?.context?.postType;
+
+				// If the is the correct variation, add the custom controls.
+				const isEventContext = isEventPostType( currentPostType );
+
+				// Reactive gate against the host editor's post type. Templates and template
+				// parts have no concrete shadow-source context to bind to, but they may render on a
+				// shadow-source page later, so we keep the toggle visible there with adjusted copy.
+				// On any non-shadow-source, non-template host the toggle can never apply, so we hide
+				// it to remove the mental load of an option that does nothing.
+				const isShadowSourceContext = isPostTypeSupporting(
+					'gatherpress-shadow-source',
+					currentPostType
+				);
+
+				const showExcludeControl =
+					isEventContext &&
+					currentPostType &&
+					queryPostType &&
+					currentPostType === queryPostType;
+
+				const showShadowSourceFilterControl =
+					inTemplateContext ||
+					(
+						isShadowSourceContext &&
+						currentPostType &&
+						queryPostType &&
+						currentPostType !== queryPostType
+					);
+
+				return (
+					<>
+						<EventListTypeControls { ...props } />
+						<EventIncludeUnfinishedControls { ...props } />
+
+						{ showExcludeControl && <EventExcludeControls { ...props } /> }
+						{ showShadowSourceFilterControl && (
+							<ShadowSourceFilterControls
+								{ ...props }
+								inTemplateContext={ inTemplateContext }
+							/>
+						) }
+						<EventCountControls { ...props } />
+						<EventOffsetControls { ...props } />
+						<EventOrderControls { ...props } />
+					</>
+				);
+			} }
+		</EventQueryControls>
 	);
 };
 
 /**
- * GatherPressInheritedQueryControlsSlotFill component
+ * EventInheritedQueryControlsSlotFill component
  *
  * Provides a condensed container for controls used when
  * a query is "inherited" (such as for nested queries), omitting
@@ -355,9 +663,9 @@ export const GatherPressQueryControlsSlotFill = () => {
  *
  * @return {Element} SlotFill with inherited event query controls for GatherPress.
  */
-export const GatherPressInheritedQueryControlsSlotFill = () => {
+export const EventInheritedQueryControlsSlotFill = () => {
 	return (
-		<GatherPressInheritedQueryControls>
+		<EventInheritedQueryControls>
 			{ ( props ) => (
 				<>
 					<EventListTypeControls { ...props } />
@@ -365,6 +673,6 @@ export const GatherPressInheritedQueryControlsSlotFill = () => {
 					<EventOrderControls { ...props } />
 				</>
 			) }
-		</GatherPressInheritedQueryControls>
+		</EventInheritedQueryControls>
 	);
 };

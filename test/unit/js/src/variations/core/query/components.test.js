@@ -1,0 +1,233 @@
+/**
+ * External dependencies
+ */
+import { describe, expect, it, jest, beforeEach } from '@jest/globals';
+import { render, screen } from '@testing-library/react';
+import '@testing-library/jest-dom';
+
+jest.mock( '@wordpress/components', () => ( {
+	RangeControl: ( { label } ) => (
+		<div data-testid="range-control">{ label }</div>
+	),
+	SelectControl: ( { label } ) => (
+		<div data-testid="select-control">{ label }</div>
+	),
+	ToggleControl: ( { label, help } ) => (
+		<div data-testid="toggle-control">
+			<span>{ label }</span>
+			{ help && <span data-testid="toggle-help">{ help }</span> }
+		</div>
+	),
+	__experimentalToggleGroupControl: ( { label, children } ) => (
+		<div data-testid="toggle-group-control">
+			{ label }
+			{ children }
+		</div>
+	),
+	__experimentalToggleGroupControlOption: ( { label } ) => (
+		<div data-testid="toggle-group-option">{ label }</div>
+	),
+} ) );
+
+jest.mock( '@wordpress/data', () => ( {
+	useSelect: jest.fn( () => ( { id: 1 } ) ),
+} ) );
+
+jest.mock( '@wordpress/i18n', () => ( {
+	__: ( text ) => text,
+	_x: ( text ) => text,
+	sprintf: ( fmt, ...args ) => {
+		// Mirror @wordpress/i18n: support both positional (%1$s) and
+		// sequential (%s) placeholders so help copy interpolates correctly.
+		let sequential = 0;
+		return fmt.replace( /%(\d+)\$s|%s/g, ( match, position ) =>
+			position ? args[ position - 1 ] : args[ sequential++ ]
+		);
+	},
+} ) );
+
+// The slot wrapper invokes its render-prop child immediately so we can assert
+// on what the fill renders without setting up a real Slot consumer.
+let mockQueryControlsProps = {
+	context: {
+		postType: 'gatherpress_event',
+	},
+	attributes: {
+		query: {
+			postType: 'gatherpress_event',
+			inherit: false,
+		},
+	},
+	setAttributes: jest.fn(),
+};
+
+jest.mock( '@src/variations/core/query/slots/query-controls', () => ( {
+	__esModule: true,
+	default: ( { children } ) => (
+		<div data-testid="query-controls-fill">
+			{ children( mockQueryControlsProps ) }
+		</div>
+	),
+} ) );
+
+jest.mock( '@src/variations/core/query/slots/inherited-query-controls', () => ( {
+	__esModule: true,
+	default: ( { children } ) => (
+		<div data-testid="inherited-fill">
+			{ children( {
+				attributes: { query: { inherit: true } },
+				setAttributes: jest.fn(),
+			} ) }
+		</div>
+	),
+} ) );
+
+jest.mock( '@src/helpers/event', () => ( {
+	isEventPostType: jest.fn(),
+	isPostTypeSupporting: jest.fn(),
+} ) );
+
+jest.mock( '@src/helpers/editor', () => ( {
+	isInFSETemplate: jest.fn(),
+	getPostTypeLabel: jest.fn( ( key, postType, fallback ) => fallback ),
+	usePostTypeLabel: jest.fn( ( key, postType, fallback ) => fallback ),
+} ) );
+
+/**
+ * WordPress dependencies
+ */
+import { isEventPostType, isPostTypeSupporting } from '@src/helpers/event';
+import { isInFSETemplate } from '@src/helpers/editor';
+
+/**
+ * Internal dependencies
+ */
+import { EventQueryControlsSlotFill } from '@src/variations/core/query/components';
+
+const venueToggleLabel = 'Filter by Current Venue';
+const excludeToggleLabel = 'Exclude Current Event';
+const venueHelp =
+	'When placed inside Venue context, only shows Events tied to that Venue.';
+const templateHelp =
+	'The filter only takes effect when this template renders on a shadow-source page (venue, tour, production, etc.).';
+
+describe( 'EventQueryControlsSlotFill', () => {
+	beforeEach( () => {
+		isEventPostType.mockReset();
+		isPostTypeSupporting.mockReset();
+		isInFSETemplate.mockReset();
+	} );
+
+	it( 'hides the venue filter toggle on a regular non-venue, non-template host', () => {
+		isEventPostType.mockReturnValue( true );
+		isPostTypeSupporting.mockReturnValue( false );
+		isInFSETemplate.mockReturnValue( false );
+
+		render( <EventQueryControlsSlotFill /> );
+
+		expect(
+			screen.queryByText( venueToggleLabel )
+		).not.toBeInTheDocument();
+		expect( isPostTypeSupporting ).toHaveBeenCalledWith(
+			'gatherpress-shadow-source',
+			'gatherpress_event'
+		);
+	} );
+
+	it( 'shows the venue filter toggle with venue copy when host is a venue post', () => {
+		mockQueryControlsProps = {
+			...mockQueryControlsProps,
+			context: {
+				postType: 'gatherpress_venue',
+			},
+			attributes: {
+				query: {
+					postType: 'gatherpress_event',
+					inherit: false,
+				},
+			},
+		};
+
+		isEventPostType.mockReturnValue( false );
+		isPostTypeSupporting.mockReturnValue( true );
+		isInFSETemplate.mockReturnValue( false );
+
+		render( <EventQueryControlsSlotFill /> );
+
+		expect( screen.getByText( venueToggleLabel ) ).toBeInTheDocument();
+		expect( screen.getByText( venueHelp ) ).toBeInTheDocument();
+		expect( screen.queryByText( templateHelp ) ).not.toBeInTheDocument();
+	} );
+
+	it( 'shows the venue filter toggle with template copy on a template / template part', () => {
+		isEventPostType.mockReturnValue( false );
+		isPostTypeSupporting.mockReturnValue( false );
+		isInFSETemplate.mockReturnValue( true );
+
+		render( <EventQueryControlsSlotFill /> );
+
+		expect( screen.getByText( venueToggleLabel ) ).toBeInTheDocument();
+		expect( screen.getByText( templateHelp ) ).toBeInTheDocument();
+		expect( screen.queryByText( venueHelp ) ).not.toBeInTheDocument();
+	} );
+
+	it( 'still gates the exclude-current-event toggle on the existing isEventPostType check', () => {
+		isEventPostType.mockReturnValue( false );
+		isPostTypeSupporting.mockReturnValue( true );
+		isInFSETemplate.mockReturnValue( false );
+
+		render( <EventQueryControlsSlotFill /> );
+
+		expect(
+			screen.queryByText( excludeToggleLabel )
+		).not.toBeInTheDocument();
+	} );
+
+	it( 'shows the exclude-current-event toggle when the host is an event post type', () => {
+		mockQueryControlsProps = {
+			...mockQueryControlsProps,
+			context: {
+				postType: 'gatherpress_event',
+			},
+			attributes: {
+				query: {
+					postType: 'gatherpress_event',
+					inherit: false,
+				},
+			},
+		};
+
+		isEventPostType.mockReturnValue( true );
+		isPostTypeSupporting.mockReturnValue( true );
+		isInFSETemplate.mockReturnValue( false );
+
+		render( <EventQueryControlsSlotFill /> );
+
+		expect( screen.getByText( excludeToggleLabel ) ).toBeInTheDocument();
+	} );
+
+	it( 'hides the exclude-current-event toggle when the query post type differs from the host post type', () => {
+		mockQueryControlsProps = {
+			...mockQueryControlsProps,
+			context: {
+				postType: 'gatherpress_event',
+			},
+			attributes: {
+				query: {
+					postType: 'post',
+					inherit: false,
+				},
+			},
+		};
+
+		isEventPostType.mockReturnValue( true );
+		isPostTypeSupporting.mockReturnValue( true );
+		isInFSETemplate.mockReturnValue( false );
+
+		render( <EventQueryControlsSlotFill /> );
+
+		expect(
+			screen.queryByText( excludeToggleLabel )
+		).not.toBeInTheDocument();
+	} );
+} );

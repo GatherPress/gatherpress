@@ -1,5 +1,5 @@
 /**
- * WordPress dependencies.
+ * WordPress dependencies
  */
 import { useBlockProps, InspectorControls } from '@wordpress/block-editor';
 import {
@@ -10,17 +10,18 @@ import {
 } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
 
-import { getFromGlobal } from '../../helpers/globals';
+import { getFromConfig } from '../../helpers/editor-settings';
 import { useEffect, useState } from '@wordpress/element';
 
 const Edit = ( { attributes, setAttributes } ) => {
 	const blockProps = useBlockProps();
 	const { icon, iconColor, iconSize } = attributes;
 	const [ svgContent, setSvgContent ] = useState( '' );
-	const svgBaseUrl = `${ getFromGlobal( 'urls.pluginUrl' ) }includes/assets/svg/`;
+	const svgBaseUrl = `${ getFromConfig( 'pluginUrl' ) }includes/assets/svg/`;
 
 	// Icon original source: https://github.com/WordPress/dashicons/tree/master/svg-min.
 	const ICON_OPTIONS = [
+		{ label: __( 'Admin Site Alt3', 'gatherpress' ), value: 'admin-site-alt3' },
 		{ label: __( 'Calendar', 'gatherpress' ), value: 'calendar' },
 		{ label: __( 'Clock', 'gatherpress' ), value: 'clock' },
 		{ label: __( 'Dismiss', 'gatherpress' ), value: 'dismiss' },
@@ -28,6 +29,8 @@ const Edit = ( { attributes, setAttributes } ) => {
 		{ label: __( 'Groups', 'gatherpress' ), value: 'groups' },
 		{ label: __( 'Location', 'gatherpress' ), value: 'location' },
 		{ label: __( 'Nametag', 'gatherpress' ), value: 'nametag' },
+		{ label: __( 'Phone', 'gatherpress' ), value: 'phone' },
+		{ label: __( 'Video Alt2', 'gatherpress' ), value: 'video-alt2' },
 		{ label: __( 'Yes Alt', 'gatherpress' ), value: 'yes-alt' },
 	];
 
@@ -49,6 +52,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 			<InspectorControls>
 				<PanelBody title={ __( 'Icon Settings', 'gatherpress' ) }>
 					<SelectControl
+						__next40pxDefaultSize
 						label={ __( 'Icon', 'gatherpress' ) }
 						value={ icon }
 						options={ ICON_OPTIONS }

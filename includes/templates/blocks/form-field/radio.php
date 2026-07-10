@@ -3,7 +3,7 @@
  * Radio Form Field Template.
  *
  * @package GatherPress\Core
- * @since 1.0.0
+ * @since 0.33.0
  */
 
 // Exit if accessed directly.
@@ -17,7 +17,7 @@ if ( ! isset(
 	$label_styles,
 	$label_wrapper_styles,
 	$required_styles,
-	$option_styles
+	$option_styles,
 ) ) {
 	return;
 }

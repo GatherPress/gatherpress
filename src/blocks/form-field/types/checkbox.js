@@ -1,11 +1,11 @@
 /**
- * WordPress dependencies.
+ * WordPress dependencies
  */
 import { __ } from '@wordpress/i18n';
 import { RichText } from '@wordpress/block-editor';
 
 /**
- * Internal dependencies.
+ * Internal dependencies
  */
 import {
 	getInputStyles,
@@ -22,6 +22,7 @@ import {
  * @param {Function} props.setAttributes     - Function to update block attributes.
  * @param {Object}   props.blockProps        - WordPress block wrapper properties.
  * @param {Function} props.generateFieldName - Function to generate field name from label.
+ *
  * @return {JSX.Element} The checkbox field component.
  */
 export default function CheckboxField( {
@@ -75,7 +76,7 @@ export default function CheckboxField( {
 					value={ label }
 					onChange={ ( value ) => setAttributes( { label: value } ) }
 					onBlur={ () => handleLabelBlur( label ) }
-					allowedFormats={ [] }
+					allowedFormats={ [ 'gatherpress/tooltip' ] }
 					style={ getLabelStyles( attributes ) }
 				/>
 				{ required && (

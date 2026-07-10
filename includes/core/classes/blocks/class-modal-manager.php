@@ -7,7 +7,7 @@
  * of modal interactions, and preparing the block for output.
  *
  * @package GatherPress\Core
- * @since 1.0.0
+ * @since 0.33.0
  */
 
 namespace GatherPress\Core\Blocks;
@@ -23,9 +23,10 @@ use WP_HTML_Tag_Processor;
  * Class responsible for managing the "Modal Manager" block and its associated functionality,
  * including dynamic transformations, modal interactions, and enhancements for interactivity.
  *
- * @since 1.0.0
+ * @since 0.33.0
  */
 class Modal_Manager {
+
 	/**
 	 * Enforces a single instance of this class.
 	 */
@@ -34,7 +35,7 @@ class Modal_Manager {
 	/**
 	 * Constant representing the Block Name.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @var string
 	 */
 	const BLOCK_NAME = 'gatherpress/modal-manager';
@@ -44,7 +45,7 @@ class Modal_Manager {
 	 *
 	 * This method initializes the object and sets up necessary hooks.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 */
 	protected function __construct() {
 		$this->setup_hooks();
@@ -55,7 +56,7 @@ class Modal_Manager {
 	 *
 	 * This method adds hooks for different purposes as needed.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @return void
 	 */
@@ -79,7 +80,7 @@ class Modal_Manager {
 	 * - Adds `data-wp-on--keydown` for keyboard accessibility.
 	 * - Sets `role="button"` and `tabindex="0"` for non-native actionable elements.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @param string $block_content The original block HTML content.
 	 *
@@ -138,7 +139,7 @@ class Modal_Manager {
 	 * - Adds `data-wp-on--keydown` for keyboard accessibility.
 	 * - Sets `role="button"` and `tabindex="0"` for non-native actionable elements.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @param string $block_content The original block HTML content.
 	 *

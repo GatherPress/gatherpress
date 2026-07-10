@@ -8,7 +8,7 @@ Event List (will be deprecated in the next version, 0.34)
 
 [RSVP Response and its inner blocks](./rsvp-response-and-inner-blocks.md) (RSVP Response Toggle, Avatar Display Name, RSVP Guest Count Display, etc)
 
-Add to Calendar: Allows a user to add an event to their preferred calendar application.
+Add to Calendar: Allows a user to add an event to their preferred calendar application. This saves a one-time copy of the event; for live, auto-updating subscriptions by venue, topic, or site, see [Calendar feeds](../calendar-feeds.md).
 
 ## Other blocks used in an event
 

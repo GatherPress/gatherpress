@@ -9,11 +9,14 @@
 
 
 <IfModule mod_headers.c>
-    # THIS IS IMPORTANT
-    # The missing piece I was hunting for 2 days.
+    # plugin-proxy.php now sets Content-Type and Content-Disposition itself,
+    # before it flushes the output buffer, so the download works even without
+    # this rule. These `Header set` lines are kept as a server-level fallback;
+    # `set` replaces with an identical value, so there is no duplicate header.
     #
-    # TODO # WEIRD
-    # Having this here DOES WORK,
-    # the exact same line DOES NOT WORK when placed in plugin-proxy.php.
+    # (The earlier "only works from .htaccess, not from PHP" note was a symptom
+    # of the proxy flushing PHP's default text/html header too early; that is
+    # fixed in plugin-proxy.php.)
+    Header set Content-Type "application/zip"
     Header set Content-Disposition "attachment; filename=\"gatherpress-pr.zip\""
 </IfModule>

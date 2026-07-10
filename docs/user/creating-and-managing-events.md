@@ -39,6 +39,8 @@ Behavior to be aware of:
 * Display follows the date and time format defined in settings by default and can be adjusted at the Event Date block level.  
 * Timezones follow the user profile or site timezone.
 
+For developers: the Duration control's preset options and default value can be customized with JavaScript filters. See [Event duration filters](../developer/event-duration.md).
+
 
 ![Screenshot of the WordPress editor with Event time](./user-doc-media/20260110153038.png)
 
@@ -65,6 +67,8 @@ For events happening both at a physical location and online, you must add the ve
 
 In the event settings panel, below the time and venue options, you will find:
 
+* Enable RSVP — only shown when the sitewide [RSVP Mode](./rsvp-system.md#rsvp-mode) is set to one of the per-event modes; turns RSVP on or off for this event
+* Enable Open RSVP — lets visitors without an account RSVP to this event, see [Open RSVP](./rsvp-system.md#open-rsvp-without-an-account)
 * Maximum number of guests  
 * Maximum attendance limit
 * Enable Anonymous RSVP
@@ -81,6 +85,8 @@ When publishing or updating an event:
 * Changes to date, time, or venue may affect how the event is listed or displayed.  
 * Existing RSVPs are preserved when editing events.
 * A Compose message prompt appears at the top of the event to invite you to inform users, see [more on Emails](./emails.md)
+
+Published events automatically appear in the site's subscribable [calendar feeds](./calendar-feeds.md), so attendees following a venue, topic, or the whole site see new and updated events in their own calendar apps.
 
 
 

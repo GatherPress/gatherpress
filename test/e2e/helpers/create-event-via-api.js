@@ -6,6 +6,7 @@
  *
  * @param {import('@playwright/test').APIRequestContext} request - Playwright request context.
  * @param {string}                                       baseURL - WordPress base URL.
+ *
  * @return {Promise<string>} The event URL.
  */
 async function createEventWithRSVP( request, baseURL = 'http://localhost:8889' ) {

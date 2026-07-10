@@ -4,8 +4,8 @@
 Filters the default state of the event updates opt-in.
 
 This filter allows modification of the default opt-in state for compliance
-with regional privacy laws (e.g., GDPR in Germany) that may require
-opt-in consent to be unchecked by default.
+with privacy laws such as the European Union's GDPR (known in Germany
+as the DSGVO) that may require opt-in consent to be unchecked by default.
 
 ## Auto-generated Example
 
@@ -31,11 +31,11 @@ add_filter(
 
 ## Files
 
-- [includes/core/classes/class-user.php:174](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/class-user.php#L174)
+- [includes/core/classes/class-user.php:176](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/class-user.php#L176)
 ```php
 apply_filters( 'gatherpress_event_updates_default_opt_in', '1', $user_id )
 ```
 
 
 
-[← All Hooks](Hooks)
+[← All Hooks](Hooks.md)

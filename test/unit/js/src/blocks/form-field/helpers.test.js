@@ -1,10 +1,10 @@
 /**
- * External dependencies.
+ * External dependencies
  */
 import { describe, expect, it, jest, beforeEach } from '@jest/globals';
 
 /**
- * Internal dependencies.
+ * Internal dependencies
  */
 import FieldValue, {
 	getInputStyles,
@@ -12,7 +12,7 @@ import FieldValue, {
 	getLabelWrapperStyles,
 	getOptionStyles,
 	getWrapperClasses,
-} from '../../../../../../src/blocks/form-field/helpers';
+} from '@src/blocks/form-field/helpers';
 
 /**
  * Mock WordPress i18n.

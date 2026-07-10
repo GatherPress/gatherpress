@@ -3,7 +3,7 @@
  * Class handles unit tests for GatherPress\Core\Migrate.
  *
  * @package GatherPress\Core
- * @since 1.0.0
+ * @since 0.30.0
  */
 
 namespace GatherPress\Tests\Core;
@@ -18,6 +18,7 @@ use GatherPress\Tests\Base;
  * @group migrate
  */
 class Test_Migrate extends Base {
+
 	/**
 	 * Coverage for get_pseudopostmetas method.
 	 *

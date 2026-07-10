@@ -37,11 +37,11 @@ add_filter(
 
 ## Files
 
-- [includes/core/classes/class-assets.php:554](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/class-assets.php#L554)
+- [includes/core/classes/class-assets.php:688](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/class-assets.php#L688)
 ```php
 apply_filters( 'gatherpress_asset_critical', $critical, $path, $name )
 ```
 
 
 
-[← All Hooks](Hooks)
+[← All Hooks](Hooks.md)

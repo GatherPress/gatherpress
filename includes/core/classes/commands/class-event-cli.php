@@ -6,7 +6,7 @@
  * Developers can use these commands to interact with and manage event-related functionalities via the command line.
  *
  * @package GatherPress\Core
- * @since 1.0.0
+ * @since 0.27.0
  */
 
 namespace GatherPress\Core\Commands;
@@ -24,9 +24,10 @@ use WP_CLI;
  * Developers can use these commands to perform various actions on events, such as updating RSVP status.
  *
  * @package GatherPress\Core
- * @since 1.0.0
+ * @since 0.29.0
  */
 class Event_Cli extends WP_CLI {
+
 	/**
 	 * Update RSVP status for an event.
 	 *
@@ -55,12 +56,14 @@ class Event_Cli extends WP_CLI {
 	 *    $ wp gatherpress event rsvp --event_id=525 --user_id=1 --status="not_attending"
 	 *    Success: The RSVP status for Event ID "525" has been successfully set to "not_attending" for User ID "1".
 	 *
-	 * @since 1.0.0
+	 * @since 0.29.0
 	 *
 	 * @param array $args       Positional arguments for the script.
 	 * @param array $assoc_args Associative arguments for the script.
 	 *
 	 * @return void
+	 *
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
 	 */
 	public function rsvp( array $args = array(), array $assoc_args = array() ): void {
 		$event_id  = (int) $assoc_args['event_id'];

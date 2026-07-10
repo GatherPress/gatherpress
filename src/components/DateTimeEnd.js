@@ -1,5 +1,5 @@
 /**
- * WordPress dependencies.
+ * WordPress dependencies
  */
 import {
 	Button,
@@ -14,8 +14,9 @@ import { useEffect } from '@wordpress/element';
 import { useDispatch, useSelect } from '@wordpress/data';
 
 /**
- * Internal dependencies.
+ * Internal dependencies
  */
+import { getStartOfWeek } from '../helpers/editor';
 import { hasEventPastNotice } from '../helpers/event';
 import {
 	createMomentWithTimezone,
@@ -34,7 +35,7 @@ import { getSettings } from '@wordpress/date';
  * The component also updates the state using the setDateTimeEnd callback.
  * If the event has passed, it displays a notice using the hasEventPastNotice function.
  *
- * @since 1.0.0
+ * @since 0.27.0
  *
  * @return {JSX.Element} The rendered React component.
  */
@@ -101,6 +102,7 @@ const DateTimeEnd = () => {
 									)
 								}
 								is12Hour={ is12HourTime }
+								startOfWeek={ getStartOfWeek() }
 							/>
 						) }
 					/>

@@ -4,7 +4,7 @@
  * handling associated hooks for customizing functionality.
  *
  * @package GatherPress\Core
- * @since 1.0.0
+ * @since 0.30.0
  */
 
 namespace GatherPress\Core\Blocks;
@@ -12,9 +12,7 @@ namespace GatherPress\Core\Blocks;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
-use GatherPress\Core\Block;
-use GatherPress\Core\Event;
-use GatherPress\Core\Rsvp;
+use GatherPress\Core\Rsvp\Rsvp;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Utility;
 use WP_HTML_Tag_Processor;
@@ -28,9 +26,10 @@ use WP_User;
  *
  * It ensures smooth integration with WordPress's block editor and REST API.
  *
- * @since 1.0.0
+ * @since 0.33.0
  */
 class Rsvp_Response {
+
 	/**
 	 * Enforces a single instance of this class.
 	 */
@@ -39,7 +38,7 @@ class Rsvp_Response {
 	/**
 	 * Constant representing the Block Name.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @var string
 	 */
 	const BLOCK_NAME = 'gatherpress/rsvp-response';
@@ -49,7 +48,7 @@ class Rsvp_Response {
 	 *
 	 * This method initializes the object and sets up necessary hooks.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 */
 	protected function __construct() {
 		$this->setup_hooks();
@@ -60,7 +59,7 @@ class Rsvp_Response {
 	 *
 	 * This method adds hooks for different purposes as needed.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @return void
 	 */
@@ -81,7 +80,7 @@ class Rsvp_Response {
 	 * interactivity attributes if the block matches certain conditions.
 	 * It uses the `WP_HTML_Tag_Processor` to locate and update the block's attributes.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @param string $block_content The original HTML content of the block.
 	 * @param array  $block         An associative array containing block data, including `blockName` and attributes.
@@ -89,15 +88,19 @@ class Rsvp_Response {
 	 * @return string The modified block content with updated attributes.
 	 */
 	public function transform_block_content( string $block_content, array $block ): string {
-		$block_instance = Block::get_instance();
+		$block_instance = Setup::get_instance();
 		$post_id        = $block_instance->get_post_id( $block );
 
-		// Validate that the post ID is an actual event post type.
+		// Validate that the post type supports RSVP.
 		// Only check publish status if not in preview mode.
 		if (
-			Event::POST_TYPE !== get_post_type( $post_id ) ||
+			! post_type_supports( (string) get_post_type( $post_id ), 'gatherpress-rsvp' ) ||
 			( ! is_preview() && 'publish' !== get_post_status( $post_id ) )
 		) {
+			return '';
+		}
+
+		if ( ! ( new Rsvp( $post_id ) )->is_enabled() ) {
 			return '';
 		}
 
@@ -130,10 +133,13 @@ class Rsvp_Response {
 			$tag->set_attribute( 'data-wp-context', wp_json_encode( array( 'postId' => $post_id ) ) );
 			$tag->set_attribute( 'data-counts', wp_json_encode( $counts ) );
 
+			$has_responses = ! empty( $counts['attending'] );
+
 			do {
 				$class_attr = $tag->get_attribute( 'class' );
+
 				if ( Utility::has_css_class( $class_attr, 'gatherpress-rsvp-response--no-responses' ) ) {
-					if ( ! empty( $counts['attending'] ) ) {
+					if ( $has_responses ) {
 						$updated_class  = str_replace(
 							'gatherpress--is-visible',
 							'',
@@ -147,6 +153,26 @@ class Rsvp_Response {
 							$class_attr
 						);
 						$updated_class .= ' gatherpress--is-visible';
+					}
+
+					$tag->set_attribute( 'class', trim( $updated_class ) );
+				}
+
+				if ( Utility::has_css_class( $class_attr, 'gatherpress-rsvp-response--has-responses' ) ) {
+					if ( $has_responses ) {
+						$updated_class  = str_replace(
+							'gatherpress--is-hidden',
+							'',
+							$class_attr
+						);
+						$updated_class .= ' gatherpress--is-visible';
+					} else {
+						$updated_class  = str_replace(
+							'gatherpress--is-visible',
+							'',
+							$class_attr
+						);
+						$updated_class .= ' gatherpress--is-hidden';
 					}
 
 					$tag->set_attribute( 'class', trim( $updated_class ) );
@@ -167,7 +193,7 @@ class Rsvp_Response {
 	 * Adds interactivity attributes to dropdown menu items with specific RSVP-related classes
 	 * for use with the WordPress Interactivity API.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @param string $block_content The block content to modify.
 	 *
@@ -242,7 +268,7 @@ class Rsvp_Response {
 	 * It checks if the provided comment is of type `gatherpress_rsvp` and modifies the avatar data `$args`
 	 * to include the user's avatar URL based on their user ID.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @param array $args    Array of arguments for the avatar data.
 	 * @param mixed $comment The comment object or other data passed to the filter.
@@ -250,35 +276,48 @@ class Rsvp_Response {
 	 * @return array Modified array of avatar arguments, including the correct URL for the avatar.
 	 */
 	public function modify_avatar_for_gatherpress_rsvp( array $args, $comment ): array {
+		// Bail when the filter fires for a non-RSVP comment so the body
+		// doesn't have to nest under the positive guard.
 		if (
-			$comment &&
-			is_a( $comment, 'WP_Comment' ) &&
-			Rsvp::COMMENT_TYPE === $comment->comment_type
+			! $comment
+			|| ! is_a( $comment, 'WP_Comment' )
+			|| Rsvp::COMMENT_TYPE !== $comment->comment_type
 		) {
-			$email = $comment->comment_author_email;
+			return $args;
+		}
 
-			if ( intval( $comment->user_id ) && empty( $email ) ) {
-				$user = new WP_User( $comment->user_id );
+		$email = $comment->comment_author_email;
 
-				if ( $user->exists() ) {
-					$email = $user->user_email;
-				}
+		if ( intval( $comment->user_id ) && empty( $email ) ) {
+			$user = new WP_User( $comment->user_id );
+
+			if ( $user->exists() ) {
+				$email = $user->user_email;
 			}
+		}
 
-			if (
-				intval( get_comment_meta( intval( $comment->comment_ID ), 'gatherpress_rsvp_anonymous', true ) ) &&
-				! current_user_can( Rsvp::CAPABILITY )
-			) {
-				// Set the email to empty if the RSVP is marked as anonymous and the current user
-				// does not have permission to edit posts. This ensures the avatar defaults
-				// to a generic or placeholder image for anonymous responses.
-				$email = '';
+		if (
+			intval( get_comment_meta( intval( $comment->comment_ID ), 'gatherpress_rsvp_anonymous', true ) ) &&
+			! current_user_can( Rsvp::CAPABILITY )
+		) {
+			// Set the email to empty if the RSVP is marked as anonymous and the current user
+			// does not have permission to edit posts. This ensures the avatar defaults
+			// to a generic or placeholder image for anonymous responses.
+			$email = '';
+		}
+
+		$args['url'] = get_avatar_url( $email, array( 'default' => 'mystery' ) );
+
+		// Preserve only style attributes from extra_attr to maintain WordPress core's
+		// border styles (e.g., border-radius on avatars). Strip all other attributes
+		// that third-party plugins (like Webmention) may inject, as they can cause
+		// issues with JavaScript/React rendering.
+		if ( ! empty( $args['extra_attr'] ) ) {
+			if ( preg_match( '/style="([^"]*)"/', $args['extra_attr'], $matches ) ) {
+				$args['extra_attr'] = sprintf( 'style="%s"', $matches[1] );
+			} else {
+				$args['extra_attr'] = '';
 			}
-
-			$args['url'] = get_avatar_url( $email, array( 'default' => 'mystery' ) );
-
-			// Clear extra attributes to prevent JavaScript framework conflicts.
-			$args['extra_attr'] = '';
 		}
 
 		return $args;
@@ -291,7 +330,7 @@ class Rsvp_Response {
 	 * to include the `gatherpress/rsvp-response` block. This allows the comment author name block
 	 * to be used as a child of the RSVP response block.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @param array $metadata The block metadata for `core/comment-author-name`.
 	 *

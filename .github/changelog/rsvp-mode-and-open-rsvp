@@ -1,0 +1,4 @@
+Significance: minor
+Type: added
+
+Add a configurable RSVP mode with a sitewide disable switch and per-event control, plus an Open RSVP setting that lets non-logged-in users RSVP via magic-link comments. [#1468] [#1469]

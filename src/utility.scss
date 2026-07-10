@@ -1,3 +1,6 @@
+// Import tooltip format styles for frontend display.
+@use "formats/tooltip/style";
+
 .gatherpress--is-visible {
 	display: block !important;
 }
@@ -29,5 +32,17 @@
 
 	50% {
 		opacity: 0.4;
+	}
+}
+
+// Event Query variation overrides.
+.gatherpress-event-query {
+	.wp-block-media-text {
+		gap: 1.5rem;
+
+		.wp-block-media-text__content {
+			padding-left: 0;
+			padding-right: 0;
+		}
 	}
 }

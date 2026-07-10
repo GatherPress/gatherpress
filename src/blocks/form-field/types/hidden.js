@@ -1,10 +1,10 @@
 /**
- * WordPress dependencies.
+ * WordPress dependencies
  */
 import { __ } from '@wordpress/i18n';
 
 /**
- * Internal dependencies.
+ * Internal dependencies
  */
 import { getWrapperClasses } from '../helpers';
 
@@ -14,6 +14,7 @@ import { getWrapperClasses } from '../helpers';
  * @param {Object} props            - Component props.
  * @param {Object} props.attributes - Block attributes object.
  * @param {Object} props.blockProps - WordPress block wrapper properties.
+ *
  * @return {JSX.Element} The hidden field component with visual placeholder.
  */
 export default function HiddenField( { attributes, blockProps } ) {

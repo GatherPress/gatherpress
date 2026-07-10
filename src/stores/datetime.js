@@ -1,41 +1,32 @@
 /**
- * WordPress dependencies.
+ * WordPress dependencies
  */
-import { createReduxStore, register } from '@wordpress/data';
+import { createReduxStore, dispatch, register, select, subscribe } from '@wordpress/data';
 
 /**
- * Internal dependencies.
+ * Internal dependencies
  */
-import { getFromGlobal, setToGlobal } from '../helpers/globals';
 import {
+	dateTimeOffset,
 	defaultDateTimeEnd,
 	defaultDateTimeStart,
-	getDateTimeOffset,
+	getDefaultDuration,
 } from '../helpers/datetime';
-
 const DEFAULT_STATE = {
-	dateTimeStart: getFromGlobal( 'eventDetails.dateTime.datetime_start' )
-		? getFromGlobal( 'eventDetails.dateTime.datetime_start' )
-		: defaultDateTimeStart,
-	dateTimeEnd: getFromGlobal( 'eventDetails.dateTime.datetime_end' )
-		? getFromGlobal( 'eventDetails.dateTime.datetime_end' )
-		: defaultDateTimeEnd,
+	dateTimeStart: defaultDateTimeStart,
+	dateTimeEnd: defaultDateTimeEnd,
 	duration: null,
-	timezone: getFromGlobal( 'eventDetails.dateTime.timezone' ),
+	timezone: '',
 };
 
 const actions = {
 	setDateTimeStart( dateTimeStart ) {
-		setToGlobal( 'eventDetails.dateTime.datetime_start', dateTimeStart );
-
 		return {
 			type: 'SET_DATETIME_START',
 			dateTimeStart,
 		};
 	},
 	setDateTimeEnd( dateTimeEnd ) {
-		setToGlobal( 'eventDetails.dateTime.datetime_end', dateTimeEnd );
-
 		return {
 			type: 'SET_DATETIME_END',
 			dateTimeEnd,
@@ -48,8 +39,6 @@ const actions = {
 		};
 	},
 	setTimezone( timezone ) {
-		setToGlobal( 'eventDetails.dateTime.timezone', timezone );
-
 		return {
 			type: 'SET_TIMEZONE',
 			timezone,
@@ -78,10 +67,57 @@ const store = createReduxStore( 'gatherpress/datetime', {
 	selectors: {
 		getDateTimeStart: ( state ) => state.dateTimeStart,
 		getDateTimeEnd: ( state ) => state.dateTimeEnd,
-		getDuration: ( state ) =>
-			false === state.duration ? false : getDateTimeOffset(),
+		// Return the raw stored value. Computing the matched preset here
+		// ran a moment.tz comparison loop on every selector call, which
+		// @wordpress/data invokes per subscriber per render — under IANA
+		// timezones the multiplied moment.tz cost overflowed the call
+		// stack on a single picker arrow keypress (#1607). Consumers that
+		// need the matched preset (the conditional in DateTimeRange, the
+		// SelectControl value in Duration, the gating in DateTimeStart's
+		// effect) call `useMatchedDuration()` from `helpers/datetime`,
+		// which memoizes the comparison on the actual store inputs.
+		getDuration: ( state ) => state.duration,
 		getTimezone: ( state ) => state.timezone,
 	},
 } );
 
 register( store );
+
+// Initialize store from post meta once the editor is ready.
+const unsubscribe = subscribe( () => {
+	const meta = select( 'core/editor' )?.getEditedPostAttribute?.( 'meta' );
+	const config =
+		select( 'core/editor' )?.getEditorSettings?.()?.gatherpress?.config;
+
+	if ( ! meta || ! config ) {
+		return;
+	}
+
+	unsubscribe();
+
+	const gpDispatch = dispatch( 'gatherpress/datetime' );
+
+	if ( meta.gatherpress_datetime_start ) {
+		gpDispatch.setDateTimeStart( meta.gatherpress_datetime_start );
+	}
+
+	// Set the timezone before deriving any default end below, since
+	// dateTimeOffset() reads it from the store.
+	gpDispatch.setTimezone(
+		meta.gatherpress_timezone || config.siteTimezone || '',
+	);
+
+	if ( meta.gatherpress_datetime_end ) {
+		gpDispatch.setDateTimeEnd( meta.gatherpress_datetime_end );
+	} else {
+		// New event (no saved end): seed the end from the default duration
+		// resolved against the live, possibly-filtered durationOptions, so the
+		// end maps to a real preset and the Duration select renders. The
+		// module-load default end is hardcoded to start + 2h, which leaves no
+		// matching preset (and drops to the end-time picker) when a
+		// `gatherpress.durationOptions` filter omits 2 (#1706).
+		const defaultDuration = getDefaultDuration();
+		gpDispatch.setDuration( defaultDuration );
+		gpDispatch.setDateTimeEnd( dateTimeOffset( defaultDuration ) );
+	}
+} );

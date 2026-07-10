@@ -6,7 +6,7 @@
  * creating custom database tables, and setting up plugin hooks.
  *
  * @package GatherPress\Core
- * @since 1.0.0
+ * @since 0.27.0
  */
 
 namespace GatherPress\Core;
@@ -23,9 +23,10 @@ use WP_Site;
  *
  * Manages plugin setup and initialization.
  *
- * @since 1.0.0
+ * @since 0.27.0
  */
 class Setup {
+
 	/**
 	 * Enforces a single instance of this class.
 	 */
@@ -36,7 +37,7 @@ class Setup {
 	 *
 	 * Initializes and sets up various components of the plugin.
 	 *
-	 * @since 1.0.0
+	 * @since 0.27.0
 	 */
 	protected function __construct() {
 		$this->instantiate_classes();
@@ -49,7 +50,7 @@ class Setup {
 	 * This method initializes various singleton classes used by the plugin.
 	 * It may throw an Exception if there are issues instantiating the classes.
 	 *
-	 * @since 1.0.0
+	 * @since 0.27.0
 	 *
 	 * @return void
 	 *
@@ -57,21 +58,22 @@ class Setup {
 	 */
 	protected function instantiate_classes(): void {
 		Assets::get_instance();
-		Block::get_instance();
+		Blocks\Setup::get_instance();
+		Calendar\Setup::get_instance();
 		Cli::get_instance();
-		Feed::get_instance();
-		Event_Query::get_instance();
-		Event_Rest_Api::get_instance();
-		Event_Setup::get_instance();
+		Coexistence_Guard::get_instance();
+		Event\Setup::get_instance();
 		Export::get_instance();
+		Feed::get_instance();
+		Geocoding::get_instance();
 		Import::get_instance();
-		Rsvp_Form::get_instance();
-		Rsvp_Query::get_instance();
-		Rsvp_Setup::get_instance();
+		Rsvp\Setup::get_instance();
 		Settings::get_instance();
+		Site_Health::get_instance();
+		Shadow_Source::get_instance();
 		Topic::get_instance();
 		User::get_instance();
-		Venue::get_instance();
+		Venue\Setup::get_instance();
 	}
 
 	/**
@@ -79,7 +81,7 @@ class Setup {
 	 *
 	 * This method adds hooks for different purposes as needed.
 	 *
-	 * @since 1.0.0
+	 * @since 0.27.0
 	 *
 	 * @return void
 	 */
@@ -121,16 +123,22 @@ class Setup {
 	 *
 	 * This method adds a 'Settings' link to the plugin's action links in the WordPress plugins list.
 	 *
-	 * @since 1.0.0
+	 * @since 0.27.0
 	 *
 	 * @param array $actions An array of existing action links.
+	 *
 	 * @return array An updated array of action links, including the 'Settings' link.
 	 */
 	public function filter_plugin_action_links( array $actions ): array {
+		$settings = Settings::get_instance();
+		$page     = Utility::prefix_key( $settings->get_main_sub_page() );
+
 		return array_merge(
 			array(
 				'settings' => '<a href="' .
-					esc_url( admin_url( 'edit.php?post_type=gatherpress_event&page=gatherpress_general' ) ) .
+					esc_url(
+						add_query_arg( 'page', $page, admin_url( Settings::PARENT_SLUG ) )
+					) .
 					'">' . esc_html__( 'Settings', 'gatherpress' ) . '</a>',
 			),
 			$actions
@@ -146,11 +154,12 @@ class Setup {
 	 * (creating tables). If not network-wide, it only performs the setup actions
 	 * for the current site.
 	 *
-	 * @since 1.0.0
+	 * @since 0.27.0
 	 *
 	 * @global wpdb $wpdb WordPress database abstraction object.
 	 *
 	 * @param bool $network_wide Whether the plugin is being activated network-wide.
+	 *
 	 * @return void
 	 */
 	public function activate_gatherpress_plugin( bool $network_wide ): void {
@@ -179,7 +188,7 @@ class Setup {
 	 * This method is called when deactivating the GatherPress plugin. It flushes the rewrite rules to ensure
 	 * proper functionality.
 	 *
-	 * @since 1.0.0
+	 * @since 0.27.0
 	 *
 	 * @return void
 	 */
@@ -194,19 +203,29 @@ class Setup {
 	 * version differs from the current version, it schedules a rewrite rules flush
 	 * to ensure any changes to rewrite rules take effect automatically.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.1
 	 *
 	 * @return void
 	 */
 	public function check_plugin_version(): void {
 		if ( ! defined( 'GATHERPRESS_VERSION' ) ) {
-			return;
+			return; // @codeCoverageIgnore
 		}
 
 		$stored_version  = get_option( 'gatherpress_version', '' );
 		$current_version = GATHERPRESS_VERSION;
 
 		if ( $stored_version !== $current_version ) {
+			// Ensure per-blog tables exist — covers multisite cases where a
+			// subsite's table was never created (e.g. site created before
+			// plugin activation, or an `on_site_create` race). dbDelta is
+			// idempotent so re-running here is safe.
+			//
+			// Note: create_tables() also re-adds the online-event term and
+			// schedules a rewrite flush. Those side effects are intentional on
+			// a version change — don't split the self-heal out without
+			// accounting for them.
+			$this->create_tables();
 			$this->schedule_rewrite_flush();
 			update_option( 'gatherpress_version', $current_version );
 		}
@@ -220,7 +239,7 @@ class Setup {
 	 * calling flush_rewrite_rules() directly and removes the need for a custom
 	 * flag option.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @return void
 	 */
@@ -245,7 +264,7 @@ class Setup {
 	 *
 	 * @see https://developer.wordpress.org/plugins/privacy/suggesting-text-for-the-site-privacy-policy/
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @return void
 	 */
@@ -285,9 +304,10 @@ class Setup {
 	 * This method appends custom body classes, such as 'gatherpress-enabled' and
 	 * 'gatherpress-theme-{theme-name}', to the array of existing body classes.
 	 *
-	 * @since 1.0.0
+	 * @since 0.27.0
 	 *
 	 * @param array $classes Existing body classes.
+	 *
 	 * @return array An updated array of body classes.
 	 */
 	public function add_gatherpress_body_classes( array $classes ): array {
@@ -303,9 +323,10 @@ class Setup {
 	 * This method registers the GatherPress block category and adds it to the array
 	 * of registered block categories.
 	 *
-	 * @since 1.0.0
+	 * @since 0.27.0
 	 *
 	 * @param array $block_categories Array of registered block categories.
+	 *
 	 * @return array An updated array of block categories.
 	 */
 	public function register_gatherpress_block_category( array $block_categories ): array {
@@ -326,34 +347,39 @@ class Setup {
 	 * This method adds the 'Online event' term to the venue taxonomy if it does not exist,
 	 * or updates it if it already exists. This term is used to categorize online events.
 	 *
-	 * @since 1.0.0
+	 * @since 0.27.0
 	 *
 	 * @return void
 	 */
 	public function add_online_event_term(): void {
-		Venue::get_instance()->register_taxonomy();
+		Venue\Setup::get_instance()->register_taxonomy();
 
 		$term_name = __( 'Online event', 'gatherpress' );
 		$term_slug = 'online-event';
-		$term      = term_exists( $term_slug, Venue::TAXONOMY );
 
-		if ( ! $term ) {
-			wp_insert_term(
-				$term_name,
-				Venue::TAXONOMY,
-				array(
-					'slug' => $term_slug,
-				)
-			);
-		} else {
-			wp_update_term(
-				intval( $term['term_id'] ),
-				Venue::TAXONOMY,
-				array(
-					'name' => $term_name,
-					'slug' => $term_slug,
-				),
-			);
+		// Ensure the online-event term exists in each registered venue taxonomy.
+		foreach ( get_post_types_by_support( 'gatherpress-venue-information' ) as $venue_post_type ) {
+			$taxonomy = Venue\Setup::get_instance()->get_taxonomy( $venue_post_type );
+			$term     = term_exists( $term_slug, $taxonomy );
+
+			if ( ! $term ) {
+				wp_insert_term(
+					$term_name,
+					$taxonomy,
+					array(
+						'slug' => $term_slug,
+					)
+				);
+			} else {
+				wp_update_term(
+					intval( $term['term_id'] ),
+					$taxonomy,
+					array(
+						'name' => $term_name,
+						'slug' => $term_slug,
+					),
+				);
+			}
 		}
 	}
 
@@ -364,18 +390,37 @@ class Setup {
 	 * If it is, it switches to the new site, calls the `create_table()` function,
 	 * and then restores the current blog.
 	 *
-	 * @since 1.0.0
+	 * @since 0.29.1
 	 *
 	 * @param WP_Site $new_site the newly created site.
 	 *
 	 * @return void
 	 */
 	public function on_site_create( WP_Site $new_site ): void {
-		if ( is_plugin_active_for_network( 'gatherpress/gatherpress.php' ) ) {
-			switch_to_blog( intval( $new_site->blog_id ) );
-			$this->create_tables();
-			restore_current_blog();
+		// Defensive shim for contexts where wp-admin/includes/plugin.php
+		// hasn't been loaded (WP-CLI, REST, early wp_initialize_site paths).
+		// Under PHPUnit this file is always loaded, so the branch below is
+		// unreachable — the whole block is flagged @codeCoverageIgnore.
+		// phpcs:ignore Squiz.Commenting.InlineComment.InvalidEndChar -- PHPUnit annotation must match exactly.
+		// @codeCoverageIgnoreStart
+		if ( ! function_exists( 'is_plugin_active_for_network' ) ) {
+			$plugin_php = ABSPATH . 'wp-admin/includes/plugin.php';
+
+			if ( file_exists( $plugin_php ) ) {
+				// @phpstan-ignore requireOnce.fileNotFound
+				require_once $plugin_php; // NOSONAR.
+			}
 		}
+		// phpcs:ignore Squiz.Commenting.InlineComment.InvalidEndChar -- PHPUnit annotation must match exactly.
+		// @codeCoverageIgnoreEnd
+
+		if ( ! is_plugin_active_for_network( plugin_basename( GATHERPRESS_CORE_FILE ) ) ) {
+			return;
+		}
+
+		switch_to_blog( intval( $new_site->blog_id ) );
+		$this->create_tables();
+		restore_current_blog();
 	}
 
 	/**
@@ -385,9 +430,10 @@ class Setup {
 	 * which custom tables associated with the plugin should be deleted. It returns an
 	 * updated array of table names to be dropped during site deletion.
 	 *
-	 * @since 1.0.0
+	 * @since 0.27.0
 	 *
 	 * @param array $tables An array of names of the site tables to be dropped.
+	 *
 	 * @return array An updated array of table names to be deleted during site deletion.
 	 */
 	public function on_site_delete( array $tables ): array {
@@ -407,7 +453,7 @@ class Setup {
 	 * or updated as necessary. Additionally, it calls methods to add the online event term
 	 * and to set a flag for flushing rewrite rules.
 	 *
-	 * @since 1.0.0
+	 * @since 0.27.0
 	 *
 	 * @global wpdb $wpdb WordPress database abstraction object.
 	 * @return void
@@ -448,7 +494,7 @@ class Setup {
 	 * If the plugin is not active, it renders an admin notice template to inform the user
 	 * that the GatherPress Alpha plugin is required for compatibility and development purposes.
 	 *
-	 * @since 1.0.0
+	 * @since 0.30.0
 	 *
 	 * @return void
 	 */
@@ -458,7 +504,7 @@ class Setup {
 		 *
 		 * Allows tests to override the constant check.
 		 *
-		 * @since 1.0.0
+		 * @since 0.27.0
 		 *
 		 * @param bool $is_alpha_active Whether GatherPress Alpha is active.
 		 */
@@ -497,10 +543,11 @@ class Setup {
 	 * set by the JavaScript editor with stale data. Hiding these fields also
 	 * prevents users from editing them in the wrong place.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.3
 	 *
 	 * @param bool   $is_protected Whether the meta key is protected.
 	 * @param string $meta_key     The meta key being checked.
+	 *
 	 * @return bool True if the meta key should be protected, false otherwise.
 	 */
 	public function protect_gatherpress_meta( bool $is_protected, string $meta_key ): bool {
@@ -516,7 +563,7 @@ class Setup {
 	 *
 	 * ♫ Let’s Go Buffalo! ♫
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @return void
 	 */

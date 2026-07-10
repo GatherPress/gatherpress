@@ -1,0 +1,4 @@
+Significance: patch
+Type: fixed
+
+RSVP status changes now save correctly from event archive and Query Loop pages, not only from individual event pages.

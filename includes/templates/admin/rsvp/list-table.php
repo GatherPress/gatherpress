@@ -8,7 +8,8 @@
 defined( 'ABSPATH' ) || exit;
 
 use GatherPress\Core\Event;
-use GatherPress\Core\Rsvp;
+use GatherPress\Core\Rsvp\Rsvp;
+use GatherPress\Core\Utility;
 
 if ( ! isset( $rsvp_table, $search_term, $status, $event ) ) {
 	return;
@@ -44,7 +45,13 @@ $rsvp_table->prepare_items();
 		printf(
 			'<a href="%1$s" class="comments-view-item-link">%2$s</a>',
 			esc_url( get_permalink( $gatherpress_post_id ) ),
-			esc_html__( 'View Event', 'gatherpress' )
+			esc_html(
+				sprintf(
+					/* translators: %s: Singular post type label, e.g. "Event". */
+					__( 'View %s', 'gatherpress' ),
+					Utility::post_type_label( 'singular_name', (string) get_post_type( $gatherpress_post_id ) )
+				)
+			)
 		);
 	}
 	?>

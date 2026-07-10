@@ -3,7 +3,7 @@
  * Class handles unit tests for GatherPress\Core\Import.
  *
  * @package GatherPress\Core
- * @since 1.0.0
+ * @since 0.30.0
  */
 
 namespace GatherPress\Tests\Core;
@@ -20,6 +20,7 @@ use PMC\Unit_Test\Utility;
  * @group migrate
  */
 class Test_Import extends Base {
+
 	/**
 	 * Coverage for setup_hooks.
 	 *
@@ -207,7 +208,7 @@ class Test_Import extends Base {
 			);
 			return $pseudopostmetas;
 		};
-		add_filter( 'gatherpress_pseudopostmetas', $filter );
+		add_filter( 'gatherpress_pseudo_post_metas', $filter );
 
 		// Defined for readability.
 		$check      = true;
@@ -223,7 +224,7 @@ class Test_Import extends Base {
 			'Should return null when import_callback is not set.'
 		);
 
-		remove_filter( 'gatherpress_pseudopostmetas', $filter );
+		remove_filter( 'gatherpress_pseudo_post_metas', $filter );
 
 		// Test with non-callable import_callback.
 		$filter_noncallable = static function ( $pseudopostmetas ) {
@@ -232,7 +233,7 @@ class Test_Import extends Base {
 			);
 			return $pseudopostmetas;
 		};
-		add_filter( 'gatherpress_pseudopostmetas', $filter_noncallable );
+		add_filter( 'gatherpress_pseudo_post_metas', $filter_noncallable );
 
 		// Tests: return null; (when import_callback is not callable).
 		$result = $instance->run( $check, $object_id, 'test_meta_noncallable', $meta_value, $unique );
@@ -242,7 +243,7 @@ class Test_Import extends Base {
 			'Should return null when import_callback is not callable.'
 		);
 
-		remove_filter( 'gatherpress_pseudopostmetas', $filter_noncallable );
+		remove_filter( 'gatherpress_pseudo_post_metas', $filter_noncallable );
 	}
 
 	/**
@@ -267,10 +268,10 @@ class Test_Import extends Base {
 		$instance->datetimes_callback( $post->ID, 0 );
 		$this->assertSame(
 			array(
-				'datetime_start'     => '0000-00-00 00:00:00',
-				'datetime_start_gmt' => '0000-00-00 00:00:00',
-				'datetime_end'       => '0000-00-00 00:00:00',
-				'datetime_end_gmt'   => '0000-00-00 00:00:00',
+				'datetime_start'     => '',
+				'datetime_start_gmt' => '',
+				'datetime_end'       => '',
+				'datetime_end_gmt'   => '',
 				'timezone'           => '+00:00',
 			),
 			$event->get_datetime()
@@ -283,6 +284,9 @@ class Test_Import extends Base {
 			'timezone'       => 'America/New_York',
 		);
 		$instance->datetimes_callback( $post->ID, $meta_data_value );
+
+		// Create new Event instance to get fresh data after datetime save.
+		$event = new Event( $post->ID );
 
 		$expect = array(
 			'datetime_start'     => '2020-05-11 15:00:00',

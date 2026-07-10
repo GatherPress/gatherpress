@@ -30,11 +30,11 @@ add_filter( 'gatherpress_autoloader', 'gatherpress_awesome_autoloader' );
 
 ## Files
 
-- [includes/core/classes/class-autoloader.php:59](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/class-autoloader.php#L59)
+- [includes/core/classes/class-autoloader.php:61](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/class-autoloader.php#L61)
 ```php
 apply_filters( 'gatherpress_autoloader', array() )
 ```
 
 
 
-[← All Hooks](Hooks)
+[← All Hooks](Hooks.md)

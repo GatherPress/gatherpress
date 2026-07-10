@@ -3,7 +3,7 @@
  * Class handles unit tests for GatherPress\Core\Settings\Credits.
  *
  * @package GatherPress\Core
- * @since 1.0.0
+ * @since 0.27.0
  */
 
 namespace GatherPress\Tests\Core\Settings;
@@ -19,6 +19,7 @@ use PMC\Unit_Test\Utility;
  * @coversDefaultClass \GatherPress\Core\Settings\Credits
  */
 class Test_Credits extends Base {
+
 	/**
 	 * Coverage for setup_hooks method.
 	 *
@@ -95,7 +96,7 @@ class Test_Credits extends Base {
 		$instance = Credits::get_instance();
 		$response = Utility::buffer_and_return(
 			array( $instance, 'settings_section' ),
-			array( 'gatherpress_general' )
+			array( 'gatherpress_events' )
 		);
 
 		$this->assertEmpty( $response, 'Failed to assert no markup was returned.' );

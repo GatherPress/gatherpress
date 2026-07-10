@@ -4,7 +4,7 @@
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 return array (
-  'version' => '0.33.3',
+  'version' => '0.34.0',
   'project-leaders' => 
   array (
     0 => 
@@ -140,36 +140,23 @@ return array (
         96 => '//www.gravatar.com/avatar/8c23225a67ae866951341a9d5844af55?s=96&#038;r=g&#038;d=mm',
       ),
     ),
+    8 => 
+    array (
+      'id' => 1321993,
+      'name' => 'Velda',
+      'link' => 'https://profiles.wordpress.org/supernovia/',
+      'slug' => 'supernovia',
+      'avatar_urls' => 
+      array (
+        24 => '//www.gravatar.com/avatar/b56caeb30157e1e1dd6c7d0a7ad00d78?s=24&#038;r=g&#038;d=mm',
+        48 => '//www.gravatar.com/avatar/b56caeb30157e1e1dd6c7d0a7ad00d78?s=48&#038;r=g&#038;d=mm',
+        96 => '//www.gravatar.com/avatar/b56caeb30157e1e1dd6c7d0a7ad00d78?s=96&#038;r=g&#038;d=mm',
+      ),
+    ),
   ),
   'contributors' => 
   array (
     0 => 
-    array (
-      'id' => 18854320,
-      'name' => 'André Menrath',
-      'link' => 'https://profiles.wordpress.org/andremenrath/',
-      'slug' => 'andremenrath',
-      'avatar_urls' => 
-      array (
-        24 => '//www.gravatar.com/avatar/712f4da4c076ed06a62413971dd25f00?s=24&#038;r=g&#038;d=mm',
-        48 => '//www.gravatar.com/avatar/712f4da4c076ed06a62413971dd25f00?s=48&#038;r=g&#038;d=mm',
-        96 => '//www.gravatar.com/avatar/712f4da4c076ed06a62413971dd25f00?s=96&#038;r=g&#038;d=mm',
-      ),
-    ),
-    1 => 
-    array (
-      'id' => 8521779,
-      'name' => 'Christoph Daum',
-      'link' => 'https://profiles.wordpress.org/apermo/',
-      'slug' => 'apermo',
-      'avatar_urls' => 
-      array (
-        24 => '//www.gravatar.com/avatar/2e834e78e3b90c551711b90418650fd4?s=24&#038;r=g&#038;d=mm',
-        48 => '//www.gravatar.com/avatar/2e834e78e3b90c551711b90418650fd4?s=48&#038;r=g&#038;d=mm',
-        96 => '//www.gravatar.com/avatar/2e834e78e3b90c551711b90418650fd4?s=96&#038;r=g&#038;d=mm',
-      ),
-    ),
-    2 => 
     array (
       'id' => 148148,
       'name' => 'Dion Hulse',
@@ -182,30 +169,69 @@ return array (
         96 => '//www.gravatar.com/avatar/019f95633d5ea08e39d8d5dab9bed527?s=96&#038;r=g&#038;d=mm',
       ),
     ),
-    3 => 
+    1 => 
     array (
-      'id' => 17578268,
-      'name' => 'Arslan Kalwar',
-      'link' => 'https://profiles.wordpress.org/passoniate/',
-      'slug' => 'passoniate',
+      'id' => 23125819,
+      'name' => 'Brady Friedrich',
+      'link' => 'https://profiles.wordpress.org/e1337geek/',
+      'slug' => 'e1337geek',
       'avatar_urls' => 
       array (
-        24 => '//www.gravatar.com/avatar/df262cbc82caecc7302849e8d591b32c?s=24&#038;r=g&#038;d=mm',
-        48 => '//www.gravatar.com/avatar/df262cbc82caecc7302849e8d591b32c?s=48&#038;r=g&#038;d=mm',
-        96 => '//www.gravatar.com/avatar/df262cbc82caecc7302849e8d591b32c?s=96&#038;r=g&#038;d=mm',
+        24 => '//www.gravatar.com/avatar/ce53d88b81cc9af61e017eb89ce1e057?s=24&#038;r=g&#038;d=mm',
+        48 => '//www.gravatar.com/avatar/ce53d88b81cc9af61e017eb89ce1e057?s=48&#038;r=g&#038;d=mm',
+        96 => '//www.gravatar.com/avatar/ce53d88b81cc9af61e017eb89ce1e057?s=96&#038;r=g&#038;d=mm',
+      ),
+    ),
+    2 => 
+    array (
+      'id' => 23518518,
+      'name' => 'jobgaspersic',
+      'link' => 'https://profiles.wordpress.org/jobgaspersic/',
+      'slug' => 'jobgaspersic',
+      'avatar_urls' => 
+      array (
+        24 => '//www.gravatar.com/avatar/3bb9acfbf74fc17daada7eafee6dcae0?s=24&#038;r=g&#038;d=mm',
+        48 => '//www.gravatar.com/avatar/3bb9acfbf74fc17daada7eafee6dcae0?s=48&#038;r=g&#038;d=mm',
+        96 => '//www.gravatar.com/avatar/3bb9acfbf74fc17daada7eafee6dcae0?s=96&#038;r=g&#038;d=mm',
+      ),
+    ),
+    3 => 
+    array (
+      'id' => 15768524,
+      'name' => 'Kofi Mokome',
+      'link' => 'https://profiles.wordpress.org/kofimokome/',
+      'slug' => 'kofimokome',
+      'avatar_urls' => 
+      array (
+        24 => '//www.gravatar.com/avatar/35d97e8ebb19530c8cb46cb42f5e5c86?s=24&#038;r=g&#038;d=mm',
+        48 => '//www.gravatar.com/avatar/35d97e8ebb19530c8cb46cb42f5e5c86?s=48&#038;r=g&#038;d=mm',
+        96 => '//www.gravatar.com/avatar/35d97e8ebb19530c8cb46cb42f5e5c86?s=96&#038;r=g&#038;d=mm',
       ),
     ),
     4 => 
     array (
-      'id' => 16994801,
-      'name' => 'Paul Barthmaier (pbrocks)',
-      'link' => 'https://profiles.wordpress.org/pbrocks/',
-      'slug' => 'pbrocks',
+      'id' => 14685954,
+      'name' => 'richsalvucci',
+      'link' => 'https://profiles.wordpress.org/richsalvucci/',
+      'slug' => 'richsalvucci',
       'avatar_urls' => 
       array (
-        24 => '//www.gravatar.com/avatar/b6d92ca42584e8419dffc636e809321a?s=24&#038;r=g&#038;d=mm',
-        48 => '//www.gravatar.com/avatar/b6d92ca42584e8419dffc636e809321a?s=48&#038;r=g&#038;d=mm',
-        96 => '//www.gravatar.com/avatar/b6d92ca42584e8419dffc636e809321a?s=96&#038;r=g&#038;d=mm',
+        24 => '//www.gravatar.com/avatar/fa01ba22f1911653a65d50ccb265ba5d?s=24&#038;r=g&#038;d=mm',
+        48 => '//www.gravatar.com/avatar/fa01ba22f1911653a65d50ccb265ba5d?s=48&#038;r=g&#038;d=mm',
+        96 => '//www.gravatar.com/avatar/fa01ba22f1911653a65d50ccb265ba5d?s=96&#038;r=g&#038;d=mm',
+      ),
+    ),
+    5 => 
+    array (
+      'id' => 13804324,
+      'name' => 'Vineet Talwar',
+      'link' => 'https://profiles.wordpress.org/vineettalwar/',
+      'slug' => 'vineettalwar',
+      'avatar_urls' => 
+      array (
+        24 => '//www.gravatar.com/avatar/80b2864ad2ab0b704caee3c1495cf0ba?s=24&#038;r=g&#038;d=mm',
+        48 => '//www.gravatar.com/avatar/80b2864ad2ab0b704caee3c1495cf0ba?s=48&#038;r=g&#038;d=mm',
+        96 => '//www.gravatar.com/avatar/80b2864ad2ab0b704caee3c1495cf0ba?s=96&#038;r=g&#038;d=mm',
       ),
     ),
   ),

@@ -1,5 +1,5 @@
 /**
- * WordPress dependencies.
+ * WordPress dependencies
  */
 import {
 	Button,
@@ -14,8 +14,9 @@ import { useEffect } from '@wordpress/element';
 import { useDispatch, useSelect } from '@wordpress/data';
 
 /**
- * Internal dependencies.
+ * Internal dependencies
  */
+import { getStartOfWeek } from '../helpers/editor';
 import { hasEventPastNotice } from '../helpers/event';
 import {
 	createMomentWithTimezone,
@@ -24,6 +25,7 @@ import {
 	dateTimeOffset,
 	getTimezone,
 	updateDateTimeStart,
+	useMatchedDuration,
 } from '../helpers/datetime';
 import { getSettings } from '@wordpress/date';
 
@@ -35,18 +37,20 @@ import { getSettings } from '@wordpress/date';
  * values are formatted and saved. The component subscribes to the saveDateTime
  * function and triggers the hasEventPastNotice function to handle any event past notices.
  *
- * @since 1.0.0
+ * @since 0.27.0
  *
  * @return {JSX.Element} The rendered React component.
  */
 const DateTimeStart = () => {
-	const { dateTimeStart, duration } = useSelect(
-		( select ) => ( {
-			dateTimeStart: select( 'gatherpress/datetime' ).getDateTimeStart(),
-			duration: select( 'gatherpress/datetime' ).getDuration(),
-		} ),
+	const dateTimeStart = useSelect(
+		( select ) => select( 'gatherpress/datetime' ).getDateTimeStart(),
 		[],
 	);
+	// Use the memoized matched-preset hook so the gating below only fires
+	// the auto-end-sync when the current end actually equals start + N
+	// hours — same semantics as the previous getDuration selector, but
+	// without that selector's per-call moment.tz comparison loop (#1607).
+	const duration = useMatchedDuration();
 	const { setDateTimeStart, setDateTimeEnd } = useDispatch(
 		'gatherpress/datetime',
 	);
@@ -108,6 +112,7 @@ const DateTimeStart = () => {
 									);
 								} }
 								is12Hour={ is12HourTime }
+								startOfWeek={ getStartOfWeek() }
 							/>
 						) }
 					/>

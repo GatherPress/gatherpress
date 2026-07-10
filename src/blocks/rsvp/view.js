@@ -1,10 +1,10 @@
 /**
- * WordPress dependencies.
+ * WordPress dependencies
  */
 import { store, getElement, getContext } from '@wordpress/interactivity';
 
 /**
- * Internal dependencies.
+ * Internal dependencies
  */
 import {
 	initPostContext,
@@ -109,11 +109,19 @@ const { state, actions } = store( 'gatherpress', {
 				() => {
 					const parentWithRsvpStatus =
 						element.ref.closest( '[data-rsvp-status]' );
-					const rsvpStatus =
-						parentWithRsvpStatus.dataset.rsvpStatus;
-					const rsvpContainer = parentWithRsvpStatus.closest(
+					const rsvpContainer = parentWithRsvpStatus?.closest(
 						'.wp-block-gatherpress-rsvp',
 					);
+
+					// Bail if the expected wrappers aren't in the DOM
+					// (malformed/partial block markup) so we don't throw on a
+					// null reference and abort the post-RSVP UI update (#1719).
+					if ( ! parentWithRsvpStatus || ! rsvpContainer ) {
+						return;
+					}
+
+					const rsvpStatus =
+						parentWithRsvpStatus.dataset.rsvpStatus;
 
 					if ( [ 'not_attending', 'no_status' ].includes( rsvpStatus ) ) {
 						const attendingStatusButton =
@@ -121,14 +129,24 @@ const { state, actions } = store( 'gatherpress', {
 								'[data-rsvp-status="attending"] .gatherpress-rsvp--trigger-update',
 							);
 
-						actions.openModal( null, attendingStatusButton );
+						if ( attendingStatusButton ) {
+							actions.openModal( null, attendingStatusButton );
+						}
 
 						/**
-						 * When keeping a modal open after an action, use findActiveSibling=false
-						 * to prevent focus from moving to a different modal manager.
+						 * When switching to the attending modal, close with
+						 * findActiveSibling=false so focus stays on the newly
+						 * opened modal manager. When the attending state's
+						 * markup is missing (malformed or partial block
+						 * content), there is no modal to switch to, so fully
+						 * close the current one instead (#1719).
 						 */
 						setTimeout( () => {
-							actions.closeModal( null, element.ref, false );
+							actions.closeModal(
+								null,
+								element.ref,
+								! attendingStatusButton,
+							);
 						}, 10 );
 					} else {
 						/**
@@ -189,20 +207,49 @@ const { state, actions } = store( 'gatherpress', {
 
 			const innerBlocks =
 				element.ref.querySelectorAll( '[data-rsvp-status]' );
+			const currentStatus = state.posts[ postId ].currentUser.status;
+
+			let matched = false;
 
 			innerBlocks.forEach( ( innerBlock ) => {
 				const parent = innerBlock.parentNode;
-				if (
-					innerBlock.dataset.rsvpStatus ===
-					state.posts[ postId ].currentUser.status
-				) {
+				if ( innerBlock.dataset.rsvpStatus === currentStatus ) {
 					innerBlock.classList.remove( 'gatherpress--is-hidden' );
-					// Move the visible block to the start of its parent.
-					parent.insertBefore( innerBlock, parent.firstChild );
+					// Guard against a spurious DOM remove+reinsert: when the block
+					// is already firstChild, insertBefore(node, node) per the DOM
+					// spec becomes insertBefore(node, node.nextSibling), which is
+					// still a real mutation and restarts CSS animations on descendants.
+					if ( parent.firstChild !== innerBlock ) {
+						parent.insertBefore( innerBlock, parent.firstChild );
+					}
+					matched = true;
 				} else {
 					innerBlock.classList.add( 'gatherpress--is-hidden' );
 				}
 			} );
+
+			// Fallback: if the saved block is missing the inner block for the
+			// current status (malformed or partial markup), the loop above
+			// hides every state and leaves nothing on screen. Re-show the
+			// no_status block so the RSVP button never fully disappears (#1719).
+			if ( ! matched ) {
+				const fallback = element.ref.querySelector(
+					'[data-rsvp-status="no_status"]',
+				);
+
+				if ( fallback ) {
+					fallback.classList.remove( 'gatherpress--is-hidden' );
+					// Same firstChild guard as above: re-inserting an already
+					// first node is still a DOM mutation and restarts CSS
+					// animations on descendants (#1741).
+					if ( fallback.parentNode.firstChild !== fallback ) {
+						fallback.parentNode.insertBefore(
+							fallback,
+							fallback.parentNode.firstChild,
+						);
+					}
+				}
+			}
 		},
 		updateGuestCountDisplay() {
 			const context = getContext();

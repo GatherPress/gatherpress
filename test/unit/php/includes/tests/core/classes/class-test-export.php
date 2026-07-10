@@ -3,7 +3,7 @@
  * Class handles unit tests for GatherPress\Core\Export.
  *
  * @package GatherPress\Core
- * @since 1.0.0
+ * @since 0.30.0
  */
 
 namespace GatherPress\Tests\Core;
@@ -20,6 +20,7 @@ use PMC\Unit_Test\Utility;
  * @group migrate
  */
 class Test_Export extends Base {
+
 	/**
 	 * Coverage for setup_hooks.
 	 *

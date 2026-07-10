@@ -6,6 +6,7 @@
 [files]
 extend-exclude = [
     ".git/",
+    ".github/",
     "**/vendor/**",
     "**/node_modules/**",
     "build/**",
@@ -18,6 +19,8 @@ locale = "en-us"
 extend-ignore-re = [
     "\\biMatix\\b",
     "\\bEvent Organiser\\b",
+    # Calibre (calibreapp.com) builds the image-actions image compressor.
+    "\\bCalibre\\b",
 ]
 
 [default.extend-identifiers]

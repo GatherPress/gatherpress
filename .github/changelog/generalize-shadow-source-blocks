@@ -1,0 +1,4 @@
+Significance: minor
+Type: changed
+
+Generalize the `gatherpress/venue` block and the `gatherpress/event-query` block's contextual toggle to work with any `gatherpress-shadow-source` post type (productions, tours, organizers, etc.), not just venues. Adds a new `gatherpress_shadow_taxonomy_object_types` filter so extensions declaratively wire their shadow taxonomy to event CPTs, plus two reusable `Shadow_Source` helpers (`resolve_post_from_query_context`, `build_tax_query_clause`) for custom Query Loops.

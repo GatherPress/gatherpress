@@ -1,5 +1,5 @@
 /**
- * WordPress dependencies.
+ * WordPress dependencies
  */
 import { __ } from '@wordpress/i18n';
 import { CheckboxControl } from '@wordpress/components';
@@ -7,9 +7,9 @@ import { useState, useEffect, useCallback } from '@wordpress/element';
 import { useDispatch, useSelect } from '@wordpress/data';
 
 /**
- * Internal dependencies.
+ * Internal dependencies
  */
-import { getFromGlobal } from '../helpers/globals';
+import { getFromSettings } from '../helpers/editor-settings';
 
 /**
  * AnonymousRsvp component.
@@ -36,7 +36,7 @@ const AnonymousRsvp = () => {
 	}, [] );
 
 	if ( isNewEvent ) {
-		defaultAnonymousRsvp = getFromGlobal( 'settings.enableAnonymousRsvp' );
+		defaultAnonymousRsvp = getFromSettings( 'enableAnonymousRsvp' );
 	}
 
 	const [ anonymousRsvp, setAnonymousRsvp ] = useState( defaultAnonymousRsvp );
@@ -62,6 +62,10 @@ const AnonymousRsvp = () => {
 	return (
 		<CheckboxControl
 			label={ __( 'Enable Anonymous RSVP', 'gatherpress' ) }
+			help={ __(
+				'Allow attendees to hide their name and avatar from the public attendee list. Administrators can still see their details.',
+				'gatherpress',
+			) }
 			checked={ anonymousRsvp }
 			onChange={ ( value ) => {
 				updateAnonymousRsvp( value );

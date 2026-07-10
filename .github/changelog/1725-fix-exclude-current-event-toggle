@@ -1,0 +1,4 @@
+Significance: patch
+Type: fixed
+
+Show "Exclude current event" toggle only when queried post type matches the currently edited post type.

@@ -1,5 +1,5 @@
 /**
- * WordPress dependencies.
+ * WordPress dependencies
  */
 import { __ } from '@wordpress/i18n';
 import { PanelRow, SelectControl } from '@wordpress/components';
@@ -7,20 +7,14 @@ import { useSelect, useDispatch } from '@wordpress/data';
 import { useEffect, useState } from '@wordpress/element';
 
 /**
- * Internal dependencies.
- */
-import { Broadcaster } from '../helpers/broadcasting';
-
-/**
  * VenueSelector component for GatherPress.
  *
  * This component is responsible for selecting a venue for an event in the GatherPress application.
  * It includes a dropdown menu with a list of available venues, and it updates the event's venue
- * information based on the selected venue. It manages the state for venue-related data such as
- * name, fullAddress, phoneNumber, website, and isOnlineEventTerm. The selected venue is stored as a
- * term associated with the event.
+ * information based on the selected venue. The selected venue is stored as a term associated
+ * with the event, and its latitude/longitude are updated in the venue store.
  *
- * @since 1.0.0
+ * @since 0.27.0
  *
  * @return {JSX.Element} The rendered React component.
  */
@@ -52,25 +46,11 @@ const VenueSelector = () => {
 		useDispatch( 'gatherpress/venue' );
 
 	useEffect( () => {
-		let venueInformation = {};
+		const venueMeta =
+			( venueSlug && Array.isArray( venuePost ) && venuePost[ 0 ]?.meta ) || {};
 
-		if ( venueSlug && Array.isArray( venuePost ) ) {
-			const jsonString =
-				venuePost[ 0 ]?.meta?.gatherpress_venue_information ?? '{}';
-
-			if ( jsonString ) {
-				venueInformation = JSON.parse( jsonString );
-				venueInformation.name = venuePost[ 0 ]?.title.rendered ?? '';
-			}
-		}
-
-		const nameUpdated =
-			venueInformation?.name ?? __( 'No venue selected.', 'gatherpress' );
-		const fullAddressUpdated = venueInformation?.fullAddress ?? '';
-		const phoneNumberUpdated = venueInformation?.phoneNumber ?? '';
-		const websiteUpdated = venueInformation?.website ?? '';
-		const latitudeUpdated = venueInformation?.latitude ?? '0';
-		const longitudeUpdated = venueInformation?.longitude ?? '0';
+		const latitudeUpdated = venueMeta.gatherpress_latitude || '0';
+		const longitudeUpdated = venueMeta.gatherpress_longitude || '0';
 
 		// Will unset the venue if slug is `undefined` here.
 		if ( slug ) {
@@ -81,16 +61,6 @@ const VenueSelector = () => {
 
 		updateVenueLatitude( latitudeUpdated );
 		updateVenueLongitude( longitudeUpdated );
-
-		Broadcaster( {
-			setName: nameUpdated,
-			setFullAddress: fullAddressUpdated,
-			setPhoneNumber: phoneNumberUpdated,
-			setWebsite: websiteUpdated,
-			setLatitude: latitudeUpdated,
-			setLongitude: longitudeUpdated,
-			setIsOnlineEventTerm: 'online-event' === venueSlug,
-		} );
 	}, [
 		venueSlug,
 		venuePost,
@@ -139,6 +109,7 @@ const VenueSelector = () => {
 	return (
 		<PanelRow>
 			<SelectControl
+				__next40pxDefaultSize
 				label={ __( 'Venue Selector', 'gatherpress' ) }
 				value={ venue }
 				onChange={ ( value ) => {

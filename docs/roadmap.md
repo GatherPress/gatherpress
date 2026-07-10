@@ -16,7 +16,4 @@ These are the upcoming features we're actively developing or planning for future
 ## Ideas Under Exploration
 
 - Custom RSVP fields (e.g., dietary preferences, accessibility needs)
-- Email verification + token expiration for Open RSVPs
 - Role-based permissions for blocks and RSVP features
-- Frontend RSVP submission forms
-- Calendar integration (iCal/ICS feeds, Google/Yahoo Calendar support)

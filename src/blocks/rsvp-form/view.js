@@ -1,14 +1,12 @@
 /**
- * WordPress dependencies.
+ * WordPress dependencies
  */
 import { store, getElement, getContext } from '@wordpress/interactivity';
 
 /**
- * Internal dependencies.
+ * Internal dependencies
  */
 import { initPostContext, getNonce } from '../../helpers/interactivity';
-import { getFromGlobal } from '../../helpers/globals';
-
 const { state } = store( 'gatherpress', {
 	state: {
 		posts: {},
@@ -83,7 +81,7 @@ const { state } = store( 'gatherpress', {
 				}
 
 				const response = await fetch(
-					getFromGlobal( 'urls.eventApiUrl' ) + '/rsvp-form',
+					state.eventApiUrl + '/rsvp-form',
 					{
 						method: 'POST',
 						headers: {

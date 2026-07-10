@@ -1,0 +1,4 @@
+Significance: patch
+Type: fixed
+
+Show a clear "Map could not be loaded" state instead of a blank gray box when the interactive map's tile provider fails to serve tiles (e.g. CartoDB returning 502s for uncached high-zoom tiles). A failed tile fetch no longer leaves the map silently empty.

@@ -1,0 +1,122 @@
+name: Props Bot
+
+on:
+    # This event runs anytime a PR is (re)opened, updated, marked ready for review, or labeled.
+    # GitHub does not allow filtering the `labeled` event by a specific label.
+    # However, the logic below will short-circuit the workflow when the `Props Bot` label is not the one being added.
+    # Note: The pull_request_target event is used instead of pull_request because this workflow needs permission to comment
+    # on the pull request. Because this event grants extra permissions to `GITHUB_TOKEN`, any code changes within the PR
+    # should be considered untrusted. See https://securitylab.github.com/research/github-actions-preventing-pwn-requests/.
+    pull_request_target:
+        types:
+            - opened
+            - synchronize
+            - reopened
+            - labeled
+            - ready_for_review
+    # This event runs anytime a comment is added or deleted.
+    # You cannot filter this event for PR comments only.
+    # However, the logic below does short-circuit the workflow for issues.
+    issue_comment:
+        types:
+            - created
+    # This event will run everytime a new PR review is initially submitted.
+    pull_request_review:
+        types:
+            - submitted
+    # This event runs anytime a PR review comment is created or deleted.
+    pull_request_review_comment:
+        types:
+            - created
+
+# Cancels all previous workflow runs for pull requests that have not completed.
+concurrency:
+    # The concurrency group contains the workflow name and the branch name for pull requests
+    # or the commit hash for any other events.
+    group: ${{ github.workflow }}-${{ contains( fromJSON( '["pull_request_target", "pull_request_review", "pull_request_review_comment"]' ), github.event_name ) && github.head_ref || github.sha }}
+    cancel-in-progress: true
+
+# Disable permissions for all available scopes by default.
+# Any needed permissions should be configured at the job level.
+permissions: {}
+
+jobs:
+    # Compiles a list of props for a pull request.
+    #
+    # Performs the following steps:
+    # - Collects a list of contributor props and leaves a comment.
+    # - Removes the Props Bot label, if necessary.
+    props-bot:
+        name: Generate a list of props
+        runs-on: ubuntu-latest
+        permissions:
+            # The action needs `write` permission for PRs in order to add a comment.
+            pull-requests: write
+        timeout-minutes: 20
+        # The job will run when pull requests are open, ready for review and:
+        #
+        # - A comment is added to the pull request.
+        # - A review is created or commented on (unless PR originates from a fork).
+        # - The pull request is opened, synchronized, marked ready for review, or reopened.
+        # - The `Props Bot` label is added to the pull request.
+        if: |
+            (
+              github.event_name == 'issue_comment' && github.event.issue.pull_request ||
+              ( contains( fromJSON( '["pull_request_review", "pull_request_review_comment"]' ), github.event_name ) && ! github.event.pull_request.head.repo.fork ) ||
+              github.event_name == 'pull_request_target' && github.event.action != 'labeled' ||
+              'Props Bot' == github.event.label.name
+            ) &&
+            ( ! github.event.pull_request.draft && github.event.pull_request.state == 'open' || ! github.event.issue.draft && github.event.issue.state == 'open' )
+
+        steps:
+            # TEMPORARY PATCH: run a locally patched copy of props-bot-action
+            # instead of using it directly. The action fails hard on any PR
+            # the what-the-diff app has commented on ("Could not resolve to a
+            # User with the login of 'what-the-diff'"), because its skipUser()
+            # bot list is hardcoded and doesn't include it. Same failure mode
+            # as WordPress/props-bot-action#232, which was fixed by extending
+            # the list (WordPress/props-bot-action#184); a configurable
+            # exclude list is requested in WordPress/props-bot-action#138.
+            # Once either lands upstream, replace these three steps with a
+            # single `uses: WordPress/props-bot-action@trunk` again.
+            #
+            # This checks out the TRUSTED upstream action repository at trunk,
+            # never code from the pull request — important because this
+            # workflow runs on pull_request_target.
+            - name: Check out props-bot-action
+              uses: actions/checkout@v4
+              with:
+                  repository: WordPress/props-bot-action
+                  ref: trunk
+                  path: props-bot-action
+
+            - name: Add what-the-diff to the skipped users
+              run: |
+                  # Guards fail the job loudly if upstream reshapes the list,
+                  # so the patch can't silently stop applying.
+                  grep -q "'github-actions'," props-bot-action/dist/index.js
+                  sed -i "s/'github-actions',/'github-actions', 'what-the-diff', 'what-the-diff[bot]',/g" props-bot-action/dist/index.js
+                  grep -q "'what-the-diff'," props-bot-action/dist/index.js
+
+            - name: Gather a list of contributors
+              uses: ./props-bot-action
+              with:
+                  # Resolve contributors to their WordPress.org usernames and render them
+                  # as a `Props <wporg-username>` list, which is what feeds the
+                  # data/credits.php + generate_version flow. We do not use SVN; the
+                  # `svn` value only describes the output style.
+                  format: 'svn'
+
+            - name: Remove the Props Bot label
+              uses: actions/github-script@v7
+              if: ${{ github.event.action == 'labeled' && 'Props Bot' == github.event.label.name }}
+              with:
+                  retries: 2
+                  retry-exempt-status-codes: 418
+                  script: |
+                      github.rest.issues.removeLabel({
+                        owner: context.repo.owner,
+                        repo: context.repo.repo,
+                        issue_number: '${{ github.event.number }}',
+                        name: 'Props Bot'
+                      });

@@ -1,3 +1,8 @@
+// Reusable component styles. The pattern-picker modal portals to
+// document.body — outside any block's iframe — so its styles need to live in
+// the admin-wide bundle, not in a block's editor stylesheet.
+@use "components/PatternPicker";
+
 .gatherpress-attendee-info {
 	display: flex;
 	gap: 0.5rem;
@@ -63,4 +68,37 @@
 .gatherpress-rsvp-pending:hover {
 	background: #b32d2e;
 	color: #fff;
+}
+
+/* Popular Venues Quick Select */
+.gatherpress-popular-venues {
+	margin: 12px 0;
+}
+
+.gatherpress-popular-venues__label {
+	margin: 0;
+	font-size: 12px;
+	color: #757575;
+}
+
+.gatherpress-popular-venue.components-button.is-link {
+	text-decoration: none;
+	padding: 0;
+	height: auto;
+	min-height: 0;
+	margin-right: 0.5rem;
+}
+
+.gatherpress-popular-venue.components-button.is-link:not(:disabled):hover {
+	text-decoration: underline;
+}
+
+.gatherpress-popular-venue--selected.components-button.is-link {
+	font-weight: 600;
+	color: #1e1e1e;
+	cursor: default;
+}
+
+.gatherpress-popular-venue--selected.components-button.is-link:disabled {
+	opacity: 1;
 }

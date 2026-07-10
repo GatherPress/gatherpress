@@ -1,0 +1,4 @@
+Significance: patch
+Type: changed
+
+Lowered the default Venue Map zoom level from 18 to 16 so new venue maps show more neighborhood context. Sites that already set a custom Default Zoom Level are unaffected.

@@ -3,38 +3,38 @@
 # The plugin-proxy.php does a check against exact this workflow name.
 name: Playground Preview
 
-# Inspired by, but not based on https://github.com/WordPress/gutenberg/blob/b89fb7b6eaf619bde0269e2a7fbf6245822f6cbf/.github/workflows/build-plugin-zip.yml#L153
+# Why pull_request (not pull_request_target)?
+#
+# This workflow checks out and builds PR code (npm ci, npm run build) which is
+# fundamentally untrusted. Running that on pull_request_target gives the PR's
+# build scripts access to the base repo's GITHUB_TOKEN — a supply-chain attack
+# surface (CodeQL flagged this as actions/untrusted-checkout/critical).
+#
+# The companion workflow `Playground Preview Comment` consumes this run's
+# artifact via workflow_run, runs in the privileged base-repo context with
+# `pull-requests: write`, and posts the preview-links PR comment — without ever
+# executing PR code.
 
 on:
-  # What and Why pull_request_target?
-  # https://github.com/GatherPress/gatherpress/pull/666#issuecomment-2143088443
-  #
-  # The GitHub Actions built in environment variables and Context
-  # of pull_request_target event are different from those of pull_request event.
-  #
-  # For example, the following environment variables and context are different.
-  #
-  # - event_name, GITHUB_EVENT_NAME
-  # - ref, GITHUB_REF
-  # - sha, GITHUB_SHA
-  # - ref_name, GITHUB_REF_NAME
-  #
-  # @source https://dev.to/suzukishunsuke/secure-github-actions-by-pullrequesttarget-641#modify-workflows-for-pullrequesttarget
-
-  pull_request_target:
+  pull_request:
     types: [opened, synchronize]
     paths:
     - 'build/**'
     - 'includes/**'
     - 'src/**'
     - '*.php'
+    # Do start the workflow, even when just a PR preview blueprint was added or changed.
+    # That allows doing compatibility tests with 3rd-party plugins or
+    # just to get some reproducible debugging environment with "Query Monitor".
+    - '.github/playground/**'
 
 # Cancels all previous workflow runs for pull requests that have not completed.
 concurrency:
-  # The concurrency group contains the workflow name and the branch name for pull requests
-  # or the commit hash for any other events.
-  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request_target' && github.head_ref || github.sha }}
+  group: ${{ github.workflow }}-${{ github.head_ref || github.sha }}
   cancel-in-progress: true
+
+permissions:
+  contents: read
 
 jobs:
 
@@ -43,19 +43,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
 
-      # To checkout the merged commit with actions/checkout on pull_request_target event,
-      # you need to get the pull request by GitHub API
-      # and set the merge commit hash to actions/checkout input ref.
-      #
-      # @source https://dev.to/suzukishunsuke/secure-github-actions-by-pullrequesttarget-641#checkout-merge-commits
-      - uses: suzuki-shunsuke/get-pr-action@v0.1.0
-        id: pr
-
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          ref: ${{ steps.pr.outputs.merge_commit_sha }}
-          show-progress: ${{ runner.debug == '1' && 'true' || 'false' }}
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
@@ -65,39 +54,27 @@ jobs:
           tools: wp-cli
 
       - name: Install dist-archive-command
-        run: wp package install wp-cli/dist-archive-command:^2
+        run: |
+          # shivammathur/setup-php stores a GitHub OAuth token in Composer's
+          # global auth config; wp-cli's bundled Composer rejects its format
+          # ("invalid characters"), breaking this install. dist-archive-command
+          # is public, so drop the token and install unauthenticated.
+          composer config --global --unset github-oauth.github.com 2>/dev/null || true
+          rm -f "$HOME/.config/composer/auth.json" "$HOME/.composer/auth.json" "$HOME/.wp-cli/packages/auth.json" 2>/dev/null || true
+          wp package install wp-cli/dist-archive-command:^2
 
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version-file: '.nvmrc'
-          # Enable built-in functionality for caching and restoring dependencies, which is disabled by default.
-          # The actions/setup-node uses actions/cache under the hood.
-          # https://github.com/actions/setup-node#caching-global-packages-data
+          # The built-in setup-node cache (keyed by package-lock.json hash) is
+          # safe for untrusted PR code; the prior manual actions/cache restore
+          # of ./node_modules was flagged as poisonable and is intentionally
+          # removed.
           cache: 'npm'
 
-      # Restoring the short lived node_modules cache
-      # to be used across all workflows running on the last commit.
-      # https://github.com/actions/cache/blob/main/caching-strategies.md#creating-a-short-lived-cache
-      - uses: actions/cache/restore@v4
-        id: node_modules-cache
-        with:
-          path: |
-            ./node_modules
-          key: ${{ runner.os }}-node_modules-${{ steps.pr.outputs.merge_commit_sha }}-${{ hashFiles('package-lock.json') }}
-
       - name: NPM install
-        if: steps.node_modules-cache.outputs.cache-hit != 'true'
-        run: npm ci --legacy-peer-deps
-
-      # Creating a short lived node_modules cache
-      - uses: actions/cache/save@v4
-        if: steps.node_modules-cache.outputs.cache-hit != 'true'
-        continue-on-error: true
-        with:
-          path: |
-            ./node_modules
-          key: ${{ steps.node_modules-cache.outputs.cache-primary-key }}
+        run: npm ci
 
       - name: Build plugin
         # - [Incorrect version number used when creating zip archive · Issue #92 · wp-cli/dist-archive-command](https://github.com/wp-cli/dist-archive-command/issues/92)
@@ -105,28 +82,23 @@ jobs:
           npm run build
           wp dist-archive . ./${{ github.event.repository.name }}.zip
 
+      # dist-archive is kept as the single source of truth for what ships
+      # (.distignore), but its zip is re-extracted so the *artifact itself*
+      # is the one and only zip: downloading it yields
+      # `gatherpress-pr-<number>.zip`, which unzips straight to a
+      # `gatherpress/` directory. Without this, GitHub wraps the uploaded
+      # files in an artifact zip and users get a zip inside a zip.
+      - name: Stage plugin directory for artifact
+        run: |
+          mkdir staging
+          unzip -q ./${{ github.event.repository.name }}.zip -d staging
+
+      # The PR number is encoded in the artifact name (instead of a
+      # pr-number.txt payload file) so the downstream `Playground Preview
+      # Comment` workflow can read it via the artifact-listing API and the
+      # downloaded zip stays clean.
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ github.event.repository.name }}-pr
-          path: ./${{ github.event.repository.name }}.zip
-
-  comment:
-    name: Comment with playground link
-    needs: zip  # Ensure this runs after zip job.
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Add Preview Links comment
-        id: comment-on-pr
-        uses: actions/github-script@v7
-        env:
-          PHP_VERSIONS: '["8.4","8.2","7.4"]'
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            const createPreviewLinks = require('.github/scripts/playground-preview');
-            createPreviewLinks(github, context);
+          name: ${{ github.event.repository.name }}-pr-${{ github.event.pull_request.number }}
+          path: staging

@@ -3,7 +3,7 @@
  * Class handles unit tests for GatherPress\Core\User.
  *
  * @package GatherPress\Core
- * @since 1.0.0
+ * @since 0.28.0
  */
 
 namespace GatherPress\Tests\Core;
@@ -18,6 +18,7 @@ use PMC\Unit_Test\Utility;
  * @coversDefaultClass \GatherPress\Core\User
  */
 class Test_User extends Base {
+
 	/**
 	 * Coverage for setup_hooks.
 	 *

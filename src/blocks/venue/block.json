@@ -1,48 +1,47 @@
 {
 	"$schema": "https://schemas.wp.org/trunk/block.json",
-	"apiVersion": 2,
+	"apiVersion": 3,
 	"name": "gatherpress/venue",
-	"version": "1.1.0",
+	"version": "2.0.0",
 	"title": "Venue",
 	"category": "gatherpress",
 	"icon": "location",
 	"example": {},
 	"description": "Provides information about an event venue.",
+	"usesContext": [ "postId", "postType", "queryId" ],
 	"attributes": {
-		"mapShow": {
-			"type": "boolean",
-			"default": true
-		},
-		"mapAlign": {
+		"sourcePostType": {
 			"type": "string",
-			"default": ""
+			"default": "gatherpress_venue"
 		},
-		"mapZoomLevel": {
-			"type": "number",
-			"default": 10
+		"selectedPostId": {
+			"type": "integer"
 		},
-		"mapType": {
-			"type": "string",
-			"default": "m"
+		"selectedPostType": {
+			"type": "string"
 		},
-		"mapHeight": {
-			"type": "number",
-			"default": 300
-		},
-		"mapCustomLatLong": {
+		"patternPicked": {
 			"type": "boolean",
 			"default": false
 		}
 	},
 	"supports": {
-		"align": [ "wide" ],
-		"html": false
+		"gatherpress": {
+			"blockGuard": true,
+			"postIdOverride": true
+		},
+		"align": [ "wide", "full" ],
+		"html": false,
+		"interactivity": {
+			"clientNavigation": true
+		},
+		"layout": {
+			"default": {
+				"type": "constrained"
+			}
+		}
 	},
 	"textdomain": "gatherpress",
 	"editorScript": "file:./index.js",
-	"editorStyle": "file:./index.css",
-	"style": "file:./style-index.css",
-	"viewScript": "file:./venue.js",
-	"viewStyle": "file:./venue.css",
 	"render": "file:./render.php"
 }

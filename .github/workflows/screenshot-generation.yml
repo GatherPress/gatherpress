@@ -1,0 +1,328 @@
+# Reusable screenshot-generation workflow.
+#
+# Runs Playwright against a WordPress Playground instance (seeded with the
+# GatherPress demo data) and opens one auto-merging pull request per locale
+# with the regenerated images. Callers decide which screenshot suite runs
+# (via the npm script + output path) and for which locales:
+#
+#   - wordpress-org-screenshots.yml → the wordpress.org plugin-assets suite,
+#     every locale with >90% complete plugin translations.
+#   - docs-screenshots.yml → the documentation-image suite, English only.
+
+name: Screenshot generation (reusable)
+
+on:
+  workflow_call:
+    inputs:
+      locales:
+        description: 'JSON array of locale codes to generate screenshots for, e.g. ["en_US","fr_FR"].'
+        required: true
+        type: string
+      npm-script:
+        description: 'The npm script that runs the Playwright screenshot suite, e.g. "screenshots:wporg".'
+        required: true
+        type: string
+      output-path:
+        description: 'Repository directory the suite writes its images to; also scopes the commit.'
+        required: true
+        type: string
+      branch-prefix:
+        description: 'Prefix for the generated per-locale branches: fix/<prefix>-<locale>-<sha>.'
+        required: true
+        type: string
+      pr-title-template:
+        description: 'PR/commit title; "{0}" is replaced with the locale code.'
+        required: true
+        type: string
+      blueprint:
+        description: 'Playground blueprint the instance boots from.'
+        required: false
+        type: string
+        default: .github/scripts/wordpress-org-screenshots/blueprint.json
+      update-all:
+        description: 'Skip the visual comparison and recreate every screenshot.'
+        required: false
+        type: boolean
+        default: false
+      mount-plugin:
+        description: >-
+          Mount the checked-out working tree as the gatherpress plugin inside
+          Playground (and build its assets first), so screenshots show the
+          code under development. Without this, the blueprint's installPlugin
+          step provides the plugin — i.e. the latest wordpress.org release.
+        required: false
+        type: boolean
+        default: false
+
+jobs:
+  screenshot:
+    runs-on: ubuntu-latest
+    # Backstop against hangs: with max-parallel 1, a job silently stuck at
+    # GitHub's 6h default limit stalls every locale behind it — one hung
+    # apt phase turned into ~48h of dead runner time (run 27881952586).
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      max-parallel: 1 # Prevent parallel runs to make use of the caching for node_modules and playwright browsers
+      matrix:
+        locale: ${{ fromJSON(inputs.locales) }}
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - uses: actions/cache@v4
+      id: playwright-cache
+      with:
+        path: |
+          ~/.cache/ms-playwright
+        key: ${{ runner.os }}-playwright-${{ hashFiles('**/package-lock.json') }}
+
+    - name: Setup Node
+      uses: actions/setup-node@v4
+      with:
+        node-version-file: '.nvmrc'
+        # Enable built-in functionality for caching and restoring dependencies, which is disabled by default.
+        # The actions/setup-node uses actions/cache under the hood.
+        # https://github.com/actions/setup-node#caching-global-packages-data
+        cache: 'npm'
+
+    # Restoring the short lived node_modules cache
+    # to be used across all workflows running on the last commit.
+    # https://github.com/actions/cache/blob/main/caching-strategies.md#creating-a-short-lived-cache
+    - uses: actions/cache/restore@v4
+      id: node_modules-cache
+      with:
+        path: |
+          ./node_modules
+        key: ${{ runner.os }}-node_modules-${{ github.sha }}-${{ hashFiles('package-lock.json') }}
+
+    - name: NPM install
+      if: steps.node_modules-cache.outputs.cache-hit != 'true'
+      run: npm ci
+
+    # Creating a short lived node_modules cache
+    - uses: actions/cache/save@v4
+      if: steps.node_modules-cache.outputs.cache-hit != 'true'
+      continue-on-error: true
+      with:
+        path: |
+          ./node_modules
+        key: ${{ steps.node_modules-cache.outputs.cache-primary-key }}
+
+    # The browser download and the apt-based system-dependency install are
+    # deliberately separate steps with their own timeouts: the combined
+    # `install --with-deps` hung indefinitely inside its apt phase (after the
+    # browser download had already completed) and every locale job burned
+    # GitHub's 6h limit — see run 27881952586. Step-level timeouts fail fast
+    # AND keep the post-job cache save alive, so the next locale job can hit
+    # the browser cache instead of repeating the download.
+    - name: Install Playwright browser
+      timeout-minutes: 10
+      run: npx playwright install chromium
+      if: steps.playwright-cache.outputs.cache-hit != 'true'
+
+    - name: Install Playwright system dependencies
+      timeout-minutes: 10
+      env:
+        DEBIAN_FRONTEND: noninteractive
+      run: npx playwright install-deps chromium
+
+    # A mounted plugin serves its assets straight from the working tree, so
+    # they have to be built — the repository doesn't commit build output.
+    - name: Build plugin assets
+      if: ${{ inputs.mount-plugin }}
+      run: npm run build
+
+    - name: Prepare localized blueprint
+      # en_US should not get any additional steps added, as this will result in errors!
+      #
+      # All other locales need those two steps!
+      # The first downloads all lang-packs, while the second is important for
+      # "( await requestUtils.getSiteSettings() ).language;"
+      # which would otherwise return only "en_US". Learned that the hard way!
+      # Might be a bug in Playgrounds setSiteLanguage step or intended behavior.
+      run: |
+        if [ ${{ matrix.locale }} == 'en_US' ]; then
+          cp ${{ inputs.blueprint }} localized_blueprint.json
+        else
+          language_step='[
+            {
+              "step": "setSiteLanguage",
+              "language": "${{ matrix.locale }}"
+            },
+            {
+              "step": "wp-cli",
+              "command": "wp option update WPLANG ${{ matrix.locale }}"
+            }
+          ]'
+          echo "Use jq to append the site language step to the existing blueprint JSON file."
+          jq --argjson languageStep "$language_step" '.steps += $languageStep' ${{ inputs.blueprint }} > localized_blueprint.json
+        fi
+
+    - name: Running the screenshot tests
+      id: screenshot-tests
+      # Having set "continue-on-error:true" should help the workflow to pass (and get a green checkmark)
+      # even if this step fails, what could happen because of intended changes or the addition of new locales.
+      continue-on-error: true
+      if: ${{ ! inputs.update-all }}
+      env:
+        PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
+      # This is kind of a hack PART 1/2,
+      # to make sure Playwright DOES NOT start the webserver on its own.
+      #
+      # Part 2/2 is the "command: undefined," declaration
+      # in the suite's playwright.config.ts
+      #
+      # While auto-loading the webserver when needed sounded nice, it introduced a race-condition
+      # between the setup of Playground and Playwrights own start event.
+      # Playwright listens for the availability of the webserver relatively simple,
+      # as soon as there is a status code 200, Playwright starts all engines.
+      #
+      # Unfortunately Playground is not ready at this point, it hast started WordPress
+      # and is going to start stepping through the blueprint, but hasn't loaded GatherPress nor imported any data;
+      # Resulting in failing tests.
+      #
+      # It was not possible (for me) to keep the setup of Playground in a separate step,
+      # why this "run > sleep > run" became necessary.
+      # The setup process usually takes about 20sec, so 60 is just a good extra, to not run into errors.
+      #
+      # The sleep step, should help making sure Playwright runs only, when this is DONE & READY.
+      #
+      # Because it seems to be a problem to "wait on webServer.command" https://github.com/microsoft/playwright/issues/11811
+      # & "it seems that globalSetup runs before webServer is started." https://github.com/microsoft/playwright/issues/11811#issuecomment-1040732201
+      #
+      # No retry here on purpose: this step failing is the SIGNAL that
+      # screenshots changed, which routes into the retry-hardened update
+      # step below. A transient Playground failure takes the same route and
+      # self-corrects there (identical regen produces no diff, so no PR).
+      run: |
+        npm run playground -- --blueprint=./localized_blueprint.json ${{ inputs.mount-plugin && '--mount=.:/wordpress/wp-content/plugins/gatherpress' || '' }}  & \
+        sleep 60 && \
+        echo 'Playground is ready now, lets take some pictures.' && \
+        # DEBUG=pw:api,pw:webserver \
+        npm run ${{ inputs.npm-script }}
+
+    - name: Updating the Screenshots
+      # Using "continue-on-error:true" results in 'conclusion' being a success in any case, while the 'outcome' can differ.
+      # And, as you already guessed, if: failure() looks at 'conclusion'.
+      #
+      # Or the step is triggered directly, while the former step is skipped,
+      # when update-all is trueish.
+      if: ${{ inputs.update-all || steps.screenshot-tests.outcome == 'failure' }}
+      env:
+        PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
+        UPDATE_ALL_SNAPSHOTS: ${{ inputs.update-all && '1' || '' }}
+      # Important Documentation about this "run"
+      # can be found on the "screenshot-tests" step!
+      #
+      # Playground's blueprint occasionally fails to download the WordPress
+      # core translations from translate.wordpress.org (transient; observed
+      # hitting random locales). Retry the whole playground + screenshots
+      # cycle a few times, killing any leftover playground on port 9400
+      # between attempts.
+      run: |
+        for attempt in 1 2 3; do
+          npm run playground -- --blueprint=./localized_blueprint.json ${{ inputs.mount-plugin && '--mount=.:/wordpress/wp-content/plugins/gatherpress' || '' }} &
+          sleep 60
+          echo 'Playground is ready now, lets take some pictures.'
+          # For verbose output, prefix the next command with: DEBUG=pw:api,pw:webserver
+          if npm run ${{ inputs.npm-script }} -- --update-snapshots; then
+            exit 0
+          fi
+          echo "Attempt ${attempt} failed; restarting Playground."
+          fuser -k 9400/tcp || true
+          sleep 10
+        done
+        exit 1
+
+    - name: Compress Images
+      if: ${{ inputs.update-all || steps.screenshot-tests.outcome == 'failure' }}
+      id: compress-images
+      uses: calibreapp/image-actions@main
+      with:
+        # The action renamed this input from `githubToken`; the old name is
+        # silently ignored ("Unexpected input(s)") and compression ran
+        # without a token.
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        # Use the compressOnly option with true value to skip the commit and summary comment.
+        compressOnly: true
+        # ignorePaths accepts a comma-separated string with globbing support # https://www.npmjs.com/package/glob
+        ignorePaths: 'artifacts,build,node_modules/**'
+
+    - name: Prepare working tree on develop
+      # Using "continue-on-error:true" results in 'conclusion' being a success in any case, while the 'outcome' can differ.
+      # And, as you already guessed, if: failure() looks at 'conclusion'.
+      #
+      # The PR branch must be based on origin/develop (screenshots flow into
+      # develop like all other work; main only moves on release) and carry
+      # over ONLY the screenshot directory. Working from the run's own
+      # checkout is wrong twice: a run dispatched from any other ref would
+      # leak that ref's commits into the PR, and the earlier main-targeted
+      # variant dragged the whole develop delta into main and conflicted.
+      if: ${{ inputs.update-all || steps.screenshot-tests.outcome == 'failure' }}
+      run: |
+        # Remove untracked, temporary file
+        rm -f ./localized_blueprint.json
+
+        # Preserve the (compressed) screenshots across the branch switch.
+        cp -r "${{ inputs.output-path }}" "${RUNNER_TEMP}/screenshots-output"
+
+        # Drop every working-tree modification (screenshots are safe in the
+        # copy above; the rest is incidental recompression) — git refuses to
+        # switch branches over dirty files that differ between the branches.
+        git reset --hard HEAD
+
+        # Check out develop itself as the local working base: peter-evans
+        # resolves the current branch as the PR's working base and resets it
+        # to its remote counterpart, so the branch must exist on origin — a
+        # local-only staging branch fails with "unknown revision".
+        git fetch --no-tags --depth=1 origin develop
+        git checkout -B develop origin/develop
+
+        rm -rf "${{ inputs.output-path }}"
+        cp -r "${RUNNER_TEMP}/screenshots-output" "${{ inputs.output-path }}"
+
+    # Create the branch, commit, and PR in one step via peter-evans — the
+    # same pattern as extract-wp-hooks-as-docs.yml. `sign-commits: true`
+    # commits the screenshots THROUGH the GitHub API; API-created commits
+    # are GPG-signed by GitHub (verified), so they satisfy the "Require
+    # signed commits" rule on develop — a plain `git commit` from the
+    # runner is unsigned and is rejected at merge. `add-paths` scopes the
+    # commit to the screenshots, and the compression markdown lands in the
+    # body via YAML interpolation (no shell quoting to break — the previous
+    # `--body '...'` crashed on the apostrophe in "Calibre's").
+    #
+    # Targets develop (main only moves on release). The Skip Changelog
+    # label is required because the changelog check enforces an entry on
+    # every develop-targeted PR, and screenshot regen doesn't warrant one.
+    #
+    # Pinned to a full commit SHA (not a tag) for supply-chain safety.
+    - name: Create pull request with updated screenshots
+      id: cpr
+      if: ${{ inputs.update-all || steps.screenshot-tests.outcome == 'failure' }}
+      uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        sign-commits: true
+        add-paths: ${{ inputs.output-path }}
+        branch: fix/${{ inputs.branch-prefix }}-${{ matrix.locale }}-${{ github.sha }}
+        base: develop
+        commit-message: ${{ format(inputs.pr-title-template, matrix.locale) }}
+        title: ${{ format(inputs.pr-title-template, matrix.locale) }}
+        body: "Created with ❤️ by WordPress Playground, Playwright & GitHub action <br /><br />${{ steps.compress-images.outputs.markdown }}"
+        labels: "Skip Changelog"
+        delete-branch: true
+
+    # Screenshot PRs are image-only regen — auto-merge as soon as required
+    # checks pass, then delete the branch so these PRs don't stack up per
+    # locale. If checks fail, the PR stays open for a human (ideally a
+    # native speaker) to investigate.
+    #
+    # Requires "Allow auto-merge" enabled in the repo settings; without it,
+    # this is a no-op (the PR still gets created, just not merged).
+    - name: Enable auto-merge
+      if: ${{ steps.cpr.outputs.pull-request-number }}
+      run: gh pr merge "${{ steps.cpr.outputs.pull-request-number }}" --auto --squash --delete-branch
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

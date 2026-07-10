@@ -1,0 +1,4 @@
+Significance: patch
+Type: fixed
+
+Fix the Event Query Settings panel and REST collection params so they work for any event-supporting post type. [#1622]

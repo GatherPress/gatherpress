@@ -1,0 +1,4 @@
+Significance: patch
+Type: changed
+
+Flatten `Rsvp_*` classes into the `GatherPress\Core\Rsvp` subnamespace. [#1524]

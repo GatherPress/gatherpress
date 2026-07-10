@@ -6,17 +6,20 @@
     "*/build/*",
     "build/*",
     "*/test/*",
+    "test/*",
     "*/tests/*",
     "*gatherpress.php",
     "*/class-autoloader.php",
     "*/class-singleton.php",
     "*/requirements-check.php",
     "*/duplicate-check.php",
+    "*/register-class-aliases.php",
     "*/templates/*",
     "*/render.php",
     "*/e2e/*",
     "*/endpoints/*",
     ".github/**",
+    ".gatherpress-org/**",
     "includes/data/*",
     "src/index.js",
     "src/editor.js",
@@ -30,6 +33,9 @@
     "src/blocks/*/templates/*.js",
     "src/blocks/*/panels/**/*",
     "src/blocks/*/types/**/*",
+    "src/blocks/*/fields/index.js",
+    "src/blocks/*/hooks/index.js",
+    "src/blocks/*/hooks/use-*.js",
     "src/panels/**/*",
     "src/modals/**/*",
     "src/variations/**/*",
@@ -38,14 +44,6 @@
     "src/stores/index.js",
     "src/helpers/urlrewrite.js",
     "src/helpers/interactivity.js",
-    "src/blocks/events-list/events-list.js",
-    "src/blocks/online-event/online-event.js",
-    "src/blocks/venue/venue.js",
     "src/blocks/rsvp-response/rsvp-manager.js"
-  ],
-  "allowLowCoverage": [
-    "includes/core/classes/class-setup.php",
-    "includes/core/classes/class-event-setup.php"
-  ],
-  "allowLowCoverageReason": "Contains multisite-specific code that cannot be tested in single-site environment, or code requiring HTTP response handling (ICS downloads)"
+  ]
 }

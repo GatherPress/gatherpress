@@ -1,0 +1,4 @@
+Significance: patch
+Type: fixed
+
+Several improvements and bug fixes to the Event Query Loop block surface (template handling, attribute migration, pattern selection). [#1396] [#1398]

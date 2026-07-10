@@ -1,10 +1,10 @@
 /**
- * WordPress dependencies.
+ * WordPress dependencies
  */
 import { store, getElement, getContext } from '@wordpress/interactivity';
 
 /**
- * Internal dependencies.
+ * Internal dependencies
  */
 import { initPostContext } from '../../helpers/interactivity';
 import { toCamelCase } from '../../helpers/globals';
@@ -177,7 +177,7 @@ const { state, actions } = store( 'gatherpress', {
 
 				element.ref.classList.add( 'gatherpress--is-disabled' );
 				element.ref.setAttribute( 'tabindex', '-1' );
-				element.ref.setAttribute( 'aira-disabled', 'true' );
+				element.ref.setAttribute( 'aria-disabled', 'true' );
 
 				triggerElement.textContent = activeText;
 			}
@@ -239,7 +239,8 @@ const { state, actions } = store( 'gatherpress', {
 			const rsvpSelection = toCamelCase(
 				state.posts[ postId ]?.rsvpSelection ?? 'attending',
 			);
-			const count = state.posts[ postId ].eventResponses[ rsvpSelection ];
+			const count =
+				state.posts[ postId ]?.eventResponses?.[ rsvpSelection ] ?? 0;
 			const limit = parseInt( rsvpResponseElement.dataset.limit, 10 ) || 8;
 
 			// If the count is less than or equal to the limit, apply the class.

@@ -3,14 +3,16 @@
  * Class handles unit tests for GatherPress\Core\Setup.
  *
  * @package GatherPress\Core
- * @since 1.0.0
+ * @since 0.27.0
  */
 
 namespace GatherPress\Tests\Core;
 
 use GatherPress\Core\Assets;
 use GatherPress\Core\Event;
+use GatherPress\Core\Settings;
 use GatherPress\Core\Setup;
+use GatherPress\Core\Utility as GatherPress_Utility;
 use GatherPress\Core\Venue;
 use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;
@@ -21,6 +23,7 @@ use PMC\Unit_Test\Utility;
  * @coversDefaultClass \GatherPress\Core\Setup
  */
 class Test_Setup extends Base {
+
 	/**
 	 * Coverage for setup_hooks.
 	 *
@@ -139,8 +142,10 @@ class Test_Setup extends Base {
 			$response['unit-test'],
 			'Failed to assert unit-test link matches.'
 		);
+		$settings     = Settings::get_instance();
+		$page         = GatherPress_Utility::prefix_key( $settings->get_main_sub_page() );
 		$expected_url = esc_url(
-			admin_url( 'edit.php?post_type=gatherpress_event&page=gatherpress_general' )
+			add_query_arg( 'page', $page, admin_url( Settings::PARENT_SLUG ) )
 		);
 		$this->assertSame(
 			'<a href="' . $expected_url . '">Settings</a>',
@@ -640,6 +645,39 @@ class Test_Setup extends Base {
 
 			restore_current_blog();
 		}
+	}
+
+	/**
+	 * Coverage for on_site_create bail path when GatherPress is not
+	 * network-active — no tables should be created on the new site.
+	 *
+	 * @group multisite
+	 * @covers ::on_site_create
+	 *
+	 * @return void
+	 */
+	public function test_on_site_create_bails_when_not_network_active(): void {
+		global $wpdb;
+
+		// Ensure the plugin is NOT listed in active_sitewide_plugins.
+		$active_sitewide_plugins = get_site_option( 'active_sitewide_plugins', array() );
+		unset( $active_sitewide_plugins['gatherpress/gatherpress.php'] );
+		update_site_option( 'active_sitewide_plugins', $active_sitewide_plugins );
+
+		$new_site_id = $this->factory()->blog->create();
+
+		switch_to_blog( $new_site_id );
+
+		$table = sprintf( Event::TABLE_FORMAT, $wpdb->prefix );
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery -- Required for testing table absence.
+		$table_exists = $wpdb->get_var( "SHOW TABLES LIKE '{$table}'" );
+
+		restore_current_blog();
+
+		$this->assertNull(
+			$table_exists,
+			'Table should not be created when plugin is not network-active.'
+		);
 	}
 
 	/**
