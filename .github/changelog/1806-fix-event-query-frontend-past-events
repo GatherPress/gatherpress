@@ -1,4 +1,0 @@
-Significance: patch
-Type: fixed
-
-Event Query block no longer lists past events on the front end when its saved query omits the event type; it now defaults to upcoming, matching the editor. [#1806]

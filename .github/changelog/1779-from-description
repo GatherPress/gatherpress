@@ -1,4 +1,0 @@
-Significance: patch
-Type: fixed
-
-Prevent a fatal error when the event REST response is prepared without an id field (e.g. a _fields= request that excludes it).

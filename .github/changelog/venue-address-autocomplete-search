@@ -1,4 +1,0 @@
-Significance: minor
-Type: added
-
-Add venue address autocomplete search powered by the Photon geocoder, with a rate-limited REST endpoint and graceful fallback to manual entry. [#1451] [#1546]

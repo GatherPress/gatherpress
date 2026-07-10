@@ -1,4 +1,0 @@
-Significance: patch
-Type: changed
-
-Use the WordPress-native taxonomy column for venues in the events admin list, replacing the custom column. [#1544]

@@ -1,4 +1,0 @@
-Significance: patch
-Type: security
-
-Require the `promote_users` capability (not just per-event `edit_post`) before adding another user to the site when RSVPing them into an event, so editors and authors cannot enroll arbitrary users as subscribers — most impactful on multisite. Self-RSVP auto-join is unchanged. [#1839]

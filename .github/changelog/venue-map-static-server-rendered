@@ -1,4 +1,0 @@
-Significance: minor
-Type: added
-
-Add server-rendered static maps to the venue-map block, with a regenerate button, prewarming, retina (2×) srcset rendering, a scale attribute, and Inspector polish. Editor previews now poll for async-arriving map descriptors so the block reflects geocode-on-save state in real time. [#1480] [#1483] [#1485] [#1489] [#1491] [#1492] [#1497] [#1498]

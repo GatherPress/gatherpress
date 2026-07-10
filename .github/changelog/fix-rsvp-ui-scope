@@ -1,4 +1,0 @@
-Significance: patch
-Type: fixed
-
-Scope the RSVP UI to the `gatherpress-rsvp` support so non-RSVP event post types don't see RSVP fields. [#1594]

@@ -1,4 +1,0 @@
-Significance: minor
-Type: added
-
-Add a `gatherpress_geocode_street_line` filter to reorder the house number and street in geocoded address suggestion labels (e.g. `Hauptstraße 42` instead of `42 Hauptstraße`), so sites can match locale address conventions. [#1836]

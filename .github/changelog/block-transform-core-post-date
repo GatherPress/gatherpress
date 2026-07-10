@@ -1,4 +1,0 @@
-Significance: patch
-Type: added
-
-Add a block transform from `core/post-date` to `gatherpress/event-date`, re-implemented via the WordPress Block Transforms API. [#1565] [#1664]

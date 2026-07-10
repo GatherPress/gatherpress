@@ -1,4 +1,0 @@
-Significance: patch
-Type: added
-
-Add a setting for the Google Maps API key, so sites that prefer Google over OpenStreetMap can wire credentials in through the UI. [#1568]

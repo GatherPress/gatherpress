@@ -1,4 +1,0 @@
-Significance: minor
-Type: added
-
-Add the `gatherpress-event-date` post type support so any post type can opt into event datetime storage, the `gatherpress_events` DB table, date-based query ordering, and the Event Date / Add to Calendar blocks. [#1440]

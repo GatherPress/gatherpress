@@ -1,4 +1,0 @@
-Significance: patch
-Type: fixed
-
-Remove the dead `RichText` `onSplit` prop on the dropdown-item block, silencing a WordPress 6.4 deprecation warning. [#1663]
