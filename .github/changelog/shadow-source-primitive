@@ -1,4 +1,0 @@
-Significance: minor
-Type: added
-
-Extract the `gatherpress-shadow-source` primitive. Hidden `_<post_type>` taxonomies with post-name-derived terms can now be enabled on any post type, providing the foundation for the venue ⇄ event tagging mechanism and letting companion plugins register their own source-style CPTs (productions, organizers, etc.). [#1569]

@@ -1,4 +1,0 @@
-Significance: patch
-Type: fixed
-
-Render the Duration select with whatever duration options are provided, defaulting to the first available option when the built-in 2-hour default is filtered out via `gatherpress.durationOptions`, instead of dropping straight to the end-time picker. [#1706]

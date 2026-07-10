@@ -1,4 +1,0 @@
-Significance: patch
-Type: fixed
-
-Fix the default archive temporal handling (upcoming / past / none) for event-supporting custom post types. The `gatherpress_event_archive_mode` filter receives the queried post type as its second argument. [#1624]

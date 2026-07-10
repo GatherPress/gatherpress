@@ -1,4 +1,0 @@
-Significance: patch
-Type: fixed
-
-Fix initial context for event date supporting types inside venue block

@@ -1,4 +1,0 @@
-Significance: patch
-Type: fixed
-
-The events list REST endpoint now always returns an array for the current_user field instead of an empty string when no RSVP exists.

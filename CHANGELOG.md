@@ -9,23 +9,161 @@ Pending entries for the next release live as individual files under
 [`.github/changelog/`](.github/changelog/) and get rolled up into a new
 version section by `composer changelog:write` at release time.
 
-## [0.33.3] - 2026-02-16
+## [0.34.0] - 2026-07-10
+### Security
+- Enforce per-post edit capability on venue / event meta and post-specific REST routes so unauthenticated or under-privileged callers cannot modify another user's events or venues. [#1520] [#1917]
+- Lock down `GITHUB_TOKEN` permissions across CI workflows to least-privilege scopes, reducing the blast radius of a compromised workflow. [#1650] [#1917]
+- Override vulnerable transitive npm dependencies (`qs`, `uuid`, `webpack-dev-server`) via npm overrides. [#1651] [#1917]
+- Rate-limit the geocoding REST endpoints to prevent abuse-by-loop. [#1546] [#1917]
+- Require the `promote_users` capability (not just per-event `edit_post`) before adding another user to the site when RSVPing them into an event, so editors and authors cannot enroll arbitrary users as subscribers — most impactful on multisite. Self-RSVP auto-join is unchanged. [#1839] [#1917]
+- Split privileged PR workflows to remove the untrusted-checkout / cache-poisoning exposure that pull-request-target workflows otherwise inherit. [#1652] [#1917]
 
+### Added
+- Add a block transform from `core/post-date` to `gatherpress/event-date`, re-implemented via the WordPress Block Transforms API. [#1565] [#1664] [#1917]
+- Add a configurable RSVP mode with a sitewide disable switch and per-event control, plus an Open RSVP setting that lets non-logged-in users RSVP via magic-link comments. [#1468] [#1469] [#1917]
+- Add a default template for the Event Query Loop block so it has a sensible starting point on themes that don't ship one. [#1399] [#1917]
+- Add a setting for the Google Maps API key, so sites that prefer Google over OpenStreetMap can wire credentials in through the UI. [#1568] [#1917]
+- Add a site health test that flags installs running on plain permalinks, since several GatherPress features (notably RSVP magic links and .ics downloads) require pretty permalinks. [#1660] [#1917]
+- Add a `gatherpress.durationDefault` JavaScript filter to override the default event duration (in hours). The value is honored when it matches one of the available `durationOptions`, otherwise it falls back to the first available duration. [#1706] [#1917]
+- Add a `gatherpress_geocode_street_line` filter to reorder the house number and street in geocoded address suggestion labels (e.g. `Hauptstraße 42` instead of `42 Hauptstraße`), so sites can match locale address conventions. [#1836] [#1917]
+- Add a `show_if` field key to the Settings API so settings fields can be conditionally hidden based on the value of other fields. [#1634] [#1917]
+- Added user documentation for the subscribable iCal calendar feeds. [#1917]
+- Add network-wide GatherPress settings with per-option inheritance so multisite installs can share or override individual settings at the site level. [#1500] [#1917]
+- Add server-rendered static maps to the venue-map block, with a regenerate button, prewarming, retina (2×) srcset rendering, a scale attribute, and Inspector polish. Editor previews now poll for async-arriving map descriptors so the block reflects geocode-on-save state in real time. [#1480] [#1483] [#1485] [#1489] [#1491] [#1492] [#1497] [#1498] [#1917]
+- Add starter pattern pickers to the Event, Venue, RSVP Form, RSVP Response, and RSVP blocks, plus an Event Query Loop starter pattern with a Start blank event scaffold. Patterns are hookable so themes can register their own. [#1571] [#1578] [#1579] [#1580] [#1581] [#1582] [#1584] [#1917]
+- Add tag-driven release automation. Pushing a stable tag now triggers a workflow that builds a versioned distro zip, rolls up `.github/changelog/*` into a new `CHANGELOG.md` section (auto-PR'd back to develop), creates a GitHub Release with the zip attached, and deploys to wordpress.org. Pre-release tags (alpha/beta/rc) produce a GitHub Pre-Release with the `[Unreleased]` changelog snapshot and skip the wp.org deploy. See `docs/developer/release-process.md`. [#1917]
+- Add the Event Archive setting so site organizers can choose whether the post-type archive defaults to upcoming, past, or is disabled. [#1587] [#1917]
+- Add the `gatherpress-event-date` post type support so any post type can opt into event datetime storage, the `gatherpress_events` DB table, date-based query ordering, and the Event Date / Add to Calendar blocks. [#1440] [#1917]
+- Add the `gatherpress-rsvp` post type support so any post type can opt into the comment-based RSVP system, attendee management, waiting lists, and the RSVP block family. [#1444] [#1917]
+- Add the `gatherpress-venue` and `gatherpress-online-event` post type supports so venue association and online-event link handling can be enabled on any custom event post type. [#1453] [#1917]
+- Add venue address autocomplete search powered by the Photon geocoder, with a rate-limited REST endpoint and graceful fallback to manual entry. [#1451] [#1546] [#1917]
+- Adopt the Jetpack changelogger workflow with a per-PR `.github/changelog/*` file format and a rolled-up `CHANGELOG.md`. Backfills history from 0.27.0. [#1917]
+- Documented the GDPR opt-in steps for event update emails in the privacy docs. [#1917]
+- Expose the `gatherpress_venue_map_prewarm_pre_enqueue_job` filter so extensions can short-circuit individual venue-map prewarm jobs (useful for sites with hundreds of venues where a `switch_theme` would otherwise flood WP-Cron with warm jobs). [#1504] [#1917]
+- Expose WordPress Geodata standard meta on venue post types so third-party themes and plugins that consume `geo_latitude` / `geo_longitude` / `geo_address` work out of the box. [#1471] [#1917]
+- Extract the `gatherpress-shadow-source` primitive. Hidden `_<post_type>` taxonomies with post-name-derived terms can now be enabled on any post type, providing the foundation for the venue ⇄ event tagging mechanism and letting companion plugins register their own source-style CPTs (productions, organizers, etc.). [#1569] [#1917]
+- Integrate with the Advanced Query Loop plugin, including a Venue facet in the taxonomy filter. [#1411] [#1917]
+- New documentation about customizable Playground previews per pull-request [#1917]
+- Persist structured venue address fields (house number, street, city, county, state, postcode, country, country code) via an async geocode-on-save cron handler. Exposed via individual meta keys for block bindings. [#1517] [#1530] [#1917]
+- Refactor the Settings API with flat storage, a config-driven architecture, import / export, and reorganized tabs. [#1434] [#1917]
+- Support the Interactivity API's `clientNavigation` flag for the venue block so navigation between venue pages stays SPA-style on themes that opt in. [#1464] [#1917]
+
+### Changed
+- Apply the GatherPress hook naming convention across the codebase. New `shadow_*` subsystem row added to the hooks-naming-convention doc. [#1550] [#1917]
+- Apply the WordPress 6.8 `__next40pxDefaultSize` opt-in to every `SelectControl` instance so admin form controls match the upcoming default sizing. [#1661] [#1917]
+- Bump 'Tested up to' to WordPress 7.0. [#1649] [#1917]
+- Calendar endpoint registration is now an explicit `(new Foo(...))->init()` chain instead of a side effect of `new Foo(...)`. The `Calendar\\Endpoint` constructor only stores validated args; `init()` performs rewrite-rule registration and hook wiring, and returns `$this` for chaining. Fixes five SonarCloud `php:S1848` bugs flagged on `Calendar\\Setup` and makes the registration side effect surface at the call site. [#1917]
+- Each post type supporting RSVPs now gets its own RSVPs admin page, scoped to that post type. [#1917]
+- Enforce per-post edit capability on venue / event meta and post-specific REST routes. [#1520] [#1917]
+- Extend the admin list-table columns, sorting, and views to every event-supporting post type — not just the built-in `gatherpress_event`. [#1467] [#1619] [#1917]
+- Extract `Event\Meta` and `Venue\Meta` from their respective `Setup` classes so meta registration lives in a dedicated, testable component. [#1542] [#1917]
+- Flatten `Event_*` classes into the `GatherPress\Core\Event` subnamespace. `Event_Admin_List` is extracted into its own class. [#1450] [#1508] [#1917]
+- Flatten `Rsvp_*` classes into the `GatherPress\Core\Rsvp` subnamespace. [#1524] [#1917]
+- Flatten `Venue_*` classes into the `GatherPress\Core\Venue` subnamespace. [#1522] [#1917]
+- GatherPress UI strings now pull from each post type's registered labels rather than hardcoding 'Event' / 'Venue'. Custom event-supporting post types see their own labels everywhere in the settings sub-menus, admin list, sidebar panels, and Query block UI. [#1627] [#1629] [#1631] [#1647] [#1659] [#1917]
+- Generalize the `gatherpress/venue` block and the `gatherpress/event-query` block's contextual toggle to work with any `gatherpress-shadow-source` post type (productions, tours, organizers, etc.), not just venues. Adds a new `gatherpress_shadow_taxonomy_object_types` filter so extensions declaratively wire their shadow taxonomy to event CPTs, plus two reusable `Shadow_Source` helpers (`resolve_post_from_query_context`, `build_tax_query_clause`) for custom Query Loops. [#1917]
+- Honor the WordPress comment privacy filters when inserting RSVP comments. [#1470] [#1917]
+- Include `SECURITY.md` in the distributed plugin zip. `wp-scripts plugin-zip` ignores `.distignore` and builds from a fixed allowlist, so a `package.json` `files` list now pins the shipped fileset and adds the security policy. [#1917]
+- Lowered the default Venue Map zoom level from 18 to 16 so new venue maps show more neighborhood context. Sites that already set a custom Default Zoom Level are unaffected. [#1917]
+- Make `postIdOverride` work for the event and venue blocks, with the dim-gate suppressed on non-event hosts when the override resolves. [#1552] [#1554] [#1917]
+- Move RSVP-related settings to a dedicated RSVP settings panel and relocate the online event link to Venue settings for better organization. [#1394] [#1917]
+- Move the gatherpress-utility-style enqueue onto `enqueue_block_assets` so it reaches the editor iframe in FSE themes. [#1655] [#1917]
+- Re-implement block-unregistration handling and clean up legacy unregister flow. [#1409] [#1917]
+- Re-implement the calendar .ics download endpoint with proper rewrites and feed handling, replacing the legacy Event ICS code. [#1669] [#1917]
+- Read `isEditorPanelOpened` from `core/editor` instead of `core/edit-post`, silencing a WordPress 6.5 deprecation warning. [#1653] [#1917]
+- Refactor the venue-detail block architecture and fix context handling so it composes cleanly inside Query Loops and FSE templates. [#1391] [#1405] [#1917]
+- Refactor the venue map block into a swappable provider strategy so Google Maps and OpenStreetMap (and future providers) share a common interface. [#1534] [#1917]
+- Rename the `safeHTML` helper to `stripScriptsAndEventHandlers` and document its narrow scope (it strips `<script>` tags and `on*=` event handlers — it is not a full HTML sanitizer). [#1545] [#1917]
+- Rename `OnlineEventLink` to `OnlineEvent` and remove the legacy Listener / Broadcaster code that was no longer used. [#1420] [#1917]
+- Replace the original RSVP / RSVP Response / RSVP Template / Venue blocks with their V2 equivalents that shipped in 0.32.0. The V2 naming is dropped now that the new blocks are canonical. [#1407] [#1917]
+- Restructure settings tabs — Date & Time moves under Events, Maps moves under a new Venues tab. `Venue` splits into an instance class plus a `Venue_Setup` singleton. [#1477] [#1917]
+- Separate `README.md` (GitHub-facing) and `readme.txt` (wp.org-facing) so each surface gets content tailored to its audience. [#1423] [#1917]
+- Stop dimming GatherPress blocks inside Query Loop contexts when valid event context is present. [#1549] [#1917]
+- Support arbitrarily deep namespaces in the GatherPress class autoloader. [#1526] [#1917]
+- The Default Map Type venue setting now only appears when the Google Maps platform is selected. [#1917]
+- The editor's "already passed" notice now uses the post type's own singular label, so a custom event-supporting post type (e.g. a `production`) reads "Production has already passed." instead of the hardcoded "event". [#1917]
+- Updated Settings screens and Editor UI to better reflect the registered post type & taxonomy labels. [#1917]
+- Updated the configuration guide for the 0.34.0 settings screens. [#1917]
+- Updated the features list and static-map docs for 0.34.0. [#1917]
+- Use the WordPress-native taxonomy column for venues in the events admin list, replacing the custom column. [#1544] [#1917]
+- Verified and updated the RSVP system docs for the shipped 0.34.0 behavior. [#1917]
+- WordPress conventions sweep across the codebase (blank line after class openings per WP core style, JS docblock dependency-header normalization, `str_contains` / `str_starts_with` migration from `strpos`), plus two small settings panel fixes. [#1589] [#1917]
+
+### Removed
+- Remove the unused public `event/events-list` REST endpoint (and its `events_list`/`max_number` handlers). The route had no callers in the plugin or build output and exposed event RSVP data on a public, unauthenticated GET; the same data is already rendered on public event pages, so nothing relied on it. [#1917]
+- Remove the `window.GatherPress` global in favor of editor settings, interactivity state, and per-block data stores. [#1465] [#1917]
+
+### Fixed
+- Add the `gatherpress_exclude_rsvp_from_comment_query` filter so integrations (like comment moderation plugins) can opt back into seeing RSVP comments in the comment query. [#1640] [#1917]
+- Center the RSVP Response display name again on WordPress versions where the comment author name block moved text alignment to the typography block support. [#1917]
+- Deduplicate admin column sorting in `Event_Setup` and fix SQL identifier quoting on the sort query. [#1449] [#1917]
+- Editor no longer forces the events admin list back to the Upcoming filter when the user explicitly selects All — the previously-saved filter sticks. [#1515] [#1917]
+- Event Query block no longer lists past events on the front end when its saved query omits the event type; it now defaults to upcoming, matching the editor. [#1806] [#1917]
+- Event Query blocks placed in a Single Event block template now filter by the viewed event's season/venue and can exclude the current event on the frontend, instead of rendering every event unfiltered. [#1917]
+- Event Query blocks placed inside a block template no longer leave the editor preview spinning indefinitely. [#1917]
+- Fix a datetime-picker stack overflow when pressing the down-arrow on the year field in relative mode. [#1621] [#1917]
+- Fix anonymous RSVP deletion breaking magic-link tokens. [#1424] [#1917]
+- Fix Dropdown block not resetting the trigger label or selected index when the default selected item is deleted in Select Mode. [#1917]
+- Fixed the event-date block incorrectly showing the edited event's dates for all events inside a query loop on an event post. [#1917]
+- Fixed the Event Query block hanging on an endless spinner when its post type is switched to one that does not support event dates. [#1917]
+- Fix ICS export escaping of lowercase `n` characters in event titles and descriptions. [#1416] [#1917]
+- Fix initial context for event date supporting types inside venue block [#1917]
+- Fix misleading single-event iCal URL in calendar test fixtures. [#1730] [#1917]
+- Fix the default archive temporal handling (upcoming / past / none) for event-supporting custom post types. The `gatherpress_event_archive_mode` filter receives the queried post type as its second argument. [#1624] [#1917]
+- Fix the Event Query Settings panel and REST collection params so they work for any event-supporting post type. [#1622] [#1917]
+- Fix the orderby behavior of the default Past events filter. [#1442] [#1917]
+- Fix the Post Date block to display the event date when the 'use event date for post date' setting is enabled. [#1430] [#1917]
+- Fix timezone parsing so option values can no longer leak HTML attributes into rendered markup. [#1558] [#1917]
+- Fix venue sorting in the admin venues list. [#1448] [#1917]
+- Follow-up to the 0.33.3 protected-meta hardening. Additional GatherPress meta keys are now protected from the Custom Fields panel to prevent stale data overwrites on event save. [#1387] [#1917]
+- Gate the 'Send Updates' email notice so it only appears on event-supporting post types, and surface post-type-aware label / pattern filters for related UI. [#1598] [#1917]
+- Guard the RSVP block against a malformed `serializedInnerBlocks` attribute so a bad stored value degrades gracefully instead of crashing the editor with "RSVP block has encountered an error and cannot be previewed". [#1704] [#1713] [#1917]
+- Harden asset metadata loading so build dependency/version data is read correctly even if the asset file was already loaded in the request. [#1917]
+- Hide the Filter by Current Venue toggle when the host post type doesn't support venues, and gate the Event Query Settings panel by context. [#1566] [#1917]
+- Hide the RSVPs admin menu when no post type supports the RSVP feature. [#1917]
+- Invalidate caches on RSVP token redemption and bypass page cache for magic-link URLs so the user sees the result of their RSVP immediately. [#1636] [#1917]
+- Link PR numbers in CHANGELOG.md to their pull requests. [#1917]
+- Make the Online Event Link field a URL input and add spacing between the toggle and the field [#1917]
+- Multiple JS fixes for blocks inside FSE templates. [#1459] [#1461] [#1917]
+- Only show "Venue Settings" panel for post types supporting `gatherpress-venue-information` [#1917]
+- Open RSVP attendees are now correctly promoted from the waiting list when a spot opens up. [#1917]
+- Pre-release tags (alpha / beta / rc) now produce a release body containing the rolled-up changelog of every queued entry, computed in an ephemeral checkout so the entry files stay in place for the eventual stable release. Previously the body only showed CHANGELOG.md's `[Unreleased]` section, which is empty until the stable rollup happens, so testers downloading pre-release zips never saw what they were testing. [#1917]
+- Prevent a fatal error when the event REST response is prepared without an id field (e.g. a _fields= request that excludes it). [#1917]
+- Prevent a successful RSVP from showing a false "RSVP API request failed" alert and a broken modal when the block's state markup is malformed or incomplete. [#1917]
+- Read SVGs from the filesystem instead of issuing an HTTP self-request, fixing icon-block rendering on hosts behind authenticating reverse proxies. [#1455] [#1917]
+- Refuse activation when duplicate GatherPress folders are on disk to prevent silent class collisions. [#1560] [#1917]
+- Remove the dead `RichText` `onSplit` prop on the dropdown-item block, silencing a WordPress 6.4 deprecation warning. [#1663] [#1917]
+- Render the Duration select with whatever duration options are provided, defaulting to the first available option when the built-in 2-hour default is filtered out via `gatherpress.durationOptions`, instead of dropping straight to the end-time picker. [#1706] [#1917]
+- Replace custom-made "Start blank" logic with registerBlockVariation() calls, like it is intended by WP core. [#1917]
+- Return 404 for the event archive URL when no matching page exists, instead of rendering an empty archive. [#1381] [#1917]
+- RSVP requests no longer throw and leave the UI inconsistent when the server returns a success response with a missing or partial responses object. [#1917]
+- RSVP status changes now save correctly from event archive and Query Loop pages, not only from individual event pages. [#1917]
+- Scope the RSVP UI to the `gatherpress-rsvp` support so non-RSVP event post types don't see RSVP fields. [#1594] [#1917]
+- Set `referrerPolicy: 'no-referrer-when-downgrade'` on OpenStreetMap tile requests so tile providers that gate access on the `Referer` header (e.g. CARTO basemaps) receive the request correctly. [#1433] [#1917]
+- Several improvements and bug fixes to the Event Query Loop block surface (template handling, attribute migration, pattern selection). [#1396] [#1398] [#1917]
+- Show "Exclude current event" toggle only when queried post type matches the currently edited post type. [#1917]
+- Show a clear "Map could not be loaded" state instead of a blank gray box when the interactive map's tile provider fails to serve tiles (e.g. CartoDB returning 502s for uncached high-zoom tiles). A failed tile fetch no longer leaves the map silently empty. [#1917]
+- Stopped the RSVP attendance modal from flickering when the Number of Guests field was changed. [#1917]
+- Stop the front-end RSVP button from vanishing when a request fails or the block markup is incomplete. The status switcher now falls back to the no_status state when no inner block matches, the request handler guards against missing/non-JSON responses and surfaces an error instead of failing silently, and the post-RSVP modal logic no longer throws on malformed markup. [#1917]
+- Stop the venue map from breaking out of the body on narrow viewports. With an auto width, the inline `height` + `aspect-ratio` pair resolved to a fixed pixel width (300px tall at 2/1 → 600px wide) that overflowed mobile screens; the wrapper is now capped to its container width. [#1703] [#1917]
+- The event-date block inside a venue block with a source post type (e.g. productions/seasons) now shows the related source post's date instead of the host event's date in the editor. [#1917]
+- The events list REST endpoint now always returns an array for the current_user field instead of an empty string when no RSVP exists. [#1917]
+- The RSVP manager in the editor now shows an error notice instead of silently clearing the attendee list when an RSVP request fails. [#1917]
+- The venue-map block returned new empty-object references from its useSelect selector on every render, triggering Gutenberg's "Non-equal value keys" warning and causing unnecessary re-renders when no venue address was set. [#1917]
+
+## [0.33.3] - 2026-02-16
 ### Fixed
 - Protect GatherPress meta from the Custom Fields panel to prevent stale data overwrites on event save. [#1383](https://github.com/GatherPress/gatherpress/pull/1383)
 
 ## [0.33.2] - 2026-02-08
-
 ### Fixed
 - Fix "not allowed to edit custom field" error when publishing events. [#1375](https://github.com/GatherPress/gatherpress/pull/1375)
 
 ## [0.33.1] - 2026-01-30
-
 ### Fixed
 - Fix `.ics` downloads on sites with custom permalinks, auto-flush rewrite rules on plugin update, and resolve add-to-calendar block context inside Query Loops. [#1356](https://github.com/GatherPress/gatherpress/pull/1356)
 
 ## [0.33.0] - 2026-01-10
-
 ### Added
 - New `gatherpress/event-query` block variation of `core/query` so theme authors can build event-aware loops from any template. [#962](https://github.com/GatherPress/gatherpress/pull/962)
 - New `gatherpress/rsvp-form` block with token-based authentication, anonymous submissions, guest counts, and configurable form-field blocks. [#1106](https://github.com/GatherPress/gatherpress/pull/1106) [#1116](https://github.com/GatherPress/gatherpress/pull/1116) [#1168](https://github.com/GatherPress/gatherpress/pull/1168) [#1179](https://github.com/GatherPress/gatherpress/pull/1179)
@@ -77,17 +215,14 @@ version section by `composer changelog:write` at release time.
 - Remove `window.GatherPress` global in favor of editor settings, interactivity state, and data stores. [#1465](https://github.com/GatherPress/gatherpress/pull/1465)
 
 ## [0.32.3] - 2025-07-09
-
 ### Fixed
 - Maintenance release with PHP / WordPress compatibility fixes and translation updates carried forward from `develop`. [#1117](https://github.com/GatherPress/gatherpress/pull/1117)
 
 ## [0.32.2] - 2025-05-01
-
 ### Fixed
 - Maintenance release rolling up post-0.32.1 fixes. [#1072](https://github.com/GatherPress/gatherpress/pull/1072)
 
 ## [0.32.1] - 2025-04-23
-
 ### Added
 - `author` support for the event and venue post types so post author appears in block bindings and admin UI. [#1050](https://github.com/GatherPress/gatherpress/pull/1050) [#1052](https://github.com/GatherPress/gatherpress/pull/1052)
 
@@ -95,7 +230,6 @@ version section by `composer changelog:write` at release time.
 - Composer dependency refresh. [#1058](https://github.com/GatherPress/gatherpress/pull/1058)
 
 ## [0.32.0] - 2025-04-12
-
 ### Added
 - V2 of the RSVP and RSVP Response blocks with a templating system for attending / not-attending / waiting-list / past / no-status states. [#959](https://github.com/GatherPress/gatherpress/pull/959)
 - RSVP Anonymous Checkbox block with per-event opt-in. [#979](https://github.com/GatherPress/gatherpress/pull/979)
@@ -135,7 +269,6 @@ version section by `composer changelog:write` at release time.
 - Many a11y improvements (modal aria, focus traps, color contrast). [#972](https://github.com/GatherPress/gatherpress/pull/972)
 
 ## [0.31.0] - 2024-10-04
-
 ### Added
 - Customizable rewrite bases for post types and taxonomies. [#812](https://github.com/GatherPress/gatherpress/pull/812)
 - New `gatherpress/event-date` block UI with refactored controls and renamed files for consistency. [#820](https://github.com/GatherPress/gatherpress/pull/820) [#873](https://github.com/GatherPress/gatherpress/pull/873)
@@ -168,7 +301,6 @@ version section by `composer changelog:write` at release time.
 - Various GitHub Actions workflow fixes. [#813](https://github.com/GatherPress/gatherpress/pull/813) [#814](https://github.com/GatherPress/gatherpress/pull/814) [#817](https://github.com/GatherPress/gatherpress/pull/817) [#840](https://github.com/GatherPress/gatherpress/pull/840) [#843](https://github.com/GatherPress/gatherpress/pull/843)
 
 ## [0.30.0] - 2024-08-15
-
 ### Added
 - OpenStreetMap support as an alternative to Google Maps. [#643](https://github.com/GatherPress/gatherpress/pull/643)
 - Export & Import functionality. [#655](https://github.com/GatherPress/gatherpress/pull/655)
@@ -201,24 +333,20 @@ version section by `composer changelog:write` at release time.
 - Plugin preview is configured to use modern Admin UI. [#823](https://github.com/GatherPress/gatherpress/pull/823)
 
 ## [0.29.3] - 2024-06-27
-
 ### Fixed
 - Fix render-file paths for wp.org review. [#706](https://github.com/GatherPress/gatherpress/pull/706)
 - Update CLI to align with wp.org plugin guidelines. [#707](https://github.com/GatherPress/gatherpress/pull/707)
 - Fix last render issue. [#710](https://github.com/GatherPress/gatherpress/pull/710)
 
 ## [0.29.2] - 2024-06-21
-
 ### Fixed
 - Fix the max-attendance setting (it was not honored correctly). [#698](https://github.com/GatherPress/gatherpress/pull/698)
 
 ## [0.29.1] - 2024-06-11
-
 ### Fixed
 - Fix table creation issue on multisite installs. [#679](https://github.com/GatherPress/gatherpress/pull/679)
 
 ## [0.29.0] - 2024-06-04
-
 ### Added
 - RSVP guest feature returns (with configurable guest count). [#570](https://github.com/GatherPress/gatherpress/pull/570)
 - Maximum attending limit at the event level. [#581](https://github.com/GatherPress/gatherpress/pull/581)
@@ -255,7 +383,6 @@ version section by `composer changelog:write` at release time.
 - Disallow direct file access across all plugin PHP files. [#624](https://github.com/GatherPress/gatherpress/pull/624)
 
 ## [0.28.0] - 2024-02-19
-
 ### Added
 - Anonymous RSVP option so attendees can opt out of being listed publicly. [#513](https://github.com/GatherPress/gatherpress/pull/513)
 - Datetime caching for performance. [#518](https://github.com/GatherPress/gatherpress/pull/518)
@@ -306,6 +433,7 @@ Initial public release. Represents 18+ months of pre-1.0 development and ships t
 - Initial unit test suite with code coverage via SonarCloud.
 - Multilingual screenshots and i18n scaffolding.
 
+[0.34.0]: https://github.com/GatherPress/gatherpress/compare/0.33.3...0.34.0
 [0.33.3]: https://github.com/GatherPress/gatherpress/compare/0.33.2...0.33.3
 [0.33.2]: https://github.com/GatherPress/gatherpress/compare/0.33.1...0.33.2
 [0.33.1]: https://github.com/GatherPress/gatherpress/compare/0.33.0...0.33.1

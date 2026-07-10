@@ -1,4 +1,0 @@
-Significance: patch
-Type: added
-
-Expose WordPress Geodata standard meta on venue post types so third-party themes and plugins that consume `geo_latitude` / `geo_longitude` / `geo_address` work out of the box. [#1471]

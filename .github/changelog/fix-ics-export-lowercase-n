@@ -1,4 +1,0 @@
-Significance: patch
-Type: fixed
-
-Fix ICS export escaping of lowercase `n` characters in event titles and descriptions. [#1416]

@@ -1,4 +1,0 @@
-Significance: patch
-Type: fixed
-
-Stopped the RSVP attendance modal from flickering when the Number of Guests field was changed.

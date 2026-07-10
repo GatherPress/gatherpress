@@ -1,4 +1,0 @@
-Significance: patch
-Type: added
-
-Integrate with the Advanced Query Loop plugin, including a Venue facet in the taxonomy filter. [#1411]

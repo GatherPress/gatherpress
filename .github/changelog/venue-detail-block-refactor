@@ -1,4 +1,0 @@
-Significance: patch
-Type: changed
-
-Refactor the venue-detail block architecture and fix context handling so it composes cleanly inside Query Loops and FSE templates. [#1391] [#1405]

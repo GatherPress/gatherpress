@@ -1,4 +1,0 @@
-Significance: patch
-Type: removed
-
-Remove the `window.GatherPress` global in favor of editor settings, interactivity state, and per-block data stores. [#1465]

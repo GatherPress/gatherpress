@@ -1,4 +1,0 @@
-Significance: patch
-Type: fixed
-
-Event Query blocks placed inside a block template no longer leave the editor preview spinning indefinitely.

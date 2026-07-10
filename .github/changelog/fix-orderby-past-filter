@@ -1,4 +1,0 @@
-Significance: patch
-Type: fixed
-
-Fix the orderby behavior of the default Past events filter. [#1442]

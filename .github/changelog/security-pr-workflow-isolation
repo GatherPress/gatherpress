@@ -1,4 +1,0 @@
-Significance: patch
-Type: security
-
-Split privileged PR workflows to remove the untrusted-checkout / cache-poisoning exposure that pull-request-target workflows otherwise inherit. [#1652]

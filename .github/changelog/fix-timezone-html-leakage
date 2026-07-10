@@ -1,4 +1,0 @@
-Significance: patch
-Type: fixed
-
-Fix timezone parsing so option values can no longer leak HTML attributes into rendered markup. [#1558]

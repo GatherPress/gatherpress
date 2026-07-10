@@ -1,4 +1,0 @@
-Significance: minor
-Type: added
-
-Add the `gatherpress-venue` and `gatherpress-online-event` post type supports so venue association and online-event link handling can be enabled on any custom event post type. [#1453]
