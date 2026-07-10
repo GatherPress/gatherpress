@@ -1,4 +1,0 @@
-Significance: patch
-Type: changed
-
-Include `SECURITY.md` in the distributed plugin zip. `wp-scripts plugin-zip` ignores `.distignore` and builds from a fixed allowlist, so a `package.json` `files` list now pins the shipped fileset and adds the security policy.

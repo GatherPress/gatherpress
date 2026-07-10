@@ -1,4 +1,0 @@
-Significance: patch
-Type: security
-
-Rate-limit the geocoding REST endpoints to prevent abuse-by-loop. [#1546]

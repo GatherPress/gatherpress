@@ -1,4 +1,0 @@
-Significance: patch
-Type: fixed
-
-Fix misleading single-event iCal URL in calendar test fixtures. [#1730]

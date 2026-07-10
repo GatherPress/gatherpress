@@ -1,4 +1,0 @@
-Significance: patch
-Type: changed
-
-Move the gatherpress-utility-style enqueue onto `enqueue_block_assets` so it reaches the editor iframe in FSE themes. [#1655]

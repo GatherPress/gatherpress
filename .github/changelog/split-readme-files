@@ -1,4 +1,0 @@
-Significance: patch
-Type: changed
-
-Separate `README.md` (GitHub-facing) and `readme.txt` (wp.org-facing) so each surface gets content tailored to its audience. [#1423]

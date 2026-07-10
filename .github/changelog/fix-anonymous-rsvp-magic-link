@@ -1,4 +1,0 @@
-Significance: patch
-Type: fixed
-
-Fix anonymous RSVP deletion breaking magic-link tokens. [#1424]

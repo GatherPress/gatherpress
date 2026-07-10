@@ -1,4 +1,0 @@
-Significance: patch
-Type: fixed
-
-Replace custom-made "Start blank" logic with registerBlockVariation() calls, like it is intended by WP core.

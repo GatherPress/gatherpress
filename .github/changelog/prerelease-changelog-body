@@ -1,4 +1,0 @@
-Significance: patch
-Type: fixed
-
-Pre-release tags (alpha / beta / rc) now produce a release body containing the rolled-up changelog of every queued entry, computed in an ephemeral checkout so the entry files stay in place for the eventual stable release. Previously the body only showed CHANGELOG.md's `[Unreleased]` section, which is empty until the stable rollup happens, so testers downloading pre-release zips never saw what they were testing.

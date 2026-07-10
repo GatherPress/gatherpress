@@ -1,4 +1,0 @@
-Significance: patch
-Type: fixed
-
-Fix Dropdown block not resetting the trigger label or selected index when the default selected item is deleted in Select Mode.

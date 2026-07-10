@@ -1,4 +1,0 @@
-Significance: patch
-Type: fixed
-
-Fix a datetime-picker stack overflow when pressing the down-arrow on the year field in relative mode. [#1621]

@@ -1,4 +1,0 @@
-Significance: minor
-Type: added
-
-Persist structured venue address fields (house number, street, city, county, state, postcode, country, country code) via an async geocode-on-save cron handler. Exposed via individual meta keys for block bindings. [#1517] [#1530]

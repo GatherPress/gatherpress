@@ -1,4 +1,0 @@
-Significance: patch
-Type: security
-
-Enforce per-post edit capability on venue / event meta and post-specific REST routes so unauthenticated or under-privileged callers cannot modify another user's events or venues. [#1520]
