@@ -276,7 +276,7 @@ Apply to PHP PHPDoc blocks and JS JSDoc blocks alike.
         ```
 
     - ❌ Bad: `class Setup {` immediately followed by `\t/**` on the next line.
-- **Prefer `str_contains` / `str_starts_with` / `str_ends_with` over `strpos`**: WordPress ships polyfills for these PHP 8 string helpers back to PHP 7.0, so they're safe under our PHP 7.4 floor. They read better than the `false ===` / `0 ===` dance and SonarCloud flags the legacy form.
+- **Prefer `str_contains` / `str_starts_with` / `str_ends_with` over `strpos`**: native in PHP 8 (the plugin's floor is 8.1). They read better than the `false ===` / `0 ===` dance and SonarCloud flags the legacy form.
     - ✅ Good: `if ( str_contains( $haystack, $needle ) )` / `if ( str_starts_with( $key, 'gatherpress_' ) )` / `if ( ! str_contains( $content, $token ) )`
     - ❌ Bad: `if ( false !== strpos( $haystack, $needle ) )` / `if ( 0 === strpos( $key, 'gatherpress_' ) )` / `if ( false === strpos( $content, $token ) )`
 - **Every `switch` needs a `default` case**: SonarCloud (`php:S131`) flags any switch missing a `default` branch, even when the listed cases cover the expected values. Add `default: break;` with a one-line comment explaining what falls through (e.g. "Field types without extra params render with the base $params.") — that way the reader sees the intent rather than wondering whether a case was forgotten.
