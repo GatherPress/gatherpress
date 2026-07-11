@@ -2,23 +2,24 @@
 /**
  * RSVP Repository.
  *
- * Handles retrieving and saving of RSVP as WordPress comments.
+ * Handles retrieving and saving of RSVP responses as WordPress comments.
  *
  * @package GatherPress\Core\Rsvp
+ * @since 0.35.0
  */
 
 namespace GatherPress\Core\Rsvp;
 
 // Exit if accessed directly.
-\defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
+defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Rsvp\Response\Data;
-use GatherPress\Core\Rsvp\Response\Provider\Provider;
-use GatherPress\Core\Rsvp\Response\Provider\User;
-use GatherPress\Core\Rsvp\Response\Provider\Email;
 use GatherPress\Core\Rsvp\Response\Identity;
 use GatherPress\Core\Rsvp\Response\Identity_Type;
 use GatherPress\Core\Rsvp\Response\Intent;
+use GatherPress\Core\Rsvp\Response\Provider\Email;
+use GatherPress\Core\Rsvp\Response\Provider\Provider;
+use GatherPress\Core\Rsvp\Response\Provider\User;
 use GatherPress\Core\Rsvp\Response\Provider_Registry;
 use GatherPress\Core\Rsvp\Response\State;
 use GatherPress\Core\Rsvp\Response\Status;
@@ -30,14 +31,23 @@ use WP_Comment;
  *
  * Handles querying and manipulation of RSVP comments within the GatherPress plugin.
  *
- * @package GatherPress\Core\Rsvp
  * @since 0.35.0
  */
 final class Repository {
+
+	/**
+	 * Comment meta key that stores an external provider's identifier.
+	 *
+	 * @since 0.35.0
+	 *
+	 * @var string
+	 */
 	private const COMMENT_META_EXTERNAL_ID = 'gatherpress_rsvp_external_id';
 
 	/**
-	 * Default save args.
+	 * Default comment args applied when inserting a new RSVP comment.
+	 *
+	 * @since 0.35.0
 	 *
 	 * @var array
 	 */
@@ -50,39 +60,34 @@ final class Repository {
 	);
 
 	/**
-	 * The default comment query args.
-	 *
-	 * @var array
-	 */
-	protected array $default_args;
-
-	/**
 	 * The RSVP query instance.
+	 *
+	 * @since 0.35.0
 	 *
 	 * @var Query
 	 */
 	protected Query $rsvp_query;
-
 
 	/**
 	 * RSVP Repository constructor.
 	 *
 	 * @since 0.35.0
 	 *
-	 * @param int $post_id The events post id.
+	 * @param int $post_id The event post ID this repository operates on.
 	 */
 	public function __construct( protected readonly int $post_id ) {
 		$this->rsvp_query = Query::get_instance();
 	}
 
-
 	/**
-	 * Get a single RSVP.
+	 * Get a single RSVP response.
 	 *
-	 * @param Identity      $identity      The Identity of the RSVP response.
-	 * @param Provider|null $provider The RSVP provider.
+	 * @since 0.35.0
 	 *
-	 * @return State|null
+	 * @param Identity      $identity The identity of the RSVP response.
+	 * @param Provider|null $provider Optional. The provider that issued the RSVP response.
+	 *
+	 * @return State|null The hydrated RSVP state, or null when none matches.
 	 */
 	public function get( Identity $identity, ?Provider $provider = null ): ?State {
 		$args = array(
@@ -108,12 +113,16 @@ final class Repository {
 	}
 
 	/**
-	 * Save or update a single RSVP.
+	 * Save or update a single RSVP response.
 	 *
-	 * @param Intent   $intent     The Intent of the RSVP response.
-	 * @param int|null $comment_id ID of an existing comment.
+	 * A `no_status` intent deletes the stored comment instead of saving it.
 	 *
-	 * @return State|bool
+	 * @since 0.35.0
+	 *
+	 * @param Intent   $intent     The intent of the RSVP response.
+	 * @param int|null $comment_id ID of an existing RSVP comment to update.
+	 *
+	 * @return State|bool The saved state, true after a deletion, or false on failure.
 	 */
 	public function save( Intent $intent, ?int $comment_id ): State|bool {
 		// If status is 'no_status', remove the record.
@@ -121,8 +130,11 @@ final class Repository {
 			return wp_delete_comment( $comment_id );
 		}
 
+		$success = true;
+
 		if ( $comment_id ) {
 			$args = get_comment( $comment_id )->to_array();
+
 			if ( $args['comment_author'] ) {
 				$intent->data->identity->display_name = $args['comment_author'];
 			}
@@ -149,13 +161,10 @@ final class Repository {
 		} else {
 			$args['comment_ID'] = $comment_id;
 			$success            = wp_update_comment( $args );
-
-			if ( false === $success ) {
-				return false;
-			}
 		}
 
-		if ( ! $comment_id ) {
+		// Insert failure surfaces as a falsy $comment_id; update failure as $success === false.
+		if ( ! $comment_id || false === $success ) {
 			return false;
 		}
 
@@ -179,9 +188,11 @@ final class Repository {
 	}
 
 	/**
-	 * Get all RSVP responses.
+	 * Get all RSVP responses for the post.
 	 *
-	 * @return State[]
+	 * @since 0.35.0
+	 *
+	 * @return State[] The hydrated RSVP states.
 	 */
 	public function all(): array {
 		$args = array(
@@ -205,15 +216,17 @@ final class Repository {
 	}
 
 	/**
-	 * Get an RSVP response from a WP_Comment.
+	 * Build an RSVP state from a WP_Comment.
 	 *
-	 * @param WP_Comment    $comment   The RSVP comment.
-	 * @param Identity|null $identity  The RSVPs identity (optional).
-	 * @param Provider|null $provider  The RSVP provider (optional).
+	 * @since 0.35.0
 	 *
-	 * @return State|null
+	 * @param WP_Comment    $comment  The RSVP comment.
+	 * @param Identity|null $identity Optional. The RSVP's identity when already resolved.
+	 * @param Provider|null $provider Optional. The RSVP's provider when already resolved.
+	 *
+	 * @return State|null The hydrated state, or null when the comment is not a resolvable RSVP.
 	 */
-	private static function hydrate(
+	private function hydrate(
 		WP_Comment $comment,
 		?Identity $identity = null,
 		?Provider $provider = null
@@ -224,7 +237,8 @@ final class Repository {
 
 		// Resolve provider if not given.
 		if ( null === $provider ) {
-			$provider = self::get_identity_provider( $comment );
+			$provider = $this->get_identity_provider( $comment );
+
 			if ( null === $provider ) {
 				return null;
 			}
@@ -232,46 +246,49 @@ final class Repository {
 
 		// Resolve identity if not given.
 		if ( null === $identity ) {
-			$identity = self::get_identity_from_comment( $comment, $provider::get_identity_type() );
+			$identity = $this->get_identity_from_comment( $comment, $provider::get_identity_type() );
+
 			if ( null === $identity ) {
 				return null;
 			}
 		}
 
-		$data = self::hydrate_data( $comment, $identity );
+		$data = $this->hydrate_data( $comment, $identity );
 
 		return new State( $data, $provider, $comment );
 	}
 
 	/**
-	 * Get RSVP data from comment.
+	 * Get RSVP data from a comment.
+	 *
+	 * @since 0.35.0
 	 *
 	 * @param WP_Comment $comment  The RSVP comment.
 	 * @param Identity   $identity The RSVP response identity.
 	 *
-	 * @return Data
+	 * @return Data The RSVP response data.
 	 */
-	private static function hydrate_data( WP_Comment $comment, Identity $identity ) {
+	private function hydrate_data( WP_Comment $comment, Identity $identity ): Data {
 		$timestamp  = $comment->comment_date;
 		$comment_id = (int) $comment->comment_ID;
 		$anonymous  = (bool) get_comment_meta( $comment_id, 'gatherpress_rsvp_anonymous', true );
 		$guests     = (int) get_comment_meta( $comment_id, 'gatherpress_rsvp_guests', true );
-		$status     = self::get_status( $comment_id );
+		$status     = $this->get_status( $comment_id );
 
 		return new Data( $identity, $status, $guests, $anonymous, $timestamp );
 	}
 
 	/**
-	 * Read identity from comment based on declared identity type.
+	 * Read the identity from a comment based on the declared identity type.
 	 *
 	 * @since 0.35.0
 	 *
-	 * @param WP_Comment    $comment       Comment.
-	 * @param Identity_Type $identity_type The identity type.
+	 * @param WP_Comment    $comment       The RSVP comment.
+	 * @param Identity_Type $identity_type The identity type to read.
 	 *
-	 * @return Identity|null
+	 * @return Identity|null The identity, or null when the stored identifier is invalid.
 	 */
-	private static function get_identity_from_comment(
+	private function get_identity_from_comment(
 		WP_Comment $comment,
 		Identity_Type $identity_type
 	): ?Identity {
@@ -296,16 +313,20 @@ final class Repository {
 	}
 
 	/**
-	 * Get the identity provider for this RSVP response.
+	 * Get the identity provider for an RSVP response.
+	 *
+	 * Falls back to the user or email provider when the comment carries no
+	 * provider term, so RSVPs saved before provider terms existed still resolve.
+	 *
+	 * @since 0.35.0
 	 *
 	 * @param WP_Comment $comment The WordPress comment that stores the RSVP response.
 	 *
-	 * @return Provider|null
+	 * @return Provider|null The provider, or null when none can be resolved.
 	 */
-	private static function get_identity_provider( WP_Comment $comment ): ?Provider {
-		$comment_id = \intval( $comment->comment_ID );
-
-		$provider_slug = self::get_value_from_object_terms( $comment_id, Provider::TAXONOMY );
+	private function get_identity_provider( WP_Comment $comment ): ?Provider {
+		$comment_id    = intval( $comment->comment_ID );
+		$provider_slug = $this->get_value_from_object_terms( $comment_id, Provider::TAXONOMY );
 
 		if ( $provider_slug && Provider_Registry::get_instance()->is_registered( $provider_slug ) ) {
 			return Provider_Registry::get_instance()->get( $provider_slug );
@@ -324,14 +345,16 @@ final class Repository {
 	}
 
 	/**
-	 * Get the status.
+	 * Get the RSVP status stored for a comment.
 	 *
-	 * @param mixed $comment_id The comment ID of the RSVP response.
+	 * @since 0.35.0
 	 *
-	 * @return Status
+	 * @param int $comment_id The comment ID of the RSVP response.
+	 *
+	 * @return Status The stored status, or Status::NO_STATUS when none is set.
 	 */
-	private static function get_status( $comment_id ): Status {
-		$status = Status::TryFrom( self::get_value_from_object_terms( $comment_id, Status::TAXONOMY ) );
+	private function get_status( int $comment_id ): Status {
+		$status = Status::tryFrom( (string) $this->get_value_from_object_terms( $comment_id, Status::TAXONOMY ) );
 
 		if ( null === $status ) {
 			$status = Status::NO_STATUS;
@@ -341,17 +364,19 @@ final class Repository {
 	}
 
 	/**
-	 * Get a single value for an taxonomy for an object.
+	 * Get a single term slug of a taxonomy for an object.
 	 *
-	 * @param int    $id        The objects ID.
-	 * @param string $taxonomy  The taxonomy of the term.
+	 * @since 0.35.0
 	 *
-	 * @return string|null
+	 * @param int    $id       The object ID.
+	 * @param string $taxonomy The taxonomy of the term.
+	 *
+	 * @return string|null The first term's slug, or null when the object has none.
 	 */
-	private static function get_value_from_object_terms( int $id, string $taxonomy ) {
+	private function get_value_from_object_terms( int $id, string $taxonomy ): ?string {
 		$terms = wp_get_object_terms( $id, $taxonomy );
 
-		if ( ! empty( $terms ) && \is_array( $terms ) ) {
+		if ( ! empty( $terms ) && is_array( $terms ) ) {
 			return $terms[0]->slug;
 		}
 
@@ -359,13 +384,15 @@ final class Repository {
 	}
 
 	/**
-	 * Get query args for the identity.
+	 * Get comment query args for an identity.
+	 *
+	 * @since 0.35.0
 	 *
 	 * @param Identity $identity The identity.
 	 *
-	 * @return array<array<int|string>|int|string>
+	 * @return array<array<int|string>|int|string> The comment query args.
 	 */
-	private function get_identity_query_args( Identity $identity ) {
+	private function get_identity_query_args( Identity $identity ): array {
 		$args = array();
 
 		switch ( $identity->type ) {
@@ -382,6 +409,7 @@ final class Repository {
 				break;
 
 			default:
+				// External identifiers are matched via comment meta.
 				$args['comment_meta'][ self::COMMENT_META_EXTERNAL_ID ] = $identity->value;
 				break;
 		}
@@ -389,14 +417,17 @@ final class Repository {
 		return $args;
 	}
 
-	/** Get comment data for comment insert.
+	/**
+	 * Add identity fields to comment data for insert or update.
+	 *
+	 * @since 0.35.0
 	 *
 	 * @param array    $args     The current comment data args.
 	 * @param Identity $identity The identity.
 	 *
-	 * @return array<array<int|string>|int|string>
+	 * @return array<array<int|string>|int|string> The comment data args including the identity.
 	 */
-	private function add_identity_comment_data( array $args, Identity $identity ) {
+	private function add_identity_comment_data( array $args, Identity $identity ): array {
 		switch ( $identity->type ) {
 			case Identity_Type::EMAIL:
 				$args['comment_author_email'] = $identity->value;
@@ -411,6 +442,7 @@ final class Repository {
 				break;
 
 			default:
+				// External identifiers are stored as comment meta.
 				$args['comment_meta'][ self::COMMENT_META_EXTERNAL_ID ] = $identity->value;
 				break;
 		}
@@ -419,13 +451,21 @@ final class Repository {
 	}
 
 	/**
-	 * Get query args.
+	 * Get comment query args for a provider.
+	 *
+	 * @since 0.35.0
 	 *
 	 * @param Provider $provider The RSVP provider.
 	 *
-	 * @return array<array<int|string>|int|string>
+	 * @return array<string, array<string, string>> The comment query args.
 	 */
-	private function get_provider_query_args( $provider ) {
+	private function get_provider_query_args( Provider $provider ): array {
+		// NOTE: this flat clause is silently ignored by WP_Tax_Query (clauses
+		// must be nested arrays), so provider filtering is currently a no-op.
+		// Nesting it correctly makes lookups miss every RSVP saved before
+		// provider terms existed (or created outside save()), turning updates
+		// into duplicate inserts — needs a design decision (e.g. also match
+		// comments with no provider term) before the filter goes strict.
 		return array(
 			// phpcs:disable WordPress.DB.SlowDBQuery.slow_db_query_tax_query
 			'tax_query' => array(
