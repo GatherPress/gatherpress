@@ -132,15 +132,18 @@ class Endpoint {
 		string $reg_ex,
 		string $object_type = 'post_type'
 	) {
-		// ...
+		// Construction stores the validated args; the actual registration
+		// (rewrite rules + filter / action hooks) happens in init(), which
+		// callers invoke explicitly via the `(new Endpoint(...))->init()`
+		// chain. Separating construction from registration keeps callers
+		// honest about side effects (SonarCloud php:S1848 flags the older
+		// "instantiate for side effects" pattern).
 		if ( $this->is_valid_registration( $type_name, $types, $object_type ) ) {
 			$this->query_var           = $query_var;
 			$this->validation_callback = $validation_callback;
 			$this->types               = $types;
 			$this->reg_ex              = $reg_ex;
 			$this->object_type         = $object_type;
-
-			$this->init();
 		}
 	}
 
@@ -155,9 +158,9 @@ class Endpoint {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @return void
+	 * @return self
 	 */
-	public function init(): void {
+	public function init(): self {
 		// Build the regular expression pattern for matching the custom endpoint URL structure.
 		$reg_ex_pattern = $this->get_regex_pattern();
 
@@ -176,6 +179,8 @@ class Endpoint {
 
 		// Handle whether to include a template or redirect the request.
 		add_action( 'template_redirect', array( $this, 'template_redirect' ) );
+
+		return $this;
 	}
 
 	/**

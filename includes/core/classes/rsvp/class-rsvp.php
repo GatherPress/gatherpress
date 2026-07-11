@@ -27,6 +27,7 @@ use GatherPress\Core\Rsvp\Response\Status;
 use GatherPress\Core\Rsvp\Response\Provider\Provider;
 use GatherPress\Core\Settings;
 use GatherPress\Core\Settings\Roles;
+use WP_Comment;
 use WP_Post;
 
 /**
@@ -337,7 +338,10 @@ class Rsvp {
 			return 0;
 		}
 
-		// If there is room, promote as many as possible.
+		// If there is room, promote as many as possible. Promotion is keyed
+		// by comment ID via the repository, so Open RSVP attendees (userId 0)
+		// promote correctly — the identifier resolution develop needed for
+		// #1771 does not apply to this design.
 		$promoted_count = 0;
 
 		for ( $i = 0; $i < $remaining_spots; $i++ ) {

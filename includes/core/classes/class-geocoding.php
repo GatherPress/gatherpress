@@ -1019,6 +1019,26 @@ class Geocoding {
 		$name        = isset( $properties['name'] ) ? trim( (string) $properties['name'] ) : '';
 
 		$street_line = trim( $housenumber . ' ' . $street );
+
+		/**
+		 * Filters the street line (house number + street) in a geocode label.
+		 *
+		 * Defaults to "{house number} {street}" (e.g. "42 Hauptstraße").
+		 * German-speaking and other locales conventionally place the house
+		 * number after the street ("Hauptstraße 42"); both components are
+		 * passed so a developer can reorder them to match local convention,
+		 * for example by keying off `get_locale()`.
+		 *
+		 * @since 0.34.0
+		 *
+		 * @param string $street_line Default street line ("{house number} {street}").
+		 * @param string $housenumber House number component (may be empty).
+		 * @param string $street      Street name component (may be empty).
+		 */
+		$street_line = trim(
+			(string) apply_filters( 'gatherpress_geocode_street_line', $street_line, $housenumber, $street )
+		);
+
 		if ( '' === $street_line ) {
 			$street_line = $name;
 		}

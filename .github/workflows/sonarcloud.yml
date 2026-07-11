@@ -5,6 +5,12 @@ on:
       - develop
       - main
 
+# Cancel superseded runs on the same ref so rapid pushes to develop/main do
+# not stack full SonarCloud analyses.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 

@@ -23,6 +23,10 @@ on:
     - 'includes/**'
     - 'src/**'
     - '*.php'
+    # Do start the workflow, even when just a PR preview blueprint was added or changed.
+    # That allows doing compatibility tests with 3rd-party plugins or
+    # just to get some reproducible debugging environment with "Query Monitor".
+    - '.github/playground/**'
 
 # Cancels all previous workflow runs for pull requests that have not completed.
 concurrency:
@@ -50,9 +54,14 @@ jobs:
           tools: wp-cli
 
       - name: Install dist-archive-command
-        env:
-          COMPOSER_AUTH: '{"github-oauth": {"github.com": "${{ secrets.GITHUB_TOKEN }}"}}'
-        run: wp package install wp-cli/dist-archive-command:^2
+        run: |
+          # shivammathur/setup-php stores a GitHub OAuth token in Composer's
+          # global auth config; wp-cli's bundled Composer rejects its format
+          # ("invalid characters"), breaking this install. dist-archive-command
+          # is public, so drop the token and install unauthenticated.
+          composer config --global --unset github-oauth.github.com 2>/dev/null || true
+          rm -f "$HOME/.config/composer/auth.json" "$HOME/.composer/auth.json" "$HOME/.wp-cli/packages/auth.json" 2>/dev/null || true
+          wp package install wp-cli/dist-archive-command:^2
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -73,13 +82,23 @@ jobs:
           npm run build
           wp dist-archive . ./${{ github.event.repository.name }}.zip
 
-      - name: Save PR number for downstream comment workflow
-        run: echo "${{ github.event.pull_request.number }}" > pr-number.txt
+      # dist-archive is kept as the single source of truth for what ships
+      # (.distignore), but its zip is re-extracted so the *artifact itself*
+      # is the one and only zip: downloading it yields
+      # `gatherpress-pr-<number>.zip`, which unzips straight to a
+      # `gatherpress/` directory. Without this, GitHub wraps the uploaded
+      # files in an artifact zip and users get a zip inside a zip.
+      - name: Stage plugin directory for artifact
+        run: |
+          mkdir staging
+          unzip -q ./${{ github.event.repository.name }}.zip -d staging
 
+      # The PR number is encoded in the artifact name (instead of a
+      # pr-number.txt payload file) so the downstream `Playground Preview
+      # Comment` workflow can read it via the artifact-listing API and the
+      # downloaded zip stays clean.
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ github.event.repository.name }}-pr
-          path: |
-            ./${{ github.event.repository.name }}.zip
-            pr-number.txt
+          name: ${{ github.event.repository.name }}-pr-${{ github.event.pull_request.number }}
+          path: staging

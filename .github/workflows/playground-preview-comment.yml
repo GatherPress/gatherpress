@@ -28,16 +28,29 @@ jobs:
     runs-on: ubuntu-latest
     steps:
 
-      - name: Download build artifact from upstream workflow
-        uses: actions/download-artifact@v4
-        with:
-          name: ${{ github.event.repository.name }}-pr
-          run-id: ${{ github.event.workflow_run.id }}
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Read PR number from artifact
+      # The upstream workflow encodes the PR number in the artifact name
+      # (`gatherpress-pr-<number>`), so listing the run's artifacts is
+      # enough — no artifact download or pr-number.txt payload file needed.
+      - name: Read PR number from artifact name
         id: pr
-        run: echo "number=$(cat pr-number.txt)" >> "$GITHUB_OUTPUT"
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const { data } = await github.rest.actions.listWorkflowRunArtifacts({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                run_id: context.payload.workflow_run.id,
+            });
+            const prefix = `${context.repo.repo}-pr-`;
+            const artifact = data.artifacts.find(
+                (a) => a.name.startsWith(prefix) && /^\d+$/.test(a.name.slice(prefix.length))
+            );
+            if (!artifact) {
+                core.setFailed(`No ${prefix}<number> artifact found on run ${context.payload.workflow_run.id}`);
+                return;
+            }
+            core.setOutput('number', artifact.name.slice(prefix.length));
 
       # Check out the base repo at the default branch (trusted code) so the
       # github-script step below can require .github/scripts/playground-preview
@@ -46,14 +59,32 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: ${{ github.event.repository.default_branch }}
+          path: base
+
+      # PR head — ONLY to read the override file, never to execute code from it.
+      # Sparse checkout limits what we pull to just the override directory.
+      - name: Checkout PR head for blueprint override
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          path: pr-head
+          sparse-checkout: |
+            .github/playground
+          sparse-checkout-cone-mode: true
 
       - name: Add Preview Links comment
         uses: actions/github-script@v7
         env:
-          PHP_VERSIONS: '["8.4","8.2","7.4"]'
+          PHP_VERSIONS: '["8.4","8.2","8.1"]'
           PR_NUMBER: ${{ steps.pr.outputs.number }}
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const createPreviewLinks = require('.github/scripts/playground-preview');
-            await createPreviewLinks(github, context, Number(process.env.PR_NUMBER));
+            const overrideFilePath = 'pr-head/.github/playground/';
+            const createPreviewLinks = require('./base/.github/scripts/playground-preview');
+            await createPreviewLinks(
+                github,
+                context,
+                Number(process.env.PR_NUMBER),
+                overrideFilePath
+            );

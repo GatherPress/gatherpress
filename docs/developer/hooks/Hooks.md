@@ -41,6 +41,7 @@
 - [`gatherpress_geocode_on_save_enabled`](gatherpress_geocode_on_save_enabled.md) Filters whether the async geocode should run on venue save.
 - [`gatherpress_geocode_rate_limit_enabled`](gatherpress_geocode_rate_limit_enabled.md) Filter whether the geocode REST rate limit is enforced.
 - [`gatherpress_geocode_rate_limit_per_minute`](gatherpress_geocode_rate_limit_per_minute.md) Filter the per-user requests-per-minute ceiling for the
+- [`gatherpress_geocode_street_line`](gatherpress_geocode_street_line.md) Filters the street line (house number + street) in a geocode label.
 - [`gatherpress_log_geocoding_errors`](gatherpress_log_geocoding_errors.md) Filters whether to write a PHP error-log line when Photon returns a body
 - [`gatherpress_photon_api_url`](gatherpress_photon_api_url.md) Filters the Photon API base URL used for geocoding and address search.
 
@@ -96,10 +97,16 @@
 - [`gatherpress_is_alpha_active`](gatherpress_is_alpha_active.md) Filters whether GatherPress Alpha is considered active.
 - [`gatherpress_venue_post_type`](gatherpress_venue_post_type.md) Filters the post type used as the venue.
 - [`gatherpress_venue_starter_patterns`](gatherpress_venue_starter_patterns.md) Filters the array of venue starter pattern definitions.
+- [`post_type_labels_%s`](post_type_labels_%s.md)
 
 ## class-shadow-source.php
 
 - [`gatherpress_shadow_taxonomy_args`](gatherpress_shadow_taxonomy_args.md) Filters the taxonomy registration args for a shadow-source post type.
+- [`gatherpress_shadow_taxonomy_object_types`](gatherpress_shadow_taxonomy_object_types.md) Filters which event post types the shadow taxonomy should be
+
+## class-topic.php
+
+- [`taxonomy_labels_%s`](taxonomy_labels_%s.md)
 
 ## class-user.php
 

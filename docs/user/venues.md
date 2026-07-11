@@ -22,6 +22,8 @@ The Venue block allows you to add/edit:
 
 Standard content blocks allow you to add any other content.
 
+For developers: the order of the house number and street in geocoded address suggestions (for example `Hauptstraße 42` versus `42 Hauptstraße`) can be customized with a filter. See [Venue address format](../developer/venue-address-format.md).
+
 Note:
 
 - A venue does not need to be assigned to an event immediately.
@@ -80,6 +82,16 @@ Changing a default only affects blocks added afterwards — existing blocks keep
 ### Regeneration
 
 Static images regenerate automatically when any input the image depends on changes — venue address, coordinates, zoom level, or block height. Each `(zoom, height)` combination is cached separately, so two events showing the same venue at different sizes each get a crisp PNG. Old images are cleaned up when the venue is updated or deleted.
+
+### Disabling static map generation
+
+GatherPress pre-generates static map images in the background so they are ready before a visitor asks for one. If your site only uses interactive maps, those generated files are wasted disk space and server work — in that case it is best to switch the pre-generation off:
+
+```php
+add_filter( 'gatherpress_static_map_prewarm_pre_enqueue_job', '__return_false' );
+```
+
+Drop the snippet into a must-use plugin, a site-specific plugin, or your theme's `functions.php`. Any Venue Map block actually set to the static render mode still generates its image on demand; the filter only stops the speculative background generation.
 
 ### Privacy of static map URLs
 

@@ -101,6 +101,12 @@ class Test_Setup extends Base {
 				'priority' => 10,
 				'callback' => array( $instance, 'add_editor_settings' ),
 			),
+			array(
+				'type'     => 'filter',
+				'name'     => 'gatherpress_shadow_taxonomy_object_types',
+				'priority' => 10,
+				'callback' => array( $instance, 'attach_venue_taxonomy_to_event_types' ),
+			),
 		);
 
 		$this->assert_hooks( $hooks, $instance );
@@ -1222,6 +1228,40 @@ class Test_Setup extends Base {
 		$this->assertNull(
 			$instance->get_venue_post_from_event_post_id( $event->ID ),
 			'Expected null when the only attached term is the non-venue sentinel.'
+		);
+	}
+
+	/**
+	 * Coverage for attach_venue_taxonomy_to_event_types — returns the
+	 * gatherpress-venue-supporting event CPTs when the filter is called for
+	 * the venue post type, leaves the list unchanged for other shadow
+	 * sources.
+	 *
+	 * @covers ::attach_venue_taxonomy_to_event_types
+	 *
+	 * @return void
+	 */
+	public function test_attach_venue_taxonomy_to_event_types(): void {
+		$instance = Setup::get_instance();
+
+		// Source is venue — returns gatherpress_event (which has gatherpress-venue support).
+		$result = $instance->attach_venue_taxonomy_to_event_types( array(), Venue::POST_TYPE );
+
+		$this->assertContains(
+			Event::POST_TYPE,
+			$result,
+			'Filter callback should return gatherpress_event when source is the venue post type.'
+		);
+
+		// Source is something else — passes through unchanged.
+		$passthrough = $instance->attach_venue_taxonomy_to_event_types(
+			array( 'gatherpress_event' ),
+			'unrelated_source'
+		);
+		$this->assertSame(
+			array( 'gatherpress_event' ),
+			$passthrough,
+			'Filter callback should pass through unchanged for non-venue sources.'
 		);
 	}
 }

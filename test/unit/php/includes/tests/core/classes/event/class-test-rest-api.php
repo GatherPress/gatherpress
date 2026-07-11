@@ -117,11 +117,6 @@ class Test_Rest_Api extends Base {
 			$namespace[ sprintf( '/%s/event/rsvp', GATHERPRESS_REST_NAMESPACE ) ],
 			'Failed to assert rsvp endpoint is registered'
 		);
-		$this->assertEquals(
-			1,
-			$namespace[ sprintf( '/%s/event/events-list', GATHERPRESS_REST_NAMESPACE ) ],
-			'Failed to assert events-list endpoint is registered'
-		);
 	}
 
 	/**
@@ -130,7 +125,6 @@ class Test_Rest_Api extends Base {
 	 * @covers ::get_event_routes
 	 * @covers ::email_route
 	 * @covers ::rsvp_route
-	 * @covers ::events_list_route
 	 *
 	 * @return void
 	 */
@@ -166,12 +160,6 @@ class Test_Rest_Api extends Base {
 		$this->assertSame(
 			WP_REST_Server::READABLE,
 			$routes[4]['args']['methods'],
-			'Failed to assert methods is GET.'
-		);
-		$this->assertSame( 'events-list', $routes[5]['route'], 'Failed to assert route is events-list.' );
-		$this->assertSame(
-			WP_REST_Server::READABLE,
-			$routes[5]['args']['methods'],
 			'Failed to assert methods is GET.'
 		);
 	}
@@ -510,104 +498,6 @@ class Test_Rest_Api extends Base {
 				return $recipient['email'];
 			},
 			$recipients
-		);
-	}
-
-	/**
-	 * Coverage for events_list method.
-	 *
-	 * @covers ::events_list
-	 *
-	 * @return void
-	 */
-	public function test_events_list(): void {
-		$instance          = Rest_Api::get_instance();
-		$request           = new WP_REST_Request( 'POST' );
-		$upcoming_event_id = $this->mock->post(
-			array( 'post_type' => Event::POST_TYPE )
-		)->get()->ID;
-		$past_event_id     = $this->mock->post(
-			array( 'post_type' => Event::POST_TYPE )
-		)->get()->ID;
-		$upcoming_event    = new Event( $upcoming_event_id );
-		$past_event        = new Event( $past_event_id );
-
-		$request->set_query_params(
-			array(
-				'event_list_type' => 'upcoming',
-			)
-		);
-
-		$upcoming_event->save_datetimes(
-			array(
-				'datetime_start' => gmdate( Event::DATETIME_FORMAT, strtotime( '+1 day' ) ),
-				'datetime_end'   => gmdate( Event::DATETIME_FORMAT, strtotime( '+2 day' ) ),
-				'timezone'       => 'America/New_York',
-			)
-		);
-
-		$past_event->save_datetimes(
-			array(
-				'datetime_start' => gmdate( Event::DATETIME_FORMAT, strtotime( '-2 day' ) ),
-				'datetime_end'   => gmdate( Event::DATETIME_FORMAT, strtotime( '-1 day' ) ),
-				'timezone'       => 'America/New_York',
-			)
-		);
-
-		$response  = $instance->events_list( $request );
-		$event_ids = $this->get_event_ids( $response->data );
-
-		$this->assertContains( $upcoming_event_id, $event_ids, 'Failed to assert event ID is in array.' );
-		$this->assertNotContains( $past_event_id, $event_ids, 'Failed to assert event ID is not in array.' );
-
-		$request->set_query_params(
-			array(
-				'event_list_type' => 'past',
-			)
-		);
-
-		$response  = $instance->events_list( $request );
-		$event_ids = $this->get_event_ids( $response->data );
-
-		$this->assertContains( $past_event_id, $event_ids, 'Failed to assert event ID is in array.' );
-		$this->assertNotContains( $upcoming_event_id, $event_ids, 'Failed to assert event ID is not in array.' );
-	}
-
-	/**
-	 * Helper to get members IDs for test.
-	 *
-	 * @param array $events Response from events_list.
-	 *
-	 * @return array
-	 */
-	protected function get_event_ids( array $events ): array {
-		return array_map(
-			static function ( $event ): int {
-				return $event['ID'];
-			},
-			$events
-		);
-	}
-
-	/**
-	 * Coverage for max_number method.
-	 *
-	 * @covers ::max_number
-	 *
-	 * @return void
-	 */
-	public function test_max_number(): void {
-		$instance = Rest_Api::get_instance();
-
-		$this->assertEquals(
-			5,
-			Utility::invoke_hidden_method( $instance, 'max_number', array( 6, 5 ) ),
-			'Failed to assert that numbers are equal.'
-		);
-		$this->assertEquals(
-			3,
-			Utility::invoke_hidden_method( $instance, 'max_number', array( 3, 5 ) ),
-			'Failed to assert that numbers are equal.'
 		);
 	}
 
@@ -1149,119 +1039,35 @@ class Test_Rest_Api extends Base {
 	}
 
 	/**
-	 * Coverage for events_list with topics filter.
+	 * Coverage for prepare_event_data when the response has no id.
 	 *
-	 * @covers ::events_list
+	 * Regression for #1765: a `_fields=` request (or another plugin filtering
+	 * the response) can produce data without an `id` key. The method should
+	 * bail instead of emitting an undefined-key notice and constructing
+	 * Event( 0 ).
 	 *
-	 * @return void
-	 */
-	public function test_events_list_with_topics(): void {
-		$instance = Rest_Api::get_instance();
-		$post_id  = $this->factory()->post->create(
-			array(
-				'post_type' => Event::POST_TYPE,
-			)
-		);
-
-		$event = new Event( $post_id );
-		$event->save_datetimes(
-			array(
-				'datetime_start' => '2099-01-01 10:00:00',
-				'datetime_end'   => '2099-01-01 14:00:00',
-				'timezone'       => 'America/New_York',
-			)
-		);
-
-		// Create a topic term.
-		$term = wp_insert_term( 'Test Topic', Topic::TAXONOMY );
-		wp_set_post_terms( $post_id, array( $term['term_id'] ), Topic::TAXONOMY );
-
-		$request = new WP_REST_Request( 'GET' );
-		$request->set_param( 'event_list_type', 'upcoming' );
-		$request->set_param( 'max_number', 5 );
-		$request->set_param( 'topics', 'test-topic' );
-
-		$response = $instance->events_list( $request );
-		$data     = $response->get_data();
-
-		$this->assertIsArray( $data );
-	}
-
-	/**
-	 * Coverage for events_list with venues filter.
-	 *
-	 * @covers ::events_list
+	 * @covers ::prepare_event_data
 	 *
 	 * @return void
 	 */
-	public function test_events_list_with_venues(): void {
+	public function test_prepare_event_data_without_id_returns_response_unchanged(): void {
 		$instance = Rest_Api::get_instance();
-		$post_id  = $this->factory()->post->create(
-			array(
-				'post_type' => Event::POST_TYPE,
-			)
+
+		// Mimic a `_fields=title` response: no `id`, no `meta`.
+		$response = new WP_REST_Response( array( 'title' => 'Filtered Event' ) );
+
+		$result = $instance->prepare_event_data( $response );
+
+		$this->assertSame(
+			array( 'title' => 'Filtered Event' ),
+			$result->data,
+			'Response data should be returned untouched when id is absent.'
 		);
-
-		$event = new Event( $post_id );
-		$event->save_datetimes(
-			array(
-				'datetime_start' => '2099-01-01 10:00:00',
-				'datetime_end'   => '2099-01-01 14:00:00',
-				'timezone'       => 'America/New_York',
-			)
+		$this->assertArrayNotHasKey(
+			'meta',
+			$result->data,
+			'No meta should be injected when id is absent.'
 		);
-
-		// Create a venue term.
-		$term = wp_insert_term( 'Test Venue', Venue::TAXONOMY );
-		wp_set_post_terms( $post_id, array( $term['term_id'] ), Venue::TAXONOMY );
-
-		$request = new WP_REST_Request( 'GET' );
-		$request->set_param( 'event_list_type', 'upcoming' );
-		$request->set_param( 'max_number', 5 );
-		$request->set_param( 'venues', 'test-venue' );
-
-		$response = $instance->events_list( $request );
-		$data     = $response->get_data();
-
-		$this->assertIsArray( $data );
-	}
-
-	/**
-	 * Coverage for events_list with custom datetime format.
-	 *
-	 * @covers ::events_list
-	 *
-	 * @return void
-	 */
-	public function test_events_list_custom_datetime_format(): void {
-		$instance = Rest_Api::get_instance();
-		$post_id  = $this->factory()->post->create(
-			array(
-				'post_type' => Event::POST_TYPE,
-			)
-		);
-
-		$event = new Event( $post_id );
-		$event->save_datetimes(
-			array(
-				'datetime_start' => '2099-01-01 10:00:00',
-				'datetime_end'   => '2099-01-01 14:00:00',
-				'timezone'       => 'America/New_York',
-			)
-		);
-
-		$request = new WP_REST_Request( 'GET' );
-		$request->set_param( 'event_list_type', 'upcoming' );
-		$request->set_param( 'max_number', 5 );
-		$request->set_param( 'datetime_format', 'Y-m-d H:i:s' );
-
-		$response = $instance->events_list( $request );
-		$data     = $response->get_data();
-
-		$this->assertIsArray( $data );
-		if ( ! empty( $data ) ) {
-			$this->assertArrayHasKey( 'datetime_start', $data[0] );
-		}
 	}
 
 	/**
@@ -2222,6 +2028,131 @@ class Test_Rest_Api extends Base {
 
 		// Verify RSVP was successful.
 		$this->assertTrue( $response->data['success'], 'RSVP should be successful' );
+
+		restore_current_blog();
+	}
+
+	/**
+	 * Tests that a manager with edit_post but not promote_users cannot enroll others.
+	 *
+	 * Managing attendees is gated by `edit_post`, but adding a non-member user to
+	 * the blog is a `promote_users` action. An event author (has edit_post on
+	 * their own event, lacks promote_users) must not be able to add another user
+	 * to the site via the RSVP endpoint, and the RSVP for that non-member fails.
+	 *
+	 * @group multisite
+	 * @covers ::update_rsvp
+	 *
+	 * @return void
+	 */
+	public function test_update_rsvp_manager_without_promote_users_cannot_enroll_other_multisite(): void {
+		$instance = Rest_Api::get_instance();
+
+		// Target network user, not a member of site 2.
+		$target_id = $this->factory->user->create( array( 'role' => 'subscriber' ) );
+
+		$site_2_id = $this->factory->blog->create();
+		switch_to_blog( $site_2_id );
+
+		$setup = Setup::get_instance();
+		Utility::invoke_hidden_method( $setup, 'create_tables' );
+
+		// Author who owns the event on site 2: has edit_post on it, no promote_users.
+		$author_id = $this->factory->user->create();
+		add_user_to_blog( $site_2_id, $author_id, 'author' );
+
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type'   => Event::POST_TYPE,
+				'post_author' => $author_id,
+				'post_status' => 'publish',
+			)
+		);
+
+		wp_set_current_user( $author_id );
+
+		$this->assertFalse(
+			current_user_can( 'promote_users' ),
+			'Author should not have promote_users.'
+		);
+
+		$request = new WP_REST_Request( 'POST', '/gatherpress/v1/event/rsvp' );
+		$request->set_param( 'post_id', $post_id );
+		$request->set_param( 'user_id', $target_id );
+		$request->set_param( 'status', 'attending' );
+
+		$response = $instance->update_rsvp( $request );
+
+		$this->assertFalse(
+			is_user_member_of_blog( $target_id, $site_2_id ),
+			'Target must not be enrolled into site 2 by a manager lacking promote_users.'
+		);
+		$this->assertFalse(
+			$response->data['success'],
+			'RSVP for a non-member target should fail when the manager cannot enroll them.'
+		);
+
+		restore_current_blog();
+	}
+
+	/**
+	 * Tests that a manager with promote_users can enroll another user.
+	 *
+	 * A site administrator holds both edit_post and promote_users, so managing an
+	 * RSVP for a non-member network user enrolls them as a subscriber and the
+	 * RSVP succeeds.
+	 *
+	 * @group multisite
+	 * @covers ::update_rsvp
+	 *
+	 * @return void
+	 */
+	public function test_update_rsvp_admin_with_promote_users_enrolls_other_multisite(): void {
+		$instance = Rest_Api::get_instance();
+
+		// Target network user, not a member of site 2.
+		$target_id = $this->factory->user->create( array( 'role' => 'subscriber' ) );
+
+		$site_2_id = $this->factory->blog->create();
+		switch_to_blog( $site_2_id );
+
+		$setup = Setup::get_instance();
+		Utility::invoke_hidden_method( $setup, 'create_tables' );
+
+		// Administrator on site 2: has edit_post (edit_others_posts) and promote_users.
+		$admin_id = $this->factory->user->create();
+		add_user_to_blog( $site_2_id, $admin_id, 'administrator' );
+
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type'   => Event::POST_TYPE,
+				'post_author' => $admin_id,
+				'post_status' => 'publish',
+			)
+		);
+
+		wp_set_current_user( $admin_id );
+
+		$this->assertTrue(
+			current_user_can( 'promote_users' ),
+			'Administrator should have promote_users.'
+		);
+
+		$request = new WP_REST_Request( 'POST', '/gatherpress/v1/event/rsvp' );
+		$request->set_param( 'post_id', $post_id );
+		$request->set_param( 'user_id', $target_id );
+		$request->set_param( 'status', 'attending' );
+
+		$response = $instance->update_rsvp( $request );
+
+		$this->assertTrue(
+			is_user_member_of_blog( $target_id, $site_2_id ),
+			'Target should be enrolled into site 2 by a manager with promote_users.'
+		);
+		$this->assertTrue(
+			$response->data['success'],
+			'RSVP should succeed when the manager can enroll the target.'
+		);
 
 		restore_current_blog();
 	}

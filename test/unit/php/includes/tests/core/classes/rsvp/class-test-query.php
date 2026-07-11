@@ -699,6 +699,66 @@ class Test_Query extends Base {
 	}
 
 	/**
+	 * `get_rsvps()` honors a caller-provided `post_type` so per-post-type
+	 * callers (like the RSVPs admin pages) can narrow results, while still
+	 * defaulting to every RSVP-supporting post type (#1849).
+	 *
+	 * @covers ::get_rsvps
+	 *
+	 * @return void
+	 */
+	public function test_get_rsvps_honors_post_type_argument(): void {
+		register_post_type(
+			'gatherpress_probe',
+			array(
+				'public'   => true,
+				'supports' => array( 'title', 'gatherpress-rsvp' ),
+			)
+		);
+
+		$instance = Query::get_instance();
+		$event    = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get();
+		$probe_id = $this->factory->post->create(
+			array(
+				'post_type'   => 'gatherpress_probe',
+				'post_status' => 'publish',
+			)
+		);
+
+		wp_insert_comment(
+			array(
+				'comment_post_ID' => $event->ID,
+				'comment_type'    => Rsvp::COMMENT_TYPE,
+			)
+		);
+		wp_insert_comment(
+			array(
+				'comment_post_ID' => $probe_id,
+				'comment_type'    => Rsvp::COMMENT_TYPE,
+			)
+		);
+
+		$this->assertSame(
+			1,
+			$instance->get_rsvps(
+				array(
+					'count'     => true,
+					'post_type' => 'gatherpress_probe',
+				)
+			),
+			'A provided post_type should narrow results to that post type.'
+		);
+
+		$this->assertSame(
+			2,
+			$instance->get_rsvps( array( 'count' => true ) ),
+			'Without a post_type, every RSVP-supporting post type is included.'
+		);
+
+		unregister_post_type( 'gatherpress_probe' );
+	}
+
+	/**
 	 * Test get_rsvps with count parameter returns integer.
 	 *
 	 * @covers ::get_rsvps

@@ -17,6 +17,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Event\Event;
 use GatherPress\Core\Settings;
+use GatherPress\Core\Shadow_Source;
 use GatherPress\Core\Topic;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Venue\Setup;
@@ -252,25 +253,22 @@ class Query {
 			}
 		}
 
-		// Filter events by venue when the venue filter is enabled and we're on a venue page.
-		$venue_filter = $query->get( 'venue_filter' );
-		if ( ! empty( $venue_filter ) && is_singular( Venue::POST_TYPE ) ) {
-			$venue_post = get_queried_object();
+		// Filter events by the current shadow-source post when the contextual
+		// filter is enabled. Resolution + clause-building live in Shadow_Source
+		// so any consumer can reuse them; we just merge the clause into the
+		// existing tax_query and call $query->set().
+		if ( ! empty( $query->get( 'shadow_filter' ) ) ) {
+			$shadow_source = Shadow_Source::get_instance();
+			$source_post   = $shadow_source->resolve_post_from_query_context( $query );
 
-			if ( $venue_post instanceof WP_Post ) {
-				$term_slug = ( new Venue( $venue_post->ID ) )->get_term_slug();
-
-				// Merge with any existing tax_query.
+			if ( $source_post instanceof WP_Post ) {
 				$existing_tax_query = $query->get( 'tax_query' );
+
 				if ( ! is_array( $existing_tax_query ) ) {
 					$existing_tax_query = array();
 				}
 
-				$existing_tax_query[] = array(
-					'taxonomy' => Venue::TAXONOMY,
-					'field'    => 'slug',
-					'terms'    => array( $term_slug ),
-				);
+				$existing_tax_query[] = $shadow_source->build_tax_query_clause( $source_post );
 
 				// phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query
 				$query->set( 'tax_query', $existing_tax_query );

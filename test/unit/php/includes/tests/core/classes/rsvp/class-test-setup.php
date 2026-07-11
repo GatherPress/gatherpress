@@ -722,6 +722,52 @@ class Test_Setup extends Base {
 	}
 
 	/**
+	 * The highlighted parent follows the RSVP-supporting post type whose
+	 * menu the current RSVPs page lives under (#1849).
+	 *
+	 * @covers ::highlight_admin_menu
+	 *
+	 * @return void
+	 */
+	public function test_highlight_admin_menu_follows_supporting_post_type(): void {
+		global $plugin_page, $typenow;
+
+		register_post_type(
+			'gatherpress_probe',
+			array(
+				'public'   => true,
+				'supports' => array( 'title', 'gatherpress-rsvp' ),
+			)
+		);
+
+		$instance = Setup::get_instance();
+
+		$plugin_page = Rsvp::COMMENT_TYPE; // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
+		$typenow     = 'gatherpress_probe'; // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
+
+		$this->assertSame(
+			'edit.php?post_type=gatherpress_probe',
+			$instance->highlight_admin_menu( 'index.php' ),
+			'Highlighted parent should follow the supporting post type.'
+		);
+
+		// A non-supporting post type falls back to the event post type.
+		$typenow = 'post'; // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
+
+		$this->assertSame(
+			sprintf( 'edit.php?post_type=%s', Event::POST_TYPE ),
+			$instance->highlight_admin_menu( 'index.php' ),
+			'Highlighted parent should fall back to the event post type.'
+		);
+
+		// Clean up.
+		remove_filter( 'submenu_file', array( $instance, 'set_submenu_file' ) );
+		unregister_post_type( 'gatherpress_probe' );
+		$plugin_page = null; // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
+		$typenow     = ''; // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
+	}
+
+	/**
 	 * Coverage for set_submenu_file method.
 	 *
 	 * @covers ::set_submenu_file
@@ -769,6 +815,154 @@ class Test_Setup extends Base {
 		$this->assertNotNull( $screen, 'Screen should be set.' );
 
 		// Clean up.
+		set_current_screen( 'front' );
+	}
+
+	/**
+	 * Returns whether the RSVPs submenu is registered under a post type's menu.
+	 *
+	 * @param string $post_type Post type slug.
+	 *
+	 * @return bool True when the RSVPs submenu exists for the post type.
+	 */
+	protected function has_rsvp_submenu_for_post_type( string $post_type ): bool {
+		global $submenu;
+
+		$parent = sprintf( 'edit.php?post_type=%s', $post_type );
+
+		foreach ( $submenu[ $parent ] ?? array() as $item ) {
+			if ( Rsvp::COMMENT_TYPE === ( $item[2] ?? '' ) ) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	/**
+	 * The RSVPs submenu is not added when no post type supports
+	 * `gatherpress-rsvp` — e.g. a companion plugin removed the support
+	 * from the event post type (#1849).
+	 *
+	 * @covers ::add_rsvp_submenu_page
+	 *
+	 * @return void
+	 */
+	public function test_add_rsvp_submenu_page_bails_without_supporting_post_type(): void {
+		global $submenu;
+
+		$submenu = array(); // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
+
+		$user_id = $this->factory->user->create( array( 'role' => 'administrator' ) );
+		wp_set_current_user( $user_id );
+
+		$instance = Setup::get_instance();
+
+		remove_post_type_support( Event::POST_TYPE, 'gatherpress-rsvp' );
+
+		$instance->add_rsvp_submenu_page();
+
+		$this->assertFalse(
+			$this->has_rsvp_submenu_for_post_type( Event::POST_TYPE ),
+			'No RSVPs submenu should be added when no post type supports gatherpress-rsvp.'
+		);
+
+		// Restore the support for subsequent tests.
+		add_post_type_support( Event::POST_TYPE, 'gatherpress-rsvp' );
+
+		$instance->add_rsvp_submenu_page();
+
+		$this->assertTrue(
+			$this->has_rsvp_submenu_for_post_type( Event::POST_TYPE ),
+			'RSVPs submenu should be added once a post type supports gatherpress-rsvp again.'
+		);
+	}
+
+	/**
+	 * Every post type declaring `gatherpress-rsvp` support gets its own
+	 * RSVPs submenu (#1849).
+	 *
+	 * @covers ::add_rsvp_submenu_page
+	 *
+	 * @return void
+	 */
+	public function test_add_rsvp_submenu_page_adds_menu_for_each_supporting_post_type(): void {
+		global $submenu;
+
+		$submenu = array(); // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
+
+		$user_id = $this->factory->user->create( array( 'role' => 'administrator' ) );
+		wp_set_current_user( $user_id );
+
+		register_post_type(
+			'gatherpress_probe',
+			array(
+				'public'   => true,
+				'supports' => array( 'title', 'gatherpress-rsvp' ),
+			)
+		);
+
+		Setup::get_instance()->add_rsvp_submenu_page();
+
+		$this->assertTrue(
+			$this->has_rsvp_submenu_for_post_type( Event::POST_TYPE ),
+			'RSVPs submenu should be added under the event post type menu.'
+		);
+		$this->assertTrue(
+			$this->has_rsvp_submenu_for_post_type( 'gatherpress_probe' ),
+			'RSVPs submenu should be added under every other supporting post type menu.'
+		);
+
+		unregister_post_type( 'gatherpress_probe' );
+	}
+
+	/**
+	 * The load-hook handler scopes the list table to the current screen's
+	 * post type, falling back to the event post type for screens without a
+	 * supporting post type (#1849).
+	 *
+	 * @covers ::prepare_rsvp_admin_page
+	 *
+	 * @return void
+	 */
+	public function test_prepare_rsvp_admin_page_scopes_list_table_to_screen_post_type(): void {
+		register_post_type(
+			'gatherpress_probe',
+			array(
+				'public'   => true,
+				'supports' => array( 'title', 'gatherpress-rsvp' ),
+			)
+		);
+
+		$instance = Setup::get_instance();
+
+		set_current_screen( sprintf( 'probes_page_%s', Rsvp::COMMENT_TYPE ) );
+		get_current_screen()->post_type = 'gatherpress_probe';
+
+		$instance->prepare_rsvp_admin_page();
+
+		$list_table = Utility::get_hidden_property( $instance, 'list_table' );
+
+		$this->assertSame(
+			'gatherpress_probe',
+			Utility::get_hidden_property( $list_table, 'post_type' ),
+			'List table should be scoped to the screen post type.'
+		);
+
+		// A screen without a supporting post type falls back to the event post type.
+		get_current_screen()->post_type = 'post';
+
+		$instance->prepare_rsvp_admin_page();
+
+		$list_table = Utility::get_hidden_property( $instance, 'list_table' );
+
+		$this->assertSame(
+			Event::POST_TYPE,
+			Utility::get_hidden_property( $list_table, 'post_type' ),
+			'List table should fall back to the event post type for non-supporting screens.'
+		);
+
+		unregister_post_type( 'gatherpress_probe' );
 		set_current_screen( 'front' );
 	}
 

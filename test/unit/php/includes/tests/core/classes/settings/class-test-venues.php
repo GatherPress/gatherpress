@@ -102,7 +102,7 @@ class Test_Venues extends Base {
 		// via Venue\Map::apply_block_attribute_defaults().
 		foreach ( array(
 			'venue_map_default_render_mode' => 'interactive',
-			'venue_map_default_zoom'        => 18,
+			'venue_map_default_zoom'        => 16,
 			'venue_map_default_height'      => '',
 			'venue_map_default_scale'       => 'cover',
 			'venue_map_default_type'        => 'roadmap',
@@ -118,5 +118,13 @@ class Test_Venues extends Base {
 				sprintf( 'Failed to assert default value for %s.', $key )
 			);
 		}
+
+		// Default Map Type only affects Google Maps rendering, so it is gated
+		// behind the Google platform via show_if (#1760).
+		$this->assertSame(
+			array( 'map_platform' => 'google' ),
+			$section['maps']['options']['venue_map_default_type']['show_if'],
+			'Failed to assert Default Map Type is gated to the Google platform.'
+		);
 	}
 }

@@ -10,6 +10,10 @@
 	"description": "Provides information about an event venue.",
 	"usesContext": [ "postId", "postType", "queryId" ],
 	"attributes": {
+		"sourcePostType": {
+			"type": "string",
+			"default": "gatherpress_venue"
+		},
 		"selectedPostId": {
 			"type": "integer"
 		},

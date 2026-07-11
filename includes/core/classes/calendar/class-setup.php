@@ -132,14 +132,14 @@ class Setup {
 
 		// Important: register the feed endpoint before the single endpoint,
 		// to make sure rewrite rules get saved in the correct order.
-		new Post_Type_Feed(
+		( new Post_Type_Feed(
 			array(
 				new Template( self::ICAL_SLUG, array( $this, 'get_ical_feed_template' ) ),
 			),
 			self::QUERY_VAR,
 			$post_type
-		);
-		new Post_Type_Single(
+		) )->init();
+		( new Post_Type_Single(
 			array(
 				new Template( self::ICAL_SLUG, array( $this, 'get_ical_file_template' ) ),
 				new Template( 'outlook', array( $this, 'get_ical_file_template' ) ),
@@ -148,7 +148,7 @@ class Setup {
 			),
 			self::QUERY_VAR,
 			$post_type
-		);
+		) )->init();
 	}
 
 	/**
@@ -165,13 +165,13 @@ class Setup {
 			return;
 		}
 
-		new Post_Type_Single_Feed(
+		( new Post_Type_Single_Feed(
 			array(
 				new Template( self::ICAL_SLUG, array( $this, 'get_ical_feed_template' ) ),
 			),
 			self::QUERY_VAR,
 			$post_type
-		);
+		) )->init();
 	}
 
 	/**
@@ -194,13 +194,13 @@ class Setup {
 			return;
 		}
 
-		new Taxonomy_Feed(
+		( new Taxonomy_Feed(
 			array(
 				new Template( self::ICAL_SLUG, array( $this, 'get_ical_feed_template' ) ),
 			),
 			self::QUERY_VAR,
 			$taxonomy
-		);
+		) )->init();
 	}
 
 	/**
@@ -215,12 +215,12 @@ class Setup {
 	 * @return void
 	 */
 	public function init_sitewide(): void {
-		new Sitewide_Feed(
+		( new Sitewide_Feed(
 			array(
 				new Template( self::ICAL_SLUG, array( $this, 'get_ical_feed_template' ) ),
 			),
 			self::QUERY_VAR
-		);
+		) )->init();
 	}
 
 	/**

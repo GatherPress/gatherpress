@@ -292,13 +292,52 @@ register_post_type( 'production', array(
 ) );
 ```
 
-Wiring the resulting taxonomy onto consumer post types is the developer's responsibility — pass it via `register_post_type`'s `taxonomies` arg or call `register_taxonomy_for_object_type()`:
+Wiring the resulting taxonomy onto consumer post types is done via the `gatherpress_shadow_taxonomy_object_types` filter — declare which event post types should be tagged with your shadow source and `Shadow_Source` handles the `register_taxonomy_for_object_type()` call for you. Default is an empty list, so wiring is always explicit (and visible in the [auto-generated hook reference](../hooks/Hooks.md)).
 
 ```php
-add_action( 'init', function() {
-    register_taxonomy_for_object_type( '_production', 'gatherpress_event' );
-}, 12 );
+add_filter( 'gatherpress_shadow_taxonomy_object_types', function ( array $object_types, string $source_post_type ): array {
+    if ( 'production' === $source_post_type ) {
+        $object_types[] = 'gatherpress_event';
+    }
+    return $object_types;
+}, 10, 2 );
 ```
+
+The venue subsystem uses this same filter to wire `_gatherpress_venue` onto every `gatherpress-venue`-supporting event CPT — `Venue\Setup::attach_venue_taxonomy_to_event_types()` is the canonical reference implementation.
+
+If you need to bypass the filter (for example to attach to a non-event post type), `register_taxonomy_for_object_type()` still works as a manual escape hatch — but the filter is the discoverable idiom and should be preferred.
+
+#### Pairing with the `gatherpress/venue` block
+
+The `gatherpress/venue` block accepts a `sourcePostType` attribute (default `gatherpress_venue`). Set it to your shadow-source CPT and the block resolves its connected source post via your taxonomy — same block, same field-rendering inner blocks (post-title, gatherpress/venue-detail, etc.), different source. Example for a production-detail surface on an event template:
+
+```html
+<!-- wp:gatherpress/venue {"sourcePostType":"production"} -->
+<!-- wp:post-title /-->
+<!-- /wp:gatherpress/venue -->
+```
+
+The `gatherpress/event-query` block's "Filter by Current Venue" contextual toggle automatically scopes to whatever shadow-source CPT the queried page represents — on a production singular it scopes to that production's events, on a tour singular to that tour's events, etc. The toggle label adapts in the editor via `usePostTypeLabel`, so users editing a Tour template see "Filter by Current Tour".
+
+#### Reusing the shadow-source query primitives
+
+If you're building a custom Query Loop block that needs the same "scope to the current shadow-source page" behavior, two public methods on `Shadow_Source` do the heavy lifting:
+
+```php
+use GatherPress\Core\Shadow_Source;
+
+// Inside a pre_get_posts callback:
+$shadow_source = Shadow_Source::get_instance();
+$source_post   = $shadow_source->resolve_post_from_query_context( $query );
+
+if ( $source_post instanceof WP_Post ) {
+    $tax_query   = (array) ( $query->get( 'tax_query' ) ?: array() );
+    $tax_query[] = $shadow_source->build_tax_query_clause( $source_post );
+    $query->set( 'tax_query', $tax_query );
+}
+```
+
+`resolve_post_from_query_context()` handles both resolution paths — the frontend `is_singular()` path AND the REST editor-preview path. For the REST path to work, the block's JS must write the editor's current post id + post type into the query attributes as `gatherpress_shadow_source_post_id` and `gatherpress_shadow_source_post_type` when the toggle is on. Those are the only two query vars the resolver looks at — everything else flows from the resolved post.
 
 #### Customizing the taxonomy registration
 

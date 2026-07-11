@@ -1636,6 +1636,41 @@ class Test_Geocoding extends Base {
 	}
 
 	/**
+	 * Tests the gatherpress_geocode_street_line filter reorders house number and street.
+	 *
+	 * @covers \GatherPress\Core\Geocoding::format_photon_feature_label
+	 *
+	 * @return void
+	 */
+	public function test_geocoding_street_line_filter(): void {
+		$instance = Geocoding::get_instance();
+
+		$callback = static function ( string $street_line, string $housenumber, string $street ): string {
+			return trim( $street . ' ' . $housenumber );
+		};
+
+		add_filter( 'gatherpress_geocode_street_line', $callback, 10, 3 );
+
+		$reordered = $this->invoke_geocoding_private(
+			$instance,
+			'format_photon_feature_label',
+			array(
+				array(
+					'housenumber' => '42',
+					'street'      => 'Hauptstraße',
+					'city'        => 'Berlin',
+				),
+			)
+		);
+
+		remove_filter( 'gatherpress_geocode_street_line', $callback, 10 );
+
+		$this->assertStringContainsString( 'Hauptstraße 42', $reordered );
+		$this->assertStringNotContainsString( '42 Hauptstraße', $reordered );
+		$this->assertStringContainsString( 'Berlin', $reordered );
+	}
+
+	/**
 	 * Default and filtered Photon API base URL.
 	 *
 	 * @covers \GatherPress\Core\Geocoding::get_photon_api_url

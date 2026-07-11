@@ -36,24 +36,36 @@ jest.mock( '@wordpress/data', () => ( {
 jest.mock( '@wordpress/i18n', () => ( {
 	__: ( text ) => text,
 	_x: ( text ) => text,
-	sprintf: ( fmt, ...args ) => args.reduce( ( s, a ) => s.replace( '%s', a ), fmt ),
+	sprintf: ( fmt, ...args ) => {
+		// Mirror @wordpress/i18n: support both positional (%1$s) and
+		// sequential (%s) placeholders so help copy interpolates correctly.
+		let sequential = 0;
+		return fmt.replace( /%(\d+)\$s|%s/g, ( match, position ) =>
+			position ? args[ position - 1 ] : args[ sequential++ ]
+		);
+	},
 } ) );
 
 // The slot wrapper invokes its render-prop child immediately so we can assert
 // on what the fill renders without setting up a real Slot consumer.
+let mockQueryControlsProps = {
+	context: {
+		postType: 'gatherpress_event',
+	},
+	attributes: {
+		query: {
+			postType: 'gatherpress_event',
+			inherit: false,
+		},
+	},
+	setAttributes: jest.fn(),
+};
+
 jest.mock( '@src/variations/core/query/slots/query-controls', () => ( {
 	__esModule: true,
 	default: ( { children } ) => (
 		<div data-testid="query-controls-fill">
-			{ children( {
-				attributes: {
-					query: {
-						postType: 'gatherpress_event',
-						inherit: false,
-					},
-				},
-				setAttributes: jest.fn(),
-			} ) }
+			{ children( mockQueryControlsProps ) }
 		</div>
 	),
 } ) );
@@ -72,7 +84,7 @@ jest.mock( '@src/variations/core/query/slots/inherited-query-controls', () => ( 
 
 jest.mock( '@src/helpers/event', () => ( {
 	isEventPostType: jest.fn(),
-	usePostTypeSupports: jest.fn(),
+	isPostTypeSupporting: jest.fn(),
 } ) );
 
 jest.mock( '@src/helpers/editor', () => ( {
@@ -84,7 +96,7 @@ jest.mock( '@src/helpers/editor', () => ( {
 /**
  * WordPress dependencies
  */
-import { isEventPostType, usePostTypeSupports } from '@src/helpers/event';
+import { isEventPostType, isPostTypeSupporting } from '@src/helpers/event';
 import { isInFSETemplate } from '@src/helpers/editor';
 
 /**
@@ -95,20 +107,20 @@ import { EventQueryControlsSlotFill } from '@src/variations/core/query/component
 const venueToggleLabel = 'Filter by Current Venue';
 const excludeToggleLabel = 'Exclude Current Event';
 const venueHelp =
-	'When placed on a venue page, only shows events at that venue.';
+	'When placed inside Venue context, only shows Events tied to that Venue.';
 const templateHelp =
-	'The filter only takes effect when this template renders on a venue page.';
+	'The filter only takes effect when this template renders on a shadow-source page (venue, tour, production, etc.).';
 
 describe( 'EventQueryControlsSlotFill', () => {
 	beforeEach( () => {
 		isEventPostType.mockReset();
-		usePostTypeSupports.mockReset();
+		isPostTypeSupporting.mockReset();
 		isInFSETemplate.mockReset();
 	} );
 
 	it( 'hides the venue filter toggle on a regular non-venue, non-template host', () => {
 		isEventPostType.mockReturnValue( true );
-		usePostTypeSupports.mockReturnValue( false );
+		isPostTypeSupporting.mockReturnValue( false );
 		isInFSETemplate.mockReturnValue( false );
 
 		render( <EventQueryControlsSlotFill /> );
@@ -116,14 +128,28 @@ describe( 'EventQueryControlsSlotFill', () => {
 		expect(
 			screen.queryByText( venueToggleLabel )
 		).not.toBeInTheDocument();
-		expect( usePostTypeSupports ).toHaveBeenCalledWith(
-			'gatherpress-venue-information'
+		expect( isPostTypeSupporting ).toHaveBeenCalledWith(
+			'gatherpress-shadow-source',
+			'gatherpress_event'
 		);
 	} );
 
 	it( 'shows the venue filter toggle with venue copy when host is a venue post', () => {
+		mockQueryControlsProps = {
+			...mockQueryControlsProps,
+			context: {
+				postType: 'gatherpress_venue',
+			},
+			attributes: {
+				query: {
+					postType: 'gatherpress_event',
+					inherit: false,
+				},
+			},
+		};
+
 		isEventPostType.mockReturnValue( false );
-		usePostTypeSupports.mockReturnValue( true );
+		isPostTypeSupporting.mockReturnValue( true );
 		isInFSETemplate.mockReturnValue( false );
 
 		render( <EventQueryControlsSlotFill /> );
@@ -135,7 +161,7 @@ describe( 'EventQueryControlsSlotFill', () => {
 
 	it( 'shows the venue filter toggle with template copy on a template / template part', () => {
 		isEventPostType.mockReturnValue( false );
-		usePostTypeSupports.mockReturnValue( false );
+		isPostTypeSupporting.mockReturnValue( false );
 		isInFSETemplate.mockReturnValue( true );
 
 		render( <EventQueryControlsSlotFill /> );
@@ -147,7 +173,7 @@ describe( 'EventQueryControlsSlotFill', () => {
 
 	it( 'still gates the exclude-current-event toggle on the existing isEventPostType check', () => {
 		isEventPostType.mockReturnValue( false );
-		usePostTypeSupports.mockReturnValue( true );
+		isPostTypeSupporting.mockReturnValue( true );
 		isInFSETemplate.mockReturnValue( false );
 
 		render( <EventQueryControlsSlotFill /> );
@@ -158,12 +184,50 @@ describe( 'EventQueryControlsSlotFill', () => {
 	} );
 
 	it( 'shows the exclude-current-event toggle when the host is an event post type', () => {
+		mockQueryControlsProps = {
+			...mockQueryControlsProps,
+			context: {
+				postType: 'gatherpress_event',
+			},
+			attributes: {
+				query: {
+					postType: 'gatherpress_event',
+					inherit: false,
+				},
+			},
+		};
+
 		isEventPostType.mockReturnValue( true );
-		usePostTypeSupports.mockReturnValue( true );
+		isPostTypeSupporting.mockReturnValue( true );
 		isInFSETemplate.mockReturnValue( false );
 
 		render( <EventQueryControlsSlotFill /> );
 
 		expect( screen.getByText( excludeToggleLabel ) ).toBeInTheDocument();
+	} );
+
+	it( 'hides the exclude-current-event toggle when the query post type differs from the host post type', () => {
+		mockQueryControlsProps = {
+			...mockQueryControlsProps,
+			context: {
+				postType: 'gatherpress_event',
+			},
+			attributes: {
+				query: {
+					postType: 'post',
+					inherit: false,
+				},
+			},
+		};
+
+		isEventPostType.mockReturnValue( true );
+		isPostTypeSupporting.mockReturnValue( true );
+		isInFSETemplate.mockReturnValue( false );
+
+		render( <EventQueryControlsSlotFill /> );
+
+		expect(
+			screen.queryByText( excludeToggleLabel )
+		).not.toBeInTheDocument();
 	} );
 } );

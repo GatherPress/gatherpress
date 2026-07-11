@@ -221,6 +221,34 @@ class Utility {
 	}
 
 	/**
+	 * Resolve a single label from a taxonomy's registered labels.
+	 *
+	 * Wraps `get_taxonomy()` so call sites don't have to defend
+	 * against unregistered taxonomies or missing label keys. Lets UI
+	 * strings reflect whatever a site builder filtered the labels to,
+	 * and lets extenders' event-supporting taxonomies surface their own
+	 * labels instead of GatherPress's defaults (#1612).
+	 *
+	 * @since 0.34.0
+	 *
+	 * @param string $key       Label key to read (e.g. `singular_name`,
+	 *                          `name`, `add_new_item`).
+	 * @param string $taxonomy  Taxonomy slug to read the label from.
+	 *
+	 * @return string The resolved label, or empty string when the taxonomy
+	 *                isn't registered or the key isn't set.
+	 */
+	public static function taxonomy_label( string $key, string $taxonomy ): string {
+		$object = get_taxonomy( $taxonomy );
+
+		if ( ! $object || empty( $object->labels->$key ) ) {
+			return '';
+		}
+
+		return (string) $object->labels->$key;
+	}
+
+	/**
 	 * Convert a snake_case string to camelCase.
 	 *
 	 * Expects standard snake_case input (lowercase words separated by single underscores).

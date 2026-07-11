@@ -53,6 +53,8 @@ class Setup {
 	 * @return void
 	 */
 	protected function setup_hooks(): void {
+		// Called from here because Init:10 from inside Blocks/Event_Query would be too late for that filter to work.
+		add_filter( 'register_block_type_args', array( $this, 'enable_context_for_core_query_block' ), 10, 2 );
 		add_action( 'init', array( $this, 'register_block_classes' ) );
 		add_action( 'init', array( $this, 'register_block_patterns' ) );
 		// Priority 11 needed for block.json translations of title and description.
@@ -303,5 +305,29 @@ class Setup {
 		$post_id = isset( $block['attrs']['postId'] ) ? intval( $block['attrs']['postId'] ) : 0;
 
 		return $post_id > 0 ? $post_id : get_the_ID();
+	}
+
+	/**
+	 * Enables block context for the core Query block.
+	 *
+	 * This allows the block to receive context values like postType and postId,
+	 * which are necessary for some of the custom Event Query block controls.
+	 *
+	 * @since 0.34.0
+	 *
+	 * @param array  $args       The arguments for registering the block type.
+	 * @param string $block_type The name of the block type being registered.
+	 *
+	 * @return array Modified arguments for registering the block type.
+	 */
+	public function enable_context_for_core_query_block( array $args, string $block_type ): array {
+		// Only modify the Query block.
+		if ( 'core/query' === $block_type ) {
+			$args['uses_context'] = array_merge(
+				$args['uses_context'] ?? array(),
+				array( 'postType', 'postId' )
+			);
+		}
+		return $args;
 	}
 }

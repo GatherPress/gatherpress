@@ -6,6 +6,33 @@ import { store } from '@wordpress/interactivity';
 const { state: gatherPressState } = store( 'gatherpress' );
 
 /**
+ * Surface an RSVP request failure to the user.
+ *
+ * Logs the underlying error for debugging and shows a brief alert so a failed
+ * request doesn't leave the UI in a silent half-updated state. Mirrors the
+ * server-error handling in the rsvp-form block (#1719).
+ *
+ * The message is a plain string, not wrapped in `__()`: this helper runs in the
+ * Interactivity API script-module graph (`wp-scripts build --experimental-modules`),
+ * which does not support `@wordpress/i18n` as a module dependency yet — the same
+ * reason the rsvp-form block hardcodes its alert copy.
+ *
+ * @since 0.34.0
+ *
+ * @param {*} [error=null] Optional error to log for debugging.
+ *
+ * @return {void}
+ */
+function notifyRsvpFailure( error = null ) {
+	// eslint-disable-next-line no-console
+	console.warn( 'RSVP API request failed:', error );
+	// eslint-disable-next-line no-alert
+	alert(
+		'Sorry, there was an issue processing your RSVP. Please try again.'
+	);
+}
+
+/**
  * Initializes the post context within the application state.
  *
  * This function ensures that the given `postId` has an entry in the `state.posts` object.
@@ -216,22 +243,19 @@ export async function sendRsvpApiRequest(
 	try {
 		const res = await makeRequest();
 
-		if ( res.success ) {
+		// `makeRequest` resolves to undefined when the nonce can't be fetched,
+		// and to a `{ success: false }` / error payload when the server (or a
+		// proxy/WAF returning non-JSON) rejects the request. Guard against both
+		// so a failed request surfaces an error instead of throwing on
+		// `res.success` and leaving the button hidden (#1719).
+		if ( res?.success ) {
 			if ( state ) {
-				// eslint-disable-next-line no-console
-				console.log( '[RSVP API] Response received:', {
-					postId,
-					status: res.status,
-					onlineLink: res.online_link,
-					fullResponse: res,
-				} );
-
 				state.posts[ postId ] = {
 					...state.posts[ postId ],
 					eventResponses: {
-						attending: res.responses.attending.count,
-						waitingList: res.responses.waiting_list.count,
-						notAttending: res.responses.not_attending.count,
+						attending: res.responses?.attending?.count ?? 0,
+						waitingList: res.responses?.waiting_list?.count ?? 0,
+						notAttending: res.responses?.not_attending?.count ?? 0,
 					},
 					currentUser: {
 						status: res.status,
@@ -240,19 +264,27 @@ export async function sendRsvpApiRequest(
 					},
 					onlineEventLink: res.online_link || '',
 				};
-
-				// eslint-disable-next-line no-console
-				console.log( '[RSVP API] State updated:', state.posts[ postId ] );
 			}
 
 			if ( 'function' === typeof onSuccess ) {
-				onSuccess( res );
+				try {
+					onSuccess( res );
+				} catch ( error ) {
+					// The RSVP request itself succeeded — a failure while
+					// updating the UI afterward must not be reported to the
+					// user as a failed request (#1719).
+					// eslint-disable-next-line no-console
+					console.warn(
+						'RSVP post-success UI update failed:',
+						error,
+					);
+				}
 			}
+		} else {
+			notifyRsvpFailure();
 		}
 	} catch ( error ) {
-		// Handle error silently - log for debugging but don't interrupt user.
-		// eslint-disable-next-line no-console
-		console.warn( 'RSVP API request failed:', error );
+		notifyRsvpFailure( error );
 	} finally {
 		// Always remove loading class when request completes.
 		if ( loadingElement ) {
@@ -287,22 +319,22 @@ export async function sendRsvpApiRequest(
  */
 export function manageFocusTrap( focusableElements ) {
 	if ( ! focusableElements || 0 === focusableElements.length ) {
-		return () => {}; // Return an empty cleanup function if no elements..
+		return () => {}; // Return an empty cleanup function if no elements.
 	}
 
 	const isElementVisible = ( element ) => {
 		return (
 			null !== element.offsetParent && // Excludes elements with `display: none`.
 			'hidden' !== window.getComputedStyle( element ).visibility && // Excludes elements with `visibility: hidden`.
-			'0' !== window.getComputedStyle( element ).opacity // Excludes fully transparent elements..
+			'0' !== window.getComputedStyle( element ).opacity // Excludes fully transparent elements.
 		);
 	};
 
-	// Filter out hidden elements..
+	// Filter out hidden elements.
 	const visibleFocusableElements = focusableElements.filter( isElementVisible );
 
 	if ( 0 === visibleFocusableElements.length ) {
-		return () => {}; // No visible elements, no trap needed..
+		return () => {}; // No visible elements, no trap needed.
 	}
 
 	const firstFocusableElement = visibleFocusableElements[ 0 ];
@@ -311,13 +343,13 @@ export function manageFocusTrap( focusableElements ) {
 	const handleFocusTrap = ( e ) => {
 		if ( 'Tab' === e.key ) {
 			if (
-				e.shiftKey && // Shift + Tab..
+				e.shiftKey && // Shift + Tab.
 				firstFocusableElement.ownerDocument.activeElement === firstFocusableElement
 			) {
 				e.preventDefault();
 				lastFocusableElement.focus();
 			} else if (
-				! e.shiftKey && // Tab..
+				! e.shiftKey && // Tab.
 				lastFocusableElement.ownerDocument.activeElement === lastFocusableElement
 			) {
 				e.preventDefault();
@@ -328,7 +360,7 @@ export function manageFocusTrap( focusableElements ) {
 
 	const handleEscapeKey = ( e ) => {
 		if ( 'Escape' === e.key ) {
-			cleanup(); // Trigger cleanup on Escape key..
+			cleanup(); // Trigger cleanup on Escape key.
 		}
 	};
 
@@ -337,11 +369,11 @@ export function manageFocusTrap( focusableElements ) {
 		document.removeEventListener( 'keydown', handleEscapeKey );
 	};
 
-	// Attach the event listeners for focus trap..
+	// Attach the event listeners for focus trap.
 	document.addEventListener( 'keydown', handleFocusTrap );
 	document.addEventListener( 'keydown', handleEscapeKey );
 
-	// Return a cleanup function for the caller..
+	// Return a cleanup function for the caller.
 	return cleanup;
 }
 
@@ -354,10 +386,10 @@ export function manageFocusTrap( focusableElements ) {
  */
 export function setupCloseHandlers( elementSelector, contentSelector, onClose ) {
 	const handleClose = ( element ) => {
-		// Remove the visible class..
+		// Remove the visible class.
 		element.classList.remove( 'gatherpress--is-visible' );
 
-		// Execute the custom close callback..
+		// Execute the custom close callback.
 		if ( 'function' === typeof onClose ) {
 			onClose( element );
 		}
@@ -394,11 +426,11 @@ export function setupCloseHandlers( elementSelector, contentSelector, onClose ) 
 		} );
 	};
 
-	// Attach event listeners..
+	// Attach event listeners.
 	document.addEventListener( 'keydown', handleEscapeKey );
 	document.addEventListener( 'click', handleOutsideClick );
 
-	// Return a cleanup function to remove event listeners if needed..
+	// Return a cleanup function to remove event listeners if needed.
 	return () => {
 		document.removeEventListener( 'keydown', handleEscapeKey );
 		document.removeEventListener( 'click', handleOutsideClick );

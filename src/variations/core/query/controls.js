@@ -146,6 +146,52 @@ export const EventQueryControlsPanel = ( props ) => {
 		updateBlockAttributes,
 	] );
 
+	// Strip the event-only query vars when the selected post type doesn't
+	// support event dates. `orderBy: 'datetime'` (and 'rand') are added to the
+	// REST orderby enum only for event-date post types, so leaving them on a
+	// plain post/page/venue query makes the core endpoint reject the request
+	// (rest_invalid_param) and the Query Loop spins forever (#1756). The
+	// gatherpress_event_query / include_unfinished vars are harmless on those
+	// endpoints but meaningless there, so drop them too. Guarded on the vars
+	// still being present so this doesn't re-fire in a loop.
+	useEffect( () => {
+		if ( queryPostTypeSupportsEvents ) {
+			return;
+		}
+
+		const { query } = props.attributes;
+		const hasEventOnlyOrderBy =
+			'datetime' === query.orderBy || 'rand' === query.orderBy;
+		const hasEventOnlyVars =
+			undefined !== query.gatherpress_event_query ||
+			undefined !== query.include_unfinished ||
+			hasEventOnlyOrderBy;
+
+		if ( ! hasEventOnlyVars ) {
+			return;
+		}
+
+		const {
+			gatherpress_event_query: removedEventQuery,
+			include_unfinished: removedIncludeUnfinished,
+			...remainingQuery
+		} = query;
+
+		// Reset the GatherPress-only ordering to the core default the
+		// posts/pages endpoint accepts; leave any other orderBy intact.
+		if ( hasEventOnlyOrderBy ) {
+			remainingQuery.orderBy = 'date';
+			remainingQuery.order = 'desc';
+		}
+
+		updateBlockAttributes( clientId, { query: remainingQuery } );
+	}, [
+		queryPostTypeSupportsEvents,
+		props.attributes,
+		clientId,
+		updateBlockAttributes,
+	] );
+
 	// Read the singular label so the label reflects what the currently
 	// selected post type is actually called — a custom event-supporting post type with
 	// `singular_name => 'Production'` shows "Production Query Settings".

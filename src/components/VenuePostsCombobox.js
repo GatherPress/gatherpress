@@ -4,11 +4,12 @@
 import { ComboboxControl } from '@wordpress/components';
 import { useCallback } from '@wordpress/element';
 import { useDebounce } from '@wordpress/compose';
-import { __ } from '@wordpress/i18n';
+import { __, sprintf } from '@wordpress/i18n';
 
 /**
  * Internal dependencies
  */
+import { usePostTypeLabel } from '../helpers/editor';
 import { useVenueOptions, getVenuePostType } from '../helpers/venue';
 
 /**
@@ -31,6 +32,21 @@ export const VenuePostsCombobox = ( { search, setSearch, ...props } ) => {
 	const venueId = props?.attributes?.selectedPostId;
 
 	const venuePostType = getVenuePostType( props?.context?.postType );
+
+	// Read the singular label so the panel title reflects what the post type
+	// is actually called — a custom venue post type with
+	// `singular_name => 'Location'` shows "Add New Location" without any
+	// extra wiring (#1612).
+	const singularLabel = usePostTypeLabel(
+		'singular_name',
+		venuePostType,
+		__( 'Venue', 'gatherpress' )
+	);
+	const comboBoxLabel = sprintf(
+		/* translators: %s: Singular post type label, e.g. "Venue". */
+		__( 'Choose a %s', 'gatherpress' ),
+		singularLabel
+	);
 
 	// Fetch available venue options using a custom query hook.
 	const { venueOptions } = useVenueOptions(
@@ -79,7 +95,7 @@ export const VenuePostsCombobox = ( { search, setSearch, ...props } ) => {
 
 	return (
 		<ComboboxControl
-			label={ __( 'Choose a venue', 'gatherpress' ) }
+			label={ comboBoxLabel }
 			__next40pxDefaultSize
 			onChange={ update }
 			onFilterValueChange={ setSearchDebounced }

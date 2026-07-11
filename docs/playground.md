@@ -9,7 +9,8 @@ The GatherPress Playground is a live, interactive demo environment powered by [W
 ## 🧪 What You Can Do
 
 - Explore the current plugin version with preloaded demo data
-- Preview plugin updates via pull request-linked blueprints
+- Preview plugin updates via [pull request-linked blueprints](docs/contributor/playground-pr-preview/README.md)
+- Test compatibility with your and third-party plugins using [customizable Playground PR previews](docs/contributor/playground-pr-preview/README.md#customize-your-pr-playground)
 - Automatically generate multilingual screenshots
 - Run end-to-end tests (in progress)
 - Curate and reuse custom demo data for consistency

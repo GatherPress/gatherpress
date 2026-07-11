@@ -15,9 +15,11 @@ name: PR Coverage Check
 
 on:
   pull_request:
+    # develop only: PRs into main are release merges whose diff is the whole
+    # cycle — every file in it already passed this check on its PR into
+    # develop (#1921).
     branches:
       - develop
-      - main
     paths:
       - '.github/workflows/pr-coverage.yml'
       - '.github/coverage-config.json'

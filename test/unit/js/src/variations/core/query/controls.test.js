@@ -71,9 +71,10 @@ jest.mock( '@src/helpers/editor', () => ( {
 	usePostTypeLabel: jest.fn( ( key, postType, fallback ) => fallback ),
 } ) );
 
+const mockUpdateBlockAttributes = jest.fn();
 jest.mock( '@wordpress/data', () => ( {
 	useDispatch: jest.fn( () => ( {
-		updateBlockAttributes: jest.fn(),
+		updateBlockAttributes: mockUpdateBlockAttributes,
 	} ) ),
 } ) );
 
@@ -180,6 +181,103 @@ describe( 'EventQueryControlsPanel', () => {
 			'gatherpress-event-date',
 			undefined
 		);
+	} );
+} );
+
+describe( 'EventQueryControlsPanel query cleanup (#1756)', () => {
+	// Pull just the `query` payload from the most recent updateBlockAttributes
+	// call that targeted the query (the metadata-name effect also fires).
+	const lastQueryUpdate = () => {
+		const call = mockUpdateBlockAttributes.mock.calls
+			.filter( ( [ , attrs ] ) => attrs?.query )
+			.at( -1 );
+		return call ? call[ 1 ].query : undefined;
+	};
+
+	beforeEach( () => {
+		usePostTypeSupports.mockReset();
+		mockUpdateBlockAttributes.mockClear();
+	} );
+
+	it( 'strips event-only vars and resets orderBy=datetime when switching to a non-event post type', () => {
+		usePostTypeSupports.mockReturnValue( false );
+
+		render(
+			<EventQueryControlsPanel
+				clientId="abc"
+				attributes={ {
+					query: {
+						postType: 'post',
+						perPage: 5,
+						gatherpress_event_query: 'upcoming',
+						include_unfinished: 1,
+						orderBy: 'datetime',
+						order: 'asc',
+					},
+				} }
+			/>
+		);
+
+		expect( lastQueryUpdate() ).toEqual( {
+			postType: 'post',
+			perPage: 5,
+			orderBy: 'date',
+			order: 'desc',
+		} );
+	} );
+
+	it( 'resets orderBy=rand as well, since rand is GatherPress-only on the REST enum', () => {
+		usePostTypeSupports.mockReturnValue( false );
+
+		render(
+			<EventQueryControlsPanel
+				clientId="abc"
+				attributes={ {
+					query: { postType: 'page', orderBy: 'rand' },
+				} }
+			/>
+		);
+
+		expect( lastQueryUpdate() ).toEqual( {
+			postType: 'page',
+			orderBy: 'date',
+			order: 'desc',
+		} );
+	} );
+
+	it( 'does not touch the query when no event-only vars are present', () => {
+		usePostTypeSupports.mockReturnValue( false );
+
+		render(
+			<EventQueryControlsPanel
+				clientId="abc"
+				attributes={ {
+					query: { postType: 'post', orderBy: 'title' },
+				} }
+			/>
+		);
+
+		expect( lastQueryUpdate() ).toBeUndefined();
+	} );
+
+	it( 'does not clean up while the post type still supports event dates', () => {
+		usePostTypeSupports.mockReturnValue( true );
+
+		render(
+			<EventQueryControlsPanel
+				clientId="abc"
+				attributes={ {
+					query: {
+						postType: 'gatherpress_event',
+						orderBy: 'datetime',
+						gatherpress_event_query: 'upcoming',
+						inherit: false,
+					},
+				} }
+			/>
+		);
+
+		expect( lastQueryUpdate() ).toBeUndefined();
 	} );
 } );
 

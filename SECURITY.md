@@ -6,8 +6,8 @@ We release patches for security vulnerabilities only for the current version:
 
 | Version | Supported          |
 | ------- | ------------------ |
-| 0.33.x  | :white_check_mark: |
-| < 0.33  | :x:                |
+| 0.34.x  | :white_check_mark: |
+| < 0.34  | :x:                |
 
 **We strongly recommend always using the latest stable version of GatherPress.** Security updates are only provided for the current release.
 

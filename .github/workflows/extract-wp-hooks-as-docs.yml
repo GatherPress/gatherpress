@@ -20,7 +20,7 @@ jobs:
     steps:
     - uses: actions/checkout@v4
       with:
-        fetch-depth: 2 # Modify the checkout step to fetch at least two commits (e.g., fetch-depth: 2) so that HEAD^ exists for the 'check-for-changes' step.
+        fetch-depth: 2 # Fetch a little history so the docs diff is computed against the prior commit.
 
     - name: Setup PHP
       uses: shivammathur/setup-php@v2
@@ -43,52 +43,28 @@ jobs:
       run: |
         vendor/bin/extract-wp-hooks.php
 
-    - name: Check for changes
-      id: check-for-changes
-      run: |
-        git add -A
-        if git diff --staged --quiet; then
-          echo "changed=false" >> $GITHUB_OUTPUT
-        else
-          echo "changed=true" >> $GITHUB_OUTPUT
-        fi
-
-    - name: Checkout new branch
-      if: ${{ steps.check-for-changes.outputs.changed == 'true' }}
-      run: |
-        git checkout -b fix/extract-wp-hooks-${{ github.sha }}
-
-    - name: Commit updated docs
-      if: ${{ steps.check-for-changes.outputs.changed == 'true' }}
-      run: |
-        git config --local user.email "action@github.com"
-        git config --local user.name "GitHub Action"
-
-        git commit -m "Hook docs updated!"
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-    - name: Push new branch to origin
-      if: ${{ steps.check-for-changes.outputs.changed == 'true' }}
-      run: |
-        git config --local user.email "action@github.com"
-        git config --local user.name "GitHub Action"
-
-        git push origin fix/extract-wp-hooks-${{ github.sha }}
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-    - name: Create a Pull Request
-      if: ${{ steps.check-for-changes.outputs.changed == 'true' }}
-      id: create-pr
-      # Using GitHub CLI in Workflows
-      # https://docs.github.com/en/actions/using-workflows/using-github-cli-in-workflows
-      # https://cli.github.com/manual/gh_pr_create
-      run: |
-        pr_url=$(gh pr create -B develop -H fix/extract-wp-hooks-${{ github.sha }} --title 'Update hook docs automatically' --body 'Created with ❤️ by extract-wp-hooks & GitHub action')
-        echo "pr_url=$pr_url" >> "$GITHUB_OUTPUT"
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    # Create the branch, commit, and PR in one step via peter-evans, which
+    # commits the regenerated docs THROUGH the GitHub API. API-created commits
+    # are GPG-signed by GitHub (verified), so they satisfy the "Require signed
+    # commits" rule on develop — a plain `git commit` from the runner is
+    # unsigned and is rejected at merge. The action also no-ops when the regen
+    # produced no changes (no commit, no PR), and applies the "Skip Changelog"
+    # label so the required `changelog` check passes for this docs-only PR.
+    #
+    # Pinned to a full commit SHA (not a tag) for supply-chain safety.
+    - name: Create pull request with updated docs
+      id: cpr
+      uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        sign-commits: true
+        branch: fix/extract-wp-hooks-${{ github.sha }}
+        base: develop
+        commit-message: "Hook docs updated!"
+        title: "Update hook docs automatically"
+        body: "Created with ❤️ by extract-wp-hooks & GitHub action"
+        labels: "Skip Changelog"
+        delete-branch: true
 
     # Hook docs are pure markdown regen — auto-merge as soon as required
     # checks pass, then delete the branch so these PRs don't stack up. If
@@ -98,7 +74,7 @@ jobs:
     # protection rule on `develop` with required status checks — without
     # those, this is a no-op (the PR still gets created, just not merged).
     - name: Enable auto-merge
-      if: ${{ steps.check-for-changes.outputs.changed == 'true' }}
-      run: gh pr merge "${{ steps.create-pr.outputs.pr_url }}" --auto --squash --delete-branch
+      if: ${{ steps.cpr.outputs.pull-request-number }}
+      run: gh pr merge "${{ steps.cpr.outputs.pull-request-number }}" --auto --squash --delete-branch
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

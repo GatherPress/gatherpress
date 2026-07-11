@@ -84,7 +84,7 @@ test.describe( '#1607 datetime picker year-down regression', () => {
 			// it by default on first load, but a previous visit could have
 			// collapsed it via persisted UI state.
 			const eventSettingsButton = page
-				.getByRole( 'button', { name: /event settings/i } )
+				.getByRole( 'button', { name: /Event settings/i } )
 				.first();
 			if ( 0 < ( await eventSettingsButton.count() ) ) {
 				const expanded =

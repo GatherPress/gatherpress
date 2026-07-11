@@ -114,7 +114,6 @@ class Rest_Api {
 			$this->rsvp_form_route(),
 			$this->rsvp_status_html_route(),
 			$this->rsvp_responses_route(),
-			$this->events_list_route(),
 			$this->nonce_route(),
 		);
 	}
@@ -364,42 +363,6 @@ class Rest_Api {
 					'post_id' => array(
 						'required'          => true,
 						'validate_callback' => array( Validate::class, 'event_post_id' ),
-					),
-				),
-			),
-		);
-	}
-
-	/**
-	 * Define the REST route for retrieving a list of events.
-	 *
-	 * This method sets up the REST route for retrieving a list of events based on specified parameters.
-	 *
-	 * @since 0.34.0
-	 *
-	 * @return array The REST route configuration.
-	 */
-	protected function events_list_route(): array {
-		return array(
-			'route' => 'events-list',
-			'args'  => array(
-				'methods'             => WP_REST_Server::READABLE,
-				'callback'            => array( $this, 'events_list' ),
-				'permission_callback' => '__return_true',
-				'args'                => array(
-					'event_list_type' => array(
-						'required'          => true,
-						'validate_callback' => array( Validate::class, 'event_list_type' ),
-					),
-					'max_number'      => array(
-						'required'          => true,
-						'validate_callback' => array( Validate::class, 'positive_number' ),
-					),
-					'datetime_format' => array(
-						'required' => false,
-					),
-					'topics'          => array(
-						'required' => false,
 					),
 				),
 			),
@@ -682,108 +645,6 @@ class Rest_Api {
 	}
 
 	/**
-	 * Retrieve a list of events based on specified criteria.
-	 *
-	 * This method handles the retrieval of a list of events based on the parameters provided in the REST API request.
-	 * It takes the `event_list_type` to determine whether to fetch upcoming or past events, the `max_number` to
-	 * limit the number of events in the response, and optional `topics` and `venues` to filter events by specific
-	 * topic and venue slugs.
-	 *
-	 * @since 0.34.0
-	 *
-	 * @param WP_REST_Request $request Contains data from the REST API request.
-	 *
-	 * @return WP_REST_Response The REST API response containing an array of event data.
-	 *
-	 * @throws Exception If there is an issue while retrieving the list of events.
-	 */
-	public function events_list( WP_REST_Request $request ): WP_REST_Response {
-		$params          = $request->get_params();
-		$event_list_type = $params['event_list_type'];
-		$max_number      = $this->max_number( (int) $params['max_number'], 5 );
-		$datetime_format = ! empty( $params['datetime_format'] ) ? $params['datetime_format'] : 'D, M j, Y, g:i a T';
-		$posts           = array();
-		$topics          = array();
-		$venues          = array();
-
-		if ( ! empty( $params['topics'] ) ) {
-			$topics = array_map(
-				static function ( $slug ): string {
-					return sanitize_key( $slug );
-				},
-				explode( ',', $params['topics'] )
-			);
-		}
-
-		if ( ! empty( $params['venues'] ) ) {
-			$venues = array_map(
-				static function ( $slug ): string {
-					return sanitize_key( $slug );
-				},
-				explode( ',', $params['venues'] )
-			);
-		}
-
-		$query = Query::get_instance()->get_events_list( $event_list_type, $max_number, $topics, $venues );
-
-		if ( $query->have_posts() ) {
-			foreach ( $query->posts as $post_id ) {
-				$event             = new Event( $post_id );
-				$venue_information = $event->get_venue_information();
-				$user_identifier   = Setup::get_instance()->get_user_identifier();
-				$current_user_rsvp = ( $event->rsvp ) ? $event->rsvp->get( $user_identifier ) : '';
-				$posts[]           = array(
-					'ID'                       => $post_id,
-					'datetime_start'           => $event->get_datetime_start( $datetime_format ),
-					'datetime_end'             => $event->get_datetime_end( $datetime_format ),
-					'permalink'                => get_the_permalink( $post_id ),
-					'title'                    => get_the_title( $post_id ),
-					'excerpt'                  => get_the_excerpt( $post_id ),
-					'featured_image'           => get_the_post_thumbnail( $post_id, 'medium' ),
-					'featured_image_large'     => get_the_post_thumbnail( $post_id, 'large' ),
-					'featured_image_thumbnail' => get_the_post_thumbnail( $post_id, 'thumbnail' ),
-					'enable_rsvp'              => ( new Rsvp( $post_id ) )->is_enabled(),
-					'enable_anonymous_rsvp'    => (bool) get_post_meta(
-						$post_id,
-						'gatherpress_enable_anonymous_rsvp',
-						true
-					),
-					'responses'                => ( $event->rsvp ) ? $event->rsvp->responses() : array(),
-					'current_user'             => ( $current_user_rsvp ) ? $current_user_rsvp : '',
-					'venue'                    => ( $venue_information['name'] )
-						? $event->get_venue_information()
-						: null,
-				);
-			}
-		}
-
-		wp_reset_postdata();
-
-		return new WP_REST_Response( $posts );
-	}
-
-	/**
-	 * Ensure that the provided number does not exceed the maximum number allowed.
-	 *
-	 * This method checks if the provided `$number` is greater than the specified `$max_number` and
-	 * returns the lower of the two values to ensure it does not exceed the maximum limit.
-	 *
-	 * @since 0.34.0
-	 *
-	 * @param int $number     The actual number.
-	 * @param int $max_number The maximum number allowed.
-	 *
-	 * @return int The sanitized number, ensuring it does not exceed the maximum limit.
-	 */
-	protected function max_number( int $number, int $max_number ): int {
-		if ( $max_number < $number ) {
-			$number = $max_number;
-		}
-
-		return $number;
-	}
-
-	/**
 	 * Update the RSVP status for a user to an event.
 	 *
 	 * This method handles the update of the RSVP status for a user to an event, including handling guest count.
@@ -813,6 +674,7 @@ class Rest_Api {
 		$event           = new Event( $post_id );
 
 		// If managing user is adding someone to an event.
+		$is_managing_other = false;
 		if (
 			$current_user_id &&
 			$user_id &&
@@ -822,14 +684,27 @@ class Rest_Api {
 			// RSVP someone else into it. The previous flat `edit_posts`
 			// check would have let any Author manage attendees on any
 			// event, including ones they don't own.
-			if ( ! current_user_can( 'edit_post', $post_id ) ) {
+			if ( current_user_can( 'edit_post', $post_id ) ) {
+				$is_managing_other = true;
+			} else {
 				$user_id = 0;
 			}
 		} else {
 			$user_id = $current_user_id;
 		}
 
-		if ( intval( $user_id ) && ! is_user_member_of_blog( $user_id ) ) {
+		// Auto-join the current blog when the RSVP target is not yet a member.
+		// A user RSVPing *themselves* joins as a subscriber (the open-RSVP
+		// across-network flow). Enrolling *another* user is a higher-privilege
+		// action: `edit_post` lets an editor manage attendees, but adding users
+		// to a site is gated by `promote_users` in WordPress, so require that
+		// capability here and confirm the target is a real user before creating
+		// any membership.
+		if (
+			intval( $user_id )
+			&& ! is_user_member_of_blog( $user_id )
+			&& ( ! $is_managing_other || ( current_user_can( 'promote_users' ) && get_userdata( $user_id ) ) )
+		) {
 			add_user_to_blog( $blog_id, $user_id, 'subscriber' );
 		}
 
@@ -1089,7 +964,17 @@ class Rest_Api {
 	 * @return WP_REST_Response The response object with enhanced event data.
 	 */
 	public function prepare_event_data( WP_REST_Response $response ): WP_REST_Response {
-		$event = new Event( $response->data['id'] );
+		// The response data shape depends on what the controller included: a
+		// `_fields=` request that drops `id`, or another plugin filtering the
+		// response, can leave it absent. Bail rather than emit an undefined-key
+		// notice and construct Event( 0 ), which would silently do nothing.
+		$post_id = $response->data['id'] ?? 0;
+
+		if ( ! $post_id ) {
+			return $response;
+		}
+
+		$event = new Event( $post_id );
 
 		// Retrieve the online event link only if:
 		// - The user is attending the event.

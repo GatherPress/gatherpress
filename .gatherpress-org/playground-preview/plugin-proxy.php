@@ -1,6 +1,6 @@
 <?php
 /**
- * https://gatherpress.org/some-random-chars/plugin-proxy.php?org=GatherPress&repo=gatherpress&workflow=Build%20GatherPress%20Plugin%20Zip&artifact=gatherpress-pr&pr=666
+ * https://gatherpress.org/some-random-chars/plugin-proxy.php?org=GatherPress&repo=gatherpress&workflow=Playground%20Preview&artifact=gatherpress-pr-666&pr=666
  * 
  * 
  * Based on: https://github.com/WordPress/wordpress-playground/blob/ca759ee3281837596bfdd9736bbea205104741b2/packages/playground/website/public/plugin-proxy.php
@@ -75,7 +75,7 @@ class PluginDownloader {
 
 			$allowed_headers = array(
 				// 'accept-ranges',
-				'content-disposition',
+				// 'content-disposition', // Set explicitly below so the filename is ours, not the upstream artifact's.
 				'content-length',
 				// 'content-type',
 				'x-frame-options',
@@ -87,6 +87,23 @@ class PluginDownloader {
 				'cache-Control',
 			);
 			$artifact_res    = $this->gitHubRequest( $zip_download_api_endpoint, false, false );
+
+			// Emit the download headers *before* flushing the output buffer.
+			//
+			// PHP commits the response headers the moment the buffer is flushed.
+			// If we wait until streamHttpResponse() to set the Content-Type, PHP
+			// has already sent its default `text/html`, every later header() call
+			// becomes a silent no-op, and the browser renders the zip bytes as
+			// gibberish (made worse by `X-Content-Type-Options: nosniff`).
+			//
+			// Setting them here makes the download work without depending on a
+			// server-level .htaccess `Header set Content-Disposition` rule.
+			if ( ! headers_sent() ) {
+				header( 'Content-Type: application/zip' );
+				// Match the artifact naming so proxy downloads and direct
+				// workflow-page downloads produce the same filename.
+				header( 'Content-Disposition: attachment; filename="gatherpress-pr-' . (int) $pr . '.zip"' );
+			}
 
 			// die(var_export($artifact_res['headers'],true));
 			ob_end_flush();
@@ -104,11 +121,10 @@ class PluginDownloader {
 						null,
 						$allowed_headers,
 						[
+							// Content-Type and Content-Disposition are already set
+							// (and committed) above, before the output buffer was
+							// flushed. They are intentionally not repeated here.
 							'Content-Type: application/zip',
-							// TODO // WEIRD
-							// Having this here DOES NOT WORK,
-							// the exact same line needs to be placed in .htaccess.
-							// 'Content-Disposition: attachment; filename="gatherpress-pr.zip"',
 						]
 					);
 					die();
@@ -241,7 +257,9 @@ try {
 				'org'      => 'GatherPress',
 				'repo'     => 'gatherpress',
 				'workflow' => 'Playground Preview',
-				'artifact' => '#gatherpress-pr#',
+				// The `Playground Preview` workflow encodes the PR number in
+				// the artifact name: gatherpress-pr-<number>.
+				'artifact' => '#^gatherpress-pr-\d+$#',
 			],
 		];
 		$allowed       = false;

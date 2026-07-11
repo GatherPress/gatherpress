@@ -177,7 +177,7 @@ const { state, actions } = store( 'gatherpress', {
 
 				element.ref.classList.add( 'gatherpress--is-disabled' );
 				element.ref.setAttribute( 'tabindex', '-1' );
-				element.ref.setAttribute( 'aira-disabled', 'true' );
+				element.ref.setAttribute( 'aria-disabled', 'true' );
 
 				triggerElement.textContent = activeText;
 			}

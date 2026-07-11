@@ -14,7 +14,9 @@ namespace GatherPress\Core\Settings;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
+use GatherPress\Core\Event;
 use GatherPress\Core\Traits\Singleton;
+use GatherPress\Core\Utility;
 
 /**
  * Class Rsvp_Settings.
@@ -74,9 +76,15 @@ class Rsvp_Settings extends Base {
 		return array(
 			'rsvp_defaults' => array(
 				'name'        => __( 'RSVP Defaults', 'gatherpress' ),
-				'description' => __(
-					'Default RSVP settings for new events. These can be overridden per event.',
-					'gatherpress'
+				'description' => sprintf(
+					// phpcs:ignore Generic.Files.LineLength.TooLong
+					/* translators: %1$s: Singular post type label, e.g. "Event", %2$s: Plural post type label, e.g. "Events". */
+					__(
+						'Default RSVP settings for new %2$s. These can be overridden per %1$s.',
+						'gatherpress'
+					),
+					Utility::post_type_label( 'singular_name', Event::POST_TYPE ),
+					Utility::post_type_label( 'name', Event::POST_TYPE )
 				),
 				'options'     => array(
 					'rsvp_mode'             => array(
@@ -92,9 +100,17 @@ class Rsvp_Settings extends Base {
 							'options' => array(
 								'default' => 'all_on',
 								'items'   => array(
-									'all_on'        => __( 'All events', 'gatherpress' ),
-									'per_event_on'  => __( 'Per event (default on)', 'gatherpress' ),
-									'per_event_off' => __( 'Per event (default off)', 'gatherpress' ),
+									'all_on'        => Utility::post_type_label( 'all_items', Event::POST_TYPE ),
+									'per_event_on'  => sprintf(
+										/* translators: %s: Singular post type label, e.g. "Event". */
+										__( 'Per %s (default on)', 'gatherpress' ),
+										Utility::post_type_label( 'singular_name', Event::POST_TYPE )
+									),
+									'per_event_off' => sprintf(
+										/* translators: %s: Singular post type label, e.g. "Event". */
+										__( 'Per %s (default off)', 'gatherpress' ),
+										Utility::post_type_label( 'singular_name', Event::POST_TYPE )
+									),
 									'disabled'      => __( 'Disabled', 'gatherpress' ),
 								),
 							),
@@ -109,9 +125,10 @@ class Rsvp_Settings extends Base {
 							'gatherpress'
 						),
 						'field'       => array(
-							'label'   => __(
-								'Enable Open RSVP for events.',
-								'gatherpress'
+							'label'   => sprintf(
+								/* translators: %s: Plural post type label, e.g. "Events". */
+								__( 'Enable Open RSVP for %s.', 'gatherpress' ),
+								Utility::post_type_label( 'name', Event::POST_TYPE )
 							),
 							'type'    => 'checkbox',
 							'options' => array(
@@ -123,16 +140,16 @@ class Rsvp_Settings extends Base {
 						'labels'      => array(
 							'name' => __( 'Maximum Attendance Limit', 'gatherpress' ),
 						),
-						'description' => __(
-							// phpcs:disable Generic.Files.LineLength.TooLong
-							'The total number of people allowed at an event. Set to 0 for no limit.',
-							// phpcs:enable Generic.Files.LineLength.TooLong
-							'gatherpress'
+						'description' => sprintf(
+							/* translators: %s: Singular post type label, e.g. "Event". */
+							__( 'The total number of people allowed per %s. Set to 0 for no limit.', 'gatherpress' ), // phpcs:ignore Generic.Files.LineLength.TooLong
+							Utility::post_type_label( 'singular_name', Event::POST_TYPE )
 						),
 						'field'       => array(
-							'label'   => __(
-								'The default maximum limit of attendees to an event.',
-								'gatherpress'
+							'label'   => sprintf(
+								/* translators: %s: Singular post type label, e.g. "Event". */
+								__( 'The default maximum limit of attendees per %s.', 'gatherpress' ),
+								Utility::post_type_label( 'singular_name', Event::POST_TYPE )
 							),
 							'type'    => 'number',
 							'size'    => 'small',
@@ -172,9 +189,10 @@ class Rsvp_Settings extends Base {
 							'gatherpress'
 						),
 						'field'       => array(
-							'label'   => __(
-								'Enable Anonymous RSVP for new events.',
-								'gatherpress'
+							'label'   => sprintf(
+								/* translators: %s: Plural post type label, e.g. "Events". */
+								__( 'Enable Anonymous RSVP for new %s.', 'gatherpress' ),
+								Utility::post_type_label( 'name', Event::POST_TYPE )
 							),
 							'type'    => 'checkbox',
 							'options' => array(

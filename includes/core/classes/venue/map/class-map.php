@@ -74,7 +74,7 @@ class Map {
 	 * @since 0.34.0
 	 * @var int
 	 */
-	const DEFAULT_ZOOM = 18;
+	const DEFAULT_ZOOM = 16;
 
 	/**
 	 * Default height (in pixels). Used by the generator and the block.

@@ -17,6 +17,7 @@
 * [Topics](./topics.md)
 * [RSVP system](./rsvp-system.md)
 * [Emails](./emails.md)
+* [Calendar feeds](./calendar-feeds.md)
 * [Venues](./venues.md)
 * [Blocks](./blocks/README.md)
 * [User roles and permissions](./user-roles-and-permissions.md)

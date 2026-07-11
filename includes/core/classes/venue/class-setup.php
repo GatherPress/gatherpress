@@ -26,6 +26,7 @@ use GatherPress\Core\Starter_Pattern_Loader;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Utility;
 use GatherPress\Core\Venue\Map\Setup as Map_Setup;
+use stdClass;
 use WP_Block_Patterns_Registry;
 use WP_Post;
 
@@ -103,6 +104,15 @@ class Setup {
 		// Priority 11 so post types registered at default priority 10 are available for get_post_types_by_support().
 		add_action( 'init', array( $this, 'register_starter_pattern' ), 11 );
 		add_filter( 'block_editor_settings_all', array( $this, 'add_editor_settings' ) );
+		// Declare the venue-event wiring via the shared shadow filter so it's
+		// discoverable in the hook reference rather than hidden behind a
+		// venue-specific `register_taxonomy_for_object_type()` loop.
+		add_filter(
+			'gatherpress_shadow_taxonomy_object_types',
+			array( $this, 'attach_venue_taxonomy_to_event_types' ),
+			10,
+			2
+		);
 	}
 
 	/**
@@ -265,12 +275,33 @@ class Setup {
 	 */
 	public function register_taxonomy(): void {
 		Shadow_Source::get_instance()->register_taxonomies();
+	}
 
-		// Register each event post type with the taxonomy of its resolved venue post type.
+	/**
+	 * Filter callback that wires the venue shadow taxonomy to event CPTs.
+	 *
+	 * Returns the event-supporting CPTs whose declared venue post type
+	 * matches `$source_post_type`, resolved via the existing
+	 * `gatherpress_venue_post_type` filter. Routes the venue's wiring through
+	 * the shared `gatherpress_shadow_taxonomy_object_types` hook so the
+	 * venue ↔ event relationship is discoverable alongside every other
+	 * shadow-source CPT a site or extension registers.
+	 *
+	 * @since 0.34.0
+	 *
+	 * @param string[] $object_types     Existing event CPTs the taxonomy attaches to.
+	 * @param string   $source_post_type Shadow-source CPT slug being wired.
+	 *
+	 * @return string[] The augmented list of event CPTs.
+	 */
+	public function attach_venue_taxonomy_to_event_types( array $object_types, string $source_post_type ): array {
 		foreach ( get_post_types_by_support( 'gatherpress-venue' ) as $event_post_type ) {
-			$venue_post_type = $this->get_venue_post_type( $event_post_type );
-			register_taxonomy_for_object_type( $this->get_taxonomy( $venue_post_type ), $event_post_type );
+			if ( $this->get_venue_post_type( $event_post_type ) === $source_post_type ) {
+				$object_types[] = $event_post_type;
+			}
 		}
+
+		return $object_types;
 	}
 
 	/**
@@ -677,8 +708,28 @@ class Setup {
 	 */
 	public function get_localized_post_type_slug(): string {
 		$switched_locale = switch_to_locale( get_locale() );
-		$slug            = _x( 'Venue', 'Admin menu and post type singular name', 'gatherpress' );
-		$slug            = sanitize_title( $slug );
+
+		// The post type (to get the singular name from) is typically not registered, when this method is called.
+		// Using Utility::post_type_label() will not yet work.
+
+		// Prepare a default at first.
+		$default_labels                = new stdClass();
+		$default_labels->singular_name = _x(
+			'Venue',
+			'Admin menu and post type singular name',
+			'gatherpress'
+		);
+
+		// To ensure, we use the proper labels, we get them from the WordPress core filter.
+		$post_type_labels = apply_filters(
+			sprintf( // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.DynamicHooknameFound
+				'post_type_labels_%s',
+				Venue::POST_TYPE
+			),
+			$default_labels
+		);
+
+		$slug = sanitize_title( $post_type_labels->singular_name );
 
 		if ( $switched_locale ) {
 			restore_previous_locale();

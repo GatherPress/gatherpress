@@ -27,7 +27,7 @@ add_filter(
 
 ## Files
 
-- [includes/core/classes/class-assets.php:248](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/class-assets.php#L248)
+- [includes/core/classes/class-assets.php:251](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/class-assets.php#L251)
 ```php
 apply_filters( 'gatherpress_asset_utility_style_block_prefixes', array() )
 ```

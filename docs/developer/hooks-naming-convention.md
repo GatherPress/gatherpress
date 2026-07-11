@@ -40,6 +40,7 @@ The subsystem segment names a single area of the plugin. The current set:
 | `static_map_*` | Server-side OSM tile compositor and PNG output **only**. |
 | `static_map_prewarm_*` | Prewarm cron family (batch sizes, run/sweep actions, enqueue short-circuit). |
 | `settings_*` | Admin settings UI surfaces. |
+| `shadow_*` | Shadow taxonomies (`_<post_type>`) auto-registered for `gatherpress-shadow-source` CPTs and the wiring that attaches them to event-bearing CPTs. |
 | `template_*` | Theme-override-aware template path resolution shared across subsystems (see `Utility::locate_template()`). |
 
 When adding a hook in a subsystem that's not on this list, add the subsystem
