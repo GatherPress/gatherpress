@@ -19,6 +19,7 @@ namespace GatherPress\Core\Venue\Map;
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Traits\Singleton;
+use GatherPress\Core\Venue\Map\Provider\Google;
 
 /**
  * Class Setup.
@@ -44,7 +45,28 @@ class Setup {
 	 * @since 0.34.0
 	 */
 	protected function __construct() {
+		$this->setup_hooks();
 		$this->instantiate_classes();
+	}
+
+	/**
+	 * Wire companion-style provider registration before siblings boot.
+	 *
+	 * Hooks `gatherpress_register_static_map_providers` so Google registers
+	 * alongside third-party providers rather than inside
+	 * `Manager::register_core_providers()`.
+	 *
+	 * @since 0.35.0
+	 *
+	 * @return void
+	 */
+	protected function setup_hooks(): void {
+		add_action(
+			'gatherpress_register_static_map_providers',
+			static function ( Manager $registry ): void {
+				$registry->register( new Google() );
+			}
+		);
 	}
 
 	/**

@@ -11,6 +11,7 @@ namespace GatherPress\Tests\Core\Venue\Map;
 use GatherPress\Core\Settings;
 use GatherPress\Core\Venue\Map\Manager;
 use GatherPress\Core\Venue\Map\Provider\Base as Map_Provider;
+use GatherPress\Core\Venue\Map\Provider\Google;
 use GatherPress\Core\Venue\Map\Provider\OSM;
 use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;
@@ -246,9 +247,9 @@ class Test_Manager extends Base {
 	}
 
 	/**
-	 * A configured slug with no matching registered provider (e.g. `google`
-	 * before its provider class lands in #1528) triggers `_doing_it_wrong`
-	 * and falls back to OSM so the front end keeps rendering.
+	 * A configured slug with no matching registered provider triggers
+	 * `_doing_it_wrong` and falls back to OSM so the front end keeps
+	 * rendering.
 	 *
 	 * @covers ::get_active
 	 *
@@ -259,9 +260,26 @@ class Test_Manager extends Base {
 
 		$instance = Manager::get_instance();
 
-		update_option( Settings::OPTION_NAME, array( 'map_platform' => 'google' ) );
+		update_option( Settings::OPTION_NAME, array( 'map_platform' => 'mapbox' ) );
 
 		$this->assertInstanceOf( OSM::class, $instance->get_active() );
+	}
+
+	/**
+	 * When `map_platform` is `google` and the Google provider is
+	 * registered, `get_active()` resolves to it.
+	 *
+	 * @covers ::get_active
+	 *
+	 * @return void
+	 */
+	public function test_get_active_returns_google_when_registered(): void {
+		$instance = Manager::get_instance();
+		$instance->register( new Google() );
+
+		update_option( Settings::OPTION_NAME, array( 'map_platform' => 'google' ) );
+
+		$this->assertInstanceOf( Google::class, $instance->get_active() );
 	}
 
 	/**
