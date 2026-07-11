@@ -12,8 +12,9 @@
  *   npm run version:bump -- --version=0.35.0
  *   php .github/scripts/release/generate-version.php --version=0.35.0
  *
- * Requires a credits entry for the target version in
- * .github/scripts/release/data/credits.php (add it there first).
+ * Requires a credits file for the target version at
+ * .github/scripts/release/credits/<version>.json (add it there first — a
+ * stable version's file is a copy of its latest pre-release file).
  *
  * Unlike the old tooling, README.md and readme.txt are hand-edited files —
  * this script only patches the strings that change per release, in place:
@@ -97,7 +98,7 @@ function fetch_wporg_profile( $username ) {
 
 	if ( ! is_array( $data ) || empty( $data['slug'] ) ) {
 		fail(
-			"profiles.wordpress.org returned no usable profile for '{$username}' — check data/credits.php."
+			"profiles.wordpress.org returned no usable profile for '{$username}' — check the credits file."
 		);
 	}
 
@@ -111,18 +112,28 @@ function fetch_wporg_profile( $username ) {
  * @return string Comma-separated leads + team usernames for readme.txt's Contributors line.
  */
 function generate_credits( $version ) {
-	$credits = require SCRIPT_ROOT . '/data/credits.php';
-	$latest  = REPO_ROOT . '/includes/data/credits.php';
-	$data    = array();
+	$credits_file = SCRIPT_ROOT . "/credits/{$version}.json";
+	$latest       = REPO_ROOT . '/includes/data/credits.php';
+	$data         = array();
 
-	if ( empty( $credits[ $version ] ) ) {
-		fail( "Version {$version} does not exist in data/credits.php — add its entry first." );
+	if ( ! file_exists( $credits_file ) ) {
+		fail( "No credits file for {$version} — add .github/scripts/release/credits/{$version}.json first." );
+	}
+
+	$entry = json_decode( file_get_contents( $credits_file ), true );
+
+	if ( ! is_array( $entry ) ) {
+		fail( "credits/{$version}.json is not valid JSON." );
 	}
 
 	$data['version'] = $version;
 	$contributors    = array();
 
-	foreach ( $credits[ $version ] as $group => $users ) {
+	// Fixed group order: leads and team drive readme.txt's Contributors
+	// line and the credits page ordering regardless of file key order.
+	foreach ( array( 'project-leaders', 'gatherpress-team', 'contributors' ) as $group ) {
+		$users = isset( $entry[ $group ] ) && is_array( $entry[ $group ] ) ? $entry[ $group ] : array();
+
 		if ( 'contributors' === $group ) {
 			sort( $users );
 		}

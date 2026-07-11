@@ -14,14 +14,15 @@ The full release runbook lives at
 | Path | Purpose |
 | --- | --- |
 | `generate-version.php` | The version bump: regenerates credits, patches version strings in place. |
-| `data/credits.php` | **Source of truth** for per-version credits (full history). Hand-edited. |
+| `credits/<version>.json` | **Source of truth** for per-version credits, one file per version (full history). Hand-edited. |
 
 ## What is generated vs hand-edited
 
 Only two things are owned by the tooling:
 
-- `includes/data/credits.php` is **fully generated** from `data/credits.php`
-  (usernames resolved via profiles.wordpress.org). Never hand-edit it.
+- `includes/data/credits.php` is **fully generated** from the target
+  version's `credits/<version>.json` (usernames resolved via
+  profiles.wordpress.org). Never hand-edit the generated file.
 - A handful of **version strings are patched in place** per release: the
   `gatherpress.php` Version header, the `package.json` version, the
   `README.md` version badge, `readme.txt`'s `Stable tag:` and
@@ -33,8 +34,11 @@ hand-edited file — improve them like any other file, no regeneration step.
 
 ## Cutting a version
 
-1. Add the new version's entry to `data/credits.php` (prepend; a stable entry
-   is a copy of its latest pre-release entry) via a normal PR.
+1. Add the new version's credits file via a normal PR — a stable version's
+   `credits/X.Y.Z.json` is a copy of its latest pre-release file, with any
+   roster corrections applied to the pre-release file first. Group order in
+   the generated output is fixed (leads, team, contributors) regardless of
+   the file's key order.
 2. Either run the **Version Bump** workflow (Actions → Version Bump → enter
    the version) — it bumps everything, refreshes the lockfile, and opens the
    `version-X.Y.Z` PR against develop — or run locally:

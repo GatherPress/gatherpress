@@ -6,8 +6,8 @@ name: Version Bump
 # label — replacing the old flow of running the gatherpress-develop WP-CLI
 # command in a local WordPress install (#1827).
 #
-# Prerequisite: the target version must already have a credits entry in
-# .github/scripts/release/data/credits.php (that lands via a normal PR).
+# Prerequisite: the target version must already have a credits file at
+# .github/scripts/release/credits/<version>.json (that lands via a normal PR).
 #
 # The GatherPress Alpha lockstep sync is NOT handled here (no sibling
 # checkout in CI) — open its version PR separately, or run the script
