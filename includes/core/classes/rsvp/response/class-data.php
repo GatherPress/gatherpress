@@ -2,31 +2,33 @@
 /**
  * RSVP Response.
  *
- * @package GatherPress\Core\Rsvp
+ * @package GatherPress\Core\Rsvp\Response
  * @since 0.35.0
  */
 
 namespace GatherPress\Core\Rsvp\Response;
 
 // Exit if accessed directly.
-\defined( 'ABSPATH' ) || exit;
-
+defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 /**
- * RSVP Response.
+ * RSVP response data value object.
  *
- * @package GatherPress\Core\Rsvp
  * @since 0.35.0
  */
 final class Data {
 	/**
 	 * The number of guests.
 	 *
+	 * @since 0.35.0
+	 *
 	 * @var int
 	 */
 	public readonly int $guests;
 
 	/**
-	 * The number of guests.
+	 * The timestamp of the response.
+	 *
+	 * @since 0.35.0
 	 *
 	 * @var string
 	 */
@@ -35,11 +37,13 @@ final class Data {
 	/**
 	 * Constructor for a RSVP response data value object.
 	 *
-	 * @param Identity $identity   The Identity of the issues of the RSVP response.
+	 * @since 0.35.0
+	 *
+	 * @param Identity $identity   The identity of the issuer of the RSVP response.
 	 * @param Status   $status     The status of the response.
 	 * @param int      $guests     The number of guests.
 	 * @param bool     $anonymous  Whether the response is anonymous.
-	 * @param string   $timestamp  The timestamp of there response.
+	 * @param string   $timestamp  The timestamp of the response.
 	 */
 	public function __construct(
 		public readonly Identity $identity,
@@ -55,9 +59,11 @@ final class Data {
 	/**
 	 * Create a copy of this data with a new status.
 	 *
+	 * @since 0.35.0
+	 *
 	 * @param Status $status The new status.
 	 *
-	 * @return self
+	 * @return self A new instance with the given status applied.
 	 */
 	public function with_status( Status $status ) {
 		return new self(

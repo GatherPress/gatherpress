@@ -2,30 +2,30 @@
 /**
  * Serialize RSVP objects.
  *
- * @package GatherPress\Core\Rsvp
+ * @package GatherPress\Core\Rsvp\Response
  * @since 0.35.0
  */
 
 namespace GatherPress\Core\Rsvp\Response;
 
 // Exit if accessed directly.
-\defined( 'ABSPATH' ) || exit;
-
+defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 use GatherPress\Core\Settings\Roles;
 
 /**
- * Class with methods to serialize RSVP Response objects
+ * Class with methods to serialize RSVP Response objects.
  *
- * @package GatherPress\Core\Rsvp
  * @since 0.35.0
  */
 final class Serializer {
 	/**
 	 * Convert state to array.
 	 *
+	 * @since 0.35.0
+	 *
 	 * @param State $state RSVP state.
 	 *
-	 * @return array
+	 * @return array The RSVP response state as an associative array.
 	 */
 	public static function to_array( State $state ): array {
 		$identity = $state->data->identity;

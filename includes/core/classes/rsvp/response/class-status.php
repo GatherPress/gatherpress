@@ -2,22 +2,26 @@
 /**
  * RSVP Status.
  *
- * @package GatherPress\Core\Rsvp
+ * @package GatherPress\Core\Rsvp\Response
  * @since 0.35.0
  */
 
 namespace GatherPress\Core\Rsvp\Response;
 
 // Exit if accessed directly.
-\defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
+defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 /**
  * RSVP Status.
  *
- * @package GatherPress\Core\Rsvp
  * @since 0.35.0
  */
 enum Status: string {
+	/**
+	 * Statuses an RSVP response can have.
+	 *
+	 * @since 0.35.0
+	 */
 	case ATTENDING     = 'attending';
 	case NOT_ATTENDING = 'not_attending';
 	case WAITING_LIST  = 'waiting_list';
@@ -28,6 +32,7 @@ enum Status: string {
 	 * This constant defines the status taxonomy for RSVP comment type.
 	 *
 	 * @since 0.35.0
+	 *
 	 * @var string
 	 */
 	public const TAXONOMY = '_gatherpress_rsvp_status';
@@ -39,7 +44,7 @@ enum Status: string {
 	 *
 	 * @param string $status The status value.
 	 *
-	 * @return Status
+	 * @return Status The matching status, or Status::NO_STATUS if no match is found.
 	 */
 	public static function try_from( string $status ): Status {
 		$status = Status::tryFrom( $status );
@@ -55,7 +60,8 @@ enum Status: string {
 	 * Get all valid values.
 	 *
 	 * @since 0.35.0
-	 * @return array
+	 *
+	 * @return array List of all valid status values.
 	 */
 	public static function values(): array {
 		$values = array();

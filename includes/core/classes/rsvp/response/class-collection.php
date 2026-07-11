@@ -2,24 +2,24 @@
 /**
  * Collection of RSVP objects.
  *
- * @package GatherPress\Core\Rsvp
+ * @package GatherPress\Core\Rsvp\Response
  * @since 0.35.0
  */
 
 namespace GatherPress\Core\Rsvp\Response;
 
 // Exit if accessed directly.
-\defined( 'ABSPATH' ) || exit;
-
+defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 /**
- * Class with methods to serialize RSVP Response objects
+ * Collection of RSVP response states.
  *
- * @package GatherPress\Core\Rsvp
  * @since 0.35.0
  */
 final class Collection {
 	/**
 	 * States.
+	 *
+	 * @since 0.35.0
 	 *
 	 * @var State[]
 	 */
@@ -27,6 +27,8 @@ final class Collection {
 
 	/**
 	 * Constructor.
+	 *
+	 * @since 0.35.0
 	 *
 	 * @param State[] $states States.
 	 */
@@ -37,7 +39,9 @@ final class Collection {
 	/**
 	 * Get all states.
 	 *
-	 * @return State[]
+	 * @since 0.35.0
+	 *
+	 * @return State[] All RSVP response states in the collection.
 	 */
 	public function all(): array {
 		return $this->states;
@@ -46,7 +50,9 @@ final class Collection {
 	/**
 	 * Get attending states.
 	 *
-	 * @return State[]
+	 * @since 0.35.0
+	 *
+	 * @return State[] States with an attending status.
 	 */
 	public function attending(): array {
 		return array_values(
@@ -60,7 +66,9 @@ final class Collection {
 	/**
 	 * Get waiting list, sorted by timestamp.
 	 *
-	 * @return State[]
+	 * @since 0.35.0
+	 *
+	 * @return State[] States with a waiting list status, oldest first.
 	 */
 	public function waiting_list(): array {
 		$waiting_list = array_values(
@@ -82,16 +90,20 @@ final class Collection {
 	/**
 	 * Get attending count.
 	 *
-	 * @return int
+	 * @since 0.35.0
+	 *
+	 * @return int The number of attending responses.
 	 */
 	public function attending_count(): int {
-		return \count( $this->attending() );
+		return count( $this->attending() );
 	}
 
 	/**
 	 * Check if there are any responses on waiting list.
 	 *
-	 * @return bool
+	 * @since 0.35.0
+	 *
+	 * @return bool True if at least one response is on the waiting list, false otherwise.
 	 */
 	public function has_waiting_list(): bool {
 		foreach ( $this->states as $state ) {
@@ -104,9 +116,11 @@ final class Collection {
 	}
 
 	/**
-	 * Count the number of attendees incl. theirs guests that are confirmed.
+	 * Count the number of attendees, including their guests, that are confirmed.
 	 *
-	 * @return int
+	 * @since 0.35.0
+	 *
+	 * @return int The total number of confirmed attendees including guests.
 	 */
 	public function get_attendee_count(): int {
 		$count = 0;
@@ -123,18 +137,22 @@ final class Collection {
 	/**
 	 * Get waiting list count.
 	 *
-	 * @return int
+	 * @since 0.35.0
+	 *
+	 * @return int The number of responses on the waiting list.
 	 */
 	public function waiting_list_count(): int {
-		return \count( $this->waiting_list() );
+		return count( $this->waiting_list() );
 	}
 
 	/**
 	 * Get available spots.
 	 *
+	 * @since 0.35.0
+	 *
 	 * @param int|null $limit Attendance limit.
 	 *
-	 * @return int
+	 * @return int The number of available spots.
 	 */
 	public function available_spots( ?int $limit ): int {
 		if ( empty( $limit ) ) {

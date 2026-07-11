@@ -4,22 +4,32 @@
  *
  * Providers define WHAT an identity is, not HOW it is stored.
  *
- * @package GatherPress\Core\Rsvp\Type
+ * @package GatherPress\Core\Rsvp\Response\Provider
  * @since 0.35.0
  */
 
 namespace GatherPress\Core\Rsvp\Response\Provider;
 
 // Exit if accessed directly.
-\defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
+defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Rsvp\Response\Identity;
 use GatherPress\Core\Rsvp\Response\Identity_Type;
 
 /**
- * Class Base
+ * Abstract base class for RSVP response providers.
+ *
+ * @since 0.35.0
  */
 abstract class Provider {
+	/**
+	 * Constant representing the RSVP provider taxonomy.
+	 * This constant defines the provider taxonomy for RSVP comment type.
+	 *
+	 * @since 0.35.0
+	 *
+	 * @var string
+	 */
 	public const TAXONOMY = '_gatherpress_rsvp_provider';
 
 	/**
@@ -27,7 +37,9 @@ abstract class Provider {
 	 *
 	 * Should be unique and only contain lowercase and underscores.
 	 *
-	 * @return string
+	 * @since 0.35.0
+	 *
+	 * @return string The unique provider slug.
 	 */
 	abstract public static function get_slug(): string;
 
@@ -41,21 +53,25 @@ abstract class Provider {
 	 *
 	 * @since 0.35.0
 	 *
-	 * @return Identity_Type
+	 * @return Identity_Type The identity type of this provider.
 	 */
 	abstract public static function get_identity_type(): Identity_Type;
 
 	/**
 	 * Get the label for this Attendee type.
 	 *
-	 * @return string
+	 * @since 0.35.0
+	 *
+	 * @return string The human-readable label.
 	 */
 	abstract public static function get_label(): string;
 
 	/**
-	 * Get the label for this Attendee type.
+	 * Get the icon for this Attendee type.
 	 *
-	 * @return string
+	 * @since 0.35.0
+	 *
+	 * @return string The icon.
 	 */
 	abstract public static function get_icon(): string;
 
@@ -66,20 +82,20 @@ abstract class Provider {
 	 *
 	 * @param Identity $identity The identity.
 	 *
-	 * @return string
+	 * @return string The display name for the identity.
 	 */
 	abstract public function get_display_name( Identity $identity ): string;
 
 	/**
-	 * Get the avatar URL for an email-based RSVP.
+	 * Get the avatar URL for an RSVP identity.
 	 *
-	 * Returns a Gravatar URL based on the email address.
+	 * Returns an avatar URL for user IDs and email addresses.
 	 *
 	 * @since 0.35.0
 	 *
 	 * @param Identity $identity The identity.
 	 *
-	 * @return string|null The Gravatar URL, or null if email is invalid.
+	 * @return string|null The avatar URL, or null if the identity has no avatar.
 	 */
 	public function get_avatar_url( Identity $identity ): ?string {
 		if ( Identity_Type::WP_USER_ID === $identity->type || is_email( $identity->value ) ) {
@@ -96,7 +112,7 @@ abstract class Provider {
 	 *
 	 * @param Identity $identity The identity.
 	 *
-	 * @return string|null
+	 * @return string|null The profile URL, or null if the identity value is not a URL.
 	 */
 	public function get_url( Identity $identity ): ?string {
 		if ( false !== filter_var( $identity->value, FILTER_VALIDATE_URL ) ) {

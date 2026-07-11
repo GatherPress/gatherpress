@@ -2,21 +2,29 @@
 /**
  * Identity Object.
  *
- * @package GatherPress
+ * @package GatherPress\Core\Rsvp\Response
+ * @since 0.35.0
  */
 
 namespace GatherPress\Core\Rsvp\Response;
 
+// Exit if accessed directly.
+defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
+
 use InvalidArgumentException;
 
 /**
- * Identity.
+ * Identity of the issuer of an RSVP response.
+ *
+ * @since 0.35.0
  *
  * @copyright 2025 André Menrath <andre.menrath@posteo.de>
  */
 final class Identity {
 	/**
 	 * Display name of this identity.
+	 *
+	 * @since 0.35.0
 	 *
 	 * @var string
 	 */
@@ -25,6 +33,7 @@ final class Identity {
 	/**
 	 * Constructor of an Identity.
 	 *
+	 * @since 0.35.0
 	 * @throws InvalidArgumentException When trying to construct an invalid Identity (e.g. URL as user ID).
 	 *
 	 * @param Identity_Type $type  Identity type.
@@ -40,7 +49,9 @@ final class Identity {
 	/**
 	 * Validate identity.
 	 *
+	 * @since 0.35.0
 	 * @throws InvalidArgumentException When trying to set an unknown Identity type.
+	 *
 	 * @return void
 	 */
 	private function assert_valid(): void {
@@ -58,7 +69,7 @@ final class Identity {
 				break;
 
 			case Identity_Type::WP_USER_ID:
-				if ( ! \is_int( $this->value ) ) {
+				if ( ! is_int( $this->value ) ) {
 					throw new InvalidArgumentException( 'Invalid ID.' );
 				}
 				if ( ! get_user_by( 'id', $this->value ) ) {
@@ -66,7 +77,7 @@ final class Identity {
 				}
 				break;
 			case Identity_Type::EXTERNAL_ID:
-				if ( ! \is_int( $this->value ) ) {
+				if ( ! is_int( $this->value ) ) {
 					throw new InvalidArgumentException( 'Invalid ID.' );
 				}
 				break;

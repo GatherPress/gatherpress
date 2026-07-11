@@ -4,20 +4,20 @@
  *
  * Handles RSVP logic for non-WordPress users via email address.
  *
- * @package GatherPress\Core\Rsvp
+ * @package GatherPress\Core\Rsvp\Response\Provider
  * @since 0.35.0
  */
 
 namespace GatherPress\Core\Rsvp\Response\Provider;
 
 // Exit if accessed directly.
-\defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
+defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Rsvp\Response\Identity;
 use GatherPress\Core\Rsvp\Response\Identity_Type;
 
 /**
- * Class Email_Type.
+ * Class Email.
  *
  * Handles RSVP logic for email-based RSVPs (non-WordPress users).
  *
@@ -27,18 +27,20 @@ final class Email extends Provider {
 	/**
 	 * Return the slug.
 	 *
-	 * @return string
+	 * @since 0.35.0
+	 *
+	 * @return string The unique provider slug.
 	 */
 	public static function get_slug(): string {
 		return 'email';
 	}
 
 	/**
-	 * Get the unique slug for this RSVP type.
+	 * Get the identity type for this RSVP type.
 	 *
 	 * @since 0.35.0
 	 *
-	 * @return Identity_Type
+	 * @return Identity_Type The email identity type.
 	 */
 	public static function get_identity_type(): Identity_Type {
 		return Identity_Type::EMAIL;
@@ -49,7 +51,7 @@ final class Email extends Provider {
 	 *
 	 * @since 0.35.0
 	 *
-	 * @return string
+	 * @return string The human-readable label.
 	 */
 	public static function get_label(): string {
 		return __( 'Email', 'gatherpress' );
@@ -60,7 +62,7 @@ final class Email extends Provider {
 	 *
 	 * @since 0.35.0
 	 *
-	 * @return string
+	 * @return string The icon.
 	 */
 	public static function get_icon(): string {
 		return '✉️';

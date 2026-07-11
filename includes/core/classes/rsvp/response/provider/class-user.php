@@ -4,21 +4,21 @@
  *
  * Handles RSVP logic for registered WordPress users.
  *
- * @package GatherPress\Core\Rsvp_Types
+ * @package GatherPress\Core\Rsvp\Response\Provider
  * @since 0.35.0
  */
 
 namespace GatherPress\Core\Rsvp\Response\Provider;
 
 // Exit if accessed directly.
-\defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
+defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Rsvp\Response\Identity;
 use GatherPress\Core\Rsvp\Response\Identity_Type;
 use WP_User;
 
 /**
- * Class User_Type.
+ * Class User.
  *
  * Handles RSVP logic for registered WordPress users.
  *
@@ -28,18 +28,20 @@ final class User extends Provider {
 	/**
 	 * Return the slug.
 	 *
-	 * @return string
+	 * @since 0.35.0
+	 *
+	 * @return string The unique provider slug.
 	 */
 	public static function get_slug(): string {
 		return 'user';
 	}
 
 	/**
-	 * Get the unique slug for this RSVP type.
+	 * Get the identity type for this RSVP type.
 	 *
 	 * @since 0.35.0
 	 *
-	 * @return Identity_Type
+	 * @return Identity_Type The WordPress user ID identity type.
 	 */
 	public static function get_identity_type(): Identity_Type {
 		return Identity_Type::WP_USER_ID;
@@ -50,7 +52,7 @@ final class User extends Provider {
 	 *
 	 * @since 0.35.0
 	 *
-	 * @return string
+	 * @return string The human-readable label.
 	 */
 	public static function get_label(): string {
 		return __( 'User', 'gatherpress' );
@@ -61,7 +63,7 @@ final class User extends Provider {
 	 *
 	 * @since 0.35.0
 	 *
-	 * @return string
+	 * @return string The icon.
 	 */
 	public static function get_icon(): string {
 		return '👤';
@@ -77,7 +79,7 @@ final class User extends Provider {
 	 * @return string The user's display name, or empty string if user not found.
 	 */
 	public function get_display_name( Identity $identity ): string {
-		$user = get_user_by( 'id', \intval( $identity->value ) );
+		$user = get_user_by( 'id', intval( $identity->value ) );
 
 		if ( ! $user instanceof WP_User ) {
 			return '';

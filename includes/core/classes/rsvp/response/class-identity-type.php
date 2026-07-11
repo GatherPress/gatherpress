@@ -1,27 +1,30 @@
 <?php
 /**
- * RSVP Identity Value Object.
+ * RSVP Identity Type.
  *
- * Represents a unique RSVP identity consisting of a type and identifier.
+ * Enumerates the identifier types an RSVP identity can be based on.
  *
- * @package GatherPress\Core\Rsvp
+ * @package GatherPress\Core\Rsvp\Response
  * @since 0.35.0
  */
 
 namespace GatherPress\Core\Rsvp\Response;
 
 // Exit if accessed directly.
-\defined( 'ABSPATH' ) || exit;
-
+defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 /**
- * RSVP Identity Value Object.
+ * RSVP Identity Type.
  *
- * Represents a unique RSVP identity consisting of a type and identifier.
+ * Enumerates the identifier types an RSVP identity can be based on.
  *
- * @package GatherPress\Core\Rsvp
  * @since 0.35.0
  */
 enum Identity_Type: string {
+	/**
+	 * Identifier types supported for RSVP identities.
+	 *
+	 * @since 0.35.0
+	 */
 	case EMAIL       = 'email';
 	case WP_USER_ID  = 'wp_user_id';
 	case URL         = 'url';

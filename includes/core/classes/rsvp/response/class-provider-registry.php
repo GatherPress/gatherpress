@@ -6,14 +6,14 @@
  * to register new types without modifying core code. It uses the Singleton
  * pattern to ensure only one registry instance exists.
  *
- * @package GatherPress\Core
+ * @package GatherPress\Core\Rsvp\Response
  * @since 0.35.0
  */
 
 namespace GatherPress\Core\Rsvp\Response;
 
 // Exit if accessed directly.
-\defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
+defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Rsvp\Response\Provider\Provider;
 use GatherPress\Core\Rsvp\Response\Provider\Email;
@@ -38,6 +38,8 @@ final class Provider_Registry {
 
 	/**
 	 * Array of registered RSVP type instances.
+	 *
+	 * @since 0.35.0
 	 *
 	 * @var array
 	 */
@@ -72,6 +74,8 @@ final class Provider_Registry {
 	 * @since 0.35.0
 	 *
 	 * @param string $slug The RSVP type slug.
+	 *
+	 * @return Provider|null The provider instance, or null if not registered.
 	 */
 	public static function from_slug( string $slug ): ?Provider {
 		return self::get_instance()->get( $slug );
@@ -88,12 +92,12 @@ final class Provider_Registry {
 	 *
 	 * @param Provider $provider The RSVP provider instance to register.
 	 *
-	 * @return bool
+	 * @return bool True if the provider was registered, false if the slug was already registered.
 	 */
 	public function register( Provider $provider ): bool {
 		$slug = $provider->get_slug();
 
-		if ( \strlen( $slug ) < 4 ) {
+		if ( strlen( $slug ) < 4 ) {
 			throw new InvalidArgumentException( 'The Provider\'s slug must string with more than four characters.' );
 		}
 

@@ -1,23 +1,27 @@
 <?php
 /**
- * RSVP Status.
+ * RSVP Visibility.
  *
- * @package GatherPress\Core\Rsvp
+ * @package GatherPress\Core\Rsvp\Response
  * @since 0.35.0
  */
 
 namespace GatherPress\Core\Rsvp\Response;
 
 // Exit if accessed directly.
-\defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
+defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 /**
- * RSVP Status.
+ * RSVP Visibility.
  *
- * @package GatherPress\Core\Rsvp
  * @since 0.35.0
  */
 enum Visibility: string {
+	/**
+	 * Visibility levels an RSVP response can have.
+	 *
+	 * @since 0.35.0
+	 */
 	case PUBLIC    = '0';
 	case ANONYMOUS = '1';
 	case ATTENDEES = '2';
@@ -26,9 +30,10 @@ enum Visibility: string {
 
 	/**
 	 * Constant representing the RSVP Taxonomy.
-	 * This constant defines the status taxonomy for RSVP comment type.
+	 * This constant defines the visibility taxonomy for RSVP comment type.
 	 *
 	 * @since 0.35.0
+	 *
 	 * @var string
 	 */
 	public const TAXONOMY = '_gatherpress_rsvp_visibility';
@@ -37,7 +42,8 @@ enum Visibility: string {
 	 * Get all valid values.
 	 *
 	 * @since 0.35.0
-	 * @return array
+	 *
+	 * @return array List of all valid visibility values.
 	 */
 	public static function values(): array {
 		$values = array();
