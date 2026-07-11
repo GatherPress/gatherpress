@@ -15,6 +15,7 @@ The full release runbook lives at
 | --- | --- |
 | `generate-version.php` | The version bump: regenerates credits, patches version strings in place. |
 | `credits/<version>.json` | **Source of truth** for per-version credits, one file per version (full history). Hand-edited. |
+| `credits/unreleased.json` | Staging file for the Credits Sync automation (#1828): contributors accumulate here as PRs merge, and the next version bump folds them into the release's credits file. |
 
 ## What is generated vs hand-edited
 

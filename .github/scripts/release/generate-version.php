@@ -106,6 +106,63 @@ function fetch_wporg_profile( $username ) {
 }
 
 /**
+ * Fold pending credits/unreleased.json contributors into the version entry.
+ *
+ * The credits-sync automation (#1828) accumulates newly-merged contributors
+ * in credits/unreleased.json between releases. At bump time they move into
+ * the target version's file (which stays the source of truth) and the
+ * staging file is emptied — both writes land in the version-bump commit.
+ *
+ * @param array  $entry        The decoded credits entry for the version.
+ * @param string $credits_file Absolute path to the version's credits file.
+ * @param string $version      The plugin version (for messages).
+ * @return array The entry with pending contributors folded in.
+ */
+function fold_unreleased_credits( $entry, $credits_file, $version ) {
+	$unreleased_file = SCRIPT_ROOT . '/credits/unreleased.json';
+
+	if ( ! file_exists( $unreleased_file ) ) {
+		return $entry;
+	}
+
+	$unreleased = json_decode( file_get_contents( $unreleased_file ), true );
+	$pending    = isset( $unreleased['contributors'] ) && is_array( $unreleased['contributors'] )
+		? $unreleased['contributors']
+		: array();
+
+	// Already-credited people (any group) don't get re-added.
+	$credited = array_merge(
+		isset( $entry['leads'] ) ? $entry['leads'] : array(),
+		isset( $entry['team'] ) ? $entry['team'] : array(),
+		isset( $entry['contributors'] ) ? $entry['contributors'] : array()
+	);
+	$new      = array_values( array_diff( array_unique( $pending ), $credited ) );
+
+	if ( empty( $new ) ) {
+		return $entry;
+	}
+
+	$entry['contributors'] = array_merge(
+		isset( $entry['contributors'] ) ? $entry['contributors'] : array(),
+		$new
+	);
+
+	$json_flags = JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES;
+
+	if ( file_put_contents( $credits_file, json_encode( $entry, $json_flags ) . "\n" ) === false ) {
+		fail( "Failed to fold unreleased contributors into credits/{$version}.json." );
+	}
+
+	if ( file_put_contents( $unreleased_file, json_encode( array( 'contributors' => array() ), $json_flags ) . "\n" ) === false ) {
+		fail( 'Failed to reset credits/unreleased.json.' );
+	}
+
+	success( 'Folded ' . count( $new ) . " unreleased contributor(s) into credits/{$version}.json: " . implode( ', ', $new ) . '.' );
+
+	return $entry;
+}
+
+/**
  * Generate includes/data/credits.php from the source credits entry.
  *
  * @param string $version The plugin version.
@@ -125,6 +182,8 @@ function generate_credits( $version ) {
 	if ( ! is_array( $entry ) ) {
 		fail( "credits/{$version}.json is not valid JSON." );
 	}
+
+	$entry = fold_unreleased_credits( $entry, $credits_file, $version );
 
 	$data['version'] = $version;
 	$contributors    = array();

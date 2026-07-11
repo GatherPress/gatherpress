@@ -46,6 +46,8 @@ For the bot to resolve you correctly, **link your GitHub account on your [profil
 
 Maintainers can force the bot to refresh its list by adding the `Props Bot` label to a pull request.
 
+Crediting is automated from there: when a pull request merges into `develop`, the Credits Sync workflow reads the Props Bot comment and appends anyone not yet credited for the current release cycle to `.github/scripts/release/credits/unreleased.json`, via a small auto-merging PR. At the next version bump those names move into the release's credits file and appear on the in-plugin Credits screen. Contributors the bot couldn't resolve (no linked GitHub account) are skipped by the automation — maintainers add them by hand to `unreleased.json` or the version's credits file.
+
 ---
 
 Thanks for helping make GatherPress better! 💜
