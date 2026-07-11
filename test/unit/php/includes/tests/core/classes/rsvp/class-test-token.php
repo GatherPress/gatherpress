@@ -9,6 +9,7 @@
 namespace GatherPress\Tests\Core\Rsvp;
 
 use GatherPress\Core\Event\Event;
+use GatherPress\Core\Rsvp\Cache;
 use GatherPress\Core\Rsvp\Rsvp;
 use GatherPress\Core\Rsvp\Token;
 use GatherPress\Tests\Base;
@@ -415,7 +416,7 @@ class Test_Token extends Base {
 		);
 
 		// Seed the per-event cache so we can confirm it gets deleted.
-		$cache_key = sprintf( Rsvp::CACHE_KEY, $post->ID );
+		$cache_key = sprintf( Cache::CACHE_KEY, $post->ID );
 		wp_cache_set( $cache_key, 'stale-payload', GATHERPRESS_CACHE_GROUP );
 		$this->assertSame(
 			'stale-payload',
@@ -499,7 +500,7 @@ class Test_Token extends Base {
 			)
 		);
 
-		$cache_key = sprintf( Rsvp::CACHE_KEY, $post->ID );
+		$cache_key = sprintf( Cache::CACHE_KEY, $post->ID );
 		wp_cache_set( $cache_key, 'still-fresh', GATHERPRESS_CACHE_GROUP );
 
 		$purged_ids = array();
