@@ -13,10 +13,10 @@ name: Version Bump
 # checkout in CI) — open its version PR separately, or run the script
 # locally where ../gatherpress-alpha is checked out.
 #
-# Note: the commit is created via git CLI and is unsigned, like the release
-# workflow's rollup commit — merging the PR into develop (signed commits
-# required) may need an admin override until #1921 moves these commits to
-# the API. Squash-merging creates a GitHub-signed commit either way.
+# The commit is created via the GraphQL API (createCommitOnBranch), so it is
+# GitHub-signed and satisfies develop's signed-commit protection. The version
+# PR is intentionally NOT auto-merged — the release manager reviews the
+# roster and generated output before it lands.
 
 on:
   workflow_dispatch:
@@ -76,16 +76,37 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VERSION: ${{ inputs.version }}
+          REPO: ${{ github.repository }}
         run: |
           branch="version-${VERSION}"
+          head_sha=$(git rev-parse HEAD)
 
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          # Branch off develop via the API, then commit every file the bump
+          # touched (version strings, generated credits, lockfile, and any
+          # credits-fold changes) with createCommitOnBranch so GitHub signs
+          # the commit (#1921).
+          gh api "repos/${REPO}/git/refs" \
+            -f ref="refs/heads/${branch}" -f sha="${head_sha}" > /dev/null
 
-          git checkout -b "${branch}"
-          git add gatherpress.php package.json package-lock.json readme.txt README.md SECURITY.md includes/data/credits.php
-          git commit -m "Start ${VERSION}"
-          git push origin "${branch}"
+          additions='[]'
+          while IFS= read -r file; do
+            additions=$(jq \
+              --arg path "${file}" \
+              --arg contents "$(base64 -w0 "${file}")" \
+              '. + [{path: $path, contents: $contents}]' <<< "${additions}")
+          done < <(git status --porcelain | awk '{print $2}')
+
+          jq -n \
+            --arg query 'mutation ($input: CreateCommitOnBranchInput!) { createCommitOnBranch(input: $input) { commit { oid } } }' \
+            --arg repo "${REPO}" \
+            --arg branch "${branch}" \
+            --arg oid "${head_sha}" \
+            --arg headline "Start ${VERSION}" \
+            --argjson additions "${additions}" \
+            '{query: $query, variables: {input: {branch: {repositoryNameWithOwner: $repo, branchName: $branch}, expectedHeadOid: $oid, message: {headline: $headline}, fileChanges: {additions: $additions}}}}' \
+            > /tmp/bump-commit.json
+
+          gh api graphql --input /tmp/bump-commit.json > /dev/null
 
           gh pr create \
             --base develop \

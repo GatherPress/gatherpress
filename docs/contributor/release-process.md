@@ -166,11 +166,11 @@ Every one of these is required; skipping any of them bites the next release:
 - [ ] **Confirm the wp.org release.** wp.org emails committers a release
   confirmation link; the new version is not live in the plugin directory
   until a committer clicks it.
-- [ ] **Merge the `release/X.Y.Z` rollup PR into develop promptly**
-  (squash — develop requires linear history). This lands the rolled-up
-  `CHANGELOG.md` and removes the consumed entry files from develop. Note:
-  the rollup commit is created unsigned by the workflow, so merging may
-  need an admin override while develop requires signed commits.
+- [ ] **Confirm the `release/X.Y.Z` rollup PR auto-merged into develop.**
+  The workflow creates its commit via the API (GitHub-signed) and enables
+  auto-merge (squash), so it lands on its own once checks pass — this brings
+  the rolled-up `CHANGELOG.md` to develop and removes the consumed entry
+  files. If it's still open, see Troubleshooting.
 - [ ] **Sync the rollup state to main** (changelog parity): the auto-PR only
   targets develop, so cherry-pick develop's rollup squash commit onto a
   branch off main and PR it (`Sync X.Y.Z changelog rollup state to main`).
@@ -268,14 +268,15 @@ rejected with "This branch must not contain merge commits." Uncheck
 *Require linear history* in the `main` protection rule for the merge, and
 re-enable afterward if that's the standing policy.
 
-### The rollup auto-PR is blocked from merging
+### The rollup auto-PR didn't merge on its own
 
-The rollup commit is authored by the workflow via git CLI, so it is
-**unsigned**; develop's protection requires signed commits, and merging can
-require an admin override (`gh pr merge --squash --admin`). Squash is the
-right method here — develop requires linear history, and the squash commit
-GitHub creates is signed. Do not close the PR: unmerged, it leaves consumed
-entry files on develop and the next release double-rolls them.
+The workflow signs its commit via the API and enables auto-merge, so the PR
+normally lands once checks pass. If it's stuck, merge it manually with
+squash (`gh pr merge --squash`, `--admin` if protection complains). Do not
+close the PR: unmerged, it leaves consumed entry files on develop and the
+next release double-rolls them — the release workflow now refuses to run a
+stable tag while a `release/*` PR is open, so an ignored rollup PR blocks
+the next release rather than corrupting its changelog.
 
 ### wp.org deploy failed
 

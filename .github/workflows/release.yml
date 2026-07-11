@@ -32,6 +32,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      pull-requests: read
     outputs:
       version: ${{ steps.context.outputs.version }}
       is_prerelease: ${{ steps.context.outputs.is_prerelease }}
@@ -49,6 +50,25 @@ jobs:
           else
             echo "is_prerelease=false" >> "$GITHUB_OUTPUT"
             echo "Tag ${version} is a stable release."
+          fi
+
+      - name: Abort if a previous rollup PR is still open
+        if: steps.context.outputs.is_prerelease == 'false'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          # An unmerged release/* rollup PR means .github/changelog/ still
+          # holds entries that already shipped in a previous release — rolling
+          # them up again would double-list them in this release's changelog
+          # (#1921). Merge (or close) the open rollup PR, fix the tag's
+          # branch, and re-tag.
+          open_rollups=$(gh pr list --repo "${REPO}" --state open \
+            --json headRefName --jq '[.[] | select(.headRefName | startswith("release/"))] | length')
+
+          if [[ "${open_rollups}" != "0" ]]; then
+            echo "::error::An open release/* rollup PR exists — its consumed changelog entries would double-roll into this release. Merge it first, then re-tag."
+            exit 1
           fi
 
   # Always runs: aggregate `.github/changelog/*` into a new [X.Y.Z] section
@@ -147,26 +167,50 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VERSION: ${{ needs.prepare.outputs.version }}
+          REPO: ${{ github.repository }}
         run: |
           branch="release/${VERSION}"
 
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          # Branch off the tag via the API, then create the rollup commit
+          # with createCommitOnBranch so GitHub signs it — develop requires
+          # signed commits, and a signed head is what lets the PR auto-merge
+          # with no admin override (#1921).
+          gh api "repos/${REPO}/git/refs" \
+            -f ref="refs/heads/${branch}" -f sha="${GITHUB_SHA}" > /dev/null
 
-          # Create the branch off the tag, add the rollup commit, and push.
-          git checkout -b "${branch}"
-          git add CHANGELOG.md .github/changelog/
-          git commit -m "Roll up changelog for ${VERSION}"
-          git push origin "${branch}"
+          # File changes from the changelogger run in this working tree:
+          # CHANGELOG.md rewritten, consumed entry files deleted.
+          additions=$(jq -n \
+            --arg path "CHANGELOG.md" \
+            --arg contents "$(base64 -w0 CHANGELOG.md)" \
+            '[{path: $path, contents: $contents}]')
+          deletions=$(git status --porcelain .github/changelog/ \
+            | awk '$1 == "D" {print $2}' | jq -R '{path: .}' | jq -s .)
 
-          # Open a PR back to develop. The release manager merges once the
-          # release has shipped and they've sanity-checked the rendered body.
-          gh pr create \
+          jq -n \
+            --arg query 'mutation ($input: CreateCommitOnBranchInput!) { createCommitOnBranch(input: $input) { commit { oid } } }' \
+            --arg repo "${REPO}" \
+            --arg branch "${branch}" \
+            --arg oid "${GITHUB_SHA}" \
+            --arg headline "Roll up changelog for ${VERSION}" \
+            --argjson additions "${additions}" \
+            --argjson deletions "${deletions}" \
+            '{query: $query, variables: {input: {branch: {repositoryNameWithOwner: $repo, branchName: $branch}, expectedHeadOid: $oid, message: {headline: $headline}, fileChanges: {additions: $additions, deletions: $deletions}}}}' \
+            > /tmp/rollup-commit.json
+
+          gh api graphql --input /tmp/rollup-commit.json > /dev/null
+
+          # Open the PR back to develop and let it merge itself once checks
+          # pass (squash keeps develop linear). The release manager still
+          # sanity-checks the rendered release body on the Release itself.
+          pr_url=$(gh pr create \
             --base develop \
             --head "${branch}" \
             --title "Roll up changelog for ${VERSION}" \
-            --body "Automated rollup of \`.github/changelog/*\` entries into \`CHANGELOG.md\` as part of the ${VERSION} release. Merge after confirming the rendered release body at https://github.com/${GITHUB_REPOSITORY}/releases/tag/${VERSION} looks right." \
-            --label "Skip Changelog"
+            --body "Automated rollup of \`.github/changelog/*\` entries into \`CHANGELOG.md\` as part of the ${VERSION} release. Auto-merges once checks pass; the rendered release body lives at https://github.com/${GITHUB_REPOSITORY}/releases/tag/${VERSION}. Remember the changelog parity cherry-pick to main afterward (docs/contributor/release-process.md)." \
+            --label "Skip Changelog")
+
+          gh pr merge --auto --squash "${pr_url}"
 
   # Build the distro zip via wp-scripts plugin-zip (already in package.json).
   # Same artifact for both pre-release and stable paths.
