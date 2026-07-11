@@ -1,0 +1,3 @@
+- [Changelog](https://github.com/GatherPress/gatherpress/releases)
+- [Frequently Asked Questions](https://github.com/GatherPress/gatherpress/blob/main/docs/faq.md)
+- [Alpha plugin info](https://github.com/GatherPress/gatherpress-alpha)
