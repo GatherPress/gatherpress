@@ -69,12 +69,10 @@ const EVENT_CARD_WITH_RSVP_TEMPLATE = [
 							[
 								'core/group',
 								{
-									className:
-										'gatherpress--has-venue-address',
+									className: 'gatherpress--has-venue-address',
 									style: {
 										spacing: {
-											blockGap:
-												'var:preset|spacing|20',
+											blockGap: 'var:preset|spacing|20',
 											margin: {
 												top: '0',
 												bottom: '0',
@@ -88,8 +86,13 @@ const EVENT_CARD_WITH_RSVP_TEMPLATE = [
 								},
 								[
 									[
-										'gatherpress/icon',
-										{ icon: 'location' },
+										'core/icon',
+										{
+											icon: 'core/map-marker',
+											style: {
+												dimensions: { width: '24px' },
+											},
+										},
 									],
 									[
 										'core/post-title',
@@ -111,8 +114,7 @@ const EVENT_CARD_WITH_RSVP_TEMPLATE = [
 								{
 									style: {
 										spacing: {
-											blockGap:
-												'var:preset|spacing|20',
+											blockGap: 'var:preset|spacing|20',
 											margin: {
 												top: '0',
 												bottom: '0',
@@ -126,8 +128,13 @@ const EVENT_CARD_WITH_RSVP_TEMPLATE = [
 								},
 								[
 									[
-										'gatherpress/icon',
-										{ icon: 'video-alt2' },
+										'core/icon',
+										{
+											icon: 'core/capture-video',
+											style: {
+												dimensions: { width: '24px' },
+											},
+										},
 									],
 									[
 										'gatherpress/online-event-link',
@@ -161,8 +168,7 @@ const EVENT_CARD_WITH_RSVP_TEMPLATE = [
 								{
 									style: {
 										spacing: {
-											blockGap:
-												'var:preset|spacing|20',
+											blockGap: 'var:preset|spacing|20',
 										},
 									},
 									layout: {
@@ -192,7 +198,8 @@ const EVENT_CARD_WITH_RSVP_TEMPLATE = [
 													layout: {
 														type: 'grid',
 														columnCount: 3,
-														minimumColumnWidth: null,
+														minimumColumnWidth:
+															null,
 													},
 												},
 												[

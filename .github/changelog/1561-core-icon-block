@@ -1,0 +1,4 @@
+Significance: major
+Type: changed
+
+Block templates now use the WordPress core Icon block instead of the GatherPress Icon block, and the minimum required WordPress version was raised to 7.0.
