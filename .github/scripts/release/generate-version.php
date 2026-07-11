@@ -1,26 +1,31 @@
 #!/usr/bin/env php
 <?php
 /**
- * Generate a GatherPress version: credits, version strings, readmes, SECURITY.md.
+ * Bump a GatherPress version: credits, version strings, SECURITY.md.
  *
- * Standalone port of the `wp gatherpress develop generate_version` WP-CLI
- * command from the retired GatherPress/gatherpress-develop repo (#1827).
- * No WordPress required — the only network dependency is the
+ * Standalone replacement for the `wp gatherpress develop generate_version`
+ * WP-CLI command from the retired GatherPress/gatherpress-develop repo
+ * (#1827). No WordPress required — the only network dependency is the
  * profiles.wordpress.org REST API used to resolve credit usernames.
  *
- * Usage:
+ * Usage (via the npm wrapper, or directly):
+ *   npm run version:bump -- --version=0.35.0
  *   php .github/scripts/release/generate-version.php --version=0.35.0
  *
  * Requires a credits entry for the target version in
- * .github/scripts/release/data/credits.php (add it there first). Writes:
- *   - includes/data/credits.php (generated credits, do not hand-edit)
- *   - gatherpress.php           (Version: header)
- *   - package.json              (version field; refresh the lockfile after:
- *                                `npm i --package-lock-only`)
- *   - README.md / readme.txt    (assembled from parts/)
- *   - SECURITY.md               (core, and ../gatherpress-alpha when present)
- *   - ../gatherpress-alpha/gatherpress-alpha.php (lockstep Version: header,
- *                                skipped with a warning when not checked out)
+ * .github/scripts/release/data/credits.php (add it there first).
+ *
+ * Unlike the old tooling, README.md and readme.txt are hand-edited files —
+ * this script only patches the strings that change per release, in place:
+ *   - includes/data/credits.php   regenerated (do not hand-edit)
+ *   - gatherpress.php             Version: header
+ *   - package.json                version field (refresh the lockfile after:
+ *                                 `npm i --package-lock-only`)
+ *   - README.md                   version badge
+ *   - readme.txt                  Stable tag: and Contributors: lines
+ *   - SECURITY.md                 supported-versions table (core + alpha)
+ *   - ../gatherpress-alpha/gatherpress-alpha.php  lockstep Version: header
+ *                                 (skipped with a warning when not checked out)
  *
  * @package GatherPress
  *
@@ -59,22 +64,6 @@ function warning( $message ) {
 function fail( $message ) {
 	fwrite( STDERR, "Error: {$message}\n" );
 	exit( 1 );
-}
-
-/**
- * Read a template part from the parts/ directory.
- *
- * @param string $relative_path Path relative to the parts directory.
- * @return string The file contents.
- */
-function read_part( $relative_path ) {
-	$file = SCRIPT_ROOT . '/parts/' . $relative_path;
-
-	if ( ! file_exists( $file ) ) {
-		fail( "Part file not found: {$relative_path}" );
-	}
-
-	return file_get_contents( $file );
 }
 
 /**
@@ -119,7 +108,7 @@ function fetch_wporg_profile( $username ) {
  * Generate includes/data/credits.php from the source credits entry.
  *
  * @param string $version The plugin version.
- * @return string Comma-separated leads + team usernames for readme headers.
+ * @return string Comma-separated leads + team usernames for readme.txt's Contributors line.
  */
 function generate_credits( $version ) {
 	$credits = require SCRIPT_ROOT . '/data/credits.php';
@@ -175,255 +164,61 @@ function generate_credits( $version ) {
 }
 
 /**
- * Replace the version in a file using a regex, mirroring the old CLI.
+ * Apply a regex replacement to a file, failing loudly when nothing matches.
  *
- * @param string $file    Absolute file path.
- * @param string $pattern Regex with the version in capture group 2.
- * @param string $version The new version.
- * @param string $label   Human-readable label for messages.
+ * @param string $file        Absolute file path.
+ * @param string $pattern     Regex whose match gets replaced.
+ * @param string $replacement Replacement (may use capture-group refs).
+ * @param string $label       Human-readable description for messages.
  * @return void
  */
-function update_version_in_file( $file, $pattern, $version, $label ) {
+function patch_file( $file, $pattern, $replacement, $label ) {
 	if ( ! file_exists( $file ) ) {
-		fail( "The {$label} file does not exist." );
+		fail( "File not found while updating {$label}: {$file}" );
 	}
 
-	$file_contents = file_get_contents( $file );
+	$contents = file_get_contents( $file );
 
-	if ( ! preg_match( $pattern, $file_contents ) ) {
-		fail( "Version not found in the {$label} file." );
+	if ( ! preg_match( $pattern, $contents ) ) {
+		fail( "Could not find {$label} in " . basename( $file ) . ' — has the file changed shape?' );
 	}
 
-	$new_contents = preg_replace( $pattern, '${1}' . $version . '${3}', $file_contents );
+	$new_contents = preg_replace( $pattern, $replacement, $contents );
 
 	if ( file_put_contents( $file, $new_contents ) === false ) {
-		fail( "Failed to update the {$label} file." );
+		fail( "Failed to write {$file}." );
 	}
 
-	success( "Updated {$label} version to {$version}." );
+	success( "Updated {$label}." );
 }
 
 /**
- * Read the current "Tested up to" value from readme.txt.
+ * Patch the supported-versions table in a SECURITY.md file.
  *
- * @return string The tested up to WordPress version.
- */
-function get_tested_up_to() {
-	$readme_file = REPO_ROOT . '/readme.txt';
-
-	if ( file_exists( $readme_file ) ) {
-		$contents = file_get_contents( $readme_file );
-
-		if ( preg_match( '/^Tested up to:\s*([\w\.-]+)\s*$/mi', $contents, $matches ) ) {
-			return $matches[1];
-		}
-	}
-
-	return '6.9';
-}
-
-/**
- * Build GitHub screenshot markdown with image references.
- *
- * @return string The screenshot section with images.
- */
-function build_github_screenshots() {
-	$screenshots = read_part( 'shared/screenshots.md' );
-	$image_map   = array(
-		1 => '.wordpress-org/screenshot-1.png',
-		2 => '.wordpress-org/screenshot-2.png',
-		3 => '.wordpress-org/screenshot-5.png',
-	);
-
-	$output = '';
-	$lines  = explode( "\n", trim( $screenshots ) );
-
-	foreach ( $lines as $line ) {
-		if ( preg_match( '/^(\d+)\.\s+(.+)$/', $line, $matches ) ) {
-			$num         = (int) $matches[1];
-			$description = $matches[2];
-			$output     .= "{$num}. {$description}\n";
-
-			if ( isset( $image_map[ $num ] ) ) {
-				$output .= "   ![screenshot-{$num}]({$image_map[ $num ]})\n";
-			}
-		}
-	}
-
-	return $output;
-}
-
-/**
- * Build the GitHub README.md content from parts.
- *
- * @param string $version The plugin version.
- * @return string The assembled README.md content.
- */
-function build_github_readme( $version ) {
-	$output  = "<!--\n";
-	$output .= "This file is auto-generated by the GatherPress release tooling.\n";
-	$output .= "Do not edit it directly: changes are overwritten when the README is regenerated.\n";
-	$output .= "To update it, edit the source parts in .github/scripts/release/parts/\n";
-	$output .= "or the assembly in .github/scripts/release/generate-version.php, then regenerate.\n";
-	$output .= "-->\n\n";
-	$output .= "# GatherPress\n\n";
-	$output .= "<!-- markdownlint-disable-next-line MD045 -->\n";
-	$output .= "![](.wordpress-org/banner-1544x500.jpg)\n\n";
-	$output .= '**' . trim( read_part( 'shared/description.md' ) ) . "**\n\n";
-
-	$version_encoded = rawurlencode( $version );
-	$output         .= '[![Try it in WordPress Playground](https://img.shields.io/badge/'
-		. 'Try_it-in_WordPress_Playground-blue?logo=wordpress&logoColor=%23fff&labelColor=%233858e9&color=%233858e9)]'
-		. '(https://playground.wordpress.net/?blueprint-url=https://raw.githubusercontent.com/'
-		. 'GatherPress/gatherpress/develop/.wordpress-org/blueprints/blueprint-nightly.json) '
-		. "![Version](https://img.shields.io/static/v1?label=version&message={$version_encoded}&color=blue)\n\n";
-	$output         .= read_part( 'github/badges.md' ) . "\n";
-	$output         .= "## Screenshots\n\n";
-	$output         .= build_github_screenshots() . "\n";
-	$output         .= "## Features\n\n";
-	$output         .= read_part( 'shared/features.md' ) . "\n";
-	$output         .= "## Getting Started\n\n";
-	$output         .= read_part( 'github/quick-start.md' ) . "\n";
-	$output         .= "## Get Involved\n\n";
-	$output         .= read_part( 'github/get-involved.md' ) . "\n";
-	$output         .= "## Third-Party Libraries\n\n";
-	$output         .= read_part( 'shared/third-party-libraries.md' ) . "\n";
-	$output         .= "## External Services\n\n";
-	$output         .= read_part( 'github/external-services.md' ) . "\n";
-	$output         .= "## More Information\n\n";
-	$output         .= read_part( 'github/more-info.md' ) . "\n";
-	$output         .= "---\n\n";
-	$output         .= read_part( 'github/footer.md' );
-
-	return $output;
-}
-
-/**
- * Build the WordPress.org readme.txt content from parts.
- *
- * @param string $version      The plugin version.
- * @param string $contributors Comma-separated list of contributor usernames.
- * @param string $tested_up_to The WordPress version tested up to.
- * @return string The assembled readme.txt content.
- */
-function build_wporg_readme( $version, $contributors, $tested_up_to ) {
-	$output  = "=== GatherPress ===\n";
-	$output .= "Contributors: {$contributors}\n";
-	$output .= "Tags: events, event, meetup, community\n";
-	$output .= "Tested up to: {$tested_up_to}\n";
-	$output .= "Stable tag: {$version}\n";
-	$output .= "License: GPL v2 or later\n";
-	$output .= "License URI: https://www.gnu.org/licenses/gpl-2.0.html\n\n";
-	$output .= trim( read_part( 'shared/description.md' ) ) . "\n\n";
-	$output .= "== Description ==\n\n";
-	$output .= read_part( 'shared/features.md' ) . "\n";
-	$output .= "== Installation ==\n\n";
-	$output .= read_part( 'shared/installation.md' ) . "\n";
-	$output .= "== Screenshots ==\n\n";
-	$output .= read_part( 'shared/screenshots.md' ) . "\n";
-	$output .= "== Changelog ==\n\n";
-	$output .= 'For the full changelog, visit the [GitHub releases page]'
-		. "(https://github.com/GatherPress/gatherpress/releases).\n\n";
-	$output .= "== Frequently Asked Questions ==\n\n";
-	$output .= 'Visit our [FAQ page](https://github.com/GatherPress/gatherpress/blob/main/docs/faq.md) '
-		. "for answers to common questions.\n\n";
-	$output .= "== External Services ==\n\n";
-	$output .= read_part( 'wporg/external-services.md' );
-
-	return $output;
-}
-
-/**
- * Generate README.md and readme.txt from parts.
- *
- * @param string $version      The plugin version.
- * @param string $contributors Comma-separated list of contributor usernames.
+ * @param string $file        Absolute path to the SECURITY.md.
+ * @param string $major_minor The major.minor version (e.g. "0.35").
+ * @param string $label       Label for messages ("core" / "alpha").
  * @return void
  */
-function generate_readmes( $version, $contributors ) {
-	$tested_up_to = get_tested_up_to();
-
-	$readme_md = build_github_readme( $version );
-
-	if ( file_put_contents( REPO_ROOT . '/README.md', $readme_md ) !== false ) {
-		success( 'Generated README.md.' );
-	} else {
-		fail( 'Failed to generate README.md.' );
-	}
-
-	$readme_txt = build_wporg_readme( $version, $contributors, $tested_up_to );
-
-	if ( file_put_contents( REPO_ROOT . '/readme.txt', $readme_txt ) !== false ) {
-		success( 'Generated readme.txt.' );
-	} else {
-		fail( 'Failed to generate readme.txt.' );
-	}
-}
-
-/**
- * Sync the GatherPress Alpha plugin's version header to match core.
- *
- * @param string $version The full plugin version.
- * @return void
- */
-function update_alpha_version( $version ) {
-	$alpha_file = dirname( REPO_ROOT ) . '/gatherpress-alpha/gatherpress-alpha.php';
-
-	if ( ! file_exists( $alpha_file ) ) {
-		warning(
-			'GatherPress Alpha plugin not found alongside core; skipping alpha version sync. '
-			. 'Open its lockstep version PR separately.'
-		);
+function patch_security_table( $file, $major_minor, $label ) {
+	if ( ! file_exists( $file ) ) {
+		warning( "{$label} SECURITY.md not found; skipping." );
 
 		return;
 	}
 
-	update_version_in_file(
-		$alpha_file,
-		'/^(\s*\*\s*Version:\s*)([\w\.-]+)(\s*)$/mi',
-		$version,
-		'GatherPress Alpha'
+	patch_file(
+		$file,
+		'/^\|\s*\d+\.\d+\.x\s*\|/m',
+		"| {$major_minor}.x  |",
+		"supported version row ({$label} SECURITY.md)"
 	);
-}
-
-/**
- * Generate SECURITY.md for core (and alpha when present) from the shared template.
- *
- * @param string $version The full plugin version.
- * @return void
- */
-function generate_security( $version ) {
-	if ( ! preg_match( '/^(\d+\.\d+)/', $version, $matches ) ) {
-		fail( "Could not derive major.minor from version: {$version}" );
-	}
-
-	$major_minor = $matches[1];
-
-	$table  = "| Version | Supported          |\n";
-	$table .= "| ------- | ------------------ |\n";
-	$table .= "| {$major_minor}.x  | :white_check_mark: |\n";
-	$table .= "| < {$major_minor}  | :x:                |";
-
-	$content = str_replace( '{{SUPPORTED_VERSIONS_TABLE}}', $table, read_part( 'shared/security.md' ) );
-
-	$targets = array(
-		'core'  => REPO_ROOT . '/SECURITY.md',
-		'alpha' => dirname( REPO_ROOT ) . '/gatherpress-alpha/SECURITY.md',
+	patch_file(
+		$file,
+		'/^\|\s*<\s*\d+\.\d+\s*\|/m',
+		"| < {$major_minor}  |",
+		"unsupported version row ({$label} SECURITY.md)"
 	);
-
-	foreach ( $targets as $label => $file ) {
-		if ( ! is_dir( dirname( $file ) ) ) {
-			warning( "{$label} plugin directory not found; skipping its SECURITY.md." );
-
-			continue;
-		}
-
-		if ( file_put_contents( $file, $content ) !== false ) {
-			success( "Generated SECURITY.md ({$label}) — supported {$major_minor}.x / < {$major_minor}." );
-		} else {
-			fail( "Failed to write SECURITY.md ({$label})." );
-		}
-	}
 }
 
 // ---------------------------------------------------------------------------
@@ -436,34 +231,75 @@ if (
 	empty( $options['version'] )
 	|| ! preg_match( '/^\d+\.\d+\.\d+(-(alpha|beta|rc)\.\d+)?$/', $options['version'] )
 ) {
-	fail( 'Usage: php .github/scripts/release/generate-version.php --version=X.Y.Z[-alpha.N|-beta.N|-rc.N]' );
+	fail( 'Usage: npm run version:bump -- --version=X.Y.Z[-alpha.N|-beta.N|-rc.N]' );
 }
 
 $version = $options['version'];
 
+if ( ! preg_match( '/^(\d+\.\d+)/', $version, $mm_matches ) ) {
+	fail( "Could not derive major.minor from version: {$version}" );
+}
+
+$major_minor = $mm_matches[1];
+
+// Generated credits file (and the Contributors line for readme.txt).
 $contributors = generate_credits( $version );
 
-update_version_in_file(
+// Version strings, patched in place. README.md and readme.txt are
+// hand-edited files — only these strings belong to the tooling.
+patch_file(
 	REPO_ROOT . '/gatherpress.php',
-	'/^(\s*\*\s*Version:\s*)([\w\.-]+)(\s*)$/mi',
-	$version,
-	'plugin'
+	'/^(\s*\*\s*Version:\s*)([\w\.-]+)$/mi',
+	'${1}' . $version,
+	'plugin Version header'
 );
-
-generate_readmes( $version, $contributors );
-
-update_version_in_file(
+patch_file(
 	REPO_ROOT . '/package.json',
 	'/^(\s*"version": ")([\w\.-]+)(",)$/mi',
-	$version,
-	'package.json'
+	'${1}' . $version . '${3}',
+	'package.json version'
 );
+patch_file(
+	REPO_ROOT . '/README.md',
+	'/(!\[Version\]\(https:\/\/img\.shields\.io\/static\/v1\?label=version&message=)[^&]+(&color=blue\))/',
+	'${1}' . rawurlencode( $version ) . '${2}',
+	'README.md version badge'
+);
+patch_file(
+	REPO_ROOT . '/readme.txt',
+	'/^(Stable tag:\s*)([\w\.-]+)$/mi',
+	'${1}' . $version,
+	'readme.txt Stable tag'
+);
+patch_file(
+	REPO_ROOT . '/readme.txt',
+	'/^(Contributors:\s*)(.+)$/mi',
+	'${1}' . $contributors,
+	'readme.txt Contributors line'
+);
+
+patch_security_table( REPO_ROOT . '/SECURITY.md', $major_minor, 'core' );
+
+// GatherPress Alpha is versioned in lockstep; sync it when checked out.
+$alpha_dir = dirname( REPO_ROOT ) . '/gatherpress-alpha';
+
+if ( is_dir( $alpha_dir ) ) {
+	patch_file(
+		$alpha_dir . '/gatherpress-alpha.php',
+		'/^(\s*\*\s*Version:\s*)([\w\.-]+)$/mi',
+		'${1}' . $version,
+		'GatherPress Alpha Version header'
+	);
+	patch_security_table( $alpha_dir . '/SECURITY.md', $major_minor, 'alpha' );
+} else {
+	warning(
+		'GatherPress Alpha plugin not found alongside core; skipping alpha version sync. '
+		. 'Open its lockstep version PR separately.'
+	);
+}
 
 echo "\n";
 echo "Next step (on a machine with Node):\n";
 echo "  npm i --package-lock-only\n";
 echo "\n";
 echo "That refreshes package-lock.json to match the new package.json version.\n";
-
-update_alpha_version( $version );
-generate_security( $version );

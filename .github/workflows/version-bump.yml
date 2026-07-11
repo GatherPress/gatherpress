@@ -1,7 +1,7 @@
 name: Version Bump
 
 # Manually-triggered version bump: runs the release tooling
-# (.github/scripts/release/generate-version.php), refreshes the lockfile,
+# (npm run version:bump), refreshes the lockfile,
 # and opens a `version-X.Y.Z` PR against develop with the Skip Changelog
 # label — replacing the old flow of running the gatherpress-develop WP-CLI
 # command in a local WordPress install (#1827).
@@ -58,16 +58,16 @@ jobs:
         with:
           php-version: '8.2'
 
-      - name: Run the version generator
-        env:
-          VERSION: ${{ inputs.version }}
-        run: php .github/scripts/release/generate-version.php --version="${VERSION}"
-
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version-file: .nvmrc
           cache: npm
+
+      - name: Run the version bump
+        env:
+          VERSION: ${{ inputs.version }}
+        run: npm run version:bump -- --version="${VERSION}"
 
       - name: Refresh package-lock.json
         run: npm i --package-lock-only
