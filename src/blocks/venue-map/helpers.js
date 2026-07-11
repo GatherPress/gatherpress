@@ -5,12 +5,96 @@ import { __ } from '@wordpress/i18n';
 import apiFetch from '@wordpress/api-fetch';
 import { Button, Spinner } from '@wordpress/components';
 import { useDispatch, useSelect } from '@wordpress/data';
-import { useEffect, useState } from '@wordpress/element';
+import { useEffect, useRef, useState } from '@wordpress/element';
 
 /**
  * Internal dependencies
  */
 import { REST_NAMESPACE } from '../../helpers/namespace';
+
+/**
+ * POST regenerate-map / ensure-only and patch descriptors into the core store.
+ *
+ * @since 0.35.0
+ *
+ * @param {Object}   args                        Request inputs.
+ * @param {number}   args.venuePostId            Venue post ID.
+ * @param {string}   args.venuePostType          Venue post type slug.
+ * @param {boolean}  [args.ensureOnly]           Lazy-generate one combo only.
+ * @param {number}   args.zoom                   Block zoom level.
+ * @param {number}   args.width                  Block width (0 = auto).
+ * @param {number}   args.height                 Block height (0 = auto).
+ * @param {string}   args.aspectRatio            Block aspect ratio string.
+ * @param {string}   args.mapType                Block map type slug.
+ * @param {Function} args.getCurrentEntityRecord Returns the cached entity record.
+ * @param {Function} args.receiveEntityRecords   core/receiveEntityRecords dispatcher.
+ * @param {Function} args.invalidateResolution   core/invalidateResolution dispatcher.
+ *
+ * @return {Promise<Object>} REST response.
+ */
+const postVenueMapDescriptors = async ( {
+	venuePostId,
+	venuePostType,
+	ensureOnly = false,
+	zoom,
+	width,
+	height,
+	aspectRatio,
+	mapType,
+	getCurrentEntityRecord,
+	receiveEntityRecords,
+	invalidateResolution,
+} ) => {
+	const response = await apiFetch( {
+		path: `/${ REST_NAMESPACE }/venue/${ venuePostId }/regenerate-map`,
+		method: 'POST',
+		data: {
+			zoom: Number.isInteger( zoom ) ? zoom : undefined,
+			width: Number.isInteger( width ) ? width : undefined,
+			height: Number.isInteger( height ) ? height : undefined,
+			aspect_ratio:
+				'string' === typeof aspectRatio && '' !== aspectRatio
+					? aspectRatio
+					: undefined,
+			map_type:
+				'string' === typeof mapType && '' !== mapType
+					? mapType
+					: undefined,
+			ensure_only: ensureOnly ? true : undefined,
+		},
+	} );
+
+	if ( venuePostType && '' === response?.reason ) {
+		const current = getCurrentEntityRecord();
+
+		if ( current ) {
+			receiveEntityRecords(
+				'postType',
+				venuePostType,
+				[
+					{
+						...current,
+						meta: {
+							...current.meta,
+							gatherpress_static_map:
+								response?.descriptors || {},
+						},
+					},
+				],
+				undefined,
+				false
+			);
+		}
+
+		invalidateResolution( 'getEntityRecord', [
+			'postType',
+			venuePostType,
+			venuePostId,
+		] );
+	}
+
+	return response;
+};
 
 /**
  * Regenerate / Generate button for the venue-map block.
@@ -28,6 +112,7 @@ import { REST_NAMESPACE } from '../../helpers/namespace';
  * @param {number}  [props.width]       Current block width (0 = auto) — forwarded to the server.
  * @param {number}  [props.height]      Current block height (0 = auto) — forwarded to the server.
  * @param {string}  [props.aspectRatio] Current block aspect ratio (e.g. "16/9") — forwarded so the server can derive any auto dimension consistently with the client.
+ * @param {string}  [props.mapType]     Current block map type — forwarded so regenerated PNGs match the editor selection.
  * @param {boolean} props.disabled      When true, the button is disabled regardless of internal state.
  * @param {string}  [props.label]       Override the default "Regenerate map" label.
  * @param {string}  [props.variant]     Underlying Button variant (e.g. 'primary', 'secondary', 'link').
@@ -41,6 +126,7 @@ export const RegenerateMapButton = ( {
 	width,
 	height,
 	aspectRatio,
+	mapType,
 	disabled = false,
 	label,
 	variant = 'secondary',
@@ -50,10 +136,6 @@ export const RegenerateMapButton = ( {
 		useDispatch( 'core' );
 	const { createErrorNotice } = useDispatch( 'core/notices' );
 
-	// Non-reactive selector lookups — we only need the current record at
-	// the moment of the click to merge fresh meta into it, not on every
-	// render. handleClick already bails on missing venuePostId/venuePostType
-	// before invoking this, so the inner closure doesn't need to re-guard.
 	const getCurrentEntityRecord = useSelect(
 		( select ) => () =>
 			select( 'core' ).getEntityRecord(
@@ -71,42 +153,20 @@ export const RegenerateMapButton = ( {
 
 		setIsBusy( true );
 
-		let response;
 		try {
-			response = await apiFetch( {
-				path: `/${ REST_NAMESPACE }/venue/${ venuePostId }/regenerate-map`,
-				method: 'POST',
-				data: {
-					zoom: Number.isInteger( zoom ) ? zoom : undefined,
-					width: Number.isInteger( width ) ? width : undefined,
-					height: Number.isInteger( height ) ? height : undefined,
-					aspect_ratio:
-						'string' === typeof aspectRatio && '' !== aspectRatio
-							? aspectRatio
-							: undefined,
-				},
+			const response = await postVenueMapDescriptors( {
+				venuePostId,
+				venuePostType,
+				zoom,
+				width,
+				height,
+				aspectRatio,
+				mapType,
+				getCurrentEntityRecord,
+				receiveEntityRecords,
+				invalidateResolution,
 			} );
-		} catch ( error ) {
-			// Network / permission failure (403, 500, offline). Keep the
-			// cached descriptor intact so the preview doesn't flash blank,
-			// surface the failure as an admin notice, and re-enable the
-			// button so the user can retry.
-			createErrorNotice?.(
-				error?.message ||
-					__(
-						'Could not regenerate the map. Please try again.',
-						'gatherpress'
-					),
-				{ type: 'snackbar' }
-			);
-			setIsBusy( false );
-			return;
-		}
 
-		try {
-			// Server reached but every combo failed to render (disk / GD /
-			// tile host). Treat as an error: leave the cached descriptor
-			// intact and surface a notice.
 			if ( 'generation_failed' === response?.reason ) {
 				createErrorNotice?.(
 					__(
@@ -115,46 +175,16 @@ export const RegenerateMapButton = ( {
 					),
 					{ type: 'snackbar' }
 				);
-				return;
 			}
-
-			if ( ! venuePostType ) {
-				return;
-			}
-
-			// Patch the fresh descriptors straight into the `core` store
-			// cache. Both core.getEntityRecord and
-			// core/editor.getEditedPostAttribute read through this entity
-			// record, so the block preview picks up the new PNG URL on the
-			// next render without waiting for a separate refetch. The
-			// trailing invalidateResolution is belt-and-suspenders for
-			// anyone subscribed to the resolution state itself.
-			const current = getCurrentEntityRecord();
-
-			if ( current ) {
-				receiveEntityRecords(
-					'postType',
-					venuePostType,
-					[
-						{
-							...current,
-							meta: {
-								...current.meta,
-								gatherpress_static_map:
-									response?.descriptors || {},
-							},
-						},
-					],
-					undefined,
-					false
-				);
-			}
-
-			invalidateResolution( 'getEntityRecord', [
-				'postType',
-				venuePostType,
-				venuePostId,
-			] );
+		} catch ( error ) {
+			createErrorNotice?.(
+				error?.message ||
+					__(
+						'Could not regenerate the map. Please try again.',
+						'gatherpress'
+					),
+				{ type: 'snackbar' }
+			);
 		} finally {
 			setIsBusy( false );
 		}
@@ -183,7 +213,7 @@ export const RegenerateMapButton = ( {
  * @since 0.34.0
  *
  * @param {Object} descriptors Provider-keyed descriptor map: `{ osm: { combo_key: { url, ... } } }`.
- * @param {string} comboKey    Combo key in the form `{zoom}x{width}x{height}`.
+ * @param {string} comboKey    Combo key in the form `{zoom}x{width}x{height}x{map_type}`.
  * @param {string} activeSlug  Slug of the currently active provider (e.g. `'osm'`).
  *
  * @return {Object|undefined} Descriptor object, or undefined when no provider has one.
@@ -206,6 +236,21 @@ export const pickDescriptorForCombo = ( descriptors, comboKey, activeSlug ) => {
 
 	return undefined;
 };
+
+/**
+ * Build the meta-storage combo key matching the PHP orchestrator.
+ *
+ * @since 0.35.0
+ *
+ * @param {number} zoom    Map zoom level.
+ * @param {number} width   Pixel width.
+ * @param {number} height  Pixel height.
+ * @param {string} mapType Map type slug (defaults to roadmap).
+ *
+ * @return {string} Combo key.
+ */
+export const buildComboKey = ( zoom, width, height, mapType = 'roadmap' ) =>
+	`${ zoom }x${ width }x${ height }x${ mapType || 'roadmap' }`;
 
 /**
  * Parse an aspect-ratio string (e.g. "16/9" or "4:3") into a float.
@@ -291,27 +336,17 @@ export const POLL_INTERVAL_MS = 15000;
 export const MAX_POLLS = 20;
 
 /**
- * While the venue-map static placeholder is visible, periodically
- * invalidate the venue's `core` entity record so background-generated
- * descriptors (WP-Cron prewarm tick, out-of-band meta writes) surface in
- * the editor without a manual reload.
- *
- * The hook only schedules an interval when `active` is true AND the
- * venue is fully addressable (post id + type + resolved coordinates).
- * Stops polling after {@link MAX_POLLS} ticks so a persistently failing
- * generation doesn't pin the editor into forever polling; tears down
- * on unmount or when any dep transitions to a falsy state.
- *
- * Scheduling only — no server-side changes here. The same behavior works
- * whether generation runs via WP-Cron (today) or Action Scheduler (when
- * #1487 lands).
+ * While the venue-map static placeholder is visible, lazily ensure the active
+ * combo (when `combo` is set) and periodically invalidate the venue entity
+ * record so background-generated descriptors surface in the editor.
  *
  * @since 0.34.0
  *
- * @param {Object}  args               Hook arguments.
- * @param {boolean} args.active        Whether polling should run (typically `showStaticPlaceholder` gated on coords).
- * @param {number}  args.venuePostId   Venue post ID.
- * @param {string}  args.venuePostType Venue post type slug.
+ * @param {Object}      args               Hook arguments.
+ * @param {boolean}     args.active        Whether effects should run.
+ * @param {number}      args.venuePostId   Venue post ID.
+ * @param {string}      args.venuePostType Venue post type slug.
+ * @param {Object|null} [args.combo]       When set, POST ensure-only once (`key`, `zoom`, `width`, `height`, `aspectRatio`, `mapType`).
  *
  * @return {void}
  */
@@ -319,12 +354,53 @@ export const usePlaceholderPolling = ( {
 	active,
 	venuePostId,
 	venuePostType,
+	combo = null,
 } ) => {
-	const { invalidateResolution } = useDispatch( 'core' );
+	const { receiveEntityRecords, invalidateResolution } =
+		useDispatch( 'core' );
+	const inFlightKeyRef = useRef( '' );
+
+	const getCurrentEntityRecord = useSelect(
+		( select ) => () =>
+			select( 'core' ).getEntityRecord(
+				'postType',
+				venuePostType,
+				venuePostId
+			),
+		[ venuePostType, venuePostId ]
+	);
 
 	useEffect( () => {
 		if ( ! active || ! venuePostId || ! venuePostType ) {
+			inFlightKeyRef.current = '';
 			return undefined;
+		}
+
+		let cancelled = false;
+
+		if (
+			combo?.key &&
+			inFlightKeyRef.current !== combo.key
+		) {
+			inFlightKeyRef.current = combo.key;
+
+			postVenueMapDescriptors( {
+				venuePostId,
+				venuePostType,
+				ensureOnly: true,
+				zoom: combo.zoom,
+				width: combo.width,
+				height: combo.height,
+				aspectRatio: combo.aspectRatio,
+				mapType: combo.mapType,
+				getCurrentEntityRecord,
+				receiveEntityRecords,
+				invalidateResolution,
+			} ).finally( () => {
+				if ( ! cancelled && inFlightKeyRef.current === combo.key ) {
+					inFlightKeyRef.current = '';
+				}
+			} );
 		}
 
 		let pollCount = 0;
@@ -335,18 +411,25 @@ export const usePlaceholderPolling = ( {
 				venuePostType,
 				venuePostId,
 			] );
-			// Stop on the MAX_POLLS'th tick rather than letting a (MAX_POLLS + 1)th
-			// tick fire just to clear — matches the cap literally.
 			if ( pollCount >= MAX_POLLS ) {
 				clearInterval( interval );
 			}
 		}, POLL_INTERVAL_MS );
 
-		return () => clearInterval( interval );
-		// `invalidateResolution` is a bound dispatch action; @wordpress/data
-		// returns a stable reference for it across renders, so omitting it
-		// from the deps is safe and avoids a spurious restart-on-rerender
-		// if that contract ever regresses.
+		return () => {
+			cancelled = true;
+			clearInterval( interval );
+		};
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [ active, venuePostId, venuePostType ] );
+	}, [
+		active,
+		combo?.aspectRatio,
+		combo?.height,
+		combo?.key,
+		combo?.mapType,
+		combo?.width,
+		combo?.zoom,
+		venuePostId,
+		venuePostType,
+	] );
 };

@@ -54,6 +54,7 @@ import {
 	MAX_POLLS,
 	POLL_INTERVAL_MS,
 	RegenerateMapButton,
+	buildComboKey,
 	parseAspectRatio,
 	pickDescriptorForCombo,
 	resolveDimensions,
@@ -134,6 +135,29 @@ describe( 'RegenerateMapButton', () => {
 						height: 295,
 						aspect_ratio: '16/9',
 					},
+				} )
+			);
+		} );
+	} );
+
+	it( 'forwards map_type in the POST body when mapType is set', async () => {
+		render(
+			<RegenerateMapButton
+				{ ...defaultProps }
+				zoom={ 16 }
+				width={ 600 }
+				height={ 300 }
+				mapType="hybrid"
+			/>
+		);
+		fireEvent.click( screen.getByRole( 'button' ) );
+
+		await waitFor( () => {
+			expect( mockApiFetch ).toHaveBeenCalledWith(
+				expect.objectContaining( {
+					data: expect.objectContaining( {
+						map_type: 'hybrid',
+					} ),
 				} )
 			);
 		} );
@@ -383,22 +407,22 @@ describe( 'pickDescriptorForCombo', () => {
 
 	it( 'returns the active provider descriptor when present', () => {
 		const descriptors = {
-			osm: { '18x600x300': osmDescriptor },
-			google: { '18x600x300': googleDescriptor },
+			osm: { '18x600x300xroadmap': osmDescriptor },
+			google: { '18x600x300xroadmap': googleDescriptor },
 		};
 
 		expect(
-			pickDescriptorForCombo( descriptors, '18x600x300', 'google' )
+			pickDescriptorForCombo( descriptors, '18x600x300xroadmap', 'google' )
 		).toBe( googleDescriptor );
 	} );
 
 	it( 'falls back to another provider when the active one is missing the combo', () => {
 		const descriptors = {
-			osm: { '18x600x300': osmDescriptor },
+			osm: { '18x600x300xroadmap': osmDescriptor },
 		};
 
 		expect(
-			pickDescriptorForCombo( descriptors, '18x600x300', 'google' )
+			pickDescriptorForCombo( descriptors, '18x600x300xroadmap', 'google' )
 		).toBe( osmDescriptor );
 	} );
 
@@ -408,27 +432,27 @@ describe( 'pickDescriptorForCombo', () => {
 		};
 
 		expect(
-			pickDescriptorForCombo( descriptors, '18x600x300', 'osm' )
+			pickDescriptorForCombo( descriptors, '18x600x300xroadmap', 'osm' )
 		).toBeUndefined();
 	} );
 
 	it( 'tolerates a missing or empty descriptor map', () => {
 		expect(
-			pickDescriptorForCombo( undefined, '18x600x300', 'osm' )
+			pickDescriptorForCombo( undefined, '18x600x300xroadmap', 'osm' )
 		).toBeUndefined();
 		expect(
-			pickDescriptorForCombo( {}, '18x600x300', 'osm' )
+			pickDescriptorForCombo( {}, '18x600x300xroadmap', 'osm' )
 		).toBeUndefined();
 	} );
 
 	it( 'skips the active slug when scanning for fallbacks', () => {
 		const descriptors = {
-			osm: { '18x600x300': osmDescriptor },
+			osm: { '18x600x300xroadmap': osmDescriptor },
 			google: {},
 		};
 
 		expect(
-			pickDescriptorForCombo( descriptors, '18x600x300', 'google' )
+			pickDescriptorForCombo( descriptors, '18x600x300xroadmap', 'google' )
 		).toBe( osmDescriptor );
 	} );
 
@@ -438,11 +462,11 @@ describe( 'pickDescriptorForCombo', () => {
 		// is visited and returns. Covers both branches of the candidate check.
 		const descriptors = {
 			empty: {},
-			osm: { '18x600x300': osmDescriptor },
+			osm: { '18x600x300xroadmap': osmDescriptor },
 		};
 
 		expect(
-			pickDescriptorForCombo( descriptors, '18x600x300', 'google' )
+			pickDescriptorForCombo( descriptors, '18x600x300xroadmap', 'google' )
 		).toBe( osmDescriptor );
 	} );
 } );
@@ -502,6 +526,20 @@ describe( 'resolveDimensions', () => {
 	} );
 } );
 
+describe( 'buildComboKey', () => {
+	it( 'includes map type in the combo key', () => {
+		expect( buildComboKey( 16, 600, 300, 'hybrid' ) ).toBe(
+			'16x600x300xhybrid'
+		);
+	} );
+
+	it( 'defaults to roadmap when map type is empty', () => {
+		expect( buildComboKey( 16, 600, 300, '' ) ).toBe(
+			'16x600x300xroadmap'
+		);
+	} );
+} );
+
 describe( 'usePlaceholderPolling', () => {
 	// Minimal test harness that invokes the hook inside a React component.
 	// The component renders nothing — it exists only to run the effect and
@@ -512,6 +550,8 @@ describe( 'usePlaceholderPolling', () => {
 	};
 
 	beforeEach( () => {
+		mockApiFetch.mockReset();
+		mockApiFetch.mockResolvedValue( { descriptors: {}, reason: '' } );
 		mockInvalidateResolution.mockReset();
 		jest.useFakeTimers();
 	} );
@@ -548,6 +588,35 @@ describe( 'usePlaceholderPolling', () => {
 		jest.advanceTimersByTime( POLL_INTERVAL_MS * 3 );
 
 		expect( mockInvalidateResolution ).not.toHaveBeenCalled();
+	} );
+
+	it( 'POSTs ensure_only when combo is provided', async () => {
+		render(
+			<Harness
+				{ ...activeProps }
+				combo={ {
+					key: '16x600x300xhybrid',
+					zoom: 16,
+					width: 600,
+					height: 300,
+					aspectRatio: '2/1',
+					mapType: 'hybrid',
+				} }
+			/>
+		);
+
+		await waitFor( () => {
+			expect( mockApiFetch ).toHaveBeenCalledWith(
+				expect.objectContaining( {
+					path: '/gatherpress/v1/venue/42/regenerate-map',
+					method: 'POST',
+					data: expect.objectContaining( {
+						ensure_only: true,
+						map_type: 'hybrid',
+					} ),
+				} )
+			);
+		} );
 	} );
 
 	it( 'ticks on the expected cadence and forwards the resolver args', () => {

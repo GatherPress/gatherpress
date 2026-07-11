@@ -414,6 +414,12 @@ class Test_Map extends Base {
 			'Hash should change when the height changes.'
 		);
 
+		$this->assertNotSame(
+			$baseline,
+			$instance->hash_for( $info, 15, 800, 400, 'osm', 'hybrid' ),
+			'Hash should change when the map type changes.'
+		);
+
 		// Same address + coords hash identically, regardless of post —
 		// filenames dedupe across venues at the same location.
 		$this->assertSame(
@@ -674,21 +680,21 @@ class Test_Map extends Base {
 			Map::META_KEY,
 			array(
 				'osm' => array(
-					'15x600x300'    => array(
+					'15x600x300xroadmap' => array(
 						'url'    => 'https://example.test/a.png',
 						'hash'   => 'abc',
 						'zoom'   => 15,
 						'width'  => 600,
 						'height' => 300,
 					),
-					'18x800x400'    => 'not-an-array',
-					'20x1000x500'   => array(
+					'18x800x400'         => 'not-an-array',
+					'20x1000x500'        => array(
 						'url'    => 'https://example.test/b.png',
 						'zoom'   => 20,
 						'width'  => 1000,
 						'height' => 500,
 					), // Missing hash.
-					'missing-shape' => array(
+					'missing-shape'      => array(
 						'url'  => 'https://example.test/c.png',
 						'hash' => 'def',
 					), // Missing zoom/width/height.
@@ -699,13 +705,13 @@ class Test_Map extends Base {
 		$descriptors = $instance->get_all_descriptors( $post_id );
 
 		$this->assertArrayHasKey( 'osm', $descriptors );
-		$this->assertArrayHasKey( '15x600x300', $descriptors['osm'] );
+		$this->assertArrayHasKey( '15x600x300xroadmap', $descriptors['osm'] );
 		$this->assertArrayNotHasKey( '18x800x400', $descriptors['osm'] );
 		$this->assertArrayNotHasKey( '20x1000x500', $descriptors['osm'] );
 		$this->assertArrayNotHasKey( 'missing-shape', $descriptors['osm'] );
-		$this->assertSame( 15, $descriptors['osm']['15x600x300']['zoom'] );
-		$this->assertSame( 600, $descriptors['osm']['15x600x300']['width'] );
-		$this->assertSame( 300, $descriptors['osm']['15x600x300']['height'] );
+		$this->assertSame( 15, $descriptors['osm']['15x600x300xroadmap']['zoom'] );
+		$this->assertSame( 600, $descriptors['osm']['15x600x300xroadmap']['width'] );
+		$this->assertSame( 300, $descriptors['osm']['15x600x300xroadmap']['height'] );
 
 		// Read path must not mutate the meta — writing on every render would
 		// thrash the post-meta cache and churn the DB. Cleanup is deferred
@@ -737,7 +743,7 @@ class Test_Map extends Base {
 			Map::META_KEY,
 			array(
 				'osm' => array(
-					'15x600x300' => array(
+					'15x600x300xroadmap' => array(
 						'url'    => 'https://example.test/a.png',
 						'hash'   => 'abc',
 						'zoom'   => 15,
@@ -771,13 +777,13 @@ class Test_Map extends Base {
 		remove_filter( 'gatherpress_static_map_descriptors', $override, 10 );
 
 		$this->assertSame(
-			sprintf( 'https://cdn.test/%d-osm-15x600x300.png', $post_id ),
-			$descriptors['osm']['15x600x300']['url'],
+			sprintf( 'https://cdn.test/%d-osm-15x600x300xroadmap.png', $post_id ),
+			$descriptors['osm']['15x600x300xroadmap']['url'],
 			'Filter can rewrite a URL.'
 		);
 		$this->assertSame(
 			$post_id,
-			$descriptors['osm']['15x600x300']['post_id'],
+			$descriptors['osm']['15x600x300xroadmap']['post_id'],
 			'Filter receives the venue post ID as its second argument.'
 		);
 
@@ -1264,7 +1270,7 @@ class Test_Map extends Base {
 		$this->assertSame( 15, $descriptor['zoom'] );
 		$this->assertSame( 800, $descriptor['width'] );
 		$this->assertSame( 400, $descriptor['height'] );
-		$this->assertStringEndsWith( '1-infinite-loop-osm-15-800-400.png', $descriptor['url'] );
+		$this->assertStringEndsWith( '1-infinite-loop-osm-roadmap-15-800-400.png', $descriptor['url'] );
 	}
 
 	/**
@@ -1304,17 +1310,17 @@ class Test_Map extends Base {
 
 		// Empty string → fallback slug.
 		$empty = Utility::invoke_hidden_method( $instance, 'filename_for', array( '', 15, 800, 400, 'osm' ) );
-		$this->assertSame( 'venue-osm-15-800-400.png', $empty );
+		$this->assertSame( 'venue-osm-roadmap-15-800-400.png', $empty );
 
 		// All-special-char input sanitize_title strips to '' → fallback.
 		$weird = Utility::invoke_hidden_method( $instance, 'filename_for', array( '!!!', 15, 800, 400, 'osm' ) );
-		$this->assertSame( 'venue-osm-15-800-400.png', $weird );
+		$this->assertSame( 'venue-osm-roadmap-15-800-400.png', $weird );
 
 		// Long slugs get truncated so the full filename stays under fs caps.
 		$long    = str_repeat( 'a', 300 );
 		$result  = Utility::invoke_hidden_method( $instance, 'filename_for', array( $long, 18, 600, 300, 'osm' ) );
 		$matches = array();
-		preg_match( '/^([a-z]+)-osm-18-600-300\.png$/', $result, $matches );
+		preg_match( '/^([a-z]+)-osm-roadmap-18-600-300\.png$/', $result, $matches );
 		$this->assertNotEmpty( $matches, 'Truncated filename still matches the expected pattern.' );
 		$this->assertSame( 150, strlen( $matches[1] ), 'Slug is capped at 150 characters.' );
 	}
@@ -1375,7 +1381,7 @@ class Test_Map extends Base {
 
 		$this->assertNotNull( $url, 'save_image should return a URL on success.' );
 		$this->assertStringContainsString( Map::UPLOADS_SUBDIR, $url );
-		$this->assertStringEndsWith( '1-infinite-loop-osm-15-800-400.png', $url );
+		$this->assertStringEndsWith( '1-infinite-loop-osm-roadmap-15-800-400.png', $url );
 
 		$path = $this->path_for_url( $url );
 		$this->assertFileExists( $path );
@@ -1523,7 +1529,7 @@ class Test_Map extends Base {
 	}
 
 	/**
-	 * Coverage for combo_key — formats `{zoom}x{width}x{height}`.
+	 * Coverage for combo_key — formats `{zoom}x{width}x{height}x{map_type}`.
 	 *
 	 * @covers ::combo_key
 	 *
@@ -1533,11 +1539,20 @@ class Test_Map extends Base {
 		$instance = Map::get_instance();
 
 		$this->assertSame(
-			'14x800x500',
+			'14x800x500xroadmap',
 			Utility::invoke_hidden_method(
 				$instance,
 				'combo_key',
 				array( 14, 800, 500 )
+			)
+		);
+
+		$this->assertSame(
+			'14x800x500xhybrid',
+			Utility::invoke_hidden_method(
+				$instance,
+				'combo_key',
+				array( 14, 800, 500, 'hybrid' )
 			)
 		);
 	}
@@ -1565,14 +1580,14 @@ class Test_Map extends Base {
 			Map::META_KEY,
 			array(
 				'osm' => array(
-					'15x600x300'  => array(
+					'15x600x300xroadmap' => array(
 						'url'    => 'https://example.test/a.png',
 						'hash'   => 'abc',
 						'zoom'   => 15,
 						'width'  => 600,
 						'height' => 300,
 					),
-					'18x1000x500' => array(
+					'18x1000x500'        => array(
 						'url'    => 'https://example.test/b.png',
 						'hash'   => 'def',
 						'zoom'   => 18,
@@ -2027,13 +2042,57 @@ class Test_Map extends Base {
 		$this->assertSame( '', $data['reason'] );
 
 		$default_key = sprintf(
-			'%dx%dx%d',
+			'%dx%dx%dx%s',
 			Map::DEFAULT_ZOOM,
 			Map::DEFAULT_HEIGHT * 2,
-			Map::DEFAULT_HEIGHT
+			Map::DEFAULT_HEIGHT,
+			Map::DEFAULT_MAP_TYPE
 		);
 		$this->assertArrayHasKey( 'osm', (array) $data['descriptors'] );
 		$this->assertArrayHasKey( $default_key, (array) $data['descriptors']['osm'] );
+	}
+
+	/**
+	 * Ensure_only lazily generates one combo without wiping other descriptors.
+	 *
+	 * @covers ::register_rest_routes
+	 * @covers ::rest_regenerate
+	 *
+	 * @return void
+	 */
+	public function test_rest_regenerate_ensure_only_generates_requested_combo(): void {
+		$instance = Map::get_instance();
+		$instance->register_rest_routes();
+
+		$editor_id = $this->factory->user->create( array( 'role' => 'editor' ) );
+		$post_id   = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
+
+		add_post_meta( $post_id, 'gatherpress_address', '1 Infinite Loop' );
+		add_post_meta( $post_id, 'gatherpress_latitude', '37.3318' );
+		add_post_meta( $post_id, 'gatherpress_longitude', '-122.0312' );
+
+		wp_set_current_user( $editor_id );
+
+		$request = new \WP_REST_Request(
+			'POST',
+			sprintf( '/%s/venue/%d/regenerate-map', GATHERPRESS_REST_NAMESPACE, $post_id )
+		);
+		$request->set_param( 'zoom', 15 );
+		$request->set_param( 'width', 800 );
+		$request->set_param( 'height', 400 );
+		$request->set_param( 'map_type', 'hybrid' );
+		$request->set_param( 'ensure_only', true );
+
+		$response = rest_do_request( $request );
+
+		$this->assertSame( 200, $response->get_status() );
+
+		$data = $response->get_data();
+		$this->assertSame( '', $data['reason'] );
+		$this->assertArrayHasKey(
+			'15x800x400xhybrid',
+			(array) $data['descriptors']['osm']
+		);
 	}
 
 	/**
@@ -2271,8 +2330,8 @@ class Test_Map extends Base {
 			array( '1 Infinite Loop', 15, 800, 400, 'osm', 2 )
 		);
 
-		$this->assertSame( '1-infinite-loop-osm-15-800-400.png', $one_x );
-		$this->assertSame( '1-infinite-loop-osm-15-800-400@2x.png', $two_x );
+		$this->assertSame( '1-infinite-loop-osm-roadmap-15-800-400.png', $one_x );
+		$this->assertSame( '1-infinite-loop-osm-roadmap-15-800-400@2x.png', $two_x );
 	}
 
 
@@ -2368,7 +2427,7 @@ class Test_Map extends Base {
 			Map::META_KEY,
 			array(
 				'osm' => array(
-					'15x600x300' => array(
+					'15x600x300xroadmap' => array(
 						'url'    => 'https://example.test/legacy.png',
 						'hash'   => 'abc',
 						'zoom'   => 15,
@@ -2383,12 +2442,12 @@ class Test_Map extends Base {
 
 		$this->assertArrayHasKey(
 			'url_2x',
-			$descriptors['osm']['15x600x300'],
+			$descriptors['osm']['15x600x300xroadmap'],
 			'Legacy descriptors still expose url_2x to callers.'
 		);
 		$this->assertSame(
 			'',
-			$descriptors['osm']['15x600x300']['url_2x'],
+			$descriptors['osm']['15x600x300xroadmap']['url_2x'],
 			'Missing url_2x normalizes to empty string.'
 		);
 	}
@@ -2826,7 +2885,7 @@ class Test_Map extends Base {
 			Map::META_KEY,
 			array(
 				'osm' => array(
-					'15x600x300' => array(
+					'15x600x300xroadmap' => array(
 						'url'    => 'https://example.test/a.png',
 						'hash'   => 'abc',
 						'zoom'   => 15,
@@ -2835,7 +2894,7 @@ class Test_Map extends Base {
 					),
 				),
 				''    => array(
-					'15x600x300' => array(
+					'15x600x300xroadmap' => array(
 						'url'    => 'https://example.test/empty.png',
 						'hash'   => 'def',
 						'zoom'   => 15,
@@ -2845,7 +2904,7 @@ class Test_Map extends Base {
 				),
 				'bad' => 'not-an-array',
 				42    => array(
-					'15x600x300' => array(
+					'15x600x300xroadmap' => array(
 						'url'    => 'https://example.test/int.png',
 						'hash'   => 'ghi',
 						'zoom'   => 15,
@@ -2890,8 +2949,8 @@ class Test_Map extends Base {
 			$post_id,
 			Map::META_KEY,
 			array(
-				'osm'    => array( '15x600x300' => $entry ),
-				'google' => array( '15x600x300' => $entry ),
+				'osm'    => array( '15x600x300xroadmap' => $entry ),
+				'google' => array( '15x600x300xroadmap' => $entry ),
 			)
 		);
 
@@ -3045,12 +3104,13 @@ class Test_Map extends Base {
 			/**
 			 * Always-null render so the orchestrator's null-image branch fires.
 			 *
-			 * @param float $latitude  Unused.
-			 * @param float $longitude Unused.
-			 * @param int   $zoom      Unused.
-			 * @param int   $width     Unused.
-			 * @param int   $height    Unused.
-			 * @param int   $density   Unused.
+			 * @param float  $latitude  Unused.
+			 * @param float  $longitude Unused.
+			 * @param int    $zoom      Unused.
+			 * @param int    $width     Unused.
+			 * @param int    $height    Unused.
+			 * @param int    $density   Unused.
+			 * @param string $map_type  Unused.
 			 *
 			 * @return null
 			 */
@@ -3060,7 +3120,8 @@ class Test_Map extends Base {
 				int $zoom,
 				int $width,
 				int $height,
-				int $density = 1
+				int $density = 1,
+				string $map_type = 'roadmap'
 			) {
 				return null;
 			}
