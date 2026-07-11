@@ -160,4 +160,205 @@ class Test_Google extends Base {
 		$this->assertStringContainsString( 'markers=', $url );
 		$this->assertStringContainsString( 'key=secret-key', $url );
 	}
+
+	/**
+	 * Google static maps declare all four common map types.
+	 *
+	 * @covers ::supported_map_types
+	 *
+	 * @return void
+	 */
+	public function test_supported_map_types_includes_all_common_types(): void {
+		$this->assertSame(
+			array( 'roadmap', 'satellite', 'hybrid', 'terrain' ),
+			( new Google() )->supported_map_types()
+		);
+	}
+
+	/**
+	 * Unsupported density values are coerced back to 1 before the API call.
+	 *
+	 * @covers ::render
+	 * @covers ::build_static_map_url
+	 *
+	 * @return void
+	 */
+	public function test_render_coerces_unsupported_density_to_one(): void {
+		if ( ! function_exists( 'imagecreatetruecolor' ) ) {
+			$this->markTestSkipped( 'GD extension is not available.' );
+		}
+
+		$captured_url = '';
+		$capture      = function ( $preempt, $args, $url ) use ( &$captured_url ) {
+			unset( $preempt, $args );
+			$captured_url = $url;
+
+			return array(
+				'response' => array(
+					'code'    => 200,
+					'message' => 'OK',
+				),
+				'body'     => $this->map_png,
+				'headers'  => array(),
+			);
+		};
+
+		remove_filter( 'pre_http_request', array( $this, 'short_circuit_static_map_requests' ), 10 );
+		add_filter( 'pre_http_request', $capture, 10, 3 );
+
+		$image = ( new Google() )->render( 40.7128, -74.0060, 12, 320, 240, 99 );
+
+		remove_filter( 'pre_http_request', $capture, 10 );
+		add_filter( 'pre_http_request', array( $this, 'short_circuit_static_map_requests' ), 10, 3 );
+
+		$this->assertInstanceOf( GdImage::class, $image );
+		$this->assertStringContainsString( 'scale=1', $captured_url );
+	}
+
+	/**
+	 * Missing API key short-circuits before any HTTP request is made.
+	 *
+	 * @covers ::render
+	 *
+	 * @return void
+	 */
+	public function test_render_returns_null_when_api_key_is_missing(): void {
+		if ( ! function_exists( 'imagecreatetruecolor' ) ) {
+			$this->markTestSkipped( 'GD extension is not available.' );
+		}
+
+		$this->setExpectedIncorrectUsage( Google::class . '::render' );
+
+		update_option( Settings::OPTION_NAME, array() );
+
+		$this->assertNull( ( new Google() )->render( 40.7128, -74.0060, 12, 320, 240 ) );
+	}
+
+	/**
+	 * HTTP failures from `wp_remote_get()` surface as null from `render()`.
+	 *
+	 * @covers ::render
+	 * @covers ::fetch_static_map
+	 *
+	 * @return void
+	 */
+	public function test_render_returns_null_when_http_request_errors(): void {
+		if ( ! function_exists( 'imagecreatetruecolor' ) ) {
+			$this->markTestSkipped( 'GD extension is not available.' );
+		}
+
+		remove_filter( 'pre_http_request', array( $this, 'short_circuit_static_map_requests' ), 10 );
+		$fail = static function () {
+			return new \WP_Error( 'http_request_failed', 'Simulated transport failure.' );
+		};
+		add_filter( 'pre_http_request', $fail, 10 );
+
+		$result = ( new Google() )->render( 40.7128, -74.0060, 12, 320, 240 );
+
+		remove_filter( 'pre_http_request', $fail, 10 );
+		add_filter( 'pre_http_request', array( $this, 'short_circuit_static_map_requests' ), 10, 3 );
+
+		$this->assertNull( $result );
+	}
+
+	/**
+	 * Non-200 Static Maps responses (e.g. API not enabled) return null.
+	 *
+	 * @covers ::render
+	 * @covers ::fetch_static_map
+	 *
+	 * @return void
+	 */
+	public function test_render_returns_null_when_static_maps_api_returns_403(): void {
+		if ( ! function_exists( 'imagecreatetruecolor' ) ) {
+			$this->markTestSkipped( 'GD extension is not available.' );
+		}
+
+		remove_filter( 'pre_http_request', array( $this, 'short_circuit_static_map_requests' ), 10 );
+		$forbidden = static function () {
+			return array(
+				'response' => array(
+					'code'    => 403,
+					'message' => 'Forbidden',
+				),
+				'body'     => 'This API is not activated on your API project.',
+				'headers'  => array(),
+			);
+		};
+		add_filter( 'pre_http_request', $forbidden, 10 );
+
+		$result = ( new Google() )->render( 40.7128, -74.0060, 12, 320, 240 );
+
+		remove_filter( 'pre_http_request', $forbidden, 10 );
+		add_filter( 'pre_http_request', array( $this, 'short_circuit_static_map_requests' ), 10, 3 );
+
+		$this->assertNull( $result );
+	}
+
+	/**
+	 * A 200 response whose body is not a PNG cannot be decoded into GD.
+	 *
+	 * @covers ::render
+	 * @covers ::decode_png
+	 *
+	 * @return void
+	 */
+	public function test_render_returns_null_when_response_body_is_not_png(): void {
+		if ( ! function_exists( 'imagecreatetruecolor' ) ) {
+			$this->markTestSkipped( 'GD extension is not available.' );
+		}
+
+		remove_filter( 'pre_http_request', array( $this, 'short_circuit_static_map_requests' ), 10 );
+		$garbage = static function () {
+			return array(
+				'response' => array(
+					'code'    => 200,
+					'message' => 'OK',
+				),
+				'body'     => 'not a png',
+				'headers'  => array(),
+			);
+		};
+		add_filter( 'pre_http_request', $garbage, 10 );
+
+		$result = ( new Google() )->render( 40.7128, -74.0060, 12, 320, 240 );
+
+		remove_filter( 'pre_http_request', $garbage, 10 );
+		add_filter( 'pre_http_request', array( $this, 'short_circuit_static_map_requests' ), 10, 3 );
+
+		$this->assertNull( $result );
+	}
+
+	/**
+	 * `decode_png()` catches throwables from GD rather than fatalling.
+	 *
+	 * @covers ::decode_png
+	 *
+	 * @return void
+	 */
+	public function test_decode_png_catches_throwable_from_invalid_input(): void {
+		if ( ! function_exists( 'imagecreatefromstring' ) ) {
+			$this->markTestSkipped( 'GD extension is not available.' );
+		}
+
+		// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_set_error_handler -- Test setup, restored in finally below.
+		set_error_handler(
+			static function ( int $errno, string $errstr ): bool {
+				// phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Test-only handler; the exception is caught immediately by decode_png().
+				throw new \ErrorException( $errstr, 0, $errno );
+			}
+		);
+
+		try {
+			$result = Utility::invoke_hidden_method(
+				new Google(),
+				'decode_png',
+				array( '' )
+			);
+		} finally {
+			restore_error_handler();
+		}
+
+		$this->assertFalse( $result );
+	}
 }

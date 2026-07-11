@@ -10,6 +10,7 @@ namespace GatherPress\Tests\Core\Venue\Map;
 
 use GatherPress\Core\Venue\Map;
 use GatherPress\Core\Venue\Map\Manager;
+use GatherPress\Core\Venue\Map\Provider\Google;
 use GatherPress\Core\Venue\Map\Prewarm;
 use GatherPress\Core\Venue\Map\Setup;
 use GatherPress\Tests\Base;
@@ -86,5 +87,33 @@ class Test_Setup extends Base {
 		$instance = Setup::get_instance();
 
 		$this->assertInstanceOf( Setup::class, $instance );
+	}
+
+	/**
+	 * `setup_hooks()` registers Google when the companion provider action fires.
+	 *
+	 * @covers ::setup_hooks
+	 *
+	 * @return void
+	 */
+	public function test_setup_hooks_registers_google_on_provider_action(): void {
+		remove_all_actions( 'gatherpress_register_static_map_providers' );
+
+		$registry   = Manager::get_instance();
+		$reflection = new \ReflectionClass( Manager::class );
+		$property   = $reflection->getProperty( 'providers' );
+		$property->setAccessible( true );
+		$providers = $property->getValue( $registry );
+		unset( $providers['google'] );
+		$property->setValue( $registry, $providers );
+
+		Utility::invoke_hidden_method( Setup::get_instance(), 'setup_hooks' );
+
+		$registry->do_register_action();
+
+		$this->assertInstanceOf( Google::class, $registry->get( 'google' ) );
+
+		// Re-wire the action for later tests in this run.
+		Utility::invoke_hidden_method( Setup::get_instance(), 'setup_hooks' );
 	}
 }
