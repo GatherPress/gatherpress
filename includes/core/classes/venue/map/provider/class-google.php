@@ -44,7 +44,7 @@ class Google extends Base {
 	 * Default map type for static renders in the minimal #1528 scope.
 	 *
 	 * Map-type threading through the orchestrator is deferred; all static
-	 * Google PNGs request roadmap until block `type` flows into render().
+	 * Google map renders request roadmap until block `type` flows into render().
 	 *
 	 * @since 0.35.0
 	 * @var string
