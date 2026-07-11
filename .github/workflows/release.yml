@@ -358,6 +358,11 @@ jobs:
           SVN_USERNAME: ${{ secrets.SVN_USERNAME }}
           SVN_PASSWORD: ${{ secrets.SVN_PASSWORD }}
           VERSION: ${{ needs.prepare.outputs.version }}
+          # Set the TRUNK_DEPLOY_DRY_RUN repository variable to "1" to run
+          # everything except the final `svn commit` — inspect the log, then
+          # clear the variable to go live. Recommended for the first beta of
+          # a cycle.
+          DRY_RUN: ${{ vars.TRUNK_DEPLOY_DRY_RUN }}
         run: |
           set -euo pipefail
 
@@ -365,25 +370,44 @@ jobs:
             https://plugins.svn.wordpress.org/gatherpress "${HOME}/svn" > /dev/null
           svn update --set-depth infinity "${HOME}/svn/trunk" > /dev/null
 
-          # The safety line: whatever wp.org currently serves keeps being
-          # served. Abort rather than guess if trunk's readme.txt is missing
-          # or has no Stable tag — deploying the beta's own Stable tag would
-          # push the beta to every production site.
+          # Safety invariant: trunk syncs must never change what wp.org
+          # serves. The served version is trunk's `Stable tag:` line, so:
+          # (1) it must currently be a strict X.Y.Z version — anything else
+          #     (empty, a prerelease, or the literal "trunk", which would
+          #     make wp.org serve trunk directly) aborts the job;
+          # (2) that version must exist as a real SVN tag (the serve target);
+          # (3) after the rsync it is re-pinned and then ASSERTED below —
+          #     a silent sed miss can never reach the commit.
           current_stable=$(grep -m1 -E '^Stable tag:' "${HOME}/svn/trunk/readme.txt" \
             | sed -E 's/^Stable tag:[[:space:]]*//' | tr -d '[:space:]')
 
-          if [[ -z "${current_stable}" ]] || [[ "${current_stable}" == *-* ]]; then
-            echo "::error::Could not read a stable 'Stable tag' from trunk's readme.txt (got '${current_stable:-nothing}'). Aborting rather than risk serving the beta to production sites."
+          if [[ ! "${current_stable}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::Trunk's Stable tag is not a plain X.Y.Z version (got '${current_stable:-nothing}'). Aborting rather than risk changing what wp.org serves."
             exit 1
           fi
-          echo "Preserving Stable tag: ${current_stable}"
+
+          if ! svn ls "https://plugins.svn.wordpress.org/gatherpress/tags/${current_stable}/" > /dev/null 2>&1; then
+            echo "::error::tags/${current_stable} does not exist in SVN, so trunk's Stable tag does not point at a real release. Aborting."
+            exit 1
+          fi
+          echo "Preserving Stable tag: ${current_stable} (verified tags/${current_stable} exists)"
 
           # Mirror 10up/action-wordpress-plugin-deploy's rsync into trunk.
           rsync -rc --exclude-from=.distignore ./ "${HOME}/svn/trunk/" \
             --delete --delete-excluded
 
-          # Re-pin the Stable tag that rsync just overwrote with the beta's.
+          # Re-pin the Stable tag that rsync just overwrote with the beta's,
+          # then assert the pin took — this is the line that keeps the beta
+          # away from every non-opted-in site, so verify it, don't trust it.
           sed -i -E "s/^Stable tag:.*/Stable tag: ${current_stable}/" "${HOME}/svn/trunk/readme.txt"
+
+          pinned=$(grep -c -E "^Stable tag: ${current_stable}\$" "${HOME}/svn/trunk/readme.txt" || true)
+          stable_lines=$(grep -c -E '^Stable tag:' "${HOME}/svn/trunk/readme.txt" || true)
+
+          if [[ "${pinned}" != "1" ]] || [[ "${stable_lines}" != "1" ]]; then
+            echo "::error::Post-pin assertion failed: expected exactly one 'Stable tag: ${current_stable}' line, found ${pinned} (of ${stable_lines} Stable tag lines). Not committing."
+            exit 1
+          fi
 
           cd "${HOME}/svn"
           svn add . --force > /dev/null
@@ -394,7 +418,16 @@ jobs:
             exit 0
           fi
 
+          echo "=== svn status:"
           svn status
+          echo "=== final trunk readme.txt header:"
+          head -8 trunk/readme.txt
+
+          if [[ "${DRY_RUN:-}" == "1" ]]; then
+            echo "::notice::TRUNK_DEPLOY_DRY_RUN=1 — skipping svn commit. Clear the repository variable to deploy for real."
+            exit 0
+          fi
+
           svn commit -m "Sync trunk with ${VERSION} for translation (Stable tag pinned to ${current_stable})" \
             --username "${SVN_USERNAME}" --password "${SVN_PASSWORD}" --non-interactive > /dev/null
           echo "Trunk updated to ${VERSION}; wp.org still serves ${current_stable}."
