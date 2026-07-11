@@ -31,7 +31,7 @@ if ( ! isset( $credits ) ) {
 		<h3><?php esc_html_e( 'GatherPress Team', 'gatherpress' ); ?></h3>
 		<ul class="gatherpress-settings__credits-featured">
 			<?php
-			foreach ( $credits['project-leaders'] as $gatherpress_contributor ) :
+			foreach ( $credits['leads'] as $gatherpress_contributor ) :
 				Utility::render_template(
 					sprintf( '%s/includes/templates/admin/settings/credits/contributor-card.php', GATHERPRESS_CORE_PATH ),
 					array(
@@ -41,7 +41,7 @@ if ( ! isset( $credits ) ) {
 					true
 				);
 			endforeach;
-			foreach ( $credits['gatherpress-team'] as $gatherpress_contributor ) :
+			foreach ( $credits['team'] as $gatherpress_contributor ) :
 				Utility::render_template(
 					sprintf( '%s/includes/templates/admin/settings/credits/contributor-card.php', GATHERPRESS_CORE_PATH ),
 					array(
