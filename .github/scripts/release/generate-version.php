@@ -131,7 +131,7 @@ function generate_credits( $version ) {
 
 	// Fixed group order: leads and team drive readme.txt's Contributors
 	// line and the credits page ordering regardless of file key order.
-	foreach ( array( 'project-leaders', 'gatherpress-team', 'contributors' ) as $group ) {
+	foreach ( array( 'leads', 'team', 'contributors' ) as $group ) {
 		$users = isset( $entry[ $group ] ) && is_array( $entry[ $group ] ) ? $entry[ $group ] : array();
 
 		if ( 'contributors' === $group ) {
