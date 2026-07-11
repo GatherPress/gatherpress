@@ -696,7 +696,7 @@ class Test_Rsvp extends Base {
 
 		$data = $rsvp->save( $email, 'attending', 0, 0 );
 
-		$this->assertSame( $post->ID, \intval( $data['post_id'] ) );
+		$this->assertSame( $post->ID, intval( $data['post_id'] ) );
 		$this->assertSame( 'attending', $data['status'] );
 		$this->assertNotEmpty( $data['comment_id'] );
 

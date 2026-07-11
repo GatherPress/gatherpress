@@ -5,8 +5,7 @@
  * @package GatherPress\Core
  */
 
-defined( 'ABSPATH' ) || exit;
-
+defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 use GatherPress\Core\Event;
 use GatherPress\Core\Rsvp;
 use GatherPress\Core\Utility;

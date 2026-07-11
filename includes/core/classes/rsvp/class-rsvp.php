@@ -15,7 +15,7 @@ use GatherPress\Core\Rsvp\Response\Collection;
 use GatherPress\Core\Rsvp\Response\Serializer;
 
 // Exit if accessed directly.
-\defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
+defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Rsvp\Response\Data;
 use GatherPress\Core\Rsvp\Response\Identity;
@@ -287,7 +287,7 @@ class Rsvp {
 			$current_response ? (int) $current_response->comment->comment_ID : null
 		);
 
-		if ( \is_bool( $state ) ) {
+		if ( is_bool( $state ) ) {
 			return null;
 		}
 
@@ -379,7 +379,7 @@ class Rsvp {
 			return false;
 		}
 
-		if ( ! \in_array( $rsvp_mode, array( 'per_event_on', 'per_event_off' ), true ) ) {
+		if ( ! in_array( $rsvp_mode, array( 'per_event_on', 'per_event_off' ), true ) ) {
 			return true;
 		}
 
@@ -458,7 +458,7 @@ class Rsvp {
 
 		return (
 			! empty( $responses['attending'] ) &&
-			\intval( $responses['attending']['count'] ) + $user_count + $guests > $this->max_attendance_limit
+			intval( $responses['attending']['count'] ) + $user_count + $guests > $this->max_attendance_limit
 		);
 	}
 
@@ -476,7 +476,7 @@ class Rsvp {
 	public function responses(): array {
 		$cached = Cache::get( $this->event->ID );
 
-		if ( \is_array( $cached ) ) {
+		if ( is_array( $cached ) ) {
 			return $cached;
 		}
 
@@ -508,7 +508,7 @@ class Rsvp {
 		usort( $records, array( $this, 'sort_by_role' ) );
 
 		$retval['all']['records'] = $records;
-		$retval['all']['count']   = \count( $records ) + $total_guests;
+		$retval['all']['count']   = count( $records ) + $total_guests;
 
 		foreach ( $statuses as $status ) {
 			$status_records = array_values(
@@ -526,7 +526,7 @@ class Rsvp {
 			);
 
 			$retval[ $status ]['records'] = $status_records;
-			$retval[ $status ]['count']   = \count( $status_records ) + $guest_count;
+			$retval[ $status ]['count']   = count( $status_records ) + $guest_count;
 		}
 
 		Cache::set( $this->event->ID, $retval );
@@ -594,7 +594,7 @@ class Rsvp {
 	 * @return Intent
 	 */
 	private function constrain_rsvp_intent( Intent $intent, ?State $current_response ): Intent {
-		$max_guest_limit = \intval( get_post_meta( $this->event->ID, 'gatherpress_max_guest_limit', true ) );
+		$max_guest_limit = intval( get_post_meta( $this->event->ID, 'gatherpress_max_guest_limit', true ) );
 
 		$guests    = $intent->data->guests;
 		$anonymous = $intent->data->anonymous;
@@ -622,7 +622,7 @@ class Rsvp {
 		$old_status_is_not_attending = Status::ATTENDING !== $current_response->data->status;
 
 		$desired_status_is_attending_or_waiting_list =
-			\in_array( $intent->data->status, array( Status::ATTENDING, Status::WAITING_LIST ), true );
+			in_array( $intent->data->status, array( Status::ATTENDING, Status::WAITING_LIST ), true );
 
 		if (
 			$old_status_is_not_attending &&
@@ -662,7 +662,7 @@ class Rsvp {
 			return new Identity( Identity_TYPE::EMAIL, $identifier );
 		}
 
-		if ( \is_int( $identifier ) && get_user_by( 'id', $identifier ) ) {
+		if ( is_int( $identifier ) && get_user_by( 'id', $identifier ) ) {
 			return new Identity( Identity_TYPE::WP_USER_ID, $identifier );
 		}
 

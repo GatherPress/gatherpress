@@ -12,7 +12,7 @@
 namespace GatherPress\Core\Rsvp;
 
 // Exit if accessed directly.
-\defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
+defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Event;
 use GatherPress\Core\Rsvp\Response\Provider\Provider;

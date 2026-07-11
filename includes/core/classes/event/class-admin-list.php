@@ -13,7 +13,7 @@
 namespace GatherPress\Core\Event;
 
 // Exit if accessed directly.
-\defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
+defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use Exception;
 use GatherPress\Core\Event;

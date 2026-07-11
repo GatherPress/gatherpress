@@ -200,7 +200,7 @@ class Query {
 		}
 
 		// Ensure we always return an array.
-		return \is_array( $types ) ? $types : $default_types;
+		return is_array( $types ) ? $types : $default_types;
 	}
 
 	/**
