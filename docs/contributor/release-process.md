@@ -106,7 +106,8 @@ Testers downloading the pre-release zip see the same changelog body they'd see a
 - [GitHub Releases page](https://github.com/GatherPress/gatherpress/releases) shows the new tag with a "Pre-release" badge.
 - The release body matches the queued `.github/changelog/` entries.
 - The attached zip downloads as `gatherpress.X.Y.Z-alpha.N.zip` and unzips with a `gatherpress/` top-level directory.
-- wp.org listing at <https://wordpress.org/plugins/gatherpress/> is **unchanged**.
+- wp.org listing at <https://wordpress.org/plugins/gatherpress/> is **unchanged** — the served version comes from trunk's `Stable tag:`, which the trunk sync deliberately preserves.
+- For **beta** tags only: SVN trunk is synced to the beta (tags/ untouched) so [translate.wordpress.org](https://translate.wordpress.org/projects/wp-plugins/gatherpress/) picks up new strings in its Development project — check that the new strings appear there.
 - Tag and release GatherPress Alpha at the same version (its own tag-driven `release.yml`, GitHub-only).
 
 ## Stable release flow

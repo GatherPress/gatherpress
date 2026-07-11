@@ -12,7 +12,8 @@ name: Release
 # release body is the SAME rolled-up section that would ship at stable (so
 # testers see what they're testing), but the rollup is computed in an
 # ephemeral checkout — no commit, no PR, no entry files deleted. Pre-releases
-# never deploy to wp.org.
+# never deploy to wp.org tags; beta tags additionally sync SVN *trunk* (with
+# the served Stable tag preserved) so translators get the new strings early.
 #
 # Release-manager docs: docs/contributor/release-process.md.
 
@@ -311,3 +312,89 @@ jobs:
         env:
           SVN_USERNAME: ${{ secrets.SVN_USERNAME }}
           SVN_PASSWORD: ${{ secrets.SVN_PASSWORD }}
+
+  # Beta tags only: deploy to wp.org SVN *trunk* — never tags/ — so
+  # translate.wordpress.org picks up the new strings before the stable
+  # release ships (#1758). Users are unaffected: wp.org serves the version
+  # named by trunk's `Stable tag:` line, which this job deliberately
+  # preserves from the existing trunk readme.txt (the beta's own readme.txt
+  # says `Stable tag: X.Y.Z-beta.N`, which must never reach trunk).
+  #
+  # This is a custom SVN deploy because 10up/action-wordpress-plugin-deploy
+  # has no trunk-only mode (10up/action-wordpress-plugin-deploy#103,
+  # closed not-planned). The rsync mechanics mirror that action's deploy.sh
+  # so trunk's layout matches what stable deploys produce. Alphas and RCs
+  # are excluded on purpose: the polyglots guidance is to publish *named
+  # beta releases*, not every development build.
+  deploy-wporg-trunk:
+    name: Deploy beta to WordPress.org trunk
+    needs: [prepare, release]
+    if: |
+      github.repository == 'GatherPress/gatherpress' &&
+      needs.prepare.outputs.is_prerelease == 'true' &&
+      contains(needs.prepare.outputs.version, '-beta.')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout the tag
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Build production assets
+        run: |
+          npm ci
+          npm run build
+
+      - name: Deploy to SVN trunk
+        env:
+          SVN_USERNAME: ${{ secrets.SVN_USERNAME }}
+          SVN_PASSWORD: ${{ secrets.SVN_PASSWORD }}
+          VERSION: ${{ needs.prepare.outputs.version }}
+        run: |
+          set -euo pipefail
+
+          svn checkout --depth immediates \
+            https://plugins.svn.wordpress.org/gatherpress "${HOME}/svn" > /dev/null
+          svn update --set-depth infinity "${HOME}/svn/trunk" > /dev/null
+
+          # The safety line: whatever wp.org currently serves keeps being
+          # served. Abort rather than guess if trunk's readme.txt is missing
+          # or has no Stable tag — deploying the beta's own Stable tag would
+          # push the beta to every production site.
+          current_stable=$(grep -m1 -E '^Stable tag:' "${HOME}/svn/trunk/readme.txt" \
+            | sed -E 's/^Stable tag:[[:space:]]*//' | tr -d '[:space:]')
+
+          if [[ -z "${current_stable}" ]] || [[ "${current_stable}" == *-* ]]; then
+            echo "::error::Could not read a stable 'Stable tag' from trunk's readme.txt (got '${current_stable:-nothing}'). Aborting rather than risk serving the beta to production sites."
+            exit 1
+          fi
+          echo "Preserving Stable tag: ${current_stable}"
+
+          # Mirror 10up/action-wordpress-plugin-deploy's rsync into trunk.
+          rsync -rc --exclude-from=.distignore ./ "${HOME}/svn/trunk/" \
+            --delete --delete-excluded
+
+          # Re-pin the Stable tag that rsync just overwrote with the beta's.
+          sed -i -E "s/^Stable tag:.*/Stable tag: ${current_stable}/" "${HOME}/svn/trunk/readme.txt"
+
+          cd "${HOME}/svn"
+          svn add . --force > /dev/null
+          svn status | awk '$1 == "!"  {print $2}' | xargs -r svn rm > /dev/null
+
+          if [[ -z "$(svn status)" ]]; then
+            echo "Trunk already matches ${VERSION}; nothing to commit."
+            exit 0
+          fi
+
+          svn status
+          svn commit -m "Sync trunk with ${VERSION} for translation (Stable tag pinned to ${current_stable})" \
+            --username "${SVN_USERNAME}" --password "${SVN_PASSWORD}" --non-interactive > /dev/null
+          echo "Trunk updated to ${VERSION}; wp.org still serves ${current_stable}."
