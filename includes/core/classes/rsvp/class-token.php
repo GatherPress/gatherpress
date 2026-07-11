@@ -158,7 +158,7 @@ class Token {
 	 * the page rendered in the same request — and on any subsequent
 	 * anonymous visit to the canonical event URL — reflects the new RSVP:
 	 *
-	 *   1. `Rsvp::CACHE_KEY` in `GATHERPRESS_CACHE_GROUP` — the
+	 *   1. The `Cache` entry in `GATHERPRESS_CACHE_GROUP` — the
 	 *      per-event response cache that `Rsvp::responses()` reads.
 	 *      Without this, the rsvp / rsvp-response blocks still pull the
 	 *      pre-approval list on the very same page render that follows
@@ -188,10 +188,7 @@ class Token {
 		$post_id = (int) $this->comment->comment_post_ID;
 
 		if ( $post_id ) {
-			wp_cache_delete(
-				sprintf( Rsvp::CACHE_KEY, $post_id ),
-				GATHERPRESS_CACHE_GROUP
-			);
+			Cache::delete( $post_id );
 			clean_post_cache( $post_id );
 		}
 	}
