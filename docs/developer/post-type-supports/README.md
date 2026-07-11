@@ -34,7 +34,7 @@ register_post_type( 'my_custom_event', array(
 Once registered, you can use the `Event` class with your custom post type:
 
 ```php
-use GatherPress\Core\Event\Event;
+use GatherPress\Core\Event;
 
 $event = new Event( $my_custom_post_id );
 $event->save_datetimes( array(

@@ -8,10 +8,10 @@
 
 namespace GatherPress\Tests\Core\Event;
 
-use GatherPress\Core\Event\Event;
+use GatherPress\Core\Event;
 use GatherPress\Core\Event\Rest_Api;
 use GatherPress\Core\Rsvp\Response\Status;
-use GatherPress\Core\Rsvp\Rsvp;
+use GatherPress\Core\Rsvp;
 use GatherPress\Core\Rsvp\Token;
 use GatherPress\Core\Settings;
 use GatherPress\Core\Setup;

@@ -32,7 +32,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 use GatherPress\Core\Settings;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Venue\Setup;
-use GatherPress\Core\Venue\Venue;
+use GatherPress\Core\Venue;
 use GdImage;
 use WP_Post;
 use WP_REST_Request;

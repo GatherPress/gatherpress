@@ -9,7 +9,7 @@
 namespace GatherPress\Tests\Core\Blocks;
 
 use GatherPress\Core\Blocks\Add_To_Calendar;
-use GatherPress\Core\Event\Event;
+use GatherPress\Core\Event;
 use GatherPress\Core\Venue;
 use GatherPress\Tests\Base;
 

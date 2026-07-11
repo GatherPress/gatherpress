@@ -16,9 +16,9 @@ namespace GatherPress\Core\Event;
 \defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use Exception;
-use GatherPress\Core\Event\Event;
+use GatherPress\Core\Event;
 use GatherPress\Core\Rsvp\Query as Rsvp_Query;
-use GatherPress\Core\Rsvp\Rsvp;
+use GatherPress\Core\Rsvp;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Utility;
 use GatherPress\Core\Venue\Setup as Venue_Setup;

@@ -9,7 +9,7 @@
 namespace GatherPress\Tests\Core\Blocks;
 
 use GatherPress\Core\Blocks\Event_Query;
-use GatherPress\Core\Event\Event;
+use GatherPress\Core\Event;
 use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;
 

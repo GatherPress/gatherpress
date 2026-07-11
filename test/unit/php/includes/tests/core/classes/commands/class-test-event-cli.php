@@ -9,7 +9,7 @@
 namespace GatherPress\Tests\Core\Commands;
 
 use GatherPress\Core\Commands\Event_Cli;
-use GatherPress\Core\Event\Event;
+use GatherPress\Core\Event;
 use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;
 

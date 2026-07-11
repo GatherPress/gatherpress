@@ -9,7 +9,7 @@
 namespace GatherPress\Tests\Core\Event;
 
 use DateTime;
-use GatherPress\Core\Event\Event;
+use GatherPress\Core\Event;
 use GatherPress\Core\Event\Query;
 use GatherPress\Core\Topic;
 use GatherPress\Core\Venue;

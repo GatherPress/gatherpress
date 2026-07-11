@@ -16,7 +16,7 @@ namespace GatherPress\Core\Rsvp;
 \defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Blocks\Rsvp_Form;
-use GatherPress\Core\Event\Event;
+use GatherPress\Core\Event;
 use GatherPress\Core\Rsvp\Response\Status;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Utility;

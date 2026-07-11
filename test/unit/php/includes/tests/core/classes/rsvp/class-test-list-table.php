@@ -8,9 +8,9 @@
 
 namespace GatherPress\Tests\Core\Rsvp;
 
-use GatherPress\Core\Event\Event;
+use GatherPress\Core\Event;
 use GatherPress\Core\Rsvp\List_Table;
-use GatherPress\Core\Rsvp\Rsvp;
+use GatherPress\Core\Rsvp;
 use GatherPress\Core\Rsvp\Response\Status;
 use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;

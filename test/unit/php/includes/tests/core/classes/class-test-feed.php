@@ -8,7 +8,7 @@
 
 namespace GatherPress\Tests\Core;
 
-use GatherPress\Core\Event\Event;
+use GatherPress\Core\Event;
 use GatherPress\Core\Feed;
 use GatherPress\Tests\Base;
 use WP_Query;

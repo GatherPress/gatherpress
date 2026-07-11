@@ -8,7 +8,7 @@
 
 namespace GatherPress\Tests\Core\Rsvp;
 
-use GatherPress\Core\Event\Event;
+use GatherPress\Core\Event;
 use GatherPress\Core\Rsvp\Response\Data;
 use GatherPress\Core\Rsvp\Response\Identity_Type;
 use GatherPress\Core\Rsvp\Response\Identity;
@@ -16,6 +16,8 @@ use GatherPress\Core\Rsvp\Response\Intent;
 use GatherPress\Core\Rsvp\Response\Status;
 use GatherPress\Core\Rsvp\Cache;
 use GatherPress\Core\Rsvp\Response\Provider_Registry;
+// Deep import on purpose: test_prior_fqn_resolves_to_current_class asserts
+// Rsvp::class equals the real FQN, which the BC alias intentionally is not.
 use GatherPress\Core\Rsvp\Rsvp;
 use GatherPress\Core\Settings;
 use GatherPress\Tests\Base;

@@ -11,8 +11,8 @@
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Blocks\Setup;
-use GatherPress\Core\Event\Event;
-use GatherPress\Core\Rsvp\Rsvp;
+use GatherPress\Core\Event;
+use GatherPress\Core\Rsvp;
 
 $gatherpress_block_instance = Setup::get_instance();
 $gatherpress_post_id        = $gatherpress_block_instance->get_post_id( $block->parsed_block );

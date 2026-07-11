@@ -16,10 +16,10 @@ use GatherPress\Core\Rsvp\Response\Provider_Registry;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
-use GatherPress\Core\Event\Event;
+use GatherPress\Core\Event;
 use GatherPress\Core\Utility;
 use GatherPress\Core\Rsvp\Response\Provider\Provider;
-use GatherPress\Core\Rsvp\Rsvp;
+use GatherPress\Core\Rsvp;
 use GatherPress\Core\Rsvp\Response\Status;
 use WP_List_Table;
 

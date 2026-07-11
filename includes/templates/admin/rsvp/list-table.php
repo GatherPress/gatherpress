@@ -7,8 +7,8 @@
 
 defined( 'ABSPATH' ) || exit;
 
-use GatherPress\Core\Event\Event;
-use GatherPress\Core\Rsvp\Rsvp;
+use GatherPress\Core\Event;
+use GatherPress\Core\Rsvp;
 use GatherPress\Core\Utility;
 
 if ( ! isset( $rsvp_table, $search_term, $status, $event ) ) {

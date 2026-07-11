@@ -9,7 +9,7 @@
 namespace GatherPress\Tests\Core\Blocks;
 
 use GatherPress\Core\Blocks\Rsvp;
-use GatherPress\Core\Event\Event;
+use GatherPress\Core\Event;
 use GatherPress\Core\Event\Setup;
 use GatherPress\Core\Settings;
 use GatherPress\Tests\Base;
