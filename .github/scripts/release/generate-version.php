@@ -153,11 +153,16 @@ function fold_unreleased_credits( $entry, $credits_file, $version ) {
 		fail( "Failed to fold unreleased contributors into credits/{$version}.json." );
 	}
 
-	if ( file_put_contents( $unreleased_file, json_encode( array( 'contributors' => array() ), $json_flags ) . "\n" ) === false ) {
+	$reset_json = json_encode( array( 'contributors' => array() ), $json_flags ) . "\n";
+
+	if ( file_put_contents( $unreleased_file, $reset_json ) === false ) {
 		fail( 'Failed to reset credits/unreleased.json.' );
 	}
 
-	success( 'Folded ' . count( $new ) . " unreleased contributor(s) into credits/{$version}.json: " . implode( ', ', $new ) . '.' );
+	success(
+		'Folded ' . count( $new ) . " unreleased contributor(s) into credits/{$version}.json: "
+		. implode( ', ', $new ) . '.'
+	);
 
 	return $entry;
 }

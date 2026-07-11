@@ -6,7 +6,7 @@
  * Author:            The GatherPress Community
  * Author URI:        https://gatherpress.org/
  * Version:           0.34.0
- * Requires PHP:      7.4
+ * Requires PHP:      8.1
  * Requires at least: 6.7
  * Text Domain:       gatherpress
  * License:           GNU General Public License v2.0 or later

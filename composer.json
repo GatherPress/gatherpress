@@ -15,7 +15,7 @@
 	],
 	"require": {
 		"pmc/unit-test": "dev-main",
-		"php": ">=7.4"
+		"php": ">=8.1"
 	},
 	"require-dev": {
 		"dealerdirect/phpcodesniffer-composer-installer": "*",
@@ -62,7 +62,7 @@
 			"dealerdirect/phpcodesniffer-composer-installer": true
 		},
 		"platform": {
-			"php": "7.4"
+			"php": "8.1"
 		}
 	}
 }
