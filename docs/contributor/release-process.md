@@ -178,6 +178,10 @@ Every one of these is required; skipping any of them bites the next release:
   already-released entry into its changelog.
 - [ ] **Release GatherPress Alpha**: merge its `version-X.Y.Z` sync PR if
   not already done, tag `X.Y.Z` on its main, merge its own rollup PR.
+- [ ] **Bring the demo data in line with the new version**: follow the
+  "Preparing demo-data for a new version of GatherPress" steps in the
+  [gatherpress-demo-data README](https://github.com/GatherPress/gatherpress-demo-data#readme)
+  so the Playground demo content matches the release.
 - [ ] **Delete the spent branches**: `version-X.Y.Z` (core and alpha),
   `credits-X.Y.Z` (gatherpress-develop). The `release/X.Y.Z` branches go
   when their PRs merge.
