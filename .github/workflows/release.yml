@@ -313,12 +313,15 @@ jobs:
           SVN_USERNAME: ${{ secrets.SVN_USERNAME }}
           SVN_PASSWORD: ${{ secrets.SVN_PASSWORD }}
 
-  # Beta tags only: deploy to wp.org SVN *trunk* — never tags/ — so
-  # translate.wordpress.org picks up the new strings before the stable
-  # release ships (#1758). Users are unaffected: wp.org serves the version
-  # named by trunk's `Stable tag:` line, which this job deliberately
+  # Beta tags only: deploy to wp.org SVN *trunk* (so translate.wordpress.org
+  # picks up the new strings before the stable ships) and create a matching
+  # SVN tag (so the beta appears as a named download in the plugin page's
+  # Advanced-view version dropdown for testers who don't use GitHub) —
+  # #1758. Regular users are unaffected either way: wp.org serves the
+  # version named by trunk's `Stable tag:` line, which this job deliberately
   # preserves from the existing trunk readme.txt (the beta's own readme.txt
-  # says `Stable tag: X.Y.Z-beta.N`, which must never reach trunk).
+  # says `Stable tag: X.Y.Z-beta.N`, which must never reach trunk). Note the
+  # new SVN tag may require a release-confirmation click, like any tag.
   #
   # This is a custom SVN deploy because 10up/action-wordpress-plugin-deploy
   # has no trunk-only mode (10up/action-wordpress-plugin-deploy#103,
@@ -327,7 +330,7 @@ jobs:
   # are excluded on purpose: the polyglots guidance is to publish *named
   # beta releases*, not every development build.
   deploy-wporg-trunk:
-    name: Deploy beta to WordPress.org trunk
+    name: Deploy beta to WordPress.org (trunk + beta tag)
     needs: [prepare, release]
     if: |
       github.repository == 'GatherPress/gatherpress' &&
@@ -413,21 +416,35 @@ jobs:
           svn add . --force > /dev/null
           svn status | awk '$1 == "!"  {print $2}' | xargs -r svn rm > /dev/null
 
-          if [[ -z "$(svn status)" ]]; then
-            echo "Trunk already matches ${VERSION}; nothing to commit."
-            exit 0
-          fi
-
           echo "=== svn status:"
           svn status
           echo "=== final trunk readme.txt header:"
           head -8 trunk/readme.txt
 
           if [[ "${DRY_RUN:-}" == "1" ]]; then
-            echo "::notice::TRUNK_DEPLOY_DRY_RUN=1 — skipping svn commit. Clear the repository variable to deploy for real."
+            echo "::notice::TRUNK_DEPLOY_DRY_RUN=1 — skipping the svn commit and the tags/${VERSION} copy. Clear the repository variable to deploy for real."
             exit 0
           fi
 
-          svn commit -m "Sync trunk with ${VERSION} for translation (Stable tag pinned to ${current_stable})" \
-            --username "${SVN_USERNAME}" --password "${SVN_PASSWORD}" --non-interactive > /dev/null
-          echo "Trunk updated to ${VERSION}; wp.org still serves ${current_stable}."
+          if [[ -n "$(svn status)" ]]; then
+            svn commit -m "Sync trunk with ${VERSION} for translation (Stable tag pinned to ${current_stable})" \
+              --username "${SVN_USERNAME}" --password "${SVN_PASSWORD}" --non-interactive > /dev/null
+            echo "Trunk updated to ${VERSION}; wp.org still serves ${current_stable}."
+          else
+            echo "Trunk already matches ${VERSION}; nothing to commit."
+          fi
+
+          # Also tag the beta so it shows up as a named download in the
+          # wp.org Advanced-view version dropdown — some testers find GitHub
+          # intimidating but will happily grab a beta from wp.org. The tag is
+          # a snapshot of the pinned trunk; the version served to regular
+          # sites is still governed solely by trunk's Stable tag line.
+          if svn ls "https://plugins.svn.wordpress.org/gatherpress/tags/${VERSION}/" > /dev/null 2>&1; then
+            echo "tags/${VERSION} already exists in SVN; skipping the tag copy."
+          else
+            svn copy "https://plugins.svn.wordpress.org/gatherpress/trunk" \
+              "https://plugins.svn.wordpress.org/gatherpress/tags/${VERSION}" \
+              -m "Tag ${VERSION} for beta testers" \
+              --username "${SVN_USERNAME}" --password "${SVN_PASSWORD}" --non-interactive > /dev/null
+            echo "Created tags/${VERSION} — it may need a release-confirmation click before it appears for download."
+          fi
