@@ -76,6 +76,7 @@ import {
 	createDropHandler,
 	applyListViewGuardForBlock,
 	applyInspectorListViewGuard,
+	injectBlockGuardStyles,
 } from '@src/supports/block-guard';
 
 /**
@@ -1000,45 +1001,58 @@ describe( 'applyInspectorListViewGuard', () => {
 		expect( tree.dataset.gatherPressGuarded ).toBeUndefined();
 	} );
 
-	it( 'injects a single notice above the tree when enabled', () => {
+	it( 'hides the tree appender when enabled and restores it when disabled', () => {
+		const appender = document.createElement( 'div' );
+		appender.className = 'list-view-appender';
+		tree.appendChild( appender );
+
 		applyInspectorListViewGuard( true );
-		applyInspectorListViewGuard( true );
 
-		const notices = inspector.querySelectorAll(
-			'.gatherpress-block-guard-inspector-notice',
-		);
+		expect( appender.style.display ).toBe( 'none' );
 
-		expect( notices ).toHaveLength( 1 );
-		expect( notices[ 0 ].nextElementSibling ).toBe( tree );
-		expect( notices[ 0 ].textContent ).toContain(
-			'Block Guard is enabled.',
-		);
-		// Without a callback there is no unprotect button.
-		expect( notices[ 0 ].querySelector( 'button' ) ).toBeNull();
-	} );
-
-	it( 'wires the unprotect button to the onDisable callback', () => {
-		const onDisable = jest.fn();
-
-		applyInspectorListViewGuard( true, onDisable );
-
-		const button = inspector.querySelector(
-			'.gatherpress-block-guard-inspector-notice button',
-		);
-
-		button.click();
-
-		expect( onDisable ).toHaveBeenCalledTimes( 1 );
-	} );
-
-	it( 'removes the notice when disabled', () => {
-		applyInspectorListViewGuard( true, jest.fn() );
 		applyInspectorListViewGuard( false );
 
-		expect(
-			inspector.querySelector(
-				'.gatherpress-block-guard-inspector-notice',
-			),
-		).toBeNull();
+		expect( appender.style.display ).toBe( '' );
+	} );
+} );
+
+/**
+ * Pristine jsdom document captured at load time, before any describe swaps
+ * global.document for a mock (in jest's jsdom environment global IS window,
+ * so window.document offers no escape hatch once overwritten).
+ */
+const realDocument = global.document;
+
+/**
+ * Tests for injectBlockGuardStyles function.
+ */
+describe( 'injectBlockGuardStyles', () => {
+	beforeEach( () => {
+		global.document = realDocument;
+
+		// Earlier describes overwrite these as own properties on the shared
+		// document object, shadowing the jsdom prototype methods; deleting
+		// the shadows restores the real implementations.
+		delete document.getElementById;
+		delete document.querySelectorAll;
+		delete document.createElement;
+	} );
+
+	afterEach( () => {
+		document.getElementById( 'gatherpress-block-guard-style' )?.remove();
+	} );
+
+	it( 'injects the panel-ordering stylesheet exactly once', () => {
+		injectBlockGuardStyles();
+		injectBlockGuardStyles();
+
+		const styles = document.querySelectorAll(
+			'#gatherpress-block-guard-style',
+		);
+
+		expect( styles ).toHaveLength( 1 );
+		expect( styles[ 0 ].textContent ).toContain(
+			'.gatherpress-block-guard-panel',
+		);
 	} );
 } );
