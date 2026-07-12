@@ -14,9 +14,23 @@ import '@testing-library/jest-dom';
 /**
  * WordPress dependencies
  */
+// Registry state steering isCoreRestrictedBlock; tests reshape this to
+// simulate core-restricted contexts (contentOnly template locks, synced
+// pattern instances).
+const mockRegistry = {
+	parents: [],
+	names: {},
+	locks: {},
+};
+
 jest.mock( '@wordpress/data', () => ( {
 	dispatch: jest.fn( () => ( {
 		selectBlock: jest.fn(),
+	} ) ),
+	select: jest.fn( () => ( {
+		getBlockParents: () => mockRegistry.parents,
+		getBlockName: ( id ) => mockRegistry.names[ id ],
+		getTemplateLock: ( id ) => mockRegistry.locks[ id ],
 	} ) ),
 } ) );
 
@@ -66,6 +80,7 @@ jest.mock( '@wordpress/element', () => ( {
  * Internal dependencies
  */
 import {
+	isCoreRestrictedBlock,
 	generateBlockGuardStateKey,
 	getEditorDocument,
 	applyGuardToContainer,
@@ -1054,5 +1069,47 @@ describe( 'injectBlockGuardStyles', () => {
 		expect( styles[ 0 ].textContent ).toContain(
 			'.gatherpress-block-guard-panel',
 		);
+	} );
+} );
+
+/**
+ * Coverage for isCoreRestrictedBlock (#1817).
+ */
+describe( 'isCoreRestrictedBlock', () => {
+	afterEach( () => {
+		mockRegistry.parents = [];
+		mockRegistry.names = {};
+		mockRegistry.locks = {};
+	} );
+
+	it( 'returns false for a block with no ancestors', () => {
+		expect( isCoreRestrictedBlock( 'solo' ) ).toBe( false );
+	} );
+
+	it( 'returns false when no ancestor restricts editing', () => {
+		mockRegistry.parents = [ 'group-1' ];
+		mockRegistry.names = { 'group-1': 'core/group' };
+		mockRegistry.locks = { 'group-1': false };
+
+		expect( isCoreRestrictedBlock( 'child' ) ).toBe( false );
+	} );
+
+	it( 'returns true when an ancestor imposes a contentOnly template lock', () => {
+		mockRegistry.parents = [ 'outer', 'locked-group' ];
+		mockRegistry.names = {
+			outer: 'core/group',
+			'locked-group': 'core/group',
+		};
+		mockRegistry.locks = { outer: false, 'locked-group': 'contentOnly' };
+
+		expect( isCoreRestrictedBlock( 'child' ) ).toBe( true );
+	} );
+
+	it( 'returns true inside a synced pattern instance', () => {
+		mockRegistry.parents = [ 'pattern-instance' ];
+		mockRegistry.names = { 'pattern-instance': 'core/block' };
+		mockRegistry.locks = {};
+
+		expect( isCoreRestrictedBlock( 'child' ) ).toBe( true );
 	} );
 } );

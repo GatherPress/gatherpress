@@ -1,0 +1,4 @@
+Significance: patch
+Type: fixed
+
+Block Guard now stands down inside contentOnly template locks and synced pattern instances, where core already protects structure but deliberately keeps text editable — previously the guard made that content uneditable with no way to reach the toggle.

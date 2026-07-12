@@ -5,6 +5,7 @@ import { getBlockType } from '@wordpress/blocks';
 import { createHigherOrderComponent } from '@wordpress/compose';
 import { InspectorControls } from '@wordpress/block-editor';
 import { PanelBody, ToggleControl } from '@wordpress/components';
+import { select } from '@wordpress/data';
 import { __ } from '@wordpress/i18n';
 import { addFilter, hasFilter } from '@wordpress/hooks';
 import { useState, useEffect, useCallback } from '@wordpress/element';
@@ -506,6 +507,34 @@ function generateBlockGuardStateKey( name, clientId ) {
 }
 
 /**
+ * Whether core already restricts a block's editing context.
+ *
+ * True when any ancestor imposes a contentOnly template lock or the block
+ * lives inside a synced pattern instance (core/block). In those contexts
+ * core protects structure while deliberately keeping content editable, and
+ * it removes the selection routes to the Block Guard toggle — so the guard
+ * stands down entirely rather than stacking a second, stricter lock on top
+ * (#1817). Read imperatively from the registry because core freezes
+ * rendering of blocks it resolves to a non-default editing mode, which
+ * makes hook-based reads (getBlockEditingMode, useBlockEditingMode) report
+ * a stale `default` forever.
+ *
+ * @param {string} clientId - The block's client ID.
+ *
+ * @return {boolean} Whether core restricts this block's context.
+ */
+function isCoreRestrictedBlock( clientId ) {
+	const { getBlockParents, getBlockName, getTemplateLock } =
+		select( 'core/block-editor' );
+
+	return getBlockParents( clientId ).some(
+		( parentClientId ) =>
+			'contentOnly' === getTemplateLock( parentClientId ) ||
+			'core/block' === getBlockName( parentClientId ),
+	);
+}
+
+/**
  * Higher-Order Component to add BlockGuard functionality to supported GatherPress blocks.
  *
  * This HOC injects a toggle control into the Inspector Controls of blocks
@@ -554,13 +583,24 @@ const withBlockGuard = createHigherOrderComponent( ( BlockEdit ) => {
 
 			injectBlockGuardStyles();
 
+			// The restriction check runs inside each pass, not as a hook:
+			// core freezes rendering of blocks it resolves to a non-default
+			// editing mode, so no hook ever delivers the mode change — but
+			// these observer passes keep firing on DOM churn and read the
+			// live registry each time.
+			const applyPass = () =>
+				applyBlockGuard(
+					clientId,
+					name,
+					stateKey,
+					isBlockGuardEnabled && ! isCoreRestrictedBlock( clientId ),
+				);
+
 			// Apply initially.
-			applyBlockGuard( clientId, name, stateKey, isBlockGuardEnabled );
+			applyPass();
 
 			// Set up observer for DOM changes.
-			const observer = new MutationObserver( () => {
-				applyBlockGuard( clientId, name, stateKey, isBlockGuardEnabled );
-			} );
+			const observer = new MutationObserver( applyPass );
 			observer.observe( document.body, {
 				childList: true,
 				subtree: true,
@@ -581,18 +621,21 @@ const withBlockGuard = createHigherOrderComponent( ( BlockEdit ) => {
 			let dropHandler = null;
 
 			const handleListView = () => {
-				applyListViewGuardForBlock( clientId, isBlockGuardEnabled );
+				const isGuardActive =
+					isBlockGuardEnabled && ! isCoreRestrictedBlock( clientId );
+
+				applyListViewGuardForBlock( clientId, isGuardActive );
 
 				// The inspector's List View tab (WordPress 7.0 `listView`
 				// support) only renders for the selected block, so gate on
 				// selection to keep unselected instances of guarded blocks
 				// from fighting over the shared inspector DOM.
 				if ( isSelected ) {
-					applyInspectorListViewGuard( isBlockGuardEnabled );
+					applyInspectorListViewGuard( isGuardActive );
 				}
 
 				// Handle drag prevention for block guard.
-				if ( isBlockGuardEnabled ) {
+				if ( isGuardActive ) {
 					// Prevent drops into this block like WordPress lock removal.
 					if ( ! dropHandler ) {
 						dropHandler = createDropHandler( clientId );
@@ -717,6 +760,7 @@ export {
 	applyListViewGuardForBlock,
 	applyInspectorListViewGuard,
 	injectBlockGuardStyles,
+	isCoreRestrictedBlock,
 	cleanupBlockGuard,
 	applyBlockGuard,
 };
