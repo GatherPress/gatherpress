@@ -8,7 +8,10 @@
 	"icon": "forms",
 	"example": {},
 	"description": "Allows visitors to RSVP to an event without requiring a site account.",
-	"usesContext": [ "postId", "queryId" ],
+	"usesContext": [
+		"postId",
+		"queryId"
+	],
 	"attributes": {
 		"patternPicked": {
 			"type": "boolean",
@@ -20,7 +23,8 @@
 			"postIdOverride": true
 		},
 		"interactivity": true,
-		"html": false
+		"html": false,
+		"listView": true
 	},
 	"textdomain": "gatherpress",
 	"editorScript": "file:./index.js",

@@ -7,7 +7,7 @@ import { InspectorControls } from '@wordpress/block-editor';
 import { PanelBody, ToggleControl } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
 import { addFilter, hasFilter } from '@wordpress/hooks';
-import { useState, useEffect } from '@wordpress/element';
+import { useState, useEffect, useCallback } from '@wordpress/element';
 
 /**
  * Shared state store for block guard settings across all block instances.
@@ -53,18 +53,67 @@ function useSharedBlockGuardState( blockName ) {
 		};
 	}, [ blockName ] );
 
-	const setSharedState = ( value ) => {
-		// Update the shared state.
-		blockGuardStates.set( blockName, value );
+	// Stable identity so consumers can list the setter in effect
+	// dependencies without re-running the effect every render.
+	const setSharedState = useCallback(
+		( value ) => {
+			// Update the shared state.
+			blockGuardStates.set( blockName, value );
 
-		// Notify all listeners (components using this block type).
-		const listeners = blockGuardListeners.get( blockName );
-		if ( listeners ) {
-			listeners.forEach( ( listener ) => listener( value ) );
-		}
-	};
+			// Notify all listeners (components using this block type).
+			const listeners = blockGuardListeners.get( blockName );
+			if ( listeners ) {
+				listeners.forEach( ( listener ) => listener( value ) );
+			}
+		},
+		[ blockName ],
+	);
 
 	return [ localState, setSharedState ];
+}
+
+/**
+ * ID of the injected stylesheet that positions the Block Guard panel.
+ */
+const BLOCK_GUARD_STYLE_ID = 'gatherpress-block-guard-style';
+
+/**
+ * Inject the stylesheet that floats the Block Guard panel to the top of
+ * whichever inspector tab it renders in (the Settings tab and the
+ * WordPress 7.0 List View tab), so the protection state is the first
+ * thing users see. Idempotent: the module evaluates in multiple webpack
+ * chunks and the HOC mounts per block, so the id guard keeps a single
+ * style element.
+ *
+ * @return {void}
+ */
+function injectBlockGuardStyles() {
+	if ( document.getElementById( BLOCK_GUARD_STYLE_ID ) ) {
+		return;
+	}
+
+	const style = document.createElement( 'style' );
+	style.id = BLOCK_GUARD_STYLE_ID;
+	// Target the panel's direct parent (the tab content wrapper, whatever
+	// element that happens to be) rather than the tabpanel itself: the
+	// panel and its sibling controls all live one wrapper below the
+	// tabpanel. The panel's order rule is declared last so it wins the
+	// equal-specificity tie against the catch-all sibling rule.
+	style.textContent = `
+		.block-editor-block-inspector [role="tabpanel"]:has(> .gatherpress-block-guard-panel),
+		.block-editor-block-inspector [role="tabpanel"] :has(> .gatherpress-block-guard-panel) {
+			display: flex;
+			flex-direction: column;
+		}
+		.block-editor-block-inspector [role="tabpanel"]:has(> .gatherpress-block-guard-panel) > *,
+		.block-editor-block-inspector [role="tabpanel"] :has(> .gatherpress-block-guard-panel) > * {
+			order: 1;
+		}
+		.block-editor-block-inspector [role="tabpanel"] .gatherpress-block-guard-panel {
+			order: 0;
+		}
+	`;
+	document.head.appendChild( style );
 }
 
 /**
@@ -279,6 +328,46 @@ function applyListViewGuardForBlock( clientId, isBlockGuardEnabled ) {
 }
 
 /**
+ * Apply block guard to the block inspector's List View tab.
+ *
+ * WordPress 7.0's `listView` block support renders the selected block's
+ * inner blocks as a standalone tree inside the block inspector. That tree
+ * bypasses both the canvas inert overlay and the main List View expander
+ * handling, so it gets the same inert treatment as the canvas container.
+ * The tree stays visible as a read-only structure map while the guard is
+ * on; the Block Guard toggle rendered into the tab (via the `list`
+ * InspectorControls group) is where users flip protection.
+ *
+ * @param {boolean} isEnabled - Whether guard is enabled.
+ *
+ * @return {HTMLElement|null} The guarded tree element, or null when the
+ *                            inspector's List View tab is not rendered.
+ */
+function applyInspectorListViewGuard( isEnabled ) {
+	// The inspector lives in the top-level document, never the editor iframe.
+	const tree = document.querySelector(
+		'.block-editor-block-inspector .block-editor-list-view-tree',
+	);
+
+	if ( ! tree ) {
+		return null;
+	}
+
+	applyGuardToContainer( tree, isEnabled );
+
+	// Hide the tree's appender while guarded, matching the canvas behavior.
+	// The tree uses its own appender class, not the `.block-list-appender`
+	// that applyGuardToContainer handles.
+	const appender = tree.querySelector( '.list-view-appender' );
+
+	if ( appender ) {
+		appender.style.display = isEnabled ? 'none' : '';
+	}
+
+	return tree;
+}
+
+/**
  * Clean up block guard from all elements that share the same state key.
  *
  * @param {string} name     - The block type name.
@@ -441,7 +530,7 @@ function generateBlockGuardStateKey( name, clientId ) {
  */
 const withBlockGuard = createHigherOrderComponent( ( BlockEdit ) => {
 	return ( props ) => {
-		const { name, clientId } = props;
+		const { name, clientId, isSelected } = props;
 
 		// Check if the block supports blockGuard.
 		if (
@@ -462,6 +551,8 @@ const withBlockGuard = createHigherOrderComponent( ( BlockEdit ) => {
 			if ( ! clientId ) {
 				return;
 			}
+
+			injectBlockGuardStyles();
 
 			// Apply initially.
 			applyBlockGuard( clientId, name, stateKey, isBlockGuardEnabled );
@@ -491,6 +582,14 @@ const withBlockGuard = createHigherOrderComponent( ( BlockEdit ) => {
 
 			const handleListView = () => {
 				applyListViewGuardForBlock( clientId, isBlockGuardEnabled );
+
+				// The inspector's List View tab (WordPress 7.0 `listView`
+				// support) only renders for the selected block, so gate on
+				// selection to keep unselected instances of guarded blocks
+				// from fighting over the shared inspector DOM.
+				if ( isSelected ) {
+					applyInspectorListViewGuard( isBlockGuardEnabled );
+				}
 
 				// Handle drag prevention for block guard.
 				if ( isBlockGuardEnabled ) {
@@ -524,45 +623,63 @@ const withBlockGuard = createHigherOrderComponent( ( BlockEdit ) => {
 			return () => {
 				observer.disconnect();
 
+				// Release the inspector tree so the next selection starts
+				// from a clean slate.
+				if ( isSelected ) {
+					applyInspectorListViewGuard( false );
+				}
+
 				// Clean up event listeners.
 				if ( dropHandler ) {
 					removeDragListeners( dropHandler );
 				}
 			};
-		}, [ clientId, isBlockGuardEnabled ] );
+		}, [ clientId, isBlockGuardEnabled, isSelected ] );
+
+		// One descriptor, rendered in both inspector tabs: the Settings tab
+		// and the WordPress 7.0 List View tab (`group="list"`), so the guard
+		// can be toggled from wherever the user happens to be looking.
+		const blockGuardToggle = (
+			<ToggleControl
+				label={ __( 'Block Guard', 'gatherpress' ) }
+				checked={ isBlockGuardEnabled }
+				onChange={ ( value ) => {
+					setIsBlockGuardEnabled( value );
+
+					const expander = document.querySelector(
+						`.block-editor-list-view-leaf[data-block="${ clientId }"][data-expanded="true"] .block-editor-list-view__expander`,
+					);
+
+					if ( value && expander ) {
+						expander.click();
+						expander.style.pointerEvents = 'none';
+					}
+				} }
+				help={
+					isBlockGuardEnabled
+						? __(
+							'Toggle to unprotect and update the block.',
+							'gatherpress',
+						)
+						: __(
+							'Block protection is disabled. Inner blocks can be freely edited.',
+							'gatherpress',
+						)
+				}
+			/>
+		);
 
 		return (
 			<>
 				<BlockEdit { ...props } />
 				<InspectorControls>
-					<PanelBody>
-						<ToggleControl
-							label={ __( 'Block Guard', 'gatherpress' ) }
-							checked={ isBlockGuardEnabled }
-							onChange={ ( value ) => {
-								setIsBlockGuardEnabled( value );
-
-								const expander = document.querySelector(
-									`.block-editor-list-view-leaf[data-block="${ clientId }"][data-expanded="true"] .block-editor-list-view__expander`,
-								);
-
-								if ( value && expander ) {
-									expander.click();
-									expander.style.pointerEvents = 'none';
-								}
-							} }
-							help={
-								isBlockGuardEnabled
-									? __(
-										'Toggle to unprotect and update the block.',
-										'gatherpress',
-									)
-									: __(
-										'Block protection is disabled. Inner blocks can be freely edited.',
-										'gatherpress',
-									)
-							}
-						/>
+					<PanelBody className="gatherpress-block-guard-panel">
+						{ blockGuardToggle }
+					</PanelBody>
+				</InspectorControls>
+				<InspectorControls group="list">
+					<PanelBody className="gatherpress-block-guard-panel">
+						{ blockGuardToggle }
 					</PanelBody>
 				</InspectorControls>
 			</>
@@ -598,6 +715,8 @@ export {
 	removeDragListeners,
 	createDropHandler,
 	applyListViewGuardForBlock,
+	applyInspectorListViewGuard,
+	injectBlockGuardStyles,
 	cleanupBlockGuard,
 	applyBlockGuard,
 };

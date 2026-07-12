@@ -8,7 +8,11 @@
 	"icon": "insert",
 	"example": {},
 	"description": "Enables members to easily confirm their attendance for an event.",
-	"usesContext": [ "postId", "postType", "queryId" ],
+	"usesContext": [
+		"postId",
+		"postType",
+		"queryId"
+	],
 	"attributes": {
 		"serializedInnerBlocks": {
 			"type": "string",
@@ -38,7 +42,8 @@
 				"justifyContent": "center",
 				"flexWrap": "wrap"
 			}
-		}
+		},
+		"listView": true
 	},
 	"textdomain": "gatherpress",
 	"editorScript": "file:./index.js",

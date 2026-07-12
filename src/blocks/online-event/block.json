@@ -7,7 +7,11 @@
 	"category": "gatherpress",
 	"icon": "video-alt2",
 	"description": "Container block for online event display with icon and link.",
-	"usesContext": ["postId", "postType", "queryId"],
+	"usesContext": [
+		"postId",
+		"postType",
+		"queryId"
+	],
 	"providesContext": {
 		"postId": "postId"
 	},
@@ -21,7 +25,8 @@
 			"blockGuard": true,
 			"postIdOverride": true
 		},
-		"html": false
+		"html": false,
+		"listView": true
 	},
 	"textdomain": "gatherpress",
 	"editorScript": "file:./index.js"
