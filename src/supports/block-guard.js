@@ -279,6 +279,36 @@ function applyListViewGuardForBlock( clientId, isBlockGuardEnabled ) {
 }
 
 /**
+ * Apply block guard to the block inspector's List View tab.
+ *
+ * WordPress 7.0's `listView` block support renders the selected block's
+ * inner blocks as a standalone tree inside the block inspector. That tree
+ * bypasses both the canvas inert overlay and the main List View expander
+ * handling, so it gets the same inert treatment as the canvas container
+ * (which also hides the tree's block appender). The tree stays visible as
+ * a read-only structure map while the guard is on.
+ *
+ * @param {boolean} isEnabled - Whether guard is enabled.
+ *
+ * @return {HTMLElement|null} The guarded tree element, or null when the
+ *                            inspector's List View tab is not rendered.
+ */
+function applyInspectorListViewGuard( isEnabled ) {
+	// The inspector lives in the top-level document, never the editor iframe.
+	const tree = document.querySelector(
+		'.block-editor-block-inspector .block-editor-list-view-tree',
+	);
+
+	if ( ! tree ) {
+		return null;
+	}
+
+	applyGuardToContainer( tree, isEnabled );
+
+	return tree;
+}
+
+/**
  * Clean up block guard from all elements that share the same state key.
  *
  * @param {string} name     - The block type name.
@@ -441,7 +471,7 @@ function generateBlockGuardStateKey( name, clientId ) {
  */
 const withBlockGuard = createHigherOrderComponent( ( BlockEdit ) => {
 	return ( props ) => {
-		const { name, clientId } = props;
+		const { name, clientId, isSelected } = props;
 
 		// Check if the block supports blockGuard.
 		if (
@@ -492,6 +522,14 @@ const withBlockGuard = createHigherOrderComponent( ( BlockEdit ) => {
 			const handleListView = () => {
 				applyListViewGuardForBlock( clientId, isBlockGuardEnabled );
 
+				// The inspector's List View tab (WordPress 7.0 `listView`
+				// support) only renders for the selected block, so gate on
+				// selection to keep unselected instances of guarded blocks
+				// from fighting over the shared inspector DOM.
+				if ( isSelected ) {
+					applyInspectorListViewGuard( isBlockGuardEnabled );
+				}
+
 				// Handle drag prevention for block guard.
 				if ( isBlockGuardEnabled ) {
 					// Prevent drops into this block like WordPress lock removal.
@@ -524,12 +562,18 @@ const withBlockGuard = createHigherOrderComponent( ( BlockEdit ) => {
 			return () => {
 				observer.disconnect();
 
+				// Release the inspector tree so the next selection starts
+				// from a clean slate.
+				if ( isSelected ) {
+					applyInspectorListViewGuard( false );
+				}
+
 				// Clean up event listeners.
 				if ( dropHandler ) {
 					removeDragListeners( dropHandler );
 				}
 			};
-		}, [ clientId, isBlockGuardEnabled ] );
+		}, [ clientId, isBlockGuardEnabled, isSelected ] );
 
 		return (
 			<>
@@ -598,6 +642,7 @@ export {
 	removeDragListeners,
 	createDropHandler,
 	applyListViewGuardForBlock,
+	applyInspectorListViewGuard,
 	cleanupBlockGuard,
 	applyBlockGuard,
 };

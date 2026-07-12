@@ -74,6 +74,7 @@ import {
 	removeDragListeners,
 	createDropHandler,
 	applyListViewGuardForBlock,
+	applyInspectorListViewGuard,
 } from '@src/supports/block-guard';
 
 /**
@@ -935,5 +936,66 @@ describe( 'applyListViewGuardForBlock', () => {
 
 		expect( result ).toEqual( { expander: mockExpander } );
 		expect( mockExpander.style.pointerEvents ).toBe( 'none' );
+	} );
+} );
+
+/**
+ * Tests for applyInspectorListViewGuard function.
+ */
+describe( 'applyInspectorListViewGuard', () => {
+	let inspector;
+	let tree;
+
+	beforeEach( () => {
+		inspector = document.createElement( 'div' );
+		inspector.className = 'block-editor-block-inspector';
+
+		tree = document.createElement( 'table' );
+		tree.className = 'block-editor-list-view-tree';
+
+		inspector.appendChild( tree );
+		document.body.appendChild( inspector );
+	} );
+
+	afterEach( () => {
+		inspector.remove();
+	} );
+
+	it( 'returns null when the inspector List View tab is not rendered', () => {
+		tree.remove();
+
+		expect( applyInspectorListViewGuard( true ) ).toBeNull();
+	} );
+
+	it( 'inerts the inspector tree when enabled', () => {
+		const result = applyInspectorListViewGuard( true );
+
+		expect( result ).toBe( tree );
+		expect( tree.inert ).toBe( true );
+		expect( tree.style.opacity ).toBe( '0.95' );
+		expect( tree.style.cursor ).toBe( 'not-allowed' );
+		expect( tree.dataset.gatherPressGuarded ).toBe( 'true' );
+	} );
+
+	it( 'hides the inspector tree appender when enabled', () => {
+		const appender = document.createElement( 'div' );
+		appender.className = 'block-list-appender';
+		tree.appendChild( appender );
+
+		applyInspectorListViewGuard( true );
+
+		expect( appender.style.display ).toBe( 'none' );
+	} );
+
+	it( 'releases the inspector tree when disabled', () => {
+		applyInspectorListViewGuard( true );
+
+		const result = applyInspectorListViewGuard( false );
+
+		expect( result ).toBe( tree );
+		expect( tree.inert ).toBe( false );
+		expect( tree.style.opacity ).toBe( '' );
+		expect( tree.style.cursor ).toBe( '' );
+		expect( tree.dataset.gatherPressGuarded ).toBeUndefined();
 	} );
 } );
