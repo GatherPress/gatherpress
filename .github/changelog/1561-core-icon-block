@@ -1,4 +1,4 @@
 Significance: major
 Type: changed
 
-Block templates now use the WordPress core Icon block instead of the GatherPress Icon block, and the minimum required WordPress version was raised to 7.0.
+The GatherPress Icon block was removed in favor of the WordPress core Icon block (block templates now use core/icon), and the minimum required WordPress version was raised to 7.0. Run the GatherPress Alpha compatibility updates to migrate existing content.
