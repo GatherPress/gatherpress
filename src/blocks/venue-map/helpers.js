@@ -64,6 +64,13 @@ const postVenueMapDescriptors = async ( {
 		},
 	} );
 
+	// Patch the fresh descriptors straight into the `core` store
+	// cache. Both core.getEntityRecord and
+	// core/editor.getEditedPostAttribute read through this entity
+	// record, so the block preview picks up the new PNG URL on the
+	// next render without waiting for a separate refetch. The
+	// trailing invalidateResolution is belt-and-suspenders for
+	// anyone subscribed to the resolution state itself.
 	if ( venuePostType && '' === response?.reason ) {
 		const current = getCurrentEntityRecord();
 
@@ -136,6 +143,11 @@ export const RegenerateMapButton = ( {
 		useDispatch( 'core' );
 	const { createErrorNotice } = useDispatch( 'core/notices' );
 
+	// Non-reactive selector lookups — we only need the current record at
+	// the moment of the click to merge fresh meta into it, not on every
+	// render. handleClick already bails on missing venuePostId before
+	// invoking postVenueMapDescriptors, and that helper skips the store
+	// patch when venuePostType is absent.
 	const getCurrentEntityRecord = useSelect(
 		( select ) => () =>
 			select( 'core' ).getEntityRecord(
@@ -167,6 +179,9 @@ export const RegenerateMapButton = ( {
 				invalidateResolution,
 			} );
 
+			// Server reached but every combo failed to render (disk / GD /
+			// tile host). Treat as an error: leave the cached descriptor
+			// intact and surface a notice.
 			if ( 'generation_failed' === response?.reason ) {
 				createErrorNotice?.(
 					__(
@@ -177,6 +192,10 @@ export const RegenerateMapButton = ( {
 				);
 			}
 		} catch ( error ) {
+			// Network / permission failure (403, 500, offline). Keep the
+			// cached descriptor intact so the preview doesn't flash blank,
+			// surface the failure as an admin notice, and re-enable the
+			// button so the user can retry.
 			createErrorNotice?.(
 				error?.message ||
 					__(
@@ -340,10 +359,20 @@ export const MAX_POLLS = 20;
  * combo (when `combo` is set) and periodically invalidate the venue entity
  * record so background-generated descriptors surface in the editor.
  *
+ * The hook schedules ensure-only POSTs when the active combo changes and an
+ * interval when `active` is true AND the venue is fully addressable (post id +
+ * type + resolved coordinates). Stops polling after {@link MAX_POLLS} ticks so
+ * a persistently failing generation doesn't pin the editor into forever polling;
+ * tears down on unmount or when any dep transitions to a falsy state.
+ *
+ * Scheduling only for the poll interval — ensure-only hits the REST endpoint
+ * directly. The same poll behavior works whether generation runs via WP-Cron
+ * (today) or Action Scheduler (when #1487 lands).
+ *
  * @since 0.34.0
  *
  * @param {Object}      args               Hook arguments.
- * @param {boolean}     args.active        Whether effects should run.
+ * @param {boolean}     args.active        Whether polling should run (typically `showStaticPlaceholder` gated on coords).
  * @param {number}      args.venuePostId   Venue post ID.
  * @param {string}      args.venuePostType Venue post type slug.
  * @param {Object|null} [args.combo]       When set, POST ensure-only once (`key`, `zoom`, `width`, `height`, `aspectRatio`, `mapType`).
@@ -360,6 +389,8 @@ export const usePlaceholderPolling = ( {
 		useDispatch( 'core' );
 	const inFlightKeyRef = useRef( '' );
 
+	// Non-reactive selector lookups — same rationale as RegenerateMapButton;
+	// we only need the current record at POST time to merge fresh meta.
 	const getCurrentEntityRecord = useSelect(
 		( select ) => () =>
 			select( 'core' ).getEntityRecord(
@@ -382,6 +413,9 @@ export const usePlaceholderPolling = ( {
 			combo?.key &&
 			inFlightKeyRef.current !== combo.key
 		) {
+			// Lazy-generate exactly one combo while the placeholder is visible.
+			// Dedupe by combo key so attribute tweaks that don't change the
+			// resolved key don't fire duplicate POSTs.
 			inFlightKeyRef.current = combo.key;
 
 			postVenueMapDescriptors( {
@@ -411,6 +445,8 @@ export const usePlaceholderPolling = ( {
 				venuePostType,
 				venuePostId,
 			] );
+			// Stop on the MAX_POLLS'th tick rather than letting a (MAX_POLLS + 1)th
+			// tick fire just to clear — matches the cap literally.
 			if ( pollCount >= MAX_POLLS ) {
 				clearInterval( interval );
 			}
@@ -420,6 +456,10 @@ export const usePlaceholderPolling = ( {
 			cancelled = true;
 			clearInterval( interval );
 		};
+		// `invalidateResolution` is a bound dispatch action; @wordpress/data
+		// returns a stable reference for it across renders, so omitting it
+		// from the deps is safe and avoids a spurious restart-on-rerender
+		// if that contract ever regresses.
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [
 		active,

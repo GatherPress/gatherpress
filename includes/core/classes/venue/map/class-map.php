@@ -785,6 +785,10 @@ class Map {
 			);
 		}
 
+		// An empty descriptor map for a geocoded venue means every combo
+		// failed — disk write error, GD missing, tile host unreachable past
+		// COMPOSITE_TIME_BUDGET. Surface it with a distinct reason so the
+		// UI can flag the failure instead of rendering as a silent success.
 		if ( empty( $descriptors ) ) {
 			return new WP_REST_Response(
 				array(
@@ -1044,7 +1048,7 @@ class Map {
 
 	/**
 	 * Return every stored descriptor for the venue, keyed by provider slug
-	 * then by `{zoom}x{width}x{height}`.
+	 * then by `{zoom}x{width}x{height}x{map_type}`.
 	 *
 	 * Filters out malformed entries so callers can iterate without defensive
 	 * shape checks. The read path itself does not persist the cleaned map —
@@ -1106,7 +1110,7 @@ class Map {
 		 * Companion plugins, multi-locale setups, or storage-layer overrides
 		 * can use this to drop entries they consider stale, add synthetic
 		 * descriptors (e.g. pre-rendered PNG files in a CDN), or rewrite URLs.
-		 * Outer key is provider slug, inner key is `{zoom}x{width}x{height}`.
+		 * Outer key is provider slug, inner key is `{zoom}x{width}x{height}x{map_type}`.
 		 * Callers of this method already tolerate empty maps, so returning
 		 * `[]` is a valid "suppress all" escape hatch.
 		 *
