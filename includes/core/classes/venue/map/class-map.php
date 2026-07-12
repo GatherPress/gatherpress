@@ -589,7 +589,7 @@ class Map {
 				$combo['zoom'],
 				$combo['width'],
 				$combo['height'],
-				$this->normalize_map_type( (string) ( $combo['map_type'] ?? '' ) )
+				$this->normalize_map_type( (string) $combo['map_type'] )
 			);
 		}
 	}
@@ -674,7 +674,7 @@ class Map {
 		$seen   = array();
 		$unique = array();
 		foreach ( $combos as $combo ) {
-			$combo_map_type = $this->normalize_map_type( (string) ( $combo['map_type'] ?? '' ) );
+			$combo_map_type = $this->normalize_map_type( (string) $combo['map_type'] );
 			$key            = $this->combo_key(
 				$this->clamp_zoom( (int) $combo['zoom'] ),
 				$this->clamp_width( (int) $combo['width'] ),
@@ -727,7 +727,7 @@ class Map {
 				$combo['zoom'],
 				$combo['width'],
 				$combo['height'],
-				$this->normalize_map_type( (string) ( $combo['map_type'] ?? '' ) )
+				$this->normalize_map_type( (string) $combo['map_type'] )
 			);
 		}
 
