@@ -44,7 +44,7 @@ class Test_Manager extends Base {
 	 * registration action is wired to `init` priority 0.
 	 *
 	 * Core providers register synchronously in the constructor and are
-	 * covered by `test_register_core_providers_registers_osm` rather
+	 * covered by `test_register_core_providers_registers_osm_and_google` rather
 	 * than as a hook here.
 	 *
 	 * @covers ::__construct
@@ -168,22 +168,22 @@ class Test_Manager extends Base {
 		$instance = Manager::get_instance();
 		$instance->register( $this->make_stub_provider( 'late' ) );
 
-		$this->assertSame( array( 'osm', 'late' ), $instance->get_slugs() );
+		$this->assertSame( array( 'osm', 'google', 'late' ), $instance->get_slugs() );
 	}
 
 	/**
-	 * `register_core_providers()` always registers OSM — it is the
-	 * always-available fallback regardless of which platform the site picks.
+	 * `register_core_providers()` registers OSM and Google — the built-in
+	 * providers regardless of which platform the site picks.
 	 *
 	 * @covers ::register_core_providers
 	 *
 	 * @return void
 	 */
-	public function test_register_core_providers_registers_osm(): void {
+	public function test_register_core_providers_registers_osm_and_google(): void {
 		$instance = Manager::get_instance();
-		$osm      = $instance->get( 'osm' );
 
-		$this->assertInstanceOf( OSM::class, $osm );
+		$this->assertInstanceOf( OSM::class, $instance->get( 'osm' ) );
+		$this->assertInstanceOf( Google::class, $instance->get( 'google' ) );
 	}
 
 	/**
@@ -275,7 +275,6 @@ class Test_Manager extends Base {
 	 */
 	public function test_get_active_returns_google_when_registered(): void {
 		$instance = Manager::get_instance();
-		$instance->register( new Google() );
 
 		update_option( Settings::OPTION_NAME, array( 'map_platform' => 'google' ) );
 
