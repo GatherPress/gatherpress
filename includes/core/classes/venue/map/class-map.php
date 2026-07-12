@@ -558,13 +558,13 @@ class Map {
 			return;
 		}
 
-		// Regenerate every (zoom, width, height) combo the venue is already
-		// cached at so a content change (new address/coords) cascades to
-		// all cached variants. For a fresh venue with nothing stored, seed
-		// the default combo that newly-inserted venue-map blocks will
-		// actually request — otherwise the editor falls back to the
-		// interactive preview on the very first save because the default
-		// cache entry is missing.
+		// Regenerate every (zoom, width, height, map_type) combo the venue is
+		// already cached at so a content change (new address/coords) cascades
+		// to all cached variants — each preserving its own map type. For a
+		// fresh venue with nothing stored, seed the default combo that
+		// newly-inserted venue-map blocks will actually request — otherwise
+		// the editor falls back to the interactive preview on the very first
+		// save because the default cache entry is missing.
 		$combos = $this->get_cached_combos( $post_id );
 		if ( empty( $combos ) ) {
 			$default = $this->resolve_dimensions(
@@ -574,9 +574,10 @@ class Map {
 			);
 			$combos  = array(
 				array(
-					'zoom'   => $this->get_zoom(),
-					'width'  => $default['width'],
-					'height' => $default['height'],
+					'zoom'     => $this->get_zoom(),
+					'width'    => $default['width'],
+					'height'   => $default['height'],
+					'map_type' => $this->normalize_map_type( '' ),
 				),
 			);
 		}
@@ -588,7 +589,7 @@ class Map {
 				$combo['zoom'],
 				$combo['width'],
 				$combo['height'],
-				$this->normalize_map_type( '' )
+				$this->normalize_map_type( (string) ( $combo['map_type'] ?? '' ) )
 			);
 		}
 	}
@@ -613,14 +614,15 @@ class Map {
 	/**
 	 * Force-regenerate the static maps for a venue.
 	 *
-	 * Clears every cached descriptor + PNG, then runs the normal
-	 * `maybe_generate()` flow to recreate images for each combo the venue
-	 * was previously cached at. When the caller supplies an extra
-	 * `(zoom, height)` — typically the combo the block editor is currently
-	 * displaying — that combo is added to the list so a "Generate" click
-	 * from the placeholder produces a PNG for it even if the combo has
-	 * never been cached before. For a venue that has no cached combos
-	 * and no caller-supplied one, the site-default combo seeds the run.
+	 * Clears every cached descriptor + PNG, then recreates images for each
+	 * combo the venue was previously cached at — preserving each variant's
+	 * own map type so distinct types at the same dimensions aren't collapsed.
+	 * When the caller supplies an extra `(zoom, height)` — typically the combo
+	 * the block editor is currently displaying — that combo is added to the
+	 * list, tagged with the requested `$map_type`, so a "Generate" click from
+	 * the placeholder produces a PNG for it even if the combo has never been
+	 * cached before. For a venue that has no cached combos and no
+	 * caller-supplied one, the site-default combo seeds the run.
 	 *
 	 * Returns the fresh descriptor map so the caller — typically the block
 	 * editor's "Regenerate Map" REST endpoint — can hand the new URLs
@@ -651,8 +653,8 @@ class Map {
 		$combos   = $this->get_cached_combos( $post_id );
 		$map_type = $this->normalize_map_type( $map_type );
 
-		// Merge the caller-supplied combo in, resolving dims when either
-		// width or height is left as "auto".
+		// Merge the caller-supplied combo in, tagged with the requested map
+		// type, resolving dims when either width or height is left as "auto".
 		if ( null !== $extra_zoom ) {
 			$resolved = $this->resolve_dimensions(
 				(int) ( $extra_width ?? 0 ),
@@ -660,28 +662,33 @@ class Map {
 				$extra_aspect_ratio
 			);
 			$combos[] = array(
-				'zoom'   => (int) $extra_zoom,
-				'width'  => $resolved['width'],
-				'height' => $resolved['height'],
+				'zoom'     => (int) $extra_zoom,
+				'width'    => $resolved['width'],
+				'height'   => $resolved['height'],
+				'map_type' => $map_type,
 			);
 		}
 
+		// Dedupe on the full (zoom, width, height, map_type) key so distinct
+		// map-type variants at the same dimensions each survive the rebuild.
 		$seen   = array();
 		$unique = array();
 		foreach ( $combos as $combo ) {
-			$key = $this->combo_key(
+			$combo_map_type = $this->normalize_map_type( (string) ( $combo['map_type'] ?? '' ) );
+			$key            = $this->combo_key(
 				$this->clamp_zoom( (int) $combo['zoom'] ),
 				$this->clamp_width( (int) $combo['width'] ),
 				$this->clamp_height( (int) $combo['height'] ),
-				$map_type
+				$combo_map_type
 			);
 
 			if ( isset( $seen[ $key ] ) ) {
 				continue;
 			}
 
-			$seen[ $key ] = true;
-			$unique[]     = $combo;
+			$seen[ $key ]      = true;
+			$combo['map_type'] = $combo_map_type;
+			$unique[]          = $combo;
 		}
 		$combos = $unique;
 
@@ -697,9 +704,10 @@ class Map {
 			);
 			$combos  = array(
 				array(
-					'zoom'   => $this->get_zoom(),
-					'width'  => $default['width'],
-					'height' => $default['height'],
+					'zoom'     => $this->get_zoom(),
+					'width'    => $default['width'],
+					'height'   => $default['height'],
+					'map_type' => $map_type,
 				),
 			);
 		}
@@ -719,7 +727,7 @@ class Map {
 				$combo['zoom'],
 				$combo['width'],
 				$combo['height'],
-				$map_type
+				$this->normalize_map_type( (string) ( $combo['map_type'] ?? '' ) )
 			);
 		}
 
@@ -1133,31 +1141,45 @@ class Map {
 	 * combo any earlier provider had — so blocks pointing at non-default
 	 * combos aren't stranded.
 	 *
+	 * Each combo carries the map type it was rendered with so callers can
+	 * rebuild every `(zoom, width, height, map_type)` variant rather than
+	 * collapsing distinct types onto the site default.
+	 *
 	 * @since 0.34.0
 	 *
 	 * @param int $post_id Venue post ID.
 	 *
-	 * @return array<int, array{zoom: int, width: int, height: int}>
+	 * @return array<int, array{zoom: int, width: int, height: int, map_type: string}>
 	 */
 	public function get_cached_combos( int $post_id ): array {
 		$seen   = array();
 		$combos = array();
 
 		foreach ( $this->get_all_descriptors( $post_id ) as $provider_combos ) {
-			foreach ( $provider_combos as $descriptor ) {
-				$key = $this->combo_key(
-					(int) $descriptor['zoom'],
-					(int) $descriptor['width'],
-					(int) $descriptor['height']
-				);
+			foreach ( $provider_combos as $stored_key => $descriptor ) {
+				$zoom   = (int) $descriptor['zoom'];
+				$width  = (int) $descriptor['width'];
+				$height = (int) $descriptor['height'];
+
+				// Recover the map type from the stored key. The key is
+				// `{zoom}x{width}x{height}x{map_type}`; legacy keys predating
+				// map-type support have no suffix and fall back to the default.
+				$prefix   = sprintf( '%dx%dx%dx', $zoom, $width, $height );
+				$map_type = str_starts_with( (string) $stored_key, $prefix )
+					? substr( (string) $stored_key, strlen( $prefix ) )
+					: '';
+				$map_type = $this->normalize_map_type( $map_type );
+
+				$key = $this->combo_key( $zoom, $width, $height, $map_type );
 				if ( isset( $seen[ $key ] ) ) {
 					continue;
 				}
 				$seen[ $key ] = true;
 				$combos[]     = array(
-					'zoom'   => (int) $descriptor['zoom'],
-					'width'  => (int) $descriptor['width'],
-					'height' => (int) $descriptor['height'],
+					'zoom'     => $zoom,
+					'width'    => $width,
+					'height'   => $height,
+					'map_type' => $map_type,
 				);
 			}
 		}

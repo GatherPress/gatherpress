@@ -1024,6 +1024,77 @@ class Test_Map extends Base {
 	}
 
 	/**
+	 * A content change regenerates each cached variant preserving its own
+	 * map type, so a non-default type at the same dimensions is not
+	 * collapsed onto the site default.
+	 *
+	 * @covers ::maybe_generate
+	 * @covers ::get_cached_combos
+	 *
+	 * @return void
+	 */
+	public function test_maybe_generate_preserves_map_type_variants(): void {
+		$instance = Map::get_instance();
+		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
+
+		update_post_meta( $post_id, 'gatherpress_address', '1 Infinite Loop' );
+		update_post_meta( $post_id, 'gatherpress_latitude', '37.3318' );
+		update_post_meta( $post_id, 'gatherpress_longitude', '-122.0312' );
+		$instance->maybe_generate( $post_id );
+		// Warm a hybrid variant at the same dimensions as the default combo.
+		$instance->get_url_for_post(
+			$post_id,
+			Venue::POST_TYPE,
+			Map::DEFAULT_ZOOM,
+			Map::DEFAULT_HEIGHT * 2,
+			Map::DEFAULT_HEIGHT,
+			'',
+			'hybrid'
+		);
+
+		$roadmap_key = sprintf(
+			'%dx%dx%dxroadmap',
+			Map::DEFAULT_ZOOM,
+			Map::DEFAULT_HEIGHT * 2,
+			Map::DEFAULT_HEIGHT
+		);
+		$hybrid_key  = sprintf(
+			'%dx%dx%dxhybrid',
+			Map::DEFAULT_ZOOM,
+			Map::DEFAULT_HEIGHT * 2,
+			Map::DEFAULT_HEIGHT
+		);
+
+		$before = $instance->get_all_descriptors( $post_id );
+		$this->assertCount( 2, $before['osm'] );
+		$this->assertArrayHasKey( $roadmap_key, $before['osm'] );
+		$this->assertArrayHasKey( $hybrid_key, $before['osm'] );
+
+		update_post_meta( $post_id, 'gatherpress_address', '60 29th Street #343, San Francisco, CA 94110' );
+		update_post_meta( $post_id, 'gatherpress_latitude', '37.7573' );
+		update_post_meta( $post_id, 'gatherpress_longitude', '-122.4132' );
+		$instance->maybe_generate( $post_id );
+
+		$after = $instance->get_all_descriptors( $post_id );
+
+		$this->assertCount(
+			2,
+			$after['osm'],
+			'Both map-type variants should survive the content-change cascade.'
+		);
+		$this->assertArrayHasKey(
+			$hybrid_key,
+			$after['osm'],
+			'The hybrid variant must not be collapsed onto the default map type.'
+		);
+		$this->assertNotSame(
+			$before['osm'][ $hybrid_key ]['hash'],
+			$after['osm'][ $hybrid_key ]['hash'],
+			'Hybrid-variant hash should change with new coordinates.'
+		);
+	}
+
+	/**
 	 * When the meta write after save_image() is dropped, the method returns
 	 * null so callers know the descriptor didn't persist. The PNG is left on
 	 * disk — GC handles orphans; files may be shared with other venues.
@@ -1577,8 +1648,9 @@ class Test_Map extends Base {
 	}
 
 	/**
-	 * Coverage for get_cached_combos — returns unique (zoom, width, height)
-	 * combos.
+	 * Coverage for get_cached_combos — returns unique
+	 * (zoom, width, height, map_type) combos, recovering the map type from
+	 * each stored key so distinct variants at the same dimensions survive.
 	 *
 	 * @covers ::get_cached_combos
 	 *
@@ -1606,8 +1678,15 @@ class Test_Map extends Base {
 						'width'  => 600,
 						'height' => 300,
 					),
-					'18x1000x500'        => array(
+					'15x600x300xhybrid'  => array(
 						'url'    => 'https://example.test/b.png',
+						'hash'   => 'bcd',
+						'zoom'   => 15,
+						'width'  => 600,
+						'height' => 300,
+					),
+					'18x1000x500'        => array(
+						'url'    => 'https://example.test/c.png',
 						'hash'   => 'def',
 						'zoom'   => 18,
 						'width'  => 1000,
@@ -1619,22 +1698,38 @@ class Test_Map extends Base {
 
 		$combos = $instance->get_cached_combos( $post_id );
 
-		$this->assertCount( 2, $combos );
+		$this->assertCount(
+			3,
+			$combos,
+			'Same dimensions under different map types must remain distinct combos.'
+		);
 		$this->assertContains(
 			array(
-				'zoom'   => 15,
-				'width'  => 600,
-				'height' => 300,
+				'zoom'     => 15,
+				'width'    => 600,
+				'height'   => 300,
+				'map_type' => 'roadmap',
 			),
 			$combos
 		);
 		$this->assertContains(
 			array(
-				'zoom'   => 18,
-				'width'  => 1000,
-				'height' => 500,
+				'zoom'     => 15,
+				'width'    => 600,
+				'height'   => 300,
+				'map_type' => 'hybrid',
 			),
 			$combos
+		);
+		$this->assertContains(
+			array(
+				'zoom'     => 18,
+				'width'    => 1000,
+				'height'   => 500,
+				'map_type' => 'roadmap',
+			),
+			$combos,
+			'A legacy key without a map-type suffix falls back to the default.'
 		);
 	}
 
@@ -1882,6 +1977,70 @@ class Test_Map extends Base {
 				sprintf( 'Post-regenerate PNG for %s should have been rewritten.', $combo_key )
 			);
 		}
+	}
+
+	/**
+	 * Rebuilds each cached variant with its own map type, so a roadmap and
+	 * a hybrid entry at the same dimensions both survive the wipe-and-rebuild
+	 * rather than collapsing onto the requested type.
+	 *
+	 * @covers ::regenerate
+	 * @covers ::get_cached_combos
+	 *
+	 * @return void
+	 */
+	public function test_regenerate_preserves_distinct_map_type_variants(): void {
+		$instance = Map::get_instance();
+		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
+
+		add_post_meta( $post_id, 'gatherpress_address', '1 Infinite Loop' );
+		add_post_meta( $post_id, 'gatherpress_latitude', '37.3318' );
+		add_post_meta( $post_id, 'gatherpress_longitude', '-122.0312' );
+		$instance->maybe_generate( $post_id );
+		// Warm a hybrid variant at the same dimensions as the default combo.
+		$instance->get_url_for_post(
+			$post_id,
+			Venue::POST_TYPE,
+			Map::DEFAULT_ZOOM,
+			Map::DEFAULT_HEIGHT * 2,
+			Map::DEFAULT_HEIGHT,
+			'',
+			'hybrid'
+		);
+
+		$roadmap_key = sprintf(
+			'%dx%dx%dxroadmap',
+			Map::DEFAULT_ZOOM,
+			Map::DEFAULT_HEIGHT * 2,
+			Map::DEFAULT_HEIGHT
+		);
+		$hybrid_key  = sprintf(
+			'%dx%dx%dxhybrid',
+			Map::DEFAULT_ZOOM,
+			Map::DEFAULT_HEIGHT * 2,
+			Map::DEFAULT_HEIGHT
+		);
+
+		$before = $instance->get_all_descriptors( $post_id );
+		$this->assertCount( 2, $before['osm'] );
+
+		$result = $instance->regenerate( $post_id );
+
+		$this->assertCount(
+			2,
+			$result['osm'],
+			'regenerate() must preserve every distinct map-type variant.'
+		);
+		$this->assertArrayHasKey(
+			$roadmap_key,
+			$result['osm'],
+			'The roadmap variant must survive regeneration.'
+		);
+		$this->assertArrayHasKey(
+			$hybrid_key,
+			$result['osm'],
+			'The hybrid variant must survive regeneration rather than collapsing to roadmap.'
+		);
 	}
 
 	/**
