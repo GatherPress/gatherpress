@@ -2,7 +2,7 @@
 /**
  * Unit tests for the venue-map dimension helpers and render sizing.
  *
- * Covers the static attribute readers on GatherPress\Core\Venue\Map\Map
+ * Covers the static attribute readers on GatherPress\Core\Venue\Map\Dimensions
  * (`get_dimension_value`, `parse_px_dimension`, `to_css_dimension`) and
  * the wrapper sizing rules the block's render.php emits from them. The
  * render tests use venues without coordinates so the template takes the
@@ -16,13 +16,14 @@
 namespace GatherPress\Tests\Core\Venue\Map;
 
 use GatherPress\Core\Venue\Map;
+use GatherPress\Core\Venue\Map\Dimensions;
 use GatherPress\Core\Venue\Venue;
 use GatherPress\Tests\Base;
 
 /**
  * Class Test_Map_Dimensions.
  *
- * @coversDefaultClass \GatherPress\Core\Venue\Map\Map
+ * @coversDefaultClass \GatherPress\Core\Venue\Map\Dimensions
  */
 class Test_Map_Dimensions extends Base {
 
@@ -91,7 +92,7 @@ class Test_Map_Dimensions extends Base {
 
 		$this->assertSame(
 			'512px',
-			Map::get_dimension_value( $attributes, 'width' ),
+			Dimensions::get_dimension_value( $attributes, 'width' ),
 			'The style.dimensions value should win over the legacy attribute.'
 		);
 	}
@@ -117,7 +118,7 @@ class Test_Map_Dimensions extends Base {
 
 		$this->assertSame(
 			300,
-			Map::get_dimension_value( $attributes, 'height' ),
+			Dimensions::get_dimension_value( $attributes, 'height' ),
 			'An empty style value should fall through to the legacy attribute.'
 		);
 	}
@@ -134,12 +135,12 @@ class Test_Map_Dimensions extends Base {
 	public function test_get_dimension_value_falls_back_to_positive_legacy(): void {
 		$this->assertSame(
 			640,
-			Map::get_dimension_value( array( 'width' => 640 ), 'width' ),
+			Dimensions::get_dimension_value( array( 'width' => 640 ), 'width' ),
 			'A positive legacy int should be returned.'
 		);
 		$this->assertSame(
 			320.5,
-			Map::get_dimension_value( array( 'height' => 320.5 ), 'height' ),
+			Dimensions::get_dimension_value( array( 'height' => 320.5 ), 'height' ),
 			'A positive legacy float should be returned.'
 		);
 	}
@@ -155,19 +156,19 @@ class Test_Map_Dimensions extends Base {
 	 */
 	public function test_get_dimension_value_treats_non_positive_legacy_as_unset(): void {
 		$this->assertNull(
-			Map::get_dimension_value( array( 'width' => 0 ), 'width' ),
+			Dimensions::get_dimension_value( array( 'width' => 0 ), 'width' ),
 			'Legacy 0 means "auto" and should read as unset.'
 		);
 		$this->assertNull(
-			Map::get_dimension_value( array( 'height' => -5 ), 'height' ),
+			Dimensions::get_dimension_value( array( 'height' => -5 ), 'height' ),
 			'A negative legacy value should read as unset.'
 		);
 		$this->assertNull(
-			Map::get_dimension_value( array( 'width' => '640' ), 'width' ),
+			Dimensions::get_dimension_value( array( 'width' => '640' ), 'width' ),
 			'A numeric string in the legacy slot should read as unset (the attribute is typed number).'
 		);
 		$this->assertNull(
-			Map::get_dimension_value( array(), 'height' ),
+			Dimensions::get_dimension_value( array(), 'height' ),
 			'A dimension carried by neither shape should read as unset.'
 		);
 	}
@@ -182,9 +183,9 @@ class Test_Map_Dimensions extends Base {
 	 * @return void
 	 */
 	public function test_parse_px_dimension_handles_numbers(): void {
-		$this->assertSame( 512, Map::parse_px_dimension( 512 ), 'A whole number should pass through.' );
-		$this->assertSame( 513, Map::parse_px_dimension( 512.6 ), 'A fractional number should round.' );
-		$this->assertSame( 0, Map::parse_px_dimension( -20 ), 'A negative number should clamp to 0.' );
+		$this->assertSame( 512, Dimensions::parse_px_dimension( 512 ), 'A whole number should pass through.' );
+		$this->assertSame( 513, Dimensions::parse_px_dimension( 512.6 ), 'A fractional number should round.' );
+		$this->assertSame( 0, Dimensions::parse_px_dimension( -20 ), 'A negative number should clamp to 0.' );
 	}
 
 	/**
@@ -197,11 +198,11 @@ class Test_Map_Dimensions extends Base {
 	 * @return void
 	 */
 	public function test_parse_px_dimension_parses_px_strings(): void {
-		$this->assertSame( 512, Map::parse_px_dimension( '512px' ), 'A px-suffixed string should parse.' );
-		$this->assertSame( 512, Map::parse_px_dimension( '512' ), 'A unitless numeric string should parse.' );
+		$this->assertSame( 512, Dimensions::parse_px_dimension( '512px' ), 'A px-suffixed string should parse.' );
+		$this->assertSame( 512, Dimensions::parse_px_dimension( '512' ), 'A unitless numeric string should parse.' );
 		$this->assertSame(
 			512,
-			Map::parse_px_dimension( '  512.4 px ' ),
+			Dimensions::parse_px_dimension( '  512.4 px ' ),
 			'Whitespace should be tolerated and fractional strings rounded.'
 		);
 	}
@@ -216,12 +217,16 @@ class Test_Map_Dimensions extends Base {
 	 * @return void
 	 */
 	public function test_parse_px_dimension_resolves_non_px_values_to_auto(): void {
-		$this->assertSame( 0, Map::parse_px_dimension( '50%' ), 'Percent values are not px-expressible.' );
-		$this->assertSame( 0, Map::parse_px_dimension( '20rem' ), 'Rem values are not px-expressible.' );
-		$this->assertSame( 0, Map::parse_px_dimension( 'fit-content' ), 'CSS keywords are not px-expressible.' );
-		$this->assertSame( 0, Map::parse_px_dimension( '' ), 'An empty string should resolve to auto.' );
-		$this->assertSame( 0, Map::parse_px_dimension( null ), 'Null should resolve to auto.' );
-		$this->assertSame( 0, Map::parse_px_dimension( true ), 'A non-scalar-dimension type should resolve to auto.' );
+		$this->assertSame( 0, Dimensions::parse_px_dimension( '50%' ), 'Percent values are not px-expressible.' );
+		$this->assertSame( 0, Dimensions::parse_px_dimension( '20rem' ), 'Rem values are not px-expressible.' );
+		$this->assertSame( 0, Dimensions::parse_px_dimension( 'fit-content' ), 'CSS keywords are not px-expressible.' );
+		$this->assertSame( 0, Dimensions::parse_px_dimension( '' ), 'An empty string should resolve to auto.' );
+		$this->assertSame( 0, Dimensions::parse_px_dimension( null ), 'Null should resolve to auto.' );
+		$this->assertSame(
+			0,
+			Dimensions::parse_px_dimension( true ),
+			'A non-scalar-dimension type should resolve to auto.'
+		);
 	}
 
 	/**
@@ -234,10 +239,14 @@ class Test_Map_Dimensions extends Base {
 	 * @return void
 	 */
 	public function test_to_css_dimension_normalizes_values(): void {
-		$this->assertSame( '300px', Map::to_css_dimension( 300 ), 'A legacy int should gain a px suffix.' );
-		$this->assertSame( '301px', Map::to_css_dimension( 300.6 ), 'A legacy float should round then gain px.' );
-		$this->assertSame( '50%', Map::to_css_dimension( '50%' ), 'A style string should pass through.' );
-		$this->assertSame( '640px', Map::to_css_dimension( ' 640px ' ), 'A style string should be trimmed.' );
+		$this->assertSame( '300px', Dimensions::to_css_dimension( 300 ), 'A legacy int should gain a px suffix.' );
+		$this->assertSame(
+			'301px',
+			Dimensions::to_css_dimension( 300.6 ),
+			'A legacy float should round then gain px.'
+		);
+		$this->assertSame( '50%', Dimensions::to_css_dimension( '50%' ), 'A style string should pass through.' );
+		$this->assertSame( '640px', Dimensions::to_css_dimension( ' 640px ' ), 'A style string should be trimmed.' );
 	}
 
 	/**

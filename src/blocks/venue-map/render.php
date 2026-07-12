@@ -36,6 +36,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Settings;
 use GatherPress\Core\Venue\Map;
+use GatherPress\Core\Venue\Map\Dimensions;
 use GatherPress\Core\Venue\Setup;
 
 if ( ! isset( $attributes ) || ! is_array( $attributes ) ) {
@@ -62,10 +63,10 @@ $gatherpress_ratio       = (string) ( $attributes['aspectRatio'] ?? Map::DEFAULT
 // Dimension values as authored (style.dimensions CSS string, or legacy
 // numeric attribute as fallback — null = auto), plus their px projections
 // for the static-map pipeline (0 = auto; non-px units land as CSS only).
-$gatherpress_width_value  = Map::get_dimension_value( $attributes, 'width' );
-$gatherpress_height_value = Map::get_dimension_value( $attributes, 'height' );
-$gatherpress_raw_width    = Map::parse_px_dimension( $gatherpress_width_value );
-$gatherpress_raw_height   = Map::parse_px_dimension( $gatherpress_height_value );
+$gatherpress_width_value  = Dimensions::get_dimension_value( $attributes, 'width' );
+$gatherpress_height_value = Dimensions::get_dimension_value( $attributes, 'height' );
+$gatherpress_raw_width    = Dimensions::parse_px_dimension( $gatherpress_width_value );
+$gatherpress_raw_height   = Dimensions::parse_px_dimension( $gatherpress_height_value );
 
 // Allow-list for the `scale` block attribute. Anything outside this set
 // (a hand-edited block attr, a filter that mutates the value, a migration
@@ -125,7 +126,7 @@ $gatherpress_has_width_css   = false;
 
 if ( null !== $gatherpress_height_value ) {
 	$gatherpress_height_declaration = safecss_filter_attr(
-		'height:' . Map::to_css_dimension( $gatherpress_height_value )
+		'height:' . Dimensions::to_css_dimension( $gatherpress_height_value )
 	);
 
 	if ( '' !== $gatherpress_height_declaration ) {
@@ -136,7 +137,7 @@ if ( null !== $gatherpress_height_value ) {
 
 if ( null !== $gatherpress_width_value && ! $gatherpress_is_wide_or_full ) {
 	$gatherpress_width_declaration = safecss_filter_attr(
-		'width:' . Map::to_css_dimension( $gatherpress_width_value )
+		'width:' . Dimensions::to_css_dimension( $gatherpress_width_value )
 	);
 
 	if ( '' !== $gatherpress_width_declaration ) {
