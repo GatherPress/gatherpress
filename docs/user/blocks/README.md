@@ -2,7 +2,7 @@
 
 [Event Query](./event-query.md)
 
-Event List (will be deprecated in the next version, 0.34)
+Event List (deprecated in 0.34 — replaced by the [Event Query](./event-query.md) block; existing blocks are migrated by GatherPress Alpha)
 
 [RSVP and its inner blocks](./rsvp-and-inner-blocks.md) (RSVP Form and fields, Modal Manager, etc)
 
@@ -20,15 +20,20 @@ Online Event
 
 ## Block Guard
 
-Some GatherPress block use the Block Guard mechanism, which protects from accidentally editing their inner blocks.
+Some GatherPress blocks use the Block Guard mechanism, which protects them from accidental edits to their inner blocks.
 
-While Block Guard is enabled, those inner blocks are protected and you cannot freely edit their structure.  If you want to customize the inner blocks, you must toggle off the block guard for the parent block first.
+Complex blocks like RSVP are built from many inner blocks (buttons, modals, text). With Block Guard enabled, the whole block behaves as a single unit: you can select it, move it, and style it, but you cannot click into its inner structure. To customize the inner blocks, toggle Block Guard off in the block's settings sidebar first — the toggle's help text always tells you which state you are in.
 
-Keep Block Guard enabled if you only need the standard layout. Toggle it off only when you intentionally want to adjust the RSVP block’s inner layout.
+Keep Block Guard enabled if you only need the standard layout. Toggle it off only when you intentionally want to adjust a block's inner layout, and consider re-enabling it when you are done.
 
-Blocks using Block guard:
+Blocks using Block Guard:
 
 - Add to Calendar
+- Online Event
 - RSVP
 - RSVP Response
-- In 0.34 (next version), it will also be applied to the "Venue" block
+- Venue
+
+### How is this different from WordPress's block locking?
+
+They solve opposite problems. Core's block locking pins a block in place — it prevents moving or removing the block, but still lets you click inside and edit its inner blocks. Block Guard leaves the block free to move and restyle as a whole, while protecting its insides from accidental selection and editing. Use core locking when a block must stay where it is; use Block Guard to keep a complex block's inner structure intact while you work around it. The two can be combined.
