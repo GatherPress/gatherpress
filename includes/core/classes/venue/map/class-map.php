@@ -1322,7 +1322,7 @@ class Map {
 			return null;
 		}
 
-		$map_type = $this->normalize_map_type( $map_type, $provider );
+		$map_type = $this->normalize_map_type( $map_type );
 
 		// Callers (maybe_generate, get_url_for_post) must have validated the
 		// coordinates via parse_coord() already — cast directly.
@@ -1737,19 +1737,23 @@ class Map {
 	}
 
 	/**
-	 * Normalize a map type slug for static-map rendering.
+	 * Normalize a map type slug for static-map cache keys, hashes, and filenames.
 	 *
-	 * Falls back to the site-wide default from Settings when the input is
-	 * empty or unsupported by the active provider.
+	 * Lowercases and trims the input, falls back to the site-wide default
+	 * from Settings when empty, and coerces any unrecognized slug to
+	 * `roadmap`. Provider capability is intentionally NOT enforced here: the
+	 * cache key records the *requested* type so a later platform switch
+	 * (e.g. OSM → Google) still resolves to the correct stored entry.
+	 * Providers self-guard at render time — Google coerces types it can't
+	 * satisfy to `roadmap` internally, and OSM ignores the type entirely.
 	 *
 	 * @since 0.35.0
 	 *
-	 * @param string             $map_type Raw map type from block attrs or REST.
-	 * @param Provider\Base|null $provider Provider to validate against; null uses active.
+	 * @param string $map_type Raw map type from block attrs or REST.
 	 *
 	 * @return string
 	 */
-	public function normalize_map_type( string $map_type, ?Provider\Base $provider = null ): string {
+	public function normalize_map_type( string $map_type ): string {
 		$map_type = strtolower( trim( $map_type ) );
 
 		if ( '' === $map_type ) {
@@ -1757,12 +1761,6 @@ class Map {
 		}
 
 		if ( ! in_array( $map_type, array( 'roadmap', 'satellite', 'hybrid', 'terrain' ), true ) ) {
-			$map_type = self::DEFAULT_MAP_TYPE;
-		}
-
-		$provider = $provider ?? Manager::get_instance()->get_active();
-
-		if ( null !== $provider && ! $provider->supports_map_type( $map_type ) ) {
 			$map_type = self::DEFAULT_MAP_TYPE;
 		}
 

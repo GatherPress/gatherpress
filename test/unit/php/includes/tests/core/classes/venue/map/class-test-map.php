@@ -847,7 +847,7 @@ class Test_Map extends Base {
 		$this->assertArrayNotHasKey( 'no-hash', $stored['osm'] );
 
 		$default_key = sprintf(
-			'%dx%dx%d',
+			'%dx%dx%dxroadmap',
 			Map::DEFAULT_ZOOM,
 			Map::DEFAULT_HEIGHT * 2,
 			Map::DEFAULT_HEIGHT
@@ -874,7 +874,7 @@ class Test_Map extends Base {
 		$instance->maybe_generate( $post_id );
 
 		$default_key = sprintf(
-			'%dx%dx%d',
+			'%dx%dx%dxroadmap',
 			Map::DEFAULT_ZOOM,
 			Map::DEFAULT_HEIGHT * 2,
 			Map::DEFAULT_HEIGHT
@@ -892,7 +892,7 @@ class Test_Map extends Base {
 		// Request a different zoom — simulates a block customized to zoom 14.
 		// Auto width at 2:1 ratio against DEFAULT_HEIGHT → DEFAULT_HEIGHT*2.
 		$new_key = sprintf(
-			'14x%dx%d',
+			'14x%dx%dxroadmap',
 			Map::DEFAULT_HEIGHT * 2,
 			Map::DEFAULT_HEIGHT
 		);
@@ -944,7 +944,7 @@ class Test_Map extends Base {
 		$this->assertNotEmpty( $tall_url );
 
 		// Auto width at 2:1 ratio on height=500 → 1000.
-		$key = sprintf( '%dx1000x500', Map::DEFAULT_ZOOM );
+		$key = sprintf( '%dx1000x500xroadmap', Map::DEFAULT_ZOOM );
 		$all = $instance->get_all_descriptors( $post_id );
 
 		$this->assertArrayHasKey( $key, $all['osm'], 'Tall-height combo should be cached under its own key.' );
@@ -975,13 +975,13 @@ class Test_Map extends Base {
 
 		// Default combo from DEFAULT_HEIGHT + auto width at 2:1 = 600×300.
 		$default_key = sprintf(
-			'%dx%dx%d',
+			'%dx%dx%dxroadmap',
 			Map::DEFAULT_ZOOM,
 			Map::DEFAULT_HEIGHT * 2,
 			Map::DEFAULT_HEIGHT
 		);
 		// Second combo: zoom=14, height=500, auto width at 2:1 = 1000×500.
-		$second_key = '14x1000x500';
+		$second_key = '14x1000x500xroadmap';
 
 		$before = $instance->get_all_descriptors( $post_id );
 
@@ -1558,6 +1558,114 @@ class Test_Map extends Base {
 	}
 
 	/**
+	 * Coverage for get_rest_combo_route_args — shared REST combo fields.
+	 *
+	 * @covers ::get_rest_combo_route_args
+	 *
+	 * @return void
+	 */
+	public function test_get_rest_combo_route_args_defines_combo_fields(): void {
+		$instance = Map::get_instance();
+		$args     = Utility::invoke_hidden_method( $instance, 'get_rest_combo_route_args', array() );
+
+		$this->assertArrayHasKey( 'zoom', $args );
+		$this->assertArrayHasKey( 'width', $args );
+		$this->assertArrayHasKey( 'height', $args );
+		$this->assertArrayHasKey( 'aspect_ratio', $args );
+		$this->assertArrayHasKey( 'map_type', $args );
+		$this->assertArrayHasKey( 'ensure_only', $args );
+		$this->assertFalse( $args['ensure_only']['default'] );
+
+		$aspect_validate = $args['aspect_ratio']['validate_callback'];
+		$this->assertTrue( $aspect_validate( '' ) );
+		$this->assertTrue( $aspect_validate( null ) );
+		$this->assertTrue( $aspect_validate( '16/9' ) );
+		$this->assertFalse( $aspect_validate( 'not-a-ratio' ) );
+
+		$type_validate = $args['map_type']['validate_callback'];
+		$this->assertTrue( $type_validate( '' ) );
+		$this->assertTrue( $type_validate( null ) );
+		$this->assertTrue( $type_validate( 'roadmap' ) );
+		$this->assertTrue( $type_validate( 'satellite' ) );
+		$this->assertTrue( $type_validate( 'hybrid' ) );
+		$this->assertTrue( $type_validate( 'terrain' ) );
+		$this->assertFalse( $type_validate( 'invalid' ) );
+	}
+
+	/**
+	 * Coverage for parse_rest_combo_request — normalizes REST combo params.
+	 *
+	 * @covers ::parse_rest_combo_request
+	 *
+	 * @return void
+	 */
+	public function test_parse_rest_combo_request_normalizes_request_params(): void {
+		$instance = Map::get_instance();
+
+		$empty = new \WP_REST_Request( 'POST', '/test' );
+		$this->assertSame(
+			array(
+				'zoom'         => null,
+				'width'        => null,
+				'height'       => null,
+				'aspect_ratio' => '',
+				'map_type'     => '',
+			),
+			Utility::invoke_hidden_method( $instance, 'parse_rest_combo_request', array( $empty ) )
+		);
+
+		$full = new \WP_REST_Request( 'POST', '/test' );
+		$full->set_param( 'zoom', 15 );
+		$full->set_param( 'width', 800 );
+		$full->set_param( 'height', 400 );
+		$full->set_param( 'aspect_ratio', '16/9' );
+		$full->set_param( 'map_type', 'hybrid' );
+		$this->assertSame(
+			array(
+				'zoom'         => 15,
+				'width'        => 800,
+				'height'       => 400,
+				'aspect_ratio' => '16/9',
+				'map_type'     => 'hybrid',
+			),
+			Utility::invoke_hidden_method( $instance, 'parse_rest_combo_request', array( $full ) )
+		);
+
+		$zero_zoom = new \WP_REST_Request( 'POST', '/test' );
+		$zero_zoom->set_param( 'zoom', 0 );
+		$zero_zoom->set_param( 'width', 0 );
+		$this->assertSame(
+			array(
+				'zoom'         => null,
+				'width'        => 0,
+				'height'       => null,
+				'aspect_ratio' => '',
+				'map_type'     => '',
+			),
+			Utility::invoke_hidden_method( $instance, 'parse_rest_combo_request', array( $zero_zoom ) )
+		);
+	}
+
+	/**
+	 * Coverage for normalize_map_type — slug cleanup without provider coercion.
+	 *
+	 * @covers ::normalize_map_type
+	 *
+	 * @return void
+	 */
+	public function test_normalize_map_type_normalizes_without_provider_coercion(): void {
+		$instance = Map::get_instance();
+		$settings = Settings::get_instance();
+
+		$this->assertSame( 'hybrid', $instance->normalize_map_type( '  HYBRID ' ) );
+		$this->assertSame( 'terrain', $instance->normalize_map_type( 'terrain' ) );
+		$this->assertSame( 'roadmap', $instance->normalize_map_type( 'bogus' ) );
+
+		$settings->set( 'venue_map_default_type', 'satellite' );
+		$this->assertSame( 'satellite', $instance->normalize_map_type( '' ) );
+	}
+
+	/**
 	 * Coverage for get_cached_combos — returns unique (zoom, width, height)
 	 * combos.
 	 *
@@ -1888,7 +1996,7 @@ class Test_Map extends Base {
 		$result = $instance->regenerate( $post_id, 8, 0, 295, '' );
 
 		// Auto-width at 2:1 on height 295 → 590.
-		$expected_key = '8x590x295';
+		$expected_key = '8x590x295xroadmap';
 		$this->assertArrayHasKey(
 			$expected_key,
 			$result['osm'],
@@ -1953,7 +2061,7 @@ class Test_Map extends Base {
 		$result = $instance->regenerate( $post_id );
 
 		$default_key = sprintf(
-			'%dx%dx%d',
+			'%dx%dx%dxroadmap',
 			Map::DEFAULT_ZOOM,
 			Map::DEFAULT_HEIGHT * 2,
 			Map::DEFAULT_HEIGHT
@@ -2768,7 +2876,7 @@ class Test_Map extends Base {
 		// slug's entry is what proves the `continue` skip in the fallback
 		// walk fires; the google entry is what the walk should ultimately
 		// return.
-		$key = sprintf( '%dx%dx%d', Map::DEFAULT_ZOOM, Map::DEFAULT_HEIGHT * 2, Map::DEFAULT_HEIGHT );
+		$key = sprintf( '%dx%dx%dxroadmap', Map::DEFAULT_ZOOM, Map::DEFAULT_HEIGHT * 2, Map::DEFAULT_HEIGHT );
 		update_post_meta(
 			$post_id,
 			Map::META_KEY,
