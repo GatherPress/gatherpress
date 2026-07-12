@@ -9,8 +9,6 @@ import {
 } from '@wordpress/block-editor';
 import {
 	Dropdown,
-	Flex,
-	FlexItem,
 	PanelBody,
 	RangeControl,
 	ResizableBox,
@@ -20,7 +18,6 @@ import {
 	ToolbarButton,
 	ToolbarGroup,
 	// eslint-disable-next-line @wordpress/no-unsafe-wp-apis
-	__experimentalToolsPanel as ToolsPanel,
 	// eslint-disable-next-line @wordpress/no-unsafe-wp-apis
 	__experimentalToolsPanelItem as ToolsPanelItem,
 } from '@wordpress/components';
@@ -48,6 +45,8 @@ import {
 	RegenerateMapButton,
 	parseAspectRatio,
 	pickDescriptorForCombo,
+	getDimensionValue,
+	parsePxDimension,
 	resolveDimensions,
 	usePlaceholderPolling,
 } from './helpers';
@@ -137,8 +136,6 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 	const {
 		zoom,
 		type,
-		width,
-		height,
 		aspectRatio,
 		scale,
 		renderMode,
@@ -332,12 +329,46 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 			( venueMeta.gatherpress_longitude || '' ) !==
 				( savedVenueMeta.gatherpress_longitude || '' ) );
 
+	// Dimensions live in style.dimensions (core dimensions support, with
+	// serialization skipped so this block owns its own output); the legacy
+	// numeric width/height attributes are read-only fallbacks until the
+	// GatherPress Alpha migration rewrites saved content.
+	const widthValue = getDimensionValue( attributes, 'width' );
+	const heightValue = getDimensionValue( attributes, 'height' );
+	const widthPx = parsePxDimension( widthValue );
+	const heightPx = parsePxDimension( heightValue );
+
+	// Write dimensions to style.dimensions and retire the legacy
+	// attributes so content self-heals as it is edited. `undefined`
+	// removes a dimension ("auto").
+	const setDimensions = ( changes, extraAttributes = {} ) => {
+		const nextDimensions = { ...( attributes.style?.dimensions ?? {} ) };
+
+		Object.entries( changes ).forEach( ( [ key, value ] ) => {
+			if ( undefined === value ) {
+				delete nextDimensions[ key ];
+			} else {
+				nextDimensions[ key ] = value;
+			}
+		} );
+
+		setAttributes( {
+			...extraAttributes,
+			style: {
+				...attributes.style,
+				dimensions: nextDimensions,
+			},
+			width: undefined,
+			height: undefined,
+		} );
+	};
+
 	// Compute the effective pixel dimensions (matching what the server
 	// will compose) so the cached-PNG lookup hits the right combo key.
 	const { width: effectiveWidth, height: effectiveHeight } =
 		resolveDimensions( {
-			width,
-			height,
+			width: widthPx,
+			height: heightPx,
 			aspectRatio,
 			defaultHeight: DEFAULT_HEIGHT,
 		} );
@@ -386,28 +417,6 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 		? generateBlockGuardStateKey( 'gatherpress/venue', parentVenueClientId )
 		: 'gatherpress/venue';
 	const [ isParentGuarded ] = useSharedBlockGuardState( parentGuardKey );
-
-	// Model mirrors core/image:
-	//   - width + aspectRatio are the authoritative shape inputs
-	//   - height is derived at render time from width × ratio; stored as
-	//     0 (auto) while a preset ratio is active
-	//   - typing an explicit height clears aspectRatio, switching the
-	//     block to "custom" mode where width and height are independent
-	//   - dragging the grips adjusts width only unless the user already
-	//     dropped into custom mode
-	const handleWidthInput = ( raw ) => {
-		const parsed = parseInt( raw, 10 );
-		setAttributes( {
-			width: Number.isNaN( parsed ) ? 0 : parsed,
-		} );
-	};
-	const handleHeightInput = ( raw ) => {
-		const parsed = parseInt( raw, 10 );
-		setAttributes( {
-			height: Number.isNaN( parsed ) ? 0 : parsed,
-			aspectRatio: '',
-		} );
-	};
 
 	// Close the "async descriptor arrived while placeholder is showing"
 	// gap — see `usePlaceholderPolling` for the cadence + bail-out logic.
@@ -464,22 +473,25 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 			WIDTH_MIN,
 			Math.min( WIDTH_MAX, Math.round( effectiveWidth + delta.width ) )
 		);
-		const changes = { width: newWidth };
+		const changes = { width: `${ newWidth }px` };
 
 		// In custom mode there's no ratio lock, so both edges moved
-		// independently and we persist both. In preset mode height stays
-		// auto so the cached aspect ratio keeps driving the render.
-		if ( isCustomAspectRatio ) {
-			changes.height = Math.max(
+		// independently and we persist both. Same when an explicit height
+		// is already stored: keeping it stale would fight the new width.
+		// In pure preset mode height stays auto so the cached aspect
+		// ratio keeps driving the render.
+		if ( isCustomAspectRatio || undefined !== heightValue ) {
+			const newHeight = Math.max(
 				HEIGHT_MIN,
 				Math.min(
 					HEIGHT_MAX,
 					Math.round( effectiveHeight + delta.height )
 				)
 			);
+			changes.height = `${ newHeight }px`;
 		}
 
-		setAttributes( changes );
+		setDimensions( changes );
 	};
 
 	// When the block is aligned wide or full, the alignment owns the
@@ -488,15 +500,23 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 	// aspect-ratio applies whenever a dimension is auto OR the alignment
 	// is wide/full so the shape tracks the container as it fills.
 	const isWideOrFull = 'wide' === align || 'full' === align;
+	const toCssDimension = ( value ) =>
+		'number' === typeof value ? `${ value }px` : value;
 	let wrapperWidth;
 	if ( ! isWideOrFull ) {
-		wrapperWidth = 0 < width ? `${ width }px` : '100%';
+		wrapperWidth =
+			undefined === widthValue ? '100%' : toCssDimension( widthValue );
 	}
 	const wrapperStyle = {
 		width: wrapperWidth,
-		height: 0 < height ? `${ height }px` : undefined,
+		height:
+			undefined === heightValue
+				? undefined
+				: toCssDimension( heightValue ),
 		aspectRatio:
-			isWideOrFull || 0 === width || 0 === height
+			isWideOrFull ||
+			undefined === widthValue ||
+			undefined === heightValue
 				? aspectRatio || '2/1'
 				: undefined,
 	};
@@ -563,8 +583,8 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 									venuePostId={ venuePostId }
 									venuePostType={ venuePostType }
 									zoom={ zoom }
-									width={ width }
-									height={ height }
+									width={ effectiveWidth }
+									height={ effectiveHeight }
 									aspectRatio={ aspectRatio }
 									label={ __(
 										'Generate map',
@@ -643,8 +663,8 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 							venuePostId={ venuePostId }
 							venuePostType={ venuePostType }
 							zoom={ zoom }
-							width={ width }
-							height={ height }
+							width={ effectiveWidth }
+							height={ effectiveHeight }
 							aspectRatio={ aspectRatio }
 							disabled={
 								! address || hasUnsavedMapInputs
@@ -653,129 +673,98 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 					) }
 				</PanelBody>
 			</InspectorControls>
-			<InspectorControls>
-				<ToolsPanel
-					label={ __( 'Dimensions', 'gatherpress' ) }
-					resetAll={ () =>
-						setAttributes( {
-							width: 0,
-							height: 0,
-							aspectRatio: '2/1',
-							scale: siteScaleDefault,
-						} )
+			{ /* Width & height come from core's dimensions support; the
+			     block's own shape controls join that same panel. */ }
+			<InspectorControls group="dimensions">
+				<ToolsPanelItem
+					label={ __( 'Aspect ratio', 'gatherpress' ) }
+					hasValue={ () =>
+						'' !== ( aspectRatio ?? '' ) &&
+						'2/1' !== aspectRatio
 					}
+					onDeselect={ () =>
+						setAttributes( { aspectRatio: '2/1' } )
+					}
+					resetAllFilter={ ( attrs ) => ( {
+						...attrs,
+						aspectRatio: '2/1',
+						width: undefined,
+						height: undefined,
+					} ) }
+					isShownByDefault
 					panelId={ clientId }
 				>
-					<ToolsPanelItem
-						label={ __( 'Width & height', 'gatherpress' ) }
-						hasValue={ () => 0 < width || 0 < height }
-						onDeselect={ () =>
-							setAttributes( { width: 0, height: 0 } )
-						}
-						isShownByDefault
-						panelId={ clientId }
-					>
-						<Flex gap={ 2 } align="flex-end">
-							<FlexItem isBlock>
-								<TextControl
-									label={ __( 'Width', 'gatherpress' ) }
-									type="number"
-									placeholder={ __( 'Auto', 'gatherpress' ) }
-									value={ 0 < width ? String( width ) : '' }
-									onChange={ handleWidthInput }
-								/>
-							</FlexItem>
-							<FlexItem isBlock>
-								<TextControl
-									label={ __( 'Height', 'gatherpress' ) }
-									type="number"
-									placeholder={ __( 'Auto', 'gatherpress' ) }
-									value={ 0 < height ? String( height ) : '' }
-									onChange={ handleHeightInput }
-								/>
-							</FlexItem>
-						</Flex>
-					</ToolsPanelItem>
-					<ToolsPanelItem
+					<SelectControl
+						__next40pxDefaultSize
 						label={ __( 'Aspect ratio', 'gatherpress' ) }
+						value={ isCustomAspectRatio ? 'custom' : aspectRatio }
+						options={ ASPECT_RATIO_PRESETS }
+						onChange={ ( value ) => {
+							if ( 'custom' === value ) {
+								// Clear so the Custom text field below owns
+								// the value. If the user typed nothing, the
+								// server falls back to DEFAULT_ASPECT_RATIO
+								// for dimension derivation.
+								setAttributes( { aspectRatio: '' } );
+								return;
+							}
+							// Picking a preset resets height to auto so the
+							// new ratio drives the rendered shape — the
+							// user's stored width (if any) is preserved.
+							setDimensions(
+								{ height: undefined },
+								{ aspectRatio: value },
+							);
+						} }
+					/>
+					{ isCustomAspectRatio && (
+						<TextControl
+							label={ __(
+								'Custom aspect ratio',
+								'gatherpress'
+							) }
+							help={ __(
+								'Format: "16/9" or "4:3".',
+								'gatherpress'
+							) }
+							value={ aspectRatio || '' }
+							onChange={ ( value ) =>
+								setAttributes( { aspectRatio: value } )
+							}
+						/>
+					) }
+				</ToolsPanelItem>
+				{ isStaticMode && (
+					<ToolsPanelItem
+						label={ __( 'Scale', 'gatherpress' ) }
 						hasValue={ () =>
-							'' !== ( aspectRatio ?? '' ) &&
-						'2/1' !== aspectRatio
+							siteScaleDefault !==
+								( scale ?? siteScaleDefault )
 						}
 						onDeselect={ () =>
-							setAttributes( { aspectRatio: '2/1' } )
+							setAttributes( { scale: siteScaleDefault } )
 						}
+						resetAllFilter={ ( attrs ) => ( {
+							...attrs,
+							scale: siteScaleDefault,
+						} ) }
 						isShownByDefault
 						panelId={ clientId }
 					>
 						<SelectControl
 							__next40pxDefaultSize
-							label={ __( 'Aspect ratio', 'gatherpress' ) }
-							value={ isCustomAspectRatio ? 'custom' : aspectRatio }
-							options={ ASPECT_RATIO_PRESETS }
-							onChange={ ( value ) => {
-								if ( 'custom' === value ) {
-								// Clear so the Custom text field below owns
-								// the value. If the user typed nothing, the
-								// server falls back to DEFAULT_ASPECT_RATIO
-								// for dimension derivation.
-									setAttributes( { aspectRatio: '' } );
-									return;
-								}
-								// Picking a preset resets height to auto so the
-								// new ratio drives the rendered shape — the
-								// user's stored width (if any) is preserved.
-								setAttributes( {
-									aspectRatio: value,
-									height: 0,
-								} );
-							} }
-						/>
-						{ isCustomAspectRatio && (
-							<TextControl
-								label={ __(
-									'Custom aspect ratio',
-									'gatherpress'
-								) }
-								help={ __(
-									'Format: "16/9" or "4:3".',
-									'gatherpress'
-								) }
-								value={ aspectRatio || '' }
-								onChange={ ( value ) =>
-									setAttributes( { aspectRatio: value } )
-								}
-							/>
-						) }
-					</ToolsPanelItem>
-					{ isStaticMode && (
-						<ToolsPanelItem
 							label={ __( 'Scale', 'gatherpress' ) }
-							hasValue={ () =>
-								siteScaleDefault !==
-								( scale ?? siteScaleDefault )
+							value={ scale ?? siteScaleDefault }
+							options={ SCALE_OPTIONS.map( ( value ) => ( {
+								label: SCALE_LABELS[ value ],
+								value,
+							} ) ) }
+							onChange={ ( value ) =>
+								setAttributes( { scale: value } )
 							}
-							onDeselect={ () =>
-								setAttributes( { scale: siteScaleDefault } )
-							}
-							isShownByDefault
-							panelId={ clientId }
-						>
-							<SelectControl
-								__next40pxDefaultSize
-								label={ __( 'Scale', 'gatherpress' ) }
-								value={ scale ?? siteScaleDefault }
-								options={ SCALE_OPTIONS.map( ( value ) => ( {
-									label: SCALE_LABELS[ value ],
-									value,
-								} ) ) }
-								onChange={ ( value ) =>
-									setAttributes( { scale: value } )
-								}
-							/>
-						</ToolsPanelItem>
-					) }
-				</ToolsPanel>
+						/>
+					</ToolsPanelItem>
+				) }
 			</InspectorControls>
 			{ isStaticMode && (
 				<BlockControls>
@@ -885,10 +874,10 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 						<ResizableBox
 							size={ {
 								width:
-									! isWideOrFull && 0 < width
-										? width
+									! isWideOrFull && 0 < widthPx
+										? widthPx
 										: 'auto',
-								height: 0 < height ? height : 'auto',
+								height: 0 < heightPx ? heightPx : 'auto',
 							} }
 							minWidth={ WIDTH_MIN }
 							maxWidth={ WIDTH_MAX }

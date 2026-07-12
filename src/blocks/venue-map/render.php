@@ -9,14 +9,19 @@
  * new venue that hasn't been geocoded — a short placeholder surfaces the
  * "map coming soon" state in place of the image.
  *
- * The wrapper sizing is driven by three block attributes:
+ * The wrapper sizing is driven by the block's dimension values and ratio:
  *
- *   - `width` / `height`: explicit pixel dimensions. Either can be `0`
- *     meaning "auto" — in which case it's derived from the other side and
- *     `aspectRatio`. When both are auto, the block fills its container
- *     width and computes height from the ratio (CSS aspect-ratio on the
- *     interactive wrapper; the static PNG is composed at the effective
- *     pixel size).
+ *   - `style.dimensions.width` / `style.dimensions.height`: CSS values
+ *     written by core's dimensions support (serialization is skipped, so
+ *     this template owns the output). An absent dimension means "auto" —
+ *     it's derived from the other side and `aspectRatio`. When both are
+ *     auto, the block fills its container width and computes height from
+ *     the ratio (CSS aspect-ratio on the wrapper; the static PNG is
+ *     composed at the effective pixel size). Values in non-px units
+ *     apply as CSS only — the PNG treats them as auto.
+ *   - `width` / `height` (legacy numeric attributes): pixel fallbacks
+ *     for content saved before 0.35.0 and the carrier for site defaults
+ *     from Settings → Venues. A style value always wins.
  *   - `aspectRatio`: CSS-style string (e.g. "16/9"). Drives auto-
  *     dimension math on the server and also lands as a CSS
  *     `aspect-ratio` hint on the wrapper so an aligned block that
@@ -52,9 +57,15 @@ $gatherpress_render_mode = 'static' === ( $attributes['renderMode'] ?? Map::DEFA
 	? 'static'
 	: 'interactive';
 $gatherpress_zoom        = (int) ( $attributes['zoom'] ?? Map::DEFAULT_ZOOM );
-$gatherpress_raw_width   = (int) ( $attributes['width'] ?? 0 );
-$gatherpress_raw_height  = (int) ( $attributes['height'] ?? Map::DEFAULT_HEIGHT );
 $gatherpress_ratio       = (string) ( $attributes['aspectRatio'] ?? Map::DEFAULT_ASPECT_RATIO );
+
+// Dimension values as authored (style.dimensions CSS string, or legacy
+// numeric attribute as fallback — null = auto), plus their px projections
+// for the static-map pipeline (0 = auto; non-px units land as CSS only).
+$gatherpress_width_value  = Map::get_dimension_value( $attributes, 'width' );
+$gatherpress_height_value = Map::get_dimension_value( $attributes, 'height' );
+$gatherpress_raw_width    = Map::parse_px_dimension( $gatherpress_width_value );
+$gatherpress_raw_height   = Map::parse_px_dimension( $gatherpress_height_value );
 
 // Allow-list for the `scale` block attribute. Anything outside this set
 // (a hand-edited block attr, a filter that mutates the value, a migration
@@ -89,29 +100,52 @@ $gatherpress_wrapper_attr_args = array(
 	'data-render-mode' => $gatherpress_render_mode,
 );
 
-// Sizing rules:
-// - Explicit height → inline height in px.
-// - Explicit width  → inline width in px (but NOT when the block is
-// aligned wide or full — then the alignment owns the horizontal space
-// via the `.alignwide` / `.alignfull` CSS rules, and a hard pixel
-// width would fight those classes).
+// Sizing rules (mirroring `wrapperStyle` in edit.js):
+// - Explicit height → inline height in the authored unit.
+// - Explicit width  → inline width in the authored unit (but NOT when
+// the block is aligned wide or full — then the alignment owns the
+// horizontal space via the `.alignwide` / `.alignfull` CSS rules, and
+// a hard width would fight those classes).
 // - Any auto dimension → CSS `aspect-ratio` stamp so the container can
 // still give the block its shape as its surrounding width changes
 // (aligned block, responsive container, etc.). Static <img> inside
 // uses object-fit: cover so the raster stays crisp at any size.
+//
+// Dimension values pass through safecss_filter_attr() because core's
+// dimensions support stores raw CSS strings and
+// get_block_wrapper_attributes() doesn't sanitize individual values —
+// without the filter an editor-role attacker with edit_posts could
+// smuggle extra declarations in via a hand-edited attribute. A rejected
+// value degrades to auto (the aspect-ratio arm below picks it up).
 $gatherpress_styles          = array();
 $gatherpress_align           = (string) ( $attributes['align'] ?? '' );
 $gatherpress_is_wide_or_full = in_array( $gatherpress_align, array( 'wide', 'full' ), true );
+$gatherpress_has_height_css  = false;
+$gatherpress_has_width_css   = false;
 
-if ( 0 < $gatherpress_raw_height ) {
-	$gatherpress_styles[] = sprintf( 'height:%dpx', $gatherpress_raw_height );
+if ( null !== $gatherpress_height_value ) {
+	$gatherpress_height_declaration = safecss_filter_attr(
+		'height:' . Map::to_css_dimension( $gatherpress_height_value )
+	);
+
+	if ( '' !== $gatherpress_height_declaration ) {
+		$gatherpress_styles[]       = $gatherpress_height_declaration;
+		$gatherpress_has_height_css = true;
+	}
 }
 
-if ( 0 < $gatherpress_raw_width && ! $gatherpress_is_wide_or_full ) {
-	$gatherpress_styles[] = sprintf( 'width:%dpx', $gatherpress_raw_width );
+if ( null !== $gatherpress_width_value && ! $gatherpress_is_wide_or_full ) {
+	$gatherpress_width_declaration = safecss_filter_attr(
+		'width:' . Map::to_css_dimension( $gatherpress_width_value )
+	);
+
+	if ( '' !== $gatherpress_width_declaration ) {
+		$gatherpress_styles[]      = $gatherpress_width_declaration;
+		$gatherpress_has_width_css = true;
+	}
 }
 
-if ( 0 === $gatherpress_raw_width || 0 === $gatherpress_raw_height || $gatherpress_is_wide_or_full ) {
+if ( ! $gatherpress_has_width_css || ! $gatherpress_has_height_css ) {
 	// The `aspectRatio` block attr lands directly in an inline style.
 	// get_block_wrapper_attributes() doesn't sanitize individual CSS
 	// values, so an editor-role attacker with edit_posts could otherwise
@@ -143,7 +177,12 @@ if ( 'interactive' === $gatherpress_render_mode ) {
 		'longitude'        => (string) ( $gatherpress_venue_meta['longitude'] ?? '' ),
 		'mapZoomLevel'     => $attributes['zoom'] ?? Map::DEFAULT_ZOOM,
 		'mapType'          => $attributes['type'] ?? Map::DEFAULT_MAP_TYPE,
-		'mapHeight'        => $attributes['height'] ?? Map::DEFAULT_HEIGHT,
+		// The effective pixel height the descriptor resolved to, so an
+		// embed that sizes itself (Google's iframe) matches the shape the
+		// wrapper CSS renders at. Leaflet ignores it (fills the wrapper).
+		'mapHeight'        => null !== $gatherpress_static_map_descriptor
+			? (int) $gatherpress_static_map_descriptor['height']
+			: ( 0 < $gatherpress_raw_height ? $gatherpress_raw_height : Map::DEFAULT_HEIGHT ),
 		'mapPlatform'      => (string) Settings::get_instance()->get( 'map_platform' ),
 		'pluginUrl'        => GATHERPRESS_CORE_URL,
 		'googleMapsApiKey' => (string) Settings::get_instance()->get( 'google_maps_api_key' ),

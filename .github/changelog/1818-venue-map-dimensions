@@ -1,0 +1,4 @@
+Significance: minor
+Type: changed
+
+The Venue Map block now uses WordPress core's dimensions support: width and height live in the Dimensions panel (with the resize handles as the primary control) and are stored as CSS values, so any unit works for display. Content saved with the old numeric attributes keeps rendering unchanged until the GatherPress Alpha migration rewrites it.

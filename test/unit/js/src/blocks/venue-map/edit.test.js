@@ -134,6 +134,12 @@ jest.mock( '@src/blocks/venue-map/helpers', () => ( {
 	pickDescriptorForCombo: jest.fn( () => undefined ),
 	resolveDimensions: jest.fn( () => ( { width: 800, height: 400 } ) ),
 	usePlaceholderPolling: jest.fn(),
+	// Pure attribute readers — use the real implementations so the mocked
+	// Edit derives dimensions exactly like production code.
+	parsePxDimension: jest.requireActual( '@src/blocks/venue-map/helpers' )
+		.parsePxDimension,
+	getDimensionValue: jest.requireActual( '@src/blocks/venue-map/helpers' )
+		.getDimensionValue,
 } ) );
 
 /**

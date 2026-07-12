@@ -237,6 +237,68 @@ export const parseAspectRatio = ( ratio ) => {
 };
 
 /**
+ * Extract a pixel integer from a dimension value.
+ *
+ * Accepts the raw numbers the legacy `width`/`height` attributes stored and
+ * the CSS strings core's dimensions support writes to `style.dimensions`
+ * (e.g. `"512px"`). Values in any other unit (`%`, `rem`, presets like
+ * `fit-content`) cannot feed the static-map PNG pipeline and resolve to 0
+ * ("auto") — the visual CSS still applies them; only the generated image
+ * falls back to derived dimensions.
+ *
+ * @since 0.35.0
+ *
+ * @param {number|string|undefined} value Dimension value from either attribute shape.
+ *
+ * @return {number} Whole pixels, or 0 when the value is unset or not px-expressible.
+ */
+export const parsePxDimension = ( value ) => {
+	if ( Number.isFinite( value ) ) {
+		return Math.max( 0, Math.round( value ) );
+	}
+
+	if ( 'string' === typeof value ) {
+		const match = /^\s*(\d+(?:\.\d+)?)\s*(?:px)?\s*$/.exec( value );
+
+		if ( match ) {
+			return Math.max( 0, Math.round( parseFloat( match[ 1 ] ) ) );
+		}
+	}
+
+	return 0;
+};
+
+/**
+ * Read a dimension for the venue map from its current home.
+ *
+ * Core's dimensions support stores values under `style.dimensions`; blocks
+ * saved before 0.35.0 carry the legacy numeric `width`/`height` attributes
+ * until the GatherPress Alpha migration rewrites them. The style value wins
+ * whenever present so edits made with the new controls take effect
+ * immediately even while a legacy value lingers.
+ *
+ * @since 0.35.0
+ *
+ * @param {Object} attributes Block attributes.
+ * @param {string} dimension  Either `width` or `height`.
+ *
+ * @return {number|string|undefined} The dimension value, or undefined when unset.
+ */
+export const getDimensionValue = ( attributes, dimension ) => {
+	const styleValue = attributes?.style?.dimensions?.[ dimension ];
+
+	if ( undefined !== styleValue && '' !== styleValue ) {
+		return styleValue;
+	}
+
+	const legacyValue = attributes?.[ dimension ];
+
+	return Number.isFinite( legacyValue ) && 0 < legacyValue
+		? legacyValue
+		: undefined;
+};
+
+/**
  * Resolve a (width, height) pair from block attribute values.
  *
  * Mirrors `Venue\Map::resolve_dimensions()` so the editor renders the map
