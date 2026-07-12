@@ -195,6 +195,7 @@ const calculateDisplayType = ( toggleType, showStartTime, showEndTime ) => {
 const Edit = ( { attributes, setAttributes, context } ) => {
 	const {
 		displayType,
+		isLink,
 		startDateFormat,
 		endDateFormat,
 		separator,
@@ -245,6 +246,16 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 	const showStartTime = [ 'start', 'both' ].includes( displayType );
 	const showEndTime = [ 'end', 'both' ].includes( displayType );
 
+	const displayedDateTime = displayDateTime(
+		showStartTime ? finalDateTimeStart : null,
+		showEndTime ? finalDateTimeEnd : null,
+		finalTimezone,
+		startDateFormat,
+		endDateFormat,
+		separator,
+		showTimezone
+	);
+
 	return (
 		<div { ...blockProps }>
 			<BlockControls>
@@ -279,14 +290,15 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 					/>
 				</ToolbarGroup>
 			</BlockControls>
-			{ displayDateTime(
-				showStartTime ? finalDateTimeStart : null,
-				showEndTime ? finalDateTimeEnd : null,
-				finalTimezone,
-				startDateFormat,
-				endDateFormat,
-				separator,
-				showTimezone
+			{ isLink ? (
+				<a
+					href="#gatherpress-event-date-pseudo-link"
+					onClick={ ( event ) => event.preventDefault() }
+				>
+					{ displayedDateTime }
+				</a>
+			) : (
+				displayedDateTime
 			) }
 			{ isEventPostType() && (
 				<InspectorControls>
@@ -379,6 +391,13 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 							setAttributes( {
 								showTimezone: value ? 'yes' : 'no',
 							} )
+						}
+					/>
+					<ToggleControl
+						label={ __( 'Link to event', 'gatherpress' ) }
+						checked={ isLink }
+						onChange={ () =>
+							setAttributes( { isLink: ! isLink } )
 						}
 					/>
 				</PanelBody>
