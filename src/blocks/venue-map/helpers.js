@@ -112,7 +112,7 @@ const postVenueMapDescriptors = async ( {
  * @param {number}  [props.width]       Current block width (0 = auto) — forwarded to the server.
  * @param {number}  [props.height]      Current block height (0 = auto) — forwarded to the server.
  * @param {string}  [props.aspectRatio] Current block aspect ratio (e.g. "16/9") — forwarded so the server can derive any auto dimension consistently with the client.
- * @param {string}  [props.mapType]     Current block map type — forwarded so regenerated PNGs match the editor selection.
+ * @param {string}  [props.mapType]     Current block map type — forwarded so regenerated static map images match the editor selection.
  * @param {boolean} props.disabled      When true, the button is disabled regardless of internal state.
  * @param {string}  [props.label]       Override the default "Regenerate map" label.
  * @param {string}  [props.variant]     Underlying Button variant (e.g. 'primary', 'secondary', 'link').
