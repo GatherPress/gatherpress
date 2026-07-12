@@ -1131,8 +1131,8 @@ class Map {
 	}
 
 	/**
-	 * Parse stored meta into the deduped list of (zoom, width, height) combos
-	 * any provider has ever rendered for this venue.
+	 * Parse stored meta into the deduped list of (zoom, width, height, map_type)
+	 * combos any provider has ever rendered for this venue.
 	 *
 	 * Used by {@see self::maybe_generate()} to cascade content changes (new
 	 * address, new coordinates) across every variant a venue has ever been
