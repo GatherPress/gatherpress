@@ -110,7 +110,7 @@ describe( 'Event Date Edit isLink', () => {
 		const { container } = renderEdit();
 
 		expect(
-			container.querySelector( 'a[href="#event-date-pseudo-link"]' )
+			container.querySelector( 'a[href="#gatherpress-event-date-pseudo-link"]' )
 		).toBeNull();
 	} );
 
@@ -118,7 +118,7 @@ describe( 'Event Date Edit isLink', () => {
 		const { container } = renderEdit( { isLink: true } );
 
 		const anchor = container.querySelector(
-			'a[href="#event-date-pseudo-link"]'
+			'a[href="#gatherpress-event-date-pseudo-link"]'
 		);
 
 		expect( anchor ).not.toBeNull();
@@ -129,7 +129,7 @@ describe( 'Event Date Edit isLink', () => {
 		const { container } = renderEdit( { isLink: true } );
 
 		const anchor = container.querySelector(
-			'a[href="#event-date-pseudo-link"]'
+			'a[href="#gatherpress-event-date-pseudo-link"]'
 		);
 
 		// fireEvent returns false when preventDefault was called.

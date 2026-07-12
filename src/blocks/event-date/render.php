@@ -36,5 +36,5 @@ if ( ! empty( $attributes['isLink'] ) ) {
 }
 ?>
 <div <?php echo wp_kses_data( get_block_wrapper_attributes() ); ?>>
-	<?php echo wp_kses_post( $gatherpress_display ); ?>
+	<?php echo wp_kses( $gatherpress_display, array( 'a' => array( 'href' => true ) ) ); ?>
 </div>

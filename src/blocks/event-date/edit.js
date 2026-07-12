@@ -292,7 +292,7 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 			</BlockControls>
 			{ isLink ? (
 				<a
-					href="#event-date-pseudo-link"
+					href="#gatherpress-event-date-pseudo-link"
 					onClick={ ( event ) => event.preventDefault() }
 				>
 					{ displayedDateTime }
