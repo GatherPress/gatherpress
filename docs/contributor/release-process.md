@@ -77,9 +77,17 @@ in-progress release and see what's queued for it, without touching wp.org.
 1. `credits-X.Y.Z-suffix.N` → gatherpress-develop `main`: add the credits
    entry.
 2. `version-X.Y.Z-suffix.N` → gatherpress-alpha `main`: the synced version
-   header (`Skip Changelog` label).
+   header (`Skip Changelog` label). Opened by that repo's **Version Bump**
+   workflow — core's Version Bump workflow dispatches it automatically when
+   the `GATHERPRESS_ALPHA_TOKEN` secret is configured, and otherwise prints
+   the `gh workflow run` one-liner in its run summary.
 3. `version-X.Y.Z-suffix.N` → core `develop`: the generated bump
-   (`Skip Changelog` label).
+   (`Skip Changelog` label). Opened by core's **Version Bump** workflow.
+
+After the core release workflow finishes, its `alpha-handoff` job likewise
+dispatches (or documents, without the token) the matching gatherpress-alpha
+release — alpha's workflow refuses to cut a release until its version PR has
+merged, so triggering it early fails loudly rather than shipping a mismatch.
 
 **Cut it:**
 
@@ -177,7 +185,11 @@ Every one of these is required; skipping any of them bites the next release:
   Without this, the next patch release cut from main re-rolls every
   already-released entry into its changelog.
 - [ ] **Release GatherPress Alpha**: merge its `version-X.Y.Z` sync PR if
-  not already done, tag `X.Y.Z` on its main, merge its own rollup PR.
+  not already done, then let the core release workflow's `alpha-handoff` job
+  dispatch alpha's release (automatic with the `GATHERPRESS_ALPHA_TOKEN`
+  secret; otherwise run the `gh workflow run release.yml` one-liner from the
+  job summary — a manual `git tag X.Y.Z && git push origin X.Y.Z` on alpha's
+  main still works too). Merge alpha's own rollup PR afterward.
 - [ ] **Bring the demo data in line with the new version**: follow the
   "Preparing demo-data for a new version of GatherPress" steps in the
   [gatherpress-demo-data README](https://github.com/GatherPress/gatherpress-demo-data#readme)
