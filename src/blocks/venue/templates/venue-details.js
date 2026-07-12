@@ -38,7 +38,13 @@ const VENUE_DETAILS = [
 			},
 		},
 		[
-			[ 'gatherpress/icon', { icon: 'location' } ],
+			[
+				'core/icon',
+				{
+					icon: 'core/map-marker',
+					style: { dimensions: { width: '24px' } },
+				},
+			],
 			[
 				'gatherpress/venue-detail',
 				{
@@ -81,7 +87,13 @@ const VENUE_DETAILS = [
 					},
 				},
 				[
-					[ 'gatherpress/icon', { icon: 'phone' } ],
+					[
+						'core/icon',
+						{
+							icon: 'core/mobile',
+							style: { dimensions: { width: '24px' } },
+						},
+					],
 					[
 						'gatherpress/venue-detail',
 						{
@@ -106,7 +118,13 @@ const VENUE_DETAILS = [
 					},
 				},
 				[
-					[ 'gatherpress/icon', { icon: 'admin-site-alt3' } ],
+					[
+						'core/icon',
+						{
+							icon: 'core/external',
+							style: { dimensions: { width: '24px' } },
+						},
+					],
 					[
 						'gatherpress/venue-detail',
 						{
