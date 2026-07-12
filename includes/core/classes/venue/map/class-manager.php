@@ -3,10 +3,10 @@
  * Venue map provider registry.
  *
  * Singleton registry that owns the provider instances backing the static
- * map pipeline. Built-in providers (OSM today) are registered immediately
- * in the constructor so the registry is usable from any later hook;
- * companion plugins hook the `gatherpress_register_static_map_providers` action
- * (fired on `init` priority 0) to register their own providers on top.
+ * map pipeline. Built-in providers (OSM and Google) are registered
+ * immediately in the constructor so the registry is usable from any later
+ * hook; companion plugins hook the `gatherpress_register_static_map_providers`
+ * action (fired on `init` priority 0) to register their own providers on top.
  *
  * @package GatherPress\Core\Venue\Map
  * @since 0.34.0
@@ -20,22 +20,21 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 use GatherPress\Core\Settings;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Venue\Map\Provider\Base as Map_Provider;
+use GatherPress\Core\Venue\Map\Provider\Google;
 use GatherPress\Core\Venue\Map\Provider\OSM;
 
 /**
  * Class Manager.
  *
- * Provider registry. `register_core_providers()` registers OSM as the
- * always-available default. Companion plugins can register additional
- * providers (Google, MapBox, MapTiler, etc.) by hooking
- * `gatherpress_register_static_map_providers` and calling `register()` on the
- * passed Manager instance — same pattern as RSVP types.
+ * Provider registry. `register_core_providers()` registers OSM and Google.
+ * Companion plugins can register additional providers (MapBox, MapTiler,
+ * etc.) by hooking `gatherpress_register_static_map_providers` and calling
+ * `register()` on the passed Manager instance — same pattern as RSVP types.
  *
  * The active provider is resolved from the `map_platform` setting at
  * `Settings → Venues → Maps`. If that setting points at a slug that no
- * registered provider claims (e.g. Google before its provider class lands
- * in #1528), the manager logs a `_doing_it_wrong()` and falls back to OSM
- * so the front end keeps rendering.
+ * registered provider claims, the manager logs a `_doing_it_wrong()` and
+ * falls back to OSM so the front end keeps rendering.
  *
  * @since 0.34.0
  */
@@ -176,7 +175,7 @@ class Manager {
 	 *
 	 * Reads `map_platform` from settings; falls back to OSM when:
 	 *  - the setting is empty
-	 *  - the configured slug isn't registered (e.g. Google before #1528 lands)
+	 *  - the configured slug isn't registered
 	 *  - even OSM isn't registered yet (returns null — bootstrap hasn't run)
 	 *
 	 * Logs a `_doing_it_wrong()` warning when the configured slug isn't
@@ -241,6 +240,7 @@ class Manager {
 	 */
 	public function register_core_providers(): void {
 		$this->register( new OSM() );
+		$this->register( new Google() );
 	}
 
 	/**
@@ -265,7 +265,7 @@ class Manager {
 		 * which is too early — the manager singleton may not yet exist)
 		 * and register their providers by calling
 		 * `$registry->register( new My_Map_Provider() )`. Core providers
-		 * (OSM) are already registered by this point.
+		 * (OSM, Google) are already registered by this point.
 		 *
 		 * @since 0.34.0
 		 *
