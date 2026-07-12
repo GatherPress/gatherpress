@@ -7,7 +7,7 @@ import { InspectorControls } from '@wordpress/block-editor';
 import { PanelBody, ToggleControl } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
 import { addFilter, hasFilter } from '@wordpress/hooks';
-import { useState, useEffect } from '@wordpress/element';
+import { useState, useEffect, useCallback } from '@wordpress/element';
 
 /**
  * Shared state store for block guard settings across all block instances.
@@ -53,16 +53,21 @@ function useSharedBlockGuardState( blockName ) {
 		};
 	}, [ blockName ] );
 
-	const setSharedState = ( value ) => {
-		// Update the shared state.
-		blockGuardStates.set( blockName, value );
+	// Stable identity so consumers can list the setter in effect
+	// dependencies without re-running the effect every render.
+	const setSharedState = useCallback(
+		( value ) => {
+			// Update the shared state.
+			blockGuardStates.set( blockName, value );
 
-		// Notify all listeners (components using this block type).
-		const listeners = blockGuardListeners.get( blockName );
-		if ( listeners ) {
-			listeners.forEach( ( listener ) => listener( value ) );
-		}
-	};
+			// Notify all listeners (components using this block type).
+			const listeners = blockGuardListeners.get( blockName );
+			if ( listeners ) {
+				listeners.forEach( ( listener ) => listener( value ) );
+			}
+		},
+		[ blockName ],
+	);
 
 	return [ localState, setSharedState ];
 }
@@ -279,6 +284,11 @@ function applyListViewGuardForBlock( clientId, isBlockGuardEnabled ) {
 }
 
 /**
+ * Class name for the notice injected above the inspector's guarded tree.
+ */
+const INSPECTOR_NOTICE_CLASS = 'gatherpress-block-guard-inspector-notice';
+
+/**
  * Apply block guard to the block inspector's List View tab.
  *
  * WordPress 7.0's `listView` block support renders the selected block's
@@ -286,14 +296,19 @@ function applyListViewGuardForBlock( clientId, isBlockGuardEnabled ) {
  * bypasses both the canvas inert overlay and the main List View expander
  * handling, so it gets the same inert treatment as the canvas container
  * (which also hides the tree's block appender). The tree stays visible as
- * a read-only structure map while the guard is on.
+ * a read-only structure map while the guard is on, with a notice above it
+ * explaining why it is not interactive and offering a one-click unprotect
+ * that flips the same shared state as the sidebar toggle.
  *
- * @param {boolean} isEnabled - Whether guard is enabled.
+ * @param {boolean}  isEnabled - Whether guard is enabled.
+ * @param {Function} onDisable - Called when the notice's unprotect button
+ *                             is clicked. Optional; without it the
+ *                             notice renders without a button.
  *
  * @return {HTMLElement|null} The guarded tree element, or null when the
  *                            inspector's List View tab is not rendered.
  */
-function applyInspectorListViewGuard( isEnabled ) {
+function applyInspectorListViewGuard( isEnabled, onDisable ) {
 	// The inspector lives in the top-level document, never the editor iframe.
 	const tree = document.querySelector(
 		'.block-editor-block-inspector .block-editor-list-view-tree',
@@ -304,6 +319,45 @@ function applyInspectorListViewGuard( isEnabled ) {
 	}
 
 	applyGuardToContainer( tree, isEnabled );
+
+	const existingNotice = tree.parentElement.querySelector(
+		`.${ INSPECTOR_NOTICE_CLASS }`,
+	);
+
+	if ( ! isEnabled ) {
+		existingNotice?.remove();
+
+		return tree;
+	}
+
+	// The MutationObserver re-runs this on every DOM change; keep it
+	// idempotent so the notice is only ever injected once.
+	if ( existingNotice ) {
+		return tree;
+	}
+
+	const notice = document.createElement( 'div' );
+	notice.className = INSPECTOR_NOTICE_CLASS;
+	notice.style.cssText =
+		'display:flex;align-items:center;justify-content:space-between;gap:8px;padding:0 16px 12px;';
+
+	const message = document.createElement( 'span' );
+	message.textContent = __( 'Block Guard is enabled.', 'gatherpress' );
+	message.style.cssText = 'color:#757575;font-size:12px;';
+	notice.appendChild( message );
+
+	if ( 'function' === typeof onDisable ) {
+		const button = document.createElement( 'button' );
+		button.type = 'button';
+		button.className = 'components-button is-secondary is-compact';
+		button.textContent = __( 'Unprotect', 'gatherpress' );
+		button.onclick = onDisable;
+		notice.appendChild( button );
+	}
+
+	// Insert as a sibling before the tree so the button stays outside the
+	// inert subtree and remains clickable.
+	tree.parentElement.insertBefore( notice, tree );
 
 	return tree;
 }
@@ -527,7 +581,9 @@ const withBlockGuard = createHigherOrderComponent( ( BlockEdit ) => {
 				// selection to keep unselected instances of guarded blocks
 				// from fighting over the shared inspector DOM.
 				if ( isSelected ) {
-					applyInspectorListViewGuard( isBlockGuardEnabled );
+					applyInspectorListViewGuard( isBlockGuardEnabled, () =>
+						setIsBlockGuardEnabled( false ),
+					);
 				}
 
 				// Handle drag prevention for block guard.
@@ -573,7 +629,12 @@ const withBlockGuard = createHigherOrderComponent( ( BlockEdit ) => {
 					removeDragListeners( dropHandler );
 				}
 			};
-		}, [ clientId, isBlockGuardEnabled, isSelected ] );
+		}, [
+			clientId,
+			isBlockGuardEnabled,
+			isSelected,
+			setIsBlockGuardEnabled,
+		] );
 
 		return (
 			<>

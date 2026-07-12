@@ -59,6 +59,7 @@ jest.mock( '@wordpress/hooks', () => ( {
 jest.mock( '@wordpress/element', () => ( {
 	useState: jest.fn(),
 	useEffect: jest.fn(),
+	useCallback: jest.fn( ( callback ) => callback ),
 } ) );
 
 /**
@@ -997,5 +998,47 @@ describe( 'applyInspectorListViewGuard', () => {
 		expect( tree.style.opacity ).toBe( '' );
 		expect( tree.style.cursor ).toBe( '' );
 		expect( tree.dataset.gatherPressGuarded ).toBeUndefined();
+	} );
+
+	it( 'injects a single notice above the tree when enabled', () => {
+		applyInspectorListViewGuard( true );
+		applyInspectorListViewGuard( true );
+
+		const notices = inspector.querySelectorAll(
+			'.gatherpress-block-guard-inspector-notice',
+		);
+
+		expect( notices ).toHaveLength( 1 );
+		expect( notices[ 0 ].nextElementSibling ).toBe( tree );
+		expect( notices[ 0 ].textContent ).toContain(
+			'Block Guard is enabled.',
+		);
+		// Without a callback there is no unprotect button.
+		expect( notices[ 0 ].querySelector( 'button' ) ).toBeNull();
+	} );
+
+	it( 'wires the unprotect button to the onDisable callback', () => {
+		const onDisable = jest.fn();
+
+		applyInspectorListViewGuard( true, onDisable );
+
+		const button = inspector.querySelector(
+			'.gatherpress-block-guard-inspector-notice button',
+		);
+
+		button.click();
+
+		expect( onDisable ).toHaveBeenCalledTimes( 1 );
+	} );
+
+	it( 'removes the notice when disabled', () => {
+		applyInspectorListViewGuard( true, jest.fn() );
+		applyInspectorListViewGuard( false );
+
+		expect(
+			inspector.querySelector(
+				'.gatherpress-block-guard-inspector-notice',
+			),
+		).toBeNull();
 	} );
 } );
