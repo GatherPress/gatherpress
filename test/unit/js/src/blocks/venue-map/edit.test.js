@@ -84,7 +84,15 @@ jest.mock( '@wordpress/components', () => ( {
 	FlexItem: ( { children } ) => <div>{ children }</div>,
 	PanelBody: ( { children } ) => <div>{ children }</div>,
 	RangeControl: () => null,
-	ResizableBox: ( { children } ) => <div>{ children }</div>,
+	ResizableBox: ( { children, maxWidth, size } ) => (
+		<div
+			data-testid="resizable-box"
+			data-max-width={ String( maxWidth ) }
+			data-size-width={ String( size?.width ) }
+		>
+			{ children }
+		</div>
+	),
 	SelectControl: () => null,
 	TextControl: () => null,
 	ToggleControl: () => null,
@@ -373,5 +381,95 @@ describe( 'venue-map Edit useSelect selector stability', () => {
 		expect( result1.staticMapDescriptors ).toBe(
 			result2.staticMapDescriptors
 		);
+	} );
+} );
+
+describe( 'venue-map Edit sizing wrappers', () => {
+	beforeEach( () => {
+		capturedVenueStateSelector = null;
+		jest.clearAllMocks();
+		isVenuePostType.mockReturnValue( false );
+	} );
+
+	it( 'clamps the resize box at 100% of its container', () => {
+		const { getByTestId } = render(
+			<Edit
+				attributes={ {
+					...DEFAULT_ATTRIBUTES,
+					style: { dimensions: { width: '779px' } },
+				} }
+				setAttributes={ jest.fn() }
+				context={ {} }
+				clientId=""
+			/>
+		);
+
+		const box = getByTestId( 'resizable-box' );
+		expect( box.dataset.maxWidth ).toBe( '100%' );
+		expect( box.dataset.sizeWidth ).toBe( '779' );
+	} );
+
+	it( 'shrinks the block wrapper to fit a fixed-width map and centers it', () => {
+		const { useBlockProps } = jest.requireMock(
+			'@wordpress/block-editor'
+		);
+
+		render(
+			<Edit
+				attributes={ {
+					...DEFAULT_ATTRIBUTES,
+					align: 'center',
+					style: { dimensions: { width: '779px' } },
+				} }
+				setAttributes={ jest.fn() }
+				context={ {} }
+				clientId=""
+			/>
+		);
+
+		expect( useBlockProps ).toHaveBeenCalledWith( {
+			style: {
+				width: 'fit-content',
+				marginLeft: 'auto',
+				marginRight: 'auto',
+			},
+		} );
+	} );
+
+	it( 'keeps the full-width block wrapper for auto and wide/full maps', () => {
+		const { useBlockProps } = jest.requireMock(
+			'@wordpress/block-editor'
+		);
+
+		render(
+			<Edit
+				attributes={ DEFAULT_ATTRIBUTES }
+				setAttributes={ jest.fn() }
+				context={ {} }
+				clientId=""
+			/>
+		);
+		expect( useBlockProps ).toHaveBeenCalledWith( {
+			style: undefined,
+		} );
+
+		jest.clearAllMocks();
+		isVenuePostType.mockReturnValue( false );
+
+		render(
+			<Edit
+				attributes={ {
+					...DEFAULT_ATTRIBUTES,
+					align: 'full',
+					style: { dimensions: { width: '779px' } },
+				} }
+				setAttributes={ jest.fn() }
+				context={ {} }
+				clientId=""
+			/>
+		);
+		expect( useBlockProps ).toHaveBeenCalledWith( {
+			style: undefined,
+		} );
 	} );
 } );
