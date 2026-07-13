@@ -909,7 +909,15 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 								height: 0 < heightPx ? heightPx : 'auto',
 							} }
 							minWidth={ WIDTH_MIN }
-							maxWidth={ WIDTH_MAX }
+							// Never let the box outgrow the column: a stored
+							// width wider than the container (or a parent
+							// layout capping the block) would otherwise
+							// overflow the block bounds and the selection
+							// outline would cut through the visible map.
+							// The stored attribute keeps its value — like an
+							// image wider than its column, the visual clamps
+							// at 100% (the frontend wrapper does the same).
+							maxWidth="100%"
 							minHeight={ HEIGHT_MIN }
 							maxHeight={ HEIGHT_MAX }
 							lockAspectRatio={ lockRatio }
