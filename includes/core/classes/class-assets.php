@@ -101,7 +101,10 @@ class Assets {
 		// Set priority to 11 to not conflict with media modal.
 		add_action( 'admin_footer', array( $this, 'event_communication_modal' ), 11 );
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_timezone_shim' ) );
-		add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_timezone_shim' ) );
+		// Late priority (100) so that on the frontend this runs after any
+		// block/script that might enqueue wp-date for this request — see
+		// the is_admin()/enqueued-vs-registered branch in the callback.
+		add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_timezone_shim' ), 100 );
 
 		add_filter( 'render_block', array( $this, 'maybe_enqueue_styles' ), 10, 2 );
 		add_filter( 'render_block', array( $this, 'maybe_enqueue_tooltip_assets' ) );
@@ -119,8 +122,23 @@ class Assets {
 	 * block editor's panels and any plugin using `@wordpress/date`.
 	 *
 	 * We can't reach into WP core, but we can append an inline script
-	 * after its `setSettings` call to re-call it with a valid zone. We
-	 * only normalize the zero-offset case; non-zero UTC offsets are
+	 * after its `setSettings` call to re-call it with a valid zone.
+	 *
+	 * In the admin, `wp-date` is registered on essentially every screen
+	 * (block editor panels use it), so we enqueue it ourselves and patch
+	 * it unconditionally there. On the frontend, `wp-date` is *always*
+	 * registered by WordPress core regardless of whether the current
+	 * page uses it — so the same "is it registered" check that works in
+	 * the admin would force `wp-date` (and its `moment` dependency) onto
+	 * every single frontend pageview, including pages with no
+	 * GatherPress block at all. On the frontend we instead check whether
+	 * `wp-date` has actually been *enqueued* by something else for this
+	 * request, and only patch it in that case. The callback is hooked at
+	 * a late priority (100) on `wp_enqueue_scripts` so that check reflects
+	 * enqueues made by GatherPress's own blocks and other plugins/themes
+	 * earlier in the request.
+	 *
+	 * We only normalize the zero-offset case; non-zero UTC offsets are
 	 * rarer and surface a different warning that users fix by choosing
 	 * an IANA zone in Settings → General.
 	 *
@@ -129,7 +147,16 @@ class Assets {
 	 * @return void
 	 */
 	public function enqueue_timezone_shim(): void {
-		if ( ! wp_script_is( 'wp-date', 'registered' ) ) {
+		if ( is_admin() ) {
+			if ( ! wp_script_is( 'wp-date', 'registered' ) ) {
+				return;
+			}
+
+			wp_enqueue_script( 'wp-date' );
+		} elseif ( ! wp_script_is( 'wp-date', 'enqueued' ) ) {
+			// Frontend: never force-load wp-date (and moment.js) on pages
+			// that don't otherwise need it. Only patch the timezone
+			// setting if another block/script already enqueued wp-date.
 			return;
 		}
 
@@ -145,7 +172,6 @@ class Assets {
 		// phpcs:ignore Squiz.Commenting.InlineComment.InvalidEndChar -- PHPUnit annotation must match exactly.
 		// @codeCoverageIgnoreEnd
 
-		wp_enqueue_script( 'wp-date' );
 		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Reading a plugin-local static file.
 		wp_add_inline_script( 'wp-date', file_get_contents( $script_path ), 'after' );
 	}
