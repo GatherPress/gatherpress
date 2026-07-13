@@ -85,11 +85,13 @@ jest.mock( '@wordpress/components', () => ( {
 	FlexItem: ( { children } ) => <div>{ children }</div>,
 	PanelBody: ( { children } ) => <div>{ children }</div>,
 	RangeControl: () => null,
-	ResizableBox: ( { children, maxWidth, size, onResizeStart } ) => (
+	ResizableBox: ( { children, maxWidth, size, onResizeStart, style } ) => (
 		<div
 			data-testid="resizable-box"
 			data-max-width={ String( maxWidth ) }
 			data-size-width={ String( size?.width ) }
+			data-margin-left={ String( style?.marginLeft ) }
+			data-margin-right={ String( style?.marginRight ) }
 		>
 			<button
 				type="button"
@@ -440,6 +442,43 @@ describe( 'venue-map Edit sizing wrappers', () => {
 				marginRight: 'auto',
 			},
 		} );
+	} );
+
+	it( 'keeps alignment margins on the box so a centered map holds position mid-drag', () => {
+		const { getByTestId } = render(
+			<Edit
+				attributes={ {
+					...DEFAULT_ATTRIBUTES,
+					align: 'center',
+					style: { dimensions: { width: '779px' } },
+				} }
+				setAttributes={ jest.fn() }
+				context={ {} }
+				clientId=""
+			/>
+		);
+
+		const box = getByTestId( 'resizable-box' );
+		expect( box.dataset.marginLeft ).toBe( 'auto' );
+		expect( box.dataset.marginRight ).toBe( 'auto' );
+	} );
+
+	it( 'leaves the box unaligned when the map has no alignment', () => {
+		const { getByTestId } = render(
+			<Edit
+				attributes={ {
+					...DEFAULT_ATTRIBUTES,
+					style: { dimensions: { width: '779px' } },
+				} }
+				setAttributes={ jest.fn() }
+				context={ {} }
+				clientId=""
+			/>
+		);
+
+		const box = getByTestId( 'resizable-box' );
+		expect( box.dataset.marginLeft ).toBe( 'undefined' );
+		expect( box.dataset.marginRight ).toBe( 'undefined' );
 	} );
 
 	it( 'releases the shrink-wrap while a resize drag is in flight', () => {

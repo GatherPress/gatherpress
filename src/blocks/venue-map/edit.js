@@ -927,6 +927,19 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 							maxWidth="100%"
 							minHeight={ HEIGHT_MIN }
 							maxHeight={ HEIGHT_MAX }
+							// The alignment margins live on the box itself so
+							// a centered or right-aligned map holds its
+							// position while a drag has the block wrapper
+							// released to full width. Once the wrapper hugs
+							// the box again, auto margins are a no-op.
+							style={ {
+								marginLeft:
+									'center' === align || 'right' === align
+										? 'auto'
+										: undefined,
+								marginRight:
+									'center' === align ? 'auto' : undefined,
+							} }
 							lockAspectRatio={ lockRatio }
 							enable={ {
 								top: false,
