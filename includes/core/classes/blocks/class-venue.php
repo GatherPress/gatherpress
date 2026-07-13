@@ -93,7 +93,7 @@ class Venue {
 		}
 
 		// Has source post — render with source context.
-		return $this->render_with_source_context( $source_post, $instance );
+		return $this->render_with_source_context( $source_post, $instance, $block_content );
 	}
 
 	/**
@@ -170,16 +170,25 @@ class Venue {
 	 *
 	 * Sets up the global post and block context to the resolved shadow-source
 	 * post (venue, tour, production, etc.), renders the inner blocks, then
-	 * restores the original context.
+	 * restores the original context. The first-pass wrapper is kept and only
+	 * its inner markup is swapped: by the time this block-specific filter
+	 * runs, the generic `render_block` filters have already decorated the
+	 * wrapper with block-supports output (core's layout classes among them),
+	 * and rebuilding the tag from scratch would silently drop all of it.
 	 *
 	 * @since 0.34.0
 	 *
-	 * @param WP_Post  $source_post The source post to use as context.
-	 * @param WP_Block $instance    The block instance.
+	 * @param WP_Post  $source_post      The source post to use as context.
+	 * @param WP_Block $instance         The block instance.
+	 * @param string   $original_content The first-pass block markup, wrapper included.
 	 *
 	 * @return string The rendered block content.
 	 */
-	private function render_with_source_context( WP_Post $source_post, WP_Block $instance ): string {
+	private function render_with_source_context(
+		WP_Post $source_post,
+		WP_Block $instance,
+		string $original_content
+	): string {
 		global $post;
 		$original_post = $post;
 
@@ -210,7 +219,16 @@ class Venue {
 
 		$post = $original_post; // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
 
-		// Build wrapper classes from block instance attributes.
+		// Reuse the first-pass wrapper tag verbatim — it carries
+		// get_block_wrapper_attributes() plus everything the generic
+		// `render_block` filters added (alignment, className, layout classes).
+		if ( preg_match( '#\A\s*<div\b[^>]*>#', $original_content, $matches ) ) {
+			return $matches[0] . $block_content . '</div>';
+		}
+
+		// Fallback when the original markup doesn't open with the expected
+		// wrapper tag (e.g. another filter rewrote it entirely): rebuild a
+		// minimal wrapper from the block instance attributes.
 		$classes = array( 'wp-block-gatherpress-venue' );
 
 		if ( ! empty( $instance->attributes['align'] ) ) {
