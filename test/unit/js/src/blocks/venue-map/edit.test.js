@@ -2,7 +2,7 @@
  * External dependencies
  */
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
-import { fireEvent, render } from '@testing-library/react';
+import { act, render } from '@testing-library/react';
 
 /**
  * Mocks
@@ -16,6 +16,10 @@ import { fireEvent, render } from '@testing-library/react';
 // Capture the venue-state selector from the Edit block's first useSelect call
 // so we can invoke it directly in tests.
 let capturedVenueStateSelector = null;
+
+// Capture the latest props handed to the mocked ResizableBox so tests can
+// drive its resize callbacks with crafted elements.
+let capturedResizableProps = null;
 
 // A minimal select mock that puts the block into the early-bail path:
 // effectiveVenuePostId === 0 because both context.postId and
@@ -85,22 +89,20 @@ jest.mock( '@wordpress/components', () => ( {
 	FlexItem: ( { children } ) => <div>{ children }</div>,
 	PanelBody: ( { children } ) => <div>{ children }</div>,
 	RangeControl: () => null,
-	ResizableBox: ( { children, maxWidth, size, onResizeStart, style } ) => (
-		<div
-			data-testid="resizable-box"
-			data-max-width={ String( maxWidth ) }
-			data-size-width={ String( size?.width ) }
-			data-margin-left={ String( style?.marginLeft ) }
-			data-margin-right={ String( style?.marginRight ) }
-		>
-			<button
-				type="button"
-				data-testid="resize-start"
-				onClick={ () => onResizeStart?.() }
-			/>
-			{ children }
-		</div>
-	),
+	ResizableBox: ( props ) => {
+		capturedResizableProps = props;
+		return (
+			<div
+				data-testid="resizable-box"
+				data-max-width={ String( props.maxWidth ) }
+				data-size-width={ String( props.size?.width ) }
+				data-margin-left={ String( props.style?.marginLeft ) }
+				data-margin-right={ String( props.style?.marginRight ) }
+			>
+				{ props.children }
+			</div>
+		);
+	},
 	SelectControl: () => null,
 	TextControl: () => null,
 	ToggleControl: () => null,
@@ -481,7 +483,94 @@ describe( 'venue-map Edit sizing wrappers', () => {
 		expect( box.dataset.marginRight ).toBe( 'undefined' );
 	} );
 
-	it( 'releases the shrink-wrap while a resize drag is in flight', () => {
+	it( 'measures a pixel growth ceiling at drag start and resets it on release', () => {
+		const { getByTestId } = render(
+			<Edit
+				attributes={ {
+					...DEFAULT_ATTRIBUTES,
+					style: { dimensions: { width: '779px' } },
+				} }
+				setAttributes={ jest.fn() }
+				context={ {} }
+				clientId=""
+			/>
+		);
+
+		const box = getByTestId( 'resizable-box' );
+		expect( box.dataset.maxWidth ).toBe( '100%' );
+
+		// Fake enough DOM for the measurement: the block wrapper is capped
+		// at 645px by a constrained parent whose content box is 1206px.
+		const doc = { defaultView: { getComputedStyle: ( n ) => n.styles } };
+		const parentEl = {
+			clientWidth: 1266,
+			ownerDocument: doc,
+			styles: { paddingLeft: '30px', paddingRight: '30px' },
+		};
+		const blockEl = {
+			parentElement: parentEl,
+			ownerDocument: doc,
+			styles: { maxWidth: '645px' },
+		};
+
+		act( () =>
+			capturedResizableProps.onResizeStart( null, 'right', {
+				closest: () => blockEl,
+			} )
+		);
+		// The tighter of column width (1206) and the parent layout's cap
+		// (645) wins.
+		expect( getByTestId( 'resizable-box' ).dataset.maxWidth ).toBe(
+			'645'
+		);
+
+		act( () =>
+			capturedResizableProps.onResizeStop( null, 'right', null, {
+				width: 10,
+				height: 5,
+			} )
+		);
+		expect( getByTestId( 'resizable-box' ).dataset.maxWidth ).toBe(
+			'100%'
+		);
+	} );
+
+	it( 'uses the column width when no parent layout caps the block', () => {
+		const { getByTestId } = render(
+			<Edit
+				attributes={ {
+					...DEFAULT_ATTRIBUTES,
+					style: { dimensions: { width: '779px' } },
+				} }
+				setAttributes={ jest.fn() }
+				context={ {} }
+				clientId=""
+			/>
+		);
+
+		const doc = { defaultView: { getComputedStyle: ( n ) => n.styles } };
+		const parentEl = {
+			clientWidth: 1266,
+			ownerDocument: doc,
+			styles: { paddingLeft: '0px', paddingRight: '0px' },
+		};
+		const blockEl = {
+			parentElement: parentEl,
+			ownerDocument: doc,
+			styles: { maxWidth: 'none' },
+		};
+
+		act( () =>
+			capturedResizableProps.onResizeStart( null, 'right', {
+				closest: () => blockEl,
+			} )
+		);
+		expect( getByTestId( 'resizable-box' ).dataset.maxWidth ).toBe(
+			'1266'
+		);
+	} );
+
+	it( 'keeps the 100% clamp when the drag environment cannot be measured', () => {
 		const { useBlockProps } = jest.requireMock(
 			'@wordpress/block-editor'
 		);
@@ -498,19 +587,19 @@ describe( 'venue-map Edit sizing wrappers', () => {
 			/>
 		);
 
-		// Fixed width before the drag: wrapper shrink-wraps the map.
+		act( () =>
+			capturedResizableProps.onResizeStart( null, 'right', {
+				closest: () => null,
+			} )
+		);
+		expect( getByTestId( 'resizable-box' ).dataset.maxWidth ).toBe(
+			'100%'
+		);
+
+		// The shrink-wrapped wrapper stays on through the drag — releasing
+		// it is what shoved parent-centered maps to the left mid-resize.
 		expect( useBlockProps ).toHaveBeenLastCalledWith( {
 			style: expect.objectContaining( { width: 'fit-content' } ),
-		} );
-
-		// Starting a drag must release the shrink-wrap so the box's
-		// 100% max-width clamp resolves against the real column instead
-		// of a wrapper that always equals the box itself (which would
-		// block growing).
-		fireEvent.click( getByTestId( 'resize-start' ) );
-
-		expect( useBlockProps ).toHaveBeenLastCalledWith( {
-			style: undefined,
 		} );
 	} );
 

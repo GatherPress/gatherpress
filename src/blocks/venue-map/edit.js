@@ -161,13 +161,13 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 	// selection outline hugs the visible map, and translate the block's
 	// own alignment into margins (the frontend centers the sized wrapper
 	// via its alignment class; the editor's extra wrapper layers don't).
-	// While a drag is in flight the shrink-wrap has to come off: the
-	// resize box clamps at 100% of this wrapper, and a wrapper that hugs
-	// the box would make that clamp circular — the box could never grow,
-	// only shrink. Full-width during the drag lets the clamp resolve
-	// against the real column; the wrapper hugs the new size on release.
-	const [ isResizing, setIsResizing ] = useState( false );
-	const hasFixedEditorWidth = 0 < widthPx && ! isWideOrFull && ! isResizing;
+	// The wrapper keeps the shrink-wrap during a drag too — releasing it
+	// moved a map that a parent layout centers (a constrained venue) to
+	// the left for the duration of the resize. Growth works because the
+	// box's ceiling is measured in pixels at drag start rather than
+	// expressed as a percentage of this wrapper (see onResizeStart).
+	const [ resizeMaxWidth, setResizeMaxWidth ] = useState( null );
+	const hasFixedEditorWidth = 0 < widthPx && ! isWideOrFull;
 	let blockWrapperStyle;
 	if ( hasFixedEditorWidth ) {
 		blockWrapperStyle = {
@@ -489,8 +489,44 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 		? false
 		: parseAspectRatio( aspectRatio ) || false;
 
+	// Measure how wide the box may grow: the column the block sits in,
+	// tightened by any max-width a parent layout stamps on the block
+	// wrapper (a constrained venue caps its children). Measured once per
+	// drag — a pixel ceiling is what breaks the circular clamp a
+	// percentage would create against the shrink-wrapped wrapper, whose
+	// width always equals the box's own.
+	const onResizeStart = ( event, direction, elt ) => {
+		const blockEl = elt?.closest?.( '[data-block]' );
+		const parentEl = blockEl?.parentElement;
+		let available = 0;
+
+		if ( parentEl ) {
+			const parentStyles =
+				parentEl.ownerDocument.defaultView.getComputedStyle(
+					parentEl
+				);
+			available =
+				parentEl.clientWidth -
+				parseFloat( parentStyles.paddingLeft ) -
+				parseFloat( parentStyles.paddingRight );
+		}
+
+		if ( blockEl ) {
+			const cap = parseFloat(
+				blockEl.ownerDocument.defaultView.getComputedStyle( blockEl )
+					.maxWidth
+			);
+
+			if ( ! Number.isNaN( cap ) ) {
+				available = 0 < available ? Math.min( available, cap ) : cap;
+			}
+		}
+
+		setResizeMaxWidth( 0 < available ? available : null );
+	};
+
 	const onResizeStop = ( event, direction, elt, delta ) => {
-		setIsResizing( false );
+		setResizeMaxWidth( null );
 		// ResizableBox hands us the pixel delta from resize start; combine
 		// with the effective dimensions we rendered at to get the new value.
 		const newWidth = Math.max(
@@ -924,7 +960,10 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 							// The stored attribute keeps its value — like an
 							// image wider than its column, the visual clamps
 							// at 100% (the frontend wrapper does the same).
-							maxWidth="100%"
+							// During a drag the ceiling switches to the pixel
+							// width measured in onResizeStart so growth isn't
+							// bounded by the shrink-wrapped wrapper.
+							maxWidth={ resizeMaxWidth ?? '100%' }
 							minHeight={ HEIGHT_MIN }
 							maxHeight={ HEIGHT_MAX }
 							// The alignment margins live on the box itself so
@@ -953,7 +992,7 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 									showLeftHandle && showBottomHandle,
 								topLeft: false,
 							} }
-							onResizeStart={ () => setIsResizing( true ) }
+							onResizeStart={ onResizeStart }
 							onResizeStop={ onResizeStop }
 						>
 							{ previewContent }
