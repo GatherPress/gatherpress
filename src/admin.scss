@@ -39,7 +39,7 @@
 }
 
 .gatherpress-rsvp-approved:hover .gatherpress-rsvp-icon {
-	background: #0073aa;
+	background: var(--wp-admin-theme-color, #0073aa);
 }
 
 .gatherpress-rsvp-pending {

@@ -1,0 +1,4 @@
+Significance: patch
+Type: changed
+
+The admin RSVP badge hover state now follows the selected WordPress admin color scheme, with the existing blue as a fallback.
