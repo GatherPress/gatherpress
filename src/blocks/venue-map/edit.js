@@ -145,7 +145,33 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 		linkTarget,
 		rel,
 	} = attributes;
-	const blockProps = useBlockProps();
+	// Dimensions live in style.dimensions (core dimensions support, with
+	// serialization skipped so this block owns its own output); the legacy
+	// numeric width/height attributes are read-only fallbacks until the
+	// GatherPress Alpha migration rewrites saved content. Derived up here
+	// because the block wrapper's own styling depends on them.
+	const widthValue = getDimensionValue( attributes, 'width' );
+	const heightValue = getDimensionValue( attributes, 'height' );
+	const widthPx = parsePxDimension( widthValue );
+	const heightPx = parsePxDimension( heightValue );
+	const isWideOrFull = 'wide' === align || 'full' === align;
+
+	// With an explicit pixel width the map is narrower than the block's
+	// full-width wrapper — shrink the wrapper to the content so the
+	// selection outline hugs the visible map, and translate the block's
+	// own alignment into margins (the frontend centers the sized wrapper
+	// via its alignment class; the editor's extra wrapper layers don't).
+	const hasFixedEditorWidth = 0 < widthPx && ! isWideOrFull;
+	let blockWrapperStyle;
+	if ( hasFixedEditorWidth ) {
+		blockWrapperStyle = {
+			width: 'fit-content',
+			marginLeft:
+				'center' === align || 'right' === align ? 'auto' : undefined,
+			marginRight: 'center' === align ? 'auto' : undefined,
+		};
+	}
+	const blockProps = useBlockProps( { style: blockWrapperStyle } );
 
 	// Determine the venue post ID and get venue meta + static-map descriptors.
 	// `savedVenueMeta` reflects what's persisted server-side — compared
@@ -329,15 +355,6 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 			( venueMeta.gatherpress_longitude || '' ) !==
 				( savedVenueMeta.gatherpress_longitude || '' ) );
 
-	// Dimensions live in style.dimensions (core dimensions support, with
-	// serialization skipped so this block owns its own output); the legacy
-	// numeric width/height attributes are read-only fallbacks until the
-	// GatherPress Alpha migration rewrites saved content.
-	const widthValue = getDimensionValue( attributes, 'width' );
-	const heightValue = getDimensionValue( attributes, 'height' );
-	const widthPx = parsePxDimension( widthValue );
-	const heightPx = parsePxDimension( heightValue );
-
 	// Write dimensions to style.dimensions and retire the legacy
 	// attributes so content self-heals as it is edited. `undefined`
 	// removes a dimension ("auto").
@@ -499,7 +516,6 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 	// / `.alignfull` can drive the layout. Height keeps its inline stamp;
 	// aspect-ratio applies whenever a dimension is auto OR the alignment
 	// is wide/full so the shape tracks the container as it fills.
-	const isWideOrFull = 'wide' === align || 'full' === align;
 	const toCssDimension = ( value ) =>
 		'number' === typeof value ? `${ value }px` : value;
 	let wrapperWidth;
