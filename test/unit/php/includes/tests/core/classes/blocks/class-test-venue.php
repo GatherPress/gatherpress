@@ -193,7 +193,7 @@ class Test_Venue extends Base {
 	 * @since 0.34.0
 	 * @covers ::render_block
 	 * @covers ::get_venue_post
-	 * @covers ::render_with_venue_context
+	 * @covers ::render_with_source_context
 	 *
 	 * @return void
 	 */
@@ -504,7 +504,7 @@ class Test_Venue extends Base {
 	 * Tests render_with_venue_context restores original post.
 	 *
 	 * @since 0.34.0
-	 * @covers ::render_with_venue_context
+	 * @covers ::render_with_source_context
 	 *
 	 * @return void
 	 */
@@ -564,7 +564,7 @@ class Test_Venue extends Base {
 	 * becomes the context for inner blocks by checking filter behavior.
 	 *
 	 * @since 0.34.0
-	 * @covers ::render_with_venue_context
+	 * @covers ::render_with_source_context
 	 *
 	 * @return void
 	 */
@@ -672,7 +672,7 @@ class Test_Venue extends Base {
 	 * @since 0.34.0
 	 * @covers ::render_block
 	 * @covers ::get_venue_post
-	 * @covers ::render_with_venue_context
+	 * @covers ::render_with_source_context
 	 *
 	 * @return void
 	 */
@@ -795,10 +795,11 @@ class Test_Venue extends Base {
 	}
 
 	/**
-	 * Tests render_with_venue_context applies align class.
+	 * Tests render_with_source_context preserves the align class the
+	 * first-pass wrapper carries.
 	 *
 	 * @since 0.34.0
-	 * @covers ::render_with_venue_context
+	 * @covers ::render_with_source_context
 	 *
 	 * @return void
 	 */
@@ -836,20 +837,25 @@ class Test_Venue extends Base {
 
 		$block = array( 'attrs' => array( 'selectedPostId' => $venue_id ) );
 
-		$result = $instance->render_block( '<div>Test</div>', $block, $block_instance );
+		$result = $instance->render_block(
+			'<div class="wp-block-gatherpress-venue alignwide">Test</div>',
+			$block,
+			$block_instance
+		);
 
 		$this->assertStringContainsString(
 			'alignwide',
 			$result,
-			'Should apply align class to wrapper.'
+			'The align class from the first-pass wrapper should be preserved.'
 		);
 	}
 
 	/**
-	 * Tests render_with_venue_context applies className attribute.
+	 * Tests render_with_source_context preserves custom classes the
+	 * first-pass wrapper carries.
 	 *
 	 * @since 0.34.0
-	 * @covers ::render_with_venue_context
+	 * @covers ::render_with_source_context
 	 *
 	 * @return void
 	 */
@@ -887,20 +893,27 @@ class Test_Venue extends Base {
 
 		$block = array( 'attrs' => array( 'selectedPostId' => $venue_id ) );
 
-		$result = $instance->render_block( '<div>Test</div>', $block, $block_instance );
+		$result = $instance->render_block(
+			'<div class="wp-block-gatherpress-venue custom-class another-class">Test</div>',
+			$block,
+			$block_instance
+		);
 
 		$this->assertStringContainsString(
 			'custom-class another-class',
 			$result,
-			'Should apply className attribute to wrapper.'
+			'Custom classes from the first-pass wrapper should be preserved.'
 		);
 	}
 
 	/**
-	 * Tests render_with_venue_context applies both align and className.
+	 * Tests render_with_source_context keeps the full first-pass wrapper —
+	 * base class, alignment, custom classes, and the layout classes core's
+	 * block-supports pipeline injected — while swapping the inner markup
+	 * for the context-corrected re-render.
 	 *
 	 * @since 0.34.0
-	 * @covers ::render_with_venue_context
+	 * @covers ::render_with_source_context
 	 *
 	 * @return void
 	 */
@@ -939,7 +952,10 @@ class Test_Venue extends Base {
 
 		$block = array( 'attrs' => array( 'selectedPostId' => $venue_id ) );
 
-		$result = $instance->render_block( '<div>Test</div>', $block, $block_instance );
+		$first_pass_markup  = '<div class="wp-block-gatherpress-venue alignfull my-custom-class';
+		$first_pass_markup .= ' is-layout-flow wp-block-gatherpress-venue-is-layout-flow">Original inner</div>';
+
+		$result = $instance->render_block( $first_pass_markup, $block, $block_instance );
 
 		$this->assertStringContainsString(
 			'wp-block-gatherpress-venue',
@@ -949,12 +965,91 @@ class Test_Venue extends Base {
 		$this->assertStringContainsString(
 			'alignfull',
 			$result,
-			'Should apply align class.'
+			'Should preserve the align class.'
 		);
 		$this->assertStringContainsString(
 			'my-custom-class',
 			$result,
-			'Should apply className.'
+			'Should preserve the custom className.'
+		);
+		$this->assertStringContainsString(
+			'is-layout-flow wp-block-gatherpress-venue-is-layout-flow',
+			$result,
+			'Layout classes injected by core block supports must survive the re-render.'
+		);
+		$this->assertStringContainsString(
+			'Inner content',
+			$result,
+			'The inner markup should be the context-corrected re-render.'
+		);
+		$this->assertStringNotContainsString(
+			'Original inner',
+			$result,
+			'The first-pass inner markup should be replaced.'
+		);
+	}
+
+	/**
+	 * Tests render_with_source_context falls back to a rebuilt wrapper when
+	 * the first-pass markup does not open with the expected wrapper tag.
+	 *
+	 * @since 0.34.0
+	 * @covers ::render_with_source_context
+	 *
+	 * @return void
+	 */
+	public function test_render_with_venue_context_rebuilds_wrapper_when_original_has_none(): void {
+		$instance = Venue_Block::get_instance();
+
+		$venue_id = $this->factory->post->create(
+			array(
+				'post_type'  => 'gatherpress_venue',
+				'post_title' => 'Fallback Wrapper Venue',
+			)
+		);
+
+		$block_instance = new WP_Block(
+			array(
+				'blockName'    => 'gatherpress/venue',
+				'attrs'        => array(
+					'selectedPostId' => $venue_id,
+					'align'          => 'wide',
+					'className'      => 'fallback-class',
+				),
+				'innerBlocks'  => array(
+					array(
+						'blockName'    => 'core/paragraph',
+						'attrs'        => array(),
+						'innerBlocks'  => array(),
+						'innerHTML'    => '<p>Inner content</p>',
+						'innerContent' => array( '<p>Inner content</p>' ),
+					),
+				),
+				'innerHTML'    => '',
+				'innerContent' => array( null ),
+			)
+		);
+
+		$block = array( 'attrs' => array( 'selectedPostId' => $venue_id ) );
+
+		// A filter upstream replaced the markup with something that has no
+		// wrapper div — the fallback rebuilds one from block attributes.
+		$result = $instance->render_block( 'plain text, no wrapper', $block, $block_instance );
+
+		$this->assertStringContainsString(
+			'wp-block-gatherpress-venue',
+			$result,
+			'The fallback should rebuild the base wrapper class.'
+		);
+		$this->assertStringContainsString(
+			'alignwide',
+			$result,
+			'The fallback should rebuild the align class from block attributes.'
+		);
+		$this->assertStringContainsString(
+			'fallback-class',
+			$result,
+			'The fallback should rebuild the className from block attributes.'
 		);
 	}
 
@@ -966,7 +1061,7 @@ class Test_Venue extends Base {
 	 *
 	 * @since 0.34.0
 	 * @covers ::get_venue_post
-	 * @covers ::render_with_venue_context
+	 * @covers ::render_with_source_context
 	 *
 	 * @return void
 	 */
@@ -1048,7 +1143,7 @@ class Test_Venue extends Base {
 	 * @since 0.34.0
 	 * @covers ::render_block
 	 * @covers ::get_venue_post
-	 * @covers ::render_with_venue_context
+	 * @covers ::render_with_source_context
 	 *
 	 * @return void
 	 */

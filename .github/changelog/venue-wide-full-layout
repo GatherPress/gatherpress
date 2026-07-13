@@ -1,0 +1,4 @@
+Significance: patch
+Type: fixed
+
+Venue blocks set to wide or full width now let their inner content expand with them: the block's inner layout no longer defaults to content-width constraint, and the frontend wrapper keeps the layout and block-supports classes WordPress generates instead of rebuilding a bare div.
