@@ -521,12 +521,25 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 				: undefined,
 	};
 
+	// Inside the ResizableBox the box owns the dimensions — the preview must
+	// fill it edge to edge or the map detaches from the drag handles while
+	// resizing. 100%/100% tracks whatever the box (or an in-flight drag)
+	// sets; when the box height is auto the 100% resolves to auto and the
+	// aspect-ratio takes over, matching the standalone sizing rules above.
+	// The guarded branch renders without the box, so it keeps wrapperStyle.
+	const boxedStyle = {
+		width: '100%',
+		height: '100%',
+		aspectRatio: wrapperStyle.aspectRatio,
+	};
+	const previewStyle = isParentGuarded ? wrapperStyle : boxedStyle;
+
 	const previewContent = (
 		<>
 			{ showStaticImage && (
 				<div
 					className="gatherpress-venue-map gatherpress-venue-map--static"
-					style={ wrapperStyle }
+					style={ previewStyle }
 				>
 					<img
 						className="gatherpress-venue-map__image"
@@ -547,7 +560,7 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 			{ showStaticPlaceholder && (
 				<div
 					className="gatherpress-venue-map gatherpress-venue-map--static"
-					style={ wrapperStyle }
+					style={ previewStyle }
 				>
 					<div className="gatherpress-venue-map__placeholder">
 						{ ! address && isInFSETemplate() && (
@@ -600,7 +613,7 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 			{ ! isStaticMode && (
 				<div
 					className="gatherpress-venue-map gatherpress-venue-map--interactive"
-					style={ wrapperStyle }
+					style={ previewStyle }
 				>
 					<MapEmbed
 						location={ address }
