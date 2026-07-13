@@ -22,7 +22,7 @@ import {
 	__experimentalToolsPanelItem as ToolsPanelItem,
 } from '@wordpress/components';
 import { useSelect } from '@wordpress/data';
-import { useEffect } from '@wordpress/element';
+import { useEffect, useState } from '@wordpress/element';
 import { Icon, link as linkIcon, mapMarker } from '@wordpress/icons';
 
 /**
@@ -161,7 +161,13 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 	// selection outline hugs the visible map, and translate the block's
 	// own alignment into margins (the frontend centers the sized wrapper
 	// via its alignment class; the editor's extra wrapper layers don't).
-	const hasFixedEditorWidth = 0 < widthPx && ! isWideOrFull;
+	// While a drag is in flight the shrink-wrap has to come off: the
+	// resize box clamps at 100% of this wrapper, and a wrapper that hugs
+	// the box would make that clamp circular — the box could never grow,
+	// only shrink. Full-width during the drag lets the clamp resolve
+	// against the real column; the wrapper hugs the new size on release.
+	const [ isResizing, setIsResizing ] = useState( false );
+	const hasFixedEditorWidth = 0 < widthPx && ! isWideOrFull && ! isResizing;
 	let blockWrapperStyle;
 	if ( hasFixedEditorWidth ) {
 		blockWrapperStyle = {
@@ -484,6 +490,7 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 		: parseAspectRatio( aspectRatio ) || false;
 
 	const onResizeStop = ( event, direction, elt, delta ) => {
+		setIsResizing( false );
 		// ResizableBox hands us the pixel delta from resize start; combine
 		// with the effective dimensions we rendered at to get the new value.
 		const newWidth = Math.max(
@@ -933,6 +940,7 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 									showLeftHandle && showBottomHandle,
 								topLeft: false,
 							} }
+							onResizeStart={ () => setIsResizing( true ) }
 							onResizeStop={ onResizeStop }
 						>
 							{ previewContent }

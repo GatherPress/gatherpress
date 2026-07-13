@@ -2,7 +2,7 @@
  * External dependencies
  */
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
-import { render } from '@testing-library/react';
+import { fireEvent, render } from '@testing-library/react';
 
 /**
  * Mocks
@@ -65,6 +65,7 @@ jest.mock( '@wordpress/i18n', () => ( {
 
 jest.mock( '@wordpress/element', () => ( {
 	useEffect: jest.fn(),
+	useState: jest.requireActual( 'react' ).useState,
 } ) );
 
 jest.mock( '@wordpress/block-editor', () => ( {
@@ -84,12 +85,17 @@ jest.mock( '@wordpress/components', () => ( {
 	FlexItem: ( { children } ) => <div>{ children }</div>,
 	PanelBody: ( { children } ) => <div>{ children }</div>,
 	RangeControl: () => null,
-	ResizableBox: ( { children, maxWidth, size } ) => (
+	ResizableBox: ( { children, maxWidth, size, onResizeStart } ) => (
 		<div
 			data-testid="resizable-box"
 			data-max-width={ String( maxWidth ) }
 			data-size-width={ String( size?.width ) }
 		>
+			<button
+				type="button"
+				data-testid="resize-start"
+				onClick={ () => onResizeStart?.() }
+			/>
 			{ children }
 		</div>
 	),
@@ -433,6 +439,39 @@ describe( 'venue-map Edit sizing wrappers', () => {
 				marginLeft: 'auto',
 				marginRight: 'auto',
 			},
+		} );
+	} );
+
+	it( 'releases the shrink-wrap while a resize drag is in flight', () => {
+		const { useBlockProps } = jest.requireMock(
+			'@wordpress/block-editor'
+		);
+
+		const { getByTestId } = render(
+			<Edit
+				attributes={ {
+					...DEFAULT_ATTRIBUTES,
+					style: { dimensions: { width: '779px' } },
+				} }
+				setAttributes={ jest.fn() }
+				context={ {} }
+				clientId=""
+			/>
+		);
+
+		// Fixed width before the drag: wrapper shrink-wraps the map.
+		expect( useBlockProps ).toHaveBeenLastCalledWith( {
+			style: expect.objectContaining( { width: 'fit-content' } ),
+		} );
+
+		// Starting a drag must release the shrink-wrap so the box's
+		// 100% max-width clamp resolves against the real column instead
+		// of a wrapper that always equals the box itself (which would
+		// block growing).
+		fireEvent.click( getByTestId( 'resize-start' ) );
+
+		expect( useBlockProps ).toHaveBeenLastCalledWith( {
+			style: undefined,
 		} );
 	} );
 
