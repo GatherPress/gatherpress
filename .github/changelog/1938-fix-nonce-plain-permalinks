@@ -1,0 +1,4 @@
+Significance: patch
+Type: fixed
+
+Fixed the RSVP and nonce REST endpoints returning a 404 when pretty permalinks are disabled, by building the event REST API URL with rest_url() instead of a hardcoded /wp-json/ path.

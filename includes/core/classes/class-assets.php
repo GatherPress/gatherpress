@@ -176,7 +176,7 @@ class Assets {
 		wp_interactivity_state(
 			'gatherpress',
 			array(
-				'eventApiUrl' => home_url( 'wp-json/' . $event_rest_api_slug ),
+				'eventApiUrl' => rest_url( $event_rest_api_slug ),
 			)
 		);
 	}
