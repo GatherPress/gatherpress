@@ -201,7 +201,7 @@ class Test_Assets extends Base {
 	 * Coverage for add_interactivity_state method without pretty permalinks.
 	 *
 	 * Regression: eventApiUrl was previously built via
-	 * `rest_url( $slug )`, a hardcoded path that only resolves
+	 * `home_url( 'wp-json/' . $slug )`, a hardcoded path that only resolves
 	 * when pretty permalinks are enabled. With the plain permalink structure,
 	 * WordPress serves the REST API via `?rest_route=` instead, so the
 	 * hardcoded `/wp-json/` path 404s. Using `rest_url()` adapts to either
@@ -214,7 +214,7 @@ class Test_Assets extends Base {
 	public function test_add_interactivity_state_without_pretty_permalinks(): void {
 		global $wp_rewrite;
 
-		$instance          = Assets::get_instance();
+		$instance            = Assets::get_instance();
 		$permalink_structure = $wp_rewrite->permalink_structure;
 		$wp_rewrite->set_permalink_structure( '' );
 
@@ -222,12 +222,13 @@ class Test_Assets extends Base {
 		$this->go_to( get_post_type_archive_link( Event::POST_TYPE ) );
 
 		$instance->add_interactivity_state();
-		$state = wp_interactivity_state( 'gatherpress' );
+		$state    = wp_interactivity_state( 'gatherpress' );
+		$expected = rest_url( sprintf( '%s/event', GATHERPRESS_REST_NAMESPACE ) );
 
 		$wp_rewrite->set_permalink_structure( $permalink_structure );
 
 		$this->assertSame(
-			rest_url( sprintf( '%s/event', GATHERPRESS_REST_NAMESPACE ) ),
+			$expected,
 			$state['eventApiUrl'],
 			'Failed to assert eventApiUrl matches rest_url() when pretty permalinks are disabled.'
 		);
