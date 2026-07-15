@@ -10,7 +10,7 @@ import {
 	__experimentalHStack as HStack,
 	useNavigator,
 } from '@wordpress/components';
-import { useState } from '@wordpress/element';
+import { useRef, useState } from '@wordpress/element';
 import { useSelect, useDispatch } from '@wordpress/data';
 import apiFetch from '@wordpress/api-fetch';
 import { store as coreDataStore } from '@wordpress/core-data';
@@ -159,7 +159,7 @@ function CreateVenueForm( { search, ...props } ) {
 		singularLabel
 	);
 
-	const { lastError, isSaving } = useSelect(
+	const { lastError, isSaving: isSavingEntityRecord } = useSelect(
 		( select ) => ( {
 			lastError: select( coreDataStore ).getLastEntitySaveError(
 				'postType',
@@ -172,6 +172,18 @@ function CreateVenueForm( { search, ...props } ) {
 		} ),
 		[ venuePostType ]
 	);
+
+	// The venue post is created via a raw apiFetch() call rather than
+	// saveEntityRecord(), so isSavingEntityRecord never reflects the
+	// in-flight request. Track it locally so the Save button disables
+	// and repeated clicks can't create duplicate venues. A ref is used
+	// alongside the state because React batches state updates: clicks
+	// fired synchronously (e.g. a rapid double-click) all run before a
+	// re-render lands, so a state-only guard would still let every one
+	// of them start the save flow.
+	const [ isCreating, setIsCreating ] = useState( false );
+	const isSavingRef = useRef( false );
+	const isSaving = isSavingEntityRecord || isCreating;
 
 	/**
 	 * Validates the venue title.
@@ -365,15 +377,25 @@ function CreateVenueForm( { search, ...props } ) {
 	 * This function is called when the save button is clicked.
 	 */
 	const saveBogus = async () => {
-		if ( isPostTypeSupporting( 'gatherpress-venue' ) ) {
-			// This should only run for the VenueTermsCombobox.
-			await updateVenueTermOnEventPost();
-		} else {
-			// This should only run for the VenuePostsCombobox.
-			await updateVenuePostOnBlockAttributes();
+		if ( isSavingRef.current ) {
+			return;
 		}
-		// In both cases, go home.
-		navigateBack();
+		isSavingRef.current = true;
+		setIsCreating( true );
+		try {
+			if ( isPostTypeSupporting( 'gatherpress-venue' ) ) {
+				// This should only run for the VenueTermsCombobox.
+				await updateVenueTermOnEventPost();
+			} else {
+				// This should only run for the VenuePostsCombobox.
+				await updateVenuePostOnBlockAttributes();
+			}
+			// In both cases, go home.
+			navigateBack();
+		} finally {
+			isSavingRef.current = false;
+			setIsCreating( false );
+		}
 	};
 
 	const hasValidationErrors = !! titleError;
