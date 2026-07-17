@@ -16,11 +16,13 @@
 		},
 		"singularLabel": {
 			"type": "string",
-			"default": "%d attendee"
+			"default": "%d attendee",
+			"role": "content"
 		},
 		"pluralLabel": {
 			"type": "string",
-			"default": "%d attendees"
+			"default": "%d attendees",
+			"role": "content"
 		}
 	},
 	"supports": {

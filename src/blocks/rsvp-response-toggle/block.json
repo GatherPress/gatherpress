@@ -12,11 +12,13 @@
 	"attributes": {
 		"showAll": {
 			"type": "string",
-			"default": "Show all"
+			"default": "Show all",
+			"role": "content"
 		},
 		"showFewer": {
 			"type": "string",
-			"default": "Show fewer"
+			"default": "Show fewer",
+			"role": "content"
 		}
 	},
 	"supports": {

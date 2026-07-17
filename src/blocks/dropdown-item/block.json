@@ -9,7 +9,8 @@
 	"attributes": {
 		"text": {
 			"type": "string",
-			"default": ""
+			"default": "",
+			"role": "content"
 		}
 	},
 	"parent": ["gatherpress/dropdown"],

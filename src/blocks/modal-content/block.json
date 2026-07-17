@@ -25,6 +25,7 @@
 		}
 	},
 	"supports": {
+		"contentRole": true,
 		"html": false,
 		"color": {
 			"gradients": true,

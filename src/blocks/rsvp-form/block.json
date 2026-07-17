@@ -19,6 +19,7 @@
 		}
 	},
 	"supports": {
+		"contentRole": true,
 		"gatherpress": {
 			"postIdOverride": true
 		},
