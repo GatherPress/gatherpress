@@ -15,6 +15,7 @@ namespace GatherPress\Core;
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use Exception;
+use GatherPress\Core\AI\Abilities_Integration;
 use GatherPress\Core\Traits\Singleton;
 use WP_Site;
 
@@ -57,6 +58,10 @@ class Setup {
 	 * @throws Exception If there are issues instantiating singleton classes.
 	 */
 	protected function instantiate_classes(): void {
+		// Only instantiate Abilities Integration if Abilities API is available.
+		if ( function_exists( 'wp_register_ability' ) ) {
+			Abilities_Integration::get_instance();
+		}
 		Assets::get_instance();
 		Blocks\Setup::get_instance();
 		Calendar\Setup::get_instance();
@@ -561,7 +566,7 @@ class Setup {
 	/**
 	 * Smash tables and add a custom HTTP header to show undying love for the Buffalo Bills.
 	 *
-	 * ♫ Let’s Go Buffalo! ♫
+	 * ♫ Let's Go Buffalo! ♫
 	 *
 	 * @since 0.33.0
 	 *

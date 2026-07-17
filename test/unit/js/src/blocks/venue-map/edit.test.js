@@ -17,6 +17,12 @@ import { render } from '@testing-library/react';
 // so we can invoke it directly in tests.
 let capturedVenueStateSelector = null;
 
+// Configurable select implementation; individual tests may override this.
+let mockSelectImpl = null;
+
+// Captured props passed to MapEmbed on the most recent render.
+let capturedMapEmbedProps = null;
+
 // A minimal select mock that puts the block into the early-bail path:
 // effectiveVenuePostId === 0 because both context.postId and
 // core/editor.getCurrentPostId() return falsy values.
@@ -45,7 +51,8 @@ const noVenueMockSelect = ( storeName ) => {
 
 jest.mock( '@wordpress/data', () => ( {
 	useSelect: jest.fn( ( selector ) => {
-		const result = selector( noVenueMockSelect );
+		const selectFn = mockSelectImpl || noVenueMockSelect;
+		const result = selector( selectFn );
 		// Identify the venue-state selector by its return shape.
 		if (
 			null !== result &&
@@ -113,7 +120,10 @@ jest.mock( '@src/helpers/editor-settings', () => ( {
 	getFromSettings: jest.fn( () => null ),
 } ) );
 
-jest.mock( '@src/components/MapEmbed', () => () => null );
+jest.mock( '@src/components/MapEmbed', () => ( props ) => {
+	capturedMapEmbedProps = props;
+	return null;
+} );
 
 jest.mock( '@src/components/GoogleMap', () => ( {
 	GOOGLE_IFRAME_UNSUPPORTED_MAP_TYPE_SLUGS: [],
@@ -160,6 +170,8 @@ const DEFAULT_ATTRIBUTES = {
 describe( 'venue-map Edit useSelect selector stability', () => {
 	beforeEach( () => {
 		capturedVenueStateSelector = null;
+		mockSelectImpl = null;
+		capturedMapEmbedProps = null;
 		jest.clearAllMocks();
 		// clearAllMocks does not reset mockReturnValue; restore the default
 		// so each test starts with isVenuePostType returning false.
@@ -367,5 +379,106 @@ describe( 'venue-map Edit useSelect selector stability', () => {
 		expect( result1.staticMapDescriptors ).toBe(
 			result2.staticMapDescriptors
 		);
+	} );
+} );
+
+describe( 'venue-map Edit coordinate resolution', () => {
+	const SAVED_VENUE_META = {
+		gatherpress_address: '123 Main St',
+		gatherpress_latitude: '40.7128',
+		gatherpress_longitude: '-74.0060',
+	};
+
+	const INTERACTIVE_ATTRIBUTES = {
+		...DEFAULT_ATTRIBUTES,
+		renderMode: 'interactive',
+	};
+
+	/**
+	 * Build a select mock for the in-editor venue path.
+	 *
+	 * @param {Object} options          Mock options.
+	 * @param {number} options.storeLat Venue store latitude.
+	 * @param {number} options.storeLng Venue store longitude.
+	 * @param {Object} options.meta     Edited post meta.
+	 * @return {Function} WordPress data select mock.
+	 */
+	const buildEditingVenueSelect = ( {
+		storeLat,
+		storeLng,
+		meta = SAVED_VENUE_META,
+	} ) => {
+		return ( storeName ) => {
+			switch ( storeName ) {
+				case 'core/editor':
+					return {
+						getCurrentPostId: () => 42,
+						getCurrentPostType: () => 'gatherpress_venue',
+						getEditedPostAttribute: ( attr ) =>
+							'meta' === attr ? meta : null,
+						getCurrentPost: () => ( { meta } ),
+					};
+				case 'core':
+					return {
+						getEditedEntityRecord: () => ( { meta } ),
+					};
+				case 'core/block-editor':
+					return { getBlockParentsByBlockName: () => [] };
+				case 'gatherpress/venue':
+					return {
+						getVenueLatitude: () => storeLat,
+						getVenueLongitude: () => storeLng,
+					};
+				default:
+					return {};
+			}
+		};
+	};
+
+	beforeEach( () => {
+		capturedMapEmbedProps = null;
+		mockSelectImpl = null;
+		jest.clearAllMocks();
+		isVenuePostType.mockReturnValue( true );
+	} );
+
+	it( 'uses post meta coordinates when the venue store is still at 0/0', () => {
+		mockSelectImpl = buildEditingVenueSelect( {
+			storeLat: 0,
+			storeLng: 0,
+		} );
+
+		render(
+			<Edit
+				attributes={ INTERACTIVE_ATTRIBUTES }
+				setAttributes={ jest.fn() }
+				context={ { postId: 42, postType: 'gatherpress_venue' } }
+				clientId=""
+			/>
+		);
+
+		expect( capturedMapEmbedProps ).not.toBeNull();
+		expect( capturedMapEmbedProps.latitude ).toBe( '40.7128' );
+		expect( capturedMapEmbedProps.longitude ).toBe( '-74.0060' );
+	} );
+
+	it( 'prefers venue store coordinates once the store holds real values', () => {
+		mockSelectImpl = buildEditingVenueSelect( {
+			storeLat: 51.5074,
+			storeLng: -0.1278,
+		} );
+
+		render(
+			<Edit
+				attributes={ INTERACTIVE_ATTRIBUTES }
+				setAttributes={ jest.fn() }
+				context={ { postId: 42, postType: 'gatherpress_venue' } }
+				clientId=""
+			/>
+		);
+
+		expect( capturedMapEmbedProps ).not.toBeNull();
+		expect( capturedMapEmbedProps.latitude ).toBe( '51.5074' );
+		expect( capturedMapEmbedProps.longitude ).toBe( '-0.1278' );
 	} );
 } );
