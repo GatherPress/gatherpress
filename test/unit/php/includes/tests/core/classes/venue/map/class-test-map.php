@@ -2067,7 +2067,14 @@ class Test_Map extends Base {
 		// Seed one cached combo the venue "already had".
 		$instance->maybe_generate( $post_id );
 
-		$result = $instance->regenerate( $post_id, 8, 0, 295, '' );
+		$result = $instance->regenerate(
+			$post_id,
+			array(
+				'zoom'   => 8,
+				'width'  => 0,
+				'height' => 295,
+			)
+		);
 
 		// Auto-width at 2:1 on height 295 → 590.
 		$expected_key = '8x590x295xroadmap';
@@ -2100,10 +2107,11 @@ class Test_Map extends Base {
 
 		$result = $instance->regenerate(
 			$post_id,
-			Map::DEFAULT_ZOOM,
-			Map::DEFAULT_HEIGHT * 2,
-			Map::DEFAULT_HEIGHT,
-			''
+			array(
+				'zoom'   => Map::DEFAULT_ZOOM,
+				'width'  => Map::DEFAULT_HEIGHT * 2,
+				'height' => Map::DEFAULT_HEIGHT,
+			)
 		);
 
 		$this->assertCount(
@@ -2274,6 +2282,57 @@ class Test_Map extends Base {
 		$this->assertArrayHasKey(
 			'15x800x400xhybrid',
 			(array) $data['descriptors']['osm']
+		);
+	}
+
+	/**
+	 * Direct ensure_combo() coverage: generates the requested combo and
+	 * returns the venue's full descriptor map.
+	 *
+	 * @covers ::ensure_combo
+	 *
+	 * @return void
+	 */
+	public function test_ensure_combo_generates_and_returns_full_map(): void {
+		$instance = Map::get_instance();
+		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
+
+		add_post_meta( $post_id, 'gatherpress_address', '1 Infinite Loop' );
+		add_post_meta( $post_id, 'gatherpress_latitude', '37.3318' );
+		add_post_meta( $post_id, 'gatherpress_longitude', '-122.0312' );
+
+		$descriptors = $instance->ensure_combo(
+			$post_id,
+			array(
+				'zoom'     => 15,
+				'width'    => 800,
+				'height'   => 400,
+				'map_type' => 'hybrid',
+			)
+		);
+
+		$this->assertArrayHasKey( '15x800x400xhybrid', $descriptors['osm'] );
+	}
+
+	/**
+	 * Direct ensure_combo() coverage: an unresolvable venue yields an
+	 * empty map — the shape the REST handler reports as generation_failed.
+	 *
+	 * @covers ::ensure_combo
+	 *
+	 * @return void
+	 */
+	public function test_ensure_combo_returns_empty_when_combo_cannot_generate(): void {
+		$instance = Map::get_instance();
+		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
+
+		// Address but no coordinates — get_descriptor_for_post() bails.
+		add_post_meta( $post_id, 'gatherpress_address', 'Nowhere' );
+
+		$this->assertSame(
+			array(),
+			$instance->ensure_combo( $post_id, array( 'zoom' => 15 ) ),
+			'A venue without coordinates cannot produce the combo.'
 		);
 	}
 

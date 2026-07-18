@@ -616,39 +616,31 @@ class Map {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @param int      $post_id            The venue post ID.
-	 * @param int|null $extra_zoom         Optional extra zoom to include.
-	 * @param int|null $extra_width        Optional extra width (0 = auto).
-	 * @param int|null $extra_height       Optional extra height (0 = auto).
-	 * @param string   $extra_aspect_ratio Optional aspect ratio hint for the extra combo.
-	 * @param string   $map_type           Map type slug for regenerated static map images.
+	 * @param int        $post_id     The venue post ID.
+	 * @param array|null $extra_combo Optional extra combo to include, in the
+	 *                                {@see Rest_Combo::parse_request()} shape:
+	 *                                `zoom`, `width` (0 = auto), `height`
+	 *                                (0 = auto), `aspect_ratio`, `map_type`.
 	 *
 	 * @return ProviderDescriptorMap
 	 */
-	public function regenerate(
-		int $post_id,
-		?int $extra_zoom = null,
-		?int $extra_width = null,
-		?int $extra_height = null,
-		string $extra_aspect_ratio = '',
-		string $map_type = ''
-	): array {
+	public function regenerate( int $post_id, ?array $extra_combo = null ): array {
 		// Cache the combos we want to rebuild before wiping meta —
 		// delete_stored_image() clears META_KEY, which is where
 		// get_cached_combos() reads from.
 		$combos   = $this->get_cached_combos( $post_id );
-		$map_type = $this->normalize_map_type( $map_type );
+		$map_type = $this->normalize_map_type( (string) ( $extra_combo['map_type'] ?? '' ) );
 
 		// Merge the caller-supplied combo in, tagged with the requested map
 		// type, resolving dims when either width or height is left as "auto".
-		if ( null !== $extra_zoom ) {
+		if ( null !== ( $extra_combo['zoom'] ?? null ) ) {
 			$resolved = $this->resolve_dimensions(
-				(int) ( $extra_width ?? 0 ),
-				(int) ( $extra_height ?? 0 ),
-				$extra_aspect_ratio
+				(int) ( $extra_combo['width'] ?? 0 ),
+				(int) ( $extra_combo['height'] ?? 0 ),
+				(string) ( $extra_combo['aspect_ratio'] ?? '' )
 			);
 			$combos[] = array(
-				'zoom'     => (int) $extra_zoom,
+				'zoom'     => (int) $extra_combo['zoom'],
 				'width'    => $resolved['width'],
 				'height'   => $resolved['height'],
 				'map_type' => $map_type,
@@ -721,6 +713,38 @@ class Map {
 	}
 
 	/**
+	 * Ensure a single combo exists for a venue and return the full map.
+	 *
+	 * Additive counterpart to {@see self::regenerate()}: generates only the
+	 * requested combo when it isn't cached yet, leaving every other cached
+	 * variant untouched. Returns the venue's full descriptor map on success
+	 * and an empty array when the combo could not be produced — the same
+	 * shape the REST handler surfaces as `generation_failed`.
+	 *
+	 * @since 0.35.0
+	 *
+	 * @param int   $post_id The venue post ID.
+	 * @param array $combo   Combo in the {@see Rest_Combo::parse_request()}
+	 *                       shape: `zoom`, `width` (0 = auto), `height`
+	 *                       (0 = auto), `aspect_ratio`, `map_type`.
+	 *
+	 * @return ProviderDescriptorMap
+	 */
+	public function ensure_combo( int $post_id, array $combo ): array {
+		$descriptor = $this->get_descriptor_for_post(
+			$post_id,
+			(string) get_post_type( $post_id ),
+			$combo['zoom'] ?? null,
+			$combo['width'] ?? null,
+			$combo['height'] ?? null,
+			(string) ( $combo['aspect_ratio'] ?? '' ),
+			(string) ( $combo['map_type'] ?? '' )
+		);
+
+		return null === $descriptor ? array() : $this->get_all_descriptors( $post_id );
+	}
+
+	/**
 	 * REST handler for `POST /venue/{id}/regenerate-map`.
 	 *
 	 * Returns the fresh descriptor map on success. When the venue has no
@@ -757,27 +781,9 @@ class Map {
 		$combo       = Rest_Combo::parse_request( $request );
 		$ensure_only = rest_sanitize_boolean( $request['ensure_only'] ?? false );
 
-		if ( $ensure_only ) {
-			$descriptor  = $this->get_descriptor_for_post(
-				$post_id,
-				(string) get_post_type( $post_id ),
-				$combo['zoom'],
-				$combo['width'],
-				$combo['height'],
-				$combo['aspect_ratio'],
-				$combo['map_type']
-			);
-			$descriptors = null === $descriptor ? array() : $this->get_all_descriptors( $post_id );
-		} else {
-			$descriptors = $this->regenerate(
-				$post_id,
-				$combo['zoom'],
-				$combo['width'],
-				$combo['height'],
-				$combo['aspect_ratio'],
-				$combo['map_type']
-			);
-		}
+		$descriptors = $ensure_only
+			? $this->ensure_combo( $post_id, $combo )
+			: $this->regenerate( $post_id, $combo );
 
 		// An empty descriptor map for a geocoded venue means every combo
 		// failed — disk write error, GD missing, tile host unreachable past
