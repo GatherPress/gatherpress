@@ -1,6 +1,6 @@
 <?php
 /**
- * Unit tests for the RSVP response enums: Status, Visibility, Identity_Type.
+ * Unit tests for the RSVP response enums: Status and Identity_Type.
  *
  * @package GatherPress\Core\Rsvp\Response
  * @since 0.35.0
@@ -10,13 +10,12 @@ namespace GatherPress\Tests\Core\Rsvp\Response;
 
 use GatherPress\Core\Rsvp\Response\Identity_Type;
 use GatherPress\Core\Rsvp\Response\Status;
-use GatherPress\Core\Rsvp\Response\Visibility;
 use GatherPress\Tests\Base;
 
 /**
  * Class Test_Enums.
  *
- * One test class for the three backed enums — each is a closed value set
+ * One test class for the backed enums — each is a closed value set
  * plus a `values()` helper (and `try_from` on Status).
  */
 class Test_Enums extends Base {
@@ -40,7 +39,6 @@ class Test_Enums extends Base {
 	 * Each enum's values() helper returns the backed values of every case.
 	 *
 	 * @covers \GatherPress\Core\Rsvp\Response\Status::values
-	 * @covers \GatherPress\Core\Rsvp\Response\Visibility::values
 	 * @covers \GatherPress\Core\Rsvp\Response\Identity_Type::values
 	 *
 	 * @return void
@@ -49,10 +47,6 @@ class Test_Enums extends Base {
 		$this->assertSame(
 			array( 'attending', 'not_attending', 'waiting_list', 'no_status' ),
 			Status::values()
-		);
-		$this->assertSame(
-			array( '0', '1', '2', '3', '4' ),
-			Visibility::values()
 		);
 		$this->assertSame(
 			array( 'email', 'wp_user_id', 'url', 'external_id' ),

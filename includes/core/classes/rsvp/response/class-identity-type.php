@@ -34,8 +34,7 @@ enum Identity_Type: string {
 	/**
 	 * Get all identity type values as an array of strings.
 	 *
-	 * Mirrors the `values()` helper on the sibling `Status` and
-	 * `Visibility` enums.
+	 * Mirrors the `values()` helper on the sibling `Status` enum.
 	 *
 	 * @since 0.35.0
 	 *
