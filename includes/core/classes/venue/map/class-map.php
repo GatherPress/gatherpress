@@ -1170,7 +1170,7 @@ class Map {
 			}
 
 			$url = $this->save_image( $image, $address, $zoom, $width, $height, 1, $slug, $map_type );
-			imagedestroy( $image );
+			unset( $image );
 
 			if ( null === $url ) {
 				return null;
@@ -1203,7 +1203,7 @@ class Map {
 					$slug,
 					$map_type
 				);
-				imagedestroy( $image_2x );
+				unset( $image_2x );
 				if ( null !== $saved_2x ) {
 					$url_2x = $saved_2x;
 				}
