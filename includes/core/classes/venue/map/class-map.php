@@ -35,9 +35,6 @@ use GatherPress\Core\Venue\Setup;
 use GatherPress\Core\Venue\Venue;
 use GdImage;
 use WP_Post;
-use WP_REST_Request;
-use WP_REST_Response;
-use WP_REST_Server;
 
 /**
  * Class Map.
@@ -300,7 +297,6 @@ class Map {
 		// against future ordering surprises.
 		add_action( 'wp_after_insert_post', array( $this, 'maybe_generate' ), 11 );
 		add_action( 'registered_post_type', array( $this, 'maybe_register_delete_hook' ) );
-		add_action( 'rest_api_init', array( $this, 'register_rest_routes' ) );
 		add_filter( 'block_type_metadata', array( $this, 'apply_block_attribute_defaults' ) );
 		// React to provider changes so a `map_platform` switch schedules
 		// the same prewarm pass that runs on theme switches.
@@ -341,60 +337,6 @@ class Map {
 		if ( class_exists( Prewarm::class ) ) {
 			Prewarm::get_instance()->schedule_full_sweep();
 		}
-	}
-
-	/**
-	 * Register REST routes for the venue-map block.
-	 *
-	 * Today there's a single endpoint that forces the static PNG files for a
-	 * venue to regenerate — used by the "Regenerate Map" button in the
-	 * block editor when a tile provider changes or a render gets out of
-	 * sync with the venue's current inputs.
-	 *
-	 * @since 0.34.0
-	 *
-	 * @return void
-	 */
-	public function register_rest_routes(): void {
-		$permission = static function ( WP_REST_Request $request ): bool {
-			$post_id = (int) $request['id'];
-
-			// Permission scope is the venue post itself — anyone who can
-			// edit the venue can force its map to regenerate. Admins with
-			// edit_others_posts go through the same check.
-			return current_user_can( 'edit_post', $post_id );
-		};
-
-		$id_arg = array(
-			'required'          => true,
-			'type'              => 'integer',
-			'sanitize_callback' => 'absint',
-			'validate_callback' => static function ( $value ): bool {
-				$post_id = (int) $value;
-
-				return $post_id > 0
-					&& post_type_supports(
-						(string) get_post_type( $post_id ),
-						'gatherpress-venue-information'
-					);
-			},
-		);
-
-		$combo_args = Rest_Combo::route_args();
-
-		register_rest_route(
-			GATHERPRESS_REST_NAMESPACE,
-			'/venue/(?P<id>\d+)/regenerate-map',
-			array(
-				'methods'             => WP_REST_Server::CREATABLE,
-				'callback'            => array( $this, 'rest_regenerate' ),
-				'permission_callback' => $permission,
-				'args'                => array_merge(
-					array( 'id' => $id_arg ),
-					$combo_args
-				),
-			)
-		);
 	}
 
 	/**
@@ -618,7 +560,7 @@ class Map {
 	 *
 	 * @param int        $post_id     The venue post ID.
 	 * @param array|null $extra_combo Optional extra combo to include, in the
-	 *                                {@see Rest_Combo::parse_request()} shape:
+	 *                                {@see Rest_Api::parse_request()} shape:
 	 *                                `zoom`, `width` (0 = auto), `height`
 	 *                                (0 = auto), `aspect_ratio`, `map_type`.
 	 *
@@ -724,7 +666,7 @@ class Map {
 	 * @since 0.35.0
 	 *
 	 * @param int   $post_id The venue post ID.
-	 * @param array $combo   Combo in the {@see Rest_Combo::parse_request()}
+	 * @param array $combo   Combo in the {@see Rest_Api::parse_request()}
 	 *                       shape: `zoom`, `width` (0 = auto), `height`
 	 *                       (0 = auto), `aspect_ratio`, `map_type`.
 	 *
@@ -742,70 +684,6 @@ class Map {
 		);
 
 		return null === $descriptor ? array() : $this->get_all_descriptors( $post_id );
-	}
-
-	/**
-	 * REST handler for `POST /venue/{id}/regenerate-map`.
-	 *
-	 * Returns the fresh descriptor map on success. When the venue has no
-	 * usable coordinates yet (address hasn't geocoded), returns an empty
-	 * descriptors array and a structured `reason` so the client can show
-	 * the right placeholder instead of a generic error.
-	 *
-	 * @since 0.34.0
-	 *
-	 * @param WP_REST_Request $request The REST request.
-	 *
-	 * @return WP_REST_Response
-	 */
-	public function rest_regenerate( WP_REST_Request $request ): WP_REST_Response {
-		nocache_headers();
-
-		$post_id     = (int) $request['id'];
-		$venue       = new Venue( $post_id );
-		$info        = $venue->get_information();
-		$latitude    = $this->parse_coord( $info['latitude'] );
-		$longitude   = $this->parse_coord( $info['longitude'] );
-		$has_address = '' !== trim( (string) $info['address'] );
-
-		if ( ! $has_address || null === $latitude || null === $longitude ) {
-			return new WP_REST_Response(
-				array(
-					'descriptors' => (object) array(),
-					'reason'      => $has_address ? 'awaiting_geocode' : 'no_address',
-				),
-				200
-			);
-		}
-
-		$combo       = Rest_Combo::parse_request( $request );
-		$ensure_only = rest_sanitize_boolean( $request['ensure_only'] ?? false );
-
-		$descriptors = $ensure_only
-			? $this->ensure_combo( $post_id, $combo )
-			: $this->regenerate( $post_id, $combo );
-
-		// An empty descriptor map for a geocoded venue means every combo
-		// failed — disk write error, GD missing, tile host unreachable past
-		// COMPOSITE_TIME_BUDGET. Surface it with a distinct reason so the
-		// UI can flag the failure instead of rendering as a silent success.
-		if ( empty( $descriptors ) ) {
-			return new WP_REST_Response(
-				array(
-					'descriptors' => (object) array(),
-					'reason'      => 'generation_failed',
-				),
-				200
-			);
-		}
-
-		return new WP_REST_Response(
-			array(
-				'descriptors' => $descriptors,
-				'reason'      => '',
-			),
-			200
-		);
 	}
 
 	/**
@@ -1586,12 +1464,14 @@ class Map {
 	 * should not generate a bogus (0, 0) map off the west coast of Africa.
 	 *
 	 * @since 0.34.0
+	 * @since 0.35.0 Visibility changed to public so the REST layer
+	 *               ({@see Rest_Api}) applies the same coercion.
 	 *
 	 * @param mixed $raw Raw coordinate from venue information.
 	 *
 	 * @return float|null
 	 */
-	protected function parse_coord( $raw ): ?float {
+	public function parse_coord( $raw ): ?float {
 		return is_numeric( $raw ) ? (float) $raw : null;
 	}
 
