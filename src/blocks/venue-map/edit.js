@@ -598,7 +598,6 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 						longitude={ longitude }
 						zoom={ zoom }
 						type={ type }
-						height={ effectiveHeight }
 						googleMapsApiKey={ googleMapsApiKey }
 					/>
 				</div>

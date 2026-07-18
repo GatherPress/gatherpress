@@ -160,12 +160,6 @@ if ( 'interactive' === $gatherpress_render_mode ) {
 		'longitude'        => (string) ( $gatherpress_venue_meta['longitude'] ?? '' ),
 		'mapZoomLevel'     => $attributes['zoom'] ?? Map::DEFAULT_ZOOM,
 		'mapType'          => $attributes['type'] ?? Map::DEFAULT_MAP_TYPE,
-		// The effective pixel height the descriptor resolved to, so an
-		// embed that sizes itself (Google's iframe) matches the shape the
-		// wrapper CSS renders at. Leaflet ignores it (fills the wrapper).
-		'mapHeight'        => null !== $gatherpress_static_map_descriptor
-			? (int) $gatherpress_static_map_descriptor['height']
-			: ( 0 < $gatherpress_raw_height ? $gatherpress_raw_height : Map::DEFAULT_HEIGHT ),
 		'mapPlatform'      => (string) Settings::get_instance()->get( 'map_platform' ),
 		'pluginUrl'        => GATHERPRESS_CORE_URL,
 		'googleMapsApiKey' => (string) Settings::get_instance()->get( 'google_maps_api_key' ),

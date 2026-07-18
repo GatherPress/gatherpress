@@ -368,39 +368,4 @@ class Test_Map_Dimensions extends Base {
 			'The ratio should shape the wrapper.'
 		);
 	}
-
-	/**
-	 * The interactive payload carries a pixel height for embeds that
-	 * size themselves.
-	 *
-	 * No descriptor exists for a coordinate-less venue, so the payload
-	 * falls back to the parsed block height (or the default when the
-	 * block has no px-expressible height).
-	 *
-	 * @since 0.35.0
-	 *
-	 * @return void
-	 */
-	public function test_render_interactive_payload_height_fallbacks(): void {
-		$venue_id = $this->create_venue_without_coordinates();
-
-		$output = $this->render_block(
-			$venue_id,
-			'{"renderMode":"interactive","style":{"dimensions":{"height":"250px"}}}'
-		);
-
-		$this->assertStringContainsString(
-			'&quot;mapHeight&quot;:250',
-			$output,
-			'The payload should carry the parsed block height.'
-		);
-
-		$output = $this->render_block( $venue_id, '{"renderMode":"interactive"}' );
-
-		$this->assertStringContainsString(
-			sprintf( '&quot;mapHeight&quot;:%d', Map::DEFAULT_HEIGHT ),
-			$output,
-			'Without a px-expressible height the payload should carry the default.'
-		);
-	}
 }
