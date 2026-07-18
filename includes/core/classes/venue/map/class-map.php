@@ -419,17 +419,15 @@ class Map {
 
 		$settings = Settings::get_instance();
 
-		// Width and height keep empty as a distinct "not set — fall through
-		// to the block.json default" state; an explicit 0 still stamps as
-		// "auto", so the validator below must reject null but accept 0.
-		$raw_width  = $settings->get( 'venue_map_default_width' );
-		$raw_height = $settings->get( 'venue_map_default_height' );
-
+		// Height is absent on purpose: it lives in the block's
+		// `style.dimensions` (core dimensions support), which has no
+		// attribute default to stamp — the Settings value reaches rendering
+		// through the dimension-resolution paths instead (render.php and
+		// the editor's getFromSettings channel). Width has no default at
+		// all: the block always fills its container.
 		$defaults = array(
 			'renderMode'  => (string) $settings->get( 'venue_map_default_render_mode' ),
 			'zoom'        => (int) $settings->get( 'venue_map_default_zoom' ),
-			'width'       => '' === $raw_width ? null : (int) $raw_width,
-			'height'      => '' === $raw_height ? null : (int) $raw_height,
 			'aspectRatio' => (string) $settings->get( 'venue_map_default_aspect_ratio' ),
 			'scale'       => (string) $settings->get( 'venue_map_default_scale' ),
 			'type'        => (string) $settings->get( 'venue_map_default_type' ),
@@ -450,18 +448,6 @@ class Map {
 				return is_int( $value )
 					&& $value >= self::ZOOM_MIN
 					&& $value <= self::ZOOM_MAX;
-			},
-			'width'       => static function ( $value ): bool {
-				// 0 means "auto" and is a valid default value.
-				return is_int( $value )
-					&& $value >= 0
-					&& $value <= self::WIDTH_MAX;
-			},
-			'height'      => static function ( $value ): bool {
-				// 0 means "auto" and is a valid default value.
-				return is_int( $value )
-					&& $value >= 0
-					&& $value <= self::HEIGHT_MAX;
 			},
 			'aspectRatio' => function ( $value ): bool {
 				return is_string( $value )

@@ -12,15 +12,14 @@ import { select } from '@wordpress/data';
  *
  * @since 0.27.0
  *
- * @param {Object} props              - Component properties.
- * @param {string} props.location     - The location to be displayed on the map.
- * @param {number} props.latitude     - The latitude coordinate to be displayed on the map.
- * @param {number} props.longitude    - The longitude coordinate to be displayed on the map.
- * @param {number} [props.zoom=10]    - The zoom level of the map.
- * @param {string} [props.type]       - Map type slug: roadmap, satellite, hybrid, terrain.
- * @param {number} [props.height=300] - The height of the map container.
- * @param {string} [props.className]  - Additional CSS class names for styling.
- * @param {string} [props.apiKey='']  - Google Maps API key; empty keeps the keyless embed URL.
+ * @param {Object} props             - Component properties.
+ * @param {string} props.location    - The location to be displayed on the map.
+ * @param {number} props.latitude    - The latitude coordinate to be displayed on the map.
+ * @param {number} props.longitude   - The longitude coordinate to be displayed on the map.
+ * @param {number} [props.zoom=10]   - The zoom level of the map.
+ * @param {string} [props.type]      - Map type slug: roadmap, satellite, hybrid, terrain.
+ * @param {string} [props.className] - Additional CSS class names for styling.
+ * @param {string} [props.apiKey=''] - Google Maps API key; empty keeps the keyless embed URL.
  *
  * @return {JSX.Element} The rendered React component.
  */
@@ -152,11 +151,12 @@ const GoogleMap = ( props ) => {
 		location,
 		latitude,
 		longitude,
-		height,
 		apiKey = '',
 	} = props;
 
-	const style = { border: 0, height, width: '100%' };
+	// Fill the wrapper — the venue-map wrapper is the single source of
+	// size (explicit height or aspect ratio), matching OpenStreetMap.
+	const style = { border: 0, height: '100%', width: '100%' };
 
 	// Check for valid latitude and longitude before rendering.
 	const validLat =

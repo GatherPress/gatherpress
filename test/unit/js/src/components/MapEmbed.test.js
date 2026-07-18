@@ -151,7 +151,7 @@ test( 'Google MapEmbed returns address in source when location is set', () => {
 		'&output=embed',
 	);
 	expect( container.children[ 0 ] ).toHaveStyle(
-		'border: 0px; height: 300px; width: 100%;',
+		'border: 0px; height: 100%; width: 100%;',
 	);
 } );
 
@@ -220,7 +220,7 @@ test( 'Google MapEmbed maps hybrid to satellite for Embed API when key is set', 
 	expect( src ).toContain( 'maptype=satellite' );
 } );
 
-test( 'MapEmbed returns address in source when location, zoom, map type, height, and class are set', () => {
+test( 'MapEmbed returns address in source when location, zoom, map type, and class are set', () => {
 	select.mockImplementation( ( store ) => {
 		if ( 'core' === store ) {
 			return { canUser: jest.fn( () => false ) };
@@ -245,7 +245,6 @@ test( 'MapEmbed returns address in source when location, zoom, map type, height,
 			zoom={ 20 }
 			type="satellite"
 			className="unit-test"
-			height={ 100 }
 		/>,
 	);
 	expect( container.children[ 0 ].getAttribute( 'src' ) ).toContain(
@@ -254,7 +253,7 @@ test( 'MapEmbed returns address in source when location, zoom, map type, height,
 	expect( container.children[ 0 ].getAttribute( 'src' ) ).toContain( '&z=20' );
 	expect( container.children[ 0 ].getAttribute( 'src' ) ).toContain( '&t=k' );
 	expect( container.children[ 0 ] ).toHaveStyle(
-		'border: 0px; height: 100px; width: 100%;',
+		'border: 0px; height: 100%; width: 100%;',
 	);
 	expect( container.children[ 0 ] ).toHaveClass( 'unit-test' );
 } );

@@ -213,7 +213,11 @@ class Test_Map extends Base {
 
 		$this->assertSame( 'static', $result['attributes']['renderMode']['default'] );
 		$this->assertSame( 12, $result['attributes']['zoom']['default'] );
-		$this->assertSame( 450, $result['attributes']['height']['default'] );
+		$this->assertSame(
+			300,
+			$result['attributes']['height']['default'],
+			'Height is style-driven (style.dimensions) — the Settings default must not stamp an attribute default.'
+		);
 		$this->assertSame( 'contain', $result['attributes']['scale']['default'] );
 		$this->assertSame( 'satellite', $result['attributes']['type']['default'] );
 	}

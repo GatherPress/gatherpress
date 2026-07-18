@@ -42,11 +42,7 @@
 		"interactivity": {
 			"clientNavigation": true
 		},
-		"layout": {
-			"default": {
-				"type": "constrained"
-			}
-		},
+		"layout": true,
 		"listView": true
 	},
 	"textdomain": "gatherpress",
