@@ -3,14 +3,12 @@
  * Dimension attribute helpers for the venue-map block.
  *
  * As of 0.35.0 the block uses core's dimensions support: width and height
- * live in `style.dimensions` as CSS strings, with the legacy numeric
- * attributes kept as read-only fallbacks for content saved before the
- * GatherPress Alpha migration runs (and as the carrier for site defaults
- * from Settings → Venues). These helpers centralize reading a dimension
- * from either shape and projecting it into the two consumers: raw CSS for
- * the wrapper, whole pixels for the static-map PNG pipeline. Each mirrors
- * a JS counterpart in the block's `helpers.js`/`edit.js` so the editor and
- * the server can never drift.
+ * live in `style.dimensions` as CSS strings (the GatherPress Alpha
+ * migration rewrites content saved with the pre-0.35 numeric attributes).
+ * These helpers centralize reading a dimension and projecting it into the
+ * two consumers: raw CSS for the wrapper, whole pixels for the static-map
+ * PNG pipeline. Each mirrors a JS counterpart in the block's
+ * `helpers.js`/`edit.js` so the editor and the server can never drift.
  *
  * @package GatherPress\Core\Venue\Map
  * @since 0.35.0
@@ -31,34 +29,26 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 class Dimensions {
 
 	/**
-	 * Read a dimension for the venue map from its current home.
+	 * Read a dimension for the venue map from its block attributes.
 	 *
-	 * Core's dimensions support stores values under `style.dimensions`;
-	 * blocks saved before 0.35.0 carry the legacy numeric `width`/`height`
-	 * attributes until the GatherPress Alpha migration rewrites them (site
-	 * defaults from Settings → Venues also arrive through the legacy
-	 * attributes via `Map::apply_block_attribute_defaults()`). The style
-	 * value wins whenever present. Mirrors `getDimensionValue()` in the
-	 * block's `helpers.js`.
+	 * Core's dimensions support stores values under `style.dimensions` as
+	 * CSS strings. Content saved before 0.35.0 carried numeric
+	 * `width`/`height` attributes instead; the GatherPress Alpha migration
+	 * rewrites those, and until it runs such blocks read as unset here.
+	 * Mirrors `getDimensionValue()` in the block's `helpers.js`.
 	 *
 	 * @since 0.35.0
 	 *
 	 * @param array  $attributes Block attributes.
 	 * @param string $dimension  Either `width` or `height`.
 	 *
-	 * @return int|float|string|null The dimension value, or null when unset.
+	 * @return string|null The dimension value, or null when unset.
 	 */
-	public static function get_dimension_value( array $attributes, string $dimension ) {
+	public static function get_dimension_value( array $attributes, string $dimension ): ?string {
 		$style_value = $attributes['style']['dimensions'][ $dimension ] ?? null;
 
-		if ( null !== $style_value && '' !== $style_value ) {
+		if ( is_string( $style_value ) && '' !== $style_value ) {
 			return $style_value;
-		}
-
-		$legacy_value = $attributes[ $dimension ] ?? null;
-
-		if ( ( is_int( $legacy_value ) || is_float( $legacy_value ) ) && 0 < $legacy_value ) {
-			return $legacy_value;
 		}
 
 		return null;

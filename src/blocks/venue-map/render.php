@@ -9,23 +9,20 @@
  * new venue that hasn't been geocoded — a short placeholder surfaces the
  * "map coming soon" state in place of the image.
  *
- * The wrapper sizing is driven by the block's dimension values and ratio:
+ * The wrapper sizing model: width always comes from the container (and
+ * the block's alignment) — never from a stored value.
  *
- *   - `style.dimensions.width` / `style.dimensions.height`: CSS values
- *     written by core's dimensions support (serialization is skipped, so
- *     this template owns the output). An absent dimension means "auto" —
- *     it's derived from the other side and `aspectRatio`. When both are
- *     auto, the block fills its container width and computes height from
- *     the ratio (CSS aspect-ratio on the wrapper; the static PNG is
- *     composed at the effective pixel size). Values in non-px units
- *     apply as CSS only — the PNG treats them as auto.
- *   - `width` / `height` (legacy numeric attributes): pixel fallbacks
- *     for content saved before 0.35.0 and the carrier for site defaults
- *     from Settings → Venues. A style value always wins.
- *   - `aspectRatio`: CSS-style string (e.g. "16/9"). Drives auto-
- *     dimension math on the server and also lands as a CSS
- *     `aspect-ratio` hint on the wrapper so an aligned block that
- *     shrinks stays at the right shape.
+ *   - `style.dimensions.height`: CSS value written by core's dimensions
+ *     support (serialization is skipped, so this template owns the
+ *     output). An absent height falls back to the site-wide default
+ *     from Settings → Venues; unset there too means the aspect ratio
+ *     shapes the wrapper as its container width changes. Values in
+ *     non-px units apply as CSS only — the static PNG treats them as
+ *     auto. (Content saved before 0.35.0 carried numeric width/height
+ *     attributes; the GatherPress Alpha migration rewrites those.)
+ *   - `aspectRatio`: CSS-style string (e.g. "16/9"). Shapes the wrapper
+ *     when no explicit height is set, and derives the static PNG's
+ *     width from its height on the server.
  *
  * @package GatherPress\Core
  * @since 0.34.0
@@ -60,13 +57,17 @@ $gatherpress_render_mode = 'static' === ( $attributes['renderMode'] ?? Map::DEFA
 $gatherpress_zoom        = (int) ( $attributes['zoom'] ?? Map::DEFAULT_ZOOM );
 $gatherpress_ratio       = (string) ( $attributes['aspectRatio'] ?? Map::DEFAULT_ASPECT_RATIO );
 
-// Dimension values as authored (style.dimensions CSS string, or legacy
-// numeric attribute as fallback — null = auto), plus their px projections
-// for the static-map pipeline (0 = auto; non-px units land as CSS only).
-$gatherpress_width_value  = Dimensions::get_dimension_value( $attributes, 'width' );
-$gatherpress_height_value = Dimensions::get_dimension_value( $attributes, 'height' );
-$gatherpress_raw_width    = Dimensions::parse_px_dimension( $gatherpress_width_value );
-$gatherpress_raw_height   = Dimensions::parse_px_dimension( $gatherpress_height_value );
+// The height value as authored (style.dimensions CSS string), falling
+// back to the site-wide default from Settings → Venues (a pixel integer;
+// '' or 0 means unset). Null = auto — the ratio shapes the wrapper. The
+// px projection feeds the static-map pipeline (0 = auto; non-px units
+// land as CSS only). Width is never stored: the PNG derives its width
+// from height × ratio, and the wrapper takes its width from the
+// container.
+$gatherpress_default_height = (int) Settings::get_instance()->get( 'venue_map_default_height' );
+$gatherpress_height_value   = Dimensions::get_dimension_value( $attributes, 'height' )
+	?? ( 0 < $gatherpress_default_height ? $gatherpress_default_height : null );
+$gatherpress_raw_height     = Dimensions::parse_px_dimension( $gatherpress_height_value );
 
 // Allow-list for the `scale` block attribute. Anything outside this set
 // (a hand-edited block attr, a filter that mutates the value, a migration
@@ -81,7 +82,7 @@ $gatherpress_static_map_descriptor = Map::get_instance()->get_descriptor_for_pos
 	$gatherpress_post_id,
 	$gatherpress_post_type,
 	$gatherpress_zoom,
-	$gatherpress_raw_width,
+	0,
 	$gatherpress_raw_height,
 	$gatherpress_ratio
 );
@@ -101,28 +102,20 @@ $gatherpress_wrapper_attr_args = array(
 	'data-render-mode' => $gatherpress_render_mode,
 );
 
-// Sizing rules (mirroring `wrapperStyle` in edit.js):
-// - Explicit height → inline height in the authored unit.
-// - Explicit width  → inline width in the authored unit (but NOT when
-// the block is aligned wide or full — then the alignment owns the
-// horizontal space via the `.alignwide` / `.alignfull` CSS rules, and
-// a hard width would fight those classes).
-// - Any auto dimension → CSS `aspect-ratio` stamp so the container can
-// still give the block its shape as its surrounding width changes
-// (aligned block, responsive container, etc.). Static <img> inside
-// uses object-fit: cover so the raster stays crisp at any size.
+// Sizing rules (mirroring `wrapperStyle` in edit.js): the wrapper always
+// spans its container — an explicit height stamps inline (and wins over
+// the ratio); no height → CSS `aspect-ratio` shapes the wrapper as its
+// container width changes. Static <img> inside uses object-fit: cover
+// so the raster stays crisp at any size.
 //
-// Dimension values pass through safecss_filter_attr() because core's
+// The height value passes through safecss_filter_attr() because core's
 // dimensions support stores raw CSS strings and
 // get_block_wrapper_attributes() doesn't sanitize individual values —
 // without the filter an editor-role attacker with edit_posts could
 // smuggle extra declarations in via a hand-edited attribute. A rejected
 // value degrades to auto (the aspect-ratio arm below picks it up).
-$gatherpress_styles          = array();
-$gatherpress_align           = (string) ( $attributes['align'] ?? '' );
-$gatherpress_is_wide_or_full = in_array( $gatherpress_align, array( 'wide', 'full' ), true );
-$gatherpress_has_height_css  = false;
-$gatherpress_has_width_css   = false;
+$gatherpress_styles         = array();
+$gatherpress_has_height_css = false;
 
 if ( null !== $gatherpress_height_value ) {
 	$gatherpress_height_declaration = safecss_filter_attr(
@@ -135,18 +128,7 @@ if ( null !== $gatherpress_height_value ) {
 	}
 }
 
-if ( null !== $gatherpress_width_value && ! $gatherpress_is_wide_or_full ) {
-	$gatherpress_width_declaration = safecss_filter_attr(
-		'width:' . Dimensions::to_css_dimension( $gatherpress_width_value )
-	);
-
-	if ( '' !== $gatherpress_width_declaration ) {
-		$gatherpress_styles[]      = $gatherpress_width_declaration;
-		$gatherpress_has_width_css = true;
-	}
-}
-
-if ( ! $gatherpress_has_width_css || ! $gatherpress_has_height_css ) {
+if ( ! $gatherpress_has_height_css ) {
 	// The `aspectRatio` block attr lands directly in an inline style.
 	// get_block_wrapper_attributes() doesn't sanitize individual CSS
 	// values, so an editor-role attacker with edit_posts could otherwise

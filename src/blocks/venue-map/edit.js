@@ -22,7 +22,7 @@ import {
 	__experimentalToolsPanelItem as ToolsPanelItem,
 } from '@wordpress/components';
 import { useSelect } from '@wordpress/data';
-import { useEffect, useState } from '@wordpress/element';
+import { useEffect } from '@wordpress/element';
 import { Icon, link as linkIcon, mapMarker } from '@wordpress/icons';
 
 /**
@@ -43,7 +43,6 @@ import {
 } from '../../supports/block-guard';
 import {
 	RegenerateMapButton,
-	parseAspectRatio,
 	pickDescriptorForCombo,
 	getDimensionValue,
 	parsePxDimension,
@@ -51,8 +50,6 @@ import {
 	usePlaceholderPolling,
 } from './helpers';
 
-const WIDTH_MIN = 100;
-const WIDTH_MAX = 4000;
 const HEIGHT_MIN = 100;
 const HEIGHT_MAX = 4000;
 const DEFAULT_HEIGHT = 300;
@@ -79,6 +76,25 @@ const SCALE_LABELS = {
 	cover: __( 'Cover', 'gatherpress' ),
 	contain: __( 'Contain', 'gatherpress' ),
 	fill: __( 'Fill', 'gatherpress' ),
+};
+
+/**
+ * Normalize a Settings → Venues default dimension into a usable value.
+ *
+ * The settings store pixel integers ('' or 0 meaning "not set"). Returns
+ * the positive pixel count, or undefined so the caller's fallback chain
+ * continues to "auto".
+ *
+ * @since 0.35.0
+ *
+ * @param {*} value Raw setting value.
+ *
+ * @return {number|undefined} Positive pixel count, or undefined.
+ */
+const toSiteDefaultDimension = ( value ) => {
+	const parsed = parseInt( value, 10 );
+
+	return Number.isInteger( parsed ) && 0 < parsed ? parsed : undefined;
 };
 
 const LINK_DESTINATION_NONE = 'none';
@@ -139,45 +155,22 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 		aspectRatio,
 		scale,
 		renderMode,
-		align,
 		href,
 		linkDestination,
 		linkTarget,
 		rel,
 	} = attributes;
-	// Dimensions live in style.dimensions (core dimensions support, with
-	// serialization skipped so this block owns its own output); the legacy
-	// numeric width/height attributes are read-only fallbacks until the
-	// GatherPress Alpha migration rewrites saved content. Derived up here
-	// because the block wrapper's own styling depends on them.
-	const widthValue = getDimensionValue( attributes, 'width' );
-	const heightValue = getDimensionValue( attributes, 'height' );
-	const widthPx = parsePxDimension( widthValue );
+	// The map always fills its container — width comes from the column
+	// and the block's alignment, never from a stored value. Height is the
+	// only stored dimension (style.dimensions.height via core's dimensions
+	// support, serialization skipped so this block owns its own output).
+	// An unset height falls back to the site-wide default from Settings →
+	// Venues; unset there too means the aspect ratio shapes the block.
+	const heightValue =
+		getDimensionValue( attributes, 'height' ) ??
+		toSiteDefaultDimension( getFromSettings( 'venueMapDefaultHeight' ) );
 	const heightPx = parsePxDimension( heightValue );
-	const isWideOrFull = 'wide' === align || 'full' === align;
-
-	// With an explicit pixel width the map is narrower than the block's
-	// full-width wrapper — shrink the wrapper to the content so the
-	// selection outline hugs the visible map, and translate the block's
-	// own alignment into margins (the frontend centers the sized wrapper
-	// via its alignment class; the editor's extra wrapper layers don't).
-	// The wrapper keeps the shrink-wrap during a drag too — releasing it
-	// moved a map that a parent layout centers (a constrained venue) to
-	// the left for the duration of the resize. Growth works because the
-	// box's ceiling is measured in pixels at drag start rather than
-	// expressed as a percentage of this wrapper (see onResizeStart).
-	const [ resizeMaxWidth, setResizeMaxWidth ] = useState( null );
-	const hasFixedEditorWidth = 0 < widthPx && ! isWideOrFull;
-	let blockWrapperStyle;
-	if ( hasFixedEditorWidth ) {
-		blockWrapperStyle = {
-			width: 'fit-content',
-			marginLeft:
-				'center' === align || 'right' === align ? 'auto' : undefined,
-			marginRight: 'center' === align ? 'auto' : undefined,
-		};
-	}
-	const blockProps = useBlockProps( { style: blockWrapperStyle } );
+	const blockProps = useBlockProps();
 
 	// Determine the venue post ID and get venue meta + static-map descriptors.
 	// `savedVenueMeta` reflects what's persisted server-side — compared
@@ -361,9 +354,8 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 			( venueMeta.gatherpress_longitude || '' ) !==
 				( savedVenueMeta.gatherpress_longitude || '' ) );
 
-	// Write dimensions to style.dimensions and retire the legacy
-	// attributes so content self-heals as it is edited. `undefined`
-	// removes a dimension ("auto").
+	// Write dimensions to style.dimensions. `undefined` removes a
+	// dimension ("auto" — or the site default when one is configured).
 	const setDimensions = ( changes, extraAttributes = {} ) => {
 		const nextDimensions = { ...( attributes.style?.dimensions ?? {} ) };
 
@@ -381,8 +373,6 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 				...attributes.style,
 				dimensions: nextDimensions,
 			},
-			width: undefined,
-			height: undefined,
 		} );
 	};
 
@@ -390,7 +380,7 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 	// will compose) so the cached-PNG lookup hits the right combo key.
 	const { width: effectiveWidth, height: effectiveHeight } =
 		resolveDimensions( {
-			width: widthPx,
+			width: 0,
 			height: heightPx,
 			aspectRatio,
 			defaultHeight: DEFAULT_HEIGHT,
@@ -477,107 +467,35 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [ linkDestination, latitude, longitude, zoom ] );
 
-	// Resize-handle visibility follows block alignment. Left-aligned blocks
-	// anchor to the left (handles on right + bottom + bottom-right); right-
-	// aligned mirror that; wide/full let the container own the width.
-	const showRightHandle =
-		'right' !== align && 'wide' !== align && 'full' !== align;
-	const showLeftHandle = 'right' === align;
-	const showBottomHandle = 'wide' !== align && 'full' !== align;
-
-	const lockRatio = isCustomAspectRatio
-		? false
-		: parseAspectRatio( aspectRatio ) || false;
-
-	// Measure how wide the box may grow: the column the block sits in,
-	// tightened by any max-width a parent layout stamps on the block
-	// wrapper (a constrained venue caps its children). Measured once per
-	// drag — a pixel ceiling is what breaks the circular clamp a
-	// percentage would create against the shrink-wrapped wrapper, whose
-	// width always equals the box's own.
-	const onResizeStart = ( event, direction, elt ) => {
-		const blockEl = elt?.closest?.( '[data-block]' );
-		const parentEl = blockEl?.parentElement;
-		let available = 0;
-
-		if ( parentEl ) {
-			const parentStyles =
-				parentEl.ownerDocument.defaultView.getComputedStyle(
-					parentEl
-				);
-			available =
-				parentEl.clientWidth -
-				parseFloat( parentStyles.paddingLeft ) -
-				parseFloat( parentStyles.paddingRight );
-		}
-
-		if ( blockEl ) {
-			const cap = parseFloat(
-				blockEl.ownerDocument.defaultView.getComputedStyle( blockEl )
-					.maxWidth
-			);
-
-			if ( ! Number.isNaN( cap ) ) {
-				available = 0 < available ? Math.min( available, cap ) : cap;
-			}
-		}
-
-		setResizeMaxWidth( 0 < available ? available : null );
-	};
-
 	const onResizeStop = ( event, direction, elt, delta ) => {
-		setResizeMaxWidth( null );
 		// ResizableBox hands us the pixel delta from resize start; combine
-		// with the effective dimensions we rendered at to get the new value.
-		const newWidth = Math.max(
-			WIDTH_MIN,
-			Math.min( WIDTH_MAX, Math.round( effectiveWidth + delta.width ) )
+		// with the effective height we rendered at to get the new value.
+		// Dragging always commits an explicit height — which takes over
+		// from the aspect ratio's derived shape until reset.
+		const newHeight = Math.max(
+			HEIGHT_MIN,
+			Math.min(
+				HEIGHT_MAX,
+				Math.round( effectiveHeight + delta.height )
+			)
 		);
-		const changes = { width: `${ newWidth }px` };
 
-		// In custom mode there's no ratio lock, so both edges moved
-		// independently and we persist both. Same when an explicit height
-		// is already stored: keeping it stale would fight the new width.
-		// In pure preset mode height stays auto so the cached aspect
-		// ratio keeps driving the render.
-		if ( isCustomAspectRatio || undefined !== heightValue ) {
-			const newHeight = Math.max(
-				HEIGHT_MIN,
-				Math.min(
-					HEIGHT_MAX,
-					Math.round( effectiveHeight + delta.height )
-				)
-			);
-			changes.height = `${ newHeight }px`;
-		}
-
-		setDimensions( changes );
+		setDimensions( { height: `${ newHeight }px` } );
 	};
 
-	// When the block is aligned wide or full, the alignment owns the
-	// horizontal space — skip the explicit pixel width so `.alignwide`
-	// / `.alignfull` can drive the layout. Height keeps its inline stamp;
-	// aspect-ratio applies whenever a dimension is auto OR the alignment
-	// is wide/full so the shape tracks the container as it fills.
+	// The wrapper always spans its container; an explicit height stamps
+	// inline (and wins over the ratio), an unset height leaves the aspect
+	// ratio shaping the block as its container width changes.
 	const toCssDimension = ( value ) =>
 		'number' === typeof value ? `${ value }px` : value;
-	let wrapperWidth;
-	if ( ! isWideOrFull ) {
-		wrapperWidth =
-			undefined === widthValue ? '100%' : toCssDimension( widthValue );
-	}
 	const wrapperStyle = {
-		width: wrapperWidth,
+		width: '100%',
 		height:
 			undefined === heightValue
 				? undefined
 				: toCssDimension( heightValue ),
 		aspectRatio:
-			isWideOrFull ||
-			undefined === widthValue ||
-			undefined === heightValue
-				? aspectRatio || '2/1'
-				: undefined,
+			undefined === heightValue ? aspectRatio || '2/1' : undefined,
 	};
 
 	// Inside the ResizableBox the box owns the dimensions — the preview must
@@ -760,8 +678,6 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 					resetAllFilter={ ( attrs ) => ( {
 						...attrs,
 						aspectRatio: '2/1',
-						width: undefined,
-						height: undefined,
 					} ) }
 					isShownByDefault
 					panelId={ clientId }
@@ -944,55 +860,26 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 						previewContent
 					) : (
 						<ResizableBox
+							// Width always comes from the container (and the
+							// block's alignment), so the box only ever
+							// resizes vertically — same model as core's
+							// Cover block.
 							size={ {
-								width:
-									! isWideOrFull && 0 < widthPx
-										? widthPx
-										: 'auto',
+								width: 'auto',
 								height: 0 < heightPx ? heightPx : 'auto',
 							} }
-							minWidth={ WIDTH_MIN }
-							// Never let the box outgrow the column: a stored
-							// width wider than the container (or a parent
-							// layout capping the block) would otherwise
-							// overflow the block bounds and the selection
-							// outline would cut through the visible map.
-							// The stored attribute keeps its value — like an
-							// image wider than its column, the visual clamps
-							// at 100% (the frontend wrapper does the same).
-							// During a drag the ceiling switches to the pixel
-							// width measured in onResizeStart so growth isn't
-							// bounded by the shrink-wrapped wrapper.
-							maxWidth={ resizeMaxWidth ?? '100%' }
 							minHeight={ HEIGHT_MIN }
 							maxHeight={ HEIGHT_MAX }
-							// The alignment margins live on the box itself so
-							// a centered or right-aligned map holds its
-							// position while a drag has the block wrapper
-							// released to full width. Once the wrapper hugs
-							// the box again, auto margins are a no-op.
-							style={ {
-								marginLeft:
-									'center' === align || 'right' === align
-										? 'auto'
-										: undefined,
-								marginRight:
-									'center' === align ? 'auto' : undefined,
-							} }
-							lockAspectRatio={ lockRatio }
 							enable={ {
 								top: false,
-								right: showRightHandle,
-								bottom: showBottomHandle,
-								left: showLeftHandle,
+								right: false,
+								bottom: true,
+								left: false,
 								topRight: false,
-								bottomRight:
-									showRightHandle && showBottomHandle,
-								bottomLeft:
-									showLeftHandle && showBottomHandle,
+								bottomRight: false,
+								bottomLeft: false,
 								topLeft: false,
 							} }
-							onResizeStart={ onResizeStart }
 							onResizeStop={ onResizeStop }
 						>
 							{ previewContent }

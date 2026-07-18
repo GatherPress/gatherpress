@@ -394,42 +394,20 @@ describe( 'venue-map Edit useSelect selector stability', () => {
 	} );
 } );
 
-describe( 'venue-map Edit sizing wrappers', () => {
+describe( 'venue-map Edit sizing', () => {
 	beforeEach( () => {
 		capturedVenueStateSelector = null;
+		capturedResizableProps = null;
 		jest.clearAllMocks();
 		isVenuePostType.mockReturnValue( false );
 	} );
 
-	it( 'clamps the resize box at 100% of its container', () => {
-		const { getByTestId } = render(
-			<Edit
-				attributes={ {
-					...DEFAULT_ATTRIBUTES,
-					style: { dimensions: { width: '779px' } },
-				} }
-				setAttributes={ jest.fn() }
-				context={ {} }
-				clientId=""
-			/>
-		);
-
-		const box = getByTestId( 'resizable-box' );
-		expect( box.dataset.maxWidth ).toBe( '100%' );
-		expect( box.dataset.sizeWidth ).toBe( '779' );
-	} );
-
-	it( 'shrinks the block wrapper to fit a fixed-width map and centers it', () => {
-		const { useBlockProps } = jest.requireMock(
-			'@wordpress/block-editor'
-		);
-
+	it( 'only offers the bottom resize handle — width always fills the container', () => {
 		render(
 			<Edit
 				attributes={ {
 					...DEFAULT_ATTRIBUTES,
-					align: 'center',
-					style: { dimensions: { width: '779px' } },
+					style: { dimensions: { height: '250px' } },
 				} }
 				setAttributes={ jest.fn() }
 				context={ {} }
@@ -437,177 +415,23 @@ describe( 'venue-map Edit sizing wrappers', () => {
 			/>
 		);
 
-		expect( useBlockProps ).toHaveBeenCalledWith( {
-			style: {
-				width: 'fit-content',
-				marginLeft: 'auto',
-				marginRight: 'auto',
-			},
+		expect( capturedResizableProps.enable ).toEqual( {
+			top: false,
+			right: false,
+			bottom: true,
+			left: false,
+			topRight: false,
+			bottomRight: false,
+			bottomLeft: false,
+			topLeft: false,
+		} );
+		expect( capturedResizableProps.size ).toEqual( {
+			width: 'auto',
+			height: 250,
 		} );
 	} );
 
-	it( 'keeps alignment margins on the box so a centered map holds position mid-drag', () => {
-		const { getByTestId } = render(
-			<Edit
-				attributes={ {
-					...DEFAULT_ATTRIBUTES,
-					align: 'center',
-					style: { dimensions: { width: '779px' } },
-				} }
-				setAttributes={ jest.fn() }
-				context={ {} }
-				clientId=""
-			/>
-		);
-
-		const box = getByTestId( 'resizable-box' );
-		expect( box.dataset.marginLeft ).toBe( 'auto' );
-		expect( box.dataset.marginRight ).toBe( 'auto' );
-	} );
-
-	it( 'leaves the box unaligned when the map has no alignment', () => {
-		const { getByTestId } = render(
-			<Edit
-				attributes={ {
-					...DEFAULT_ATTRIBUTES,
-					style: { dimensions: { width: '779px' } },
-				} }
-				setAttributes={ jest.fn() }
-				context={ {} }
-				clientId=""
-			/>
-		);
-
-		const box = getByTestId( 'resizable-box' );
-		expect( box.dataset.marginLeft ).toBe( 'undefined' );
-		expect( box.dataset.marginRight ).toBe( 'undefined' );
-	} );
-
-	it( 'measures a pixel growth ceiling at drag start and resets it on release', () => {
-		const { getByTestId } = render(
-			<Edit
-				attributes={ {
-					...DEFAULT_ATTRIBUTES,
-					style: { dimensions: { width: '779px' } },
-				} }
-				setAttributes={ jest.fn() }
-				context={ {} }
-				clientId=""
-			/>
-		);
-
-		const box = getByTestId( 'resizable-box' );
-		expect( box.dataset.maxWidth ).toBe( '100%' );
-
-		// Fake enough DOM for the measurement: the block wrapper is capped
-		// at 645px by a constrained parent whose content box is 1206px.
-		const doc = { defaultView: { getComputedStyle: ( n ) => n.styles } };
-		const parentEl = {
-			clientWidth: 1266,
-			ownerDocument: doc,
-			styles: { paddingLeft: '30px', paddingRight: '30px' },
-		};
-		const blockEl = {
-			parentElement: parentEl,
-			ownerDocument: doc,
-			styles: { maxWidth: '645px' },
-		};
-
-		act( () =>
-			capturedResizableProps.onResizeStart( null, 'right', {
-				closest: () => blockEl,
-			} )
-		);
-		// The tighter of column width (1206) and the parent layout's cap
-		// (645) wins.
-		expect( getByTestId( 'resizable-box' ).dataset.maxWidth ).toBe(
-			'645'
-		);
-
-		act( () =>
-			capturedResizableProps.onResizeStop( null, 'right', null, {
-				width: 10,
-				height: 5,
-			} )
-		);
-		expect( getByTestId( 'resizable-box' ).dataset.maxWidth ).toBe(
-			'100%'
-		);
-	} );
-
-	it( 'uses the column width when no parent layout caps the block', () => {
-		const { getByTestId } = render(
-			<Edit
-				attributes={ {
-					...DEFAULT_ATTRIBUTES,
-					style: { dimensions: { width: '779px' } },
-				} }
-				setAttributes={ jest.fn() }
-				context={ {} }
-				clientId=""
-			/>
-		);
-
-		const doc = { defaultView: { getComputedStyle: ( n ) => n.styles } };
-		const parentEl = {
-			clientWidth: 1266,
-			ownerDocument: doc,
-			styles: { paddingLeft: '0px', paddingRight: '0px' },
-		};
-		const blockEl = {
-			parentElement: parentEl,
-			ownerDocument: doc,
-			styles: { maxWidth: 'none' },
-		};
-
-		act( () =>
-			capturedResizableProps.onResizeStart( null, 'right', {
-				closest: () => blockEl,
-			} )
-		);
-		expect( getByTestId( 'resizable-box' ).dataset.maxWidth ).toBe(
-			'1266'
-		);
-	} );
-
-	it( 'keeps the 100% clamp when the drag environment cannot be measured', () => {
-		const { useBlockProps } = jest.requireMock(
-			'@wordpress/block-editor'
-		);
-
-		const { getByTestId } = render(
-			<Edit
-				attributes={ {
-					...DEFAULT_ATTRIBUTES,
-					style: { dimensions: { width: '779px' } },
-				} }
-				setAttributes={ jest.fn() }
-				context={ {} }
-				clientId=""
-			/>
-		);
-
-		act( () =>
-			capturedResizableProps.onResizeStart( null, 'right', {
-				closest: () => null,
-			} )
-		);
-		expect( getByTestId( 'resizable-box' ).dataset.maxWidth ).toBe(
-			'100%'
-		);
-
-		// The shrink-wrapped wrapper stays on through the drag — releasing
-		// it is what shoved parent-centered maps to the left mid-resize.
-		expect( useBlockProps ).toHaveBeenLastCalledWith( {
-			style: expect.objectContaining( { width: 'fit-content' } ),
-		} );
-	} );
-
-	it( 'keeps the full-width block wrapper for auto and wide/full maps', () => {
-		const { useBlockProps } = jest.requireMock(
-			'@wordpress/block-editor'
-		);
-
+	it( 'uses an auto box height when no height is stored', () => {
 		render(
 			<Edit
 				attributes={ DEFAULT_ATTRIBUTES }
@@ -616,27 +440,59 @@ describe( 'venue-map Edit sizing wrappers', () => {
 				clientId=""
 			/>
 		);
-		expect( useBlockProps ).toHaveBeenCalledWith( {
-			style: undefined,
-		} );
 
-		jest.clearAllMocks();
-		isVenuePostType.mockReturnValue( false );
+		expect( capturedResizableProps.size ).toEqual( {
+			width: 'auto',
+			height: 'auto',
+		} );
+	} );
+
+	it( 'commits an explicit height on resize', () => {
+		const setAttributes = jest.fn();
 
 		render(
 			<Edit
 				attributes={ {
 					...DEFAULT_ATTRIBUTES,
-					align: 'full',
-					style: { dimensions: { width: '779px' } },
+					style: { dimensions: { height: '250px' } },
+				} }
+				setAttributes={ setAttributes }
+				context={ {} }
+				clientId=""
+			/>
+		);
+
+		// resolveDimensions is mocked to an effective height of 400; a
+		// +50 drag commits 450px into style.dimensions.height.
+		act( () =>
+			capturedResizableProps.onResizeStop( null, 'bottom', null, {
+				width: 0,
+				height: 50,
+			} )
+		);
+
+		expect( setAttributes ).toHaveBeenCalledWith( {
+			style: { dimensions: { height: '450px' } },
+		} );
+	} );
+
+	it( 'passes the block wrapper through without custom styling', () => {
+		const { useBlockProps } = jest.requireMock(
+			'@wordpress/block-editor'
+		);
+
+		render(
+			<Edit
+				attributes={ {
+					...DEFAULT_ATTRIBUTES,
+					style: { dimensions: { height: '250px' } },
 				} }
 				setAttributes={ jest.fn() }
 				context={ {} }
 				clientId=""
 			/>
 		);
-		expect( useBlockProps ).toHaveBeenCalledWith( {
-			style: undefined,
-		} );
+
+		expect( useBlockProps ).toHaveBeenCalledWith();
 	} );
 } );

@@ -15,6 +15,7 @@
 
 namespace GatherPress\Tests\Core\Venue\Map;
 
+use GatherPress\Core\Settings;
 use GatherPress\Core\Venue\Map;
 use GatherPress\Core\Venue\Map\Dimensions;
 use GatherPress\Core\Venue\Venue;
@@ -26,6 +27,17 @@ use GatherPress\Tests\Base;
  * @coversDefaultClass \GatherPress\Core\Venue\Map\Dimensions
  */
 class Test_Map_Dimensions extends Base {
+
+	/**
+	 * Resets the site-wide default height between tests.
+	 *
+	 * @return void
+	 */
+	public function tearDown(): void {
+		Settings::get_instance()->set( 'venue_map_default_height', '' );
+
+		parent::tearDown();
+	}
 
 	/**
 	 * Create a venue post with an address but no coordinates.
@@ -72,7 +84,7 @@ class Test_Map_Dimensions extends Base {
 	}
 
 	/**
-	 * Style.dimensions value wins over the legacy attribute.
+	 * Returns the style.dimensions value when present.
 	 *
 	 * @since 0.35.0
 	 *
@@ -80,25 +92,24 @@ class Test_Map_Dimensions extends Base {
 	 *
 	 * @return void
 	 */
-	public function test_get_dimension_value_prefers_style_dimensions(): void {
+	public function test_get_dimension_value_reads_style_dimensions(): void {
 		$attributes = array(
-			'width' => 640,
 			'style' => array(
 				'dimensions' => array(
-					'width' => '512px',
+					'height' => '250px',
 				),
 			),
 		);
 
 		$this->assertSame(
-			'512px',
-			Dimensions::get_dimension_value( $attributes, 'width' ),
-			'The style.dimensions value should win over the legacy attribute.'
+			'250px',
+			Dimensions::get_dimension_value( $attributes, 'height' ),
+			'The style.dimensions value should be returned.'
 		);
 	}
 
 	/**
-	 * An empty style value falls through to the legacy attribute.
+	 * Treats an empty style value as unset.
 	 *
 	 * @since 0.35.0
 	 *
@@ -106,25 +117,23 @@ class Test_Map_Dimensions extends Base {
 	 *
 	 * @return void
 	 */
-	public function test_get_dimension_value_skips_empty_style_value(): void {
+	public function test_get_dimension_value_treats_empty_style_value_as_unset(): void {
 		$attributes = array(
-			'height' => 300,
-			'style'  => array(
+			'style' => array(
 				'dimensions' => array(
 					'height' => '',
 				),
 			),
 		);
 
-		$this->assertSame(
-			300,
+		$this->assertNull(
 			Dimensions::get_dimension_value( $attributes, 'height' ),
-			'An empty style value should fall through to the legacy attribute.'
+			'An empty style value should read as unset.'
 		);
 	}
 
 	/**
-	 * Positive legacy numbers (int and float) are returned as-is.
+	 * Ignores pre-0.35 numeric attributes and non-string style values.
 	 *
 	 * @since 0.35.0
 	 *
@@ -132,40 +141,17 @@ class Test_Map_Dimensions extends Base {
 	 *
 	 * @return void
 	 */
-	public function test_get_dimension_value_falls_back_to_positive_legacy(): void {
-		$this->assertSame(
-			640,
-			Dimensions::get_dimension_value( array( 'width' => 640 ), 'width' ),
-			'A positive legacy int should be returned.'
-		);
-		$this->assertSame(
-			320.5,
-			Dimensions::get_dimension_value( array( 'height' => 320.5 ), 'height' ),
-			'A positive legacy float should be returned.'
-		);
-	}
-
-	/**
-	 * Zero, negative, and non-numeric legacy values read as unset.
-	 *
-	 * @since 0.35.0
-	 *
-	 * @covers ::get_dimension_value
-	 *
-	 * @return void
-	 */
-	public function test_get_dimension_value_treats_non_positive_legacy_as_unset(): void {
+	public function test_get_dimension_value_ignores_legacy_and_non_string_values(): void {
 		$this->assertNull(
-			Dimensions::get_dimension_value( array( 'width' => 0 ), 'width' ),
-			'Legacy 0 means "auto" and should read as unset.'
+			Dimensions::get_dimension_value( array( 'height' => 300 ), 'height' ),
+			'Pre-0.35 numeric attributes should read as unset — the Alpha migration rewrites them.'
 		);
 		$this->assertNull(
-			Dimensions::get_dimension_value( array( 'height' => -5 ), 'height' ),
-			'A negative legacy value should read as unset.'
-		);
-		$this->assertNull(
-			Dimensions::get_dimension_value( array( 'width' => '640' ), 'width' ),
-			'A numeric string in the legacy slot should read as unset (the attribute is typed number).'
+			Dimensions::get_dimension_value(
+				array( 'style' => array( 'dimensions' => array( 'height' => 300 ) ) ),
+				'height'
+			),
+			'A non-string style value should read as unset.'
 		);
 		$this->assertNull(
 			Dimensions::get_dimension_value( array(), 'height' ),
@@ -239,51 +225,97 @@ class Test_Map_Dimensions extends Base {
 	 * @return void
 	 */
 	public function test_to_css_dimension_normalizes_values(): void {
-		$this->assertSame( '300px', Dimensions::to_css_dimension( 300 ), 'A legacy int should gain a px suffix.' );
+		$this->assertSame( '300px', Dimensions::to_css_dimension( 300 ), 'An int should gain a px suffix.' );
 		$this->assertSame(
 			'301px',
 			Dimensions::to_css_dimension( 300.6 ),
-			'A legacy float should round then gain px.'
+			'A float should round then gain px.'
 		);
 		$this->assertSame( '50%', Dimensions::to_css_dimension( '50%' ), 'A style string should pass through.' );
 		$this->assertSame( '640px', Dimensions::to_css_dimension( ' 640px ' ), 'A style string should be trimmed.' );
 	}
 
 	/**
-	 * Style.dimensions px values land as inline width and height.
+	 * An explicit style height stamps inline and suppresses the ratio.
 	 *
-	 * With both dimensions explicit there's no auto side, so no
-	 * aspect-ratio stamp.
+	 * Width is never stamped — the wrapper always spans its container.
 	 *
 	 * @since 0.35.0
 	 *
 	 * @return void
 	 */
-	public function test_render_stamps_style_dimensions_as_inline_styles(): void {
+	public function test_render_stamps_style_height_and_no_width(): void {
 		$venue_id = $this->create_venue_without_coordinates();
 
 		$output = $this->render_block(
 			$venue_id,
-			'{"renderMode":"static","style":{"dimensions":{"height":"250px","width":"640px"}}}'
+			'{"renderMode":"static","style":{"dimensions":{"height":"250px"}}}'
 		);
 
 		$this->assertStringContainsString( 'height:250px', $output, 'The style height should stamp inline.' );
-		$this->assertStringContainsString( 'width:640px', $output, 'The style width should stamp inline.' );
 		$this->assertStringNotContainsString(
 			'aspect-ratio',
 			$output,
-			'With both dimensions explicit there is no auto side to derive.'
+			'An explicit height should suppress the ratio.'
 		);
+		$this->assertStringNotContainsString( 'width:', $output, 'Width is never stamped.' );
 	}
 
 	/**
-	 * Non-px units apply as CSS; the auto arm still stamps the ratio.
+	 * The site-wide default height applies when the block has none.
 	 *
 	 * @since 0.35.0
 	 *
 	 * @return void
 	 */
-	public function test_render_passes_non_px_units_through_with_aspect_ratio(): void {
+	public function test_render_falls_back_to_site_default_height(): void {
+		Settings::get_instance()->set( 'venue_map_default_height', 400 );
+
+		$venue_id = $this->create_venue_without_coordinates();
+
+		$output = $this->render_block( $venue_id, '{"renderMode":"static"}' );
+
+		$this->assertStringContainsString(
+			'height:400px',
+			$output,
+			'The Settings default height should stamp when the block has none.'
+		);
+		$this->assertStringNotContainsString(
+			'aspect-ratio',
+			$output,
+			'A resolved height should suppress the ratio.'
+		);
+	}
+
+	/**
+	 * A block height wins over the site-wide default.
+	 *
+	 * @since 0.35.0
+	 *
+	 * @return void
+	 */
+	public function test_render_block_height_beats_site_default(): void {
+		Settings::get_instance()->set( 'venue_map_default_height', 400 );
+
+		$venue_id = $this->create_venue_without_coordinates();
+
+		$output = $this->render_block(
+			$venue_id,
+			'{"renderMode":"static","style":{"dimensions":{"height":"250px"}}}'
+		);
+
+		$this->assertStringContainsString( 'height:250px', $output, 'The block height should win.' );
+		$this->assertStringNotContainsString( 'height:400px', $output, 'The Settings default should be ignored.' );
+	}
+
+	/**
+	 * Non-px units apply as CSS.
+	 *
+	 * @since 0.35.0
+	 *
+	 * @return void
+	 */
+	public function test_render_passes_non_px_units_through(): void {
 		$venue_id = $this->create_venue_without_coordinates();
 
 		$output = $this->render_block(
@@ -292,64 +324,16 @@ class Test_Map_Dimensions extends Base {
 		);
 
 		$this->assertStringContainsString( 'height:50%', $output, 'A percent height should stamp as authored.' );
-		$this->assertStringContainsString(
-			'aspect-ratio:2/1',
-			$output,
-			'Width is auto, so the ratio should shape the wrapper.'
-		);
 	}
 
 	/**
-	 * Legacy numeric attributes still size the wrapper (pre-0.35 content).
+	 * A height value safecss rejects degrades to the ratio.
 	 *
 	 * @since 0.35.0
 	 *
 	 * @return void
 	 */
-	public function test_render_falls_back_to_legacy_attributes(): void {
-		$venue_id = $this->create_venue_without_coordinates();
-
-		$output = $this->render_block(
-			$venue_id,
-			'{"renderMode":"static","height":250,"width":640}'
-		);
-
-		$this->assertStringContainsString( 'height:250px', $output, 'The legacy height should stamp in px.' );
-		$this->assertStringContainsString( 'width:640px', $output, 'The legacy width should stamp in px.' );
-		$this->assertStringNotContainsString(
-			'aspect-ratio',
-			$output,
-			'With both dimensions explicit there is no auto side to derive.'
-		);
-	}
-
-	/**
-	 * A style value beats a lingering legacy attribute on the same block.
-	 *
-	 * @since 0.35.0
-	 *
-	 * @return void
-	 */
-	public function test_render_prefers_style_value_over_legacy(): void {
-		$venue_id = $this->create_venue_without_coordinates();
-
-		$output = $this->render_block(
-			$venue_id,
-			'{"renderMode":"static","height":300,"style":{"dimensions":{"height":"200px"}}}'
-		);
-
-		$this->assertStringContainsString( 'height:200px', $output, 'The style height should win.' );
-		$this->assertStringNotContainsString( 'height:300px', $output, 'The legacy height should be ignored.' );
-	}
-
-	/**
-	 * A dimension value safecss rejects degrades to auto.
-	 *
-	 * @since 0.35.0
-	 *
-	 * @return void
-	 */
-	public function test_render_drops_unsafe_dimension_values(): void {
+	public function test_render_drops_unsafe_height_values(): void {
 		$venue_id = $this->create_venue_without_coordinates();
 
 		$output = $this->render_block(
@@ -361,54 +345,27 @@ class Test_Map_Dimensions extends Base {
 		$this->assertStringContainsString(
 			'aspect-ratio:2/1',
 			$output,
-			'The rejected height should degrade to auto and pick up the ratio.'
+			'The rejected height should degrade to the ratio.'
 		);
 	}
 
 	/**
-	 * Wide and full alignments own the horizontal space.
+	 * With no height at all, the ratio shapes the wrapper.
 	 *
 	 * @since 0.35.0
 	 *
 	 * @return void
 	 */
-	public function test_render_skips_width_for_wide_alignment(): void {
+	public function test_render_uses_ratio_when_no_height_set(): void {
 		$venue_id = $this->create_venue_without_coordinates();
 
-		$output = $this->render_block(
-			$venue_id,
-			'{"renderMode":"static","align":"wide","style":{"dimensions":{"height":"250px","width":"640px"}}}'
-		);
-
-		$this->assertStringNotContainsString(
-			'width:640px',
-			$output,
-			'Wide alignment should suppress the explicit width.'
-		);
-		$this->assertStringContainsString(
-			'aspect-ratio:2/1',
-			$output,
-			'The alignment-driven width should keep its ratio hint.'
-		);
-	}
-
-	/**
-	 * With no dimensions at all, only the ratio shapes the wrapper.
-	 *
-	 * @since 0.35.0
-	 *
-	 * @return void
-	 */
-	public function test_render_uses_ratio_alone_when_no_dimensions_set(): void {
-		$venue_id = $this->create_venue_without_coordinates();
-
-		$output = $this->render_block( $venue_id, '{"renderMode":"static"}' );
+		$output = $this->render_block( $venue_id, '{"renderMode":"static","aspectRatio":"16/9"}' );
 
 		$this->assertStringNotContainsString( 'height:', $output, 'No height should stamp when unset.' );
 		$this->assertStringContainsString(
-			'aspect-ratio:2/1',
+			'aspect-ratio:16/9',
 			$output,
-			'Both sides auto should leave the ratio in charge.'
+			'The ratio should shape the wrapper.'
 		);
 	}
 

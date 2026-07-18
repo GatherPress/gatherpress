@@ -550,46 +550,26 @@ describe( 'getDimensionValue', () => {
 	it( 'returns the style.dimensions value when present', () => {
 		expect(
 			getDimensionValue(
-				{
-					width: 640,
-					style: { dimensions: { width: '512px' } },
-				},
+				{ style: { dimensions: { width: '512px' } } },
 				'width'
 			)
 		).toBe( '512px' );
 	} );
 
-	it( 'falls back to the legacy attribute when the style value is an empty string', () => {
+	it( 'treats an empty style value as unset', () => {
 		expect(
 			getDimensionValue(
-				{
-					height: 300,
-					style: { dimensions: { height: '' } },
-				},
+				{ style: { dimensions: { height: '' } } },
 				'height'
 			)
-		).toBe( 300 );
-	} );
-
-	it( 'falls back to a positive legacy attribute when no style value exists', () => {
-		expect( getDimensionValue( { width: 640 }, 'width' ) ).toBe( 640 );
-	} );
-
-	it( 'treats a legacy 0 ("auto") as unset', () => {
-		expect( getDimensionValue( { width: 0 }, 'width' ) ).toBeUndefined();
-	} );
-
-	it( 'treats a negative legacy value as unset', () => {
-		expect( getDimensionValue( { height: -5 }, 'height' ) ).toBeUndefined();
-	} );
-
-	it( 'treats a non-numeric legacy value as unset', () => {
-		expect(
-			getDimensionValue( { width: '640' }, 'width' )
 		).toBeUndefined();
 	} );
 
-	it( 'returns undefined when neither shape carries the dimension', () => {
+	it( 'ignores pre-0.35 numeric attributes (Alpha migrates those)', () => {
+		expect( getDimensionValue( { width: 640 }, 'width' ) ).toBeUndefined();
+	} );
+
+	it( 'returns undefined when the dimension is absent', () => {
 		expect( getDimensionValue( {}, 'height' ) ).toBeUndefined();
 		expect( getDimensionValue( undefined, 'height' ) ).toBeUndefined();
 	} );

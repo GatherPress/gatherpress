@@ -269,32 +269,25 @@ export const parsePxDimension = ( value ) => {
 };
 
 /**
- * Read a dimension for the venue map from its current home.
+ * Read a dimension for the venue map from its block attributes.
  *
- * Core's dimensions support stores values under `style.dimensions`; blocks
- * saved before 0.35.0 carry the legacy numeric `width`/`height` attributes
- * until the GatherPress Alpha migration rewrites them. The style value wins
- * whenever present so edits made with the new controls take effect
- * immediately even while a legacy value lingers.
+ * Core's dimensions support stores values under `style.dimensions` as CSS
+ * strings. Content saved before 0.35.0 carried numeric `width`/`height`
+ * attributes instead; the GatherPress Alpha migration rewrites those, and
+ * until it runs such blocks read as unset here.
  *
  * @since 0.35.0
  *
  * @param {Object} attributes Block attributes.
  * @param {string} dimension  Either `width` or `height`.
  *
- * @return {number|string|undefined} The dimension value, or undefined when unset.
+ * @return {string|undefined} The dimension value, or undefined when unset.
  */
 export const getDimensionValue = ( attributes, dimension ) => {
 	const styleValue = attributes?.style?.dimensions?.[ dimension ];
 
-	if ( undefined !== styleValue && '' !== styleValue ) {
-		return styleValue;
-	}
-
-	const legacyValue = attributes?.[ dimension ];
-
-	return Number.isFinite( legacyValue ) && 0 < legacyValue
-		? legacyValue
+	return 'string' === typeof styleValue && '' !== styleValue
+		? styleValue
 		: undefined;
 };
 
