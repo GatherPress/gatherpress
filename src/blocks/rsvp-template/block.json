@@ -9,6 +9,7 @@
 	"example": {},
 	"description": "Define a reusable template for RSVP entries dynamically populated with data.",
 	"supports": {
+		"contentRole": true,
 		"html": false,
 		"listView": true
 	},
