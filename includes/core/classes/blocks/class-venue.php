@@ -44,56 +44,69 @@ class Venue {
 	/**
 	 * Class constructor.
 	 *
-	 * This method initializes the object and sets up necessary hooks.
+	 * The block needs no hooks: `render.php` calls
+	 * {@see self::render_inner_blocks()} directly.
 	 *
 	 * @since 0.34.0
 	 */
 	protected function __construct() {
-		$this->setup_hooks();
 	}
 
 	/**
-	 * Set up hooks for various purposes.
+	 * Renders the block's inner blocks with the resolved source post as
+	 * their context.
 	 *
-	 * This method adds hooks for different purposes as needed.
+	 * WordPress renders a dynamic block's inner blocks before the render
+	 * callback runs, using the surrounding post's context — wrong for a
+	 * venue, whose children (post-title, venue details, map) must read the
+	 * shadow-source post (venue, tour, production, etc.). This re-renders
+	 * them from the parsed block with the source post passed as available
+	 * context, so every descendant that consumes `postId`/`postType` sees
+	 * the source post while nested providers (a query loop inside the
+	 * venue, say) still override normally for their own children.
+	 *
+	 * Called from `render.php` before the wrapper is emitted, which is
+	 * what lets core's block-supports pipeline (layout classes among the
+	 * rest) decorate the one real wrapper afterward.
 	 *
 	 * @since 0.34.0
 	 *
-	 * @return void
+	 * @param WP_Block $instance The venue block instance.
+	 *
+	 * @return string|null The rendered inner blocks, or null when no
+	 *                     source post resolves (the block renders nothing).
 	 */
-	protected function setup_hooks(): void {
-		add_filter( sprintf( 'render_block_%s', self::BLOCK_NAME ), array( $this, 'render_block' ), 10, 3 );
-	}
+	public function render_inner_blocks( WP_Block $instance ): ?string {
+		$source_post = $this->get_source_post( $instance->parsed_block );
 
-	/**
-	 * Renders the venue block with appropriate context.
-	 *
-	 * @see https://developer.wordpress.org/reference/hooks/render_block_this-name/
-	 *
-	 * @since 0.34.0
-	 *
-	 * @param string|null $block_content The block content.
-	 * @param array|null  $block         The full block, including name and attributes.
-	 * @param WP_Block    $instance      The block instance.
-	 *
-	 * @return string
-	 */
-	public function render_block( ?string $block_content, ?array $block, WP_Block $instance ): string {
-		// Handle null inputs early.
-		// See https://developer.wordpress.org/reference/hooks/render_block/#comment-6606.
-		if ( is_null( $block_content ) || is_null( $block ) ) {
-			return is_string( $block_content ) ? $block_content : '';
-		}
-
-		$source_post = $this->get_source_post( $block );
-
-		// No source post resolved — don't render.
 		if ( ! $source_post instanceof WP_Post ) {
-			return '';
+			return null;
 		}
 
-		// Has source post — render with source context.
-		return $this->render_with_source_context( $source_post, $instance );
+		global $post;
+		$original_post = $post;
+
+		/*
+		 * Override global $post for core/post-title block compatibility.
+		 *
+		 * @see https://github.com/WordPress/gutenberg/pull/37622#issuecomment-1000932816
+		 */
+		$post = $source_post; // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
+
+		$context = array(
+			'postId'   => $source_post->ID,
+			'postType' => $source_post->post_type,
+		);
+
+		$rendered = '';
+
+		foreach ( $instance->parsed_block['innerBlocks'] ?? array() as $inner_block ) {
+			$rendered .= ( new WP_Block( $inner_block, $context ) )->render();
+		}
+
+		$post = $original_post; // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
+
+		return $rendered;
 	}
 
 	/**
@@ -163,68 +176,5 @@ class Venue {
 		}
 
 		return $source_post;
-	}
-
-	/**
-	 * Renders the block with source post context.
-	 *
-	 * Sets up the global post and block context to the resolved shadow-source
-	 * post (venue, tour, production, etc.), renders the inner blocks, then
-	 * restores the original context.
-	 *
-	 * @since 0.34.0
-	 *
-	 * @param WP_Post  $source_post The source post to use as context.
-	 * @param WP_Block $instance    The block instance.
-	 *
-	 * @return string The rendered block content.
-	 */
-	private function render_with_source_context( WP_Post $source_post, WP_Block $instance ): string {
-		global $post;
-		$original_post = $post;
-
-		/*
-		 * Override global $post for core/post-title block compatibility.
-		 *
-		 * @see https://github.com/WordPress/gutenberg/pull/37622#issuecomment-1000932816
-		 */
-		$post = $source_post; // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
-
-		// Use 'core/null' to prevent rendering block supports on inner blocks.
-		$block_instance              = $instance->parsed_block;
-		$block_instance['blockName'] = 'core/null';
-
-		$post_id   = $source_post->ID;
-		$post_type = $source_post->post_type;
-
-		$filter_block_context = static function ( array $context ) use ( $post_id, $post_type ): array {
-			$context['postType'] = $post_type;
-			$context['postId']   = $post_id;
-			return $context;
-		};
-
-		// Use PHP_INT_MAX to ensure our context runs last and overrides query loop context.
-		add_filter( 'render_block_context', $filter_block_context, PHP_INT_MAX );
-		$block_content = ( new WP_Block( $block_instance ) )->render();
-		remove_filter( 'render_block_context', $filter_block_context, PHP_INT_MAX );
-
-		$post = $original_post; // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
-
-		// Build wrapper classes from block instance attributes.
-		$classes = array( 'wp-block-gatherpress-venue' );
-
-		if ( ! empty( $instance->attributes['align'] ) ) {
-			$classes[] = 'align' . $instance->attributes['align'];
-		}
-
-		if ( ! empty( $instance->attributes['className'] ) ) {
-			$classes[] = $instance->attributes['className'];
-		}
-
-		return sprintf(
-			'<div class="%s">%s</div>',
-			esc_attr( implode( ' ', $classes ) ),
-			$block_content
-		);
 	}
 }

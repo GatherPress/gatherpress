@@ -54,7 +54,9 @@ import {
 	MAX_POLLS,
 	POLL_INTERVAL_MS,
 	RegenerateMapButton,
+	getDimensionValue,
 	parseAspectRatio,
+	parsePxDimension,
 	pickDescriptorForCombo,
 	resolveDimensions,
 	usePlaceholderPolling,
@@ -499,6 +501,77 @@ describe( 'resolveDimensions', () => {
 				aspectRatio: 'garbage',
 			} )
 		).toEqual( { width: 800, height: 400 } );
+	} );
+} );
+
+describe( 'parsePxDimension', () => {
+	it( 'passes through a whole number', () => {
+		expect( parsePxDimension( 512 ) ).toBe( 512 );
+	} );
+
+	it( 'rounds a fractional number', () => {
+		expect( parsePxDimension( 512.6 ) ).toBe( 513 );
+	} );
+
+	it( 'clamps a negative number to 0', () => {
+		expect( parsePxDimension( -20 ) ).toBe( 0 );
+	} );
+
+	it( 'parses a px-suffixed string', () => {
+		expect( parsePxDimension( '512px' ) ).toBe( 512 );
+	} );
+
+	it( 'parses a unitless numeric string', () => {
+		expect( parsePxDimension( '512' ) ).toBe( 512 );
+	} );
+
+	it( 'tolerates surrounding whitespace and rounds fractional strings', () => {
+		expect( parsePxDimension( '  512.4 px ' ) ).toBe( 512 );
+	} );
+
+	it( 'resolves non-px units to 0 (auto)', () => {
+		expect( parsePxDimension( '50%' ) ).toBe( 0 );
+		expect( parsePxDimension( '20rem' ) ).toBe( 0 );
+	} );
+
+	it( 'resolves CSS keywords to 0 (auto)', () => {
+		expect( parsePxDimension( 'fit-content' ) ).toBe( 0 );
+	} );
+
+	it( 'resolves unset and non-finite values to 0', () => {
+		expect( parsePxDimension( undefined ) ).toBe( 0 );
+		expect( parsePxDimension( null ) ).toBe( 0 );
+		expect( parsePxDimension( NaN ) ).toBe( 0 );
+		expect( parsePxDimension( '' ) ).toBe( 0 );
+	} );
+} );
+
+describe( 'getDimensionValue', () => {
+	it( 'returns the style.dimensions value when present', () => {
+		expect(
+			getDimensionValue(
+				{ style: { dimensions: { width: '512px' } } },
+				'width'
+			)
+		).toBe( '512px' );
+	} );
+
+	it( 'treats an empty style value as unset', () => {
+		expect(
+			getDimensionValue(
+				{ style: { dimensions: { height: '' } } },
+				'height'
+			)
+		).toBeUndefined();
+	} );
+
+	it( 'ignores pre-0.35 numeric attributes (Alpha migrates those)', () => {
+		expect( getDimensionValue( { width: 640 }, 'width' ) ).toBeUndefined();
+	} );
+
+	it( 'returns undefined when the dimension is absent', () => {
+		expect( getDimensionValue( {}, 'height' ) ).toBeUndefined();
+		expect( getDimensionValue( undefined, 'height' ) ).toBeUndefined();
 	} );
 } );
 

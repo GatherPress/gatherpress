@@ -237,6 +237,69 @@ export const parseAspectRatio = ( ratio ) => {
 };
 
 /**
+ * Extract a pixel integer from a dimension value.
+ *
+ * Accepts the raw numbers the legacy `width`/`height` attributes stored and
+ * the CSS strings core's dimensions support writes to `style.dimensions`
+ * (e.g. `"512px"`). Values in any other unit (`%`, `rem`, presets like
+ * `fit-content`) cannot feed the static-map PNG pipeline and resolve to 0
+ * ("auto") — the visual CSS still applies them; only the generated image
+ * falls back to derived dimensions.
+ *
+ * @since 0.35.0
+ *
+ * @param {number|string|undefined} value Dimension value from either attribute shape.
+ *
+ * @return {number} Whole pixels, or 0 when the value is unset or not px-expressible.
+ */
+export const parsePxDimension = ( value ) => {
+	if ( Number.isFinite( value ) ) {
+		return Math.max( 0, Math.round( value ) );
+	}
+
+	if ( 'string' !== typeof value ) {
+		return 0;
+	}
+
+	let trimmed = value.trim();
+
+	// Strip a px suffix; any other unit (%, rem, keywords) leaves a
+	// non-numeric remainder and resolves to auto below.
+	if ( trimmed.endsWith( 'px' ) ) {
+		trimmed = trimmed.slice( 0, -2 ).trim();
+	}
+
+	const parsed = Number( trimmed );
+
+	return '' !== trimmed && Number.isFinite( parsed )
+		? Math.max( 0, Math.round( parsed ) )
+		: 0;
+};
+
+/**
+ * Read a dimension for the venue map from its block attributes.
+ *
+ * Core's dimensions support stores values under `style.dimensions` as CSS
+ * strings. Content saved before 0.35.0 carried numeric `width`/`height`
+ * attributes instead; the GatherPress Alpha migration rewrites those, and
+ * until it runs such blocks read as unset here.
+ *
+ * @since 0.35.0
+ *
+ * @param {Object} attributes Block attributes.
+ * @param {string} dimension  Either `width` or `height`.
+ *
+ * @return {string|undefined} The dimension value, or undefined when unset.
+ */
+export const getDimensionValue = ( attributes, dimension ) => {
+	const styleValue = attributes?.style?.dimensions?.[ dimension ];
+
+	return 'string' === typeof styleValue && '' !== styleValue
+		? styleValue
+		: undefined;
+};
+
+/**
  * Resolve a (width, height) pair from block attribute values.
  *
  * Mirrors `Venue\Map::resolve_dimensions()` so the editor renders the map

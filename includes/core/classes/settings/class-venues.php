@@ -227,27 +227,6 @@ class Venues extends Base {
 							),
 						),
 					),
-					'venue_map_default_width'        => array(
-						'labels'      => array(
-							'name' => __( 'Default Width', 'gatherpress' ),
-						),
-						'description' => __(
-							'Default pixel width for new venue map blocks. Leave empty for auto.',
-							'gatherpress'
-						),
-						'field'       => array(
-							'label'       => __( 'Width for new blocks (px):', 'gatherpress' ),
-							'type'        => 'number',
-							'size'        => 'small',
-							'placeholder' => __( 'Auto', 'gatherpress' ),
-							'allow_empty' => true,
-							'options'     => array(
-								'default' => '',
-								'min'     => '0',
-								'max'     => (string) Map::WIDTH_MAX,
-							),
-						),
-					),
 					'venue_map_default_aspect_ratio' => array(
 						'labels'      => array(
 							'name' => __( 'Default Aspect Ratio', 'gatherpress' ),
