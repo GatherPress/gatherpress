@@ -95,7 +95,7 @@ export default function DefaultField( {
 				style={ getInputStyles( fieldType, attributes ) }
 				type={ fieldType }
 				name={ fieldName }
-				defaultValue={ fieldValue }
+				value={ fieldValue }
 				placeholder={ placeholder }
 				required={ required }
 				readOnly={ true }

@@ -33,6 +33,10 @@
 			"type": "boolean",
 			"default": false
 		},
+		"prefillCurrentUser": {
+			"type": "boolean",
+			"default": false
+		},
 		"requiredText": {
 			"type": "string",
 			"default": "(required)"
