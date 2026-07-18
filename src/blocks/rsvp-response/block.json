@@ -28,6 +28,7 @@
 		}
 	},
 	"supports": {
+		"contentRole": true,
 		"gatherpress": {
 			"blockGuard": true,
 			"postIdOverride": true

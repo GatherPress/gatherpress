@@ -33,7 +33,8 @@
 		},
 		"href": {
 			"type": "string",
-			"default": ""
+			"default": "",
+			"role": "content"
 		},
 		"linkDestination": {
 			"type": "string",
