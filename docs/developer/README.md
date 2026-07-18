@@ -5,7 +5,7 @@
 Standalone guides for customizing specific GatherPress features through hooks:
 
 - [Event duration filters](event-duration.md): customize the editor's Duration control (`gatherpress.durationOptions`, `gatherpress.durationDefault`).
-- [Venue address format](venue-address-format.md): reorder the house number and street in geocoded address labels (`gatherpress_geocode_street_line`).
+- [Venue address format](venue-address-format.md): locale-aware ordering of geocoded address labels via translatable format strings, plus the `gatherpress_formatted_address` filter.
 
 For every hook GatherPress exposes, see the auto-generated [hook reference](hooks/) and the [hook naming convention](hooks-naming-convention.md).
 

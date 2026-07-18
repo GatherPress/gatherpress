@@ -22,7 +22,7 @@ The Venue block allows you to add/edit:
 
 Standard content blocks allow you to add any other content.
 
-For developers: the order of the house number and street in geocoded address suggestions (for example `Hauptstraße 42` versus `42 Hauptstraße`) can be customized with a filter. See [Venue address format](../developer/venue-address-format.md).
+The order of the components in geocoded address suggestions (for example `Hauptstraße 42, 10115 Berlin` versus `42 Hauptstraße, Berlin, 10115`) follows your site language's translation, and developers can customize it further with a filter. See [Venue address format](../developer/venue-address-format.md).
 
 Note:
 
