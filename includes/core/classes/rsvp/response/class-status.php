@@ -17,6 +17,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
  * @since 0.35.0
  */
 enum Status: string {
+
 	/**
 	 * Statuses an RSVP response can have.
 	 *

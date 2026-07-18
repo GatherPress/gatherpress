@@ -16,6 +16,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
  * @since 0.35.0
  */
 final class Collection {
+
 	/**
 	 * States.
 	 *

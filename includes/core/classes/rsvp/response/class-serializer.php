@@ -18,6 +18,7 @@ use GatherPress\Core\Settings\Roles;
  * @since 0.35.0
  */
 final class Serializer {
+
 	/**
 	 * Convert state to array.
 	 *

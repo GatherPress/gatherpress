@@ -21,6 +21,7 @@ use InvalidArgumentException;
  * @copyright 2025 André Menrath <andre.menrath@posteo.de>
  */
 final class Identity {
+
 	/**
 	 * Display name of this identity.
 	 *

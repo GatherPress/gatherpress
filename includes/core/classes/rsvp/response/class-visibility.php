@@ -17,6 +17,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
  * @since 0.35.0
  */
 enum Visibility: string {
+
 	/**
 	 * Visibility levels an RSVP response can have.
 	 *

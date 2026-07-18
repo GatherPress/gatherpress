@@ -19,6 +19,7 @@ use WP_Comment;
  * @since 0.35.0
  */
 final class State {
+
 	/**
 	 * Get an object for a saved RSVP response.
 	 *

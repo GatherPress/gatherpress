@@ -18,6 +18,7 @@ use GatherPress\Core\Rsvp\Response\Provider\Base as Provider;
  * @since 0.35.0
  */
 final class Intent {
+
 	/**
 	 * Compose a request of an RSVP response (not saved, but the intent).
 	 *

@@ -20,6 +20,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
  * @since 0.35.0
  */
 enum Identity_Type: string {
+
 	/**
 	 * Identifier types supported for RSVP identities.
 	 *
