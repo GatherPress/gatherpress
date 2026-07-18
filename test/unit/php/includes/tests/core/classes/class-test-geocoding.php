@@ -1676,7 +1676,7 @@ class Test_Geocoding extends Base {
 			)
 		);
 
-		remove_filter( 'gettext_with_context', $translate, 10 );
+		remove_filter( 'gettext_with_context', $translate );
 
 		$this->assertSame(
 			'Hauptstraße 42, 10115 Berlin',
@@ -1721,7 +1721,7 @@ class Test_Geocoding extends Base {
 			)
 		);
 
-		remove_filter( 'gatherpress_formatted_address', $callback, 10 );
+		remove_filter( 'gatherpress_formatted_address', $callback );
 
 		$this->assertSame( 'Hauptstraße 42, 10115 Berlin', $rebuilt );
 		$this->assertSame(
