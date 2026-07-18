@@ -150,14 +150,15 @@ class Form_Field {
 	/**
 	 * Prefill the field value from the logged-in user.
 	 *
-	 * Applies only when the block's prefill toggle is on, the authored
-	 * value is empty, and a user is logged in: text fields receive the
-	 * user's display name, email fields the account email address.
-	 * Logged-out visitors always see an empty field. Prefilling the
-	 * email with the account address also makes the account-linked RSVP
-	 * path the default — `Rsvp\Form::prepare_comment_data()` associates
-	 * a submission with the current user only when the submitted email
-	 * matches their account email.
+	 * Applies only when the block's prefill toggle is on and a user is
+	 * logged in: text fields receive the user's display name, email
+	 * fields the account email address — trumping any authored default
+	 * value. Logged-out visitors fall back to the authored default (or
+	 * an empty field). Prefilling the email with the account address
+	 * also makes the account-linked RSVP path the default —
+	 * `Rsvp\Form::prepare_comment_data()` associates a submission with
+	 * the current user only when the submitted email matches their
+	 * account email.
 	 *
 	 * @since 0.35.0
 	 *
@@ -166,7 +167,6 @@ class Form_Field {
 	private function maybe_prefill_field_value(): void {
 		if (
 			empty( $this->attributes['prefill_current_user'] )
-			|| '' !== (string) $this->attributes['field_value']
 			|| ! is_user_logged_in()
 		) {
 			return;

@@ -1209,8 +1209,9 @@ class Test_Form_Field extends Base {
 	}
 
 	/**
-	 * Logged-out visitors get an empty field even when the toggle is on,
-	 * and logged-in users get an empty field when the toggle is off.
+	 * Logged-out visitors get the authored default value even when the
+	 * toggle is on, and logged-in users get the default when the toggle
+	 * is off.
 	 *
 	 * @since 0.35.0
 	 * @covers ::maybe_prefill_field_value
@@ -1224,44 +1225,46 @@ class Test_Form_Field extends Base {
 			array(
 				'fieldType'          => 'email',
 				'fieldName'          => 'email',
+				'fieldValue'         => 'default@example.test',
 				'prefillCurrentUser' => true,
 			)
 		);
 
 		$this->assertStringContainsString(
-			'value=""',
+			'value="default@example.test"',
 			$logged_out->get_input_attributes(),
-			'A logged-out visitor should see an empty field.'
+			'A logged-out visitor should see the authored default value.'
 		);
 
 		$this->login_prefill_user();
 
 		$toggle_off = new Form_Field(
 			array(
-				'fieldType' => 'email',
-				'fieldName' => 'email',
+				'fieldType'  => 'email',
+				'fieldName'  => 'email',
+				'fieldValue' => 'default@example.test',
 			)
 		);
 
 		$this->assertStringContainsString(
-			'value=""',
+			'value="default@example.test"',
 			$toggle_off->get_input_attributes(),
-			'Without the toggle, a logged-in user still sees an empty field.'
+			'Without the toggle, a logged-in user still sees the default value.'
 		);
 
 		wp_set_current_user( 0 );
 	}
 
 	/**
-	 * An authored fieldValue wins over the prefill, and field types other
-	 * than text/email are never prefilled.
+	 * For a logged-in user the prefill trumps an authored default value,
+	 * and field types other than text/email are never prefilled.
 	 *
 	 * @since 0.35.0
 	 * @covers ::maybe_prefill_field_value
 	 *
 	 * @return void
 	 */
-	public function test_prefill_preserves_authored_value_and_skips_other_types(): void {
+	public function test_prefill_trumps_authored_value_and_skips_other_types(): void {
 		$this->login_prefill_user();
 
 		$authored = new Form_Field(
@@ -1274,9 +1277,9 @@ class Test_Form_Field extends Base {
 		);
 
 		$this->assertStringContainsString(
-			'value="Authored Name"',
+			'value="Jane Attendee"',
 			$authored->get_input_attributes(),
-			'An explicit fieldValue must not be overwritten by the prefill.'
+			'For a logged-in user, the prefill overrides the authored default value.'
 		);
 
 		$url_field = new Form_Field(
