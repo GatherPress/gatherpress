@@ -85,6 +85,38 @@ test( 'OSM MapEmbed returns a placeholder div when location is set but no coordi
 	} );
 } );
 
+test( 'Google MapEmbed returns a placeholder div when location is set but no coordinates', () => {
+	select.mockImplementation( ( store ) => {
+		if ( 'core' === store ) {
+			return { canUser: jest.fn( () => false ) };
+		}
+		if ( 'core/edit-post' === store ) {
+			return null;
+		}
+		if ( 'core/editor' === store ) {
+			return {
+				getEditorSettings: () => ( {
+					gatherpress: { settings: { mapPlatform: 'google' } },
+				} ),
+			};
+		}
+		return null;
+	} );
+
+	const { container } = render(
+		<MapEmbed
+			location="50 South Fullerton Avenue, Montclair, NJ 07042"
+			googleMapsApiKey="unit-test-key"
+		/>,
+	);
+
+	expect( container.children[ 0 ] ).toBeInTheDocument();
+	expect( container.children[ 0 ].tagName ).toBe( 'DIV' );
+	expect( container.children[ 0 ] ).toHaveStyle( {
+		backgroundColor: 'rgb(224, 224, 224)',
+	} );
+} );
+
 test( 'Google MapEmbed returns address in source when location is set', () => {
 	select.mockImplementation( ( store ) => {
 		if ( 'core' === store ) {
@@ -249,12 +281,13 @@ test( 'MapEmbed uses default location when admin user is not in post editor and 
 
 	const { container } = render( <MapEmbed /> );
 
-	// Should render a Google Map iframe with the default location.
-	// The component sets location to "660 4th Street #119 San Francisco CA 94107, USA".
-	// Since no coordinates are provided, the URL will use "undefined" for lat/lng.
-	// We just verify that it rendered a map (iframe exists).
+	// Default location is set server-side but coords are still missing — show
+	// the same grey placeholder as the editor until geocode data exists.
 	expect( container.children[ 0 ] ).toBeInTheDocument();
-	expect( container.children[ 0 ].tagName ).toBe( 'IFRAME' );
+	expect( container.children[ 0 ].tagName ).toBe( 'DIV' );
+	expect( container.children[ 0 ] ).toHaveStyle( {
+		backgroundColor: 'rgb(224, 224, 224)',
+	} );
 } );
 
 test( 'MapEmbed returns empty fragment when mapPlatform is invalid', () => {

@@ -148,6 +148,10 @@ jest.mock( '@src/supports/block-guard', () => ( {
 
 jest.mock( '@src/blocks/venue-map/helpers', () => ( {
 	RegenerateMapButton: () => null,
+	buildComboKey: jest.fn(
+		( zoom, width, height, mapType = 'roadmap' ) =>
+			`${ zoom }x${ width }x${ height }x${ mapType || 'roadmap' }`
+	),
 	parseAspectRatio: jest.fn( () => false ),
 	pickDescriptorForCombo: jest.fn( () => undefined ),
 	resolveDimensions: jest.fn( () => ( { width: 800, height: 400 } ) ),

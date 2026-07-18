@@ -43,6 +43,7 @@ import {
 } from '../../supports/block-guard';
 import {
 	RegenerateMapButton,
+	buildComboKey,
 	pickDescriptorForCombo,
 	getDimensionValue,
 	parsePxDimension,
@@ -295,13 +296,14 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 	const siteScaleDefault = SCALE_OPTIONS.includes( rawSiteScale )
 		? rawSiteScale
 		: SCALE_DEFAULT;
-	const showMapTypeControl =
-		'interactive' === renderMode && 'google' === mapPlatform;
+	const showMapTypeControl = 'google' === mapPlatform;
 
 	// Full list of map types for Google. Maps Embed API (iframe) supports
-	// only roadmap and satellite — hybrid/terrain are filtered out below until
-	// a Maps JavaScript API integration can use the full set without changing
-	// `GOOGLE_MAP_TYPE_DEFINITIONS` in `GoogleMap.js`.
+	// only roadmap and satellite — hybrid/terrain are filtered out for
+	// interactive mode until a Maps JavaScript API integration can use
+	// the full set without changing `GOOGLE_MAP_TYPE_DEFINITIONS` in
+	// `GoogleMap.js`. Static mode uses the Static Maps API, which supports
+	// all four types.
 	const GOOGLE_MAP_TYPE_OPTIONS_ALL = GOOGLE_MAP_TYPE_DEFINITIONS.map(
 		( definition ) => ( {
 			label: definition.label,
@@ -313,12 +315,16 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 		GOOGLE_IFRAME_UNSUPPORTED_MAP_TYPE_SLUGS
 	);
 
-	const googleMapTypeSelectOptions = GOOGLE_MAP_TYPE_OPTIONS_ALL.filter(
-		( opt ) => ! IFRAME_UNSUPPORTED_GOOGLE_MAP_TYPES.has( opt.value )
-	);
+	let googleMapTypeSelectOptions = GOOGLE_MAP_TYPE_OPTIONS_ALL;
+	if ( 'static' !== renderMode ) {
+		googleMapTypeSelectOptions = GOOGLE_MAP_TYPE_OPTIONS_ALL.filter(
+			( opt ) => ! IFRAME_UNSUPPORTED_GOOGLE_MAP_TYPES.has( opt.value )
+		);
+	}
 
 	useEffect( () => {
 		if (
+			'interactive' === renderMode &&
 			showMapTypeControl &&
 			! [ 'roadmap', 'satellite' ].includes( type )
 		) {
@@ -326,7 +332,7 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 				type: toMapsEmbedApiMapType( type ),
 			} );
 		}
-	}, [ showMapTypeControl, type, setAttributes ] );
+	}, [ renderMode, showMapTypeControl, type, setAttributes ] );
 
 	// Link destination options track the site's mapping platform: on an
 	// OSM-powered site we only offer the OpenStreetMap preset (and vice
@@ -386,7 +392,12 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 			defaultHeight: DEFAULT_HEIGHT,
 		} );
 
-	const comboKey = `${ zoom }x${ effectiveWidth }x${ effectiveHeight }`;
+	const comboKey = buildComboKey(
+		zoom,
+		effectiveWidth,
+		effectiveHeight,
+		type || 'roadmap'
+	);
 	const staticMapDescriptor = pickDescriptorForCombo(
 		staticMapDescriptors,
 		comboKey,
@@ -432,7 +443,23 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 	const [ isParentGuarded ] = useSharedBlockGuardState( parentGuardKey );
 
 	// Close the "async descriptor arrived while placeholder is showing"
-	// gap — see `usePlaceholderPolling` for the cadence + bail-out logic.
+	// gap — see `usePlaceholderPolling` for ensure-only + poll cadence.
+	let activeCombo = null;
+	if (
+		isStaticMode &&
+		! hasUnsavedMapInputs &&
+		! staticMapUrl &&
+		0 < venuePostId
+	) {
+		activeCombo = {
+			key: comboKey,
+			zoom,
+			width: effectiveWidth,
+			height: effectiveHeight,
+			aspectRatio,
+			mapType: type || 'roadmap',
+		};
+	}
 	usePlaceholderPolling( {
 		active:
 			showStaticPlaceholder &&
@@ -441,6 +468,7 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 			Boolean( longitude ),
 		venuePostId,
 		venuePostType,
+		combo: activeCombo,
 	} );
 
 	// Keep the href in sync with a preset link destination so toggling the
@@ -576,6 +604,7 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 									width={ effectiveWidth }
 									height={ effectiveHeight }
 									aspectRatio={ aspectRatio }
+									mapType={ type }
 									label={ __(
 										'Generate map',
 										'gatherpress'
@@ -655,6 +684,7 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 							width={ effectiveWidth }
 							height={ effectiveHeight }
 							aspectRatio={ aspectRatio }
+							mapType={ type }
 							disabled={
 								! address || hasUnsavedMapInputs
 							}

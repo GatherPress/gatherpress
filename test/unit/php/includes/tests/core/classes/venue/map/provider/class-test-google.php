@@ -147,7 +147,7 @@ class Test_Google extends Base {
 		$url = Utility::invoke_hidden_method(
 			new Google(),
 			'build_static_map_url',
-			array( 40.7128, -74.0060, 12, 320, 240, 1, 'secret-key' )
+			array( 40.7128, -74.0060, 12, 320, 240, 1, 'roadmap', 'secret-key' )
 		);
 
 		$this->assertStringStartsWith( Google::STATIC_MAP_API_URL, $url );
@@ -159,6 +159,70 @@ class Test_Google extends Base {
 		$this->assertStringContainsString( 'maptype=roadmap', $url );
 		$this->assertStringContainsString( 'markers=', $url );
 		$this->assertStringContainsString( 'key=secret-key', $url );
+	}
+
+	/**
+	 * Static Maps API requests pass through hybrid and terrain map types.
+	 *
+	 * @covers ::build_static_map_url
+	 *
+	 * @return void
+	 */
+	public function test_build_static_map_url_supports_hybrid_map_type(): void {
+		$url = Utility::invoke_hidden_method(
+			new Google(),
+			'build_static_map_url',
+			array( 40.7128, -74.0060, 12, 320, 240, 1, 'hybrid', 'secret-key' )
+		);
+
+		$this->assertStringContainsString( 'maptype=hybrid', $url );
+	}
+
+	/**
+	 * Unsupported map types are coerced to roadmap before the API call.
+	 *
+	 * @covers ::render
+	 *
+	 * @return void
+	 */
+	public function test_render_coerces_unsupported_map_type_to_roadmap(): void {
+		if ( ! function_exists( 'imagecreatetruecolor' ) ) {
+			$this->markTestSkipped( 'GD extension is not available.' );
+		}
+
+		$captured_url = '';
+		$capture      = function ( $preempt, $args, $url ) use ( &$captured_url ) {
+			unset( $preempt, $args );
+			$captured_url = $url;
+
+			return array(
+				'response' => array(
+					'code'    => 200,
+					'message' => 'OK',
+				),
+				'body'     => $this->map_png,
+				'headers'  => array(),
+			);
+		};
+
+		remove_filter( 'pre_http_request', array( $this, 'short_circuit_static_map_requests' ), 10 );
+		add_filter( 'pre_http_request', $capture, 10, 3 );
+
+		$image = ( new Google() )->render(
+			40.7128,
+			-74.0060,
+			12,
+			320,
+			240,
+			1,
+			'not-a-valid-type'
+		);
+
+		remove_filter( 'pre_http_request', $capture, 10 );
+		add_filter( 'pre_http_request', array( $this, 'short_circuit_static_map_requests' ), 10, 3 );
+
+		$this->assertInstanceOf( GdImage::class, $image );
+		$this->assertStringContainsString( 'maptype=roadmap', $captured_url );
 	}
 
 	/**

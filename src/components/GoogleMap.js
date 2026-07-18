@@ -158,6 +158,30 @@ const GoogleMap = ( props ) => {
 	// size (explicit height or aspect ratio), matching OpenStreetMap.
 	const style = { border: 0, height: '100%', width: '100%' };
 
+	// Check for valid latitude and longitude before rendering.
+	const validLat =
+		latitude && '' !== latitude && ! isNaN( parseFloat( latitude ) );
+	const validLng =
+		longitude && '' !== longitude && ! isNaN( parseFloat( longitude ) );
+
+	// Show placeholder when no valid coordinates — avoids keyed Embed API
+	// requests with an invalid `center` param on new events before geocode.
+	if ( ! validLat || ! validLng ) {
+		return (
+			<div
+				className={ className }
+				style={ {
+					...style,
+					backgroundColor: '#e0e0e0',
+					display: 'flex',
+					alignItems: 'center',
+					justifyContent: 'center',
+					color: '#757575',
+				} }
+			></div>
+		);
+	}
+
 	const srcURL = getGoogleMapEmbedSrc( {
 		latitude,
 		longitude,

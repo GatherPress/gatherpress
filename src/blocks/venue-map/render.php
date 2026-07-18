@@ -78,13 +78,16 @@ $gatherpress_scale           = in_array( $gatherpress_scale_candidate, Map::SCAL
 	? $gatherpress_scale_candidate
 	: Map::DEFAULT_SCALE;
 
+$gatherpress_map_type = (string) ( $attributes['type'] ?? Map::DEFAULT_MAP_TYPE );
+
 $gatherpress_static_map_descriptor = Map::get_instance()->get_descriptor_for_post(
 	$gatherpress_post_id,
 	$gatherpress_post_type,
 	$gatherpress_zoom,
 	0,
 	$gatherpress_raw_height,
-	$gatherpress_ratio
+	$gatherpress_ratio,
+	$gatherpress_map_type
 );
 
 $gatherpress_static_map_url    = null !== $gatherpress_static_map_descriptor
