@@ -71,15 +71,19 @@ final class Email extends Base {
 	/**
 	 * Get the display name for an email-based RSVP.
 	 *
-	 * Returns the email address itself, sanitized.
+	 * The address is the best displayable name an email identity has.
+	 * No sanitization is needed here: the Identity constructor already
+	 * rejected anything that is not a valid address, and sanitizing on
+	 * read could silently return a modified string that diverges from
+	 * the stored identity value.
 	 *
 	 * @since 0.35.0
 	 *
 	 * @param Identity $identity The identity.
 	 *
-	 * @return string The sanitized email address.
+	 * @return string The email address.
 	 */
 	public function get_display_name( Identity $identity ): string {
-		return sanitize_email( $identity->value );
+		return (string) $identity->value;
 	}
 }

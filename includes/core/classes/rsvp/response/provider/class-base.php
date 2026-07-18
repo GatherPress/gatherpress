@@ -77,7 +77,15 @@ abstract class Base {
 	abstract public static function get_icon(): string;
 
 	/**
-	 * Get display name.
+	 * Get the best displayable name for an identity.
+	 *
+	 * "Display name" follows WordPress semantics — the best available
+	 * name to show, not necessarily a proper human name. Providers with
+	 * no real name to offer fall back to the identity value itself (the
+	 * email provider returns the address), mirroring how core's
+	 * `WP_User::display_name` falls back to the login or email. This is
+	 * the fallback source for `Identity::$display_name` when a stored
+	 * response carries no explicit author name.
 	 *
 	 * @since 0.35.0
 	 *
