@@ -12,6 +12,7 @@ use GatherPress\Core\Blocks\Venue as Venue_Block;
 use GatherPress\Core\Event;
 use GatherPress\Core\Venue;
 use GatherPress\Tests\Base;
+use PMC\Unit_Test\Utility;
 use WP_Block;
 
 /**
@@ -24,6 +25,27 @@ class Test_Venue extends Base {
 
 
 
+
+	/**
+	 * The constructor registers nothing — render.php drives the block by
+	 * calling render_inner_blocks() directly, so no render filter may be
+	 * hooked.
+	 *
+	 * @since 0.34.0
+	 * @covers ::__construct
+	 *
+	 * @return void
+	 */
+	public function test_constructor_registers_no_hooks(): void {
+		$instance = Venue_Block::get_instance();
+
+		Utility::invoke_hidden_method( $instance, '__construct' );
+
+		$this->assertFalse(
+			has_filter( sprintf( 'render_block_%s', Venue_Block::BLOCK_NAME ) ),
+			'The venue block must not hook render filters — the old filter architecture stays retired.'
+		);
+	}
 
 	/**
 	 * Tests render_block returns empty string when no venue is found.
