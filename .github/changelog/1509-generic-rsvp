@@ -1,0 +1,4 @@
+Significance: minor
+Type: changed
+
+The RSVP system is rebuilt on a generic provider architecture: responses flow through identity providers (user account and email) registered in a provider registry, so plugins can add their own RSVP identity types. A new `gatherpress_loaded` action fires once GatherPress finishes bootstrapping — the hook where such providers register.
