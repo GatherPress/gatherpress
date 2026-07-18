@@ -18,7 +18,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Event;
 use GatherPress\Core\Utility;
-use GatherPress\Core\Rsvp\Response\Provider\Provider;
+use GatherPress\Core\Rsvp\Response\Provider\Base as Provider;
 use GatherPress\Core\Rsvp;
 use GatherPress\Core\Rsvp\Response\Status;
 use WP_List_Table;

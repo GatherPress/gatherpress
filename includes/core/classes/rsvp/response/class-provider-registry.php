@@ -15,7 +15,7 @@ namespace GatherPress\Core\Rsvp\Response;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
-use GatherPress\Core\Rsvp\Response\Provider\Provider;
+use GatherPress\Core\Rsvp\Response\Provider\Base as Provider;
 use GatherPress\Core\Rsvp\Response\Provider\Email;
 use GatherPress\Core\Rsvp\Response\Provider\User;
 use GatherPress\Core\Traits\Singleton;

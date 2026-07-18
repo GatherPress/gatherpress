@@ -21,7 +21,8 @@ use GatherPress\Core\Rsvp\Response\Identity_Type;
  *
  * @since 0.35.0
  */
-abstract class Provider {
+abstract class Base {
+
 	/**
 	 * Constant representing the RSVP provider taxonomy.
 	 * This constant defines the provider taxonomy for RSVP comment type.

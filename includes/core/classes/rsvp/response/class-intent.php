@@ -10,7 +10,7 @@ namespace GatherPress\Core\Rsvp\Response;
 
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
-use GatherPress\Core\Rsvp\Response\Provider\Provider;
+use GatherPress\Core\Rsvp\Response\Provider\Base as Provider;
 
 /**
  * RSVP Response intent.

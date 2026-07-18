@@ -24,7 +24,7 @@ use WP_User;
  *
  * @since 0.35.0
  */
-final class User extends Provider {
+final class User extends Base {
 	/**
 	 * Return the slug.
 	 *

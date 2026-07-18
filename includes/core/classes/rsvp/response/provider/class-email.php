@@ -23,7 +23,7 @@ use GatherPress\Core\Rsvp\Response\Identity_Type;
  *
  * @since 0.35.0
  */
-final class Email extends Provider {
+final class Email extends Base {
 	/**
 	 * Return the slug.
 	 *

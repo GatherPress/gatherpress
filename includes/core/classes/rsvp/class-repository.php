@@ -18,7 +18,7 @@ use GatherPress\Core\Rsvp\Response\Identity;
 use GatherPress\Core\Rsvp\Response\Identity_Type;
 use GatherPress\Core\Rsvp\Response\Intent;
 use GatherPress\Core\Rsvp\Response\Provider\Email;
-use GatherPress\Core\Rsvp\Response\Provider\Provider;
+use GatherPress\Core\Rsvp\Response\Provider\Base as Provider;
 use GatherPress\Core\Rsvp\Response\Provider\User;
 use GatherPress\Core\Rsvp\Response\Provider_Registry;
 use GatherPress\Core\Rsvp\Response\State;

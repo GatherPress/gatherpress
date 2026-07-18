@@ -24,7 +24,7 @@ use GatherPress\Core\Rsvp\Response\Intent;
 use GatherPress\Core\Rsvp\Response\Provider_Registry;
 use GatherPress\Core\Rsvp\Response\State;
 use GatherPress\Core\Rsvp\Response\Status;
-use GatherPress\Core\Rsvp\Response\Provider\Provider;
+use GatherPress\Core\Rsvp\Response\Provider\Base as Provider;
 use GatherPress\Core\Settings;
 use GatherPress\Core\Settings\Roles;
 use WP_Comment;
