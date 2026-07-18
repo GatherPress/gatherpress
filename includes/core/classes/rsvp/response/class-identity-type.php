@@ -29,4 +29,24 @@ enum Identity_Type: string {
 	case WP_USER_ID  = 'wp_user_id';
 	case URL         = 'url';
 	case EXTERNAL_ID = 'external_id';
+
+	/**
+	 * Get all identity type values as an array of strings.
+	 *
+	 * Mirrors the `values()` helper on the sibling `Status` and
+	 * `Visibility` enums.
+	 *
+	 * @since 0.35.0
+	 *
+	 * @return array<int, string> The backed values of every case.
+	 */
+	public static function values(): array {
+		$values = array();
+
+		foreach ( self::cases() as $case ) {
+			$values[] = $case->value;
+		}
+
+		return $values;
+	}
 }

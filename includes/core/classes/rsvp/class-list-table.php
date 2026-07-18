@@ -497,7 +497,9 @@ class List_Table extends WP_List_Table {
 					return '';
 				}
 
-				return Provider_Registry::get_instance()->get( $terms[0] ) ?? '-';
+				$provider = Provider_Registry::get_instance()->get( $terms[0]->slug );
+
+				return $provider ? $provider::get_label() : '-';
 			default:
 				// Default assignment already covers this arm.
 				break;

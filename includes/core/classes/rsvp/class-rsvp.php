@@ -82,9 +82,9 @@ class Rsvp {
 	 * The event post object associated with this RSVP instance.
 	 *
 	 * @since 0.34.0
-	 * @var WP_Post
+	 * @var WP_Post|null Null when the instance wraps an invalid post ID.
 	 */
-	protected readonly WP_Post $event;
+	protected readonly ?WP_Post $event;
 
 	/**
 	 * Storage for RSVP Responses for this event.
@@ -271,7 +271,7 @@ class Rsvp {
 	 */
 	public function process( Intent $intent ): State|null {
 		// If no valid event or RSVP is disabled for this event return empty default response.
-		if ( 1 > $this->event->ID || ! $this->is_enabled() ) {
+		if ( 1 > ( $this->event->ID ?? 0 ) || ! $this->is_enabled() ) {
 			return null;
 		}
 
@@ -619,7 +619,9 @@ class Rsvp {
 			$guests = $current_response->data->guests;
 		}
 
-		$old_status_is_not_attending = Status::ATTENDING !== $current_response->data->status;
+		// A first-time RSVP has no prior response, which counts as "not attending".
+		$old_status_is_not_attending = null === $current_response
+			|| Status::ATTENDING !== $current_response->data->status;
 
 		$desired_status_is_attending_or_waiting_list =
 			in_array( $intent->data->status, array( Status::ATTENDING, Status::WAITING_LIST ), true );
@@ -659,11 +661,11 @@ class Rsvp {
 	 */
 	private function resolve_identity( int|string $identifier ): ?Identity {
 		if ( is_email( $identifier ) ) {
-			return new Identity( Identity_TYPE::EMAIL, $identifier );
+			return new Identity( Identity_Type::EMAIL, $identifier );
 		}
 
 		if ( is_int( $identifier ) && get_user_by( 'id', $identifier ) ) {
-			return new Identity( Identity_TYPE::WP_USER_ID, $identifier );
+			return new Identity( Identity_Type::WP_USER_ID, $identifier );
 		}
 
 		return null;

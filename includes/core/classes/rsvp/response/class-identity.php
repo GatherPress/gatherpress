@@ -82,7 +82,9 @@ final class Identity {
 				}
 				break;
 			default:
-				throw new InvalidArgumentException( 'Invalid Identity_Type' );
+				// Unreachable while the switch handles every Identity_Type case;
+				// kept as a guard for future enum additions.
+				throw new InvalidArgumentException( 'Invalid Identity_Type' ); // @codeCoverageIgnore
 		}
 	}
 }
