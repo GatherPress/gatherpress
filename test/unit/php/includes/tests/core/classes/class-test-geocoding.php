@@ -1636,20 +1636,31 @@ class Test_Geocoding extends Base {
 	}
 
 	/**
-	 * Tests the gatherpress_geocode_street_line filter reorders house number and street.
+	 * Translating the two address format strings reorders components without
+	 * any code — the way a polyglot team encodes a locale's convention.
+	 * German-style translations produce "Hauptstraße 42, 10115 Berlin".
 	 *
 	 * @covers \GatherPress\Core\Geocoding::format_photon_feature_label
 	 *
 	 * @return void
 	 */
-	public function test_geocoding_street_line_filter(): void {
+	public function test_geocoding_translated_address_formats_reorder_components(): void {
 		$instance = Geocoding::get_instance();
 
-		$callback = static function ( string $street_line, string $housenumber, string $street ): string {
-			return trim( $street . ' ' . $housenumber );
+		$translate = static function ( string $translation, string $text, string $context, string $domain ): string {
+			if ( 'gatherpress' !== $domain ) {
+				return $translation;
+			}
+			if ( 'address street line' === $context ) {
+				return '%2$s %1$s';
+			}
+			if ( 'address locality line' === $context ) {
+				return '%3$s %1$s';
+			}
+			return $translation;
 		};
 
-		add_filter( 'gatherpress_geocode_street_line', $callback, 10, 3 );
+		add_filter( 'gettext_with_context', $translate, 10, 4 );
 
 		$reordered = $this->invoke_geocoding_private(
 			$instance,
@@ -1659,15 +1670,108 @@ class Test_Geocoding extends Base {
 					'housenumber' => '42',
 					'street'      => 'Hauptstraße',
 					'city'        => 'Berlin',
+					'state'       => 'Bayern',
+					'postcode'    => '10115',
 				),
 			)
 		);
 
-		remove_filter( 'gatherpress_geocode_street_line', $callback, 10 );
+		remove_filter( 'gettext_with_context', $translate );
 
-		$this->assertStringContainsString( 'Hauptstraße 42', $reordered );
-		$this->assertStringNotContainsString( '42 Hauptstraße', $reordered );
-		$this->assertStringContainsString( 'Berlin', $reordered );
+		$this->assertSame(
+			'Hauptstraße 42, 10115 Berlin',
+			$reordered,
+			'German-style templates flip the street line and drop the region from the locality line.'
+		);
+	}
+
+	/**
+	 * The gatherpress_formatted_address filter receives the composed label
+	 * plus every raw component and can rebuild the label wholesale.
+	 *
+	 * @covers \GatherPress\Core\Geocoding::format_photon_feature_label
+	 *
+	 * @return void
+	 */
+	public function test_geocoding_formatted_address_filter(): void {
+		$instance = Geocoding::get_instance();
+
+		$received = array();
+		$callback = static function ( string $label, array $components ) use ( &$received ): string {
+			$received = $components;
+			return trim( $components['street'] . ' ' . $components['house_number'] )
+				. ', ' . $components['postcode'] . ' ' . $components['locality'];
+		};
+
+		add_filter( 'gatherpress_formatted_address', $callback, 10, 2 );
+
+		$rebuilt = $this->invoke_geocoding_private(
+			$instance,
+			'format_photon_feature_label',
+			array(
+				array(
+					'housenumber' => '42',
+					'street'      => 'Hauptstraße',
+					'city'        => 'Berlin',
+					'state'       => 'Berlin',
+					'postcode'    => '10115',
+					'country'     => 'Deutschland',
+					'countrycode' => 'DE',
+				),
+			)
+		);
+
+		remove_filter( 'gatherpress_formatted_address', $callback );
+
+		$this->assertSame( 'Hauptstraße 42, 10115 Berlin', $rebuilt );
+		$this->assertSame(
+			array(
+				'house_number' => '42',
+				'street'       => 'Hauptstraße',
+				'name'         => '',
+				'locality'     => 'Berlin',
+				'region'       => '',
+				'postcode'     => '10115',
+				'country'      => 'Deutschland',
+				'country_code' => 'DE',
+			),
+			$received,
+			'Every raw component reaches the filter; the duplicate region is blanked.'
+		);
+	}
+
+	/**
+	 * Branch coverage for normalize_address_line — dangling separators from
+	 * empty components, inner space collapse, and the all-empty case.
+	 *
+	 * @covers \GatherPress\Core\Geocoding::normalize_address_line
+	 *
+	 * @return void
+	 */
+	public function test_geocoding_private_normalize_address_line(): void {
+		$instance = Geocoding::get_instance();
+
+		$cases = array(
+			'Montclair, , 07042' => 'Montclair, 07042',
+			' Main Road'         => 'Main Road',
+			'Montclair  07042'   => 'Montclair 07042',
+			', , '               => '',
+			''                   => '',
+			'0 Main Road, 0'     => '0 Main Road, 0',
+			'A, B, C'            => 'A, B, C',
+		);
+
+		foreach ( $cases as $input => $expected ) {
+			$this->assertSame(
+				$expected,
+				$this->invoke_geocoding_private(
+					$instance,
+					'normalize_address_line',
+					array( (string) $input )
+				),
+				sprintf( 'Input "%s" should normalize cleanly.', $input )
+			);
+		}
 	}
 
 	/**

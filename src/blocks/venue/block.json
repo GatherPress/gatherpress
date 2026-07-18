@@ -8,7 +8,11 @@
 	"icon": "location",
 	"example": {},
 	"description": "Provides information about an event venue.",
-	"usesContext": [ "postId", "postType", "queryId" ],
+	"usesContext": [
+		"postId",
+		"postType",
+		"queryId"
+	],
 	"attributes": {
 		"sourcePostType": {
 			"type": "string",
@@ -30,16 +34,16 @@
 			"blockGuard": true,
 			"postIdOverride": true
 		},
-		"align": [ "wide", "full" ],
+		"align": [
+			"wide",
+			"full"
+		],
 		"html": false,
 		"interactivity": {
 			"clientNavigation": true
 		},
-		"layout": {
-			"default": {
-				"type": "constrained"
-			}
-		}
+		"layout": true,
+		"listView": true
 	},
 	"textdomain": "gatherpress",
 	"editorScript": "file:./index.js",

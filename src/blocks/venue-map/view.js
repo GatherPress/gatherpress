@@ -43,7 +43,6 @@ domReady( () => {
 				longitude={ attrs.longitude }
 				zoom={ attrs.mapZoomLevel }
 				type={ attrs.mapType }
-				height={ attrs.mapHeight }
 				mapPlatform={ attrs.mapPlatform }
 				pluginUrl={ attrs.pluginUrl }
 				googleMapsApiKey={ attrs.googleMapsApiKey }

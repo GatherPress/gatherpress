@@ -144,12 +144,6 @@ class Test_Map extends Base {
 			),
 			array(
 				'type'     => 'action',
-				'name'     => 'rest_api_init',
-				'priority' => 10,
-				'callback' => array( $instance, 'register_rest_routes' ),
-			),
-			array(
-				'type'     => 'action',
 				'name'     => 'update_option_gatherpress_settings',
 				'priority' => 10,
 				'callback' => array( $instance, 'maybe_handle_settings_change' ),
@@ -213,7 +207,11 @@ class Test_Map extends Base {
 
 		$this->assertSame( 'static', $result['attributes']['renderMode']['default'] );
 		$this->assertSame( 12, $result['attributes']['zoom']['default'] );
-		$this->assertSame( 450, $result['attributes']['height']['default'] );
+		$this->assertSame(
+			300,
+			$result['attributes']['height']['default'],
+			'Height is style-driven (style.dimensions) — the Settings default must not stamp an attribute default.'
+		);
 		$this->assertSame( 'contain', $result['attributes']['scale']['default'] );
 		$this->assertSame( 'satellite', $result['attributes']['type']['default'] );
 	}
@@ -412,6 +410,12 @@ class Test_Map extends Base {
 			$baseline,
 			$instance->hash_for( $info, 15, 800, 500, 'osm' ),
 			'Hash should change when the height changes.'
+		);
+
+		$this->assertNotSame(
+			$baseline,
+			$instance->hash_for( $info, 15, 800, 400, 'osm', 'hybrid' ),
+			'Hash should change when the map type changes.'
 		);
 
 		// Same address + coords hash identically, regardless of post —
@@ -674,21 +678,21 @@ class Test_Map extends Base {
 			Map::META_KEY,
 			array(
 				'osm' => array(
-					'15x600x300'    => array(
+					'15x600x300xroadmap' => array(
 						'url'    => 'https://example.test/a.png',
 						'hash'   => 'abc',
 						'zoom'   => 15,
 						'width'  => 600,
 						'height' => 300,
 					),
-					'18x800x400'    => 'not-an-array',
-					'20x1000x500'   => array(
+					'18x800x400'         => 'not-an-array',
+					'20x1000x500'        => array(
 						'url'    => 'https://example.test/b.png',
 						'zoom'   => 20,
 						'width'  => 1000,
 						'height' => 500,
 					), // Missing hash.
-					'missing-shape' => array(
+					'missing-shape'      => array(
 						'url'  => 'https://example.test/c.png',
 						'hash' => 'def',
 					), // Missing zoom/width/height.
@@ -699,13 +703,13 @@ class Test_Map extends Base {
 		$descriptors = $instance->get_all_descriptors( $post_id );
 
 		$this->assertArrayHasKey( 'osm', $descriptors );
-		$this->assertArrayHasKey( '15x600x300', $descriptors['osm'] );
+		$this->assertArrayHasKey( '15x600x300xroadmap', $descriptors['osm'] );
 		$this->assertArrayNotHasKey( '18x800x400', $descriptors['osm'] );
 		$this->assertArrayNotHasKey( '20x1000x500', $descriptors['osm'] );
 		$this->assertArrayNotHasKey( 'missing-shape', $descriptors['osm'] );
-		$this->assertSame( 15, $descriptors['osm']['15x600x300']['zoom'] );
-		$this->assertSame( 600, $descriptors['osm']['15x600x300']['width'] );
-		$this->assertSame( 300, $descriptors['osm']['15x600x300']['height'] );
+		$this->assertSame( 15, $descriptors['osm']['15x600x300xroadmap']['zoom'] );
+		$this->assertSame( 600, $descriptors['osm']['15x600x300xroadmap']['width'] );
+		$this->assertSame( 300, $descriptors['osm']['15x600x300xroadmap']['height'] );
 
 		// Read path must not mutate the meta — writing on every render would
 		// thrash the post-meta cache and churn the DB. Cleanup is deferred
@@ -737,7 +741,7 @@ class Test_Map extends Base {
 			Map::META_KEY,
 			array(
 				'osm' => array(
-					'15x600x300' => array(
+					'15x600x300xroadmap' => array(
 						'url'    => 'https://example.test/a.png',
 						'hash'   => 'abc',
 						'zoom'   => 15,
@@ -771,13 +775,13 @@ class Test_Map extends Base {
 		remove_filter( 'gatherpress_static_map_descriptors', $override, 10 );
 
 		$this->assertSame(
-			sprintf( 'https://cdn.test/%d-osm-15x600x300.png', $post_id ),
-			$descriptors['osm']['15x600x300']['url'],
+			sprintf( 'https://cdn.test/%d-osm-15x600x300xroadmap.png', $post_id ),
+			$descriptors['osm']['15x600x300xroadmap']['url'],
 			'Filter can rewrite a URL.'
 		);
 		$this->assertSame(
 			$post_id,
-			$descriptors['osm']['15x600x300']['post_id'],
+			$descriptors['osm']['15x600x300xroadmap']['post_id'],
 			'Filter receives the venue post ID as its second argument.'
 		);
 
@@ -841,7 +845,7 @@ class Test_Map extends Base {
 		$this->assertArrayNotHasKey( 'no-hash', $stored['osm'] );
 
 		$default_key = sprintf(
-			'%dx%dx%d',
+			'%dx%dx%dxroadmap',
 			Map::DEFAULT_ZOOM,
 			Map::DEFAULT_HEIGHT * 2,
 			Map::DEFAULT_HEIGHT
@@ -868,7 +872,7 @@ class Test_Map extends Base {
 		$instance->maybe_generate( $post_id );
 
 		$default_key = sprintf(
-			'%dx%dx%d',
+			'%dx%dx%dxroadmap',
 			Map::DEFAULT_ZOOM,
 			Map::DEFAULT_HEIGHT * 2,
 			Map::DEFAULT_HEIGHT
@@ -886,7 +890,7 @@ class Test_Map extends Base {
 		// Request a different zoom — simulates a block customized to zoom 14.
 		// Auto width at 2:1 ratio against DEFAULT_HEIGHT → DEFAULT_HEIGHT*2.
 		$new_key = sprintf(
-			'14x%dx%d',
+			'14x%dx%dxroadmap',
 			Map::DEFAULT_HEIGHT * 2,
 			Map::DEFAULT_HEIGHT
 		);
@@ -938,7 +942,7 @@ class Test_Map extends Base {
 		$this->assertNotEmpty( $tall_url );
 
 		// Auto width at 2:1 ratio on height=500 → 1000.
-		$key = sprintf( '%dx1000x500', Map::DEFAULT_ZOOM );
+		$key = sprintf( '%dx1000x500xroadmap', Map::DEFAULT_ZOOM );
 		$all = $instance->get_all_descriptors( $post_id );
 
 		$this->assertArrayHasKey( $key, $all['osm'], 'Tall-height combo should be cached under its own key.' );
@@ -969,13 +973,13 @@ class Test_Map extends Base {
 
 		// Default combo from DEFAULT_HEIGHT + auto width at 2:1 = 600×300.
 		$default_key = sprintf(
-			'%dx%dx%d',
+			'%dx%dx%dxroadmap',
 			Map::DEFAULT_ZOOM,
 			Map::DEFAULT_HEIGHT * 2,
 			Map::DEFAULT_HEIGHT
 		);
 		// Second combo: zoom=14, height=500, auto width at 2:1 = 1000×500.
-		$second_key = '14x1000x500';
+		$second_key = '14x1000x500xroadmap';
 
 		$before = $instance->get_all_descriptors( $post_id );
 
@@ -1014,6 +1018,77 @@ class Test_Map extends Base {
 			$before['osm'][ $default_key ]['url'],
 			$after['osm'][ $default_key ]['url'],
 			'Address change produces a different URL via the slug.'
+		);
+	}
+
+	/**
+	 * A content change regenerates each cached variant preserving its own
+	 * map type, so a non-default type at the same dimensions is not
+	 * collapsed onto the site default.
+	 *
+	 * @covers ::maybe_generate
+	 * @covers ::get_cached_combos
+	 *
+	 * @return void
+	 */
+	public function test_maybe_generate_preserves_map_type_variants(): void {
+		$instance = Map::get_instance();
+		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
+
+		update_post_meta( $post_id, 'gatherpress_address', '1 Infinite Loop' );
+		update_post_meta( $post_id, 'gatherpress_latitude', '37.3318' );
+		update_post_meta( $post_id, 'gatherpress_longitude', '-122.0312' );
+		$instance->maybe_generate( $post_id );
+		// Warm a hybrid variant at the same dimensions as the default combo.
+		$instance->get_url_for_post(
+			$post_id,
+			Venue::POST_TYPE,
+			Map::DEFAULT_ZOOM,
+			Map::DEFAULT_HEIGHT * 2,
+			Map::DEFAULT_HEIGHT,
+			'',
+			'hybrid'
+		);
+
+		$roadmap_key = sprintf(
+			'%dx%dx%dxroadmap',
+			Map::DEFAULT_ZOOM,
+			Map::DEFAULT_HEIGHT * 2,
+			Map::DEFAULT_HEIGHT
+		);
+		$hybrid_key  = sprintf(
+			'%dx%dx%dxhybrid',
+			Map::DEFAULT_ZOOM,
+			Map::DEFAULT_HEIGHT * 2,
+			Map::DEFAULT_HEIGHT
+		);
+
+		$before = $instance->get_all_descriptors( $post_id );
+		$this->assertCount( 2, $before['osm'] );
+		$this->assertArrayHasKey( $roadmap_key, $before['osm'] );
+		$this->assertArrayHasKey( $hybrid_key, $before['osm'] );
+
+		update_post_meta( $post_id, 'gatherpress_address', '60 29th Street #343, San Francisco, CA 94110' );
+		update_post_meta( $post_id, 'gatherpress_latitude', '37.7573' );
+		update_post_meta( $post_id, 'gatherpress_longitude', '-122.4132' );
+		$instance->maybe_generate( $post_id );
+
+		$after = $instance->get_all_descriptors( $post_id );
+
+		$this->assertCount(
+			2,
+			$after['osm'],
+			'Both map-type variants should survive the content-change cascade.'
+		);
+		$this->assertArrayHasKey(
+			$hybrid_key,
+			$after['osm'],
+			'The hybrid variant must not be collapsed onto the default map type.'
+		);
+		$this->assertNotSame(
+			$before['osm'][ $hybrid_key ]['hash'],
+			$after['osm'][ $hybrid_key ]['hash'],
+			'Hybrid-variant hash should change with new coordinates.'
 		);
 	}
 
@@ -1264,7 +1339,7 @@ class Test_Map extends Base {
 		$this->assertSame( 15, $descriptor['zoom'] );
 		$this->assertSame( 800, $descriptor['width'] );
 		$this->assertSame( 400, $descriptor['height'] );
-		$this->assertStringEndsWith( '1-infinite-loop-osm-15-800-400.png', $descriptor['url'] );
+		$this->assertStringEndsWith( '1-infinite-loop-osm-roadmap-15-800-400.png', $descriptor['url'] );
 	}
 
 	/**
@@ -1304,17 +1379,17 @@ class Test_Map extends Base {
 
 		// Empty string → fallback slug.
 		$empty = Utility::invoke_hidden_method( $instance, 'filename_for', array( '', 15, 800, 400, 'osm' ) );
-		$this->assertSame( 'venue-osm-15-800-400.png', $empty );
+		$this->assertSame( 'venue-osm-roadmap-15-800-400.png', $empty );
 
 		// All-special-char input sanitize_title strips to '' → fallback.
 		$weird = Utility::invoke_hidden_method( $instance, 'filename_for', array( '!!!', 15, 800, 400, 'osm' ) );
-		$this->assertSame( 'venue-osm-15-800-400.png', $weird );
+		$this->assertSame( 'venue-osm-roadmap-15-800-400.png', $weird );
 
 		// Long slugs get truncated so the full filename stays under fs caps.
 		$long    = str_repeat( 'a', 300 );
 		$result  = Utility::invoke_hidden_method( $instance, 'filename_for', array( $long, 18, 600, 300, 'osm' ) );
 		$matches = array();
-		preg_match( '/^([a-z]+)-osm-18-600-300\.png$/', $result, $matches );
+		preg_match( '/^([a-z]+)-osm-roadmap-18-600-300\.png$/', $result, $matches );
 		$this->assertNotEmpty( $matches, 'Truncated filename still matches the expected pattern.' );
 		$this->assertSame( 150, strlen( $matches[1] ), 'Slug is capped at 150 characters.' );
 	}
@@ -1375,7 +1450,7 @@ class Test_Map extends Base {
 
 		$this->assertNotNull( $url, 'save_image should return a URL on success.' );
 		$this->assertStringContainsString( Map::UPLOADS_SUBDIR, $url );
-		$this->assertStringEndsWith( '1-infinite-loop-osm-15-800-400.png', $url );
+		$this->assertStringEndsWith( '1-infinite-loop-osm-roadmap-15-800-400.png', $url );
 
 		$path = $this->path_for_url( $url );
 		$this->assertFileExists( $path );
@@ -1391,16 +1466,9 @@ class Test_Map extends Base {
 	public function test_parse_coord(): void {
 		$instance = Map::get_instance();
 
-		$this->assertSame(
-			37.3318,
-			Utility::invoke_hidden_method( $instance, 'parse_coord', array( '37.3318' ) )
-		);
-		$this->assertNull(
-			Utility::invoke_hidden_method( $instance, 'parse_coord', array( 'not a number' ) )
-		);
-		$this->assertNull(
-			Utility::invoke_hidden_method( $instance, 'parse_coord', array( '' ) )
-		);
+		$this->assertSame( 37.3318, $instance->parse_coord( '37.3318' ) );
+		$this->assertNull( $instance->parse_coord( 'not a number' ) );
+		$this->assertNull( $instance->parse_coord( '' ) );
 	}
 
 	/**
@@ -1523,7 +1591,7 @@ class Test_Map extends Base {
 	}
 
 	/**
-	 * Coverage for combo_key — formats `{zoom}x{width}x{height}`.
+	 * Coverage for combo_key — formats `{zoom}x{width}x{height}x{map_type}`.
 	 *
 	 * @covers ::combo_key
 	 *
@@ -1533,18 +1601,47 @@ class Test_Map extends Base {
 		$instance = Map::get_instance();
 
 		$this->assertSame(
-			'14x800x500',
+			'14x800x500xroadmap',
 			Utility::invoke_hidden_method(
 				$instance,
 				'combo_key',
 				array( 14, 800, 500 )
 			)
 		);
+
+		$this->assertSame(
+			'14x800x500xhybrid',
+			Utility::invoke_hidden_method(
+				$instance,
+				'combo_key',
+				array( 14, 800, 500, 'hybrid' )
+			)
+		);
 	}
 
 	/**
-	 * Coverage for get_cached_combos — returns unique (zoom, width, height)
-	 * combos.
+	 * Coverage for normalize_map_type — slug cleanup without provider coercion.
+	 *
+	 * @covers ::normalize_map_type
+	 *
+	 * @return void
+	 */
+	public function test_normalize_map_type_normalizes_without_provider_coercion(): void {
+		$instance = Map::get_instance();
+		$settings = Settings::get_instance();
+
+		$this->assertSame( 'hybrid', $instance->normalize_map_type( '  HYBRID ' ) );
+		$this->assertSame( 'terrain', $instance->normalize_map_type( 'terrain' ) );
+		$this->assertSame( 'roadmap', $instance->normalize_map_type( 'bogus' ) );
+
+		$settings->set( 'venue_map_default_type', 'satellite' );
+		$this->assertSame( 'satellite', $instance->normalize_map_type( '' ) );
+	}
+
+	/**
+	 * Coverage for get_cached_combos — returns unique
+	 * (zoom, width, height, map_type) combos, recovering the map type from
+	 * each stored key so distinct variants at the same dimensions survive.
 	 *
 	 * @covers ::get_cached_combos
 	 *
@@ -1565,15 +1662,22 @@ class Test_Map extends Base {
 			Map::META_KEY,
 			array(
 				'osm' => array(
-					'15x600x300'  => array(
+					'15x600x300xroadmap' => array(
 						'url'    => 'https://example.test/a.png',
 						'hash'   => 'abc',
 						'zoom'   => 15,
 						'width'  => 600,
 						'height' => 300,
 					),
-					'18x1000x500' => array(
+					'15x600x300xhybrid'  => array(
 						'url'    => 'https://example.test/b.png',
+						'hash'   => 'bcd',
+						'zoom'   => 15,
+						'width'  => 600,
+						'height' => 300,
+					),
+					'18x1000x500'        => array(
+						'url'    => 'https://example.test/c.png',
 						'hash'   => 'def',
 						'zoom'   => 18,
 						'width'  => 1000,
@@ -1585,22 +1689,38 @@ class Test_Map extends Base {
 
 		$combos = $instance->get_cached_combos( $post_id );
 
-		$this->assertCount( 2, $combos );
+		$this->assertCount(
+			3,
+			$combos,
+			'Same dimensions under different map types must remain distinct combos.'
+		);
 		$this->assertContains(
 			array(
-				'zoom'   => 15,
-				'width'  => 600,
-				'height' => 300,
+				'zoom'     => 15,
+				'width'    => 600,
+				'height'   => 300,
+				'map_type' => 'roadmap',
 			),
 			$combos
 		);
 		$this->assertContains(
 			array(
-				'zoom'   => 18,
-				'width'  => 1000,
-				'height' => 500,
+				'zoom'     => 15,
+				'width'    => 600,
+				'height'   => 300,
+				'map_type' => 'hybrid',
 			),
 			$combos
+		);
+		$this->assertContains(
+			array(
+				'zoom'     => 18,
+				'width'    => 1000,
+				'height'   => 500,
+				'map_type' => 'roadmap',
+			),
+			$combos,
+			'A legacy key without a map-type suffix falls back to the default.'
 		);
 	}
 
@@ -1851,6 +1971,70 @@ class Test_Map extends Base {
 	}
 
 	/**
+	 * Rebuilds each cached variant with its own map type, so a roadmap and
+	 * a hybrid entry at the same dimensions both survive the wipe-and-rebuild
+	 * rather than collapsing onto the requested type.
+	 *
+	 * @covers ::regenerate
+	 * @covers ::get_cached_combos
+	 *
+	 * @return void
+	 */
+	public function test_regenerate_preserves_distinct_map_type_variants(): void {
+		$instance = Map::get_instance();
+		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
+
+		add_post_meta( $post_id, 'gatherpress_address', '1 Infinite Loop' );
+		add_post_meta( $post_id, 'gatherpress_latitude', '37.3318' );
+		add_post_meta( $post_id, 'gatherpress_longitude', '-122.0312' );
+		$instance->maybe_generate( $post_id );
+		// Warm a hybrid variant at the same dimensions as the default combo.
+		$instance->get_url_for_post(
+			$post_id,
+			Venue::POST_TYPE,
+			Map::DEFAULT_ZOOM,
+			Map::DEFAULT_HEIGHT * 2,
+			Map::DEFAULT_HEIGHT,
+			'',
+			'hybrid'
+		);
+
+		$roadmap_key = sprintf(
+			'%dx%dx%dxroadmap',
+			Map::DEFAULT_ZOOM,
+			Map::DEFAULT_HEIGHT * 2,
+			Map::DEFAULT_HEIGHT
+		);
+		$hybrid_key  = sprintf(
+			'%dx%dx%dxhybrid',
+			Map::DEFAULT_ZOOM,
+			Map::DEFAULT_HEIGHT * 2,
+			Map::DEFAULT_HEIGHT
+		);
+
+		$before = $instance->get_all_descriptors( $post_id );
+		$this->assertCount( 2, $before['osm'] );
+
+		$result = $instance->regenerate( $post_id );
+
+		$this->assertCount(
+			2,
+			$result['osm'],
+			'regenerate() must preserve every distinct map-type variant.'
+		);
+		$this->assertArrayHasKey(
+			$roadmap_key,
+			$result['osm'],
+			'The roadmap variant must survive regeneration.'
+		);
+		$this->assertArrayHasKey(
+			$hybrid_key,
+			$result['osm'],
+			'The hybrid variant must survive regeneration rather than collapsing to roadmap.'
+		);
+	}
+
+	/**
 	 * When the caller supplies an extra (zoom, height), regenerate() adds
 	 * that combo to the rebuild list so the block editor's current combo
 	 * always gets a PNG on an explicit Generate click — even if the venue
@@ -1870,10 +2054,17 @@ class Test_Map extends Base {
 		// Seed one cached combo the venue "already had".
 		$instance->maybe_generate( $post_id );
 
-		$result = $instance->regenerate( $post_id, 8, 0, 295, '' );
+		$result = $instance->regenerate(
+			$post_id,
+			array(
+				'zoom'   => 8,
+				'width'  => 0,
+				'height' => 295,
+			)
+		);
 
 		// Auto-width at 2:1 on height 295 → 590.
-		$expected_key = '8x590x295';
+		$expected_key = '8x590x295xroadmap';
 		$this->assertArrayHasKey(
 			$expected_key,
 			$result['osm'],
@@ -1903,10 +2094,11 @@ class Test_Map extends Base {
 
 		$result = $instance->regenerate(
 			$post_id,
-			Map::DEFAULT_ZOOM,
-			Map::DEFAULT_HEIGHT * 2,
-			Map::DEFAULT_HEIGHT,
-			''
+			array(
+				'zoom'   => Map::DEFAULT_ZOOM,
+				'width'  => Map::DEFAULT_HEIGHT * 2,
+				'height' => Map::DEFAULT_HEIGHT,
+			)
 		);
 
 		$this->assertCount(
@@ -1938,7 +2130,7 @@ class Test_Map extends Base {
 		$result = $instance->regenerate( $post_id );
 
 		$default_key = sprintf(
-			'%dx%dx%d',
+			'%dx%dx%dxroadmap',
 			Map::DEFAULT_ZOOM,
 			Map::DEFAULT_HEIGHT * 2,
 			Map::DEFAULT_HEIGHT
@@ -1967,285 +2159,54 @@ class Test_Map extends Base {
 	}
 
 	/**
-	 * The POST /venue/{id}/regenerate-map endpoint requires edit_post on
-	 * the target venue — anonymous callers receive 401/403.
+	 * Direct ensure_combo() coverage: generates the requested combo and
+	 * returns the venue's full descriptor map.
 	 *
-	 * @covers ::register_rest_routes
-	 *
-	 * @return void
-	 */
-	public function test_rest_regenerate_requires_edit_post(): void {
-		$instance = Map::get_instance();
-		$instance->register_rest_routes();
-
-		$post_id = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
-
-		wp_set_current_user( 0 );
-
-		$request  = new \WP_REST_Request(
-			'POST',
-			sprintf( '/%s/venue/%d/regenerate-map', GATHERPRESS_REST_NAMESPACE, $post_id )
-		);
-		$response = rest_do_request( $request );
-
-		$this->assertGreaterThanOrEqual( 400, $response->get_status() );
-		$this->assertLessThan( 500, $response->get_status() );
-	}
-
-	/**
-	 * Happy-path REST call: an editor-level user regenerates a venue with
-	 * usable coordinates and gets the fresh descriptor map in the response.
-	 *
-	 * @covers ::register_rest_routes
-	 * @covers ::rest_regenerate
+	 * @covers ::ensure_combo
 	 *
 	 * @return void
 	 */
-	public function test_rest_regenerate_returns_fresh_descriptors(): void {
+	public function test_ensure_combo_generates_and_returns_full_map(): void {
 		$instance = Map::get_instance();
-		$instance->register_rest_routes();
-
-		$editor_id = $this->factory->user->create( array( 'role' => 'editor' ) );
-		$post_id   = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
+		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
 
 		add_post_meta( $post_id, 'gatherpress_address', '1 Infinite Loop' );
 		add_post_meta( $post_id, 'gatherpress_latitude', '37.3318' );
 		add_post_meta( $post_id, 'gatherpress_longitude', '-122.0312' );
 
-		wp_set_current_user( $editor_id );
-
-		$request  = new \WP_REST_Request(
-			'POST',
-			sprintf( '/%s/venue/%d/regenerate-map', GATHERPRESS_REST_NAMESPACE, $post_id )
+		$descriptors = $instance->ensure_combo(
+			$post_id,
+			array(
+				'zoom'     => 15,
+				'width'    => 800,
+				'height'   => 400,
+				'map_type' => 'hybrid',
+			)
 		);
-		$response = rest_do_request( $request );
 
-		$this->assertSame( 200, $response->get_status() );
-
-		$data = $response->get_data();
-		$this->assertArrayHasKey( 'descriptors', $data );
-		$this->assertSame( '', $data['reason'] );
-
-		$default_key = sprintf(
-			'%dx%dx%d',
-			Map::DEFAULT_ZOOM,
-			Map::DEFAULT_HEIGHT * 2,
-			Map::DEFAULT_HEIGHT
-		);
-		$this->assertArrayHasKey( 'osm', (array) $data['descriptors'] );
-		$this->assertArrayHasKey( $default_key, (array) $data['descriptors']['osm'] );
+		$this->assertArrayHasKey( '15x800x400xhybrid', $descriptors['osm'] );
 	}
 
 	/**
-	 * When the venue has no address, the REST endpoint returns a 200 with
-	 * a structured reason so the client can render the appropriate
-	 * placeholder rather than a generic error state.
+	 * Direct ensure_combo() coverage: an unresolvable venue yields an
+	 * empty map — the shape the REST handler reports as generation_failed.
 	 *
-	 * @covers ::rest_regenerate
+	 * @covers ::ensure_combo
 	 *
 	 * @return void
 	 */
-	public function test_rest_regenerate_reports_no_address_reason(): void {
+	public function test_ensure_combo_returns_empty_when_combo_cannot_generate(): void {
 		$instance = Map::get_instance();
-		$instance->register_rest_routes();
+		$post_id  = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
 
-		$editor_id = $this->factory->user->create( array( 'role' => 'editor' ) );
-		$post_id   = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
-
-		wp_set_current_user( $editor_id );
-
-		$request  = new \WP_REST_Request(
-			'POST',
-			sprintf( '/%s/venue/%d/regenerate-map', GATHERPRESS_REST_NAMESPACE, $post_id )
-		);
-		$response = rest_do_request( $request );
-
-		$this->assertSame( 200, $response->get_status() );
-		$data = $response->get_data();
-		$this->assertSame( 'no_address', $data['reason'] );
-	}
-
-	/**
-	 * When the address is set but not yet geocoded (empty lat/lng), the
-	 * endpoint reports `awaiting_geocode` so the client shows the "Save
-	 * the venue first" placeholder instead of treating it as a failure.
-	 *
-	 * @covers ::rest_regenerate
-	 *
-	 * @return void
-	 */
-	/**
-	 * Reports a `generation_failed` reason when the venue has coordinates
-	 * but every combo's PNG write fails. Simulated here by putting the
-	 * uploads dir in an error state so `save_image` returns null and the
-	 * regenerate() call comes back with an empty descriptor map.
-	 *
-	 * @covers ::rest_regenerate
-	 *
-	 * @return void
-	 */
-	public function test_rest_regenerate_reports_generation_failed_when_saves_fail(): void {
-		$instance = Map::get_instance();
-		$instance->register_rest_routes();
-
-		$editor_id = $this->factory->user->create( array( 'role' => 'editor' ) );
-		$post_id   = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
-
-		add_post_meta( $post_id, 'gatherpress_address', '1 Infinite Loop' );
-		add_post_meta( $post_id, 'gatherpress_latitude', '37.3318' );
-		add_post_meta( $post_id, 'gatherpress_longitude', '-122.0312' );
-
-		wp_set_current_user( $editor_id );
-
-		// Force save_image to fail for every combo so regenerate() returns
-		// an empty array and the REST handler enters the generation_failed
-		// branch.
-		$force_error = static function ( $dirs ) {
-			$dirs['error'] = 'Simulated uploads failure.';
-			return $dirs;
-		};
-		add_filter( 'upload_dir', $force_error );
-
-		$request = new \WP_REST_Request(
-			'POST',
-			sprintf( '/%s/venue/%d/regenerate-map', GATHERPRESS_REST_NAMESPACE, $post_id )
-		);
-		$request->set_param( 'zoom', 15 );
-		$request->set_param( 'width', 800 );
-		$request->set_param( 'height', 400 );
-		$request->set_param( 'aspect_ratio', '2/1' );
-
-		$response = rest_do_request( $request );
-
-		remove_filter( 'upload_dir', $force_error );
-
-		$this->assertSame( 200, $response->get_status() );
-		$data = $response->get_data();
-		$this->assertSame( 'generation_failed', $data['reason'] );
-	}
-
-	/**
-	 * Rejects a malformed `aspect_ratio` parameter at the REST boundary
-	 * with a 400 instead of silently falling back. Empty / valid values
-	 * (slash or colon form) pass through.
-	 *
-	 * @covers ::register_rest_routes
-	 *
-	 * @return void
-	 */
-	public function test_rest_regenerate_aspect_ratio_validator(): void {
-		$instance = Map::get_instance();
-		$instance->register_rest_routes();
-
-		$editor_id = $this->factory->user->create( array( 'role' => 'editor' ) );
-		$post_id   = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
-
-		add_post_meta( $post_id, 'gatherpress_address', '1 Infinite Loop' );
-		add_post_meta( $post_id, 'gatherpress_latitude', '37.3318' );
-		add_post_meta( $post_id, 'gatherpress_longitude', '-122.0312' );
-
-		wp_set_current_user( $editor_id );
-
-		$invalid = new \WP_REST_Request(
-			'POST',
-			sprintf( '/%s/venue/%d/regenerate-map', GATHERPRESS_REST_NAMESPACE, $post_id )
-		);
-		$invalid->set_param( 'aspect_ratio', 'not-a-ratio' );
+		// Address but no coordinates — get_descriptor_for_post() bails.
+		add_post_meta( $post_id, 'gatherpress_address', 'Nowhere' );
 
 		$this->assertSame(
-			400,
-			rest_do_request( $invalid )->get_status(),
-			'A malformed aspect_ratio string is rejected at the REST boundary.'
+			array(),
+			$instance->ensure_combo( $post_id, array( 'zoom' => 15 ) ),
+			'A venue without coordinates cannot produce the combo.'
 		);
-
-		$valid_slash = new \WP_REST_Request(
-			'POST',
-			sprintf( '/%s/venue/%d/regenerate-map', GATHERPRESS_REST_NAMESPACE, $post_id )
-		);
-		$valid_slash->set_param( 'aspect_ratio', '16/9' );
-		$this->assertSame(
-			200,
-			rest_do_request( $valid_slash )->get_status(),
-			'Slash-form aspect ratio passes.'
-		);
-
-		$valid_colon = new \WP_REST_Request(
-			'POST',
-			sprintf( '/%s/venue/%d/regenerate-map', GATHERPRESS_REST_NAMESPACE, $post_id )
-		);
-		$valid_colon->set_param( 'aspect_ratio', '4:3' );
-		$this->assertSame(
-			200,
-			rest_do_request( $valid_colon )->get_status(),
-			'Colon-form aspect ratio passes.'
-		);
-
-		$empty = new \WP_REST_Request(
-			'POST',
-			sprintf( '/%s/venue/%d/regenerate-map', GATHERPRESS_REST_NAMESPACE, $post_id )
-		);
-		$empty->set_param( 'aspect_ratio', '' );
-		$this->assertSame(
-			200,
-			rest_do_request( $empty )->get_status(),
-			'Empty aspect ratio is treated as "use server default" and passes.'
-		);
-
-		// Degenerate `0/X` / `X/0` values that CSS would treat as auto
-		// must still be rejected — the block never emits a zero side.
-		$zero_numerator = new \WP_REST_Request(
-			'POST',
-			sprintf( '/%s/venue/%d/regenerate-map', GATHERPRESS_REST_NAMESPACE, $post_id )
-		);
-		$zero_numerator->set_param( 'aspect_ratio', '0/9' );
-		$this->assertSame(
-			400,
-			rest_do_request( $zero_numerator )->get_status(),
-			'Zero numerator is rejected by the tightened [1-9] rule.'
-		);
-
-		$zero_denominator = new \WP_REST_Request(
-			'POST',
-			sprintf( '/%s/venue/%d/regenerate-map', GATHERPRESS_REST_NAMESPACE, $post_id )
-		);
-		$zero_denominator->set_param( 'aspect_ratio', '9/0' );
-		$this->assertSame(
-			400,
-			rest_do_request( $zero_denominator )->get_status(),
-			'Zero denominator is rejected by the tightened [1-9] rule.'
-		);
-	}
-
-	/**
-	 * Reports the `awaiting_geocode` reason when the venue has an address
-	 * but no resolved coordinates yet.
-	 *
-	 * @covers ::rest_regenerate
-	 *
-	 * @return void
-	 */
-	public function test_rest_regenerate_reports_awaiting_geocode_reason(): void {
-		$instance = Map::get_instance();
-		$instance->register_rest_routes();
-
-		$editor_id = $this->factory->user->create( array( 'role' => 'editor' ) );
-		$post_id   = $this->factory->post->create( array( 'post_type' => Venue::POST_TYPE ) );
-
-		add_post_meta( $post_id, 'gatherpress_address', 'Somewhere' );
-		add_post_meta( $post_id, 'gatherpress_latitude', '' );
-		add_post_meta( $post_id, 'gatherpress_longitude', '' );
-
-		wp_set_current_user( $editor_id );
-
-		$request  = new \WP_REST_Request(
-			'POST',
-			sprintf( '/%s/venue/%d/regenerate-map', GATHERPRESS_REST_NAMESPACE, $post_id )
-		);
-		$response = rest_do_request( $request );
-
-		$this->assertSame( 200, $response->get_status() );
-		$data = $response->get_data();
-		$this->assertSame( 'awaiting_geocode', $data['reason'] );
 	}
 
 	/**
@@ -2271,8 +2232,8 @@ class Test_Map extends Base {
 			array( '1 Infinite Loop', 15, 800, 400, 'osm', 2 )
 		);
 
-		$this->assertSame( '1-infinite-loop-osm-15-800-400.png', $one_x );
-		$this->assertSame( '1-infinite-loop-osm-15-800-400@2x.png', $two_x );
+		$this->assertSame( '1-infinite-loop-osm-roadmap-15-800-400.png', $one_x );
+		$this->assertSame( '1-infinite-loop-osm-roadmap-15-800-400@2x.png', $two_x );
 	}
 
 
@@ -2368,7 +2329,7 @@ class Test_Map extends Base {
 			Map::META_KEY,
 			array(
 				'osm' => array(
-					'15x600x300' => array(
+					'15x600x300xroadmap' => array(
 						'url'    => 'https://example.test/legacy.png',
 						'hash'   => 'abc',
 						'zoom'   => 15,
@@ -2383,12 +2344,12 @@ class Test_Map extends Base {
 
 		$this->assertArrayHasKey(
 			'url_2x',
-			$descriptors['osm']['15x600x300'],
+			$descriptors['osm']['15x600x300xroadmap'],
 			'Legacy descriptors still expose url_2x to callers.'
 		);
 		$this->assertSame(
 			'',
-			$descriptors['osm']['15x600x300']['url_2x'],
+			$descriptors['osm']['15x600x300xroadmap']['url_2x'],
 			'Missing url_2x normalizes to empty string.'
 		);
 	}
@@ -2709,7 +2670,7 @@ class Test_Map extends Base {
 		// slug's entry is what proves the `continue` skip in the fallback
 		// walk fires; the google entry is what the walk should ultimately
 		// return.
-		$key = sprintf( '%dx%dx%d', Map::DEFAULT_ZOOM, Map::DEFAULT_HEIGHT * 2, Map::DEFAULT_HEIGHT );
+		$key = sprintf( '%dx%dx%dxroadmap', Map::DEFAULT_ZOOM, Map::DEFAULT_HEIGHT * 2, Map::DEFAULT_HEIGHT );
 		update_post_meta(
 			$post_id,
 			Map::META_KEY,
@@ -2826,7 +2787,7 @@ class Test_Map extends Base {
 			Map::META_KEY,
 			array(
 				'osm' => array(
-					'15x600x300' => array(
+					'15x600x300xroadmap' => array(
 						'url'    => 'https://example.test/a.png',
 						'hash'   => 'abc',
 						'zoom'   => 15,
@@ -2835,7 +2796,7 @@ class Test_Map extends Base {
 					),
 				),
 				''    => array(
-					'15x600x300' => array(
+					'15x600x300xroadmap' => array(
 						'url'    => 'https://example.test/empty.png',
 						'hash'   => 'def',
 						'zoom'   => 15,
@@ -2845,7 +2806,7 @@ class Test_Map extends Base {
 				),
 				'bad' => 'not-an-array',
 				42    => array(
-					'15x600x300' => array(
+					'15x600x300xroadmap' => array(
 						'url'    => 'https://example.test/int.png',
 						'hash'   => 'ghi',
 						'zoom'   => 15,
@@ -2890,8 +2851,8 @@ class Test_Map extends Base {
 			$post_id,
 			Map::META_KEY,
 			array(
-				'osm'    => array( '15x600x300' => $entry ),
-				'google' => array( '15x600x300' => $entry ),
+				'osm'    => array( '15x600x300xroadmap' => $entry ),
+				'google' => array( '15x600x300xroadmap' => $entry ),
 			)
 		);
 
@@ -3045,12 +3006,13 @@ class Test_Map extends Base {
 			/**
 			 * Always-null render so the orchestrator's null-image branch fires.
 			 *
-			 * @param float $latitude  Unused.
-			 * @param float $longitude Unused.
-			 * @param int   $zoom      Unused.
-			 * @param int   $width     Unused.
-			 * @param int   $height    Unused.
-			 * @param int   $density   Unused.
+			 * @param float  $latitude  Unused.
+			 * @param float  $longitude Unused.
+			 * @param int    $zoom      Unused.
+			 * @param int    $width     Unused.
+			 * @param int    $height    Unused.
+			 * @param int    $density   Unused.
+			 * @param string $map_type  Unused.
 			 *
 			 * @return null
 			 */
@@ -3060,7 +3022,8 @@ class Test_Map extends Base {
 				int $zoom,
 				int $width,
 				int $height,
-				int $density = 1
+				int $density = 1,
+				string $map_type = 'roadmap'
 			) {
 				return null;
 			}

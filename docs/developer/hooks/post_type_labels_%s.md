@@ -18,7 +18,7 @@ add_filter(
 
 ## Files
 
-- [includes/core/classes/venue/class-setup.php:724](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/venue/class-setup.php#L724)
+- [includes/core/classes/venue/class-setup.php:722](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/venue/class-setup.php#L722)
 ```php
 apply_filters(
 			sprintf( // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.DynamicHooknameFound

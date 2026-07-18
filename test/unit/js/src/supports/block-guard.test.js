@@ -59,6 +59,7 @@ jest.mock( '@wordpress/hooks', () => ( {
 jest.mock( '@wordpress/element', () => ( {
 	useState: jest.fn(),
 	useEffect: jest.fn(),
+	useCallback: jest.fn( ( callback ) => callback ),
 } ) );
 
 /**
@@ -74,6 +75,8 @@ import {
 	removeDragListeners,
 	createDropHandler,
 	applyListViewGuardForBlock,
+	applyInspectorListViewGuard,
+	injectBlockGuardStyles,
 } from '@src/supports/block-guard';
 
 /**
@@ -935,5 +938,121 @@ describe( 'applyListViewGuardForBlock', () => {
 
 		expect( result ).toEqual( { expander: mockExpander } );
 		expect( mockExpander.style.pointerEvents ).toBe( 'none' );
+	} );
+} );
+
+/**
+ * Tests for applyInspectorListViewGuard function.
+ */
+describe( 'applyInspectorListViewGuard', () => {
+	let inspector;
+	let tree;
+
+	beforeEach( () => {
+		inspector = document.createElement( 'div' );
+		inspector.className = 'block-editor-block-inspector';
+
+		tree = document.createElement( 'table' );
+		tree.className = 'block-editor-list-view-tree';
+
+		inspector.appendChild( tree );
+		document.body.appendChild( inspector );
+	} );
+
+	afterEach( () => {
+		inspector.remove();
+	} );
+
+	it( 'returns null when the inspector List View tab is not rendered', () => {
+		tree.remove();
+
+		expect( applyInspectorListViewGuard( true ) ).toBeNull();
+	} );
+
+	it( 'inerts the inspector tree when enabled', () => {
+		const result = applyInspectorListViewGuard( true );
+
+		expect( result ).toBe( tree );
+		expect( tree.inert ).toBe( true );
+		expect( tree.style.opacity ).toBe( '0.95' );
+		expect( tree.style.cursor ).toBe( 'not-allowed' );
+		expect( tree.dataset.gatherPressGuarded ).toBe( 'true' );
+	} );
+
+	it( 'hides the inspector tree appender when enabled', () => {
+		const appender = document.createElement( 'div' );
+		appender.className = 'block-list-appender';
+		tree.appendChild( appender );
+
+		applyInspectorListViewGuard( true );
+
+		expect( appender.style.display ).toBe( 'none' );
+	} );
+
+	it( 'releases the inspector tree when disabled', () => {
+		applyInspectorListViewGuard( true );
+
+		const result = applyInspectorListViewGuard( false );
+
+		expect( result ).toBe( tree );
+		expect( tree.inert ).toBe( false );
+		expect( tree.style.opacity ).toBe( '' );
+		expect( tree.style.cursor ).toBe( '' );
+		expect( tree.dataset.gatherPressGuarded ).toBeUndefined();
+	} );
+
+	it( 'hides the tree appender when enabled and restores it when disabled', () => {
+		const appender = document.createElement( 'div' );
+		appender.className = 'list-view-appender';
+		tree.appendChild( appender );
+
+		applyInspectorListViewGuard( true );
+
+		expect( appender.style.display ).toBe( 'none' );
+
+		applyInspectorListViewGuard( false );
+
+		expect( appender.style.display ).toBe( '' );
+	} );
+} );
+
+/**
+ * Pristine jsdom document captured at load time, before any describe swaps
+ * global.document for a mock (in jest's jsdom environment global IS window,
+ * so window.document offers no escape hatch once overwritten).
+ */
+const realDocument = global.document;
+
+/**
+ * Tests for injectBlockGuardStyles function.
+ */
+describe( 'injectBlockGuardStyles', () => {
+	beforeEach( () => {
+		global.document = realDocument;
+
+		// Earlier describes overwrite these as own properties on the shared
+		// document object, shadowing the jsdom prototype methods; deleting
+		// the shadows restores the real implementations.
+		delete document.getElementById;
+		delete document.querySelectorAll;
+		delete document.createElement;
+	} );
+
+	afterEach( () => {
+		document.getElementById( 'gatherpress-block-guard-style' )?.remove();
+	} );
+
+	it( 'injects the panel-ordering stylesheet exactly once', () => {
+		injectBlockGuardStyles();
+		injectBlockGuardStyles();
+
+		const styles = document.querySelectorAll(
+			'#gatherpress-block-guard-style',
+		);
+
+		expect( styles ).toHaveLength( 1 );
+		expect( styles[ 0 ].textContent ).toContain(
+			'.gatherpress-block-guard-panel',
+		);
 	} );
 } );

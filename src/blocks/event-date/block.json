@@ -22,6 +22,11 @@
 			"type": "string",
 			"default": "both"
 		},
+		"isLink": {
+			"type": "boolean",
+			"default": false,
+			"role": "content"
+		},
 		"startDateFormat": {
 			"type": "string",
 			"default": ""
