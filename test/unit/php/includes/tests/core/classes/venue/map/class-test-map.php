@@ -1446,7 +1446,7 @@ class Test_Map extends Base {
 		$canvas   = imagecreatetruecolor( 10, 10 );
 
 		$url = $instance->save_image( $canvas, '1 Infinite Loop', 15, 800, 400, 1, 'osm' );
-		unset( $canvas );
+		imagedestroy( $canvas );
 
 		$this->assertNotNull( $url, 'save_image should return a URL on success.' );
 		$this->assertStringContainsString( Map::UPLOADS_SUBDIR, $url );
@@ -1744,7 +1744,7 @@ class Test_Map extends Base {
 		$url = $instance->save_image( $canvas, 'test address', 15, 800, 400, 1, 'osm' );
 
 		remove_filter( 'upload_dir', $force_error );
-		unset( $canvas );
+		imagedestroy( $canvas );
 
 		$this->assertNull(
 			$url,
