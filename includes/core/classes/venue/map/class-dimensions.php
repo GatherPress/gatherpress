@@ -76,11 +76,19 @@ class Dimensions {
 			return max( 0, (int) round( (float) $value ) );
 		}
 
-		if ( is_string( $value ) && preg_match( '#\A\s*(\d+(?:\.\d+)?)\s*(?:px)?\s*\z#', $value, $matches ) ) {
-			return max( 0, (int) round( (float) $matches[1] ) );
+		if ( ! is_string( $value ) ) {
+			return 0;
 		}
 
-		return 0;
+		$value = trim( $value );
+
+		// Strip a px suffix; any other unit (%, rem, keywords) leaves a
+		// non-numeric remainder and resolves to auto below.
+		if ( str_ends_with( $value, 'px' ) ) {
+			$value = trim( substr( $value, 0, -2 ) );
+		}
+
+		return is_numeric( $value ) ? max( 0, (int) round( (float) $value ) ) : 0;
 	}
 
 	/**

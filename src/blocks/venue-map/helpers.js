@@ -257,15 +257,23 @@ export const parsePxDimension = ( value ) => {
 		return Math.max( 0, Math.round( value ) );
 	}
 
-	if ( 'string' === typeof value ) {
-		const match = /^\s*(\d+(?:\.\d+)?)\s*(?:px)?\s*$/.exec( value );
-
-		if ( match ) {
-			return Math.max( 0, Math.round( parseFloat( match[ 1 ] ) ) );
-		}
+	if ( 'string' !== typeof value ) {
+		return 0;
 	}
 
-	return 0;
+	let trimmed = value.trim();
+
+	// Strip a px suffix; any other unit (%, rem, keywords) leaves a
+	// non-numeric remainder and resolves to auto below.
+	if ( trimmed.endsWith( 'px' ) ) {
+		trimmed = trimmed.slice( 0, -2 ).trim();
+	}
+
+	const parsed = Number( trimmed );
+
+	return '' !== trimmed && Number.isFinite( parsed )
+		? Math.max( 0, Math.round( parsed ) )
+		: 0;
 };
 
 /**

@@ -22,101 +22,15 @@ use WP_Block;
  */
 class Test_Venue extends Base {
 
-	/**
-	 * Tests the setup_hooks method.
-	 *
-	 * Verifies that the appropriate filters are registered during setup,
-	 * ensuring the hooks are properly configured for the Venue block.
-	 *
-	 * @since 0.34.0
-	 * @covers ::__construct
-	 * @covers ::setup_hooks
-	 *
-	 * @return void
-	 */
-	public function test_setup_hooks(): void {
-		$instance          = Venue_Block::get_instance();
-		$render_block_hook = sprintf( 'render_block_%s', Venue_Block::BLOCK_NAME );
-		$hooks             = array(
-			array(
-				'type'     => 'filter',
-				'name'     => $render_block_hook,
-				'priority' => 10,
-				'callback' => array( $instance, 'render_block' ),
-			),
-		);
 
-		$this->assert_hooks( $hooks, $instance );
-	}
 
-	/**
-	 * Tests render_block returns empty string when block_content is null.
-	 *
-	 * @since 0.34.0
-	 * @covers ::render_block
-	 *
-	 * @return void
-	 */
-	public function test_render_block_returns_empty_for_null_content(): void {
-		$instance = Venue_Block::get_instance();
-
-		// Create a minimal WP_Block instance.
-		$block_instance = new WP_Block(
-			array(
-				'blockName'    => 'gatherpress/venue',
-				'attrs'        => array(),
-				'innerBlocks'  => array(),
-				'innerHTML'    => '',
-				'innerContent' => array(),
-			)
-		);
-
-		$result = $instance->render_block( null, array( 'attrs' => array() ), $block_instance );
-
-		$this->assertSame(
-			'',
-			$result,
-			'Should return empty string when block_content is null.'
-		);
-	}
-
-	/**
-	 * Tests render_block returns empty string when block array is null.
-	 *
-	 * @since 0.34.0
-	 * @covers ::render_block
-	 *
-	 * @return void
-	 */
-	public function test_render_block_returns_content_for_null_block(): void {
-		$instance = Venue_Block::get_instance();
-
-		// Create a minimal WP_Block instance.
-		$block_instance = new WP_Block(
-			array(
-				'blockName'    => 'gatherpress/venue',
-				'attrs'        => array(),
-				'innerBlocks'  => array(),
-				'innerHTML'    => '',
-				'innerContent' => array(),
-			)
-		);
-
-		$result = $instance->render_block( 'test content', null, $block_instance );
-
-		$this->assertSame(
-			'test content',
-			$result,
-			'Should return block_content as-is when block array is null.'
-		);
-	}
 
 	/**
 	 * Tests render_block returns empty string when no venue is found.
 	 *
 	 * @since 0.34.0
-	 * @covers ::render_block
-	 * @covers ::get_venue_post
+	 * @covers ::render_inner_blocks
+	 * @covers ::get_source_post
 	 *
 	 * @return void
 	 */
@@ -140,10 +54,9 @@ class Test_Venue extends Base {
 		$block_content = '<div class="venue-content">Test venue block</div>';
 		$block         = array( 'attrs' => array() );
 
-		$result = $instance->render_block( $block_content, $block, $block_instance );
+		$result = $instance->render_inner_blocks( $block_instance );
 
-		$this->assertSame(
-			'',
+		$this->assertNull(
 			$result,
 			'Should return empty string when no venue is found.'
 		);
@@ -153,8 +66,8 @@ class Test_Venue extends Base {
 	 * Tests render_block returns empty string for non-event post without venue.
 	 *
 	 * @since 0.34.0
-	 * @covers ::render_block
-	 * @covers ::get_venue_post
+	 * @covers ::render_inner_blocks
+	 * @covers ::get_source_post
 	 *
 	 * @return void
 	 */
@@ -178,10 +91,9 @@ class Test_Venue extends Base {
 		$block_content = '<div class="venue-content">Test venue block</div>';
 		$block         = array( 'attrs' => array() );
 
-		$result = $instance->render_block( $block_content, $block, $block_instance );
+		$result = $instance->render_inner_blocks( $block_instance );
 
-		$this->assertSame(
-			'',
+		$this->assertNull(
 			$result,
 			'Should return empty string for non-event posts without venue.'
 		);
@@ -191,9 +103,9 @@ class Test_Venue extends Base {
 	 * Tests render_block with manually selected venue post ID.
 	 *
 	 * @since 0.34.0
-	 * @covers ::render_block
-	 * @covers ::get_venue_post
-	 * @covers ::render_with_source_context
+	 * @covers ::render_inner_blocks
+	 * @covers ::get_source_post
+	 * @covers ::render_inner_blocks
 	 *
 	 * @return void
 	 */
@@ -229,7 +141,7 @@ class Test_Venue extends Base {
 		$block_content = '<div class="venue-content">Test venue block</div>';
 		$block         = array( 'attrs' => array( 'selectedPostId' => $venue_id ) );
 
-		$result = $instance->render_block( $block_content, $block, $block_instance );
+		$result = $instance->render_inner_blocks( $block_instance );
 
 		// The render_with_venue_context should render inner blocks.
 		$this->assertStringContainsString(
@@ -243,8 +155,8 @@ class Test_Venue extends Base {
 	 * Tests render_block returns empty when selected post ID is not a venue.
 	 *
 	 * @since 0.34.0
-	 * @covers ::render_block
-	 * @covers ::get_venue_post
+	 * @covers ::render_inner_blocks
+	 * @covers ::get_source_post
 	 *
 	 * @return void
 	 */
@@ -268,10 +180,9 @@ class Test_Venue extends Base {
 		$block_content = '<div class="venue-content">Test venue block</div>';
 		$block         = array( 'attrs' => array( 'selectedPostId' => $post_id ) );
 
-		$result = $instance->render_block( $block_content, $block, $block_instance );
+		$result = $instance->render_inner_blocks( $block_instance );
 
-		$this->assertSame(
-			'',
+		$this->assertNull(
 			$result,
 			'Should return empty string when selected post is not a venue.'
 		);
@@ -281,8 +192,8 @@ class Test_Venue extends Base {
 	 * Tests render_block returns empty for online-only event (no physical venue).
 	 *
 	 * @since 0.34.0
-	 * @covers ::render_block
-	 * @covers ::get_venue_post
+	 * @covers ::render_inner_blocks
+	 * @covers ::get_source_post
 	 *
 	 * @return void
 	 */
@@ -322,10 +233,9 @@ class Test_Venue extends Base {
 		$block_content = '<div class="venue-content">Test venue block</div>';
 		$block         = array( 'attrs' => array() );
 
-		$result = $instance->render_block( $block_content, $block, $block_instance );
+		$result = $instance->render_inner_blocks( $block_instance );
 
-		$this->assertSame(
-			'',
+		$this->assertNull(
 			$result,
 			'Should return empty string for online-only event (no physical venue).'
 		);
@@ -343,8 +253,8 @@ class Test_Venue extends Base {
 	 * The render_with_venue_context method is fully tested via selectedPostId tests.
 	 *
 	 * @since 0.34.0
-	 * @covers ::render_block
-	 * @covers ::get_venue_post
+	 * @covers ::render_inner_blocks
+	 * @covers ::get_source_post
 	 *
 	 * @return void
 	 */
@@ -386,11 +296,10 @@ class Test_Venue extends Base {
 		$block_content = '<div class="venue-content">Test venue block</div>';
 		$block         = array( 'attrs' => array() );
 
-		$result = $instance->render_block( $block_content, $block, $block_instance );
+		$result = $instance->render_inner_blocks( $block_instance );
 
 		// Without a valid venue post, the venue block should not render for events.
-		$this->assertSame(
-			'',
+		$this->assertNull(
 			$result,
 			'Should return empty string when venue term exists but no matching venue post.'
 		);
@@ -400,8 +309,8 @@ class Test_Venue extends Base {
 	 * Tests render_block returns empty when event has no venue terms.
 	 *
 	 * @since 0.34.0
-	 * @covers ::render_block
-	 * @covers ::get_venue_post
+	 * @covers ::render_inner_blocks
+	 * @covers ::get_source_post
 	 *
 	 * @return void
 	 */
@@ -426,11 +335,10 @@ class Test_Venue extends Base {
 		$block_content = '<div class="venue-content">Test</div>';
 		$block         = array( 'attrs' => array() );
 
-		$result = $instance->render_block( $block_content, $block, $block_instance );
+		$result = $instance->render_inner_blocks( $block_instance );
 
 		// With no venue terms, the event has no venue, so the block should not render.
-		$this->assertSame(
-			'',
+		$this->assertNull(
 			$result,
 			'Should return empty string when event has no venue terms.'
 		);
@@ -440,8 +348,8 @@ class Test_Venue extends Base {
 	 * Tests render_block returns empty when event has multiple venue terms but no valid venue post.
 	 *
 	 * @since 0.34.0
-	 * @covers ::render_block
-	 * @covers ::get_venue_post
+	 * @covers ::render_inner_blocks
+	 * @covers ::get_source_post
 	 *
 	 * @return void
 	 */
@@ -489,12 +397,11 @@ class Test_Venue extends Base {
 		$block_content = '<div class="venue-content">Test</div>';
 		$block         = array( 'attrs' => array() );
 
-		$result = $instance->render_block( $block_content, $block, $block_instance );
+		$result = $instance->render_inner_blocks( $block_instance );
 
 		// With multiple terms, the event is not online-only.
 		// Without a valid venue post, the venue block should not render.
-		$this->assertSame(
-			'',
+		$this->assertNull(
 			$result,
 			'Should return empty string when event has multiple venue terms but no valid venue post.'
 		);
@@ -504,7 +411,7 @@ class Test_Venue extends Base {
 	 * Tests render_with_venue_context restores original post.
 	 *
 	 * @since 0.34.0
-	 * @covers ::render_with_source_context
+	 * @covers ::render_inner_blocks
 	 *
 	 * @return void
 	 */
@@ -547,7 +454,7 @@ class Test_Venue extends Base {
 
 		$block = array( 'attrs' => array( 'selectedPostId' => $venue_id ) );
 
-		$instance->render_block( '<div>Test</div>', $block, $block_instance );
+		$instance->render_inner_blocks( $block_instance );
 
 		// Verify the global post is restored.
 		$this->assertSame(
@@ -564,7 +471,7 @@ class Test_Venue extends Base {
 	 * becomes the context for inner blocks by checking filter behavior.
 	 *
 	 * @since 0.34.0
-	 * @covers ::render_with_source_context
+	 * @covers ::render_inner_blocks
 	 *
 	 * @return void
 	 */
@@ -599,7 +506,7 @@ class Test_Venue extends Base {
 
 		$block = array( 'attrs' => array( 'selectedPostId' => $venue_id ) );
 
-		$result = $instance->render_block( '<div>Test</div>', $block, $block_instance );
+		$result = $instance->render_inner_blocks( $block_instance );
 
 		// The core/post-title block should render with the venue's title.
 		$this->assertStringContainsString(
@@ -628,8 +535,8 @@ class Test_Venue extends Base {
 	 * Tests render_block returns empty when selectedPostId is not an integer.
 	 *
 	 * @since 0.34.0
-	 * @covers ::render_block
-	 * @covers ::get_venue_post
+	 * @covers ::render_inner_blocks
+	 * @covers ::get_source_post
 	 *
 	 * @return void
 	 */
@@ -653,10 +560,9 @@ class Test_Venue extends Base {
 		$block_content = '<div class="venue-content">Test</div>';
 		$block         = array( 'attrs' => array( 'selectedPostId' => 'not-an-integer' ) );
 
-		$result = $instance->render_block( $block_content, $block, $block_instance );
+		$result = $instance->render_inner_blocks( $block_instance );
 
-		$this->assertSame(
-			'',
+		$this->assertNull(
 			$result,
 			'Should return empty string when selectedPostId is not an integer.'
 		);
@@ -670,9 +576,9 @@ class Test_Venue extends Base {
 	 * a valid venue post.
 	 *
 	 * @since 0.34.0
-	 * @covers ::render_block
-	 * @covers ::get_venue_post
-	 * @covers ::render_with_source_context
+	 * @covers ::render_inner_blocks
+	 * @covers ::get_source_post
+	 * @covers ::render_inner_blocks
 	 *
 	 * @return void
 	 */
@@ -733,7 +639,7 @@ class Test_Venue extends Base {
 		$block_content = '<div class="venue-content">Test venue block</div>';
 		$block         = array( 'attrs' => array() );
 
-		$result = $instance->render_block( $block_content, $block, $block_instance );
+		$result = $instance->render_inner_blocks( $block_instance );
 
 		// The venue title should appear in the rendered output.
 		$this->assertStringContainsString(
@@ -747,7 +653,7 @@ class Test_Venue extends Base {
 	 * Tests render_block when event has venue term but no matching venue post.
 	 *
 	 * @since 0.34.0
-	 * @covers ::get_venue_post
+	 * @covers ::get_source_post
 	 *
 	 * @return void
 	 */
@@ -784,274 +690,18 @@ class Test_Venue extends Base {
 		$block_content = '<div class="venue-content">Test</div>';
 		$block         = array( 'attrs' => array() );
 
-		$result = $instance->render_block( $block_content, $block, $block_instance );
+		$result = $instance->render_inner_blocks( $block_instance );
 
 		// The venue term doesn't map to a venue post, so the venue block should not render.
-		$this->assertSame(
-			'',
+		$this->assertNull(
 			$result,
 			'Should return empty string when venue term does not map to a venue post.'
 		);
 	}
 
-	/**
-	 * Tests render_with_source_context preserves the align class the
-	 * first-pass wrapper carries.
-	 *
-	 * @since 0.34.0
-	 * @covers ::render_with_source_context
-	 *
-	 * @return void
-	 */
-	public function test_render_with_venue_context_applies_align_class(): void {
-		$instance = Venue_Block::get_instance();
 
-		// Create a venue post.
-		$venue_id = $this->factory->post->create(
-			array(
-				'post_type'  => 'gatherpress_venue',
-				'post_title' => 'Align Test Venue',
-			)
-		);
 
-		$block_instance = new WP_Block(
-			array(
-				'blockName'    => 'gatherpress/venue',
-				'attrs'        => array(
-					'selectedPostId' => $venue_id,
-					'align'          => 'wide',
-				),
-				'innerBlocks'  => array(
-					array(
-						'blockName'    => 'core/paragraph',
-						'attrs'        => array(),
-						'innerBlocks'  => array(),
-						'innerHTML'    => '<p>Inner content</p>',
-						'innerContent' => array( '<p>Inner content</p>' ),
-					),
-				),
-				'innerHTML'    => '',
-				'innerContent' => array( null ),
-			)
-		);
 
-		$block = array( 'attrs' => array( 'selectedPostId' => $venue_id ) );
-
-		$result = $instance->render_block(
-			'<div class="wp-block-gatherpress-venue alignwide">Test</div>',
-			$block,
-			$block_instance
-		);
-
-		$this->assertStringContainsString(
-			'alignwide',
-			$result,
-			'The align class from the first-pass wrapper should be preserved.'
-		);
-	}
-
-	/**
-	 * Tests render_with_source_context preserves custom classes the
-	 * first-pass wrapper carries.
-	 *
-	 * @since 0.34.0
-	 * @covers ::render_with_source_context
-	 *
-	 * @return void
-	 */
-	public function test_render_with_venue_context_applies_classname(): void {
-		$instance = Venue_Block::get_instance();
-
-		// Create a venue post.
-		$venue_id = $this->factory->post->create(
-			array(
-				'post_type'  => 'gatherpress_venue',
-				'post_title' => 'ClassName Test Venue',
-			)
-		);
-
-		$block_instance = new WP_Block(
-			array(
-				'blockName'    => 'gatherpress/venue',
-				'attrs'        => array(
-					'selectedPostId' => $venue_id,
-					'className'      => 'custom-class another-class',
-				),
-				'innerBlocks'  => array(
-					array(
-						'blockName'    => 'core/paragraph',
-						'attrs'        => array(),
-						'innerBlocks'  => array(),
-						'innerHTML'    => '<p>Inner content</p>',
-						'innerContent' => array( '<p>Inner content</p>' ),
-					),
-				),
-				'innerHTML'    => '',
-				'innerContent' => array( null ),
-			)
-		);
-
-		$block = array( 'attrs' => array( 'selectedPostId' => $venue_id ) );
-
-		$result = $instance->render_block(
-			'<div class="wp-block-gatherpress-venue custom-class another-class">Test</div>',
-			$block,
-			$block_instance
-		);
-
-		$this->assertStringContainsString(
-			'custom-class another-class',
-			$result,
-			'Custom classes from the first-pass wrapper should be preserved.'
-		);
-	}
-
-	/**
-	 * Tests render_with_source_context keeps the full first-pass wrapper —
-	 * base class, alignment, custom classes, and the layout classes core's
-	 * block-supports pipeline injected — while swapping the inner markup
-	 * for the context-corrected re-render.
-	 *
-	 * @since 0.34.0
-	 * @covers ::render_with_source_context
-	 *
-	 * @return void
-	 */
-	public function test_render_with_venue_context_applies_align_and_classname(): void {
-		$instance = Venue_Block::get_instance();
-
-		// Create a venue post.
-		$venue_id = $this->factory->post->create(
-			array(
-				'post_type'  => 'gatherpress_venue',
-				'post_title' => 'Combined Test Venue',
-			)
-		);
-
-		$block_instance = new WP_Block(
-			array(
-				'blockName'    => 'gatherpress/venue',
-				'attrs'        => array(
-					'selectedPostId' => $venue_id,
-					'align'          => 'full',
-					'className'      => 'my-custom-class',
-				),
-				'innerBlocks'  => array(
-					array(
-						'blockName'    => 'core/paragraph',
-						'attrs'        => array(),
-						'innerBlocks'  => array(),
-						'innerHTML'    => '<p>Inner content</p>',
-						'innerContent' => array( '<p>Inner content</p>' ),
-					),
-				),
-				'innerHTML'    => '',
-				'innerContent' => array( null ),
-			)
-		);
-
-		$block = array( 'attrs' => array( 'selectedPostId' => $venue_id ) );
-
-		$first_pass_markup  = '<div class="wp-block-gatherpress-venue alignfull my-custom-class';
-		$first_pass_markup .= ' is-layout-flow wp-block-gatherpress-venue-is-layout-flow">Original inner</div>';
-
-		$result = $instance->render_block( $first_pass_markup, $block, $block_instance );
-
-		$this->assertStringContainsString(
-			'wp-block-gatherpress-venue',
-			$result,
-			'Should include base wrapper class.'
-		);
-		$this->assertStringContainsString(
-			'alignfull',
-			$result,
-			'Should preserve the align class.'
-		);
-		$this->assertStringContainsString(
-			'my-custom-class',
-			$result,
-			'Should preserve the custom className.'
-		);
-		$this->assertStringContainsString(
-			'is-layout-flow wp-block-gatherpress-venue-is-layout-flow',
-			$result,
-			'Layout classes injected by core block supports must survive the re-render.'
-		);
-		$this->assertStringContainsString(
-			'Inner content',
-			$result,
-			'The inner markup should be the context-corrected re-render.'
-		);
-		$this->assertStringNotContainsString(
-			'Original inner',
-			$result,
-			'The first-pass inner markup should be replaced.'
-		);
-	}
-
-	/**
-	 * Tests render_with_source_context falls back to a rebuilt wrapper when
-	 * the first-pass markup does not open with the expected wrapper tag.
-	 *
-	 * @since 0.34.0
-	 * @covers ::render_with_source_context
-	 *
-	 * @return void
-	 */
-	public function test_render_with_venue_context_rebuilds_wrapper_when_original_has_none(): void {
-		$instance = Venue_Block::get_instance();
-
-		$venue_id = $this->factory->post->create(
-			array(
-				'post_type'  => 'gatherpress_venue',
-				'post_title' => 'Fallback Wrapper Venue',
-			)
-		);
-
-		$block_instance = new WP_Block(
-			array(
-				'blockName'    => 'gatherpress/venue',
-				'attrs'        => array(
-					'selectedPostId' => $venue_id,
-					'align'          => 'wide',
-					'className'      => 'fallback-class',
-				),
-				'innerBlocks'  => array(
-					array(
-						'blockName'    => 'core/paragraph',
-						'attrs'        => array(),
-						'innerBlocks'  => array(),
-						'innerHTML'    => '<p>Inner content</p>',
-						'innerContent' => array( '<p>Inner content</p>' ),
-					),
-				),
-				'innerHTML'    => '',
-				'innerContent' => array( null ),
-			)
-		);
-
-		$block = array( 'attrs' => array( 'selectedPostId' => $venue_id ) );
-
-		// A filter upstream replaced the markup with something that has no
-		// wrapper div — the fallback rebuilds one from block attributes.
-		$result = $instance->render_block( 'plain text, no wrapper', $block, $block_instance );
-
-		$this->assertStringContainsString(
-			'wp-block-gatherpress-venue',
-			$result,
-			'The fallback should rebuild the base wrapper class.'
-		);
-		$this->assertStringContainsString(
-			'alignwide',
-			$result,
-			'The fallback should rebuild the align class from block attributes.'
-		);
-		$this->assertStringContainsString(
-			'fallback-class',
-			$result,
-			'The fallback should rebuild the className from block attributes.'
-		);
-	}
 
 	/**
 	 * Tests get_venue_post with postId override attribute.
@@ -1060,8 +710,8 @@ class Test_Venue extends Base {
 	 * block attributes (used for query loop context).
 	 *
 	 * @since 0.34.0
-	 * @covers ::get_venue_post
-	 * @covers ::render_with_source_context
+	 * @covers ::get_source_post
+	 * @covers ::render_inner_blocks
 	 *
 	 * @return void
 	 */
@@ -1124,7 +774,7 @@ class Test_Venue extends Base {
 
 		$block = array( 'attrs' => array( 'postId' => $event_id ) );
 
-		$result = $instance->render_block( '<div>Test</div>', $block, $block_instance );
+		$result = $instance->render_inner_blocks( $block_instance );
 
 		// The venue title should appear in the rendered output.
 		$this->assertStringContainsString(
@@ -1141,9 +791,9 @@ class Test_Venue extends Base {
 	 * the block renders directly using the current venue post.
 	 *
 	 * @since 0.34.0
-	 * @covers ::render_block
-	 * @covers ::get_venue_post
-	 * @covers ::render_with_source_context
+	 * @covers ::render_inner_blocks
+	 * @covers ::get_source_post
+	 * @covers ::render_inner_blocks
 	 *
 	 * @return void
 	 */
@@ -1180,7 +830,7 @@ class Test_Venue extends Base {
 
 		$block = array( 'attrs' => array() );
 
-		$result = $instance->render_block( '<div>Test</div>', $block, $block_instance );
+		$result = $instance->render_inner_blocks( $block_instance );
 
 		$this->assertStringContainsString(
 			'Venue Context Test',
@@ -1193,7 +843,7 @@ class Test_Venue extends Base {
 	 * Tests get_venue_post returns null when postId override points to non-event.
 	 *
 	 * @since 0.34.0
-	 * @covers ::get_venue_post
+	 * @covers ::get_source_post
 	 *
 	 * @return void
 	 */
@@ -1222,10 +872,9 @@ class Test_Venue extends Base {
 
 		$block = array( 'attrs' => array( 'postId' => $post_id ) );
 
-		$result = $instance->render_block( '<div>Test</div>', $block, $block_instance );
+		$result = $instance->render_inner_blocks( $block_instance );
 
-		$this->assertSame(
-			'',
+		$this->assertNull(
 			$result,
 			'Should return empty when postId override points to non-event.'
 		);
@@ -1237,7 +886,7 @@ class Test_Venue extends Base {
 	 * generalization of the venue block.
 	 *
 	 * @since 0.34.0
-	 * @covers ::render_block
+	 * @covers ::render_inner_blocks
 	 * @covers ::get_source_post
 	 * @covers ::get_source_post_type
 	 *
@@ -1281,7 +930,7 @@ class Test_Venue extends Base {
 			),
 		);
 
-		$result = $instance->render_block( '<div>Test</div>', $block, $block_instance );
+		$result = $instance->render_inner_blocks( $block_instance );
 
 		$this->assertStringContainsString(
 			'Explicit-source inner content',
@@ -1296,7 +945,7 @@ class Test_Venue extends Base {
 	 * empty. Documents the defensive contract.
 	 *
 	 * @since 0.34.0
-	 * @covers ::render_block
+	 * @covers ::render_inner_blocks
 	 * @covers ::get_source_post
 	 *
 	 * @return void
@@ -1321,12 +970,75 @@ class Test_Venue extends Base {
 
 		$block = array( 'attrs' => array( 'sourcePostType' => 'gatherpress_definitely_not_registered' ) );
 
-		$result = $instance->render_block( '<div>Test</div>', $block, $block_instance );
+		$result = $instance->render_inner_blocks( $block_instance );
 
-		$this->assertSame(
-			'',
+		$this->assertNull(
 			$result,
 			'Block should render empty when sourcePostType points at an unregistered CPT.'
 		);
+	}
+
+	/**
+	 * Rendering through do_blocks emits one wrapper that core's block
+	 * supports decorate — alignment, className, and layout classes all
+	 * land on it, with the inner blocks rendered in the source post's
+	 * context inside.
+	 *
+	 * @since 0.34.0
+	 * @covers ::render_inner_blocks
+	 *
+	 * @return void
+	 */
+	public function test_do_blocks_emits_decorated_wrapper_with_source_context(): void {
+		$venue_id = $this->factory->post->create(
+			array(
+				'post_type'  => 'gatherpress_venue',
+				'post_title' => 'Wrapper Test Venue',
+			)
+		);
+
+		$output = do_blocks(
+			sprintf(
+				'<!-- wp:gatherpress/venue {"selectedPostId":%d,"align":"full","className":"my-venue"} -->' .
+				'<!-- wp:post-title /--><!-- /wp:gatherpress/venue -->',
+				$venue_id
+			)
+		);
+
+		$this->assertStringContainsString(
+			'wp-block-gatherpress-venue',
+			$output,
+			'The wrapper should carry the block class.'
+		);
+		$this->assertStringContainsString( 'alignfull', $output, 'The wrapper should carry the alignment.' );
+		$this->assertStringContainsString( 'my-venue', $output, 'The wrapper should carry the className.' );
+		$this->assertStringContainsString(
+			'is-layout-flow',
+			$output,
+			'Core layout classes must decorate the wrapper — this is what the render.php architecture exists for.'
+		);
+		$this->assertStringContainsString(
+			'Wrapper Test Venue',
+			$output,
+			'Inner blocks should render with the venue as their context.'
+		);
+	}
+
+	/**
+	 * Rendering through do_blocks emits nothing at all when no source
+	 * post resolves — no wrapper, no leaked first-pass inner content.
+	 *
+	 * @since 0.34.0
+	 * @covers ::render_inner_blocks
+	 *
+	 * @return void
+	 */
+	public function test_do_blocks_emits_nothing_without_source_post(): void {
+		$output = do_blocks(
+			'<!-- wp:gatherpress/venue {"selectedPostId":999999} -->' .
+			'<!-- wp:paragraph --><p>ghost content</p><!-- /wp:paragraph --><!-- /wp:gatherpress/venue -->'
+		);
+
+		$this->assertSame( '', trim( $output ), 'No source post should render nothing at all.' );
 	}
 }
