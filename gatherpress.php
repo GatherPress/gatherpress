@@ -63,6 +63,6 @@ GatherPress\Core\Setup::get_instance();
  * Subsystems or third party plugins can use this to run setup work that
  * depends on other GatherPress classes already being instantiated.
  *
- * @since 1.0.0
+ * @since 0.35.0
  */
 do_action( 'gatherpress_loaded' );

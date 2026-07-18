@@ -35,10 +35,11 @@ class Setup {
 	/**
 	 * Constructor for the Setup class.
 	 *
-	 * Initializes and sets up various components of the plugin. Fires
-	 * the `gatherpress_loaded` action at the end so subsystems that
-	 * registered listeners during instantiation (e.g. `Rsvp\Manager`'s
-	 * core-type registration) can run with all classes already wired up.
+	 * Initializes and sets up various components of the plugin. Once this
+	 * constructor completes, `gatherpress.php` fires the
+	 * `gatherpress_loaded` action so subsystems that registered listeners
+	 * during instantiation (e.g. the RSVP `Provider_Registry`'s
+	 * core-provider registration) run with all classes already wired up.
 	 *
 	 * @since 0.27.0
 	 */
