@@ -70,6 +70,13 @@ class Test_Serializer extends Base {
 		$this->assertSame( $user_id, $row['identifier'] );
 		$this->assertArrayHasKey( 'photo', $row );
 		$this->assertArrayHasKey( 'role', $row );
+
+		// The camelCase keys are the pre-existing responses() record
+		// contract (block context mapping, editor JS); the snake_case
+		// twins are the save() return contract. Both must survive.
+		$this->assertSame( $row['comment_id'], $row['commentId'] );
+		$this->assertSame( $row['post_id'], $row['postId'] );
+		$this->assertSame( $row['user_id'], $row['userId'] );
 	}
 
 	/**

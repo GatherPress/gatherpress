@@ -785,4 +785,61 @@ class Test_Rsvp_Template extends Base {
 		delete_post_meta( $post_id, 'gatherpress_enable_rsvp' );
 		Settings::get_instance()->set( 'rsvp_mode', 'all_on' );
 	}
+
+	/**
+	 * Rendering with an attending response resolves each record's real
+	 * comment ID into the output — the regression tooth for the record
+	 * key contract (a broken commentId key renders data-id="rsvp-0").
+	 *
+	 * @covers ::generate_rsvp_template_block
+	 * @covers ::get_block_content
+	 *
+	 * @return void
+	 */
+	public function test_generate_rsvp_template_block_renders_real_comment_ids(): void {
+		$instance = Rsvp_Template::get_instance();
+		$post     = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get();
+		$post_id  = $post->ID;
+
+		$user_id = $this->factory->user->create();
+		$rsvp    = new Rsvp\Rsvp( $post_id );
+		$rsvp->save( $user_id, 'attending' );
+
+		$comment_id = (int) $rsvp->find( $user_id )->comment->comment_ID;
+
+		$wp_block = new WP_Block(
+			array( 'blockName' => 'gatherpress/rsvp-template' ),
+			array( 'postId' => $post_id )
+		);
+
+		$reflection       = new \ReflectionClass( $wp_block );
+		$context_property = $reflection->getProperty( 'context' );
+		$context_property->setAccessible( true );
+		$context_property->setValue( $wp_block, array( 'postId' => $post_id ) );
+
+		$block = array(
+			'innerBlocks' => array(
+				array(
+					'blockName'    => 'core/paragraph',
+					'attrs'        => array(),
+					'innerBlocks'  => array(),
+					'innerHTML'    => '<p>Test Response</p>',
+					'innerContent' => array( '<p>Test Response</p>' ),
+				),
+			),
+		);
+
+		$result = $instance->generate_rsvp_template_block( '', $block, $wp_block );
+
+		$this->assertStringContainsString(
+			sprintf( 'data-id="rsvp-%d"', $comment_id ),
+			$result,
+			'The rendered record carries the actual comment ID, not a fallback zero.'
+		);
+		$this->assertStringNotContainsString(
+			'data-id="rsvp-0"',
+			$result,
+			'No record degrades to the zero ID a missing commentId key produces.'
+		);
+	}
 }

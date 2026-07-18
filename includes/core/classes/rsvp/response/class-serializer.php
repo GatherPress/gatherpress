@@ -55,10 +55,18 @@ final class Serializer {
 			'timestamp'  => $state->data->timestamp,
 			'provider'   => $state->provider->get_slug(),
 			'identifier' => $identity->value,
-			'comment_id' => (int) $state->comment->comment_ID,
-			'post_id'    => (int) $state->comment->comment_post_ID,
-			'user_id'    => $user_id,
 			'role'       => Roles::get_instance()->get_user_role( (int) $state->comment->user_id ),
+			// Both naming styles ship deliberately: the responses() record
+			// contract (the rsvp-response block's context mapping, editor
+			// JS, and REST consumers) predates this class and uses
+			// camelCase, while the save() return contract uses snake_case.
+			// Dropping either silently breaks its consumers.
+			'commentId'  => (int) $state->comment->comment_ID,
+			'comment_id' => (int) $state->comment->comment_ID,
+			'postId'     => (int) $state->comment->comment_post_ID,
+			'post_id'    => (int) $state->comment->comment_post_ID,
+			'userId'     => $user_id,
+			'user_id'    => $user_id,
 		);
 	}
 }

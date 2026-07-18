@@ -1213,6 +1213,12 @@ class Test_Rsvp extends Base {
 		$first = $rsvp->responses();
 
 		$this->assertSame( 1, $first['attending']['count'] );
+		$this->assertArrayHasKey(
+			'commentId',
+			$first['attending']['records'][0],
+			'Records keep the camelCase contract the blocks consume.'
+		);
+		$this->assertArrayHasKey( 'userId', $first['attending']['records'][0] );
 		$this->assertSame( $first, $rsvp->responses(), 'The cached array is served on repeat calls.' );
 	}
 
