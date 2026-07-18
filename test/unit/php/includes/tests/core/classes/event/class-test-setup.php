@@ -247,6 +247,53 @@ class Test_Setup extends Base {
 	}
 
 	/**
+	 * A filter-supplied definition carrying its own `postTypes` key
+	 * registers against exactly those slugs, while definitions without
+	 * one keep the full `gatherpress-event-date` support list.
+	 *
+	 * @covers ::register_starter_pattern
+	 *
+	 * @return void
+	 */
+	public function test_register_starter_pattern_honors_per_pattern_post_types(): void {
+		$instance = Setup::get_instance();
+		$registry = WP_Block_Patterns_Registry::get_instance();
+
+		if ( $registry->is_registered( 'unit-test/scoped-event-pattern' ) ) {
+			$registry->unregister( 'unit-test/scoped-event-pattern' );
+		}
+
+		$append_pattern = static function ( array $patterns ): array {
+			$patterns[] = array(
+				'name'      => 'unit-test/scoped-event-pattern',
+				'title'     => 'Scoped Event Pattern',
+				'content'   => '<!-- wp:paragraph --><p>Scoped</p><!-- /wp:paragraph -->',
+				'postTypes' => array( 'my_custom_event' ),
+			);
+			return $patterns;
+		};
+
+		add_filter( 'gatherpress_event_starter_patterns', $append_pattern );
+
+		$instance->register_starter_pattern();
+
+		remove_filter( 'gatherpress_event_starter_patterns', $append_pattern );
+
+		$this->assertSame(
+			array( 'my_custom_event' ),
+			$registry->get_registered( 'unit-test/scoped-event-pattern' )['postTypes'],
+			'The per-pattern postTypes key must narrow registration to those slugs only.'
+		);
+		$this->assertContains(
+			Event::POST_TYPE,
+			$registry->get_registered( 'gatherpress/event-with-rsvp' )['postTypes'],
+			'Definitions without postTypes keep the support-resolved list.'
+		);
+
+		$registry->unregister( 'unit-test/scoped-event-pattern' );
+	}
+
+	/**
 	 * The `gatherpress_event_starter_patterns` filter passes the array of
 	 * post types about to receive the registered patterns as its second
 	 * argument, so consumers can vary the returned patterns based on which
