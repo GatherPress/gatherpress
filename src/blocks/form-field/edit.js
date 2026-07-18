@@ -42,6 +42,7 @@ export default function Edit( { attributes, setAttributes } ) {
 		maxValue,
 		placeholder,
 		required,
+		prefillCurrentUser,
 		autocomplete,
 	} = attributes;
 
@@ -182,6 +183,9 @@ export default function Edit( { attributes, setAttributes } ) {
 							setAttributes( {
 								fieldType: value,
 								fieldValue: '', // Reset fieldValue when type changes.
+								// The prefill source is type-specific, so a
+								// type change resets the toggle too.
+								prefillCurrentUser: false,
 								autocomplete: getDefaultAutocomplete( value ),
 							} );
 						} }
@@ -215,6 +219,37 @@ export default function Edit( { attributes, setAttributes } ) {
 								'Make this field required.',
 								'gatherpress',
 							) }
+						/>
+					) }
+
+					{ [ 'text', 'email' ].includes( fieldType ) && (
+						<ToggleControl
+							label={
+								'email' === fieldType
+									? __(
+										'Prefill with user email',
+										'gatherpress',
+									)
+									: __(
+										'Prefill with user name',
+										'gatherpress',
+									)
+							}
+							checked={ prefillCurrentUser }
+							onChange={ ( value ) =>
+								setAttributes( { prefillCurrentUser: value } )
+							}
+							help={
+								'email' === fieldType
+									? __(
+										'Prefill with the email address of the logged-in user. Logged-out visitors see an empty field.',
+										'gatherpress',
+									)
+									: __(
+										'Prefill with the display name of the logged-in user. Logged-out visitors see an empty field.',
+										'gatherpress',
+									)
+							}
 						/>
 					) }
 
