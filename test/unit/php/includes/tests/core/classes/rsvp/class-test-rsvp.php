@@ -14,6 +14,8 @@ use GatherPress\Core\Rsvp\Response\Identity_Type;
 use GatherPress\Core\Rsvp\Response\Identity;
 use GatherPress\Core\Rsvp\Response\Intent;
 use GatherPress\Core\Rsvp\Response\Status;
+use GatherPress\Core\Rsvp\Response\State;
+use GatherPress\Core\Rsvp\Response\Provider\User;
 use GatherPress\Core\Rsvp\Cache;
 use GatherPress\Core\Rsvp\Response\Provider_Registry;
 // Deep import on purpose: test_prior_fqn_resolves_to_current_class asserts
@@ -1044,5 +1046,217 @@ class Test_Rsvp extends Base {
 
 		// Restore the sitewide setting for other tests.
 		Settings::get_instance()->set( 'enable_open_rsvp', true );
+	}
+
+	/**
+	 * Identifier resolution: an unrecognized identifier yields null from
+	 * get() and find(); email and user-ID identifiers resolve through
+	 * their providers and round-trip a saved response.
+	 *
+	 * @covers ::get
+	 * @covers ::find
+	 * @covers ::resolve_identity
+	 * @covers ::resolve_provider
+	 *
+	 * @return void
+	 */
+	public function test_get_and_find_resolve_identifiers(): void {
+		$event_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
+		$rsvp     = new Rsvp( $event_id );
+
+		$this->assertNull( $rsvp->get( 'not-an-email-or-id' ), 'Unresolvable identifiers yield null.' );
+		$this->assertNull( $rsvp->find( 'not-an-email-or-id' ) );
+		$this->assertNull( $rsvp->get( 'unknown@example.test' ), 'A valid email with no response yields null.' );
+
+		$user_id = $this->factory->user->create();
+		$rsvp->save( $user_id, 'attending' );
+
+		$row = $rsvp->get( $user_id );
+		$this->assertSame( 'attending', $row['status'] );
+
+		$state = $rsvp->find( $user_id );
+		$this->assertInstanceOf( State::class, $state );
+		$this->assertSame( Status::ATTENDING, $state->data->status );
+	}
+
+	/**
+	 * The save pipeline clamps guests to the event's guest limit and
+	 * forces anonymity off unless the event enables anonymous RSVPs.
+	 *
+	 * @covers ::save
+	 * @covers ::process
+	 * @covers ::constrain_rsvp_intent
+	 *
+	 * @return void
+	 */
+	public function test_save_constrains_guests_and_anonymity(): void {
+		$event_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
+		update_post_meta( $event_id, 'gatherpress_max_guest_limit', 3 );
+
+		$rsvp = new Rsvp( $event_id );
+
+		$constrained = $rsvp->save( $this->factory->user->create(), 'attending', 1, 5 );
+
+		$this->assertSame( 'attending', $constrained['status'] );
+		$this->assertSame( 3, $constrained['guests'], 'Guests clamp to the event limit.' );
+		$this->assertFalse( $constrained['anonymous'], 'Anonymity is off while the event disallows it.' );
+
+		update_post_meta( $event_id, 'gatherpress_enable_anonymous_rsvp', true );
+
+		$anonymous = $rsvp->save( $this->factory->user->create(), 'attending', 1 );
+
+		$this->assertTrue( (bool) $anonymous['anonymous'], 'Anonymity persists once the event allows it.' );
+	}
+
+	/**
+	 * When the attending limit is already reached, a first-time attending
+	 * request lands on the waiting list with zero guests — and an explicit
+	 * waiting-list request always drops its guests.
+	 *
+	 * @covers ::process
+	 * @covers ::constrain_rsvp_intent
+	 *
+	 * @return void
+	 */
+	public function test_save_routes_to_waiting_list_when_limit_reached(): void {
+		$event_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
+		update_post_meta( $event_id, 'gatherpress_max_attendance_limit', 1 );
+		update_post_meta( $event_id, 'gatherpress_max_guest_limit', 5 );
+
+		$first  = ( new Rsvp( $event_id ) )->save( $this->factory->user->create(), 'attending' );
+		$second = ( new Rsvp( $event_id ) )->save( $this->factory->user->create(), 'attending', 0, 2 );
+
+		$this->assertSame( 'attending', $first['status'] );
+		$this->assertSame( 'waiting_list', $second['status'], 'A full event routes newcomers to the waiting list.' );
+		$this->assertSame( 2, $second['guests'], 'Redirected responders keep their party size for later promotion.' );
+
+		$explicit = ( new Rsvp( $event_id ) )->save( $this->factory->user->create(), 'waiting_list', 0, 3 );
+
+		$this->assertSame( 'waiting_list', $explicit['status'] );
+		$this->assertSame( 0, $explicit['guests'] );
+	}
+
+	/**
+	 * An already-attending responder re-saving into a full event keeps
+	 * their prior guest count instead of growing it.
+	 *
+	 * @covers ::constrain_rsvp_intent
+	 *
+	 * @return void
+	 */
+	public function test_save_keeps_prior_guests_when_full(): void {
+		$event_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
+
+		// The limit counts the whole party: responder plus guests. A
+		// limit of 4 admits one responder with two guests, and is then
+		// exceeded the moment they ask to grow the party.
+		update_post_meta( $event_id, 'gatherpress_max_attendance_limit', 4 );
+		update_post_meta( $event_id, 'gatherpress_max_guest_limit', 5 );
+
+		$user_id = $this->factory->user->create();
+
+		$initial = ( new Rsvp( $event_id ) )->save( $user_id, 'attending', 0, 2 );
+		$this->assertSame( 'attending', $initial['status'] );
+
+		$resave = ( new Rsvp( $event_id ) )->save( $user_id, 'attending', 0, 4 );
+
+		$this->assertSame( 'attending', $resave['status'], 'An attending responder stays attending.' );
+		$this->assertSame( 2, $resave['guests'], 'A full event freezes the prior guest count.' );
+	}
+
+	/**
+	 * Freeing a spot promotes the earliest waiting-list responder.
+	 *
+	 * @covers ::process
+	 * @covers ::check_waiting_list
+	 *
+	 * @return void
+	 */
+	public function test_check_waiting_list_promotes_on_freed_spot(): void {
+		$event_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
+		update_post_meta( $event_id, 'gatherpress_max_attendance_limit', 1 );
+
+		$attendee_id = $this->factory->user->create();
+		$waiter_id   = $this->factory->user->create();
+
+		( new Rsvp( $event_id ) )->save( $attendee_id, 'attending' );
+		( new Rsvp( $event_id ) )->save( $waiter_id, 'attending' );
+
+		$this->assertSame(
+			'waiting_list',
+			( new Rsvp( $event_id ) )->get( $waiter_id )['status'],
+			'The second responder starts on the waiting list.'
+		);
+
+		( new Rsvp( $event_id ) )->save( $attendee_id, 'not_attending' );
+
+		$this->assertSame(
+			'attending',
+			( new Rsvp( $event_id ) )->get( $waiter_id )['status'],
+			'Freeing a spot promotes the waiting-list responder.'
+		);
+	}
+
+	/**
+	 * A second responses() call within the cache TTL returns the cached
+	 * array without rebuilding.
+	 *
+	 * @covers ::responses
+	 *
+	 * @return void
+	 */
+	public function test_responses_returns_cached_array(): void {
+		$event_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
+		( new Rsvp( $event_id ) )->save( $this->factory->user->create(), 'attending' );
+
+		$rsvp  = new Rsvp( $event_id );
+		$first = $rsvp->responses();
+
+		$this->assertSame( 1, $first['attending']['count'] );
+		$this->assertSame( $first, $rsvp->responses(), 'The cached array is served on repeat calls.' );
+	}
+
+	/**
+	 * Process refuses invalid events, a removal round-trips to the
+	 * default response, and providers only resolve for user and email
+	 * identity types.
+	 *
+	 * @covers ::process
+	 * @covers ::save
+	 * @covers ::resolve_provider
+	 *
+	 * @return void
+	 */
+	public function test_process_degenerate_paths(): void {
+		$user_id = $this->factory->user->create();
+		$intent  = new Intent(
+			new Data( new Identity( Identity_Type::WP_USER_ID, $user_id ), Status::ATTENDING ),
+			new User()
+		);
+
+		$this->assertNull(
+			( new Rsvp( 0 ) )->process( $intent ),
+			'An invalid event never processes.'
+		);
+
+		$event_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
+		$rsvp     = new Rsvp( $event_id );
+
+		$rsvp->save( $user_id, 'attending' );
+		$removed = $rsvp->save( $user_id, 'no_status' );
+
+		$this->assertSame(
+			'no_status',
+			$removed['status'],
+			'Removing a response returns the default no_status shape.'
+		);
+		$this->assertNull( $rsvp->get( $user_id ), 'The response no longer resolves after removal.' );
+
+		$url_identity = new Identity( Identity_Type::URL, 'https://example.test/responder' );
+
+		$this->assertNull(
+			Utility::invoke_hidden_method( $rsvp, 'resolve_provider', array( $url_identity ) ),
+			'Only user and email identities resolve to core providers.'
+		);
 	}
 }

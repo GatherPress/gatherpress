@@ -11,6 +11,8 @@ namespace GatherPress\Tests\Core\Rsvp;
 use GatherPress\Core\Event;
 use GatherPress\Core\Rsvp\List_Table;
 use GatherPress\Core\Rsvp;
+use GatherPress\Core\Rsvp\Response\Provider\Base as Provider;
+use GatherPress\Core\Rsvp\Response\Provider_Registry;
 use GatherPress\Core\Rsvp\Response\Status;
 use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;
@@ -1777,5 +1779,40 @@ class Test_List_Table extends Base {
 		);
 
 		unset( $_REQUEST['status'] );
+	}
+
+	/**
+	 * The type column resolves the stored provider term to its label,
+	 * renders a dash for unknown providers, and an empty string when no
+	 * provider term exists.
+	 *
+	 * @covers ::column_default
+	 *
+	 * @return void
+	 */
+	public function test_column_default_type(): void {
+		$comment_id = (int) $this->rsvp['comment_ID'];
+
+		$this->assertSame(
+			'',
+			$this->list_table->column_default( $this->rsvp, 'type' ),
+			'No provider term renders as an empty string.'
+		);
+
+		wp_set_object_terms( $comment_id, 'user', Provider::TAXONOMY );
+
+		$this->assertSame(
+			Provider_Registry::get_instance()->get( 'user' )::get_label(),
+			$this->list_table->column_default( $this->rsvp, 'type' ),
+			'A known provider renders its label.'
+		);
+
+		wp_set_object_terms( $comment_id, 'mystery-provider', Provider::TAXONOMY );
+
+		$this->assertSame(
+			'-',
+			$this->list_table->column_default( $this->rsvp, 'type' ),
+			'An unknown provider renders a dash.'
+		);
 	}
 }
