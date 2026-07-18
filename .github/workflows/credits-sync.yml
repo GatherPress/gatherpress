@@ -17,6 +17,11 @@ name: Credits Sync
 # - Membership is checked against the newest credits file (leads + team +
 #   contributors) plus any pending entries already on the standing branch, so
 #   double-crediting can't happen even while the standing PR is open.
+# - The standing branch is rebuilt from develop's head on every run, with the
+#   pending entries re-applied as one fresh commit. Without the rebuild the
+#   branch accumulates merge conflicts: the standing PR squash-merges (its
+#   commits never land in develop's history) and version bumps rewrite
+#   unreleased.json on develop.
 # - Leads and team stay hand-curated; this only ever appends to the
 #   contributors long tail via unreleased.json.
 # - Contributors props-bot can't resolve (no GitHub link on their wp.org
@@ -82,49 +87,64 @@ jobs:
           fi
           echo "Props usernames: $(paste -sd, /tmp/props.txt)"
 
-          # 2. Base state: if the standing branch exists, its unreleased.json
-          # (with pending, not-yet-merged additions) is the base; otherwise
-          # develop's copy is.
+          # 2. Base state: develop's copy (this checkout) is always the base.
+          # The standing branch only contributes its not-yet-merged pending
+          # entries; its history is rebuilt from develop on every run (step
+          # 5). A long-lived branch drifts into merge conflicts otherwise:
+          # the standing PR squash-merges, so its commits never enter
+          # develop's history, and the version bump rewrites unreleased.json
+          # on develop out from under the branch.
+          cp "${UNRELEASED_PATH}" /tmp/unreleased.json
+
           if gh api "repos/${REPO}/git/ref/heads/${SYNC_BRANCH}" > /dev/null 2>&1; then
             branch_exists=1
             gh api "repos/${REPO}/contents/${UNRELEASED_PATH}?ref=${SYNC_BRANCH}" \
-              --jq .content | base64 -d > /tmp/unreleased.json
+              --jq .content | base64 -d \
+              | jq -r '(.contributors // [])[]' | sort -u > /tmp/pending.txt
           else
             branch_exists=0
-            cp "${UNRELEASED_PATH}" /tmp/unreleased.json
+            : > /tmp/pending.txt
           fi
 
-          # 3. Membership: newest version file's full roster + pending entries.
+          # 3. Membership: newest version file's full roster + develop's own
+          # unreleased entries. Pending branch entries are filtered against
+          # it too, so entries already consumed by a release are never
+          # re-proposed from the stale branch copy.
           newest=$(ls .github/scripts/release/credits/*.json | grep -v unreleased | sort -V | tail -1)
           echo "Roster source: ${newest}"
           jq -r '[(.leads // [])[], (.team // [])[], (.contributors // [])[]] | .[]' "${newest}" > /tmp/roster.txt
           jq -r '(.contributors // [])[]' /tmp/unreleased.json >> /tmp/roster.txt
           sort -u /tmp/roster.txt -o /tmp/roster.txt
 
+          pending=$(comm -23 /tmp/pending.txt /tmp/roster.txt || true)
           new_contributors=$(comm -23 /tmp/props.txt /tmp/roster.txt || true)
+          additions=$(printf '%s\n%s\n' "${pending}" "${new_contributors}" | sed '/^$/d' | sort -u)
 
-          if [[ -z "${new_contributors}" ]]; then
+          if [[ -z "${additions}" ]]; then
             echo "::notice::Everyone on PR #${PR_NUMBER} is already credited for this cycle."
             exit 0
           fi
-          echo "New contributors: $(echo "${new_contributors}" | paste -sd, -)"
+          echo "Crediting: $(echo "${additions}" | paste -sd, -)"
 
           # 4. Append and write the updated staging file.
-          jq --argjson add "$(echo "${new_contributors}" | jq -R . | jq -s .)" \
+          jq --argjson add "$(echo "${additions}" | jq -R . | jq -s .)" \
             '.contributors = ((.contributors // []) + $add | unique)' \
             /tmp/unreleased.json > /tmp/unreleased.new.json
           printf '%s\n' "$(jq --indent 4 . /tmp/unreleased.new.json)" > /tmp/unreleased.final.json
 
-          # 5. Ensure the standing branch exists (created from develop's head).
+          # 5. Rebuild the standing branch from develop's head so the single
+          # commit below always sits on current develop and the standing PR
+          # can never conflict.
           develop_sha=$(gh api "repos/${REPO}/git/ref/heads/develop" --jq .object.sha)
 
           if [[ "${branch_exists}" == "0" ]]; then
             gh api "repos/${REPO}/git/refs" \
               -f ref="refs/heads/${SYNC_BRANCH}" -f sha="${develop_sha}" > /dev/null
-            head_sha="${develop_sha}"
           else
-            head_sha=$(gh api "repos/${REPO}/git/ref/heads/${SYNC_BRANCH}" --jq .object.sha)
+            gh api -X PATCH "repos/${REPO}/git/refs/heads/${SYNC_BRANCH}" \
+              -f sha="${develop_sha}" -F force=true > /dev/null
           fi
+          head_sha="${develop_sha}"
 
           # 6. Commit via GraphQL so GitHub signs it (develop requires signed
           # commits; an unsigned CLI commit would block auto-merge).
