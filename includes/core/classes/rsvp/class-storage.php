@@ -1,6 +1,6 @@
 <?php
 /**
- * RSVP Repository.
+ * RSVP Storage.
  *
  * Handles retrieving and saving of RSVP responses as WordPress comments.
  *
@@ -27,13 +27,13 @@ use InvalidArgumentException;
 use WP_Comment;
 
 /**
- * Class Repository.
+ * Class Storage.
  *
  * Handles querying and manipulation of RSVP comments within the GatherPress plugin.
  *
  * @since 0.35.0
  */
-final class Repository {
+final class Storage {
 
 	/**
 	 * Comment meta key that stores an external provider's identifier.
@@ -69,11 +69,11 @@ final class Repository {
 	protected Query $rsvp_query;
 
 	/**
-	 * RSVP Repository constructor.
+	 * RSVP Storage constructor.
 	 *
 	 * @since 0.35.0
 	 *
-	 * @param int $post_id The event post ID this repository operates on.
+	 * @param int $post_id The event post ID this storage operates on.
 	 */
 	public function __construct( protected readonly int $post_id ) {
 		$this->rsvp_query = Query::get_instance();

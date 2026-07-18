@@ -87,11 +87,11 @@ class Rsvp {
 	protected readonly WP_Post $event;
 
 	/**
-	 * Repository for RSVP Responses for this event.
+	 * Storage for RSVP Responses for this event.
 	 *
-	 * @var Repository
+	 * @var Storage
 	 */
-	protected readonly Repository $repository;
+	protected readonly Storage $storage;
 
 	/**
 	 * List of all RSVP providers.
@@ -119,7 +119,7 @@ class Rsvp {
 	 */
 	public function __construct( int $post_id ) {
 		$this->event                = get_post( $post_id );
-		$this->repository           = new Repository( $post_id );
+		$this->storage              = new Storage( $post_id );
 		$this->max_attendance_limit = (int) get_post_meta( $post_id, 'gatherpress_max_attendance_limit', true );
 		$this->providers            = Provider_Registry::get_instance()->get_all();
 	}
@@ -146,7 +146,7 @@ class Rsvp {
 		}
 
 		$provider = $this->resolve_provider( $identity );
-		$state    = $this->repository->get( $identity, $provider );
+		$state    = $this->storage->get( $identity, $provider );
 
 		return $state ? Serializer::to_array( $state ) : null;
 	}
@@ -168,7 +168,7 @@ class Rsvp {
 		}
 
 		$provider = $this->resolve_provider( $identity );
-		$state    = $this->repository->get( $identity, $provider );
+		$state    = $this->storage->get( $identity, $provider );
 
 		return $state;
 	}
@@ -276,13 +276,13 @@ class Rsvp {
 		}
 
 		// Get current/prior RSVP response.
-		$current_response = $this->repository->get( $intent->data->identity, $intent->provider );
+		$current_response = $this->storage->get( $intent->data->identity, $intent->provider );
 
 		// Apply business logic for RSVP requests.
 		$intent = $this->constrain_rsvp_intent( $intent, $current_response );
 
 		// Persist RSVP comment: Create new RSVP-comment, Update existing one, or delete on invalid status.
-		$state = $this->repository->save(
+		$state = $this->storage->save(
 			$intent,
 			$current_response ? (int) $current_response->comment->comment_ID : null
 		);
@@ -306,7 +306,7 @@ class Rsvp {
 	 * @return int Number of RSVPs promoted from the waiting list.
 	 */
 	public function check_waiting_list(): int {
-		$states    = $this->repository->all();
+		$states    = $this->storage->all();
 		$responses = new Collection( $states );
 
 		// If no RSVP responses are on the waiting list, quit.
@@ -321,7 +321,7 @@ class Rsvp {
 			$promoted_count = 0;
 
 			foreach ( $waiting_list as $state ) {
-				$state = $this->repository->save( Intent::attend( $state ), (int) $state->comment->comment_ID );
+				$state = $this->storage->save( Intent::attend( $state ), (int) $state->comment->comment_ID );
 
 				if ( $state instanceof State ) {
 					++$promoted_count;
@@ -339,14 +339,14 @@ class Rsvp {
 		}
 
 		// If there is room, promote as many as possible. Promotion is keyed
-		// by comment ID via the repository, so Open RSVP attendees (userId 0)
+		// by comment ID via the storage, so Open RSVP attendees (userId 0)
 		// promote correctly — the identifier resolution develop needed for
 		// #1771 does not apply to this design.
 		$promoted_count = 0;
 
 		for ( $i = 0; $i < $remaining_spots; $i++ ) {
 			$state = $waiting_list[ $i ];
-			$state = $this->repository->save( Intent::attend( $state ), (int) $state->comment->comment_ID );
+			$state = $this->storage->save( Intent::attend( $state ), (int) $state->comment->comment_ID );
 
 			if ( $state instanceof State ) {
 				++$promoted_count;
@@ -487,7 +487,7 @@ class Rsvp {
 			),
 		);
 
-		$states   = $this->repository->all();
+		$states   = $this->storage->all();
 		$statuses = Status::values();
 
 		foreach ( $statuses as $status ) {
