@@ -5,50 +5,45 @@ import {
 	describe,
 	expect,
 	it,
+	beforeAll,
 	beforeEach,
 	afterEach,
 	jest,
 } from '@jest/globals';
-import '@testing-library/jest-dom';
+import { render, renderHook, act } from '@testing-library/react';
 
 /**
  * WordPress dependencies
  */
-jest.mock( '@wordpress/data', () => ( {
-	dispatch: jest.fn( () => ( {
-		selectBlock: jest.fn(),
-	} ) ),
-} ) );
+import { getBlockType } from '@wordpress/blocks';
 
 jest.mock( '@wordpress/blocks', () => ( {
 	getBlockType: jest.fn(),
 } ) );
 
+// Stub block-editor so importing the module under test does not pull in the
+// real editor store (its private-apis unlock throws under jsdom).
+jest.mock( '@wordpress/block-editor', () => ( {
+	store: {},
+} ) );
+
+jest.mock( '@wordpress/data', () => ( {
+	useSelect: jest.fn(),
+	select: jest.fn( () => ( { getSelectedBlockClientId: () => null } ) ),
+} ) );
+
+/**
+ * WordPress dependencies
+ */
+// eslint-disable-next-line import/order
+import { useSelect } from '@wordpress/data';
+
 jest.mock( '@wordpress/compose', () => ( {
 	createHigherOrderComponent: jest.fn( ( hoc ) => hoc ),
 } ) );
 
-jest.mock( '@wordpress/block-editor', () => ( {
-	InspectorControls: ( { children } ) => (
-		<div data-testid="inspector-controls">{ children }</div>
-	),
-} ) );
-
-jest.mock( '@wordpress/components', () => ( {
-	PanelBody: ( { children } ) => <div data-testid="panel-body">{ children }</div>,
-	ToggleControl: ( { label, checked, onChange } ) => (
-		<button
-			data-testid="toggle-control"
-			onClick={ () => onChange( ! checked ) }
-			aria-pressed={ checked }
-		>
-			{ label }
-		</button>
-	),
-} ) );
-
-jest.mock( '@wordpress/i18n', () => ( {
-	__: ( text ) => text,
+jest.mock( '@wordpress/a11y', () => ( {
+	speak: jest.fn(),
 } ) );
 
 jest.mock( '@wordpress/hooks', () => ( {
@@ -56,1003 +51,772 @@ jest.mock( '@wordpress/hooks', () => ( {
 	hasFilter: jest.fn( () => false ),
 } ) );
 
-jest.mock( '@wordpress/element', () => ( {
-	useState: jest.fn(),
-	useEffect: jest.fn(),
-	useCallback: jest.fn( ( callback ) => callback ),
-} ) );
-
 /**
  * Internal dependencies
  */
 import {
-	generateBlockGuardStateKey,
-	getEditorDocument,
-	applyGuardToContainer,
-	cleanupGuardFromContainer,
-	applyListViewGuard,
-	addDragListeners,
-	removeDragListeners,
-	createDropHandler,
-	applyListViewGuardForBlock,
-	applyInspectorListViewGuard,
-	injectBlockGuardStyles,
+	isBlockGuarded,
+	useIsBlockSealed,
+	publishSealedState,
+	getCanvasDocument,
+	placeCaretAtPoint,
+	ensureDragPointerCycle,
+	withBlockGuard,
 } from '@src/supports/block-guard';
 
-/**
- * Mock DOM setup for editor document detection.
- */
-const setupMockDOM = () => {
-	// Mock iframe for FSE context.
-	const mockIframe = {
-		contentDocument: {
-			getElementById: jest.fn(),
-			querySelectorAll: jest.fn( () => [] ),
-			createElement: jest.fn( () => ( {
-				className: '',
-				style: {},
-				onclick: null,
-				appendChild: jest.fn(),
-			} ) ),
-			body: {},
-		},
-	};
+// jsdom does not implement elementFromPoint and throws; the caret forwarding
+// calls it whenever a double-click opens a block, so give every suite a
+// harmless default (individual tests override it to observe calls).
+beforeAll( () => {
+	document.elementFromPoint = jest.fn( () => null );
+} );
 
-	// Create proper jest mocks for document methods.
-	global.document = {
-		querySelector: jest.fn( () => mockIframe ),
-		getElementById: jest.fn(),
-		querySelectorAll: jest.fn( () => [] ),
-		createElement: jest.fn( () => ( {
-			className: '',
-			style: {},
-			onclick: null,
-			appendChild: jest.fn(),
-		} ) ),
-		body: {},
-	};
-
-	return mockIframe;
-};
-
-/**
- * Mock block element structure for testing.
- *
- * @param {string}  clientId  - The block's client ID.
- * @param {string}  blockType - The block type name.
- * @param {boolean} queryLoop - Whether this block is in a query loop.
- *
- * @return {Object} Mock block element.
- */
-const createMockBlockElement = ( clientId, blockType, queryLoop = false ) => {
-	const element = {
-		id: `block-${ clientId }`,
-		getAttribute: jest.fn( () => blockType ),
-		closest: jest.fn( ( selector ) => {
-			if ( '[data-type="core/post-template"]' === selector && queryLoop ) {
-				return {
-					id: 'query-loop-123',
-					querySelectorAll: jest.fn( () => [ element ] ),
-					closest: jest.fn( () => ( {
-						id: 'query-block-456',
-						querySelectorAll: jest.fn( () => [ element ] ),
-					} ) ),
-				};
-			}
-			if ( '[data-type="core/query"]' === selector && queryLoop ) {
-				return {
-					id: 'query-block-456',
-					querySelectorAll: jest.fn( () => [ element ] ),
-				};
-			}
-			return null;
-		} ),
-		querySelector: jest.fn( () => ( {
-			querySelectorAll: jest.fn( () => [] ),
-			querySelector: jest.fn( () => null ),
-			style: {},
-			appendChild: jest.fn(),
-		} ) ),
-	};
-
-	return element;
-};
-
-/**
- * Create mock query loop container that can be shared between elements.
- *
- * @return {Object} Mock query loop container.
- */
-const createMockQueryLoopContainer = () => {
-	return {
-		id: 'query-loop-123',
-		querySelectorAll: jest.fn(),
-		closest: jest.fn( () => ( {
-			id: 'query-block-456',
-			querySelectorAll: jest.fn(),
-		} ) ),
-	};
-};
-
-/**
- * Coverage for generateBlockGuardStateKey function.
- */
-describe( 'generateBlockGuardStateKey', () => {
-	beforeEach( () => {
-		// Clear all mocks first.
-		jest.clearAllMocks();
-
-		// Set up fresh DOM mocks.
-		setupMockDOM();
-	} );
-
+describe( 'isBlockGuarded', () => {
 	afterEach( () => {
 		jest.clearAllMocks();
 	} );
 
-	it( 'returns clientId-based key for individual blocks outside query loops', () => {
-		const blockName = 'gatherpress/rsvp';
-		const clientId = 'test-client-123';
-		const mockElement = createMockBlockElement( clientId, blockName, false );
+	it( 'returns true when the block declares the blockGuard support', () => {
+		getBlockType.mockReturnValue( {
+			supports: { gatherpress: { blockGuard: true } },
+		} );
 
-		// Directly assign the mock function return value.
-		global.document.getElementById = jest.fn().mockReturnValue( mockElement );
-
-		const stateKey = generateBlockGuardStateKey( blockName, clientId );
-		expect( stateKey ).toBe( `${ blockName }-${ clientId }` );
+		expect( isBlockGuarded( 'gatherpress/add-to-calendar' ) ).toBe( true );
 	} );
 
-	it( 'returns position-based key for blocks inside query loops', () => {
-		const blockName = 'gatherpress/rsvp';
-		const clientId = 'test-client-456';
-		const mockElement = createMockBlockElement( clientId, blockName, true );
+	it( 'returns false when the block does not declare blockGuard', () => {
+		getBlockType.mockReturnValue( { supports: { gatherpress: {} } } );
 
-		global.document.getElementById = jest.fn().mockReturnValue( mockElement );
-		mockElement
-			.closest( '[data-type="core/post-template"]' )
-			.querySelectorAll.mockReturnValue( [ mockElement ] );
-
-		const stateKey = generateBlockGuardStateKey( blockName, clientId );
-		expect( stateKey ).toBe(
-			`${ blockName }-queryloop-query-block-456-position-0`,
-		);
+		expect( isBlockGuarded( 'gatherpress/venue' ) ).toBe( false );
 	} );
 
-	it( 'returns fallback key when block element is not found', () => {
-		const blockName = 'gatherpress/rsvp';
-		const clientId = 'missing-client';
+	it( 'returns false when the block has no gatherpress supports', () => {
+		getBlockType.mockReturnValue( { supports: {} } );
 
-		global.document.getElementById = jest.fn().mockReturnValue( null );
-
-		const stateKey = generateBlockGuardStateKey( blockName, clientId );
-		expect( stateKey ).toBe( `${ blockName }-${ clientId }` );
+		expect( isBlockGuarded( 'core/paragraph' ) ).toBe( false );
 	} );
 
-	it( 'handles multiple blocks of same type in query loop with different positions', () => {
-		const blockName = 'gatherpress/rsvp';
-		const firstClientId = 'first-block';
-		const secondClientId = 'second-block';
+	it( 'returns false when the block type is unregistered', () => {
+		getBlockType.mockReturnValue( undefined );
 
-		// Create elements but use a shared query loop container.
-		const firstElement = {
-			id: `block-${ firstClientId }`,
-			getAttribute: jest.fn( () => blockName ),
-			closest: jest.fn(),
-		};
-		const secondElement = {
-			id: `block-${ secondClientId }`,
-			getAttribute: jest.fn( () => blockName ),
-			closest: jest.fn(),
-		};
-
-		// Create shared query loop container.
-		const sharedQueryContainer = createMockQueryLoopContainer();
-		const elementsArray = [ firstElement, secondElement ];
-		sharedQueryContainer.querySelectorAll.mockReturnValue( elementsArray );
-
-		// Both elements should return the same query container.
-		firstElement.closest.mockReturnValue( sharedQueryContainer );
-		secondElement.closest.mockReturnValue( sharedQueryContainer );
-
-		global.document.getElementById = jest
-			.fn()
-			.mockReturnValueOnce( firstElement )
-			.mockReturnValueOnce( secondElement );
-
-		const firstStateKey = generateBlockGuardStateKey(
-			blockName,
-			firstClientId,
-		);
-		const secondStateKey = generateBlockGuardStateKey(
-			blockName,
-			secondClientId,
-		);
-
-		expect( firstStateKey ).toContain( 'position-0' );
-		expect( secondStateKey ).toContain( 'position-1' );
-		expect( firstStateKey ).not.toBe( secondStateKey );
+		expect( isBlockGuarded( 'gatherpress/nope' ) ).toBe( false );
 	} );
 } );
 
-/**
- * Coverage for useSharedBlockGuardState hook.
- */
-describe( 'useSharedBlockGuardState', () => {
-	beforeEach( () => {
-		jest.clearAllMocks();
+describe( 'useIsBlockSealed', () => {
+	it( 'reports sealed for a block that has not published state yet', () => {
+		const { result } = renderHook( () => useIsBlockSealed( 'unknown-id' ) );
+
+		expect( result.current ).toBe( true );
 	} );
 
-	it( 'initializes with default enabled state', () => {
-		// This would test the hook initialization.
-		// const { useState, useEffect } = require('@wordpress/element');
-		// useState.mockReturnValue([true, jest.fn()]);
-		// useEffect.mockImplementation((fn) => fn());
-		// const [state, setState] = useSharedBlockGuardState('test-key');
-		// expect(state).toBe(true);
+	it( 'reports sealed when there is no client ID', () => {
+		const { result } = renderHook( () => useIsBlockSealed( '' ) );
+
+		expect( result.current ).toBe( true );
 	} );
 
-	it( 'synchronizes state across multiple instances with same key', () => {
-		// This would test that multiple hooks with the same key share state
-		// Mock implementation would verify that listeners are properly managed.
+	it( 'reflects the published sealed state for a block', () => {
+		const { result } = renderHook( () => useIsBlockSealed( 'block-1' ) );
+
+		act( () => {
+			publishSealedState( 'block-1', false );
+		} );
+
+		expect( result.current ).toBe( false );
+
+		act( () => {
+			publishSealedState( 'block-1', true );
+		} );
+
+		expect( result.current ).toBe( true );
 	} );
 
-	it( 'maintains independent state for different keys', () => {
-		// This would test that different state keys don't interfere with each other.
+	it( 'shares one listener set between subscribers to the same block', () => {
+		const first = renderHook( () => useIsBlockSealed( 'shared-id' ) );
+		const second = renderHook( () => useIsBlockSealed( 'shared-id' ) );
+
+		act( () => {
+			publishSealedState( 'shared-id', false );
+		} );
+
+		expect( first.result.current ).toBe( false );
+		expect( second.result.current ).toBe( false );
+	} );
+
+	it( 'does not react to another block changing state', () => {
+		const { result } = renderHook( () => useIsBlockSealed( 'block-a' ) );
+
+		act( () => {
+			publishSealedState( 'block-b', false );
+		} );
+
+		expect( result.current ).toBe( true );
 	} );
 } );
 
-/**
- * Coverage for withBlockGuard HOC.
- */
-describe( 'withBlockGuard HOC', () => {
-	let mockGetBlockType;
-	let mockUseState;
-	let mockUseEffect;
-
-	beforeEach( () => {
-		setupMockDOM();
-
-		const { getBlockType } = require( '@wordpress/blocks' );
-		const { useState, useEffect } = require( '@wordpress/element' );
-
-		mockGetBlockType = getBlockType;
-		mockUseState = useState;
-		mockUseEffect = useEffect;
-
-		// Reset mocks.
-		mockGetBlockType.mockClear();
-		mockUseState.mockClear();
-		mockUseEffect.mockClear();
-	} );
-
+describe( 'getCanvasDocument', () => {
 	afterEach( () => {
+		document.querySelector( 'iframe[name="editor-canvas"]' )?.remove();
+	} );
+
+	it( 'falls back to the main document when there is no canvas iframe', () => {
+		expect( getCanvasDocument() ).toBe( document );
+	} );
+
+	it( 'returns the canvas iframe document when one is present', () => {
+		const iframe = document.createElement( 'iframe' );
+		iframe.name = 'editor-canvas';
+		document.body.appendChild( iframe );
+
+		expect( getCanvasDocument() ).toBe( iframe.contentDocument );
+	} );
+} );
+
+describe( 'withBlockGuard', () => {
+	const BlockListBlock = jest.fn( () => <div /> );
+	const Guarded = withBlockGuard( BlockListBlock );
+	const lastProps = () => BlockListBlock.mock.calls.at( -1 )[ 0 ];
+	const sealedNow = () =>
+		( lastProps().className || '' ).includes( 'has-block-overlay' );
+
+	const setSelection = ( { isSelf = false, isInner = false } ) => {
+		useSelect.mockImplementation( ( mapSelect ) =>
+			mapSelect( () => ( {
+				isBlockSelected: () => isSelf,
+				hasSelectedInnerBlock: () => isInner,
+			} ) )
+		);
+	};
+
+	const element = ( extra = {} ) => (
+		<Guarded
+			name="gatherpress/add-to-calendar"
+			clientId="abc"
+			wrapperProps={ {} }
+			{ ...extra }
+		/>
+	);
+
+	beforeEach( () => {
 		jest.clearAllMocks();
-	} );
-
-	it( 'returns original component for non-GatherPress blocks', () => {
-		mockGetBlockType.mockReturnValue( {
-			supports: { gatherpress: { blockGuard: false } },
-		} );
-
-		// Test would verify that withBlockGuard passes through non-GatherPress blocks unchanged.
-		expect( mockGetBlockType ).toBeDefined();
-	} );
-
-	it( 'returns original component for blocks without blockGuard support', () => {
-		mockGetBlockType.mockReturnValue( {
-			supports: { gatherpress: {} },
-		} );
-
-		// Test would verify that blocks without blockGuard support are passed through unchanged.
-		expect( mockGetBlockType ).toBeDefined();
-	} );
-
-	it( 'adds Inspector Controls for GatherPress blocks with blockGuard support', () => {
-		mockGetBlockType.mockReturnValue( {
+		getBlockType.mockReturnValue( {
 			supports: { gatherpress: { blockGuard: true } },
 		} );
-
-		mockUseState.mockReturnValue( [ true, jest.fn() ] );
-		mockUseEffect.mockImplementation( ( fn ) => {
-			fn();
-			return jest.fn(); // cleanup function.
-		} );
-
-		// Test would verify that Inspector Controls are added for supported blocks.
-		expect( mockUseState ).toBeDefined();
-		expect( mockUseEffect ).toBeDefined();
+		document.getElementById( 'gatherpress-block-guard-hint' )?.remove();
 	} );
 
-	it( 'applies block guard to DOM elements when enabled', () => {
-		mockGetBlockType.mockReturnValue( {
-			supports: { gatherpress: { blockGuard: true } },
-		} );
+	it( 'passes a non-guarded block straight through', () => {
+		getBlockType.mockReturnValue( { supports: {} } );
+		setSelection( {} );
+		render( element( { name: 'core/paragraph' } ) );
 
-		const mockSetState = jest.fn();
-		mockUseState.mockReturnValue( [ true, mockSetState ] );
-
-		const mockElement = createMockBlockElement(
-			'test-123',
-			'gatherpress/rsvp',
-			false,
-		);
-		global.document.getElementById = jest.fn().mockReturnValue( mockElement );
-		global.document.querySelectorAll = jest
-			.fn()
-			.mockReturnValue( [ mockElement ] );
-
-		// This would test that the DOM manipulation occurs correctly
-		// when the effect runs.
+		expect( lastProps().className ).toBeUndefined();
 	} );
 
-	it( 'handles query loop context correctly', () => {
-		mockGetBlockType.mockReturnValue( {
-			supports: { gatherpress: { blockGuard: true } },
+	it( 'seals a guarded block while selection is outside it', () => {
+		setSelection( {} );
+		render( element() );
+
+		expect( sealedNow() ).toBe( true );
+	} );
+
+	it( 'stays sealed when merely selected, so the whole block can be dragged', () => {
+		setSelection( { isSelf: true } );
+		render( element() );
+
+		expect( sealedNow() ).toBe( true );
+	} );
+
+	it( 'opens on a double-click', () => {
+		setSelection( { isSelf: true } );
+		render( element() );
+		expect( sealedNow() ).toBe( true );
+
+		act( () => {
+			lastProps().wrapperProps.onDoubleClick( {} );
 		} );
 
-		const mockSetState = jest.fn();
-		mockUseState.mockReturnValue( [ true, mockSetState ] );
-		mockUseEffect.mockImplementation( ( fn ) => fn() );
+		expect( sealedNow() ).toBe( false );
+	} );
 
-		const mockElement = createMockBlockElement(
-			'test-123',
-			'gatherpress/rsvp',
-			true,
-		);
-		global.document.getElementById = jest.fn().mockReturnValue( mockElement );
-		global.document.querySelectorAll = jest
-			.fn()
-			.mockReturnValue( [ mockElement ] );
+	it( 'opens on Enter while the block is selected', () => {
+		setSelection( { isSelf: true } );
+		render( element() );
 
-		// This would test that query loop detection and state key generation
-		// works correctly for blocks within query loops.
+		act( () => {
+			lastProps().wrapperProps.onKeyDown( {
+				key: 'Enter',
+				preventDefault() {},
+				stopPropagation() {},
+			} );
+		} );
+
+		expect( sealedNow() ).toBe( false );
+	} );
+
+	it( 'chains other keys to the original handler', () => {
+		const onKeyDown = jest.fn();
+		setSelection( { isSelf: true } );
+		render( element( { wrapperProps: { onKeyDown } } ) );
+
+		act( () => {
+			lastProps().wrapperProps.onKeyDown( {
+				key: 'a',
+				preventDefault() {},
+				stopPropagation() {},
+			} );
+		} );
+
+		expect( onKeyDown ).toHaveBeenCalled();
+		expect( sealedNow() ).toBe( true );
+	} );
+
+	it( 'chains an existing onDoubleClick handler', () => {
+		const onDoubleClick = jest.fn();
+		setSelection( { isSelf: true } );
+		render( element( { wrapperProps: { onDoubleClick } } ) );
+
+		act( () => {
+			lastProps().wrapperProps.onDoubleClick( {} );
+		} );
+
+		expect( onDoubleClick ).toHaveBeenCalled();
+	} );
+
+	it( 're-arms after being opened once selection leaves', () => {
+		setSelection( { isSelf: true } );
+		const { rerender } = render( element() );
+		act( () => {
+			lastProps().wrapperProps.onDoubleClick( {} );
+		} );
+		expect( sealedNow() ).toBe( false );
+
+		setSelection( {} );
+		rerender( element() );
+
+		expect( sealedNow() ).toBe( true );
+	} );
+
+	it( 'unseals while an inner block is selected', () => {
+		setSelection( { isInner: true } );
+		render( element() );
+
+		expect( sealedNow() ).toBe( false );
+	} );
+
+	it( 're-arms after a remount, and can be opened again', () => {
+		setSelection( { isSelf: true } );
+		const first = render( element() );
+		act( () => {
+			lastProps().wrapperProps.onDoubleClick( {} );
+		} );
+		expect( sealedNow() ).toBe( false );
+
+		// a move unmounts and remounts the block
+		first.unmount();
+		render( element() );
+		expect( sealedNow() ).toBe( true );
+
+		// and re-opening still works — no stranded state
+		act( () => {
+			lastProps().wrapperProps.onDoubleClick( {} );
+		} );
+		expect( sealedNow() ).toBe( false );
+	} );
+
+	it( 'shows a pointer cursor while sealed, and no tint yet', () => {
+		setSelection( {} );
+		render( element() );
+
+		expect( lastProps().wrapperProps.style ).toMatchObject( {
+			cursor: 'pointer',
+		} );
+		expect( lastProps().wrapperProps.style.backgroundColor ).toBeUndefined();
+	} );
+
+	it( 'tints the block once it is selected', () => {
+		setSelection( { isSelf: true } );
+		render( element() );
+
+		expect( lastProps().wrapperProps.style ).toMatchObject( {
+			backgroundColor: 'rgba(30, 58, 233, 0.04)',
+		} );
+	} );
+
+	it( 'does not tint while only an inner block is selected', () => {
+		setSelection( { isInner: true } );
+		render( element() );
+
+		expect( lastProps().wrapperProps.style.backgroundColor ).toBeUndefined();
+	} );
+
+	it( 'preserves any style core already set on the wrapper', () => {
+		setSelection( { isSelf: true } );
+		render( element( { wrapperProps: { style: { marginTop: '8px' } } } ) );
+
+		expect( lastProps().wrapperProps.style ).toMatchObject( {
+			marginTop: '8px',
+			backgroundColor: 'rgba(30, 58, 233, 0.04)',
+		} );
+	} );
+
+	it( 'publishes its sealed state for descendants', () => {
+		setSelection( {} );
+		render( element() );
+
+		const { result } = renderHook( () => useIsBlockSealed( 'abc' ) );
+		expect( result.current ).toBe( true );
 	} );
 } );
 
-/**
- * Integration tests for complete block guard workflow.
- */
-describe( 'Block Guard Integration', () => {
+describe( 'accessibility', () => {
+	const BlockListBlock = jest.fn( () => <div /> );
+	const Guarded = withBlockGuard( BlockListBlock );
+	const lastProps = () => BlockListBlock.mock.calls.at( -1 )[ 0 ];
+
+	const renderWith = ( { isSelf = false, isInner = false, wrapperProps = {} } ) => {
+		useSelect.mockImplementation( ( mapSelect ) =>
+			mapSelect( () => ( {
+				isBlockSelected: () => isSelf,
+				hasSelectedInnerBlock: () => isInner,
+			} ) )
+		);
+
+		return render(
+			<Guarded
+				name="gatherpress/add-to-calendar"
+				clientId="a11y"
+				wrapperProps={ wrapperProps }
+			/>
+		);
+	};
+
 	beforeEach( () => {
-		setupMockDOM();
 		jest.clearAllMocks();
+		getBlockType.mockReturnValue( {
+			supports: { gatherpress: { blockGuard: true } },
+		} );
+		document.getElementById( 'gatherpress-block-guard-hint' )?.remove();
 	} );
 
-	it( 'maintains independent states for blocks outside query loops', () => {
-		// Test that individual blocks each have their own state.
+	it( 'adds a visually hidden hint describing how to get in', () => {
+		renderWith( {} );
+
+		const hint = document.getElementById( 'gatherpress-block-guard-hint' );
+		expect( hint ).not.toBeNull();
+		expect( hint.className ).toBe( 'screen-reader-text' );
 	} );
 
-	it( 'synchronizes state for same position blocks across query loop instances', () => {
-		// Test that blocks at position 0 in different posts share state
-		// but are independent from blocks at position 1.
+	it( 'only ever creates one hint element', () => {
+		renderWith( {} );
+		renderWith( {} );
+
+		expect(
+			document.querySelectorAll( '#gatherpress-block-guard-hint' )
+		).toHaveLength( 1 );
 	} );
 
-	it( 'handles mixed contexts (individual blocks + query loops) correctly', () => {
-		// Test that individual blocks and query loop blocks don't interfere.
-	} );
+	it( 'describes the block by the hint while sealed', () => {
+		renderWith( {} );
 
-	it( 'cleans up properly on component unmount', () => {
-		// Test that overlays are removed and listeners are cleaned up.
-	} );
-} );
-
-/**
- * Tests for getEditorDocument function.
- */
-describe( 'getEditorDocument', () => {
-	afterEach( () => {
-		jest.restoreAllMocks();
-	} );
-
-	it( 'returns iframe contentDocument in FSE context', () => {
-		const mockContentDocument = {
-			getElementById: jest.fn(),
-		};
-		const mockIframe = { contentDocument: mockContentDocument };
-
-		jest.spyOn( document, 'querySelector' ).mockReturnValue(
-			mockIframe
-		);
-
-		const result = getEditorDocument();
-		expect( result ).toBe( mockContentDocument );
-		expect( document.querySelector ).toHaveBeenCalledWith(
-			'iframe[name="editor-canvas"]',
+		expect( lastProps().wrapperProps[ 'aria-describedby' ] ).toBe(
+			'gatherpress-block-guard-hint'
 		);
 	} );
 
-	it( 'returns main document when iframe is not found', () => {
-		jest.spyOn( document, 'querySelector' ).mockReturnValue( null );
+	it( 'preserves an existing aria-describedby alongside the hint', () => {
+		renderWith( { wrapperProps: { 'aria-describedby': 'other-id' } } );
 
-		const result = getEditorDocument();
-		expect( result ).toBe( document );
+		expect( lastProps().wrapperProps[ 'aria-describedby' ] ).toBe(
+			'other-id gatherpress-block-guard-hint'
+		);
 	} );
 
-	it( 'returns main document when iframe has no contentDocument', () => {
-		const mockIframe = { contentDocument: null };
+	it( 'drops the hint description once unsealed', () => {
+		renderWith( { isInner: true } );
 
-		jest.spyOn( document, 'querySelector' ).mockReturnValue(
-			mockIframe
+		expect( lastProps().wrapperProps[ 'aria-describedby' ] ).toBeUndefined();
+	} );
+
+	it( 'announces when the block unseals', () => {
+		// eslint-disable-next-line global-require
+		const { speak } = require( '@wordpress/a11y' );
+		const { rerender } = renderWith( {} );
+		speak.mockClear();
+
+		// an inner block becoming selected opens it
+		useSelect.mockImplementation( ( mapSelect ) =>
+			mapSelect( () => ( {
+				isBlockSelected: () => false,
+				hasSelectedInnerBlock: () => true,
+			} ) )
+		);
+		rerender(
+			<Guarded
+				name="gatherpress/add-to-calendar"
+				clientId="a11y"
+				wrapperProps={ {} }
+			/>
 		);
 
-		const result = getEditorDocument();
-		expect( result ).toBe( document );
+		expect( speak ).toHaveBeenCalledWith(
+			expect.stringContaining( 'unlocked' ),
+			'polite'
+		);
+	} );
+
+	it( 'does not announce while the block stays sealed', () => {
+		// eslint-disable-next-line global-require
+		const { speak } = require( '@wordpress/a11y' );
+		speak.mockClear();
+
+		renderWith( {} );
+
+		expect( speak ).not.toHaveBeenCalled();
 	} );
 } );
 
-/**
- * Tests for applyGuardToContainer function.
- */
-describe( 'applyGuardToContainer', () => {
-	let mockContainer;
-	let mockBlockAppender;
+describe( 'filter registration', () => {
+	// eslint-disable-next-line global-require
+	const hooks = require( '@wordpress/hooks' );
 
 	beforeEach( () => {
-		mockBlockAppender = {
-			style: {},
-		};
-
-		mockContainer = {
-			style: {},
-			dataset: {},
-			querySelectorAll: jest.fn( () => [] ),
-			querySelector: jest.fn( ( selector ) => {
-				if ( '.block-list-appender' === selector ) {
-					return mockBlockAppender;
-				}
-				return null;
-			} ),
-		};
+		hooks.addFilter.mockClear();
 	} );
 
-	it( 'returns early if container is null', () => {
-		applyGuardToContainer( null, true );
-		// No error should be thrown.
-		expect( true ).toBe( true );
+	it( 'registers the BlockListBlock filter when not already present', () => {
+		hooks.hasFilter.mockReturnValue( false );
+
+		jest.isolateModules( () => {
+			require( '@src/supports/block-guard' );
+		} );
+
+		expect( hooks.addFilter ).toHaveBeenCalledWith(
+			'editor.BlockListBlock',
+			'gatherpress/with-block-guard',
+			expect.anything()
+		);
 	} );
 
-	it( 'applies guard styles when enabled', () => {
-		applyGuardToContainer( mockContainer, true );
+	it( 'does not register a second time when the filter already exists', () => {
+		hooks.hasFilter.mockReturnValue( true );
 
-		expect( mockContainer.inert ).toBe( true );
-		expect( mockContainer.style.opacity ).toBe( '0.95' );
-		expect( mockContainer.style.cursor ).toBe( 'not-allowed' );
-		expect( mockContainer.dataset.gatherPressGuarded ).toBe( 'true' );
-	} );
+		jest.isolateModules( () => {
+			require( '@src/supports/block-guard' );
+		} );
 
-	it( 'hides block appender when enabled', () => {
-		applyGuardToContainer( mockContainer, true );
-
-		expect( mockBlockAppender.style.display ).toBe( 'none' );
-	} );
-
-	it( 'removes guard styles when disabled', () => {
-		// First apply guard.
-		mockContainer.inert = true;
-		mockContainer.style.opacity = '0.95';
-		mockContainer.style.cursor = 'not-allowed';
-		mockContainer.dataset.gatherPressGuarded = 'true';
-
-		applyGuardToContainer( mockContainer, false );
-
-		expect( mockContainer.inert ).toBe( false );
-		expect( mockContainer.style.opacity ).toBe( '' );
-		expect( mockContainer.style.cursor ).toBe( '' );
-		expect( mockContainer.dataset.gatherPressGuarded ).toBeUndefined();
-	} );
-
-	it( 'shows block appender when disabled', () => {
-		mockBlockAppender.style.display = 'none';
-
-		applyGuardToContainer( mockContainer, false );
-
-		expect( mockBlockAppender.style.display ).toBe( '' );
+		expect( hooks.addFilter ).not.toHaveBeenCalled();
 	} );
 } );
 
-/**
- * Tests for cleanupGuardFromContainer function.
- */
-describe( 'cleanupGuardFromContainer', () => {
-	let mockBlockAppender;
-
-	beforeEach( () => {
-		mockBlockAppender = {
-			style: {},
+describe( 'placeCaretAtPoint', () => {
+	const makeDoc = ( overrides = {} ) => {
+		const editable = {
+			focus: jest.fn(),
 		};
+		const target = {
+			closest: jest.fn( () => editable ),
+		};
+		const selection = {
+			removeAllRanges: jest.fn(),
+			addRange: jest.fn(),
+		};
+		return {
+			editable,
+			target,
+			selection,
+			doc: {
+				elementFromPoint: jest.fn( () => target ),
+				getSelection: jest.fn( () => selection ),
+				...overrides,
+			},
+		};
+	};
+
+	it( 'does nothing when no element sits at the point', () => {
+		const { doc } = makeDoc( { elementFromPoint: jest.fn( () => null ) } );
+
+		expect( () => placeCaretAtPoint( doc, 5, 5 ) ).not.toThrow();
 	} );
 
-	it( 'returns early if container is null', () => {
-		cleanupGuardFromContainer( null );
-		// No error should be thrown.
-		expect( true ).toBe( true );
+	it( 'does nothing when the element is not inside editable text', () => {
+		const { doc, editable } = makeDoc();
+		doc.elementFromPoint = jest.fn( () => ( {
+			closest: () => null,
+		} ) );
+
+		placeCaretAtPoint( doc, 5, 5 );
+
+		expect( editable.focus ).not.toHaveBeenCalled();
 	} );
 
-	it( 'removes guard styles and attributes from container', () => {
-		const mockContainer = {
-			inert: true,
-			style: { opacity: '0.95', cursor: 'not-allowed' },
-			dataset: { gatherPressGuarded: 'true' },
-			querySelectorAll: jest.fn( () => [] ),
-			querySelector: jest.fn( () => mockBlockAppender ),
-		};
+	it( 'focuses and places the caret via caretRangeFromPoint', () => {
+		const { doc, editable, selection } = makeDoc();
+		const range = {};
+		doc.caretRangeFromPoint = jest.fn( () => range );
 
-		cleanupGuardFromContainer( mockContainer );
+		placeCaretAtPoint( doc, 5, 5 );
 
-		expect( mockContainer.inert ).toBe( false );
-		expect( mockContainer.style.opacity ).toBe( '' );
-		expect( mockContainer.style.cursor ).toBe( '' );
-		expect( mockContainer.dataset.gatherPressGuarded ).toBeUndefined();
+		expect( editable.focus ).toHaveBeenCalled();
+		expect( selection.removeAllRanges ).toHaveBeenCalled();
+		expect( selection.addRange ).toHaveBeenCalledWith( range );
 	} );
 
-	it( 'restores block appender display', () => {
-		mockBlockAppender.style.display = 'none';
-
-		const mockContainer = {
-			inert: false,
-			style: {},
-			dataset: {},
-			querySelectorAll: jest.fn( () => [] ),
-			querySelector: jest.fn( () => mockBlockAppender ),
+	it( 'falls back to caretPositionFromPoint when needed', () => {
+		const { doc, editable, selection } = makeDoc();
+		const node = {};
+		const builtRange = {
+			setStart: jest.fn(),
+			collapse: jest.fn(),
 		};
+		doc.caretPositionFromPoint = jest.fn( () => ( {
+			offsetNode: node,
+			offset: 2,
+		} ) );
+		doc.createRange = jest.fn( () => builtRange );
 
-		cleanupGuardFromContainer( mockContainer );
+		placeCaretAtPoint( doc, 5, 5 );
 
-		expect( mockBlockAppender.style.display ).toBe( '' );
+		expect( editable.focus ).toHaveBeenCalled();
+		expect( builtRange.setStart ).toHaveBeenCalledWith( node, 2 );
+		expect( selection.addRange ).toHaveBeenCalledWith( builtRange );
+	} );
+
+	it( 'stops at focus when caretPositionFromPoint yields nothing', () => {
+		const { doc, editable, selection } = makeDoc();
+		doc.caretPositionFromPoint = jest.fn( () => null );
+
+		placeCaretAtPoint( doc, 5, 5 );
+
+		expect( editable.focus ).toHaveBeenCalled();
+		expect( selection.addRange ).not.toHaveBeenCalled();
+	} );
+
+	it( 'stops at focus when neither caret API exists', () => {
+		const { doc, editable, selection } = makeDoc();
+
+		placeCaretAtPoint( doc, 5, 5 );
+
+		expect( editable.focus ).toHaveBeenCalled();
+		expect( selection.addRange ).not.toHaveBeenCalled();
+	} );
+
+	it( 'copes with a document that has no selection', () => {
+		const { doc, editable } = makeDoc( {
+			getSelection: jest.fn( () => null ),
+		} );
+
+		placeCaretAtPoint( doc, 5, 5 );
+
+		expect( editable.focus ).toHaveBeenCalled();
 	} );
 } );
 
-/**
- * Tests for applyListViewGuard function.
- */
-describe( 'applyListViewGuard', () => {
-	let mockExpander;
-	let mockParentLink;
+describe( 'double-click caret forwarding', () => {
+	const BlockListBlock = jest.fn( () => <div /> );
+	const Guarded = withBlockGuard( BlockListBlock );
+	const lastProps = () => BlockListBlock.mock.calls.at( -1 )[ 0 ];
+
+	const setSelection = ( { isSelf = false, isInner = false } ) => {
+		useSelect.mockImplementation( ( mapSelect ) =>
+			mapSelect( () => ( {
+				isBlockSelected: () => isSelf,
+				hasSelectedInnerBlock: () => isInner,
+			} ) )
+		);
+	};
+
+	const element = () => (
+		<Guarded
+			name="gatherpress/add-to-calendar"
+			clientId="caret"
+			wrapperProps={ {} }
+		/>
+	);
 
 	beforeEach( () => {
-		mockParentLink = {
-			style: {},
-			setAttribute: jest.fn(),
-			classList: {
-				add: jest.fn(),
-				remove: jest.fn(),
+		jest.clearAllMocks();
+		getBlockType.mockReturnValue( {
+			supports: { gatherpress: { blockGuard: true } },
+		} );
+		document.elementFromPoint = jest.fn( () => null );
+	} );
+
+	it( 'forwards the caret to the double-click point once the seal lifts', () => {
+		setSelection( { isSelf: true } );
+		render( element() );
+
+		act( () => {
+			lastProps().wrapperProps.onDoubleClick( {
+				clientX: 42,
+				clientY: 24,
+			} );
+		} );
+
+		// the seal has lifted and the caret was sought at the click point
+		expect( document.elementFromPoint ).toHaveBeenCalledWith( 42, 24 );
+	} );
+
+	it( 'does not forward for a double-click on an already-open block', () => {
+		setSelection( { isInner: true } ); // open via inner selection
+		render( element() );
+
+		act( () => {
+			lastProps().wrapperProps.onDoubleClick( {
+				clientX: 42,
+				clientY: 24,
+			} );
+		} );
+
+		expect( document.elementFromPoint ).not.toHaveBeenCalled();
+	} );
+} );
+
+describe( 'ensureDragPointerCycle', () => {
+	it( 'dispatches a pointerup on the view when a drag ends', () => {
+		const received = jest.fn();
+		window.addEventListener( 'pointerup', received );
+
+		ensureDragPointerCycle( document );
+		document.dispatchEvent( new window.Event( 'dragend', { bubbles: true } ) );
+
+		expect( received ).toHaveBeenCalledTimes( 1 );
+
+		window.removeEventListener( 'pointerup', received );
+	} );
+
+	it( 'also completes the cycle on drop', () => {
+		const received = jest.fn();
+		window.addEventListener( 'pointerup', received );
+
+		ensureDragPointerCycle( document );
+		document.dispatchEvent( new window.Event( 'drop', { bubbles: true } ) );
+
+		expect( received ).toHaveBeenCalledTimes( 1 );
+
+		window.removeEventListener( 'pointerup', received );
+	} );
+
+	it( 'registers once per document', () => {
+		const received = jest.fn();
+		window.addEventListener( 'pointerup', received );
+
+		ensureDragPointerCycle( document );
+		ensureDragPointerCycle( document );
+		document.dispatchEvent( new window.Event( 'dragend', { bubbles: true } ) );
+
+		expect( received ).toHaveBeenCalledTimes( 1 );
+
+		window.removeEventListener( 'pointerup', received );
+	} );
+
+	it( 'copes with a document that has no view', () => {
+		const handlers = {};
+		const doc = {
+			defaultView: null,
+			addEventListener: ( type, fn ) => {
+				handlers[ type ] = fn;
 			},
 		};
 
-		mockExpander = {
-			style: {},
-			onclick: null,
-			closest: jest.fn( ( selector ) => {
-				if (
-					'.block-editor-list-view-block-select-button' === selector
-				) {
-					return mockParentLink;
-				}
-				return null;
-			} ),
-		};
+		ensureDragPointerCycle( doc );
+
+		expect( () => handlers.dragend() ).not.toThrow();
 	} );
 
-	it( 'returns early if expander is null', () => {
-		applyListViewGuard( null, true );
-		// No error should be thrown.
-		expect( true ).toBe( true );
-	} );
-
-	it( 'applies guard styles to expander when enabled', () => {
-		applyListViewGuard( mockExpander, true );
-
-		expect( mockExpander.style.opacity ).toBe( '0.3' );
-		expect( mockExpander.style.pointerEvents ).toBe( 'none' );
-	} );
-
-	it( 'sets parent link styles and attributes when enabled', () => {
-		applyListViewGuard( mockExpander, true );
-
-		expect( mockParentLink.setAttribute ).toHaveBeenCalledWith(
-			'aria-expanded',
-			'false',
-		);
-		expect( mockParentLink.style.pointerEvents ).toBe( 'auto' );
-		expect( mockParentLink.classList.add ).toHaveBeenCalledWith(
-			'gatherpress-block-guard-enabled',
-		);
-	} );
-
-	it( 'removes guard styles from expander when disabled', () => {
-		mockExpander.style.opacity = '0.3';
-		mockExpander.style.pointerEvents = 'none';
-
-		applyListViewGuard( mockExpander, false );
-
-		expect( mockExpander.style.opacity ).toBe( '' );
-		expect( mockExpander.style.pointerEvents ).toBe( '' );
-	} );
-
-	it( 're-enables parent link when disabled', () => {
-		mockParentLink.style.pointerEvents = 'auto';
-
-		applyListViewGuard( mockExpander, false );
-
-		expect( mockParentLink.style.pointerEvents ).toBe( '' );
-		expect( mockParentLink.classList.remove ).toHaveBeenCalledWith(
-			'gatherpress-block-guard-enabled',
-		);
+	it( 'does nothing for a missing document', () => {
+		expect( () => ensureDragPointerCycle( null ) ).not.toThrow();
 	} );
 } );
 
-/**
- * Tests for drag event handler functions.
- */
-describe( 'Drag Event Handlers', () => {
+describe( 'review follow-ups', () => {
+	const BlockListBlock = jest.fn( () => <div /> );
+	const Guarded = withBlockGuard( BlockListBlock );
+	const lastProps = () => BlockListBlock.mock.calls.at( -1 )[ 0 ];
+	const sealedNow = () =>
+		( lastProps().className || '' ).includes( 'has-block-overlay' );
+
+	const setSelection = ( { isSelf = false, isInner = false } ) => {
+		useSelect.mockImplementation( ( mapSelect ) =>
+			mapSelect( () => ( {
+				isBlockSelected: () => isSelf,
+				hasSelectedInnerBlock: () => isInner,
+			} ) )
+		);
+	};
+
 	beforeEach( () => {
-		jest.spyOn( document, 'addEventListener' );
-		jest.spyOn( document, 'removeEventListener' );
-	} );
-
-	afterEach( () => {
-		jest.restoreAllMocks();
-	} );
-
-	describe( 'addDragListeners', () => {
-		it( 'adds all drag event listeners', () => {
-			const mockHandler = jest.fn();
-			addDragListeners( mockHandler );
-
-			expect( document.addEventListener ).toHaveBeenCalledWith(
-				'dragover',
-				mockHandler,
-				true,
-			);
-			expect( document.addEventListener ).toHaveBeenCalledWith(
-				'dragenter',
-				mockHandler,
-				true,
-			);
-			expect( document.addEventListener ).toHaveBeenCalledWith(
-				'dragleave',
-				mockHandler,
-				true,
-			);
-			expect( document.addEventListener ).toHaveBeenCalledWith(
-				'drop',
-				mockHandler,
-				true,
-			);
-			expect( document.addEventListener ).toHaveBeenCalledTimes( 4 );
+		jest.clearAllMocks();
+		getBlockType.mockReturnValue( {
+			supports: { gatherpress: { blockGuard: true } },
 		} );
 	} );
 
-	describe( 'removeDragListeners', () => {
-		it( 'removes all drag event listeners', () => {
-			const mockHandler = jest.fn();
-			removeDragListeners( mockHandler );
-
-			expect( document.removeEventListener ).toHaveBeenCalledWith(
-				'dragover',
-				mockHandler,
-				true,
-			);
-			expect( document.removeEventListener ).toHaveBeenCalledWith(
-				'dragenter',
-				mockHandler,
-				true,
-			);
-			expect( document.removeEventListener ).toHaveBeenCalledWith(
-				'dragleave',
-				mockHandler,
-				true,
-			);
-			expect( document.removeEventListener ).toHaveBeenCalledWith(
-				'drop',
-				mockHandler,
-				true,
-			);
-			expect( document.removeEventListener ).toHaveBeenCalledTimes(
-				4,
-			);
-		} );
-	} );
-
-	describe( 'createDropHandler', () => {
-		it( 'creates a handler that prevents default for matching blocks', () => {
-			const clientId = 'test-123';
-			const handler = createDropHandler( clientId );
-
-			const mockTarget = {
-				closest: jest.fn( () => ( {
-					dataset: { block: clientId },
-				} ) ),
-			};
-
-			const mockEvent = {
-				type: 'dragover',
-				target: mockTarget,
-				preventDefault: jest.fn(),
-				stopPropagation: jest.fn(),
-			};
-
-			handler( mockEvent );
-
-			expect( mockEvent.preventDefault ).toHaveBeenCalled();
-			expect( mockEvent.stopPropagation ).toHaveBeenCalled();
-		} );
-
-		it( 'does not prevent default for non-matching blocks', () => {
-			const clientId = 'test-123';
-			const handler = createDropHandler( clientId );
-
-			const mockEvent = {
-				type: 'dragover',
-				target: {
-					closest: jest.fn( () => null ),
-				},
-				preventDefault: jest.fn(),
-				stopPropagation: jest.fn(),
-			};
-
-			handler( mockEvent );
-
-			expect( mockEvent.preventDefault ).not.toHaveBeenCalled();
-			expect( mockEvent.stopPropagation ).not.toHaveBeenCalled();
-		} );
-
-		it( 'prevents default for dragenter events', () => {
-			const clientId = 'test-123';
-			const handler = createDropHandler( clientId );
-
-			const mockEvent = {
-				type: 'dragenter',
-				target: {
-					closest: jest.fn( () => ( {
-						dataset: { block: clientId },
-					} ) ),
-				},
-				preventDefault: jest.fn(),
-				stopPropagation: jest.fn(),
-			};
-
-			handler( mockEvent );
-
-			expect( mockEvent.preventDefault ).toHaveBeenCalled();
-		} );
-
-		it( 'prevents default for drop events', () => {
-			const clientId = 'test-123';
-			const handler = createDropHandler( clientId );
-
-			const mockEvent = {
-				type: 'drop',
-				target: {
-					closest: jest.fn( () => ( {
-						dataset: { block: clientId },
-					} ) ),
-				},
-				preventDefault: jest.fn(),
-				stopPropagation: jest.fn(),
-			};
-
-			handler( mockEvent );
-
-			expect( mockEvent.preventDefault ).toHaveBeenCalled();
-		} );
-
-		it( 'does not prevent default for dragleave events', () => {
-			const clientId = 'test-123';
-			const handler = createDropHandler( clientId );
-
-			const mockEvent = {
-				type: 'dragleave',
-				target: {
-					closest: jest.fn( () => ( {
-						dataset: { block: clientId },
-					} ) ),
-				},
-				preventDefault: jest.fn(),
-				stopPropagation: jest.fn(),
-			};
-
-			handler( mockEvent );
-
-			// dragleave is listened to but doesn't prevent default.
-			expect( mockEvent.preventDefault ).not.toHaveBeenCalled();
-		} );
-	} );
-} );
-
-/**
- * Tests for applyListViewGuardForBlock function.
- */
-describe( 'applyListViewGuardForBlock', () => {
-	afterEach( () => {
-		jest.restoreAllMocks();
-	} );
-
-	it( 'returns null if list view item is not found', () => {
-		jest.spyOn( document, 'querySelector' ).mockReturnValue( null );
-
-		const result = applyListViewGuardForBlock( 'test-123', true );
-
-		expect( result ).toBeNull();
-	} );
-
-	it( 'returns null if expander is not found', () => {
-		const mockListViewItem = {
-			querySelector: jest.fn( () => null ),
-		};
-
-		jest.spyOn( document, 'querySelector' ).mockReturnValue(
-			mockListViewItem
+	it( 'opens on Space while the block is selected', () => {
+		setSelection( { isSelf: true } );
+		render(
+			<Guarded
+				name="gatherpress/add-to-calendar"
+				clientId="space"
+				wrapperProps={ {} }
+			/>
 		);
 
-		const result = applyListViewGuardForBlock( 'test-123', true );
+		act( () => {
+			lastProps().wrapperProps.onKeyDown( {
+				key: ' ',
+				preventDefault() {},
+				stopPropagation() {},
+			} );
+		} );
 
-		expect( result ).toBeNull();
+		expect( sealedNow() ).toBe( false );
 	} );
 
-	it( 'returns null if expander SVG is not found', () => {
-		const mockExpander = {
-			querySelector: jest.fn( () => null ),
-		};
-
-		const mockListViewItem = {
-			querySelector: jest.fn( () => mockExpander ),
-		};
-
-		jest.spyOn( document, 'querySelector' ).mockReturnValue(
-			mockListViewItem
+	it( 'chains Enter to the original handler when the block is not selected', () => {
+		const onKeyDown = jest.fn();
+		setSelection( {} );
+		render(
+			<Guarded
+				name="gatherpress/add-to-calendar"
+				clientId="chain"
+				wrapperProps={ { onKeyDown } }
+			/>
 		);
 
-		const result = applyListViewGuardForBlock( 'test-123', true );
+		act( () => {
+			lastProps().wrapperProps.onKeyDown( {
+				key: 'Enter',
+				preventDefault() {},
+				stopPropagation() {},
+			} );
+		} );
 
-		expect( result ).toBeNull();
+		expect( onKeyDown ).toHaveBeenCalled();
+		expect( sealedNow() ).toBe( true );
 	} );
 
-	it( 'applies guard and returns expander when all elements are found', () => {
-		const mockExpanderSvg = {};
-		const mockParentLink = {
-			style: {},
-			setAttribute: jest.fn(),
-			classList: {
-				add: jest.fn(),
-				remove: jest.fn(),
+	it( 'uses PointerEvent for the synthetic pointerup when the view has it', () => {
+		class FakePointerEvent extends Event {}
+		const dispatched = [];
+		const handlers = {};
+		const view = {
+			PointerEvent: FakePointerEvent,
+			dispatchEvent: ( e ) => dispatched.push( e ),
+		};
+		const doc = {
+			defaultView: view,
+			addEventListener: ( type, fn ) => {
+				handlers[ type ] = fn;
 			},
 		};
 
-		const mockExpander = {
-			querySelector: jest.fn( () => mockExpanderSvg ),
-			style: {},
-			onclick: null,
-			closest: jest.fn( () => mockParentLink ),
-		};
+		ensureDragPointerCycle( doc );
+		handlers.dragend();
 
-		const mockListViewItem = {
-			querySelector: jest.fn( () => mockExpander ),
-		};
-
-		jest.spyOn( document, 'querySelector' ).mockReturnValue(
-			mockListViewItem
-		);
-
-		const result = applyListViewGuardForBlock( 'test-123', true );
-
-		expect( result ).toEqual( { expander: mockExpander } );
-		expect( mockExpander.style.pointerEvents ).toBe( 'none' );
-	} );
-} );
-
-/**
- * Tests for applyInspectorListViewGuard function.
- */
-describe( 'applyInspectorListViewGuard', () => {
-	let inspector;
-	let tree;
-
-	beforeEach( () => {
-		inspector = document.createElement( 'div' );
-		inspector.className = 'block-editor-block-inspector';
-
-		tree = document.createElement( 'table' );
-		tree.className = 'block-editor-list-view-tree';
-
-		inspector.appendChild( tree );
-		document.body.appendChild( inspector );
-	} );
-
-	afterEach( () => {
-		inspector.remove();
-	} );
-
-	it( 'returns null when the inspector List View tab is not rendered', () => {
-		tree.remove();
-
-		expect( applyInspectorListViewGuard( true ) ).toBeNull();
-	} );
-
-	it( 'inerts the inspector tree when enabled', () => {
-		const result = applyInspectorListViewGuard( true );
-
-		expect( result ).toBe( tree );
-		expect( tree.inert ).toBe( true );
-		expect( tree.style.opacity ).toBe( '0.95' );
-		expect( tree.style.cursor ).toBe( 'not-allowed' );
-		expect( tree.dataset.gatherPressGuarded ).toBe( 'true' );
-	} );
-
-	it( 'hides the inspector tree appender when enabled', () => {
-		const appender = document.createElement( 'div' );
-		appender.className = 'block-list-appender';
-		tree.appendChild( appender );
-
-		applyInspectorListViewGuard( true );
-
-		expect( appender.style.display ).toBe( 'none' );
-	} );
-
-	it( 'releases the inspector tree when disabled', () => {
-		applyInspectorListViewGuard( true );
-
-		const result = applyInspectorListViewGuard( false );
-
-		expect( result ).toBe( tree );
-		expect( tree.inert ).toBe( false );
-		expect( tree.style.opacity ).toBe( '' );
-		expect( tree.style.cursor ).toBe( '' );
-		expect( tree.dataset.gatherPressGuarded ).toBeUndefined();
-	} );
-
-	it( 'hides the tree appender when enabled and restores it when disabled', () => {
-		const appender = document.createElement( 'div' );
-		appender.className = 'list-view-appender';
-		tree.appendChild( appender );
-
-		applyInspectorListViewGuard( true );
-
-		expect( appender.style.display ).toBe( 'none' );
-
-		applyInspectorListViewGuard( false );
-
-		expect( appender.style.display ).toBe( '' );
-	} );
-} );
-
-/**
- * Pristine jsdom document captured at load time, before any describe swaps
- * global.document for a mock (in jest's jsdom environment global IS window,
- * so window.document offers no escape hatch once overwritten).
- */
-const realDocument = global.document;
-
-/**
- * Tests for injectBlockGuardStyles function.
- */
-describe( 'injectBlockGuardStyles', () => {
-	beforeEach( () => {
-		global.document = realDocument;
-
-		// Earlier describes overwrite these as own properties on the shared
-		// document object, shadowing the jsdom prototype methods; deleting
-		// the shadows restores the real implementations.
-		delete document.getElementById;
-		delete document.querySelectorAll;
-		delete document.createElement;
-	} );
-
-	afterEach( () => {
-		document.getElementById( 'gatherpress-block-guard-style' )?.remove();
-	} );
-
-	it( 'injects the panel-ordering stylesheet exactly once', () => {
-		injectBlockGuardStyles();
-		injectBlockGuardStyles();
-
-		const styles = document.querySelectorAll(
-			'#gatherpress-block-guard-style',
-		);
-
-		expect( styles ).toHaveLength( 1 );
-		expect( styles[ 0 ].textContent ).toContain(
-			'.gatherpress-block-guard-panel',
+		expect( dispatched.some( ( e ) => e instanceof FakePointerEvent ) ).toBe(
+			true
 		);
 	} );
 } );

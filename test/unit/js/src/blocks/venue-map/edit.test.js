@@ -140,10 +140,7 @@ jest.mock( '@src/components/GoogleMap', () => ( {
 } ) );
 
 jest.mock( '@src/supports/block-guard', () => ( {
-	useSharedBlockGuardState: jest.fn( () => [ false ] ),
-	generateBlockGuardStateKey: jest.fn(
-		( type, id ) => `${ type }:${ id }`
-	),
+	useIsBlockSealed: jest.fn( () => false ),
 } ) );
 
 jest.mock( '@src/blocks/venue-map/helpers', () => ( {
