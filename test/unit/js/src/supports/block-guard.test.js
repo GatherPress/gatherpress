@@ -295,8 +295,6 @@ describe( 'withBlockGuard', () => {
 		expect( sealedNow() ).toBe( false );
 	} );
 
-
-
 	it( 're-arms after a remount, and can be opened again', () => {
 		setSelection( { isSelf: true } );
 		const first = render( element() );
