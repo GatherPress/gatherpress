@@ -5,6 +5,7 @@ import {
 	describe,
 	expect,
 	it,
+	beforeAll,
 	beforeEach,
 	afterEach,
 	jest,
@@ -507,7 +508,6 @@ describe( 'filter registration', () => {
 		expect( hooks.addFilter ).not.toHaveBeenCalled();
 	} );
 } );
-
 
 describe( 'placeCaretAtPoint', () => {
 	const makeDoc = ( overrides = {} ) => {
