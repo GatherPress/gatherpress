@@ -168,6 +168,59 @@ export function useIsBlockSealed( clientId ) {
 }
 
 /**
+ * Place the caret at a point in the canvas, if editable text sits there.
+ *
+ * Used when a double-click opens a guarded block: the clicks themselves were
+ * consumed by the seal (the contents were still `pointer-events: none` when
+ * they landed), so nothing focused the text. This forwards the gesture to
+ * whatever is under that point now that the seal is gone.
+ *
+ * @param {Document} doc - The canvas document.
+ * @param {number}   x   - Viewport X of the double-click.
+ * @param {number}   y   - Viewport Y of the double-click.
+ *
+ * @return {void}
+ */
+export function placeCaretAtPoint( doc, x, y ) {
+	const editable = doc
+		.elementFromPoint( x, y )
+		?.closest( '[contenteditable="true"]' );
+
+	if ( ! editable ) {
+		return;
+	}
+
+	editable.focus();
+
+	const selection = doc.getSelection();
+
+	if ( ! selection ) {
+		return;
+	}
+
+	// Chromium and WebKit expose caretRangeFromPoint; Firefox exposes
+	// caretPositionFromPoint. Fall back to focus alone when neither exists.
+	let range = null;
+
+	if ( doc.caretRangeFromPoint ) {
+		range = doc.caretRangeFromPoint( x, y );
+	} else if ( doc.caretPositionFromPoint ) {
+		const position = doc.caretPositionFromPoint( x, y );
+
+		if ( position ) {
+			range = doc.createRange();
+			range.setStart( position.offsetNode, position.offset );
+			range.collapse( true );
+		}
+	}
+
+	if ( range ) {
+		selection.removeAllRanges();
+		selection.addRange( range );
+	}
+}
+
+/**
  * Tint applied while a guarded block is selected, so it reads as a protected
  * unit you have hold of — in the spirit of the tint core gives template parts
  * and synced patterns.
@@ -239,10 +292,39 @@ export const withBlockGuard = createHigherOrderComponent( ( BlockListBlock ) => 
 			}
 		}, [ isSelf, isInner, entered ] );
 
+		// Where the opening double-click happened, so the caret can be
+		// forwarded there once the seal lifts.
+		const pendingCaret = useRef( null );
+
 		const onDoubleClick = ( event ) => {
+			// Only stash a caret target when this double-click is the one
+			// doing the opening — a double-click on an already-open block
+			// reaches the text natively.
+			if ( sealed ) {
+				pendingCaret.current = {
+					x: event.clientX,
+					y: event.clientY,
+				};
+			}
+
 			setEntered( true );
 			wrapperProps?.onDoubleClick?.( event );
 		};
+
+		// While sealed, the contents are `pointer-events: none`, so both
+		// clicks of the opening double-click land on the block's shell —
+		// focus and caret never reach the text underneath, and the block
+		// would open with the user's clicks having visibly done nothing.
+		// Once the seal has actually lifted (this effect runs after the
+		// commit that removes the overlay class), put the caret where the
+		// user double-clicked, so entering and editing are one gesture.
+		useEffect( () => {
+			if ( ! sealed && pendingCaret.current ) {
+				const { x, y } = pendingCaret.current;
+				pendingCaret.current = null;
+				placeCaretAtPoint( getCanvasDocument(), x, y );
+			}
+		}, [ sealed ] );
 
 		const onKeyDown = ( event ) => {
 			if (

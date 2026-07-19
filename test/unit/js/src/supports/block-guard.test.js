@@ -58,8 +58,16 @@ import {
 	useIsBlockSealed,
 	publishSealedState,
 	getCanvasDocument,
+	placeCaretAtPoint,
 	withBlockGuard,
 } from '@src/supports/block-guard';
+
+// jsdom does not implement elementFromPoint and throws; the caret forwarding
+// calls it whenever a double-click opens a block, so give every suite a
+// harmless default (individual tests override it to observe calls).
+beforeAll( () => {
+	document.elementFromPoint = jest.fn( () => null );
+} );
 
 describe( 'isBlockGuarded', () => {
 	afterEach( () => {
@@ -500,3 +508,166 @@ describe( 'filter registration', () => {
 	} );
 } );
 
+
+describe( 'placeCaretAtPoint', () => {
+	const makeDoc = ( overrides = {} ) => {
+		const editable = {
+			focus: jest.fn(),
+		};
+		const target = {
+			closest: jest.fn( () => editable ),
+		};
+		const selection = {
+			removeAllRanges: jest.fn(),
+			addRange: jest.fn(),
+		};
+		return {
+			editable,
+			target,
+			selection,
+			doc: {
+				elementFromPoint: jest.fn( () => target ),
+				getSelection: jest.fn( () => selection ),
+				...overrides,
+			},
+		};
+	};
+
+	it( 'does nothing when no element sits at the point', () => {
+		const { doc } = makeDoc( { elementFromPoint: jest.fn( () => null ) } );
+
+		expect( () => placeCaretAtPoint( doc, 5, 5 ) ).not.toThrow();
+	} );
+
+	it( 'does nothing when the element is not inside editable text', () => {
+		const { doc, editable } = makeDoc();
+		doc.elementFromPoint = jest.fn( () => ( {
+			closest: () => null,
+		} ) );
+
+		placeCaretAtPoint( doc, 5, 5 );
+
+		expect( editable.focus ).not.toHaveBeenCalled();
+	} );
+
+	it( 'focuses and places the caret via caretRangeFromPoint', () => {
+		const { doc, editable, selection } = makeDoc();
+		const range = {};
+		doc.caretRangeFromPoint = jest.fn( () => range );
+
+		placeCaretAtPoint( doc, 5, 5 );
+
+		expect( editable.focus ).toHaveBeenCalled();
+		expect( selection.removeAllRanges ).toHaveBeenCalled();
+		expect( selection.addRange ).toHaveBeenCalledWith( range );
+	} );
+
+	it( 'falls back to caretPositionFromPoint when needed', () => {
+		const { doc, editable, selection } = makeDoc();
+		const node = {};
+		const builtRange = {
+			setStart: jest.fn(),
+			collapse: jest.fn(),
+		};
+		doc.caretPositionFromPoint = jest.fn( () => ( {
+			offsetNode: node,
+			offset: 2,
+		} ) );
+		doc.createRange = jest.fn( () => builtRange );
+
+		placeCaretAtPoint( doc, 5, 5 );
+
+		expect( editable.focus ).toHaveBeenCalled();
+		expect( builtRange.setStart ).toHaveBeenCalledWith( node, 2 );
+		expect( selection.addRange ).toHaveBeenCalledWith( builtRange );
+	} );
+
+	it( 'stops at focus when caretPositionFromPoint yields nothing', () => {
+		const { doc, editable, selection } = makeDoc();
+		doc.caretPositionFromPoint = jest.fn( () => null );
+
+		placeCaretAtPoint( doc, 5, 5 );
+
+		expect( editable.focus ).toHaveBeenCalled();
+		expect( selection.addRange ).not.toHaveBeenCalled();
+	} );
+
+	it( 'stops at focus when neither caret API exists', () => {
+		const { doc, editable, selection } = makeDoc();
+
+		placeCaretAtPoint( doc, 5, 5 );
+
+		expect( editable.focus ).toHaveBeenCalled();
+		expect( selection.addRange ).not.toHaveBeenCalled();
+	} );
+
+	it( 'copes with a document that has no selection', () => {
+		const { doc, editable } = makeDoc( {
+			getSelection: jest.fn( () => null ),
+		} );
+
+		placeCaretAtPoint( doc, 5, 5 );
+
+		expect( editable.focus ).toHaveBeenCalled();
+	} );
+} );
+
+describe( 'double-click caret forwarding', () => {
+	const BlockListBlock = jest.fn( () => <div /> );
+	const Guarded = withBlockGuard( BlockListBlock );
+	const lastProps = () => BlockListBlock.mock.calls.at( -1 )[ 0 ];
+
+	const setSelection = ( { isSelf = false, isInner = false } ) => {
+		useSelect.mockImplementation( ( mapSelect ) =>
+			mapSelect( () => ( {
+				isBlockSelected: () => isSelf,
+				hasSelectedInnerBlock: () => isInner,
+			} ) )
+		);
+	};
+
+	const element = () => (
+		<Guarded
+			name="gatherpress/add-to-calendar"
+			clientId="caret"
+			wrapperProps={ {} }
+		/>
+	);
+
+	beforeEach( () => {
+		jest.clearAllMocks();
+		getBlockType.mockReturnValue( {
+			supports: { gatherpress: { blockGuard: true } },
+		} );
+		document.elementFromPoint = jest.fn( () => null );
+	} );
+
+	it( 'forwards the caret to the double-click point once the seal lifts', () => {
+		setSelection( { isSelf: true } );
+		render( element() );
+
+		act( () => {
+			lastProps().wrapperProps.onDoubleClick( {
+				clientX: 42,
+				clientY: 24,
+			} );
+		} );
+
+		// the seal has lifted and the caret was sought at the click point
+		expect( document.elementFromPoint ).toHaveBeenCalledWith( 42, 24 );
+	} );
+
+	it( 'does not forward for a double-click on an already-open block', () => {
+		setSelection( { isInner: true } ); // open via inner selection
+		render( element() );
+
+		act( () => {
+			lastProps().wrapperProps.onDoubleClick( {
+				clientX: 42,
+				clientY: 24,
+			} );
+		} );
+
+		expect( document.elementFromPoint ).not.toHaveBeenCalled();
+	} );
+} );
