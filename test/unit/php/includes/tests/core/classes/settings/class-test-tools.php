@@ -65,7 +65,7 @@ class Test_Tools extends Base_Ajax {
 		$instance = Tools::get_instance();
 		$slug     = Utility::invoke_hidden_method( $instance, 'get_slug' );
 
-		$this->assertSame( 'tools', $slug, 'Failed to assert slug is tools.' );
+		$this->assertSame( 'tools_settings', $slug, 'Failed to assert slug is tools_settings.' );
 	}
 
 	/**
@@ -107,7 +107,7 @@ class Test_Tools extends Base_Ajax {
 		$instance = Tools::get_instance();
 		$response = Utility::buffer_and_return(
 			array( $instance, 'settings_section' ),
-			array( 'gatherpress_tools' )
+			array( 'gatherpress_tools_settings' )
 		);
 
 		$this->assertFalse(

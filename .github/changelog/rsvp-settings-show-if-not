@@ -2,3 +2,5 @@ Significance: minor
 Type: changed
 
 The RSVP settings page now hides options that don't apply: the Open RSVP, Maximum Attendance Limit, Maximum Number of Guests, and Anonymous RSVP fields disappear when RSVP Mode is set to Disabled, and the Cleanup Frequency and Cleanup Interval fields disappear when RSVP cleanup is off. Powered by a new negation form for the settings `show_if` feature (`array( 'not' => … )`).
+
+Every GatherPress settings page slug is now suffixed with `_settings` for consistency — Events, Venues, Roles, Tools, Credits, and RSVP. Saved settings are unaffected; only the admin page URLs change (e.g. `…page=gatherpress_rsvp_settings`).

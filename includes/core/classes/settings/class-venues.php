@@ -43,7 +43,7 @@ class Venues extends Base {
 	 * @return string The slug for the venues settings page.
 	 */
 	protected function get_slug(): string {
-		return 'venues';
+		return 'venues_settings';
 	}
 
 	/**

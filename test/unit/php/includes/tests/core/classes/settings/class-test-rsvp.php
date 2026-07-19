@@ -30,7 +30,7 @@ class Test_Rsvp extends Base {
 		$instance = Rsvp::get_instance();
 		$slug     = Utility::invoke_hidden_method( $instance, 'get_slug' );
 
-		$this->assertSame( 'rsvp', $slug, 'Failed to assert slug is rsvp.' );
+		$this->assertSame( 'rsvp_settings', $slug, 'Failed to assert slug is rsvp_settings.' );
 	}
 
 	/**

@@ -153,9 +153,9 @@ class Test_Settings extends Base {
 		Utility::invoke_hidden_method( $instance, 'set_main_sub_page' );
 
 		$this->assertSame(
-			'events',
+			'events_settings',
 			Utility::get_hidden_property( $instance, 'main_sub_page' ),
-			'Failed to assert main sub page is set to events'
+			'Failed to assert main sub page is set to events_settings'
 		);
 	}
 
@@ -323,9 +323,9 @@ class Test_Settings extends Base {
 		$instance = Settings::get_instance();
 
 		$this->assertSame(
-			'events',
+			'events_settings',
 			$instance->get_main_sub_page(),
-			'Failed to assert main sub page is events.'
+			'Failed to assert main sub page is events_settings.'
 		);
 	}
 
@@ -893,20 +893,20 @@ class Test_Settings extends Base {
 		$instance  = Settings::get_instance();
 		$sub_pages = $instance->get_sub_pages();
 
-		$this->assertIsArray( $sub_pages['events'], 'Failed to assert sub page is an array.' );
-		$this->assertIsArray( $sub_pages['rsvp'], 'Failed to assert sub page is an array.' );
-		$this->assertIsArray( $sub_pages['venues'], 'Failed to assert sub page is an array.' );
-		$this->assertIsArray( $sub_pages['roles'], 'Failed to assert sub page is an array.' );
-		$this->assertIsArray( $sub_pages['credits'], 'Failed to assert sub page is an array.' );
+		$this->assertIsArray( $sub_pages['events_settings'], 'Failed to assert sub page is an array.' );
+		$this->assertIsArray( $sub_pages['rsvp_settings'], 'Failed to assert sub page is an array.' );
+		$this->assertIsArray( $sub_pages['venues_settings'], 'Failed to assert sub page is an array.' );
+		$this->assertIsArray( $sub_pages['roles_settings'], 'Failed to assert sub page is an array.' );
+		$this->assertIsArray( $sub_pages['credits_settings'], 'Failed to assert sub page is an array.' );
 		$this->assertSame(
-			'events',
+			'events_settings',
 			array_key_first( $sub_pages ),
-			'Failed to assert that events is first key.'
+			'Failed to assert that events_settings is first key.'
 		);
 		$this->assertSame(
-			'credits',
+			'credits_settings',
 			array_key_last( $sub_pages ),
-			'Failed to assert that credits is last key.'
+			'Failed to assert that credits_settings is last key.'
 		);
 	}
 

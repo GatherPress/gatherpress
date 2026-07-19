@@ -191,7 +191,7 @@ class Settings {
 				sprintf(
 					'edit.php?post_type=%s&page=%s',
 					Event::POST_TYPE,
-					sprintf( 'gatherpress_event_page_%s', Utility::prefix_key( 'venues' ) )
+					sprintf( 'gatherpress_event_page_%s', Utility::prefix_key( 'venues_settings' ) )
 				)
 			),
 		);

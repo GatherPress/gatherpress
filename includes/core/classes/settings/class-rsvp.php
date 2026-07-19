@@ -40,7 +40,7 @@ class Rsvp extends Base {
 	 * @return string The slug for the RSVP settings page.
 	 */
 	protected function get_slug(): string {
-		return 'rsvp';
+		return 'rsvp_settings';
 	}
 
 	/**
