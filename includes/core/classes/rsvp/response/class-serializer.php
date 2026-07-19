@@ -11,6 +11,7 @@ namespace GatherPress\Core\Rsvp\Response;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 use GatherPress\Core\Settings\Roles;
+use GatherPress\Core\Utility;
 
 /**
  * Class with methods to serialize RSVP Response objects.
@@ -45,7 +46,7 @@ final class Serializer {
 			$photo   = $state->provider->get_avatar_url( $identity );
 		}
 
-		return array(
+		$data = array(
 			'name'       => $name,
 			'photo'      => $photo,
 			'profile'    => $profile,
@@ -56,17 +57,21 @@ final class Serializer {
 			'provider'   => $state->provider->get_slug(),
 			'identifier' => $identity->value,
 			'role'       => Roles::get_instance()->get_user_role( (int) $state->comment->user_id ),
-			// Both naming styles ship deliberately: the responses() record
-			// contract (the rsvp-response block's context mapping, editor
-			// JS, and REST consumers) predates this class and uses
-			// camelCase, while the save() return contract uses snake_case.
-			// Dropping either silently breaks its consumers.
-			'commentId'  => (int) $state->comment->comment_ID,
 			'comment_id' => (int) $state->comment->comment_ID,
-			'postId'     => (int) $state->comment->comment_post_ID,
 			'post_id'    => (int) $state->comment->comment_post_ID,
-			'userId'     => $user_id,
 			'user_id'    => $user_id,
 		);
+
+		// The responses() record contract (the rsvp-response block's context
+		// mapping, editor JS, and REST consumers) predates this class and
+		// reads the multi-word keys in camelCase, while the save() return
+		// contract reads snake_case. Emit both so neither set of consumers
+		// breaks, deriving the camelCase aliases from the snake_case source
+		// rather than maintaining two hand-written lists.
+		foreach ( array( 'comment_id', 'post_id', 'user_id' ) as $gatherpress_snake_key ) {
+			$data[ Utility::snake_to_camel( $gatherpress_snake_key ) ] = $data[ $gatherpress_snake_key ];
+		}
+
+		return $data;
 	}
 }
