@@ -78,14 +78,6 @@ class Test_Provider_Registry extends Base {
 				return 'Unit Test Provider';
 			}
 
-			/**
-			 * Icon.
-			 *
-			 * @return string
-			 */
-			public static function get_icon(): string {
-				return '🧪';
-			}
 
 			/**
 			 * Display name for an identity.

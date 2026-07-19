@@ -28,11 +28,9 @@ class Test_Providers extends Base {
 	 * @covers \GatherPress\Core\Rsvp\Response\Provider\User::get_slug
 	 * @covers \GatherPress\Core\Rsvp\Response\Provider\User::get_identity_type
 	 * @covers \GatherPress\Core\Rsvp\Response\Provider\User::get_label
-	 * @covers \GatherPress\Core\Rsvp\Response\Provider\User::get_icon
 	 * @covers \GatherPress\Core\Rsvp\Response\Provider\Email::get_slug
 	 * @covers \GatherPress\Core\Rsvp\Response\Provider\Email::get_identity_type
 	 * @covers \GatherPress\Core\Rsvp\Response\Provider\Email::get_label
-	 * @covers \GatherPress\Core\Rsvp\Response\Provider\Email::get_icon
 	 *
 	 * @return void
 	 */
@@ -40,12 +38,10 @@ class Test_Providers extends Base {
 		$this->assertSame( 'user', User::get_slug() );
 		$this->assertSame( Identity_Type::WP_USER_ID, User::get_identity_type() );
 		$this->assertNotEmpty( User::get_label() );
-		$this->assertNotEmpty( User::get_icon() );
 
 		$this->assertSame( 'email', Email::get_slug() );
 		$this->assertSame( Identity_Type::EMAIL, Email::get_identity_type() );
 		$this->assertNotEmpty( Email::get_label() );
-		$this->assertNotEmpty( Email::get_icon() );
 	}
 
 	/**

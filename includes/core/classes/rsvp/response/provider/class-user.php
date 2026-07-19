@@ -59,16 +59,6 @@ final class User extends Base {
 		return __( 'User', 'gatherpress' );
 	}
 
-	/**
-	 * Get the icon for this RSVP type.
-	 *
-	 * @since 0.35.0
-	 *
-	 * @return string The icon.
-	 */
-	public static function get_icon(): string {
-		return '👤';
-	}
 
 	/**
 	 * Get the display name for a WordPress user.

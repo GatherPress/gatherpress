@@ -58,16 +58,6 @@ final class Email extends Base {
 		return __( 'Email', 'gatherpress' );
 	}
 
-	/**
-	 * Get the icon for this RSVP type.
-	 *
-	 * @since 0.35.0
-	 *
-	 * @return string The icon.
-	 */
-	public static function get_icon(): string {
-		return '✉️';
-	}
 
 	/**
 	 * Get the display name for an email-based RSVP.

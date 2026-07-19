@@ -67,14 +67,6 @@ abstract class Base {
 	 */
 	abstract public static function get_label(): string;
 
-	/**
-	 * Get the icon for this Attendee type.
-	 *
-	 * @since 0.35.0
-	 *
-	 * @return string The icon.
-	 */
-	abstract public static function get_icon(): string;
 
 	/**
 	 * Get the best displayable name for an identity.
