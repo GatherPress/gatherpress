@@ -4,7 +4,7 @@
 import { getBlockType } from '@wordpress/blocks';
 import { createHigherOrderComponent } from '@wordpress/compose';
 import { store as blockEditorStore } from '@wordpress/block-editor';
-import { useSelect } from '@wordpress/data';
+import { select as dataSelect, useSelect } from '@wordpress/data';
 import { useState, useEffect, useRef } from '@wordpress/element';
 import { addFilter, hasFilter } from '@wordpress/hooks';
 import { speak } from '@wordpress/a11y';
@@ -177,6 +177,7 @@ export function useIsBlockSealed( clientId ) {
  * clears it, so a block that remounts mid-gesture cannot be stranded.
  */
 let pointerIsDown = false;
+let selectedAtPointerDown = null;
 const pointerListeners = new Set();
 
 /**
@@ -208,7 +209,19 @@ function ensurePointerTracking( doc ) {
 	}
 
 	doc.gatherpressPointerTracked = true;
-	doc.addEventListener( 'pointerdown', () => setPointerIsDown( true ), true );
+	doc.addEventListener(
+		'pointerdown',
+		() => {
+			// Remember what was selected when the gesture began, so a block can
+			// tell "this click is selecting me" from "this click is reaching
+			// inside a block I already had selected".
+			selectedAtPointerDown = dataSelect(
+				blockEditorStore
+			).getSelectedBlockClientId();
+			setPointerIsDown( true );
+		},
+		true
+	);
 	doc.addEventListener( 'pointerup', () => setPointerIsDown( false ), true );
 	doc.addEventListener(
 		'pointercancel',
@@ -311,7 +324,12 @@ export const withBlockGuard = createHigherOrderComponent( ( BlockListBlock ) => 
 		// every time a drag remounted the block, which left it sealed with no
 		// way back in — its contents stayed `pointer-events: none` and the
 		// block became uneditable until the page was reloaded.
-		const sealed = ! isInner && ( ! isSelf || pointerDown );
+		// Hold the seal only for the gesture that selects the block — the one
+		// that would otherwise fall through into the contents. Once the block
+		// is already selected, a press must reach inside immediately, so that
+		// gesture can select *and* drag an inner block.
+		const isSelectingGesture = pointerDown && selectedAtPointerDown !== clientId;
+		const sealed = ! isInner && ( ! isSelf || isSelectingGesture );
 
 		// Publish for descendants (the venue map drops its resize handles
 		// while its parent venue is sealed).

@@ -28,6 +28,7 @@ jest.mock( '@wordpress/block-editor', () => ( {
 
 jest.mock( '@wordpress/data', () => ( {
 	useSelect: jest.fn(),
+	select: jest.fn( () => ( { getSelectedBlockClientId: () => null } ) ),
 } ) );
 
 /**
@@ -539,6 +540,77 @@ describe( 'pointer gesture', () => {
 		} );
 		rerender( element() );
 
+		expect( sealedNow() ).toBe( false );
+	} );
+} );
+
+describe( 'pointer gesture scoping', () => {
+	// eslint-disable-next-line global-require
+	const { select: dataSelect } = require( '@wordpress/data' );
+	const BlockListBlock = jest.fn( () => <div /> );
+	const Guarded = withBlockGuard( BlockListBlock );
+	const lastProps = () => BlockListBlock.mock.calls.at( -1 )[ 0 ];
+	const sealedNow = () =>
+		( lastProps().className || '' ).includes( 'has-block-overlay' );
+
+	const setSelection = ( { isSelf = false, isInner = false } ) => {
+		useSelect.mockImplementation( ( mapSelect ) =>
+			mapSelect( () => ( {
+				isBlockSelected: () => isSelf,
+				hasSelectedInnerBlock: () => isInner,
+			} ) )
+		);
+	};
+
+	// what the editor reports as selected when the gesture starts
+	const selectedWhenPressed = ( clientId ) =>
+		dataSelect.mockImplementation( () => ( {
+			getSelectedBlockClientId: () => clientId,
+		} ) );
+
+	const element = () => (
+		<Guarded
+			name="gatherpress/add-to-calendar"
+			clientId="scoped"
+			wrapperProps={ {} }
+		/>
+	);
+
+	const press = () =>
+		document.dispatchEvent( new window.Event( 'pointerdown', { bubbles: true } ) );
+	const release = () =>
+		document.dispatchEvent( new window.Event( 'pointerup', { bubbles: true } ) );
+
+	beforeEach( () => {
+		jest.clearAllMocks();
+		getBlockType.mockReturnValue( {
+			supports: { gatherpress: { blockGuard: true } },
+		} );
+		act( () => release() );
+	} );
+
+	it( 'holds the seal through the gesture that selects the block', () => {
+		selectedWhenPressed( null ); // nothing selected when pressed
+		setSelection( {} );
+		const { rerender } = render( element() );
+
+		act( () => press() );
+		setSelection( { isSelf: true } ); // selection lands mid-gesture
+		rerender( element() );
+
+		expect( sealedNow() ).toBe( true );
+	} );
+
+	it( 'does not re-seal on a press when the block was already selected', () => {
+		selectedWhenPressed( 'scoped' ); // this block was already selected
+		setSelection( { isSelf: true } );
+		const { rerender } = render( element() );
+		expect( sealedNow() ).toBe( false );
+
+		act( () => press() );
+		rerender( element() );
+
+		// stays open, so this press can select and drag an inner block
 		expect( sealedNow() ).toBe( false );
 	} );
 } );
