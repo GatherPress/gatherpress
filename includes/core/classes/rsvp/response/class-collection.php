@@ -10,6 +10,7 @@ namespace GatherPress\Core\Rsvp\Response;
 
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
+
 /**
  * Collection of RSVP response states.
  *
