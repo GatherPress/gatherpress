@@ -98,8 +98,22 @@ jobs:
       # flaky test can never recover. This downloads only ffmpeg (a few MB),
       # not the browsers, so it doesn't reopen the 2026-05-30 hang above.
       - name: Install Playwright ffmpeg for retry videos
-        timeout-minutes: 5
-        run: npx playwright install ffmpeg
+        timeout-minutes: 6
+        run: |
+          # The ffmpeg download from Playwright's CDN sometimes hangs mid-
+          # transfer rather than failing, so cap each attempt with `timeout`
+          # and retry a few times. If it still can't be fetched, warn and
+          # continue rather than failing the whole job: ffmpeg is only needed
+          # to record a video on a test *retry*, so a run whose tests pass on
+          # the first try is unaffected — and a flaky CDN shouldn't red-x the
+          # entire E2E suite.
+          for attempt in 1 2 3; do
+            if timeout 90 npx playwright install ffmpeg; then
+              exit 0
+            fi
+            echo "ffmpeg install attempt ${attempt} timed out or failed; retrying..."
+          done
+          echo "::warning::Playwright ffmpeg unavailable after retries; retry videos disabled for this run."
 
       - name: Build plugin assets
         run: npm run build
