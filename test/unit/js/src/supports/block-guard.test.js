@@ -351,18 +351,12 @@ describe( 'withBlockGuard re-seal transitions', () => {
 	} );
 
 	it( 'unseals on a click whose mousedown began on the selected block', () => {
-		const node = document.createElement( 'div' );
-		node.id = 'block-abc';
-		document.body.appendChild( node );
-
 		setSelection( { isSelf: true } );
 		render( element() );
 		expect( sealedNow() ).toBe( true );
 
 		act( () => {
-			node.dispatchEvent(
-				new window.MouseEvent( 'mousedown', { bubbles: true } )
-			);
+			lastProps().wrapperProps.onMouseDown( {} );
 		} );
 
 		act( () => {
@@ -370,8 +364,24 @@ describe( 'withBlockGuard re-seal transitions', () => {
 		} );
 
 		expect( sealedNow() ).toBe( false );
+	} );
 
-		node.remove();
+	it( 'chains to an existing onMouseDown handler', () => {
+		const onMouseDown = jest.fn();
+		setSelection( { isSelf: true } );
+		render(
+			<Guarded
+				name="gatherpress/add-to-calendar"
+				clientId="abc"
+				wrapperProps={ { onMouseDown } }
+			/>
+		);
+
+		act( () => {
+			lastProps().wrapperProps.onMouseDown( {} );
+		} );
+
+		expect( onMouseDown ).toHaveBeenCalled();
 	} );
 } );
 

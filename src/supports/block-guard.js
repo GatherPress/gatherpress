@@ -301,42 +301,18 @@ export const withBlockGuard = createHigherOrderComponent( ( BlockListBlock ) => 
 		// reading selection there reports true even on the very first click and
 		// would let one click straight in. Capture it on mousedown instead.
 		const wasSelectedOnMouseDown = useRef( false );
-		const isActiveRef = useRef( isActive );
 
-		useEffect( () => {
-			isActiveRef.current = isActive;
-		}, [ isActive ] );
-
-		// The mousedown listener is attached natively in the capture phase
-		// rather than passed through `wrapperProps`: core relies on its own
-		// mousedown handling on this wrapper to select the block, and passing
-		// `onMouseDown` in wrapperProps replaces it, which stops the block from
-		// being selectable at all. Capture phase also means this runs before
-		// core selects, so the ref still holds the pre-click state. It only
-		// writes a ref — no re-render — so the drag gesture is untouched.
-		useEffect( () => {
-			const element = getCanvasDocument().getElementById(
-				`block-${ clientId }`,
-			);
-
-			if ( ! element ) {
-				return undefined;
-			}
-
-			const handleMouseDown = () => {
-				wasSelectedOnMouseDown.current = isActiveRef.current;
-			};
-
-			element.addEventListener( 'mousedown', handleMouseDown, true );
-
-			return () => {
-				element.removeEventListener(
-					'mousedown',
-					handleMouseDown,
-					true,
-				);
-			};
-		}, [ clientId ] );
+		// Recorded through React rather than a listener bound imperatively to
+		// the wrapper node: moving a block can remount that node, which would
+		// leave an imperative listener attached to a detached element. The ref
+		// would then never update, the unseal click would never fire, and the
+		// block could not be entered again after being moved. A React handler
+		// is re-bound on every render, so it cannot go stale. It only writes a
+		// ref — no re-render — so the drag gesture is untouched.
+		const onMouseDown = ( event ) => {
+			wasSelectedOnMouseDown.current = isActive;
+			wrapperProps?.onMouseDown?.( event );
+		};
 
 		// A click on a block that was *already* selected is the deliberate
 		// "let me in" action, so the first click only selects and the second
@@ -376,6 +352,7 @@ export const withBlockGuard = createHigherOrderComponent( ( BlockListBlock ) => 
 				className={ className }
 				wrapperProps={ {
 					...wrapperProps,
+					onMouseDown,
 					onClick,
 					onKeyDown,
 					'aria-describedby': sealed
