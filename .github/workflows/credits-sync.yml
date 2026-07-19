@@ -183,5 +183,8 @@ jobs:
             echo "Opened standing PR #${pr_number}."
           fi
 
-          gh pr merge "${pr_number}" --auto --squash
+          # --delete-branch removes the standing branch once the auto-merge
+          # lands. It is recreated from develop's head on the next sync run
+          # (step 5), so the branch only exists while credits are pending.
+          gh pr merge "${pr_number}" --auto --squash --delete-branch
           echo "Auto-merge enabled on PR #${pr_number}."
