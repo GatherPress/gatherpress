@@ -12,8 +12,7 @@ name: Release
 # release body is the SAME rolled-up section that would ship at stable (so
 # testers see what they're testing), but the rollup is computed in an
 # ephemeral checkout — no commit, no PR, no entry files deleted. Pre-releases
-# never deploy to wp.org tags; beta tags additionally sync SVN *trunk* (with
-# the served Stable tag preserved) so translators get the new strings early.
+# never deploy to wp.org.
 #
 # Release-manager docs: docs/contributor/release-process.md.
 
@@ -96,7 +95,7 @@ jobs:
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: '7.4'
+          php-version: '8.1'
           tools: composer
 
       - name: Composer install
@@ -447,4 +446,42 @@ jobs:
               -m "Tag ${VERSION} for beta testers" \
               --username "${SVN_USERNAME}" --password "${SVN_PASSWORD}" --non-interactive > /dev/null
             echo "Created tags/${VERSION} — it may need a release-confirmation click before it appears for download."
+          fi
+
+  # GatherPress Alpha ships in lockstep (its coexistence guard refuses to run
+  # on a version mismatch), so every core release needs a matching alpha
+  # release. Dispatch that repo's Release workflow when a cross-repo token is
+  # configured; otherwise print the one-liner for the release manager
+  # (#1921). Alpha's workflow refuses to cut a release until its version PR
+  # has merged, so a premature dispatch fails loudly there, not silently.
+  alpha-handoff:
+    name: GatherPress Alpha lockstep handoff
+    needs: [prepare, release]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Dispatch or document the alpha release
+        env:
+          ALPHA_TOKEN: ${{ secrets.GATHERPRESS_ALPHA_TOKEN }}
+          VERSION: ${{ needs.prepare.outputs.version }}
+        run: |
+          if [ -n "${ALPHA_TOKEN}" ]; then
+            GH_TOKEN="${ALPHA_TOKEN}" gh workflow run release.yml \
+              --repo GatherPress/gatherpress-alpha \
+              -f version="${VERSION}"
+
+            echo "Dispatched the gatherpress-alpha Release workflow for ${VERSION}." >> "$GITHUB_STEP_SUMMARY"
+          else
+            {
+              echo "### GatherPress Alpha lockstep release"
+              echo ""
+              echo "No \`GATHERPRESS_ALPHA_TOKEN\` secret is configured — cut the matching alpha release with:"
+              echo ""
+              echo '```'
+              echo "gh workflow run release.yml --repo GatherPress/gatherpress-alpha -f version=${VERSION}"
+              echo '```'
+              echo ""
+              echo "(Requires the alpha version PR for ${VERSION} to be merged first — the workflow refuses a mismatched Version header.)"
+            } >> "$GITHUB_STEP_SUMMARY"
           fi

@@ -6,87 +6,133 @@ GatherPress proxies). Each suggestion is a one-line, postal-style label such as
 `42 Hauptstraße, Berlin, 10115`. Picking a suggestion writes that label into the
 venue's address.
 
-By default the street portion of that label is formatted as
-`{house number} {street}` (for example `42 Hauptstraße`). German-speaking and
-several other locales conventionally place the house number after the street
-name (`Hauptstraße 42`). The
-[`gatherpress_geocode_street_line`](#gatherpress_geocode_street_line) filter lets
-you reorder those two pieces.
+The order of the components in that label is locale-aware: GatherPress composes
+the label through two translatable format strings, so each language's
+translators decide the convention. Sites that need a different policy than
+their language's translation provides can rebuild the label with the
+[`gatherpress_formatted_address`](#gatherpress_formatted_address) filter.
 
-## `gatherpress_geocode_street_line`
+## Translatable format strings
 
-Filters the street line (house number plus street) used when GatherPress builds
-an address autocomplete suggestion label.
+The label is built from two `sprintf()` format strings, each registered with
+`_x()` so translators can reorder the placeholders per locale:
+
+| Context | Default | Placeholders |
+|---|---|---|
+| `address street line` | `%1$s %2$s` | 1: house number, 2: street name |
+| `address locality line` | `%1$s, %2$s, %3$s` | 1: city, 2: region/state, 3: postal code |
+
+The two lines are joined with `, `. With the English defaults a German address
+renders as `42 Hauptstraße, Berlin, 10115`; a German translation of `%2$s %1$s`
+and `%3$s %1$s` renders the same address as `Hauptstraße 42, 10115 Berlin` —
+house number after the street, postal code before the city, region omitted.
+
+Missing components are safe to ignore when translating: GatherPress strips the
+dangling separators an empty component leaves behind, so a suggestion without a
+house number or postal code still comes out clean. A placeholder a translation
+doesn't reference (like the region in `%3$s %1$s`) is simply dropped.
+
+Translations resolve in the locale of the request building the label — for the
+editor's autocomplete that is the locale of the user doing the editing, exactly
+like every other GatherPress string.
+
+## `gatherpress_formatted_address`
+
+Filters the finished one-line label after the format strings have composed it.
+The callback receives every raw component, so it can rebuild the label
+wholesale.
 
 | Parameter | Type | Description |
 |---|---|---|
-| `$street_line` | `string` | The default street line, `"{house number} {street}"` (for example `"42 Hauptstraße"`). |
-| `$housenumber` | `string` | The house number on its own. May be empty. |
-| `$street` | `string` | The street name on its own. May be empty. |
+| `$label` | `string` | The composed label (may be empty when the geocoder returned no usable components). |
+| `$components` | `array` | Raw components, each an empty string when absent: `house_number`, `street`, `name`, `locality`, `region`, `postcode`, `country`, `country_code`. |
 
-The filter returns the street line as a string. GatherPress trims the returned
-value; if it comes back empty, the label falls back to the feature's `name`
-property.
+The filter returns the label as a string. GatherPress trims the returned value;
+a suggestion whose label ends up empty is dropped from the autocomplete list.
 
-### Reorder unconditionally
+Notes on the components:
 
-The simplest use is to always place the house number after the street:
+- `name` is the geocoder feature's display name (a point of interest or a
+  station, for example). It becomes the street line when the feature has no
+  street data.
+- `locality` is the city, falling back to the district and then the county.
+- `region` is blanked when it duplicates the locality (city-states like
+  Berlin), before either the format strings or this filter see it.
 
-```php
-add_filter(
-	'gatherpress_geocode_street_line',
-	static function ( string $street_line, string $housenumber, string $street ): string {
-		// Leave partial results (name-only or a missing piece) untouched.
-		if ( '' === $housenumber || '' === $street ) {
-			return $street_line;
-		}
+### Key the format off the address's country
 
-		return trim( $street . ' ' . $housenumber );
-	},
-	10,
-	3
-);
-```
-
-### Reorder only for German locales
-
-To match the locale convention from
-[issue #1833](https://github.com/GatherPress/gatherpress/issues/1833), gate the
-reorder on `get_locale()` so only German-speaking sites (`de_DE`, `de_AT`,
-`de_CH`, and so on) are affected:
+Postal conventions follow the country of the address more than the language of
+the site. `country_code` (a lowercase two-letter code from the geocoder) makes
+that policy possible:
 
 ```php
 add_filter(
-	'gatherpress_geocode_street_line',
-	static function ( string $street_line, string $housenumber, string $street ): string {
-		if ( '' === $housenumber || '' === $street ) {
-			return $street_line;
+	'gatherpress_formatted_address',
+	static function ( string $label, array $components ): string {
+		if ( 'de' !== $components['country_code'] ) {
+			return $label;
 		}
 
-		if ( ! str_starts_with( get_locale(), 'de' ) ) {
-			return $street_line;
-		}
+		$street_line   = trim( $components['street'] . ' ' . $components['house_number'] );
+		$locality_line = trim( $components['postcode'] . ' ' . $components['locality'] );
 
-		return trim( $street . ' ' . $housenumber );
+		return trim( implode( ', ', array_filter( array( $street_line, $locality_line ) ) ), ', ' );
 	},
 	10,
-	3
+	2
 );
 ```
+
+### Reorder the street line only
+
+The equivalent of the removed 0.34.0 filter (see
+[Replaces `gatherpress_geocode_street_line`](#replaces-gatherpress_geocode_street_line)):
+
+```php
+add_filter(
+	'gatherpress_formatted_address',
+	static function ( string $label, array $components ): string {
+		if ( '' === $components['house_number'] || '' === $components['street'] ) {
+			return $label;
+		}
+
+		$flipped = $components['street'] . ' ' . $components['house_number'];
+
+		return str_replace(
+			$components['house_number'] . ' ' . $components['street'],
+			$flipped,
+			$label
+		);
+	},
+	10,
+	2
+);
+```
+
+For a single, always-on ordering change, prefer a translation override of the
+format strings (a `gettext_with_context` filter or a custom language pack) —
+that is what the format strings are for.
+
+## Replaces `gatherpress_geocode_street_line`
+
+The `gatherpress_geocode_street_line` filter shipped in 0.34.0 and only exposed
+the house-number/street portion of the label. It was removed in 0.35.0 in favor
+of the mechanisms above; a callback attached to it is silently ignored. Port
+street-line callbacks to `gatherpress_formatted_address` (previous section) or,
+for locale-wide conventions, to a translation of the format strings.
 
 ## Scope and limitations
 
-- The filter only changes the **suggestion label** shown in the editor's address
+- Formatting applies to the **suggestion label** shown in the editor's address
   autocomplete. That label becomes the saved `gatherpress_address` when a user
-  selects a suggestion, so the saved address follows the order you return.
+  selects a suggestion, so the saved address follows the composed order.
 - It does not change the structured address meta (`gatherpress_house_number`,
   `gatherpress_street`, and the rest). Those are stored as separate fields and
   are not reordered.
-- It only affects the street portion of the label. The locality, region, and
-  postcode are appended after it, comma-separated, and are not touched by this
-  filter.
 - An address a user types by hand (rather than choosing a suggestion) is stored
-  verbatim and never passes through this filter.
+  verbatim and never passes through the format strings or the filter.
+- Already-saved addresses are not reformatted when translations or filters
+  change — the stored address string stays the single source of truth.
 
 ## See also
 

@@ -2,7 +2,7 @@
  * External dependencies
  */
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
-import { render } from '@testing-library/react';
+import { act, render } from '@testing-library/react';
 
 /**
  * Mocks
@@ -16,6 +16,10 @@ import { render } from '@testing-library/react';
 // Capture the venue-state selector from the Edit block's first useSelect call
 // so we can invoke it directly in tests.
 let capturedVenueStateSelector = null;
+
+// Capture the latest props handed to the mocked ResizableBox so tests can
+// drive its resize callbacks with crafted elements.
+let capturedResizableProps = null;
 
 // A minimal select mock that puts the block into the early-bail path:
 // effectiveVenuePostId === 0 because both context.postId and
@@ -65,6 +69,7 @@ jest.mock( '@wordpress/i18n', () => ( {
 
 jest.mock( '@wordpress/element', () => ( {
 	useEffect: jest.fn(),
+	useState: jest.requireActual( 'react' ).useState,
 } ) );
 
 jest.mock( '@wordpress/block-editor', () => ( {
@@ -84,7 +89,20 @@ jest.mock( '@wordpress/components', () => ( {
 	FlexItem: ( { children } ) => <div>{ children }</div>,
 	PanelBody: ( { children } ) => <div>{ children }</div>,
 	RangeControl: () => null,
-	ResizableBox: ( { children } ) => <div>{ children }</div>,
+	ResizableBox: ( props ) => {
+		capturedResizableProps = props;
+		return (
+			<div
+				data-testid="resizable-box"
+				data-max-width={ String( props.maxWidth ) }
+				data-size-width={ String( props.size?.width ) }
+				data-margin-left={ String( props.style?.marginLeft ) }
+				data-margin-right={ String( props.style?.marginRight ) }
+			>
+				{ props.children }
+			</div>
+		);
+	},
 	SelectControl: () => null,
 	TextControl: () => null,
 	ToggleControl: () => null,
@@ -122,18 +140,25 @@ jest.mock( '@src/components/GoogleMap', () => ( {
 } ) );
 
 jest.mock( '@src/supports/block-guard', () => ( {
-	useSharedBlockGuardState: jest.fn( () => [ false ] ),
-	generateBlockGuardStateKey: jest.fn(
-		( type, id ) => `${ type }:${ id }`
-	),
+	useIsBlockSealed: jest.fn( () => false ),
 } ) );
 
 jest.mock( '@src/blocks/venue-map/helpers', () => ( {
 	RegenerateMapButton: () => null,
+	buildComboKey: jest.fn(
+		( zoom, width, height, mapType = 'roadmap' ) =>
+			`${ zoom }x${ width }x${ height }x${ mapType || 'roadmap' }`
+	),
 	parseAspectRatio: jest.fn( () => false ),
 	pickDescriptorForCombo: jest.fn( () => undefined ),
 	resolveDimensions: jest.fn( () => ( { width: 800, height: 400 } ) ),
 	usePlaceholderPolling: jest.fn(),
+	// Pure attribute readers — use the real implementations so the mocked
+	// Edit derives dimensions exactly like production code.
+	parsePxDimension: jest.requireActual( '@src/blocks/venue-map/helpers' )
+		.parsePxDimension,
+	getDimensionValue: jest.requireActual( '@src/blocks/venue-map/helpers' )
+		.getDimensionValue,
 } ) );
 
 /**
@@ -367,5 +392,108 @@ describe( 'venue-map Edit useSelect selector stability', () => {
 		expect( result1.staticMapDescriptors ).toBe(
 			result2.staticMapDescriptors
 		);
+	} );
+} );
+
+describe( 'venue-map Edit sizing', () => {
+	beforeEach( () => {
+		capturedVenueStateSelector = null;
+		capturedResizableProps = null;
+		jest.clearAllMocks();
+		isVenuePostType.mockReturnValue( false );
+	} );
+
+	it( 'only offers the bottom resize handle — width always fills the container', () => {
+		render(
+			<Edit
+				attributes={ {
+					...DEFAULT_ATTRIBUTES,
+					style: { dimensions: { height: '250px' } },
+				} }
+				setAttributes={ jest.fn() }
+				context={ {} }
+				clientId=""
+			/>
+		);
+
+		expect( capturedResizableProps.enable ).toEqual( {
+			top: false,
+			right: false,
+			bottom: true,
+			left: false,
+			topRight: false,
+			bottomRight: false,
+			bottomLeft: false,
+			topLeft: false,
+		} );
+		expect( capturedResizableProps.size ).toEqual( {
+			width: 'auto',
+			height: 250,
+		} );
+	} );
+
+	it( 'uses an auto box height when no height is stored', () => {
+		render(
+			<Edit
+				attributes={ DEFAULT_ATTRIBUTES }
+				setAttributes={ jest.fn() }
+				context={ {} }
+				clientId=""
+			/>
+		);
+
+		expect( capturedResizableProps.size ).toEqual( {
+			width: 'auto',
+			height: 'auto',
+		} );
+	} );
+
+	it( 'commits an explicit height on resize', () => {
+		const setAttributes = jest.fn();
+
+		render(
+			<Edit
+				attributes={ {
+					...DEFAULT_ATTRIBUTES,
+					style: { dimensions: { height: '250px' } },
+				} }
+				setAttributes={ setAttributes }
+				context={ {} }
+				clientId=""
+			/>
+		);
+
+		// resolveDimensions is mocked to an effective height of 400; a
+		// +50 drag commits 450px into style.dimensions.height.
+		act( () =>
+			capturedResizableProps.onResizeStop( null, 'bottom', null, {
+				width: 0,
+				height: 50,
+			} )
+		);
+
+		expect( setAttributes ).toHaveBeenCalledWith( {
+			style: { dimensions: { height: '450px' } },
+		} );
+	} );
+
+	it( 'passes the block wrapper through without custom styling', () => {
+		const { useBlockProps } = jest.requireMock(
+			'@wordpress/block-editor'
+		);
+
+		render(
+			<Edit
+				attributes={ {
+					...DEFAULT_ATTRIBUTES,
+					style: { dimensions: { height: '250px' } },
+				} }
+				setAttributes={ jest.fn() }
+				context={ {} }
+				clientId=""
+			/>
+		);
+
+		expect( useBlockProps ).toHaveBeenCalledWith();
 	} );
 } );

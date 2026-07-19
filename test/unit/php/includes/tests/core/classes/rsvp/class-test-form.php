@@ -10,7 +10,8 @@ namespace GatherPress\Tests\Core\Rsvp;
 
 use GatherPress\Core\Event;
 use GatherPress\Core\Rsvp\Form;
-use GatherPress\Core\Rsvp\Rsvp;
+use GatherPress\Core\Rsvp;
+use GatherPress\Core\Rsvp\Response\Status;
 use GatherPress\Core\Settings;
 use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;
@@ -999,8 +1000,8 @@ class Test_Form extends Base {
 			)
 		);
 
-		// Set rsvp_mode to per_event_on so that per-event disabling is respected.
-		Settings::get_instance()->set( 'rsvp_mode', 'per_event_on' );
+		// Set rsvp_mode to per_event_enabled so that per-event disabling is respected.
+		Settings::get_instance()->set( 'rsvp_mode', 'per_event_enabled' );
 
 		// Explicitly disable RSVP for this event.
 		update_post_meta( $post_id, 'gatherpress_enable_rsvp', 0 );
@@ -1032,7 +1033,7 @@ class Test_Form extends Base {
 		remove_all_filters( 'gatherpress_pre_get_http_input' );
 
 		// Restore the setting for other tests.
-		Settings::get_instance()->set( 'rsvp_mode', 'all_on' );
+		Settings::get_instance()->set( 'rsvp_mode', 'enabled' );
 	}
 
 	/**
@@ -1257,7 +1258,7 @@ class Test_Form extends Base {
 		$instance->handle_rsvp_comment_post( $comment_id );
 
 		// Should not set any RSVP meta or terms.
-		$terms = wp_get_object_terms( $comment_id, Rsvp::TAXONOMY );
+		$terms = wp_get_object_terms( $comment_id, Status::TAXONOMY );
 		$this->assertEmpty( $terms );
 	}
 
@@ -2800,7 +2801,7 @@ class Test_Form extends Base {
 		$this->assertStringContainsString( 'RSVP has been submitted successfully', $result['message'] );
 		$this->assertSame( $comment_id, $result['comment_id'] );
 
-		$terms = wp_get_object_terms( $comment_id, Rsvp::TAXONOMY );
+		$terms = wp_get_object_terms( $comment_id, Status::TAXONOMY );
 		$this->assertNotEmpty( $terms, 'Should set RSVP status' );
 		$this->assertSame( 'attending', $terms[0]->slug, 'Should set status to attending' );
 	}

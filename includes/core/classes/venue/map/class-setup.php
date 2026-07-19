@@ -3,8 +3,8 @@
  * Hub for the venue map subsystem.
  *
  * Owns instantiation of the Map\* sibling singletons (Manager, Map,
- * Prewarm) so the outer `Venue\Setup::instantiate_classes()` can hand
- * off the whole map subsystem with a single line — same shape as
+ * Prewarm, Rest_Api) so the outer `Venue\Setup::instantiate_classes()`
+ * can hand off the whole map subsystem with a single line — same shape as
  * `Event\Setup`, `Rsvp\Setup`, `Venue\Setup`. Adding a new Map\* class
  * in the future lands as one line in `Map\Setup::instantiate_classes()`
  * rather than touching `Venue\Setup`.
@@ -63,5 +63,6 @@ class Setup {
 		Manager::get_instance();
 		Map::get_instance();
 		Prewarm::get_instance();
+		Rest_Api::get_instance();
 	}
 }

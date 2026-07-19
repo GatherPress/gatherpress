@@ -38,7 +38,7 @@ import { RsvpPluginDocumentSettings } from './slot';
  */
 const RsvpSettings = () => {
 	// Only show per-event RSVP toggle when the admin has set rsvp_mode to per_event.
-	const rsvpMode = getFromSettings( 'rsvpMode' ) ?? 'all_on';
+	const rsvpMode = getFromSettings( 'rsvpMode' ) ?? 'enabled';
 	const enableOpenRsvp = getFromSettings( 'enableOpenRsvp' ) ?? true;
 	const supportsRsvp = usePostTypeSupports( 'gatherpress-rsvp' );
 

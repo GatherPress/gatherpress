@@ -12,7 +12,7 @@ use GatherPress\Core\Event;
 use GatherPress\Core\Venue\Map\Setup as Map_Setup;
 use GatherPress\Core\Venue\Meta;
 use GatherPress\Core\Venue\Setup;
-use GatherPress\Core\Venue\Venue;
+use GatherPress\Core\Venue;
 use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;
 use WP_Block_Patterns_Registry;
@@ -367,6 +367,53 @@ class Test_Setup extends Base {
 		);
 
 		$registry->unregister( 'unit-test/extra-venue-pattern' );
+	}
+
+	/**
+	 * A filter-supplied definition carrying its own `postTypes` key
+	 * registers against exactly those slugs, while definitions without
+	 * one keep the full `gatherpress-venue-information` support list.
+	 *
+	 * @covers ::register_starter_pattern
+	 *
+	 * @return void
+	 */
+	public function test_register_starter_pattern_honors_per_pattern_post_types(): void {
+		$instance = Setup::get_instance();
+		$registry = WP_Block_Patterns_Registry::get_instance();
+
+		if ( $registry->is_registered( 'unit-test/scoped-venue-pattern' ) ) {
+			$registry->unregister( 'unit-test/scoped-venue-pattern' );
+		}
+
+		$append_pattern = static function ( array $patterns ): array {
+			$patterns[] = array(
+				'name'      => 'unit-test/scoped-venue-pattern',
+				'title'     => 'Scoped Venue Pattern',
+				'content'   => '<!-- wp:paragraph --><p>Scoped</p><!-- /wp:paragraph -->',
+				'postTypes' => array( 'my_custom_venue' ),
+			);
+			return $patterns;
+		};
+
+		add_filter( 'gatherpress_venue_starter_patterns', $append_pattern );
+
+		$instance->register_starter_pattern();
+
+		remove_filter( 'gatherpress_venue_starter_patterns', $append_pattern );
+
+		$this->assertSame(
+			array( 'my_custom_venue' ),
+			$registry->get_registered( 'unit-test/scoped-venue-pattern' )['postTypes'],
+			'The per-pattern postTypes key must narrow registration to those slugs only.'
+		);
+		$this->assertContains(
+			Venue::POST_TYPE,
+			$registry->get_registered( 'gatherpress/venue-with-map' )['postTypes'],
+			'Definitions without postTypes keep the support-resolved list.'
+		);
+
+		$registry->unregister( 'unit-test/scoped-venue-pattern' );
 	}
 
 	/**

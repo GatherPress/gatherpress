@@ -9,6 +9,17 @@
 namespace GatherPress\Tests\Core\Rsvp;
 
 use GatherPress\Core\Event;
+use GatherPress\Core\Rsvp\Response\Data;
+use GatherPress\Core\Rsvp\Response\Identity_Type;
+use GatherPress\Core\Rsvp\Response\Identity;
+use GatherPress\Core\Rsvp\Response\Intent;
+use GatherPress\Core\Rsvp\Response\Status;
+use GatherPress\Core\Rsvp\Response\State;
+use GatherPress\Core\Rsvp\Response\Provider\User;
+use GatherPress\Core\Rsvp\Cache;
+use GatherPress\Core\Rsvp\Response\Provider_Registry;
+// Deep import on purpose: test_prior_fqn_resolves_to_current_class asserts
+// Rsvp::class equals the real FQN, which the BC alias intentionally is not.
 use GatherPress\Core\Rsvp\Rsvp;
 use GatherPress\Core\Settings;
 use GatherPress\Tests\Base;
@@ -89,15 +100,8 @@ class Test_Rsvp extends Base {
 	 * @covers ::__construct
 	 */
 	public function test_save(): void {
-		// @todo Investigate root cause of empty cache key from WP_Object_Cache::add.
-		$this->setExpectedIncorrectUsage( 'WP_Object_Cache::add' );
-
-		$post    = $this->mock->post(
-			array(
-				'post_type' => Event::POST_TYPE,
-			)
-		)->get();
-		$rsvp    = new Rsvp( $post->ID );
+		$post_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
+		$rsvp    = new Rsvp( $post_id );
 		$user_id = $this->factory->user->create();
 		$status  = 'attending';
 
@@ -125,7 +129,7 @@ class Test_Rsvp extends Base {
 			'Failed to assert no_status due to invalid status.'
 		);
 
-		$rsvp = new Rsvp( $post->ID );
+		$rsvp = new Rsvp( $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) ) );
 
 		Utility::set_and_get_hidden_property( $rsvp, 'max_attendance_limit', 1 );
 
@@ -169,15 +173,10 @@ class Test_Rsvp extends Base {
 			'Failed to assert that user 2 is no_status.'
 		);
 
-		$post      = $this->mock->post(
-			array(
-				'post_type' => Event::POST_TYPE,
-				'post_meta' => array(
-					'gatherpress_max_guest_limit' => 2,
-				),
-			)
-		)->get();
-		$rsvp      = new Rsvp( $post->ID );
+		$limit_post_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
+		update_post_meta( $limit_post_id, 'gatherpress_max_guest_limit', 2 );
+
+		$rsvp      = new Rsvp( $limit_post_id );
 		$user_1_id = $this->factory->user->create();
 		$this->assertSame(
 			2,
@@ -185,8 +184,14 @@ class Test_Rsvp extends Base {
 			'Failed to assert that user 1 can only bring 2 guests at most.'
 		);
 
-		// Simulate error saving RSVP.
-		add_filter( 'query', '__return_false' );
+		// Simulate a failed comment update. Blanking every query via the
+		// `query` filter also breaks the reads inside save(), leaving
+		// wpdb serving stale rows from the previous statement — fail the
+		// write precisely instead.
+		$force_failure = static function () {
+			return new WP_Error( 'simulated', 'Simulated update failure.' );
+		};
+		add_filter( 'wp_update_comment_data', $force_failure );
 
 		$result   = $rsvp->save( $user_1_id, 'attending' );
 		$expected = array(
@@ -201,7 +206,7 @@ class Test_Rsvp extends Base {
 
 		$this->assertEquals( $expected, $result );
 
-		remove_filter( 'query', '__return_false' );
+		remove_filter( 'wp_update_comment_data', $force_failure );
 	}
 
 	/**
@@ -350,18 +355,20 @@ class Test_Rsvp extends Base {
 	 * @return void
 	 */
 	public function test_attending_limit_reached(): void {
-		$post = $this->mock->post(
-			array(
-				'post_type' => Event::POST_TYPE,
-			)
-		)->get();
-		$rsvp = new Rsvp( $post->ID );
+		$rsvp = new Rsvp( $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) ) );
 
 		Utility::set_and_get_hidden_property( $rsvp, 'max_attendance_limit', 1 );
 
-		$current_response = array(
-			'status' => 'waiting_list',
-			'guests' => 0,
+		$user_id = $this->factory->user->create();
+
+		$current_response = $rsvp->process(
+			new Intent(
+				new Data(
+					new Identity( Identity_Type::WP_USER_ID, $user_id ),
+					Status::WAITING_LIST
+				),
+				Provider_Registry::get_instance()->get( 'user' ),
+			)
 		);
 
 		$this->assertFalse(
@@ -369,11 +376,9 @@ class Test_Rsvp extends Base {
 			'Failed to assert that limit has not been reached.'
 		);
 
-		$user_id = $this->factory->user->create();
-
 		$rsvp->save( $user_id, 'attending' );
 
-		$current_response = $rsvp->get( $user_id );
+		$current_response = $rsvp->find( $user_id );
 
 		$this->assertTrue(
 			$rsvp->attending_limit_reached( $current_response, 1 ),
@@ -421,19 +426,19 @@ class Test_Rsvp extends Base {
 		$this->assertEquals( 2, $responses['all']['count'], 'Failed to assert that count is 2.' );
 		$this->assertEquals(
 			$user_id_1,
-			$responses['attending']['records'][0]['userId'],
+			$responses['attending']['records'][0]['user_id'],
 			'Failed to assert user ID matches.'
 		);
 		$this->assertEquals(
 			$user_id_2,
-			$responses['not_attending']['records'][0]['userId'],
+			$responses['not_attending']['records'][0]['user_id'],
 			'Failed to assert user ID matches.'
 		);
 
 		wp_delete_user( $user_id_2 );
 
 		// User will remain while cached until it expires.
-		wp_cache_delete( sprintf( Rsvp::CACHE_KEY, $post->ID ), GATHERPRESS_CACHE_GROUP );
+		Cache::delete( $post->ID );
 
 		$responses = $rsvp->responses();
 
@@ -581,8 +586,8 @@ class Test_Rsvp extends Base {
 			)
 		)->get();
 
-		// Set rsvp_mode to per_event_on so that per-event disabling is respected.
-		Settings::get_instance()->set( 'rsvp_mode', 'per_event_on' );
+		// Set rsvp_mode to per_event_enabled so that per-event disabling is respected.
+		Settings::get_instance()->set( 'rsvp_mode', 'per_event_enabled' );
 
 		// Explicitly disable RSVP for this event.
 		update_post_meta( $post->ID, 'gatherpress_enable_rsvp', 0 );
@@ -595,7 +600,7 @@ class Test_Rsvp extends Base {
 		$this->assertSame( 'no_status', $result['status'], 'Should return no_status when RSVP is disabled.' );
 
 		// Restore the setting for other tests.
-		Settings::get_instance()->set( 'rsvp_mode', 'all_on' );
+		Settings::get_instance()->set( 'rsvp_mode', 'enabled' );
 	}
 
 	/**
@@ -608,49 +613,49 @@ class Test_Rsvp extends Base {
 	public function test_is_enabled(): void {
 		$post_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
 
-		// Returns false when mode is per_event_on and meta is '0'.
-		Settings::get_instance()->set( 'rsvp_mode', 'per_event_on' );
+		// Returns false when mode is per_event_enabled and meta is '0'.
+		Settings::get_instance()->set( 'rsvp_mode', 'per_event_enabled' );
 		update_post_meta( $post_id, 'gatherpress_enable_rsvp', '0' );
 		$this->assertFalse(
 			( new Rsvp( $post_id ) )->is_enabled(),
-			'Should return false when mode is per_event_on and meta is 0.'
+			'Should return false when mode is per_event_enabled and meta is 0.'
 		);
 
-		// Returns false when mode is per_event_off and meta is '0'.
-		Settings::get_instance()->set( 'rsvp_mode', 'per_event_off' );
+		// Returns false when mode is per_event_disabled and meta is '0'.
+		Settings::get_instance()->set( 'rsvp_mode', 'per_event_disabled' );
 		$this->assertFalse(
 			( new Rsvp( $post_id ) )->is_enabled(),
-			'Should return false when mode is per_event_off and meta is 0.'
+			'Should return false when mode is per_event_disabled and meta is 0.'
 		);
 
-		// Returns true when mode is per_event_on and meta is '1'.
-		Settings::get_instance()->set( 'rsvp_mode', 'per_event_on' );
+		// Returns true when mode is per_event_enabled and meta is '1'.
+		Settings::get_instance()->set( 'rsvp_mode', 'per_event_enabled' );
 		update_post_meta( $post_id, 'gatherpress_enable_rsvp', '1' );
 		$this->assertTrue(
 			( new Rsvp( $post_id ) )->is_enabled(),
-			'Should return true when mode is per_event_on and meta is 1.'
+			'Should return true when mode is per_event_enabled and meta is 1.'
 		);
 
-		// Returns true when mode is per_event_on and meta is '' (never set).
+		// Returns true when mode is per_event_enabled and meta is '' (never set).
 		delete_post_meta( $post_id, 'gatherpress_enable_rsvp' );
 		$this->assertTrue(
 			( new Rsvp( $post_id ) )->is_enabled(),
-			'Should return true when mode is per_event_on and meta is empty (never set).'
+			'Should return true when mode is per_event_enabled and meta is empty (never set).'
 		);
 
-		// Returns false when mode is per_event_off and meta is '' (never set).
-		Settings::get_instance()->set( 'rsvp_mode', 'per_event_off' );
+		// Returns false when mode is per_event_disabled and meta is '' (never set).
+		Settings::get_instance()->set( 'rsvp_mode', 'per_event_disabled' );
 		$this->assertFalse(
 			( new Rsvp( $post_id ) )->is_enabled(),
-			'Should return false when mode is per_event_off and meta is empty (never set).'
+			'Should return false when mode is per_event_disabled and meta is empty (never set).'
 		);
 
-		// Returns true when mode is all_on and meta is '0'.
-		Settings::get_instance()->set( 'rsvp_mode', 'all_on' );
+		// Returns true when mode is enabled and meta is '0'.
+		Settings::get_instance()->set( 'rsvp_mode', 'enabled' );
 		update_post_meta( $post_id, 'gatherpress_enable_rsvp', '0' );
 		$this->assertTrue(
 			( new Rsvp( $post_id ) )->is_enabled(),
-			'Should return true when mode is all_on regardless of meta.'
+			'Should return true when mode is enabled regardless of meta.'
 		);
 
 		// Returns false when mode is disabled regardless of meta.
@@ -661,7 +666,7 @@ class Test_Rsvp extends Base {
 		);
 
 		// Restore default setting.
-		Settings::get_instance()->set( 'rsvp_mode', 'all_on' );
+		Settings::get_instance()->set( 'rsvp_mode', 'enabled' );
 	}
 
 	/**
@@ -679,7 +684,7 @@ class Test_Rsvp extends Base {
 		$rsvp  = new Rsvp( $post->ID );
 		$email = 'rsvp@example.com';
 
-		$data = $rsvp->save( $email, 'attending' );
+		$data = $rsvp->save( $email, 'attending', 0, 0 );
 
 		$this->assertSame( $post->ID, intval( $data['post_id'] ) );
 		$this->assertSame( 'attending', $data['status'] );
@@ -794,7 +799,7 @@ class Test_Rsvp extends Base {
 
 		// Set attendance limit.
 		update_post_meta( $post->ID, 'gatherpress_enable_attendance_limit', 1 );
-		update_post_meta( $post->ID, 'gatherpress_max_attendance_limit', 5 );
+		update_post_meta( $post->ID, 'gatherpress_max_attendance_limit', 3 );
 
 		$rsvp = new Rsvp( $post->ID );
 
@@ -833,19 +838,19 @@ class Test_Rsvp extends Base {
 	 *
 	 * @return void
 	 */
-	public function test_initialize_enabled_writes_meta_in_all_on_mode(): void {
+	public function test_initialize_enabled_writes_meta_in_enabled_mode(): void {
 		$post_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
 
 		// Clear any meta set by the wp_after_insert_post hook during post creation.
 		delete_post_meta( $post_id, 'gatherpress_enable_rsvp' );
 
-		// Default mode is all_on; calling the method should write 1.
+		// Default mode is enabled; calling the method should write 1.
 		( new Rsvp( $post_id ) )->initialize_enabled();
 
 		$this->assertSame(
 			'1',
 			get_post_meta( $post_id, 'gatherpress_enable_rsvp', true ),
-			'Meta should be written as 1 in all_on mode when not previously set.'
+			'Meta should be written as 1 in enabled mode when not previously set.'
 		);
 	}
 
@@ -862,7 +867,7 @@ class Test_Rsvp extends Base {
 		// Pre-set meta to 0 (RSVP disabled for this event).
 		update_post_meta( $post_id, 'gatherpress_enable_rsvp', 0 );
 
-		// Default mode is all_on; method should not overwrite the existing value.
+		// Default mode is enabled; method should not overwrite the existing value.
 		( new Rsvp( $post_id ) )->initialize_enabled();
 
 		$this->assertSame(
@@ -901,15 +906,15 @@ class Test_Rsvp extends Base {
 	}
 
 	/**
-	 * Coverage for initialize_enabled method in per_event_on mode.
+	 * Coverage for initialize_enabled method in per_event_enabled mode.
 	 *
 	 * @covers ::initialize_enabled
 	 *
 	 * @return void
 	 */
-	public function test_initialize_enabled_writes_meta_in_per_event_on_mode(): void {
-		// Switch to per_event_on mode BEFORE creating the post so the hook does not write meta.
-		Settings::get_instance()->set( 'rsvp_mode', 'per_event_on' );
+	public function test_initialize_enabled_writes_meta_in_per_event_enabled_mode(): void {
+		// Switch to per_event_enabled mode BEFORE creating the post so the hook does not write meta.
+		Settings::get_instance()->set( 'rsvp_mode', 'per_event_enabled' );
 
 		$post_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
 
@@ -918,27 +923,27 @@ class Test_Rsvp extends Base {
 
 		( new Rsvp( $post_id ) )->initialize_enabled();
 
-		// per_event_on default is enabled, so meta should be written as 1.
+		// per_event_enabled default is enabled, so meta should be written as 1.
 		$this->assertSame(
 			'1',
 			get_post_meta( $post_id, 'gatherpress_enable_rsvp', true ),
-			'Meta should be written as 1 in per_event_on mode when not previously set.'
+			'Meta should be written as 1 in per_event_enabled mode when not previously set.'
 		);
 
 		// Restore setting.
-		Settings::get_instance()->set( 'rsvp_mode', 'all_on' );
+		Settings::get_instance()->set( 'rsvp_mode', 'enabled' );
 	}
 
 	/**
-	 * Coverage for initialize_enabled method in per_event_off mode.
+	 * Coverage for initialize_enabled method in per_event_disabled mode.
 	 *
 	 * @covers ::initialize_enabled
 	 *
 	 * @return void
 	 */
-	public function test_initialize_enabled_writes_meta_in_per_event_off_mode(): void {
-		// Switch to per_event_off mode BEFORE creating the post so the hook does not write meta.
-		Settings::get_instance()->set( 'rsvp_mode', 'per_event_off' );
+	public function test_initialize_enabled_writes_meta_in_per_event_disabled_mode(): void {
+		// Switch to per_event_disabled mode BEFORE creating the post so the hook does not write meta.
+		Settings::get_instance()->set( 'rsvp_mode', 'per_event_disabled' );
 
 		$post_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
 
@@ -947,15 +952,15 @@ class Test_Rsvp extends Base {
 
 		( new Rsvp( $post_id ) )->initialize_enabled();
 
-		// per_event_off default is disabled, so meta should be written as 0.
+		// per_event_disabled default is disabled, so meta should be written as 0.
 		$this->assertSame(
 			'0',
 			get_post_meta( $post_id, 'gatherpress_enable_rsvp', true ),
-			'Meta should be written as 0 in per_event_off mode when not previously set.'
+			'Meta should be written as 0 in per_event_disabled mode when not previously set.'
 		);
 
 		// Restore setting.
-		Settings::get_instance()->set( 'rsvp_mode', 'all_on' );
+		Settings::get_instance()->set( 'rsvp_mode', 'enabled' );
 	}
 
 	/**
@@ -984,7 +989,7 @@ class Test_Rsvp extends Base {
 		);
 
 		// Restore setting.
-		Settings::get_instance()->set( 'rsvp_mode', 'all_on' );
+		Settings::get_instance()->set( 'rsvp_mode', 'enabled' );
 	}
 
 	/**
@@ -1029,5 +1034,223 @@ class Test_Rsvp extends Base {
 
 		// Restore the sitewide setting for other tests.
 		Settings::get_instance()->set( 'enable_open_rsvp', true );
+	}
+
+	/**
+	 * Identifier resolution: an unrecognized identifier yields null from
+	 * get() and find(); email and user-ID identifiers resolve through
+	 * their providers and round-trip a saved response.
+	 *
+	 * @covers ::get
+	 * @covers ::find
+	 * @covers ::resolve_identity
+	 * @covers ::resolve_provider
+	 *
+	 * @return void
+	 */
+	public function test_get_and_find_resolve_identifiers(): void {
+		$event_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
+		$rsvp     = new Rsvp( $event_id );
+
+		$this->assertNull( $rsvp->get( 'not-an-email-or-id' ), 'Unresolvable identifiers yield null.' );
+		$this->assertNull( $rsvp->find( 'not-an-email-or-id' ) );
+		$this->assertNull( $rsvp->get( 'unknown@example.test' ), 'A valid email with no response yields null.' );
+
+		$user_id = $this->factory->user->create();
+		$rsvp->save( $user_id, 'attending' );
+
+		$row = $rsvp->get( $user_id );
+		$this->assertSame( 'attending', $row['status'] );
+
+		$state = $rsvp->find( $user_id );
+		$this->assertInstanceOf( State::class, $state );
+		$this->assertSame( Status::ATTENDING, $state->data->status );
+	}
+
+	/**
+	 * The save pipeline clamps guests to the event's guest limit and
+	 * forces anonymity off unless the event enables anonymous RSVPs.
+	 *
+	 * @covers ::save
+	 * @covers ::process
+	 * @covers ::constrain_rsvp_intent
+	 *
+	 * @return void
+	 */
+	public function test_save_constrains_guests_and_anonymity(): void {
+		$event_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
+		update_post_meta( $event_id, 'gatherpress_max_guest_limit', 3 );
+
+		$rsvp = new Rsvp( $event_id );
+
+		$constrained = $rsvp->save( $this->factory->user->create(), 'attending', 1, 5 );
+
+		$this->assertSame( 'attending', $constrained['status'] );
+		$this->assertSame( 3, $constrained['guests'], 'Guests clamp to the event limit.' );
+		$this->assertFalse( $constrained['anonymous'], 'Anonymity is off while the event disallows it.' );
+
+		update_post_meta( $event_id, 'gatherpress_enable_anonymous_rsvp', true );
+
+		$anonymous = $rsvp->save( $this->factory->user->create(), 'attending', 1 );
+
+		$this->assertTrue( (bool) $anonymous['anonymous'], 'Anonymity persists once the event allows it.' );
+	}
+
+	/**
+	 * When the attending limit is already reached, a first-time attending
+	 * request lands on the waiting list with zero guests — and an explicit
+	 * waiting-list request always drops its guests.
+	 *
+	 * @covers ::process
+	 * @covers ::constrain_rsvp_intent
+	 *
+	 * @return void
+	 */
+	public function test_save_routes_to_waiting_list_when_limit_reached(): void {
+		$event_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
+		update_post_meta( $event_id, 'gatherpress_max_attendance_limit', 1 );
+		update_post_meta( $event_id, 'gatherpress_max_guest_limit', 5 );
+
+		$first  = ( new Rsvp( $event_id ) )->save( $this->factory->user->create(), 'attending' );
+		$second = ( new Rsvp( $event_id ) )->save( $this->factory->user->create(), 'attending', 0, 2 );
+
+		$this->assertSame( 'attending', $first['status'] );
+		$this->assertSame( 'waiting_list', $second['status'], 'A full event routes newcomers to the waiting list.' );
+		$this->assertSame( 2, $second['guests'], 'Redirected responders keep their party size for later promotion.' );
+
+		$explicit = ( new Rsvp( $event_id ) )->save( $this->factory->user->create(), 'waiting_list', 0, 3 );
+
+		$this->assertSame( 'waiting_list', $explicit['status'] );
+		$this->assertSame( 0, $explicit['guests'] );
+	}
+
+	/**
+	 * An already-attending responder re-saving into a full event keeps
+	 * their prior guest count instead of growing it.
+	 *
+	 * @covers ::constrain_rsvp_intent
+	 *
+	 * @return void
+	 */
+	public function test_save_keeps_prior_guests_when_full(): void {
+		$event_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
+
+		// The limit counts the whole party: responder plus guests. A
+		// limit of 4 admits one responder with two guests, and is then
+		// exceeded the moment they ask to grow the party.
+		update_post_meta( $event_id, 'gatherpress_max_attendance_limit', 4 );
+		update_post_meta( $event_id, 'gatherpress_max_guest_limit', 5 );
+
+		$user_id = $this->factory->user->create();
+
+		$initial = ( new Rsvp( $event_id ) )->save( $user_id, 'attending', 0, 2 );
+		$this->assertSame( 'attending', $initial['status'] );
+
+		$resave = ( new Rsvp( $event_id ) )->save( $user_id, 'attending', 0, 4 );
+
+		$this->assertSame( 'attending', $resave['status'], 'An attending responder stays attending.' );
+		$this->assertSame( 2, $resave['guests'], 'A full event freezes the prior guest count.' );
+	}
+
+	/**
+	 * Freeing a spot promotes the earliest waiting-list responder.
+	 *
+	 * @covers ::process
+	 * @covers ::check_waiting_list
+	 *
+	 * @return void
+	 */
+	public function test_check_waiting_list_promotes_on_freed_spot(): void {
+		$event_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
+		update_post_meta( $event_id, 'gatherpress_max_attendance_limit', 1 );
+
+		$attendee_id = $this->factory->user->create();
+		$waiter_id   = $this->factory->user->create();
+
+		( new Rsvp( $event_id ) )->save( $attendee_id, 'attending' );
+		( new Rsvp( $event_id ) )->save( $waiter_id, 'attending' );
+
+		$this->assertSame(
+			'waiting_list',
+			( new Rsvp( $event_id ) )->get( $waiter_id )['status'],
+			'The second responder starts on the waiting list.'
+		);
+
+		( new Rsvp( $event_id ) )->save( $attendee_id, 'not_attending' );
+
+		$this->assertSame(
+			'attending',
+			( new Rsvp( $event_id ) )->get( $waiter_id )['status'],
+			'Freeing a spot promotes the waiting-list responder.'
+		);
+	}
+
+	/**
+	 * A second responses() call within the cache TTL returns the cached
+	 * array without rebuilding.
+	 *
+	 * @covers ::responses
+	 *
+	 * @return void
+	 */
+	public function test_responses_returns_cached_array(): void {
+		$event_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
+		( new Rsvp( $event_id ) )->save( $this->factory->user->create(), 'attending' );
+
+		$rsvp  = new Rsvp( $event_id );
+		$first = $rsvp->responses();
+
+		$this->assertSame( 1, $first['attending']['count'] );
+		$this->assertArrayHasKey(
+			'commentId',
+			$first['attending']['records'][0],
+			'Records keep the camelCase contract the blocks consume.'
+		);
+		$this->assertArrayHasKey( 'userId', $first['attending']['records'][0] );
+		$this->assertSame( $first, $rsvp->responses(), 'The cached array is served on repeat calls.' );
+	}
+
+	/**
+	 * Process refuses invalid events, a removal round-trips to the
+	 * default response, and providers only resolve for user and email
+	 * identity types.
+	 *
+	 * @covers ::process
+	 * @covers ::save
+	 * @covers ::resolve_provider
+	 *
+	 * @return void
+	 */
+	public function test_process_degenerate_paths(): void {
+		$user_id = $this->factory->user->create();
+		$intent  = new Intent(
+			new Data( new Identity( Identity_Type::WP_USER_ID, $user_id ), Status::ATTENDING ),
+			new User()
+		);
+
+		$this->assertNull(
+			( new Rsvp( 0 ) )->process( $intent ),
+			'An invalid event never processes.'
+		);
+
+		$event_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
+		$rsvp     = new Rsvp( $event_id );
+
+		$rsvp->save( $user_id, 'attending' );
+		$removed = $rsvp->save( $user_id, 'no_status' );
+
+		$this->assertSame(
+			'no_status',
+			$removed['status'],
+			'Removing a response returns the default no_status shape.'
+		);
+		$this->assertNull( $rsvp->get( $user_id ), 'The response no longer resolves after removal.' );
+
+		$url_identity = new Identity( Identity_Type::URL, 'https://example.test/responder' );
+
+		$this->assertNull(
+			Utility::invoke_hidden_method( $rsvp, 'resolve_provider', array( $url_identity ) ),
+			'Only user and email identities resolve to core providers.'
+		);
 	}
 }

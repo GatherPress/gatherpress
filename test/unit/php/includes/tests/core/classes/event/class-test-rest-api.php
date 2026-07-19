@@ -10,7 +10,8 @@ namespace GatherPress\Tests\Core\Event;
 
 use GatherPress\Core\Event;
 use GatherPress\Core\Event\Rest_Api;
-use GatherPress\Core\Rsvp\Rsvp;
+use GatherPress\Core\Rsvp\Response\Status;
+use GatherPress\Core\Rsvp;
 use GatherPress\Core\Rsvp\Token;
 use GatherPress\Core\Settings;
 use GatherPress\Core\Setup;
@@ -321,19 +322,8 @@ class Test_Rest_Api extends Base {
 		$event->rsvp->save( $attending_user_id, 'attending' );
 		$event->rsvp->save( $not_attending_user_id, 'not_attending' );
 
-		// Create anonymous attending RSVP using wp_insert_comment for better control.
-		wp_insert_comment(
-			array(
-				'comment_post_ID'      => $event_id,
-				'comment_type'         => Rsvp::COMMENT_TYPE,
-				'comment_author'       => 'Anonymous Attendee',
-				'comment_author_email' => 'attendee@example.com',
-				'comment_approved'     => 1,
-				'user_id'              => 0,
-			)
-		);
-
-		$event->rsvp->save( 'attendee@example.com', 'attending' );
+		// Create anonymous attending RSVP.
+		$event->rsvp->save( 'attendee@example.com', 'attending', 1 );
 
 		$send = array(
 			'all'           => false,
@@ -552,7 +542,7 @@ class Test_Rest_Api extends Base {
 		$this->assertEquals( 0, $response->data['guests'] );
 		$this->assertSame(
 			$user_id,
-			$response->data['responses']['attending']['records'][0]['userId'],
+			$response->data['responses']['attending']['records'][0]['user_id'],
 			'Failed to assert that user ID matches.'
 		);
 		$this->assertSame(
@@ -1235,7 +1225,7 @@ class Test_Rest_Api extends Base {
 		);
 
 		// Set RSVP status.
-		wp_set_object_terms( $comment_id, 'attending', Rsvp::TAXONOMY );
+		wp_set_object_terms( $comment_id, 'attending', Status::TAXONOMY );
 
 		// Opt out of event updates.
 		update_comment_meta( $comment_id, 'gatherpress_event_updates_opt_in', 0 );
@@ -1276,7 +1266,7 @@ class Test_Rest_Api extends Base {
 			)
 		);
 
-		wp_set_object_terms( $comment_id, 'attending', Rsvp::TAXONOMY );
+		wp_set_object_terms( $comment_id, 'attending', Status::TAXONOMY );
 
 		$send = array(
 			'attending' => true,
@@ -1312,7 +1302,7 @@ class Test_Rest_Api extends Base {
 			)
 		);
 
-		wp_set_object_terms( $comment_id, 'attending', Rsvp::TAXONOMY );
+		wp_set_object_terms( $comment_id, 'attending', Status::TAXONOMY );
 
 		$send = array(
 			'attending' => true,

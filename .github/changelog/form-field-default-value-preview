@@ -1,0 +1,4 @@
+Significance: patch
+Type: fixed
+
+Editing a Form Field block's default value in the sidebar now updates the block's preview in the editor canvas immediately; previously the preview kept showing the old value until the editor was reloaded.

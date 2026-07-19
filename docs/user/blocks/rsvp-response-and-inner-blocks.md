@@ -21,7 +21,7 @@ Developers can add their own patterns to the picker via the
 
 ## Editing the inner content
 
-If you want to edit the content of the RSVP Response Block, you first need to toggle off the Block Guard.
+To edit the content of the RSVP Response block, double-click it to step inside — or expand it in the List view and select an inner block directly. See [Block Guard](README.md#block-guard).
 
 You will then see the default inner content that you can modify. Be careful!
 

@@ -10,7 +10,7 @@ namespace GatherPress\Tests\Core\Event;
 
 use GatherPress\Core\Event;
 use GatherPress\Core\Event\Admin_List;
-use GatherPress\Core\Rsvp\Rsvp;
+use GatherPress\Core\Rsvp;
 use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;
 use WP_Query;

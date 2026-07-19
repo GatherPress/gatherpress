@@ -49,7 +49,7 @@ When using GatherPress, we recommend:
 
 1. **Keep Updated**: Always run the latest version of GatherPress
 2. **WordPress Core**: Keep WordPress core updated to the latest version
-3. **PHP Version**: Use a supported PHP version (7.4 or higher recommended)
+3. **PHP Version**: Use a supported PHP version (8.1 or higher recommended)
 4. **Access Control**: Limit administrative access to trusted users only
 5. **Backups**: Maintain regular backups of your WordPress site
 6. **HTTPS**: Always use HTTPS for production sites

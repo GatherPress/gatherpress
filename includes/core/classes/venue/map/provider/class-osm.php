@@ -97,12 +97,13 @@ class OSM extends Base {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @param float $latitude  Venue latitude in decimal degrees.
-	 * @param float $longitude Venue longitude in decimal degrees.
-	 * @param int   $zoom      Map zoom level (already clamped by the orchestrator).
-	 * @param int   $width     Logical pixel width (at density 1).
-	 * @param int   $height    Logical pixel height (at density 1).
-	 * @param int   $density   Pixel-density multiplier. 1 = standard, 2 = retina.
+	 * @param float  $latitude  Venue latitude in decimal degrees.
+	 * @param float  $longitude Venue longitude in decimal degrees.
+	 * @param int    $zoom      Map zoom level (already clamped by the orchestrator).
+	 * @param int    $width     Logical pixel width (at density 1).
+	 * @param int    $height    Logical pixel height (at density 1).
+	 * @param int    $density   Pixel-density multiplier. 1 = standard, 2 = retina.
+	 * @param string $map_type  Map type slug (OSM only renders roadmap tiles).
 	 *
 	 * @return GdImage|resource|null Finished image, or null on failure.
 	 */
@@ -112,8 +113,10 @@ class OSM extends Base {
 		int $zoom,
 		int $width,
 		int $height,
-		int $density = 1
+		int $density = 1,
+		string $map_type = 'roadmap'
 	) {
+		// OSM tiles are roadmap-only; $map_type is accepted for provider parity.
 		// PHP built without the GD extension. Can't simulate in a unit test without making the runtime itself broken.
 		if ( ! function_exists( 'imagecreatetruecolor' ) ) { // @codeCoverageIgnore
 			return null; // @codeCoverageIgnore
@@ -238,7 +241,7 @@ class OSM extends Base {
 		$dst_y = $ty * self::TILE_SIZE - $top_pixel;
 
 		imagecopy( $canvas, $tile, $dst_x, $dst_y, 0, 0, self::TILE_SIZE, self::TILE_SIZE );
-		imagedestroy( $tile );
+		unset( $tile );
 	}
 
 	/**

@@ -11,7 +11,7 @@ namespace GatherPress\Tests\Core\Rsvp;
 use GatherPress\Core\Event;
 use GatherPress\Core\Rsvp\Cleanup;
 use GatherPress\Core\Rsvp\Query;
-use GatherPress\Core\Rsvp\Rsvp;
+use GatherPress\Core\Rsvp;
 use GatherPress\Core\Settings;
 use GatherPress\Tests\Base;
 
@@ -66,7 +66,7 @@ class Test_Cleanup extends Base {
 	 */
 	public function test_rsvp_cleanup_job_can_be_scheduled_hourly(): void {
 		$settings = Settings::get_instance();
-		$settings->set( 'rsvp_cleanup_switch', 'on' );
+		$settings->set( 'rsvp_cleanup_switch', 'enabled' );
 		$settings->set( 'rsvp_cleanup_frequency', 'hourly' );
 
 		Cleanup::get_instance()->schedule_cleanup_cron();
@@ -84,7 +84,7 @@ class Test_Cleanup extends Base {
 	 */
 	public function test_rsvp_cleanup_job_can_be_scheduled_daily(): void {
 		$settings = Settings::get_instance();
-		$settings->set( 'rsvp_cleanup_switch', 'on' );
+		$settings->set( 'rsvp_cleanup_switch', 'enabled' );
 
 		Cleanup::get_instance()->schedule_cleanup_cron();
 		$next_event = wp_next_scheduled( 'gatherpress_rsvp_cleanup' );
@@ -101,7 +101,7 @@ class Test_Cleanup extends Base {
 	 */
 	public function test_rsvp_cleanup_job_can_be_scheduled_weekly(): void {
 		$settings = Settings::get_instance();
-		$settings->set( 'rsvp_cleanup_switch', 'on' );
+		$settings->set( 'rsvp_cleanup_switch', 'enabled' );
 		$settings->set( 'rsvp_cleanup_frequency', 'weekly' );
 
 		Cleanup::get_instance()->schedule_cleanup_cron();
@@ -119,7 +119,7 @@ class Test_Cleanup extends Base {
 	 */
 	public function test_rsvp_cleanup_job_can_be_scheduled_yearly(): void {
 		$settings = Settings::get_instance();
-		$settings->set( 'rsvp_cleanup_switch', 'on' );
+		$settings->set( 'rsvp_cleanup_switch', 'enabled' );
 		$settings->set( 'rsvp_cleanup_frequency', 'yearly' );
 
 		Cleanup::get_instance()->schedule_cleanup_cron();
@@ -137,7 +137,7 @@ class Test_Cleanup extends Base {
 	 */
 	public function test_rsvp_cleanup_job_can_be_scheduled_monthly(): void {
 		$settings = Settings::get_instance();
-		$settings->set( 'rsvp_cleanup_switch', 'on' );
+		$settings->set( 'rsvp_cleanup_switch', 'enabled' );
 		$settings->set( 'rsvp_cleanup_frequency', 'monthly' );
 
 		Cleanup::get_instance()->schedule_cleanup_cron();
@@ -171,7 +171,7 @@ class Test_Cleanup extends Base {
 	 */
 	public function test_rsvp_cleanup_job_is_rescheduled_if_cleanup_settings_change(): void {
 		$settings = Settings::get_instance();
-		$settings->set( 'rsvp_cleanup_switch', 'on' );
+		$settings->set( 'rsvp_cleanup_switch', 'enabled' );
 		$settings->set( 'rsvp_cleanup_frequency', 'hourly' );
 
 		Cleanup::get_instance()->schedule_cleanup_cron();

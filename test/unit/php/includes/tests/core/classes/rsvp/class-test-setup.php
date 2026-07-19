@@ -13,8 +13,9 @@ use GatherPress\Core\Rsvp\Cleanup;
 use GatherPress\Core\Rsvp\Form;
 use GatherPress\Core\Rsvp\List_Table;
 use GatherPress\Core\Rsvp\Query;
-use GatherPress\Core\Rsvp\Rsvp;
+use GatherPress\Core\Rsvp;
 use GatherPress\Core\Rsvp\Setup;
+use GatherPress\Core\Rsvp\Response\Status;
 use GatherPress\Core\Rsvp\Token;
 use GatherPress\Core\Settings;
 use GatherPress\Tests\Base;
@@ -187,7 +188,7 @@ class Test_Setup extends Base {
 		$instance = Setup::get_instance();
 		$instance->register_taxonomy();
 
-		$this->assertTrue( taxonomy_exists( Rsvp::TAXONOMY ) );
+		$this->assertTrue( taxonomy_exists( Status::TAXONOMY ) );
 	}
 
 	/**
@@ -1178,13 +1179,13 @@ class Test_Setup extends Base {
 		// Clear any meta set by the wp_after_insert_post hook during post creation.
 		delete_post_meta( $post_id, 'gatherpress_enable_rsvp' );
 
-		// Default mode is all_on; the delegation should write 1.
+		// Default mode is enabled; the delegation should write 1.
 		Setup::get_instance()->maybe_set_rsvp_meta_default( $post_id );
 
 		$this->assertSame(
 			'1',
 			get_post_meta( $post_id, 'gatherpress_enable_rsvp', true ),
-			'Delegation to Rsvp::initialize_enabled should write meta as 1 in all_on mode.'
+			'Delegation to Rsvp::initialize_enabled should write meta as 1 in enabled mode.'
 		);
 	}
 
@@ -1224,7 +1225,7 @@ class Test_Setup extends Base {
 			'Event post type should support gatherpress-rsvp before disabling.'
 		);
 
-		// With rsvp_mode defaulting to all_on, this should be a no-op.
+		// With rsvp_mode defaulting to enabled, this should be a no-op.
 		$instance->maybe_disable_rsvp();
 
 		// Verify support is still present.
@@ -1259,7 +1260,7 @@ class Test_Setup extends Base {
 		);
 
 		// Restore the setting and support for other tests.
-		Settings::get_instance()->set( 'rsvp_mode', 'all_on' );
+		Settings::get_instance()->set( 'rsvp_mode', 'enabled' );
 		add_post_type_support( Event::POST_TYPE, 'gatherpress-rsvp' );
 	}
 
@@ -1343,7 +1344,7 @@ class Test_Setup extends Base {
 		);
 
 		// Restore the setting for other tests.
-		Settings::get_instance()->set( 'rsvp_mode', 'all_on' );
+		Settings::get_instance()->set( 'rsvp_mode', 'enabled' );
 	}
 
 	/**
@@ -1368,7 +1369,7 @@ class Test_Setup extends Base {
 			'gatherpress/rsvp block should be removed when RSVP is disabled.'
 		);
 
-		Settings::get_instance()->set( 'rsvp_mode', 'all_on' );
+		Settings::get_instance()->set( 'rsvp_mode', 'enabled' );
 	}
 
 	/**
@@ -1388,7 +1389,7 @@ class Test_Setup extends Base {
 
 		$this->assertFalse( $result, 'Non-array, non-true value should be returned unchanged.' );
 
-		Settings::get_instance()->set( 'rsvp_mode', 'all_on' );
+		Settings::get_instance()->set( 'rsvp_mode', 'enabled' );
 	}
 
 	/**
@@ -1518,6 +1519,6 @@ class Test_Setup extends Base {
 			'No submenu page should be added when RSVP is globally disabled.'
 		);
 
-		Settings::get_instance()->set( 'rsvp_mode', 'all_on' );
+		Settings::get_instance()->set( 'rsvp_mode', 'enabled' );
 	}
 }
