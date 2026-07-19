@@ -102,3 +102,22 @@
 .gatherpress-popular-venue--selected.components-button.is-link:disabled {
 	opacity: 1;
 }
+
+// Float the RSVP block's own settings panel to the top of the block
+// inspector's Settings tab, above core's Layout panel. Core renders its
+// support panels (Layout) and the block's own InspectorControls into the same
+// wrapper, in that order, and offers no API for ordering them. The wrapper's
+// own class is generated, so the panel is reached through `:has()` and
+// reordered with flexbox instead.
+.block-editor-block-inspector [role="tabpanel"] :has(> .gatherpress-rsvp-block-settings) {
+	display: flex;
+	flex-direction: column;
+
+	> * {
+		order: 1;
+	}
+}
+
+.block-editor-block-inspector [role="tabpanel"] .gatherpress-rsvp-block-settings {
+	order: 0;
+}
