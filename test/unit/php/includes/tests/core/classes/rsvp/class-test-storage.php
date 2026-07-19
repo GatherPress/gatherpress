@@ -148,12 +148,11 @@ class Test_Storage extends Base {
 	}
 
 	/**
-	 * Get retrieves a saved response by identity, optionally narrowed by
-	 * provider, and returns null when nothing matches.
+	 * Get retrieves a saved response by identity, optionally passing the
+	 * provider through to hydration, and returns null when nothing matches.
 	 *
 	 * @covers ::get
 	 * @covers ::get_identity_query_args
-	 * @covers ::get_provider_query_args
 	 *
 	 * @return void
 	 */
@@ -171,8 +170,8 @@ class Test_Storage extends Base {
 		$this->assertInstanceOf( State::class, $found );
 		$this->assertSame( 1, $found->data->guests );
 
-		$narrowed = $storage->get( $identity, new User() );
-		$this->assertInstanceOf( State::class, $narrowed );
+		$with_provider = $storage->get( $identity, new User() );
+		$this->assertInstanceOf( State::class, $with_provider );
 	}
 
 	/**
@@ -489,20 +488,22 @@ class Test_Storage extends Base {
 	}
 
 	/**
-	 * RSVPs saved before provider terms were stamped still resolve when
-	 * the lookup is provider-filtered — the identity-only fallback covers
-	 * legacy rows so their next update cannot become a duplicate insert.
+	 * Passing a provider to get() does not prevent resolving an RSVP that
+	 * carries no provider term — the identity pins the row, and the
+	 * provider is only used for hydration. Guards term-less rows (the
+	 * open/email form path, or content saved before stamping) against
+	 * their next update becoming a duplicate insert.
 	 *
 	 * @covers ::get
 	 *
 	 * @return void
 	 */
-	public function test_get_falls_back_for_legacy_rows_without_provider_term(): void {
+	public function test_get_resolves_rows_without_provider_term(): void {
 		list( $event_id, $storage ) = $this->make_storage();
 
 		$user_id = $this->factory->user->create();
 
-		// A pre-stamping RSVP: comment + status term, no provider term.
+		// A comment + status term, but no provider term.
 		$comment_id = $this->factory->comment->create(
 			array(
 				'comment_post_ID'  => $event_id,
@@ -515,7 +516,7 @@ class Test_Storage extends Base {
 
 		$found = $storage->get( new Identity( Identity_Type::WP_USER_ID, $user_id ), new User() );
 
-		$this->assertInstanceOf( State::class, $found, 'The legacy row resolves despite the provider filter.' );
+		$this->assertInstanceOf( State::class, $found, 'The term-less row resolves when a provider is passed.' );
 		$this->assertSame( $comment_id, (int) $found->comment->comment_ID );
 	}
 }

@@ -98,27 +98,15 @@ final class Storage {
 		// Add the identity of the RSVP response.
 		$args = wp_parse_args( $this->get_identity_query_args( $identity ), $args );
 
-		// Optionally also specify the provider that issued the RSVP response.
-		if ( $provider ) {
-			$args = wp_parse_args( $this->get_provider_query_args( $provider ), $args );
-		}
-
 		$rsvp = $this->rsvp_query->get_rsvp( $args );
-
-		// Comments saved before providers were stamped as terms carry no
-		// provider relationship, so the provider-filtered lookup misses
-		// them — and a miss here would turn their next update into a
-		// duplicate insert. Fall back to the identity-only lookup; the
-		// provider still applies during hydration.
-		if ( null === $rsvp && $provider ) {
-			unset( $args['tax_query'] );
-			$rsvp = $this->rsvp_query->get_rsvp( $args );
-		}
 
 		if ( null === $rsvp ) {
 			return null;
 		}
 
+		// The identity already pins the row (a user id or an email is
+		// unique per event); the provider is passed through so hydration
+		// uses it directly instead of re-resolving from the comment.
 		return $this->hydrate( $rsvp, $identity, $provider );
 	}
 
@@ -464,29 +452,5 @@ final class Storage {
 		}
 
 		return $args;
-	}
-
-	/**
-	 * Get comment query args for a provider.
-	 *
-	 * @since 0.35.0
-	 *
-	 * @param Provider $provider The RSVP provider.
-	 *
-	 * @return array<string, array<string, string>> The comment query args.
-	 */
-	private function get_provider_query_args( Provider $provider ): array {
-		// WP_Comment_Query honors this clause (a flat array is a valid
-		// single first-order clause), so the filter is active. Comments
-		// saved before provider terms were stamped won't match it — the
-		// identity-only fallback in get() covers those legacy rows.
-		return array(
-			// phpcs:disable WordPress.DB.SlowDBQuery.slow_db_query_tax_query
-			'tax_query' => array(
-				'taxonomy' => Provider::TAXONOMY,
-				'terms'    => $provider->get_slug(),
-				'field'    => 'slug',
-			),
-		);
 	}
 }

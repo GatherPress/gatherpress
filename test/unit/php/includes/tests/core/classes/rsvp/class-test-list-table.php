@@ -1782,37 +1782,93 @@ class Test_List_Table extends Base {
 	}
 
 	/**
-	 * The type column resolves the stored provider term to its label,
-	 * renders a dash for unknown providers, and an empty string when no
-	 * provider term exists.
+	 * Create an RSVP comment on the test event and return its ID.
+	 *
+	 * @return int
+	 */
+	private function make_rsvp_comment(): int {
+		return $this->factory->comment->create(
+			array(
+				'comment_post_ID' => $this->event_id,
+				'comment_type'    => Rsvp::COMMENT_TYPE,
+			)
+		);
+	}
+
+	/**
+	 * The type column prefers the stamped provider term and renders its
+	 * label, dashes an unknown term, and — when no term is stamped —
+	 * infers the provider from the comment's user id or author email.
 	 *
 	 * @covers ::column_default
+	 * @covers ::infer_provider_from_item
 	 *
 	 * @return void
 	 */
 	public function test_column_default_type(): void {
-		$comment_id = (int) $this->rsvp['comment_ID'];
+		$user_label  = Provider_Registry::get_instance()->get( 'user' )::get_label();
+		$email_label = Provider_Registry::get_instance()->get( 'email' )::get_label();
+
+		// A stamped provider term takes precedence and renders its label.
+		$stamped = $this->make_rsvp_comment();
+		wp_set_object_terms( $stamped, 'user', Provider::TAXONOMY );
 
 		$this->assertSame(
-			'',
-			$this->list_table->column_default( $this->rsvp, 'type' ),
-			'No provider term renders as an empty string.'
+			$user_label,
+			$this->list_table->column_default( array( 'comment_ID' => $stamped ), 'type' ),
+			'A stamped provider term renders its label.'
 		);
 
-		wp_set_object_terms( $comment_id, 'user', Provider::TAXONOMY );
-
-		$this->assertSame(
-			Provider_Registry::get_instance()->get( 'user' )::get_label(),
-			$this->list_table->column_default( $this->rsvp, 'type' ),
-			'A known provider renders its label.'
-		);
-
-		wp_set_object_terms( $comment_id, 'mystery-provider', Provider::TAXONOMY );
+		// An unknown term renders a dash.
+		wp_set_object_terms( $stamped, 'mystery-provider', Provider::TAXONOMY );
 
 		$this->assertSame(
 			'-',
-			$this->list_table->column_default( $this->rsvp, 'type' ),
-			'An unknown provider renders a dash.'
+			$this->list_table->column_default( array( 'comment_ID' => $stamped ), 'type' ),
+			'An unknown provider term renders a dash.'
+		);
+
+		// No term: a real user id infers the user provider.
+		$this->assertSame(
+			$user_label,
+			$this->list_table->column_default(
+				array(
+					'comment_ID'           => $this->make_rsvp_comment(),
+					'user_id'              => 5,
+					'comment_author_email' => '',
+				),
+				'type'
+			),
+			'A user id infers the user provider when no term is stamped.'
+		);
+
+		// No term: a valid author email infers the email provider (the
+		// open/email front-end form leaves no provider term).
+		$this->assertSame(
+			$email_label,
+			$this->list_table->column_default(
+				array(
+					'comment_ID'           => $this->make_rsvp_comment(),
+					'user_id'              => 0,
+					'comment_author_email' => 'guest@example.test',
+				),
+				'type'
+			),
+			'A valid author email infers the email provider when no term is stamped.'
+		);
+
+		// No term and nothing to infer from renders empty.
+		$this->assertSame(
+			'',
+			$this->list_table->column_default(
+				array(
+					'comment_ID'           => $this->make_rsvp_comment(),
+					'user_id'              => 0,
+					'comment_author_email' => '',
+				),
+				'type'
+			),
+			'No term and nothing to infer from renders empty.'
 		);
 	}
 }

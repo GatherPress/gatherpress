@@ -11,6 +11,8 @@
 
 namespace GatherPress\Core\Rsvp;
 
+use GatherPress\Core\Rsvp\Response\Provider\Email;
+use GatherPress\Core\Rsvp\Response\Provider\User;
 use GatherPress\Core\Rsvp\Response\Provider_Registry;
 
 // Exit if accessed directly.
@@ -493,8 +495,15 @@ class List_Table extends WP_List_Table {
 			case 'type':
 				$terms = wp_get_object_terms( $item['comment_ID'], Provider::TAXONOMY );
 
+				// Prefer the authoritative provider term when present, but
+				// fall back to inferring the provider from the comment so
+				// the column is correct for rows that never carried the
+				// term — the open/email front-end form doesn't stamp it,
+				// and RSVPs saved before the term existed predate it.
 				if ( empty( $terms ) ) {
-					return '';
+					$provider = $this->infer_provider_from_item( $item );
+
+					return $provider ? $provider::get_label() : '';
 				}
 
 				$provider = Provider_Registry::get_instance()->get( $terms[0]->slug );
@@ -506,6 +515,35 @@ class List_Table extends WP_List_Table {
 		}
 
 		return $output;
+	}
+
+	/**
+	 * Infer the RSVP provider from a row when no provider term is stamped.
+	 *
+	 * Mirrors the fallback in {@see \GatherPress\Core\Rsvp\Storage}: a real
+	 * user id maps to the user provider, a valid author email to the email
+	 * provider. Covers RSVPs written by paths that don't stamp the provider
+	 * term (the open/email front-end form) and rows saved before the term
+	 * existed.
+	 *
+	 * @since 0.35.0
+	 *
+	 * @param array $item Row data (a comment cast to an array).
+	 *
+	 * @return Provider|null The inferred provider, or null when none applies.
+	 */
+	private function infer_provider_from_item( array $item ): ?Provider {
+		$registry = Provider_Registry::get_instance();
+
+		if ( ! empty( $item['user_id'] ) && (int) $item['user_id'] > 0 ) {
+			return $registry->get( User::get_slug() );
+		}
+
+		if ( ! empty( $item['comment_author_email'] ) && is_email( (string) $item['comment_author_email'] ) ) {
+			return $registry->get( Email::get_slug() );
+		}
+
+		return null;
 	}
 
 	/**

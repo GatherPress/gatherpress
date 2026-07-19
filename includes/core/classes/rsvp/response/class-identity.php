@@ -77,11 +77,13 @@ final class Identity {
 					throw new InvalidArgumentException( 'User does not exist.' );
 				}
 				break;
+
 			case Identity_Type::EXTERNAL_ID:
 				if ( ! is_int( $this->value ) ) {
 					throw new InvalidArgumentException( 'Invalid ID.' );
 				}
 				break;
+
 			default:
 				// Unreachable while the switch handles every Identity_Type case;
 				// kept as a guard for future enum additions.
