@@ -272,7 +272,7 @@ final class Setup {
 	 *
 	 * @return void
 	 */
-	public function add_privacy_policy_content() {
+	public function add_privacy_policy_content(): void {
 		$content = '<h2>' .
 			__( 'Inform your visitors about GatherPress\' use of OpenStreetMap services.', 'gatherpress' ) .
 			'</h2>'

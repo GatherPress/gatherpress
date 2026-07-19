@@ -300,7 +300,7 @@ final class Network {
 	 *
 	 * @return mixed
 	 */
-	public function route_read_to_site_option( $pre ) {
+	public function route_read_to_site_option( $pre ): mixed {
 		unset( $pre );
 
 		return get_site_option( Settings::OPTION_NAME, array() );

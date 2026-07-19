@@ -53,7 +53,7 @@ final class Cache {
 	 *
 	 * @return array|null The cached RSVP data, or null when no valid cache exists.
 	 */
-	public static function get( int $post_id ) {
+	public static function get( int $post_id ): ?array {
 		$value = get_transient( self::cache_key( $post_id ) );
 
 		if ( empty( $value ) || ! is_array( $value ) ) {
@@ -73,7 +73,7 @@ final class Cache {
 	 *
 	 * @return void
 	 */
-	public static function set( int $post_id, $value ) {
+	public static function set( int $post_id, $value ): void {
 		set_transient( self::cache_key( $post_id ), $value, self::CACHE_EXPIRATION );
 	}
 
@@ -86,7 +86,7 @@ final class Cache {
 	 *
 	 * @return void
 	 */
-	public static function delete( int $post_id ) {
+	public static function delete( int $post_id ): void {
 		delete_transient( self::cache_key( $post_id ) );
 	}
 
@@ -99,7 +99,7 @@ final class Cache {
 	 *
 	 * @return string The cache key for the given post ID.
 	 */
-	private static function cache_key( $post_id ) {
+	private static function cache_key( $post_id ): string {
 		return sprintf( self::CACHE_KEY, $post_id );
 	}
 }

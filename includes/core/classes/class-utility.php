@@ -645,7 +645,7 @@ final class Utility {
 	 *
 	 * @return int|false The user ID if authentication was successful, false otherwise.
 	 */
-	public static function ensure_user_authentication() {
+	public static function ensure_user_authentication(): int|false {
 		// Force WordPress to authenticate the user.
 		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound
 		$user_id = apply_filters( 'determine_current_user', false );
@@ -753,7 +753,7 @@ final class Utility {
 	 *
 	 * @return string|false The referer URL on success, false on failure.
 	 */
-	public static function get_wp_referer() {
+	public static function get_wp_referer(): string|false {
 		// Only allow pre-filtering during unit tests for security.
 		if ( defined( 'WP_TESTS_DOMAIN' ) || ( defined( 'PHPUNIT_RUNNING' ) && PHPUNIT_RUNNING ) ) {
 			/**
