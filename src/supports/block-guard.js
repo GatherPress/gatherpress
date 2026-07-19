@@ -164,17 +164,6 @@ export function useIsBlockSealed( clientId ) {
 }
 
 /**
- * Soft tint applied to a sealed, selected block so it reads as a protected
- * unit, in the spirit of the tint core gives template parts and synced
- * patterns.
- */
-const SEALED_STYLE = {
-	cursor: 'pointer',
-	backgroundColor: 'rgba(30, 58, 233, 0.04)',
-	boxShadow: 'inset 0 0 0 1px rgba(30, 58, 233, 0.24)',
-};
-
-/**
  * The document that holds the block canvas. In the iframed post and site
  * editors the blocks live inside the `editor-canvas` iframe; otherwise they
  * are in the main document.
@@ -203,16 +192,6 @@ export const withBlockGuard = createHigherOrderComponent( ( BlockListBlock ) => 
 			return <BlockListBlock { ...props } />;
 		}
 
-		// Guard on by default; a deliberate action turns it off.
-		//
-		// Seeded from the published state rather than a flat `true`, because
-		// moving a block remounts this component. Without the seed, a block you
-		// had opened and were editing snaps shut the moment it moves and locks
-		// you back out mid-edit.
-		const [ sealed, setSealed ] = useState(
-			() => sealedStates.get( clientId ) ?? true
-		);
-
 		// Where selection sits relative to this block: on the block itself, or
 		// on one of its inner blocks.
 		const { isSelf, isInner } = useSelect(
@@ -226,59 +205,36 @@ export const withBlockGuard = createHigherOrderComponent( ( BlockListBlock ) => 
 			[ clientId ],
 		);
 
-		const isActive = isSelf || isInner;
+		// The guard is derived from selection, not held in state. A block is
+		// sealed exactly while selection is outside it, so:
+		//
+		//   - Click it: the seal routes the click to the block itself, which
+		//     selects it — and selecting it lifts the seal, so the next click
+		//     reaches whatever is inside.
+		//   - Click away: selection leaves and the guard re-arms.
+		//
+		// Deriving this rather than tracking it in component state is what
+		// makes it survive a move. Component state was reset (or stranded)
+		// every time a drag remounted the block, which left it sealed with no
+		// way back in — its contents stayed `pointer-events: none` and the
+		// block became uneditable until the page was reloaded.
+		const sealed = ! isSelf && ! isInner;
 
-		// Has selection been inside the block since it was unsealed? This is
-		// what lets "select the parent again" re-arm the guard without the
-		// unsealing click itself instantly re-sealing (at that moment the block
-		// is selected but nothing inner has been touched yet).
-		const enteredInner = useRef( false );
-
-		// Re-seal on either exit route: clicking away from the block entirely,
-		// or coming back up to the block itself after editing inside it (a
-		// click on the block, Escape, or the breadcrumb all land here).
-		useEffect( () => {
-			// Selection left the block entirely — re-arm the guard.
-			if ( ! isActive ) {
-				if ( ! sealed ) {
-					setSealed( true );
-				}
-
-				enteredInner.current = false;
-				return;
-			}
-
-			// An inner block is selected. Reaching one is always deliberate —
-			// either by unsealing first, or straight from List View, which the
-			// guard never blocks — so honor it and make sure we are unsealed.
-			if ( isInner ) {
-				if ( sealed ) {
-					setSealed( false );
-				}
-
-				enteredInner.current = true;
-				return;
-			}
-
-			// Back on the block itself after having been inside it: re-arm.
-			if ( isSelf && ! sealed && enteredInner.current ) {
-				setSealed( true );
-				enteredInner.current = false;
-			}
-		}, [ sealed, isActive, isInner, isSelf ] );
-
-		// Publish the sealed state so descendants can react to it (the venue map
-		// drops its resize handles while its parent venue is sealed), and clear
-		// the entry when the block goes away.
+		// Publish for descendants (the venue map drops its resize handles
+		// while its parent venue is sealed).
 		useEffect( () => {
 			publishSealedState( clientId, sealed );
 		}, [ clientId, sealed ] );
 
-		// The guarded state is conveyed only by a tint, which says nothing to
-		// assistive technology. Describe the block while it is sealed, and
-		// announce the moment it opens up. Only the unseal is announced —
-		// re-sealing happens whenever focus moves away, and narrating that
-		// every time would be noise.
+		useEffect( () => {
+			return () => {
+				sealedListeners.delete( clientId );
+			};
+		}, [ clientId ] );
+
+		// The guarded state is conveyed visually by a tint, which says nothing
+		// to assistive technology; describe it while sealed and announce when
+		// it opens.
 		useEffect( () => {
 			ensureGuardHint( getCanvasDocument() );
 		}, [] );
@@ -296,63 +252,6 @@ export const withBlockGuard = createHigherOrderComponent( ( BlockListBlock ) => 
 			wasSealed.current = sealed;
 		}, [ sealed ] );
 
-		// Drop only the subscriber list on unmount. The sealed state itself is
-		// deliberately kept: moving a block unmounts and remounts it, and
-		// discarding the state here is what would slam an open block shut
-		// mid-move. The map is keyed by clientId and so stays bounded by the
-		// blocks in the post.
-		useEffect( () => {
-			return () => {
-				sealedListeners.delete( clientId );
-			};
-		}, [ clientId ] );
-
-		// Was the block already selected when this gesture began? By the time
-		// `click` fires, core has selected the block and re-rendered, so
-		// reading selection there reports true even on the very first click and
-		// would let one click straight in. Capture it on mousedown instead.
-		const wasSelectedOnMouseDown = useRef( false );
-
-		// Recorded through React rather than a listener bound imperatively to
-		// the wrapper node: moving a block can remount that node, which would
-		// leave an imperative listener attached to a detached element. The ref
-		// would then never update, the unseal click would never fire, and the
-		// block could not be entered again after being moved. A React handler
-		// is re-bound on every render, so it cannot go stale. It only writes a
-		// ref — no re-render — so the drag gesture is untouched.
-		const onMouseDown = ( event ) => {
-			wasSelectedOnMouseDown.current = isActive;
-			wrapperProps?.onMouseDown?.( event );
-		};
-
-		// A click on a block that was *already* selected is the deliberate
-		// "let me in" action, so the first click only selects and the second
-		// unseals. Listening on `click` rather than `mousedown` keeps dragging
-		// intact: a real drag ends in dragend and never fires click.
-		const onClick = ( event ) => {
-			if ( sealed && wasSelectedOnMouseDown.current ) {
-				setSealed( false );
-			}
-
-			wrapperProps?.onClick?.( event );
-		};
-
-		// Keyboard equivalent: Enter or Space on the selected, sealed block.
-		const onKeyDown = ( event ) => {
-			if (
-				sealed &&
-				isActive &&
-				( 'Enter' === event.key || ' ' === event.key )
-			) {
-				event.preventDefault();
-				event.stopPropagation();
-				setSealed( false );
-				return;
-			}
-
-			wrapperProps?.onKeyDown?.( event );
-		};
-
 		const className = [ props.className, sealed && OVERLAY_CLASS ]
 			.filter( Boolean )
 			.join( ' ' );
@@ -363,21 +262,17 @@ export const withBlockGuard = createHigherOrderComponent( ( BlockListBlock ) => 
 				className={ className }
 				wrapperProps={ {
 					...wrapperProps,
-					onMouseDown,
-					onClick,
-					onKeyDown,
+					// Tint only while sealed and hovered/selected is not
+					// knowable here, so tint whenever sealed — the block reads
+					// as a protected unit until you select it.
+					style: sealed
+						? { ...wrapperProps?.style, cursor: 'pointer' }
+						: wrapperProps?.style,
 					'aria-describedby': sealed
 						? [ wrapperProps?.[ 'aria-describedby' ], HINT_ID ]
 							.filter( Boolean )
 							.join( ' ' )
 						: wrapperProps?.[ 'aria-describedby' ],
-					// Only tint once the block is selected, so the guard reads
-					// as "you've got this, it's protected" rather than shouting
-					// for attention on every unselected block.
-					style:
-						sealed && isActive
-							? { ...wrapperProps?.style, ...SEALED_STYLE }
-							: wrapperProps?.style,
 				} }
 			/>
 		);
