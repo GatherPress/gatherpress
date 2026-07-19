@@ -11,11 +11,11 @@ jest.mock( '@wordpress/blocks', () => ( {
 // real editor store (its private-apis unlock throws under jsdom).
 jest.mock( '@wordpress/block-editor', () => ( {
 	store: {},
-	useBlockEditingMode: jest.fn(),
 } ) );
 
 jest.mock( '@wordpress/data', () => ( {
 	useSelect: jest.fn(),
+	useDispatch: jest.fn(),
 } ) );
 
 jest.mock( '@wordpress/compose', () => ( {

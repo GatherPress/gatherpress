@@ -3,11 +3,8 @@
  */
 import { getBlockType } from '@wordpress/blocks';
 import { createHigherOrderComponent } from '@wordpress/compose';
-import {
-	store as blockEditorStore,
-	useBlockEditingMode,
-} from '@wordpress/block-editor';
-import { useSelect } from '@wordpress/data';
+import { store as blockEditorStore } from '@wordpress/block-editor';
+import { useSelect, useDispatch } from '@wordpress/data';
 import { useState, useEffect, useCallback } from '@wordpress/element';
 import { addFilter, hasFilter } from '@wordpress/hooks';
 
@@ -21,19 +18,26 @@ import { addFilter, hasFilter } from '@wordpress/hooks';
  * locks each strip the other's escape hatch.
  *
  * This prototype drops the toggle entirely and expresses the guard through the
- * one system core already uses for "safe" editing — block editing mode:
+ * one system core already uses to gate editing — block editing mode:
  *
- *   - **Sealed** (default): the block is `contentOnly`. Because GatherPress
- *     inner blocks are structural and carry no `role: 'content'`, contentOnly
- *     leaves nothing inside selectable or draggable, which is exactly the
- *     "don't let a stray click pull a piece out" behavior we want. The block
- *     itself stays selectable.
- *   - **Unsealed**: a deliberate gesture on the selected block — double-click,
- *     or Enter while it is focused — promotes it to `default`, giving full
- *     access to the inner blocks.
- *   - **Re-seal**: when selection leaves the block's subtree (click-out, or
- *     Escape which moves selection to the parent), it drops back to
- *     contentOnly.
+ *   - **Sealed** (default): the guarded block's *direct children* are set to
+ *     `disabled`. Core's derived-editing-mode cascade then reports the whole
+ *     inner subtree as `disabled` (a block whose nearest explicit-mode
+ *     ancestor is `disabled` derives `disabled` too), so a stray click can't
+ *     grab an inner block — it selects the guarded container instead. The
+ *     container itself stays `default`, so it remains selectable.
+ *   - **Unsealed**: a deliberate gesture on the selected container —
+ *     double-click, or Enter while it is focused — clears the children's mode,
+ *     handing back full editing.
+ *   - **Re-seal**: when selection leaves the container's subtree (click-out,
+ *     or Escape which moves selection to the parent), the children are
+ *     disabled again.
+ *
+ * Setting the container to `contentOnly` was the first attempt, but that does
+ * not participate in core's derived cascade — only `templateLock: 'contentOnly'`
+ * parents, unsynced patterns, and template parts disable their children — so
+ * the inner blocks stayed selectable. Disabling the direct children is what
+ * actually seals the subtree.
  *
  * @todo Prototype scope: gated to the blocks in {@link PROTOTYPE_BLOCKS} while
  *       we validate the interaction and the contentOnly-pattern interplay from
@@ -139,14 +143,20 @@ const withEditingModeGuard = createHigherOrderComponent( ( BlockEdit ) => {
 		// Whether the user has deliberately entered this block.
 		const [ unsealed, setUnsealed ] = useState( false );
 
-		// Is selection currently anywhere within this block's subtree?
-		const isActive = useSelect(
+		const { setBlockEditingMode, unsetBlockEditingMode } =
+			useDispatch( blockEditorStore );
+
+		// Direct children of the guarded block, plus whether selection is
+		// currently anywhere within its subtree.
+		const { childClientIds, isActive } = useSelect(
 			( select ) => {
 				const store = select( blockEditorStore );
-				return (
-					store.isBlockSelected( clientId ) ||
-					store.hasSelectedInnerBlock( clientId, true )
-				);
+				return {
+					childClientIds: store.getBlockOrder( clientId ),
+					isActive:
+						store.isBlockSelected( clientId ) ||
+						store.hasSelectedInnerBlock( clientId, true ),
+				};
 			},
 			[ clientId ],
 		);
@@ -158,9 +168,31 @@ const withEditingModeGuard = createHigherOrderComponent( ( BlockEdit ) => {
 			}
 		}, [ isActive, unsealed ] );
 
-		// Drive the actual protection: contentOnly seals the inner blocks,
-		// default hands them over. Cleaned up automatically on unmount.
-		useBlockEditingMode( unsealed ? 'default' : 'contentOnly' );
+		// Drive the actual protection: disable the direct children to seal the
+		// whole inner subtree, clear their mode to unseal. Always released on
+		// unmount so a removed block leaves no stale overrides behind.
+		useEffect( () => {
+			if ( ! childClientIds.length ) {
+				return undefined;
+			}
+
+			if ( unsealed ) {
+				childClientIds.forEach( ( id ) => unsetBlockEditingMode( id ) );
+			} else {
+				childClientIds.forEach( ( id ) =>
+					setBlockEditingMode( id, 'disabled' ),
+				);
+			}
+
+			return () => {
+				childClientIds.forEach( ( id ) => unsetBlockEditingMode( id ) );
+			};
+		}, [
+			unsealed,
+			childClientIds,
+			setBlockEditingMode,
+			unsetBlockEditingMode,
+		] );
 
 		const enter = useCallback( () => setUnsealed( true ), [] );
 
