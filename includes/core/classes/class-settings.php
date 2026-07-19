@@ -121,7 +121,7 @@ class Settings {
 		Settings\Events::get_instance();
 		Settings\Network::get_instance();
 		Settings\Roles::get_instance();
-		Settings\Rsvp_Settings::get_instance();
+		Settings\Rsvp::get_instance();
 		Settings\Tools::get_instance();
 		Settings\Venues::get_instance();
 	}
@@ -500,12 +500,19 @@ class Settings {
 	 * Evaluate a `show_if` condition against the current saved option values.
 	 *
 	 * Conditions are an associative array of `controlling_field => expected`.
-	 * Multiple keys are combined with AND. A value can be a scalar (equality
-	 * after string casting) or an array (membership, OR within the same key).
+	 * Multiple keys are combined with AND. A value can be:
+	 *
+	 *   - a scalar — equality after string casting;
+	 *   - an array of scalars — membership (OR within the same key);
+	 *   - `array( 'not' => scalar|array )` — negation: matches when the
+	 *     current value is NOT (one of) the given value(s). Useful for
+	 *     "show unless disabled" without listing every enabled variant.
+	 *
 	 * Comparisons cast both sides to string so checkbox booleans, select
 	 * strings, and numeric values all compare cleanly.
 	 *
 	 * @since 0.34.0
+	 * @since 0.35.0 Added the `array( 'not' => … )` negation form.
 	 *
 	 * @param array $conditions Map of controlling option key => expected value(s).
 	 *
@@ -513,19 +520,30 @@ class Settings {
 	 */
 	protected function evaluate_show_if( array $conditions ): bool {
 		foreach ( $conditions as $key => $expected ) {
-			$current = $this->get( (string) $key );
+			$current = (string) $this->get( (string) $key );
 
-			if ( is_array( $expected ) ) {
-				$expected = array_map( 'strval', $expected );
+			// Negation: show when the current value is not among the given.
+			if ( is_array( $expected ) && array_key_exists( 'not', $expected ) ) {
+				$excluded = array_map( 'strval', (array) $expected['not'] );
 
-				if ( ! in_array( (string) $current, $expected, true ) ) {
+				if ( in_array( $current, $excluded, true ) ) {
 					return false;
 				}
 
 				continue;
 			}
 
-			if ( (string) $current !== (string) $expected ) {
+			if ( is_array( $expected ) ) {
+				$expected = array_map( 'strval', $expected );
+
+				if ( ! in_array( $current, $expected, true ) ) {
+					return false;
+				}
+
+				continue;
+			}
+
+			if ( $current !== (string) $expected ) {
 				return false;
 			}
 		}

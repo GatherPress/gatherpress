@@ -19,13 +19,13 @@ use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Utility;
 
 /**
- * Class Rsvp_Settings.
+ * Class Rsvp.
  *
  * Handles the "RSVP" settings page for GatherPress.
  *
  * @since 0.34.0
  */
-class Rsvp_Settings extends Base {
+class Rsvp extends Base {
 
 	/**
 	 * Enforces a single instance of this class.
@@ -40,7 +40,7 @@ class Rsvp_Settings extends Base {
 	 * @return string The slug for the RSVP settings page.
 	 */
 	protected function get_slug(): string {
-		return 'rsvp_settings';
+		return 'rsvp';
 	}
 
 	/**
@@ -135,6 +135,9 @@ class Rsvp_Settings extends Base {
 								'default' => true,
 							),
 						),
+						'show_if'     => array(
+							'rsvp_mode' => array( 'not' => 'disabled' ),
+						),
 					),
 					'max_attendance_limit'  => array(
 						'labels'      => array(
@@ -156,6 +159,9 @@ class Rsvp_Settings extends Base {
 							'options' => array(
 								'default' => 50,
 							),
+						),
+						'show_if'     => array(
+							'rsvp_mode' => array( 'not' => 'disabled' ),
 						),
 					),
 					'max_guest_limit'       => array(
@@ -179,6 +185,9 @@ class Rsvp_Settings extends Base {
 								'max'     => '5',
 							),
 						),
+						'show_if'     => array(
+							'rsvp_mode' => array( 'not' => 'disabled' ),
+						),
 					),
 					'enable_anonymous_rsvp' => array(
 						'labels'      => array(
@@ -198,6 +207,9 @@ class Rsvp_Settings extends Base {
 							'options' => array(
 								'default' => false,
 							),
+						),
+						'show_if'     => array(
+							'rsvp_mode' => array( 'not' => 'disabled' ),
 						),
 					),
 				),
@@ -249,6 +261,9 @@ class Rsvp_Settings extends Base {
 								),
 							),
 						),
+						'show_if'     => array(
+							'rsvp_cleanup_switch' => array( 'not' => 'off' ),
+						),
 					),
 					'rsvp_cleanup_interval'  => array(
 						'labels'      => array(
@@ -265,6 +280,9 @@ class Rsvp_Settings extends Base {
 								'min'     => 1,
 								'default' => 1,
 							),
+						),
+						'show_if'     => array(
+							'rsvp_cleanup_switch' => array( 'not' => 'off' ),
 						),
 					),
 				),

@@ -13,7 +13,7 @@ use GatherPress\Core\Settings\Credits;
 use GatherPress\Core\Settings\Events;
 use GatherPress\Core\Settings\Network;
 use GatherPress\Core\Settings\Roles;
-use GatherPress\Core\Settings\Rsvp_Settings;
+use GatherPress\Core\Settings\Rsvp;
 use GatherPress\Core\Settings\Tools;
 use GatherPress\Core\Settings\Venues;
 use GatherPress\Core\Utility as GatherPress_Utility;
@@ -29,7 +29,7 @@ class Test_Settings extends Base {
 
 	/**
 	 * Settings now owns the instantiation of every settings-page subclass
-	 * (Credits, Events, Network, Roles, Rsvp_Settings, Tools, Venues) so
+	 * (Credits, Events, Network, Roles, Rsvp, Tools, Venues) so
 	 * `Setup::instantiate_classes()` can hand off with a single
 	 * `Settings::get_instance()` call. Checks the subclass registrations
 	 * landed — `Credits` is the proxy: its constructor wires an
@@ -56,13 +56,13 @@ class Test_Settings extends Base {
 		// wiring; `Network` overrides `setup_hooks()` and uses
 		// `network_admin_menu → register_page` instead.
 		$expected_hooks = array(
-			Credits::class       => array( 'admin_init', array( Credits::get_instance(), 'init' ) ),
-			Events::class        => array( 'admin_init', array( Events::get_instance(), 'init' ) ),
-			Network::class       => array( 'network_admin_menu', array( Network::get_instance(), 'register_page' ) ),
-			Roles::class         => array( 'admin_init', array( Roles::get_instance(), 'init' ) ),
-			Rsvp_Settings::class => array( 'admin_init', array( Rsvp_Settings::get_instance(), 'init' ) ),
-			Tools::class         => array( 'admin_init', array( Tools::get_instance(), 'init' ) ),
-			Venues::class        => array( 'admin_init', array( Venues::get_instance(), 'init' ) ),
+			Credits::class => array( 'admin_init', array( Credits::get_instance(), 'init' ) ),
+			Events::class  => array( 'admin_init', array( Events::get_instance(), 'init' ) ),
+			Network::class => array( 'network_admin_menu', array( Network::get_instance(), 'register_page' ) ),
+			Roles::class   => array( 'admin_init', array( Roles::get_instance(), 'init' ) ),
+			Rsvp::class    => array( 'admin_init', array( Rsvp::get_instance(), 'init' ) ),
+			Tools::class   => array( 'admin_init', array( Tools::get_instance(), 'init' ) ),
+			Venues::class  => array( 'admin_init', array( Venues::get_instance(), 'init' ) ),
 		);
 
 		foreach ( $expected_hooks as $class_name => $expected ) {
@@ -894,7 +894,7 @@ class Test_Settings extends Base {
 		$sub_pages = $instance->get_sub_pages();
 
 		$this->assertIsArray( $sub_pages['events'], 'Failed to assert sub page is an array.' );
-		$this->assertIsArray( $sub_pages['rsvp_settings'], 'Failed to assert sub page is an array.' );
+		$this->assertIsArray( $sub_pages['rsvp'], 'Failed to assert sub page is an array.' );
 		$this->assertIsArray( $sub_pages['venues'], 'Failed to assert sub page is an array.' );
 		$this->assertIsArray( $sub_pages['roles'], 'Failed to assert sub page is an array.' );
 		$this->assertIsArray( $sub_pages['credits'], 'Failed to assert sub page is an array.' );
@@ -2932,6 +2932,63 @@ class Test_Settings extends Base {
 			array( array( 'map_platform' => array( 'google', 'mapbox' ) ) )
 		);
 		$this->assertFalse( $result );
+
+		delete_option( Settings::OPTION_NAME );
+	}
+
+	/**
+	 * Evaluate show_if `array( 'not' => … )` matches when the current
+	 * value is not (one of) the excluded value(s).
+	 *
+	 * @since 0.35.0
+	 * @covers ::evaluate_show_if
+	 *
+	 * @return void
+	 */
+	public function test_evaluate_show_if_negation(): void {
+		$instance = Settings::get_instance();
+
+		delete_option( Settings::OPTION_NAME );
+
+		// Scalar negation: true while the value is not 'disabled'.
+		update_option( Settings::OPTION_NAME, array( 'rsvp_mode' => 'all_on' ) );
+		$this->assertTrue(
+			Utility::invoke_hidden_method(
+				$instance,
+				'evaluate_show_if',
+				array( array( 'rsvp_mode' => array( 'not' => 'disabled' ) ) )
+			),
+			'A non-excluded value matches the negation.'
+		);
+
+		update_option( Settings::OPTION_NAME, array( 'rsvp_mode' => 'disabled' ) );
+		$this->assertFalse(
+			Utility::invoke_hidden_method(
+				$instance,
+				'evaluate_show_if',
+				array( array( 'rsvp_mode' => array( 'not' => 'disabled' ) ) )
+			),
+			'The excluded value fails the negation.'
+		);
+
+		// Array negation: excluded when the value is any of the listed.
+		update_option( Settings::OPTION_NAME, array( 'rsvp_mode' => 'per_event_off' ) );
+		$this->assertFalse(
+			Utility::invoke_hidden_method(
+				$instance,
+				'evaluate_show_if',
+				array( array( 'rsvp_mode' => array( 'not' => array( 'disabled', 'per_event_off' ) ) ) )
+			),
+			'A value in the excluded list fails the negation.'
+		);
+		$this->assertTrue(
+			Utility::invoke_hidden_method(
+				$instance,
+				'evaluate_show_if',
+				array( array( 'rsvp_mode' => array( 'not' => array( 'disabled', 'all_on' ) ) ) )
+			),
+			'A value outside the excluded list matches.'
+		);
 
 		delete_option( Settings::OPTION_NAME );
 	}

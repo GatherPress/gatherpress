@@ -64,7 +64,7 @@ class Venues extends Base {
 	 * Get the priority for displaying the venues settings page.
 	 *
 	 * Priority 1 places Venues immediately after Events (PHP_INT_MIN) and
-	 * before Rsvp_Settings (priority 2), so the tabs flow content → venue →
+	 * before Rsvp (priority 2), so the tabs flow content → venue →
 	 * RSVP rather than relying on class-setup.php registration order.
 	 *
 	 * @since 0.34.0
