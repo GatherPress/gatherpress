@@ -14,6 +14,7 @@ use GatherPress\Core\Rsvp;
 use GatherPress\Core\Rsvp\Response\Status;
 use GatherPress\Core\Settings;
 use GatherPress\Tests\Base;
+use ReflectionClass;
 use WP_Block;
 use WP_Block_Type_Registry;
 
@@ -669,7 +670,7 @@ class Test_Rsvp_Template extends Base {
 			)
 		);
 
-		$reflection       = new \ReflectionClass( $wp_block );
+		$reflection       = new ReflectionClass( $wp_block );
 		$context_property = $reflection->getProperty( 'context' );
 		$context_property->setAccessible( true );
 		$context_property->setValue(
@@ -727,7 +728,7 @@ class Test_Rsvp_Template extends Base {
 			)
 		);
 
-		$reflection       = new \ReflectionClass( $wp_block );
+		$reflection       = new ReflectionClass( $wp_block );
 		$context_property = $reflection->getProperty( 'context' );
 		$context_property->setAccessible( true );
 		$context_property->setValue(
@@ -802,7 +803,7 @@ class Test_Rsvp_Template extends Base {
 		$post_id  = $post->ID;
 
 		$user_id = $this->factory->user->create();
-		$rsvp    = new Rsvp\Rsvp( $post_id );
+		$rsvp    = new Rsvp( $post_id );
 		$rsvp->save( $user_id, 'attending' );
 
 		$comment_id = (int) $rsvp->find( $user_id )->comment->comment_ID;
@@ -812,7 +813,7 @@ class Test_Rsvp_Template extends Base {
 			array( 'postId' => $post_id )
 		);
 
-		$reflection       = new \ReflectionClass( $wp_block );
+		$reflection       = new ReflectionClass( $wp_block );
 		$context_property = $reflection->getProperty( 'context' );
 		$context_property->setAccessible( true );
 		$context_property->setValue( $wp_block, array( 'postId' => $post_id ) );

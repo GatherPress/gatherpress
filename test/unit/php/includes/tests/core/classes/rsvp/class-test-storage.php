@@ -21,6 +21,7 @@ use GatherPress\Core\Rsvp\Rsvp;
 use GatherPress\Core\Rsvp\Storage;
 use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;
+use WP_Error;
 
 /**
  * Class Test_Storage.
@@ -473,7 +474,7 @@ class Test_Storage extends Base {
 		$state   = $storage->save( $this->user_intent( $user_id, Status::ATTENDING ), null );
 
 		$force_failure = static function () {
-			return new \WP_Error( 'simulated', 'Simulated update failure.' );
+			return new WP_Error( 'simulated', 'Simulated update failure.' );
 		};
 		add_filter( 'wp_update_comment_data', $force_failure );
 

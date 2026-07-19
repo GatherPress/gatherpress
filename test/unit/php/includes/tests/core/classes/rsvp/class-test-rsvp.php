@@ -25,6 +25,7 @@ use GatherPress\Core\Settings;
 use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;
 use ReflectionClass;
+use WP_Error;
 
 /**
  * Class Test_Rsvp.
@@ -188,7 +189,7 @@ class Test_Rsvp extends Base {
 		// wpdb serving stale rows from the previous statement — fail the
 		// write precisely instead.
 		$force_failure = static function () {
-			return new \WP_Error( 'simulated', 'Simulated update failure.' );
+			return new WP_Error( 'simulated', 'Simulated update failure.' );
 		};
 		add_filter( 'wp_update_comment_data', $force_failure );
 
