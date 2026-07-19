@@ -221,6 +221,52 @@ export function placeCaretAtPoint( doc, x, y ) {
 }
 
 /**
+ * Complete the pointer cycle that rich text's focus-capture guard expects.
+ *
+ * Core temporarily sets `contenteditable="false"` on a rich text whenever a
+ * pointerdown lands on one of its ancestors, restoring it on the next
+ * `pointerup` (see `preventFocusCapture` in `@wordpress/rich-text`). While a
+ * guarded block is sealed, every press lands on exactly such an ancestor —
+ * the block wrapper — so all rich texts inside are temporarily disabled on
+ * every press. If that press starts a block drag, the browser suppresses
+ * pointer events for the drag's duration: `pointerup` never fires, core's
+ * restore never runs, and every rich text inside the moved block is left
+ * `contenteditable="false"` — permanently uneditable until reload.
+ *
+ * Dispatching a synthetic `pointerup` when the drag ends lets core's restore
+ * listener run. Registered once per document.
+ *
+ * @param {Document} canvasDoc - The canvas document.
+ *
+ * @return {void}
+ */
+export function ensureDragPointerCycle( canvasDoc ) {
+	const finish = () => {
+		// The restore listener lives on the canvas view; when the editor is
+		// not iframed that is the top view. Notify both (deduped) so a drag
+		// ending in either document completes the cycle.
+		new Set( [ canvasDoc?.defaultView, window ] ).forEach( ( view ) => {
+			if ( view ) {
+				const EventCtor = view.PointerEvent || view.Event;
+				view.dispatchEvent( new EventCtor( 'pointerup' ) );
+			}
+		} );
+	};
+
+	// Register on the canvas document and the top document: dragend fires at
+	// the drag source (canvas), but a drop can land in the parent document.
+	new Set( [ canvasDoc, document ] ).forEach( ( doc ) => {
+		if ( ! doc || doc.gatherpressDragCycleTracked ) {
+			return;
+		}
+
+		doc.gatherpressDragCycleTracked = true;
+		doc.addEventListener( 'dragend', finish, true );
+		doc.addEventListener( 'drop', finish, true );
+	} );
+}
+
+/**
  * Tint applied while a guarded block is selected, so it reads as a protected
  * unit you have hold of — in the spirit of the tint core gives template parts
  * and synced patterns.
@@ -357,7 +403,9 @@ export const withBlockGuard = createHigherOrderComponent( ( BlockListBlock ) => 
 		// to assistive technology; describe it while sealed and announce when
 		// it opens.
 		useEffect( () => {
-			ensureGuardHint( getCanvasDocument() );
+			const doc = getCanvasDocument();
+			ensureGuardHint( doc );
+			ensureDragPointerCycle( doc );
 		}, [] );
 
 		const wasSealed = useRef( sealed );

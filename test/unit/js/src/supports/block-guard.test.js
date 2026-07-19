@@ -60,6 +60,7 @@ import {
 	publishSealedState,
 	getCanvasDocument,
 	placeCaretAtPoint,
+	ensureDragPointerCycle,
 	withBlockGuard,
 } from '@src/supports/block-guard';
 
@@ -669,5 +670,153 @@ describe( 'double-click caret forwarding', () => {
 		} );
 
 		expect( document.elementFromPoint ).not.toHaveBeenCalled();
+	} );
+} );
+
+describe( 'ensureDragPointerCycle', () => {
+	it( 'dispatches a pointerup on the view when a drag ends', () => {
+		const received = jest.fn();
+		window.addEventListener( 'pointerup', received );
+
+		ensureDragPointerCycle( document );
+		document.dispatchEvent( new window.Event( 'dragend', { bubbles: true } ) );
+
+		expect( received ).toHaveBeenCalledTimes( 1 );
+
+		window.removeEventListener( 'pointerup', received );
+	} );
+
+	it( 'also completes the cycle on drop', () => {
+		const received = jest.fn();
+		window.addEventListener( 'pointerup', received );
+
+		ensureDragPointerCycle( document );
+		document.dispatchEvent( new window.Event( 'drop', { bubbles: true } ) );
+
+		expect( received ).toHaveBeenCalledTimes( 1 );
+
+		window.removeEventListener( 'pointerup', received );
+	} );
+
+	it( 'registers once per document', () => {
+		const received = jest.fn();
+		window.addEventListener( 'pointerup', received );
+
+		ensureDragPointerCycle( document );
+		ensureDragPointerCycle( document );
+		document.dispatchEvent( new window.Event( 'dragend', { bubbles: true } ) );
+
+		expect( received ).toHaveBeenCalledTimes( 1 );
+
+		window.removeEventListener( 'pointerup', received );
+	} );
+
+	it( 'copes with a document that has no view', () => {
+		const handlers = {};
+		const doc = {
+			defaultView: null,
+			addEventListener: ( type, fn ) => {
+				handlers[ type ] = fn;
+			},
+		};
+
+		ensureDragPointerCycle( doc );
+
+		expect( () => handlers.dragend() ).not.toThrow();
+	} );
+
+	it( 'does nothing for a missing document', () => {
+		expect( () => ensureDragPointerCycle( null ) ).not.toThrow();
+	} );
+} );
+
+describe( 'review follow-ups', () => {
+	const BlockListBlock = jest.fn( () => <div /> );
+	const Guarded = withBlockGuard( BlockListBlock );
+	const lastProps = () => BlockListBlock.mock.calls.at( -1 )[ 0 ];
+	const sealedNow = () =>
+		( lastProps().className || '' ).includes( 'has-block-overlay' );
+
+	const setSelection = ( { isSelf = false, isInner = false } ) => {
+		useSelect.mockImplementation( ( mapSelect ) =>
+			mapSelect( () => ( {
+				isBlockSelected: () => isSelf,
+				hasSelectedInnerBlock: () => isInner,
+			} ) )
+		);
+	};
+
+	beforeEach( () => {
+		jest.clearAllMocks();
+		getBlockType.mockReturnValue( {
+			supports: { gatherpress: { blockGuard: true } },
+		} );
+	} );
+
+	it( 'opens on Space while the block is selected', () => {
+		setSelection( { isSelf: true } );
+		render(
+			<Guarded
+				name="gatherpress/add-to-calendar"
+				clientId="space"
+				wrapperProps={ {} }
+			/>
+		);
+
+		act( () => {
+			lastProps().wrapperProps.onKeyDown( {
+				key: ' ',
+				preventDefault() {},
+				stopPropagation() {},
+			} );
+		} );
+
+		expect( sealedNow() ).toBe( false );
+	} );
+
+	it( 'chains Enter to the original handler when the block is not selected', () => {
+		const onKeyDown = jest.fn();
+		setSelection( {} );
+		render(
+			<Guarded
+				name="gatherpress/add-to-calendar"
+				clientId="chain"
+				wrapperProps={ { onKeyDown } }
+			/>
+		);
+
+		act( () => {
+			lastProps().wrapperProps.onKeyDown( {
+				key: 'Enter',
+				preventDefault() {},
+				stopPropagation() {},
+			} );
+		} );
+
+		expect( onKeyDown ).toHaveBeenCalled();
+		expect( sealedNow() ).toBe( true );
+	} );
+
+	it( 'uses PointerEvent for the synthetic pointerup when the view has it', () => {
+		class FakePointerEvent extends Event {}
+		const dispatched = [];
+		const handlers = {};
+		const view = {
+			PointerEvent: FakePointerEvent,
+			dispatchEvent: ( e ) => dispatched.push( e ),
+		};
+		const doc = {
+			defaultView: view,
+			addEventListener: ( type, fn ) => {
+				handlers[ type ] = fn;
+			},
+		};
+
+		ensureDragPointerCycle( doc );
+		handlers.dragend();
+
+		expect( dispatched.some( ( e ) => e instanceof FakePointerEvent ) ).toBe(
+			true
+		);
 	} );
 } );
