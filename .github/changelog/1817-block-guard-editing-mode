@@ -1,4 +1,0 @@
-Significance: minor
-Type: changed
-
-Prototype a rebuilt Block Guard for the Add to Calendar block, based on core's block editing mode instead of the on/off toggle. A guarded block starts sealed so a stray click can no longer pull its inner blocks apart — clicking anywhere inside selects the block itself; double-click or press Enter to edit its contents, and click away or press Escape to re-seal. Other guarded blocks keep the existing toggle for now.

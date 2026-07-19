@@ -38,8 +38,7 @@ import {
 	toMapsEmbedApiMapType,
 } from '../../components/GoogleMap';
 import {
-	useSharedBlockGuardState,
-	generateBlockGuardStateKey,
+	useIsBlockSealed,
 } from '../../supports/block-guard';
 import {
 	RegenerateMapButton,
@@ -415,9 +414,8 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 		) || 'custom' === aspectRatio;
 
 	// Find the nearest `gatherpress/venue` ancestor so we can subscribe to
-	// the exact guard state the block-guard HOC writes to (it's keyed per
-	// instance via generateBlockGuardStateKey, not by block name alone —
-	// subscribing to the bare name would miss every update).
+	// its guard state: while the venue is sealed the map renders without its
+	// resize handles.
 	const parentVenueClientId = useSelect(
 		( select ) => {
 			if ( ! clientId ) {
@@ -437,10 +435,7 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 		},
 		[ clientId ]
 	);
-	const parentGuardKey = parentVenueClientId
-		? generateBlockGuardStateKey( 'gatherpress/venue', parentVenueClientId )
-		: 'gatherpress/venue';
-	const [ isParentGuarded ] = useSharedBlockGuardState( parentGuardKey );
+	const isParentGuarded = useIsBlockSealed( parentVenueClientId );
 
 	// Close the "async descriptor arrived while placeholder is showing"
 	// gap — see `usePlaceholderPolling` for ensure-only + poll cadence.

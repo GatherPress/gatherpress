@@ -13,7 +13,6 @@ import './stores';
 import './supports/post-id-override';
 import './supports/post-date-override';
 import './supports/block-guard';
-import './supports/block-guard-editing-mode';
 import './formats/tooltip';
 
 /**

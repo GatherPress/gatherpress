@@ -3,528 +3,49 @@
  */
 import { getBlockType } from '@wordpress/blocks';
 import { createHigherOrderComponent } from '@wordpress/compose';
-import { InspectorControls } from '@wordpress/block-editor';
-import { PanelBody, ToggleControl } from '@wordpress/components';
-import { __ } from '@wordpress/i18n';
+import { store as blockEditorStore } from '@wordpress/block-editor';
+import { useSelect } from '@wordpress/data';
+import { useState, useEffect, useRef } from '@wordpress/element';
 import { addFilter, hasFilter } from '@wordpress/hooks';
-import { useState, useEffect, useCallback } from '@wordpress/element';
 
 /**
- * Internal dependencies
- */
-import { isEditingModeGuarded } from './block-guard-editing-mode';
-
-/**
- * Shared state store for block guard settings across all block instances.
- * This ensures that blocks of the same type (especially in query loops)
- * maintain consistent guard states.
- */
-const blockGuardStates = new Map();
-const blockGuardListeners = new Map();
-
-/**
- * Custom hook to manage shared block guard state.
+ * Block Guard, rethought as a canvas-only seal.
  *
- * @param {string} blockName - The name of the block type.
+ * The original Block Guard was a sidebar toggle that hand-applied `inert`,
+ * opacity, and document-wide MutationObservers to fake a lock. It was
+ * obtrusive, it fought core's `contentOnly` pattern mode (#1817), and it still
+ * let a stray click grab and drag an inner block out of place.
  *
- * @return {Array} Array containing [isEnabled, setIsEnabled] similar to useState.
- */
-function useSharedBlockGuardState( blockName ) {
-	// Initialize state if it doesn't exist.
-	if ( ! blockGuardStates.has( blockName ) ) {
-		blockGuardStates.set( blockName, true ); // Default to enabled.
-	}
-
-	const [ localState, setLocalState ] = useState(
-		blockGuardStates.get( blockName ),
-	);
-
-	useEffect( () => {
-		// Initialize listeners array for this block type if it doesn't exist.
-		if ( ! blockGuardListeners.has( blockName ) ) {
-			blockGuardListeners.set( blockName, new Set() );
-		}
-
-		// Add this component's state setter to the listeners.
-		const listeners = blockGuardListeners.get( blockName );
-		listeners.add( setLocalState );
-
-		// Sync with current shared state.
-		setLocalState( blockGuardStates.get( blockName ) );
-
-		// Cleanup: remove listener on unmount.
-		return () => {
-			listeners.delete( setLocalState );
-		};
-	}, [ blockName ] );
-
-	// Stable identity so consumers can list the setter in effect
-	// dependencies without re-running the effect every render.
-	const setSharedState = useCallback(
-		( value ) => {
-			// Update the shared state.
-			blockGuardStates.set( blockName, value );
-
-			// Notify all listeners (components using this block type).
-			const listeners = blockGuardListeners.get( blockName );
-			if ( listeners ) {
-				listeners.forEach( ( listener ) => listener( value ) );
-			}
-		},
-		[ blockName ],
-	);
-
-	return [ localState, setSharedState ];
-}
-
-/**
- * ID of the injected stylesheet that positions the Block Guard panel.
- */
-const BLOCK_GUARD_STYLE_ID = 'gatherpress-block-guard-style';
-
-/**
- * Inject the stylesheet that floats the Block Guard panel to the top of
- * whichever inspector tab it renders in (the Settings tab and the
- * WordPress 7.0 List View tab), so the protection state is the first
- * thing users see. Idempotent: the module evaluates in multiple webpack
- * chunks and the HOC mounts per block, so the id guard keeps a single
- * style element.
+ * The rethink keeps the real goal — stop people from breaking these blocks by
+ * accidentally editing inside them — with a light two-state interaction and
+ * nothing else:
  *
- * @return {void}
- */
-function injectBlockGuardStyles() {
-	if ( document.getElementById( BLOCK_GUARD_STYLE_ID ) ) {
-		return;
-	}
-
-	const style = document.createElement( 'style' );
-	style.id = BLOCK_GUARD_STYLE_ID;
-	// Target the panel's direct parent (the tab content wrapper, whatever
-	// element that happens to be) rather than the tabpanel itself: the
-	// panel and its sibling controls all live one wrapper below the
-	// tabpanel. The panel's order rule is declared last so it wins the
-	// equal-specificity tie against the catch-all sibling rule.
-	style.textContent = `
-		.block-editor-block-inspector [role="tabpanel"]:has(> .gatherpress-block-guard-panel),
-		.block-editor-block-inspector [role="tabpanel"] :has(> .gatherpress-block-guard-panel) {
-			display: flex;
-			flex-direction: column;
-		}
-		.block-editor-block-inspector [role="tabpanel"]:has(> .gatherpress-block-guard-panel) > *,
-		.block-editor-block-inspector [role="tabpanel"] :has(> .gatherpress-block-guard-panel) > * {
-			order: 1;
-		}
-		.block-editor-block-inspector [role="tabpanel"] .gatherpress-block-guard-panel {
-			order: 0;
-		}
-	`;
-	document.head.appendChild( style );
-}
-
-/**
- * Get the appropriate document context for the block editor.
+ *   - **Sealed** (default): the block's wrapper gets core's own
+ *     `has-block-overlay` class, whose stylesheet rule
+ *     (`.has-block-overlay .block-editor-block-list__block { pointer-events:
+ *     none }`) makes every inner block non-interactive in the canvas. A click
+ *     anywhere on the block therefore falls through to the block itself — it
+ *     selects the whole block, and its inner pieces can't be grabbed or dragged
+ *     out by accident. The wrapper keeps its own pointer events, so the block
+ *     still selects and drags normally. Once selected, it carries a soft tint
+ *     so it reads as a protected unit.
+ *   - **A deliberate second action** — clicking the already-selected block
+ *     again, or pressing Enter / Space while it is selected — unseals it,
+ *     handing over full editing of the inner blocks.
+ *   - **Re-seal**: clicking out (selection leaves the block's subtree) puts the
+ *     guard back on.
  *
- * In FSE (Full Site Editing) contexts, blocks are rendered within an iframe
- * with the name "editor-canvas". This function detects that iframe and returns
- * its document, otherwise falls back to the main document for regular editors.
+ * The seal is only that one class on the canvas wrapper — it never touches
+ * block editing mode or the block's saved attributes — so **List View is
+ * completely untouched** and stays the deliberate way in for anyone who needs
+ * it. The block is not locked: it stays fully editable, it just asks for one
+ * intentional click before you edit inside.
  *
- * @return {Document} The document object containing the block editor content.
- */
-function getEditorDocument() {
-	const iframe = document.querySelector(
-		'iframe[name="editor-canvas"]',
-	);
-
-	if ( iframe?.contentDocument ) {
-		return iframe.contentDocument;
-	}
-
-	return document;
-}
-
-/**
- * Apply block guard styling to an inner blocks container.
- *
- * @param {HTMLElement} innerBlocksContainer - The container to apply guard to.
- * @param {boolean}     isEnabled            - Whether guard is enabled.
- */
-function applyGuardToContainer( innerBlocksContainer, isEnabled ) {
-	if ( ! innerBlocksContainer ) {
-		return;
-	}
-
-	// Use the inert attribute to disable all interactions within inner blocks.
-	if ( isEnabled ) {
-		innerBlocksContainer.inert = true;
-		// Add a visual indicator that the content is protected (optional).
-		innerBlocksContainer.style.opacity = '0.95';
-		innerBlocksContainer.style.cursor = 'not-allowed';
-		// Mark it so we can find it for cleanup.
-		innerBlocksContainer.dataset.gatherPressGuarded = 'true';
-	} else {
-		innerBlocksContainer.inert = false;
-		innerBlocksContainer.style.opacity = '';
-		innerBlocksContainer.style.cursor = '';
-		delete innerBlocksContainer.dataset.gatherPressGuarded;
-	}
-
-	// Handle block appender visibility.
-	const blockAppender = innerBlocksContainer.querySelector(
-		'.block-list-appender',
-	);
-
-	if ( blockAppender ) {
-		blockAppender.style.display = isEnabled ? 'none' : '';
-	}
-}
-
-/**
- * Clean up guard styles from an inner blocks container.
- *
- * @param {HTMLElement} innerBlocks - The container to clean up.
- */
-function cleanupGuardFromContainer( innerBlocks ) {
-	if ( ! innerBlocks ) {
-		return;
-	}
-
-	innerBlocks.inert = false;
-	innerBlocks.style.opacity = '';
-	innerBlocks.style.cursor = '';
-	delete innerBlocks.dataset.gatherPressGuarded;
-
-	// Also restore block appender.
-	const blockAppender = innerBlocks.querySelector( '.block-list-appender' );
-	if ( blockAppender ) {
-		blockAppender.style.display = '';
-	}
-}
-
-/**
- * Apply list view styling for block guard.
- *
- * @param {HTMLElement} expander  - The expander element.
- * @param {boolean}     isEnabled - Whether guard is enabled.
- */
-function applyListViewGuard( expander, isEnabled ) {
-	if ( ! expander ) {
-		return;
-	}
-
-	if ( isEnabled ) {
-		// Make expander non-interactive but preserve layout.
-		expander.style.pointerEvents = 'none';
-		expander.style.opacity = '0.3';
-
-		// Disable the parent link element.
-		const parentLink = expander.closest(
-			'.block-editor-list-view-block-select-button',
-		);
-
-		if ( parentLink ) {
-			parentLink.setAttribute( 'aria-expanded', 'false' );
-			parentLink.style.pointerEvents = 'none';
-
-			// Re-enable just the link itself, but not the expander.
-			parentLink.style.pointerEvents = 'auto';
-			parentLink.classList.add( 'gatherpress-block-guard-enabled' );
-		}
-	} else {
-		// Restore interactivity.
-		expander.style.pointerEvents = '';
-		expander.style.opacity = '';
-
-		// Re-enable the parent link.
-		const parentLink = expander.closest(
-			'.block-editor-list-view-block-select-button',
-		);
-		if ( parentLink ) {
-			parentLink.style.pointerEvents = '';
-			parentLink.classList.remove( 'gatherpress-block-guard-enabled' );
-		}
-	}
-}
-
-/**
- * Drag event types for block guard.
- */
-const DRAG_EVENTS = [ 'dragover', 'dragenter', 'dragleave', 'drop' ];
-
-/**
- * Add drag event listeners.
- *
- * @param {Function} handler - Event handler function.
- */
-function addDragListeners( handler ) {
-	DRAG_EVENTS.forEach( ( eventType ) => {
-		document.addEventListener( eventType, handler, true );
-	} );
-}
-
-/**
- * Remove drag event listeners.
- *
- * @param {Function} handler - Event handler function.
- */
-function removeDragListeners( handler ) {
-	DRAG_EVENTS.forEach( ( eventType ) => {
-		document.removeEventListener( eventType, handler, true );
-	} );
-}
-
-/**
- * Create a drop handler for the given clientId.
- *
- * @param {string} clientId - The block's client ID.
- *
- * @return {Function} Drop handler function.
- */
-function createDropHandler( clientId ) {
-	return ( e ) => {
-		// Check if we're in this block or its drop zones.
-		const targetBlock = e.target.closest( `[data-block="${ clientId }"]` );
-		if ( targetBlock ) {
-			// Prevent dragenter, dragover and drop to disable block insertion indicators.
-			if ( 'dragenter' === e.type || 'dragover' === e.type || 'drop' === e.type ) {
-				e.preventDefault();
-				e.stopPropagation();
-			}
-		}
-	};
-}
-
-/**
- * Apply list view guard for a specific block.
- *
- * @param {string}  clientId            - The block's client ID.
- * @param {boolean} isBlockGuardEnabled - Whether guard is enabled.
- *
- * @return {Object|null} Object with expander element or null if not found.
- */
-function applyListViewGuardForBlock( clientId, isBlockGuardEnabled ) {
-	// Find the list view item.
-	const listViewItem = document.querySelector(
-		`.block-editor-list-view-leaf[data-block="${ clientId }"]`,
-	);
-
-	if ( ! listViewItem ) {
-		return null;
-	}
-
-	// Find the expander.
-	const expander = listViewItem.querySelector(
-		'.block-editor-list-view__expander',
-	);
-
-	if ( ! expander ) {
-		return null;
-	}
-
-	// Find the SVG inside the expander.
-	const expanderSvg = expander.querySelector( 'svg' );
-
-	if ( ! expanderSvg ) {
-		return null;
-	}
-
-	applyListViewGuard( expander, isBlockGuardEnabled );
-
-	return { expander };
-}
-
-/**
- * Apply block guard to the block inspector's List View tab.
- *
- * WordPress 7.0's `listView` block support renders the selected block's
- * inner blocks as a standalone tree inside the block inspector. That tree
- * bypasses both the canvas inert overlay and the main List View expander
- * handling, so it gets the same inert treatment as the canvas container.
- * The tree stays visible as a read-only structure map while the guard is
- * on; the Block Guard toggle rendered into the tab (via the `list`
- * InspectorControls group) is where users flip protection.
- *
- * @param {boolean} isEnabled - Whether guard is enabled.
- *
- * @return {HTMLElement|null} The guarded tree element, or null when the
- *                            inspector's List View tab is not rendered.
- */
-function applyInspectorListViewGuard( isEnabled ) {
-	// The inspector lives in the top-level document, never the editor iframe.
-	const tree = document.querySelector(
-		'.block-editor-block-inspector .block-editor-list-view-tree',
-	);
-
-	if ( ! tree ) {
-		return null;
-	}
-
-	applyGuardToContainer( tree, isEnabled );
-
-	// Hide the tree's appender while guarded, matching the canvas behavior.
-	// The tree uses its own appender class, not the `.block-list-appender`
-	// that applyGuardToContainer handles.
-	const appender = tree.querySelector( '.list-view-appender' );
-
-	if ( appender ) {
-		appender.style.display = isEnabled ? 'none' : '';
-	}
-
-	return tree;
-}
-
-/**
- * Clean up block guard from all elements that share the same state key.
- *
- * @param {string} name     - The block type name.
- * @param {string} stateKey - The shared state key.
- */
-function cleanupBlockGuard( name, stateKey ) {
-	const editorDoc = getEditorDocument();
-
-	// First, clean up any elements we marked as guarded.
-	const guardedElements = editorDoc.querySelectorAll( '[data-gather-press-guarded="true"]' );
-	guardedElements.forEach( ( element ) => {
-		element.inert = false;
-		element.style.opacity = '';
-		element.style.cursor = '';
-		delete element.dataset.gatherPressGuarded;
-	} );
-
-	// Also clean up based on state key for thoroughness.
-	const allBlocks = Array.from(
-		editorDoc.querySelectorAll( `[data-type="${ name }"]` ),
-	);
-
-	allBlocks.forEach( ( blockElement ) => {
-		const blockId = blockElement.id?.replace( 'block-', '' );
-		if ( blockId ) {
-			const blockStateKey = generateBlockGuardStateKey(
-				name,
-				blockId,
-			);
-			if ( blockStateKey === stateKey ) {
-				const innerBlocks = blockElement?.querySelector(
-					'.block-editor-inner-blocks',
-				);
-				cleanupGuardFromContainer( innerBlocks );
-			}
-		}
-	} );
-}
-
-/**
- * Apply block guard to all elements that share the same state key.
- *
- * @param {string}  clientId            - The current block's client ID.
- * @param {string}  name                - The block type name.
- * @param {string}  stateKey            - The shared state key.
- * @param {boolean} isBlockGuardEnabled - Whether guard is enabled.
- */
-function applyBlockGuard( clientId, name, stateKey, isBlockGuardEnabled ) {
-	const editorDoc = getEditorDocument();
-	const currentBlockElement = editorDoc.getElementById(
-		`block-${ clientId }`,
-	);
-
-	if ( ! currentBlockElement ) {
-		return;
-	}
-
-	// Find all blocks on the page that should share the same state as this block.
-	const allBlocks = Array.from(
-		editorDoc.querySelectorAll( `[data-type="${ name }"]` ),
-	);
-	const targetElements = [];
-
-	// Filter blocks to only include those with the same state key.
-	allBlocks.forEach( ( blockElement ) => {
-		const blockId = blockElement.id?.replace( 'block-', '' );
-		if ( blockId ) {
-			const blockStateKey = generateBlockGuardStateKey(
-				name,
-				blockId,
-			);
-			if ( blockStateKey === stateKey ) {
-				targetElements.push( blockElement );
-			}
-		}
-	} );
-
-	targetElements.forEach( ( blockElement ) => {
-		const innerBlocksContainer = blockElement.querySelector(
-			'.block-editor-inner-blocks',
-		);
-		applyGuardToContainer( innerBlocksContainer, isBlockGuardEnabled );
-	} );
-}
-
-/**
- * Generate a unique state key for block guard state management.
- * This creates the right level of sharing vs independence:
- * - Individual blocks outside query loops: each gets unique state
- * - Individual blocks inside query loops: each gets unique state
- * - Repeated instances in query loops: same position shares state across posts
- *
- * @param {string} name     - The block type name.
- * @param {string} clientId - The current block's client ID.
- *
- * @return {string} Unique state key for this block's context.
- */
-function generateBlockGuardStateKey( name, clientId ) {
-	const editorDoc = getEditorDocument();
-	const currentBlockElement = editorDoc.getElementById( `block-${ clientId }` );
-
-	if ( ! currentBlockElement ) {
-		// Fallback: each block gets its own state.
-		return `${ name }-${ clientId }`;
-	}
-
-	// Check if this block is in a query loop.
-	const queryLoopContainer = currentBlockElement.closest(
-		'[data-type="core/post-template"]',
-	);
-
-	if ( queryLoopContainer ) {
-		// Find all blocks of the same type within this query loop template.
-		const sameTypeBlocks = Array.from(
-			queryLoopContainer.querySelectorAll( `[data-type="${ name }"]` ),
-		);
-
-		// Find the index of the current block within blocks of the same type.
-		const blockIndex = sameTypeBlocks.findIndex(
-			( block ) => block.id === `block-${ clientId }`,
-		);
-
-		if ( -1 !== blockIndex ) {
-			// Create a unique key for this block position within query loops.
-			// This ensures the 1st RSVP block across all posts shares state,
-			// but is independent from the 2nd RSVP block.
-			const queryLoopId =
-				queryLoopContainer.closest( '[data-type="core/query"]' )?.id ||
-				'unknown-query-loop';
-			return `${ name }-queryloop-${ queryLoopId }-position-${ blockIndex }`;
-		}
-	}
-
-	// For blocks outside query loops, each gets its own unique state.
-	return `${ name }-${ clientId }`;
-}
-
-/**
- * Higher-Order Component to add BlockGuard functionality to supported GatherPress blocks.
- *
- * This HOC injects a toggle control into the Inspector Controls of blocks
- * that support `blockGuard`, enabling users to toggle block protection.
- * When enabled (default), an invisible overlay prevents interactions with inner blocks.
- *
- * @param {Function} BlockEdit - The original BlockEdit component.
- * @param            props
- *
- * @return {Function} Enhanced BlockEdit component with BlockGuard functionality.
+ * Applies to every block declaring `supports.gatherpress.blockGuard` in its
+ * `block.json`.
  *
  * @example
- * // Usage:
- * // In a block's `block.json`, add the following to enable this feature:
+ * // In a block's `block.json`:
  * {
  *   "supports": {
  *     "gatherpress": {
@@ -533,201 +54,303 @@ function generateBlockGuardStateKey( name, clientId ) {
  *   }
  * }
  */
-const withBlockGuard = createHigherOrderComponent( ( BlockEdit ) => {
+
+/**
+ * Core's own class for a block whose inner blocks are sealed off in the canvas.
+ * Its stylesheet rule ships in the editor content styles, so it is already
+ * present in the canvas document — we only have to add the class.
+ */
+const OVERLAY_CLASS = 'has-block-overlay';
+
+/**
+ * Whether a block opts into Block Guard.
+ *
+ * @param {string} name - The block type name.
+ *
+ * @return {boolean} True when the block declares the `blockGuard` support.
+ */
+export function isBlockGuarded( name ) {
+	return !! getBlockType( name )?.supports?.gatherpress?.blockGuard;
+}
+
+/**
+ * Sealed state per block instance, so other blocks can react to whether an
+ * ancestor is currently guarded (the venue map hides its resize handles while
+ * its parent venue is sealed). Keyed by clientId, with a small subscription
+ * list because the state lives in component state, not the editor store.
+ */
+const sealedStates = new Map();
+const sealedListeners = new Map();
+
+/**
+ * Publish a block's sealed state to any subscribers.
+ *
+ * @param {string}  clientId - The block's client ID.
+ * @param {boolean} sealed   - Whether the guard is on.
+ *
+ * @return {void}
+ */
+export function publishSealedState( clientId, sealed ) {
+	sealedStates.set( clientId, sealed );
+	sealedListeners.get( clientId )?.forEach( ( listener ) => listener( sealed ) );
+}
+
+/**
+ * Subscribe to whether a given block is currently sealed.
+ *
+ * Guarded blocks are sealed until the user deliberately enters them, so an
+ * unknown or not-yet-mounted block reports sealed.
+ *
+ * @param {string} clientId - The block's client ID.
+ *
+ * @return {boolean} True while the block's guard is on.
+ */
+export function useIsBlockSealed( clientId ) {
+	const [ sealed, setSealed ] = useState(
+		() => sealedStates.get( clientId ) ?? true
+	);
+
+	useEffect( () => {
+		if ( ! clientId ) {
+			setSealed( true );
+			return undefined;
+		}
+
+		if ( ! sealedListeners.has( clientId ) ) {
+			sealedListeners.set( clientId, new Set() );
+		}
+
+		const listeners = sealedListeners.get( clientId );
+		listeners.add( setSealed );
+		setSealed( sealedStates.get( clientId ) ?? true );
+
+		return () => {
+			listeners.delete( setSealed );
+		};
+	}, [ clientId ] );
+
+	return sealed;
+}
+
+/**
+ * Soft tint applied to a sealed, selected block so it reads as a protected
+ * unit, in the spirit of the tint core gives template parts and synced
+ * patterns.
+ */
+const SEALED_STYLE = {
+	cursor: 'pointer',
+	backgroundColor: 'rgba(30, 58, 233, 0.04)',
+	boxShadow: 'inset 0 0 0 1px rgba(30, 58, 233, 0.24)',
+};
+
+/**
+ * The document that holds the block canvas. In the iframed post and site
+ * editors the blocks live inside the `editor-canvas` iframe; otherwise they
+ * are in the main document.
+ *
+ * @return {Document} The document containing the rendered blocks.
+ */
+export function getCanvasDocument() {
+	const iframe = document.querySelector( 'iframe[name="editor-canvas"]' );
+
+	return iframe?.contentDocument || document;
+}
+
+/**
+ * Higher-Order Component that seals a block's inner blocks behind one
+ * deliberate click.
+ *
+ * @param {Function} BlockListBlock - The original BlockListBlock component.
+ *
+ * @return {Function} The wrapped BlockListBlock.
+ */
+export const withBlockGuard = createHigherOrderComponent( ( BlockListBlock ) => {
 	return ( props ) => {
-		const { name, clientId, isSelected } = props;
+		const { name, clientId, wrapperProps } = props;
 
-		// Check if the block supports blockGuard.
-		if (
-			! name.startsWith( 'gatherpress/' ) ||
-			! getBlockType( name )?.supports?.gatherpress?.blockGuard
-		) {
-			return <BlockEdit { ...props } />;
+		if ( ! isBlockGuarded( name ) ) {
+			return <BlockListBlock { ...props } />;
 		}
 
-		// Blocks moved to the editing-mode guard prototype opt out of the
-		// legacy toggle so the two mechanisms never stack (see #1817).
-		if ( isEditingModeGuarded( name ) ) {
-			return <BlockEdit { ...props } />;
-		}
+		// Guard on by default; a deliberate action turns it off.
+		const [ sealed, setSealed ] = useState( true );
 
-		// Generate unique state key for appropriate sharing/independence.
-		const stateKey = generateBlockGuardStateKey( name, clientId );
-
-		// Use shared state to track if BlockGuard is enabled (default to enabled).
-		const [ isBlockGuardEnabled, setIsBlockGuardEnabled ] =
-			useSharedBlockGuardState( stateKey );
-
-		useEffect( () => {
-			if ( ! clientId ) {
-				return;
-			}
-
-			injectBlockGuardStyles();
-
-			// Apply initially.
-			applyBlockGuard( clientId, name, stateKey, isBlockGuardEnabled );
-
-			// Set up observer for DOM changes.
-			const observer = new MutationObserver( () => {
-				applyBlockGuard( clientId, name, stateKey, isBlockGuardEnabled );
-			} );
-			observer.observe( document.body, {
-				childList: true,
-				subtree: true,
-			} );
-
-			return () => {
-				observer.disconnect();
-				cleanupBlockGuard( name, stateKey );
-			};
-		}, [ clientId, isBlockGuardEnabled, name, stateKey ] );
-
-		// Handle List View behavior.
-		useEffect( () => {
-			if ( ! clientId ) {
-				return;
-			}
-
-			let dropHandler = null;
-
-			const handleListView = () => {
-				applyListViewGuardForBlock( clientId, isBlockGuardEnabled );
-
-				// The inspector's List View tab (WordPress 7.0 `listView`
-				// support) only renders for the selected block, so gate on
-				// selection to keep unselected instances of guarded blocks
-				// from fighting over the shared inspector DOM.
-				if ( isSelected ) {
-					applyInspectorListViewGuard( isBlockGuardEnabled );
-				}
-
-				// Handle drag prevention for block guard.
-				if ( isBlockGuardEnabled ) {
-					// Prevent drops into this block like WordPress lock removal.
-					if ( ! dropHandler ) {
-						dropHandler = createDropHandler( clientId );
-						// Add drag prevention listeners globally.
-						addDragListeners( dropHandler );
-					}
-				} else if ( dropHandler ) {
-					// Remove drop prevention.
-					removeDragListeners( dropHandler );
-					dropHandler = null;
-				}
-			};
-
-			// Apply Block Guard initially and when List View changes.
-			handleListView();
-
-			// Simple observer that just calls handleListView.
-			const observer = new MutationObserver( () => {
-				handleListView();
-			} );
-
-			// Observe the entire document for simplicity and reliability.
-			observer.observe( document.body, {
-				childList: true,
-				subtree: true,
-			} );
-
-			return () => {
-				observer.disconnect();
-
-				// Release the inspector tree so the next selection starts
-				// from a clean slate.
-				if ( isSelected ) {
-					applyInspectorListViewGuard( false );
-				}
-
-				// Clean up event listeners.
-				if ( dropHandler ) {
-					removeDragListeners( dropHandler );
-				}
-			};
-		}, [ clientId, isBlockGuardEnabled, isSelected ] );
-
-		// One descriptor, rendered in both inspector tabs: the Settings tab
-		// and the WordPress 7.0 List View tab (`group="list"`), so the guard
-		// can be toggled from wherever the user happens to be looking.
-		const blockGuardToggle = (
-			<ToggleControl
-				label={ __( 'Block Guard', 'gatherpress' ) }
-				checked={ isBlockGuardEnabled }
-				onChange={ ( value ) => {
-					setIsBlockGuardEnabled( value );
-
-					const expander = document.querySelector(
-						`.block-editor-list-view-leaf[data-block="${ clientId }"][data-expanded="true"] .block-editor-list-view__expander`,
-					);
-
-					if ( value && expander ) {
-						expander.click();
-						expander.style.pointerEvents = 'none';
-					}
-				} }
-				help={
-					isBlockGuardEnabled
-						? __(
-							'Toggle to unprotect and update the block.',
-							'gatherpress',
-						)
-						: __(
-							'Block protection is disabled. Inner blocks can be freely edited.',
-							'gatherpress',
-						)
-				}
-			/>
+		// Where selection sits relative to this block: on the block itself, or
+		// on one of its inner blocks.
+		const { isSelf, isInner } = useSelect(
+			( select ) => {
+				const store = select( blockEditorStore );
+				return {
+					isSelf: store.isBlockSelected( clientId ),
+					isInner: store.hasSelectedInnerBlock( clientId, true ),
+				};
+			},
+			[ clientId ],
 		);
 
+		const isActive = isSelf || isInner;
+
+		// Has selection been inside the block since it was unsealed? This is
+		// what lets "select the parent again" re-arm the guard without the
+		// unsealing click itself instantly re-sealing (at that moment the block
+		// is selected but nothing inner has been touched yet).
+		const enteredInner = useRef( false );
+
+		// Re-seal on either exit route: clicking away from the block entirely,
+		// or coming back up to the block itself after editing inside it (a
+		// click on the block, Escape, or the breadcrumb all land here).
+		useEffect( () => {
+			// Selection left the block entirely — re-arm the guard.
+			if ( ! isActive ) {
+				if ( ! sealed ) {
+					setSealed( true );
+				}
+
+				enteredInner.current = false;
+				return;
+			}
+
+			// An inner block is selected. Reaching one is always deliberate —
+			// either by unsealing first, or straight from List View, which the
+			// guard never blocks — so honor it and make sure we are unsealed.
+			if ( isInner ) {
+				if ( sealed ) {
+					setSealed( false );
+				}
+
+				enteredInner.current = true;
+				return;
+			}
+
+			// Back on the block itself after having been inside it: re-arm.
+			if ( isSelf && ! sealed && enteredInner.current ) {
+				setSealed( true );
+				enteredInner.current = false;
+			}
+		}, [ sealed, isActive, isInner, isSelf ] );
+
+		// Publish the sealed state so descendants can react to it (the venue map
+		// drops its resize handles while its parent venue is sealed), and clear
+		// the entry when the block goes away.
+		useEffect( () => {
+			publishSealedState( clientId, sealed );
+		}, [ clientId, sealed ] );
+
+		useEffect( () => {
+			return () => {
+				sealedStates.delete( clientId );
+				sealedListeners.delete( clientId );
+			};
+		}, [ clientId ] );
+
+		// Was the block already selected when this gesture began? By the time
+		// `click` fires, core has selected the block and re-rendered, so
+		// reading selection there reports true even on the very first click and
+		// would let one click straight in. Capture it on mousedown instead.
+		const wasSelectedOnMouseDown = useRef( false );
+		const isActiveRef = useRef( isActive );
+
+		useEffect( () => {
+			isActiveRef.current = isActive;
+		}, [ isActive ] );
+
+		// The mousedown listener is attached natively in the capture phase
+		// rather than passed through `wrapperProps`: core relies on its own
+		// mousedown handling on this wrapper to select the block, and passing
+		// `onMouseDown` in wrapperProps replaces it, which stops the block from
+		// being selectable at all. Capture phase also means this runs before
+		// core selects, so the ref still holds the pre-click state. It only
+		// writes a ref — no re-render — so the drag gesture is untouched.
+		useEffect( () => {
+			const element = getCanvasDocument().getElementById(
+				`block-${ clientId }`,
+			);
+
+			if ( ! element ) {
+				return undefined;
+			}
+
+			const handleMouseDown = () => {
+				wasSelectedOnMouseDown.current = isActiveRef.current;
+			};
+
+			element.addEventListener( 'mousedown', handleMouseDown, true );
+
+			return () => {
+				element.removeEventListener(
+					'mousedown',
+					handleMouseDown,
+					true,
+				);
+			};
+		}, [ clientId ] );
+
+		// A click on a block that was *already* selected is the deliberate
+		// "let me in" action, so the first click only selects and the second
+		// unseals. Listening on `click` rather than `mousedown` keeps dragging
+		// intact: a real drag ends in dragend and never fires click.
+		const onClick = ( event ) => {
+			if ( sealed && wasSelectedOnMouseDown.current ) {
+				setSealed( false );
+			}
+
+			wrapperProps?.onClick?.( event );
+		};
+
+		// Keyboard equivalent: Enter or Space on the selected, sealed block.
+		const onKeyDown = ( event ) => {
+			if (
+				sealed &&
+				isActive &&
+				( 'Enter' === event.key || ' ' === event.key )
+			) {
+				event.preventDefault();
+				event.stopPropagation();
+				setSealed( false );
+				return;
+			}
+
+			wrapperProps?.onKeyDown?.( event );
+		};
+
+		const className = [ props.className, sealed && OVERLAY_CLASS ]
+			.filter( Boolean )
+			.join( ' ' );
+
 		return (
-			<>
-				<BlockEdit { ...props } />
-				<InspectorControls>
-					<PanelBody className="gatherpress-block-guard-panel">
-						{ blockGuardToggle }
-					</PanelBody>
-				</InspectorControls>
-				<InspectorControls group="list">
-					<PanelBody className="gatherpress-block-guard-panel">
-						{ blockGuardToggle }
-					</PanelBody>
-				</InspectorControls>
-			</>
+			<BlockListBlock
+				{ ...props }
+				className={ className }
+				wrapperProps={ {
+					...wrapperProps,
+					onClick,
+					onKeyDown,
+					// Only tint once the block is selected, so the guard reads
+					// as "you've got this, it's protected" rather than shouting
+					// for attention on every unselected block.
+					style:
+						sealed && isActive
+							? { ...wrapperProps?.style, ...SEALED_STYLE }
+							: wrapperProps?.style,
+				} }
+			/>
 		);
 	};
 }, 'withBlockGuard' );
 
 /**
- * Register the HOC as a filter for the BlockEdit component.
+ * Register the HOC as a filter for the BlockListBlock component.
  *
  * @see https://developer.wordpress.org/block-editor/reference-guides/filters/block-filters/
  */
-// This module is imported both as a side-effect from `src/editor.js` and as
-// named exports from block edits (e.g. venue-map), so it lands in multiple
-// webpack chunks that all evaluate on the editor page. WP's addFilter doesn't
-// dedupe by namespace — every evaluation would otherwise append a second
-// handler and render duplicate Block Guard toggles. hasFilter returns the
-// handler's priority when registered, `false` when absent.
-if ( false === hasFilter( 'editor.BlockEdit', 'gatherpress/with-block-guard' ) ) {
-	addFilter( 'editor.BlockEdit', 'gatherpress/with-block-guard', withBlockGuard );
+// The module can land in multiple webpack chunks; addFilter does not dedupe by
+// namespace, so guard against a second registration.
+if (
+	false === hasFilter( 'editor.BlockListBlock', 'gatherpress/with-block-guard' )
+) {
+	addFilter(
+		'editor.BlockListBlock',
+		'gatherpress/with-block-guard',
+		withBlockGuard,
+	);
 }
-
-// Export functions for testing.
-export {
-	useSharedBlockGuardState,
-	generateBlockGuardStateKey,
-	withBlockGuard,
-	getEditorDocument,
-	applyGuardToContainer,
-	cleanupGuardFromContainer,
-	applyListViewGuard,
-	addDragListeners,
-	removeDragListeners,
-	createDropHandler,
-	applyListViewGuardForBlock,
-	applyInspectorListViewGuard,
-	injectBlockGuardStyles,
-	cleanupBlockGuard,
-	applyBlockGuard,
-};
