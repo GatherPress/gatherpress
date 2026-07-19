@@ -164,6 +164,80 @@ export function useIsBlockSealed( clientId ) {
 }
 
 /**
+ * Whether a pointer button is currently held anywhere in the editor.
+ *
+ * Selecting a guarded block is what lifts its seal, which creates a race
+ * inside a single click: mousedown lands on the block (its contents are
+ * sealed) and selects it, the seal lifts on the re-render, and then mouseup
+ * and caret placement land *inside* the now-interactive block — so one click
+ * ends up selecting an inner block instead of the block itself. Holding the
+ * seal until the pointer is released keeps the whole gesture on the block.
+ *
+ * Tracked globally and transiently: unlike per-block state, a pointerup always
+ * clears it, so a block that remounts mid-gesture cannot be stranded.
+ */
+let pointerIsDown = false;
+const pointerListeners = new Set();
+
+/**
+ * Update the shared pointer state and notify subscribers.
+ *
+ * @param {boolean} down - Whether a pointer button is held.
+ *
+ * @return {void}
+ */
+function setPointerIsDown( down ) {
+	if ( pointerIsDown === down ) {
+		return;
+	}
+
+	pointerIsDown = down;
+	pointerListeners.forEach( ( listener ) => listener( down ) );
+}
+
+/**
+ * Start tracking pointer state on a document, once per document.
+ *
+ * @param {Document} doc - The document to track.
+ *
+ * @return {void}
+ */
+function ensurePointerTracking( doc ) {
+	if ( ! doc || doc.gatherpressPointerTracked ) {
+		return;
+	}
+
+	doc.gatherpressPointerTracked = true;
+	doc.addEventListener( 'pointerdown', () => setPointerIsDown( true ), true );
+	doc.addEventListener( 'pointerup', () => setPointerIsDown( false ), true );
+	doc.addEventListener(
+		'pointercancel',
+		() => setPointerIsDown( false ),
+		true
+	);
+}
+
+/**
+ * Subscribe to whether a pointer button is currently held.
+ *
+ * @return {boolean} True while a pointer is down.
+ */
+function usePointerIsDown() {
+	const [ down, setDown ] = useState( pointerIsDown );
+
+	useEffect( () => {
+		pointerListeners.add( setDown );
+		setDown( pointerIsDown );
+
+		return () => {
+			pointerListeners.delete( setDown );
+		};
+	}, [] );
+
+	return down;
+}
+
+/**
  * Tint applied while a guarded block is selected, so it reads as a protected
  * unit you have hold of — in the spirit of the tint core gives template parts
  * and synced patterns.
@@ -215,12 +289,21 @@ export const withBlockGuard = createHigherOrderComponent( ( BlockListBlock ) => 
 			[ clientId ],
 		);
 
+		const pointerDown = usePointerIsDown();
+
+		useEffect( () => {
+			ensurePointerTracking( getCanvasDocument() );
+			ensurePointerTracking( document );
+		}, [] );
+
 		// The guard is derived from selection, not held in state. A block is
-		// sealed exactly while selection is outside it, so:
+		// sealed while selection is outside it, and stays sealed for the rest
+		// of the gesture that selected it, so:
 		//
 		//   - Click it: the seal routes the click to the block itself, which
-		//     selects it — and selecting it lifts the seal, so the next click
-		//     reaches whatever is inside.
+		//     selects it. The seal holds until the pointer is released, so the
+		//     rest of that click cannot fall through into the contents.
+		//   - Click it again: now open, so the click reaches what is inside.
 		//   - Click away: selection leaves and the guard re-arms.
 		//
 		// Deriving this rather than tracking it in component state is what
@@ -228,7 +311,7 @@ export const withBlockGuard = createHigherOrderComponent( ( BlockListBlock ) => 
 		// every time a drag remounted the block, which left it sealed with no
 		// way back in — its contents stayed `pointer-events: none` and the
 		// block became uneditable until the page was reloaded.
-		const sealed = ! isSelf && ! isInner;
+		const sealed = ! isInner && ( ! isSelf || pointerDown );
 
 		// Publish for descendants (the venue map drops its resize handles
 		// while its parent venue is sealed).

@@ -432,3 +432,113 @@ describe( 'filter registration', () => {
 		expect( hooks.addFilter ).not.toHaveBeenCalled();
 	} );
 } );
+
+describe( 'pointer gesture', () => {
+	const BlockListBlock = jest.fn( () => <div /> );
+	const Guarded = withBlockGuard( BlockListBlock );
+	const lastProps = () => BlockListBlock.mock.calls.at( -1 )[ 0 ];
+	const sealedNow = () =>
+		( lastProps().className || '' ).includes( 'has-block-overlay' );
+
+	const setSelection = ( { isSelf = false, isInner = false } ) => {
+		useSelect.mockImplementation( ( mapSelect ) =>
+			mapSelect( () => ( {
+				isBlockSelected: () => isSelf,
+				hasSelectedInnerBlock: () => isInner,
+			} ) )
+		);
+	};
+
+	const element = () => (
+		<Guarded
+			name="gatherpress/add-to-calendar"
+			clientId="gesture"
+			wrapperProps={ {} }
+		/>
+	);
+
+	beforeEach( () => {
+		jest.clearAllMocks();
+		getBlockType.mockReturnValue( {
+			supports: { gatherpress: { blockGuard: true } },
+		} );
+		document.dispatchEvent( new window.Event( 'pointerup', { bubbles: true } ) );
+	} );
+
+	it( 'holds the seal while the pointer that selected it is still down', () => {
+		setSelection( {} );
+		const { rerender } = render( element() );
+		expect( sealedNow() ).toBe( true );
+
+		// pointer goes down, then the block becomes selected mid-gesture
+		act( () => {
+			document.dispatchEvent(
+				new window.Event( 'pointerdown', { bubbles: true } )
+			);
+		} );
+		setSelection( { isSelf: true } );
+		rerender( element() );
+
+		// still sealed, so the rest of the click cannot fall through
+		expect( sealedNow() ).toBe( true );
+	} );
+
+	it( 'opens once the pointer is released', () => {
+		setSelection( {} );
+		const { rerender } = render( element() );
+
+		act( () => {
+			document.dispatchEvent(
+				new window.Event( 'pointerdown', { bubbles: true } )
+			);
+		} );
+		setSelection( { isSelf: true } );
+		rerender( element() );
+		expect( sealedNow() ).toBe( true );
+
+		act( () => {
+			document.dispatchEvent(
+				new window.Event( 'pointerup', { bubbles: true } )
+			);
+		} );
+		rerender( element() );
+
+		expect( sealedNow() ).toBe( false );
+	} );
+
+	it( 'treats a cancelled pointer as released', () => {
+		setSelection( { isSelf: true } );
+		const { rerender } = render( element() );
+
+		act( () => {
+			document.dispatchEvent(
+				new window.Event( 'pointerdown', { bubbles: true } )
+			);
+		} );
+		rerender( element() );
+		expect( sealedNow() ).toBe( true );
+
+		act( () => {
+			document.dispatchEvent(
+				new window.Event( 'pointercancel', { bubbles: true } )
+			);
+		} );
+		rerender( element() );
+
+		expect( sealedNow() ).toBe( false );
+	} );
+
+	it( 'stays open while an inner block is selected regardless of the pointer', () => {
+		setSelection( { isInner: true } );
+		const { rerender } = render( element() );
+
+		act( () => {
+			document.dispatchEvent(
+				new window.Event( 'pointerdown', { bubbles: true } )
+			);
+		} );
+		rerender( element() );
+
+		expect( sealedNow() ).toBe( false );
+	} );
+} );
