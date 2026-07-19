@@ -75,6 +75,10 @@
 - [`gatherpress_static_map_prewarm_content_batch_size`](gatherpress_static_map_prewarm_content_batch_size.md) Filter the venue-map prewarm content-scan batch size.
 - [`gatherpress_static_map_prewarm_pre_enqueue_job`](gatherpress_static_map_prewarm_pre_enqueue_job.md) Filter the prewarm enqueue call to take over scheduling.
 
+## class-provider-registry.php
+
+- [`gatherpress_register_rsvp_types`](gatherpress_register_rsvp_types.md) Fires so plugins can register custom RSVP providers.
+
 ## class-query.php
 
 - [`gatherpress_rsvp_comment_query_exclusion`](gatherpress_rsvp_comment_query_exclusion.md) Filters whether RSVP comments should be excluded from a comment query.
@@ -104,6 +108,10 @@
 - [`gatherpress_shadow_taxonomy_args`](gatherpress_shadow_taxonomy_args.md) Filters the taxonomy registration args for a shadow-source post type.
 - [`gatherpress_shadow_taxonomy_object_types`](gatherpress_shadow_taxonomy_object_types.md) Filters which event post types the shadow taxonomy should be
 
+## class-storage.php
+
+- [`gatherpress_save_rsvp`](gatherpress_save_rsvp.md)
+
 ## class-topic.php
 
 - [`taxonomy_labels_%s`](taxonomy_labels_%s.md)
@@ -117,6 +125,10 @@
 - [`gatherpress_pre_get_http_input`](gatherpress_pre_get_http_input.md) Short-circuit filter for HTTP input retrieval during testing.
 - [`gatherpress_pre_get_wp_referer`](gatherpress_pre_get_wp_referer.md) Short-circuit filter for wp_get_referer() during testing.
 - [`gatherpress_template_path`](gatherpress_template_path.md) Filters the resolved template path returned by `Utility::locate_template()`.
+
+## gatherpress.php
+
+- [`gatherpress_loaded`](gatherpress_loaded.md) Fires once GatherPress has finished bootstrapping its core classes.
 
 ## network-page.php
 
