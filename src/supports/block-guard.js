@@ -7,6 +7,8 @@ import { store as blockEditorStore } from '@wordpress/block-editor';
 import { useSelect } from '@wordpress/data';
 import { useState, useEffect, useRef } from '@wordpress/element';
 import { addFilter, hasFilter } from '@wordpress/hooks';
+import { speak } from '@wordpress/a11y';
+import { __ } from '@wordpress/i18n';
 
 /**
  * Block Guard, rethought as a canvas-only seal.
@@ -61,6 +63,35 @@ import { addFilter, hasFilter } from '@wordpress/hooks';
  * present in the canvas document — we only have to add the class.
  */
 const OVERLAY_CLASS = 'has-block-overlay';
+
+/**
+ * ID of the visually hidden element describing the guarded state. Guarded
+ * blocks point `aria-describedby` at it while sealed, so assistive technology
+ * announces how to get in — the tint alone conveys nothing non-visually.
+ */
+const HINT_ID = 'gatherpress-block-guard-hint';
+
+/**
+ * Ensure the shared screen-reader hint exists in the canvas document.
+ *
+ * @param {Document} doc - The canvas document.
+ *
+ * @return {void}
+ */
+function ensureGuardHint( doc ) {
+	if ( ! doc || doc.getElementById( HINT_ID ) ) {
+		return;
+	}
+
+	const hint = doc.createElement( 'span' );
+	hint.id = HINT_ID;
+	hint.className = 'screen-reader-text';
+	hint.textContent = __(
+		'Protected block. Press Enter to edit the blocks inside it.',
+		'gatherpress'
+	);
+	doc.body.appendChild( hint );
+}
 
 /**
  * Whether a block opts into Block Guard.
@@ -236,6 +267,28 @@ export const withBlockGuard = createHigherOrderComponent( ( BlockListBlock ) => 
 			publishSealedState( clientId, sealed );
 		}, [ clientId, sealed ] );
 
+		// The guarded state is conveyed only by a tint, which says nothing to
+		// assistive technology. Describe the block while it is sealed, and
+		// announce the moment it opens up. Only the unseal is announced —
+		// re-sealing happens whenever focus moves away, and narrating that
+		// every time would be noise.
+		useEffect( () => {
+			ensureGuardHint( getCanvasDocument() );
+		}, [] );
+
+		const wasSealed = useRef( sealed );
+
+		useEffect( () => {
+			if ( wasSealed.current && ! sealed ) {
+				speak(
+					__( 'Block unlocked. You can edit its contents.', 'gatherpress' ),
+					'polite'
+				);
+			}
+
+			wasSealed.current = sealed;
+		}, [ sealed ] );
+
 		useEffect( () => {
 			return () => {
 				sealedStates.delete( clientId );
@@ -325,6 +378,11 @@ export const withBlockGuard = createHigherOrderComponent( ( BlockListBlock ) => 
 					...wrapperProps,
 					onClick,
 					onKeyDown,
+					'aria-describedby': sealed
+						? [ wrapperProps?.[ 'aria-describedby' ], HINT_ID ]
+							.filter( Boolean )
+							.join( ' ' )
+						: wrapperProps?.[ 'aria-describedby' ],
 					// Only tint once the block is selected, so the guard reads
 					// as "you've got this, it's protected" rather than shouting
 					// for attention on every unselected block.

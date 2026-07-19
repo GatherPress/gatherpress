@@ -40,6 +40,10 @@ jest.mock( '@wordpress/compose', () => ( {
 	createHigherOrderComponent: jest.fn( ( hoc ) => hoc ),
 } ) );
 
+jest.mock( '@wordpress/a11y', () => ( {
+	speak: jest.fn(),
+} ) );
+
 jest.mock( '@wordpress/hooks', () => ( {
 	addFilter: jest.fn(),
 	hasFilter: jest.fn( () => false ),
@@ -415,5 +419,101 @@ describe( 'filter registration', () => {
 		} );
 
 		expect( hooks.addFilter ).not.toHaveBeenCalled();
+	} );
+} );
+
+describe( 'accessibility', () => {
+	const BlockListBlock = jest.fn( () => <div /> );
+	const Guarded = withBlockGuard( BlockListBlock );
+	const lastProps = () => BlockListBlock.mock.calls.at( -1 )[ 0 ];
+
+	const renderWith = ( { isSelf = false, isInner = false, wrapperProps = {} } ) => {
+		useSelect.mockImplementation( ( mapSelect ) =>
+			mapSelect( () => ( {
+				isBlockSelected: () => isSelf,
+				hasSelectedInnerBlock: () => isInner,
+			} ) )
+		);
+
+		return render(
+			<Guarded
+				name="gatherpress/add-to-calendar"
+				clientId="a11y"
+				wrapperProps={ wrapperProps }
+			/>
+		);
+	};
+
+	beforeEach( () => {
+		jest.clearAllMocks();
+		getBlockType.mockReturnValue( {
+			supports: { gatherpress: { blockGuard: true } },
+		} );
+		document.getElementById( 'gatherpress-block-guard-hint' )?.remove();
+	} );
+
+	it( 'adds a visually hidden hint to the canvas describing how to get in', () => {
+		renderWith( {} );
+
+		const hint = document.getElementById( 'gatherpress-block-guard-hint' );
+		expect( hint ).not.toBeNull();
+		expect( hint.className ).toBe( 'screen-reader-text' );
+		expect( hint.textContent ).toContain( 'Press Enter' );
+	} );
+
+	it( 'only ever creates one hint element', () => {
+		renderWith( {} );
+		renderWith( {} );
+
+		expect(
+			document.querySelectorAll( '#gatherpress-block-guard-hint' )
+		).toHaveLength( 1 );
+	} );
+
+	it( 'describes the block by the hint while sealed', () => {
+		renderWith( {} );
+
+		expect( lastProps().wrapperProps[ 'aria-describedby' ] ).toBe(
+			'gatherpress-block-guard-hint'
+		);
+	} );
+
+	it( 'preserves an existing aria-describedby alongside the hint', () => {
+		renderWith( { wrapperProps: { 'aria-describedby': 'other-id' } } );
+
+		expect( lastProps().wrapperProps[ 'aria-describedby' ] ).toBe(
+			'other-id gatherpress-block-guard-hint'
+		);
+	} );
+
+	it( 'drops the hint description once unsealed', () => {
+		renderWith( { isInner: true } );
+
+		expect(
+			lastProps().wrapperProps[ 'aria-describedby' ]
+		).toBeUndefined();
+	} );
+
+	it( 'announces to assistive technology when the block unseals', () => {
+		// eslint-disable-next-line global-require
+		const { speak } = require( '@wordpress/a11y' );
+		speak.mockClear();
+
+		renderWith( { isInner: true } );
+
+		expect( speak ).toHaveBeenCalledWith(
+			expect.stringContaining( 'unlocked' ),
+			'polite'
+		);
+	} );
+
+	it( 'does not announce while the block stays sealed', () => {
+		// eslint-disable-next-line global-require
+		const { speak } = require( '@wordpress/a11y' );
+		speak.mockClear();
+
+		renderWith( { isSelf: true } );
+
+		expect( speak ).not.toHaveBeenCalled();
 	} );
 } );
