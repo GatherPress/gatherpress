@@ -211,11 +211,81 @@ describe( 'withBlockGuard', () => {
 		expect( sealedNow() ).toBe( true );
 	} );
 
-	it( 'unseals as soon as the block itself is selected', () => {
+	it( 'stays sealed when merely selected, so the whole block can be dragged', () => {
 		setSelection( { isSelf: true } );
 		render( element() );
 
+		expect( sealedNow() ).toBe( true );
+	} );
+
+	it( 'opens on a double-click', () => {
+		setSelection( { isSelf: true } );
+		render( element() );
+		expect( sealedNow() ).toBe( true );
+
+		act( () => {
+			lastProps().wrapperProps.onDoubleClick( {} );
+		} );
+
 		expect( sealedNow() ).toBe( false );
+	} );
+
+	it( 'opens on Enter while the block is selected', () => {
+		setSelection( { isSelf: true } );
+		render( element() );
+
+		act( () => {
+			lastProps().wrapperProps.onKeyDown( {
+				key: 'Enter',
+				preventDefault() {},
+				stopPropagation() {},
+			} );
+		} );
+
+		expect( sealedNow() ).toBe( false );
+	} );
+
+	it( 'chains other keys to the original handler', () => {
+		const onKeyDown = jest.fn();
+		setSelection( { isSelf: true } );
+		render( element( { wrapperProps: { onKeyDown } } ) );
+
+		act( () => {
+			lastProps().wrapperProps.onKeyDown( {
+				key: 'a',
+				preventDefault() {},
+				stopPropagation() {},
+			} );
+		} );
+
+		expect( onKeyDown ).toHaveBeenCalled();
+		expect( sealedNow() ).toBe( true );
+	} );
+
+	it( 'chains an existing onDoubleClick handler', () => {
+		const onDoubleClick = jest.fn();
+		setSelection( { isSelf: true } );
+		render( element( { wrapperProps: { onDoubleClick } } ) );
+
+		act( () => {
+			lastProps().wrapperProps.onDoubleClick( {} );
+		} );
+
+		expect( onDoubleClick ).toHaveBeenCalled();
+	} );
+
+	it( 're-arms after being opened once selection leaves', () => {
+		setSelection( { isSelf: true } );
+		const { rerender } = render( element() );
+		act( () => {
+			lastProps().wrapperProps.onDoubleClick( {} );
+		} );
+		expect( sealedNow() ).toBe( false );
+
+		setSelection( {} );
+		rerender( element() );
+
+		expect( sealedNow() ).toBe( true );
 	} );
 
 	it( 'unseals while an inner block is selected', () => {
@@ -225,26 +295,25 @@ describe( 'withBlockGuard', () => {
 		expect( sealedNow() ).toBe( false );
 	} );
 
-	it( 're-seals when selection leaves the block', () => {
-		setSelection( { isSelf: true } );
-		const { rerender } = render( element() );
-		expect( sealedNow() ).toBe( false );
 
-		setSelection( {} );
-		rerender( element() );
 
-		expect( sealedNow() ).toBe( true );
-	} );
-
-	it( 'stays unsealed across a remount while selected, so a move cannot lock it', () => {
+	it( 're-arms after a remount, and can be opened again', () => {
 		setSelection( { isSelf: true } );
 		const first = render( element() );
+		act( () => {
+			lastProps().wrapperProps.onDoubleClick( {} );
+		} );
 		expect( sealedNow() ).toBe( false );
 
 		// a move unmounts and remounts the block
 		first.unmount();
 		render( element() );
+		expect( sealedNow() ).toBe( true );
 
+		// and re-opening still works — no stranded state
+		act( () => {
+			lastProps().wrapperProps.onDoubleClick( {} );
+		} );
 		expect( sealedNow() ).toBe( false );
 	} );
 
@@ -265,7 +334,6 @@ describe( 'withBlockGuard', () => {
 		expect( lastProps().wrapperProps.style ).toMatchObject( {
 			backgroundColor: 'rgba(30, 58, 233, 0.04)',
 		} );
-		expect( lastProps().wrapperProps.style.cursor ).toBeUndefined();
 	} );
 
 	it( 'does not tint while only an inner block is selected', () => {
@@ -358,7 +426,7 @@ describe( 'accessibility', () => {
 	} );
 
 	it( 'drops the hint description once unsealed', () => {
-		renderWith( { isSelf: true } );
+		renderWith( { isInner: true } );
 
 		expect( lastProps().wrapperProps[ 'aria-describedby' ] ).toBeUndefined();
 	} );
@@ -369,11 +437,11 @@ describe( 'accessibility', () => {
 		const { rerender } = renderWith( {} );
 		speak.mockClear();
 
-		// selecting the block is what opens it
+		// an inner block becoming selected opens it
 		useSelect.mockImplementation( ( mapSelect ) =>
 			mapSelect( () => ( {
-				isBlockSelected: () => true,
-				hasSelectedInnerBlock: () => false,
+				isBlockSelected: () => false,
+				hasSelectedInnerBlock: () => true,
 			} ) )
 		);
 		rerender(
@@ -434,183 +502,3 @@ describe( 'filter registration', () => {
 	} );
 } );
 
-describe( 'pointer gesture', () => {
-	const BlockListBlock = jest.fn( () => <div /> );
-	const Guarded = withBlockGuard( BlockListBlock );
-	const lastProps = () => BlockListBlock.mock.calls.at( -1 )[ 0 ];
-	const sealedNow = () =>
-		( lastProps().className || '' ).includes( 'has-block-overlay' );
-
-	const setSelection = ( { isSelf = false, isInner = false } ) => {
-		useSelect.mockImplementation( ( mapSelect ) =>
-			mapSelect( () => ( {
-				isBlockSelected: () => isSelf,
-				hasSelectedInnerBlock: () => isInner,
-			} ) )
-		);
-	};
-
-	const element = () => (
-		<Guarded
-			name="gatherpress/add-to-calendar"
-			clientId="gesture"
-			wrapperProps={ {} }
-		/>
-	);
-
-	beforeEach( () => {
-		jest.clearAllMocks();
-		getBlockType.mockReturnValue( {
-			supports: { gatherpress: { blockGuard: true } },
-		} );
-		document.dispatchEvent( new window.Event( 'pointerup', { bubbles: true } ) );
-	} );
-
-	it( 'holds the seal while the pointer that selected it is still down', () => {
-		setSelection( {} );
-		const { rerender } = render( element() );
-		expect( sealedNow() ).toBe( true );
-
-		// pointer goes down, then the block becomes selected mid-gesture
-		act( () => {
-			document.dispatchEvent(
-				new window.Event( 'pointerdown', { bubbles: true } )
-			);
-		} );
-		setSelection( { isSelf: true } );
-		rerender( element() );
-
-		// still sealed, so the rest of the click cannot fall through
-		expect( sealedNow() ).toBe( true );
-	} );
-
-	it( 'opens once the pointer is released', () => {
-		setSelection( {} );
-		const { rerender } = render( element() );
-
-		act( () => {
-			document.dispatchEvent(
-				new window.Event( 'pointerdown', { bubbles: true } )
-			);
-		} );
-		setSelection( { isSelf: true } );
-		rerender( element() );
-		expect( sealedNow() ).toBe( true );
-
-		act( () => {
-			document.dispatchEvent(
-				new window.Event( 'pointerup', { bubbles: true } )
-			);
-		} );
-		rerender( element() );
-
-		expect( sealedNow() ).toBe( false );
-	} );
-
-	it( 'treats a cancelled pointer as released', () => {
-		setSelection( { isSelf: true } );
-		const { rerender } = render( element() );
-
-		act( () => {
-			document.dispatchEvent(
-				new window.Event( 'pointerdown', { bubbles: true } )
-			);
-		} );
-		rerender( element() );
-		expect( sealedNow() ).toBe( true );
-
-		act( () => {
-			document.dispatchEvent(
-				new window.Event( 'pointercancel', { bubbles: true } )
-			);
-		} );
-		rerender( element() );
-
-		expect( sealedNow() ).toBe( false );
-	} );
-
-	it( 'stays open while an inner block is selected regardless of the pointer', () => {
-		setSelection( { isInner: true } );
-		const { rerender } = render( element() );
-
-		act( () => {
-			document.dispatchEvent(
-				new window.Event( 'pointerdown', { bubbles: true } )
-			);
-		} );
-		rerender( element() );
-
-		expect( sealedNow() ).toBe( false );
-	} );
-} );
-
-describe( 'pointer gesture scoping', () => {
-	// eslint-disable-next-line global-require
-	const { select: dataSelect } = require( '@wordpress/data' );
-	const BlockListBlock = jest.fn( () => <div /> );
-	const Guarded = withBlockGuard( BlockListBlock );
-	const lastProps = () => BlockListBlock.mock.calls.at( -1 )[ 0 ];
-	const sealedNow = () =>
-		( lastProps().className || '' ).includes( 'has-block-overlay' );
-
-	const setSelection = ( { isSelf = false, isInner = false } ) => {
-		useSelect.mockImplementation( ( mapSelect ) =>
-			mapSelect( () => ( {
-				isBlockSelected: () => isSelf,
-				hasSelectedInnerBlock: () => isInner,
-			} ) )
-		);
-	};
-
-	// what the editor reports as selected when the gesture starts
-	const selectedWhenPressed = ( clientId ) =>
-		dataSelect.mockImplementation( () => ( {
-			getSelectedBlockClientId: () => clientId,
-		} ) );
-
-	const element = () => (
-		<Guarded
-			name="gatherpress/add-to-calendar"
-			clientId="scoped"
-			wrapperProps={ {} }
-		/>
-	);
-
-	const press = () =>
-		document.dispatchEvent( new window.Event( 'pointerdown', { bubbles: true } ) );
-	const release = () =>
-		document.dispatchEvent( new window.Event( 'pointerup', { bubbles: true } ) );
-
-	beforeEach( () => {
-		jest.clearAllMocks();
-		getBlockType.mockReturnValue( {
-			supports: { gatherpress: { blockGuard: true } },
-		} );
-		act( () => release() );
-	} );
-
-	it( 'holds the seal through the gesture that selects the block', () => {
-		selectedWhenPressed( null ); // nothing selected when pressed
-		setSelection( {} );
-		const { rerender } = render( element() );
-
-		act( () => press() );
-		setSelection( { isSelf: true } ); // selection lands mid-gesture
-		rerender( element() );
-
-		expect( sealedNow() ).toBe( true );
-	} );
-
-	it( 'does not re-seal on a press when the block was already selected', () => {
-		selectedWhenPressed( 'scoped' ); // this block was already selected
-		setSelection( { isSelf: true } );
-		const { rerender } = render( element() );
-		expect( sealedNow() ).toBe( false );
-
-		act( () => press() );
-		rerender( element() );
-
-		// stays open, so this press can select and drag an inner block
-		expect( sealedNow() ).toBe( false );
-	} );
-} );

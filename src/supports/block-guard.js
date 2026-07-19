@@ -4,7 +4,7 @@
 import { getBlockType } from '@wordpress/blocks';
 import { createHigherOrderComponent } from '@wordpress/compose';
 import { store as blockEditorStore } from '@wordpress/block-editor';
-import { select as dataSelect, useSelect } from '@wordpress/data';
+import { useSelect } from '@wordpress/data';
 import { useState, useEffect, useRef } from '@wordpress/element';
 import { addFilter, hasFilter } from '@wordpress/hooks';
 import { speak } from '@wordpress/a11y';
@@ -21,23 +21,27 @@ import { __ } from '@wordpress/i18n';
  * The rethink keeps the real goal — stop people from breaking these blocks by
  * accidentally editing inside them — with no toggle and no state:
  *
- *   - **Sealed** while selection sits outside the block. The wrapper gets
- *     core's own `has-block-overlay` class, whose stylesheet rule
+ *   - **Sealed** by default. The wrapper gets core's own `has-block-overlay`
+ *     class, whose stylesheet rule
  *     (`.has-block-overlay .block-editor-block-list__block { pointer-events:
- *     none }`) makes every inner block non-interactive in the canvas, so a
- *     click anywhere on the block lands on the block itself and selects it
- *     rather than grabbing a piece out of it. The wrapper keeps its own
- *     pointer events, so the block still selects and drags normally.
- *   - **Open** once the block (or something inside it) is selected. Selecting
- *     is what lifts the seal, so the click after that reaches the contents.
- *     A selected block is tinted, so it reads as a protected unit you have
- *     hold of.
- *   - **Re-sealed** when selection leaves.
+ *     none }`) makes every inner block non-interactive in the canvas. A click
+ *     lands on the block itself and selects it rather than grabbing a piece
+ *     out of it, and because the contents stay sealed, dragging then moves
+ *     the whole block.
+ *   - **Open** on a deliberate double-click, or Enter / Space while the block
+ *     is selected. Only then do the contents become interactive, so you can
+ *     edit them and drag inner blocks around.
+ *   - **Re-sealed** when selection leaves the block.
  *
- * The seal is derived from selection rather than tracked in component state.
- * That is deliberate: state was reset or stranded whenever a move remounted
- * the block, which left it sealed with no way back in and its contents stuck
- * at `pointer-events: none` until the page was reloaded.
+ * Selection deliberately does not open the block. If it did, the press after
+ * selecting would land inside and drag an inner block out — so the block could
+ * never be dragged once selected, which is the damage this guard exists to
+ * prevent.
+ *
+ * A move remounts the block and re-arms the guard, which is fine: opening it
+ * again is a double-click. Earlier versions tracked the open state through a
+ * mousedown/click pairing that a remount could strand, leaving the block
+ * sealed with no way back in — a double-click has no such pairing to lose.
  *
  * It never touches block editing mode or the block's saved attributes, so
  * **List View is completely untouched** and the block is never actually
@@ -87,7 +91,7 @@ function ensureGuardHint( doc ) {
 	hint.id = HINT_ID;
 	hint.className = 'screen-reader-text';
 	hint.textContent = __(
-		'Protected block. Select it to edit the blocks inside it.',
+		'Protected block. Press Enter to edit the blocks inside it.',
 		'gatherpress'
 	);
 	doc.body.appendChild( hint );
@@ -164,93 +168,6 @@ export function useIsBlockSealed( clientId ) {
 }
 
 /**
- * Whether a pointer button is currently held anywhere in the editor.
- *
- * Selecting a guarded block is what lifts its seal, which creates a race
- * inside a single click: mousedown lands on the block (its contents are
- * sealed) and selects it, the seal lifts on the re-render, and then mouseup
- * and caret placement land *inside* the now-interactive block — so one click
- * ends up selecting an inner block instead of the block itself. Holding the
- * seal until the pointer is released keeps the whole gesture on the block.
- *
- * Tracked globally and transiently: unlike per-block state, a pointerup always
- * clears it, so a block that remounts mid-gesture cannot be stranded.
- */
-let pointerIsDown = false;
-let selectedAtPointerDown = null;
-const pointerListeners = new Set();
-
-/**
- * Update the shared pointer state and notify subscribers.
- *
- * @param {boolean} down - Whether a pointer button is held.
- *
- * @return {void}
- */
-function setPointerIsDown( down ) {
-	if ( pointerIsDown === down ) {
-		return;
-	}
-
-	pointerIsDown = down;
-	pointerListeners.forEach( ( listener ) => listener( down ) );
-}
-
-/**
- * Start tracking pointer state on a document, once per document.
- *
- * @param {Document} doc - The document to track.
- *
- * @return {void}
- */
-function ensurePointerTracking( doc ) {
-	if ( ! doc || doc.gatherpressPointerTracked ) {
-		return;
-	}
-
-	doc.gatherpressPointerTracked = true;
-	doc.addEventListener(
-		'pointerdown',
-		() => {
-			// Remember what was selected when the gesture began, so a block can
-			// tell "this click is selecting me" from "this click is reaching
-			// inside a block I already had selected".
-			selectedAtPointerDown = dataSelect(
-				blockEditorStore
-			).getSelectedBlockClientId();
-			setPointerIsDown( true );
-		},
-		true
-	);
-	doc.addEventListener( 'pointerup', () => setPointerIsDown( false ), true );
-	doc.addEventListener(
-		'pointercancel',
-		() => setPointerIsDown( false ),
-		true
-	);
-}
-
-/**
- * Subscribe to whether a pointer button is currently held.
- *
- * @return {boolean} True while a pointer is down.
- */
-function usePointerIsDown() {
-	const [ down, setDown ] = useState( pointerIsDown );
-
-	useEffect( () => {
-		pointerListeners.add( setDown );
-		setDown( pointerIsDown );
-
-		return () => {
-			pointerListeners.delete( setDown );
-		};
-	}, [] );
-
-	return down;
-}
-
-/**
  * Tint applied while a guarded block is selected, so it reads as a protected
  * unit you have hold of — in the spirit of the tint core gives template parts
  * and synced patterns.
@@ -302,34 +219,45 @@ export const withBlockGuard = createHigherOrderComponent( ( BlockListBlock ) => 
 			[ clientId ],
 		);
 
-		const pointerDown = usePointerIsDown();
+		// Entering is a deliberate gesture, kept separate from selection.
+		//
+		// Selection must NOT open the block: if it did, the press after
+		// selecting would land inside and drag an inner block out — so the
+		// whole block could never be dragged once selected, which is the exact
+		// damage the guard exists to prevent. So a single click selects the
+		// block and it stays sealed (a drag then moves the whole block), and
+		// only a double-click — or Enter/Space on the selected block — opens
+		// it. Selecting something inside (via List View, say) counts as being
+		// in.
+		const [ entered, setEntered ] = useState( false );
+		const sealed = ! entered && ! isInner;
 
+		// Leaving the block re-arms the guard.
 		useEffect( () => {
-			ensurePointerTracking( getCanvasDocument() );
-			ensurePointerTracking( document );
-		}, [] );
+			if ( ! isSelf && ! isInner && entered ) {
+				setEntered( false );
+			}
+		}, [ isSelf, isInner, entered ] );
 
-		// The guard is derived from selection, not held in state. A block is
-		// sealed while selection is outside it, and stays sealed for the rest
-		// of the gesture that selected it, so:
-		//
-		//   - Click it: the seal routes the click to the block itself, which
-		//     selects it. The seal holds until the pointer is released, so the
-		//     rest of that click cannot fall through into the contents.
-		//   - Click it again: now open, so the click reaches what is inside.
-		//   - Click away: selection leaves and the guard re-arms.
-		//
-		// Deriving this rather than tracking it in component state is what
-		// makes it survive a move. Component state was reset (or stranded)
-		// every time a drag remounted the block, which left it sealed with no
-		// way back in — its contents stayed `pointer-events: none` and the
-		// block became uneditable until the page was reloaded.
-		// Hold the seal only for the gesture that selects the block — the one
-		// that would otherwise fall through into the contents. Once the block
-		// is already selected, a press must reach inside immediately, so that
-		// gesture can select *and* drag an inner block.
-		const isSelectingGesture = pointerDown && selectedAtPointerDown !== clientId;
-		const sealed = ! isInner && ( ! isSelf || isSelectingGesture );
+		const onDoubleClick = ( event ) => {
+			setEntered( true );
+			wrapperProps?.onDoubleClick?.( event );
+		};
+
+		const onKeyDown = ( event ) => {
+			if (
+				sealed &&
+				isSelf &&
+				( 'Enter' === event.key || ' ' === event.key )
+			) {
+				event.preventDefault();
+				event.stopPropagation();
+				setEntered( true );
+				return;
+			}
+
+			wrapperProps?.onKeyDown?.( event );
+		};
 
 		// Publish for descendants (the venue map drops its resize handles
 		// while its parent venue is sealed).
@@ -373,6 +301,8 @@ export const withBlockGuard = createHigherOrderComponent( ( BlockListBlock ) => 
 				className={ className }
 				wrapperProps={ {
 					...wrapperProps,
+					onDoubleClick,
+					onKeyDown,
 					// A sealed block gets a pointer cursor to show it is the
 					// thing a click will land on. Selecting it tints it, so the
 					// block reads as a protected unit you have hold of — the
