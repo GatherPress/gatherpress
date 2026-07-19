@@ -247,16 +247,41 @@ describe( 'withBlockGuard', () => {
 		expect( sealedNow() ).toBe( false );
 	} );
 
-	it( 'shows a pointer cursor while sealed only', () => {
+	it( 'shows a pointer cursor while sealed, and no tint yet', () => {
 		setSelection( {} );
-		const { rerender } = render( element() );
+		render( element() );
+
 		expect( lastProps().wrapperProps.style ).toMatchObject( {
 			cursor: 'pointer',
 		} );
+		expect( lastProps().wrapperProps.style.backgroundColor ).toBeUndefined();
+	} );
 
+	it( 'tints the block once it is selected', () => {
 		setSelection( { isSelf: true } );
-		rerender( element() );
-		expect( lastProps().wrapperProps.style ).toBeUndefined();
+		render( element() );
+
+		expect( lastProps().wrapperProps.style ).toMatchObject( {
+			backgroundColor: 'rgba(30, 58, 233, 0.04)',
+		} );
+		expect( lastProps().wrapperProps.style.cursor ).toBeUndefined();
+	} );
+
+	it( 'does not tint while only an inner block is selected', () => {
+		setSelection( { isInner: true } );
+		render( element() );
+
+		expect( lastProps().wrapperProps.style.backgroundColor ).toBeUndefined();
+	} );
+
+	it( 'preserves any style core already set on the wrapper', () => {
+		setSelection( { isSelf: true } );
+		render( element( { wrapperProps: { style: { marginTop: '8px' } } } ) );
+
+		expect( lastProps().wrapperProps.style ).toMatchObject( {
+			marginTop: '8px',
+			backgroundColor: 'rgba(30, 58, 233, 0.04)',
+		} );
 	} );
 
 	it( 'publishes its sealed state for descendants', () => {

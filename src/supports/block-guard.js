@@ -19,29 +19,29 @@ import { __ } from '@wordpress/i18n';
  * let a stray click grab and drag an inner block out of place.
  *
  * The rethink keeps the real goal — stop people from breaking these blocks by
- * accidentally editing inside them — with a light two-state interaction and
- * nothing else:
+ * accidentally editing inside them — with no toggle and no state:
  *
- *   - **Sealed** (default): the block's wrapper gets core's own
- *     `has-block-overlay` class, whose stylesheet rule
+ *   - **Sealed** while selection sits outside the block. The wrapper gets
+ *     core's own `has-block-overlay` class, whose stylesheet rule
  *     (`.has-block-overlay .block-editor-block-list__block { pointer-events:
- *     none }`) makes every inner block non-interactive in the canvas. A click
- *     anywhere on the block therefore falls through to the block itself — it
- *     selects the whole block, and its inner pieces can't be grabbed or dragged
- *     out by accident. The wrapper keeps its own pointer events, so the block
- *     still selects and drags normally. Once selected, it carries a soft tint
- *     so it reads as a protected unit.
- *   - **A deliberate second action** — clicking the already-selected block
- *     again, or pressing Enter / Space while it is selected — unseals it,
- *     handing over full editing of the inner blocks.
- *   - **Re-seal**: clicking out (selection leaves the block's subtree) puts the
- *     guard back on.
+ *     none }`) makes every inner block non-interactive in the canvas, so a
+ *     click anywhere on the block lands on the block itself and selects it
+ *     rather than grabbing a piece out of it. The wrapper keeps its own
+ *     pointer events, so the block still selects and drags normally.
+ *   - **Open** once the block (or something inside it) is selected. Selecting
+ *     is what lifts the seal, so the click after that reaches the contents.
+ *     A selected block is tinted, so it reads as a protected unit you have
+ *     hold of.
+ *   - **Re-sealed** when selection leaves.
  *
- * The seal is only that one class on the canvas wrapper — it never touches
- * block editing mode or the block's saved attributes — so **List View is
- * completely untouched** and stays the deliberate way in for anyone who needs
- * it. The block is not locked: it stays fully editable, it just asks for one
- * intentional click before you edit inside.
+ * The seal is derived from selection rather than tracked in component state.
+ * That is deliberate: state was reset or stranded whenever a move remounted
+ * the block, which left it sealed with no way back in and its contents stuck
+ * at `pointer-events: none` until the page was reloaded.
+ *
+ * It never touches block editing mode or the block's saved attributes, so
+ * **List View is completely untouched** and the block is never actually
+ * locked — it just asks for one intentional click before you edit inside.
  *
  * Applies to every block declaring `supports.gatherpress.blockGuard` in its
  * `block.json`.
@@ -87,7 +87,7 @@ function ensureGuardHint( doc ) {
 	hint.id = HINT_ID;
 	hint.className = 'screen-reader-text';
 	hint.textContent = __(
-		'Protected block. Press Enter to edit the blocks inside it.',
+		'Protected block. Select it to edit the blocks inside it.',
 		'gatherpress'
 	);
 	doc.body.appendChild( hint );
@@ -108,7 +108,7 @@ export function isBlockGuarded( name ) {
  * Sealed state per block instance, so other blocks can react to whether an
  * ancestor is currently guarded (the venue map hides its resize handles while
  * its parent venue is sealed). Keyed by clientId, with a small subscription
- * list because the state lives in component state, not the editor store.
+ * list because the seal is derived per block, not held in the editor store.
  */
 const sealedStates = new Map();
 const sealedListeners = new Map();
@@ -129,8 +129,8 @@ export function publishSealedState( clientId, sealed ) {
 /**
  * Subscribe to whether a given block is currently sealed.
  *
- * Guarded blocks are sealed until the user deliberately enters them, so an
- * unknown or not-yet-mounted block reports sealed.
+ * Guarded blocks are sealed until they are selected, so an unknown or
+ * not-yet-mounted block reports sealed.
  *
  * @param {string} clientId - The block's client ID.
  *
@@ -164,6 +164,16 @@ export function useIsBlockSealed( clientId ) {
 }
 
 /**
+ * Tint applied while a guarded block is selected, so it reads as a protected
+ * unit you have hold of — in the spirit of the tint core gives template parts
+ * and synced patterns.
+ */
+const GUARD_TINT = {
+	backgroundColor: 'rgba(30, 58, 233, 0.04)',
+	boxShadow: 'inset 0 0 0 1px rgba(30, 58, 233, 0.24)',
+};
+
+/**
  * The document that holds the block canvas. In the iframed post and site
  * editors the blocks live inside the `editor-canvas` iframe; otherwise they
  * are in the main document.
@@ -177,8 +187,8 @@ export function getCanvasDocument() {
 }
 
 /**
- * Higher-Order Component that seals a block's inner blocks behind one
- * deliberate click.
+ * Higher-Order Component that seals a block's inner blocks until the block is
+ * selected.
  *
  * @param {Function} BlockListBlock - The original BlockListBlock component.
  *
@@ -262,12 +272,15 @@ export const withBlockGuard = createHigherOrderComponent( ( BlockListBlock ) => 
 				className={ className }
 				wrapperProps={ {
 					...wrapperProps,
-					// Tint only while sealed and hovered/selected is not
-					// knowable here, so tint whenever sealed — the block reads
-					// as a protected unit until you select it.
-					style: sealed
-						? { ...wrapperProps?.style, cursor: 'pointer' }
-						: wrapperProps?.style,
+					// A sealed block gets a pointer cursor to show it is the
+					// thing a click will land on. Selecting it tints it, so the
+					// block reads as a protected unit you have hold of — the
+					// tint appears on click and clears when you click away.
+					style: {
+						...wrapperProps?.style,
+						...( sealed ? { cursor: 'pointer' } : {} ),
+						...( isSelf ? GUARD_TINT : {} ),
+					},
 					'aria-describedby': sealed
 						? [ wrapperProps?.[ 'aria-describedby' ], HINT_ID ]
 							.filter( Boolean )
