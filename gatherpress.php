@@ -56,19 +56,28 @@ if ( ! trait_exists( 'GatherPress\Core\Traits\Singleton' ) ) {
 // Initialize setups.
 GatherPress\Core\Setup::get_instance();
 
-/**
- * Fires once GatherPress has finished bootstrapping its core classes.
- *
- * Subsystems or third party plugins can use this to run setup work that
- * depends on other GatherPress classes already being instantiated — for
- * example, the RSVP provider registry consumes it to fire its own
- * `gatherpress_register_rsvp_types` action.
- *
- * This fires while GatherPress's main file loads, before `plugins_loaded`
- * and `init`, so a listener must be registered before GatherPress loads
- * to catch it. See the plugin lifecycle guide
- * (`docs/developer/plugin-lifecycle.md`) for load-order details.
- *
- * @since 0.35.0
- */
-do_action( 'gatherpress_loaded' );
+// Announce that GatherPress is ready on `plugins_loaded`, after every
+// active plugin's file has been included. Firing here rather than inline
+// means a listener added at the top level of any plugin — regardless of
+// its load order relative to GatherPress — is registered in time to catch
+// the action. GatherPress's classes are already instantiated above, so
+// they are fully available by the time this fires.
+add_action(
+	'plugins_loaded',
+	static function (): void {
+		/**
+		 * Fires once GatherPress has finished bootstrapping its core classes.
+		 *
+		 * Subsystems and third party plugins use this to run setup work that
+		 * depends on other GatherPress classes already being instantiated —
+		 * for example, the RSVP provider registry consumes it to fire its own
+		 * `gatherpress_register_rsvp_types` action.
+		 *
+		 * Fires on `plugins_loaded`, so any plugin can catch it. See the
+		 * plugin lifecycle guide (`docs/developer/plugin-lifecycle.md`).
+		 *
+		 * @since 0.35.0
+		 */
+		do_action( 'gatherpress_loaded' );
+	}
+);

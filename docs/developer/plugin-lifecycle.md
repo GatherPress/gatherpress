@@ -11,54 +11,43 @@ a short, fixed sequence:
 4. Instantiate the plugin: `GatherPress\Core\Setup::get_instance()`. This
    constructs every subsystem (events, venues, RSVP, settings, …), and each
    subsystem wires its own hooks in its constructor.
-5. Fire the `gatherpress_loaded` action.
+5. Schedule the `gatherpress_loaded` action to fire on `plugins_loaded`.
 
 ## `gatherpress_loaded`
 
 ```php
-do_action( 'gatherpress_loaded' );
+add_action( 'gatherpress_loaded', function () {
+    // Every core GatherPress class exists — safe to integrate.
+} );
 ```
 
-Fires once, immediately after step 4, to signal that **every core GatherPress
-class has been instantiated**. Code that needs a GatherPress class to already
-exist — a registry to register into, a singleton to read — can run here instead
-of guessing at load order.
+Fires once, on `plugins_loaded`, to signal that **every core GatherPress class
+has been instantiated**. Code that needs a GatherPress class to already exist —
+a registry to register into, a singleton to read — can run here instead of
+guessing at load order.
 
-GatherPress uses it internally for exactly this. The RSVP provider registry
-(`Rsvp\Response\Provider_Registry`) registers its listener during step 4, then
-on `gatherpress_loaded` fires its own `gatherpress_register_rsvp_types` action
-so providers are registered once the registry is ready. See the
+The classes are actually constructed earlier, at step 4 (plugin include time).
+The action is deliberately deferred to `plugins_loaded` so that it fires *after
+every active plugin's main file has been included* — which means a listener
+added at the top level of **any** plugin is registered in time to catch it,
+regardless of whether that plugin loads before or after GatherPress. Without the
+deferral, a plugin that loaded after GatherPress would miss the event.
+
+GatherPress uses it internally: the RSVP provider registry
+(`Rsvp\Response\Provider_Registry`) hooks `gatherpress_loaded` and, when it
+fires, dispatches its own `gatherpress_register_rsvp_types` action so companion
+plugins can register custom providers once the registry is ready. See the
 [RSVP developer guide](rsvp/README.md#rsvp-providers-identity-sources).
 
-## Load order matters
+## Which hook should I use?
 
-`gatherpress_loaded` fires **while GatherPress's main file is being included** —
-that is, during WordPress's plugin-loading phase, *before* the `plugins_loaded`
-and `init` actions. A callback only runs if it was added to the hook **before**
-GatherPress fired it:
-
-- **GatherPress's own subsystems** are safe: they add their listeners in their
-  constructors (step 4), which runs before the fire (step 5).
-- **A companion plugin** catches it only if its `add_action( 'gatherpress_loaded', … )`
-  has already executed when GatherPress loads. Because WordPress includes plugin
-  files in a fixed (roughly alphabetical) order, a plugin whose directory sorts
-  *after* `gatherpress` will have missed the event if it registers the listener
-  at the top level of its own main file.
-- **`plugins_loaded` / `init` callbacks are always too late** — both fire after
-  every plugin file (including GatherPress's) has finished loading, so
-  `gatherpress_loaded` has already come and gone.
-
-### Which hook should I use?
-
-- **You only need GatherPress classes to *exist*** (call a singleton, read a
-  setting, query events): use **`init`** (or any hook after `plugins_loaded`).
-  GatherPress is fully instantiated by then and stays available for the rest of
-  the request — you simply don't need the `gatherpress_loaded` event itself.
-- **You need to catch the `gatherpress_loaded` *event*** (register into a
-  registry that is populated during the fire, such as RSVP providers): register
-  your listener as early as possible — at the top level of a must-use plugin, or
-  a plugin that is guaranteed to load before GatherPress. Hooking `muplugins_loaded`
-  also runs early enough.
+- **To integrate with GatherPress-specific extension points** — register an RSVP
+  provider, react to the subsystems being ready — hook **`gatherpress_loaded`**.
+- **If you only need GatherPress classes to *exist*** (call a singleton, read a
+  setting, query events) and don't need the readiness event itself, any hook
+  from `plugins_loaded` onward (including `init`) works, since GatherPress is
+  fully instantiated by then. Guarding with `class_exists()` / `function_exists()`
+  is still good practice for a soft dependency.
 
 ## See also
 
