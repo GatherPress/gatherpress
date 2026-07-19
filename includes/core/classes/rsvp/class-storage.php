@@ -105,6 +105,16 @@ final class Storage {
 
 		$rsvp = $this->rsvp_query->get_rsvp( $args );
 
+		// Comments saved before providers were stamped as terms carry no
+		// provider relationship, so the provider-filtered lookup misses
+		// them — and a miss here would turn their next update into a
+		// duplicate insert. Fall back to the identity-only lookup; the
+		// provider still applies during hydration.
+		if ( null === $rsvp && $provider ) {
+			unset( $args['tax_query'] );
+			$rsvp = $this->rsvp_query->get_rsvp( $args );
+		}
+
 		if ( null === $rsvp ) {
 			return null;
 		}
@@ -169,6 +179,12 @@ final class Storage {
 		}
 
 		wp_set_object_terms( $comment_id, $intent->data->status->value, Status::TAXONOMY );
+
+		// Stamp the issuing provider so hydration resolves it from the
+		// authoritative term instead of inferring from user_id/email —
+		// providers with external identities have no fallback to infer
+		// from, so without this term their responses could never load.
+		wp_set_object_terms( $comment_id, $intent->provider->get_slug(), Provider::TAXONOMY );
 
 		if ( $intent->data->guests ) {
 			update_comment_meta( $comment_id, 'gatherpress_rsvp_guests', $intent->data->guests );
@@ -460,12 +476,10 @@ final class Storage {
 	 * @return array<string, array<string, string>> The comment query args.
 	 */
 	private function get_provider_query_args( Provider $provider ): array {
-		// NOTE: this flat clause is silently ignored by WP_Tax_Query (clauses
-		// must be nested arrays), so provider filtering is currently a no-op.
-		// Nesting it correctly makes lookups miss every RSVP saved before
-		// provider terms existed (or created outside save()), turning updates
-		// into duplicate inserts — needs a design decision (e.g. also match
-		// comments with no provider term) before the filter goes strict.
+		// WP_Comment_Query honors this clause (a flat array is a valid
+		// single first-order clause), so the filter is active. Comments
+		// saved before provider terms were stamped won't match it — the
+		// identity-only fallback in get() covers those legacy rows.
 		return array(
 			// phpcs:disable WordPress.DB.SlowDBQuery.slow_db_query_tax_query
 			'tax_query' => array(

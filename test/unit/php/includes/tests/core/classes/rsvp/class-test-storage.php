@@ -87,6 +87,9 @@ class Test_Storage extends Base {
 
 		$terms = wp_get_object_terms( (int) $state->comment->comment_ID, Status::TAXONOMY );
 		$this->assertSame( 'attending', $terms[0]->slug );
+
+		$provider_terms = wp_get_object_terms( (int) $state->comment->comment_ID, User::TAXONOMY );
+		$this->assertSame( 'user', $provider_terms[0]->slug, 'The issuing provider is stamped as a term.' );
 	}
 
 	/**
@@ -483,5 +486,36 @@ class Test_Storage extends Base {
 		remove_filter( 'wp_update_comment_data', $force_failure );
 
 		$this->assertFalse( $result, 'An update failure reports false.' );
+	}
+
+	/**
+	 * RSVPs saved before provider terms were stamped still resolve when
+	 * the lookup is provider-filtered — the identity-only fallback covers
+	 * legacy rows so their next update cannot become a duplicate insert.
+	 *
+	 * @covers ::get
+	 *
+	 * @return void
+	 */
+	public function test_get_falls_back_for_legacy_rows_without_provider_term(): void {
+		list( $event_id, $storage ) = $this->make_storage();
+
+		$user_id = $this->factory->user->create();
+
+		// A pre-stamping RSVP: comment + status term, no provider term.
+		$comment_id = $this->factory->comment->create(
+			array(
+				'comment_post_ID'  => $event_id,
+				'comment_type'     => Rsvp::COMMENT_TYPE,
+				'comment_approved' => 1,
+				'user_id'          => $user_id,
+			)
+		);
+		wp_set_object_terms( $comment_id, Status::ATTENDING->value, Status::TAXONOMY );
+
+		$found = $storage->get( new Identity( Identity_Type::WP_USER_ID, $user_id ), new User() );
+
+		$this->assertInstanceOf( State::class, $found, 'The legacy row resolves despite the provider filter.' );
+		$this->assertSame( $comment_id, (int) $found->comment->comment_ID );
 	}
 }

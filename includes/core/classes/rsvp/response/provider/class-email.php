@@ -58,7 +58,6 @@ final class Email extends Base {
 		return __( 'Email', 'gatherpress' );
 	}
 
-
 	/**
 	 * Get the display name for an email-based RSVP.
 	 *

@@ -59,7 +59,6 @@ final class User extends Base {
 		return __( 'User', 'gatherpress' );
 	}
 
-
 	/**
 	 * Get the display name for a WordPress user.
 	 *

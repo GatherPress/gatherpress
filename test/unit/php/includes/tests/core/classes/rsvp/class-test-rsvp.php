@@ -99,12 +99,8 @@ class Test_Rsvp extends Base {
 	 * @covers ::__construct
 	 */
 	public function test_save(): void {
-		$post    = $this->mock->post(
-			array(
-				'post_type' => Event::POST_TYPE,
-			)
-		)->get();
-		$rsvp    = new Rsvp( $post->ID );
+		$post_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
+		$rsvp    = new Rsvp( $post_id );
 		$user_id = $this->factory->user->create();
 		$status  = 'attending';
 
@@ -132,12 +128,7 @@ class Test_Rsvp extends Base {
 			'Failed to assert no_status due to invalid status.'
 		);
 
-		$post = $this->mock->post(
-			array(
-				'post_type' => Event::POST_TYPE,
-			)
-		)->get();
-		$rsvp = new Rsvp( $post->ID );
+		$rsvp = new Rsvp( $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) ) );
 
 		Utility::set_and_get_hidden_property( $rsvp, 'max_attendance_limit', 1 );
 
@@ -181,15 +172,10 @@ class Test_Rsvp extends Base {
 			'Failed to assert that user 2 is no_status.'
 		);
 
-		$post      = $this->mock->post(
-			array(
-				'post_type' => Event::POST_TYPE,
-				'post_meta' => array(
-					'gatherpress_max_guest_limit' => 2,
-				),
-			)
-		)->get();
-		$rsvp      = new Rsvp( $post->ID );
+		$limit_post_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
+		update_post_meta( $limit_post_id, 'gatherpress_max_guest_limit', 2 );
+
+		$rsvp      = new Rsvp( $limit_post_id );
 		$user_1_id = $this->factory->user->create();
 		$this->assertSame(
 			2,
@@ -197,8 +183,14 @@ class Test_Rsvp extends Base {
 			'Failed to assert that user 1 can only bring 2 guests at most.'
 		);
 
-		// Simulate error saving RSVP.
-		add_filter( 'query', '__return_false' );
+		// Simulate a failed comment update. Blanking every query via the
+		// `query` filter also breaks the reads inside save(), leaving
+		// wpdb serving stale rows from the previous statement — fail the
+		// write precisely instead.
+		$force_failure = static function () {
+			return new \WP_Error( 'simulated', 'Simulated update failure.' );
+		};
+		add_filter( 'wp_update_comment_data', $force_failure );
 
 		$result   = $rsvp->save( $user_1_id, 'attending' );
 		$expected = array(
@@ -213,7 +205,7 @@ class Test_Rsvp extends Base {
 
 		$this->assertEquals( $expected, $result );
 
-		remove_filter( 'query', '__return_false' );
+		remove_filter( 'wp_update_comment_data', $force_failure );
 	}
 
 	/**
@@ -362,12 +354,7 @@ class Test_Rsvp extends Base {
 	 * @return void
 	 */
 	public function test_attending_limit_reached(): void {
-		$post = $this->mock->post(
-			array(
-				'post_type' => Event::POST_TYPE,
-			)
-		)->get();
-		$rsvp = new Rsvp( $post->ID );
+		$rsvp = new Rsvp( $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) ) );
 
 		Utility::set_and_get_hidden_property( $rsvp, 'max_attendance_limit', 1 );
 

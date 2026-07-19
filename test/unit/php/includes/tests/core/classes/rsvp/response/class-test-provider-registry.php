@@ -78,7 +78,6 @@ class Test_Provider_Registry extends Base {
 				return 'Unit Test Provider';
 			}
 
-
 			/**
 			 * Display name for an identity.
 			 *
