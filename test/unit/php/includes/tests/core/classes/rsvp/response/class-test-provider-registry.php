@@ -171,14 +171,14 @@ class Test_Provider_Registry extends Base {
 		$registry = Provider_Registry::get_instance();
 
 		$this->assertSame(
-			5,
+			PHP_INT_MIN,
 			has_action( 'gatherpress_loaded', array( $registry, 'register_rsvp_providers' ) ),
-			'Construction hooks provider registration onto gatherpress_loaded at priority 5.'
+			'Construction hooks provider registration onto gatherpress_loaded as early as possible.'
 		);
 		$this->assertTrue( $registry->is_registered( 'user' ), 'Core user provider registers at construction.' );
 		$this->assertTrue( $registry->is_registered( 'email' ), 'Core email provider registers at construction.' );
 
-		remove_action( 'gatherpress_loaded', array( $registry, 'register_rsvp_providers' ), 5 );
+		remove_action( 'gatherpress_loaded', array( $registry, 'register_rsvp_providers' ), PHP_INT_MIN );
 		$property->setValue( null, $original );
 	}
 }

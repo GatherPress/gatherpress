@@ -65,7 +65,11 @@ final class Provider_Registry {
 	 * @return void
 	 */
 	protected function setup_hooks(): void {
-		add_action( 'gatherpress_loaded', array( $this, 'register_rsvp_providers' ), 5 );
+		// PHP_INT_MIN: fire third-party provider registration as early as
+		// possible on gatherpress_loaded so every other listener on the
+		// hook sees the complete provider set when it runs, regardless of
+		// its own priority.
+		add_action( 'gatherpress_loaded', array( $this, 'register_rsvp_providers' ), PHP_INT_MIN );
 	}
 
 	/**
