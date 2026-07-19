@@ -30,7 +30,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
  *
  * @since 0.34.0
  */
-class Starter_Pattern_Loader {
+final class Starter_Pattern_Loader {
 
 	/**
 	 * Load every starter pattern definition found in a directory.

@@ -22,7 +22,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
  *
  * @since 0.27.0
  */
-class Autoloader {
+final class Autoloader {
 
 	/**
 	 * Register method for autoloader.

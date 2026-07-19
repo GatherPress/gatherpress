@@ -372,6 +372,17 @@ Apply to PHP PHPDoc blocks and JS JSDoc blocks alike.
         - ❌ Bad: `Event::get_instance()` (doesn't exist for these classes)
     - In tests, always check the class structure before deciding instantiation method
     - Look for `use Singleton;` trait to determine if `::get_instance()` should be used
+- **Classes are `final` by default** (#1961). Extensibility flows through hooks, `post_type_supports`, and the abstract provider bases — not through subclassing concrete classes. A new class gets `final` unless it is deliberately an extension point.
+    - ✅ Good: `final class Token {` — a leaf class nothing extends.
+    - ✅ Good: `abstract class Base {` — the documented extension point for settings pages / RSVP response providers / venue map providers.
+    - ❌ Bad: a plain `class Foo {` that nothing extends and that isn't meant to be extended.
+    - **Four things must stay non-final**, and the reasons are worth knowing before you add the keyword:
+        1. Abstract bases (`Settings\Base`, `Calendar\Endpoint_Type`, `Rsvp\Response\Provider\Base`, `Venue\Map\Provider\Base`).
+        2. Anything actually extended in `includes/` — currently `Calendar\Endpoint` and `Migrate`.
+        3. **Anything mocked in tests.** PHPUnit cannot mock a `final` class, so `createMock( Foo::class )` / `getMockBuilder( Foo::class )` and `final` are mutually exclusive. This is what keeps `Event`, `Settings`, `Template`, and `Endpoint` non-final. Check `grep -rn "createMock\|getMockBuilder" test/unit/php` before finalizing.
+        4. Anything a test subclasses, including anonymous `new class() extends Foo` doubles.
+    - `final` makes PHPStan's inference precise: it can prove a return type is never returned, where before a hypothetical subclass kept the union alive. Expect the analyzer to surface dead types when you add the keyword — fix them rather than widening the signature back.
+    - In a `final` class, use `self::` rather than `static::` — late static binding has no meaning once nothing can subclass, and PHPCS enforces it (`Universal.CodeAnalysis.StaticInFinalClass`).
 
 ### PHP Linting Requirements
 

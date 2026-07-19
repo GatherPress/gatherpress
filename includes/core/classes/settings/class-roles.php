@@ -24,7 +24,7 @@ use GatherPress\Core\Traits\Singleton;
  *
  * @since 0.34.0
  */
-class Roles extends Base {
+final class Roles extends Base {
 
 	/**
 	 * Enforces a single instance of this class.

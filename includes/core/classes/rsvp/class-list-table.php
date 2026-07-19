@@ -35,7 +35,7 @@ use WP_List_Table;
  * @package GatherPress\Core\Rsvp
  * @since 0.34.0
  */
-class List_Table extends WP_List_Table {
+final class List_Table extends WP_List_Table {
 
 	/**
 	 * Default number of RSVPs to display per page in the admin list table.

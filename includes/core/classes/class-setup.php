@@ -25,7 +25,7 @@ use WP_Site;
  *
  * @since 0.27.0
  */
-class Setup {
+final class Setup {
 
 	/**
 	 * Enforces a single instance of this class.

@@ -24,7 +24,7 @@ use WP_HTML_Tag_Processor;
  *
  * @since 0.27.0
  */
-class Utility {
+final class Utility {
 
 	/**
 	 * Renders a template file.

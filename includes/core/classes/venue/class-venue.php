@@ -30,7 +30,7 @@ use WP_Term;
  *
  * @since 0.34.0
  */
-class Venue {
+final class Venue {
 
 	/**
 	 * Default venue post type slug.

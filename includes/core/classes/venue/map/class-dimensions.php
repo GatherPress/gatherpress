@@ -26,7 +26,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
  *
  * @since 0.35.0
  */
-class Dimensions {
+final class Dimensions {
 
 	/**
 	 * Read a dimension for the venue map from its block attributes.

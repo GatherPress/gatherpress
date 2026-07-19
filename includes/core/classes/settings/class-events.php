@@ -27,7 +27,7 @@ use GatherPress\Core\Utility;
  *
  * @since 0.34.0
  */
-class Events extends Base {
+final class Events extends Base {
 
 	/**
 	 * Enforces a single instance of this class.

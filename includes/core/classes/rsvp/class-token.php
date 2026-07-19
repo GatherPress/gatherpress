@@ -28,7 +28,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
  * @package GatherPress\Core\Rsvp
  * @since 0.34.0
  */
-class Token {
+final class Token {
 
 	/**
 	 * The parameter name used for RSVP tokens in URLs.
@@ -201,7 +201,7 @@ class Token {
 	 * @return string The formatted meta key.
 	 */
 	private function get_meta_key(): string {
-		return sprintf( '%s%s', self::META_KEY_PREFIX, static::NAME );
+		return sprintf( '%s%s', self::META_KEY_PREFIX, self::NAME );
 	}
 
 	/**
@@ -410,7 +410,7 @@ class Token {
 
 		$token_value = $this->format_token_value( (int) $comment->comment_ID, $token );
 
-		return add_query_arg( static::NAME, $token_value, $event_url );
+		return add_query_arg( self::NAME, $token_value, $event_url );
 	}
 
 	/**

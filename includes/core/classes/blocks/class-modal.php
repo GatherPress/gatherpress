@@ -26,7 +26,7 @@ use WP_HTML_Tag_Processor;
  *
  * @since 0.33.0
  */
-class Modal {
+final class Modal {
 
 	/**
 	 * Enforces a single instance of this class.
