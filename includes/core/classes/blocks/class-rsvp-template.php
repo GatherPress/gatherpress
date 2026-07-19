@@ -30,7 +30,7 @@ use WP_HTML_Tag_Processor;
  *
  * @since 0.33.0
  */
-class Rsvp_Template {
+final class Rsvp_Template {
 
 	/**
 	 * Enforces a single instance of this class.

@@ -31,7 +31,7 @@ use WP_User;
  * @package GatherPress\Core\Rsvp
  * @since 0.34.0
  */
-class Form {
+final class Form {
 
 	/**
 	 * Enforces a single instance of this class.

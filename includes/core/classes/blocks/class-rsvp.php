@@ -27,7 +27,7 @@ use WP_HTML_Tag_Processor;
  *
  * @since 0.33.0
  */
-class Rsvp {
+final class Rsvp {
 
 	/**
 	 * Enforces a single instance of this class.

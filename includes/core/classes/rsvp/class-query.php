@@ -27,7 +27,7 @@ use WP_Tax_Query;
  * @package GatherPress\Core\Rsvp
  * @since 0.34.0
  */
-class Query {
+final class Query {
 
 	/**
 	 * Enforces a single instance of this class.

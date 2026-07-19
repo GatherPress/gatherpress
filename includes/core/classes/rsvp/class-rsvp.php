@@ -37,7 +37,7 @@ use WP_Post;
  *
  * @since 0.34.0
  */
-class Rsvp {
+final class Rsvp {
 
 	/**
 	 * Capability required to manage RSVPs.
@@ -239,7 +239,7 @@ class Rsvp {
 		string $status,
 		int $anonymous = 0,
 		int $guests = 0,
-	): ?array {
+	): array {
 		$identity = $this->resolve_identity( $identifier );
 
 		if ( null === $identity ) {

@@ -33,7 +33,7 @@ use WP_Query;
  * @package GatherPress\Core\Event
  * @since 0.34.0
  */
-class Admin_List {
+final class Admin_List {
 
 	/**
 	 * Enforces a single instance of this class.

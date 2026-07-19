@@ -50,7 +50,7 @@ use WP_Post;
  * @phpstan-type DescriptorMap array<string, Descriptor>
  * @phpstan-type ProviderDescriptorMap array<string, DescriptorMap>
  */
-class Map {
+final class Map {
 
 	/**
 	 * Enforces a single instance of this class.

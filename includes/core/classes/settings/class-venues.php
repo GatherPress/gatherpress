@@ -28,7 +28,7 @@ use GatherPress\Core\Venue\Setup;
  *
  * @since 0.34.0
  */
-class Venues extends Base {
+final class Venues extends Base {
 
 	/**
 	 * Enforces a single instance of this class.

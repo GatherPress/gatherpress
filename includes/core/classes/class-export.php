@@ -23,7 +23,7 @@ use WP_Post;
  *
  * @since 0.30.0
  */
-class Export extends Migrate {
+final class Export extends Migrate {
 
 	/**
 	 * Enforces a single instance of this class.

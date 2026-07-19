@@ -32,7 +32,7 @@ use Throwable;
  *
  * @since 0.34.0
  */
-class OSM extends Base {
+final class OSM extends Base {
 
 	/**
 	 * Default XYZ tile URL template. CartoDB's "light_all" basemap —
@@ -91,10 +91,6 @@ class OSM extends Base {
 	 * unavailable, when the requested density is unsupported, or when the
 	 * retina variant would require a tile zoom past `Map::ZOOM_MAX`.
 	 *
-	 * Return type is intentionally untyped at the PHP signature level for
-	 * PHP 7.4 compatibility (GD returns a `resource` there, not a
-	 * `GdImage`).
-	 *
 	 * @since 0.34.0
 	 *
 	 * @param float  $latitude  Venue latitude in decimal degrees.
@@ -105,7 +101,7 @@ class OSM extends Base {
 	 * @param int    $density   Pixel-density multiplier. 1 = standard, 2 = retina.
 	 * @param string $map_type  Map type slug (OSM only renders roadmap tiles).
 	 *
-	 * @return GdImage|resource|null Finished image, or null on failure.
+	 * @return GdImage|null Finished image, or null on failure.
 	 */
 	public function render(
 		float $latitude,
@@ -206,13 +202,13 @@ class OSM extends Base {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @param GdImage|resource $canvas     Canvas being composited into.
-	 * @param int              $tx         X tile coordinate.
-	 * @param int              $ty         Y tile coordinate.
-	 * @param int              $tile_zoom  OSM zoom level for this tile.
-	 * @param int              $left_pixel World-pixel x-offset of the canvas top-left.
-	 * @param int              $top_pixel  World-pixel y-offset of the canvas top-left.
-	 * @param string           $tiles      URL template (`{z}/{x}/{y}` placeholders).
+	 * @param GdImage $canvas     Canvas being composited into.
+	 * @param int     $tx         X tile coordinate.
+	 * @param int     $ty         Y tile coordinate.
+	 * @param int     $tile_zoom  OSM zoom level for this tile.
+	 * @param int     $left_pixel World-pixel x-offset of the canvas top-left.
+	 * @param int     $top_pixel  World-pixel y-offset of the canvas top-left.
+	 * @param string  $tiles      URL template (`{z}/{x}/{y}` placeholders).
 	 *
 	 * @return void
 	 */
@@ -284,9 +280,9 @@ class OSM extends Base {
 	 *
 	 * @param string $bytes Raw PNG bytes from `fetch_tile()`.
 	 *
-	 * @return GdImage|resource|false Decoded image, or false when the bytes don't decode.
+	 * @return GdImage|false Decoded image, or false when the bytes don't decode.
 	 */
-	protected function decode_tile( string $bytes ) {
+	protected function decode_tile( string $bytes ): GdImage|false {
 		try {
 			return imagecreatefromstring( $bytes );
 		} catch ( Throwable $e ) {
@@ -345,10 +341,10 @@ class OSM extends Base {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @param GdImage|resource $canvas Destination canvas.
-	 * @param int              $x      Pixel X position (marker center).
-	 * @param int              $y      Pixel Y position (marker center).
-	 * @param float            $scale  Multiplier applied to the marker radii.
+	 * @param GdImage $canvas Destination canvas.
+	 * @param int     $x      Pixel X position (marker center).
+	 * @param int     $y      Pixel Y position (marker center).
+	 * @param float   $scale  Multiplier applied to the marker radii.
 	 *
 	 * @return void
 	 */

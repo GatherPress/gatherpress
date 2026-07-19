@@ -22,7 +22,7 @@ use GatherPress\Core\Traits\Singleton;
  *
  * @since 0.27.0
  */
-class Assets {
+final class Assets {
 
 	/**
 	 * Enforces a single instance of this class.

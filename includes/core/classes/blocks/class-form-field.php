@@ -23,7 +23,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
  *
  * @since 0.33.0
  */
-class Form_Field {
+final class Form_Field {
 
 	/**
 	 * Processed form field attributes with defaults applied.

@@ -32,7 +32,7 @@ use WP_REST_Server;
  *
  * @since 0.35.0
  */
-class Rest_Api {
+final class Rest_Api {
 
 	/**
 	 * Enforces a single instance of this class.

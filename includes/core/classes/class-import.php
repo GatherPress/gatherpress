@@ -24,7 +24,7 @@ use GatherPress\Core\Traits\Singleton;
  *
  * @since 0.30.0
  */
-class Import extends Migrate {
+final class Import extends Migrate {
 
 	/**
 	 * Enforces a single instance of this class.

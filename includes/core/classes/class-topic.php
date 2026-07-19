@@ -23,7 +23,7 @@ use stdClass;
  *
  * @since 0.29.0
  */
-class Topic {
+final class Topic {
 
 	/**
 	 * Enforces a single instance of this class.

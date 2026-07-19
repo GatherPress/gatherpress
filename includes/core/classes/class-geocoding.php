@@ -31,7 +31,7 @@ use WP_REST_Server;
  *
  * @since 0.34.0
  */
-class Geocoding {
+final class Geocoding {
 
 	/**
 	 * Enforces a single instance of this class.

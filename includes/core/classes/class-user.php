@@ -28,7 +28,7 @@ use WP_User;
  *
  * @since 0.28.0
  */
-class User {
+final class User {
 
 	/**
 	 * Enforces a single instance of this class.
@@ -96,13 +96,13 @@ class User {
 		if ( $user_id ) {
 			$user_time_format = get_user_meta( $user_id, 'gatherpress_time_format', true );
 
-			if ( static::HOUR_12 === $user_time_format ) {
+			if ( self::HOUR_12 === $user_time_format ) {
 				$time_format = str_replace( 'G', 'g', $time_format );
 
 				if ( ! str_contains( $time_format, 'a' ) ) {
 					$time_format = str_replace( 'i', 'ia', $time_format );
 				}
-			} elseif ( static::HOUR_24 === $user_time_format ) {
+			} elseif ( self::HOUR_24 === $user_time_format ) {
 				$time_format = str_replace(
 					array(
 						'g',

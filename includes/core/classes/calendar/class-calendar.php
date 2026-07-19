@@ -34,7 +34,7 @@ use GatherPress\Core\Event;
  *
  * @since 0.34.0
  */
-class Calendar {
+final class Calendar {
 
 	/**
 	 * Event this Calendar instance wraps.
