@@ -181,10 +181,11 @@ final class Provider_Registry {
 	}
 
 	/**
-	 * Fire the action for plugins to register their RSVP providers.
+	 * Fire the action that lets plugins register custom RSVP providers.
 	 *
-	 * Companion plugins should hook into 'gatherpress_register_rsvp_types' to register
-	 * their types.  This method is called after core types are registered.
+	 * Runs on `gatherpress_loaded`, after the core `user` and `email`
+	 * providers are registered, so companion plugins can add their own
+	 * identity providers via the `gatherpress_register_rsvp_types` action.
 	 *
 	 * @since 0.35.0
 	 *
@@ -192,21 +193,27 @@ final class Provider_Registry {
 	 */
 	public function register_rsvp_providers(): void {
 		/**
-		 * Fires when RSVP providers are being registered.
+		 * Fires so plugins can register custom RSVP providers.
 		 *
-		 * Plugins should use this hook to register their custom RSVP types by calling
-		 * $registry->register( new My_Custom_Rsvp_Type() ).
+		 * A provider defines a new RSVP identity source — a membership
+		 * system, an external ticketing platform, and so on. Register one
+		 * by passing an instance of a
+		 * `GatherPress\Core\Rsvp\Response\Provider\Base` subclass to the
+		 * registry. Core registers the `user` and `email` providers before
+		 * this fires.
 		 *
-		 * Example:
 		 * ```php
-		 * add_action( 'gatherpress_register_rsvp_types', function( $registry ) {
-		 *     $registry->register( new My_Plugin\Rsvp_Type() );
-		 * });
+		 * add_action( 'gatherpress_register_rsvp_types', function ( $registry ) {
+		 *     $registry->register( new My_Plugin\Membership_Provider() );
+		 * } );
 		 * ```
+		 *
+		 * The full provider contract and a worked example live in the
+		 * RSVP developer guide (`docs/developer/rsvp/README.md`).
 		 *
 		 * @since 0.35.0
 		 *
-		 * @param Provider_Registry $provider_registry The RSVP type registry instance.
+		 * @param Provider_Registry $registry The RSVP provider registry.
 		 */
 		do_action( 'gatherpress_register_rsvp_types', $this );
 	}
