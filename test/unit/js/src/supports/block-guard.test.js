@@ -176,6 +176,9 @@ describe( 'withBlockGuard', () => {
 
 	beforeEach( () => {
 		jest.clearAllMocks();
+		// The sealed state persists across mounts by design (so moving a block
+		// doesn't slam it shut), so reset it between tests.
+		publishSealedState( 'abc', true );
 		getBlockType.mockReturnValue( {
 			supports: { gatherpress: { blockGuard: true } },
 		} );
@@ -313,6 +316,7 @@ describe( 'withBlockGuard re-seal transitions', () => {
 
 	beforeEach( () => {
 		jest.clearAllMocks();
+		publishSealedState( 'abc', true );
 		getBlockType.mockReturnValue( {
 			supports: { gatherpress: { blockGuard: true } },
 		} );
@@ -456,6 +460,7 @@ describe( 'accessibility', () => {
 
 	beforeEach( () => {
 		jest.clearAllMocks();
+		publishSealedState( 'a11y', true );
 		getBlockType.mockReturnValue( {
 			supports: { gatherpress: { blockGuard: true } },
 		} );
@@ -525,5 +530,70 @@ describe( 'accessibility', () => {
 		renderWith( { isSelf: true } );
 
 		expect( speak ).not.toHaveBeenCalled();
+	} );
+} );
+
+describe( 'sealed state across a move', () => {
+	const BlockListBlock = jest.fn( () => <div /> );
+	const Guarded = withBlockGuard( BlockListBlock );
+	const lastProps = () => BlockListBlock.mock.calls.at( -1 )[ 0 ];
+
+	beforeEach( () => {
+		jest.clearAllMocks();
+		publishSealedState( 'moved', true );
+		getBlockType.mockReturnValue( {
+			supports: { gatherpress: { blockGuard: true } },
+		} );
+		useSelect.mockImplementation( ( mapSelect ) =>
+			mapSelect( () => ( {
+				isBlockSelected: () => true,
+				hasSelectedInnerBlock: () => false,
+			} ) )
+		);
+	} );
+
+	const element = () => (
+		<Guarded
+			name="gatherpress/add-to-calendar"
+			clientId="moved"
+			wrapperProps={ {} }
+		/>
+	);
+
+	it( 'stays open across a remount, so moving an open block does not shut it', () => {
+		const first = render( element() );
+		act( () => {
+			lastProps().wrapperProps.onMouseDown( {} );
+			lastProps().wrapperProps.onClick( {} );
+		} );
+		expect( lastProps().className ).not.toContain( 'has-block-overlay' );
+
+		// a move unmounts and remounts the block
+		first.unmount();
+		render( element() );
+
+		expect( lastProps().className ).not.toContain( 'has-block-overlay' );
+	} );
+
+	it( 'defaults to sealed for a block with no recorded state', () => {
+		render(
+			<Guarded
+				name="gatherpress/add-to-calendar"
+				clientId="never-seen-before"
+				wrapperProps={ {} }
+			/>
+		);
+
+		expect( lastProps().className ).toContain( 'has-block-overlay' );
+	} );
+
+	it( 'remounts sealed when it was sealed before the move', () => {
+		const first = render( element() );
+		expect( lastProps().className ).toContain( 'has-block-overlay' );
+
+		first.unmount();
+		render( element() );
+
+		expect( lastProps().className ).toContain( 'has-block-overlay' );
 	} );
 } );

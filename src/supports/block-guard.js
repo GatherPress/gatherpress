@@ -204,7 +204,14 @@ export const withBlockGuard = createHigherOrderComponent( ( BlockListBlock ) => 
 		}
 
 		// Guard on by default; a deliberate action turns it off.
-		const [ sealed, setSealed ] = useState( true );
+		//
+		// Seeded from the published state rather than a flat `true`, because
+		// moving a block remounts this component. Without the seed, a block you
+		// had opened and were editing snaps shut the moment it moves and locks
+		// you back out mid-edit.
+		const [ sealed, setSealed ] = useState(
+			() => sealedStates.get( clientId ) ?? true
+		);
 
 		// Where selection sits relative to this block: on the block itself, or
 		// on one of its inner blocks.
@@ -289,9 +296,13 @@ export const withBlockGuard = createHigherOrderComponent( ( BlockListBlock ) => 
 			wasSealed.current = sealed;
 		}, [ sealed ] );
 
+		// Drop only the subscriber list on unmount. The sealed state itself is
+		// deliberately kept: moving a block unmounts and remounts it, and
+		// discarding the state here is what would slam an open block shut
+		// mid-move. The map is keyed by clientId and so stays bounded by the
+		// blocks in the post.
 		useEffect( () => {
 			return () => {
-				sealedStates.delete( clientId );
 				sealedListeners.delete( clientId );
 			};
 		}, [ clientId ] );
