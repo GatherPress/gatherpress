@@ -179,9 +179,9 @@ class Rsvp {
 	 *
 	 * Ensures that programmatically created events (e.g. via WP-CLI or imports)
 	 * carry predictable meta regardless of which mode was active at creation time:
-	 * - `all_on`: writes meta = 1 so switching to a per-event mode later is safe.
-	 * - `per_event_on`: writes meta = 1 (default-on intent).
-	 * - `per_event_off`: writes meta = 0 (default-off intent).
+	 * - `enabled`: writes meta = 1 so switching to a per-event mode later is safe.
+	 * - `per_event_enabled`: writes meta = 1 (default-on intent).
+	 * - `per_event_disabled`: writes meta = 0 (default-off intent).
 	 * - `disabled`: no meta is written.
 	 *
 	 * @since 0.34.0
@@ -205,7 +205,7 @@ class Rsvp {
 			return;
 		}
 
-		$default_value = ( 'per_event_off' === $rsvp_mode ) ? 0 : 1;
+		$default_value = ( 'per_event_disabled' === $rsvp_mode ) ? 0 : 1;
 		update_post_meta( $post_id, 'gatherpress_enable_rsvp', $default_value );
 	}
 
@@ -362,11 +362,11 @@ class Rsvp {
 	 * Determines whether RSVP is enabled for this event.
 	 *
 	 * Returns false immediately when the sitewide mode is `disabled`.
-	 * Returns true when the mode is `all_on` (every event has RSVP).
-	 * In per-event modes (`per_event_on` or `per_event_off`), the
+	 * Returns true when the mode is `enabled` (every event has RSVP).
+	 * In per-event modes (`per_event_enabled` or `per_event_disabled`), the
 	 * `gatherpress_enable_rsvp` post meta is consulted. An unset meta
-	 * (empty string) falls back to the mode default: `per_event_on`
-	 * defaults to enabled, `per_event_off` defaults to disabled.
+	 * (empty string) falls back to the mode default: `per_event_enabled`
+	 * defaults to enabled, `per_event_disabled` defaults to disabled.
 	 *
 	 * @since 0.35.0
 	 *
@@ -380,7 +380,7 @@ class Rsvp {
 			return false;
 		}
 
-		if ( ! in_array( $rsvp_mode, array( 'per_event_on', 'per_event_off' ), true ) ) {
+		if ( ! in_array( $rsvp_mode, array( 'per_event_enabled', 'per_event_disabled' ), true ) ) {
 			return true;
 		}
 
@@ -388,7 +388,7 @@ class Rsvp {
 
 		// Empty meta falls back to the mode default.
 		if ( '' === $meta ) {
-			return 'per_event_on' === $rsvp_mode;
+			return 'per_event_enabled' === $rsvp_mode;
 		}
 
 		return '0' !== $meta;

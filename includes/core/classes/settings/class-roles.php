@@ -39,7 +39,7 @@ class Roles extends Base {
 	 * @return string The slug for the roles settings page.
 	 */
 	protected function get_slug(): string {
-		return 'roles';
+		return 'roles_settings';
 	}
 
 	/**
@@ -112,7 +112,7 @@ class Roles extends Base {
 	public function get_user_roles(): array {
 		$sub_pages = Settings::get_instance()->get_sub_pages();
 
-		return (array) $sub_pages['roles']['sections']['roles']['options'];
+		return (array) $sub_pages['roles_settings']['sections']['roles']['options'];
 	}
 
 	/**

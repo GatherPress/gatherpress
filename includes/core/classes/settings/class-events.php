@@ -42,7 +42,7 @@ class Events extends Base {
 	 * @return string The slug for the events settings page.
 	 */
 	protected function get_slug(): string {
-		return 'events';
+		return 'events_settings';
 	}
 
 	/**

@@ -56,7 +56,7 @@ class Credits extends Base {
 	 * @return string The slug for the credits section.
 	 */
 	protected function get_slug(): string {
-		return 'credits';
+		return 'credits_settings';
 	}
 
 	/**

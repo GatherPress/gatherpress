@@ -1000,8 +1000,8 @@ class Test_Form extends Base {
 			)
 		);
 
-		// Set rsvp_mode to per_event_on so that per-event disabling is respected.
-		Settings::get_instance()->set( 'rsvp_mode', 'per_event_on' );
+		// Set rsvp_mode to per_event_enabled so that per-event disabling is respected.
+		Settings::get_instance()->set( 'rsvp_mode', 'per_event_enabled' );
 
 		// Explicitly disable RSVP for this event.
 		update_post_meta( $post_id, 'gatherpress_enable_rsvp', 0 );
@@ -1033,7 +1033,7 @@ class Test_Form extends Base {
 		remove_all_filters( 'gatherpress_pre_get_http_input' );
 
 		// Restore the setting for other tests.
-		Settings::get_instance()->set( 'rsvp_mode', 'all_on' );
+		Settings::get_instance()->set( 'rsvp_mode', 'enabled' );
 	}
 
 	/**

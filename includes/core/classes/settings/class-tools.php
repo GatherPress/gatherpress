@@ -55,7 +55,7 @@ class Tools extends Base {
 	 * @return string The slug for the tools settings page.
 	 */
 	protected function get_slug(): string {
-		return 'tools';
+		return 'tools_settings';
 	}
 
 	/**

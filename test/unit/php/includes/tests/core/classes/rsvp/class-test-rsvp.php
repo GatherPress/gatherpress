@@ -586,8 +586,8 @@ class Test_Rsvp extends Base {
 			)
 		)->get();
 
-		// Set rsvp_mode to per_event_on so that per-event disabling is respected.
-		Settings::get_instance()->set( 'rsvp_mode', 'per_event_on' );
+		// Set rsvp_mode to per_event_enabled so that per-event disabling is respected.
+		Settings::get_instance()->set( 'rsvp_mode', 'per_event_enabled' );
 
 		// Explicitly disable RSVP for this event.
 		update_post_meta( $post->ID, 'gatherpress_enable_rsvp', 0 );
@@ -600,7 +600,7 @@ class Test_Rsvp extends Base {
 		$this->assertSame( 'no_status', $result['status'], 'Should return no_status when RSVP is disabled.' );
 
 		// Restore the setting for other tests.
-		Settings::get_instance()->set( 'rsvp_mode', 'all_on' );
+		Settings::get_instance()->set( 'rsvp_mode', 'enabled' );
 	}
 
 	/**
@@ -613,49 +613,49 @@ class Test_Rsvp extends Base {
 	public function test_is_enabled(): void {
 		$post_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
 
-		// Returns false when mode is per_event_on and meta is '0'.
-		Settings::get_instance()->set( 'rsvp_mode', 'per_event_on' );
+		// Returns false when mode is per_event_enabled and meta is '0'.
+		Settings::get_instance()->set( 'rsvp_mode', 'per_event_enabled' );
 		update_post_meta( $post_id, 'gatherpress_enable_rsvp', '0' );
 		$this->assertFalse(
 			( new Rsvp( $post_id ) )->is_enabled(),
-			'Should return false when mode is per_event_on and meta is 0.'
+			'Should return false when mode is per_event_enabled and meta is 0.'
 		);
 
-		// Returns false when mode is per_event_off and meta is '0'.
-		Settings::get_instance()->set( 'rsvp_mode', 'per_event_off' );
+		// Returns false when mode is per_event_disabled and meta is '0'.
+		Settings::get_instance()->set( 'rsvp_mode', 'per_event_disabled' );
 		$this->assertFalse(
 			( new Rsvp( $post_id ) )->is_enabled(),
-			'Should return false when mode is per_event_off and meta is 0.'
+			'Should return false when mode is per_event_disabled and meta is 0.'
 		);
 
-		// Returns true when mode is per_event_on and meta is '1'.
-		Settings::get_instance()->set( 'rsvp_mode', 'per_event_on' );
+		// Returns true when mode is per_event_enabled and meta is '1'.
+		Settings::get_instance()->set( 'rsvp_mode', 'per_event_enabled' );
 		update_post_meta( $post_id, 'gatherpress_enable_rsvp', '1' );
 		$this->assertTrue(
 			( new Rsvp( $post_id ) )->is_enabled(),
-			'Should return true when mode is per_event_on and meta is 1.'
+			'Should return true when mode is per_event_enabled and meta is 1.'
 		);
 
-		// Returns true when mode is per_event_on and meta is '' (never set).
+		// Returns true when mode is per_event_enabled and meta is '' (never set).
 		delete_post_meta( $post_id, 'gatherpress_enable_rsvp' );
 		$this->assertTrue(
 			( new Rsvp( $post_id ) )->is_enabled(),
-			'Should return true when mode is per_event_on and meta is empty (never set).'
+			'Should return true when mode is per_event_enabled and meta is empty (never set).'
 		);
 
-		// Returns false when mode is per_event_off and meta is '' (never set).
-		Settings::get_instance()->set( 'rsvp_mode', 'per_event_off' );
+		// Returns false when mode is per_event_disabled and meta is '' (never set).
+		Settings::get_instance()->set( 'rsvp_mode', 'per_event_disabled' );
 		$this->assertFalse(
 			( new Rsvp( $post_id ) )->is_enabled(),
-			'Should return false when mode is per_event_off and meta is empty (never set).'
+			'Should return false when mode is per_event_disabled and meta is empty (never set).'
 		);
 
-		// Returns true when mode is all_on and meta is '0'.
-		Settings::get_instance()->set( 'rsvp_mode', 'all_on' );
+		// Returns true when mode is enabled and meta is '0'.
+		Settings::get_instance()->set( 'rsvp_mode', 'enabled' );
 		update_post_meta( $post_id, 'gatherpress_enable_rsvp', '0' );
 		$this->assertTrue(
 			( new Rsvp( $post_id ) )->is_enabled(),
-			'Should return true when mode is all_on regardless of meta.'
+			'Should return true when mode is enabled regardless of meta.'
 		);
 
 		// Returns false when mode is disabled regardless of meta.
@@ -666,7 +666,7 @@ class Test_Rsvp extends Base {
 		);
 
 		// Restore default setting.
-		Settings::get_instance()->set( 'rsvp_mode', 'all_on' );
+		Settings::get_instance()->set( 'rsvp_mode', 'enabled' );
 	}
 
 	/**
@@ -838,19 +838,19 @@ class Test_Rsvp extends Base {
 	 *
 	 * @return void
 	 */
-	public function test_initialize_enabled_writes_meta_in_all_on_mode(): void {
+	public function test_initialize_enabled_writes_meta_in_enabled_mode(): void {
 		$post_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
 
 		// Clear any meta set by the wp_after_insert_post hook during post creation.
 		delete_post_meta( $post_id, 'gatherpress_enable_rsvp' );
 
-		// Default mode is all_on; calling the method should write 1.
+		// Default mode is enabled; calling the method should write 1.
 		( new Rsvp( $post_id ) )->initialize_enabled();
 
 		$this->assertSame(
 			'1',
 			get_post_meta( $post_id, 'gatherpress_enable_rsvp', true ),
-			'Meta should be written as 1 in all_on mode when not previously set.'
+			'Meta should be written as 1 in enabled mode when not previously set.'
 		);
 	}
 
@@ -867,7 +867,7 @@ class Test_Rsvp extends Base {
 		// Pre-set meta to 0 (RSVP disabled for this event).
 		update_post_meta( $post_id, 'gatherpress_enable_rsvp', 0 );
 
-		// Default mode is all_on; method should not overwrite the existing value.
+		// Default mode is enabled; method should not overwrite the existing value.
 		( new Rsvp( $post_id ) )->initialize_enabled();
 
 		$this->assertSame(
@@ -906,15 +906,15 @@ class Test_Rsvp extends Base {
 	}
 
 	/**
-	 * Coverage for initialize_enabled method in per_event_on mode.
+	 * Coverage for initialize_enabled method in per_event_enabled mode.
 	 *
 	 * @covers ::initialize_enabled
 	 *
 	 * @return void
 	 */
-	public function test_initialize_enabled_writes_meta_in_per_event_on_mode(): void {
-		// Switch to per_event_on mode BEFORE creating the post so the hook does not write meta.
-		Settings::get_instance()->set( 'rsvp_mode', 'per_event_on' );
+	public function test_initialize_enabled_writes_meta_in_per_event_enabled_mode(): void {
+		// Switch to per_event_enabled mode BEFORE creating the post so the hook does not write meta.
+		Settings::get_instance()->set( 'rsvp_mode', 'per_event_enabled' );
 
 		$post_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
 
@@ -923,27 +923,27 @@ class Test_Rsvp extends Base {
 
 		( new Rsvp( $post_id ) )->initialize_enabled();
 
-		// per_event_on default is enabled, so meta should be written as 1.
+		// per_event_enabled default is enabled, so meta should be written as 1.
 		$this->assertSame(
 			'1',
 			get_post_meta( $post_id, 'gatherpress_enable_rsvp', true ),
-			'Meta should be written as 1 in per_event_on mode when not previously set.'
+			'Meta should be written as 1 in per_event_enabled mode when not previously set.'
 		);
 
 		// Restore setting.
-		Settings::get_instance()->set( 'rsvp_mode', 'all_on' );
+		Settings::get_instance()->set( 'rsvp_mode', 'enabled' );
 	}
 
 	/**
-	 * Coverage for initialize_enabled method in per_event_off mode.
+	 * Coverage for initialize_enabled method in per_event_disabled mode.
 	 *
 	 * @covers ::initialize_enabled
 	 *
 	 * @return void
 	 */
-	public function test_initialize_enabled_writes_meta_in_per_event_off_mode(): void {
-		// Switch to per_event_off mode BEFORE creating the post so the hook does not write meta.
-		Settings::get_instance()->set( 'rsvp_mode', 'per_event_off' );
+	public function test_initialize_enabled_writes_meta_in_per_event_disabled_mode(): void {
+		// Switch to per_event_disabled mode BEFORE creating the post so the hook does not write meta.
+		Settings::get_instance()->set( 'rsvp_mode', 'per_event_disabled' );
 
 		$post_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
 
@@ -952,15 +952,15 @@ class Test_Rsvp extends Base {
 
 		( new Rsvp( $post_id ) )->initialize_enabled();
 
-		// per_event_off default is disabled, so meta should be written as 0.
+		// per_event_disabled default is disabled, so meta should be written as 0.
 		$this->assertSame(
 			'0',
 			get_post_meta( $post_id, 'gatherpress_enable_rsvp', true ),
-			'Meta should be written as 0 in per_event_off mode when not previously set.'
+			'Meta should be written as 0 in per_event_disabled mode when not previously set.'
 		);
 
 		// Restore setting.
-		Settings::get_instance()->set( 'rsvp_mode', 'all_on' );
+		Settings::get_instance()->set( 'rsvp_mode', 'enabled' );
 	}
 
 	/**
@@ -989,7 +989,7 @@ class Test_Rsvp extends Base {
 		);
 
 		// Restore setting.
-		Settings::get_instance()->set( 'rsvp_mode', 'all_on' );
+		Settings::get_instance()->set( 'rsvp_mode', 'enabled' );
 	}
 
 	/**

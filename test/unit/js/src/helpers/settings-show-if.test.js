@@ -135,6 +135,20 @@ describe( 'settings-show-if helper', () => {
 		it( 'returns false when current is not a member of an expected array', () => {
 			expect( matches( 'osm', [ 'google', 'mapbox' ] ) ).toBe( false );
 		} );
+
+		it( 'negates with { not: scalar } — true unless the value is excluded', () => {
+			expect( matches( 'enabled', { not: 'disabled' } ) ).toBe( true );
+			expect( matches( 'disabled', { not: 'disabled' } ) ).toBe( false );
+		} );
+
+		it( 'negates with { not: array } — false when the value is any of the listed', () => {
+			expect(
+				matches( 'per_event_disabled', { not: [ 'disabled', 'per_event_disabled' ] } )
+			).toBe( false );
+			expect(
+				matches( 'enabled', { not: [ 'disabled', 'per_event_disabled' ] } )
+			).toBe( true );
+		} );
 	} );
 
 	describe( 'readControlValue', () => {
