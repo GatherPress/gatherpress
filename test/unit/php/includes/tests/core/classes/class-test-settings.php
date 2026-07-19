@@ -2951,7 +2951,7 @@ class Test_Settings extends Base {
 		delete_option( Settings::OPTION_NAME );
 
 		// Scalar negation: true while the value is not 'disabled'.
-		update_option( Settings::OPTION_NAME, array( 'rsvp_mode' => 'all_on' ) );
+		update_option( Settings::OPTION_NAME, array( 'rsvp_mode' => 'enabled' ) );
 		$this->assertTrue(
 			Utility::invoke_hidden_method(
 				$instance,
@@ -2972,12 +2972,12 @@ class Test_Settings extends Base {
 		);
 
 		// Array negation: excluded when the value is any of the listed.
-		update_option( Settings::OPTION_NAME, array( 'rsvp_mode' => 'per_event_off' ) );
+		update_option( Settings::OPTION_NAME, array( 'rsvp_mode' => 'per_event_disabled' ) );
 		$this->assertFalse(
 			Utility::invoke_hidden_method(
 				$instance,
 				'evaluate_show_if',
-				array( array( 'rsvp_mode' => array( 'not' => array( 'disabled', 'per_event_off' ) ) ) )
+				array( array( 'rsvp_mode' => array( 'not' => array( 'disabled', 'per_event_disabled' ) ) ) )
 			),
 			'A value in the excluded list fails the negation.'
 		);
@@ -2985,7 +2985,7 @@ class Test_Settings extends Base {
 			Utility::invoke_hidden_method(
 				$instance,
 				'evaluate_show_if',
-				array( array( 'rsvp_mode' => array( 'not' => array( 'disabled', 'all_on' ) ) ) )
+				array( array( 'rsvp_mode' => array( 'not' => array( 'disabled', 'enabled' ) ) ) )
 			),
 			'A value outside the excluded list matches.'
 		);

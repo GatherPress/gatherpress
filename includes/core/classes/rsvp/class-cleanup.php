@@ -115,7 +115,7 @@ class Cleanup {
 		$settings = Settings::get_instance();
 		$switch   = $settings->get( 'rsvp_cleanup_switch' );
 
-		if ( 'on' === $switch && ! wp_next_scheduled( 'gatherpress_rsvp_cleanup' ) ) {
+		if ( 'enabled' === $switch && ! wp_next_scheduled( 'gatherpress_rsvp_cleanup' ) ) {
 			$frequency       = $settings->get( 'rsvp_cleanup_frequency' );
 			$interval        = $settings->get( 'rsvp_cleanup_interval' );
 			$time_in_seconds = $this->convert_to_seconds( $frequency, $interval );

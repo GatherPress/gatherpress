@@ -98,20 +98,20 @@ class Rsvp extends Base {
 						'field'       => array(
 							'type'    => 'select',
 							'options' => array(
-								'default' => 'all_on',
+								'default' => 'enabled',
 								'items'   => array(
-									'all_on'        => Utility::post_type_label( 'all_items', Event::POST_TYPE ),
-									'per_event_on'  => sprintf(
+									'enabled'            => Utility::post_type_label( 'all_items', Event::POST_TYPE ),
+									'per_event_enabled'  => sprintf(
 										/* translators: %s: Singular post type label, e.g. "Event". */
-										__( 'Per %s (default on)', 'gatherpress' ),
+										__( 'Per %s (default enabled)', 'gatherpress' ),
 										Utility::post_type_label( 'singular_name', Event::POST_TYPE )
 									),
-									'per_event_off' => sprintf(
+									'per_event_disabled' => sprintf(
 										/* translators: %s: Singular post type label, e.g. "Event". */
-										__( 'Per %s (default off)', 'gatherpress' ),
+										__( 'Per %s (default disabled)', 'gatherpress' ),
 										Utility::post_type_label( 'singular_name', Event::POST_TYPE )
 									),
-									'disabled'      => __( 'Disabled', 'gatherpress' ),
+									'disabled'           => __( 'Disabled', 'gatherpress' ),
 								),
 							),
 						),
@@ -232,10 +232,10 @@ class Rsvp extends Base {
 						'field'       => array(
 							'type'    => 'select',
 							'options' => array(
-								'default' => 'off',
+								'default' => 'disabled',
 								'items'   => array(
-									'off' => __( 'Disable', 'gatherpress' ),
-									'on'  => __( 'Enable', 'gatherpress' ),
+									'disabled' => __( 'Disabled', 'gatherpress' ),
+									'enabled'  => __( 'Enabled', 'gatherpress' ),
 								),
 							),
 						),
@@ -262,7 +262,7 @@ class Rsvp extends Base {
 							),
 						),
 						'show_if'     => array(
-							'rsvp_cleanup_switch' => array( 'not' => 'off' ),
+							'rsvp_cleanup_switch' => array( 'not' => 'disabled' ),
 						),
 					),
 					'rsvp_cleanup_interval'  => array(
@@ -282,7 +282,7 @@ class Rsvp extends Base {
 							),
 						),
 						'show_if'     => array(
-							'rsvp_cleanup_switch' => array( 'not' => 'off' ),
+							'rsvp_cleanup_switch' => array( 'not' => 'disabled' ),
 						),
 					),
 				),

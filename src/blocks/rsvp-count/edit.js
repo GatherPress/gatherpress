@@ -96,7 +96,7 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 		]
 	);
 
-	const rsvpMode = getFromSettings( 'rsvpMode' ) ?? 'all_on';
+	const rsvpMode = getFromSettings( 'rsvpMode' ) ?? 'enabled';
 
 	const blockProps = useBlockProps( {
 		style: {

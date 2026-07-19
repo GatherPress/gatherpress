@@ -1691,16 +1691,16 @@ describe( 'hasOnlineEventTerm', () => {
  * Coverage for isPerEventRsvpMode.
  */
 describe( 'isPerEventRsvpMode', () => {
-	it( 'returns true for per_event_on', () => {
-		expect( isPerEventRsvpMode( 'per_event_on' ) ).toBe( true );
+	it( 'returns true for per_event_enabled', () => {
+		expect( isPerEventRsvpMode( 'per_event_enabled' ) ).toBe( true );
 	} );
 
-	it( 'returns true for per_event_off', () => {
-		expect( isPerEventRsvpMode( 'per_event_off' ) ).toBe( true );
+	it( 'returns true for per_event_disabled', () => {
+		expect( isPerEventRsvpMode( 'per_event_disabled' ) ).toBe( true );
 	} );
 
-	it( 'returns false for all_on', () => {
-		expect( isPerEventRsvpMode( 'all_on' ) ).toBe( false );
+	it( 'returns false for enabled', () => {
+		expect( isPerEventRsvpMode( 'enabled' ) ).toBe( false );
 	} );
 
 	it( 'returns false for disabled', () => {
@@ -1734,25 +1734,25 @@ describe( 'isOpenRsvpEnabled', () => {
  * Coverage for isRsvpEnabledForEvent.
  */
 describe( 'isRsvpEnabledForEvent', () => {
-	it( 'returns true for all_on mode regardless of enableRsvp', () => {
-		expect( isRsvpEnabledForEvent( 'all_on', true ) ).toBe( true );
-		expect( isRsvpEnabledForEvent( 'all_on', false ) ).toBe( true );
+	it( 'returns true for enabled mode regardless of enableRsvp', () => {
+		expect( isRsvpEnabledForEvent( 'enabled', true ) ).toBe( true );
+		expect( isRsvpEnabledForEvent( 'enabled', false ) ).toBe( true );
 	} );
 
-	it( 'returns true for per_event_on when enableRsvp is true', () => {
-		expect( isRsvpEnabledForEvent( 'per_event_on', true ) ).toBe( true );
+	it( 'returns true for per_event_enabled when enableRsvp is true', () => {
+		expect( isRsvpEnabledForEvent( 'per_event_enabled', true ) ).toBe( true );
 	} );
 
-	it( 'returns false for per_event_on when enableRsvp is false', () => {
-		expect( isRsvpEnabledForEvent( 'per_event_on', false ) ).toBe( false );
+	it( 'returns false for per_event_enabled when enableRsvp is false', () => {
+		expect( isRsvpEnabledForEvent( 'per_event_enabled', false ) ).toBe( false );
 	} );
 
-	it( 'returns true for per_event_off when enableRsvp is true', () => {
-		expect( isRsvpEnabledForEvent( 'per_event_off', true ) ).toBe( true );
+	it( 'returns true for per_event_disabled when enableRsvp is true', () => {
+		expect( isRsvpEnabledForEvent( 'per_event_disabled', true ) ).toBe( true );
 	} );
 
-	it( 'returns false for per_event_off when enableRsvp is false', () => {
-		expect( isRsvpEnabledForEvent( 'per_event_off', false ) ).toBe( false );
+	it( 'returns false for per_event_disabled when enableRsvp is false', () => {
+		expect( isRsvpEnabledForEvent( 'per_event_disabled', false ) ).toBe( false );
 	} );
 
 	it( 'returns false for disabled mode regardless of enableRsvp', () => {

@@ -137,16 +137,16 @@ describe( 'settings-show-if helper', () => {
 		} );
 
 		it( 'negates with { not: scalar } — true unless the value is excluded', () => {
-			expect( matches( 'all_on', { not: 'disabled' } ) ).toBe( true );
+			expect( matches( 'enabled', { not: 'disabled' } ) ).toBe( true );
 			expect( matches( 'disabled', { not: 'disabled' } ) ).toBe( false );
 		} );
 
 		it( 'negates with { not: array } — false when the value is any of the listed', () => {
 			expect(
-				matches( 'per_event_off', { not: [ 'disabled', 'per_event_off' ] } )
+				matches( 'per_event_disabled', { not: [ 'disabled', 'per_event_disabled' ] } )
 			).toBe( false );
 			expect(
-				matches( 'all_on', { not: [ 'disabled', 'per_event_off' ] } )
+				matches( 'enabled', { not: [ 'disabled', 'per_event_disabled' ] } )
 			).toBe( true );
 		} );
 	} );

@@ -38,8 +38,8 @@ const EnableRsvp = () => {
 	// existing events use the per-event meta value.
 	const defaultEnableRsvp = useMemo( () => {
 		if ( isNewEvent ) {
-			// Default based on rsvp_mode: per_event_off defaults to disabled, all others default to enabled.
-			return 'per_event_off' !== ( getFromSettings( 'rsvpMode' ) ?? 'all_on' );
+			// Default based on rsvp_mode: per_event_disabled defaults to disabled, all others default to enabled.
+			return 'per_event_disabled' !== ( getFromSettings( 'rsvpMode' ) ?? 'enabled' );
 		}
 		return metaDefault;
 	}, [ isNewEvent, metaDefault ] );

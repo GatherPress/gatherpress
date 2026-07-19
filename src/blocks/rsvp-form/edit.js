@@ -291,7 +291,7 @@ const Edit = ( { attributes, setAttributes, clientId, context } ) => {
 		};
 	}, [ maxAttendanceLimit, enableAnonymousRsvp, clientId ] );
 
-	const rsvpMode = getFromSettings( 'rsvpMode' ) ?? 'all_on';
+	const rsvpMode = getFromSettings( 'rsvpMode' ) ?? 'enabled';
 	const enableOpenRsvp = getFromSettings( 'enableOpenRsvp' ) ?? true;
 
 	const blockProps = useBlockProps( {

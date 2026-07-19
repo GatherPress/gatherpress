@@ -111,7 +111,7 @@ class Test_Rsvp extends Base {
 
 		foreach ( array( 'rsvp_cleanup_frequency', 'rsvp_cleanup_interval' ) as $option ) {
 			$this->assertSame(
-				array( 'rsvp_cleanup_switch' => array( 'not' => 'off' ) ),
+				array( 'rsvp_cleanup_switch' => array( 'not' => 'disabled' ) ),
 				$sections['rsvp_cleanup']['options'][ $option ]['show_if'],
 				sprintf( '%s should hide when cleanup is off.', $option )
 			);
