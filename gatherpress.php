@@ -60,7 +60,14 @@ GatherPress\Core\Setup::get_instance();
  * Fires once GatherPress has finished bootstrapping its core classes.
  *
  * Subsystems or third party plugins can use this to run setup work that
- * depends on other GatherPress classes already being instantiated.
+ * depends on other GatherPress classes already being instantiated — for
+ * example, the RSVP provider registry consumes it to fire its own
+ * `gatherpress_register_rsvp_types` action.
+ *
+ * This fires while GatherPress's main file loads, before `plugins_loaded`
+ * and `init`, so a listener must be registered before GatherPress loads
+ * to catch it. See the plugin lifecycle guide
+ * (`docs/developer/plugin-lifecycle.md`) for load-order details.
  *
  * @since 0.35.0
  */
