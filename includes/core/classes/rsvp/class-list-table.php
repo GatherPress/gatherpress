@@ -559,7 +559,7 @@ final class List_Table extends WP_List_Table {
 	 *
 	 * @return string HTML markup for the checkbox input element.
 	 */
-	public function column_cb( $item ) {
+	public function column_cb( $item ): string {
 		return sprintf(
 			'<input type="checkbox" name="gatherpress_rsvp_id[]" value="%d" />',
 			intval( $item['comment_ID'] )
@@ -963,7 +963,7 @@ final class List_Table extends WP_List_Table {
 	 *
 	 * @return void
 	 */
-	public function display() {
+	public function display(): void {
 		wp_nonce_field( Rsvp::COMMENT_TYPE );
 		wp_nonce_field( 'gatherpress_rsvp_action', '_gatherpress_rsvp_action_nonce' );
 

@@ -111,7 +111,7 @@ final class OSM extends Base {
 		int $height,
 		int $density = 1,
 		string $map_type = 'roadmap'
-	) {
+	): ?GdImage {
 		// OSM tiles are roadmap-only; $map_type is accepted for provider parity.
 		// PHP built without the GD extension. Can't simulate in a unit test without making the runtime itself broken.
 		if ( ! function_exists( 'imagecreatetruecolor' ) ) { // @codeCoverageIgnore

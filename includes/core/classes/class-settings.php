@@ -888,7 +888,7 @@ class Settings {
 	 *
 	 * @return mixed The value of the option or its default value.
 	 */
-	public function get( string $option ) {
+	public function get( string $option ): mixed {
 		// Read from the network options table when this is an inherited
 		// option on a multisite subsite, otherwise the local options table.
 		// `get_site_option` returns false on single-site, so the type check
@@ -971,7 +971,7 @@ class Settings {
 	 *
 	 * @return mixed The default value of the option or an empty string if not defined.
 	 */
-	public function get_flat_default( string $option ) {
+	public function get_flat_default( string $option ): mixed {
 		$defaults = $this->get_defaults_map();
 
 		return $defaults[ $option ] ?? '';

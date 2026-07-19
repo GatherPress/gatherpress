@@ -202,7 +202,7 @@ final class Setup {
 	 *
 	 * @return bool|string[] Filtered allowed block types.
 	 */
-	public function filter_rsvp_block_types( $allowed_block_types ) {
+	public function filter_rsvp_block_types( $allowed_block_types ): bool|array {
 		$settings         = Settings::get_instance();
 		$remove_all_rsvp  = 'disabled' === $settings->get( 'rsvp_mode' );
 		$remove_open_form = ! $settings->get( 'enable_open_rsvp' );
@@ -246,7 +246,7 @@ final class Setup {
 	 *
 	 * @return string|int User ID if logged in, email address if via token, or 0 if neither.
 	 */
-	public function get_user_identifier() {
+	public function get_user_identifier(): string|int {
 		$user_identifier = get_current_user_id();
 		$rsvp_token      = Token::from_url_parameter();
 
@@ -526,7 +526,7 @@ final class Setup {
 	 *
 	 * @return mixed The screen option value or false to use default.
 	 */
-	public function set_rsvp_screen_options( $status, $option, $value ) {
+	public function set_rsvp_screen_options( $status, $option, $value ): mixed {
 		if ( $this->get_per_page_option() === $option ) {
 			return $value;
 		}

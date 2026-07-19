@@ -329,7 +329,7 @@ final class Admin_List {
 	 *
 	 * @return string[] Updated list of allowed query variables.
 	 */
-	public function query_vars( array $query_vars ) {
+	public function query_vars( array $query_vars ): array {
 		$query_vars[] = 'gatherpress_event_query';
 		return $query_vars;
 	}

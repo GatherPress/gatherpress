@@ -585,7 +585,7 @@ final class Geocoding {
 	 *
 	 * @return WP_REST_Response|WP_Error Response with coordinates or error.
 	 */
-	public function geocode_address( WP_REST_Request $request ) {
+	public function geocode_address( WP_REST_Request $request ): WP_REST_Response|WP_Error {
 		$rate_limited = $this->check_rate_limit();
 		if ( null !== $rate_limited ) {
 			return $rate_limited;
@@ -649,7 +649,7 @@ final class Geocoding {
 	 *     country_code: string
 	 * }|WP_Error Result payload, or WP_Error on Photon HTTP failure.
 	 */
-	public function geocode_to_result( string $address ) {
+	public function geocode_to_result( string $address ): array|WP_Error {
 		// Cap oversize input for parity with search_addresses(); protects
 		// upstream from pathological requests.
 		$address = mb_substr( trim( $address ), 0, 200 );
@@ -776,7 +776,7 @@ final class Geocoding {
 	 *
 	 * @return WP_REST_Response|WP_Error Suggestions or error.
 	 */
-	public function search_addresses( WP_REST_Request $request ) {
+	public function search_addresses( WP_REST_Request $request ): WP_REST_Response|WP_Error {
 		$rate_limited = $this->check_rate_limit();
 		if ( null !== $rate_limited ) {
 			return $rate_limited;

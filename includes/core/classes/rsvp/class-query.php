@@ -115,7 +115,7 @@ final class Query {
 	 *
 	 * @return mixed Array of RSVP comments or integer count when count parameter is true.
 	 */
-	public function get_rsvps( array $args ) {
+	public function get_rsvps( array $args ): mixed {
 		$args['type']         = Rsvp::COMMENT_TYPE;
 		$args['type__in']     = array();
 		$args['type__not_in'] = array();
@@ -248,7 +248,7 @@ final class Query {
 	 *
 	 * @return void
 	 */
-	public function exclude_rsvp_from_comment_query( WP_Comment_Query $query ) {
+	public function exclude_rsvp_from_comment_query( WP_Comment_Query $query ): void {
 		/**
 		 * Filters whether RSVP comments should be excluded from a comment query.
 		 *

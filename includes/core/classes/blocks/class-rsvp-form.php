@@ -703,7 +703,7 @@ final class Rsvp_Form {
 	 *
 	 * @return mixed|false The sanitized value, or false if sanitization fails.
 	 */
-	public function sanitize_custom_field_value( $value, array $config ) {
+	public function sanitize_custom_field_value( $value, array $config ): mixed {
 		// Handle required field validation.
 		if ( ! empty( $config['required'] ) && empty( $value ) ) {
 			return false;

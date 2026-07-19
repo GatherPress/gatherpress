@@ -44,7 +44,7 @@ final class Cleanup {
 	 *
 	 * @return void
 	 */
-	private function setup_hooks() {
+	private function setup_hooks(): void {
 		add_action( 'init', array( $this, 'schedule_cleanup_cron' ) );
 		add_action( 'gatherpress_rsvp_cleanup', array( $this, 'rsvp_cleanup' ), 10, 0 );
 		add_action( 'update_option_gatherpress_settings', array( $this, 'reschedule_cleanup_cron' ), 10, 2 );
@@ -111,7 +111,7 @@ final class Cleanup {
 	 *
 	 * @return void
 	 */
-	public function schedule_cleanup_cron() {
+	public function schedule_cleanup_cron(): void {
 		$settings = Settings::get_instance();
 		$switch   = $settings->get( 'rsvp_cleanup_switch' );
 

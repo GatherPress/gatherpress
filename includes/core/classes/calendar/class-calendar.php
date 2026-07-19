@@ -63,7 +63,7 @@ final class Calendar {
 	 *
 	 * @return string|false Endpoint URL, or false if the event post can't be resolved.
 	 */
-	public function get_ical_url() {
+	public function get_ical_url(): string|false {
 		return $this->get_endpoint_url( Setup::ICAL_SLUG );
 	}
 
@@ -78,7 +78,7 @@ final class Calendar {
 	 *
 	 * @return string|false Endpoint URL, or false if the event post can't be resolved.
 	 */
-	public function get_outlook_url() {
+	public function get_outlook_url(): string|false {
 		return $this->get_endpoint_url( 'outlook' );
 	}
 
@@ -99,7 +99,7 @@ final class Calendar {
 	 *
 	 * @return string|false Endpoint URL, or false if the event post can't be resolved.
 	 */
-	public function get_google_url() {
+	public function get_google_url(): string|false {
 		return $this->get_endpoint_url( 'google-calendar' );
 	}
 
@@ -115,7 +115,7 @@ final class Calendar {
 	 *
 	 * @return string|false Endpoint URL, or false if the event post can't be resolved.
 	 */
-	public function get_yahoo_url() {
+	public function get_yahoo_url(): string|false {
 		return $this->get_endpoint_url( 'yahoo-calendar' );
 	}
 
@@ -303,7 +303,7 @@ final class Calendar {
 	 *
 	 * @return string|false              URL of the event's endpoint, or false when the post can't be resolved.
 	 */
-	protected function get_endpoint_url( string $endpoint_slug, ?string $query_var = null ) {
+	protected function get_endpoint_url( string $endpoint_slug, ?string $query_var = null ): string|false {
 		$post = $this->event->event;
 
 		if ( ! $post ) {

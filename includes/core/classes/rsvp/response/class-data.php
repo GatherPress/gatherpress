@@ -67,7 +67,7 @@ final class Data {
 	 *
 	 * @return self A new instance with the given status applied.
 	 */
-	public function with_status( Status $status ) {
+	public function with_status( Status $status ): self {
 		return new self(
 			$this->identity,
 			$status,
