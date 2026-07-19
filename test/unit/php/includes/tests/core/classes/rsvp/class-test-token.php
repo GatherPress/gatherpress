@@ -416,18 +416,14 @@ class Test_Token extends Base {
 		);
 
 		// Seed the per-event cache so we can confirm it gets deleted.
-		$cache_key = sprintf( Cache::CACHE_KEY, $post->ID );
-		wp_cache_set( $cache_key, 'stale-payload', GATHERPRESS_CACHE_GROUP );
-		$this->assertSame(
-			'stale-payload',
-			wp_cache_get( $cache_key, GATHERPRESS_CACHE_GROUP )
-		);
+		Cache::set( $post->ID, array( 'all' => array( 'count' => 1 ) ) );
+		$this->assertNotNull( Cache::get( $post->ID ) );
 
 		$token = new Token( $comment_id );
 		$token->approve_comment();
 
-		$this->assertFalse(
-			wp_cache_get( $cache_key, GATHERPRESS_CACHE_GROUP ),
+		$this->assertNull(
+			Cache::get( $post->ID ),
 			'Per-event RSVP cache must be deleted after a successful token redemption.'
 		);
 	}
@@ -500,8 +496,8 @@ class Test_Token extends Base {
 			)
 		);
 
-		$cache_key = sprintf( Cache::CACHE_KEY, $post->ID );
-		wp_cache_set( $cache_key, 'still-fresh', GATHERPRESS_CACHE_GROUP );
+		$fresh = array( 'all' => array( 'count' => 3 ) );
+		Cache::set( $post->ID, $fresh );
 
 		$purged_ids = array();
 		$spy        = static function ( $purged_post_id ) use ( &$purged_ids ): void {
@@ -515,8 +511,8 @@ class Test_Token extends Base {
 		remove_action( 'clean_post_cache', $spy );
 
 		$this->assertSame(
-			'still-fresh',
-			wp_cache_get( $cache_key, GATHERPRESS_CACHE_GROUP ),
+			$fresh,
+			Cache::get( $post->ID ),
 			'Per-event RSVP cache must NOT be invalidated when the comment was already approved.'
 		);
 		$this->assertNotContains(

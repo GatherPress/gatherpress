@@ -32,7 +32,20 @@ class Cache {
 	const CACHE_KEY = 'gatherpress_rsvp_%d';
 
 	/**
+	 * Lifetime of an RSVP cache entry, in seconds.
+	 *
+	 * @since 0.35.0
+	 *
+	 * @var int
+	 */
+	const CACHE_EXPIRATION = 15 * MINUTE_IN_SECONDS;
+
+	/**
 	 * Get the RSVP cache for an event by the event's WordPress post ID.
+	 *
+	 * Backed by a transient so the cache persists across requests on any
+	 * site, and is transparently served from a persistent object cache
+	 * (Redis / Memcached) when one is enabled.
 	 *
 	 * @since 0.35.0
 	 *
@@ -41,7 +54,7 @@ class Cache {
 	 * @return array|null The cached RSVP data, or null when no valid cache exists.
 	 */
 	public static function get( int $post_id ) {
-		$value = wp_cache_get( self::cache_key( $post_id ), GATHERPRESS_CACHE_GROUP );
+		$value = get_transient( self::cache_key( $post_id ) );
 
 		if ( empty( $value ) || ! is_array( $value ) ) {
 			return null;
@@ -61,7 +74,7 @@ class Cache {
 	 * @return void
 	 */
 	public static function set( int $post_id, $value ) {
-		wp_cache_set( self::cache_key( $post_id ), $value, GATHERPRESS_CACHE_GROUP, 15 * MINUTE_IN_SECONDS );
+		set_transient( self::cache_key( $post_id ), $value, self::CACHE_EXPIRATION );
 	}
 
 	/**
@@ -74,7 +87,7 @@ class Cache {
 	 * @return void
 	 */
 	public static function delete( int $post_id ) {
-		wp_cache_delete( self::cache_key( $post_id ), GATHERPRESS_CACHE_GROUP );
+		delete_transient( self::cache_key( $post_id ) );
 	}
 
 	/**

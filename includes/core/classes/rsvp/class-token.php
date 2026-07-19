@@ -158,11 +158,11 @@ class Token {
 	 * the page rendered in the same request — and on any subsequent
 	 * anonymous visit to the canonical event URL — reflects the new RSVP:
 	 *
-	 *   1. The `Cache` entry in `GATHERPRESS_CACHE_GROUP` — the
-	 *      per-event response cache that `Rsvp::responses()` reads.
-	 *      Without this, the rsvp / rsvp-response blocks still pull the
-	 *      pre-approval list on the very same page render that follows
-	 *      token redemption (see #1626).
+	 *   1. The `Cache` entry (a per-event transient) — the per-event
+	 *      response cache that `Rsvp::responses()` reads. Without this,
+	 *      the rsvp / rsvp-response blocks still pull the pre-approval
+	 *      list on the very same page render that follows token
+	 *      redemption (see #1626).
 	 *   2. `clean_post_cache()` — bumps WP's lastpostmodified and fires
 	 *      the `clean_post_cache` action that page-cache plugins
 	 *      (WP Rocket, W3TC, etc.) listen to for purging the canonical
