@@ -56,12 +56,8 @@ if ( ! trait_exists( 'GatherPress\Core\Traits\Singleton' ) ) {
 // Initialize setups.
 GatherPress\Core\Setup::get_instance();
 
-// Announce that GatherPress is ready on `plugins_loaded`, after every
-// active plugin's file has been included. Firing here rather than inline
-// means a listener added at the top level of any plugin — regardless of
-// its load order relative to GatherPress — is registered in time to catch
-// the action. GatherPress's classes are already instantiated above, so
-// they are fully available by the time this fires.
+// Deferred to `plugins_loaded` so a listener in any plugin is registered
+// in time to catch it, whatever its load order relative to GatherPress.
 add_action(
 	'plugins_loaded',
 	static function (): void {
