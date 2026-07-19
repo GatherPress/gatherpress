@@ -33,7 +33,7 @@ add_filter(
 
 ## Files
 
-- [includes/core/classes/class-settings.php:936](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/class-settings.php#L936)
+- [includes/core/classes/class-settings.php:954](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/class-settings.php#L954)
 ```php
 apply_filters(
 			'gatherpress_network_is_option_inherited',
