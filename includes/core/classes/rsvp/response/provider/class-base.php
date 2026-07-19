@@ -67,7 +67,6 @@ abstract class Base {
 	 */
 	abstract public static function get_label(): string;
 
-
 	/**
 	 * Get the best displayable name for an identity.
 	 *
