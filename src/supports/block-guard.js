@@ -10,6 +10,11 @@ import { addFilter, hasFilter } from '@wordpress/hooks';
 import { useState, useEffect, useCallback } from '@wordpress/element';
 
 /**
+ * Internal dependencies
+ */
+import { isEditingModeGuarded } from './block-guard-editing-mode';
+
+/**
  * Shared state store for block guard settings across all block instances.
  * This ensures that blocks of the same type (especially in query loops)
  * maintain consistent guard states.
@@ -537,6 +542,12 @@ const withBlockGuard = createHigherOrderComponent( ( BlockEdit ) => {
 			! name.startsWith( 'gatherpress/' ) ||
 			! getBlockType( name )?.supports?.gatherpress?.blockGuard
 		) {
+			return <BlockEdit { ...props } />;
+		}
+
+		// Blocks moved to the editing-mode guard prototype opt out of the
+		// legacy toggle so the two mechanisms never stack (see #1817).
+		if ( isEditingModeGuarded( name ) ) {
 			return <BlockEdit { ...props } />;
 		}
 
