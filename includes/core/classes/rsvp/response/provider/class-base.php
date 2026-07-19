@@ -1,0 +1,124 @@
+<?php
+/**
+ * Abstract RSVP Response Type.
+ *
+ * Providers define WHAT an identity is, not HOW it is stored.
+ *
+ * @package GatherPress\Core\Rsvp\Response\Provider
+ * @since 0.35.0
+ */
+
+namespace GatherPress\Core\Rsvp\Response\Provider;
+
+// Exit if accessed directly.
+defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
+
+use GatherPress\Core\Rsvp\Response\Identity;
+use GatherPress\Core\Rsvp\Response\Identity_Type;
+
+/**
+ * Abstract base class for RSVP response providers.
+ *
+ * @since 0.35.0
+ */
+abstract class Base {
+
+	/**
+	 * Constant representing the RSVP provider taxonomy.
+	 * This constant defines the provider taxonomy for RSVP comment type.
+	 *
+	 * @since 0.35.0
+	 *
+	 * @var string
+	 */
+	public const TAXONOMY = '_gatherpress_rsvp_provider';
+
+	/**
+	 * Get the slug of the provider.
+	 *
+	 * Should be unique and only contain lowercase and underscores.
+	 *
+	 * @since 0.35.0
+	 *
+	 * @return string The unique provider slug.
+	 */
+	abstract public static function get_slug(): string;
+
+	/**
+	 * Get identity type.
+	 *
+	 * Defines how identity is stored within a WordPress comment.
+	 *
+	 * The types 'user', 'email', 'url' will lead to direct storage in the comment
+	 * Any other valid string will lead to storage in Comment Meta.
+	 *
+	 * @since 0.35.0
+	 *
+	 * @return Identity_Type The identity type of this provider.
+	 */
+	abstract public static function get_identity_type(): Identity_Type;
+
+	/**
+	 * Get the label for this Attendee type.
+	 *
+	 * @since 0.35.0
+	 *
+	 * @return string The human-readable label.
+	 */
+	abstract public static function get_label(): string;
+
+	/**
+	 * Get the best displayable name for an identity.
+	 *
+	 * "Display name" follows WordPress semantics — the best available
+	 * name to show, not necessarily a proper human name. Providers with
+	 * no real name to offer fall back to the identity value itself (the
+	 * email provider returns the address), mirroring how core's
+	 * `WP_User::display_name` falls back to the login or email. This is
+	 * the fallback source for `Identity::$display_name` when a stored
+	 * response carries no explicit author name.
+	 *
+	 * @since 0.35.0
+	 *
+	 * @param Identity $identity The identity.
+	 *
+	 * @return string The display name for the identity.
+	 */
+	abstract public function get_display_name( Identity $identity ): string;
+
+	/**
+	 * Get the avatar URL for an RSVP identity.
+	 *
+	 * Returns an avatar URL for user IDs and email addresses.
+	 *
+	 * @since 0.35.0
+	 *
+	 * @param Identity $identity The identity.
+	 *
+	 * @return string|null The avatar URL, or null if the identity has no avatar.
+	 */
+	public function get_avatar_url( Identity $identity ): ?string {
+		if ( Identity_Type::WP_USER_ID === $identity->type || is_email( $identity->value ) ) {
+			return get_avatar_url( $identity->value );
+		}
+
+		return null;
+	}
+
+	/**
+	 * Get profile URL.
+	 *
+	 * @since 0.35.0
+	 *
+	 * @param Identity $identity The identity.
+	 *
+	 * @return string|null The profile URL, or null if the identity value is not a URL.
+	 */
+	public function get_url( Identity $identity ): ?string {
+		if ( false !== filter_var( $identity->value, FILTER_VALIDATE_URL ) ) {
+			return $identity->value;
+		}
+
+		return null;
+	}
+}

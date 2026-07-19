@@ -28,7 +28,6 @@ if ( $gatherpress_duplicate_check_result ) {
 }
 
 // Constants.
-define( 'GATHERPRESS_CACHE_GROUP', 'gatherpress_cache' );
 define( 'GATHERPRESS_CORE_FILE', __FILE__ );
 define( 'GATHERPRESS_CORE_PATH', __DIR__ );
 define( 'GATHERPRESS_CORE_URL', plugin_dir_url( __FILE__ ) );
@@ -56,3 +55,25 @@ if ( ! trait_exists( 'GatherPress\Core\Traits\Singleton' ) ) {
 
 // Initialize setups.
 GatherPress\Core\Setup::get_instance();
+
+// Deferred to `plugins_loaded` so a listener in any plugin is registered
+// in time to catch it, whatever its load order relative to GatherPress.
+add_action(
+	'plugins_loaded',
+	static function (): void {
+		/**
+		 * Fires once GatherPress has finished bootstrapping its core classes.
+		 *
+		 * Subsystems and third party plugins use this to run setup work that
+		 * depends on other GatherPress classes already being instantiated —
+		 * for example, the RSVP provider registry consumes it to fire its own
+		 * `gatherpress_register_rsvp_types` action.
+		 *
+		 * Fires on `plugins_loaded`, so any plugin can catch it. See the
+		 * plugin lifecycle guide (`docs/developer/plugin-lifecycle.md`).
+		 *
+		 * @since 0.35.0
+		 */
+		do_action( 'gatherpress_loaded' );
+	}
+);

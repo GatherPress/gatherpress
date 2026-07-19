@@ -241,7 +241,7 @@ class OSM extends Base {
 		$dst_y = $ty * self::TILE_SIZE - $top_pixel;
 
 		imagecopy( $canvas, $tile, $dst_x, $dst_y, 0, 0, self::TILE_SIZE, self::TILE_SIZE );
-		imagedestroy( $tile );
+		unset( $tile );
 	}
 
 	/**

@@ -32,7 +32,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 use GatherPress\Core\Settings;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Venue\Setup;
-use GatherPress\Core\Venue\Venue;
+use GatherPress\Core\Venue;
 use GdImage;
 use WP_Post;
 
@@ -1170,7 +1170,7 @@ class Map {
 			}
 
 			$url = $this->save_image( $image, $address, $zoom, $width, $height, 1, $slug, $map_type );
-			imagedestroy( $image );
+			unset( $image );
 
 			if ( null === $url ) {
 				return null;
@@ -1203,7 +1203,7 @@ class Map {
 					$slug,
 					$map_type
 				);
-				imagedestroy( $image_2x );
+				unset( $image_2x );
 				if ( null !== $saved_2x ) {
 					$url_2x = $saved_2x;
 				}

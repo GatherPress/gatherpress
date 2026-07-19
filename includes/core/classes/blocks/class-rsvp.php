@@ -151,7 +151,7 @@ class Rsvp {
 			if ( $event->rsvp ) {
 				$user_identifier = Rsvp_Setup::get_instance()->get_user_identifier();
 
-				$user_data = $event->rsvp->get( $user_identifier );
+				$user_data = $event->rsvp->get( $user_identifier ) ?? array();
 			}
 
 			$filtered_data   = array_intersect_key(

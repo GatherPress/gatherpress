@@ -16,7 +16,7 @@ use GatherPress\Core\Settings;
 use GatherPress\Core\Venue\Map;
 use GatherPress\Core\Venue\Map\Manager;
 use GatherPress\Core\Venue\Setup;
-use GatherPress\Core\Venue\Venue;
+use GatherPress\Core\Venue;
 use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;
 
@@ -1446,7 +1446,7 @@ class Test_Map extends Base {
 		$canvas   = imagecreatetruecolor( 10, 10 );
 
 		$url = $instance->save_image( $canvas, '1 Infinite Loop', 15, 800, 400, 1, 'osm' );
-		imagedestroy( $canvas );
+		unset( $canvas );
 
 		$this->assertNotNull( $url, 'save_image should return a URL on success.' );
 		$this->assertStringContainsString( Map::UPLOADS_SUBDIR, $url );
@@ -1744,7 +1744,7 @@ class Test_Map extends Base {
 		$url = $instance->save_image( $canvas, 'test address', 15, 800, 400, 1, 'osm' );
 
 		remove_filter( 'upload_dir', $force_error );
-		imagedestroy( $canvas );
+		unset( $canvas );
 
 		$this->assertNull(
 			$url,

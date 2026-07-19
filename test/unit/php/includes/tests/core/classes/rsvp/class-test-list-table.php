@@ -10,7 +10,10 @@ namespace GatherPress\Tests\Core\Rsvp;
 
 use GatherPress\Core\Event;
 use GatherPress\Core\Rsvp\List_Table;
-use GatherPress\Core\Rsvp\Rsvp;
+use GatherPress\Core\Rsvp;
+use GatherPress\Core\Rsvp\Response\Provider\Base as Provider;
+use GatherPress\Core\Rsvp\Response\Provider_Registry;
+use GatherPress\Core\Rsvp\Response\Status;
 use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;
 use WP_Screen;
@@ -384,7 +387,7 @@ class Test_List_Table extends Base {
 	 * @return void
 	 */
 	public function test_column_default_response_attending(): void {
-		wp_set_object_terms( $this->rsvp['comment_ID'], 'attending', Rsvp::TAXONOMY );
+		wp_set_object_terms( $this->rsvp['comment_ID'], Status::ATTENDING->value, Status::TAXONOMY );
 		$response_col = $this->list_table->column_default( $this->rsvp, 'response' );
 
 		$this->assertSame(
@@ -401,7 +404,7 @@ class Test_List_Table extends Base {
 	 * @return void
 	 */
 	public function test_column_default_response_not_attending(): void {
-		wp_set_object_terms( $this->rsvp['comment_ID'], 'not_attending', Rsvp::TAXONOMY );
+		wp_set_object_terms( $this->rsvp['comment_ID'], Status::NOT_ATTENDING->value, Status::TAXONOMY );
 		$response_col = $this->list_table->column_default( $this->rsvp, 'response' );
 
 		$this->assertSame(
@@ -418,7 +421,7 @@ class Test_List_Table extends Base {
 	 * @return void
 	 */
 	public function test_column_default_response_waiting_list(): void {
-		wp_set_object_terms( $this->rsvp['comment_ID'], 'waiting_list', Rsvp::TAXONOMY );
+		wp_set_object_terms( $this->rsvp['comment_ID'], Status::WAITING_LIST->value, Status::TAXONOMY );
 		$response_col = $this->list_table->column_default( $this->rsvp, 'response' );
 
 		$this->assertSame(
@@ -1260,8 +1263,8 @@ class Test_List_Table extends Base {
 	 */
 	public function test_column_default_response_unknown(): void {
 		// Create a term with an unknown slug.
-		$term_id = wp_insert_term( 'Unknown', Rsvp::TAXONOMY, array( 'slug' => 'unknown_status' ) );
-		wp_set_object_terms( $this->rsvp['comment_ID'], $term_id['term_id'], Rsvp::TAXONOMY );
+		$term_id = wp_insert_term( 'Unknown', Status::TAXONOMY, array( 'slug' => 'unknown_status' ) );
+		wp_set_object_terms( $this->rsvp['comment_ID'], $term_id['term_id'], Status::TAXONOMY );
 
 		$output = $this->list_table->column_default( $this->rsvp, 'response' );
 
@@ -1776,5 +1779,96 @@ class Test_List_Table extends Base {
 		);
 
 		unset( $_REQUEST['status'] );
+	}
+
+	/**
+	 * Create an RSVP comment on the test event and return its ID.
+	 *
+	 * @return int
+	 */
+	private function make_rsvp_comment(): int {
+		return $this->factory->comment->create(
+			array(
+				'comment_post_ID' => $this->event_id,
+				'comment_type'    => Rsvp::COMMENT_TYPE,
+			)
+		);
+	}
+
+	/**
+	 * The type column prefers the stamped provider term and renders its
+	 * label, dashes an unknown term, and — when no term is stamped —
+	 * infers the provider from the comment's user id or author email.
+	 *
+	 * @covers ::column_default
+	 * @covers ::infer_provider_from_item
+	 *
+	 * @return void
+	 */
+	public function test_column_default_type(): void {
+		$user_label  = Provider_Registry::get_instance()->get( 'user' )::get_label();
+		$email_label = Provider_Registry::get_instance()->get( 'email' )::get_label();
+
+		// A stamped provider term takes precedence and renders its label.
+		$stamped = $this->make_rsvp_comment();
+		wp_set_object_terms( $stamped, 'user', Provider::TAXONOMY );
+
+		$this->assertSame(
+			$user_label,
+			$this->list_table->column_default( array( 'comment_ID' => $stamped ), 'type' ),
+			'A stamped provider term renders its label.'
+		);
+
+		// An unknown term renders a dash.
+		wp_set_object_terms( $stamped, 'mystery-provider', Provider::TAXONOMY );
+
+		$this->assertSame(
+			'-',
+			$this->list_table->column_default( array( 'comment_ID' => $stamped ), 'type' ),
+			'An unknown provider term renders a dash.'
+		);
+
+		// No term: a real user id infers the user provider.
+		$this->assertSame(
+			$user_label,
+			$this->list_table->column_default(
+				array(
+					'comment_ID'           => $this->make_rsvp_comment(),
+					'user_id'              => 5,
+					'comment_author_email' => '',
+				),
+				'type'
+			),
+			'A user id infers the user provider when no term is stamped.'
+		);
+
+		// No term: a valid author email infers the email provider (the
+		// open/email front-end form leaves no provider term).
+		$this->assertSame(
+			$email_label,
+			$this->list_table->column_default(
+				array(
+					'comment_ID'           => $this->make_rsvp_comment(),
+					'user_id'              => 0,
+					'comment_author_email' => 'guest@example.test',
+				),
+				'type'
+			),
+			'A valid author email infers the email provider when no term is stamped.'
+		);
+
+		// No term and nothing to infer from renders empty.
+		$this->assertSame(
+			'',
+			$this->list_table->column_default(
+				array(
+					'comment_ID'           => $this->make_rsvp_comment(),
+					'user_id'              => 0,
+					'comment_author_email' => '',
+				),
+				'type'
+			),
+			'No term and nothing to infer from renders empty.'
+		);
 	}
 }

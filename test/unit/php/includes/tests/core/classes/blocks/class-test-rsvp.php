@@ -104,7 +104,7 @@ class Test_Rsvp extends Base {
 		$user     = $this->mock->user( true )->get();
 		$event    = new Event( $post_id );
 
-		$event->rsvp->save( $user->ID, 'attending' );
+		$save_result = $event->rsvp->save( $user->ID, 'attending' );
 
 		$block = array(
 			'blockName'   => 'gatherpress/rsvp-v2',

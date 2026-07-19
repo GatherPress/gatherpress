@@ -11,11 +11,18 @@
 
 namespace GatherPress\Core\Rsvp;
 
+use GatherPress\Core\Rsvp\Response\Provider\Email;
+use GatherPress\Core\Rsvp\Response\Provider\User;
+use GatherPress\Core\Rsvp\Response\Provider_Registry;
+
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
-use GatherPress\Core\Event\Event;
+use GatherPress\Core\Event;
 use GatherPress\Core\Utility;
+use GatherPress\Core\Rsvp\Response\Provider\Base as Provider;
+use GatherPress\Core\Rsvp;
+use GatherPress\Core\Rsvp\Response\Status;
 use WP_List_Table;
 
 /**
@@ -104,6 +111,7 @@ class List_Table extends WP_List_Table {
 			'cb'       => '<input type="checkbox" />',
 			'attendee' => __( 'Attendee', 'gatherpress' ),
 			'response' => __( 'Response', 'gatherpress' ),
+			'type'     => __( 'Type', 'gatherpress' ),
 			'event'    => Utility::post_type_label( 'singular_name', $this->post_type ),
 			'approved' => __( 'Status', 'gatherpress' ),
 			'date'     => __( 'Date', 'gatherpress' ),
@@ -449,15 +457,26 @@ class List_Table extends WP_List_Table {
 
 		switch ( $column_name ) {
 			case 'response':
-				$terms          = wp_get_object_terms( $item['comment_ID'], Rsvp::TAXONOMY );
-				$response_names = array(
-					'attending'     => __( 'Attending', 'gatherpress' ),
-					'not_attending' => __( 'Not Attending', 'gatherpress' ),
-					'waiting_list'  => __( 'Waiting List', 'gatherpress' ),
-				);
-				$output         = empty( $terms )
-					? '-'
-					: ( $response_names[ $terms[0]->slug ] ?? '-' );
+				$terms = wp_get_object_terms( $item['comment_ID'], Status::TAXONOMY );
+
+				if ( empty( $terms ) ) {
+					return '-';
+				}
+
+				switch ( $terms[0]->slug ) {
+					case 'attending':
+						$output = __( 'Attending', 'gatherpress' );
+						break;
+					case 'not_attending':
+						$output = __( 'Not Attending', 'gatherpress' );
+						break;
+					case 'waiting_list':
+						$output = __( 'Waiting List', 'gatherpress' );
+						break;
+					default:
+						$output = '-';
+				}
+
 				break;
 			case 'event':
 				$output = '<a href="' . esc_url( get_permalink( $item['comment_post_ID'] ) ) . '">' .
@@ -472,14 +491,59 @@ class List_Table extends WP_List_Table {
 				$output   = $statuses[ $item['comment_approved'] ];
 				break;
 			case 'date':
-				$output = get_comment_date( 'Y/m/d \a\t g:i a', $item['comment_ID'] );
-				break;
+				return get_comment_date( 'Y/m/d \a\t g:i a', $item['comment_ID'] );
+			case 'type':
+				$terms = wp_get_object_terms( $item['comment_ID'], Provider::TAXONOMY );
+
+				// Prefer the authoritative provider term when present, but
+				// fall back to inferring the provider from the comment so
+				// the column is correct for rows that never carried the
+				// term — the open/email front-end form doesn't stamp it,
+				// and RSVPs saved before the term existed predate it.
+				if ( empty( $terms ) ) {
+					$provider = $this->infer_provider_from_item( $item );
+
+					return $provider ? $provider::get_label() : '';
+				}
+
+				$provider = Provider_Registry::get_instance()->get( $terms[0]->slug );
+
+				return $provider ? $provider::get_label() : '-';
 			default:
 				// Default assignment already covers this arm.
 				break;
 		}
 
 		return $output;
+	}
+
+	/**
+	 * Infer the RSVP provider from a row when no provider term is stamped.
+	 *
+	 * Mirrors the fallback in {@see \GatherPress\Core\Rsvp\Storage}: a real
+	 * user id maps to the user provider, a valid author email to the email
+	 * provider. Covers RSVPs written by paths that don't stamp the provider
+	 * term (the open/email front-end form) and rows saved before the term
+	 * existed.
+	 *
+	 * @since 0.35.0
+	 *
+	 * @param array $item Row data (a comment cast to an array).
+	 *
+	 * @return Provider|null The inferred provider, or null when none applies.
+	 */
+	private function infer_provider_from_item( array $item ): ?Provider {
+		$registry = Provider_Registry::get_instance();
+
+		if ( ! empty( $item['user_id'] ) && (int) $item['user_id'] > 0 ) {
+			return $registry->get( User::get_slug() );
+		}
+
+		if ( ! empty( $item['comment_author_email'] ) && is_email( (string) $item['comment_author_email'] ) ) {
+			return $registry->get( Email::get_slug() );
+		}
+
+		return null;
 	}
 
 	/**
