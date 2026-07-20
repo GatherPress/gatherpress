@@ -4,83 +4,55 @@
  *
  * This file checks the system requirements before loading the GatherPress plugin.
  *
- * Runs before the autoloader is registered, so the Notice class it uses is
- * required explicitly rather than autoloaded. Notice is deliberately written
- * to parse on very old PHP for this reason: on a site below the PHP floor, a
- * parse error here would replace the "please upgrade" notice with a fatal, so
- * the file meant to explain the problem would instead become one.
+ * Runs before the autoloader is registered, so the notice classes it uses are
+ * required explicitly rather than autoloaded. Everything under
+ * `classes/admin/notices/` is written to parse on very old PHP for this reason
+ * -- see `class-base.php` for the constraint and why it matters.
  *
- * Notices raised here are non-persistent by design. Dismissal is recorded by
+ * Each notice owns its own condition via `applies()`, so this file asks the
+ * notice whether it applies rather than duplicating the check. The condition
+ * that halts loading and the condition that shows the notice cannot drift
+ * apart, because they are the same method.
+ *
+ * These notices are non-persistent: dismissal is recorded by
  * GatherPress\Core\Admin\Notifications, which only loads once requirements
- * pass, and a blocking requirement failure is not something an administrator
- * should be able to silence anyway.
+ * pass, and a blocking failure is not something to let an administrator
+ * silence anyway.
  *
  * @package GatherPress\Core
  * @since 0.27.0
  */
 
-use GatherPress\Core\Admin\Notice;
+use GatherPress\Core\Admin\Notices\Missing_Build;
+use GatherPress\Core\Admin\Notices\Requires_Php;
 
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
-require_once GATHERPRESS_CORE_PATH . '/includes/core/classes/admin/class-notice.php';
+require_once GATHERPRESS_CORE_PATH . '/includes/core/classes/admin/notices/class-base.php';
+require_once GATHERPRESS_CORE_PATH . '/includes/core/classes/admin/notices/class-requires-php.php';
+require_once GATHERPRESS_CORE_PATH . '/includes/core/classes/admin/notices/class-missing-build.php';
 
 $gatherpress_activation = true;
 
-// Check the PHP version to ensure compatibility with the plugin.
-if ( version_compare( PHP_VERSION, GATHERPRESS_REQUIRES_PHP, '<' ) ) {
-	$gatherpress_php_notice = new Notice(
-		'gatherpress_requires_php',
-		array(
-			'type'        => Notice::TYPE_ERROR,
-			'dismissible' => false,
-			'message'     => static function () {
-				return sprintf(
-					/* translators: %1$s: minimum PHP version, %2$s: current PHP version. */
-					esc_html__(
-						'GatherPress requires %1$s or higher. Your current PHP version is %2$s. Please upgrade.',
-						'gatherpress'
-					),
-					esc_html( GATHERPRESS_REQUIRES_PHP ),
-					esc_html( phpversion() )
-				);
-			},
-		)
-	);
+/**
+ * Blocking notices, in the order they are evaluated.
+ *
+ * Any that applies both shows its notice and prevents GatherPress loading.
+ *
+ * @var GatherPress\Core\Admin\Notices\Base[] $gatherpress_blocking_notices
+ */
+$gatherpress_blocking_notices = array(
+	new Requires_Php(),
+	new Missing_Build(),
+);
 
-	add_action( 'admin_notices', array( $gatherpress_php_notice, 'render' ) );
+foreach ( $gatherpress_blocking_notices as $gatherpress_blocking_notice ) {
+	if ( ! $gatherpress_blocking_notice->applies() ) {
+		continue;
+	}
 
-	$gatherpress_activation = false;
-}
-
-// Check if build directory exists. Show an admin notice if it doesn't.
-// This is crucial for first-time installations after cloning the repo,
-// as the build files are not committed to version control and must be
-// generated locally with npm.
-if ( ! is_dir( GATHERPRESS_CORE_PATH . '/build' ) ) {
-	$gatherpress_build_notice = new Notice(
-		'gatherpress_missing_build',
-		array(
-			'type'        => Notice::TYPE_ERROR,
-			'dismissible' => false,
-			'message'     => static function () {
-				return sprintf(
-					/* translators: %1$s: build command, %2$s: the plugin path */
-					esc_html__(
-						// phpcs:disable Generic.Files.LineLength.TooLong
-						'Please run %1$s in the %2$s plugin directory to generate required assets. This is needed after first cloning the plugin for development.',
-						// phpcs:enable Generic.Files.LineLength.TooLong
-						'gatherpress'
-					),
-					'<code>npm run build</code>',
-					'<code>gatherpress</code>'
-				);
-			},
-		)
-	);
-
-	add_action( 'admin_notices', array( $gatherpress_build_notice, 'render' ) );
+	add_action( 'admin_notices', array( $gatherpress_blocking_notice, 'render' ) );
 
 	$gatherpress_activation = false;
 }
