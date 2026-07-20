@@ -1,0 +1,4 @@
+Significance: patch
+Type: added
+
+Warn sites running PHP below 8.1 or WordPress below 7.0 that GatherPress 0.35.0 raises those requirements.

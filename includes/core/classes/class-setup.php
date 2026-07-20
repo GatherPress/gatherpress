@@ -71,6 +71,7 @@ final class Setup {
 		Feed::get_instance();
 		Geocoding::get_instance();
 		Import::get_instance();
+		Notifications::get_instance();
 		Rsvp\Setup::get_instance();
 		Settings::get_instance();
 		Site_Health::get_instance();
