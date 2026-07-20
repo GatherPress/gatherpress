@@ -141,24 +141,14 @@ final class Cleanup {
 	private function convert_to_seconds( string $frequency, int $interval ): int {
 		// Assign per-arm and return once so the dispatch isn't a five-arm
 		// return chain.
-		switch ( $frequency ) {
-			case 'daily':
-				$multiplier = DAY_IN_SECONDS;
-				break;
-			case 'weekly':
-				$multiplier = WEEK_IN_SECONDS;
-				break;
-			case 'monthly':
-				$multiplier = MONTH_IN_SECONDS;
-				break;
-			case 'yearly':
-				$multiplier = YEAR_IN_SECONDS;
-				break;
-			case 'hourly':
-			default:
-				$multiplier = HOUR_IN_SECONDS;
-				break;
-		}
+		$multiplier = match ( $frequency ) {
+			'daily'   => DAY_IN_SECONDS,
+			'weekly'  => WEEK_IN_SECONDS,
+			'monthly' => MONTH_IN_SECONDS,
+			'yearly'  => YEAR_IN_SECONDS,
+			// 'hourly' and any unrecognized frequency fall back to hourly.
+			default   => HOUR_IN_SECONDS,
+		};
 
 		return $interval * $multiplier;
 	}

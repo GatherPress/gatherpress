@@ -279,7 +279,12 @@ Apply to PHP PHPDoc blocks and JS JSDoc blocks alike.
 - **Prefer `str_contains` / `str_starts_with` / `str_ends_with` over `strpos`**: native in PHP 8 (the plugin's floor is 8.1). They read better than the `false ===` / `0 ===` dance and SonarCloud flags the legacy form.
     - ✅ Good: `if ( str_contains( $haystack, $needle ) )` / `if ( str_starts_with( $key, 'gatherpress_' ) )` / `if ( ! str_contains( $content, $token ) )`
     - ❌ Bad: `if ( false !== strpos( $haystack, $needle ) )` / `if ( 0 === strpos( $key, 'gatherpress_' ) )` / `if ( false === strpos( $content, $token ) )`
-- **Every `switch` needs a `default` case**: SonarCloud (`php:S131`) flags any switch missing a `default` branch, even when the listed cases cover the expected values. Add `default: break;` with a one-line comment explaining what falls through (e.g. "Field types without extra params render with the base $params.") — that way the reader sees the intent rather than wondering whether a case was forgotten.
+- **Prefer `match` when a `switch` exists only to produce one value.** `match` is an expression, so the assignment appears once instead of in every arm, and it is exhaustive — which retires the `default:`-arm boilerplate `php:S131` otherwise demands. Two things to check before converting, because they are behavior changes rather than style:
+    1. **`match` compares with `===`, `switch` with `==`.** Equivalent when dispatching on strings or enum cases (what we do everywhere today); not equivalent if the subject can be an int compared against string cases.
+    2. **`match` throws `UnhandledMatchError` when nothing matches**, where `switch` silently falls through. Keep a `default =>` arm unless an unmatched value genuinely is a bug worth surfacing.
+    - ✅ Good: `$multiplier = match ( $frequency ) { 'daily' => DAY_IN_SECONDS, ..., default => HOUR_IN_SECONDS };`
+    - ❌ Not a candidate: arms with side effects (`add_filter`), arms assigning *different* targets, arms with intermediate variables, or a `default` that deliberately does nothing. Leave those as `switch` — most of ours are this shape.
+- **Every remaining `switch` needs a `default` case**: SonarCloud (`php:S131`) flags any switch missing a `default` branch, even when the listed cases cover the expected values. Add `default: break;` with a one-line comment explaining what falls through (e.g. "Field types without extra params render with the base $params.") — that way the reader sees the intent rather than wondering whether a case was forgotten.
     - ✅ Good:
 
         ```php

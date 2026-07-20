@@ -655,29 +655,18 @@ class Settings {
 			foreach ( $input as $key => $value ) {
 				$type = $field_type_map[ $key ] ?? 'text';
 
-				switch ( $type ) {
-					case 'checkbox':
-						$sanitized[ $key ] = (bool) $value;
-						break;
-					case 'number':
-						// Preserve empty submissions as '' instead of
-						// coercing to 0 via intval — so a field that
-						// accepts empty (e.g. Width/Height "Auto") can
-						// round-trip blank without silently saving 0.
-						$sanitized[ $key ] = ( '' === $value || null === $value )
-							? ''
-							: intval( $value );
-						break;
-					case 'autocomplete':
-						$sanitized[ $key ] = $this->sanitize_autocomplete( $value );
-						break;
-					case 'password':
-					case 'text':
-					case 'select':
-					default:
-						$sanitized[ $key ] = sanitize_text_field( (string) $value );
-						break;
-				}
+				$sanitized[ $key ] = match ( $type ) {
+					'checkbox' => (bool) $value,
+					// Preserve empty submissions as '' instead of coercing to
+					// 0 via intval — so a field that accepts empty (e.g.
+					// Width/Height "Auto") can round-trip blank without
+					// silently saving 0.
+					'number'       => ( '' === $value || null === $value ) ? '' : intval( $value ),
+					'autocomplete' => $this->sanitize_autocomplete( $value ),
+					// password, text, select and any unrecognized type are
+					// sanitized as plain text.
+					default        => sanitize_text_field( (string) $value ),
+				};
 			}
 
 			// Merge with existing values to preserve settings from other tabs.
