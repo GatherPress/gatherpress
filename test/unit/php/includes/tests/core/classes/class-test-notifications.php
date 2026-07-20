@@ -262,6 +262,60 @@ class Test_Notifications extends Base {
 	}
 
 	/**
+	 * Coverage for the callables the requirement notices are registered with.
+	 *
+	 * The render tests swap in fixture notices, so without this the real
+	 * condition and message closures would be registered but never executed.
+	 *
+	 * @covers ::register_requirement_notices
+	 *
+	 * @return void
+	 */
+	public function test_requirement_notice_callbacks(): void {
+		$notices = Notifications::get_instance()->get_notices();
+		$php     = $notices['gatherpress_upcoming_php_requirement'];
+		$wp      = $notices['gatherpress_upcoming_wp_requirement'];
+
+		// The conditions read the live environment, so the value depends on
+		// where the suite runs. The comparison itself is asserted both ways in
+		// its own test; here we only need the closure to execute.
+		$this->assertIsBool(
+			call_user_func( $php['condition'] ),
+			'Failed to assert that the PHP condition returned a boolean.'
+		);
+		$this->assertIsBool(
+			call_user_func( $wp['condition'] ),
+			'Failed to assert that the WordPress condition returned a boolean.'
+		);
+
+		$php_message = call_user_func( $php['message'] );
+
+		$this->assertStringContainsString(
+			Notifications::UPCOMING_VERSION,
+			$php_message,
+			'Failed to assert that the PHP message named the upcoming version.'
+		);
+		$this->assertStringContainsString(
+			Notifications::UPCOMING_REQUIRES_PHP,
+			$php_message,
+			'Failed to assert that the PHP message named the required PHP version.'
+		);
+
+		$wp_message = call_user_func( $wp['message'] );
+
+		$this->assertStringContainsString(
+			Notifications::UPCOMING_VERSION,
+			$wp_message,
+			'Failed to assert that the WordPress message named the upcoming version.'
+		);
+		$this->assertStringContainsString(
+			Notifications::UPCOMING_REQUIRES_WP,
+			$wp_message,
+			'Failed to assert that the WordPress message named the required WordPress version.'
+		);
+	}
+
+	/**
 	 * Coverage for register_requirement_notices method.
 	 *
 	 * @covers ::register_requirement_notices
@@ -269,7 +323,16 @@ class Test_Notifications extends Base {
 	 * @return void
 	 */
 	public function test_register_requirement_notices(): void {
-		$notices = Notifications::get_instance()->get_notices();
+		$instance = Notifications::get_instance();
+		$original = Utility::get_hidden_property( $instance, 'notices' );
+
+		// The constructor already registered these during plugin bootstrap,
+		// which happens before coverage collection starts. Register again from
+		// an empty slate so the registration itself is exercised under test.
+		Utility::set_and_get_hidden_property( $instance, 'notices', array() );
+		Utility::invoke_hidden_method( $instance, 'register_requirement_notices' );
+
+		$notices = $instance->get_notices();
 
 		$this->assertArrayHasKey(
 			'gatherpress_upcoming_php_requirement',
@@ -281,5 +344,7 @@ class Test_Notifications extends Base {
 			$notices,
 			'Failed to assert that the WordPress requirement notice was registered.'
 		);
+
+		Utility::set_and_get_hidden_property( $instance, 'notices', $original );
 	}
 }
