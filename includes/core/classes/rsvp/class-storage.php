@@ -66,7 +66,7 @@ final class Storage {
 	 *
 	 * @var Query
 	 */
-	protected Query $rsvp_query;
+	protected readonly Query $rsvp_query;
 
 	/**
 	 * RSVP Storage constructor.

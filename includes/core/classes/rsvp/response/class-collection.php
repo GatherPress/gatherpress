@@ -19,23 +19,13 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 final class Collection {
 
 	/**
-	 * States.
-	 *
-	 * @since 0.35.0
-	 *
-	 * @var State[]
-	 */
-	private array $states = array();
-
-	/**
 	 * Constructor.
 	 *
 	 * @since 0.35.0
 	 *
-	 * @param State[] $states States.
+	 * @param State[] $states States held by this collection.
 	 */
-	public function __construct( array $states = array() ) {
-		$this->states = $states;
+	public function __construct( private readonly array $states = array() ) {
 	}
 
 	/**
