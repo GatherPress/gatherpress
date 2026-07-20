@@ -52,7 +52,7 @@ class Notice {
 	 * @since 0.34.1
 	 * @var string
 	 */
-	const OPTION_NAME = 'gatherpress_admin_notifications';
+	const OPTION_NAME = 'gatherpress_admin_notices';
 
 	/**
 	 * Notice type: a problem that needs attention.
