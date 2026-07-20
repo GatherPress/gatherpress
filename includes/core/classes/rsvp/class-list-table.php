@@ -463,19 +463,12 @@ final class List_Table extends WP_List_Table {
 					return '-';
 				}
 
-				switch ( $terms[0]->slug ) {
-					case 'attending':
-						$output = __( 'Attending', 'gatherpress' );
-						break;
-					case 'not_attending':
-						$output = __( 'Not Attending', 'gatherpress' );
-						break;
-					case 'waiting_list':
-						$output = __( 'Waiting List', 'gatherpress' );
-						break;
-					default:
-						$output = '-';
-				}
+				$output = match ( $terms[0]->slug ) {
+					'attending'     => __( 'Attending', 'gatherpress' ),
+					'not_attending' => __( 'Not Attending', 'gatherpress' ),
+					'waiting_list'  => __( 'Waiting List', 'gatherpress' ),
+					default         => '-',
+				};
 
 				break;
 			case 'event':
