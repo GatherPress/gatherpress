@@ -56,3 +56,28 @@ if ( ! trait_exists( 'GatherPress\Core\Traits\Singleton' ) ) {
 
 // Initialize setups.
 GatherPress\Core\Setup::get_instance();
+
+// Deferred to `plugins_loaded` so a listener in any plugin is registered
+// in time to catch it, whatever its load order relative to GatherPress.
+add_action(
+	'plugins_loaded',
+	static function (): void {
+		/**
+		 * Fires once GatherPress has finished bootstrapping its core classes.
+		 *
+		 * Subsystems and third party plugins use this to run setup work that
+		 * depends on other GatherPress classes already being instantiated.
+		 *
+		 * Because this fires only after the requirements check passes, it is
+		 * also the signal a companion plugin should boot from. The GATHERPRESS_*
+		 * constants are defined *before* that check, so they mean "GatherPress
+		 * began loading", not "GatherPress loaded successfully" — booting on
+		 * those instead is what caused the fatal in #1982.
+		 *
+		 * Fires on `plugins_loaded`, so any plugin can catch it.
+		 *
+		 * @since 0.34.1
+		 */
+		do_action( 'gatherpress_loaded' );
+	}
+);
