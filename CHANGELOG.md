@@ -9,6 +9,10 @@ Pending entries for the next release live as individual files under
 [`.github/changelog/`](.github/changelog/) and get rolled up into a new
 version section by `composer changelog:write` at release time.
 
+## [0.34.1] - 2026-07-20
+### Fixed
+- Fixed a bug in the modal manager block where keyboard navigation (using the Enter or Space key) failed to open or close the modal on non-anchor trigger wrappers due to missing Interactivity API event handlers.
+
 ## [0.34.0] - 2026-07-10
 ### Security
 - Enforce per-post edit capability on venue / event meta and post-specific REST routes so unauthenticated or under-privileged callers cannot modify another user's events or venues. [#1520] [#1917]
@@ -433,6 +437,7 @@ Initial public release. Represents 18+ months of pre-1.0 development and ships t
 - Initial unit test suite with code coverage via SonarCloud.
 - Multilingual screenshots and i18n scaffolding.
 
+[0.34.1]: https://github.com/GatherPress/gatherpress/compare/0.34.0...0.34.1
 [0.34.0]: https://github.com/GatherPress/gatherpress/compare/0.33.3...0.34.0
 [0.33.3]: https://github.com/GatherPress/gatherpress/compare/0.33.2...0.33.3
 [0.33.2]: https://github.com/GatherPress/gatherpress/compare/0.33.1...0.33.2
