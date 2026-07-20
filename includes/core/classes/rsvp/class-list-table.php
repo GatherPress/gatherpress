@@ -61,7 +61,7 @@ final class List_Table extends WP_List_Table {
 	 *
 	 * @var string
 	 */
-	protected string $post_type;
+	protected readonly string $post_type;
 
 	/**
 	 * Initializes the RSVP list table.

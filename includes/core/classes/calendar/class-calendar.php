@@ -43,7 +43,7 @@ final class Calendar {
 	 *
 	 * @var Event
 	 */
-	public Event $event;
+	public readonly Event $event;
 
 	/**
 	 * Class constructor.

@@ -377,6 +377,12 @@ Apply to PHP PHPDoc blocks and JS JSDoc blocks alike.
         - ❌ Bad: `Event::get_instance()` (doesn't exist for these classes)
     - In tests, always check the class structure before deciding instantiation method
     - Look for `use Singleton;` trait to determine if `::get_instance()` should be used
+- **`readonly` where a property is genuinely write-once** (#1961), which lets the type system enforce immutability instead of convention. The surface is far smaller than it looks — four conditions each disqualify a property, and three of them are invisible in the class itself:
+    1. **It cannot have a default value.** `protected ?WP_Post $event = null;` is out; `readonly` forbids defaults, and dropping the default only works if the constructor always assigns.
+    2. **It must be assigned unconditionally.** `Calendar\Endpoint` assigns inside `if ( $this->is_valid_registration() )`, so on the failing branch the property stays uninitialized forever — PHPStan flags this as `property.uninitializedReadonly`.
+    3. **Nothing may write it from outside the declaring class** — including tests writing to a mock, e.g. `$template->slug = '…';`. That is a fatal `Cannot initialize readonly property … from scope`.
+    4. **The PMC test helpers must not touch it.** `Utility::set_and_get_hidden_property()` writes through reflection, which PHP 8.1 forbids on an initialized readonly property, and `assert_hooks()` re-invokes the constructor on an existing instance — which throws on the *second* assignment. This is what keeps `Settings\Base::$priority` and `Rsvp::$max_attendance_limit` mutable.
+    - Before adding the keyword, grep for external writes with POSIX classes, not `\s` — **BSD grep on macOS silently matches nothing for `\s`**, which will tell you a property is safe when it is not: `grep -rnE -- "->[[:space:]]*prop[[:space:]]*=[^=>]" includes test`.
 - **Classes are `final` by default** (#1961). Extensibility flows through hooks, `post_type_supports`, and the abstract provider bases — not through subclassing concrete classes. A new class gets `final` unless it is deliberately an extension point.
     - ✅ Good: `final class Token {` — a leaf class nothing extends.
     - ✅ Good: `abstract class Base {` — the documented extension point for settings pages / RSVP response providers / venue map providers.
