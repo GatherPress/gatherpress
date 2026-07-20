@@ -1,0 +1,4 @@
+Significance: patch
+Type: fixed
+
+Correct the gatherpress_loaded action's @since to 0.34.1, the release it now first ships in.
