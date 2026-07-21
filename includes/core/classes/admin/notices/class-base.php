@@ -6,30 +6,27 @@
  * extends.
  *
  * IMPORTANT: this class, and any notice constructed by `requirements-check.php`
- * or `duplicate-check.php`, load before the requirements gate -- and therefore
- * before we know anything about the site's PHP version. Those files must PARSE
- * on the oldest PHP that could reach them, or a site below the floor gets a
- * fatal parse error instead of the notice telling it to upgrade: the whole site
- * goes down rather than just the plugin, and the file whose job is explaining
- * the problem becomes a worse one.
+ * or `duplicate-check.php`, load before the requirements gate -- so they parse
+ * on every site that has the plugin active, including one running the oldest
+ * PHP the plugin supports. GatherPress's floor is PHP 7.4 (the 0.34.x line, via
+ * which these classes ship in 0.34.1), so everything here must parse on 7.4. A
+ * site that only needs the "please upgrade to PHP 8.1 for 0.35.0" notice would
+ * otherwise get a fatal parse error instead -- taking down the whole site
+ * rather than just the plugin, and turning the file whose job is explaining the
+ * problem into a worse one.
  *
- * So in this class and in every blocking notice:
+ * So in this class and in every blocking notice, stay within PHP 7.4. Return
+ * types, scalar and nullable parameter types, `void`, typed properties and
+ * arrow functions are all fine (all <= 7.4). What is *not* allowed is anything
+ * 8.0+: union types, `mixed`, constructor property promotion, `readonly`,
+ * `match`, the nullsafe operator `?->`, named arguments, and enums.
  *
- *   - no return types or scalar parameter types (PHP 7.0)
- *   - no nullable types or `void` (PHP 7.1)
- *   - no typed properties or arrow functions (PHP 7.4)
- *   - no null coalescing (PHP 7.0), constructor promotion or `readonly` (8.1)
- *
- * Types live in the docblocks so static analysis still sees them, and
- * `npm run lint:php:early` enforces the constraint against PHP 7.2 --
- * WordPress 6.7's own floor, and therefore the oldest PHP that can run a
- * WordPress capable of running this plugin.
- *
- * The lint script names the early-loaded files explicitly rather than globbing
- * this directory, because the notices that render *after* the gate (and the
- * Setup registry alongside them) are ordinary modern code. Adding a new
- * blocking notice means adding it to that list -- which is exactly the moment
- * to be thinking about this constraint.
+ * `npm run lint:php:early` enforces this against PHP 7.4 over the early-loaded
+ * files. It names them explicitly rather than globbing this directory, because
+ * the notices that render *after* the gate (and the Setup registry alongside
+ * them) are ordinary modern code. Adding a new blocking notice means adding it
+ * to that list -- which is exactly the moment to be thinking about this
+ * constraint.
  *
  * @package GatherPress\Core\Admin\Notices
  * @since 0.34.1
@@ -101,7 +98,7 @@ abstract class Base {
 	 *
 	 * @return string The slug.
 	 */
-	abstract public function get_slug();
+	abstract public function get_slug(): string;
 
 	/**
 	 * The notice's message.
@@ -115,7 +112,7 @@ abstract class Base {
 	 *
 	 * @return string The translated, escaped message.
 	 */
-	abstract public function get_message();
+	abstract public function get_message(): string;
 
 	/**
 	 * The notice's type.
@@ -124,7 +121,7 @@ abstract class Base {
 	 *
 	 * @return string One of the TYPE_* constants.
 	 */
-	public function get_type() {
+	public function get_type(): string {
 		return self::TYPE_INFO;
 	}
 
@@ -135,7 +132,7 @@ abstract class Base {
 	 *
 	 * @return bool True when the notice renders a close button.
 	 */
-	public function is_dismissible() {
+	public function is_dismissible(): bool {
 		return true;
 	}
 
@@ -146,7 +143,7 @@ abstract class Base {
 	 *
 	 * @return bool True when dismissal persists.
 	 */
-	public function is_persistent() {
+	public function is_persistent(): bool {
 		return false;
 	}
 
@@ -157,7 +154,7 @@ abstract class Base {
 	 *
 	 * @return string A capability, or an empty string for no gate.
 	 */
-	public function get_capability() {
+	public function get_capability(): string {
 		return '';
 	}
 
@@ -174,7 +171,7 @@ abstract class Base {
 	 *
 	 * @return bool True when the notice's condition holds.
 	 */
-	public function applies() {
+	public function applies(): bool {
 		return true;
 	}
 
@@ -188,7 +185,7 @@ abstract class Base {
 	 *
 	 * @return bool True when the slug is recorded as dismissed.
 	 */
-	public function is_dismissed() {
+	public function is_dismissed(): bool {
 		if ( ! $this->is_persistent() ) {
 			return false;
 		}
@@ -212,7 +209,7 @@ abstract class Base {
 	 *
 	 * @return bool True when the dismissal was recorded.
 	 */
-	public function dismiss() {
+	public function dismiss(): bool {
 		if ( ! $this->is_persistent() ) {
 			return false;
 		}
@@ -235,7 +232,7 @@ abstract class Base {
 	 *
 	 * @return string Nonced dismissal URL, or an empty string when not persistent.
 	 */
-	public function get_dismiss_url() {
+	public function get_dismiss_url(): string {
 		if ( ! $this->is_persistent() ) {
 			return '';
 		}
@@ -253,7 +250,7 @@ abstract class Base {
 	 *
 	 * @return bool True when the capability, dismissal and condition all allow it.
 	 */
-	public function should_render() {
+	public function should_render(): bool {
 		$capability = $this->get_capability();
 
 		if ( '' !== $capability && ! current_user_can( $capability ) ) {
@@ -274,7 +271,7 @@ abstract class Base {
 	 *
 	 * @return void
 	 */
-	public function render() {
+	public function render(): void {
 		$message = $this->get_message();
 
 		if ( '' === $message ) {

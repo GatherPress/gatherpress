@@ -33,7 +33,7 @@ final class Upcoming_Wp_Requirement extends Upcoming_Requirement {
 	 *
 	 * @return string The slug.
 	 */
-	public function get_slug() {
+	public function get_slug(): string {
 		return 'gatherpress_upcoming_wp_requirement';
 	}
 
@@ -44,7 +44,7 @@ final class Upcoming_Wp_Requirement extends Upcoming_Requirement {
 	 *
 	 * @return string A version string.
 	 */
-	public function get_required_version() {
+	public function get_required_version(): string {
 		return self::REQUIRES_WP;
 	}
 
@@ -55,7 +55,7 @@ final class Upcoming_Wp_Requirement extends Upcoming_Requirement {
 	 *
 	 * @return string A version string.
 	 */
-	public function get_current_version() {
+	public function get_current_version(): string {
 		return get_bloginfo( 'version' );
 	}
 
@@ -66,7 +66,7 @@ final class Upcoming_Wp_Requirement extends Upcoming_Requirement {
 	 *
 	 * @return string The translated, escaped message.
 	 */
-	public function get_message() {
+	public function get_message(): string {
 		return sprintf(
 			/* translators: %1$s: GatherPress version, %2$s: required WP, %3$s: current WP. */
 			esc_html__(

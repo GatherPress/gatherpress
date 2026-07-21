@@ -66,7 +66,7 @@ class Test_Setup extends Test_Base {
 			 *
 			 * @return string The slug.
 			 */
-			public function get_slug() {
+			public function get_slug(): string {
 				return 'gatherpress_test';
 			}
 
@@ -75,7 +75,7 @@ class Test_Setup extends Test_Base {
 			 *
 			 * @return string The message.
 			 */
-			public function get_message() {
+			public function get_message(): string {
 				return 'Test message.';
 			}
 
@@ -84,7 +84,7 @@ class Test_Setup extends Test_Base {
 			 *
 			 * @return bool Always true.
 			 */
-			public function is_persistent() {
+			public function is_persistent(): bool {
 				return true;
 			}
 		};

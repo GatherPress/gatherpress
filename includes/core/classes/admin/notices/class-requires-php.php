@@ -30,7 +30,7 @@ final class Requires_Php extends Base {
 	 *
 	 * @return string The slug.
 	 */
-	public function get_slug() {
+	public function get_slug(): string {
 		return 'gatherpress_requires_php';
 	}
 
@@ -41,7 +41,7 @@ final class Requires_Php extends Base {
 	 *
 	 * @return string One of the TYPE_* constants.
 	 */
-	public function get_type() {
+	public function get_type(): string {
 		return self::TYPE_ERROR;
 	}
 
@@ -55,7 +55,7 @@ final class Requires_Php extends Base {
 	 *
 	 * @return bool Always false.
 	 */
-	public function is_dismissible() {
+	public function is_dismissible(): bool {
 		return false;
 	}
 
@@ -69,7 +69,7 @@ final class Requires_Php extends Base {
 	 *
 	 * @return bool True when PHP is too old to run GatherPress.
 	 */
-	public function applies() {
+	public function applies(): bool {
 		return version_compare( PHP_VERSION, GATHERPRESS_REQUIRES_PHP, '<' );
 	}
 
@@ -80,7 +80,7 @@ final class Requires_Php extends Base {
 	 *
 	 * @return string The translated, escaped message.
 	 */
-	public function get_message() {
+	public function get_message(): string {
 		return sprintf(
 			/* translators: %1$s: minimum PHP version, %2$s: current PHP version. */
 			esc_html__(

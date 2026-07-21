@@ -34,7 +34,7 @@ final class Missing_Build extends Base {
 	 *
 	 * @return string The slug.
 	 */
-	public function get_slug() {
+	public function get_slug(): string {
 		return 'gatherpress_missing_build';
 	}
 
@@ -45,7 +45,7 @@ final class Missing_Build extends Base {
 	 *
 	 * @return string One of the TYPE_* constants.
 	 */
-	public function get_type() {
+	public function get_type(): string {
 		return self::TYPE_ERROR;
 	}
 
@@ -56,7 +56,7 @@ final class Missing_Build extends Base {
 	 *
 	 * @return bool Always false.
 	 */
-	public function is_dismissible() {
+	public function is_dismissible(): bool {
 		return false;
 	}
 
@@ -67,7 +67,7 @@ final class Missing_Build extends Base {
 	 *
 	 * @return bool True when the build directory is absent.
 	 */
-	public function applies() {
+	public function applies(): bool {
 		return ! is_dir( GATHERPRESS_CORE_PATH . '/build' );
 	}
 
@@ -78,7 +78,7 @@ final class Missing_Build extends Base {
 	 *
 	 * @return string The translated, escaped message.
 	 */
-	public function get_message() {
+	public function get_message(): string {
 		return sprintf(
 			/* translators: %1$s: build command, %2$s: the plugin path */
 			esc_html__(

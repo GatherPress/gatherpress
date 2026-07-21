@@ -67,7 +67,7 @@ class Test_Base extends Unit_Test_Base {
 			 *
 			 * @return string The slug.
 			 */
-			public function get_slug() {
+			public function get_slug(): string {
 				return $this->args['slug'] ?? 'gatherpress_test';
 			}
 
@@ -76,7 +76,7 @@ class Test_Base extends Unit_Test_Base {
 			 *
 			 * @return string The message.
 			 */
-			public function get_message() {
+			public function get_message(): string {
 				return $this->args['message'] ?? 'Test message.';
 			}
 
@@ -85,7 +85,7 @@ class Test_Base extends Unit_Test_Base {
 			 *
 			 * @return string One of the TYPE_* constants.
 			 */
-			public function get_type() {
+			public function get_type(): string {
 				return $this->args['type'] ?? parent::get_type();
 			}
 
@@ -94,7 +94,7 @@ class Test_Base extends Unit_Test_Base {
 			 *
 			 * @return bool True when dismissible.
 			 */
-			public function is_dismissible() {
+			public function is_dismissible(): bool {
 				return $this->args['dismissible'] ?? parent::is_dismissible();
 			}
 
@@ -103,7 +103,7 @@ class Test_Base extends Unit_Test_Base {
 			 *
 			 * @return bool True when persistent.
 			 */
-			public function is_persistent() {
+			public function is_persistent(): bool {
 				return $this->args['persistent'] ?? parent::is_persistent();
 			}
 
@@ -112,7 +112,7 @@ class Test_Base extends Unit_Test_Base {
 			 *
 			 * @return string The capability, or an empty string.
 			 */
-			public function get_capability() {
+			public function get_capability(): string {
 				return $this->args['capability'] ?? parent::get_capability();
 			}
 
@@ -121,7 +121,7 @@ class Test_Base extends Unit_Test_Base {
 			 *
 			 * @return bool True when it applies.
 			 */
-			public function applies() {
+			public function applies(): bool {
 				return $this->args['applies'] ?? parent::applies();
 			}
 		};

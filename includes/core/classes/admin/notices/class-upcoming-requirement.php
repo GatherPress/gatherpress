@@ -39,7 +39,7 @@ abstract class Upcoming_Requirement extends Base {
 	 *
 	 * @return string A version string.
 	 */
-	abstract public function get_required_version();
+	abstract public function get_required_version(): string;
 
 	/**
 	 * The version this site currently runs.
@@ -48,7 +48,7 @@ abstract class Upcoming_Requirement extends Base {
 	 *
 	 * @return string A version string.
 	 */
-	abstract public function get_current_version();
+	abstract public function get_current_version(): string;
 
 	/**
 	 * The notice's type.
@@ -57,7 +57,7 @@ abstract class Upcoming_Requirement extends Base {
 	 *
 	 * @return string One of the TYPE_* constants.
 	 */
-	public function get_type() {
+	public function get_type(): string {
 		return self::TYPE_WARNING;
 	}
 
@@ -72,7 +72,7 @@ abstract class Upcoming_Requirement extends Base {
 	 *
 	 * @return string The capability.
 	 */
-	public function get_capability() {
+	public function get_capability(): string {
 		return 'update_plugins';
 	}
 
@@ -89,7 +89,7 @@ abstract class Upcoming_Requirement extends Base {
 	 *
 	 * @return bool Always false.
 	 */
-	public function is_persistent() {
+	public function is_persistent(): bool {
 		return false;
 	}
 
@@ -100,7 +100,7 @@ abstract class Upcoming_Requirement extends Base {
 	 *
 	 * @return bool True when the site does not yet meet the coming floor.
 	 */
-	public function applies() {
+	public function applies(): bool {
 		return $this->is_below( $this->get_current_version(), $this->get_required_version() );
 	}
 
@@ -118,7 +118,7 @@ abstract class Upcoming_Requirement extends Base {
 	 *
 	 * @return bool True when the current version is older than required.
 	 */
-	public function is_below( $current_version, $required_version ) {
+	public function is_below( string $current_version, string $required_version ): bool {
 		return version_compare( $current_version, $required_version, '<' );
 	}
 }
