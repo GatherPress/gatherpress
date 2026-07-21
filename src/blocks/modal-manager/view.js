@@ -11,7 +11,7 @@ import {
 	setupCloseHandlers,
 } from '../../helpers/interactivity';
 
-const { actions } = store('gatherpress', {
+const { actions } = store( 'gatherpress', {
 	actions: {
 		openModal(event = null, element = null) {
 			if (event) {
