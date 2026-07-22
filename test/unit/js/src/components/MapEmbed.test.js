@@ -13,9 +13,17 @@ jest.mock( '@wordpress/data', () => ( {
 } ) );
 
 /**
+ * Mock Google Maps API loader
+ */
+jest.mock( '@src/helpers/google-maps-api', () => ( {
+	loadGoogleMapsApi: jest.fn(),
+} ) );
+
+/**
  * Internal dependencies
  */
 import MapEmbed from '@src/components/MapEmbed';
+import { loadGoogleMapsApi } from '@src/helpers/google-maps-api';
 import { select } from '@wordpress/data';
 
 beforeEach( () => {
@@ -155,7 +163,7 @@ test( 'Google MapEmbed returns address in source when location is set', () => {
 	);
 } );
 
-test( 'Google MapEmbed uses Embed API when googleMapsApiKey prop is set', () => {
+test( 'Google MapEmbed uses the Maps JavaScript API when googleMapsApiKey prop is set', async () => {
 	select.mockImplementation( ( store ) => {
 		if ( 'core' === store ) {
 			return { canUser: jest.fn( () => false ) };
@@ -172,52 +180,43 @@ test( 'Google MapEmbed uses Embed API when googleMapsApiKey prop is set', () => 
 		}
 		return null;
 	} );
-	const { container } = render(
-		<MapEmbed
-			location="Test"
-			latitude="40.8117036"
-			longitude="-74.2187738"
-			zoom={ 15 }
-			type="terrain"
-			googleMapsApiKey="unit-test-key"
-		/>,
-	);
-	const src = container.children[ 0 ].getAttribute( 'src' );
-	expect( src ).toContain( 'https://www.google.com/maps/embed/v1/view?' );
-	expect( src ).toContain( 'key=unit-test-key' );
-	// Maps Embed API only allows roadmap or satellite; terrain maps to roadmap.
-	expect( src ).toContain( 'maptype=roadmap' );
-} );
 
-test( 'Google MapEmbed maps hybrid to satellite for Embed API when key is set', () => {
-	select.mockImplementation( ( store ) => {
-		if ( 'core' === store ) {
-			return { canUser: jest.fn( () => false ) };
-		}
-		if ( 'core/edit-post' === store ) {
-			return null;
-		}
-		if ( 'core/editor' === store ) {
-			return {
-				getEditorSettings: () => ( {
-					gatherpress: { settings: { mapPlatform: 'google' } },
-				} ),
-			};
-		}
-		return null;
+	const mapInstance = {
+		setCenter: jest.fn(),
+		setZoom: jest.fn(),
+		setMapTypeId: jest.fn(),
+	};
+	const maps = {
+		Map: jest.fn( () => mapInstance ),
+		Marker: jest.fn( () => ( {} ) ),
+	};
+	loadGoogleMapsApi.mockResolvedValue( maps );
+
+	let container;
+	await act( async () => {
+		( { container } = render(
+			<MapEmbed
+				location="Test"
+				latitude="40.8117036"
+				longitude="-74.2187738"
+				zoom={ 15 }
+				type="terrain"
+				googleMapsApiKey="unit-test-key"
+			/>,
+		) );
 	} );
-	const { container } = render(
-		<MapEmbed
-			location="Test"
-			latitude="40.8117036"
-			longitude="-74.2187738"
-			zoom={ 15 }
-			type="hybrid"
-			googleMapsApiKey="unit-test-key"
-		/>,
+
+	// The keyed path mounts a JS API map into a div — no iframe.
+	expect( container.children[ 0 ].tagName ).toBe( 'DIV' );
+	expect( loadGoogleMapsApi ).toHaveBeenCalledWith(
+		'unit-test-key',
+		document,
 	);
-	const src = container.children[ 0 ].getAttribute( 'src' );
-	expect( src ).toContain( 'maptype=satellite' );
+	// The JS API honors the full map-type set — terrain stays terrain.
+	expect( maps.Map ).toHaveBeenCalledWith(
+		expect.anything(),
+		expect.objectContaining( { mapTypeId: 'terrain', zoom: 15 } ),
+	);
 } );
 
 test( 'MapEmbed returns address in source when location, zoom, map type, and class are set', () => {

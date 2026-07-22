@@ -1,0 +1,4 @@
+Significance: minor
+Type: added
+
+Interactive Google maps now use the Maps JavaScript API when an API key is configured, unlocking hybrid and terrain map types.

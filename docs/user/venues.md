@@ -68,14 +68,16 @@ Two toggles apply to any link destination except "None":
 
 ### Sitewide defaults
 
-Under `Settings > GatherPress > Venues > Maps` you choose the **mapping platform** (OpenStreetMap or Google Maps). For Google Maps you can add an optional **Google Maps API key**. It is stored and edited as a normal text field (not a masked password); restrict the key by HTTP referrer in Google Cloud. The value is used where maps run (including the block editor and the front of the site), so treat it like any other client-side API key.
+Under `Settings > GatherPress > Venues > Maps` you choose the **mapping platform** (OpenStreetMap or Google Maps). For Google Maps you can add an optional **Google Maps API key**. Enable the **Maps JavaScript API**, **Maps Embed API**, and **Maps Static API** for the key in Google Cloud — interactive maps run on the Maps JavaScript API, the Embed API backs the iframe fallback, and static images use the Static API. It is stored and edited as a normal text field (not a masked password); restrict the key by HTTP referrer in Google Cloud. The value is used where maps run (including the block editor and the front of the site), so treat it like any other client-side API key.
+
+With an API key configured, interactive Google maps support all four map types (roadmap, satellite, hybrid, and terrain). Without a key, interactive Google maps fall back to a keyless embed that only offers roadmap and satellite.
 
 The same screen sets defaults for **new** Venue Map blocks (render mode, zoom, height, width, aspect ratio, scale, map type, and related options). Highlights:
 
 - **Default Render Mode** — interactive or static image.
 - **Default Zoom Level** — 1 (world) to 20 (street).
 - **Default Height** — in pixels.
-- **Default Map Type** — roadmap, satellite, hybrid, or terrain (Google Maps only; OpenStreetMap and static images ignore this).
+- **Default Map Type** — roadmap, satellite, hybrid, or terrain (Google Maps only; OpenStreetMap ignores this). Static Google maps and — with an API key — interactive Google maps honor all four types; keyless interactive Google maps render roadmap and satellite only.
 
 Changing a default only affects blocks added afterwards — existing blocks keep the values the editor chose at insertion time, so a sitewide change never rewrites published content.
 
