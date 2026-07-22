@@ -1,14 +1,23 @@
 /**
  * WordPress dependencies
  */
-import { __ } from '@wordpress/i18n';
 import { select } from '@wordpress/data';
+import { useEffect, useRef, useState } from '@wordpress/element';
+import { __ } from '@wordpress/i18n';
+
+/**
+ * Internal dependencies
+ */
+import { loadGoogleMapsApi } from '../helpers/google-maps-api';
 
 /**
  * GoogleMap component for GatherPress.
  *
- * This component is used to embed a Google Map with specified location,
- * zoom level, map type, and height.
+ * Renders the interactive Google map for the venue-map block. With a Google
+ * Maps API key configured the map runs on the Maps JavaScript API — the only
+ * Google surface that honors all four map types (roadmap, satellite, hybrid,
+ * terrain). Without a key the component falls back to the keyless legacy
+ * embed iframe, which supports roadmap and satellite only.
  *
  * @since 0.27.0
  *
@@ -28,6 +37,11 @@ import { select } from '@wordpress/data';
  * Canonical Google map types for the venue-map block: localized label, block
  * attribute slug, and legacy keyless embed `t=` parameter letter.
  *
+ * The slugs double as Maps JavaScript API `mapTypeId` values, so the keyed
+ * interactive path passes them through untouched. The `legacyEmbedLetter`
+ * values back the keyless embed fallback.
+ *
+ * @see https://developers.google.com/maps/documentation/javascript/maptypes
  * @see https://developers.google.com/maps/documentation/embed/map-parameters
  */
 export const GOOGLE_MAP_TYPE_DEFINITIONS = [
@@ -54,10 +68,12 @@ export const GOOGLE_MAP_TYPE_DEFINITIONS = [
 ];
 
 /**
- * Slugs omitted from the editor map-type control while the iframe path uses
- * the Embed API (roadmap and satellite only).
+ * Slugs the keyless legacy embed iframe can't honor — it only renders the
+ * roadmap and satellite views, matching the coercion in
+ * `toMapsEmbedApiMapType()`. The keyed Maps JavaScript API path supports
+ * every slug in `GOOGLE_MAP_TYPE_DEFINITIONS`.
  */
-export const GOOGLE_IFRAME_UNSUPPORTED_MAP_TYPE_SLUGS = [
+export const GOOGLE_KEYLESS_UNSUPPORTED_MAP_TYPE_SLUGS = [
 	'hybrid',
 	'terrain',
 ];
@@ -75,19 +91,29 @@ const LEGACY_EMBED_LETTER_BY_SLUG = GOOGLE_MAP_TYPE_DEFINITIONS.reduce(
 );
 
 /**
+ * Normalize a block map-type slug to the canonical set.
+ *
+ * @param {string} type Map type slug from the block.
+ *
+ * @return {string} A slug from `GOOGLE_MAP_TYPE_DEFINITIONS`; unknown values fall back to roadmap.
+ */
+export function toGoogleMapType( type ) {
+	return type && BLOCK_MAP_TYPE_SLUGS.includes( type ) ? type : 'roadmap';
+}
+
+/**
  * Maps Embed API `view` (and related) modes only allow `roadmap` or `satellite`
- * for `maptype`. Hybrid or terrain in block data (e.g. before the editor
- * normalizes) are coerced so keyed iframe URLs stay valid.
+ * for `maptype`. Hybrid or terrain in block data (e.g. content authored while
+ * an API key was configured) are coerced so embed URLs stay valid.
  *
  * @see https://developers.google.com/maps/documentation/embed/embedding-map#view_mode
  *
  * @param {string} type Map type slug from the block.
  *
- * @return {'roadmap'|'satellite'} Coercion for interactive iframe: hybrid→satellite, terrain→roadmap.
+ * @return {'roadmap'|'satellite'} Coercion for the embed iframe: hybrid→satellite, terrain→roadmap.
  */
 export function toMapsEmbedApiMapType( type ) {
-	const normalized =
-		type && BLOCK_MAP_TYPE_SLUGS.includes( type ) ? type : 'roadmap';
+	const normalized = toGoogleMapType( type );
 	if ( 'satellite' === normalized || 'hybrid' === normalized ) {
 		return 'satellite';
 	}
@@ -99,6 +125,10 @@ const GOOGLE_LEGACY_EMBED_BASE = 'https://maps.google.com/maps';
 
 /**
  * Builds the iframe `src` for a Google map embed.
+ *
+ * With an API key this is the Maps Embed API `view` URL — only used as the
+ * fallback when the Maps JavaScript API fails to load. Without a key it is
+ * the keyless legacy embed URL, the primary no-key path.
  *
  * @param {Object} params           Parameters.
  * @param {string} params.latitude  Latitude.
@@ -117,8 +147,7 @@ export function getGoogleMapEmbedSrc( {
 	apiKey,
 } ) {
 	const z = zoom || 10;
-	const safeType =
-		type && BLOCK_MAP_TYPE_SLUGS.includes( type ) ? type : 'roadmap';
+	const safeType = toGoogleMapType( type );
 	const trimmedKey = ( apiKey || '' ).trim();
 
 	if ( trimmedKey ) {
@@ -131,17 +160,146 @@ export function getGoogleMapEmbedSrc( {
 		return `${ GOOGLE_EMBED_VIEW_BASE }?${ params.toString() }`;
 	}
 
+	// toMapsEmbedApiMapType() only ever returns roadmap or satellite, both
+	// of which are always present in the letter table.
 	const legacyType = toMapsEmbedApiMapType( safeType );
 	const params = new URLSearchParams( {
 		q: `${ latitude },${ longitude }`,
 		z: String( z ),
-		t:
-			LEGACY_EMBED_LETTER_BY_SLUG[ legacyType ] ||
-			LEGACY_EMBED_LETTER_BY_SLUG.roadmap,
+		t: LEGACY_EMBED_LETTER_BY_SLUG[ legacyType ],
 		output: 'embed',
 	} );
 	return `${ GOOGLE_LEGACY_EMBED_BASE }?${ params.toString() }`;
 }
+
+/**
+ * Interactive Google map backed by the Maps JavaScript API.
+ *
+ * Mounts a `google.maps.Map` with a marker into a plain div, re-pointing the
+ * existing instance when props change rather than tearing it down. If the
+ * API script fails to load (network error, key without the Maps JavaScript
+ * API enabled), the component falls back to the keyed Maps Embed API iframe
+ * so the block still shows a map.
+ *
+ * @since 0.35.0
+ *
+ * @param {Object}  props              - Component properties.
+ * @param {string}  props.location     - Marker tooltip text.
+ * @param {string}  props.latitude     - Latitude.
+ * @param {string}  props.longitude    - Longitude.
+ * @param {number}  props.zoom         - Zoom level.
+ * @param {string}  props.type         - Map type slug.
+ * @param {string}  props.className    - Additional CSS class names.
+ * @param {Object}  props.style        - Wrapper inline style.
+ * @param {string}  props.apiKey       - Google Maps API key (non-empty).
+ * @param {boolean} props.isPostEditor - Whether the map renders inside the post editor canvas.
+ *
+ * @return {JSX.Element} The rendered React component.
+ */
+const GoogleMapsApiMap = ( {
+	location,
+	latitude,
+	longitude,
+	zoom,
+	type,
+	className,
+	style,
+	apiKey,
+	isPostEditor,
+} ) => {
+	const containerRef = useRef( null );
+	const mapRef = useRef( null );
+	const markerRef = useRef( null );
+	const [ loadFailed, setLoadFailed ] = useState( false );
+
+	const z = zoom || 10;
+	const safeType = toGoogleMapType( type );
+
+	useEffect( () => {
+		let cancelled = false;
+
+		// The editor canvas can live in its own iframe — the API script must
+		// load into the document that owns the map container or it bootstraps
+		// against the wrong window.
+		const doc = containerRef.current?.ownerDocument || document;
+
+		loadGoogleMapsApi( apiKey, doc )
+			.then( ( maps ) => {
+				if ( cancelled || ! containerRef.current ) {
+					return;
+				}
+
+				const center = {
+					lat: parseFloat( latitude ),
+					lng: parseFloat( longitude ),
+				};
+
+				if ( ! mapRef.current ) {
+					mapRef.current = new maps.Map( containerRef.current, {
+						center,
+						zoom: z,
+						mapTypeId: safeType,
+					} );
+					markerRef.current = new maps.Marker( {
+						position: center,
+						map: mapRef.current,
+						title: location,
+					} );
+					return;
+				}
+
+				// Re-point the live instance instead of remounting — keeps
+				// the editor preview smooth while controls change. The
+				// marker is created alongside the map, so it's always set
+				// whenever the map is.
+				mapRef.current.setCenter( center );
+				mapRef.current.setZoom( z );
+				mapRef.current.setMapTypeId( safeType );
+				markerRef.current.setPosition( center );
+				markerRef.current.setTitle( location );
+			} )
+			.catch( () => {
+				if ( ! cancelled ) {
+					setLoadFailed( true );
+				}
+			} );
+
+		return () => {
+			cancelled = true;
+		};
+	}, [ apiKey, latitude, longitude, z, safeType, location ] );
+
+	// The Maps JavaScript API didn't come up — fall back to the keyed Maps
+	// Embed API iframe (roadmap/satellite only) so the block still renders.
+	if ( loadFailed ) {
+		return (
+			<iframe
+				src={ getGoogleMapEmbedSrc( {
+					latitude,
+					longitude,
+					zoom: z,
+					type: safeType,
+					apiKey,
+				} ) }
+				style={ { ...style, border: 0 } }
+				className={ className }
+				title={ location }
+				{ ...( isPostEditor && { inert: '' } ) }
+			></iframe>
+		);
+	}
+
+	return (
+		<div
+			ref={ containerRef }
+			className={ className }
+			// Carry the block's border-radius down so the map canvas stays
+			// clipped to the same rounded corners as the wrapper.
+			style={ { ...style, borderRadius: 'inherit', overflow: 'hidden' } }
+			{ ...( isPostEditor && { inert: '' } ) }
+		></div>
+	);
+};
 
 const GoogleMap = ( props ) => {
 	const {
@@ -164,8 +322,8 @@ const GoogleMap = ( props ) => {
 	const validLng =
 		longitude && '' !== longitude && ! isNaN( parseFloat( longitude ) );
 
-	// Show placeholder when no valid coordinates — avoids keyed Embed API
-	// requests with an invalid `center` param on new events before geocode.
+	// Show placeholder when no valid coordinates — avoids keyed API
+	// requests with an invalid `center` on new events before geocode.
 	if ( ! validLat || ! validLng ) {
 		return (
 			<div
@@ -182,18 +340,36 @@ const GoogleMap = ( props ) => {
 		);
 	}
 
+	// Matches the OpenStreetMap editor fix: the `inert` attribute stops the
+	// map from capturing clicks/focus so the user can select the block
+	// itself instead of interacting with the embedded map inside the canvas.
+	const isPostEditor = Boolean( select( 'core/edit-post' ) );
+
+	const trimmedKey = ( apiKey || '' ).trim();
+
+	if ( trimmedKey ) {
+		return (
+			<GoogleMapsApiMap
+				location={ location }
+				latitude={ latitude }
+				longitude={ longitude }
+				zoom={ zoom }
+				type={ type }
+				className={ className }
+				style={ style }
+				apiKey={ trimmedKey }
+				isPostEditor={ isPostEditor }
+			/>
+		);
+	}
+
 	const srcURL = getGoogleMapEmbedSrc( {
 		latitude,
 		longitude,
 		zoom,
 		type,
-		apiKey,
+		apiKey: '',
 	} );
-
-	// Matches the OpenStreetMap editor fix: the `inert` attribute stops the
-	// iframe from capturing clicks/focus so the user can select the block
-	// itself instead of interacting with the embedded map inside the canvas.
-	const isPostEditor = Boolean( select( 'core/edit-post' ) );
 
 	return (
 		<iframe

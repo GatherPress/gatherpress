@@ -21,6 +21,10 @@ let capturedVenueStateSelector = null;
 // drive its resize callbacks with crafted elements.
 let capturedResizableProps = null;
 
+// Capture every SelectControl render so tests can inspect the Map type
+// control's option list under different render-mode / API-key combos.
+let mockSelectControlProps = [];
+
 // A minimal select mock that puts the block into the early-bail path:
 // effectiveVenuePostId === 0 because both context.postId and
 // core/editor.getCurrentPostId() return falsy values.
@@ -103,7 +107,10 @@ jest.mock( '@wordpress/components', () => ( {
 			</div>
 		);
 	},
-	SelectControl: () => null,
+	SelectControl: ( props ) => {
+		mockSelectControlProps.push( props );
+		return null;
+	},
 	TextControl: () => null,
 	ToggleControl: () => null,
 	ToolbarButton: () => null,
@@ -134,9 +141,19 @@ jest.mock( '@src/helpers/editor-settings', () => ( {
 jest.mock( '@src/components/MapEmbed', () => () => null );
 
 jest.mock( '@src/components/GoogleMap', () => ( {
-	GOOGLE_IFRAME_UNSUPPORTED_MAP_TYPE_SLUGS: [],
-	GOOGLE_MAP_TYPE_DEFINITIONS: [],
-	toMapsEmbedApiMapType: jest.fn( ( type ) => type ),
+	GOOGLE_KEYLESS_UNSUPPORTED_MAP_TYPE_SLUGS: [ 'hybrid', 'terrain' ],
+	GOOGLE_MAP_TYPE_DEFINITIONS: [
+		{ slug: 'roadmap', label: 'Roadmap' },
+		{ slug: 'satellite', label: 'Satellite' },
+		{ slug: 'hybrid', label: 'Hybrid' },
+		{ slug: 'terrain', label: 'Terrain' },
+	],
+	toMapsEmbedApiMapType: jest.fn( ( type ) => {
+		if ( 'hybrid' === type || 'satellite' === type ) {
+			return 'satellite';
+		}
+		return 'roadmap';
+	} ),
 } ) );
 
 jest.mock( '@src/supports/block-guard', () => ( {
@@ -165,6 +182,7 @@ jest.mock( '@src/blocks/venue-map/helpers', () => ( {
  * Internal dependencies
  */
 import Edit from '@src/blocks/venue-map/edit';
+import { getFromSettings } from '@src/helpers/editor-settings';
 import { isVenuePostType } from '@src/helpers/venue';
 
 const DEFAULT_ATTRIBUTES = {
@@ -392,6 +410,212 @@ describe( 'venue-map Edit useSelect selector stability', () => {
 		expect( result1.staticMapDescriptors ).toBe(
 			result2.staticMapDescriptors
 		);
+	} );
+} );
+
+describe( 'venue-map Edit Google map type control', () => {
+	/**
+	 * Settings mock for a Google-platform site.
+	 *
+	 * @param {string} apiKey Google Maps API key setting value.
+	 *
+	 * @return {Function} getFromSettings implementation.
+	 */
+	const googleSettings =
+		( apiKey ) =>
+			( key ) => {
+				if ( 'mapPlatform' === key ) {
+					return 'google';
+				}
+				if ( 'googleMapsApiKey' === key ) {
+					return apiKey;
+				}
+				return null;
+			};
+
+	/**
+	 * Find the Map type SelectControl captured during the last render.
+	 *
+	 * @return {Object|undefined} Captured props.
+	 */
+	const getMapTypeControl = () =>
+		mockSelectControlProps.find(
+			( props ) => 'Map type' === props.label
+		);
+
+	/**
+	 * Invoke every effect registered with the mocked useEffect.
+	 *
+	 * @return {void}
+	 */
+	const runEffects = () => {
+		const { useEffect } = jest.requireMock( '@wordpress/element' );
+		act( () => {
+			useEffect.mock.calls.forEach( ( [ callback ] ) => callback() );
+		} );
+	};
+
+	beforeEach( () => {
+		mockSelectControlProps = [];
+		jest.clearAllMocks();
+		isVenuePostType.mockReturnValue( false );
+	} );
+
+	it( 'offers only roadmap and satellite for keyless interactive maps', () => {
+		getFromSettings.mockImplementation( googleSettings( null ) );
+
+		render(
+			<Edit
+				attributes={ {
+					...DEFAULT_ATTRIBUTES,
+					renderMode: 'interactive',
+				} }
+				setAttributes={ jest.fn() }
+				context={ {} }
+				clientId=""
+			/>
+		);
+
+		expect(
+			getMapTypeControl().options.map( ( opt ) => opt.value )
+		).toEqual( [ 'roadmap', 'satellite' ] );
+	} );
+
+	it( 'offers all four types for interactive maps with an API key', () => {
+		getFromSettings.mockImplementation( googleSettings( 'unit-test-key' ) );
+
+		render(
+			<Edit
+				attributes={ {
+					...DEFAULT_ATTRIBUTES,
+					renderMode: 'interactive',
+				} }
+				setAttributes={ jest.fn() }
+				context={ {} }
+				clientId=""
+			/>
+		);
+
+		expect(
+			getMapTypeControl().options.map( ( opt ) => opt.value )
+		).toEqual( [ 'roadmap', 'satellite', 'hybrid', 'terrain' ] );
+	} );
+
+	it( 'offers all four types for static maps without an API key', () => {
+		getFromSettings.mockImplementation( googleSettings( null ) );
+
+		render(
+			<Edit
+				attributes={ DEFAULT_ATTRIBUTES }
+				setAttributes={ jest.fn() }
+				context={ {} }
+				clientId=""
+			/>
+		);
+
+		expect(
+			getMapTypeControl().options.map( ( opt ) => opt.value )
+		).toEqual( [ 'roadmap', 'satellite', 'hybrid', 'terrain' ] );
+	} );
+
+	it( 'coerces a stored hybrid type when the interactive map is keyless', () => {
+		getFromSettings.mockImplementation( googleSettings( null ) );
+		const setAttributes = jest.fn();
+
+		render(
+			<Edit
+				attributes={ {
+					...DEFAULT_ATTRIBUTES,
+					renderMode: 'interactive',
+					type: 'hybrid',
+				} }
+				setAttributes={ setAttributes }
+				context={ {} }
+				clientId=""
+			/>
+		);
+
+		runEffects();
+
+		expect( setAttributes ).toHaveBeenCalledWith( {
+			type: 'satellite',
+		} );
+	} );
+
+	it( 'keeps a stored hybrid type when an API key is configured', () => {
+		getFromSettings.mockImplementation( googleSettings( 'unit-test-key' ) );
+		const setAttributes = jest.fn();
+
+		render(
+			<Edit
+				attributes={ {
+					...DEFAULT_ATTRIBUTES,
+					renderMode: 'interactive',
+					type: 'hybrid',
+				} }
+				setAttributes={ setAttributes }
+				context={ {} }
+				clientId=""
+			/>
+		);
+
+		runEffects();
+
+		expect( setAttributes ).not.toHaveBeenCalledWith( {
+			type: expect.anything(),
+		} );
+	} );
+
+	it( 'keeps a roadmap type untouched on the keyless interactive path', () => {
+		getFromSettings.mockImplementation( googleSettings( null ) );
+		const setAttributes = jest.fn();
+
+		render(
+			<Edit
+				attributes={ {
+					...DEFAULT_ATTRIBUTES,
+					renderMode: 'interactive',
+					type: 'roadmap',
+				} }
+				setAttributes={ setAttributes }
+				context={ {} }
+				clientId=""
+			/>
+		);
+
+		runEffects();
+
+		expect( setAttributes ).not.toHaveBeenCalledWith( {
+			type: expect.anything(),
+		} );
+	} );
+
+	it( 'never coerces when the map type control is hidden (OSM platform)', () => {
+		getFromSettings.mockImplementation( ( key ) =>
+			'mapPlatform' === key ? 'osm' : null
+		);
+		const setAttributes = jest.fn();
+
+		render(
+			<Edit
+				attributes={ {
+					...DEFAULT_ATTRIBUTES,
+					renderMode: 'interactive',
+					type: 'hybrid',
+				} }
+				setAttributes={ setAttributes }
+				context={ {} }
+				clientId=""
+			/>
+		);
+
+		expect( getMapTypeControl() ).toBeUndefined();
+
+		runEffects();
+
+		expect( setAttributes ).not.toHaveBeenCalledWith( {
+			type: expect.anything(),
+		} );
 	} );
 } );
 

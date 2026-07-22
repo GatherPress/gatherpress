@@ -119,7 +119,7 @@ final class Venues extends Base {
 							sprintf(
 								// phpcs:disable Generic.Files.LineLength.TooLong -- One translator string for the full API key guidance sentence.
 								/* translators: %s: link to "Get an API key" documentation. */
-								__( 'Optional. Referrer-restricted Google Maps key (Embed + Static APIs). Roadmap and satellite views only. %s', 'gatherpress' ),
+								__( 'Optional. Referrer-restricted Google Maps key (Maps JavaScript + Embed + Static APIs). Unlocks all map types; without a key, interactive maps show roadmap and satellite views only. %s', 'gatherpress' ),
 								// phpcs:enable Generic.Files.LineLength.TooLong
 								'<a href="https://developers.google.com/maps/documentation/embed/get-api-key"'
 								. ' target="_blank" rel="noopener noreferrer">'

@@ -33,7 +33,7 @@ import { isInFSETemplate } from '../../helpers/editor';
 import { getFromSettings } from '../../helpers/editor-settings';
 import MapEmbed from '../../components/MapEmbed';
 import {
-	GOOGLE_IFRAME_UNSUPPORTED_MAP_TYPE_SLUGS,
+	GOOGLE_KEYLESS_UNSUPPORTED_MAP_TYPE_SLUGS,
 	GOOGLE_MAP_TYPE_DEFINITIONS,
 	toMapsEmbedApiMapType,
 } from '../../components/GoogleMap';
@@ -297,12 +297,11 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 		: SCALE_DEFAULT;
 	const showMapTypeControl = 'google' === mapPlatform;
 
-	// Full list of map types for Google. Maps Embed API (iframe) supports
-	// only roadmap and satellite — hybrid/terrain are filtered out for
-	// interactive mode until a Maps JavaScript API integration can use
-	// the full set without changing `GOOGLE_MAP_TYPE_DEFINITIONS` in
-	// `GoogleMap.js`. Static mode uses the Static Maps API, which supports
-	// all four types.
+	// Full list of map types for Google. With an API key, interactive mode
+	// runs on the Maps JavaScript API and supports all four types — same as
+	// static mode's Static Maps API. Only the keyless interactive path (the
+	// legacy embed iframe) is limited to roadmap and satellite, so the
+	// hybrid/terrain options drop out just for that combination.
 	const GOOGLE_MAP_TYPE_OPTIONS_ALL = GOOGLE_MAP_TYPE_DEFINITIONS.map(
 		( definition ) => ( {
 			label: definition.label,
@@ -310,20 +309,26 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 		} )
 	);
 
-	const IFRAME_UNSUPPORTED_GOOGLE_MAP_TYPES = new Set(
-		GOOGLE_IFRAME_UNSUPPORTED_MAP_TYPE_SLUGS
+	const KEYLESS_UNSUPPORTED_GOOGLE_MAP_TYPES = new Set(
+		GOOGLE_KEYLESS_UNSUPPORTED_MAP_TYPE_SLUGS
 	);
 
+	const isKeylessInteractiveGoogle =
+		'static' !== renderMode && '' === googleMapsApiKey.trim();
+
 	let googleMapTypeSelectOptions = GOOGLE_MAP_TYPE_OPTIONS_ALL;
-	if ( 'static' !== renderMode ) {
+	if ( isKeylessInteractiveGoogle ) {
 		googleMapTypeSelectOptions = GOOGLE_MAP_TYPE_OPTIONS_ALL.filter(
-			( opt ) => ! IFRAME_UNSUPPORTED_GOOGLE_MAP_TYPES.has( opt.value )
+			( opt ) => ! KEYLESS_UNSUPPORTED_GOOGLE_MAP_TYPES.has( opt.value )
 		);
 	}
 
+	// Keep the stored type inside what the keyless embed can render so the
+	// Map type control never shows a value its own option list dropped —
+	// e.g. content authored with an API key that has since been removed.
 	useEffect( () => {
 		if (
-			'interactive' === renderMode &&
+			isKeylessInteractiveGoogle &&
 			showMapTypeControl &&
 			! [ 'roadmap', 'satellite' ].includes( type )
 		) {
@@ -331,7 +336,7 @@ const Edit = ( { attributes, setAttributes, context, clientId } ) => {
 				type: toMapsEmbedApiMapType( type ),
 			} );
 		}
-	}, [ renderMode, showMapTypeControl, type, setAttributes ] );
+	}, [ isKeylessInteractiveGoogle, showMapTypeControl, type, setAttributes ] );
 
 	// Link destination options track the site's mapping platform: on an
 	// OSM-powered site we only offer the OpenStreetMap preset (and vice
