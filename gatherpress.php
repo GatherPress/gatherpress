@@ -72,7 +72,7 @@ add_action(
 		 * Fires on `plugins_loaded`, so any plugin can catch it. See the
 		 * plugin lifecycle guide (`docs/developer/plugin-lifecycle.md`).
 		 *
-		 * @since 0.35.0
+		 * @since 0.34.1
 		 */
 		do_action( 'gatherpress_loaded' );
 	}
