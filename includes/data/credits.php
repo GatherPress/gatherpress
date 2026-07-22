@@ -90,19 +90,6 @@ return array (
     ),
     4 => 
     array (
-      'id' => 10452344,
-      'name' => 'Pratik Bhatt',
-      'link' => 'https://profiles.wordpress.org/pkbhatt/',
-      'slug' => 'pkbhatt',
-      'avatar_urls' => 
-      array (
-        24 => '//www.gravatar.com/avatar/8c23225a67ae866951341a9d5844af55?s=24&#038;r=g&#038;d=mm',
-        48 => '//www.gravatar.com/avatar/8c23225a67ae866951341a9d5844af55?s=48&#038;r=g&#038;d=mm',
-        96 => '//www.gravatar.com/avatar/8c23225a67ae866951341a9d5844af55?s=96&#038;r=g&#038;d=mm',
-      ),
-    ),
-    5 => 
-    array (
       'id' => 1321993,
       'name' => 'Velda',
       'link' => 'https://profiles.wordpress.org/supernovia/',
