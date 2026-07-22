@@ -9,6 +9,14 @@ Pending entries for the next release live as individual files under
 [`.github/changelog/`](.github/changelog/) and get rolled up into a new
 version section by `composer changelog:write` at release time.
 
+## [0.34.1] - 2026-07-22
+### Added
+- Warn sites running PHP below 8.1 or WordPress below 7.0 that GatherPress 0.35.0 raises those requirements. [#1983]
+
+### Fixed
+- Add the gatherpress_loaded action so companion plugins boot only after the requirements check passes, fixing a site-wide fatal when GatherPress Alpha is active and requirements fail. [#1983]
+- Exclude .wp-env.test.json from the WordPress.org distribution package. [#1983]
+
 ## [0.34.0] - 2026-07-10
 ### Security
 - Enforce per-post edit capability on venue / event meta and post-specific REST routes so unauthenticated or under-privileged callers cannot modify another user's events or venues. [#1520] [#1917]
@@ -433,6 +441,7 @@ Initial public release. Represents 18+ months of pre-1.0 development and ships t
 - Initial unit test suite with code coverage via SonarCloud.
 - Multilingual screenshots and i18n scaffolding.
 
+[0.34.1]: https://github.com/GatherPress/gatherpress/compare/0.34.0...0.34.1
 [0.34.0]: https://github.com/GatherPress/gatherpress/compare/0.33.3...0.34.0
 [0.33.3]: https://github.com/GatherPress/gatherpress/compare/0.33.2...0.33.3
 [0.33.2]: https://github.com/GatherPress/gatherpress/compare/0.33.1...0.33.2
