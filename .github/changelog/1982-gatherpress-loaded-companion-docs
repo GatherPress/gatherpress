@@ -1,4 +1,4 @@
 Significance: patch
 Type: changed
 
-Document how companion plugins boot on the gatherpress_loaded lifecycle action, and align the hook's @since with its 0.34.1 release.
+Document how companion plugins boot on the gatherpress_loaded lifecycle action.

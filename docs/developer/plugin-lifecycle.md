@@ -15,7 +15,7 @@ a short, fixed sequence:
 
 ## `gatherpress_loaded`
 
-*Available since GatherPress 0.34.1.*
+*Available since GatherPress 0.34.0.*
 
 ```php
 add_action( 'gatherpress_loaded', function () {
