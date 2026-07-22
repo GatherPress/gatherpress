@@ -1,4 +1,0 @@
-Significance: patch
-Type: fixed
-
-Add the gatherpress_loaded action so companion plugins boot only after the requirements check passes, fixing a site-wide fatal when GatherPress Alpha is active and requirements fail.

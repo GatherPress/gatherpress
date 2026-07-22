@@ -1,4 +1,0 @@
-Significance: patch
-Type: fixed
-
-Exclude .wp-env.test.json from the WordPress.org distribution package.
