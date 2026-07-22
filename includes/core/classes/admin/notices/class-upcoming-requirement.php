@@ -79,18 +79,19 @@ abstract class Upcoming_Requirement extends Base {
 	/**
 	 * Whether dismissing the notice is remembered across page loads.
 	 *
-	 * Deliberately false. These notices can be closed for the current page
-	 * view, but they come back on the next load and keep coming back until the
-	 * site is actually updated. A requirement warning that can be silenced
-	 * forever defeats its own purpose, and would be silenced by exactly the
-	 * person who most needs to see it.
+	 * True: the point is to let the site owner know about the upcoming
+	 * requirement, once. Some sites genuinely can't move off an old PHP or
+	 * WordPress -- a managed host that hasn't upgraded, a dependency that pins
+	 * them -- and nagging someone who is already stuck helps no one. So once
+	 * they have seen it and dismissed it, it stays gone even if they never
+	 * update.
 	 *
 	 * @since 0.34.1
 	 *
-	 * @return bool Always false.
+	 * @return bool Always true.
 	 */
 	public function is_persistent(): bool {
-		return false;
+		return true;
 	}
 
 	/**
