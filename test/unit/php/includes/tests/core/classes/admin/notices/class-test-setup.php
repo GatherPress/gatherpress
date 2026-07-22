@@ -250,12 +250,36 @@ class Test_Setup extends Test_Base {
 	 */
 	public function test_handle_dismissal_ignores_non_persistent_notices(): void {
 		$instance = Setup::get_instance();
+
+		// A notice that is dismissible for the page view but not persistent --
+		// Base's default. handle_dismissal must not record it.
+		$notice = new class() extends Base {
+
+			/**
+			 * Unique slug identifying this notice.
+			 *
+			 * @return string The slug.
+			 */
+			public function get_slug(): string {
+				return 'gatherpress_transient_notice';
+			}
+
+			/**
+			 * The notice's message.
+			 *
+			 * @return string The message.
+			 */
+			public function get_message(): string {
+				return 'Transient.';
+			}
+		};
+
 		$original = $this->swap_notices(
 			$instance,
-			array( 'gatherpress_upcoming_php_requirement' => new Upcoming_Php_Requirement() )
+			array( $notice->get_slug() => $notice )
 		);
 
-		$slug = 'gatherpress_upcoming_php_requirement';
+		$slug = $notice->get_slug();
 
 		$_GET[ Setup::DISMISS_QUERY_ARG ] = $slug;
 		$_GET['_wpnonce']                 = wp_create_nonce( 'gatherpress_dismiss_notice_' . $slug );

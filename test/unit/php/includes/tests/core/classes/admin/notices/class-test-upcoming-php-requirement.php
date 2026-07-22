@@ -60,9 +60,9 @@ class Test_Upcoming_Php_Requirement extends Test_Base {
 			$notice->get_capability(),
 			'Failed to assert that the notice is gated to those who can act on it.'
 		);
-		$this->assertFalse(
+		$this->assertTrue(
 			$notice->is_persistent(),
-			'Failed to assert that a requirement warning cannot be silenced permanently.'
+			'Failed to assert that the notice can be dismissed for good.'
 		);
 	}
 
