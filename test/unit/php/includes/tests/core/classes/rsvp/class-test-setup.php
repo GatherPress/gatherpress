@@ -15,6 +15,7 @@ use GatherPress\Core\Rsvp\List_Table;
 use GatherPress\Core\Rsvp\Query;
 use GatherPress\Core\Rsvp;
 use GatherPress\Core\Rsvp\Setup;
+use GatherPress\Core\Rsvp\Response\Provider\Base as Provider;
 use GatherPress\Core\Rsvp\Response\Status;
 use GatherPress\Core\Rsvp\Token;
 use GatherPress\Core\Settings;
@@ -189,6 +190,18 @@ class Test_Setup extends Base {
 		$instance->register_taxonomy();
 
 		$this->assertTrue( taxonomy_exists( Status::TAXONOMY ) );
+		$this->assertTrue( taxonomy_exists( Provider::TAXONOMY ) );
+
+		// Private comment taxonomies: nothing is reachable through a term URL,
+		// so no rewrite rules may be generated for them (#825).
+		$this->assertFalse(
+			get_taxonomy( Status::TAXONOMY )->rewrite,
+			'Failed to assert that the RSVP status taxonomy registers no rewrite rules.'
+		);
+		$this->assertFalse(
+			get_taxonomy( Provider::TAXONOMY )->rewrite,
+			'Failed to assert that the RSVP provider taxonomy registers no rewrite rules.'
+		);
 	}
 
 	/**
