@@ -93,13 +93,22 @@ jobs:
           gh api "repos/${REPO}/git/refs" \
             -f ref="refs/heads/${branch}" -f sha="${head_sha}" > /dev/null
 
+          # File contents reach jq via --rawfile (and the accumulated array via
+          # --slurpfile below), never as command-line arguments: Linux caps a
+          # single argv string at 128 KiB (MAX_ARG_STRLEN), and the lockfile's
+          # base64 alone is ~10x that, killing jq with "Argument list too
+          # long" (#2002). rtrimstr drops the trailing newline base64 emits,
+          # which the old command substitution used to strip.
           additions='[]'
           while IFS= read -r file; do
+            base64 -w0 "${file}" > /tmp/bump-file.b64
             additions=$(jq \
               --arg path "${file}" \
-              --arg contents "$(base64 -w0 "${file}")" \
-              '. + [{path: $path, contents: $contents}]' <<< "${additions}")
+              --rawfile contents /tmp/bump-file.b64 \
+              '. + [{path: $path, contents: ($contents | rtrimstr("\n"))}]' <<< "${additions}")
           done < <(git status --porcelain | awk '{print $2}')
+
+          printf '%s' "${additions}" > /tmp/bump-additions.json
 
           jq -n \
             --arg query 'mutation ($input: CreateCommitOnBranchInput!) { createCommitOnBranch(input: $input) { commit { oid } } }' \
@@ -107,8 +116,8 @@ jobs:
             --arg branch "${branch}" \
             --arg oid "${head_sha}" \
             --arg headline "Start ${VERSION}" \
-            --argjson additions "${additions}" \
-            '{query: $query, variables: {input: {branch: {repositoryNameWithOwner: $repo, branchName: $branch}, expectedHeadOid: $oid, message: {headline: $headline}, fileChanges: {additions: $additions}}}}' \
+            --slurpfile additions /tmp/bump-additions.json \
+            '{query: $query, variables: {input: {branch: {repositoryNameWithOwner: $repo, branchName: $branch}, expectedHeadOid: $oid, message: {headline: $headline}, fileChanges: {additions: $additions[0]}}}}' \
             > /tmp/bump-commit.json
 
           gh api graphql --input /tmp/bump-commit.json > /dev/null
