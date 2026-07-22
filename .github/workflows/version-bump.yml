@@ -72,7 +72,10 @@ jobs:
         run: npm run version:bump -- --version="${VERSION}"
 
       - name: Refresh package-lock.json
-        run: npm i --package-lock-only
+        # --ignore-scripts: this step only rewrites the lockfile, and the
+        # postinstall (patch-package) would run against an empty node_modules
+        # in CI and fail (the @wordpress/env patch-package hook; see AGENTS.md).
+        run: npm i --package-lock-only --ignore-scripts
 
       - name: Open the version PR
         env:
