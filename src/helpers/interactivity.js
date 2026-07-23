@@ -2,6 +2,7 @@
  * WordPress dependencies
  */
 import { store } from '@wordpress/interactivity';
+import { speak } from '@wordpress/a11y';
 
 const { state: gatherPressState } = store( 'gatherpress' );
 
@@ -12,10 +13,12 @@ const { state: gatherPressState } = store( 'gatherpress' );
  * request doesn't leave the UI in a silent half-updated state. Mirrors the
  * server-error handling in the rsvp-form block (#1719).
  *
- * The message is a plain string, not wrapped in `__()`: this helper runs in the
- * Interactivity API script-module graph (`wp-scripts build --experimental-modules`),
- * which does not support `@wordpress/i18n` as a module dependency yet — the same
- * reason the rsvp-form block hardcodes its alert copy.
+ * The message is not wrapped in `__()`: this helper runs in the Interactivity
+ * API script-module graph (`wp-scripts build --experimental-modules`), which
+ * does not support `@wordpress/i18n` as a module dependency yet. The translated
+ * string is provided server-side via `wp_interactivity_state()` (see
+ * `Assets::add_interactivity_state()`), with an English fallback for contexts
+ * where the state is unavailable.
  *
  * @since 0.34.0
  *
@@ -28,8 +31,60 @@ function notifyRsvpFailure( error = null ) {
 	console.warn( 'RSVP API request failed:', error );
 	// eslint-disable-next-line no-alert
 	alert(
-		'Sorry, there was an issue processing your RSVP. Please try again.'
+		gatherPressState.i18n?.rsvpFailed ??
+			'Sorry, there was an issue processing your RSVP. Please try again.'
 	);
+}
+
+/**
+ * Announce the result of a successful RSVP update to screen readers.
+ *
+ * The RSVP status swap, attendee count, and online-event-link reveal are all
+ * silent DOM updates driven by watchers — without an announcement, assistive
+ * technology gets no feedback that the RSVP was recorded (WCAG 4.1.3 Status
+ * Messages). `speak()` uses the core-managed live region, which is immune to
+ * the DOM re-insertion `renderRsvpBlock` performs on the block's own subtree.
+ *
+ * The message is assembled from the API response rather than the requested
+ * status, so a server-side bump to the waiting list announces correctly.
+ * Translated strings arrive via `wp_interactivity_state()` (the module graph
+ * cannot import `@wordpress/i18n` — see `notifyRsvpFailure()` above); if the
+ * state is unavailable, no announcement is made rather than announcing in the
+ * wrong language.
+ *
+ * @since 0.36.0
+ *
+ * @param {Object} res The successful RSVP API response.
+ *
+ * @return {void}
+ */
+function announceRsvpSuccess( res ) {
+	const i18n = gatherPressState.i18n ?? {};
+	const statusMessages = {
+		attending: i18n.rsvpAttending,
+		waiting_list: i18n.rsvpWaitingList,
+		not_attending: i18n.rsvpNotAttending,
+	};
+	const parts = [ statusMessages[ res.status ] ];
+
+	if ( i18n.attendingCount ) {
+		parts.push(
+			i18n.attendingCount.replace(
+				'%d',
+				res.responses?.attending?.count ?? 0
+			)
+		);
+	}
+
+	if ( res.online_link && i18n.onlineLinkReady ) {
+		parts.push( i18n.onlineLinkReady );
+	}
+
+	const message = parts.filter( Boolean ).join( ' ' );
+
+	if ( message ) {
+		speak( message, 'polite' );
+	}
 }
 
 /**
@@ -265,6 +320,8 @@ export async function sendRsvpApiRequest(
 					onlineEventLink: res.online_link || '',
 				};
 			}
+
+			announceRsvpSuccess( res );
 
 			if ( 'function' === typeof onSuccess ) {
 				try {
