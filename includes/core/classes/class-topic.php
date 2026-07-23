@@ -130,6 +130,10 @@ final class Topic {
 				'show_in_rest'      => true,
 			)
 		);
+
+		// register_taxonomy() alone never fires `registered_taxonomy_for_object_type`;
+		// this explicit call does, giving extenders a hook for the pairing (#1639).
+		register_taxonomy_for_object_type( self::TAXONOMY, Event::POST_TYPE );
 	}
 
 	/**
