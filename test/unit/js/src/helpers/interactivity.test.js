@@ -5,24 +5,64 @@ import { describe, expect, it, jest, beforeEach, afterEach } from '@jest/globals
 
 /**
  * Mock the Interactivity API store so the module can read
- * `gatherPressState.eventApiUrl` at import time without a real store.
+ * `gatherPressState.eventApiUrl` at import time without a real store. The
+ * state object is created inside the factory (jest.mock is hoisted above
+ * any const in this file) and re-exported as `__mockState` so individual
+ * tests can mutate it (e.g. remove `i18n` to cover the missing-strings
+ * guard in announceRsvpSuccess()).
  */
 jest.mock(
 	'@wordpress/interactivity',
+	() => {
+		const state = {
+			eventApiUrl: 'https://example.test/wp-json/gatherpress/v1',
+		};
+
+		return {
+			store: jest.fn( () => ( { state } ) ),
+			__mockState: state,
+		};
+	},
+	{ virtual: true }
+);
+
+/**
+ * Mock the a11y script module so announcement tests can assert on `speak()`
+ * without a DOM live region.
+ */
+jest.mock(
+	'@wordpress/a11y',
 	() => ( {
-		store: jest.fn( () => ( {
-			state: {
-				eventApiUrl: 'https://example.test/wp-json/gatherpress/v1',
-			},
-		} ) ),
+		speak: jest.fn(),
 	} ),
 	{ virtual: true }
 );
 
 /**
+ * WordPress dependencies
+ */
+import { speak } from '@wordpress/a11y';
+// eslint-disable-next-line import/named -- `__mockState` only exists on the virtual mock above.
+import { __mockState as mockInteractivityState } from '@wordpress/interactivity';
+
+/**
  * Internal dependencies
  */
 import { sendRsvpApiRequest, getNonce } from '@src/helpers/interactivity';
+
+/**
+ * English source strings mirroring Assets::add_interactivity_state(), so the
+ * announcement tests assert the fully assembled message.
+ */
+const I18N_FIXTURE = {
+	rsvpAttending: 'Your RSVP was updated. You are attending.',
+	rsvpWaitingList: 'Your RSVP was updated. You are on the waiting list.',
+	rsvpNotAttending: 'Your RSVP was updated. You are not attending.',
+	attendeeCountSingular: '%d attendee.',
+	attendeeCountPlural: '%d attendees.',
+	onlineLinkReady: 'The event link is now available on this page.',
+	rsvpFailed: 'Sorry, there was an issue processing your RSVP. Please try again.',
+};
 
 /**
  * Regression coverage for #1769 — sendRsvpApiRequest must not throw when a
@@ -193,5 +233,181 @@ describe( 'sendRsvpApiRequest', () => {
 			waitingList: 0,
 			notAttending: 0,
 		} );
+	} );
+} );
+
+/**
+ * Screen-reader announcements for successful RSVP updates (WCAG 4.1.3).
+ * The message is assembled from the API response inside
+ * announceRsvpSuccess() and spoken via the core a11y module's polite
+ * live region.
+ */
+describe( 'sendRsvpApiRequest announcements', () => {
+	let state;
+	let rsvpPayload;
+
+	beforeEach( () => {
+		getNonce.clearCache();
+
+		state = { posts: { 123: {} } };
+		mockInteractivityState.i18n = { ...I18N_FIXTURE };
+
+		window.alert = jest.fn();
+		jest.spyOn( console, 'warn' ).mockImplementation( () => {} );
+
+		global.fetch = jest.fn( ( url ) => {
+			if ( url.endsWith( '/nonce' ) ) {
+				return Promise.resolve( {
+					json: () => Promise.resolve( { nonce: 'test-nonce' } ),
+				} );
+			}
+
+			return Promise.resolve( {
+				status: 200,
+				json: () => Promise.resolve( rsvpPayload ),
+			} );
+		} );
+	} );
+
+	afterEach( () => {
+		jest.restoreAllMocks();
+		speak.mockClear();
+		delete global.fetch;
+		delete mockInteractivityState.i18n;
+	} );
+
+	it( 'announces the attending status with a singular attendee count', async () => {
+		rsvpPayload = {
+			success: true,
+			status: 'attending',
+			guests: 0,
+			anonymous: false,
+			responses: { attending: { count: 1 } },
+		};
+
+		await sendRsvpApiRequest(
+			123,
+			{ status: 'attending', guests: 0, anonymous: false },
+			state
+		);
+
+		expect( speak ).toHaveBeenCalledWith(
+			'Your RSVP was updated. You are attending. 1 attendee.',
+			'polite'
+		);
+	} );
+
+	it( 'uses the plural template when more than one attendee', async () => {
+		rsvpPayload = {
+			success: true,
+			status: 'attending',
+			guests: 0,
+			anonymous: false,
+			responses: { attending: { count: 7 } },
+		};
+
+		await sendRsvpApiRequest(
+			123,
+			{ status: 'attending', guests: 0, anonymous: false },
+			state
+		);
+
+		expect( speak ).toHaveBeenCalledWith(
+			'Your RSVP was updated. You are attending. 7 attendees.',
+			'polite'
+		);
+	} );
+
+	it( 'announces the response status when the server bumps to the waiting list', async () => {
+		// The user requested attending, but the event is full and the
+		// server answered with waiting_list — the announcement must
+		// reflect the actual resulting status.
+		rsvpPayload = {
+			success: true,
+			status: 'waiting_list',
+			guests: 0,
+			anonymous: false,
+			responses: { attending: { count: 5 } },
+		};
+
+		await sendRsvpApiRequest(
+			123,
+			{ status: 'attending', guests: 0, anonymous: false },
+			state
+		);
+
+		expect( speak ).toHaveBeenCalledWith(
+			'Your RSVP was updated. You are on the waiting list. 5 attendees.',
+			'polite'
+		);
+	} );
+
+	it( 'appends the online-link sentence when the response includes one', async () => {
+		rsvpPayload = {
+			success: true,
+			status: 'attending',
+			guests: 0,
+			anonymous: false,
+			online_link: 'https://meet.example.test/room',
+			responses: { attending: { count: 1 } },
+		};
+
+		await sendRsvpApiRequest(
+			123,
+			{ status: 'attending', guests: 0, anonymous: false },
+			state
+		);
+
+		expect( speak ).toHaveBeenCalledWith(
+			'Your RSVP was updated. You are attending. 1 attendee. The event link is now available on this page.',
+			'polite'
+		);
+	} );
+
+	it( 'replaces positional placeholders that translations may use', async () => {
+		mockInteractivityState.i18n.attendeeCountPlural = '%1$d attendees.';
+
+		rsvpPayload = {
+			success: true,
+			status: 'attending',
+			guests: 0,
+			anonymous: false,
+			responses: { attending: { count: 3 } },
+		};
+
+		await sendRsvpApiRequest(
+			123,
+			{ status: 'attending', guests: 0, anonymous: false },
+			state
+		);
+
+		expect( speak ).toHaveBeenCalledWith(
+			'Your RSVP was updated. You are attending. 3 attendees.',
+			'polite'
+		);
+	} );
+
+	it( 'announces nothing when i18n strings are unavailable', async () => {
+		// No strings — announcing hardcoded English on a localized site
+		// would be worse than staying silent.
+		delete mockInteractivityState.i18n;
+
+		rsvpPayload = {
+			success: true,
+			status: 'attending',
+			guests: 0,
+			anonymous: false,
+			responses: { attending: { count: 1 } },
+		};
+
+		await sendRsvpApiRequest(
+			123,
+			{ status: 'attending', guests: 0, anonymous: false },
+			state
+		);
+
+		expect( speak ).not.toHaveBeenCalled();
+		// The request itself still succeeded.
+		expect( state.posts[ 123 ].currentUser.status ).toBe( 'attending' );
 	} );
 } );

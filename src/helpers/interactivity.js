@@ -50,9 +50,12 @@ function notifyRsvpFailure( error = null ) {
  * Translated strings arrive via `wp_interactivity_state()` (the module graph
  * cannot import `@wordpress/i18n` — see `notifyRsvpFailure()` above); if the
  * state is unavailable, no announcement is made rather than announcing in the
- * wrong language.
+ * wrong language. The attendee count picks a singular or plural template
+ * client-side, mirroring the rsvp-count and guest-count-display blocks, and
+ * the placeholder replace tolerates positional forms (`%1$d`) that
+ * translations may use.
  *
- * @since 0.36.0
+ * @since 0.35.0
  *
  * @param {Object} res The successful RSVP API response.
  *
@@ -67,13 +70,12 @@ function announceRsvpSuccess( res ) {
 	};
 	const parts = [ statusMessages[ res.status ] ];
 
-	if ( i18n.attendingCount ) {
-		parts.push(
-			i18n.attendingCount.replace(
-				'%d',
-				res.responses?.attending?.count ?? 0
-			)
-		);
+	const count = res.responses?.attending?.count ?? 0;
+	const countTemplate =
+		1 === count ? i18n.attendeeCountSingular : i18n.attendeeCountPlural;
+
+	if ( countTemplate ) {
+		parts.push( countTemplate.replace( /%(?:\d+\$)?d/, String( count ) ) );
 	}
 
 	if ( res.online_link && i18n.onlineLinkReady ) {
