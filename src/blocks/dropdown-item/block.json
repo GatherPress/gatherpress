@@ -20,6 +20,7 @@
 			"text": true
 		},
 		"html": false,
+		"interactivity": true,
 		"spacing": {
 			"padding": true,
 			"margin": true
