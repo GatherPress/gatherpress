@@ -182,14 +182,20 @@ final class Assets {
 				'eventApiUrl' => rest_url( $event_rest_api_slug ),
 				'i18n'        => array(
 					'rsvpAttending'         => __( 'Your RSVP was updated. You are attending.', 'gatherpress' ),
-					'rsvpWaitingList'       => __( 'Your RSVP was updated. You are on the waiting list.', 'gatherpress' ),
+					'rsvpWaitingList'       => __(
+						'Your RSVP was updated. You are on the waiting list.',
+						'gatherpress'
+					),
 					'rsvpNotAttending'      => __( 'Your RSVP was updated. You are not attending.', 'gatherpress' ),
 					/* translators: %d: Number of attendees (singular case). */
 					'attendeeCountSingular' => __( '%d attendee.', 'gatherpress' ),
 					/* translators: %d: Number of attendees (plural case). */
 					'attendeeCountPlural'   => __( '%d attendees.', 'gatherpress' ),
 					'onlineLinkReady'       => __( 'The event link is now available on this page.', 'gatherpress' ),
-					'rsvpFailed'            => __( 'Sorry, there was an issue processing your RSVP. Please try again.', 'gatherpress' ),
+					'rsvpFailed'            => __(
+						'Sorry, there was an issue processing your RSVP. Please try again.',
+						'gatherpress'
+					),
 				),
 			)
 		);
