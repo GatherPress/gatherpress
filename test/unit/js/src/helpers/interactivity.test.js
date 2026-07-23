@@ -391,6 +391,12 @@ describe( 'sendRsvpApiRequest announcements', () => {
 			state
 		);
 
+		// toHaveBeenCalledWith only proves *some* call matched, and the
+		// expected string here is identical to the one the singular-count
+		// test produces. Pinning the call count makes this assert the
+		// absence of the link sentence rather than leaning on the
+		// mockClear() in beforeEach to keep history empty.
+		expect( speak ).toHaveBeenCalledTimes( 1 );
 		expect( speak ).toHaveBeenCalledWith(
 			'Your RSVP was updated. You are attending. 1 attendee.',
 			'polite'
@@ -415,6 +421,9 @@ describe( 'sendRsvpApiRequest announcements', () => {
 			state
 		);
 
+		// Same reasoning as the already-visible case above: the count pins
+		// that no second, link-bearing announcement was made.
+		expect( speak ).toHaveBeenCalledTimes( 1 );
 		expect( speak ).toHaveBeenCalledWith(
 			'Your RSVP was updated. You are attending. 1 attendee.',
 			'polite'
