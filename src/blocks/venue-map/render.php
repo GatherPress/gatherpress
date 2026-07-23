@@ -3,11 +3,14 @@
  * Render Venue Map block.
  *
  * Emits the pre-rendered static map as the baseline (no JavaScript required).
- * When `renderMode === 'interactive'` the wrapper also carries the data
- * attributes the view.js script reads to swap the `<img>` for a live Leaflet
- * map at hydration time. When the venue has no coordinates yet — e.g. a brand
- * new venue that hasn't been geocoded — a short placeholder surfaces the
- * "map coming soon" state in place of the image.
+ * When `renderMode === 'interactive'` the wrapper also carries Interactivity
+ * API directives (`data-wp-init`) and a `data-wp-context` payload the view
+ * script module reads to swap the `<img>` for a live Leaflet or Google map —
+ * on initial load and again whenever a client-side region swap (Query Loop
+ * enhanced pagination) inserts the block (#2009). When the venue has no
+ * coordinates yet — e.g. a brand new venue that hasn't been geocoded — a
+ * short placeholder surfaces the "map coming soon" state in place of the
+ * image.
  *
  * The wrapper sizing model: width always comes from the container (and
  * the block's alignment) — never from a stored value.
@@ -157,21 +160,49 @@ if ( ! empty( $gatherpress_styles ) ) {
 }
 
 if ( 'interactive' === $gatherpress_render_mode ) {
-	$gatherpress_block_attrs = array(
-		'address'          => $gatherpress_address,
-		'latitude'         => (string) ( $gatherpress_venue_meta['latitude'] ?? '' ),
-		'longitude'        => (string) ( $gatherpress_venue_meta['longitude'] ?? '' ),
-		'mapZoomLevel'     => $attributes['zoom'] ?? Map::DEFAULT_ZOOM,
-		'mapType'          => $attributes['type'] ?? Map::DEFAULT_MAP_TYPE,
-		'mapPlatform'      => (string) Settings::get_instance()->get( 'map_platform' ),
-		'pluginUrl'        => GATHERPRESS_CORE_URL,
-		'googleMapsApiKey' => (string) Settings::get_instance()->get( 'google_maps_api_key' ),
+	$gatherpress_map_platform = (string) Settings::get_instance()->get( 'map_platform' );
+
+	// Leaflet's stylesheet and marker images cannot ride the view script
+	// module -- webpack's async CSS chunk loading does not work under ESM
+	// module output -- so the styles ship as their own build entry, enqueued
+	// here whenever an interactive Leaflet map renders.
+	if ( 'google' !== $gatherpress_map_platform ) {
+		$gatherpress_leaflet_asset = include GATHERPRESS_CORE_PATH . '/build/leaflet_style.asset.php';
+
+		wp_enqueue_style(
+			'gatherpress-leaflet-style',
+			GATHERPRESS_CORE_URL . 'build/leaflet_style.css',
+			array(),
+			$gatherpress_leaflet_asset['version'] ?? GATHERPRESS_VERSION
+		);
+	}
+
+	// Everything the view script module needs travels in the context payload:
+	// script modules cannot import @wordpress/i18n or read the block editor's
+	// config, so the tile settings and translated strings are resolved here,
+	// server-side.
+	$gatherpress_block_context = array(
+		'address'            => $gatherpress_address,
+		'latitude'           => (string) ( $gatherpress_venue_meta['latitude'] ?? '' ),
+		'longitude'          => (string) ( $gatherpress_venue_meta['longitude'] ?? '' ),
+		'mapZoomLevel'       => $attributes['zoom'] ?? Map::DEFAULT_ZOOM,
+		'mapType'            => $attributes['type'] ?? Map::DEFAULT_MAP_TYPE,
+		'mapPlatform'        => $gatherpress_map_platform,
+		'pluginUrl'          => GATHERPRESS_CORE_URL,
+		'googleMapsApiKey'   => (string) Settings::get_instance()->get( 'google_maps_api_key' ),
+		'mapTileUrl'         => Settings::get_map_tile_url(),
+		'mapTileAttribution' => Settings::get_map_tile_attribution(),
+		'i18n'               => array(
+			'gestureTouch'     => __( 'Use two fingers to move the map', 'gatherpress' ),
+			'gestureScroll'    => __( 'Use ctrl + scroll to zoom the map', 'gatherpress' ),
+			'gestureScrollMac' => __( 'Use ⌘ + scroll to zoom the map', 'gatherpress' ),
+			'tileError'        => __( 'Map could not be loaded. Please try again later.', 'gatherpress' ),
+		),
 	);
 
-	$gatherpress_wrapper_attr_args['data-gatherpress_block_name']  = 'map-embed';
-	$gatherpress_wrapper_attr_args['data-gatherpress_block_attrs'] = esc_attr(
-		(string) wp_json_encode( $gatherpress_block_attrs )
-	);
+	$gatherpress_wrapper_attr_args['data-wp-interactive'] = 'gatherpress/venue-map';
+	$gatherpress_wrapper_attr_args['data-wp-init']        = 'callbacks.init';
+	$gatherpress_wrapper_attr_args['data-wp-context']     = (string) wp_json_encode( $gatherpress_block_context );
 }
 
 printf(
