@@ -148,6 +148,7 @@ final class Setup {
 				'show_admin_column'  => false,
 				'query_var'          => true,
 				'publicly_queryable' => false,
+				'rewrite'            => false,
 				'show_in_rest'       => true,
 			)
 		);
@@ -163,6 +164,7 @@ final class Setup {
 				'show_admin_column'  => false,
 				'query_var'          => true,
 				'publicly_queryable' => false,
+				'rewrite'            => false,
 				'show_in_rest'       => true,
 			)
 		);
