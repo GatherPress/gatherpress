@@ -20,6 +20,9 @@
 			"postIdOverride": true
 		},
 		"html": false,
+		"interactivity": {
+			"clientNavigation": true
+		},
 		"listView": true
 	},
 	"textdomain": "gatherpress",

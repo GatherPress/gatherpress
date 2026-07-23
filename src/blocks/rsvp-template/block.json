@@ -11,6 +11,7 @@
 	"supports": {
 		"contentRole": true,
 		"html": false,
+		"interactivity": true,
 		"listView": true
 	},
 	"usesContext": [

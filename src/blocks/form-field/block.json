@@ -129,7 +129,10 @@
 		}
 	},
 	"supports": {
-		"html": false
+		"html": false,
+		"interactivity": {
+			"clientNavigation": true
+		}
 	},
 	"textdomain": "gatherpress",
 	"editorScript": "file:./index.js",
