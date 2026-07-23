@@ -166,6 +166,12 @@ if ( 'interactive' === $gatherpress_render_mode ) {
 	// module -- webpack's async CSS chunk loading does not work under ESM
 	// module output -- so the styles ship as their own build entry, enqueued
 	// here whenever an interactive Leaflet map renders.
+	//
+	// `!== 'google'` rather than `=== 'osm'` on purpose: this must match the
+	// view module's own branch (google mounts Google Maps, everything else
+	// mounts Leaflet), so the stylesheet ships exactly when the Leaflet path
+	// runs. Checking for 'osm' would desync the two on an unset or unexpected
+	// platform value -- Leaflet would still mount, just unstyled.
 	if ( 'google' !== $gatherpress_map_platform ) {
 		$gatherpress_leaflet_asset = include GATHERPRESS_CORE_PATH . '/build/leaflet_style.asset.php';
 
