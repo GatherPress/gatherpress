@@ -9,6 +9,11 @@ import { __ } from '@wordpress/i18n';
  * Internal dependencies
  */
 import { loadGoogleMapsApi } from '../helpers/google-maps-api';
+import {
+	getGoogleMapEmbedSrc,
+	toGoogleMapType,
+	toMapsEmbedApiMapType,
+} from '../helpers/map-embed';
 
 /**
  * GoogleMap component for GatherPress.
@@ -78,99 +83,10 @@ export const GOOGLE_KEYLESS_UNSUPPORTED_MAP_TYPE_SLUGS = [
 	'terrain',
 ];
 
-const BLOCK_MAP_TYPE_SLUGS = GOOGLE_MAP_TYPE_DEFINITIONS.map(
-	( definition ) => definition.slug
-);
-
-const LEGACY_EMBED_LETTER_BY_SLUG = GOOGLE_MAP_TYPE_DEFINITIONS.reduce(
-	( accumulator, definition ) => {
-		accumulator[ definition.slug ] = definition.legacyEmbedLetter;
-		return accumulator;
-	},
-	{}
-);
-
-/**
- * Normalize a block map-type slug to the canonical set.
- *
- * @param {string} type Map type slug from the block.
- *
- * @return {string} A slug from `GOOGLE_MAP_TYPE_DEFINITIONS`; unknown values fall back to roadmap.
- */
-export function toGoogleMapType( type ) {
-	return type && BLOCK_MAP_TYPE_SLUGS.includes( type ) ? type : 'roadmap';
-}
-
-/**
- * Maps Embed API `view` (and related) modes only allow `roadmap` or `satellite`
- * for `maptype`. Hybrid or terrain in block data (e.g. content authored while
- * an API key was configured) are coerced so embed URLs stay valid.
- *
- * @see https://developers.google.com/maps/documentation/embed/embedding-map#view_mode
- *
- * @param {string} type Map type slug from the block.
- *
- * @return {'roadmap'|'satellite'} Coercion for the embed iframe: hybrid→satellite, terrain→roadmap.
- */
-export function toMapsEmbedApiMapType( type ) {
-	const normalized = toGoogleMapType( type );
-	if ( 'satellite' === normalized || 'hybrid' === normalized ) {
-		return 'satellite';
-	}
-	return 'roadmap';
-}
-
-const GOOGLE_EMBED_VIEW_BASE = 'https://www.google.com/maps/embed/v1/view';
-const GOOGLE_LEGACY_EMBED_BASE = 'https://maps.google.com/maps';
-
-/**
- * Builds the iframe `src` for a Google map embed.
- *
- * With an API key this is the Maps Embed API `view` URL — only used as the
- * fallback when the Maps JavaScript API fails to load. Without a key it is
- * the keyless legacy embed URL, the primary no-key path.
- *
- * @param {Object} params           Parameters.
- * @param {string} params.latitude  Latitude.
- * @param {string} params.longitude Longitude.
- * @param {number} params.zoom      Zoom level.
- * @param {string} params.type      Map type slug from the block.
- * @param {string} params.apiKey    API key or empty string.
- *
- * @return {string} Iframe URL.
- */
-export function getGoogleMapEmbedSrc( {
-	latitude,
-	longitude,
-	zoom,
-	type,
-	apiKey,
-} ) {
-	const z = zoom || 10;
-	const safeType = toGoogleMapType( type );
-	const trimmedKey = ( apiKey || '' ).trim();
-
-	if ( trimmedKey ) {
-		const params = new URLSearchParams( {
-			key: trimmedKey,
-			center: `${ latitude },${ longitude }`,
-			zoom: String( z ),
-			maptype: toMapsEmbedApiMapType( safeType ),
-		} );
-		return `${ GOOGLE_EMBED_VIEW_BASE }?${ params.toString() }`;
-	}
-
-	// toMapsEmbedApiMapType() only ever returns roadmap or satellite, both
-	// of which are always present in the letter table.
-	const legacyType = toMapsEmbedApiMapType( safeType );
-	const params = new URLSearchParams( {
-		q: `${ latitude },${ longitude }`,
-		z: String( z ),
-		t: LEGACY_EMBED_LETTER_BY_SLUG[ legacyType ],
-		output: 'embed',
-	} );
-	return `${ GOOGLE_LEGACY_EMBED_BASE }?${ params.toString() }`;
-}
+// The type-normalization and embed-URL helpers moved to the framework-free
+// `helpers/map-embed.js` so the venue-map view module can share them; they are
+// re-exported here so existing imports keep working.
+export { getGoogleMapEmbedSrc, toGoogleMapType, toMapsEmbedApiMapType };
 
 /**
  * Interactive Google map backed by the Maps JavaScript API.
