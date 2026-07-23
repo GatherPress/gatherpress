@@ -137,6 +137,8 @@ final class Setup {
 	 * @return void
 	 */
 	public function register_taxonomy(): void {
+		// No register_taxonomy_for_object_type() here (#1639): core requires a
+		// post type object and returns false for 'comment'.
 		register_taxonomy(
 			Status::TAXONOMY,
 			'comment',
