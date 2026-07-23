@@ -249,6 +249,10 @@ describe( 'sendRsvpApiRequest announcements', () => {
 	beforeEach( () => {
 		getNonce.clearCache();
 
+		// Clear any speak() history from other suites so an earlier
+		// matching call can't produce a false positive here.
+		speak.mockClear();
+
 		state = { posts: { 123: {} } };
 		mockInteractivityState.i18n = { ...I18N_FIXTURE };
 
@@ -271,7 +275,6 @@ describe( 'sendRsvpApiRequest announcements', () => {
 
 	afterEach( () => {
 		jest.restoreAllMocks();
-		speak.mockClear();
 		delete global.fetch;
 		delete mockInteractivityState.i18n;
 	} );
@@ -342,7 +345,11 @@ describe( 'sendRsvpApiRequest announcements', () => {
 		);
 	} );
 
-	it( 'appends the online-link sentence when the response includes one', async () => {
+	it( 'appends the online-link sentence when the link is revealed by this update', async () => {
+		// The online-event-link block initialized with no visible link:
+		// this response transitions it from unavailable to available.
+		state.posts[ 123 ].onlineEventLink = '';
+
 		rsvpPayload = {
 			success: true,
 			status: 'attending',
@@ -360,6 +367,56 @@ describe( 'sendRsvpApiRequest announcements', () => {
 
 		expect( speak ).toHaveBeenCalledWith(
 			'Your RSVP was updated. You are attending. 1 attendee. The event link is now available on this page.',
+			'polite'
+		);
+	} );
+
+	it( 'does not re-announce a link that was already visible', async () => {
+		// e.g. a guest-count update while attending: the response still
+		// carries online_link, but the link did not just appear.
+		state.posts[ 123 ].onlineEventLink = 'https://meet.example.test/room';
+
+		rsvpPayload = {
+			success: true,
+			status: 'attending',
+			guests: 1,
+			anonymous: false,
+			online_link: 'https://meet.example.test/room',
+			responses: { attending: { count: 1 } },
+		};
+
+		await sendRsvpApiRequest(
+			123,
+			{ status: 'attending', guests: 1, anonymous: false },
+			state
+		);
+
+		expect( speak ).toHaveBeenCalledWith(
+			'Your RSVP was updated. You are attending. 1 attendee.',
+			'polite'
+		);
+	} );
+
+	it( 'does not mention the link when the online-event-link block never initialized', async () => {
+		// No onlineEventLink key in state: the block is not on this page,
+		// so "available on this page" would be false.
+		rsvpPayload = {
+			success: true,
+			status: 'attending',
+			guests: 0,
+			anonymous: false,
+			online_link: 'https://meet.example.test/room',
+			responses: { attending: { count: 1 } },
+		};
+
+		await sendRsvpApiRequest(
+			123,
+			{ status: 'attending', guests: 0, anonymous: false },
+			state
+		);
+
+		expect( speak ).toHaveBeenCalledWith(
+			'Your RSVP was updated. You are attending. 1 attendee.',
 			'polite'
 		);
 	} );

@@ -55,13 +55,25 @@ function notifyRsvpFailure( error = null ) {
  * the placeholder replace tolerates positional forms (`%1$d`) that
  * translations may use.
  *
+ * The online-link sentence is only spoken when the link actually becomes
+ * available with this update: the online-event-link block initializes
+ * `onlineEventLink` in state to an empty string when it renders without a
+ * visible link, so a previous value of `''` plus a link in the response is
+ * the reveal transition. An undefined previous value means the block never
+ * initialized (not present on this page), and a non-empty previous value
+ * means the link was already visible (e.g. a guest-count update) — neither
+ * should re-announce it.
+ *
  * @since 0.35.0
  *
- * @param {Object} res The successful RSVP API response.
+ * @param {Object}           res                The successful RSVP API response.
+ * @param {string|undefined} previousOnlineLink The `onlineEventLink` state value
+ *                                              captured before this response was
+ *                                              merged into state.
  *
  * @return {void}
  */
-function announceRsvpSuccess( res ) {
+function announceRsvpSuccess( res, previousOnlineLink ) {
 	const i18n = gatherPressState.i18n ?? {};
 	const statusMessages = {
 		attending: i18n.rsvpAttending,
@@ -78,7 +90,11 @@ function announceRsvpSuccess( res ) {
 		parts.push( countTemplate.replace( /%(?:\d+\$)?d/, String( count ) ) );
 	}
 
-	if ( res.online_link && i18n.onlineLinkReady ) {
+	if (
+		'' === previousOnlineLink &&
+		res.online_link &&
+		i18n.onlineLinkReady
+	) {
 		parts.push( i18n.onlineLinkReady );
 	}
 
@@ -306,6 +322,12 @@ export async function sendRsvpApiRequest(
 		// so a failed request surfaces an error instead of throwing on
 		// `res.success` and leaving the button hidden (#1719).
 		if ( res?.success ) {
+			// Captured before the state merge below overwrites it: the
+			// announcement only mentions the online link when it transitions
+			// from initialized-but-empty to present (see announceRsvpSuccess).
+			const previousOnlineLink =
+				state?.posts?.[ postId ]?.onlineEventLink;
+
 			if ( state ) {
 				state.posts[ postId ] = {
 					...state.posts[ postId ],
@@ -323,7 +345,7 @@ export async function sendRsvpApiRequest(
 				};
 			}
 
-			announceRsvpSuccess( res );
+			announceRsvpSuccess( res, previousOnlineLink );
 
 			if ( 'function' === typeof onSuccess ) {
 				try {
