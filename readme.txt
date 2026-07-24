@@ -1,6 +1,6 @@
 === GatherPress ===
 Contributors: mauteri, patricia70, hrmervin, jmarx75, stephenerdelyi, carstenbach, supernovia
-Tags: events, event, meetup, community
+Tags: events, rsvp, meetup, community, calendar
 Requires at least: 7.0
 Tested up to: 7.0
 Requires PHP: 8.1
