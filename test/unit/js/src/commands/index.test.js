@@ -171,7 +171,7 @@ describe( 'add new event command', () => {
 
 		const command = getCommand( 'gatherpress/add-new-event' );
 
-		expect( command.label ).toBe( 'Add new event' );
+		expect( command.label ).toBe( 'Add New Event' );
 		expect( command.icon ).toBeDefined();
 		expect( command.context ).toBeUndefined();
 	} );

@@ -30,7 +30,7 @@ import VenueNavigator from '../components/VenueNavigator';
  */
 const AddVenueModal = ( { onRequestClose } ) => (
 	<Modal
-		title={ __( 'Add new venue', 'gatherpress' ) }
+		title={ __( 'Add New Venue', 'gatherpress' ) }
 		onRequestClose={ onRequestClose }
 		shouldCloseOnClickOutside
 		shouldCloseOnEsc
@@ -45,10 +45,10 @@ const AddVenueModal = ( { onRequestClose } ) => (
 /**
  * Register GatherPress entries in the editor's command palette.
  *
- * "Add new venue" opens the venue navigator in a modal so a venue can be
+ * "Add New Venue" opens the venue navigator in a modal so a venue can be
  * created without leaving the post being edited. It is scoped to the block
  * editor because the navigator resolves the venue post type from the post
- * currently open. "Add new event" has nothing to offer inline, so it closes
+ * currently open. "Add New Event" has nothing to offer inline, so it closes
  * the palette and navigates to the new-event screen.
  *
  * @since 0.35.0
@@ -60,7 +60,7 @@ const GatherPressCommands = () => {
 
 	useCommand( {
 		name: 'gatherpress/add-new-venue',
-		label: __( 'Add new venue', 'gatherpress' ),
+		label: __( 'Add New Venue', 'gatherpress' ),
 		icon: mapMarker,
 		context: 'block-editor',
 		callback: ( { close } ) => {
@@ -71,7 +71,7 @@ const GatherPressCommands = () => {
 
 	useCommand( {
 		name: 'gatherpress/add-new-event',
-		label: __( 'Add new event', 'gatherpress' ),
+		label: __( 'Add New Event', 'gatherpress' ),
 		icon: calendar,
 		callback: ( { close } ) => {
 			close();
