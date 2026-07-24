@@ -1,0 +1,4 @@
+Significance: minor
+Type: added
+
+Added an "Add New Venue" item to the Events admin menu, which also gives venues a command palette entry alongside the existing one for events.
