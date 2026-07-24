@@ -33,7 +33,7 @@ GatherPress is built by the WordPress community for the people who organize it: 
 
 Open a working demo in your browser through WordPress Playground. No signup, no setup, and real data to click around in.
 
-[Try GatherPress in WordPress Playground](https://playground.wordpress.net/?blueprint-url=https://raw.githubusercontent.com/GatherPress/gatherpress/develop/.wordpress-org/blueprints/blueprint.json) | [Watch the intro demo](https://gatherpress.org/demovideo)
+[Try GatherPress in WordPress Playground](https://playground.wordpress.net/?blueprint-url=https://raw.githubusercontent.com/GatherPress/gatherpress/main/.wordpress-org/blueprints/blueprint.json) | [Watch the intro demo](https://gatherpress.org/demovideo)
 
 = Join our community =
 
