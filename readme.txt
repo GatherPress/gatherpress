@@ -8,18 +8,40 @@ Stable tag: 0.35.0-alpha.2
 License: GPL v2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-GatherPress is a flexible, community-powered event management plugin for WordPress.
+Build events, together. Open source event tools for the communities that run on WordPress.
 
 == Description ==
 
-- Event scheduling (date, time, location, description)
-- Attendee registration (with optional anonymous listing)
-- Open RSVP support (non-logged-in users)
-- Attendees can bring guests
-- Email notifications for attendees and non-attendees
-- Online and in-person event support (with mapping)
-- Full block editor support
-- Multisite-ready and fully internationalized
+Running a meetup, a user group, a conference, or a class? GatherPress gives you what you need to publish events, collect RSVPs, and keep everyone in the loop, all from your own WordPress site.
+
+Your events live on your site. You own the data, you control how it looks, and you keep the relationship with the people who show up.
+
+GatherPress is built by the WordPress community for the people who organize it: meetup organizers, WordCamp teams, user groups, and anyone else who gets people together in a room. It is free, open source, and shaped by the people using it every day.
+
+= What you can do =
+
+- Publish events with the date, time, venue, and everything people need to know
+- Collect RSVPs, with anonymous listing for attendees who would rather not be named
+- Let people RSVP without an account, so nobody bounces off a signup wall
+- Let attendees bring guests
+- Email everyone who is coming, or everyone who is not, without leaving WordPress
+- Run events in person, online, or both, with maps for physical venues
+- Build and arrange it all in the block editor
+- Multisite ready and fully translatable
+
+= Try it before you install =
+
+Open a working demo in your browser through WordPress Playground. No signup, no setup, and real data to click around in.
+
+[Try GatherPress in WordPress Playground](https://playground.wordpress.net/?blueprint-url=https://raw.githubusercontent.com/GatherPress/gatherpress/develop/.wordpress-org/blueprints/blueprint.json) | [Watch the intro demo](https://gatherpress.org/demovideo)
+
+= Join our community =
+
+GatherPress is built in the open, and contributions are always welcome, whether that is code, translations, documentation, or just telling us what broke.
+
+- [Get involved](https://gatherpress.org/get-involved)
+- [Contributor guide](https://github.com/GatherPress/gatherpress/blob/main/docs/contributing.md)
+- [Open issues on GitHub](https://github.com/GatherPress/gatherpress/issues)
 
 == Installation ==
 
