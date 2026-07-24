@@ -525,6 +525,10 @@ final class Assets {
 	 * if the same file was already loaded elsewhere in the request, and `(array) true` would corrupt the
 	 * `dependencies` / `version` lookups. A missing file yields an empty array rather than a fatal.
 	 *
+	 * Public so block templates can resolve a build asset's version without
+	 * repeating the `include` (and its memoization) inline — see the
+	 * venue-map block's Leaflet stylesheet enqueue.
+	 *
 	 * @since 0.27.0
 	 *
 	 * @param string  $asset The file name of the asset.
@@ -532,7 +536,7 @@ final class Assets {
 	 *                       or null to use the path based on the default naming scheme.
 	 * @return array An array containing asset-related data.
 	 */
-	protected function get_asset_data( string $asset, ?string $path = null ): array {
+	public function get_asset_data( string $asset, ?string $path = null ): array {
 		$path = $path ?? $this->path . sprintf( '%s.asset.php', $asset );
 		if ( empty( $this->asset_data[ $asset ] ) ) {
 			// Loading a WordPress asset metadata file that returns an array, not importing a class.

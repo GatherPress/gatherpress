@@ -540,6 +540,13 @@ describe( 'buildComboKey', () => {
 			'16x600x300xroadmap'
 		);
 	} );
+
+	it( 'defaults to roadmap when map type is omitted entirely', () => {
+		// Exercises the default parameter rather than the `|| 'roadmap'`
+		// fallback above — callers that predate the map-type argument still
+		// resolve to the same key.
+		expect( buildComboKey( 16, 600, 300 ) ).toBe( '16x600x300xroadmap' );
+	} );
 } );
 
 describe( 'parsePxDimension', () => {
@@ -689,6 +696,46 @@ describe( 'usePlaceholderPolling', () => {
 					} ),
 				} )
 			);
+		} );
+	} );
+
+	it( 'leaves the in-flight key alone when the effect is cleaned up mid-request', async () => {
+		// The ensure POST is held open so the component can unmount while it
+		// is still pending. The effect's cleanup sets `cancelled`, so the
+		// settle handler must not clear the in-flight key — doing so would
+		// let a remount re-POST the same combo it already requested.
+		let settleEnsure;
+		mockApiFetch.mockReturnValue(
+			new Promise( ( resolve ) => {
+				settleEnsure = resolve;
+			} )
+		);
+
+		const combo = {
+			key: '16x600x300xhybrid',
+			zoom: 16,
+			width: 600,
+			height: 300,
+			aspectRatio: '2/1',
+			mapType: 'hybrid',
+		};
+
+		const { unmount } = render(
+			<Harness { ...activeProps } combo={ combo } />
+		);
+
+		await waitFor( () => {
+			expect( mockApiFetch ).toHaveBeenCalled();
+		} );
+
+		unmount();
+
+		settleEnsure( { descriptors: {}, reason: '' } );
+
+		// Let the settle handler run. It should take the guarded branch and
+		// leave the ref untouched rather than throwing.
+		await waitFor( () => {
+			expect( mockApiFetch ).toHaveBeenCalledTimes( 1 );
 		} );
 	} );
 
