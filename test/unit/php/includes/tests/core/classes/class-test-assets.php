@@ -436,7 +436,7 @@ class Test_Assets extends Base {
 
 		Utility::set_and_get_hidden_property( $instance, 'asset_data', array() );
 
-		$asset = Utility::invoke_hidden_method( $instance, 'get_asset_data', array( 'editor' ) );
+		$asset = $instance->get_asset_data( 'editor' );
 
 		$this->assertIsArray( $asset['dependencies'], 'Failed to assert that dependencies is an array.' );
 		$this->assertIsString( $asset['version'], 'Failed to assert that version is a string.' );
@@ -466,11 +466,7 @@ class Test_Assets extends Base {
 		require_once $path;
 
 		Utility::set_and_get_hidden_property( $instance, 'asset_data', array() );
-		$asset = Utility::invoke_hidden_method(
-			$instance,
-			'get_asset_data',
-			array( 'editor_already_loaded', $path )
-		);
+		$asset = $instance->get_asset_data( 'editor_already_loaded', $path );
 
 		$this->assertArrayHasKey(
 			'version',
@@ -495,10 +491,9 @@ class Test_Assets extends Base {
 		$instance = Assets::get_instance();
 
 		Utility::set_and_get_hidden_property( $instance, 'asset_data', array() );
-		$asset = Utility::invoke_hidden_method(
-			$instance,
-			'get_asset_data',
-			array( 'does_not_exist', GATHERPRESS_CORE_PATH . '/build/missing.asset.php' )
+		$asset = $instance->get_asset_data(
+			'does_not_exist',
+			GATHERPRESS_CORE_PATH . '/build/missing.asset.php'
 		);
 
 		$this->assertSame(

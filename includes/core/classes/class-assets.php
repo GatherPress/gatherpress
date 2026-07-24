@@ -524,12 +524,11 @@ final class Assets {
 	 * Plain `require` is used rather than `require_once`: `require_once` returns `true` (not the array)
 	 * if the same file was already loaded elsewhere in the request, and `(array) true` would corrupt the
 	 * `dependencies` / `version` lookups. A missing file yields an empty array rather than a fatal.
-	 *
-	 * Public so block templates can resolve a build asset's version without
-	 * repeating the `include` (and its memoization) inline — see the
-	 * venue-map block's Leaflet stylesheet enqueue.
+	 * That was a real regression (#1768), so the `require` carries a `NOSONAR` marker — converting it
+	 * to `require_once` to satisfy `php:S2003` would reintroduce the bug.
 	 *
 	 * @since 0.27.0
+	 * @since 0.35.0 Made public for use from block templates.
 	 *
 	 * @param string  $asset The file name of the asset.
 	 * @param ?string $path  (Optional) The absolute path to the asset file
@@ -540,7 +539,7 @@ final class Assets {
 		$path = $path ?? $this->path . sprintf( '%s.asset.php', $asset );
 		if ( empty( $this->asset_data[ $asset ] ) ) {
 			// Loading a WordPress asset metadata file that returns an array, not importing a class.
-			$this->asset_data[ $asset ] = file_exists( $path ) ? require $path : array(); // NOSONAR.
+			$this->asset_data[ $asset ] = file_exists( $path ) ? require $path : array(); // NOSONAR — see #1768.
 		}
 
 		return (array) $this->asset_data[ $asset ];

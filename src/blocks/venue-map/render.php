@@ -174,10 +174,6 @@ if ( 'interactive' === $gatherpress_render_mode ) {
 	// runs. Checking for 'osm' would desync the two on an unset or unexpected
 	// platform value -- Leaflet would still mount, just unstyled.
 	if ( 'google' !== $gatherpress_map_platform ) {
-		// Read through Assets so the file is memoized for the request: a page
-		// with several venue-map blocks resolves the version once. A bare
-		// `include_once` here would return `true` rather than the array on the
-		// second block and silently drop the version.
 		$gatherpress_leaflet_asset = Assets::get_instance()->get_asset_data( 'leaflet_style' );
 
 		wp_enqueue_style(
