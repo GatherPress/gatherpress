@@ -34,6 +34,7 @@
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
+use GatherPress\Core\Assets;
 use GatherPress\Core\Settings;
 use GatherPress\Core\Venue\Map;
 use GatherPress\Core\Venue\Map\Dimensions;
@@ -173,7 +174,7 @@ if ( 'interactive' === $gatherpress_render_mode ) {
 	// runs. Checking for 'osm' would desync the two on an unset or unexpected
 	// platform value -- Leaflet would still mount, just unstyled.
 	if ( 'google' !== $gatherpress_map_platform ) {
-		$gatherpress_leaflet_asset = include GATHERPRESS_CORE_PATH . '/build/leaflet_style.asset.php';
+		$gatherpress_leaflet_asset = Assets::get_instance()->get_asset_data( 'leaflet_style' );
 
 		wp_enqueue_style(
 			'gatherpress-leaflet-style',

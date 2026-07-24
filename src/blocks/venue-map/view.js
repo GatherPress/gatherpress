@@ -164,12 +164,15 @@ function mountGoogleMap( wrapper, context, lat, lng ) {
 				mapTypeId: type,
 			} );
 
-			// eslint-disable-next-line no-new -- The marker attaches itself to the map.
-			new maps.Marker( {
+			const marker = new maps.Marker( {
 				position: center,
-				map,
 				title: context.address || '',
 			} );
+
+			// setMap() rather than passing `map` in the options above: both
+			// attach the marker, but this one consumes the instance instead
+			// of constructing it purely for its side effect.
+			marker.setMap( map );
 		} )
 		.catch( () => {
 			if ( wrapper.isConnected ) {

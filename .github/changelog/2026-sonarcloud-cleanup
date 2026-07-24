@@ -1,0 +1,4 @@
+Significance: patch
+Type: changed
+
+Resolved SonarCloud findings in the venue map block and closed two branch-coverage gaps in its helpers.

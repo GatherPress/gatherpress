@@ -524,19 +524,22 @@ final class Assets {
 	 * Plain `require` is used rather than `require_once`: `require_once` returns `true` (not the array)
 	 * if the same file was already loaded elsewhere in the request, and `(array) true` would corrupt the
 	 * `dependencies` / `version` lookups. A missing file yields an empty array rather than a fatal.
+	 * That was a real regression (#1768), so the `require` carries a `NOSONAR` marker — converting it
+	 * to `require_once` to satisfy `php:S2003` would reintroduce the bug.
 	 *
 	 * @since 0.27.0
+	 * @since 0.35.0 Made public for use from block templates.
 	 *
 	 * @param string  $asset The file name of the asset.
 	 * @param ?string $path  (Optional) The absolute path to the asset file
 	 *                       or null to use the path based on the default naming scheme.
 	 * @return array An array containing asset-related data.
 	 */
-	protected function get_asset_data( string $asset, ?string $path = null ): array {
+	public function get_asset_data( string $asset, ?string $path = null ): array {
 		$path = $path ?? $this->path . sprintf( '%s.asset.php', $asset );
 		if ( empty( $this->asset_data[ $asset ] ) ) {
 			// Loading a WordPress asset metadata file that returns an array, not importing a class.
-			$this->asset_data[ $asset ] = file_exists( $path ) ? require $path : array();
+			$this->asset_data[ $asset ] = file_exists( $path ) ? require $path : array(); // NOSONAR — see #1768.
 		}
 
 		return (array) $this->asset_data[ $asset ];
@@ -620,7 +623,7 @@ final class Assets {
 		// Plain include, not include_once: a repeat include_once would return
 		// `true` instead of the asset array if the file was already loaded
 		// (existence is already guaranteed by the file_exists guard above).
-		$asset = include $asset_path;
+		$asset = include $asset_path; // NOSONAR — see comment above.
 
 		// Add AQL as a dependency so our script loads after theirs.
 		$dependencies   = $asset['dependencies'] ?? array();

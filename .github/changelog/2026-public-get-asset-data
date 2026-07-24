@@ -1,0 +1,4 @@
+Significance: minor
+Type: changed
+
+`Assets::get_asset_data()` is now public, so block templates and companion plugins can resolve a build asset's version and dependencies through the same memoized reader core uses.
