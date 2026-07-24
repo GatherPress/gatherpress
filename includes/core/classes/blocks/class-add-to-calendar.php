@@ -8,7 +8,7 @@
  * It enables users to add events to services like Google, iCal, Outlook, and Yahoo.
  *
  * @package GatherPress\Core
- * @since 1.0.0
+ * @since 0.33.0
  */
 
 namespace GatherPress\Core\Blocks;
@@ -16,7 +16,6 @@ namespace GatherPress\Core\Blocks;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
-use GatherPress\Core\Block;
 use GatherPress\Core\Event;
 use GatherPress\Core\Traits\Singleton;
 use WP_HTML_Tag_Processor;
@@ -25,9 +24,10 @@ use WP_HTML_Tag_Processor;
  * Class responsible for managing the "Add_To_Calendar" block and its functionality,
  * including dynamic rendering adjustments.
  *
- * @since 1.0.0
+ * @since 0.33.0
  */
-class Add_To_Calendar {
+final class Add_To_Calendar {
+
 	/**
 	 * Enforces a single instance of this class.
 	 */
@@ -36,7 +36,7 @@ class Add_To_Calendar {
 	/**
 	 * Constant representing the Block Name.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @var string
 	 */
 	const BLOCK_NAME = 'gatherpress/add-to-calendar';
@@ -46,7 +46,7 @@ class Add_To_Calendar {
 	 *
 	 * This method initializes the object and sets up necessary hooks.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 */
 	protected function __construct() {
 		$this->setup_hooks();
@@ -57,7 +57,7 @@ class Add_To_Calendar {
 	 *
 	 * This method adds hooks for different purposes as needed.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @return void
 	 */
@@ -75,7 +75,7 @@ class Add_To_Calendar {
 	 * URLs based on the associated event data. This ensures that "Add to Calendar"
 	 * links point to the correct service with event details.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @param string $block_content The original block content.
 	 * @param array  $block         The block instance array, used to determine the event.
@@ -83,13 +83,13 @@ class Add_To_Calendar {
 	 * @return string The modified block content with calendar hrefs replaced.
 	 */
 	public function replace_calendar_placeholders( string $block_content, array $block ): string {
-		$block_instance = Block::get_instance();
+		$block_instance = Setup::get_instance();
 		$post_id        = $block_instance->get_post_id( $block );
 
-		// Validate that the post ID is an actual event post type.
+		// Validate that the post type supports event_date.
 		// Only check publish status if not in preview mode.
 		if (
-			Event::POST_TYPE !== get_post_type( $post_id ) ||
+			! post_type_supports( (string) get_post_type( $post_id ), 'gatherpress-event-date' ) ||
 			( ! is_preview() && 'publish' !== get_post_status( $post_id ) )
 		) {
 			return '';
@@ -98,10 +98,17 @@ class Add_To_Calendar {
 		$event          = new Event( $post_id );
 		$tag            = new WP_HTML_Tag_Processor( $block_content );
 		$calendar_links = $event->get_calendar_links();
-		$replacements   = array(
+		// iCal and Outlook entries surface as `download` URLs (the new
+		// `/event/{slug}/ical|outlook` endpoints serve attachments with
+		// `Content-Disposition: attachment`), while Google and Yahoo are
+		// off-site redirects keyed under `link`. Fall back across both so
+		// older themes that haven't migrated still get a valid href.
+		$ical_href    = $calendar_links['ical']['download'] ?? $calendar_links['ical']['link'] ?? '';
+		$outlook_href = $calendar_links['outlook']['download'] ?? $calendar_links['outlook']['link'] ?? '';
+		$replacements = array(
 			'#gatherpress-google-calendar'  => $calendar_links['google']['link'] ?? '',
-			'#gatherpress-ical-calendar'    => $calendar_links['ical']['link'] ?? '',
-			'#gatherpress-outlook-calendar' => $calendar_links['outlook']['link'] ?? '',
+			'#gatherpress-ical-calendar'    => $ical_href,
+			'#gatherpress-outlook-calendar' => $outlook_href,
 			'#gatherpress-yahoo-calendar'   => $calendar_links['yahoo']['link'] ?? '',
 		);
 

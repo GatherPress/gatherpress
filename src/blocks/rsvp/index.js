@@ -1,10 +1,10 @@
 /**
- * WordPress dependencies.
+ * WordPress dependencies
  */
 import { registerBlockType } from '@wordpress/blocks';
 import { useBlockProps, InnerBlocks } from '@wordpress/block-editor';
 /**
- * Internal dependencies.
+ * Internal dependencies
  */
 import edit from './edit';
 import metadata from './block.json';
@@ -16,7 +16,7 @@ import './style.scss';
  * This component renders the edit view of the GatherPress RSVP block.
  * It provides an interface for users to RSVP to an event.
  *
- * @since 1.0.0
+ * @since 0.27.0
  *
  * @return {JSX.Element} The rendered React component.
  */

@@ -1,0 +1,316 @@
+# Extending Settings
+
+This guide shows how to add custom settings to GatherPress from a companion plugin or theme.
+
+## Adding a New Settings Tab
+
+Create a class that extends `GatherPress\Core\Settings\Base`:
+
+```php
+<?php
+
+namespace My_Plugin\Settings;
+
+use GatherPress\Core\Settings\Base;
+use GatherPress\Core\Traits\Singleton;
+
+class Notifications extends Base {
+    use Singleton;
+
+    protected function get_slug(): string {
+        return 'notifications';
+    }
+
+    protected function get_name(): string {
+        return __( 'Notifications', 'my-plugin' );
+    }
+
+    protected function get_priority(): int {
+        return 5; // Lower = earlier in tab order.
+    }
+
+    protected function get_sections(): array {
+        return array(
+            'email' => array(
+                'name'        => __( 'Email Settings', 'my-plugin' ),
+                'description' => __( 'Configure email notifications.', 'my-plugin' ),
+                'options'     => array(
+                    'notify_on_rsvp' => array(
+                        'labels' => array(
+                            'name' => __( 'RSVP Notifications', 'my-plugin' ),
+                        ),
+                        'field'  => array(
+                            'label'   => __( 'Send email when someone RSVPs.', 'my-plugin' ),
+                            'type'    => 'checkbox',
+                            'options' => array(
+                                'default' => false,
+                            ),
+                        ),
+                    ),
+                    'admin_email' => array(
+                        'labels' => array(
+                            'name' => __( 'Admin Email', 'my-plugin' ),
+                        ),
+                        'field'  => array(
+                            'label'   => __( 'Email address for notifications.', 'my-plugin' ),
+                            'type'    => 'text',
+                            'size'    => 'regular',
+                            'options' => array(
+                                'default' => '',
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        );
+    }
+}
+```
+
+Then instantiate it in your plugin:
+
+```php
+add_action( 'plugins_loaded', function() {
+    if ( class_exists( 'GatherPress\Core\Settings\Base' ) ) {
+        My_Plugin\Settings\Notifications::get_instance();
+    }
+});
+```
+
+Your tab will appear in the GatherPress settings page, and your options are automatically:
+
+- Stored in the shared `gatherpress_settings` option
+- Sanitized based on field type
+- Included in import/export
+- Stripped when matching their defaults
+
+## Reading and Writing Your Custom Settings
+
+```php
+use GatherPress\Core\Settings;
+
+$settings = Settings::get_instance();
+
+// Read.
+$notify = $settings->get( 'notify_on_rsvp' ); // false (default)
+$email  = $settings->get( 'admin_email' );     // '' (default)
+
+// Write. Values matching the default are automatically removed.
+$settings->set( 'notify_on_rsvp', true );
+```
+
+## Field Types
+
+### checkbox
+
+Boolean toggle. Sanitized to `(bool)`.
+
+```php
+'my_option' => array(
+    'labels' => array( 'name' => __( 'Label', 'my-plugin' ) ),
+    'field'  => array(
+        'label'   => __( 'Description shown next to the checkbox.', 'my-plugin' ),
+        'type'    => 'checkbox',
+        'options' => array( 'default' => false ),
+    ),
+),
+```
+
+### text
+
+Text input. Sanitized with `sanitize_text_field()`.
+
+```php
+'my_option' => array(
+    'labels' => array( 'name' => __( 'Label', 'my-plugin' ) ),
+    'field'  => array(
+        'label'   => __( 'Description shown above the input.', 'my-plugin' ),
+        'type'    => 'text',
+        'size'    => 'regular', // 'small', 'regular', or 'large'.
+        'options' => array( 'default' => 'default value' ),
+    ),
+),
+```
+
+### number
+
+Numeric input. Sanitized with `intval()`.
+
+```php
+'my_option' => array(
+    'labels' => array( 'name' => __( 'Label', 'my-plugin' ) ),
+    'field'  => array(
+        'label'   => __( 'Description.', 'my-plugin' ),
+        'type'    => 'number',
+        'size'    => 'small',
+        'options' => array(
+            'default' => 10,
+            'min'     => '1',
+            'max'     => '100',
+        ),
+    ),
+),
+```
+
+### select
+
+Dropdown. Sanitized with `sanitize_text_field()`.
+
+```php
+'my_option' => array(
+    'labels' => array( 'name' => __( 'Label', 'my-plugin' ) ),
+    'field'  => array(
+        'label'   => __( 'Description.', 'my-plugin' ),
+        'type'    => 'select',
+        'options' => array(
+            'default' => 'option_a',
+            'items'   => array(
+                'option_a' => __( 'Option A', 'my-plugin' ),
+                'option_b' => __( 'Option B', 'my-plugin' ),
+            ),
+        ),
+    ),
+),
+```
+
+### autocomplete
+
+Dynamic search field for selecting posts or users. Value stored as JSON string.
+
+```php
+'my_option' => array(
+    'labels' => array( 'name' => __( 'Label', 'my-plugin' ) ),
+    'field'  => array(
+        'type'    => 'autocomplete',
+        'options' => array(
+            'type'    => 'user', // or 'page'.
+            'label'   => __( 'Select users', 'my-plugin' ),
+            'limit'   => 5,
+            'default' => '[]',
+        ),
+    ),
+),
+```
+
+## Field Config Options
+
+### Preview
+
+Add a live preview below text fields. Create a template in `includes/templates/admin/settings/partials/`:
+
+```php
+'field' => array(
+    'type'    => 'text',
+    'options' => array( 'default' => 'Y-m-d' ),
+    'preview' => array(
+        'template' => 'my-preview', // Renders partials/my-preview.php.
+        'custom'   => 'extra data', // Passed to the template.
+    ),
+),
+```
+
+### Rewrite
+
+Flag fields that affect permalink structure. When these change, rewrite rules are automatically flushed:
+
+```php
+'field' => array(
+    'type'    => 'text',
+    'rewrite' => true,
+    'options' => array( 'default' => 'my-slug' ),
+),
+```
+
+### show_if (conditional visibility)
+
+Show a field only when one or more controlling fields hold a specific value. Useful for "this setting only matters when that other setting is on" relationships — for example, hiding the Google Maps API Key field unless Google is the selected map provider.
+
+`show_if` is a sibling of `field`, not nested inside it. It maps controlling field keys to expected values:
+
+```php
+'google_maps_api_key' => array(
+    'labels'      => array( 'name' => __( 'Google Maps API Key', 'my-plugin' ) ),
+    'description' => __( 'Required when Google Maps is selected.', 'my-plugin' ),
+    'field'       => array(
+        'type'    => 'text',
+        'size'    => 'regular',
+        'options' => array( 'default' => '' ),
+    ),
+    'show_if'     => array(
+        'map_platform' => 'google',
+    ),
+),
+```
+
+#### Match semantics
+
+- **Scalar value** — string equality after casting. `'map_platform' => 'google'` matches when the controlling field's current value (coerced to string) equals `'google'`.
+- **Array of values** — OR within one key. `'map_platform' => array( 'google', 'mapbox' )` matches when the current value is either.
+- **Negation** — `array( 'not' => value )` or `array( 'not' => array( … ) )` — the inverse: show when the current value is **not** (one of) the given value(s). Useful for "show unless disabled" without enumerating every enabled variant.
+- **Multiple keys** — AND across keys. Every entry in the `show_if` array must be satisfied for the field to be visible.
+
+```php
+'show_if' => array(
+    'map_platform'                  => array( 'google', 'mapbox' ),
+    'venue_map_default_render_mode' => 'interactive',
+),
+```
+
+The negation form is what the RSVP settings page uses to hide the mode-dependent fields whenever RSVP Mode is `disabled` — rather than listing `all_on`, `per_event_on`, `per_event_off`, so the intent reads directly and a future mode doesn't silently fall out of the condition:
+
+```php
+'show_if' => array(
+    'rsvp_mode' => array( 'not' => 'disabled' ),
+),
+```
+
+The negation form is available since 0.35.0.
+
+#### Hidden ≠ cleared
+
+Hiding a field is purely visual — its stored value is **never** dropped just because the field is currently hidden. If a user enters a Google Maps API key, switches the platform to OSM, and saves, the key remains in the `gatherpress_settings` option. Switching back to Google reveals the field with its prior value intact.
+
+This works because (a) the field row is hidden via CSS, so the input still posts its value, and (b) the save path merges submitted input with the previously stored options — any field key not in POST keeps its existing value.
+
+#### Constraints (v1)
+
+- **Same page only.** The controlling field must live on the same settings tab as the dependent field.
+- **Single controller per key.** Each option key on a settings page renders one input; that's the input the JS will resolve.
+- **Comparisons are string-based.** Booleans and numbers are coerced to string before comparing. To match a checkbox stored as `true`, declare `'my_toggle' => 'true'`.
+
+## Key Uniqueness
+
+All option keys must be globally unique across all tabs and sections. If two extensions register the same key, an admin error notice is displayed:
+
+> GatherPress: Duplicate settings keys found: my_option. Each key must be unique.
+
+Use a prefix for your keys to avoid collisions (e.g., `myplugin_notify_on_rsvp`).
+
+## Custom (Non-Form) Tabs
+
+For tabs that need custom UI instead of the standard settings form (like the Tools or Credits tabs), hook into `gatherpress_settings_section` at priority 9:
+
+```php
+protected function setup_hooks(): void {
+    parent::setup_hooks();
+
+    add_action( 'gatherpress_settings_section', array( $this, 'settings_section' ), 9 );
+}
+
+public function settings_section( string $page ): void {
+    if ( Utility::unprefix_key( $page ) === $this->slug ) {
+        remove_action(
+            'gatherpress_settings_section',
+            array( Settings::get_instance(), 'render_settings_form' )
+        );
+
+        // Render your custom template.
+        Utility::render_template( '/path/to/your/template.php', array(), true );
+    }
+}
+```
+
+## Related Hooks
+
+- [`gatherpress_sub_pages`](../hooks/gatherpress_sub_pages.md) -- Filter to modify the sub-pages array directly
+- [`gatherpress_roles`](../hooks/gatherpress_roles.md) -- Filter to add custom roles to the Roles tab

@@ -4,7 +4,9 @@
 	"name": "gatherpress/modal-content",
 	"version": "1.0.0",
 	"title": "Modal Content",
-	"parent": ["gatherpress/modal"],
+	"parent": [
+		"gatherpress/modal"
+	],
 	"category": "gatherpress",
 	"icon": "external",
 	"example": {},
@@ -20,18 +22,14 @@
 					"maxWidth": "400px"
 				}
 			}
-		},
-		"backgroundColor": {
-			"type": "string",
-			"default": "white"
-		},
-		"textColor": {
-			"type": "string",
-			"default": "contrast"
 		}
 	},
 	"supports": {
+		"contentRole": true,
 		"html": false,
+		"interactivity": {
+			"clientNavigation": true
+		},
 		"color": {
 			"gradients": true,
 			"__experimentalDefaultControls": {
@@ -56,7 +54,8 @@
 				"style": true,
 				"width": true
 			}
-		}
+		},
+		"listView": true
 	},
 	"textdomain": "gatherpress",
 	"editorScript": "file:./index.js",

@@ -4,13 +4,13 @@
 import { ComboboxControl } from '@wordpress/components';
 import { useCallback } from '@wordpress/element';
 import { useDebounce } from '@wordpress/compose';
-import { __ } from '@wordpress/i18n';
+import { __, sprintf } from '@wordpress/i18n';
 
 /**
- * Internal dependencies.
+ * Internal dependencies
  */
-import { useVenueOptions } from '../helpers/venue';
-import { CPT_VENUE } from '../helpers/namespace';
+import { usePostTypeLabel } from '../helpers/editor';
+import { useVenueOptions, getVenuePostType } from '../helpers/venue';
 
 /**
  * VenuePostsCombobox component.
@@ -19,9 +19,9 @@ import { CPT_VENUE } from '../helpers/namespace';
  * Fetches available venues as options based on the search input,
  * and updates block attributes when a new venue is selected.
  *
- * @since 1.0.0
+ * @since 0.34.0
  *
- * @param {Object}   props           Properties of the 'gatherpress/venue-v2'-block.
+ * @param {Object}   props           Properties of the 'gatherpress/venue'-block.
  * @param {string}   props.search    Current search string for venue filtering.
  * @param {Function} props.setSearch Function to update the search string.
  *
@@ -31,12 +31,29 @@ export const VenuePostsCombobox = ( { search, setSearch, ...props } ) => {
 	// Get the currently selected venue post ID from block attributes.
 	const venueId = props?.attributes?.selectedPostId;
 
+	const venuePostType = getVenuePostType( props?.context?.postType );
+
+	// Read the singular label so the panel title reflects what the post type
+	// is actually called — a custom venue post type with
+	// `singular_name => 'Location'` shows "Add New Location" without any
+	// extra wiring (#1612).
+	const singularLabel = usePostTypeLabel(
+		'singular_name',
+		venuePostType,
+		__( 'Venue', 'gatherpress' )
+	);
+	const comboBoxLabel = sprintf(
+		/* translators: %s: Singular post type label, e.g. "Venue". */
+		__( 'Choose a %s', 'gatherpress' ),
+		singularLabel
+	);
+
 	// Fetch available venue options using a custom query hook.
 	const { venueOptions } = useVenueOptions(
 		search,
 		venueId,
 		'postType',
-		CPT_VENUE
+		venuePostType
 	);
 
 	/**
@@ -51,11 +68,11 @@ export const VenuePostsCombobox = ( { search, setSearch, ...props } ) => {
 			const newAttributes = {
 				...props.attributes,
 				selectedPostId: value,
-				selectedPostType: CPT_VENUE,
+				selectedPostType: venuePostType,
 			};
 			props.setAttributes( newAttributes );
 		},
-		[ props ]
+		[ props, venuePostType ]
 	);
 
 	/**
@@ -77,15 +94,13 @@ export const VenuePostsCombobox = ( { search, setSearch, ...props } ) => {
 	};
 
 	return (
-		<>
-			<ComboboxControl
-				label={ __( 'Choose a venue', 'gatherpress' ) }
-				__next40pxDefaultSize
-				onChange={ update }
-				onFilterValueChange={ setSearchDebounced }
-				options={ venueOptions }
-				value={ setValue() }
-			/>
-		</>
+		<ComboboxControl
+			label={ comboBoxLabel }
+			__next40pxDefaultSize
+			onChange={ update }
+			onFilterValueChange={ setSearchDebounced }
+			options={ venueOptions }
+			value={ setValue() }
+		/>
 	);
 };

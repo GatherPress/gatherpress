@@ -3,7 +3,7 @@
  * Class handles unit tests for GatherPress\Core\Utility.
  *
  * @package GatherPress\Core
- * @since 1.0.0
+ * @since 0.27.0
  */
 
 namespace GatherPress\Tests\Core;
@@ -19,6 +19,7 @@ use PMC\Unit_Test\Utility as PMC_Utility;
  * @coversDefaultClass \GatherPress\Core\Utility
  */
 class Test_Utility extends Base {
+
 	/**
 	 * Coverage for render_template method.
 	 *
@@ -57,6 +58,248 @@ class Test_Utility extends Base {
 	}
 
 	/**
+	 * Coverage for locate_template — resolves a theme override placed in the
+	 * registered stylesheet directory.
+	 *
+	 * @covers ::locate_template
+	 *
+	 * @return void
+	 */
+	public function test_locate_template_resolves_theme_override(): void {
+		$file_name = 'gatherpress_locate-test-' . wp_generate_password( 6, false, false ) . '.php';
+		$tmp_dir   = sys_get_temp_dir() . '/gatherpress-test-theme-' . wp_generate_password( 6, false, false );
+
+		wp_mkdir_p( $tmp_dir );
+		$theme_path = trailingslashit( $tmp_dir ) . $file_name;
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents -- Tmp scratch dir under sys_get_temp_dir().
+		file_put_contents( $theme_path, "<?php // Test stub.\n" );
+
+		$override = static function () use ( $tmp_dir ) {
+			return $tmp_dir;
+		};
+		add_filter( 'stylesheet_directory', $override );
+		add_filter( 'template_directory', $override );
+
+		try {
+			$this->assertSame(
+				$theme_path,
+				Utility::locate_template( $file_name, '/nonexistent/plugin/templates' ),
+				'locate_template should return the theme override when locate_template() resolves it.'
+			);
+		} finally {
+			remove_filter( 'stylesheet_directory', $override );
+			remove_filter( 'template_directory', $override );
+			// phpcs:ignore WordPress.WP.AlternativeFunctions.unlink_unlink -- Tmp scratch dir.
+			unlink( $theme_path );
+			// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_rmdir -- Tmp scratch dir.
+			rmdir( $tmp_dir );
+		}
+	}
+
+	/**
+	 * Coverage for locate_template — falls back to the plugin directory when
+	 * the theme has no override. Strips the `gatherpress_` prefix from the
+	 * passed file name before checking disk.
+	 *
+	 * @covers ::locate_template
+	 *
+	 * @return void
+	 */
+	public function test_locate_template_resolves_plugin_fallback(): void {
+		$expected = sprintf( '%s/includes/templates/calendar/ical-download.php', GATHERPRESS_CORE_PATH );
+
+		$this->assertSame(
+			$expected,
+			Utility::locate_template(
+				'gatherpress_ical-download.php',
+				sprintf( '%s/includes/templates/calendar', GATHERPRESS_CORE_PATH )
+			),
+			'locate_template should return the bundled plugin template and strip the gatherpress_ prefix.'
+		);
+	}
+
+	/**
+	 * Coverage for locate_template — resolves an exact (already-unprefixed)
+	 * filename inside the supplied plugin directory without touching the
+	 * prefix-strip fallback.
+	 *
+	 * @covers ::locate_template
+	 *
+	 * @return void
+	 */
+	public function test_locate_template_resolves_exact_plugin_filename(): void {
+		$tmp_template = wp_tempnam( 'gatherpress-locate-exact' );
+		$dir_path     = dirname( $tmp_template );
+		$file_name    = basename( $tmp_template );
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents -- Tmp scratch file.
+		file_put_contents( $tmp_template, "<?php // Test stub.\n" );
+
+		try {
+			$this->assertSame(
+				$tmp_template,
+				Utility::locate_template( $file_name, $dir_path ),
+				'locate_template should resolve an exact plugin filename without the prefix-strip fallback.'
+			);
+		} finally {
+			// phpcs:ignore WordPress.WP.AlternativeFunctions.unlink_unlink -- Tmp scratch file.
+			unlink( $tmp_template );
+		}
+	}
+
+	/**
+	 * Coverage for locate_template — returns an empty string when neither the
+	 * theme nor the supplied plugin directory has the file.
+	 *
+	 * @covers ::locate_template
+	 *
+	 * @return void
+	 */
+	public function test_locate_template_returns_empty_when_missing(): void {
+		$this->assertSame(
+			'',
+			Utility::locate_template( 'definitely-missing.php', '/nonexistent/plugin/templates' ),
+			'locate_template should return an empty string when nothing resolves.'
+		);
+	}
+
+	/**
+	 * Coverage for locate_template — returns an empty string when the theme
+	 * has no override and the caller omits the fallback directory.
+	 *
+	 * @covers ::locate_template
+	 *
+	 * @return void
+	 */
+	public function test_locate_template_without_fallback_dir_returns_empty(): void {
+		$this->assertSame(
+			'',
+			Utility::locate_template( 'definitely-missing.php' ),
+			'locate_template should return an empty string when no fallback dir is supplied and no theme override.'
+		);
+	}
+
+	/**
+	 * Coverage for resolve_fallback_template_path — returns the file at its
+	 * supplied name when it exists on disk.
+	 *
+	 * @covers ::resolve_fallback_template_path
+	 *
+	 * @return void
+	 */
+	public function test_resolve_fallback_template_path_exact_match(): void {
+		$tmp_template = wp_tempnam( 'gatherpress-resolve-exact' );
+		$dir_path     = dirname( $tmp_template );
+		$file_name    = basename( $tmp_template );
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents -- Tmp scratch file.
+		file_put_contents( $tmp_template, "<?php // Test stub.\n" );
+
+		try {
+			$this->assertSame(
+				$tmp_template,
+				PMC_Utility::invoke_hidden_method(
+					new Utility(),
+					'resolve_fallback_template_path',
+					array( $dir_path, $file_name )
+				),
+				'resolve_fallback_template_path should return the file at the supplied name when it exists.'
+			);
+		} finally {
+			// phpcs:ignore WordPress.WP.AlternativeFunctions.unlink_unlink -- Tmp scratch file.
+			unlink( $tmp_template );
+		}
+	}
+
+	/**
+	 * Coverage for resolve_fallback_template_path — falls back to the
+	 * unprefixed file name when the prefixed name does not exist on disk.
+	 *
+	 * @covers ::resolve_fallback_template_path
+	 *
+	 * @return void
+	 */
+	public function test_resolve_fallback_template_path_strips_prefix(): void {
+		$fallback_dir = sprintf( '%s/includes/templates/calendar', GATHERPRESS_CORE_PATH );
+		$expected     = sprintf( '%s/ical-download.php', $fallback_dir );
+
+		$this->assertSame(
+			$expected,
+			PMC_Utility::invoke_hidden_method(
+				new Utility(),
+				'resolve_fallback_template_path',
+				array( $fallback_dir, 'gatherpress_ical-download.php' )
+			),
+			'resolve_fallback_template_path should fall back to the unprefixed name when the prefixed name is absent.'
+		);
+	}
+
+	/**
+	 * Coverage for resolve_fallback_template_path — returns an empty string
+	 * when neither the prefixed nor the unprefixed name resolves to a file.
+	 *
+	 * @covers ::resolve_fallback_template_path
+	 *
+	 * @return void
+	 */
+	public function test_resolve_fallback_template_path_returns_empty_when_missing(): void {
+		$this->assertSame(
+			'',
+			PMC_Utility::invoke_hidden_method(
+				new Utility(),
+				'resolve_fallback_template_path',
+				array( '/nonexistent/fallback/templates', 'definitely-missing.php' )
+			),
+			'resolve_fallback_template_path should return an empty string when neither variant exists.'
+		);
+	}
+
+	/**
+	 * Coverage for locate_template — the `gatherpress_template_path` filter
+	 * receives the resolved path along with the file name and fallback dir,
+	 * and the filter's return value wins over the default resolution.
+	 *
+	 * @covers ::locate_template
+	 *
+	 * @return void
+	 */
+	public function test_locate_template_filter_overrides_resolved_path(): void {
+		$captured = array();
+		$callback = static function ( $resolved, $file_name, $fallback_dir ) use ( &$captured ) {
+			$captured['resolved']     = $resolved;
+			$captured['file_name']    = $file_name;
+			$captured['fallback_dir'] = $fallback_dir;
+
+			return '/filter/overrode/this.php';
+		};
+
+		add_filter( 'gatherpress_template_path', $callback, 10, 3 );
+
+		try {
+			$this->assertSame(
+				'/filter/overrode/this.php',
+				Utility::locate_template( 'definitely-missing.php', '/nonexistent/fallback/templates' ),
+				'The gatherpress_template_path filter return value should win over the default resolution.'
+			);
+			$this->assertSame(
+				'',
+				$captured['resolved'],
+				'Filter should receive the unresolved empty string.'
+			);
+			$this->assertSame(
+				'definitely-missing.php',
+				$captured['file_name'],
+				'Filter should receive the requested file name.'
+			);
+			$this->assertSame(
+				'/nonexistent/fallback/templates',
+				$captured['fallback_dir'],
+				'Filter should receive the supplied fallback dir.'
+			);
+		} finally {
+			remove_filter( 'gatherpress_template_path', $callback, 10 );
+		}
+	}
+
+	/**
 	 * Coverage for prefix_key method.
 	 *
 	 * @covers ::prefix_key
@@ -88,6 +331,205 @@ class Test_Utility extends Base {
 	}
 
 	/**
+	 * `Utility::post_type_label()` reads a single label off a registered
+	 * post type so admin UI strings reflect whatever a site builder
+	 * filtered the labels to (#1612).
+	 *
+	 * @covers ::post_type_label
+	 *
+	 * @return void
+	 */
+	public function test_post_type_label_returns_registered_label(): void {
+		register_post_type(
+			'shindig',
+			array(
+				'public' => false,
+				'labels' => array(
+					'name'          => 'Shindigs',
+					'singular_name' => 'Shindig',
+					'add_new_item'  => 'Add New Shindig',
+				),
+			)
+		);
+
+		$this->assertSame( 'Shindigs', Utility::post_type_label( 'name', 'shindig' ) );
+		$this->assertSame( 'Shindig', Utility::post_type_label( 'singular_name', 'shindig' ) );
+		$this->assertSame( 'Add New Shindig', Utility::post_type_label( 'add_new_item', 'shindig' ) );
+
+		unregister_post_type( 'shindig' );
+	}
+
+	/**
+	 * `Utility::post_type_label()` returns an empty string for an
+	 * unregistered post type rather than warning. Lets call sites fall
+	 * back gracefully when the post type isn't (or isn't yet)
+	 * registered.
+	 *
+	 * @covers ::post_type_label
+	 *
+	 * @return void
+	 */
+	public function test_post_type_label_unregistered_post_type_returns_empty_string(): void {
+		$this->assertSame( '', Utility::post_type_label( 'name', 'definitely_not_a_post_type' ) );
+	}
+
+	/**
+	 * `Utility::post_type_label()` returns an empty string when the
+	 * label key isn't set on the post type, instead of triggering a
+	 * notice on the missing dynamic property.
+	 *
+	 * @covers ::post_type_label
+	 *
+	 * @return void
+	 */
+	public function test_post_type_label_missing_key_returns_empty_string(): void {
+		register_post_type(
+			'shindig',
+			array(
+				'public' => false,
+				'labels' => array(
+					'name' => 'Shindigs',
+				),
+			)
+		);
+
+		$this->assertSame( '', Utility::post_type_label( 'no_such_label_key', 'shindig' ) );
+
+		unregister_post_type( 'shindig' );
+	}
+
+	/**
+	 * `Utility::taxonomy_label()` reads a single label off a registered
+	 * taxonomy so admin UI strings reflect whatever a site builder
+	 * filtered the labels to (#1612).
+	 *
+	 * @covers ::taxonomy_label
+	 *
+	 * @return void
+	 */
+	public function test_taxonomy_label_returns_registered_label(): void {
+		register_taxonomy(
+			'shindig_type',
+			'post',
+			array(
+				'public' => false,
+				'labels' => array(
+					'name'          => 'Shindig Types',
+					'singular_name' => 'Shindig Type',
+					'add_new_item'  => 'Add New Shindig Type',
+				),
+			)
+		);
+
+		$this->assertSame( 'Shindig Types', Utility::taxonomy_label( 'name', 'shindig_type' ) );
+		$this->assertSame( 'Shindig Type', Utility::taxonomy_label( 'singular_name', 'shindig_type' ) );
+		$this->assertSame( 'Add New Shindig Type', Utility::taxonomy_label( 'add_new_item', 'shindig_type' ) );
+
+		unregister_taxonomy( 'shindig_type' );
+	}
+
+	/**
+	 * `Utility::taxonomy_label()` returns an empty string for an
+	 * unregistered taxonomy rather than warning. Lets call sites fall
+	 * back gracefully when the taxonomy isn't (or isn't yet)
+	 * registered.
+	 *
+	 * @covers ::taxonomy_label
+	 *
+	 * @return void
+	 */
+	public function test_taxonomy_label_unregistered_taxonomy_returns_empty_string(): void {
+		$this->assertSame( '', Utility::taxonomy_label( 'name', 'definitely_not_a_taxonomy' ) );
+	}
+
+	/**
+	 * `Utility::taxonomy_label()` returns an empty string when the
+	 * label key isn't set on the taxonomy, instead of triggering a
+	 * notice on the missing dynamic property.
+	 *
+	 * @covers ::taxonomy_label
+	 *
+	 * @return void
+	 */
+	public function test_taxonomy_label_missing_key_returns_empty_string(): void {
+		register_taxonomy(
+			'shindig_type',
+			'post',
+			array(
+				'public' => false,
+				'labels' => array(
+					'name' => 'Shindig Types',
+				),
+			)
+		);
+
+		$this->assertSame( '', Utility::taxonomy_label( 'no_such_label_key', 'shindig_type' ) );
+	}
+
+	/**
+	 * Coverage for snake_to_camel method.
+	 *
+	 * @covers ::snake_to_camel
+	 *
+	 * @return void
+	 */
+	public function test_snake_to_camel(): void {
+		$this->assertSame( 'dateFormat', Utility::snake_to_camel( 'date_format' ) );
+		$this->assertSame( 'enableAnonymousRsvp', Utility::snake_to_camel( 'enable_anonymous_rsvp' ) );
+		$this->assertSame( 'postOrEventDate', Utility::snake_to_camel( 'post_or_event_date' ) );
+		$this->assertSame( 'simple', Utility::snake_to_camel( 'simple' ) );
+	}
+
+	/**
+	 * Coverage for can_edit_post_meta — per-post auth callback shared by every
+	 * editor-writable post meta GatherPress registers.
+	 *
+	 * Routes through `user_can( $user_id, 'edit_post', $object_id )` so the
+	 * permission model matches what WP applies to the post itself: Editors
+	 * (via `edit_others_posts`) can edit anyone's meta, Authors only their
+	 * own posts, Subscribers and logged-out users are denied.
+	 *
+	 * @covers ::can_edit_post_meta
+	 *
+	 * @return void
+	 */
+	public function test_can_edit_post_meta(): void {
+		$author_one_id = $this->factory->user->create( array( 'role' => 'author' ) );
+		$author_two_id = $this->factory->user->create( array( 'role' => 'author' ) );
+		$editor_id     = $this->factory->user->create( array( 'role' => 'editor' ) );
+		$subscriber_id = $this->factory->user->create( array( 'role' => 'subscriber' ) );
+
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type'   => 'post',
+				'post_author' => $author_one_id,
+				'post_status' => 'publish',
+			)
+		);
+
+		$this->assertTrue(
+			Utility::can_edit_post_meta( false, 'any_meta_key', $post_id, $author_one_id ),
+			'The post author should be able to edit their own post meta.'
+		);
+		$this->assertFalse(
+			Utility::can_edit_post_meta( false, 'any_meta_key', $post_id, $author_two_id ),
+			'A different author should not be able to edit a post they do not own.'
+		);
+		$this->assertTrue(
+			Utility::can_edit_post_meta( false, 'any_meta_key', $post_id, $editor_id ),
+			'An editor should be able to edit any post meta via edit_others_posts.'
+		);
+		$this->assertFalse(
+			Utility::can_edit_post_meta( false, 'any_meta_key', $post_id, $subscriber_id ),
+			'A subscriber should not be able to edit any post meta.'
+		);
+		$this->assertFalse(
+			Utility::can_edit_post_meta( false, 'any_meta_key', $post_id, 0 ),
+			'A logged-out user (user_id 0) should not be able to edit any post meta.'
+		);
+	}
+
+	/**
 	 * Coverage for timezone_choices method.
 	 *
 	 * @covers ::timezone_choices
@@ -116,6 +558,105 @@ class Test_Utility extends Base {
 			$this->assertArrayHasKey( $key, $timezones );
 			$this->assertIsArray( $timezones[ $key ] );
 		}
+	}
+
+	/**
+	 * Regression: option values must be raw timezone identifiers, never markup.
+	 *
+	 * WordPress's `wp_timezone_choice()` markup has shifted across releases —
+	 * recent versions added a `dir="auto"` attribute on `<optgroup>` and
+	 * `<option>` tags. A greedy `.+` capture in the parser used to pull that
+	 * trailing attribute into the option value, so the saved timezone never
+	 * matched any option in the editor's select and the dropdown silently
+	 * fell back to the first item. This bug has shipped twice; lock it down
+	 * with assertions that catch any HTML markup leaking into either group
+	 * keys or option values, regardless of which WP version emitted them.
+	 *
+	 * @since 0.34.0
+	 *
+	 * @covers ::timezone_choices
+	 *
+	 * @return void
+	 */
+	public function test_timezone_choices_keys_and_values_have_no_html_leakage(): void {
+		$timezones = Utility::timezone_choices();
+
+		$this->assertNotEmpty(
+			$timezones,
+			'timezone_choices() should return at least one group.'
+		);
+
+		// Tokens that should never appear in a group label or option value /
+		// label — any presence indicates HTML markup leaked through the
+		// parser. Mapped to a short noun phrase that completes the
+		// assertion failure message ("Group label \"...\" contains <reason>").
+		$forbidden = array(
+			'"'    => 'a quote',
+			'<'    => 'a tag character',
+			'>'    => 'a tag character',
+			'dir=' => 'a `dir=` attribute',
+		);
+
+		foreach ( $timezones as $group_label => $options ) {
+			foreach ( $forbidden as $needle => $reason ) {
+				$this->assertStringNotContainsString(
+					$needle,
+					$group_label,
+					sprintf( 'Group label "%s" contains %s.', $group_label, $reason )
+				);
+			}
+
+			$this->assertIsArray( $options );
+
+			foreach ( $options as $value => $label ) {
+				$value_string = (string) $value;
+				foreach ( $forbidden as $needle => $reason ) {
+					$this->assertStringNotContainsString(
+						$needle,
+						$value_string,
+						sprintf( 'Option value "%s" contains %s.', $value_string, $reason )
+					);
+				}
+
+				$label_string = (string) $label;
+				foreach ( array( '<', '>' ) as $needle ) {
+					$this->assertStringNotContainsString(
+						$needle,
+						$label_string,
+						sprintf( 'Option label "%s" contains a tag character.', $label_string )
+					);
+				}
+			}
+		}
+	}
+
+	/**
+	 * Regression: well-known timezone identifiers must round-trip as exact keys.
+	 *
+	 * If the parser corrupts option `value` attributes, common identifiers
+	 * like `America/New_York` or `UTC` will not appear as exact keys in their
+	 * groups — instead the keys carry trailing markup like
+	 * `America/New_York" dir="auto`. Asserting that a few canonical
+	 * identifiers exist as exact keys is a tight check that catches this
+	 * class of regression early.
+	 *
+	 * @since 0.34.0
+	 *
+	 * @covers ::timezone_choices
+	 *
+	 * @return void
+	 */
+	public function test_timezone_choices_exposes_canonical_identifiers_as_exact_keys(): void {
+		$timezones = Utility::timezone_choices();
+
+		$this->assertArrayHasKey( 'America', $timezones );
+		$this->assertArrayHasKey( 'America/New_York', $timezones['America'] );
+
+		$this->assertArrayHasKey( 'Europe', $timezones );
+		$this->assertArrayHasKey( 'Europe/Berlin', $timezones['Europe'] );
+
+		$this->assertArrayHasKey( 'UTC', $timezones );
+		$this->assertArrayHasKey( 'UTC', $timezones['UTC'] );
 	}
 
 	/**
@@ -203,32 +744,118 @@ class Test_Utility extends Base {
 	 */
 	public function data_get_system_timezone(): array {
 		return array(
+			// No gmt_offset and no timezone_string → defaults to UTC.
 			array(
 				false,
 				false,
-				'UTC+0',
+				'UTC',
 			),
+			// Whole positive offset.
 			array(
 				5,
 				false,
-				'UTC+5',
+				'+05:00',
 			),
+			// Whole negative offset.
 			array(
 				-4,
 				false,
-				'UTC-4',
+				'-04:00',
 			),
+			// Fractional offset (e.g. India).
+			array(
+				5.5,
+				false,
+				'+05:30',
+			),
+			// IANA passthrough.
 			array(
 				false,
 				'Europe/London',
 				'Europe/London',
 			),
+			// Etc/GMT is stripped; falls back to gmt_offset.
 			array(
-				false,
+				-3,
 				'Etc/GMT+3',
-				'UTC-3',
+				'-03:00',
 			),
 		);
+	}
+
+	/**
+	 * Data provider for test_offset_to_timezone_string.
+	 *
+	 * @since 0.34.0
+	 *
+	 * @return array
+	 */
+	public function data_offset_to_timezone_string(): array {
+		return array(
+			'zero returns UTC'                  => array( 0.0, 'UTC' ),
+			'positive whole hour'               => array( 5.0, '+05:00' ),
+			'negative whole hour'               => array( -8.0, '-08:00' ),
+			'positive half hour (India)'        => array( 5.5, '+05:30' ),
+			'negative half hour (Newfoundland)' => array( -3.5, '-03:30' ),
+			'positive quarter hour (Kathmandu)' => array( 5.75, '+05:45' ),
+		);
+	}
+
+	/**
+	 * Coverage for offset_to_timezone_string.
+	 *
+	 * @dataProvider data_offset_to_timezone_string
+	 *
+	 * @covers ::offset_to_timezone_string
+	 *
+	 * @param float  $offset   Decimal hour offset from UTC.
+	 * @param string $expected Expected DateTimeZone-compatible string.
+	 *
+	 * @return void
+	 */
+	public function test_offset_to_timezone_string( float $offset, string $expected ): void {
+		$this->assertSame( $expected, Utility::offset_to_timezone_string( $offset ) );
+	}
+
+	/**
+	 * Data provider for test_normalize_timezone_string.
+	 *
+	 * @since 0.34.0
+	 *
+	 * @return array
+	 */
+	public function data_normalize_timezone_string(): array {
+		return array(
+			'empty string becomes UTC'           => array( '', 'UTC' ),
+			'whitespace-only string becomes UTC' => array( '   ', 'UTC' ),
+			'offset +HH:MM passes through'       => array( '+05:30', '+05:30' ),
+			'offset -HH:MM passes through'       => array( '-08:00', '-08:00' ),
+			'literal UTC passes through'         => array( 'UTC', 'UTC' ),
+			'UTC+0 normalizes to UTC'            => array( 'UTC+0', 'UTC' ),
+			'UTC-0 normalizes to UTC'            => array( 'UTC-0', 'UTC' ),
+			'UTC+5 becomes +05:00'               => array( 'UTC+5', '+05:00' ),
+			'UTC-8 becomes -08:00'               => array( 'UTC-8', '-08:00' ),
+			'UTC+5.5 becomes +05:30'             => array( 'UTC+5.5', '+05:30' ),
+			'UTC+5:30 becomes +05:30'            => array( 'UTC+5:30', '+05:30' ),
+			'UTC with zero colon form'           => array( 'UTC+0:00', 'UTC' ),
+			'IANA identifier passes through'     => array( 'America/New_York', 'America/New_York' ),
+		);
+	}
+
+	/**
+	 * Coverage for normalize_timezone_string.
+	 *
+	 * @dataProvider data_normalize_timezone_string
+	 *
+	 * @covers ::normalize_timezone_string
+	 *
+	 * @param string $input    Input timezone string.
+	 * @param string $expected Expected normalized output.
+	 *
+	 * @return void
+	 */
+	public function test_normalize_timezone_string( string $input, string $expected ): void {
+		$this->assertSame( $expected, Utility::normalize_timezone_string( $input ) );
 	}
 
 	/**
@@ -498,7 +1125,7 @@ class Test_Utility extends Base {
 	/**
 	 * Tests get_http_input method with various sanitizers.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::get_http_input
 	 *
 	 * @return void
@@ -606,7 +1233,7 @@ class Test_Utility extends Base {
 	/**
 	 * Tests get_http_input method with special characters and encoding.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::get_http_input
 	 *
 	 * @return void
@@ -654,7 +1281,7 @@ class Test_Utility extends Base {
 	/**
 	 * Tests get_wp_referer method.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::get_wp_referer
 	 *
 	 * @return void
@@ -703,7 +1330,7 @@ class Test_Utility extends Base {
 	/**
 	 * Tests get_wp_referer without filter (normal WordPress behavior).
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::get_wp_referer
 	 *
 	 * @return void
@@ -723,7 +1350,7 @@ class Test_Utility extends Base {
 	/**
 	 * Tests safe_exit returns early during unit tests instead of calling exit().
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::safe_exit
 	 *
 	 * @return void
@@ -735,5 +1362,100 @@ class Test_Utility extends Base {
 
 		// If we reach this assertion, safe_exit returned successfully.
 		$this->assertTrue( true, 'safe_exit should return early during unit tests' );
+	}
+
+	/**
+	 * Coverage for get_block_names with simple block.
+	 *
+	 * @covers ::get_block_names
+	 *
+	 * @return void
+	 */
+	public function test_get_block_names_simple(): void {
+		$blocks = array(
+			'blockName' => 'core/paragraph',
+		);
+
+		$this->assertSame(
+			array( 'core/paragraph' ),
+			Utility::get_block_names( $blocks )
+		);
+	}
+
+	/**
+	 * Coverage for get_block_names with nested blocks.
+	 *
+	 * @covers ::get_block_names
+	 *
+	 * @return void
+	 */
+	public function test_get_block_names_nested(): void {
+		$blocks = array(
+			'blockName'   => 'core/group',
+			'innerBlocks' => array(
+				array(
+					'blockName' => 'core/paragraph',
+				),
+				array(
+					'blockName' => 'gatherpress/event-date',
+				),
+			),
+		);
+
+		$this->assertSame(
+			array( 'core/group', 'core/paragraph', 'gatherpress/event-date' ),
+			Utility::get_block_names( $blocks )
+		);
+	}
+
+	/**
+	 * Coverage for get_block_names with deeply nested blocks.
+	 *
+	 * @covers ::get_block_names
+	 *
+	 * @return void
+	 */
+	public function test_get_block_names_deeply_nested(): void {
+		$blocks = array(
+			'blockName'   => 'core/group',
+			'innerBlocks' => array(
+				array(
+					'blockName'   => 'core/columns',
+					'innerBlocks' => array(
+						array(
+							'blockName'   => 'core/column',
+							'innerBlocks' => array(
+								array(
+									'blockName' => 'core/paragraph',
+								),
+							),
+						),
+					),
+				),
+			),
+		);
+
+		$this->assertSame(
+			array( 'core/group', 'core/columns', 'core/column', 'core/paragraph' ),
+			Utility::get_block_names( $blocks )
+		);
+	}
+
+	/**
+	 * Coverage for get_block_names with no blockName.
+	 *
+	 * @covers ::get_block_names
+	 *
+	 * @return void
+	 */
+	public function test_get_block_names_no_blockname(): void {
+		$blocks = array(
+			'attrs' => array(),
+		);
+
+		$this->assertSame(
+			array(),
+			Utility::get_block_names( $blocks )
+		);
 	}
 }

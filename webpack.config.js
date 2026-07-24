@@ -48,7 +48,9 @@ function getVariationEntries() {
 }
 
 module.exports = [
-	...defaultConfig,
+	// The scripts (classic) config, with the project's extra entries. This
+	// replaces defaultConfig[ 0 ] rather than being appended alongside it —
+	// exporting both compiled every classic entry twice.
 	{
 		...defaultConfig[ 0 ],
 		entry: {
@@ -70,10 +72,20 @@ module.exports = [
 				'style.scss',
 			),
 			utility_style: path.resolve( process.cwd(), 'src', 'utility.scss' ),
+			leaflet_style: path.resolve(
+				process.cwd(),
+				'src',
+				'leaflet-style.js'
+			),
 			tooltip_view: path.resolve(
 				process.cwd(),
 				'src/formats/tooltip',
 				'view.js'
+			),
+			'integrations/aql/index': path.resolve(
+				process.cwd(),
+				'src/integrations/aql',
+				'index.js'
 			),
 			...getVariationEntries(),
 		},
@@ -111,5 +123,18 @@ module.exports = [
 			} ),
 			...defaultConfig[ 0 ].plugins,
 		],
+	},
+	// The script-modules config (from --experimental-modules). Both configs
+	// emit async chunks as `[id].js` into build/ by default, and the ids can
+	// collide — the classic build then overwrites a module-format chunk with
+	// a jsonp-format one, and the module runtime dies importing it
+	// (\"Cannot read properties of undefined (reading 'length')\", #2009).
+	// A distinct chunk filename keeps the two chunk namespaces apart.
+	{
+		...defaultConfig[ 1 ],
+		output: {
+			...defaultConfig[ 1 ].output,
+			chunkFilename: '[id].module.js',
+		},
 	},
 ];

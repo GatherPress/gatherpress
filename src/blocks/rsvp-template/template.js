@@ -1,5 +1,5 @@
 /**
- * WordPress dependencies.
+ * WordPress dependencies
  */
 import { _x } from '@wordpress/i18n';
 
@@ -38,8 +38,18 @@ const TEMPLATE = [
 							'gatherpress',
 						),
 					},
+					// Centering is declared both ways on purpose: newer
+					// WordPress moved the block's text alignment from the
+					// `textAlign` attribute to the typography block support
+					// (`style.typography.textAlign`) and silently drops the
+					// legacy attribute on insert, while our WP 6.7 floor
+					// still reads the attribute. Each version keeps the one
+					// it understands.
 					textAlign: 'center',
 					style: {
+						typography: {
+							textAlign: 'center',
+						},
 						spacing: {
 							margin: {
 								top: '0',

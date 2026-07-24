@@ -1,3 +1,8 @@
+// Reusable component styles. The pattern-picker modal portals to
+// document.body — outside any block's iframe — so its styles need to live in
+// the admin-wide bundle, not in a block's editor stylesheet.
+@use "components/PatternPicker";
+
 .gatherpress-attendee-info {
 	display: flex;
 	gap: 0.5rem;
@@ -34,14 +39,14 @@
 }
 
 .gatherpress-rsvp-approved:hover .gatherpress-rsvp-icon {
-	background: #0073aa;
+	background: var(--wp-admin-theme-color, #0073aa);
 }
 
 .gatherpress-rsvp-pending {
 	position: absolute;
 	top: -8px;
 	right: -12px;
-	background: #d63638;
+	background: var(--wp-admin-theme-color, #d63638);
 	color: #fff;
 	border-radius: 50%;
 	font-size: 10px;
@@ -61,7 +66,7 @@
 }
 
 .gatherpress-rsvp-pending:hover {
-	background: #b32d2e;
+	background: var(--wp-admin-theme-color-darker-10, #b32d2e);
 	color: #fff;
 }
 
@@ -96,4 +101,23 @@
 
 .gatherpress-popular-venue--selected.components-button.is-link:disabled {
 	opacity: 1;
+}
+
+// Float the RSVP block's own settings panel to the top of the block
+// inspector's Settings tab, above core's Layout panel. Core renders its
+// support panels (Layout) and the block's own InspectorControls into the same
+// wrapper, in that order, and offers no API for ordering them. The wrapper's
+// own class is generated, so the panel is reached through `:has()` and
+// reordered with flexbox instead.
+.block-editor-block-inspector [role="tabpanel"] :has(> .gatherpress-rsvp-block-settings) {
+	display: flex;
+	flex-direction: column;
+
+	> * {
+		order: 1;
+	}
+}
+
+.block-editor-block-inspector [role="tabpanel"] .gatherpress-rsvp-block-settings {
+	order: 0;
 }

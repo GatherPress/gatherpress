@@ -2,37 +2,30 @@
 /**
  * Render Venue block.
  *
+ * The inner blocks are re-rendered with the resolved shadow-source post
+ * (venue, tour, production, etc.) as their context — WordPress rendered
+ * them with the surrounding post's context before this callback ran.
+ * Emitting the wrapper here, after that, lets core's block-supports
+ * pipeline (layout classes among the rest) decorate the one real wrapper.
+ * When no source post resolves, the block renders nothing.
+ *
  * @package GatherPress\Core
- * @since 1.0.0
+ * @since 0.27.0
  */
 
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
-use GatherPress\Core\Venue;
+use GatherPress\Core\Blocks\Venue;
 
-if ( ! isset( $attributes ) || ! is_array( $attributes ) ) {
+$gatherpress_inner_content = Venue::get_instance()->render_inner_blocks( $block );
+
+if ( null === $gatherpress_inner_content ) {
 	return;
 }
 
-$gatherpress_venue      = Venue::get_instance();
-$gatherpress_attributes = array_merge(
-	$attributes,
-	$gatherpress_venue->get_venue_meta( get_the_ID(), get_post_type() )
+printf(
+	'<div %s>%s</div>',
+	get_block_wrapper_attributes(), // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Already escaped by core.
+	$gatherpress_inner_content // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Inner blocks rendered by core.
 );
-
-// Don't render name on venue post.
-if ( Venue::POST_TYPE === get_post_type() ) {
-	$gatherpress_attributes['name'] = '';
-}
-
-?>
-<div <?php echo wp_kses_data( get_block_wrapper_attributes() ); ?>>
-	<div class="gatherpress-venue">
-		<div data-gatherpress_block_name="venue" data-gatherpress_block_attrs="<?php echo esc_attr( htmlspecialchars( wp_json_encode( $gatherpress_attributes ), ENT_QUOTES, 'UTF-8' ) ); ?>"></div>
-
-		<?php if ( $attributes['mapShow'] ) : ?>
-			<div data-gatherpress_block_name="map-embed" data-gatherpress_block_attrs="<?php echo esc_attr( htmlspecialchars( wp_json_encode( $gatherpress_attributes ), ENT_QUOTES, 'UTF-8' ) ); ?>"></div>
-		<?php endif; ?>
-	</div>
-</div>

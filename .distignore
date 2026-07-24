@@ -19,13 +19,16 @@
 .stylelintrc.js
 .travis.yml
 .typos.toml
+AGENTS.md
 CLAUDE.md
 CODE_OF_CONDUCT.md
+README.md
 composer.json
 composer.lock
 dependencies.yml
 Gruntfile.js
 jest.config.js
+jsconfig.json
 package.json
 package-lock.json
 phpcs.xml
@@ -51,6 +54,7 @@ yarn.lock
 .github
 .wordpress-version-checker.json
 .wp-env.json
+.wp-env.test.json
 .DS_Store
 Thumbs.db
 .circleci/config.yml
@@ -59,6 +63,7 @@ vendor
 src
 docs
 wp-cron.sh
+patches
 
 # Miscellaneous and SQL Archives
 behat.yml

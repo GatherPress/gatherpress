@@ -32,6 +32,13 @@ module.exports = defineConfig( {
 			name: 'chromium',
 			use: {
 				...devices[ 'Desktop Chrome' ],
+				// In CI, run against the Google Chrome preinstalled on the
+				// GitHub runner instead of Playwright's downloaded Chromium —
+				// the `playwright install chromium` download hangs after
+				// completing on the runners (observed 2026-05-30). Local runs
+				// keep using the downloaded Chromium so no system Chrome is
+				// required for development.
+				...( process.env.CI ? { channel: 'chrome' } : {} ),
 				storageState: './test/e2e/storageState.json',
 			},
 		},

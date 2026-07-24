@@ -1,0 +1,723 @@
+/**
+ * External dependencies
+ */
+import { beforeEach, describe, expect, it, jest } from '@jest/globals';
+import { act, render } from '@testing-library/react';
+
+/**
+ * Mocks
+ */
+
+// Verify that the useSelect selector returns stable object references for
+// venueMeta, savedVenueMeta, and staticMapDescriptors across repeated calls
+// with the same state. Unstable references trigger Gutenberg's "Non-equal
+// value keys" warning and cause unnecessary re-renders (issue #1735).
+
+// Capture the venue-state selector from the Edit block's first useSelect call
+// so we can invoke it directly in tests.
+let capturedVenueStateSelector = null;
+
+// Capture the latest props handed to the mocked ResizableBox so tests can
+// drive its resize callbacks with crafted elements.
+let capturedResizableProps = null;
+
+// Capture every SelectControl render so tests can inspect the Map type
+// control's option list under different render-mode / API-key combos.
+let mockSelectControlProps = [];
+
+// A minimal select mock that puts the block into the early-bail path:
+// effectiveVenuePostId === 0 because both context.postId and
+// core/editor.getCurrentPostId() return falsy values.
+const noVenueMockSelect = ( storeName ) => {
+	switch ( storeName ) {
+		case 'core/editor':
+			return {
+				getCurrentPostId: () => 0,
+				getCurrentPostType: () => '',
+				getEditedPostAttribute: () => null,
+				getCurrentPost: () => null,
+			};
+		case 'core':
+			return { getEditedEntityRecord: () => null };
+		case 'core/block-editor':
+			return { getBlockParentsByBlockName: () => [] };
+		case 'gatherpress/venue':
+			return {
+				getVenueLatitude: () => null,
+				getVenueLongitude: () => null,
+			};
+		default:
+			return {};
+	}
+};
+
+jest.mock( '@wordpress/data', () => ( {
+	useSelect: jest.fn( ( selector ) => {
+		const result = selector( noVenueMockSelect );
+		// Identify the venue-state selector by its return shape.
+		if (
+			null !== result &&
+			'object' === typeof result &&
+			'venueMeta' in result
+		) {
+			capturedVenueStateSelector = selector;
+		}
+		return result;
+	} ),
+	useDispatch: jest.fn( () => ( {} ) ),
+} ) );
+
+jest.mock( '@wordpress/i18n', () => ( {
+	__: ( str ) => str,
+} ) );
+
+jest.mock( '@wordpress/element', () => ( {
+	useEffect: jest.fn(),
+	useState: jest.requireActual( 'react' ).useState,
+} ) );
+
+jest.mock( '@wordpress/block-editor', () => ( {
+	BlockControls: ( { children } ) => <div>{ children }</div>,
+	InspectorControls: ( { children } ) => <div>{ children }</div>,
+	useBlockProps: jest.fn( () => ( {} ) ),
+} ) );
+
+jest.mock( '@wordpress/components', () => ( {
+	Dropdown: ( { renderToggle, renderContent } ) => (
+		<div>
+			{ renderToggle( { isOpen: false, onToggle: () => {} } ) }
+			{ renderContent() }
+		</div>
+	),
+	Flex: ( { children } ) => <div>{ children }</div>,
+	FlexItem: ( { children } ) => <div>{ children }</div>,
+	PanelBody: ( { children } ) => <div>{ children }</div>,
+	RangeControl: () => null,
+	ResizableBox: ( props ) => {
+		capturedResizableProps = props;
+		return (
+			<div
+				data-testid="resizable-box"
+				data-max-width={ String( props.maxWidth ) }
+				data-size-width={ String( props.size?.width ) }
+				data-margin-left={ String( props.style?.marginLeft ) }
+				data-margin-right={ String( props.style?.marginRight ) }
+			>
+				{ props.children }
+			</div>
+		);
+	},
+	SelectControl: ( props ) => {
+		mockSelectControlProps.push( props );
+		return null;
+	},
+	TextControl: () => null,
+	ToggleControl: () => null,
+	ToolbarButton: () => null,
+	ToolbarGroup: ( { children } ) => <div>{ children }</div>,
+	Icon: () => null,
+	__experimentalToolsPanel: ( { children } ) => <div>{ children }</div>,
+	__experimentalToolsPanelItem: ( { children } ) => <div>{ children }</div>,
+} ) );
+
+jest.mock( '@wordpress/icons', () => ( {
+	Icon: () => null,
+	link: null,
+	mapMarker: null,
+} ) );
+
+jest.mock( '@src/helpers/venue', () => ( {
+	isVenuePostType: jest.fn( () => false ),
+} ) );
+
+jest.mock( '@src/helpers/editor', () => ( {
+	isInFSETemplate: jest.fn( () => false ),
+} ) );
+
+jest.mock( '@src/helpers/editor-settings', () => ( {
+	getFromSettings: jest.fn( () => null ),
+} ) );
+
+jest.mock( '@src/components/MapEmbed', () => () => null );
+
+jest.mock( '@src/components/GoogleMap', () => ( {
+	GOOGLE_KEYLESS_UNSUPPORTED_MAP_TYPE_SLUGS: [ 'hybrid', 'terrain' ],
+	GOOGLE_MAP_TYPE_DEFINITIONS: [
+		{ slug: 'roadmap', label: 'Roadmap' },
+		{ slug: 'satellite', label: 'Satellite' },
+		{ slug: 'hybrid', label: 'Hybrid' },
+		{ slug: 'terrain', label: 'Terrain' },
+	],
+	toMapsEmbedApiMapType: jest.fn( ( type ) => {
+		if ( 'hybrid' === type || 'satellite' === type ) {
+			return 'satellite';
+		}
+		return 'roadmap';
+	} ),
+} ) );
+
+jest.mock( '@src/supports/block-guard', () => ( {
+	useIsBlockSealed: jest.fn( () => false ),
+} ) );
+
+jest.mock( '@src/blocks/venue-map/helpers', () => ( {
+	RegenerateMapButton: () => null,
+	buildComboKey: jest.fn(
+		( zoom, width, height, mapType = 'roadmap' ) =>
+			`${ zoom }x${ width }x${ height }x${ mapType || 'roadmap' }`
+	),
+	parseAspectRatio: jest.fn( () => false ),
+	pickDescriptorForCombo: jest.fn( () => undefined ),
+	resolveDimensions: jest.fn( () => ( { width: 800, height: 400 } ) ),
+	usePlaceholderPolling: jest.fn(),
+	// Pure attribute readers — use the real implementations so the mocked
+	// Edit derives dimensions exactly like production code.
+	parsePxDimension: jest.requireActual( '@src/blocks/venue-map/helpers' )
+		.parsePxDimension,
+	getDimensionValue: jest.requireActual( '@src/blocks/venue-map/helpers' )
+		.getDimensionValue,
+} ) );
+
+/**
+ * Internal dependencies
+ */
+import Edit from '@src/blocks/venue-map/edit';
+import { getFromSettings } from '@src/helpers/editor-settings';
+import { isVenuePostType } from '@src/helpers/venue';
+
+const DEFAULT_ATTRIBUTES = {
+	zoom: 16,
+	type: 'roadmap',
+	width: 0,
+	height: 300,
+	aspectRatio: '2/1',
+	scale: 'cover',
+	renderMode: 'static',
+	align: '',
+	href: '',
+	linkDestination: 'none',
+	linkTarget: '',
+	rel: '',
+};
+
+describe( 'venue-map Edit useSelect selector stability', () => {
+	beforeEach( () => {
+		capturedVenueStateSelector = null;
+		jest.clearAllMocks();
+		// clearAllMocks does not reset mockReturnValue; restore the default
+		// so each test starts with isVenuePostType returning false.
+		isVenuePostType.mockReturnValue( false );
+	} );
+
+	it( 'returns the same venueMeta reference on repeated calls when there is no venue post', () => {
+		render(
+			<Edit
+				attributes={ DEFAULT_ATTRIBUTES }
+				setAttributes={ jest.fn() }
+				context={ {} }
+				clientId=""
+			/>
+		);
+
+		expect( capturedVenueStateSelector ).not.toBeNull();
+
+		const result1 = capturedVenueStateSelector( noVenueMockSelect );
+		const result2 = capturedVenueStateSelector( noVenueMockSelect );
+
+		expect( result1.venueMeta ).toBe( result2.venueMeta );
+	} );
+
+	it( 'returns the same savedVenueMeta reference on repeated calls when there is no venue post', () => {
+		render(
+			<Edit
+				attributes={ DEFAULT_ATTRIBUTES }
+				setAttributes={ jest.fn() }
+				context={ {} }
+				clientId=""
+			/>
+		);
+
+		expect( capturedVenueStateSelector ).not.toBeNull();
+
+		const result1 = capturedVenueStateSelector( noVenueMockSelect );
+		const result2 = capturedVenueStateSelector( noVenueMockSelect );
+
+		expect( result1.savedVenueMeta ).toBe( result2.savedVenueMeta );
+	} );
+
+	it( 'returns the same staticMapDescriptors reference on repeated calls when there is no venue post', () => {
+		render(
+			<Edit
+				attributes={ DEFAULT_ATTRIBUTES }
+				setAttributes={ jest.fn() }
+				context={ {} }
+				clientId=""
+			/>
+		);
+
+		expect( capturedVenueStateSelector ).not.toBeNull();
+
+		const result1 = capturedVenueStateSelector( noVenueMockSelect );
+		const result2 = capturedVenueStateSelector( noVenueMockSelect );
+
+		expect( result1.staticMapDescriptors ).toBe(
+			result2.staticMapDescriptors
+		);
+	} );
+
+	it( 'returns the same venueMeta reference when the venue post has null meta', () => {
+		const nullMetaSelect = ( storeName ) => {
+			switch ( storeName ) {
+				case 'core/editor':
+					return {
+						getCurrentPostId: () => 0,
+						getCurrentPostType: () => '',
+						getEditedPostAttribute: () => null,
+						getCurrentPost: () => null,
+					};
+				case 'core':
+					return {
+						// Venue post exists but has no meta.
+						getEditedEntityRecord: () => ( {
+							id: 99,
+							meta: null,
+						} ),
+					};
+				case 'core/block-editor':
+					return { getBlockParentsByBlockName: () => [] };
+				case 'gatherpress/venue':
+					return {
+						getVenueLatitude: () => null,
+						getVenueLongitude: () => null,
+					};
+				default:
+					return {};
+			}
+		};
+
+		// Render with a context.postId to bypass the early bail.
+		render(
+			<Edit
+				attributes={ DEFAULT_ATTRIBUTES }
+				setAttributes={ jest.fn() }
+				context={ { postId: 99, postType: 'gatherpress_venue' } }
+				clientId=""
+			/>
+		);
+
+		expect( capturedVenueStateSelector ).not.toBeNull();
+
+		const result1 = capturedVenueStateSelector( nullMetaSelect );
+		const result2 = capturedVenueStateSelector( nullMetaSelect );
+
+		expect( result1.venueMeta ).toBe( result2.venueMeta );
+	} );
+
+	it( 'returns the same staticMapDescriptors reference when the venue post has no static map meta', () => {
+		const noMapSelect = ( storeName ) => {
+			switch ( storeName ) {
+				case 'core/editor':
+					return {
+						getCurrentPostId: () => 0,
+						getCurrentPostType: () => '',
+						getEditedPostAttribute: () => null,
+						getCurrentPost: () => null,
+					};
+				case 'core':
+					return {
+						// Venue post with meta but no gatherpress_static_map key.
+						getEditedEntityRecord: () => ( {
+							id: 99,
+							meta: { gatherpress_address: '123 Main St' },
+						} ),
+					};
+				case 'core/block-editor':
+					return { getBlockParentsByBlockName: () => [] };
+				case 'gatherpress/venue':
+					return {
+						getVenueLatitude: () => null,
+						getVenueLongitude: () => null,
+					};
+				default:
+					return {};
+			}
+		};
+
+		render(
+			<Edit
+				attributes={ DEFAULT_ATTRIBUTES }
+				setAttributes={ jest.fn() }
+				context={ { postId: 99, postType: 'gatherpress_venue' } }
+				clientId=""
+			/>
+		);
+
+		expect( capturedVenueStateSelector ).not.toBeNull();
+
+		const result1 = capturedVenueStateSelector( noMapSelect );
+		const result2 = capturedVenueStateSelector( noMapSelect );
+
+		expect( result1.staticMapDescriptors ).toBe(
+			result2.staticMapDescriptors
+		);
+	} );
+
+	it( 'returns stable savedVenueMeta and staticMapDescriptors references in the isEditing branch', () => {
+		// Trigger the isEditing path: getCurrentPostId() matches context.postId
+		// and isVenuePostType() returns true.
+		isVenuePostType.mockReturnValue( true );
+
+		const editingSelect = ( storeName ) => {
+			switch ( storeName ) {
+				case 'core/editor':
+					return {
+						getCurrentPostId: () => 42,
+						getCurrentPostType: () => 'gatherpress_venue',
+						// Null meta and null post ensure the || EMPTY_META and
+						// || EMPTY_STATIC_MAP_DESCRIPTORS fallbacks are exercised.
+						getEditedPostAttribute: () => null,
+						getCurrentPost: () => null,
+					};
+				case 'core':
+					return { getEditedEntityRecord: () => null };
+				case 'core/block-editor':
+					return { getBlockParentsByBlockName: () => [] };
+				case 'gatherpress/venue':
+					return {
+						getVenueLatitude: () => null,
+						getVenueLongitude: () => null,
+					};
+				default:
+					return {};
+			}
+		};
+
+		render(
+			<Edit
+				attributes={ DEFAULT_ATTRIBUTES }
+				setAttributes={ jest.fn() }
+				context={ { postId: 42, postType: 'gatherpress_venue' } }
+				clientId=""
+			/>
+		);
+
+		expect( capturedVenueStateSelector ).not.toBeNull();
+
+		const result1 = capturedVenueStateSelector( editingSelect );
+		const result2 = capturedVenueStateSelector( editingSelect );
+
+		expect( result1.savedVenueMeta ).toBe( result2.savedVenueMeta );
+		expect( result1.staticMapDescriptors ).toBe(
+			result2.staticMapDescriptors
+		);
+	} );
+} );
+
+describe( 'venue-map Edit Google map type control', () => {
+	/**
+	 * Settings mock for a Google-platform site.
+	 *
+	 * @param {string} apiKey Google Maps API key setting value.
+	 *
+	 * @return {Function} getFromSettings implementation.
+	 */
+	const googleSettings =
+		( apiKey ) =>
+			( key ) => {
+				if ( 'mapPlatform' === key ) {
+					return 'google';
+				}
+				if ( 'googleMapsApiKey' === key ) {
+					return apiKey;
+				}
+				return null;
+			};
+
+	/**
+	 * Find the Map type SelectControl captured during the last render.
+	 *
+	 * @return {Object|undefined} Captured props.
+	 */
+	const getMapTypeControl = () =>
+		mockSelectControlProps.find(
+			( props ) => 'Map type' === props.label
+		);
+
+	/**
+	 * Invoke every effect registered with the mocked useEffect.
+	 *
+	 * @return {void}
+	 */
+	const runEffects = () => {
+		const { useEffect } = jest.requireMock( '@wordpress/element' );
+		act( () => {
+			useEffect.mock.calls.forEach( ( [ callback ] ) => callback() );
+		} );
+	};
+
+	beforeEach( () => {
+		mockSelectControlProps = [];
+		jest.clearAllMocks();
+		isVenuePostType.mockReturnValue( false );
+	} );
+
+	it( 'offers only roadmap and satellite for keyless interactive maps', () => {
+		getFromSettings.mockImplementation( googleSettings( null ) );
+
+		render(
+			<Edit
+				attributes={ {
+					...DEFAULT_ATTRIBUTES,
+					renderMode: 'interactive',
+				} }
+				setAttributes={ jest.fn() }
+				context={ {} }
+				clientId=""
+			/>
+		);
+
+		expect(
+			getMapTypeControl().options.map( ( opt ) => opt.value )
+		).toEqual( [ 'roadmap', 'satellite' ] );
+	} );
+
+	it( 'offers all four types for interactive maps with an API key', () => {
+		getFromSettings.mockImplementation( googleSettings( 'unit-test-key' ) );
+
+		render(
+			<Edit
+				attributes={ {
+					...DEFAULT_ATTRIBUTES,
+					renderMode: 'interactive',
+				} }
+				setAttributes={ jest.fn() }
+				context={ {} }
+				clientId=""
+			/>
+		);
+
+		expect(
+			getMapTypeControl().options.map( ( opt ) => opt.value )
+		).toEqual( [ 'roadmap', 'satellite', 'hybrid', 'terrain' ] );
+	} );
+
+	it( 'offers all four types for static maps without an API key', () => {
+		getFromSettings.mockImplementation( googleSettings( null ) );
+
+		render(
+			<Edit
+				attributes={ DEFAULT_ATTRIBUTES }
+				setAttributes={ jest.fn() }
+				context={ {} }
+				clientId=""
+			/>
+		);
+
+		expect(
+			getMapTypeControl().options.map( ( opt ) => opt.value )
+		).toEqual( [ 'roadmap', 'satellite', 'hybrid', 'terrain' ] );
+	} );
+
+	it( 'coerces a stored hybrid type when the interactive map is keyless', () => {
+		getFromSettings.mockImplementation( googleSettings( null ) );
+		const setAttributes = jest.fn();
+
+		render(
+			<Edit
+				attributes={ {
+					...DEFAULT_ATTRIBUTES,
+					renderMode: 'interactive',
+					type: 'hybrid',
+				} }
+				setAttributes={ setAttributes }
+				context={ {} }
+				clientId=""
+			/>
+		);
+
+		runEffects();
+
+		expect( setAttributes ).toHaveBeenCalledWith( {
+			type: 'satellite',
+		} );
+	} );
+
+	it( 'keeps a stored hybrid type when an API key is configured', () => {
+		getFromSettings.mockImplementation( googleSettings( 'unit-test-key' ) );
+		const setAttributes = jest.fn();
+
+		render(
+			<Edit
+				attributes={ {
+					...DEFAULT_ATTRIBUTES,
+					renderMode: 'interactive',
+					type: 'hybrid',
+				} }
+				setAttributes={ setAttributes }
+				context={ {} }
+				clientId=""
+			/>
+		);
+
+		runEffects();
+
+		expect( setAttributes ).not.toHaveBeenCalledWith( {
+			type: expect.anything(),
+		} );
+	} );
+
+	it( 'keeps a roadmap type untouched on the keyless interactive path', () => {
+		getFromSettings.mockImplementation( googleSettings( null ) );
+		const setAttributes = jest.fn();
+
+		render(
+			<Edit
+				attributes={ {
+					...DEFAULT_ATTRIBUTES,
+					renderMode: 'interactive',
+					type: 'roadmap',
+				} }
+				setAttributes={ setAttributes }
+				context={ {} }
+				clientId=""
+			/>
+		);
+
+		runEffects();
+
+		expect( setAttributes ).not.toHaveBeenCalledWith( {
+			type: expect.anything(),
+		} );
+	} );
+
+	it( 'never coerces when the map type control is hidden (OSM platform)', () => {
+		getFromSettings.mockImplementation( ( key ) =>
+			'mapPlatform' === key ? 'osm' : null
+		);
+		const setAttributes = jest.fn();
+
+		render(
+			<Edit
+				attributes={ {
+					...DEFAULT_ATTRIBUTES,
+					renderMode: 'interactive',
+					type: 'hybrid',
+				} }
+				setAttributes={ setAttributes }
+				context={ {} }
+				clientId=""
+			/>
+		);
+
+		expect( getMapTypeControl() ).toBeUndefined();
+
+		runEffects();
+
+		expect( setAttributes ).not.toHaveBeenCalledWith( {
+			type: expect.anything(),
+		} );
+	} );
+} );
+
+describe( 'venue-map Edit sizing', () => {
+	beforeEach( () => {
+		capturedVenueStateSelector = null;
+		capturedResizableProps = null;
+		jest.clearAllMocks();
+		isVenuePostType.mockReturnValue( false );
+	} );
+
+	it( 'only offers the bottom resize handle — width always fills the container', () => {
+		render(
+			<Edit
+				attributes={ {
+					...DEFAULT_ATTRIBUTES,
+					style: { dimensions: { height: '250px' } },
+				} }
+				setAttributes={ jest.fn() }
+				context={ {} }
+				clientId=""
+			/>
+		);
+
+		expect( capturedResizableProps.enable ).toEqual( {
+			top: false,
+			right: false,
+			bottom: true,
+			left: false,
+			topRight: false,
+			bottomRight: false,
+			bottomLeft: false,
+			topLeft: false,
+		} );
+		expect( capturedResizableProps.size ).toEqual( {
+			width: 'auto',
+			height: 250,
+		} );
+	} );
+
+	it( 'uses an auto box height when no height is stored', () => {
+		render(
+			<Edit
+				attributes={ DEFAULT_ATTRIBUTES }
+				setAttributes={ jest.fn() }
+				context={ {} }
+				clientId=""
+			/>
+		);
+
+		expect( capturedResizableProps.size ).toEqual( {
+			width: 'auto',
+			height: 'auto',
+		} );
+	} );
+
+	it( 'commits an explicit height on resize', () => {
+		const setAttributes = jest.fn();
+
+		render(
+			<Edit
+				attributes={ {
+					...DEFAULT_ATTRIBUTES,
+					style: { dimensions: { height: '250px' } },
+				} }
+				setAttributes={ setAttributes }
+				context={ {} }
+				clientId=""
+			/>
+		);
+
+		// resolveDimensions is mocked to an effective height of 400; a
+		// +50 drag commits 450px into style.dimensions.height.
+		act( () =>
+			capturedResizableProps.onResizeStop( null, 'bottom', null, {
+				width: 0,
+				height: 50,
+			} )
+		);
+
+		expect( setAttributes ).toHaveBeenCalledWith( {
+			style: { dimensions: { height: '450px' } },
+		} );
+	} );
+
+	it( 'passes the block wrapper through without custom styling', () => {
+		const { useBlockProps } = jest.requireMock(
+			'@wordpress/block-editor'
+		);
+
+		render(
+			<Edit
+				attributes={ {
+					...DEFAULT_ATTRIBUTES,
+					style: { dimensions: { height: '250px' } },
+				} }
+				setAttributes={ jest.fn() }
+				context={ {} }
+				clientId=""
+			/>
+		);
+
+		expect( useBlockProps ).toHaveBeenCalledWith();
+	} );
+} );

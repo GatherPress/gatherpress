@@ -1,5 +1,5 @@
 /**
- * External dependencies.
+ * External dependencies
  */
 import {
 	describe,
@@ -54,7 +54,7 @@ describe( 'Tooltip view', () => {
 				configurable: true,
 			} );
 
-			await import( '../../../../../../src/formats/tooltip/view' );
+			await import( '@src/formats/tooltip/view' );
 
 			expect( mockQuerySelectorAll ).toHaveBeenCalledWith(
 				'.gatherpress-tooltip[data-gatherpress-tooltip]'
@@ -78,7 +78,7 @@ describe( 'Tooltip view', () => {
 				configurable: true,
 			} );
 
-			await import( '../../../../../../src/formats/tooltip/view' );
+			await import( '@src/formats/tooltip/view' );
 
 			expect( mockSetProperty ).toHaveBeenCalledWith(
 				'--gatherpress-tooltip-text-color',
@@ -103,7 +103,7 @@ describe( 'Tooltip view', () => {
 				configurable: true,
 			} );
 
-			await import( '../../../../../../src/formats/tooltip/view' );
+			await import( '@src/formats/tooltip/view' );
 
 			expect( mockSetProperty ).toHaveBeenCalledWith(
 				'--gatherpress-tooltip-bg-color',
@@ -129,7 +129,7 @@ describe( 'Tooltip view', () => {
 				configurable: true,
 			} );
 
-			await import( '../../../../../../src/formats/tooltip/view' );
+			await import( '@src/formats/tooltip/view' );
 
 			expect( mockSetProperty ).toHaveBeenCalledTimes( 2 );
 			expect( mockSetProperty ).toHaveBeenCalledWith(
@@ -157,7 +157,7 @@ describe( 'Tooltip view', () => {
 				configurable: true,
 			} );
 
-			await import( '../../../../../../src/formats/tooltip/view' );
+			await import( '@src/formats/tooltip/view' );
 
 			expect( mockSetProperty ).not.toHaveBeenCalled();
 		} );
@@ -182,7 +182,7 @@ describe( 'Tooltip view', () => {
 				configurable: true,
 			} );
 
-			await import( '../../../../../../src/formats/tooltip/view' );
+			await import( '@src/formats/tooltip/view' );
 
 			expect( mockSetProperty1 ).toHaveBeenCalledWith(
 				'--gatherpress-tooltip-text-color',
@@ -204,7 +204,7 @@ describe( 'Tooltip view', () => {
 				configurable: true,
 			} );
 
-			await import( '../../../../../../src/formats/tooltip/view' );
+			await import( '@src/formats/tooltip/view' );
 
 			// Should have been called because readyState is 'complete'.
 			expect( document.querySelectorAll ).toHaveBeenCalled();
@@ -220,7 +220,7 @@ describe( 'Tooltip view', () => {
 				configurable: true,
 			} );
 
-			await import( '../../../../../../src/formats/tooltip/view' );
+			await import( '@src/formats/tooltip/view' );
 
 			expect( mockAddEventListener ).toHaveBeenCalledWith(
 				'DOMContentLoaded',

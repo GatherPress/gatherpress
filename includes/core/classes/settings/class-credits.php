@@ -7,7 +7,7 @@
  * common settings page functionality.
  *
  * @package GatherPress\Core\Settings
- * @since 1.0.0
+ * @since 0.27.0
  */
 
 namespace GatherPress\Core\Settings;
@@ -22,9 +22,10 @@ use GatherPress\Core\Utility;
 /**
  * Class Credits.
  *
- * @since 1.0.0
+ * @since 0.27.0
  */
-class Credits extends Base {
+final class Credits extends Base {
+
 	/**
 	 * Enforces a single instance of this class.
 	 */
@@ -35,7 +36,7 @@ class Credits extends Base {
 	 *
 	 * This method adds hooks for different purposes as needed.
 	 *
-	 * @since 1.0.0
+	 * @since 0.27.0
 	 *
 	 * @return void
 	 */
@@ -50,12 +51,12 @@ class Credits extends Base {
 	 *
 	 * This method returns the slug used to identify the credits section.
 	 *
-	 * @since 1.0.0
+	 * @since 0.27.0
 	 *
 	 * @return string The slug for the credits section.
 	 */
 	protected function get_slug(): string {
-		return 'credits';
+		return 'credits_settings';
 	}
 
 	/**
@@ -63,7 +64,7 @@ class Credits extends Base {
 	 *
 	 * This method returns the localized name for the credits section.
 	 *
-	 * @since 1.0.0
+	 * @since 0.27.0
 	 *
 	 * @return string The localized name for the credits section.
 	 */
@@ -76,7 +77,7 @@ class Credits extends Base {
 	 *
 	 * This method returns the priority at which credits should be displayed.
 	 *
-	 * @since 1.0.0
+	 * @since 0.27.0
 	 *
 	 * @return int The priority for displaying credits. Higher values mean later execution.
 	 */
@@ -91,9 +92,10 @@ class Credits extends Base {
 	 * matches the plugin's slug. It removes the default action to render the settings form and instead calls the
 	 * `credits_page` method to render content specific to the "Credits" page.
 	 *
-	 * @since 1.0.0
+	 * @since 0.27.0
 	 *
 	 * @param string $page The current settings page slug.
+	 *
 	 * @return void
 	 */
 	public function settings_section( string $page ): void {
@@ -110,7 +112,7 @@ class Credits extends Base {
 	 * This method is responsible for rendering the custom "Credits" page in the plugin's settings.
 	 * It loads credits data and uses a template to display the credits information.
 	 *
-	 * @since 1.0.0
+	 * @since 0.27.0
 	 *
 	 * @return void
 	 */

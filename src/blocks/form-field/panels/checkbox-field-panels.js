@@ -1,5 +1,5 @@
 /**
- * WordPress dependencies.
+ * WordPress dependencies
  */
 import { __ } from '@wordpress/i18n';
 import { FontSizePicker, PanelColorSettings } from '@wordpress/block-editor';
@@ -11,6 +11,7 @@ import { BaseControl, PanelBody, RangeControl } from '@wordpress/components';
  * @param {Object}   props               - Component props.
  * @param {Object}   props.attributes    - Block attributes object.
  * @param {Function} props.setAttributes - Function to update block attributes.
+ *
  * @return {JSX.Element} The checkbox field styling panels.
  */
 export default function CheckboxFieldPanels( { attributes, setAttributes } ) {
@@ -25,11 +26,10 @@ export default function CheckboxFieldPanels( { attributes, setAttributes } ) {
 	return (
 		<>
 			<PanelBody title={ __( 'Label Styles', 'gatherpress' ) }>
-				<BaseControl __nextHasNoMarginBottom={ true }>
+				<BaseControl>
 					<FontSizePicker
 						withReset={ true }
 						size="__unstable-large"
-						__nextHasNoMarginBottom
 						onChange={ ( value ) =>
 							setAttributes( { labelFontSize: value } )
 						}

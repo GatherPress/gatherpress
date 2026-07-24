@@ -2,10 +2,10 @@
  * WordPress dependencies
  */
 import { useCommand } from '@wordpress/commands';
-import { Modal, Button } from '@wordpress/components';
+import { Button, Modal } from '@wordpress/components';
 import { useState } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
-import { mapMarker, calendar } from '@wordpress/icons';
+import { calendar, mapMarker } from '@wordpress/icons';
 import { registerPlugin } from '@wordpress/plugins';
 
 /**
@@ -13,49 +13,60 @@ import { registerPlugin } from '@wordpress/plugins';
  */
 import VenueNavigator from '../components/VenueNavigator';
 
-const Render = () => {
-	// For showing the new venue modal.
-	const [ isVenueNavigatorOpen, setIsVenueNavigatorOpen ] = useState( false );
+/**
+ * Modal wrapper hosting the venue navigator.
+ *
+ * Declared at module scope rather than inside the plugin component so it keeps
+ * a stable identity across renders. A component defined inline would be a new
+ * type on every render, remounting the navigator and discarding whatever the
+ * user had already typed into it.
+ *
+ * @since 0.35.0
+ *
+ * @param {Object}   props                Component properties.
+ * @param {Function} props.onRequestClose Invoked when the modal should close.
+ *
+ * @return {JSX.Element} The rendered modal.
+ */
+const AddVenueModal = ( { onRequestClose } ) => (
+	<Modal
+		title={ __( 'Add new venue', 'gatherpress' ) }
+		onRequestClose={ onRequestClose }
+		shouldCloseOnClickOutside
+		shouldCloseOnEsc
+	>
+		<VenueNavigator />
+		<Button variant="secondary" onClick={ onRequestClose }>
+			{ __( 'Cancel', 'gatherpress' ) }
+		</Button>
+	</Modal>
+);
 
-	// // Get the current post type
-	// const postType = wp.data.select("core/editor").getCurrentPostType();
-
-	// // Get the post type object
-	// const postTypeObject = wp.data.select("core").getPostType(postType);
-
-	const UserModal = ( props ) => {
-		return (
-			<>
-				<Modal
-					title={ __( 'Add new venue', 'gatherpress' ) }
-					onRequestClose={ () => {
-						props.onRequestClose();
-					} }
-					shouldCloseOnClickOutside={ true }
-					shouldCloseOnEsc={ true }
-				>
-					<VenueNavigator />
-					<Button
-						variant="secondary"
-						onClick={ () => {
-							props.onRequestClose();
-						} }
-					>
-						{ __( 'Cancel', 'gatherpress' ) }
-					</Button>
-				</Modal>
-			</>
-		);
-	};
+/**
+ * Register GatherPress entries in the editor's command palette.
+ *
+ * "Add new venue" opens the venue navigator in a modal so a venue can be
+ * created without leaving the post being edited. It is scoped to the block
+ * editor because the navigator resolves the venue post type from the post
+ * currently open. "Add new event" has nothing to offer inline, so it closes
+ * the palette and navigates to the new-event screen.
+ *
+ * @since 0.35.0
+ *
+ * @return {JSX.Element|null} The venue modal while open, otherwise nothing.
+ */
+const GatherPressCommands = () => {
+	const [ isVenueModalOpen, setIsVenueModalOpen ] = useState( false );
 
 	useCommand( {
 		name: 'gatherpress/add-new-venue',
 		label: __( 'Add new venue', 'gatherpress' ),
 		icon: mapMarker,
-		callback: () => {
-			setIsVenueNavigatorOpen( true );
-		},
 		context: 'block-editor',
+		callback: ( { close } ) => {
+			close();
+			setIsVenueModalOpen( true );
+		},
 	} );
 
 	useCommand( {
@@ -64,23 +75,21 @@ const Render = () => {
 		icon: calendar,
 		callback: ( { close } ) => {
 			close();
-			document.location.href = 'post-new.php?post_type=gatherpress_event';
+			window.location.assign(
+				'post-new.php?post_type=gatherpress_event'
+			);
 		},
 	} );
 
-	if ( isVenueNavigatorOpen ) {
-		return (
-			<UserModal
-				onRequestClose={ () => {
-					setIsVenueNavigatorOpen( false );
-				} }
-			/>
-		);
+	if ( ! isVenueModalOpen ) {
+		return null;
 	}
 
-	return null; // The component doesn't need to render anything visually
+	return (
+		<AddVenueModal onRequestClose={ () => setIsVenueModalOpen( false ) } />
+	);
 };
 
 registerPlugin( 'gatherpress-commands', {
-	render: Render,
+	render: GatherPressCommands,
 } );

@@ -7,7 +7,7 @@
  * and customizing excerpts to show event details.
  *
  * @package GatherPress\Core
- * @since 1.0.0
+ * @since 0.33.0
  */
 
 namespace GatherPress\Core;
@@ -15,8 +15,10 @@ namespace GatherPress\Core;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
-use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Settings;
+use GatherPress\Core\Traits\Singleton;
+use GatherPress\Core\Utility;
+use GatherPress\Core\Venue;
 use WP_Query;
 
 /**
@@ -24,9 +26,10 @@ use WP_Query;
  *
  * Manages feeds for GatherPress.
  *
- * @since 1.0.0
+ * @since 0.33.0
  */
-class Feed {
+final class Feed {
+
 	/**
 	 * Enforces a single instance of this class.
 	 */
@@ -37,7 +40,7 @@ class Feed {
 	 *
 	 * This method initializes the object and sets up necessary hooks.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 */
 	protected function __construct() {
 		$this->setup_hooks();
@@ -48,7 +51,7 @@ class Feed {
 	 *
 	 * This method adds hooks for different purposes as needed.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @return void
 	 */
@@ -71,13 +74,14 @@ class Feed {
 	/**
 	 * Handle events feed queries by setting the appropriate parameters.
 	 *
-	 * This method works in conjunction with Event_Query::prepare_event_query_before_execution()
+	 * This method works in conjunction with Event\Query::prepare_event_query_before_execution()
 	 * to ensure feeds show upcoming events with proper sorting. Supports ?type=past parameter
 	 * to show past events instead of upcoming events.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @param WP_Query $query The WP_Query instance.
+	 *
 	 * @return void
 	 */
 	public function handle_events_feed_query( WP_Query $query ): void {
@@ -92,11 +96,11 @@ class Feed {
 
 			// Get the rewrite slug from settings.
 			$settings     = Settings::get_instance();
-			$rewrite_slug = $settings->get_value( 'general', 'urls', 'events' );
+			$rewrite_slug = $settings->get( 'events_url' );
 
 			// Check if this is the events feed URL.
 			if ( str_contains( $request_uri, '/' . $rewrite_slug . '/' . $GLOBALS['wp_rewrite']->feed_base ) ) {
-				// Set the post type and let Event_Query handle the rest.
+				// Set the post type and let Event\Query handle the rest.
 				$query->set( 'post_type', Event::POST_TYPE );
 
 				// Check for type parameter to determine if we want past or upcoming events.
@@ -120,16 +124,17 @@ class Feed {
 	/**
 	 * Get formatted event datetime information for feeds.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @param Event $event The event object.
+	 *
 	 * @return array Array of event information strings.
 	 */
 	private function get_event_datetime_info( Event $event ): array {
 		$event_info       = array();
 		$display_datetime = $event->get_display_datetime();
 
-		if ( ! empty( $display_datetime ) && '—' !== $display_datetime ) {
+		if ( ! empty( $display_datetime ) && Event::DATETIME_PLACEHOLDER !== $display_datetime ) {
 			$event_info[] = sprintf(
 				/* translators: %s: Formatted date and time */
 				__( 'Date: %s', 'gatherpress' ),
@@ -143,14 +148,15 @@ class Feed {
 	/**
 	 * Get default event excerpt customization.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @param string $excerpt The current excerpt.
+	 *
 	 * @return string The customized excerpt.
 	 */
 	public function get_default_event_excerpt( string $excerpt ): string {
 		// Only apply to events.
-		if ( Event::POST_TYPE !== get_post_type() ) {
+		if ( ! post_type_supports( (string) get_post_type(), 'gatherpress-event-date' ) ) {
 			return $excerpt;
 		}
 
@@ -162,8 +168,9 @@ class Feed {
 		// Add venue information.
 		if ( $venue && ! empty( $venue['name'] ) ) {
 			$event_info[] = sprintf(
-				/* translators: %s: Venue name */
-				__( 'Venue: %s', 'gatherpress' ),
+				/* translators: 1: Singular post type label (e.g. "Venue"), 2: Venue name. */
+				__( '%1$s: %2$s', 'gatherpress' ),
+				Utility::post_type_label( 'singular_name', Venue::POST_TYPE ),
 				$venue['name']
 			);
 		}
@@ -192,14 +199,15 @@ class Feed {
 	/**
 	 * Get default event content customization.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @param string $content The current content.
+	 *
 	 * @return string The customized content.
 	 */
 	public function get_default_event_content( string $content ): string {
 		// Only apply to events.
-		if ( Event::POST_TYPE !== get_post_type() ) {
+		if ( ! post_type_supports( (string) get_post_type(), 'gatherpress-event-date' ) ) {
 			return $content;
 		}
 
@@ -211,8 +219,9 @@ class Feed {
 		// Add venue information.
 		if ( $venue && ! empty( $venue['name'] ) ) {
 			$event_info[] = sprintf(
-				/* translators: %s: Venue name */
-				__( 'Venue: %s', 'gatherpress' ),
+				/* translators: 1: Singular post type label (e.g. "Venue"), 2: Venue name. */
+				__( '%1$s: %2$s', 'gatherpress' ),
+				Utility::post_type_label( 'singular_name', Venue::POST_TYPE ),
 				$venue['name']
 			);
 		}
@@ -240,14 +249,15 @@ class Feed {
 	/**
 	 * Apply event excerpt customization with flexibility for themes/editors.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @param string $excerpt The current excerpt.
+	 *
 	 * @return string The customized excerpt.
 	 */
 	public function apply_event_excerpt( string $excerpt ): string {
 		// Only apply to events.
-		if ( Event::POST_TYPE !== get_post_type() ) {
+		if ( ! post_type_supports( (string) get_post_type(), 'gatherpress-event-date' ) ) {
 			return $excerpt;
 		}
 
@@ -272,7 +282,7 @@ class Feed {
 		 * } );
 		 * ```
 		 *
-		 * @since 1.0.0
+		 * @since 0.33.0
 		 *
 		 * @param string $excerpt The event post excerpt.
 		 */
@@ -282,14 +292,15 @@ class Feed {
 	/**
 	 * Apply event content customization with flexibility for themes/editors.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @param string $content The current content.
+	 *
 	 * @return string The customized content.
 	 */
 	public function apply_event_content( string $content ): string {
 		// Only apply to events.
-		if ( Event::POST_TYPE !== get_post_type() ) {
+		if ( ! post_type_supports( (string) get_post_type(), 'gatherpress-event-date' ) ) {
 			return $content;
 		}
 
@@ -314,7 +325,7 @@ class Feed {
 		 * } );
 		 * ```
 		 *
-		 * @since 1.0.0
+		 * @since 0.33.0
 		 *
 		 * @param string $content The event post content.
 		 */
@@ -324,9 +335,10 @@ class Feed {
 	/**
 	 * Modify feed link for past events page.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @param string $feed_link The feed link URL.
+	 *
 	 * @return string The modified feed link URL.
 	 */
 	public function modify_feed_link_for_past_events( $feed_link ): string {

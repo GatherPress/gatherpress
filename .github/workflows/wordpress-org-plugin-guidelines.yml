@@ -13,6 +13,14 @@ on: # rebuild any PRs and main branch changes
     branches:
     - main
 
+# Cancel superseded runs on the same ref so stacked PR pushes do not pile up.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
 jobs:
   wp-org-plugin-guidelines:
     runs-on: ubuntu-latest
@@ -29,7 +37,14 @@ jobs:
           tools: wp-cli
 
       - name: Install dist-archive-command
-        run: wp package install wp-cli/dist-archive-command:^2
+        run: |
+          # shivammathur/setup-php stores a GitHub OAuth token in Composer's
+          # global auth config; wp-cli's bundled Composer rejects its format
+          # ("invalid characters"), breaking this install. dist-archive-command
+          # is public, so drop the token and install unauthenticated.
+          composer config --global --unset github-oauth.github.com 2>/dev/null || true
+          rm -f "$HOME/.config/composer/auth.json" "$HOME/.composer/auth.json" "$HOME/.wp-cli/packages/auth.json" 2>/dev/null || true
+          wp package install wp-cli/dist-archive-command:^2
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -53,7 +68,7 @@ jobs:
 
       - name: NPM install
         if: steps.node_modules-cache.outputs.cache-hit != 'true'
-        run: npm ci --legacy-peer-deps
+        run: npm ci
 
       # Creating a short lived node_modules cache
       - uses: actions/cache/save@v4
@@ -71,8 +86,53 @@ jobs:
           mkdir tmp-build
           unzip gatherpress.zip -d tmp-build
 
-      - name: Run plugin check
-        uses: wordpress/plugin-check-action@v1.1.5
-        with:
-          build-dir: './tmp-build/gatherpress'
-          wp-version: 'trunk'
+      # Run Plugin Check against a wp-env environment. We deliberately do NOT
+      # use `uses: wordpress/plugin-check-action@…` or a fresh global
+      # `npm i -g @wordpress/env`: the wp-env Docker image build runs
+      # `composer global require phpunit/phpunit`, which Composer's audit blocks
+      # on the PKSA-5jz8-6tcw-pbk4 / PKSA-z3gr-8qht-p93v advisories. The repo
+      # already solves this for its other wp-env CI (e2e, phpunit) by patching
+      # the generated Dockerfile via patches/@wordpress+env+11.2.0.patch, which
+      # `npm ci` applies above (patch-package fails loudly if it ever stops
+      # matching). So we use that local, validated wp-env (`npm run wp-env`)
+      # instead of an unpinned global install + a silent best-effort `sed`,
+      # which broke when `latest` drifted and the WordPress image stopped
+      # building (only the db containers came up → "Environment not
+      # initialized"). Revert to the upstream action once it ships a fix.
+      - name: Export plugin paths
+        run: |
+          PLUGIN_DIR=$(realpath "./tmp-build/gatherpress")
+          echo "PLUGIN_DIR=$PLUGIN_DIR" >> "$GITHUB_ENV"
+          echo "PLUGIN_SLUG=$(basename $PLUGIN_DIR)" >> "$GITHUB_ENV"
+        shell: bash
+
+      - name: Configure wp-env
+        run: |
+          # Mirror the repo's proven local-only .wp-env.json (what e2e/phpunit
+          # boot). Crucially NO remote plugin URL in `plugins`: having wp-env
+          # fetch plugin-check from downloads.wordpress.org during `wp-env start`
+          # is what left the env provisioning only the database. Map the built
+          # plugin in here; plugin-check is installed at runtime once WP is live.
+          echo "{ \"\$schema\": \"https://schemas.wp.org/trunk/wp-env.json\", \"testsEnvironment\": false, \"themes\": [ \"WordPress/twentytwentyfive\" ], \"config\": { \"WP_DEBUG\": true }, \"mappings\": { \"wp-content/plugins/$PLUGIN_SLUG\": \"$PLUGIN_DIR\" } }" > .wp-env.json
+          cat .wp-env.json
+        shell: bash
+
+      - name: Start wp-env
+        run: |
+          npm run wp-env -- start
+          # Block until the dev site (port 8888) actually answers, so a
+          # non-booting env fails here rather than at the Plugin Check step.
+          npx wait-on http://localhost:8888/wp-admin -t 180000
+        shell: bash
+
+      - name: Run Plugin Check
+        run: |
+          # Install Plugin Check inside the running env (a runtime fetch, after
+          # WordPress is up, rather than during wp-env start).
+          npm run wp-env -- run cli wp plugin install plugin-check --activate
+          npm run wp-env -- run cli wp plugin activate "$PLUGIN_SLUG"
+          npm run wp-env -- run cli wp plugin check "$PLUGIN_SLUG" \
+            --format=json \
+            --exclude-files=.wp-env.json \
+            --require=./wp-content/plugins/plugin-check/cli.php
+        shell: bash

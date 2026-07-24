@@ -1,57 +1,273 @@
 /**
- * WordPress dependencies.
+ * WordPress dependencies
  */
-import { InspectorControls, useBlockProps } from '@wordpress/block-editor';
-import { PanelBody, PanelRow } from '@wordpress/components';
-import { useSelect } from '@wordpress/data';
+import {
+	BlockContextProvider,
+	InnerBlocks,
+	InspectorControls,
+	useBlockProps,
+} from '@wordpress/block-editor';
+import {
+	PanelBody,
+	TextControl,
+	ToggleControl,
+	// eslint-disable-next-line @wordpress/no-unsafe-wp-apis
+	__experimentalVStack as VStack,
+} from '@wordpress/components';
+import { useSelect, useDispatch } from '@wordpress/data';
+import { useState, useEffect } from '@wordpress/element';
+import { __, sprintf } from '@wordpress/i18n';
 
 /**
- * Internal dependencies.
+ * Internal dependencies
  */
-import OnlineEvent from '../../components/OnlineEvent';
-import OnlineEventLink from '../../components/OnlineEventLink';
-import EditCover from '../../components/EditCover';
-import { isGatherPressPostType } from '../../helpers/editor';
+import TEMPLATE from './template';
+import { hasValidBlockContext, isInFSETemplate, usePostTypeLabel } from '../../helpers/editor';
+import { isPostTypeSupporting, usePostTypeSupports, DISABLED_FIELD_OPACITY } from '../../helpers/event';
+import { getVenuePostType, getVenueTaxonomy, useVenueTaxonomyIds } from '../../helpers/venue';
 
 /**
  * Edit component for the GatherPress Online Event block.
  *
- * This component renders the edit view of the GatherPress Online Event block.
- * It provides an interface for users to add an online event link.
- * The component includes an inspector control for managing the online event link.
+ * Container block that holds an icon and online event link.
+ * If a postId attribute is set (override), it provides that as context to children.
+ * Dims when the event doesn't have the online-event term.
  *
- * @since 1.0.0
+ * @since 0.27.0
  *
- * @param {Object}  props            - The component properties.
- * @param {boolean} props.isSelected - Indicates whether the block is selected.
+ * @param {Object} props            Block props.
+ * @param {Object} props.attributes Block attributes.
+ * @param {Object} props.context    Block context.
  *
  * @return {JSX.Element} The rendered React component.
  */
-const Edit = ( { isSelected } ) => {
-	const blockProps = useBlockProps();
-	const onlineEventLink = useSelect(
+const Edit = ( { attributes, context } ) => {
+	const { postId } = attributes;
+
+	// Determine the event ID to check for online-event term.
+	const eventId = postId || context?.postId || null;
+
+	const isDescendentOfQueryLoop = Number.isFinite( context?.queryId );
+	const { editPost, unlockPostSaving } = useDispatch( 'core/editor' );
+
+	// Get the current post info and venue taxonomy.
+	const { currentPostId, currentPostType, venueTaxonomy, onlineEventTerm } = useSelect(
+		( select ) => {
+			const editorPostType = select( 'core/editor' )?.getCurrentPostType();
+			const tax = getVenueTaxonomy( getVenuePostType( editorPostType ) );
+			return {
+				currentPostId: select( 'core/editor' )?.getCurrentPostId(),
+				currentPostType: editorPostType,
+				venueTaxonomy: tax,
+				onlineEventTerm:
+					select( 'core' ).getEntityRecords( 'taxonomy', tax, {
+						slug: 'online-event',
+						per_page: 1,
+					} )?.[ 0 ] || null,
+			};
+		},
+		[]
+	);
+
+	// Read the singular label so the panel title reflects what the post type
+	// is actually called — a renamed event post type with
+	// `singular_name => 'Happening'` shows "This is an online Happening" without any
+	// extra wiring (#1612).
+	const singularLabel = usePostTypeLabel(
+		'singular_name',
+		currentPostType,
+		__( 'Event', 'gatherpress' )
+	);
+
+	const isEditingEvent = isPostTypeSupporting( 'gatherpress-online-event', currentPostType );
+	const showControls =
+		! isDescendentOfQueryLoop && ! isInFSETemplate() && isEditingEvent;
+
+	// Read venue taxonomy IDs without triggering context=edit REST requests.
+	const venueTaxonomyIds = useVenueTaxonomyIds(
+		venueTaxonomy,
+		currentPostId,
+		! isEditingEvent
+	);
+
+	const updateVenueTaxonomyIds = ( newIds ) =>
+		editPost( { [ venueTaxonomy ]: newIds } );
+
+	// Get online event link from meta.
+	const onlineEventLinkMeta = useSelect(
 		( select ) =>
-			select( 'core/editor' )?.getEditedPostAttribute( 'meta' )
-				?.gatherpress_online_event_link,
+			select( 'core/editor' ).getEditedPostAttribute( 'meta' )
+				?.gatherpress_online_event_link || '',
+		[]
+	);
+
+	const [ onlineEventLink, setOnlineEventLink ] = useState( onlineEventLinkMeta );
+
+	// Sync link state with meta.
+	useEffect( () => {
+		setOnlineEventLink( onlineEventLinkMeta );
+	}, [ onlineEventLinkMeta ] );
+
+	// Update the online event link meta.
+	const updateOnlineEventLink = ( value ) => {
+		editPost( { meta: { gatherpress_online_event_link: value } } );
+		setOnlineEventLink( value );
+		unlockPostSaving();
+	};
+
+	// Toggle the online-event term.
+	const toggleOnlineEvent = ( shouldAdd ) => {
+		if ( ! onlineEventTerm ) {
+			return;
+		}
+
+		let currentTerms = [];
+		if ( Array.isArray( venueTaxonomyIds ) ) {
+			currentTerms = [ ...venueTaxonomyIds ];
+		} else if ( venueTaxonomyIds ) {
+			currentTerms = [ venueTaxonomyIds ];
+		}
+
+		const termId = onlineEventTerm.id;
+		const termIdStr = String( termId );
+		const hasTermAlready = currentTerms.some(
+			( id ) => String( id ) === termIdStr
+		);
+
+		let newTerms;
+		if ( shouldAdd ) {
+			newTerms = hasTermAlready
+				? currentTerms
+				: [ ...currentTerms, termId ];
+		} else {
+			newTerms = currentTerms.filter( ( id ) => String( id ) !== termIdStr );
+		}
+
+		updateVenueTaxonomyIds( newTerms );
+	};
+
+	// Check if the event has the online-event term (reactive to changes).
+	const isOnlineEvent = useSelect(
+		( select ) => {
+			const onlineTermId = onlineEventTerm?.id;
+
+			if ( ! onlineTermId ) {
+				return false;
+			}
+
+			// Check if eventId matches the current post being edited.
+			const editorPostId = select( 'core/editor' )?.getCurrentPostId();
+			const editorPostType = select( 'core/editor' )?.getCurrentPostType();
+			const isCurrentPost = eventId && editorPostId === eventId;
+			const isEditorEvent = isPostTypeSupporting(
+				'gatherpress-online-event',
+				editorPostType
+			);
+
+			let venueTermIds;
+
+			if ( isCurrentPost || ( ! eventId && isEditorEvent ) ) {
+				// Use live editor data for current post.
+				venueTermIds =
+					select( 'core/editor' ).getEditedPostAttribute( venueTaxonomy );
+			} else if ( eventId ) {
+				// Query taxonomy terms with context=view to avoid context=edit requests.
+				const terms = select( 'core' ).getEntityRecords(
+					'taxonomy',
+					venueTaxonomy,
+					{ post: eventId, per_page: 100, context: 'view' }
+				);
+				venueTermIds = terms?.map( ( t ) => t.id );
+			} else {
+				return false;
+			}
+
+			if ( ! venueTermIds?.length ) {
+				return false;
+			}
+
+			return venueTermIds.some(
+				( id ) => String( id ) === String( onlineTermId )
+			);
+		},
+		[ eventId, onlineEventTerm, venueTaxonomy ]
+	);
+
+	// Reactive supports check — keeps the block from staying dimmed when the
+	// post-type definition isn't cached on first render.
+	const hasOnlineEventSupport = usePostTypeSupports(
+		'gatherpress-online-event',
+		context?.postType
+	);
+
+	// Dim the block when not an online event or no valid context.
+	const blockProps = useBlockProps( {
+		style: {
+			opacity: hasValidBlockContext( {
+				isDescendentOfQueryLoop,
+				hasSupport: hasOnlineEventSupport,
+				hasData: isOnlineEvent,
+			} )
+				? 1
+				: DISABLED_FIELD_OPACITY,
+		},
+	} );
+
+	const innerBlocksContent = (
+		<InnerBlocks template={ TEMPLATE } templateLock={ false } />
 	);
 
 	return (
-		<>
-			{ isGatherPressPostType() && (
+		<div { ...blockProps }>
+			{ postId ? (
+				<BlockContextProvider value={ { postId } }>
+					{ innerBlocksContent }
+				</BlockContextProvider>
+			) : (
+				innerBlocksContent
+			) }
+			{ showControls && (
 				<InspectorControls>
-					<PanelBody>
-						<PanelRow>
-							<OnlineEventLink />
-						</PanelRow>
+					<PanelBody
+						title={ sprintf(
+							/* translators: %s: Singular post type label, e.g. "Event". */
+							__( 'Online %s Settings', 'gatherpress' ),
+							singularLabel
+						) }
+						initialOpen={ true }
+					>
+						<VStack spacing={ 3 }>
+							<ToggleControl
+								label={ sprintf(
+									/* translators: %s: Singular post type label, e.g. "Event". */
+									__( 'This is an online %s', 'gatherpress' ),
+									singularLabel
+								) }
+								checked={ isOnlineEvent }
+								onChange={ toggleOnlineEvent }
+							/>
+							{ isOnlineEvent && (
+								<TextControl
+									type="url"
+									label={ sprintf(
+										/* translators: %s: Singular post type label, e.g. "Event". */
+										__( 'Online %s link', 'gatherpress' ),
+										singularLabel
+									) }
+									value={ onlineEventLink }
+									placeholder={ sprintf(
+										/* translators: %s: Singular post type label, e.g. "Event". */
+										__( 'Add link to online %s', 'gatherpress' ),
+										singularLabel
+									) }
+									onChange={ updateOnlineEventLink }
+								/>
+							) }
+						</VStack>
 					</PanelBody>
 				</InspectorControls>
 			) }
-			<div { ...blockProps }>
-				<EditCover isSelected={ isSelected }>
-					<OnlineEvent onlineEventLinkDefault={ onlineEventLink } />
-				</EditCover>
-			</div>
-		</>
+		</div>
 	);
 };
 

@@ -7,32 +7,85 @@
 	"category": "gatherpress",
 	"icon": "location-alt",
 	"description": "Display a map for the venue location.",
-	"usesContext": ["postId", "queryId"],
+	"parent": ["gatherpress/venue"],
+	"usesContext": ["postId", "postType", "queryId"],
 	"attributes": {
 		"zoom": {
 			"type": "number",
-			"default": 10
+			"default": 16
 		},
 		"type": {
 			"type": "string",
 			"default": "roadmap"
 		},
-		"height": {
-			"type": "number",
-			"default": 300
+		"aspectRatio": {
+			"type": "string",
+			"default": "2/1"
+		},
+		"scale": {
+			"type": "string",
+			"enum": ["cover", "contain", "fill"],
+			"default": "cover"
+		},
+		"renderMode": {
+			"type": "string",
+			"default": "interactive"
+		},
+		"href": {
+			"type": "string",
+			"default": "",
+			"role": "content"
+		},
+		"linkDestination": {
+			"type": "string",
+			"default": "none"
+		},
+		"linkTarget": {
+			"type": "string",
+			"default": ""
+		},
+		"rel": {
+			"type": "string",
+			"default": ""
 		}
 	},
 	"supports": {
-		"gatherpress": {
-			"postIdOverride": true
+		"align": ["left", "center", "right", "wide", "full"],
+		"html": false,
+		"interactivity": true,
+		"dimensions": {
+			"height": true,
+			"__experimentalSkipSerialization": true,
+			"__experimentalDefaultControls": {
+				"height": false
+			}
 		},
-		"align": ["wide", "full"],
-		"html": false
+		"spacing": {
+			"margin": true,
+			"padding": true,
+			"__experimentalDefaultControls": {
+				"margin": false,
+				"padding": false
+			}
+		},
+		"__experimentalBorder": {
+			"color": true,
+			"radius": true,
+			"style": true,
+			"width": true,
+			"__experimentalDefaultControls": {
+				"color": true,
+				"radius": true,
+				"style": true,
+				"width": true
+			}
+		},
+		"shadow": true
 	},
 	"textdomain": "gatherpress",
 	"editorScript": "file:./index.js",
-	"editorStyle": "file:./editor.css",
+	"editorStyle": "file:./index.css",
+	"viewScriptModule": "file:./view.js",
 	"style": "file:./style-index.css",
-	"viewScript": "file:../venue/venue.js",
 	"render": "file:./render.php"
 }

@@ -1,0 +1,1066 @@
+<?php
+/**
+ * Class handles unit tests for GatherPress\Core\Blocks\Venue.
+ *
+ * @package GatherPress\Core
+ * @since 0.34.0
+ */
+
+namespace GatherPress\Tests\Core\Blocks;
+
+use GatherPress\Core\Blocks\Venue as Venue_Block;
+use GatherPress\Core\Event;
+use GatherPress\Core\Venue;
+use GatherPress\Tests\Base;
+use PMC\Unit_Test\Utility;
+use WP_Block;
+
+/**
+ * Class Test_Venue.
+ *
+ * @group multisite
+ * @coversDefaultClass \GatherPress\Core\Blocks\Venue
+ */
+class Test_Venue extends Base {
+
+
+
+
+	/**
+	 * The constructor registers nothing — render.php drives the block by
+	 * calling render_inner_blocks() directly, so no render filter may be
+	 * hooked.
+	 *
+	 * @since 0.34.0
+	 * @covers ::__construct
+	 *
+	 * @return void
+	 */
+	public function test_constructor_registers_no_hooks(): void {
+		$instance = Venue_Block::get_instance();
+
+		Utility::invoke_hidden_method( $instance, '__construct' );
+
+		$this->assertFalse(
+			has_filter( sprintf( 'render_block_%s', Venue_Block::BLOCK_NAME ) ),
+			'The venue block must not hook render filters — the old filter architecture stays retired.'
+		);
+	}
+
+	/**
+	 * Tests render_block returns empty string when no venue is found.
+	 *
+	 * @since 0.34.0
+	 * @covers ::render_inner_blocks
+	 * @covers ::get_source_post
+	 *
+	 * @return void
+	 */
+	public function test_render_block_returns_empty_when_no_venue(): void {
+		$instance = Venue_Block::get_instance();
+
+		// Create a regular post (not an event).
+		$post_id = $this->factory->post->create();
+		$this->go_to( get_permalink( $post_id ) );
+
+		$block_instance = new WP_Block(
+			array(
+				'blockName'    => 'gatherpress/venue',
+				'attrs'        => array(),
+				'innerBlocks'  => array(),
+				'innerHTML'    => '',
+				'innerContent' => array(),
+			)
+		);
+
+		$block_content = '<div class="venue-content">Test venue block</div>';
+		$block         = array( 'attrs' => array() );
+
+		$result = $instance->render_inner_blocks( $block_instance );
+
+		$this->assertNull(
+			$result,
+			'Should return empty string when no venue is found.'
+		);
+	}
+
+	/**
+	 * Tests render_block returns empty string for non-event post without venue.
+	 *
+	 * @since 0.34.0
+	 * @covers ::render_inner_blocks
+	 * @covers ::get_source_post
+	 *
+	 * @return void
+	 */
+	public function test_render_block_returns_empty_for_non_event_post(): void {
+		$instance = Venue_Block::get_instance();
+
+		// Create a page (not an event).
+		$post_id = $this->factory->post->create( array( 'post_type' => 'page' ) );
+		$this->go_to( get_permalink( $post_id ) );
+
+		$block_instance = new WP_Block(
+			array(
+				'blockName'    => 'gatherpress/venue',
+				'attrs'        => array(),
+				'innerBlocks'  => array(),
+				'innerHTML'    => '',
+				'innerContent' => array(),
+			)
+		);
+
+		$block_content = '<div class="venue-content">Test venue block</div>';
+		$block         = array( 'attrs' => array() );
+
+		$result = $instance->render_inner_blocks( $block_instance );
+
+		$this->assertNull(
+			$result,
+			'Should return empty string for non-event posts without venue.'
+		);
+	}
+
+	/**
+	 * Tests render_block with manually selected venue post ID.
+	 *
+	 * @since 0.34.0
+	 * @covers ::render_inner_blocks
+	 * @covers ::get_source_post
+	 * @covers ::render_inner_blocks
+	 *
+	 * @return void
+	 */
+	public function test_render_block_with_selected_post_id(): void {
+		$instance = Venue_Block::get_instance();
+
+		// Create a venue post.
+		$venue_id = $this->factory->post->create(
+			array(
+				'post_type'  => 'gatherpress_venue',
+				'post_title' => 'Test Venue',
+			)
+		);
+
+		$block_instance = new WP_Block(
+			array(
+				'blockName'    => 'gatherpress/venue',
+				'attrs'        => array( 'selectedPostId' => $venue_id ),
+				'innerBlocks'  => array(
+					array(
+						'blockName'    => 'core/paragraph',
+						'attrs'        => array(),
+						'innerBlocks'  => array(),
+						'innerHTML'    => '<p>Inner content</p>',
+						'innerContent' => array( '<p>Inner content</p>' ),
+					),
+				),
+				'innerHTML'    => '',
+				'innerContent' => array( null ),
+			)
+		);
+
+		$block_content = '<div class="venue-content">Test venue block</div>';
+		$block         = array( 'attrs' => array( 'selectedPostId' => $venue_id ) );
+
+		$result = $instance->render_inner_blocks( $block_instance );
+
+		// The render_with_venue_context should render inner blocks.
+		$this->assertStringContainsString(
+			'Inner content',
+			$result,
+			'Should render inner blocks with venue context.'
+		);
+	}
+
+	/**
+	 * Tests render_block returns empty when selected post ID is not a venue.
+	 *
+	 * @since 0.34.0
+	 * @covers ::render_inner_blocks
+	 * @covers ::get_source_post
+	 *
+	 * @return void
+	 */
+	public function test_render_block_returns_empty_for_non_venue_selected_post_id(): void {
+		$instance = Venue_Block::get_instance();
+
+		// Create a regular post (not a venue).
+		$post_id = $this->factory->post->create( array( 'post_type' => 'post' ) );
+		$this->go_to( get_permalink( $post_id ) );
+
+		$block_instance = new WP_Block(
+			array(
+				'blockName'    => 'gatherpress/venue',
+				'attrs'        => array( 'selectedPostId' => $post_id ),
+				'innerBlocks'  => array(),
+				'innerHTML'    => '',
+				'innerContent' => array(),
+			)
+		);
+
+		$block_content = '<div class="venue-content">Test venue block</div>';
+		$block         = array( 'attrs' => array( 'selectedPostId' => $post_id ) );
+
+		$result = $instance->render_inner_blocks( $block_instance );
+
+		$this->assertNull(
+			$result,
+			'Should return empty string when selected post is not a venue.'
+		);
+	}
+
+	/**
+	 * Tests render_block returns empty for online-only event (no physical venue).
+	 *
+	 * @since 0.34.0
+	 * @covers ::render_inner_blocks
+	 * @covers ::get_source_post
+	 *
+	 * @return void
+	 */
+	public function test_render_block_returns_empty_for_online_only_event(): void {
+		$instance = Venue_Block::get_instance();
+
+		// Create an event post.
+		$event_id = $this->factory->post->create( array( 'post_type' => 'gatherpress_event' ) );
+
+		// Register the venue taxonomy if not registered.
+		if ( ! taxonomy_exists( '_gatherpress_venue' ) ) {
+			register_taxonomy( '_gatherpress_venue', 'gatherpress_event' );
+		}
+
+		// Create the online-event term if it doesn't exist.
+		$term = term_exists( 'online-event', '_gatherpress_venue' );
+		if ( ! $term ) {
+			$term = wp_insert_term( 'Online Event', '_gatherpress_venue', array( 'slug' => 'online-event' ) );
+		}
+		$term_id = is_array( $term ) ? $term['term_id'] : $term;
+
+		// Set the event as online-only.
+		wp_set_object_terms( $event_id, (int) $term_id, '_gatherpress_venue' );
+
+		$this->go_to( get_permalink( $event_id ) );
+
+		$block_instance = new WP_Block(
+			array(
+				'blockName'    => 'gatherpress/venue',
+				'attrs'        => array(),
+				'innerBlocks'  => array(),
+				'innerHTML'    => '',
+				'innerContent' => array(),
+			)
+		);
+
+		$block_content = '<div class="venue-content">Test venue block</div>';
+		$block         = array( 'attrs' => array() );
+
+		$result = $instance->render_inner_blocks( $block_instance );
+
+		$this->assertNull(
+			$result,
+			'Should return empty string for online-only event (no physical venue).'
+		);
+	}
+
+	/**
+	 * Tests render_block with event that has a venue assigned.
+	 *
+	 * This test verifies the code path where an event has a venue term
+	 * but the venue lookup doesn't find a matching venue post. This covers
+	 * the fallback path in get_venue_post.
+	 *
+	 * Note: Testing the full event-to-venue rendering path would require
+	 * get_page_by_path to work in the test environment, which has limitations.
+	 * The render_with_venue_context method is fully tested via selectedPostId tests.
+	 *
+	 * @since 0.34.0
+	 * @covers ::render_inner_blocks
+	 * @covers ::get_source_post
+	 *
+	 * @return void
+	 */
+	public function test_render_block_with_event_venue_term_no_post(): void {
+		$instance = Venue_Block::get_instance();
+
+		// Create an event post.
+		$event_id = $this->factory->post->create(
+			array(
+				'post_type'   => 'gatherpress_event',
+				'post_status' => 'publish',
+			)
+		);
+
+		// Create a venue term that doesn't correspond to any venue post.
+		// This will exercise the code path where venue lookup returns null.
+		$term    = wp_insert_term(
+			'Nonexistent Venue',
+			Venue::TAXONOMY,
+			array( 'slug' => '_nonexistent-venue-slug' )
+		);
+		$term_id = is_array( $term ) ? $term['term_id'] : $term;
+
+		// Associate the event with the venue term.
+		wp_set_object_terms( $event_id, (int) $term_id, Venue::TAXONOMY );
+
+		$this->go_to( get_permalink( $event_id ) );
+
+		$block_instance = new WP_Block(
+			array(
+				'blockName'    => 'gatherpress/venue',
+				'attrs'        => array(),
+				'innerBlocks'  => array(),
+				'innerHTML'    => '',
+				'innerContent' => array(),
+			)
+		);
+
+		$block_content = '<div class="venue-content">Test venue block</div>';
+		$block         = array( 'attrs' => array() );
+
+		$result = $instance->render_inner_blocks( $block_instance );
+
+		// Without a valid venue post, the venue block should not render for events.
+		$this->assertNull(
+			$result,
+			'Should return empty string when venue term exists but no matching venue post.'
+		);
+	}
+
+	/**
+	 * Tests render_block returns empty when event has no venue terms.
+	 *
+	 * @since 0.34.0
+	 * @covers ::render_inner_blocks
+	 * @covers ::get_source_post
+	 *
+	 * @return void
+	 */
+	public function test_render_block_returns_empty_for_event_with_no_terms(): void {
+		$instance = Venue_Block::get_instance();
+
+		// Create an event post without any venue terms.
+		$event_id = $this->factory->post->create( array( 'post_type' => 'gatherpress_event' ) );
+
+		$this->go_to( get_permalink( $event_id ) );
+
+		$block_instance = new WP_Block(
+			array(
+				'blockName'    => 'gatherpress/venue',
+				'attrs'        => array(),
+				'innerBlocks'  => array(),
+				'innerHTML'    => '',
+				'innerContent' => array(),
+			)
+		);
+
+		$block_content = '<div class="venue-content">Test</div>';
+		$block         = array( 'attrs' => array() );
+
+		$result = $instance->render_inner_blocks( $block_instance );
+
+		// With no venue terms, the event has no venue, so the block should not render.
+		$this->assertNull(
+			$result,
+			'Should return empty string when event has no venue terms.'
+		);
+	}
+
+	/**
+	 * Tests render_block returns empty when event has multiple venue terms but no valid venue post.
+	 *
+	 * @since 0.34.0
+	 * @covers ::render_inner_blocks
+	 * @covers ::get_source_post
+	 *
+	 * @return void
+	 */
+	public function test_render_block_returns_empty_for_multiple_terms_no_venue_post(): void {
+		$instance = Venue_Block::get_instance();
+
+		// Create an event post.
+		$event_id = $this->factory->post->create( array( 'post_type' => 'gatherpress_event' ) );
+
+		// Register the venue taxonomy if not registered.
+		if ( ! taxonomy_exists( '_gatherpress_venue' ) ) {
+			register_taxonomy( '_gatherpress_venue', 'gatherpress_event' );
+		}
+
+		// Create online-event term.
+		$online_term = term_exists( 'online-event', '_gatherpress_venue' );
+		if ( ! $online_term ) {
+			$online_term = wp_insert_term( 'Online Event', '_gatherpress_venue', array( 'slug' => 'online-event' ) );
+		}
+		$online_term_id = is_array( $online_term ) ? $online_term['term_id'] : $online_term;
+
+		// Create another venue term.
+		$venue_term    = wp_insert_term(
+			'Physical Venue',
+			'_gatherpress_venue',
+			array( 'slug' => 'physical-venue-test' )
+		);
+		$venue_term_id = is_array( $venue_term ) ? $venue_term['term_id'] : $venue_term;
+
+		// Set both terms on the event.
+		wp_set_object_terms( $event_id, array( (int) $online_term_id, (int) $venue_term_id ), '_gatherpress_venue' );
+
+		$this->go_to( get_permalink( $event_id ) );
+
+		$block_instance = new WP_Block(
+			array(
+				'blockName'    => 'gatherpress/venue',
+				'attrs'        => array(),
+				'innerBlocks'  => array(),
+				'innerHTML'    => '',
+				'innerContent' => array(),
+			)
+		);
+
+		$block_content = '<div class="venue-content">Test</div>';
+		$block         = array( 'attrs' => array() );
+
+		$result = $instance->render_inner_blocks( $block_instance );
+
+		// With multiple terms, the event is not online-only.
+		// Without a valid venue post, the venue block should not render.
+		$this->assertNull(
+			$result,
+			'Should return empty string when event has multiple venue terms but no valid venue post.'
+		);
+	}
+
+	/**
+	 * Tests render_with_venue_context restores original post.
+	 *
+	 * @since 0.34.0
+	 * @covers ::render_inner_blocks
+	 *
+	 * @return void
+	 */
+	public function test_render_with_venue_context_restores_post(): void {
+		$instance = Venue_Block::get_instance();
+
+		// Create original post and venue.
+		$original_post_id = $this->factory->post->create( array( 'post_title' => 'Original Post' ) );
+		$venue_id         = $this->factory->post->create(
+			array(
+				'post_type'  => 'gatherpress_venue',
+				'post_title' => 'Test Venue for Restore',
+			)
+		);
+
+		// Set up the original post context.
+		$this->go_to( get_permalink( $original_post_id ) );
+
+		// Store reference to original post.
+		global $post;
+		$original_post = $post;
+
+		$block_instance = new WP_Block(
+			array(
+				'blockName'    => 'gatherpress/venue',
+				'attrs'        => array( 'selectedPostId' => $venue_id ),
+				'innerBlocks'  => array(
+					array(
+						'blockName'    => 'core/paragraph',
+						'attrs'        => array(),
+						'innerBlocks'  => array(),
+						'innerHTML'    => '<p>Inner</p>',
+						'innerContent' => array( '<p>Inner</p>' ),
+					),
+				),
+				'innerHTML'    => '',
+				'innerContent' => array( null ),
+			)
+		);
+
+		$block = array( 'attrs' => array( 'selectedPostId' => $venue_id ) );
+
+		$instance->render_inner_blocks( $block_instance );
+
+		// Verify the global post is restored.
+		$this->assertSame(
+			$original_post,
+			$post,
+			'Global $post should be restored after render_with_venue_context.'
+		);
+	}
+
+	/**
+	 * Tests render_block applies correct block context.
+	 *
+	 * This test verifies that when rendering with venue context, the venue post
+	 * becomes the context for inner blocks by checking filter behavior.
+	 *
+	 * @since 0.34.0
+	 * @covers ::render_inner_blocks
+	 *
+	 * @return void
+	 */
+	public function test_render_with_venue_context_applies_correct_context(): void {
+		$instance = Venue_Block::get_instance();
+
+		// Create a venue post with specific title.
+		$venue_id = $this->factory->post->create(
+			array(
+				'post_type'  => 'gatherpress_venue',
+				'post_title' => 'Context Test Venue Unique',
+			)
+		);
+
+		$block_instance = new WP_Block(
+			array(
+				'blockName'    => 'gatherpress/venue',
+				'attrs'        => array( 'selectedPostId' => $venue_id ),
+				'innerBlocks'  => array(
+					array(
+						'blockName'    => 'core/post-title',
+						'attrs'        => array(),
+						'innerBlocks'  => array(),
+						'innerHTML'    => '',
+						'innerContent' => array(),
+					),
+				),
+				'innerHTML'    => '',
+				'innerContent' => array( null ),
+			)
+		);
+
+		$block = array( 'attrs' => array( 'selectedPostId' => $venue_id ) );
+
+		$result = $instance->render_inner_blocks( $block_instance );
+
+		// The core/post-title block should render with the venue's title.
+		$this->assertStringContainsString(
+			'Context Test Venue Unique',
+			$result,
+			'Inner blocks should render with venue context (venue title should appear).'
+		);
+	}
+
+	/**
+	 * Tests BLOCK_NAME constant value.
+	 *
+	 * @since 0.34.0
+	 *
+	 * @return void
+	 */
+	public function test_block_name_constant(): void {
+		$this->assertSame(
+			'gatherpress/venue',
+			Venue_Block::BLOCK_NAME,
+			'BLOCK_NAME constant should be gatherpress/venue.'
+		);
+	}
+
+	/**
+	 * Tests render_block returns empty when selectedPostId is not an integer.
+	 *
+	 * @since 0.34.0
+	 * @covers ::render_inner_blocks
+	 * @covers ::get_source_post
+	 *
+	 * @return void
+	 */
+	public function test_render_block_returns_empty_for_non_integer_selected_id(): void {
+		$instance = Venue_Block::get_instance();
+
+		// Create a regular post for context.
+		$post_id = $this->factory->post->create();
+		$this->go_to( get_permalink( $post_id ) );
+
+		$block_instance = new WP_Block(
+			array(
+				'blockName'    => 'gatherpress/venue',
+				'attrs'        => array( 'selectedPostId' => 'not-an-integer' ),
+				'innerBlocks'  => array(),
+				'innerHTML'    => '',
+				'innerContent' => array(),
+			)
+		);
+
+		$block_content = '<div class="venue-content">Test</div>';
+		$block         = array( 'attrs' => array( 'selectedPostId' => 'not-an-integer' ) );
+
+		$result = $instance->render_inner_blocks( $block_instance );
+
+		$this->assertNull(
+			$result,
+			'Should return empty string when selectedPostId is not an integer.'
+		);
+	}
+
+	/**
+	 * Tests render_block with event that has a properly linked venue.
+	 *
+	 * This test creates an event with a venue term that maps to a real venue post,
+	 * covering the success path where get_venue_post_from_event_post_id returns
+	 * a valid venue post.
+	 *
+	 * @since 0.34.0
+	 * @covers ::render_inner_blocks
+	 * @covers ::get_source_post
+	 * @covers ::render_inner_blocks
+	 *
+	 * @return void
+	 */
+	public function test_render_block_with_event_linked_to_venue(): void {
+		$instance = Venue_Block::get_instance();
+
+		// Create a venue post.
+		$venue_id = $this->factory->post->create(
+			array(
+				'post_type'  => Venue::POST_TYPE,
+				'post_name'  => 'linked-venue-for-event-test',
+				'post_title' => 'Linked Venue For Event Test',
+			)
+		);
+
+		// Get the venue post to ensure we have the correct slug.
+		$venue_post = get_post( $venue_id );
+
+		// Create the venue term with the correct slug format.
+		$term_slug = ( new Venue( $venue_post->ID ) )->get_term_slug();
+		wp_insert_term(
+			'Linked Venue For Event Test',
+			Venue::TAXONOMY,
+			array( 'slug' => $term_slug )
+		);
+
+		// Create an event post.
+		$event_id = $this->factory->post->create(
+			array(
+				'post_type'   => Event::POST_TYPE,
+				'post_status' => 'publish',
+			)
+		);
+
+		// Associate the event with the venue term.
+		wp_set_post_terms( $event_id, $term_slug, Venue::TAXONOMY );
+
+		$this->go_to( get_permalink( $event_id ) );
+
+		$block_instance = new WP_Block(
+			array(
+				'blockName'    => 'gatherpress/venue',
+				'attrs'        => array(),
+				'innerBlocks'  => array(
+					array(
+						'blockName'    => 'core/post-title',
+						'attrs'        => array(),
+						'innerBlocks'  => array(),
+						'innerHTML'    => '',
+						'innerContent' => array(),
+					),
+				),
+				'innerHTML'    => '',
+				'innerContent' => array( null ),
+			)
+		);
+
+		$block_content = '<div class="venue-content">Test venue block</div>';
+		$block         = array( 'attrs' => array() );
+
+		$result = $instance->render_inner_blocks( $block_instance );
+
+		// The venue title should appear in the rendered output.
+		$this->assertStringContainsString(
+			'Linked Venue For Event Test',
+			$result,
+			'Should render inner blocks with venue context from event.'
+		);
+	}
+
+	/**
+	 * Tests render_block when event has venue term but no matching venue post.
+	 *
+	 * @since 0.34.0
+	 * @covers ::get_source_post
+	 *
+	 * @return void
+	 */
+	public function test_render_block_event_with_non_venue_term(): void {
+		$instance = Venue_Block::get_instance();
+
+		// Create an event post.
+		$event_id = $this->factory->post->create( array( 'post_type' => 'gatherpress_event' ) );
+
+		// Register the venue taxonomy if not registered.
+		if ( ! taxonomy_exists( '_gatherpress_venue' ) ) {
+			register_taxonomy( '_gatherpress_venue', 'gatherpress_event' );
+		}
+
+		// Create a venue term that doesn't follow the _venue-{id} pattern.
+		$term    = wp_insert_term( 'Random Venue', '_gatherpress_venue', array( 'slug' => 'random-venue-slug' ) );
+		$term_id = is_array( $term ) ? $term['term_id'] : $term;
+
+		// Associate the event with the venue term.
+		wp_set_object_terms( $event_id, (int) $term_id, '_gatherpress_venue' );
+
+		$this->go_to( get_permalink( $event_id ) );
+
+		$block_instance = new WP_Block(
+			array(
+				'blockName'    => 'gatherpress/venue',
+				'attrs'        => array(),
+				'innerBlocks'  => array(),
+				'innerHTML'    => '',
+				'innerContent' => array(),
+			)
+		);
+
+		$block_content = '<div class="venue-content">Test</div>';
+		$block         = array( 'attrs' => array() );
+
+		$result = $instance->render_inner_blocks( $block_instance );
+
+		// The venue term doesn't map to a venue post, so the venue block should not render.
+		$this->assertNull(
+			$result,
+			'Should return empty string when venue term does not map to a venue post.'
+		);
+	}
+
+
+
+
+
+	/**
+	 * Tests get_venue_post with postId override attribute.
+	 *
+	 * This tests the Block::get_post_id() path where postId comes from
+	 * block attributes (used for query loop context).
+	 *
+	 * @since 0.34.0
+	 * @covers ::get_source_post
+	 * @covers ::render_inner_blocks
+	 *
+	 * @return void
+	 */
+	public function test_get_venue_post_with_postid_override(): void {
+		$instance = Venue_Block::get_instance();
+
+		// Create a venue post.
+		$venue_id = $this->factory->post->create(
+			array(
+				'post_type'  => Venue::POST_TYPE,
+				'post_name'  => 'override-venue-test',
+				'post_title' => 'Override Venue Test',
+			)
+		);
+
+		// Get the venue post to ensure we have the correct slug.
+		$venue_post = get_post( $venue_id );
+
+		// Create the venue term with the correct slug format.
+		$term_slug = ( new Venue( $venue_post->ID ) )->get_term_slug();
+		wp_insert_term(
+			'Override Venue Test',
+			Venue::TAXONOMY,
+			array( 'slug' => $term_slug )
+		);
+
+		// Create an event post and link it to the venue.
+		$event_id = $this->factory->post->create(
+			array(
+				'post_type'   => Event::POST_TYPE,
+				'post_status' => 'publish',
+			)
+		);
+		wp_set_post_terms( $event_id, $term_slug, Venue::TAXONOMY );
+
+		// Create a different post for global context (not an event).
+		$other_post_id = $this->factory->post->create();
+		$this->go_to( get_permalink( $other_post_id ) );
+
+		// Block attributes include postId override (query loop context).
+		$block_instance = new WP_Block(
+			array(
+				'blockName'    => 'gatherpress/venue',
+				'attrs'        => array(
+					'postId' => $event_id, // Override to event ID.
+				),
+				'innerBlocks'  => array(
+					array(
+						'blockName'    => 'core/post-title',
+						'attrs'        => array(),
+						'innerBlocks'  => array(),
+						'innerHTML'    => '',
+						'innerContent' => array(),
+					),
+				),
+				'innerHTML'    => '',
+				'innerContent' => array( null ),
+			)
+		);
+
+		$block = array( 'attrs' => array( 'postId' => $event_id ) );
+
+		$result = $instance->render_inner_blocks( $block_instance );
+
+		// The venue title should appear in the rendered output.
+		$this->assertStringContainsString(
+			'Override Venue Test',
+			$result,
+			'Should use postId attribute to get event and render venue context.'
+		);
+	}
+
+	/**
+	 * Tests render_block when the current post is a venue (without selectedPostId).
+	 *
+	 * Covers the Venue::POST_TYPE case in the switch statement, where
+	 * the block renders directly using the current venue post.
+	 *
+	 * @since 0.34.0
+	 * @covers ::render_inner_blocks
+	 * @covers ::get_source_post
+	 * @covers ::render_inner_blocks
+	 *
+	 * @return void
+	 */
+	public function test_render_block_on_venue_post_context(): void {
+		$instance = Venue_Block::get_instance();
+
+		// Create a venue post.
+		$venue_id = $this->factory->post->create(
+			array(
+				'post_type'  => Venue::POST_TYPE,
+				'post_title' => 'Venue Context Test',
+			)
+		);
+
+		$this->go_to( get_permalink( $venue_id ) );
+
+		$block_instance = new WP_Block(
+			array(
+				'blockName'    => 'gatherpress/venue',
+				'attrs'        => array(),
+				'innerBlocks'  => array(
+					array(
+						'blockName'    => 'core/post-title',
+						'attrs'        => array(),
+						'innerBlocks'  => array(),
+						'innerHTML'    => '',
+						'innerContent' => array(),
+					),
+				),
+				'innerHTML'    => '',
+				'innerContent' => array( null ),
+			)
+		);
+
+		$block = array( 'attrs' => array() );
+
+		$result = $instance->render_inner_blocks( $block_instance );
+
+		$this->assertStringContainsString(
+			'Venue Context Test',
+			$result,
+			'Should render venue block using current venue post context.'
+		);
+	}
+
+	/**
+	 * Tests get_venue_post returns null when postId override points to non-event.
+	 *
+	 * @since 0.34.0
+	 * @covers ::get_source_post
+	 *
+	 * @return void
+	 */
+	public function test_get_venue_post_returns_null_for_non_event_postid_override(): void {
+		$instance = Venue_Block::get_instance();
+
+		// Create a regular post (not an event).
+		$post_id = $this->factory->post->create( array( 'post_type' => 'post' ) );
+
+		// Create an event as global context.
+		$event_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
+		$this->go_to( get_permalink( $event_id ) );
+
+		// Block attributes include postId override pointing to non-event.
+		$block_instance = new WP_Block(
+			array(
+				'blockName'    => 'gatherpress/venue',
+				'attrs'        => array(
+					'postId' => $post_id, // Override to non-event post ID.
+				),
+				'innerBlocks'  => array(),
+				'innerHTML'    => '',
+				'innerContent' => array(),
+			)
+		);
+
+		$block = array( 'attrs' => array( 'postId' => $post_id ) );
+
+		$result = $instance->render_inner_blocks( $block_instance );
+
+		$this->assertNull(
+			$result,
+			'Should return empty when postId override points to non-event.'
+		);
+	}
+
+	/**
+	 * Explicit `sourcePostType: gatherpress_venue` should behave identically
+	 * to the default (no attribute). Regression guard for the #1687
+	 * generalization of the venue block.
+	 *
+	 * @since 0.34.0
+	 * @covers ::render_inner_blocks
+	 * @covers ::get_source_post
+	 * @covers ::get_source_post_type
+	 *
+	 * @return void
+	 */
+	public function test_render_block_with_explicit_source_post_type_venue(): void {
+		$instance = Venue_Block::get_instance();
+
+		$venue_id = $this->factory->post->create(
+			array(
+				'post_type'  => 'gatherpress_venue',
+				'post_title' => 'Explicit Source Type Venue',
+			)
+		);
+
+		$block_instance = new WP_Block(
+			array(
+				'blockName'    => 'gatherpress/venue',
+				'attrs'        => array(
+					'sourcePostType' => 'gatherpress_venue',
+					'selectedPostId' => $venue_id,
+				),
+				'innerBlocks'  => array(
+					array(
+						'blockName'    => 'core/paragraph',
+						'attrs'        => array(),
+						'innerBlocks'  => array(),
+						'innerHTML'    => '<p>Explicit-source inner content</p>',
+						'innerContent' => array( '<p>Explicit-source inner content</p>' ),
+					),
+				),
+				'innerHTML'    => '',
+				'innerContent' => array( null ),
+			)
+		);
+
+		$block = array(
+			'attrs' => array(
+				'sourcePostType' => 'gatherpress_venue',
+				'selectedPostId' => $venue_id,
+			),
+		);
+
+		$result = $instance->render_inner_blocks( $block_instance );
+
+		$this->assertStringContainsString(
+			'Explicit-source inner content',
+			$result,
+			'Setting sourcePostType=gatherpress_venue explicitly should resolve and render identically to the default.'
+		);
+	}
+
+	/**
+	 * When `sourcePostType` points at a CPT that isn't actually registered
+	 * (no shadow taxonomy exists), no source resolves and the block renders
+	 * empty. Documents the defensive contract.
+	 *
+	 * @since 0.34.0
+	 * @covers ::render_inner_blocks
+	 * @covers ::get_source_post
+	 *
+	 * @return void
+	 */
+	public function test_render_block_returns_empty_for_unregistered_source_post_type(): void {
+		$instance = Venue_Block::get_instance();
+
+		$event_id = $this->mock->post(
+			array( 'post_type' => Event::POST_TYPE )
+		)->get()->ID;
+		$this->go_to( get_permalink( $event_id ) );
+
+		$block_instance = new WP_Block(
+			array(
+				'blockName'    => 'gatherpress/venue',
+				'attrs'        => array( 'sourcePostType' => 'gatherpress_definitely_not_registered' ),
+				'innerBlocks'  => array(),
+				'innerHTML'    => '',
+				'innerContent' => array(),
+			)
+		);
+
+		$block = array( 'attrs' => array( 'sourcePostType' => 'gatherpress_definitely_not_registered' ) );
+
+		$result = $instance->render_inner_blocks( $block_instance );
+
+		$this->assertNull(
+			$result,
+			'Block should render empty when sourcePostType points at an unregistered CPT.'
+		);
+	}
+
+	/**
+	 * Rendering through do_blocks emits one wrapper that core's block
+	 * supports decorate — alignment, className, and layout classes all
+	 * land on it, with the inner blocks rendered in the source post's
+	 * context inside.
+	 *
+	 * @since 0.34.0
+	 * @covers ::render_inner_blocks
+	 *
+	 * @return void
+	 */
+	public function test_do_blocks_emits_decorated_wrapper_with_source_context(): void {
+		$venue_id = $this->factory->post->create(
+			array(
+				'post_type'  => 'gatherpress_venue',
+				'post_title' => 'Wrapper Test Venue',
+			)
+		);
+
+		$output = do_blocks(
+			sprintf(
+				'<!-- wp:gatherpress/venue {"selectedPostId":%d,"align":"full","className":"my-venue"} -->' .
+				'<!-- wp:post-title /--><!-- /wp:gatherpress/venue -->',
+				$venue_id
+			)
+		);
+
+		$this->assertStringContainsString(
+			'wp-block-gatherpress-venue',
+			$output,
+			'The wrapper should carry the block class.'
+		);
+		$this->assertStringContainsString( 'alignfull', $output, 'The wrapper should carry the alignment.' );
+		$this->assertStringContainsString( 'my-venue', $output, 'The wrapper should carry the className.' );
+		$this->assertStringContainsString(
+			'is-layout-flow',
+			$output,
+			'Core layout classes must decorate the wrapper — this is what the render.php architecture exists for.'
+		);
+		$this->assertStringContainsString(
+			'Wrapper Test Venue',
+			$output,
+			'Inner blocks should render with the venue as their context.'
+		);
+	}
+
+	/**
+	 * Rendering through do_blocks emits nothing at all when no source
+	 * post resolves — no wrapper, no leaked first-pass inner content.
+	 *
+	 * @since 0.34.0
+	 * @covers ::render_inner_blocks
+	 *
+	 * @return void
+	 */
+	public function test_do_blocks_emits_nothing_without_source_post(): void {
+		$output = do_blocks(
+			'<!-- wp:gatherpress/venue {"selectedPostId":999999} -->' .
+			'<!-- wp:paragraph --><p>ghost content</p><!-- /wp:paragraph --><!-- /wp:gatherpress/venue -->'
+		);
+
+		$this->assertSame( '', trim( $output ), 'No source post should render nothing at all.' );
+	}
+}

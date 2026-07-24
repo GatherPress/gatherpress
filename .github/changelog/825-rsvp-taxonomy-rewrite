@@ -1,0 +1,4 @@
+Significance: patch
+Type: fixed
+
+Stop generating rewrite rules for the private RSVP status and provider comment taxonomies; their terms are never reachable through a URL.

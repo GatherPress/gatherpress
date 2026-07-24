@@ -1,5 +1,5 @@
 /**
- * WordPress dependencies.
+ * WordPress dependencies
  */
 import { createReduxStore, register } from '@wordpress/data';
 
@@ -15,13 +15,6 @@ const DEFAULT_STATE = {
  * Actions for the email modal store.
  */
 const actions = {
-	setModalOpen( isOpen ) {
-		return {
-			type: 'SET_MODAL_OPEN',
-			isOpen,
-		};
-	},
-
 	openModal() {
 		return {
 			type: 'SET_MODAL_OPEN',

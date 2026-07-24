@@ -4,15 +4,24 @@
 
 GatherPress allows to generate screenshots for the plugin **automated & manually**, while sharing the same, [`wp-playground/cli`](https://github.com/WordPress/wordpress-playground/pull/1289) powered, setup. The started playground imports the [`GatherPress/gatherpress-demo-data`](https://github.com/GatherPress/gatherpress-demo-data) and sets some options, e.g. to hide GatherPress' admin-notices.
 
-GatherPress uses Playwright for this task, which is a tool to do [end-to-end testing](../e2e-tests). Playwright has an advanced [screenshots API](https://playwright.dev/docs/screenshots), that allows to take screenshots for a full-page or an element only. Like for the e2e tests, it is configurable what browsers to use, what screenresolution to set, etc. Which screenshots to take is defined in a [wporg.spec.ts](../../../.github/scripts/wordpress-org-screenshots/wporg.spec.ts) file. The names of the generated files match the captions in the plugins [readme.md](../../../readme.md)!
+GatherPress uses Playwright for this task, which is a tool to do [end-to-end testing](../e2e-tests). Playwright has an advanced [screenshots API](https://playwright.dev/docs/screenshots), that allows to take screenshots for a full-page or an element only. Like for the e2e tests, it is configurable what browsers to use, what screenresolution to set, etc.
 
-With the help of WordPress Playground, identical instances are created one for each language, based on one identical [blueprint.json](../../../.github/scripts/wordpress-org-screenshots/blueprint.json) file. Screenshots are generated in all languages, with more than 90% of finished translations.
+With the help of WordPress Playground, identical instances are created one for each language, based on one identical [blueprint.json](../../../.github/scripts/wordpress-org-screenshots/blueprint.json) file.
+
+There are **two screenshot suites**, both driven by the same reusable workflow ([screenshot-generation.yml](../../../.github/workflows/screenshot-generation.yml)):
+
+| Suite | Spec | Output | Languages |
+|---|---|---|---|
+| wordpress.org plugin assets | [wporg.spec.ts](../../../.github/scripts/wordpress-org-screenshots/wporg.spec.ts) | `.wordpress-org/` | every locale with more than 90% of finished translations |
+| Documentation images | [docs.spec.ts](../../../.github/scripts/docs-screenshots/docs.spec.ts) | `docs/user/user-doc-media/` | English only |
+
+For the wordpress.org suite, the names of the generated files match the captions in the plugins [readme.md](../../../readme.md)! For the documentation suite, the screenshot names are semantic (`settings-rsvp-tab.png`) and are referenced directly from the markdown under `docs/user/` — a spec can also **highlight an element** in GatherPress' brand color via the [highlight helper](../../../.github/scripts/docs-screenshots/highlight.ts) to draw the reader's attention.
 
 ## Automated Screenshots
 
-...are generated using a GitHub actions workflow.
+...are generated using GitHub actions workflows: [WordPress.org screenshot generation](../../../.github/workflows/wordpress-org-screenshots.yml) and [Documentation screenshot generation](../../../.github/workflows/docs-screenshots.yml) are thin callers that hand their locale list, Playwright suite, and output directory to the shared reusable workflow.
 
-While such a workflow could run on every major- and minor-, but not on bug-fix-releases, this is *currently **started manually** via `workflow_dispatch`*.
+While such a workflow could run on every major- and minor-, but not on bug-fix-releases, both are *currently **started manually** via `workflow_dispatch`*.
 
 1. Start the workflow
    ![The workflow trigger button, to start the screenshot generator workflows.](./screenshot-generator__workflow-dispatch.png)
@@ -22,6 +31,16 @@ While such a workflow could run on every major- and minor-, but not on bug-fix-r
    ![The screenshot generator workflows running on github.com](./screenshot-generator__workflow-runs.png)
 3. ... **pull_requests are created**, one for each language, that could be reviewed by native speakers.
    ![The created PRs per language on github.com](./screenshot-generator__PRs-per-language.png)
+
+### How the workflow publishes changes
+
+Some details worth knowing when reviewing the generated pull requests:
+
+- The locale jobs run **sequentially** (`max-parallel: 1`) so later jobs reuse the cached Playwright browser, and every job is bounded by timeouts — a hung step fails within minutes instead of stalling the whole matrix.
+- Each per-locale branch is cut **from `origin/develop`** and contains **only the `.wordpress-org/` screenshot changes**; incidental changes elsewhere in the run's checkout (for example the image recompression pass) are never committed.
+- The pull requests **target `develop`** — like all other work, screenshots reach `main` with the next release. They carry the **Skip Changelog** label, since screenshot regeneration doesn't warrant a changelog entry.
+- Branch, commit, and pull request are created by [`peter-evans/create-pull-request`](https://github.com/peter-evans/create-pull-request) with `sign-commits: true` — the same pattern as the hook-docs workflow. Commits are created through the GitHub API and therefore **signed by GitHub ("Verified")**, which the branch protection on `develop` requires.
+- Each pull request has **auto-merge (squash) enabled** and its branch is deleted after merging — the per-locale PRs land on their own once required checks pass, and only stay open for human review when something fails.
 
 ## Manually generating Screenshots
 

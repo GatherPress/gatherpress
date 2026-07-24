@@ -1,15 +1,14 @@
 /**
- * WordPress dependencies.
+ * WordPress dependencies
  */
 import { PanelRow, SelectControl } from '@wordpress/components';
-import { useEffect } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
 import { useDispatch, useSelect } from '@wordpress/data';
 
 /**
- * Internal dependencies.
+ * Internal dependencies
  */
-import { getFromGlobal } from '../helpers/globals';
+import { getFromConfig } from '../helpers/editor-settings';
 import { enableSave } from '../helpers/editor';
 import {
 	maybeConvertUtcOffsetForDatabase,
@@ -23,7 +22,7 @@ import {
  * It includes a SelectControl with options grouped by regions. The selected time zone is
  * stored in the state and updated via the setTimezone function.
  *
- * @since 1.0.0
+ * @since 0.27.0
  *
  * @return {JSX.Element} The rendered React component.
  */
@@ -35,16 +34,12 @@ const Timezone = () => {
 		[],
 	);
 	const { setTimezone } = useDispatch( 'gatherpress/datetime' );
-	const choices = getFromGlobal( 'misc.timezoneChoices' );
-
-	// Run only once.
-	useEffect( () => {
-		setTimezone( getFromGlobal( 'eventDetails.dateTime.timezone' ) );
-	}, [ setTimezone ] );
+	const choices = getFromConfig( 'timezoneChoices' );
 
 	return (
 		<PanelRow>
 			<SelectControl
+				__next40pxDefaultSize
 				label={ __( 'Time Zone', 'gatherpress' ) }
 				value={ maybeConvertUtcOffsetForSelect( timezone ) }
 				onChange={ ( value ) => {

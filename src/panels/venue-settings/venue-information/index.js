@@ -1,5 +1,5 @@
 /**
- * Internal dependencies.
+ * Internal dependencies
  */
 import VenueInformation from '../../../components/VenueInformation';
 
@@ -9,7 +9,7 @@ import VenueInformation from '../../../components/VenueInformation';
  * This component represents a panel in the Block Editor containing venue information.
  * It includes the VenueInformation component to manage and display venue details.
  *
- * @since 1.0.0
+ * @since 0.27.0
  *
  * @return {JSX.Element} The JSX element for the VenueInformationPanel.
  */

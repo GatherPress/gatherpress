@@ -1,11 +1,11 @@
 /**
- * WordPress dependencies.
+ * WordPress dependencies
  */
 import { __ } from '@wordpress/i18n';
 import { RichText } from '@wordpress/block-editor';
 
 /**
- * Internal dependencies.
+ * Internal dependencies
  */
 import {
 	getInputStyles,
@@ -22,6 +22,7 @@ import {
  * @param {Function} props.setAttributes     - Function to update block attributes.
  * @param {Object}   props.blockProps        - WordPress block wrapper properties.
  * @param {Function} props.generateFieldName - Function to generate field name from label.
+ *
  * @return {JSX.Element} The textarea field component.
  */
 export default function TextareaField( {
@@ -95,7 +96,7 @@ export default function TextareaField( {
 				style={ getInputStyles( fieldType, attributes ) }
 				name={ fieldName }
 				placeholder={ placeholder }
-				defaultValue={ fieldValue }
+				value={ fieldValue }
 				required={ required }
 				readOnly={ true }
 				tabIndex={ -1 }

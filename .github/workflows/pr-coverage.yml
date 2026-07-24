@@ -1,10 +1,25 @@
 name: PR Coverage Check
 
+# Why pull_request (not pull_request_target)?
+#
+# This workflow checks out and executes PR code (composer install, npm install,
+# npm run build, the PHPUnit/Jest suites). Running that on pull_request_target
+# would give the PR's build/test scripts access to the base repo's
+# pull-requests:write token — a supply-chain attack surface (CodeQL flagged
+# this as actions/untrusted-checkout/critical).
+#
+# The companion workflow `PR Coverage Comment` consumes this run's artifact
+# via workflow_run, runs in the privileged base-repo context with
+# `pull-requests: write`, and posts the coverage PR comment — without ever
+# executing PR code.
+
 on:
   pull_request:
+    # develop only: PRs into main are release merges whose diff is the whole
+    # cycle — every file in it already passed this check on its PR into
+    # develop (#1921).
     branches:
       - develop
-      - main
     paths:
       - '.github/workflows/pr-coverage.yml'
       - '.github/coverage-config.json'
@@ -19,6 +34,14 @@ on:
       - 'jest.config.js'
       - 'package.json'
 
+# Ensure only one coverage check runs per PR at a time.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
 jobs:
   check-coverage:
     name: Check Test Coverage on Changed Files
@@ -28,7 +51,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Fetch all history for all branches and tags
+          fetch-depth: 0  # Fetch all history for all branches and tags.
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
@@ -70,24 +93,51 @@ jobs:
 
       - name: Check PHP PR coverage
         id: php-coverage
-        run: php .github/scripts/check-pr-coverage.php
+        run: |
+          # Capture output to file and display it.
+          php .github/scripts/check-pr-coverage.php 2>&1 | tee php-coverage-output.txt
+          # Preserve the exit code from PHP script.
+          exit ${PIPESTATUS[0]}
         env:
           GITHUB_BASE_REF: ${{ github.base_ref }}
         continue-on-error: true  # Continue to check JS coverage even if PHP fails
 
       - name: Check JavaScript PR coverage
         id: js-coverage
-        run: php .github/scripts/check-pr-coverage-js.php
+        run: |
+          # Capture output to file and display it.
+          php .github/scripts/check-pr-coverage-js.php 2>&1 | tee js-coverage-output.txt
+          # Preserve the exit code from PHP script.
+          exit ${PIPESTATUS[0]}
         env:
           GITHUB_BASE_REF: ${{ github.base_ref }}
         continue-on-error: true  # Continue to show all results before failing
 
+      - name: Save PR metadata for downstream comment workflow
+        if: always()
+        run: |
+          echo "${{ github.event.pull_request.number }}" > pr-number.txt
+          echo "${{ steps.php-coverage.outcome }}" > php-status.txt
+          echo "${{ steps.js-coverage.outcome }}" > js-status.txt
+
+      - name: Upload coverage artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr-coverage-results
+          path: |
+            php-coverage-output.txt
+            js-coverage-output.txt
+            pr-number.txt
+            php-status.txt
+            js-status.txt
+
       - name: Fail if coverage checks failed
         if: steps.php-coverage.outcome == 'failure' || steps.js-coverage.outcome == 'failure'
         run: |
-          echo "❌ One or more coverage checks failed. See above for details."
+          echo "One or more coverage checks failed. See the PR comment for details."
           exit 1
 
       - name: Stop WordPress environment
         if: always()
-        run: npm run wp-env stop
+        run: npm run wp-env -- stop --config .wp-env.test.json

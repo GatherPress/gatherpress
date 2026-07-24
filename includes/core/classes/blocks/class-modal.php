@@ -7,7 +7,7 @@
  * styles and attributes.
  *
  * @package GatherPress\Core
- * @since 1.0.0
+ * @since 0.33.0
  */
 
 namespace GatherPress\Core\Blocks;
@@ -15,8 +15,7 @@ namespace GatherPress\Core\Blocks;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
-use GatherPress\Core\Block;
-use GatherPress\Core\Rsvp_Setup;
+use GatherPress\Core\Rsvp\Setup;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Utility;
 use WP_HTML_Tag_Processor;
@@ -25,9 +24,10 @@ use WP_HTML_Tag_Processor;
  * Class responsible for managing the "Modal" block and its functionality,
  * including dynamic rendering adjustments.
  *
- * @since 1.0.0
+ * @since 0.33.0
  */
-class Modal {
+final class Modal {
+
 	/**
 	 * Enforces a single instance of this class.
 	 */
@@ -36,7 +36,7 @@ class Modal {
 	/**
 	 * Constant representing the Block Name.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @var string
 	 */
 	const BLOCK_NAME = 'gatherpress/modal';
@@ -46,7 +46,7 @@ class Modal {
 	 *
 	 * This method initializes the object and sets up necessary hooks.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 */
 	protected function __construct() {
 		$this->setup_hooks();
@@ -57,7 +57,7 @@ class Modal {
 	 *
 	 * This method adds hooks for different purposes as needed.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @return void
 	 */
@@ -76,7 +76,7 @@ class Modal {
 	 * Dynamically updates the modal block's rendered content to include necessary
 	 * attributes for improved accessibility and functionality.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @param string $block_content The HTML content of the block.
 	 * @param array  $block         The parsed block data.
@@ -110,7 +110,7 @@ class Modal {
 	 *
 	 * This ensures proper stacking behavior for the block in the DOM.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @param string $block_content The HTML content of the block.
 	 * @param array  $block         The parsed block data.
@@ -142,7 +142,7 @@ class Modal {
 	 * `gatherpress-modal--type-login` class. If the user is logged in, it removes
 	 * the block's output.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @param string $block_content The HTML content of the block.
 	 * @param array  $block         The parsed block data.
@@ -167,7 +167,7 @@ class Modal {
 	 * `gatherpress-modal--type-rsvp` class. If the user is not logged in, it removes
 	 * the block's output.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @param string $block_content The HTML content of the block.
 	 * @param array  $block         The parsed block data.
@@ -177,7 +177,7 @@ class Modal {
 	public function filter_rsvp_modal( string $block_content, array $block ): string {
 		if (
 			Utility::has_css_class( $block['attrs']['className'] ?? null, 'gatherpress-modal--type-rsvp' ) &&
-			! Rsvp_Setup::get_instance()->get_user_identifier()
+			! Setup::get_instance()->get_user_identifier()
 		) {
 			return '';
 		}

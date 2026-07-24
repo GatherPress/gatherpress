@@ -1,5 +1,5 @@
 /**
- * WordPress dependencies.
+ * WordPress dependencies
  */
 import { registerBlockType } from '@wordpress/blocks';
 import { useBlockProps, InnerBlocks, InspectorAdvancedControls } from '@wordpress/block-editor';
@@ -11,7 +11,7 @@ import { addFilter } from '@wordpress/hooks';
 import { select, dispatch, useSelect } from '@wordpress/data';
 
 /**
- * Internal dependencies.
+ * Internal dependencies
  */
 import edit from './edit';
 import metadata from './block.json';
@@ -21,6 +21,7 @@ import metadata from './block.json';
  * Stores visibility settings on each block's metadata.gatherpressRsvpFormVisibility attribute.
  *
  * @param {Function} BlockEdit Original BlockEdit component.
+ *
  * @return {Function} Wrapped BlockEdit component.
  */
 const withFormVisibilityControls = createHigherOrderComponent( ( BlockEdit ) => {
@@ -117,6 +118,7 @@ const withFormVisibilityControls = createHigherOrderComponent( ( BlockEdit ) => 
 				<BlockEdit { ...props } />
 				<InspectorAdvancedControls>
 					<SelectControl
+						__next40pxDefaultSize
 						label={ __( 'On Successful Submission', 'gatherpress' ) }
 						help={ __(
 							'Control visibility when the RSVP form is successfully submitted.',
@@ -140,6 +142,7 @@ const withFormVisibilityControls = createHigherOrderComponent( ( BlockEdit ) => 
 						onChange={ ( value ) => updateVisibility( 'onSuccess', value ) }
 					/>
 					<SelectControl
+						__next40pxDefaultSize
 						label={ __( 'When Event Has Passed', 'gatherpress' ) }
 						help={ __(
 							'Control visibility when the event end time has passed.',
@@ -176,7 +179,7 @@ const withFormVisibilityControls = createHigherOrderComponent( ( BlockEdit ) => 
  * It provides a form interface for event registration and integrates with the
  * WordPress comment system for processing RSVP submissions.
  *
- * @since 1.0.0
+ * @since 0.27.0
  *
  * @return {JSX.Element} The rendered React component for editing the block.
  */
@@ -198,6 +201,7 @@ registerBlockType( metadata, {
  * @param {boolean|Array} canInsert    Whether the block can be inserted.
  * @param {Object}        blockType    The block type being checked.
  * @param {string}        rootClientId The client ID of the parent block.
+ *
  * @return {boolean} Whether the block can be inserted.
  */
 function preventNestedRsvpFormInsertion( canInsert, blockType, rootClientId ) {

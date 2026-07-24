@@ -1,0 +1,4 @@
+Significance: patch
+Type: changed
+
+Declare native return types on methods that only described them in a docblock, so static analysis verifies them instead of trusting the comment. No behavior change.

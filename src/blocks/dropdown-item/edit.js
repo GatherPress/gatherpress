@@ -1,5 +1,5 @@
 /**
- * WordPress dependencies.
+ * WordPress dependencies
  */
 import { __ } from '@wordpress/i18n';
 import {
@@ -19,6 +19,7 @@ import { dispatch, select } from '@wordpress/data';
  * @param {Function} props.setAttributes     Function to update attributes.
  * @param {string}   props.clientId          Unique ID of the block.
  * @param {Function} props.insertBlocksAfter Function to insert blocks after this block.
+ *
  * @return {JSX.Element} The rendered edit component.
  */
 const Edit = ( { attributes, setAttributes, clientId, insertBlocksAfter } ) => {
@@ -108,13 +109,6 @@ const Edit = ( { attributes, setAttributes, clientId, insertBlocksAfter } ) => {
 				} }
 				placeholder={ __( 'Item Text…', 'gatherpress' ) }
 				allowedFormats={ [ 'core/link' ] }
-				onSplit={ ( before, after ) => {
-					const newBlock = createBlock( 'gatherpress/dropdown-item', {
-						text: after,
-					} );
-					insertBlocksAfter( [ newBlock ] );
-					setAttributes( { text: before } );
-				} }
 				onKeyDown={ ( event ) => {
 					if ( 'Enter' === event.key ) {
 						event.preventDefault();

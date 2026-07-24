@@ -1,12 +1,12 @@
 /**
- * External dependencies.
+ * External dependencies
  */
 import moment from 'moment';
 
 /**
- * WordPress dependencies.
+ * WordPress dependencies
  */
-import { __, sprintf } from '@wordpress/i18n';
+import { __ } from '@wordpress/i18n';
 import {
 	BlockControls,
 	InspectorControls,
@@ -17,16 +17,16 @@ import {
 	__experimentalVStack as VStack,
 	PanelBody,
 	RadioControl,
-	SelectControl,
 	Spinner,
 	TextControl,
+	ToggleControl,
 	ToolbarButton,
 	ToolbarGroup,
 } from '@wordpress/components';
 import { useSelect } from '@wordpress/data';
 
 /**
- * Internal dependencies.
+ * Internal dependencies
  */
 import {
 	convertPHPToMomentFormat,
@@ -37,14 +37,13 @@ import {
 	removeNonTimePHPFormatChars,
 } from '../../helpers/datetime';
 import DateTimeRange from '../../components/DateTimeRange';
-import { getFromGlobal } from '../../helpers/globals';
-import { isEventPostType, hasValidEventId } from '../../helpers/event';
+import { getFromSettings } from '../../helpers/editor-settings';
+import {
+	isEventPostType,
+	DISABLED_FIELD_OPACITY,
+} from '../../helpers/event';
 import { isInFSETemplate } from '../../helpers/editor';
-
-const globalDateFormat = getFromGlobal( 'settings.dateFormat' );
-const globalTimeFormat = getFromGlobal( 'settings.timeFormat' );
-const globalShowTimezone = getFromGlobal( 'settings.showTimezone' );
-const defaultFormat = `${ globalDateFormat } ${ globalTimeFormat }`;
+import { resolveEventDateData } from './helpers';
 
 /**
  * Similar to get_display_datetime method in class-event.php.
@@ -56,6 +55,7 @@ const defaultFormat = `${ globalDateFormat } ${ globalTimeFormat }`;
  * @param {string} endFormat
  * @param {string} separator
  * @param {string} showTimezone
+ *
  * @return {string} Displayed date.
  */
 const displayDateTime = (
@@ -67,13 +67,18 @@ const displayDateTime = (
 	separator,
 	showTimezone
 ) => {
+	const dateFormat = getFromSettings( 'dateFormat' );
+	const timeFormat = getFromSettings( 'timeFormat' );
+	const globalShowTimezone = getFromSettings( 'showTimezone' );
+	const fullFormat = `${ dateFormat } ${ timeFormat }`;
+
 	timezone = getTimezone( timezone );
 	let sameStartEndDay = false;
 
 	// Check for default formatting with same event day before applying
 	// attribute-specific formats.
 	if ( dateTimeStart && dateTimeEnd ) {
-		const sameDayFormat = convertPHPToMomentFormat( globalDateFormat );
+		const sameDayFormat = convertPHPToMomentFormat( dateFormat );
 		sameStartEndDay =
 			createMomentWithTimezone( dateTimeStart, timezone ).format( sameDayFormat ) ===
 			createMomentWithTimezone( dateTimeEnd, timezone ).format( sameDayFormat );
@@ -84,7 +89,7 @@ const displayDateTime = (
 	// Add start date/time.
 	if ( dateTimeStart ) {
 		startFormat = convertPHPToMomentFormat(
-			startFormat || defaultFormat
+			startFormat || fullFormat
 		);
 		parts.push( createMomentWithTimezone( dateTimeStart, timezone ).format( startFormat ) );
 	}
@@ -92,7 +97,7 @@ const displayDateTime = (
 	// Determine end date/time.
 	if ( dateTimeEnd ) {
 		// Fall formatting back to default.
-		endFormat = endFormat || defaultFormat;
+		endFormat = endFormat || fullFormat;
 
 		// Remove non-time characters from PHP date format if start and end
 		// are on the same day.
@@ -145,6 +150,7 @@ const displayDateTime = (
  * @param {string}  toggleType    - Which date to toggle: 'start' or 'end'.
  * @param {boolean} showStartTime - Whether start time is currently shown.
  * @param {boolean} showEndTime   - Whether end time is currently shown.
+ *
  * @return {string} New display type value.
  */
 const calculateDisplayType = ( toggleType, showStartTime, showEndTime ) => {
@@ -173,7 +179,7 @@ const calculateDisplayType = ( toggleType, showStartTime, showEndTime ) => {
  * time, and provides controls for editing the date and time range via the
  * DateTimeRange component within InspectorControls.
  *
- * @since 1.0.0
+ * @since 0.27.0
  *
  * @param {Object}   root0               The props passed to the Edit component.
  * @param {Object}   root0.attributes    The block attributes.
@@ -189,68 +195,34 @@ const calculateDisplayType = ( toggleType, showStartTime, showEndTime ) => {
 const Edit = ( { attributes, setAttributes, context } ) => {
 	const {
 		displayType,
+		isLink,
 		startDateFormat,
 		endDateFormat,
 		separator,
 		showTimezone,
 	} = attributes;
-	// Normalize empty strings to null so fallback to context.postId works correctly.
-	const postId = ( attributes?.postId || null ) ?? context?.postId ?? null;
 
-	// Check if block has a valid event connection.
-	const isValidEvent = hasValidEventId( postId );
+	const dateFormat = getFromSettings( 'dateFormat' );
+	const timeFormat = getFromSettings( 'timeFormat' );
+	const defaultShowTimezone = getFromSettings( 'showTimezone' );
+
+	// Defer the supports check to useSelect so it stays reactive.
+	const postId = attributes?.postId ?? context?.postId ?? null;
+	const hasExplicitOverride = !! attributes?.postId;
+
+	const contextPostType = context?.postType;
+	const contextQueryId = context?.queryId;
+
+	const { dateTimeStart, dateTimeEnd, timezone, isLoading, isValidEvent } = useSelect(
+		( select ) => resolveEventDateData( select, contextPostType, contextQueryId, postId, hasExplicitOverride ),
+		[ postId, contextPostType, contextQueryId, hasExplicitOverride ]
+	);
 
 	const blockProps = useBlockProps( {
 		style: {
-			opacity: ( isInFSETemplate() || isValidEvent ) ? 1 : 0.3,
+			opacity: ( isInFSETemplate() || isValidEvent ) ? 1 : DISABLED_FIELD_OPACITY,
 		},
 	} );
-
-	const { dateTimeStart, dateTimeEnd, timezone, isLoading } = useSelect(
-		( select ) => {
-			if ( ! postId ) {
-				return {
-					dateTimeStart: undefined,
-					dateTimeEnd: undefined,
-					timezone: undefined,
-					isLoading: false,
-				};
-			}
-
-			if ( isEventPostType() ) {
-				return {
-					dateTimeStart: select(
-						'gatherpress/datetime',
-					).getDateTimeStart(),
-					dateTimeEnd: select(
-						'gatherpress/datetime',
-					).getDateTimeEnd(),
-					timezone: select( 'gatherpress/datetime' ).getTimezone(),
-					isLoading: false,
-				};
-			}
-
-			// Check if the entity record has finished loading.
-			const hasResolved = select( 'core' ).hasFinishedResolution(
-				'getEntityRecord',
-				[ 'postType', 'gatherpress_event', postId ]
-			);
-
-			const meta = select( 'core' ).getEntityRecord(
-				'postType',
-				'gatherpress_event',
-				postId,
-			)?.meta;
-
-			return {
-				dateTimeStart: meta?.gatherpress_datetime_start,
-				dateTimeEnd: meta?.gatherpress_datetime_end,
-				timezone: meta?.gatherpress_timezone,
-				isLoading: ! hasResolved,
-			};
-		},
-		[ postId ],
-	);
 
 	// Show spinner only while loading, not on 404.
 	if ( isLoading ) {
@@ -273,6 +245,16 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 
 	const showStartTime = [ 'start', 'both' ].includes( displayType );
 	const showEndTime = [ 'end', 'both' ].includes( displayType );
+
+	const displayedDateTime = displayDateTime(
+		showStartTime ? finalDateTimeStart : null,
+		showEndTime ? finalDateTimeEnd : null,
+		finalTimezone,
+		startDateFormat,
+		endDateFormat,
+		separator,
+		showTimezone
+	);
 
 	return (
 		<div { ...blockProps }>
@@ -308,14 +290,15 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 					/>
 				</ToolbarGroup>
 			</BlockControls>
-			{ displayDateTime(
-				showStartTime ? finalDateTimeStart : null,
-				showEndTime ? finalDateTimeEnd : null,
-				finalTimezone,
-				startDateFormat,
-				endDateFormat,
-				separator,
-				showTimezone
+			{ isLink ? (
+				<a
+					href="#gatherpress-event-date-pseudo-link"
+					onClick={ ( event ) => event.preventDefault() }
+				>
+					{ displayedDateTime }
+				</a>
+			) : (
+				displayedDateTime
 			) }
 			{ isEventPostType() && (
 				<InspectorControls>
@@ -323,106 +306,102 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 						<VStack spacing={ 4 }>
 							<DateTimeRange />
 						</VStack>
-						<div style={ { height: '1rem' } } />
-						<SelectControl
-							label={ __( 'Show time zone', 'gatherpress' ) }
-							value={ showTimezone }
-							options={ [
-								{
-									label: sprintf(
-										/* translators: %s: Plugin "show timezone" setting */
-										__(
-											'%s (plugin setting)',
-											'gatherpress'
-										),
-										globalShowTimezone
-											? __( 'Yes', 'gatherpress' )
-											: __( 'No', 'gatherpress' )
-									),
-									value: '',
-								},
-								{
-									label: __( 'Yes', 'gatherpress' ),
-									value: 'yes',
-								},
-								{
-									label: __( 'No', 'gatherpress' ),
-									value: 'no',
-								},
-							] }
-							onChange={ ( value ) =>
-								setAttributes( { showTimezone: value } )
-							}
-						/>
-						<RadioControl
-							label={ __( 'Display', 'gatherpress' ) }
-							selected={ displayType }
-							options={ [
-								{
-									label: __(
-										'Start and end date',
-										'gatherpress'
-									),
-									value: 'both',
-								},
-								{
-									label: __( 'Start date only', 'gatherpress' ),
-									value: 'start',
-								},
-								{
-									label: __( 'End date only', 'gatherpress' ),
-									value: 'end',
-								},
-							] }
-							onChange={ ( value ) =>
-								setAttributes( { displayType: value } )
-							}
-						/>
-						{ 'both' === displayType && (
-							<TextControl
-								label={ __( 'Separator', 'gatherpress' ) }
-								value={ separator }
-								placeholder={ __( 'to', 'gatherpress' ) }
-								onChange={ ( value ) =>
-									setAttributes( { separator: value } )
-								}
-							/>
-						) }
-						{ showStartTime && (
-							<TextControl
-								label={ __( 'Start date format', 'gatherpress' ) }
-								value={ startDateFormat }
-								placeholder={ `${ globalDateFormat } ${ globalTimeFormat }` }
-								onChange={ ( value ) =>
-									setAttributes( { startDateFormat: value } )
-								}
-							/>
-						) }
-						{ showEndTime && (
-							<TextControl
-								label={ __( 'End date format', 'gatherpress' ) }
-								value={ endDateFormat }
-								placeholder={ `${ globalDateFormat } ${ globalTimeFormat }` }
-								onChange={ ( value ) =>
-									setAttributes( { endDateFormat: value } )
-								}
-							/>
-						) }
-						<p className="components-base-control__help">
-							<a
-								href="https://wordpress.org/documentation/article/customize-date-and-time-format/"
-								target="_blank"
-								rel="noreferrer"
-							>
-								{ __(
-									'Date/time formatting documentation',
-									'gatherpress'
-								) }
-							</a>
-						</p>
 					</PanelBody>
 				</InspectorControls>
 			) }
+			<InspectorControls>
+				<PanelBody
+					title={ __( 'Display Settings', 'gatherpress' ) }
+					initialOpen={ true }
+				>
+					<RadioControl
+						label={ __( 'Display', 'gatherpress' ) }
+						selected={ displayType }
+						options={ [
+							{
+								label: __(
+									'Start and end date',
+									'gatherpress'
+								),
+								value: 'both',
+							},
+							{
+								label: __( 'Start date only', 'gatherpress' ),
+								value: 'start',
+							},
+							{
+								label: __( 'End date only', 'gatherpress' ),
+								value: 'end',
+							},
+						] }
+						onChange={ ( value ) =>
+							setAttributes( { displayType: value } )
+						}
+					/>
+					{ 'both' === displayType && (
+						<TextControl
+							label={ __( 'Separator', 'gatherpress' ) }
+							value={ separator }
+							placeholder={ __( 'to', 'gatherpress' ) }
+							onChange={ ( value ) =>
+								setAttributes( { separator: value } )
+							}
+						/>
+					) }
+					{ showStartTime && (
+						<TextControl
+							label={ __( 'Start date format', 'gatherpress' ) }
+							value={ startDateFormat }
+							placeholder={ `${ dateFormat } ${ timeFormat }` }
+							onChange={ ( value ) =>
+								setAttributes( { startDateFormat: value } )
+							}
+						/>
+					) }
+					{ showEndTime && (
+						<TextControl
+							label={ __( 'End date format', 'gatherpress' ) }
+							value={ endDateFormat }
+							placeholder={ `${ dateFormat } ${ timeFormat }` }
+							onChange={ ( value ) =>
+								setAttributes( { endDateFormat: value } )
+							}
+						/>
+					) }
+					<p className="components-base-control__help">
+						<a
+							href="https://wordpress.org/documentation/article/customize-date-and-time-format/"
+							target="_blank"
+							rel="noreferrer"
+						>
+							{ __(
+								'Date/time formatting documentation',
+								'gatherpress'
+							) }
+						</a>
+					</p>
+					<ToggleControl
+						label={ __( 'Append time zone', 'gatherpress' ) }
+						checked={
+							showTimezone
+								? 'yes' === showTimezone
+								: defaultShowTimezone
+						}
+						onChange={ ( value ) =>
+							setAttributes( {
+								showTimezone: value ? 'yes' : 'no',
+							} )
+						}
+					/>
+					<ToggleControl
+						label={ __( 'Link to event', 'gatherpress' ) }
+						checked={ isLink }
+						onChange={ () =>
+							setAttributes( { isLink: ! isLink } )
+						}
+					/>
+				</PanelBody>
+			</InspectorControls>
 		</div>
 	);
 };

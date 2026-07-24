@@ -8,13 +8,22 @@
 	"icon": "calendar",
 	"example": {},
 	"description": "Allows a member to add an event to their preferred calendar.",
-	"usesContext": [ "postId", "queryId" ],
+	"usesContext": [
+		"postId",
+		"postType",
+		"queryId"
+	],
 	"supports": {
+		"contentRole": true,
 		"gatherpress": {
 			"blockGuard": true,
 			"postIdOverride": true
 		},
-		"html": false
+		"html": false,
+		"interactivity": {
+			"clientNavigation": true
+		},
+		"listView": true
 	},
 	"textdomain": "gatherpress",
 	"editorScript": "file:./index.js"

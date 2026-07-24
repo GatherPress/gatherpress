@@ -7,7 +7,7 @@
  * rendering form fields with appropriate styles and validation attributes.
  *
  * @package GatherPress\Core
- * @since 1.0.0
+ * @since 0.33.0
  */
 
 namespace GatherPress\Core\Blocks;
@@ -21,13 +21,14 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
  * Class responsible for managing the "FormField" block and its functionality,
  * including dynamic rendering and attribute processing.
  *
- * @since 1.0.0
+ * @since 0.33.0
  */
-class Form_Field {
+final class Form_Field {
+
 	/**
 	 * Processed form field attributes with defaults applied.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @var array
 	 */
@@ -36,7 +37,7 @@ class Form_Field {
 	/**
 	 * Constant representing the Block Name.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @var string
 	 */
 	const BLOCK_NAME = 'gatherpress/form-field';
@@ -44,7 +45,7 @@ class Form_Field {
 	/**
 	 * CSS property format for color.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @var string
 	 */
 	const CSS_COLOR = 'color:%s';
@@ -52,7 +53,7 @@ class Form_Field {
 	/**
 	 * CSS property format for font size.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @var string
 	 */
 	const CSS_FONT_SIZE = 'font-size:%s';
@@ -60,7 +61,7 @@ class Form_Field {
 	/**
 	 * CSS property format for line height.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @var string
 	 */
 	const CSS_LINE_HEIGHT = 'line-height:%s';
@@ -70,12 +71,14 @@ class Form_Field {
 	 *
 	 * Initializes a FormField object with the provided block attributes.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @param array $attributes The block attributes array.
 	 */
 	public function __construct( array $attributes ) {
 		$this->attributes = $this->process_attributes( $attributes );
+
+		$this->maybe_prefill_field_value();
 	}
 
 	/**
@@ -86,7 +89,7 @@ class Form_Field {
 	 * and naming conventions. Generates a unique input ID and applies
 	 * fallback values for all attributes.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @param array $raw_attributes Raw attributes from the block editor.
 	 *
@@ -100,6 +103,7 @@ class Form_Field {
 			'label'                  => $raw_attributes['label'] ?? '',
 			'placeholder'            => $raw_attributes['placeholder'] ?? '',
 			'required'               => (bool) ( $raw_attributes['required'] ?? false ),
+			'prefill_current_user'   => (bool) ( $raw_attributes['prefillCurrentUser'] ?? false ),
 			'required_text'          => $raw_attributes['requiredText'] ?? __( '(required)', 'gatherpress' ),
 			'help_text'              => $raw_attributes['helpText'] ?? '',
 			'min_value'              => $raw_attributes['minValue'] ?? null,
@@ -135,12 +139,46 @@ class Form_Field {
 	 * a random number to ensure uniqueness across multiple
 	 * form fields on the same page.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @return string Unique input ID (e.g., 'gatherpress_123456789').
 	 */
 	private function get_input_id(): string {
 		return sprintf( 'gatherpress_%s', wp_rand() );
+	}
+
+	/**
+	 * Prefill the field value from the logged-in user.
+	 *
+	 * Applies only when the block's prefill toggle is on and a user is
+	 * logged in: text fields receive the user's display name, email
+	 * fields the account email address — trumping any authored default
+	 * value. Logged-out visitors fall back to the authored default (or
+	 * an empty field). Prefilling the email with the account address
+	 * also makes the account-linked RSVP path the default —
+	 * `Rsvp\Form::prepare_comment_data()` associates a submission with
+	 * the current user only when the submitted email matches their
+	 * account email.
+	 *
+	 * @since 0.35.0
+	 *
+	 * @return void
+	 */
+	private function maybe_prefill_field_value(): void {
+		if (
+			empty( $this->attributes['prefill_current_user'] )
+			|| ! is_user_logged_in()
+		) {
+			return;
+		}
+
+		$user = wp_get_current_user();
+
+		if ( 'email' === $this->attributes['field_type'] ) {
+			$this->attributes['field_value'] = $user->user_email;
+		} elseif ( 'text' === $this->attributes['field_type'] ) {
+			$this->attributes['field_value'] = $user->display_name;
+		}
 	}
 
 	/**
@@ -150,7 +188,7 @@ class Form_Field {
 	 * then formats it using the provided format string and adds it
 	 * to the styles array. Handles both numeric and string values.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @param array  $styles   Reference to the styles array to modify.
 	 * @param string $attr_key The attribute key to check in the attributes array.
@@ -170,7 +208,7 @@ class Form_Field {
 	 * Takes an array of CSS style declarations and formats them into
 	 * a properly escaped HTML style attribute string.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @param array $styles Array of CSS style declarations (e.g., ['color:red', 'font-size:16px']).
 	 *
@@ -186,7 +224,7 @@ class Form_Field {
 	 * Returns the field type from the processed attributes with
 	 * a fallback to 'text' if not specified.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @return string The field type (e.g., 'text', 'email', 'checkbox', 'radio').
 	 */
@@ -202,7 +240,7 @@ class Form_Field {
 	 * full styling including fonts, padding, and colors. All input
 	 * types receive border styling.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @return string Formatted CSS style attribute string or empty string if no styles.
 	 */
@@ -220,6 +258,18 @@ class Form_Field {
 			$this->add_style( $styles, 'input_border_radius', 'border-radius:%dpx' );
 			$this->add_style( $styles, 'field_text_color', self::CSS_COLOR );
 			$this->add_style( $styles, 'field_background_color', 'background-color:%s' );
+
+			// Match editor JS fallback: use transparent when no background color is set
+			// to prevent browser default white input background.
+			if ( empty( $this->attributes['field_background_color'] ) ) {
+				$styles[] = 'background-color:transparent';
+			}
+
+			// Match editor JS fallback: inherit text color when none is set.
+			if ( empty( $this->attributes['field_text_color'] ) ) {
+				$styles[] = 'color:inherit';
+			}
+
 			$this->add_style( $styles, 'field_width', 'width:%s%%' );
 			$this->add_style( $styles, 'input_border_width', 'border-width:%dpx' );
 			$this->add_style( $styles, 'border_color', 'border-color:%s' );
@@ -235,7 +285,7 @@ class Form_Field {
 	 * line height, and text color. Applied to all field types
 	 * that display labels.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @return string Formatted CSS style attribute string or empty string if no styles.
 	 */
@@ -254,7 +304,7 @@ class Form_Field {
 	 * and line height. Applied to wrapper elements that contain both
 	 * the label and required text.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @return string Formatted CSS style attribute string or empty string if no styles.
 	 */
@@ -273,7 +323,7 @@ class Form_Field {
 	 * Builds CSS styles for the required field indicator text,
 	 * typically displayed next to the field label.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @return string Formatted CSS style attribute string or empty string if no styles.
 	 */
@@ -291,7 +341,7 @@ class Form_Field {
 	 * Builds CSS styles for radio button option labels including
 	 * font size, line height, and text color. Only used for radio field types.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @return string Formatted CSS style attribute string or empty string if no styles.
 	 */
@@ -312,7 +362,7 @@ class Form_Field {
 	 * conditional layout classes. Inline layout is only applied to
 	 * text-based field types.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @return array Array of CSS class names for the wrapper element.
 	 */
@@ -338,7 +388,7 @@ class Form_Field {
 	 * using WordPress's get_block_wrapper_attributes() function with
 	 * field-specific CSS classes.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @return string Formatted HTML attributes string for the wrapper element.
 	 */
@@ -358,7 +408,7 @@ class Form_Field {
 	 * the field type. Includes common attributes like id, name, type, and
 	 * field-specific attributes like min/max values, placeholder, etc.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @return string Formatted HTML attributes string (e.g., ' id="field_123" type="text" name="email"').
 	 */
@@ -460,7 +510,7 @@ class Form_Field {
 	 * Determines the appropriate template file based on the field type.
 	 * Falls back to default.php if a field-specific template doesn't exist.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @return string The full path to the template file.
 	 */
@@ -480,7 +530,7 @@ class Form_Field {
 	/**
 	 * Renders the form field based on its type and attributes.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @return void
 	 */

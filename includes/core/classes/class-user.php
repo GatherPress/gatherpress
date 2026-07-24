@@ -8,7 +8,7 @@
  * settings fields on the user profile and saving these settings.
  *
  * @package GatherPress\Core
- * @since 1.0.0
+ * @since 0.28.0
  */
 
 namespace GatherPress\Core;
@@ -26,9 +26,10 @@ use WP_User;
  * managing user profiles, handling user permissions, and user notification settings.
  * It includes methods for rendering and saving user profile fields.
  *
- * @since 1.0.0
+ * @since 0.28.0
  */
-class User {
+final class User {
+
 	/**
 	 * Enforces a single instance of this class.
 	 */
@@ -53,7 +54,7 @@ class User {
 	 *
 	 * This method initializes the object and sets up necessary hooks.
 	 *
-	 * @since 1.0.0
+	 * @since 0.28.0
 	 */
 	protected function __construct() {
 		$this->setup_hooks();
@@ -64,7 +65,7 @@ class User {
 	 *
 	 * This method adds hooks for different purposes as needed.
 	 *
-	 * @since 1.0.0
+	 * @since 0.28.0
 	 *
 	 * @return void
 	 */
@@ -83,7 +84,7 @@ class User {
 	 *
 	 * This is a filter to get a user defined time format. 'gatherpress_time_format'
 	 *
-	 * @since 1.0.0
+	 * @since 0.29.0
 	 *
 	 * @param string $time_format The default time format.
 	 *
@@ -95,13 +96,13 @@ class User {
 		if ( $user_id ) {
 			$user_time_format = get_user_meta( $user_id, 'gatherpress_time_format', true );
 
-			if ( static::HOUR_12 === $user_time_format ) {
+			if ( self::HOUR_12 === $user_time_format ) {
 				$time_format = str_replace( 'G', 'g', $time_format );
 
-				if ( false === strpos( $time_format, 'a' ) ) {
+				if ( ! str_contains( $time_format, 'a' ) ) {
 					$time_format = str_replace( 'i', 'ia', $time_format );
 				}
-			} elseif ( static::HOUR_24 === $user_time_format ) {
+			} elseif ( self::HOUR_24 === $user_time_format ) {
 				$time_format = str_replace(
 					array(
 						'g',
@@ -126,7 +127,7 @@ class User {
 	 *
 	 * This is a filter to get a user defined timezone. 'gatherpress_timezone'
 	 *
-	 * @since 1.0.0
+	 * @since 0.29.0
 	 *
 	 * @param string $timezone The default timezone.
 	 *
@@ -149,9 +150,10 @@ class User {
 	 * This method centralizes the logic for checking opt-in status,
 	 * including handling defaults when no preference has been set.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @param int $user_id The user ID to check.
+	 *
 	 * @return bool True if the user has opted in, false otherwise.
 	 */
 	public function has_event_updates_opt_in( int $user_id ): bool {
@@ -163,10 +165,10 @@ class User {
 			 * Filters the default state of the event updates opt-in.
 			 *
 			 * This filter allows modification of the default opt-in state for compliance
-			 * with regional privacy laws (e.g., GDPR in Germany) that may require
-			 * opt-in consent to be unchecked by default.
+			 * with privacy laws such as the European Union's GDPR (known in Germany
+			 * as the DSGVO) that may require opt-in consent to be unchecked by default.
 			 *
-			 * @since 1.0.0
+			 * @since 0.28.0
 			 *
 			 * @param string $default_opt_in Default opt-in state ('1' for opted in, '0' for opted out).
 			 * @param int    $user_id        The user ID.

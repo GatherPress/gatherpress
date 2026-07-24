@@ -6,12 +6,20 @@ on:
   pull_request:
     paths:
     - '.github/workflows/coding-standards.yml'
+    - '.github/scripts/**'
     - 'includes/**'
     - 'src/**'
     - 'test/**'
     - 'package.*'
+    - 'composer.*'
+    - 'phpcs.ruleset.xml'
+    - '*.php'
     - '*.js'
     - '*.php'
+
+permissions:
+  contents: read
+
 jobs:
   phpcs:
     name: PHP Coding Standards
@@ -37,7 +45,7 @@ jobs:
       - name: Set up PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: '7.4'
+          php-version: '8.1'
           coverage: none
           tools: composer, cs2pr
 
@@ -91,7 +99,7 @@ jobs:
 
       - name: NPM install
         if: steps.node_modules-cache.outputs.cache-hit != 'true'
-        run: npm ci --legacy-peer-deps
+        run: npm ci
 
       # Creating a short lived node_modules cache
       - uses: actions/cache/save@v4
@@ -144,7 +152,7 @@ jobs:
 
       - name: NPM install
         if: steps.node_modules-cache.outputs.cache-hit != 'true'
-        run: npm ci --legacy-peer-deps
+        run: npm ci
 
       # Creating a short lived node_modules cache
       - uses: actions/cache/save@v4

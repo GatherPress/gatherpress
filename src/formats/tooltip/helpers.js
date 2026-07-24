@@ -1,5 +1,5 @@
 /**
- * Internal dependencies.
+ * Internal dependencies
  */
 import { DEFAULT_COLORS } from './constants';
 
@@ -7,6 +7,7 @@ import { DEFAULT_COLORS } from './constants';
  * Get tooltip attributes from the active format.
  *
  * @param {Object} activeFormat The active format object.
+ *
  * @return {Object} Object containing tooltip, textColor, and bgColor.
  */
 export function getTooltipAttributes( activeFormat ) {

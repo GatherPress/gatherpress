@@ -1,18 +1,18 @@
 /**
- * External dependencies.
+ * External dependencies
  */
 import { describe, expect, it } from '@jest/globals';
 
 /**
- * WordPress dependencies.
+ * WordPress dependencies
  */
 import { select, dispatch } from '@wordpress/data';
 
 /**
- * Internal dependencies.
+ * Internal dependencies
  */
 // Import the actual store to get coverage.
-import '../../../../../src/stores/venue';
+import '@src/stores/venue';
 
 describe( 'Venue store', () => {
 	const STORE_NAME = 'gatherpress/venue';
@@ -53,14 +53,6 @@ describe( 'Venue store', () => {
 
 			expect( result ).toBe( -74.006 );
 		} );
-
-		it( 'getMapCustomLatLong returns the mapCustomLatLong from state', () => {
-			dispatch( STORE_NAME ).updateMapCustomLatLong( true );
-
-			const result = select( STORE_NAME ).getMapCustomLatLong();
-
-			expect( result ).toBe( true );
-		} );
 	} );
 
 	describe( 'state changes', () => {
@@ -80,22 +72,12 @@ describe( 'Venue store', () => {
 			expect( longitude ).toBe( -0.1278 );
 		} );
 
-		it( 'updateMapCustomLatLong updates mapCustomLatLong in state', () => {
-			dispatch( STORE_NAME ).updateMapCustomLatLong( true );
-
-			const mapCustomLatLong = select( STORE_NAME ).getMapCustomLatLong();
-
-			expect( mapCustomLatLong ).toBe( true );
-		} );
-
 		it( 'can update all coordinates together', () => {
 			dispatch( STORE_NAME ).updateVenueLatitude( 48.8566 );
 			dispatch( STORE_NAME ).updateVenueLongitude( 2.3522 );
-			dispatch( STORE_NAME ).updateMapCustomLatLong( true );
 
 			expect( select( STORE_NAME ).getVenueLatitude() ).toBe( 48.8566 );
 			expect( select( STORE_NAME ).getVenueLongitude() ).toBe( 2.3522 );
-			expect( select( STORE_NAME ).getMapCustomLatLong() ).toBe( true );
 		} );
 
 		it( 'handles negative coordinates', () => {
@@ -110,11 +92,11 @@ describe( 'Venue store', () => {
 			dispatch( STORE_NAME ).updateVenueLatitude( 35.6762 );
 			dispatch( STORE_NAME ).updateVenueLongitude( 139.6503 );
 
-			// Update only mapCustomLatLong.
-			dispatch( STORE_NAME ).updateMapCustomLatLong( true );
+			// Update only latitude.
+			dispatch( STORE_NAME ).updateVenueLatitude( 40.7128 );
 
-			// Verify other properties are preserved.
-			expect( select( STORE_NAME ).getVenueLatitude() ).toBe( 35.6762 );
+			// Verify longitude is preserved.
+			expect( select( STORE_NAME ).getVenueLatitude() ).toBe( 40.7128 );
 			expect( select( STORE_NAME ).getVenueLongitude() ).toBe( 139.6503 );
 		} );
 	} );

@@ -3,7 +3,7 @@
  * Class handles unit tests for GatherPress\Core\Assets.
  *
  * @package GatherPress\Core
- * @since 1.0.0
+ * @since 0.27.0
  */
 
 namespace GatherPress\Tests\Core;
@@ -19,6 +19,7 @@ use PMC\Unit_Test\Utility;
  * @coversDefaultClass \GatherPress\Core\Assets
  */
 class Test_Assets extends Base {
+
 	/**
 	 * Coverage for setup_hooks.
 	 *
@@ -32,12 +33,6 @@ class Test_Assets extends Base {
 		$hooks    = array(
 			array(
 				'type'     => 'action',
-				'name'     => 'admin_print_scripts',
-				'priority' => PHP_INT_MIN,
-				'callback' => array( $instance, 'add_global_object' ),
-			),
-			array(
-				'type'     => 'action',
 				'name'     => 'admin_enqueue_scripts',
 				'priority' => 10,
 				'callback' => array( $instance, 'admin_enqueue_scripts' ),
@@ -46,7 +41,7 @@ class Test_Assets extends Base {
 				'type'     => 'action',
 				'name'     => 'enqueue_block_assets',
 				'priority' => 10,
-				'callback' => array( $instance, 'block_enqueue_scripts' ),
+				'callback' => array( $instance, 'register_block_assets' ),
 			),
 			array(
 				'type'     => 'action',
@@ -62,6 +57,12 @@ class Test_Assets extends Base {
 			),
 			array(
 				'type'     => 'action',
+				'name'     => 'enqueue_block_editor_assets',
+				'priority' => 10,
+				'callback' => array( $instance, 'enqueue_aql_integration' ),
+			),
+			array(
+				'type'     => 'action',
 				'name'     => 'init',
 				'priority' => 10,
 				'callback' => array( $instance, 'register_variation_assets' ),
@@ -69,14 +70,26 @@ class Test_Assets extends Base {
 			array(
 				'type'     => 'action',
 				'name'     => 'wp_head',
-				'priority' => PHP_INT_MIN,
-				'callback' => array( $instance, 'add_global_object' ),
+				'priority' => 10,
+				'callback' => array( $instance, 'add_interactivity_state' ),
 			),
 			array(
 				'type'     => 'action',
 				'name'     => 'admin_footer',
 				'priority' => 11,
 				'callback' => array( $instance, 'event_communication_modal' ),
+			),
+			array(
+				'type'     => 'action',
+				'name'     => 'admin_enqueue_scripts',
+				'priority' => 10,
+				'callback' => array( $instance, 'enqueue_timezone_shim' ),
+			),
+			array(
+				'type'     => 'action',
+				'name'     => 'wp_enqueue_scripts',
+				'priority' => 10,
+				'callback' => array( $instance, 'enqueue_timezone_shim' ),
 			),
 			array(
 				'type'     => 'filter',
@@ -97,23 +110,132 @@ class Test_Assets extends Base {
 	}
 
 	/**
-	 * Coverage for add_global_object method.
+	 * Coverage for enqueue_timezone_shim when wp-date isn't registered.
 	 *
-	 * @covers ::add_global_object
+	 * @covers ::enqueue_timezone_shim
 	 *
 	 * @return void
 	 */
-	public function test_add_global_object(): void {
-		$instance = Assets::get_instance();
-		$event_id = $this->mock->post(
-			array( 'post_type' => Event::POST_TYPE )
-		)->get()->ID;
-		$object   = Utility::buffer_and_return( array( $instance, 'add_global_object' ) );
+	public function test_enqueue_timezone_shim_bails_without_wp_date(): void {
+		$instance       = Assets::get_instance();
+		$was_registered = wp_script_is( 'wp-date', 'registered' );
 
-		$this->assertMatchesRegularExpression(
-			'#<script>window.GatherPress = {.*}</script>#',
-			$object,
-			'Failed to assert regex of global object matches.'
+		if ( $was_registered ) {
+			wp_deregister_script( 'wp-date' );
+		}
+
+		$instance->enqueue_timezone_shim();
+
+		$this->assertFalse( wp_script_is( 'wp-date', 'enqueued' ) );
+
+		// Leave the global script registry as we found it.
+		if ( $was_registered ) {
+			wp_default_packages_scripts( wp_scripts() );
+		}
+	}
+
+	/**
+	 * Coverage for enqueue_timezone_shim when wp-date is registered — enqueues
+	 * the shim and attaches the inline script that normalizes `UTC+0` / `UTC-0`.
+	 *
+	 * @covers ::enqueue_timezone_shim
+	 *
+	 * @return void
+	 */
+	public function test_enqueue_timezone_shim_enqueues_and_attaches_inline_script(): void {
+		$instance = Assets::get_instance();
+
+		if ( ! wp_script_is( 'wp-date', 'registered' ) ) {
+			// phpcs:ignore WordPress.WP.EnqueuedResourceParameters.NoExplicitVersion -- Test registration; no real asset.
+			wp_register_script( 'wp-date', '', array(), '1', false );
+		}
+
+		$instance->enqueue_timezone_shim();
+
+		$this->assertTrue( wp_script_is( 'wp-date', 'enqueued' ) );
+
+		$inline = wp_scripts()->get_data( 'wp-date', 'after' );
+		$joined = is_array( $inline ) ? implode( "\n", $inline ) : (string) $inline;
+
+		$this->assertStringContainsString( 'wp.date.setSettings', $joined );
+		$this->assertStringContainsString( 'UTC', $joined );
+	}
+
+	/**
+	 * Coverage for add_interactivity_state method.
+	 *
+	 * Regression for #1752: the eventApiUrl must be available on event
+	 * archives (and Query Loops), not only singular event pages — RSVP and
+	 * other interactive blocks render there too. The previous `is_singular()`
+	 * gate left `eventApiUrl` undefined on the archive, so the RSVP view
+	 * scripts requested `/event/undefined/nonce` (404) and every RSVP from an
+	 * archive failed.
+	 *
+	 * @covers ::add_interactivity_state
+	 *
+	 * @return void
+	 */
+	public function test_add_interactivity_state(): void {
+		$instance = Assets::get_instance();
+
+		// Visit the event archive — the context that previously bailed.
+		$this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get();
+		$this->go_to( get_post_type_archive_link( Event::POST_TYPE ) );
+
+		$instance->add_interactivity_state();
+		$state = wp_interactivity_state( 'gatherpress' );
+
+		$this->assertArrayHasKey(
+			'eventApiUrl',
+			$state,
+			'Failed to assert eventApiUrl is set in interactivity state on the event archive.'
+		);
+		$this->assertSame(
+			rest_url( sprintf( '%s/event', GATHERPRESS_REST_NAMESPACE ) ),
+			$state['eventApiUrl'],
+			'Failed to assert eventApiUrl matches rest_url() so it adapts to the permalink structure.'
+		);
+	}
+
+	/**
+	 * Coverage for add_interactivity_state method without pretty permalinks.
+	 *
+	 * Regression: eventApiUrl was previously built via
+	 * `home_url( 'wp-json/' . $slug )`, a hardcoded path that only resolves
+	 * when pretty permalinks are enabled. With the plain permalink structure,
+	 * WordPress serves the REST API via `?rest_route=` instead, so the
+	 * hardcoded `/wp-json/` path 404s. Using `rest_url()` adapts to either
+	 * structure.
+	 *
+	 * @covers ::add_interactivity_state
+	 *
+	 * @return void
+	 */
+	public function test_add_interactivity_state_without_pretty_permalinks(): void {
+		global $wp_rewrite;
+
+		$instance            = Assets::get_instance();
+		$permalink_structure = $wp_rewrite->permalink_structure;
+		$wp_rewrite->set_permalink_structure( '' );
+
+		$this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get();
+		$this->go_to( get_post_type_archive_link( Event::POST_TYPE ) );
+
+		$instance->add_interactivity_state();
+		$state    = wp_interactivity_state( 'gatherpress' );
+		$expected = rest_url( sprintf( '%s/event', GATHERPRESS_REST_NAMESPACE ) );
+
+		$wp_rewrite->set_permalink_structure( $permalink_structure );
+
+		$this->assertSame(
+			$expected,
+			$state['eventApiUrl'],
+			'Failed to assert eventApiUrl matches rest_url() when pretty permalinks are disabled.'
+		);
+		$this->assertStringContainsString(
+			'rest_route=',
+			$state['eventApiUrl'],
+			'Failed to assert eventApiUrl uses the ?rest_route= form without pretty permalinks.'
 		);
 	}
 
@@ -145,17 +267,51 @@ class Test_Assets extends Base {
 
 
 	/**
-	 * Coverage for block_enqueue_scripts.
+	 * Coverage for register_block_assets.
 	 *
-	 * @covers ::block_enqueue_scripts
+	 * Registers `gatherpress-utility-style` in every context and additionally
+	 * enqueues it in the block editor (where `is_admin()` is true) so the
+	 * stylesheet lands inside the editor canvas iframe via the
+	 * `enqueue_block_assets` hook.
+	 *
+	 * @covers ::register_block_assets
 	 *
 	 * @return void
 	 */
-	public function test_block_enqueue_scripts(): void {
+	public function test_register_block_assets(): void {
 		$instance = Assets::get_instance();
-		$instance->block_enqueue_scripts();
 
-		$this->assertTrue( wp_style_is( 'dashicons', 'enqueued' ) );
+		// Frontend context: style registered but not enqueued (the per-block
+		// `maybe_enqueue_styles` filter handles conditional frontend loading).
+		set_current_screen( 'front' );
+		wp_dequeue_style( 'gatherpress-utility-style' );
+
+		$instance->register_block_assets();
+
+		$this->assertTrue(
+			wp_style_is( 'gatherpress-utility-style', 'registered' ),
+			'Failed to assert gatherpress-utility-style is registered on frontend.'
+		);
+		$this->assertFalse(
+			wp_style_is( 'gatherpress-utility-style', 'enqueued' ),
+			'Failed to assert gatherpress-utility-style is not enqueued on frontend.'
+		);
+
+		// Admin / block-editor context: style is also enqueued so it reaches
+		// the editor canvas iframe (issue #1645).
+		set_current_screen( 'post.php' );
+		wp_dequeue_style( 'gatherpress-utility-style' );
+
+		$instance->register_block_assets();
+
+		$this->assertTrue(
+			wp_style_is( 'gatherpress-utility-style', 'enqueued' ),
+			'Failed to assert gatherpress-utility-style is enqueued in the block editor.'
+		);
+
+		// Reset for downstream tests.
+		set_current_screen( 'front' );
+		wp_dequeue_style( 'gatherpress-utility-style' );
 	}
 
 	/**
@@ -186,121 +342,6 @@ class Test_Assets extends Base {
 	}
 
 	/**
-	 * Coverage for localize method.
-	 *
-	 * @covers ::localize
-	 *
-	 * @return void
-	 */
-	public function test_localize(): void {
-		$instance = Assets::get_instance();
-		$event_id = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get()->ID;
-		$event    = new Event( $event_id );
-
-		$event->save_datetimes(
-			array(
-				'datetime_start' => '2020-05-11 15:00:00',
-				'datetime_end'   => '2020-05-12 17:00:00',
-				'timezone'       => 'America/New_York',
-			)
-		);
-
-		$output = Utility::invoke_hidden_method( $instance, 'localize', array( $event_id ) );
-
-		$expected_datetime = array(
-			'datetime_start'     => '2020-05-11 15:00:00',
-			'datetime_start_gmt' => '2020-05-11 19:00:00',
-			'datetime_end'       => '2020-05-12 17:00:00',
-			'datetime_end_gmt'   => '2020-05-12 21:00:00',
-			'timezone'           => 'America/New_York',
-		);
-
-		$this->assertSame(
-			$expected_datetime,
-			$output['eventDetails']['dateTime'],
-			'Failed to assert that datetime array matches.'
-		);
-		$this->assertEquals(
-			1,
-			$output['eventDetails']['hasEventPast'],
-			'Failed to assert that has_event_past is true'
-		);
-		$this->assertEquals( $event_id, $output['eventDetails']['postId'], 'Failed to assert that post_id matches.' );
-	}
-
-	/**
-	 * Coverage for unregister_blocks.
-	 *
-	 * @covers ::unregister_blocks
-	 *
-	 * @return void
-	 */
-	public function test_unregister_blocks_frontend(): void {
-		$instance = Assets::get_instance();
-
-		$blocks = Utility::invoke_hidden_method( $instance, 'unregister_blocks' );
-		$this->assertSame( array(), $blocks );
-		$this->mock->wp()->reset();
-	}
-
-	/**
-	 * Data provider for unregister_blocks_admin test.
-	 *
-	 * @return array
-	 */
-	public function date_unregister_blocks_admin(): array {
-		return array(
-			array(
-				'post',
-				array(
-					'gatherpress/online-event',
-					'gatherpress/venue',
-				),
-			),
-			array(
-				'page',
-				array(
-					'gatherpress/online-event',
-					'gatherpress/venue',
-				),
-			),
-			array(
-				'gatherpress_event',
-				array(),
-			),
-			array(
-				'gatherpress_venue',
-				array(
-					'gatherpress/online-event',
-				),
-			),
-		);
-	}
-
-	/**
-	 * Coverage for unregister_blocks.
-	 *
-	 * @param string $post_type       Post type.
-	 * @param array  $expected_blocks Array of blocks.
-	 *
-	 * @dataProvider date_unregister_blocks_admin
-	 * @covers ::unregister_blocks
-	 *
-	 * @return void
-	 */
-	public function test_unregister_blocks_admin( string $post_type, array $expected_blocks ): void {
-		$instance = Assets::get_instance();
-
-		$this->mock->post( array( 'post_type' => $post_type ) );
-		$this->mock->user( 'admin', 'wp-admin-page' );
-
-		$blocks = Utility::invoke_hidden_method( $instance, 'unregister_blocks' );
-		$this->assertSame( $expected_blocks, $blocks );
-
-		$this->mock->wp()->reset();
-	}
-
-	/**
 	 * Coverage for get_asset_data method.
 	 *
 	 * @covers ::get_asset_data
@@ -323,6 +364,68 @@ class Test_Assets extends Base {
 	}
 
 	/**
+	 * Coverage for get_asset_data when the asset file was already loaded.
+	 *
+	 * Regression for #1768: the method used require_once, which returns `true`
+	 * (not the array) when the file has already been loaded in the request.
+	 * `(array) true` is `[ 0 => true ]`, breaking the dependencies/version
+	 * lookups. Plain require always returns the array.
+	 *
+	 * @covers ::get_asset_data
+	 *
+	 * @return void
+	 */
+	public function test_get_asset_data_returns_array_when_file_already_loaded(): void {
+		$instance = Assets::get_instance();
+		$path     = GATHERPRESS_CORE_PATH . '/build/editor.asset.php';
+
+		// Simulate the asset file already being loaded earlier in the request.
+		require_once $path;
+
+		Utility::set_and_get_hidden_property( $instance, 'asset_data', array() );
+		$asset = Utility::invoke_hidden_method(
+			$instance,
+			'get_asset_data',
+			array( 'editor_already_loaded', $path )
+		);
+
+		$this->assertArrayHasKey(
+			'version',
+			$asset,
+			'get_asset_data should return the asset array even when the file was already loaded.'
+		);
+		$this->assertArrayHasKey(
+			'dependencies',
+			$asset,
+			'get_asset_data should expose dependencies even when the file was already loaded.'
+		);
+	}
+
+	/**
+	 * Coverage for get_asset_data when the asset file is missing.
+	 *
+	 * @covers ::get_asset_data
+	 *
+	 * @return void
+	 */
+	public function test_get_asset_data_returns_empty_array_for_missing_file(): void {
+		$instance = Assets::get_instance();
+
+		Utility::set_and_get_hidden_property( $instance, 'asset_data', array() );
+		$asset = Utility::invoke_hidden_method(
+			$instance,
+			'get_asset_data',
+			array( 'does_not_exist', GATHERPRESS_CORE_PATH . '/build/missing.asset.php' )
+		);
+
+		$this->assertSame(
+			array(),
+			$asset,
+			'get_asset_data should return an empty array when the asset file is missing.'
+		);
+	}
+
+	/**
 	 * Coverage for maybe_enqueue_styles method with GatherPress block.
 	 *
 	 * @covers ::maybe_enqueue_styles
@@ -333,7 +436,7 @@ class Test_Assets extends Base {
 		$instance = Assets::get_instance();
 
 		// First register the utility style.
-		$instance->block_enqueue_scripts();
+		$instance->register_block_assets();
 
 		$block_content = '<div class="wp-block-gatherpress-event-date">Test</div>';
 		$block         = array(
@@ -369,7 +472,7 @@ class Test_Assets extends Base {
 		$instance = Assets::get_instance();
 
 		// First register the utility style.
-		$instance->block_enqueue_scripts();
+		$instance->register_block_assets();
 
 		// Dequeue if it was enqueued by previous test.
 		wp_dequeue_style( 'gatherpress-utility-style' );
@@ -403,7 +506,7 @@ class Test_Assets extends Base {
 		$instance = Assets::get_instance();
 
 		// First register the utility style.
-		$instance->block_enqueue_scripts();
+		$instance->register_block_assets();
 
 		// Dequeue if it was enqueued by previous test.
 		wp_dequeue_style( 'gatherpress-utility-style' );
@@ -425,6 +528,71 @@ class Test_Assets extends Base {
 	}
 
 	/**
+	 * Coverage for maybe_enqueue_styles with a third-party prefix added via the
+	 * `gatherpress_asset_utility_style_block_prefixes` filter.
+	 *
+	 * @covers ::maybe_enqueue_styles
+	 *
+	 * @return void
+	 */
+	public function test_maybe_enqueue_styles_filter_adds_extra_prefix(): void {
+		$instance = Assets::get_instance();
+
+		$instance->register_block_assets();
+		wp_dequeue_style( 'gatherpress-utility-style' );
+
+		$callback = static function (): array {
+			return array( 'gatherpress-awesome/' );
+		};
+		add_filter( 'gatherpress_asset_utility_style_block_prefixes', $callback );
+
+		$block_content = '<div>Test</div>';
+		$block         = array( 'blockName' => 'gatherpress-awesome/showcase' );
+
+		$instance->maybe_enqueue_styles( $block_content, $block );
+
+		remove_filter( 'gatherpress_asset_utility_style_block_prefixes', $callback );
+
+		$this->assertTrue(
+			wp_style_is( 'gatherpress-utility-style', 'enqueued' ),
+			'Failed to assert gatherpress-utility-style is enqueued for a filter-added prefix.'
+		);
+	}
+
+	/**
+	 * `gatherpress/` is appended after the filter runs, so a filter that omits
+	 * (or replaces) the array still leaves GatherPress's own blocks covered.
+	 *
+	 * @covers ::maybe_enqueue_styles
+	 *
+	 * @return void
+	 */
+	public function test_maybe_enqueue_styles_filter_cannot_remove_gatherpress_prefix(): void {
+		$instance = Assets::get_instance();
+
+		$instance->register_block_assets();
+		wp_dequeue_style( 'gatherpress-utility-style' );
+
+		$callback = static function (): array {
+			return array();
+		};
+		add_filter( 'gatherpress_asset_utility_style_block_prefixes', $callback );
+
+		$block_content = '<div>Test</div>';
+		$block         = array( 'blockName' => 'gatherpress/event-date' );
+
+		$instance->maybe_enqueue_styles( $block_content, $block );
+
+		remove_filter( 'gatherpress_asset_utility_style_block_prefixes', $callback );
+
+		$this->assertTrue(
+			wp_style_is( 'gatherpress-utility-style', 'enqueued' ),
+			'Failed to assert gatherpress-utility-style is still enqueued for gatherpress/ blocks '
+			. 'when the filter returns an empty array.'
+		);
+	}
+
+	/**
 	 * Coverage for editor_enqueue_scripts method.
 	 *
 	 * @covers ::editor_enqueue_scripts
@@ -434,8 +602,12 @@ class Test_Assets extends Base {
 	public function test_editor_enqueue_scripts(): void {
 		$instance = Assets::get_instance();
 
-		// First register the utility style.
-		$instance->block_enqueue_scripts();
+		// First register the utility style. The utility-style enqueue itself
+		// moved into register_block_assets() so it loads on the
+		// `enqueue_block_assets` hook and reaches the editor canvas iframe
+		// (issue #1645); editor_enqueue_scripts() now only enqueues the
+		// editor script.
+		$instance->register_block_assets();
 
 		$this->assertFalse(
 			wp_script_is( 'gatherpress-editor', 'enqueued' ),
@@ -447,10 +619,6 @@ class Test_Assets extends Base {
 		$this->assertTrue(
 			wp_script_is( 'gatherpress-editor', 'enqueued' ),
 			'Failed to assert gatherpress-editor is enqueued.'
-		);
-		$this->assertTrue(
-			wp_style_is( 'gatherpress-utility-style', 'enqueued' ),
-			'Failed to assert gatherpress-utility-style is enqueued in editor.'
 		);
 	}
 
@@ -744,7 +912,7 @@ class Test_Assets extends Base {
 		$instance = Assets::get_instance();
 
 		// Test with a settings page hook.
-		$hook = 'gatherpress_event_page_gatherpress_general';
+		$hook = 'gatherpress_event_page_gatherpress_events_settings';
 
 		$this->assertFalse(
 			wp_style_is( 'gatherpress-settings-style', 'enqueued' ),
@@ -785,7 +953,7 @@ class Test_Assets extends Base {
 		$instance = Assets::get_instance();
 
 		// First register the utility style.
-		$instance->block_enqueue_scripts();
+		$instance->register_block_assets();
 
 		// Dequeue if it was enqueued by previous test.
 		wp_dequeue_style( 'gatherpress-utility-style' );
@@ -810,7 +978,7 @@ class Test_Assets extends Base {
 		$instance = Assets::get_instance();
 
 		// First register the utility style.
-		$instance->block_enqueue_scripts();
+		$instance->register_block_assets();
 
 		// Call enqueue_tooltip_assets twice - second call should return early.
 		Utility::invoke_hidden_method( $instance, 'enqueue_tooltip_assets' );
@@ -818,6 +986,94 @@ class Test_Assets extends Base {
 
 		// The test passes if no errors occur - the early return path is covered.
 		$this->assertTrue( true, 'Second call should return early without error.' );
+	}
+
+	/**
+	 * Coverage for enqueue_aql_integration when AQL is not active.
+	 *
+	 * @covers ::enqueue_aql_integration
+	 *
+	 * @return void
+	 */
+	public function test_enqueue_aql_integration_without_aql(): void {
+		$instance = Assets::get_instance();
+
+		// Ensure AQL is not registered.
+		wp_deregister_script( 'advanced-query-loop' );
+
+		$instance->enqueue_aql_integration();
+
+		$this->assertFalse(
+			wp_script_is( 'gatherpress-aql-integration', 'enqueued' ),
+			'AQL integration should not be enqueued when AQL plugin is not active.'
+		);
+	}
+
+	/**
+	 * Coverage for enqueue_aql_integration when AQL is active but asset file is missing.
+	 *
+	 * @covers ::enqueue_aql_integration
+	 *
+	 * @return void
+	 */
+	public function test_enqueue_aql_integration_missing_asset_file(): void {
+		$instance = Assets::get_instance();
+
+		// Register a fake AQL script to simulate the plugin being active.
+		wp_register_script( 'advanced-query-loop', 'https://example.com/aql.js', array(), '1.0.0', true );
+
+		// Use reflection to temporarily set path to a non-existent directory.
+		$reflection = new \ReflectionClass( $instance );
+		$property   = $reflection->getProperty( 'path' );
+		$property->setAccessible( true );
+		$original_path = $property->getValue( $instance );
+		$property->setValue( $instance, '/non/existent/path/' );
+
+		$instance->enqueue_aql_integration();
+
+		$this->assertFalse(
+			wp_script_is( 'gatherpress-aql-integration', 'enqueued' ),
+			'AQL integration should not be enqueued when asset file is missing.'
+		);
+
+		// Restore original path and clean up.
+		$property->setValue( $instance, $original_path );
+		wp_deregister_script( 'advanced-query-loop' );
+	}
+
+	/**
+	 * Coverage for enqueue_aql_integration when AQL is active.
+	 *
+	 * @covers ::enqueue_aql_integration
+	 *
+	 * @return void
+	 */
+	public function test_enqueue_aql_integration_with_aql(): void {
+		$instance = Assets::get_instance();
+
+		// Register a fake AQL script to simulate the plugin being active.
+		wp_register_script( 'advanced-query-loop', 'https://example.com/aql.js', array(), '1.0.0', true );
+
+		$instance->enqueue_aql_integration();
+
+		$this->assertTrue(
+			wp_script_is( 'gatherpress-aql-integration', 'enqueued' ),
+			'AQL integration should be enqueued when AQL plugin is active.'
+		);
+
+		// Verify AQL is a dependency.
+		$script = wp_scripts()->registered['gatherpress-aql-integration'] ?? null;
+		$this->assertNotNull( $script, 'Script should be registered.' );
+		$this->assertContains(
+			'advanced-query-loop',
+			$script->deps,
+			'AQL should be listed as a dependency.'
+		);
+
+		// Clean up.
+		wp_dequeue_script( 'gatherpress-aql-integration' );
+		wp_deregister_script( 'gatherpress-aql-integration' );
+		wp_deregister_script( 'advanced-query-loop' );
 	}
 
 	/**
@@ -853,7 +1109,7 @@ class Test_Assets extends Base {
 		$instance = Assets::get_instance();
 
 		// First register the utility style.
-		$instance->block_enqueue_scripts();
+		$instance->register_block_assets();
 
 		// Dequeue if it was enqueued by previous test.
 		wp_dequeue_style( 'gatherpress-utility-style' );
@@ -871,5 +1127,107 @@ class Test_Assets extends Base {
 			wp_style_is( 'gatherpress-utility-style', 'enqueued' ),
 			'Failed to assert gatherpress-utility-style is not enqueued without tooltip markup.'
 		);
+	}
+
+	/**
+	 * Coverage for get_block_variations.
+	 *
+	 * @covers ::get_block_variations
+	 *
+	 * @return void
+	 */
+	public function test_get_block_variations(): void {
+		$instance = Assets::get_instance();
+
+		$this->assertSame(
+			array(
+				'query',
+				'query-no-results',
+				'query-pagination',
+				'query-pagination-next',
+				'query-pagination-numbers',
+				'query-pagination-previous',
+			),
+			$instance->get_block_variations(),
+			'Failed to assert, to get all block variations from the "/src" directory.'
+		);
+	}
+
+	/**
+	 * Coverage for get_block_variations when directory doesn't exist.
+	 *
+	 * Covers: Early return when variations directory doesn't exist.
+	 *
+	 * @covers ::get_block_variations
+	 *
+	 * @return void
+	 */
+	public function test_get_block_variations_directory_not_exists(): void {
+		$instance         = Assets::get_instance();
+		$variations_dir   = sprintf( '%1$s/build/variations/core/', GATHERPRESS_CORE_PATH );
+		$temp_renamed_dir = sprintf( '%1$s/build/variations/core-temp-renamed/', GATHERPRESS_CORE_PATH );
+
+		// Temporarily rename the variations directory to simulate non-existence.
+		if ( file_exists( $variations_dir ) ) {
+			// phpcs:ignore WordPress.WP.AlternativeFunctions.rename_rename -- Necessary for testing.
+			rename( $variations_dir, $temp_renamed_dir );
+		}
+
+		// Reset the cached property to force a fresh check.
+		Utility::set_and_get_hidden_property( $instance, 'block_variation_names', array() );
+
+		// Now the directory doesn't exist, should return empty array.
+		$result = $instance->get_block_variations();
+
+		$this->assertSame( array(), $result, 'Should return empty array when variations directory does not exist.' );
+
+		// Restore the directory.
+		if ( file_exists( $temp_renamed_dir ) ) {
+			// phpcs:ignore WordPress.WP.AlternativeFunctions.rename_rename -- Necessary for testing.
+			rename( $temp_renamed_dir, $variations_dir );
+		}
+
+		// Reset the cache again for other tests.
+		Utility::set_and_get_hidden_property( $instance, 'block_variation_names', array() );
+	}
+
+	/**
+	 * Coverage for get_block_variations caching behavior.
+	 *
+	 * Covers: Caching of block variation names.
+	 *
+	 * @covers ::get_block_variations
+	 *
+	 * @return void
+	 */
+	public function test_get_block_variations_caching(): void {
+		$instance = Assets::get_instance();
+
+		// Reset the cache to ensure we're starting fresh.
+		Utility::set_and_get_hidden_property( $instance, 'block_variation_names', array() );
+
+		// Verify block_variation_names is empty initially.
+		$cache_before = Utility::get_hidden_property( $instance, 'block_variation_names' );
+		$this->assertEmpty( $cache_before );
+
+		// First call should populate the cache.
+		$first_result = $instance->get_block_variations();
+
+		// Verify cache is now populated (target code executed).
+		$cache_after_first = Utility::get_hidden_property( $instance, 'block_variation_names' );
+		$this->assertNotEmpty( $cache_after_first );
+
+		// Second call should use cached values (target code check causes early return from cache).
+		$second_result = $instance->get_block_variations();
+
+		// Verify cache wasn't modified by second call.
+		$cache_after_second = Utility::get_hidden_property( $instance, 'block_variation_names' );
+		$this->assertSame( $cache_after_first, $cache_after_second );
+
+		// Both results should be identical.
+		$this->assertSame( $first_result, $second_result, 'Should return cached variation names on subsequent calls.' );
+
+		// Verify the final result matches the cached data after array_filter.
+		$this->assertSame( array_filter( $cache_after_second ), $second_result );
 	}
 }

@@ -1,12 +1,13 @@
 /**
- * WordPress dependencies.
+ * WordPress dependencies
  */
 import { registerBlockType } from '@wordpress/blocks';
 import { mapMarker as icon } from '@wordpress/icons';
 
 /**
- * Internal dependencies.
+ * Internal dependencies
  */
+import './editor.scss';
 import edit from './edit';
 import metadata from './block.json';
 import variations from './variations';
@@ -14,7 +15,7 @@ import variations from './variations';
 /**
  * Register the Venue Detail block.
  *
- * @since 1.0.0
+ * @since 0.34.0
  */
 registerBlockType( metadata.name, {
 	icon,

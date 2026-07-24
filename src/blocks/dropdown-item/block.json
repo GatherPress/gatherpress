@@ -9,7 +9,8 @@
 	"attributes": {
 		"text": {
 			"type": "string",
-			"default": ""
+			"default": "",
+			"role": "content"
 		}
 	},
 	"parent": ["gatherpress/dropdown"],
@@ -19,6 +20,7 @@
 			"text": true
 		},
 		"html": false,
+		"interactivity": true,
 		"spacing": {
 			"padding": true,
 			"margin": true

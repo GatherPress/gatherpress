@@ -1,5 +1,5 @@
 /**
- * WordPress dependencies.
+ * WordPress dependencies
  */
 import { __ } from '@wordpress/i18n';
 import { useBlockProps, InspectorControls } from '@wordpress/block-editor';
@@ -13,7 +13,7 @@ import {
 } from '@wordpress/components';
 
 /**
- * Internal dependencies.
+ * Internal dependencies
  */
 import DefaultField from './types/default';
 import RadioField from './types/radio';
@@ -31,6 +31,7 @@ import FieldValue from './helpers';
  * @param {Object}   props               The block props.
  * @param {Object}   props.attributes    The block attributes.
  * @param {Function} props.setAttributes Function to set block attributes.
+ *
  * @return {JSX.Element} The edit component.
  */
 export default function Edit( { attributes, setAttributes } ) {
@@ -41,6 +42,7 @@ export default function Edit( { attributes, setAttributes } ) {
 		maxValue,
 		placeholder,
 		required,
+		prefillCurrentUser,
 		autocomplete,
 	} = attributes;
 
@@ -56,6 +58,7 @@ export default function Edit( { attributes, setAttributes } ) {
 	 * Generate field name from label.
 	 *
 	 * @param {string} labelValue The label value to convert.
+	 *
 	 * @return {string} The generated field name.
 	 */
 	const generateFieldName = ( labelValue ) => {
@@ -72,6 +75,7 @@ export default function Edit( { attributes, setAttributes } ) {
 	 * Get the default autocomplete value based on field type.
 	 *
 	 * @param {string} value - The field type.
+	 *
 	 * @return {string} The default autocomplete value.
 	 */
 	const getDefaultAutocomplete = ( value ) => {
@@ -140,6 +144,7 @@ export default function Edit( { attributes, setAttributes } ) {
 			<InspectorControls>
 				<PanelBody title={ __( 'Field Settings', 'gatherpress' ) }>
 					<SelectControl
+						__next40pxDefaultSize
 						label={ __( 'Field Type', 'gatherpress' ) }
 						value={ fieldType }
 						options={ [
@@ -178,6 +183,9 @@ export default function Edit( { attributes, setAttributes } ) {
 							setAttributes( {
 								fieldType: value,
 								fieldValue: '', // Reset fieldValue when type changes.
+								// The prefill source is type-specific, so a
+								// type change resets the toggle too.
+								prefillCurrentUser: false,
 								autocomplete: getDefaultAutocomplete( value ),
 							} );
 						} }
@@ -211,6 +219,37 @@ export default function Edit( { attributes, setAttributes } ) {
 								'Make this field required.',
 								'gatherpress',
 							) }
+						/>
+					) }
+
+					{ [ 'text', 'email' ].includes( fieldType ) && (
+						<ToggleControl
+							label={
+								'email' === fieldType
+									? __(
+										'Prefill with user email',
+										'gatherpress',
+									)
+									: __(
+										'Prefill with user name',
+										'gatherpress',
+									)
+							}
+							checked={ prefillCurrentUser }
+							onChange={ ( value ) =>
+								setAttributes( { prefillCurrentUser: value } )
+							}
+							help={
+								'email' === fieldType
+									? __(
+										'Prefill with the email address of the logged-in user, overriding the default value. Logged-out visitors see the default value.',
+										'gatherpress',
+									)
+									: __(
+										'Prefill with the display name of the logged-in user, overriding the default value. Logged-out visitors see the default value.',
+										'gatherpress',
+									)
+							}
 						/>
 					) }
 

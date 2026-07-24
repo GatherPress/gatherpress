@@ -10,81 +10,19 @@ import {
 	__experimentalHStack as HStack,
 	useNavigator,
 } from '@wordpress/components';
-import { useState } from '@wordpress/element';
-import { useSelect } from '@wordpress/data';
+import { useRef, useState } from '@wordpress/element';
+import { useSelect, useDispatch } from '@wordpress/data';
 import apiFetch from '@wordpress/api-fetch';
-import { useEntityProp, store as coreDataStore } from '@wordpress/core-data';
+import { store as coreDataStore } from '@wordpress/core-data';
 
 /**
  * Internal dependencies
  */
-import { CPT_EVENT, CPT_VENUE, TAX_VENUE } from '../helpers/namespace';
-import { isEventPostType } from '../helpers/event';
-import { getCurrentContextualPostId } from '../helpers/editor';
-
-/**
- * Geocodes an address using Nominatim OpenStreetMap API.
- *
- * @param {string} address - The full address to geocode.
- * @return {Promise<Object>} Promise resolving to { latitude, longitude, error } or { latitude: '', longitude: '', error: string } on error.
- */
-async function geocodeAddress( address ) {
-	if ( ! address || '' === address.trim() ) {
-		return { latitude: '', longitude: '', error: null };
-	}
-
-	try {
-		const response = await fetch(
-			`https://nominatim.openstreetmap.org/search?q=${ encodeURIComponent(
-				address
-			) }&format=geojson`
-		);
-
-		if ( ! response.ok ) {
-			return {
-				latitude: '',
-				longitude: '',
-				error: sprintf(
-					/* translators: %s: HTTP status text */
-					__( 'Geocoding failed: %s', 'gatherpress' ),
-					response.statusText
-				),
-			};
-		}
-
-		const data = await response.json();
-
-		if ( 0 < data.features.length ) {
-			const latitude = String(
-				data.features[ 0 ].geometry.coordinates[ 1 ]
-			);
-			const longitude = String(
-				data.features[ 0 ].geometry.coordinates[ 0 ]
-			);
-			return { latitude, longitude, error: null };
-		}
-
-		// No results found.
-		return {
-			latitude: '',
-			longitude: '',
-			error: __(
-				'Could not find location. Please check the address and try again.',
-				'gatherpress'
-			),
-		};
-	} catch ( error ) {
-		return {
-			latitude: '',
-			longitude: '',
-			error: sprintf(
-				/* translators: %s: Error message */
-				__( 'Geocoding error: %s', 'gatherpress' ),
-				error.message
-			),
-		};
-	}
-}
+import { usePostTypeLabel } from '../helpers/editor';
+import { getVenuePostType, getVenueTaxonomy } from '../helpers/venue';
+import { isPostTypeSupporting } from '../helpers/event';
+import { geocodeAddress } from '../helpers/geocoding';
+import AddressAutocompleteField from './AddressAutocompleteField';
 
 /**
  * Venue form component for creating or editing a venue.
@@ -92,9 +30,10 @@ async function geocodeAddress( address ) {
  * Renders a form with fields for venue name and address,
  * along with save and cancel buttons.
  *
- * @since 1.0.0
+ * @since 0.34.0
  *
  * @param {Object}   props                     Component props.
+ * @param {string}   props.newTitleLabel       The label for the venue title.
  * @param {string}   props.title               The venue title.
  * @param {Function} props.onChangeTitle       Callback when title changes.
  * @param {string}   props.titleError          Error message for title validation.
@@ -110,6 +49,7 @@ async function geocodeAddress( address ) {
  * @return {JSX.Element} The venue form component.
  */
 function VenueForm( {
+	newTitleLabel,
 	title,
 	onChangeTitle,
 	titleError,
@@ -127,16 +67,14 @@ function VenueForm( {
 			<div className="gatherpress-new-venue-form">
 				<TextControl
 					__next40pxDefaultSize
-					__nextHasNoMarginBottom
-					label={ __( 'Venue name', 'gatherpress' ) }
+					label={ newTitleLabel }
 					value={ title }
 					onChange={ onChangeTitle }
 					help={ titleError }
 					className={ titleError ? 'has-error' : '' }
 				/>
-				<TextControl
-					__next40pxDefaultSize
-					label={ __( 'Full Address', 'gatherpress' ) }
+				<AddressAutocompleteField
+					variant="settings"
 					value={ address }
 					onChange={ onChangeAddress }
 					help={ __(
@@ -183,7 +121,7 @@ function VenueForm( {
  * Handles the complete workflow of creating a new venue post,
  * including geocoding the address and updating event relationships.
  *
- * @since 1.0.0
+ * @since 0.34.0
  *
  * @param {Object} props        Component props.
  * @param {string} props.search Initial search text to populate the title.
@@ -195,34 +133,78 @@ function CreateVenueForm( { search, ...props } ) {
 	const [ address, setAddress ] = useState( '' );
 	const [ titleError, setTitleError ] = useState( '' );
 
-	const { lastError, isSaving } = useSelect(
+	// Use context post type if provided, otherwise fall back to the editor's current post type.
+	// This is necessary because CreateVenueForm can be rendered from slotfill.js without any props.
+	const currentPostType = useSelect(
+		( select ) =>
+			props?.context?.postType ||
+			select( 'core/editor' )?.getCurrentPostType(),
+		[ props?.context?.postType ]
+	);
+	const venuePostType = getVenuePostType( currentPostType );
+	const venueTaxonomy = getVenueTaxonomy( venuePostType );
+
+	// Read the singular label so the input-label reflects what the post type
+	// is actually called — a custom venue post type with
+	// `singular_name => 'Location'` shows "Location name" without any
+	// extra wiring (#1612).
+	const singularLabel = usePostTypeLabel(
+		'singular_name',
+		venuePostType,
+		__( 'Venue', 'gatherpress' )
+	);
+	const newTitleLabel = sprintf(
+		/* translators: %s: Singular post type label, e.g. "Venue". */
+		__( '%s name', 'gatherpress' ),
+		singularLabel
+	);
+
+	const { lastError, isSaving: isSavingEntityRecord } = useSelect(
 		( select ) => ( {
 			lastError: select( coreDataStore ).getLastEntitySaveError(
 				'postType',
-				CPT_VENUE
+				venuePostType
 			),
 			isSaving: select( coreDataStore ).isSavingEntityRecord(
 				'postType',
-				CPT_VENUE
+				venuePostType
 			),
 		} ),
-		[]
+		[ venuePostType ]
 	);
+
+	// The venue post is created via a raw apiFetch() call rather than
+	// saveEntityRecord(), so isSavingEntityRecord never reflects the
+	// in-flight request. Track it locally so the Save button disables
+	// and repeated clicks can't create duplicate venues. A ref is used
+	// alongside the state because React batches state updates: clicks
+	// fired synchronously (e.g. a rapid double-click) all run before a
+	// re-render lands, so a state-only guard would still let every one
+	// of them start the save flow.
+	const [ isCreating, setIsCreating ] = useState( false );
+	const isSavingRef = useRef( false );
+	const isSaving = isSavingEntityRecord || isCreating;
 
 	/**
 	 * Validates the venue title.
 	 *
 	 * @param {string} value - The title value to validate.
+	 *
 	 * @return {string} Error message if validation fails, empty string if valid.
 	 */
 	const validateTitle = ( value ) => {
 		if ( ! value || '' === value.trim() ) {
-			return __( 'Venue name is required.', 'gatherpress' );
+			return sprintf(
+				/* translators: %s: Singular post type label, e.g. "Venue". */
+				__( '%s name is required.', 'gatherpress' ),
+				singularLabel
+			);
 		}
 		if ( 2 > value.trim().length ) {
-			return __(
-				'Venue name must be at least 2 characters.',
-				'gatherpress'
+			return sprintf(
+				/* translators: %s: Singular post type label, e.g. "Venue". */
+				__( '%s name must be at least 2 characters.', 'gatherpress' ),
+				singularLabel
 			);
 		}
 		return '';
@@ -239,14 +221,17 @@ function CreateVenueForm( { search, ...props } ) {
 		setTitleError( error );
 	};
 
-	const cId = getCurrentContextualPostId( props?.context?.postId );
-
-	const [ , updateVenueTaxonomyIds ] = useEntityProp(
-		'postType',
-		CPT_EVENT,
-		TAX_VENUE,
-		cId
+	const venueRestBase = useSelect(
+		( select ) => {
+			const venuePostTypeObj = select( 'core' ).getPostType( venuePostType );
+			return venuePostTypeObj?.rest_base || venuePostType + 's';
+		},
+		[ venuePostType ]
 	);
+
+	const { editPost } = useDispatch( 'core/editor' );
+	const updateVenueTaxonomyIds = ( newIds ) =>
+		editPost( { [ venueTaxonomy ]: newIds } );
 
 	const { goTo } = useNavigator();
 
@@ -268,7 +253,7 @@ function CreateVenueForm( { search, ...props } ) {
 			const newAttributes = {
 				...blockProps.attributes,
 				selectedPostId: postId,
-				selectedPostType: CPT_VENUE,
+				selectedPostType: venuePostType,
 			};
 			blockProps.setAttributes( newAttributes );
 		}
@@ -279,12 +264,16 @@ function CreateVenueForm( { search, ...props } ) {
 	 *
 	 * Uses the new individual meta fields architecture.
 	 * Phone and website can be added later when editing the full venue post.
+	 * Structured-address fields (city, state, postcode, etc.) are populated
+	 * server-side by an async cron handler that fires when `gatherpress_address`
+	 * changes — they don't need to be sent in this initial POST.
 	 *
 	 * @param {string} newTitle   - The title of the new venue.
 	 * @param {string} newAddress - The address of the new venue.
 	 * @param {string} latitude   - Latitude coordinate (from geocoding).
 	 * @param {string} longitude  - Longitude coordinate (from geocoding).
-	 * @return {Object} The newly created venue post.
+	 *
+	 * @return {Promise<Object>} A promise that resolves to the newly created venue post.
 	 */
 	const createNewVenuePost = async (
 		newTitle,
@@ -292,32 +281,19 @@ function CreateVenueForm( { search, ...props } ) {
 		latitude = '',
 		longitude = ''
 	) => {
-		try {
-			const newPost = await apiFetch( {
-				path: `/wp/v2/${ CPT_VENUE }s`, // !! Watch out & beware of the 's' at the end. // @TODO Make this nicer.
-				method: 'POST',
-				data: {
-					title,
-					status: 'publish', // 'draft' is the default
-					meta: {
-						// Store venue information as JSON.
-						gatherpress_venue_information: JSON.stringify( {
-							fullAddress: newAddress,
-							latitude,
-							longitude,
-							phoneNumber: '',
-							website: '',
-						} ),
-					},
+		return apiFetch( {
+			path: `/wp/v2/${ venueRestBase }`,
+			method: 'POST',
+			data: {
+				title,
+				status: 'publish', // 'draft' is the default
+				meta: {
+					gatherpress_address: newAddress,
+					gatherpress_latitude: latitude,
+					gatherpress_longitude: longitude,
 				},
-			} );
-
-			// console.log(`${newPost.title.rendered} Venue saved successfully.`, newPost );
-			return newPost;
-		} catch ( error ) {
-			// console.error('Error creating post:', error);
-			throw error;
-		}
+			},
+		} );
 	};
 
 	/**
@@ -332,7 +308,7 @@ function CreateVenueForm( { search, ...props } ) {
 	) => {
 		try {
 			const terms = await apiFetch( {
-				path: `/wp/v2/${ TAX_VENUE }?slug=${ newPostSlug }`,
+				path: `/wp/v2/${ venueTaxonomy }?slug=${ newPostSlug }`,
 			} );
 
 			if ( 0 < terms.length ) {
@@ -401,21 +377,32 @@ function CreateVenueForm( { search, ...props } ) {
 	 * This function is called when the save button is clicked.
 	 */
 	const saveBogus = async () => {
-		if ( isEventPostType() ) {
-			// This should only run for the VenueTermsCombobox.
-			await updateVenueTermOnEventPost();
-		} else {
-			// This should only run for the VenuePostsCombobox.
-			await updateVenuePostOnBlockAttributes();
+		if ( isSavingRef.current ) {
+			return;
 		}
-		// In both cases, go home.
-		navigateBack();
+		isSavingRef.current = true;
+		setIsCreating( true );
+		try {
+			if ( isPostTypeSupporting( 'gatherpress-venue' ) ) {
+				// This should only run for the VenueTermsCombobox.
+				await updateVenueTermOnEventPost();
+			} else {
+				// This should only run for the VenuePostsCombobox.
+				await updateVenuePostOnBlockAttributes();
+			}
+			// In both cases, go home.
+			navigateBack();
+		} finally {
+			isSavingRef.current = false;
+			setIsCreating( false );
+		}
 	};
 
 	const hasValidationErrors = !! titleError;
 
 	return (
 		<VenueForm
+			newTitleLabel={ newTitleLabel }
 			title={ title ?? '' }
 			onChangeTitle={ handleTitleChange }
 			titleError={ titleError }

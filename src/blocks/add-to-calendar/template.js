@@ -1,5 +1,5 @@
 /**
- * WordPress dependencies.
+ * WordPress dependencies
  */
 import { __ } from '@wordpress/i18n';
 
@@ -21,7 +21,13 @@ const TEMPLATE = [
 			},
 		},
 		[
-			[ 'gatherpress/icon', { icon: 'calendar' } ],
+			[
+				'core/icon',
+				{
+					icon: 'core/calendar',
+					style: { dimensions: { width: '24px' } },
+				},
+			],
 			[
 				'gatherpress/dropdown',
 				{

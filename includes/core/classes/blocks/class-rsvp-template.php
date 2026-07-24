@@ -4,7 +4,7 @@
  * including preparation of its output and handling hooks for customization and interactivity.
  *
  * @package GatherPress\Core
- * @since 1.0.0
+ * @since 0.33.0
  */
 
 namespace GatherPress\Core\Blocks;
@@ -12,8 +12,8 @@ namespace GatherPress\Core\Blocks;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
-use GatherPress\Core\Block;
 use GatherPress\Core\Event;
+use GatherPress\Core\Rsvp;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Utility;
 use WP_Block;
@@ -28,9 +28,10 @@ use WP_HTML_Tag_Processor;
  *
  * It ensures seamless integration with WordPress's block editor and dynamic functionality.
  *
- * @since 1.0.0
+ * @since 0.33.0
  */
-class Rsvp_Template {
+final class Rsvp_Template {
+
 	/**
 	 * Enforces a single instance of this class.
 	 */
@@ -39,7 +40,7 @@ class Rsvp_Template {
 	/**
 	 * Constant representing the Block Name.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @var string
 	 */
 	const BLOCK_NAME = 'gatherpress/rsvp-template';
@@ -49,7 +50,7 @@ class Rsvp_Template {
 	 *
 	 * This method initializes the object and sets up necessary hooks.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 */
 	protected function __construct() {
 		$this->setup_hooks();
@@ -60,7 +61,7 @@ class Rsvp_Template {
 	 *
 	 * This method adds hooks for different purposes as needed.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @return void
 	 */
@@ -77,19 +78,18 @@ class Rsvp_Template {
 	 * This function checks if the `gatherpress/rsvp-template` block contains inner blocks and retrieves
 	 * their block names. It then enqueues the associated styles for each inner block dynamically.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @param string $block_content The content of the current block being rendered.
 	 *
 	 * @return string The filtered block content.
 	 */
 	public function ensure_block_styles_loaded( string $block_content ): string {
-		$block_instance = Block::get_instance();
-		$tag            = new WP_HTML_Tag_Processor( $block_content );
+		$tag = new WP_HTML_Tag_Processor( $block_content );
 
 		if ( $tag->next_tag() && ! empty( $tag->get_attribute( 'data-blocks' ) ) ) {
 			$inner_blocks = (array) json_decode( $tag->get_attribute( 'data-blocks' ), true );
-			$inner_blocks = $block_instance->get_block_names( $inner_blocks );
+			$inner_blocks = Utility::get_block_names( $inner_blocks );
 
 			foreach ( $inner_blocks as $inner_block ) {
 				$block_registry = WP_Block_Type_Registry::get_instance();
@@ -112,7 +112,7 @@ class Rsvp_Template {
 	 * found, a default template is added to maintain the block structure and enable
 	 * front-end API interactions.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @param string   $block_content The original block content.
 	 * @param array    $block         The parsed block data.
@@ -124,13 +124,17 @@ class Rsvp_Template {
 		$post_id = (int) $instance->context['postId'];
 		$event   = new Event( $post_id );
 
-		// Only process if we have a valid event post.
+		// Only process if the post type supports RSVP.
 		// Only check publish status if not in preview mode.
 		if (
-			Event::POST_TYPE !== get_post_type( $post_id ) ||
+			! post_type_supports( (string) get_post_type( $post_id ), 'gatherpress-rsvp' ) ||
 			( ! is_preview() && 'publish' !== get_post_status( $post_id ) )
 		) {
 			return $block_content;
+		}
+
+		if ( ! ( new Rsvp( $post_id ) )->is_enabled() ) {
+			return '';
 		}
 
 		$responses     = $event->rsvp->responses()['attending']['records'];
@@ -156,9 +160,10 @@ class Rsvp_Template {
 			JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT
 		);
 		$rsvp_response_template = sprintf(
-			'<script type="application/json" data-wp-interactive="gatherpress"'
-				. ' data-wp-watch="callbacks.renderBlocks">%s</script>',
-			$blocks
+			'<div hidden data-wp-interactive="gatherpress"'
+				. ' data-wp-watch="callbacks.renderBlocks"'
+				. ' data-block-template="%s"></div>',
+			esc_attr( $blocks )
 		);
 
 		return $block_content . $rsvp_response_template;
@@ -172,7 +177,7 @@ class Rsvp_Template {
 	 * rendering behavior. The block content is wrapped in a `div` with a `data-id` attribute
 	 * for identification.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @param array $parsed_block The parsed block data, typically from a block's JSON structure.
 	 * @param int   $response_id  The ID of the response used to populate the block's context.
@@ -204,7 +209,7 @@ class Rsvp_Template {
 				$parsed_block,
 				array( 'commentId' => $response_id )
 			)
-		)->render( array( 'dynamic' => false ) );
+		)->render( array( 'dynamic' => true ) );
 
 		// Re-add the filter after rendering to ensure it continues to apply to other blocks.
 		add_filter( $render_block_hook, array( $this, 'generate_rsvp_template_block' ), 10, 3 );
@@ -233,7 +238,7 @@ class Rsvp_Template {
 	 * - Replaces the `core/comment-author-name` block's text with "Anonymous"
 	 *   and converts it into a `core/paragraph` block.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 *
 	 * @param array $blocks      The array of blocks to process, passed by reference.
 	 * @param int   $response_id The ID of the response, used for rendering context.

@@ -15,6 +15,9 @@ parameters:
         maximumNumberOfProcesses: 1
         processTimeout: 300.0
 
+    # Analyze as PHP 8.1 — the plugin's minimum supported version.
+    phpVersion: 80100
+
     # the analysis level, from 0 (loose) to 9 (strict)
     # https://phpstan.org/user-guide/rule-levels
     level: 5
@@ -23,7 +26,8 @@ parameters:
         - includes/
 
     ignoreErrors:
-        # includes/core/classes/class-setup.php
+        # includes/core/classes/class-setup.php and includes/core/classes/class-coexistence-guard.php
         #
-        # A dev-only errors, which can occur if the gatherpress is symlinked into a WP instance or called via wp-env or Playground.
+        # Dev-only errors, which can occur if the gatherpress is symlinked into a WP instance or called via wp-env or Playground.
         - '#^Path in require_once\(\) "\./wp-admin/includes/upgrade\.php" is not a file or it does not exist\.$#'
+        - '#^Path in require_once\(\) "\./wp-admin/includes/plugin\.php" is not a file or it does not exist\.$#'

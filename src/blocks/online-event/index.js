@@ -1,9 +1,11 @@
 /**
- * External dependencies.
+ * External dependencies
  */
 import { registerBlockType } from '@wordpress/blocks';
+import { InnerBlocks, useBlockProps } from '@wordpress/block-editor';
+
 /**
- * Internal dependencies.
+ * Internal dependencies
  */
 import edit from './edit';
 import metadata from './block.json';
@@ -11,16 +13,19 @@ import metadata from './block.json';
 /**
  * Register the GatherPress Online Event block.
  *
- * This code registers the GatherPress Online Event block in the WordPress block editor.
- * It uses the block metadata from the 'block.json' file and associates it with the
- * edit component for rendering in the editor. The 'save' function is set to null as
- * the block doesn't have a front-end representation and is only used in the editor.
+ * Container block for online event display with icon and link.
  *
- * @since 1.0.0
+ * @since 0.27.0
  *
  * @return {void}
  */
 registerBlockType( metadata, {
 	edit,
-	save: () => null,
+	save: () => {
+		return (
+			<div { ...useBlockProps.save() }>
+				<InnerBlocks.Content />
+			</div>
+		);
+	},
 } );

@@ -1,10 +1,10 @@
 /**
- * WordPress dependencies.
+ * WordPress dependencies
  */
 import { store } from '@wordpress/interactivity';
 
 /**
- * Internal dependencies.
+ * Internal dependencies
  */
 import {
 	manageFocusTrap,
@@ -18,7 +18,13 @@ const { actions } = store( 'gatherpress', {
 				event.preventDefault();
 			}
 
-			element = element ?? event.target;
+			element = element ?? event?.target;
+
+			// Bail when called with neither an event nor an element (e.g. a
+			// querySelector miss at the call site) instead of throwing (#1719).
+			if ( ! element ) {
+				return;
+			}
 
 			const modalManager = element.closest(
 				'.wp-block-gatherpress-modal-manager',

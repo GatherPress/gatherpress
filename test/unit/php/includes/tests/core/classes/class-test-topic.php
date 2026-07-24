@@ -3,11 +3,12 @@
  * Class handles unit tests for GatherPress\Core\Topic.
  *
  * @package GatherPress\Core
- * @since 1.0.0
+ * @since 0.31.0
  */
 
 namespace GatherPress\Tests\Core;
 
+use GatherPress\Core\Event;
 use GatherPress\Core\Topic;
 use GatherPress\Tests\Base;
 
@@ -17,6 +18,7 @@ use GatherPress\Tests\Base;
  * @coversDefaultClass \GatherPress\Core\Topic
  */
 class Test_Topic extends Base {
+
 	/**
 	 * Coverage for __construct and setup_hooks.
 	 *
@@ -53,9 +55,29 @@ class Test_Topic extends Base {
 
 		$this->assertFalse( taxonomy_exists( Topic::TAXONOMY ), 'Failed to assert that taxonomy does not exist.' );
 
+		// Capture the pairings announced during registration (#1639).
+		$paired   = array();
+		$listener = static function ( $taxonomy, $object_type ) use ( &$paired ): void {
+			$paired[] = array( $taxonomy, $object_type );
+		};
+
+		add_action( 'registered_taxonomy_for_object_type', $listener, 10, 2 );
+
 		$instance->register_taxonomy();
 
+		remove_action( 'registered_taxonomy_for_object_type', $listener );
+
 		$this->assertTrue( taxonomy_exists( Topic::TAXONOMY ), 'Failed to assert that taxonomy exists.' );
+		$this->assertContains(
+			array( Topic::TAXONOMY, Event::POST_TYPE ),
+			$paired,
+			'Failed to assert that registered_taxonomy_for_object_type fired for the topic/event pairing.'
+		);
+		$this->assertContains(
+			Topic::TAXONOMY,
+			get_object_taxonomies( Event::POST_TYPE ),
+			'Failed to assert that the topic taxonomy is attached to the event post type.'
+		);
 	}
 
 	/**
@@ -114,6 +136,7 @@ class Test_Topic extends Base {
 		 * @param string $translation Translated text.
 		 * @param string $text        Text to translate.
 		 * @param string $context     Context information for the translators.
+		 *
 		 * @return string Translated text.
 		 */
 		add_filter( 'gettext_with_context_gatherpress', $filter, 10, 3 );

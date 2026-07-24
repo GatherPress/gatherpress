@@ -1,5 +1,5 @@
 /**
- * External dependencies.
+ * External dependencies
  */
 import { describe, expect, it, jest, beforeAll } from '@jest/globals';
 
@@ -11,15 +11,35 @@ jest.mock( '@wordpress/rich-text', () => ( {
 	registerFormatType: jest.fn( ( name, settings ) => {
 		registrationArgs = { name, settings };
 	} ),
+	applyFormat: jest.fn(),
+	removeFormat: jest.fn(),
+	getActiveFormat: jest.fn(),
+	useAnchor: jest.fn(),
+} ) );
+
+// Mock block-editor to avoid private-apis unlock error.
+jest.mock( '@wordpress/block-editor', () => ( {
+	RichTextToolbarButton: jest.fn( () => null ),
+	useCachedTruthy: jest.fn( ( val ) => val ),
+} ) );
+
+// Mock components to avoid deep imports.
+jest.mock( '@wordpress/components', () => ( {
+	Popover: jest.fn( () => null ),
+	TextControl: jest.fn( () => null ),
+	ColorPicker: jest.fn( () => null ),
+	Button: jest.fn( () => null ),
+	Flex: jest.fn( () => null ),
+	FlexItem: jest.fn( () => null ),
 } ) );
 
 // Mock the style import.
-jest.mock( '../../../../../../src/formats/tooltip/style.scss', () => ( {} ) );
+jest.mock( '@src/formats/tooltip/style.scss', () => ( {} ) );
 
 describe( 'Tooltip format registration', () => {
 	beforeAll( async () => {
 		// Import the module to trigger registration.
-		await import( '../../../../../../src/formats/tooltip/index' );
+		await import( '@src/formats/tooltip/index' );
 	} );
 
 	it( 'registers the tooltip format type', () => {

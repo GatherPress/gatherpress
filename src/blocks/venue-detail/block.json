@@ -7,7 +7,8 @@
 	"category": "gatherpress",
 	"icon": "location",
 	"description": "Display venue details like address, phone, or website.",
-	"usesContext": ["postId", "queryId"],
+	"parent": ["gatherpress/venue"],
+	"usesContext": ["postId", "postType", "queryId"],
 	"attributes": {
 		"content": {
 			"type": "string",
@@ -21,15 +22,21 @@
 			"type": "string",
 			"default": "text"
 		},
+		"linkTarget": {
+			"type": "string",
+			"default": "_blank"
+		},
+		"cleanUrl": {
+			"type": "boolean",
+			"default": true
+		},
 		"metadata": {
 			"type": "object",
 			"default": {}
 		}
 	},
 	"supports": {
-		"gatherpress": {
-			"postIdOverride": true
-		},
+		"contentRole": true,
 		"html": false,
 		"anchor": true,
 		"className": true,
@@ -70,6 +77,6 @@
 	},
 	"textdomain": "gatherpress",
 	"editorScript": "file:./index.js",
-	"style": "file:./style-index.css",
+	"editorStyle": "file:./index.css",
 	"render": "file:./render.php"
 }

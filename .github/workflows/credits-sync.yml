@@ -1,0 +1,190 @@
+name: Credits Sync
+
+# Auto-credit merged-PR contributors (#1828).
+#
+# When a PR into develop merges, the props-bot comment on it already resolves
+# every participant to a wp.org username (the hard part). This workflow takes
+# those usernames, drops anyone already credited for the current cycle, and
+# appends the rest to .github/scripts/release/credits/unreleased.json on a
+# fixed branch via a standing, auto-merging PR. At the next version bump,
+# `npm run version:bump` folds unreleased.json into the new version's credits
+# file and empties it.
+#
+# Design notes:
+# - The commit is created through the GraphQL API (createCommitOnBranch), so
+#   it is signed by GitHub and satisfies develop's signed-commit protection —
+#   that's what lets the standing PR auto-merge with no human step.
+# - Membership is checked against the newest credits file (leads + team +
+#   contributors) plus any pending entries already on the standing branch, so
+#   double-crediting can't happen even while the standing PR is open.
+# - The standing branch is rebuilt from develop's head on every run, with the
+#   pending entries re-applied as one fresh commit. Without the rebuild the
+#   branch accumulates merge conflicts: the standing PR squash-merges (its
+#   commits never land in develop's history) and version bumps rewrite
+#   unreleased.json on develop.
+# - Leads and team stay hand-curated; this only ever appends to the
+#   contributors long tail via unreleased.json.
+# - Contributors props-bot can't resolve (no GitHub link on their wp.org
+#   profile) are skipped with a log line — see docs/contributing.md for the
+#   manual fallback.
+#
+# Security: pull_request_target grants a write token, so this workflow never
+# checks out or executes code from the PR head — it checks out develop and
+# only reads PR metadata/comments via the API. Parsed usernames are
+# charset-validated before they touch a file.
+
+on:
+  pull_request_target:
+    types: [closed]
+    branches:
+      - develop
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: credits-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    name: Credit merged-PR contributors
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout develop
+        uses: actions/checkout@v4
+        with:
+          ref: develop
+
+      - name: Collect new contributors and update the standing PR
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          SYNC_BRANCH: credits/unreleased-sync
+          UNRELEASED_PATH: .github/scripts/release/credits/unreleased.json
+        run: |
+          set -euo pipefail
+
+          # 1. Parse the props-bot comment for resolved wp.org usernames.
+          props_line=$(gh api "repos/${REPO}/issues/${PR_NUMBER}/comments" \
+            --jq '[.[] | select(.user.login == "github-actions[bot]") | .body] | join("\n")' \
+            | grep -E '^Props .+\.$' | head -1 || true)
+
+          if [[ -z "${props_line}" ]]; then
+            echo "::notice::No props-bot props line found on PR #${PR_NUMBER}; nothing to credit."
+            exit 0
+          fi
+
+          echo "${props_line}" | sed 's/^Props //; s/\.$//' | tr ',' '\n' | tr -d ' ' \
+            | grep -E '^[a-z0-9._-]+$' | grep -v -- '-bot$' | sort -u > /tmp/props.txt
+
+          if [[ ! -s /tmp/props.txt ]]; then
+            echo "::notice::Props line contained no valid usernames; nothing to credit."
+            exit 0
+          fi
+          echo "Props usernames: $(paste -sd, /tmp/props.txt)"
+
+          # 2. Base state: develop's copy (this checkout) is always the base.
+          # The standing branch only contributes its not-yet-merged pending
+          # entries; its history is rebuilt from develop on every run (step
+          # 5). A long-lived branch drifts into merge conflicts otherwise:
+          # the standing PR squash-merges, so its commits never enter
+          # develop's history, and the version bump rewrites unreleased.json
+          # on develop out from under the branch.
+          cp "${UNRELEASED_PATH}" /tmp/unreleased.json
+
+          if gh api "repos/${REPO}/git/ref/heads/${SYNC_BRANCH}" > /dev/null 2>&1; then
+            branch_exists=1
+            gh api "repos/${REPO}/contents/${UNRELEASED_PATH}?ref=${SYNC_BRANCH}" \
+              --jq .content | base64 -d \
+              | jq -r '(.contributors // [])[]' | sort -u > /tmp/pending.txt
+          else
+            branch_exists=0
+            : > /tmp/pending.txt
+          fi
+
+          # 3. Membership: newest version file's full roster + develop's own
+          # unreleased entries. Pending branch entries are filtered against
+          # it too, so entries already consumed by a release are never
+          # re-proposed from the stale branch copy.
+          newest=$(ls .github/scripts/release/credits/*.json | grep -v unreleased | sort -V | tail -1)
+          echo "Roster source: ${newest}"
+          jq -r '[(.leads // [])[], (.team // [])[], (.contributors // [])[]] | .[]' "${newest}" > /tmp/roster.txt
+          jq -r '(.contributors // [])[]' /tmp/unreleased.json >> /tmp/roster.txt
+          sort -u /tmp/roster.txt -o /tmp/roster.txt
+
+          pending=$(comm -23 /tmp/pending.txt /tmp/roster.txt || true)
+          new_contributors=$(comm -23 /tmp/props.txt /tmp/roster.txt || true)
+          additions=$(printf '%s\n%s\n' "${pending}" "${new_contributors}" | sed '/^$/d' | sort -u)
+
+          if [[ -z "${additions}" ]]; then
+            echo "::notice::Everyone on PR #${PR_NUMBER} is already credited for this cycle."
+            exit 0
+          fi
+          echo "Crediting: $(echo "${additions}" | paste -sd, -)"
+
+          # 4. Append and write the updated staging file.
+          jq --argjson add "$(echo "${additions}" | jq -R . | jq -s .)" \
+            '.contributors = ((.contributors // []) + $add | unique)' \
+            /tmp/unreleased.json > /tmp/unreleased.new.json
+          printf '%s\n' "$(jq --indent 4 . /tmp/unreleased.new.json)" > /tmp/unreleased.final.json
+
+          # 5. Rebuild the standing branch from develop's head so the single
+          # commit below always sits on current develop and the standing PR
+          # can never conflict.
+          develop_sha=$(gh api "repos/${REPO}/git/ref/heads/develop" --jq .object.sha)
+
+          if [[ "${branch_exists}" == "0" ]]; then
+            gh api "repos/${REPO}/git/refs" \
+              -f ref="refs/heads/${SYNC_BRANCH}" -f sha="${develop_sha}" > /dev/null
+          else
+            gh api -X PATCH "repos/${REPO}/git/refs/heads/${SYNC_BRANCH}" \
+              -f sha="${develop_sha}" -F force=true > /dev/null
+          fi
+          head_sha="${develop_sha}"
+
+          # 6. Commit via GraphQL so GitHub signs it (develop requires signed
+          # commits; an unsigned CLI commit would block auto-merge).
+          contents_b64=$(base64 < /tmp/unreleased.final.json | tr -d '\n')
+          names=$(echo "${new_contributors}" | paste -sd, - | sed 's/,/, /g')
+
+          gh api graphql \
+            -f query='mutation ($repo: String!, $branch: String!, $oid: GitObjectID!, $headline: String!, $path: String!, $contents: Base64String!) {
+              createCommitOnBranch(input: {
+                branch: { repositoryNameWithOwner: $repo, branchName: $branch },
+                expectedHeadOid: $oid,
+                message: { headline: $headline },
+                fileChanges: { additions: [ { path: $path, contents: $contents } ] }
+              }) { commit { oid } }
+            }' \
+            -f repo="${REPO}" \
+            -f branch="${SYNC_BRANCH}" \
+            -f oid="${head_sha}" \
+            -f headline="Credit ${names} (PR #${PR_NUMBER})" \
+            -f path="${UNRELEASED_PATH}" \
+            -f contents="${contents_b64}" > /dev/null
+          echo "Signed commit pushed to ${SYNC_BRANCH}."
+
+          # 7. Open the standing PR when none exists, and keep auto-merge on.
+          pr_number=$(gh pr list --head "${SYNC_BRANCH}" --base develop --state open \
+            --json number --jq '.[0].number // empty')
+
+          if [[ -z "${pr_number}" ]]; then
+            pr_url=$(gh pr create \
+              --base develop \
+              --head "${SYNC_BRANCH}" \
+              --title "Credit new contributors" \
+              --body "Automated credits sync (#1828): appends newly-merged contributors to \`credits/unreleased.json\`. The next \`npm run version:bump\` folds these into the release's credits file. Commits are API-signed and this PR auto-merges once checks pass." \
+              --label "Skip Changelog")
+            pr_number=$(basename "${pr_url}")
+            echo "Opened standing PR #${pr_number}."
+          fi
+
+          # --delete-branch removes the standing branch once the auto-merge
+          # lands. It is recreated from develop's head on the next sync run
+          # (step 5), so the branch only exists while credits are pending.
+          gh pr merge "${pr_number}" --auto --squash --delete-branch
+          echo "Auto-merge enabled on PR #${pr_number}."

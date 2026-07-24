@@ -1,0 +1,4 @@
+Significance: patch
+Type: fixed
+
+Fire registered_taxonomy_for_object_type for the topic/event pairing by wiring the taxonomy explicitly, so extenders can hook the connection.

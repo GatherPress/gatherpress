@@ -1,5 +1,5 @@
 /**
- * WordPress dependencies.
+ * WordPress dependencies
  */
 import { useState, useCallback } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
@@ -24,7 +24,7 @@ import {
 import { comment } from '@wordpress/icons';
 
 /**
- * Internal dependencies.
+ * Internal dependencies
  */
 import { FORMAT_NAME, DEFAULT_COLORS } from './constants';
 import { getTooltipAttributes } from './helpers';
@@ -32,7 +32,7 @@ import { getTooltipAttributes } from './helpers';
 /**
  * Tooltip popover component for editing tooltip content and colors.
  *
- * @since 1.0.0
+ * @since 0.34.0
  *
  * @param {Object}   props              Component props.
  * @param {Function} props.onClose      Callback when popover closes.
@@ -68,10 +68,7 @@ function TooltipPopover( {
 	} );
 
 	const applyTooltip = useCallback( () => {
-		if ( ! tooltipText.trim() ) {
-			// Remove format if tooltip text is empty.
-			onChange( removeFormat( value, FORMAT_NAME ) );
-		} else {
+		if ( tooltipText.trim() ) {
 			// Build attributes object, only including colors if they differ from defaults.
 			// This allows theme CSS custom properties to control the default appearance.
 			const attributes = {
@@ -95,6 +92,9 @@ function TooltipPopover( {
 					attributes,
 				} )
 			);
+		} else {
+			// Remove format if tooltip text is empty.
+			onChange( removeFormat( value, FORMAT_NAME ) );
 		}
 		onClose();
 	}, [
@@ -129,7 +129,6 @@ function TooltipPopover( {
 						value={ tooltipText }
 						onChange={ setTooltipText }
 						placeholder={ __( 'Enter tooltip text…', 'gatherpress' ) }
-						__nextHasNoMarginBottom
 					/>
 				</FlexItem>
 
@@ -256,7 +255,7 @@ function TooltipPopover( {
  * This component renders the toolbar button and popover for adding/editing tooltips.
  * The tooltip button is disabled when the selected text is inside a link.
  *
- * @since 1.0.0
+ * @since 0.34.0
  *
  * @param {Object}   props            Component props.
  * @param {Object}   props.value      RichText value object.

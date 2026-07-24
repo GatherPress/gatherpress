@@ -6,7 +6,7 @@
  * that is not saved in WordPress' default db tables, within the GatherPress plugin.
  *
  * @package GatherPress\Core
- * @since 1.0.0
+ * @since 0.30.0
  */
 
 namespace GatherPress\Core;
@@ -19,13 +19,14 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
  *
  * Provides common migration methods.
  *
- * @since 1.0.0
+ * @since 0.30.0
  */
 class Migrate {
+
 	/**
 	 * List of non-existent post_meta keys with array values containing getter and setter callback definitions.
 	 *
-	 * @since 1.0.0
+	 * @since 0.30.0
 	 * @var array $pseudopostmetas
 	 */
 	protected array $pseudopostmetas = array(
@@ -39,7 +40,7 @@ class Migrate {
 	 * Returns a filterable list of data-names and their respective callbacks
 	 * to either get that data during export or set that data during import.
 	 *
-	 * @since 1.0.0
+	 * @since 0.30.0
 	 *
 	 * @return array
 	 */
@@ -56,7 +57,7 @@ class Migrate {
 		 *
 		 *   ```php
 		 *   \add_filter(
-		 *       'gatherpress_pseudopostmetas',
+		 *       'gatherpress_pseudo_post_metas',
 		 *       function ( array $pseudopostmetas ): array {
 		 *           $pseudopostmetas['my_gatherpress_extension_data_name'] = [
 		 *               'export_callback' => function ( WP_Post $post ): string {
@@ -76,11 +77,12 @@ class Migrate {
 		 *   );
 		 *   ```
 		 *
-		 * @since 1.0.0
+		 * @since 0.34.0
 		 *
 		 * @param  array $pseudopostmetas List of data-names and their respective export- and import-callbacks.
+		 *
 		 * @return array
 		 */
-		return (array) apply_filters( 'gatherpress_pseudopostmetas', $this->pseudopostmetas );
+		return (array) apply_filters( 'gatherpress_pseudo_post_metas', $this->pseudopostmetas );
 	}
 }

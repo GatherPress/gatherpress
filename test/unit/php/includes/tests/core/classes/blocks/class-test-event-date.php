@@ -3,7 +3,7 @@
  * Class handles unit tests for GatherPress\Core\Blocks\Event_Date.
  *
  * @package GatherPress\Core
- * @since 1.0.0
+ * @since 0.33.0
  */
 
 namespace GatherPress\Tests\Core\Blocks;
@@ -18,13 +18,14 @@ use GatherPress\Tests\Base;
  * @coversDefaultClass \GatherPress\Core\Blocks\Event_Date
  */
 class Test_Event_Date extends Base {
+
 	/**
 	 * Tests the setup_hooks method.
 	 *
 	 * Verifies that the appropriate filters are registered during setup,
 	 * ensuring the hooks are properly configured for the Event Date block.
 	 *
-	 * @since 1.0.0
+	 * @since 0.33.0
 	 * @covers ::__construct
 	 * @covers ::setup_hooks
 	 *
@@ -252,6 +253,61 @@ class Test_Event_Date extends Base {
 			'',
 			$result,
 			'Empty content should be returned as-is when block content is empty'
+		);
+	}
+
+	/**
+	 * Coverage for the rendered block with the isLink attribute enabled.
+	 *
+	 * Mirrors core/post-date's isLink behavior: the datetime output is
+	 * wrapped in a link to the event.
+	 *
+	 * @since 0.35.0
+	 *
+	 * @return void
+	 */
+	public function test_render_links_datetime_to_event_when_islink_set(): void {
+		$event_post = $this->mock->post(
+			array(
+				'post_title' => 'Linked Unit Test Event',
+				'post_type'  => Event::POST_TYPE,
+			)
+		)->get();
+
+		$this->go_to( get_permalink( $event_post->ID ) );
+
+		$output = do_blocks( '<!-- wp:gatherpress/event-date {"isLink":true} /-->' );
+
+		$this->assertStringContainsString(
+			sprintf( '<a href="%s">', esc_url( get_permalink( $event_post->ID ) ) ),
+			$output,
+			'isLink should wrap the datetime in a link to the event.'
+		);
+	}
+
+	/**
+	 * Coverage for the rendered block without the isLink attribute.
+	 *
+	 * @since 0.35.0
+	 *
+	 * @return void
+	 */
+	public function test_render_does_not_link_datetime_by_default(): void {
+		$event_post = $this->mock->post(
+			array(
+				'post_title' => 'Unlinked Unit Test Event',
+				'post_type'  => Event::POST_TYPE,
+			)
+		)->get();
+
+		$this->go_to( get_permalink( $event_post->ID ) );
+
+		$output = do_blocks( '<!-- wp:gatherpress/event-date /-->' );
+
+		$this->assertStringNotContainsString(
+			'<a href=',
+			$output,
+			'The datetime should not be linked when isLink is not set.'
 		);
 	}
 }

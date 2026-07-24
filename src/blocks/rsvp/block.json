@@ -8,7 +8,11 @@
 	"icon": "insert",
 	"example": {},
 	"description": "Enables members to easily confirm their attendance for an event.",
-	"usesContext": [ "postId", "queryId" ],
+	"usesContext": [
+		"postId",
+		"postType",
+		"queryId"
+	],
 	"attributes": {
 		"serializedInnerBlocks": {
 			"type": "string",
@@ -17,15 +21,30 @@
 		"selectedStatus": {
 			"type": "string",
 			"default": "no_status"
+		},
+		"patternPicked": {
+			"type": "boolean",
+			"default": false
 		}
 	},
 	"supports": {
+		"contentRole": true,
 		"gatherpress": {
 			"blockGuard": true,
 			"postIdOverride": true
 		},
 		"html": false,
-		"interactivity": true
+		"interactivity": true,
+		"layout": {
+			"allowEditing": true,
+			"allowSwitching": true,
+			"default": {
+				"type": "flex",
+				"justifyContent": "center",
+				"flexWrap": "wrap"
+			}
+		},
+		"listView": true
 	},
 	"textdomain": "gatherpress",
 	"editorScript": "file:./index.js",

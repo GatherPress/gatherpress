@@ -1,16 +1,118 @@
 /**
- * Internal dependencies.
+ * WordPress dependencies
  */
-import { getFromGlobal } from './globals';
+import { store } from '@wordpress/interactivity';
+import { speak } from '@wordpress/a11y';
+
+const { state: gatherPressState } = store( 'gatherpress' );
+
+/**
+ * Surface an RSVP request failure to the user.
+ *
+ * Logs the underlying error for debugging and shows a brief alert so a failed
+ * request doesn't leave the UI in a silent half-updated state. Mirrors the
+ * server-error handling in the rsvp-form block (#1719).
+ *
+ * The message is not wrapped in `__()`: this helper runs in the Interactivity
+ * API script-module graph (`wp-scripts build --experimental-modules`), which
+ * does not support `@wordpress/i18n` as a module dependency yet. The translated
+ * string is provided server-side via `wp_interactivity_state()` (see
+ * `Assets::add_interactivity_state()`), with an English fallback for contexts
+ * where the state is unavailable.
+ *
+ * @since 0.34.0
+ *
+ * @param {*} [error=null] Optional error to log for debugging.
+ *
+ * @return {void}
+ */
+function notifyRsvpFailure( error = null ) {
+	// eslint-disable-next-line no-console
+	console.warn( 'RSVP API request failed:', error );
+	// eslint-disable-next-line no-alert
+	alert(
+		gatherPressState.i18n?.rsvpFailed ??
+			'Sorry, there was an issue processing your RSVP. Please try again.'
+	);
+}
+
+/**
+ * Announce the result of a successful RSVP update to screen readers.
+ *
+ * The RSVP status swap, attendee count, and online-event-link reveal are all
+ * silent DOM updates driven by watchers — without an announcement, assistive
+ * technology gets no feedback that the RSVP was recorded (WCAG 4.1.3 Status
+ * Messages). `speak()` uses the core-managed live region, which is immune to
+ * the DOM re-insertion `renderRsvpBlock` performs on the block's own subtree.
+ *
+ * The message is assembled from the API response rather than the requested
+ * status, so a server-side bump to the waiting list announces correctly.
+ * Translated strings arrive via `wp_interactivity_state()` (the module graph
+ * cannot import `@wordpress/i18n` — see `notifyRsvpFailure()` above); if the
+ * state is unavailable, no announcement is made rather than announcing in the
+ * wrong language. The attendee count picks a singular or plural template
+ * client-side, mirroring the rsvp-count and guest-count-display blocks, and
+ * the placeholder replace tolerates positional forms (`%1$d`) that
+ * translations may use.
+ *
+ * The online-link sentence is only spoken when the link actually becomes
+ * available with this update: the online-event-link block initializes
+ * `onlineEventLink` in state to an empty string when it renders without a
+ * visible link, so a previous value of `''` plus a link in the response is
+ * the reveal transition. An undefined previous value means the block never
+ * initialized (not present on this page), and a non-empty previous value
+ * means the link was already visible (e.g. a guest-count update) — neither
+ * should re-announce it.
+ *
+ * @since 0.35.0
+ *
+ * @param {Object}           res                The successful RSVP API response.
+ * @param {string|undefined} previousOnlineLink The `onlineEventLink` state value
+ *                                              captured before this response was
+ *                                              merged into state.
+ *
+ * @return {void}
+ */
+function announceRsvpSuccess( res, previousOnlineLink ) {
+	const i18n = gatherPressState.i18n ?? {};
+	const statusMessages = {
+		attending: i18n.rsvpAttending,
+		waiting_list: i18n.rsvpWaitingList,
+		not_attending: i18n.rsvpNotAttending,
+	};
+	const parts = [ statusMessages[ res.status ] ];
+
+	const count = res.responses?.attending?.count ?? 0;
+	const countTemplate =
+		1 === count ? i18n.attendeeCountSingular : i18n.attendeeCountPlural;
+
+	if ( countTemplate ) {
+		parts.push( countTemplate.replace( /%(?:\d+\$)?d/, String( count ) ) );
+	}
+
+	if (
+		'' === previousOnlineLink &&
+		res.online_link &&
+		i18n.onlineLinkReady
+	) {
+		parts.push( i18n.onlineLinkReady );
+	}
+
+	const message = parts.filter( Boolean ).join( ' ' );
+
+	if ( message ) {
+		speak( message, 'polite' );
+	}
+}
 
 /**
  * Initializes the post context within the application state.
  *
  * This function ensures that the given `postId` has an entry in the `state.posts` object.
- * If no entry exists, it creates one using the `eventDetails` global, which provides
- * initial data for event responses, the current user's RSVP status, and other RSVP-related details.
+ * If no entry exists, it creates one with default values for event responses,
+ * the current user's RSVP status, and other RSVP-related details.
  *
- * @since 1.0.0
+ * @since 0.33.0
  *
  * @param {Object} state  - The application state object to be updated.
  *                        Should contain a `posts` property.
@@ -68,7 +170,7 @@ export function initPostContext( state, postId ) {
  * request failures gracefully. The nonce is required for authenticated AJAX requests
  * to WordPress REST API endpoints.
  *
- * @since 1.0.0
+ * @since 0.33.0
  *
  * @return {Promise<string|null>} A promise that resolves to the nonce string on success,
  *                                or null if the request fails.
@@ -99,7 +201,7 @@ export const getNonce = ( () => {
 			return noncePromise;
 		}
 
-		noncePromise = fetch( getFromGlobal( 'urls.eventApiUrl' ) + '/nonce', {
+		noncePromise = fetch( gatherPressState.eventApiUrl + '/nonce', {
 			method: 'GET',
 			credentials: 'same-origin',
 		} )
@@ -135,7 +237,7 @@ export const getNonce = ( () => {
  * with invalid statuses (`no_status`, `waiting_list`). If the nonce expires during
  * the request, it automatically retries once with a fresh nonce.
  *
- * @since 1.0.0
+ * @since 0.33.0
  *
  * @param {number}      postId                 - The ID of the post for which the RSVP is being updated.
  * @param {Object}      args                   - An object containing the RSVP details.
@@ -184,7 +286,7 @@ export async function sendRsvpApiRequest(
 		}
 
 		const response = await fetch(
-			getFromGlobal( 'urls.eventApiUrl' ) + '/rsvp',
+			gatherPressState.eventApiUrl + '/rsvp',
 			{
 				method: 'POST',
 				headers: {
@@ -214,22 +316,25 @@ export async function sendRsvpApiRequest(
 	try {
 		const res = await makeRequest();
 
-		if ( res.success ) {
-			if ( state ) {
-				// eslint-disable-next-line no-console
-				console.log( '[RSVP API] Response received:', {
-					postId,
-					status: res.status,
-					onlineLink: res.online_link,
-					fullResponse: res,
-				} );
+		// `makeRequest` resolves to undefined when the nonce can't be fetched,
+		// and to a `{ success: false }` / error payload when the server (or a
+		// proxy/WAF returning non-JSON) rejects the request. Guard against both
+		// so a failed request surfaces an error instead of throwing on
+		// `res.success` and leaving the button hidden (#1719).
+		if ( res?.success ) {
+			// Captured before the state merge below overwrites it: the
+			// announcement only mentions the online link when it transitions
+			// from initialized-but-empty to present (see announceRsvpSuccess).
+			const previousOnlineLink =
+				state?.posts?.[ postId ]?.onlineEventLink;
 
+			if ( state ) {
 				state.posts[ postId ] = {
 					...state.posts[ postId ],
 					eventResponses: {
-						attending: res.responses.attending.count,
-						waitingList: res.responses.waiting_list.count,
-						notAttending: res.responses.not_attending.count,
+						attending: res.responses?.attending?.count ?? 0,
+						waitingList: res.responses?.waiting_list?.count ?? 0,
+						notAttending: res.responses?.not_attending?.count ?? 0,
 					},
 					currentUser: {
 						status: res.status,
@@ -238,19 +343,29 @@ export async function sendRsvpApiRequest(
 					},
 					onlineEventLink: res.online_link || '',
 				};
-
-				// eslint-disable-next-line no-console
-				console.log( '[RSVP API] State updated:', state.posts[ postId ] );
 			}
+
+			announceRsvpSuccess( res, previousOnlineLink );
 
 			if ( 'function' === typeof onSuccess ) {
-				onSuccess( res );
+				try {
+					onSuccess( res );
+				} catch ( error ) {
+					// The RSVP request itself succeeded — a failure while
+					// updating the UI afterward must not be reported to the
+					// user as a failed request (#1719).
+					// eslint-disable-next-line no-console
+					console.warn(
+						'RSVP post-success UI update failed:',
+						error,
+					);
+				}
 			}
+		} else {
+			notifyRsvpFailure();
 		}
 	} catch ( error ) {
-		// Handle error silently - log for debugging but don't interrupt user.
-		// eslint-disable-next-line no-console
-		console.warn( 'RSVP API request failed:', error );
+		notifyRsvpFailure( error );
 	} finally {
 		// Always remove loading class when request completes.
 		if ( loadingElement ) {
@@ -267,7 +382,7 @@ export async function sendRsvpApiRequest(
  * when the `Escape` key is pressed or when the function is explicitly
  * invoked.
  *
- * @since 1.0.0
+ * @since 0.33.0
  *
  * @param {HTMLElement[]} focusableElements - An array of focusable elements.
  *                                          These elements will be used to define
@@ -285,22 +400,22 @@ export async function sendRsvpApiRequest(
  */
 export function manageFocusTrap( focusableElements ) {
 	if ( ! focusableElements || 0 === focusableElements.length ) {
-		return () => {}; // Return an empty cleanup function if no elements..
+		return () => {}; // Return an empty cleanup function if no elements.
 	}
 
 	const isElementVisible = ( element ) => {
 		return (
 			null !== element.offsetParent && // Excludes elements with `display: none`.
 			'hidden' !== window.getComputedStyle( element ).visibility && // Excludes elements with `visibility: hidden`.
-			'0' !== window.getComputedStyle( element ).opacity // Excludes fully transparent elements..
+			'0' !== window.getComputedStyle( element ).opacity // Excludes fully transparent elements.
 		);
 	};
 
-	// Filter out hidden elements..
+	// Filter out hidden elements.
 	const visibleFocusableElements = focusableElements.filter( isElementVisible );
 
 	if ( 0 === visibleFocusableElements.length ) {
-		return () => {}; // No visible elements, no trap needed..
+		return () => {}; // No visible elements, no trap needed.
 	}
 
 	const firstFocusableElement = visibleFocusableElements[ 0 ];
@@ -309,13 +424,13 @@ export function manageFocusTrap( focusableElements ) {
 	const handleFocusTrap = ( e ) => {
 		if ( 'Tab' === e.key ) {
 			if (
-				e.shiftKey && // Shift + Tab..
+				e.shiftKey && // Shift + Tab.
 				firstFocusableElement.ownerDocument.activeElement === firstFocusableElement
 			) {
 				e.preventDefault();
 				lastFocusableElement.focus();
 			} else if (
-				! e.shiftKey && // Tab..
+				! e.shiftKey && // Tab.
 				lastFocusableElement.ownerDocument.activeElement === lastFocusableElement
 			) {
 				e.preventDefault();
@@ -326,7 +441,7 @@ export function manageFocusTrap( focusableElements ) {
 
 	const handleEscapeKey = ( e ) => {
 		if ( 'Escape' === e.key ) {
-			cleanup(); // Trigger cleanup on Escape key..
+			cleanup(); // Trigger cleanup on Escape key.
 		}
 	};
 
@@ -335,11 +450,11 @@ export function manageFocusTrap( focusableElements ) {
 		document.removeEventListener( 'keydown', handleEscapeKey );
 	};
 
-	// Attach the event listeners for focus trap..
+	// Attach the event listeners for focus trap.
 	document.addEventListener( 'keydown', handleFocusTrap );
 	document.addEventListener( 'keydown', handleEscapeKey );
 
-	// Return a cleanup function for the caller..
+	// Return a cleanup function for the caller.
 	return cleanup;
 }
 
@@ -352,10 +467,10 @@ export function manageFocusTrap( focusableElements ) {
  */
 export function setupCloseHandlers( elementSelector, contentSelector, onClose ) {
 	const handleClose = ( element ) => {
-		// Remove the visible class..
+		// Remove the visible class.
 		element.classList.remove( 'gatherpress--is-visible' );
 
-		// Execute the custom close callback..
+		// Execute the custom close callback.
 		if ( 'function' === typeof onClose ) {
 			onClose( element );
 		}
@@ -392,11 +507,11 @@ export function setupCloseHandlers( elementSelector, contentSelector, onClose ) 
 		} );
 	};
 
-	// Attach event listeners..
+	// Attach event listeners.
 	document.addEventListener( 'keydown', handleEscapeKey );
 	document.addEventListener( 'click', handleOutsideClick );
 
-	// Return a cleanup function to remove event listeners if needed..
+	// Return a cleanup function to remove event listeners if needed.
 	return () => {
 		document.removeEventListener( 'keydown', handleEscapeKey );
 		document.removeEventListener( 'click', handleOutsideClick );

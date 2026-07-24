@@ -1,0 +1,4 @@
+Significance: minor
+Type: added
+
+Added "Add new event" and "Add new venue" to the editor's command palette, with venue creation handled inline without leaving the post.

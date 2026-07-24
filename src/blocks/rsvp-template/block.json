@@ -9,13 +9,27 @@
 	"example": {},
 	"description": "Define a reusable template for RSVP entries dynamically populated with data.",
 	"supports": {
-		"html": false
+		"contentRole": true,
+		"html": false,
+		"interactivity": true,
+		"listView": true
 	},
-	"usesContext": [ "gatherpress/rsvpResponses", "gatherpress/rsvpLimitEnabled", "gatherpress/rsvpLimit", "postId" ],
-	"parent": [ "core/group" ],
-	"ancestor": [ "core/rsvp-response" ],
+	"usesContext": [
+		"gatherpress/rsvpResponses",
+		"gatherpress/rsvpLimitEnabled",
+		"gatherpress/rsvpLimit",
+		"postId"
+	],
+	"parent": [
+		"core/group"
+	],
+	"ancestor": [
+		"core/rsvp-response"
+	],
 	"textdomain": "gatherpress",
 	"editorScript": "file:./index.js",
 	"style": "file:./style-index.css",
-	"viewScriptModule": [ "file:./view.js" ]
+	"viewScriptModule": [
+		"file:./view.js"
+	]
 }

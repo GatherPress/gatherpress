@@ -1,10 +1,10 @@
 /**
- * WordPress dependencies.
+ * WordPress dependencies
  */
 import { store, getElement } from '@wordpress/interactivity';
 
 /**
- * Internal dependencies.
+ * Internal dependencies
  */
 import {
 	manageFocusTrap,
@@ -19,77 +19,74 @@ const { actions } = store( 'gatherpress', {
 			}
 		},
 		linkHandler( event ) {
-			// Prevent the default link behavior
 			actions.preventDefault( event );
 
-			// Get the clicked element
 			const element = getElement();
-
-			// Find the parent `.wp-block-gatherpress-dropdown`
 			const dropdownParent = element.ref.closest(
 				'.wp-block-gatherpress-dropdown',
 			);
 
-			// If the dropdown is in select mode
-			if ( 'select' === dropdownParent?.dataset.dropdownMode ) {
-				// Get the dropdown menu and trigger
-				const dropdownMenu = dropdownParent.querySelector(
-					'.wp-block-gatherpress-dropdown__menu',
-				);
-				const dropdownTrigger = dropdownParent.querySelector(
-					'.wp-block-gatherpress-dropdown__trigger',
-				);
+			// Bail unless the dropdown is in select mode and the click landed
+			// on a non-disabled item — flattens the original four-deep nest
+			// into early returns so the per-item update can stay readable.
+			if ( 'select' !== dropdownParent?.dataset.dropdownMode ) {
+				return;
+			}
 
-				// If the clicked anchor is already disabled, prevent further action
-				const clickedItem = element.ref.closest(
-					'.wp-block-gatherpress-dropdown-item',
-				);
-				if ( clickedItem ) {
-					const clickedAnchor = clickedItem.querySelector( 'a' );
-					if ( clickedAnchor?.classList.contains( 'gatherpress--is-disabled' ) ) {
-						return;
-					}
+			const clickedItem = element.ref.closest(
+				'.wp-block-gatherpress-dropdown-item',
+			);
 
-					// Disable the clicked item
-					if ( clickedAnchor ) {
-						clickedAnchor.classList.add( 'gatherpress--is-disabled' );
-						clickedAnchor.setAttribute( 'tabindex', '-1' );
-						clickedAnchor.setAttribute( 'aira-disabled', 'true' );
-					}
+			if ( ! clickedItem ) {
+				return;
+			}
 
-					// Enable siblings
-					const siblingItems = dropdownMenu.querySelectorAll(
-						'.wp-block-gatherpress-dropdown-item',
-					);
+			const clickedAnchor = clickedItem.querySelector( 'a' );
 
-					siblingItems.forEach( ( sibling ) => {
-						const siblingAnchor = sibling.querySelector( 'a' );
+			if ( clickedAnchor?.classList.contains( 'gatherpress--is-disabled' ) ) {
+				return;
+			}
 
-						if ( siblingAnchor && sibling !== clickedItem ) {
-							siblingAnchor.classList.remove(
-								'gatherpress--is-disabled',
-							);
-							siblingAnchor.removeAttribute( 'tabindex' );
-							siblingAnchor.removeAttribute( 'aria-disabled' );
-						}
-					} );
+			const dropdownMenu = dropdownParent.querySelector(
+				'.wp-block-gatherpress-dropdown__menu',
+			);
+			const dropdownTrigger = dropdownParent.querySelector(
+				'.wp-block-gatherpress-dropdown__trigger',
+			);
 
-					// Update the dropdown trigger text
-					if ( dropdownTrigger && clickedAnchor ) {
-						dropdownTrigger.textContent =
-							clickedAnchor.textContent.trim();
-					}
+			// Disable the clicked item.
+			if ( clickedAnchor ) {
+				clickedAnchor.classList.add( 'gatherpress--is-disabled' );
+				clickedAnchor.setAttribute( 'tabindex', '-1' );
+				clickedAnchor.setAttribute( 'aria-disabled', 'true' );
+			}
 
-					// Close the dropdown menu
-					if ( dropdownMenu ) {
-						dropdownMenu.classList.remove(
-							'gatherpress--is-visible',
-						);
+			// Enable sibling items.
+			const siblingItems = dropdownMenu.querySelectorAll(
+				'.wp-block-gatherpress-dropdown-item',
+			);
 
-						dropdownTrigger.setAttribute( 'aria-expanded', 'false' );
-						dropdownTrigger.focus();
-					}
+			siblingItems.forEach( ( sibling ) => {
+				const siblingAnchor = sibling.querySelector( 'a' );
+
+				if ( siblingAnchor && sibling !== clickedItem ) {
+					siblingAnchor.classList.remove( 'gatherpress--is-disabled' );
+					siblingAnchor.removeAttribute( 'tabindex' );
+					siblingAnchor.removeAttribute( 'aria-disabled' );
 				}
+			} );
+
+			// Update the dropdown trigger text.
+			if ( dropdownTrigger && clickedAnchor ) {
+				dropdownTrigger.textContent =
+					clickedAnchor.textContent.trim();
+			}
+
+			// Close the dropdown menu.
+			if ( dropdownMenu ) {
+				dropdownMenu.classList.remove( 'gatherpress--is-visible' );
+				dropdownTrigger.setAttribute( 'aria-expanded', 'false' );
+				dropdownTrigger.focus();
 			}
 		},
 		toggleDropdown( event = null, element = null, forceClose = false ) {
