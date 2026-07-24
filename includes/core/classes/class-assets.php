@@ -153,9 +153,12 @@ final class Assets {
 	/**
 	 * Set initial interactivity state for frontend blocks.
 	 *
-	 * Provides the REST API URL to the gatherpress interactivity store so
-	 * frontend view scripts (RSVP nonce/status requests) can build API URLs
-	 * without relying on window globals.
+	 * Provides the REST API URL and translated UI strings to the gatherpress
+	 * interactivity store so frontend view scripts (RSVP nonce/status requests,
+	 * screen-reader announcements) can use them without relying on window
+	 * globals. Strings are translated here because the Interactivity API
+	 * script-module graph cannot import `@wordpress/i18n` (see
+	 * `notifyRsvpFailure()` in `src/helpers/interactivity.js`).
 	 *
 	 * The state is set on every front-end view rather than only on singular
 	 * event pages: RSVP and other interactive blocks also render in event
@@ -177,6 +180,23 @@ final class Assets {
 			'gatherpress',
 			array(
 				'eventApiUrl' => rest_url( $event_rest_api_slug ),
+				'i18n'        => array(
+					'rsvpAttending'         => __( 'Your RSVP was updated. You are attending.', 'gatherpress' ),
+					'rsvpWaitingList'       => __(
+						'Your RSVP was updated. You are on the waiting list.',
+						'gatherpress'
+					),
+					'rsvpNotAttending'      => __( 'Your RSVP was updated. You are not attending.', 'gatherpress' ),
+					/* translators: %d: Number of attendees (singular case). */
+					'attendeeCountSingular' => __( '%d attendee.', 'gatherpress' ),
+					/* translators: %d: Number of attendees (plural case). */
+					'attendeeCountPlural'   => __( '%d attendees.', 'gatherpress' ),
+					'onlineLinkReady'       => __( 'The event link is now available on this page.', 'gatherpress' ),
+					'rsvpFailed'            => __(
+						'Sorry, there was an issue processing your RSVP. Please try again.',
+						'gatherpress'
+					),
+				),
 			)
 		);
 	}
