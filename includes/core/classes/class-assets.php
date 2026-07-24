@@ -540,7 +540,7 @@ final class Assets {
 		$path = $path ?? $this->path . sprintf( '%s.asset.php', $asset );
 		if ( empty( $this->asset_data[ $asset ] ) ) {
 			// Loading a WordPress asset metadata file that returns an array, not importing a class.
-			$this->asset_data[ $asset ] = file_exists( $path ) ? require $path : array();
+			$this->asset_data[ $asset ] = file_exists( $path ) ? require $path : array(); // NOSONAR.
 		}
 
 		return (array) $this->asset_data[ $asset ];
@@ -624,7 +624,7 @@ final class Assets {
 		// Plain include, not include_once: a repeat include_once would return
 		// `true` instead of the asset array if the file was already loaded
 		// (existence is already guaranteed by the file_exists guard above).
-		$asset = include $asset_path;
+		$asset = include $asset_path; // NOSONAR — see comment above.
 
 		// Add AQL as a dependency so our script loads after theirs.
 		$dependencies   = $asset['dependencies'] ?? array();
