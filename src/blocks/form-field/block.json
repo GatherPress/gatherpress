@@ -23,19 +23,26 @@
 		},
 		"label": {
 			"type": "string",
-			"default": ""
+			"default": "",
+			"role": "content"
 		},
 		"placeholder": {
 			"type": "string",
-			"default": ""
+			"default": "",
+			"role": "content"
 		},
 		"required": {
 			"type": "boolean",
 			"default": false
 		},
+		"prefillCurrentUser": {
+			"type": "boolean",
+			"default": false
+		},
 		"requiredText": {
 			"type": "string",
-			"default": "(required)"
+			"default": "(required)",
+			"role": "content"
 		},
 		"minValue": {
 			"type": "number"
@@ -45,6 +52,7 @@
 		},
 		"radioOptions": {
 			"type": "array",
+			"role": "content",
 			"default": [
 				{
 					"label": "",
@@ -121,7 +129,10 @@
 		}
 	},
 	"supports": {
-		"html": false
+		"html": false,
+		"interactivity": {
+			"clientNavigation": true
+		}
 	},
 	"textdomain": "gatherpress",
 	"editorScript": "file:./index.js",

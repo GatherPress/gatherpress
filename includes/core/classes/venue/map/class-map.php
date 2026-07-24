@@ -32,12 +32,9 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 use GatherPress\Core\Settings;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Venue\Setup;
-use GatherPress\Core\Venue\Venue;
+use GatherPress\Core\Venue;
 use GdImage;
 use WP_Post;
-use WP_REST_Request;
-use WP_REST_Response;
-use WP_REST_Server;
 
 /**
  * Class Map.
@@ -53,7 +50,7 @@ use WP_REST_Server;
  * @phpstan-type DescriptorMap array<string, Descriptor>
  * @phpstan-type ProviderDescriptorMap array<string, DescriptorMap>
  */
-class Map {
+final class Map {
 
 	/**
 	 * Enforces a single instance of this class.
@@ -300,7 +297,6 @@ class Map {
 		// against future ordering surprises.
 		add_action( 'wp_after_insert_post', array( $this, 'maybe_generate' ), 11 );
 		add_action( 'registered_post_type', array( $this, 'maybe_register_delete_hook' ) );
-		add_action( 'rest_api_init', array( $this, 'register_rest_routes' ) );
 		add_filter( 'block_type_metadata', array( $this, 'apply_block_attribute_defaults' ) );
 		// React to provider changes so a `map_platform` switch schedules
 		// the same prewarm pass that runs on theme switches.
@@ -344,94 +340,6 @@ class Map {
 	}
 
 	/**
-	 * Register REST routes for the venue-map block.
-	 *
-	 * Today there's a single endpoint that forces the static PNG files for a
-	 * venue to regenerate — used by the "Regenerate Map" button in the
-	 * block editor when a tile provider changes or a render gets out of
-	 * sync with the venue's current inputs.
-	 *
-	 * @since 0.34.0
-	 *
-	 * @return void
-	 */
-	public function register_rest_routes(): void {
-		register_rest_route(
-			GATHERPRESS_REST_NAMESPACE,
-			'/venue/(?P<id>\d+)/regenerate-map',
-			array(
-				'methods'             => WP_REST_Server::CREATABLE,
-				'callback'            => array( $this, 'rest_regenerate' ),
-				'permission_callback' => static function ( WP_REST_Request $request ): bool {
-					$post_id = (int) $request['id'];
-
-					// Permission scope is the venue post itself — anyone who can
-					// edit the venue can force its map to regenerate. Admins with
-					// edit_others_posts go through the same check.
-					return current_user_can( 'edit_post', $post_id );
-				},
-				'args'                => array(
-					'id'           => array(
-						'required'          => true,
-						'type'              => 'integer',
-						'sanitize_callback' => 'absint',
-						'validate_callback' => static function ( $value ): bool {
-							$post_id = (int) $value;
-
-							return $post_id > 0
-								&& post_type_supports(
-									(string) get_post_type( $post_id ),
-									'gatherpress-venue-information'
-								);
-						},
-					),
-					// Optional: the combo the client is currently displaying. If
-					// provided, that combo is added to the regenerate list so a
-					// "Generate" click from the block placeholder produces a PNG
-					// for the active (zoom, width, height) combo even when it has
-					// never been rendered before. `width` and `height` may be 0
-					// ("auto") — the aspect-ratio hint then drives derivation.
-					'zoom'         => array(
-						'required'          => false,
-						'type'              => 'integer',
-						'sanitize_callback' => 'absint',
-					),
-					'width'        => array(
-						'required'          => false,
-						'type'              => 'integer',
-						'sanitize_callback' => 'absint',
-					),
-					'height'       => array(
-						'required'          => false,
-						'type'              => 'integer',
-						'sanitize_callback' => 'absint',
-					),
-					'aspect_ratio' => array(
-						'required'          => false,
-						'type'              => 'string',
-						'sanitize_callback' => 'sanitize_text_field',
-						// Accept empty ("use server default") or an
-						// integer-separated pair matching the block's
-						// aspect-ratio format. parse_aspect_ratio()
-						// downstream still has to handle odd inputs for
-						// the non-REST call sites, but surfacing a 400
-						// here is cheaper than silently falling back.
-						'validate_callback' => static function ( $value ): bool {
-							if ( '' === $value || null === $value ) {
-								return true;
-							}
-							return (bool) preg_match(
-								self::ASPECT_RATIO_PATTERN,
-								(string) $value
-							);
-						},
-					),
-				),
-			)
-		);
-	}
-
-	/**
 	 * Override the venue-map block's attribute defaults with user-chosen values
 	 * from Settings → Venues → Maps.
 	 *
@@ -453,17 +361,15 @@ class Map {
 
 		$settings = Settings::get_instance();
 
-		// Width and height keep empty as a distinct "not set — fall through
-		// to the block.json default" state; an explicit 0 still stamps as
-		// "auto", so the validator below must reject null but accept 0.
-		$raw_width  = $settings->get( 'venue_map_default_width' );
-		$raw_height = $settings->get( 'venue_map_default_height' );
-
+		// Height is absent on purpose: it lives in the block's
+		// `style.dimensions` (core dimensions support), which has no
+		// attribute default to stamp — the Settings value reaches rendering
+		// through the dimension-resolution paths instead (render.php and
+		// the editor's getFromSettings channel). Width has no default at
+		// all: the block always fills its container.
 		$defaults = array(
 			'renderMode'  => (string) $settings->get( 'venue_map_default_render_mode' ),
 			'zoom'        => (int) $settings->get( 'venue_map_default_zoom' ),
-			'width'       => '' === $raw_width ? null : (int) $raw_width,
-			'height'      => '' === $raw_height ? null : (int) $raw_height,
 			'aspectRatio' => (string) $settings->get( 'venue_map_default_aspect_ratio' ),
 			'scale'       => (string) $settings->get( 'venue_map_default_scale' ),
 			'type'        => (string) $settings->get( 'venue_map_default_type' ),
@@ -484,18 +390,6 @@ class Map {
 				return is_int( $value )
 					&& $value >= self::ZOOM_MIN
 					&& $value <= self::ZOOM_MAX;
-			},
-			'width'       => static function ( $value ): bool {
-				// 0 means "auto" and is a valid default value.
-				return is_int( $value )
-					&& $value >= 0
-					&& $value <= self::WIDTH_MAX;
-			},
-			'height'      => static function ( $value ): bool {
-				// 0 means "auto" and is a valid default value.
-				return is_int( $value )
-					&& $value >= 0
-					&& $value <= self::HEIGHT_MAX;
 			},
 			'aspectRatio' => function ( $value ): bool {
 				return is_string( $value )
@@ -592,13 +486,13 @@ class Map {
 			return;
 		}
 
-		// Regenerate every (zoom, width, height) combo the venue is already
-		// cached at so a content change (new address/coords) cascades to
-		// all cached variants. For a fresh venue with nothing stored, seed
-		// the default combo that newly-inserted venue-map blocks will
-		// actually request — otherwise the editor falls back to the
-		// interactive preview on the very first save because the default
-		// cache entry is missing.
+		// Regenerate every (zoom, width, height, map_type) combo the venue is
+		// already cached at so a content change (new address/coords) cascades
+		// to all cached variants — each preserving its own map type. For a
+		// fresh venue with nothing stored, seed the default combo that
+		// newly-inserted venue-map blocks will actually request — otherwise
+		// the editor falls back to the interactive preview on the very first
+		// save because the default cache entry is missing.
 		$combos = $this->get_cached_combos( $post_id );
 		if ( empty( $combos ) ) {
 			$default = $this->resolve_dimensions(
@@ -608,9 +502,10 @@ class Map {
 			);
 			$combos  = array(
 				array(
-					'zoom'   => $this->get_zoom(),
-					'width'  => $default['width'],
-					'height' => $default['height'],
+					'zoom'     => $this->get_zoom(),
+					'width'    => $default['width'],
+					'height'   => $default['height'],
+					'map_type' => $this->normalize_map_type( '' ),
 				),
 			);
 		}
@@ -621,7 +516,8 @@ class Map {
 				$info,
 				$combo['zoom'],
 				$combo['width'],
-				$combo['height']
+				$combo['height'],
+				$this->normalize_map_type( (string) $combo['map_type'] )
 			);
 		}
 	}
@@ -646,14 +542,15 @@ class Map {
 	/**
 	 * Force-regenerate the static maps for a venue.
 	 *
-	 * Clears every cached descriptor + PNG, then runs the normal
-	 * `maybe_generate()` flow to recreate images for each combo the venue
-	 * was previously cached at. When the caller supplies an extra
-	 * `(zoom, height)` — typically the combo the block editor is currently
-	 * displaying — that combo is added to the list so a "Generate" click
-	 * from the placeholder produces a PNG for it even if the combo has
-	 * never been cached before. For a venue that has no cached combos
-	 * and no caller-supplied one, the site-default combo seeds the run.
+	 * Clears every cached descriptor + PNG, then recreates images for each
+	 * combo the venue was previously cached at — preserving each variant's
+	 * own map type so distinct types at the same dimensions aren't collapsed.
+	 * When the caller supplies an extra `(zoom, height)` — typically the combo
+	 * the block editor is currently displaying — that combo is added to the
+	 * list, tagged with the requested `$map_type`, so a "Generate" click from
+	 * the placeholder produces a PNG for it even if the combo has never been
+	 * cached before. For a venue that has no cached combos and no
+	 * caller-supplied one, the site-default combo seeds the run.
 	 *
 	 * Returns the fresh descriptor map so the caller — typically the block
 	 * editor's "Regenerate Map" REST endpoint — can hand the new URLs
@@ -661,56 +558,57 @@ class Map {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @param int      $post_id            The venue post ID.
-	 * @param int|null $extra_zoom         Optional extra zoom to include.
-	 * @param int|null $extra_width        Optional extra width (0 = auto).
-	 * @param int|null $extra_height       Optional extra height (0 = auto).
-	 * @param string   $extra_aspect_ratio Optional aspect ratio hint for the extra combo.
+	 * @param int        $post_id     The venue post ID.
+	 * @param array|null $extra_combo Optional extra combo to include, in the
+	 *                                {@see Rest_Api::parse_request()} shape:
+	 *                                `zoom`, `width` (0 = auto), `height`
+	 *                                (0 = auto), `aspect_ratio`, `map_type`.
 	 *
 	 * @return ProviderDescriptorMap
 	 */
-	public function regenerate(
-		int $post_id,
-		?int $extra_zoom = null,
-		?int $extra_width = null,
-		?int $extra_height = null,
-		string $extra_aspect_ratio = ''
-	): array {
+	public function regenerate( int $post_id, ?array $extra_combo = null ): array {
 		// Cache the combos we want to rebuild before wiping meta —
 		// delete_stored_image() clears META_KEY, which is where
 		// get_cached_combos() reads from.
-		$combos = $this->get_cached_combos( $post_id );
+		$combos   = $this->get_cached_combos( $post_id );
+		$map_type = $this->normalize_map_type( (string) ( $extra_combo['map_type'] ?? '' ) );
 
-		// Merge the caller-supplied combo in, resolving dims when either
-		// width or height is left as "auto".
-		if ( null !== $extra_zoom ) {
+		// Merge the caller-supplied combo in, tagged with the requested map
+		// type, resolving dims when either width or height is left as "auto".
+		if ( null !== ( $extra_combo['zoom'] ?? null ) ) {
 			$resolved = $this->resolve_dimensions(
-				(int) ( $extra_width ?? 0 ),
-				(int) ( $extra_height ?? 0 ),
-				$extra_aspect_ratio
+				(int) ( $extra_combo['width'] ?? 0 ),
+				(int) ( $extra_combo['height'] ?? 0 ),
+				(string) ( $extra_combo['aspect_ratio'] ?? '' )
 			);
 			$combos[] = array(
-				'zoom'   => (int) $extra_zoom,
-				'width'  => $resolved['width'],
-				'height' => $resolved['height'],
+				'zoom'     => (int) $extra_combo['zoom'],
+				'width'    => $resolved['width'],
+				'height'   => $resolved['height'],
+				'map_type' => $map_type,
 			);
 		}
 
+		// Dedupe on the full (zoom, width, height, map_type) key so distinct
+		// map-type variants at the same dimensions each survive the rebuild.
 		$seen   = array();
 		$unique = array();
 		foreach ( $combos as $combo ) {
-			$key = $this->combo_key(
+			$combo_map_type = $this->normalize_map_type( (string) $combo['map_type'] );
+			$key            = $this->combo_key(
 				$this->clamp_zoom( (int) $combo['zoom'] ),
 				$this->clamp_width( (int) $combo['width'] ),
-				$this->clamp_height( (int) $combo['height'] )
+				$this->clamp_height( (int) $combo['height'] ),
+				$combo_map_type
 			);
 
 			if ( isset( $seen[ $key ] ) ) {
 				continue;
 			}
 
-			$seen[ $key ] = true;
-			$unique[]     = $combo;
+			$seen[ $key ]      = true;
+			$combo['map_type'] = $combo_map_type;
+			$unique[]          = $combo;
 		}
 		$combos = $unique;
 
@@ -726,9 +624,10 @@ class Map {
 			);
 			$combos  = array(
 				array(
-					'zoom'   => $this->get_zoom(),
-					'width'  => $default['width'],
-					'height' => $default['height'],
+					'zoom'     => $this->get_zoom(),
+					'width'    => $default['width'],
+					'height'   => $default['height'],
+					'map_type' => $map_type,
 				),
 			);
 		}
@@ -747,7 +646,8 @@ class Map {
 				$info,
 				$combo['zoom'],
 				$combo['width'],
-				$combo['height']
+				$combo['height'],
+				$this->normalize_map_type( (string) $combo['map_type'] )
 			);
 		}
 
@@ -755,80 +655,35 @@ class Map {
 	}
 
 	/**
-	 * REST handler for `POST /venue/{id}/regenerate-map`.
+	 * Ensure a single combo exists for a venue and return the full map.
 	 *
-	 * Returns the fresh descriptor map on success. When the venue has no
-	 * usable coordinates yet (address hasn't geocoded), returns an empty
-	 * descriptors array and a structured `reason` so the client can show
-	 * the right placeholder instead of a generic error.
+	 * Additive counterpart to {@see self::regenerate()}: generates only the
+	 * requested combo when it isn't cached yet, leaving every other cached
+	 * variant untouched. Returns the venue's full descriptor map on success
+	 * and an empty array when the combo could not be produced — the same
+	 * shape the REST handler surfaces as `generation_failed`.
 	 *
-	 * @since 0.34.0
+	 * @since 0.35.0
 	 *
-	 * @param WP_REST_Request $request The REST request.
+	 * @param int   $post_id The venue post ID.
+	 * @param array $combo   Combo in the {@see Rest_Api::parse_request()}
+	 *                       shape: `zoom`, `width` (0 = auto), `height`
+	 *                       (0 = auto), `aspect_ratio`, `map_type`.
 	 *
-	 * @return WP_REST_Response
+	 * @return ProviderDescriptorMap
 	 */
-	public function rest_regenerate( WP_REST_Request $request ): WP_REST_Response {
-		nocache_headers();
-
-		$post_id     = (int) $request['id'];
-		$venue       = new Venue( $post_id );
-		$info        = $venue->get_information();
-		$latitude    = $this->parse_coord( $info['latitude'] );
-		$longitude   = $this->parse_coord( $info['longitude'] );
-		$has_address = '' !== trim( (string) $info['address'] );
-
-		if ( ! $has_address || null === $latitude || null === $longitude ) {
-			return new WP_REST_Response(
-				array(
-					'descriptors' => (object) array(),
-					'reason'      => $has_address ? 'awaiting_geocode' : 'no_address',
-				),
-				200
-			);
-		}
-
-		// Pass the block's current combo through so its PNG is generated
-		// even when the venue has never been rendered at those dimensions.
-		// `width` and `height` may be 0 / omitted (meaning "auto") — the
-		// aspect-ratio hint then drives whichever dimension is missing.
-		$raw_zoom     = $request['zoom'] ?? null;
-		$raw_width    = $request['width'] ?? null;
-		$raw_height   = $request['height'] ?? null;
-		$extra_zoom   = ( null !== $raw_zoom && (int) $raw_zoom > 0 ) ? (int) $raw_zoom : null;
-		$extra_width  = ( null !== $raw_width && (int) $raw_width >= 0 ) ? (int) $raw_width : null;
-		$extra_height = ( null !== $raw_height && (int) $raw_height >= 0 ) ? (int) $raw_height : null;
-		$aspect       = (string) ( $request['aspect_ratio'] ?? '' );
-
-		$descriptors = $this->regenerate(
+	public function ensure_combo( int $post_id, array $combo ): array {
+		$descriptor = $this->get_descriptor_for_post(
 			$post_id,
-			$extra_zoom,
-			$extra_width,
-			$extra_height,
-			$aspect
+			(string) get_post_type( $post_id ),
+			$combo['zoom'] ?? null,
+			$combo['width'] ?? null,
+			$combo['height'] ?? null,
+			(string) ( $combo['aspect_ratio'] ?? '' ),
+			(string) ( $combo['map_type'] ?? '' )
 		);
 
-		// An empty descriptor map for a geocoded venue means every combo
-		// failed — disk write error, GD missing, tile host unreachable past
-		// COMPOSITE_TIME_BUDGET. Surface it with a distinct reason so the
-		// UI can flag the failure instead of rendering as a silent success.
-		if ( empty( $descriptors ) ) {
-			return new WP_REST_Response(
-				array(
-					'descriptors' => (object) array(),
-					'reason'      => 'generation_failed',
-				),
-				200
-			);
-		}
-
-		return new WP_REST_Response(
-			array(
-				'descriptors' => $descriptors,
-				'reason'      => '',
-			),
-			200
-		);
+		return null === $descriptor ? array() : $this->get_all_descriptors( $post_id );
 	}
 
 	/**
@@ -851,6 +706,7 @@ class Map {
 	 * @param int|null $width        Desired pixel width (0/null = auto).
 	 * @param int|null $height       Desired pixel height (0/null = auto).
 	 * @param string   $aspect_ratio Aspect-ratio hint used to derive any auto dimension.
+	 * @param string   $map_type     Map type slug from the block attribute.
 	 *
 	 * @return array{url: string, url_2x: string, hash: string, zoom: int, width: int, height: int}|null
 	 */
@@ -860,7 +716,8 @@ class Map {
 		?int $zoom = null,
 		?int $width = null,
 		?int $height = null,
-		string $aspect_ratio = ''
+		string $aspect_ratio = '',
+		string $map_type = ''
 	): ?array {
 		$venue_post_id = 0;
 
@@ -891,13 +748,15 @@ class Map {
 			'' !== $aspect_ratio ? $aspect_ratio : self::DEFAULT_ASPECT_RATIO
 		);
 		$resolved_zoom = $zoom ?? $this->get_zoom();
+		$map_type      = $this->normalize_map_type( $map_type );
 
 		$active_descriptor = $this->ensure_descriptor_for_combo(
 			$venue_post_id,
 			$info,
 			$resolved_zoom,
 			$resolved['width'],
-			$resolved['height']
+			$resolved['height'],
+			$map_type
 		);
 
 		if ( null !== $active_descriptor ) {
@@ -913,7 +772,8 @@ class Map {
 		$key         = $this->combo_key(
 			$this->clamp_zoom( $resolved_zoom ),
 			$this->clamp_width( $resolved['width'] ),
-			$this->clamp_height( $resolved['height'] )
+			$this->clamp_height( $resolved['height'] ),
+			$map_type
 		);
 		$all         = $this->get_all_descriptors( $venue_post_id );
 		$active_slug = Manager::get_instance()->get_active_slug();
@@ -945,6 +805,7 @@ class Map {
 	 * @param int|null $width        Desired pixel width (0/null = auto).
 	 * @param int|null $height       Desired pixel height (0/null = auto).
 	 * @param string   $aspect_ratio Aspect-ratio hint used to derive any auto dimension.
+	 * @param string   $map_type     Map type slug from the block attribute.
 	 *
 	 * @return string Static map URL, or '' when unavailable.
 	 */
@@ -954,9 +815,18 @@ class Map {
 		?int $zoom = null,
 		?int $width = null,
 		?int $height = null,
-		string $aspect_ratio = ''
+		string $aspect_ratio = '',
+		string $map_type = ''
 	): string {
-		$descriptor = $this->get_descriptor_for_post( $post_id, $post_type, $zoom, $width, $height, $aspect_ratio );
+		$descriptor = $this->get_descriptor_for_post(
+			$post_id,
+			$post_type,
+			$zoom,
+			$width,
+			$height,
+			$aspect_ratio,
+			$map_type
+		);
 
 		return null === $descriptor ? '' : $descriptor['url'];
 	}
@@ -981,10 +851,18 @@ class Map {
 	 * @param int    $width        Pixel width (0 = auto).
 	 * @param int    $height       Pixel height (0 = auto).
 	 * @param string $aspect_ratio Aspect-ratio string (e.g. "16/9").
+	 * @param string $map_type     Map type slug (defaults to site setting).
 	 *
 	 * @return array{url: string, url_2x: string, hash: string, zoom: int, width: int, height: int}|null
 	 */
-	public function warm( int $post_id, int $zoom, int $width, int $height, string $aspect_ratio = '' ): ?array {
+	public function warm(
+		int $post_id,
+		int $zoom,
+		int $width,
+		int $height,
+		string $aspect_ratio = '',
+		string $map_type = ''
+	): ?array {
 		if ( 0 >= $post_id ) {
 			return null;
 		}
@@ -1007,7 +885,8 @@ class Map {
 			$info,
 			$zoom,
 			$resolved['width'],
-			$resolved['height']
+			$resolved['height'],
+			$map_type
 		);
 	}
 
@@ -1038,7 +917,8 @@ class Map {
 		$key = $this->combo_key(
 			$this->get_zoom(),
 			$defaults['width'],
-			$defaults['height']
+			$defaults['height'],
+			$this->normalize_map_type( '' )
 		);
 
 		return $all[ $slug ][ $key ] ?? null;
@@ -1046,7 +926,7 @@ class Map {
 
 	/**
 	 * Return every stored descriptor for the venue, keyed by provider slug
-	 * then by `{zoom}x{width}x{height}`.
+	 * then by `{zoom}x{width}x{height}x{map_type}`.
 	 *
 	 * Filters out malformed entries so callers can iterate without defensive
 	 * shape checks. The read path itself does not persist the cleaned map —
@@ -1108,7 +988,7 @@ class Map {
 		 * Companion plugins, multi-locale setups, or storage-layer overrides
 		 * can use this to drop entries they consider stale, add synthetic
 		 * descriptors (e.g. pre-rendered PNG files in a CDN), or rewrite URLs.
-		 * Outer key is provider slug, inner key is `{zoom}x{width}x{height}`.
+		 * Outer key is provider slug, inner key is `{zoom}x{width}x{height}x{map_type}`.
 		 * Callers of this method already tolerate empty maps, so returning
 		 * `[]` is a valid "suppress all" escape hatch.
 		 *
@@ -1121,8 +1001,8 @@ class Map {
 	}
 
 	/**
-	 * Parse stored meta into the deduped list of (zoom, width, height) combos
-	 * any provider has ever rendered for this venue.
+	 * Parse stored meta into the deduped list of (zoom, width, height, map_type)
+	 * combos any provider has ever rendered for this venue.
 	 *
 	 * Used by {@see self::maybe_generate()} to cascade content changes (new
 	 * address, new coordinates) across every variant a venue has ever been
@@ -1131,31 +1011,45 @@ class Map {
 	 * combo any earlier provider had — so blocks pointing at non-default
 	 * combos aren't stranded.
 	 *
+	 * Each combo carries the map type it was rendered with so callers can
+	 * rebuild every `(zoom, width, height, map_type)` variant rather than
+	 * collapsing distinct types onto the site default.
+	 *
 	 * @since 0.34.0
 	 *
 	 * @param int $post_id Venue post ID.
 	 *
-	 * @return array<int, array{zoom: int, width: int, height: int}>
+	 * @return array<int, array{zoom: int, width: int, height: int, map_type: string}>
 	 */
 	public function get_cached_combos( int $post_id ): array {
 		$seen   = array();
 		$combos = array();
 
 		foreach ( $this->get_all_descriptors( $post_id ) as $provider_combos ) {
-			foreach ( $provider_combos as $descriptor ) {
-				$key = $this->combo_key(
-					(int) $descriptor['zoom'],
-					(int) $descriptor['width'],
-					(int) $descriptor['height']
-				);
+			foreach ( $provider_combos as $stored_key => $descriptor ) {
+				$zoom   = (int) $descriptor['zoom'];
+				$width  = (int) $descriptor['width'];
+				$height = (int) $descriptor['height'];
+
+				// Recover the map type from the stored key. The key is
+				// `{zoom}x{width}x{height}x{map_type}`; legacy keys predating
+				// map-type support have no suffix and fall back to the default.
+				$prefix   = sprintf( '%dx%dx%dx', $zoom, $width, $height );
+				$map_type = str_starts_with( (string) $stored_key, $prefix )
+					? substr( (string) $stored_key, strlen( $prefix ) )
+					: '';
+				$map_type = $this->normalize_map_type( $map_type );
+
+				$key = $this->combo_key( $zoom, $width, $height, $map_type );
 				if ( isset( $seen[ $key ] ) ) {
 					continue;
 				}
 				$seen[ $key ] = true;
 				$combos[]     = array(
-					'zoom'   => (int) $descriptor['zoom'],
-					'width'  => (int) $descriptor['width'],
-					'height' => (int) $descriptor['height'],
+					'zoom'     => $zoom,
+					'width'    => $width,
+					'height'   => $height,
+					'map_type' => $map_type,
 				);
 			}
 		}
@@ -1164,18 +1058,30 @@ class Map {
 	}
 
 	/**
-	 * Build the meta-storage key for a (zoom, width, height) combo.
+	 * Build the meta-storage key for a (zoom, width, height, map_type) combo.
 	 *
 	 * @since 0.34.0
 	 *
-	 * @param int $zoom   Zoom level.
-	 * @param int $width  Pixel width.
-	 * @param int $height Pixel height.
+	 * @param int    $zoom     Zoom level.
+	 * @param int    $width    Pixel width.
+	 * @param int    $height   Pixel height.
+	 * @param string $map_type Map type slug.
 	 *
 	 * @return string
 	 */
-	protected function combo_key( int $zoom, int $width, int $height ): string {
-		return sprintf( '%dx%dx%d', $zoom, $width, $height );
+	protected function combo_key(
+		int $zoom,
+		int $width,
+		int $height,
+		string $map_type = self::DEFAULT_MAP_TYPE
+	): string {
+		return sprintf(
+			'%dx%dx%dx%s',
+			$zoom,
+			$width,
+			$height,
+			$this->normalize_map_type( $map_type )
+		);
 	}
 
 	/**
@@ -1189,11 +1095,12 @@ class Map {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @param int   $post_id Venue post ID.
-	 * @param array $info    Parsed venue information.
-	 * @param int   $zoom    Zoom level to render at.
-	 * @param int   $width   Pixel width of the PNG.
-	 * @param int   $height  Pixel height of the PNG.
+	 * @param int    $post_id Venue post ID.
+	 * @param array  $info    Parsed venue information.
+	 * @param int    $zoom     Zoom level to render at.
+	 * @param int    $width    Pixel width of the PNG.
+	 * @param int    $height   Pixel height of the PNG.
+	 * @param string $map_type Map type slug for the render.
 	 *
 	 * @return array{url: string, url_2x: string, hash: string, zoom: int, width: int, height: int}|null
 	 */
@@ -1202,12 +1109,15 @@ class Map {
 		array $info,
 		int $zoom,
 		int $width,
-		int $height
+		int $height,
+		string $map_type = ''
 	): ?array {
 		$provider = Manager::get_instance()->get_active();
 		if ( null === $provider ) {
 			return null;
 		}
+
+		$map_type = $this->normalize_map_type( $map_type );
 
 		// Callers (maybe_generate, get_url_for_post) must have validated the
 		// coordinates via parse_coord() already — cast directly.
@@ -1224,15 +1134,15 @@ class Map {
 
 		$slug    = $provider->get_slug();
 		$address = (string) ( $info['address'] ?? '' );
-		$hash    = $this->hash_for( $info, $zoom, $width, $height, $slug );
-		$key     = $this->combo_key( $zoom, $width, $height );
+		$hash    = $this->hash_for( $info, $zoom, $width, $height, $slug, $map_type );
+		$key     = $this->combo_key( $zoom, $width, $height, $map_type );
 
 		$all      = $this->get_all_descriptors( $post_id );
 		$existing = $all[ $slug ][ $key ] ?? null;
 
 		$retina_enabled = $this->should_generate_retina();
 
-		$expected_url = $this->build_image_url( $address, $zoom, $width, $height, $slug, 1 );
+		$expected_url = $this->build_image_url( $address, $zoom, $width, $height, $slug, 1, $map_type );
 		$has_valid_1x = null !== $existing
 			&& $existing['hash'] === $hash
 			&& $existing['url'] === $expected_url;
@@ -1250,7 +1160,7 @@ class Map {
 		if ( $has_valid_1x ) {
 			$url = $existing['url'];
 		} else {
-			$image = $provider->render( $latitude, $longitude, $zoom, $width, $height, 1 );
+			$image = $provider->render( $latitude, $longitude, $zoom, $width, $height, 1, $map_type );
 
 			// Provider returned null — GD missing, network failure, or the
 			// provider can't satisfy this combo. Surface as "no descriptor"
@@ -1259,8 +1169,8 @@ class Map {
 				return null;
 			}
 
-			$url = $this->save_image( $image, $address, $zoom, $width, $height, 1, $slug );
-			imagedestroy( $image );
+			$url = $this->save_image( $image, $address, $zoom, $width, $height, 1, $slug, $map_type );
+			unset( $image );
 
 			if ( null === $url ) {
 				return null;
@@ -1279,7 +1189,8 @@ class Map {
 				$zoom,
 				$width,
 				$height,
-				self::RETINA_DENSITY
+				self::RETINA_DENSITY,
+				$map_type
 			);
 			if ( null !== $image_2x ) {
 				$saved_2x = $this->save_image(
@@ -1289,9 +1200,10 @@ class Map {
 					$width,
 					$height,
 					self::RETINA_DENSITY,
-					$slug
+					$slug,
+					$map_type
 				);
-				imagedestroy( $image_2x );
+				unset( $image_2x );
 				if ( null !== $saved_2x ) {
 					$url_2x = $saved_2x;
 				}
@@ -1367,10 +1279,19 @@ class Map {
 	 * @param int    $width    Output width.
 	 * @param int    $height   Output height.
 	 * @param string $provider Provider slug (e.g. `osm`).
+	 * @param string $map_type Map type slug.
 	 *
 	 * @return string MD5 hex digest.
 	 */
-	public function hash_for( array $info, int $zoom, int $width, int $height, string $provider ): string {
+	public function hash_for(
+		array $info,
+		int $zoom,
+		int $width,
+		int $height,
+		string $provider,
+		string $map_type = self::DEFAULT_MAP_TYPE
+	): string {
+		$map_type = $this->normalize_map_type( $map_type );
 		// md5() here is a non-cryptographic cache-key discriminator, matching class-geocoding.php.
 		// CAUTION: the order and types of the values composed below define the
 		// cache key for every static-map PNG on disk. Reordering or changing a
@@ -1387,6 +1308,7 @@ class Map {
 					(string) $width,
 					(string) $height,
 					$provider,
+					$map_type,
 				)
 			)
 		);
@@ -1409,6 +1331,7 @@ class Map {
 	 * @param int    $height   Output height (at density 1).
 	 * @param string $provider Provider slug (e.g. `osm`).
 	 * @param int    $density  Pixel-density multiplier. 1 = standard, 2 = retina.
+	 * @param string $map_type Map type slug.
 	 *
 	 * @return string Full public URL for the PNG.
 	 */
@@ -1418,11 +1341,12 @@ class Map {
 		int $width,
 		int $height,
 		string $provider,
-		int $density = 1
+		int $density = 1,
+		string $map_type = self::DEFAULT_MAP_TYPE
 	): string {
 		$dirs     = wp_get_upload_dir();
 		$base_url = trailingslashit( $dirs['baseurl'] ) . self::UPLOADS_SUBDIR;
-		$filename = $this->filename_for( $address, $zoom, $width, $height, $provider, $density );
+		$filename = $this->filename_for( $address, $zoom, $width, $height, $provider, $density, $map_type );
 
 		return trailingslashit( $base_url ) . $filename;
 	}
@@ -1446,6 +1370,7 @@ class Map {
 	 * @param string $provider Provider slug (e.g. `osm`) — namespaces the file
 	 *                         so OSM and Google PNG files can coexist on disk.
 	 * @param int    $density  Pixel-density multiplier. 1 = standard, 2 = retina.
+	 * @param string $map_type Map type slug.
 	 *
 	 * @return string Filename including the `.png` extension.
 	 */
@@ -1455,8 +1380,10 @@ class Map {
 		int $width,
 		int $height,
 		string $provider,
-		int $density = 1
+		int $density = 1,
+		string $map_type = self::DEFAULT_MAP_TYPE
 	): string {
+		$map_type = $this->normalize_map_type( $map_type );
 		// `sanitize_title()` URL-slugifies; pass the result through
 		// `sanitize_file_name()` as defense-in-depth so any path-sensitive
 		// characters that slip past (or future changes to sanitize_title's
@@ -1473,7 +1400,7 @@ class Map {
 
 		$suffix = $density > 1 ? sprintf( '@%dx', $density ) : '';
 
-		return sprintf( '%s-%s-%d-%d-%d%s.png', $slug, $provider, $zoom, $width, $height, $suffix );
+		return sprintf( '%s-%s-%s-%d-%d-%d%s.png', $slug, $provider, $map_type, $zoom, $width, $height, $suffix );
 	}
 
 	/**
@@ -1494,6 +1421,7 @@ class Map {
 	 * @param int              $height   Output height (at density 1).
 	 * @param int              $density  Pixel-density multiplier. 1 = standard, 2 = retina.
 	 * @param string           $provider Provider slug.
+	 * @param string           $map_type Map type slug.
 	 *
 	 * @return string|null Public URL of the saved file, or null on failure.
 	 */
@@ -1504,7 +1432,8 @@ class Map {
 		int $width,
 		int $height,
 		int $density,
-		string $provider
+		string $provider,
+		string $map_type = self::DEFAULT_MAP_TYPE
 	): ?string {
 		$dirs = wp_get_upload_dir();
 
@@ -1514,7 +1443,7 @@ class Map {
 
 		$base_dir = trailingslashit( $dirs['basedir'] ) . self::UPLOADS_SUBDIR;
 		$base_url = trailingslashit( $dirs['baseurl'] ) . self::UPLOADS_SUBDIR;
-		$filename = $this->filename_for( $address, $zoom, $width, $height, $provider, $density );
+		$filename = $this->filename_for( $address, $zoom, $width, $height, $provider, $density, $map_type );
 		$path     = trailingslashit( $base_dir ) . $filename;
 
 		// Filesystem failure modes — uploads/ not writable, disk full, or
@@ -1535,12 +1464,14 @@ class Map {
 	 * should not generate a bogus (0, 0) map off the west coast of Africa.
 	 *
 	 * @since 0.34.0
+	 * @since 0.35.0 Visibility changed to public so the REST layer
+	 *               ({@see Rest_Api}) applies the same coercion.
 	 *
 	 * @param mixed $raw Raw coordinate from venue information.
 	 *
 	 * @return float|null
 	 */
-	protected function parse_coord( $raw ): ?float {
+	public function parse_coord( $raw ): ?float {
 		return is_numeric( $raw ) ? (float) $raw : null;
 	}
 
@@ -1600,6 +1531,37 @@ class Map {
 		$height = (int) apply_filters( 'gatherpress_map_height', $default );
 
 		return $this->clamp_height( $height );
+	}
+
+	/**
+	 * Normalize a map type slug for static-map cache keys, hashes, and filenames.
+	 *
+	 * Lowercases and trims the input, falls back to the site-wide default
+	 * from Settings when empty, and coerces any unrecognized slug to
+	 * `roadmap`. Provider capability is intentionally NOT enforced here: the
+	 * cache key records the *requested* type so a later platform switch
+	 * (e.g. OSM → Google) still resolves to the correct stored entry.
+	 * Providers self-guard at render time — Google coerces types it can't
+	 * satisfy to `roadmap` internally, and OSM ignores the type entirely.
+	 *
+	 * @since 0.35.0
+	 *
+	 * @param string $map_type Raw map type from block attrs or REST.
+	 *
+	 * @return string
+	 */
+	public function normalize_map_type( string $map_type ): string {
+		$map_type = strtolower( trim( $map_type ) );
+
+		if ( '' === $map_type ) {
+			$map_type = (string) Settings::get_instance()->get( 'venue_map_default_type' );
+		}
+
+		if ( ! in_array( $map_type, array( 'roadmap', 'satellite', 'hybrid', 'terrain' ), true ) ) {
+			$map_type = self::DEFAULT_MAP_TYPE;
+		}
+
+		return $map_type;
 	}
 
 	/**

@@ -30,6 +30,7 @@
 		}
 	},
 	"supports": {
+		"contentRole": true,
 		"gatherpress": {
 			"blockGuard": true,
 			"postIdOverride": true
@@ -42,11 +43,7 @@
 		"interactivity": {
 			"clientNavigation": true
 		},
-		"layout": {
-			"default": {
-				"type": "constrained"
-			}
-		},
+		"layout": true,
 		"listView": true
 	},
 	"textdomain": "gatherpress",

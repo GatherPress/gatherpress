@@ -1,0 +1,4 @@
+Significance: patch
+Type: changed
+
+Use match expressions for the three switch statements that existed only to pick a value. No behavior change.

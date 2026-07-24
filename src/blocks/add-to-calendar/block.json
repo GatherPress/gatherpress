@@ -14,11 +14,15 @@
 		"queryId"
 	],
 	"supports": {
+		"contentRole": true,
 		"gatherpress": {
 			"blockGuard": true,
 			"postIdOverride": true
 		},
 		"html": false,
+		"interactivity": {
+			"clientNavigation": true
+		},
 		"listView": true
 	},
 	"textdomain": "gatherpress",

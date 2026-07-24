@@ -19,7 +19,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 use GatherPress\Core\Blocks\Form_Field;
 use GatherPress\Core\Blocks\General_Block;
 use GatherPress\Core\Event;
-use GatherPress\Core\Rsvp\Rsvp;
+use GatherPress\Core\Rsvp;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Utility;
 use WP_HTML_Tag_Processor;
@@ -30,7 +30,7 @@ use WP_HTML_Tag_Processor;
  *
  * @since 0.33.0
  */
-class Rsvp_Form {
+final class Rsvp_Form {
 
 	/**
 	 * Enforces a single instance of this class.
@@ -703,7 +703,7 @@ class Rsvp_Form {
 	 *
 	 * @return mixed|false The sanitized value, or false if sanitization fails.
 	 */
-	public function sanitize_custom_field_value( $value, array $config ) {
+	public function sanitize_custom_field_value( $value, array $config ): mixed {
 		// Handle required field validation.
 		if ( ! empty( $config['required'] ) && empty( $value ) ) {
 			return false;

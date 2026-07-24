@@ -11,6 +11,7 @@ namespace GatherPress\Tests\Core\Venue\Map;
 use GatherPress\Core\Venue\Map;
 use GatherPress\Core\Venue\Map\Manager;
 use GatherPress\Core\Venue\Map\Prewarm;
+use GatherPress\Core\Venue\Map\Rest_Api;
 use GatherPress\Core\Venue\Map\Setup;
 use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;
@@ -24,8 +25,8 @@ class Test_Setup extends Base {
 
 	/**
 	 * Map\Setup is the hub for the venue map subsystem — its
-	 * `instantiate_classes()` is what wires Manager / Map / Prewarm so
-	 * `Venue\Setup` can hand off in one line. Per-sibling
+	 * `instantiate_classes()` is what wires Manager / Map / Prewarm /
+	 * Rest_Api so `Venue\Setup` can hand off in one line. Per-sibling
 	 * proof-of-construction via each one's distinctive
 	 * `setup_hooks()`-registered callback. Catches the case where a
 	 * sibling silently drops out of `instantiate_classes()`.
@@ -39,19 +40,24 @@ class Test_Setup extends Base {
 		Utility::invoke_hidden_method( Setup::get_instance(), 'instantiate_classes' );
 
 		$expected_hooks = array(
-			Manager::class => array(
+			Manager::class  => array(
 				'init',
 				array( Manager::get_instance(), 'do_register_action' ),
 				0,
 			),
-			Map::class     => array(
-				'rest_api_init',
-				array( Map::get_instance(), 'register_rest_routes' ),
-				10,
+			Map::class      => array(
+				'wp_after_insert_post',
+				array( Map::get_instance(), 'maybe_generate' ),
+				11,
 			),
-			Prewarm::class => array(
+			Prewarm::class  => array(
 				'switch_theme',
 				array( Prewarm::get_instance(), 'on_theme_switched' ),
+				10,
+			),
+			Rest_Api::class => array(
+				'rest_api_init',
+				array( Rest_Api::get_instance(), 'register_endpoints' ),
 				10,
 			),
 		);

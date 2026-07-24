@@ -38,7 +38,7 @@ use GatherPress\Core\Venue\Map\Provider\OSM;
  *
  * @since 0.34.0
  */
-class Manager {
+final class Manager {
 
 	/**
 	 * Enforces a single instance of this class.

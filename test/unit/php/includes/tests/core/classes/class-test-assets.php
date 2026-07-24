@@ -273,10 +273,52 @@ class Test_Assets extends Base {
 			$state,
 			'Failed to assert eventApiUrl is set in interactivity state on the event archive.'
 		);
-		$this->assertStringContainsString(
-			'wp-json/gatherpress/v1/event',
+		$this->assertSame(
+			rest_url( sprintf( '%s/event', GATHERPRESS_REST_NAMESPACE ) ),
 			$state['eventApiUrl'],
-			'Failed to assert eventApiUrl contains the correct REST API path.'
+			'Failed to assert eventApiUrl matches rest_url() so it adapts to the permalink structure.'
+		);
+	}
+
+	/**
+	 * Coverage for add_interactivity_state method without pretty permalinks.
+	 *
+	 * Regression: eventApiUrl was previously built via
+	 * `home_url( 'wp-json/' . $slug )`, a hardcoded path that only resolves
+	 * when pretty permalinks are enabled. With the plain permalink structure,
+	 * WordPress serves the REST API via `?rest_route=` instead, so the
+	 * hardcoded `/wp-json/` path 404s. Using `rest_url()` adapts to either
+	 * structure.
+	 *
+	 * @covers ::add_interactivity_state
+	 *
+	 * @return void
+	 */
+	public function test_add_interactivity_state_without_pretty_permalinks(): void {
+		global $wp_rewrite;
+
+		$instance            = Assets::get_instance();
+		$permalink_structure = $wp_rewrite->permalink_structure;
+		$wp_rewrite->set_permalink_structure( '' );
+
+		$this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get();
+		$this->go_to( get_post_type_archive_link( Event::POST_TYPE ) );
+
+		$instance->add_interactivity_state();
+		$state    = wp_interactivity_state( 'gatherpress' );
+		$expected = rest_url( sprintf( '%s/event', GATHERPRESS_REST_NAMESPACE ) );
+
+		$wp_rewrite->set_permalink_structure( $permalink_structure );
+
+		$this->assertSame(
+			$expected,
+			$state['eventApiUrl'],
+			'Failed to assert eventApiUrl matches rest_url() when pretty permalinks are disabled.'
+		);
+		$this->assertStringContainsString(
+			'rest_route=',
+			$state['eventApiUrl'],
+			'Failed to assert eventApiUrl uses the ?rest_route= form without pretty permalinks.'
 		);
 	}
 
@@ -953,7 +995,7 @@ class Test_Assets extends Base {
 		$instance = Assets::get_instance();
 
 		// Test with a settings page hook.
-		$hook = 'gatherpress_event_page_gatherpress_events';
+		$hook = 'gatherpress_event_page_gatherpress_events_settings';
 
 		$this->assertFalse(
 			wp_style_is( 'gatherpress-settings-style', 'enqueued' ),

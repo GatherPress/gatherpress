@@ -26,7 +26,7 @@ use WP_CLI;
  * @package GatherPress\Core
  * @since 0.29.0
  */
-class Event_Cli extends WP_CLI {
+final class Event_Cli extends WP_CLI {
 
 	/**
 	 * Update RSVP status for an event.
@@ -74,7 +74,7 @@ class Event_Cli extends WP_CLI {
 		$event     = new Event( $event_id );
 		$response  = $event->rsvp->save( $user_id, $status, $anonymous, $guests );
 
-		static::success(
+		self::success(
 			sprintf(
 				/* translators: %1$d: event ID, %2$s: attendance status, %3$d: user ID. */
 				__(

@@ -13,7 +13,7 @@ namespace GatherPress\Core\Blocks;
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Event;
-use GatherPress\Core\Rsvp\Rsvp;
+use GatherPress\Core\Rsvp;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Utility;
 use WP_Block;
@@ -30,7 +30,7 @@ use WP_HTML_Tag_Processor;
  *
  * @since 0.33.0
  */
-class Rsvp_Template {
+final class Rsvp_Template {
 
 	/**
 	 * Enforces a single instance of this class.

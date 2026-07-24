@@ -27,7 +27,7 @@ use WP_HTML_Tag_Processor;
  *
  * @since 0.33.0
  */
-class Rsvp {
+final class Rsvp {
 
 	/**
 	 * Enforces a single instance of this class.
@@ -151,7 +151,7 @@ class Rsvp {
 			if ( $event->rsvp ) {
 				$user_identifier = Rsvp_Setup::get_instance()->get_user_identifier();
 
-				$user_data = $event->rsvp->get( $user_identifier );
+				$user_data = $event->rsvp->get( $user_identifier ) ?? array();
 			}
 
 			$filtered_data   = array_intersect_key(

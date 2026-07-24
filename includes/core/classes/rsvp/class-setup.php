@@ -14,14 +14,15 @@ namespace GatherPress\Core\Rsvp;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
-use GatherPress\Core\Blocks\Rsvp_Form;
-use GatherPress\Core\Event\Event;
+use GatherPress\Core\Event;
+use GatherPress\Core\Rsvp\Response\Provider\Base as Provider;
+use GatherPress\Core\Rsvp\Response\Provider_Registry;
+use GatherPress\Core\Rsvp\Response\Status;
 use GatherPress\Core\Settings;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Utility;
 use WP_Block_Type_Registry;
 use WP_Comment;
-use WP_User;
 
 /**
  * Handles setup tasks related to RSVP functionality.
@@ -35,7 +36,7 @@ use WP_User;
  * @package GatherPress\Core\Rsvp
  * @since 0.34.0
  */
-class Setup {
+final class Setup {
 
 	/**
 	 * Enforces a single instance of this class.
@@ -80,6 +81,7 @@ class Setup {
 		Cleanup::get_instance();
 		Form::get_instance();
 		Query::get_instance();
+		Provider_Registry::get_instance();
 	}
 
 	/**
@@ -135,8 +137,10 @@ class Setup {
 	 * @return void
 	 */
 	public function register_taxonomy(): void {
+		// No register_taxonomy_for_object_type() here (#1639): core requires a
+		// post type object and returns false for 'comment'.
 		register_taxonomy(
-			Rsvp::TAXONOMY,
+			Status::TAXONOMY,
 			'comment',
 			array(
 				'labels'             => array(),
@@ -146,6 +150,23 @@ class Setup {
 				'show_admin_column'  => false,
 				'query_var'          => true,
 				'publicly_queryable' => false,
+				'rewrite'            => false,
+				'show_in_rest'       => true,
+			)
+		);
+
+		register_taxonomy(
+			Provider::TAXONOMY,
+			'comment',
+			array(
+				'labels'             => array(),
+				'hierarchical'       => false,
+				'public'             => true,
+				'show_ui'            => false,
+				'show_admin_column'  => false,
+				'query_var'          => true,
+				'publicly_queryable' => false,
+				'rewrite'            => false,
 				'show_in_rest'       => true,
 			)
 		);
@@ -185,7 +206,7 @@ class Setup {
 	 *
 	 * @return bool|string[] Filtered allowed block types.
 	 */
-	public function filter_rsvp_block_types( $allowed_block_types ) {
+	public function filter_rsvp_block_types( $allowed_block_types ): bool|array {
 		$settings         = Settings::get_instance();
 		$remove_all_rsvp  = 'disabled' === $settings->get( 'rsvp_mode' );
 		$remove_open_form = ! $settings->get( 'enable_open_rsvp' );
@@ -229,7 +250,7 @@ class Setup {
 	 *
 	 * @return string|int User ID if logged in, email address if via token, or 0 if neither.
 	 */
-	public function get_user_identifier() {
+	public function get_user_identifier(): string|int {
 		$user_identifier = get_current_user_id();
 		$rsvp_token      = Token::from_url_parameter();
 
@@ -509,7 +530,7 @@ class Setup {
 	 *
 	 * @return mixed The screen option value or false to use default.
 	 */
-	public function set_rsvp_screen_options( $status, $option, $value ) {
+	public function set_rsvp_screen_options( $status, $option, $value ): mixed {
 		if ( $this->get_per_page_option() === $option ) {
 			return $value;
 		}

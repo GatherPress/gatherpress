@@ -17,7 +17,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 use Exception;
 use GatherPress\Core\Event;
 use GatherPress\Core\Feed;
-use GatherPress\Core\Rsvp\Rsvp;
+use GatherPress\Core\Rsvp;
 use GatherPress\Core\Settings;
 use GatherPress\Core\Starter_Pattern_Loader;
 use GatherPress\Core\Traits\Singleton;
@@ -34,7 +34,7 @@ use WP_Query;
  *
  * @since 0.34.0
  */
-class Setup {
+final class Setup {
 
 	/**
 	 * Enforces a single instance of this class.
@@ -252,9 +252,10 @@ class Setup {
 	 * the list through the `gatherpress_event_starter_patterns` filter so
 	 * third parties can append their own, and registers each entry scoped
 	 * to `core/post-content` plus every post type declaring
-	 * `gatherpress-event-date` support. The block editor's starter pattern
-	 * modal — the same UX Twenty Twenty-Five uses on new pages — then
-	 * surfaces them when authors create a new event.
+	 * `gatherpress-event-date` support (or the entry's own `postTypes`
+	 * list when provided). The block editor's starter pattern modal — the
+	 * same UX Twenty Twenty-Five uses on new pages — then surfaces them
+	 * when authors create a new event.
 	 *
 	 * Per-user dismissal is handled by the modal's own "Always show
 	 * starter patterns for new pages" toggle, so no site-wide setting
@@ -279,11 +280,21 @@ class Setup {
 		 * Filters the array of event starter pattern definitions.
 		 *
 		 * Each entry is an associative array with `name`, `title`,
-		 * `description`, and `content` keys. Returned patterns are
-		 * registered with `core/post-content` `blockTypes` scoping plus
-		 * every post type declaring `gatherpress-event-date` support, so
-		 * they appear in the new-event chooser modal for any post type
-		 * acting as an event source.
+		 * `description`, and `content` keys, plus an optional `postTypes`
+		 * key (an array of post type slugs) narrowing that one pattern to
+		 * specific post types. Entries without `postTypes` register
+		 * against every post type declaring `gatherpress-event-date`
+		 * support, so they appear in the new-event chooser modal for any
+		 * post type acting as an event source.
+		 *
+		 * Prefer this filter over calling `register_block_pattern()`
+		 * directly: definitions inherit the support-resolved post type
+		 * list (a companion post type declaring the support is included
+		 * automatically — no slugs to enumerate), the `core/post-content`
+		 * scoping that surfaces patterns in the chooser modal is applied
+		 * for you, and the bundled defaults arrive in the same array so
+		 * they can be reordered, modified, or removed — not just
+		 * appended to.
 		 *
 		 * The `$post_types` array lets consumers tailor the returned
 		 * patterns to the post types about to receive them — useful for
@@ -292,31 +303,18 @@ class Setup {
 		 * is in scope.
 		 *
 		 * @since 0.29.0
+		 * @since 0.35.0 Definitions may include a `postTypes` key to
+		 *               narrow a single pattern's registration.
 		 *
 		 * @param array $patterns   Pattern definitions loaded from the
 		 *                          `includes/core/templates/event/` directory.
 		 * @param array $post_types Post type slugs declaring `gatherpress-event-date`
-		 *                          support that the patterns will be registered against.
+		 *                          support that patterns without their own
+		 *                          `postTypes` key will be registered against.
 		 */
 		$patterns = apply_filters( 'gatherpress_event_starter_patterns', $patterns, $post_types );
 
-		foreach ( (array) $patterns as $pattern ) {
-			if ( ! is_array( $pattern ) || empty( $pattern['name'] ) ) {
-				continue;
-			}
-
-			register_block_pattern(
-				$pattern['name'],
-				array(
-					'title'       => $pattern['title'] ?? '',
-					'description' => $pattern['description'] ?? '',
-					'content'     => $pattern['content'] ?? '',
-					'blockTypes'  => array( 'core/post-content' ),
-					'postTypes'   => $post_types,
-					'source'      => 'plugin',
-				)
-			);
-		}
+		Starter_Pattern_Loader::register( (array) $patterns, $post_types );
 	}
 
 	/**

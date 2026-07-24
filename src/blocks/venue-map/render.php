@@ -3,24 +3,29 @@
  * Render Venue Map block.
  *
  * Emits the pre-rendered static map as the baseline (no JavaScript required).
- * When `renderMode === 'interactive'` the wrapper also carries the data
- * attributes the view.js script reads to swap the `<img>` for a live Leaflet
- * map at hydration time. When the venue has no coordinates yet — e.g. a brand
- * new venue that hasn't been geocoded — a short placeholder surfaces the
- * "map coming soon" state in place of the image.
+ * When `renderMode === 'interactive'` the wrapper also carries Interactivity
+ * API directives (`data-wp-init`) and a `data-wp-context` payload the view
+ * script module reads to swap the `<img>` for a live Leaflet or Google map —
+ * on initial load and again whenever a client-side region swap (Query Loop
+ * enhanced pagination) inserts the block (#2009). When the venue has no
+ * coordinates yet — e.g. a brand new venue that hasn't been geocoded — a
+ * short placeholder surfaces the "map coming soon" state in place of the
+ * image.
  *
- * The wrapper sizing is driven by three block attributes:
+ * The wrapper sizing model: width always comes from the container (and
+ * the block's alignment) — never from a stored value.
  *
- *   - `width` / `height`: explicit pixel dimensions. Either can be `0`
- *     meaning "auto" — in which case it's derived from the other side and
- *     `aspectRatio`. When both are auto, the block fills its container
- *     width and computes height from the ratio (CSS aspect-ratio on the
- *     interactive wrapper; the static PNG is composed at the effective
- *     pixel size).
- *   - `aspectRatio`: CSS-style string (e.g. "16/9"). Drives auto-
- *     dimension math on the server and also lands as a CSS
- *     `aspect-ratio` hint on the wrapper so an aligned block that
- *     shrinks stays at the right shape.
+ *   - `style.dimensions.height`: CSS value written by core's dimensions
+ *     support (serialization is skipped, so this template owns the
+ *     output). An absent height falls back to the site-wide default
+ *     from Settings → Venues; unset there too means the aspect ratio
+ *     shapes the wrapper as its container width changes. Values in
+ *     non-px units apply as CSS only — the static PNG treats them as
+ *     auto. (Content saved before 0.35.0 carried numeric width/height
+ *     attributes; the GatherPress Alpha migration rewrites those.)
+ *   - `aspectRatio`: CSS-style string (e.g. "16/9"). Shapes the wrapper
+ *     when no explicit height is set, and derives the static PNG's
+ *     width from its height on the server.
  *
  * @package GatherPress\Core
  * @since 0.34.0
@@ -31,6 +36,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Settings;
 use GatherPress\Core\Venue\Map;
+use GatherPress\Core\Venue\Map\Dimensions;
 use GatherPress\Core\Venue\Setup;
 
 if ( ! isset( $attributes ) || ! is_array( $attributes ) ) {
@@ -52,9 +58,19 @@ $gatherpress_render_mode = 'static' === ( $attributes['renderMode'] ?? Map::DEFA
 	? 'static'
 	: 'interactive';
 $gatherpress_zoom        = (int) ( $attributes['zoom'] ?? Map::DEFAULT_ZOOM );
-$gatherpress_raw_width   = (int) ( $attributes['width'] ?? 0 );
-$gatherpress_raw_height  = (int) ( $attributes['height'] ?? Map::DEFAULT_HEIGHT );
 $gatherpress_ratio       = (string) ( $attributes['aspectRatio'] ?? Map::DEFAULT_ASPECT_RATIO );
+
+// The height value as authored (style.dimensions CSS string), falling
+// back to the site-wide default from Settings → Venues (a pixel integer;
+// '' or 0 means unset). Null = auto — the ratio shapes the wrapper. The
+// px projection feeds the static-map pipeline (0 = auto; non-px units
+// land as CSS only). Width is never stored: the PNG derives its width
+// from height × ratio, and the wrapper takes its width from the
+// container.
+$gatherpress_default_height = (int) Settings::get_instance()->get( 'venue_map_default_height' );
+$gatherpress_height_value   = Dimensions::get_dimension_value( $attributes, 'height' )
+	?? ( 0 < $gatherpress_default_height ? $gatherpress_default_height : null );
+$gatherpress_raw_height     = Dimensions::parse_px_dimension( $gatherpress_height_value );
 
 // Allow-list for the `scale` block attribute. Anything outside this set
 // (a hand-edited block attr, a filter that mutates the value, a migration
@@ -65,13 +81,16 @@ $gatherpress_scale           = in_array( $gatherpress_scale_candidate, Map::SCAL
 	? $gatherpress_scale_candidate
 	: Map::DEFAULT_SCALE;
 
+$gatherpress_map_type = (string) ( $attributes['type'] ?? Map::DEFAULT_MAP_TYPE );
+
 $gatherpress_static_map_descriptor = Map::get_instance()->get_descriptor_for_post(
 	$gatherpress_post_id,
 	$gatherpress_post_type,
 	$gatherpress_zoom,
-	$gatherpress_raw_width,
+	0,
 	$gatherpress_raw_height,
-	$gatherpress_ratio
+	$gatherpress_ratio,
+	$gatherpress_map_type
 );
 
 $gatherpress_static_map_url    = null !== $gatherpress_static_map_descriptor
@@ -89,29 +108,33 @@ $gatherpress_wrapper_attr_args = array(
 	'data-render-mode' => $gatherpress_render_mode,
 );
 
-// Sizing rules:
-// - Explicit height → inline height in px.
-// - Explicit width  → inline width in px (but NOT when the block is
-// aligned wide or full — then the alignment owns the horizontal space
-// via the `.alignwide` / `.alignfull` CSS rules, and a hard pixel
-// width would fight those classes).
-// - Any auto dimension → CSS `aspect-ratio` stamp so the container can
-// still give the block its shape as its surrounding width changes
-// (aligned block, responsive container, etc.). Static <img> inside
-// uses object-fit: cover so the raster stays crisp at any size.
-$gatherpress_styles          = array();
-$gatherpress_align           = (string) ( $attributes['align'] ?? '' );
-$gatherpress_is_wide_or_full = in_array( $gatherpress_align, array( 'wide', 'full' ), true );
+// Sizing rules (mirroring `wrapperStyle` in edit.js): the wrapper always
+// spans its container — an explicit height stamps inline (and wins over
+// the ratio); no height → CSS `aspect-ratio` shapes the wrapper as its
+// container width changes. Static <img> inside uses object-fit: cover
+// so the raster stays crisp at any size.
+//
+// The height value passes through safecss_filter_attr() because core's
+// dimensions support stores raw CSS strings and
+// get_block_wrapper_attributes() doesn't sanitize individual values —
+// without the filter an editor-role attacker with edit_posts could
+// smuggle extra declarations in via a hand-edited attribute. A rejected
+// value degrades to auto (the aspect-ratio arm below picks it up).
+$gatherpress_styles         = array();
+$gatherpress_has_height_css = false;
 
-if ( 0 < $gatherpress_raw_height ) {
-	$gatherpress_styles[] = sprintf( 'height:%dpx', $gatherpress_raw_height );
+if ( null !== $gatherpress_height_value ) {
+	$gatherpress_height_declaration = safecss_filter_attr(
+		'height:' . Dimensions::to_css_dimension( $gatherpress_height_value )
+	);
+
+	if ( '' !== $gatherpress_height_declaration ) {
+		$gatherpress_styles[]       = $gatherpress_height_declaration;
+		$gatherpress_has_height_css = true;
+	}
 }
 
-if ( 0 < $gatherpress_raw_width && ! $gatherpress_is_wide_or_full ) {
-	$gatherpress_styles[] = sprintf( 'width:%dpx', $gatherpress_raw_width );
-}
-
-if ( 0 === $gatherpress_raw_width || 0 === $gatherpress_raw_height || $gatherpress_is_wide_or_full ) {
+if ( ! $gatherpress_has_height_css ) {
 	// The `aspectRatio` block attr lands directly in an inline style.
 	// get_block_wrapper_attributes() doesn't sanitize individual CSS
 	// values, so an editor-role attacker with edit_posts could otherwise
@@ -137,22 +160,55 @@ if ( ! empty( $gatherpress_styles ) ) {
 }
 
 if ( 'interactive' === $gatherpress_render_mode ) {
-	$gatherpress_block_attrs = array(
-		'address'          => $gatherpress_address,
-		'latitude'         => (string) ( $gatherpress_venue_meta['latitude'] ?? '' ),
-		'longitude'        => (string) ( $gatherpress_venue_meta['longitude'] ?? '' ),
-		'mapZoomLevel'     => $attributes['zoom'] ?? Map::DEFAULT_ZOOM,
-		'mapType'          => $attributes['type'] ?? Map::DEFAULT_MAP_TYPE,
-		'mapHeight'        => $attributes['height'] ?? Map::DEFAULT_HEIGHT,
-		'mapPlatform'      => (string) Settings::get_instance()->get( 'map_platform' ),
-		'pluginUrl'        => GATHERPRESS_CORE_URL,
-		'googleMapsApiKey' => (string) Settings::get_instance()->get( 'google_maps_api_key' ),
+	$gatherpress_map_platform = (string) Settings::get_instance()->get( 'map_platform' );
+
+	// Leaflet's stylesheet and marker images cannot ride the view script
+	// module -- webpack's async CSS chunk loading does not work under ESM
+	// module output -- so the styles ship as their own build entry, enqueued
+	// here whenever an interactive Leaflet map renders.
+	//
+	// `!== 'google'` rather than `=== 'osm'` on purpose: this must match the
+	// view module's own branch (google mounts Google Maps, everything else
+	// mounts Leaflet), so the stylesheet ships exactly when the Leaflet path
+	// runs. Checking for 'osm' would desync the two on an unset or unexpected
+	// platform value -- Leaflet would still mount, just unstyled.
+	if ( 'google' !== $gatherpress_map_platform ) {
+		$gatherpress_leaflet_asset = include GATHERPRESS_CORE_PATH . '/build/leaflet_style.asset.php';
+
+		wp_enqueue_style(
+			'gatherpress-leaflet-style',
+			GATHERPRESS_CORE_URL . 'build/leaflet_style.css',
+			array(),
+			$gatherpress_leaflet_asset['version'] ?? GATHERPRESS_VERSION
+		);
+	}
+
+	// Everything the view script module needs travels in the context payload:
+	// script modules cannot import @wordpress/i18n or read the block editor's
+	// config, so the tile settings and translated strings are resolved here,
+	// server-side.
+	$gatherpress_block_context = array(
+		'address'            => $gatherpress_address,
+		'latitude'           => (string) ( $gatherpress_venue_meta['latitude'] ?? '' ),
+		'longitude'          => (string) ( $gatherpress_venue_meta['longitude'] ?? '' ),
+		'mapZoomLevel'       => $attributes['zoom'] ?? Map::DEFAULT_ZOOM,
+		'mapType'            => $attributes['type'] ?? Map::DEFAULT_MAP_TYPE,
+		'mapPlatform'        => $gatherpress_map_platform,
+		'pluginUrl'          => GATHERPRESS_CORE_URL,
+		'googleMapsApiKey'   => (string) Settings::get_instance()->get( 'google_maps_api_key' ),
+		'mapTileUrl'         => Settings::get_map_tile_url(),
+		'mapTileAttribution' => Settings::get_map_tile_attribution(),
+		'i18n'               => array(
+			'gestureTouch'     => __( 'Use two fingers to move the map', 'gatherpress' ),
+			'gestureScroll'    => __( 'Use ctrl + scroll to zoom the map', 'gatherpress' ),
+			'gestureScrollMac' => __( 'Use ⌘ + scroll to zoom the map', 'gatherpress' ),
+			'tileError'        => __( 'Map could not be loaded. Please try again later.', 'gatherpress' ),
+		),
 	);
 
-	$gatherpress_wrapper_attr_args['data-gatherpress_block_name']  = 'map-embed';
-	$gatherpress_wrapper_attr_args['data-gatherpress_block_attrs'] = esc_attr(
-		(string) wp_json_encode( $gatherpress_block_attrs )
-	);
+	$gatherpress_wrapper_attr_args['data-wp-interactive'] = 'gatherpress/venue-map';
+	$gatherpress_wrapper_attr_args['data-wp-init']        = 'callbacks.init';
+	$gatherpress_wrapper_attr_args['data-wp-context']     = (string) wp_json_encode( $gatherpress_block_context );
 }
 
 printf(

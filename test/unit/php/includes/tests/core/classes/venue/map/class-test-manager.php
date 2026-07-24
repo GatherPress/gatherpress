@@ -367,12 +367,13 @@ class Test_Manager extends Base {
 			/**
 			 * No-op render — this stub is only used for registry assertions.
 			 *
-			 * @param float $latitude  Unused.
-			 * @param float $longitude Unused.
-			 * @param int   $zoom      Unused.
-			 * @param int   $width     Unused.
-			 * @param int   $height    Unused.
-			 * @param int   $density   Unused.
+			 * @param float  $latitude  Unused.
+			 * @param float  $longitude Unused.
+			 * @param int    $zoom      Unused.
+			 * @param int    $width     Unused.
+			 * @param int    $height    Unused.
+			 * @param int    $density   Unused.
+			 * @param string $map_type  Unused.
 			 *
 			 * @return null
 			 */
@@ -382,7 +383,8 @@ class Test_Manager extends Base {
 				int $zoom,
 				int $width,
 				int $height,
-				int $density = 1
+				int $density = 1,
+				string $map_type = 'roadmap'
 			) {
 				return null;
 			}

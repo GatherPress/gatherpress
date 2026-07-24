@@ -23,7 +23,7 @@ use WP_Post;
  *
  * @since 0.30.0
  */
-class Export extends Migrate {
+final class Export extends Migrate {
 
 	/**
 	 * Enforces a single instance of this class.
@@ -176,7 +176,7 @@ class Export extends Migrate {
 	 * @return void
 	 * @since 0.30.0
 	 */
-	public function render( array $callbacks, string $key, WP_Post $post ) {
+	public function render( array $callbacks, string $key, WP_Post $post ): void {
 		if (
 			! isset( $callbacks['export_callback'] ) ||
 			! is_callable( $callbacks['export_callback'] ) ||

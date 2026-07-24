@@ -2,6 +2,7 @@
  * WordPress dependencies
  */
 import { store } from '@wordpress/interactivity';
+import { speak } from '@wordpress/a11y';
 
 const { state: gatherPressState } = store( 'gatherpress' );
 
@@ -12,10 +13,12 @@ const { state: gatherPressState } = store( 'gatherpress' );
  * request doesn't leave the UI in a silent half-updated state. Mirrors the
  * server-error handling in the rsvp-form block (#1719).
  *
- * The message is a plain string, not wrapped in `__()`: this helper runs in the
- * Interactivity API script-module graph (`wp-scripts build --experimental-modules`),
- * which does not support `@wordpress/i18n` as a module dependency yet — the same
- * reason the rsvp-form block hardcodes its alert copy.
+ * The message is not wrapped in `__()`: this helper runs in the Interactivity
+ * API script-module graph (`wp-scripts build --experimental-modules`), which
+ * does not support `@wordpress/i18n` as a module dependency yet. The translated
+ * string is provided server-side via `wp_interactivity_state()` (see
+ * `Assets::add_interactivity_state()`), with an English fallback for contexts
+ * where the state is unavailable.
  *
  * @since 0.34.0
  *
@@ -28,8 +31,78 @@ function notifyRsvpFailure( error = null ) {
 	console.warn( 'RSVP API request failed:', error );
 	// eslint-disable-next-line no-alert
 	alert(
-		'Sorry, there was an issue processing your RSVP. Please try again.'
+		gatherPressState.i18n?.rsvpFailed ??
+			'Sorry, there was an issue processing your RSVP. Please try again.'
 	);
+}
+
+/**
+ * Announce the result of a successful RSVP update to screen readers.
+ *
+ * The RSVP status swap, attendee count, and online-event-link reveal are all
+ * silent DOM updates driven by watchers — without an announcement, assistive
+ * technology gets no feedback that the RSVP was recorded (WCAG 4.1.3 Status
+ * Messages). `speak()` uses the core-managed live region, which is immune to
+ * the DOM re-insertion `renderRsvpBlock` performs on the block's own subtree.
+ *
+ * The message is assembled from the API response rather than the requested
+ * status, so a server-side bump to the waiting list announces correctly.
+ * Translated strings arrive via `wp_interactivity_state()` (the module graph
+ * cannot import `@wordpress/i18n` — see `notifyRsvpFailure()` above); if the
+ * state is unavailable, no announcement is made rather than announcing in the
+ * wrong language. The attendee count picks a singular or plural template
+ * client-side, mirroring the rsvp-count and guest-count-display blocks, and
+ * the placeholder replace tolerates positional forms (`%1$d`) that
+ * translations may use.
+ *
+ * The online-link sentence is only spoken when the link actually becomes
+ * available with this update: the online-event-link block initializes
+ * `onlineEventLink` in state to an empty string when it renders without a
+ * visible link, so a previous value of `''` plus a link in the response is
+ * the reveal transition. An undefined previous value means the block never
+ * initialized (not present on this page), and a non-empty previous value
+ * means the link was already visible (e.g. a guest-count update) — neither
+ * should re-announce it.
+ *
+ * @since 0.35.0
+ *
+ * @param {Object}           res                The successful RSVP API response.
+ * @param {string|undefined} previousOnlineLink The `onlineEventLink` state value
+ *                                              captured before this response was
+ *                                              merged into state.
+ *
+ * @return {void}
+ */
+function announceRsvpSuccess( res, previousOnlineLink ) {
+	const i18n = gatherPressState.i18n ?? {};
+	const statusMessages = {
+		attending: i18n.rsvpAttending,
+		waiting_list: i18n.rsvpWaitingList,
+		not_attending: i18n.rsvpNotAttending,
+	};
+	const parts = [ statusMessages[ res.status ] ];
+
+	const count = res.responses?.attending?.count ?? 0;
+	const countTemplate =
+		1 === count ? i18n.attendeeCountSingular : i18n.attendeeCountPlural;
+
+	if ( countTemplate ) {
+		parts.push( countTemplate.replace( /%(?:\d+\$)?d/, String( count ) ) );
+	}
+
+	if (
+		'' === previousOnlineLink &&
+		res.online_link &&
+		i18n.onlineLinkReady
+	) {
+		parts.push( i18n.onlineLinkReady );
+	}
+
+	const message = parts.filter( Boolean ).join( ' ' );
+
+	if ( message ) {
+		speak( message, 'polite' );
+	}
 }
 
 /**
@@ -249,6 +322,12 @@ export async function sendRsvpApiRequest(
 		// so a failed request surfaces an error instead of throwing on
 		// `res.success` and leaving the button hidden (#1719).
 		if ( res?.success ) {
+			// Captured before the state merge below overwrites it: the
+			// announcement only mentions the online link when it transitions
+			// from initialized-but-empty to present (see announceRsvpSuccess).
+			const previousOnlineLink =
+				state?.posts?.[ postId ]?.onlineEventLink;
+
 			if ( state ) {
 				state.posts[ postId ] = {
 					...state.posts[ postId ],
@@ -265,6 +344,8 @@ export async function sendRsvpApiRequest(
 					onlineEventLink: res.online_link || '',
 				};
 			}
+
+			announceRsvpSuccess( res, previousOnlineLink );
 
 			if ( 'function' === typeof onSuccess ) {
 				try {

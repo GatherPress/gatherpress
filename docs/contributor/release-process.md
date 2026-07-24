@@ -48,24 +48,36 @@ Stable tags are cut from `main`; pre-release tags are cut from `develop`.
 
 ## Version bump generation
 
-Version bumps are never hand-edited. The generator (currently the
-`wp gatherpress develop generate_version --version=X.Y.Z` WP-CLI command in
-the [gatherpress-develop](https://github.com/GatherPress/gatherpress-develop)
-plugin; being ported into `.github/scripts` by
-[#1827](https://github.com/GatherPress/gatherpress/issues/1827)) needs a
-credits entry for the target version in gatherpress-develop's
-`data/credits.php` first, then writes:
+Version bumps are never hand-edited. The generator lives in-repo at
+`.github/scripts/release/generate-version.php`
+([#1827](https://github.com/GatherPress/gatherpress/issues/1827) retired the
+old `wp gatherpress develop generate_version` WP-CLI command in the
+[gatherpress-develop](https://github.com/GatherPress/gatherpress-develop)
+plugin). Run it via the **Version Bump** workflow (Actions → Version Bump →
+enter the version), or locally:
+
+```bash
+npm run version:bump -- --version=X.Y.Z
+npm i --package-lock-only
+```
+
+It reads the target version's credits file at
+`.github/scripts/release/credits/X.Y.Z.json` (hand-added first via a normal
+PR; new contributors accumulate in `credits/unreleased.json` and fold in
+automatically at bump time), then writes:
 
 - `gatherpress.php` `Version:` header, `package.json` version, `readme.txt`
   `Stable tag:`, the version badge in `README.md`, and the regenerated
   `includes/data/credits.php`.
 - The GatherPress Alpha `Version:` header in the sibling
-  `../gatherpress-alpha` checkout.
+  `../gatherpress-alpha` checkout, when present — the Version Bump workflow
+  runs with no sibling checkout and skips it, so alpha's version PR is opened
+  separately (see the release-train PR list below).
 - `SECURITY.md` supported-versions tables in both plugins.
 
-After running it, refresh the lockfile on the host: `npm i
---package-lock-only`. `README.md`, `readme.txt`, `includes/data/credits.php`,
-and `SECURITY.md` are generated output — never edit them by hand.
+`README.md`, `readme.txt`, `includes/data/credits.php`, and `SECURITY.md` are
+generated output — never edit them by hand. The `npm i --package-lock-only`
+step above refreshes the lockfile to match the new `package.json` version.
 
 ## Pre-release flow
 
@@ -74,8 +86,11 @@ in-progress release and see what's queued for it, without touching wp.org.
 
 **Prepare the version PRs** (one release train, three PRs, in merge order):
 
-1. `credits-X.Y.Z-suffix.N` → gatherpress-develop `main`: add the credits
-   entry.
+1. **Credits file** → this repo's
+   `.github/scripts/release/credits/X.Y.Z-suffix.N.json`, added via a normal
+   PR to `develop`. Usually the leads/team roster copied forward; new
+   contributors accumulate in `credits/unreleased.json` and the bump folds
+   them in automatically.
 2. `version-X.Y.Z-suffix.N` → gatherpress-alpha `main`: the synced version
    header (`Skip Changelog` label). Opened by that repo's **Version Bump**
    workflow — core's Version Bump workflow dispatches it automatically when
@@ -114,7 +129,8 @@ Testers downloading the pre-release zip see the same changelog body they'd see a
 - [GitHub Releases page](https://github.com/GatherPress/gatherpress/releases) shows the new tag with a "Pre-release" badge.
 - The release body matches the queued `.github/changelog/` entries.
 - The attached zip downloads as `gatherpress.X.Y.Z-alpha.N.zip` and unzips with a `gatherpress/` top-level directory.
-- wp.org listing at <https://wordpress.org/plugins/gatherpress/> is **unchanged**.
+- wp.org listing at <https://wordpress.org/plugins/gatherpress/> is **unchanged** — the served version comes from trunk's `Stable tag:`, which the trunk sync deliberately preserves.
+- For **beta** tags only: SVN trunk is synced to the beta so [translate.wordpress.org](https://translate.wordpress.org/projects/wp-plugins/gatherpress/) picks up new strings in its Development project (check they appear there), and a matching SVN tag is created so the beta shows as a named download in the plugin page's [Advanced view](https://wordpress.org/plugins/gatherpress/advanced/) — the new tag may need a release-confirmation click first.
 - Tag and release GatherPress Alpha at the same version (its own tag-driven `release.yml`, GitHub-only).
 
 ## Stable release flow
@@ -125,8 +141,8 @@ Testers downloading the pre-release zip see the same changelog body they'd see a
 
 - [ ] All issues in the release's milestone are closed or moved.
 - [ ] Queued `.github/changelog/` entries read correctly (skim, fix anything off).
-- [ ] Credits entry for `X.Y.Z` added in gatherpress-develop (`data/credits.php`) — by convention an exact copy of the latest pre-release entry, roster corrections applied there first.
-- [ ] `generate_version --version=X.Y.Z` run + `npm i --package-lock-only`; version PRs opened and merged in order: gatherpress-develop credits, alpha sync, core `version-X.Y.Z` → develop.
+- [ ] Credits file for `X.Y.Z` added at `.github/scripts/release/credits/X.Y.Z.json` — by convention a copy of the latest pre-release file, roster corrections applied to the pre-release file first.
+- [ ] `npm run version:bump -- --version=X.Y.Z` (or the Version Bump workflow) + `npm i --package-lock-only`; version PRs opened and merged in order: credits file, alpha sync, core `version-X.Y.Z` → develop.
 
 ### 2. Release merge (develop → main)
 
@@ -194,9 +210,8 @@ Every one of these is required; skipping any of them bites the next release:
   "Preparing demo-data for a new version of GatherPress" steps in the
   [gatherpress-demo-data README](https://github.com/GatherPress/gatherpress-demo-data#readme)
   so the Playground demo content matches the release.
-- [ ] **Delete the spent branches**: `version-X.Y.Z` (core and alpha),
-  `credits-X.Y.Z` (gatherpress-develop). The `release/X.Y.Z` branches go
-  when their PRs merge.
+- [ ] **Delete the spent branches**: `version-X.Y.Z` (core and alpha) and the
+  credits-file PR branch. The `release/X.Y.Z` branches go when their PRs merge.
 
 **Verify:**
 
@@ -223,9 +238,9 @@ on to the next minor.
 
     The `-x` records the source commit; the cherry-picks bring their
     changelog entry files along.
-3. **Version bump on the patch branch**: credits entry (copy the `X.Y.0`
-   entry forward, appending any new contributors) + `generate_version
-   --version=X.Y.1` + lockfile refresh.
+3. **Version bump on the patch branch**: add the `X.Y.1` credits file (copy
+   the `X.Y.0` file forward, appending any new contributors) +
+   `npm run version:bump -- --version=X.Y.1` + lockfile refresh.
 4. **PR `version-X.Y.1` → main, merge, tag `X.Y.1` on main.** The workflow
    ships it exactly like a stable release (it is one), and opens
    `release/X.Y.1` → develop.

@@ -25,7 +25,11 @@
 		}
 	},
 	"supports": {
+		"contentRole": true,
 		"html": false,
+		"interactivity": {
+			"clientNavigation": true
+		},
 		"color": {
 			"gradients": true,
 			"__experimentalDefaultControls": {

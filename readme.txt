@@ -1,10 +1,10 @@
 === GatherPress ===
-Contributors: mauteri, patricia70, hrmervin, jmarx75, stephenerdelyi, carstenbach, jordanpak, mahimadave, tusharaddweb, pkbhatt, supernovia
+Contributors: mauteri, patricia70, hrmervin, jmarx75, stephenerdelyi, carstenbach, supernovia
 Tags: events, event, meetup, community
 Requires at least: 7.0
 Tested up to: 7.0
 Requires PHP: 8.1
-Stable tag: 0.34.0
+Stable tag: 0.35.0-alpha.1
 License: GPL v2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 

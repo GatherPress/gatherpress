@@ -63,6 +63,95 @@ effect for unrelated comment lists on the same site, and it has no coupling to
 GatherPress's class names or singleton accessors, so it survives internal
 refactors without code changes on the integration side.
 
+## RSVP providers (identity sources)
+
+Since 0.35.0 an RSVP response is attributed to a **provider** — the source of
+the responder's identity. GatherPress ships two: `user` (a logged-in WordPress
+account) and `email` (an address supplied through the open RSVP form). Companion
+plugins can add their own — a membership system, an external ticketing platform,
+an SSO directory — so responses from those sources are stored, displayed, and
+de-duplicated alongside the built-in ones.
+
+### The pieces
+
+- **`GatherPress\Core\Rsvp\Response\Identity`** — a value object pairing an
+  `Identity_Type` with its value (a user ID, an email address, a URL, or an
+  external ID). It validates on construction, so an invalid email or a
+  non-existent user ID throws rather than persisting a bad row.
+- **`GatherPress\Core\Rsvp\Response\Identity_Type`** — the enum of identity
+  kinds: `WP_USER_ID`, `EMAIL`, `URL`, `EXTERNAL_ID`.
+- **`GatherPress\Core\Rsvp\Response\Provider\Base`** — the abstract a provider
+  extends. It declares what an identity *is* and how to present it; it does not
+  touch storage (the repository owns that).
+- **`GatherPress\Core\Rsvp\Response\Provider_Registry`** — the singleton that
+  holds registered providers and fires the registration hook.
+
+### The provider contract
+
+A provider extends `Base` and implements four abstract methods:
+
+| Method | Returns | Purpose |
+|---|---|---|
+| `get_slug()` (static) | `string` | Stable identifier, **4+ characters**. Stored as the provider taxonomy term and used as the registry key. |
+| `get_identity_type()` (static) | `Identity_Type` | Which identity kind this provider issues. |
+| `get_label()` (static) | `string` | Human-readable name shown in the RSVPs admin Type column. |
+| `get_display_name( Identity $identity )` | `string` | The best name to show for a given identity (see the WordPress-style "display name" note on `Base`). |
+
+`Base` also provides two overridable helpers with sensible defaults:
+`get_avatar_url( Identity $identity )` and `get_url( Identity $identity )`
+(profile link), each returning `?string`.
+
+### Registering a provider
+
+Hook `gatherpress_register_rsvp_types` and call `register()` with an instance.
+The action fires on `gatherpress_loaded` after the core providers register, so a
+plugin loaded normally is in time. `register()` returns `false` for a duplicate
+slug and throws `InvalidArgumentException` for a slug shorter than four
+characters.
+
+```php
+use GatherPress\Core\Rsvp\Response\Identity;
+use GatherPress\Core\Rsvp\Response\Identity_Type;
+use GatherPress\Core\Rsvp\Response\Provider\Base;
+
+final class Membership_Provider extends Base {
+
+	public static function get_slug(): string {
+		return 'membership';
+	}
+
+	public static function get_identity_type(): Identity_Type {
+		return Identity_Type::EXTERNAL_ID;
+	}
+
+	public static function get_label(): string {
+		return __( 'Member', 'my-plugin' );
+	}
+
+	public function get_display_name( Identity $identity ): string {
+		$member = my_plugin_get_member( (int) $identity->value );
+
+		return $member ? $member->name : '';
+	}
+}
+
+add_action( 'gatherpress_register_rsvp_types', function ( $registry ) {
+	$registry->register( new Membership_Provider() );
+} );
+```
+
+### What the provider term is (and isn't) for
+
+On save, GatherPress stamps the provider's slug as a `_gatherpress_rsvp_provider`
+taxonomy term on the RSVP comment. That term is the authoritative record of which
+provider issued a response — and for a custom identity type such as
+`EXTERNAL_ID` it is the **only** way to resolve the provider later, since it
+can't be inferred from a user ID or email. For the two core providers the term
+is an optimization: the admin Type column and hydration both fall back to
+inferring `user` from a real user ID and `email` from a valid author email when
+no term is present, so responses written by paths that don't stamp it (the open
+RSVP form) still resolve.
+
 ## Sitewide gating (RSVP Mode and Open RSVP)
 
 Since 0.34.0 the `rsvp_mode` setting is the master switch for the whole RSVP

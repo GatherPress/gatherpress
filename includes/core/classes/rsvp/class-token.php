@@ -28,7 +28,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
  * @package GatherPress\Core\Rsvp
  * @since 0.34.0
  */
-class Token {
+final class Token {
 
 	/**
 	 * The parameter name used for RSVP tokens in URLs.
@@ -158,11 +158,11 @@ class Token {
 	 * the page rendered in the same request — and on any subsequent
 	 * anonymous visit to the canonical event URL — reflects the new RSVP:
 	 *
-	 *   1. `Rsvp::CACHE_KEY` in `GATHERPRESS_CACHE_GROUP` — the
-	 *      per-event response cache that `Rsvp::responses()` reads.
-	 *      Without this, the rsvp / rsvp-response blocks still pull the
-	 *      pre-approval list on the very same page render that follows
-	 *      token redemption (see #1626).
+	 *   1. The `Cache` entry (a per-event transient) — the per-event
+	 *      response cache that `Rsvp::responses()` reads. Without this,
+	 *      the rsvp / rsvp-response blocks still pull the pre-approval
+	 *      list on the very same page render that follows token
+	 *      redemption (see #1626).
 	 *   2. `clean_post_cache()` — bumps WP's lastpostmodified and fires
 	 *      the `clean_post_cache` action that page-cache plugins
 	 *      (WP Rocket, W3TC, etc.) listen to for purging the canonical
@@ -188,10 +188,7 @@ class Token {
 		$post_id = (int) $this->comment->comment_post_ID;
 
 		if ( $post_id ) {
-			wp_cache_delete(
-				sprintf( Rsvp::CACHE_KEY, $post_id ),
-				GATHERPRESS_CACHE_GROUP
-			);
+			Cache::delete( $post_id );
 			clean_post_cache( $post_id );
 		}
 	}
@@ -204,7 +201,7 @@ class Token {
 	 * @return string The formatted meta key.
 	 */
 	private function get_meta_key(): string {
-		return sprintf( '%s%s', self::META_KEY_PREFIX, static::NAME );
+		return sprintf( '%s%s', self::META_KEY_PREFIX, self::NAME );
 	}
 
 	/**
@@ -413,7 +410,7 @@ class Token {
 
 		$token_value = $this->format_token_value( (int) $comment->comment_ID, $token );
 
-		return add_query_arg( static::NAME, $token_value, $event_url );
+		return add_query_arg( self::NAME, $token_value, $event_url );
 	}
 
 	/**

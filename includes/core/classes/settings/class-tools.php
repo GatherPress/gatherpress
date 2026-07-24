@@ -25,7 +25,7 @@ use GatherPress\Core\Utility;
  *
  * @since 0.34.0
  */
-class Tools extends Base {
+final class Tools extends Base {
 
 	/**
 	 * Enforces a single instance of this class.
@@ -55,7 +55,7 @@ class Tools extends Base {
 	 * @return string The slug for the tools settings page.
 	 */
 	protected function get_slug(): string {
-		return 'tools';
+		return 'tools_settings';
 	}
 
 	/**

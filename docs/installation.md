@@ -22,7 +22,7 @@ You can install GatherPress either from the WordPress plugin repository or manua
 
 GatherPress is compatible with most modern WordPress setups. Recommended:
 
-- PHP 7.4 or higher
+- PHP 8.1 or higher
 - WordPress 6.0 or higher
 - MySQL 5.6+ or MariaDB 10.0+
 - HTTPS support

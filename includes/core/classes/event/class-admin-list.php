@@ -18,7 +18,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 use Exception;
 use GatherPress\Core\Event;
 use GatherPress\Core\Rsvp\Query as Rsvp_Query;
-use GatherPress\Core\Rsvp\Rsvp;
+use GatherPress\Core\Rsvp;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Utility;
 use GatherPress\Core\Venue\Setup as Venue_Setup;
@@ -33,7 +33,7 @@ use WP_Query;
  * @package GatherPress\Core\Event
  * @since 0.34.0
  */
-class Admin_List {
+final class Admin_List {
 
 	/**
 	 * Enforces a single instance of this class.
@@ -329,7 +329,7 @@ class Admin_List {
 	 *
 	 * @return string[] Updated list of allowed query variables.
 	 */
-	public function query_vars( array $query_vars ) {
+	public function query_vars( array $query_vars ): array {
 		$query_vars[] = 'gatherpress_event_query';
 		return $query_vars;
 	}

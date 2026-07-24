@@ -19,13 +19,13 @@ use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Utility;
 
 /**
- * Class Rsvp_Settings.
+ * Class Rsvp.
  *
  * Handles the "RSVP" settings page for GatherPress.
  *
  * @since 0.34.0
  */
-class Rsvp_Settings extends Base {
+final class Rsvp extends Base {
 
 	/**
 	 * Enforces a single instance of this class.
@@ -98,20 +98,20 @@ class Rsvp_Settings extends Base {
 						'field'       => array(
 							'type'    => 'select',
 							'options' => array(
-								'default' => 'all_on',
+								'default' => 'enabled',
 								'items'   => array(
-									'all_on'        => Utility::post_type_label( 'all_items', Event::POST_TYPE ),
-									'per_event_on'  => sprintf(
+									'enabled'            => Utility::post_type_label( 'all_items', Event::POST_TYPE ),
+									'per_event_enabled'  => sprintf(
 										/* translators: %s: Singular post type label, e.g. "Event". */
-										__( 'Per %s (default on)', 'gatherpress' ),
+										__( 'Per %s (default enabled)', 'gatherpress' ),
 										Utility::post_type_label( 'singular_name', Event::POST_TYPE )
 									),
-									'per_event_off' => sprintf(
+									'per_event_disabled' => sprintf(
 										/* translators: %s: Singular post type label, e.g. "Event". */
-										__( 'Per %s (default off)', 'gatherpress' ),
+										__( 'Per %s (default disabled)', 'gatherpress' ),
 										Utility::post_type_label( 'singular_name', Event::POST_TYPE )
 									),
-									'disabled'      => __( 'Disabled', 'gatherpress' ),
+									'disabled'           => __( 'Disabled', 'gatherpress' ),
 								),
 							),
 						),
@@ -135,6 +135,9 @@ class Rsvp_Settings extends Base {
 								'default' => true,
 							),
 						),
+						'show_if'     => array(
+							'rsvp_mode' => array( 'not' => 'disabled' ),
+						),
 					),
 					'max_attendance_limit'  => array(
 						'labels'      => array(
@@ -156,6 +159,9 @@ class Rsvp_Settings extends Base {
 							'options' => array(
 								'default' => 50,
 							),
+						),
+						'show_if'     => array(
+							'rsvp_mode' => array( 'not' => 'disabled' ),
 						),
 					),
 					'max_guest_limit'       => array(
@@ -179,6 +185,9 @@ class Rsvp_Settings extends Base {
 								'max'     => '5',
 							),
 						),
+						'show_if'     => array(
+							'rsvp_mode' => array( 'not' => 'disabled' ),
+						),
 					),
 					'enable_anonymous_rsvp' => array(
 						'labels'      => array(
@@ -198,6 +207,9 @@ class Rsvp_Settings extends Base {
 							'options' => array(
 								'default' => false,
 							),
+						),
+						'show_if'     => array(
+							'rsvp_mode' => array( 'not' => 'disabled' ),
 						),
 					),
 				),
@@ -220,10 +232,10 @@ class Rsvp_Settings extends Base {
 						'field'       => array(
 							'type'    => 'select',
 							'options' => array(
-								'default' => 'off',
+								'default' => 'disabled',
 								'items'   => array(
-									'off' => __( 'Disable', 'gatherpress' ),
-									'on'  => __( 'Enable', 'gatherpress' ),
+									'disabled' => __( 'Disabled', 'gatherpress' ),
+									'enabled'  => __( 'Enabled', 'gatherpress' ),
 								),
 							),
 						),
@@ -249,6 +261,9 @@ class Rsvp_Settings extends Base {
 								),
 							),
 						),
+						'show_if'     => array(
+							'rsvp_cleanup_switch' => array( 'not' => 'disabled' ),
+						),
 					),
 					'rsvp_cleanup_interval'  => array(
 						'labels'      => array(
@@ -265,6 +280,9 @@ class Rsvp_Settings extends Base {
 								'min'     => 1,
 								'default' => 1,
 							),
+						),
+						'show_if'     => array(
+							'rsvp_cleanup_switch' => array( 'not' => 'disabled' ),
 						),
 					),
 				),

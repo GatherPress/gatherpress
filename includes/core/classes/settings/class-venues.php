@@ -28,7 +28,7 @@ use GatherPress\Core\Venue\Setup;
  *
  * @since 0.34.0
  */
-class Venues extends Base {
+final class Venues extends Base {
 
 	/**
 	 * Enforces a single instance of this class.
@@ -43,7 +43,7 @@ class Venues extends Base {
 	 * @return string The slug for the venues settings page.
 	 */
 	protected function get_slug(): string {
-		return 'venues';
+		return 'venues_settings';
 	}
 
 	/**
@@ -64,7 +64,7 @@ class Venues extends Base {
 	 * Get the priority for displaying the venues settings page.
 	 *
 	 * Priority 1 places Venues immediately after Events (PHP_INT_MIN) and
-	 * before Rsvp_Settings (priority 2), so the tabs flow content → venue →
+	 * before Rsvp (priority 2), so the tabs flow content → venue →
 	 * RSVP rather than relying on class-setup.php registration order.
 	 *
 	 * @since 0.34.0
@@ -119,7 +119,7 @@ class Venues extends Base {
 							sprintf(
 								// phpcs:disable Generic.Files.LineLength.TooLong -- One translator string for the full API key guidance sentence.
 								/* translators: %s: link to "Get an API key" documentation. */
-								__( 'Optional. Referrer-restricted Google Maps key (Embed + Static APIs). Roadmap and satellite views only. %s', 'gatherpress' ),
+								__( 'Optional. Referrer-restricted Google Maps key (Maps JavaScript + Embed + Static APIs). Unlocks all map types; without a key, interactive maps show roadmap and satellite views only. %s', 'gatherpress' ),
 								// phpcs:enable Generic.Files.LineLength.TooLong
 								'<a href="https://developers.google.com/maps/documentation/embed/get-api-key"'
 								. ' target="_blank" rel="noopener noreferrer">'
@@ -224,27 +224,6 @@ class Venues extends Base {
 								'default' => '',
 								'min'     => '0',
 								'max'     => (string) Map::HEIGHT_MAX,
-							),
-						),
-					),
-					'venue_map_default_width'        => array(
-						'labels'      => array(
-							'name' => __( 'Default Width', 'gatherpress' ),
-						),
-						'description' => __(
-							'Default pixel width for new venue map blocks. Leave empty for auto.',
-							'gatherpress'
-						),
-						'field'       => array(
-							'label'       => __( 'Width for new blocks (px):', 'gatherpress' ),
-							'type'        => 'number',
-							'size'        => 'small',
-							'placeholder' => __( 'Auto', 'gatherpress' ),
-							'allow_empty' => true,
-							'options'     => array(
-								'default' => '',
-								'min'     => '0',
-								'max'     => (string) Map::WIDTH_MAX,
 							),
 						),
 					),

@@ -22,7 +22,7 @@ use GatherPress\Core\Traits\Singleton;
  *
  * This class manages rsvp cleanup events.
  */
-class Cleanup {
+final class Cleanup {
 
 	use Singleton;
 
@@ -44,7 +44,7 @@ class Cleanup {
 	 *
 	 * @return void
 	 */
-	private function setup_hooks() {
+	private function setup_hooks(): void {
 		add_action( 'init', array( $this, 'schedule_cleanup_cron' ) );
 		add_action( 'gatherpress_rsvp_cleanup', array( $this, 'rsvp_cleanup' ), 10, 0 );
 		add_action( 'update_option_gatherpress_settings', array( $this, 'reschedule_cleanup_cron' ), 10, 2 );
@@ -111,11 +111,11 @@ class Cleanup {
 	 *
 	 * @return void
 	 */
-	public function schedule_cleanup_cron() {
+	public function schedule_cleanup_cron(): void {
 		$settings = Settings::get_instance();
 		$switch   = $settings->get( 'rsvp_cleanup_switch' );
 
-		if ( 'on' === $switch && ! wp_next_scheduled( 'gatherpress_rsvp_cleanup' ) ) {
+		if ( 'enabled' === $switch && ! wp_next_scheduled( 'gatherpress_rsvp_cleanup' ) ) {
 			$frequency       = $settings->get( 'rsvp_cleanup_frequency' );
 			$interval        = $settings->get( 'rsvp_cleanup_interval' );
 			$time_in_seconds = $this->convert_to_seconds( $frequency, $interval );
@@ -141,24 +141,14 @@ class Cleanup {
 	private function convert_to_seconds( string $frequency, int $interval ): int {
 		// Assign per-arm and return once so the dispatch isn't a five-arm
 		// return chain.
-		switch ( $frequency ) {
-			case 'daily':
-				$multiplier = DAY_IN_SECONDS;
-				break;
-			case 'weekly':
-				$multiplier = WEEK_IN_SECONDS;
-				break;
-			case 'monthly':
-				$multiplier = MONTH_IN_SECONDS;
-				break;
-			case 'yearly':
-				$multiplier = YEAR_IN_SECONDS;
-				break;
-			case 'hourly':
-			default:
-				$multiplier = HOUR_IN_SECONDS;
-				break;
-		}
+		$multiplier = match ( $frequency ) {
+			'daily'   => DAY_IN_SECONDS,
+			'weekly'  => WEEK_IN_SECONDS,
+			'monthly' => MONTH_IN_SECONDS,
+			'yearly'  => YEAR_IN_SECONDS,
+			// 'hourly' and any unrecognized frequency fall back to hourly.
+			default   => HOUR_IN_SECONDS,
+		};
 
 		return $interval * $multiplier;
 	}

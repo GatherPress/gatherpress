@@ -30,7 +30,7 @@ use Throwable;
  *
  * @since 0.35.0
  */
-class Google extends Base {
+final class Google extends Base {
 
 	/**
 	 * Google Static Maps API endpoint.
@@ -39,17 +39,6 @@ class Google extends Base {
 	 * @var string
 	 */
 	const STATIC_MAP_API_URL = 'https://maps.googleapis.com/maps/api/staticmap';
-
-	/**
-	 * Default map type for static renders in the minimal #1528 scope.
-	 *
-	 * Map-type threading through the orchestrator is deferred; all static
-	 * Google map renders request roadmap until block `type` flows into render().
-	 *
-	 * @since 0.35.0
-	 * @var string
-	 */
-	const DEFAULT_MAP_TYPE = 'roadmap';
 
 	/**
 	 * Provider slug used in post meta keys, filenames, and the
@@ -92,20 +81,17 @@ class Google extends Base {
 	 * Returns null when GD is unavailable, the API key is missing, the
 	 * HTTP request fails, or the response body is not a valid PNG.
 	 *
-	 * Return type is intentionally untyped at the PHP signature level for
-	 * PHP 7.4 compatibility (GD returns a `resource` there, not a
-	 * `GdImage`).
-	 *
 	 * @since 0.35.0
 	 *
-	 * @param float $latitude  Venue latitude in decimal degrees.
-	 * @param float $longitude Venue longitude in decimal degrees.
-	 * @param int   $zoom      Map zoom level (already clamped by the orchestrator).
-	 * @param int   $width     Logical pixel width (at density 1).
-	 * @param int   $height    Logical pixel height (at density 1).
-	 * @param int   $density   Pixel-density multiplier. 1 = standard, 2 = retina.
+	 * @param float  $latitude  Venue latitude in decimal degrees.
+	 * @param float  $longitude Venue longitude in decimal degrees.
+	 * @param int    $zoom      Map zoom level (already clamped by the orchestrator).
+	 * @param int    $width     Logical pixel width (at density 1).
+	 * @param int    $height    Logical pixel height (at density 1).
+	 * @param int    $density   Pixel-density multiplier. 1 = standard, 2 = retina.
+	 * @param string $map_type  Map type slug passed from the orchestrator.
 	 *
-	 * @return GdImage|resource|null Finished image, or null on failure.
+	 * @return GdImage|null Finished image, or null on failure.
 	 */
 	public function render(
 		float $latitude,
@@ -113,8 +99,9 @@ class Google extends Base {
 		int $zoom,
 		int $width,
 		int $height,
-		int $density = 1
-	) {
+		int $density = 1,
+		string $map_type = 'roadmap'
+	): ?GdImage {
 		// PHP built without the GD extension. Can't simulate in a unit test without making the runtime itself broken.
 		if ( ! function_exists( 'imagecreatefromstring' ) ) { // @codeCoverageIgnore
 			return null; // @codeCoverageIgnore
@@ -140,6 +127,10 @@ class Google extends Base {
 			return null;
 		}
 
+		if ( ! $this->supports_map_type( $map_type ) ) {
+			$map_type = 'roadmap';
+		}
+
 		$url       = $this->build_static_map_url(
 			$latitude,
 			$longitude,
@@ -147,6 +138,7 @@ class Google extends Base {
 			$width,
 			$height,
 			$density,
+			$map_type,
 			$api_key
 		);
 		$png_bytes = $this->fetch_static_map( $url );
@@ -171,6 +163,7 @@ class Google extends Base {
 	 * @param int    $width     Logical width in pixels.
 	 * @param int    $height    Logical height in pixels.
 	 * @param int    $density   Scale multiplier (`scale` query param).
+	 * @param string $map_type  Map type slug for the `maptype` query param.
 	 * @param string $api_key   Google Maps API key.
 	 *
 	 * @return string
@@ -182,6 +175,7 @@ class Google extends Base {
 		int $width,
 		int $height,
 		int $density,
+		string $map_type,
 		string $api_key
 	): string {
 		$marker = sprintf(
@@ -196,7 +190,7 @@ class Google extends Base {
 				'zoom'    => (string) $zoom,
 				'size'    => sprintf( '%dx%d', $width, $height ),
 				'scale'   => (string) $density,
-				'maptype' => self::DEFAULT_MAP_TYPE,
+				'maptype' => $map_type,
 				'markers' => $marker,
 				'key'     => $api_key,
 			),
@@ -247,9 +241,9 @@ class Google extends Base {
 	 *
 	 * @param string $bytes Raw PNG bytes from `fetch_static_map()`.
 	 *
-	 * @return GdImage|resource|false Decoded image, or false when the bytes don't decode.
+	 * @return GdImage|false Decoded image, or false when the bytes don't decode.
 	 */
-	protected function decode_png( string $bytes ) {
+	protected function decode_png( string $bytes ): GdImage|false {
 		try {
 			return imagecreatefromstring( $bytes );
 		} catch ( Throwable $e ) {

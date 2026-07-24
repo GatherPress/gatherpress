@@ -27,7 +27,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
  *
  * @since 0.34.0
  */
-class Redirect extends Endpoint_Type {
+final class Redirect extends Endpoint_Type {
 
 	/**
 	 * The target URL for the redirection.

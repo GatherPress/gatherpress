@@ -31,7 +31,7 @@ use WP_REST_Server;
  *
  * @since 0.34.0
  */
-class Geocoding {
+final class Geocoding {
 
 	/**
 	 * Enforces a single instance of this class.
@@ -585,7 +585,7 @@ class Geocoding {
 	 *
 	 * @return WP_REST_Response|WP_Error Response with coordinates or error.
 	 */
-	public function geocode_address( WP_REST_Request $request ) {
+	public function geocode_address( WP_REST_Request $request ): WP_REST_Response|WP_Error {
 		$rate_limited = $this->check_rate_limit();
 		if ( null !== $rate_limited ) {
 			return $rate_limited;
@@ -649,7 +649,7 @@ class Geocoding {
 	 *     country_code: string
 	 * }|WP_Error Result payload, or WP_Error on Photon HTTP failure.
 	 */
-	public function geocode_to_result( string $address ) {
+	public function geocode_to_result( string $address ): array|WP_Error {
 		// Cap oversize input for parity with search_addresses(); protects
 		// upstream from pathological requests.
 		$address = mb_substr( trim( $address ), 0, 200 );
@@ -776,7 +776,7 @@ class Geocoding {
 	 *
 	 * @return WP_REST_Response|WP_Error Suggestions or error.
 	 */
-	public function search_addresses( WP_REST_Request $request ) {
+	public function search_addresses( WP_REST_Request $request ): WP_REST_Response|WP_Error {
 		$rate_limited = $this->check_rate_limit();
 		if ( null !== $rate_limited ) {
 			return $rate_limited;
@@ -1007,78 +1007,159 @@ class Geocoding {
 	/**
 	 * Builds a one-line label from Photon GeocodeJson properties (country omitted).
 	 *
+	 * Component ordering is translator-controlled: the street line and the
+	 * locality tail are each composed through a translatable format string,
+	 * so polyglot teams can encode each locale's postal conventions (e.g.
+	 * German "Hauptstraße 42" and "10115 Berlin") without code changes.
+	 * The label is minted in the locale of the request doing the geocoding
+	 * and stored as plain text — it is not reformatted per viewer later.
+	 *
 	 * @since 0.34.0
+	 * @since 0.35.0 Ordering moved into translatable format strings; the
+	 *               `gatherpress_geocode_street_line` filter was replaced
+	 *               by `gatherpress_formatted_address`.
 	 *
 	 * @param array $properties Photon `properties` object.
 	 *
 	 * @return string Non-empty label or empty string.
 	 */
 	private function format_photon_feature_label( array $properties ): string {
-		$housenumber = isset( $properties['housenumber'] ) ? trim( (string) $properties['housenumber'] ) : '';
-		$street      = isset( $properties['street'] ) ? trim( (string) $properties['street'] ) : '';
-		$name        = isset( $properties['name'] ) ? trim( (string) $properties['name'] ) : '';
+		$pluck = static function ( string $key ) use ( $properties ): string {
+			// Skip non-scalar values — a malformed response with a nested
+			// object would otherwise emit "Array to string conversion"
+			// notices mid-label.
+			if ( ! isset( $properties[ $key ] ) || ! is_scalar( $properties[ $key ] ) ) {
+				return '';
+			}
+			return trim( (string) $properties[ $key ] );
+		};
 
-		$street_line = trim( $housenumber . ' ' . $street );
-
-		/**
-		 * Filters the street line (house number + street) in a geocode label.
-		 *
-		 * Defaults to "{house number} {street}" (e.g. "42 Hauptstraße").
-		 * German-speaking and other locales conventionally place the house
-		 * number after the street ("Hauptstraße 42"); both components are
-		 * passed so a developer can reorder them to match local convention,
-		 * for example by keying off `get_locale()`.
-		 *
-		 * @since 0.34.0
-		 *
-		 * @param string $street_line Default street line ("{house number} {street}").
-		 * @param string $housenumber House number component (may be empty).
-		 * @param string $street      Street name component (may be empty).
-		 */
-		$street_line = trim(
-			(string) apply_filters( 'gatherpress_geocode_street_line', $street_line, $housenumber, $street )
-		);
-
-		if ( '' === $street_line ) {
-			$street_line = $name;
-		}
+		$house_number = $pluck( 'housenumber' );
+		$street       = $pluck( 'street' );
+		$name         = $pluck( 'name' );
 
 		$locality = '';
 		foreach ( array( 'city', 'district', 'county' ) as $key ) {
-			if ( ! empty( $properties[ $key ] ) ) {
-				$locality = trim( (string) $properties[ $key ] );
+			$locality = $pluck( $key );
+			if ( '' !== $locality ) {
 				break;
 			}
 		}
 
-		$region = isset( $properties['state'] ) ? trim( (string) $properties['state'] ) : '';
+		$region   = $pluck( 'state' );
+		$postcode = $pluck( 'postcode' );
 
-		$parts = array();
-
-		if ( '' !== $street_line ) {
-			$parts[] = $street_line;
-		}
-		if ( '' !== $locality ) {
-			$parts[] = $locality;
-		}
-		if ( '' !== $region && 0 !== strcasecmp( $region, $locality ) ) {
-			$parts[] = $region;
-		}
-		if ( ! empty( $properties['postcode'] ) ) {
-			$postcode = trim( (string) $properties['postcode'] );
-			if ( '' !== $postcode ) {
-				$parts[] = $postcode;
-			}
+		// A region that duplicates the locality (city-states like Berlin)
+		// only adds noise — drop it before it reaches the format string.
+		if ( 0 === strcasecmp( $region, $locality ) ) {
+			$region = '';
 		}
 
-		$parts = array_filter(
-			array_map( 'trim', $parts ),
-			static function ( $part ): bool {
-				return '' !== $part;
-			}
+		/* translators: Address street line. 1: house number, 2: street name. Reorder freely, e.g. "%2$s %1$s". */
+		$street_format = _x( '%1$s %2$s', 'address street line', 'gatherpress' );
+		$street_line   = self::normalize_address_line(
+			sprintf( $street_format, $house_number, $street )
 		);
 
-		return implode( ', ', $parts );
+		// A feature with no street data (a POI, a station) labels by name.
+		if ( '' === $street_line ) {
+			$street_line = $name;
+		}
+
+		/* translators: Address locality line. 1: city, 2: region, 3: postal code. Reorder freely, e.g. "%3$s %1$s". */
+		$locality_format = _x( '%1$s, %2$s, %3$s', 'address locality line', 'gatherpress' );
+		$locality_line   = self::normalize_address_line(
+			sprintf( $locality_format, $locality, $region, $postcode )
+		);
+
+		$label = implode(
+			', ',
+			array_filter(
+				array( $street_line, $locality_line ),
+				static function ( string $part ): bool {
+					return '' !== $part;
+				}
+			)
+		);
+
+		/**
+		 * Filters the one-line address label minted from a geocoder result.
+		 *
+		 * Runs after the translatable street/locality format strings have
+		 * composed the default label, and receives every raw component so
+		 * a callback can rebuild the label wholesale — for example keyed
+		 * off `$components['country_code']` when postal conventions should
+		 * follow the address's country rather than the site language.
+		 *
+		 * Replaces the `gatherpress_geocode_street_line` filter from
+		 * 0.34.0, which only exposed the house-number/street portion.
+		 *
+		 * @since 0.35.0
+		 *
+		 * @param string $label      Default label (may be empty).
+		 * @param array  $components {
+		 *     Raw components from the geocoder response; empty string when absent.
+		 *
+		 *     @type string $house_number House number.
+		 *     @type string $street       Street name.
+		 *     @type string $name         Feature name (POIs, stations).
+		 *     @type string $locality     City, falling back to district, then county.
+		 *     @type string $region       State/region ('' when it duplicates the locality).
+		 *     @type string $postcode     Postal code.
+		 *     @type string $country      Country name.
+		 *     @type string $country_code Two-letter country code.
+		 * }
+		 */
+		return trim(
+			(string) apply_filters(
+				'gatherpress_formatted_address',
+				$label,
+				array(
+					'house_number' => $house_number,
+					'street'       => $street,
+					'name'         => $name,
+					'locality'     => $locality,
+					'region'       => $region,
+					'postcode'     => $postcode,
+					'country'      => $pluck( 'country' ),
+					'country_code' => $pluck( 'countrycode' ),
+				)
+			)
+		);
+	}
+
+	/**
+	 * Normalizes a sprintf-composed address line.
+	 *
+	 * The translatable format strings are filled with whatever components
+	 * the geocoder returned — missing pieces leave dangling separators
+	 * behind ("Montclair, , 07042" or " Main Road"). Splitting on commas,
+	 * trimming each segment, and dropping the empties turns every partial
+	 * fill into a clean line, so translators never have to reason about
+	 * absent components when reordering placeholders.
+	 *
+	 * @since 0.35.0
+	 *
+	 * @param string $line Raw sprintf output.
+	 *
+	 * @return string Cleaned line ('' when every component was empty).
+	 */
+	private static function normalize_address_line( string $line ): string {
+		$is_non_empty = static function ( string $piece ): bool {
+			return '' !== $piece;
+		};
+
+		// The inner space collapse handles adjacent placeholders with an
+		// empty middle component (a custom "%1$s %2$s %3$s" template with
+		// no region would otherwise yield "Montclair  07042").
+		$segments = array_map(
+			static function ( string $segment ) use ( $is_non_empty ): string {
+				return implode( ' ', array_filter( explode( ' ', $segment ), $is_non_empty ) );
+			},
+			array_map( 'trim', explode( ',', $line ) )
+		);
+
+		return implode( ', ', array_filter( $segments, $is_non_empty ) );
 	}
 
 	/**

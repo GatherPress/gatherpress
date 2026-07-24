@@ -54,7 +54,10 @@ import {
 	MAX_POLLS,
 	POLL_INTERVAL_MS,
 	RegenerateMapButton,
+	buildComboKey,
+	getDimensionValue,
 	parseAspectRatio,
+	parsePxDimension,
 	pickDescriptorForCombo,
 	resolveDimensions,
 	usePlaceholderPolling,
@@ -134,6 +137,29 @@ describe( 'RegenerateMapButton', () => {
 						height: 295,
 						aspect_ratio: '16/9',
 					},
+				} )
+			);
+		} );
+	} );
+
+	it( 'forwards map_type in the POST body when mapType is set', async () => {
+		render(
+			<RegenerateMapButton
+				{ ...defaultProps }
+				zoom={ 16 }
+				width={ 600 }
+				height={ 300 }
+				mapType="hybrid"
+			/>
+		);
+		fireEvent.click( screen.getByRole( 'button' ) );
+
+		await waitFor( () => {
+			expect( mockApiFetch ).toHaveBeenCalledWith(
+				expect.objectContaining( {
+					data: expect.objectContaining( {
+						map_type: 'hybrid',
+					} ),
 				} )
 			);
 		} );
@@ -383,22 +409,22 @@ describe( 'pickDescriptorForCombo', () => {
 
 	it( 'returns the active provider descriptor when present', () => {
 		const descriptors = {
-			osm: { '18x600x300': osmDescriptor },
-			google: { '18x600x300': googleDescriptor },
+			osm: { '18x600x300xroadmap': osmDescriptor },
+			google: { '18x600x300xroadmap': googleDescriptor },
 		};
 
 		expect(
-			pickDescriptorForCombo( descriptors, '18x600x300', 'google' )
+			pickDescriptorForCombo( descriptors, '18x600x300xroadmap', 'google' )
 		).toBe( googleDescriptor );
 	} );
 
 	it( 'falls back to another provider when the active one is missing the combo', () => {
 		const descriptors = {
-			osm: { '18x600x300': osmDescriptor },
+			osm: { '18x600x300xroadmap': osmDescriptor },
 		};
 
 		expect(
-			pickDescriptorForCombo( descriptors, '18x600x300', 'google' )
+			pickDescriptorForCombo( descriptors, '18x600x300xroadmap', 'google' )
 		).toBe( osmDescriptor );
 	} );
 
@@ -408,27 +434,27 @@ describe( 'pickDescriptorForCombo', () => {
 		};
 
 		expect(
-			pickDescriptorForCombo( descriptors, '18x600x300', 'osm' )
+			pickDescriptorForCombo( descriptors, '18x600x300xroadmap', 'osm' )
 		).toBeUndefined();
 	} );
 
 	it( 'tolerates a missing or empty descriptor map', () => {
 		expect(
-			pickDescriptorForCombo( undefined, '18x600x300', 'osm' )
+			pickDescriptorForCombo( undefined, '18x600x300xroadmap', 'osm' )
 		).toBeUndefined();
 		expect(
-			pickDescriptorForCombo( {}, '18x600x300', 'osm' )
+			pickDescriptorForCombo( {}, '18x600x300xroadmap', 'osm' )
 		).toBeUndefined();
 	} );
 
 	it( 'skips the active slug when scanning for fallbacks', () => {
 		const descriptors = {
-			osm: { '18x600x300': osmDescriptor },
+			osm: { '18x600x300xroadmap': osmDescriptor },
 			google: {},
 		};
 
 		expect(
-			pickDescriptorForCombo( descriptors, '18x600x300', 'google' )
+			pickDescriptorForCombo( descriptors, '18x600x300xroadmap', 'google' )
 		).toBe( osmDescriptor );
 	} );
 
@@ -438,11 +464,11 @@ describe( 'pickDescriptorForCombo', () => {
 		// is visited and returns. Covers both branches of the candidate check.
 		const descriptors = {
 			empty: {},
-			osm: { '18x600x300': osmDescriptor },
+			osm: { '18x600x300xroadmap': osmDescriptor },
 		};
 
 		expect(
-			pickDescriptorForCombo( descriptors, '18x600x300', 'google' )
+			pickDescriptorForCombo( descriptors, '18x600x300xroadmap', 'google' )
 		).toBe( osmDescriptor );
 	} );
 } );
@@ -502,6 +528,91 @@ describe( 'resolveDimensions', () => {
 	} );
 } );
 
+describe( 'buildComboKey', () => {
+	it( 'includes map type in the combo key', () => {
+		expect( buildComboKey( 16, 600, 300, 'hybrid' ) ).toBe(
+			'16x600x300xhybrid'
+		);
+	} );
+
+	it( 'defaults to roadmap when map type is empty', () => {
+		expect( buildComboKey( 16, 600, 300, '' ) ).toBe(
+			'16x600x300xroadmap'
+		);
+	} );
+} );
+
+describe( 'parsePxDimension', () => {
+	it( 'passes through a whole number', () => {
+		expect( parsePxDimension( 512 ) ).toBe( 512 );
+	} );
+
+	it( 'rounds a fractional number', () => {
+		expect( parsePxDimension( 512.6 ) ).toBe( 513 );
+	} );
+
+	it( 'clamps a negative number to 0', () => {
+		expect( parsePxDimension( -20 ) ).toBe( 0 );
+	} );
+
+	it( 'parses a px-suffixed string', () => {
+		expect( parsePxDimension( '512px' ) ).toBe( 512 );
+	} );
+
+	it( 'parses a unitless numeric string', () => {
+		expect( parsePxDimension( '512' ) ).toBe( 512 );
+	} );
+
+	it( 'tolerates surrounding whitespace and rounds fractional strings', () => {
+		expect( parsePxDimension( '  512.4 px ' ) ).toBe( 512 );
+	} );
+
+	it( 'resolves non-px units to 0 (auto)', () => {
+		expect( parsePxDimension( '50%' ) ).toBe( 0 );
+		expect( parsePxDimension( '20rem' ) ).toBe( 0 );
+	} );
+
+	it( 'resolves CSS keywords to 0 (auto)', () => {
+		expect( parsePxDimension( 'fit-content' ) ).toBe( 0 );
+	} );
+
+	it( 'resolves unset and non-finite values to 0', () => {
+		expect( parsePxDimension( undefined ) ).toBe( 0 );
+		expect( parsePxDimension( null ) ).toBe( 0 );
+		expect( parsePxDimension( NaN ) ).toBe( 0 );
+		expect( parsePxDimension( '' ) ).toBe( 0 );
+	} );
+} );
+
+describe( 'getDimensionValue', () => {
+	it( 'returns the style.dimensions value when present', () => {
+		expect(
+			getDimensionValue(
+				{ style: { dimensions: { width: '512px' } } },
+				'width'
+			)
+		).toBe( '512px' );
+	} );
+
+	it( 'treats an empty style value as unset', () => {
+		expect(
+			getDimensionValue(
+				{ style: { dimensions: { height: '' } } },
+				'height'
+			)
+		).toBeUndefined();
+	} );
+
+	it( 'ignores pre-0.35 numeric attributes (Alpha migrates those)', () => {
+		expect( getDimensionValue( { width: 640 }, 'width' ) ).toBeUndefined();
+	} );
+
+	it( 'returns undefined when the dimension is absent', () => {
+		expect( getDimensionValue( {}, 'height' ) ).toBeUndefined();
+		expect( getDimensionValue( undefined, 'height' ) ).toBeUndefined();
+	} );
+} );
+
 describe( 'usePlaceholderPolling', () => {
 	// Minimal test harness that invokes the hook inside a React component.
 	// The component renders nothing — it exists only to run the effect and
@@ -512,6 +623,8 @@ describe( 'usePlaceholderPolling', () => {
 	};
 
 	beforeEach( () => {
+		mockApiFetch.mockReset();
+		mockApiFetch.mockResolvedValue( { descriptors: {}, reason: '' } );
 		mockInvalidateResolution.mockReset();
 		jest.useFakeTimers();
 	} );
@@ -548,6 +661,35 @@ describe( 'usePlaceholderPolling', () => {
 		jest.advanceTimersByTime( POLL_INTERVAL_MS * 3 );
 
 		expect( mockInvalidateResolution ).not.toHaveBeenCalled();
+	} );
+
+	it( 'POSTs ensure_only when combo is provided', async () => {
+		render(
+			<Harness
+				{ ...activeProps }
+				combo={ {
+					key: '16x600x300xhybrid',
+					zoom: 16,
+					width: 600,
+					height: 300,
+					aspectRatio: '2/1',
+					mapType: 'hybrid',
+				} }
+			/>
+		);
+
+		await waitFor( () => {
+			expect( mockApiFetch ).toHaveBeenCalledWith(
+				expect.objectContaining( {
+					path: '/gatherpress/v1/venue/42/regenerate-map',
+					method: 'POST',
+					data: expect.objectContaining( {
+						ensure_only: true,
+						map_type: 'hybrid',
+					} ),
+				} )
+			);
+		} );
 	} );
 
 	it( 'ticks on the expected cadence and forwards the resolver args', () => {
