@@ -4,7 +4,7 @@
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 return array (
-  'version' => '0.35.0-alpha.1',
+  'version' => '0.35.0-alpha.2',
   'leads' => 
   array (
     0 => 
@@ -132,6 +132,32 @@ return array (
     ),
     2 => 
     array (
+      'id' => 15029042,
+      'name' => 'FahimMurshed',
+      'link' => 'https://profiles.wordpress.org/fahimmurshed/',
+      'slug' => 'fahimmurshed',
+      'avatar_urls' => 
+      array (
+        24 => '//www.gravatar.com/avatar/fd11fef5cb83c5448e7b260729a0635d?s=24&#038;r=g&#038;d=mm',
+        48 => '//www.gravatar.com/avatar/fd11fef5cb83c5448e7b260729a0635d?s=48&#038;r=g&#038;d=mm',
+        96 => '//www.gravatar.com/avatar/fd11fef5cb83c5448e7b260729a0635d?s=96&#038;r=g&#038;d=mm',
+      ),
+    ),
+    3 => 
+    array (
+      'id' => 23534793,
+      'name' => 'lheroorg',
+      'link' => 'https://profiles.wordpress.org/lheroorg/',
+      'slug' => 'lheroorg',
+      'avatar_urls' => 
+      array (
+        24 => '//www.gravatar.com/avatar/ee6cccae40a29f2fc886d06c55b48426?s=24&#038;r=g&#038;d=mm',
+        48 => '//www.gravatar.com/avatar/ee6cccae40a29f2fc886d06c55b48426?s=48&#038;r=g&#038;d=mm',
+        96 => '//www.gravatar.com/avatar/ee6cccae40a29f2fc886d06c55b48426?s=96&#038;r=g&#038;d=mm',
+      ),
+    ),
+    4 => 
+    array (
       'id' => 23285232,
       'name' => 'Andrew Matia',
       'link' => 'https://profiles.wordpress.org/linewebdigital/',
@@ -143,7 +169,20 @@ return array (
         96 => '//www.gravatar.com/avatar/07edde51bd6af2361a1dd84d23b0a180?s=96&#038;r=g&#038;d=mm',
       ),
     ),
-    3 => 
+    5 => 
+    array (
+      'id' => 23409562,
+      'name' => 'matthewneilcowan',
+      'link' => 'https://profiles.wordpress.org/matthewneilcowan/',
+      'slug' => 'matthewneilcowan',
+      'avatar_urls' => 
+      array (
+        24 => '//www.gravatar.com/avatar/2ac9c9ef23e824f4727750a76536392e?s=24&#038;r=g&#038;d=mm',
+        48 => '//www.gravatar.com/avatar/2ac9c9ef23e824f4727750a76536392e?s=48&#038;r=g&#038;d=mm',
+        96 => '//www.gravatar.com/avatar/2ac9c9ef23e824f4727750a76536392e?s=96&#038;r=g&#038;d=mm',
+      ),
+    ),
+    6 => 
     array (
       'id' => 23532709,
       'name' => 'w3lld1',
