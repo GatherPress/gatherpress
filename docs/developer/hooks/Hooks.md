@@ -130,6 +130,6 @@
 
 - [`gatherpress_loaded`](gatherpress_loaded.md) Fires once GatherPress has finished bootstrapping its core classes.
 
-## network-page.php
+## index.php
 
 - [`gatherpress_settings_section`](gatherpress_settings_section.md) Fires so tabs that render via the GatherPress settings section action

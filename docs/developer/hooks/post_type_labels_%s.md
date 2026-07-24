@@ -18,23 +18,23 @@ add_filter(
 
 ## Files
 
-- [includes/core/classes/venue/class-setup.php:722](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/venue/class-setup.php#L722)
-```php
-apply_filters(
-			sprintf( // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.DynamicHooknameFound
-				'post_type_labels_%s',
-				Venue::POST_TYPE
-			),
-			$default_labels
-		)
-```
-
 - [includes/core/classes/event/class-setup.php:231](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/event/class-setup.php#L231)
 ```php
 apply_filters(
 			sprintf( // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.DynamicHooknameFound
 				'post_type_labels_%s',
 				Event::POST_TYPE
+			),
+			$default_labels
+		)
+```
+
+- [includes/core/classes/venue/class-setup.php:722](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/venue/class-setup.php#L722)
+```php
+apply_filters(
+			sprintf( // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.DynamicHooknameFound
+				'post_type_labels_%s',
+				Venue::POST_TYPE
 			),
 			$default_labels
 		)
