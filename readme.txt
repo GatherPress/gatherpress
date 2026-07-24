@@ -31,9 +31,9 @@ GatherPress is built by the WordPress community for the people who organize it: 
 
 = Try it before you install =
 
-Open a working demo in your browser through WordPress Playground. No signup, no setup, and real data to click around in.
+Hit the **Live Preview** button on this page to open a working demo in your browser. No signup, no setup, and real data to click around in.
 
-[Try GatherPress in WordPress Playground](https://playground.wordpress.net/?blueprint-url=https://raw.githubusercontent.com/GatherPress/gatherpress/develop/.wordpress-org/blueprints/blueprint.json) | [Watch the intro demo](https://gatherpress.org/demovideo)
+Prefer to watch first? [There is a short intro demo](https://gatherpress.org/demovideo).
 
 = Join our community =
 
