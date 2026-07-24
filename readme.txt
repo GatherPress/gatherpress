@@ -85,9 +85,14 @@ Default map tile provider when the OpenStreetMap map platform is selected. When 
 
 Override the tile URL or attribution with the `gatherpress_interactive_map_tile_url` and `gatherpress_interactive_map_tile_attribution` filters.
 
-= Google Maps (maps.google.com) =
+= Google Maps (maps.googleapis.com, www.google.com, maps.google.com) =
 
-Alternative map provider, only used when a site opts in by choosing "Google Maps" in GatherPress settings. When enabled, the visitor's browser embeds a Google Maps iframe.
+Alternative map provider, only used when a site opts in by choosing "Google Maps" in GatherPress settings. What the visitor's browser requests depends on whether a Google Maps API key is configured:
+
+- With an API key, the browser loads the Maps JavaScript API from maps.googleapis.com and renders the map in the page.
+- Without a key, or if that script fails to load, the browser embeds a Google Maps iframe from www.google.com or maps.google.com instead.
+
+Either way the request carries the venue coordinates, the visitor's IP, and standard browser headers. A configured API key travels with the request and is visible in the page source, so restrict it by HTTP referrer in Google Cloud.
 
 - Google Maps terms: https://cloud.google.com/maps-platform/terms/
 - Google privacy policy: https://policies.google.com/privacy
