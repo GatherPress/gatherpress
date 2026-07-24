@@ -95,9 +95,6 @@ final class Setup {
 			3
 		);
 		add_action( 'init', array( $this, 'register_post_type' ) );
-		// Priority 11 so core's `_add_post_type_submenus()` (default priority)
-		// has already placed the venue listing under its parent menu.
-		add_action( 'admin_menu', array( $this, 'register_add_new_submenu' ), 11 );
 		// Priority 9 so the implicit `gatherpress-shadow-source` support is
 		// declared before Shadow_Source's own priority-10 `registered_post_type`
 		// callback wires its per-post-type lifecycle hooks for that post type.
@@ -116,55 +113,6 @@ final class Setup {
 			10,
 			2
 		);
-	}
-
-	/**
-	 * Add an "Add New Venue" item to whichever menu the venue post type sits under.
-	 *
-	 * A post type whose `show_in_menu` is a string is nested inside another
-	 * menu, and core gives those exactly one entry: `_add_post_type_submenus()`
-	 * registers the listing screen and nothing else. Only post types with
-	 * `show_in_menu === true` get the `all_items` plus `add_new_item` pair that
-	 * `wp-admin/menu.php` builds.
-	 *
-	 * Venues are nested under Events, so that asymmetry is why the admin menu
-	 * offers "Add New Event" but no venue equivalent. It also reaches the
-	 * command palette, whose "Go to:" entries core generates by walking the
-	 * `$menu` and `$submenu` globals: an admin menu with no "Add New Venue"
-	 * item produces no command for creating one either.
-	 *
-	 * Registering the missing item closes both gaps at once, and the label
-	 * comes from the post type so a venue post type renamed to "Location"
-	 * reads "Add New Location" without extra wiring.
-	 *
-	 * @since 0.35.0
-	 *
-	 * @return void
-	 */
-	public function register_add_new_submenu(): void {
-		foreach ( get_post_types_by_support( 'gatherpress-venue-information' ) as $post_type ) {
-			$post_type_object = get_post_type_object( $post_type );
-
-			if ( ! $post_type_object || ! $post_type_object->show_ui ) {
-				continue;
-			}
-
-			$parent_slug = $post_type_object->show_in_menu;
-
-			// A top-level post type already gets its own "Add New" entry from
-			// core; only the nested (string `show_in_menu`) case is missing one.
-			if ( ! is_string( $parent_slug ) || '' === $parent_slug ) {
-				continue;
-			}
-
-			add_submenu_page(
-				$parent_slug,
-				$post_type_object->labels->add_new_item,
-				$post_type_object->labels->add_new_item,
-				$post_type_object->cap->create_posts,
-				sprintf( 'post-new.php?post_type=%s', $post_type )
-			);
-		}
 	}
 
 	/**

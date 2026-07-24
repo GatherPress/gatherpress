@@ -79,12 +79,6 @@ class Test_Setup extends Base {
 			),
 			array(
 				'type'     => 'action',
-				'name'     => 'admin_menu',
-				'priority' => 11,
-				'callback' => array( $instance, 'register_add_new_submenu' ),
-			),
-			array(
-				'type'     => 'action',
 				'name'     => 'registered_post_type',
 				'priority' => 9,
 				'callback' => array( $instance, 'maybe_link_shadow_source_support' ),
@@ -116,110 +110,6 @@ class Test_Setup extends Base {
 		);
 
 		$this->assert_hooks( $hooks, $instance );
-	}
-
-	/**
-	 * Coverage for register_add_new_submenu — the nested venue post type gets
-	 * the "Add New" entry core omits for post types whose `show_in_menu` is a
-	 * parent slug rather than `true`.
-	 *
-	 * @covers ::register_add_new_submenu
-	 *
-	 * @return void
-	 */
-	public function test_register_add_new_submenu_adds_entry_for_nested_venue(): void {
-		$instance = Setup::get_instance();
-
-		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
-		require_once ABSPATH . 'wp-admin/includes/plugin.php';
-
-		$instance->register_add_new_submenu();
-
-		$parent  = get_post_type_object( Venue::POST_TYPE )->show_in_menu;
-		$entries = $GLOBALS['submenu'][ $parent ] ?? array();
-		$slugs   = wp_list_pluck( $entries, 2 );
-
-		$this->assertContains(
-			sprintf( 'post-new.php?post_type=%s', Venue::POST_TYPE ),
-			$slugs,
-			'Failed to assert the venue "Add New" item was added under its parent menu.'
-		);
-	}
-
-	/**
-	 * Coverage for register_add_new_submenu — post types that already own a
-	 * top-level menu are skipped, since core builds their "Add New" entry.
-	 *
-	 * @covers ::register_add_new_submenu
-	 *
-	 * @return void
-	 */
-	public function test_register_add_new_submenu_skips_top_level_post_type(): void {
-		$instance  = Setup::get_instance();
-		$post_type = 'gp_top_venue';
-
-		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
-		require_once ABSPATH . 'wp-admin/includes/plugin.php';
-
-		register_post_type(
-			$post_type,
-			array(
-				'public'       => true,
-				'show_ui'      => true,
-				'show_in_menu' => true,
-				'supports'     => array( 'title', 'gatherpress-venue-information' ),
-			)
-		);
-
-		$instance->register_add_new_submenu();
-
-		$entries = $GLOBALS['submenu'][ sprintf( 'edit.php?post_type=%s', $post_type ) ] ?? array();
-
-		$this->assertNotContains(
-			sprintf( 'post-new.php?post_type=%s', $post_type ),
-			wp_list_pluck( $entries, 2 ),
-			'Failed to assert a top-level venue post type is left to core.'
-		);
-
-		unregister_post_type( $post_type );
-	}
-
-	/**
-	 * Coverage for register_add_new_submenu — a venue post type with no admin
-	 * UI never reaches the submenu registration.
-	 *
-	 * @covers ::register_add_new_submenu
-	 *
-	 * @return void
-	 */
-	public function test_register_add_new_submenu_skips_post_type_without_ui(): void {
-		$instance  = Setup::get_instance();
-		$post_type = 'gp_hidden_venue';
-
-		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
-		require_once ABSPATH . 'wp-admin/includes/plugin.php';
-
-		register_post_type(
-			$post_type,
-			array(
-				'public'       => false,
-				'show_ui'      => false,
-				'show_in_menu' => 'edit.php?post_type=gatherpress_event',
-				'supports'     => array( 'title', 'gatherpress-venue-information' ),
-			)
-		);
-
-		$instance->register_add_new_submenu();
-
-		$entries = $GLOBALS['submenu']['edit.php?post_type=gatherpress_event'] ?? array();
-
-		$this->assertNotContains(
-			sprintf( 'post-new.php?post_type=%s', $post_type ),
-			wp_list_pluck( $entries, 2 ),
-			'Failed to assert a venue post type without admin UI is skipped.'
-		);
-
-		unregister_post_type( $post_type );
 	}
 
 	/**
