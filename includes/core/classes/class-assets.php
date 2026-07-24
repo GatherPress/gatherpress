@@ -101,10 +101,10 @@ class Assets {
 		// Set priority to 11 to not conflict with media modal.
 		add_action( 'admin_footer', array( $this, 'event_communication_modal' ), 11 );
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_timezone_shim' ) );
-		// Late priority (100) so that on the frontend this runs after any
+		// Last priority so that on the frontend this runs after every
 		// block/script that might enqueue wp-date for this request — see
-		// the is_admin()/enqueued-vs-registered branch in the callback.
-		add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_timezone_shim' ), 100 );
+		// the registered-vs-enqueued check in the callback.
+		add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_timezone_shim' ), PHP_INT_MAX );
 
 		add_filter( 'render_block', array( $this, 'maybe_enqueue_styles' ), 10, 2 );
 		add_filter( 'render_block', array( $this, 'maybe_enqueue_tooltip_assets' ) );
@@ -133,8 +133,8 @@ class Assets {
 	 * every single frontend pageview, including pages with no
 	 * GatherPress block at all. On the frontend we instead check whether
 	 * `wp-date` has actually been *enqueued* by something else for this
-	 * request, and only patch it in that case. The callback is hooked at
-	 * a late priority (100) on `wp_enqueue_scripts` so that check reflects
+	 * request, and only patch it in that case. The callback is hooked last
+	 * (`PHP_INT_MAX`) on `wp_enqueue_scripts` so that check reflects
 	 * enqueues made by GatherPress's own blocks and other plugins/themes
 	 * earlier in the request.
 	 *
@@ -147,17 +147,18 @@ class Assets {
 	 * @return void
 	 */
 	public function enqueue_timezone_shim(): void {
-		if ( is_admin() ) {
-			if ( ! wp_script_is( 'wp-date', 'registered' ) ) {
-				return;
-			}
+		$is_admin = is_admin();
 
-			wp_enqueue_script( 'wp-date' );
-		} elseif ( ! wp_script_is( 'wp-date', 'enqueued' ) ) {
-			// Frontend: never force-load wp-date (and moment.js) on pages
-			// that don't otherwise need it. Only patch the timezone
-			// setting if another block/script already enqueued wp-date.
+		// Admin screens have wp-date registered on essentially every request,
+		// so "registered" is a sufficient signal there. The frontend requires
+		// an actual enqueue by something else, which is what keeps wp-date
+		// (and its moment.js dependency) off pages that don't need it.
+		if ( ! wp_script_is( 'wp-date', $is_admin ? 'registered' : 'enqueued' ) ) {
 			return;
+		}
+
+		if ( $is_admin ) {
+			wp_enqueue_script( 'wp-date' );
 		}
 
 		$script_path = GATHERPRESS_CORE_PATH . '/includes/templates/admin/timezone-shim.js';

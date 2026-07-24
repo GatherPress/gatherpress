@@ -88,7 +88,7 @@ class Test_Assets extends Base {
 			array(
 				'type'     => 'action',
 				'name'     => 'wp_enqueue_scripts',
-				'priority' => 10,
+				'priority' => PHP_INT_MAX,
 				'callback' => array( $instance, 'enqueue_timezone_shim' ),
 			),
 			array(
@@ -110,55 +110,138 @@ class Test_Assets extends Base {
 	}
 
 	/**
-	 * Coverage for enqueue_timezone_shim when wp-date isn't registered.
+	 * Coverage for enqueue_timezone_shim in the admin when wp-date isn't registered.
 	 *
 	 * @covers ::enqueue_timezone_shim
 	 *
 	 * @return void
 	 */
-	public function test_enqueue_timezone_shim_bails_without_wp_date(): void {
-		$instance       = Assets::get_instance();
-		$was_registered = wp_script_is( 'wp-date', 'registered' );
+	public function test_enqueue_timezone_shim_bails_in_admin_without_wp_date(): void {
+		$instance = Assets::get_instance();
 
-		if ( $was_registered ) {
-			wp_deregister_script( 'wp-date' );
-		}
+		set_current_screen( 'post.php' );
+		wp_deregister_script( 'wp-date' );
 
 		$instance->enqueue_timezone_shim();
 
-		$this->assertFalse( wp_script_is( 'wp-date', 'enqueued' ) );
+		$this->assertFalse(
+			wp_script_is( 'wp-date', 'enqueued' ),
+			'Failed to assert wp-date stays unenqueued when it is not registered.'
+		);
 
-		// Leave the global script registry as we found it.
-		if ( $was_registered ) {
-			wp_default_packages_scripts( wp_scripts() );
-		}
+		// Leave the global script registry and screen as we found them.
+		wp_default_packages_scripts( wp_scripts() );
+		set_current_screen( 'front' );
 	}
 
 	/**
-	 * Coverage for enqueue_timezone_shim when wp-date is registered — enqueues
-	 * the shim and attaches the inline script that normalizes `UTC+0` / `UTC-0`.
+	 * Coverage for enqueue_timezone_shim in the admin when wp-date is registered.
+	 *
+	 * The admin path enqueues wp-date itself and attaches the inline script
+	 * that normalizes `UTC+0` / `UTC-0`.
 	 *
 	 * @covers ::enqueue_timezone_shim
 	 *
 	 * @return void
 	 */
-	public function test_enqueue_timezone_shim_enqueues_and_attaches_inline_script(): void {
+	public function test_enqueue_timezone_shim_enqueues_and_attaches_inline_script_in_admin(): void {
 		$instance = Assets::get_instance();
 
-		if ( ! wp_script_is( 'wp-date', 'registered' ) ) {
-			// phpcs:ignore WordPress.WP.EnqueuedResourceParameters.NoExplicitVersion -- Test registration; no real asset.
-			wp_register_script( 'wp-date', '', array(), '1', false );
-		}
+		set_current_screen( 'post.php' );
+
+		// Re-register from scratch so any inline data attached by an earlier
+		// test can't stand in for the inline script this one is asserting on.
+		wp_deregister_script( 'wp-date' );
+		// phpcs:ignore WordPress.WP.EnqueuedResourceParameters.NoExplicitVersion -- Test registration; no real asset.
+		wp_register_script( 'wp-date', '', array(), '1', false );
 
 		$instance->enqueue_timezone_shim();
 
-		$this->assertTrue( wp_script_is( 'wp-date', 'enqueued' ) );
+		$this->assertTrue(
+			wp_script_is( 'wp-date', 'enqueued' ),
+			'Failed to assert wp-date is enqueued in the admin.'
+		);
 
 		$inline = wp_scripts()->get_data( 'wp-date', 'after' );
 		$joined = is_array( $inline ) ? implode( "\n", $inline ) : (string) $inline;
 
 		$this->assertStringContainsString( 'wp.date.setSettings', $joined );
 		$this->assertStringContainsString( 'UTC', $joined );
+
+		// Reset for downstream tests.
+		wp_dequeue_script( 'wp-date' );
+		wp_deregister_script( 'wp-date' );
+		wp_default_packages_scripts( wp_scripts() );
+		set_current_screen( 'front' );
+	}
+
+	/**
+	 * Coverage for enqueue_timezone_shim on the front end when nothing else
+	 * enqueued wp-date.
+	 *
+	 * Regression for #1944. WordPress core registers wp-date on every request
+	 * whether or not the page uses it, so the old `registered` check never
+	 * bailed on the front end and dragged wp-date (and its moment dependency)
+	 * onto every pageview, including pages with no GatherPress block at all.
+	 *
+	 * @covers ::enqueue_timezone_shim
+	 *
+	 * @return void
+	 */
+	public function test_enqueue_timezone_shim_does_not_force_wp_date_on_front_end(): void {
+		$instance = Assets::get_instance();
+
+		set_current_screen( 'front' );
+
+		wp_deregister_script( 'wp-date' );
+		// phpcs:ignore WordPress.WP.EnqueuedResourceParameters.NoExplicitVersion -- Test registration; no real asset.
+		wp_register_script( 'wp-date', '', array(), '1', false );
+
+		$instance->enqueue_timezone_shim();
+
+		$this->assertFalse(
+			wp_script_is( 'wp-date', 'enqueued' ),
+			'Failed to assert wp-date stays off the front end when nothing else enqueued it.'
+		);
+
+		// Reset for downstream tests.
+		wp_deregister_script( 'wp-date' );
+		wp_default_packages_scripts( wp_scripts() );
+	}
+
+	/**
+	 * Coverage for enqueue_timezone_shim on the front end when another block or
+	 * plugin already enqueued wp-date.
+	 *
+	 * The timezone patch still applies in that case; the shim simply never
+	 * forces the load itself.
+	 *
+	 * @covers ::enqueue_timezone_shim
+	 *
+	 * @return void
+	 */
+	public function test_enqueue_timezone_shim_patches_front_end_when_wp_date_already_enqueued(): void {
+		$instance = Assets::get_instance();
+
+		set_current_screen( 'front' );
+
+		wp_deregister_script( 'wp-date' );
+		// phpcs:ignore WordPress.WP.EnqueuedResourceParameters.NoExplicitVersion -- Test registration; no real asset.
+		wp_register_script( 'wp-date', '', array(), '1', false );
+		wp_enqueue_script( 'wp-date' );
+
+		$instance->enqueue_timezone_shim();
+
+		$inline = wp_scripts()->get_data( 'wp-date', 'after' );
+		$joined = is_array( $inline ) ? implode( "\n", $inline ) : (string) $inline;
+
+		$this->assertStringContainsString( 'wp.date.setSettings', $joined );
+		$this->assertStringContainsString( 'UTC', $joined );
+
+		// Reset for downstream tests.
+		wp_dequeue_script( 'wp-date' );
+		wp_deregister_script( 'wp-date' );
+		wp_default_packages_scripts( wp_scripts() );
 	}
 
 	/**
