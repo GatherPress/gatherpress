@@ -124,6 +124,14 @@ jobs:
             --deduplicate=-1 \
             --yes
 
+          # --add-pr-num only emits bare `[#123]` markers, which render as
+          # literal text in CHANGELOG.md and in the release body extracted
+          # from it below. This turns them into inline links. It mirrors the
+          # last step of `composer changelog:write`; both call sites are
+          # needed because this job runs changelogger directly rather than
+          # through the composer script. Idempotent.
+          php .github/scripts/link-changelog-prs.php
+
       - name: Extract release body from CHANGELOG.md
         id: extract
         env:
