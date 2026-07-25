@@ -128,6 +128,7 @@ Testers downloading the pre-release zip see the same changelog body they'd see a
 
 - [GitHub Releases page](https://github.com/GatherPress/gatherpress/releases) shows the new tag with a "Pre-release" badge.
 - The release body matches the queued `.github/changelog/` entries.
+- PR numbers in the release body are **links**, not literal `[#1234]` text. See the troubleshooting entry below if they are bare.
 - The attached zip downloads as `gatherpress.X.Y.Z-alpha.N.zip` and unzips with a `gatherpress/` top-level directory.
 - wp.org listing at <https://wordpress.org/plugins/gatherpress/> is **unchanged** — the served version comes from trunk's `Stable tag:`, which the trunk sync deliberately preserves.
 - For **beta** tags only: SVN trunk is synced to the beta so [translate.wordpress.org](https://translate.wordpress.org/projects/wp-plugins/gatherpress/) picks up new strings in its Development project (check they appear there), and a matching SVN tag is created so the beta shows as a named download in the plugin page's [Advanced view](https://wordpress.org/plugins/gatherpress/advanced/) — the new tag may need a release-confirmation click first.
@@ -195,6 +196,11 @@ Every one of these is required; skipping any of them bites the next release:
   auto-merge (squash), so it lands on its own once checks pass — this brings
   the rolled-up `CHANGELOG.md` to develop and removes the consumed entry
   files. If it's still open, see Troubleshooting.
+- [ ] **Check the PR numbers in the new changelog section are links.**
+  `changelogger --add-pr-num` only emits bare `[#1234]` markers; the rollup
+  job runs `.github/scripts/link-changelog-prs.php` immediately afterward to
+  turn them into inline links. Bare markers mean that step did not run — see
+  Troubleshooting.
 - [ ] **Sync the rollup state to main** (changelog parity): the auto-PR only
   targets develop, so cherry-pick develop's rollup squash commit onto a
   branch off main and PR it (`Sync X.Y.Z changelog rollup state to main`).
@@ -285,6 +291,24 @@ The tag was cut from a `main` that never got the previous release's parity
 sync, so already-released entry files were still present and got rolled up
 again. Fix main first (cherry-pick the previous rollup commit onto main),
 delete the bad tag and GitHub Release, and re-tag.
+
+### PR numbers in the changelog render as literal `[#1234]` text
+
+`changelogger write --add-pr-num` appends bare markers and never links them.
+`.github/scripts/link-changelog-prs.php` rewrites each one as an inline link
+and runs as the last part of the rollup job, and again as the last step of
+`composer changelog:write`. Inline links (rather than reference-style
+definitions at the bottom of the file) are deliberate: the workflow extracts
+a version's section out of `CHANGELOG.md` to use as the GitHub Release body,
+and a definition living elsewhere in the file would not survive that.
+
+Bare markers mean the script did not run. Repair the committed file by
+running `php .github/scripts/link-changelog-prs.php` on develop and PRing the
+result — it is idempotent, so it only touches unlinked markers — then check
+that the workflow still calls it. This exact gap shipped in 0.34.0 and
+0.34.1: the script was added in #1900 and wired into `composer
+changelog:write`, but the rollup job calls `vendor/bin/changelogger` directly
+and was never updated to match (#2035).
 
 ### The release merge PR can't be merged with a merge commit
 

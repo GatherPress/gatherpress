@@ -109,10 +109,19 @@ jobs:
         env:
           VERSION: ${{ needs.prepare.outputs.version }}
         run: |
+          # Stamp each entry with the PR that introduced it. This stands in for
+          # changelogger's own --add-pr-num, which resolves the wrong PR on
+          # stable releases: it walks history with --first-parent, and a stable
+          # tag is cut from main where the release PR is a merge commit, so
+          # every entry ends up credited to the release instead of the work.
+          # See the script's docblock. Must run before the rollup consumes the
+          # entry files.
+          php .github/scripts/add-changelog-pr-nums.php
+
           # --use-version pins the section header to the tag we're releasing,
-          # --release-date defaults to today, --add-pr-num appends [#NNNN] from
-          # merge commit subjects, and --deduplicate=-1 disables looking back
-          # at prior versions (we trust each entry file to be unique-by-author).
+          # --release-date defaults to today, and --deduplicate=-1 disables
+          # looking back at prior versions (we trust each entry file to be
+          # unique-by-author). No --add-pr-num: the step above owns that now.
           #
           # On pre-releases this modifies the ephemeral working dir; the
           # changes never get pushed because the commit step below is gated
@@ -120,9 +129,16 @@ jobs:
           vendor/bin/changelogger write \
             --use-version="${VERSION}" \
             --release-date="$(date +%Y-%m-%d)" \
-            --add-pr-num \
             --deduplicate=-1 \
             --yes
+
+          # The markers above are bare `[#123]`, which render as literal text
+          # in CHANGELOG.md and in the release body extracted from it below.
+          # This turns them into inline links. It mirrors the last step of
+          # `composer changelog:write`; both call sites are needed because
+          # this job runs changelogger directly rather than through the
+          # composer script. Idempotent.
+          php .github/scripts/link-changelog-prs.php
 
       - name: Extract release body from CHANGELOG.md
         id: extract
