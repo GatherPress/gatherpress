@@ -1,4 +1,4 @@
 Significance: minor
 Type: changed
 
-Flush GatherPress cache transients (geocode cache, RSVP caches, rate-limit buckets) on plugin deactivation. Multisite-aware: network deactivation wipes each subsite's rows. Plugin settings are preserved.
+Flush GatherPress cache transients (geocode cache, RSVP caches, rate-limit buckets) on plugin uninstall. Multisite-aware: network uninstall wipes each subsite's rows. Plugin settings are preserved.

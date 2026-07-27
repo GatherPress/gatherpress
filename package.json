@@ -21,7 +21,8 @@
 		"includes",
 		"gatherpress.php",
 		"CHANGELOG.md",
-		"SECURITY.md"
+		"SECURITY.md",
+		"uninstall.php"
 	],
 	"main": "index.js",
 	"devDependencies": {
