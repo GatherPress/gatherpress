@@ -1,0 +1,4 @@
+Significance: minor
+Type: added
+
+Event organizers can now set a custom subject line when sending the event-update email; the existing `📅 {title}` default stays in place when the field is left untouched, and a new `gatherpress_email_subject` filter lets developers customize the default template.
