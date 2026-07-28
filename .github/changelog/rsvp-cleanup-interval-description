@@ -1,0 +1,4 @@
+Significance: patch
+Type: changed
+
+Clarified the RSVP Cleanup Interval setting description to explain that it multiplies the Cleanup Frequency.
