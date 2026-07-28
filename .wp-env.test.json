@@ -9,8 +9,8 @@
 		"WordPress/twentytwentyfive"
 	],
 	"config": {
-		"WP_DEBUG": true,
-		"WP_DEBUG_LOG": true
+		"WP_DEBUG": false,
+		"SCRIPT_DEBUG": false
 	},
 	"mappings": {
 		"wp-content/plugins/gatherpress": "."
