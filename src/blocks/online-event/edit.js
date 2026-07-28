@@ -51,19 +51,16 @@ const Edit = ( { attributes, context } ) => {
 	const { editPost, unlockPostSaving } = useDispatch( 'core/editor' );
 
 	// Get the current post info and venue taxonomy.
-	const { currentPostId, currentPostType, venueTaxonomy, onlineEventTerm } = useSelect(
+	const { currentPostId, currentPostType, venueTaxonomy, onlineEventTermId } = useSelect(
 		( select ) => {
 			const editorPostType = select( 'core/editor' )?.getCurrentPostType();
-			const tax = getVenueTaxonomy( getVenuePostType( editorPostType ) );
+			const venuePostType = getVenuePostType( editorPostType );
 			return {
 				currentPostId: select( 'core/editor' )?.getCurrentPostId(),
 				currentPostType: editorPostType,
-				venueTaxonomy: tax,
-				onlineEventTerm:
-					select( 'core' ).getEntityRecords( 'taxonomy', tax, {
-						slug: 'online-event',
-						per_page: 1,
-					} )?.[ 0 ] || null,
+				venueTaxonomy: getVenueTaxonomy( venuePostType ),
+				onlineEventTermId: select( 'core/editor' )?.getEditorSettings?.()
+					?.gatherpress?.config?.onlineEventTermIds?.[ venuePostType ] ?? null,
 			};
 		},
 		[]
@@ -117,7 +114,7 @@ const Edit = ( { attributes, context } ) => {
 
 	// Toggle the online-event term.
 	const toggleOnlineEvent = ( shouldAdd ) => {
-		if ( ! onlineEventTerm ) {
+		if ( ! onlineEventTermId ) {
 			return;
 		}
 
@@ -128,7 +125,7 @@ const Edit = ( { attributes, context } ) => {
 			currentTerms = [ venueTaxonomyIds ];
 		}
 
-		const termId = onlineEventTerm.id;
+		const termId = Number( onlineEventTermId );
 		const termIdStr = String( termId );
 		const hasTermAlready = currentTerms.some(
 			( id ) => String( id ) === termIdStr
@@ -149,7 +146,8 @@ const Edit = ( { attributes, context } ) => {
 	// Check if the event has the online-event term (reactive to changes).
 	const isOnlineEvent = useSelect(
 		( select ) => {
-			const onlineTermId = onlineEventTerm?.id;
+			const onlineTermId =
+				onlineEventTermId === null ? null : Number( onlineEventTermId );
 
 			if ( ! onlineTermId ) {
 				return false;
@@ -190,7 +188,7 @@ const Edit = ( { attributes, context } ) => {
 				( id ) => String( id ) === String( onlineTermId )
 			);
 		},
-		[ eventId, onlineEventTerm, venueTaxonomy ]
+		[ eventId, onlineEventTermId, venueTaxonomy ]
 	);
 
 	// Reactive supports check — keeps the block from staying dimmed when the

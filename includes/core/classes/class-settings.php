@@ -14,7 +14,7 @@ namespace GatherPress\Core;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
-use GatherPress\Core\Event\Event;
+use GatherPress\Core\Event\Event as Core_Event;
 use GatherPress\Core\Traits\Singleton;
 
 /**
@@ -190,7 +190,7 @@ class Settings {
 			'venuesMapsSettingsUrl' => admin_url(
 				sprintf(
 					'edit.php?post_type=%s&page=%s',
-					Event::POST_TYPE,
+					Core_Event::POST_TYPE,
 					sprintf( 'gatherpress_event_page_%s', Utility::prefix_key( 'venues_settings' ) )
 				)
 			),

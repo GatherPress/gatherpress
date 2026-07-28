@@ -8,21 +8,29 @@
  * Calculate event mode from venue terms.
  *
  * Determines whether an event is in-person, online, or hybrid based on
- * the presence of venue terms and the special 'online-event' term.
+ * the presence of venue terms and the online-event sentinel term
+ * (matched by pre-resolved ID rather than slug string).
  *
  * @since 0.34.0
  *
- * @param {Array} terms Array of venue term objects.
+ * @param {Array} terms             Array of venue term objects.
+ * @param {number|null} onlineEventTermId Pre-resolved term ID of the online-event
+ *                                         sentinel for this venue taxonomy.
  *
  * @return {string} Mode: 'in-person', 'online', or 'hybrid'.
  */
-export function calculateMode( terms ) {
+export function calculateMode( terms, onlineEventTermId ) {
 	if ( ! terms?.length ) {
 		return 'in-person';
 	}
 
-	const hasOnline = terms.some( ( term ) => 'online-event' === term.slug );
-	const hasVenue = terms.some( ( term ) => 'online-event' !== term.slug );
+	const sentinel = Number( onlineEventTermId ) || null;
+	const matchesOnline = ( term ) =>
+		null !== sentinel && Number( term.id ) === sentinel;
+	const matchesVenue = ( term ) =>
+		null === sentinel || Number( term.id ) !== sentinel;
+	const hasOnline = terms.some( matchesOnline );
+	const hasVenue = terms.some( matchesVenue );
 
 	if ( hasVenue && hasOnline ) {
 		return 'hybrid';

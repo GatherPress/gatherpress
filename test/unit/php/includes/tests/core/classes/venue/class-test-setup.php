@@ -1236,6 +1236,83 @@ class Test_Setup extends Base {
 	}
 
 	/**
+	 * Coverage for is_online_event_term_slug predicate.
+	 *
+	 * @covers ::is_online_event_term_slug
+	 *
+	 * @return void
+	 */
+	public function test_is_online_event_term_slug(): void {
+		$instance = Setup::get_instance();
+
+		$this->assertTrue(
+			$instance->is_online_event_term_slug( Event::ONLINE_EVENT_TERM_SLUG ),
+			'is_online_event_term_slug should match the canonical online-event sentinel slug.'
+		);
+		$this->assertFalse(
+			$instance->is_online_event_term_slug( '_my-venue' ),
+			'is_online_event_term_slug should not match shadow-source slugs.'
+		);
+		$this->assertFalse(
+			$instance->is_online_event_term_slug( '' ),
+			'is_online_event_term_slug should not match empty input.'
+		);
+		$this->assertFalse(
+			$instance->is_online_event_term_slug( 'Online-Event' ),
+			'is_online_event_term_slug should be case-sensitive (matches the seeded lowercase slug).'
+		);
+	}
+
+	/**
+	 * Coverage for get_online_event_term_id resolver when the term is seeded.
+	 *
+	 * @covers ::get_online_event_term_id
+	 *
+	 * @return void
+	 */
+	public function test_get_online_event_term_id_returns_id_for_post_type(): void {
+		$instance = Setup::get_instance();
+		$term_id  = $instance->get_online_event_term_id( Venue::POST_TYPE );
+
+		$this->assertIsInt(
+			$term_id,
+			'get_online_event_term_id should return an int for a seeded venue taxonomy.'
+		);
+		$this->assertSame(
+			Event::ONLINE_EVENT_TERM_SLUG,
+			get_term_by( 'id', $term_id, Venue::TAXONOMY )->slug,
+			'Resolved term ID should point at the online-event sentinel.'
+		);
+	}
+
+	/**
+	 * Coverage for get_online_event_term_id resolver when the term is missing.
+	 *
+	 * @covers ::get_online_event_term_id
+	 *
+	 * @return void
+	 */
+	public function test_get_online_event_term_id_returns_null_when_term_missing(): void {
+		$instance = Setup::get_instance();
+		$existing = get_terms(
+			array(
+				'taxonomy'   => Venue::TAXONOMY,
+				'hide_empty' => false,
+				'slug'       => Event::ONLINE_EVENT_TERM_SLUG,
+			)
+		);
+
+		foreach ( $existing as $term ) {
+			wp_delete_term( (int) $term->term_id, Venue::TAXONOMY );
+		}
+
+		$this->assertNull(
+			$instance->get_online_event_term_id( Venue::POST_TYPE ),
+			'get_online_event_term_id should return null when the sentinel term is missing.'
+		);
+	}
+
+	/**
 	 * Coverage for taxonomy_for_event_post_type.
 	 *
 	 * @covers ::taxonomy_for_event_post_type

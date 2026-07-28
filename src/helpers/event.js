@@ -14,7 +14,7 @@ import { __, sprintf } from '@wordpress/i18n';
  */
 import { createMomentWithTimezone, getTimezone } from './datetime';
 import { getPostTypeLabel } from './editor';
-import { getVenueTaxonomy, getVenuePostType } from './venue';
+import { getVenueTaxonomy, getVenuePostType, getOnlineEventTermId } from './venue';
 
 /**
  * Opacity value for disabled form fields and elements.
@@ -424,15 +424,9 @@ export function hasEventPastNotice() {
 export function hasOnlineEventTerm( postId = null ) {
 	// Derive the venue taxonomy from the current editor post type.
 	const currentPostType = select( 'core/editor' )?.getCurrentPostType?.();
-	const venueTaxonomy = getVenueTaxonomy( getVenuePostType( currentPostType ) );
-
-	// Get the online-event term ID.
-	const onlineEventTerms = select( 'core' ).getEntityRecords(
-		'taxonomy',
-		venueTaxonomy,
-		{ slug: 'online-event', per_page: 1 }
-	);
-	const onlineEventTermId = onlineEventTerms?.[ 0 ]?.id;
+	const venuePostType = getVenuePostType( currentPostType );
+	const venueTaxonomy = getVenueTaxonomy( venuePostType );
+	const onlineEventTermId = getOnlineEventTermId( venuePostType );
 
 	if ( ! onlineEventTermId ) {
 		return false;

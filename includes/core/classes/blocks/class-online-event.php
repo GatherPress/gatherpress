@@ -15,6 +15,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Venue\Setup;
 use WP_Block;
+use WP_Term;
 
 /**
  * Class responsible for managing the "Online Event" block and its functionality,
@@ -123,7 +124,15 @@ final class Online_Event {
 			return false;
 		}
 
-		return in_array( 'online-event', wp_list_pluck( $venue_terms, 'slug' ), true );
+		return ! empty(
+			array_filter(
+				$venue_terms,
+				static function ( $term ): bool {
+					return $term instanceof WP_Term
+						&& Setup::get_instance()->is_online_event_term_slug( $term->slug );
+				}
+			)
+		);
 	}
 
 	/**

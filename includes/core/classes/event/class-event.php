@@ -17,6 +17,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 use DateTimeZone;
 use Exception;
 use GatherPress\Core\Calendar\Calendar;
+use GatherPress\Core\Setup as Core_Setup;
 use GatherPress\Core\Rsvp\Rsvp;
 use GatherPress\Core\Rsvp\Setup as Rsvp_Setup;
 use GatherPress\Core\Settings;
@@ -25,6 +26,7 @@ use GatherPress\Core\Validate;
 use GatherPress\Core\Venue\Setup;
 use GatherPress\Core\Venue\Venue;
 use WP_Post;
+use WP_Term;
 
 /**
  * Class Event.
@@ -85,6 +87,19 @@ class Event {
 	 * @var string
 	 */
 	const TEMPLATE_PATTERN = 'gatherpress/event-template';
+
+	/**
+	 * Slug of the sentinel term used to mark an event as online.
+	 *
+	 * The term itself is seeded into every shadow-source venue taxonomy by
+	 * {@see \GatherPress\Core\Setup::add_online_event_term()} on plugin
+	 * activation, and the same slug is used by the editor, `Event::is_online()`,
+	 * `Event::set_online()`, and the block editor's pre-resolved term-ID map.
+	 *
+	 * @since 0.35.0
+	 * @var string
+	 */
+	const ONLINE_EVENT_TERM_SLUG = 'online-event';
 
 	/**
 	 * Non-time PHP DateTime formatting characters
@@ -809,5 +824,106 @@ class Event {
 		}
 
 		return $event_link;
+	}
+
+	/**
+	 * Whether this event is marked online.
+	 *
+	 * Unconditional online-status check: returns true whenever the event
+	 * carries the `online-event` sentinel term in its venue taxonomy, no
+	 * matter the current user's RSVP status, the event's time, or the admin
+	 * context. Distinct from {@see self::maybe_get_online_event_link()}, which
+	 * gates link disclosure on attendance and time.
+	 *
+	 * @since 0.35.0
+	 *
+	 * @return bool True if the event has the online-event term, false otherwise.
+	 */
+	public function is_online(): bool {
+		if ( ! $this->event ) {
+			return false;
+		}
+
+		$taxonomy = Setup::get_instance()->taxonomy_for_event_post_type( $this->event->post_type );
+		$terms    = get_the_terms( $this->event->ID, $taxonomy );
+
+		if ( ! is_array( $terms ) ) {
+			return false;
+		}
+
+		foreach ( $terms as $term ) {
+			if ( $term instanceof WP_Term && self::ONLINE_EVENT_TERM_SLUG === $term->slug ) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	/**
+	 * Mark this event as online or offline and persist the link.
+	 *
+	 * Owns the term-plus-meta pairing so callers do not have to coordinate
+	 * the two writes themselves. Toggle on: the sentinel term is ensured to
+	 * exist in the right venue taxonomy (idempotent with plugin activation)
+	 * and its term ID is appended without removing existing venue terms, so
+	 * hybrid events keep their venue. Toggle off: the sentinel term is
+	 * removed and the link meta is deleted so re-enabling starts blank rather
+	 * than reading a stale URL.
+	 *
+	 * @since 0.35.0
+	 *
+	 * @param bool   $is_online True to mark online, false to mark offline.
+	 * @param string $link      Optional URL for the `gatherpress_online_event_link` meta when online.
+	 *
+	 * @return void
+	 */
+	public function set_online( bool $is_online, string $link = '' ): void {
+		if ( ! $this->event ) {
+			return;
+		}
+
+		$venue_setup = Setup::get_instance();
+		$venue_pt    = $venue_setup->get_venue_post_type( $this->event->post_type );
+		$taxonomy    = $venue_setup->taxonomy_for_event_post_type( $this->event->post_type );
+		$term_id     = $venue_setup->get_online_event_term_id( $venue_pt );
+
+		// No resolved term id means the venue taxonomy has no sentinel seeded.
+		// Toggle on: seed it first; toggle off: nothing to remove.
+		if ( null === $term_id ) {
+			if ( ! $is_online ) {
+				return;
+			}
+
+			Core_Setup::get_instance()->add_online_event_term();
+			$term_id = $venue_setup->get_online_event_term_id( $venue_pt );
+
+			if ( null === $term_id ) {
+				return;
+			}
+		}
+
+		$existing = wp_get_post_terms( $this->event->ID, $taxonomy, array( 'fields' => 'ids' ) );
+		$existing = is_array( $existing ) ? array_map( 'intval', $existing ) : array();
+
+		if ( $is_online ) {
+			if ( ! in_array( $term_id, $existing, true ) ) {
+				$existing[] = $term_id;
+				wp_set_post_terms( $this->event->ID, array_values( array_unique( $existing ) ), $taxonomy );
+			}
+
+			update_post_meta( $this->event->ID, 'gatherpress_online_event_link', esc_url_raw( $link ) );
+			return;
+		}
+
+		// Toggle off: drop the sentinel from the term list (preserve venue terms)
+		// and clear the link meta so re-enabling starts blank.
+		$remaining = array_values( array_filter( $existing, static fn ( int $id ): bool => $id !== $term_id ) );
+
+		if ( count( $remaining ) !== count( $existing ) ) {
+			wp_set_post_terms( $this->event->ID, $remaining, $taxonomy );
+		}
+
+		delete_post_meta( $this->event->ID, 'gatherpress_online_event_link' );
 	}
 }
