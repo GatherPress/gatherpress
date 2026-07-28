@@ -51,8 +51,9 @@ function gatherpress_uninstall_wipe_transients(): void {
 	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Cache invalidation pre-delete; not a read path.
 	$rows = $wpdb->get_results(
 		$wpdb->prepare(
-			"SELECT option_name FROM {$wpdb->options}"
+			'SELECT option_name FROM %i'
 			. ' WHERE option_name LIKE %s OR option_name LIKE %s',
+			$wpdb->options,
 			$wpdb->esc_like( '_transient_gatherpress_' ) . '%',
 			$wpdb->esc_like( '_transient_timeout_gatherpress_' ) . '%'
 		)
@@ -65,7 +66,8 @@ function gatherpress_uninstall_wipe_transients(): void {
 	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Bulk delete on uninstall; not a read path.
 	$wpdb->query(
 		$wpdb->prepare(
-			"DELETE FROM {$wpdb->options} WHERE option_name LIKE %s OR option_name LIKE %s",
+			'DELETE FROM %i WHERE option_name LIKE %s OR option_name LIKE %s',
+			$wpdb->options,
 			$wpdb->esc_like( '_transient_gatherpress_' ) . '%',
 			$wpdb->esc_like( '_transient_timeout_gatherpress_' ) . '%'
 		)
