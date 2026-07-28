@@ -674,6 +674,11 @@ final class Map {
 	 * @return void
 	 */
 	public function process_generate_job( int $post_id, int $zoom, int $width, int $height, string $map_type ): void {
+		$status = get_post_status( $post_id );
+		if ( false === $status || 'trash' === $status ) {
+			return;
+		}
+
 		if ( ! post_type_supports( (string) get_post_type( $post_id ), 'gatherpress-venue-information' ) ) {
 			return;
 		}
