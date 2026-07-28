@@ -412,7 +412,7 @@ final class Rest_Api {
 	 * as it's intended to be called by an action hook.
 	 *
 	 * @since 0.34.0
-	 * @since 0.35.0 Added `$subject` parameter for #827.
+	 * @since 0.36.0 Added `$subject` parameter for #827.
 	 *
 	 * @param int    $post_id Post ID.
 	 * @param array  $send    Members to send the email to.
@@ -433,7 +433,7 @@ final class Rest_Api {
 	 * the appropriate subject, body, and headers.
 	 *
 	 * @since 0.34.0
-	 * @since 0.35.0 Added `$subject` parameter for #827.
+	 * @since 0.36.0 Added `$subject` parameter for #827.
 	 *
 	 * @param int    $post_id Post ID.
 	 * @param array  $send    Members to send the email to.
@@ -469,7 +469,7 @@ final class Rest_Api {
 	 * Restores the editor's user / locale before returning.
 	 *
 	 * @since 0.34.0
-	 * @since 0.35.0 Added `$subject` parameter for #827.
+	 * @since 0.36.0 Added `$subject` parameter for #827.
 	 *
 	 * @param array   $recipient    Recipient row from `get_recipients()`.
 	 * @param int     $post_id      Event post ID.
@@ -528,7 +528,7 @@ final class Rest_Api {
 		/**
 		 * Filters the event update email subject.
 		 *
-		 * @since 0.35.0
+		 * @since 0.36.0
 		 *
 		 * @param string $subject Email subject line.
 		 * @param int    $post_id Event post ID.
