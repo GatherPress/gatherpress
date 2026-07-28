@@ -270,7 +270,7 @@ final class Rsvp extends Base {
 							'name' => __( 'Cleanup Interval', 'gatherpress' ),
 						),
 						'description' => __(
-							'The number of days, months, or years between each cleanup run.',
+							'Multiplies the Cleanup Frequency. Daily with an interval of 3 runs every 3 days.',
 							'gatherpress'
 						),
 						'field'       => array(
