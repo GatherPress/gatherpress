@@ -132,7 +132,7 @@ const EventCommunicationModal = () => {
 						label={ __( 'Subject', 'gatherpress' ) }
 						value={ subject }
 						onChange={ ( value ) => setSubject( value ) }
-						style={ { marginBottom: '16px' } }
+						style={ { marginBottom: '1rem' } }
 					/>
 					<TextareaControl
 						label={ __( 'Optional message', 'gatherpress' ) }
