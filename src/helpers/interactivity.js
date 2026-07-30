@@ -383,7 +383,9 @@ export async function sendRsvpApiRequest(
  * without it Space performs the anchor default — scrolling the page. This
  * helper mirrors native button semantics by turning Space into a click on the
  * same element, so each trigger's existing click action runs unchanged.
- * `event.repeat` is ignored so holding Space doesn't rapid-toggle.
+ * Space always suppresses the scroll default — including key-repeat events
+ * while the key is held — but only the initial (non-repeat) press clicks, so
+ * holding Space neither scrolls nor rapid-toggles.
  *
  * Registered as `actions.activateOnSpace` by the view modules whose triggers
  * carry `data-wp-on--keydown="actions.activateOnSpace"` (attached server-side
@@ -398,9 +400,12 @@ export async function sendRsvpApiRequest(
  * @return {void}
  */
 export function activateOnSpace( event, ref ) {
-	if ( ' ' === event.key && ! event.repeat ) {
+	if ( ' ' === event.key ) {
 		event.preventDefault();
-		ref.click();
+
+		if ( ! event.repeat ) {
+			ref.click();
+		}
 	}
 }
 

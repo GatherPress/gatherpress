@@ -505,13 +505,15 @@ describe( 'activateOnSpace', () => {
 		expect( ref.click ).toHaveBeenCalledTimes( 1 );
 	} );
 
-	it( 'ignores key repeat so holding Space does not rapid-toggle', () => {
+	it( 'still prevents scrolling on key repeat but only clicks once', () => {
+		// Holding Space fires repeat keydowns; a native button suppresses
+		// the scroll default for the whole hold while activating only once.
 		const ref = { click: jest.fn() };
 		const event = makeEvent( ' ', true );
 
 		activateOnSpace( event, ref );
 
-		expect( event.preventDefault ).not.toHaveBeenCalled();
+		expect( event.preventDefault ).toHaveBeenCalled();
 		expect( ref.click ).not.toHaveBeenCalled();
 	} );
 
