@@ -1,0 +1,4 @@
+Significance: minor
+Type: added
+
+Added check-in for RSVPs. An arrival time is recorded per RSVP, shown in a Checked in column on the RSVPs screen, with Check in and Clear check-in bulk actions, so organizers can record who actually turned up rather than only who said they would.
