@@ -349,6 +349,123 @@ class Test_Calendar extends Base {
 	}
 
 	/**
+	 * Coverage for get_ical_event_string on a never-edited event: SEQUENCE is
+	 * zero and LAST-MODIFIED reports the post's GMT modification time.
+	 *
+	 * @covers ::get_ical_event_string
+	 * @covers ::get_sequence
+	 *
+	 * @return void
+	 */
+	public function test_get_ical_event_string_sequence_and_last_modified(): void {
+		$instance = new Calendar( $this->make_event() );
+
+		$instance->event->event->post_date_gmt     = '2030-01-01 10:00:00';
+		$instance->event->event->post_modified_gmt = '2030-01-01 10:00:00';
+
+		$vevent = $instance->get_ical_event_string();
+
+		$this->assertStringContainsString(
+			'SEQUENCE:0',
+			$vevent,
+			'An unedited event should carry sequence zero.'
+		);
+		$this->assertStringContainsString(
+			'LAST-MODIFIED:20300101T100000Z',
+			$vevent,
+			'LAST-MODIFIED should report post_modified_gmt in UTC form.'
+		);
+
+		$instance->event->event->post_modified_gmt = '2030-01-01 11:00:00';
+
+		$this->assertStringContainsString(
+			'SEQUENCE:3600',
+			$instance->get_ical_event_string(),
+			'An edited event should carry a sequence a client can compare against.'
+		);
+	}
+
+	/**
+	 * Coverage for get_sequence: an edited event reports the seconds between
+	 * creation and last modification, so clients see a higher revision.
+	 *
+	 * @covers ::get_sequence
+	 *
+	 * @return void
+	 */
+	public function test_get_sequence_grows_when_event_is_edited(): void {
+		$event_id = $this->make_event();
+		$instance = new Calendar( $event_id );
+
+		$instance->event->event->post_date_gmt     = '2030-01-01 10:00:00';
+		$instance->event->event->post_modified_gmt = '2030-01-01 11:00:00';
+
+		$this->assertSame(
+			HOUR_IN_SECONDS,
+			Utility::invoke_hidden_method( $instance, 'get_sequence' ),
+			'Sequence should be the seconds elapsed between creation and modification.'
+		);
+	}
+
+	/**
+	 * Coverage for get_sequence guards: an unparsable or non-advancing
+	 * modification date yields zero rather than a negative sequence.
+	 *
+	 * @covers ::get_sequence
+	 *
+	 * @return void
+	 */
+	public function test_get_sequence_returns_zero_for_invalid_or_backwards_dates(): void {
+		$instance = new Calendar( $this->make_event() );
+
+		$instance->event->event->post_date_gmt     = '2030-01-01 10:00:00';
+		$instance->event->event->post_modified_gmt = '2030-01-01 09:00:00';
+
+		$this->assertSame(
+			0,
+			Utility::invoke_hidden_method( $instance, 'get_sequence' ),
+			'A modification date before creation should not produce a negative sequence.'
+		);
+
+		$instance->event->event->post_modified_gmt = 'not a date';
+
+		$this->assertSame(
+			0,
+			Utility::invoke_hidden_method( $instance, 'get_sequence' ),
+			'An unparsable modification date should fall back to zero.'
+		);
+
+		$instance->event->event->post_date_gmt = 'not a date';
+
+		$this->assertSame(
+			0,
+			Utility::invoke_hidden_method( $instance, 'get_sequence' ),
+			'An unparsable creation date should fall back to zero.'
+		);
+	}
+
+	/**
+	 * Coverage for get_sequence clamping: a span wider than the RFC 5545
+	 * integer ceiling saturates instead of overflowing.
+	 *
+	 * @covers ::get_sequence
+	 *
+	 * @return void
+	 */
+	public function test_get_sequence_clamps_to_rfc_integer_ceiling(): void {
+		$instance = new Calendar( $this->make_event() );
+
+		$instance->event->event->post_date_gmt     = '1970-01-01 00:00:00';
+		$instance->event->event->post_modified_gmt = '2100-01-01 00:00:00';
+
+		$this->assertSame(
+			2147483647,
+			Utility::invoke_hidden_method( $instance, 'get_sequence' ),
+			'Sequence should clamp to the RFC 5545 integer maximum.'
+		);
+	}
+
+	/**
 	 * Coverage for get_ical_event_string when no venue is attached — the
 	 * empty-address branch leaves location as just the venue name (which is
 	 * also empty here).

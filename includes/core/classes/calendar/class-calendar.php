@@ -238,6 +238,9 @@ final class Calendar {
 		$datetime_end   = sprintf( '%sT%sZ', $date_end, $time_end );
 		$modified_date  = strtotime( $this->event->event->post_modified );
 		$datetime_stamp = sprintf( '%sT%sZ', gmdate( 'Ymd', $modified_date ), gmdate( 'His', $modified_date ) );
+		$modified_gmt   = strtotime( $this->event->event->post_modified_gmt );
+		$last_modified  = sprintf( '%sT%sZ', gmdate( 'Ymd', $modified_gmt ), gmdate( 'His', $modified_gmt ) );
+		$sequence       = $this->get_sequence();
 		$venue          = $this->event->get_venue_information();
 		$location       = $venue['name'];
 		$description    = $this->event->get_calendar_description();
@@ -256,6 +259,8 @@ final class Calendar {
 			sprintf( 'DTSTART:%s', sanitize_text_field( $datetime_start ) ),
 			sprintf( 'DTEND:%s', sanitize_text_field( $datetime_end ) ),
 			sprintf( 'DTSTAMP:%s', sanitize_text_field( $datetime_stamp ) ),
+			sprintf( 'LAST-MODIFIED:%s', sanitize_text_field( $last_modified ) ),
+			sprintf( 'SEQUENCE:%d', $sequence ),
 			sprintf( 'SUMMARY:%s', $summary ),
 			sprintf( 'DESCRIPTION:%s', $description ),
 			sprintf( 'LOCATION:%s', $location ),
@@ -264,6 +269,42 @@ final class Calendar {
 		);
 
 		return implode( "\r\n", $args );
+	}
+
+	/**
+	 * Revision number for this event's VEVENT, per RFC 5545 §3.8.7.4.
+	 *
+	 * Calendar clients key their update rules on `SEQUENCE`: an incoming
+	 * VEVENT that repeats a `UID` they already hold is only treated as a
+	 * revision when the sequence is higher than the stored one. GatherPress
+	 * emits a stable UID, so without a sequence an event whose date or venue
+	 * changed can keep showing the original time in a subscribed calendar.
+	 *
+	 * The value is the number of seconds between the event's creation and its
+	 * last modification: zero for an event nobody has edited, and monotonically
+	 * increasing for that event afterwards, which is all the property requires.
+	 * Post revisions are not used because they get pruned, and sites can turn
+	 * them off entirely, which would freeze the sequence at zero. A counter in
+	 * post meta was the other option, at the cost of a write on every save and
+	 * nothing to fall back on for events that predate it.
+	 *
+	 * The RFC caps an INTEGER at 2147483647, roughly 68 years of seconds, so
+	 * the value only saturates for an event edited a lifetime after it was
+	 * created. It is clamped rather than left to overflow.
+	 *
+	 * @since 0.35.0
+	 *
+	 * @return int Non-negative revision number for this event.
+	 */
+	private function get_sequence(): int {
+		$created  = strtotime( (string) $this->event->event->post_date_gmt );
+		$modified = strtotime( (string) $this->event->event->post_modified_gmt );
+
+		if ( false === $created || false === $modified || $modified <= $created ) {
+			return 0;
+		}
+
+		return min( $modified - $created, 2147483647 );
 	}
 
 	/**
