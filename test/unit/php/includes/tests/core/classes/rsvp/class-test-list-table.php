@@ -784,6 +784,98 @@ class Test_List_Table extends Base {
 	}
 
 	/**
+	 * The bulk form's own nonce, which is core's `bulk-<plural>` nonce, is
+	 * accepted. Before #2062 only the comment-type nonce was, and since
+	 * `WP_List_Table` emits its nonce under the same `_wpnonce` name, a browser
+	 * submit was always rejected and the screen did nothing.
+	 *
+	 * @covers ::process_bulk_action
+	 *
+	 * @return void
+	 */
+	public function test_process_bulk_action_accepts_the_core_bulk_nonce(): void {
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
+
+		$rsvp_id = (int) $this->rsvp['comment_ID'];
+
+		wp_set_comment_status( $rsvp_id, 'approve' );
+
+		$_REQUEST['_wpnonce']            = wp_create_nonce( 'bulk-rsvps' );
+		$_REQUEST['gatherpress_rsvp_id'] = array( $rsvp_id );
+		$_REQUEST['action']              = 'unapprove';
+
+		$this->list_table->process_bulk_action();
+
+		$this->assertSame(
+			'0',
+			get_comment( $rsvp_id )->comment_approved,
+			'Failed to assert the core bulk nonce authorizes a bulk action.'
+		);
+
+		unset( $_REQUEST['_wpnonce'], $_REQUEST['gatherpress_rsvp_id'], $_REQUEST['action'] );
+	}
+
+	/**
+	 * `display()` emits the comment-type nonce under its own field name so it
+	 * cannot shadow core's, and that field is still accepted (#2062).
+	 *
+	 * @covers ::process_bulk_action
+	 * @covers ::display
+	 *
+	 * @return void
+	 */
+	public function test_process_bulk_action_accepts_the_gatherpress_nonce_field(): void {
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
+
+		$rsvp_id = (int) $this->rsvp['comment_ID'];
+
+		wp_set_comment_status( $rsvp_id, 'approve' );
+
+		$_REQUEST['_gatherpress_rsvp_nonce'] = wp_create_nonce( Rsvp::COMMENT_TYPE );
+		$_REQUEST['gatherpress_rsvp_id']     = array( $rsvp_id );
+		$_REQUEST['action']                  = 'unapprove';
+
+		$this->list_table->process_bulk_action();
+
+		$this->assertSame(
+			'0',
+			get_comment( $rsvp_id )->comment_approved,
+			'Failed to assert the dedicated GatherPress nonce field authorizes a bulk action.'
+		);
+
+		unset( $_REQUEST['_gatherpress_rsvp_nonce'], $_REQUEST['gatherpress_rsvp_id'], $_REQUEST['action'] );
+	}
+
+	/**
+	 * An unrelated nonce is still refused.
+	 *
+	 * @covers ::process_bulk_action
+	 *
+	 * @return void
+	 */
+	public function test_process_bulk_action_refuses_an_unrelated_nonce(): void {
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
+
+		$rsvp_id = (int) $this->rsvp['comment_ID'];
+
+		wp_set_comment_status( $rsvp_id, 'approve' );
+
+		$_REQUEST['_wpnonce']            = wp_create_nonce( 'something-else' );
+		$_REQUEST['gatherpress_rsvp_id'] = array( $rsvp_id );
+		$_REQUEST['action']              = 'unapprove';
+
+		$this->list_table->process_bulk_action();
+
+		$this->assertSame(
+			'1',
+			get_comment( $rsvp_id )->comment_approved,
+			'Failed to assert an unrelated nonce is refused.'
+		);
+
+		unset( $_REQUEST['_wpnonce'], $_REQUEST['gatherpress_rsvp_id'], $_REQUEST['action'] );
+	}
+
+	/**
 	 * Tests get_views method.
 	 *
 	 * @covers ::get_views
