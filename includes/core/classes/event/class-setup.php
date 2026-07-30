@@ -78,6 +78,7 @@ final class Setup {
 	 */
 	protected function instantiate_classes(): void {
 		Admin_List::get_instance();
+		Duplicate::get_instance();
 		Meta::get_instance();
 		Query::get_instance();
 		Rest_Api::get_instance();

@@ -1,0 +1,4 @@
+Significance: minor
+Type: added
+
+Added a Duplicate row action for events. It copies the content, taxonomy terms including the venue, the featured image, and the event meta into a fresh draft, moving the datetimes forward by whole weeks so the copy keeps the original weekday, time of day, and duration without landing in the past. RSVPs, the slug, and the published status stay with the original.

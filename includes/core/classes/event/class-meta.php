@@ -48,6 +48,26 @@ final class Meta {
 	use Singleton;
 
 	/**
+	 * Datetime meta keys derived from `gatherpress_datetime`.
+	 *
+	 * Written only by `Event::save_datetimes()`, which is why they register
+	 * with an `auth_callback` of `__return_false`. Single source of truth for
+	 * the REST strip in `filter_readonly_meta()` and for anything else that
+	 * needs to leave derived values alone, such as duplicating an event.
+	 *
+	 * @since 0.35.0
+	 *
+	 * @var string[]
+	 */
+	const READONLY_DATETIME_KEYS = array(
+		'gatherpress_datetime_start',
+		'gatherpress_datetime_start_gmt',
+		'gatherpress_datetime_end',
+		'gatherpress_datetime_end_gmt',
+		'gatherpress_timezone',
+	);
+
+	/**
 	 * Class constructor.
 	 *
 	 * @since 0.34.0
@@ -261,18 +281,10 @@ final class Meta {
 	 * @return stdClass The prepared post object.
 	 */
 	public function filter_readonly_meta( stdClass $prepared_post, WP_REST_Request $request ): stdClass {
-		$readonly_keys = array(
-			'gatherpress_datetime_start',
-			'gatherpress_datetime_start_gmt',
-			'gatherpress_datetime_end',
-			'gatherpress_datetime_end_gmt',
-			'gatherpress_timezone',
-		);
-
 		$meta = $request->get_param( 'meta' );
 
 		if ( is_array( $meta ) ) {
-			foreach ( $readonly_keys as $key ) {
+			foreach ( self::READONLY_DATETIME_KEYS as $key ) {
 				unset( $meta[ $key ] );
 			}
 
