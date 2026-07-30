@@ -361,7 +361,7 @@ final class Setup {
 		Venue\Setup::get_instance()->register_taxonomy();
 
 		$term_name = __( 'Online event', 'gatherpress' );
-		$term_slug = 'online-event';
+		$term_slug = Venue\Setup::ONLINE_EVENT_TERM_SLUG;
 
 		// Ensure the online-event term exists in each registered venue taxonomy.
 		foreach ( get_post_types_by_support( 'gatherpress-venue-information' ) as $venue_post_type ) {

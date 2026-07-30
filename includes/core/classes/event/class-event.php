@@ -765,6 +765,94 @@ class Event {
 	}
 
 	/**
+	 * Whether this event is online.
+	 *
+	 * The unconditional answer, unlike {@see self::maybe_get_online_event_link()},
+	 * which asks whether the current visitor should be shown the link right now.
+	 * Online status lives in the venue taxonomy as a sentinel term, so this reads
+	 * the terms rather than any meta.
+	 *
+	 * @since 0.35.0
+	 *
+	 * @return bool True when the event carries the online-event term.
+	 */
+	public function is_online(): bool {
+		if ( ! $this->event instanceof WP_Post ) {
+			return false;
+		}
+
+		$venue_setup = Setup::get_instance();
+		$terms       = get_the_terms(
+			$this->event->ID,
+			$venue_setup->taxonomy_for_event_post_type( $this->event->post_type )
+		);
+
+		if ( ! is_array( $terms ) ) {
+			return false;
+		}
+
+		foreach ( $terms as $term ) {
+			if ( $venue_setup->is_online_event_term_slug( $term->slug ) ) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	/**
+	 * Mark this event online or not, and set its link.
+	 *
+	 * Online status is a term and the link is post meta, and the two have to
+	 * move together: an event tagged online with no link is a dead end, and a
+	 * link left behind on an event that moved to a venue leaks a room URL that
+	 * is no longer the answer. Nothing owned that pairing before, so every
+	 * consumer outside our own editor reimplemented it.
+	 *
+	 * Setting an event online replaces any venue term, since an event is at one
+	 * or the other. Turning it off removes the term and clears the link.
+	 *
+	 * @since 0.35.0
+	 *
+	 * @param bool   $is_online Whether the event is online.
+	 * @param string $link      Optional. The online event link. Ignored when `$is_online` is false.
+	 *
+	 * @return bool True on success, false when the event or the online term cannot be resolved.
+	 */
+	public function set_online( bool $is_online, string $link = '' ): bool {
+		if ( ! $this->event instanceof WP_Post ) {
+			return false;
+		}
+
+		$venue_setup = Setup::get_instance();
+		$taxonomy    = $venue_setup->taxonomy_for_event_post_type( $this->event->post_type );
+		$term_id     = $venue_setup->get_online_event_term_id( $this->event->post_type );
+
+		if ( empty( $taxonomy ) || null === $term_id ) {
+			return false;
+		}
+
+		if ( ! $is_online ) {
+			// Only the online term goes; a venue term on the same event is
+			// somebody else's state to manage.
+			wp_remove_object_terms( $this->event->ID, $term_id, $taxonomy );
+			delete_post_meta( $this->event->ID, 'gatherpress_online_event_link' );
+
+			return true;
+		}
+
+		wp_set_object_terms( $this->event->ID, $term_id, $taxonomy );
+
+		if ( '' === $link ) {
+			delete_post_meta( $this->event->ID, 'gatherpress_online_event_link' );
+		} else {
+			update_post_meta( $this->event->ID, 'gatherpress_online_event_link', sanitize_url( $link ) );
+		}
+
+		return true;
+	}
+
+	/**
 	 * Get the online event link if the user is attending and the event hasn't passed.
 	 *
 	 * This method retrieves the online event link for a user who is attending an event

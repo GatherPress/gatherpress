@@ -13,7 +13,7 @@ namespace GatherPress\Core\Blocks;
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Traits\Singleton;
-use GatherPress\Core\Venue\Setup;
+use GatherPress\Core\Venue\Setup as Venue_Setup;
 use WP_Block;
 
 /**
@@ -116,14 +116,18 @@ final class Online_Event {
 			return false;
 		}
 
-		$taxonomy    = Setup::get_instance()->taxonomy_for_event_post_type( $event_post_type );
+		$taxonomy    = Venue_Setup::get_instance()->taxonomy_for_event_post_type( $event_post_type );
 		$venue_terms = get_the_terms( $post_id, $taxonomy );
 
 		if ( ! is_array( $venue_terms ) ) {
 			return false;
 		}
 
-		return in_array( 'online-event', wp_list_pluck( $venue_terms, 'slug' ), true );
+		return in_array(
+			Venue_Setup::ONLINE_EVENT_TERM_SLUG,
+			wp_list_pluck( $venue_terms, 'slug' ),
+			true
+		);
 	}
 
 	/**

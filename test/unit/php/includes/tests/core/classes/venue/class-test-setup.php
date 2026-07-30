@@ -11,9 +11,11 @@ namespace GatherPress\Tests\Core\Venue;
 use GatherPress\Core\Event;
 use GatherPress\Core\Venue\Map\Setup as Map_Setup;
 use GatherPress\Core\Venue\Meta;
+use GatherPress\Core\Setup as Core_Setup;
 use GatherPress\Core\Venue\Setup;
 use GatherPress\Core\Venue;
 use GatherPress\Tests\Base;
+use WP_Term;
 use PMC\Unit_Test\Utility;
 use WP_Block_Patterns_Registry;
 
@@ -1309,6 +1311,92 @@ class Test_Setup extends Base {
 			array( 'gatherpress_event' ),
 			$passthrough,
 			'Filter callback should pass through unchanged for non-venue sources.'
+		);
+	}
+
+	/**
+	 * The online-event sentinel predicate is the counterpart to
+	 * is_venue_term_slug, and the two are mutually exclusive.
+	 *
+	 * @since 0.35.0
+	 *
+	 * @covers ::is_online_event_term_slug
+	 *
+	 * @return void
+	 */
+	public function test_is_online_event_term_slug(): void {
+		$instance = Setup::get_instance();
+
+		$this->assertTrue(
+			$instance->is_online_event_term_slug( Setup::ONLINE_EVENT_TERM_SLUG ),
+			'The sentinel slug should be recognized.'
+		);
+		$this->assertFalse(
+			$instance->is_online_event_term_slug( '_a-venue' ),
+			'A shadow venue term slug is not the online sentinel.'
+		);
+		$this->assertFalse(
+			$instance->is_venue_term_slug( Setup::ONLINE_EVENT_TERM_SLUG ),
+			'The online sentinel is not a venue term.'
+		);
+	}
+
+	/**
+	 * The term ID helper resolves the sentinel once the term exists, and reports
+	 * null rather than failing before it does.
+	 *
+	 * @since 0.35.0
+	 *
+	 * @covers ::get_online_event_term_id
+	 *
+	 * @return void
+	 */
+	public function test_get_online_event_term_id(): void {
+		$instance = Setup::get_instance();
+		$taxonomy = $instance->taxonomy_for_event_post_type( Event::POST_TYPE );
+
+		$existing = get_term_by( 'slug', Setup::ONLINE_EVENT_TERM_SLUG, $taxonomy );
+
+		if ( $existing instanceof WP_Term ) {
+			wp_delete_term( $existing->term_id, $taxonomy );
+		}
+
+		$this->assertNull(
+			$instance->get_online_event_term_id( Event::POST_TYPE ),
+			'The helper should report null while the sentinel term is absent.'
+		);
+
+		Core_Setup::get_instance()->add_online_event_term();
+
+		$term_id = $instance->get_online_event_term_id( Event::POST_TYPE );
+
+		$this->assertIsInt( $term_id, 'The helper should resolve the sentinel term ID.' );
+		$this->assertSame(
+			Setup::ONLINE_EVENT_TERM_SLUG,
+			get_term( $term_id, $taxonomy )->slug,
+			'The resolved term should be the online sentinel.'
+		);
+	}
+
+	/**
+	 * The resolved sentinel term ID reaches the block editor settings, so editor
+	 * components stop looking it up one by one.
+	 *
+	 * @since 0.35.0
+	 *
+	 * @covers ::add_editor_settings
+	 *
+	 * @return void
+	 */
+	public function test_add_editor_settings_exposes_online_event_term_id(): void {
+		Core_Setup::get_instance()->add_online_event_term();
+
+		$settings = Setup::get_instance()->add_editor_settings( array() );
+
+		$this->assertSame(
+			Setup::get_instance()->get_online_event_term_id( Event::POST_TYPE ),
+			$settings['gatherpress']['config']['onlineEventTermId'],
+			'Editor settings should carry the resolved online-event term ID.'
 		);
 	}
 }

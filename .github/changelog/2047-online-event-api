@@ -1,0 +1,4 @@
+Significance: minor
+Type: added
+
+Added a public API for online events: `Event::is_online()` and `Event::set_online()`, which own the online-event term and the link meta together, plus `Venue\Setup::ONLINE_EVENT_TERM_SLUG`, `is_online_event_term_slug()` and `get_online_event_term_id()`. The resolved term ID is exposed to the block editor so components stop looking it up individually.

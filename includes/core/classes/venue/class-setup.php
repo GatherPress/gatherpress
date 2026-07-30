@@ -29,6 +29,7 @@ use GatherPress\Core\Venue\Map\Setup as Map_Setup;
 use stdClass;
 use WP_Block_Patterns_Registry;
 use WP_Post;
+use WP_Term;
 
 /**
  * Class Setup.
@@ -48,6 +49,20 @@ final class Setup {
 	 * Enforces a single instance of this class.
 	 */
 	use Singleton;
+
+	/**
+	 * Term slug marking an event as online rather than at a venue.
+	 *
+	 * A sentinel term in the venue taxonomy, not a shadow term for a venue
+	 * post, which is why it carries no leading underscore and why
+	 * {@see self::is_venue_term_slug()} deliberately excludes it. Declared here
+	 * so the slug has one home instead of being repeated at every call site.
+	 *
+	 * @since 0.35.0
+	 *
+	 * @var string
+	 */
+	const ONLINE_EVENT_TERM_SLUG = 'online-event';
 
 	/**
 	 * Class constructor.
@@ -164,6 +179,10 @@ final class Setup {
 		}
 
 		$settings['gatherpress']['config']['venuePostTypes'] = $this->get_venue_post_type_map();
+
+		// Resolved once here so editor components stop each running their own
+		// getEntityRecords lookup for the same sentinel term.
+		$settings['gatherpress']['config']['onlineEventTermId'] = $this->get_online_event_term_id();
 
 		return $settings;
 	}
@@ -471,7 +490,7 @@ final class Setup {
 			$venue_terms = get_the_terms( $post_id, $this->taxonomy_for_event_post_type( $post_type ) );
 			$venue_slug  = ( is_array( $venue_terms ) && ! empty( $venue_terms ) ) ? $venue_terms[0]->slug : null;
 
-			$venue_meta['isOnlineEventTerm'] = ( 'online-event' === $venue_slug );
+			$venue_meta['isOnlineEventTerm'] = self::ONLINE_EVENT_TERM_SLUG === $venue_slug;
 			$venue_meta['onlineEventLink']   = $event->maybe_get_online_event_link();
 
 			$venue_post = $this->get_venue_post_from_event_post_id( $post_id );
@@ -569,6 +588,49 @@ final class Setup {
 	 */
 	public function is_venue_term_slug( string $slug ): bool {
 		return Shadow_Source::get_instance()->is_shadow_term_slug( $slug );
+	}
+
+	/**
+	 * Returns true when `$slug` is the online-event sentinel term slug.
+	 *
+	 * The counterpart to {@see self::is_venue_term_slug()}: that one answers
+	 * "is this a venue", this one answers "is this the online marker", and the
+	 * two are deliberately mutually exclusive.
+	 *
+	 * @since 0.35.0
+	 *
+	 * @param string $slug The term slug to test.
+	 *
+	 * @return bool
+	 */
+	public function is_online_event_term_slug( string $slug ): bool {
+		return self::ONLINE_EVENT_TERM_SLUG === $slug;
+	}
+
+	/**
+	 * Term ID of the online-event sentinel in an event post type's venue taxonomy.
+	 *
+	 * Every call site that needed this was resolving the term by slug itself.
+	 * Returns null when the term does not exist yet, which is the state between
+	 * plugin activation and {@see \GatherPress\Core\Setup::add_online_event_term()}
+	 * running, rather than a failure worth an error.
+	 *
+	 * @since 0.35.0
+	 *
+	 * @param string $event_post_type Optional. Event post type whose venue taxonomy to look in.
+	 *
+	 * @return int|null The term ID, or null when the term is absent.
+	 */
+	public function get_online_event_term_id( string $event_post_type = '' ): ?int {
+		$taxonomy = $this->taxonomy_for_event_post_type( $event_post_type );
+
+		if ( empty( $taxonomy ) ) {
+			return null;
+		}
+
+		$term = get_term_by( 'slug', self::ONLINE_EVENT_TERM_SLUG, $taxonomy );
+
+		return ( $term instanceof WP_Term ) ? (int) $term->term_id : null;
 	}
 
 	/**

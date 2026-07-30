@@ -12,6 +12,7 @@ use DateTime;
 use DateTimeZone;
 use GatherPress\Core\Event\Event;
 use GatherPress\Core\Rsvp\Rsvp;
+use GatherPress\Core\Setup;
 use GatherPress\Core\Venue;
 use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;
@@ -1137,5 +1138,114 @@ class Test_Event extends Base {
 
 		$this->assertNull( $event->event, 'Failed to assert event is null for non-event post.' );
 		$this->assertNull( $event->rsvp, 'Failed to assert rsvp is null for non-event post.' );
+	}
+
+	/**
+	 * Coverage for is_online on an event with no venue terms at all.
+	 *
+	 * @since 0.35.0
+	 *
+	 * @covers ::is_online
+	 *
+	 * @return void
+	 */
+	public function test_is_online_is_false_without_terms(): void {
+		$post  = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get();
+		$event = new Event( $post->ID );
+
+		$this->assertFalse(
+			$event->is_online(),
+			'An event with no venue terms should not report as online.'
+		);
+	}
+
+	/**
+	 * Coverage for set_online and is_online together: the term and the link move
+	 * as one, and turning it off clears both.
+	 *
+	 * @since 0.35.0
+	 *
+	 * @covers ::set_online
+	 * @covers ::is_online
+	 *
+	 * @return void
+	 */
+	public function test_set_online_owns_the_term_and_the_link(): void {
+		Setup::get_instance()->add_online_event_term();
+
+		$post  = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get();
+		$event = new Event( $post->ID );
+
+		$this->assertTrue(
+			$event->set_online( true, 'https://example.org/room' ),
+			'Marking an event online should succeed.'
+		);
+		$this->assertTrue(
+			$event->is_online(),
+			'The event should report as online afterwards.'
+		);
+		$this->assertSame(
+			'https://example.org/room',
+			get_post_meta( $post->ID, 'gatherpress_online_event_link', true ),
+			'The link should be stored.'
+		);
+
+		$this->assertTrue(
+			$event->set_online( false ),
+			'Turning an event offline should succeed.'
+		);
+		$this->assertFalse(
+			$event->is_online(),
+			'The event should no longer report as online.'
+		);
+		$this->assertSame(
+			'',
+			get_post_meta( $post->ID, 'gatherpress_online_event_link', true ),
+			'The link should be cleared so a stale room URL is not left behind.'
+		);
+	}
+
+	/**
+	 * An online event without a link stores no link rather than an empty string
+	 * that later reads as a real value.
+	 *
+	 * @since 0.35.0
+	 *
+	 * @covers ::set_online
+	 *
+	 * @return void
+	 */
+	public function test_set_online_without_a_link_stores_nothing(): void {
+		Setup::get_instance()->add_online_event_term();
+
+		$post  = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get();
+		$event = new Event( $post->ID );
+
+		$event->set_online( true, 'https://example.org/room' );
+		$event->set_online( true );
+
+		$this->assertTrue( $event->is_online(), 'The event should still be online.' );
+		$this->assertSame(
+			'',
+			get_post_meta( $post->ID, 'gatherpress_online_event_link', true ),
+			'Re-marking online without a link should clear the previous one.'
+		);
+	}
+
+	/**
+	 * Both methods bail rather than fatal when the instance wraps no post.
+	 *
+	 * @since 0.35.0
+	 *
+	 * @covers ::is_online
+	 * @covers ::set_online
+	 *
+	 * @return void
+	 */
+	public function test_online_methods_bail_without_a_post(): void {
+		$event = new Event( 0 );
+
+		$this->assertFalse( $event->is_online(), 'is_online should bail without a post.' );
+		$this->assertFalse( $event->set_online( true ), 'set_online should bail without a post.' );
 	}
 }
