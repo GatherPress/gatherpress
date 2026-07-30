@@ -2,3 +2,10 @@
 	// This block has customizable padding, border-box makes that more predictable.
 	box-sizing: border-box;
 }
+
+.gatherpress-event-date__viewer-time {
+	// Reads as a secondary note next to the event's own time rather than a
+	// second competing timestamp.
+	margin-inline-start: 0.5em;
+	opacity: 0.75;
+}

@@ -43,6 +43,10 @@
 		"showTimezone": {
 			"type": "string",
 			"default": ""
+		},
+		"showViewerTime": {
+			"type": "boolean",
+			"default": false
 		}
 	},
 	"supports": {
@@ -95,6 +99,7 @@
 	},
 	"textdomain": "gatherpress",
 	"editorScript": "file:./index.js",
+	"viewScript": "file:./view.js",
 	"style": "file:./style-index.css",
 	"render": "file:./render.php"
 }

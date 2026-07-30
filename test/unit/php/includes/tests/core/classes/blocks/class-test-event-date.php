@@ -310,4 +310,87 @@ class Test_Event_Date extends Base {
 			'The datetime should not be linked when isLink is not set.'
 		);
 	}
+
+	/**
+	 * The showViewerTime attribute emits the placeholder the view script fills,
+	 * carrying the event's GMT datetimes and its own timezone.
+	 *
+	 * @since 0.35.0
+	 *
+	 * @return void
+	 */
+	public function test_render_emits_viewer_time_placeholder(): void {
+		$event_post = $this->mock->post(
+			array(
+				'post_title' => 'Viewer Time Unit Test Event',
+				'post_type'  => Event::POST_TYPE,
+			)
+		)->get();
+
+		$event = new Event( $event_post->ID );
+		$event->save_datetimes(
+			array(
+				'datetime_start' => '2030-06-15 18:00:00',
+				'datetime_end'   => '2030-06-15 20:00:00',
+				'timezone'       => 'America/New_York',
+			)
+		);
+
+		$this->go_to( get_permalink( $event_post->ID ) );
+
+		$output = do_blocks( '<!-- wp:gatherpress/event-date {"showViewerTime":true} /-->' );
+
+		$this->assertStringContainsString(
+			'gatherpress-event-date__viewer-time',
+			$output,
+			'The viewer time placeholder should be rendered when the attribute is set.'
+		);
+		$this->assertStringContainsString(
+			'data-gatherpress-start-gmt="2030-06-15 22:00:00"',
+			$output,
+			'The placeholder should carry the GMT start so the browser can convert it.'
+		);
+		$this->assertStringContainsString(
+			'data-gatherpress-end-gmt="2030-06-16 00:00:00"',
+			$output,
+			'The placeholder should carry the GMT end.'
+		);
+		$this->assertStringContainsString(
+			'data-gatherpress-timezone="America/New_York"',
+			$output,
+			'The placeholder should carry the event timezone to compare against.'
+		);
+		$this->assertStringContainsString(
+			'hidden',
+			$output,
+			'The placeholder should start hidden so no-JS readers see no empty note.'
+		);
+	}
+
+	/**
+	 * No placeholder without the attribute, so nothing changes for the blocks
+	 * already out there.
+	 *
+	 * @since 0.35.0
+	 *
+	 * @return void
+	 */
+	public function test_render_omits_viewer_time_placeholder_by_default(): void {
+		$event_post = $this->mock->post(
+			array(
+				'post_title' => 'No Viewer Time Unit Test Event',
+				'post_type'  => Event::POST_TYPE,
+			)
+		)->get();
+
+		$this->go_to( get_permalink( $event_post->ID ) );
+
+		$output = do_blocks( '<!-- wp:gatherpress/event-date /-->' );
+
+		$this->assertStringNotContainsString(
+			'gatherpress-event-date__viewer-time',
+			$output,
+			'The viewer time placeholder should be absent by default.'
+		);
+	}
 }

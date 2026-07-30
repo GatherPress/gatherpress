@@ -44,6 +44,7 @@ import {
 } from '../../helpers/event';
 import { isInFSETemplate } from '../../helpers/editor';
 import { resolveEventDateData } from './helpers';
+import { getViewerTimeLabel } from './viewer-time';
 
 /**
  * Similar to get_display_datetime method in class-event.php.
@@ -200,6 +201,7 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 		endDateFormat,
 		separator,
 		showTimezone,
+		showViewerTime,
 	} = attributes;
 
 	const dateFormat = getFromSettings( 'dateFormat' );
@@ -256,6 +258,24 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 		showTimezone
 	);
 
+	// Same label the frontend renders, so the toggle previews its own effect
+	// rather than changing something the author cannot see. Empty when the
+	// author is already in the event's timezone, which is what a reader there
+	// would get too.
+	const viewerTimeLabel = showViewerTime
+		? getViewerTimeLabel( {
+			startGmt: createMomentWithTimezone( finalDateTimeStart, finalTimezone )
+				.utc()
+				.format( 'YYYY-MM-DD HH:mm:ss' ),
+			endGmt: showEndTime
+				? createMomentWithTimezone( finalDateTimeEnd, finalTimezone )
+					.utc()
+					.format( 'YYYY-MM-DD HH:mm:ss' )
+				: '',
+			eventTimezone: finalTimezone,
+		} )
+		: '';
+
 	return (
 		<div { ...blockProps }>
 			<BlockControls>
@@ -299,6 +319,11 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 				</a>
 			) : (
 				displayedDateTime
+			) }
+			{ !! viewerTimeLabel && (
+				<span className="gatherpress-event-date__viewer-time">
+					{ viewerTimeLabel }
+				</span>
 			) }
 			{ isEventPostType() && (
 				<InspectorControls>
@@ -391,6 +416,17 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 							setAttributes( {
 								showTimezone: value ? 'yes' : 'no',
 							} )
+						}
+					/>
+					<ToggleControl
+						label={ __( 'Show the reader their local time', 'gatherpress' ) }
+						help={ __(
+							'Adds the event time converted to each reader\u2019s own timezone. Readers already in the event\u2019s timezone see nothing extra.',
+							'gatherpress'
+						) }
+						checked={ !! showViewerTime }
+						onChange={ ( value ) =>
+							setAttributes( { showViewerTime: value } )
 						}
 					/>
 					<ToggleControl
