@@ -11,7 +11,7 @@ import { __, sprintf } from '@wordpress/i18n';
  * Internal dependencies
  */
 import { getCurrentContextualPostId, usePostTypeLabel } from '../helpers/editor';
-import { getVenuePostType, getVenueTaxonomy, useVenueOptions, useVenueTaxonomyIds } from '../helpers/venue';
+import { getOnlineEventTermId, getVenuePostType, getVenueTaxonomy, useVenueOptions, useVenueTaxonomyIds } from '../helpers/venue';
 
 /**
  * VenueTermsCombobox component.
@@ -73,14 +73,12 @@ export const VenueTermsCombobox = ( { search, setSearch, ...props } ) => {
 		[ editPost, venueTaxonomy ]
 	);
 
-	// Get the online-event term to exclude it from venue selection.
-	const onlineEventTermId = useSelect( ( wpSelect ) => {
-		const terms = wpSelect( 'core' ).getEntityRecords( 'taxonomy', venueTaxonomy, {
-			slug: 'online-event',
-			per_page: 1,
-		} );
-		return terms?.[ 0 ]?.id || null;
-	}, [ venueTaxonomy ] );
+	// The term id comes from the editor settings, resolved once in PHP, and
+	// falls back to a query only where that filter did not run.
+	const onlineEventTermId = useSelect(
+		( wpSelect ) => getOnlineEventTermId( wpSelect, venueTaxonomy ),
+		[ venueTaxonomy ]
+	);
 
 	// Filter out the online-event term to get only physical venue IDs.
 	const physicalVenueIds = useMemo( () => {

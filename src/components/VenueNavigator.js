@@ -10,7 +10,7 @@ import { useState, useCallback, useMemo } from '@wordpress/element';
 /**
  * Internal dependencies
  */
-import { getVenuePostType, getVenueTaxonomy, useVenueTaxonomyIds } from '../helpers/venue';
+import { getOnlineEventTermId, getVenuePostType, getVenueTaxonomy, useVenueTaxonomyIds } from '../helpers/venue';
 import CreateVenueForm from './VenueForm';
 import { VenueComboboxProvider } from './VenueComboboxProvider';
 import PopularVenues from './PopularVenues';
@@ -76,14 +76,12 @@ export default function VenueNavigator( props = null ) {
 		[ editPost, venueTaxonomy ]
 	);
 
-	// Get the online-event term to preserve it when selecting a venue.
-	const onlineEventTermId = useSelect( ( wpSelect ) => {
-		const terms = wpSelect( 'core' ).getEntityRecords( 'taxonomy', venueTaxonomy, {
-			slug: 'online-event',
-			per_page: 1,
-		} );
-		return terms?.[ 0 ]?.id || null;
-	}, [ venueTaxonomy ] );
+	// The term id comes from the editor settings, resolved once in PHP, and
+	// falls back to a query only where that filter did not run.
+	const onlineEventTermId = useSelect(
+		( wpSelect ) => getOnlineEventTermId( wpSelect, venueTaxonomy ),
+		[ venueTaxonomy ]
+	);
 
 	// Check if online-event term is currently assigned.
 	const hasOnlineEventTerm = useMemo( () => {

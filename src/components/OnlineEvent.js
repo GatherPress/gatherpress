@@ -15,7 +15,7 @@ import { useDispatch, useSelect } from '@wordpress/data';
  * Internal dependencies
  */
 import { usePostTypeLabel } from '../helpers/editor';
-import { getVenuePostType, getVenueTaxonomy } from '../helpers/venue';
+import { getOnlineEventTermId, getVenuePostType, getVenueTaxonomy } from '../helpers/venue';
 
 /**
  * OnlineEvent component for GatherPress.
@@ -62,25 +62,23 @@ const OnlineEvent = () => {
 		select( 'core/editor' ).getEditedPostAttribute( venueTaxonomy ),
 	);
 
-	// Get the online-event term to find its ID.
-	const onlineEventTerm = useSelect( ( select ) => {
-		const terms = select( 'core' ).getEntityRecords( 'taxonomy', venueTaxonomy, {
-			slug: 'online-event',
-			per_page: 1,
-		} );
-		return terms?.[ 0 ] || null;
-	}, [ venueTaxonomy ] );
+	// The term id comes from the editor settings, resolved once in PHP, and
+	// falls back to a query only where that filter did not run.
+	const onlineEventTermId = useSelect(
+		( select ) => getOnlineEventTermId( select, venueTaxonomy ),
+		[ venueTaxonomy ]
+	);
 
 	// Check if online-event term is currently assigned.
 	// Term IDs may be strings or numbers depending on source, so compare as strings.
 	const hasOnlineEventTerm = ( () => {
-		if ( ! onlineEventTerm || ! venueTermIds ) {
+		if ( ! onlineEventTermId || ! venueTermIds ) {
 			return false;
 		}
 		const termIds = Array.isArray( venueTermIds )
 			? venueTermIds
 			: [ venueTermIds ];
-		const onlineTermId = String( onlineEventTerm.id );
+		const onlineTermId = String( onlineEventTermId );
 		return termIds.some( ( id ) => String( id ) === onlineTermId );
 	} )();
 
@@ -108,7 +106,7 @@ const OnlineEvent = () => {
 	};
 
 	const updateOnlineEventTerm = ( shouldAdd ) => {
-		if ( ! onlineEventTerm ) {
+		if ( ! onlineEventTermId ) {
 			return;
 		}
 
@@ -120,7 +118,7 @@ const OnlineEvent = () => {
 		}
 
 		// Use string for consistent comparison, but store as number for API.
-		const termId = onlineEventTerm.id;
+		const termId = onlineEventTermId;
 		const termIdStr = String( termId );
 		const hasTermAlready = currentTerms.some(
 			( id ) => String( id ) === termIdStr

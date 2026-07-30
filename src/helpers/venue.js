@@ -9,6 +9,7 @@ import { store as coreStore } from '@wordpress/core-data';
 /**
  * Internal dependencies
  */
+import { getFromConfig } from './editor-settings';
 
 /**
  * Default venue post type slug used as a fallback when no override is configured.
@@ -18,6 +19,69 @@ import { store as coreStore } from '@wordpress/core-data';
  * @type {string}
  */
 const DEFAULT_VENUE_POST_TYPE = 'gatherpress_venue';
+
+/**
+ * Slug of the sentinel term that marks an event as online.
+ *
+ * Mirrors `Venue\Setup::ONLINE_EVENT_TERM_SLUG`. A sentinel rather than a
+ * shadow term for a venue post, which is why it carries no leading underscore.
+ *
+ * @since 0.35.0
+ *
+ * @type {string}
+ */
+export const ONLINE_EVENT_TERM_SLUG = 'online-event';
+
+/**
+ * Whether a term slug is the online-event sentinel.
+ *
+ * The counterpart to the venue-term check in PHP: this answers "is this the
+ * online marker", and is deliberately mutually exclusive with being a venue.
+ *
+ * @since 0.35.0
+ *
+ * @param {string} slug The term slug to test.
+ *
+ * @return {boolean} True when the slug is the online-event sentinel.
+ */
+export function isOnlineEventTermSlug( slug ) {
+	return ONLINE_EVENT_TERM_SLUG === slug;
+}
+
+/**
+ * Term ID of the online-event sentinel in the venue taxonomy.
+ *
+ * Prefers the ID resolved once in PHP and handed to the editor through
+ * `gatherpress.config.onlineEventTermId`, which is why this exists: every
+ * component that needed the ID used to run its own `getEntityRecords()` lookup
+ * for the same term. The query remains as a fallback for a context where the
+ * editor settings filter did not run, and is only reached in that case.
+ *
+ * @since 0.35.0
+ *
+ * @param {Function} selectFunc Optional `select` to read with, for use inside a `useSelect` callback.
+ * @param {string}   taxonomy   Optional venue taxonomy to fall back to querying.
+ *
+ * @return {number|null} The term ID, or null when it cannot be resolved.
+ */
+export function getOnlineEventTermId( selectFunc = select, taxonomy = '' ) {
+	const fromConfig = getFromConfig( 'onlineEventTermId' );
+
+	if ( fromConfig ) {
+		return Number( fromConfig );
+	}
+
+	if ( ! taxonomy ) {
+		return null;
+	}
+
+	const terms = selectFunc( 'core' ).getEntityRecords( 'taxonomy', taxonomy, {
+		slug: ONLINE_EVENT_TERM_SLUG,
+		per_page: 1,
+	} );
+
+	return terms?.[ 0 ]?.id ? Number( terms[ 0 ].id ) : null;
+}
 
 /**
  * Returns the venue taxonomy slug for a given venue post type.

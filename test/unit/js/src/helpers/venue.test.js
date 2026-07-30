@@ -33,6 +33,8 @@ import { select, useSelect } from '@wordpress/data';
  * Internal dependencies
  */
 import {
+	getOnlineEventTermId,
+	isOnlineEventTermSlug,
 	isVenuePostType,
 	getVenuePostType,
 	getVenueTaxonomy,
@@ -44,6 +46,7 @@ import {
 	usePopularVenues,
 	useVenueTaxonomyIds,
 	findVenuePostById,
+	ONLINE_EVENT_TERM_SLUG,
 } from '@src/helpers/venue';
 
 /**
@@ -1395,3 +1398,85 @@ describe( 'findVenuePostById', () => {
 	} );
 } );
 
+/**
+ * Coverage for the online-event sentinel helpers.
+ *
+ * The slug used to be repeated at seven call sites, several of which resolved
+ * the same term with their own `getEntityRecords()` query. These cover the
+ * shared predicate and the resolver's two paths (#2047).
+ */
+describe( 'isOnlineEventTermSlug', () => {
+	it( 'recognizes the sentinel slug', () => {
+		expect( isOnlineEventTermSlug( ONLINE_EVENT_TERM_SLUG ) ).toBe( true );
+		expect( isOnlineEventTermSlug( 'online-event' ) ).toBe( true );
+	} );
+
+	it( 'rejects a venue term slug', () => {
+		expect( isOnlineEventTermSlug( '_a-venue' ) ).toBe( false );
+		expect( isOnlineEventTermSlug( undefined ) ).toBe( false );
+	} );
+} );
+
+describe( 'getOnlineEventTermId', () => {
+	beforeEach( () => {
+		jest.clearAllMocks();
+	} );
+
+	it( 'prefers the term id exposed in the editor settings', () => {
+		const getEntityRecords = jest.fn();
+
+		select.mockImplementation( ( store ) => {
+			if ( 'core/editor' === store ) {
+				return {
+					getEditorSettings: () => ( {
+						gatherpress: { config: { onlineEventTermId: 42 } },
+					} ),
+				};
+			}
+
+			return { getEntityRecords };
+		} );
+
+		expect( getOnlineEventTermId( select, '_gatherpress_venue' ) ).toBe( 42 );
+		expect( getEntityRecords ).not.toHaveBeenCalled();
+	} );
+
+	it( 'falls back to querying the term when the setting is absent', () => {
+		const getEntityRecords = jest.fn( () => [ { id: 7 } ] );
+
+		select.mockImplementation( ( store ) => {
+			if ( 'core/editor' === store ) {
+				return { getEditorSettings: () => ( {} ) };
+			}
+
+			return { getEntityRecords };
+		} );
+
+		expect( getOnlineEventTermId( select, '_gatherpress_venue' ) ).toBe( 7 );
+		expect( getEntityRecords ).toHaveBeenCalledWith(
+			'taxonomy',
+			'_gatherpress_venue',
+			{ slug: 'online-event', per_page: 1 }
+		);
+	} );
+
+	it( 'returns null without a setting and without a taxonomy to query', () => {
+		select.mockImplementation( () => ( {
+			getEditorSettings: () => ( {} ),
+		} ) );
+
+		expect( getOnlineEventTermId( select ) ).toBeNull();
+	} );
+
+	it( 'returns null when the query resolves nothing', () => {
+		select.mockImplementation( ( store ) => {
+			if ( 'core/editor' === store ) {
+				return { getEditorSettings: () => ( {} ) };
+			}
+
+			return { getEntityRecords: () => [] };
+		} );
+
+		expect( getOnlineEventTermId( select, '_gatherpress_venue' ) ).toBeNull();
+	} );
+} );

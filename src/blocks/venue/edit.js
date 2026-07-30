@@ -26,7 +26,7 @@ import { useMemo, useState } from '@wordpress/element';
  */
 import { getCurrentContextualPostId, hasValidBlockContext, isInFSETemplate, usePostTypeLabel } from '../../helpers/editor';
 import { usePostTypeSupports, findEventPostById, DISABLED_FIELD_OPACITY } from '../../helpers/event';
-import { useVenuePostFromTermId, GetVenuePostFromEventId, findVenuePostById, getVenuePostType, getVenueTaxonomy, useVenueTaxonomyIds } from '../../helpers/venue';
+import { useVenuePostFromTermId, GetVenuePostFromEventId, findVenuePostById, getVenuePostType, getVenueTaxonomy, isOnlineEventTermSlug, useVenueTaxonomyIds } from '../../helpers/venue';
 import VenueNavigator from '../../components/VenueNavigator';
 import PatternPicker, { PatternChooserModal } from '../../components/PatternPicker';
 import { TEMPLATE_WITH_TITLE, TEMPLATE_WITHOUT_TITLE } from './templates/venue-details';
@@ -217,7 +217,7 @@ const Edit = ( props ) => {
 
 	// Find venue term ID (excluding online-event).
 	const venueTermId =
-		venueTerms.find( ( term ) => 'online-event' !== term?.slug )?.id ||
+		venueTerms.find( ( term ) => ! isOnlineEventTermSlug( term?.slug ) )?.id ||
 		null;
 
 	// Fetch venue post - use different methods for Query Loop vs direct editing.

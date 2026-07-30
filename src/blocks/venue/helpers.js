@@ -5,6 +5,11 @@
  */
 
 /**
+ * Internal dependencies
+ */
+import { isOnlineEventTermSlug } from '../../helpers/venue';
+
+/**
  * Calculate event mode from venue terms.
  *
  * Determines whether an event is in-person, online, or hybrid based on
@@ -21,8 +26,8 @@ export function calculateMode( terms ) {
 		return 'in-person';
 	}
 
-	const hasOnline = terms.some( ( term ) => 'online-event' === term.slug );
-	const hasVenue = terms.some( ( term ) => 'online-event' !== term.slug );
+	const hasOnline = terms.some( ( term ) => isOnlineEventTermSlug( term.slug ) );
+	const hasVenue = terms.some( ( term ) => ! isOnlineEventTermSlug( term.slug ) );
 
 	if ( hasVenue && hasOnline ) {
 		return 'hybrid';

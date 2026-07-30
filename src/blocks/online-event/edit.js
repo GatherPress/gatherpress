@@ -24,7 +24,7 @@ import { __, sprintf } from '@wordpress/i18n';
 import TEMPLATE from './template';
 import { hasValidBlockContext, isInFSETemplate, usePostTypeLabel } from '../../helpers/editor';
 import { isPostTypeSupporting, usePostTypeSupports, DISABLED_FIELD_OPACITY } from '../../helpers/event';
-import { getVenuePostType, getVenueTaxonomy, useVenueTaxonomyIds } from '../../helpers/venue';
+import { getOnlineEventTermId, getVenuePostType, getVenueTaxonomy, useVenueTaxonomyIds } from '../../helpers/venue';
 
 /**
  * Edit component for the GatherPress Online Event block.
@@ -51,7 +51,7 @@ const Edit = ( { attributes, context } ) => {
 	const { editPost, unlockPostSaving } = useDispatch( 'core/editor' );
 
 	// Get the current post info and venue taxonomy.
-	const { currentPostId, currentPostType, venueTaxonomy, onlineEventTerm } = useSelect(
+	const { currentPostId, currentPostType, venueTaxonomy, onlineEventTermId } = useSelect(
 		( select ) => {
 			const editorPostType = select( 'core/editor' )?.getCurrentPostType();
 			const tax = getVenueTaxonomy( getVenuePostType( editorPostType ) );
@@ -59,11 +59,9 @@ const Edit = ( { attributes, context } ) => {
 				currentPostId: select( 'core/editor' )?.getCurrentPostId(),
 				currentPostType: editorPostType,
 				venueTaxonomy: tax,
-				onlineEventTerm:
-					select( 'core' ).getEntityRecords( 'taxonomy', tax, {
-						slug: 'online-event',
-						per_page: 1,
-					} )?.[ 0 ] || null,
+				// Resolved once in PHP and handed to the editor, with a query
+				// fallback for a context where that filter did not run.
+				onlineEventTermId: getOnlineEventTermId( select, tax ),
 			};
 		},
 		[]
@@ -117,7 +115,7 @@ const Edit = ( { attributes, context } ) => {
 
 	// Toggle the online-event term.
 	const toggleOnlineEvent = ( shouldAdd ) => {
-		if ( ! onlineEventTerm ) {
+		if ( ! onlineEventTermId ) {
 			return;
 		}
 
@@ -128,7 +126,7 @@ const Edit = ( { attributes, context } ) => {
 			currentTerms = [ venueTaxonomyIds ];
 		}
 
-		const termId = onlineEventTerm.id;
+		const termId = onlineEventTermId;
 		const termIdStr = String( termId );
 		const hasTermAlready = currentTerms.some(
 			( id ) => String( id ) === termIdStr
@@ -149,7 +147,7 @@ const Edit = ( { attributes, context } ) => {
 	// Check if the event has the online-event term (reactive to changes).
 	const isOnlineEvent = useSelect(
 		( select ) => {
-			const onlineTermId = onlineEventTerm?.id;
+			const onlineTermId = onlineEventTermId;
 
 			if ( ! onlineTermId ) {
 				return false;
@@ -190,7 +188,7 @@ const Edit = ( { attributes, context } ) => {
 				( id ) => String( id ) === String( onlineTermId )
 			);
 		},
-		[ eventId, onlineEventTerm, venueTaxonomy ]
+		[ eventId, onlineEventTermId, venueTaxonomy ]
 	);
 
 	// Reactive supports check — keeps the block from staying dimmed when the

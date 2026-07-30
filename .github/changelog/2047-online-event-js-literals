@@ -1,0 +1,4 @@
+Significance: patch
+Type: changed
+
+The editor now resolves the online-event term once through `gatherpress.config.onlineEventTermId` instead of seven call sites repeating the slug, several of which each ran their own taxonomy query for the same term. Adds `isOnlineEventTermSlug()` and `getOnlineEventTermId()` to the venue helpers.
