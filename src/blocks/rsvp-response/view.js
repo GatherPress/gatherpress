@@ -6,7 +6,10 @@ import { store, getElement, getContext } from '@wordpress/interactivity';
 /**
  * Internal dependencies
  */
-import { initPostContext } from '../../helpers/interactivity';
+import {
+	activateOnSpace as activateOnSpaceHelper,
+	initPostContext,
+} from '../../helpers/interactivity';
 import { toCamelCase } from '../../helpers/globals';
 
 const { state, actions } = store( 'gatherpress', {
@@ -14,6 +17,9 @@ const { state, actions } = store( 'gatherpress', {
 		posts: {},
 	},
 	actions: {
+		activateOnSpace( event ) {
+			activateOnSpaceHelper( event, getElement().ref );
+		},
 		processRsvpSelection( event ) {
 			// Call the linkHandler action to handle the default link behavior.
 			actions.linkHandler( event );

@@ -1,0 +1,4 @@
+Significance: patch
+Type: fixed
+
+Activate dropdown and RSVP-response-toggle triggers with the Space key, honoring their announced button role.
