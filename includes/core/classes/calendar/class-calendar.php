@@ -39,10 +39,8 @@ final class Calendar {
 	/**
 	 * Epoch the VEVENT `SEQUENCE` counts from, as a Unix timestamp.
 	 *
-	 * 2020-01-01 00:00:00 UTC. Subtracting a fixed epoch from
-	 * `post_modified_gmt` keeps the sequence inside RFC 5545's INTEGER
-	 * ceiling of 2147483647 until roughly 2087, where a raw Unix timestamp
-	 * would cross it in January 2038.
+	 * 2020-01-01 00:00:00 UTC. See `get_sequence()` for why the sequence is
+	 * measured from an epoch rather than being a raw timestamp.
 	 *
 	 * @since 0.35.0
 	 * @var int
@@ -286,34 +284,28 @@ final class Calendar {
 	/**
 	 * Revision number for this event's VEVENT, per RFC 5545 §3.8.7.4.
 	 *
-	 * Calendar clients key their update rules on `SEQUENCE`: an incoming
-	 * VEVENT that repeats a `UID` they already hold is only treated as a
-	 * revision when the sequence is higher than the stored one. GatherPress
-	 * emits a stable UID, so without a sequence an event whose date or venue
-	 * changed can keep showing the original time in a subscribed calendar.
+	 * Clients only treat an incoming VEVENT as a revision of one they already
+	 * hold when its `SEQUENCE` is higher than the stored value. GatherPress
+	 * emits a stable `UID`, so without a sequence an edited event keeps
+	 * showing its original date in a subscribed calendar.
 	 *
-	 * The value is seconds elapsed since `SEQUENCE_EPOCH`, taken from
-	 * `post_modified_gmt`. That field only ever moves forward, so the sequence
-	 * is strictly monotonic for a given event, which is the whole contract.
+	 * The value is seconds since `SEQUENCE_EPOCH`, read from
+	 * `post_modified_gmt`. That field only moves forward, so the sequence is
+	 * strictly monotonic per event, which is the only thing the property
+	 * requires. It emits around 2.1e8 today and reaches the RFC's INTEGER
+	 * ceiling of 2147483647 in 2088.
 	 *
-	 * Two rejected alternatives, both of which look fine until they aren't:
+	 * Neither obvious alternative works. The gap between creation and
+	 * modification shrinks whenever `post_date_gmt` is corrected forward, and
+	 * a sequence that moves backwards is one clients may ignore. A raw
+	 * timestamp is monotonic but hits the same ceiling in January 2038; the
+	 * epoch is what buys the other sixty years at the same resolution.
 	 *
-	 * - The gap between creation and modification is not monotonic. Correcting
-	 *   an event's publish date moves `post_date_gmt` forward, which *shrinks*
-	 *   the gap, and a sequence that goes backwards is one clients are entitled
-	 *   to ignore. That reintroduces this bug intermittently.
-	 * - A raw Unix timestamp is monotonic but crosses the RFC's INTEGER ceiling
-	 *   of 2147483647 in January 2038. Subtracting a fixed epoch buys headroom
-	 *   to roughly 2087 at the same resolution.
-	 *
-	 * The clamp is a guard against nonsense data, not a routine ceiling. A
-	 * saturated sequence is not a safe state to be in: every later revision
-	 * repeats the ceiling value and is ignored, freezing the event in
-	 * subscribers' calendars with nothing in the feed to say why. The epoch
-	 * offset is what keeps real events far away from it, so the clamp only
-	 * ever catches something like an import writing a year-3000 modification
-	 * date. Emitting an out-of-range INTEGER instead would risk clients
-	 * rejecting the whole VEVENT rather than just the revision.
+	 * The clamp guards against corrupt data, not ordinary growth. Saturating
+	 * it would freeze the event in subscribers' calendars, since every later
+	 * revision would repeat the ceiling and be ignored, so it should only ever
+	 * catch something like an import writing a year-3000 date. Emitting an
+	 * out-of-range INTEGER instead risks clients rejecting the whole VEVENT.
 	 *
 	 * @since 0.35.0
 	 *
