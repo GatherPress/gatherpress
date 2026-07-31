@@ -23,6 +23,30 @@ use GatherPress\Tests\Base;
 class Test_Cache extends Base {
 
 	/**
+	 * Coverage for __construct.
+	 *
+	 * The instance is built during plugin bootstrap, so the constructor only
+	 * runs inside a test once the stored instance is cleared.
+	 *
+	 * @covers ::__construct
+	 *
+	 * @return void
+	 */
+	public function test_construct_builds_the_instance(): void {
+		$reflection = new \ReflectionClass( Cache::class );
+		$property   = $reflection->getProperty( 'instance' );
+
+		$property->setAccessible( true );
+		$property->setValue( null, null );
+
+		$this->assertInstanceOf(
+			Cache::class,
+			Cache::get_instance(),
+			'Failed to assert that the constructor returns a Cache instance.'
+		);
+	}
+
+	/**
 	 * Coverage for setup_hooks.
 	 *
 	 * @covers ::setup_hooks
