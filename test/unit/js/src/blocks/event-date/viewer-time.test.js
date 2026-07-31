@@ -29,6 +29,38 @@ describe( 'getViewerTimezone', () => {
 	it( 'returns the browser timezone', () => {
 		expect( getViewerTimezone() ).toEqual( expect.any( String ) );
 	} );
+
+	it( 'returns an empty string when Intl names no timezone', () => {
+		const original = global.Intl;
+
+		global.Intl = {
+			DateTimeFormat: () => ( {
+				resolvedOptions: () => ( {} ),
+			} ),
+		};
+
+		try {
+			expect( getViewerTimezone() ).toBe( '' );
+		} finally {
+			global.Intl = original;
+		}
+	} );
+
+	it( 'returns an empty string when Intl refuses the call', () => {
+		const original = global.Intl;
+
+		global.Intl = {
+			DateTimeFormat: () => {
+				throw new Error( 'Intl is unavailable.' );
+			},
+		};
+
+		try {
+			expect( getViewerTimezone() ).toBe( '' );
+		} finally {
+			global.Intl = original;
+		}
+	} );
 } );
 
 describe( 'formatInTimezone', () => {
