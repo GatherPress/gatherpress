@@ -42,12 +42,13 @@ class Test_Rest_Api extends Base {
 	}
 
 	/**
-	 * Restore open RSVP to its default disabled state after each test.
+	 * Restore RSVP settings to their defaults after each test.
 	 *
 	 * @return void
 	 */
 	public function tearDown(): void {
 		Settings::get_instance()->set( 'enable_open_rsvp', true );
+		Settings::get_instance()->set( 'rsvp_mode', 'enabled' );
 		parent::tearDown();
 	}
 
@@ -2513,7 +2514,6 @@ class Test_Rest_Api extends Base {
 		);
 
 		remove_filter( 'pre_wp_mail', $capture_email );
-		Settings::get_instance()->set( 'rsvp_mode', 'enabled' );
 
 		$this->assertNotEmpty( $captured_body, 'Email body should still be sent.' );
 		$this->assertStringNotContainsString(
