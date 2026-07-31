@@ -2332,12 +2332,13 @@ class Test_Rest_Api extends Base {
 	 */
 	public function test_send_event_email_includes_rsvp_cta_for_future_event(): void {
 		$captured_body = '';
+		$capture_email = static function ( $preempt, $atts ) use ( &$captured_body ) {
+			$captured_body = $atts['message'] ?? '';
+			return true;
+		};
 		add_filter(
 			'pre_wp_mail',
-			static function ( $preempt, $atts ) use ( &$captured_body ) {
-				$captured_body = $atts['message'] ?? '';
-				return true;
-			},
+			$capture_email,
 			10,
 			2
 		);
@@ -2376,7 +2377,7 @@ class Test_Rest_Api extends Base {
 			)
 		);
 
-		remove_all_filters( 'pre_wp_mail' );
+		remove_filter( 'pre_wp_mail', $capture_email );
 
 		$this->assertStringContainsString(
 			'RSVP Now',
@@ -2394,12 +2395,13 @@ class Test_Rest_Api extends Base {
 	 */
 	public function test_send_event_email_omits_rsvp_cta_for_past_event(): void {
 		$captured_body = '';
+		$capture_email = static function ( $preempt, $atts ) use ( &$captured_body ) {
+			$captured_body = $atts['message'] ?? '';
+			return true;
+		};
 		add_filter(
 			'pre_wp_mail',
-			static function ( $preempt, $atts ) use ( &$captured_body ) {
-				$captured_body = $atts['message'] ?? '';
-				return true;
-			},
+			$capture_email,
 			10,
 			2
 		);
@@ -2438,7 +2440,7 @@ class Test_Rest_Api extends Base {
 			)
 		);
 
-		remove_all_filters( 'pre_wp_mail' );
+		remove_filter( 'pre_wp_mail', $capture_email );
 
 		$this->assertNotEmpty( $captured_body, 'Past-event email body should still be sent.' );
 		$this->assertStringContainsString(
@@ -2462,12 +2464,13 @@ class Test_Rest_Api extends Base {
 	 */
 	public function test_send_event_email_omits_rsvp_cta_when_rsvp_disabled(): void {
 		$captured_body = '';
+		$capture_email = static function ( $preempt, $atts ) use ( &$captured_body ) {
+			$captured_body = $atts['message'] ?? '';
+			return true;
+		};
 		add_filter(
 			'pre_wp_mail',
-			static function ( $preempt, $atts ) use ( &$captured_body ) {
-				$captured_body = $atts['message'] ?? '';
-				return true;
-			},
+			$capture_email,
 			10,
 			2
 		);
@@ -2509,7 +2512,7 @@ class Test_Rest_Api extends Base {
 			)
 		);
 
-		remove_all_filters( 'pre_wp_mail' );
+		remove_filter( 'pre_wp_mail', $capture_email );
 		Settings::get_instance()->set( 'rsvp_mode', 'enabled' );
 
 		$this->assertNotEmpty( $captured_body, 'Email body should still be sent.' );
