@@ -739,17 +739,39 @@ final class List_Table extends WP_List_Table {
 	 * @return void
 	 */
 	public function process_bulk_action(): void {
-		$nonce = isset( $_REQUEST['_wpnonce'] ) ? sanitize_text_field( wp_unslash( $_REQUEST['_wpnonce'] ) ) : '';
+		// Requests reach this method carrying different nonces under `_wpnonce`
+		// depending on how they were made: core's `bulk-<plural>` nonce from the
+		// bulk form, the comment-type nonce from the view links, and the
+		// dedicated `gatherpress_rsvp_action` nonce from the row-action delete
+		// link, which is why that one only counts for `delete`. Any single valid
+		// pairing is enough; the capability check below is what authorizes the
+		// action.
+		$nonces = array();
 
-		// Accept either the standard comment-type nonce, or — only for the
-		// `delete` action — the dedicated `gatherpress_rsvp_action` nonce
-		// the row-action emits. Cap check folds in for a single guard.
-		$valid_nonce = $nonce && (
-			wp_verify_nonce( $nonce, Rsvp::COMMENT_TYPE )
-			|| ( 'delete' === $this->current_action()
-				&& wp_verify_nonce( $nonce, 'gatherpress_rsvp_action' )
-			)
+		if ( isset( $_REQUEST['_wpnonce'] ) ) {
+			$nonces[] = sanitize_text_field( wp_unslash( $_REQUEST['_wpnonce'] ) );
+		}
+
+		$nonce_actions = array(
+			sprintf( 'bulk-%s', $this->_args['plural'] ),
+			Rsvp::COMMENT_TYPE,
 		);
+
+		if ( 'delete' === $this->current_action() ) {
+			$nonce_actions[] = 'gatherpress_rsvp_action';
+		}
+
+		$valid_nonce = false;
+
+		foreach ( $nonces as $nonce ) {
+			foreach ( $nonce_actions as $nonce_action ) {
+				if ( wp_verify_nonce( $nonce, $nonce_action ) ) {
+					$valid_nonce = true;
+
+					break 2;
+				}
+			}
+		}
 
 		if ( ! $valid_nonce || ! current_user_can( Rsvp::CAPABILITY ) ) {
 			return;
@@ -943,23 +965,5 @@ final class List_Table extends WP_List_Table {
 		);
 
 		return $status_links;
-	}
-
-	/**
-	 * Displays the RSVP list table with nonce fields.
-	 *
-	 * Outputs the HTML for the RSVP list table, including necessary nonce fields
-	 * for security. This method extends the parent display() method to add
-	 * GatherPress-specific nonce fields for RSVP actions.
-	 *
-	 * @since 0.34.0
-	 *
-	 * @return void
-	 */
-	public function display(): void {
-		wp_nonce_field( Rsvp::COMMENT_TYPE );
-		wp_nonce_field( 'gatherpress_rsvp_action', '_gatherpress_rsvp_action_nonce' );
-
-		parent::display();
 	}
 }

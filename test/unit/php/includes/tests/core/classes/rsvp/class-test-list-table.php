@@ -784,6 +784,70 @@ class Test_List_Table extends Base {
 	}
 
 	/**
+	 * The bulk form's own nonce, which is core's `bulk-<plural>` nonce, is
+	 * accepted. Before #2062 only the comment-type nonce was, and since
+	 * `WP_List_Table` emits its nonce under the same `_wpnonce` name, a browser
+	 * submit was always rejected and the screen did nothing.
+	 *
+	 * @covers ::process_bulk_action
+	 *
+	 * @return void
+	 */
+	public function test_process_bulk_action_accepts_the_core_bulk_nonce(): void {
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
+
+		$rsvp_id = (int) $this->rsvp['comment_ID'];
+
+		wp_set_comment_status( $rsvp_id, 'approve' );
+
+		// Derive the bulk nonce the same way process_bulk_action() does, so the
+		// test stays honest if the list table's plural arg ever changes.
+		$plural                          = Utility::get_hidden_property( $this->list_table, '_args' )['plural'];
+		$_REQUEST['_wpnonce']            = wp_create_nonce( sprintf( 'bulk-%s', $plural ) );
+		$_REQUEST['gatherpress_rsvp_id'] = array( $rsvp_id );
+		$_REQUEST['action']              = 'unapprove';
+
+		$this->list_table->process_bulk_action();
+
+		$this->assertSame(
+			'0',
+			get_comment( $rsvp_id )->comment_approved,
+			'Failed to assert the core bulk nonce authorizes a bulk action.'
+		);
+
+		unset( $_REQUEST['_wpnonce'], $_REQUEST['gatherpress_rsvp_id'], $_REQUEST['action'] );
+	}
+
+	/**
+	 * An unrelated nonce is still refused.
+	 *
+	 * @covers ::process_bulk_action
+	 *
+	 * @return void
+	 */
+	public function test_process_bulk_action_refuses_an_unrelated_nonce(): void {
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
+
+		$rsvp_id = (int) $this->rsvp['comment_ID'];
+
+		wp_set_comment_status( $rsvp_id, 'approve' );
+
+		$_REQUEST['_wpnonce']            = wp_create_nonce( 'something-else' );
+		$_REQUEST['gatherpress_rsvp_id'] = array( $rsvp_id );
+		$_REQUEST['action']              = 'unapprove';
+
+		$this->list_table->process_bulk_action();
+
+		$this->assertSame(
+			'1',
+			get_comment( $rsvp_id )->comment_approved,
+			'Failed to assert an unrelated nonce is refused.'
+		);
+
+		unset( $_REQUEST['_wpnonce'], $_REQUEST['gatherpress_rsvp_id'], $_REQUEST['action'] );
+	}
+
+	/**
 	 * Tests get_views method.
 	 *
 	 * @covers ::get_views
@@ -939,29 +1003,6 @@ class Test_List_Table extends Base {
 			array( 'date', true ),
 			$sortable['date'],
 			'Failed to assert date is the default sort column.'
-		);
-	}
-
-	/**
-	 * Tests display method.
-	 *
-	 * @covers ::display
-	 * @return void
-	 */
-	public function test_display(): void {
-		set_current_screen( 'gatherpress_event_page_gatherpress_rsvp' );
-		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
-
-		$this->list_table->prepare_items();
-
-		ob_start();
-		$this->list_table->display();
-		$output = ob_get_clean();
-
-		$this->assertStringContainsString(
-			'gatherpress_rsvp',
-			$output,
-			'Failed to assert display outputs table with RSVP nonce field.'
 		);
 	}
 
