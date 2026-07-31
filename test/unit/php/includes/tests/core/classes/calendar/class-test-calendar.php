@@ -349,8 +349,8 @@ class Test_Calendar extends Base {
 	}
 
 	/**
-	 * Coverage for get_ical_event_string on a never-edited event: SEQUENCE is
-	 * zero and LAST-MODIFIED reports the post's GMT modification time.
+	 * Coverage for get_ical_event_string: SEQUENCE is post_modified_gmt as a
+	 * Unix timestamp, and DTSTAMP and LAST-MODIFIED both report that GMT time.
 	 *
 	 * @covers ::get_ical_event_string
 	 * @covers ::get_sequence
@@ -360,34 +360,77 @@ class Test_Calendar extends Base {
 	public function test_get_ical_event_string_sequence_and_last_modified(): void {
 		$instance = new Calendar( $this->make_event() );
 
-		$instance->event->event->post_date_gmt     = '2030-01-01 10:00:00';
 		$instance->event->event->post_modified_gmt = '2030-01-01 10:00:00';
 
 		$vevent = $instance->get_ical_event_string();
 
 		$this->assertStringContainsString(
-			'SEQUENCE:0',
+			sprintf( 'SEQUENCE:%d', strtotime( '2030-01-01 10:00:00' ) ),
 			$vevent,
-			'An unedited event should carry sequence zero.'
+			'SEQUENCE should be post_modified_gmt as a Unix timestamp.'
 		);
 		$this->assertStringContainsString(
 			'LAST-MODIFIED:20300101T100000Z',
 			$vevent,
 			'LAST-MODIFIED should report post_modified_gmt in UTC form.'
 		);
+		$this->assertStringContainsString(
+			'DTSTAMP:20300101T100000Z',
+			$vevent,
+			'DTSTAMP shares the post_modified_gmt derivation with LAST-MODIFIED.'
+		);
 
 		$instance->event->event->post_modified_gmt = '2030-01-01 11:00:00';
 
 		$this->assertStringContainsString(
-			'SEQUENCE:3600',
+			sprintf( 'SEQUENCE:%d', strtotime( '2030-01-01 11:00:00' ) ),
 			$instance->get_ical_event_string(),
-			'An edited event should carry a sequence a client can compare against.'
+			'A later modification should raise the sequence a client can compare against.'
 		);
 	}
 
 	/**
-	 * Coverage for get_sequence: an edited event reports the seconds between
-	 * creation and last modification, so clients see a higher revision.
+	 * Regression coverage for DTSTAMP on a non-UTC site: it must derive from
+	 * post_modified_gmt, not the site-local post_modified, so it does not drift
+	 * by the UTC offset.
+	 *
+	 * @covers ::get_ical_event_string
+	 *
+	 * @return void
+	 */
+	public function test_get_ical_event_string_dtstamp_uses_gmt_on_non_utc_site(): void {
+		$original_tz = get_option( 'timezone_string' );
+		update_option( 'timezone_string', 'America/New_York' );
+
+		$instance = new Calendar( $this->make_event() );
+
+		// Site-local modification time and its GMT counterpart differ by the offset.
+		$instance->event->event->post_modified     = '2030-01-01 05:00:00';
+		$instance->event->event->post_modified_gmt = '2030-01-01 10:00:00';
+
+		$vevent = $instance->get_ical_event_string();
+
+		$this->assertStringContainsString(
+			'DTSTAMP:20300101T100000Z',
+			$vevent,
+			'DTSTAMP must come from post_modified_gmt, not the site-local post_modified.'
+		);
+		$this->assertStringNotContainsString(
+			'DTSTAMP:20300101T050000Z',
+			$vevent,
+			'DTSTAMP must not use the site-local time on a non-UTC site.'
+		);
+
+		if ( false === $original_tz ) {
+			delete_option( 'timezone_string' );
+		} else {
+			update_option( 'timezone_string', $original_tz );
+		}
+	}
+
+	/**
+	 * Coverage for get_sequence: the value is post_modified_gmt as a Unix
+	 * timestamp, so a later modification yields a higher revision.
 	 *
 	 * @covers ::get_sequence
 	 *
@@ -397,35 +440,33 @@ class Test_Calendar extends Base {
 		$event_id = $this->make_event();
 		$instance = new Calendar( $event_id );
 
-		$instance->event->event->post_date_gmt     = '2030-01-01 10:00:00';
 		$instance->event->event->post_modified_gmt = '2030-01-01 11:00:00';
 
 		$this->assertSame(
-			HOUR_IN_SECONDS,
+			strtotime( '2030-01-01 11:00:00' ),
 			Utility::invoke_hidden_method( $instance, 'get_sequence' ),
-			'Sequence should be the seconds elapsed between creation and modification.'
+			'Sequence should be post_modified_gmt as a Unix timestamp.'
+		);
+
+		$instance->event->event->post_modified_gmt = '2030-01-01 12:00:00';
+
+		$this->assertSame(
+			strtotime( '2030-01-01 12:00:00' ),
+			Utility::invoke_hidden_method( $instance, 'get_sequence' ),
+			'A later modification should raise the sequence.'
 		);
 	}
 
 	/**
-	 * Coverage for get_sequence guards: an unparsable or non-advancing
-	 * modification date yields zero rather than a negative sequence.
+	 * Coverage for the get_sequence guard: an unparsable modification date
+	 * yields zero rather than a warning or a negative value.
 	 *
 	 * @covers ::get_sequence
 	 *
 	 * @return void
 	 */
-	public function test_get_sequence_returns_zero_for_invalid_or_backwards_dates(): void {
+	public function test_get_sequence_returns_zero_for_unparsable_date(): void {
 		$instance = new Calendar( $this->make_event() );
-
-		$instance->event->event->post_date_gmt     = '2030-01-01 10:00:00';
-		$instance->event->event->post_modified_gmt = '2030-01-01 09:00:00';
-
-		$this->assertSame(
-			0,
-			Utility::invoke_hidden_method( $instance, 'get_sequence' ),
-			'A modification date before creation should not produce a negative sequence.'
-		);
 
 		$instance->event->event->post_modified_gmt = 'not a date';
 
@@ -433,14 +474,6 @@ class Test_Calendar extends Base {
 			0,
 			Utility::invoke_hidden_method( $instance, 'get_sequence' ),
 			'An unparsable modification date should fall back to zero.'
-		);
-
-		$instance->event->event->post_date_gmt = 'not a date';
-
-		$this->assertSame(
-			0,
-			Utility::invoke_hidden_method( $instance, 'get_sequence' ),
-			'An unparsable creation date should fall back to zero.'
 		);
 	}
 
@@ -455,7 +488,6 @@ class Test_Calendar extends Base {
 	public function test_get_sequence_clamps_to_rfc_integer_ceiling(): void {
 		$instance = new Calendar( $this->make_event() );
 
-		$instance->event->event->post_date_gmt     = '1970-01-01 00:00:00';
 		$instance->event->event->post_modified_gmt = '2100-01-01 00:00:00';
 
 		$this->assertSame(

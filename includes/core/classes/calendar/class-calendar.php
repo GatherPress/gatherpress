@@ -236,10 +236,9 @@ final class Calendar {
 		$time_end       = $this->event->get_formatted_datetime( 'His', 'end', false );
 		$datetime_start = sprintf( '%sT%sZ', $date_start, $time_start );
 		$datetime_end   = sprintf( '%sT%sZ', $date_end, $time_end );
-		$modified_date  = strtotime( $this->event->event->post_modified );
-		$datetime_stamp = sprintf( '%sT%sZ', gmdate( 'Ymd', $modified_date ), gmdate( 'His', $modified_date ) );
 		$modified_gmt   = strtotime( $this->event->event->post_modified_gmt );
-		$last_modified  = sprintf( '%sT%sZ', gmdate( 'Ymd', $modified_gmt ), gmdate( 'His', $modified_gmt ) );
+		$datetime_stamp = sprintf( '%sT%sZ', gmdate( 'Ymd', $modified_gmt ), gmdate( 'His', $modified_gmt ) );
+		$last_modified  = $datetime_stamp;
 		$sequence       = $this->get_sequence();
 		$venue          = $this->event->get_venue_information();
 		$location       = $venue['name'];
@@ -280,31 +279,33 @@ final class Calendar {
 	 * emits a stable UID, so without a sequence an event whose date or venue
 	 * changed can keep showing the original time in a subscribed calendar.
 	 *
-	 * The value is the number of seconds between the event's creation and its
-	 * last modification: zero for an event nobody has edited, and monotonically
-	 * increasing for that event afterwards, which is all the property requires.
-	 * Post revisions are not used because they get pruned, and sites can turn
-	 * them off entirely, which would freeze the sequence at zero. A counter in
-	 * post meta was the other option, at the cost of a write on every save and
-	 * nothing to fall back on for events that predate it.
+	 * The value is `post_modified_gmt` as a Unix timestamp. `post_modified`
+	 * only ever moves forward, so the sequence is strictly monotonic per event
+	 * without depending on a second field, a write on every save, or a
+	 * backfill. A delta between creation and modification was rejected because
+	 * correcting an event's publish date moves `post_date_gmt` forward and can
+	 * push the delta below a value subscribers already hold, which per RFC 5545
+	 * lets clients ignore that revision and every later one. Post revisions were
+	 * rejected because they get pruned and sites can turn them off, and a
+	 * post-meta counter for the cost of a write on every save. The only thing a
+	 * raw timestamp gives up is `SEQUENCE:0` for a never-edited event, which
+	 * nothing needs.
 	 *
-	 * The RFC caps an INTEGER at 2147483647, roughly 68 years of seconds, so
-	 * the value only saturates for an event edited a lifetime after it was
-	 * created. It is clamped rather than left to overflow.
+	 * The RFC caps an INTEGER at 2147483647; a Unix timestamp reaches that in
+	 * 2038, so the value is clamped rather than left to overflow.
 	 *
 	 * @since 0.35.0
 	 *
 	 * @return int Non-negative revision number for this event.
 	 */
 	private function get_sequence(): int {
-		$created  = strtotime( (string) $this->event->event->post_date_gmt );
 		$modified = strtotime( (string) $this->event->event->post_modified_gmt );
 
-		if ( false === $created || false === $modified || $modified <= $created ) {
+		if ( false === $modified ) {
 			return 0;
 		}
 
-		return min( $modified - $created, 2147483647 );
+		return min( $modified, 2147483647 );
 	}
 
 	/**
