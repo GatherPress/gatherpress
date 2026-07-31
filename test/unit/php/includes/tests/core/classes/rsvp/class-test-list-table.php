@@ -503,6 +503,53 @@ class Test_List_Table extends Base {
 	}
 
 	/**
+	 * Tests column_cb labels registered users by their display name.
+	 *
+	 * @covers ::column_cb
+	 * @covers ::get_attendee_name
+	 * @return void
+	 */
+	public function test_column_cb_registered_user(): void {
+		$user_id = $this->factory->user->create(
+			array(
+				'display_name' => 'Registered Attendee',
+			)
+		);
+
+		$rsvp            = $this->rsvp;
+		$rsvp['user_id'] = $user_id;
+
+		$cb_col = $this->list_table->column_cb( $rsvp );
+
+		$this->assertStringContainsString(
+			'Select Registered Attendee',
+			$cb_col,
+			'Failed to assert label uses the registered user\'s display name.'
+		);
+	}
+
+	/**
+	 * Tests column_cb falls back to the submitted author name when the
+	 * stored user ID no longer resolves to an account.
+	 *
+	 * @covers ::column_cb
+	 * @covers ::get_attendee_name
+	 * @return void
+	 */
+	public function test_column_cb_stale_user_id(): void {
+		$rsvp            = $this->rsvp;
+		$rsvp['user_id'] = 999999; // No such user.
+
+		$cb_col = $this->list_table->column_cb( $rsvp );
+
+		$this->assertStringContainsString(
+			sprintf( 'Select %s', $this->rsvp['comment_author'] ),
+			$cb_col,
+			'Failed to assert a stale user ID falls back to the submitted author name.'
+		);
+	}
+
+	/**
 	 * Tests column_attendee method.
 	 *
 	 * @covers ::column_attendee

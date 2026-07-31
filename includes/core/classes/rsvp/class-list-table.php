@@ -549,6 +549,7 @@ final class List_Table extends WP_List_Table {
 	 * users know which entry each checkbox selects.
 	 *
 	 * @since 0.34.0
+	 * @since 0.35.0 Row checkboxes carry a visually hidden label naming the attendee.
 	 *
 	 * @param array|object $item RSVP comment data containing the comment_ID.
 	 *
@@ -559,7 +560,8 @@ final class List_Table extends WP_List_Table {
 		$comment_id = intval( $item['comment_ID'] );
 
 		return sprintf(
-			'<label class="label-covers-full-cell" for="cb-select-%1$d"><span class="screen-reader-text">%2$s</span></label>' .
+			'<label class="label-covers-full-cell" for="cb-select-%1$d">' .
+			'<span class="screen-reader-text">%2$s</span></label>' .
 			'<input id="cb-select-%1$d" type="checkbox" name="gatherpress_rsvp_id[]" value="%1$d" />',
 			$comment_id,
 			esc_html(
@@ -576,8 +578,10 @@ final class List_Table extends WP_List_Table {
 	 * Resolves the display name for an RSVP entry.
 	 *
 	 * Registered users are shown by their display name; open (account-less)
-	 * RSVPs fall back to the submitted author name. Mirrors the resolution
-	 * used when rendering the Attendee column.
+	 * RSVPs — and stale user IDs whose account was deleted — fall back to the
+	 * submitted author name. Mirrors the resolution used when rendering the
+	 * Attendee column, and always returns a non-empty name so the checkbox
+	 * label never renders as a bare "Select ".
 	 *
 	 * @since 0.35.0
 	 *
@@ -589,8 +593,15 @@ final class List_Table extends WP_List_Table {
 		$username = (string) ( $item['comment_author'] ?? '' );
 
 		if ( ! empty( $item['user_id'] ) ) {
-			$user     = get_userdata( $item['user_id'] );
-			$username = $user->display_name ?? __( 'Unknown', 'gatherpress' );
+			$user = get_userdata( $item['user_id'] );
+
+			if ( $user && '' !== trim( (string) $user->display_name ) ) {
+				$username = $user->display_name;
+			}
+		}
+
+		if ( '' === trim( $username ) ) {
+			$username = __( 'Unknown', 'gatherpress' );
 		}
 
 		return $username;
