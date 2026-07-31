@@ -1252,6 +1252,47 @@ class Test_Event extends Base {
 	}
 
 	/**
+	 * An event that has never been given datetimes reads every meta key as
+	 * empty and cannot compare two dates it does not have.
+	 *
+	 * The empty-datetime paths were only reached through the empty-params case
+	 * of the display-datetime provider, which depends on that test running
+	 * first and on nothing having warmed the datetime cache. This asserts them
+	 * directly instead.
+	 *
+	 * @since 0.35.0
+	 *
+	 * @covers ::is_same_date
+	 * @covers ::get_gmt_datetime
+	 *
+	 * @return void
+	 */
+	public function test_is_same_date_is_false_without_datetimes(): void {
+		global $wpdb;
+
+		$post  = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get();
+		$table = sprintf( Event::TABLE_FORMAT, $wpdb->prefix );
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$wpdb->delete( $table, array( 'post_id' => $post->ID ), array( '%d' ) );
+		delete_transient( sprintf( Event::DATETIME_CACHE_KEY, $post->ID ) );
+
+		foreach ( array( 'datetime_start', 'datetime_start_gmt', 'datetime_end', 'datetime_end_gmt' ) as $key ) {
+			delete_post_meta( $post->ID, sprintf( 'gatherpress_%s', $key ) );
+		}
+
+		$this->assertFalse(
+			( new Event( $post->ID ) )->is_same_date(),
+			'An event with no datetimes should not report the same date.'
+		);
+		$this->assertSame(
+			'',
+			( new Event( $post->ID ) )->get_datetime()['datetime_start'],
+			'Every empty datetime meta key should be skipped rather than stored.'
+		);
+	}
+
+	/**
 	 * An event carrying a venue term is not online: the loop has to read every
 	 * term before it can answer, rather than treating any term as the sentinel.
 	 *
