@@ -622,13 +622,10 @@ final class Setup {
 	 * @return int|null The term ID, or null when the term is absent.
 	 */
 	public function get_online_event_term_id( string $event_post_type = '' ): ?int {
+		// Always a taxonomy name: an unmapped event post type falls back to the
+		// built-in venue post type, so there is no empty case to guard.
 		$taxonomy = $this->taxonomy_for_event_post_type( $event_post_type );
-
-		if ( empty( $taxonomy ) ) {
-			return null;
-		}
-
-		$term = get_term_by( 'slug', self::ONLINE_EVENT_TERM_SLUG, $taxonomy );
+		$term     = get_term_by( 'slug', self::ONLINE_EVENT_TERM_SLUG, $taxonomy );
 
 		return ( $term instanceof WP_Term ) ? (int) $term->term_id : null;
 	}

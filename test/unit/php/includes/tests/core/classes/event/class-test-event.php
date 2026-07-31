@@ -14,10 +14,12 @@ use GatherPress\Core\Event\Event;
 use GatherPress\Core\Rsvp\Rsvp;
 use GatherPress\Core\Setup;
 use GatherPress\Core\Venue;
+use GatherPress\Core\Venue\Setup as Venue_Setup;
 use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;
 use ReflectionClass;
 use WP_Post;
+use WP_Term;
 
 /**
  * Class Test_Event.
@@ -1247,5 +1249,61 @@ class Test_Event extends Base {
 
 		$this->assertFalse( $event->is_online(), 'is_online should bail without a post.' );
 		$this->assertFalse( $event->set_online( true ), 'set_online should bail without a post.' );
+	}
+
+	/**
+	 * An event carrying a venue term is not online: the loop has to read every
+	 * term before it can answer, rather than treating any term as the sentinel.
+	 *
+	 * @since 0.35.0
+	 *
+	 * @covers ::is_online
+	 *
+	 * @return void
+	 */
+	public function test_is_online_is_false_with_a_venue_term(): void {
+		$post     = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get();
+		$taxonomy = Venue_Setup::get_instance()->taxonomy_for_event_post_type( Event::POST_TYPE );
+		$term     = wp_insert_term( 'Some Venue', $taxonomy, array( 'slug' => '_some-venue' ) );
+
+		wp_set_object_terms( $post->ID, (int) $term['term_id'], $taxonomy );
+
+		$this->assertFalse(
+			( new Event( $post->ID ) )->is_online(),
+			'An event tagged with a venue should not report as online.'
+		);
+	}
+
+	/**
+	 * Before the online-event term exists there is nothing to tag the event
+	 * with, so set_online reports failure rather than storing a link that
+	 * nothing can read back.
+	 *
+	 * @since 0.35.0
+	 *
+	 * @covers ::set_online
+	 *
+	 * @return void
+	 */
+	public function test_set_online_is_false_without_the_sentinel_term(): void {
+		$venue_setup = Venue_Setup::get_instance();
+		$taxonomy    = $venue_setup->taxonomy_for_event_post_type( Event::POST_TYPE );
+		$existing    = get_term_by( 'slug', Venue_Setup::ONLINE_EVENT_TERM_SLUG, $taxonomy );
+
+		if ( $existing instanceof WP_Term ) {
+			wp_delete_term( $existing->term_id, $taxonomy );
+		}
+
+		$post = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get();
+
+		$this->assertFalse(
+			( new Event( $post->ID ) )->set_online( true, 'https://example.org/room' ),
+			'An event should not be markable online while the sentinel term is absent.'
+		);
+		$this->assertSame(
+			'',
+			get_post_meta( $post->ID, 'gatherpress_online_event_link', true ),
+			'No link should be stored when the term cannot be resolved.'
+		);
 	}
 }
