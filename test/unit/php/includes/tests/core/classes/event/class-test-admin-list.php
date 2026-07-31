@@ -767,13 +767,15 @@ class Test_Admin_List extends Base {
 	 *
 	 * @return void
 	 */
-	public function test_get_event_counts_with_no_date(): void {
+	public function test_get_event_counts_for_an_event_created_without_dates(): void {
 		$instance = Admin_List::get_instance();
 
 		// Reset cached counts.
 		Utility::set_and_get_hidden_property( $instance, 'event_counts', array() );
 
-		// Create an event without setting any dates.
+		// An event created without dates is seeded with the editor's default,
+		// which is tomorrow, so it counts as upcoming rather than falling out
+		// of both buckets the way a datetime-less event used to (#2054).
 		$this->mock->post(
 			array(
 				'post_type'   => Event::POST_TYPE,
@@ -783,8 +785,8 @@ class Test_Admin_List extends Base {
 
 		$counts = Utility::invoke_hidden_method( $instance, 'get_event_counts' );
 
-		$this->assertSame( 0, $counts['upcoming'], 'Event without date should not count as upcoming.' );
-		$this->assertSame( 0, $counts['past'], 'Event without date should not count as past.' );
+		$this->assertSame( 1, $counts['upcoming'], 'Event created without dates should count as upcoming.' );
+		$this->assertSame( 0, $counts['past'], 'Event created without dates should not count as past.' );
 	}
 
 	/**

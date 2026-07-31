@@ -105,10 +105,6 @@ class Test_Event extends Base {
 				'expects' => 'Monday, May 11, 2020 3:00 PM to Tuesday, May 12, 2020 5:00 PM EDT',
 			),
 			array(
-				'params'  => array(),
-				'expects' => '—',
-			),
-			array(
 				'params'  => array(
 					'datetime_start' => '2020-05-11 15:00:00',
 					'datetime_end'   => '2020-05-11 17:00:00',
@@ -310,15 +306,18 @@ class Test_Event extends Base {
 		)->get();
 		$event = new Event( $post->ID );
 
+		// A new event is seeded with the editor's default rather than left
+		// datetime-less, so it always lands in the events table (#2054).
+		$seeded = $event->get_datetime();
+
+		$this->assertNotEmpty(
+			$seeded['datetime_start'],
+			'Failed to assert that a new event is seeded with a start datetime.'
+		);
 		$this->assertSame(
-			array(
-				'datetime_start'     => '',
-				'datetime_start_gmt' => '',
-				'datetime_end'       => '',
-				'datetime_end_gmt'   => '',
-				'timezone'           => '+00:00',
-			),
-			$event->get_datetime()
+			2 * HOUR_IN_SECONDS,
+			strtotime( $seeded['datetime_end'] ) - strtotime( $seeded['datetime_start'] ),
+			'Failed to assert that the seeded default runs for two hours.'
 		);
 
 		$params = array(
