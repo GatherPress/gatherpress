@@ -480,6 +480,26 @@ class Test_List_Table extends Base {
 			$cb_col,
 			'Failed to assert checkbox has comment ID as value.'
 		);
+		$this->assertStringContainsString(
+			sprintf( 'for="cb-select-%d"', $this->rsvp['comment_ID'] ),
+			$cb_col,
+			'Failed to assert label is associated with the checkbox.'
+		);
+		$this->assertStringContainsString(
+			sprintf( 'id="cb-select-%d"', $this->rsvp['comment_ID'] ),
+			$cb_col,
+			'Failed to assert checkbox carries the id the label points at.'
+		);
+		$this->assertStringContainsString(
+			'screen-reader-text',
+			$cb_col,
+			'Failed to assert label text is visually hidden.'
+		);
+		$this->assertStringContainsString(
+			sprintf( 'Select %s', $this->rsvp['comment_author'] ),
+			$cb_col,
+			'Failed to assert label names the attendee the checkbox selects.'
+		);
 	}
 
 	/**
