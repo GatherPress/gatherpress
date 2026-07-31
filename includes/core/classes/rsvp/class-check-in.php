@@ -112,7 +112,7 @@ final class Check_In {
 	/**
 	 * Undo a check-in.
 	 *
-	 * Wrong person, wrong row, or a mis-tap at the door: the arrival time is
+	 * Wrong person, wrong row, or an accidental tap at the door: the arrival time is
 	 * removed rather than kept alongside a flag, so the meta stays the single
 	 * answer to whether someone turned up.
 	 *

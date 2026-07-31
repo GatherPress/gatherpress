@@ -45,6 +45,30 @@ class Test_Check_In extends Base {
 	}
 
 	/**
+	 * Coverage for __construct.
+	 *
+	 * The instance is built during plugin bootstrap, so the constructor only
+	 * runs inside a test once the stored instance is cleared.
+	 *
+	 * @covers ::__construct
+	 *
+	 * @return void
+	 */
+	public function test_construct_builds_the_instance(): void {
+		$reflection = new \ReflectionClass( Check_In::class );
+		$property   = $reflection->getProperty( 'instance' );
+
+		$property->setAccessible( true );
+		$property->setValue( null, null );
+
+		$this->assertInstanceOf(
+			Check_In::class,
+			Check_In::get_instance(),
+			'Failed to assert that the constructor returns a Check_In instance.'
+		);
+	}
+
+	/**
 	 * Coverage for setup_hooks.
 	 *
 	 * @covers ::setup_hooks
