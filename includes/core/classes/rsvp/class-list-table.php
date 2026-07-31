@@ -739,19 +739,17 @@ final class List_Table extends WP_List_Table {
 	 * @return void
 	 */
 	public function process_bulk_action(): void {
-		// Requests reach this method carrying different nonces depending on how
-		// they were made: core's `bulk-<plural>` nonce from the bulk form, the
-		// comment-type nonce from the view links and from `display()`'s own
-		// field, and the dedicated `gatherpress_rsvp_action` nonce from the
-		// row-action delete link, which is why that one only counts for
-		// `delete`. Any single valid pairing is enough; the capability check
-		// below is what authorizes the action.
+		// Requests reach this method carrying different nonces under `_wpnonce`
+		// depending on how they were made: core's `bulk-<plural>` nonce from the
+		// bulk form, the comment-type nonce from the view links, and the
+		// dedicated `gatherpress_rsvp_action` nonce from the row-action delete
+		// link, which is why that one only counts for `delete`. Any single valid
+		// pairing is enough; the capability check below is what authorizes the
+		// action.
 		$nonces = array();
 
-		foreach ( array( '_wpnonce', '_gatherpress_rsvp_nonce' ) as $field ) {
-			if ( isset( $_REQUEST[ $field ] ) ) {
-				$nonces[] = sanitize_text_field( wp_unslash( $_REQUEST[ $field ] ) );
-			}
+		if ( isset( $_REQUEST['_wpnonce'] ) ) {
+			$nonces[] = sanitize_text_field( wp_unslash( $_REQUEST['_wpnonce'] ) );
 		}
 
 		$nonce_actions = array(
@@ -967,27 +965,5 @@ final class List_Table extends WP_List_Table {
 		);
 
 		return $status_links;
-	}
-
-	/**
-	 * Displays the RSVP list table with nonce fields.
-	 *
-	 * Outputs the HTML for the RSVP list table, including necessary nonce fields
-	 * for security. This method extends the parent display() method to add
-	 * GatherPress-specific nonce fields for RSVP actions.
-	 *
-	 * @since 0.34.0
-	 *
-	 * @return void
-	 */
-	public function display(): void {
-		// Own field name rather than the `_wpnonce` default: `parent::display()`
-		// emits core's `bulk-<plural>` nonce under `_wpnonce` too, and a browser
-		// sending both leaves PHP with the last one, which used to mean every
-		// bulk action failed verification and did nothing (#2062).
-		wp_nonce_field( Rsvp::COMMENT_TYPE, '_gatherpress_rsvp_nonce' );
-		wp_nonce_field( 'gatherpress_rsvp_action', '_gatherpress_rsvp_action_nonce' );
-
-		parent::display();
 	}
 }
