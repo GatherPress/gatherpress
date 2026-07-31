@@ -550,6 +550,27 @@ class Test_List_Table extends Base {
 	}
 
 	/**
+	 * Tests column_cb never renders an empty attendee name.
+	 *
+	 * @covers ::column_cb
+	 * @covers ::get_attendee_name
+	 * @return void
+	 */
+	public function test_column_cb_unknown_attendee(): void {
+		$rsvp                   = $this->rsvp;
+		$rsvp['comment_author'] = '';
+		$rsvp['user_id']        = 0;
+
+		$cb_col = $this->list_table->column_cb( $rsvp );
+
+		$this->assertStringContainsString(
+			'Select Unknown',
+			$cb_col,
+			'Failed to assert an empty name resolution falls back to "Unknown".'
+		);
+	}
+
+	/**
 	 * Tests column_attendee method.
 	 *
 	 * @covers ::column_attendee
