@@ -37,6 +37,19 @@ use GatherPress\Core\Event;
 final class Calendar {
 
 	/**
+	 * Epoch the VEVENT `SEQUENCE` counts from, as a Unix timestamp.
+	 *
+	 * 2020-01-01 00:00:00 UTC. Subtracting a fixed epoch from
+	 * `post_modified_gmt` keeps the sequence inside RFC 5545's INTEGER
+	 * ceiling of 2147483647 until roughly 2087, where a raw Unix timestamp
+	 * would cross it in January 2038.
+	 *
+	 * @since 0.35.0
+	 * @var int
+	 */
+	private const SEQUENCE_EPOCH = 1577836800;
+
+	/**
 	 * Event this Calendar instance wraps.
 	 *
 	 * @since 0.34.0
@@ -279,20 +292,28 @@ final class Calendar {
 	 * emits a stable UID, so without a sequence an event whose date or venue
 	 * changed can keep showing the original time in a subscribed calendar.
 	 *
-	 * The value is `post_modified_gmt` as a Unix timestamp. `post_modified`
-	 * only ever moves forward, so the sequence is strictly monotonic per event
-	 * without depending on a second field, a write on every save, or a
-	 * backfill. A delta between creation and modification was rejected because
-	 * correcting an event's publish date moves `post_date_gmt` forward and can
-	 * push the delta below a value subscribers already hold, which per RFC 5545
-	 * lets clients ignore that revision and every later one. Post revisions were
-	 * rejected because they get pruned and sites can turn them off, and a
-	 * post-meta counter for the cost of a write on every save. The only thing a
-	 * raw timestamp gives up is `SEQUENCE:0` for a never-edited event, which
-	 * nothing needs.
+	 * The value is seconds elapsed since `SEQUENCE_EPOCH`, taken from
+	 * `post_modified_gmt`. That field only ever moves forward, so the sequence
+	 * is strictly monotonic for a given event, which is the whole contract.
 	 *
-	 * The RFC caps an INTEGER at 2147483647; a Unix timestamp reaches that in
-	 * 2038, so the value is clamped rather than left to overflow.
+	 * Two rejected alternatives, both of which look fine until they aren't:
+	 *
+	 * - The gap between creation and modification is not monotonic. Correcting
+	 *   an event's publish date moves `post_date_gmt` forward, which *shrinks*
+	 *   the gap, and a sequence that goes backwards is one clients are entitled
+	 *   to ignore. That reintroduces this bug intermittently.
+	 * - A raw Unix timestamp is monotonic but crosses the RFC's INTEGER ceiling
+	 *   of 2147483647 in January 2038. Subtracting a fixed epoch buys headroom
+	 *   to roughly 2087 at the same resolution.
+	 *
+	 * The clamp is a guard against nonsense data, not a routine ceiling. A
+	 * saturated sequence is not a safe state to be in: every later revision
+	 * repeats the ceiling value and is ignored, freezing the event in
+	 * subscribers' calendars with nothing in the feed to say why. The epoch
+	 * offset is what keeps real events far away from it, so the clamp only
+	 * ever catches something like an import writing a year-3000 modification
+	 * date. Emitting an out-of-range INTEGER instead would risk clients
+	 * rejecting the whole VEVENT rather than just the revision.
 	 *
 	 * @since 0.35.0
 	 *
@@ -305,7 +326,9 @@ final class Calendar {
 			return 0;
 		}
 
-		return min( $modified, 2147483647 );
+		// Floor at zero for anything modified before the epoch; clamp at the
+		// RFC ceiling for dates far enough out to be data corruption.
+		return min( max( 0, $modified - self::SEQUENCE_EPOCH ), 2147483647 );
 	}
 
 	/**

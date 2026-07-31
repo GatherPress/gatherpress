@@ -349,7 +349,7 @@ class Test_Calendar extends Base {
 	}
 
 	/**
-	 * Coverage for get_ical_event_string: SEQUENCE is post_modified_gmt as a
+	 * Coverage for get_ical_event_string: SEQUENCE is post_modified_gmt as seconds
 	 * Unix timestamp, and DTSTAMP and LAST-MODIFIED both report that GMT time.
 	 *
 	 * @covers ::get_ical_event_string
@@ -365,9 +365,9 @@ class Test_Calendar extends Base {
 		$vevent = $instance->get_ical_event_string();
 
 		$this->assertStringContainsString(
-			sprintf( 'SEQUENCE:%d', strtotime( '2030-01-01 10:00:00' ) ),
+			sprintf( 'SEQUENCE:%d', strtotime( '2030-01-01 10:00:00' ) - 1577836800 ),
 			$vevent,
-			'SEQUENCE should be post_modified_gmt as a Unix timestamp.'
+			'SEQUENCE should be seconds since the 2020 epoch, taken from post_modified_gmt.'
 		);
 		$this->assertStringContainsString(
 			'LAST-MODIFIED:20300101T100000Z',
@@ -383,7 +383,7 @@ class Test_Calendar extends Base {
 		$instance->event->event->post_modified_gmt = '2030-01-01 11:00:00';
 
 		$this->assertStringContainsString(
-			sprintf( 'SEQUENCE:%d', strtotime( '2030-01-01 11:00:00' ) ),
+			sprintf( 'SEQUENCE:%d', strtotime( '2030-01-01 11:00:00' ) - 1577836800 ),
 			$instance->get_ical_event_string(),
 			'A later modification should raise the sequence a client can compare against.'
 		);
@@ -429,7 +429,7 @@ class Test_Calendar extends Base {
 	}
 
 	/**
-	 * Coverage for get_sequence: the value is post_modified_gmt as a Unix
+	 * Coverage for get_sequence: the value is post_modified_gmt as epoch-offset
 	 * timestamp, so a later modification yields a higher revision.
 	 *
 	 * @covers ::get_sequence
@@ -443,15 +443,15 @@ class Test_Calendar extends Base {
 		$instance->event->event->post_modified_gmt = '2030-01-01 11:00:00';
 
 		$this->assertSame(
-			strtotime( '2030-01-01 11:00:00' ),
+			strtotime( '2030-01-01 11:00:00' ) - 1577836800,
 			Utility::invoke_hidden_method( $instance, 'get_sequence' ),
-			'Sequence should be post_modified_gmt as a Unix timestamp.'
+			'Sequence should be seconds since the 2020 epoch, taken from post_modified_gmt.'
 		);
 
 		$instance->event->event->post_modified_gmt = '2030-01-01 12:00:00';
 
 		$this->assertSame(
-			strtotime( '2030-01-01 12:00:00' ),
+			strtotime( '2030-01-01 12:00:00' ) - 1577836800,
 			Utility::invoke_hidden_method( $instance, 'get_sequence' ),
 			'A later modification should raise the sequence.'
 		);
