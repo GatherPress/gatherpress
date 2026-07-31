@@ -2334,7 +2334,7 @@ class Test_Rest_Api extends Base {
 		$captured_body = '';
 		add_filter(
 			'pre_wp_mail',
-			static function ( $null, $atts ) use ( &$captured_body ) {
+			static function ( $preempt, $atts ) use ( &$captured_body ) {
 				$captured_body = $atts['message'] ?? '';
 				return true;
 			},
@@ -2396,7 +2396,7 @@ class Test_Rest_Api extends Base {
 		$captured_body = '';
 		add_filter(
 			'pre_wp_mail',
-			static function ( $null, $atts ) use ( &$captured_body ) {
+			static function ( $preempt, $atts ) use ( &$captured_body ) {
 				$captured_body = $atts['message'] ?? '';
 				return true;
 			},
@@ -2464,7 +2464,7 @@ class Test_Rest_Api extends Base {
 		$captured_body = '';
 		add_filter(
 			'pre_wp_mail',
-			static function ( $null, $atts ) use ( &$captured_body ) {
+			static function ( $preempt, $atts ) use ( &$captured_body ) {
 				$captured_body = $atts['message'] ?? '';
 				return true;
 			},

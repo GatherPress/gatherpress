@@ -86,11 +86,13 @@ $gatherpress_venue       = $gatherpress_event->get_venue_information()['name'];
 		<?php endif; ?>
 
 		<!-- RSVP Button: only when registration is still open. -->
-		<?php if (
+		<?php
+		if (
 			! $gatherpress_event->has_event_past()
 			&& $gatherpress_event->rsvp
 			&& $gatherpress_event->rsvp->is_enabled()
-		) : ?>
+		) :
+			?>
 			<div style="text-align: center; margin-top: 20px;">
 				<a href="<?php echo esc_url( get_the_permalink( $event_id ) ); ?>" style="background-color: #007bff; color: #ffffff; padding: 12px 20px; text-decoration: none; border-radius: 4px; font-weight: bold;">
 					<?php esc_html_e( 'RSVP Now', 'gatherpress' ); ?>
