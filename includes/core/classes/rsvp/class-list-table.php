@@ -544,19 +544,67 @@ final class List_Table extends WP_List_Table {
 	 *
 	 * Generates a checkbox input element for each RSVP record that allows users
 	 * to select multiple entries for performing bulk actions. The checkbox value
-	 * is set to the comment ID.
+	 * is set to the comment ID. A visually hidden label names the checkbox after
+	 * the attendee — mirroring core's post/comment list tables — so screen-reader
+	 * users know which entry each checkbox selects.
 	 *
 	 * @since 0.34.0
+	 * @since 0.35.0 Row checkboxes carry a visually hidden label naming the attendee.
 	 *
 	 * @param array|object $item RSVP comment data containing the comment_ID.
 	 *
-	 * @return string HTML markup for the checkbox input element.
+	 * @return string HTML markup for the labeled checkbox input element.
 	 */
 	public function column_cb( $item ): string {
+		$item       = (array) $item;
+		$comment_id = intval( $item['comment_ID'] );
+
 		return sprintf(
-			'<input type="checkbox" name="gatherpress_rsvp_id[]" value="%d" />',
-			intval( $item['comment_ID'] )
+			'<label class="label-covers-full-cell" for="cb-select-%1$d">' .
+			'<span class="screen-reader-text">%2$s</span></label>' .
+			'<input id="cb-select-%1$d" type="checkbox" name="gatherpress_rsvp_id[]" value="%1$d" />',
+			$comment_id,
+			esc_html(
+				sprintf(
+					/* translators: %s: Attendee name. */
+					__( 'Select %s', 'gatherpress' ),
+					$this->get_attendee_name( $item )
+				)
+			)
 		);
+	}
+
+	/**
+	 * Resolves the display name for an RSVP entry.
+	 *
+	 * Registered users are shown by their display name; open (account-less)
+	 * RSVPs — and stale user IDs whose account was deleted — fall back to the
+	 * submitted author name. Mirrors the resolution used when rendering the
+	 * Attendee column, and always returns a non-empty name so the checkbox
+	 * label never renders as a bare "Select ".
+	 *
+	 * @since 0.35.0
+	 *
+	 * @param array $item RSVP comment data.
+	 *
+	 * @return string The attendee's display name.
+	 */
+	protected function get_attendee_name( array $item ): string {
+		$username = (string) ( $item['comment_author'] ?? '' );
+
+		if ( ! empty( $item['user_id'] ) ) {
+			$user = get_userdata( $item['user_id'] );
+
+			if ( $user && '' !== trim( (string) $user->display_name ) ) {
+				$username = $user->display_name;
+			}
+		}
+
+		if ( '' === trim( $username ) ) {
+			$username = __( 'Unknown', 'gatherpress' );
+		}
+
+		return $username;
 	}
 
 	/**

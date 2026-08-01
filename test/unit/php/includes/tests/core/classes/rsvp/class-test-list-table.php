@@ -480,6 +480,94 @@ class Test_List_Table extends Base {
 			$cb_col,
 			'Failed to assert checkbox has comment ID as value.'
 		);
+		$this->assertStringContainsString(
+			sprintf( 'for="cb-select-%d"', $this->rsvp['comment_ID'] ),
+			$cb_col,
+			'Failed to assert label is associated with the checkbox.'
+		);
+		$this->assertStringContainsString(
+			sprintf( 'id="cb-select-%d"', $this->rsvp['comment_ID'] ),
+			$cb_col,
+			'Failed to assert checkbox carries the id the label points at.'
+		);
+		$this->assertStringContainsString(
+			'screen-reader-text',
+			$cb_col,
+			'Failed to assert label text is visually hidden.'
+		);
+		$this->assertStringContainsString(
+			sprintf( 'Select %s', $this->rsvp['comment_author'] ),
+			$cb_col,
+			'Failed to assert label names the attendee the checkbox selects.'
+		);
+	}
+
+	/**
+	 * Tests column_cb labels registered users by their display name.
+	 *
+	 * @covers ::column_cb
+	 * @covers ::get_attendee_name
+	 * @return void
+	 */
+	public function test_column_cb_registered_user(): void {
+		$user_id = $this->factory->user->create(
+			array(
+				'display_name' => 'Registered Attendee',
+			)
+		);
+
+		$rsvp            = $this->rsvp;
+		$rsvp['user_id'] = $user_id;
+
+		$cb_col = $this->list_table->column_cb( $rsvp );
+
+		$this->assertStringContainsString(
+			'Select Registered Attendee',
+			$cb_col,
+			'Failed to assert label uses the registered user\'s display name.'
+		);
+	}
+
+	/**
+	 * Tests column_cb falls back to the submitted author name when the
+	 * stored user ID no longer resolves to an account.
+	 *
+	 * @covers ::column_cb
+	 * @covers ::get_attendee_name
+	 * @return void
+	 */
+	public function test_column_cb_stale_user_id(): void {
+		$rsvp            = $this->rsvp;
+		$rsvp['user_id'] = 999999; // No such user.
+
+		$cb_col = $this->list_table->column_cb( $rsvp );
+
+		$this->assertStringContainsString(
+			sprintf( 'Select %s', $this->rsvp['comment_author'] ),
+			$cb_col,
+			'Failed to assert a stale user ID falls back to the submitted author name.'
+		);
+	}
+
+	/**
+	 * Tests column_cb never renders an empty attendee name.
+	 *
+	 * @covers ::column_cb
+	 * @covers ::get_attendee_name
+	 * @return void
+	 */
+	public function test_column_cb_unknown_attendee(): void {
+		$rsvp                   = $this->rsvp;
+		$rsvp['comment_author'] = '';
+		$rsvp['user_id']        = 0;
+
+		$cb_col = $this->list_table->column_cb( $rsvp );
+
+		$this->assertStringContainsString(
+			'Select Unknown',
+			$cb_col,
+			'Failed to assert an empty name resolution falls back to "Unknown".'
+		);
 	}
 
 	/**
