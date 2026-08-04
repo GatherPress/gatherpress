@@ -296,12 +296,12 @@ final class Events extends Base {
 						'field'  => array(
 							'type'    => 'text',
 							'rewrite' => true,
+							'label'   => sprintf(
+								/* translators: %s: Plural post type label, e.g. "Events". */
+								__( 'Permalink base of %s.', 'gatherpress' ),
+								Utility::post_type_label( 'name', Event::POST_TYPE )
+							),
 							'options' => array(
-								'label'   => sprintf(
-									/* translators: %s: Plural post type label, e.g. "Events". */
-									__( 'Permalink base of %s.', 'gatherpress' ),
-									Utility::post_type_label( 'name', Event::POST_TYPE )
-								),
 								'default' => Setup::get_localized_post_type_slug(),
 							),
 							'preview' => array(
@@ -321,12 +321,12 @@ final class Events extends Base {
 						'field'  => array(
 							'type'    => 'text',
 							'rewrite' => true,
+							'label'   => sprintf(
+								/* translators: %s: Plural taxonomy label, e.g. "Topics". */
+								__( 'Permalink base of %s.', 'gatherpress' ),
+								Utility::taxonomy_label( 'name', Topic::TAXONOMY )
+							),
 							'options' => array(
-								'label'   => sprintf(
-									/* translators: %s: Plural taxonomy label, e.g. "Topics". */
-									__( 'Permalink base of %s.', 'gatherpress' ),
-									Utility::taxonomy_label( 'name', Topic::TAXONOMY )
-								),
 								'default' => Topic::get_localized_taxonomy_slug(),
 							),
 							'preview' => array(

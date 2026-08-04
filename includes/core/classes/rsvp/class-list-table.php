@@ -544,19 +544,67 @@ final class List_Table extends WP_List_Table {
 	 *
 	 * Generates a checkbox input element for each RSVP record that allows users
 	 * to select multiple entries for performing bulk actions. The checkbox value
-	 * is set to the comment ID.
+	 * is set to the comment ID. A visually hidden label names the checkbox after
+	 * the attendee — mirroring core's post/comment list tables — so screen-reader
+	 * users know which entry each checkbox selects.
 	 *
 	 * @since 0.34.0
+	 * @since 0.35.0 Row checkboxes carry a visually hidden label naming the attendee.
 	 *
 	 * @param array|object $item RSVP comment data containing the comment_ID.
 	 *
-	 * @return string HTML markup for the checkbox input element.
+	 * @return string HTML markup for the labeled checkbox input element.
 	 */
 	public function column_cb( $item ): string {
+		$item       = (array) $item;
+		$comment_id = intval( $item['comment_ID'] );
+
 		return sprintf(
-			'<input type="checkbox" name="gatherpress_rsvp_id[]" value="%d" />',
-			intval( $item['comment_ID'] )
+			'<label class="label-covers-full-cell" for="cb-select-%1$d">' .
+			'<span class="screen-reader-text">%2$s</span></label>' .
+			'<input id="cb-select-%1$d" type="checkbox" name="gatherpress_rsvp_id[]" value="%1$d" />',
+			$comment_id,
+			esc_html(
+				sprintf(
+					/* translators: %s: Attendee name. */
+					__( 'Select %s', 'gatherpress' ),
+					$this->get_attendee_name( $item )
+				)
+			)
 		);
+	}
+
+	/**
+	 * Resolves the display name for an RSVP entry.
+	 *
+	 * Registered users are shown by their display name; open (account-less)
+	 * RSVPs — and stale user IDs whose account was deleted — fall back to the
+	 * submitted author name. Mirrors the resolution used when rendering the
+	 * Attendee column, and always returns a non-empty name so the checkbox
+	 * label never renders as a bare "Select ".
+	 *
+	 * @since 0.35.0
+	 *
+	 * @param array $item RSVP comment data.
+	 *
+	 * @return string The attendee's display name.
+	 */
+	protected function get_attendee_name( array $item ): string {
+		$username = (string) ( $item['comment_author'] ?? '' );
+
+		if ( ! empty( $item['user_id'] ) ) {
+			$user = get_userdata( $item['user_id'] );
+
+			if ( $user && '' !== trim( (string) $user->display_name ) ) {
+				$username = $user->display_name;
+			}
+		}
+
+		if ( '' === trim( $username ) ) {
+			$username = __( 'Unknown', 'gatherpress' );
+		}
+
+		return $username;
 	}
 
 	/**
@@ -739,17 +787,39 @@ final class List_Table extends WP_List_Table {
 	 * @return void
 	 */
 	public function process_bulk_action(): void {
-		$nonce = isset( $_REQUEST['_wpnonce'] ) ? sanitize_text_field( wp_unslash( $_REQUEST['_wpnonce'] ) ) : '';
+		// Requests reach this method carrying different nonces under `_wpnonce`
+		// depending on how they were made: core's `bulk-<plural>` nonce from the
+		// bulk form, the comment-type nonce from the view links, and the
+		// dedicated `gatherpress_rsvp_action` nonce from the row-action delete
+		// link, which is why that one only counts for `delete`. Any single valid
+		// pairing is enough; the capability check below is what authorizes the
+		// action.
+		$nonces = array();
 
-		// Accept either the standard comment-type nonce, or — only for the
-		// `delete` action — the dedicated `gatherpress_rsvp_action` nonce
-		// the row-action emits. Cap check folds in for a single guard.
-		$valid_nonce = $nonce && (
-			wp_verify_nonce( $nonce, Rsvp::COMMENT_TYPE )
-			|| ( 'delete' === $this->current_action()
-				&& wp_verify_nonce( $nonce, 'gatherpress_rsvp_action' )
-			)
+		if ( isset( $_REQUEST['_wpnonce'] ) ) {
+			$nonces[] = sanitize_text_field( wp_unslash( $_REQUEST['_wpnonce'] ) );
+		}
+
+		$nonce_actions = array(
+			sprintf( 'bulk-%s', $this->_args['plural'] ),
+			Rsvp::COMMENT_TYPE,
 		);
+
+		if ( 'delete' === $this->current_action() ) {
+			$nonce_actions[] = 'gatherpress_rsvp_action';
+		}
+
+		$valid_nonce = false;
+
+		foreach ( $nonces as $nonce ) {
+			foreach ( $nonce_actions as $nonce_action ) {
+				if ( wp_verify_nonce( $nonce, $nonce_action ) ) {
+					$valid_nonce = true;
+
+					break 2;
+				}
+			}
+		}
 
 		if ( ! $valid_nonce || ! current_user_can( Rsvp::CAPABILITY ) ) {
 			return;
@@ -943,23 +1013,5 @@ final class List_Table extends WP_List_Table {
 		);
 
 		return $status_links;
-	}
-
-	/**
-	 * Displays the RSVP list table with nonce fields.
-	 *
-	 * Outputs the HTML for the RSVP list table, including necessary nonce fields
-	 * for security. This method extends the parent display() method to add
-	 * GatherPress-specific nonce fields for RSVP actions.
-	 *
-	 * @since 0.34.0
-	 *
-	 * @return void
-	 */
-	public function display(): void {
-		wp_nonce_field( Rsvp::COMMENT_TYPE );
-		wp_nonce_field( 'gatherpress_rsvp_action', '_gatherpress_rsvp_action_nonce' );
-
-		parent::display();
 	}
 }

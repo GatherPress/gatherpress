@@ -517,10 +517,13 @@ class Test_Setup extends Base {
 			array( 'post_type' => Event::POST_TYPE )
 		)->get()->ID;
 
+		// An event with no stored datetime gets the default filled in rather
+		// than no row at all, which would leave it invisible to every
+		// upcoming / past query (#2054).
 		$instance->set_datetimes( $post_id );
-		$this->assertEmpty(
+		$this->assertNotEmpty(
 			get_post_meta( $post_id, 'gatherpress_datetime_start', true ),
-			'Failed to assert that datetime start meta is empty.'
+			'Failed to assert that a missing datetime falls back to the default.'
 		);
 
 		$post_id = $this->mock->post(
@@ -1078,6 +1081,74 @@ class Test_Setup extends Base {
 			'Label should contain GatherPress.'
 		);
 	}
+
+	/**
+	 * An event created without a stored datetime gets the editor's default
+	 * seeded server side, so it lands in the events table rather than being
+	 * invisible to every upcoming / past query (#2054).
+	 *
+	 * @covers ::set_datetimes
+	 * @covers ::get_default_datetime
+	 *
+	 * @return void
+	 */
+	public function test_set_datetimes_seeds_the_default_when_meta_is_absent(): void {
+		$post_id = $this->mock->post(
+			array( 'post_type' => Event::POST_TYPE )
+		)->get()->ID;
+
+		$this->assertEmpty(
+			get_post_meta( $post_id, 'gatherpress_datetime', true ),
+			'Failed to assert the seed leaves the editor-owned meta alone.'
+		);
+
+		$start = (string) get_post_meta( $post_id, 'gatherpress_datetime_start', true );
+		$end   = (string) get_post_meta( $post_id, 'gatherpress_datetime_end', true );
+
+		$this->assertNotEmpty(
+			$start,
+			'Failed to assert the events table was populated from the default.'
+		);
+		$this->assertSame(
+			'18:00:00',
+			gmdate( 'H:i:s', (int) strtotime( $start ) ),
+			'Failed to assert the default starts at 18:00, matching the editor.'
+		);
+		$this->assertSame(
+			2 * HOUR_IN_SECONDS,
+			strtotime( $end ) - strtotime( $start ),
+			'Failed to assert the default runs for two hours, matching the editor.'
+		);
+	}
+
+	/**
+	 * The seeded default is stable across saves.
+	 *
+	 * Recomputing it each time would walk the event's date forward a day on
+	 * every save, which is why the seed only applies when nothing is stored.
+	 *
+	 * @covers ::set_datetimes
+	 *
+	 * @return void
+	 */
+	public function test_set_datetimes_default_does_not_drift_across_saves(): void {
+		$instance = Setup::get_instance();
+		$post_id  = $this->mock->post(
+			array( 'post_type' => Event::POST_TYPE )
+		)->get()->ID;
+
+		$first = get_post_meta( $post_id, 'gatherpress_datetime_start', true );
+
+		$instance->set_datetimes( $post_id );
+		$second = get_post_meta( $post_id, 'gatherpress_datetime_start', true );
+
+		$this->assertSame(
+			$first,
+			$second,
+			'Failed to assert that re-saving leaves the seeded default unchanged.'
+		);
+	}
+
 
 	/**
 	 * Coverage for set_datetimes method with non-event post.

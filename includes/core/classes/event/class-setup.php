@@ -14,6 +14,7 @@ namespace GatherPress\Core\Event;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
+use DateTimeImmutable;
 use Exception;
 use GatherPress\Core\Event;
 use GatherPress\Core\Feed;
@@ -745,10 +746,26 @@ final class Setup {
 		$data = get_post_meta( $post_id, 'gatherpress_datetime', true );
 
 		if ( empty( $data ) ) {
-			return;
-		}
+			// No meta means the editor never wrote one, which is the normal
+			// path for an event saved without touching the date controls
+			// (#2054), and for any programmatic insert that omits it. Without
+			// a fallback such an event gets no row in the events table and is
+			// invisible to every upcoming / past query while still looking
+			// correct in the editor.
+			//
+			// Seed the default only when nothing is stored yet. Recomputing it
+			// on every save would walk the event's date forward a day at a
+			// time, and the meta itself is deliberately left alone so a caller
+			// that inserts the post first and sets `gatherpress_datetime`
+			// afterwards is not overwritten.
+			if ( '' !== (string) get_post_meta( $post_id, 'gatherpress_datetime_start', true ) ) {
+				return;
+			}
 
-		$data = json_decode( (string) $data, true ) ?? array();
+			$data = $this->get_default_datetime();
+		} else {
+			$data = json_decode( (string) $data, true ) ?? array();
+		}
 
 		$event  = new Event( $post_id );
 		$params = array(
@@ -759,5 +776,33 @@ final class Setup {
 		);
 
 		$event->save_datetimes( $params );
+	}
+
+	/**
+	 * Default date and time payload for an event that has none stored.
+	 *
+	 * Mirrors the editor's defaults in `src/helpers/datetime.js`: tomorrow at
+	 * 18:00 in the site timezone, running for two hours.
+	 *
+	 * The editor's duration is filterable in JavaScript through
+	 * `gatherpress.durationDefault`, which cannot be read from here. A site
+	 * that filters it only sees a difference for an event saved without the
+	 * date controls ever being touched, since any real edit writes the meta
+	 * from the editor instead.
+	 *
+	 * @since 0.35.0
+	 *
+	 * @return array{dateTimeStart: string, dateTimeEnd: string, timezone: string} Default datetime payload.
+	 */
+	protected function get_default_datetime(): array {
+		$timezone = wp_timezone();
+		$start    = new DateTimeImmutable( 'tomorrow 18:00', $timezone );
+		$end      = $start->modify( '+2 hours' );
+
+		return array(
+			'dateTimeStart' => $start->format( Event::DATETIME_FORMAT ),
+			'dateTimeEnd'   => $end->format( Event::DATETIME_FORMAT ),
+			'timezone'      => wp_timezone_string(),
+		);
 	}
 }

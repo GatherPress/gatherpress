@@ -51,6 +51,12 @@ test.describe( '#1607 datetime picker year-down regression', () => {
 				data: {
 					title: 'E2E #1607 datetime picker regression',
 					status: 'publish',
+					// Non-empty content on purpose. The block editor shows
+					// its "Choose a pattern" start-page modal for empty
+					// posts, and that modal covers the sidebar controls
+					// this test clicks.
+					content:
+						'<!-- wp:paragraph --><p>Seeded by the #1607 regression test.</p><!-- /wp:paragraph -->',
 					meta: {
 						gatherpress_datetime: JSON.stringify( {
 							dateTimeStart: '2099-04-29 18:00:00',
@@ -74,11 +80,32 @@ test.describe( '#1607 datetime picker year-down regression', () => {
 			);
 			await page.waitForLoadState( 'load' );
 
-			// Dismiss any first-run modals (welcome guide, etc).
-			await page.waitForTimeout( 500 );
-			await page.keyboard.press( 'Escape' );
-			await page.waitForTimeout( 200 );
-			await page.keyboard.press( 'Escape' );
+			// Dismiss any first-run modal (welcome guide, and historically
+			// the pattern picker before this test seeded content).
+			//
+			// Escape-then-fixed-timeout used to be enough, but it raced the
+			// modal whenever the editor loaded slowly, and unminified
+			// scripts under SCRIPT_DEBUG made losing that race routine.
+			// Wait for the overlay to actually detach instead. The loop
+			// covers modals that stack.
+			const modalOverlay = page
+				.locator( '.components-modal__screen-overlay' )
+				.first();
+
+			for ( let attempt = 0; 3 > attempt; attempt++ ) {
+				const isOpen = await modalOverlay
+					.isVisible()
+					.catch( () => false );
+
+				if ( ! isOpen ) {
+					break;
+				}
+
+				await page.keyboard.press( 'Escape' );
+				await modalOverlay
+					.waitFor( { state: 'hidden', timeout: 5000 } )
+					.catch( () => {} );
+			}
 
 			// Make sure the Event settings panel is open. WP usually opens
 			// it by default on first load, but a previous visit could have

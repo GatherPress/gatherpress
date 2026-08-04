@@ -34,6 +34,7 @@ printf(
 			data-show-fewer="%3$s"
 			data-wp-interactivity="gatherpress"
 			data-wp-on--click="actions.toggleRsvpVisibility"
+			data-wp-on--keydown="actions.activateOnSpace"
 		>%4$s</a>
 	</div>',
 	wp_kses_data( get_block_wrapper_attributes() ),
