@@ -9,6 +9,7 @@
     "test/*",
     "*/tests/*",
     "*gatherpress.php",
+    "*uninstall.php",
     "*/class-autoloader.php",
     "*/class-singleton.php",
     "*/requirements-check.php",

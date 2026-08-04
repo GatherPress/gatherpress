@@ -37,7 +37,7 @@ add_filter(
 
 ## Files
 
-- [includes/core/classes/calendar/class-calendar.php:373](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/calendar/class-calendar.php#L373)
+- [includes/core/classes/calendar/class-calendar.php:430](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/calendar/class-calendar.php#L430)
 ```php
 apply_filters(
 				'gatherpress_calendar_url',

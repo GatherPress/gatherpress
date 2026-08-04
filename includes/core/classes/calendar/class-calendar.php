@@ -37,6 +37,17 @@ use GatherPress\Core\Event;
 final class Calendar {
 
 	/**
+	 * Epoch the VEVENT `SEQUENCE` counts from, as a Unix timestamp.
+	 *
+	 * 2020-01-01 00:00:00 UTC. See `get_sequence()` for why the sequence is
+	 * measured from an epoch rather than being a raw timestamp.
+	 *
+	 * @since 0.35.0
+	 * @var int
+	 */
+	private const SEQUENCE_EPOCH = 1577836800;
+
+	/**
 	 * Event this Calendar instance wraps.
 	 *
 	 * @since 0.34.0
@@ -236,8 +247,10 @@ final class Calendar {
 		$time_end       = $this->event->get_formatted_datetime( 'His', 'end', false );
 		$datetime_start = sprintf( '%sT%sZ', $date_start, $time_start );
 		$datetime_end   = sprintf( '%sT%sZ', $date_end, $time_end );
-		$modified_date  = strtotime( $this->event->event->post_modified );
-		$datetime_stamp = sprintf( '%sT%sZ', gmdate( 'Ymd', $modified_date ), gmdate( 'His', $modified_date ) );
+		$modified_gmt   = strtotime( $this->event->event->post_modified_gmt );
+		$datetime_stamp = sprintf( '%sT%sZ', gmdate( 'Ymd', $modified_gmt ), gmdate( 'His', $modified_gmt ) );
+		$last_modified  = $datetime_stamp;
+		$sequence       = $this->get_sequence();
 		$venue          = $this->event->get_venue_information();
 		$location       = $venue['name'];
 		$description    = $this->event->get_calendar_description();
@@ -256,6 +269,8 @@ final class Calendar {
 			sprintf( 'DTSTART:%s', sanitize_text_field( $datetime_start ) ),
 			sprintf( 'DTEND:%s', sanitize_text_field( $datetime_end ) ),
 			sprintf( 'DTSTAMP:%s', sanitize_text_field( $datetime_stamp ) ),
+			sprintf( 'LAST-MODIFIED:%s', sanitize_text_field( $last_modified ) ),
+			sprintf( 'SEQUENCE:%d', $sequence ),
 			sprintf( 'SUMMARY:%s', $summary ),
 			sprintf( 'DESCRIPTION:%s', $description ),
 			sprintf( 'LOCATION:%s', $location ),
@@ -264,6 +279,48 @@ final class Calendar {
 		);
 
 		return implode( "\r\n", $args );
+	}
+
+	/**
+	 * Revision number for this event's VEVENT, per RFC 5545 §3.8.7.4.
+	 *
+	 * Clients only treat an incoming VEVENT as a revision of one they already
+	 * hold when its `SEQUENCE` is higher than the stored value. GatherPress
+	 * emits a stable `UID`, so without a sequence an edited event keeps
+	 * showing its original date in a subscribed calendar.
+	 *
+	 * The value is seconds since `SEQUENCE_EPOCH`, read from
+	 * `post_modified_gmt`. That field only moves forward, so the sequence is
+	 * strictly monotonic per event, which is the only thing the property
+	 * requires. It emits around 2.1e8 today and reaches the RFC's INTEGER
+	 * ceiling of 2147483647 in 2088.
+	 *
+	 * Neither obvious alternative works. The gap between creation and
+	 * modification shrinks whenever `post_date_gmt` is corrected forward, and
+	 * a sequence that moves backwards is one clients may ignore. A raw
+	 * timestamp is monotonic but hits the same ceiling in January 2038; the
+	 * epoch is what buys the other sixty years at the same resolution.
+	 *
+	 * The clamp guards against corrupt data, not ordinary growth. Saturating
+	 * it would freeze the event in subscribers' calendars, since every later
+	 * revision would repeat the ceiling and be ignored, so it should only ever
+	 * catch something like an import writing a year-3000 date. Emitting an
+	 * out-of-range INTEGER instead risks clients rejecting the whole VEVENT.
+	 *
+	 * @since 0.35.0
+	 *
+	 * @return int Non-negative revision number for this event.
+	 */
+	private function get_sequence(): int {
+		$modified = strtotime( (string) $this->event->event->post_modified_gmt );
+
+		if ( false === $modified ) {
+			return 0;
+		}
+
+		// Floor at zero for anything modified before the epoch; clamp at the
+		// RFC ceiling for dates far enough out to be data corruption.
+		return min( max( 0, $modified - self::SEQUENCE_EPOCH ), 2147483647 );
 	}
 
 	/**
