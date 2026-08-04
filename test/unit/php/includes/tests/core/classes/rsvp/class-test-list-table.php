@@ -971,7 +971,7 @@ class Test_List_Table extends Base {
 			'get_current_class_attr',
 			array( 'pending', 'pending' )
 		);
-		$this->assertEquals( ' class="current"', $result );
+		$this->assertEquals( ' class="current" aria-current="page"', $result );
 
 		// Test when status does not match current.
 		$result = Utility::invoke_hidden_method(
@@ -987,7 +987,7 @@ class Test_List_Table extends Base {
 			'get_current_class_attr',
 			array( 'all', 'all' )
 		);
-		$this->assertEquals( ' class="current"', $result );
+		$this->assertEquals( ' class="current" aria-current="page"', $result );
 
 		// Test with 'mine' status.
 		$result = Utility::invoke_hidden_method(
