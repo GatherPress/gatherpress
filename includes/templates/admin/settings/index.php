@@ -39,7 +39,11 @@ $gatherpress_settings = Settings::get_instance();
 				admin_url( $gatherpress_settings::PARENT_SLUG )
 			);
 			?>
-			<a class="<?php echo esc_attr( 'nav-tab ' . $gatherpress_active_page ); ?>" href="<?php echo esc_url( $gatherpress_url ); ?>"<?php echo '' !== $gatherpress_active_page ? ' aria-current="page"' : ''; ?>>
+			<a
+				class="<?php echo esc_attr( 'nav-tab ' . $gatherpress_active_page ); ?>"
+				href="<?php echo esc_url( $gatherpress_url ); ?>"
+				<?php echo '' !== $gatherpress_active_page ? ' aria-current="page"' : ''; ?>
+			>
 				<?php echo esc_html( $gatherpress_value['name'] ); ?>
 			</a>
 			<?php
