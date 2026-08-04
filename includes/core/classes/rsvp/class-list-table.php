@@ -861,12 +861,13 @@ final class List_Table extends WP_List_Table {
 	}
 
 	/**
-	 * Gets the CSS class attribute for current status links.
+	 * Gets the current-view attributes for status links.
 	 *
-	 * The active view also carries `aria-current="page"` so assistive
-	 * technology announces which status filter is selected — the visual
-	 * `current` styling alone conveys nothing programmatically. Mirrors
-	 * the Events list views (`Admin_List`).
+	 * The active view carries the `current` CSS class plus
+	 * `aria-current="page"` so assistive technology announces which status
+	 * filter is selected — the visual `current` styling alone conveys
+	 * nothing programmatically. Mirrors the Events list views
+	 * (`Admin_List`).
 	 *
 	 * @since 0.34.0
 	 * @since 0.35.0 Active link also carries `aria-current="page"`.
@@ -874,7 +875,7 @@ final class List_Table extends WP_List_Table {
 	 * @param string $status_key The status key to check.
 	 * @param string $current    The currently active status.
 	 *
-	 * @return string The class attribute string or empty string.
+	 * @return string The class and aria-current attributes, or empty string.
 	 */
 	private function get_current_class_attr( string $status_key, string $current ): string {
 		return $status_key === $current ? ' class="current" aria-current="page"' : '';

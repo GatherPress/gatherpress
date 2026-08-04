@@ -1266,6 +1266,11 @@ class Test_Admin_List extends Base {
 
 		$this->assertStringContainsString( 'gatherpress-rsvp-approved', $output, 'Should show approved RSVP count.' );
 		$this->assertStringContainsString( '>1<', $output, 'Should show count of 1.' );
+		$this->assertStringContainsString(
+			'<span class="screen-reader-text"> approved RSVP</span>',
+			$output,
+			'Should append the visually hidden accessible-name suffix.'
+		);
 	}
 
 	/**
@@ -1307,6 +1312,11 @@ class Test_Admin_List extends Base {
 			'Should show unapproved RSVP indicator.'
 		);
 		$this->assertStringContainsString( 'Unapproved RSVPs', $output, 'Should contain title for unapproved.' );
+		$this->assertStringContainsString(
+			'<span class="screen-reader-text"> unapproved RSVP</span>',
+			$output,
+			'Should append the visually hidden accessible-name suffix.'
+		);
 	}
 
 	/**
