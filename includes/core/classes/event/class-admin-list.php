@@ -552,7 +552,8 @@ final class Admin_List {
 			// meaningless in a screen-reader link list.
 			echo '<span class="gatherpress-rsvp-container">';
 			printf(
-				'<a href="%s" class="gatherpress-rsvp-approved"><span class="gatherpress-rsvp-icon">%d</span><span class="screen-reader-text"> %s</span></a>',
+				'<a href="%s" class="gatherpress-rsvp-approved"><span class="gatherpress-rsvp-icon">%d</span>' .
+				'<span class="screen-reader-text"> %s</span></a>',
 				esc_url( $approved_rsvp_url ),
 				(int) $approved_rsvps,
 				esc_html( _n( 'approved RSVP', 'approved RSVPs', (int) $approved_rsvps, 'gatherpress' ) )
@@ -574,7 +575,8 @@ final class Admin_List {
 				// assistive technology exposes title inconsistently, and once
 				// the link has text content the name comes from the content.
 				printf(
-					'<a href="%s" class="gatherpress-rsvp-pending" title="%s">%d<span class="screen-reader-text"> %s</span></a>',
+					'<a href="%s" class="gatherpress-rsvp-pending" title="%s">%d' .
+					'<span class="screen-reader-text"> %s</span></a>',
 					esc_url( $unapproved_rsvp_url ),
 					esc_attr( __( 'Unapproved RSVPs', 'gatherpress' ) ),
 					(int) $unapproved_rsvps,
