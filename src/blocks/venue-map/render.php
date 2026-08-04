@@ -204,6 +204,8 @@ if ( 'interactive' === $gatherpress_render_mode ) {
 			'gestureScroll'    => __( 'Use ctrl + scroll to zoom the map', 'gatherpress' ),
 			'gestureScrollMac' => __( 'Use ⌘ + scroll to zoom the map', 'gatherpress' ),
 			'tileError'        => __( 'Map could not be loaded. Please try again later.', 'gatherpress' ),
+			/* translators: %s: full address of the venue. */
+			'mapLabel'         => sprintf( __( 'Map of %s', 'gatherpress' ), $gatherpress_address ),
 		),
 	);
 
