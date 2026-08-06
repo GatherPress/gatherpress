@@ -1,0 +1,22 @@
+/**
+ * Frontend styles for the Venue block.
+ */
+
+/*
+ * The starter templates lay the venue details out in nowrap flex rows
+ * (icon + text pairs, and the phone + website groups side by side). At
+ * narrow viewports — small phones, or desktop at 400% zoom — the nowrap
+ * rows force two-dimensional scrolling (WCAG 1.4.10 Reflow). Allow the
+ * rows to wrap below 480px: flex-wrap only takes effect when a row
+ * actually runs out of room, so wider layouts are untouched. Scoped to
+ * the venue block wrapper so core's is-nowrap behavior is unchanged
+ * elsewhere, and specific enough to out-rank core's generated
+ * per-container layout CSS. The media query also covers content saved
+ * from older starter templates, which stored the nowrap layout in the
+ * block markup itself.
+ */
+@media (width <= 480px) {
+	.wp-block-gatherpress-venue .wp-block-group.is-nowrap {
+		flex-wrap: wrap;
+	}
+}
