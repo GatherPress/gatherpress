@@ -1260,10 +1260,19 @@ class Test_Event extends Base {
 	 * first and on nothing having warmed the datetime cache. This asserts them
 	 * directly instead.
 	 *
+	 * Keep the get_datetime entry in the covers list below. PHPUnit treats
+	 * that list as a whitelist and throws away anything the test executes
+	 * outside it, so without the entry the skip-empty-key branch in
+	 * get_datetime() runs here but is credited to nobody. The only other test
+	 * that reaches that branch, test_get_datetime(), gets there by leaving a
+	 * fresh post's meta alone rather than by deleting it, which makes its
+	 * coverage depend on no earlier test having written defaults.
+	 *
 	 * @since 0.35.0
 	 *
 	 * @covers ::is_same_date
 	 * @covers ::get_gmt_datetime
+	 * @covers ::get_datetime
 	 *
 	 * @return void
 	 */
@@ -1285,11 +1294,15 @@ class Test_Event extends Base {
 			( new Event( $post->ID ) )->is_same_date(),
 			'An event with no datetimes should not report the same date.'
 		);
-		$this->assertSame(
-			'',
-			( new Event( $post->ID ) )->get_datetime()['datetime_start'],
-			'Every empty datetime meta key should be skipped rather than stored.'
-		);
+		$datetime = ( new Event( $post->ID ) )->get_datetime();
+
+		foreach ( array( 'datetime_start', 'datetime_start_gmt', 'datetime_end', 'datetime_end_gmt' ) as $key ) {
+			$this->assertSame(
+				'',
+				$datetime[ $key ],
+				sprintf( 'Empty %s meta should be skipped rather than stored.', $key )
+			);
+		}
 	}
 
 	/**
