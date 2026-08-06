@@ -828,7 +828,7 @@ class Event {
 		$taxonomy    = $venue_setup->taxonomy_for_event_post_type( $this->event->post_type );
 		$term_id     = $venue_setup->get_online_event_term_id( $this->event->post_type );
 
-		if ( empty( $taxonomy ) || null === $term_id ) {
+		if ( null === $term_id ) {
 			return false;
 		}
 
