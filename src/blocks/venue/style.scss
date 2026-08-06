@@ -14,8 +14,16 @@
  * per-container layout CSS. The media query also covers content saved
  * from older starter templates, which stored the nowrap layout in the
  * block markup itself.
+ *
+ * max-width rather than the range syntax stylelint prefers: the build
+ * ships media queries untransformed, and range notation requires
+ * Safari 16.4+ — older browsers would ignore the rule entirely and
+ * silently keep the reflow bug. An accessibility fix should reach the
+ * widest possible set of browsers.
  */
-@media (width <= 480px) {
+
+/* stylelint-disable-next-line media-feature-range-notation */
+@media (max-width: 480px) {
 	.wp-block-gatherpress-venue .wp-block-group.is-nowrap {
 		flex-wrap: wrap;
 	}
