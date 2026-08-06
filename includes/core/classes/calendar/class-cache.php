@@ -10,7 +10,7 @@
  * the responses are validated against.
  *
  * @package GatherPress\Core\Calendar
- * @since 0.35.0
+ * @since 0.36.0
  */
 
 namespace GatherPress\Core\Calendar;
@@ -31,7 +31,7 @@ use GatherPress\Core\Traits\Singleton;
  * against, so the HTTP layer and the object cache cannot disagree about how
  * fresh a response is.
  *
- * @since 0.35.0
+ * @since 0.36.0
  */
 final class Cache {
 
@@ -43,7 +43,7 @@ final class Cache {
 	/**
 	 * Object cache group for rendered calendar payloads.
 	 *
-	 * @since 0.35.0
+	 * @since 0.36.0
 	 *
 	 * @var string
 	 */
@@ -52,7 +52,7 @@ final class Cache {
 	/**
 	 * Option holding the GMT timestamp of the last calendar-relevant change.
 	 *
-	 * @since 0.35.0
+	 * @since 0.36.0
 	 *
 	 * @var string
 	 */
@@ -65,7 +65,7 @@ final class Cache {
 	 * use by default, so a subscriber's next poll is usually a conditional
 	 * request that costs a 304 rather than a full render.
 	 *
-	 * @since 0.35.0
+	 * @since 0.36.0
 	 *
 	 * @var int
 	 */
@@ -76,7 +76,7 @@ final class Cache {
 	 *
 	 * This method initializes the object and sets up necessary hooks.
 	 *
-	 * @since 0.35.0
+	 * @since 0.36.0
 	 */
 	protected function __construct() {
 		$this->setup_hooks();
@@ -87,7 +87,7 @@ final class Cache {
 	 *
 	 * This method adds hooks for different purposes as needed.
 	 *
-	 * @since 0.35.0
+	 * @since 0.36.0
 	 *
 	 * @return void
 	 */
@@ -106,7 +106,7 @@ final class Cache {
 	/**
 	 * Seconds a client may reuse a calendar response without revalidating.
 	 *
-	 * @since 0.35.0
+	 * @since 0.36.0
 	 *
 	 * @return int Max age in seconds. Zero disables client caching.
 	 */
@@ -118,7 +118,7 @@ final class Cache {
 		 * a rendered body is kept in the object cache, so the two cannot drift.
 		 * Return 0 to send `no-cache` and rebuild on every request.
 		 *
-		 * @since 0.35.0
+		 * @since 0.36.0
 		 *
 		 * @param int $max_age Seconds a calendar response stays fresh.
 		 *
@@ -134,7 +134,7 @@ final class Cache {
 	 * has a stable validator to hand out, rather than one that moves on every
 	 * request and defeats the point.
 	 *
-	 * @since 0.35.0
+	 * @since 0.36.0
 	 *
 	 * @return string Timestamp in `Y-m-d H:i:s` GMT.
 	 */
@@ -153,7 +153,7 @@ final class Cache {
 	/**
 	 * Stamp the calendar as changed, invalidating every cached response.
 	 *
-	 * @since 0.35.0
+	 * @since 0.36.0
 	 *
 	 * @return void
 	 */
@@ -164,7 +164,7 @@ final class Cache {
 	/**
 	 * Return a cached calendar payload, rendering it on a miss.
 	 *
-	 * @since 0.35.0
+	 * @since 0.36.0
 	 *
 	 * @param string   $key      Cache key, unique to the request's scope.
 	 * @param callable $renderer Builds the payload when the cache misses.
@@ -195,7 +195,7 @@ final class Cache {
 	/**
 	 * Namespace a cache key with the current calendar version stamp.
 	 *
-	 * @since 0.35.0
+	 * @since 0.36.0
 	 *
 	 * @param string $key Scope-specific key.
 	 *
@@ -208,7 +208,7 @@ final class Cache {
 	/**
 	 * Stamp the calendar when an event or venue post changes.
 	 *
-	 * @since 0.35.0
+	 * @since 0.36.0
 	 *
 	 * @param int|string $post_id The post that changed.
 	 *
@@ -227,7 +227,7 @@ final class Cache {
 	 * written without touching the post row, so `save_post` alone would miss
 	 * them.
 	 *
-	 * @since 0.35.0
+	 * @since 0.36.0
 	 *
 	 * @param int|string $meta_id  Meta row ID (unused; part of the hook signature).
 	 * @param int|string $post_id  The post the meta belongs to.
@@ -252,7 +252,7 @@ final class Cache {
 	 * Venue association and topics decide which feeds an event appears in, and
 	 * term writes do not touch the post row either.
 	 *
-	 * @since 0.35.0
+	 * @since 0.36.0
 	 *
 	 * @param int|string $object_id  The object whose terms changed.
 	 * @param array      $terms      Terms set (unused; part of the hook signature).
@@ -278,7 +278,7 @@ final class Cache {
 	/**
 	 * Whether a post type contributes to calendar output.
 	 *
-	 * @since 0.35.0
+	 * @since 0.36.0
 	 *
 	 * @param string $post_type The post type to test.
 	 *

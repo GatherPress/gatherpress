@@ -780,7 +780,7 @@ final class Setup {
 	 *
 	 * @since 0.34.0
 	 *
-	 * @since 0.35.0 Added `$etag` and `$last_modified` for cache validation.
+	 * @since 0.36.0 Added `$etag` and `$last_modified` for cache validation.
 	 *
 	 * @param string $filename      Generated name of the file.
 	 * @param string $etag          Optional. Entity tag for the body being sent.
@@ -829,7 +829,7 @@ final class Setup {
 	/**
 	 * Cached iCalendar body for the current request.
 	 *
-	 * @since 0.35.0
+	 * @since 0.36.0
 	 *
 	 * @return string The complete iCal payload.
 	 */
@@ -850,7 +850,7 @@ final class Setup {
 	 * Built from the resolved query rather than the request URI, so unknown
 	 * query parameters cannot fragment the cache into unbounded entries.
 	 *
-	 * @since 0.35.0
+	 * @since 0.36.0
 	 *
 	 * @return string Scope-specific cache key.
 	 */
@@ -879,7 +879,7 @@ final class Setup {
 	/**
 	 * ETag for an iCalendar body.
 	 *
-	 * @since 0.35.0
+	 * @since 0.36.0
 	 *
 	 * @param string $body The rendered iCal payload.
 	 *
@@ -896,7 +896,7 @@ final class Setup {
 	 * which is what RFC 9110 asks for: the entity tag is exact where the
 	 * timestamp has one-second resolution.
 	 *
-	 * @since 0.35.0
+	 * @since 0.36.0
 	 *
 	 * @param string $etag          Current entity tag.
 	 * @param string $last_modified Current GMT modification timestamp.
