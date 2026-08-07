@@ -359,6 +359,58 @@ class Test_Event extends Base {
 	}
 
 	/**
+	 * Coverage for get_datetime method with partially missing meta.
+	 *
+	 * Events created before #2054 seeded a default datetime, and events built
+	 * outside the editor, can be missing some of the five datetime meta keys.
+	 * Each absent key is skipped and keeps its empty default rather than
+	 * poisoning the whole array.
+	 *
+	 * @covers ::get_datetime
+	 *
+	 * @return void
+	 */
+	public function test_get_datetime_skips_missing_meta(): void {
+		$post  = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get();
+		$event = new Event( $post->ID );
+
+		$event->save_datetimes(
+			array(
+				'datetime_start' => '2020-05-11 15:00:00',
+				'datetime_end'   => '2020-05-12 17:00:00',
+				'timezone'       => 'America/New_York',
+			)
+		);
+
+		delete_post_meta( $post->ID, 'gatherpress_datetime_end' );
+		delete_post_meta( $post->ID, 'gatherpress_datetime_end_gmt' );
+
+		// A fresh instance so the read is not served from datetime_cache.
+		$datetime = ( new Event( $post->ID ) )->get_datetime();
+
+		$this->assertSame(
+			'2020-05-11 15:00:00',
+			$datetime['datetime_start'],
+			'Failed to assert that a present meta key still populates.'
+		);
+		$this->assertSame(
+			'America/New_York',
+			$datetime['timezone'],
+			'Failed to assert that timezone survives a missing datetime key.'
+		);
+		$this->assertSame(
+			'',
+			$datetime['datetime_end'],
+			'Failed to assert that a missing meta key keeps its empty default.'
+		);
+		$this->assertSame(
+			'',
+			$datetime['datetime_end_gmt'],
+			'Failed to assert that a missing gmt meta key keeps its empty default.'
+		);
+	}
+
+	/**
 	 * Coverage for get_gmt_datetime method.
 	 *
 	 * @covers ::get_gmt_datetime
@@ -941,6 +993,26 @@ class Test_Event extends Base {
 		$this->assertFalse(
 			$event->is_same_date(),
 			'Failed to assert event spans multiple days.'
+		);
+	}
+
+	/**
+	 * Coverage for is_same_date method without datetimes.
+	 *
+	 * A post that is not an event resolves to no datetimes at all, so there is
+	 * no date to compare and the answer is false rather than a spurious true
+	 * from two empty strings matching each other.
+	 *
+	 * @covers ::is_same_date
+	 *
+	 * @return void
+	 */
+	public function test_is_same_date_is_false_without_datetimes(): void {
+		$event = new Event( 0 );
+
+		$this->assertFalse(
+			$event->is_same_date(),
+			'Failed to assert that an event with no datetimes is not on the same date.'
 		);
 	}
 
