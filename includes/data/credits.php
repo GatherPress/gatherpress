@@ -4,7 +4,7 @@
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 return array (
-  'version' => '0.35.0-beta.1',
+  'version' => '0.35.0-beta.2',
   'leads' => 
   array (
     0 => 
@@ -183,6 +183,19 @@ return array (
       ),
     ),
     6 => 
+    array (
+      'id' => 108511,
+      'name' => 'Mariusz Szatkowski',
+      'link' => 'https://profiles.wordpress.org/motylanogha/',
+      'slug' => 'motylanogha',
+      'avatar_urls' => 
+      array (
+        24 => '//www.gravatar.com/avatar/2be80984e145ca2eba53d5c0bd10209b?s=24&#038;r=g&#038;d=mm',
+        48 => '//www.gravatar.com/avatar/2be80984e145ca2eba53d5c0bd10209b?s=48&#038;r=g&#038;d=mm',
+        96 => '//www.gravatar.com/avatar/2be80984e145ca2eba53d5c0bd10209b?s=96&#038;r=g&#038;d=mm',
+      ),
+    ),
+    7 => 
     array (
       'id' => 23532709,
       'name' => 'w3lld1',
