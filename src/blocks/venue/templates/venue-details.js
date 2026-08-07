@@ -67,7 +67,9 @@ const VENUE_DETAILS = [
 			},
 			layout: {
 				type: 'flex',
-				flexWrap: 'nowrap',
+				// Wrap so phone + website stack instead of forcing
+				// horizontal scroll at narrow widths (WCAG 1.4.10).
+				flexWrap: 'wrap',
 				justifyContent: 'left',
 			},
 		},
