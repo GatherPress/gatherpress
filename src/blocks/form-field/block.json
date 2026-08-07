@@ -126,6 +126,10 @@
 		"autocomplete": {
 			"type": "string",
 			"default": "on"
+		},
+		"helpText": {
+			"type": "string",
+			"default": ""
 		}
 	},
 	"supports": {

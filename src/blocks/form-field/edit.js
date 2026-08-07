@@ -44,6 +44,7 @@ export default function Edit( { attributes, setAttributes } ) {
 		required,
 		prefillCurrentUser,
 		autocomplete,
+		helpText,
 	} = attributes;
 
 	// Handle data attributes for conditional rendering.
@@ -207,6 +208,20 @@ export default function Edit( { attributes, setAttributes } ) {
 							'gatherpress',
 						) }
 					/>
+
+					{ 'hidden' !== fieldType && (
+						<TextControl
+							label={ __( 'Help Text', 'gatherpress' ) }
+							value={ helpText }
+							onChange={ ( value ) =>
+								setAttributes( { helpText: value } )
+							}
+							help={ __(
+								'Optional description shown below the field and announced by screen readers.',
+								'gatherpress',
+							) }
+						/>
+					) }
 
 					{ 'hidden' !== fieldType && (
 						<ToggleControl
