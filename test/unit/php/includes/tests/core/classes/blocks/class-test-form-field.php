@@ -592,6 +592,13 @@ class Test_Form_Field extends Base {
 			'Failed to assert email fields infer the email token.'
 		);
 
+		$url_field = new Form_Field( array( 'fieldType' => 'url' ) );
+		$this->assertStringContainsString(
+			'autocomplete="url"',
+			$url_field->get_input_attributes(),
+			'Failed to assert url fields infer the url token.'
+		);
+
 		$stored_on = new Form_Field(
 			array(
 				'fieldType'    => 'tel',
