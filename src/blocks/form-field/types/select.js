@@ -192,7 +192,7 @@ export default function SelectField( {
 						<RichText
 							key={ option.id }
 							tagName="label"
-							placeholder={ __( 'Option label...', 'gatherpress' ) }
+							placeholder={ __( 'Option label…', 'gatherpress' ) }
 							value={ option.label }
 							onChange={ ( value ) => updateSelectOption( index, 'label', value ) }
 							onKeyDown={ ( event ) => handleKeyDown( event, index ) }
