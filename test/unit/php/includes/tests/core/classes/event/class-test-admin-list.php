@@ -10,6 +10,7 @@ namespace GatherPress\Tests\Core\Event;
 
 use GatherPress\Core\Event;
 use GatherPress\Core\Event\Admin_List;
+use GatherPress\Core\Event\Setup as Event_Setup;
 use GatherPress\Core\Rsvp;
 use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;
@@ -775,13 +776,16 @@ class Test_Admin_List extends Base {
 
 		// An event created without dates is seeded with the editor's default,
 		// which is tomorrow, so it counts as upcoming rather than falling out
-		// of both buckets the way a datetime-less event used to (#2054).
+		// of both buckets the way a datetime-less event used to (#2054). The
+		// seed runs at shutdown so late-arriving meta wins over it (#2116).
 		$this->mock->post(
 			array(
 				'post_type'   => Event::POST_TYPE,
 				'post_status' => 'publish',
 			)
 		)->get();
+
+		Event_Setup::get_instance()->resolve_pending_datetimes();
 
 		$counts = Utility::invoke_hidden_method( $instance, 'get_event_counts' );
 
