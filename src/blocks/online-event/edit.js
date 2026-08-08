@@ -147,7 +147,7 @@ const Edit = ( { attributes, context } ) => {
 	const isOnlineEvent = useSelect(
 		( select ) => {
 			const onlineTermId =
-				onlineEventTermId === null ? null : Number( onlineEventTermId );
+				null === onlineEventTermId ? null : Number( onlineEventTermId );
 
 			if ( ! onlineTermId ) {
 				return false;

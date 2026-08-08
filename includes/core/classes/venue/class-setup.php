@@ -50,6 +50,14 @@ final class Setup {
 	use Singleton;
 
 	/**
+	 * Slug of the sentinel term used to mark an event as online.
+	 *
+	 * @since 0.35.0
+	 * @var string
+	 */
+	const ONLINE_EVENT_TERM_SLUG = 'online-event';
+
+	/**
 	 * Class constructor.
 	 *
 	 * Instantiates the sibling Venue\* singletons before wiring hooks so
@@ -484,7 +492,7 @@ final class Setup {
 		$venue = null;
 
 		if ( post_type_supports( $post_type, 'gatherpress-venue' ) ) {
-			$event       = new Event( $post_id );
+			$event       = new Core_Event( $post_id );
 			$venue_terms = get_the_terms( $post_id, $this->taxonomy_for_event_post_type( $post_type ) );
 			$venue_slug  = ( is_array( $venue_terms ) && ! empty( $venue_terms ) ) ? $venue_terms[0]->slug : null;
 
@@ -607,7 +615,7 @@ final class Setup {
 	 * @return bool
 	 */
 	public function is_online_event_term_slug( string $slug ): bool {
-		return Core_Event::ONLINE_EVENT_TERM_SLUG === $slug;
+		return self::ONLINE_EVENT_TERM_SLUG === $slug;
 	}
 
 	/**
@@ -634,9 +642,9 @@ final class Setup {
 		// `term_exists()` returns `array{term_id, term_taxonomy_id}` when the term
 		// is registered, `null` otherwise. Use it instead of `get_term_by()` so
 		// we don't depend on `get_term_by()`'s taxonomy-registered cache state.
-		$existing = term_exists( Core_Event::ONLINE_EVENT_TERM_SLUG, $this->get_taxonomy( $venue_post_type ) );
+		$existing = term_exists( self::ONLINE_EVENT_TERM_SLUG, $this->get_taxonomy( $venue_post_type ) );
 
-		return is_array( $existing ) && isset( $existing['term_id'] ) ? (int) $existing['term_id'] : null;
+		return is_array( $existing ) ? (int) $existing['term_id'] : null;
 	}
 
 	/**

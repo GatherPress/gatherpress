@@ -789,6 +789,15 @@ class Test_Setup extends Base {
 			$result['gatherpress']['config']['venuePostTypes'],
 			'Failed to assert that venuePostTypes is an array.'
 		);
+		$this->assertArrayHasKey(
+			'onlineEventTermIds',
+			$result['gatherpress']['config'],
+			'Failed to assert that onlineEventTermIds is present in gatherpress config.'
+		);
+		$this->assertIsArray(
+			$result['gatherpress']['config']['onlineEventTermIds'],
+			'Failed to assert that onlineEventTermIds is an array.'
+		);
 
 		// Test that existing gatherpress settings are preserved and venuePostTypes is appended.
 		$settings = array(
@@ -805,6 +814,11 @@ class Test_Setup extends Base {
 			'venuePostTypes',
 			$result['gatherpress']['config'],
 			'Failed to assert that venuePostTypes is added alongside existing gatherpress settings.'
+		);
+		$this->assertArrayHasKey(
+			'onlineEventTermIds',
+			$result['gatherpress']['config'],
+			'Failed to assert that onlineEventTermIds is added alongside existing settings.'
 		);
 	}
 
@@ -1246,7 +1260,7 @@ class Test_Setup extends Base {
 		$instance = Setup::get_instance();
 
 		$this->assertTrue(
-			$instance->is_online_event_term_slug( Event::ONLINE_EVENT_TERM_SLUG ),
+			$instance->is_online_event_term_slug( Setup::ONLINE_EVENT_TERM_SLUG ),
 			'is_online_event_term_slug should match the canonical online-event sentinel slug.'
 		);
 		$this->assertFalse(
@@ -1273,13 +1287,19 @@ class Test_Setup extends Base {
 	public function test_get_online_event_term_id_returns_id_for_post_type(): void {
 		$instance = Setup::get_instance();
 		$term_id  = $instance->get_online_event_term_id( Venue::POST_TYPE );
+		$default  = $instance->get_online_event_term_id();
 
 		$this->assertIsInt(
 			$term_id,
 			'get_online_event_term_id should return an int for a seeded venue taxonomy.'
 		);
 		$this->assertSame(
-			Event::ONLINE_EVENT_TERM_SLUG,
+			$term_id,
+			$default,
+			'Default venue post type should resolve same sentinel term ID.'
+		);
+		$this->assertSame(
+			Setup::ONLINE_EVENT_TERM_SLUG,
 			get_term_by( 'id', $term_id, Venue::TAXONOMY )->slug,
 			'Resolved term ID should point at the online-event sentinel.'
 		);
@@ -1298,7 +1318,7 @@ class Test_Setup extends Base {
 			array(
 				'taxonomy'   => Venue::TAXONOMY,
 				'hide_empty' => false,
-				'slug'       => Event::ONLINE_EVENT_TERM_SLUG,
+				'slug'       => Setup::ONLINE_EVENT_TERM_SLUG,
 			)
 		);
 

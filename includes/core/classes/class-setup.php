@@ -16,7 +16,6 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use Exception;
 use GatherPress\Core\Admin\Notices\Setup as Notices_Setup;
-use GatherPress\Core\Event\Event as Core_Event;
 use GatherPress\Core\Traits\Singleton;
 use WP_Site;
 
@@ -362,7 +361,7 @@ final class Setup {
 		Venue\Setup::get_instance()->register_taxonomy();
 
 		$term_name = __( 'Online event', 'gatherpress' );
-		$term_slug = Core_Event::ONLINE_EVENT_TERM_SLUG;
+		$term_slug = Venue\Setup::ONLINE_EVENT_TERM_SLUG;
 
 		// Ensure the online-event term exists in each registered venue taxonomy.
 		foreach ( get_post_types_by_support( 'gatherpress-venue-information' ) as $venue_post_type ) {

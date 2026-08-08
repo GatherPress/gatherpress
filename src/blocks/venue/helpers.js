@@ -13,9 +13,9 @@
  *
  * @since 0.34.0
  *
- * @param {Array} terms             Array of venue term objects.
+ * @param {Array}       terms             Array of venue term objects.
  * @param {number|null} onlineEventTermId Pre-resolved term ID of the online-event
- *                                         sentinel for this venue taxonomy.
+ *                                        sentinel for this venue taxonomy.
  *
  * @return {string} Mode: 'in-person', 'online', or 'hybrid'.
  */

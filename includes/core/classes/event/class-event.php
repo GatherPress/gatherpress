@@ -26,7 +26,6 @@ use GatherPress\Core\Validate;
 use GatherPress\Core\Venue\Setup;
 use GatherPress\Core\Venue\Venue;
 use WP_Post;
-use WP_Term;
 
 /**
  * Class Event.
@@ -87,19 +86,6 @@ class Event {
 	 * @var string
 	 */
 	const TEMPLATE_PATTERN = 'gatherpress/event-template';
-
-	/**
-	 * Slug of the sentinel term used to mark an event as online.
-	 *
-	 * The term itself is seeded into every shadow-source venue taxonomy by
-	 * {@see \GatherPress\Core\Setup::add_online_event_term()} on plugin
-	 * activation, and the same slug is used by the editor, `Event::is_online()`,
-	 * `Event::set_online()`, and the block editor's pre-resolved term-ID map.
-	 *
-	 * @since 0.35.0
-	 * @var string
-	 */
-	const ONLINE_EVENT_TERM_SLUG = 'online-event';
 
 	/**
 	 * Non-time PHP DateTime formatting characters
@@ -852,7 +838,7 @@ class Event {
 		}
 
 		foreach ( $terms as $term ) {
-			if ( $term instanceof WP_Term && self::ONLINE_EVENT_TERM_SLUG === $term->slug ) {
+			if ( Setup::ONLINE_EVENT_TERM_SLUG === $term->slug ) {
 				return true;
 			}
 		}
@@ -876,11 +862,11 @@ class Event {
 	 * @param bool   $is_online True to mark online, false to mark offline.
 	 * @param string $link      Optional URL for the `gatherpress_online_event_link` meta when online.
 	 *
-	 * @return void
+	 * @return bool True when the online status was saved, false otherwise.
 	 */
-	public function set_online( bool $is_online, string $link = '' ): void {
+	public function set_online( bool $is_online, string $link = '' ): bool {
 		if ( ! $this->event ) {
-			return;
+			return false;
 		}
 
 		$venue_setup = Setup::get_instance();
@@ -892,14 +878,14 @@ class Event {
 		// Toggle on: seed it first; toggle off: nothing to remove.
 		if ( null === $term_id ) {
 			if ( ! $is_online ) {
-				return;
+				return false;
 			}
 
 			Core_Setup::get_instance()->add_online_event_term();
 			$term_id = $venue_setup->get_online_event_term_id( $venue_pt );
 
 			if ( null === $term_id ) {
-				return;
+				return false;
 			}
 		}
 
@@ -913,7 +899,7 @@ class Event {
 			}
 
 			update_post_meta( $this->event->ID, 'gatherpress_online_event_link', esc_url_raw( $link ) );
-			return;
+			return true;
 		}
 
 		// Toggle off: drop the sentinel from the term list (preserve venue terms)
@@ -925,5 +911,6 @@ class Event {
 		}
 
 		delete_post_meta( $this->event->ID, 'gatherpress_online_event_link' );
+		return true;
 	}
 }

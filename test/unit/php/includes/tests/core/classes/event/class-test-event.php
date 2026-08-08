@@ -955,7 +955,7 @@ class Test_Event extends Base {
 			)
 		)->get()->ID;
 
-		wp_set_post_terms( $event_id, array( Event::ONLINE_EVENT_TERM_SLUG ), Venue::TAXONOMY );
+		wp_set_post_terms( $event_id, array( Venue\Setup::ONLINE_EVENT_TERM_SLUG ), Venue::TAXONOMY );
 
 		$event = new Event( $event_id );
 
@@ -988,7 +988,7 @@ class Test_Event extends Base {
 			)
 		)->get()->ID;
 
-		wp_set_post_terms( $event_id, array( '_hybrid-venue', Event::ONLINE_EVENT_TERM_SLUG ), Venue::TAXONOMY );
+		wp_set_post_terms( $event_id, array( '_hybrid-venue', Venue\Setup::ONLINE_EVENT_TERM_SLUG ), Venue::TAXONOMY );
 
 		$event = new Event( $event_id );
 
@@ -1026,12 +1026,12 @@ class Test_Event extends Base {
 		register_taxonomy_for_object_type( Venue::TAXONOMY, Event::POST_TYPE );
 
 		$event = new Event( $event_id );
-		$event->set_online( true, 'https://example.com/meet' );
+		$this->assertTrue( $event->set_online( true, 'https://example.com/meet' ) );
 
 		$terms = wp_get_post_terms( $event_id, Venue::TAXONOMY, array( 'fields' => 'slugs' ) );
 
 		$this->assertContains(
-			Event::ONLINE_EVENT_TERM_SLUG,
+			Venue\Setup::ONLINE_EVENT_TERM_SLUG,
 			$terms,
 			'set_online(true) should attach the online-event term.'
 		);
@@ -1057,13 +1057,13 @@ class Test_Event extends Base {
 		)->get()->ID;
 
 		$event = new Event( $event_id );
-		$event->set_online( true, 'https://example.com/meet' );
-		$event->set_online( false );
+		$this->assertTrue( $event->set_online( true, 'https://example.com/meet' ) );
+		$this->assertTrue( $event->set_online( false ) );
 
 		$terms = wp_get_post_terms( $event_id, Venue::TAXONOMY, array( 'fields' => 'slugs' ) );
 
 		$this->assertNotContains(
-			Event::ONLINE_EVENT_TERM_SLUG,
+			Venue\Setup::ONLINE_EVENT_TERM_SLUG,
 			$terms,
 			'set_online(false) should remove the online-event term.'
 		);
@@ -1100,8 +1100,8 @@ class Test_Event extends Base {
 		wp_set_post_terms( $event_id, array( '_hybrid-venue' ), Venue::TAXONOMY );
 
 		$event = new Event( $event_id );
-		$event->set_online( true, 'https://example.com/meet' );
-		$event->set_online( false );
+		$this->assertTrue( $event->set_online( true, 'https://example.com/meet' ) );
+		$this->assertTrue( $event->set_online( false ) );
 
 		$terms = wp_get_post_terms( $event_id, Venue::TAXONOMY, array( 'fields' => 'slugs' ) );
 
@@ -1111,7 +1111,7 @@ class Test_Event extends Base {
 			'set_online(false) on a hybrid should keep the real venue term.'
 		);
 		$this->assertNotContains(
-			Event::ONLINE_EVENT_TERM_SLUG,
+			Venue\Setup::ONLINE_EVENT_TERM_SLUG,
 			$terms,
 			'set_online(false) on a hybrid should still remove the online-event sentinel.'
 		);
@@ -1143,7 +1143,7 @@ class Test_Event extends Base {
 
 		$this->assertSame(
 			1,
-			count( array_filter( $terms, fn ( $slug ) => Event::ONLINE_EVENT_TERM_SLUG === $slug ) ),
+			count( array_filter( $terms, fn ( $slug ) => Venue\Setup::ONLINE_EVENT_TERM_SLUG === $slug ) ),
 			'Calling set_online(true) twice should leave exactly one online-event term attached.'
 		);
 	}
@@ -1162,7 +1162,7 @@ class Test_Event extends Base {
 		$event->set_online( true, 'https://example.com/meet' );
 
 		$this->assertFalse(
-			get_term_by( 'slug', Event::ONLINE_EVENT_TERM_SLUG, Venue::TAXONOMY ) instanceof WP_Term,
+			get_term_by( 'slug', Venue\Setup::ONLINE_EVENT_TERM_SLUG, Venue::TAXONOMY ) instanceof WP_Term,
 			'set_online with no bound event should not seed any term.'
 		);
 	}

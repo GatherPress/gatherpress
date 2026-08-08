@@ -425,12 +425,13 @@ export function hasOnlineEventTerm( postId = null ) {
 	// Derive the venue taxonomy from the current editor post type.
 	const currentPostType = select( 'core/editor' )?.getCurrentPostType?.();
 	const venuePostType = getVenuePostType( currentPostType );
-	const venueTaxonomy = getVenueTaxonomy( venuePostType );
 	const onlineEventTermId = getOnlineEventTermId( venuePostType );
 
 	if ( ! onlineEventTermId ) {
 		return false;
 	}
+
+	const venueTaxonomy = getVenueTaxonomy( venuePostType );
 
 	// If postId is provided, check that specific post.
 	if ( postId ) {

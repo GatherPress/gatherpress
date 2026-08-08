@@ -86,29 +86,29 @@ describe( 'venue helpers', () => {
 	} );
 
 	describe( 'getNewTaxonomyIds', () => {
-		const onlineEventTermId = 99;
+		const taxonomyOnlineEventTermId = 99;
 		const venueTermId = 42;
 
 		describe( 'in-person mode', () => {
 			it( 'should return only venue term ID when venue exists', () => {
-				const result = getNewTaxonomyIds( 'in-person', onlineEventTermId, venueTermId );
+				const result = getNewTaxonomyIds( 'in-person', taxonomyOnlineEventTermId, venueTermId );
 				expect( result ).toEqual( [ 42 ] );
 			} );
 
 			it( 'should return empty array when no venue exists', () => {
-				const result = getNewTaxonomyIds( 'in-person', onlineEventTermId, null );
+				const result = getNewTaxonomyIds( 'in-person', taxonomyOnlineEventTermId, null );
 				expect( result ).toEqual( [] );
 			} );
 
 			it( 'should return empty array when venue is undefined', () => {
-				const result = getNewTaxonomyIds( 'in-person', onlineEventTermId, undefined );
+				const result = getNewTaxonomyIds( 'in-person', taxonomyOnlineEventTermId, undefined );
 				expect( result ).toEqual( [] );
 			} );
 		} );
 
 		describe( 'online mode', () => {
 			it( 'should return only online-event term ID when it exists', () => {
-				const result = getNewTaxonomyIds( 'online', onlineEventTermId, venueTermId );
+				const result = getNewTaxonomyIds( 'online', taxonomyOnlineEventTermId, venueTermId );
 				expect( result ).toEqual( [ 99 ] );
 			} );
 
@@ -125,7 +125,7 @@ describe( 'venue helpers', () => {
 
 		describe( 'hybrid mode', () => {
 			it( 'should return both venue and online-event IDs when both exist', () => {
-				const result = getNewTaxonomyIds( 'hybrid', onlineEventTermId, venueTermId );
+				const result = getNewTaxonomyIds( 'hybrid', taxonomyOnlineEventTermId, venueTermId );
 				expect( result ).toEqual( [ 42, 99 ] );
 			} );
 
@@ -135,7 +135,7 @@ describe( 'venue helpers', () => {
 			} );
 
 			it( 'should return only online-event ID when venue does not exist', () => {
-				const result = getNewTaxonomyIds( 'hybrid', onlineEventTermId, null );
+				const result = getNewTaxonomyIds( 'hybrid', taxonomyOnlineEventTermId, null );
 				expect( result ).toEqual( [ 99 ] );
 			} );
 
@@ -150,7 +150,7 @@ describe( 'venue helpers', () => {
 			} );
 
 			it( 'should maintain correct order (venue first, then online)', () => {
-				const result = getNewTaxonomyIds( 'hybrid', onlineEventTermId, venueTermId );
+				const result = getNewTaxonomyIds( 'hybrid', taxonomyOnlineEventTermId, venueTermId );
 				expect( result[ 0 ] ).toBe( 42 ); // Venue first.
 				expect( result[ 1 ] ).toBe( 99 ); // Online second.
 			} );
@@ -158,7 +158,7 @@ describe( 'venue helpers', () => {
 
 		describe( 'edge cases', () => {
 			it( 'should handle zero as valid term ID for in-person mode', () => {
-				const result = getNewTaxonomyIds( 'in-person', onlineEventTermId, 0 );
+				const result = getNewTaxonomyIds( 'in-person', taxonomyOnlineEventTermId, 0 );
 				expect( result ).toEqual( [] );
 			} );
 
@@ -168,12 +168,12 @@ describe( 'venue helpers', () => {
 			} );
 
 			it( 'should handle string numbers for in-person mode', () => {
-				const result = getNewTaxonomyIds( 'in-person', onlineEventTermId, 42 );
+				const result = getNewTaxonomyIds( 'in-person', taxonomyOnlineEventTermId, 42 );
 				expect( result ).toEqual( [ 42 ] );
 			} );
 
 			it( 'should handle unknown mode by defaulting to hybrid logic', () => {
-				const result = getNewTaxonomyIds( 'unknown-mode', onlineEventTermId, venueTermId );
+				const result = getNewTaxonomyIds( 'unknown-mode', taxonomyOnlineEventTermId, venueTermId );
 				expect( result ).toEqual( [ 42, 99 ] );
 			} );
 		} );

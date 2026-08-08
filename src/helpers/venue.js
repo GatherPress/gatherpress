@@ -301,15 +301,15 @@ export function getVenueTitle( venue, kind ) {
  * Adapted from useAuthorsQuery()
  * @see gutenberg/packages/editor/src/components/post-author/hook.js
  *
- * @param {string} search  Current search string for venue filtering.
- * @param {number} venueId Currently selected venue, can be either a post ID or a taxonomy term ID.
- * @param {string} kind    Actual kind to query for, could taxonomy (default) or posttype.
- * @param {string} name    Name of the current kind.
+ * @param {string} search                              Current search string for venue filtering.
+ * @param {number} venueId                             Currently selected venue, can be either a post ID or a taxonomy term ID.
+ * @param {string} kind                                Actual kind to query for, could taxonomy (default) or posttype.
+ * @param {string} name                                Name of the current kind.
  * @param {string} [venuePostType='gatherpress_venue'] Venue post type slug used to resolve
- *                                                       the online-event sentinel ID. Pass
- *                                                       it when calling with a non-default
- *                                                       venue post type so the sentinel
- *                                                       filter matches the right term.
+ *                                                     the online-event sentinel ID. Pass
+ *                                                     it when calling with a non-default
+ *                                                     venue post type so the sentinel
+ *                                                     filter matches the right term.
  *
  * @return {Array} A list options prepared for a typical combobox, with ID and label.
  */
@@ -343,15 +343,15 @@ export function useVenueOptions(
 		[ kind, name, search, venueId ]
 	);
 
-	// Use the pre-resolved sentinel term ID from editor settings so the filter
-	// compares against a single int instead of string-matching the slug.
-	const onlineTermId = getOnlineEventTermId( venuePostType );
-	const isOnline = ( obj ) =>
-		null !== onlineTermId && Number( obj?.id ) === Number( onlineTermId );
-
 	// Using useMemo will cause a re-render only when the raw venues really change.
 	const venueOptions = useMemo(
 		() => {
+			// Use the pre-resolved sentinel term ID from editor settings so the filter
+			// compares against a single int instead of string-matching the slug.
+			const onlineTermId = getOnlineEventTermId( venuePostType );
+			const isOnline = ( obj ) =>
+				null !== onlineTermId && Number( obj?.id ) === Number( onlineTermId );
+
 			// Create a combobox-friendly list as dropdown
 			// from the array of venues (can be ~posts or ~terms).
 			// Filter out the online-event term since it's controlled by a separate toggle.
@@ -385,7 +385,7 @@ export function useVenueOptions(
 		},
 		// Dependency array, every time venue or venues is updated,
 		//  the useMemo callback will be called.
-		[ venue, venues, kind, onlineTermId ]
+		[ venue, venues, kind, venuePostType ]
 	);
 
 	return { venueOptions };
