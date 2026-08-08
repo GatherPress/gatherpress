@@ -512,7 +512,7 @@ final class Rsvp_Form {
 							break;
 						case 'select':
 						case 'radio':
-							$field_config['options'] = array_map( 'sanitize_text_field', $attrs['options'] ?? array() );
+							$field_config['options'] = $this->get_field_options( $attrs );
 							break;
 						case 'textarea':
 							$field_config['max_length'] = intval( $attrs['maxLength'] ?? 1000 );
@@ -533,6 +533,47 @@ final class Rsvp_Form {
 		}
 
 		return $fields;
+	}
+
+	/**
+	 * Get sanitized options from form field attributes.
+	 *
+	 * Supports the current radioOptions attribute and the legacy options key.
+	 *
+	 * @since 0.34.0
+	 *
+	 * @param array<string, mixed> $attributes Form field attributes.
+	 *
+	 * @return string[] Sanitized option values.
+	 */
+	private function get_field_options( array $attributes ): array {
+		$options = $attributes['radioOptions'] ?? $attributes['options'] ?? array();
+
+		if ( isset( $attributes['radioOptions'] ) ) {
+			$options = array_map(
+				static function ( $option ): string {
+					if ( ! is_array( $option ) ) {
+						return sanitize_text_field( $option );
+					}
+
+					$value = $option['value'] ?? '';
+					$value = '' === $value ? ( $option['label'] ?? '' ) : $value;
+					return sanitize_text_field( $value );
+				},
+				$options
+			);
+		} else {
+			$options = array_map( 'sanitize_text_field', (array) $options );
+		}
+
+		return array_values(
+			array_filter(
+				$options,
+				static function ( $option ): bool {
+					return '' !== $option;
+				}
+			)
+		);
 	}
 
 	/**

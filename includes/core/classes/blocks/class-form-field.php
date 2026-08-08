@@ -436,6 +436,15 @@ final class Form_Field {
 
 				break;
 
+			case 'select':
+				$attributes = array(
+					'id'           => $this->attributes['input_id'],
+					'name'         => $this->attributes['field_name'],
+					'autocomplete' => $this->attributes['autocomplete'],
+				);
+
+				break;
+
 			case 'textarea':
 				$attributes = array(
 					'id'           => $this->attributes['input_id'],

@@ -17,11 +17,13 @@ import {
  */
 import DefaultField from './types/default';
 import RadioField from './types/radio';
+import SelectField from './types/select';
 import CheckboxField from './types/checkbox';
 import TextareaField from './types/textarea';
 import HiddenField from './types/hidden';
 import DefaultFieldPanels from './panels/default-field-panels';
 import RadioFieldPanels from './panels/radio-field-panels';
+import SelectFieldPanels from './panels/select-field-panels';
 import CheckboxFieldPanels from './panels/checkbox-field-panels';
 import FieldValue from './helpers';
 
@@ -107,6 +109,8 @@ export default function Edit( { attributes, setAttributes } ) {
 		switch ( fieldType ) {
 			case 'radio':
 				return <RadioField { ...commonProps } />;
+			case 'select':
+				return <SelectField { ...commonProps } />;
 			case 'checkbox':
 				return <CheckboxField { ...commonProps } />;
 			case 'textarea':
@@ -129,6 +133,8 @@ export default function Edit( { attributes, setAttributes } ) {
 		switch ( fieldType ) {
 			case 'radio':
 				return <RadioFieldPanels { ...commonProps } />;
+			case 'select':
+				return <SelectFieldPanels { ...commonProps } />;
 			case 'checkbox':
 				return <CheckboxFieldPanels { ...commonProps } />;
 			case 'hidden':
@@ -173,6 +179,10 @@ export default function Edit( { attributes, setAttributes } ) {
 							{
 								label: __( 'Radio', 'gatherpress' ),
 								value: 'radio',
+							},
+							{
+								label: __( 'Select', 'gatherpress' ),
+								value: 'select',
 							},
 							{
 								label: __( 'Hidden', 'gatherpress' ),

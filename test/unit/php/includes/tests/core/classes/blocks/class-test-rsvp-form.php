@@ -1746,7 +1746,9 @@ class Test_Rsvp_Form extends Base {
 					<div class="wp-block-gatherpress-rsvp-form">
 						<!-- wp:gatherpress/form-field '
 					. '{"fieldName":"select_field","fieldType":"select",'
-					. '"options":["Option 1","Option 2","Option 3"]} -->
+					. '"radioOptions":[{"label":"Option 1","value":"option-1"},'
+					. '{"label":"Option 2","value":"option-2"},{"label":"Option 3",'
+					. '"value":"option-3"}]} -->
 						<div class="wp-block-gatherpress-form-field"></div>
 						<!-- /wp:gatherpress/form-field -->
 					</div>
@@ -1763,9 +1765,67 @@ class Test_Rsvp_Form extends Base {
 		$this->assertArrayHasKey( 'select_field', $schemas['form_0']['fields'] );
 		$this->assertEquals( 'select', $schemas['form_0']['fields']['select_field']['type'] );
 		$this->assertEquals(
-			array( 'Option 1', 'Option 2', 'Option 3' ),
+			array( 'option-1', 'option-2', 'option-3' ),
 			$schemas['form_0']['fields']['select_field']['options']
 		);
+	}
+
+	/**
+	 * Tests sanitized options from current and legacy field attributes.
+	 *
+	 * @covers ::get_field_options
+	 */
+	public function test_get_field_options(): void {
+		$instance = Rsvp_Form::get_instance();
+
+		$radio_options = Utility::invoke_hidden_method(
+			$instance,
+			'get_field_options',
+			array(
+				array(
+					'radioOptions' => array(
+						array(
+							'label' => 'Small',
+							'value' => 'small',
+						),
+						array(
+							'label' => 'Large',
+							'value' => 'large',
+						),
+					),
+				),
+			)
+		);
+
+		$legacy_options = Utility::invoke_hidden_method(
+			$instance,
+			'get_field_options',
+			array( array( 'options' => array( ' First ', 'Second' ) ) )
+		);
+
+		$this->assertSame( array( 'small', 'large' ), $radio_options );
+		$this->assertSame( array( 'First', 'Second' ), $legacy_options );
+
+		$fallback_options = Utility::invoke_hidden_method(
+			$instance,
+			'get_field_options',
+			array(
+				array(
+					'radioOptions' => array(
+						array(
+							'label' => 'No value',
+							'value' => '',
+						),
+						array(
+							'label' => 'Zero',
+							'value' => '0',
+						),
+					),
+				),
+			)
+		);
+
+		$this->assertSame( array( 'No value', '0' ), $fallback_options );
 	}
 
 	/**
@@ -1957,7 +2017,9 @@ class Test_Rsvp_Form extends Base {
 				'post_content' => '<!-- wp:gatherpress/rsvp-form -->
 					<div class="wp-block-gatherpress-rsvp-form">
 						<!-- wp:gatherpress/form-field '
-					. '{"fieldName":"radio_field","fieldType":"radio","options":["Yes","No","Maybe"]} -->
+					. '{"fieldName":"radio_field","fieldType":"radio",'
+					. '"radioOptions":[{"label":"Yes","value":"yes"},'
+					. '{"label":"No","value":"no"},{"label":"Maybe","value":"maybe"}]} -->
 						<div class="wp-block-gatherpress-form-field"></div>
 						<!-- /wp:gatherpress/form-field -->
 					</div>
@@ -1973,7 +2035,7 @@ class Test_Rsvp_Form extends Base {
 
 		$this->assertArrayHasKey( 'radio_field', $schemas['form_0']['fields'] );
 		$this->assertEquals( 'radio', $schemas['form_0']['fields']['radio_field']['type'] );
-		$this->assertEquals( array( 'Yes', 'No', 'Maybe' ), $schemas['form_0']['fields']['radio_field']['options'] );
+		$this->assertEquals( array( 'yes', 'no', 'maybe' ), $schemas['form_0']['fields']['radio_field']['options'] );
 	}
 
 	/**

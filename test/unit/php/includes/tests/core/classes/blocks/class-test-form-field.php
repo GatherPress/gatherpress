@@ -572,6 +572,36 @@ class Test_Form_Field extends Base {
 	}
 
 	/**
+	 * Tests get_input_attributes for select field.
+	 *
+	 * @since 0.34.0
+	 * @covers ::get_input_attributes
+	 *
+	 * @return void
+	 */
+	public function test_get_input_attributes_select(): void {
+		$form_field = new Form_Field(
+			array(
+				'fieldType' => 'select',
+				'fieldName' => 'choice',
+			)
+		);
+
+		$attributes = $form_field->get_input_attributes();
+
+		$this->assertStringContainsString(
+			'name="choice"',
+			$attributes,
+			'Failed to assert select attributes contain name.'
+		);
+		$this->assertStringNotContainsString(
+			'type="select"',
+			$attributes,
+			'Failed to assert select attributes do not contain an input type.'
+		);
+	}
+
+	/**
 	 * Tests get_input_attributes for textarea field.
 	 *
 	 * @since 0.33.0
@@ -834,6 +864,42 @@ class Test_Form_Field extends Base {
 	 *
 	 * @return void
 	 */
+	/**
+	 * Tests get_template_path for select field type.
+	 *
+	 * @since 0.34.0
+	 * @covers ::get_template_path
+	 *
+	 * @return void
+	 */
+	public function test_get_template_path_select(): void {
+		$form_field = new Form_Field(
+			array(
+				'fieldType' => 'select',
+			)
+		);
+
+		$template_path = $form_field->get_template_path();
+
+		$this->assertStringContainsString(
+			'select.php',
+			$template_path,
+			'Failed to assert template path contains select.php.'
+		);
+		$this->assertFileExists(
+			$template_path,
+			'Failed to assert select template file exists.'
+		);
+	}
+
+	/**
+	 * Tests get_template_path falls back to default for non-existing field type.
+	 *
+	 * @since 0.33.0
+	 * @covers ::get_template_path
+	 *
+	 * @return void
+	 */
 	public function test_get_template_path_default_fallback(): void {
 		$form_field = new Form_Field(
 			array(
@@ -852,6 +918,46 @@ class Test_Form_Field extends Base {
 			$template_path,
 			'Failed to assert default template file exists.'
 		);
+	}
+
+	/**
+	 * Tests render method.
+	 *
+	 * @since 0.33.0
+	 * @covers ::render
+	 *
+	 * @return void
+	 */
+	public function test_render_select(): void {
+			$form_field = new Form_Field(
+				array(
+					'fieldType'    => 'select',
+					'fieldName'    => 'choice',
+					'fieldValue'   => 'large',
+					'label'        => 'Size',
+					'radioOptions' => array(
+						array(
+							'label' => 'Small',
+							'value' => 'small',
+						),
+						array(
+							'label' => 'Large',
+							'value' => 'large',
+						),
+					),
+				)
+			);
+
+		ob_start();
+		$form_field->render();
+		$output = ob_get_clean();
+
+		$this->assertStringContainsString( '<select', $output );
+		$this->assertStringContainsString( 'name="choice"', $output );
+		$this->assertStringContainsString( '<option value="small"', $output );
+		$this->assertStringContainsString( '<option value="large"', $output );
+		$this->assertStringContainsString( "selected='selected'", $output );
+		$this->assertStringNotContainsString( '<input', $output );
 	}
 
 	/**
