@@ -60,7 +60,12 @@ jobs:
     # Backstop against hangs: with max-parallel 1, a job silently stuck at
     # GitHub's 6h default limit stalls every locale behind it — one hung
     # apt phase turned into ~48h of dead runner time (run 27881952586).
-    timeout-minutes: 40
+    #
+    # 60 so a cold first locale actually fits: the browser download can take
+    # 30 and the apt phase 10, which at the previous 40 left nothing for the
+    # screenshots themselves. Later locales reuse the caches and finish in
+    # well under 10 (run 28679615230 took 6 end to end).
+    timeout-minutes: 60
     strategy:
       fail-fast: false
       max-parallel: 1 # Prevent parallel runs to make use of the caching for node_modules and playwright browsers
@@ -118,7 +123,15 @@ jobs:
     # AND keep the post-job cache save alive, so the next locale job can hit
     # the browser cache instead of repeating the download.
     - name: Install Playwright browser
-      timeout-minutes: 10
+      # 30, not 10: a cold download genuinely needs it. Runs 31287296394 and
+      # its re-run both hit the 10-minute cap mid-download, saved no cache,
+      # and so left the next run just as cold -- the cap was reproducing the
+      # condition it fired on. Generous on purpose: it only applies until one
+      # run populates the cache, after which the cache-hit guard below skips
+      # the step entirely. The 6h hang this file's timeouts guard against was
+      # in the apt phase, which is the separate step below with its own cap,
+      # so this does not reopen it.
+      timeout-minutes: 30
       run: npx playwright install chromium
       if: steps.playwright-cache.outputs.cache-hit != 'true'
 
