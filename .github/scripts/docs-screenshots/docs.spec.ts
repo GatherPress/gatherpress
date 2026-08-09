@@ -24,7 +24,7 @@ test.describe( 'Documentation screenshots', () => {
 	test( 'GatherPress settings: Events tab', async ( { admin, page } ) => {
 		await admin.visitAdminPage(
 			'edit.php',
-			'post_type=gatherpress_event&page=gatherpress_events'
+			'post_type=gatherpress_event&page=gatherpress_events_settings'
 		);
 
 		await expect( page ).toHaveScreenshot( 'settings-events-tab.png', {
@@ -53,7 +53,7 @@ test.describe( 'Documentation screenshots', () => {
 	test( 'GatherPress settings: Venues tab', async ( { admin, page } ) => {
 		await admin.visitAdminPage(
 			'edit.php',
-			'post_type=gatherpress_event&page=gatherpress_venues'
+			'post_type=gatherpress_event&page=gatherpress_venues_settings'
 		);
 
 		await expect( page ).toHaveScreenshot( 'settings-venues-tab.png', {

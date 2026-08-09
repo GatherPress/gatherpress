@@ -274,6 +274,36 @@ jobs:
         done
         exit 1
 
+    # A screenshot of an error page is still a valid PNG, so the suite
+    # captures it, passes, and auto-merge ships it -- which is exactly what
+    # happened in #2122, where two settings screens came back as WordPress's
+    # "Sorry, you are not allowed to access this page" at 2,203 bytes against
+    # a ~40,000 byte norm. Nothing downstream distinguishes the two.
+    #
+    # Size is a crude but effective proxy: a real full-page screenshot of an
+    # admin screen is tens of KB, and every error/permission page is a few.
+    # Fail here, before the PR exists, rather than reverting from develop.
+    - name: Sanity-check the regenerated screenshots
+      if: ${{ inputs.update-all || steps.screenshot-tests.outcome == 'failure' }}
+      run: |
+        min_bytes=10000
+        suspect=0
+        while IFS= read -r image; do
+          [ -n "$image" ] || continue
+          size=$(wc -c < "$image")
+          if [ "$size" -lt "$min_bytes" ]; then
+            echo "::error file=${image}::${image} is ${size} bytes, under the ${min_bytes} byte floor -- almost certainly an error page rather than a screenshot."
+            suspect=1
+          else
+            echo "ok: ${image} (${size} bytes)"
+          fi
+        done <<< "$(git diff --name-only --diff-filter=d -- '${{ inputs.output-path }}/*.png')"
+
+        if [ "$suspect" -ne 0 ]; then
+          echo "::error::Refusing to open a screenshot PR: at least one regenerated image looks like an error page."
+          exit 1
+        fi
+
     - name: Compress Images
       if: ${{ inputs.update-all || steps.screenshot-tests.outcome == 'failure' }}
       id: compress-images
