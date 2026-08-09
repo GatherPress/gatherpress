@@ -27,6 +27,14 @@ test.describe( 'Documentation screenshots', () => {
 			'post_type=gatherpress_event&page=gatherpress_events_settings'
 		);
 
+		// Assert the tab actually loaded before capturing. A permission page is
+		// still a valid PNG, so without this the suite screenshots the error and
+		// reports success (#2122). Matching the href rather than the label keeps
+		// the assertion locale-independent.
+		await expect(
+			page.locator( 'a.nav-tab-active[href*="page=gatherpress_events_settings"]' )
+		).toBeVisible();
+
 		await expect( page ).toHaveScreenshot( 'settings-events-tab.png', {
 			fullPage: true,
 		} );
@@ -40,6 +48,14 @@ test.describe( 'Documentation screenshots', () => {
 			'edit.php',
 			'post_type=gatherpress_event&page=gatherpress_rsvp_settings'
 		);
+
+		// Assert the tab actually loaded before capturing. A permission page is
+		// still a valid PNG, so without this the suite screenshots the error and
+		// reports success (#2122). Matching the href rather than the label keeps
+		// the assertion locale-independent.
+		await expect(
+			page.locator( 'a.nav-tab-active[href*="page=gatherpress_rsvp_settings"]' )
+		).toBeVisible();
 
 		// Draw attention to the RSVP Mode select, the setting the docs
 		// section explains first.
@@ -55,6 +71,14 @@ test.describe( 'Documentation screenshots', () => {
 			'edit.php',
 			'post_type=gatherpress_event&page=gatherpress_venues_settings'
 		);
+
+		// Assert the tab actually loaded before capturing. A permission page is
+		// still a valid PNG, so without this the suite screenshots the error and
+		// reports success (#2122). Matching the href rather than the label keeps
+		// the assertion locale-independent.
+		await expect(
+			page.locator( 'a.nav-tab-active[href*="page=gatherpress_venues_settings"]' )
+		).toBeVisible();
 
 		await expect( page ).toHaveScreenshot( 'settings-venues-tab.png', {
 			fullPage: true,

@@ -283,6 +283,10 @@ jobs:
     # Size is a crude but effective proxy: a real full-page screenshot of an
     # admin screen is tens of KB, and every error/permission page is a few.
     # Fail here, before the PR exists, rather than reverting from develop.
+    #
+    # git status rather than git diff: a locale whose images are new to the
+    # repo is untracked, and git diff would not list it -- exempting exactly
+    # the case with no baseline to compare against.
     - name: Sanity-check the regenerated screenshots
       if: ${{ inputs.update-all || steps.screenshot-tests.outcome == 'failure' }}
       run: |
@@ -297,7 +301,7 @@ jobs:
           else
             echo "ok: ${image} (${size} bytes)"
           fi
-        done <<< "$(git diff --name-only --diff-filter=d -- '${{ inputs.output-path }}/*.png')"
+        done <<< "$(git status --porcelain -- '${{ inputs.output-path }}/*.png' | awk '$1 != "D" { print $NF }')"
 
         if [ "$suspect" -ne 0 ]; then
           echo "::error::Refusing to open a screenshot PR: at least one regenerated image looks like an error page."
