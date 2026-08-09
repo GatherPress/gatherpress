@@ -76,12 +76,24 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v4
 
+    # Read straight from the lockfile: this runs before npm install, so
+    # node_modules is not available to require() the version from.
+    - name: Resolve the Playwright version
+      id: playwright-version
+      run: |
+        echo "version=$(jq -r '.packages["node_modules/@playwright/test"].version' package-lock.json)" >> "$GITHUB_OUTPUT"
+
+    # Keyed on the Playwright version, not the whole lockfile. Hashing
+    # package-lock.json meant any unrelated dependency bump threw away a
+    # ~400MB browser cache and forced a cold re-download -- a js-yaml
+    # security bump (#2111) is what discarded it most recently, and the
+    # download that followed hung twice.
     - uses: actions/cache@v4
       id: playwright-cache
       with:
         path: |
           ~/.cache/ms-playwright
-        key: ${{ runner.os }}-playwright-${{ hashFiles('**/package-lock.json') }}
+        key: ${{ runner.os }}-playwright-${{ steps.playwright-version.outputs.version }}
 
     - name: Setup Node
       uses: actions/setup-node@v4
