@@ -48,6 +48,26 @@ Maintainers can force the bot to refresh its list by adding the `Props Bot` labe
 
 Crediting is automated from there: when a pull request merges into `develop`, the Credits Sync workflow reads the Props Bot comment and appends anyone not yet credited for the current release cycle to `.github/scripts/release/credits/unreleased.json`, via a small auto-merging PR. At the next version bump those names move into the release's credits file and appear on the in-plugin Credits screen. Contributors the bot couldn't resolve (no linked GitHub account) are skipped by the automation — maintainers add them by hand to `unreleased.json` or the version's credits file.
 
+### How credits are grouped
+
+The Credits screen has three groups, and every release is credited on its own terms.
+
+**Leads** are the people responsible for the direction of the project. This is a standing role and changes rarely.
+
+**Noteworthy Contributors** are the people whose work shaped a given release. The bar is not the size of any single contribution, it is showing up repeatedly across a cycle: pull requests landing, issues opened and triaged, reviews given, discussion that moves decisions forward. It also covers work that never appears in git — helping in Slack, shaping ideas, organizing, translating, supporting other contributors. The leads make that call, because it is the part no tool can see.
+
+**Contributors to GatherPress X.Y.Z** is everyone who contributed to that release, however small. A single typo fix belongs here, and belongs here genuinely — it is a real credit, sized to the contribution.
+
+### Moving between groups
+
+Getting into Noteworthy takes a pattern of contribution, not one good week. Staying there is deliberately easier than getting there: a quiet release does not cost you your place, because contribution comes in waves and people have jobs and lives.
+
+Someone comes off the Noteworthy list after roughly three consecutive releases with no contribution of any kind. That is a few months of dormancy, and it is a statement about the release being credited rather than a judgement about the person. Anyone who returns and contributes goes back on.
+
+Two things worth being direct about. This is not a permanent status and is not meant to be — the list describes who is currently building GatherPress, and it stays honest by changing. And the leads' judgement is genuinely part of it, particularly for contribution that happens outside the repository. We would rather say that plainly than dress it up as a formula.
+
+If you want to be in that group, the route is the same one everyone took: pick up issues, review other people's work, and keep showing up. We would much rather grow this list than prune it.
+
 ---
 
 Thanks for helping make GatherPress better! 💜
