@@ -118,7 +118,13 @@ jobs:
     # AND keep the post-job cache save alive, so the next locale job can hit
     # the browser cache instead of repeating the download.
     - name: Install Playwright browser
-      timeout-minutes: 10
+      # 20, not 10: a cold download genuinely needs it. Runs 31287296394 and
+      # its re-run both hit the 10-minute cap mid-download, saved no cache,
+      # and so left the next run just as cold -- the cap was reproducing the
+      # condition it fired on. The 6h hang this file's timeouts guard against
+      # was in the apt phase, which is the separate step below with its own
+      # cap, so this does not reopen it.
+      timeout-minutes: 20
       run: npx playwright install chromium
       if: steps.playwright-cache.outputs.cache-hit != 'true'
 
