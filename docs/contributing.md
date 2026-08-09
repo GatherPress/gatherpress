@@ -62,9 +62,9 @@ The Credits screen has three groups, and every release is credited on its own te
 
 Getting into Noteworthy takes a pattern of contribution, not one good week. Staying there is deliberately easier than getting there: a quiet release does not cost you your place, because contribution comes in waves and people have jobs and lives.
 
-Someone comes off the Noteworthy list after roughly three consecutive releases with no contribution of any kind. That is a few months of dormancy, and it is a statement about the release being credited rather than a judgement about the person. Anyone who returns and contributes goes back on.
+Someone comes off the Noteworthy list after roughly three consecutive releases with no contribution of any kind. That is a few months of dormancy, and it is a statement about the release being credited rather than a judgment about the person. Anyone who returns and contributes goes back on.
 
-Two things worth being direct about. This is not a permanent status and is not meant to be — the list describes who is currently building GatherPress, and it stays honest by changing. And the leads' judgement is genuinely part of it, particularly for contribution that happens outside the repository. We would rather say that plainly than dress it up as a formula.
+Two things worth being direct about. This is not a permanent status and is not meant to be — the list describes who is currently building GatherPress, and it stays honest by changing. And the leads' judgment is genuinely part of it, particularly for contribution that happens outside the repository. We would rather say that plainly than dress it up as a formula.
 
 If you want to be in that group, the route is the same one everyone took: pick up issues, review other people's work, and keep showing up. We would much rather grow this list than prune it.
 
