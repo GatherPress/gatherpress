@@ -1,0 +1,4 @@
+Significance: minor
+Type: added
+
+Expose upcoming events and per-event RSVP counts through the WordPress Abilities API, so REST clients, WP-CLI, and AI tooling can read a site's schedule without hard-coding GatherPress post types, meta keys, or RSVP comment storage. Both abilities are read-only and permission checked.
