@@ -127,43 +127,38 @@ jobs:
           ./node_modules
         key: ${{ steps.node_modules-cache.outputs.cache-primary-key }}
 
-    # The browser download and the apt-based system-dependency install are
-    # deliberately separate steps with their own timeouts: the combined
-    # `install --with-deps` hung indefinitely inside its apt phase (after the
-    # browser download had already completed) and every locale job burned
-    # GitHub's 6h limit — see run 27881952586. Step-level timeouts fail fast
-    # AND keep the post-job cache save alive, so the next locale job can hit
-    # the browser cache instead of repeating the download.
-    - name: Install Playwright browser
-      # 30, not 10: a cold download genuinely needs it. Runs 31287296394 and
-      # its re-run both hit the 10-minute cap mid-download, saved no cache,
-      # and so left the next run just as cold -- the cap was reproducing the
-      # condition it fired on. Generous on purpose: it only applies until one
-      # run populates the cache, after which the cache-hit guard below skips
-      # the step entirely. The 6h hang this file's timeouts guard against was
-      # in the apt phase, which is the separate step below with its own cap,
-      # so this does not reopen it.
-      timeout-minutes: 30
-      # Retry with a hard kill rather than one long attempt. The download
-      # itself is not the problem -- it reaches 100% of 167MB and then the
-      # process sits there, so a bigger budget just means waiting longer for
-      # the same nothing (runs 31287296394, 31288339635). `timeout` kills a
-      # stuck attempt at 8 minutes and the next one re-uses whatever already
-      # landed on disk, so each retry starts closer to done.
-      run: |
-        for attempt in 1 2 3; do
-          echo "::group::playwright install chromium (attempt $attempt/3)"
-          if timeout --signal=KILL 8m npx playwright install chromium; then
-            echo "::endgroup::"
-            exit 0
-          fi
-          echo "::endgroup::"
-          echo "::warning::Attempt $attempt stalled or failed; retrying."
-          sleep 5
-        done
-        echo "::error::playwright install chromium did not complete in 3 attempts."
-        exit 1
+    # playwright-core's bundled yauzl deadlocks unpacking the browser archive
+    # on Node 24.16/24.17: the extract stream never emits `close`, so the
+    # forked oopDownloadBrowserMain.js wedges silently *after* the transfer
+    # reaches 100% (nodejs/node#63487, microsoft/playwright#41133). Playwright
+    # vendored the fix in 1.60.0; 1.58.x never got it.
+    #
+    # .nvmrc pins 24.17.0 (#1962, to dodge a 24.18.0 `wp-scripts build`
+    # corruption), which is squarely in the broken range -- that pin is why
+    # runs 31287296394, 31288339635 and 31313721827 all hung after reaching
+    # 100%. Node 24.18.0 carries the libuv revert, so run the install (and
+    # only the install) on a Node past it, then restore the pinned one before
+    # anything builds.
+    #
+    # The apt phase below stays a separate step with its own timeout: the
+    # combined `install --with-deps` once hung indefinitely inside it and
+    # burned GitHub's 6h limit across every locale (run 27881952586).
+    - name: Use a Node without the extraction deadlock
       if: steps.playwright-cache.outputs.cache-hit != 'true'
+      uses: actions/setup-node@v4
+      with:
+        node-version: '24.19.0'
+
+    - name: Install Playwright browser
+      timeout-minutes: 15
+      run: npx playwright install chromium
+      if: steps.playwright-cache.outputs.cache-hit != 'true'
+
+    - name: Restore the pinned Node
+      if: steps.playwright-cache.outputs.cache-hit != 'true'
+      uses: actions/setup-node@v4
+      with:
+        node-version-file: '.nvmrc'
 
     - name: Install Playwright system dependencies
       timeout-minutes: 10
